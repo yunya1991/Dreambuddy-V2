@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the first shippable `ui-map` independent hub homepage in `7-ARTIFACT_HUB` by constructing the frontend shell first, then filling modules one by one with mandatory pressure testing, multi-scenario simulation, and architecture-drift review after each important chunk.
+**Goal:** Build the first shippable `ui-map` independent hub homepage in `7-产物中台/系统研究索引体系` by constructing the frontend shell first, then filling modules one by one with mandatory pressure testing, multi-scenario simulation, and architecture-drift review after each important chunk.
 
 **Architecture:** Deliver `ui-map` in two phases. `Phase A` builds the independent frontend shell and stabilizes the layered page skeleton, scenario fixtures, and navigation without touching real backend integration. `Phase B` fills the shell module by module in the same order as the approved architecture diagram: source layer, unified mainline, dual index foundations, then perspective layer. Each module lands only after passing tests, scripted pressure checks, multi-scenario simulation, and design-drift review against the approved diagram.
 
@@ -63,44 +63,44 @@ Each module is treated as its own unit of delivery and validation.
 
 ### New Files
 
-- `7-ARTIFACT_HUB/app/ui-map/page.tsx`
+- `7-产物中台/系统研究索引体系/app/ui-map/page.tsx`
   - Route entry for the independent hub homepage.
-- `7-ARTIFACT_HUB/app/ui-map/UIMapClient.tsx`
+- `7-产物中台/系统研究索引体系/app/ui-map/UIMapClient.tsx`
   - Client shell that renders the layered homepage and scenario switcher.
-- `7-ARTIFACT_HUB/app/ui-map/UIMapShell.tsx`
+- `7-产物中台/系统研究索引体系/app/ui-map/UIMapShell.tsx`
   - Pure shell layout that places source, mainline, index foundation, and perspective sections into the approved visual structure.
-- `7-ARTIFACT_HUB/app/ui-map/UIMapModuleCard.tsx`
+- `7-产物中台/系统研究索引体系/app/ui-map/UIMapModuleCard.tsx`
   - Reusable block renderer for each module card.
-- `7-ARTIFACT_HUB/app/ui-map/ui-map-scenarios.ts`
+- `7-产物中台/系统研究索引体系/app/ui-map/ui-map-scenarios.ts`
   - Typed scenario fixtures for shell and module rendering.
-- `7-ARTIFACT_HUB/app/ui-map/ui-map-shell-view-model.ts`
+- `7-产物中台/系统研究索引体系/app/ui-map/ui-map-shell-view-model.ts`
   - Pure transformation from scenario data to shell-ready `UIMapShellViewModel`.
-- `7-ARTIFACT_HUB/app/ui-map/ui-map-shell-view-model.test.ts`
+- `7-产物中台/系统研究索引体系/app/ui-map/ui-map-shell-view-model.test.ts`
   - TDD coverage for shell semantics and scenario fallback behavior.
-- `7-ARTIFACT_HUB/app/ui-map/page.test.ts`
+- `7-产物中台/系统研究索引体系/app/ui-map/page.test.ts`
   - Smoke test for the `/ui-map` route entry.
-- `7-ARTIFACT_HUB/app/ui-map/navigation.test.ts`
+- `7-产物中台/系统研究索引体系/app/ui-map/navigation.test.ts`
   - Smoke test for `/` redirect and `Header` promotion.
-- `7-ARTIFACT_HUB/scripts/ui-map-pressure-check.mjs`
+- `7-产物中台/系统研究索引体系/scripts/ui-map-pressure-check.mjs`
   - Repeated fetch checker for `/ui-map` across all scenarios.
 
 ### Modified Files
 
-- `7-ARTIFACT_HUB/app/page.tsx`
+- `7-产物中台/系统研究索引体系/app/page.tsx`
   - Promote `/ui-map` as the independent hub entry.
-- `7-ARTIFACT_HUB/components/Header.tsx`
+- `7-产物中台/系统研究索引体系/components/Header.tsx`
   - Add the `UI-Map` navigation item while preserving `feed / chain / org / meeting`.
-- `7-ARTIFACT_HUB/app/globals.css`
+- `7-产物中台/系统研究索引体系/app/globals.css`
   - Minimal shared helpers only if needed for shell-level layout.
-- `7-ARTIFACT_HUB/docs/superpowers/specs/2026-05-22-ui-map-independent-hub-main-map-design.md`
+- `7-产物中台/docs/superpowers/specs/2026-05-22-ui-map-independent-hub-main-map-design.md`
   - Backfill delivered route and shell notes after implementation.
 
 ## Task 1: Build The Shell Scenario Model
 
 **Files:**
-- Create: `7-ARTIFACT_HUB/app/ui-map/ui-map-scenarios.ts`
-- Create: `7-ARTIFACT_HUB/app/ui-map/ui-map-shell-view-model.ts`
-- Test: `7-ARTIFACT_HUB/app/ui-map/ui-map-shell-view-model.test.ts`
+- Create: `7-产物中台/系统研究索引体系/app/ui-map/ui-map-scenarios.ts`
+- Create: `7-产物中台/系统研究索引体系/app/ui-map/ui-map-shell-view-model.ts`
+- Test: `7-产物中台/系统研究索引体系/app/ui-map/ui-map-shell-view-model.test.ts`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -139,7 +139,7 @@ test("unknown scenario falls back to balanced shell data", () => {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -276,7 +276,7 @@ export function buildUIMapShellViewModel(scenario: UIMapScenario): UIMapShellVie
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -287,7 +287,7 @@ Expected: PASS with 3 passing tests.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm exec tsx --eval "import { getUIMapScenario } from './app/ui-map/ui-map-scenarios.ts'; import { buildUIMapShellViewModel } from './app/ui-map/ui-map-shell-view-model.ts'; const ids=['balanced','custom-heavy','system-heavy','execution-heavy']; for (let i=0;i<200;i++) { for (const id of ids) { const vm=buildUIMapShellViewModel(getUIMapScenario(id)); if (vm.mainlineLayer.title !== '策略主线') throw new Error('broken shell model'); } } console.log('ui-map shell scenario pressure ok');"
 ```
 
@@ -319,11 +319,11 @@ git commit -m "feat: add ui-map shell model"
 ## Task 2: Build The UI-Map Frontend Shell
 
 **Files:**
-- Create: `7-ARTIFACT_HUB/app/ui-map/UIMapModuleCard.tsx`
-- Create: `7-ARTIFACT_HUB/app/ui-map/UIMapShell.tsx`
-- Create: `7-ARTIFACT_HUB/app/ui-map/UIMapClient.tsx`
-- Create: `7-ARTIFACT_HUB/app/ui-map/page.tsx`
-- Test: `7-ARTIFACT_HUB/app/ui-map/page.test.ts`
+- Create: `7-产物中台/系统研究索引体系/app/ui-map/UIMapModuleCard.tsx`
+- Create: `7-产物中台/系统研究索引体系/app/ui-map/UIMapShell.tsx`
+- Create: `7-产物中台/系统研究索引体系/app/ui-map/UIMapClient.tsx`
+- Create: `7-产物中台/系统研究索引体系/app/ui-map/page.tsx`
+- Test: `7-产物中台/系统研究索引体系/app/ui-map/page.test.ts`
 
 - [ ] **Step 1: Write the failing route smoke test**
 
@@ -345,7 +345,7 @@ test("ui-map route entry renders the shell and uses the shell view model", () =>
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/page.test.ts
 ```
 
@@ -492,7 +492,7 @@ export default function UIMapPage({
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm build
 ```
 
@@ -503,7 +503,7 @@ Expected: `/ui-map` route builds successfully.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-shell.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -544,9 +544,9 @@ git commit -m "feat: add ui-map frontend shell"
 ## Task 3: Fill The Source Layer Module
 
 **Files:**
-- Modify: `7-ARTIFACT_HUB/app/ui-map/ui-map-shell-view-model.ts`
-- Modify: `7-ARTIFACT_HUB/app/ui-map/UIMapShell.tsx`
-- Test: `7-ARTIFACT_HUB/app/ui-map/ui-map-shell-view-model.test.ts`
+- Modify: `7-产物中台/系统研究索引体系/app/ui-map/ui-map-shell-view-model.ts`
+- Modify: `7-产物中台/系统研究索引体系/app/ui-map/UIMapShell.tsx`
+- Test: `7-产物中台/系统研究索引体系/app/ui-map/ui-map-shell-view-model.test.ts`
 
 - [ ] **Step 1: Write the failing test for richer source-layer semantics**
 
@@ -567,7 +567,7 @@ test("source layer keeps custom strategy as a composite source instead of a flat
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -605,7 +605,7 @@ sourceLayer: [
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -616,7 +616,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-source.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -649,9 +649,9 @@ git commit -m "feat: refine ui-map source layer"
 ## Task 4: Fill The Mainline And Dual Index Modules
 
 **Files:**
-- Modify: `7-ARTIFACT_HUB/app/ui-map/ui-map-shell-view-model.ts`
-- Modify: `7-ARTIFACT_HUB/app/ui-map/UIMapShell.tsx`
-- Test: `7-ARTIFACT_HUB/app/ui-map/ui-map-shell-view-model.test.ts`
+- Modify: `7-产物中台/系统研究索引体系/app/ui-map/ui-map-shell-view-model.ts`
+- Modify: `7-产物中台/系统研究索引体系/app/ui-map/UIMapShell.tsx`
+- Test: `7-产物中台/系统研究索引体系/app/ui-map/ui-map-shell-view-model.test.ts`
 
 - [ ] **Step 1: Write the failing test for mainline and dual-index semantics**
 
@@ -670,7 +670,7 @@ test("mainline and dual-index layers keep convergence and foundation semantics",
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -717,7 +717,7 @@ indexFoundation: {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -728,7 +728,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-mainline.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -763,11 +763,11 @@ git commit -m "feat: refine ui-map mainline and foundations"
 ## Task 5: Fill The Perspective Layer And Promote UI-Map Entry
 
 **Files:**
-- Modify: `7-ARTIFACT_HUB/app/page.tsx`
-- Modify: `7-ARTIFACT_HUB/components/Header.tsx`
-- Modify: `7-ARTIFACT_HUB/app/ui-map/UIMapShell.tsx`
-- Modify: `7-ARTIFACT_HUB/app/globals.css`
-- Test: `7-ARTIFACT_HUB/app/ui-map/navigation.test.ts`
+- Modify: `7-产物中台/系统研究索引体系/app/page.tsx`
+- Modify: `7-产物中台/系统研究索引体系/components/Header.tsx`
+- Modify: `7-产物中台/系统研究索引体系/app/ui-map/UIMapShell.tsx`
+- Modify: `7-产物中台/系统研究索引体系/app/globals.css`
+- Test: `7-产物中台/系统研究索引体系/app/ui-map/navigation.test.ts`
 
 - [ ] **Step 1: Write the failing navigation and perspective test**
 
@@ -793,7 +793,7 @@ test("ui-map is promoted as hub entry and keeps dual perspective layer", () => {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/navigation.test.ts
 ```
 
@@ -839,7 +839,7 @@ export default function Home() {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm build
 ```
 
@@ -850,7 +850,7 @@ Expected: `/` redirects to `/ui-map`, and `/feed` `/chain` remain available.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-nav.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -883,15 +883,15 @@ git commit -m "feat: promote ui-map shell as hub entry"
 ## Task 6: Add Automated Pressure Checks, Browser Scenarios, And Docs Handoff
 
 **Files:**
-- Create: `7-ARTIFACT_HUB/scripts/ui-map-pressure-check.mjs`
-- Modify: `7-ARTIFACT_HUB/app/ui-map/UIMapClient.tsx`
-- Modify: `7-ARTIFACT_HUB/docs/superpowers/specs/2026-05-22-ui-map-independent-hub-main-map-design.md`
-- Modify: `7-ARTIFACT_HUB/docs/superpowers/plans/2026-05-22-ui-map-independent-hub-main-map-implementation.md`
+- Create: `7-产物中台/系统研究索引体系/scripts/ui-map-pressure-check.mjs`
+- Modify: `7-产物中台/系统研究索引体系/app/ui-map/UIMapClient.tsx`
+- Modify: `7-产物中台/docs/superpowers/specs/2026-05-22-ui-map-independent-hub-main-map-design.md`
+- Modify: `7-产物中台/docs/superpowers/plans/2026-05-22-ui-map-independent-hub-main-map-implementation.md`
 
 - [ ] **Step 1: Write the failing pressure script invocation**
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 node scripts/ui-map-pressure-check.mjs
 ```
 
@@ -938,7 +938,7 @@ main().catch((error) => {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-pressure.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -958,7 +958,7 @@ ui-map pressure check ok
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-ARTIFACT_HUB
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
 mkdir -p .tmp/ui-map-scenarios
 pnpm dlx playwright screenshot --viewport-size="1440,1400" "http://127.0.0.1:3456/ui-map?scenario=balanced" .tmp/ui-map-scenarios/balanced.png
 pnpm dlx playwright screenshot --viewport-size="1440,1400" "http://127.0.0.1:3456/ui-map?scenario=custom-heavy" .tmp/ui-map-scenarios/custom-heavy.png
@@ -1012,7 +1012,7 @@ git commit -m "docs: finalize ui-map shell-first handoff"
 - Type consistency:
   - `UIMapScenarioId`, `UIMapScenario`, and `UIMapShellViewModel` are introduced in Task 1 and used consistently in later tasks.
 
-Plan complete and saved to `7-ARTIFACT_HUB/docs/superpowers/plans/2026-05-22-ui-map-independent-hub-main-map-implementation.md`. Two execution options:
+Plan complete and saved to `7-产物中台/docs/superpowers/plans/2026-05-22-ui-map-independent-hub-main-map-implementation.md`. Two execution options:
 
 **1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
 

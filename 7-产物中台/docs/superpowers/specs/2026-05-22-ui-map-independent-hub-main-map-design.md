@@ -1,7 +1,7 @@
 # UI-Map Independent Hub Main Map Design
 
 > Date: 2026-05-22
-> Scope: `7-ARTIFACT_HUB`
+> Scope: `7-产物中台/系统研究索引体系`
 > Status: Ready for review
 
 ## 1. Goal
