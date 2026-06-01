@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
 """
-回测策略实现模块 v14.0
+回测策略实现模块 v13.0
 ======================
 忠实实现 TRADING_WORKFLOW_SPEC_v1.md 设计规范
-
-v14.0 — BTC牛市信号增强 + ETH波动率自适应:
-  A1. 牛市溢价分: STRONG_BULL + LONG + RSI∈[50,75] → signal_score +8 (仓位 MEDIUM→STRONG)
-  A2. RSI过热减仓: STRONG_BULL + LONG + RSI>75 → single_layer_pct×0.5 (防高位追涨)
-  B1. ETH vol_mult地板 1.30→1.50: 加仓间隔10.4%→12%, 止盈5.2%→6% (链变稀疏)
-  B2. ETH SHORT L2c放宽: avg×1.20→avg×1.25 (多5%呼吸空间, 减少误止链)
 
 v13.0 — 强趋势区顺势马丁 (ABOVE_ALL/BELOW_ALL + 连涨跌 + MEC):
   1. ABOVE_ALL (BTC全线上方=强多头): 连跌≥3日 + MEC≥2 → 开 LONG 马丁
@@ -242,7 +236,6 @@ def _apply_opt_params(defaults: dict, overrides: dict = None) -> dict:
 # v7.0 Opt-1B: 动态 HV 驱动的 Regime 阈值乘数
 # 静态表作为 fallback (数据 <4 周时使用)
 # 推导: BTC~65%/ETH~85%/SOL~115% 年化波动率 → 周波动率基准 BTC≈9%/周
-# v14.0-B1: ETH波动率地板 1.30→1.50 (加仓间隔10.4%→12%, 止盈5.2%→6%)
 _STATIC_REGIME_VOL_MULT: dict = {
     "BTC-USDT-SWAP": 1.00,
     "ETH-USDT-SWAP": 1.50,
@@ -1012,7 +1005,7 @@ def check_exit_signals(
     current_equity: float,
     peak_equity: float,
     trade_count: int,
-    inst_id: str = "BTC-USDT-SWAP",  # v14.0-B2: ETH L2c定制
+    inst_id: str = "BTC-USDT-SWAP",  # v14.0-B2
 ) -> Tuple[bool, ExitReason, int]:
     """
     v12.0 离场决策 (四条件)
@@ -1087,7 +1080,7 @@ def check_exit_signals(
     # v14.0-B2: ETH SHORT L2c放宽至avg×1.25 (ETH波动大, 多5%呼吸空间)
     l2c_mult = 1.25 if (inst_id == "ETH-USDT-SWAP" and position.direction == Direction.SHORT) else 1.20
     if position.level >= 1 and not position.is_martin_complete and not position.ma_zone_opened:
-        avg = position.entry_price  # recalc_avg_entry已将entry_price更新为加权均价
+        avg = position.entry_price
         if position.direction == Direction.LONG and low <= avg * 0.80:
             return True, ExitReason.STOP_LOSS, -1
         if position.direction == Direction.SHORT and high >= avg * l2c_mult:
