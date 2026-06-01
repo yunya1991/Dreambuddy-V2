@@ -463,8 +463,10 @@ class BacktestEngine:
                         print(f"   最大回撤触发, 强制全平!")
                         break
                 else:
-                    # 检查加仓 (v7.0 Opt-2: RSI+ATR扩张时跳过; v8.0: 信号评分门禁)
-                    if screen2.addon_suppressed:
+                    # 检查加仓 (v11.0: MA区间反向单禁止加仓; v7.0: RSI+ATR扩张跳过; v8.0: 信号评分门禁)
+                    if self.position.ma_zone_opened:
+                        add_info = None  # MA区间反向单: 单层持仓, 不加仓
+                    elif screen2.addon_suppressed:
                         add_info = None
                     else:
                         addon_min_score = (self.opt_params or {}).get(
