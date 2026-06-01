@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """
-回测策略实现模块 v13.0
+回测策略实现模块 v14.0
 ======================
 忠实实现 TRADING_WORKFLOW_SPEC_v1.md 设计规范
+
+v14.0 — BTC牛市信号增强 + ETH波动率自适应:
+  A1. 牛市溢价分: STRONG_BULL + LONG + RSI∈[50,75] → signal_score +8 (仓位 MEDIUM→STRONG)
+  A2. RSI过热减仓: STRONG_BULL + LONG + RSI>75 → single_layer_pct×0.5 (防高位追涨)
+  B1. ETH vol_mult地板 1.30→1.50: 加仓间隔10.4%→12%, 止盈5.2%→6% (链变稀疏)
+  B2. ETH SHORT L2c放宽: avg×1.20→avg×1.25 (多5%呼吸空间, 减少误止链)
 
 v13.0 — 强趋势区顺势马丁 (ABOVE_ALL/BELOW_ALL + 连涨跌 + MEC):
   1. ABOVE_ALL (BTC全线上方=强多头): 连跌≥3日 + MEC≥2 → 开 LONG 马丁
