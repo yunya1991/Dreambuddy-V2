@@ -159,8 +159,9 @@ class BacktestEngine:
             is_martin_complete=False,
         )
 
-        # v10.0: MA区间反向单标记 (用于 check_exit_signals 跳过L2)
-        if screen2.ma_direction is not None:
+        # v10.0: MA区间反向单标记 (用于 check_exit_signals 跳过L2, 禁止加仓)
+        # v13.0: ABOVE_ALL_LONG/BELOW_ALL_SHORT 是顺势马丁, 不设此标记 (允许加仓+L2b/L2c出场)
+        if screen2.ma_direction is not None and screen2.ma_zone_gate not in ("ABOVE_ALL_LONG", "BELOW_ALL_SHORT"):
             self.position.ma_zone_opened = True
             self.position.ma_zone_ref_price = screen2.ma_zone_ref_price
 
@@ -434,7 +435,8 @@ class BacktestEngine:
                 # 规范: 第一屏确定方向 或 MA区间信号确定方向 -> 开仓
                 elif screen1.direction in (Direction.LONG, Direction.SHORT) or screen2.ma_direction is not None:
                     self._open_position(screen2, screen1, candle)
-                    print(f"   {dt:%Y-%m-%d} 开仓: {screen1.direction.value} ({screen1.market_state}) "
+                    open_dir = screen2.ma_direction if screen2.ma_direction is not None else screen1.direction
+                    print(f"   {dt:%Y-%m-%d} 开仓: {open_dir.value} ({screen1.market_state}) "
                           f"| 信号={screen2.signal_score:.0f}({screen2.signal_strength.value}) "
                           f"| 价位=${price:,.0f} | 单层仓位={screen2.position_pct*100:.1f}% "
                           f"| TP=${screen2.tp_target:,.0f}")
@@ -451,7 +453,8 @@ class BacktestEngine:
                     if exit_reason == ExitReason.TAKE_PROFIT_1:
                         close_price = self.position.tp_target
                     elif exit_reason == ExitReason.STOP_LOSS:
-                        close_price = getattr(self.position, "stop_loss_price", price)
+                        sl = self.position.stop_loss_price
+                        close_price = sl if sl > 0 else price  # L2c无预设价时用当日收盘
                     else:
                         close_price = price
                     martin_tag = "[马丁加满]" if self.position.is_martin_complete else ""
