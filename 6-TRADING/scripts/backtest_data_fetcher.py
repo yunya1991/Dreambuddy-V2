@@ -278,6 +278,7 @@ def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
       - ATR_14:   14周期ATR (波动率)
       - RSI_14:   14周期RSI
       - vol_ratio: 成交量相对于20日均量之比
+      - sma5/13/30/65/128/200: 简单均线 (MA区间经验法则用)
     """
     closes = [c["close"] for c in candles]
     highs  = [c["high"]  for c in candles]
@@ -359,6 +360,15 @@ def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
             full_signal[i] = signal_raw[j]
             j += 1
 
+    # SMA 计算 (MA区间经验法则: MA5/13/30/65/128/200)
+    _MA_PERIODS = [5, 13, 30, 65, 128, 200]
+    sma_arrays = {}
+    for p in _MA_PERIODS:
+        arr = [None] * n
+        for i in range(p - 1, n):
+            arr[i] = sum(closes[i - p + 1:i + 1]) / p
+        sma_arrays[p] = arr
+
     for i, c in enumerate(candles):
         c["ema20"]     = ema20[i]
         c["ema50"]     = ema50[i]
@@ -368,6 +378,8 @@ def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
         c["rsi"]       = rsi14[i]
         c["atr"]       = atr14[i]
         c["vol_ratio"] = (vols[i] / vol_ma20[i]) if vol_ma20[i] else None
+        for p in _MA_PERIODS:
+            c[f"sma{p}"] = sma_arrays[p][i]
 
     return candles
 
