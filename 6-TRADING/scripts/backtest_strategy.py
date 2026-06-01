@@ -236,9 +236,10 @@ def _apply_opt_params(defaults: dict, overrides: dict = None) -> dict:
 # v7.0 Opt-1B: 动态 HV 驱动的 Regime 阈值乘数
 # 静态表作为 fallback (数据 <4 周时使用)
 # 推导: BTC~65%/ETH~85%/SOL~115% 年化波动率 → 周波动率基准 BTC≈9%/周
+# v14.0-B1: ETH波动率地板 1.30→1.50 (加仓间隔10.4%→12%, 止盈5.2%→6%)
 _STATIC_REGIME_VOL_MULT: dict = {
     "BTC-USDT-SWAP": 1.00,
-    "ETH-USDT-SWAP": 1.30,
+    "ETH-USDT-SWAP": 1.50,
     "SOL-USDT-SWAP": 1.75,
 }
 
@@ -872,6 +873,11 @@ def run_screen2(
     elif vr < 0.6:
         score -= 5
 
+    # v14.0-A1: 牛市溢价分 (STRONG_BULL + LONG + RSI∈[50,75] → 健康牛市区段加分)
+    if (screen1.regime == "STRONG_BULL" and screen1.direction == Direction.LONG
+            and rsi_val is not None and 50 <= rsi_val <= 75):
+        score += 8
+
     score = max(0, min(100, score))
     signal_strength = _classify_signal(score)
 
@@ -929,6 +935,11 @@ def run_screen2(
 
     effective_total = total_limit * strength_mult * screen1.regime_multiplier
     single_layer_pct = effective_total / 4.0
+
+    # v14.0-A2: RSI过热减仓 (STRONG_BULL + LONG + RSI>75 → 半仓入场)
+    if (screen1.regime == "STRONG_BULL" and screen1.direction == Direction.LONG
+            and rsi_val is not None and rsi_val > 75):
+        single_layer_pct = single_layer_pct * 0.5
 
     # v11.0: MA区间反向单按MEC评分缩放仓位
     if ma_direction_override is not None and ma_zone_size_mult_val < 1.0:
@@ -994,7 +1005,8 @@ def check_exit_signals(
     screen1: Screen1Output,
     current_equity: float,
     peak_equity: float,
-    trade_count: int
+    trade_count: int,
+    inst_id: str = "BTC-USDT-SWAP",  # v14.0-B2: ETH L2c定制
 ) -> Tuple[bool, ExitReason, int]:
     """
     v12.0 离场决策 (四条件)
@@ -1066,11 +1078,13 @@ def check_exit_signals(
     # --- L2c: 链均价提前保护 (v12.0: level>=1 未加满时也启用均价止损) ---
     # 与v9.0 L1b逻辑相同 (avg×1.20/×0.80), 但不等Level3完成即生效
     # 防止第1次加仓后极端反向行情继续叠损 (如ETH 2025-05, 2025-07事件)
+    # v14.0-B2: ETH SHORT L2c放宽至avg×1.25 (ETH波动大, 多5%呼吸空间)
+    l2c_mult = 1.25 if (inst_id == "ETH-USDT-SWAP" and position.direction == Direction.SHORT) else 1.20
     if position.level >= 1 and not position.is_martin_complete and not position.ma_zone_opened:
         avg = position.entry_price  # recalc_avg_entry已将entry_price更新为加权均价
         if position.direction == Direction.LONG and low <= avg * 0.80:
             return True, ExitReason.STOP_LOSS, -1
-        if position.direction == Direction.SHORT and high >= avg * 1.20:
+        if position.direction == Direction.SHORT and high >= avg * l2c_mult:
             return True, ExitReason.STOP_LOSS, -1
 
     # --- L4: 最大回撤约束 (20%强制全平) ---
