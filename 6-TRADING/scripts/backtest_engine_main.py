@@ -55,9 +55,12 @@ DEFAULT_CONFIG = {
 # ==================== 回测引擎 ====================
 
 class BacktestEngine:
-    def __init__(self, config: dict = None, opt_params: dict = None):
+    def __init__(self, config: dict = None, opt_params: dict = None, btc_candles: List[Dict] = None):
         self.cfg = {**DEFAULT_CONFIG, **(config or {})}
         self.opt_params = opt_params
+        self._btc_candles_param = btc_candles
+        self.btc_daily_candles: List[Dict] = []
+        self.btc_date_idx: Dict = {}
         self.reset()
 
     def reset(self):
@@ -120,8 +123,9 @@ class BacktestEngine:
         return self.cash + self.position.size_usd + unrealized
 
     def _open_position(self, screen2: Screen2Output, screen1: Screen1Output, candle: Dict):
-        """开仓 (对齐规范: 第二屏确定后必须设置订单)"""
-        price = self._apply_slippage(screen2.entry_price, screen1.direction, is_buy=True)
+        """开仓 (v10.0: MA区间信号可覆盖Screen1方向)"""
+        open_direction = screen2.ma_direction if screen2.ma_direction is not None else screen1.direction
+        price = self._apply_slippage(screen2.entry_price, open_direction, is_buy=True)
         size_usd = self.equity * screen2.position_pct
         fee = self._calc_fee(size_usd)
 
@@ -136,8 +140,11 @@ class BacktestEngine:
         self.cash -= (size_usd + fee)
         dt = ts_to_dt(candle["ts"])
 
+        if screen2.ma_direction is not None:
+            print(f"      [MA-{screen2.ma_zone_gate}] 方向覆盖: {screen1.direction.value} -> {open_direction.value}")
+
         self.position = Position(
-            direction=screen1.direction,
+            direction=open_direction,
             entry_price=price,
             initial_size_usd=size_usd,
             size_usd=size_usd,
@@ -152,12 +159,17 @@ class BacktestEngine:
             is_martin_complete=False,
         )
 
+        # v10.0: MA区间反向单标记 (用于 check_exit_signals 跳过L2)
+        if screen2.ma_direction is not None:
+            self.position.ma_zone_opened = True
+            self.position.ma_zone_ref_price = screen2.ma_zone_ref_price
+
         trade = Trade(
             trade_id=self._next_trade_id(),
             timestamp=candle["ts"],
             date=dt.strftime("%Y-%m-%d"),
             action="open",
-            direction=screen1.direction,
+            direction=open_direction,
             price=price,
             size_usd=size_usd,
             fee=fee,
@@ -362,14 +374,31 @@ class BacktestEngine:
         self.weekly_candles = resample_to_weekly(self.daily_candles)
         self.weekly_candles = add_technical_indicators(self.weekly_candles)
 
+        # v10.0: 构建BTC参考数据 (MA区间经验法则用)
+        if self.cfg["inst_id"] == "BTC-USDT-SWAP":
+            self.btc_daily_candles = self.daily_candles
+        elif self._btc_candles_param:
+            self.btc_daily_candles = self._btc_candles_param
+        else:
+            print("  [BTC参考] 单独加载BTC日线数据...")
+            raw_btc = load_or_fetch("BTC-USDT-SWAP", "1D", start_ts, end_ts)
+            self.btc_daily_candles = add_technical_indicators(raw_btc) if raw_btc else []
+
+        self.btc_date_idx = {
+            ts_to_dt(c["ts"]).strftime("%Y-%m-%d"): i
+            for i, c in enumerate(self.btc_daily_candles)
+        }
+
         print(f"\n数据准备完成:")
         print(f"   日线: {len(self.daily_candles)} 根")
         print(f"   周线: {len(self.weekly_candles)} 根")
+        print(f"   BTC参考: {len(self.btc_daily_candles)} 根")
         print(f"   时间: {ts_to_dt(self.daily_candles[0]['ts']):%Y-%m-%d} ~ {ts_to_dt(self.daily_candles[-1]['ts']):%Y-%m-%d}")
         print(f"   初始资金: ${self.cfg['initial_capital']:,.2f}")
         print(f"   止损: 无固定SL (仅信号反转/20%回撤强制全平)")
         print(f"   加仓: 等额, 每跌8%×vol_mult, 最多3次, 信号评分≥50")
         print(f"   止盈: 单次全仓, 均价+4%×vol_mult")
+        print(f"   MA区间: 涨三不追/跌四不压 (BTC全局参考)")
 
         print(f"\n开始回测...")
         warmup = 50
@@ -382,16 +411,28 @@ class BacktestEngine:
             # 第一屏: 周线决策
             screen1 = self._get_weekly_screen1(candle)
 
-            # 第二屏: 日线预设
-            screen2 = run_screen2(self.daily_candles, i, screen1, self.position, inst_id=self.cfg["inst_id"], opt_params=self.opt_params)
+            # v10.0: 查找BTC当日索引
+            date_str = dt.strftime("%Y-%m-%d")
+            btc_idx = self.btc_date_idx.get(date_str)
+
+            # 第二屏: 日线预设 (v10.0: 传入BTC参考数据)
+            screen2 = run_screen2(
+                self.daily_candles, i, screen1, self.position,
+                inst_id=self.cfg["inst_id"], opt_params=self.opt_params,
+                btc_daily_candles=self.btc_daily_candles if self.btc_daily_candles else None,
+                btc_idx=btc_idx,
+            )
 
             # --- 持仓管理 ---
             if self.position.direction == Direction.WAIT:
                 # 冷却期检查
-                if self._is_in_cooldown(dt.strftime("%Y-%m-%d")):
+                if self._is_in_cooldown(date_str):
                     self.stats["sl_cooldown_skip_count"] += 1
-                # 规范: 第一屏确定方向即可开仓 (WAIT=弱多头LONG也开仓)
-                elif screen1.direction in (Direction.LONG, Direction.SHORT):
+                # v10.0: MA区间门禁
+                elif screen2.ma_zone_gate in ("BLOCKED", "BELOW_ALL_BLOCKED"):
+                    pass
+                # 规范: 第一屏确定方向 或 MA区间信号确定方向 -> 开仓
+                elif screen1.direction in (Direction.LONG, Direction.SHORT) or screen2.ma_direction is not None:
                     self._open_position(screen2, screen1, candle)
                     print(f"   {dt:%Y-%m-%d} 开仓: {screen1.direction.value} ({screen1.market_state}) "
                           f"| 信号={screen2.signal_score:.0f}({screen2.signal_strength.value}) "
