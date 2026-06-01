@@ -445,7 +445,8 @@ class BacktestEngine:
                 should_exit, exit_reason, tp_level = check_exit_signals(
                     self.position, candle, screen1,
                     self._current_equity(price), self.peak_equity,
-                    len(self.trades)
+                    len(self.trades),
+                    inst_id=self.cfg["inst_id"],  # v14.0-B2
                 )
 
                 if should_exit:
