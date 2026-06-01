@@ -1,8 +1,23 @@
 #!/usr/bin/env python3
 """
-回测策略实现模块 v13.0
+回测策略实现模块 v15.0
 ======================
 忠实实现 TRADING_WORKFLOW_SPEC_v1.md 设计规范
+
+v15.0 — MA区间重设计: 斐波那契 + 布林带替代连涨跌+MEC门禁:
+  1. MA周期简化: SMA5/13 → 移除; 保留 SMA30/65/128/200 (有效支撑/阻力)
+  2. ABOVE_ALL (BTC全线上方): Fib回调38.2-61.8% + RSI<55 → LONG马丁
+     黄金区50-61.8% size_mult=1.0; 浅区38.2-50% size_mult=0.5
+  3. BELOW_ALL (BTC全线下方): Fib反弹38.2-61.8% + RSI>45 → SHORT马丁 (对称)
+  4. IN_ZONE (震荡区): BB下轨+RSI<35 → LONG单层; BB上轨+RSI>65 → SHORT单层
+  5. 删除 calc_btc_mec() 和连涨跌计数; 三个辅助函数替代: calc_bollinger_bands /
+     calc_swing_high_low / check_fib_entry
+
+v14.0 — BTC牛市信号增强 + ETH波动率自适应:
+  A1. 牛市溢价分: STRONG_BULL + LONG + RSI∈[50,75] → signal_score +8
+  A2. RSI过热减仓: STRONG_BULL + LONG + RSI>75 → single_layer_pct×0.5
+  B1. ETH vol_mult地板 1.30→1.50: 加仓间隔10.4%→12%, 止盈5.2%→6%
+  B2. ETH SHORT L2c放宽: avg×1.20→avg×1.25
 
 v13.0 — 强趋势区顺势马丁 (ABOVE_ALL/BELOW_ALL + 连涨跌 + MEC):
   1. ABOVE_ALL (BTC全线上方=强多头): 连跌≥3日 + MEC≥2 → 开 LONG 马丁
@@ -282,9 +297,10 @@ def _calc_quarterly_vol_mult(
     return max(static_floor, min(2.5, round(dynamic_mult, 3)))
 
 
-# ==================== MA区间经验法则 (v10.0) ====================
+# ==================== MA区间经验法则 (v15.0) ====================
 
-MA_PERIODS = [5, 13, 30, 65, 128, 200]
+# v15.0: 移除噪音均线 SMA5/SMA13，保留有意义的支撑/阻力均线
+MA_PERIODS = [30, 65, 128, 200]
 
 
 def detect_btc_ma_zone(btc_candles: List[Dict], idx: int) -> str:
@@ -317,92 +333,70 @@ def detect_btc_ma_zone(btc_candles: List[Dict], idx: int) -> str:
     return "IN_ZONE"
 
 
-def calc_btc_mec(
-    btc_candles: List[Dict],
-    btc_idx: int,
-    signal_dir: str,
-    vol_mult: float,
-    consecutive_days: int,
-) -> Tuple[int, Dict]:
-    """
-    BTC动能衰竭确认 (MEC, v11.0)
+def calc_bollinger_bands(
+    candles: List[Dict],
+    idx: int,
+    period: int = 20,
+    std_mult: float = 2.0,
+) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+    """BB上中下轨 (v15.0). 返回 (upper, middle, lower) 或 (None, None, None)"""
+    if idx < period - 1:
+        return None, None, None
+    closes = [candles[i]["close"] for i in range(idx - period + 1, idx + 1)]
+    middle = sum(closes) / period
+    std = statistics.stdev(closes)
+    return round(middle + std_mult * std, 4), round(middle, 4), round(middle - std_mult * std, 4)
 
-    三维验证: 动能/量能/势能 各1分, 满分3分
-      动能: 末日涨幅 < 首日涨幅 (相对衰减)
-      量能: 末日成交量 < 首日成交量 (量能背离)
-      势能: BTC收盘距最近阻力/支撑MA < 1.5×vol_mult 个ATR (接近关键位)
 
-    signal_dir: "SHORT"(看空,3连涨) / "LONG"(看多,4连跌)
-    vol_mult: 目标币种波动率乘数, 仅用于势能门槛
-    consecutive_days: 触发条件天数 (SHORT=3, LONG=4)
-    返回: (score 0-3, detail_dict)
-    """
-    if btc_idx < consecutive_days + 1:
-        return 0, {"error": "insufficient_data"}
+def calc_swing_high_low(
+    candles: List[Dict],
+    idx: int,
+    lookback: int = 20,
+) -> Tuple[Optional[float], Optional[float], float]:
+    """找最近 lookback 根K线的波段高低点 (v15.0). ATR过滤: range<2×ATR14→返回(None,None,0)"""
+    if idx < lookback - 1:
+        return None, None, 0.0
+    swing_high = max(candles[i]["high"] for i in range(idx - lookback + 1, idx + 1))
+    swing_low  = min(candles[i]["low"]  for i in range(idx - lookback + 1, idx + 1))
+    swing_range = swing_high - swing_low
+    atr_val = candles[idx].get("atr") or 0
+    if atr_val > 0 and swing_range < 2.0 * atr_val:
+        return None, None, 0.0
+    return swing_high, swing_low, round(swing_range, 4)
 
-    first_idx = btc_idx - consecutive_days + 1
-    last_idx = btc_idx
 
-    first_c = btc_candles[first_idx]
-    last_c = btc_candles[last_idx]
-    prev_first = btc_candles[first_idx - 1]
-
-    score = 0
-    detail: Dict = {}
-
-    # 动能: 末日vs首日收益率绝对值
-    gain_first = abs(first_c["close"] - prev_first["close"]) / (prev_first["close"] + 1e-9)
-    gain_last = abs(last_c["close"] - btc_candles[last_idx - 1]["close"]) / (btc_candles[last_idx - 1]["close"] + 1e-9)
-    momentum_decay = gain_last < gain_first
-    detail["gain_first"] = round(gain_first * 100, 3)
-    detail["gain_last"] = round(gain_last * 100, 3)
-    detail["momentum_decay"] = momentum_decay
-    if momentum_decay:
-        score += 1
-
-    # 量能: 末日vs首日成交量
-    vol_first = first_c.get("volume", 0)
-    vol_last = last_c.get("volume", 0)
-    vol_ratio = vol_last / (vol_first + 1e-9) if vol_first > 0 else 1.0
-    volume_diverge = vol_last < vol_first
-    detail["vol_first"] = round(vol_first, 1)
-    detail["vol_last"] = round(vol_last, 1)
-    detail["vol_ratio"] = round(vol_ratio, 3)
-    detail["volume_diverge"] = volume_diverge
-    if volume_diverge:
-        score += 1
-
-    # 势能: BTC接近关键MA (距离 < 1.5×vol_mult 个ATR)
-    atr_val = last_c.get("atr")
-    close_val = last_c["close"]
-    ma_vals = [last_c.get(f"sma{p}") for p in MA_PERIODS]
-    valid_mas = [v for v in ma_vals if v is not None]
-    proximity = False
-    threshold_atr = 1.5 * vol_mult
-    if atr_val and atr_val > 0 and valid_mas:
-        if signal_dir == "SHORT":
-            mas_above = [v for v in valid_mas if v > close_val]
-            if mas_above:
-                nearest = min(mas_above)
-                dist_atr = (nearest - close_val) / atr_val
-                proximity = dist_atr < threshold_atr
-                detail["nearest_resist_ma"] = round(nearest, 4)
-                detail["dist_atr"] = round(dist_atr, 3)
-        else:
-            mas_below = [v for v in valid_mas if v < close_val]
-            if mas_below:
-                nearest = max(mas_below)
-                dist_atr = (close_val - nearest) / atr_val
-                proximity = dist_atr < threshold_atr
-                detail["nearest_support_ma"] = round(nearest, 4)
-                detail["dist_atr"] = round(dist_atr, 3)
-    detail["proximity"] = proximity
-    detail["threshold_atr"] = threshold_atr
-    if proximity:
-        score += 1
-
-    detail["score"] = score
-    return score, detail
+def check_fib_entry(
+    candles: List[Dict],
+    idx: int,
+    direction: "Direction",
+    swing_high: float,
+    swing_low: float,
+) -> Tuple[str, float]:
+    """斐波那契回调/反弹入场检查 (v15.0).
+    LONG: fib_618~fib_500 → ("FIB_GOLDEN",1.0); fib_500~fib_382 → ("FIB_EARLY",0.5)
+    SHORT: 对称 (从swing_low向上量反弹)
+    返回: (gate_str, size_mult)"""
+    close = candles[idx]["close"]
+    rng = swing_high - swing_low
+    if rng <= 0:
+        return "FIB_MISS", 0.0
+    if direction == Direction.LONG:
+        fib_382 = swing_high - 0.382 * rng
+        fib_500 = swing_high - 0.500 * rng
+        fib_618 = swing_high - 0.618 * rng
+        if fib_618 <= close <= fib_500:
+            return "FIB_GOLDEN", 1.0
+        if fib_500 < close <= fib_382:
+            return "FIB_EARLY", 0.5
+    else:  # SHORT: bounce from swing_low
+        fib_382 = swing_low + 0.382 * rng
+        fib_500 = swing_low + 0.500 * rng
+        fib_618 = swing_low + 0.618 * rng
+        if fib_500 <= close <= fib_618:
+            return "FIB_GOLDEN", 1.0
+        if fib_382 <= close < fib_500:
+            return "FIB_EARLY", 0.5
+    return "FIB_MISS", 0.0
 
 
 def check_ma_zone_entry_signal(
@@ -412,113 +406,52 @@ def check_ma_zone_entry_signal(
     target_idx: int,
     vol_mult: float = 1.0,
 ) -> Tuple[str, Optional[Direction], float, float]:
-    """
-    "涨三不追，跌四不压" 均线区间经验法则 (v11.0)
+    """MA区间入场门禁 v15.0 — 斐波那契 + 布林带
 
-    BTC作为全局参考: BTC区间状态决定是否应用此规则
-    目标币种(target)的连涨/连跌条件决定方向
-    MEC评分决定入场规模 (v11.0新增)
+    ABOVE_ALL: Fib回调38.2-61.8% + RSI<55 → LONG马丁 (size_mult 1.0/0.5)
+    BELOW_ALL: Fib反弹38.2-61.8% + RSI>45 → SHORT马丁 (对称)
+    IN_ZONE:   BB下轨+RSI<35→LONG单层; BB上轨+RSI>65→SHORT单层 (size_mult=0.5)
 
     返回: (gate, direction_override, ref_ma_price, size_mult)
-      gate:
-        "LONG_ALLOWED"     — IN_ZONE 连跌4日+支撑未破+MEC≥2 → 单层多头; ref_ma=支撑MA
-        "SHORT_ALLOWED"    — IN_ZONE 连涨3日+阻力未突破+MEC≥2 → 单层空头; ref_ma=阻力MA
-        "ABOVE_ALL_LONG"   — 强多头 连跌≥3日+MEC≥2 → LONG马丁(可加仓); ref_ma=0
-        "BELOW_ALL_SHORT"  — 强空头 连涨≥3日+MEC≥2 → SHORT马丁(可加仓); ref_ma=0
-        "BLOCKED_LOW_MEC"  — 连涨/连跌条件满足但MEC<2 → 回退V9正常入场
-        "BELOW_ALL_BLOCKED"— BTC跌破所有均线且无涨三信号 → 仅阻止LONG (SHORT保留)
-        "BREAKOUT_SKIP"    — BTC上行突破或数据不足 → 跳过此规则用常规Screen2
-      size_mult: ABOVE/BELOW_ALL=1.0, IN_ZONE MEC=3→1.0/MEC=2→0.5, 其余→0.0
+      gate: "ABOVE_ALL_LONG" / "BELOW_ALL_SHORT" / "LONG_ALLOWED" / "SHORT_ALLOWED" /
+            "BELOW_ALL_BLOCKED" / "BREAKOUT_SKIP"
     """
     zone = detect_btc_ma_zone(btc_candles, btc_idx)
-
     if zone == "INSUFFICIENT_DATA":
         return "BREAKOUT_SKIP", None, 0.0, 0.0
 
-    # v13.0: 强多头区 (BTC全线上方) — 跌三不压 + MEC → LONG 马丁
     if zone == "ABOVE_ALL":
-        if target_idx >= 3:
-            consecutive_down = 0
-            for j in range(target_idx, max(0, target_idx - 5), -1):
-                if j > 0 and target_candles[j]["close"] < target_candles[j - 1]["close"]:
-                    consecutive_down += 1
-                else:
-                    break
-            if consecutive_down >= 3:
-                mec_score, _ = calc_btc_mec(btc_candles, btc_idx, "LONG", vol_mult, consecutive_down)
-                if mec_score >= 2:
-                    return "ABOVE_ALL_LONG", Direction.LONG, 0.0, 1.0
+        rsi = target_candles[target_idx].get("rsi")
+        if rsi is not None and rsi < 55:
+            sh, sl, _ = calc_swing_high_low(target_candles, target_idx, 20)
+            if sh is not None and sl is not None:
+                gate, size_mult = check_fib_entry(target_candles, target_idx,
+                                                   Direction.LONG, sh, sl)
+                if gate != "FIB_MISS":
+                    return "ABOVE_ALL_LONG", Direction.LONG, 0.0, size_mult
         return "BREAKOUT_SKIP", None, 0.0, 0.0
 
-    # v13.0: 强空头区 (BTC全线下方) — 涨三不追 + MEC → SHORT 马丁
     if zone == "BELOW_ALL":
-        if target_idx >= 3:
-            consecutive_up = 0
-            for j in range(target_idx, max(0, target_idx - 5), -1):
-                if j > 0 and target_candles[j]["close"] > target_candles[j - 1]["close"]:
-                    consecutive_up += 1
-                else:
-                    break
-            if consecutive_up >= 3:
-                mec_score, _ = calc_btc_mec(btc_candles, btc_idx, "SHORT", vol_mult, consecutive_up)
-                if mec_score >= 2:
-                    return "BELOW_ALL_SHORT", Direction.SHORT, 0.0, 1.0
+        rsi = target_candles[target_idx].get("rsi")
+        if rsi is not None and rsi > 45:
+            sh, sl, _ = calc_swing_high_low(target_candles, target_idx, 20)
+            if sh is not None and sl is not None:
+                gate, size_mult = check_fib_entry(target_candles, target_idx,
+                                                   Direction.SHORT, sh, sl)
+                if gate != "FIB_MISS":
+                    return "BELOW_ALL_SHORT", Direction.SHORT, 0.0, size_mult
         return "BELOW_ALL_BLOCKED", None, 0.0, 0.0
 
-    # zone == "IN_ZONE": 检测目标币种连涨/连跌
-    if target_idx < 4:
-        return "BREAKOUT_SKIP", None, 0.0, 0.0
-
-    curr_price = target_candles[target_idx]["close"]
-
-    # 连续上涨天数 (从今日向前数)
-    consecutive_up = 0
-    for j in range(target_idx, max(0, target_idx - 5), -1):
-        if j > 0 and target_candles[j]["close"] > target_candles[j - 1]["close"]:
-            consecutive_up += 1
-        else:
-            break
-
-    # 连续下跌天数
-    consecutive_down = 0
-    for j in range(target_idx, max(0, target_idx - 6), -1):
-        if j > 0 and target_candles[j]["close"] < target_candles[j - 1]["close"]:
-            consecutive_down += 1
-        else:
-            break
-
-    # 目标币种可用MA值
-    target_mas = [target_candles[target_idx].get(f"sma{p}") for p in MA_PERIODS]
-    valid_mas = [v for v in target_mas if v is not None]
-
-    if not valid_mas:
-        return "BREAKOUT_SKIP", None, 0.0, 0.0
-
-    mas_above = sorted([v for v in valid_mas if v > curr_price])
-    mas_below = sorted([v for v in valid_mas if v < curr_price], reverse=True)
-
-    # 涨三不追: 连涨>=3日 且 收盘仍低于最近上方MA(阻力未破) -> MEC验证后空头
-    if consecutive_up >= 3 and mas_above:
-        nearest_above = mas_above[0]
-        if curr_price < nearest_above:
-            mec_score, _ = calc_btc_mec(btc_candles, btc_idx, "SHORT", vol_mult, consecutive_up)
-            if mec_score >= 2:
-                size_mult = 1.0 if mec_score >= 3 else 0.5
-                return "SHORT_ALLOWED", Direction.SHORT, nearest_above, size_mult
-            else:
-                return "BLOCKED_LOW_MEC", None, 0.0, 0.0
-
-    # 跌四不压: 连跌>=4日 且 收盘仍高于最近下方MA(支撑未破) -> MEC验证后多头
-    if consecutive_down >= 4 and mas_below:
-        nearest_below = mas_below[0]
-        if curr_price > nearest_below:
-            mec_score, _ = calc_btc_mec(btc_candles, btc_idx, "LONG", vol_mult, consecutive_down)
-            if mec_score >= 2:
-                size_mult = 1.0 if mec_score >= 3 else 0.5
-                return "LONG_ALLOWED", Direction.LONG, nearest_below, size_mult
-            else:
-                return "BLOCKED_LOW_MEC", None, 0.0, 0.0
-
+    # IN_ZONE: 布林带均值回归 (单层, 不加仓)
+    upper, middle, lower = calc_bollinger_bands(target_candles, target_idx)
+    rsi = target_candles[target_idx].get("rsi")
+    low_p  = target_candles[target_idx]["low"]
+    high_p = target_candles[target_idx]["high"]
+    if upper is not None and lower is not None:
+        if low_p <= lower and rsi is not None and rsi < 35:
+            return "LONG_ALLOWED", Direction.LONG, 0.0, 0.5
+        if high_p >= upper and rsi is not None and rsi > 65:
+            return "SHORT_ALLOWED", Direction.SHORT, 0.0, 0.5
     return "BREAKOUT_SKIP", None, 0.0, 0.0
 
 

@@ -1,8 +1,52 @@
 #!/usr/bin/env python3
 """
-回测策略实现模块 v8.0
+回测策略实现模块 v15.0
 ======================
 忠实实现 TRADING_WORKFLOW_SPEC_v1.md 设计规范
+
+v15.0 — MA区间重设计: 斐波那契 + 布林带替代连涨跌+MEC门禁:
+  1. MA周期简化: SMA5/13 → 移除; 保留 SMA30/65/128/200 (有效支撑/阻力)
+  2. ABOVE_ALL (BTC全线上方): Fib回调38.2-61.8% + RSI<55 → LONG马丁
+     黄金区50-61.8% size_mult=1.0; 浅区38.2-50% size_mult=0.5
+  3. BELOW_ALL (BTC全线下方): Fib反弹38.2-61.8% + RSI>45 → SHORT马丁 (对称)
+  4. IN_ZONE (震荡区): BB下轨+RSI<35 → LONG单层; BB上轨+RSI>65 → SHORT单层
+  5. 删除 calc_btc_mec() 和连涨跌计数; 三个辅助函数替代: calc_bollinger_bands /
+     calc_swing_high_low / check_fib_entry
+
+v14.0 — BTC牛市信号增强 + ETH波动率自适应:
+  A1. 牛市溢价分: STRONG_BULL + LONG + RSI∈[50,75] → signal_score +8
+  A2. RSI过热减仓: STRONG_BULL + LONG + RSI>75 → single_layer_pct×0.5
+  B1. ETH vol_mult地板 1.30→1.50: 加仓间隔10.4%→12%, 止盈5.2%→6%
+  B2. ETH SHORT L2c放宽: avg×1.20→avg×1.25
+
+v13.0 — 强趋势区顺势马丁 (ABOVE_ALL/BELOW_ALL + 连涨跌 + MEC):
+  1. ABOVE_ALL (BTC全线上方=强多头): 连跌≥3日 + MEC≥2 → 开 LONG 马丁
+  2. BELOW_ALL (BTC全线下方=强空头): 连涨≥3日 + MEC≥2 → 开 SHORT 马丁
+  3. 与IN_ZONE单层不同: 不设ma_zone_opened, 允许马丁加仓, 用L2b/L2c出场
+  4. MEC阈值统一: score≥2=满仓(1.0), <2=BLOCKED, 动能+量能双确认即可入场
+
+v12.0 — L2b/L2c 双层链保护 (防马丁链在趋势反转中越陷越深):
+  1. L2b: Regime对立止链 — 持仓方向与当前 Regime 明确对立时提前止损整条链
+     Level=0: 仅 STRONG 对立才触发 (SHORT+STRONG_BULL / LONG+STRONG_BEAR)
+     Level>=1: WEAK 或 STRONG 对立均触发 (保护已堆叠的马丁链)
+  2. L2c: 链均价提前保护 — Level>=1 时启用与v9.0相同的均价×1.20/×0.80止损
+     不等Level3加满: 第1次加仓后即保护, 防止极端行情在链内继续叠损
+  3. 不影响 V9 熊市基线: 熊市SHORT链极少加仓, L2b/L2c基本不触发
+
+v11.0 — MEC动能衰竭确认 + V9基础保留 (BLOCKED→FALLBACK_V9):
+  1. calc_btc_mec(): 三维验证BTC动能衰竭 (动能/量能/势能, score 0-3)
+  2. BLOCKED状态改为FALLBACK_V9: 无MA信号时V9正常入场, 不再阻止
+  3. BLOCKED_LOW_MEC: MA区间但MEC评分不足(<2), 直接回退V9
+  4. BELOW_ALL_BLOCKED仅阻止LONG: 强趋势下跌时仍允许STRONG_BEAR SHORT
+  5. MA区间反向单: score≥3 满仓(size_mult=1.0), score=2 半仓(0.5), 无加仓
+  6. 势能门槛按币种vol_mult动态: 1.5×vol_mult ATR
+
+v10.0 — 日线MA区间经验法则: 涨三不追，跌四不压:
+  1. detect_btc_ma_zone(): 检测BTC价格在MA5/13/30/65/128/200中的区间位置
+  2. check_ma_zone_entry_signal(): 连续涨3日→允许空头, 连续跌4日→允许多头
+  3. BTC作为全局参考: BTC跌破所有均线时禁止所有币种开仓
+  4. Screen2可覆盖Screen1方向: 均线区间内日线反转信号优先
+  5. Screen2Output新增 ma_zone_gate / ma_direction 字段
 
 v9.0 — Level3加满后启用均价止损 (防整链亏损):
   1. is_martin_complete 时设置 stop_loss_price = avg_entry×0.80 (LONG) / ×1.20 (SHORT)
@@ -135,6 +179,10 @@ class Screen2Output:
     atr: float
     volatility: float
     addon_suppressed: bool = False   # v7.0 Opt-2: RSI超买/ATR扩张时抑制本轮加仓
+    ma_zone_gate: str = "BREAKOUT_SKIP"      # v10.0: MA区间门禁状态
+    ma_direction: Optional["Direction"] = None  # v10.0: MA区间确定的方向 (可覆盖Screen1)
+    ma_zone_ref_price: float = 0.0           # v10.0: 参考MA价格 (SHORT=阻力MA, LONG=支撑MA)
+    ma_zone_size_mult: float = 1.0           # v11.0: MEC评分决定仓位 (score=3→1.0, score=2→0.5)
 
 
 @dataclass
@@ -154,6 +202,8 @@ class Position:
     screen1: Optional[Screen1Output] = None
     total_cost: float = 0.0
     is_martin_complete: bool = False  # Level 3加满标志 (用于统计)
+    ma_zone_opened: bool = False      # v10.0: 是否为MA区间反向单
+    ma_zone_ref_price: float = 0.0   # v10.0: 参考MA价格 (SHORT=阻力MA突破出场, LONG=支撑MA跌破出场)
 
 
 @dataclass
@@ -203,7 +253,7 @@ def _apply_opt_params(defaults: dict, overrides: dict = None) -> dict:
 # 推导: BTC~65%/ETH~85%/SOL~115% 年化波动率 → 周波动率基准 BTC≈9%/周
 _STATIC_REGIME_VOL_MULT: dict = {
     "BTC-USDT-SWAP": 1.00,
-    "ETH-USDT-SWAP": 1.30,
+    "ETH-USDT-SWAP": 1.50,
     "SOL-USDT-SWAP": 1.75,
 }
 
@@ -245,6 +295,164 @@ def _calc_quarterly_vol_mult(
     # 避免短期低波动期给高波动代币赋予过低的 vol_mult (冷启动问题)
     static_floor = _STATIC_REGIME_VOL_MULT.get(inst_id, 1.0)
     return max(static_floor, min(2.5, round(dynamic_mult, 3)))
+
+
+# ==================== MA区间经验法则 (v15.0) ====================
+
+# v15.0: 移除噪音均线 SMA5/SMA13，保留有意义的支撑/阻力均线
+MA_PERIODS = [30, 65, 128, 200]
+
+
+def detect_btc_ma_zone(btc_candles: List[Dict], idx: int) -> str:
+    """
+    检测 BTC 价格在均线系列中的位置 (v10.0)
+
+    返回:
+      "IN_ZONE"          — 价格被夹在均线之间 (至少一条在上，一条在下)
+      "ABOVE_ALL"        — 价格高于全部有效MA → 上行突破，跳过经验法则
+      "BELOW_ALL"        — 价格低于全部有效MA → 强趋势下跌，禁止所有开仓
+      "INSUFFICIENT_DATA"— 有效MA不足3条，无法判断
+    """
+    if idx < 0 or idx >= len(btc_candles):
+        return "INSUFFICIENT_DATA"
+
+    price = btc_candles[idx]["close"]
+    ma_values = [btc_candles[idx].get(f"sma{p}") for p in MA_PERIODS]
+    valid = [v for v in ma_values if v is not None]
+
+    if len(valid) < 3:
+        return "INSUFFICIENT_DATA"
+
+    above = [v for v in valid if v > price]
+    below = [v for v in valid if v < price]
+
+    if not above:
+        return "ABOVE_ALL"
+    if not below:
+        return "BELOW_ALL"
+    return "IN_ZONE"
+
+
+def calc_bollinger_bands(
+    candles: List[Dict],
+    idx: int,
+    period: int = 20,
+    std_mult: float = 2.0,
+) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+    """BB上中下轨 (v15.0). 返回 (upper, middle, lower) 或 (None, None, None)"""
+    if idx < period - 1:
+        return None, None, None
+    closes = [candles[i]["close"] for i in range(idx - period + 1, idx + 1)]
+    middle = sum(closes) / period
+    std = statistics.stdev(closes)
+    return round(middle + std_mult * std, 4), round(middle, 4), round(middle - std_mult * std, 4)
+
+
+def calc_swing_high_low(
+    candles: List[Dict],
+    idx: int,
+    lookback: int = 20,
+) -> Tuple[Optional[float], Optional[float], float]:
+    """找最近 lookback 根K线的波段高低点 (v15.0). ATR过滤: range<2×ATR14→返回(None,None,0)"""
+    if idx < lookback - 1:
+        return None, None, 0.0
+    swing_high = max(candles[i]["high"] for i in range(idx - lookback + 1, idx + 1))
+    swing_low  = min(candles[i]["low"]  for i in range(idx - lookback + 1, idx + 1))
+    swing_range = swing_high - swing_low
+    atr_val = candles[idx].get("atr") or 0
+    if atr_val > 0 and swing_range < 2.0 * atr_val:
+        return None, None, 0.0
+    return swing_high, swing_low, round(swing_range, 4)
+
+
+def check_fib_entry(
+    candles: List[Dict],
+    idx: int,
+    direction: "Direction",
+    swing_high: float,
+    swing_low: float,
+) -> Tuple[str, float]:
+    """斐波那契回调/反弹入场检查 (v15.0).
+    LONG: fib_618~fib_500 → ("FIB_GOLDEN",1.0); fib_500~fib_382 → ("FIB_EARLY",0.5)
+    SHORT: 对称 (从swing_low向上量反弹)
+    返回: (gate_str, size_mult)"""
+    close = candles[idx]["close"]
+    rng = swing_high - swing_low
+    if rng <= 0:
+        return "FIB_MISS", 0.0
+    if direction == Direction.LONG:
+        fib_382 = swing_high - 0.382 * rng
+        fib_500 = swing_high - 0.500 * rng
+        fib_618 = swing_high - 0.618 * rng
+        if fib_618 <= close <= fib_500:
+            return "FIB_GOLDEN", 1.0
+        if fib_500 < close <= fib_382:
+            return "FIB_EARLY", 0.5
+    else:  # SHORT: bounce from swing_low
+        fib_382 = swing_low + 0.382 * rng
+        fib_500 = swing_low + 0.500 * rng
+        fib_618 = swing_low + 0.618 * rng
+        if fib_500 <= close <= fib_618:
+            return "FIB_GOLDEN", 1.0
+        if fib_382 <= close < fib_500:
+            return "FIB_EARLY", 0.5
+    return "FIB_MISS", 0.0
+
+
+def check_ma_zone_entry_signal(
+    btc_candles: List[Dict],
+    target_candles: List[Dict],
+    btc_idx: int,
+    target_idx: int,
+    vol_mult: float = 1.0,
+) -> Tuple[str, Optional[Direction], float, float]:
+    """MA区间入场门禁 v15.0 — 斐波那契 + 布林带
+
+    ABOVE_ALL: Fib回调38.2-61.8% + RSI<55 → LONG马丁 (size_mult 1.0/0.5)
+    BELOW_ALL: Fib反弹38.2-61.8% + RSI>45 → SHORT马丁 (对称)
+    IN_ZONE:   BB下轨+RSI<35→LONG单层; BB上轨+RSI>65→SHORT单层 (size_mult=0.5)
+
+    返回: (gate, direction_override, ref_ma_price, size_mult)
+      gate: "ABOVE_ALL_LONG" / "BELOW_ALL_SHORT" / "LONG_ALLOWED" / "SHORT_ALLOWED" /
+            "BELOW_ALL_BLOCKED" / "BREAKOUT_SKIP"
+    """
+    zone = detect_btc_ma_zone(btc_candles, btc_idx)
+    if zone == "INSUFFICIENT_DATA":
+        return "BREAKOUT_SKIP", None, 0.0, 0.0
+
+    if zone == "ABOVE_ALL":
+        rsi = target_candles[target_idx].get("rsi")
+        if rsi is not None and rsi < 55:
+            sh, sl, _ = calc_swing_high_low(target_candles, target_idx, 20)
+            if sh is not None and sl is not None:
+                gate, size_mult = check_fib_entry(target_candles, target_idx,
+                                                   Direction.LONG, sh, sl)
+                if gate != "FIB_MISS":
+                    return "ABOVE_ALL_LONG", Direction.LONG, 0.0, size_mult
+        return "BREAKOUT_SKIP", None, 0.0, 0.0
+
+    if zone == "BELOW_ALL":
+        rsi = target_candles[target_idx].get("rsi")
+        if rsi is not None and rsi > 45:
+            sh, sl, _ = calc_swing_high_low(target_candles, target_idx, 20)
+            if sh is not None and sl is not None:
+                gate, size_mult = check_fib_entry(target_candles, target_idx,
+                                                   Direction.SHORT, sh, sl)
+                if gate != "FIB_MISS":
+                    return "BELOW_ALL_SHORT", Direction.SHORT, 0.0, size_mult
+        return "BELOW_ALL_BLOCKED", None, 0.0, 0.0
+
+    # IN_ZONE: 布林带均值回归 (单层, 不加仓)
+    upper, middle, lower = calc_bollinger_bands(target_candles, target_idx)
+    rsi = target_candles[target_idx].get("rsi")
+    low_p  = target_candles[target_idx]["low"]
+    high_p = target_candles[target_idx]["high"]
+    if upper is not None and lower is not None:
+        if low_p <= lower and rsi is not None and rsi < 35:
+            return "LONG_ALLOWED", Direction.LONG, 0.0, 0.5
+        if high_p >= upper and rsi is not None and rsi > 65:
+            return "SHORT_ALLOWED", Direction.SHORT, 0.0, 0.5
+    return "BREAKOUT_SKIP", None, 0.0, 0.0
 
 
 # ==================== 市场形态识别 ====================
@@ -523,9 +731,16 @@ def run_screen2(
     position: Optional[Position],
     inst_id: str = "BTC-USDT-SWAP",
     opt_params: dict = None,
+    btc_daily_candles: List[Dict] = None,
+    btc_idx: int = None,
 ) -> Screen2Output:
     """
-    第二屏: 日线预设 (v8.0)
+    第二屏: 日线预设 (v10.0)
+
+    v10.0 新增 MA区间经验法则:
+    - BTC跌破所有MA -> 全面禁止开仓 (ma_zone_gate=BELOW_ALL_BLOCKED)
+    - BTC在区间内 -> 涨三不追/跌四不压作为独立入场门, 方向可覆盖Screen1
+    - BTC上行突破/数据不足 -> 跳过此规则 (ma_zone_gate=BREAKOUT_SKIP)
 
     v8.0 规则:
     - 加仓间隔: addon_gap_pct%×vol_mult 复利计算 (BTC=8%, SOL/ETH按波动率放大)
@@ -590,6 +805,11 @@ def run_screen2(
     elif vr < 0.6:
         score -= 5
 
+    # v14.0-A1: 牛市溢价分 (STRONG_BULL + LONG + RSI∈[50,75] → 健康牛市区段加分)
+    if (screen1.regime == "STRONG_BULL" and screen1.direction == Direction.LONG
+            and rsi_val is not None and 50 <= rsi_val <= 75):
+        score += 8
+
     score = max(0, min(100, score))
     signal_strength = _classify_signal(score)
 
@@ -597,11 +817,47 @@ def run_screen2(
     atr_val = curr.get("atr") or (price * 0.02)
     volatility = _calc_20d_volatility(daily_candles, current_idx)
 
-    # === 仓位计算 (对齐规范) ===
-    # 规范: 总仓位上限 = screen1.position_limit_pct (20%/40%/60%)
-    # 马丁策略: 4个层级 (初始 + 3次加仓), 每层等额
-    total_limit = screen1.position_limit_pct
+    # === v11.0: MA区间经验法则 (仅在未持仓时检查入场门禁) ===
+    ma_gate = "BREAKOUT_SKIP"
+    ma_direction_override: Optional[Direction] = None
+    ma_zone_ref_price_val: float = 0.0
+    ma_zone_size_mult_val: float = 1.0
 
+    if btc_daily_candles is not None and btc_idx is not None and position is not None and position.direction == Direction.WAIT:
+        btc_ref = btc_daily_candles if inst_id != "BTC-USDT-SWAP" else daily_candles
+        btc_ref_idx = btc_idx if inst_id != "BTC-USDT-SWAP" else current_idx
+        ma_gate, ma_direction_override, ma_zone_ref_price_val, ma_zone_size_mult_val = check_ma_zone_entry_signal(
+            btc_ref, daily_candles, btc_ref_idx, current_idx, vol_mult
+        )
+
+    # v11.0: BTC跌破所有均线且无涨三信号 -> 仅阻止LONG (STRONG_BEAR SHORT仍允许)
+    # v13.0: BELOW_ALL_SHORT/ABOVE_ALL_LONG 不命中此分支, 直接透传到仓位计算
+    if ma_gate == "BELOW_ALL_BLOCKED" and screen1.direction != Direction.SHORT:
+        return Screen2Output(
+            timestamp=curr["ts"],
+            signal_strength=SignalStrength.NONE,
+            signal_score=round(score, 2),
+            entry_price=price,
+            position_pct=0.0,
+            add_on_levels=[],
+            tp_target=0.0,
+            atr=atr_val,
+            volatility=round(volatility, 4),
+            addon_suppressed=True,
+            ma_zone_gate=ma_gate,
+            ma_direction=None,
+        )
+    elif ma_gate == "BELOW_ALL_BLOCKED":
+        # Screen1 is SHORT (STRONG_BEAR) — allow normal V9 flow
+        ma_gate = "BREAKOUT_SKIP"
+
+    # v11.0: BLOCKED_LOW_MEC / 未满足连涨跌条件 → 回退V9正常入场 (不再阻止)
+
+    # === 确定有效方向 (MA信号可覆盖Screen1) ===
+    effective_direction = ma_direction_override if ma_direction_override is not None else screen1.direction
+
+    # === 仓位计算 (对齐规范) ===
+    total_limit = screen1.position_limit_pct
     strength_mult = {
         SignalStrength.STRONG: 1.0,
         SignalStrength.MEDIUM: 0.7,
@@ -610,19 +866,28 @@ def run_screen2(
     }.get(signal_strength, 0.2)
 
     effective_total = total_limit * strength_mult * screen1.regime_multiplier
-    single_layer_pct = effective_total / 4.0  # 等额分4层
+    single_layer_pct = effective_total / 4.0
 
-    # v8.0: 加仓间隔 = addon_gap_pct%×vol_mult 复利 (BTC=8%, SOL/ETH按波动率放大)
+    # v14.0-A2: RSI过热减仓 (STRONG_BULL + LONG + RSI>75 → 半仓入场)
+    if (screen1.regime == "STRONG_BULL" and screen1.direction == Direction.LONG
+            and rsi_val is not None and rsi_val > 75):
+        single_layer_pct = single_layer_pct * 0.5
+
+    # v11.0: MA区间反向单按MEC评分缩放仓位
+    if ma_direction_override is not None and ma_zone_size_mult_val < 1.0:
+        single_layer_pct = single_layer_pct * ma_zone_size_mult_val
+
+    # v8.0: 加仓间隔 = addon_gap_pct%×vol_mult 复利 (使用 effective_direction)
     gap = addon_gap_pct / 100.0 * vol_mult
     add_on_levels = []
-    if screen1.direction == Direction.LONG:
+    if effective_direction == Direction.LONG:
         add_on_levels = [
             round(price * (1 - gap) ** 1, 2),
             round(price * (1 - gap) ** 2, 2),
             round(price * (1 - gap) ** 3, 2),
         ]
         tp_target = round(price * (1 + tp_pct / 100.0 * vol_mult), 2)
-    elif screen1.direction == Direction.SHORT:
+    elif effective_direction == Direction.SHORT:
         add_on_levels = [
             round(price * (1 + gap) ** 1, 2),
             round(price * (1 + gap) ** 2, 2),
@@ -641,9 +906,9 @@ def run_screen2(
     atr_expanding = avg_atr_20d > 0 and atr_val > avg_atr_20d * sup_cfg["atr_mult"]
     addon_suppressed = False
     if atr_expanding:
-        if screen1.direction == Direction.LONG and rsi_val and rsi_val > sup_cfg["rsi_long"]:
+        if effective_direction == Direction.LONG and rsi_val and rsi_val > sup_cfg["rsi_long"]:
             addon_suppressed = True
-        elif screen1.direction == Direction.SHORT and rsi_val and rsi_val < sup_cfg["rsi_short"]:
+        elif effective_direction == Direction.SHORT and rsi_val and rsi_val < sup_cfg["rsi_short"]:
             addon_suppressed = True
 
     return Screen2Output(
@@ -657,6 +922,10 @@ def run_screen2(
         atr=atr_val,
         volatility=round(volatility, 4),
         addon_suppressed=addon_suppressed,
+        ma_zone_gate=ma_gate,
+        ma_direction=ma_direction_override,
+        ma_zone_ref_price=ma_zone_ref_price_val,
+        ma_zone_size_mult=ma_zone_size_mult_val,
     )
 
 
@@ -668,16 +937,21 @@ def check_exit_signals(
     screen1: Screen1Output,
     current_equity: float,
     peak_equity: float,
-    trade_count: int
+    trade_count: int,
+    inst_id: str = "BTC-USDT-SWAP",  # v14.0-B2
 ) -> Tuple[bool, ExitReason, int]:
     """
-    v8.0 简化离场决策 (三条件, 非明确信号不出场)
+    v12.0 离场决策 (四条件)
 
-    返回: (should_exit, exit_reason, -1)  — v8.0 全部为全仓平仓 (-1)
+    返回: (should_exit, exit_reason, -1)  — 全部为全仓平仓 (-1)
 
     L1a: TP目标触及 (均价+tp_pct%×vol_mult) → 全平
     L1b: 均价止损 (仅 Level3加满后; avg×0.80/×1.20) → 全平
     L2:  Screen1 方向明确反转 (LONG→SHORT 或 SHORT→LONG)
+    L2b: Regime对立止链 (v12.0):
+         Level=0: 仅 STRONG 对立触发 (SHORT+STRONG_BULL / LONG+STRONG_BEAR)
+         Level>=1: WEAK或STRONG 对立均触发 (SHORT+BULL / LONG+BEAR)
+    L2c: 链均价提前保护 (v12.0): Level>=2 且未加满时, avg×1.20(SHORT)/×0.80(LONG)
     L4:  最大回撤约束 (20%强制全平)
 
     已移除: L1-固定SL(未加满时无SL), L1c(移动止盈), L3(风险事件/ATR扩张)
@@ -702,12 +976,48 @@ def check_exit_signals(
         elif position.direction == Direction.SHORT and high >= position.stop_loss_price:
             return True, ExitReason.STOP_LOSS, -1
 
-    # --- L2: Screen1 方向明确反转 ---
-    if position.screen1 and screen1.direction != Direction.WAIT:
+    # --- L2: Screen1 方向明确反转 (MA区间单用参考MA突破替代, 避免当日开仓次日立刻被L2关闭) ---
+    if position.ma_zone_opened and position.ma_zone_ref_price > 0:
+        # MA区间反向单: 参考MA价格被突破则出场 (SHORT=阻力MA被向上突破, LONG=支撑MA被向下跌破)
+        close_price = daily_candle["close"]
+        if position.direction == Direction.SHORT and close_price > position.ma_zone_ref_price:
+            return True, ExitReason.SIGNAL_REVERSAL, -1
+        if position.direction == Direction.LONG and close_price < position.ma_zone_ref_price:
+            return True, ExitReason.SIGNAL_REVERSAL, -1
+    elif position.screen1 and screen1.direction != Direction.WAIT:
         if position.direction == Direction.LONG and screen1.direction == Direction.SHORT:
             return True, ExitReason.SIGNAL_REVERSAL, -1
         if position.direction == Direction.SHORT and screen1.direction == Direction.LONG:
             return True, ExitReason.SIGNAL_REVERSAL, -1
+
+    # --- L2b: Regime对立止链 (v12.0: 防趋势反转时马丁链越陷越深) ---
+    # MA区间单跳过L2b (已有自己的参考MA出场逻辑)
+    if not position.ma_zone_opened:
+        current_regime = screen1.regime
+        if position.level >= 1:
+            # 已加仓: WEAK或STRONG对立都触发
+            if position.direction == Direction.SHORT and current_regime in ("WEAK_BULL", "STRONG_BULL"):
+                return True, ExitReason.SIGNAL_REVERSAL, -1
+            if position.direction == Direction.LONG and current_regime in ("WEAK_BEAR", "STRONG_BEAR"):
+                return True, ExitReason.SIGNAL_REVERSAL, -1
+        else:
+            # 初始单: 仅STRONG对立触发 (避免震荡市频繁止损)
+            if position.direction == Direction.SHORT and current_regime == "STRONG_BULL":
+                return True, ExitReason.SIGNAL_REVERSAL, -1
+            if position.direction == Direction.LONG and current_regime == "STRONG_BEAR":
+                return True, ExitReason.SIGNAL_REVERSAL, -1
+
+    # --- L2c: 链均价提前保护 (v12.0: level>=1 未加满时也启用均价止损) ---
+    # 与v9.0 L1b逻辑相同 (avg×1.20/×0.80), 但不等Level3完成即生效
+    # 防止第1次加仓后极端反向行情继续叠损 (如ETH 2025-05, 2025-07事件)
+    # v14.0-B2: ETH SHORT L2c放宽至avg×1.25 (ETH波动大, 多5%呼吸空间)
+    l2c_mult = 1.25 if (inst_id == "ETH-USDT-SWAP" and position.direction == Direction.SHORT) else 1.20
+    if position.level >= 1 and not position.is_martin_complete and not position.ma_zone_opened:
+        avg = position.entry_price
+        if position.direction == Direction.LONG and low <= avg * 0.80:
+            return True, ExitReason.STOP_LOSS, -1
+        if position.direction == Direction.SHORT and high >= avg * l2c_mult:
+            return True, ExitReason.STOP_LOSS, -1
 
     # --- L4: 最大回撤约束 (20%强制全平) ---
     if peak_equity > 0:
