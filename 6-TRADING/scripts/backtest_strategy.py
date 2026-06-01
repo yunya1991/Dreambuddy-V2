@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """
-回测策略实现模块 v12.0
+回测策略实现模块 v13.0
 ======================
 忠实实现 TRADING_WORKFLOW_SPEC_v1.md 设计规范
+
+v13.0 — 强趋势区顺势马丁 (ABOVE_ALL/BELOW_ALL + 连涨跌 + MEC):
+  1. ABOVE_ALL (BTC全线上方=强多头): 连跌≥3日 + MEC≥2 → 开 LONG 马丁
+  2. BELOW_ALL (BTC全线下方=强空头): 连涨≥3日 + MEC≥2 → 开 SHORT 马丁
+  3. 与IN_ZONE单层不同: 不设ma_zone_opened, 允许马丁加仓, 用L2b/L2c出场
+  4. MEC阈值统一: score≥2=满仓(1.0), <2=BLOCKED, 动能+量能双确认即可入场
 
 v12.0 — L2b/L2c 双层链保护 (防马丁链在趋势反转中越陷越深):
   1. L2b: Regime对立止链 — 持仓方向与当前 Regime 明确对立时提前止损整条链
@@ -415,19 +421,48 @@ def check_ma_zone_entry_signal(
 
     返回: (gate, direction_override, ref_ma_price, size_mult)
       gate:
-        "LONG_ALLOWED"     — 连跌4日+支撑未破+MEC≥2 → 允许多头; ref_ma_price=支撑MA
-        "SHORT_ALLOWED"    — 连涨3日+阻力未突破+MEC≥2 → 允许空头; ref_ma_price=阻力MA
+        "LONG_ALLOWED"     — IN_ZONE 连跌4日+支撑未破+MEC≥2 → 单层多头; ref_ma=支撑MA
+        "SHORT_ALLOWED"    — IN_ZONE 连涨3日+阻力未突破+MEC≥2 → 单层空头; ref_ma=阻力MA
+        "ABOVE_ALL_LONG"   — 强多头 连跌≥3日+MEC≥2 → LONG马丁(可加仓); ref_ma=0
+        "BELOW_ALL_SHORT"  — 强空头 连涨≥3日+MEC≥2 → SHORT马丁(可加仓); ref_ma=0
         "BLOCKED_LOW_MEC"  — 连涨/连跌条件满足但MEC<2 → 回退V9正常入场
-        "BELOW_ALL_BLOCKED"— BTC跌破所有均线 → 仅阻止LONG (SHORT保留)
+        "BELOW_ALL_BLOCKED"— BTC跌破所有均线且无涨三信号 → 仅阻止LONG (SHORT保留)
         "BREAKOUT_SKIP"    — BTC上行突破或数据不足 → 跳过此规则用常规Screen2
-      size_mult: MEC=3→1.0(满仓), MEC=2→0.5(半仓), 其余→0.0
+      size_mult: ABOVE/BELOW_ALL=1.0, IN_ZONE MEC=3→1.0/MEC=2→0.5, 其余→0.0
     """
     zone = detect_btc_ma_zone(btc_candles, btc_idx)
 
-    if zone in ("INSUFFICIENT_DATA", "ABOVE_ALL"):
+    if zone == "INSUFFICIENT_DATA":
         return "BREAKOUT_SKIP", None, 0.0, 0.0
 
+    # v13.0: 强多头区 (BTC全线上方) — 跌三不压 + MEC → LONG 马丁
+    if zone == "ABOVE_ALL":
+        if target_idx >= 3:
+            consecutive_down = 0
+            for j in range(target_idx, max(0, target_idx - 5), -1):
+                if j > 0 and target_candles[j]["close"] < target_candles[j - 1]["close"]:
+                    consecutive_down += 1
+                else:
+                    break
+            if consecutive_down >= 3:
+                mec_score, _ = calc_btc_mec(btc_candles, btc_idx, "LONG", vol_mult, consecutive_down)
+                if mec_score >= 2:
+                    return "ABOVE_ALL_LONG", Direction.LONG, 0.0, 1.0
+        return "BREAKOUT_SKIP", None, 0.0, 0.0
+
+    # v13.0: 强空头区 (BTC全线下方) — 涨三不追 + MEC → SHORT 马丁
     if zone == "BELOW_ALL":
+        if target_idx >= 3:
+            consecutive_up = 0
+            for j in range(target_idx, max(0, target_idx - 5), -1):
+                if j > 0 and target_candles[j]["close"] > target_candles[j - 1]["close"]:
+                    consecutive_up += 1
+                else:
+                    break
+            if consecutive_up >= 3:
+                mec_score, _ = calc_btc_mec(btc_candles, btc_idx, "SHORT", vol_mult, consecutive_up)
+                if mec_score >= 2:
+                    return "BELOW_ALL_SHORT", Direction.SHORT, 0.0, 1.0
         return "BELOW_ALL_BLOCKED", None, 0.0, 0.0
 
     # zone == "IN_ZONE": 检测目标币种连涨/连跌
@@ -857,7 +892,8 @@ def run_screen2(
             btc_ref, daily_candles, btc_ref_idx, current_idx, vol_mult
         )
 
-    # v11.0: BTC跌破所有均线 -> 仅阻止LONG (STRONG_BEAR SHORT仍允许, 由Screen1决定)
+    # v11.0: BTC跌破所有均线且无涨三信号 -> 仅阻止LONG (STRONG_BEAR SHORT仍允许)
+    # v13.0: BELOW_ALL_SHORT/ABOVE_ALL_LONG 不命中此分支, 直接透传到仓位计算
     if ma_gate == "BELOW_ALL_BLOCKED" and screen1.direction != Direction.SHORT:
         return Screen2Output(
             timestamp=curr["ts"],
