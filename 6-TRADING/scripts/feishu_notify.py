@@ -10,6 +10,7 @@
   python feishu_notify.py a9         <session_dir>   # 管理看板 + 复盘室
   python feishu_notify.py escalate   <reason_json>   # 风控审批（人工介入）
   python feishu_notify.py review     <session_dir>   # 复盘室
+  python feishu_notify.py bitable    <session_dir>   # 写入多维表格交易记录
 """
 import json
 import sys
@@ -22,13 +23,17 @@ from pathlib import Path
 FEISHU_APP_ID     = "cli_aa9442bde4b89be9"
 FEISHU_APP_SECRET = "dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70"
 
+# 多维表格
+BITABLE_APP_TOKEN = "CMlnbvAKYafUL0sxLpFcxNfVnoc"
+BITABLE_TABLE_ID  = "tblSDdfk2sbBAVsr"  # Trading Episodes
+
 # 交易部门五群组
 CHAT_IDS = {
     "research":    "oc_36c575b6f39a8df3dd75057a96685a21",  # 交易部-研究室
     "trading":     "oc_36c8543cea823b7546fcaad55d111f9f",  # 交易部-交易台
     "management":  "oc_9cf9f141613b4e6a0f34651843cf8b9b",  # 交易部-管理看板
     "review":      "oc_8868a5c84f3d8427afa9ed1a9ad7fb76",  # 交易部-复盘室
-    "risk":        "oc_98f080b50e2ac52634e3f1f18d118efe",  # 交易部-风控审批（暂用原群）
+    "risk":        "oc_20fcedf0c35035568ea8fa947380f75d",  # 交易部-风控审批
 }
 
 # ESCALATE_TO_HUMAN 强制触发条件（可在此调整阈值）
@@ -415,6 +420,132 @@ def notify_execution(session_dir: str):
             card(f"[交易台] Screen3 {label} — {sid}", color, elements))
 
 
+# ── 多维表格：写入交易记录 ────────────────────────────────────────────────────
+def bitable_upsert(session_dir: str) -> str:
+    """
+    从 session 目录读取所有可用数据，写入/更新多维表格一行。
+    返回 record_id。支持部分字段（缺失字段跳过不报错）。
+    """
+    import time as _time
+    base = Path(session_dir)
+    sid  = base.name
+
+    # ── 读取各数据源（缺失则用空值）────────────────────────────────────────
+    def load(path):
+        p = base / path
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+
+    meta     = load("meta.json")
+    strategy = load("team-a/screen1/strategy-type.json")
+    episode  = load("team-b/episode.json")
+    gatec    = load("team-b/gate-c/pretrade-check.json")
+    a9       = load("a9-exit.json") or load("team-a/screen3/a9-exit.json")
+    a8       = load("review/a8-reflection.json")
+
+    # ── 解析字段 ─────────────────────────────────────────────────────────────
+    direction   = (strategy.get("direction") or meta.get("screen1_direction") or "")
+    gate_result = (episode.get("outcome") or gatec.get("gate_c_result") or "SKIP")
+    clock       = (strategy.get("clock_stage") or meta.get("screen1_clock_stage") or "")
+    regime      = (strategy.get("skill_regime") or meta.get("screen1_skill_regime") or "")
+    s1_score    = int(strategy.get("weighted_total") or strategy.get("score") or meta.get("screen1_score") or 0)
+    entry_price = float(episode.get("entry_price") or episode.get("btc_price") or meta.get("screen1_price") or 0)
+    signal_pct  = float(episode.get("composite_confidence") or episode.get("signal_score") or 0)
+    if signal_pct <= 1:
+        signal_pct = round(signal_pct * 100, 1)
+    martin_layers   = int(episode.get("martin_layers") or episode.get("max_layers") or 0)
+    position_cap    = float(
+        strategy.get("allocation", {}).get("BTC_SHORT", "0").replace("%","").strip() or
+        meta.get("position_cap_usdt") or 0
+    )
+    exit_price  = float(a9.get("exit_price") or 0)
+    realized_pnl= float(a9.get("realized_pnl") or 0)
+    pnl_pct     = float(a9.get("pnl_pct") or 0)
+    exit_reason = str(a9.get("reason") or a9.get("decision") or "")[:200]
+    a8_score    = int(a8.get("retrospective_score") or 0)
+    red_team    = bool(strategy.get("red_team_flag") or False)
+    notes       = str(meta.get("notes") or "")[:300]
+
+    # 日期：从 session_id 前缀解析 YYYYMMDD
+    date_ms = 0
+    try:
+        date_str = sid[:8]  # "20260602"
+        from datetime import datetime as _dt
+        date_ms = int(_dt.strptime(date_str, "%Y%m%d").timestamp() * 1000)
+    except Exception:
+        date_ms = int(_time.time() * 1000)
+
+    gh_url = f"https://github.com/yunya1991/Dreambuddy-V2/tree/main/6-TRADING/sessions/{sid}"
+
+    fields = {
+        "Session ID":        sid,
+        "Date":              date_ms,
+        "Direction":         direction,
+        "Gate C Result":     gate_result,
+        "Screen1 Score":     s1_score,
+        "Exit Reason":       exit_reason,
+        "Red Team Flag":     red_team,
+        "Notes":             notes,
+        "GitHub URL":        {"link": gh_url, "text": sid},
+    }
+    # 仅在有值时写入，避免 0 覆盖有效数据
+    if clock:               fields["Clock Stage"]        = clock
+    if regime:              fields["Skill Regime"]       = regime
+    if entry_price > 0:     fields["Entry Price"]        = entry_price
+    if signal_pct > 0:      fields["Signal Score"]       = signal_pct
+    if martin_layers > 0:   fields["Martin Layers"]      = martin_layers
+    if position_cap > 0:    fields["Position Cap USDT"]  = position_cap
+    if exit_price > 0:      fields["Exit Price"]         = exit_price
+    if realized_pnl != 0:   fields["Realized PnL"]       = realized_pnl
+    if pnl_pct != 0:        fields["PnL Pct"]            = pnl_pct
+    if a8_score > 0:        fields["A8 Score"]           = a8_score
+
+    # episode_id 单独处理
+    ep_id = episode.get("episode_id") or meta.get("hermes_session_id") or ""
+    if ep_id: fields["Episode ID"] = ep_id
+
+    # ── 检查是否已有该 Session 的记录（upsert）────────────────────────────────
+    token = get_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    base_url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{BITABLE_APP_TOKEN}/tables/{BITABLE_TABLE_ID}"
+
+    search = requests.post(f"{base_url}/records/search", headers=headers, json={
+        "filter": {"conjunction": "and", "conditions": [
+            {"field_name": "Session ID", "operator": "is", "value": [sid]}
+        ]},
+        "page_size": 1
+    }).json()
+
+    existing = search.get("data", {}).get("items", [])
+    if existing:
+        record_id = existing[0]["record_id"]
+        r = requests.put(f"{base_url}/records/{record_id}", headers=headers,
+                         json={"fields": fields}).json()
+        action = "updated"
+    else:
+        r = requests.post(f"{base_url}/records", headers=headers,
+                          json={"fields": fields}).json()
+        record_id = r.get("data", {}).get("record", {}).get("record_id", "")
+        action = "created"
+
+    if r.get("code") != 0:
+        raise RuntimeError(f"Bitable write error: {r.get('msg')} | {r.get('code')}")
+
+    print(f"[OK] Bitable {action}: {sid} -> {record_id}")
+    return record_id
+
+
+def notify_bitable(session_dir: str):
+    """写入多维表格 + 推送确认消息到管理看板"""
+    record_id = bitable_upsert(session_dir)
+    sid = Path(session_dir).name
+    bitable_url = f"https://icnic28nu1x5.feishu.cn/base/{BITABLE_APP_TOKEN}"
+    elements = [
+        md(f"交易记录已归档 `{sid}`\n[查看多维表格]({bitable_url})"),
+    ]
+    send_to("management", "interactive",
+            card(f"[管理看板] 记录已归档 — {sid}", "blue", elements))
+
+
 # ── ESCALATE_TO_HUMAN → 风控审批 ─────────────────────────────────────────────
 def notify_escalate(data: dict):
     sid     = data.get("session_id", "?")
@@ -458,6 +589,7 @@ if __name__ == "__main__":
         "a9":         lambda: notify_a9(resolve_path(arg)),
         "review":     lambda: notify_review(resolve_path(arg)),
         "escalate":   lambda: notify_escalate(json.loads(arg)),
+        "bitable":    lambda: notify_bitable(resolve_path(arg)),
     }
 
     if cmd not in dispatch:
