@@ -420,6 +420,146 @@ def notify_execution(session_dir: str):
             card(f"[交易台] Screen3 {label} — {sid}", color, elements))
 
 
+# ── 任务追踪 ─────────────────────────────────────────────────────────────────
+TASK_STATE_FILE = Path(__file__).parent.parent / "task_state.json"
+
+def _load_task_state() -> dict:
+    return json.loads(TASK_STATE_FILE.read_text(encoding="utf-8")) if TASK_STATE_FILE.exists() else {}
+
+def _save_task_state(state: dict):
+    TASK_STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+
+def task_create(summary: str, description: str, due_days: int = 7) -> str:
+    """创建飞书任务，返回 task_guid"""
+    import time as _t
+    due_ms = str(int((_t.time() + due_days * 86400) * 1000))
+    token = get_token()
+    r = requests.post(
+        "https://open.feishu.cn/open-apis/task/v2/tasks",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        json={
+            "summary": summary,
+            "description": description,
+            "due": {"timestamp": due_ms},
+            "origin": {"platform_i18n_name": {"zh_cn": "Dreambuddy Trading"}},
+        }
+    ).json()
+    if r.get("code") != 0:
+        raise RuntimeError(f"Task create error: {r.get('msg')}")
+    guid = r["data"]["task"]["guid"]
+    print(f"[OK] Task created: {guid} | {summary[:50]}")
+    return guid
+
+
+def task_complete(guid: str):
+    """完成飞书任务"""
+    token = get_token()
+    r = requests.patch(
+        f"https://open.feishu.cn/open-apis/task/v2/tasks/{guid}",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        json={"task": {"completed_at": str(int(__import__("time").time() * 1000))},
+              "update_fields": ["completed_at"]}
+    ).json()
+    if r.get("code") != 0:
+        raise RuntimeError(f"Task complete error: {r.get('msg')}")
+    print(f"[OK] Task completed: {guid}")
+
+
+def notify_task(event: str, session_dir: str):
+    """
+    event:
+      screen1_done   → 创建"本周研判"任务
+      screen2_done   → 创建"日线预设"任务
+      enter          → 创建"持仓监控"任务
+      skip           → 完成"日线预设"任务（未入场）
+      exit           → 完成"持仓监控"任务
+      process_d_done → 创建"复盘待审阅"任务
+    """
+    base = Path(session_dir)
+    sid  = base.name
+    state = _load_task_state()
+
+    if event == "screen1_done":
+        meta     = json.loads((base / "meta.json").read_text(encoding="utf-8"))
+        strategy = json.loads((base / "team-a/screen1/strategy-type.json").read_text(encoding="utf-8")) if (base / "team-a/screen1/strategy-type.json").exists() else {}
+        score    = strategy.get("weighted_total", meta.get("screen1_score", 0))
+        direction = strategy.get("direction", meta.get("screen1_direction", "?"))
+        valid    = strategy.get("valid_until", meta.get("valid_until", "?"))
+        guid = task_create(
+            f"[Screen1] 本周研判 — {direction} {score}分",
+            f"Session: {sid}\n得分: {score} | 方向: {direction} | 有效至: {valid}\n{github_url(sid)}",
+            due_days=7
+        )
+        state["screen1_task"] = guid
+        _save_task_state(state)
+
+    elif event == "screen2_done":
+        guid = task_create(
+            f"[Screen2] 日线预设 — {sid}",
+            f"Session: {sid}\n日线预设已生成，等待 Screen3 入场评估。\n{github_url(sid)}",
+            due_days=1
+        )
+        state["screen2_task"] = guid
+        _save_task_state(state)
+
+    elif event == "enter":
+        episode = json.loads((base / "team-b/episode.json").read_text(encoding="utf-8")) if (base / "team-b/episode.json").exists() else {}
+        entry_price = episode.get("entry_price", episode.get("btc_price", "?"))
+        direction   = episode.get("direction", "?")
+        # 完成 screen2 任务
+        if state.get("screen2_task"):
+            try: task_complete(state.pop("screen2_task"))
+            except Exception as e: print(f"[WARN] screen2 task: {e}")
+        # 创建持仓监控任务
+        guid = task_create(
+            f"[持仓] 监控中 — {direction} @{entry_price}",
+            f"Session: {sid}\n入场价: {entry_price} | 方向: {direction}\nA6 每4h自动监控，等待 A9 离场信号。\n{github_url(sid)}",
+            due_days=30
+        )
+        state["position_task"] = guid
+        _save_task_state(state)
+
+    elif event == "skip":
+        if state.get("screen2_task"):
+            try: task_complete(state.pop("screen2_task"))
+            except Exception as e: print(f"[WARN] screen2 task: {e}")
+            _save_task_state(state)
+        print(f"[OK] Skip — screen2 task closed")
+
+    elif event == "exit":
+        a9 = {}
+        for p in ["a9-exit.json", "team-a/screen3/a9-exit.json"]:
+            if (base / p).exists():
+                a9 = json.loads((base / p).read_text(encoding="utf-8"))
+                break
+        pnl = a9.get("realized_pnl", 0)
+        if state.get("position_task"):
+            try: task_complete(state.pop("position_task"))
+            except Exception as e: print(f"[WARN] position task: {e}")
+        # 创建复盘任务
+        guid = task_create(
+            f"[复盘] 本次交易待复盘 — PnL {pnl:+.1f} USDT",
+            f"Session: {sid}\n已实现盈亏: {pnl} USDT\n请查看 ProcessD 复盘报告。\n{github_url(sid)}",
+            due_days=3
+        )
+        state["review_task"] = guid
+        _save_task_state(state)
+
+    elif event == "process_d_done":
+        if state.get("review_task"):
+            try: task_complete(state.pop("review_task"))
+            except Exception as e: print(f"[WARN] review task: {e}")
+        # 完成 screen1 任务
+        if state.get("screen1_task"):
+            try: task_complete(state.pop("screen1_task"))
+            except Exception as e: print(f"[WARN] screen1 task: {e}")
+        _save_task_state(state)
+        print(f"[OK] ProcessD tasks closed")
+
+    else:
+        raise ValueError(f"Unknown task event: {event}")
+
+
 # ── 多维表格：写入交易记录 ────────────────────────────────────────────────────
 def bitable_upsert(session_dir: str) -> str:
     """
@@ -578,7 +718,16 @@ if __name__ == "__main__":
         sys.exit(1)
 
     cmd  = sys.argv[1]
-    arg  = sys.argv[2]
+    arg  = sys.argv[2] if len(sys.argv) > 2 else ""
+
+    # task 命令特殊处理：python feishu_notify.py task <event> <session_dir>
+    if cmd == "task":
+        if len(sys.argv) < 4:
+            print("Usage: python feishu_notify.py task <event> <session_dir>")
+            print("Events: screen1_done screen2_done enter skip exit process_d_done")
+            sys.exit(1)
+        notify_task(sys.argv[2], resolve_path(sys.argv[3]))
+        sys.exit(0)
 
     dispatch = {
         "screen1":    lambda: notify_screen1(resolve_path(arg)),
