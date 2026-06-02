@@ -374,6 +374,47 @@ def notify_review(session_dir: str):
             card(f"[复盘室] ProcessD 复盘 — {sid}", "blue", elements))
 
 
+# ── Screen3 执行日志（ENTER / SKIP）→ 交易台 ─────────────────────────────────
+def notify_execution(session_dir: str):
+    base = Path(session_dir)
+    sid  = base.name
+
+    episode_path = base / "team-b/episode.json"
+    gatec_path   = base / "team-b/gate-c/pretrade-check.json"
+    episode = json.loads(episode_path.read_text(encoding="utf-8")) if episode_path.exists() else {}
+    gatec   = json.loads(gatec_path.read_text(encoding="utf-8"))   if gatec_path.exists()   else {}
+
+    outcome       = episode.get("outcome", episode.get("gate_c_result", "UNKNOWN"))  # ENTER / SKIP
+    direction     = episode.get("direction", "?")
+    entry_price   = episode.get("entry_price", episode.get("btc_price", "?"))
+    signal_score  = episode.get("composite_confidence", episode.get("signal_score", "?"))
+    a7_score      = episode.get("a7_gate_score", "?")
+    skip_reason   = episode.get("skip_reason", episode.get("reason", ""))
+    consec_skip   = episode.get("consecutive_skip_count", 0)
+    ach_summary   = gatec.get("ach_summary", "")
+
+    is_enter  = str(outcome).upper() in ("ENTER", "PASS")
+    color     = "green" if is_enter else "blue"
+    de        = DIR_EMOJI.get(str(direction).upper(), "")
+    label     = "入场" if is_enter else "跳过"
+
+    lines = [f"**Gate C** `{outcome}`　**信号得分** `{signal_score}`　**A7** `{a7_score}`"]
+    if is_enter:
+        lines.append(f"**入场价** `{entry_price}`　**方向** {de} `{direction}`")
+    else:
+        lines.append(f"**原因** {skip_reason}　**连续SKIP** `{consec_skip}` 次")
+    if ach_summary:
+        lines.append(f"**ACH** {ach_summary}")
+
+    elements = [
+        md("\n".join(lines)),
+        hr(),
+        md(f"_执行时间: {now_str()} | [GitHub]({github_url(sid)})_"),
+    ]
+    send_to("trading", "interactive",
+            card(f"[交易台] Screen3 {label} — {sid}", color, elements))
+
+
 # ── ESCALATE_TO_HUMAN → 风控审批 ─────────────────────────────────────────────
 def notify_escalate(data: dict):
     sid     = data.get("session_id", "?")
@@ -411,6 +452,7 @@ if __name__ == "__main__":
     dispatch = {
         "screen1":    lambda: notify_screen1(resolve_path(arg)),
         "screen2":    lambda: notify_screen2(resolve_path(arg)),
+        "execution":  lambda: notify_execution(resolve_path(arg)),
         "a6_monitor": lambda: notify_a6_monitor(resolve_path(arg)),
         "a6_alert":   lambda: notify_a6_alert(arg),
         "a9":         lambda: notify_a9(resolve_path(arg)),
