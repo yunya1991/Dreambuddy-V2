@@ -1,0 +1,19 @@
+[Unit]
+Description=6-TRADING Group Poller — Feishu REST API @mention watcher
+After=hermes-gateway.service
+Wants=hermes-gateway.service
+
+[Service]
+Type=simple
+User=luke
+WorkingDirectory=/home/luke/tmp
+Environment="HOME=/home/luke"
+Environment="HERMES_HOME=/home/luke/.hermes"
+ExecStart=/usr/bin/python3 /home/luke/tmp/group_poller.py
+Restart=always
+RestartSec=15
+StandardOutput=append:/home/luke/.hermes/logs/poller.log
+StandardError=append:/home/luke/.hermes/logs/poller.log
+
+[Install]
+WantedBy=multi-user.target
