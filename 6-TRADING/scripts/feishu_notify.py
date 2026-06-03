@@ -745,6 +745,16 @@ def notify_gate_c_approval(session_dir: str) -> str:
 
     instance_code = create_approval_instance(APPROVAL_CODES["gate_c"], form_values)
 
+    # 注册到 approval_agent（30 分钟超时后 AI 兜底）
+    try:
+        import subprocess as _sp
+        _sp.Popen([sys.executable,
+                   str(Path(__file__).parent / "approval_agent.py"),
+                   "register", instance_code, sid, "gate_c"],
+                  stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+    except Exception as _e:
+        print(f"[WARN] approval_agent register: {_e}")
+
     # 同时推一条通知到风控审批群（告知有新审批单）
     approval_url = f"https://applink.feishu.cn/client/mini_program/open?appId=cli_approval&path=pages/detail/index&query=instanceCode%3D{instance_code}"
     elements = [
@@ -781,6 +791,16 @@ def notify_a9_approval(session_dir: str) -> str:
     ]
 
     instance_code = create_approval_instance(APPROVAL_CODES["a9"], form_values)
+
+    # 注册到 approval_agent（30 分钟超时后 AI 兜底）
+    try:
+        import subprocess as _sp
+        _sp.Popen([sys.executable,
+                   str(Path(__file__).parent / "approval_agent.py"),
+                   "register", instance_code, sid, "a9"],
+                  stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+    except Exception as _e:
+        print(f"[WARN] approval_agent register: {_e}")
 
     approval_url = f"https://applink.feishu.cn/client/mini_program/open?appId=cli_approval&path=pages/detail/index&query=instanceCode%3D{instance_code}"
     color = "green" if decision == "EXIT" else "blue"
