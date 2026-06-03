@@ -34,7 +34,7 @@
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
-      "deliver": "origin,feishu:oc_36c575b6f39a8df3dd75057a96685a21,feishu:oc_36c8543cea823b7546fcaad55d111f9f,feishu:oc_9cf9f141613b4e6a0f34651843cf8b9b,feishu:oc_8868a5c84f3d8427afa9ed1a9ad7fb76,feishu:oc_20fcedf0c35035568ea8fa947380f75d",
+      "deliver": "feishu:oc_36c575b6f39a8df3dd75057a96685a21,feishu:oc_9cf9f141613b4e6a0f34651843cf8b9b",
       "origin": null,
       "enabled_toolsets": null,
       "workdir": "/home/luke/tmp"
@@ -73,7 +73,7 @@
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
-      "deliver": "origin,feishu:oc_36c575b6f39a8df3dd75057a96685a21,feishu:oc_36c8543cea823b7546fcaad55d111f9f,feishu:oc_9cf9f141613b4e6a0f34651843cf8b9b,feishu:oc_8868a5c84f3d8427afa9ed1a9ad7fb76,feishu:oc_20fcedf0c35035568ea8fa947380f75d",
+      "deliver": "feishu:oc_36c8543cea823b7546fcaad55d111f9f,feishu:oc_36c575b6f39a8df3dd75057a96685a21",
       "origin": null,
       "enabled_toolsets": null,
       "workdir": "/home/luke/tmp"
@@ -112,7 +112,7 @@
       "last_status": null,
       "last_error": null,
       "last_delivery_error": null,
-      "deliver": "origin,feishu:oc_36c575b6f39a8df3dd75057a96685a21,feishu:oc_36c8543cea823b7546fcaad55d111f9f,feishu:oc_9cf9f141613b4e6a0f34651843cf8b9b,feishu:oc_8868a5c84f3d8427afa9ed1a9ad7fb76,feishu:oc_20fcedf0c35035568ea8fa947380f75d",
+      "deliver": "feishu:oc_36c8543cea823b7546fcaad55d111f9f,feishu:oc_20fcedf0c35035568ea8fa947380f75d",
       "origin": null,
       "enabled_toolsets": null,
       "workdir": "/home/luke/tmp"
@@ -151,7 +151,7 @@
       "last_status": null,
       "last_error": null,
       "last_delivery_error": null,
-      "deliver": "origin,feishu:oc_36c575b6f39a8df3dd75057a96685a21,feishu:oc_36c8543cea823b7546fcaad55d111f9f,feishu:oc_9cf9f141613b4e6a0f34651843cf8b9b,feishu:oc_8868a5c84f3d8427afa9ed1a9ad7fb76,feishu:oc_20fcedf0c35035568ea8fa947380f75d",
+      "deliver": "feishu:oc_8868a5c84f3d8427afa9ed1a9ad7fb76,feishu:oc_9cf9f141613b4e6a0f34651843cf8b9b",
       "origin": null,
       "enabled_toolsets": null,
       "workdir": "/home/luke/tmp"
@@ -190,7 +190,7 @@
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
-      "deliver": "origin,feishu:oc_36c575b6f39a8df3dd75057a96685a21,feishu:oc_36c8543cea823b7546fcaad55d111f9f,feishu:oc_9cf9f141613b4e6a0f34651843cf8b9b,feishu:oc_8868a5c84f3d8427afa9ed1a9ad7fb76,feishu:oc_20fcedf0c35035568ea8fa947380f75d",
+      "deliver": "local",
       "origin": null,
       "enabled_toolsets": null,
       "workdir": "/home/luke/tmp",
