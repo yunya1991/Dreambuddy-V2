@@ -2,15 +2,17 @@
 """
 飞书通知推送模块 - Dreambuddy-V2 交易部门
 用法:
-  python feishu_notify.py screen1    <session_dir>   # 研究室 + 管理看板摘要
-  python feishu_notify.py screen2    <session_dir>   # 交易台
-  python feishu_notify.py execution  <session_dir>   # 交易台执行日志
-  python feishu_notify.py a6_monitor <session_dir>   # 交易台定时监控
-  python feishu_notify.py a6_alert   <alert_json>    # 交易台阈值预警
-  python feishu_notify.py a9         <session_dir>   # 管理看板 + 复盘室
-  python feishu_notify.py escalate   <reason_json>   # 风控审批（人工介入）
-  python feishu_notify.py review     <session_dir>   # 复盘室
-  python feishu_notify.py bitable    <session_dir>   # 写入多维表格交易记录
+  python feishu_notify.py screen1      <session_dir>    # 研究室 + 管理看板摘要
+  python feishu_notify.py screen2      <session_dir>    # 交易台
+  python feishu_notify.py execution    <session_dir>    # 交易台执行日志
+  python feishu_notify.py a6_monitor   <session_dir>    # 交易台定时监控
+  python feishu_notify.py a6_alert     <alert_json>     # 交易台阈值预警
+  python feishu_notify.py a9           <session_dir>    # 管理看板 + 复盘室
+  python feishu_notify.py escalate     <reason_json>    # 风控审批（人工介入，旧版兼容）
+  python feishu_notify.py gate_c_approval <session_dir> # Gate-C 正式审批单
+  python feishu_notify.py a9_approval  <session_dir>    # A9 离场正式审批单
+  python feishu_notify.py review       <session_dir>    # 复盘室
+  python feishu_notify.py bitable      <session_dir>    # 写入多维表格交易记录
 """
 import json
 import sys
@@ -26,6 +28,13 @@ FEISHU_APP_SECRET = "dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70"
 # 多维表格
 BITABLE_APP_TOKEN = "CMlnbvAKYafUL0sxLpFcxNfVnoc"
 BITABLE_TABLE_ID  = "tblSDdfk2sbBAVsr"  # Trading Episodes
+
+# 正式审批定义 Code
+APPROVAL_CODES = {
+    "gate_c": "3901A0B3-5E7F-4A2F-A76E-74A5752BFD1F",  # Gate-C 入场审批
+    "a9":     "1D4CB111-9E67-4430-AA05-3CD1C262E174",  # A9 离场审批
+}
+APPROVAL_USER_ID = "f9g91eae"  # 审批人 user_id（审批 API 用 user_id 不是 open_id）
 
 # 交易部门五群组
 CHAT_IDS = {
@@ -686,6 +695,105 @@ def notify_bitable(session_dir: str):
             card(f"[管理看板] 记录已归档 — {sid}", "blue", elements))
 
 
+# ── 正式飞书审批单（Gate-C / A9）────────────────────────────────────────────
+APPROVAL_URL = "https://open.feishu.cn/open-apis/approval/v4/instances"
+
+def create_approval_instance(approval_code: str, form_values: list) -> str:
+    """创建飞书正式审批实例，返回 instance_code"""
+    token = get_token()
+    payload = {
+        "approval_code": approval_code,
+        "user_id":       APPROVAL_USER_ID,
+        "form":          json.dumps(form_values, ensure_ascii=False),
+    }
+    resp = requests.post(
+        f"{APPROVAL_URL}?user_id_type=user_id",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        json=payload, timeout=15,
+    ).json()
+    if resp.get("code") != 0:
+        raise RuntimeError(f"审批创建失败: {resp.get('msg')} | {resp.get('code')}")
+    instance_code = resp["data"]["instance_code"]
+    print(f"[OK] 正式审批单已创建: {instance_code}")
+    return instance_code
+
+
+def notify_gate_c_approval(session_dir: str) -> str:
+    """Gate-C 入场：创建正式飞书审批单 + 推送通知到风控审批群"""
+    base = Path(session_dir)
+    sid  = base.name
+    meta     = json.loads((base / "meta.json").read_text(encoding="utf-8"))
+    strategy = json.loads((base / "team-a/screen1/strategy-type.json").read_text(encoding="utf-8")) \
+               if (base / "team-a/screen1/strategy-type.json").exists() else {}
+    episode  = json.loads((base / "team-b/episode.json").read_text(encoding="utf-8")) \
+               if (base / "team-b/episode.json").exists() else {}
+    gatec    = json.loads((base / "team-b/gate-c/pretrade-check.json").read_text(encoding="utf-8")) \
+               if (base / "team-b/gate-c/pretrade-check.json").exists() else {}
+
+    direction    = strategy.get("direction", meta.get("screen1_direction", "?"))
+    signal_score = f"{episode.get('composite_confidence', 0)*100:.0f}% | A7: {episode.get('a7_gate_score','?')}/40"
+    entry_price  = str(episode.get("entry_price", episode.get("btc_price", "?")))
+    ach_summary  = gatec.get("ach_summary", "ACH分析未找到")
+
+    form_values = [
+        {"id": "session_id",   "type": "input",    "value": sid},
+        {"id": "direction",    "type": "input",    "value": direction},
+        {"id": "signal",       "type": "input",    "value": signal_score},
+        {"id": "entry_price",  "type": "input",    "value": entry_price},
+        {"id": "ach",          "type": "textarea", "value": ach_summary},
+    ]
+
+    instance_code = create_approval_instance(APPROVAL_CODES["gate_c"], form_values)
+
+    # 同时推一条通知到风控审批群（告知有新审批单）
+    approval_url = f"https://applink.feishu.cn/client/mini_program/open?appId=cli_approval&path=pages/detail/index&query=instanceCode%3D{instance_code}"
+    elements = [
+        md(f"**Gate-C 入场审批** | Session: `{sid}`\n"
+           f"**方向** `{direction}`　**信号** `{signal_score}`　**入场价** `{entry_price}`\n"
+           f"[点击处理审批]({approval_url})"),
+    ]
+    send_to("risk", "interactive",
+            card(f"[风控审批] Gate-C 入场审批 — {sid}", "red", elements))
+    return instance_code
+
+
+def notify_a9_approval(session_dir: str) -> str:
+    """A9 离场：创建正式飞书审批单 + 推送通知到风控审批群"""
+    base = Path(session_dir)
+    sid  = base.name
+    a9 = {}
+    for p in ["a9-exit.json", "team-a/screen3/a9-exit.json"]:
+        if (base / p).exists():
+            a9 = json.loads((base / p).read_text(encoding="utf-8"))
+            break
+
+    decision   = a9.get("decision", "?")
+    exit_score = str(a9.get("exit_score", "?"))
+    pnl        = str(a9.get("realized_pnl", "?"))
+    reason     = a9.get("reason", "")[:500]
+
+    form_values = [
+        {"id": "session_id",  "type": "input",    "value": sid},
+        {"id": "decision",    "type": "input",    "value": decision},
+        {"id": "exit_score",  "type": "input",    "value": exit_score},
+        {"id": "pnl",         "type": "input",    "value": pnl},
+        {"id": "reason",      "type": "textarea", "value": reason},
+    ]
+
+    instance_code = create_approval_instance(APPROVAL_CODES["a9"], form_values)
+
+    approval_url = f"https://applink.feishu.cn/client/mini_program/open?appId=cli_approval&path=pages/detail/index&query=instanceCode%3D{instance_code}"
+    color = "green" if decision == "EXIT" else "blue"
+    elements = [
+        md(f"**A9 离场审批** | Session: `{sid}`\n"
+           f"**决策** `{decision}`　**离场分** `{exit_score}`　**预计PnL** `{pnl} USDT`\n"
+           f"[点击处理审批]({approval_url})"),
+    ]
+    send_to("risk", "interactive",
+            card(f"[风控审批] A9 离场审批 — {sid}", color, elements))
+    return instance_code
+
+
 # ── ESCALATE_TO_HUMAN → 风控审批 ─────────────────────────────────────────────
 def notify_escalate(data: dict):
     sid     = data.get("session_id", "?")
@@ -738,7 +846,9 @@ if __name__ == "__main__":
         "a9":         lambda: notify_a9(resolve_path(arg)),
         "review":     lambda: notify_review(resolve_path(arg)),
         "escalate":   lambda: notify_escalate(json.loads(arg)),
-        "bitable":    lambda: notify_bitable(resolve_path(arg)),
+        "bitable":          lambda: notify_bitable(resolve_path(arg)),
+        "gate_c_approval":  lambda: notify_gate_c_approval(resolve_path(arg)),
+        "a9_approval":      lambda: notify_a9_approval(resolve_path(arg)),
     }
 
     if cmd not in dispatch:
