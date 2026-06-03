@@ -22,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 
 # ── 配置 ─────────────────────────────────────────────────────────────────────
-FEISHU_APP_ID     = "cli_aa9442bde4b89be9"
+FEISHU_APP_ID     = "cli_aa95b2dee3b85bd1"  # 云涯Hermes Bot
 FEISHU_APP_SECRET = "dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70"
 
 # 多维表格
