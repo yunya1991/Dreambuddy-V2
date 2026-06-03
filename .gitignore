@@ -66,3 +66,6 @@ temp/
 **/private/
 **/secrets/
 **/credentials/
+
+# Wiki temp files
+wiki_tmp/
