@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { getUIMapScenario } from "./ui-map-scenarios.ts";
 import { buildUIMapShellViewModel } from "./ui-map-shell-view-model.ts";
@@ -24,4 +25,25 @@ test("shell view model keeps user context index as build-time and runtime founda
 
 test("unknown scenario falls back to balanced shell data", () => {
   assert.equal(getUIMapScenario("missing").id, "balanced");
+});
+
+test("source layer keeps custom strategy as a composite source instead of a flat mechanism list", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"));
+  const custom = viewModel.sourceLayer[0];
+  const system = viewModel.sourceLayer[1];
+
+  assert.equal(custom.title, "自定义策略");
+  assert.match(custom.description, /业务来源层/);
+  assert.match(custom.description, /共同形成/);
+  assert.ok(custom.bullets.includes("意图闭环"));
+  assert.ok(custom.bullets.includes("AI 推理与推荐"));
+
+  assert.equal(system?.title, "系统策略");
+  assert.match(system.description, /业务来源层/);
+});
+
+test("ui-map shell marks the source layer as its own semantic section", () => {
+  const source = readFileSync(new URL("./UIMapShell.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /aria-label="source-layer"/);
 });
