@@ -12,7 +12,7 @@ export default function UIMapShell(props: { viewModel: UIMapShellViewModel }) {
         <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">{hero.subtitle}</p>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section aria-label="source-layer" className="grid gap-6 lg:grid-cols-2">
         {sourceLayer.map((item) => (
           <UIMapModuleCard key={item.title} title={item.title} description={item.description} bullets={item.bullets} />
         ))}

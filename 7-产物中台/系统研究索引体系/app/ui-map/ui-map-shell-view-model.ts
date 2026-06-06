@@ -30,12 +30,12 @@ export function buildUIMapShellViewModel(scenario: UIMapScenario): UIMapShellVie
     sourceLayer: [
       {
         title: "自定义策略",
-        description: "自定义策略是业务来源，不是单一机制。",
+        description: "业务来源层：自定义策略由意图闭环、AI 推理与推荐、个人经验和传统联网金融经验共同形成。",
         bullets: scenario.customStrategyBullets,
       },
       {
         title: "系统策略",
-        description: "系统策略承接系统研究产物、固定研究链路与 feed 入口。",
+        description: "业务来源层：系统策略承接系统研究产物、固定研究链路和 feed 入口。",
         bullets: scenario.systemStrategyBullets,
       },
     ],
