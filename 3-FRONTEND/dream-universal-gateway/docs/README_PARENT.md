@@ -20,6 +20,12 @@ Layer 2: 产物中台 (/feed :3456)    ← 现有Next.js项目
 Layer 3: 产物源 (~/.workbuddy/)    ← 现有文件系统
 ```
 
+补充说明：
+
+- `/chat` 是用户主入口
+- `/dashboard` 是内部调试/展示页，用于承接中台能力状态，不作为长期对外首页
+- 若某项能力未来面向用户正式开放，应优先回收到 `/chat` 的对话式承接
+
 ## 四大独立功能设置
 
 | 功能 | 定位 | 入口 | 文档 |
@@ -40,6 +46,7 @@ Layer 3: 产物源 (~/.workbuddy/)    ← 现有文件系统
 | [docs/TRADING_CONFIG_DESIGN.md](docs/TRADING_CONFIG_DESIGN.md) | **交易参数配置+下单门禁（v2.1新增核心）** | ⭐⭐⭐ |
 | [docs/STRATEGY_CONFIG_DESIGN.md](docs/STRATEGY_CONFIG_DESIGN.md) | **策略设置+定时执行（v2.2新增核心）** | ⭐⭐⭐ |
 | [docs/UI_SPEC.md](docs/UI_SPEC.md) | 前端UI详细规范（含术语禁用清单） | ⭐⭐ |
+| [docs/DASHBOARD_CURRENT_STATE.md](docs/DASHBOARD_CURRENT_STATE.md) | `/dashboard` 当前角色与 `/chat` 的边界说明 | ⭐⭐ |
 | [docs/API_CONFIG_DESIGN.md](docs/API_CONFIG_DESIGN.md) | API连接凭证管理 | ⭐⭐ |
 | [docs/CHANNEL_DESIGN.md](docs/CHANNEL_DESIGN.md) | 通信渠道功能详细设计 | ⭐ |
 | [docs/CHAIN_ORCHESTRATOR.md](docs/CHAIN_ORCHESTRATOR.md) | 内部链路执行器（用户不可见） | ⭐ |
@@ -82,6 +89,14 @@ dream-universal-gateway/
 | P2 | 通信渠道(TG/微信) | 1周 |
 | P3 | 持久化与多会话 | 1周 |
 | P4 | 通用化扩展 | 2周 |
+
+## 页面角色分工
+
+| 页面 | 角色 | 对外属性 |
+|------|------|----------|
+| `/chat` | 用户主入口、对话式能力承接 | 对外主入口 |
+| `/dashboard` | 中台调试展示、能力联调、研发验收 | 内部页 |
+| `/feed` | 产物中台已有入口 | 中台页 |
 
 ## 开发说明
 

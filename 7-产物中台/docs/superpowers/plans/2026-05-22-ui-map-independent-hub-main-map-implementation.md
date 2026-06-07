@@ -6,6 +6,8 @@
 
 **Architecture:** Deliver `ui-map` in two phases. `Phase A` builds the independent frontend shell and stabilizes the layered page skeleton, scenario fixtures, and navigation without touching real backend integration. `Phase B` fills the shell module by module in the same order as the approved architecture diagram: source layer, unified mainline, dual index foundations, then perspective layer. Each module lands only after passing tests, scripted pressure checks, multi-scenario simulation, and design-drift review against the approved diagram.
 
+**Phase B data contract:** Before wiring real backend data, read `7-产物中台/docs/superpowers/specs/2026-06-07-ui-map-real-data-integration-contract.md`. It defines the source-of-truth mapping, server adapter boundary, fixture fallback rule, and the rollout order for real data mode.
+
 **Tech Stack:** Next.js 14 App Router, React 18, TypeScript, Tailwind utility classes, `node:test` via `tsx --test`, Playwright CLI for multi-scenario screenshots, Node scripts for repeated route checks
 
 ---
