@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const MODULE_PATH = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系/lib/org-data.ts";
+const MODULE_PATH = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系/lib/org-data.ts";
 
 async function importOrgDataModule() {
   const moduleUrl = `${pathToFileURL(MODULE_PATH).href}?t=${Date.now()}-${Math.random()}`;

@@ -141,7 +141,7 @@ test("unknown scenario falls back to balanced shell data", () => {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -278,7 +278,7 @@ export function buildUIMapShellViewModel(scenario: UIMapScenario): UIMapShellVie
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -289,7 +289,7 @@ Expected: PASS with 3 passing tests.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm exec tsx --eval "import { getUIMapScenario } from './app/ui-map/ui-map-scenarios.ts'; import { buildUIMapShellViewModel } from './app/ui-map/ui-map-shell-view-model.ts'; const ids=['balanced','custom-heavy','system-heavy','execution-heavy']; for (let i=0;i<200;i++) { for (const id of ids) { const vm=buildUIMapShellViewModel(getUIMapScenario(id)); if (vm.mainlineLayer.title !== '策略主线') throw new Error('broken shell model'); } } console.log('ui-map shell scenario pressure ok');"
 ```
 
@@ -347,7 +347,7 @@ test("ui-map route entry renders the shell and uses the shell view model", () =>
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/page.test.ts
 ```
 
@@ -494,7 +494,7 @@ export default function UIMapPage({
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm build
 ```
 
@@ -505,7 +505,7 @@ Expected: `/ui-map` route builds successfully.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-shell.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -569,7 +569,7 @@ test("source layer keeps custom strategy as a composite source instead of a flat
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -607,7 +607,7 @@ sourceLayer: [
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -618,7 +618,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-source.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -672,7 +672,7 @@ test("mainline and dual-index layers keep convergence and foundation semantics",
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -719,7 +719,7 @@ indexFoundation: {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/ui-map-shell-view-model.test.ts
 ```
 
@@ -730,7 +730,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-mainline.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -795,7 +795,7 @@ test("ui-map is promoted as hub entry and keeps dual perspective layer", () => {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm exec tsx --test app/ui-map/navigation.test.ts
 ```
 
@@ -841,7 +841,7 @@ export default function Home() {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm build
 ```
 
@@ -852,7 +852,7 @@ Expected: `/` redirects to `/ui-map`, and `/feed` `/chain` remain available.
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-nav.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -893,7 +893,7 @@ git commit -m "feat: promote ui-map shell as hub entry"
 - [ ] **Step 1: Write the failing pressure script invocation**
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 node scripts/ui-map-pressure-check.mjs
 ```
 
@@ -940,7 +940,7 @@ main().catch((error) => {
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 pnpm dev >/tmp/ui-map-pressure.log 2>&1 &
 DEV_PID=$!
 sleep 6
@@ -960,7 +960,7 @@ ui-map pressure check ok
 Run:
 
 ```bash
-cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-产物中台/系统研究索引体系
+cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系
 mkdir -p .tmp/ui-map-scenarios
 pnpm dlx playwright screenshot --viewport-size="1440,1400" "http://127.0.0.1:3456/ui-map?scenario=balanced" .tmp/ui-map-scenarios/balanced.png
 pnpm dlx playwright screenshot --viewport-size="1440,1400" "http://127.0.0.1:3456/ui-map?scenario=custom-heavy" .tmp/ui-map-scenarios/custom-heavy.png

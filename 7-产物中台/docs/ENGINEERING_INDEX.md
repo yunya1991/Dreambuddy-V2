@@ -9,12 +9,12 @@
 ## 当前文档主线
 
 - 当前保留的设计文档：
-- [ui-map-independent-hub-main-map-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/specs/2026-05-22-ui-map-independent-hub-main-map-design.md)
-- [ui-map-real-data-integration-contract.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/specs/2026-06-07-ui-map-real-data-integration-contract.md)
-- [product-hub-directory-migration-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/specs/2026-05-22-product-hub-directory-migration-design.md)
+- [ui-map-independent-hub-main-map-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/specs/2026-05-22-ui-map-independent-hub-main-map-design.md)
+- [ui-map-real-data-integration-contract.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/specs/2026-06-07-ui-map-real-data-integration-contract.md)
+- [product-hub-directory-migration-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/specs/2026-05-22-product-hub-directory-migration-design.md)
 - 当前保留的实施计划：
-- [ui-map-independent-hub-main-map-implementation.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/plans/2026-05-22-ui-map-independent-hub-main-map-implementation.md)
-- [product-hub-directory-migration-implementation.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2-mainline/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/plans/2026-05-22-product-hub-directory-migration-implementation.md)
+- [ui-map-independent-hub-main-map-implementation.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/plans/2026-05-22-ui-map-independent-hub-main-map-implementation.md)
+- [product-hub-directory-migration-implementation.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-%E4%BA%A7%E7%89%A9%E4%B8%AD%E5%8F%B0/docs/superpowers/plans/2026-05-22-product-hub-directory-migration-implementation.md)
 
 ## 目录地图
 
