@@ -84,3 +84,7 @@ Step4: 自主分析
 - **交易系统** ← 合规审查前门
 - **产物中台** ← 产物投递验证
 - **记忆系统** ← 记忆围栏防护
+
+---
+
+> Validation note: out-of-scope drift-guard block path probe.
