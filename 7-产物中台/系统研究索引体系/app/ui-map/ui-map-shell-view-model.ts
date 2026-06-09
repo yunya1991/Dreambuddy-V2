@@ -1,5 +1,14 @@
 import type { UIMapScenario } from "./ui-map-scenarios.ts";
 
+export interface UIMapSystemResearchOverride {
+  description: string;
+  bullets: string[];
+}
+
+export interface UIMapShellOverrides {
+  systemResearch?: UIMapSystemResearchOverride | null;
+}
+
 export interface UIMapShellViewModel {
   hero: { title: string; subtitle: string };
   sourceLayer: Array<{ title: string; description: string; bullets: string[] }>;
@@ -21,7 +30,15 @@ export interface UIMapShellViewModel {
   perspectiveLayer: Array<{ title: string; description: string }>;
 }
 
-export function buildUIMapShellViewModel(scenario: UIMapScenario): UIMapShellViewModel {
+export function buildUIMapShellViewModel(
+  scenario: UIMapScenario,
+  overrides: UIMapShellOverrides = {},
+): UIMapShellViewModel {
+  const systemResearch = overrides.systemResearch ?? {
+    description: "平台基础能力底座，持续为系统策略和 AI 推理供能。",
+    bullets: scenario.systemCapabilityBullets,
+  };
+
   return {
     hero: {
       title: "UI-Map 独立中台首页",
@@ -54,8 +71,8 @@ export function buildUIMapShellViewModel(scenario: UIMapScenario): UIMapShellVie
       },
       systemResearch: {
         title: "系统研究索引体系",
-        description: "平台基础能力底座，持续为系统策略和 AI 推理供能。",
-        bullets: scenario.systemCapabilityBullets,
+        description: systemResearch.description,
+        bullets: systemResearch.bullets,
       },
     },
     perspectiveLayer: [
