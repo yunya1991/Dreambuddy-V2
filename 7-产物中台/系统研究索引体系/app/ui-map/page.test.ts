@@ -8,4 +8,5 @@ test("ui-map route entry renders the shell and uses the shell view model", () =>
   assert.match(source, /export default function UIMapPage/);
   assert.match(source, /buildUIMapShellViewModel/);
   assert.match(source, /UIMapClient/);
+  assert.match(source, /buildSystemResearchUIMapOverride/);
 });
