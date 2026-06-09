@@ -34,6 +34,8 @@ npm-debug.log*
 # Local agent state
 .superpowers/
 .workbuddy/
+!.workbuddy/
+!.workbuddy/drift-guard.json
 
 # Python cache
 **/__pycache__/
