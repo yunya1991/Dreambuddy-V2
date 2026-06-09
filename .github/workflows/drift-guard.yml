@@ -24,11 +24,12 @@ concurrency:
 
 jobs:
   guard:
-    uses: yunya1991/DREAM-AGENT/.github/workflows/reusable-drift-guard.yml@drift-guard/v0.1.1
+    uses: yunya1991/DREAM-AGENT/.github/workflows/reusable-drift-guard.yml@drift-guard/v0.1.2
     permissions:
       contents: read
       pull-requests: write
     with:
       change_class: ${{ github.event_name == 'workflow_dispatch' && inputs.change_class || 'mainline' }}
+      source_ref: drift-guard/v0.1.2
       config_path: .workbuddy/drift-guard.json
       comment_on_pr_block: true
