@@ -24,56 +24,11 @@ concurrency:
 
 jobs:
   guard:
-    runs-on: ubuntu-latest
+    uses: yunya1991/DREAM-AGENT/.github/workflows/reusable-drift-guard.yml@drift-guard/v0.1.0
     permissions:
       contents: read
       pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          clean: true
-
-      - name: Ensure clean workspace
-        shell: bash
-        run: |
-          set -e
-          git reset --hard
-          git clean -fdx
-          git fetch origin main --depth=1
-
-      - name: Run drift guard
-        id: drift
-        uses: ./.github/actions/drift-guard
-        with:
-          mode: ${{ github.event_name == 'workflow_dispatch' && 'manual' || github.event_name }}
-          change_class: ${{ inputs.change_class || 'mainline' }}
-          config_path: .workbuddy/drift-guard.json
-          base_sha: ${{ github.event_name == 'pull_request' && 'origin/main' || '' }}
-          head_sha: ${{ github.event_name == 'pull_request' && 'HEAD' || '' }}
-          report_json: drift_report.json
-          report_md: drift_report.md
-
-      - name: Upload drift report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: drift-guard-report-${{ github.run_id }}
-          path: |
-            drift_report.json
-            drift_report.md
-
-      - name: Comment drift report (PR block)
-        if: ${{ failure() && github.event_name == 'pull_request' && hashFiles('drift_report.md') != '' }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require("fs");
-            const body = fs.readFileSync("drift_report.md", "utf8");
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body,
-            });
+    with:
+      change_class: ${{ github.event_name == 'workflow_dispatch' && inputs.change_class || 'mainline' }}
+      config_path: .workbuddy/drift-guard.json
+      comment_on_pr_block: true
