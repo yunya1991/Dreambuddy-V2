@@ -1,0 +1,10 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 3456
+  },
+  "paths": {
+    "artifacts_root": "./dreambuddy/artifacts",
+    "meta_root": "./dreambuddy/meta"
+  }
+}

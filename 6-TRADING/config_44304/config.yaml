@@ -1,0 +1,59 @@
+# 配置文件 - GitHub Actions 版本
+# 所有敏感信息存储在 GitHub Secrets 中
+
+# OKX 配置
+okx:
+  project: dreamdemo  # 或 your_project_name
+  inst_id: BTC-USDT-SWAP
+  bar: 1H  # K线周期
+
+# A-series 配置
+a_series:
+  enabled:
+    a1: true   # 调研
+    a2: true   # 原理分析
+    a3: true   # 推演
+    a4: true   # 验证
+    a5: true   # 执行 (模拟盘)
+    a6: true   # 情报监控
+    a7: false  # 门禁 (可选)
+    a8: false  # 验证 (可选)
+    a9: true   # 离场
+  
+  # 自动执行时间 (cron 格式)
+  schedule: "0 * * * *"  # 每小时
+
+# 产物配置
+artifacts:
+  output_dir: artifacts/trading
+  formats:
+    - json
+    - html
+    - md
+  
+  # 保留历史版本数
+  keep_versions: 30
+
+# GitHub Pages 配置
+github_pages:
+  enabled: true
+  branch: gh-pages
+  custom_domain: ""  # 可选: dream.yourdomain.com
+
+# 通知配置 (可选)
+notifications:
+  # 企业微信 Webhook
+  wecom_webhook: ${WECOM_WEBHOOK}
+  
+  # 钉钉 Webhook
+  dingtalk_webhook: ${DINGTALK_WEBHOOK}
+  
+  # Telegram Bot
+  telegram_bot_token: ${TELEGRAM_BOT_TOKEN}
+  telegram_chat_id: ${TELEGRAM_CHAT_ID}
+
+# 日志配置
+logging:
+  level: INFO
+  save_to_file: true
+  file: logs/dream_automation.log

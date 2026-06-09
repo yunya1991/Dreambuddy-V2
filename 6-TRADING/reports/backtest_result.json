@@ -1,0 +1,74 @@
+{
+  "config": {
+    "inst_id": "BTC-USDT-SWAP",
+    "start_date": "2025-01-01",
+    "end_date": "2026-05-16",
+    "initial_capital": 10000,
+    "maker_fee": 0.0002,
+    "taker_fee": 0.0005,
+    "slippage": 0.0001,
+    "max_drawdown": 20.0,
+    "warn_drawdown": 15.0,
+    "max_position_pct": 0.2,
+    "max_total_pct": 0.6
+  },
+  "total_return": 0.7,
+  "annual_return": 0.51,
+  "max_drawdown": 4.06,
+  "sharpe_ratio": -0.47,
+  "win_rate": 50.0,
+  "profit_factor": 1.7,
+  "total_trades": 2,
+  "win_trades": 1,
+  "loss_trades": 1,
+  "add_on_count": 0,
+  "forced_close_count": 0,
+  "drawdown_limit_count": 0,
+  "final_equity": 10069.78,
+  "initial_capital": 10000,
+  "backtest_days": 499,
+  "signal_analysis": {
+    "strong": {
+      "count": 0,
+      "wins": 0,
+      "win_rate": 0
+    },
+    "medium": {
+      "count": 2,
+      "wins": 1,
+      "win_rate": 50.0
+    },
+    "weak": {
+      "count": 0,
+      "wins": 0,
+      "win_rate": 0
+    },
+    "none": {
+      "count": 0,
+      "wins": 0,
+      "win_rate": 0
+    }
+  },
+  "screen1_accuracy": 50.0,
+  "monthly_returns": {
+    "2025-02": 0.0,
+    "2025-03": 0.0,
+    "2025-04": 0.0,
+    "2025-05": 0.23,
+    "2025-06": 0.35,
+    "2025-07": 1.25,
+    "2025-08": -1.1,
+    "2025-09": 0.5,
+    "2025-10": -0.34,
+    "2025-11": -1.73,
+    "2025-12": 0.45,
+    "2026-01": 0.85,
+    "2026-02": 2.1,
+    "2026-03": -0.24,
+    "2026-04": -1.21,
+    "2026-05": -0.34
+  },
+  "equity_curve_count": 450,
+  "drawdown_curve_count": 450,
+  "trades_count": 4
+}

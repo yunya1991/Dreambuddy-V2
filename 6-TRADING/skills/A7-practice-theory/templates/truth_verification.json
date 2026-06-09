@@ -1,0 +1,80 @@
+{
+  "template_name": "真理验证模板",
+  "version": "1.0",
+  "created": "2026-04-26",
+  "description": "基于实践论真理标准，验证认识正确性",  
+  "truth_verification": {
+    "verification_id": "TV_[阶段]_[日期]_[序号]",
+    "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+    "stage": "A4/A5/REFLECTION",
+    "based_on": "实践结果 (P&L/胜率/回撤)",
+    
+    "truth_criteria": {
+      "P&L": {
+        "criteria": "> 0",
+        "meaning": "盈利是真理的根本标准"
+      },
+      "win_rate": {
+        "criteria": "≥ 50% (样本≥20)",
+        "meaning": "胜率反映认识稳定性"
+      },
+      "max_drawdown": {
+        "criteria": "≤ 15%",
+        "meaning": "回撤反映风险控制能力"
+      },
+      "discipline": {
+        "criteria": "违反纪律次数 = 0",
+        "meaning": "执行纪律反映实践态度"
+      }
+    },
+    
+    "practice_result": {
+      "P&L": 0.00,
+      "win_rate": 0.0,
+      "sample_size": 0,
+      "max_drawdown": 0.00,
+      "max_drawdown_percentage": 0.00,
+      "discipline_violation": 0
+    },
+    
+    "verification_results": {
+      "P&L": {
+        "status": "PASS/FAIL",
+        "evidence": "实践结果证据",
+        "meaning": "P&L>0 → 认识正确; P&L<0 → 认识错误"
+      },
+      "win_rate": {
+        "status": "PASS/FAIL",
+        "evidence": "实践结果证据",
+        "meaning": "胜率≥50% → 认识稳定; 胜率<50% → 认识不稳定"
+      },
+      "max_drawdown": {
+        "status": "PASS/FAIL",
+        "evidence": "实践结果证据",
+        "meaning": "回撤≤15% → 风险控制好; 回撤>15% → 风险失控"
+      },
+      "discipline": {
+        "status": "PASS/FAIL",
+        "evidence": "实践日志证据",
+        "meaning": "无违反 → 执行纪律好; 有违反 → 执行纪律松懈"
+      }
+    },
+    
+    "overall_verification": {
+      "status": "PASS/FAIL",
+      "reason": "综合判断理由",
+      "meaning": "PASS → 认识正确，可以继续; FAIL → 认识错误，需修正"
+    },
+    
+    "recognition_correction": {
+      "required": "true/false",
+      "correction_content": "如果需要修正，修正什么?",
+      "correction_reason": "实践证据是什么?",
+      "correction_method": "如何修正?"
+    },
+    
+    "next_action": "继续A5 / 返回A1-A3 / 复盘反思",
+    
+    "practice_theory_principle": "真理的标准只能是社会的实践。P&L和胜率是唯一真理标准，不能'我认为正确'。"
+  }
+}

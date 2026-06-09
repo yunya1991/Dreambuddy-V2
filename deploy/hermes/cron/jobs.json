@@ -1,0 +1,279 @@
+{
+  "jobs": [
+    {
+      "id": "718ba684cd56",
+      "name": "Screen1-weekly",
+      "prompt": "Run 6-TRADING Screen1 weekly analysis using screen1-trigger skill",
+      "skills": [
+        "screen1-trigger"
+      ],
+      "skill": "screen1-trigger",
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 20 * * 0",
+        "display": "0 20 * * 0"
+      },
+      "schedule_display": "0 20 * * 0",
+      "repeat": {
+        "times": null,
+        "completed": 1
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-05-28T15:48:33.363876+08:00",
+      "next_run_at": "2026-06-07T20:00:00+08:00",
+      "last_run_at": "2026-06-02T02:47:00.844899+08:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "feishu:oc_36c575b6f39a8df3dd75057a96685a21,feishu:oc_9cf9f141613b4e6a0f34651843cf8b9b",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": "/home/luke/tmp"
+    },
+    {
+      "id": "faf81794c30c",
+      "name": "Screen2-daily",
+      "prompt": "Run 6-TRADING Screen2 daily preset using screen2-trigger skill",
+      "skills": [
+        "screen2-trigger"
+      ],
+      "skill": "screen2-trigger",
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 7 * * 1-5",
+        "display": "30 7 * * 1-5"
+      },
+      "schedule_display": "30 7 * * 1-5",
+      "repeat": {
+        "times": null,
+        "completed": 1
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-05-28T15:48:40.085362+08:00",
+      "next_run_at": "2026-06-04T07:30:00+08:00",
+      "last_run_at": "2026-06-03T07:37:44.410965+08:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "feishu:oc_36c8543cea823b7546fcaad55d111f9f,feishu:oc_36c575b6f39a8df3dd75057a96685a21",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": "/home/luke/tmp"
+    },
+    {
+      "id": "ba57cc7a61d3",
+      "name": "Screen3-teamb",
+      "prompt": "Run 6-TRADING Screen3 TeamB entry check using screen3-trigger skill",
+      "skills": [
+        "screen3-trigger"
+      ],
+      "skill": "screen3-trigger",
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * 1-5",
+        "display": "0 9 * * 1-5"
+      },
+      "schedule_display": "0 9 * * 1-5",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-05-28T15:48:41.374838+08:00",
+      "next_run_at": "2026-06-04T09:00:00+08:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "feishu:oc_36c8543cea823b7546fcaad55d111f9f,feishu:oc_20fcedf0c35035568ea8fa947380f75d",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": "/home/luke/tmp"
+    },
+    {
+      "id": "c6366fcf6e98",
+      "name": "ProcessD-weekly",
+      "prompt": "Run 6-TRADING Process D weekly retrospective using process-d-trigger skill",
+      "skills": [
+        "process-d-trigger"
+      ],
+      "skill": "process-d-trigger",
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 6 * * 1",
+        "display": "0 6 * * 1"
+      },
+      "schedule_display": "0 6 * * 1",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-05-28T15:48:42.600494+08:00",
+      "next_run_at": "2026-06-08T06:00:00+08:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "feishu:oc_8868a5c84f3d8427afa9ed1a9ad7fb76,feishu:oc_9cf9f141613b4e6a0f34651843cf8b9b",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": "/home/luke/tmp"
+    },
+    {
+      "id": "91117ffb9088",
+      "name": "A6-monitor-4h",
+      "prompt": "",
+      "skills": [
+        "a6-monitor-trigger"
+      ],
+      "skill": "a6-monitor-trigger",
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 */4 * * *",
+        "display": "0 */4 * * *"
+      },
+      "schedule_display": "0 */4 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 4
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-03T02:05:50.278240+08:00",
+      "next_run_at": "2026-06-03T20:00:00+08:00",
+      "last_run_at": "2026-06-03T16:03:50.044393+08:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": "/home/luke/tmp",
+      "profile": null
+    },
+    {
+      "id": "a3c5f632fbf4",
+      "name": "ApprovalTimeout-10min",
+      "prompt": "",
+      "skills": [
+        "approval-timeout-check"
+      ],
+      "skill": "approval-timeout-check",
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "*/10 * * * *",
+        "display": "*/10 * * * *"
+      },
+      "schedule_display": "*/10 * * * *",
+      "repeat": {
+        "times": null,
+        "completed": 31
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-03T12:49:25.715242+08:00",
+      "next_run_at": "2026-06-03T18:40:00+08:00",
+      "last_run_at": "2026-06-03T18:31:34.020329+08:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": "/home/luke/tmp",
+      "profile": null
+    },
+    {
+      "id": "c19a6b02bbe3",
+      "name": "GroupMentionProcessor-60s",
+      "prompt": "You are processing pending group @mentions from Feishu group chats.\n\nSTEP 1: Read the pending file at C:/Users/luke.zhang/.hermes/pending_group_mentions.jsonl\n- If file doesn't exist, respond with [SILENT]\n- Each line is a JSON object with fields: ts, group_name, chat_id, sender, text, msg_id, status\n- Only process entries where status == \"pending\"\n\nSTEP 2: For each pending mention, process the user's message:\n- The user's message is in the \"text\" field (strip @_user_1 prefix if present)\n- The message came from group: group_name (chat_id: chat_id)\n- Process the message like a normal DM request - analyze, research if needed, provide a helpful response\n- Keep responses concise since they go to a group chat\n- Use Tavily API (web_search) for any data queries\n\nSTEP 3: Send your response to the group. Try send_message first, fallback to REST API:\n- FIRST: try send_message(target=\"feishu:<chat_id>\", message=\"your response\")\n- FALLBACK: if send_message not available, use execute_code with this Python script:\n\n```python\nimport json, os, requests\nenv_path = os.path.expanduser(\"~/.hermes/.env\")\nenv = {}\nwith open(env_path, 'r') as f:\n    for line in f:\n        line = line.strip()\n        if line and not line.startswith('#') and '=' in line:\n            k, v = line.split('=', 1)\n            env[k.strip()] = v.strip()\nr = requests.post(\"https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal\",\n    json={\"app_id\": env[\"FEISHU_APP_ID\"], \"app_secret\": env[\"FEISHU_APP_SECRET\"]}, timeout=10).json()\ntoken = r[\"tenant_access_token\"]\nheaders = {\"Authorization\": f\"Bearer {token}\", \"Content-Type\": \"application/json\"}\ncontent = json.dumps({\"text\": \"YOUR RESPONSE HERE\"})\nr = requests.post(f\"https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id\",\n    headers=headers, json={\"receive_id\": \"CHAT_ID_HERE\", \"msg_type\": \"text\", \"content\": content}, timeout=10)\nprint(r.json())\n```\n\nSTEP 4: Mark the entry as processed:\n- Change \"status\" from \"pending\" to \"processed\" in the JSONL file by rewriting all lines\n\nIf no pending entries, respond with [SILENT].\n\nCRITICAL: Always reply to the GROUP chat_id (e.g. oc_20fced...), NOT the sender's DM.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "no_agent": false,
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "* * * * *",
+        "display": "* * * * *"
+      },
+      "schedule_display": "* * * * *",
+      "repeat": {
+        "times": null,
+        "completed": 114
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-06-03T15:41:08.550076+08:00",
+      "next_run_at": "2026-06-03T18:38:00+08:00",
+      "last_run_at": "2026-06-03T18:37:48.417403+08:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": "/home/luke/tmp",
+      "profile": null
+    }
+  ],
+  "updated_at": "2026-06-03T18:37:48.426703+08:00"
+}

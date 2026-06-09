@@ -1,0 +1,124 @@
+{
+  "session_id": "2026-06-03-BTC-SCREEN1",
+  "generated_at": "2026-06-03T10:50:46Z",
+  "btc_price": 67200,
+  "direction": "BEAR",
+  "confidence": "MODERATE",
+  "total_score": 30,
+  "max_score": 100,
+  "ach": {
+    "h1": {
+      "hypothesis": "持续空头趋势",
+      "probability": 0.55,
+      "evidence": "MA200下行确认+ETF连续流出+算力暴跌+MVRV虽低但未到极端"
+    },
+    "h2": {
+      "hypothesis": "底部震荡筑底",
+      "probability": 0.3,
+      "evidence": "MVRV低估+接近矿工成本+STH亏损清洗+200WMA接近"
+    },
+    "h3": {
+      "hypothesis": "V型反弹",
+      "probability": 0.15,
+      "evidence": "RSI超卖+短期跌幅过大+历史模式"
+    }
+  },
+  "dimensions": {
+    "technical": {
+      "dimension": "technical_detector",
+      "weight": 40,
+      "anchor": "BEAR",
+      "ma200_daily": 88500,
+      "ma200_weekly": 61000,
+      "price_vs_ma200": "BELOW",
+      "three_day_confirm": true,
+      "indicators": {
+        "rsi_daily": 22,
+        "macd": "bearish_cross",
+        "adx": 32,
+        "obv": "bearish",
+        "volume_profile": "distribution"
+      },
+      "score": 0,
+      "reasoning": "价格$67,200远低于MA200日线~$88,500和MA200周线$61,000+。三日确认跌破MA200成立。RSI 22超卖但非翻转信号。MACD死叉+ADX 32强趋势=空头确认。ETF连续10日流出$29.7亿加剧下行。",
+      "generated_at": "2026-06-03T10:50:46Z",
+      "freshness_days": 7
+    },
+    "cycle": {
+      "dimension": "halving_cycle",
+      "weight": 15,
+      "days_since_halving": 420,
+      "cycle_phase": "post_halving_accumulation",
+      "historical_pattern": "bullish_phase",
+      "current_deviation": "bearish_divergence",
+      "score": 5,
+      "reasoning": "减半后420天(~14个月)历史上处于积累→上涨过渡期。但当前价格行为与历史模式严重背离，减半供应冲击被ETF流出和宏观不确定性淹没。",
+      "generated_at": "2026-06-03T10:50:46Z",
+      "freshness_days": 7
+    },
+    "miner": {
+      "dimension": "miner_economics",
+      "weight": 15,
+      "hashrate_ehs": 700,
+      "hashrate_change_6m": -46,
+      "hashprice": 53,
+      "production_cost_low": 40000,
+      "production_cost_high": 80000,
+      "production_cost_avg": 60000,
+      "price_to_cost_ratio": 1.12,
+      "miner_capitulation": true,
+      "hash_ribbon": "bearish_cross",
+      "score": 7,
+      "reasoning": "全网算力从1,300 EH/s暴跌至700 EH/s(-46%)，严重矿工投降信号。哈希价格$53极低。BTC$67K接近平均生产成本$60K，距离$40K下限还有距离。矿工投降在底部区域(-2分)，但接近成本支撑(+2分)。",
+      "generated_at": "2026-06-03T10:50:46Z",
+      "freshness_days": 7
+    },
+    "onchain": {
+      "dimension": "onchain_valuation",
+      "weight": 15,
+      "mvrv_z_score": 1.25,
+      "nupl": -0.15,
+      "realized_price": 61120,
+      "price_to_realized": 1.1,
+      "rhodl_ratio": "accumulation_zone",
+      "sth_mvrv": 0.92,
+      "score": 12,
+      "reasoning": "MVRV Z-Score ~1.25处于历史低估区间(ETF后峰值阈值~3.5)。NUPL约-0.15进入投降区。BTC仅高于Realized Price 10%($61,120)，历史上此估值对应底部区域。STH-MVRV 0.92表明短期持有者已亏损，清洗浮筹。",
+      "generated_at": "2026-06-03T10:50:46Z",
+      "freshness_days": 7
+    },
+    "macro": {
+      "dimension": "macro_finance",
+      "weight": 10,
+      "fed_rate": "3.50-3.75%",
+      "dxy": 99.0,
+      "dxy_trend": "weakening",
+      "us10y": 4.44,
+      "global_m2_trend": "stable",
+      "geopolitical_risk": "elevated",
+      "oil_price_trend": "rising",
+      "score": 5,
+      "reasoning": "DXY走弱(~99)历史上利好BTC，但当前BTC逆势下跌说明加密市场内部抛压主导。Fed利率维持3.50-3.75%未降息。霍尔木兹海峡局势推高油价增加滞胀风险。整体中性偏多(DXY弱)但被内部因素抵消。",
+      "generated_at": "2026-06-03T10:50:46Z",
+      "freshness_days": 7
+    },
+    "cross_market": {
+      "dimension": "cross_market",
+      "weight": 5,
+      "sp500_trend": "sideways",
+      "gold_trend": "bullish",
+      "btc_correlation_sp500": "decoupling",
+      "risk_appetite": "risk_off",
+      "score": 1,
+      "reasoning": "风险资产整体承压。BTC与美股脱钩，加密市场独立走弱。黄金走强反映避险情绪，资金从BTC流向黄金。跨市场信号偏空。",
+      "generated_at": "2026-06-03T10:50:46Z",
+      "freshness_days": 7
+    }
+  },
+  "gate_level": "FULL",
+  "clock_stage": "DEFLATION_SCARE",
+  "skill_regime": "BEAR_TREND",
+  "red_team_flag": false,
+  "valid_until": "2026-06-10",
+  "dispatch_model": "deepseek-v4-pro"
+}

@@ -1,0 +1,43 @@
+{
+  "session_id": "20260527-BTC-SCREEN3",
+  "skill": "A7-practice-theory",
+  "date": "2026-05-27",
+  "checks": {
+    "C1_entry_zone_reachable": {
+      "score": 0,
+      "max": 10,
+      "result": "FAIL",
+      "detail": "当前价格7,267低于入场区7,500-8,000。理论入场区存在但实践尚未触发。"
+    },
+    "C2_capital_compliance": {
+      "score": 8,
+      "max": 8,
+      "result": "PASS",
+      "detail": "L0=5 USDT ≤ 单笔上限50 USDT，符合资金规则"
+    },
+    "C3_stop_loss_valid": {
+      "score": 8,
+      "max": 8,
+      "result": "PASS",
+      "detail": "SL=0,600 定义明确，距入场7,650约+3.8%，在-4%止损范围内"
+    },
+    "C4_direction_consistency": {
+      "score": 8,
+      "max": 8,
+      "result": "PASS",
+      "detail": "SHORT方向与Screen1一致，Screen1 valid_until=2026-06-09"
+    },
+    "C5_rr_acceptability": {
+      "score": 4,
+      "max": 6,
+      "result": "BORDERLINE",
+      "detail": "L0单层RR=0.75（低于1:1）。多层平均RR~1.4（可接受），但单层偏低"
+    }
+  },
+  "a7_gate_score": 28,
+  "a7_gate_max": 40,
+  "a7_gate_pct": 70.0,
+  "threshold": 30,
+  "result": "CONDITIONAL_SKIP",
+  "verdict": "A7 score=28/40 < 30阈值。C1入场区未触达是主要失分项（-10分）。理论分析完备，等待实践条件成立（价格到达7,500-8,000）后可重新过门。"
+}

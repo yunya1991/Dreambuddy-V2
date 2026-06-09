@@ -1,0 +1,20 @@
+{
+  "contract": "workflow-summary.v1",
+  "level": "L1",
+  "owner": "solo",
+  "frozen_at": "2026-05-16",
+  "schema": {
+    "workflow_id": "string",
+    "workflow_type": "string",
+    "chain_phase": "A0 | A1 | A2 | A3 | A4 | A5 | A6 | A7 | A8 | A9",
+    "status": "pending | running | completed | failed",
+    "latest_trace_id": "string | null"
+  },
+  "example": {
+    "workflow_id": "wf_demo_001",
+    "workflow_type": "legacy_chain",
+    "chain_phase": "A3",
+    "status": "running",
+    "latest_trace_id": "trace_demo_001"
+  }
+}

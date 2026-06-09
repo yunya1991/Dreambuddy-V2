@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+.next/
+out/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Local runtime artifacts
+/artifacts/
+
+# Local agent state
+.superpowers/
+.workbuddy/
+!.workbuddy/
+!.workbuddy/drift-guard.json
+
+# Python cache
+**/__pycache__/
+*.pyc
+
+# Artifact Hub runtime state (repo-local)
+dreambuddy/meta/*.sqlite*
+dreambuddy/artifacts/tasks/*.json
+dreambuddy/artifacts/results/*.json
+
+# Trading runtime data / generated logs
+6-TRADING/data/
+**/.codebuddy/
+6-TRADING/skills/**/intelligence_input/
+
+# Cache
+.cache/
+.eslintcache
+
+# Database
+*.db
+*.db-journal
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+# Private
+**/private/
+**/secrets/
+**/credentials/
+
+# Wiki temp files
+wiki_tmp/

@@ -1,0 +1,97 @@
+{
+  "date": "2026-05-26",
+  "symbol": "BTC-USDT",
+  "strategy": "spot_martingale",
+  "direction": "LONG",
+  "screen1_score": 58,
+  "position_mode": "light",
+  "valid_until": "2026-06-09",
+  "analysis_summary": {
+    "A1_conflict": "Daily high consolidation, long/short battle $100K-$108K, wait-for-pullback favored over chase",
+    "A2_key_levels": {
+      "resistance": [
+        110000,
+        105000
+      ],
+      "support": [
+        103000,
+        100000,
+        98000,
+        95000
+      ],
+      "stop_boundary": 90000
+    },
+    "A3_scenario": {
+      "primary": "Pullback to $103K-$105K then bounce, prob 45%",
+      "secondary": "Attack $110K then pullback, prob 30%",
+      "bear_case": "Dip below $98K triggers L1, prob 20%",
+      "invalidation": "Break $95K stop-out, prob 5%"
+    }
+  },
+  "entry_preset": {
+    "preset_id": "P1_ENTRY",
+    "type": "limit_buy",
+    "trigger_zone": [
+      103000,
+      105000
+    ],
+    "target_price": 104000,
+    "position_pct": 0.1,
+    "confirmation_required": true,
+    "confirmation_condition": "daily_candle_close_above_entry_zone OR lower_wick_gt_1.5pct"
+  },
+  "martingale_grid": [
+    {
+      "level": "L0",
+      "trigger_price": 104000,
+      "position_pct": 0.1,
+      "cumulative_pct": 0.1,
+      "avg_cost_estimate": 104000,
+      "status": "pending"
+    },
+    {
+      "level": "L1",
+      "trigger_price": 98800,
+      "trigger_pct_from_prev": -0.05,
+      "position_pct": 0.15,
+      "cumulative_pct": 0.25,
+      "avg_cost_estimate": 100960,
+      "status": "pending"
+    },
+    {
+      "level": "L2",
+      "trigger_price": 93860,
+      "trigger_pct_from_prev": -0.05,
+      "position_pct": 0.2,
+      "cumulative_pct": 0.4,
+      "avg_cost_estimate": 97844,
+      "status": "pending"
+    }
+  ],
+  "exit_preset": {
+    "stop_loss": {
+      "price": 90000,
+      "type": "hard_stop_full_position",
+      "drawdown_from_L0": -0.135
+    },
+    "early_stop_L0_only": {
+      "price": 99000,
+      "condition": "L1_not_triggered"
+    },
+    "take_profit_1": {
+      "price": 109000,
+      "action": "close_50pct",
+      "gain_from_L0": 0.048
+    },
+    "take_profit_2": {
+      "price": 113000,
+      "action": "close_remaining",
+      "gain_from_L0": 0.087
+    }
+  },
+  "risk_summary": {
+    "max_capital_at_risk_pct": 0.4,
+    "worst_case_loss_pct_of_account": -0.054,
+    "risk_reward_TP2": "1:1.65"
+  }
+}

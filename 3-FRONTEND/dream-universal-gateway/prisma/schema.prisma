@@ -1,0 +1,562 @@
+// Dream Universal Gateway — Prisma Schema
+// 版本: v1.0 | 日期: 2026-05-14
+// 基于: USER_SYSTEM_DESIGN.md v1.0
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 核心用户模型
+// ============================================
+
+model User {
+  uid           String    @id       // UID: U + 10位随机
+  email         String    @unique   // 登录邮箱
+  emailVerified Boolean   @default(false)
+  passwordHash  String              // bcrypt加密的密码
+  displayName   String?            // 显示名称
+  avatarUrl     String?            // 头像
+  role          UserRole  @default(FREE)
+
+  // 安全字段
+  loginAttempts Int       @default(0)
+  lockedUntil   DateTime?
+  lastLoginAt   DateTime?
+
+  // 时间戳
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // 关联
+  profile       UserProfile?
+  apiConfigs    ApiConfig[]
+  tradingParams TradingParams?
+  strategies    Strategy[]
+  channels      ChannelConfig[]
+  creditsAccount CreditsAccount?
+  creditsTransactions CreditsTransaction[]
+  orders        Order[]
+  strategyTaskOrders StrategyTaskOrder[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  FREE      // 免费用户
+  PRO       // 专业用户(付费)
+  ADMIN     // 管理员
+}
+
+// ============================================
+// 用户配置列表 (1:1 with User)
+// ============================================
+
+model UserProfile {
+  uid           String    @id      // 关联User.uid
+  user          User      @relation(fields: [uid], references: [uid], onDelete: Cascade)
+
+  // === 交易配置 ===
+  availableCapital    Float?                   // 可用资金(USDT)
+  capitalPercentage   Float    @default(0.10)  // 交易百分比(默认10%)
+  tradeType           TradeType @default(SPOT) // 交易类型(现货/合约)
+  tradeMode           TradeMode @default(SPOT_MODE) // 交易模式(现货/永续/期货/期权/杠杆)
+  marginMode          MarginMode?              // 保证金模式(全仓/逐仓，合约模式适用)
+  positionMode        PositionMode @default(NET) // 持仓模式(净仓/逐仓，合约模式适用)
+  leverageMax         Int      @default(3)     // 杠杆上限(1-5x)
+  dailyLossLimit      Float    @default(500)   // 日亏损限制(USDT)
+  dailyLossPercent    Float    @default(0.05)  // 日亏损限制(%)
+  accountLossLimit    Float    @default(2000)  // 账户亏损限制(USDT)
+  accountLossPercent  Float    @default(0.20)  // 账户亏损限制(%)
+  allowedSymbols      String[] @default(["BTC-USDT-SWAP"])
+  allowedTradeModes   String[] @default(["SPOT_MODE"]) // 允许的交易模式列表
+  isTradingEnabled    Boolean  @default(false) // 交易开关
+
+  // === 期权特有参数 ===
+  optionsType         OptionsType?             // 期权类型(看涨/看跌)
+  expiryDate         String?                  // 交割日期(期货/期权)
+
+  // === 策略偏好 ===
+  preferredFrequency  Frequency? @default(FOUR_H) // 首选执行频率
+  riskTolerance       RiskTolerance @default(MODERATE) // 风险偏好
+
+  // 时间戳
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("user_profiles")
+}
+
+enum TradeType {
+  SPOT      // 现货
+  SWAP      // 合约
+}
+
+enum TradeMode {
+  SPOT_MODE      // 现货交易
+  SWAP_MODE      // 永续合约
+  FUTURES_MODE   // 交割期货
+  OPTIONS_MODE   // 期权
+  MARGIN_MODE    // 杠杆交易(多币种)
+}
+
+enum MarginMode {
+  CROSS      // 全仓
+  ISOLATED   // 逐仓
+}
+
+enum PositionMode {
+  NET        // 净仓模式(买卖方向净额)
+  HEDGE      // 逐仓模式(买卖独立持仓)
+}
+
+enum OptionsType {
+  CALL       // 看涨期权
+  PUT        // 看跌期权
+}
+
+enum Frequency {
+  ONE_H     // 1小时
+  FOUR_H    // 4小时
+  ONE_D     // 1天
+}
+
+enum RiskTolerance {
+  CONSERVATIVE  // 保守
+  MODERATE      // 适中
+  AGGRESSIVE    // 激进
+}
+
+// ============================================
+// API配置 (1:N with User — 一个用户可配多个API)
+// ============================================
+
+model ApiConfig {
+  id            String   @id @default(cuid())
+  uid           String                           // 关联User.uid
+  user          User      @relation(fields: [uid], references: [uid], onDelete: Cascade)
+
+  category      ApiCategory                       // API类别
+  provider      String                            // 提供商: okx/openai/coinglass
+  label         String                            // 用户自定义标签: "主账户"
+
+  // 加密存储的凭证 (AES-256-GCM加密后的JSON)
+  encryptedData String                            // {apiKey, secretKey, passphrase, ...}
+  iv            String                            // 加密IV
+  authTag       String                            // GCM认证标签
+
+  // 元数据 (脱敏，可搜索)
+  keyHint       String?                           // 密钥提示: "••••kT9x"
+  environment   String?                           // 环境: demo/live
+  baseUrl       String?                           // 自定义API地址
+
+  // 验证状态
+  isVerified    Boolean  @default(false)
+  lastVerifiedAt DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([uid, category, provider, label])
+  @@map("api_configs")
+}
+
+enum ApiCategory {
+  EXCHANGE       // 交易所
+  LLM            // AI模型
+  DATA_SOURCE    // 数据源
+}
+
+// ============================================
+// 交易参数 (1:1 with User)
+// ============================================
+
+model TradingParams {
+  id            String   @id @default(cuid())
+  uid           String   @unique                     // 关联User.uid
+  user          User      @relation(fields: [uid], references: [uid], onDelete: Cascade)
+
+  // 实时亏损追踪 (每日重置)
+  todayLoss     Float    @default(0)
+  todayTradeCount Int    @default(0)
+  lastResetDate String                              // "2026-05-14"
+
+  // 累计追踪
+  totalLoss     Float    @default(0)
+  totalTradeCount Int    @default(0)
+
+  // 状态
+  status        TradingStatus @default(ACTIVE)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("trading_params")
+}
+
+enum TradingStatus {
+  ACTIVE     // 正常运行
+  PAUSED     // 用户暂停
+  FROZEN     // 冻结(需解冻操作)
+  LOCKED     // 系统锁定(亏损超限)
+}
+
+// ============================================
+// 策略 (1:N with User)
+// ============================================
+
+model Strategy {
+  id            String   @id @default(cuid())
+  uid           String                           // 关联User.uid
+  user          User      @relation(fields: [uid], references: [uid], onDelete: Cascade)
+
+  type          StrategyType                     // 推荐策略/自定义策略
+  name          String                           // 策略名称
+  description   String?                          // 策略描述
+
+  // 策略参数
+  direction     Direction                        // BUY/SHORT/SKIP
+  symbol        String   @default("BTC-USDT-SWAP")
+  tradeType     TradeType @default(SPOT)
+  leverage      Int      @default(1)
+  positionSize  Float    @default(0)
+  stopLoss      Float?
+  takeProfit    Float?
+  confidence    Int?
+  edgeScore     Int?
+
+  // 推荐策略特有
+  regime        String?                          // 市场状态
+  source        String?                          // 来源: A4
+  isRead        Boolean  @default(false)
+
+  // 自定义策略特有
+  rawInput      String?                          // 用户自然语言输入
+  parsedIntent  Json?                            // IntentParser解析结果
+  backtestResult Json?                           // 回测结果
+
+  // 策略状态
+  status        StrategyStatus @default(DRAFT)
+
+  // 关联定时任务
+  tasks         StrategyTask[]
+  taskOrders    StrategyTaskOrder[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("strategies")
+}
+
+enum StrategyType {
+  RECOMMENDED    // 推荐策略
+  CUSTOM         // 自定义策略(信号策略)
+}
+
+enum Direction {
+  BUY
+  SHORT
+  SKIP
+}
+
+enum StrategyStatus {
+  DRAFT          // 草稿
+  APPROVED       // 已审批(回测通过)
+  APPLIED        // 已应用
+  PAUSED         // 已暂停
+  EXPIRED        // 已过期
+}
+
+// ============================================
+// 策略定时任务 (1:N with Strategy)
+// ============================================
+
+model StrategyTask {
+  id            String   @id @default(cuid())
+  strategyId    String                           // 关联Strategy.id
+  strategy      Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  taskOrderId   String?
+  taskOrder     StrategyTaskOrder? @relation(fields: [taskOrderId], references: [strategyTaskOrderId], onDelete: SetNull)
+  uid           String                           // 冗余字段，便于按用户查询
+
+  exchangeConfigId String?                       // 关联ApiConfig.id
+  executionFrequency Frequency
+
+  // 执行状态
+  status        TaskStatus @default(ACTIVE)
+  nextExecutionAt DateTime?
+  lastExecutionAt DateTime?
+  executionCount Int      @default(0)
+  skipCount     Int      @default(0)
+  tradeCount    Int      @default(0)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([taskOrderId])
+  @@map("strategy_tasks")
+}
+
+enum TaskStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  FAILED
+}
+
+// ============================================
+// 策略任务单与执行记录
+// ============================================
+
+model StrategyTaskOrder {
+  strategyTaskOrderId String   @id
+  strategyType        String
+  source              String
+  status              String
+  title               String
+  summary             String?
+  rawInput            String?
+  originStrategyId    String
+  originStrategy      Strategy @relation(fields: [originStrategyId], references: [id], onDelete: Cascade)
+  ownerUserId         String
+  ownerUser           User     @relation(fields: [ownerUserId], references: [uid], onDelete: Cascade)
+  strategySnapshot    Json
+  createdAt           DateTime
+  updatedAt           DateTime
+  appliedAt           DateTime
+
+  strategyTasks       StrategyTask[]
+  executionRuns       StrategyExecutionRun[]
+
+  @@index([ownerUserId, status])
+  @@index([originStrategyId])
+  @@map("strategy_task_orders")
+}
+
+model StrategyExecutionRun {
+  strategyExecutionRunId String   @id
+  strategyTaskOrderId    String
+  taskOrder              StrategyTaskOrder @relation(fields: [strategyTaskOrderId], references: [strategyTaskOrderId], onDelete: Cascade)
+  triggerType            String
+  status                 String
+  startedAt              DateTime?
+  endedAt                DateTime?
+  reason                 String?
+  createdAt              DateTime @default(now())
+
+  @@index([strategyTaskOrderId, status])
+  @@map("strategy_execution_runs")
+}
+
+// ============================================
+// 通信渠道配置 (1:N with User)
+// ============================================
+
+model ChannelConfig {
+  id            String   @id @default(cuid())
+  uid           String                           // 关联User.uid
+  user          User      @relation(fields: [uid], references: [uid], onDelete: Cascade)
+
+  channelType   ChannelType                      // 渠道类型
+  label         String                            // 用户自定义标签: "我的信号群"
+  encryptedData String                           // 加密的Token/配置
+  iv            String                           // 加密IV
+  authTag       String                           // GCM认证标签
+
+  // 推送规则
+  pushRules     Json                             // 推送规则配置
+  silentStart   String?                          // 静默开始 "23:00"
+  silentEnd     String?                          // 静默结束 "07:00"
+  format        PushFormat @default(CONCISE)      // 推送格式
+
+  // 状态
+  isOnline      Boolean  @default(false)
+  lastTestAt    DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("channel_configs")
+}
+
+enum ChannelType {
+  TELEGRAM
+  WECHAT_SERVERCHAN
+  WECHAT_WORK
+  EMAIL_SMTP
+  DISCORD
+  SLACK
+}
+
+enum PushFormat {
+  CONCISE      // 简洁
+  DETAILED     // 详细
+}
+
+// ============================================
+// 积分账户 (1:1 with User)
+// ============================================
+
+model CreditsAccount {
+  id            String   @id @default(cuid())
+  uid           String   @unique                     // 关联User.uid
+  user          User      @relation(fields: [uid], references: [uid], onDelete: Cascade)
+
+  balance       Float    @default(0)                 // 可用积分余额
+  totalEarned   Float    @default(0)                 // 累计获得
+  totalSpent    Float    @default(0)                 // 累计消耗
+  pendingCredits Float   @default(0)                 // 待生效积分
+
+  // 新用户赠送
+  signupBonus   Boolean  @default(false)             // 是否已领取注册赠送
+
+  // 签到
+  lastSigninAt  DateTime?                            // 最后签到时间
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("credits_accounts")
+}
+
+// ============================================
+// 积分流水 (1:N with User)
+// ============================================
+
+model CreditsTransaction {
+  id            String   @id @default(cuid())
+  uid           String                           // 关联User.uid
+  user          User      @relation(fields: [uid], references: [uid], onDelete: Cascade)
+
+  type          CreditsType                      // 收入/支出
+  category      CreditsCategory                  // 分类
+  amount        Float                            // 变动数量(正数)
+  balanceAfter  Float                            // 变动后余额
+  description   String                           // 描述
+
+  // 关联
+  relatedId     String?                          // 关联ID(策略ID/订单ID)
+  expiresAt     DateTime?                        // 过期时间(赠送积分)
+
+  createdAt     DateTime  @default(now())
+
+  @@map("credits_transactions")
+}
+
+enum CreditsType {
+  EARN          // 收入
+  SPEND         // 支出
+}
+
+enum CreditsCategory {
+  // 收入
+  RECHARGE          // 充值
+  SIGNIN            // 签到
+  REFERRAL          // 邀请好友
+  BONUS             // 活动赠送
+  SIGNUP_BONUS      // 注册赠送
+
+  // 支出
+  STRATEGY_EXECUTION // 策略执行
+  ANALYSIS_REPORT    // 分析报告
+  INTEL_BRIEF        // 情报快报
+}
+
+// ============================================
+// 订单 (充值订单)
+// ============================================
+
+model Order {
+  id            String   @id @default(cuid())
+  uid           String                           // 关联User.uid
+  user          User      @relation(fields: [uid], references: [uid], onDelete: Cascade)
+
+  orderNo       String   @unique                  // 订单号: CG202605140001
+  packageId     String                           // 套餐ID
+
+  // 订单金额
+  amount        Float                            // 支付金额(¥)
+  credits       Float                            // 积分数
+  bonusCredits  Float    @default(0)              // 赠送积分
+
+  // 支付信息
+  paymentMethod PaymentMethod                     // 支付方式
+  paymentNo     String?                           // 第三方支付流水号
+
+  // 状态
+  status        OrderStatus @default(PENDING)
+
+  // 时间
+  paidAt        DateTime?
+  completedAt   DateTime?
+  expiredAt     DateTime?                         // 订单过期时间(15分钟)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("orders")
+}
+
+enum PaymentMethod {
+  WECHAT_PAY
+  ALIPAY
+  APPLE_PAY
+}
+
+enum OrderStatus {
+  PENDING       // 待支付
+  PAID          // 已支付
+  COMPLETED     // 已完成(积分已到账)
+  CANCELLED     // 已取消
+  REFUNDED      // 已退款
+  FAILED        // 支付失败
+}
+
+// ============================================
+// 验证码 (邮箱验证/密码重置)
+// ============================================
+
+model VerificationCode {
+  id            String   @id @default(cuid())
+  email         String                           // 目标邮箱
+  code          String                           // 6位验证码
+  type          CodeType                         // 验证类型
+  attempts      Int      @default(0)              // 尝试次数
+  maxAttempts   Int      @default(5)              // 最大尝试次数
+
+  expiresAt     DateTime                          // 过期时间(10分钟)
+  usedAt        DateTime?                         // 使用时间
+
+  createdAt     DateTime  @default(now())
+
+  @@map("verification_codes")
+}
+
+enum CodeType {
+  EMAIL_VERIFY      // 邮箱验证
+  PASSWORD_RESET    // 密码重置
+  LOGIN_2FA         // 登录二次验证
+}
+
+// ============================================
+// 会话 (Auth.js 自动管理)
+// ============================================
+
+model Session {
+  id            String   @id @default(cuid())
+  uid           String                           // 关联User.uid
+  user          User      @relation(fields: [uid], references: [uid], onDelete: Cascade)
+
+  sessionToken  String   @unique
+  expiresAt     DateTime
+
+  createdAt     DateTime  @default(now())
+
+  @@map("sessions")
+}

@@ -1,0 +1,97 @@
+{
+  "session_id": "20260527-BTC-SCREEN2",
+  "date": "2026-05-27",
+  "direction": "SHORT",
+  "primary_scenario": "S1",
+  "reference_price": 77267,
+  "phase2_skipped": true,
+  "grid": {
+    "S1_short_continuation": {
+      "entry_signal": "resistance_rejection_at_77500_78000",
+      "layers": [
+        {
+          "level": "L0",
+          "trigger_price": 77650,
+          "side": "SHORT",
+          "position_usdt": 45,
+          "position_pct": 30,
+          "TP": 74200,
+          "SL": 80600
+        },
+        {
+          "level": "L1",
+          "trigger_price": 78700,
+          "side": "SHORT",
+          "position_usdt": 30,
+          "position_pct": 20,
+          "TP": 74200,
+          "SL": 80600
+        },
+        {
+          "level": "L2",
+          "trigger_price": 79870,
+          "side": "SHORT",
+          "position_usdt": 30,
+          "position_pct": 20,
+          "TP": 74200,
+          "SL": 80600
+        },
+        {
+          "level": "L3",
+          "trigger_price": 81050,
+          "side": "SHORT",
+          "position_usdt": 22.5,
+          "position_pct": 15,
+          "TP": 74200,
+          "SL": 80600
+        }
+      ],
+      "max_total_usdt": 127.5,
+      "grid_spacing_pct": 1.5,
+      "avg_entry_estimate": 79200,
+      "TP_price": 74200,
+      "SL_price": 80600,
+      "expected_PnL_TP_usdt": "+18.7",
+      "expected_PnL_SL_usdt": "-3.1"
+    },
+    "S2_squeeze_hedge": {
+      "trigger": "daily_close_above_78200",
+      "action": "exit_all_SHORT",
+      "long_reentry": "pullback_to_77500_78000",
+      "L0_position_usdt": 30,
+      "TP": 82000,
+      "SL": 76500
+    },
+    "S3_macro_shock": {
+      "trigger": "BTC_breaks_76000_downward",
+      "layers": [
+        {
+          "level": "L0",
+          "trigger_price": 76700,
+          "side": "SHORT",
+          "position_usdt": 37.5,
+          "position_pct": 25,
+          "TP": 70000,
+          "SL": 79500
+        },
+        {
+          "level": "L1",
+          "trigger_price": 78990,
+          "side": "SHORT",
+          "position_usdt": 25,
+          "position_pct": 17,
+          "TP": 70000,
+          "SL": 79500
+        }
+      ],
+      "grid_spacing_pct": 3.0
+    }
+  },
+  "risk_summary": {
+    "max_loss_S1_L0_only": "-1.8_USDT",
+    "max_loss_S1_all_layers": "-5.1_USDT",
+    "expected_profit_S1_TP": "+18.7_USDT",
+    "total_capital_at_risk_pct": "3.4",
+    "position_cap_usdt": 150
+  }
+}

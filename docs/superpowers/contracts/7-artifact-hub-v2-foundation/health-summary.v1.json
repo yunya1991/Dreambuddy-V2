@@ -1,0 +1,26 @@
+{
+  "contract": "health-summary.v1",
+  "level": "L1",
+  "owner": "solo",
+  "frozen_at": "2026-05-16",
+  "schema": {
+    "service": "string",
+    "status": "ok | degraded | error",
+    "timestamp": "ISO8601",
+    "dependencies": {
+      "artifact_hub": "ok | degraded | error | unknown",
+      "gateway": "ok | degraded | error | unknown",
+      "meta_db": "ok | degraded | error | unknown"
+    }
+  },
+  "example": {
+    "service": "artifact-hub-v2",
+    "status": "ok",
+    "timestamp": "2026-05-16T00:00:00Z",
+    "dependencies": {
+      "artifact_hub": "ok",
+      "gateway": "unknown",
+      "meta_db": "ok"
+    }
+  }
+}

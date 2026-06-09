@@ -1,0 +1,27 @@
+{
+  "updated": "2026-06-02",
+  "generated_at": "2026-06-02T20:00:00Z",
+  "freshness_days": 7,
+  "stage": 6,
+  "stage_name": "去库存期",
+  "days_since_halving": 773,
+  "halving_date": "2024-04-20",
+  "s2f_ratio": 119,
+  "baseline_score": -15,
+  "baseline_signal": "BEAR",
+  "stage_adjustment": -2,
+  "final_score": -17,
+  "final_signal": "BEAR",
+  "confidence": 0.82,
+  "narrative": "当前处于第4减半周期去库存期（第6阶段，+773天）。供给压力已释放约60%，但矿工盈利能力仍受压。S2F比率约119显示稀缺性极度强化，但ETF时代机构持仓改变了传导节奏。链上RHODL=4.5（历史第三高）与NUPL<0.25同时出现，是去库存期接近尾声的早期信号。矿工算力~872 EH/s虽有回落但高位企稳，难度调整已开始下调—这是矿工投降的经典后半段。交易含义：去库存期已进入后段，维持防御仓位（SHORT），等待Hash Ribbon金叉与NUPL转正双重确认后逐步转向做多。",
+  "s2f_deviation": "FAIR",
+  "etf_era_note": "ETF时代加速了减半前抢跑（2024Q1 ETF批准后BTC已涨+150%），第4周期峰值倍数预计+1.94x（远低于早期周期），但绝对增幅仍显著。ETF机构持仓约130万BTC形成结构性托底，使阶段6底部绝对价格远高于历史同期。",
+  "dimension_scores": {
+    "hash_rate": 1,
+    "miner_income": -1,
+    "s2f_deviation": 0,
+    "nupl": 1,
+    "etf_flow": -2,
+    "macro_overlay": -1
+  }
+}

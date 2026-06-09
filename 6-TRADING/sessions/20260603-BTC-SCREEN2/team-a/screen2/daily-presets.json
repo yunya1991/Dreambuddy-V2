@@ -1,0 +1,66 @@
+{
+  "session_id": "20260603-BTC-SCREEN2",
+  "date": "2026-06-03",
+  "screen1_direction": "SHORT",
+  "screen1_score": 48,
+  "btc_price_at_analysis": 72000,
+  "driven_by": "hermes-agent-inline",
+  "phase0_data": {
+    "btc_price_approx": 72000,
+    "screen1_btc_price_basis": 73349,
+    "price_drift_pct": -1.84,
+    "funding_rate": "+0.0028% (neutral, recovering from 46d negative streak)",
+    "etf_10d_net_flow_m_usd": -2217.5,
+    "etf_trend": "persistent_outflows_institutional_distribution",
+    "fear_greed": "28 (Extreme Fear)",
+    "macro_context": "US-Iran 2-week ceasefire, oil crashing, risk-off easing",
+    "gold_price": 4593,
+    "dxy": 98.94,
+    "btc_drawdown_from_ath": "-42.9% from $126,198 ATH"
+  },
+  "phase1_analysis": {
+    "a1_contradiction_score": 5.25,
+    "a1_summary": "Screen1 SHORT有效但短期轧空风险上升。ETF持续流出支撑中长期看空，但停火反弹和费率恢复增加不确定性。",
+    "a2_trend_confidence": 0.5,
+    "a2_screen1_alignment_pct": 85,
+    "a2_summary": "六因子加权强烈偏空。ETF流出(-20)、市场结构恶化(-15)为主要驱动。宏观中性偏空。sentiment/on-chain中性。",
+    "a3_scenarios": {
+      "S1_SHORT_Continuation": {
+        "probability": 0.45,
+        "entry_zone": [
+          73200,
+          74800
+        ],
+        "preferred_entry": 74200,
+        "TP": 65200,
+        "SL": 76200
+      },
+      "S2_Ceasefire_Squeeze": {
+        "probability": 0.3,
+        "trigger": "daily_close_above_76000",
+        "action": "exit_all_SHORT"
+      },
+      "S3_Macro_Shock": {
+        "probability": 0.25,
+        "trigger": "ceasefire_breakdown",
+        "TP": 60500
+      }
+    },
+    "red_team_flag": false
+  },
+  "recommended_action": "WAIT_FOR_ENTRY_SIGNAL",
+  "entry_zone": [
+    73200,
+    74800
+  ],
+  "preferred_entry": 74200,
+  "invalidation": "daily_close_above_76500",
+  "trend_confidence": 0.5,
+  "position_cap_usdt": 150,
+  "direction": "SHORT",
+  "entry_price": 74200,
+  "take_profit": 65200,
+  "stop_loss": 76200,
+  "max_layers": 4,
+  "interval_pct": 1.9
+}

@@ -1,0 +1,53 @@
+{
+  "episode_id": "20260527-BTC-SCREEN3-EP001",
+  "session_id": "20260527-BTC-SCREEN3",
+  "date": "2026-05-27",
+  "symbol": "BTC-USDT-SWAP",
+  "skill": "learning-episode-writer",
+  "trace_id": "20260527-BTC-SCREEN3-B9-001",
+  "action": "SKIP",
+  "gate_result": "GATE_C_SKIP",
+  "skip_reason": "ENTRY_ZONE_NOT_REACHED",
+  "skip_detail": "价格7,267低于入场区7,500-8,000，composite_confidence=57%<60%，ACH Hypothesis B wins",
+  "signal": {
+    "composite_score_pct": 65.0,
+    "signal_score_raw": "25/40",
+    "directive_bias": "SHORT",
+    "screen1_direction": "SHORT",
+    "screen1_valid_until": "2026-06-09"
+  },
+  "gate": {
+    "a7_gate_score": 28,
+    "a7_gate_threshold": 30,
+    "a7_result": "CONDITIONAL_SKIP",
+    "gate_c_confidence": 57,
+    "gate_c_threshold": 60,
+    "gate_c_result": "SKIP",
+    "ach_hypothesis_a_count": 2,
+    "ach_hypothesis_b_count": 3
+  },
+  "execution": null,
+  "outcome": null,
+  "market_context": {
+    "btc_price": 77267,
+    "price_drift_pct": 0.37,
+    "funding_direction": "neutral_to_bearish",
+    "etf_flows": "+2.7B_9day",
+    "fear_greed": "fear_35_40",
+    "macro_tone": "risk_off"
+  },
+  "cost_fields": {
+    "fee_usdt": 0.0,
+    "fee_rate_bps": 0,
+    "slippage_usdt": 0.0,
+    "delay_cost_usdt": 0.0,
+    "total_cost_usdt": 0.0,
+    "cost_rate_pct": 0.0,
+    "note": "SKIP - no trade executed"
+  },
+  "skip_tracking": {
+    "consecutive_skip_count": 1,
+    "sleepwalk_alert": false,
+    "sleepwalk_threshold": 7
+  }
+}

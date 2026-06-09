@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>产物中台 - 运维监控台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #030712; color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="app" class="min-h-screen p-8">
+    <header class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-white">运维监控台</h1>
+        <p class="text-gray-400 mt-1">队列状态 · 任务监控 · 决策分级</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <label class="text-gray-400 text-sm">自动刷新:</label>
+        <select id="refresh-interval" class="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-white text-sm">
+          <option value="5">5秒</option>
+          <option value="10" selected>10秒</option>
+          <option value="30">30秒</option>
+          <option value="60">1分钟</option>
+        </select>
+        <button onclick="fetchData()" class="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-sm">刷新</button>
+      </div>
+    </header>
+
+    <div id="error" class="hidden bg-red-900/50 border border-red-700 rounded p-4 mb-6"></div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8" id="stats-cards"></div>
+
+    <!-- Performance & Department -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="bg-gray-900 rounded-lg p-6 border border-gray-800">
+        <h3 class="text-lg font-semibold text-gray-300 mb-4">系统性能</h3>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-400">平均延迟</span>
+          <span class="text-2xl font-bold text-white" id="avg-latency">-</span>
+        </div>
+      </div>
+      <div class="bg-gray-900 rounded-lg p-6 border border-gray-800">
+        <h3 class="text-lg font-semibold text-gray-300 mb-4">部门队列深度</h3>
+        <div id="dept-queue" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- Decision Levels -->
+    <div class="bg-gray-900 rounded-lg p-6 border border-gray-800 mb-8">
+      <h3 class="text-lg font-semibold text-gray-300 mb-4">决策分级 (L1/L2/L3)</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="decision-levels"></div>
+    </div>
+
+    <!-- Queue Items Table -->
+    <div class="bg-gray-900 rounded-lg p-6 border border-gray-800">
+      <h3 class="text-lg font-semibold text-gray-300 mb-4">队列项目 (最新20条)</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-gray-400 border-b border-gray-800">
+              <th class="text-left py-2 px-3">任务ID</th>
+              <th class="text-left py-2 px-3">状态</th>
+              <th class="text-left py-2 px-3">部门</th>
+              <th class="text-left py-2 px-3">工作流类型</th>
+              <th class="text-left py-2 px-3">创建时间</th>
+            </tr>
+          </thead>
+          <tbody id="queue-items"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-8 flex gap-4">
+      <a href="/board" class="text-blue-400 hover:text-blue-300 text-sm">← 返回董事会总览台</a>
+      <a href="/board/proposals" class="text-blue-400 hover:text-blue-300 text-sm">提案管理 →</a>
+    </div>
+  </div>
+
+  <script>
+    const API = '';
+    let refreshTimer = null;
+
+    async function fetchData() {
+      try {
+        const [statsRes, itemsRes, levelsRes] = await Promise.all([
+          fetch(`${API}/ops/queues`),
+          fetch(`${API}/ops/queues/items?limit=20`),
+          fetch(`${API}/ops/decision-levels`)
+        ]);
+        const stats = await statsRes.json();
+        const items = await itemsRes.json();
+        const levels = await levelsRes.json();
+
+        if (stats.success) renderStats(stats.data);
+        if (items.success) renderItems(items.data);
+        if (levels.success) renderLevels(levels.data);
+
+        document.getElementById('error').classList.add('hidden');
+      } catch (e) {
+        const errDiv = document.getElementById('error');
+        errDiv.textContent = `Error: ${e.message}`;
+        errDiv.classList.remove('hidden');
+      }
+    }
+
+    function renderStats(data) {
+      const cards = [
+        { label: '总任务数', value: data.total_tasks, color: 'bg-gray-800 border-gray-700 text-white' },
+        { label: '待处理', value: data.pending_tasks, color: 'bg-yellow-950/50 border-yellow-700 text-yellow-400' },
+        { label: '处理中', value: data.processing_tasks, color: 'bg-blue-950/50 border-blue-700 text-blue-400' },
+        { label: '已完成', value: data.completed_tasks, color: 'bg-green-950/50 border-green-700 text-green-400' },
+        { label: '失败', value: data.failed_tasks, color: 'bg-red-950/50 border-red-700 text-red-400' },
+      ];
+      document.getElementById('stats-cards').innerHTML = cards.map(c => `
+        <div class="rounded-lg p-4 border ${c.color}">
+          <div class="text-3xl font-bold">${c.value}</div>
+          <div class="text-sm mt-1 text-gray-400">${c.label}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('avg-latency').textContent = `${data.avg_latency_ms} ms`;
+
+      const deptDiv = document.getElementById('dept-queue');
+      const depts = data.queue_depth_by_department || {};
+      const total = data.total_tasks || 1;
+      const entries = Object.entries(depts);
+      if (entries.length === 0) {
+        deptDiv.innerHTML = '<p class="text-gray-500 text-sm">暂无数据</p>';
+      } else {
+        deptDiv.innerHTML = entries.map(([dept, count]) => `
+          <div class="flex justify-between items-center">
+            <span class="text-gray-400 capitalize">${dept}</span>
+            <div class="flex items-center gap-2">
+              <div class="w-24 h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div class="h-full bg-blue-600" style="width: ${Math.min(100, (count / total) * 100)}%"></div>
+              </div>
+              <span class="text-gray-200 font-bold">${count}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderItems(items) {
+      const tbody = document.getElementById('queue-items');
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-gray-500">暂无队列项目</td></tr>';
+        return;
+      }
+      const statusColors = {
+        pending: 'bg-yellow-950/50 text-yellow-400 border-yellow-700',
+        processing: 'bg-blue-950/50 text-blue-400 border-blue-700',
+        completed: 'bg-green-950/50 text-green-400 border-green-700',
+        failed: 'bg-red-950/50 text-red-400 border-red-700',
+      };
+      tbody.innerHTML = items.map(item => `
+        <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+          <td class="py-2 px-3 font-mono text-xs text-gray-300">${item.task_id.substring(0, 16)}...</td>
+          <td class="py-2 px-3"><span class="px-2 py-0.5 rounded text-xs border ${statusColors[item.status] || ''}">${item.status}</span></td>
+          <td class="py-2 px-3 text-gray-300 capitalize">${item.department}</td>
+          <td class="py-2 px-3 text-gray-300">${item.workflow_type}</td>
+          <td class="py-2 px-3 text-gray-500">${new Date(item.created_at).toLocaleString('zh-CN')}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderLevels(levels) {
+      const colors = { L1: 'border-green-700 bg-green-950/30 text-green-400', L2: 'border-yellow-700 bg-yellow-950/30 text-yellow-400', L3: 'border-red-700 bg-red-950/30 text-red-400' };
+      document.getElementById('decision-levels').innerHTML = levels.map(l => `
+        <div class="rounded-lg p-4 border ${colors[l.level] || ''}">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-xl font-bold">${l.level}</span>
+            <span class="text-white font-semibold">${l.label}</span>
+          </div>
+          <p class="text-sm text-gray-400 mb-2">${l.description}</p>
+          <div class="flex items-center gap-2 text-xs text-gray-500">
+            <span>阈值: $${l.auto_threshold.toLocaleString()}</span>
+            ${l.requires_board_approval ? '<span class="text-red-400">⚠️ 需审批</span>' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('refresh-interval').addEventListener('change', (e) => {
+      if (refreshTimer) clearInterval(refreshTimer);
+      const interval = parseInt(e.target.value) * 1000;
+      refreshTimer = setInterval(fetchData, interval);
+    });
+
+    fetchData();
+    refreshTimer = setInterval(fetchData, 10000);
+  </script>
+</body>
+</html>

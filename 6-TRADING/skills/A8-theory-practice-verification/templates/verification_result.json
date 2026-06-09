@@ -1,0 +1,122 @@
+{
+  "verification_id": "VRXXX",
+  "hypothesis_id": "HXXX",
+  "experiment_id": "EXXX",
+  "verification_date": "YYYY-MM-DD",
+  "verification_status": "PASSED/FAILED/INCONCLUSIVE",
+  
+  "hypothesis_summary": {
+    "name": "假说名称",
+    "description": "假说描述",
+    "prediction": "具体预测"
+  },
+  
+  "experiment_summary": {
+    "experiment_type": "回测实验/模拟盘实验/A-B测试/影子模式",
+    "duration": "实验时长",
+    "sample_size": 0,
+    "control_group": "对照组描述",
+    "treatment_group": "处理组描述"
+  },
+  
+  "statistical_analysis": {
+    "test_method": "统计检验方法",
+    "control_results": {
+      "metric_name": "指标名称",
+      "mean": 0,
+      "std_dev": 0,
+      "sample_size": 0
+    },
+    "treatment_results": {
+      "metric_name": "指标名称",
+      "mean": 0,
+      "std_dev": 0,
+      "sample_size": 0
+    },
+    "p_value": 0,
+    "confidence_interval": [0, 0],
+    "effect_size": 0,
+    "effect_size_interpretation": "小/中/大"
+  },
+  
+  "verification_criteria": {
+    "statistical_significance": true,
+    "effect_size_sufficient": true,
+    "practical_significance": true,
+    "reproducibility": true,
+    "all_criteria_met": true
+  },
+  
+  "conclusion": {
+    "summary": "验证结论摘要",
+    "detailed_conclusion": "详细结论...",
+    "supporting_evidence": [
+      "支持证据1",
+      "支持证据2"
+    ],
+    "limitiations": [
+      "局限性1",
+      "局限性2"
+    ]
+  },
+  
+  "next_steps": {
+    "if_passed": [
+      {
+        "action_id": "AXXX",
+        "description": "如果验证通过，行动描述",
+        "owner": "A8/A0/A2/...",
+        "due_date": "YYYY-MM-DD",
+        "priority": "高/中/低"
+      }
+    ],
+    "if_failed": [
+      {
+        "action_id": "AXXX",
+        "description": "如果验证失败，行动描述",
+        "owner": "A8",
+        "due_date": "YYYY-MM-DD",
+        "priority": "高/中/低"
+      }
+    ],
+    "if_inconclusive": [
+      {
+        "action_id": "AXXX",
+        "description": "如果结果不确定，行动描述",
+        "owner": "A8",
+        "due_date": "YYYY-MM-DD",
+        "priority": "高/中/低"
+      }
+    ]
+  },
+  
+  "theory_refinement_proposal": {
+    "created": false,
+    "proposal_id": "TRPXXX",
+    "target_system": "A0/A2/A4/...",
+    "improvement_content": "改进内容...",
+    "implementation_plan": "实施计划...",
+    "expected_benefit": "预期收益..."
+  },
+  
+  "quality_assessment": {
+    "experiment_design_quality": "高/中/低",
+    "data_quality": "高/中/低",
+    "analysis_quality": "高/中/低",
+    "conclusion_reliability": "高/中/低",
+    "overall_quality": "高/中/低"
+  },
+  
+  "metadata": {
+    "created_date": "YYYY-MM-DD",
+    "last_modified": "YYYY-MM-DD",
+    "version": "v1.0",
+    "related_verifications": [
+      "相关验证ID"
+    ],
+    "tags": [
+      "标签1",
+      "标签2"
+    ]
+  }
+}

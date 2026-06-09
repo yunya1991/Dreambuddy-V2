@@ -1,0 +1,93 @@
+{
+  "last_updated": "2026-05-22T04:47:43.945Z",
+  "artifacts": [
+    {
+      "artifact_id": "trading/strategy-task-order-b2e392cd-13c6-493c-a85f-cadaeb56839b",
+      "title": "Strategy Task Order: reset后先建后应用策略-b",
+      "file": "strategy_task_order_b2e392cd-13c6-493c-a85f-cadaeb56839b.json",
+      "filename": "strategy_task_order_b2e392cd-13c6-493c-a85f-cadaeb56839b.json",
+      "type": "strategy_task_order",
+      "status": "applied",
+      "date": "2026-05-22T04:47:43.945Z",
+      "chain_phase": "A9",
+      "tags": [
+        "strategy_task_order",
+        "BUY",
+        "BTC-USDT-SWAP",
+        "ONE_H",
+        "custom"
+      ],
+      "workflow_id": "cmpgfuvwq0007hcqpazitda5l",
+      "workflow_type": "trading_v2",
+      "trace_id": "b2e392cd-13c6-493c-a85f-cadaeb56839b",
+      "department": "trading",
+      "excerpt": "BTC-USDT-SWAP | BUY | ONE_H | Strategy task order ready"
+    },
+    {
+      "artifact_id": "trading/strategy-task-order-e7fba7d2-e4f5-4a5e-b0f5-de3d4fa288e7",
+      "title": "Strategy Task Order: reset后自定义策略",
+      "file": "strategy_task_order_e7fba7d2-e4f5-4a5e-b0f5-de3d4fa288e7.json",
+      "filename": "strategy_task_order_e7fba7d2-e4f5-4a5e-b0f5-de3d4fa288e7.json",
+      "type": "strategy_task_order",
+      "status": "applied",
+      "date": "2026-05-22T04:46:57.458Z",
+      "chain_phase": "A9",
+      "tags": [
+        "strategy_task_order",
+        "BUY",
+        "BTC-USDT-SWAP",
+        "FOUR_H",
+        "custom"
+      ],
+      "workflow_id": "cmpgftx2w0003hcqpx3kij24f",
+      "workflow_type": "trading_v2",
+      "trace_id": "e7fba7d2-e4f5-4a5e-b0f5-de3d4fa288e7",
+      "department": "trading",
+      "excerpt": "BTC-USDT-SWAP | BUY | FOUR_H | Strategy task order ready"
+    },
+    {
+      "artifact_id": "trading/strategy-task-order-4e3c864a-dfc4-4e53-b1dd-3ab94dafb161",
+      "title": "Strategy Task Order: 联调自定义策略",
+      "file": "strategy_task_order_4e3c864a-dfc4-4e53-b1dd-3ab94dafb161.json",
+      "filename": "strategy_task_order_4e3c864a-dfc4-4e53-b1dd-3ab94dafb161.json",
+      "type": "strategy_task_order",
+      "status": "applied",
+      "date": "2026-05-22T04:02:16.449Z",
+      "chain_phase": "A9",
+      "tags": [
+        "strategy_task_order",
+        "BUY",
+        "BTC-USDT-SWAP",
+        "ONE_H",
+        "custom"
+      ],
+      "workflow_id": "cmpge8gec0009hchwksvwhx40",
+      "workflow_type": "trading_v2",
+      "trace_id": "4e3c864a-dfc4-4e53-b1dd-3ab94dafb161",
+      "department": "trading",
+      "excerpt": "BTC-USDT-SWAP | BUY | ONE_H | 用于真实联调验收的自定义策略"
+    },
+    {
+      "artifact_id": "trading/strategy-task-order-31bdc4ad-843a-4927-8c82-cee047e14491",
+      "title": "Strategy Task Order: 联调系统策略",
+      "file": "strategy_task_order_31bdc4ad-843a-4927-8c82-cee047e14491.json",
+      "filename": "strategy_task_order_31bdc4ad-843a-4927-8c82-cee047e14491.json",
+      "type": "strategy_task_order",
+      "status": "applied",
+      "date": "2026-05-22T04:02:16.338Z",
+      "chain_phase": "A9",
+      "tags": [
+        "strategy_task_order",
+        "BUY",
+        "BTC-USDT-SWAP",
+        "FOUR_H",
+        "system"
+      ],
+      "workflow_id": "cmpge8el80005hchwlag6a6wn",
+      "workflow_type": "trading_v2",
+      "trace_id": "31bdc4ad-843a-4927-8c82-cee047e14491",
+      "department": "trading",
+      "excerpt": "BTC-USDT-SWAP | BUY | FOUR_H | 用于真实联调验收的系统策略"
+    }
+  ]
+}

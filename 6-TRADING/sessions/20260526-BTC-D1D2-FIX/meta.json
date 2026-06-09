@@ -1,0 +1,13 @@
+{
+  "session_id": "20260526-BTC-D1D2-FIX",
+  "symbol": "BTC-USDT-SWAP",
+  "trigger": "d1d2-fix-validation",
+  "created_at": "2026-05-26T10:30:00Z",
+  "created_by": "claude-code",
+  "description": "D1 TP_RATIOS 50/30/20 + D2 动态均价止损 修正后重新验证",
+  "backtest_version": "backtest_strategy v3.1",
+  "scenarios_total": 13,
+  "scenarios_passed": 13,
+  "scenarios_failed": 0,
+  "result": "PASS"
+}

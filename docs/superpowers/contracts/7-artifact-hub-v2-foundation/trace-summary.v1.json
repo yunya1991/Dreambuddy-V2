@@ -1,0 +1,24 @@
+{
+  "contract": "trace-summary.v1",
+  "level": "L1",
+  "owner": "solo",
+  "frozen_at": "2026-05-16",
+  "schema": {
+    "trace_id": "string",
+    "status": "running | completed | failed",
+    "workflow_id": "string",
+    "workflow_type": "string",
+    "department": "string",
+    "started_at": "ISO8601",
+    "finished_at": "ISO8601 | null"
+  },
+  "example": {
+    "trace_id": "trace_demo_001",
+    "status": "completed",
+    "workflow_id": "wf_demo_001",
+    "workflow_type": "legacy_chain",
+    "department": "governance",
+    "started_at": "2026-05-16T00:00:00Z",
+    "finished_at": "2026-05-16T00:02:30Z"
+  }
+}

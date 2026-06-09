@@ -1,0 +1,132 @@
+name: Collab Ledger Sync
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'AGENT协作工具/ledger/tasks/index.json'
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+
+jobs:
+  sync-ledger:
+    runs-on: [self-hosted, macOS, workbuddy]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Find workspaces to sync
+        id: find-workspaces
+        run: |
+          import json
+          import os
+          from pathlib import Path
+
+          # Find all .ledger-sync.json files
+          ledger_sync_files = list(Path('.').glob('**/.ledger-sync.json'))
+          workspaces = []
+
+          for sync_file in ledger_sync_files:
+              workspace = sync_file.parent.name
+              workspaces.append(workspace)
+
+          workspaces_json = json.dumps(workspaces)
+          print(f"Found workspaces: {workspaces_json}")
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"workspaces={workspaces_json}\n")
+        shell: python3 -c "$(cat)"
+
+      - name: Sync each workspace
+        env:
+          WORKSPACES: ${{ steps.find-workspaces.outputs.workspaces }}
+        run: |
+          import json
+          import subprocess
+          from pathlib import Path
+
+          workspaces = json.loads("""${{ steps.find-workspaces.outputs.workspaces }}""")
+
+          for workspace in workspaces:
+              print(f"\n=== Syncing {workspace} ===")
+
+              cmd = [
+                  "python3",
+                  "AGENT协作工具/SKILLS/collab-ledger-planner/ledger_sync.py",
+                  "push-status",
+                  "--workspace", workspace,
+              ]
+
+              result = subprocess.run(cmd, capture_output=True, text=True)
+
+              if result.returncode != 0:
+                  print(f"Error: {result.stderr}")
+                  exit(1)
+
+              output = json.loads(result.stdout)
+
+              # Store comment for later use
+              if "ledger_sync_comment" in output:
+                  comment_file = Path(f"/tmp/ledger-comment-{workspace}.md")
+                  comment_file.write_text(output["ledger_sync_comment"])
+                  print(f"Comment saved to {comment_file}")
+        shell: python3 -c "$(cat)"
+
+      - name: Commit PLAN.md changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          # Find changed PLAN.md files
+          git add -A AGENT协作工具/ledger/tasks/
+
+          # Find and add all PLAN.md files that changed
+          for workspace_dir in */; do
+              if [ -f "${workspace_dir}PLAN.md" ]; then
+                  git add "${workspace_dir}PLAN.md"
+              fi
+          done
+
+          if [ -n "$(git status --porcelain)" ]; then
+              git commit -m "chore: sync ledger workspace PLAN.md files [skip ci]"
+          fi
+
+      - name: Push changes
+        run: |
+          git push origin main
+        if: github.event_name == 'push'
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            import fs from 'fs';
+            import path from 'path';
+
+            const commentDir = '/tmp';
+            const files = fs.readdirSync(commentDir);
+
+            for (const file of files) {
+                if (file.startsWith('ledger-comment-')) {
+                    const commentFile = path.join(commentDir, file);
+                    const comment = fs.readFileSync(commentFile, 'utf-8');
+
+                    github.rest.issues.createComment({
+                        issue_number: context.issue.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: comment
+                    });
+                }
+            }

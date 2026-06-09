@@ -1,0 +1,24 @@
+{
+  "session_id": "20260527-BTC-SCREEN3",
+  "skill": "dream-execution-cost-model",
+  "inputs": {
+    "trade_usdt": 45,
+    "instrument": "BTC-USDT-SWAP",
+    "exchange": "OKX",
+    "order_type": "limit_maker"
+  },
+  "fee_rate_bps": 2,
+  "fee_usdt": 0.009,
+  "slippage_estimate_bps": 5,
+  "slippage_usdt": 0.0225,
+  "delay_cost_usdt": 0.01,
+  "total_cost_usdt": 0.0415,
+  "cost_rate_pct": 0.092,
+  "atomic_bracket_check": {
+    "entry_limit": true,
+    "tp_limit": true,
+    "sl_market": true,
+    "atomic_bracket_valid": true
+  },
+  "status": "OK"
+}

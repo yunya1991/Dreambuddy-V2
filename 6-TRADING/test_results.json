@@ -1,0 +1,317 @@
+{
+  "start_time": "2026-05-15T23:36:11.607652",
+  "scenarios": [
+    {
+      "scenario": "API验证",
+      "module": "Tavily",
+      "status": "PASS",
+      "message": "API Key有效，搜索正常",
+      "duration_ms": 1551.8600940704346,
+      "timestamp": "2026-05-15T23:36:13.159527"
+    },
+    {
+      "scenario": "API验证",
+      "module": "OKX",
+      "status": "SKIP",
+      "message": "OKX API Key未配置(模拟盘模式)",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:13.159559"
+    },
+    {
+      "scenario": "Bridge API",
+      "module": "健康检查",
+      "status": "SKIP",
+      "message": "服务未启动(需手动启动)",
+      "duration_ms": 24.67203140258789,
+      "timestamp": "2026-05-15T23:36:13.184746"
+    },
+    {
+      "scenario": "Bridge API",
+      "module": "行情查询",
+      "status": "PASS",
+      "message": "HTTP 200",
+      "duration_ms": 1878.6847591400146,
+      "timestamp": "2026-05-15T23:36:15.063494"
+    },
+    {
+      "scenario": "Bridge API",
+      "module": "交易对列表",
+      "status": "PASS",
+      "message": "HTTP 200",
+      "duration_ms": 2.496004104614258,
+      "timestamp": "2026-05-15T23:36:15.066054"
+    },
+    {
+      "scenario": "A1调研 Round-1",
+      "module": "Tavily",
+      "status": "PASS",
+      "message": "查询成功，获得3条结果",
+      "duration_ms": 2401.3028144836426,
+      "timestamp": "2026-05-15T23:36:17.467844"
+    },
+    {
+      "scenario": "A1调研 Round-2",
+      "module": "Tavily",
+      "status": "PASS",
+      "message": "查询成功，获得3条结果",
+      "duration_ms": 2089.7698402404785,
+      "timestamp": "2026-05-15T23:36:19.557656"
+    },
+    {
+      "scenario": "A1调研 Round-3",
+      "module": "Tavily",
+      "status": "PASS",
+      "message": "查询成功，获得3条结果",
+      "duration_ms": 1290.1151180267334,
+      "timestamp": "2026-05-15T23:36:20.847829"
+    },
+    {
+      "scenario": "A1调研 Round-4",
+      "module": "Tavily",
+      "status": "PASS",
+      "message": "查询成功，获得3条结果",
+      "duration_ms": 2088.9511108398438,
+      "timestamp": "2026-05-15T23:36:22.936826"
+    },
+    {
+      "scenario": "A1调研 Round-5",
+      "module": "Tavily",
+      "status": "PASS",
+      "message": "查询成功，获得3条结果",
+      "duration_ms": 1077.448844909668,
+      "timestamp": "2026-05-15T23:36:24.014341"
+    },
+    {
+      "scenario": "A1调研",
+      "module": "并发测试",
+      "status": "PASS",
+      "message": "3个并发请求，3成功",
+      "duration_ms": 1167.3781871795654,
+      "timestamp": "2026-05-15T23:36:25.181778"
+    },
+    {
+      "scenario": "策略库",
+      "module": "config",
+      "status": "PASS",
+      "message": "加载成功，7个Regime，46个策略",
+      "duration_ms": 37.126779556274414,
+      "timestamp": "2026-05-15T23:36:25.241626"
+    },
+    {
+      "scenario": "策略库",
+      "module": "config_44304",
+      "status": "PASS",
+      "message": "加载成功，0个Regime，0个策略",
+      "duration_ms": 1.3649463653564453,
+      "timestamp": "2026-05-15T23:36:25.243013"
+    },
+    {
+      "scenario": "OKX CLI",
+      "module": "初始化",
+      "status": "PASS",
+      "message": "OKXCLI初始化成功",
+      "duration_ms": 4.888772964477539,
+      "timestamp": "2026-05-15T23:36:25.247913"
+    },
+    {
+      "scenario": "OKX CLI",
+      "module": "行情查询",
+      "status": "PASS",
+      "message": "获取BTC行情成功",
+      "duration_ms": 904.5310020446777,
+      "timestamp": "2026-05-15T23:36:26.152467"
+    },
+    {
+      "scenario": "SKILL",
+      "module": "A9离场",
+      "status": "PASS",
+      "message": "dream-exit-skill-v2 已安装",
+      "duration_ms": 0.05507469177246094,
+      "timestamp": "2026-05-15T23:36:26.152700"
+    },
+    {
+      "scenario": "SKILL",
+      "module": "A2原理",
+      "status": "PASS",
+      "message": "dream-first-principles 已安装",
+      "duration_ms": 0.0019073486328125,
+      "timestamp": "2026-05-15T23:36:26.152718"
+    },
+    {
+      "scenario": "SKILL",
+      "module": "A1调研",
+      "status": "PASS",
+      "message": "dream-strategy-research 已安装",
+      "duration_ms": 0.00095367431640625,
+      "timestamp": "2026-05-15T23:36:26.152734"
+    },
+    {
+      "scenario": "SKILL",
+      "module": "A7门禁",
+      "status": "PASS",
+      "message": "A7-practice-theory 已安装",
+      "duration_ms": 0.00095367431640625,
+      "timestamp": "2026-05-15T23:36:26.152755"
+    },
+    {
+      "scenario": "极端模拟",
+      "module": "剧烈波动",
+      "status": "PASS",
+      "message": "观察信号:BTC 1小时内涨跌20%",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.152764"
+    },
+    {
+      "scenario": "极端模拟",
+      "module": "流动性枯竭",
+      "status": "PASS",
+      "message": "观察信号:买卖盘深度不足1%",
+      "duration_ms": 0.00095367431640625,
+      "timestamp": "2026-05-15T23:36:26.152766"
+    },
+    {
+      "scenario": "极端模拟",
+      "module": "监管消息",
+      "status": "PASS",
+      "message": "离场信号触发:突发政策干预",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.152768"
+    },
+    {
+      "scenario": "极端模拟",
+      "module": "黑客事件",
+      "status": "PASS",
+      "message": "离场信号触发:交易所安全事故",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.152769"
+    },
+    {
+      "scenario": "评分系统",
+      "module": "综合评分",
+      "status": "PASS",
+      "message": "总分73/100 → BUY",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.152789"
+    },
+    {
+      "scenario": "评分波动 Round-1",
+      "module": "评分",
+      "status": "PASS",
+      "message": "波动后73±9=82 → BUY",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.152828"
+    },
+    {
+      "scenario": "评分波动 Round-2",
+      "module": "评分",
+      "status": "PASS",
+      "message": "波动后73±8=65 → BUY",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.152838"
+    },
+    {
+      "scenario": "评分波动 Round-3",
+      "module": "评分",
+      "status": "PASS",
+      "message": "波动后73±4=69 → BUY",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.152841"
+    },
+    {
+      "scenario": "评分波动 Round-4",
+      "module": "评分",
+      "status": "PASS",
+      "message": "波动后73±5=68 → BUY",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.152843"
+    },
+    {
+      "scenario": "评分波动 Round-5",
+      "module": "评分",
+      "status": "PASS",
+      "message": "波动后73±9=64 → BUY",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.152846"
+    },
+    {
+      "scenario": "记忆系统",
+      "module": "memory",
+      "status": "PASS",
+      "message": "存在，2个条目",
+      "duration_ms": 0.4611015319824219,
+      "timestamp": "2026-05-15T23:36:26.153319"
+    },
+    {
+      "scenario": "记忆系统",
+      "module": "skills",
+      "status": "SKIP",
+      "message": "目录不存在",
+      "duration_ms": 0.02002716064453125,
+      "timestamp": "2026-05-15T23:36:26.153342"
+    },
+    {
+      "scenario": "文档",
+      "module": "API配置指南",
+      "status": "PASS",
+      "message": "API_CONFIG_GUIDE.md (5923 bytes)",
+      "duration_ms": 0.0007152557373046875,
+      "timestamp": "2026-05-15T23:36:26.153359"
+    },
+    {
+      "scenario": "文档",
+      "module": "常见问题",
+      "status": "PASS",
+      "message": "FAQ.md (2928 bytes)",
+      "duration_ms": 0.00095367431640625,
+      "timestamp": "2026-05-15T23:36:26.153368"
+    },
+    {
+      "scenario": "文档",
+      "module": "文档索引",
+      "status": "PASS",
+      "message": "DOC_INDEX.md (2246 bytes)",
+      "duration_ms": 0.0007152557373046875,
+      "timestamp": "2026-05-15T23:36:26.153376"
+    },
+    {
+      "scenario": "文档",
+      "module": "系统概述",
+      "status": "PASS",
+      "message": "README.md (7845 bytes)",
+      "duration_ms": 0.0,
+      "timestamp": "2026-05-15T23:36:26.153384"
+    },
+    {
+      "scenario": "文档",
+      "module": "代码结构",
+      "status": "PASS",
+      "message": "CODE_STRUCTURE.md (3758 bytes)",
+      "duration_ms": 0.0011920928955078125,
+      "timestamp": "2026-05-15T23:36:26.153392"
+    },
+    {
+      "scenario": "文档",
+      "module": "A系列详解",
+      "status": "PASS",
+      "message": "A_SERIES_DETAIL.md (2813 bytes)",
+      "duration_ms": 0.00095367431640625,
+      "timestamp": "2026-05-15T23:36:26.153400"
+    },
+    {
+      "scenario": "文档",
+      "module": "交易系统",
+      "status": "PASS",
+      "message": "TRADING_SYSTEM.md (27700 bytes)",
+      "duration_ms": 0.00095367431640625,
+      "timestamp": "2026-05-15T23:36:26.153407"
+    }
+  ],
+  "summary": {
+    "total": 38,
+    "passed": 35,
+    "failed": 0,
+    "skipped": 3
+  },
+  "end_time": "2026-05-15T23:36:26.153445",
+  "pass_rate": 100.0
+}

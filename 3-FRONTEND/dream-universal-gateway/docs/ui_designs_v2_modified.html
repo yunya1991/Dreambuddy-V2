@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dream Universal Gateway - 修改版设计图</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #0a0a1a;
+            color: #e4e4e7;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #3b82f6;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #a1a1aa;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+        .section {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4e;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .section-title {
+            color: #3b82f6;
+            font-size: 24px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #2a2a4e;
+        }
+        .three-column {
+            display: grid;
+            grid-template-columns: 260px 1fr 320px;
+            gap: 1px;
+            background: #2a2a4e;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+            min-height: 600px;
+        }
+        .col-left {
+            background: #16213e;
+            padding: 16px;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+        }
+        .col-center {
+            background: #0f3460;
+            padding: 16px;
+            font-size: 13px;
+        }
+        .col-right {
+            background: #16213e;
+            padding: 16px;
+            font-size: 13px;
+        }
+        .nav-item {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 13px;
+        }
+        .nav-item:hover { background: #1a1a2e; }
+        .nav-item.active { background: #1a1a2e; border-left: 3px solid #3b82f6; }
+        
+        .collapsible {
+            margin: 4px 0;
+        }
+        .collapsible-header {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .collapsible-header:hover { background: #1a1a2e; }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapsible-content.expanded {
+            max-height: 500px;
+        }
+        .collapsible-content .nav-item {
+            padding-left: 24px;
+            font-size: 12px;
+        }
+        .arrow {
+            transition: transform 0.3s;
+            font-size: 10px;
+        }
+        .arrow.expanded {
+            transform: rotate(90deg);
+        }
+        
+        .user-info-bottom {
+            margin-top: auto;
+            padding: 12px;
+            background: #0f1729;
+            border-radius: 8px;
+            border: 1px solid #2a2a4e;
+        }
+        .user-name {
+            color: #e4e4e7;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .user-id {
+            color: #a1a1aa;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+        .user-credits {
+            color: #eab308;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .message-bubble {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            max-width: 80%;
+        }
+        .message-bubble.user {
+            background: #3b82f6;
+            margin-left: auto;
+        }
+        .input-box {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4e;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 16px;
+        }
+        
+        .config-section {
+            background: #1a1a2e;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            font-size: 12px;
+        }
+        .config-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        .config-row:last-child { border-bottom: none; }
+        
+        .data-card-preview {
+            background: #0f1729;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 6px 0;
+            font-size: 12px;
+            border: 1px solid #2a2a4e;
+        }
+        .data-card-title {
+            color: #3b82f6;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+    </style>
+    <script>
+        function toggleCollapse(header) {
+            const content = header.nextElementSibling;
+            const arrow = header.querySelector('.arrow');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                arrow.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                arrow.classList.add('expanded');
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🌌 Dream Universal Gateway</h1>
+        <p class="subtitle">修改版UI设计图 | 按用户反馈优化（v2.1）</p>
+        
+        <!-- Section 1: 修改后的三栏布局 -->
+        <div class="section">
+            <h2 class="section-title">📐 修改后的三栏布局（完整展示）</h2>
+            <p style="color: #a1a1aa; margin-bottom: 20px;">核心修改：左侧栏新增数据卡片模块 + 设置改为折叠 + 用户信息/积分移到左下角</p>
+            
+            <div class="three-column">
+                <!-- 左侧栏：修改后 -->
+                <div class="col-left">
+                    <div style="font-weight: 600; margin-bottom: 16px; color: #3b82f6; font-size: 15px;">🧠 Dream</div>
+                    
+                    <div class="nav-item" style="font-size: 12px; color: #a1a1aa;">🔍 搜索对话...</div>
+                    
+                    <div style="font-size: 11px; color: #a1a1aa; margin: 8px 0 4px 0;">📅 今天</div>
+                    <div class="nav-item active">🔴 BTC行情分析</div>
+                    <div class="nav-item">📊 ETH走势查看</div>
+                    <div class="nav-item">📡 情报快报</div>
+                    
+                    <div style="font-size: 11px; color: #a1a1aa; margin: 12px 0 4px 0;">📅 昨天</div>
+                    <div class="nav-item">🟢 SOL策略讨论</div>
+                    <div class="nav-item">⚙️ API配置帮助</div>
+                    
+                    <hr style="border-color: #2a2a4e; margin: 12px 0;">
+                    
+                    <div class="nav-item" style="background: #22c55e; color: white; font-weight: 600;">＋ 新建对话</div>
+                    
+                    <!-- 数据卡片：默认折叠 -->
+                    <div class="collapsible">
+                        <div class="collapsible-header" onclick="toggleCollapse(this)">
+                            <span>📊 数据卡片</span>
+                            <span class="arrow">▶</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <div class="nav-item">📈 行情卡片</div>
+                            <div class="nav-item">📊 评分卡片</div>
+                            <div class="nav-item">💼 持仓卡片</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 设置：默认折叠 -->
+                    <div class="collapsible">
+                        <div class="collapsible-header" onclick="toggleCollapse(this)">
+                            <span>⚙️ 设置</span>
+                            <span class="arrow">▶</span>
+                        </div>
+                        <div class="collapsible-content">
+                            <div class="nav-item">⚙️ API配置</div>
+                            <div class="nav-item">💰 交易设置</div>
+                            <div class="nav-item">🎯 策略设置</div>
+                            <div class="nav-item">📡 通信渠道</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 左下角：用户信息 + 积分（常驻显示） -->
+                    <div class="user-info-bottom">
+                        <div class="user-name">👤 张三</div>
+                        <div class="user-id">U3kR***xQ</div>
+                        <div class="user-credits">💎 1,250 积分</div>
+                        <div style="display: flex; gap: 6px; margin-top: 8px;">
+                            <button style="background: #3b82f6; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; flex: 1;">签到</button>
+                            <button style="background: #2a2a4e; color: #e4e4e7; border: 1px solid #3b82f6; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; flex: 1;">明细</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 中间对话区：保持不变 -->
+                <div class="col-center">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #2a2a4e;">
+                        <div style="font-weight: 600;">BTC行情分析</div>
+                        <div style="color: #a1a1aa;">⋯</div>
+                    </div>
+                    
+                    <div class="message-bubble">
+                        <div style="color: #06b6d4; font-size: 11px; margin-bottom: 6px;">🤖 AI助手 · 2秒前</div>
+                        <div>当前BTC处于区间震荡，宏观面转鹰(CPI 3.8%)，恐惧指数42。</div>
+                        <div style="margin-top: 8px; color: #a1a1aa; font-size: 12px;">建议关注$79.7K支撑位...</div>
+                    </div>
+                    
+                    <div class="message-bubble user" style="margin-left: auto;">
+                        <div style="text-align: right;">👤 你</div>
+                        <div>分析一下局势</div>
+                    </div>
+                    
+                    <div class="input-box">
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+                            <span style="background: #16213e; color: #e4e4e7; padding: 4px 8px; border-radius: 4px; font-size: 11px;">/行情</span>
+                            <span style="background: #16213e; color: #e4e4e7; padding: 4px 8px; border-radius: 4px; font-size: 11px;">/分析</span>
+                            <span style="background: #16213e; color: #e4e4e7; padding: 4px 8px; border-radius: 4px; font-size: 11px;">/推演</span>
+                        </div>
+                        <input type="text" placeholder="输入消息..." style="background: transparent; border: none; color: #e4e4e7; width: 100%; outline: none;">
+                    </div>
+                </div>
+                
+                <!-- 右侧面板：保持不变 -->
+                <div class="col-right">
+                    <div style="font-weight: 600; margin-bottom: 16px; color: #3b82f6;">📌 分析面板</div>
+                    
+                    <div style="font-size: 11px; color: #a1a1aa; margin: 8px 0;">📊 分析进度</div>
+                    <div class="config-section">
+                        <div>✅ 情报更新  完成</div>
+                        <div>✅ 市场侦察  完成</div>
+                        <div style="color: #eab308;">🔄 深度分析  进行中</div>
+                    </div>
+                    
+                    <div style="font-size: 11px; color: #a1a1aa; margin: 12px 0 8px 0;">📋 市场概况</div>
+                    <div class="config-section">
+                        <div class="config-row"><span>品种</span><span>BTC-USDT-SWAP</span></div>
+                        <div class="config-row"><span>状态</span><span style="color: #eab308;">区间震荡</span></div>
+                        <div class="config-row"><span>持仓</span><span>空仓</span></div>
+                    </div>
+                    
+                    <div style="font-size: 11px; color: #a1a1aa; margin: 12px 0 8px 0;">📎 参考报告 (2)</div>
+                    <div class="config-section" style="font-size: 12px;">
+                        📄 深度分析 (3h前)<br>
+                        📄 情报快报 (1h前)
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Section 2: 数据卡片展开效果 -->
+        <div class="section">
+            <h2 class="section-title">📊 数据卡片模块（点击展开效果）</h2>
+            <p style="color: #a1a1aa; margin-bottom: 20px;">默认折叠，点击"📊 数据卡片"展开，显示3个可点击的卡片</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                <div class="data-card-preview">
+                    <div class="data-card-title">📈 行情卡片</div>
+                    <div style="color: #a1a1aa; font-size: 12px; line-height: 1.8;">
+                        价格: $80,630 <span style="color: #eab308;">(+0.8%)</span><br>
+                        24h涨跌: <span style="color: #22c55e;">+2.3%</span><br>
+                        成交量: 12,450 BTC
+                    </div>
+                </div>
+                
+                <div class="data-card-preview">
+                    <div class="data-card-title">📊 评分卡片</div>
+                    <div style="color: #a1a1aa; font-size: 12px; line-height: 1.8;">
+                        总分: <span style="color: #eab308; font-weight: 600;">65/100</span><br>
+                        技术面: 68/100<br>
+                        基本面: 62/100
+                    </div>
+                </div>
+                
+                <div class="data-card-preview">
+                    <div class="data-card-title">💼 持仓卡片</div>
+                    <div style="color: #a1a1aa; font-size: 12px; line-height: 1.8;">
+                        状态: <span style="color: #a1a1aa;">空仓</span><br>
+                        <span style="color: #22c55e;">OR</span><br>
+                        方向: 做多 | 杠杆: 2x<br>
+                        未实现盈亏: <span style="color: #22c55e;">+$140.5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Section 3: 设置展开效果 -->
+        <div class="section">
+            <h2 class="section-title">⚙️ 设置模块（点击展开效果）</h2>
+            <p style="color: #a1a1aa; margin-bottom: 20px;">默认折叠，点击"⚙️ 设置"展开，显示4个独立设置项</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                <div class="data-card-preview">
+                    <div class="data-card-title">⚙️ API配置</div>
+                    <div style="color: #a1a1aa; font-size: 12px; line-height: 1.8;">
+                        OKX (Demo) ● 已验证 ✅<br>
+                        API Key: 6a37d...<br>
+                        [测试连接] [更新] [删除]
+                    </div>
+                </div>
+                
+                <div class="data-card-preview">
+                    <div class="data-card-title">💰 交易设置</div>
+                    <div style="color: #a1a1aa; font-size: 12px; line-height: 1.8;">
+                        交易金额: 10% 账户余额<br>
+                        杠杆范围: 1x ~ 3x<br>
+                        最大日亏损: 500 USDT
+                    </div>
+                </div>
+                
+                <div class="data-card-preview">
+                    <div class="data-card-title">🎯 策略设置</div>
+                    <div style="color: #a1a1aa; font-size: 12px; line-height: 1.8;">
+                        推荐策略 (3) <span style="color: #22c55e; font-size: 11px;">[新]</span><br>
+                        信号策略: RSI超卖+MACD金叉<br>
+                        运行中的策略 (1)
+                    </div>
+                </div>
+                
+                <div class="data-card-preview">
+                    <div class="data-card-title">📡 通信渠道</div>
+                    <div style="color: #a1a1aa; font-size: 12px; line-height: 1.8;">
+                        ✅ 已连接 (2)<br>
+                        📱 Telegram - @dream_signals<br>
+                        💬 微信(Server酱)
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Section 4: 修改要点总结 -->
+        <div class="section">
+            <h2 class="section-title">📝 修改要点总结</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                <div>
+                    <h3 style="color: #22c55e; font-size: 16px; margin-bottom: 12px;">✅ 左侧栏修改</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid #2a2a4e; color: #a1a1aa; font-size: 14px;">
+                            <strong style="color: #e4e4e7;">新增:</strong> 📊 数据卡片模块（默认折叠）
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #2a2a4e; color: #a1a1aa; font-size: 14px;">
+                            <strong style="color: #e4e4e7;">修改:</strong> ⚙️ 设置改为折叠式
+                        </li>
+                        <li style="padding: 8px 0; color: #a1a1aa; font-size: 14px;">
+                            <strong style="color: #e4e4e7;">移动:</strong> 用户信息+积分 → 左下角
+                        </li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 style="color: #22c55e; font-size: 16px; margin-bottom: 12px;">✅ 交互逻辑</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid #2a2a4e; color: #a1a1aa; font-size: 14px;">
+                            <strong style="color: #e4e4e7;">数据卡片:</strong> 点击展开 → 点击卡片 → 右侧显示详情
+                        </li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #2a2a4e; color: #a1a1aa; font-size: 14px;">
+                            <strong style="color: #e4e4e7;">设置:</strong> 点击展开 → 点击设置项 → 右侧显示配置
+                        </li>
+                        <li style="padding: 8px 0; color: #a1a1aa; font-size: 14px;">
+                            <strong style="color: #e4e4e7;">右侧面板:</strong> 保持不变，可显示分析/卡片详情/设置配置
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="text-align: center; padding: 30px; color: #a1a1aa; font-size: 14px;">
+            <p>Dream Universal Gateway - 修改版UI设计图 v2.1</p>
+            <p style="margin-top: 5px;">生成时间: 2026-05-14 02:30:04 GMT+8</p>
+        </div>
+    </div>
+</body>
+</html>

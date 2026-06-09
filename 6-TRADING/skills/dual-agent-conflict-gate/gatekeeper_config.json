@@ -1,0 +1,64 @@
+{
+  "_comment": "dual-agent-conflict-gate 配置。主责域、共享文件、契约注册表均在此维护。",
+  "version": "1.0",
+
+  "ownership": {
+    "solo": [
+      "7-ARTIFACT-HUB-V2/src/",
+      "dreambuddy/meta/",
+      "dreambuddy/config/",
+      "docs/superpowers/contracts/",
+      "docs/superpowers/specs/",
+      "docs/superpowers/checklists/"
+    ],
+    "claude": [
+      "7-ARTIFACT-HUB-V2/src/ops-ui/",
+      "3-FRONTEND/dream-universal-gateway/src/app/",
+      "3-FRONTEND/dream-universal-gateway/src/components/",
+      "3-FRONTEND/dream-universal-gateway/src/stores/"
+    ]
+  },
+
+  "shared_requires_approval": [
+    "7-ARTIFACT-HUB-V2/src/types.ts",
+    "7-ARTIFACT-HUB-V2/src/index.ts",
+    "3-FRONTEND/dream-universal-gateway/src/types/index.ts",
+    "README.md",
+    "7-ARTIFACT-HUB-V2/README.md",
+    "docs/superpowers/plans/"
+  ],
+
+  "branch_rules": {
+    "claude_pattern": "agent/claude/",
+    "solo_pattern": "agent/solo/",
+    "milestone_pattern": "milestone/",
+    "protected": ["main"]
+  },
+
+  "contracts": {
+    "health-summary.v1": {
+      "level": "L1",
+      "path": "docs/superpowers/contracts/7-artifact-hub-v2-foundation/health-summary.v1.json",
+      "owner": "solo",
+      "frozen_at": "2026-05-16"
+    },
+    "trace-summary.v1": {
+      "level": "L1",
+      "path": "docs/superpowers/contracts/7-artifact-hub-v2-foundation/trace-summary.v1.json",
+      "owner": "solo",
+      "frozen_at": "2026-05-16"
+    },
+    "route-decision-summary.v1": {
+      "level": "L1",
+      "path": "docs/superpowers/contracts/7-artifact-hub-v2-foundation/route-decision-summary.v1.json",
+      "owner": "solo",
+      "frozen_at": "2026-05-16"
+    },
+    "workflow-summary.v1": {
+      "level": "L1",
+      "path": "docs/superpowers/contracts/7-artifact-hub-v2-foundation/workflow-summary.v1.json",
+      "owner": "solo",
+      "frozen_at": "2026-05-16"
+    }
+  }
+}

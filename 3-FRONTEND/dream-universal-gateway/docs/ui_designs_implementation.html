@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dream Universal Gateway - 完整落地版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #0a0a1a;
+            color: #e4e4e7;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 260px 1fr 320px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* ========== 左侧栏 ========== */
+        .sidebar-left {
+            background: #16213e;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 1px solid #2a2a4e;
+        }
+        
+        .sidebar-header {
+            padding: 16px;
+            font-weight: 600;
+            color: #3b82f6;
+            font-size: 15px;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        
+        .sidebar-search {
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #a1a1aa;
+            cursor: pointer;
+        }
+        
+        .sidebar-search:hover {
+            background: #1a1a2e;
+        }
+        
+        .sidebar-sessions {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        
+        .session-group-title {
+            font-size: 11px;
+            color: #a1a1aa;
+            padding: 8px 12px 4px 12px;
+        }
+        
+        .session-item {
+            padding: 8px 12px;
+            margin: 2px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 13px;
+        }
+        
+        .session-item:hover {
+            background: #1a1a2e;
+        }
+        
+        .session-item.active {
+            background: #1a1a2e;
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .sidebar-divider {
+            border: none;
+            border-top: 1px solid #2a2a4e;
+            margin: 8px 12px;
+        }
+        
+        .sidebar-new-chat {
+            padding: 8px 12px;
+            margin: 4px 8px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        
+        .sidebar-new-chat:hover {
+            background: #16a34a;
+        }
+        
+        /* 折叠模块 */
+        .collapsible-module {
+            margin: 4px 8px;
+        }
+        
+        .collapsible-header {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        
+        .collapsible-header:hover {
+            background: #1a1a2e;
+        }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .collapsible-content.expanded {
+            max-height: 500px;
+        }
+        
+        .collapsible-item {
+            padding: 6px 12px 6px 24px;
+            margin: 2px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 12px;
+        }
+        
+        .collapsible-item:hover {
+            background: #1a1a2e;
+        }
+        
+        .arrow {
+            transition: transform 0.3s;
+            font-size: 10px;
+        }
+        
+        .arrow.expanded {
+            transform: rotate(90deg);
+        }
+        
+        /* 用户信息（左下角） */
+        .user-info-bottom {
+            margin-top: auto;
+            padding: 12px;
+            background: #0f1729;
+            border-top: 1px solid #2a2a4e;
+        }
+        
+        .user-name {
+            color: #e4e4e7;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .user-id {
+            color: #a1a1aa;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+        
+        .user-credits {
+            color: #eab308;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .btn-sm {
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            flex: 1;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary-sm {
+            background: #3b82f6;
+            color: white;
+            border: none;
+        }
+        
+        .btn-primary-sm:hover {
+            background: #2563eb;
+        }
+        
+        .btn-ghost-sm {
+            background: #2a2a4e;
+            color: #e4e4e7;
+            border: 1px solid #3b82f6;
+        }
+        
+        /* ========== 中间对话区 ========== */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            background: #0f3460;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        
+        .chat-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .message {
+            margin: 8px 0;
+            max-width: 80%;
+        }
+        
+        .message-ai {
+            align-self: flex-start;
+        }
+        
+        .message-user {
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        
+        .message-bubble {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 4px 0;
+        }
+        
+        .message-user .message-bubble {
+            background: #3b82f6;
+        }
+        
+        .message-meta {
+            font-size: 11px;
+            color: #06b6d4;
+            margin-bottom: 6px;
+        }
+        
+        .message-user .message-meta {
+            text-align: right;
+            color: #e4e4e7;
+        }
+        
+        .chat-input-area {
+            padding: 12px 16px;
+            border-top: 1px solid #2a2a4e;
+        }
+        
+        .quick-commands {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        
+        .quick-cmd {
+            background: #16213e;
+            color: #e4e4e7;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .quick-cmd:hover {
+            background: #1a1a2e;
+        }
+        
+        .input-box {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: #1a1a2e;
+            border: 1px solid #2a2a4e;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        
+        .input-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #e4e4e7;
+            outline: none;
+            font-size: 13px;
+        }
+        
+        .input-box button {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        /* ========== 右侧面板 ========== */
+        .sidebar-right {
+            background: #16213e;
+            overflow-y: auto;
+            border-left: 1px solid #2a2a4e;
+            padding: 16px;
+        }
+        
+        .panel-title {
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #3b82f6;
+            font-size: 14px;
+        }
+        
+        .panel-subtitle {
+            font-size: 11px;
+            color: #a1a1aa;
+            margin: 8px 0 4px 0;
+        }
+        
+        .config-section {
+            background: #1a1a2e;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            font-size: 12px;
+        }
+        
+        .config-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        
+        .config-row:last-child {
+            border-bottom: none;
+        }
+        
+        /* 数据卡片 */
+        .data-card {
+            background: #0f1729;
+            border: 1px solid #2a2a4e;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .data-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+        
+        .data-card-title {
+            color: #3b82f6;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .data-card-content {
+            font-size: 12px;
+            color: #a1a1aa;
+            line-height: 1.6;
+        }
+        
+        /* 分析进度 */
+        .progress-item {
+            padding: 4px 0;
+            font-size: 12px;
+        }
+        
+        .progress-done {
+            color: #22c55e;
+        }
+        
+        .progress-active {
+            color: #eab308;
+        }
+        
+        .progress-waiting {
+            color: #a1a1aa;
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0a0a1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a4e;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧栏 -->
+        <div class="sidebar-left">
+            <div class="sidebar-header">🧠 Dream</div>
+            
+            <div class="sidebar-search">🔍 搜索对话...</div>
+            
+            <div class="sidebar-sessions">
+                <div class="session-group-title">📅 今天</div>
+                <div class="session-item active">🔴 BTC行情分析</div>
+                <div class="session-item">📊 ETH走势查看</div>
+                <div class="session-item">📡 情报快报</div>
+                
+                <div class="session-group-title">📅 昨天</div>
+                <div class="session-item">🟢 SOL策略讨论</div>
+                <div class="session-item">⚙️ API配置帮助</div>
+            </div>
+            
+            <hr class="sidebar-divider">
+            
+            <button class="sidebar-new-chat">＋ 新建对话</button>
+            
+            <!-- 数据卡片模块（默认折叠） -->
+            <div class="collapsible-module">
+                <div class="collapsible-header" onclick="toggleCollapse(this)">
+                    <span>📊 数据卡片</span>
+                    <span class="arrow">▶</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="collapsible-item" onclick="showRightPanel('market')">📈 行情卡片</div>
+                    <div class="collapsible-item" onclick="showRightPanel('signal')">📊 评分卡片</div>
+                    <div class="collapsible-item" onclick="showRightPanel('position')">💼 持仓卡片</div>
+                </div>
+            </div>
+            
+            <!-- 设置模块（默认折叠） -->
+            <div class="collapsible-module">
+                <div class="collapsible-header" onclick="toggleCollapse(this)">
+                    <span>⚙️ 设置</span>
+                    <span class="arrow">▶</span>
+                </div>
+                <div class="collapsible-content">
+                    <div class="collapsible-item" onclick="showRightPanel('api')">⚙️ API配置</div>
+                    <div class="collapsible-item" onclick="showRightPanel('trading')">💰 交易设置</div>
+                    <div class="collapsible-item" onclick="showRightPanel('strategy')">🎯 策略设置</div>
+                    <div class="collapsible-item" onclick="showRightPanel('communication')">📡 通信渠道</div>
+                </div>
+            </div>
+            
+            <!-- 用户信息（左下角） -->
+            <div class="user-info-bottom">
+                <div class="user-name">👤 张三</div>
+                <div class="user-id">U3kR***xQ</div>
+                <div class="user-credits">💎 1,250 积分</div>
+                <div class="user-actions">
+                    <button class="btn-sm btn-primary-sm" onclick="checkIn()">签到</button>
+                    <button class="btn-sm btn-ghost-sm" onclick="showCredits()">明细</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 中间对话区 -->
+        <div class="main-content">
+            <div class="chat-header">
+                <div class="chat-title">BTC行情分析</div>
+                <div style="color: #a1a1aa; cursor: pointer;">⋯</div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message message-ai">
+                    <div class="message-meta">🤖 AI助手 · 2秒前</div>
+                    <div class="message-bubble">
+                        当前BTC处于区间震荡，宏观面转鹰(CPI 3.8%)，恐惧指数42。
+                        <div style="margin-top: 8px; color: #a1a1aa; font-size: 12px;">
+                            建议关注$79.7K支撑位...
+                        </div>
+                        <div style="margin-top: 8px; padding: 8px; background: #16213e; border-radius: 6px; font-size: 12px;">
+                            📎 参考报告: 📄 深度分析 (3h前) | 8大矛盾 | 区间震荡 | [查看详情]
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="message message-user">
+                    <div class="message-meta">👤 你</div>
+                    <div class="message-bubble">
+                        分析一下局势
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="quick-commands">
+                    <span class="quick-cmd" onclick="insertCommand('/行情')">/行情</span>
+                    <span class="quick-cmd" onclick="insertCommand('/分析')">/分析</span>
+                    <span class="quick-cmd" onclick="insertCommand('/推演')">/推演</span>
+                    <span class="quick-cmd" onclick="insertCommand('/验证')">/验证</span>
+                    <span class="quick-cmd" onclick="insertCommand('/开仓')">/开仓</span>
+                </div>
+                <div class="input-box">
+                    <input type="text" id="messageInput" placeholder="输入消息..." onkeypress="handleKeyPress(event)">
+                    <button onclick="sendMessage()">➤</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11px; color: #a1a1aa;">
+                    <span>模型: GPT-4 | 产物中台: ✅</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧面板 -->
+        <div class="sidebar-right" id="rightPanel">
+            <div class="panel-title">📌 分析面板</div>
+            
+            <div class="panel-subtitle">📊 分析进度</div>
+            <div class="config-section">
+                <div class="progress-item progress-done">✅ 情报更新  完成</div>
+                <div class="progress-item progress-done">✅ 市场侦察  完成</div>
+                <div class="progress-item progress-active">🔄 深度分析  进行中</div>
+                <div class="progress-item progress-waiting">⏳ 情景推演  等待</div>
+                <div class="progress-item progress-waiting">⏳ 方案验证  等待</div>
+                <div class="progress-item progress-waiting">⏳ 风控审查  等待</div>
+            </div>
+            
+            <div class="panel-subtitle">📋 市场概况</div>
+            <div class="config-section">
+                <div class="config-row"><span>品种</span><span>BTC-USDT-SWAP</span></div>
+                <div class="config-row"><span>状态</span><span style="color: #eab308;">区间震荡</span></div>
+                <div class="config-row"><span>持仓</span><span>空仓</span></div>
+                <div class="config-row"><span>恐惧指数</span><span>42 (恐惧)</span></div>
+                <div class="config-row"><span>资金费率</span><span>+0.003%</span></div>
+            </div>
+            
+            <div class="panel-subtitle">📎 参考报告 (2)</div>
+            <div class="config-section" style="font-size: 12px; margin: 4px 0;">
+                📄 深度分析 (3h前)<br>
+                📄 情报快报 (1h前)
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 折叠/展开功能
+        function toggleCollapse(header) {
+            const content = header.nextElementSibling;
+            const arrow = header.querySelector('.arrow');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                arrow.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                arrow.classList.add('expanded');
+            }
+        }
+        
+        // 显示右侧面板内容
+        function showRightPanel(type) {
+            const panel = document.getElementById('rightPanel');
+            
+            const panels = {
+                'market': `
+                    <div class="panel-title">📈 行情卡片</div>
+                    <div class="data-card">
+                        <div class="data-card-title">📊 BTC-USDT-SWAP</div>
+                        <div class="data-card-content">
+                            价格: $80,630.00 <span style="color: #ef4444;">▼ -0.23%</span><br>
+                            24h高: $81,500<br>
+                            24h低: $79,700<br>
+                            资金费率: +0.003%<br>
+                            恐惧指数: 42 (恐惧)<br>
+                            市场状态: <span style="color: #eab308;">区间震荡</span>
+                        </div>
+                    </div>
+                `,
+                'signal': `
+                    <div class="panel-title">🎯 评分卡片</div>
+                    <div class="data-card">
+                        <div class="data-card-title">🎯 交易评分</div>
+                        <div class="data-card-content">
+                            总分: <span style="color: #ef4444; font-weight: 600;">12/80</span> → 偏空<br>
+                            优势评分: -35 (强空方优势)<br>
+                            宏观: 3/10 (CPI超预期)<br>
+                            技术: 5/10 (关键均线下方)<br>
+                            情绪: 4/10 (恐惧持续)<br>
+                            <span style="color: #eab308;">建议: 观望为主，谨慎做空</span>
+                        </div>
+                    </div>
+                `,
+                'position': `
+                    <div class="panel-title">💼 持仓卡片</div>
+                    <div class="data-card">
+                        <div class="data-card-title">💼 当前持仓</div>
+                        <div class="data-card-content">
+                            状态: <span style="color: #a1a1aa;">空仓</span><br>
+                            <span style="color: #22c55e;">OR</span><br>
+                            方向: 做多 | 杠杆: 2x<br>
+                            未实现盈亏: <span style="color: #22c55e;">+$140.5</span>
+                        </div>
+                    </div>
+                `,
+                'api': `
+                    <div class="panel-title">⚙️ API配置</div>
+                    <div class="config-section">
+                        <div style="font-weight: 600; margin-bottom: 8px;">OKX</div>
+                        <div style="display: flex; gap: 8px; align-items: center; margin: 8px 0;">
+                            <span style="background: #22c55e; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">● Demo</span>
+                            <span style="color: #a1a1aa;">□ Live</span>
+                        </div>
+                        <div style="font-size: 12px; margin: 8px 0;">
+                            <div>API Key: •••••••6a37d [👁]</div>
+                            <div>Secret Key: •••••••mN2p [👁]</div>
+                            <div>Passphrase: •••••••qR5w [👁]</div>
+                        </div>
+                        <div style="color: #22c55e; font-size: 12px; margin: 8px 0;">✅ 已验证 (05-13 18:00)</div>
+                        <div style="display: flex; gap: 8px;">
+                            <button style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">测试连接</button>
+                            <button style="background: #2a2a4e; color: #e4e4e7; border: 1px solid #3b82f6; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">更新</button>
+                            <button style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">删除</button>
+                        </div>
+                    </div>
+                `,
+                'trading': `
+                    <div class="panel-title">💰 交易设置</div>
+                    <div class="config-section">
+                        <div style="font-weight: 600; margin-bottom: 8px;">🔗 关联交易所</div>
+                        <div style="font-size: 12px; color: #22c55e; margin: 4px 0;">● OKX (Demo) 已验证 ✅</div>
+                        <div style="font-size: 12px; color: #a1a1aa; margin: 4px 0;">品种: BTC-USDT-SWAP</div>
+                    </div>
+                    <div class="config-section">
+                        <div style="font-weight: 600; margin-bottom: 8px;">💵 交易金额</div>
+                        <div style="font-size: 16px; font-weight: 600; color: #3b82f6;">每次交易: 10% 账户余额</div>
+                        <div style="font-size: 11px; color: #a1a1aa; margin-top: 8px;">ℹ️ 百分比由系统统一设定，确保策略一致性</div>
+                    </div>
+                `,
+                'strategy': `
+                    <div class="panel-title">🎯 策略设置</div>
+                    
+                    <!-- 推荐策略 -->
+                    <div style="font-size: 12px; color: #a1a1aa; margin-bottom: 8px;">📋 推荐策略 (3) <span style="cursor: pointer; color: #3b82f6;">[刷新]</span></div>
+                    <div class="config-section" style="border-left: 3px solid #eab308;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 600;">🟡 观望防守策略</div>
+                            <div><span style="background: #22c55e; color: #000; padding: 2px 6px; border-radius: 3px; font-size: 10px;">新</span> <span style="font-size: 11px; color: #a1a1aa;">1d</span></div>
+                        </div>
+                        <div style="font-size: 12px; color: #a1a1aa;">区间震荡 | 置信度65% | 优势-10</div>
+                        <div style="font-size: 12px; margin-top: 4px;">方向: 观望 | 杠杆: 1x | 仓位: 0x</div>
+                        <div style="font-size: 11px; color: #06b6d4; margin-top: 4px;">来源: A4验证 (12:00)</div>
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <button style="background: #2a2a4e; color: #e4e4e7; border: 1px solid #3b82f6; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">查看详情</button>
+                            <button style="background: #3b82f6; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">应用</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 自定义策略 -->
+                    <div style="font-size: 12px; color: #a1a1aa; margin: 16px 0 8px 0;">✏️ 自定义策略</div>
+                    <div class="config-section">
+                        <div style="font-size: 12px; color: #a1a1aa; margin-bottom: 12px;">描述你的策略，系统自动解析并生成策略</div>
+                        <textarea id="customStrategyInput" placeholder="RSI低于30并且MACD金叉的时候做多" style="width: 100%; background: #0f1729; border: 1px solid #2a2a4e; border-radius: 6px; padding: 10px; color: #e4e4e7; font-size: 13px; min-height: 60px; resize: vertical;"></textarea>
+                        
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                            <button class="quick-cmd" onclick="insertTemplate('RSI超卖反弹')" style="font-size: 11px; padding: 4px 10px;">[RSI超卖反弹]</button>
+                            <button class="quick-cmd" onclick="insertTemplate('均线金叉')" style="font-size: 11px; padding: 4px 10px;">[均线金叉]</button>
+                            <button class="quick-cmd" onclick="insertTemplate('布林带回归')" style="font-size: 11px; padding: 4px 10px;">[布林带回归]</button>
+                            <button class="quick-cmd" onclick="insertTemplate('放量突破')" style="font-size: 11px; padding: 4px 10px;">[放量突破]</button>
+                        </div>
+                        
+                        <button onclick="parseStrategy()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 12px; width: 100%;">🔍 解析策略</button>
+                        
+                        <!-- 意图识别结果（默认隐藏） -->
+                        <div id="parseResult" style="display: none; margin-top: 12px;">
+                            <div style="font-size: 11px; color: #06b6d4; margin-bottom: 8px;">🧠 意图识别结果</div>
+                            <div style="font-size: 12px;">方向: <span style="color: #22c55e; font-weight: 600;">做多 ✅</span></div>
+                            <div style="font-size: 12px;">条件1: RSI 低于 30 [AND]</div>
+                            <div style="font-size: 12px;">条件2: MACD 上穿信号线 [AND]</div>
+                            <div style="font-size: 12px; margin-top: 4px;">置信度: <span style="color: #22c55e; font-weight: 600;">92%</span></div>
+                            <button class="quick-cmd" style="font-size: 11px; margin-top: 8px;">修正解析</button>
+                            
+                            <div style="margin-top: 12px; padding: 8px 12px; background: #0f1729; border-radius: 6px; font-size: 12px; color: #22c55e;">
+                                ✓ 策略库匹配: 85% (RSI超卖模板) | <span style="color: #3b82f6; cursor: pointer;" onclick="generateStrategy()">[生成策略]</span>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                'communication': `
+                    <div class="panel-title">📡 通信渠道</div>
+                    <div class="config-section">
+                        <div style="font-weight: 600; margin-bottom: 8px;">📱 Telegram - @dream_signals</div>
+                        <div style="font-size: 12px; color: #22c55e; margin: 4px 0;">● 在线 | 延迟: 120ms | 今日: 8条</div>
+                        <div style="font-size: 12px; color: #a1a1aa; margin: 4px 0;">推送: 交易信号/风险告警/情报更新</div>
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <button style="background: #2a2a4e; color: #e4e4e7; border: 1px solid #3b82f6; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">测试</button>
+                            <button style="background: #2a2a4e; color: #e4e4e7; border: 1px solid #3b82f6; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">编辑规则</button>
+                            <button style="background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">断开</button>
+                        </div>
+                    </div>
+                `
+            };
+            
+            panel.innerHTML = panels[type] || panels['market'];
+        }
+        
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const chatMessages = document.getElementById('chatMessages');
+            
+            // 添加用户消息
+            const userMsg = document.createElement('div');
+            userMsg.className = 'message message-user';
+            userMsg.innerHTML = `
+                <div class="message-meta">👤 你</div>
+                <div class="message-bubble">${message}</div>
+            `;
+            chatMessages.appendChild(userMsg);
+            
+            // 清空输入框
+            input.value = '';
+            
+            // 滚动到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // 模拟AI回复（延迟1秒）
+            setTimeout(() => {
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'message message-ai';
+                aiMsg.innerHTML = `
+                    <div class="message-meta">🤖 AI助手 · 刚刚</div>
+                    <div class="message-bubble">
+                        收到你的消息："${message}"<br>
+                        正在处理中...
+                    </div>
+                `;
+                chatMessages.appendChild(aiMsg);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 1000);
+        }
+        
+        // 处理回车键
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        // 插入快捷命令
+        function insertCommand(cmd) {
+            const input = document.getElementById('messageInput');
+            input.value = cmd + ' ';
+            input.focus();
+        }
+        
+        // 签到功能
+        function checkIn() {
+            alert('🎁 签到成功！\n\n获得 50 积分\n连续签到7天可获得额外奖励！');
+        }
+        
+        // 查看积分明细
+        function showCredits() {
+            alert('💎 积分明细\n\n当前余额: 1,250 积分\n待生效: 2,000\n即将过期: 800 (05-20)');
+        }
+        
+        // 自定义策略 - 插入模板
+        function insertTemplate(template) {
+            const input = document.getElementById('customStrategyInput');
+            const templates = {
+                'RSI超卖反弹': 'RSI低于30并且价格站上5日均线的时候做多',
+                '均线金叉': '5日均线上穿20日均线并且成交量放大的时候做多',
+                '布林带回归': '价格触及布林带下轨并且RSI低于30的时候做多',
+                '放量突破': '成交量大于前20日均量2倍并且价格突破前高的时候做多'
+            };
+            input.value = templates[template] || template;
+            input.focus();
+        }
+        
+        // 自定义策略 - 解析策略
+        function parseStrategy() {
+            const input = document.getElementById('customStrategyInput');
+            const result = document.getElementById('parseResult');
+            
+            if (!input.value.trim()) {
+                alert('请先输入策略描述！');
+                return;
+            }
+            
+            // 显示解析结果
+            result.style.display = 'block';
+            
+            // 模拟解析（实际应用中这里会调用AI解析）
+            // 根据关键词简单判断方向
+            const text = input.value.toLowerCase();
+            const directionSpan = result.querySelector('span');
+            if (text.includes('做多') || text.includes('买入') || text.includes('多头')) {
+                directionSpan.textContent = '做多 ✅';
+                directionSpan.style.color = '#22c55e';
+            } else if (text.includes('做空') || text.includes('卖出') || text.includes('空头')) {
+                directionSpan.textContent = '做空 ✅';
+                directionSpan.style.color = '#ef4444';
+            }
+        }
+        
+        // 自定义策略 - 生成策略
+        function generateStrategy() {
+            alert('🎯 策略生成成功！\n\n策略已添加到自定义策略库，可以在推荐策略中查看和应用。');
+        }
+    </script>
+</body>
+</html>

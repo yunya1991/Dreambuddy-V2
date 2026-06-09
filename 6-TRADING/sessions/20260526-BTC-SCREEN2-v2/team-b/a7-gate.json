@@ -1,0 +1,39 @@
+{
+  "gate": "A7",
+  "session_id": "20260526-BTC-SCREEN2-v2",
+  "date": "2026-05-26",
+  "status": "PASS_WITH_CONDITIONS",
+  "checks": {
+    "check1_screen1_valid": {
+      "result": "PASS",
+      "detail": "Screen1 v2 direction=SHORT, score=72, valid until 2026-06-09, data_source=tavily_realtime",
+      "score": 10
+    },
+    "check2_entry_zone_defined": {
+      "result": "PASS",
+      "detail": "Entry zone [77000, 79000], preferred 77800, trigger defined (1h rejection at resistance)",
+      "score": 10
+    },
+    "check3_stop_loss_logical": {
+      "result": "PASS",
+      "detail": "SL=81500, structure-based (above CME gap lower + squeeze stop cluster). RR from L0: -5.2% risk vs +3.9% TP1",
+      "score": 8
+    },
+    "check4_risk_acknowledged": {
+      "result": "CONDITIONAL",
+      "detail": "Funding rate -6% Short Squeeze risk (40%) acknowledged. Composite confidence 64/100. Condition: L0 position must be <= 30% total capital. No entry below 77000.",
+      "score": 7,
+      "condition": "Max L0 = 30% capital, wait for bounce (do not chase at 76750)"
+    }
+  },
+  "total_score": 35,
+  "max_score": 40,
+  "gate_result": "PASS_WITH_CONDITIONS",
+  "conditions": [
+    "L0 entry ONLY on bounce to 77000-79000 with 1h rejection signal",
+    "Do not enter at current price 76750 (poor RR, close to 74344 support)",
+    "Max total position 30% across all martingale levels",
+    "If funding rate moves above -2%, reassess Short Squeeze risk before adding L1/L2"
+  ],
+  "team_b_instruction": "WAITING_ENTRY — monitor for bounce to entry zone"
+}

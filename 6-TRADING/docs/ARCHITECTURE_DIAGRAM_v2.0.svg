@@ -1,0 +1,485 @@
+<svg viewBox="0 0 1300 1100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 渐变色 -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="layerGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a90d9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357abd;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="layerGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="layerGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="martinGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="a9Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- 箭头标记 -->
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#60a5fa" />
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#34d399" />
+    </marker>
+    <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#fbbf24" />
+    </marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#a78bfa" />
+    </marker>
+    <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
+    </marker>
+
+    <!-- 阴影 -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- 背景 -->
+  <rect x="0" y="0" width="1300" height="1100" fill="#0f172a" />
+
+  <!-- 标题 -->
+  <rect x="20" y="15" width="1260" height="55" rx="8" fill="url(#headerGrad)" />
+  <text x="650" y="45" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">Dream Universal Gateway 交易系统架构图 v2.8</text>
+  <text x="650" y="63" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">★ Elder三屏执行逻辑: 第二屏预设可直接挂单 / 加仓阶梯预设 / L1止损分层执行 ★</text>
+
+  <!-- ==================== 双轨制架构 ==================== -->
+  <g transform="translate(30, 85)">
+    <rect x="0" y="0" width="600" height="65" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="2" />
+    <text x="300" y="22" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#a78bfa" text-anchor="middle">DreamBuddy 智能交易平台 - 双轨制架构</text>
+    
+    <!-- 本地自动化 -->
+    <rect x="15" y="32" width="265" height="28" rx="4" fill="#7c3aed" />
+    <text x="147" y="50" font-family="Arial, sans-serif" font-size="11" fill="#fff" text-anchor="middle">本地自动化 (模拟盘探索)</text>
+    
+    <!-- 箭头 -->
+    <line x1="280" y1="46" x2="310" y2="46" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowPurple)" />
+    
+    <!-- DUG -->
+    <rect x="310" y="32" width="275" height="28" rx="4" fill="#059669" />
+    <text x="447" y="50" font-family="Arial, sans-serif" font-size="11" fill="#fff" text-anchor="middle">Dream Universal Gateway (统一输出口)</text>
+  </g>
+
+  <!-- ==================== 用户交互层 ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="30" y="170" width="380" height="55" rx="8" fill="url(#layerGrad1)" />
+    <text x="220" y="192" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">用户交互层 (User Interface)</text>
+    <text x="220" y="210" font-family="Arial, sans-serif" font-size="10" fill="#e0f2fe" text-anchor="middle">Dashboard / 充值页面 / 策略管理</text>
+  </g>
+
+  <!-- ==================== 意图识别层 ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="30" y="245" width="380" height="60" rx="8" fill="url(#layerGrad2)" stroke="#fef08a" stroke-width="2" />
+    <text x="220" y="268" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">意图识别层 (Intent Recognition) ★ 智能路由</text>
+    <text x="220" y="288" font-family="Arial, sans-serif" font-size="10" fill="#fef08a" text-anchor="middle">用户偏好识别 → 智能路由 → SKILL调度</text>
+  </g>
+
+  <!-- 连接线: 用户层 → 意图层 -->
+  <line x1="220" y1="225" x2="220" y2="245" stroke="url(#arrowBlue)" stroke-width="2" marker-end="url(#arrowBlue)" />
+
+  <!-- ==================== 产物中台层 ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="450" y="200" width="200" height="105" rx="8" fill="url(#layerGrad3)" />
+    <text x="550" y="222" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">产物中台 (Product Hub)</text>
+    <text x="550" y="242" font-family="Arial, sans-serif" font-size="9" fill="#a7f3d0" text-anchor="middle">产物接收 | 产物存储</text>
+    <text x="550" y="257" font-family="Arial, sans-serif" font-size="9" fill="#a7f3d0" text-anchor="middle">产物分发 | 状态追踪</text>
+    <text x="550" y="272" font-family="Arial, sans-serif" font-size="9" fill="#a7f3d0" text-anchor="middle">质量门禁 | 冲突仲裁</text>
+    <text x="550" y="292" font-family="Arial, sans-serif" font-size="9" fill="#6ee7b7" text-anchor="middle">★ 双向通信枢纽</text>
+  </g>
+
+  <!-- 连接线: 意图层 → 产物中台 -->
+  <line x1="410" y1="275" x2="450" y2="252" stroke="url(#arrowGreen)" stroke-width="2" marker-end="url(#arrowGreen)" />
+
+  <!-- ==================== WorkBuddy 工作引擎 ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="450" y="325" width="200" height="175" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2" />
+    <text x="550" y="348" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">WorkBuddy 工作引擎</text>
+    <text x="550" y="362" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A0-A9 交易流水线</text>
+
+    <!-- A系列流程 -->
+    <g transform="translate(460, 372)">
+      <rect x="0" y="0" width="30" height="16" rx="3" fill="#3b82f6" />
+      <text x="15" y="11" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A0</text>
+      <text x="45" y="9" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8">矛盾识别</text>
+
+      <line x1="31" y1="8" x2="40" y2="8" stroke="#60a5fa" stroke-width="1" />
+
+      <rect x="48" y="0" width="30" height="16" rx="3" fill="#3b82f6" />
+      <text x="63" y="11" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A1</text>
+      <text x="93" y="9" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8">矛盾调查</text>
+
+      <line x1="79" y1="8" x2="88" y2="8" stroke="#60a5fa" stroke-width="1" />
+
+      <rect x="0" y="22" width="30" height="16" rx="3" fill="#3b82f6" />
+      <text x="15" y="33" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A2</text>
+      <text x="45" y="31" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8">第一性原理</text>
+
+      <line x1="31" y1="30" x2="40" y2="30" stroke="#60a5fa" stroke-width="1" />
+
+      <rect x="48" y="22" width="30" height="16" rx="3" fill="#3b82f6" />
+      <text x="63" y="33" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A3</text>
+      <text x="93" y="31" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8">沙盘推演</text>
+
+      <line x1="79" y1="30" x2="88" y2="30" stroke="#60a5fa" stroke-width="1" />
+
+      <rect x="0" y="44" width="30" height="16" rx="3" fill="#8b5cf6" />
+      <text x="15" y="55" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A4</text>
+      <text x="45" y="53" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8">验证报告</text>
+
+      <line x1="31" y1="52" x2="40" y2="52" stroke="#a78bfa" stroke-width="1" />
+
+      <rect x="48" y="44" width="30" height="16" rx="3" fill="#8b5cf6" />
+      <text x="63" y="55" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A5</text>
+      <text x="93" y="53" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8">综合执行</text>
+
+      <line x1="79" y1="52" x2="88" y2="52" stroke="#a78bfa" stroke-width="1" />
+
+      <rect x="0" y="66" width="30" height="16" rx="3" fill="#f59e0b" />
+      <text x="15" y="77" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A6</text>
+      <text x="45" y="75" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8">情报监控</text>
+
+      <line x1="31" y1="74" x2="40" y2="74" stroke="#fbbf24" stroke-width="1" />
+
+      <rect x="48" y="66" width="30" height="16" rx="3" fill="#f59e0b" />
+      <text x="63" y="77" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A7</text>
+      <text x="93" y="75" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8">实践理论</text>
+
+      <line x1="79" y1="74" x2="88" y2="74" stroke="#fbbf24" stroke-width="1" />
+
+      <rect x="0" y="88" width="30" height="16" rx="3" fill="#f59e0b" />
+      <text x="15" y="99" font-family="Arial, sans-serif" font-size="7" fill="#ffffff" text-anchor="middle">A8</text>
+      <text x="45" y="97" font-family="Arial, sans-serif" font-size="6" fill="#94a3b8">验证闭环</text>
+
+      <line x1="31" y1="96" x2="40" y2="96" stroke="#fbbf24" stroke-width="1" />
+
+      <rect x="48" y="88" width="35" height="16" rx="3" fill="url(#a9Grad)" stroke="#fef08a" stroke-width="1" />
+      <text x="65" y="99" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="#fef08a" text-anchor="middle">A9</text>
+      <text x="98" y="97" font-family="Arial, sans-serif" font-size="6" fill="#fca5a5">★离场决策</text>
+    </g>
+  </g>
+
+  <!-- 连接线: 产物中台 → WorkBuddy -->
+  <line x1="550" y1="305" x2="550" y2="325" stroke="url(#arrowPurple)" stroke-width="2" marker-end="url(#arrowPurple)" />
+
+  <!-- ==================== 三屏交易体系 ==================== -->
+  <g transform="translate(700, 85)">
+    <rect x="0" y="0" width="570" height="310" rx="8" fill="#1e293b" stroke="#60a5fa" stroke-width="2" />
+    <text x="285" y="25" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#60a5fa" text-anchor="middle">三屏交易体系 v2.7 (战略→战术→执行)</text>
+
+    <!-- 第一屏: 周线 - 双轨策略 -->
+    <rect x="15" y="40" width="160" height="70" rx="6" fill="#1e40af" />
+    <text x="95" y="58" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#dbeafe" text-anchor="middle">第一屏: 周线 ★战略</text>
+    <text x="25" y="76" font-family="Arial, sans-serif" font-size="8" fill="#fb923c">★ A1-A3 周线级</text>
+    <text x="25" y="88" font-family="Arial, sans-serif" font-size="8" fill="#fbbf24">★ 双轨策略选择:</text>
+    <text x="25" y="100" font-family="Arial, sans-serif" font-size="8" fill="#fbbf24">合约马丁 / 现货马丁</text>
+
+    <!-- 箭头1 -->
+    <line x1="175" y1="75" x2="195" y2="75" stroke="#60a5fa" stroke-width="2" marker-end="url(#arrowBlue)" />
+
+    <!-- 第二屏: 日线 - 预设 ★可直接挂单 -->
+    <rect x="195" y="40" width="160" height="70" rx="6" fill="#7c3aed" stroke="#fbbf24" stroke-width="2" />
+    <text x="275" y="55" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#ede9fe" text-anchor="middle">第二屏: 日线 ★战术</text>
+    <text x="205" y="72" font-family="Arial, sans-serif" font-size="8" fill="#fb923c">★ A1-A3 日线级</text>
+    <text x="205" y="84" font-family="Arial, sans-serif" font-size="8" fill="#22c55e">★ 预设完成 → 直接挂单</text>
+    <text x="205" y="96" font-family="Arial, sans-serif" font-size="8" fill="#fef08a">★ 加仓阶梯预设(最多3次)</text>
+    <text x="205" y="108" font-family="Arial, sans-serif" font-size="7" fill="#fbbf24">★ 阶梯间隔=波动率计算</text>
+
+    <!-- 箭头2 -->
+    <line x1="355" y1="75" x2="375" y2="75" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowPurple)" />
+
+    <!-- 第三屏: 调整 -->
+    <rect x="375" y="40" width="180" height="70" rx="6" fill="url(#a9Grad)" stroke="#fef08a" stroke-width="1" />
+    <text x="465" y="55" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#fef08a" text-anchor="middle">第三屏: 动态调整</text>
+    <text x="385" y="72" font-family="Arial, sans-serif" font-size="8" fill="#fecaca">★撤单/改单实现调整</text>
+    <text x="475" y="72" font-family="Arial, sans-serif" font-size="8" fill="#ddd6fe">★加仓调整</text>
+    <text x="385" y="84" font-family="Arial, sans-serif" font-size="8" fill="#a7f3d0">★止盈止损调整</text>
+    <text x="385" y="96" font-family="Arial, sans-serif" font-size="8" fill="#fef08a">★A9紧急离场</text>
+
+    <!-- 预设→调整 流向 -->
+    <rect x="15" y="120" width="540" height="50" rx="6" fill="#1f1f1f" stroke="#60a5fa" stroke-width="1" />
+    <text x="285" y="135" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#60a5fa" text-anchor="middle">★ 预设 → 挂单 → 调整 闭环</text>
+    <text x="80" y="158" font-family="Arial, sans-serif" font-size="8" fill="#93c5fd">第二屏预设价位</text>
+    <text x="220" y="158" font-family="Arial, sans-serif" font-size="8" fill="#22c55e">→ 直接挂单</text>
+    <text x="310" y="158" font-family="Arial, sans-serif" font-size="8" fill="#a78bfa">→ 第三屏撤/改单</text>
+    <text x="440" y="158" font-family="Arial, sans-serif" font-size="8" fill="#fca5a5">→ 执行信号</text>
+
+    <!-- 加仓阶梯预设 ★ v2.7新增 -->
+    <rect x="15" y="175" width="540" height="50" rx="6" fill="#7c3aed" stroke="#fbbf24" stroke-width="1" />
+    <text x="285" y="193" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#fbbf24" text-anchor="middle">★ 加仓阶梯预设原则 ★★ 核心原则</text>
+    <rect x="30" y="205" width="120" height="18" rx="3" fill="#dc2626" />
+    <text x="90" y="217" font-family="Arial, sans-serif" font-size="8" fill="#fff" text-anchor="middle">Level 0: $79,800</text>
+    <rect x="155" y="205" width="120" height="18" rx="3" fill="#ea580c" />
+    <text x="215" y="217" font-family="Arial, sans-serif" font-size="8" fill="#fff" text-anchor="middle">Level 1: $79,000</text>
+    <rect x="280" y="205" width="120" height="18" rx="3" fill="#ca8a04" />
+    <text x="340" y="217" font-family="Arial, sans-serif" font-size="8" fill="#fff" text-anchor="middle">Level 2: $78,200</text>
+    <rect x="405" y="205" width="120" height="18" rx="3" fill="#65a30d" />
+    <text x="465" y="217" font-family="Arial, sans-serif" font-size="8" fill="#fff" text-anchor="middle">Level 3: $77,500</text>
+    <text x="540" y="217" font-family="Arial, sans-serif" font-size="7" fill="#fbbf24" text-anchor="middle">阶梯间隔=$800</text>
+
+    <!-- 信号过滤机制 ★ v2.7新增 -->
+    <rect x="15" y="230" width="540" height="40" rx="6" fill="#1f1f1f" stroke="#ef4444" stroke-width="1" />
+    <text x="285" y="248" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#ef4444" text-anchor="middle">★ 信号过滤机制: 强信号执行 / 弱信号忽略 ★</text>
+    <text x="100" y="263" font-family="Arial, sans-serif" font-size="8" fill="#22c55e">强信号: 突破关键位/基本面变化</text>
+    <text x="350" y="263" font-family="Arial, sans-serif" font-size="8" fill="#ef4444">弱信号: 超时/噪音/轻微偏离→忽略</text>
+  </g>
+
+  <!-- 连接线: WorkBuddy → 三屏 -->
+  <line x1="650" y1="400" x2="700" y2="220" stroke="url(#arrowOrange)" stroke-width="2" stroke-dasharray="5,3" />
+
+  <!-- ==================== 信号路由层 ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="450" y="540" width="200" height="85" rx="8" fill="url(#martinGrad)" />
+    <text x="550" y="563" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">信号路由层</text>
+    <text x="550" y="583" font-family="Arial, sans-serif" font-size="9" fill="#e9d5ff" text-anchor="middle">Regime 检测 + 情景选择</text>
+    <text x="550" y="598" font-family="Arial, sans-serif" font-size="9" fill="#e9d5ff" text-anchor="middle">A4/A5/A6/A9 执行决策</text>
+  </g>
+
+  <!-- 连接线: WorkBuddy → 信号路由 -->
+  <line x1="550" y1="500" x2="550" y2="540" stroke="url(#arrowPurple)" stroke-width="2" marker-end="url(#arrowPurple)" />
+
+  <!-- ==================== 执行引擎层 ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="450" y="645" width="200" height="130" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2" />
+    <text x="550" y="668" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#22c55e" text-anchor="middle">执行引擎 (OKX)</text>
+
+    <!-- 执行组件 -->
+    <g transform="translate(460, 680)">
+      <rect x="0" y="0" width="175" height="20" rx="4" fill="#064e3b" />
+      <text x="87" y="13" font-family="Arial, sans-serif" font-size="9" fill="#a7f3d0" text-anchor="middle">订单管理器</text>
+
+      <rect x="0" y="26" width="175" height="20" rx="4" fill="#064e3b" />
+      <text x="87" y="39" font-family="Arial, sans-serif" font-size="9" fill="#a7f3d0" text-anchor="middle">仓位管理器 (4等份)</text>
+
+      <rect x="0" y="52" width="175" height="20" rx="4" fill="#064e3b" />
+      <text x="87" y="65" font-family="Arial, sans-serif" font-size="9" fill="#a7f3d0" text-anchor="middle">风险控制器</text>
+
+      <rect x="0" y="78" width="175" height="20" rx="4" fill="#064e3b" />
+      <text x="87" y="91" font-family="Arial, sans-serif" font-size="9" fill="#a7f3d0" text-anchor="middle">TP/SL 联动</text>
+    </g>
+  </g>
+
+  <!-- 连接线: 信号路由 → 执行引擎 -->
+  <line x1="550" y1="625" x2="550" y2="645" stroke="url(#arrowGreen)" stroke-width="2" marker-end="url(#arrowGreen)" />
+
+  <!-- ==================== A9 离场决策 ==================== -->
+  <g transform="translate(700, 380)">
+    <rect x="0" y="0" width="280" height="200" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2" />
+    <text x="140" y="22" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ef4444" text-anchor="middle">★ A9 离场决策 (四层决策链)</text>
+
+    <!-- 四层决策 -->
+    <g transform="translate(10, 35)">
+      <rect x="0" y="0" width="70" height="35" rx="4" fill="#dc2626" />
+      <text x="35" y="13" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#fff" text-anchor="middle">L1</text>
+      <text x="35" y="26" font-family="Arial, sans-serif" font-size="7" fill="#fecaca" text-anchor="middle">止盈止损</text>
+
+      <line x1="70" y1="17" x2="82" y2="17" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowBlue)" />
+
+      <rect x="82" y="0" width="70" height="35" rx="4" fill="#ea580c" />
+      <text x="117" y="13" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#fff" text-anchor="middle">L2</text>
+      <text x="117" y="26" font-family="Arial, sans-serif" font-size="7" fill="#ffedd5" text-anchor="middle">信号反转</text>
+
+      <line x1="152" y1="17" x2="164" y2="17" stroke="#ea580c" stroke-width="1.5" marker-end="url(#arrowBlue)" />
+
+      <rect x="164" y="0" width="70" height="35" rx="4" fill="#ca8a04" />
+      <text x="199" y="13" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#fff" text-anchor="middle">L3</text>
+      <text x="199" y="26" font-family="Arial, sans-serif" font-size="7" fill="#fef9c3" text-anchor="middle">★21风险事件</text>
+
+      <line x1="0" y1="35" x2="0" y2="47" stroke="#ca8a04" stroke-width="1.5" />
+
+      <rect x="0" y="47" width="234" height="35" rx="4" fill="#65a30d" />
+      <text x="117" y="60" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#fff" text-anchor="middle">L4: 参数优化</text>
+      <text x="117" y="74" font-family="Arial, sans-serif" font-size="7" fill="#d9f99d" text-anchor="middle">回撤/时间止损</text>
+    </g>
+
+    <!-- ★ L1分层执行 ★ v2.8新增 -->
+    <rect x="10" y="118" width="260" height="35" rx="4" fill="#831843" stroke="#fef08a" stroke-width="1" />
+    <text x="140" y="132" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#fef08a" text-anchor="middle">★ L1止损分层执行 ★ 核心修复</text>
+    <text x="50" y="148" font-family="Arial, sans-serif" font-size="7" fill="#fce7f3">加仓期: 硬性保护</text>
+    <text x="160" y="148" font-family="Arial, sans-serif" font-size="7" fill="#fce7f3">→ 三层满后启用</text>
+    <text x="235" y="148" font-family="Arial, sans-serif" font-size="7" fill="#a7f3d0">★趋势加强→提高止盈</text>
+
+    <!-- TP/SL -->
+    <rect x="10" y="158" width="120" height="25" rx="4" fill="#831843" />
+    <text x="70" y="175" font-family="Arial, sans-serif" font-size="9" fill="#fce7f3" text-anchor="middle">TP/SL 联动 OKX</text>
+
+    <rect x="140" y="158" width="130" height="25" rx="4" fill="#064e3b" />
+    <text x="205" y="175" font-family="Arial, sans-serif" font-size="9" fill="#a7f3d0" text-anchor="middle">分批离场 50/30/20</text>
+  </g>
+
+  <!-- 连接线: 执行引擎 → A9 -->
+  <path d="M 650 700 Q 720 700 780 560" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,3" />
+
+  <!-- ==================== 系统宪法 ==================== -->
+  <g transform="translate(700, 580)">
+    <rect x="0" y="0" width="280" height="215" rx="8" fill="#1e293b" stroke="#dc2626" stroke-width="2" />
+    <text x="140" y="22" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#dc2626" text-anchor="middle">⚠️ 系统宪法: 马丁策略约束</text>
+
+    <!-- 核心条款 -->
+    <rect x="10" y="32" width="260" height="175" rx="4" fill="#1f1f1f" />
+
+    <text x="20" y="50" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#a78bfa">★ 多空不对称性</text>
+    <text x="25" y="64" font-family="Arial, sans-serif" font-size="8" fill="#a3a3a3">多头→多头合约马丁 / 空头→空头合约</text>
+
+    <text x="20" y="83" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#22c55e">✓ 资金四等份原则</text>
+    <text x="25" y="97" font-family="Arial, sans-serif" font-size="8" fill="#a3a3a3">入场1份 + 加仓3次 = 最多4份</text>
+
+    <text x="20" y="116" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#22c55e">✓ 加仓规则</text>
+    <text x="25" y="130" font-family="Arial, sans-serif" font-size="8" fill="#a3a3a3">基于波动率+支撑阻力位</text>
+    <text x="25" y="142" font-family="Arial, sans-serif" font-size="8" fill="#a3a3a3">最多加仓3次 (解决SKIP问题)</text>
+
+    <text x="20" y="161" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#fbbf24">★ 止盈截断原则</text>
+    <text x="25" y="175" font-family="Arial, sans-serif" font-size="8" fill="#fbbf24">"不赚最后一枚铜板"</text>
+
+    <text x="20" y="194" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#ef4444">⚠ 禁止反马丁 / 禁止手动加仓</text>
+  </g>
+
+  <!-- ==================== 双轨制详解 ==================== -->
+  <g transform="translate(30, 340)">
+    <rect x="0" y="0" width="380" height="200" rx="8" fill="#1e293b" stroke="#7c3aed" stroke-width="2" />
+    <text x="190" y="22" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#a78bfa" text-anchor="middle">双轨制架构详解</text>
+
+    <!-- 本地自动化 -->
+    <rect x="15" y="35" width="170" height="75" rx="6" fill="#7c3aed" />
+    <text x="100" y="52" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">本地自动化</text>
+    <text x="25" y="70" font-family="Arial, sans-serif" font-size="8" fill="#e9d5ff">• 模拟盘探索</text>
+    <text x="25" y="84" font-family="Arial, sans-serif" font-size="8" fill="#e9d5ff">• 策略验证</text>
+    <text x="25" y="98" font-family="Arial, sans-serif" font-size="8" fill="#e9d5ff">• 按本地逻辑执行</text>
+    <text x="25" y="102" font-family="Arial, sans-serif" font-size="8" fill="#fbbf24">• 解决SKIP问题</text>
+
+    <!-- 箭头 -->
+    <line x1="185" y1="72" x2="205" y2="72" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrowPurple)" />
+
+    <!-- DUG -->
+    <rect x="205" y="35" width="160" height="75" rx="6" fill="#059669" />
+    <text x="285" y="52" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">DUG 交易系统</text>
+    <text x="215" y="70" font-family="Arial, sans-serif" font-size="8" fill="#a7f3d0">• Dreambuddy统一出口</text>
+    <text x="215" y="84" font-family="Arial, sans-serif" font-size="8" fill="#a7f3d0">• 马丁策略为核心</text>
+    <text x="215" y="98" font-family="Arial, sans-serif" font-size="8" fill="#a7f3d0">• 高胜率平稳盈利</text>
+    <text x="215" y="102" font-family="Arial, sans-serif" font-size="8" fill="#fbbf24">• 无需手动干预</text>
+
+    <!-- 策略学习 -->
+    <rect x="15" y="120" width="350" height="30" rx="4" fill="#1f1f1f" stroke="#22c55e" stroke-width="1" />
+    <text x="190" y="139" font-family="Arial, sans-serif" font-size="9" fill="#22c55e" text-anchor="middle">策略学习: 本地验证有效后 → 迁移到 DUG 实盘执行</text>
+
+    <!-- 核心理念 -->
+    <rect x="15" y="160" width="350" height="32" rx="4" fill="#dc2626" />
+    <text x="190" y="178" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">★ 马丁策略验证有效，胜率高</text>
+    <text x="190" y="186" font-family="Arial, sans-serif" font-size="8" fill="#fecaca" text-anchor="middle">结合信号系统 → 更平稳服务用户</text>
+  </g>
+
+  <!-- ==================== 统一信号系统 ==================== -->
+  <g transform="translate(30, 560)">
+    <rect x="0" y="0" width="380" height="235" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="2" />
+    <text x="190" y="22" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#a78bfa" text-anchor="middle">统一信号系统 (预设→调整闭环)</text>
+
+    <!-- 预设→调整 流向 -->
+    <rect x="15" y="32" width="350" height="30" rx="4" fill="#1f1f1f" stroke="#60a5fa" stroke-width="1" />
+    <text x="190" y="50" font-family="Arial, sans-serif" font-size="9" fill="#60a5fa" text-anchor="middle">★ 第二屏预设价位表 → 第三屏实时调整执行</text>
+
+    <!-- 信号流程 -->
+    <g transform="translate(15, 70)">
+      <!-- 方向信号 -->
+      <rect x="0" y="0" width="70" height="30" rx="4" fill="#3b82f6" />
+      <text x="35" y="13" font-family="Arial, sans-serif" font-size="8" fill="#fff" text-anchor="middle">第一屏方向</text>
+      <text x="35" y="24" font-family="Arial, sans-serif" font-size="6" fill="#bfdbfe" text-anchor="middle">A1-A3</text>
+
+      <line x1="70" y1="15" x2="82" y2="15" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#arrowBlue)" />
+
+      <!-- 情景信号 -->
+      <rect x="82" y="0" width="70" height="30" rx="4" fill="#8b5cf6" />
+      <text x="117" y="13" font-family="Arial, sans-serif" font-size="8" fill="#fff" text-anchor="middle">第二屏预设</text>
+      <text x="117" y="24" font-family="Arial, sans-serif" font-size="6" fill="#ddd6fe" text-anchor="middle">★三大预设</text>
+
+      <line x1="152" y1="15" x2="164" y2="15" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowPurple)" />
+
+      <!-- A4验证 -->
+      <rect x="164" y="0" width="70" height="30" rx="4" fill="#22c55e" stroke="#fef08a" stroke-width="1" />
+      <text x="199" y="13" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#fef08a" text-anchor="middle">★A4验证</text>
+      <text x="199" y="24" font-family="Arial, sans-serif" font-size="6" fill="#bbf7d0" text-anchor="middle">二次确认</text>
+
+      <!-- 第二行 -->
+      <rect x="0" y="40" width="70" height="30" rx="4" fill="#8b5cf6" />
+      <text x="35" y="53" font-family="Arial, sans-serif" font-size="8" fill="#fff" text-anchor="middle">A5入场</text>
+      <text x="35" y="64" font-family="Arial, sans-serif" font-size="6" fill="#ddd6fe" text-anchor="middle">发出指令</text>
+
+      <line x1="70" y1="55" x2="82" y2="55" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowPurple)" />
+
+      <!-- A6时机 -->
+      <rect x="82" y="40" width="70" height="30" rx="4" fill="#f59e0b" />
+      <text x="117" y="53" font-family="Arial, sans-serif" font-size="8" fill="#1a1a2e" text-anchor="middle">★A6调整</text>
+      <text x="117" y="64" font-family="Arial, sans-serif" font-size="6" fill="#fef3c7" text-anchor="middle">实时监控</text>
+
+      <line x1="152" y1="55" x2="164" y2="55" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrowOrange)" />
+
+      <!-- A9离场 -->
+      <rect x="164" y="40" width="70" height="30" rx="4" fill="#ef4444" stroke="#fef08a" stroke-width="1" />
+      <text x="199" y="53" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#fef08a" text-anchor="middle">★A9调整</text>
+      <text x="199" y="64" font-family="Arial, sans-serif" font-size="6" fill="#fecaca" text-anchor="middle">止盈止损</text>
+    </g>
+
+    <!-- 说明 -->
+    <rect x="15" y="145" width="350" height="80" rx="4" fill="#1f1f1f" />
+    <text x="190" y="163" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">第三屏四大调整功能</text>
+    <text x="25" y="183" font-family="Arial, sans-serif" font-size="8" fill="#22c55e">① 入场时机调整 → 参考第二屏预设</text>
+    <text x="180" y="183" font-family="Arial, sans-serif" font-size="8" fill="#8b5cf6">② 加仓时机调整</text>
+    <text x="25" y="200" font-family="Arial, sans-serif" font-size="8" fill="#f59e0b">③ 止盈止损调整 → 实时追踪</text>
+    <text x="180" y="200" font-family="Arial, sans-serif" font-size="8" fill="#ef4444">④ 紧急离场</text>
+    <text x="190" y="218" font-family="Arial, sans-serif" font-size="9" fill="#a78bfa" text-anchor="middle">★ 预设是计划，调整是执行</text>
+  </g>
+
+  <!-- ==================== 底部待确认 ==================== -->
+  <g transform="translate(30, 820)">
+    <rect x="0" y="0" width="1240" height="28" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1" />
+    <text x="15" y="18" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">📋 待确认:</text>
+    <text x="80" y="18" font-family="Arial, sans-serif" font-size="9" fill="#fbbf24">波动率参数 | 情景阈值(70分) | 回撤熔断 | 分批离场比例</text>
+  </g>
+
+  <!-- ==================== 图例 ==================== -->
+  <g transform="translate(30, 860)">
+    <rect x="0" y="0" width="1240" height="40" rx="6" fill="#0f172a" stroke="#334155" stroke-width="1" />
+
+    <text x="15" y="18" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#ffffff">图例:</text>
+
+    <rect x="70" y="8" width="15" height="15" rx="3" fill="#4a90d9" />
+    <text x="90" y="20" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8">用户层</text>
+
+    <rect x="150" y="8" width="15" height="15" rx="3" fill="#7c3aed" />
+    <text x="170" y="20" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8">意图识别</text>
+
+    <rect x="240" y="8" width="15" height="15" rx="3" fill="#059669" />
+    <text x="260" y="20" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8">产物中台</text>
+
+    <rect x="330" y="8" width="15" height="15" rx="3" fill="#8b5cf6" />
+    <text x="350" y="20" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8">马丁策略</text>
+
+    <rect x="420" y="8" width="15" height="15" rx="3" fill="#ef4444" stroke="#fef08a" stroke-width="1" />
+    <text x="440" y="20" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8">A9离场</text>
+
+    <rect x="500" y="8" width="15" height="15" rx="3" fill="#22c55e" stroke="#fef08a" stroke-width="1" />
+    <text x="520" y="20" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8">A4验证</text>
+
+    <line x1="600" y1="15" x2="630" y2="15" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,3" />
+    <text x="640" y="20" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8">A9联动</text>
+
+    <rect x="720" y="8" width="15" height="15" rx="3" fill="#7c3aed" stroke="#fef08a" stroke-width="1" />
+    <text x="740" y="20" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8">双轨制</text>
+  </g>
+
+  <!-- 版本信息 -->
+  <text x="1270" y="1085" font-family="Arial, sans-serif" font-size="8" fill="#64748b" text-anchor="end">Dream Universal Gateway v2.8 | 2026-05-15 | A9 L1止损分层执行 ★</text>
+
+</svg>

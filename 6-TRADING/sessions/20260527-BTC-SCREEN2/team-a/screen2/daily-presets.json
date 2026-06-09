@@ -1,0 +1,108 @@
+{
+  "session_id": "20260527-BTC-SCREEN2",
+  "date": "2026-05-27",
+  "screen1_direction": "SHORT",
+  "screen1_score": 68,
+  "screen1_session_ref": "20260518-BTC-SCREEN1",
+  "phase0_data": {
+    "btc_price_current": 77267,
+    "btc_price_basis": 76981,
+    "price_drift_pct": 0.37,
+    "drift_status": "normal",
+    "funding_rate_direction": "neutral_to_bearish",
+    "funding_rate_note": "briefly_negative_recovering_from_46day_negative_streak",
+    "etf_flows_9day": "+2.7B_USD",
+    "etf_flows_direction": "inflow_bullish",
+    "macro_tone": "risk_off_mildly_bearish",
+    "macro_drivers": [
+      "Fed_hawkish_hold_Kevin_Warsh",
+      "tariff_escalation_trade_war",
+      "oil_above_100"
+    ],
+    "key_resistance": [
+      77800,
+      78000,
+      80000
+    ],
+    "key_support": [
+      73000,
+      74500,
+      75000
+    ],
+    "fear_greed_estimated": "fear_35_40",
+    "data_source": "tavily_api_20260527"
+  },
+  "phase1_analysis": {
+    "a1_contradiction_score": "65_35_short_favored",
+    "a2_trend_confidence": 0.62,
+    "a2_screen1_alignment_pct": 85,
+    "a3_scenarios": {
+      "S1_short_continuation": {
+        "probability": 0.45,
+        "target": 74200,
+        "scenario": "resistance_rejection"
+      },
+      "S2_squeeze": {
+        "probability": 0.3,
+        "target": 82000,
+        "scenario": "etf_driven_breakout"
+      },
+      "S3_macro_shock": {
+        "probability": 0.25,
+        "target": 71000,
+        "scenario": "fed_tariff_shock"
+      }
+    },
+    "red_team_flag": false,
+    "phase7_contingency": {
+      "trigger": "BTC_single_day_drop_gt_8pct_or_exchange_risk",
+      "action": "immediate_full_stop_loss_no_wait_TP",
+      "escalate_to": "dream-operation-director_SOP2"
+    }
+  },
+  "phase2_status": "skipped",
+  "phase2_skipped": true,
+  "phase2_skip_reason": "no_data_analysis_report_available",
+  "martingale_presets": {
+    "primary_direction": "SHORT",
+    "S1": {
+      "scenario": "short_continuation_45pct",
+      "entry_zone": "77500_78000",
+      "entry_signal": "upper_wick_volume_shrink_at_resistance",
+      "L0_position_pct": 30,
+      "TP_pct": 3.0,
+      "TP_price": 74200,
+      "SL_pct": 4.0,
+      "SL_price": 80600,
+      "grid_spacing_pct": 1.5,
+      "L1_price": 78700,
+      "L2_price": 79870,
+      "max_layers": 3,
+      "expected_RR_single": 0.75,
+      "expected_RR_multi": 1.4
+    },
+    "S2": {
+      "scenario": "squeeze_hedge_30pct",
+      "trigger": "daily_close_above_78200",
+      "action": "exit_short_stop_loss_at_80600",
+      "long_reentry": "wait_pullback_77500_78000",
+      "L0_position_pct": 20,
+      "TP_pct": 5.0,
+      "SL_pct": 3.0
+    },
+    "S3": {
+      "scenario": "macro_shock_25pct",
+      "entry_zone": "76500_77000",
+      "L0_position_pct": 25,
+      "TP_pct": 8.0,
+      "TP_price": 70000,
+      "SL_pct": 5.0,
+      "SL_price": 79500,
+      "grid_spacing_pct": 3.0
+    }
+  },
+  "recommended_action": "WAIT_FOR_ENTRY_SIGNAL",
+  "wait_condition": "BTC_touches_77500_78000_with_rejection_signal",
+  "invalidation_condition": "BTC_daily_close_above_78200",
+  "position_cap_usdt": 150
+}

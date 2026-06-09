@@ -1,0 +1,301 @@
+name: agent-collaboration-claim-guard
+
+on:
+  issue_comment:
+    types: [created, edited]
+  workflow_run:
+    workflows: [pr9-validator-agent, collab-validator-agent]
+    types: [completed]
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+  actions: read
+
+jobs:
+  validate-collaboration:
+    if: |
+      github.event.issue.pull_request &&
+      (
+        (
+          startsWith(github.event.comment.body, '[验证结论 / VALIDATION_RESULT]') &&
+          (
+            contains(github.event.comment.body, 'Governance Handoff: ledgered') ||
+            contains(github.event.comment.body, 'Governance Handoff: archived') ||
+            contains(github.event.comment.body, 'Governance Handoff: knowledge_synced')
+          )
+        ) ||
+        startsWith(github.event.comment.body, '[账本记账 / LEDGER_ENTRY]')
+      ) &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR' ||
+        github.event.comment.user.type == 'Bot' ||
+        github.event.comment.user.login == 'github-actions[bot]'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build collaboration raw payload
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const payload = context.payload;
+            const issueNumber = payload.pull_request?.number || payload.issue?.number;
+            let pr = payload.pull_request;
+            if (!pr && payload.issue?.pull_request && issueNumber) {
+              const prResponse = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: issueNumber
+              });
+              pr = prResponse.data;
+            }
+
+            const comments = [];
+            if (issueNumber) {
+              const issueComments = await github.paginate(
+                github.rest.issues.listComments,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber
+                }
+              );
+              for (const comment of issueComments) {
+                comments.push(comment.body || "");
+              }
+            }
+
+            const result = {
+              branch: String(pr?.head?.ref || ""),
+              pr_body: pr?.body || "",
+              comments
+            };
+            fs.writeFileSync(
+              "agent_collaboration_raw.json",
+              JSON.stringify(result, null, 2)
+            );
+
+      - name: Run governance ledger cycle
+        run: |
+          python3 "AGENT协作工具/github-actions/run_governance_ledger_cycle.py" \
+            "AGENT协作工具/ledger/tasks/index.json" \
+            "AGENT协作工具/ledger/rewards/index.json" \
+            < agent_collaboration_raw.json > agent_governance_cycle_result.json
+          python3 - <<'PY'
+          import json
+          import sys
+
+          result = json.load(open("agent_governance_cycle_result.json", encoding="utf-8"))
+          if result.get("decision") != "PASS":
+              print(json.dumps(result, ensure_ascii=False, indent=2))
+              sys.exit(1)
+          print(json.dumps(result, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Commit ledger updates
+        run: |
+          if git diff --quiet -- "AGENT协作工具/ledger/tasks/index.json" "AGENT协作工具/ledger/rewards/index.json"; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "AGENT协作工具/ledger/tasks/index.json" "AGENT协作工具/ledger/rewards/index.json"
+          git commit -m "chore(ledger): apply governance cycle"
+          git push origin HEAD:main
+
+  validate-collaboration-validator-run:
+    if: |
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.name == 'collab-validator-agent' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Download collab context artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: collab-context
+          path: .
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Read collab context
+        id: collab_ctx
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const ctx = JSON.parse(fs.readFileSync('collab_context.json', 'utf8'));
+            core.setOutput('pr_number', String(ctx.pr_number || ''));
+            core.setOutput('task_id', String(ctx.task_id || ''));
+            core.setOutput('head_ref', String(ctx.head_ref || ''));
+            core.setOutput('head_sha', String(ctx.head_sha || ''));
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build collaboration raw payload (validator run)
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.collab_ctx.outputs.pr_number }}
+          HEAD_REF: ${{ steps.collab_ctx.outputs.head_ref }}
+          HEAD_SHA: ${{ steps.collab_ctx.outputs.head_sha }}
+          TASK_ID: ${{ steps.collab_ctx.outputs.task_id }}
+        with:
+          script: |
+            const fs = require('fs');
+            const issueNumber = Number(process.env.PR_NUMBER);
+            const prResponse = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: issueNumber
+            });
+            const pr = prResponse.data;
+            const issueComments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              }
+            );
+            const comments = issueComments.map((c) => c.body || "");
+            const result = {
+              branch: String(process.env.HEAD_REF || pr?.head?.ref || ""),
+              pr_body: pr?.body || "",
+              comments,
+              collab_context: {
+                pr_number: String(process.env.PR_NUMBER || ""),
+                task_id: String(process.env.TASK_ID || ""),
+                head_ref: String(process.env.HEAD_REF || ""),
+                head_sha: String(process.env.HEAD_SHA || "")
+              }
+            };
+            fs.writeFileSync(
+              "agent_collaboration_raw.json",
+              JSON.stringify(result, null, 2)
+            );
+
+      - name: Run governance ledger cycle
+        run: |
+          python3 "AGENT协作工具/github-actions/run_governance_ledger_cycle.py" \
+            "AGENT协作工具/ledger/tasks/index.json" \
+            "AGENT协作工具/ledger/rewards/index.json" \
+            < agent_collaboration_raw.json > agent_governance_cycle_result.json
+          python3 - <<'PY'
+          import json
+          import sys
+
+          result = json.load(open("agent_governance_cycle_result.json", encoding="utf-8"))
+          if result.get("decision") != "PASS":
+              print(json.dumps(result, ensure_ascii=False, indent=2))
+              sys.exit(1)
+          print(json.dumps(result, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Commit ledger updates
+        run: |
+          if git diff --quiet -- "AGENT协作工具/ledger/tasks/index.json" "AGENT协作工具/ledger/rewards/index.json"; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "AGENT协作工具/ledger/tasks/index.json" "AGENT协作工具/ledger/rewards/index.json"
+          git commit -m "chore(ledger): apply governance cycle (collab validator run pr${{ steps.collab_ctx.outputs.pr_number }})"
+          git push origin HEAD:main
+
+  validate-collaboration-pr9-validator-run:
+    if: |
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.name == 'pr9-validator-agent' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build collaboration raw payload (PR9)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const issueNumber = 9;
+            const prResponse = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: issueNumber
+            });
+            const pr = prResponse.data;
+            const issueComments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              }
+            );
+            const comments = issueComments.map((c) => c.body || "");
+            const result = {
+              branch: String(pr?.head?.ref || ""),
+              pr_body: pr?.body || "",
+              comments
+            };
+            fs.writeFileSync(
+              "agent_collaboration_raw.json",
+              JSON.stringify(result, null, 2)
+            );
+
+      - name: Run governance ledger cycle
+        run: |
+          python3 "AGENT协作工具/github-actions/run_governance_ledger_cycle.py" \
+            "AGENT协作工具/ledger/tasks/index.json" \
+            "AGENT协作工具/ledger/rewards/index.json" \
+            < agent_collaboration_raw.json > agent_governance_cycle_result.json
+          python3 - <<'PY'
+          import json
+          import sys
+
+          result = json.load(open("agent_governance_cycle_result.json", encoding="utf-8"))
+          if result.get("decision") != "PASS":
+              print(json.dumps(result, ensure_ascii=False, indent=2))
+              sys.exit(1)
+          print(json.dumps(result, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Commit ledger updates
+        run: |
+          if git diff --quiet -- "AGENT协作工具/ledger/tasks/index.json" "AGENT协作工具/ledger/rewards/index.json"; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "AGENT协作工具/ledger/tasks/index.json" "AGENT协作工具/ledger/rewards/index.json"
+          git commit -m "chore(ledger): apply governance cycle (pr9 validator run)"
+          git push origin HEAD:main

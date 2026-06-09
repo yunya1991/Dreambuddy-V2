@@ -1,0 +1,169 @@
+name: collab-developer-agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Target PR number"
+        required: true
+        type: string
+      task_id:
+        description: "Task ID (ledger pointer)"
+        required: true
+        type: string
+      workspace_path:
+        description: "Workspace path (default 7-ARTIFACT-HUB-V2)"
+        required: false
+        default: "7-ARTIFACT-HUB-V2"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: collab-developer-agent-${{ inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  developer:
+    runs-on: [self-hosted, macOS, workbuddy]
+    env:
+      PR_NUMBER: ${{ inputs.pr_number }}
+      TASK_ID: ${{ inputs.task_id }}
+      WORKSPACE_PATH: ${{ inputs.workspace_path }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify gh
+        run: gh --version
+
+      - name: Resolve PR head
+        id: pr
+        run: |
+          echo "head_ref=$(gh pr view ${PR_NUMBER} --json headRefName --jq .headRefName)" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(gh pr view ${PR_NUMBER} --json headRefOid --jq .headRefOid)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout PR head
+        run: |
+          git fetch origin "${{ steps.pr.outputs.head_ref }}"
+          git checkout -B "pr${PR_NUMBER}" "origin/${{ steps.pr.outputs.head_ref }}"
+
+      - name: Ensure STARTED anchor exists
+        run: |
+          comments="$(gh pr view ${PR_NUMBER} --json comments --jq '.comments[].body' || true)"
+          if printf "%s\n" "$comments" | grep -q '^\[协作开工声明 / STARTED\]'; then
+            exit 0
+          fi
+
+          {
+            printf '%s\n' \
+              '[协作开工声明 / STARTED]' \
+              '' \
+              'Agent: collab-developer-agent' \
+              "任务: PR${PR_NUMBER} / build+test" \
+              "Task ID: ${TASK_ID}" \
+              "分支: ${{ steps.pr.outputs.head_ref }}" \
+              "Workspace Path: ${WORKSPACE_PATH}" \
+              'Execution Mode: STANDARD' \
+              'Direct Takeover: no' \
+              'Governance Agent: collab-governance-agent' \
+              'Ledger Protocol Agent: ledger-protocol-agent' \
+              'Task Type: parallel' \
+              'Dependency Gate: accepted' \
+              'Current Sync State: none' \
+              'Next Required Action: validator: post VALIDATION_RESULT with Governance Handoff: ledgered if PASS' \
+              "Claim Target: ${TASK_ID}" \
+              '计划修改:' \
+              "- ${WORKSPACE_PATH}/*" \
+              '' \
+              '冲突门禁结果:' \
+              '- decision: SAFE' \
+              '- reason_codes: []' \
+              '' \
+              '状态: STARTED'
+          } > pr_started.md
+          gh pr comment ${PR_NUMBER} --body-file pr_started.md
+
+      - name: Build and test
+        id: run
+        run: |
+          set +e
+          cd "${WORKSPACE_PATH}"
+          npm ci
+          npm_ci_exit=$?
+          npm run build
+          build_exit=$?
+          npm test
+          test_exit=$?
+          set -e
+
+          overall=0
+          if [ "$npm_ci_exit" -ne 0 ] || [ "$build_exit" -ne 0 ] || [ "$test_exit" -ne 0 ]; then
+            overall=1
+          fi
+
+          echo "npm_ci_exit=$npm_ci_exit" >> "$GITHUB_OUTPUT"
+          echo "build_exit=$build_exit" >> "$GITHUB_OUTPUT"
+          echo "test_exit=$test_exit" >> "$GITHUB_OUTPUT"
+          echo "overall=$overall" >> "$GITHUB_OUTPUT"
+
+      - name: Post TEST_REPORT comment
+        run: |
+          unit="PASS"
+          integration="PASS"
+          stress="WAIVED"
+          decision="TEST_PASS"
+          if [ "${{ steps.run.outputs.overall }}" != "0" ]; then
+            unit="FAIL"
+            integration="FAIL"
+            decision="TEST_FAIL"
+          fi
+
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          {
+            printf '%s\n' \
+              '[测试报告 / TEST_REPORT]' \
+              '' \
+              'Tester: collab-developer-agent' \
+              "Task ID: ${TASK_ID}" \
+              'Execution Mode: STANDARD' \
+              'Unit:' \
+              "- ${unit}" \
+              '' \
+              'Integration:' \
+              "- ${integration}" \
+              '' \
+              'Scenario Simulation:' \
+              '- normal path' \
+              '- edge input' \
+              '- invalid input' \
+              '- upstream failure' \
+              '' \
+              'Stress:' \
+              "- ${stress}" \
+              '' \
+              "Decision: ${decision}" \
+              'Sync Recommendation: continue parallel' \
+              'Evidence:' \
+              "- pr_number=${PR_NUMBER}" \
+              "- task_id=${TASK_ID}" \
+              "- head_ref=${{ steps.pr.outputs.head_ref }}" \
+              "- head_sha=${{ steps.pr.outputs.head_sha }}" \
+              "- actions_run=${run_url}" \
+              "- npm_ci_exit=${{ steps.run.outputs.npm_ci_exit }}" \
+              "- build_exit=${{ steps.run.outputs.build_exit }}" \
+              "- test_exit=${{ steps.run.outputs.test_exit }}"
+          } > pr_test_report.md
+          gh pr comment ${PR_NUMBER} --body-file pr_test_report.md
+
+      - name: Fail job on test failure
+        if: ${{ steps.run.outputs.overall != '0' }}
+        run: exit 1

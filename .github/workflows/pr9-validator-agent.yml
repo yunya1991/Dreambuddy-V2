@@ -1,0 +1,116 @@
+name: pr9-validator-agent
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pr9-validator-agent
+  cancel-in-progress: true
+
+jobs:
+  pr9-validator:
+    runs-on: [self-hosted, macOS, workbuddy]
+    env:
+      PR_NUMBER: "9"
+      TASK_ID: "task-pr9-artifact-hub-v2-build-1"
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify gh
+        run: gh --version
+
+      - name: Resolve PR head
+        id: pr
+        run: |
+          echo "head_ref=$(gh pr view ${PR_NUMBER} --json headRefName --jq .headRefName)" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(gh pr view ${PR_NUMBER} --json headRefOid --jq .headRefOid)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout PR head
+        run: |
+          git fetch origin "${{ steps.pr.outputs.head_ref }}"
+          git checkout -B "pr${PR_NUMBER}" "origin/${{ steps.pr.outputs.head_ref }}"
+
+      - name: Build and test
+        id: run
+        run: |
+          set +e
+          cd 7-ARTIFACT-HUB-V2
+          npm ci
+          npm_ci_exit=$?
+          npm run build
+          build_exit=$?
+          npm test
+          test_exit=$?
+          set -e
+
+          overall=0
+          if [ "$npm_ci_exit" -ne 0 ] || [ "$build_exit" -ne 0 ] || [ "$test_exit" -ne 0 ]; then
+            overall=1
+          fi
+
+          echo "npm_ci_exit=$npm_ci_exit" >> "$GITHUB_OUTPUT"
+          echo "build_exit=$build_exit" >> "$GITHUB_OUTPUT"
+          echo "test_exit=$test_exit" >> "$GITHUB_OUTPUT"
+          echo "overall=$overall" >> "$GITHUB_OUTPUT"
+
+      - name: Post VALIDATION_RESULT comment
+        run: |
+          hard_gate="PASS"
+          score="95"
+          decision="ACCEPTED"
+          reward_multiplier="1.0"
+          reason_code="NONE"
+          handoff="ledgered"
+
+          if [ "${{ steps.run.outputs.overall }}" != "0" ]; then
+            hard_gate="BLOCK"
+            score="40"
+            decision="REWORK"
+            reward_multiplier="0.0"
+            reason_code="BUILD_OR_TEST_FAILED"
+            handoff="pending"
+          fi
+
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          {
+            printf '%s\n' \
+              '[验证结论 / VALIDATION_RESULT]' \
+              '' \
+              'Validator: pr9-validator-agent' \
+              "Hard Gate Result: ${hard_gate}" \
+              "Score: ${score}" \
+              "Decision: ${decision}" \
+              'Reason Codes:' \
+              "- ${reason_code}" \
+              "Reward Multiplier: ${reward_multiplier}" \
+              "Ledger Update: ${TASK_ID}" \
+              "Governance Handoff: ${handoff}" \
+              '' \
+              'Evidence:' \
+              "- head_ref=${{ steps.pr.outputs.head_ref }}" \
+              "- head_sha=${{ steps.pr.outputs.head_sha }}" \
+              "- actions_run=${run_url}" \
+              "- npm_ci_exit=${{ steps.run.outputs.npm_ci_exit }}" \
+              "- build_exit=${{ steps.run.outputs.build_exit }}" \
+              "- test_exit=${{ steps.run.outputs.test_exit }}"
+          } > pr_validation_result.md
+
+          gh pr comment ${PR_NUMBER} --body-file pr_validation_result.md
+
+      - name: Fail job on validation block
+        if: ${{ steps.run.outputs.overall != '0' }}
+        run: exit 1

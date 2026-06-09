@@ -1,0 +1,56 @@
+{
+  "type": "contract_martingale",
+  "direction": "SHORT",
+  "score": 48,
+  "valid_until": "2026-06-09T00:00:00+08:00",
+  "skill_regime": "WEAK_BEAR",
+  "position_multiplier": 0.4,
+  "clock_stage": "STAGFLATION_LITE",
+  "btc_role": "high_beta_short",
+  "confidence_breakdown": {
+    "A_tech_detector": {
+      "score": -10,
+      "signal": "BEAR",
+      "key": "价格$73,349 < MA200，月线MACD死叉",
+      "weight": 0.40
+    },
+    "B_halving_cycle": {
+      "score": -17,
+      "signal": "BEAR",
+      "key": "阶段6去库存期 +773天，基线-15",
+      "weight": 0.15
+    },
+    "C_miner_economics": {
+      "score": -7,
+      "signal": "BEAR",
+      "key": "低于均成本-10%，Hash Ribbon金叉恢复中",
+      "weight": 0.15
+    },
+    "D_onchain_valuation": {
+      "score": 32,
+      "signal": "BULL",
+      "key": "MVRV Z=1.0 + RHODL=4.5(历史第三高) + NUPL=0.23",
+      "weight": 0.15
+    },
+    "E_macro_finance": {
+      "score": 8,
+      "signal": "BULL",
+      "key": "M2+12%背离6个月 | DXY↓100结构性 | 10Y 5%",
+      "weight": 0.10
+    },
+    "F_cross_market": {
+      "score": 2,
+      "signal": "NEUTRAL",
+      "key": "Stagflation Lite(-5) vs 领先信号(+8) 内部对冲",
+      "weight": 0.05
+    }
+  },
+  "weighted_total": 48,
+  "allocation": {
+    "BTC_SHORT": "10%",
+    "ETH_SHORT": "5%",
+    "CASH": "85%"
+  },
+  "stop_rule": "10%组合回撤止损",
+  "price_drift_warning": "前次Screen2基准$77,267，当前$73,349，漂移-5.1%，处于WARNING区间"
+}

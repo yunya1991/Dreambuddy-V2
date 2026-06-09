@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dream Bridge API 测试页面</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0a0e17; color: #e1e5eb; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #00d4ff; margin-bottom: 20px; }
+        .section { background: #151b2b; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #2a3142; }
+        h2 { color: #7b61ff; margin-bottom: 15px; font-size: 18px; }
+        button { background: linear-gradient(135deg, #00d4ff, #7b61ff); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 5px; font-size: 14px; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        pre { background: #0d1220; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 12px; margin-top: 10px; border: 1px solid #2a3142; }
+        .success { color: #00ff88; }
+        .error { color: #ff4757; }
+        .info { color: #00d4ff; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        input, select { background: #0d1220; border: 1px solid #2a3142; color: #e1e5eb; padding: 8px 12px; border-radius: 6px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌉 Dream Universal Gateway - Bridge API 测试</h1>
+        
+        <div class="section">
+            <h2>🔧 服务状态</h2>
+            <button onclick="testHealth()">健康检查</button>
+            <button onclick="testBridgeStatus()">桥接状态</button>
+            <div id="status-result"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 市场数据</h2>
+            <button onclick="testTicker()">获取行情</button>
+            <button onclick="testCandles()">获取K线</button>
+            <div id="market-result"></div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 意图路由</h2>
+            <input type="text" id="intent-input" value="买入1手BTC" style="width: 300px;">
+            <button onclick="testIntent()">路由意图</button>
+            <div id="intent-result"></div>
+        </div>
+
+        <div class="section">
+            <h2>💰 交易执行 (模拟)</h2>
+            <button onclick="testPlaceOrder()">模拟下单</button>
+            <button onclick="testGetOrders()">查询订单</button>
+            <div id="trade-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const BRIDGE_URL = 'http://127.0.0.1:3847';
+
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${BRIDGE_URL}${endpoint}`, {
+                    headers: { 'Content-Type': 'application/json' },
+                    ...options
+                });
+                return await response.json();
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testHealth() {
+            const result = await apiRequest('/api/health');
+            displayResult('status-result', result, '健康检查');
+        }
+
+        async function testBridgeStatus() {
+            const result = await apiRequest('/api/bridge/status');
+            displayResult('status-result', result, '桥接状态');
+        }
+
+        async function testTicker() {
+            const result = await apiRequest('/api/market/ticker/BTC-USDT-SWAP');
+            displayResult('market-result', result, '行情数据');
+        }
+
+        async function testCandles() {
+            const result = await apiRequest('/api/market/candles/BTC-USDT-SWAP?bar=1H&limit=5');
+            displayResult('market-result', result, 'K线数据');
+        }
+
+        async function testIntent() {
+            const text = document.getElementById('intent-input').value;
+            const result = await apiRequest('/api/intent/route', {
+                method: 'POST',
+                body: JSON.stringify({ text })
+            });
+            displayResult('intent-result', result, '意图路由');
+        }
+
+        async function testPlaceOrder() {
+            const result = await apiRequest('/api/trade/order', {
+                method: 'POST',
+                body: JSON.stringify({
+                    inst_id: 'BTC-USDT-SWAP',
+                    side: 'buy',
+                    pos_side: 'long',
+                    sz: '1',
+                    px: '95000'
+                })
+            });
+            displayResult('trade-result', result, '下单结果');
+        }
+
+        async function testGetOrders() {
+            const result = await apiRequest('/api/trade/orders');
+            displayResult('trade-result', result, '订单列表');
+        }
+
+        function displayResult(elementId, data, title) {
+            const el = document.getElementById(elementId);
+            const isSuccess = data.success !== false;
+            el.innerHTML = `
+                <h3 class="${isSuccess ? 'success' : 'error'}">${title} - ${isSuccess ? '✅ 成功' : '❌ 失败'}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+    </script>
+</body>
+</html>
