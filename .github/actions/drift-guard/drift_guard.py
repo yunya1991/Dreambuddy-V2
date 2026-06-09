@@ -1,4 +1,5 @@
 import argparse
+import fnmatch
 import hashlib
 import importlib
 import json
@@ -6,7 +7,7 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 
@@ -84,10 +85,7 @@ def _diff_files(base_sha: str, head_sha: str) -> List[str]:
 
 
 def _path_matches(pattern: str, file_path: str) -> bool:
-    try:
-        return PurePosixPath(file_path).match(pattern)
-    except Exception:
-        return False
+    return fnmatch.fnmatchcase(file_path, pattern)
 
 
 def _match_module(modules: Dict[str, Any], file_path: str) -> Optional[str]:

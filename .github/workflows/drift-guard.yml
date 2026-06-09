@@ -41,6 +41,7 @@ jobs:
           set -e
           git reset --hard
           git clean -fdx
+          git fetch origin main --depth=1
 
       - name: Run drift guard
         id: drift
@@ -49,8 +50,8 @@ jobs:
           mode: ${{ github.event_name == 'workflow_dispatch' && 'manual' || github.event_name }}
           change_class: ${{ inputs.change_class || 'mainline' }}
           config_path: .workbuddy/drift-guard.json
-          base_sha: ${{ github.event.pull_request.base.sha }}
-          head_sha: ${{ github.event.pull_request.head.sha }}
+          base_sha: ${{ github.event_name == 'pull_request' && 'origin/main' || '' }}
+          head_sha: ${{ github.event_name == 'pull_request' && 'HEAD' || '' }}
           report_json: drift_report.json
           report_md: drift_report.md
 
