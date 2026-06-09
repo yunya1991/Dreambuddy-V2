@@ -1,0 +1,31 @@
+{
+  "modules": {
+    "product_hub": {
+      "paths": ["7-产物中台/**"]
+    },
+    "trading": {
+      "paths": ["6-TRADING/**"]
+    },
+    "frontend_gateway": {
+      "paths": ["3-FRONTEND/dream-universal-gateway/**"]
+    },
+    "ci": {
+      "paths": [".github/**", ".gitignore", "docs/**", ".workbuddy/**"]
+    }
+  },
+  "change_classes": {
+    "mainline": {
+      "allowed_modules": ["product_hub", "ci"]
+    },
+    "integration": {
+      "allowed_modules": ["product_hub", "trading", "frontend_gateway", "ci"]
+    },
+    "infra": {
+      "allowed_modules": ["ci"]
+    }
+  },
+  "required_docs": [
+    "1-ARCHITECTURE/中台设计/PRODUCT_HUB.md",
+    "docs/superpowers/plans/2026-05-17-agent-standard-dev-lifecycle-implementation-plan.md"
+  ]
+}
