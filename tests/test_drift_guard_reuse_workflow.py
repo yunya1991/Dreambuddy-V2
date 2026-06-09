@@ -7,7 +7,7 @@ WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "drift-guard.yml"
 VENDORED_ACTION_DIR = REPO_ROOT / ".github" / "actions" / "drift-guard"
 EXPECTED_USES = (
     "uses: yunya1991/DREAM-AGENT/.github/workflows/"
-    "reusable-drift-guard.yml@drift-guard/v0.1.0"
+    "reusable-drift-guard.yml@drift-guard/v0.1.1"
 )
 
 

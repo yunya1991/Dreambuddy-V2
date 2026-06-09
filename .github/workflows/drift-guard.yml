@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   guard:
-    uses: yunya1991/DREAM-AGENT/.github/workflows/reusable-drift-guard.yml@drift-guard/v0.1.0
+    uses: yunya1991/DREAM-AGENT/.github/workflows/reusable-drift-guard.yml@drift-guard/v0.1.1
     permissions:
       contents: read
       pull-requests: write
