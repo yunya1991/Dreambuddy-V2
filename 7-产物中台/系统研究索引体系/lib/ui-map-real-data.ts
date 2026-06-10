@@ -100,6 +100,8 @@ export function buildOperationsUIMapOverride(): UIMapOperationsOverride | null {
   }
 }
 
+const A_PHASE_ORDER = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9"];
+
 export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
   try {
     const artifactsData = getArtifactsData();
@@ -111,6 +113,12 @@ export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
       return null;
     }
 
+    const byPhase = artifactsData.statistics.by_a_phase ?? {};
+    const activePhases = A_PHASE_ORDER.filter((phase) => (byPhase[phase] ?? 0) > 0);
+    const phaseDistribution = activePhases.length
+      ? activePhases.map((phase) => `${phase}×${byPhase[phase]}`).join(" / ")
+      : "无 A-phase 标注";
+
     const byStatus = artifactsData.statistics.by_status ?? {};
     const completedCount = Number(byStatus["completed"] ?? 0);
     const activeCount = total - completedCount;
@@ -119,14 +127,14 @@ export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
       : "";
 
     const convergenceLabel =
-      `summary-only：${strategyCount} 份策略产物沉淀（strategy_setting_result 契约待落地）`;
+      `summary-only：${strategyCount} 份策略产物沉淀（${phaseDistribution}，strategy_setting_result 契约待落地）`;
     const chain =
-      `${strategyCount} 策略设置 → ${total} 产物链条 → ${activeCount} 活跃 → 结果产物 → 索引${lastUpdated ? `（${lastUpdated}）` : ""}`;
+      `${strategyCount} 策略设置 → ${total} 产物链条（${activeCount} 活跃 / ${completedCount} 已沉淀）→ 结果产物 → 索引${lastUpdated ? `（${lastUpdated}）` : ""}`;
 
     return {
       convergenceLabel,
       chain,
-      summaryNote: "当前为摘要级接入：基于 artifacts 索引的 type=strategy 统计，敏感配置与执行状态尚未透出。",
+      summaryNote: "当前为摘要级接入：基于 artifacts 索引的 type=strategy 与 A-phase 分布统计，敏感配置与执行状态尚未透出。",
     };
   } catch {
     return null;

@@ -11,7 +11,6 @@
 import ChainMindmap from "./ChainMindmap";
 import type { StrategySummary } from "./types";
 import { buildChainSummaryPayload } from "./summary-only";
-import { getChainPhaseArtifacts } from "../../lib/content.server";
 
 export default function ChainPage({
   searchParams,
@@ -53,7 +52,7 @@ export default function ChainPage({
       activeLoop={payload.activeLoop}
       strategy={strategy}
       orgData={null}
-      phaseArtifacts={getChainPhaseArtifacts(5)}
+      phaseArtifacts={payload.phaseArtifacts}
       focusPhase={searchParams?.phase}
       focusArtifactId={searchParams?.artifact}
     />

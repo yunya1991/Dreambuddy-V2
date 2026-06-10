@@ -432,3 +432,59 @@ test("ui-map page assembly marks hero dataModeLabel with user-context override",
   assert.match(viewModel.hero.dataModeLabel, /Phase B/);
   assert.match(viewModel.hero.dataModeLabel, /用户上下文索引/);
 });
+
+test("buildStrategyUIMapOverride includes A-phase distribution in its summary-only label", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-strategy-aphase-"));
+  const tradingDir = path.join(root, "trading");
+  fs.mkdirSync(tradingDir, { recursive: true });
+
+  const artifacts = [
+    { artifact_id: "trading/s-001", title: "S1", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A3", tags: ["signal"], filename: "s1.md" },
+    { artifact_id: "trading/s-002", title: "S2", department: "trading", type: "strategy", status: "active", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: ["signal"], filename: "s2.md" },
+    { artifact_id: "trading/s-003", title: "S3", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: ["signal"], filename: "s3.md" },
+    { artifact_id: "trading/r-001", title: "R1", department: "trading", type: "research", status: "completed", date: "2026-06-08T08:00:00Z", chain_phase: "A6", tags: ["summary"], filename: "r1.md" },
+  ];
+
+  fs.writeFileSync(
+    path.join(tradingDir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts }),
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+
+  const override = buildStrategyUIMapOverride();
+  assert.ok(override !== null);
+  assert.match(override!.convergenceLabel, /A3×1/);
+  assert.match(override!.convergenceLabel, /A4×2/);
+  assert.match(override!.chain, /3 策略设置/);
+  assert.match(override!.chain, /1 活跃 /);
+  assert.match(override!.chain, /3 已沉淀/);
+
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("buildStrategyUIMapOverride shows fallback label when no A-phase annotation exists", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-strategy-no-aphase-"));
+  const tradingDir = path.join(root, "trading");
+  fs.mkdirSync(tradingDir, { recursive: true });
+
+  const artifacts = [
+    { artifact_id: "trading/s-001", title: "S1", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "", tags: [], filename: "s1.md" },
+    { artifact_id: "trading/g-001", title: "G1", department: "trading", type: "governance", status: "active", date: "2026-06-09T08:00:00Z", chain_phase: "", tags: [], filename: "g1.md" },
+  ];
+
+  fs.writeFileSync(
+    path.join(tradingDir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts }),
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+
+  const override = buildStrategyUIMapOverride();
+  assert.ok(override !== null);
+  assert.match(override!.convergenceLabel, /无 A-phase 标注/);
+
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
+});
