@@ -8,6 +8,7 @@ import { getUIMapScenario } from "../app/ui-map/ui-map-scenarios.ts";
 import { buildUIMapShellViewModel } from "../app/ui-map/ui-map-shell-view-model.ts";
 import {
   buildResearchChainUIMapOverride,
+  buildStrategyUIMapOverride,
   buildSystemResearchUIMapOverride,
   buildOperationsUIMapOverride,
 } from "./ui-map-real-data.ts";
@@ -252,4 +253,105 @@ test("ui-map shell view model prefers real-data operations summary when availabl
     "meeting：2 条最近（2026-06-10 08:01）",
     "system：1 条最近（2026-06-10 08:02）",
   ]);
+});
+
+test("buildStrategyUIMapOverride produces summary-only label from strategy typed artifacts", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-strategy-"));
+  const tradingDir = path.join(root, "trading");
+  fs.mkdirSync(tradingDir, { recursive: true });
+
+  const artifacts = [
+    { artifact_id: "trading/s-001", title: "S1", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: ["signal"], filename: "s1.md" },
+    { artifact_id: "trading/s-002", title: "S2", department: "trading", type: "strategy", status: "active", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: ["signal"], filename: "s2.md" },
+    { artifact_id: "trading/r-001", title: "R1", department: "trading", type: "research", status: "completed", date: "2026-06-08T08:00:00Z", chain_phase: "A6", tags: ["summary"], filename: "r1.md" },
+  ];
+
+  fs.writeFileSync(
+    path.join(tradingDir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts }),
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+
+  const override = buildStrategyUIMapOverride();
+
+  assert.ok(override !== null, "buildStrategyUIMapOverride should produce an override when strategy artifacts exist");
+  assert.match(override!.convergenceLabel, /summary-only/);
+  assert.match(override!.convergenceLabel, /2 份策略产物沉淀/);
+  assert.ok(override!.chain.includes("2 策略设置"));
+  assert.ok(override!.chain.includes("3 产物链条"));
+  assert.match(override!.summaryNote ?? "", /摘要级接入/);
+
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("buildStrategyUIMapOverride returns null when no strategy artifacts exist", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-empty-strategy-"));
+  const tradingDir = path.join(root, "trading");
+  fs.mkdirSync(tradingDir, { recursive: true });
+
+  const artifacts = [
+    { artifact_id: "trading/r-001", title: "R1", department: "trading", type: "research", status: "completed", date: "2026-06-08T08:00:00Z", chain_phase: "A6", tags: ["summary"], filename: "r1.md" },
+  ];
+
+  fs.writeFileSync(
+    path.join(tradingDir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts }),
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+  assert.equal(buildStrategyUIMapOverride(), null);
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("ui-map shell view model exposes strategy summaryNote through mainlineLayer", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
+    strategy: {
+      convergenceLabel: "summary-only：2 份策略产物沉淀",
+      chain: "2 策略设置 → 3 产物链条 → 1 活跃 → 结果产物 → 索引",
+      summaryNote: "当前为摘要级接入：基于 artifacts 索引的 type=strategy 统计。",
+    },
+  });
+
+  assert.equal(viewModel.mainlineLayer.summaryNote, "当前为摘要级接入：基于 artifacts 索引的 type=strategy 统计。");
+  assert.match(viewModel.mainlineLayer.convergenceLabel, /summary-only/);
+});
+
+test("ui-map page assembly includes strategy override when all four adapters are wired", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-assembly-strategy-"));
+  const tradingDir = path.join(root, "trading");
+  fs.mkdirSync(tradingDir, { recursive: true });
+
+  const artifacts = [
+    { artifact_id: "trading/s-001", title: "S1", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: ["signal"], filename: "s1.md" },
+    { artifact_id: "trading/r-001", title: "R1", department: "trading", type: "research", status: "completed", date: "2026-06-08T08:00:00Z", chain_phase: "A6", tags: ["summary"], filename: "r1.md" },
+  ];
+
+  fs.writeFileSync(
+    path.join(tradingDir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts }),
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+
+  const hub = getRealtimeHub();
+  hub.publish("dream-agent", { level: "info", message: "agent-query" });
+
+  const overrides = {
+    systemResearch: buildSystemResearchUIMapOverride(),
+    researchChain: buildResearchChainUIMapOverride(),
+    operations: buildOperationsUIMapOverride(),
+    strategy: buildStrategyUIMapOverride(),
+  };
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), overrides);
+
+  assert.match(viewModel.hero.dataModeLabel, /Phase B/);
+  assert.match(viewModel.hero.dataModeLabel, /策略主线/);
+  assert.match(viewModel.mainlineLayer.convergenceLabel, /summary-only/);
+  assert.match(viewModel.mainlineLayer.summaryNote ?? "", /摘要级接入/);
+
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
 });

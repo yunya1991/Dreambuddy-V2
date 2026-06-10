@@ -26,6 +26,11 @@ export default function UIMapShell(props: { viewModel: UIMapShellViewModel }) {
         <h2 className="mt-2 text-2xl font-bold text-slate-900">{mainlineLayer.title}</h2>
         <p className="mt-3 text-sm font-medium text-emerald-700">{mainlineLayer.convergenceLabel}</p>
         <p className="mt-4 text-sm leading-7 text-slate-700">{mainlineLayer.chain}</p>
+        {mainlineLayer.summaryNote && (
+          <p className="mt-4 rounded-xl border border-emerald-200 bg-white/60 p-3 text-xs leading-6 text-emerald-900">
+            {mainlineLayer.summaryNote}
+          </p>
+        )}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">

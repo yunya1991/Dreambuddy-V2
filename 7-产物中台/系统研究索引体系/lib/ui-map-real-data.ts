@@ -8,6 +8,7 @@ import type { RealtimeChannel } from "./types.ts";
 import type {
   UIMapOperationsOverride,
   UIMapResearchChainOverride,
+  UIMapStrategyOverride,
   UIMapSystemResearchOverride,
 } from "../app/ui-map/ui-map-shell-view-model.ts";
 
@@ -92,6 +93,39 @@ export function buildOperationsUIMapOverride(): UIMapOperationsOverride | null {
     return {
       description: `已接入真实运营事件：共 ${totalEvents} 条最近事件，覆盖 ${channelLines.length} 个通道。`,
       bullets: channelLines.slice(0, 3),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
+  try {
+    const artifactsData = getArtifactsData();
+    const byType = artifactsData.statistics.by_type ?? {};
+    const strategyCount = Number(byType["strategy"] ?? 0);
+    const total = artifactsData.total;
+
+    if (!total || !strategyCount) {
+      return null;
+    }
+
+    const byStatus = artifactsData.statistics.by_status ?? {};
+    const completedCount = Number(byStatus["completed"] ?? 0);
+    const activeCount = total - completedCount;
+    const lastUpdated = artifactsData.generated_at
+      ? new Date(artifactsData.generated_at).toISOString().replace("T", " ").slice(0, 16)
+      : "";
+
+    const convergenceLabel =
+      `summary-only：${strategyCount} 份策略产物沉淀（strategy_setting_result 契约待落地）`;
+    const chain =
+      `${strategyCount} 策略设置 → ${total} 产物链条 → ${activeCount} 活跃 → 结果产物 → 索引${lastUpdated ? `（${lastUpdated}）` : ""}`;
+
+    return {
+      convergenceLabel,
+      chain,
+      summaryNote: "当前为摘要级接入：基于 artifacts 索引的 type=strategy 统计，敏感配置与执行状态尚未透出。",
     };
   } catch {
     return null;

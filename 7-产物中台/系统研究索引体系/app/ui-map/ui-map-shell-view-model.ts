@@ -31,7 +31,7 @@ export interface UIMapShellOverrides {
 export interface UIMapShellViewModel {
   hero: { title: string; subtitle: string; dataModeLabel: string };
   sourceLayer: Array<{ title: string; description: string; bullets: string[] }>;
-  mainlineLayer: { title: string; convergenceLabel: string; chain: string };
+  mainlineLayer: { title: string; convergenceLabel: string; chain: string; summaryNote?: string };
   indexFoundation: {
     userContext: {
       title: string;
@@ -117,6 +117,7 @@ export function buildUIMapShellViewModel(
           title: "策略主线",
           convergenceLabel: overrides.strategy.convergenceLabel,
           chain: overrides.strategy.chain,
+          summaryNote: overrides.strategy.summaryNote,
         }
       : {
           title: "策略主线",
