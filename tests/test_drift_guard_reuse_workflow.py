@@ -30,6 +30,11 @@ class DriftGuardReuseWorkflowTests(unittest.TestCase):
 
         self.assertIn("tests/**", config["modules"]["ci"]["paths"])
 
+    def test_config_allows_agent_collaboration_tools_as_ci_scope(self):
+        config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+
+        self.assertIn("AGENT协作工具/**", config["modules"]["ci"]["paths"])
+
 
 if __name__ == "__main__":
     unittest.main()
