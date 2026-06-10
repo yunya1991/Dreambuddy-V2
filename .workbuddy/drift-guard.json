@@ -10,7 +10,7 @@
       "paths": ["3-FRONTEND/dream-universal-gateway/**"]
     },
     "ci": {
-      "paths": [".github/**", ".gitignore", "docs/**", ".workbuddy/**", "tests/**"]
+      "paths": [".github/**", ".gitignore", "docs/**", ".workbuddy/**", "tests/**", "AGENT协作工具/**"]
     }
   },
   "change_classes": {
