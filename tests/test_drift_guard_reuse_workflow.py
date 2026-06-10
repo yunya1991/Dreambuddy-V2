@@ -9,9 +9,9 @@ VENDORED_ACTION_DIR = REPO_ROOT / ".github" / "actions" / "drift-guard"
 CONFIG_PATH = REPO_ROOT / ".workbuddy" / "drift-guard.json"
 EXPECTED_USES = (
     "uses: yunya1991/DREAM-AGENT/.github/workflows/"
-    "reusable-drift-guard.yml@drift-guard/v0.1.2"
+    "reusable-drift-guard.yml@drift-guard/v0.1.3"
 )
-EXPECTED_SOURCE_REF = "source_ref: drift-guard/v0.1.2"
+EXPECTED_SOURCE_REF = "source_ref: drift-guard/v0.1.3"
 
 
 class DriftGuardReuseWorkflowTests(unittest.TestCase):
