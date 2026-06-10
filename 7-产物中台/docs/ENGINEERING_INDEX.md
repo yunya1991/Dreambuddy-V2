@@ -4,7 +4,8 @@
 
 - `7-产物中台` 是当前产物中台总容器。
 - `系统研究索引体系` 是已经归位的现有实现工程。
-- `ui-map`、`用户上下文索引系统`、`策略主线`、`系统研究链路`、`系统运营链路` 是后续按模块推进的目标目录。
+- `ui-map` 独立中台首页已进入 Phase B 真实数据接入阶段，当前已接入：系统研究索引、研究链路、运营链路三个模块。
+- `ui-map/`、`用户上下文索引系统/`、`策略主线/`、`系统研究链路/`、`系统运营链路/` 仍作为模块预留目录存在，具体实现集中在 `系统研究索引体系/app/ui-map/`。
 
 ## 当前文档主线
 
@@ -23,16 +24,24 @@
 - `系统研究索引体系/`
 - 已归位的老中台实现工程，当前可运行并负责系统研究索引能力。
 - `当前 ui-map 的真实实现入口位于：系统研究索引体系/app/ui-map/`
+- 核心实现文件：
+- `app/ui-map/page.tsx`：服务端装配入口，调用三个真实数据 adapter。
+- `app/ui-map/UIMapShell.tsx`：纯渲染壳层，消费 view-model。
+- `app/ui-map/ui-map-shell-view-model.ts`：view-model 生成，支持 fixture / real-data 双入口。
+- `app/ui-map/ui-map-scenarios.ts`：场景 fixture，降级模式保留。
+- `lib/ui-map-real-data.ts`：三个真实数据 adapter（系统研究索引、研究链路、运营链路）。
+- `lib/content.server.ts`：系统研究产物索引与关系数据源。
+- `lib/realtime-hub.ts`：运营事件实时数据源。
 - `ui-map/`
 - 独立中台首页模块预留目录；当前仍以规划占位为主，不是主实现目录。
 - `用户上下文索引系统/`
-- 用户配置、记忆、执行上下文承载模块预留目录。
+- 用户配置、记忆、执行上下文承载模块预留目录；当前未接入真实数据。
 - `策略主线/`
-- 策略统一收口与主链承接模块预留目录。
+- 策略统一收口与主链承接模块预留目录；当前仍使用 view-model 层固定语义。
 - `系统研究链路/`
-- 系统研究链路透视模块预留目录。
+- 系统研究链路透视模块预留目录；真实数据由 `lib/ui-map-real-data.ts` 中 `buildResearchChainUIMapOverride` 提供。
 - `系统运营链路/`
-- 系统运营链路透视模块预留目录。
+- 系统运营链路透视模块预留目录；真实数据由 `lib/ui-map-real-data.ts` 中 `buildOperationsUIMapOverride` 提供。
 
 ## 协作者先看
 
@@ -41,3 +50,10 @@
 - 再看 `docs/superpowers/specs/2026-05-22-product-hub-directory-migration-design.md`。
 - 若要改 `ui-map` 页面实现，请优先进入 `系统研究索引体系/app/ui-map/`，不要误改 `ui-map/` 预留目录。
 - 若要追溯旧文档，请查看 `docs/archive/README.md` 提示并通过 `git` 历史查询。
+
+## ui-map 模块状态（2026-06-10）
+
+- **Phase A（壳层）**：已稳定。路由 `/ui-map`、`UIMapShell`、场景切换、语义分层均已验证（`ui-map-shell-view-model.test.ts` 10 个测试通过）。
+- **Phase B（真实数据接入）**：系统研究索引、研究链路、运营链路三个模块已接入，每个模块均具备 fixture 降级模式。
+- **未接入**：策略主线、用户上下文索引系统。策略主线仍使用 view-model 层固定语义；用户上下文索引系统暂不开放敏感配置。
+- **测试覆盖**：`lib/ui-map-real-data.test.ts` 10 个测试覆盖真实数据注入与降级行为。

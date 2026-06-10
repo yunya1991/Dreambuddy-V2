@@ -39,16 +39,18 @@
 
 当前 `ui-map` 已经具备以下能力：
 
-- 路由入口已存在：`系统研究索引体系/app/ui-map/page.tsx`
+- 路由入口已存在：`系统研究索引体系/app/ui-map/page.tsx`（服务端装配入口，调用三个真实数据 adapter）
 - 页面壳已存在：`系统研究索引体系/app/ui-map/UIMapShell.tsx`
 - 客户端壳已存在：`系统研究索引体系/app/ui-map/UIMapClient.tsx`
-- 壳层 view-model 已存在：`系统研究索引体系/app/ui-map/ui-map-shell-view-model.ts`
-- 当前数据仍以场景 fixture 为主：`系统研究索引体系/app/ui-map/ui-map-scenarios.ts`
+- 壳层 view-model 已存在：`系统研究索引体系/app/ui-map/ui-map-shell-view-model.ts`（支持 fixture / real-data 双入口）
+- 场景 fixture 已存在：`系统研究索引体系/app/ui-map/ui-map-scenarios.ts`（继续承担降级模式）
+- 真实数据 adapter 已存在：`系统研究索引体系/lib/ui-map-real-data.ts`（三个 adapter：系统研究索引、研究链路、运营链路）
 
 这意味着当前阶段属于：
 
-- `Phase A`: 前端壳与语义结构已成型
-- `Phase B`: 真实数据接入尚未正式落地
+- `Phase A`: 前端壳与语义结构已稳定
+- `Phase B`: 真实数据接入已部分落地（系统研究索引、研究链路、运营链路）
+- `Phase B 待落地`: 策略主线、用户上下文索引系统
 
 ## 4. Integration Principle
 
@@ -104,6 +106,7 @@
 当前可复用锚点：
 
 - `系统研究索引体系/lib/content.server.ts`
+- `系统研究索引体系/lib/ui-map-real-data.ts` → `buildSystemResearchUIMapOverride()`
 
 该模块已提供：
 
@@ -112,19 +115,41 @@
 - `getArtifactRelations()`
 - `getChainPhaseArtifacts()`
 
-因此，本模块的正式职责是：
+已实现能力：
+
+- 生成 `系统研究索引体系` 卡片所需摘要（产物数、部门数、阶段数）
+- 生成系统研究链路的阶段关系与产物关系
+- 无数据时自动降级为 Phase A 壳层语义
+
+本模块的正式职责是：
 
 - 生成 `系统研究索引体系` 卡片所需摘要
 - 生成 `系统研究链路` 的阶段关系与产物关系
 - 为后续系统策略来源提供“真实研究结果存在性”证据
 
-### 5.2 系统运营链路
+### 5.2 系统研究链路（透视层）
 
-这是第二批适合接入的真实数据。
+这是 `系统研究索引体系` 的透视延伸模块，已在 Phase B 中与系统研究索引一起落地。
+
+当前可复用锚点：
+
+- `系统研究索引体系/lib/ui-map-real-data.ts` → `buildResearchChainUIMapOverride()`
+- 底层数据来自 `content.server.ts` 的 `getArtifactRelations()` + `getChainPhaseArtifacts()`
+
+已实现能力：
+
+- 按阶段分组展示研究产物关系
+- 展示阶段覆盖与每个阶段的产物数量
+- 无关系数据时降级为空壳卡片
+
+### 5.3 系统运营链路
+
+这是第二批适合接入的真实数据，已在 Phase B 中落地。
 
 当前可复用锚点：
 
 - `系统研究索引体系/lib/realtime-hub.ts`
+- `系统研究索引体系/lib/ui-map-real-data.ts` → `buildOperationsUIMapOverride()`
 
 该模块已提供：
 
@@ -132,12 +157,14 @@
 - `subscribe()`
 - `getRecentEvents()`
 
-因此，本模块的正式职责是：
+已实现能力：
 
-- 为 `系统运营链路` 提供最近事件、状态变化、通道快照
+- 从 `realtime-hub` 读取最近事件
+- 按通道（dream-agent / meeting / system）汇总事件数量与最近时间戳
+- 无事件时自动降级为空壳卡片
 - 作为“前端进入 -> 策略收口 -> 执行 -> 结果入索引”这条透视链的实时事件来源
 
-### 5.3 策略主线
+### 5.4 策略主线
 
 `策略主线` 是业务核心，但当前仍缺统一的真实数据契约。
 
@@ -150,7 +177,7 @@
 
 在这些对象没有成型前，`策略主线` 仍允许暂时使用 view-model 层的固定语义。
 
-### 5.4 用户上下文索引系统
+### 5.5 用户上下文索引系统
 
 该模块当前在设计层面是清楚的，但真实数据锚点尚不如系统研究索引稳定。
 
@@ -164,28 +191,32 @@
 
 ## 6. Server Adapter Boundary
 
-`ui-map` 的真实数据接入必须新增或复用一个服务端 adapter 层。
+`ui-map` 的真实数据接入通过一个集中的服务端 adapter 层完成。该层已在 `系统研究索引体系/lib/ui-map-real-data.ts` 中落地，包含三个 adapter：
 
-推荐职责如下：
+- `buildSystemResearchUIMapOverride()` → 系统研究索引摘要
+- `buildResearchChainUIMapOverride()` → 研究链路阶段与关系摘要
+- `buildOperationsUIMapOverride()` → 运营事件通道摘要
 
-- 读取系统研究索引数据
-- 读取实时事件数据
-- 在可用时读取策略主线摘要
-- 在可用时读取用户上下文摘要
-- 统一生成 `UIMapShellViewModel` 所需真实数据版本
+adapters 职责如下：
 
-建议边界如下：
+- 从 `content.server.ts` 读取系统研究索引与关系数据（已实现）
+- 从 `realtime-hub.ts` 读取实时事件数据（已实现）
+- 在可用时读取策略主线摘要（待实现）
+- 在可用时读取用户上下文摘要（待实现）
+- 统一生成 `UIMapShellViewModel` 所需的 override 对象（null 表示“降级为 fixture”）
+
+固定边界（代码现状已对齐，遵循以下约束）：
 
 - `UIMapShell.tsx`
-  - 只负责展示
+  - 只负责展示，不直接碰数据
 - `UIMapClient.tsx`
-  - 只负责场景切换、模式切换和客户端交互
+  - 只负责场景切换和客户端交互
 - `ui-map-shell-view-model.ts`
-  - 继续承接 view-model 生成，但应允许“fixture mode / real-data mode”双入口
-- `lib/*`
-  - 继续承接底层数据读取
+  - 继续承接 view-model 生成，已实现“fixture mode / real-data mode”双入口（通过 `overrides` 对象）
+- `lib/ui-map-real-data.ts`
+  - 承接真实数据聚合与降级判断
 - `app/ui-map/page.tsx`
-  - 作为服务端装配入口
+  - 作为服务端装配入口，负责调用三个 adapter 并传入 view-model
 
 ## 7. Real Data Mode Contract
 
@@ -221,28 +252,37 @@
 
 ## 8. Acceptance Boundary
 
-真实数据接入完成，不以“页面有数据”为完成标准，而以以下条件为准：
+真实数据接入完成，不以“页面有数据”为完成标准，而以以下条件为准。当前已达成部分已标注 ✅，未达成部分标注 ⏳。
 
-### 8.1 系统研究索引体系
+### 8.1 系统研究索引体系 ✅
 
 - 页面卡片能展示真实系统研究摘要
 - 页面能根据真实关系数据渲染研究链路摘要
 - 不再完全依赖 fixture 才能展示该模块
 
-### 8.2 系统运营链路
+### 8.2 系统研究链路（透视层）✅
+
+- 页面能根据真实关系数据渲染阶段分组摘要
+- 能展示阶段覆盖与每阶段产物数量
+- 无关系数据时能降级为空壳卡片而不崩溃
+
+### 8.3 系统运营链路 ✅
 
 - 页面能展示最近事件或最近状态变化
+- 按通道（dream-agent / meeting / system）汇总事件数量与最近时间戳
 - 实时数据源断开时，页面能降级而不是崩溃
 
-### 8.3 策略主线
+### 8.4 策略主线 ⏳
 
 - 页面展示的主线状态来自真实对象摘要，而不是纯固定文案
 - 若真实对象暂不可用，应显式标记为 `summary-only` 或 `fixture-backed`
+- 需先定义标准对象：`strategy_setting_result` / `strategy_task_ticket` / `execution_status` / `result_artifact_reference`
 
-### 8.4 用户上下文索引系统
+### 8.5 用户上下文索引系统 ⏳
 
 - 只能展示经过脱敏和摘要化的上下文信息
 - 不允许把敏感配置直接透出到 `ui-map`
+- 需先明确用户配置读取路径与可暴露字段边界
 
 ## 9. Explicit Non-Goals
 
@@ -255,18 +295,18 @@
 
 ## 10. Recommended Phase B Order
 
-后续真实数据接入按以下顺序推进：
+真实数据接入按以下顺序推进：
 
-1. `系统研究索引体系`
-   - 复用 `content.server.ts`
-2. `系统研究链路`
-   - 复用 artifact relations / chain phase 数据
-3. `系统运营链路`
-   - 接 `realtime-hub.ts`
-4. `策略主线`
+1. `系统研究索引体系` ✅
+   - 复用 `content.server.ts`，由 `buildSystemResearchUIMapOverride()` 提供
+2. `系统研究链路` ✅
+   - 复用 artifact relations / chain phase 数据，由 `buildResearchChainUIMapOverride()` 提供
+3. `系统运营链路` ✅
+   - 接 `realtime-hub.ts`，由 `buildOperationsUIMapOverride()` 提供
+4. `策略主线` ⏳
    - 先定义标准对象，再接真实摘要
-5. `用户上下文索引系统`
-   - 先定义脱敏摘要，再接真实数据
+5. `用户上下文索引系统` ⏳
+   - 先定义脱敏摘要与敏感字段边界，再接真实数据
 
 ## 11. Reader Shortcut
 
@@ -275,6 +315,11 @@
 - 壳继续在 `app/ui-map/`
 - 真实研究数据先接 `lib/content.server.ts`
 - 真实运营事件先接 `lib/realtime-hub.ts`
-- `page.tsx` 负责服务端装配
+- 真实数据聚合由 `lib/ui-map-real-data.ts` 中三个 adapter 完成
+  - `buildSystemResearchUIMapOverride()` → 系统研究索引摘要
+  - `buildResearchChainUIMapOverride()` → 研究链路阶段与关系摘要
+  - `buildOperationsUIMapOverride()` → 运营事件通道摘要
+- `page.tsx` 负责服务端装配（调用三个 adapter 并传入 view-model）
+- `ui-map-shell-view-model.ts` 支持 fixture / real-data 双入口（通过 `overrides` 对象，null 表示降级）
 - `UIMapShell.tsx` 不直接碰真实数据源
 - `scenario` 不能删，只能作为降级模式继续存在

@@ -15,10 +15,17 @@ export interface UIMapOperationsOverride {
   bullets: string[];
 }
 
+export interface UIMapStrategyOverride {
+  convergenceLabel: string;
+  chain: string;
+  summaryNote?: string;
+}
+
 export interface UIMapShellOverrides {
   systemResearch?: UIMapSystemResearchOverride | null;
   researchChain?: UIMapResearchChainOverride | null;
   operations?: UIMapOperationsOverride | null;
+  strategy?: UIMapStrategyOverride | null;
 }
 
 export interface UIMapShellViewModel {
@@ -79,6 +86,7 @@ export function buildUIMapShellViewModel(
   if (overrides.systemResearch) realDataSources.push("系统研究索引");
   if (overrides.researchChain) realDataSources.push("研究链路");
   if (overrides.operations) realDataSources.push("运营链路");
+  if (overrides.strategy) realDataSources.push("策略主线");
 
   const phaseLabel = realDataSources.length
     ? `Phase B · 已接入：${realDataSources.join("、")}`
@@ -104,11 +112,17 @@ export function buildUIMapShellViewModel(
         bullets: scenario.systemStrategyBullets,
       },
     ],
-    mainlineLayer: {
-      title: "策略主线",
-      convergenceLabel: "通过交易设置实现策略收口",
-      chain: "策略设置成功 → 策略任务单 → 交易链条 → 交易执行 → 结果产物 → 索引",
-    },
+    mainlineLayer: overrides.strategy
+      ? {
+          title: "策略主线",
+          convergenceLabel: overrides.strategy.convergenceLabel,
+          chain: overrides.strategy.chain,
+        }
+      : {
+          title: "策略主线",
+          convergenceLabel: "通过交易设置实现策略收口",
+          chain: "策略设置成功 → 策略任务单 → 交易链条 → 交易执行 → 结果产物 → 索引",
+        },
     indexFoundation: {
       userContext: {
         title: "用户上下文索引系统",

@@ -114,3 +114,54 @@ test("perspective layer prefers real-data research chain override when available
     "A6：1 个产物",
   ]);
 });
+
+test("mainline layer keeps fixed strategy text when no override is provided", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"));
+
+  assert.equal(viewModel.mainlineLayer.title, "策略主线");
+  assert.equal(viewModel.mainlineLayer.convergenceLabel, "通过交易设置实现策略收口");
+  assert.match(viewModel.mainlineLayer.chain, /策略设置成功/);
+});
+
+test("mainline layer prefers real-data strategy override when available", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
+    strategy: {
+      convergenceLabel: "summary-only：strategy_setting_result 契约待落地",
+      chain: "策略设置 → 任务单 → 交易链条 → 执行 → 结果产物 → 索引",
+    },
+  });
+
+  assert.equal(viewModel.mainlineLayer.title, "策略主线");
+  assert.equal(
+    viewModel.mainlineLayer.convergenceLabel,
+    "summary-only：strategy_setting_result 契约待落地",
+  );
+  assert.match(viewModel.mainlineLayer.chain, /策略设置/);
+});
+
+test("hero dataModeLabel includes 策略主线 when strategy override is present", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
+    systemResearch: {
+      description: "已接入真实系统研究数据：9 个产物，覆盖 4 个部门、3 个阶段。",
+      bullets: ["系统研究结果沉淀：9 个真实产物", "关系链路覆盖：7 条关系，3 个阶段", "平台能力覆盖：4 个部门"],
+    },
+    strategy: {
+      convergenceLabel: "summary-only：策略主线真实数据接入测试",
+      chain: "策略设置 → 任务单 → 交易链条",
+    },
+  });
+
+  assert.match(viewModel.hero.dataModeLabel, /Phase B/);
+  assert.match(viewModel.hero.dataModeLabel, /策略主线/);
+});
+
+test("hero keeps Phase A label when only explicit null overrides are passed (strategy included)", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
+    systemResearch: null,
+    researchChain: null,
+    operations: null,
+    strategy: null,
+  });
+
+  assert.equal(viewModel.hero.dataModeLabel, "Phase A · 纯场景壳模式");
+});
