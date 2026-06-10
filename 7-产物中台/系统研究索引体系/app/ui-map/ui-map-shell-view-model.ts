@@ -22,7 +22,7 @@ export interface UIMapShellOverrides {
 }
 
 export interface UIMapShellViewModel {
-  hero: { title: string; subtitle: string };
+  hero: { title: string; subtitle: string; dataModeLabel: string };
   sourceLayer: Array<{ title: string; description: string; bullets: string[] }>;
   mainlineLayer: { title: string; convergenceLabel: string; chain: string };
   indexFoundation: {
@@ -75,10 +75,22 @@ export function buildUIMapShellViewModel(
         bullets: [] as string[],
       };
 
+  const realDataSources: string[] = [];
+  if (overrides.systemResearch) realDataSources.push("系统研究索引");
+  if (overrides.researchChain) realDataSources.push("研究链路");
+  if (overrides.operations) realDataSources.push("运营链路");
+
+  const phaseLabel = realDataSources.length
+    ? `Phase B · 已接入：${realDataSources.join("、")}`
+    : "Phase A · 纯场景壳模式";
+
   return {
     hero: {
       title: "UI-Map 独立中台首页",
-      subtitle: `当前场景：${scenario.label}。先稳定前端壳，再按模块逐块落地。`,
+      subtitle: realDataSources.length
+        ? `当前场景：${scenario.label}。${phaseLabel}，其余模块继续以壳模式展示。`
+        : `当前场景：${scenario.label}。先稳定前端壳，再按模块逐块落地。`,
+      dataModeLabel: phaseLabel,
     },
     sourceLayer: [
       {

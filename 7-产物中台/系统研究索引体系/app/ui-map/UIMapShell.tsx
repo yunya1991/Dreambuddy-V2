@@ -7,7 +7,10 @@ export default function UIMapShell(props: { viewModel: UIMapShellViewModel }) {
   return (
     <div className="space-y-8">
       <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">独立中台首页</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">独立中台首页</span>
+          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{hero.dataModeLabel}</span>
+        </div>
         <h1 className="mt-4 text-3xl font-bold text-slate-900">{hero.title}</h1>
         <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">{hero.subtitle}</p>
       </section>

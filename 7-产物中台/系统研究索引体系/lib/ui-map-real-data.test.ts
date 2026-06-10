@@ -184,6 +184,47 @@ test("buildOperationsUIMapOverride summaries include realtime event counts and t
   assert.ok(override!.bullets.some((b) => b.startsWith("system：1 条最近")));
 });
 
+test("ui-map page assembly produces Phase B shell when real artifact data and realtime events are present", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-assembly-"));
+  const tradingDir = path.join(root, "trading");
+  fs.mkdirSync(tradingDir, { recursive: true });
+
+  const artifacts = [
+    { artifact_id: "trading/t-001", title: "T1", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: ["signal"], filename: "t1.md" },
+    { artifact_id: "trading/t-002", title: "T2", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: ["signal"], filename: "t2.md" },
+    { artifact_id: "trading/t-003", title: "T3", department: "trading", type: "research", status: "completed", date: "2026-06-08T08:00:00Z", chain_phase: "A6", tags: ["summary"], filename: "t3.md" },
+  ];
+
+  fs.writeFileSync(
+    path.join(tradingDir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts })
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+
+  const hub = getRealtimeHub();
+  hub.publish("dream-agent", { level: "info", message: "agent-query" });
+  hub.publish("meeting", { level: "info", message: "meeting-start" });
+  hub.publish("system", { level: "info", message: "status-ping" });
+
+  const overrides = {
+    systemResearch: buildSystemResearchUIMapOverride(),
+    researchChain: buildResearchChainUIMapOverride(),
+    operations: buildOperationsUIMapOverride(),
+  };
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), overrides);
+
+  assert.match(viewModel.hero.dataModeLabel, /Phase B/);
+  assert.match(viewModel.hero.subtitle, /Phase B/);
+  assert.match(viewModel.indexFoundation.systemResearch.description, /已接入真实系统研究数据/);
+  assert.ok(viewModel.indexFoundation.systemResearch.bullets.some((b) => b.includes("真实产物")));
+  assert.match(viewModel.perspectiveLayer[0]?.description ?? "", /已接入真实研究链路数据/);
+  assert.match(viewModel.perspectiveLayer[1]?.description ?? "", /已接入真实运营事件/);
+
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
 test("ui-map shell view model keeps operations card as fallback when no override provided", () => {
   const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
     operations: null,
