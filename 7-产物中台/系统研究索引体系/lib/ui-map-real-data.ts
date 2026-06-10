@@ -3,7 +3,10 @@ import {
   getArtifactsData,
   getChainPhaseArtifacts,
 } from "./content.server.ts";
+import { getRealtimeHub } from "./realtime-hub.ts";
+import type { RealtimeChannel } from "./types.ts";
 import type {
+  UIMapOperationsOverride,
   UIMapResearchChainOverride,
   UIMapSystemResearchOverride,
 } from "../app/ui-map/ui-map-shell-view-model.ts";
@@ -56,6 +59,39 @@ export function buildResearchChainUIMapOverride(): UIMapResearchChainOverride | 
         `阶段覆盖：${phases.slice(0, 3).join(" → ")}${phases.length > 3 ? `（共 ${phases.length} 阶段）` : ""}`,
         ...topPhaseLines,
       ],
+    };
+  } catch {
+    return null;
+  }
+}
+
+const OPERATIONS_CHANNELS: RealtimeChannel[] = ["dream-agent", "meeting", "system"];
+
+export function buildOperationsUIMapOverride(): UIMapOperationsOverride | null {
+  try {
+    const hub = getRealtimeHub();
+    const channelSummaries = OPERATIONS_CHANNELS.map((channel) => ({
+      channel,
+      events: hub.getRecentEvents(channel),
+    }));
+
+    const totalEvents = channelSummaries.reduce((sum, item) => sum + item.events.length, 0);
+
+    if (!totalEvents) {
+      return null;
+    }
+
+    const channelLines = channelSummaries
+      .filter((item) => item.events.length > 0)
+      .map((item) => {
+        const latest = item.events[item.events.length - 1];
+        const timestamp = new Date(latest.timestamp).toISOString().replace("T", " ").slice(0, 16);
+        return `${item.channel}：${item.events.length} 条最近（${timestamp}）`;
+      });
+
+    return {
+      description: `已接入真实运营事件：共 ${totalEvents} 条最近事件，覆盖 ${channelLines.length} 个通道。`,
+      bullets: channelLines.slice(0, 3),
     };
   } catch {
     return null;

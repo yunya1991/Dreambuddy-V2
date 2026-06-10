@@ -10,9 +10,15 @@ export interface UIMapResearchChainOverride {
   bullets: string[];
 }
 
+export interface UIMapOperationsOverride {
+  description: string;
+  bullets: string[];
+}
+
 export interface UIMapShellOverrides {
   systemResearch?: UIMapSystemResearchOverride | null;
   researchChain?: UIMapResearchChainOverride | null;
+  operations?: UIMapOperationsOverride | null;
 }
 
 export interface UIMapShellViewModel {
@@ -54,6 +60,18 @@ export function buildUIMapShellViewModel(
     : {
         title: "系统研究链路",
         description: "展示固定研究流程、系统策略形成过程和研究产物关系。",
+        bullets: [] as string[],
+      };
+
+  const operationsCard = overrides.operations
+    ? {
+        title: "系统运营链路",
+        description: overrides.operations.description,
+        bullets: overrides.operations.bullets,
+      }
+    : {
+        title: "系统运营链路",
+        description: "展示前端进入、策略收口、上下文调用、执行和索引更新。",
         bullets: [] as string[],
       };
 
@@ -100,9 +118,9 @@ export function buildUIMapShellViewModel(
         bullets: researchChainCard.bullets,
       },
       {
-        title: "系统运营链路",
-        description: "展示前端进入、策略收口、上下文调用、执行和索引更新。",
-        bullets: [] as string[],
+        title: operationsCard.title,
+        description: operationsCard.description,
+        bullets: operationsCard.bullets,
       },
     ],
   };

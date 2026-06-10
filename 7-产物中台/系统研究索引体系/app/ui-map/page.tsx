@@ -2,6 +2,7 @@ import UIMapClient from "./UIMapClient";
 import { getUIMapScenario, type UIMapScenarioId } from "./ui-map-scenarios.ts";
 import { buildUIMapShellViewModel } from "./ui-map-shell-view-model.ts";
 import {
+  buildOperationsUIMapOverride,
   buildResearchChainUIMapOverride,
   buildSystemResearchUIMapOverride,
 } from "../../lib/ui-map-real-data.ts";
@@ -17,6 +18,7 @@ export default function UIMapPage({
   const viewModel = buildUIMapShellViewModel(scenario, {
     systemResearch: buildSystemResearchUIMapOverride(),
     researchChain: buildResearchChainUIMapOverride(),
+    operations: buildOperationsUIMapOverride(),
   });
 
   return <UIMapClient scenarioId={scenario.id as UIMapScenarioId} viewModel={viewModel} />;

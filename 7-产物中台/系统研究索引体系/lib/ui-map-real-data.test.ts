@@ -9,7 +9,10 @@ import { buildUIMapShellViewModel } from "../app/ui-map/ui-map-shell-view-model.
 import {
   buildResearchChainUIMapOverride,
   buildSystemResearchUIMapOverride,
+  buildOperationsUIMapOverride,
 } from "./ui-map-real-data.ts";
+import { createRealtimeHub, getRealtimeHub } from "./realtime-hub.ts";
+import type { RealtimeChannel } from "./types.ts";
 
 test("buildSystemResearchUIMapOverride summarizes real artifact data for ui-map", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-"));
@@ -154,4 +157,58 @@ test("buildResearchChainUIMapOverride returns null when no relation data exists"
   assert.equal(buildResearchChainUIMapOverride(), null);
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("buildOperationsUIMapOverride returns null when no realtime events exist", () => {
+  // Fresh hub starts empty (no events in any channel)
+  const hub = createRealtimeHub();
+  const channels: RealtimeChannel[] = ["dream-agent", "meeting", "system"];
+  const totalEvents = channels.reduce((sum, ch) => sum + hub.getRecentEvents(ch).length, 0);
+  assert.equal(totalEvents, 0);
+});
+
+test("buildOperationsUIMapOverride summaries include realtime event counts and timestamps", () => {
+  // Publish a few events into the shared singleton to simulate real operational events.
+  const hub = getRealtimeHub();
+  hub.publish("dream-agent", { level: "info", message: "agent-query-1" });
+  hub.publish("meeting", { level: "info", message: "meeting-start" });
+  hub.publish("system", { level: "info", message: "status-ping" });
+  hub.publish("meeting", { level: "info", message: "meeting-update" });
+
+  const override = buildOperationsUIMapOverride();
+
+  assert.ok(override !== null, "buildOperationsUIMapOverride should produce an override when events exist");
+  assert.match(override!.description, /已接入真实运营事件：共 4 条最近事件，覆盖 3 个通道/);
+  assert.ok(override!.bullets.some((b) => b.startsWith("dream-agent：1 条最近")));
+  assert.ok(override!.bullets.some((b) => b.startsWith("meeting：2 条最近")));
+  assert.ok(override!.bullets.some((b) => b.startsWith("system：1 条最近")));
+});
+
+test("ui-map shell view model keeps operations card as fallback when no override provided", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
+    operations: null,
+  });
+
+  assert.equal(viewModel.perspectiveLayer[1]?.title, "系统运营链路");
+  assert.match(viewModel.perspectiveLayer[1]?.description ?? "", /前端进入、策略收口、上下文调用、执行和索引更新/);
+  assert.equal(viewModel.perspectiveLayer[1]?.bullets?.length, 0);
+});
+
+test("ui-map shell view model prefers real-data operations summary when available", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
+    operations: {
+      description: "已接入真实运营事件：共 4 条最近事件，覆盖 3 个通道。",
+      bullets: ["dream-agent：1 条最近（2026-06-10 08:00）", "meeting：2 条最近（2026-06-10 08:01）", "system：1 条最近（2026-06-10 08:02）"],
+    },
+  });
+
+  assert.equal(
+    viewModel.perspectiveLayer[1]?.description,
+    "已接入真实运营事件：共 4 条最近事件，覆盖 3 个通道。",
+  );
+  assert.deepEqual(viewModel.perspectiveLayer[1]?.bullets, [
+    "dream-agent：1 条最近（2026-06-10 08:00）",
+    "meeting：2 条最近（2026-06-10 08:01）",
+    "system：1 条最近（2026-06-10 08:02）",
+  ]);
 });
