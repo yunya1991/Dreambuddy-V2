@@ -53,7 +53,11 @@
 
 ## ui-map 模块状态（2026-06-10）
 
-- **Phase A（壳层）**：已稳定。路由 `/ui-map`、`UIMapShell`、场景切换、语义分层均已验证（`ui-map-shell-view-model.test.ts` 10 个测试通过）。
-- **Phase B（真实数据接入）**：系统研究索引、研究链路、运营链路三个模块已接入，每个模块均具备 fixture 降级模式。
-- **未接入**：策略主线、用户上下文索引系统。策略主线仍使用 view-model 层固定语义；用户上下文索引系统暂不开放敏感配置。
-- **测试覆盖**：`lib/ui-map-real-data.test.ts` 10 个测试覆盖真实数据注入与降级行为。
+- **Phase A（壳层）**：已稳定。路由 `/ui-map`、`UIMapShell`、场景切换、语义分层均已验证（`ui-map-shell-view-model.test.ts` 14 个测试通过）。
+- **Phase B（真实数据接入）**：系统研究索引、研究链路、运营链路、策略主线四个模块已接入，每个模块均具备 fixture 降级模式。
+  - 系统研究索引：`buildSystemResearchUIMapOverride` 基于 `content.server.ts` 产物索引生成。
+  - 研究链路：`buildResearchChainUIMapOverride` 基于 `getChainPhaseArtifacts` 阶段分组生成。
+  - 运营链路：`buildOperationsUIMapOverride` 基于 `realtime-hub.ts` 最近事件摘要生成。
+  - 策略主线：`buildStrategyUIMapOverride` 基于 artifacts 索引的 `type=strategy` 统计生成（摘要级接入，明确标记 `summary-only`，敏感配置与执行状态未透出）。
+- **未接入**：用户上下文索引系统。暂不开放敏感配置透出，保留 view-model 层固定语义。
+- **测试覆盖**：`lib/ui-map-real-data.test.ts` 14 个测试覆盖真实数据注入与降级行为。

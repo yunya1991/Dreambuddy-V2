@@ -1,8 +1,9 @@
 # UI-Map Real Data Integration Contract
 
 > Date: 2026-06-07
+> Updated: 2026-06-10（补充策略主线 summary-only 接入状态）
 > Scope: `7-产物中台/系统研究索引体系/app/ui-map`
-> Status: Ready for implementation
+> Status: In progress — Phase B 真实数据接入已覆盖系统研究索引、研究链路、运营链路、策略主线（summary-only）
 
 ## 1. Goal
 
@@ -50,7 +51,7 @@
 
 - `Phase A`: 前端壳与语义结构已稳定
 - `Phase B`: 真实数据接入已部分落地（系统研究索引、研究链路、运营链路）
-- `Phase B 待落地`: 策略主线、用户上下文索引系统
+- `Phase B 待落地`: 策略主线（summary-only）已上线；用户上下文索引系统仍待定义
 
 ## 4. Integration Principle
 
@@ -166,16 +167,20 @@
 
 ### 5.4 策略主线
 
-`策略主线` 是业务核心，但当前仍缺统一的真实数据契约。
+`策略主线` 是业务核心，当前已提供 **summary-only** 级的真实数据接入。
 
-在正式接入前，必须先定义标准对象：
+- 当前可复用锚点：
+  - `系统研究索引体系/lib/ui-map-real-data.ts` → `buildStrategyUIMapOverride()`
+  - 底层数据来自 `content.server.ts` → `getArtifactsData()` 的 `statistics.by_type["strategy"]` 统计
 
-- `strategy_setting_result`
-- `strategy_task_ticket`
-- `execution_status`
-- `result_artifact_reference`
+- 已实现能力：
+  - 基于 artifacts 索引的 `type=strategy` 统计汇总产物数量与状态分布
+  - 显式标记为 `summary-only`，不透出敏感配置或执行状态
+  - 无策略类型产物时自动降级为 view-model 层固定语义
 
-在这些对象没有成型前，`策略主线` 仍允许暂时使用 view-model 层的固定语义。
+- 待完善（不阻塞当前阶段）：
+  - 标准对象定义：`strategy_setting_result` / `strategy_task_ticket` / `execution_status` / `result_artifact_reference`
+  - 待上述标准对象成型后，可升级为完整的策略主线接入
 
 ### 5.5 用户上下文索引系统
 
@@ -191,17 +196,18 @@
 
 ## 6. Server Adapter Boundary
 
-`ui-map` 的真实数据接入通过一个集中的服务端 adapter 层完成。该层已在 `系统研究索引体系/lib/ui-map-real-data.ts` 中落地，包含三个 adapter：
+`ui-map` 的真实数据接入通过一个集中的服务端 adapter 层完成。该层已在 `系统研究索引体系/lib/ui-map-real-data.ts` 中落地，包含四个 adapter：
 
 - `buildSystemResearchUIMapOverride()` → 系统研究索引摘要
 - `buildResearchChainUIMapOverride()` → 研究链路阶段与关系摘要
 - `buildOperationsUIMapOverride()` → 运营事件通道摘要
+- `buildStrategyUIMapOverride()` → 策略主线 summary-only 摘要（基于 artifacts 索引 `type=strategy`）
 
 adapters 职责如下：
 
 - 从 `content.server.ts` 读取系统研究索引与关系数据（已实现）
 - 从 `realtime-hub.ts` 读取实时事件数据（已实现）
-- 在可用时读取策略主线摘要（待实现）
+- 从 `content.server.ts` 读取策略主线摘要（已实现，summary-only）
 - 在可用时读取用户上下文摘要（待实现）
 - 统一生成 `UIMapShellViewModel` 所需的 override 对象（null 表示“降级为 fixture”）
 
@@ -216,7 +222,7 @@ adapters 职责如下：
 - `lib/ui-map-real-data.ts`
   - 承接真实数据聚合与降级判断
 - `app/ui-map/page.tsx`
-  - 作为服务端装配入口，负责调用三个 adapter 并传入 view-model
+  - 作为服务端装配入口，负责调用四个 adapter 并传入 view-model
 
 ## 7. Real Data Mode Contract
 
@@ -272,11 +278,13 @@ adapters 职责如下：
 - 按通道（dream-agent / meeting / system）汇总事件数量与最近时间戳
 - 实时数据源断开时，页面能降级而不是崩溃
 
-### 8.4 策略主线 ⏳
+### 8.4 策略主线 ✅（summary-only，基于 artifacts 索引）
 
-- 页面展示的主线状态来自真实对象摘要，而不是纯固定文案
-- 若真实对象暂不可用，应显式标记为 `summary-only` 或 `fixture-backed`
-- 需先定义标准对象：`strategy_setting_result` / `strategy_task_ticket` / `execution_status` / `result_artifact_reference`
+- 页面展示的主线状态来自 artifacts 索引的 `type=strategy` 统计（摘要级）
+- 显式标记为 `summary-only`；敏感配置与执行状态未透出
+- 统一标准对象（`strategy_setting_result` / `strategy_task_ticket` / `execution_status` / `result_artifact_reference`）仍待后续正式契约落地
+- 真实数据 adapter：`buildStrategyUIMapOverride()`（`ui-map-real-data.ts`）
+- 降级行为：无 `type=strategy` 产物时自动回退为 view-model 层固定语义
 
 ### 8.5 用户上下文索引系统 ⏳
 
@@ -303,8 +311,9 @@ adapters 职责如下：
    - 复用 artifact relations / chain phase 数据，由 `buildResearchChainUIMapOverride()` 提供
 3. `系统运营链路` ✅
    - 接 `realtime-hub.ts`，由 `buildOperationsUIMapOverride()` 提供
-4. `策略主线` ⏳
-   - 先定义标准对象，再接真实摘要
+4. `策略主线` ✅（summary-only）
+   - 接 artifacts 索引的 `type=strategy` 统计，由 `buildStrategyUIMapOverride()` 提供
+   - 敏感配置、执行状态等尚未透出，仅作为摘要级接入
 5. `用户上下文索引系统` ⏳
    - 先定义脱敏摘要与敏感字段边界，再接真实数据
 
@@ -315,11 +324,12 @@ adapters 职责如下：
 - 壳继续在 `app/ui-map/`
 - 真实研究数据先接 `lib/content.server.ts`
 - 真实运营事件先接 `lib/realtime-hub.ts`
-- 真实数据聚合由 `lib/ui-map-real-data.ts` 中三个 adapter 完成
+- 真实数据聚合由 `lib/ui-map-real-data.ts` 中四个 adapter 完成
   - `buildSystemResearchUIMapOverride()` → 系统研究索引摘要
   - `buildResearchChainUIMapOverride()` → 研究链路阶段与关系摘要
   - `buildOperationsUIMapOverride()` → 运营事件通道摘要
-- `page.tsx` 负责服务端装配（调用三个 adapter 并传入 view-model）
+  - `buildStrategyUIMapOverride()` → 策略主线 summary-only 摘要（基于 `type=strategy` 统计）
+- `page.tsx` 负责服务端装配（调用四个 adapter 并传入 view-model）
 - `ui-map-shell-view-model.ts` 支持 fixture / real-data 双入口（通过 `overrides` 对象，null 表示降级）
 - `UIMapShell.tsx` 不直接碰真实数据源
 - `scenario` 不能删，只能作为降级模式继续存在
