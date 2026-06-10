@@ -47,3 +47,28 @@ test("ui-map shell marks the source layer as its own semantic section", () => {
 
   assert.match(source, /aria-label="source-layer"/);
 });
+
+test("perspective layer keeps static research chain description when no override provided", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"));
+
+  assert.equal(viewModel.perspectiveLayer[0]?.title, "系统研究链路");
+  assert.match(viewModel.perspectiveLayer[0]?.description ?? "", /固定研究流程/);
+  assert.equal(viewModel.perspectiveLayer[0]?.bullets?.length, 0);
+  assert.equal(viewModel.perspectiveLayer[1]?.title, "系统运营链路");
+});
+
+test("perspective layer prefers real-data research chain override when available", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
+    researchChain: {
+      description: "已接入真实研究链路数据：7 条关系，覆盖 3 个阶段。",
+      bullets: ["阶段覆盖：A4 → A6 → A8（共 3 阶段）", "A4：2 个产物", "A6：1 个产物"],
+    },
+  });
+
+  assert.equal(viewModel.perspectiveLayer[0]?.description, "已接入真实研究链路数据：7 条关系，覆盖 3 个阶段。");
+  assert.deepEqual(viewModel.perspectiveLayer[0]?.bullets, [
+    "阶段覆盖：A4 → A6 → A8（共 3 阶段）",
+    "A4：2 个产物",
+    "A6：1 个产物",
+  ]);
+});

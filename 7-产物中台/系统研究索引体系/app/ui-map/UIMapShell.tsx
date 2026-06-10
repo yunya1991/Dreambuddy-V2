@@ -40,7 +40,12 @@ export default function UIMapShell(props: { viewModel: UIMapShellViewModel }) {
 
       <section className="grid gap-6 lg:grid-cols-2">
         {perspectiveLayer.map((item) => (
-          <UIMapModuleCard key={item.title} title={item.title} description={item.description} />
+          <UIMapModuleCard
+            key={item.title}
+            title={item.title}
+            description={item.description}
+            bullets={item.bullets}
+          />
         ))}
       </section>
     </div>

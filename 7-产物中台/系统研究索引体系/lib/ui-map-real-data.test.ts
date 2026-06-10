@@ -6,7 +6,10 @@ import path from "node:path";
 
 import { getUIMapScenario } from "../app/ui-map/ui-map-scenarios.ts";
 import { buildUIMapShellViewModel } from "../app/ui-map/ui-map-shell-view-model.ts";
-import { buildSystemResearchUIMapOverride } from "./ui-map-real-data.ts";
+import {
+  buildResearchChainUIMapOverride,
+  buildSystemResearchUIMapOverride,
+} from "./ui-map-real-data.ts";
 
 test("buildSystemResearchUIMapOverride summarizes real artifact data for ui-map", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-"));
@@ -107,4 +110,48 @@ test("ui-map shell view model prefers the real-data system research summary when
     "关系链路覆盖：7 条关系，3 个阶段",
     "平台能力覆盖：4 个部门",
   ]);
+});
+
+test("buildResearchChainUIMapOverride summarizes real chain-phase data for ui-map", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-chain-"));
+  const phasesDir = path.join(root, "trading");
+  fs.mkdirSync(phasesDir, { recursive: true });
+
+  const artifacts = [
+    { artifact_id: "trading/t-001", title: "T1", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: ["signal"], filename: "t1.md" },
+    { artifact_id: "trading/t-002", title: "T2", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: ["signal"], filename: "t2.md" },
+    { artifact_id: "trading/t-003", title: "T3", department: "trading", type: "research", status: "completed", date: "2026-06-08T08:00:00Z", chain_phase: "A6", tags: ["summary"], filename: "t3.md" },
+  ];
+
+  fs.writeFileSync(
+    path.join(phasesDir, "index.json"), JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts })
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+
+  const override = buildResearchChainUIMapOverride();
+
+  assert.ok(override !== null);
+  assert.match(override!.description, /已接入真实研究链路数据：3 条关系，覆盖 2 个阶段/);
+  assert.ok(override!.bullets[0].includes("A4 → A6"));
+  assert.ok(override!.bullets.some((b) => b.startsWith("A4：2 个产物")));
+  assert.ok(override!.bullets.some((b) => b.startsWith("A6：1 个产物")));
+
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("buildResearchChainUIMapOverride returns null when no relation data exists", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-empty-"));
+  const emptyDir = path.join(root, "trading");
+  fs.mkdirSync(emptyDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(emptyDir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts: [] })
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+  assert.equal(buildResearchChainUIMapOverride(), null);
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
 });

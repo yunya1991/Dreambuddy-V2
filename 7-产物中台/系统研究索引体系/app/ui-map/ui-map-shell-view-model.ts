@@ -5,8 +5,14 @@ export interface UIMapSystemResearchOverride {
   bullets: string[];
 }
 
+export interface UIMapResearchChainOverride {
+  description: string;
+  bullets: string[];
+}
+
 export interface UIMapShellOverrides {
   systemResearch?: UIMapSystemResearchOverride | null;
+  researchChain?: UIMapResearchChainOverride | null;
 }
 
 export interface UIMapShellViewModel {
@@ -27,7 +33,7 @@ export interface UIMapShellViewModel {
       bullets: string[];
     };
   };
-  perspectiveLayer: Array<{ title: string; description: string }>;
+  perspectiveLayer: Array<{ title: string; description: string; bullets?: string[] }>;
 }
 
 export function buildUIMapShellViewModel(
@@ -38,6 +44,18 @@ export function buildUIMapShellViewModel(
     description: "平台基础能力底座，持续为系统策略和 AI 推理供能。",
     bullets: scenario.systemCapabilityBullets,
   };
+
+  const researchChainCard = overrides.researchChain
+    ? {
+        title: "系统研究链路",
+        description: overrides.researchChain.description,
+        bullets: overrides.researchChain.bullets,
+      }
+    : {
+        title: "系统研究链路",
+        description: "展示固定研究流程、系统策略形成过程和研究产物关系。",
+        bullets: [] as string[],
+      };
 
   return {
     hero: {
@@ -76,8 +94,16 @@ export function buildUIMapShellViewModel(
       },
     },
     perspectiveLayer: [
-      { title: "系统研究链路", description: "展示固定研究流程、系统策略形成过程和研究产物关系。" },
-      { title: "系统运营链路", description: "展示前端进入、策略收口、上下文调用、执行和索引更新。" },
+      {
+        title: researchChainCard.title,
+        description: researchChainCard.description,
+        bullets: researchChainCard.bullets,
+      },
+      {
+        title: "系统运营链路",
+        description: "展示前端进入、策略收口、上下文调用、执行和索引更新。",
+        bullets: [] as string[],
+      },
     ],
   };
 }
