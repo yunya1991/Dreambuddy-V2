@@ -15,7 +15,28 @@ def load_rules():
     if not RULES_PATH.exists():
         raise FileNotFoundError(f"rules file not found: {RULES_PATH}")
     with RULES_PATH.open("r", encoding="utf-8") as fh:
-        return json.load(fh)["rules"]
+        data = json.load(fh)
+    return data.get("rules", [])
+
+
+def load_rules_for_lane(lane_type: str):
+    if not RULES_PATH.exists():
+        raise FileNotFoundError(f"rules file not found: {RULES_PATH}")
+    with RULES_PATH.open("r", encoding="utf-8") as fh:
+        data = json.load(fh)
+
+    lanes = data.get("lanes")
+    if not isinstance(lanes, dict):
+        return data.get("rules", [])
+
+    lane_key = (lane_type or "").strip().casefold()
+    if lane_key not in lanes:
+        lane_key = "strict"
+    lane_rules = lanes.get(lane_key, {}).get("rules")
+    if isinstance(lane_rules, list):
+        return lane_rules
+
+    return data.get("rules", [])
 
 
 def branch_policy_valid(branch):
@@ -72,6 +93,15 @@ def check_shared_files_declared(payload):
     return bool(payload.get("shared_files_declared"))
 
 
+def check_summary_comment_present(payload):
+    return bool(payload.get("summary_present")) or ("SUMMARY" in payload.get("comments", []))
+
+
+def check_fast_lane_test_evidence_present(payload):
+    return bool(payload.get("summary_test_evidence_present")) or bool(payload.get("test_report_present"))
+
+
+
 CHECKERS = {
     "check_task_card_present": check_task_card_present,
     "check_design_review_present": check_design_review_present,
@@ -82,6 +112,8 @@ CHECKERS = {
     "check_non_owner_review_present": check_non_owner_review_present,
     "check_done_comment_present": check_done_comment_present,
     "check_branch_policy_valid": check_branch_policy_valid,
+    "check_summary_comment_present": check_summary_comment_present,
+    "check_fast_lane_test_evidence_present": check_fast_lane_test_evidence_present,
     "check_shared_files_declared": check_shared_files_declared,
 }
 
@@ -97,7 +129,8 @@ def build_rule_checkers(rules):
 
 
 def evaluate_payload(payload):
-    rules = load_rules()
+    lane_type = payload.get("lane_type") or "strict"
+    rules = load_rules_for_lane(lane_type)
     rule_checkers = build_rule_checkers(rules)
     reason_codes = []
     for rule in rules:
