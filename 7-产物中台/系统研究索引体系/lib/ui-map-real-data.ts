@@ -69,6 +69,21 @@ export function buildResearchChainUIMapOverride(): UIMapResearchChainOverride | 
 
 const OPERATIONS_CHANNELS: RealtimeChannel[] = ["dream-agent", "meeting", "system"];
 
+/**
+ * Canonical status labels used by the artifact index. The repository writes
+ * `status` verbatim from the index JSON, so this constant documents the
+ * specific values that the summary-only adapter relies on.
+ */
+const ARTIFACT_STATUS_COMPLETED = "completed";
+
+/** Format an ISO-ish string timestamp or numeric ms timestamp as "YYYY-MM-DD HH:mm" for summary banners. */
+function formatSummaryTimestamp(ts: string | number | undefined | null): string {
+  if (ts === undefined || ts === null || ts === "") return "";
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().replace("T", " ").slice(0, 16);
+}
+
 export function buildOperationsUIMapOverride(): UIMapOperationsOverride | null {
   try {
     const hub = getRealtimeHub();
@@ -87,7 +102,7 @@ export function buildOperationsUIMapOverride(): UIMapOperationsOverride | null {
       .filter((item) => item.events.length > 0)
       .map((item) => {
         const latest = item.events[item.events.length - 1];
-        const timestamp = new Date(latest.timestamp).toISOString().replace("T", " ").slice(0, 16);
+        const timestamp = formatSummaryTimestamp(latest.timestamp as string | undefined | null);
         return `${item.channel}：${item.events.length} 条最近（${timestamp}）`;
       });
 
@@ -120,11 +135,9 @@ export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
       : "无 A-phase 标注";
 
     const byStatus = artifactsData.statistics.by_status ?? {};
-    const completedCount = Number(byStatus["completed"] ?? 0);
+    const completedCount = Number(byStatus[ARTIFACT_STATUS_COMPLETED] ?? 0);
     const activeCount = total - completedCount;
-    const lastUpdated = artifactsData.generated_at
-      ? new Date(artifactsData.generated_at).toISOString().replace("T", " ").slice(0, 16)
-      : "";
+    const lastUpdated = formatSummaryTimestamp(artifactsData.generated_at);
 
     const convergenceLabel =
       `summary-only：${strategyCount} 份策略产物沉淀（${phaseDistribution}，strategy_setting_result 契约待落地）`;
@@ -154,9 +167,7 @@ export function buildUserContextUIMapOverride(): UIMapUserContextOverride | null
       return null;
     }
 
-    const lastUpdated = artifactsData.generated_at
-      ? new Date(artifactsData.generated_at).toISOString().replace("T", " ").slice(0, 16)
-      : "";
+    const lastUpdated = formatSummaryTimestamp(artifactsData.generated_at);
 
     return {
       description: `已接入 summary-only 用户上下文摘要：基于 ${total} 个产物沉淀，覆盖 ${departmentCount} 个部门的执行上下文可见范围。`,
