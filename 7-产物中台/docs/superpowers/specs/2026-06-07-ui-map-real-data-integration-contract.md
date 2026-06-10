@@ -3,7 +3,7 @@
 > Date: 2026-06-07
 > Updated: 2026-06-10（补充策略主线 summary-only 接入状态）
 > Scope: `7-产物中台/系统研究索引体系/app/ui-map`
-> Status: In progress — Phase B 真实数据接入已覆盖系统研究索引、研究链路、运营链路、策略主线（summary-only）
+> Status: In progress — Phase B 真实数据接入已覆盖系统研究索引、研究链路、运营链路、策略主线（summary-only）、用户上下文索引（summary-only）
 
 ## 1. Goal
 
@@ -40,18 +40,18 @@
 
 当前 `ui-map` 已经具备以下能力：
 
-- 路由入口已存在：`系统研究索引体系/app/ui-map/page.tsx`（服务端装配入口，调用三个真实数据 adapter）
+- 路由入口已存在：`系统研究索引体系/app/ui-map/page.tsx`（服务端装配入口，调用五个真实数据 adapter）
 - 页面壳已存在：`系统研究索引体系/app/ui-map/UIMapShell.tsx`
 - 客户端壳已存在：`系统研究索引体系/app/ui-map/UIMapClient.tsx`
 - 壳层 view-model 已存在：`系统研究索引体系/app/ui-map/ui-map-shell-view-model.ts`（支持 fixture / real-data 双入口）
 - 场景 fixture 已存在：`系统研究索引体系/app/ui-map/ui-map-scenarios.ts`（继续承担降级模式）
-- 真实数据 adapter 已存在：`系统研究索引体系/lib/ui-map-real-data.ts`（三个 adapter：系统研究索引、研究链路、运营链路）
+- 真实数据 adapter 已存在：`系统研究索引体系/lib/ui-map-real-data.ts`（五个 adapter：系统研究索引、研究链路、运营链路、策略主线、用户上下文索引）
 
 这意味着当前阶段属于：
 
 - `Phase A`: 前端壳与语义结构已稳定
-- `Phase B`: 真实数据接入已部分落地（系统研究索引、研究链路、运营链路）
-- `Phase B 待落地`: 策略主线（summary-only）已上线；用户上下文索引系统仍待定义
+- `Phase B`: 真实数据接入已全部落地（系统研究索引、研究链路、运营链路、策略主线 summary-only、用户上下文索引 summary-only）
+- `Phase B 待提升`: 策略主线需升级为完整标准对象（`strategy_setting_result` 等）；用户上下文需明确脱敏摘要与敏感字段边界
 
 ## 4. Integration Principle
 
@@ -196,20 +196,21 @@
 
 ## 6. Server Adapter Boundary
 
-`ui-map` 的真实数据接入通过一个集中的服务端 adapter 层完成。该层已在 `系统研究索引体系/lib/ui-map-real-data.ts` 中落地，包含四个 adapter：
+`ui-map` 的真实数据接入通过一个集中的服务端 adapter 层完成。该层已在 `系统研究索引体系/lib/ui-map-real-data.ts` 中落地，包含五个 adapter：
 
 - `buildSystemResearchUIMapOverride()` → 系统研究索引摘要
 - `buildResearchChainUIMapOverride()` → 研究链路阶段与关系摘要
 - `buildOperationsUIMapOverride()` → 运营事件通道摘要
 - `buildStrategyUIMapOverride()` → 策略主线 summary-only 摘要（基于 artifacts 索引 `type=strategy`）
+- `buildUserContextUIMapOverride()` → 用户上下文索引 summary-only 摘要（基于 artifacts 索引全量统计，不透出用户配置或敏感信息）
 
 adapters 职责如下：
 
 - 从 `content.server.ts` 读取系统研究索引与关系数据（已实现）
 - 从 `realtime-hub.ts` 读取实时事件数据（已实现）
 - 从 `content.server.ts` 读取策略主线摘要（已实现，summary-only）
-- 在可用时读取用户上下文摘要（待实现）
-- 统一生成 `UIMapShellViewModel` 所需的 override 对象（null 表示“降级为 fixture”）
+- 从 `content.server.ts` 读取用户上下文摘要（已实现，summary-only：仅沉淀产物数量与活跃状态摘要，不透出敏感配置）
+- 统一生成 `UIMapShellViewModel` 所需的 override 对象（null 表示"降级为 fixture"）
 
 固定边界（代码现状已对齐，遵循以下约束）：
 
@@ -222,7 +223,7 @@ adapters 职责如下：
 - `lib/ui-map-real-data.ts`
   - 承接真实数据聚合与降级判断
 - `app/ui-map/page.tsx`
-  - 作为服务端装配入口，负责调用四个 adapter 并传入 view-model
+  - 作为服务端装配入口，负责调用五个 adapter 并传入 view-model
 
 ## 7. Real Data Mode Contract
 
@@ -286,11 +287,14 @@ adapters 职责如下：
 - 真实数据 adapter：`buildStrategyUIMapOverride()`（`ui-map-real-data.ts`）
 - 降级行为：无 `type=strategy` 产物时自动回退为 view-model 层固定语义
 
-### 8.5 用户上下文索引系统 ⏳
+### 8.5 用户上下文索引系统 ✅（summary-only，基于 artifacts 索引全量统计）
 
 - 只能展示经过脱敏和摘要化的上下文信息
 - 不允许把敏感配置直接透出到 `ui-map`
-- 需先明确用户配置读取路径与可暴露字段边界
+- 真实数据 adapter：`buildUserContextUIMapOverride()`（`ui-map-real-data.ts`）
+- 接入方式：基于 artifacts 索引的全量统计（产物数量、活跃状态摘要、部门覆盖范围）
+- 降级行为：无产物索引时自动回退为 view-model 层固定语义
+- 后续可提升项：需先明确用户配置读取路径与可暴露字段边界，再考虑从 summary-only 升级为真实用户上下文接入
 
 ## 9. Explicit Non-Goals
 
@@ -314,8 +318,10 @@ adapters 职责如下：
 4. `策略主线` ✅（summary-only）
    - 接 artifacts 索引的 `type=strategy` 统计，由 `buildStrategyUIMapOverride()` 提供
    - 敏感配置、执行状态等尚未透出，仅作为摘要级接入
-5. `用户上下文索引系统` ⏳
-   - 先定义脱敏摘要与敏感字段边界，再接真实数据
+5. `用户上下文索引系统` ✅（summary-only，基于 artifacts 索引全量统计）
+   - 接 artifacts 索引的全量统计（产物数量、活跃状态摘要、部门覆盖范围），由 `buildUserContextUIMapOverride()` 提供
+   - 未透出任何用户配置或敏感信息，仅作为摘要级接入
+   - 后续可提升：明确用户配置读取路径与可暴露字段边界后，可从 summary-only 升级为真实用户上下文接入
 
 ## 11. Reader Shortcut
 
@@ -324,12 +330,13 @@ adapters 职责如下：
 - 壳继续在 `app/ui-map/`
 - 真实研究数据先接 `lib/content.server.ts`
 - 真实运营事件先接 `lib/realtime-hub.ts`
-- 真实数据聚合由 `lib/ui-map-real-data.ts` 中四个 adapter 完成
+- 真实数据聚合由 `lib/ui-map-real-data.ts` 中五个 adapter 完成
   - `buildSystemResearchUIMapOverride()` → 系统研究索引摘要
   - `buildResearchChainUIMapOverride()` → 研究链路阶段与关系摘要
   - `buildOperationsUIMapOverride()` → 运营事件通道摘要
   - `buildStrategyUIMapOverride()` → 策略主线 summary-only 摘要（基于 `type=strategy` 统计）
-- `page.tsx` 负责服务端装配（调用四个 adapter 并传入 view-model）
+  - `buildUserContextUIMapOverride()` → 用户上下文索引 summary-only 摘要（基于 artifacts 全量统计，不透出敏感配置）
+- `page.tsx` 负责服务端装配（调用五个 adapter 并传入 view-model）
 - `ui-map-shell-view-model.ts` 支持 fixture / real-data 双入口（通过 `overrides` 对象，null 表示降级）
 - `UIMapShell.tsx` 不直接碰真实数据源
 - `scenario` 不能删，只能作为降级模式继续存在

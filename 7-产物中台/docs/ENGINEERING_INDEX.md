@@ -25,19 +25,21 @@
 - 已归位的老中台实现工程，当前可运行并负责系统研究索引能力。
 - `当前 ui-map 的真实实现入口位于：系统研究索引体系/app/ui-map/`
 - 核心实现文件：
-- `app/ui-map/page.tsx`：服务端装配入口，调用三个真实数据 adapter。
+- `app/ui-map/page.tsx`：服务端装配入口，调用五个真实数据 adapter。
 - `app/ui-map/UIMapShell.tsx`：纯渲染壳层，消费 view-model。
 - `app/ui-map/ui-map-shell-view-model.ts`：view-model 生成，支持 fixture / real-data 双入口。
 - `app/ui-map/ui-map-scenarios.ts`：场景 fixture，降级模式保留。
-- `lib/ui-map-real-data.ts`：三个真实数据 adapter（系统研究索引、研究链路、运营链路）。
+- `app/chain/page.tsx`：A 系列三环驾驶舱页，只通过 `app/chain/summary-only.ts` 接入 `content.server` 的规范索引。
+- `app/chain/summary-only.ts`：summary-only 聚合层，严格禁止 fs / log / raw content 读取。
+- `lib/ui-map-real-data.ts`：五个真实数据 adapter（系统研究索引、研究链路、运营链路、策略主线、用户上下文索引）。
 - `lib/content.server.ts`：系统研究产物索引与关系数据源。
 - `lib/realtime-hub.ts`：运营事件实时数据源。
 - `ui-map/`
 - 独立中台首页模块预留目录；当前仍以规划占位为主，不是主实现目录。
 - `用户上下文索引系统/`
-- 用户配置、记忆、执行上下文承载模块预留目录；当前未接入真实数据。
+- 用户配置、记忆、执行上下文承载模块预留目录；summary-only 聚合已由 `buildUserContextUIMapOverride` 提供。
 - `策略主线/`
-- 策略统一收口与主链承接模块预留目录；当前仍使用 view-model 层固定语义。
+- 策略统一收口与主链承接模块预留目录；summary-only 聚合已由 `buildStrategyUIMapOverride` 提供。
 - `系统研究链路/`
 - 系统研究链路透视模块预留目录；真实数据由 `lib/ui-map-real-data.ts` 中 `buildResearchChainUIMapOverride` 提供。
 - `系统运营链路/`
