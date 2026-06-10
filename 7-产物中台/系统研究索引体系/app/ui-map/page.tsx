@@ -6,6 +6,7 @@ import {
   buildResearchChainUIMapOverride,
   buildStrategyUIMapOverride,
   buildSystemResearchUIMapOverride,
+  buildUserContextUIMapOverride,
 } from "../../lib/ui-map-real-data.ts";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default function UIMapPage({
     researchChain: buildResearchChainUIMapOverride(),
     operations: buildOperationsUIMapOverride(),
     strategy: buildStrategyUIMapOverride(),
+    userContext: buildUserContextUIMapOverride(),
   });
 
   return <UIMapClient scenarioId={scenario.id as UIMapScenarioId} viewModel={viewModel} />;

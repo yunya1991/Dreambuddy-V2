@@ -10,6 +10,7 @@ import type {
   UIMapResearchChainOverride,
   UIMapStrategyOverride,
   UIMapSystemResearchOverride,
+  UIMapUserContextOverride,
 } from "../app/ui-map/ui-map-shell-view-model.ts";
 
 export function buildSystemResearchUIMapOverride(): UIMapSystemResearchOverride | null {
@@ -126,6 +127,34 @@ export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
       convergenceLabel,
       chain,
       summaryNote: "当前为摘要级接入：基于 artifacts 索引的 type=strategy 统计，敏感配置与执行状态尚未透出。",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function buildUserContextUIMapOverride(): UIMapUserContextOverride | null {
+  try {
+    const artifactsData = getArtifactsData();
+    const total = artifactsData.total;
+    const departmentCount = Object.keys(artifactsData.statistics.by_department ?? {}).length;
+    const byStatus = artifactsData.statistics.by_status ?? {};
+    const completedCount = Number(byStatus["completed"] ?? 0);
+    const activeCount = total - completedCount;
+
+    if (!total) {
+      return null;
+    }
+
+    const lastUpdated = artifactsData.generated_at
+      ? new Date(artifactsData.generated_at).toISOString().replace("T", " ").slice(0, 16)
+      : "";
+
+    return {
+      description: `已接入 summary-only 用户上下文摘要：基于 ${total} 个产物沉淀，覆盖 ${departmentCount} 个部门的执行上下文可见范围。`,
+      buildLabel: `支撑自定义策略生成（${completedCount} 个已沉淀产物可被索引回溯）`,
+      runtimeLabel: `支撑每次策略执行（${activeCount} 个活跃产物可供上下文注入）`,
+      summaryNote: `summary-only：未透出任何用户配置或敏感信息（${lastUpdated}）`,
     };
   } catch {
     return null;

@@ -11,6 +11,7 @@ import {
   buildStrategyUIMapOverride,
   buildSystemResearchUIMapOverride,
   buildOperationsUIMapOverride,
+  buildUserContextUIMapOverride,
 } from "./ui-map-real-data.ts";
 import { createRealtimeHub, getRealtimeHub } from "./realtime-hub.ts";
 import type { RealtimeChannel } from "./types.ts";
@@ -354,4 +355,80 @@ test("ui-map page assembly includes strategy override when all four adapters are
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("buildUserContextUIMapOverride returns null when no artifacts exist", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-empty-uc-"));
+  const emptyDir = path.join(root, "knowledge");
+  fs.mkdirSync(emptyDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(emptyDir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts: [] }),
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+  assert.equal(buildUserContextUIMapOverride(), null);
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("buildUserContextUIMapOverride produces summary-only label from artifact statistics", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-uc-"));
+  const dir = path.join(root, "trading");
+  fs.mkdirSync(dir, { recursive: true });
+
+  const artifacts = [
+    { artifact_id: "trading/s-001", title: "S1", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A4", tags: [], filename: "s1.md" },
+    { artifact_id: "trading/k-001", title: "K1", department: "knowledge", type: "knowledge", status: "active", date: "2026-06-10T08:00:00Z", chain_phase: "A6", tags: [], filename: "k1.md" },
+  ];
+
+  fs.writeFileSync(
+    path.join(dir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts }),
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+
+  const override = buildUserContextUIMapOverride();
+
+  assert.ok(override !== null, "buildUserContextUIMapOverride should produce an override when artifacts exist");
+  assert.ok(override!.buildLabel.length > 0, "buildLabel should be non-empty");
+  assert.ok(override!.runtimeLabel.length > 0, "runtimeLabel should be non-empty");
+  assert.match(override!.description, /summary-only/);
+  assert.match(override!.summaryNote, /未透出/);
+
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("ui-map shell view model prefers real-data user-context override when available", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
+    userContext: {
+      description: "已接入 summary-only 用户上下文摘要",
+      buildLabel: "支撑自定义策略生成（5 个已沉淀产物可被索引回溯）",
+      runtimeLabel: "支撑每次策略执行（2 个活跃产物可供上下文注入）",
+      summaryNote: "summary-only：未透出任何用户配置或敏感信息",
+    },
+  });
+
+  assert.match(viewModel.indexFoundation.userContext.description, /已接入 summary-only/);
+  assert.match(viewModel.indexFoundation.userContext.buildLabel, /已沉淀产物可被索引回溯/);
+  assert.match(viewModel.indexFoundation.userContext.runtimeLabel, /活跃产物可供上下文注入/);
+  assert.ok(
+    viewModel.indexFoundation.userContext.executionFrequencies.some((f) => f.includes("未透出")),
+  );
+});
+
+test("ui-map page assembly marks hero dataModeLabel with user-context override", () => {
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
+    userContext: {
+      description: "已接入 summary-only 用户上下文摘要",
+      buildLabel: "支撑自定义策略生成",
+      runtimeLabel: "支撑每次策略执行",
+      summaryNote: "summary-only：未透出任何用户配置或敏感信息",
+    },
+  });
+
+  assert.match(viewModel.hero.dataModeLabel, /Phase B/);
+  assert.match(viewModel.hero.dataModeLabel, /用户上下文索引/);
 });
