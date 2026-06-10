@@ -1,7 +1,27 @@
 {
   "modules": {
     "product_hub": {
-      "paths": ["7-产物中台/**"]
+      "paths": [
+        "7-产物中台/系统研究索引体系/app/ui-map/*",
+        "7-产物中台/系统研究索引体系/app/chain/*",
+        "7-产物中台/系统研究索引体系/app/feed/*",
+        "7-产物中台/系统研究索引体系/app/meeting/*",
+        "7-产物中台/系统研究索引体系/app/org/*",
+        "7-产物中台/系统研究索引体系/app/api/*",
+        "7-产物中台/系统研究索引体系/app/*",
+        "7-产物中台/系统研究索引体系/lib/*",
+        "7-产物中台/系统研究索引体系/components/*",
+        "7-产物中台/系统研究索引体系/scripts/*",
+        "7-产物中台/系统研究索引体系/*",
+        "7-产物中台/系统研究链路/*",
+        "7-产物中台/系统运营链路/*",
+        "7-产物中台/策略主线/*",
+        "7-产物中台/用户上下文索引系统/*",
+        "7-产物中台/ui-map/*",
+        "7-产物中台/docs/*",
+        "7-产物中台/*"
+      ],
+      "_note": "fnmatch does not support ** recursive match; explicit subpaths required until DREAM-AGENT drift_guard.py is fixed to support **"
     },
     "trading": {
       "paths": ["6-TRADING/**"]
@@ -10,7 +30,7 @@
       "paths": ["3-FRONTEND/dream-universal-gateway/**"]
     },
     "ci": {
-      "paths": [".github/**", ".gitignore", "docs/**", ".workbuddy/**", "tests/**", "AGENT协作工具/**"]
+      "paths": [".github/**", ".gitignore", "docs/**", ".workbuddy/**", "tests/**"]
     }
   },
   "change_classes": {
