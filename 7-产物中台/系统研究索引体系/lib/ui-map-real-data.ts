@@ -117,6 +117,13 @@ export function buildOperationsUIMapOverride(): UIMapOperationsOverride | null {
 
 const A_PHASE_ORDER = ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9"];
 
+function phaseLabelFor(value: string): string {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return trimmed;
+  const m = trimmed.match(/^A([0-9])$/i);
+  return m ? `A${m[1]}` : "";
+}
+
 export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
   try {
     const artifactsData = getArtifactsData();
@@ -128,21 +135,31 @@ export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
       return null;
     }
 
-    const byPhase = artifactsData.statistics.by_a_phase ?? {};
-    const activePhases = A_PHASE_ORDER.filter((phase) => (byPhase[phase] ?? 0) > 0);
+    const strategyArtifacts = artifactsData.artifacts.filter((item) => item.type === "strategy");
+    const strategyPhaseCount: Record<string, number> = {};
+    strategyArtifacts.forEach((item) => {
+      const normalized = phaseLabelFor(item.chain_phase);
+      if (normalized) strategyPhaseCount[normalized] = (strategyPhaseCount[normalized] ?? 0) + 1;
+    });
+    const activePhases = A_PHASE_ORDER.filter((phase) => (strategyPhaseCount[phase] ?? 0) > 0);
     const phaseDistribution = activePhases.length
-      ? activePhases.map((phase) => `${phase}×${byPhase[phase]}`).join(" / ")
+      ? activePhases.map((phase) => `${phase}×${strategyPhaseCount[phase]}`).join(" / ")
       : "无 A-phase 标注";
 
-    const byStatus = artifactsData.statistics.by_status ?? {};
-    const completedCount = Number(byStatus[ARTIFACT_STATUS_COMPLETED] ?? 0);
-    const activeCount = total - completedCount;
+    const strategyStatusCount: Record<string, number> = {};
+    strategyArtifacts.forEach((item) => {
+      const s = (item.status ?? "").toLowerCase();
+      strategyStatusCount[s] = (strategyStatusCount[s] ?? 0) + 1;
+    });
+    const strategyCompleted = Number(strategyStatusCount[ARTIFACT_STATUS_COMPLETED] ?? 0);
+    const strategyActive = strategyCount - strategyCompleted;
+
     const lastUpdated = formatSummaryTimestamp(artifactsData.generated_at);
 
     const convergenceLabel =
       `summary-only：${strategyCount} 份策略产物沉淀（${phaseDistribution}，strategy_setting_result 契约待落地）`;
     const chain =
-      `${strategyCount} 策略设置 → ${total} 产物链条（${activeCount} 活跃 / ${completedCount} 已沉淀）→ 结果产物 → 索引${lastUpdated ? `（${lastUpdated}）` : ""}`;
+      `${strategyCount} 策略设置（${strategyActive} 活跃 / ${strategyCompleted} 已沉淀）→ ${total} 产物链条 → 结果产物 → 索引${lastUpdated ? `（${lastUpdated}）` : ""}`;
 
     return {
       convergenceLabel,
