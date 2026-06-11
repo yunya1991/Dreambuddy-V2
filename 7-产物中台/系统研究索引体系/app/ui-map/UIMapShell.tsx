@@ -7,7 +7,10 @@ export default function UIMapShell(props: { viewModel: UIMapShellViewModel }) {
   return (
     <div className="space-y-8">
       <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">独立中台首页</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">独立中台首页</span>
+          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{hero.dataModeLabel}</span>
+        </div>
         <h1 className="mt-4 text-3xl font-bold text-slate-900">{hero.title}</h1>
         <p className="mt-3 max-w-4xl text-sm leading-7 text-slate-600">{hero.subtitle}</p>
       </section>
@@ -23,6 +26,11 @@ export default function UIMapShell(props: { viewModel: UIMapShellViewModel }) {
         <h2 className="mt-2 text-2xl font-bold text-slate-900">{mainlineLayer.title}</h2>
         <p className="mt-3 text-sm font-medium text-emerald-700">{mainlineLayer.convergenceLabel}</p>
         <p className="mt-4 text-sm leading-7 text-slate-700">{mainlineLayer.chain}</p>
+        {mainlineLayer.summaryNote && (
+          <p className="mt-4 rounded-xl border border-emerald-200 bg-white/60 p-3 text-xs leading-6 text-emerald-900">
+            {mainlineLayer.summaryNote}
+          </p>
+        )}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
@@ -40,7 +48,12 @@ export default function UIMapShell(props: { viewModel: UIMapShellViewModel }) {
 
       <section className="grid gap-6 lg:grid-cols-2">
         {perspectiveLayer.map((item) => (
-          <UIMapModuleCard key={item.title} title={item.title} description={item.description} />
+          <UIMapModuleCard
+            key={item.title}
+            title={item.title}
+            description={item.description}
+            bullets={item.bullets}
+          />
         ))}
       </section>
     </div>

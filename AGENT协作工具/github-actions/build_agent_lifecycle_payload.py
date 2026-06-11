@@ -11,7 +11,6 @@ HEADER_TO_STATUS = {
     "[协作完成回报 / DONE]": "DONE",
     "[方案评审记录 / DESIGN_REVIEW]": "DESIGN_REVIEW",
     "[测试报告 / TEST_REPORT]": "TEST_REPORT",
-    "[单次总结 / SUMMARY]": "SUMMARY",
 }
 
 
@@ -84,12 +83,6 @@ def parse_structured_comment(text):
                 "reviewer": extract_field(text, "Reviewer"),
                 "execution_mode": detect_execution_mode(text),
                 "direct_takeover": detect_direct_takeover(text),
-                "test_evidence": first_non_empty(
-                    extract_field(text, "Test"),
-                    extract_field(text, "Test Command"),
-                    extract_field(text, "测试"),
-                    extract_field(text, "测试命令"),
-                ),
                 "occupied_paths": extract_bullets_after_label(text, "占用范围")
                 or extract_bullets_after_label(text, "当前占用范围"),
             }
@@ -141,9 +134,6 @@ def build_payload(raw):
     task_card_present = bool(
         parse_pr_template_field(raw.get("pr_body", ""), "Task Card")
     )
-    lane_type = parse_pr_template_field(raw.get("pr_body", ""), "Lane").strip().casefold()
-    if lane_type not in {"fast", "strict"}:
-        lane_type = "strict"
     execution_mode = (
         (started_comment or {}).get("execution_mode")
         or first_non_empty(
@@ -157,16 +147,10 @@ def build_payload(raw):
     )
     scope_change_declared = "UPDATED" in comments
     block_declared = "BLOCKED" in comments
-    summary_present = "SUMMARY" in comments
-    summary_test_evidence_present = any(
-        comment["status"] == "SUMMARY" and bool(comment.get("test_evidence"))
-        for comment in structured_comments
-    )
 
     return {
         "branch": raw.get("branch", ""),
         "owner_agent": owner_agent,
-        "lane_type": lane_type,
         "execution_mode": execution_mode,
         "direct_takeover": direct_takeover,
         "shared_files_declared": shared_files_declared,
@@ -178,8 +162,6 @@ def build_payload(raw):
         "block_declared": block_declared,
         "scope_changed": scope_change_declared,
         "execution_blocked": block_declared,
-        "summary_present": summary_present,
-        "summary_test_evidence_present": summary_test_evidence_present,
         "comments": comments,
     }
 

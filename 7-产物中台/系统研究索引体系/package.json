@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start -p 3456",
     "lint": "next lint",
+    "test": "node --test lib/**/*.test.ts app/**/*.test.ts",
     "build:static": "NEXT_PUBLIC_STATIC_EXPORT=true next build",
     "postbuild": "node scripts/run-pagefind.js",
     "search:index": "node scripts/build-search-index.js",
