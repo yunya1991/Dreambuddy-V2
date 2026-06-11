@@ -60,7 +60,7 @@
   - 系统研究索引：`buildSystemResearchUIMapOverride` 基于 `content.server.ts` 产物索引生成。
   - 研究链路：`buildResearchChainUIMapOverride` 基于 `getChainPhaseArtifacts` 阶段分组生成。
   - 运营链路：`buildOperationsUIMapOverride` 基于 `realtime-hub.ts` 最近事件摘要生成。
-  - 策略主线：`buildStrategyUIMapOverride` 基于 artifacts 索引的 `type=strategy` 统计生成（摘要级接入，明确标记 `summary-only`，敏感配置与执行状态未透出）。
+  - 策略主线：`buildStrategyUIMapOverride` 基于 artifacts 索引的 `type=strategy` 统计生成（摘要级接入，明确标记 `summary-only`，敏感配置与执行状态未透出）。策略主线统计从全量 artifacts 精确化为仅 `type=strategy`（phase 分布、活跃/已沉淀状态均仅统计策略产物）；支持小写 phase 标签归一化（a9→A9）。
   - 用户上下文索引：`buildUserContextUIMapOverride` 基于 artifacts 索引全量统计生成（summary-only：未透出任何用户配置或敏感信息，仅沉淀产物数量与活跃状态摘要）。
 - **未接入**：无（全部五个索引底座模块均以 summary-only 接入真实数据，用户配置等敏感信息继续不透出）。
 - **测试覆盖**：`lib/ui-map-real-data.test.ts` 18 个测试覆盖真实数据注入与降级行为。
