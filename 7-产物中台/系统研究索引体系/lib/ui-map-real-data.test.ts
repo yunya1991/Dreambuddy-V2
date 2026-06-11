@@ -488,3 +488,52 @@ test("buildStrategyUIMapOverride shows fallback label when no A-phase annotation
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test("ui-map page assembly produces Phase B shell when all five real-data adapters are wired", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-assembly-all-five-"));
+  const tradingDir = path.join(root, "trading");
+  fs.mkdirSync(tradingDir, { recursive: true });
+
+  const artifacts = [
+    { artifact_id: "trading/s-001", title: "S1", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A3", tags: ["signal"], filename: "s1.md" },
+    { artifact_id: "trading/r-001", title: "R1", department: "trading", type: "research", status: "active", date: "2026-06-08T08:00:00Z", chain_phase: "A5", tags: ["summary"], filename: "r1.md" },
+  ];
+
+  fs.writeFileSync(
+    path.join(tradingDir, "index.json"),
+    JSON.stringify({ last_updated: "2026-06-09T08:00:00Z", artifacts }),
+  );
+
+  process.env.WORKBUDDY_ARTIFACTS_ROOT = root;
+
+  const hub = getRealtimeHub();
+  hub.publish("dream-agent", { level: "info", message: "agent-query" });
+  hub.publish("meeting", { level: "info", message: "meeting-start" });
+  hub.publish("system", { level: "info", message: "status-ping" });
+
+  const overrides = {
+    systemResearch: buildSystemResearchUIMapOverride(),
+    researchChain: buildResearchChainUIMapOverride(),
+    operations: buildOperationsUIMapOverride(),
+    strategy: buildStrategyUIMapOverride(),
+    userContext: buildUserContextUIMapOverride(),
+  };
+  const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), overrides);
+
+  assert.match(viewModel.hero.dataModeLabel, /Phase B/);
+  assert.match(viewModel.hero.dataModeLabel, /系统研究索引/);
+  assert.match(viewModel.hero.dataModeLabel, /研究链路/);
+  assert.match(viewModel.hero.dataModeLabel, /运营链路/);
+  assert.match(viewModel.hero.dataModeLabel, /策略主线/);
+  assert.match(viewModel.hero.dataModeLabel, /用户上下文索引/);
+
+  assert.match(viewModel.indexFoundation.systemResearch.description, /已接入真实系统研究数据/);
+  assert.match(viewModel.indexFoundation.userContext.description, /已接入 summary-only/);
+  assert.match(viewModel.mainlineLayer.convergenceLabel, /summary-only/);
+  assert.match(viewModel.mainlineLayer.chain, /策略设置/);
+  assert.match(viewModel.perspectiveLayer[0]?.description ?? "", /已接入真实研究链路数据/);
+  assert.match(viewModel.perspectiveLayer[1]?.description ?? "", /已接入真实运营事件/);
+
+  delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
+  fs.rmSync(root, { recursive: true, force: true });
+});
