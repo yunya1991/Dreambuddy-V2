@@ -373,7 +373,7 @@ test("buildUserContextUIMapOverride returns null when no artifacts exist", () =>
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test("buildUserContextUIMapOverride produces summary-only label from artifact statistics", () => {
+test("buildUserContextUIMapOverride produces full integration label from artifact statistics", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-uc-"));
   const dir = path.join(root, "trading");
   fs.mkdirSync(dir, { recursive: true });
@@ -395,7 +395,8 @@ test("buildUserContextUIMapOverride produces summary-only label from artifact st
   assert.ok(override !== null, "buildUserContextUIMapOverride should produce an override when artifacts exist");
   assert.ok(override!.buildLabel.length > 0, "buildLabel should be non-empty");
   assert.ok(override!.runtimeLabel.length > 0, "runtimeLabel should be non-empty");
-  assert.match(override!.description, /summary-only/);
+  assert.match(override!.description, /用户上下文索引完整接入/);
+  assert.match(override!.description, /覆盖率/);
   assert.match(override!.summaryNote, /未透出/);
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
@@ -405,14 +406,14 @@ test("buildUserContextUIMapOverride produces summary-only label from artifact st
 test("ui-map shell view model prefers real-data user-context override when available", () => {
   const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
     userContext: {
-      description: "已接入 summary-only 用户上下文摘要",
+      description: "用户上下文索引完整接入：基于 10 个产物沉淀",
       buildLabel: "支撑自定义策略生成（5 个已沉淀产物可被索引回溯）",
       runtimeLabel: "支撑每次策略执行（2 个活跃产物可供上下文注入）",
-      summaryNote: "summary-only：未透出任何用户配置或敏感信息",
+      summaryNote: "基于 artifacts 索引构建用户上下文摘要；未透出任何用户配置或敏感信息",
     },
   });
 
-  assert.match(viewModel.indexFoundation.userContext.description, /已接入 summary-only/);
+  assert.match(viewModel.indexFoundation.userContext.description, /用户上下文索引完整接入/);
   assert.match(viewModel.indexFoundation.userContext.buildLabel, /已沉淀产物可被索引回溯/);
   assert.match(viewModel.indexFoundation.userContext.runtimeLabel, /活跃产物可供上下文注入/);
   assert.ok(
@@ -423,10 +424,10 @@ test("ui-map shell view model prefers real-data user-context override when avail
 test("ui-map page assembly marks hero dataModeLabel with user-context override", () => {
   const viewModel = buildUIMapShellViewModel(getUIMapScenario("balanced"), {
     userContext: {
-      description: "已接入 summary-only 用户上下文摘要",
+      description: "用户上下文索引完整接入",
       buildLabel: "支撑自定义策略生成",
       runtimeLabel: "支撑每次策略执行",
-      summaryNote: "summary-only：未透出任何用户配置或敏感信息",
+      summaryNote: "基于 artifacts 索引构建用户上下文摘要；未透出任何用户配置或敏感信息",
     },
   });
 
@@ -623,7 +624,7 @@ test("ui-map page assembly produces Phase B shell when all five real-data adapte
   assert.match(viewModel.hero.dataModeLabel, /用户上下文索引/);
 
   assert.match(viewModel.indexFoundation.systemResearch.description, /已接入真实系统研究数据/);
-  assert.match(viewModel.indexFoundation.userContext.description, /已接入 summary-only/);
+  assert.match(viewModel.indexFoundation.userContext.description, /用户上下文索引完整接入/);
   assert.match(viewModel.mainlineLayer.convergenceLabel, /策略主线完整接入/);
   assert.match(viewModel.mainlineLayer.convergenceLabel, /2 份策略产物沉淀/);
   assert.match(viewModel.mainlineLayer.convergenceLabel, /1 活跃 \/ 1 已完成/);
