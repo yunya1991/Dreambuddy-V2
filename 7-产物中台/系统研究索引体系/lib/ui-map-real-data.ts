@@ -102,7 +102,7 @@ export function buildOperationsUIMapOverride(): UIMapOperationsOverride | null {
       .filter((item) => item.events.length > 0)
       .map((item) => {
         const latest = item.events[item.events.length - 1];
-        const timestamp = formatSummaryTimestamp(latest.timestamp as string | undefined | null);
+        const timestamp = formatSummaryTimestamp(latest.timestamp);
         return `${item.channel}：${item.events.length} 条最近（${timestamp}）`;
       });
 

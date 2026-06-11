@@ -34,6 +34,8 @@ export interface ChainStrategySummary {
   phaseCounts: Record<string, number>;
 }
 
+import type { ChainPhaseArtifacts } from "../../lib/types";
+
 export interface ChainSummaryPayload {
   phases: Record<string, ChainPhaseSummary>;
   activeLoop: ChainLoop;
@@ -43,7 +45,7 @@ export interface ChainSummaryPayload {
   /** Generated timestamp string from the canonical index. */
   generatedAt: string;
   /** Summary-only phase-artifact list for the mindmap relation panel. */
-  phaseArtifacts: Record<string, Array<{ artifactId: string; title: string; date: string; chainPhase: string; feedHref: string; chainHref: string; nodeId: string; category: string }>>;
+  phaseArtifacts: ChainPhaseArtifacts;
 }
 
 const PHASE_LOOP_MAP: Record<string, ChainLoop> = {
@@ -116,7 +118,9 @@ export function buildChainSummaryPayload(): ChainSummaryPayload {
       }
     }
 
-    for (const [phase, bucket] of byPhase.entries()) {
+    const phaseEntries = Array.from(byPhase.entries());
+    for (let i = 0; i < phaseEntries.length; i++) {
+      const [phase, bucket] = phaseEntries[i];
       phases[phase] = {
         count: bucket.count,
         latest: bucket.latest,
