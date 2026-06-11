@@ -1,13 +1,3 @@
-## Lane Routing (Feishu Base 模块任务)
-Task ID: <task_id from 模块任务表>
-Goal ID: <goal_id from 目标推进表 (Strict required)>
-Lane: <fast | strict>
-Module Key: <module_key>
-Module Paths:
-- <repo-relative glob path>
-Spec Doc: <repo path or URL>
-Plan Doc: <repo path or URL>
-
 ## Task Card
 Task Card: <link or inline summary>
 
@@ -42,9 +32,6 @@ Delivery Pointer: <comment url>
 - [ ] 阻塞时已发 `BLOCKED`
 - [ ] 完成后将发 `DONE`
 - [ ] 仅在关键节点广播，不为每个微小提交重复评论
-
-## Fast Lane Summary (fast only)
-[单次总结 / SUMMARY] Comment: <comment url>
 
 ## Owner Agent
 Owner Agent: <SOLO | Claude Code | other>

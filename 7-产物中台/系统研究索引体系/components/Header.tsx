@@ -12,6 +12,7 @@ export default function Header() {
   const isOrgActive = pathname.startsWith('/org');
   const isChainActive = pathname.startsWith('/chain');
   const isMeetingActive = pathname.startsWith('/meeting');
+  const isUIMapActive = pathname.startsWith('/ui-map');
 
   const [totalArtifacts, setTotalArtifacts] = useState<number | null>(null);
   const [numDepartments, setNumDepartments] = useState<number | null>(null);
@@ -87,6 +88,17 @@ export default function Header() {
               )}
             >
               会议室
+            </Link>
+            <Link
+              href="/ui-map"
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                isUIMapActive
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              UI-Map
             </Link>
           </nav>
         </div>

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { OrgTreeData } from './org-types';
-import { applyStatusInference } from './status-inference';
+import { applyStatusInference } from './status-inference.ts';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const EMPTY_ORG_TREE_NAME = 'Dream Product Hub';
