@@ -12,6 +12,11 @@ import type {
   UIMapSystemResearchOverride,
   UIMapUserContextOverride,
 } from "../app/ui-map/ui-map-shell-view-model.ts";
+import {
+  buildStrategyFullView,
+  type StrategyFullView,
+  type StrategySettingResult,
+} from "./strategy-standard-objects.ts";
 
 export function buildSystemResearchUIMapOverride(): UIMapSystemResearchOverride | null {
   try {
@@ -136,6 +141,7 @@ export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
     }
 
     const strategyArtifacts = artifactsData.artifacts.filter((item) => item.type === "strategy");
+    
     const strategyPhaseCount: Record<string, number> = {};
     strategyArtifacts.forEach((item) => {
       const normalized = phaseLabelFor(item.chain_phase);
@@ -156,23 +162,45 @@ export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
 
     const lastUpdated = formatSummaryTimestamp(artifactsData.generated_at);
 
+    const strategyFullViews: StrategyFullView[] = strategyArtifacts
+      .map((artifact) => buildStrategyFullView(artifact))
+      .filter((view): view is StrategyFullView => view !== null);
+
+    const activeSettings = strategyFullViews.filter(
+      (view) => view.setting.status === "active",
+    );
+    const completedSettings = strategyFullViews.filter(
+      (view) => view.setting.status === "completed",
+    );
+    const draftSettings = strategyFullViews.filter(
+      (view) => view.setting.status === "draft",
+    );
+
+    const runningExecutions = strategyFullViews.filter(
+      (view) => view.executionStatus.status === "running",
+    );
+    const totalTasks = strategyFullViews.reduce(
+      (sum, view) => sum + view.executionStatus.metrics.totalTasks,
+      0,
+    );
+    const completedTasks = strategyFullViews.reduce(
+      (sum, view) => sum + view.executionStatus.metrics.completedTasks,
+      0,
+    );
+
     const convergenceLabel =
-      `summary-only：${strategyCount} 份策略产物沉淀（${phaseDistribution}，strategy_setting_result 契约待落地）`;
+      `策略主线完整接入：${strategyCount} 份策略产物沉淀（${phaseDistribution}），${activeSettings.length} 活跃 / ${completedSettings.length} 已完成 / ${draftSettings.length} 草稿`;
 
-    // Chain description: focus on strategy-specific flow, not the full artifact ecosystem.
-    // Strategy artifacts → strategy execution → result artifact indexed.
-    // The "318 产物" context belongs to the system-research perspective, not strategy.
     const chain =
-      `${strategyCount} 策略设置（${strategyActive} 活跃 / ${strategyCompleted} 已沉淀）→ 策略执行 → 结果产物入索引${lastUpdated ? `（${lastUpdated}）` : ""}`;
+      `${strategyCount} 策略设置 → ${runningExecutions.length} 正在执行 → ${completedTasks}/${totalTasks} 任务完成 → 结果产物入索引${lastUpdated ? `（${lastUpdated}）` : ""}`;
 
-    // summaryNote: clarify scope — type=strategy artifacts are counted; A-phase
-    // distribution is from strategy artifacts only (may be empty if none have chain_phase).
-    const hasPhaseData = activePhases.length > 0;
-    const phaseNote = hasPhaseData
-      ? `含 ${activePhases.length} 个 A-phase 分布（来自 type=strategy artifacts）`
-      : "A-phase 分布：strategy artifacts 均无 chain_phase 标注";
-    const summaryNote =
-      `summary-only 接入：type=strategy 产物统计（${phaseNote}）；策略配置详情与执行状态待 strategy_setting_result 契约落地后透出。`;
+    const activeStrategyNames = activeSettings
+      .slice(0, 3)
+      .map((view) => view.setting.strategyName)
+      .join("、");
+    const summaryNote = activeStrategyNames
+      ? `活跃策略：${activeStrategyNames}${activeSettings.length > 3 ? ` 等共 ${activeSettings.length} 个` : ""}`
+      : "暂无活跃策略";
 
     return {
       convergenceLabel,

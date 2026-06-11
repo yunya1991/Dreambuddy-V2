@@ -256,7 +256,7 @@ test("ui-map shell view model prefers real-data operations summary when availabl
   ]);
 });
 
-test("buildStrategyUIMapOverride produces summary-only label from strategy typed artifacts", () => {
+test("buildStrategyUIMapOverride produces full integration label from strategy typed artifacts", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-real-data-strategy-"));
   const tradingDir = path.join(root, "trading");
   fs.mkdirSync(tradingDir, { recursive: true });
@@ -277,11 +277,12 @@ test("buildStrategyUIMapOverride produces summary-only label from strategy typed
   const override = buildStrategyUIMapOverride();
 
   assert.ok(override !== null, "buildStrategyUIMapOverride should produce an override when strategy artifacts exist");
-  assert.match(override!.convergenceLabel, /summary-only/);
+  assert.match(override!.convergenceLabel, /策略主线完整接入/);
   assert.match(override!.convergenceLabel, /2 份策略产物沉淀/);
+  assert.match(override!.convergenceLabel, /1 活跃 \/ 1 已完成 \/ 0 草稿/);
   assert.ok(override!.chain.includes("2 策略设置"));
-  assert.ok(override!.chain.includes("策略执行"));
-  assert.match(override!.summaryNote ?? "", /summary-only 接入/);
+  assert.ok(override!.chain.includes("正在执行"));
+  assert.match(override!.summaryNote ?? "", /活跃策略：S2/);
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
@@ -350,8 +351,8 @@ test("ui-map page assembly includes strategy override when all four adapters are
 
   assert.match(viewModel.hero.dataModeLabel, /Phase B/);
   assert.match(viewModel.hero.dataModeLabel, /策略主线/);
-  assert.match(viewModel.mainlineLayer.convergenceLabel, /summary-only/);
-  assert.match(viewModel.mainlineLayer.summaryNote ?? "", /summary-only 接入/);
+  assert.match(viewModel.mainlineLayer.convergenceLabel, /策略主线完整接入/);
+  assert.match(viewModel.mainlineLayer.summaryNote ?? "", /暂无活跃策略/);
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
@@ -433,7 +434,7 @@ test("ui-map page assembly marks hero dataModeLabel with user-context override",
   assert.match(viewModel.hero.dataModeLabel, /用户上下文索引/);
 });
 
-test("buildStrategyUIMapOverride includes A-phase distribution in its summary-only label", () => {
+test("buildStrategyUIMapOverride includes A-phase distribution in its full integration label", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "ui-map-strategy-aphase-"));
   const tradingDir = path.join(root, "trading");
   fs.mkdirSync(tradingDir, { recursive: true });
@@ -454,10 +455,12 @@ test("buildStrategyUIMapOverride includes A-phase distribution in its summary-on
 
   const override = buildStrategyUIMapOverride();
   assert.ok(override !== null);
+  assert.match(override!.convergenceLabel, /策略主线完整接入/);
   assert.match(override!.convergenceLabel, /A3×1/);
   assert.match(override!.convergenceLabel, /A4×2/);
+  assert.match(override!.convergenceLabel, /1 活跃 \/ 2 已完成 \/ 0 草稿/);
   assert.match(override!.chain, /3 策略设置/);
-  assert.match(override!.chain, /1 活跃 \/ 2 已沉淀/);
+  assert.match(override!.chain, /1 正在执行/);
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
@@ -509,10 +512,13 @@ test("buildStrategyUIMapOverride counts phase from strategy artifacts only, not 
 
   const override = buildStrategyUIMapOverride();
   assert.ok(override !== null);
+  assert.match(override!.convergenceLabel, /策略主线完整接入/);
   assert.match(override!.convergenceLabel, /A4×1/);
   assert.ok(!override!.convergenceLabel.includes("A6"), "phase label should only reflect strategy-typed artifacts");
   assert.ok(!override!.convergenceLabel.includes("A5"), "phase label should only reflect strategy-typed artifacts");
-  assert.match(override!.chain, /1 策略设置（0 活跃 \/ 1 已沉淀）/);
+  assert.match(override!.chain, /1 策略设置/);
+  assert.match(override!.chain, /0 正在执行/);
+  assert.match(override!.convergenceLabel, /0 活跃 \/ 1 已完成 \/ 0 草稿/);
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
@@ -566,10 +572,12 @@ test("buildStrategyUIMapOverride counts active/completed only among strategy art
 
   const override = buildStrategyUIMapOverride();
   assert.ok(override !== null);
+  assert.match(override!.convergenceLabel, /策略主线完整接入/);
+  assert.match(override!.convergenceLabel, /3 份策略产物沉淀/);
+  assert.match(override!.convergenceLabel, /2 活跃 \/ 1 已完成 \/ 0 草稿/);
   assert.match(override!.chain, /3 策略设置/);
-  assert.match(override!.chain, /2 活跃 \/ 1 已沉淀/);
-  // chain description is now strategy-centric; does not reference total artifact count
-  assert.ok(override!.chain.includes("策略执行"));
+  assert.match(override!.chain, /2 正在执行/);
+  assert.ok(override!.chain.includes("任务完成"));
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
@@ -582,6 +590,7 @@ test("ui-map page assembly produces Phase B shell when all five real-data adapte
 
   const artifacts = [
     { artifact_id: "trading/s-001", title: "S1", department: "trading", type: "strategy", status: "completed", date: "2026-06-09T08:00:00Z", chain_phase: "A3", tags: ["signal"], filename: "s1.md" },
+    { artifact_id: "trading/s-002", title: "S2", department: "trading", type: "strategy", status: "active", date: "2026-06-08T08:00:00Z", chain_phase: "A5", tags: ["signal"], filename: "s2.md" },
     { artifact_id: "trading/r-001", title: "R1", department: "trading", type: "research", status: "active", date: "2026-06-08T08:00:00Z", chain_phase: "A5", tags: ["summary"], filename: "r1.md" },
   ];
 
@@ -615,8 +624,11 @@ test("ui-map page assembly produces Phase B shell when all five real-data adapte
 
   assert.match(viewModel.indexFoundation.systemResearch.description, /已接入真实系统研究数据/);
   assert.match(viewModel.indexFoundation.userContext.description, /已接入 summary-only/);
-  assert.match(viewModel.mainlineLayer.convergenceLabel, /summary-only/);
+  assert.match(viewModel.mainlineLayer.convergenceLabel, /策略主线完整接入/);
+  assert.match(viewModel.mainlineLayer.convergenceLabel, /2 份策略产物沉淀/);
+  assert.match(viewModel.mainlineLayer.convergenceLabel, /1 活跃 \/ 1 已完成/);
   assert.match(viewModel.mainlineLayer.chain, /策略设置/);
+  assert.match(viewModel.mainlineLayer.summaryNote ?? "", /活跃策略：S2/);
   assert.match(viewModel.perspectiveLayer[0]?.description ?? "", /已接入真实研究链路数据/);
   assert.match(viewModel.perspectiveLayer[1]?.description ?? "", /已接入真实运营事件/);
 
