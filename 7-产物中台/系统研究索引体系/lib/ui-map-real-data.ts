@@ -158,13 +158,26 @@ export function buildStrategyUIMapOverride(): UIMapStrategyOverride | null {
 
     const convergenceLabel =
       `summary-only：${strategyCount} 份策略产物沉淀（${phaseDistribution}，strategy_setting_result 契约待落地）`;
+
+    // Chain description: focus on strategy-specific flow, not the full artifact ecosystem.
+    // Strategy artifacts → strategy execution → result artifact indexed.
+    // The "318 产物" context belongs to the system-research perspective, not strategy.
     const chain =
-      `${strategyCount} 策略设置（${strategyActive} 活跃 / ${strategyCompleted} 已沉淀）→ ${total} 产物链条 → 结果产物 → 索引${lastUpdated ? `（${lastUpdated}）` : ""}`;
+      `${strategyCount} 策略设置（${strategyActive} 活跃 / ${strategyCompleted} 已沉淀）→ 策略执行 → 结果产物入索引${lastUpdated ? `（${lastUpdated}）` : ""}`;
+
+    // summaryNote: clarify scope — type=strategy artifacts are counted; A-phase
+    // distribution is from strategy artifacts only (may be empty if none have chain_phase).
+    const hasPhaseData = activePhases.length > 0;
+    const phaseNote = hasPhaseData
+      ? `含 ${activePhases.length} 个 A-phase 分布（来自 type=strategy artifacts）`
+      : "A-phase 分布：strategy artifacts 均无 chain_phase 标注";
+    const summaryNote =
+      `summary-only 接入：type=strategy 产物统计（${phaseNote}）；策略配置详情与执行状态待 strategy_setting_result 契约落地后透出。`;
 
     return {
       convergenceLabel,
       chain,
-      summaryNote: "当前为摘要级接入：基于 artifacts 索引的 type=strategy 与 A-phase 分布统计，敏感配置与执行状态尚未透出。",
+      summaryNote,
     };
   } catch {
     return null;

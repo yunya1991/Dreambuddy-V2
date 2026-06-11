@@ -280,8 +280,8 @@ test("buildStrategyUIMapOverride produces summary-only label from strategy typed
   assert.match(override!.convergenceLabel, /summary-only/);
   assert.match(override!.convergenceLabel, /2 份策略产物沉淀/);
   assert.ok(override!.chain.includes("2 策略设置"));
-  assert.ok(override!.chain.includes("3 产物链条"));
-  assert.match(override!.summaryNote ?? "", /摘要级接入/);
+  assert.ok(override!.chain.includes("策略执行"));
+  assert.match(override!.summaryNote ?? "", /summary-only 接入/);
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
@@ -351,7 +351,7 @@ test("ui-map page assembly includes strategy override when all four adapters are
   assert.match(viewModel.hero.dataModeLabel, /Phase B/);
   assert.match(viewModel.hero.dataModeLabel, /策略主线/);
   assert.match(viewModel.mainlineLayer.convergenceLabel, /summary-only/);
-  assert.match(viewModel.mainlineLayer.summaryNote ?? "", /摘要级接入/);
+  assert.match(viewModel.mainlineLayer.summaryNote ?? "", /summary-only 接入/);
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
@@ -568,10 +568,8 @@ test("buildStrategyUIMapOverride counts active/completed only among strategy art
   assert.ok(override !== null);
   assert.match(override!.chain, /3 策略设置/);
   assert.match(override!.chain, /2 活跃 \/ 1 已沉淀/);
-  assert.ok(
-    !override!.chain.includes("5 产物链条") || override!.chain.includes("5 产物链条") === true,
-    "chain label should still reference total artifacts for the chain portion"
-  );
+  // chain description is now strategy-centric; does not reference total artifact count
+  assert.ok(override!.chain.includes("策略执行"));
 
   delete process.env.WORKBUDDY_ARTIFACTS_ROOT;
   fs.rmSync(root, { recursive: true, force: true });
