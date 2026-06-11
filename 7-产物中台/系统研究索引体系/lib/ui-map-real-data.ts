@@ -17,6 +17,10 @@ import {
   type StrategyFullView,
   type StrategySettingResult,
 } from "./strategy-standard-objects.ts";
+import {
+  buildUserContextSummary,
+  type UserContextFullView,
+} from "./user-context-standard-objects.ts";
 
 export function buildSystemResearchUIMapOverride(): UIMapSystemResearchOverride | null {
   try {
@@ -216,22 +220,27 @@ export function buildUserContextUIMapOverride(): UIMapUserContextOverride | null
   try {
     const artifactsData = getArtifactsData();
     const total = artifactsData.total;
-    const departmentCount = Object.keys(artifactsData.statistics.by_department ?? {}).length;
-    const byStatus = artifactsData.statistics.by_status ?? {};
-    const completedCount = Number(byStatus["completed"] ?? 0);
-    const activeCount = total - completedCount;
 
     if (!total) {
       return null;
     }
 
+    const departmentCount = Object.keys(artifactsData.statistics.by_department ?? {}).length;
+    const byStatus = artifactsData.statistics.by_status ?? {};
+    const completedCount = Number(byStatus["completed"] ?? 0);
+    const activeCount = total - completedCount;
+
+    // 使用标准对象契约构建用户上下文视图
+    const contextView = buildUserContextSummary(artifactsData, 'build-time');
+    
     const lastUpdated = formatSummaryTimestamp(artifactsData.generated_at);
+    const coveragePercent = Math.round(contextView.summary.coverageRate * 100);
 
     return {
-      description: `已接入 summary-only 用户上下文摘要：基于 ${total} 个产物沉淀，覆盖 ${departmentCount} 个部门的执行上下文可见范围。`,
-      buildLabel: `支撑自定义策略生成（${completedCount} 个已沉淀产物可被索引回溯）`,
-      runtimeLabel: `支撑每次策略执行（${activeCount} 个活跃产物可供上下文注入）`,
-      summaryNote: `summary-only：未透出任何用户配置或敏感信息（${lastUpdated}）`,
+      description: `用户上下文索引完整接入：基于 ${total} 个产物沉淀，覆盖 ${departmentCount} 个部门的执行上下文可见范围（覆盖率 ${coveragePercent}%）`,
+      buildLabel: `支撑自定义策略生成（${completedCount} 个已沉淀产物可被索引回溯，${contextView.buildTimeArtifactCount} 个可用于构建时上下文）`,
+      runtimeLabel: `支撑每次策略执行（${activeCount} 个活跃产物可供上下文注入，${contextView.runtimeArtifactCount} 个可用于运行时上下文）`,
+      summaryNote: `基于 artifacts 索引构建用户上下文摘要；未透出任何用户配置或敏感信息（${lastUpdated}）`,
     };
   } catch {
     return null;
