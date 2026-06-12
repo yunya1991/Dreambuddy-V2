@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI-Map 项目进度监控 · 2026-06-11 08:03:06</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    margin: 0; padding: 0;
+    background: #0f172a;
+    color: #e2e8f0;
+    line-height: 1.6;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+    padding: 32px; border-radius: 16px; margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  h1 { margin: 0 0 8px 0; font-size: 28px; }
+  .subtitle { color: #94a3b8; font-size: 14px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; font-size: 13px; color: #cbd5e1; }
+  .meta-item { background: rgba(255,255,255,0.08); padding: 6px 12px; border-radius: 20px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155;
+  }
+  .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-value { font-size: 32px; font-weight: bold; margin: 8px 0; }
+  .stat-detail { font-size: 13px; color: #cbd5e1; }
+  .pass { color: #4ade80; }
+  .fail { color: #f87171; }
+  .pct { color: #60a5fa; }
+
+  .progress-wrap { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid #334155; }
+  .progress-bar-wrap { background: #334155; height: 14px; border-radius: 7px; overflow: hidden; margin-top: 12px; }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+    width: 50%;
+    transition: width 0.3s;
+  }
+
+  section { margin-bottom: 32px; }
+  h2 { font-size: 20px; margin: 0 0 16px 0; color: #f1f5f9; border-left: 4px solid #3b82f6; padding-left: 12px; }
+
+  .task-card {
+    background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 12px;
+    border-left: 4px solid #475569; border-top: 1px solid #334155;
+    border-right: 1px solid #334155; border-bottom: 1px solid #334155;
+  }
+  .task-done { border-left-color: #22c55e; }
+  .task-pending { border-left-color: #f59e0b; background: #1e293b; }
+  .task-header { display: flex; align-items: flex-start; gap: 12px; }
+  .task-icon { font-size: 20px; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .task-done .task-icon { background: rgba(34,197,94,0.2); color: #4ade80; }
+  .task-pending .task-icon { background: rgba(245,158,11,0.2); color: #fbbf24; }
+  .task-title-wrap { flex: 1; }
+  .task-name { font-size: 16px; font-weight: 600; color: #f1f5f9; }
+  .task-desc { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+  .task-status { font-size: 12px; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
+  .status-done { background: rgba(34,197,94,0.2); color: #4ade80; }
+  .status-pending { background: rgba(245,158,11,0.2); color: #fbbf24; }
+  .task-evidence { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #334155; }
+  .evidence-line { font-size: 12px; color: #cbd5e1; margin: 4px 0; font-family: "SF Mono", Consolas, monospace; }
+  .ok { color: #4ade80; margin-right: 6px; }
+  .no { color: #f87171; margin-right: 6px; }
+
+  .test-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .test-card {
+    background: #1e293b; border-radius: 12px; padding: 16px;
+    border: 1px solid #334155; border-left: 4px solid #475569;
+  }
+  .test-pass { border-left-color: #22c55e; }
+  .test-fail { border-left-color: #ef4444; background: #2c1810; }
+  .test-missing { border-left-color: #64748b; opacity: 0.7; }
+  .test-warn { border-left-color: #f59e0b; }
+  .test-name { font-family: "SF Mono", Consolas, monospace; font-size: 13px; color: #e2e8f0; }
+  .test-meta { margin-top: 8px; font-size: 11px; color: #94a3b8; display: flex; gap: 12px; }
+  .pass-num { color: #4ade80; }
+  .fail-num { color: #f87171; }
+  .test-status { margin-top: 8px; font-size: 13px; font-weight: 600; }
+  .test-pass .test-status { color: #4ade80; }
+  .test-fail .test-status { color: #f87171; }
+  .failures { margin-top: 8px; }
+  .failure { font-size: 11px; color: #fca5a5; font-family: monospace; padding: 4px 0; border-bottom: 1px dashed #334155; }
+
+  .alert-fail {
+    background: rgba(239,68,68,0.15); border: 1px solid #ef4444;
+    color: #fca5a5; padding: 12px 16px; border-radius: 8px;
+    margin-bottom: 16px; font-size: 14px;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+
+  .panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; }
+  .panel-title { font-size: 14px; color: #94a3b8; margin-bottom: 12px; font-weight: 600; }
+  .file-line, .commit-line, .log-line {
+    font-size: 12px; color: #cbd5e1; padding: 6px 8px;
+    border-bottom: 1px dashed #334155; font-family: "SF Mono", Consolas, monospace;
+  }
+  .file-line.empty { color: #64748b; font-style: italic; }
+  .commit-line:last-child, .file-line:last-child, .log-line:last-child { border-bottom: none; }
+
+  footer {
+    margin-top: 32px; padding: 24px; text-align: center;
+    color: #64748b; font-size: 12px;
+    border-top: 1px solid #334155;
+  }
+  footer .commit { font-family: "SF Mono", Consolas, monospace; color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>🔍 UI-Map 项目进度监控</h1>
+    <div class="subtitle">自动扫描 · 测试验证 · 页面更新 · 每 30 分钟刷新</div>
+    <div class="meta-row">
+      <span class="meta-item">🕐 最后更新：2026-06-11 08:03:06</span>
+      <span class="meta-item">📌 Git：<span class="commit">9895cbcf</span></span>
+      <span class="meta-item">📊 进度：50%</span>
+      <span class="meta-item">🧪 测试通过率：100%</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>📊 测试报告</h2>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">测试总数</div>
+        <div class="stat-value">18</div>
+        <div class="stat-detail">覆盖 4 个测试文件</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">通过</div>
+        <div class="stat-value pass">18</div>
+        <div class="stat-detail">占比 <span class="pct">100%</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">失败</div>
+        <div class="stat-value fail">0</div>
+        <div class="stat-detail">失败的测试需关注</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">HTTP 页面</div>
+        <div class="stat-value pass">✓</div>
+        <div class="stat-detail">http://127.0.0.1:62932/progress-monitor.html · 200</div>
+      </div>
+    </div>
+    <div class="test-grid">
+      
+            <div class="test-card test-pass">
+                <div class="test-name">ui-map-shell-view-model.test.ts</div>
+                <div class="test-meta">
+                    <span>总计 14</span>
+                    <span class="pass-num">通过 14</span>
+                    <span class="fail-num">失败 0</span>
+                </div>
+                <div class="test-status">14/14 通过</div>
+                
+            </div>
+            
+            <div class="test-card test-pass">
+                <div class="test-name">page.test.ts</div>
+                <div class="test-meta">
+                    <span>总计 1</span>
+                    <span class="pass-num">通过 1</span>
+                    <span class="fail-num">失败 0</span>
+                </div>
+                <div class="test-status">1/1 通过</div>
+                
+            </div>
+            
+            <div class="test-card test-pass">
+                <div class="test-name">org-data.test.ts</div>
+                <div class="test-meta">
+                    <span>总计 2</span>
+                    <span class="pass-num">通过 2</span>
+                    <span class="fail-num">失败 0</span>
+                </div>
+                <div class="test-status">2/2 通过</div>
+                
+            </div>
+            
+            <div class="test-card test-pass">
+                <div class="test-name">workspace-path-alignment.test.mjs</div>
+                <div class="test-meta">
+                    <span>总计 1</span>
+                    <span class="pass-num">通过 1</span>
+                    <span class="fail-num">失败 0</span>
+                </div>
+                <div class="test-status">1/1 通过</div>
+                
+            </div>
+            
+    </div>
+  </section>
+
+  <section>
+    <h2>🎯 整体进度</h2>
+    <div class="progress-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <div>
+          <div style="font-size: 14px; color: #cbd5e1;">已完成 Task</div>
+          <div style="font-size: 28px; font-weight: bold; color: #4ade80;">3 / 6</div>
+        </div>
+        <div style="font-size: 36px; font-weight: bold; color: #60a5fa;">50%</div>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>✅ Task 完成状态</h2>
+    
+            <div class="task-card task-pending">
+                <div class="task-header">
+                    <span class="task-icon">◯</span>
+                    <div class="task-title-wrap">
+                        <div class="task-name">Task 1 · 壳层 view-model 与基础语义</div>
+                        <div class="task-desc">ui-map-scenarios.ts / ui-map-shell-view-model.ts / 对应测试文件齐备且测试通过</div>
+                    </div>
+                    <span class="task-status status-pending">进行中</span>
+                </div>
+                <div class="task-evidence"><div class="evidence-line"><span class="ok">✓</span> ui-map-scenarios.ts</div><div class="evidence-line"><span class="ok">✓</span> ui-map-shell-view-model.ts</div><div class="evidence-line"><span class="ok">✓</span> ui-map-shell-view-model.test.ts</div></div>
+            </div>
+            
+            <div class="task-card task-pending">
+                <div class="task-header">
+                    <span class="task-icon">◯</span>
+                    <div class="task-title-wrap">
+                        <div class="task-name">Task 2 · 页面组件与路由入口</div>
+                        <div class="task-desc">UIMapModuleCard / UIMapShell / UIMapClient / page.tsx / page.test.ts 齐备且测试通过</div>
+                    </div>
+                    <span class="task-status status-pending">进行中</span>
+                </div>
+                <div class="task-evidence"><div class="evidence-line"><span class="ok">✓</span> UIMapModuleCard.tsx</div><div class="evidence-line"><span class="ok">✓</span> UIMapShell.tsx</div><div class="evidence-line"><span class="ok">✓</span> UIMapClient.tsx</div><div class="evidence-line"><span class="ok">✓</span> page.tsx</div><div class="evidence-line"><span class="ok">✓</span> page.test.ts</div></div>
+            </div>
+            
+            <div class="task-card task-done">
+                <div class="task-header">
+                    <span class="task-icon">✓</span>
+                    <div class="task-title-wrap">
+                        <div class="task-name">Task 3 · 来源层语义增强</div>
+                        <div class="task-desc">view-model 与 shell 中包含来源层语义（sourceLayer / 业务来源层）</div>
+                    </div>
+                    <span class="task-status status-done">已完成</span>
+                </div>
+                <div class="task-evidence"><div class="evidence-line"><span class="ok">✓</span> ui-map-shell-view-model.ts 含 sourceLayer</div><div class="evidence-line"><span class="ok">✓</span> UIMapShell.tsx 含 source-layer</div></div>
+            </div>
+            
+            <div class="task-card task-done">
+                <div class="task-header">
+                    <span class="task-icon">✓</span>
+                    <div class="task-title-wrap">
+                        <div class="task-name">Task 4 · 主线层与双索引语义</div>
+                        <div class="task-desc">view-model 与 shell 中包含主线层与索引底座语义</div>
+                    </div>
+                    <span class="task-status status-done">已完成</span>
+                </div>
+                <div class="task-evidence"><div class="evidence-line"><span class="ok">✓</span> ui-map-shell-view-model.ts 含主线层/索引</div><div class="evidence-line"><span class="ok">✓</span> UIMapShell.tsx 含主线层</div></div>
+            </div>
+            
+            <div class="task-card task-pending">
+                <div class="task-header">
+                    <span class="task-icon">◯</span>
+                    <div class="task-title-wrap">
+                        <div class="task-name">Task 5 · 导航入口与 ui-map 导航项</div>
+                        <div class="task-desc">page.tsx 含 ui-map 入口，Header.tsx 含 ui-map 导航项，navigation.test.ts 覆盖</div>
+                    </div>
+                    <span class="task-status status-pending">进行中</span>
+                </div>
+                <div class="task-evidence"><div class="evidence-line"><span class="ok">✓</span> page.tsx 含 ui-map 入口</div><div class="evidence-line"><span class="ok">✓</span> Header.tsx 含 ui-map 导航</div><div class="evidence-line"><span class="no">✗</span> navigation.test.ts 存在</div></div>
+            </div>
+            
+            <div class="task-card task-done">
+                <div class="task-header">
+                    <span class="task-icon">✓</span>
+                    <div class="task-title-wrap">
+                        <div class="task-name">Task 6 · 压力测试脚本与自动测试文档</div>
+                        <div class="task-desc">scripts/ui-map-pressure-check.mjs 存在，且文档中包含自动测试章节</div>
+                    </div>
+                    <span class="task-status status-done">已完成</span>
+                </div>
+                <div class="task-evidence"><div class="evidence-line"><span class="ok">✓</span> ui-map-pressure-check.mjs 存在</div><div class="evidence-line"><span class="ok">✓</span> 文档含自动测试章节</div></div>
+            </div>
+            
+  </section>
+
+  <section class="two-col">
+    <div class="panel">
+      <div class="panel-title">📝 本轮检测到的工作区变更</div>
+      <div class="file-line">M .github/pull_request_template.md</div><div class="file-line">M "AGENT\345\215\217\344\275\234\345\267\245\345\205\267/SKILLS/agent-collab-supervisor/rules.json"</div><div class="file-line">M "AGENT\345\215\217\344\275\234\345\267\245\345\205\267/github-actions/build_agent_lifecycle_payload.py"</div><div class="file-line">M "AGENT\345\215\217\344\275\234\345\267\245\345\205\267/github-actions/check_agent_lifecycle.py"</div><div class="file-line">M deploy/hermes/cron/jobs.json</div><div class="file-line">M deploy/hermes/skills/trading/a6-monitor-trigger/SKILL.md</div><div class="file-line">?? "7-\344\272\247\347\211\251\344\270\255\345\217\260/.monitor-backups/"</div><div class="file-line">?? "7-\344\272\247\347\211\251\344\270\255\345\217\260/progress-monitor.html"</div><div class="file-line">?? "7-\344\272\247\347\211\251\344\270\255\345\217\260/progress_auto_update.py"</div><div class="file-line">?? "7-\344\272\247\347\211\251\344\270\255\345\217\260/\347\263\273\347\273\237\347\240\224\347\251\266\347\264\242\345\274\225\344\275\223\347\263\273/pnpm-lock.yaml"</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">🔄 与 HEAD~1 差异</div>
+      <div class="file-line">.github/pull_request_template.md</div><div class="file-line">"7-\344\272\247\347\211\251\344\270\255\345\217\260/\347\263\273\347\273\237\347\240\224\347\251\266\347\264\242\345\274\225\344\275\223\347\263\273/app/ui-map/page.test.ts"</div><div class="file-line">"7-\344\272\247\347\211\251\344\270\255\345\217\260/\347\263\273\347\273\237\347\240\224\347\251\266\347\264\242\345\274\225\344\275\223\347\263\273/lib/ui-map-real-data.ts"</div><div class="file-line">"AGENT\345\215\217\344\275\234\345\267\245\345\205\267/SKILLS/agent-collab-supervisor/rules.json"</div><div class="file-line">"AGENT\345\215\217\344\275\234\345\267\245\345\205\267/github-actions/build_agent_lifecycle_payload.py"</div><div class="file-line">"AGENT\345\215\217\344\275\234\345\267\245\345\205\267/github-actions/check_agent_lifecycle.py"</div><div class="file-line">deploy/hermes/cron/jobs.json</div><div class="file-line">deploy/hermes/skills/trading/a6-monitor-trigger/SKILL.md</div>
+    </div>
+  </section>
+
+  <section class="two-col">
+    <div class="panel">
+      <div class="panel-title">📜 最近 commits</div>
+      <div class="commit-line">9895cbcf refactor(ui-map): 抽取 formatSummaryTimestamp 辅助函数 + 统一 ARTIFACT_STATUS_COMPLETED 常量 + 强化 page 装配测试</div><div class="commit-line">8bbfeca9 feat(ui-map): chain page summary-only接入 + A-phase分布显示 + 导航测试 + 工程索引更新</div><div class="commit-line">75bda767 feat(ui-map): complete Phase B with all five modules + summary-only chain page</div><div class="commit-line">f2955ed7 feat(ui-map): 接入用户上下文索引系统 summary-only adapter，补齐 Phase B 五个模块</div><div class="commit-line">955ac001 docs(ui-map): 同步 Phase B 策略主线 summary-only 接入状态到工程索引与契约</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">📋 本轮运行日志</div>
+      <div class="log-line">[2026-06-11 08:03:06] 启动自动检测</div><div class="log-line">[2026-06-11 08:03:06] Git HEAD: 9895cbcf refactor(ui-map): 抽取 formatSummaryTimestamp 辅助函数 + 统一 ARTIFACT_STATUS_COMPLETED 常量 + 强化 page 装配测试</div><div class="log-line">[2026-06-11 08:03:06] 变更文件数: 12 (工作区) / 8 (HEAD~1 对比)</div><div class="log-line">[2026-06-11 08:03:06] 运行 4 个测试文件, 共 18 个测试, 通过 18, 失败 0</div><div class="log-line">[2026-06-11 08:03:06] HTTP 服务器: 可达</div><div class="log-line">[2026-06-11 08:03:06] Task 完成度: 3/6 (50%)</div>
+    </div>
+  </section>
+
+  <footer>
+    本次检查基于 commit：<span class="commit">9895cbcf</span> · refactor(ui-map): 抽取 formatSummaryTimestamp 辅助函数 + 统一 ARTIFACT_STATUS_COMPLETED 常量 + 强化 page 装配测试<br>
+    页面由 progress_auto_update.py 自动生成 · 2026-06-11 08:03:06
+  </footer>
+</div>
+</body>
+</html>
