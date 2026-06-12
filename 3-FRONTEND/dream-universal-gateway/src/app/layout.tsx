@@ -26,10 +26,10 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
       suppressHydrationWarning={true}
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning={true}>
+      <body className="min-h-screen flex flex-col" suppressHydrationWarning={true}>
         <Providers>
           {children}
         </Providers>

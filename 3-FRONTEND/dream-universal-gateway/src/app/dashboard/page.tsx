@@ -13,8 +13,6 @@ import {
   normalizeTradingPanelData,
   type TradingPanelData,
 } from "./trading-panel-data";
-import DashboardMainPanel from "./components/DashboardMainPanel";
-import { buildDashboardMainPanelViewModel } from "./dashboard-main-panel-view-model";
 import { buildStrategyPanelViewModel } from "./strategy-view-model";
 import "./dashboard.css";
 
@@ -131,7 +129,9 @@ export default function ChatPage() {
   const [mounted, setMounted] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
-  
+  const [activeTab, setActiveTab] = useState<'trade' | 'research'>('trade');
+  const [researchSubTab, setResearchSubTab] = useState<'reports' | 'news' | 'macro' | 'indicators' | 'signals'>('reports');
+
   const [dataCardExpanded, setDataCardExpanded] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [rightPanelContent, setRightPanelContent] = useState<RightPanelType>('analysis');
@@ -259,31 +259,6 @@ export default function ChatPage() {
   const strategyViewModel = useMemo(
     () => buildStrategyPanelViewModel({ strategies: strategies.strategies }),
     [strategies.strategies],
-  );
-  const dashboardMainPanelViewModel = useMemo(
-    () =>
-      buildDashboardMainPanelViewModel({
-        strategy: strategyViewModel,
-        memory: {
-          totalRecords: memoryStats?.total_records ?? 0,
-          candidateCount: memoryCandidates.length,
-          adjustmentCount: memoryAdjustments.length,
-        },
-        llm: {
-          status: llmStatus,
-          model: llmModel,
-          intentMethod,
-        },
-      }),
-    [
-      strategyViewModel,
-      memoryStats,
-      memoryCandidates.length,
-      memoryAdjustments.length,
-      llmStatus,
-      llmModel,
-      intentMethod,
-    ],
   );
 
   // === 策略向导状态 (Wizard) ===
@@ -4215,10 +4190,33 @@ export default function ChatPage() {
 
   return (
     <main className="dashboard-page">
-      <DashboardMainPanel viewModel={dashboardMainPanelViewModel} />
-      <section className="dashboard-legacy-shell">
-        <div className="flex h-screen bg-[#0d0d0d] text-[#e0e0e0]">
-      {/* Left Sidebar */}
+      <div className="h-11 bg-[#1a1a1a] border-b border-[#1a1a1a] flex items-center px-2 gap-1">
+        <button
+          onClick={() => setActiveTab('trade')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+            activeTab === 'trade'
+              ? 'bg-[#0066ff] text-white'
+              : 'text-[#8a8a8a] hover:text-[#e0e0e0] hover:bg-[#1f1f1f]'
+          }`}
+        >
+          🔗 对话交易
+        </button>
+        <button
+          onClick={() => setActiveTab('research')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+            activeTab === 'research'
+              ? 'bg-[#8b5cf6] text-white'
+              : 'text-[#8a8a8a] hover:text-[#e0e0e0] hover:bg-[#1f1f1f]'
+          }`}
+        >
+          📚 研究体系
+        </button>
+      </div>
+
+      {activeTab === 'trade' && (
+        <section className="dashboard-legacy-shell">
+          <div className="flex h-screen bg-[#0d0d0d] text-[#e0e0e0]">
+            {/* Left Sidebar */}
       <div
         className={`${leftCollapsed ? "w-0" : "w-64"} flex-shrink-0 flex flex-col bg-[#1a1a1a] border-r border-[#1a1a1a] transition-all duration-300 overflow-hidden`}
       >
@@ -4601,9 +4599,77 @@ export default function ChatPage() {
           {renderRightPanel()}
         </div>
       </div>
-
         </div>
       </section>
+      )}
+
+      {activeTab === 'research' && (
+        <section className="dashboard-legacy-shell">
+          <div className="flex flex-col h-screen bg-[#0d0d0d] text-[#e0e0e0]">
+            <div className="bg-[#1a1a1a] border-b border-[#1a1a1a] px-4 py-3">
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setResearchSubTab('reports')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                    researchSubTab === 'reports' ? 'bg-[#8b5cf6] text-white' : 'text-[#8a8a8a] hover:text-[#e0e0e0] hover:bg-[#1f1f1f]'
+                  }`}
+                >
+                  📄 最新研报
+                </button>
+                <button
+                  onClick={() => setResearchSubTab('news')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                    researchSubTab === 'news' ? 'bg-[#8b5cf6] text-white' : 'text-[#8a8a8a] hover:text-[#e0e0e0] hover:bg-[#1f1f1f]'
+                  }`}
+                >
+                  📰 热点新闻
+                </button>
+                <button
+                  onClick={() => setResearchSubTab('macro')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                    researchSubTab === 'macro' ? 'bg-[#8b5cf6] text-white' : 'text-[#8a8a8a] hover:text-[#e0e0e0] hover:bg-[#1f1f1f]'
+                  }`}
+                >
+                  📊 宏观数据
+                </button>
+                <button
+                  onClick={() => setResearchSubTab('indicators')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                    researchSubTab === 'indicators' ? 'bg-[#8b5cf6] text-white' : 'text-[#8a8a8a] hover:text-[#e0e0e0] hover:bg-[#1f1f1f]'
+                  }`}
+                >
+                  📈 经典指标
+                </button>
+                <button
+                  onClick={() => setResearchSubTab('signals')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                    researchSubTab === 'signals' ? 'bg-[#8b5cf6] text-white' : 'text-[#8a8a8a] hover:text-[#e0e0e0] hover:bg-[#1f1f1f]'
+                  }`}
+                >
+                  🎯 策略信号
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {researchSubTab === 'reports' && (
+                <div className="text-center text-[#8a8a8a]">研报模块加载中...</div>
+              )}
+              {researchSubTab === 'news' && (
+                <div className="text-center text-[#8a8a8a]">热点新闻敬请期待...</div>
+              )}
+              {researchSubTab === 'macro' && (
+                <div className="text-center text-[#8a8a8a]">宏观数据敬请期待...</div>
+              )}
+              {researchSubTab === 'indicators' && (
+                <div className="text-center text-[#8a8a8a]">经典指标敬请期待...</div>
+              )}
+              {researchSubTab === 'signals' && (
+                <div className="text-center text-[#8a8a8a]">策略信号敬请期待...</div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
