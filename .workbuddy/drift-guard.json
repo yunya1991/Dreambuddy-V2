@@ -24,16 +24,22 @@
     "frontend_gateway": {
       "paths": ["3-FRONTEND/dream-universal-gateway/**"]
     },
+    "knowledge": {
+      "paths": ["2-KNOWLEDGE/**"]
+    },
+    "chain_development": {
+      "paths": ["3-CHAIN-DEVELOPMENT/**"]
+    },
     "ci": {
       "paths": [".github/**", ".gitignore", "docs/**", ".workbuddy/**", "tests/**", "AGENT协作工具/**"]
     }
   },
   "change_classes": {
     "mainline": {
-      "allowed_modules": ["product_hub", "ci"]
+      "allowed_modules": ["product_hub", "ci", "knowledge", "chain_development"]
     },
     "integration": {
-      "allowed_modules": ["product_hub", "trading", "frontend_gateway", "ci"]
+      "allowed_modules": ["product_hub", "trading", "frontend_gateway", "ci", "knowledge", "chain_development"]
     },
     "infra": {
       "allowed_modules": ["ci"]
