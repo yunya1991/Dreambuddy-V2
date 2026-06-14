@@ -15,7 +15,15 @@
         "7-产物中台/系统研究索引体系/components/*",
         "7-产物中台/系统研究索引体系/scripts/*",
         "7-产物中台/系统研究索引体系/package.json",
-        "7-产物中台/系统研究索引体系/*"
+        "7-产物中台/系统研究索引体系/*",
+        "7-ARTIFACT-HUB-V2/**",
+        "7-ARTIFACT_HUB/**",
+        "7-产物中台/系统研究索引体系/app/api/recommendation-engine/**",
+        "7-产物中台/系统研究索引体系/app/recommendation-engine/**",
+        "7-产物中台/系统研究索引体系/lib/recommendation-engine/**",
+        "7-产物中台/系统研究索引体系/scripts/recommendation-engine/**",
+        "7-产物中台/系统研究索引体系/app/api/admin/**",
+        "7-产物中台/系统研究索引体系/app/admin/**"
       ]
     },
     "trading": {
@@ -47,6 +55,23 @@
       "paths": [
         "3-CHAIN-DEVELOPMENT/**"
       ]
+    },
+    "intent_recognition": {
+      "paths": [
+        "3-FRONTEND/dream-universal-gateway/src/app/api/task/**",
+        "3-FRONTEND/dream-universal-gateway/src/app/dashboard/**",
+        "3-FRONTEND/dream-universal-gateway/src/lib/intent/**",
+        "3-FRONTEND/dream-universal-gateway/src/lib/market-data-adapter*",
+        "3-FRONTEND/dream-universal-gateway/src/lib/task-manager*",
+        "3-FRONTEND/dream-universal-gateway/scripts/register_user*",
+        "3-FRONTEND/dream-universal-gateway/tests/**",
+        "3-FRONTEND/skills/**"
+      ]
+    },
+    "runtime_data": {
+      "paths": [
+        "dreambuddy/**"
+      ]
     }
   },
   "change_classes": {
@@ -55,7 +80,9 @@
         "product_hub",
         "ci",
         "knowledge",
-        "chain_development"
+        "chain_development",
+        "intent_recognition",
+        "runtime_data"
       ]
     },
     "integration": {
@@ -65,7 +92,9 @@
         "frontend_gateway",
         "ci",
         "knowledge",
-        "chain_development"
+        "chain_development",
+        "intent_recognition",
+        "runtime_data"
       ]
     },
     "infra": {
