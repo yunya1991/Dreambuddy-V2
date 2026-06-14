@@ -648,6 +648,24 @@ function extractKeywords(input: string): string[] {
 const intentMemory = new IntentMemoryBank();
 export default intentMemory;
 
+/**
+ * 金融相关性简易检测
+ * 非金融内容不写入记忆库
+ */
+function isFinanceMessage(message: string, _recognizedIntent: string): boolean {
+  const msg = message.toLowerCase();
+  const financeKeywords = [
+    'btc', 'eth', 'sol', 'bnb', 'xrp', 'usdt', 'usdc', 'doge', 'ada', 'crypto',
+    'bitcoin', 'ethereum', '比特币', '以太坊', '代币', '合约', 'swap', '永续',
+    'stock', '股票', '指数', 'nasdaq', '纳斯达克', '外汇', 'forex', '汇率',
+    '黄金', 'gold', '白银', 'silver', '原油', 'oil',
+    'fed', '美联储', '加息', '降息', 'cpi', '通胀', '央行', 'macro', '宏观', '经济', 'recession', '衰退',
+    'trade', '交易', '持仓', 'position', 'risk', '风险', '趋势', 'trend', 'signal', '信号', 'regime',
+    'price', '价格', '行情', 'market', '市场', '分析', 'analysis', 'invest', '投资',
+  ];
+  return financeKeywords.some(kw => msg.includes(kw));
+}
+
 // 便捷函数
 export function recordRecognition(data: {
   input: string;
@@ -662,6 +680,10 @@ export function recordRecognition(data: {
   session_id: string;
   user_role: 'FREE' | 'PRO' | 'ADMIN';
 }): string {
+  // 非金融内容 —— 不存储到记忆库，也不参与经验/模式生成
+  if (!isFinanceMessage(data.input, data.recognized_intent)) {
+    return '';
+  }
   return intentMemory.recordRecognition(data);
 }
 

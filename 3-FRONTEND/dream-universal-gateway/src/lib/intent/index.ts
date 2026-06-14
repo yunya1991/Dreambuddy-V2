@@ -6,7 +6,7 @@
 export {
   recognizeIntent,
   checkLLMStatus,
-  QWEN_CONFIG,
+  DEEPSEEK_CONFIG,
   extractEntities,
 } from './fallback-engine';
 
@@ -26,6 +26,9 @@ export {
   getLoopLabel,
   normalizeChainName,
   CHAIN_STEPS,
+  requiresStepConfirmation,
+  isExecutionChainStep,
+  generateStepConfirmationPrompt,
 } from './smart-router';
 
 export type {

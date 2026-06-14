@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Building2, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { Building2, LayoutDashboard, ShieldCheck, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Header() {
