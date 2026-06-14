@@ -26,6 +26,9 @@ export {
   getLoopLabel,
   normalizeChainName,
   CHAIN_STEPS,
+  requiresStepConfirmation,
+  isExecutionChainStep,
+  generateStepConfirmationPrompt,
 } from './smart-router';
 
 export type {
