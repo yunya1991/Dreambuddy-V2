@@ -162,6 +162,26 @@ export function buildUIMapShellViewModel(
     },
     perspectiveLayer: [
       {
+        title: "管理系统",
+        description: "后台管理系统，提供用户、策略、交易参数、渠道、API配置、信用额度、订单和任务等管理功能。",
+        bullets: [
+          "用户管理：管理用户信息和权限",
+          "策略管理：配置和调整交易策略参数",
+          "交易参数：设置交易执行相关参数",
+          "渠道管理：配置交易渠道和接口",
+        ],
+      },
+      {
+        title: "策略推荐引擎",
+        description: "基于研报分析自动生成和优化交易策略，实时监控市场动态并推荐最优策略。",
+        bullets: [
+          "研报分析：自动解析研报内容提取交易信号",
+          "策略生成：根据研报信号生成候选策略",
+          "回测验证：对候选策略进行历史回测验证",
+          "贝叶斯优化：持续优化策略参数",
+        ],
+      },
+      {
         title: researchChainCard.title,
         description: researchChainCard.description,
         bullets: researchChainCard.bullets,
