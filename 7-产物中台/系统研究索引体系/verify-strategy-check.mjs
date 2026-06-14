@@ -1,0 +1,15 @@
+const { getArtifactsData } = await import("./lib/content.server.ts");
+const data = getArtifactsData();
+const byType = data.statistics.by_type;
+console.log("strategy count (by_type):", byType["strategy"] ?? 0);
+console.log("total:", data.total);
+console.log("by_a_phase (全仓库):", JSON.stringify(data.statistics.by_a_phase));
+const strategyItems = data.artifacts.filter(a => a.type === "strategy");
+console.log("strategy items count:", strategyItems.length);
+const strategyPhases = {};
+strategyItems.forEach(a => { if(a.chain_phase) strategyPhases[a.chain_phase] = (strategyPhases[a.chain_phase]||0)+1; });
+console.log("strategy items phase分布:", JSON.stringify(strategyPhases));
+const stratByStatus = {};
+strategyItems.forEach(a => { stratByStatus[a.status] = (stratByStatus[a.status]||0)+1; });
+console.log("strategy items status分布:", JSON.stringify(stratByStatus));
+strategyItems.slice(0, 20).forEach(a => console.log(" -", a.id, "phase=", a.chain_phase, "status=", a.status));

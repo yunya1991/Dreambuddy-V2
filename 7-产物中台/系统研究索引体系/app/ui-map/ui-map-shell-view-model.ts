@@ -28,18 +28,35 @@ export interface UIMapUserContextOverride {
   summaryNote: string;
 }
 
+export interface UIMapBusinessPrecipitationOverride {
+  description: string;
+  statsCards: Array<{ label: string; value: string; detail?: string }>;
+  strategyCard: { label: string; detail: string };
+  userCard: { label: string; detail: string };
+  tradingCard: { label: string; detail: string };
+  aggregatedAt: string;
+}
+
 export interface UIMapShellOverrides {
   systemResearch?: UIMapSystemResearchOverride | null;
   researchChain?: UIMapResearchChainOverride | null;
   operations?: UIMapOperationsOverride | null;
   strategy?: UIMapStrategyOverride | null;
   userContext?: UIMapUserContextOverride | null;
+  businessPrecipitation?: UIMapBusinessPrecipitationOverride | null;
 }
 
 export interface UIMapShellViewModel {
   hero: { title: string; subtitle: string; dataModeLabel: string };
   sourceLayer: Array<{ title: string; description: string; bullets: string[] }>;
   mainlineLayer: { title: string; convergenceLabel: string; chain: string; summaryNote?: string };
+  businessPrecipitation: {
+    title: string;
+    description: string;
+    aggregatedAt: string;
+    statsCards: Array<{ label: string; value: string; detail?: string }>;
+    cards: Array<{ label: string; detail: string }>;
+  };
   indexFoundation: {
     userContext: {
       title: string;
@@ -96,10 +113,31 @@ export function buildUIMapShellViewModel(
   if (overrides.operations) realDataSources.push("运营链路");
   if (overrides.strategy) realDataSources.push("策略主线");
   if (overrides.userContext) realDataSources.push("用户上下文索引");
+  if (overrides.businessPrecipitation) realDataSources.push("业务数据沉淀");
 
   const phaseLabel = realDataSources.length
     ? `Phase B · 已接入：${realDataSources.join("、")}`
     : "Phase A · 纯场景壳模式";
+
+  const businessPrecipitation = overrides.businessPrecipitation
+    ? {
+        title: "业务数据沉淀",
+        description: overrides.businessPrecipitation.description,
+        aggregatedAt: overrides.businessPrecipitation.aggregatedAt,
+        statsCards: overrides.businessPrecipitation.statsCards,
+        cards: [
+          overrides.businessPrecipitation.strategyCard,
+          overrides.businessPrecipitation.userCard,
+          overrides.businessPrecipitation.tradingCard,
+        ],
+      }
+    : {
+        title: "业务数据沉淀",
+        description: "来自 Prisma 业务层数据库的实时聚合：策略、任务、执行、账户、积分。",
+        aggregatedAt: "等待业务数据接入",
+        statsCards: [] as Array<{ label: string; value: string; detail?: string }>,
+        cards: [] as Array<{ label: string; detail: string }>,
+      };
 
   return {
     hero: {
@@ -133,6 +171,7 @@ export function buildUIMapShellViewModel(
           convergenceLabel: "通过交易设置实现策略收口",
           chain: "策略设置成功 → 策略任务单 → 交易链条 → 交易执行 → 结果产物 → 索引",
         },
+    businessPrecipitation,
     indexFoundation: {
       userContext: overrides.userContext
         ? {

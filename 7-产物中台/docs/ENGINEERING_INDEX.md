@@ -53,14 +53,22 @@
 - 若要改 `ui-map` 页面实现，请优先进入 `系统研究索引体系/app/ui-map/`，不要误改 `ui-map/` 预留目录。
 - 若要追溯旧文档，请查看 `docs/archive/README.md` 提示并通过 `git` 历史查询。
 
-## ui-map 模块状态（2026-06-10）
+## ui-map 模块状态（2026-06-11）
 
 - **Phase A（壳层）**：已稳定。路由 `/ui-map`、`UIMapShell`、场景切换、语义分层均已验证（`ui-map-shell-view-model.test.ts` 14 个测试通过）。
 - **Phase B（真实数据接入）**：系统研究索引、研究链路、运营链路、策略主线、用户上下文索引五个模块已接入，每个模块均具备 fixture 降级模式。
   - 系统研究索引：`buildSystemResearchUIMapOverride` 基于 `content.server.ts` 产物索引生成。
   - 研究链路：`buildResearchChainUIMapOverride` 基于 `getChainPhaseArtifacts` 阶段分组生成。
   - 运营链路：`buildOperationsUIMapOverride` 基于 `realtime-hub.ts` 最近事件摘要生成。
-  - 策略主线：`buildStrategyUIMapOverride` 基于 artifacts 索引的 `type=strategy` 统计生成（摘要级接入，明确标记 `summary-only`，敏感配置与执行状态未透出）。策略主线统计从全量 artifacts 精确化为仅 `type=strategy`（phase 分布、活跃/已沉淀状态均仅统计策略产物）；支持小写 phase 标签归一化（a9→A9）。
-  - 用户上下文索引：`buildUserContextUIMapOverride` 基于 artifacts 索引全量统计生成（summary-only：未透出任何用户配置或敏感信息，仅沉淀产物数量与活跃状态摘要）。
-- **未接入**：无（全部五个索引底座模块均以 summary-only 接入真实数据，用户配置等敏感信息继续不透出）。
+  - 策略主线：`buildStrategyUIMapOverride` 基于标准对象契约（`strategy-standard-objects.ts`）构建完整接入：
+    - 使用 `StrategyFullView` 视图，基于 artifacts 索引的 `type=strategy` 产物统计生成。
+    - 显示活跃/已完成/草稿策略设置状态，正在执行的策略数量，任务完成进度。
+    - 列出活跃策略名称，策略产物 phase 分布（A0~A9），无敏感配置或执行状态未透出。
+    - 策略主线统计从全量 artifacts 精确化为仅 `type=strategy`（phase 分布、活跃/已沉淀状态均仅统计策略产物）。
+    - 支持小写 phase 标签归一化（a9→A9）。
+  - 用户上下文索引：`buildUserContextUIMapOverride` 基于标准对象契约（`user-context-standard-objects.ts`）构建完整接入：
+    - 使用 `UserContextFullView` 视图，基于 artifacts 索引全量统计生成。
+    - 显示覆盖率百分比，构建时/运行时上下文统计。
+    - 用户配置等敏感信息未透出。
+- **未接入**：无（全部五个索引底座模块均以标准对象接入真实数据，用户配置等敏感信息继续不透出）。
 - **测试覆盖**：`lib/ui-map-real-data.test.ts` 18 个测试覆盖真实数据注入与降级行为。
