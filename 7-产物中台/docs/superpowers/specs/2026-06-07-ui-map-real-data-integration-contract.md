@@ -1,9 +1,9 @@
 # UI-Map Real Data Integration Contract
 
 > Date: 2026-06-07
-> Updated: 2026-06-10（补充策略主线 summary-only 接入状态）
+> Updated: 2026-06-11（更新：策略主线/用户上下文索引升级为标准对象完整接入；添加 strategy-standard-objects.ts / user-context-standard-objects.ts 定义）
 > Scope: `7-产物中台/系统研究索引体系/app/ui-map`
-> Status: In progress — Phase B 真实数据接入已覆盖系统研究索引、研究链路、运营链路、策略主线（summary-only）、用户上下文索引（summary-only）
+> Status: Complete — Phase B 真实数据接入已全部完成，覆盖系统研究索引、研究链路、运营链路、策略主线（标准对象完整接入）、用户上下文索引（标准对象完整接入）
 
 ## 1. Goal
 
@@ -46,12 +46,13 @@
 - 壳层 view-model 已存在：`系统研究索引体系/app/ui-map/ui-map-shell-view-model.ts`（支持 fixture / real-data 双入口）
 - 场景 fixture 已存在：`系统研究索引体系/app/ui-map/ui-map-scenarios.ts`（继续承担降级模式）
 - 真实数据 adapter 已存在：`系统研究索引体系/lib/ui-map-real-data.ts`（五个 adapter：系统研究索引、研究链路、运营链路、策略主线、用户上下文索引）
+- 策略主线标准对象契约：`系统研究索引体系/lib/strategy-standard-objects.ts`（定义 `StrategySettingResult`、`StrategyFullView` 等标准对象）
+- 用户上下文标准对象契约：`系统研究索引体系/lib/user-context-standard-objects.ts`（定义 `UserContextConfiguration`、`UserContextFullView` 等标准对象）
 
 这意味着当前阶段属于：
 
 - `Phase A`: 前端壳与语义结构已稳定
-- `Phase B`: 真实数据接入已全部落地（系统研究索引、研究链路、运营链路、策略主线 summary-only、用户上下文索引 summary-only）
-- `Phase B 待提升`: 策略主线需升级为完整标准对象（`strategy_setting_result` 等）；用户上下文需明确脱敏摘要与敏感字段边界
+- `Phase B`: 真实数据接入已全部落地（系统研究索引、研究链路、运营链路、策略主线标准对象完整接入、用户上下文索引标准对象完整接入）
 
 ## 4. Integration Principle
 
@@ -167,32 +168,49 @@
 
 ### 5.4 策略主线
 
-`策略主线` 是业务核心，当前已提供 **summary-only** 级的真实数据接入。
+`策略主线` 是业务核心，当前已提供**标准对象契约完整接入**级的真实数据接入。
 
 - 当前可复用锚点：
+  - `系统研究索引体系/lib/strategy-standard-objects.ts` → 定义 `StrategySettingResult`、`StrategyFullView` 等标准对象
   - `系统研究索引体系/lib/ui-map-real-data.ts` → `buildStrategyUIMapOverride()`
-  - 底层数据来自 `content.server.ts` → `getArtifactsData()` 的 `statistics.by_type["strategy"]` 统计
+  - 底层数据来自 `content.server.ts` → `getArtifactsData()` 的 `type=strategy` 统计
 
 - 已实现能力：
+  - 基于 `StrategyFullView` 视图构建完整策略主线接入：活跃/已完成/草稿策略设置状态，正在执行的策略数量，任务完成进度
+  - 列出活跃策略名称（最多 3 个）
   - 基于 artifacts 索引的 `type=strategy` 统计汇总产物数量与状态分布
-  - 显式标记为 `summary-only`，不透出敏感配置或执行状态
+  - 支持小写 phase 标签归一化（a9→A9）
   - 无策略类型产物时自动降级为 view-model 层固定语义
+  - 敏感配置与执行状态未透出（基于 artifacts 索引公开信息）
 
-- 待完善（不阻塞当前阶段）：
-  - 标准对象定义：`strategy_setting_result` / `strategy_task_ticket` / `execution_status` / `result_artifact_reference`
-  - 待上述标准对象成型后，可升级为完整的策略主线接入
+- 标准对象定义：已在 `strategy-standard-objects.ts` 中定义
+  - `StrategySettingResult`：策略设置结果
+  - `StrategyTaskTicket`：策略任务单
+  - `ExecutionStatus`：执行状态
+  - `ResultArtifactReference`：结果产物引用
+  - `StrategyFullView`：完整策略视图
 
 ### 5.5 用户上下文索引系统
 
-该模块当前在设计层面是清楚的，但真实数据锚点尚不如系统研究索引稳定。
+该模块当前已提供**标准对象契约完整接入**（基于 artifacts 索引，不透出敏感配置）。
 
-正式接入前至少需要明确：
+- 当前可复用锚点：
+  - `系统研究索引体系/lib/user-context-standard-objects.ts` → 定义 `UserContextConfiguration`、`UserContextFullView` 等标准对象
+  - `系统研究索引体系/lib/ui-map-real-data.ts` → `buildUserContextUIMapOverride()`
+  - 底层数据来自 `content.server.ts` → `getArtifactsData()` 的全量统计
 
-- 用户配置数据从哪里读取
-- 哪些字段可进入结构地图
-- 哪些属于敏感信息不能直接展示
+- 已实现能力：
+  - 基于 `UserContextFullView` 视图构建完整用户上下文索引：覆盖率百分比，构建时/运行时上下文统计
+  - 显式标记为“未透出任何用户配置或敏感信息”
+  - 无产物索引时自动降级为 view-model 层固定语义
 
-在这些字段未定前，只允许保留摘要级展示，不接真实敏感配置。
+- 标准对象定义：已在 `user-context-standard-objects.ts` 中定义
+  - `UserContextConfiguration`：上下文配置（脱敏）
+  - `UserContextArtifact`：关联产物信息（脱敏）
+  - `UserContextSummary`：上下文摘要
+  - `UserContextFullView`：完整上下文视图
+
+- 约束：用户配置数据属于敏感信息，只展示基于 artifacts 索引的摘要信息
 
 ## 6. Server Adapter Boundary
 
