@@ -31,14 +31,9 @@ const colors = {
   accentRed: "#ff3b30",
 };
 
-// Qwen 模型列表
+// 模型列表
 const QWEN_MODELS = [
-  { id: 'qwen-turbo', name: 'Qwen Turbo', desc: '最快响应' },
-  { id: 'qwen-plus', name: 'Qwen Plus', desc: '质量与速度平衡' },
-  { id: 'qwen-max', name: 'Qwen Max', desc: '最强推理' },
-  { id: 'qwen3-30b-a3b', name: 'Qwen3 30B-A3B', desc: 'MoE轻量' },
-  { id: 'qwen3-235b-a22b', name: 'Qwen3 235B-A22B', desc: 'MoE旗舰' },
-  { id: 'qwq-32b', name: 'QwQ 32B', desc: '推理增强' },
+  { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', desc: '最强推理·金融分析', provider: 'deepseek' },
 ];
 
 type RightPanelType = 'analysis' | 'market' | 'signal' | 'position' | 'api' | 'trading' | 'strategy' | 'communication' | 'llm' | 'report' | 'monitor' | 'memory';

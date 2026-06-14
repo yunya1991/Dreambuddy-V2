@@ -6,7 +6,7 @@
 export {
   recognizeIntent,
   checkLLMStatus,
-  QWEN_CONFIG,
+  DEEPSEEK_CONFIG,
   extractEntities,
 } from './fallback-engine';
 

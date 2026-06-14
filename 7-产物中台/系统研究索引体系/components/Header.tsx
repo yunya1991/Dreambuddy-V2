@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Building2, LayoutDashboard } from 'lucide-react';
+import { Building2, LayoutDashboard, ShieldCheck, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Header() {
@@ -13,6 +13,8 @@ export default function Header() {
   const isChainActive = pathname.startsWith('/chain');
   const isMeetingActive = pathname.startsWith('/meeting');
   const isUIMapActive = pathname.startsWith('/ui-map');
+  const isAdminActive = pathname.startsWith('/admin');
+  const isRecommendationActive = pathname.startsWith('/recommendation-engine');
 
   const [totalArtifacts, setTotalArtifacts] = useState<number | null>(null);
   const [numDepartments, setNumDepartments] = useState<number | null>(null);
@@ -99,6 +101,30 @@ export default function Header() {
               )}
             >
               UI-Map
+            </Link>
+            <Link
+              href="/recommendation-engine"
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                isRecommendationActive
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              <Sparkles className="h-4 w-4" />
+              策略推荐
+            </Link>
+            <Link
+              href="/admin"
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                isAdminActive
+                  ? 'bg-slate-900 text-white'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              管理系统
             </Link>
           </nav>
         </div>
