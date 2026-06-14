@@ -140,6 +140,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [thinkingMode, setThinkingMode] = useState<'quick' | 'deep'>('quick');
   const [workbuddyMode, setWorkbuddyMode] = useState(true); // WorkBuddy桥接模式
+  const [lang, setLang] = useState<'zh' | 'en'>('zh'); // 语言设置，默认中文
 
   // ========== 动态分析链路追踪 ==========
   const [analysisChain, setAnalysisChain] = useState<{
@@ -198,6 +199,16 @@ export default function ChatPage() {
     thinking_mode?: string;
     trade_task_id?: string; // 交易任务ID，用于确认交互
     trade_confirmed?: boolean; // 交易是否已确认/取消
+    // 步进确认字段（D/Z/E 思维链）
+    step_confirmation?: {
+      current_step: string;
+      next_step: string | null;
+      options: Array<{ key: string; label: string; action: string }>;
+      prompt: string;
+    };
+    step_task_id?: string; // 步进确认对应的任务ID
+    awaiting_step?: string; // 当前等待确认的步骤
+    next_step?: string; // 下一步骤
   }[]>([
     {
       role: "assistant",
@@ -889,6 +900,28 @@ export default function ChatPage() {
     if (!input.trim() || isLoading) return;
 
     const userMessage = input;
+
+    // 🔍 检测用户是否在回复步进确认（D/Z/E 思维链选择）
+    const lastAssistantMsg = messages[messages.length - 1];
+    if (lastAssistantMsg?.step_confirmation && lastAssistantMsg?.step_task_id) {
+      // 识别用户的步进确认选择
+      const normalizedInput = userMessage.trim().toLowerCase();
+      let choice: 'continue' | 'finalize' | 'skip' | 'unknown' = 'unknown';
+
+      if (normalizedInput === '1' || normalizedInput.includes('继续') || normalizedInput.includes('下一步')) {
+        choice = 'continue';
+      } else if (normalizedInput === '2' || normalizedInput.includes('落地') || normalizedInput.includes('finalize')) {
+        choice = 'finalize';
+      } else if (normalizedInput === '3' || normalizedInput.includes('跳过') || normalizedInput.includes('skip')) {
+        choice = 'skip';
+      }
+
+      if (choice !== 'unknown') {
+        await handleStepConfirmation(userMessage, lastAssistantMsg, choice);
+        return;
+      }
+    }
+
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setInput("");
     setIsLoading(true);
@@ -900,6 +933,142 @@ export default function ChatPage() {
     } else {
       // ========== 原有同步Mock/LLM模式 ==========
       await handleDirectChat(userMessage);
+    }
+  };
+
+  /**
+   * 处理 D/Z/E 思维链步进确认
+   * 用户选择 (1)继续/(2)落地/(3)跳过 后调用此函数
+   */
+  const handleStepConfirmation = async (
+    userMessage: string,
+    lastMsg: typeof messages[number],
+    choice: 'continue' | 'finalize' | 'skip'
+  ) => {
+    const stepTaskId = lastMsg.step_task_id;
+    const currentStep = lastMsg.awaiting_step;
+    const nextStep = lastMsg.next_step;
+
+    // 将用户选择作为新消息发送，继续执行思维链
+    const continueMessage = choice === 'continue'
+      ? `用户选择: 继续到下一步 (${nextStep})`
+      : choice === 'finalize'
+      ? '用户选择: 直接落地'
+      : '用户选择: 跳过剩余步骤落地';
+
+    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setInput("");
+    setIsLoading(true);
+    resetAnalysisChain();
+
+    try {
+      const res = await fetch("/api/task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: continueMessage,
+          session_id: "dashboard-session",
+          thinking_mode: lastMsg.thinking_mode || 'deep',
+          llm_model: llmModel,
+          intent_method: intentMethod,
+          lang: lang,
+          // 传递前序步骤信息用于链 continuation
+          chain_context: {
+            previous_task_id: stepTaskId,
+            previous_step: currentStep,
+            user_choice: choice,
+            next_step: nextStep,
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const taskStatus = data.data.status;
+      const content = data.data.content || '';
+
+      if (taskStatus === 'completed') {
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => m.intent !== "step_confirmation");
+          return [
+            ...filtered,
+            { role: "assistant", content, intent: 'step_continued' },
+          ];
+        });
+      } else if (taskStatus === 'awaiting_confirmation') {
+        // 再次等待确认
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => m.intent !== "step_confirmation");
+          return [
+            ...filtered,
+            {
+              role: "assistant",
+              content,
+              intent: 'step_confirmation' as any,
+              step_confirmation: data.data.step_confirmation,
+              step_task_id: data.data.task_id,
+              awaiting_step: data.data.execution_summary?.current_step,
+              next_step: data.data.step_confirmation?.next_step,
+              thinking_mode: lastMsg.thinking_mode,
+            },
+          ];
+        });
+      }
+    } catch (error) {
+      console.error('Step confirmation error:', error);
+      setMessages((prev) => {
+        const filtered = prev.filter((m) => m.intent !== "step_confirmation");
+        return [
+          ...filtered,
+          { role: "assistant", content: `❌ 步进确认失败: ${error instanceof Error ? error.message : '未知错误'}`, intent: 'error' },
+        ];
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * 处理用户点击澄清选项（意图识别不确定时）
+   * 用户点击后，以选项的 label 作为新消息发送到后端
+   * 后端会重新走意图识别→执行链路
+   */
+  const handleClarificationChoice = async (msg: any, opt: any, _idx: number) => {
+    const newUserMessage = opt.label || opt.target_intent || opt.key;
+    // 过滤掉当前的"需要澄清"消息，然后发送用户选择的内容
+    setMessages((prev) => {
+      const filtered = prev.filter((m: any) => !(m.clarification_state && m.clarification_state.options));
+      return [...filtered, { role: "user", content: newUserMessage }];
+    });
+    setIsLoading(true);
+
+    // 走 WorkBuddy 模式发送消息
+    if (workbuddyMode) {
+      await handleWorkbuddyTask(newUserMessage);
+    } else {
+      await handleDirectChat(newUserMessage);
+    }
+  };
+
+  /**
+   * 处理 D/Z/E 思维链的步进确认
+   */
+  const handleStepChoice = async (msg: any, _opt: any) => {
+    // 简单地让用户重新输入选择
+    const choiceMessage = _opt.key === 'continue' || _opt.label?.includes('继续')
+      ? '进入下一步'
+      : _opt.key === 'finalize' || _opt.label?.includes('落地')
+      ? '直接落地'
+      : '跳过';
+    setMessages((prev) => {
+      const filtered = prev.filter((m: any) => !(m.step_confirmation));
+      return [...filtered, { role: "user", content: choiceMessage }];
+    });
+    setIsLoading(true);
+    if (workbuddyMode) {
+      await handleWorkbuddyTask(choiceMessage);
+    } else {
+      await handleDirectChat(choiceMessage);
     }
   };
 
@@ -936,6 +1105,7 @@ export default function ChatPage() {
           thinking_mode: thinkingMode,
           llm_model: llmModel,
           intent_method: intentMethod,
+          lang: lang,
         }),
       });
 
@@ -1006,6 +1176,99 @@ export default function ChatPage() {
               chain: summary?.chain_executed || [],
               trade_task_id: isTrade ? taskId : undefined,
               trade_confirmed: false,
+            },
+          ];
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 2b: 澄清状态（意图识别不确定，需要用户选择）
+      if (taskStatus === 'awaiting_clarification') {
+        const content = createData.data.content || '';
+        const clarificationState = createData.data.clarification_state;
+        const summary = createData.data.execution_summary;
+
+        if (summary?.chain_executed) {
+          const executedChain = summary.chain_executed as string[];
+          setAnalysisChain(prev => prev.map(step => {
+            if (executedChain.includes(step.id)) {
+              return {
+                ...step,
+                status: 'completed' as const,
+                timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              };
+            }
+            return step;
+          }));
+        }
+        if (createData.data.intent?.confidence) {
+          setAnalysisConfidence(createData.data.intent.confidence);
+        }
+
+        setMessages((prev) => {
+          const filtered = prev.filter((m: any) => m.intent !== "thinking");
+          return [
+            ...filtered,
+            {
+              role: "assistant",
+              content,
+              intent: 'need_clarification',
+              confidence: createData.data.intent?.confidence,
+              thinking_mode: thinkingMode,
+              chain: summary?.chain_executed || [],
+              clarification_state: clarificationState,
+            },
+          ];
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 2c: 步进确认状态（D/Z/E 思维链等待用户选择）
+      if (taskStatus === 'awaiting_confirmation') {
+        const content = createData.data.content || '';
+        const summary = createData.data.execution_summary;
+        const stepConfirmation = createData.data.step_confirmation;
+
+        // 🔗 更新分析链路：标记当前步骤完成
+        if (summary?.chain_executed) {
+          const executedChain = summary.chain_executed as string[];
+          setAnalysisChain(prev => prev.map((step, idx) => {
+            if (executedChain.includes(step.id)) {
+              return {
+                ...step,
+                status: 'completed' as const,
+                timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              };
+            }
+            // 下一个未执行的步骤标记为 running
+            const executedSet = new Set(executedChain);
+            const nextIdx = prev.findIndex((s, i) => i > idx && !executedSet.has(s.id));
+            if (idx === nextIdx - 1 && step.status === 'idle') {
+              return { ...step, status: 'running' as const };
+            }
+            return step;
+          }));
+          setAnalysisEndTime(Date.now());
+        }
+
+        // 标记步进确认信息到消息上，供下次回复时识别
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => m.intent !== "thinking");
+          return [
+            ...filtered,
+            {
+              role: "assistant",
+              content: content,
+              intent: 'step_confirmation' as any,
+              confidence: createData.data.intent?.confidence,
+              thinking_mode: thinkingMode,
+              chain: summary?.chain_executed || [],
+              step_confirmation: stepConfirmation,
+              step_task_id: taskId,
+              awaiting_step: summary?.current_step,
+              next_step: stepConfirmation?.next_step,
             },
           ];
         });
@@ -4412,6 +4675,32 @@ export default function ChatPage() {
               💬 直接
             </button>
           </div>
+
+          {/* 语言切换 */}
+          <div className="flex items-center space-x-1 bg-[#1a1a1a] rounded-lg p-0.5">
+            <button
+              onClick={() => setLang('zh')}
+              className={`px-2 py-1.5 text-xs rounded-md transition ${
+                lang === 'zh'
+                  ? 'bg-[#f59e0b] text-black shadow-lg shadow-amber-500/20 font-medium'
+                  : 'text-[#8a8a8a] hover:text-[#e0e0e0]'
+              }`}
+              title="中文"
+            >
+              🀄 中文
+            </button>
+            <button
+              onClick={() => setLang('en')}
+              className={`px-2 py-1.5 text-xs rounded-md transition ${
+                lang === 'en'
+                  ? 'bg-[#f59e0b] text-black shadow-lg shadow-amber-500/20 font-medium'
+                  : 'text-[#8a8a8a] hover:text-[#e0e0e0]'
+              }`}
+              title="English"
+            >
+              🇺🇸 EN
+            </button>
+          </div>
           
           <button
             onClick={() => setRightCollapsed(!rightCollapsed)}
@@ -4501,6 +4790,44 @@ export default function ChatPage() {
                       >
                         🚫 取消
                       </button>
+                    </div>
+                  </div>
+                )}
+                {/* 澄清选项按钮 */}
+                {msg.clarification_state && msg.clarification_state.options && msg.clarification_state.options.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-[#1a1a1a]">
+                    <div className="text-xs text-[#8a8a8a] mb-2">💡 请选择你要的操作：</div>
+                    <div className="flex flex-wrap gap-2">
+                      {msg.clarification_state.options.map((opt: any, idx: number) => (
+                        <button
+                          key={opt.key || idx}
+                          onClick={() => handleClarificationChoice(
+                            msg,
+                            opt,
+                            idx
+                          )}
+                          className="px-3 py-1.5 text-xs bg-[#0066ff]/20 text-[#5ca8ff] rounded-md hover:bg-[#0066ff]/30 border border-[#0066ff]/30 transition font-medium"
+                        >
+                          {idx + 1}. {opt.label || opt.key}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* D/Z/E思维链步进确认 */}
+                {msg.step_confirmation && msg.step_confirmation.options && msg.step_confirmation.options.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-[#1a1a1a]">
+                    <div className="text-xs text-[#8a8a8a] mb-2">🔗 请选择：</div>
+                    <div className="flex flex-wrap gap-2">
+                      {msg.step_confirmation.options.map((opt: any, idx: number) => (
+                        <button
+                          key={opt.key || idx}
+                          onClick={() => handleStepChoice(msg, opt)}
+                          className="px-3 py-1.5 text-xs bg-purple-500/20 text-purple-300 rounded-md hover:bg-purple-500/30 border border-purple-500/30 transition font-medium"
+                        >
+                          {opt.label || opt.key}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
