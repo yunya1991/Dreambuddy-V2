@@ -19,24 +19,59 @@
       ]
     },
     "trading": {
-      "paths": ["6-TRADING/**"]
+      "paths": [
+        "6-TRADING/**"
+      ]
     },
     "frontend_gateway": {
-      "paths": ["3-FRONTEND/dream-universal-gateway/**"]
+      "paths": [
+        "3-FRONTEND/dream-universal-gateway/**"
+      ]
     },
     "ci": {
-      "paths": [".github/**", ".gitignore", "docs/**", ".workbuddy/**", "tests/**", "AGENT协作工具/**"]
+      "paths": [
+        ".github/**",
+        ".gitignore",
+        "docs/**",
+        ".workbuddy/**",
+        "tests/**",
+        "AGENT协作工具/**"
+      ]
+    },
+    "knowledge": {
+      "paths": [
+        "2-KNOWLEDGE/**"
+      ]
+    },
+    "chain_development": {
+      "paths": [
+        "3-CHAIN-DEVELOPMENT/**"
+      ]
     }
   },
   "change_classes": {
     "mainline": {
-      "allowed_modules": ["product_hub", "ci"]
+      "allowed_modules": [
+        "product_hub",
+        "ci",
+        "knowledge",
+        "chain_development"
+      ]
     },
     "integration": {
-      "allowed_modules": ["product_hub", "trading", "frontend_gateway", "ci"]
+      "allowed_modules": [
+        "product_hub",
+        "trading",
+        "frontend_gateway",
+        "ci",
+        "knowledge",
+        "chain_development"
+      ]
     },
     "infra": {
-      "allowed_modules": ["ci"]
+      "allowed_modules": [
+        "ci"
+      ]
     }
   },
   "required_docs": [
