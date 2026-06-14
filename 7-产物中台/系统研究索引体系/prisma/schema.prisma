@@ -241,40 +241,6 @@ model Strategy {
   parsedIntent  Json?                            // IntentParser解析结果
   backtestResult Json?                           // 回测结果
 
-  // 回测与基线
-  backtestSharpe      Float?
-  backtestMaxDrawdown Float?
-  backtestWinRate      Float?
-  backtestProfitFactor Float?
-  backtestTotalReturn Float?
-  backtestPeriod      String?
-  backtestDate        DateTime?
-  baselineVersion     String?
-  baselineSharpe      Float?
-  baselineMaxDrawdown Float?
-  baselineTotalReturn Float?
-  isBetterThanBaseline Boolean?
-
-  // 策略库
-  isInLibrary        Boolean  @default(false)
-  libraryScore       Float?
-  libraryActive      Boolean  @default(false)
-  libraryArchivedAt  DateTime?
-
-  // 策略代际
-  generation                  Int      @default(1)
-  parentStrategyId            String?
-  sourceReportIds             String?
-  sourceEngine                String?
-  consecutiveBelowBaseline     Int      @default(0)
-  lastDailyBacktestDate       DateTime?
-  recommendedDays             Int      @default(0)
-
-  // 策略状态
-  status        StrategyStatus @default(DRAFT)
-
-  // 关联
-  backtestRecords StrategyBacktestRecord[]
   tasks         StrategyTask[]
   taskOrders    StrategyTaskOrder[]
 
@@ -572,92 +538,6 @@ enum CodeType {
   EMAIL_VERIFY      // 邮箱验证
   PASSWORD_RESET    // 密码重置
   LOGIN_2FA         // 登录二次验证
-}
-
-// ============================================
-// 推荐策略引擎回测记录 (1:N with Strategy)
-// ============================================
-
-model StrategyBacktestRecord {
-  id                                      String   @id @default(cuid())
-  strategyId                              String                           // 关联Strategy.id
-  strategy                                Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
-
-  backtestDate                            DateTime @default(now())
-  backtestPeriod                          String                            // 回测周期
-  baselineVersion                         String                            // 基线版本
-  symbol                                  String  @default("BTC-USDT-SWAP")
-
-  // 回测指标
-  sharpeRatio                             Float
-  maxDrawdown                             Float
-  winRate                                 Float
-  profitFactor                            Float
-  totalReturn                             Float
-  tradeCount                              Int      @default(0)
-
-  // 基线对比
-  baselineSharpe                          Float
-  baselineMaxDrawdown                     Float
-  baselineTotalReturn                     Float
-  isBetterThanBaseline                    Boolean
-
-  // 连续劣于基线计数（策略级别）
-  strategyBetterThanBaselineAfterThisRun  Boolean @default(false)
-  strategyConsecutiveBelowBaseline         Int      @default(0)
-
-  // 运行信息
-  runId                                   String?
-  engineVersion                           String?
-
-  createdAt                               DateTime @default(now())
-
-  @@index([strategyId, backtestDate])
-  @@index([strategyId, isBetterThanBaseline])
-  @@map("strategy_backtest_records")
-}
-
-// ============================================
-// 推荐策略引擎运行日志
-// ============================================
-
-model RecommendationEngineLog {
-  id                            String   @id @default(cuid())
-  runId                         String   @unique
-  runDate                       DateTime @default(now())
-  triggerType                   String                            // 触发类型
-  status                        String                            // 运行状态
-
-  reportsUsed                   Int      @default(0)
-  reportIds                     String?                           // JSON 数组
-  candidatesGenerated           Int      @default(0)
-  strategiesBacktested          Int      @default(0)
-  strategiesPassed              Int      @default(0)
-  recommendedStrategyId         String?
-  isForcedRefresh              Boolean @default(false)
-  decisionReason                String?
-  errorMessage                  String?
-  durationMs                    Int?
-
-  startedAt                     DateTime?
-  endedAt                       DateTime?
-  createdAt                     DateTime @default(now())
-
-  @@map("recommendation_engine_logs")
-}
-
-// ============================================
-// 推荐策略引擎配置
-// ============================================
-
-model RecommendationEngineConfig {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String
-  description String?
-  updatedAt   DateTime @updatedAt
-
-  @@map("recommendation_engine_configs")
 }
 
 // ============================================
