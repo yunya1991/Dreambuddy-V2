@@ -11,7 +11,8 @@ import { recordRecognition, loadExperienceMemory } from './intent-memory';
 export type IntentType =
   | 'market_query' | 'deep_analysis' | 'scenario_sim' | 'strategy_verify'
   | 'execute_trade' | 'simple_qa' | 'command' | 'system_config'
-  | 'credits_query' | 'artifact_query' | 'risk_alert_response';
+  | 'credits_query' | 'artifact_query' | 'risk_alert_response'
+  | 'triple_chain' | 'need_clarification' | 'clarification_result';
 
 export type ComplexityLevel = 'simple' | 'moderate' | 'complex' | 'urgent';
 
@@ -36,6 +37,17 @@ export interface IntentRecognitionResult {
   method: 'llm' | 'rule' | 'follow_up' | 'default';
   context_aware: boolean;
   matchedPatternId?: string;
+  // 澄清相关字段（仅当 intent == 'need_clarification' 时有值）
+  clarification_options?: Array<{
+    key: string;        // 用户回复时可匹配的关键词
+    label: string;      // 向用户展示的标签
+    target_intent: IntentType;  // 用户选择该选项后应使用的意图
+    entities?: Record<string, string>;  // 建议的实体
+  }>;
+  clarification_question?: string;  // 向用户提问的问题
+  // 用户澄清后的结果字段（仅当 intent == 'clarification_result' 时有值）
+  selected_option_key?: string;     // 用户实际选择的选项key
+  original_message?: string;         // 用户原始的澄清回复
 }
 
 export interface ExperiencePattern {
@@ -59,10 +71,10 @@ export interface LLMConfig {
 
 // ============ LLM 状态管理 ============
 
-const QWEN_CONFIG: LLMConfig = {
-  apiKey: process.env.QWEN_API_KEY || '',
-  endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-  model: process.env.QWEN_MODEL || 'qwen-plus',
+const DEEPSEEK_CONFIG: LLMConfig = {
+  apiKey: process.env.DEEPSEEK_API_KEY || '',
+  endpoint: 'https://api.deepseek.com/v1/chat/completions',
+  model: process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro',
 };
 
 let llmStatusCache: 'online' | 'offline' | 'degraded' = 'offline';
@@ -75,7 +87,7 @@ async function checkLLMStatus(): Promise<'online' | 'offline' | 'degraded'> {
     return llmStatusCache;
   }
 
-  if (!QWEN_CONFIG.apiKey) {
+  if (!DEEPSEEK_CONFIG.apiKey) {
     llmStatusCache = 'offline';
     llmLastCheck = now;
     return llmStatusCache;
@@ -84,14 +96,14 @@ async function checkLLMStatus(): Promise<'online' | 'offline' | 'degraded'> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch(QWEN_CONFIG.endpoint, {
+    const response = await fetch(DEEPSEEK_CONFIG.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${QWEN_CONFIG.apiKey}`,
+        'Authorization': `Bearer ${DEEPSEEK_CONFIG.apiKey}`,
       },
       body: JSON.stringify({
-        model: QWEN_CONFIG.model,
+        model: DEEPSEEK_CONFIG.model,
         messages: [{ role: 'user', content: 'ping' }],
         max_tokens: 5,
       }),
@@ -113,7 +125,7 @@ async function checkLLMStatus(): Promise<'online' | 'offline' | 'degraded'> {
 // ============ LLM 调用 ============
 
 async function callLLM(messages: Array<{ role: string; content: string }>, temperature = 0.2): Promise<string> {
-  if (!QWEN_CONFIG.apiKey) {
+  if (!DEEPSEEK_CONFIG.apiKey) {
     throw new Error('QWEN_API_KEY not configured');
   }
 
@@ -121,14 +133,14 @@ async function callLLM(messages: Array<{ role: string; content: string }>, tempe
   const timeout = setTimeout(() => controller.abort(), 15000);
 
   try {
-    const response = await fetch(QWEN_CONFIG.endpoint, {
+    const response = await fetch(DEEPSEEK_CONFIG.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${QWEN_CONFIG.apiKey}`,
+        'Authorization': `Bearer ${DEEPSEEK_CONFIG.apiKey}`,
       },
       body: JSON.stringify({
-        model: QWEN_CONFIG.model,
+        model: DEEPSEEK_CONFIG.model,
         messages,
         temperature,
         max_tokens: 500,
@@ -286,34 +298,60 @@ function defaultFallback(message: string, context?: SessionContext): IntentRecog
 
 async function recognizeWithLLM(message: string, context?: SessionContext): Promise<IntentRecognitionResult> {
   const allIntents = [
-    'market_query', 'deep_analysis', 'scenario_sim', 'strategy_verify',
-    'execute_trade', 'simple_qa', 'command', 'system_config',
-    'credits_query', 'artifact_query', 'risk_alert_response',
+    'market_query (查询行情/价格)',
+    'deep_analysis (深度分析走势/机会)',
+    'scenario_sim (情景推演/假设分析)',
+    'strategy_verify (策略验证/回测)',
+    'execute_trade (下单/交易执行)',
+    'simple_qa (简单问答/问候)',
+    'command (系统命令)',
+    'system_config (系统配置/设置)',
+    'credits_query (查询余额/积分)',
+    'artifact_query (查询历史记录/产物)',
+    'risk_alert_response (应对风险/告警)',
+    'triple_chain (全面分析+规划+执行)',
+    'need_clarification (不确定意图，需要询问用户)',
   ].join(' | ');
 
   const systemPrompt = `你是 Dream-MultiSkill 交易系统的意图识别模块。分析用户输入，输出结构化的意图识别结果。
 
-## 意图类型
+## 核心规则
+1. **高置信度判断(>=0.7)**：意图明确、有具体交易品种或方向 → 直接输出对应意图
+2. **中等置信度(0.4-0.7)**：有部分关键词但不够明确 → 输出 need_clarification，同时提供2-3个最可能的选项让用户选择
+3. **低置信度(<0.4)**：完全不相关的话题 → 输出 simple_qa
+
+## 意图类型说明
 ${allIntents}
 
-## 输出格式 (仅输出JSON，不要其他内容)
-{"intent":"类型","confidence":0.0-1.0,"entities":{"symbol":"BTC","timeframe":"4h"},"complexity":"simple|moderate|complex|urgent","reasoning":"判断理由(1句话)"}
+## 实体说明
+- symbol: 交易品种 (BTC, ETH, SOL, BNB, XRP 等)
+- timeframe: 时间周期 (1h, 4h, 1d, 1w)
+- direction: 方向 (long/short)
 
-注意: 仅输出JSON，不要解释。`;
+## 输出格式 (仅输出JSON，不要其他内容)
+{"intent":"类型","confidence":0.0-1.0,"entities":{"symbol":"BTC","timeframe":"4h"},"complexity":"simple|moderate|complex|urgent","reasoning":"判断理由(1句话)"
+
+## 澄清场景示例
+当用户输入模糊时，如下格式输出澄清选项：
+{"intent":"need_clarification","confidence":0.5,"entities":{},"complexity":"simple","reasoning":"用户意图不明确，提供2-3个可能的选项让用户选择","clarification_options":[{"key":"analysis","label":"深度分析BTC走势","target_intent":"deep_analysis","entities":{"symbol":"BTC"}},{"key":"query","label":"查询BTC实时价格","target_intent":"market_query","entities":{"symbol":"BTC"}}],"clarification_question":"你想查询什么？"}
+
+注意: 仅输出JSON，不要解释，不要markdown，不要代码块。`;
 
   const contextLines: string[] = [];
   if (context?.last_intent) contextLines.push(`上一轮意图: ${context.last_intent}`);
   if (context?.last_symbol) contextLines.push(`上一轮品种: ${context.last_symbol}`);
+  if (context?.last_analysis_result) contextLines.push(`上一轮结果摘要: ${context.last_analysis_result.slice(0, 80)}`);
   if (context?.message_history && context.message_history.length > 0) {
-    contextLines.push(`近3条消息: ${context.message_history.slice(-3).join(' | ')}`);
+    const lastMessages = context.message_history.slice(-3);
+    contextLines.push(`对话历史: ${lastMessages.map((m, i) => `[${i + 1}] ${m.slice(0, 60)}`).join(' | ')}`);
   }
 
-  const userPrompt = `用户消息: "${message}"\n${contextLines.join('\n')}`;
+  const userPrompt = `用户消息: "${message}"\n${contextLines.length > 0 ? contextLines.join('\n') : '（无前文上下文）'}\n\n请识别意图并输出JSON：`;
 
   const response = await callLLM([
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
-  ], 0.2);
+  ], 0.3);
 
   // 鲁棒 JSON 解析
   let parsed: any = null;
@@ -321,14 +359,25 @@ ${allIntents}
   // 方式1: 直接匹配花括号
   const jsonMatch = response.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
-    try { parsed = JSON.parse(jsonMatch[0]); } catch {}
+    try { parsed = JSON.parse(jsonMatch[0]); } catch { /* skip */ }
   }
 
   // 方式2: 提取 ```json 代码块
   if (!parsed) {
     const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (codeBlockMatch) {
-      try { parsed = JSON.parse(codeBlockMatch[1].trim()); } catch {}
+      try { parsed = JSON.parse(codeBlockMatch[1].trim()); } catch { /* skip */ }
+    }
+  }
+
+  // 方式3: 逐行提取
+  if (!parsed) {
+    for (const line of response.split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        try { parsed = JSON.parse(trimmed); } catch { /* skip */ }
+        if (parsed) break;
+      }
     }
   }
 
@@ -340,7 +389,37 @@ ${allIntents}
     'market_query', 'deep_analysis', 'scenario_sim', 'strategy_verify',
     'execute_trade', 'simple_qa', 'command', 'system_config',
     'credits_query', 'artifact_query', 'risk_alert_response',
+    'triple_chain', 'need_clarification', 'clarification_result',
   ];
+
+  // 如果输出了 need_clarification，必须有选项
+  if (parsed.intent === 'need_clarification') {
+    const opts = parsed.clarification_options || [];
+    if (!Array.isArray(opts) || opts.length === 0) {
+      // LLM没有提供选项，生成默认澄清
+      parsed.clarification_options = [
+        { key: 'market', label: '查询行情', target_intent: 'market_query' },
+        { key: 'analyze', label: '深度分析', target_intent: 'deep_analysis' },
+      ];
+      parsed.clarification_question = '请问你想了解什么？';
+      parsed.confidence = 0.5;
+    }
+    const entities = { ...extractEntities(message), ...(parsed.entities || {}) };
+    if (context?.last_symbol && !entities.symbol) {
+      entities.symbol = context.last_symbol;
+    }
+    return {
+      intent: 'need_clarification',
+      confidence: parsed.confidence || 0.5,
+      entities,
+      complexity: 'simple',
+      reasoning: parsed.reasoning || '用户意图不明确',
+      method: 'llm',
+      context_aware: !!context?.last_intent,
+      clarification_options: parsed.clarification_options,
+      clarification_question: parsed.clarification_question || '请选择你想做什么？',
+    };
+  }
 
   if (!validIntents.includes(parsed.intent)) {
     console.warn(`[FallbackEngine] Invalid intent "${parsed.intent}", fallback to simple_qa`);
@@ -348,7 +427,7 @@ ${allIntents}
     parsed.confidence = 0.4;
   }
 
-  const entities = { ...extractEntities(message), ...parsed.entities };
+  const entities = { ...extractEntities(message), ...(parsed.entities || {}) };
   if (context?.last_symbol && !entities.symbol) {
     entities.symbol = context.last_symbol;
   }
@@ -401,7 +480,6 @@ export async function recognizeIntent(
       duration_ms: Date.now() - startTime,
     });
 
-    // 记录到记忆库
     recordRecognition({
       input: message,
       recognized_intent: result.intent,
@@ -423,64 +501,90 @@ export async function recognizeIntent(
       const llmRecognized = await recognizeWithLLM(message, context);
       llmResult = llmRecognized;
 
-      // 低置信度 → 降级到规则
-      if (llmRecognized.confidence < 0.6) {
-        const ruleResult = matchRuleEngine(message, context);
-        if (ruleResult && ruleResult.confidence >= llmRecognized.confidence) {
-          matchedPatternId = (ruleResult as any).matchedPatternId;
+      // LLM 明确要求澄清 → 直接返回（核心增强：不确定就问用户）
+      if (llmRecognized.intent === 'need_clarification') {
+        emitMonitorEvent({
+          trace_id: `intent_${Date.now()}`,
+          uid: context?.session_id || 'anonymous',
+          layer: 'intent',
+          phase: 'clarification_requested',
+          status: 'completed',
+          intent: 'need_clarification',
+          duration_ms: Date.now() - startTime,
+        });
 
+        recordRecognition({
+          input: message,
+          recognized_intent: 'need_clarification',
+          recognized_confidence: llmRecognized.confidence,
+          recognized_method: 'llm',
+          recognized_complexity: llmRecognized.complexity,
+          routing_chain: [],
+          session_id: context?.session_id || 'anonymous',
+          user_role: context?.user_role || 'FREE',
+        });
+
+        return llmRecognized;
+      }
+
+      // 低置信度 (0.4-0.6) → 用LLM生成澄清选项（而不是直接降级为规则）
+      if (llmRecognized.confidence >= 0.4 && llmRecognized.confidence < 0.6) {
+        const clarified = buildClarificationFromLowConfidence(message, llmRecognized, context);
+        if (clarified) {
           emitMonitorEvent({
             trace_id: `intent_${Date.now()}`,
             uid: context?.session_id || 'anonymous',
             layer: 'intent',
-            phase: 'fallback_rule',
+            phase: 'low_confidence_clarification',
             status: 'completed',
-            intent: ruleResult.intent,
+            intent: 'need_clarification',
             duration_ms: Date.now() - startTime,
           });
 
           recordRecognition({
             input: message,
-            recognized_intent: ruleResult.intent,
-            recognized_confidence: ruleResult.confidence,
-            recognized_method: 'rule',
-            recognized_complexity: ruleResult.complexity,
-            matched_pattern_id: matchedPatternId,
-            llm_intent: llmRecognized.intent,
-            llm_confidence: llmRecognized.confidence,
+            recognized_intent: 'need_clarification',
+            recognized_confidence: llmRecognized.confidence,
+            recognized_method: 'llm',
+            recognized_complexity: 'simple',
             routing_chain: [],
             session_id: context?.session_id || 'anonymous',
             user_role: context?.user_role || 'FREE',
           });
 
-          return ruleResult;
+          return clarified;
         }
       }
 
-      emitMonitorEvent({
-        trace_id: `intent_${Date.now()}`,
-        uid: context?.session_id || 'anonymous',
-        layer: 'intent',
-        phase: 'recognized',
-        status: 'completed',
-        intent: llmRecognized.intent,
-        duration_ms: Date.now() - startTime,
-      });
+      // 高置信度 (>=0.6) → 直接使用
+      if (llmRecognized.confidence >= 0.6) {
+        emitMonitorEvent({
+          trace_id: `intent_${Date.now()}`,
+          uid: context?.session_id || 'anonymous',
+          layer: 'intent',
+          phase: 'recognized',
+          status: 'completed',
+          intent: llmRecognized.intent,
+          duration_ms: Date.now() - startTime,
+        });
 
-      recordRecognition({
-        input: message,
-        recognized_intent: llmRecognized.intent,
-        recognized_confidence: llmRecognized.confidence,
-        recognized_method: 'llm',
-        recognized_complexity: llmRecognized.complexity,
-        llm_intent: llmRecognized.intent,
-        llm_confidence: llmRecognized.confidence,
-        routing_chain: [],
-        session_id: context?.session_id || 'anonymous',
-        user_role: context?.user_role || 'FREE',
-      });
+        recordRecognition({
+          input: message,
+          recognized_intent: llmRecognized.intent,
+          recognized_confidence: llmRecognized.confidence,
+          recognized_method: 'llm',
+          recognized_complexity: llmRecognized.complexity,
+          llm_intent: llmRecognized.intent,
+          llm_confidence: llmRecognized.confidence,
+          routing_chain: [],
+          session_id: context?.session_id || 'anonymous',
+          user_role: context?.user_role || 'FREE',
+        });
 
-      return llmRecognized;
+        return llmRecognized;
+      }
+
+      // 置信度 < 0.4 → 尝试规则；规则不匹配时兜底但提供澄清
     } catch (e) {
       console.warn('[FallbackEngine] LLM failed, falling back to rule engine:', e);
     }
@@ -518,7 +622,7 @@ export async function recognizeIntent(
     return ruleResult;
   }
 
-  // Step 4: 默认兜底
+  // Step 4: 默认兜底 — 但如果完全无法判断，给用户澄清机会
   const fallback = defaultFallback(message, context);
 
   emitMonitorEvent({
@@ -547,6 +651,76 @@ export async function recognizeIntent(
   return fallback;
 }
 
+/**
+ * 基于低置信度LLM结果构建澄清选项
+ */
+function buildClarificationFromLowConfidence(
+  message: string,
+  llmResult: IntentRecognitionResult,
+  context?: SessionContext,
+): IntentRecognitionResult | null {
+  const entities = extractEntities(message);
+  if (context?.last_symbol && !entities.symbol) {
+    entities.symbol = context.last_symbol;
+  }
+
+  const symbol = entities.symbol || '';
+
+  // 根据当前LLM识别结果，生成合理选项
+  const primaryIntent = llmResult.intent;
+  const primaryLabel = intentLabel(primaryIntent, symbol);
+
+  // 另外两个备选意图
+  const alternatives = pickAlternativeIntents(primaryIntent, symbol);
+
+  const options = [
+    { key: 'opt1', label: primaryLabel, target_intent: primaryIntent as IntentType, entities },
+    ...alternatives.slice(0, 2).map((alt, i) => ({
+      key: `opt${i + 2}`,
+      label: alt.label,
+      target_intent: alt.intent as IntentType,
+      entities,
+    })),
+  ];
+
+  return {
+    intent: 'need_clarification',
+    confidence: llmResult.confidence,
+    entities,
+    complexity: 'simple',
+    reasoning: `意图识别置信度较低（${llmResult.confidence}），请用户澄清`,
+    method: 'llm',
+    context_aware: !!context?.last_intent,
+    clarification_options: options,
+    clarification_question: `你想做什么？请选择一个选项：`,
+  };
+}
+
+function intentLabel(intent: string, symbol: string): string {
+  const s = symbol ? ` ${symbol}` : '';
+  switch (intent) {
+    case 'market_query': return `查询${s}实时行情`;
+    case 'deep_analysis': return `深度分析${s}走势`;
+    case 'scenario_sim': return `情景推演${s}`;
+    case 'strategy_verify': return `策略验证`;
+    case 'execute_trade': return `执行交易${s}`;
+    case 'triple_chain': return `全面分析规划执行${s}`;
+    case 'simple_qa': return `简单问答`;
+    default: return '了解更多信息';
+  }
+}
+
+function pickAlternativeIntents(primaryIntent: string, symbol: string) {
+  const pool = [
+    { intent: 'market_query', label: intentLabel('market_query', symbol) },
+    { intent: 'deep_analysis', label: intentLabel('deep_analysis', symbol) },
+    { intent: 'scenario_sim', label: intentLabel('scenario_sim', symbol) },
+    { intent: 'triple_chain', label: intentLabel('triple_chain', symbol) },
+    { intent: 'simple_qa', label: intentLabel('simple_qa', symbol) },
+  ];
+  return pool.filter(p => p.intent !== primaryIntent).slice(0, 2);
+}
+
 // ============ 导出 ============
 
-export { extractEntities, checkLLMStatus, QWEN_CONFIG };
+export { extractEntities, checkLLMStatus, DEEPSEEK_CONFIG };
