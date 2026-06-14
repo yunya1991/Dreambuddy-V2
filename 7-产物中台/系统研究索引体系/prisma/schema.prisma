@@ -74,8 +74,8 @@ model UserProfile {
   dailyLossPercent    Float    @default(0.05)  // 日亏损限制(%)
   accountLossLimit    Float    @default(2000)  // 账户亏损限制(USDT)
   accountLossPercent  Float    @default(0.20)  // 账户亏损限制(%)
-  allowedSymbols      String   @default("BTC-USDT-SWAP") // 逗号分隔的交易对列表
-  allowedTradeModes   String   @default("SPOT_MODE")    // 逗号分隔的允许交易模式列表
+  allowedSymbols      Json     @default("\"BTC-USDT-SWAP\"")
+  allowedTradeModes   Json     @default("\"SPOT_MODE\"") // 允许的交易模式列表
   isTradingEnabled    Boolean  @default(false) // 交易开关
 
   // === 期权特有参数 ===
@@ -241,10 +241,6 @@ model Strategy {
   parsedIntent  Json?                            // IntentParser解析结果
   backtestResult Json?                           // 回测结果
 
-  // 策略状态
-  status        StrategyStatus @default(DRAFT)
-
-  // 关联定时任务
   tasks         StrategyTask[]
   taskOrders    StrategyTaskOrder[]
 

@@ -34,7 +34,7 @@ import * as path from 'path';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, thinking_mode, session_id, llm_model, intent_method } = body;
+    const { message, thinking_mode, session_id, llm_model, intent_method, lang } = body;
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
       session_id,
       llm_model,
       intent_method,
+      lang: lang || 'zh',
     });
 
     const estimatedTime = getEstimatedTimeMs(result?.execution_summary?.chain_executed || []);
@@ -139,6 +140,18 @@ export async function POST(request: NextRequest) {
       execution_summary: result!.execution_summary,
       metadata: result!.metadata,
     };
+
+    // 步进确认任务（D/Z/E 链中途等待用户选择）
+    if (result!.status === 'awaiting_confirmation') {
+      responseData.step_confirmation = result!.step_confirmation;
+      responseData.status_message = '等待用户选择下一步操作';
+    }
+
+    // 意图澄清任务（LLM不确定用户意图，需用户选择选项）
+    if (result!.status === 'awaiting_clarification') {
+      responseData.clarification_state = (result as any).clarification_state;
+      responseData.status_message = '意图不明确，请选择你要做的操作';
+    }
 
     // 交易任务标记
     if (isTrade) {
