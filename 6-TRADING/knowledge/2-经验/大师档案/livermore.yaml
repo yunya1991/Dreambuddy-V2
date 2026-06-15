@@ -1,0 +1,34 @@
+name: "Jesse Livermore"
+camp: "neutral"
+core_style: "趋势识别·关键点交易"
+strong_regimes:
+  - TREND
+  - RANGE
+  - BREAKOUT
+weak_regimes:
+  - CRISIS
+  - SIDEWAYS
+tags:
+  - trend_trader
+  - key_levels
+
+total_seminars: 3
+total_adoptions: 1.902
+avg_adoption: 0.634
+weight_history: [1.0, 1.0, 1.0, 1.0]
+
+core_philosophy: |
+  关键点交易: 价格突破关键支撑/阻力时入场
+  顺势而为: 永远不逆着趋势开仓
+  加仓原则: 盈利仓位可加，亏损仓位要减
+  金字塔法: 金字塔式加仓
+
+pivot_point_rules:
+  entry: "突破前高/前低+成交量确认"
+  stop: "前一个关键支撑/阻力下方"
+  exit: "趋势衰竭或关键点反转"
+
+application:
+  trend: "关键点模型参照"
+  breakout: "识别真/假突破信号"
+  warning: "极度震荡长期横盘不适用"

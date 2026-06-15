@@ -1,0 +1,26 @@
+name: "Walter Talmans"
+camp: "neutral"
+core_style: "技术分析·趋势跟踪"
+strong_regimes:
+  - TREND
+  - BREAKOUT
+weak_regimes:
+  - RANGE
+  - SIDEWAYS
+tags:
+  - technical
+  - trend_follower
+
+total_seminars: 0
+total_adoptions: 0
+weight_history: [1.0]
+
+core_philosophy: |
+  趋势跟随: 跟随趋势而非预测
+  技术纯粹: 基于纯粹技术信号决策
+  突破确认: 需成交量或动量确认
+
+application:
+  trend: "技术确认信号增强"
+  breakout: "突破确认方法"
+  warning: "震荡市场权重降低"

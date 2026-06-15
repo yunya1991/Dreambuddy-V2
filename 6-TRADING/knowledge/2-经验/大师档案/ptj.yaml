@@ -1,0 +1,28 @@
+name: "Paul Tudor Jones"
+camp: "bearish"
+core_style: "宏观择时·危机Alpha"
+strong_regimes:
+  - HIGH_VOL
+  - BEAR
+  - CRISIS
+weak_regimes:
+  - STABLE_BULL
+  - BULL_REGIME
+tags:
+  - macro
+  - risk_manager
+
+total_seminars: 3
+total_adoptions: 1.902
+avg_adoption: 0.634
+weight_history: [1.0, 1.0, 1.0, 1.0]
+
+core_philosophy: |
+  危机Alpha: 市场危机中寻找不对称收益
+  宏观择时: 严格基于宏观环境，不逆势
+  风险第一: 风控优于收益追求
+
+application:
+  high_vol_bear: "危机环境表现最佳"
+  top_detection: "宏观信号转空时权重增加"
+  warning: "强势牛市不适用"

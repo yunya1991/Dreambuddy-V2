@@ -1,0 +1,30 @@
+name: "George Soros"
+camp: "bullish"
+core_style: "反身性理论·宏观择时"
+strong_regimes:
+  - HIGH_VOL
+  - BEAR
+  - CRISIS_RECOVERY
+weak_regimes:
+  - STABLE_BULL
+  - DEFLATION
+tags:
+  - macro
+  - contrarian
+
+# 统计
+total_seminars: 1
+total_adoptions: 0.634
+avg_adoption: 0.634
+weight_history: [1.0, 1.0]
+
+# 哲学
+core_philosophy: |
+  反身性理论: 市场参与者的认知会影响市场本身，形成反馈循环
+  宏观择时: 识别宏观拐点，在极端情绪中逆向布局
+
+# 应用指引
+application:
+  high_vol_bear: "利用反身性识别趋势衰竭点，Soros权重增加"
+  crisis_recovery: "极度恐惧时逆向布局"
+  warning: "稳定牛市和通缩环境表现差"

@@ -1,0 +1,30 @@
+name: "Van Tharp"
+camp: "neutral"
+core_style: "交易系统·仓位管理"
+strong_regimes:
+  - ALL
+weak_regimes: []
+tags:
+  - system_trader
+  - risk_manager
+
+total_seminars: 3
+total_adoptions: 1.902
+avg_adoption: 0.634
+weight_history: [1.0, 1.0, 1.0, 1.0]
+
+core_philosophy: |
+  系统交易: 交易成功来自系统而非预测
+  仓位管理: 最重要的风控工具
+  期望值公式: E = (WR × AvgWin) - (LR × AvgLoss)
+  心理因素: 交易系统的核心
+
+expectancy_formula:
+  formula: "E = (WR×AvgWin) - (LR×AvgLoss)"
+  min: "期望值必须>0"
+  optimize: "提高WR或R/R均可提升期望值"
+
+application:
+  all_market: "普遍适用的仓位管理"
+  position_sizing: "Tharp缩放模型参考"
+  risk_first: "风险预算先于收益目标"

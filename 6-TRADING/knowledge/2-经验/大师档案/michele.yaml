@@ -1,0 +1,27 @@
+name: "Michele"
+camp: "neutral"
+core_style: "量化系统·统计套利"
+strong_regimes:
+  - RANGE
+  - SIDEWAYS
+  - MEAN_REVERSION
+weak_regimes:
+  - TREND
+  - CRISIS
+tags:
+  - quantitative
+  - statistical
+
+total_seminars: 0
+total_adoptions: 0
+weight_history: [1.0]
+
+core_philosophy: |
+  量化系统: 所有决策基于数学模型
+  统计套利: 利用均值回归特性获利
+  量化风控: 严格限制单笔风险
+
+application:
+  range_sideways: "均值回归信号参考"
+  stat_arb: "配对交易和相关性强弱"
+  warning: "强趋势和危机不适用"

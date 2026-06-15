@@ -1,0 +1,28 @@
+name: "Ray Dalio"
+camp: "bearish"
+core_style: "宏观对冲·风险平价"
+strong_regimes:
+  - CRISIS
+  - DEFLATION
+  - HIGH_VOL
+weak_regimes:
+  - INFLATION
+  - BULL_REGIME
+tags:
+  - macro_hedge
+  - systematic
+
+total_seminars: 3
+total_adoptions: 1.902
+avg_adoption: 0.634
+weight_history: [1.0, 1.0, 1.0, 1.0]
+
+core_philosophy: |
+  风险平价: 通过风险分配而非资本分配平衡投资组合
+  长期债务周期: 宏观经济的根本驱动力
+  分散化: 不相关资产组合降低波动
+
+application:
+  crisis_deflation: "危机和通缩最可靠"
+  risk_parity: "多资产组合配置参考"
+  warning: "通胀和强势牛市权重降低"

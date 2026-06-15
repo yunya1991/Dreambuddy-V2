@@ -1,0 +1,28 @@
+name: "Stanley Druckenmiller"
+camp: "bullish"
+core_style: "趋势追踪·杠杆大师"
+strong_regimes:
+  - TREND_BULL
+  - HIGH_VOL
+  - BULL
+weak_regimes:
+  - BEAR
+  - RANGE
+tags:
+  - trend_follower
+  - aggressive
+
+total_seminars: 3
+total_adoptions: 1.902
+avg_adoption: 0.634
+weight_history: [1.0, 1.0, 1.0, 1.0]
+
+core_philosophy: |
+  趋势追踪: 识别最强趋势，启动时重仓介入
+  杠杆大师: 高胜率加大杠杆，低胜率降低风险
+  宏观自上而下: 先宏观环境分析，再选标的
+
+application:
+  strong_trend: "趋势追踪系统信号增强"
+  high_vol: "杠杆公式参考"
+  warning: "震荡盘整和熊市权重降低"

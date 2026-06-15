@@ -1,0 +1,33 @@
+name: "William O'Neil"
+camp: "bullish"
+core_style: "CANSLIM·成长股投资"
+strong_regimes:
+  - BULL_REGIME
+  - TREND_BULL
+weak_regimes:
+  - BEAR
+  - HIGH_VOL
+tags:
+  - growth_investor
+  - technical
+
+total_seminars: 2
+total_adoptions: 1.268
+avg_adoption: 0.634
+weight_history: [1.0, 1.0, 1.0]
+
+core_philosophy:
+  CANSLIM:
+    C: "季度EPS同比高增长"
+    A: "年度EPS增长>25%"
+    N: "新产品/新高价"
+    S: "供给与需求(流通股少=好)"
+    L: "领涨股或行业龙头"
+    I: "机构投资者认可"
+    M: "市场方向判断"
+  cup_handle: "杯柄形态是经典买入信号"
+
+application:
+  strong_bull: "CANSLIM筛选参考"
+  breakout: "杯柄形态+突破确认"
+  warning: "熊市和高波动不适用"

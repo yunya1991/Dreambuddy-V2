@@ -1,0 +1,26 @@
+name: "Warren Buffett"
+camp: "bullish"
+core_style: "价值投资·长期持有"
+strong_regimes:
+  - NEUTRAL
+  - BULL_REGIME
+  - STABLE_BULL
+weak_regimes:
+  - HIGH_VOL
+  - CRISIS
+tags:
+  - value_investor
+  - long_term
+
+total_seminars: 0
+total_adoptions: 0
+weight_history: [1.0]
+
+core_philosophy: |
+  价值投资: 低于内在价值买入长期持有
+  安全边际: 安全边际是投资的核心
+  能力圈: 只投自己理解的领域
+
+application:
+  stable_market: "长周期配置参考"
+  warning: "高波动和危机环境不适用"
