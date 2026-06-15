@@ -151,6 +151,8 @@ export interface ResultFile {
     confidence?: number;
     method?: string;
     reasoning?: string;
+    entities?: Record<string, string>;
+    complexity?: string;
   };
   artifacts_produced?: Array<{
     file: string;
@@ -530,11 +532,15 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
       task_id: task.task_id,
       session_id: task.session_id,
       status: 'completed',
+      created_at: new Date().toISOString(),
       intent: { type: 'simple_qa', confidence: 0.5 },
       content: msg,
+      content_type: 'markdown',
       execution_summary: {
         intent_recognized: 'non_financial_skip',
         chain_executed: [],
+        total_steps: 0,
+        skipped_steps: [],
         total_time_ms: Date.now() - startTime,
         current_step: 'skip_finished',
       },
@@ -1911,6 +1917,8 @@ ${hint}`;
     task_id: task.task_id,
     session_id: task.session_id,
     status: 'awaiting_clarification',
+    created_at: new Date().toISOString(),
+    content_type: 'markdown',
     intent: {
       type: 'need_clarification',
       confidence: task.intent.confidence || 0.5,
@@ -1932,6 +1940,8 @@ ${hint}`;
     execution_summary: {
       intent_recognized: 'need_clarification',
       chain_executed: [],
+      total_steps: 0,
+      skipped_steps: [],
       total_time_ms: Date.now() - startTime,
       current_step: 'awaiting_user_choice',
     },

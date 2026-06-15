@@ -176,6 +176,7 @@ function extractEntities(msg: string): Record<string, string> {
     'SOL': ['sol', 'solana'],
     'BNB': ['bnb'],
     'XRP': ['xrp', 'ripple'],
+    'XAU': ['xau', 'gold', '黄金', '金价', '黄金价格'],
   };
 
   const lower = msg.toLowerCase();

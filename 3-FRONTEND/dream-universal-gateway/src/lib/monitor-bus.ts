@@ -42,7 +42,11 @@ export type MonitorPhase =
   | 'artifact_synced'
   | 'index_updated'
   | 'feed_ready'
-  | 'result_displayed';
+  | 'result_displayed'
+  | 'clarification_requested'
+  | 'low_confidence_clarification'
+  | 'non_financial_skip'
+  | 'clarification_sent';
 
 export interface MonitorEvent {
   id: string;

@@ -6,6 +6,7 @@
 import { emitMonitorEvent } from '@/lib/monitor-bus';
 import { IntentType, ComplexityLevel, SessionContext } from './fallback-engine';
 import { updateLastRoutingChain } from './intent-memory';
+import { routeToStrategyChain, STRATEGY_COMMAND_ROUTE_MAP } from '@/lib/strategy';
 
 // ============ 类型定义 ============
 
@@ -24,7 +25,14 @@ export interface RoutingDecision {
 
 // ============ 链定义 (统一链名规范) ============
 
-export const CHAIN_STEPS: Record<string, { label: string; icon: string; loop: LoopType; credits: number; time_ms: number; chain?: 'D' | 'Z' | 'E' }> = {
+export const CHAIN_STEPS: Record<string, { label: string; icon: string; loop: LoopType; credits: number; time_ms: number; chain?: 'D' | 'Z' | 'E' | 'S' }> = {
+  // S系列 - 策略思维链（用于策略分析）
+  S1_RESEARCH:  { label: 'S1_调研', icon: '🔍', loop: 'execution', credits: 30, time_ms: 15000, chain: 'S' },
+  S2_ANALYSIS:  { label: 'S2_分析', icon: '🧠', loop: 'execution', credits: 50, time_ms: 30000, chain: 'S' },
+  S3_DESIGN:    { label: 'S3_设计', icon: '🎯', loop: 'execution', credits: 60, time_ms: 45000, chain: 'S' },
+  S4_VALIDATE:  { label: 'S4_验证', icon: '✅', loop: 'execution', credits: 80, time_ms: 60000, chain: 'S' },
+  S5_EXECUTE:   { label: 'S5_执行', icon: '⚡', loop: 'execution', credits: 20, time_ms: 10000, chain: 'S' },
+
   // A系列（原交易链路，保留兼容)
   A1_research:    { label: '市场侦察', icon: '🔍', loop: 'execution',    credits: 50,  time_ms: 30000 },
   A2_analysis:    { label: '深度分析', icon: '🧠', loop: 'execution',    credits: 80,  time_ms: 45000 },
@@ -79,46 +87,51 @@ const ROUTE_MAP: Record<Exclude<IntentType, 'command'>, RouteConfig> = {
     requires_confirmation: false,
     fallback_chain: ['market_data'],
   },
-  // D/Z/E 三链模式（步进确认机制）
+  // S系列策略思维链 - 用于策略分析
+  // triple_chain保留用于开发治理场景
   triple_chain: {
     loop: 'execution',
-    free_chain: ['D1_investigator', 'D2_analyst', 'D3_deducer', 'D4_spec_author'],
+    free_chain: ['D1_investigator', 'D2_analyst'],
     pro_short_chain: ['D1_investigator', 'D2_analyst', 'D3_deducer', 'D4_spec_author'],
     pro_full_chain: ['D1_investigator', 'D2_analyst', 'D3_deducer', 'D4_spec_author', 'Z1_code_scanner', 'Z2_boundary_divider', 'Z3_path_planner', 'Z4_acceptance_designer', 'E1_task_executor', 'E2_tester', 'E3_deployer'],
-    requires_confirmation: true, // D/E/Z 每步需用户确认
-    fallback_chain: ['D1_investigator'],
-  },
-  deep_analysis: {
-    loop: 'execution',
-    free_chain: ['D1_investigator', 'D2_analyst'],
-    pro_short_chain: ['D1_investigator', 'D2_analyst'],
-    pro_full_chain: ['D1_investigator', 'D2_analyst', 'D3_deducer', 'D4_spec_author'],
     requires_confirmation: true,
     fallback_chain: ['D1_investigator', 'D2_analyst'],
   },
+  // 深度分析 - 使用S系列链
+  deep_analysis: {
+    loop: 'execution',
+    free_chain: ['S1_RESEARCH', 'S2_ANALYSIS'],
+    pro_short_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
+    pro_full_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
+    requires_confirmation: true,
+    fallback_chain: ['S1_RESEARCH', 'S2_ANALYSIS'],
+  },
+  // 情景模拟 - 使用S系列链
   scenario_sim: {
     loop: 'execution',
-    free_chain: ['knowledge_base'],
-    pro_short_chain: ['A3_simulation'],
-    pro_full_chain: ['A1_research', 'A2_analysis', 'A3_simulation'],
-    requires_confirmation: false,
-    fallback_chain: ['A2_analysis'],
+    free_chain: ['S1_RESEARCH', 'S2_ANALYSIS'],
+    pro_short_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
+    pro_full_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
+    requires_confirmation: true,
+    fallback_chain: ['S1_RESEARCH', 'S2_ANALYSIS'],
   },
+  // 策略验证 - 使用S系列链
   strategy_verify: {
     loop: 'execution',
-    free_chain: ['A4_validation'],
-    pro_short_chain: ['A4_validation'],
-    pro_full_chain: ['A3_simulation', 'A4_validation', 'A5_execution'],
-    requires_confirmation: false,
-    fallback_chain: ['A2_analysis'],
+    free_chain: ['S2_ANALYSIS', 'S3_DESIGN'],
+    pro_short_chain: ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
+    pro_full_chain: ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
+    requires_confirmation: true,
+    fallback_chain: ['S2_ANALYSIS', 'S3_DESIGN'],
   },
+  // 执行交易 - 使用S系列链
   execute_trade: {
     loop: 'execution',
-    free_chain: [],
-    pro_short_chain: ['A4_validation', 'A5_execution'],
-    pro_full_chain: ['A4_validation', 'A5_execution', 'A9_exit'],
+    free_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
+    pro_short_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
+    pro_full_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
     requires_confirmation: true,
-    fallback_chain: ['A4_validation'],
+    fallback_chain: ['S1_RESEARCH', 'S2_ANALYSIS'],
   },
   system_config: {
     loop: 'general',
@@ -183,11 +196,12 @@ const ROUTE_MAP: Record<Exclude<IntentType, 'command'>, RouteConfig> = {
 const COMMAND_ROUTE_MAP: Record<string, { intent: IntentType; chain: string[]; loop: LoopType }> = {
   '/行情': { intent: 'market_query',    chain: ['market_data'],                     loop: 'intelligence' },
   '/hq':   { intent: 'market_query',    chain: ['market_data'],                     loop: 'intelligence' },
-  '/分析': { intent: 'deep_analysis',   chain: ['A1_research', 'A2_analysis'],       loop: 'execution' },
-  '/fx':   { intent: 'deep_analysis',   chain: ['A1_research', 'A2_analysis'],       loop: 'execution' },
-  '/推演': { intent: 'scenario_sim',    chain: ['A1_research', 'A2_analysis', 'A3_simulation'], loop: 'execution' },
-  '/验证': { intent: 'strategy_verify', chain: ['A4_validation'],                    loop: 'execution' },
-  '/开仓': { intent: 'execute_trade',   chain: ['A4_validation', 'A5_execution', 'A9_exit'], loop: 'execution' },
+  // 使用S系列策略思维链
+  '/分析': { intent: 'deep_analysis',   chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],       loop: 'execution' },
+  '/fx':   { intent: 'deep_analysis',   chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],       loop: 'execution' },
+  '/推演': { intent: 'scenario_sim',    chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'], loop: 'execution' },
+  '/验证': { intent: 'strategy_verify', chain: ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],                    loop: 'execution' },
+  '/开仓': { intent: 'execute_trade',   chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'], loop: 'execution' },
 };
 
 // ============ 主路由函数 ============
@@ -463,32 +477,30 @@ export function generateStepConfirmationPrompt(
   if (!nextStep) {
     // 最后一步，询问是否落地
     return isZh
-      ? `✅ **${currentLabel} 完成**\n\n请问是否直接落地？\n\n- 回复 **(1)** 确认落地\n- 回复 **(2)** 查看完整链路并选择`
-      : `✅ **${currentLabel} Complete**\n\nWould you like to finalize? (1) Confirm (2) Review full chain`;
+      ? `✅ **${currentLabel} 完成**\n\n请确认是否进入执行阶段落地：\n\n- 回复 **(1)** 确认并落地\n- 回复 **(2)** 先查看完整链路再决定`
+      : `✅ **${currentLabel} Complete**\n\nProceed to execution? (1) Confirm & execute (2) Review full chain first`;
   }
 
   const nextStepDef = CHAIN_STEPS[nextStep];
   const nextLabel = nextStepDef?.label || nextStep;
+  const nextChainTag = nextStepDef?.chain || '';
 
   return isZh
-    ? `✅ **${currentLabel} 完成**\n\n请选择下一步操作：\n- **(1)** 进入下一步：**${nextLabel}**\n- **(2)** 直接落地（当前方案）\n- **(3)** 跳过后续步骤，直接落地`
-    : `✅ **${currentLabel} Complete**\n\nChoose next action:\n- **(1)** Proceed to: **${nextLabel}**\n- **(2)** Finalize current solution\n- **(3)** Skip remaining steps and finalize`;
+    ? `✅ **${currentLabel} 完成**\n\nD-Z-E 核心链路已启用，**每步需您确认后方可继续**。\n\n请选择下一步操作：\n- **(1)** 进入下一步：**${nextLabel}** (${nextChainTag}链)\n- **(2)** 当前方案已满意，直接落地执行\n\n⚠️ **注意：系统禁止跳步。如想提前落地，请选择 (2)。**`
+    : `✅ **${currentLabel} Complete**\n\nD-Z-E core chain active, **confirmation required for each step.**\n\nChoose next action:\n- **(1)** Proceed to: **${nextLabel}** (${nextChainTag} chain)\n- **(2)** Satisfied with current plan, finalize and execute\n\n⚠️ **Note: Step skipping is not allowed. Choose (2) to finalize early.**`;
 }
 
 /**
  * 判断用户回复是否为确认继续
  */
-export function parseUserConfirmation(response: string): 'continue' | 'finalize' | 'skip' | 'unknown' {
+export function parseUserConfirmation(response: string): 'continue' | 'finalize' | 'unknown' {
   const normalized = response.trim().toLowerCase();
 
   if (normalized === '1' || normalized === 'continue' || normalized.includes('继续') || normalized.includes('下一步')) {
     return 'continue';
   }
-  if (normalized === '2' || normalized === 'finalize' || normalized.includes('落地')) {
+  if (normalized === '2' || normalized === 'finalize' || normalized.includes('落地') || normalized.includes('执行')) {
     return 'finalize';
-  }
-  if (normalized === '3' || normalized === 'skip' || normalized.includes('跳过')) {
-    return 'skip';
   }
   return 'unknown';
 }

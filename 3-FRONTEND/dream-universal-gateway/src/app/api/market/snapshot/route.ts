@@ -19,11 +19,53 @@ const SYMBOL_MAP: Record<string, string> = {
   BTC: 'BTC-USDT-SWAP',
   ETH: 'ETH-USDT-SWAP',
   SOL: 'SOL-USDT-SWAP',
+  XAU: 'XAU-USD',
+  GOLD: 'XAU-USD',
+};
+
+// 黄金/外汇 mock 数据（基于市场最近值 + 轻微随机波动，模拟实时行情）
+const FOREX_MOCKS: Record<string, () => Record<string, unknown>> = {
+  'XAU-USD': () => {
+    const basePrice = 3085.0; // 黄金最近区间参考价
+    const jitter = (Math.random() - 0.5) * 15; // ±7.5 美元随机
+    const price = basePrice + jitter;
+    const open = basePrice + (Math.random() - 0.5) * 8;
+    const high = Math.max(price, open) + Math.random() * 6;
+    const low = Math.min(price, open) - Math.random() * 6;
+    const changePct = ((price - open) / open) * 100;
+    return {
+      instId: 'XAU-USD',
+      symbol: 'XAU/USD',
+      displayName: '黄金/美元 (现货)',
+      category: 'commodity',
+      price: parseFloat(price.toFixed(2)),
+      open24h: parseFloat(open.toFixed(2)),
+      high24h: parseFloat(high.toFixed(2)),
+      low24h: parseFloat(low.toFixed(2)),
+      change24h: parseFloat(changePct.toFixed(2)),
+      volume24h: 'Spot Market',
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+      unit: 'USD/oz',
+      currency: 'USD',
+      support_levels: [3070, 3050, 3020],
+      resistance_levels: [3100, 3120, 3150],
+      note: '黄金实时参考价 · 基于国际现货黄金市场最近成交价 + 轻微波动模拟',
+      isMock: true,
+    };
+  },
 };
 
 function resolveSymbol(input: string): string {
   const upper = input.toUpperCase();
-  return SYMBOL_MAP[upper] || (upper.includes('-') ? upper : `${upper}-USDT-SWAP`);
+  if (SYMBOL_MAP[upper]) return SYMBOL_MAP[upper];
+  if (upper.includes('-')) return upper;
+  // XAU/GOLD 特殊处理（不追加 -USDT-SWAP）
+  if (upper === 'XAU' || upper === 'GOLD' || upper.startsWith('XAU')) return 'XAU-USD';
+  return `${upper}-USDT-SWAP`;
+}
+
+function isForexOrCommodity(symbol: string): boolean {
+  return FOREX_MOCKS.hasOwnProperty(symbol) || symbol.includes('XAU') || symbol === 'XAU-USD';
 }
 
 function parseTickerOutput(output: string): Record<string, unknown> | null {
@@ -166,6 +208,42 @@ export async function GET(request: NextRequest) {
       data: cache.data[cacheKey],
       cached: true,
     });
+  }
+
+  // ====== 外汇/大宗商品（黄金等）优先处理 —— 不调用 OKX CLI ======
+  if (isForexOrCommodity(symbol)) {
+    let result: Record<string, unknown> = {};
+    if (FOREX_MOCKS[symbol]) {
+      result = FOREX_MOCKS[symbol]();
+    } else {
+      // 其他品种的默认 mock
+      result = {
+        instId: symbol,
+        symbol: symbol,
+        displayName: symbol,
+        category: 'commodity',
+        price: 100,
+        open24h: 99.5,
+        high24h: 101,
+        low24h: 98.5,
+        change24h: 0.5,
+        volume24h: 'Spot Market',
+        time: new Date().toLocaleString('zh-CN', { hour12: false }),
+        unit: 'USD',
+        currency: 'USD',
+        note: `${symbol} 参考行情（模拟数据）`,
+        isMock: true,
+      };
+    }
+
+    // 更新缓存
+    if (!cache || Date.now() - cache.timestamp >= CACHE_TTL) {
+      cache = { data: { [cacheKey]: result }, timestamp: Date.now() };
+    } else {
+      cache.data[cacheKey] = result;
+    }
+
+    return NextResponse.json({ success: true, data: result, cached: false, source: 'forex-mock' });
   }
 
   try {

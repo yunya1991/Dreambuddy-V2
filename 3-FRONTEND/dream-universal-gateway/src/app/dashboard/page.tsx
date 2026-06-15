@@ -15,6 +15,12 @@ import {
 } from "./trading-panel-data";
 import { buildStrategyPanelViewModel } from "./strategy-view-model";
 import "./dashboard.css";
+// Notebook 组件
+const NotebookPanel = dynamic(() => import("@/components/notebook/NotebookPanel"), { ssr: false });
+
+function NotebookPanelWrapper() {
+  return <NotebookPanel />;
+}
 
 // 动态导入 react-markdown (客户端only)
 const ReactMarkdown = dynamic(() => import('react-markdown'), { ssr: false });
@@ -36,7 +42,7 @@ const QWEN_MODELS = [
   { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', desc: '最强推理·金融分析', provider: 'deepseek' },
 ];
 
-type RightPanelType = 'analysis' | 'market' | 'signal' | 'position' | 'api' | 'trading' | 'strategy' | 'communication' | 'llm' | 'report' | 'monitor' | 'memory';
+type RightPanelType = 'analysis' | 'market' | 'signal' | 'position' | 'api' | 'trading' | 'strategy' | 'communication' | 'llm' | 'report' | 'monitor' | 'memory' | 'notebook';
 
 // 链路步骤定义 (v2 三闭环架构)
 const CHAIN_STEP_MAP: Record<string, { label: string; icon: string; loop?: string }> = {
@@ -184,7 +190,7 @@ export default function ChatPage() {
   const [llmModel, setLlmModel] = useState('qwen3-30b-a3b');
   const [intentMethod, setIntentMethod] = useState<'rule' | 'llm'>('llm');
   
-  const [messages, setMessages] = useState<{
+  const [messages, setMessages] = useState<Array<{
     role: string;
     content: string;
     intent?: string;
@@ -192,19 +198,23 @@ export default function ChatPage() {
     context_aware?: boolean;
     chain?: string[];
     thinking_mode?: string;
-    trade_task_id?: string; // 交易任务ID，用于确认交互
-    trade_confirmed?: boolean; // 交易是否已确认/取消
-    // 步进确认字段（D/Z/E 思维链）
+    trade_task_id?: string;
+    trade_confirmed?: boolean;
     step_confirmation?: {
       current_step: string;
       next_step: string | null;
       options: Array<{ key: string; label: string; action: string }>;
       prompt: string;
     };
-    step_task_id?: string; // 步进确认对应的任务ID
-    awaiting_step?: string; // 当前等待确认的步骤
-    next_step?: string; // 下一步骤
-  }[]>([
+    step_task_id?: string;
+    awaiting_step?: string;
+    next_step?: string;
+    clarification_state?: {
+      options: Array<{ key: string; label: string; target_intent?: string; action?: string }>;
+      prompt?: string;
+      current_intent?: string;
+    };
+  }>>([
     {
       role: "assistant",
       content: "你好！我是 Dream Gateway 智能交易助手。我可以帮你分析市场、制定策略、管理交易。\n\n⚡ **快速思考**：轻量级，即时响应\n🧠 **深度思考**：完整A1-A5闭环深度调研\n\n🔗 **桥接模式**：中台即时执行，秒级响应\n💬 **直接模式**：LLM/Mock即时对话\n\n⚠️ 交易任务需确认执行时间，不会自动执行\n\n试试输入「/行情」或「分析BTC」",
@@ -1486,6 +1496,9 @@ export default function ChatPage() {
             context_aware: result.data?.context_aware || false,
             chain: result.data?.chain || [],
             thinking_mode: result.data?.thinking_mode || thinkingMode,
+            chainState: result.data?.chainState,
+            stepProgress: result.data?.stepProgress,
+            market: result.data?.market,
           },
         ];
       });
@@ -1587,6 +1600,12 @@ export default function ChatPage() {
 
   const renderRightPanel = () => {
     switch (rightPanelContent) {
+      case 'notebook':
+        return (
+          <div style={{ padding: 0 }}>
+            <NotebookPanelWrapper />
+          </div>
+        );
       case 'llm':
         return (
           <div>
@@ -4546,6 +4565,7 @@ export default function ChatPage() {
               <div className="collapsible-item" onClick={() => handleShowRightPanel('communication')}>📡 通信渠道</div>
               <div className="collapsible-item" onClick={() => handleShowRightPanel('monitor')}>📡 传递监控</div>
               <div className="collapsible-item" onClick={() => handleShowRightPanel('memory')}>🧠 意图记忆库</div>
+              <div className="collapsible-item" onClick={() => handleShowRightPanel('notebook')}>📒 笔记本 (Notebook)</div>
             </div>
           </div>
         </div>
@@ -4753,6 +4773,152 @@ export default function ChatPage() {
                   <div className="text-right text-xs mb-1.5 opacity-70">👤 你</div>
                 )}
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                {/* 🏆 笔记本 7 步进度条 */}
+                {msg.role === "assistant" && ((msg as any).stepProgress || (msg as any).step_progress) && (() => {
+                  const sp = (msg as any).stepProgress || (msg as any).step_progress;
+                  return (
+                    <div className="mt-4 pt-3 border-t border-[#2a2a2a]">
+                      <div className="text-[11px] text-[#8a8a8a] mb-2">📖 笔记本 · 7步进度</div>
+                      <div className="flex items-center gap-1">
+                        {sp.steps.map((s: any, idx: number) => {
+                          const isActive = s.status === 'active';
+                          const isDone = s.status === 'completed';
+                          const isSkipped = s.status === 'skipped';
+                          return (
+                            <div key={s.id} className="flex items-center flex-shrink-0" style={{ minWidth: 0 }}>
+                              <div
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                  isActive ? 'bg-[#0066ff] text-white animate-pulse' :
+                                  isDone ? 'bg-green-500/30 text-green-400' :
+                                  isSkipped ? 'bg-gray-500/20 text-gray-400' :
+                                  'bg-[#1a1a1a] text-[#666]'
+                                }`}
+                              >
+                                {isDone ? '✓' : idx + 1}
+                              </div>
+                              {idx < sp.steps.length - 1 && (
+                                <div
+                                  className={`h-0.5 w-3 flex-shrink-0 ${
+                                    isDone ? 'bg-green-500/50' : 'bg-[#2a2a2a]'
+                                  }`}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 text-[9px] text-[#71717a]">
+                        {sp.steps.map((s: any, idx: number) => (
+                          <span key={s.id} style={{ width: `${100 / sp.steps.length}%`, textAlign: 'center', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {s.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* 🔗 D-Z-E 思维链可视化 */}
+                {msg.role === "assistant" && ((msg as any).chainState || (msg as any).chain_state) && ((msg as any).chainState?.phases || (msg as any).chain_state?.phases) && (() => {
+                  const cs = (msg as any).chainState || (msg as any).chain_state;
+                  const groups = [
+                    { key: 'D', name: '调研链', color: '#0088aa', items: cs.phases.filter((p: any) => p.id.startsWith('D')) },
+                    { key: 'Z', name: '规划链', color: '#aa6600', items: cs.phases.filter((p: any) => p.id.startsWith('Z')) },
+                    { key: 'E', name: '执行链', color: '#008855', items: cs.phases.filter((p: any) => p.id.startsWith('E')) },
+                  ].filter(g => g.items.length > 0);
+                  
+                  if (groups.length === 0) return null;
+                  
+                  return (
+                    <div className="mt-3 pt-3 border-t border-[#2a2a2a]">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-[11px] text-[#0088aa]">🔗 D-Z-E 思维链</div>
+                        <div className="text-[9px] text-[#71717a]">{cs.scope || ''}</div>
+                      </div>
+                      <div className="space-y-2">
+                        {groups.map((g: any) => {
+                          const groupDone = g.items.filter((p: any) => p.status === 'completed' || p.status === 'skipped').length;
+                          return (
+                            <div key={g.key} className="p-2 rounded bg-[#0d0d0d]">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: g.color }} />
+                                <span className="text-[10px] text-[#999]">{g.name}</span>
+                                <span className="text-[9px] text-[#666] ml-auto">{groupDone}/{g.items.length}</span>
+                              </div>
+                              <div className="flex gap-1 flex-wrap">
+                                {g.items.map((p: any) => {
+                                  const isCurrent = cs.currentPhase === p.id;
+                                  const isDone = p.status === 'completed' || p.status === 'skipped';
+                                  return (
+                                    <div
+                                      key={p.id}
+                                      className={`px-2 py-1 rounded text-[10px] text-center min-w-[48px] flex-shrink-0 ${
+                                        isCurrent ? 'bg-[#0066ff]/20 text-[#3b82f6] border border-[#0066ff]/50' :
+                                        isDone ? 'bg-green-500/10 text-green-400 border border-green-500/30' :
+                                        'bg-[#141414] text-[#666] border border-[#2a2a2a]'
+                                      }`}
+                                      style={isCurrent ? { animation: 'pulse 1.5s ease-in-out infinite' } : {}}
+                                    >
+                                      <div className="font-bold">{p.id}</div>
+                                      <div className="text-[8px] opacity-70 mt-0.5 truncate max-w-[60px]">{p.name}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* 📊 市场价格卡片 */}
+                {msg.role === "assistant" && (msg as any).market && (msg as any).market.price != null && (() => {
+                  const m = (msg as any).market;
+                  const change = typeof m.change24h === 'number' ? m.change24h : 0;
+                  return (
+                    <div className="mt-3 pt-3 border-t border-[#2a2a2a]">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-[11px] text-[#06b6d4]">📊 实时行情</div>
+                        <div className="text-[9px] text-[#71717a]">{m.displayName || m.symbol}</div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-gradient-to-br from-[#0f3460]/30 to-[#0d0d0d] border border-[#2a2a2a]">
+                        <div className="flex items-baseline justify-between">
+                          <div className="text-2xl font-bold text-[#e0e0e0]">
+                            {typeof m.price === 'number' ? `$${m.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : m.price}
+                          </div>
+                          <div className={`text-xs font-semibold ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {change >= 0 ? '▲' : '▼'} {Math.abs(change).toFixed(2)}%
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-[10px]">
+                          <div>
+                            <span className="text-[#71717a]">支撑: </span>
+                            <span className="text-[#666]">
+                              {Array.isArray(m.support) ? m.support.slice(0, 2).map((v: number) => `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`).join(' / ') : m.support}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[#71717a]">阻力: </span>
+                            <span className="text-[#666]">
+                              {Array.isArray(m.resistance) ? m.resistance.slice(0, 2).map((v: number) => `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`).join(' / ') : m.resistance}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[#71717a]">24h 高: </span>
+                            <span className="text-[#666]">${typeof m.high24h === 'number' ? m.high24h.toLocaleString('en-US', { maximumFractionDigits: 2 }) : m.high24h}</span>
+                          </div>
+                          <div>
+                            <span className="text-[#71717a]">24h 低: </span>
+                            <span className="text-[#666]">${typeof m.low24h === 'number' ? m.low24h.toLocaleString('en-US', { maximumFractionDigits: 2 }) : m.low24h}</span>
+                          </div>
+                        </div>
+                        {m.note && (
+                          <div className="text-[9px] text-[#555] mt-2 italic">{m.note}</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {/* 交易确认按钮 */}
                 {msg.trade_task_id && !msg.trade_confirmed && (
                   <div className="mt-3 pt-3 border-t border-[#1a1a1a]">
