@@ -1,0 +1,71 @@
+{
+  "_comment": "任务分级中心配置。G0-G4 等级→模型映射。由 tier-sync.py 自动同步到 cron job。",
+  "version": "1.0.0",
+  "last_updated": "2026-06-13",
+
+  "layers": {
+    "G4": {
+      "label": "战略级",
+      "model": "deepseek-v4-pro",
+      "provider": "deepseek_pro",
+      "relative_cost": "15-20x",
+      "tasks": [
+        "A1-深度调研",
+        "A2-第一性原理",
+        "A3-战略制定",
+        "A9-离场决策AI",
+        "Screen1-weekly",
+        "A8-治理审查Daily",
+        "做梦部DreamOneirology",
+        "governance-daily-archive-a0a8"
+      ]
+    },
+    "G3": {
+      "label": "复杂级",
+      "model": "deepseek-v4-flash",
+      "provider": "deepseek",
+      "relative_cost": "1.0x",
+      "tasks": [
+        "A4-战术验证",
+        "A5-战术执行",
+        "A6-monitor-4h"
+      ]
+    },
+    "G2": {
+      "label": "常规级",
+      "model": null,
+      "provider": null,
+      "relative_cost": "1.0x（默认）",
+      "tasks": [
+        "Screen2-daily",
+        "Screen3-teamb",
+        "ProcessD-weekly",
+        "trading-evolution-weekly",
+        "index-ops-daily-audit"
+      ]
+    },
+    "G1": {
+      "label": "简单级",
+      "model": "deepseek-r1:1.5b",
+      "provider": "self-deepseek",
+      "relative_cost": "低（自部署）",
+      "tasks": [
+        "ApprovalTimeout-10min",
+        "GroupMentionProcessor-60s"
+      ],
+      "note": "✅ 已就绪——自部署 DeepSeek R1 1.5B"
+    },
+    "G0": {
+      "label": "零Token级",
+      "model": "no_agent",
+      "provider": null,
+      "relative_cost": "0",
+      "tasks": [
+        "token-budget-calculator",
+        "token-mode-switcher",
+        "ExecutionLoopOrchestrator",
+        "A8ReviewDaily-old-script"
+      ]
+    }
+  }
+}

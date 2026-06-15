@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>产物中台 - 董事会总览台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #030712; color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="app" class="min-h-screen p-8">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold text-white">董事会总览台</h1>
+      <p class="text-gray-400 mt-1">Artifact Hub 治理层监控面板</p>
+    </header>
+
+    <!-- Metrics Cards -->
+    <div id="metrics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"></div>
+
+    <!-- Approval & Performance -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-gray-900 rounded-lg p-6 border border-gray-800">
+        <h3 class="text-lg font-semibold text-gray-300 mb-4">审批状态</h3>
+        <div id="approval-status" class="space-y-3"></div>
+      </div>
+      <div class="bg-gray-900 rounded-lg p-6 border border-gray-800">
+        <h3 class="text-lg font-semibold text-gray-300 mb-4">近期表现</h3>
+        <div id="performance" class="space-y-3"></div>
+      </div>
+      <div class="bg-gray-900 rounded-lg p-6 border border-gray-800">
+        <h3 class="text-lg font-semibold text-gray-300 mb-4">部门分布</h3>
+        <div id="dept-breakdown" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- Nav Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <a href="/board/proposals" class="block bg-gray-900 rounded-lg p-6 border border-gray-800 hover:border-gray-700 transition-colors">
+        <div class="flex items-start gap-4">
+          <span class="text-3xl">📋</span>
+          <div><h3 class="text-lg font-semibold text-white">提案管理</h3><p class="text-sm text-gray-400 mt-1">查看和管理董事会提案</p></div>
+        </div>
+      </a>
+      <a href="/board/review" class="block bg-gray-900 rounded-lg p-6 border border-gray-800 hover:border-gray-700 transition-colors">
+        <div class="flex items-start gap-4">
+          <span class="text-3xl">📊</span>
+          <div><h3 class="text-lg font-semibold text-white">绩效审查</h3><p class="text-sm text-gray-400 mt-1">查看策略执行绩效</p></div>
+        </div>
+      </a>
+      <a href="/ops" class="block bg-gray-900 rounded-lg p-6 border border-gray-800 hover:border-gray-700 transition-colors">
+        <div class="flex items-start gap-4">
+          <span class="text-3xl">⚙️</span>
+          <div><h3 class="text-lg font-semibold text-white">运维监控</h3><p class="text-sm text-gray-400 mt-1">队列状态和系统健康</p></div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const API = '';  // same origin
+
+    async function fetchData() {
+      try {
+        const [metricsRes, approvalRes] = await Promise.all([
+          fetch(`${API}/board/metrics`),
+          fetch(`${API}/board/approval/summary`)
+        ]);
+        const metrics = await metricsRes.json();
+        const approval = await approvalRes.json();
+
+        if (metrics.success) renderMetrics(metrics.data);
+        if (approval.success) renderApproval(approval.data);
+        if (metrics.success) renderPerformance(metrics.data);
+        if (metrics.success) renderDeptBreakdown(metrics.data);
+      } catch (e) {
+        console.error('Failed to load:', e);
+      }
+    }
+
+    function renderMetrics(data) {
+      const bgColors = ['bg-blue-950/30 border-blue-600', 'bg-purple-950/30 border-purple-600', 'bg-green-950/30 border-green-600', 'bg-yellow-950/30 border-yellow-600'];
+      const icons = ['🔍', '⚖️', '📦', '⏳'];
+      const labels = ['总追踪数', '总决策数', '总产物数', '待审批'];
+      const values = [data.total_traces, data.total_decisions, data.total_artifacts, data.pending_approvals];
+
+      document.getElementById('metrics').innerHTML = labels.map((label, i) => `
+        <div class="rounded-lg p-6 border ${bgColors[i]}">
+          <div class="flex items-center justify-between mb-2"><span class="text-3xl">${icons[i]}</span></div>
+          <div class="text-3xl font-bold text-white">${values[i]}</div>
+          <div class="text-sm text-gray-400 mt-1">${label}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderApproval(data) {
+      document.getElementById('approval-status').innerHTML = `
+        <div class="flex justify-between"><span class="text-gray-400">待审批</span><span class="text-yellow-400 font-bold">${data.pending}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">已批准</span><span class="text-green-400 font-bold">${data.approved}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">已拒绝</span><span class="text-red-400 font-bold">${data.rejected}</span></div>
+      `;
+    }
+
+    function renderPerformance(data) {
+      const p = data.recent_performance;
+      const pnlColor = p.total_pnl >= 0 ? 'text-green-400' : 'text-red-400';
+      document.getElementById('performance').innerHTML = `
+        <div class="flex justify-between"><span class="text-gray-400">胜率</span><span class="text-blue-400 font-bold">${(p.avg_win_rate * 100).toFixed(1)}%</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">PnL</span><span class="font-bold ${pnlColor}">$${p.total_pnl.toFixed(2)}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">交易数</span><span class="text-gray-200 font-bold">${p.trade_count}</span></div>
+      `;
+    }
+
+    function renderDeptBreakdown(data) {
+      const depts = data.department_breakdown || {};
+      const entries = Object.entries(depts);
+      if (entries.length === 0) {
+        document.getElementById('dept-breakdown').innerHTML = '<p class="text-gray-500 text-sm">暂无数据</p>';
+        return;
+      }
+      document.getElementById('dept-breakdown').innerHTML = entries.map(([dept, count]) => `
+        <div class="flex justify-between"><span class="text-gray-400 capitalize">${dept}</span><span class="text-gray-200 font-bold">${count}</span></div>
+      `).join('');
+    }
+
+    fetchData();
+    setInterval(fetchData, 30000);
+  </script>
+</body>
+</html>

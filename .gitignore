@@ -1,0 +1,31 @@
+# === 运行时产物 ===
+6-TRADING/logs/
+6-TRADING/sessions/
+6-TRADING/state/
+6-TRADING/backup/
+6-TRADING/artifacts/
+6-TRADING/approval_timeout_health_*.json
+6-TRADING/project_trading_session_state.json
+6-TRADING/v15_hourly_state.json
+6-TRADING/hermes_cron_setup.sh
+6-TRADING/hermes_crontab.txt
+6-TRADING/scripts/v15_price_cache.json
+reports/
+
+# === Python 缓存 ===
+__pycache__/
+*.pyc
+*.pyo
+
+# === 运行时 Session 状态 ===
+0-NOTEBOOK/.session_gate
+0-NOTEBOOK/.step_state.json
+
+# === 系统 ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# === 依赖 ===
+node_modules/

@@ -1,0 +1,36 @@
+# 前端设计
+> 路径: 1-ARCHITECTURE/前端设计/
+> 自动生成: 2026-06-13 02:41:05
+> 用途: 目录索引
+
+## 目录
+
+### 文件
+
+| 文件 | 说明 |
+|:---|:---|
+| [API_CONFIG_DESIGN.md](API_CONFIG_DESIGN.md) | |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | |
+| [CHAIN_ORCHESTRATOR.md](CHAIN_ORCHESTRATOR.md) | |
+| [CHANNEL_DESIGN.md](CHANNEL_DESIGN.md) | |
+| [FRONTEND_ARCHITECTURE.md](FRONTEND_ARCHITECTURE.md) | |
+| [FRONTEND_WB_INTEGRATION.md](FRONTEND_WB_INTEGRATION.md) | |
+| [INTENT_ROUTER.md](INTENT_ROUTER.md) | |
+| [README_PARENT.md](README_PARENT.md) | |
+| [STRATEGY_CONFIG_DESIGN.md](STRATEGY_CONFIG_DESIGN.md) | |
+| [TECH_STACK_EVALUATION.md](TECH_STACK_EVALUATION.md) | |
+| [TRADING_CONFIG_DESIGN.md](TRADING_CONFIG_DESIGN.md) | |
+| [UI_ROADMAP.md](UI_ROADMAP.md) | |
+| [UI_SPEC.md](UI_SPEC.md) | |
+| [USER_SYSTEM_DESIGN.md](USER_SYSTEM_DESIGN.md) | |
+
+### 概述
+
+---
+| 文档 | 描述 | 状态 |
+|------|------|------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | 系统架构设计 | ✅ |
+| [FRONTEND_ARCHITECTURE.md](./FRONTEND_ARCHITECTURE.md) | 前端架构详细设计 | ✅ |
+
+---
+*索引更新时间: 2026-06-13 02:41:05*
