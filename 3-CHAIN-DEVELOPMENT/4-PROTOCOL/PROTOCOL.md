@@ -16,19 +16,32 @@
 
 ## 阶段定义
 
-| ID | 阶段 | 链 | 方法论文档 |
-|:---|:---|---|:---:|
-| d1 | D1 深度调研 | 调研 | `1-RESEARCH/D1-investigator.md` |
-| d2 | D2 分析诊断 | 调研 | `1-RESEARCH/D2-analyst.md` |
-| d3 | D3 推演验证 | 调研 | `1-RESEARCH/D3-deducer.md` |
-| d4 | D4 Spec合成 | 调研 | `1-RESEARCH/D4-spec-author.md` |
-| z1 | Z1 代码扫描 | 规划 | `2-PLANNING/Z1-code-scanner.md` |
-| z2 | Z2 范围划分 | 规划 | `2-PLANNING/Z2-boundary-divider.md` |
-| z3 | Z3 路径设计 | 规划 | `2-PLANNING/Z3-path-planner.md` |
-| z4 | Z4 验收方案 | 规划 | `2-PLANNING/Z4-acceptance-designer.md` |
-| e1 | E1 任务执行 | 执行 | `3-EXECUTION/E1-task-executor.md` |
-| e2 | E2 测试验证 | 执行 | `3-EXECUTION/E2-tester.md` |
-| e3 | E3 部署交付 | 执行 | `3-EXECUTION/E3-deployer.md` |
+| ID | 阶段 | 链 | 子模式 | 方法论文档 |
+|:---|:---|---|:---|:---:|
+| d1 | D1 深度调研 | 调研 | **d1-a** / **d1-b** 对抗性子路径（可选） | `1-RESEARCH/D1-investigator.md` |
+| d2 | D2 分析诊断 | 调研 | — | `1-RESEARCH/D2-analyst.md` |
+| d3 | D3 推演验证 | 调研 | — | `1-RESEARCH/D3-deducer.md` |
+| d4 | D4 Spec合成 | 调研 | — | `1-RESEARCH/D4-spec-author.md` |
+| z1 | Z1 代码扫描 | 规划 | — | `2-PLANNING/Z1-code-scanner.md` |
+| z2 | Z2 范围划分 | 规划 | — | `2-PLANNING/Z2-boundary-divider.md` |
+| z3 | Z3 路径设计 | 规划 | — | `2-PLANNING/Z3-path-planner.md` |
+| z4 | Z4 验收方案 | 规划 | — | `2-PLANNING/Z4-acceptance-designer.md` |
+| e1 | E1 任务执行 | 执行 | — | `3-EXECUTION/E1-task-executor.md` |
+| e2 | E2 测试验证 | 执行 | **delegate_task** 独立上下文（默认） | `3-EXECUTION/E2-tester.md` |
+| e3 | E3 部署交付 | 执行 | — | `3-EXECUTION/E3-deployer.md` |
+
+### 对抗性子路径说明
+
+D1 调研阶段可能启动两个子调研方向（d1-a / d1-b），当问题有多方争议或设计方案有正反选择时：
+
+```
+d1-a: 方案A方向调研（从方案A假设出发收集事实）
+d1-b: 方案B方向调研（从方案B假设出发收集事实，与d1-a独立）
+d1-synthesis: 分歧点标记（d1-a + d1-b 的事实对比，不下结论）
+```
+
+**子路径之间必须做到事实独立收集**——d1-a 收集的事实不应影响 d1-b 的调研方向。
+D1 报告同时包含两个方向的事实，然后进入 D2 做矛盾分析。
 
 ---
 
@@ -64,6 +77,56 @@ to_phase 的状态必须是 pending
 使用 `chain_override()` 记录跳过的理由。
 override会标记被跳过的阶段为 `skipped`，供后续追溯。
 
+### 规则5：对抗性调研触发条件（新增 — 借 Parallax 独立队列）
+
+当 D1 调研发现以下情形时，**必须**启动对抗性调研（d1-a / d1-b 双路径）：
+
+```
+触发条件（任一条即启动）:
+├── 存在两种以上差异显著的技术方案（如重构 vs 渐进改进）
+├── 竞品分析中出现了矛盾结论（方案A好 vs 方案B好，各有依据）
+├── 用户需求中存在方向性模糊（"A也可以，B也行"）
+├── 代码问题根因有多个可争辩的解释
+└── 涉及架构决策（影响范围超过1个模块）
+
+不触发条件（跳过对抗性调研）:
+├── 极其简单的问题（改一个变量名、修正拼写错误）
+├── 纯文档/配置变更
+├── 用户已明确指定了单一方案
+└── 技术债务清理（已有明确共识的方向）
+```
+
+D1 对抗性调研的产出格式见 `D1-investigator.md § 准则五`。
+
+### 规则6：E2 独立上下文 + 跨链反馈（新增 — 借多Agent验证）
+
+**E2 必须优先使用 delegate_task 实现独立上下文验证。** E2 与 E1 的上下文隔离不是可选项。
+
+```
+E2 执行方式选择:
+├── ✅ delegate_task 独立子Agent（默认）— 用于包含P0验收用例的复杂任务
+├── ✅ 同上下文降级（非理想但可接受）— 仅用于极小改动（1-2行，非逻辑变更）
+└── ❌ 禁止在同一上下文对同一段代码既写又验
+```
+
+**E2 跨链反馈（新增）:**
+
+E2 发现的问题不仅要阻断 E3 部署，还要反馈到 D 系列：
+
+```
+E2 发现问题
+    ├── 阻断 E3: blocker → chain_state.approval = blocked
+    └── 反馈到 D: 写入 _plan/feedback-e2.md
+        ↓
+D系列下次触发时先读 feedback-e2.md
+    ↓
+在 D1 调研 / D2 分析中考虑历史教训
+    ↓
+避免同样的设计错误反复出现
+```
+
+`_plan/feedback-e2.md` 的格式见 `E2-tester.md § 跨链反馈闭环`。
+
 ---
 
 ## Guard 函数速查
@@ -77,6 +140,12 @@ override会标记被跳过的阶段为 `skipped`，供后续追溯。
 | `chain_status()` | 查看当前状态 | 任何时间 | 读 ✅ |
 | `chain_approve(phase_id)` | 标记已批准+已完成 | 用户批准后 | 读+写 ✅ |
 | `chain_mark_in_progress(phase_id)` | 标记进行中 | 阶段启动时 | 读+写 ✅ |
+
+## 工具函数速查
+
+| 工具 | 用途 | 所属阶段 | 使用方式 |
+|:---|---|:---|:---|
+| `review_filter.py` | 三级过滤管道（置信度→去重→幻觉） | E2 报告生成 | `python3 scripts/review_filter.py --input raw.json --output filtered.json --stats` |
 
 ---
 
@@ -163,6 +232,8 @@ Z1输出 ──→ Z2输出 ──→ Z3输出 ──→ Z4输出 ──→ E2�
 | Z2 | `_plan/z2-boundaries.md` | 阶段划分表、依赖图、回滚点、边界声明 | Z3 |
 | Z3 | `_plan/z3-implementation-plan.md` | 前置条件、执行步骤、回滚方案、时间预估 | **E1** |
 | Z4 | `_plan/z4-acceptance-plan.md` | 验收策略、测试用例、回归方案、验收清单 | **E2** |
+| E2(反馈) | `_plan/feedback-e2.md` | 跨链反馈：E2发现的问题+根因+建议 | **D1, D2** |
+| E2(过滤) | `_plan/e2-findings-filtered.json` | 经 review_filter.py 过滤后的有效发现 | **D2** |
 
 ### 文件缺失处理
 

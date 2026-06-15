@@ -78,8 +78,12 @@ def _default_state():
 def _load():
     if not os.path.exists(STATE_FILE):
         return _default_state()
-    with open(STATE_FILE, "r") as f:
-        return json.load(f)
+    try:
+        with open(STATE_FILE, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, ValueError):
+        # 损坏/空JSON -> 重置为默认状态
+        return _default_state()
 
 def _save(state):
     os.makedirs(STATE_DIR, exist_ok=True)
@@ -118,7 +122,10 @@ def chain_init(scope):
 
 def chain_check(state, from_phase, to_phase):
     """检查跳转是否合法。返回 {"allowed": bool, "reason": str}"""
-    phase_ids = {p["id"] for p in state["phases"]}
+    phases = state.get("phases", [])
+    if not phases:
+        return {"allowed": False, "reason": "状态未初始化，请先运行 chain_guard.py init"}
+    phase_ids = {p["id"] for p in phases}
     if from_phase not in phase_ids:
         return {"allowed": False, "reason": f"来源阶段 {from_phase} 不存在"}
     if to_phase not in phase_ids:
@@ -209,7 +216,7 @@ def chain_override(state, from_phase, to_phase, reason):
         from_idx = to_idx = -1
 
     if from_idx >= 0 and to_idx >= 0 and to_idx > from_idx:
-        for i in range(from_idx, to_idx):
+        for i in range(from_idx + 1, to_idx):  # 跳过 from_phase，不标记其为 skipped
             pid = PHASES_ORDER[i]
             for p in state["phases"]:
                 if p["id"] == pid and p["status"] in ("pending", "in_progress"):
