@@ -1,0 +1,94 @@
+{
+  "updated_at": "2026-06-15T20:07:15.957363",
+  "systems": {
+    "trading-evolution": {
+      "name_cn": "交易进化",
+      "status": "🟢",
+      "last_run": "2026-06-15T20:07:15.740898",
+      "findings": [
+        "学习5篇",
+        "1篇高价值回补",
+        "无异常"
+      ],
+      "issues_count": 0
+    },
+    "memory-evolution": {
+      "name_cn": "记忆进化",
+      "status": "🟡",
+      "last_run": "2026-06-15T20:07:15.777571",
+      "findings": [
+        "memory使用率96%",
+        "建议压缩10条过期记录"
+      ],
+      "issues_count": 0
+    },
+    "token-optimization": {
+      "name_cn": "Token优化",
+      "status": "🟢",
+      "last_run": "2026-06-15T20:07:15.812992",
+      "findings": [
+        "Token已用¥68/100",
+        "模型降级建议"
+      ],
+      "issues_count": 0
+    },
+    "index-audit": {
+      "name_cn": "索引审计",
+      "status": "🟢",
+      "last_run": "2026-06-15T20:07:15.848190",
+      "findings": [
+        "索引覆盖率100%",
+        "反向同步成功"
+      ],
+      "issues_count": 0
+    },
+    "knowledge-sync": {
+      "name_cn": "知识库同步",
+      "status": "🟢",
+      "last_run": "2026-06-15T20:07:15.884656",
+      "findings": [
+        "新增3篇",
+        "0待审批"
+      ],
+      "issues_count": 0
+    },
+    "gate-audit": {
+      "name_cn": "思维链门禁审计",
+      "status": "🟢",
+      "last_run": "2026-06-15T20:07:15.920686",
+      "findings": [
+        "门禁99%合规",
+        "步进控制器正常"
+      ],
+      "issues_count": 0
+    },
+    "meta-governance": {
+      "name_cn": "元链治理",
+      "status": "🟢",
+      "last_run": "2026-06-15T20:07:15.957348",
+      "findings": [
+        "全系统扫描完成",
+        "遗留问题: A2 0字节(15天)"
+      ],
+      "issues_count": 1
+    }
+  },
+  "tracked_issues": [
+    {
+      "id": "memory-evolution-1",
+      "title": "memory使用率96%",
+      "status": "unresolved",
+      "first_detected": "2026-06-15T20:07:15.777586",
+      "last_detected": "2026-06-15T20:07:15.777588",
+      "system": "memory-evolution"
+    },
+    {
+      "id": "memory-evolution-2",
+      "title": "建议压缩10条过期记录",
+      "status": "unresolved",
+      "first_detected": "2026-06-15T20:07:15.777591",
+      "last_detected": "2026-06-15T20:07:15.777592",
+      "system": "memory-evolution"
+    }
+  ]
+}
