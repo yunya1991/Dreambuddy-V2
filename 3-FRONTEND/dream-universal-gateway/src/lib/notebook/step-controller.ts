@@ -154,6 +154,7 @@ export function createTask(
     lastActiveAt: nowISO(),
     steps,
     dzeChain: null,
+    strategyChain: null,
     routing,
     entities,
     credits: { estimated: 20, used: 0 },

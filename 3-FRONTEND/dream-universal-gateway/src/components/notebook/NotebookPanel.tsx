@@ -12,6 +12,7 @@ import StepProgress from "./StepProgress";
 import StepActionMenu from "./StepActionMenu";
 import TaskCard from "./TaskCard";
 import ActiveDZEChain from "./ActiveDZEChain";
+import ActiveStrategyChain from "./ActiveStrategyChain";
 import { useNotebookStore } from "@/stores/notebook-store";
 import type { NotebookTask, StepAction, NotebookState } from "@/lib/notebook/types";
 
@@ -23,6 +24,20 @@ const TAB_COLORS: Record<string, { bg: string; color: string }> = {
   current: { bg: "#1a2a3a", color: "#00a0ff" },
   history: { bg: "#1a2a1a", color: "#00a060" },
 };
+
+// S系列策略链意图列表
+const STRATEGY_INTENTS = [
+  'deep_analysis',
+  'scenario_sim',
+  'strategy_verify',
+  'execute_trade',
+];
+
+// 判断是否为策略分析任务
+function isStrategyTask(task: NotebookTask): boolean {
+  return STRATEGY_INTENTS.includes(task.intent) ||
+    task.steps.some(s => s.id.startsWith('S'));
+}
 
 export default function NotebookPanel({ onNewTask }: Props) {
   const { currentTaskId, tasks, startTask, applyStepAction, syncFromServer, init } = useNotebookStore();
@@ -181,7 +196,7 @@ export default function NotebookPanel({ onNewTask }: Props) {
                   <StepProgress steps={currentTask.steps} />
                 </div>
 
-                {/* D-Z-E 链可视化 */}
+                {/* 思维链可视化 - 根据任务类型选择 */}
                 <div style={{ marginBottom: 16 }}>
                   <div
                     style={{
@@ -191,9 +206,16 @@ export default function NotebookPanel({ onNewTask }: Props) {
                       color: "#ccc",
                     }}
                   >
-                    🔗 思维链
+                    {isStrategyTask(currentTask) ? "🎯 策略思维链" : "🔗 D-Z-E 思维链"}
                   </div>
-                  <ActiveDZEChain chain={currentTask.dzeChain} />
+                  {isStrategyTask(currentTask) ? (
+                    <ActiveStrategyChain
+                      chain={currentTask.strategyChain || null}
+                      onStepClick={(stepId) => console.log("Step clicked:", stepId)}
+                    />
+                  ) : (
+                    <ActiveDZEChain chain={currentTask.dzeChain} />
+                  )}
                 </div>
 
                 {/* 当前步骤的输入/输出 */}

@@ -65,6 +65,7 @@ function createTask(title: string, userInput: string, intent: string, sessionId:
     lastActiveAt: nowISO(),
     steps,
     dzeChain: null,
+    strategyChain: null,
     routing,
     entities,
     credits: { estimated: 20, used: 0 },

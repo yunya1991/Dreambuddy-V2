@@ -5,6 +5,7 @@
 // ============================================================
 
 import type { IntentType } from "@/types";
+import type { StrategyChainState } from "@/lib/strategy/types";
 
 /** 单个步骤的状态 */
 export type StepStatus = "pending" | "active" | "done" | "skipped";
@@ -78,7 +79,8 @@ export interface NotebookTask {
   lastActiveAt: string;
   completedAt?: string;
   steps: NotebookStep[];    // 7步
-  dzeChain: DZEChainState | null;  // Step2 的链状态
+  dzeChain: DZEChainState | null;  // Step2 的链状态 (D-Z-E链)
+  strategyChain: StrategyChainState | null;  // 策略思维链状态 (S系列链)
   routing: {                // 智能路由快照
     chain: string[];
     thinkingMode: "quick" | "deep";
