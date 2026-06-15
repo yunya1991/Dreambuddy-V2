@@ -94,12 +94,15 @@ A6 的 10 种 action 供 scheduler 路由：
 5. **model/provider 缺失**：任务会排期但永不执行（last_run_at=null）。
 6. **deliver=local**：输出仅存本地不推送消息平台。
 
+<<<<<<< HEAD
 ## QA常见坑
 
 | # | 现象 | 原因 | 修复 |
 |:---|---|:---|---:|
 | Q1 | A4/A5 产出80%+时间0字节 | `managed=true` guard 阶段不匹配 → SILENT | 设 managed=false (2026-06-15) |
 
+=======
+>>>>>>> 9b8dfd36bc56c4877c634ed18a1f770f118437fc
 ## 验证清单
 
 ```bash

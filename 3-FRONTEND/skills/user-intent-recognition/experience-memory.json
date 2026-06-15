@@ -1,0 +1,44 @@
+{
+  "version": "1.1",
+  "updated_at": "2026-06-13",
+  "description": "经验长期记忆 - 常见用户意图模式库 (auto-evolved)",
+  "patterns": [
+    {
+      "id": "eq_001",
+      "patterns": [
+        "当前",
+        "当前美",
+        "前美"
+      ],
+      "intent": "simple_qa",
+      "confidence": 0.97,
+      "entities_template": {
+        "symbol": "{{auto_detect}}"
+      },
+      "complexity": "moderate",
+      "source": "llm_discovery",
+      "usage_count": 3
+    },
+    {
+      "id": "eq_002",
+      "patterns": [
+        "价格",
+        "查询",
+        "查询下"
+      ],
+      "intent": "market_query",
+      "confidence": 0.94,
+      "entities_template": {
+        "symbol": "{{auto_detect}}"
+      },
+      "complexity": "moderate",
+      "source": "llm_discovery",
+      "usage_count": 20
+    }
+  ],
+  "total_patterns": 2,
+  "intent_distribution": {
+    "simple_qa": 1,
+    "market_query": 1
+  }
+}
