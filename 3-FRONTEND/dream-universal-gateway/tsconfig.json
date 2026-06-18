@@ -25,6 +25,12 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@yunya/graph-context-compressor": [
+        "../../../graph-compressor/src/index.ts"
+      ],
+      "@yunya/graph-context-compressor/*": [
+        "../../../graph-compressor/src/*"
       ]
     }
   },

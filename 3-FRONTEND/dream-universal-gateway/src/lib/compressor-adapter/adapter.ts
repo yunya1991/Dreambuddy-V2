@@ -21,6 +21,37 @@ import type {
 } from './types';
 import { createFallbackResult, estimateTokens } from './fallback';
 
+// 尝试 import 图文压缩模块。失败时返回 null，让后续逻辑走降级路径。
+// 注：tsconfig.json 中 "@yunya/graph-context-compressor" 映射到 ../../../graph-compressor/src/index.ts
+// 这样不需要 npm 发布即可本地联调。
+let graphModuleRef:
+  | {
+      VERSION: string;
+      PROTOCOL_VERSION: string;
+      createCompressor: (options?: unknown) => {
+        compress: (input: CompressInput) => Promise<CompressResult>;
+        expand: (graphId: string, level: 'A' | 'B' | 'C') => Promise<import('./types').GraphData>;
+        health: () => Promise<{ healthy: boolean; version: string; uptimeMs: number; lastError?: string }>;
+        getStats: () => unknown;
+      };
+    }
+  | null = null;
+let graphModuleLoadError: string | null = null;
+
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require('@yunya/graph-context-compressor');
+  if (mod && typeof mod.createCompressor === 'function') {
+    graphModuleRef = {
+      VERSION: mod.VERSION ?? 'unknown',
+      PROTOCOL_VERSION: mod.PROTOCOL_VERSION ?? '1',
+      createCompressor: mod.createCompressor,
+    };
+  }
+} catch (err) {
+  graphModuleLoadError = (err as Error).message;
+}
+
 // ==================== 默认配置 ====================
 
 const DEFAULT_CONFIG: AdapterConfig = {
@@ -202,46 +233,24 @@ export class CompressorAdapter {
    * 2. 本地文件（开发调试）
    */
   private async tryLoadGraphModule(): Promise<GraphModuleRef | null> {
-    try {
-      // 尝试 npm 包（图文体作为私有 npm 包集成后生效）
-      // @ts-ignore — 模块作为 npm 包安装后才存在
-      const mod = await import('graph-context-compressor');
-      if (mod && typeof mod.createCompressor === 'function') {
-        return {
-          VERSION: mod.VERSION ?? 'unknown',
-          PROTOCOL_VERSION: mod.PROTOCOL_VERSION ?? '1',
-          createCompressor: mod.createCompressor,
-          health: async () => {
-            const inst = mod.createCompressor();
-            return inst.health();
-          },
-        };
-      }
-    } catch {
-      // npm 包不存在，尝试本地路径
+    if (graphModuleLoadError) {
+      throw new Error(`图文模块加载失败: ${graphModuleLoadError}`);
     }
-
-    try {
-      // 尝试本地文件路径（开发调试用）
-      const localPath = this.config.modulePath ?? '../../../graph-compressor/src';
-      // @ts-ignore — 本地路径仅在开发时存在
-      const mod = await import(/* webpackIgnore: true */ localPath);
-      if (mod && typeof mod.createCompressor === 'function') {
-        return {
-          VERSION: mod.VERSION ?? 'unknown',
-          PROTOCOL_VERSION: mod.PROTOCOL_VERSION ?? '1',
-          createCompressor: mod.createCompressor,
-          health: async () => {
-            const inst = mod.createCompressor();
-            return inst.health();
-          },
-        };
-      }
-    } catch {
-      // 本地路径也不存在
+    if (!graphModuleRef) {
+      return null;
     }
-
-    return null;
+    // 静态加载的模块已就绪，构造一个引用对象，通过 createCompressor 工厂创建实例后调用 health。
+    const ref = graphModuleRef;
+    return {
+      VERSION: ref.VERSION,
+      PROTOCOL_VERSION: ref.PROTOCOL_VERSION,
+      createCompressor: ref.createCompressor,
+      health: async () => {
+        const inst = ref.createCompressor();
+        const h = await inst.health();
+        return { healthy: h.healthy, version: h.version, lastError: h.lastError };
+      },
+    };
   }
 
   private degrade(mode: 'fallback' | 'disabled', err: Error): void {
