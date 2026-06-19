@@ -19,6 +19,21 @@ def load_rules():
 
 
 def branch_policy_valid(branch):
+    return (
+        branch.startswith("agent/")
+        or branch.startswith("milestone/")
+        or branch.startswith("feat/")
+        or branch.startswith("feature/")
+        or branch.startswith("fix/")
+        or branch.startswith("bugfix/")
+        or branch.startswith("hotfix/")
+        or branch.startswith("refactor/")
+        or branch.startswith("docs/")
+        or branch.startswith("chore/")
+    )
+
+
+def is_agent_managed_branch(branch):
     return branch.startswith("agent/") or branch.startswith("milestone/")
 
 
@@ -97,6 +112,16 @@ def build_rule_checkers(rules):
 
 
 def evaluate_payload(payload):
+    branch = payload.get("branch", "")
+
+    if not is_agent_managed_branch(branch):
+        return {
+            "decision": "PASS",
+            "reason_codes": [],
+            "evaluated_rule_count": 0,
+            "note": f"Branch '{branch}' is not agent-managed; skipping agent lifecycle checks.",
+        }
+
     rules = load_rules()
     rule_checkers = build_rule_checkers(rules)
     reason_codes = []
