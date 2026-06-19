@@ -52,7 +52,9 @@
         "AGENT协作工具/**",
         "6-图结构上下文压缩/**",
         "*.png",
-        "*.jpg"
+        "*.jpg",
+        "data/**",
+        "artifacts/**"
       ]
     },
     "knowledge": {
