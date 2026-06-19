@@ -36,6 +36,7 @@ export {
 export type {
   LoopType,
   RoutingDecision,
+  ExecMode,
 } from './smart-router';
 
 // Memory Bank
