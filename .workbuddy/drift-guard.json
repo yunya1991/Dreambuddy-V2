@@ -56,7 +56,9 @@
         "data/**",
         "artifacts/**",
         "3-EVOLUTION/**",
-        "scripts/*.py"
+        "scripts/*.py",
+        "scripts/*.md",
+        "deploy/**"
       ]
     },
     "intent_recognition": {
