@@ -1,0 +1,38 @@
+{
+  "correct": 0,
+  "incorrect": 0,
+  "pending": 597,
+  "methodDist": {
+    "rule": 467,
+    "llm": 28,
+    "default": 102
+  },
+  "intentDist": {
+    "market_query": 237,
+    "deep_analysis": 130,
+    "triple_chain": 1,
+    "need_clarification": 1,
+    "scenario_sim": 68,
+    "execute_trade": 31,
+    "simple_qa": 103,
+    "strategy_verify": 26
+  },
+  "confusion": {
+    "market_query": {
+      "market_query": 5
+    },
+    "deep_analysis": {
+      "deep_analysis": 19
+    },
+    "triple_chain": {
+      "triple_chain": 1
+    },
+    "scenario_sim": {
+      "scenario_sim": 1
+    },
+    "execute_trade": {
+      "execute_trade": 1
+    }
+  },
+  "updated_at": "2026-06-18T19:20:58.653Z"
+}

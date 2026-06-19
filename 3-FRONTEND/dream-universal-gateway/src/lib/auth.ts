@@ -22,11 +22,13 @@ export const authConfig: NextAuthConfig = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log("[auth] authorize: missing credentials");
           return null;
         }
 
         const email = credentials.email as string;
         const password = credentials.password as string;
+        console.log("[auth] authorize: attempting login for:", email);
 
         // 查找用户
         const user = await prisma.user.findUnique({
@@ -34,16 +36,22 @@ export const authConfig: NextAuthConfig = {
         });
 
         if (!user) {
+          console.log("[auth] authorize: user not found:", email);
           return null;
         }
 
+        console.log("[auth] authorize: found user:", user.uid, "attempts:", user.loginAttempts, "locked:", user.lockedUntil);
+
         // 检查账户是否被锁定
         if (user.lockedUntil && new Date() < user.lockedUntil) {
+          console.log("[auth] authorize: account locked");
           throw new Error("账户已被锁定，请稍后再试");
         }
 
         // 验证密码
         const isValid = await bcrypt.compare(password, user.passwordHash);
+        console.log("[auth] authorize: password valid:", isValid);
+        
         if (!isValid) {
           // 增加失败次数
           const newAttempts = user.loginAttempts + 1;
@@ -57,6 +65,7 @@ export const authConfig: NextAuthConfig = {
                 : null,
             },
           });
+          console.log("[auth] authorize: login failed, attempts:", newAttempts);
           return null;
         }
 
@@ -69,6 +78,8 @@ export const authConfig: NextAuthConfig = {
             lastLoginAt: new Date(),
           },
         });
+
+        console.log("[auth] authorize: login SUCCESS for:", email);
 
         return {
           id: user.uid,
@@ -109,7 +120,6 @@ export const authConfig: NextAuthConfig = {
   },
   trustHost: authRuntime.trustHost,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  basePath: "/api/auth",
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

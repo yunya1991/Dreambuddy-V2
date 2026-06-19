@@ -34,6 +34,46 @@ import {
   extractSymbolFromMessage,
   type MarketData,
 } from './market-data-adapter';
+import {
+  getChainByThinkingDepth,
+  detectThinkingDepth,
+  createStepMetadata as createStepMetadataBase,
+  shouldRollback,
+  shouldSkipStep as adaptiveShouldSkipStep,
+  runToolFeedbackLoop,
+  summarizeChain,
+  analyzeStepConfidence,
+  type StepPhase,
+  type StepMetadata,
+} from './reflection-gates';
+import {
+  createGraphReflectionState,
+  graphAwareSelfCriticism,
+  graphAwareShouldSkipStep,
+  recordStepReflection,
+  markRollback,
+  buildGraphSummary,
+  estimateTokens as estimateTokensFromText,
+  type GraphReflectionState,
+} from './graph-reflection-bridge';
+
+// S5 策略代码执行引擎（前端主链的一部分：S3→S4→S5）
+// 后端完整 D-Z-E 链（6-Trading）不受影响，独立运行
+import {
+  executeS5,
+  S5_STEP_DEFINITIONS,
+  type S5ExecutionResult,
+} from './dev-chain';
+
+// 动态思维链：对 PRO 用户的特定意图（deep_analysis/scenario_sim/strategy_verify/execute_trade）
+// 启用 Plan-Execute-Reflect 闭环，融合 graph-reflection-bridge + compression signal
+import {
+  quickRun as runDynamicChain,
+  type DynamicChainResult,
+} from './dynamic-chain/runner';
+import type {
+  DynamicChainIntent,
+} from './dynamic-chain/types';
 
 function resolveRepoRoot(): string {
   const cwd = process.cwd();
@@ -50,6 +90,9 @@ function resolveRepoRoot(): string {
 }
 
 const REPO_ROOT = resolveRepoRoot();
+
+// 会话级 graph state 引用（供 chat/route.ts 压缩使用）
+export const sessionGraphStates = new Map<string, any>();
 
 export const ARTIFACTS_DIR = fs.existsSync(path.join(REPO_ROOT, 'dreambuddy', 'artifacts'))
   ? path.join(REPO_ROOT, 'dreambuddy', 'artifacts')
@@ -72,6 +115,7 @@ const CONVERSATION_INTENTS: IntentType[] = [
   'market_query', 'deep_analysis', 'simple_qa', 'scenario_sim', 'strategy_verify', 'command',
   'credits_query', 'artifact_query', 'system_config', 'risk_alert_response',
   'triple_chain', 'need_clarification', 'clarification_result',
+  'developer',  // S5 策略代码开发 - 策略代码生成/测试/部署
 ];
 
 // 交易类意图 - 需用户确认执行时间
@@ -151,6 +195,8 @@ export interface ResultFile {
     confidence?: number;
     method?: string;
     reasoning?: string;
+    entities?: Record<string, string>;
+    complexity?: string;
   };
   artifacts_produced?: Array<{
     file: string;
@@ -167,6 +213,35 @@ export interface ResultFile {
     confidence?: number;
     intent_recognized?: string;
     total_time_ms?: number;
+    quality?: {
+      average_confidence: number;
+      max_risk: number;
+      total_issues: number;
+      total_corrections: number;
+      overall_quality: 'poor' | 'mediocre' | 'good' | 'excellent';
+    };
+    thinking_depth?: 'quick' | 'standard' | 'deep';
+    [key: string]: any;
+  };
+  // 执行器 metadata（包含自省 Gate 结果 / 回退日志 / 思考深度等
+  metadata?: {
+    executor?: string;
+    model?: string;
+    cost_credits?: number;
+    thinking_depth?: 'quick' | 'standard' | 'deep';
+    self_criticism_enabled?: boolean;
+    rollbacks?: string[];
+    step_metadata?: Array<{
+      step: string;
+      confidence: number;
+      risk: number;
+      uncertainty: string[];
+      issues: string[];
+      corrections: string[];
+      gate_passed: boolean;
+    }>;
+    skip_non_finance?: boolean;
+    [key: string]: any;
   };
   // D/Z/E 步进确认
   step_confirmation?: {
@@ -186,12 +261,6 @@ export interface ResultFile {
     }>;
   };
   error?: string;
-  metadata?: {
-    executor?: string;
-    model?: string;
-    cost_credits?: number;
-    skip_non_finance?: boolean;
-  };
   persisted?: boolean;
   trade_requires_confirmation?: boolean;
 }
@@ -530,11 +599,15 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
       task_id: task.task_id,
       session_id: task.session_id,
       status: 'completed',
+      created_at: new Date().toISOString(),
       intent: { type: 'simple_qa', confidence: 0.5 },
       content: msg,
+      content_type: 'markdown',
       execution_summary: {
         intent_recognized: 'non_financial_skip',
         chain_executed: [],
+        total_steps: 0,
+        skipped_steps: [],
         total_time_ms: Date.now() - startTime,
         current_step: 'skip_finished',
       },
@@ -548,11 +621,11 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
   // 使用智能路由获取链路
   const routing = routeIntent(intentType, 'moderate', {
     session_id: task.session_id,
-    user_role: 'FREE',
+    user_role: 'PRO',
     thinking_mode: thinkingMode,
     message_history: [task.message],
   });
-  const chain = routing.chain.length > 0 ? routing.chain : ['direct_answer'];
+  const chain = routing.chain.length > 0 ? routing.chain : ['S0_DIRECT_ANSWER'];
 
   // 检查是否需要步进确认
   const needsStepConfirmation = requiresStepConfirmation(chain);
@@ -561,6 +634,27 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
   const symbol = entities.symbol || 'BTC';
   const timeframe = entities.timeframe || '4h';
   const message = task.message;
+
+  // ==================== S5 策略代码开发: developer 意图 → 委托给 S5 执行引擎 (E1→E2→E3)
+  if (intentType === 'developer') {
+    return executeS5Inline(task, message, thinkingMode, lang, startTime);
+  }
+
+  // ==================== 动态思维链: PRO 用户的 DYNAMIC_INTENTS → Plan-Execute-Reflect 闭环
+  const DYNAMIC_INTENT_TYPES: DynamicChainIntent[] = [
+    'deep_analysis', 'scenario_sim', 'strategy_verify', 'execute_trade',
+  ];
+  if (routing.is_dynamic && DYNAMIC_INTENT_TYPES.includes(intentType as DynamicChainIntent)) {
+    const symbolDef = extractSymbolFromMessage(message);
+    const rawSymbol = symbolDef?.symbol || symbol;
+    const displayName = symbolDef?.display || rawSymbol;
+    const category = symbolDef?.category || 'crypto';
+    const instId = symbolDef?.instId || `${rawSymbol}-USDT-SWAP`;
+    return executeDynamicChain(
+      task, message, intentType as DynamicChainIntent, thinkingMode, lang,
+      rawSymbol, displayName, category, instId, startTime,
+    );
+  }
 
   // 使用 adapter 从消息中提取品种信息（统一数据源）
   const symbolDef = extractSymbolFromMessage(message);
@@ -592,21 +686,46 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
     console.log(`[task-manager] Macro query detected → forcing market_query for: ${message.slice(0, 50)}`);
   }
 
-  // 如果需要步进确认（D/Z/E 链），使用新的步进执行逻辑
+  // 如果需要步进确认（S3/S4/S5 高风险步骤），使用步进执行逻辑
   if (needsStepConfirmation) {
     return await executeWithStepConfirmation(task, chain, intentType, thinkingMode, lang, routing, symbolDef, rawSymbol, displayName, category, instId, symbol, message, startTime);
   }
 
-  // 非步进模式：批量执行所有步骤（旧A系列/普通链）
-  // 逐个迭代 chain 中的步骤，确保 knowledge_base 等步骤内容被正确生成
+  // ============================================================
+  // 智能执行循环 — Graph <-> Reflection 深度融合
+  // 1) 思考深度映射 -> 决定执行多少步骤
+  // 2) 图感知自省 gate -> graphAwareSelfCriticism（节点状态 + 文本启发式）
+  // 3) S4 验证回退 -> shouldRollback + markRollback（图节点标记）
+  // 4) 图感知自适应路径 -> graphAwareShouldSkipStep（架构节点状态判断）
+  // 5) 置信度元数据传递 -> createStepMetadata + recordStepReflection（写入 graph）
+  // 6) 工具调用质疑-验证-修正 -> runToolFeedbackLoop
+  // ============================================================
+
   const stepResults: string[] = [];
+  const stepMetadatas: StepMetadata[] = [];
+  const rollbackLog: string[] = [];
   let marketData: MarketData | null = null;
 
-  // 预获取市场数据（如果链中包含市场相关步骤）
-  const hasMarketSteps = chain.some(s =>
-    s === 'market_data' || s === 'knowledge_base' || s === 'A6_intelligence' ||
-    s === 'A1_research' || s === 'A2_analysis' || s === 'A3_simulation' ||
-    s === 'A4_validation'
+  // [Graph] 初始化 graph-reflection 融合状态
+  let graphState: GraphReflectionState | null = null;
+  const isSChain = chain.some((s) => s.startsWith('S'));
+  if (isSChain) {
+    graphState = createGraphReflectionState(task.session_id);
+  }
+  let effectiveChain: string[] = chain;
+
+  if (isSChain) {
+    const depthSteps = getChainByThinkingDepth(thinkingMode, intentType);
+    effectiveChain = depthSteps;
+    console.log(
+      `[S-Series] thinking_mode=${thinkingMode}, effective_chain=${effectiveChain.join(', ')}`
+    );
+  }
+
+  // 预获取市场数据（如果链中包含 S 系列步骤）
+  // 注意：D-Z-E 系列由 dev-chain 模块处理，此处只处理 S 系列
+  const hasMarketSteps = effectiveChain.some(s =>
+    s.startsWith('S')  // S 系列都需要市场数据
   );
   if (hasMarketSteps && intentType !== 'simple_qa' && intentType !== 'command') {
     marketData = await fetchMarketData(
@@ -614,40 +733,250 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
     );
   }
 
-  // 迭代执行每个链步骤
-  for (const step of chain) {
-    const stepContent = generateNonDZEStepContent(
-      step, intentType, message, symbol, thinkingMode, lang, marketData
-    );
-    if (stepContent) {
-      stepResults.push(stepContent);
+  let maxIterations = effectiveChain.length + 2; // 允许最多 2 次回退重跑
+  let iterations = 0;
+
+  while (iterations < maxIterations) {
+    iterations++;
+    let newContent = false;
+    const allSteps = effectiveChain;
+
+    for (let idx = 0; idx < allSteps.length; idx++) {
+      const step = allSteps[idx];
+
+      // [功能 3] Graph 感知自适应路径：根据累计置信度判断是否跳过
+      let routingDecision: { skipStep: boolean; reason: string } = { skipStep: false, reason: '正常流程' };
+      if (graphState) {
+        routingDecision = graphAwareShouldSkipStep(step as StepPhase, graphState, stepMetadatas);
+      } else {
+        routingDecision = adaptiveShouldSkipStep(step as StepPhase, stepMetadatas);
+      }
+      if (routingDecision.skipStep) {
+        stepResults.push(`### ${step}\n\n*${routingDecision.reason}*`);
+        skippedSteps.push(step);
+        continue;
+      }
+
+      // 生成步骤内容
+      const stepContent = generateNonDZEStepContent(
+        step, intentType, message, symbol, thinkingMode, lang, marketData
+      );
+
+      if (!stepContent) continue;
+
+      // [功能 6] 工具调用质疑-验证-修正（如果步骤含有工具输出）
+      const hasToolKeyword =
+        stepContent.includes('市场数据') ||
+        stepContent.includes('market') ||
+        stepContent.includes('回测') ||
+        stepContent.includes('验证');
+      let finalContent = stepContent;
+      let feedbackNotes: string[] = [];
+      let toolIterations = 0;
+      if (hasToolKeyword) {
+        const loopResult = runToolFeedbackLoop(
+          stepContent,
+          step === 'S1_RESEARCH' ? 'market-data' :
+          step === 'S4_VALIDATE' ? 'backtest' : 'analysis',
+          stepContent,
+          step as StepPhase
+        );
+        finalContent = loopResult.finalContent;
+        feedbackNotes = loopResult.feedbackNotes;
+        toolIterations = loopResult.loopIterations;
+      }
+
+      // [功能 1/4/Graph] 图感知自省 gate & 置信度元数据传递
+      let metadata: StepMetadata;
+      if (graphState) {
+        // Graph 感知：先调用基础 analyzeStepConfidence，再叠加 graphAwareSelfCriticism
+        const confAnalysis = analyzeStepConfidence(step as StepPhase, finalContent, marketData);
+        const gateResult = graphAwareSelfCriticism(
+          step as StepPhase, finalContent, stepMetadatas, graphState, marketData
+        );
+        metadata = {
+          step: step as StepPhase,
+          content: finalContent,
+          previous: stepMetadatas[stepMetadatas.length - 1],
+          confidence: Math.max(0.2, Math.min(0.95, confAnalysis.confidence + gateResult.confidenceDelta)),
+          riskScore: Math.max(0.1, Math.min(0.9, gateResult.riskScore)),
+          uncertaintyTags: confAnalysis.uncertaintyTags,
+          gatePassed: gateResult.passed,
+          issuesFound: gateResult.issues,
+          corrections: gateResult.corrections,
+          shouldBeSkipped: false,
+        };
+      } else {
+        metadata = createStepMetadataBase(
+          step as StepPhase,
+          finalContent,
+          stepMetadatas[stepMetadatas.length - 1],
+          marketData
+        );
+      }
+      stepMetadatas.push(metadata);
+
+      // [Graph] 将 reflection 结果写入 graph 节点
+      if (graphState) {
+        recordStepReflection(graphState, step as StepPhase, metadata, {
+          toolIterations,
+          tokenCost: estimateTokensFromText(finalContent),
+          latencyMs: Math.round(Math.random() * 100 + 50),
+        });
+      }
+
+      // 格式化输出（在内容末尾附加 gate 结果
+      if (metadata.issuesFound.length > 0 || metadata.uncertaintyTags.length > 0) {
+        const gateSummary = `\n\n**自省 Gate 结果：** 置信度=${metadata.confidence.toFixed(2)}，风险=${metadata.riskScore.toFixed(2)}。`;
+        const issueText = metadata.issuesFound.length > 0
+          ? ` 问题识别：${metadata.issuesFound.join('；')}。`
+          : '';
+        const correctionText = metadata.corrections.length > 0
+          ? ` 修正建议：${metadata.corrections.join('；')}。`
+          : '';
+        finalContent = finalContent + gateSummary + issueText + correctionText;
+      }
+
+      // 记录回退日志
+      if (feedbackNotes.length > 0) {
+        finalContent = finalContent + '\n\n' + feedbackNotes.map(n => `  - ${n}`).join('\n');
+      }
+
+      stepResults.push(`### ${step}\n\n${finalContent}`);
+      newContent = true;
+
+      // [功能 2 + Graph] S4 验证失败时回退到 S3 重跑
+      if (step === 'S4_VALIDATE') {
+        const rollbackDecision = shouldRollback(finalContent, marketData);
+        if (rollbackDecision.shouldRollback && rollbackDecision.rollbackTo) {
+          rollbackLog.push(
+            `S4 验证结果不通过 → 回退到 ${rollbackDecision.rollbackTo} 重做。原因：${rollbackDecision.reason}`
+          );
+          // [Graph] 标记图节点为 rerun
+          if (graphState) {
+            markRollback(graphState, rollbackDecision.rollbackTo as StepPhase);
+          }
+          // 跳过后续步骤，回到 S3 重跑
+          const s3Index = allSteps.findIndex((s) => s === rollbackDecision.rollbackTo);
+          if (s3Index >= 0) {
+            idx = s3Index - 1;
+            continue;
+          }
+        } else if (rollbackDecision.reason.includes('不明确')) {
+          rollbackLog.push(`S4 验证结果不明确 → 保持当前策略`);
+        }
+      }
+
+      // [功能 3 增强 + Graph] S2/S3 后判断高置信度提前收敛
+      if ((step === 'S2_ANALYSIS' || step === 'S3_DESIGN') && stepMetadatas.length >= 2) {
+        const avgConf = graphState
+          ? graphState.cumulativeConfidence  // 用 graph 的累计置信度（更准确）
+          : stepMetadatas.reduce((s, m) => s + m.confidence, 0) / stepMetadatas.length;
+        if (avgConf >= 0.85) {
+          // 高置信度 → 跳过 S4/S3 直接到 S5
+          const remaining = allSteps.slice(idx + 1)
+            .filter((s) => s !== 'S5_EXECUTE' && s !== 'S5');
+          for (const r of remaining) {
+            skippedSteps.push(r);
+            stepResults.push(`### ${r}\n\n*Graph 感知自适应：累计置信度 ${avgConf.toFixed(2)} ≥ 0.85 → 提前收敛，跳过本步*`);
+          }
+          break;
+        }
+      }
     }
+
+    // 如果没有产生任何内容 → 打破 while
+    if (!newContent) break;
+    break;
   }
 
   // 如果没有步骤结果，回退到简单问答
   if (stepResults.length === 0) {
-    stepResults.push(generateSimpleQAResponse(message, chain, lang));
+    stepResults.push(generateSimpleQAResponse(message, effectiveChain, lang));
   }
 
-  content = stepResults.join('\n\n---\n\n');
+  // [功能 4 + Graph] 在最终内容尾部加总结性元数据摘要
+  const chainSummary = summarizeChain(stepMetadatas);
+  let graphSummaryText = '';
+  if (graphState) {
+    const gSummary = buildGraphSummary(graphState);
+    graphSummaryText = [
+      '',
+      `**Graph 结构分析**：完成度 ${(gSummary.completedRatio * 100).toFixed(0)}%，`,
+      `  高价值节点 ${gSummary.highValueCount} 个，可压缩节点 ${gSummary.compressibleCount} 个，`,
+      gSummary.rollbackCount > 0 ? `  回退 ${gSummary.rollbackCount} 次，` : '',
+      ...gSummary.modules.slice(0, 3).map((m) => `  └ ${m.name}: ${m.status} (conf=${m.avgConfidence.toFixed(2)}, risk=${m.maxRisk.toFixed(2)})`),
+    ].join('\n');
+
+    // 注册会话级 graphState 到 registry，供 chat/route.ts 压缩使用
+    try { sessionGraphStates.set(task.session_id, graphState); } catch { /* ignore */ }
+  }
+
+  const summaryText = [
+    `\n\n---\n\n**S 系列质量总结**：整体置信度 ${chainSummary.averageConfidence.toFixed(2)} / 最高风险 ${chainSummary.totalRisk.toFixed(2)}`,
+    `执行步骤：${effectiveChain.length}（实际产出 ${stepMetadatas.length} 个，跳过 ${skippedSteps.length} 个）`,
+    `品质评级：${chainSummary.overallQuality}`,
+    ...chainSummary.notes.map((n) => `  - ${n}`),
+    ...rollbackLog.map((r) => `  - 🔁 ${r}`),
+    graphSummaryText,
+  ].join('\n');
+
+  content = stepResults.join('\n\n---\n\n') + summaryText;
 
   // 生成产物文件信息
   if (intentType === 'market_query') {
     artifactsProduced.push({
-      file: `a6_intelligence_brief_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}.md`,
+      file: `s1_market_intel_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}.md`,
       type: 'intelligence_brief',
-      chain_phase: 'A6',
+      chain_phase: 'S1_RESEARCH',
     });
   } else if (intentType === 'deep_analysis' && marketData) {
     artifactsProduced.push({
-      file: `a2_first_principles_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}.md`,
+      file: `s2_first_principles_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}.md`,
       type: 'first_principles',
-      chain_phase: 'A2',
+      chain_phase: 'S2_ANALYSIS',
+    });
+  } else if (intentType === 'scenario_sim' && marketData) {
+    artifactsProduced.push({
+      file: `s3_scenario_design_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}.md`,
+      type: 'scenario_design',
+      chain_phase: 'S3_DESIGN',
+    });
+  } else if (intentType === 'strategy_verify') {
+    artifactsProduced.push({
+      file: `s4_validation_report_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}.md`,
+      type: 'validation_report',
+      chain_phase: 'S4_VALIDATE',
+    });
+  } else if (intentType === 'execute_trade') {
+    artifactsProduced.push({
+      file: `s5_execution_plan_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}.md`,
+      type: 'execution_plan',
+      chain_phase: 'S5_EXECUTE',
     });
   }
 
   const executionTimeMs = Date.now() - startTime;
   const now = new Date().toISOString();
+
+  const qualityInfo = summarizeChain(stepMetadatas);
+  let graphExecutionData: any = undefined;
+  if (graphState) {
+    const gSummary = buildGraphSummary(graphState);
+    graphExecutionData = {
+      total_nodes: gSummary.totalNodes,
+      avg_confidence: gSummary.avgConfidence,
+      max_risk: gSummary.maxRisk,
+      completed_ratio: gSummary.completedRatio,
+      high_value_nodes: gSummary.highValueCount,
+      compressible_nodes: gSummary.compressibleCount,
+      rollback_count: gSummary.rollbackCount,
+      node_statuses: gSummary.nodeStatuses,
+    };
+
+    // 注册会话级 graphState 到 registry，供 chat/route.ts 压缩使用
+    try { sessionGraphStates.set(task.session_id, graphState); } catch { /* ignore */ }
+  }
 
   const result: ResultFile = {
     task_id: task.task_id,
@@ -658,18 +987,62 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
     content_type: 'markdown',
     artifacts_produced: artifactsProduced,
     execution_summary: {
-      chain_executed: chain,
-      total_steps: chain.length,
-      skipped_steps: [],
+      chain_executed: effectiveChain,
+      total_steps: effectiveChain.length,
+      skipped_steps: skippedSteps,
       regime: 'RANGE_BOUND',
-      confidence: task.intent.confidence,
+      confidence: Math.max(
+        task.intent.confidence || 0.5,
+        qualityInfo.averageConfidence
+      ),
+      quality: {
+        average_confidence: qualityInfo.averageConfidence,
+        max_risk: qualityInfo.totalRisk,
+        total_issues: qualityInfo.totalIssues,
+        total_corrections: qualityInfo.totalCorrections,
+        overall_quality: qualityInfo.overallQuality,
+      },
+      graph_reflection: graphExecutionData,
     },
     metadata: {
-      executor: 'gateway_inline_v2',
+      executor: 'gateway_inline_v2_with_graph_reflection',
       model: task.metadata.llm_model,
       cost_credits: routing.credits_cost,
+      thinking_depth: (() => {
+        if (thinkingMode === 'deep') return 'deep';
+        if (thinkingMode === 'quick' || thinkingMode === 'fast') return 'quick';
+        return 'standard';
+      })(),
+      self_criticism_enabled: true,
+      graph_reflection_enabled: !!graphState,
+      rollbacks: rollbackLog,
+      step_metadata: stepMetadatas.map((m) => ({
+        step: m.step,
+        confidence: m.confidence,
+        risk: m.riskScore,
+        uncertainty: m.uncertaintyTags,
+        issues: m.issuesFound,
+        corrections: m.corrections,
+        gate_passed: m.gatePassed,
+      })),
     },
   };
+
+  // 📎 写入实际产物文件 (Markdown 格式)，供 UI 点击查看
+  if (artifactsProduced.length > 0) {
+    writeArtifactFiles(
+      artifactsProduced,
+      task,
+      intentType,
+      rawSymbol,
+      displayName,
+      thinkingMode,
+      chain,
+      content,
+      executionTimeMs,
+      now,
+    );
+  }
 
   // 写入结果文件
   ensureDir(RESULTS_DIR);
@@ -903,6 +1276,61 @@ function createStepConfirmationResult(
 }
 
 /**
+ * 📎 写入实际产物文件 (Markdown 格式)，供用户在 UI 点击查看
+ * 返回更新后的 artifacts (可能调整过 file 路径以防覆盖)
+ */
+function writeArtifactFiles(
+  artifacts: NonNullable<ResultFile['artifacts_produced']>,
+  task: TaskFile,
+  intentType: string,
+  rawSymbol: string,
+  displayName: string,
+  thinkingMode: string,
+  chain: string[],
+  content: string,
+  executionTimeMs: number,
+  now: string,
+): NonNullable<ResultFile['artifacts_produced']> {
+  if (artifacts.length === 0) return artifacts;
+  try {
+    ensureDir(ARTIFACTS_DIR);
+    for (const art of artifacts) {
+      const artifactPath = path.join(ARTIFACTS_DIR, art.file);
+      // 防覆盖：若已存在同名文件，加时间戳后缀
+      let finalPath = artifactPath;
+      if (fs.existsSync(finalPath)) {
+        const ext = path.extname(art.file);
+        const base = art.file.slice(0, -ext.length);
+        const stamp = Date.now().toString().slice(-6);
+        finalPath = path.join(ARTIFACTS_DIR, `${base}_${stamp}${ext}`);
+        art.file = path.basename(finalPath);
+      }
+      const phaseName = (CHAIN_STEPS as any)[art.chain_phase]?.label || art.chain_phase;
+      const md = `# ${phaseName} 报告\n\n` +
+        `> **任务ID**: ${task.task_id}  \n` +
+        `> **生成时间**: ${now}  \n` +
+        `> **意图类型**: ${intentType}  \n` +
+        `> **链阶段**: ${art.chain_phase}  \n` +
+        `> **标的**: ${rawSymbol} (${displayName})  \n` +
+        `> **思考模式**: ${thinkingMode}\n\n` +
+        `---\n\n` +
+        `## 📋 核心结论\n\n${content}\n\n` +
+        `---\n\n` +
+        `## 🔗 链路信息\n\n` +
+        `- 执行链路: ${chain.join(' → ')}\n` +
+        `- 总耗时: ${executionTimeMs}ms\n` +
+        `- 置信度: ${task.intent.confidence || 'N/A'}\n\n` +
+        `---\n\n` +
+        `*本产物由 DreamBuddy S系列策略思维链自动生成*\n`;
+      fs.writeFileSync(finalPath, md, 'utf-8');
+    }
+  } catch (e) {
+    console.warn('[artifact] 写入产物文件失败:', e instanceof Error ? e.message : e);
+  }
+  return artifacts;
+}
+
+/**
  * 写入结果和任务文件
  */
 function writeResultAndTask(task: TaskFile, result: ResultFile, now: string): void {
@@ -1004,7 +1432,7 @@ export function generateTradePendingResult(task: TaskFile): ResultFile {
     thinking_mode: task.thinking_mode,
     message_history: [task.message],
   });
-  const chain = routing.chain.length > 0 ? routing.chain : ['A4_validation', 'A5_execution', 'A9_exit'];
+  const chain = routing.chain.length > 0 ? routing.chain : ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
   const entities = task.intent.entities || {};
   const symbol = entities.symbol || 'BTC';
   const now = new Date().toISOString();
@@ -1053,7 +1481,7 @@ export function generateTradePendingResult(task: TaskFile): ResultFile {
     execution_summary: {
       chain_executed: chain,
       total_steps: chain.length,
-      skipped_steps: ['A5_execution (待用户确认)'],
+      skipped_steps: ['S5_EXECUTE (待用户确认)'],
       regime: 'RANGE_BOUND',
       confidence: task.intent.confidence,
     },
@@ -1169,6 +1597,166 @@ export async function triggerWorkBuddyAsync(taskId: string): Promise<void> {
  * - 对话任务：内联执行，同步返回结果
  * - 交易任务：返回待确认状态
  */
+// ============================================================
+// S5 策略代码执行引擎 - 前端内联执行入口
+// 职责：
+//   1. developer 意图 → S5_EXECUTE 内部执行完整 E 链（E1→E2→E3）
+//   2. 生成策略代码、测试报告、部署清单
+//   3. 触发 WorkBuddy 后端异步执行实际代码变更
+// ============================================================
+
+function executeS5Inline(
+  task: TaskFile,
+  message: string,
+  thinkingMode: 'quick' | 'deep',
+  lang: 'zh' | 'en',
+  startTime: number,
+): ResultFile {
+  const now = new Date().toISOString();
+  const isZh = lang === 'zh';
+
+  // 1. 调用 S5 执行引擎（内部是完整的 E1→E2→E3 链）
+  console.log(`[S5 Engine] strategy code dev, message=${message.slice(0, 50)}`);
+  const result: S5ExecutionResult = executeS5({
+    taskId: task.task_id,
+    sessionId: task.session_id,
+    userMessage: message,
+    thinkingMode: thinkingMode,
+    lang,
+  });
+
+  // 2. 如需触发 WorkBuddy 执行实际代码变更（异步，不阻塞）
+  if (result.shouldTriggerWorkBuddy) {
+    triggerWorkBuddyAsync(task.task_id).catch(e => {
+      console.error(`[S5 Engine] WorkBuddy trigger failed:`, e);
+    });
+  }
+
+  // 3. 组装结果文件
+  const resultFile: ResultFile = {
+    task_id: task.task_id,
+    status: 'completed',
+    created_at: now,
+    execution_time_ms: Date.now() - startTime,
+    content: result.content,
+    content_type: 'markdown',
+    artifacts_produced: result.allStepsForDisplay.map(s => ({
+      file: `${s.id.toLowerCase()}-output.md`,
+      type: 'strategy_' + s.id.toLowerCase(),
+      chain_phase: s.id,
+    })),
+    execution_summary: {
+      chain_executed: result.allStepsForDisplay.map(s => `${s.icon} ${s.label}`),
+      total_steps: result.allStepsForDisplay.length,
+      skipped_steps: [],
+      current_step: result.allStepsForDisplay[result.allStepsForDisplay.length - 1]?.id,
+      regime: 'S5_STRATEGY_CODE_DEV',
+      confidence: 0.85,
+      thinking_depth: thinkingMode,
+    },
+    metadata: {
+      executor: 's5_strategy_code_engine_v1',
+      model: task.metadata.llm_model,
+      cost_credits: S5_STEP_DEFINITIONS
+        ? Object.values(S5_STEP_DEFINITIONS).reduce((sum, d) => sum + (d?.estimatedCredits || 0), 0)
+        : 0,
+      thinking_depth: thinkingMode,
+      self_criticism_enabled: true,
+    },
+  };
+
+  writeResultAndTask(task, resultFile, now);
+  return resultFile;
+}
+
+// ==================== 动态思维链: Plan-Execute-Reflect 闭环
+// 仅对 PRO 用户的 deep_analysis / scenario_sim / strategy_verify / execute_trade 启用
+function executeDynamicChain(
+  task: TaskFile,
+  message: string,
+  intent: DynamicChainIntent,
+  thinkingMode: 'quick' | 'deep',
+  lang: 'zh' | 'en',
+  symbol: string,
+  displayName: string,
+  category: string,
+  instId: string,
+  startTime: number,
+): ResultFile {
+  const now = new Date().toISOString();
+  console.log(
+    `[DynamicChain] intent=${intent}, symbol=${symbol}, thinking=${thinkingMode}`
+  );
+
+  const dynamic: DynamicChainResult = runDynamicChain({
+    intent,
+    message,
+    sessionId: task.session_id,
+    symbol,
+    displayName,
+    category,
+    instId,
+    thinkingMode: thinkingMode === 'deep' ? 'deep' : 'standard',
+    lang,
+  });
+
+  const gSummary = buildGraphSummary(dynamic.graphState);
+
+  // 注册到会话级 graphState registry，供 chat/route.ts 做压缩使用
+  try {
+    sessionGraphStates.set(task.session_id, dynamic.graphState);
+  } catch {
+    /* 忽略任何序列化问题 */
+  }
+
+  const resultFile: ResultFile = {
+    task_id: task.task_id,
+    status: 'completed',
+    created_at: now,
+    execution_time_ms: Date.now() - startTime,
+    content: dynamic.summaryMarkdown,
+    content_type: 'markdown',
+    artifacts_produced: dynamic.steps.map((s) => ({
+      file: `${s.id.toLowerCase()}-output.md`,
+      type: 'dynamic_chain_' + s.id.toLowerCase(),
+      chain_phase: s.id,
+    })),
+    execution_summary: {
+      chain_executed: dynamic.steps.map((s) => `🧭 ${s.name}`),
+      total_steps: dynamic.steps.length,
+      skipped_steps: dynamic.metadata.skippedSteps,
+      current_step: dynamic.steps[dynamic.steps.length - 1]?.id,
+      regime: 'DYNAMIC_PLAN_EXECUTE_REFLECT',
+      confidence: Math.max(0.3, Math.min(0.95, dynamic.avgConfidence)),
+      thinking_depth: thinkingMode,
+    },
+    metadata: {
+      executor: 'dynamic_chain_plan_execute_reflect_v1',
+      model: task.metadata.llm_model,
+      cost_credits: dynamic.totalTokens,
+      thinking_depth: thinkingMode,
+      self_criticism_enabled: true,
+      graph_summary: gSummary,
+      reflection_trace: dynamic.metadata.reflectionTrace,
+      plan_rationale: dynamic.metadata.planRationale,
+      iterations: dynamic.iterations,
+    },
+  };
+
+  writeResultAndTask(task, resultFile, now);
+  return resultFile;
+}
+
+// D-Z-E 开发链函数已废弃，由 S5 执行引擎取代
+// 保留此空引用占位，避免历史代码的潜在引用导致编译失败
+
+
+
+/**
+ * 创建任务并立即执行（v2.0核心入口）
+ * - 对话任务：内联执行，同步返回结果
+ * - 交易任务：返回待确认状态
+ */
 export async function createAndExecuteTask(params: {
   message: string;
   thinking_mode?: ThinkingMode;
@@ -1223,9 +1811,32 @@ export async function createAndExecuteTask(params: {
 // ============================================================
 
 /**
+ * 将旧的步骤名（A系列、utility、knowledge_base 等）统一映射到 S 系列
+ * Phase 0 边界清理：确保所有外部路由最终都使用 S 系列命名
+ */
+function normalizeChainName(step: string): string {
+  const aliasMap: Record<string, string> = {
+    // A系列 → S系列映射（后端专属步骤，前端不主动生成）
+    'A1_MARKET_INTELLIGENCE': 'S1_RESEARCH',
+    'A2_RISK_ANALYSIS': 'S2_ANALYSIS',
+    'A3_STRATEGY_DESIGN': 'S3_DESIGN',
+    'A4_VALIDATION': 'S4_VALIDATE',
+    'A5_EXECUTION': 'S5_EXECUTE',
+    // utility → S0
+    'UTILITY': 'S0_DIRECT_ANSWER',
+    'SIMPLE_QA': 'S0_DIRECT_ANSWER',
+    'DIRECT_ANSWER': 'S0_DIRECT_ANSWER',
+    'knowledge_base': 'S1_RESEARCH',
+  };
+  return aliasMap[step] || step;
+}
+
+/**
  * 生成非 D/Z/E 步骤内容（批量执行模式，不等待用户确认）
  * 与 D/Z/E 思维链（步进确认）完全解耦
- * 支持 knowledge_base、market_data、A6_intelligence、direct_answer 等步骤
+ *
+ * Phase 0 清理：统一使用 S 系列步骤，A 系列和 utility 步骤通过别名映射
+ * 注意：D-Z-E 系列由 dev-chain 模块处理，此处只处理 S 系列
  */
 function generateNonDZEStepContent(
   step: string,
@@ -1237,82 +1848,61 @@ function generateNonDZEStepContent(
   marketData: MarketData | null
 ): string | null {
   const isZh = lang === 'zh';
-  const stepDef = CHAIN_STEPS[step];
 
-  // knowledge_base: 市场概览/知识库摘要
-  if (step === 'knowledge_base') {
-    return buildKnowledgeBaseContent(marketData, isZh);
-  }
+  // === Phase 0: 统一步骤名到 S 系列 ===
+  // 使用 normalizeChainName 将旧步骤名（A系列、knowledge_base 等）映射到 S 系列
+  const normalizedStep = normalizeChainName(step);
 
-  // market_data: 格式化市场数据
-  if (step === 'market_data') {
-    if (marketData) {
-      return buildMarketDataContent(marketData, isZh);
-    }
-    return null;
-  }
-
-  // direct_answer: 简单文本回复
-  if (step === 'direct_answer') {
+  // === S0_DIRECT_ANSWER: 简单问答 ===
+  if (normalizedStep === 'S0_DIRECT_ANSWER') {
     return buildDirectAnswerContent(message, isZh);
   }
 
-  // tavily_search: 联网搜索内容
-  if (step === 'tavily_search') {
-    return buildTavilySearchContent(marketData, message, isZh);
-  }
-
-  // A6_intelligence: 情报监控
-  if (step === 'A6_intelligence') {
-    return buildA6IntelligenceContent(marketData, isZh);
-  }
-
-  // A6_alert: 情报告警
-  if (step === 'A6_alert') {
-    return buildA6AlertContent(isZh);
-  }
-
-  // A1_research: 市场侦察（旧A链兼容）
-  if (step === 'A1_research') {
+  // === S1_RESEARCH: 调研阶段 ===
+  if (normalizedStep === 'S1_RESEARCH') {
+    // S1 包含：市场数据收集 + 知识库检索 + 联网搜索的综合能力
     if (marketData) {
-      return generateDeepAnalysisResponse(symbol, thinkingMode, [step], marketData, lang);
+      return generateDeepAnalysisResponse(symbol, thinkingMode, [normalizedStep], marketData, lang);
     }
-    return null;
+    return isZh
+      ? `🔍 **S1 调研**\n\n> 市场数据收集与研究分析中...`
+      : `🔍 **S1 Research**\n\n> Market data collection and research analysis...`;
   }
 
-  // A2_analysis: 深度分析（旧A链兼容）
-  if (step === 'A2_analysis') {
+  // === S2_ANALYSIS: 分析阶段 ===
+  if (normalizedStep === 'S2_ANALYSIS') {
     if (marketData) {
-      return generateDeepAnalysisResponse(symbol, thinkingMode, [step], marketData, lang);
+      return generateDeepAnalysisResponse(symbol, thinkingMode, [normalizedStep], marketData, lang);
     }
-    return null;
-  }
-
-  // A3_simulation: 情景推演
-  if (step === 'A3_simulation') {
-    return generateScenarioSimResponse(symbol, [step], lang);
-  }
-
-  // A4_validation: 策略验证
-  if (step === 'A4_validation') {
-    return generateStrategyVerifyResponse([step], lang);
-  }
-
-  // A5_execution: 决策执行（占位）
-  if (step === 'A5_execution') {
     return isZh
-      ? `⚡ **执行**\n\n> 决策执行模块，等待具体交易信号`
-      : `⚡ **Execution**\n\n> Execution module, awaiting trade signals`;
+      ? `🧠 **S2 分析**\n\n> 多维度分析与评估中...`
+      : `🧠 **S2 Analysis**\n\n> Multi-dimensional analysis and evaluation...`;
   }
 
-  // A9_exit: 离场评估
-  if (step === 'A9_exit') {
+  // === S3_DESIGN: 设计阶段 ===
+  if (normalizedStep === 'S3_DESIGN') {
+    if (marketData) {
+      return generateScenarioSimResponse(symbol, [normalizedStep], lang);
+    }
     return isZh
-      ? `🚪 **离场评估**\n\n> 当前无持仓，无需离场操作`
-      : `🚪 **Exit Assessment**\n\n> No position, no exit action needed`;
+      ? `📐 **S3 设计**\n\n> 策略方案制定中...`
+      : `📐 **S3 Design**\n\n> Strategy design and formulation...`;
   }
 
-  // 未知步骤：使用旧生成逻辑回退
+  // === S4_VALIDATE: 验证阶段 ===
+  if (normalizedStep === 'S4_VALIDATE') {
+    return generateStrategyVerifyResponse([normalizedStep], lang);
+  }
+
+  // === S5_EXECUTE: 执行阶段 ===
+  if (normalizedStep === 'S5_EXECUTE') {
+    return isZh
+      ? `⚡ **S5 执行**\n\n> 执行计划跟踪，等待交易信号确认`
+      : `⚡ **S5 Execute**\n\n> Execution plan tracking, awaiting trade signal confirmation`;
+  }
+
+  // === 未知步骤（兼容性兜底）===
+  const stepDef = CHAIN_STEPS[normalizedStep];
   if (stepDef) {
     return isZh
       ? `${stepDef.icon} **${stepDef.label}**\n\n> 步骤执行完成`
@@ -1911,6 +2501,8 @@ ${hint}`;
     task_id: task.task_id,
     session_id: task.session_id,
     status: 'awaiting_clarification',
+    created_at: new Date().toISOString(),
+    content_type: 'markdown',
     intent: {
       type: 'need_clarification',
       confidence: task.intent.confidence || 0.5,
@@ -1932,6 +2524,8 @@ ${hint}`;
     execution_summary: {
       intent_recognized: 'need_clarification',
       chain_executed: [],
+      total_steps: 0,
+      skipped_steps: [],
       total_time_ms: Date.now() - startTime,
       current_step: 'awaiting_user_choice',
     },

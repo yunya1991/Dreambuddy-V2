@@ -1,0 +1,21 @@
+{
+  "userId": "anonymous",
+  "memories": [
+    {
+      "id": "mem_1781797420508_b0il",
+      "type": "preferred_symbols",
+      "value": [
+        "BTC"
+      ],
+      "importance": 1,
+      "lastReinforced": 1781802553089,
+      "createdAt": 1781797420508,
+      "reinforcementCount": 9,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 BTC"
+    }
+  ],
+  "evolutionCount": 8,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-18T17:09:13.089Z"
+}

@@ -1,0 +1,21 @@
+{
+  "userId": "mem_stress_test",
+  "memories": [
+    {
+      "id": "mem_1781668863304_a8f0",
+      "type": "preferred_symbols",
+      "value": [
+        "SOL"
+      ],
+      "importance": 1,
+      "lastReinforced": 1781669013006,
+      "createdAt": 1781668863304,
+      "reinforcementCount": 12,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 SOL"
+    }
+  ],
+  "evolutionCount": 11,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-17T04:03:33.006Z"
+}

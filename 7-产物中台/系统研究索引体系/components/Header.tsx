@@ -14,6 +14,7 @@ export default function Header() {
   const isMeetingActive = pathname.startsWith('/meeting');
   const isUIMapActive = pathname.startsWith('/ui-map');
   const isAdminActive = pathname.startsWith('/admin');
+  const isRecommendationActive = pathname.startsWith('/recommendation-engine');
 
   const [totalArtifacts, setTotalArtifacts] = useState<number | null>(null);
   const [numDepartments, setNumDepartments] = useState<number | null>(null);
@@ -100,6 +101,18 @@ export default function Header() {
               )}
             >
               UI-Map
+            </Link>
+            <Link
+              href="/recommendation-engine"
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                isRecommendationActive
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              <Sparkles className="h-4 w-4" />
+              策略推荐
             </Link>
             <Link
               href="/admin"

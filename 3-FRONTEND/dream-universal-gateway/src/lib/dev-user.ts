@@ -40,8 +40,10 @@ export async function ensureDemoUser(prisma: MinimalPrisma): Promise<UserRecord>
     data: {
       uid: DEMO_UID,
       email: DEMO_EMAIL,
-      passwordHash: "dev-local-password-hash",
+      passwordHash: "$2b$10$/4/hVHTsQpHUqeZULFprpeeKwJbjr2Q5gLerfIzjigyF34nuF.Vf6",
       displayName: DEMO_DISPLAY_NAME,
+      role: "FREE",
+      loginAttempts: 0,
     },
     select: {
       uid: true,
