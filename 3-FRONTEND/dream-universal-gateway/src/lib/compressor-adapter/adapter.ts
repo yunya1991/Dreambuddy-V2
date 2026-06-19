@@ -18,12 +18,33 @@ import type {
   AdapterHealth,
   AdapterStats,
   AdapterConfig,
+  GraphData,
 } from './types';
 import { createFallbackResult, estimateTokens } from './fallback';
+import * as path from 'path';
+
+// ==================== Graph-aware 压缩：轻量 graph-reflection-bridge 节点类型（避免循环 import）
+interface GraphNodeLite {
+  id: string;
+  confidence?: number;
+  riskScore?: number;
+  issuesFound?: string[];
+  corrections?: string[];
+  tokenCost?: number;
+}
+interface GraphStateLite {
+  sessionId: string;
+  architectureNodes: Map<string, GraphNodeLite> | Iterable<[string, GraphNodeLite]>;
+  compressionSignal: {
+    highValueNodes: string[];
+    compressibleNodes: string[];
+  };
+}
 
 // 尝试 import 图文压缩模块。失败时返回 null，让后续逻辑走降级路径。
-// 注：tsconfig.json 中 "@yunya/graph-context-compressor" 映射到 ../../../graph-compressor/src/index.ts
-// 这样不需要 npm 发布即可本地联调。
+// 支持两种路径：
+// 1) tsconfig paths: @yunya/graph-context-compressor -> ../../../graph-compressor/src/index.ts (正式开源版)
+// 2) 本地开发版: ../../../6-图结构上下文压缩/index.ts (项目内)
 let graphModuleRef:
   | {
       VERSION: string;
@@ -38,19 +59,44 @@ let graphModuleRef:
   | null = null;
 let graphModuleLoadError: string | null = null;
 
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mod = require('@yunya/graph-context-compressor');
-  if (mod && typeof mod.createCompressor === 'function') {
-    graphModuleRef = {
-      VERSION: mod.VERSION ?? 'unknown',
-      PROTOCOL_VERSION: mod.PROTOCOL_VERSION ?? '1',
-      createCompressor: mod.createCompressor,
-    };
+function tryLoadGraphModuleSync(): { VERSION: string; PROTOCOL_VERSION: string; createCompressor: any } | null {
+  // 方式 1: 尝试 @yunya/graph-context-compressor（正式集成路径）
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('@yunya/graph-context-compressor');
+    if (mod && typeof mod.createCompressor === 'function') {
+      return {
+        VERSION: mod.VERSION ?? '1.0.0',
+        PROTOCOL_VERSION: mod.PROTOCOL_VERSION ?? '1',
+        createCompressor: mod.createCompressor,
+      };
+    }
+  } catch (err) {
+    // 静默失败，尝试下一个方式
+    graphModuleLoadError = (err as Error).message;
   }
-} catch (err) {
-  graphModuleLoadError = (err as Error).message;
+
+  // 方式 2: 尝试本地开发版（项目内 6-图结构上下文压缩）
+  try {
+    const localPath = path.join(__dirname, '..', '..', '..', '6-图结构上下文压缩', 'index.ts');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require(localPath);
+    if (mod && typeof mod.createCompressor === 'function') {
+      return {
+        VERSION: mod.VERSION ?? 'local-dev',
+        PROTOCOL_VERSION: mod.PROTOCOL_VERSION ?? '1',
+        createCompressor: mod.createCompressor,
+      };
+    }
+  } catch (err) {
+    graphModuleLoadError = (err as Error).message;
+  }
+
+  return null;
 }
+
+// 启动时尝试加载
+graphModuleRef = tryLoadGraphModuleSync();
 
 // ==================== 默认配置 ====================
 
@@ -201,6 +247,106 @@ export class CompressorAdapter {
       this.lastError = (err as Error).message;
       return this.executeFallback(input, tokens, start);
     }
+  }
+
+  /**
+   * Graph-aware 压缩：直接从 graph-reflection-bridge 的 GraphReflectionState
+   * 生成压缩结果。节点 metadata（confidence / riskScore / issuesFound）驱动
+   * highValueNodes / compressibleNodes 信号，不再需要对原始文本做语义分析。
+   *
+   * - highValueNodes：confidence ≥ 0.7 OR risk ≥ 0.5 OR 存在 issues/corrections
+   * - compressibleNodes：confidence < 0.5 AND risk < 0.3 AND 无 issues
+   * - 其他：默认保留
+   */
+  compressFromGraphState(graphState: GraphStateLite): CompressResult {
+    const start = Date.now();
+    const highValueIds = new Set(graphState.compressionSignal.highValueNodes);
+    const compressibleIds = new Set(graphState.compressionSignal.compressibleNodes);
+
+    const architectureNodesList: [string, GraphNodeLite][] =
+      graphState.architectureNodes instanceof Map
+        ? Array.from(graphState.architectureNodes.entries())
+        : Array.from(graphState.architectureNodes);
+
+    let originalTokens = 0;
+    let compressedTokens = 0;
+
+    const nodes = architectureNodesList.map(([id, node]) => {
+      const isHighValue = highValueIds.has(id);
+      const isCompressible = compressibleIds.has(id);
+      const nodeTokens = node.tokenCost ?? Math.max(50, (id.length * 30));
+      const retainedTokens = isCompressible
+        ? Math.max(10, Math.floor(nodeTokens * 0.3))
+        : nodeTokens;
+
+      originalTokens += nodeTokens;
+      compressedTokens += retainedTokens;
+
+      return {
+        id,
+        type: `step:${id}`,
+        name: id,
+        level: 'A' as const,
+        tokens: retainedTokens,
+        compressed: isCompressible,
+        meta: {
+          confidence: node.confidence,
+          risk: node.riskScore,
+          hasIssues: (node.issuesFound?.length ?? 0) > 0,
+          hasCorrections: (node.corrections?.length ?? 0) > 0,
+          signal: isHighValue ? 'high-value' : isCompressible ? 'compressible' : 'retained',
+        },
+      };
+    });
+
+    // 生成 edges：按执行顺序把节点链接起来（模拟 A 层的时间轴）
+    const edges = nodes.slice(1).map((n, i) => ({
+      from: nodes[i].id,
+      to: n.id,
+      type: 'follows',
+    }));
+
+    const ratio = originalTokens > 0 ? compressedTokens / originalTokens : 1;
+    const result: CompressResult = {
+      graph: {
+        architecture: nodes,
+        edges,
+      } as GraphData,
+      originalTokens,
+      compressedTokens,
+      compressionRatio: ratio,
+      stats: {
+        totalNodes: nodes.length,
+        totalEdges: edges.length,
+        byLevel: { B: 0, A: nodes.length, C: 0 },
+        retainedNodes: nodes.filter((n) => !n.compressed).length,
+        compressedNodes: nodes.filter((n) => n.compressed).length,
+      },
+      report: {
+        strategy: 'graph-reflection-aware',
+        discarded: nodes
+          .filter((n) => n.compressed)
+          .map((n) => ({
+            id: n.id,
+            reason: (n.meta as any)?.signal ?? 'compressible',
+            savedTokens: (n.tokens ?? 0) - Math.max(10, Math.floor((n.tokens ?? 50) * 0.3)),
+          })),
+        durationMs: Math.max(1, Date.now() - start),
+        algorithmVersion: 'graph-reflection-v1',
+      },
+    };
+
+    // 记录统计
+    this.stats.totalCompressions++;
+    this.stats.fallbackCompressions++;
+    const n = this.stats.totalCompressions;
+    this.stats.averageCompressionRatio =
+      (this.stats.averageCompressionRatio * (n - 1) + ratio) / n;
+    this.stats.averageLatencyMs =
+      (this.stats.averageLatencyMs * (n - 1) + (Date.now() - start)) / n;
+    this.stats.totalTokensSaved += originalTokens - compressedTokens;
+
+    return result;
   }
 
   /**

@@ -31,6 +31,28 @@ const STRATEGY_INTENTS = [
   'scenario_sim',
   'strategy_verify',
   'execute_trade',
+  'triple_chain',
+  'market_query',
+  'asset_comparison',
+  'entry_timing',
+  'exit_timing',
+  'risk_analysis',
+  'position_sizing',
+  'market_sentiment',
+  'trend_analysis',
+  'technical_signal',
+  'support_resistance',
+  'portfolio_allocation',
+  'portfolio_rebalance',
+  'event_analysis',
+  'concept_explain',
+  'strategy_recommendation',
+  'backtest_help',
+  'volatility_analysis',
+  'macro_analysis',
+  'dca_strategy',
+  'arbitrage_opportunity',
+  'sector_rotation',
 ];
 
 // 判断是否为策略分析任务
@@ -455,26 +477,34 @@ function defaultOutput(stepNumber: number, task: NotebookTask): string {
 
   switch (stepNumber) {
     case 2:
-      return `根据需求 "${task.title}"，建议通过 D-Z-E 三链展开：
+      return `根据需求 "${task.title}"，建议通过 S 系列策略思维链展开：
 
-📌 D 链 — 深度调研
-  D1: ${entity} 宏观行情与资金流向分析
-  D2: ${entity} 技术结构与关键位识别
-  D3: ${entity} 多情景推演
-  D4: 输出策略规格书
+🎯 S1 调研 — 市场数据收集
+  - ${entity} 宏观行情与资金流向分析
+  - ${entity} 技术结构与关键位识别
+  - 多情景推演与压力测试
 
-📌 Z 链 — 规划验证
-  Z1: 参数扫描与回测
-  Z2: 风险边界界定
-  Z3: 具体路径
-  Z4: 验收标准
+🧠 S2 分析 — 多维度分析
+  - 第一性原理分析框架
+  - 支撑/阻力位识别
+  - 趋势判断与动量分析
 
-📌 E 链 — 执行交付
-  E1: 实际执行步骤
-  E2: 监控与验证
-  E3: 复盘总结
+📐 S3 设计 — 策略方案制定
+  - 策略方向选择（突破/趋势/均值回归）
+  - 时间框架与入场时机
+  - 风险控制与仓位管理
 
-  ↓ 继续下一步，进入 D1 调研`;
+✅ S4 验证 — 回测风险评估
+  - 历史回测与参数优化
+  - 风险评估与最大回撤
+  - 策略稳定性验证
+
+⚡ S5 执行 — 执行计划跟踪
+  - 执行步骤分解
+  - 实时监控与调整
+  - 复盘总结与迭代
+
+  ↓ 继续下一步，进入 S1 调研`;
 
     case 3:
       return `知识库检索建议：

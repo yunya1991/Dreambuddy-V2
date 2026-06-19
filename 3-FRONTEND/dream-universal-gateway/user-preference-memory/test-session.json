@@ -1,0 +1,21 @@
+{
+  "userId": "test-session",
+  "memories": [
+    {
+      "id": "mem_1781770036809_uoft",
+      "type": "preferred_symbols",
+      "value": [
+        "BTC"
+      ],
+      "importance": 0.9500000000000001,
+      "lastReinforced": 1781770159811,
+      "createdAt": 1781770036809,
+      "reinforcementCount": 4,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 BTC"
+    }
+  ],
+  "evolutionCount": 3,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-18T08:09:19.812Z"
+}

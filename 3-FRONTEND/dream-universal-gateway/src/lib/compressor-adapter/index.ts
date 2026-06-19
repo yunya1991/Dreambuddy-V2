@@ -36,12 +36,13 @@ let _initialized = false;
  */
 export function getCompressorAdapter(): CompressorAdapter {
   if (!_adapter) {
-    const enabled =
+    // 默认启用压缩器。仅当显式设置 USE_SCHEDULER=false 时禁用
+    const explicitlyDisabled =
       typeof process !== 'undefined' &&
-      (process.env.USE_SCHEDULER === 'true' || process.env.USE_SCHEDULER === '1');
+      (process.env.USE_SCHEDULER === 'false' || process.env.USE_SCHEDULER === '0');
 
     _adapter = new CompressorAdapter({
-      enabled: enabled ?? false,
+      enabled: !explicitlyDisabled,
       fallbackStrategy: 'text-summarize',
       defaultTargetRatio: 0.5,
       minTokensForCompression: 200,

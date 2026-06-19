@@ -1,0 +1,21 @@
+{
+  "userId": "test-dev-p2-003",
+  "memories": [
+    {
+      "id": "mem_1781804400865_kq98",
+      "type": "preferred_symbols",
+      "value": [
+        "BTC"
+      ],
+      "importance": 0.4,
+      "lastReinforced": 1781804400865,
+      "createdAt": 1781804400865,
+      "reinforcementCount": 1,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 BTC"
+    }
+  ],
+  "evolutionCount": 0,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-18T17:40:00.865Z"
+}

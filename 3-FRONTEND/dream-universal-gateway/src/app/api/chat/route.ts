@@ -15,6 +15,19 @@ import { fetchMarketData, SYMBOL_DEFINITIONS, extractSymbolFromMessage } from "@
 import { getKnowledgeContext, loadAllKnowledge, getKnowledgeStats } from "@/lib/knowledge-loader";
 
 // ========================================
+// P2: S5 策略代码执行引擎（主前端专用的 E 链）
+// 用途：developer 意图统一走 S5 → 完整 E 链（E1→E2→E3）
+// 边界：前端 S5 = 策略代码开发专用；后端 6-Trading = 完整 D-Z-E 链（互不影响）
+// ========================================
+import {
+  executeS5,
+  S5_STEP_DEFINITIONS,
+  type S5ExecutionResult,
+} from "@/lib/dev-chain";
+
+// S5 不需要额外的会话状态（每次调用都是完整的 E1→E2→E3 流水线）
+
+// ========================================
 // P0: 调度器（Hermes-Planner）— Cost Keeper + Skip Gate
 // Feature Flag: process.env.USE_SCHEDULER = "true" | "false"（默认 false）
 // 作用: 1) 追踪每次请求的 token 用量
@@ -40,6 +53,7 @@ import {
 // 作用: 对 message_history 进行图结构压缩，保留上下文关系
 // ========================================
 import { compressorAdapter, type CompressResult } from "@/lib/compressor-adapter";
+import { sessionGraphStates } from "@/lib/task-manager";
 
 // 计算 scheduler 是否启用（仅当环境变量显式设置为 "true" / "1" 时才激活）
 const SCHEDULER_ENABLED =
@@ -103,7 +117,9 @@ type IntentType =
   | "macro_analysis"
   | "dca_strategy"
   | "arbitrage_opportunity"
-  | "sector_rotation";
+  | "sector_rotation"
+  // P1-2 D-Z-E 开发链
+  | "developer";
 
 interface IntentResult {
   intent: IntentType;
@@ -291,6 +307,11 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
       '/推演': 'scenario_sim',
       '/验证': 'strategy_verify',
       '/开仓': 'execute_trade',
+      // P1-2 D-Z-E 开发链命令
+      '/dev': 'developer',
+      '/代码': 'developer',
+      '/修复': 'developer',
+      '/bug': 'developer',
     };
 
     for (const [cmd, intent] of Object.entries(commandMap)) {
@@ -337,7 +358,7 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
         context_aware: true,
         thinking_mode: mode,
         routing: {
-          chain: ['direct_answer'],
+          chain: ['S0_DIRECT_ANSWER'],
           priority: 'medium',
           cacheable: true,
         },
@@ -358,7 +379,7 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
         context_aware: true,
         thinking_mode: mode,
         routing: {
-          chain: ['A1_research', 'A2_analysis'],
+          chain: ['S1_RESEARCH', 'S2_ANALYSIS'],
           priority: 'high',
           cacheable: false,
         },
@@ -373,7 +394,7 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
       entities: extractEntities(msg), thinking_mode: mode,
       complexity: "simple",
       method: "rule",
-      routing: { chain: ['market_data'], priority: 'high', cacheable: true },
+      routing: { chain: ['S1_RESEARCH'], priority: 'high', cacheable: true },
     };
   }
 
@@ -393,7 +414,7 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
       entities: extractEntities(msg), thinking_mode: mode,
       complexity: "complex",
       method: "rule",
-      routing: { chain: ['A3_simulation'], priority: 'medium', cacheable: false },
+      routing: { chain: ['S3_DESIGN'], priority: 'medium', cacheable: false },
     };
   }
 
@@ -403,17 +424,34 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
       entities: extractEntities(msg),
       complexity: "moderate",
       method: "rule",
-      routing: { chain: ['A4_validation'], priority: 'medium', cacheable: false },
+      routing: { chain: ['S4_VALIDATE'], priority: 'medium', cacheable: false },
     };
   }
 
-  if (msg.includes('开仓') || msg.includes('下单') || msg.includes('交易')) {
+  if (msg.includes('开仓') || msg.includes('下单') || msg.includes('交易') || msg.includes('策略执行') || msg.includes('策略驱动')) {
     return {
       intent: 'execute_trade', confidence: 0.75, thinking_mode: mode,
       entities: extractEntities(msg),
       complexity: "complex",
       method: "rule",
-      routing: { chain: ['A5_execution'], priority: 'high', cacheable: false },
+      routing: { chain: ['S5_EXECUTE'], priority: 'high', cacheable: false },
+    };
+  }
+
+  // P1-2 D-Z-E 开发链：关键词匹配 - 代码开发/修复/重构/分析
+  if (/bug|修复|问题|错误|崩溃|bugfix|报错|异常/.test(msg) ||
+      /重构|refactor|清理代码|代码优化/.test(msg) ||
+      /代码|开发|dev|实现|写代码|编码/.test(msg) ||
+      /新功能|新增功能|添加功能|功能开发/.test(msg) ||
+      /策略.*代码|策略.*修改|修改.*策略|策略逻辑/.test(msg) ||
+      /分析代码|代码.*分析|review|审阅|代码review|review代码|看代码/.test(msg)) {
+    console.log(`[IntentRule] 开发类任务识别 → developer`);
+    return {
+      intent: 'developer', confidence: 0.85, thinking_mode: mode,
+      entities: extractEntities(msg),
+      complexity: "complex",
+      method: "rule",
+      routing: { chain: getChainForIntent('developer', mode), priority: 'high', cacheable: false },
     };
   }
 
@@ -423,7 +461,7 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
     entities: extractEntities(msg),
     complexity: "simple",
     method: "default",
-    routing: { chain: ['direct_answer'], priority: 'low', cacheable: true },
+    routing: { chain: ['S0_DIRECT_ANSWER'], priority: 'low', cacheable: true },
   };
 }
 
@@ -437,21 +475,23 @@ async function recognizeIntentLLM(message: string, context?: SessionContext): Pr
 
 意图说明:
 - market_query: 简单行情查询
-- deep_analysis: 深度分析（D链）
-- triple_chain: 完整策略制定（D-Z-E 三链，需用户确认步进）
+- deep_analysis: 深度分析（S系列链）
+- triple_chain: 完整策略制定（S系列策略思维链，需用户确认步进）
 - scenario_sim: 情景推演
 - strategy_verify: 策略验证
 - execute_trade: 下单/交易执行
 - simple_qa: 简单问答
+- developer: 代码开发、bug修复、代码重构、代码审阅（D-Z-E开发链）
 
 输出格式:
 {"intent":"类型","confidence":0.0-1.0,"entities":{"symbol":"BTC","timeframe":"4h"},"reasoning":"理由"}
 
 规则:
-1. 用户请求"制定策略"、"帮我分析+制定"、"给我一个策略"等 → triple_chain (D-Z-E 完整链路)
-2. 用户请求"分析"、"怎么看"、"走势" → deep_analysis (D链)
+1. 用户请求"制定策略"、"帮我分析+制定"、"给我一个策略"等 → triple_chain (S系列完整链路)
+2. 用户请求"分析"、"怎么看"、"走势" → deep_analysis (S系列链)
 3. 用户请求"现在黄金怎么样"、"BTC行情" → market_query
 4. 用户明确请求"下单"、"买入"、"卖出" → execute_trade
+5. 用户请求"修复bug"、"修改代码"、"重构"、"开发"、"代码review"、"看一下代码"、"实现功能"等 → developer (D-Z-E开发链)
 
 仅输出JSON。`;
 
@@ -499,6 +539,8 @@ ${context?.message_history && context.message_history.length > 0 ? `近3条:${co
       'event_analysis', 'concept_explain', 'strategy_recommendation',
       'backtest_help', 'volatility_analysis', 'macro_analysis', 'dca_strategy',
       'arbitrage_opportunity', 'sector_rotation',
+      // P1-2 D-Z-E 开发链
+      'developer',
     ];
     if (!validIntents.includes(parsed.intent)) {
       console.warn(`[IntentLLM] Invalid intent "${parsed.intent}", fallback to simple_qa`);
@@ -508,7 +550,7 @@ ${context?.message_history && context.message_history.length > 0 ? `近3条:${co
 
     // P2-1: 基于意图类型动态计算复杂度
     const simpleIntents = new Set(['market_query', 'simple_qa', 'system_config', 'credits_query', 'concept_explain', 'market_sentiment']);
-    const complexIntents = new Set(['triple_chain', 'execute_trade', 'portfolio_allocation', 'strategy_recommendation', 'arbitrage_opportunity', 'portfolio_rebalance']);
+    const complexIntents = new Set(['triple_chain', 'execute_trade', 'portfolio_allocation', 'strategy_recommendation', 'arbitrage_opportunity', 'portfolio_rebalance', 'developer']);
     const isSimple = simpleIntents.has(parsed.intent);
     const isComplex = complexIntents.has(parsed.intent);
 
@@ -541,89 +583,91 @@ function getChainForIntent(intent: IntentType, thinkingMode: ThinkingMode): stri
   const S1_3 = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'];
   const FULL_S = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
 
-  // D-Z-E 核心链路：D=调研分析, Z=方案制定, E=执行交付（保留用于开发治理）
-  const D1_2 = ['D1_investigator', 'D2_analyst'];
-  const D1_4 = ['D1_investigator', 'D2_analyst', 'D3_deducer', 'D4_spec_author'];
-  const FULL_DZE = ['D1_investigator', 'D2_analyst', 'D3_deducer', 'D4_spec_author', 'Z1_code_scanner', 'Z2_boundary_divider', 'Z3_path_planner', 'Z4_acceptance_designer', 'E1_task_executor', 'E2_tester', 'E3_deployer'];
+  // 主前端开发链：S3 策略设计 → S4 验证 → S5 执行（完整 E1→E2→E3）
+  const STRATEGY_DEV_CHAIN = ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
 
   if (thinkingMode === 'quick') {
     const quickChainMap: Record<IntentType, string[]> = {
-      'market_query': ['market_data'],
+      'market_query': ['S1_RESEARCH'],
       // 所有策略分析统一使用 S 系列链
       'deep_analysis': S1_2,
       'triple_chain': S1_2,
       'scenario_sim': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
       'strategy_verify': ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
       'execute_trade': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
-      'simple_qa': ['direct_answer'],
-      'system_config': ['direct_answer'],
-      'credits_query': ['direct_answer'],
-      'artifact_query': ['knowledge_base'],
-      'risk_alert_response': ['A6_intelligence', 'A6_alert'],
+      'simple_qa': ['S0_DIRECT_ANSWER'],
+      'system_config': ['S0_DIRECT_ANSWER'],
+      'credits_query': ['S0_DIRECT_ANSWER'],
+      'artifact_query': ['S1_RESEARCH'],
+      'risk_alert_response': ['S2_ANALYSIS'],
       'command': ['route_by_command'],
       // P2-1 多场景意图 - quick 模式
       'asset_comparison': S1_2,
-      'entry_timing': ['market_data', 'S2_ANALYSIS'],
-      'exit_timing': ['market_data', 'S2_ANALYSIS'],
+      'entry_timing': ['S1_RESEARCH', 'S2_ANALYSIS'],
+      'exit_timing': ['S1_RESEARCH', 'S2_ANALYSIS'],
       'risk_analysis': ['S2_ANALYSIS'],
       'position_sizing': ['S2_ANALYSIS', 'S3_DESIGN'],
-      'market_sentiment': ['market_data', 'direct_answer'],
-      'trend_analysis': ['market_data', 'S2_ANALYSIS'],
-      'technical_signal': ['market_data', 'S2_ANALYSIS'],
-      'support_resistance': ['market_data', 'S2_ANALYSIS'],
+      'market_sentiment': ['S1_RESEARCH', 'S0_DIRECT_ANSWER'],
+      'trend_analysis': ['S1_RESEARCH', 'S2_ANALYSIS'],
+      'technical_signal': ['S1_RESEARCH', 'S2_ANALYSIS'],
+      'support_resistance': ['S1_RESEARCH', 'S2_ANALYSIS'],
       'portfolio_allocation': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
       'portfolio_rebalance': ['S2_ANALYSIS', 'S3_DESIGN'],
       'event_analysis': S1_2,
-      'concept_explain': ['knowledge_base', 'direct_answer'],
+      'concept_explain': ['S1_RESEARCH', 'S0_DIRECT_ANSWER'],
       'strategy_recommendation': ['S2_ANALYSIS', 'S3_DESIGN'],
-      'backtest_help': ['knowledge_base', 'direct_answer'],
-      'volatility_analysis': ['market_data', 'S2_ANALYSIS'],
+      'backtest_help': ['S1_RESEARCH', 'S0_DIRECT_ANSWER'],
+      'volatility_analysis': ['S1_RESEARCH', 'S2_ANALYSIS'],
       'macro_analysis': S1_2,
       'dca_strategy': ['S2_ANALYSIS', 'S3_DESIGN'],
       'arbitrage_opportunity': S1_2,
       'sector_rotation': S1_2,
+      // S5 策略代码开发 - quick 模式
+      'developer': STRATEGY_DEV_CHAIN,
     };
-    return quickChainMap[intent] || ['direct_answer'];
+    return quickChainMap[intent] || ['S0_DIRECT_ANSWER'];
   }
 
   // 深度思考模式：完整策略链（S 系列）
   const deepChainMap: Record<IntentType, string[]> = {
-    'market_query': ['market_data'],
+    'market_query': ['S1_RESEARCH'],
     // 所有策略分析统一使用 S 系列链
     'deep_analysis': S1_3,
     'triple_chain': FULL_S,
     'scenario_sim': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
     'strategy_verify': ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
     'execute_trade': FULL_S,
-    'simple_qa': ['direct_answer'],
-    'system_config': ['direct_answer'],
-    'credits_query': ['direct_answer'],
-    'artifact_query': ['knowledge_base', 'tavily_search'],
-    'risk_alert_response': ['A6_intelligence', 'A6_alert'],
+    'simple_qa': ['S0_DIRECT_ANSWER'],
+    'system_config': ['S0_DIRECT_ANSWER'],
+    'credits_query': ['S0_DIRECT_ANSWER'],
+    'artifact_query': ['S1_RESEARCH'],
+    'risk_alert_response': ['S2_ANALYSIS'],
     'command': ['route_by_command'],
     // P2-1 多场景意图 - deep 模式
     'asset_comparison': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
-    'entry_timing': ['market_data', 'S2_ANALYSIS', 'S3_DESIGN'],
-    'exit_timing': ['market_data', 'S2_ANALYSIS', 'S3_DESIGN'],
+    'entry_timing': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
+    'exit_timing': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
     'risk_analysis': ['S2_ANALYSIS', 'S3_DESIGN'],
     'position_sizing': ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
-    'market_sentiment': ['market_data', 'S2_ANALYSIS'],
-    'trend_analysis': ['market_data', 'S2_ANALYSIS'],
-    'technical_signal': ['market_data', 'S2_ANALYSIS'],
-    'support_resistance': ['market_data', 'S2_ANALYSIS'],
+    'market_sentiment': ['S1_RESEARCH', 'S2_ANALYSIS'],
+    'trend_analysis': ['S1_RESEARCH', 'S2_ANALYSIS'],
+    'technical_signal': ['S1_RESEARCH', 'S2_ANALYSIS'],
+    'support_resistance': ['S1_RESEARCH', 'S2_ANALYSIS'],
     'portfolio_allocation': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
     'portfolio_rebalance': ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
     'event_analysis': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
-    'concept_explain': ['knowledge_base', 'direct_answer'],
+    'concept_explain': ['S1_RESEARCH', 'S0_DIRECT_ANSWER'],
     'strategy_recommendation': ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
     'backtest_help': ['S3_DESIGN', 'S4_VALIDATE'],
-    'volatility_analysis': ['market_data', 'S2_ANALYSIS', 'S3_DESIGN'],
+    'volatility_analysis': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
     'macro_analysis': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
     'dca_strategy': ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
     'arbitrage_opportunity': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
     'sector_rotation': ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
+    // S5 策略代码开发 - deep 模式
+    'developer': STRATEGY_DEV_CHAIN,
   };
-  return deepChainMap[intent] || ['direct_answer'];
+  return deepChainMap[intent] || ['S0_DIRECT_ANSWER'];
 }
 
 // ============ P3 多意图组合路由 ============
@@ -2052,6 +2096,34 @@ const STEP_TO_SKILL: Record<string, string> = {
   'S5_EXECUTE': 'dream-tactical-executor-s',
 };
 
+// ============================================================
+// P2: S5 策略代码执行引擎 - Chat 专用执行函数
+// 职责：
+//   1. developer 意图 → 调用 S5 executeS5（完整 E1→E2→E3 链）
+//   2. 输出格式与 generateChainResponse 对齐
+// 边界：与 S 系列的其他步骤共享链命名；不再使用 D/Z 系列
+// ============================================================
+
+async function executeS5ForChat(
+  sessionId: string,
+  userMessage: string,
+  thinkingMode: 'quick' | 'deep' | 'scheduler',
+  lang: 'zh' | 'en',
+): Promise<S5ExecutionResult> {
+  const mode = thinkingMode === 'scheduler' ? 'deep' : thinkingMode;
+  console.log(`[S5 Engine] chat invoke: message=${userMessage.slice(0, 50)}`);
+
+  const result = executeS5({
+    taskId: `chat_${sessionId}_${Date.now()}`,
+    sessionId,
+    userMessage,
+    thinkingMode: mode,
+    lang,
+  });
+
+  return result;
+}
+
 /**
  * 处理链响应（调用真实SKILL，实现阶段门禁）
  */
@@ -3315,19 +3387,20 @@ ${displayName} 当前处于区间震荡格局，采用"低吸高抛 + 突破跟�
 
 **💡 后续建议:** 持续跟踪入场信号，每周复盘策略参数表现。`,
 
-    A1_research: `🔍 **D1 深度调研**\n\n当前 ${displayName} 价格 ${priceStr}。`,
-    A2_analysis: `🧠 **D2 分析诊断**\n\n${displayName} 当前区间震荡（${supportStr} ~ ${resistanceStr}），等待突破信号。`,
-    A3_simulation: `🎲 **D3 推演验证**\n\n情景推演完成，更符合区间震荡。`,
-    A4_validation: `✅ **D4 策略验证**\n\n策略参数回测通过。`,
-    A5_execution: `⚡ **E1 执行决策**\n\n等待入场信号中...`,
-    A9_exit: `🚪 **离场评估**\n\n当前持仓正常监控中。`,
-    A6_intelligence: `📡 **情报监控**\n\n持续监控市场变化...`,
-    A6_alert: `⚠️ **情报警报**\n\n检测到市场波动加剧。`,
+    // Phase 0: A系列兼容映射 - 统一为 S 系列标签
+    'A1_research': `🔍 **S1 调研**\n\n当前 ${displayName} 价格 ${priceStr}。`,
+    A2_analysis: `🧠 **S2 分析**\n\n${displayName} 当前区间震荡（${supportStr} ~ ${resistanceStr}），等待突破信号。`,
+    A3_simulation: `🎲 **S3 设计**\n\n情景推演完成，更符合区间震荡。`,
+    A4_validation: `✅ **S4 验证**\n\n策略参数回测通过。`,
+    A5_execution: `⚡ **S5 执行**\n\n等待入场信号中...`,
+    A9_exit: `🚪 **S5 执行（离场）**\n\n当前持仓正常监控中。`,
+    A6_intelligence: `📡 **S2 分析**\n\n持续监控市场变化...`,
+    A6_alert: `⚠️ **S2 分析（告警）**\n\n检测到市场波动加剧。`,
 
     market_data: `📊 **${displayName} 行情数据**\n\n当前价格: ${priceStr}\n24h涨跌: ${changeStr}\n关键支撑: ${supportStr}\n关键阻力: ${resistanceStr}\n24h最高: ${fmtPrice(market.high24h, market.unit)}\n24h最低: ${fmtPrice(market.low24h, market.unit)}\n\n${market.note || ''}`,
-    knowledge_base: `📚 **知识库检索**\n\n根据历史数据，${displayName} 当前处于关键价位附近。建议启用 D-Z-E 链进行完整策略分析。`,
-    tavily_search: `🌐 **联网搜索**\n\n最新市场资讯已获取（模拟数据）。`,
-    direct_answer: `💬 收到请求，正在处理...`,
+    knowledge_base: `📚 **S1 调研（知识库）**\n\n根据历史数据，${displayName} 当前处于关键价位附近。`,
+    tavily_search: `🌐 **S1 调研（联网）**\n\n最新市场资讯已获取（模拟数据）。`,
+    'S0_DIRECT_ANSWER': `💬 收到请求，正在处理...`,
   };
   
   return responses[step] || `📋 **${step}**\n\n执行完成。`;
@@ -3357,7 +3430,7 @@ function stepNameOf(step: string): string {
     'S5_EXECUTE': 'S5 执行',
     'market_data': '市场数据',
     'knowledge_base': '知识库',
-    'direct_answer': '快速问答',
+    'S0_DIRECT_ANSWER': '快速问答',
   };
   return map[step] || step;
 }
@@ -3749,6 +3822,48 @@ export async function POST(request: NextRequest) {
       const symbol = context.last_symbol || "BTC";
       const market = await fetchMarketPrice(symbol);
 
+      // ===== P2: S5 策略代码开发链的确认回复处理
+      // S5 = 完整 E 链（E1→E2→E3），每次调用一次完成，不需要分步确认
+      if (context.last_intent === 'developer') {
+        const s5Resp = await executeS5ForChat(
+          ctxSessionId,
+          message,
+          context.thinking_mode,
+          (message.match(/[\u4e00-\u9fa5]/) ? 'zh' : 'en'),
+        );
+
+        const stepProgress = {
+          steps: s5Resp.allStepsForDisplay,
+          current_step: s5Resp.allStepsForDisplay[s5Resp.allStepsForDisplay.length - 1]?.id,
+        };
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            content: s5Resp.content,
+            chainState: {},
+            strategyChainState: {
+              scope: `策略代码开发: ${message}`,
+              currentStep: stepProgress.current_step,
+              steps: s5Resp.allStepsForDisplay,
+              complexity: context.thinking_mode,
+              createdAt: new Date().toISOString(),
+              modifiedAt: new Date().toISOString(),
+            },
+            stepProgress,
+            market: null,
+            intent: 'developer',
+            confidence: 0.9,
+            routing: { chain: s5Resp.allStepsForDisplay.map((s: { id: string }) => s.id) },
+            llm_status: await checkLLMStatus(),
+            llm_model: process.env.DEEPSEEK_MODEL || "deepseek-v4-pro",
+            timestamp: new Date().toISOString(),
+            needsConfirmation: false,
+            nextStep: null,
+          },
+        });
+      }
+
       // 解析用户灵活回复意图（支持：继续/落地/调整/跳过/摘要/详细解释）
       const userIntent = parseUserReplyIntent(message, strategyState);
 
@@ -4058,6 +4173,67 @@ export async function POST(request: NextRequest) {
     // 1. 意图识别 (统一入口: LLM → rule → fallback)
     const intentResult = await recognizeIntent(message, context);
 
+    // ===== P2: developer 意图专属路径 —— 走 S5 完整 E 链（E1→E2→E3）
+    if (intentResult.intent === 'developer') {
+      console.log(`[Chat API] S5 Engine: strategy code dev`);
+
+      // 调用 S5 执行引擎（完整 E1→E2→E3 链，一次完成）
+      const s5Resp = await executeS5ForChat(
+        ctxSessionId,
+        message,
+        context.thinking_mode || 'quick',
+        (message.match(/[\u4e00-\u9fa5]/) ? 'zh' : 'en'),
+      );
+
+      const devStepsForFrontend = s5Resp.allStepsForDisplay.map((s, idx) => ({
+        id: s.id,
+        number: idx + 1,
+        name: `${s.icon} ${s.label}`,
+        status: s.status,
+      }));
+
+      // 标记为 developer 意图（作为 session 的 last_intent）
+      context.last_intent = 'developer';
+      context.message_history.push(message);
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          content: s5Resp.content,
+          chainState: {},
+          strategyChainState: {
+            scope: `策略代码开发: ${message.slice(0, 60)}`,
+            currentStep: devStepsForFrontend[devStepsForFrontend.length - 1]?.id,
+            steps: devStepsForFrontend,
+            complexity: context.thinking_mode,
+            createdAt: new Date().toISOString(),
+            modifiedAt: new Date().toISOString(),
+          },
+          stepProgress: {
+            steps: s5Resp.allStepsForDisplay,
+            current_step: s5Resp.allStepsForDisplay[s5Resp.allStepsForDisplay.length - 1]?.id,
+          },
+          market: null,
+          intent: 'developer',
+          confidence: intentResult.confidence,
+          routing: {
+            chain: s5Resp.allStepsForDisplay.map((s: { id: string }) => s.id),
+            loop_type: 'execution',
+            role_check: 'allowed',
+            requires_confirmation: false,
+            message_history: [],
+          },
+          complexity: context.thinking_mode,
+          method: 's5-strategy-code-engine',
+          llm_status: await checkLLMStatus(),
+          llm_model: process.env.DEEPSEEK_MODEL || "deepseek-v4-pro",
+          timestamp: new Date().toISOString(),
+          needsConfirmation: false,
+          nextStep: null,
+        },
+      });
+    }
+
     // 📡 监控埋点: 意图识别完成
     emitMonitorEvent({
       trace_id: chatTraceId,
@@ -4115,7 +4291,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. 执行路由 (生成响应)
-    let chain = routing.chain.length > 0 ? routing.chain : ["direct_answer"];
+    let chain = routing.chain.length > 0 ? routing.chain : ["S0_DIRECT_ANSWER"];
     
     // ===== P3 多意图组合路由 =====
     // 在标准路由完成后，检测是否有复合意图（如：先宏观分析 → 再入场 → 再仓位管理）
@@ -4162,16 +4338,35 @@ export async function POST(request: NextRequest) {
 
     // ===== P0+: 图文压缩（当历史超过阈值时触发） =====
     let compressionResult: CompressResult | undefined = undefined;
-    if (shouldEnableScheduler && context.message_history.length >= 10) {
+
+    // 1) 如果会话有 graph-reflection-bridge 状态 → 使用 graph-aware 压缩
+    const graphStateForCompression = sessionGraphStates.get(chatTraceId);
+    if (graphStateForCompression && shouldEnableScheduler) {
       try {
-        // 将 message_history 转换为 CompressItem 格式
+        const gResult = compressorAdapter.compressFromGraphState(graphStateForCompression);
+        if (gResult && gResult.compressionRatio < 1) {
+          compressionResult = gResult;
+          console.log(
+            `[CompressorAdapter] session=${chatTraceId} | ` +
+            `graph-aware compression ${gResult.originalTokens} → ${gResult.compressedTokens} tokens ` +
+            `(${(gResult.compressionRatio * 100).toFixed(1)}%) | ` +
+            `nodes=${gResult.stats.totalNodes}`
+          );
+        }
+      } catch (err) {
+        console.warn('[CompressorAdapter] graph-aware 压缩失败，回退到文本摘要', err);
+      }
+    }
+
+    // 2) 回退：纯文本摘要压缩（如果 graphState 不可用或未触发）
+    if (!compressionResult && shouldEnableScheduler && context.message_history.length >= 10) {
+      try {
         const items = context.message_history.map((msg, idx) => ({
           id: `msg-${idx}`,
           type: 'message' as const,
           content: msg,
           tokens: estimateTokens(msg),
         }));
-
         compressionResult = await compressorAdapter.compress({
           sessionId: chatTraceId,
           payload: items,

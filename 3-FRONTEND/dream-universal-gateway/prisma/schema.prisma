@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -74,8 +74,8 @@ model UserProfile {
   dailyLossPercent    Float    @default(0.05)  // 日亏损限制(%)
   accountLossLimit    Float    @default(2000)  // 账户亏损限制(USDT)
   accountLossPercent  Float    @default(0.20)  // 账户亏损限制(%)
-  allowedSymbols      String[] @default(["BTC-USDT-SWAP"])
-  allowedTradeModes   String[] @default(["SPOT_MODE"]) // 允许的交易模式列表
+  allowedSymbols      String   @default("[\"BTC-USDT-SWAP\"]")
+  allowedTradeModes   String   @default("[\"SPOT_MODE\"]") // 允许的交易模式列表
   isTradingEnabled    Boolean  @default(false) // 交易开关
 
   // === 期权特有参数 ===

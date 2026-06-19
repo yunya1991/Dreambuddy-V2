@@ -1,0 +1,21 @@
+{
+  "userId": "mem_final_test",
+  "memories": [
+    {
+      "id": "mem_1781668620922_1xk5",
+      "type": "preferred_symbols",
+      "value": [
+        "ETH"
+      ],
+      "importance": 0.4,
+      "lastReinforced": 1781668620922,
+      "createdAt": 1781668620922,
+      "reinforcementCount": 1,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 ETH"
+    }
+  ],
+  "evolutionCount": 0,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-17T03:57:00.922Z"
+}

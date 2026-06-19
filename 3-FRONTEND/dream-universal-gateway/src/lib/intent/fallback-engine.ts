@@ -12,7 +12,8 @@ export type IntentType =
   | 'market_query' | 'deep_analysis' | 'scenario_sim' | 'strategy_verify'
   | 'execute_trade' | 'simple_qa' | 'command' | 'system_config'
   | 'credits_query' | 'artifact_query' | 'risk_alert_response'
-  | 'triple_chain' | 'need_clarification' | 'clarification_result';
+  | 'triple_chain' | 'need_clarification' | 'clarification_result'
+  | 'developer';
 
 export type ComplexityLevel = 'simple' | 'moderate' | 'complex' | 'urgent';
 
@@ -223,11 +224,118 @@ function detectFollowUp(message: string, context?: SessionContext): { isFollowUp
   return { isFollowUp: false };
 }
 
+// ============ 硬编码意图关键词规则（S系列保障层）============
+/**
+ * 快速关键词匹配 - 确保深度分析类请求始终能正确路由到 S 系列
+ * 当经验库为空/不足时，此层保证系统的基础功能正常
+ */
+const HARDCODED_INTENT_RULES: Array<{
+  intent: IntentType;
+  complexity: ComplexityLevel;
+  confidence: number;
+  keywords: string[];
+  id: string;
+}> = [
+  {
+    id: 'hc_deep_analysis',
+    intent: 'deep_analysis',
+    complexity: 'moderate',
+    confidence: 0.85,
+    keywords: ['深度分析', '深入分析', '深度分析', '技术分析', '走势分析', '趋势分析', '入场策略', '策略分析', '分析策略', '机会分析', '制定策略', '交易策略', '策略建议', '持仓策略', '规划入场', '全面分析'],
+  },
+  {
+    id: 'hc_scenario_sim',
+    intent: 'scenario_sim',
+    complexity: 'complex',
+    confidence: 0.85,
+    keywords: ['情景推演', '情景分析', '情景假设', '如果', '假设', '推演', '模拟', '极端行情', '压力测试', '最坏情况', '最好情况', '敏感性分析', 'hypothetical', 'scenario'],
+  },
+  {
+    id: 'hc_strategy_verify',
+    intent: 'strategy_verify',
+    complexity: 'complex',
+    confidence: 0.85,
+    keywords: [
+      '策略验证', '验证策略', '回测', '策略回测', '测试策略', '检验策略',
+      '策略有效性', '策略质量', 'signal quality', '验证信号', '策略评估',
+      '信号验证', '策略信号', '策略信号质量', '评估策略', '策略的有效性',
+      '信号质量', 'backtest', 'validate strategy', 'strategy validation',
+    ],
+  },
+  {
+    id: 'hc_execute_trade',
+    intent: 'execute_trade',
+    complexity: 'complex',
+    confidence: 0.9,
+    keywords: ['开仓', '下单', '买入', '卖出', '做多', '做空', '止损', '止盈', '加仓', '减仓', '平仓', '执行交易', '立即交易', 'execute', 'place order', 'buy', 'sell'],
+  },
+  {
+    id: 'hc_market_query',
+    intent: 'market_query',
+    complexity: 'simple',
+    confidence: 0.85,
+    keywords: ['行情', '价格', '现在', '当前', '实时', '最新', '查询', '多少', '报价', '实时行情', '现价'],
+  },
+  {
+    id: 'hc_triple_chain',
+    intent: 'triple_chain',
+    complexity: 'complex',
+    confidence: 0.9,
+    keywords: ['全面规划', '完整策略', '综合分析', '从分析到执行', '全流程', '系统策略', '端到端', '一站式'],
+  },
+];
+
 // ============ 规则引擎匹配 ============
 
 function matchRuleEngine(message: string, context?: SessionContext): IntentRecognitionResult | null {
-  const patterns = loadExperienceMemory();
   const lower = message.toLowerCase().trim();
+
+  // Step 0.1: 组合词匹配（避免泛化词误匹配）
+  // 如果消息中同时出现"验证/检验/评估/测试/信号" + "策略/信号/回测/有效性"，优先判定为 strategy_verify
+  const strategyVerifyActionTerms = ['验证', '检验', '评估', '测试', 'check', 'verify', 'test', 'validate', 'backtest', '信号质量', '信号的'];
+  const strategyVerifyObjectTerms = ['策略', '信号', '回测', '有效性', '质量', 'strategy', 'signal', 'validation'];
+  const hasActionTerm = strategyVerifyActionTerms.some(term => lower.includes(term));
+  const hasObjectTerm = strategyVerifyObjectTerms.some(term => lower.includes(term));
+  if (hasActionTerm && hasObjectTerm && lower.length < 200) {
+    const entities = extractEntities(message);
+    if (context?.last_symbol && !entities.symbol) {
+      entities.symbol = context.last_symbol;
+    }
+    return {
+      intent: 'strategy_verify',
+      confidence: 0.82,
+      entities,
+      complexity: 'complex',
+      reasoning: 'Composite keyword match: action+object pattern detected (strategy verification)',
+      method: 'rule',
+      matchedPatternId: 'hc_composite_strategy_verify',
+      context_aware: !!context?.last_intent,
+    };
+  }
+
+  // Step 0: 先检查硬编码规则（保障 S 系列请求能被正确识别）
+  for (const rule of HARDCODED_INTENT_RULES) {
+    const matched = rule.keywords.some(kw => lower.includes(kw.toLowerCase()));
+    if (matched) {
+      const entities = extractEntities(message);
+      if (context?.last_symbol && !entities.symbol) {
+        entities.symbol = context.last_symbol;
+      }
+      return {
+        intent: rule.intent,
+        confidence: rule.confidence,
+        entities,
+        complexity: rule.complexity,
+        reasoning: `Hardcoded rule match: ${rule.id} (keyword-based fallback)`,
+        method: 'rule',
+        matchedPatternId: rule.id,
+        context_aware: !!context?.last_intent,
+      };
+    }
+  }
+
+  // Step 1: 从经验记忆库中查找匹配
+  const patterns = loadExperienceMemory();
   let bestMatch: ExperiencePattern | null = null;
   let bestScore = 0;
 

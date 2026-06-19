@@ -21,50 +21,52 @@ export interface RoutingDecision {
   role_check: 'pass' | 'upgrade_required' | 'denied';
   fallback_chain: string[];
   reasoning: string;
+  /** Phase 2+: 是否走动态计划-执行-反思闭环 */
+  is_dynamic?: boolean;
 }
 
+// ============ 动态链配置 (Phase 2) ============
+
+/** 环境开关：ENABLE_DYNAMIC_CHAIN=true/1 时启用；'false'/'0'/'0' 显式禁用，其余默认启用
+ * 对 PRO 用户特定意图启用 Plan-Execute-Reflect 动态链
+ */
+const ENABLE_DYNAMIC_CHAIN = (() => {
+  if (typeof process === 'undefined') return true;
+  const v = (process.env.ENABLE_DYNAMIC_CHAIN || '').toLowerCase();
+  if (v === 'false' || v === '0' || v === 'no' || v === 'off') return false;
+  if (v === 'true' || v === '1' || v === 'yes' || v === 'on') return true;
+  // 默认启用（dynamic-chain 可回退到正常执行，是纯增加的）
+  return true;
+})();
+
+/** 启用动态计划-执行-反思闭环的意图列表（developer 不走动态链） */
+const DYNAMIC_INTENTS: Array<Exclude<IntentType, 'command'>> = [
+  'deep_analysis',
+  'scenario_sim',
+  'strategy_verify',
+  'execute_trade',
+];
+
 // ============ 链定义 (统一链名规范) ============
+//
+// 重要说明（Phase 0 边界清理）：
+// - S系列（S1-S5）是前端主策略思维链，由 src/lib/strategy/ 模块管理
+// - D-Z-E系列是开发专用链，由 src/lib/dev-chain/ 模块管理，不在此定义
+// - A系列（A1-A9）是后端 Web3 研究技能链，前端不应直接引用
+// - simple/utility 步骤（direct_answer/market_data 等）统一为 S0/S1 的子步骤
+//
+// 最终只保留前端主链 S系列的步骤定义
 
-export const CHAIN_STEPS: Record<string, { label: string; icon: string; loop: LoopType; credits: number; time_ms: number; chain?: 'D' | 'Z' | 'E' | 'S' }> = {
-  // S系列 - 策略思维链（用于策略分析）
-  S1_RESEARCH:  { label: 'S1_调研', icon: '🔍', loop: 'execution', credits: 30, time_ms: 15000, chain: 'S' },
-  S2_ANALYSIS:  { label: 'S2_分析', icon: '🧠', loop: 'execution', credits: 50, time_ms: 30000, chain: 'S' },
-  S3_DESIGN:    { label: 'S3_设计', icon: '🎯', loop: 'execution', credits: 60, time_ms: 45000, chain: 'S' },
-  S4_VALIDATE:  { label: 'S4_验证', icon: '✅', loop: 'execution', credits: 80, time_ms: 60000, chain: 'S' },
-  S5_EXECUTE:   { label: 'S5_执行', icon: '⚡', loop: 'execution', credits: 20, time_ms: 10000, chain: 'S' },
+export const CHAIN_STEPS: Record<string, { label: string; icon: string; loop: LoopType; credits: number; time_ms: number; chain?: 'S' }> = {
+  // S0 - 快捷路径（简单问答，无需完整思维链）
+  S0_DIRECT_ANSWER: { label: 'S0_快速回答', icon: '💬', loop: 'general', credits: 5, time_ms: 2000, chain: 'S' },
 
-  // A系列（原交易链路，保留兼容)
-  A1_research:    { label: '市场侦察', icon: '🔍', loop: 'execution',    credits: 50,  time_ms: 30000 },
-  A2_analysis:    { label: '深度分析', icon: '🧠', loop: 'execution',    credits: 80,  time_ms: 45000 },
-  A3_simulation: { label: '情景推演', icon: '🎲', loop: 'execution',    credits: 100, time_ms: 60000 },
-  A4_validation: { label: '方案验证', icon: '✅', loop: 'execution',    credits: 120, time_ms: 45000 },
-  A5_execution:   { label: '决策执行', icon: '⚡', loop: 'execution',    credits: 150, time_ms: 30000 },
-  A9_exit:        { label: '离场评估', icon: '🚪', loop: 'execution',    credits: 80,  time_ms: 20000 },
-  A6_intelligence:{ label: '情报监控', icon: '📡', loop: 'intelligence', credits: 30,  time_ms: 15000 },
-  A6_alert:       { label: '情报告警', icon: '⚠️', loop: 'intelligence', credits: 20,  time_ms: 5000 },
-  A7_practice:    { label: '实践记录', icon: '📝', loop: 'governance',   credits: 60,  time_ms: 30000 },
-  A8_verification:{ label: '知行验证', icon: '🔮', loop: 'governance',   credits: 70,  time_ms: 30000 },
-  knowledge_base: { label: '知识库',   icon: '📚', loop: 'general',      credits: 5,   time_ms: 2000 },
-  tavily_search:  { label: '联网搜索', icon: '🌐', loop: 'general',      credits: 10,  time_ms: 8000 },
-  market_data:    { label: '行情数据', icon: '📊', loop: 'intelligence', credits: 5,   time_ms: 3000 },
-  direct_answer:  { label: '直接回答', icon: '💬', loop: 'general',      credits: 5,   time_ms: 2000 },
-
-  // D系列 - 调研分析链（每步需用户确认）
-  D1_investigator: { label: 'D1深度调研', icon: '🔍', loop: 'execution', credits: 50, time_ms: 30000, chain: 'D' },
-  D2_analyst:      { label: 'D2分析诊断', icon: '🧠', loop: 'execution', credits: 80, time_ms: 45000, chain: 'D' },
-  D3_deducer:      { label: 'D3推演验证', icon: '🎲', loop: 'execution', credits: 100, time_ms: 60000, chain: 'D' },
-  D4_spec_author:  { label: 'D4-Spec合成', icon: '📝', loop: 'execution', credits: 120, time_ms: 45000, chain: 'D' },
-
-  // Z系列 - 实施规划链（每步需用户确认）
-  Z1_code_scanner:         { label: 'Z1代码扫描', icon: '🏗️', loop: 'execution', credits: 60, time_ms: 35000, chain: 'Z' },
-  Z2_boundary_divider:     { label: 'Z2范围划分', icon: '📐', loop: 'execution', credits: 70, time_ms: 40000, chain: 'Z' },
-  Z3_path_planner:         { label: 'Z3路径设计', icon: '🗺️', loop: 'execution', credits: 80, time_ms: 45000, chain: 'Z' },
-  Z4_acceptance_designer:  { label: 'Z4验收方案', icon: '✅', loop: 'execution', credits: 90, time_ms: 40000, chain: 'Z' },
-
-  // E系列 - 执行交付链（不需要每步确认）
-  E1_task_executor: { label: 'E1任务执行', icon: '⚡', loop: 'execution', credits: 100, time_ms: 60000, chain: 'E' },
-  E2_tester:        { label: 'E2测试验证', icon: '🧪', loop: 'execution', credits: 80,  time_ms: 45000, chain: 'E' },
-  E3_deployer:      { label: 'E3部署交付', icon: '🚀', loop: 'execution', credits: 60,  time_ms: 30000, chain: 'E' },
+  // S系列 - 策略思维链（5步标准结构）
+  S1_RESEARCH:    { label: 'S1_调研', icon: '🔍', loop: 'execution', credits: 30,  time_ms: 15000, chain: 'S' },
+  S2_ANALYSIS:    { label: 'S2_分析', icon: '🧠', loop: 'execution', credits: 50,  time_ms: 30000, chain: 'S' },
+  S3_DESIGN:      { label: 'S3_设计', icon: '🎯', loop: 'execution', credits: 60,  time_ms: 45000, chain: 'S' },
+  S4_VALIDATE:    { label: 'S4_验证', icon: '✅', loop: 'execution', credits: 80,  time_ms: 60000, chain: 'S' },
+  S5_EXECUTE:     { label: 'S5_执行', icon: '⚡', loop: 'execution', credits: 20,  time_ms: 10000, chain: 'S' },
 };
 
 // ============ 意图 → 路由映射表 ============
@@ -81,21 +83,21 @@ interface RouteConfig {
 const ROUTE_MAP: Record<Exclude<IntentType, 'command'>, RouteConfig> = {
   market_query: {
     loop: 'intelligence',
-    free_chain: ['knowledge_base', 'market_data'],
-    pro_short_chain: ['A6_intelligence', 'market_data'],
-    pro_full_chain: ['A6_intelligence', 'market_data'],
+    // 行情查询走 S1 调研步骤（包含 market_data 的能力）
+    free_chain: ['S1_RESEARCH'],
+    pro_short_chain: ['S1_RESEARCH'],
+    pro_full_chain: ['S1_RESEARCH'],
     requires_confirmation: false,
-    fallback_chain: ['market_data'],
+    fallback_chain: ['S1_RESEARCH'],
   },
-  // S系列策略思维链 - 用于策略分析
-  // triple_chain保留用于开发治理场景
+  // S系列策略思维链 - 完整策略制定
   triple_chain: {
     loop: 'execution',
-    free_chain: ['D1_investigator', 'D2_analyst'],
-    pro_short_chain: ['D1_investigator', 'D2_analyst', 'D3_deducer', 'D4_spec_author'],
-    pro_full_chain: ['D1_investigator', 'D2_analyst', 'D3_deducer', 'D4_spec_author', 'Z1_code_scanner', 'Z2_boundary_divider', 'Z3_path_planner', 'Z4_acceptance_designer', 'E1_task_executor', 'E2_tester', 'E3_deployer'],
+    free_chain: ['S1_RESEARCH', 'S2_ANALYSIS'],
+    pro_short_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
+    pro_full_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
     requires_confirmation: true,
-    fallback_chain: ['D1_investigator', 'D2_analyst'],
+    fallback_chain: ['S1_RESEARCH', 'S2_ANALYSIS'],
   },
   // 深度分析 - 使用S系列链
   deep_analysis: {
@@ -128,50 +130,55 @@ const ROUTE_MAP: Record<Exclude<IntentType, 'command'>, RouteConfig> = {
   execute_trade: {
     loop: 'execution',
     free_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
-    pro_short_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
+    pro_short_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
     pro_full_chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
     requires_confirmation: true,
     fallback_chain: ['S1_RESEARCH', 'S2_ANALYSIS'],
   },
   system_config: {
     loop: 'general',
-    free_chain: ['direct_answer'],
-    pro_short_chain: ['direct_answer'],
-    pro_full_chain: ['direct_answer'],
+    // 系统配置类走 S0 快速回答
+    free_chain: ['S0_DIRECT_ANSWER'],
+    pro_short_chain: ['S0_DIRECT_ANSWER'],
+    pro_full_chain: ['S0_DIRECT_ANSWER'],
     requires_confirmation: false,
-    fallback_chain: ['direct_answer'],
+    fallback_chain: ['S0_DIRECT_ANSWER'],
   },
   credits_query: {
     loop: 'general',
-    free_chain: ['direct_answer'],
-    pro_short_chain: ['direct_answer'],
-    pro_full_chain: ['direct_answer'],
+    // 积分查询走 S0 快速回答
+    free_chain: ['S0_DIRECT_ANSWER'],
+    pro_short_chain: ['S0_DIRECT_ANSWER'],
+    pro_full_chain: ['S0_DIRECT_ANSWER'],
     requires_confirmation: false,
-    fallback_chain: ['direct_answer'],
+    fallback_chain: ['S0_DIRECT_ANSWER'],
   },
   artifact_query: {
     loop: 'general',
-    free_chain: ['knowledge_base'],
-    pro_short_chain: ['knowledge_base'],
-    pro_full_chain: ['knowledge_base', 'tavily_search'],
+    // 知识库查询走 S1 调研（S1 内部包含知识库检索能力）
+    free_chain: ['S1_RESEARCH'],
+    pro_short_chain: ['S1_RESEARCH'],
+    pro_full_chain: ['S1_RESEARCH'],
     requires_confirmation: false,
-    fallback_chain: ['direct_answer'],
+    fallback_chain: ['S0_DIRECT_ANSWER'],
   },
   risk_alert_response: {
     loop: 'intelligence',
-    free_chain: ['A6_intelligence', 'A6_alert'],
-    pro_short_chain: ['A6_intelligence', 'A6_alert'],
-    pro_full_chain: ['A6_intelligence', 'A6_alert'],
+    // 风险告警走 S2 分析（快速评估风险级别）
+    free_chain: ['S2_ANALYSIS'],
+    pro_short_chain: ['S2_ANALYSIS'],
+    pro_full_chain: ['S2_ANALYSIS'],
     requires_confirmation: false,
-    fallback_chain: ['direct_answer'],
+    fallback_chain: ['S0_DIRECT_ANSWER'],
   },
   simple_qa: {
     loop: 'general',
-    free_chain: ['direct_answer'],
-    pro_short_chain: ['direct_answer'],
-    pro_full_chain: ['tavily_search', 'direct_answer'],
+    // 简单问答走 S0 快速回答
+    free_chain: ['S0_DIRECT_ANSWER'],
+    pro_short_chain: ['S0_DIRECT_ANSWER'],
+    pro_full_chain: ['S0_DIRECT_ANSWER'],
     requires_confirmation: false,
-    fallback_chain: ['direct_answer'],
+    fallback_chain: ['S0_DIRECT_ANSWER'],
   },
   need_clarification: {
     loop: 'general',
@@ -183,25 +190,40 @@ const ROUTE_MAP: Record<Exclude<IntentType, 'command'>, RouteConfig> = {
   },
   clarification_result: {
     loop: 'general',
-    free_chain: ['direct_answer'],
-    pro_short_chain: ['direct_answer'],
-    pro_full_chain: ['direct_answer'],
+    // 澄清结果走 S0 快速回答
+    free_chain: ['S0_DIRECT_ANSWER'],
+    pro_short_chain: ['S0_DIRECT_ANSWER'],
+    pro_full_chain: ['S0_DIRECT_ANSWER'],
     requires_confirmation: false,
-    fallback_chain: ['direct_answer'],
+    fallback_chain: ['S0_DIRECT_ANSWER'],
+  },
+  // 策略代码开发：S 级策略明确后生成可执行的策略代码
+  // FREE 角色也能执行完整 S3→S4→S5（策略代码开发核心链）
+  developer: {
+    loop: 'execution',
+    free_chain: ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
+    pro_short_chain: ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
+    pro_full_chain: ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
+    requires_confirmation: true,
+    fallback_chain: ['S5_EXECUTE'],
   },
 };
 
 // ============ 命令路由 ============
 
 const COMMAND_ROUTE_MAP: Record<string, { intent: IntentType; chain: string[]; loop: LoopType }> = {
-  '/行情': { intent: 'market_query',    chain: ['market_data'],                     loop: 'intelligence' },
-  '/hq':   { intent: 'market_query',    chain: ['market_data'],                     loop: 'intelligence' },
+  // 行情查询命令 - 走 S1 调研步骤
+  '/行情': { intent: 'market_query', chain: ['S1_RESEARCH'], loop: 'intelligence' },
+  '/hq':   { intent: 'market_query', chain: ['S1_RESEARCH'], loop: 'intelligence' },
   // 使用S系列策略思维链
   '/分析': { intent: 'deep_analysis',   chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],       loop: 'execution' },
   '/fx':   { intent: 'deep_analysis',   chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],       loop: 'execution' },
   '/推演': { intent: 'scenario_sim',    chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'], loop: 'execution' },
   '/验证': { intent: 'strategy_verify', chain: ['S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],                    loop: 'execution' },
   '/开仓': { intent: 'execute_trade',   chain: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'], loop: 'execution' },
+  // 策略代码开发命令
+  '/策略代码': { intent: 'developer', chain: ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'], loop: 'execution' },
+  '/策略': { intent: 'developer', chain: ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'], loop: 'execution' },
 };
 
 // ============ 主路由函数 ============
@@ -283,13 +305,14 @@ export function routeIntent(
   if (intent === 'scenario_sim' && userRole === 'FREE' && (complexity === 'complex' || complexity === 'urgent')) {
     const decision: RoutingDecision = {
       loop_type: routeConfig.loop,
-      chain: ['knowledge_base'],
-      estimated_time_ms: calcTime(['knowledge_base']),
-      credits_cost: calcCredits(['knowledge_base']),
+      // 降级到 S1 调研（S1 内部包含知识库检索能力）
+      chain: ['S1_RESEARCH'],
+      estimated_time_ms: calcTime(['S1_RESEARCH']),
+      credits_cost: calcCredits(['S1_RESEARCH']),
       requires_confirmation: false,
       role_check: 'upgrade_required',
-      fallback_chain: ['knowledge_base'],
-      reasoning: 'Scenario simulation complex requires PRO role, downgraded to knowledge base',
+      fallback_chain: ['S1_RESEARCH'],
+      reasoning: 'Scenario simulation complex requires PRO role, downgraded to S1 research',
     };
     return decision;
   }
@@ -307,9 +330,18 @@ export function routeIntent(
     }
   }
 
-  // 紧急事件处理: 强制使用情报环
+  // 紧急事件处理: 强制使用 S2 分析（快速评估）
   if (complexity === 'urgent') {
-    chain = ['A6_intelligence', 'A6_alert'];
+    chain = ['S2_ANALYSIS'];
+  }
+
+  // Phase 2+: 动态链分流 — 对 PRO 用户的 DYNAMIC_INTENTS 启用 Plan-Execute-Reflect 闭环
+  let isDynamic = false;
+  if (ENABLE_DYNAMIC_CHAIN && userRole === 'PRO' &&
+      DYNAMIC_INTENTS.includes(intent as (typeof DYNAMIC_INTENTS)[number])) {
+    isDynamic = true;
+    // 对动态链使用完整链作为种子；真正的"动态步骤"由 task-manager 中的 runner 产生
+    chain = routeConfig.pro_full_chain;
   }
 
   const decision: RoutingDecision = {
@@ -320,7 +352,10 @@ export function routeIntent(
     requires_confirmation: routeConfig.requires_confirmation,
     role_check: chain.length > 0 ? 'pass' : 'upgrade_required',
     fallback_chain: routeConfig.fallback_chain,
-    reasoning: `${userRole} + ${complexity} + ${thinkingMode} → chain: ${chain.join(' → ')}`,
+    reasoning: isDynamic
+      ? `[DYNAMIC] ${userRole} + ${complexity} + ${thinkingMode} → plan-execute-reflect 闭环`
+      : `${userRole} + ${complexity} + ${thinkingMode} → chain: ${chain.join(' → ')}`,
+    is_dynamic: isDynamic,
   };
 
   emitMonitorEvent({
@@ -345,12 +380,12 @@ export function routeIntent(
 function getDefaultRoute(intent: IntentType): RoutingDecision {
   return {
     loop_type: 'general',
-    chain: ['direct_answer'],
+    chain: ['S0_DIRECT_ANSWER'],
     estimated_time_ms: 2000,
     credits_cost: 5,
     requires_confirmation: false,
     role_check: 'pass',
-    fallback_chain: ['direct_answer'],
+    fallback_chain: ['S0_DIRECT_ANSWER'],
     reasoning: `Unknown intent "${intent}", defaulting to direct answer`,
   };
 }
@@ -366,14 +401,14 @@ function calcTime(chain: string[]): number {
 // ============ 降级路由 ============
 
 export function downgradeChain(chain: string[]): string[] {
-  if (!chain || chain.length === 0) return ['direct_answer'];
+  if (!chain || chain.length === 0) return ['S0_DIRECT_ANSWER'];
 
   const available = chain.filter(step => CHAIN_STEPS[step]);
-  if (available.length === 0) return ['direct_answer'];
+  if (available.length === 0) return ['S0_DIRECT_ANSWER'];
   if (available.length === chain.length) return chain;
 
   // 部分步骤不可用，降级到可用步骤
-  return available.length > 0 ? available : ['direct_answer'];
+  return available.length > 0 ? available : ['S0_DIRECT_ANSWER'];
 }
 
 // ============ 获取循环颜色 ============
@@ -399,54 +434,66 @@ export function getLoopLabel(loop: LoopType): string {
 // ============ 链名统一 ============
 
 export function normalizeChainName(name: string): string {
-  // 旧名 → 新名映射
+  // 旧名 → 新名映射（Phase 0: 清理 A系列和旧 utility 步骤的别名）
+  // 注意：D-Z-E 系列已在 dev-chain 模块中独立管理，此处只处理 S 系列的向后兼容
   const aliasMap: Record<string, string> = {
-    'A1_research': 'A1_research',
-    'A2_analysis': 'A2_analysis',
-    'A2_advisor': 'A2_analysis',
-    'A3_simulation': 'A3_simulation',
-    'A3_strategy': 'A3_simulation',
-    'A4_validation': 'A4_validation',
-    'A5_execution': 'A5_execution',
-    'A6_intel': 'A6_intelligence',
-    'A6_intelligence': 'A6_intelligence',
-    'A7_gate': 'A9_exit',
-    'market_data': 'market_data',
-    'direct_answer': 'direct_answer',
+    // 旧 utility 步骤名 → S 系列
+    'knowledge_base': 'S1_RESEARCH',
+    'tavily_search': 'S1_RESEARCH',
+    'market_data': 'S1_RESEARCH',
+    'direct_answer': 'S0_DIRECT_ANSWER',
+    // 旧 A 系列别名（兼容性保留，最终应删除）
+    'A1_research': 'S1_RESEARCH',
+    'A2_analysis': 'S2_ANALYSIS',
+    'A2_advisor': 'S2_ANALYSIS',
+    'A3_simulation': 'S3_DESIGN',
+    'A3_strategy': 'S3_DESIGN',
+    'A4_validation': 'S4_VALIDATE',
+    'A5_execution': 'S5_EXECUTE',
+    'A6_intel': 'S2_ANALYSIS',
+    'A6_intelligence': 'S2_ANALYSIS',
+    'A6_alert': 'S2_ANALYSIS',
+    'A7_gate': 'S5_EXECUTE',
+    'A7_practice': 'S5_EXECUTE',
+    'A8_verification': 'S4_VALIDATE',
+    'A9_exit': 'S5_EXECUTE',
   };
   return aliasMap[name] || name;
 }
 
-// ============ D/Z/E 步进确认机制 ============
+// ============ S 系列步进确认机制 ============
+//
+// 注意：S 系列的高风险步骤（S3_DESIGN, S4_VALIDATE, S5_EXECUTE）需要用户确认
+// developer 意图 → S3→S4→S5，同样遵循这个确认机制
+// D-Z-E 系列（后端完整开发链）不在前端主链中，由 6-Trading 模块独立管理
 
 /**
- * 判断链中是否包含需要步进确认的步骤（D/Z/E系列）
- * D系列和Z系列每步完成后需要用户确认
- * E系列不需要每步确认（执行模式）
+ * 判断链中是否包含需要步进确认的步骤
+ * S系列：S3_DESIGN, S4_VALIDATE, S5_EXECUTE 需要确认
  */
 export function requiresStepConfirmation(chain: string[]): boolean {
-  return chain.some(step => {
-    const stepDef = CHAIN_STEPS[step];
-    return stepDef?.chain === 'D' || stepDef?.chain === 'Z';
-  });
+  // S 系列中需要确认的高风险步骤
+  const S_CONFIRM_STEPS = ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
+  return chain.some(step => S_CONFIRM_STEPS.includes(step));
 }
 
 /**
- * 判断是否为E系列步骤（执行链，不需要每步确认）
+ * 判断是否为可以直接执行的步骤（不需要用户确认）
+ * - S0/S1/S2：直接执行
+ * - S3/S4/S5：高风险步骤，需要确认
  */
 export function isExecutionChainStep(step: string): boolean {
-  const stepDef = CHAIN_STEPS[step];
-  return stepDef?.chain === 'E';
+  const CONFIRM_STEPS = ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
+  // S 系列的高风险步骤，或未识别的步骤，都需要走确认流程
+  if (CONFIRM_STEPS.includes(step)) return false;
+  return true;
 }
 
 /**
- * 获取链中需要确认的步骤（不包括E系列）
+ * 获取链中需要确认的步骤（仅 S 系列）
  */
 export function getConfirmationSteps(chain: string[]): string[] {
-  return chain.filter(step => {
-    const stepDef = CHAIN_STEPS[step];
-    return stepDef?.chain === 'D' || stepDef?.chain === 'Z';
-  });
+  return chain.filter(step => ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'].includes(step));
 }
 
 /**
@@ -454,16 +501,14 @@ export function getConfirmationSteps(chain: string[]): string[] {
  */
 export function getNextConfirmationStep(chain: string[], currentIndex: number): number {
   for (let i = currentIndex + 1; i < chain.length; i++) {
-    const stepDef = CHAIN_STEPS[chain[i]];
-    if (stepDef?.chain === 'D' || stepDef?.chain === 'Z') {
-      return i;
-    }
+    const step = chain[i];
+    if (['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'].includes(step)) return i;
   }
-  return -1; // 没有更多需要确认的步骤
+  return -1;
 }
 
 /**
- * 生成步进确认提示语
+ * 生成步进确认提示语（S 系列的通用提示，不再提及 D-Z-E）
  */
 export function generateStepConfirmationPrompt(
   currentStep: string,
@@ -486,8 +531,8 @@ export function generateStepConfirmationPrompt(
   const nextChainTag = nextStepDef?.chain || '';
 
   return isZh
-    ? `✅ **${currentLabel} 完成**\n\nD-Z-E 核心链路已启用，**每步需您确认后方可继续**。\n\n请选择下一步操作：\n- **(1)** 进入下一步：**${nextLabel}** (${nextChainTag}链)\n- **(2)** 当前方案已满意，直接落地执行\n\n⚠️ **注意：系统禁止跳步。如想提前落地，请选择 (2)。**`
-    : `✅ **${currentLabel} Complete**\n\nD-Z-E core chain active, **confirmation required for each step.**\n\nChoose next action:\n- **(1)** Proceed to: **${nextLabel}** (${nextChainTag} chain)\n- **(2)** Satisfied with current plan, finalize and execute\n\n⚠️ **Note: Step skipping is not allowed. Choose (2) to finalize early.**`;
+    ? `✅ **${currentLabel} 完成**\n\n策略开发链已启用，**高风险步骤需要您确认后方可继续**。\n\n请选择下一步操作：\n- **(1)** 进入下一步：**${nextLabel}** (${nextChainTag}链)\n- **(2)** 当前方案已满意，直接落地执行\n\n⚠️ **注意：系统禁止跳步。如想提前落地，请选择 (2)。**`
+    : `✅ **${currentLabel} Complete**\n\nStrategy dev chain active, **confirmation required for high-risk steps.**\n\nChoose next action:\n- **(1)** Proceed to: **${nextLabel}** (${nextChainTag} chain)\n- **(2)** Satisfied with current plan, finalize and execute\n\n⚠️ **Note: Step skipping is not allowed. Choose (2) to finalize early.**`;
 }
 
 /**

@@ -45,40 +45,53 @@ const QWEN_MODELS = [
 type RightPanelType = 'analysis' | 'market' | 'signal' | 'position' | 'api' | 'trading' | 'strategy' | 'communication' | 'llm' | 'report' | 'monitor' | 'memory' | 'notebook';
 
 // 链路步骤定义 (v2 三闭环架构)
+// Phase 0: 统一使用 S 系列，A 系列已迁移到后端
 const CHAIN_STEP_MAP: Record<string, { label: string; icon: string; loop?: string }> = {
-  'A1_research':    { label: '市场侦察', icon: '🔍', loop: 'execution' },
-  'A2_analysis':    { label: '深度分析', icon: '🧠', loop: 'execution' },
-  'A3_simulation':  { label: '情景推演', icon: '🎲', loop: 'execution' },
-  'A4_validation':  { label: '方案验证', icon: '✅', loop: 'execution' },
-  'A5_execution':   { label: '决策执行', icon: '⚡', loop: 'execution' },
-  'A9_exit':        { label: '离场评估', icon: '🚪', loop: 'execution' },
-  'A6_intelligence':{ label: '情报监控', icon: '📡', loop: 'intelligence' },
-  'A6_alert':       { label: '情报告警', icon: '⚠️', loop: 'intelligence' },
-  'A7_practice':    { label: '实践记录', icon: '📝', loop: 'governance' },
-  'A8_verification':{ label: '知行验证', icon: '🔮', loop: 'governance' },
-  'market_data':    { label: '行情数据', icon: '📊', loop: 'intelligence' },
-  'knowledge_base': { label: '知识库', icon: '📚', loop: 'general' },
-  'tavily_search':  { label: '联网搜索', icon: '🌐', loop: 'general' },
-  'direct_answer':  { label: '直接回答', icon: '💬', loop: 'general' },
-  // 旧名兼容 (向后兼容)
-  'A6_intel':       { label: '情报更新', icon: '📡', loop: 'intelligence' },
-  'A7_gate':        { label: '风控审查', icon: '🛡️', loop: 'governance' },
+  // S 系列策略思维链（前端主链）
+  'S0_DIRECT_ANSWER': { label: 'S0 快速回答', icon: '💬', loop: 'general' },
+  'S1_RESEARCH':       { label: 'S1 调研', icon: '🔍', loop: 'execution' },
+  'S2_ANALYSIS':       { label: 'S2 分析', icon: '🧠', loop: 'execution' },
+  'S3_DESIGN':         { label: 'S3 设计', icon: '📐', loop: 'execution' },
+  'S4_VALIDATE':       { label: 'S4 验证', icon: '✅', loop: 'execution' },
+  'S5_EXECUTE':        { label: 'S5 执行', icon: '⚡', loop: 'execution' },
+
+  // A 系列兼容映射（向后兼容，后端技能链）
+  'A1_research':    { label: 'S1 调研（后端）', icon: '🔍', loop: 'execution' },
+  'A2_analysis':    { label: 'S2 分析（后端）', icon: '🧠', loop: 'execution' },
+  'A3_simulation':  { label: 'S3 设计（后端）', icon: '🎲', loop: 'execution' },
+  'A4_validation':  { label: 'S4 验证（后端）', icon: '✅', loop: 'execution' },
+  'A5_execution':   { label: 'S5 执行（后端）', icon: '⚡', loop: 'execution' },
+  'A9_exit':        { label: 'S5 执行（离场）', icon: '🚪', loop: 'execution' },
+  'A6_intelligence':{ label: 'S2 分析（情报）', icon: '📡', loop: 'intelligence' },
+  'A6_alert':       { label: 'S2 分析（告警）', icon: '⚠️', loop: 'intelligence' },
+  'A6_intel':       { label: 'S2 分析（情报）', icon: '📡', loop: 'intelligence' },
+  'A7_practice':    { label: 'S5 执行（实践）', icon: '📝', loop: 'governance' },
+  'A7_gate':        { label: 'S5 执行（风控）', icon: '🛡️', loop: 'governance' },
+  'A8_verification':{ label: 'S4 验证（知行）', icon: '🔮', loop: 'governance' },
+
+  // 旧 utility 步骤兼容映射
+  'market_data':    { label: 'S1 调研（行情）', icon: '📊', loop: 'intelligence' },
+  'knowledge_base': { label: 'S1 调研（知识库）', icon: '📚', loop: 'general' },
+  'tavily_search': { label: 'S1 调研（联网）', icon: '🌐', loop: 'general' },
+  'direct_answer': { label: 'S0 快速回答', icon: '💬', loop: 'general' },
 };
 
-// 意图→默认链路映射 (v2 对齐智能路由)
+// 意图→默认链路映射 (v2 对齐智能路由 + S系列策略思维链)
+// Phase 0: 统一使用 S 系列
 const INTENT_CHAIN_MAP: Record<string, string[]> = {
-  'market_query':    ['A6_intelligence', 'market_data'],
-  'deep_analysis':   ['A1_research', 'A2_analysis'],
-  'scenario_sim':    ['A1_research', 'A2_analysis', 'A3_simulation'],
-  'strategy_verify': ['A4_validation'],
-  'execute_trade':   ['A4_validation', 'A5_execution', 'A9_exit'],
-  'deep_full':       ['A1_research', 'A2_analysis', 'A3_simulation', 'A4_validation'],
-  'simple_qa':       ['direct_answer'],
-  'command':         ['market_data'],
-  'system_config':   ['direct_answer'],
-  'credits_query':   ['direct_answer'],
-  'artifact_query':  ['knowledge_base'],
-  'risk_alert_response': ['A6_intelligence', 'A6_alert'],
+  'market_query':    ['S1_RESEARCH'],
+  'deep_analysis':   ['S1_RESEARCH', 'S2_ANALYSIS'],
+  'scenario_sim':    ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'],
+  'strategy_verify': ['S4_VALIDATE'],
+  'execute_trade':   ['S4_VALIDATE', 'S5_EXECUTE'],
+  'triple_chain':    ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
+  'deep_full':       ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'],
+  'simple_qa':       ['S0_DIRECT_ANSWER'],
+  'command':         ['S1_RESEARCH'],
+  'system_config':   ['S0_DIRECT_ANSWER'],
+  'credits_query':   ['S0_DIRECT_ANSWER'],
+  'artifact_query':  ['S1_RESEARCH'],
+  'risk_alert_response': ['S2_ANALYSIS'],
 };
 
 // API配置类型
@@ -200,6 +213,9 @@ export default function ChatPage() {
     thinking_mode?: string;
     trade_task_id?: string;
     trade_confirmed?: boolean;
+    task_id?: string;       // 📌 任务 ID，用于结果去重
+    in_flight?: boolean;    // 📌 标识是否进行中（thinking 消息）
+    artifacts?: Array<{ file: string; type: string; chain_phase: string }>; // 📌 生成的策略产物
     step_confirmation?: {
       current_step: string;
       next_step: string | null;
@@ -217,7 +233,7 @@ export default function ChatPage() {
   }>>([
     {
       role: "assistant",
-      content: "你好！我是 Dream Gateway 智能交易助手。我可以帮你分析市场、制定策略、管理交易。\n\n⚡ **快速思考**：轻量级，即时响应\n🧠 **深度思考**：完整A1-A5闭环深度调研\n\n🔗 **桥接模式**：中台即时执行，秒级响应\n💬 **直接模式**：LLM/Mock即时对话\n\n⚠️ 交易任务需确认执行时间，不会自动执行\n\n试试输入「/行情」或「分析BTC」",
+      content: "你好！我是 Dream Gateway 智能交易助手。我可以帮你分析市场、制定策略、管理交易。\n\n⚡ **智能思考**：轻量级 (S1→S2) 即时响应\n🧠 **深度思考**：完整 S1→S2→S3→S4 闭环深度调研\n\n🔗 **桥接模式**：中台即时执行，秒级响应\n💬 **直接模式**：LLM/Mock即时对话\n\n⚠️ 交易任务需确认执行时间，不会自动执行\n\n试试输入「/行情」或「分析BTC」",
     },
   ]);
 
@@ -384,6 +400,11 @@ export default function ChatPage() {
   const [marketError, setMarketError] = useState<string | null>(null);
   const marketIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reportIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // 🔒 同步任务锁：防止快速双击/重入导致重复提交 (state setIsLoading 是异步的，仅靠它无法防重入)
+  const submittingRef = useRef<boolean>(false);
+  // 📌 最近一次提交的 user message 指纹 + 任务 ID，用于去重 (同样的消息短时间内只触发一次)
+  const lastSubmitRef = useRef<{ message: string; ts: number; taskId?: string } | null>(null);
 
   // 研报状态
   const [reportList, setReportList] = useState<ReportMeta[]>([]);
@@ -814,10 +835,17 @@ export default function ChatPage() {
   /** 根据意图+思考模式初始化分析链路 */
   const initAnalysisChain = (intent: string, mode: 'quick' | 'deep') => {
     let steps: string[];
-    if (mode === 'deep' && (intent === 'deep_analysis' || intent === 'scenario_sim')) {
-      steps = ['A1_research', 'A2_analysis', 'A3_simulation', 'A4_validation'];
+    if (mode === 'deep' && (intent === 'deep_analysis' || intent === 'scenario_sim' || intent === 'triple_chain')) {
+      // 深度模式：完整 S 系列链
+      if (intent === 'triple_chain') {
+        steps = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
+      } else if (intent === 'scenario_sim') {
+        steps = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'];
+      } else {
+        steps = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'];
+      }
     } else {
-      steps = INTENT_CHAIN_MAP[intent] || ['A1_research'];
+      steps = INTENT_CHAIN_MAP[intent] || ['S1_RESEARCH'];
     }
     
     const chain = steps.map((id, idx) => ({
@@ -904,7 +932,23 @@ export default function ChatPage() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    // 🔒 同步锁：防止快速重复点击/重入 (setIsLoading 异步更新不足以防重入)
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+
     const userMessage = input;
+
+    // 📌 短时间窗口 (1500ms) 内相同消息视为重复提交，直接忽略
+    const now = Date.now();
+    if (
+      lastSubmitRef.current &&
+      lastSubmitRef.current.message === userMessage &&
+      now - lastSubmitRef.current.ts < 1500
+    ) {
+      submittingRef.current = false;
+      return;
+    }
+    lastSubmitRef.current = { message: userMessage, ts: now };
 
     // 🔍 检测用户是否在回复步进确认（D/Z/E 思维链选择）
     const lastAssistantMsg = messages[messages.length - 1];
@@ -927,17 +971,31 @@ export default function ChatPage() {
       }
     }
 
+    // 🛡️ 二次防御：若 messages 末尾已有相同内容的 user 消息 (state更新延迟场景)，跳过添加
+    if (messages.length > 0) {
+      const tail = messages[messages.length - 1];
+      if (tail.role === 'user' && tail.content === userMessage) {
+        submittingRef.current = false;
+        return;
+      }
+    }
+
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setInput("");
     setIsLoading(true);
     resetAnalysisChain(); // 清除上一轮分析链路
 
-    if (workbuddyMode) {
-      // ========== WorkBuddy 异步桥接模式 ==========
-      await handleWorkbuddyTask(userMessage);
-    } else {
-      // ========== 原有同步Mock/LLM模式 ==========
-      await handleDirectChat(userMessage);
+    try {
+      if (workbuddyMode) {
+        // ========== WorkBuddy 异步桥接模式 ==========
+        await handleWorkbuddyTask(userMessage);
+      } else {
+        // ========== 原有同步Mock/LLM模式 ==========
+        await handleDirectChat(userMessage);
+      }
+    } finally {
+      // 🔓 释放同步锁，isLoading 也会在子流程的 finally 中重置
+      submittingRef.current = false;
     }
   };
 
@@ -1083,19 +1141,32 @@ export default function ChatPage() {
    * 回退：如果返回processing状态，仍然走轮询逻辑
    */
   const handleWorkbuddyTask = async (userMessage: string) => {
-    const thinkingText = thinkingMode === 'quick' 
-      ? "⏳ ⚡ 任务已发送，中台即时执行中..." 
+    // 📌 幂等保护：若 messages 末尾已经是 thinking 或同样的任务结果，短路返回
+    const tail = messages[messages.length - 1];
+    if (tail && tail.role === 'assistant' && (tail.intent === 'thinking' || (tail as any).in_flight)) {
+      console.warn('[handleWorkbuddyTask] 检测到正在进行的任务消息，忽略重复调用');
+      return;
+    }
+
+    const thinkingText = thinkingMode === 'quick'
+      ? "⏳ ⚡ 任务已发送，中台即时执行中..."
       : "⏳ 🧠 深度任务已发送，中台即时执行中...";
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: thinkingText, intent: "thinking" },
-    ]);
+
+    // 🛡️ 防御性添加 thinking 消息：用 setMessages 回调式更新，避免闭包旧值问题
+    setMessages((prev) => {
+      // 如果最后一条已经是 thinking，则不再追加
+      const last = prev[prev.length - 1];
+      if (last && last.role === 'assistant' && last.intent === 'thinking') {
+        return prev;
+      }
+      return [...prev, { role: "assistant", content: thinkingText, intent: "thinking", in_flight: true } as any];
+    });
 
     // 🔗 初始化分析链路追踪
     initAnalysisChain('deep_analysis', thinkingMode);
     // 深度模式启动分步进度模拟
     if (thinkingMode === 'deep') {
-      const deepSteps = ['A1_research', 'A2_analysis', 'A3_simulation', 'A4_validation'];
+      const deepSteps = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'];
       simulateDeepProgress(deepSteps);
     }
 
@@ -1138,7 +1209,13 @@ export default function ChatPage() {
           const executedChain = summary.chain_executed as string[];
           setAnalysisChain(prev => prev.map(step => {
             if (executedChain.includes(step.id)) {
-              const artifact = artifacts?.find((a: any) => a.chain_phase === step.id.replace('_research','').replace('_analysis','').replace('_simulation','').replace('_validation','').replace('_execution','').replace('_intel',''));
+              // artifact 匹配：同时支持大小写和带/不带前缀
+              const stepIdLower = step.id.toLowerCase();
+              const stepIdNormalized = step.id.replace(/^S\d+_/, '').toLowerCase();
+              const artifact = artifacts?.find((a: any) => {
+                const phase = String(a.chain_phase || '').toLowerCase();
+                return phase === stepIdLower || phase === stepIdNormalized;
+              });
               return {
                 ...step,
                 status: 'completed' as const,
@@ -1168,21 +1245,56 @@ export default function ChatPage() {
           resultContent += `\n🔗 执行链路: ${summary.chain_executed?.join(' → ') || 'N/A'}`;
         }
 
+        const isSChain = summary?.chain_executed && summary.chain_executed.some((s: string) => s.startsWith('S'));
+        
         setMessages((prev) => {
           const filtered = prev.filter((m) => m.intent !== "thinking");
-          return [
-            ...filtered,
-            {
-              role: "assistant",
-              content: resultContent,
-              intent: isTrade ? 'execute_trade' : intentType,
-              confidence: createData.data.intent?.confidence,
-              thinking_mode: thinkingMode,
-              chain: summary?.chain_executed || [],
-              trade_task_id: isTrade ? taskId : undefined,
-              trade_confirmed: false,
-            },
-          ];
+          // 📌 去重：若已存在同 taskId 的结果消息，更新而非新增
+          const existingIdx = filtered.findIndex((m: any) => m.task_id === taskId);
+          const newMsg = {
+            role: "assistant",
+            content: resultContent,
+            intent: isTrade ? 'execute_trade' : intentType,
+            confidence: createData.data.intent?.confidence,
+            thinking_mode: thinkingMode,
+            chain: summary?.chain_executed || [],
+            task_id: taskId,
+            artifacts: artifacts.length > 0 ? artifacts : undefined,
+            trade_task_id: isTrade ? taskId : undefined,
+            trade_confirmed: false,
+            strategyChain: isSChain ? {
+              scope: `${createData.data.intent?.entities?.symbol || 'BTC'} 策略分析`,
+              currentStep: summary?.chain_executed?.[summary.chain_executed.length - 1] || null,
+              steps: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'].map((stepId, idx) => {
+                const isExecuted = summary?.chain_executed?.includes(stepId);
+                const isCurrent = stepId === summary?.chain_executed?.[summary.chain_executed.length - 1];
+                let status = 'pending';
+                if (isExecuted && !isCurrent) status = 'done';
+                else if (isCurrent) status = 'active';
+                const nameMap: Record<string, string> = {
+                  'S1_RESEARCH': 'S1 调研',
+                  'S2_ANALYSIS': 'S2 分析',
+                  'S3_DESIGN': 'S3 设计',
+                  'S4_VALIDATE': 'S4 验证',
+                  'S5_EXECUTE': 'S5 执行',
+                };
+                return {
+                  id: stepId,
+                  number: idx + 1,
+                  name: nameMap[stepId] || stepId,
+                  status,
+                };
+              }),
+              complexity: (summary?.chain_executed?.length || 0) <= 2 ? 'quick' : (summary?.chain_executed?.length || 0) <= 3 ? 'standard' : 'deep',
+            } : undefined,
+          };
+          if (existingIdx >= 0) {
+            // 更新已存在的消息
+            const next = [...filtered];
+            next[existingIdx] = { ...next[existingIdx], ...newMsg };
+            return next;
+          }
+          return [...filtered, newMsg];
         });
         setIsLoading(false);
         return;
@@ -1341,17 +1453,23 @@ export default function ChatPage() {
 
             setMessages((prev) => {
               const filtered = prev.filter((m) => m.intent !== "thinking");
-              return [
-                ...filtered,
-                {
-                  role: "assistant",
-                  content: resultContent,
-                  intent: intentType,
-                  confidence: pollData.data.intent?.confidence,
-                  thinking_mode: thinkingMode,
-                  chain: summary?.chain_executed || [],
-                },
-              ];
+              // 📌 去重：若已存在同 taskId 的结果消息，更新而非新增
+              const existingIdx = filtered.findIndex((m: any) => m.task_id === taskId);
+              const newMsg = {
+                role: "assistant",
+                content: resultContent,
+                intent: intentType,
+                confidence: pollData.data.intent?.confidence,
+                thinking_mode: thinkingMode,
+                chain: summary?.chain_executed || [],
+                task_id: taskId,
+              };
+              if (existingIdx >= 0) {
+                const next = [...filtered];
+                next[existingIdx] = { ...next[existingIdx], ...newMsg };
+                return next;
+              }
+              return [...filtered, newMsg];
             });
             setIsLoading(false);
             return;
@@ -1360,14 +1478,20 @@ export default function ChatPage() {
           if (pollStatus === 'failed') {
             setMessages((prev) => {
               const filtered = prev.filter((m) => m.intent !== "thinking");
-              return [
-                ...filtered,
-                {
-                  role: "assistant",
-                  content: `❌ 任务执行失败\n\n📋 任务ID: ${taskId}\n💥 错误: ${pollData.data.error || '未知错误'}`,
-                  intent: "error",
-                },
-              ];
+              // 📌 去重：若已存在同 taskId 的错误消息，更新而非新增
+              const existingIdx = filtered.findIndex((m: any) => m.task_id === taskId);
+              const newMsg = {
+                role: "assistant",
+                content: `❌ 任务执行失败\n\n📋 任务ID: ${taskId}\n💥 错误: ${pollData.data.error || '未知错误'}`,
+                intent: "error",
+                task_id: taskId,
+              };
+              if (existingIdx >= 0) {
+                const next = [...filtered];
+                next[existingIdx] = { ...next[existingIdx], ...newMsg };
+                return next;
+              }
+              return [...filtered, newMsg];
             });
             setIsLoading(false);
             return;
@@ -1426,7 +1550,7 @@ export default function ChatPage() {
    */
   const handleDirectChat = async (userMessage: string) => {
     const thinkingText = thinkingMode === 'quick' 
-      ? "⏳ ⚡ 快速思考中..." 
+      ? "⏳ ⚡ 智能思考中..." 
       : "⏳ 🧠 深度思考中...";
     setMessages((prev) => [
       ...prev,
@@ -1436,7 +1560,7 @@ export default function ChatPage() {
     // 🔗 初始化分析链路追踪
     initAnalysisChain('deep_analysis', thinkingMode);
     if (thinkingMode === 'deep') {
-      const deepSteps = ['A1_research', 'A2_analysis', 'A3_simulation', 'A4_validation'];
+      const deepSteps = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'];
       simulateDeepProgress(deepSteps);
     }
 
@@ -1497,6 +1621,7 @@ export default function ChatPage() {
             chain: result.data?.chain || [],
             thinking_mode: result.data?.thinking_mode || thinkingMode,
             chainState: result.data?.chainState,
+            strategyChain: result.data?.strategyChainState,
             stepProgress: result.data?.stepProgress,
             market: result.data?.market,
           },
@@ -4361,7 +4486,7 @@ export default function ChatPage() {
                 <div className="text-xs text-[#8a8a8a] mb-1">暂无进行中的分析</div>
                 <div className="text-[10px] text-[#71717a]">发送消息后，分析进度将在此实时显示</div>
                 <div className="text-[10px] text-[#71717a] mt-1">
-                  ⚡快速: A1→A2 | 🧠深度: A1→A2→A3→A4
+                  ⚡快速: S1→S2 | 🧠深度: S1→S2→S3→S4 | 🎯完整: S1→S2→S3→S4→S5
                 </div>
               </div>
             )}
@@ -4648,9 +4773,9 @@ export default function ChatPage() {
                   ? 'bg-[#0066ff] text-white shadow-lg shadow-blue-500/20'
                   : 'text-[#8a8a8a] hover:text-[#e0e0e0]'
               }`}
-              title="快速思考：轻量级，直接调用SKILL"
+              title="智能思考：轻量级，直接调用SKILL"
             >
-              ⚡ 快速思考
+              ⚡ 智能思考
             </button>
             <button
               onClick={() => setThinkingMode('deep')}
@@ -4659,7 +4784,7 @@ export default function ChatPage() {
                   ? 'bg-[#8b5cf6] text-white shadow-lg shadow-purple-500/20'
                   : 'text-[#8a8a8a] hover:text-[#e0e0e0]'
               }`}
-              title="深度思考：完整A1-A5闭环"
+              title="深度思考：完整S1-S5闭环"
             >
               🧠 深度思考
             </button>
@@ -4731,7 +4856,28 @@ export default function ChatPage() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <AutoConfigBubble />
           <AutoConfigSummary />
-          {messages.map((msg, i) => (
+          {/* 🛡️ 渲染层去重：1) 同 taskId 保留最新；2) 连续重复 user 消息去重；3) 永远只保留最后一个 thinking */}
+          {(() => {
+            const dedupByTaskId = (() => {
+              const map = new Map<string, number>();
+              messages.forEach((m: any, idx) => {
+                if (m?.task_id) {
+                  map.set(m.task_id, idx);
+                }
+              });
+              return messages.filter((m: any, idx: number) => !m?.task_id || map.get(m.task_id) === idx);
+            })();
+            // 连续 user 消息去重 (相同 content)
+            const dedupUser = dedupByTaskId.filter((m, idx, arr) => {
+              if (idx === 0) return true;
+              const prev = arr[idx - 1];
+              if (m.role === 'user' && prev?.role === 'user' && m.content === prev.content) return false;
+              return true;
+            });
+            // thinking 消息只保留最后一个
+            const lastThinkingIdx = dedupUser.map((m: any) => m.intent).lastIndexOf('thinking');
+            const finalMessages = dedupUser.filter((m: any, idx) => m.intent !== 'thinking' || idx === lastThinkingIdx);
+            return finalMessages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[80%] px-4 py-3 rounded-lg ${
@@ -4817,8 +4963,355 @@ export default function ChatPage() {
                     </div>
                   );
                 })()}
-                {/* 🔗 D-Z-E 思维链可视化 */}
-                {msg.role === "assistant" && ((msg as any).chainState || (msg as any).chain_state) && ((msg as any).chainState?.phases || (msg as any).chain_state?.phases) && (() => {
+                {/* 📎 生成的策略产物卡片 (S系列核心产出) */}
+                {msg.role === "assistant" && (msg as any).artifacts && (msg as any).artifacts.length > 0 && (() => {
+                  const artifacts: Array<{ file: string; type: string; chain_phase: string }> = (msg as any).artifacts;
+                  const phaseNameMap: Record<string, { name: string; icon: string; desc: string }> = {
+                    S1_RESEARCH: { name: 'S1 调研报告', icon: '🔍', desc: '市场数据 & 宏观环境' },
+                    S2_ANALYSIS: { name: 'S2 分析报告', icon: '🧠', desc: '多维度技术分析' },
+                    S3_DESIGN: { name: 'S3 策略方案', icon: '📐', desc: '入场出场点位' },
+                    S4_VALIDATE: { name: 'S4 验证报告', icon: '✅', desc: '回测 & 风险评估' },
+                    S5_EXECUTE: { name: 'S5 执行计划', icon: '⚡', desc: '下单 & 跟踪计划' },
+                    A2: { name: '分析报告', icon: '🧠', desc: '深度分析' },
+                    A6: { name: '情报简报', icon: '🔍', desc: '市场情报' },
+                  };
+                  return (
+                    <div className="mt-3 pt-3 border-t border-[#2a2a2a]">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-[11px] text-[#06b6d4] font-semibold flex items-center gap-1.5">
+                          📎 生成的策略产物 <span className="text-[#71717a] font-normal">({artifacts.length})</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // 打开全部产物列表弹窗
+                            const event = new CustomEvent('show-artifacts', { detail: { artifacts, taskId: (msg as any).task_id } });
+                            window.dispatchEvent(event);
+                          }}
+                          className="text-[10px] text-[#06b6d4] hover:underline"
+                        >
+                          全部查看 →
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {artifacts.map((art, idx) => {
+                          const info = phaseNameMap[art.chain_phase] || { name: art.chain_phase, icon: '📄', desc: art.type };
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-2 px-2.5 py-2 bg-gradient-to-r from-cyan-500/10 to-purple-500/5 border border-cyan-500/30 rounded-lg hover:border-cyan-500/60 transition group cursor-pointer"
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch(`/api/artifact?file=${encodeURIComponent(art.file)}`);
+                                  const data = await res.json();
+                                  if (data.success && data.content) {
+                                    alert(`📄 ${art.file}\n\n${data.content.slice(0, 2000)}${data.content.length > 2000 ? '\n\n...(更多内容)' : ''}`);
+                                  } else {
+                                    alert(`⚠️ 产物文件暂未生成\n\n文件名: ${art.file}\n类型: ${art.type}\n阶段: ${art.chain_phase}\n\n请稍后再试或查看消息内容。`);
+                                  }
+                                } catch (e) {
+                                  alert(`❌ 读取失败: ${e instanceof Error ? e.message : '未知错误'}`);
+                                }
+                              }}
+                            >
+                              <div className="text-lg flex-shrink-0">{info.icon}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-semibold text-[#06b6d4] truncate">{info.name}</div>
+                                <div className="text-[10px] text-[#71717a] truncate">{info.desc} · {art.file}</div>
+                              </div>
+                              <div className="text-[10px] text-[#71717a] group-hover:text-[#06b6d4] flex-shrink-0">
+                                点击查看 →
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {msg.role === "assistant" && ((msg as any).strategyChain || (msg as any).strategy_chain) && ((msg as any).strategyChain?.steps || (msg as any).strategy_chain?.steps) && (() => {
+                  const sc = (msg as any).strategyChain || (msg as any).strategy_chain;
+                  const stepInfo: Record<string, { name: string; desc: string }> = {
+                    S1_RESEARCH: { name: "调研", desc: "市场数据收集" },
+                    S2_ANALYSIS: { name: "分析", desc: "多维度分析" },
+                    S3_DESIGN: { name: "设计", desc: "策略方案制定" },
+                    S4_VALIDATE: { name: "验证", desc: "回测风险评估" },
+                    S5_EXECUTE: { name: "执行", desc: "执行计划跟踪" },
+                  };
+                  const totalDone = sc.steps.filter((s: any) => s.status === 'done' || s.status === 'skipped').length;
+                  const total = sc.steps.length;
+                  
+                  return (
+                    <div className="mt-3 pt-3 border-t border-[#2a2a2a]">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-[11px] text-[#a855f7]">🎯 S系列策略思维链</div>
+                        <div className="text-[9px] text-[#71717a]">
+                          {totalDone}/{total} · {sc.complexity === 'quick' ? '快速' : sc.complexity === 'standard' ? '标准' : '深度'}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        {sc.steps.map((step: any, idx: number) => {
+                          const info = stepInfo[step.id] || { name: step.id, desc: '' };
+                          const isLast = idx === sc.steps.length - 1;
+                          const isCurrent = sc.currentStep === step.id;
+                          const isDone = step.status === 'done' || step.status === 'skipped';
+                          const isPending = step.status === 'pending';
+                          return (
+                            <div key={step.id} className="flex items-center" style={{ flex: isLast ? 0 : 1 }}>
+                              <div 
+                                className={`w-10 h-10 rounded-full flex flex-col items-center justify-center text-xs flex-shrink-0 transition-all ${
+                                  isCurrent ? 'bg-purple-500/30 border-2 border-purple-500 text-white' :
+                                  isDone ? 'bg-green-500/20 border-2 border-green-500/50 text-green-400' :
+                                  isPending ? 'bg-[#1a1a1a] border-2 border-[#2a2a2a] text-[#666]' :
+                                  'bg-[#1a1a1a] border-2 border-[#2a2a2a] text-[#999]'
+                                }`}
+                              >
+                                <span>{isCurrent ? '▶' : isDone ? '✓' : isPending ? '⬜' : '⏭'}</span>
+                                <span className="text-[9px] mt-0.5">{step.number}</span>
+                              </div>
+                              {!isLast && (
+                                <div 
+                                  className="flex-1 h-0.5 mx-[-4px]" 
+                                  style={{ 
+                                    backgroundColor: sc.steps[idx + 1]?.status !== 'pending' ? '#a855f7' : '#2a2a2a',
+                                    minWidth: 8
+                                  }} 
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between gap-2 mt-2">
+                        {sc.steps.map((step: any) => {
+                          const info = stepInfo[step.id] || { name: step.id, desc: '' };
+                          const isCurrent = sc.currentStep === step.id;
+                          const isDone = step.status === 'done' || step.status === 'skipped';
+                          return (
+                            <div 
+                              key={step.id} 
+                              className="flex-1 text-center text-[10px] px-1"
+                              style={{ 
+                                color: isCurrent ? '#a855f7' : isDone ? '#22c55e' : '#666',
+                                fontWeight: isCurrent ? 700 : 400
+                              }}
+                            >
+                              <div className="font-semibold">{info.name}</div>
+                              <div className="text-[8px] opacity-60 mt-0.5">
+                                {step.status === 'active' ? '进行中' : step.status === 'done' ? '已完成' : step.status === 'skipped' ? '已跳过' : '待开始'}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-2 h-1 bg-[#2a2a2a] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-[#a855f7] transition-all duration-300" 
+                          style={{ width: `${Math.round((totalDone / total) * 100)}%` }}
+                        />
+                      </div>
+                      <div className="text-center text-[9px] text-[#666] mt-1">
+                        进度 {totalDone}/{total} · {Math.round((totalDone / total) * 100)}%
+                      </div>
+
+                      {/* 🎯 数字选项 + 系统推荐 - 基于当前进度智能推荐 */}
+                      {(() => {
+                        const currentStepIdx = sc.steps.findIndex((s: any) => s.status === 'active');
+                        const allDone = totalDone === total;
+                        const nextStepIdx = currentStepIdx >= 0 ? currentStepIdx + 1 : (allDone ? -1 : sc.steps.findIndex((s: any) => s.status === 'pending'));
+                        const completion = total > 0 ? totalDone / total : 0;
+                        const options: Array<{ key: string; label: string; desc: string; recommended: boolean }> = [];
+
+                        if (nextStepIdx >= 0 && nextStepIdx < sc.steps.length) {
+                          const nextStep = sc.steps[nextStepIdx];
+                          const nextInfo = stepInfo[nextStep.id] || { name: nextStep.id, desc: '' };
+                          // 选项1: 继续下一步
+                          let rec1 = true;
+                          let desc1 = `进入 ${nextStep.id} ${nextInfo.name} 阶段，${nextInfo.desc}。`;
+                          if (completion >= 0.8) {
+                            desc1 = `${nextInfo.name} 是策略收官环节，建议完成以解锁执行计划。`;
+                          } else if (completion >= 0.4) {
+                            desc1 = `核心步骤已完成大半，继续 ${nextInfo.name} 可获得闭环结论。`;
+                          } else {
+                            desc1 = `当前已完成 ${totalDone}/${total} 步，建议继续走完 S 系列以获得完整策略。`;
+                          }
+                          options.push({ key: '1', label: `继续 ${nextInfo.name}`, desc: desc1, recommended: rec1 });
+                          // 选项2: 跳过
+                          options.push({ key: '2', label: `跳过 ${nextInfo.name}`, desc: `如果不需要 ${nextInfo.desc}，可跳到后续步骤。`, recommended: false });
+                          // 选项3: 落地保存
+                          options.push({ key: '3', label: '落地保存', desc: `已完成的 ${totalDone} 步可作为研报保存，结束本轮 S 系列。`, recommended: false });
+                        } else if (allDone) {
+                          // S系列全部完成后，询问是否形成策略驱动交易
+                          const symbol = sc.scope?.replace(/[\s策略分析]/g, '') || 'BTC';
+                          options.push({ key: '1', label: `📊 策略驱动交易 ${symbol}`, desc: '基于 S1-S5 完整策略，立即生成交易计划并执行。', recommended: true });
+                          options.push({ key: '2', label: '📄 查看完整报告', desc: '汇总 S 系列各阶段结论，生成完整策略文档。', recommended: false });
+                          options.push({ key: '3', label: '💾 保存研报', desc: '将策略结论存入研报库，稍后参考。', recommended: false });
+                          options.push({ key: '4', label: '🔄 开始新分析', desc: '结束当前会话，切换到其他标的继续分析。', recommended: false });
+                        } else if (totalDone >= 1 && nextStepIdx < 0) {
+                          // 有步骤已完成但不是全部完成，且无下一步可选 → 询问是否形成策略驱动交易
+                          const symbol = sc.scope?.replace(/[\s策略分析]/g, '') || '';
+                          const stepNames = sc.steps.filter((s: any) => s.status === 'done' || s.status === 'skipped').map((s: any) => (stepInfo[s.id] || { name: s.id }).name).join(' → ');
+                          options.push({ key: '1', label: `📊 形成策略驱动交易${symbol ? ` ${symbol}` : ''}`, desc: `基于已完成 ${stepNames} 环节，生成交易计划。`, recommended: true });
+                          options.push({ key: '2', label: '📄 查看分析报告', desc: '汇总已完成的分析环节，生成研报文档。', recommended: false });
+                          options.push({ key: '3', label: '💾 保存研报', desc: '将分析结论存入研报库，稍后参考。', recommended: false });
+                          options.push({ key: '4', label: '🔄 继续分析', desc: '继续执行剩余 S 系列环节，获得更完整结论。', recommended: false });
+                        }
+
+                        if (options.length === 0) return null;
+                        return (
+                          <div className="mt-3 pt-2 border-t border-[#2a2a2a]">
+                            <div className="text-[10px] text-[#a1a1aa] mb-1.5 font-medium">🔗 下一步操作（点击或输入数字）：</div>
+                            <div className="flex flex-col gap-1.5">
+                              {options.map((opt) => {
+                                const bgClass = opt.recommended
+                                  ? 'bg-gradient-to-r from-purple-500/20 to-cyan-500/10 border-purple-500/60 hover:from-purple-500/30'
+                                  : 'bg-[#1a1a1a] border-[#2a2a2a] hover:bg-[#222] hover:border-[#3a3a3a]';
+                                return (
+                                  <button
+                                    key={opt.key}
+                                    onClick={() => {
+                                      let choiceText = '';
+                                      if (nextStepIdx >= 0) {
+                                        // 执行中选项
+                                        choiceText = opt.key === '1'
+                                          ? `继续${(stepInfo[sc.steps[nextStepIdx].id] || {name: ''}).name}`
+                                          : opt.key === '2'
+                                          ? `跳过${(stepInfo[sc.steps[nextStepIdx].id] || {name: ''}).name}`
+                                          : '落地保存当前研报';
+                                      } else if (allDone) {
+                                        // S系列全部完成选项
+                                        const sym = sc.scope?.replace(/[\s策略分析]/g, '') || 'BTC';
+                                        choiceText = opt.key === '1'
+                                          ? `基于策略执行交易 ${sym}`
+                                          : opt.key === '2'
+                                          ? '查看S系列完整报告'
+                                          : opt.key === '3'
+                                          ? '保存研报'
+                                          : '开始新一轮分析';
+                                      } else {
+                                        // 有步骤完成但非全部完成选项
+                                        choiceText = opt.key === '1'
+                                          ? '形成策略驱动交易'
+                                          : opt.key === '2'
+                                          ? '查看分析报告'
+                                          : opt.key === '3'
+                                          ? '保存研报'
+                                          : '继续完成S系列';
+                                      }
+                                      // 找到输入框元素并触发提交
+                                      const input = document.querySelector('input[placeholder*="输入消息"]') as HTMLInputElement;
+                                      if (input) {
+                                        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+                                        nativeInputValueSetter?.call(input, choiceText);
+                                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                                        setTimeout(() => {
+                                          const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true });
+                                          input.dispatchEvent(enterEvent);
+                                        }, 100);
+                                      }
+                                    }}
+                                    className={`group flex items-start gap-2 px-2.5 py-1.5 text-left text-[10px] rounded-lg transition border ${bgClass}`}
+                                  >
+                                    <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                                      opt.recommended ? 'bg-purple-500 text-white shadow' : 'bg-[#2a2a2a] text-[#a1a1aa] group-hover:bg-[#3a3a3a]'
+                                    }`}>
+                                      {opt.key}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className={`font-semibold ${opt.recommended ? 'text-purple-200' : 'text-[#e0e0e0]'}`}>
+                                        {opt.label}
+                                        {opt.recommended && (
+                                          <span className="ml-1.5 inline-flex items-center gap-0.5 px-1 py-0.5 bg-cyan-500/20 text-cyan-300 rounded text-[8px] font-bold">
+                                            💡 系统推荐
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className={`text-[9px] mt-0.5 ${opt.recommended ? 'text-[#a1a1aa]' : 'text-[#71717a]'} leading-tight`}>
+                                        {opt.desc}
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div className="mt-1.5 text-[9px] text-[#71717a]">
+                              💬 或输入 <span className="font-mono text-[#a1a1aa]">{options.map(o => o.key).join(' / ')}</span> 选择
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* 📊 策略驱动交易引导卡片 - S系列分析完成后询问 */}
+                      {(() => {
+                        const sc = (msg as any).strategyChain || (msg as any).strategy_chain;
+                        if (!sc || !sc.steps) return null;
+                        const totalDone = sc.steps.filter((s: any) => s.status === 'done' || s.status === 'skipped').length;
+                        const allDone = totalDone === sc.steps.length;
+                        const currentActive = sc.steps.find((s: any) => s.status === 'active');
+                        const symbol = (msg as any).chain?.length > 0
+                          ? (msg as any).chain.join('').includes('BTC') ? 'BTC' : (msg as any).chain.join('').includes('ETH') ? 'ETH' : ''
+                          : sc.scope?.replace(/[\s策略分析]/g, '') || '';
+                        // 有步骤完成，且不在等待确认状态 → 显示策略驱动交易引导
+                        if (totalDone === 0) return null;
+                        const isAllDone = totalDone === sc.steps.length;
+                        return (
+                          <div className="mt-3 pt-2 border-t border-[#2a2a2a]">
+                            <div className="text-[10px] text-[#e0c060] font-semibold mb-2 flex items-center gap-1.5">
+                              <span>💡</span>
+                              <span>{isAllDone ? 'S系列策略分析已完成！' : '策略分析已有结论'}</span>
+                            </div>
+                            <div className="bg-gradient-to-r from-yellow-500/10 to-green-500/5 border border-yellow-500/30 rounded-lg px-3 py-2.5">
+                              <div className="text-[11px] text-[#e0e0e0] font-medium mb-2">
+                                {isAllDone
+                                  ? `📊 基于完整 ${symbol || '标的'} S系列策略，是否现在形成策略驱动交易？`
+                                  : `📊 基于已完成分析，是否形成策略驱动交易${symbol ? ` ${symbol}` : ''}？`}
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    const input = document.querySelector('input[placeholder*="输入消息"]') as HTMLInputElement;
+                                    if (input) {
+                                      const text = symbol ? `基于策略执行交易 ${symbol}` : '基于策略执行交易';
+                                      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+                                      nativeInputValueSetter?.call(input, text);
+                                      input.dispatchEvent(new Event('input', { bubbles: true }));
+                                      setTimeout(() => {
+                                        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true });
+                                        input.dispatchEvent(enterEvent);
+                                      }, 100);
+                                    }
+                                  }}
+                                  className="flex-1 px-3 py-2 text-[11px] font-semibold bg-gradient-to-r from-green-500/80 to-emerald-500/80 hover:from-green-500 hover:to-emerald-500 text-white rounded-lg transition shadow"
+                                >
+                                  ⚡ 是，立即生成交易计划
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const input = document.querySelector('input[placeholder*="输入消息"]') as HTMLInputElement;
+                                    if (input) {
+                                      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+                                      nativeInputValueSetter?.call(input, '先看看分析报告');
+                                      input.dispatchEvent(new Event('input', { bubbles: true }));
+                                      setTimeout(() => {
+                                        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true });
+                                        input.dispatchEvent(enterEvent);
+                                      }, 100);
+                                    }
+                                  }}
+                                  className="px-3 py-2 text-[11px] bg-[#2a2a2a] hover:bg-[#333] text-[#a1a1aa] border border-[#3a3a3a] rounded-lg transition"
+                                >
+                                  📋 查看报告
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                })()}
+                
+                {/* 🔗 D-Z-E 思维链可视化（保留用于开发治理场景） */}
+                {msg.role === "assistant" && ((msg as any).chainState || (msg as any).chain_state) && ((msg as any).chainState?.phases || (msg as any).chain_state?.phases) && !(msg as any).strategyChain && !(msg as any).strategy_chain && (() => {
                   const cs = (msg as any).chainState || (msg as any).chain_state;
                   const groups = [
                     { key: 'D', name: '调研链', color: '#0088aa', items: cs.phases.filter((p: any) => p.id.startsWith('D')) },
@@ -4831,7 +5324,7 @@ export default function ChatPage() {
                   return (
                     <div className="mt-3 pt-3 border-t border-[#2a2a2a]">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="text-[11px] text-[#0088aa]">🔗 D-Z-E 思维链</div>
+                        <div className="text-[11px] text-[#0088aa]">🔗 D-Z-E 思维链 (开发治理)</div>
                         <div className="text-[9px] text-[#71717a]">{cs.scope || ''}</div>
                       </div>
                       <div className="space-y-2">
@@ -4975,28 +5468,103 @@ export default function ChatPage() {
                     </div>
                   </div>
                 )}
-                {/* D/Z/E思维链步进确认 */}
-                {msg.step_confirmation && msg.step_confirmation.options && msg.step_confirmation.options.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-[#1a1a1a]">
-                    <div className="text-xs text-[#8a8a8a] mb-2">🔗 请选择：</div>
-                    <div className="flex flex-wrap gap-2">
-                      {msg.step_confirmation.options.map((opt: any, idx: number) => (
-                        <button
-                          key={opt.key || idx}
-                          onClick={() => handleStepChoice(msg, opt)}
-                          className="px-3 py-1.5 text-xs bg-purple-500/20 text-purple-300 rounded-md hover:bg-purple-500/30 border border-purple-500/30 transition font-medium"
-                        >
-                          {opt.label || opt.key}
-                        </button>
-                      ))}
+                {/* 🎯 S系列步进确认 - 数字选项 + 系统推荐 */}
+                {msg.step_confirmation && msg.step_confirmation.options && msg.step_confirmation.options.length > 0 && (() => {
+                  const sc = msg.step_confirmation;
+                  const currentStep = sc.current_step;
+                  const nextStep = sc.next_step;
+                  const stepNameMap: Record<string, string> = {
+                    'S1_RESEARCH': 'S1 调研', 'S2_ANALYSIS': 'S2 分析', 'S3_DESIGN': 'S3 设计',
+                    'S4_VALIDATE': 'S4 验证', 'S5_EXECUTE': 'S5 执行',
+                  };
+                  const currentName = stepNameMap[currentStep] || currentStep;
+                  const nextName = nextStep ? stepNameMap[nextStep] || nextStep : null;
+                  // 🔮 智能推荐逻辑：基于已执行步骤数 & 复杂度给出推荐
+                  const totalSteps = (msg as any).strategyChain?.steps?.length || 0;
+                  const doneSteps = (msg as any).strategyChain?.steps?.filter((s: any) => s.status === 'done' || s.status === 'skipped').length || 0;
+                  const completion = totalSteps > 0 ? doneSteps / totalSteps : 0;
+                  let recommendedKey = '1';
+                  let recommendReason = '';
+                  if (nextStep) {
+                    if (completion < 0.5) {
+                      recommendedKey = '1';
+                      recommendReason = `当前已完成 ${doneSteps}/${totalSteps} 步，建议继续走完 S 系列以获得完整策略。`;
+                    } else if (completion < 0.8) {
+                      recommendedKey = '1';
+                      recommendReason = `核心步骤已完成大半，继续执行 ${nextName} 可获得闭环结论。`;
+                    } else {
+                      recommendedKey = '1';
+                      recommendReason = `${nextName} 是策略的收官环节，建议完成以解锁执行计划。`;
+                    }
+                  } else {
+                    recommendedKey = '2';
+                    recommendReason = '已是最后一步，建议直接落地保存当前结果。';
+                  }
+                  return (
+                    <div className="mt-3 pt-3 border-t border-[#2a2a2a]">
+                      {/* 当前步骤信息 */}
+                      <div className="flex items-center gap-2 mb-2 text-[11px]">
+                        <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded font-mono">{currentName}</span>
+                        <span className="text-[#71717a]">已完成 ·</span>
+                        {nextName && (
+                          <>
+                            <span className="text-[#71717a]">下一步:</span>
+                            <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-300 rounded font-mono">{nextName}</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-xs text-[#a1a1aa] mb-2 font-medium">🔗 请选择下一步操作：</div>
+                      <div className="flex flex-col gap-2">
+                        {sc.options.map((opt: any, idx: number) => {
+                          const isRecommended = opt.key === recommendedKey;
+                          return (
+                            <button
+                              key={opt.key || idx}
+                              onClick={() => handleStepChoice(msg, opt)}
+                              className={`group flex items-start gap-3 px-3 py-2.5 text-left text-xs rounded-lg transition border ${
+                                isRecommended
+                                  ? 'bg-gradient-to-r from-purple-500/20 to-cyan-500/10 border-purple-500/60 hover:from-purple-500/30 hover:to-cyan-500/20 shadow-[0_0_12px_rgba(168,85,247,0.15)]'
+                                  : 'bg-[#1a1a1a] border-[#2a2a2a] hover:bg-[#222] hover:border-[#3a3a3a]'
+                              }`}
+                            >
+                              <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm ${
+                                isRecommended
+                                  ? 'bg-purple-500 text-white shadow-[0_0_8px_rgba(168,85,247,0.5)]'
+                                  : 'bg-[#2a2a2a] text-[#a1a1aa] group-hover:bg-[#333]'
+                              }`}>
+                                {opt.key || idx + 1}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className={`font-semibold ${isRecommended ? 'text-purple-200' : 'text-[#e0e0e0]'}`}>
+                                  {opt.label || opt.key}
+                                  {isRecommended && (
+                                    <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 bg-cyan-500/20 text-cyan-300 rounded text-[9px] font-bold">
+                                      💡 系统推荐
+                                    </span>
+                                  )}
+                                </div>
+                                {isRecommended && recommendReason && (
+                                  <div className="text-[10px] text-[#a1a1aa] mt-1 leading-relaxed">
+                                    {recommendReason}
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-2 text-[10px] text-[#71717a]">
+                        💬 也可直接输入数字 <span className="font-mono text-[#a1a1aa]">1</span> / <span className="font-mono text-[#a1a1aa]">2</span> / <span className="font-mono text-[#a1a1aa]">3</span> 回复
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
-          ))}
+          ));
+          })()}
         </div>
-        
+
         {/* Quick Commands */}
         <div className="px-4 py-2 border-t border-[#1a1a1a]">
           <div className="flex flex-wrap gap-2 mb-2">
@@ -5021,7 +5589,7 @@ export default function ChatPage() {
               placeholder={`输入消息... (${
                 workbuddyMode ? '🔗桥接' : '💬直接'
               } | ${
-                thinkingMode === 'quick' ? '⚡快速' : '🧠深度'
+                thinkingMode === 'quick' ? '⚡智能' : '🧠深度'
               } | 支持 /命令)`}
               className="flex-1 bg-transparent text-sm text-[#e0e0e0] placeholder-[#a1a1aa] focus:outline-none"
             />
@@ -5043,7 +5611,7 @@ export default function ChatPage() {
               )}
             </span>
             <span>
-              模式: {thinkingMode === 'quick' ? '⚡ 快速思考' : '🧠 深度思考'}
+              模式: {thinkingMode === 'quick' ? '⚡ 智能思考' : '🧠 深度思考'}
             </span>
           </div>
         </form>
