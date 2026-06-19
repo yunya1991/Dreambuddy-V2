@@ -54,17 +54,9 @@
         "*.png",
         "*.jpg",
         "data/**",
-        "artifacts/**"
-      ]
-    },
-    "knowledge": {
-      "paths": [
-        "2-KNOWLEDGE/**"
-      ]
-    },
-    "chain_development": {
-      "paths": [
-        "3-CHAIN-DEVELOPMENT/**"
+        "artifacts/**",
+        "3-EVOLUTION/**",
+        "scripts/*.py"
       ]
     },
     "intent_recognition": {
