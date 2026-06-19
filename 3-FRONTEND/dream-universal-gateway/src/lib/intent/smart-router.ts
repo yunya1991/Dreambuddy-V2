@@ -12,6 +12,8 @@ import { routeToStrategyChain, STRATEGY_COMMAND_ROUTE_MAP } from '@/lib/strategy
 
 export type LoopType = 'execution' | 'intelligence' | 'governance' | 'general';
 
+export type ExecMode = 'dynamic' | 'stepwise' | 'quick' | 'developer';
+
 export interface RoutingDecision {
   loop_type: LoopType;
   chain: string[];
@@ -23,6 +25,10 @@ export interface RoutingDecision {
   reasoning: string;
   /** Phase 2+: 是否走动态计划-执行-反思闭环 */
   is_dynamic?: boolean;
+  /** 执行模式：dynamic=动态链自动执行；stepwise=步进式需用户确认；quick=简化短链；developer=策略代码开发 */
+  mode?: ExecMode;
+  /** developer 意图标记：应走 dev-chain.executeS5() 而非 S 系列链 */
+  is_dev_chain?: boolean;
 }
 
 // ============ 动态链配置 (Phase 2) ============
@@ -78,6 +84,7 @@ interface RouteConfig {
   pro_full_chain: string[];
   requires_confirmation: boolean;
   fallback_chain: string[];
+  is_dev_chain?: boolean;
 }
 
 const ROUTE_MAP: Record<Exclude<IntentType, 'command'>, RouteConfig> = {
@@ -199,13 +206,16 @@ const ROUTE_MAP: Record<Exclude<IntentType, 'command'>, RouteConfig> = {
   },
   // 策略代码开发：S 级策略明确后生成可执行的策略代码
   // FREE 角色也能执行完整 S3→S4→S5（策略代码开发核心链）
+  // developer 意图由上方的早期拦截（routeIntent 249行）直接返回 dev-chain 决策
+  // 此 ROUTE_MAP 条目保留作为默认回退（不应被正常路径访问）
   developer: {
     loop: 'execution',
-    free_chain: ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
-    pro_short_chain: ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
-    pro_full_chain: ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
-    requires_confirmation: true,
-    fallback_chain: ['S5_EXECUTE'],
+    free_chain: ['DEV_E_CHAIN'],
+    pro_short_chain: ['DEV_E_CHAIN'],
+    pro_full_chain: ['DEV_E_CHAIN'],
+    requires_confirmation: false,
+    fallback_chain: ['DEV_E_CHAIN'],
+    is_dev_chain: true,
   },
 };
 
@@ -237,21 +247,62 @@ export function routeIntent(
   const userRole = context?.user_role || 'FREE';
   const thinkingMode = context?.thinking_mode || 'quick';
 
+  // ==== developer 早期拦截：直接路由到 dev-chain.executeS5() ====
+  // 主前端的 developer 意图 = 策略代码开发（E 链）
+  // 不走 S 系列策略分析链
+  if (intent === 'developer') {
+    const decision: RoutingDecision = {
+      loop_type: 'execution',
+      chain: ['DEV_E_CHAIN'],
+      estimated_time_ms: 120000,
+      credits_cost: 60,
+      requires_confirmation: false,
+      role_check: 'pass',
+      fallback_chain: ['DEV_E_CHAIN'],
+      reasoning: `[DEV] developer 意图 → dev-chain.executeS5()（策略代码开发 E 链）`,
+      mode: 'developer',
+      is_dev_chain: true,
+    };
+
+    emitMonitorEvent({
+      trace_id: `route_${Date.now()}`,
+      uid: context?.session_id || 'anonymous',
+      layer: 'router',
+      phase: 'routed',
+      status: 'completed',
+      intent,
+      chain: decision.chain,
+      duration_ms: Date.now() - startTime,
+    });
+
+    return decision;
+  }
+
   // 命令路由
   if (intent === 'command') {
     const msg = context?.message_history?.[context.message_history.length - 1] || '';
     const cmdKey = Object.keys(COMMAND_ROUTE_MAP).find(cmd => msg.startsWith(cmd));
     if (cmdKey) {
       const cmdRoute = COMMAND_ROUTE_MAP[cmdKey];
+      // Developer 命令走 dev-chain 而非 S 系列
+      if (cmdRoute.intent === 'developer') {
+        return routeIntent('developer', complexity, context);
+      }
+
+      const cmdExecMode: ExecMode =
+        thinkingMode === 'stepwise' ? 'stepwise'
+        : thinkingMode === 'quick' ? 'quick'
+        : 'dynamic';
       const decision: RoutingDecision = {
         loop_type: cmdRoute.loop,
         chain: cmdRoute.chain,
         estimated_time_ms: calcTime(cmdRoute.chain),
         credits_cost: calcCredits(cmdRoute.chain),
-        requires_confirmation: cmdRoute.intent === 'execute_trade',
+        requires_confirmation: cmdExecMode === 'stepwise' ? true : (cmdRoute.intent === 'execute_trade'),
         role_check: cmdRoute.intent === 'execute_trade' && userRole === 'FREE' ? 'upgrade_required' : 'pass',
         fallback_chain: cmdRoute.chain.slice(0, 1),
-        reasoning: `Command route: ${cmdKey}`,
+        reasoning: `Command route: ${cmdKey} (mode: ${cmdExecMode})`,
+        mode: cmdExecMode,
       };
 
       emitMonitorEvent({
@@ -276,6 +327,8 @@ export function routeIntent(
 
   // 执行 trade 对 FREE 用户不可用
   if (intent === 'execute_trade' && userRole === 'FREE') {
+    const denyMode: ExecMode =
+      thinkingMode === 'stepwise' ? 'stepwise' : 'dynamic';
     const decision: RoutingDecision = {
       loop_type: routeConfig.loop,
       chain: [],
@@ -285,6 +338,7 @@ export function routeIntent(
       role_check: 'upgrade_required',
       fallback_chain: routeConfig.fallback_chain,
       reasoning: 'Trade execution requires PRO role',
+      mode: denyMode,
     };
 
     emitMonitorEvent({
@@ -303,6 +357,8 @@ export function routeIntent(
 
   // scenario_sim 对 FREE 用户 complex 不可用
   if (intent === 'scenario_sim' && userRole === 'FREE' && (complexity === 'complex' || complexity === 'urgent')) {
+    const scenarioMode: ExecMode =
+      thinkingMode === 'stepwise' ? 'stepwise' : 'dynamic';
     const decision: RoutingDecision = {
       loop_type: routeConfig.loop,
       // 降级到 S1 调研（S1 内部包含知识库检索能力）
@@ -313,6 +369,7 @@ export function routeIntent(
       role_check: 'upgrade_required',
       fallback_chain: ['S1_RESEARCH'],
       reasoning: 'Scenario simulation complex requires PRO role, downgraded to S1 research',
+      mode: scenarioMode,
     };
     return decision;
   }
@@ -344,18 +401,36 @@ export function routeIntent(
     chain = routeConfig.pro_full_chain;
   }
 
+  // Phase A: 从 thinkingMode 推导执行模式
+  //   - 'stepwise' → 用户明确要求步进式，每步确认
+  //   - 'quick'    → 简化短链快速执行
+  //   - 'deep'     → 默认 dynamic 模式（自动执行完整链）
+  //   - 'scheduler'→ 动态计划-执行-反思闭环
+  const execMode: ExecMode =
+    thinkingMode === 'stepwise' ? 'stepwise'
+    : thinkingMode === 'quick' ? 'quick'
+    : 'dynamic';
+
+  // stepwise 模式下，requires_confirmation 由 mode 驱动
+  // 非 stepwise 模式下，由 routeConfig 的默认值决定
+  const needConfirmation =
+    execMode === 'stepwise' ? true : routeConfig.requires_confirmation;
+
   const decision: RoutingDecision = {
     loop_type: routeConfig.loop,
     chain,
     estimated_time_ms: calcTime(chain),
     credits_cost: calcCredits(chain),
-    requires_confirmation: routeConfig.requires_confirmation,
+    requires_confirmation: needConfirmation,
     role_check: chain.length > 0 ? 'pass' : 'upgrade_required',
     fallback_chain: routeConfig.fallback_chain,
-    reasoning: isDynamic
+    reasoning: execMode === 'stepwise'
+      ? `[STEPWISE] ${userRole} + ${complexity} → 步进式执行，S3/S4/S5 需用户确认`
+      : isDynamic
       ? `[DYNAMIC] ${userRole} + ${complexity} + ${thinkingMode} → plan-execute-reflect 闭环`
       : `${userRole} + ${complexity} + ${thinkingMode} → chain: ${chain.join(' → ')}`,
     is_dynamic: isDynamic,
+    mode: execMode,
   };
 
   emitMonitorEvent({
@@ -461,54 +536,74 @@ export function normalizeChainName(name: string): string {
   return aliasMap[name] || name;
 }
 
-// ============ S 系列步进确认机制 ============
+// ============ 步进确认机制（stepwise 模式专属） ============
 //
-// 注意：S 系列的高风险步骤（S3_DESIGN, S4_VALIDATE, S5_EXECUTE）需要用户确认
-// developer 意图 → S3→S4→S5，同样遵循这个确认机制
-// D-Z-E 系列（后端完整开发链）不在前端主链中，由 6-Trading 模块独立管理
+// 设计原则：
+//   - dynamic 模式：runDynamicChain() 自动执行到结束，不中断，不等待确认
+//   - stepwise 模式：StrategyChainController 逐步骤执行，S3/S4/S5 前需用户确认
+//   - quick 模式：短链快速执行，无确认
+//   - developer 模式：dev-chain.executeS5() 整体执行，无需逐步骤确认
+//
+// 注：S3_DESIGN/S4_VALIDATE/S5_EXECUTE = S 系列高风险步骤
 
 /**
- * 判断链中是否包含需要步进确认的步骤
- * S系列：S3_DESIGN, S4_VALIDATE, S5_EXECUTE 需要确认
+ * 判断链是否需要步进确认（仅 stepwise 模式 + 包含 S3/S4/S5 时返回 true）
  */
-export function requiresStepConfirmation(chain: string[]): boolean {
-  // S 系列中需要确认的高风险步骤
-  const S_CONFIRM_STEPS = ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
-  return chain.some(step => S_CONFIRM_STEPS.includes(step));
+export function requiresStepConfirmation(
+  chain: string[],
+  mode: ExecMode = 'dynamic',
+): boolean {
+  // dynamic / quick / developer 模式都不需要步进确认
+  if (mode !== 'stepwise') return false;
+
+  const CONFIRM_STEPS = ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
+  return chain.some(step => CONFIRM_STEPS.includes(step));
 }
 
 /**
- * 判断是否为可以直接执行的步骤（不需要用户确认）
- * - S0/S1/S2：直接执行
- * - S3/S4/S5：高风险步骤，需要确认
+ * 判断某步骤是否为可以直接执行的步骤
  */
-export function isExecutionChainStep(step: string): boolean {
+export function isExecutionChainStep(
+  step: string,
+  mode: ExecMode = 'dynamic',
+): boolean {
+  // 非 stepwise 模式：所有步骤都可直接执行（由各自的执行器控制流程）
+  if (mode === 'dynamic' || mode === 'quick' || mode === 'developer') return true;
+
+  // stepwise 模式：S3/S4/S5 需要确认后才能执行
   const CONFIRM_STEPS = ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
-  // S 系列的高风险步骤，或未识别的步骤，都需要走确认流程
   if (CONFIRM_STEPS.includes(step)) return false;
   return true;
 }
 
 /**
- * 获取链中需要确认的步骤（仅 S 系列）
+ * 获取链中需要确认的步骤列表（仅 stepwise 模式返回非空）
  */
-export function getConfirmationSteps(chain: string[]): string[] {
+export function getConfirmationSteps(
+  chain: string[],
+  mode: ExecMode = 'stepwise',
+): string[] {
+  if (mode !== 'stepwise') return [];
   return chain.filter(step => ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'].includes(step));
 }
 
 /**
- * 获取下一个需要确认的步骤索引
+ * 获取链中从 currentIndex 起下一个需要确认的步骤索引（stepwise 模式专属）
  */
-export function getNextConfirmationStep(chain: string[], currentIndex: number): number {
+export function getNextConfirmationStep(
+  chain: string[],
+  currentIndex: number,
+  mode: ExecMode = 'stepwise',
+): number {
+  if (mode !== 'stepwise') return -1;
   for (let i = currentIndex + 1; i < chain.length; i++) {
-    const step = chain[i];
-    if (['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'].includes(step)) return i;
+    if (['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'].includes(chain[i])) return i;
   }
   return -1;
 }
 
 /**
- * 生成步进确认提示语（S 系列的通用提示，不再提及 D-Z-E）
+ * 生成步进确认提示语（stepwise 模式专属）
  */
 export function generateStepConfirmationPrompt(
   currentStep: string,
@@ -522,8 +617,8 @@ export function generateStepConfirmationPrompt(
   if (!nextStep) {
     // 最后一步，询问是否落地
     return isZh
-      ? `✅ **${currentLabel} 完成**\n\n请确认是否进入执行阶段落地：\n\n- 回复 **(1)** 确认并落地\n- 回复 **(2)** 先查看完整链路再决定`
-      : `✅ **${currentLabel} Complete**\n\nProceed to execution? (1) Confirm & execute (2) Review full chain first`;
+      ? `✅ **${currentLabel} 完成**\n\n请确认是否进入最终执行阶段：\n\n- 回复 **(1)** 确认并落地\n- 回复 **(2)** 查看完整分析链路`
+      : `✅ **${currentLabel} Complete**\n\nProceed to final execution? (1) Confirm & execute (2) Review full chain`;
   }
 
   const nextStepDef = CHAIN_STEPS[nextStep];
@@ -531,8 +626,8 @@ export function generateStepConfirmationPrompt(
   const nextChainTag = nextStepDef?.chain || '';
 
   return isZh
-    ? `✅ **${currentLabel} 完成**\n\n策略开发链已启用，**高风险步骤需要您确认后方可继续**。\n\n请选择下一步操作：\n- **(1)** 进入下一步：**${nextLabel}** (${nextChainTag}链)\n- **(2)** 当前方案已满意，直接落地执行\n\n⚠️ **注意：系统禁止跳步。如想提前落地，请选择 (2)。**`
-    : `✅ **${currentLabel} Complete**\n\nStrategy dev chain active, **confirmation required for high-risk steps.**\n\nChoose next action:\n- **(1)** Proceed to: **${nextLabel}** (${nextChainTag} chain)\n- **(2)** Satisfied with current plan, finalize and execute\n\n⚠️ **Note: Step skipping is not allowed. Choose (2) to finalize early.**`;
+    ? `✅ **${currentLabel} 完成**\n\n**步进式模式**已启用，**高风险步骤需要您确认后方可继续**。\n\n请选择下一步操作：\n- **(1)** 进入下一步：**${nextLabel}** (${nextChainTag}链)\n- **(2)** 当前方案已满意，直接落地执行\n\n⚠️ **注意：步进式模式禁止跳步。如想提前落地，请选择 (2)**。`
+    : `✅ **${currentLabel} Complete**\n\n**Stepwise mode** active, **confirmation required for high-risk steps.**\n\nChoose next action:\n- **(1)** Proceed to: **${nextLabel}** (${nextChainTag} chain)\n- **(2)** Satisfied with current plan, finalize and execute\n\n⚠️ **Note: Step skipping is not allowed in stepwise mode. Choose (2) to finalize early.**`;
 }
 
 /**

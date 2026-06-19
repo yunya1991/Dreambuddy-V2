@@ -76,13 +76,14 @@ interface SessionContext {
   last_symbol?: string;
   last_complexity?: ComplexityLevel;
   message_history: string[];
-  thinking_mode: "quick" | "deep" | "scheduler";
+  /** Phase A: 扩展 thinking_mode 以支持步进式执行 */
+  thinking_mode: "quick" | "deep" | "scheduler" | "stepwise";
   cached_responses: Map<string, { response: string; timestamp: number }>;
 }
 
 type IntentMethod = "llm" | "rule" | "follow_up" | "default";
 
-type ThinkingMode = "quick" | "deep" | "scheduler";
+type ThinkingMode = "quick" | "deep" | "scheduler" | "stepwise";
 
 type IntentType =
   | "market_query"
@@ -771,7 +772,7 @@ function detectCombinedIntents(message: string, primaryIntent: string): string[]
  * @param thinkingMode 思考模式
  * @returns string[] - 完整组合思维链（去重后）
  */
-function buildCombinedChain(combinedIntents: string[], thinkingMode: 'quick' | 'deep' | 'scheduler'): string[] {
+function buildCombinedChain(combinedIntents: string[], thinkingMode: 'quick' | 'deep' | 'scheduler' | 'stepwise'): string[] {
   if (combinedIntents.length <= 1) return [];
 
   const allSteps: string[] = [];
@@ -1067,13 +1068,14 @@ function update_chain_state(sessionId: string, state: ChainState): void {
   sessionChainStates.set(sessionId, state);
 }
 
-function get_or_init_strategy_state(sessionId: string): any {
+function get_or_init_strategy_state(sessionId: string, defaultMode?: ExecMode): any {
   let state = sessionStrategyStates.get(sessionId);
   if (!state) {
     state = {
       currentStep: 'S1_RESEARCH',
       steps: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'],
       completedSteps: [] as string[],
+      executionMode: defaultMode || 'dynamic',
     };
     sessionStrategyStates.set(sessionId, state);
   }
@@ -2107,10 +2109,10 @@ const STEP_TO_SKILL: Record<string, string> = {
 async function executeS5ForChat(
   sessionId: string,
   userMessage: string,
-  thinkingMode: 'quick' | 'deep' | 'scheduler',
+  thinkingMode: 'quick' | 'deep' | 'scheduler' | 'stepwise',
   lang: 'zh' | 'en',
 ): Promise<S5ExecutionResult> {
-  const mode = thinkingMode === 'scheduler' ? 'deep' : thinkingMode;
+  const mode = thinkingMode === 'scheduler' || thinkingMode === 'stepwise' ? 'deep' : thinkingMode;
   console.log(`[S5 Engine] chat invoke: message=${userMessage.slice(0, 50)}`);
 
   const result = executeS5({
@@ -2127,6 +2129,15 @@ async function executeS5ForChat(
 /**
  * 处理链响应（调用真实SKILL，实现阶段门禁）
  */
+/**
+ * 执行模式：
+ *   - dynamic:   自动执行完整链（S1-S5 不中断）
+ *   - stepwise:  S1+S2 后暂停，S3/S4 后再次暂停，需要用户确认
+ *   - quick:     简化短链快速执行
+ *   - developer: dev-chain.executeS5() 路径（不在此函数中执行）
+ */
+type ExecMode = 'dynamic' | 'stepwise' | 'quick' | 'developer';
+
 async function generateChainResponse(
   chain: string[], 
   intent: string, 
@@ -2137,7 +2148,9 @@ async function generateChainResponse(
   schedulerCtx?: {
     userMessage: string;
     complexity: 'simple' | 'moderate' | 'complex';
-  }
+  },
+  // Phase A: 执行模式（控制是否在 S2→S3/S3→S4 前暂停）
+  mode: ExecMode = 'dynamic',
 ): Promise<{ content: string; chainState: any; strategyChainState: any; stepProgress: any; market: MarketPriceData | null; needsConfirmation: boolean; nextStep: string | null }> {
   const symbol = entities.symbol || "BTC";
 
@@ -2217,25 +2230,23 @@ async function generateChainResponse(
 
   for (let i = 0; i < chain.length; i++) {
     const step = chain[i];
-    
-    // S系列策略链特殊确认机制：S2之后需要用户确认才能进入S3
-    // S1+S2完成后生成Spec文档，用户确认后才能继续S3设计
-    if (step === 'S3_DESIGN' && chain.slice(0, i).includes('S2_ANALYSIS')) {
+
+    // Phase A: 仅 stepwise 模式下，S2→S3 / S3→S4 前才需要用户确认
+    //   - dynamic/quick 模式：自动执行完整链，不中断
+    //   - stepwise 模式：在 S3 前暂停（S1+S2 完成后），在 S4 前再次暂停（S3 完成后）
+    if (mode === 'stepwise' && step === 'S3_DESIGN' && chain.slice(0, i).includes('S2_ANALYSIS')) {
       pendingConfirmationStep = step;
       confirmationType = 'spec';
       break;
     }
-    
-    // S系列策略链特殊确认机制：S3之后需要用户确认才能进入S4
-    // S3完成后生成代码策略Plan，用户确认后才能继续S4验证
-    if (step === 'S4_VALIDATE' && chain.slice(0, i).includes('S3_DESIGN')) {
+
+    if (mode === 'stepwise' && step === 'S4_VALIDATE' && chain.slice(0, i).includes('S3_DESIGN')) {
       pendingConfirmationStep = step;
       confirmationType = 'code_plan';
       break;
     }
-    
-    // 检查是否需要用户确认才能继续（D/Z系列需要确认，E系列和S系列不需要）
-    // S系列是策略思维链，全部执行，不需要中途确认（除了S2→S3的Spec确认和S3→S4的代码Plan确认）
+
+    // D/Z 系列在 needUserConfirmation=true 时需要确认（与原逻辑一致）
     if (needUserConfirmation && i > 0 && (step.startsWith('D') || step.startsWith('Z'))) {
       // 如果需要确认，只执行到当前步骤，然后等待确认
       const schedulerContext = schedulerCtx
@@ -2339,38 +2350,30 @@ async function generateChainResponse(
     });
   }
 
-  // 更新 needsConfirmation 和 nextStep 以支持 S系列的确认机制
-  const isS2Complete = chain.includes('S2_ANALYSIS') && pendingConfirmationStep === 'S3_DESIGN';
-  const isS3Complete = chain.includes('S3_DESIGN') && pendingConfirmationStep === 'S4_VALIDATE';
-  
-  if (isS2Complete) {
+  // Phase A: 仅 stepwise 模式才追加 Spec/Code Plan 确认提示
+  //   - dynamic 模式：自动跑完 S1-S5，不需要用户确认
+  //   - stepwise 模式：S2→S3 与 S3→S4 前暂停并提示用户确认
+  const isS2Break = mode === 'stepwise' && pendingConfirmationStep === 'S3_DESIGN';
+  const isS3Break = mode === 'stepwise' && pendingConfirmationStep === 'S4_VALIDATE';
+
+  if (isS2Break) {
     needsConfirmation = true;
     nextStep = 'S3_DESIGN';
     result += "\n\n---\n\n";
-    result += "## ⚠️ 需要您的确认（Spec 确认）\n\n";
-    result += "**S1 调研** 和 **S2 分析** 已完成，策略规格说明（Spec）已生成。\n\n";
-    result += "**待确认事项：**\n";
-    result += "1. 🎯 策略方向选择（区间突破 / 趋势跟随 / 均值回归）\n";
-    result += "2. ⏰ 时间框架选择（4H / Daily / 1H）\n";
-    result += "3. 🛡️ 风险偏好设置（1% / 2% / 3%）\n";
-    result += "4. 📊 仓位管理方式（固定仓位 / 凯利公式 / 金字塔加仓）\n\n";
-    result += "请确认以上决策，或回复 **\"确认\"** / **\"继续\"** 进入 S3 策略设计阶段，生成代码策略 Plan。\n\n";
-    result += "您也可以直接修改以上选项，例如：\"确认，风险偏好改为1%\"";
+    result += "## 🔸 步进式分析模式 · S2 完成\n\n";
+    result += "**S1 调研** 和 **S2 深度分析** 已完成。\n\n";
+    result += "下一步将进入 **S3 策略设计**（入场条件、止损止盈、仓位管理等核心决策）。\n\n";
+    result += "请回复 **\"继续\"** 进入 S3，或提出修改意见（如：\"把止损改成 1%\"）。";
   }
-  
-  if (isS3Complete) {
+
+  if (isS3Break) {
     needsConfirmation = true;
     nextStep = 'S4_VALIDATE';
     result += "\n\n---\n\n";
-    result += "## ⚠️ 需要您的确认（Code Plan 确认）\n\n";
-    result += "**S3 设计** 已完成，代码策略开发计划（Code Plan）已生成。\n\n";
-    result += "**待确认事项：**\n";
-    result += "1. 📐 模块划分是否合理\n";
-    result += "2. 🔧 代码模板是否满足需求\n";
-    result += "3. 📦 依赖库是否正确\n";
-    result += "4. ⏱️ 开发计划是否合理\n\n";
-    result += "请确认以上代码开发计划，或回复 **\"确认\"** / **\"继续\"** 进入 S4 策略验证阶段。\n\n";
-    result += "您也可以提出修改建议，例如：\"确认，增加止损模块\"";
+    result += "## 🔸 步进式分析模式 · S3 完成\n\n";
+    result += "**S3 策略设计** 已完成。\n\n";
+    result += "下一步将进入 **S4 策略验证**（回测、压力测试、参数稳定性检查）。\n\n";
+    result += "请回复 **\"继续\"** 进入 S4，或提出修改意见。";
   }
   
   return {
@@ -3812,6 +3815,15 @@ export async function POST(request: NextRequest) {
     if (thinking_mode) context.thinking_mode = thinking_mode;
     if (user_role) context.user_role = user_role;
 
+    // ===== 步进模式自动识别：用户消息中包含 stepwise 关键词时切换模式 =====
+    // 用户说 "一步步分析"/"分步来"/"不要自动"/"每步确认"/"步进模式" 等
+    //  → 切换为 stepwise，确保 S3/S4/S5 前需要用户确认
+    const stepwiseKeywords = /逐步|一步步|分步来|不要自动|不要一口气|不要一次性|每步确认|步进模式|步进执行|分步确认|不要全自动/;
+    if (stepwiseKeywords.test(message)) {
+      context.thinking_mode = 'stepwise';
+      console.log(`[Chat API] 用户请求步进模式 → thinking_mode=stepwise`);
+    }
+
     // 检查是否是用户确认回复（继续/下一步/确认等）
     const isConfirmation = isConfirmationMessage(message);
 
@@ -4071,50 +4083,98 @@ export async function POST(request: NextRequest) {
         }
 
         // 情况 B：继续/落地/跳过 — 正常执行 targetStep
+        // Phase A: 根据 executionMode 决定行为
+        //   - dynamic:  执行当前步 → 自动继续执行剩余步骤（S3→S4→S5 连续）
+        //   - stepwise: 执行当前步 → 若当前步是 S3/S4，再次暂停等待用户确认
         if (targetStep) {
-          // 根据意图决定是否使用用户偏好记忆
+          const execMode: ExecMode = (strategyState as any).executionMode || 'dynamic';
           const usePreference = userIntent === 'preference_recommend';
-          const response = await executeSinglePhase(targetStep, symbol, market, ctxSessionId, usePreference);
 
-          // 标记跳过的步骤为已完成
-          const effectiveCompleted = userIntent === 'skip_step'
-            ? [...strategyState.completedSteps, strategyState.currentStep, getNextSStep(strategyState.currentStep!)].filter(Boolean)
-            : [...strategyState.completedSteps, strategyState.currentStep];
+          // 构造需要执行的步骤序列
+          const allSStepsOrdered: string[] = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
+          const startIdx = allSStepsOrdered.indexOf(targetStep);
 
+          // stepwise 模式：只执行当前这一步（S3/S4 后再次暂停）
+          // dynamic 模式：从 targetStep 一直执行到 S5
+          let stepsToRun: string[] = [];
+          if (execMode === 'stepwise' || userIntent === 'skip_step' || userIntent === 'finalize') {
+            stepsToRun = [targetStep];
+          } else {
+            // dynamic: 从 targetStep 到 S5 全部执行
+            stepsToRun = allSStepsOrdered.slice(startIdx);
+          }
+
+          // 依次执行步骤
+          let accumulatedContent = '';
+          let lastStrategyState: any = null;
+          let lastMarket = market;
+          let completedThisTurn: string[] = [...strategyState.completedSteps];
+
+          for (let idx = 0; idx < stepsToRun.length; idx++) {
+            const stepId = stepsToRun[idx];
+            const stepResp = await executeSinglePhase(stepId, symbol, lastMarket, ctxSessionId, usePreference);
+
+            if (idx === 0 && (userIntent === 'skip_step')) {
+              accumulatedContent += `⏭️ **已跳过一步**（根据您的请求直接进入下一阶段）\n\n---\n\n`;
+            } else if (idx === 0 && userIntent === 'finalize') {
+              accumulatedContent += `🚀 **直接进入执行阶段**\n\n---\n\n`;
+            } else if (idx === 0 && userIntent === 'system_recommend') {
+              accumulatedContent += `🔧 **系统推荐**（标准分析）\n\n---\n\n`;
+            } else if (idx === 0 && userIntent === 'preference_recommend') {
+              accumulatedContent += `🎯 **偏好推荐**（根据您的风险偏好和习惯定制）\n\n---\n\n`;
+            } else if (idx > 0) {
+              accumulatedContent += `\n\n---\n\n`;
+            }
+
+            accumulatedContent += stepResp.content;
+            lastStrategyState = stepResp.strategyChainState;
+            lastMarket = stepResp.market;
+            completedThisTurn.push(stepId);
+          }
+
+          // 更新策略状态
+          const finalStep = stepsToRun[stepsToRun.length - 1];
           update_strategy_state(ctxSessionId, {
             ...strategyState,
-            currentStep: response.strategyChainState?.currentStep || targetStep,
-            completedSteps: effectiveCompleted as string[],
+            currentStep: finalStep,
+            completedSteps: completedThisTurn,
+            executionMode: execMode,
           });
 
-          // 生成标注前缀
-          let prefixNote = '';
-          if (userIntent === 'skip_step') {
-            prefixNote = `⏭️ **已跳过一步**（根据您的请求直接进入下一阶段）\n\n---\n\n`;
-          } else if (userIntent === 'finalize') {
-            prefixNote = `🚀 **直接进入执行阶段**\n\n---\n\n`;
-          } else if (userIntent === 'system_recommend') {
-            prefixNote = `🔧 **系统推荐**（标准分析）\n\n---\n\n`;
-          } else if (userIntent === 'preference_recommend') {
-            prefixNote = `🎯 **偏好推荐**（根据您的风险偏好和习惯定制）\n\n---\n\n`;
+          // 判断是否需要再次确认（仅 stepwise 模式）
+          //   - S3 完成后 → 提示确认 S4
+          //   - S4 完成后 → 提示确认 S5
+          let needsConfirmationOut = false;
+          let nextStepOut: string | null = null;
+
+          if (execMode === 'stepwise') {
+            if (finalStep === 'S3_DESIGN') {
+              needsConfirmationOut = true;
+              nextStepOut = 'S4_VALIDATE';
+              accumulatedContent += `\n\n---\n\n## 🔸 步进式分析模式 · S3 完成\n\n**S3 策略设计** 已完成。\n\n下一步将进入 **S4 策略验证**（回测、压力测试、参数稳定性检查）。\n\n请回复 **\"继续\"** 进入 S4，或提出修改意见。`;
+            } else if (finalStep === 'S4_VALIDATE') {
+              needsConfirmationOut = true;
+              nextStepOut = 'S5_EXECUTE';
+              accumulatedContent += `\n\n---\n\n## 🔸 步进式分析模式 · S4 完成\n\n**S4 策略验证** 已完成。\n\n下一步将进入 **S5 策略执行清单**（触发条件、委托单、异常退出条件）。\n\n请回复 **\"继续\"** 进入 S5，或提出修改意见。`;
+            }
           }
 
           return NextResponse.json({
             success: true,
             data: {
-              content: prefixNote + response.content,
+              content: accumulatedContent,
               chainState: {},
-              strategyChainState: response.strategyChainState,
-              stepProgress: response.stepProgress,
-              market: response.market,
+              strategyChainState: lastStrategyState,
+              stepProgress: null,
+              market: lastMarket,
               intent: context.last_intent || 'deep_analysis',
               confidence: 0.9,
-              routing: { chain: [targetStep] },
+              routing: { chain: stepsToRun },
               llm_status: await checkLLMStatus(),
               llm_model: process.env.DEEPSEEK_MODEL || "deepseek-v4-pro",
               timestamp: new Date().toISOString(),
-              needsConfirmation: false,
-              nextStep: null,
+              needsConfirmation: needsConfirmationOut,
+              nextStep: nextStepOut,
             },
           });
         }
@@ -4247,7 +4307,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 2. 智能路由 (基于三闭环 + 角色 + 复杂度)
-    const routing = routeIntent(intentResult.intent, intentResult.complexity, context);
+    const routing = routeIntent(intentResult.intent as any, intentResult.complexity, context as any);
 
     console.log(`[Chat API] Intent: ${intentResult.intent} (method: ${intentResult.method}, confidence: ${intentResult.confidence})`);
     console.log(`[Chat API] Route: ${routing.loop_type} → ${routing.chain.join(" → ")}`);
@@ -4258,7 +4318,7 @@ export async function POST(request: NextRequest) {
         ? `⚠️ 该功能需要 PRO 角色。当前为 FREE 角色，已降级到知识库查询。\n\n如需完整功能，请升级到 PRO。`
         : `ℹ️ 部分功能需要 PRO 角色。当前已为你执行了简化路径: ${routing.chain.join(" → ")}`;
 
-      const chainResp = await generateChainResponse(routing.chain, intentResult.intent, intentResult.entities, ctxSessionId, routing.requires_confirmation, { userMessage: message, complexity: (intentResult.complexity as any) || 'moderate' });
+      const chainResp = await generateChainResponse(routing.chain, intentResult.intent, intentResult.entities, ctxSessionId, routing.requires_confirmation, { userMessage: message, complexity: (intentResult.complexity as any) || 'moderate' }, ((routing as any).mode || 'dynamic') as ExecMode);
       const content = upgradeMsg + "\n\n" + chainResp.content;
 
       return NextResponse.json({
@@ -4290,14 +4350,32 @@ export async function POST(request: NextRequest) {
       }, { status: 403 });
     }
 
-    // 4. 执行路由 (生成响应)
+    // 4. 执行路由 (生成响应) —— 根据 routing.mode 选择不同执行策略
+    //
+    //   dynamic 模式 (默认)：执行完整链，自动运行到结束
+    //   stepwise 模式：S1+S2 执行后暂停，S3/S4/S5 需要用户确认后继续
+    //   quick 模式：简化短链直接执行
+    //   developer 模式：已在上方（4176-4235）由 executeS5ForChat 处理
+
+    // Phase A: 不切片 chain，完全依赖 mode 参数在 generateChainResponse 内部决定是否中断
+    //   - dynamic: S1-S5 完整执行
+    //   - stepwise: S1+S2 后在 generateChainResponse 内部暂停（由硬编码的 S2→S3 中断逻辑控制）
     let chain = routing.chain.length > 0 ? routing.chain : ["S0_DIRECT_ANSWER"];
-    
+    const executionMode: ExecMode = (routing as any).mode || 'dynamic';
+
+    // 仅当链含 S 步骤时才启用步进式逻辑（非 S 意图如 quick 直接执行）
+    const hasSSteps = chain.some(s => s.startsWith('S'));
+    if (executionMode === 'stepwise' && !hasSSteps) {
+      // 非 S 意图不支持步进，回退到 dynamic
+      console.log(`[Chat API] stepwise 模式但非 S 链 → 回退到 dynamic`);
+    }
+    console.log(`[Chat API] 执行模式=${executionMode}, chain=${chain.join(' → ')}`);
+
     // ===== P3 多意图组合路由 =====
     // 在标准路由完成后，检测是否有复合意图（如：先宏观分析 → 再入场 → 再仓位管理）
     const combinedIntents = detectCombinedIntents(message, intentResult.intent);
     let isCombined = false;
-    if (combinedIntents.length > 1) {
+    if (executionMode !== 'stepwise' && combinedIntents.length > 1) {
       const combinedChain = buildCombinedChain(combinedIntents, context.thinking_mode || 'deep');
       if (combinedChain.length > chain.length) {
         chain = combinedChain;  // 使用更完整的组合链
@@ -4320,8 +4398,25 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const response = await generateChainResponse(chain, intentResult.intent, intentResult.entities, ctxSessionId, routing.requires_confirmation, { userMessage: message, complexity: (intentResult.complexity as any) || 'moderate' });
-    
+    const response = await generateChainResponse(chain, intentResult.intent, intentResult.entities, ctxSessionId,
+      routing.requires_confirmation,
+      { userMessage: message, complexity: (intentResult.complexity as any) || 'moderate' },
+      executionMode as ExecMode);
+
+    // Phase A: 将执行模式写入 strategyState，供后续"继续"回复时使用
+    const sState = get_or_init_strategy_state(ctxSessionId, executionMode as ExecMode);
+    sState.executionMode = executionMode as ExecMode;
+    // 如果是 stepwise 首次请求，标记 S1+S2 为已完成
+    if (executionMode === 'stepwise') {
+      sState.completedSteps = Array.from(new Set([...(sState.completedSteps || []), 'S1_RESEARCH', 'S2_ANALYSIS']));
+      sState.currentStep = 'S2_ANALYSIS';
+    } else if (executionMode === 'dynamic') {
+      // dynamic 模式：完整链已由 generateChainResponse 执行
+      sState.completedSteps = Array.from(new Set([...(sState.completedSteps || []), ...chain]));
+      sState.currentStep = chain[chain.length - 1] || sState.currentStep;
+    }
+    update_strategy_state(ctxSessionId, sState);
+
     // P3 多意图组合路由 - 给组合意图响应加上阶段说明
     if (isCombined) {
       response.content = buildCombinedIntentHeader(combinedIntents) + response.content;

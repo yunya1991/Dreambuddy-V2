@@ -25,7 +25,7 @@ export interface SessionContext {
   last_complexity?: ComplexityLevel;
   last_analysis_result?: string;
   message_history: string[];
-  thinking_mode: 'quick' | 'deep';
+  thinking_mode: 'quick' | 'deep' | 'stepwise' | 'scheduler';
   active_strategy_id?: string;
 }
 
