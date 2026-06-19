@@ -1,0 +1,19 @@
+{
+  "userId": "test-dev-p2-005",
+  "memories": [
+    {
+      "id": "mem_1781804448668_r60b",
+      "type": "strategy_feedback",
+      "value": "开发新功能：用户偏好设置模块",
+      "importance": 0.7,
+      "lastReinforced": 1781804448668,
+      "createdAt": 1781804448668,
+      "reinforcementCount": 1,
+      "source": "explicit_feedback",
+      "evidence": "开发新功能：用户偏好设置模块"
+    }
+  ],
+  "evolutionCount": 0,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-18T17:40:48.668Z"
+}

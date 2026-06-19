@@ -29,6 +29,8 @@ export {
   requiresStepConfirmation,
   isExecutionChainStep,
   generateStepConfirmationPrompt,
+  getNextConfirmationStep,
+  parseUserConfirmation,
 } from './smart-router';
 
 export type {

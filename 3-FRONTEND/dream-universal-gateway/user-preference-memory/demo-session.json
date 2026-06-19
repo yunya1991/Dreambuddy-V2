@@ -1,0 +1,144 @@
+{
+  "userId": "demo-session",
+  "memories": [
+    {
+      "id": "mem_1781776670952_x1x0",
+      "type": "preferred_symbols",
+      "value": [
+        "SOL"
+      ],
+      "importance": 1,
+      "lastReinforced": 1781792967389,
+      "createdAt": 1781776670952,
+      "reinforcementCount": 5,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 SOL"
+    },
+    {
+      "id": "mem_1781769431430_7np6",
+      "type": "conclusion_style",
+      "value": "action_only",
+      "importance": 0.8,
+      "lastReinforced": 1781792967389,
+      "createdAt": 1781769431430,
+      "reinforcementCount": 3,
+      "source": "implicit_behavior",
+      "evidence": "基于策略执行交易 SOL"
+    },
+    {
+      "id": "mem_1781769431431_3bi0",
+      "type": "preferred_symbols",
+      "value": [
+        "BTC"
+      ],
+      "importance": 0.55,
+      "lastReinforced": 1781774727778,
+      "createdAt": 1781769431431,
+      "reinforcementCount": 2,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 BTC"
+    },
+    {
+      "id": "mem_1781774542185_sbre",
+      "type": "interaction_count",
+      "value": 1,
+      "importance": 0.2,
+      "lastReinforced": 1781774542185,
+      "createdAt": 1781774542185,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第1次交互"
+    },
+    {
+      "id": "mem_1781774602303_udmy",
+      "type": "interaction_count",
+      "value": 2,
+      "importance": 0.2,
+      "lastReinforced": 1781774602303,
+      "createdAt": 1781774602303,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第2次交互"
+    },
+    {
+      "id": "mem_1781774747227_c96f",
+      "type": "interaction_count",
+      "value": 3,
+      "importance": 0.2,
+      "lastReinforced": 1781774747227,
+      "createdAt": 1781774747227,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第3次交互"
+    },
+    {
+      "id": "mem_1781774794110_fvtp",
+      "type": "interaction_count",
+      "value": 4,
+      "importance": 0.2,
+      "lastReinforced": 1781774794110,
+      "createdAt": 1781774794110,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第4次交互"
+    },
+    {
+      "id": "mem_1781775170818_39fd",
+      "type": "interaction_count",
+      "value": 5,
+      "importance": 0.2,
+      "lastReinforced": 1781775170818,
+      "createdAt": 1781775170818,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第5次交互"
+    },
+    {
+      "id": "mem_1781776843262_989b",
+      "type": "interaction_count",
+      "value": 6,
+      "importance": 0.2,
+      "lastReinforced": 1781776843262,
+      "createdAt": 1781776843262,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第6次交互"
+    },
+    {
+      "id": "mem_1781776874161_uxw3",
+      "type": "interaction_count",
+      "value": 7,
+      "importance": 0.2,
+      "lastReinforced": 1781776874161,
+      "createdAt": 1781776874161,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第7次交互"
+    },
+    {
+      "id": "mem_1781776878858_jjqc",
+      "type": "interaction_count",
+      "value": 8,
+      "importance": 0.2,
+      "lastReinforced": 1781776878858,
+      "createdAt": 1781776878858,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第8次交互"
+    },
+    {
+      "id": "mem_1781776899015_46sn",
+      "type": "interaction_count",
+      "value": 9,
+      "importance": 0.2,
+      "lastReinforced": 1781776899015,
+      "createdAt": 1781776899015,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第9次交互"
+    }
+  ],
+  "evolutionCount": 7,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-18T14:29:27.389Z"
+}

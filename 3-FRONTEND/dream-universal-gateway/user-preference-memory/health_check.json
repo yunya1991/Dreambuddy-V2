@@ -1,0 +1,21 @@
+{
+  "userId": "health_check",
+  "memories": [
+    {
+      "id": "mem_1781668112264_j9bi",
+      "type": "preferred_symbols",
+      "value": [
+        "BTC"
+      ],
+      "importance": 0.4,
+      "lastReinforced": 1781668112264,
+      "createdAt": 1781668112264,
+      "reinforcementCount": 1,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 BTC"
+    }
+  ],
+  "evolutionCount": 0,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-17T03:48:32.264Z"
+}

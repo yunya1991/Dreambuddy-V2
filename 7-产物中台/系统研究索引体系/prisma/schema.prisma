@@ -241,8 +241,38 @@ model Strategy {
   parsedIntent  Json?                            // IntentParser解析结果
   backtestResult Json?                           // 回测结果
 
+  // 策略状态
+  status        StrategyStatus @default(DRAFT)
+
+  // 推荐引擎扩展字段（可选，兼容现有数据）
+  backtestSharpe          Float?
+  backtestMaxDrawdown     Float?
+  backtestWinRate         Float?
+  backtestProfitFactor    Float?
+  backtestTotalReturn     Float?
+  backtestPeriod          String?
+  backtestDate            DateTime?
+  baselineVersion         String?
+  baselineSharpe          Float?
+  baselineMaxDrawdown     Float?
+  baselineTotalReturn     Float?
+  isBetterThanBaseline    Boolean?
+  sourceEngine            String?
+  sourceReportIds         String?
+  generation              Int?
+  parentStrategyId        String?
+  isInLibrary             Boolean?
+  libraryScore            Float?
+  libraryActive           Boolean?
+  libraryArchivedAt       DateTime?
+  recommendedDays         Int?
+  lastDailyBacktestDate   DateTime?
+  consecutiveBelowBaseline Int?
+
+  // 关联定时任务
   tasks         StrategyTask[]
   taskOrders    StrategyTaskOrder[]
+  backtestRecords StrategyBacktestRecord[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -555,4 +585,83 @@ model Session {
   createdAt     DateTime  @default(now())
 
   @@map("sessions")
+}
+
+// ============================================
+// 策略回测记录 (推荐引擎)
+// ============================================
+
+model StrategyBacktestRecord {
+  id            String   @id @default(cuid())
+  strategyId    String                           // 关联Strategy.id
+  strategy      Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  backtestDate  DateTime                         // 回测日期
+  backtestPeriod String                           // 回测周期: 7D/30D/180D
+  baselineVersion String                          // 基线版本: v9/v15
+  symbol        String                           // 交易标的
+
+  // 策略性能
+  sharpeRatio   Float                            // Sharpe比率
+  maxDrawdown   Float                            // 最大回撤(%)
+  winRate       Float                            // 胜率(%)
+  profitFactor  Float                            // 盈亏比
+  totalReturn   Float                            // 总收益率(%)
+  tradeCount    Int                              // 交易次数
+
+  // 基线性能
+  baselineSharpe Float                           // 基线Sharpe
+  baselineMaxDrawdown Float                      // 基线最大回撤
+  baselineTotalReturn Float                      // 基线总收益率
+
+  // 对比判定
+  isBetterThanBaseline Boolean  @default(false)  // 是否优于基线
+  betterCount  Int      @default(0)               // 优于基线的指标数量
+
+  // 回测详情
+  reportPath   String?                           // 回测报告路径
+  rawMetrics   Json?                             // 原始指标数据
+  runId        String?                           // 关联引擎运行ID
+
+  createdAt    DateTime  @default(now())
+
+  @@index([strategyId, backtestDate])
+  @@map("strategy_backtest_records")
+}
+
+// ============================================
+// 推荐引擎运行日志 (推荐引擎)
+// ============================================
+
+model RecommendationEngineLog {
+  runId        String   @id                      // 运行ID
+  runDate      DateTime                         // 运行日期
+  triggerType  String                           // 触发类型: scheduled/manual/forced
+  status       String                           // 状态: idle/running/success/partial/failed/skipped
+
+  // 运行统计
+  reportsUsed  Int      @default(0)              // 使用的研报数量
+  reportIds    Json                             // 研报ID列表
+  candidatesGenerated Int @default(0)            // 生成的候选策略数
+  strategiesBacktested Int @default(0)           // 回测的策略数
+  strategiesPassed Int @default(0)               // 通过的策略数
+
+  // 推荐结果
+  recommendedStrategyId String?                  // 推荐的策略ID
+  recommendedStrategyName String?                // 推荐的策略名称
+  isForcedRefresh Boolean @default(false)        // 是否强制刷新
+
+  // 决策与错误
+  decisionReason String?                         // 决策原因
+  errorMessage String?                           // 错误信息
+
+  // 时间统计
+  durationMs   Int?                              // 运行耗时(ms)
+  startedAt    DateTime?                         // 开始时间
+  endedAt      DateTime?                         // 结束时间
+
+  createdAt    DateTime  @default(now())
+
+  @@index([runDate, status])
+  @@map("recommendation_engine_logs")
 }
