@@ -77,15 +77,25 @@
       "paths": [
         "dreambuddy/**"
       ]
+    },
+    "governance": {
+      "paths": [
+        "2-GOVERNANCE/**",
+        "8-FEISHU/**",
+        "4-MEMORY/**",
+        "5-BUSINESS/**"
+      ]
     }
   },
   "change_classes": {
     "mainline": {
       "allowed_modules": [
         "product_hub",
+        "frontend_gateway",
         "ci",
         "knowledge",
         "chain_development",
+        "governance",
         "intent_recognition",
         "runtime_data"
       ]
