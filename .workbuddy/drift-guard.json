@@ -49,7 +49,10 @@
         "docs/**",
         ".workbuddy/**",
         "tests/**",
-        "AGENT协作工具/**"
+        "AGENT协作工具/**",
+        "6-图结构上下文压缩/**",
+        "*.png",
+        "*.jpg"
       ]
     },
     "knowledge": {
