@@ -1,0 +1,78 @@
+{
+  "trained_at_ms": 1767071859560,
+  "train_samples": 6073,
+  "new_samples": null,
+  "family": "rf",
+  "filename": "rf_model.pkl",
+  "online_version": null,
+  "feature_set_version": "v1",
+  "feature_set_id": "ml3_v1",
+  "feature_set_sig": "v1:2ec992ea5ab279f0",
+  "signal_feature_set_id": null,
+  "feature_keys": [
+    "returns",
+    "volatility",
+    "dist_ma20",
+    "rsi",
+    "ret_lag_1",
+    "ret_lag_2",
+    "ret_lag_3",
+    "ret_lag_4",
+    "ret_lag_5"
+  ],
+  "metrics": {
+    "auc": 0.5,
+    "brier": 0.0,
+    "win_rate": 0.0,
+    "confusion": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 0,
+      "fn": 0
+    },
+    "calibration": [
+      {
+        "prob": 0.1,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.2,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.3,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.4,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.5,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.6,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.7,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.8,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.9,
+        "actual": 0.0
+      }
+    ],
+    "ece": 0.0,
+    "pr_auc": 0.0,
+    "pnl": [],
+    "coverage": 0.0,
+    "mean_return": 0.0,
+    "sharpe": 0.0
+  }
+}

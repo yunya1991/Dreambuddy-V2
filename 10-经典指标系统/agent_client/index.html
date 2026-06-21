@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css?v=20260310a" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>交易 Ai Agent 客户端</title>
+    <script type="module" src="/src/main.ts?v=20260310a" defer></script>
+  </head>
+
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="title">
+          <div class="title-main">交易 Ai Agent</div>
+          <div class="title-sub">本地只读监控与诊断入口</div>
+        </div>
+        <div class="status">
+          <span id="health-badge" class="badge badge-warn">检测中</span>
+          <span id="health-ts" class="meta">health: --</span>
+          <button id="open-browser" class="btn">浏览器打开</button>
+        </div>
+      </header>
+
+      <section class="body">
+        <div class="panel">
+          <div class="panel-title">Profile</div>
+          <div class="panel-row">
+            <span>环境</span>
+            <span>
+              <select id="profile-select" class="input-sm">
+                <option value="prod">Prod</option>
+                <option value="ai_ex">AI EX</option>
+                <option value="fundamental">Fundamental</option>
+                <option value="pilot">Pilot</option>
+              </select>
+            </span>
+          </div>
+          <div class="panel-row"><span>PROJECT_DIR</span><span><input id="project-dir" class="input-sm" placeholder="/path/to/project" /></span></div>
+          <div class="panel-row"><span>后端端口</span><span id="profile-backend-port">-</span></div>
+          <div class="panel-row"><span>前端端口</span><span id="profile-ui-port">-</span></div>
+          <div class="panel-title">本机进程控制</div>
+          <div class="panel-actions">
+            <button id="btn-nanoclaw-start-top" class="btn btn-sm">启动 NanoClaw</button>
+          </div>
+          <div class="panel-actions">
+            <button id="btn-backend-install" class="btn btn-sm">后端 Install</button>
+            <button id="btn-backend-start" class="btn btn-sm">后端 Start</button>
+            <button id="btn-backend-stop" class="btn btn-sm">后端 Stop</button>
+            <button id="btn-backend-restart" class="btn btn-sm">后端 Restart</button>
+            <button id="btn-backend-status" class="btn btn-sm">后端 Status</button>
+            <button id="btn-backend-logs" class="btn btn-sm">后端 Logs</button>
+            <button id="btn-nanoclaw-start" class="btn btn-sm">启动 NanoClaw</button>
+          </div>
+          <div class="panel-actions">
+            <button id="btn-frontend-install" class="btn btn-sm">前端 Install</button>
+            <button id="btn-frontend-start" class="btn btn-sm">前端 Start</button>
+            <button id="btn-frontend-stop" class="btn btn-sm">前端 Stop</button>
+            <button id="btn-frontend-restart" class="btn btn-sm">前端 Restart</button>
+            <button id="btn-frontend-status" class="btn btn-sm">前端 Status</button>
+            <button id="btn-frontend-logs" class="btn btn-sm">前端 Logs</button>
+          </div>
+          <div class="panel-title">服务状态</div>
+          <div class="panel-row"><span>后端</span><span id="backend-status">--</span></div>
+          <div class="panel-row"><span>最近心跳</span><span id="backend-ts">--</span></div>
+          <div class="panel-row"><span>控制台</span><span id="frontend-status">--</span></div>
+          <div class="panel-title">ML 只读</div>
+          <div class="panel-row"><span>signals</span><span id="ml-signals">--</span></div>
+          <div class="panel-row"><span>orders</span><span id="ml-orders">--</span></div>
+          <div class="panel-row"><span>guard.pass</span><span id="ml-guard-pass">--</span></div>
+          <div class="panel-title">快捷入口</div>
+          <div class="panel-actions">
+            <button id="open-chat" class="btn btn-sm">打开 Chat</button>
+            <button id="open-control" class="btn btn-sm">打开控制台</button>
+            <button id="open-ml" class="btn btn-sm">打开 ML</button>
+          </div>
+          <div class="panel-title">审批与限流</div>
+          <div class="panel-row"><span>令牌</span><span><input id="exec-token" class="input-sm" placeholder="token" /></span></div>
+          <div class="panel-row"><span>审批人A</span><span><input type="checkbox" id="approver-a" /></span></div>
+          <div class="panel-row"><span>审批人B</span><span><input type="checkbox" id="approver-b" /></span></div>
+          <div class="panel-row"><span>限流/分钟</span><span><input id="rate-limit" class="input-sm" type="number" value="3" /></span></div>
+          <div class="panel-row"><span>使用次数</span><span id="rate-used">0</span></div>
+          <div class="panel-title">受控触发</div>
+          <div class="panel-actions">
+            <button id="btn-run-backtest" class="btn btn-sm">运行回测</button>
+            <button id="btn-fetch-report" class="btn btn-sm">拉取报告</button>
+            <button id="btn-refresh-guard" class="btn btn-sm">刷新门禁</button>
+            <button id="btn-fetch-intel" class="btn btn-sm">获取数据快照</button>
+          </div>
+          <div class="panel-title">触发参数</div>
+          <div class="panel-row"><span>config</span><span><input id="bt-config" class="input-sm" placeholder="config name" /></span></div>
+          <div class="panel-row"><span>timerange</span><span><input id="bt-timerange" class="input-sm" placeholder="e.g. 20250101-20260101" /></span></div>
+          <div class="panel-row"><span>strategy</span><span><input id="bt-strategy" class="input-sm" placeholder="Strategy" /></span></div>
+          <div class="panel-row"><span>timeout_sec</span><span><input id="bt-timeout" class="input-sm" type="number" value="0" /></span></div>
+          <div class="panel-row"><span>zip</span><span><input id="bt-zip" class="input-sm" placeholder="result.zip" /></span></div>
+          <div class="panel-title">审计与推送</div>
+          <div class="panel-actions">
+            <button id="btn-view-audit" class="btn btn-sm">查看本地审计</button>
+            <button id="btn-clear-audit" class="btn btn-sm">清空本地审计</button>
+          </div>
+          <div class="panel-title">Strategy 控件</div>
+          <div class="panel-actions">
+            <button id="btn-strategy-optimize" class="btn btn-sm">策略优化</button>
+            <button id="btn-strategy-backtest" class="btn btn-sm">策略回测</button>
+            <button id="btn-strategy-robust" class="btn btn-sm">稳健性</button>
+          </div>
+          <div class="panel-title">Quant 控件</div>
+          <div class="panel-actions">
+            <button id="btn-quant-advance" class="btn btn-sm">灰度推进</button>
+            <button id="btn-quant-rollback" class="btn btn-sm">自动回滚</button>
+          </div>
+          <div class="panel-title">门控/数据/风险/相关性</div>
+          <div class="panel-row"><span>gate.weights</span><span><input id="gate-weights" class="input-sm" placeholder='{\"macro\":0.4,\"event\":0.2,\"fund\":0.2,\"sentiment\":0.2}' /></span></div>
+          <div class="panel-row"><span>gate.half_life_days</span><span><input id="gate-half-life" class="input-sm" type="number" value="7" /></span></div>
+          <div class="panel-actions">
+            <button id="btn-save-gate" class="btn btn-sm">保存门控策略</button>
+            <button id="btn-refresh-dq" class="btn btn-sm">刷新数据质量</button>
+            <button id="btn-eval-risk" class="btn btn-sm">评估风险叠加</button>
+            <button id="btn-update-corr" class="btn btn-sm">更新相关性权重</button>
+          </div>
+          <div class="panel-row"><span>dq.grade</span><span id="dq-grade">-</span></div>
+          <div class="panel-row"><span>risk.pass</span><span id="risk-pass">-</span></div>
+          <div class="panel-title">阶段三：闭环动作</div>
+          <div class="panel-actions">
+            <button id="btn-export-change-pkg" class="btn btn-sm">导出变更包（服务端）</button>
+            <button id="btn-joint-validate" class="btn btn-sm">联合验证（门控+回测）</button>
+            <button id="btn-conflict-resolve" class="btn btn-sm">冲突处置（观望/回滚）</button>
+          </div>
+        </div>
+        <div class="viewer">
+          <iframe id="agent-frame" title="Agent Console"></iframe>
+        </div>
+      </section>
+      <section class="body secondary">
+        <div class="panel">
+          <div class="panel-title">情报包模板</div>
+          <div class="panel-row"><span>llm.model</span><span><input id="llm-model" class="input-sm" value="qwen2.5:7b-instruct" /></span></div>
+          <div class="panel-row"><span>llm.instruction</span><span><input id="llm-instruction" class="input-sm" placeholder="例如：基于最新回测报告，生成建议单与下一步沙箱计划" /></span></div>
+          <div class="panel-actions">
+            <button id="btn-llm-generate" class="btn btn-sm">AI 生成建议</button>
+            <button id="btn-llm-runplan" class="btn btn-sm">执行推荐任务</button>
+          </div>
+          <div class="panel-row"><span>llm.status</span><span id="llm-status">-</span></div>
+          <div class="panel-row"><span>title</span><span><input id="s-title" class="input-sm" /></span></div>
+          <div class="panel-row"><span>summary</span><span><input id="s-summary" class="input-sm" /></span></div>
+          <div class="panel-row"><span>doc.section</span><span><input id="s-doc-section" class="input-sm" /></span></div>
+          <div class="panel-row"><span>doc.rule</span><span><input id="s-doc-rule" class="input-sm" /></span></div>
+          <div class="panel-row"><span>pairs</span><span><input id="s-pairs" class="input-sm" /></span></div>
+          <div class="panel-row"><span>market_regime</span><span><input id="s-regime" class="input-sm" /></span></div>
+          <div class="panel-row"><span>risk.level</span><span>
+            <select id="s-risk-level" class="input-sm">
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+          </span></div>
+          <div class="panel-row"><span>action1.path</span><span><input id="s-action-path1" class="input-sm" /></span></div>
+          <div class="panel-row"><span>action1.from</span><span><input id="s-action-from1" class="input-sm" /></span></div>
+          <div class="panel-row"><span>action1.to</span><span><input id="s-action-to1" class="input-sm" /></span></div>
+          <div class="panel-row"><span>action2.path</span><span><input id="s-action-path2" class="input-sm" /></span></div>
+          <div class="panel-row"><span>action2.from</span><span><input id="s-action-from2" class="input-sm" /></span></div>
+          <div class="panel-row"><span>action2.to</span><span><input id="s-action-to2" class="input-sm" /></span></div>
+          <div class="panel-row"><span>review.approvers</span><span><input id="s-approvers" class="input-sm" placeholder="user1,user2" /></span></div>
+          <div class="panel-actions">
+            <button id="btn-export-suggestion" class="btn btn-sm">导出 JSON</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">结果与审计</div>
+          <div class="panel-row"><span>最新结果</span><span id="result-hint">-</span></div>
+          <div class="result-box"><pre id="result-box">-</pre></div>
+          <div class="panel-row"><span>审计条目</span><span id="audit-count">0</span></div>
+          <div class="result-box"><pre id="audit-box">-</pre></div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>
