@@ -89,7 +89,9 @@
     "fundamental_analysis": {
       "paths": [
         "9-基本面分析/**",
-        "10-经典指标系统/**"
+        "10-经典指标系统/**",
+        "generate_fundamental_sample_data.py",
+        "test_fundamental_endpoints.py"
       ]
     }
   },
