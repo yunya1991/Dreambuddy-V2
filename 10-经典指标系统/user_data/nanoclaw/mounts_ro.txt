@@ -1,0 +1,4 @@
+/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/agent_outbox
+/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data_prod/agent_outbox
+/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data_pilot/agent_outbox_pilot
+/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data_explore/agent_outbox_explore

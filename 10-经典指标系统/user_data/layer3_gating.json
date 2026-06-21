@@ -1,0 +1,8 @@
+{
+  "BREAKOUT": {
+    "group_weight_multiplier": {
+      "SR_BREAKOUT": 1.2,
+      "VOLATILITY": 1.1
+    }
+  }
+}

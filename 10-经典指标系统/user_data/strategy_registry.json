@@ -1,0 +1,288 @@
+{
+  "schema_version": 2,
+  "entries": {
+    "Strategy005|*": {
+      "strategy_id": "Strategy005",
+      "family": "trend",
+      "stage": "research",
+      "tags": [
+        "demo"
+      ],
+      "robustness": "pass",
+      "updated_at": "2026-01-29T13:11:44.239072+00:00",
+      "source_zip": "*"
+    },
+    "Strategy005|backtest-result-2026-01-29_22-43-31.zip": {
+      "strategy_id": "Strategy005",
+      "source_zip": "backtest-result-2026-01-29_22-43-31.zip",
+      "family": "trend",
+      "stage": "research",
+      "tags": [
+        "demo"
+      ],
+      "tier": "unrated",
+      "tier_reason": "prereq_fail:days<180; pf=0.00; dd=0.0%; wr=0.0%; trades=0; days=36; awlr=0.00; sd=0.00 (p50=0.00); robust=good",
+      "eval_policy_ref": "p3_default",
+      "bundle_id": "97257936ac100e9f343e57cdfa79fb60af3bc11c3b926977a371d78586fbe849",
+      "updated_at": "2026-01-29T15:11:30.133204+00:00"
+    },
+    "Strategy005|backtest-result-2026-01-30_00-28-21.zip": {
+      "strategy_id": "Strategy005",
+      "family": "trend",
+      "stage": "research",
+      "tags": [
+        "demo"
+      ],
+      "robustness": "pass",
+      "updated_at": "2026-01-29T16:30:22.596879+00:00",
+      "source_zip": "backtest-result-2026-01-30_00-28-21.zip",
+      "tier": "unrated",
+      "tier_reason": "prereq_fail:days<180; pf=0.00; dd=0.0%; wr=0.0%; trades=0; days=36; awlr=0.00; sd=0.00 (p50=0.00); robust=pass",
+      "signal_density": 0.0,
+      "metrics_summary": {
+        "profit_factor": 0.0,
+        "max_drawdown_pct": 0.0,
+        "trades": 0,
+        "winrate": 0.0,
+        "backtest_days": 36.0,
+        "timeframe": "1h",
+        "timerange": ""
+      },
+      "oos_summary": null,
+      "gate_result": {
+        "ok": false,
+        "ts": 1769704222596,
+        "eval": {
+          "ok": true,
+          "policy": {
+            "min_trades": 80,
+            "max_drawdown_pct": 0.25,
+            "min_weekly_winrate": 0.45,
+            "max_daily_loss_pct": null,
+            "max_weekly_loss_pct": null
+          },
+          "metrics": {
+            "trades": 0,
+            "winrate": null,
+            "weekly_winrate": null,
+            "calmar": null,
+            "sharpe": null,
+            "total_pct": 0.0,
+            "maxdd_pct": 0.0,
+            "dd_recovery_ms_max": null,
+            "max_daily_loss_pct": null,
+            "max_weekly_loss_pct": null
+          },
+          "hard_fails": [
+            "min_trades<80"
+          ],
+          "score": -1e+18,
+          "objective": "maximize score (calmar/sharpe/return) with hard risk constraints"
+        }
+      },
+      "features": {
+        "group_id": "trend_4h_mtf",
+        "feature_set_id": "trend_4h_mtf_v1"
+      },
+      "timeframe": "1h",
+      "pair_universe": [
+        "BTC/USDT:USDT",
+        "ETH/USDT:USDT",
+        "SOL/USDT:USDT"
+      ],
+      "leverage_mode": "isolated",
+      "backtest_spec": {
+        "zip": "backtest-result-2026-01-30_00-28-21.zip",
+        "timerange": "",
+        "timeframe": "1h",
+        "pair_universe": [
+          "BTC/USDT:USDT",
+          "ETH/USDT:USDT",
+          "SOL/USDT:USDT"
+        ],
+        "fees_bps": 4.0,
+        "slippage_bps": null,
+        "starting_balance": 10000,
+        "stake_currency": "USDT",
+        "market_type": "futures",
+        "leverage_mode": "isolated"
+      },
+      "econ_driver": "trend"
+    },
+    "Strategy005|backtest-result-2026-01-30_00-30-29.zip": {
+      "strategy_id": "Strategy005",
+      "family": "trend",
+      "stage": "research",
+      "tags": [
+        "demo"
+      ],
+      "robustness": "pass",
+      "updated_at": "2026-01-29T16:30:30.204440+00:00",
+      "source_zip": "backtest-result-2026-01-30_00-30-29.zip",
+      "tier": "unrated",
+      "tier_reason": "prereq_fail:days<180; pf=0.00; dd=0.0%; wr=0.0%; trades=0; days=36; awlr=0.00; sd=0.00 (p50=0.00); robust=pass",
+      "signal_density": 0.0,
+      "metrics_summary": {
+        "profit_factor": 0.0,
+        "max_drawdown_pct": 0.0,
+        "trades": 0,
+        "winrate": 0.0,
+        "backtest_days": 36.0,
+        "timeframe": "1h",
+        "timerange": ""
+      },
+      "oos_summary": null,
+      "gate_result": {
+        "ok": false,
+        "ts": 1769704230204,
+        "eval": {
+          "ok": true,
+          "policy": {
+            "min_trades": 80,
+            "max_drawdown_pct": 0.25,
+            "min_weekly_winrate": 0.45,
+            "max_daily_loss_pct": null,
+            "max_weekly_loss_pct": null
+          },
+          "metrics": {
+            "trades": 0,
+            "winrate": null,
+            "weekly_winrate": null,
+            "calmar": null,
+            "sharpe": null,
+            "total_pct": 0.0,
+            "maxdd_pct": 0.0,
+            "dd_recovery_ms_max": null,
+            "max_daily_loss_pct": null,
+            "max_weekly_loss_pct": null
+          },
+          "hard_fails": [
+            "min_trades<80"
+          ],
+          "score": -1e+18,
+          "objective": "maximize score (calmar/sharpe/return) with hard risk constraints"
+        }
+      },
+      "features": {
+        "group_id": "trend_4h_mtf",
+        "feature_set_id": "trend_4h_mtf_v1"
+      },
+      "timeframe": "1h",
+      "pair_universe": [
+        "BTC/USDT:USDT",
+        "ETH/USDT:USDT",
+        "SOL/USDT:USDT"
+      ],
+      "leverage_mode": "isolated",
+      "backtest_spec": {
+        "zip": "backtest-result-2026-01-30_00-30-29.zip",
+        "timerange": "",
+        "timeframe": "1h",
+        "pair_universe": [
+          "BTC/USDT:USDT",
+          "ETH/USDT:USDT",
+          "SOL/USDT:USDT"
+        ],
+        "fees_bps": 4.0,
+        "slippage_bps": null,
+        "starting_balance": 10000,
+        "stake_currency": "USDT",
+        "market_type": "futures",
+        "leverage_mode": "isolated"
+      },
+      "econ_driver": "trend"
+    },
+    "Strategy006|backtest-result-2026-01-30_00-40-31.zip": {
+      "strategy_id": "Strategy006",
+      "source_zip": "backtest-result-2026-01-30_00-40-31.zip",
+      "family": "trend",
+      "stage": "research",
+      "tags": [
+        "repo",
+        "local"
+      ],
+      "robustness": "unknown",
+      "tier": "unrated",
+      "tier_reason": "prereq_fail:days<180; pf=0.00; dd=0.0%; wr=0.0%; trades=0; days=6; awlr=0.00; sd=0.00 (p50=0.00); robust=unknown",
+      "signal_density": 0.0,
+      "metrics_summary": {
+        "profit_factor": 0.0,
+        "max_drawdown_pct": 0.0,
+        "trades": 0,
+        "winrate": 0.0,
+        "backtest_days": 6.0,
+        "timeframe": "1h",
+        "timerange": "20251201-20251220"
+      },
+      "oos_summary": null,
+      "gate_result": {
+        "ok": false,
+        "ts": 1769704855041,
+        "eval": {
+          "ok": true,
+          "policy": {
+            "min_trades": 80,
+            "max_drawdown_pct": 0.25,
+            "min_weekly_winrate": 0.45,
+            "max_daily_loss_pct": null,
+            "max_weekly_loss_pct": null
+          },
+          "metrics": {
+            "trades": 0,
+            "winrate": null,
+            "weekly_winrate": null,
+            "calmar": null,
+            "sharpe": null,
+            "total_pct": 0.0,
+            "maxdd_pct": 0.0,
+            "dd_recovery_ms_max": null,
+            "max_daily_loss_pct": null,
+            "max_weekly_loss_pct": null
+          },
+          "hard_fails": [
+            "min_trades<80"
+          ],
+          "score": -1e+18,
+          "objective": "maximize score (calmar/sharpe/return) with hard risk constraints"
+        }
+      },
+      "features": {
+        "group_id": "default",
+        "feature_set_id": ""
+      },
+      "timeframe": "1h",
+      "pair_universe": [
+        "BTC/USDT:USDT",
+        "ETH/USDT:USDT",
+        "SOL/USDT:USDT"
+      ],
+      "leverage_mode": "isolated",
+      "backtest_spec": {
+        "zip": "backtest-result-2026-01-30_00-40-31.zip",
+        "timerange": "20251201-20251220",
+        "timeframe": "1h",
+        "pair_universe": [
+          "BTC/USDT:USDT",
+          "ETH/USDT:USDT",
+          "SOL/USDT:USDT"
+        ],
+        "fees_bps": 4.0,
+        "slippage_bps": null,
+        "starting_balance": 10000,
+        "stake_currency": "USDT",
+        "market_type": "futures",
+        "leverage_mode": "isolated"
+      },
+      "updated_at": "2026-01-29T16:51:20.375024+00:00",
+      "econ_driver": "trend",
+      "eval_policy_ref": "p3_default",
+      "owner": "local_repo",
+      "bundle_id": "5f7d01ac77350e0b63ccc93d1a95a42d20c399c356c18905292b47e9735f0168",
+      "source": {
+        "repo_url": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/local_repo_freqtrade",
+        "commit": "a8c5bd1b14e41b20d4b3f468e30e9da684c1efd7",
+        "path": "user_data/strategies"
+      }
+    }
+  }
+}
