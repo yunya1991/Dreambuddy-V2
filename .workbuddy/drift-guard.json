@@ -85,6 +85,12 @@
         "4-MEMORY/**",
         "5-BUSINESS/**"
       ]
+    },
+    "fundamental_analysis": {
+      "paths": [
+        "9-基本面分析/**",
+        "10-经典指标系统/**"
+      ]
     }
   },
   "change_classes": {
@@ -97,7 +103,8 @@
         "chain_development",
         "governance",
         "intent_recognition",
-        "runtime_data"
+        "runtime_data",
+        "fundamental_analysis"
       ]
     },
     "integration": {
@@ -109,7 +116,8 @@
         "knowledge",
         "chain_development",
         "intent_recognition",
-        "runtime_data"
+        "runtime_data",
+        "fundamental_analysis"
       ]
     },
     "infra": {
