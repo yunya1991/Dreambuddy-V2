@@ -1,0 +1,52 @@
+{
+  "ok": true,
+  "ts": 1781892047062,
+  "research_root": "/Users/zhangjiangtao/ft_userdata/基本面分析_fundamental",
+  "trading_root": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统",
+  "mode": "baseline",
+  "baseline_sec": 28800,
+  "burst_sec": 900,
+  "burst_hold_sec": 7200,
+  "sla_sec": 900,
+  "effective_interval_sec": 28800,
+  "last_full_sync_ms": 1781870434850,
+  "next_due_ms": 1781899234850,
+  "trigger": {
+    "hit": false,
+    "force_sync": false,
+    "reasons": []
+  },
+  "upstream_probe": {
+    "brief": {
+      "name": "brief_v3_20260421_optimized.md",
+      "mtime_ms": 1776759030106,
+      "size": 22403
+    },
+    "risk_action_events": {
+      "name": "risk_action_events_20260421_1607.json",
+      "mtime_ms": 1776759030076,
+      "size": 47611,
+      "risk_action": "hold"
+    },
+    "flow_regime": {
+      "name": "flow_regime_20260412_1256.json",
+      "mtime_ms": 1775998569109,
+      "size": 5324,
+      "turning_point_state": "",
+      "quality": "",
+      "coverage": null
+    },
+    "narrative_registry": {
+      "name": "narrative_registry_20260420_1916.json",
+      "mtime_ms": 1776683793427,
+      "size": 7771,
+      "quality": ""
+    },
+    "signature": "d4f9ba8df11629554596c988d3985186b464f383"
+  },
+  "scanned": 0,
+  "copied": 0,
+  "missing_sources": [],
+  "touched": [],
+  "skipped": true
+}

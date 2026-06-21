@@ -1,0 +1,46 @@
+{
+  "ts_ms": 1782028510101,
+  "generated_at": "2026-06-21T07:55:10.101181+00:00",
+  "regime": "bullish",
+  "overall_sentiment": 0.34,
+  "btc_price": 65420.88,
+  "net_flow": 1.24,
+  "net_flow_usd": 1240000000,
+  "source_signals": {
+    "etf_flow": {
+      "btc_etf_net_inflow": 1200000000,
+      "stablecoin_supply_delta": 400000000,
+      "state": "risk_on"
+    },
+    "leverage": {
+      "binance": {
+        "funding_rate": 0.00012,
+        "open_interest_24h_change": 5.6,
+        "long_short_ratio": 1.18
+      }
+    },
+    "onchain": {
+      "exchange_net_flow_btc": -12000.0,
+      "whale_transactions": 421,
+      "glassnode_sopr": 1.034
+    }
+  },
+  "signals": [
+    {
+      "name": "etf_inflow",
+      "direction": "bullish",
+      "strength": 0.8
+    },
+    {
+      "name": "exchange_outflow",
+      "direction": "bullish",
+      "strength": 0.7
+    },
+    {
+      "name": "funding_rate",
+      "direction": "neutral",
+      "strength": 0.5
+    }
+  ],
+  "summary_markdown": "## 📊 核心信号概览\n\n- 状态: **多头主导** (regime=bullish)\n- 整体情绪: {0.34}（偏乐观）\n- 净资金流: +1.24 B USD\n\n## 📈 三层信号分解\n\n### 1. 外源层（ETF + 稳定币）\n比特币 ETF 连续 5 日净流入，本周累计 1.2 B USD；稳定币总供给 +0.4 B，流动性扩张支持风险资产。\n\n### 2. 杠杆层（衍生品）\nBinance 合约资金费率中性偏多，持仓量 24h +5.6%，多空比 1.18，多头略占优。\n\n### 3. 链上层\n交易所净流出 -12K BTC，巨鲸转账活跃 (+14%)，SOPR 处于赢利区但未极端。\n\n## 🧭 新增情绪指标面板\n\n情绪指数 0.34，位于偏乐观区间，未超历史极值。\n\n## ⚠️ 风险提示\n\n短期 RSI 超买，警惕技术回调；关注 ETF 资金流逆转。"
+}

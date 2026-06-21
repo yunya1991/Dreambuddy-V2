@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/nanoclaw/core_task1/flow_brief_receipt.schema.json",
+  "title": "core_task1 flow brief receipt contract",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event": {
+      "type": "string",
+      "const": "flow.brief.generate.receipt"
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 8
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 16
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "brief_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "regime_path": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["brief_path", "regime_path"]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bias": {
+          "type": "string",
+          "enum": ["bullish", "bearish", "neutral", "unknown"]
+        },
+        "composite": {
+          "type": "number"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "filter": {
+          "type": "string",
+          "enum": ["enable", "disable", "slowdown", "unknown"]
+        }
+      },
+      "required": ["bias", "composite", "confidence", "filter"]
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "overall_quality": {
+          "type": "string",
+          "enum": ["ok", "stale", "missing", "backfilled", "suspect", "unknown"]
+        },
+        "coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "missing_data": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["overall_quality", "coverage", "missing_data"]
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["event", "trace_id", "idempotency_key", "ok", "ts", "artifacts", "summary", "quality", "errors"]
+}

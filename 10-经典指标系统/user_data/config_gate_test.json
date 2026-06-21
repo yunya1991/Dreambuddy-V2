@@ -1,0 +1,68 @@
+{
+    "max_open_trades": 3,
+    "stake_currency": "USDT",
+    "stake_amount": 50,
+    "tradable_balance_ratio": 0.05,
+    "fiat_display_currency": "USD",
+    "timeframe": "1h",
+    "dry_run": false,
+    "cancel_open_orders_on_exit": true,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "liquidation_buffer": 0.05,
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 30,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exit_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exchange": {
+        "name": "gate",
+        "key": "${GATE_KEY}",
+        "secret": "${GATE_SECRET}",
+        "ccxt_config": {
+            "enableRateLimit": true,
+            "timeout": 30000,
+            "options": {
+                "defaultType": "swap"
+            }
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": true,
+            "timeout": 30000
+        },
+        "pair_whitelist": [
+            "BTC/USDT:USDT",
+            "SOL/USDT:USDT", 
+            "ETH/USDT:USDT"
+        ]
+    },
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        }
+    ],
+    "api_server": {
+        "enabled": false,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8888,
+        "username": "admin",
+        "password": "admin"
+    },
+    "strategy": "Strategy005",
+    "initial_state": "running",
+    "internals": {
+        "process_throttle_secs": 5
+    },
+    "position_adjustment_enable": true,
+    "max_entry_position_adjustment": 0
+}

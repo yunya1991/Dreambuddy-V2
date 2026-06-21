@@ -1,0 +1,19 @@
+[Unit]
+Description=OKX TSDB Incremental Ingest Batch %i
+After=network.target
+
+[Service]
+Type=oneshot
+# 修改为你的项目根目录
+WorkingDirectory=/path/to/project
+Environment=PYTHONPATH=/path/to/project
+Environment=OKX_INST_IDS=BTC-USDT,ETH-USDT
+Environment=OKX_BARS=5m,1H,4H
+Environment=OKX_LIMIT=200
+Environment=OKX_REQ_DELAY_SEC=1
+Environment=OKX_INST_DELAY_SEC=0.5
+Environment=OKX_BAR_DELAY_SEC=0.5
+ExecStart=/path/to/project/venv/bin/python /path/to/project/scripts/okx_tsdb_incremental.py
+
+[Install]
+WantedBy=multi-user.target

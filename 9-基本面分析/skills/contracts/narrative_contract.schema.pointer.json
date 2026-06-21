@@ -1,0 +1,14 @@
+{
+  "schema": "skills.contract_pointer.v1",
+  "type": "json_schema_pointer",
+  "name": "nanoclaw.core_task1.narrative_contract",
+  "target": {
+    "path": "ops/nanoclaw/core_task1/schema/narrative_contract.schema.json",
+    "title": "core_task1 narrative contract"
+  },
+  "stage": "A.1",
+  "notes": [
+    "This is a pointer-only mirror for unified catalog browsing.",
+    "Do not edit the target schema via this file; edit the target file directly."
+  ]
+}

@@ -2,7 +2,8 @@
  * Compressor Adapter — 统一入口
  *
  * Feature Flag：
- * - USE_SCHEDULER=true/false 控制全局开关
+ * - 默认启用（与 Scheduler/CostKeeper 联动）
+ * - 设置 USE_SCHEDULER=false 可全局禁用
  * - 默认降级策略：text-summarize（文本摘要）
  */
 
@@ -20,7 +21,27 @@ export type {
   AdapterHealth,
   AdapterStats,
   AdapterConfig,
+  DecisionNode,
+  ReasoningPath,
+  ConflictDetection,
+  NextStepSuggestion,
+  InferenceResult,
+  SessionMeta,
+  SessionData,
 } from './types';
+
+// ==================== 编排器适配器 ====================
+export {
+  OrchestrateAdapter,
+  getOrchestrateAdapter,
+  createOrchestrateAdapter,
+} from './orchestrate-adapter';
+export type {
+  OrchestrateConfig,
+  OrchestrateRequest,
+  OrchestrateResponse,
+  OrchestrateStatus,
+} from './orchestrate-adapter';
 
 // ==================== 全局单例（应用级共享） ====================
 
@@ -33,6 +54,7 @@ let _initialized = false;
  * 特性：
  * - 延迟初始化（第一次调用时才初始化）
  * - 全局共享（整个应用生命周期内）
+ * - 默认启用（与 Scheduler/CostKeeper 联动）
  */
 export function getCompressorAdapter(): CompressorAdapter {
   if (!_adapter) {

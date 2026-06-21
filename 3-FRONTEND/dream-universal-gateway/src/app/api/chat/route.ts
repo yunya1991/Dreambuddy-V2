@@ -29,7 +29,7 @@ import {
 
 // ========================================
 // P0: 调度器（Hermes-Planner）— Cost Keeper + Skip Gate
-// Feature Flag: process.env.USE_SCHEDULER = "true" | "false"（默认 false）
+// Feature Flag: process.env.USE_SCHEDULER = "true" | "false"（默认 true，已启用）
 // 作用: 1) 追踪每次请求的 token 用量
 //       2) 用轻量启发式判断哪些步骤可跳过，省 token / 降延迟
 // ========================================
@@ -49,20 +49,20 @@ import {
 
 // ========================================
 // P0+: 图文压缩适配器（graph-context-compressor）
-// Feature Flag: USE_SCHEDULER=true 时同时启用
+// 与调度器联动启用（默认已开启）
 // 作用: 对 message_history 进行图结构压缩，保留上下文关系
 // ========================================
 import { compressorAdapter, type CompressResult } from "@/lib/compressor-adapter";
-import { sessionGraphStates } from "@/lib/task-manager";
+import { sessionGraphStates, executeClassicChain, type TaskFile } from "@/lib/task-manager";
 
-// 计算 scheduler 是否启用（仅当环境变量显式设置为 "true" / "1" 时才激活）
+// 计算 scheduler 是否启用（默认 true，仅当显式设置 USE_SCHEDULER=false 时禁用）
 const SCHEDULER_ENABLED =
   typeof process !== 'undefined' &&
-  (process.env.USE_SCHEDULER === 'true' || process.env.USE_SCHEDULER === '1');
+  !(process.env.USE_SCHEDULER === 'false' || process.env.USE_SCHEDULER === '0');
 
 // 在 console 中标识一次（启动时）
 if (SCHEDULER_ENABLED) {
-  console.log('[Hermes-Planner] P0 Scheduler ENABLED: CostKeeper + SkipGate');
+  console.log('[Hermes-Planner] P0 Scheduler ENABLED (default): CostKeeper + SkipGate + Compressor');
 } else {
   console.log('[Hermes-Planner] P0 Scheduler DISABLED (set USE_SCHEDULER=true to enable)');
 }
@@ -78,6 +78,8 @@ interface SessionContext {
   message_history: string[];
   /** Phase A: 扩展 thinking_mode 以支持步进式执行 */
   thinking_mode: "quick" | "deep" | "scheduler" | "stepwise";
+  /** 交易模式: ai_skill 或 classic */
+  trading_mode?: "ai_skill" | "classic";
   cached_responses: Map<string, { response: string; timestamp: number }>;
 }
 
@@ -337,7 +339,7 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
           method: "rule",
           thinking_mode: mode,
           routing: {
-            chain: getChainForIntent(intent, mode),
+            chain: getChainForIntent(intent, mode, context?.trading_mode),
             priority: 'high',
             cacheable: false,
           },
@@ -405,7 +407,7 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
       entities: extractEntities(msg), thinking_mode: mode,
       complexity: "moderate",
       method: "rule",
-      routing: { chain: getChainForIntent('deep_analysis', mode), priority: 'high', cacheable: false },
+      routing: { chain: getChainForIntent('deep_analysis', mode, context?.trading_mode), priority: 'high', cacheable: false },
     };
   }
 
@@ -452,7 +454,7 @@ function recognizeIntentRule(message: string, context?: SessionContext): IntentR
       entities: extractEntities(msg),
       complexity: "complex",
       method: "rule",
-      routing: { chain: getChainForIntent('developer', mode), priority: 'high', cacheable: false },
+      routing: { chain: getChainForIntent('developer', mode, context?.trading_mode), priority: 'high', cacheable: false },
     };
   }
 
@@ -563,7 +565,7 @@ ${context?.message_history && context.message_history.length > 0 ? `近3条:${co
       method: "llm",
       thinking_mode: thinkingMode,
       routing: {
-        chain: getChainForIntent(parsed.intent as IntentType, thinkingMode),
+        chain: getChainForIntent(parsed.intent as IntentType, thinkingMode, context?.trading_mode),
         priority: (parsed.confidence || 0.7) >= 0.8 ? 'high' : 'medium',
         cacheable: parsed.intent === 'market_query' || parsed.intent === 'simple_qa',
       },
@@ -577,8 +579,62 @@ ${context?.message_history && context.message_history.length > 0 ? `近3条:${co
 /**
  * 根据意图和思考模式获取处理链路
  * 策略分析使用S系列思维链
+ * 经典交易使用C系列思维链（调用经典指标系统API）
  */
-function getChainForIntent(intent: IntentType, thinkingMode: ThinkingMode): string[] {
+function getChainForIntent(intent: IntentType, thinkingMode: ThinkingMode, tradingMode?: string): string[] {
+  // ========== C系列经典交易思维链 ==========
+  // C1=宏观扫描, C2=代币宇宙, C3=Gate评估, C4=竞技场, C5=策略库, C6=信号系统, C7=离场监控, C8=执行追踪
+  if (tradingMode === 'classic') {
+    const CLASSIC_QUICK = ['C1_MACRO_SCAN', 'C3_GATE_CHECK'];
+    const CLASSIC_DEEP = [
+      'C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C3_GATE_CHECK',
+      'C4_ARENA_REVIEW', 'C5_STRATEGY_SELECT', 'C6_SIGNAL_REVIEW',
+      'C7_EXIT_MONITOR', 'C8_TRACKING_AUDIT'
+    ];
+
+    // 经典模式意图映射
+    const classicIntentMap: Record<IntentType, string[]> = {
+      'market_query': ['C1_MACRO_SCAN'],
+      'macro_analysis': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+      'deep_analysis': CLASSIC_DEEP,
+      'triple_chain': CLASSIC_DEEP,
+      'scenario_sim': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C5_STRATEGY_SELECT'],
+      'strategy_verify': ['C3_GATE_CHECK', 'C4_ARENA_REVIEW'],
+      'strategy_recommendation': ['C3_GATE_CHECK', 'C4_ARENA_REVIEW', 'C5_STRATEGY_SELECT'],
+      'execute_trade': CLASSIC_DEEP,
+      'entry_timing': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C3_GATE_CHECK', 'C6_SIGNAL_REVIEW'],
+      'exit_timing': ['C7_EXIT_MONITOR', 'C8_TRACKING_AUDIT'],
+      'risk_analysis': ['C3_GATE_CHECK', 'C7_EXIT_MONITOR', 'C8_TRACKING_AUDIT'],
+      'backtest_help': ['C3_GATE_CHECK', 'C4_ARENA_REVIEW'],
+      'simple_qa': ['C0_DIRECT_ANSWER'],
+      'system_config': ['C0_DIRECT_ANSWER'],
+      'credits_query': ['C0_DIRECT_ANSWER'],
+      'artifact_query': ['C5_STRATEGY_SELECT'],
+      'risk_alert_response': ['C3_GATE_CHECK', 'C7_EXIT_MONITOR'],
+      'command': ['C1_MACRO_SCAN'],
+      // 其他多场景意图 - 经典模式
+      'asset_comparison': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+      'position_sizing': ['C1_MACRO_SCAN', 'C3_GATE_CHECK', 'C8_TRACKING_AUDIT'],
+      'market_sentiment': ['C1_MACRO_SCAN'],
+      'trend_analysis': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+      'technical_signal': ['C6_SIGNAL_REVIEW'],
+      'support_resistance': ['C1_MACRO_SCAN', 'C6_SIGNAL_REVIEW'],
+      'portfolio_allocation': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C3_GATE_CHECK'],
+      'portfolio_rebalance': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C8_TRACKING_AUDIT'],
+      'event_analysis': ['C1_MACRO_SCAN'],
+      'concept_explain': ['C0_DIRECT_ANSWER'],
+      'volatility_analysis': ['C1_MACRO_SCAN', 'C6_SIGNAL_REVIEW'],
+      'dca_strategy': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C3_GATE_CHECK'],
+      'arbitrage_opportunity': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+      'sector_rotation': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+      'developer': ['C5_STRATEGY_SELECT', 'C3_GATE_CHECK'],
+    };
+
+    const chain = classicIntentMap[intent] || CLASSIC_QUICK;
+    return thinkingMode === 'quick' ? chain.slice(0, 2) : chain;
+  }
+
+  // ========== S系列AI SKILL思维链（现有逻辑）==========
   // S系列策略思维链：S1=调研, S2=分析, S3=设计, S4=验证, S5=执行
   const S1_2 = ['S1_RESEARCH', 'S2_ANALYSIS'];
   const S1_3 = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN'];
@@ -772,7 +828,7 @@ function detectCombinedIntents(message: string, primaryIntent: string): string[]
  * @param thinkingMode 思考模式
  * @returns string[] - 完整组合思维链（去重后）
  */
-function buildCombinedChain(combinedIntents: string[], thinkingMode: 'quick' | 'deep' | 'scheduler' | 'stepwise'): string[] {
+function buildCombinedChain(combinedIntents: string[], thinkingMode: 'quick' | 'deep' | 'scheduler' | 'stepwise', tradingMode?: string): string[] {
   if (combinedIntents.length <= 1) return [];
 
   const allSteps: string[] = [];
@@ -780,7 +836,7 @@ function buildCombinedChain(combinedIntents: string[], thinkingMode: 'quick' | '
 
   for (const intent of combinedIntents) {
     // 对每个意图获取对应思维链
-    const subChain = getChainForIntent(intent as IntentType, thinkingMode);
+    const subChain = getChainForIntent(intent as IntentType, thinkingMode, tradingMode);
     for (const step of subChain) {
       if (!stepSet.has(step)) {
         stepSet.add(step);
@@ -3757,18 +3813,74 @@ export async function POST(request: NextRequest) {
   // shouldEnableScheduler 在 try 外面声明，确保 catch 块可以访问
   let shouldEnableScheduler = SCHEDULER_ENABLED;
 
+  // ===== body 缓存（流只能消费一次，新增端点与原聊天逻辑共享同一个 body） =====
+  const body: any = await request.json().catch(() => ({}));
+
+  // ============ 会话管理 POST /api/chat action=save_session / delete_session / analyze_session ============
+  try {
+    const action = body.action;
+
+    if (action === "save_session") {
+      const sessionId = body.session_id || `session_${Date.now()}`;
+      const messages = body.messages || [];
+      sessionContexts.set(sessionId, {
+        message_history: messages,
+        last_intent: body.intent || '',
+        last_symbol: body.symbol || '',
+      } as any);
+      return NextResponse.json({ success: true, data: { session_id: sessionId, message_count: messages.length } });
+    }
+
+    if (action === "delete_session") {
+      const sessionId = body.session_id;
+      if (sessionId) sessionContexts.delete(sessionId);
+      return NextResponse.json({ success: true, data: { deleted: !!sessionId, session_id: sessionId } });
+    }
+
+    if (action === "analyze_session") {
+      const sessionId = body.session_id || `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const messages = body.messages || [];
+      const n = messages.length;
+      // 轻量级推理引擎（压缩比率分析，基于消息数量计算，简化版）
+      return NextResponse.json({
+        success: true,
+        data: {
+          session_id: sessionId,
+          compression: {
+            original_nodes: n,
+            retained: Math.max(3, Math.round(n * 0.4)),
+            compressed: Math.max(0, n - Math.max(3, Math.round(n * 0.4))),
+            ratio: n > 0 ? 0.4 : 1,
+          },
+          risk_score: Math.min(100, 20 + Math.max(0, n * 3)),
+          inference: {
+            intent: body.intent || 'general',
+            key_decisions: messages.slice(0, 3).map((m: any, i: number) => ({
+              id: `decision_${i}`,
+              content: typeof m === 'string' ? m.slice(0, 50) : (m as any).content?.slice(0, 50),
+            })),
+          },
+          next_steps: messages.length > 5 ? ['继续压缩上下文', '聚焦关键决策', '检测潜在冲突'] : ['积累更多消息', '继续对话'],
+          conflicts: [],
+          summary: `会话包含 ${n} 条消息，建议保留 ${Math.max(3, Math.round(n * 0.4))} 条关键节点`,
+        },
+      });
+    }
+  } catch (e) {
+    // JSON 解析失败则继续进入正常聊天处理
+  }
+
   try {
     chatTraceId = `chat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    const body = await request.json();
-    const { message, session_id, thinking_mode, user_role, confirm_step } = body;
+    const { message, session_id, thinking_mode, user_role, confirm_step, trading_mode } = body;
 
     if (!message) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
     // ===== P0: Cost Keeper 初始化（按 session 隔离） =====
-    // 启用条件：USE_SCHEDULER=true 环境变量 或 thinking_mode=scheduler
-    // 这样既支持全局配置，也支持前端动态切换
+    // 启用条件：默认启用（SCHEDULER_ENABLED=true），或 thinking_mode=scheduler
+    // 设置 USE_SCHEDULER=false 可全局禁用
     const schedulerEnabledByMode = thinking_mode === 'scheduler';
     shouldEnableScheduler = SCHEDULER_ENABLED || schedulerEnabledByMode;
     
@@ -3806,6 +3918,7 @@ export async function POST(request: NextRequest) {
         user_role: user_role || "FREE",
         message_history: [],
         thinking_mode: thinking_mode || "quick",
+        trading_mode: trading_mode || "ai_skill",
         cached_responses: new Map(),
       };
       sessionContexts.set(ctxSessionId, context);
@@ -3814,6 +3927,7 @@ export async function POST(request: NextRequest) {
     // 更新思考模式和角色
     if (thinking_mode) context.thinking_mode = thinking_mode;
     if (user_role) context.user_role = user_role;
+    if (trading_mode) context.trading_mode = trading_mode;
 
     // ===== 步进模式自动识别：用户消息中包含 stepwise 关键词时切换模式 =====
     // 用户说 "一步步分析"/"分步来"/"不要自动"/"每步确认"/"步进模式" 等
@@ -4235,63 +4349,67 @@ export async function POST(request: NextRequest) {
 
     // ===== P2: developer 意图专属路径 —— 走 S5 完整 E 链（E1→E2→E3）
     if (intentResult.intent === 'developer') {
-      console.log(`[Chat API] S5 Engine: strategy code dev`);
+      // 经典交易模式下 developer 也走 C 系列链（策略库 + 门控）
+      if (context.trading_mode === 'classic') {
+        console.log(`[Chat API] Classic 模式下 developer 意图 → C 系列链`);
+        // fallthrough 到路由层，由 routeIntent 生成 C5+C3 链
+      } else {
+        console.log(`[Chat API] S5 Engine: strategy code dev`);
 
-      // 调用 S5 执行引擎（完整 E1→E2→E3 链，一次完成）
-      const s5Resp = await executeS5ForChat(
-        ctxSessionId,
-        message,
-        context.thinking_mode || 'quick',
-        (message.match(/[\u4e00-\u9fa5]/) ? 'zh' : 'en'),
-      );
+        const s5Resp = await executeS5ForChat(
+          ctxSessionId,
+          message,
+          context.thinking_mode || 'quick',
+          (message.match(/[\u4e00-\u9fa5]/) ? 'zh' : 'en'),
+        );
 
-      const devStepsForFrontend = s5Resp.allStepsForDisplay.map((s, idx) => ({
-        id: s.id,
-        number: idx + 1,
-        name: `${s.icon} ${s.label}`,
-        status: s.status,
-      }));
+        const devStepsForFrontend = s5Resp.allStepsForDisplay.map((s, idx) => ({
+          id: s.id,
+          number: idx + 1,
+          name: `${s.icon} ${s.label}`,
+          status: s.status,
+        }));
 
-      // 标记为 developer 意图（作为 session 的 last_intent）
-      context.last_intent = 'developer';
-      context.message_history.push(message);
+        context.last_intent = 'developer';
+        context.message_history.push(message);
 
-      return NextResponse.json({
-        success: true,
-        data: {
-          content: s5Resp.content,
-          chainState: {},
-          strategyChainState: {
-            scope: `策略代码开发: ${message.slice(0, 60)}`,
-            currentStep: devStepsForFrontend[devStepsForFrontend.length - 1]?.id,
-            steps: devStepsForFrontend,
-            complexity: context.thinking_mode,
-            createdAt: new Date().toISOString(),
-            modifiedAt: new Date().toISOString(),
+        return NextResponse.json({
+          success: true,
+          data: {
+            content: s5Resp.content,
+            chainState: {},
+            strategyChainState: {
+              scope: `🛠 策略代码开发: ${message.slice(0, 60)}`,
+              currentStep: s5Resp.allStepsForDisplay[s5Resp.allStepsForDisplay.length - 1]?.id,
+              steps: devStepsForFrontend,
+              complexity: context.thinking_mode,
+              createdAt: new Date().toISOString(),
+              modifiedAt: new Date().toISOString(),
+            },
+            stepProgress: {
+              steps: s5Resp.allStepsForDisplay.map(s => ({ id: s.id, status: s.status })),
+              current_step: s5Resp.allStepsForDisplay[s5Resp.allStepsForDisplay.length - 1]?.id,
+            },
+            market: null,
+            intent: 'developer',
+            confidence: intentResult.confidence,
+            routing: {
+              loop_type: 'execution' as const,
+              chain: s5Resp.allStepsForDisplay.map(s => s.id),
+              reasoning: '策略代码开发专用 E 链',
+              complexity: context.thinking_mode || 'quick',
+              priority: 'high',
+            },
+            complexity: intentResult.complexity,
+            method: intentResult.method,
+            llm_status: 'completed',
+            llm_model: process.env.DEEPSEEK_MODEL || "deepseek-v4-pro",
+            timestamp: new Date().toISOString(),
+            needsConfirmation: false,
+            nextStep: null,
           },
-          stepProgress: {
-            steps: s5Resp.allStepsForDisplay,
-            current_step: s5Resp.allStepsForDisplay[s5Resp.allStepsForDisplay.length - 1]?.id,
-          },
-          market: null,
-          intent: 'developer',
-          confidence: intentResult.confidence,
-          routing: {
-            chain: s5Resp.allStepsForDisplay.map((s: { id: string }) => s.id),
-            loop_type: 'execution',
-            role_check: 'allowed',
-            requires_confirmation: false,
-            message_history: [],
-          },
-          complexity: context.thinking_mode,
-          method: 's5-strategy-code-engine',
-          llm_status: await checkLLMStatus(),
-          llm_model: process.env.DEEPSEEK_MODEL || "deepseek-v4-pro",
-          timestamp: new Date().toISOString(),
-          needsConfirmation: false,
-          nextStep: null,
-        },
-      });
+        });
+      }
     }
 
     // 📡 监控埋点: 意图识别完成
@@ -4371,12 +4489,88 @@ export async function POST(request: NextRequest) {
     }
     console.log(`[Chat API] 执行模式=${executionMode}, chain=${chain.join(' → ')}`);
 
+    // ==== Classic 经典交易模式：Early Intercept ====
+    // 当 trading_mode=classic 或 chain 含 C系列步骤时，直接调用经典指标系统 API 并返回结构化报告
+    // 此时不走 generateChainResponse (它只处理 S 系列步骤)
+    if ((routing as any).is_classic_mode === true || chain.some(s => s.startsWith('C'))) {
+      console.log(`[Chat API] Classic 模式 → 调用经典指标系统 API 跳过 LLM 生成`);
+
+      const lang = message.match(/[\u4e00-\u9fa5]/) ? 'zh' : 'en';
+      const classicTask: TaskFile = {
+        task_id: `classic_${Date.now()}`,
+        message: message,
+        intent: {
+          type: intentResult.intent as any,
+          confidence: intentResult.confidence,
+          entities: intentResult.entities || {},
+        },
+        thinking_mode: (context.thinking_mode || 'deep') as any,
+        trading_mode: 'classic',
+        session_id: ctxSessionId,
+        priority: 'high',
+        status: 'completed',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        source: 'chat',
+        metadata: {},
+      };
+
+      const classicResult = await executeClassicChain(classicTask, lang);
+
+      // 5. 更新会话上下文（在 early intercept 中也要做）
+      context.last_intent = intentResult.intent;
+      context.last_symbol = intentResult.entities?.symbol || context.last_symbol;
+      context.last_complexity = intentResult.complexity;
+      context.message_history.push(message);
+      if (context.message_history.length > 20) {
+        context.message_history = context.message_history.slice(-20);
+      }
+
+      const classicStepsForDisplay = chain.map((s: string, idx: number) => ({
+        id: s,
+        number: idx + 1,
+        name: s.replace('_', ' '),
+        status: 'completed' as const,
+      }));
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          content: classicResult.content,
+          chainState: {},
+          strategyChainState: {
+            scope: `📊 经典系统分析: ${message.slice(0, 60)}`,
+            currentStep: chain[chain.length - 1],
+            steps: classicStepsForDisplay,
+            complexity: context.thinking_mode,
+            createdAt: new Date().toISOString(),
+            modifiedAt: new Date().toISOString(),
+          },
+          stepProgress: {
+            steps: chain.map((s: string) => ({ id: s, status: 'completed' as const })),
+            current_step: chain[chain.length - 1],
+          },
+          market: null,
+          intent: intentResult.intent,
+          confidence: intentResult.confidence,
+          routing,
+          complexity: intentResult.complexity,
+          method: intentResult.method,
+          llm_status: await checkLLMStatus(),
+          llm_model: process.env.DEEPSEEK_MODEL || "deepseek-v4-pro",
+          timestamp: new Date().toISOString(),
+          needsConfirmation: false,
+          nextStep: null,
+        },
+      });
+    }
+
     // ===== P3 多意图组合路由 =====
     // 在标准路由完成后，检测是否有复合意图（如：先宏观分析 → 再入场 → 再仓位管理）
     const combinedIntents = detectCombinedIntents(message, intentResult.intent);
     let isCombined = false;
     if (executionMode !== 'stepwise' && combinedIntents.length > 1) {
-      const combinedChain = buildCombinedChain(combinedIntents, context.thinking_mode || 'deep');
+      const combinedChain = buildCombinedChain(combinedIntents, context.thinking_mode || 'deep', context.trading_mode);
       if (combinedChain.length > chain.length) {
         chain = combinedChain;  // 使用更完整的组合链
         isCombined = true;
@@ -4884,6 +5078,121 @@ export async function GET(request: NextRequest) {
         intent_method: intentMethod,
         timestamp: new Date().toISOString(),
       },
+    });
+  }
+
+  // ============ 图压缩会话管理 ============
+  if (action === "list_sessions") {
+    try {
+      const sessions: string[] = [];
+      const metaList: Array<{ id: string; title: string; messageCount: number; updatedAt: string; tokenEstimate?: number; tags?: string[] }> = [];
+      // 使用 sessionContexts Map 作为当前会话列表
+      sessionContexts.forEach((ctx, id) => {
+        metaList.push({
+          id,
+          title: ctx.last_intent || '未命名会话',
+          messageCount: ctx.message_history?.length || 0,
+          updatedAt: new Date().toISOString(),
+          tags: ctx.last_symbol ? [ctx.last_symbol] : [],
+        });
+        sessions.push(id);
+      });
+      return NextResponse.json({
+        success: true,
+        data: {
+          sessions,
+          metas: metaList,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (e) {
+      return NextResponse.json({ success: false, error: String(e) }, { status: 500 });
+    }
+  }
+
+  if (action === "load_session") {
+    const sid = searchParams.get("session_id");
+    if (!sid) return NextResponse.json({ success: false, error: "session_id 必传" }, { status: 400 });
+    const ctx = sessionContexts.get(sid);
+    return NextResponse.json({
+      success: true,
+      data: ctx ? {
+        session_id: sid,
+        message_history: ctx.message_history || [],
+        last_intent: ctx.last_intent,
+        last_symbol: ctx.last_symbol,
+      } : null,
+    });
+  }
+
+  // ============ 会话持久化 action ============
+  if (action === "session_list") {
+    // 列出所有持久化的会话
+    const sessionIds = [];
+    try {
+      // 尝试从 compressor-adapter 的持久化层读取
+      if (typeof localStorage !== 'undefined') {
+        const keys = Object.keys(localStorage);
+        const sessionKeys = keys.filter(k => k.startsWith('compressor-adapter:session:'));
+        for (const key of sessionKeys) {
+          try {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              sessionIds.push({
+                id: parsed.sessionId || key.replace('compressor-adapter:session:', ''),
+                title: parsed.meta?.title || '未命名会话',
+                messageCount: parsed.messages?.length || 0,
+                tokenEstimate: parsed.meta?.tokenEstimate || 0,
+                updatedAt: parsed.meta?.updatedAt || new Date().toISOString(),
+              });
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+    
+    return NextResponse.json({
+      success: true,
+      data: {
+        sessions: sessionIds,
+        total: sessionIds.length,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+
+  if (action === "session_load") {
+    // 加载指定会话
+    const sessionId = searchParams.get("session_id");
+    if (!sessionId) {
+      return NextResponse.json({
+        success: false,
+        error: "Missing session_id",
+      }, { status: 400 });
+    }
+    
+    let loadedData: any = null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(`compressor-adapter:session:${sessionId}`);
+        if (raw) {
+          loadedData = JSON.parse(raw);
+        }
+      }
+    } catch (e) {}
+    
+    return NextResponse.json({
+      success: loadedData !== null,
+      data: loadedData ? {
+        sessionId: loadedData.sessionId,
+        messages: loadedData.messages || [],
+        meta: loadedData.meta || {},
+        graphSnapshot: loadedData.graphSnapshot || null,
+        inferenceSnapshot: loadedData.inferenceSnapshot || null,
+        createdAt: loadedData.createdAt,
+        updatedAt: loadedData.updatedAt,
+      } : null,
     });
   }
 

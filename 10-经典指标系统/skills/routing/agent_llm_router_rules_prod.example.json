@@ -1,0 +1,20 @@
+[
+  { "id": "base_small", "route": "small", "weight": 10 },
+  { "id": "purpose_agent_chat_fast", "route": "small", "weight": 25, "purpose_any": ["agent.chat.fast"] },
+  { "id": "purpose_automation_small", "route": "small", "weight": 18, "purpose_any": ["automation.web3_digest", "agent.push.compose", "agent.twitter.compose"] },
+  { "id": "kind_general_assist", "route": "small", "weight": 8, "kind_any": ["general.assist"] },
+  { "id": "tools_readonly_plan", "route": "small", "weight": 6, "tools_any": ["engineering.index", "doc.snippet", "doc.retrieve", "metrics.recent", "health.get", "code_index.query", "code.snippet"] },
+
+  { "id": "intent_level_L2", "route": "code", "weight": 110, "intent_level_in": ["L2"] },
+  { "id": "tool_bugfix", "route": "code", "weight": 85, "tools_any": ["pipeline.r3_bugfix", "pipeline.r3_codefix", "changeset.draft", "bugfix.triage_and_draft"] },
+  { "id": "kw_stacktrace_en", "route": "code", "weight": 60, "keywords_any": ["traceback", "typeerror", "nameerror", "syntaxerror", "exception", "stack", "segfault", "panic", "500"] },
+  { "id": "kw_stacktrace_cn", "route": "code", "weight": 60, "keywords_any": ["修复", "报错", "异常栈", "栈追踪", "语法错误", "崩溃", "线上故障", "500"] },
+
+  { "id": "kind_explore_prefix", "route": "explore", "weight": 70, "kind_prefix_any": ["trade_monitor.", "repo.", "sandbox.", "optimize."] },
+  { "id": "kind_bayes_scope", "route": "explore", "weight": 72, "kind_any": ["bayes.optimize.strategy_scope", "bayes.optimize.system_scope"] },
+  { "id": "tool_sandbox", "route": "explore", "weight": 80, "tools_any": ["sandbox.backtest", "sandbox.robustness", "sandbox.train", "sandbox.evaluate"] },
+  { "id": "evidence_links", "route": "explore", "weight": 12, "weight_mode": "per_evidence", "cap": 48, "evidence_min": 1 },
+  { "id": "plan_steps", "route": "explore", "weight": 5, "weight_mode": "per_plan_step", "cap": 40, "plan_len_min": 2 },
+  { "id": "kw_research_cn_long", "route": "explore", "weight": 30, "min_text_len": 220, "keywords_any": ["事件分析", "归因", "复盘", "研究", "调研", "方案对比", "架构", "规划"] },
+  { "id": "kw_research_en", "route": "explore", "weight": 30, "keywords_any": ["post-mortem", "attribution", "regime", "investigate", "root cause", "design", "evaluate", "compare"] }
+]

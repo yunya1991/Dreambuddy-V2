@@ -41,19 +41,27 @@ export async function getAdminUserList(
 ): Promise<{ items: AdminUserListItem[]; total: number }> {
   const db = getPrisma();
 
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
+
   const where: any = {};
-  if (search) {
-    where.OR = [
-      { email: { contains: search, mode: "insensitive" as const } },
-      { displayName: { contains: search, mode: "insensitive" as const } },
-    ];
+  if (like) {
+    // SQLite / Prisma 不支持 mode: "insensitive"。退化为大小写敏感的 contains，
+    // 再用 OR 组合大小写形式以保留近似的不区分大小写能力。
+    const variants = [like, like.toLowerCase(), like.toUpperCase()];
+    const unique = Array.from(new Set(variants));
+    where.OR = unique.flatMap((v) => [
+      { email: { contains: v } },
+      { displayName: { contains: v } },
+    ]);
   }
 
   const [users, total] = await Promise.all([
     (db.user as any).findMany({
       where: Object.keys(where).length > 0 ? where : undefined,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize,
       orderBy: { createdAt: "desc" as const },
     }),
     (db.user as any).count({ where: Object.keys(where).length > 0 ? where : undefined }),
@@ -165,17 +173,25 @@ export async function getAdminStrategyList(
 ): Promise<{ items: AdminStrategyListItem[]; total: number }> {
   const db = getPrisma();
 
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
+
   const where: any = {};
-  if (status) where.status = status;
-  if (type) where.type = type;
-  if (uid) where.uid = uid;
-  if (search) where.name = { contains: search, mode: "insensitive" as const };
+  if (status && status.trim()) where.status = status.trim();
+  if (type && type.trim()) where.type = type.trim();
+  if (uid && uid.trim()) where.uid = uid.trim();
+  if (like) {
+    const variants = [like, like.toLowerCase(), like.toUpperCase()];
+    const unique = Array.from(new Set(variants));
+    where.OR = unique.map((v) => ({ name: { contains: v } }));
+  }
 
   const [strategies, total] = await Promise.all([
     safeFindMany(db, "strategy", {
       where: Object.keys(where).length > 0 ? where : undefined,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize,
       orderBy: { createdAt: "desc" as const },
     }),
     safeCount(db, "strategy", { where: Object.keys(where).length > 0 ? where : undefined }),
@@ -313,14 +329,18 @@ export async function getAdminTaskList(
 ): Promise<{ items: AdminTaskListItem[]; total: number }> {
   const db = getPrisma();
 
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
+
   const where: any = {};
-  if (status) where.status = status;
+  if (status && status.trim()) where.status = status.trim();
 
   const [tasks, total] = await Promise.all([
     safeFindMany(db, "strategyTask", {
       where: Object.keys(where).length > 0 ? where : undefined,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize,
       orderBy: { createdAt: "desc" as const },
     }),
     safeCount(db, "strategyTask", { where: Object.keys(where).length > 0 ? where : undefined }),
@@ -357,8 +377,8 @@ export async function getAdminTaskList(
   });
 
   // 如果有搜索，在内存中过滤任务名称
-  if (search) {
-    const low = search.toLowerCase();
+  if (like) {
+    const low = like.toLowerCase();
     const filtered = items.filter((i) => i.name.toLowerCase().includes(low));
     return { items: filtered, total: filtered.length };
   }
@@ -392,15 +412,19 @@ export async function getAdminExecutionList(
 ): Promise<{ items: AdminExecutionListItem[]; total: number }> {
   const db = getPrisma();
 
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
+
   const where: any = {};
-  if (status) where.status = status;
-  if (strategyId) where.strategyId = strategyId;
+  if (status && status.trim()) where.status = status.trim();
+  if (strategyId && strategyId.trim()) where.strategyId = strategyId.trim();
 
   const [runs, total] = await Promise.all([
     safeFindMany(db, "strategyExecutionRun", {
       where: Object.keys(where).length > 0 ? where : undefined,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize,
       orderBy: { createdAt: "desc" as const },
     }),
     safeCount(db, "strategyExecutionRun", {
@@ -439,8 +463,8 @@ export async function getAdminExecutionList(
     };
   });
 
-  if (search) {
-    const low = search.toLowerCase();
+  if (like) {
+    const low = like.toLowerCase();
     const filtered = items.filter((i) =>
       (i.strategyName || "").toLowerCase().includes(low) ||
       String(i.id).toLowerCase().includes(low),
@@ -473,19 +497,25 @@ export async function getAdminApiConfigList(
 ): Promise<{ items: AdminApiConfigListItem[]; total: number }> {
   const db = getPrisma();
 
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
+
   const where: any = {};
-  if (search) {
-    where.OR = [
-      { provider: { contains: search, mode: "insensitive" as const } },
-      { category: { contains: search, mode: "insensitive" as const } },
-    ];
+  if (like) {
+    const variants = [like, like.toLowerCase(), like.toUpperCase()];
+    const unique = Array.from(new Set(variants));
+    where.OR = unique.flatMap((v) => [
+      { provider: { contains: v } },
+      { category: { contains: v } },
+    ]);
   }
 
   const [items_raw, total] = await Promise.all([
     safeFindMany(db, "apiConfig", {
       where: Object.keys(where).length > 0 ? where : undefined,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize,
       orderBy: { createdAt: "desc" as const },
       include: { user: { select: { email: true, displayName: true } } },
     }),
@@ -532,6 +562,10 @@ export async function getAdminGenericList(
     { name: "order", display: "充值订单", titleFields: ["amount", "status", "id"] },
   ];
 
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
+
   const allItems: AdminGenericItem[] = [];
 
   for (const { name, display, titleFields } of candidateModels) {
@@ -564,8 +598,8 @@ export async function getAdminGenericList(
   allItems.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
 
   let filtered = allItems;
-  if (search) {
-    const low = search.toLowerCase();
+  if (like) {
+    const low = like.toLowerCase();
     filtered = allItems.filter((i) =>
       i.type.toLowerCase().includes(low) ||
       i.title.toLowerCase().includes(low) ||
@@ -573,9 +607,9 @@ export async function getAdminGenericList(
     );
   }
 
-  const start = (page - 1) * pageSize;
+  const start = (safePage - 1) * safePageSize;
   return {
-    items: filtered.slice(start, start + pageSize),
+    items: filtered.slice(start, start + safePageSize),
     total: filtered.length,
   };
 }
@@ -664,13 +698,16 @@ export async function getAdminChannelList(
   const candidateModels = ["channelConfig", "channel"];
   let items: any[] = [];
   let total = 0;
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
   for (const name of candidateModels) {
     try {
       const model = (db as any)[name];
       if (!model || !model.findMany) continue;
       items = await model.findMany({
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
         orderBy: { createdAt: "desc" as const },
         include: { user: { select: { email: true, displayName: true, uid: true } } },
       });
@@ -691,8 +728,8 @@ export async function getAdminChannelList(
     status: c.status || "unknown",
     createdAt: safeDate(c.createdAt),
   }));
-  if (search) {
-    const low = search.toLowerCase();
+  if (like) {
+    const low = like.toLowerCase();
     const filtered = result.filter(
       (i) =>
         (i.name || "").toLowerCase().includes(low) ||
@@ -726,13 +763,16 @@ export async function getAdminCreditsList(
   const candidateModels = ["creditsAccount", "credits"];
   let items: any[] = [];
   let total = 0;
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
   for (const name of candidateModels) {
     try {
       const model = (db as any)[name];
       if (!model || !model.findMany) continue;
       items = await model.findMany({
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
         orderBy: { createdAt: "desc" as const },
         include: { user: { select: { email: true, displayName: true, uid: true } } },
       });
@@ -750,8 +790,8 @@ export async function getAdminCreditsList(
     balance: Number(c.balance || c.amount || 0),
     createdAt: safeDate(c.createdAt),
   }));
-  if (search) {
-    const low = search.toLowerCase();
+  if (like) {
+    const low = like.toLowerCase();
     const filtered = result.filter(
       (i) =>
         (i.userEmail || "").toLowerCase().includes(low) ||
@@ -785,13 +825,16 @@ export async function getAdminOrderList(
   const candidateModels = ["order", "creditsOrder", "paymentOrder"];
   let items: any[] = [];
   let total = 0;
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
   for (const name of candidateModels) {
     try {
       const model = (db as any)[name];
       if (!model || !model.findMany) continue;
       items = await model.findMany({
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
         orderBy: { createdAt: "desc" as const },
         include: { user: { select: { email: true, displayName: true, uid: true } } },
       });
@@ -810,8 +853,8 @@ export async function getAdminOrderList(
     status: o.status || o.paymentStatus || "unknown",
     createdAt: safeDate(o.createdAt),
   }));
-  if (search) {
-    const low = search.toLowerCase();
+  if (like) {
+    const low = like.toLowerCase();
     const filtered = result.filter(
       (i) =>
         (i.userEmail || "").toLowerCase().includes(low) ||
@@ -847,13 +890,16 @@ export async function getAdminTradingParamsList(
   const candidateModels = ["tradingParams", "tradingConfig"];
   let items: any[] = [];
   let total = 0;
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.min(Math.floor(pageSize), 200) : 20;
+  const like = typeof search === "string" && search.length > 0 && search.length < 200 ? search : "";
   for (const name of candidateModels) {
     try {
       const model = (db as any)[name];
       if (!model || !model.findMany) continue;
       items = await model.findMany({
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (safePage - 1) * safePageSize,
+        take: safePageSize,
         orderBy: { createdAt: "desc" as const },
         include: { user: { select: { email: true, displayName: true, uid: true } } },
       });
@@ -873,8 +919,8 @@ export async function getAdminTradingParamsList(
     totalTradeCount: Number(tp.totalTradeCount || tp.tradeCount || 0),
     createdAt: safeDate(tp.createdAt),
   }));
-  if (search) {
-    const low = search.toLowerCase();
+  if (like) {
+    const low = like.toLowerCase();
     const filtered = result.filter(
       (i) =>
         (i.userEmail || "").toLowerCase().includes(low) ||

@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/nanoclaw/core_task1/news_contract.schema.json",
+  "title": "core_task1 news contract",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "time_window_hours": { "type": "integer", "minimum": 1 },
+    "raw_crypto": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/CryptoItem" }
+    },
+    "raw_macro": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/MacroItem" }
+    }
+  },
+  "required": ["version", "generated_at", "time_window_hours", "raw_crypto", "raw_macro"],
+  "$defs": {
+    "Common": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "published_at": { "type": "string" },
+        "fetched_at": { "type": "string" },
+        "source_url": { "type": "string", "minLength": 1 },
+        "fact_text": { "type": "string" },
+        "analysis_text": { "type": "string" },
+        "summary_2lines": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "source_confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "impact_horizon": { "type": "string", "enum": ["T0", "T1", "T2", "T3"] },
+        "cross_market_map": { "type": "string" },
+        "risk_flags": { "type": "array", "items": { "type": "string" } },
+        "attention_score": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "attention_type": {
+          "type": "string",
+          "enum": ["narrative", "event", "policy", "security", "market_microstructure"]
+        },
+        "community_base_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "decay_half_life_hours": { "type": "integer", "minimum": 1 },
+        "decay_factor": { "type": "number", "minimum": 0, "maximum": 1 },
+        "community_effective_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "narrative_status": {
+          "type": "string",
+          "enum": ["active", "cooling", "archive"]
+        },
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "geopolitics",
+            "monetary_policy",
+            "us_data",
+            "crypto_regulation",
+            "protocol_tech",
+            "security_incident",
+            "meme_culture",
+            "onchain_data",
+            "kols_view",
+            "project_update",
+            "market_analysis",
+            "unknown"
+          ]
+        },
+        "event_window_range": {
+          "type": "string",
+          "enum": ["[-48h,+48h]", "[-24h,+24h]", "[-6h,+6h]", "[0,+4h]"]
+        },
+        "expectation_bucket": {
+          "type": "string",
+          "enum": ["偏鹰", "符合", "偏鸽", "利多", "中性", "利空", "unknown"]
+        },
+        "risk_action_proposal": {
+          "type": "string",
+          "enum": ["hold", "reduce", "increase", "hedge", "stop_loss", "take_profit"]
+        }
+      },
+      "required": ["title", "source_url"],
+      "anyOf": [
+        { "required": ["published_at"] },
+        { "required": ["fetched_at"] }
+      ]
+    },
+    "CryptoItem": {
+      "allOf": [
+        { "$ref": "#/$defs/Common" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "category": { "type": "string", "enum": ["onchain_data", "kols_view", "project_update"] }
+          },
+          "required": ["category"]
+        }
+      ]
+    },
+    "MacroItem": {
+      "allOf": [
+        { "$ref": "#/$defs/Common" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "topic": { "type": "string", "enum": ["fed", "us_data", "geopolitics", "us_policy", "market_analysis"] },
+            "key_fact": { "type": "string" },
+            "possible_market_impact": { "type": "string" }
+          },
+          "required": ["topic", "key_fact"]
+        }
+      ]
+    }
+  }
+}

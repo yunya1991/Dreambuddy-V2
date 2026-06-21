@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/nanoclaw/core_task1/delta_registry.schema.json",
+  "title": "delta registry",
+  "type": "object",
+  "required": [
+    "version",
+    "update_id",
+    "anchor_id",
+    "anchor_date",
+    "anchor_key",
+    "anchor_session",
+    "generated_at",
+    "file_ts",
+    "hours",
+    "market_trend_state",
+    "signal_snapshot",
+    "changes",
+    "param_drift"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "update_id": { "type": "string" },
+    "anchor_id": { "type": "string" },
+    "anchor_date": { "type": "string" },
+    "anchor_key": { "type": "string" },
+    "anchor_session": { "type": "string", "enum": ["apac", "eu", "us"] },
+    "generated_at": { "type": "string" },
+    "file_ts": { "type": "string" },
+    "hours": { "type": "integer", "minimum": 1 },
+    "market_trend_state": { "type": "string" },
+    "signal_snapshot": { "type": "object" },
+    "changes": { "type": "object" },
+    "adaptive_thresholds": { "type": "object" },
+    "params_ema": { "type": "object" },
+    "param_drift": { "type": "object" }
+  }
+}
