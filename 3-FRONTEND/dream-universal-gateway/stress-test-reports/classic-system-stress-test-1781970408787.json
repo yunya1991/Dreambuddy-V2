@@ -1,0 +1,524 @@
+{
+  "generated_at": "2026-06-20T15:46:48.785Z",
+  "total_cases": 880,
+  "passed": 763,
+  "failed": 117,
+  "pass_rate": 86.70454545454545,
+  "total_time_ms": 18222,
+  "latency_distribution": {
+    "p50": 997,
+    "p90": 2121,
+    "p95": 2254,
+    "p99": 2429
+  },
+  "phases": [
+    {
+      "phase": "phase1_apiDirect",
+      "total": 15,
+      "passed": 11,
+      "failed": 4,
+      "avg_latency_ms": 21.066666666666666,
+      "max_latency_ms": 99
+    },
+    {
+      "phase": "phase2_classicChain",
+      "total": 26,
+      "passed": 21,
+      "failed": 5,
+      "avg_latency_ms": 15.115384615384615,
+      "max_latency_ms": 51
+    },
+    {
+      "phase": "phase3_intentRouting",
+      "total": 64,
+      "passed": 60,
+      "failed": 4,
+      "avg_latency_ms": 0.03125,
+      "max_latency_ms": 1
+    },
+    {
+      "phase": "phase4_concurrent",
+      "total": 720,
+      "passed": 630,
+      "failed": 90,
+      "avg_latency_ms": 1251.151388888889,
+      "max_latency_ms": 2458
+    },
+    {
+      "phase": "phase5_parallelAggregation",
+      "total": 5,
+      "passed": 1,
+      "failed": 4,
+      "avg_latency_ms": 61.2,
+      "max_latency_ms": 118
+    },
+    {
+      "phase": "phase6_faultTolerance",
+      "total": 50,
+      "passed": 40,
+      "failed": 10,
+      "avg_latency_ms": 27.64,
+      "max_latency_ms": 317
+    }
+  ],
+  "failed_cases": [
+    {
+      "id": "p1-2",
+      "label": "信号系统 getSignalStats",
+      "phase": "phase1_apiDirect",
+      "latencyMs": 1,
+      "passed": false,
+      "error": "验证失败: ok=false, data={\"ok\":false,\"error\":\"Error: Classic API Error: 404 NOT FOUND\"}",
+      "dataPreview": "{\"ok\":false,\"error\":\"Error: Classic API Error: 404 NOT FOUND\"}"
+    },
+    {
+      "id": "p1-9",
+      "label": "Evaluation Gate Check",
+      "phase": "phase1_apiDirect",
+      "latencyMs": 1,
+      "passed": false,
+      "error": "验证失败: ok=false, data={\"ok\":false,\"error\":\"Error: Classic API Error: 404 NOT FOUND\"}",
+      "dataPreview": "{\"ok\":false,\"error\":\"Error: Classic API Error: 404 NOT FOUND\"}"
+    },
+    {
+      "id": "p1-12",
+      "label": "Sandbox 沙箱 getSandboxState",
+      "phase": "phase1_apiDirect",
+      "latencyMs": 1,
+      "passed": false,
+      "error": "验证失败: ok=false, data={\"ok\":false,\"error\":\"Error: Classic API Error: 404 NOT FOUND\"}",
+      "dataPreview": "{\"ok\":false,\"error\":\"Error: Classic API Error: 404 NOT FOUND\"}"
+    },
+    {
+      "id": "p1-14",
+      "label": "Pipeline Gate Check",
+      "phase": "phase1_apiDirect",
+      "latencyMs": 1,
+      "passed": false,
+      "error": "验证失败: ok=false, data={\"ok\":false,\"error\":\"Error: Classic API Error: 404 NOT FOUND\"}",
+      "dataPreview": "{\"ok\":false,\"error\":\"Error: Classic API Error: 404 NOT FOUND\"}"
+    },
+    {
+      "id": "p2-0-1",
+      "label": "快速查询 (quick模式) · Gate 评估",
+      "phase": "phase2_classicChain",
+      "latencyMs": 4,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "步骤 C3_GATE_CHECK 失败"
+    },
+    {
+      "id": "p2-1-2",
+      "label": "深度分析 (deep模式) · Gate 评估",
+      "phase": "phase2_classicChain",
+      "latencyMs": 1,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "步骤 C3_GATE_CHECK 失败"
+    },
+    {
+      "id": "p2-2-0",
+      "label": "策略验证链 · Gate 评估",
+      "phase": "phase2_classicChain",
+      "latencyMs": 4,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "步骤 C3_GATE_CHECK 失败"
+    },
+    {
+      "id": "p2-4-2",
+      "label": "入场时机分析 · Gate 评估",
+      "phase": "phase2_classicChain",
+      "latencyMs": 2,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "步骤 C3_GATE_CHECK 失败"
+    },
+    {
+      "id": "p2-5-0",
+      "label": "风险评估链 · Gate 评估",
+      "phase": "phase2_classicChain",
+      "latencyMs": 1,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "步骤 C3_GATE_CHECK 失败"
+    },
+    {
+      "id": "p3-execute_trade-quick",
+      "label": "execute_trade (quick) - 交易执行",
+      "phase": "phase3_intentRouting",
+      "latencyMs": 0,
+      "passed": false,
+      "tradingMode": "classic",
+      "chainSteps": [],
+      "error": "chain=empty"
+    },
+    {
+      "id": "p3-execute_trade-deep",
+      "label": "execute_trade (deep) - 交易执行",
+      "phase": "phase3_intentRouting",
+      "latencyMs": 0,
+      "passed": false,
+      "tradingMode": "classic",
+      "chainSteps": [],
+      "error": "chain=empty"
+    },
+    {
+      "id": "p3-developer-quick",
+      "label": "developer (quick) - 开发者模式",
+      "phase": "phase3_intentRouting",
+      "latencyMs": 0,
+      "passed": false,
+      "tradingMode": "classic",
+      "chainSteps": [
+        "DEV_E_CHAIN"
+      ],
+      "error": "chain=DEV_E_CHAIN"
+    },
+    {
+      "id": "p3-developer-deep",
+      "label": "developer (deep) - 开发者模式",
+      "phase": "phase3_intentRouting",
+      "latencyMs": 0,
+      "passed": false,
+      "tradingMode": "classic",
+      "chainSteps": [
+        "DEV_E_CHAIN"
+      ],
+      "error": "chain=DEV_E_CHAIN"
+    },
+    {
+      "id": "p4-3",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 231,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-11",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 257,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-19",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 266,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-27",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 339,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-35",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 376,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-43",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 438,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-51",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 527,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-59",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 640,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-67",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 767,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-75",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 880,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-83",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 964,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-91",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1098,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-99",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1163,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-107",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1241,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-115",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1304,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-123",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1365,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-131",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1751,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-139",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 2332,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-147",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 2266,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-155",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 2207,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-163",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1636,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-171",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1555,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-179",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1491,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-187",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 2189,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-195",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 2135,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-203",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1416,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-211",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1993,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-219",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1936,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-227",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1872,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-235",
+      "label": "Round 1 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 1847,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-243",
+      "label": "Round 2 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 203,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-251",
+      "label": "Round 2 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 264,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-259",
+      "label": "Round 2 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 276,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-267",
+      "label": "Round 2 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 344,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-275",
+      "label": "Round 2 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 387,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-283",
+      "label": "Round 2 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 463,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    },
+    {
+      "id": "p4-291",
+      "label": "Round 2 · EvaluationAPI.getGateCheck()",
+      "phase": "phase4_concurrent",
+      "latencyMs": 487,
+      "passed": false,
+      "tradingMode": "classic",
+      "error": "数据验证失败"
+    }
+  ]
+}
