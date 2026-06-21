@@ -1,0 +1,707 @@
+{
+  "ok": true,
+  "ts": 1772138614721,
+  "root": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github",
+  "dry_run": false,
+  "n_seen_py": 7,
+  "n_unique": 7,
+  "mirrored": [
+    {
+      "strategy": "FAdxSmaStrategy",
+      "repo": "freqtrade-strategies",
+      "mirror": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "strategy": "FOttStrategy",
+      "repo": "freqtrade-strategies",
+      "mirror": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "strategy": "FReinforcedStrategy",
+      "repo": "freqtrade-strategies",
+      "mirror": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "strategy": "FSampleStrategy",
+      "repo": "freqtrade-strategies",
+      "mirror": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "strategy": "FSupertrendStrategy",
+      "repo": "freqtrade-strategies",
+      "mirror": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "strategy": "TrendFollowingStrategy",
+      "repo": "freqtrade-strategies",
+      "mirror": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "strategy": "FAdxSmaStrategy",
+      "repo": "freqtrade__freqtrade-strategies",
+      "mirror": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    }
+  ],
+  "actions": [],
+  "links": [
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "family",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "stage",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tier",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tier/UNRATED/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "market",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_market/futures/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "symlink",
+      "kind": "timeframe",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_timeframe/1h/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "repo",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/futures/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/rsi/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/sma/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/trailing/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/stoploss/freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "family",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "stage",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tier",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tier/UNRATED/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "market",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_market/spot/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "symlink",
+      "kind": "timeframe",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_timeframe/1h/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "repo",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/spot/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/supertrend/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/rsi/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/ema/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/ott/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/trailing/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/stoploss/freqtrade-strategies__FOttStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FOttStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "family",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "stage",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tier",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tier/UNRATED/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "market",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_market/futures/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "symlink",
+      "kind": "timeframe",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_timeframe/5m/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "repo",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/futures/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/rsi/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/bbands/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/ema/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/sma/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/trailing/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/stoploss/freqtrade-strategies__FReinforcedStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FReinforcedStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "family",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "stage",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tier",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tier/UNRATED/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "market",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_market/futures/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "symlink",
+      "kind": "timeframe",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_timeframe/1h/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "repo",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/futures/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/rsi/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/macd/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/bbands/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/ema/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/trailing/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/stoploss/freqtrade-strategies__FSampleStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSampleStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "family",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "stage",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tier",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tier/UNRATED/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "market",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_market/spot/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "symlink",
+      "kind": "timeframe",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_timeframe/1h/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "repo",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/spot/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/supertrend/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/rsi/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/sma/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/atr/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/trailing/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/stoploss/freqtrade-strategies__FSupertrendStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FSupertrendStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "family",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "stage",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tier",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tier/UNRATED/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "market",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_market/spot/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "symlink",
+      "kind": "timeframe",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_timeframe/5m/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "repo",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/spot/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/rsi/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/trailing/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/stoploss/freqtrade-strategies__TrendFollowingStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/TrendFollowingStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "family",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_family/trend/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "stage",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_stage/research/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tier",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tier/UNRATED/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "market",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_market/futures/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "symlink",
+      "kind": "timeframe",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_timeframe/1h/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "repo",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_repo/freqtrade__freqtrade-strategies/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/futures/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/adx/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/rsi/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/sma/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/trailing/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    },
+    {
+      "ok": true,
+      "mode": "kept",
+      "kind": "tag",
+      "dst": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/_by_tag/stoploss/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+      "src": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade__freqtrade-strategies/user_data/strategies/futures/FAdxSmaStrategy.py"
+    }
+  ],
+  "errors": []
+}

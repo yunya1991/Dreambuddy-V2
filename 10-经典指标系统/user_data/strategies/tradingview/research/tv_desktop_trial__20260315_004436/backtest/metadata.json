@@ -1,0 +1,26 @@
+{
+  "strategy_key": "tv_desktop_trial__20260315_004436",
+  "strategy_class": "TvDesktopTrialTvStrategy",
+  "returncode": 0,
+  "metrics": {
+    "win_rate_pct": null,
+    "sharpe": null,
+    "max_drawdown_pct": null,
+    "total_trades": 2
+  },
+  "command": [
+    "freqtrade",
+    "backtesting",
+    "--config",
+    "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/config_local_backtest.json",
+    "--strategy-path",
+    "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/tradingview/research/tv_desktop_trial__20260315_004436/strategy",
+    "--strategy",
+    "TvDesktopTrialTvStrategy",
+    "--timeframe",
+    "1h",
+    "--timerange",
+    "20250101-20250301"
+  ],
+  "created_at": "2026-03-15T00:45:23.333807+00:00"
+}
