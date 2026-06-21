@@ -118,6 +118,109 @@ export interface AdapterConfig {
   initTimeoutMs?: number;
   /** 默认压缩比 */
   defaultTargetRatio?: number;
-  /** 降级阈值：当 token 数低于此值时不压缩 */
+  /** 最小 token 数，低于该值不压缩 */
   minTokensForCompression?: number;
 }
+
+// ==================== 推理引擎 ====================
+
+/** 关键决策节点 */
+export interface DecisionNode {
+  id: string;
+  name: string;
+  type: 'goal' | 'constraint' | 'choice' | 'tradeoff' | 'action';
+  description: string;
+  weight: number;
+  confidence: number;
+  sourceMessageIds: string[];
+  createdAt: number;
+}
+
+/** 关键推理路径 */
+export interface ReasoningPath {
+  id: string;
+  name: string;
+  nodeIds: string[];
+  rationale: string;
+  confidence: number;
+  priority: 'high' | 'medium' | 'low';
+}
+
+/** 冲突检测 */
+export interface ConflictDetection {
+  id: string;
+  type: 'goal-conflict' | 'constraint-conflict' | 'inconsistency' | 'duplicate';
+  severity: 'high' | 'medium' | 'low';
+  description: string;
+  involvedNodes: string[];
+  suggestion: string;
+  detectedAt: number;
+}
+
+/** 下一步建议 */
+export interface NextStepSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  action: 'ask-clarify' | 'refine-goal' | 'explore-alternative' | 'execute-action' | 'validate' | 'other';
+  priority: 'high' | 'medium' | 'low';
+  estimatedTokens?: number;
+  references?: string[];
+}
+
+/** 推理分析结果 */
+export interface InferenceResult {
+  sessionId: string;
+  analyzedAt: number;
+  keyDecisionNodes: DecisionNode[];
+  keyReasoningPaths: ReasoningPath[];
+  conflicts: ConflictDetection[];
+  riskScore: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  nextSteps: NextStepSuggestion[];
+  summary: string;
+  metadata: {
+    messageCount: number;
+    inferenceTokens: number;
+    analysisDurationMs: number;
+    mode: 'graph' | 'fallback';
+  };
+}
+
+// ==================== 会话持久化 ====================
+
+/** 会话元数据 */
+export interface SessionMeta {
+  sessionId: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+  tokenEstimate: number;
+  tag?: string[];
+}
+
+/** 会话数据结构（持久化用） */
+export interface SessionData {
+  sessionId: string;
+  title?: string;
+  messages: any[];
+  meta?: Record<string, unknown>;
+  graphSnapshot?: {
+    blueprint?: any[];
+    architecture?: any[];
+    chronicle?: any[];
+  };
+  inferenceSnapshot?: InferenceResult;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// 从通用模块再导出，方便前端统一 import
+export type {
+  VisualizationData,
+  VizNode,
+  VizEdge,
+  TimelineItem,
+  DiffSummary,
+} from '../../../../../6-图结构上下文压缩/index.ts';

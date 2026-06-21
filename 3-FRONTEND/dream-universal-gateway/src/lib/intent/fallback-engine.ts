@@ -26,6 +26,7 @@ export interface SessionContext {
   last_analysis_result?: string;
   message_history: string[];
   thinking_mode: 'quick' | 'deep' | 'stepwise' | 'scheduler';
+  trading_mode: 'ai_skill' | 'classic';
   active_strategy_id?: string;
 }
 
