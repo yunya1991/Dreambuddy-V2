@@ -1,0 +1,14 @@
+[Unit]
+Description=Hyperliquid derivatives snapshot ingest (OI + funding)
+After=network.target
+
+[Service]
+Type=oneshot
+# 修改为你的项目根目录
+WorkingDirectory=/path/to/project
+Environment=PYTHONPATH=/path/to/project
+ExecStart=/path/to/project/venv/bin/python /path/to/project/scripts/hl_deriv_metrics_ingest.py
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,91 @@
+{
+  "schema": "skills.index.v1",
+  "generated_at": "2026-03-20",
+  "root": "经典指标机器学习系统",
+  "sources": [
+    {"kind": "agent_registry", "file": "ml_trade_service.py"},
+    {"kind": "minimal_catalog", "file": "skills/catalog/minimal_skills_catalog.json"},
+    {"kind": "routing_mirror", "file": "skills/routing/agent_llm_router_rules_prod.example.json"},
+    {"kind": "contract_pointer", "file": "skills/contracts/news_contract.schema.pointer.json"},
+    {"kind": "ops_scripts", "paths": ["ops/twitter_outbox_sender.py", "ops/nanoclaw/core_task1/scripts"]}
+  ],
+  "items": [
+    {"tool": "metrics.recent", "title": "最近指标", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "health.get", "title": "健康检查", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "signals.recent", "title": "最近信号", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "signals.reject_stats", "title": "拒单原因统计", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "read.observe", "title": "观测快照", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "read.explain", "title": "解释请求", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "tracker.stats", "title": "Tracker 状态", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "tracker.sync.recent", "title": "最近同步摘要", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "engineering.index", "title": "工程入口索引", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "doc.retrieve", "title": "文档检索", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "doc.lines", "title": "文档按行读取", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "doc.snippet", "title": "文档片段读取", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "config.get", "title": "读取配置键", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "code.search", "title": "代码搜索", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "code.lines", "title": "代码按行读取", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "code.snippet", "title": "代码片段读取", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "code_index.query", "title": "代码索引查询", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "fs.glob", "title": "文件查找", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "agent.trace.replay", "title": "Trace 回放", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "automation.control_plane.orchestrator", "title": "自动化控制面编排器（只生成 tool_plan）", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["plan_only", "no_production_write_by_default"]},
+
+    {"tool": "audit.alerts_evaluate", "title": "告警评估", "category": "audit", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "audit.data_quality", "title": "数据质量", "category": "audit", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "audit.execution_quality", "title": "执行质量", "category": "audit", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+
+    {"tool": "sandbox.backtest", "title": "沙箱回测", "category": "sandbox", "level": "R1", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "sandbox.robustness", "title": "稳健性验证", "category": "sandbox", "level": "R1", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "github.fetch", "title": "GitHub 拉取策略", "category": "repo", "level": "R1", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+
+    {"tool": "telegram.send", "title": "TG 发送（入队）", "category": "push", "level": "R2", "kind": "inproc_outbox", "impl": {"file": "ml_trade_service.py"}, "artifacts": [{"kind": "outbox", "path": "user_data/agent_outbox/telegram.jsonl"}]},
+
+    {"tool": "binance_web3.query_address_info", "title": "地址洞察（Binance Web3）", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "binance_web3.query_token_info", "title": "代币详情（Binance Web3）", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "binance_web3.crypto_market_rank", "title": "市场榜单（Binance Web3）", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "binance_web3.query_token_audit", "title": "代币合约审计（Binance Web3）", "category": "audit", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "binance_web3.token_tradeable_check", "title": "可交易检查（Binance Web3）", "category": "audit", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+
+    {"tool": "binance_spot.market_data", "title": "Binance Spot 行情查询", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "binance_spot.account", "title": "Binance Spot 账户查询", "category": "read", "level": "R0", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "binance_spot.trade", "title": "Binance Spot 交易执行", "category": "trade", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+
+    {"tool": "changeset.draft", "title": "变更包草案", "category": "governance", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "pipeline.r2_param", "title": "R2 参数流水线", "category": "governance", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "pipeline.r3_bugfix", "title": "R3 修复流水线", "category": "governance", "level": "R3", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+    {"tool": "bugfix.triage_and_draft", "title": "Bugfix 诊断与草案", "category": "governance", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["approval_required", "confirm_live_required_for_production_write"]},
+    {"tool": "bayes.optimize.strategy_scope", "title": "贝叶斯优化（策略域）", "category": "governance", "level": "R1", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["suggest_or_sandbox_only", "approval_required_for_production_write"]},
+    {"tool": "bayes.optimize.system_scope", "title": "贝叶斯优化（系统域）", "category": "governance", "level": "R1", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["suggest_or_sandbox_only", "approval_required_for_production_write"]},
+    {"tool": "nanoclaw.control.gtw_run", "title": "NanoClaw 控制面触发 GTW", "category": "automation", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["control_plane_only", "execution_semantics_unchanged"]},
+    {"tool": "nanoclaw.control.shadow_loop_run", "title": "NanoClaw 控制面触发 Shadow Loop", "category": "automation", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["control_plane_only", "execution_semantics_unchanged"]},
+    {"tool": "nanoclaw.control.paramopt_trigger", "title": "NanoClaw 控制面触发 ParamOpt", "category": "automation", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["confirm_live_required", "approval_required_for_production_write"]},
+    {"tool": "nanoclaw.control.system_monitor_run", "title": "NanoClaw 控制面触发 SystemMonitor", "category": "automation", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["request_approval_default", "allow_auto_exec_default_false"]},
+    {"tool": "qwen.control.gtw_run", "title": "Qwen 控制面触发 GTW", "category": "automation", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["remote_qwen_or_rule_fallback", "execution_semantics_unchanged"]},
+    {"tool": "qwen.control.shadow_loop_run", "title": "Qwen 控制面触发 Shadow Loop", "category": "automation", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["remote_qwen_or_rule_fallback", "execution_semantics_unchanged"]},
+    {"tool": "qwen.control.paramopt_trigger", "title": "Qwen 控制面触发 ParamOpt", "category": "automation", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["remote_qwen_or_rule_fallback", "confirm_live_required", "approval_required_for_production_write"]},
+    {"tool": "qwen.control.paramopt_explore_trigger", "title": "Qwen 控制面触发 ParamOpt Explore", "category": "automation", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["remote_qwen_or_rule_fallback", "confirm_live_required", "approval_required_for_production_write"]},
+    {"tool": "qwen.control.system_monitor_run", "title": "Qwen 控制面触发 SystemMonitor", "category": "automation", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}, "gates": ["remote_qwen_or_rule_fallback", "request_approval_default", "allow_auto_exec_default_false"]},
+    {"tool": "approval.request", "title": "审批请求", "category": "governance", "level": "R2", "kind": "inproc", "impl": {"file": "ml_trade_service.py"}},
+
+    {"tool": "automation.control_plane.orchestrator.playbook", "title": "自动化控制面编排 Playbook（LLM 可替换）", "category": "automation", "level": "R0", "kind": "playbook", "impl": {"file": "skills/playbooks/automation_control_plane_orchestrator_skill.md"}, "notes": {"status": "planned", "uses": ["qwen.control.*", "nanoclaw.control.*", "sandbox.backtest", "sandbox.robustness"]}},
+
+    {"tool": "twitter.outbox", "title": "Twitter 出站通道（入队）", "category": "push", "level": "R2", "kind": "outbox_channel", "impl": {"file": "ml_trade_service.py"}, "artifacts": [{"kind": "outbox", "path": "user_data/agent_outbox/twitter.jsonl"}, {"kind": "receipt", "path": "user_data/agent_outbox/delivery_receipts.jsonl"}]},
+    {"tool": "twitter.sender", "title": "Twitter Outbox Sender（宿主脚本）", "category": "push", "level": "R2", "kind": "host_script", "impl": {"file": "ops/twitter_outbox_sender.py"}},
+
+    {"tool": "tradingview.strategy.export.request", "title": "TradingView 策略导出（入队）", "category": "push", "level": "R2", "kind": "outbox_channel", "impl": {"file": "skills/playbooks/tv_strategy_skill.md"}, "artifacts": [{"kind": "outbox", "path": "user_data/agent_outbox/strategy_import_tv.jsonl"}, {"kind": "receipt", "path": "user_data/agent_outbox/delivery_receipts.jsonl"}], "notes": {"status": "planned", "path_modes": ["A_source", "B_blackbox"], "source_visibility_gate": true}},
+    {"tool": "tradingview.strategy.exporter", "title": "TradingView 策略导出执行器（宿主侧）", "category": "push", "level": "R2", "kind": "host_script", "impl": {"file": "skills/playbooks/tv_strategy_skill.md"}, "notes": {"status": "planned", "path_modes": ["A_source", "B_blackbox"], "source_visibility_gate": true}},
+    {"tool": "strategy_import.tv_pine_to_freqtrade.simple.request", "title": "TV Pine → Freqtrade(SimpleStrategy) 转化（入队）", "category": "governance", "level": "R2", "kind": "outbox_channel", "impl": {"file": "skills/playbooks/tv_strategy_skill.md"}, "artifacts": [{"kind": "outbox", "path": "user_data/agent_outbox/strategy_import_tv.jsonl"}, {"kind": "receipt", "path": "user_data/agent_outbox/delivery_receipts.jsonl"}], "notes": {"status": "planned", "path_mode": "A_source_only"}},
+    {"tool": "strategy_import.tv_blackbox_asset.request", "title": "TV 黑盒策略资产入库（入队）", "category": "governance", "level": "R2", "kind": "outbox_channel", "impl": {"file": "skills/playbooks/tv_strategy_skill.md"}, "artifacts": [{"kind": "outbox", "path": "user_data/agent_outbox/strategy_import_tv.jsonl"}, {"kind": "receipt", "path": "user_data/agent_outbox/delivery_receipts.jsonl"}], "notes": {"status": "planned", "path_mode": "B_blackbox_only"}},
+    {"tool": "nanoclaw.strategy_import.worker", "title": "NanoClaw 策略转化与修复 Worker", "category": "sandbox", "level": "R2", "kind": "sandbox_script", "impl": {"file": "ops/nanoclaw/README.md"}, "artifacts": [{"kind": "workspace", "path": "user_data/nanoclaw/workspace"}, {"kind": "state", "path": "user_data/nanoclaw/state"}, {"kind": "logs", "path": "user_data/nanoclaw/logs"}], "notes": {"status": "planned", "path_modes": ["A_source", "B_blackbox"]}},
+
+    {"tool": "crypto_news.contract", "title": "News Contract（Schema）", "category": "contract", "level": "R0", "kind": "schema", "impl": {"file": "ops/nanoclaw/core_task1/schema/news_contract.schema.json"}, "mirrors": [{"kind": "pointer", "file": "skills/contracts/news_contract.schema.pointer.json"}]},
+    {"tool": "crypto_narrative.contract", "title": "Narrative Contract（Schema）", "category": "contract", "level": "R0", "kind": "schema", "impl": {"file": "ops/nanoclaw/core_task1/schema/narrative_contract.schema.json"}, "mirrors": [{"kind": "pointer", "file": "skills/contracts/narrative_contract.schema.pointer.json"}]},
+    {"tool": "crypto_flow.brief_request.contract", "title": "Flow Brief Request Contract（Schema）", "category": "contract", "level": "R0", "kind": "schema", "impl": {"file": "ops/nanoclaw/core_task1/schema/flow_brief_request.schema.json"}, "mirrors": [{"kind": "pointer", "file": "skills/contracts/flow_brief_request.schema.pointer.json"}]},
+    {"tool": "crypto_flow.brief_receipt.contract", "title": "Flow Brief Receipt Contract（Schema）", "category": "contract", "level": "R0", "kind": "schema", "impl": {"file": "ops/nanoclaw/core_task1/schema/flow_brief_receipt.schema.json"}, "mirrors": [{"kind": "pointer", "file": "skills/contracts/flow_brief_receipt.schema.pointer.json"}]},
+    {"tool": "crypto_news.crawler.nanoclaw", "title": "Nanoclaw News Crawler", "category": "sandbox", "level": "R1", "kind": "sandbox_script", "impl": {"file": "ops/nanoclaw/core_task1/scripts/news_crawler.py"}},
+    {"tool": "crypto_news.digest.nanoclaw", "title": "Nanoclaw News Digest", "category": "sandbox", "level": "R1", "kind": "sandbox_script", "impl": {"file": "ops/nanoclaw/core_task1/scripts/news_digest_v2.py"}},
+
+    {"tool": "llm.routing.rules.prod_example", "title": "LLM Router Rules（Prod example）", "category": "routing", "level": "R0", "kind": "config_copy", "impl": {"file": "tools/agent_llm_router_rules_prod.example.json"}, "mirrors": [{"kind": "copy", "file": "skills/routing/agent_llm_router_rules_prod.example.json"}]}
+  ]
+}
