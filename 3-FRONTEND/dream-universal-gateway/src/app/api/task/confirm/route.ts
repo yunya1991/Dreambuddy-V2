@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
     session_id: task.session_id,
     user_role: 'FREE',
     thinking_mode: task.thinking_mode,
+    trading_mode: task.trading_mode || 'ai_skill',
     message_history: [task.message],
   }).chain;
       const entities = task.intent.entities || {};
@@ -179,6 +180,7 @@ export async function POST(request: NextRequest) {
     session_id: task.session_id,
     user_role: 'FREE',
     thinking_mode: task.thinking_mode,
+    trading_mode: task.trading_mode || 'ai_skill',
     message_history: [task.message],
   }).chain;
       const result: ResultFile = {

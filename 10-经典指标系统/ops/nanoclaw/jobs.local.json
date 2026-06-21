@@ -1,0 +1,22 @@
+{
+  "jobs": [
+    {
+      "id": "market_news_digest_daily",
+      "cron": "0 9 * * 1-5",
+      "group": "research-main",
+      "task": "抓取主流财经与加密新闻，输出 8 条以内的结构化摘要与风险提示，附来源链接与时间戳。"
+    },
+    {
+      "id": "risk_monitor_hourly",
+      "cron": "5 * * * *",
+      "group": "ops-main",
+      "task": "读取 outbox 风险相关事件，按 trace_id 聚合，输出过去 1 小时告警摘要、潜在根因和建议处置。"
+    },
+    {
+      "id": "weekly_strategy_review",
+      "cron": "30 10 * * 1",
+      "group": "strategy-review",
+      "task": "回顾过去一周策略表现，重点列出最大回撤区间、失败交易样本、可执行的降风险建议。"
+    }
+  ]
+}

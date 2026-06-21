@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer for okx-ingest@1.service
+
+[Timer]
+OnCalendar=*:35
+Unit=okx-ingest@1.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

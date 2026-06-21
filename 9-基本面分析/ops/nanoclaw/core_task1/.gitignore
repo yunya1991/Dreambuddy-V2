@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# 日志
+logs/*.log
+
+# 环境
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

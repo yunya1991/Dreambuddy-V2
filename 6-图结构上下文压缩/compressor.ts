@@ -1,445 +1,259 @@
 import {
-  BlueprintGraph, ArchitectureGraph, ChronicleGraph,
-  BNode, ANode, CNode, BEdge, AEdge, CEdge,
-  NodeId, DataFlow, NodeMetadata, CompressionResult, ExpansionResult
-} from './models';
+  ChronicleGraph,
+  ArchitectureGraph,
+  BlueprintGraph,
+  CompressionResult,
+  CompressionOptions,
+  NodeId,
+} from './types';
+import { calculateSize } from './chronicle';
 
-function createDefaultMetadata(status: NodeMetadata['status'] = 'pending'): NodeMetadata {
-  return {
-    tokenCost: 0,
-    latencyMs: 0,
-    status,
-    timestamp: Date.now(),
-  };
-}
+const DEFAULT_WEIGHTS = {
+  tokenCost: 0.4,
+  latency: 0.3,
+  structuralPosition: 0.2,
+  semanticImportance: 0.1,
+};
 
-function createDataFlow(type: string, description: string): DataFlow {
-  return {
-    type,
-    schema: `${type}_v1`,
-    description,
-  };
-}
+/**
+ * 计算节点的价值评分（0-1）
+ * 分值越高，说明该节点越值得保留。
+ */
+function scoreNode(
+  nodeId: NodeId,
+  chronicle: ChronicleGraph,
+  architecture: ArchitectureGraph,
+  weights: Required<CompressionOptions>['weights']
+): number {
+  const node = chronicle.nodes.get(nodeId);
+  if (!node) return 0;
 
-export class ContextCompressor {
-  private blueprints: Map<string, BlueprintGraph> = new Map();
-  private architectures: Map<string, ArchitectureGraph> = new Map();
-  private chronicles: Map<string, ChronicleGraph> = new Map();
+  // 1. Token 消耗（归一化：相对最高消耗的比例）
+  let maxTokenCost = 0;
+  chronicle.nodes.forEach((n) => {
+    if (n.metadata.tokenCost > maxTokenCost) maxTokenCost = n.metadata.tokenCost;
+  });
+  const tokenScore = maxTokenCost > 0 ? node.metadata.tokenCost / maxTokenCost : 0;
 
-  createBlueprint(name: string): BlueprintGraph {
-    const id = `bp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    
-    const blueprint: BlueprintGraph = {
-      id,
-      name,
-      version: '1.0.0',
-      nodes: new Map(),
-      edges: [],
-      rootId: `bp_root`,
-      createdAt: Date.now(),
-    };
+  // 2. 耗时（归一化）
+  let maxLatency = 0;
+  chronicle.nodes.forEach((n) => {
+    if (n.metadata.latencyMs > maxLatency) maxLatency = n.metadata.latencyMs;
+  });
+  const latencyScore = maxLatency > 0 ? node.metadata.latencyMs / maxLatency : 0;
 
-    const root: BNode = {
-      id: blueprint.rootId,
-      type: 'module',
-      name: '量化分析系统',
-      description: '完整的量化交易分析流程',
-      metadata: createDefaultMetadata('completed'),
-      children: [],
-    };
-    blueprint.nodes.set(root.id, root);
-
-    const components: BNode[] = [
-      {
-        id: 'intent_engine',
-        type: 'service',
-        name: '意图识别引擎',
-        description: '识别用户意图并分类',
-        metadata: createDefaultMetadata('completed'),
-      },
-      {
-        id: 'knowledge_base',
-        type: 'service',
-        name: '知识库检索',
-        description: '检索相关知识和策略',
-        metadata: createDefaultMetadata('completed'),
-      },
-      {
-        id: 'market_data',
-        type: 'service',
-        name: '行情数据服务',
-        description: '获取实时和历史行情数据',
-        metadata: createDefaultMetadata('completed'),
-      },
-      {
-        id: 'analysis_chain',
-        type: 'module',
-        name: '分析链',
-        description: 'S1-S5 分析步骤',
-        metadata: createDefaultMetadata('completed'),
-        children: [],
-      },
-      {
-        id: 'strategy_engine',
-        type: 'service',
-        name: '策略引擎',
-        description: '策略生成和验证',
-        metadata: createDefaultMetadata('completed'),
-      },
-      {
-        id: 'report_generator',
-        type: 'service',
-        name: '报告生成器',
-        description: '生成最终报告',
-        metadata: createDefaultMetadata('completed'),
-      },
-    ];
-
-    components.forEach(c => {
-      blueprint.nodes.set(c.id, c);
-      root.children!.push(c.id);
-    });
-
-    const edges: BEdge[] = [
-      { source: root.id, target: 'intent_engine', dataFlow: createDataFlow('control', '触发意图识别') },
-      { source: 'intent_engine', target: 'knowledge_base', dataFlow: createDataFlow('query', '意图驱动的知识检索') },
-      { source: 'intent_engine', target: 'market_data', dataFlow: createDataFlow('query', '意图驱动的行情查询') },
-      { source: 'intent_engine', target: 'analysis_chain', dataFlow: createDataFlow('control', '路由到分析链') },
-      { source: 'knowledge_base', target: 'analysis_chain', dataFlow: createDataFlow('knowledge', '注入知识库数据') },
-      { source: 'market_data', target: 'analysis_chain', dataFlow: createDataFlow('market', '注入行情数据') },
-      { source: 'analysis_chain', target: 'strategy_engine', dataFlow: createDataFlow('analysis', '分析结果驱动策略') },
-      { source: 'analysis_chain', target: 'report_generator', dataFlow: createDataFlow('result', '分析结果生成报告') },
-      { source: 'strategy_engine', target: 'report_generator', dataFlow: createDataFlow('strategy', '策略建议生成报告') },
-    ];
-
-    blueprint.edges = edges;
-    this.blueprints.set(id, blueprint);
-
-    return blueprint;
-  }
-
-  expandToArchitecture(blueprintId: string): ArchitectureGraph {
-    const blueprint = this.blueprints.get(blueprintId);
-    if (!blueprint) throw new Error(`Blueprint not found: ${blueprintId}`);
-
-    const id = `arch_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    
-    const arch: ArchitectureGraph = {
-      id,
-      blueprintId,
-      nodes: new Map(),
-      edges: [],
-      entryPoint: 'start',
-      createdAt: Date.now(),
-    };
-
-    const entryNode: ANode = {
-      id: 'start',
-      type: 'step',
-      name: '开始',
-      parentNodeId: blueprint.rootId,
-      metadata: createDefaultMetadata('completed'),
-    };
-    arch.nodes.set(entryNode.id, entryNode);
-
-    const analysisChain = blueprint.nodes.get('analysis_chain');
-    if (analysisChain) {
-      const steps: ANode[] = [
-        {
-          id: 'S1_RESEARCH',
-          type: 'step',
-          name: 'S1 调研',
-          parentNodeId: 'analysis_chain',
-          metadata: createDefaultMetadata('pending'),
-          requires: ['start'],
-        },
-        {
-          id: 'S2_ANALYSIS',
-          type: 'step',
-          name: 'S2 分析',
-          parentNodeId: 'analysis_chain',
-          metadata: createDefaultMetadata('pending'),
-          requires: ['S1_RESEARCH'],
-        },
-        {
-          id: 'S3_DESIGN',
-          type: 'step',
-          name: 'S3 设计',
-          parentNodeId: 'analysis_chain',
-          metadata: createDefaultMetadata('pending'),
-          requires: ['S2_ANALYSIS'],
-        },
-        {
-          id: 'S4_VALIDATE',
-          type: 'step',
-          name: 'S4 验证',
-          parentNodeId: 'analysis_chain',
-          metadata: createDefaultMetadata('pending'),
-          requires: ['S3_DESIGN'],
-          branches: [
-            { condition: '回测通过', target: 'S5_EXECUTE' },
-            { condition: '回测失败', target: 'S3_DESIGN' },
-          ],
-        },
-        {
-          id: 'S5_EXECUTE',
-          type: 'step',
-          name: 'S5 执行',
-          parentNodeId: 'analysis_chain',
-          metadata: createDefaultMetadata('pending'),
-          requires: ['S4_VALIDATE'],
-        },
-      ];
-
-      steps.forEach(s => arch.nodes.set(s.id, s));
-      analysisChain.children = steps.map(s => s.id);
+  // 3. 结构位置（入口/出口/条件分支 有特殊权重）
+  let structuralScore = 0;
+  const archNode = architecture.nodes.get(node.architectureNodeId);
+  if (archNode) {
+    // 入口节点
+    if (archNode.id === architecture.entryPoint) structuralScore = 0.9;
+    // 有分支（决策点）
+    else if (archNode.branches && archNode.branches.length > 0) structuralScore = 0.7;
+    // 被其他节点依赖
+    else {
+      let dependents = 0;
+      architecture.nodes.forEach((n) => {
+        if (n.requires?.includes(archNode.id)) dependents++;
+      });
+      structuralScore = Math.min(0.6, 0.2 + dependents * 0.1);
     }
-
-    const edges: AEdge[] = [
-      { source: 'start', target: 'S1_RESEARCH', dataFlow: createDataFlow('control', '开始调研') },
-      { source: 'S1_RESEARCH', target: 'S2_ANALYSIS', dataFlow: createDataFlow('research', '调研结果') },
-      { source: 'S2_ANALYSIS', target: 'S3_DESIGN', dataFlow: createDataFlow('analysis', '分析结果') },
-      { source: 'S3_DESIGN', target: 'S4_VALIDATE', dataFlow: createDataFlow('strategy', '策略设计') },
-      { source: 'S4_VALIDATE', target: 'S5_EXECUTE', dataFlow: createDataFlow('validation', '验证结果') },
-      { source: 'S4_VALIDATE', target: 'S3_DESIGN', dataFlow: createDataFlow('feedback', '失败反馈', true), isConditional: true },
-    ];
-
-    arch.edges = edges;
-    this.architectures.set(id, arch);
-
-    return arch;
   }
 
-  expandToChronicle(architectureId: string, executionId: string): ChronicleGraph {
-    const arch = this.architectures.get(architectureId);
-    if (!arch) throw new Error(`Architecture not found: ${architectureId}`);
+  // 4. 语义重要性（简化为：是否有输出内容）
+  const outputCount = Object.keys(node.outputs).length;
+  const inputCount = Object.keys(node.inputs).length;
+  const semanticScore = Math.min(1, (outputCount + inputCount) / 4);
 
-    const id = `chr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    const chronicle: ChronicleGraph = {
-      id,
-      architectureId,
-      nodes: new Map(),
-      edges: [],
-      executionId,
-      startedAt: Date.now(),
-    };
+  // 加权组合
+  const total =
+    weights.tokenCost * tokenScore +
+    weights.latency * latencyScore +
+    weights.structuralPosition * structuralScore +
+    weights.semanticImportance * semanticScore;
 
-    const nodeOrder = ['start', 'S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
-    let currentTime = Date.now();
+  return Math.min(1, total);
+}
 
-    nodeOrder.forEach((nodeId, index) => {
-      const archNode = arch.nodes.get(nodeId);
-      if (!archNode) return;
+/**
+ * C→A→B: 回溯压缩
+ *
+ * 算法:
+ * 1. 计算每个节点的价值评分
+ * 2. 按评分排序，保留前 (1 - targetRatio) 的节点
+ * 3. 保留的节点保留完整信息
+ * 4. 压缩的节点保留引用关系，但清空详细内容
+ * 5. 生成压缩后的架构图（只保留"已执行"的节点）
+ */
+export function compress(
+  chronicle: ChronicleGraph,
+  architecture: ArchitectureGraph,
+  blueprint: BlueprintGraph,
+  options: CompressionOptions = {}
+): CompressionResult {
+  const targetRatio = options.targetRatio ?? 0.5;
+  const weights = { ...DEFAULT_WEIGHTS, ...(options.weights ?? {}) };
+  const keepAllEdges = options.keepAllEdges ?? false;
+  const minNodes = options.minNodes ?? 1;
 
-      const startTime = currentTime;
-      const latency = index === 0 ? 10 : 100 + Math.random() * 200;
-      currentTime += latency;
+  // 1. 评分
+  const nodeScores = new Map<NodeId, number>();
+  const allNodeIds = Array.from(chronicle.nodes.keys());
 
-      const cNode: CNode = {
-        id: `${executionId}_${nodeId}`,
-        architectureNodeId: nodeId,
-        executionId,
-        startTime,
-        endTime: currentTime,
+  allNodeIds.forEach((id) => {
+    const score = scoreNode(id, chronicle, architecture, weights);
+    nodeScores.set(id, score);
+  });
+
+  // 2. 按评分排序
+  const sortedIds = [...allNodeIds].sort((a, b) => {
+    return (nodeScores.get(b) ?? 0) - (nodeScores.get(a) ?? 0);
+  });
+
+  // 3. 确定保留的节点数
+  const totalNodes = allNodeIds.length;
+  const targetKeep = Math.max(minNodes, Math.ceil(totalNodes * (1 - targetRatio)));
+  const keepIds = new Set(sortedIds.slice(0, targetKeep));
+
+  // 4. 创建压缩后的 Chronicle
+  const compressedChronicle: ChronicleGraph = {
+    ...chronicle,
+    id: `${chronicle.id}_compressed`,
+    nodes: new Map(),
+    edges: [],
+    startedAt: chronicle.startedAt,
+    completedAt: chronicle.completedAt,
+  };
+
+  const discardedDetails: { nodeId: string; reason: string }[] = [];
+
+  chronicle.nodes.forEach((node, id) => {
+    if (keepIds.has(id)) {
+      // 保留节点，但摘要化输入输出
+      const keptNode = { ...node };
+      if (Object.keys(node.inputs).length > 0) {
+        keptNode.inputs = { summary: `[已摘要] ${node.architectureNodeId} inputs` };
+      }
+      if (Object.keys(node.outputs).length > 0 && !node.metadata.skipReason) {
+        keptNode.outputs = { summary: node.metadata.outputSummary ?? `[已摘要] ${node.architectureNodeId} outputs` };
+      }
+      if (node.logs.length > 2) {
+        keptNode.logs = node.logs.slice(0, 1);
+      }
+      compressedChronicle.nodes.set(id, keptNode);
+    } else {
+      // 压缩节点：保留引用关系，清空详细内容
+      const compressedNode = {
+        ...node,
         metadata: {
-          ...archNode.metadata,
-          status: 'completed',
-          tokenCost: index === 0 ? 0 : 500 + Math.random() * 800,
-          latencyMs: latency,
-          timestamp: startTime,
+          ...node.metadata,
+          status: 'compressed' as const,
+          outputSummary: `[已压缩] ${node.architectureNodeId} (评分: ${(nodeScores.get(id) ?? 0).toFixed(2)})`,
+          skipReason: undefined,
         },
-        inputs: index === 0 ? {} : { [`input_from_${nodeOrder[index - 1]}`]: '...' },
-        outputs: nodeId === 'S5_EXECUTE' ? { finalReport: '完整策略报告' } : { [`output_${nodeId}`]: '...' },
-        logs: [`Step ${nodeId} executed successfully`],
+        inputs: {},
+        outputs: {},
+        logs: [],
       };
-
-      chronicle.nodes.set(cNode.id, cNode);
-    });
-
-    for (let i = 0; i < nodeOrder.length - 1; i++) {
-      const edge: CEdge = {
-        source: `${executionId}_${nodeOrder[i]}`,
-        target: `${executionId}_${nodeOrder[i + 1]}`,
-        timestamp: currentTime,
-        dataFlow: createDataFlow('execution', `从${nodeOrder[i]}到${nodeOrder[i + 1]}`),
-        payloadSummary: `数据传递: ${nodeOrder[i]} → ${nodeOrder[i + 1]}`,
-      };
-      chronicle.edges.push(edge);
+      compressedChronicle.nodes.set(id, compressedNode);
+      discardedDetails.push({
+        nodeId: node.architectureNodeId,
+        reason: `价值评分 ${(nodeScores.get(id) ?? 0).toFixed(2)}，低于保留阈值`,
+      });
     }
+  });
 
-    chronicle.completedAt = currentTime;
-    this.chronicles.set(id, chronicle);
+  // 5. 更新边
+  chronicle.edges.forEach((edge) => {
+    const sourceKept = keepIds.has(edge.source);
+    const targetKept = keepIds.has(edge.target);
 
-    return chronicle;
-  }
+    if (keepAllEdges) {
+      compressedChronicle.edges.push(edge);
+    } else if (sourceKept || targetKept) {
+      // 至少一端是保留节点，保留边
+      // 如果另一端被压缩，标注边的状态
+      const markedEdge = {
+        ...edge,
+        payloadSummary:
+          sourceKept && targetKept
+            ? edge.payloadSummary
+            : `${edge.payloadSummary} (端点已压缩)`,
+      };
+      compressedChronicle.edges.push(markedEdge);
+    }
+  });
 
-  compress(chronicleId: string, targetCompressionRatio: number = 0.5): CompressionResult {
-    const chronicle = this.chronicles.get(chronicleId);
-    if (!chronicle) throw new Error(`Chronicle not found: ${chronicleId}`);
+  compressedChronicle.rawSizeBytes = calculateSize(compressedChronicle);
 
-    const arch = this.architectures.get(chronicle.architectureId);
-    const blueprint = this.blueprints.get(arch?.blueprintId || '');
+  // 6. 创建压缩后的 Architecture（只保留对应的架构节点）
+  const compressedArchitecture: ArchitectureGraph = {
+    ...architecture,
+    id: `${architecture.id}_compressed`,
+    nodes: new Map(),
+    edges: [],
+  };
 
-    const originalSize = this.calculateGraphSize(chronicle);
-    
-    const compressedChronicle = this.createCompressedChronicle(chronicle, targetCompressionRatio);
-    const compressedArchitecture = this.createCompressedArchitecture(arch!, chronicle);
-    
-    const compressedSize = this.calculateGraphSize(compressedChronicle);
-    const compressionRatio = compressedSize / originalSize;
+  const keptArchIds = new Set<string>();
+  compressedChronicle.nodes.forEach((node) => {
+    keptArchIds.add(node.architectureNodeId);
+  });
 
-    const discardedDetails = this.findDiscardedDetails(chronicle, compressedChronicle);
+  architecture.nodes.forEach((node, id) => {
+    if (keptArchIds.has(id)) {
+      compressedArchitecture.nodes.set(id, node);
+    }
+  });
 
-    return {
-      compressedChronicle,
-      compressedArchitecture,
-      blueprint: blueprint!,
-      compressionRatio,
-      retainedContext: (1 - compressionRatio) * 100,
-      discardedDetails,
-    };
-  }
+  architecture.edges.forEach((edge) => {
+    if (compressedArchitecture.nodes.has(edge.source) && compressedArchitecture.nodes.has(edge.target)) {
+      compressedArchitecture.edges.push(edge);
+    }
+  });
 
-  private calculateGraphSize(graph: ChronicleGraph): number {
-    let size = 0;
-    graph.nodes.forEach(node => {
-      size += JSON.stringify(node).length;
+  // 7. 计算压缩率
+  const originalSize = chronicle.rawSizeBytes ?? calculateSize(chronicle);
+  const newSize = compressedChronicle.rawSizeBytes ?? calculateSize(compressedChronicle);
+  const compressionRatio = newSize / originalSize;
+  const retainedContext = 1 - compressionRatio;
+
+  return {
+    compressedChronicle,
+    compressedArchitecture,
+    blueprint,
+    compressionRatio,
+    retainedContext,
+    discardedDetails,
+    nodeScores,
+  };
+}
+
+/** 生成压缩报告（便于调试） */
+export function generateCompressionReport(result: CompressionResult): string {
+  const lines: string[] = [];
+  lines.push('=== 压缩报告 ===');
+  lines.push(`压缩率: ${(result.compressionRatio * 100).toFixed(1)}%`);
+  lines.push(`保留上下文: ${(result.retainedContext * 100).toFixed(1)}%`);
+  lines.push(`保留节点: ${result.compressedChronicle.nodes.size}`);
+  lines.push(`压缩节点: ${result.discardedDetails.length}`);
+  lines.push('');
+
+  if (result.nodeScores) {
+    lines.push('节点评分:');
+    const sorted = Array.from(result.nodeScores.entries()).sort((a, b) => b[1] - a[1]);
+    sorted.forEach(([id, score]) => {
+      const node = result.compressedChronicle.nodes.get(id);
+      const status = node?.metadata.status ?? 'unknown';
+      const indicator = status === 'compressed' ? '□' : '■';
+      lines.push(`  ${indicator} ${node?.architectureNodeId ?? id}: ${score.toFixed(3)} [${status}]`);
     });
-    graph.edges.forEach(edge => {
-      size += JSON.stringify(edge).length;
-    });
-    return size;
   }
 
-  private createCompressedChronicle(chronicle: ChronicleGraph, targetRatio: number): ChronicleGraph {
-    const compressed: ChronicleGraph = {
-      ...chronicle,
-      nodes: new Map(),
-      edges: [],
-    };
+  lines.push('');
+  lines.push('丢弃详情:');
+  result.discardedDetails.forEach((d) => {
+    lines.push(`  - ${d.nodeId}: ${d.reason}`);
+  });
 
-    const nodesArray = Array.from(chronicle.nodes.values());
-    const nodesToKeep = Math.ceil(nodesArray.length * (1 - targetRatio));
-
-    const sortedNodes = [...nodesArray].sort((a, b) => {
-      const aCost = a.metadata.tokenCost + a.metadata.latencyMs;
-      const bCost = b.metadata.tokenCost + b.metadata.latencyMs;
-      return bCost - aCost;
-    });
-
-    const keepIds = new Set(sortedNodes.slice(0, nodesToKeep).map(n => n.id));
-
-    chronicle.nodes.forEach((node, id) => {
-      if (keepIds.has(id)) {
-        const compressedNode: CNode = {
-          ...node,
-          inputs: node.metadata.status === 'completed' ? { summary: '已处理' } : {},
-          outputs: node.metadata.status === 'completed' ? { summary: node.metadata.outputSummary || '已完成' } : {},
-          logs: node.logs.slice(0, 1),
-        };
-        compressed.nodes.set(id, compressedNode);
-      } else {
-        const compressedNode: CNode = {
-          ...node,
-          metadata: {
-            ...node.metadata,
-            status: 'compressed',
-            outputSummary: `[已压缩] ${node.name}`,
-          },
-          inputs: {},
-          outputs: {},
-          logs: [],
-        };
-        compressed.nodes.set(id, compressedNode);
-      }
-    });
-
-    chronicle.edges.forEach(edge => {
-      if (keepIds.has(edge.source) || keepIds.has(edge.target)) {
-        compressed.edges.push(edge);
-      }
-    });
-
-    return compressed;
-  }
-
-  private createCompressedArchitecture(arch: ArchitectureGraph, chronicle: ChronicleGraph): ArchitectureGraph {
-    const compressed: ArchitectureGraph = {
-      ...arch,
-      nodes: new Map(),
-      edges: [],
-    };
-
-    const completedNodes = new Set<string>();
-    chronicle.nodes.forEach(node => {
-      if (node.metadata.status === 'completed') {
-        completedNodes.add(node.architectureNodeId);
-      }
-    });
-
-    arch.nodes.forEach((node, id) => {
-      if (completedNodes.has(id)) {
-        compressed.nodes.set(id, node);
-      }
-    });
-
-    arch.edges.forEach(edge => {
-      if (completedNodes.has(edge.source) && completedNodes.has(edge.target)) {
-        compressed.edges.push(edge);
-      }
-    });
-
-    return compressed;
-  }
-
-  private findDiscardedDetails(original: ChronicleGraph, compressed: ChronicleGraph): { nodeId: string; reason: string }[] {
-    const discarded: { nodeId: string; reason: string }[] = [];
-
-    original.nodes.forEach((originalNode, id) => {
-      const compressedNode = compressed.nodes.get(id);
-      if (!compressedNode) return;
-
-      const originalLogs = originalNode.logs.length;
-      const compressedLogs = compressedNode.logs.length;
-      const originalInputs = Object.keys(originalNode.inputs).length;
-      const compressedInputs = Object.keys(compressedNode.inputs).length;
-      const originalOutputs = Object.keys(originalNode.outputs).length;
-      const compressedOutputs = Object.keys(compressedNode.outputs).length;
-
-      const reasons: string[] = [];
-      if (originalLogs > compressedLogs) reasons.push(`丢弃 ${originalLogs - compressedLogs} 条日志`);
-      if (originalInputs > compressedInputs) reasons.push(`丢弃 ${originalInputs - compressedInputs} 个输入`);
-      if (originalOutputs > compressedOutputs) reasons.push(`丢弃 ${originalOutputs - compressedOutputs} 个输出详情`);
-
-      if (reasons.length > 0) {
-        discarded.push({ nodeId: originalNode.architectureNodeId, reason: reasons.join('; ') });
-      }
-    });
-
-    return discarded;
-  }
-
-  getBlueprint(id: string): BlueprintGraph | undefined {
-    return this.blueprints.get(id);
-  }
-
-  getArchitecture(id: string): ArchitectureGraph | undefined {
-    return this.architectures.get(id);
-  }
-
-  getChronicle(id: string): ChronicleGraph | undefined {
-    return this.chronicles.get(id);
-  }
-
-  getAllBlueprints(): BlueprintGraph[] {
-    return Array.from(this.blueprints.values());
-  }
-
-  getAllArchitectures(): ArchitectureGraph[] {
-    return Array.from(this.architectures.values());
-  }
-
-  getAllChronicles(): ChronicleGraph[] {
-    return Array.from(this.chronicles.values());
-  }
+  return lines.join('\n');
 }

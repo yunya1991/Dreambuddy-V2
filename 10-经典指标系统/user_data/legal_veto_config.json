@@ -1,0 +1,12 @@
+{
+  "constitution_threshold": 0.35,
+  "law_threshold": 0.25,
+  "weights": {
+    "constitution": 1.0,
+    "law": 0.7
+  },
+  "confidence_scale": {
+    "constitution": 0.6,
+    "law": 0.8
+  }
+}

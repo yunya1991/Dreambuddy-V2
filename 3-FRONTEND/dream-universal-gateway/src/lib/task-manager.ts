@@ -75,6 +75,19 @@ import type {
   DynamicChainIntent,
 } from './dynamic-chain/types';
 
+// 经典指标系统 API 客户端（用于 classic 模式）
+import {
+  MacroAPI,
+  UniverseAPI,
+  EvaluationAPI,
+  ArenaAPI,
+  StrategyLibraryAPI,
+  SignalsAPI,
+  ExitAPI,
+  TrackerAPI,
+  SystemHealthAPI,
+} from './classic-system-api';
+
 function resolveRepoRoot(): string {
   const cwd = process.cwd();
   const candidates = [
@@ -169,6 +182,7 @@ export interface TaskFile {
     reasoning?: string;
   };
   thinking_mode: ThinkingMode;
+  trading_mode?: 'ai_skill' | 'classic';
   session_id: string;
   priority: 'high' | 'medium' | 'low';
   metadata: {
@@ -317,6 +331,7 @@ export async function createTask(params: {
   session_id?: string;
   llm_model?: string;
   intent_method?: string;
+  trading_mode?: 'ai_skill' | 'classic';
 }): Promise<TaskFile> {
   ensureDir(TASKS_DIR);
   ensureDir(RESULTS_DIR);
@@ -328,6 +343,7 @@ export async function createTask(params: {
     session_id: params.session_id || `sess_${Date.now()}`,
     user_role: 'FREE', // TODO: from auth context
     thinking_mode: thinkingMode,
+    trading_mode: params.trading_mode || 'ai_skill',
     message_history: [],
   });
 
@@ -344,6 +360,7 @@ export async function createTask(params: {
     message: params.message,
     intent,
     thinking_mode: thinkingMode,
+    trading_mode: params.trading_mode || 'ai_skill',
     session_id: params.session_id || `sess_${Date.now()}`,
     priority: intent.confidence >= 0.8 ? 'high' : 'medium',
     metadata: {
@@ -623,6 +640,7 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
     session_id: task.session_id,
     user_role: 'PRO',
     thinking_mode: thinkingMode,
+    trading_mode: task.trading_mode || 'ai_skill',
     message_history: [task.message],
   });
   const chain = routing.chain.length > 0 ? routing.chain : ['S0_DIRECT_ANSWER'];
@@ -1430,6 +1448,7 @@ export function generateTradePendingResult(task: TaskFile): ResultFile {
     session_id: task.session_id,
     user_role: 'FREE',
     thinking_mode: task.thinking_mode,
+    trading_mode: task.trading_mode || 'ai_skill',
     message_history: [task.message],
   });
   const chain = routing.chain.length > 0 ? routing.chain : ['S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'];
@@ -1555,6 +1574,7 @@ export async function triggerWorkBuddyAsync(taskId: string): Promise<void> {
       session_id: task.session_id,
       user_role: 'FREE',
       thinking_mode: task.thinking_mode,
+      trading_mode: task.trading_mode || 'ai_skill',
       message_history: [task.message],
     });
     emitMonitorEvent({
@@ -1597,6 +1617,289 @@ export async function triggerWorkBuddyAsync(taskId: string): Promise<void> {
  * - 对话任务：内联执行，同步返回结果
  * - 交易任务：返回待确认状态
  */
+// ============================================================
+// 经典交易 C 系列思维链执行器
+// 职责：
+//   1. classic 模式 → C 系列思维链执行
+//   2. 调用经典指标系统 API 获取真实数据
+//   3. LLM 解读并生成结构化报告
+// ============================================================
+
+type ClassicChainStep =
+  | 'C0_DIRECT_ANSWER'
+  | 'C1_MACRO_SCAN'
+  | 'C2_UNIVERSE_SCAN'
+  | 'C3_GATE_CHECK'
+  | 'C4_ARENA_REVIEW'
+  | 'C5_STRATEGY_SELECT'
+  | 'C6_SIGNAL_REVIEW'
+  | 'C7_EXIT_MONITOR'
+  | 'C8_TRACKING_AUDIT';
+
+const CLASSIC_STEP_LABELS: Record<ClassicChainStep, { label: string; icon: string; zh: string }> = {
+  'C0_DIRECT_ANSWER': { label: 'Direct Answer', icon: '💬', zh: '快速回答' },
+  'C1_MACRO_SCAN': { label: 'Macro Scan', icon: '🌐', zh: '宏观扫描' },
+  'C2_UNIVERSE_SCAN': { label: 'Universe Scan', icon: '🌌', zh: '代币宇宙' },
+  'C3_GATE_CHECK': { label: 'Gate Check', icon: '🚪', zh: 'Gate 评估' },
+  'C4_ARENA_REVIEW': { label: 'Arena Review', icon: '🏟️', zh: '竞技场审查' },
+  'C5_STRATEGY_SELECT': { label: 'Strategy Select', icon: '📚', zh: '策略库' },
+  'C6_SIGNAL_REVIEW': { label: 'Signal Review', icon: '📡', zh: '信号系统' },
+  'C7_EXIT_MONITOR': { label: 'Exit Monitor', icon: '🚪', zh: '离场监控' },
+  'C8_TRACKING_AUDIT': { label: 'Tracking Audit', icon: '📊', zh: '执行追踪' },
+};
+
+/**
+ * 执行单个 C 系列步骤
+ */
+async function executeClassicStep(step: ClassicChainStep): Promise<{ step: string; data: any; error?: string }> {
+  try {
+    switch (step) {
+      case 'C1_MACRO_SCAN': {
+        const data = await MacroAPI.getOverview();
+        return { step, data };
+      }
+      case 'C2_UNIVERSE_SCAN': {
+        const data = await UniverseAPI.getStatus();
+        return { step, data };
+      }
+      case 'C3_GATE_CHECK': {
+        const data = await EvaluationAPI.getGateCheck();
+        return { step, data };
+      }
+      case 'C4_ARENA_REVIEW': {
+        const data = await ArenaAPI.getState();
+        return { step, data };
+      }
+      case 'C5_STRATEGY_SELECT': {
+        const data = await StrategyLibraryAPI.listStrategies();
+        return { step, data };
+      }
+      case 'C6_SIGNAL_REVIEW': {
+        const data = await SignalsAPI.getRecentSignals(20);
+        return { step, data };
+      }
+      case 'C7_EXIT_MONITOR': {
+        const data = await ExitAPI.getExitStatus();
+        return { step, data };
+      }
+      case 'C8_TRACKING_AUDIT': {
+        const data = await TrackerAPI.getStats();
+        return { step, data };
+      }
+      case 'C0_DIRECT_ANSWER':
+      default:
+        return { step, data: { ok: true } };
+    }
+  } catch (error) {
+    console.error(`[ClassicChain] Step ${step} failed:`, error);
+    return { step, data: null, error: String(error) };
+  }
+}
+
+/**
+ * 格式化经典系统数据为可读文本
+ */
+function formatClassicStepResult(step: string, data: any, isZh: boolean): string {
+  const labels = CLASSIC_STEP_LABELS[step as ClassicChainStep];
+  const stepName = isZh ? labels?.zh || step : labels?.label || step;
+  const icon = labels?.icon || '📋';
+
+  if (!data) {
+    return `${icon} **${stepName}**：获取数据失败`;
+  }
+
+  switch (step) {
+    case 'C1_MACRO_SCAN': {
+      // 宏观扫描结果
+      const regime = data.regime || data.btc?.regime || '-';
+      const trend = data.trend || data.btc?.trend || '-';
+      const energy = data.energy || data.btc?.energy || '-';
+      return `${icon} **${stepName}**
+
+| 指标 | 值 |
+|------|-----|
+| Regime | ${typeof regime === 'object' ? JSON.stringify(regime) : regime} |
+| Trend | ${typeof trend === 'object' ? JSON.stringify(trend) : trend} |
+| Energy | ${typeof energy === 'object' ? JSON.stringify(energy) : energy} |`;
+    }
+    case 'C2_UNIVERSE_SCAN': {
+      // 代币宇宙结果
+      const core = Array.isArray(data.core) ? data.core.join(', ') : data.core || '-';
+      const watchlist = Array.isArray(data.watchlist) ? data.watchlist.join(', ') : '-';
+      const shadow = Array.isArray(data.shadow) ? data.shadow.join(', ') : '-';
+      return `${icon} **${stepName}**
+
+| 池子 | 交易对 |
+|------|--------|
+| Core | ${core} |
+| Watchlist | ${watchlist} |
+| Shadow | ${shadow} |`;
+    }
+    case 'C3_GATE_CHECK': {
+      // Gate 评估结果
+      // 兼容处理: 降级时 available=false, 正常时 checks/checks 存在
+      if (!data || data.available === false) {
+        return `${icon} **${stepName}**
+
+**状态**：⚠️ 暂无回测数据
+
+> 当前没有足够的回测数据来执行 Gate 评估。
+> 这可能是因为：
+> - 尚未运行过回测
+> - 回测数据已过期
+> - 系统正在初始化
+
+*提示：可以先运行沙箱测试生成回测数据*`;
+      }
+      const passed = data.passed;
+      const checks = data.checks || {};
+      const thresholds = data.thresholds || {};
+      const checksStr = Object.entries(checks).map(([k, v]) => `${k}: ${v ? '✓' : '✗'}`).join(', ');
+      const metricsStr = Object.entries(data.metrics || {}).map(([k, v]) => `${k}: ${typeof v === 'number' ? v.toFixed(2) : v}`).join(', ');
+      return `${icon} **${stepName}**
+
+**状态**：${passed ? '✅ 全部通过' : '❌ 存在未通过项'}
+
+${checksStr ? `**检查项**：${checksStr}` : ''}
+${metricsStr ? `**指标**：${metricsStr}` : ''}`;
+    }
+    case 'C4_ARENA_REVIEW': {
+      // 竞技场结果
+      const enabled = data.enabled ? '已启用' : '未启用';
+      const pool_u = data.pool_u ? `${data.pool_u.toFixed(2)}%` : '-';
+      const models = data.models ? Object.keys(data.models).length : 0;
+      return `${icon} **${stepName}**
+
+| 指标 | 值 |
+|------|-----|
+| 状态 | ${enabled} |
+| 资金费率 | ${pool_u} |
+| 模型数 | ${models} |`;
+    }
+    case 'C5_STRATEGY_SELECT': {
+      // 策略库结果
+      const strategies = data.strategies || [];
+      const activeCount = strategies.filter((s: any) => s.status === 'active').length;
+      return `${icon} **${stepName}**
+
+**活跃策略**：${activeCount} 个（共 ${strategies.length} 个注册策略）
+
+${strategies.slice(0, 5).map((s: any) => `- \`${s.strategy}\` (${s.status || 'unknown'})`).join('\n')}${strategies.length > 5 ? `\n... 及其他 ${strategies.length - 5} 个策略` : ''}`;
+    }
+    case 'C6_SIGNAL_REVIEW': {
+      // 信号系统结果
+      const signals = data.signals || [];
+      const recentSignals = signals.slice(0, 10).map((s: any) => {
+        const ts = s.timestamp || s.ts;
+        const time = ts ? new Date(ts).toLocaleString('zh-CN', { hour12: false }) : '-';
+        return `${time} | ${s.strategy || s.signal || '-'} | ${s.direction || s.side || '-'} | ${s.signal || '-'} ${s.action || ''}`;
+      }).join('\n');
+      return `${icon} **${stepName}**
+
+**最近信号**（${signals.length} 条）：
+
+${recentSignals || '暂无信号'}`;
+    }
+    case 'C7_EXIT_MONITOR': {
+      // 离场监控结果
+      const positions = data.open_positions || data.positions || [];
+      const exitSignals = data.exit_signals || data.signals || [];
+      return `${icon} **${stepName}**
+
+**开放持仓**：${positions.length} 个
+**离场信号**：${exitSignals.length} 个`;
+    }
+    case 'C8_TRACKING_AUDIT': {
+      // 执行追踪结果
+      const settlements = data.ab_settlements || data.settlements || [];
+      const totalPnl = settlements.reduce((sum: number, s: any) => sum + (s.pnl_usdc || 0), 0);
+      const winCount = settlements.filter((s: any) => s.pnl_usdc > 0).length;
+      const lossCount = settlements.filter((s: any) => s.pnl_usdc < 0).length;
+      return `${icon} **${stepName}**
+
+| 指标 | 值 |
+|------|-----|
+| 总交易 | ${settlements.length} |
+| 盈利 | ${winCount} |
+| 亏损 | ${lossCount} |
+| 总PnL | ${totalPnl.toFixed(2)} USDC |`;
+    }
+    default:
+      return `${icon} **${stepName}**：${JSON.stringify(data).slice(0, 200)}`;
+  }
+}
+
+/**
+ * 执行经典交易 C 系列思维链
+ */
+export async function executeClassicChain(task: TaskFile, lang: 'zh' | 'en'): Promise<ResultFile> {
+  const startTime = Date.now();
+  const isZh = lang === 'zh';
+  const { task_id, message } = task;
+
+  console.log(`[ClassicChain] Starting classic chain for: ${message.slice(0, 50)}`);
+
+  // 从路由获取 C 系列思维链
+  const routing = routeIntent(task.intent.type, 'moderate', {
+    session_id: task.session_id,
+    user_role: 'FREE',
+    thinking_mode: task.thinking_mode || 'deep',
+    trading_mode: 'classic',
+    message_history: [message],
+  });
+
+  // 过滤出 C 系列步骤
+  const chain = (routing.chain || []).filter((s: string) => s.startsWith('C')) as ClassicChainStep[];
+  console.log(`[ClassicChain] Execution chain: ${chain.join(' → ')}`);
+
+  // 执行每一步
+  const stepResults: Array<{ step: string; content: string; data: any }> = [];
+  for (const step of chain) {
+    console.log(`[ClassicChain] Executing step: ${step}`);
+    const result = await executeClassicStep(step);
+    const content = formatClassicStepResult(step, result.data, isZh);
+    stepResults.push({
+      step,
+      content,
+      data: result.data,
+    });
+  }
+
+  // 生成结构化报告
+  const reportHeader = isZh
+    ? `# 📊 经典指标系统分析报告\n\n**问题**：${message}\n\n**执行链路**：${chain.map(s => CLASSIC_STEP_LABELS[s]?.zh || s).join(' → ')}`
+    : `# 📊 Classic System Analysis Report\n\n**Question**: ${message}\n\n**Execution Chain**: ${chain.map(s => CLASSIC_STEP_LABELS[s]?.label || s).join(' → ')}`;
+
+  const reportBody = stepResults.map(r => r.content).join('\n\n---\n\n');
+
+  const reportFooter = isZh
+    ? `\n\n---\n\n*报告生成时间：${new Date().toLocaleString('zh-CN', { hour12: false })}*\n*数据来源：10-经典指标系统 (8092端口)*`
+    : `\n\n---\n\n*Generated at: ${new Date().toLocaleString()}}*\n*Data source: 10-Classic System (port 8092)*`;
+
+  const content = `${reportHeader}\n\n${reportBody}${reportFooter}`;
+
+  const now = new Date().toISOString();
+  return {
+    task_id,
+    status: 'completed',
+    created_at: now,
+    execution_time_ms: Date.now() - startTime,
+    content,
+    content_type: 'markdown',
+    artifacts_produced: chain.map(s => ({
+      file: `${s.toLowerCase()}-report.md`,
+      type: 'classic_' + s.toLowerCase(),
+      chain_phase: s,
+    })),
+    execution_summary: {
+      chain_executed: chain.map(s => `${CLASSIC_STEP_LABELS[s]?.icon || '📋'} ${isZh ? CLASSIC_STEP_LABELS[s]?.zh : CLASSIC_STEP_LABELS[s]?.label}`),
+      total_steps: chain.length,
+      skipped_steps: [],
+      classic_mode: true,
+    },
+  };
+}
+
 // ============================================================
 // S5 策略代码执行引擎 - 前端内联执行入口
 // 职责：
@@ -1764,6 +2067,7 @@ export async function createAndExecuteTask(params: {
   llm_model?: string;
   intent_method?: string;
   lang?: 'zh' | 'en';
+  trading_mode?: 'ai_skill' | 'classic';
 }): Promise<{ task: TaskFile; result: ResultFile | null; needAsync: boolean }> {
   // 1. 创建任务文件 (now async due to intent recognition)
   const task = await createTask(params);
@@ -1774,6 +2078,7 @@ export async function createAndExecuteTask(params: {
     session_id: task.session_id,
     user_role: 'FREE',
     thinking_mode: task.thinking_mode,
+    trading_mode: params.trading_mode || 'ai_skill',
     message_history: [params.message],
   });
 
@@ -1789,6 +2094,13 @@ export async function createAndExecuteTask(params: {
     chain: routing.chain,
     message_preview: params.message.slice(0, 50),
   });
+
+  // ===== 经典交易模式：使用 C 系列思维链调用经典指标系统 API =====
+  // 当 trading_mode === 'classic' 时，所有意图（包括 execute_trade）都走 C 系列链
+  if (params.trading_mode === 'classic') {
+    const result = await executeClassicChain(task, params.lang || 'zh');
+    return { task, result, needAsync: false };
+  }
 
   // 2. 对话任务 → 内联执行，同步返回结果
   if (isConversationIntent(intentType)) {

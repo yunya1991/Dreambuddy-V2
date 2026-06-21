@@ -1,0 +1,407 @@
+{
+  "schema": "skills.catalog.v1",
+  "scope": "stage_a_view_only",
+  "root": "经典指标机器学习系统",
+  "notes": [
+    "Stage A: only create a unified catalog view; no file moves; no code changes.",
+    "Items here may reference in-process skills, outbox contracts, and host/sandbox scripts.",
+    "Paths are repo-relative unless stated otherwise."
+  ],
+  "mirrors": {
+    "routing": [
+      {
+        "kind": "copy_for_browsing",
+        "source": "tools/agent_llm_router_rules_prod.example.json",
+        "mirror": "skills/routing/agent_llm_router_rules_prod.example.json"
+      }
+    ],
+    "contracts": [
+      {
+        "kind": "pointer_for_browsing",
+        "source": "ops/nanoclaw/core_task1/schema/news_contract.schema.json",
+        "mirror": "skills/contracts/news_contract.schema.pointer.json"
+      },
+      {
+        "kind": "pointer_for_browsing",
+        "source": "ops/nanoclaw/core_task1/schema/narrative_contract.schema.json",
+        "mirror": "skills/contracts/narrative_contract.schema.pointer.json"
+      },
+      {
+        "kind": "pointer_for_browsing",
+        "source": "ops/nanoclaw/core_task1/schema/flow_brief_request.schema.json",
+        "mirror": "skills/contracts/flow_brief_request.schema.pointer.json"
+      },
+      {
+        "kind": "pointer_for_browsing",
+        "source": "ops/nanoclaw/core_task1/schema/flow_brief_receipt.schema.json",
+        "mirror": "skills/contracts/flow_brief_receipt.schema.pointer.json"
+      }
+    ]
+  },
+  "domains": [
+    {
+      "domain": "binance",
+      "items": [
+        {
+          "tool": "binance_web3.query_address_info",
+          "kind": "inproc_skill",
+          "capability_level": "R0",
+          "category": "read",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "related_docs": ["交易AI Agent 技术文档2.0.md"]
+        },
+        {
+          "tool": "binance_web3.query_token_info",
+          "kind": "inproc_skill",
+          "capability_level": "R0",
+          "category": "read",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "related_docs": ["交易AI Agent 技术文档2.0.md"]
+        },
+        {
+          "tool": "binance_web3.crypto_market_rank",
+          "kind": "inproc_skill",
+          "capability_level": "R0",
+          "category": "read",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "related_docs": ["交易AI Agent 技术文档2.0.md"]
+        },
+        {
+          "tool": "binance_web3.query_token_audit",
+          "kind": "inproc_skill",
+          "capability_level": "R0",
+          "category": "audit",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "related_docs": ["交易AI Agent 技术文档2.0.md"]
+        },
+        {
+          "tool": "binance_web3.token_tradeable_check",
+          "kind": "inproc_skill",
+          "capability_level": "R0",
+          "category": "audit",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "related_docs": ["交易AI Agent 技术文档2.0.md"]
+        },
+        {
+          "tool": "binance_spot.market_data",
+          "kind": "inproc_skill",
+          "capability_level": "R0",
+          "category": "read",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "auth": {"secrets_scope": "env_or_config", "keys_hint": ["BINANCE_SPOT_API_KEY (optional)", "BINANCE_SPOT_API_SECRET (optional)"]},
+          "related_docs": ["交易AI Agent 技术文档2.0.md"]
+        },
+        {
+          "tool": "binance_spot.account",
+          "kind": "inproc_skill",
+          "capability_level": "R0",
+          "category": "read",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "auth": {"secrets_scope": "env_or_config", "keys_hint": ["BINANCE_SPOT_API_KEY", "BINANCE_SPOT_API_SECRET"]},
+          "related_docs": ["交易AI Agent 技术文档2.0.md"]
+        },
+        {
+          "tool": "binance_spot.trade",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "trade",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "auth": {"secrets_scope": "env_or_config", "keys_hint": ["BINANCE_SPOT_API_KEY", "BINANCE_SPOT_API_SECRET"]},
+          "gates": ["approval_required_or_operator_token", "precheck_token_audit_if_applicable"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "技术文档.md"]
+        }
+      ],
+      "ops_refs": [
+        {"kind": "ingest_script", "path": "ops/binance_ingest_hourly.sh"},
+        {"kind": "cron", "path": "ops/cron.d/binance_ingest_active.cron"},
+        {"kind": "cron", "path": "ops/cron.d/binance_ingest_example.cron"},
+        {"kind": "systemd", "path": "ops/systemd/binance-ingest@.service"},
+        {"kind": "systemd", "path": "ops/systemd/binance-ingest@0.timer"}
+      ]
+    },
+    {
+      "domain": "twitter",
+      "items": [
+        {
+          "tool": "twitter.outbox",
+          "kind": "outbox_channel",
+          "capability_level": "R2",
+          "category": "push",
+          "contract": {
+            "outbox_file_hint": "user_data/agent_outbox/twitter.jsonl",
+            "event": "twitter.thread.publish.request",
+            "receipt_file_hint": "user_data/agent_outbox/delivery_receipts.jsonl"
+          },
+          "impl_ref": {"file": "ml_trade_service.py", "functions_hint": ["_twitter_thread_publish_request_enqueue", "_twitter_publish_request_enqueue"]},
+          "related_docs": ["交易AI Agent 技术文档2.0.md"]
+        },
+        {
+          "tool": "twitter.sender",
+          "kind": "host_script",
+          "capability_level": "R2",
+          "category": "push",
+          "impl_ref": {"file": "ops/twitter_outbox_sender.py"},
+          "auth": {"secrets_scope": "env_only", "keys_hint": ["TWITTER_*"]},
+          "related_docs": ["交易AI Agent 技术文档2.0.md"]
+        }
+      ]
+    },
+    {
+      "domain": "news",
+      "items": [
+        {
+          "tool": "crypto_news.crawler.nanoclaw",
+          "kind": "sandbox_script",
+          "capability_level": "R1",
+          "category": "sandbox",
+          "impl_ref": {"file": "ops/nanoclaw/core_task1/scripts/news_crawler.py"},
+          "artifacts": [
+            {"kind": "raw_data_dir", "path": "ops/nanoclaw/core_task1/raw"},
+            {"kind": "outputs_dir", "path": "ops/nanoclaw/core_task1/outputs"},
+            {"kind": "historical_news_dir", "path": "ops/nanoclaw/core_task1/historical_data/historical_news"}
+          ]
+        },
+        {
+          "tool": "crypto_news.digest.nanoclaw",
+          "kind": "sandbox_script",
+          "capability_level": "R1",
+          "category": "sandbox",
+          "impl_ref": {"file": "ops/nanoclaw/core_task1/scripts/news_digest_v2.py"}
+        },
+        {
+          "tool": "crypto_news.digest.run",
+          "kind": "sandbox_script",
+          "capability_level": "R1",
+          "category": "sandbox",
+          "impl_ref": {"file": "ops/nanoclaw/core_task1/scripts/run_news_digest.py"}
+        },
+        {
+          "tool": "crypto_news.digest.run_on_demand",
+          "kind": "sandbox_script",
+          "capability_level": "R1",
+          "category": "sandbox",
+          "impl_ref": {"file": "ops/nanoclaw/core_task1/scripts/run_news_digest_on_demand.py"}
+        }
+      ],
+      "contracts": [
+        {"kind": "schema", "path": "ops/nanoclaw/core_task1/schema/news_contract.schema.json"},
+        {"kind": "schema_pointer", "path": "skills/contracts/news_contract.schema.pointer.json"},
+        {"kind": "schema", "path": "ops/nanoclaw/core_task1/schema/narrative_contract.schema.json"},
+        {"kind": "schema_pointer", "path": "skills/contracts/narrative_contract.schema.pointer.json"},
+        {"kind": "schema", "path": "ops/nanoclaw/core_task1/schema/flow_brief_request.schema.json"},
+        {"kind": "schema_pointer", "path": "skills/contracts/flow_brief_request.schema.pointer.json"},
+        {"kind": "schema", "path": "ops/nanoclaw/core_task1/schema/flow_brief_receipt.schema.json"},
+        {"kind": "schema_pointer", "path": "skills/contracts/flow_brief_receipt.schema.pointer.json"}
+      ]
+    },
+    {
+      "domain": "automation",
+      "items": [
+        {
+          "tool": "bugfix.triage_and_draft",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "governance",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["approval_required", "confirm_live_required_for_production_write"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "bayes.optimize.strategy_scope",
+          "kind": "inproc_skill",
+          "capability_level": "R1",
+          "category": "governance",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["suggest_or_sandbox_only", "approval_required_for_production_write"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "bayes.optimize.system_scope",
+          "kind": "inproc_skill",
+          "capability_level": "R1",
+          "category": "governance",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["suggest_or_sandbox_only", "approval_required_for_production_write"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "nanoclaw.control.gtw_run",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "automation",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["control_plane_only", "execution_semantics_unchanged"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "nanoclaw.control.shadow_loop_run",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "automation",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["control_plane_only", "execution_semantics_unchanged"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "nanoclaw.control.paramopt_trigger",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "automation",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["confirm_live_required", "approval_required_for_production_write"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "nanoclaw.control.system_monitor_run",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "automation",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["request_approval_default", "allow_auto_exec_default_false"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "qwen.control.gtw_run",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "automation",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["remote_qwen_or_rule_fallback", "execution_semantics_unchanged"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "qwen.control.shadow_loop_run",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "automation",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["remote_qwen_or_rule_fallback", "execution_semantics_unchanged"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "qwen.control.paramopt_trigger",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "automation",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["remote_qwen_or_rule_fallback", "confirm_live_required", "approval_required_for_production_write"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "qwen.control.paramopt_explore_trigger",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "automation",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["remote_qwen_or_rule_fallback", "confirm_live_required", "approval_required_for_production_write"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "qwen.control.system_monitor_run",
+          "kind": "inproc_skill",
+          "capability_level": "R2",
+          "category": "automation",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["remote_qwen_or_rule_fallback", "request_approval_default", "allow_auto_exec_default_false"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "automation.control_plane.orchestrator",
+          "kind": "inproc_skill",
+          "capability_level": "R0",
+          "category": "read",
+          "impl_ref": {"file": "ml_trade_service.py", "registry": "_AGENT_SKILLS_REGISTRY"},
+          "gates": ["plan_only", "no_production_write_by_default"],
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "automation.control_plane.orchestrator.playbook",
+          "kind": "playbook",
+          "capability_level": "R0",
+          "category": "automation",
+          "impl_ref": {"file": "skills/playbooks/automation_control_plane_orchestrator_skill.md"},
+          "notes": {"status": "planned", "llm_agnostic": true, "default_provider_hint": "qwen.control.*"},
+          "related_docs": ["交易AI Agent 技术文档2.0.md", "skills/SKILLS_技术文档规范.md"]
+        }
+      ]
+    },
+    {
+      "domain": "tradingview",
+      "items": [
+        {
+          "tool": "tradingview.strategy.export.request",
+          "kind": "outbox_channel",
+          "capability_level": "R2",
+          "category": "push",
+          "contract": {
+            "outbox_file_hint": "user_data/agent_outbox/strategy_import_tv.jsonl",
+            "event": "tradingview.strategy.export.request",
+            "receipt_file_hint": "user_data/agent_outbox/delivery_receipts.jsonl"
+          },
+          "notes": {"path_modes": ["A_source", "B_blackbox"], "source_visibility_gate": true},
+          "impl_ref": {"file": "skills/playbooks/tv_strategy_skill.md"},
+          "related_docs": ["skills/SKILLS_技术文档规范.md", "策略开发规范（基于SimpleStrategy）.md"]
+        },
+        {
+          "tool": "tradingview.strategy.exporter",
+          "kind": "host_script",
+          "capability_level": "R2",
+          "category": "push",
+          "notes": {"path_modes": ["A_source", "B_blackbox"], "source_visibility_gate": true},
+          "impl_ref": {"file": "skills/playbooks/tv_strategy_skill.md"},
+          "auth": {"secrets_scope": "browser_profile_only", "keys_hint": []},
+          "related_docs": ["skills/SKILLS_技术文档规范.md"]
+        },
+        {
+          "tool": "strategy_import.tv_pine_to_freqtrade.simple.request",
+          "kind": "outbox_channel",
+          "capability_level": "R2",
+          "category": "governance",
+          "contract": {
+            "outbox_file_hint": "user_data/agent_outbox/strategy_import_tv.jsonl",
+            "event": "strategy_import.tv_pine_to_freqtrade.simple.request",
+            "receipt_file_hint": "user_data/agent_outbox/delivery_receipts.jsonl"
+          },
+          "notes": {"path_mode": "A_source_only"},
+          "impl_ref": {"file": "skills/playbooks/tv_strategy_skill.md"},
+          "gates": ["research_assets_only", "no_sys_path_injection", "must_conform_simple_strategy_spec"],
+          "related_docs": ["skills/playbooks/tv_strategy_skill.md", "策略开发规范（基于SimpleStrategy）.md"]
+        },
+        {
+          "tool": "strategy_import.tv_blackbox_asset.request",
+          "kind": "outbox_channel",
+          "capability_level": "R2",
+          "category": "governance",
+          "contract": {
+            "outbox_file_hint": "user_data/agent_outbox/strategy_import_tv.jsonl",
+            "event": "strategy_import.tv_blackbox_asset.request",
+            "receipt_file_hint": "user_data/agent_outbox/delivery_receipts.jsonl"
+          },
+          "notes": {"path_mode": "B_blackbox_only"},
+          "impl_ref": {"file": "skills/playbooks/tv_strategy_skill.md"},
+          "gates": ["research_assets_only", "must_mark_source_not_visible"],
+          "related_docs": ["skills/playbooks/tv_strategy_skill.md"]
+        },
+        {
+          "tool": "nanoclaw.strategy_import.worker",
+          "kind": "sandbox_script",
+          "capability_level": "R2",
+          "category": "sandbox",
+          "notes": {"path_modes": ["A_source", "B_blackbox"]},
+          "impl_ref": {"file": "ops/nanoclaw/README.md"},
+          "artifacts": [
+            {"kind": "workspace", "path": "user_data/nanoclaw/workspace"},
+            {"kind": "state", "path": "user_data/nanoclaw/state"},
+            {"kind": "logs", "path": "user_data/nanoclaw/logs"}
+          ],
+          "related_docs": ["ops/nanoclaw/README.md"]
+        }
+      ]
+    }
+  ],
+  "entrypoints": {
+    "skills_list_endpoint": "/agent/skills/list",
+    "skills_execute_endpoint": "/agent/skills/execute",
+    "code_registry_file": "ml_trade_service.py"
+  }
+}

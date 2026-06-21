@@ -10,9 +10,9 @@ import { routeToStrategyChain, STRATEGY_COMMAND_ROUTE_MAP } from '@/lib/strategy
 
 // ============ 类型定义 ============
 
-export type LoopType = 'execution' | 'intelligence' | 'governance' | 'general';
+export type LoopType = 'execution' | 'intelligence' | 'governance' | 'general' | 'classic';
 
-export type ExecMode = 'dynamic' | 'stepwise' | 'quick' | 'developer';
+export type ExecMode = 'dynamic' | 'stepwise' | 'quick' | 'developer' | 'classic';
 
 export interface RoutingDecision {
   loop_type: LoopType;
@@ -29,6 +29,8 @@ export interface RoutingDecision {
   mode?: ExecMode;
   /** developer 意图标记：应走 dev-chain.executeS5() 而非 S 系列链 */
   is_dev_chain?: boolean;
+  /** 经典交易模式标记 */
+  is_classic_mode?: boolean;
 }
 
 // ============ 动态链配置 (Phase 2) ============
@@ -238,6 +240,51 @@ const COMMAND_ROUTE_MAP: Record<string, { intent: IntentType; chain: string[]; l
 
 // ============ 主路由函数 ============
 
+// C 系列经典交易思维链定义
+const CLASSIC_QUICK = ['C1_MACRO_SCAN', 'C3_GATE_CHECK'];
+const CLASSIC_DEEP = [
+  'C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C3_GATE_CHECK',
+  'C4_ARENA_REVIEW', 'C5_STRATEGY_SELECT', 'C6_SIGNAL_REVIEW',
+  'C7_EXIT_MONITOR', 'C8_TRACKING_AUDIT'
+];
+
+// 经典模式意图映射
+const CLASSIC_INTENT_MAP: Record<string, string[]> = {
+  'market_query': ['C1_MACRO_SCAN'],
+  'macro_analysis': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+  'deep_analysis': CLASSIC_DEEP,
+  'triple_chain': CLASSIC_DEEP,
+  'scenario_sim': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C5_STRATEGY_SELECT'],
+  'strategy_verify': ['C3_GATE_CHECK', 'C4_ARENA_REVIEW'],
+  'strategy_recommendation': ['C3_GATE_CHECK', 'C4_ARENA_REVIEW', 'C5_STRATEGY_SELECT'],
+  'execute_trade': CLASSIC_DEEP,
+  'entry_timing': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C3_GATE_CHECK', 'C6_SIGNAL_REVIEW'],
+  'exit_timing': ['C7_EXIT_MONITOR', 'C8_TRACKING_AUDIT'],
+  'risk_analysis': ['C3_GATE_CHECK', 'C7_EXIT_MONITOR', 'C8_TRACKING_AUDIT'],
+  'backtest_help': ['C3_GATE_CHECK', 'C4_ARENA_REVIEW'],
+  'simple_qa': ['C0_DIRECT_ANSWER'],
+  'system_config': ['C0_DIRECT_ANSWER'],
+  'credits_query': ['C0_DIRECT_ANSWER'],
+  'artifact_query': ['C5_STRATEGY_SELECT'],
+  'risk_alert_response': ['C3_GATE_CHECK', 'C7_EXIT_MONITOR'],
+  'command': ['C1_MACRO_SCAN'],
+  'asset_comparison': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+  'position_sizing': ['C1_MACRO_SCAN', 'C3_GATE_CHECK', 'C8_TRACKING_AUDIT'],
+  'market_sentiment': ['C1_MACRO_SCAN'],
+  'trend_analysis': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+  'technical_signal': ['C6_SIGNAL_REVIEW'],
+  'support_resistance': ['C1_MACRO_SCAN', 'C6_SIGNAL_REVIEW'],
+  'portfolio_allocation': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C3_GATE_CHECK'],
+  'portfolio_rebalance': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C8_TRACKING_AUDIT'],
+  'event_analysis': ['C1_MACRO_SCAN'],
+  'concept_explain': ['C0_DIRECT_ANSWER'],
+  'volatility_analysis': ['C1_MACRO_SCAN', 'C6_SIGNAL_REVIEW'],
+  'dca_strategy': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN', 'C3_GATE_CHECK'],
+  'arbitrage_opportunity': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+  'sector_rotation': ['C1_MACRO_SCAN', 'C2_UNIVERSE_SCAN'],
+  'developer': ['C5_STRATEGY_SELECT', 'C3_GATE_CHECK'],
+};
+
 export function routeIntent(
   intent: IntentType,
   complexity: ComplexityLevel,
@@ -246,6 +293,41 @@ export function routeIntent(
   const startTime = Date.now();
   const userRole = context?.user_role || 'FREE';
   const thinkingMode = context?.thinking_mode || 'quick';
+  const tradingMode = context?.trading_mode || 'ai_skill';
+
+  // ==== Classic 经典交易模式：使用 C 系列思维链 ====
+  if (tradingMode === 'classic') {
+    // 经典模式开发者意图也走 C 系列
+    const chain = CLASSIC_INTENT_MAP[intent] || CLASSIC_QUICK;
+    const finalChain = thinkingMode === 'quick' ? chain.slice(0, 2) : chain;
+
+    const decision: RoutingDecision = {
+      loop_type: 'classic',
+      chain: finalChain,
+      estimated_time_ms: calcTime(finalChain),
+      credits_cost: 0, // 经典模式调用 API 不消耗 LLM credits
+      requires_confirmation: false,
+      role_check: 'pass',
+      fallback_chain: CLASSIC_QUICK,
+      reasoning: `[CLASSIC] ${intent} → ${finalChain.join(' → ')} (thinking: ${thinkingMode})`,
+      mode: 'classic',
+      is_classic_mode: true,
+    };
+
+    emitMonitorEvent({
+      trace_id: `route_${Date.now()}`,
+      uid: context?.session_id || 'anonymous',
+      layer: 'router',
+      phase: 'routed',
+      status: 'completed',
+      intent,
+      chain: decision.chain,
+      duration_ms: Date.now() - startTime,
+      extra: { trading_mode: 'classic' },
+    });
+
+    return decision;
+  }
 
   // ==== developer 早期拦截：直接路由到 dev-chain.executeS5() ====
   // 主前端的 developer 意图 = 策略代码开发（E 链）

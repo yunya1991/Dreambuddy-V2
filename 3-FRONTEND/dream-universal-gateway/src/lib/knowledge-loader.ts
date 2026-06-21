@@ -7,6 +7,9 @@
  *   当前版本: 真正的 RAG（向量语义检索）
  *           → 文档切片 + DeepSeek Embeddings + 余弦相似度 + 关键词加权
  *
+ * 启用状态: 默认启用（无条件），知识库 RAG 始终参与上下文构建
+ *           如需禁用可通过环境变量控制（见 knowledge-rag.ts）
+ *
  * 模块依赖: src/lib/knowledge-rag.ts（核心实现）
  *
  * 本文件仅提供简化 API（供 route.ts 调用），核心逻辑见 knowledge-rag.ts

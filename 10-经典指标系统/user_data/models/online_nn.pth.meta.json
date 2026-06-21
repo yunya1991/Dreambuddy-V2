@@ -1,0 +1,3997 @@
+{
+  "trained_at_ms": 1770296633529,
+  "train_samples": 782,
+  "new_samples": 782,
+  "family": "nn",
+  "filename": "online_nn.pth",
+  "online_version": 1,
+  "feature_set_version": "v1",
+  "feature_set_id": "trend_4h_mtf_v1",
+  "feature_set_sig": "v1:17ededfbbffc12ad",
+  "signal_feature_set_id": "trend_4h_mtf_v1",
+  "feature_keys": [
+    "returns",
+    "atr_pct",
+    "ema_short_dist",
+    "ema_long_dist",
+    "bb_width_ratio",
+    "volume_ratio",
+    "weekly_state",
+    "rv_24h",
+    "rv_168h",
+    "rv_ratio_24_168"
+  ],
+  "metrics": {
+    "train": {
+      "auc": 0.717893948157106,
+      "brier": 0.21310232858209913,
+      "win_rate": 0.6304347826086957,
+      "confusion": {
+        "tp": 295,
+        "fp": 166,
+        "tn": 198,
+        "fn": 123
+      },
+      "calibration": [
+        {
+          "prob": 0.1,
+          "actual": 0.167
+        },
+        {
+          "prob": 0.2,
+          "actual": 0.196
+        },
+        {
+          "prob": 0.3,
+          "actual": 0.299
+        },
+        {
+          "prob": 0.4,
+          "actual": 0.537
+        },
+        {
+          "prob": 0.5,
+          "actual": 0.494
+        },
+        {
+          "prob": 0.6,
+          "actual": 0.608
+        },
+        {
+          "prob": 0.7,
+          "actual": 0.829
+        },
+        {
+          "prob": 0.8,
+          "actual": 0.895
+        },
+        {
+          "prob": 0.9,
+          "actual": 1.0
+        }
+      ],
+      "ece": 0.053324808184143244,
+      "pr_auc": 0.7436899815467827,
+      "pnl": [
+        {
+          "date": "t1",
+          "pnl": 1.0,
+          "cum_pnl": 1.0
+        },
+        {
+          "date": "t2",
+          "pnl": 1.0,
+          "cum_pnl": 2.0
+        },
+        {
+          "date": "t3",
+          "pnl": 1.0,
+          "cum_pnl": 3.0
+        },
+        {
+          "date": "t4",
+          "pnl": -1.0,
+          "cum_pnl": 2.0
+        },
+        {
+          "date": "t5",
+          "pnl": -1.0,
+          "cum_pnl": 1.0
+        },
+        {
+          "date": "t6",
+          "pnl": -1.0,
+          "cum_pnl": 0.0
+        },
+        {
+          "date": "t7",
+          "pnl": 1.0,
+          "cum_pnl": 1.0
+        },
+        {
+          "date": "t8",
+          "pnl": -1.0,
+          "cum_pnl": 0.0
+        },
+        {
+          "date": "t9",
+          "pnl": 1.0,
+          "cum_pnl": 1.0
+        },
+        {
+          "date": "t10",
+          "pnl": 1.0,
+          "cum_pnl": 2.0
+        },
+        {
+          "date": "t11",
+          "pnl": 1.0,
+          "cum_pnl": 3.0
+        },
+        {
+          "date": "t12",
+          "pnl": 1.0,
+          "cum_pnl": 4.0
+        },
+        {
+          "date": "t13",
+          "pnl": 1.0,
+          "cum_pnl": 5.0
+        },
+        {
+          "date": "t14",
+          "pnl": -1.0,
+          "cum_pnl": 4.0
+        },
+        {
+          "date": "t15",
+          "pnl": 1.0,
+          "cum_pnl": 5.0
+        },
+        {
+          "date": "t16",
+          "pnl": 1.0,
+          "cum_pnl": 6.0
+        },
+        {
+          "date": "t17",
+          "pnl": 1.0,
+          "cum_pnl": 7.0
+        },
+        {
+          "date": "t18",
+          "pnl": 1.0,
+          "cum_pnl": 8.0
+        },
+        {
+          "date": "t19",
+          "pnl": 1.0,
+          "cum_pnl": 9.0
+        },
+        {
+          "date": "t20",
+          "pnl": -1.0,
+          "cum_pnl": 8.0
+        },
+        {
+          "date": "t21",
+          "pnl": -1.0,
+          "cum_pnl": 7.0
+        },
+        {
+          "date": "t22",
+          "pnl": 0.0,
+          "cum_pnl": 7.0
+        },
+        {
+          "date": "t23",
+          "pnl": 1.0,
+          "cum_pnl": 8.0
+        },
+        {
+          "date": "t24",
+          "pnl": 1.0,
+          "cum_pnl": 9.0
+        },
+        {
+          "date": "t25",
+          "pnl": 1.0,
+          "cum_pnl": 10.0
+        },
+        {
+          "date": "t26",
+          "pnl": -1.0,
+          "cum_pnl": 9.0
+        },
+        {
+          "date": "t27",
+          "pnl": -1.0,
+          "cum_pnl": 8.0
+        },
+        {
+          "date": "t28",
+          "pnl": -1.0,
+          "cum_pnl": 7.0
+        },
+        {
+          "date": "t29",
+          "pnl": -1.0,
+          "cum_pnl": 6.0
+        },
+        {
+          "date": "t30",
+          "pnl": 1.0,
+          "cum_pnl": 7.0
+        },
+        {
+          "date": "t31",
+          "pnl": 1.0,
+          "cum_pnl": 8.0
+        },
+        {
+          "date": "t32",
+          "pnl": 1.0,
+          "cum_pnl": 9.0
+        },
+        {
+          "date": "t33",
+          "pnl": 1.0,
+          "cum_pnl": 10.0
+        },
+        {
+          "date": "t34",
+          "pnl": 1.0,
+          "cum_pnl": 11.0
+        },
+        {
+          "date": "t35",
+          "pnl": 1.0,
+          "cum_pnl": 12.0
+        },
+        {
+          "date": "t36",
+          "pnl": 1.0,
+          "cum_pnl": 13.0
+        },
+        {
+          "date": "t37",
+          "pnl": 1.0,
+          "cum_pnl": 14.0
+        },
+        {
+          "date": "t38",
+          "pnl": 1.0,
+          "cum_pnl": 15.0
+        },
+        {
+          "date": "t39",
+          "pnl": 1.0,
+          "cum_pnl": 16.0
+        },
+        {
+          "date": "t40",
+          "pnl": 1.0,
+          "cum_pnl": 17.0
+        },
+        {
+          "date": "t41",
+          "pnl": 1.0,
+          "cum_pnl": 18.0
+        },
+        {
+          "date": "t42",
+          "pnl": -1.0,
+          "cum_pnl": 17.0
+        },
+        {
+          "date": "t43",
+          "pnl": 1.0,
+          "cum_pnl": 18.0
+        },
+        {
+          "date": "t44",
+          "pnl": 1.0,
+          "cum_pnl": 19.0
+        },
+        {
+          "date": "t45",
+          "pnl": 1.0,
+          "cum_pnl": 20.0
+        },
+        {
+          "date": "t46",
+          "pnl": 1.0,
+          "cum_pnl": 21.0
+        },
+        {
+          "date": "t47",
+          "pnl": 1.0,
+          "cum_pnl": 22.0
+        },
+        {
+          "date": "t48",
+          "pnl": 1.0,
+          "cum_pnl": 23.0
+        },
+        {
+          "date": "t49",
+          "pnl": 1.0,
+          "cum_pnl": 24.0
+        },
+        {
+          "date": "t50",
+          "pnl": 1.0,
+          "cum_pnl": 25.0
+        },
+        {
+          "date": "t51",
+          "pnl": 1.0,
+          "cum_pnl": 26.0
+        },
+        {
+          "date": "t52",
+          "pnl": -1.0,
+          "cum_pnl": 25.0
+        },
+        {
+          "date": "t53",
+          "pnl": 0.0,
+          "cum_pnl": 25.0
+        },
+        {
+          "date": "t54",
+          "pnl": 1.0,
+          "cum_pnl": 26.0
+        },
+        {
+          "date": "t55",
+          "pnl": 1.0,
+          "cum_pnl": 27.0
+        },
+        {
+          "date": "t56",
+          "pnl": 1.0,
+          "cum_pnl": 28.0
+        },
+        {
+          "date": "t57",
+          "pnl": 0.0,
+          "cum_pnl": 28.0
+        },
+        {
+          "date": "t58",
+          "pnl": 0.0,
+          "cum_pnl": 28.0
+        },
+        {
+          "date": "t59",
+          "pnl": -1.0,
+          "cum_pnl": 27.0
+        },
+        {
+          "date": "t60",
+          "pnl": 1.0,
+          "cum_pnl": 28.0
+        },
+        {
+          "date": "t61",
+          "pnl": -1.0,
+          "cum_pnl": 27.0
+        },
+        {
+          "date": "t62",
+          "pnl": -1.0,
+          "cum_pnl": 26.0
+        },
+        {
+          "date": "t63",
+          "pnl": -1.0,
+          "cum_pnl": 25.0
+        },
+        {
+          "date": "t64",
+          "pnl": 0.0,
+          "cum_pnl": 25.0
+        },
+        {
+          "date": "t65",
+          "pnl": 0.0,
+          "cum_pnl": 25.0
+        },
+        {
+          "date": "t66",
+          "pnl": 1.0,
+          "cum_pnl": 26.0
+        },
+        {
+          "date": "t67",
+          "pnl": 1.0,
+          "cum_pnl": 27.0
+        },
+        {
+          "date": "t68",
+          "pnl": -1.0,
+          "cum_pnl": 26.0
+        },
+        {
+          "date": "t69",
+          "pnl": -1.0,
+          "cum_pnl": 25.0
+        },
+        {
+          "date": "t70",
+          "pnl": 0.0,
+          "cum_pnl": 25.0
+        },
+        {
+          "date": "t71",
+          "pnl": 1.0,
+          "cum_pnl": 26.0
+        },
+        {
+          "date": "t72",
+          "pnl": 1.0,
+          "cum_pnl": 27.0
+        },
+        {
+          "date": "t73",
+          "pnl": 1.0,
+          "cum_pnl": 28.0
+        },
+        {
+          "date": "t74",
+          "pnl": 1.0,
+          "cum_pnl": 29.0
+        },
+        {
+          "date": "t75",
+          "pnl": 1.0,
+          "cum_pnl": 30.0
+        },
+        {
+          "date": "t76",
+          "pnl": 1.0,
+          "cum_pnl": 31.0
+        },
+        {
+          "date": "t77",
+          "pnl": 1.0,
+          "cum_pnl": 32.0
+        },
+        {
+          "date": "t78",
+          "pnl": 1.0,
+          "cum_pnl": 33.0
+        },
+        {
+          "date": "t79",
+          "pnl": -1.0,
+          "cum_pnl": 32.0
+        },
+        {
+          "date": "t80",
+          "pnl": -1.0,
+          "cum_pnl": 31.0
+        },
+        {
+          "date": "t81",
+          "pnl": 1.0,
+          "cum_pnl": 32.0
+        },
+        {
+          "date": "t82",
+          "pnl": 1.0,
+          "cum_pnl": 33.0
+        },
+        {
+          "date": "t83",
+          "pnl": 1.0,
+          "cum_pnl": 34.0
+        },
+        {
+          "date": "t84",
+          "pnl": 1.0,
+          "cum_pnl": 35.0
+        },
+        {
+          "date": "t85",
+          "pnl": 1.0,
+          "cum_pnl": 36.0
+        },
+        {
+          "date": "t86",
+          "pnl": 1.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t87",
+          "pnl": 0.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t88",
+          "pnl": 0.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t89",
+          "pnl": 0.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t90",
+          "pnl": 0.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t91",
+          "pnl": 0.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t92",
+          "pnl": 0.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t93",
+          "pnl": 0.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t94",
+          "pnl": 1.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t95",
+          "pnl": 1.0,
+          "cum_pnl": 39.0
+        },
+        {
+          "date": "t96",
+          "pnl": 0.0,
+          "cum_pnl": 39.0
+        },
+        {
+          "date": "t97",
+          "pnl": -1.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t98",
+          "pnl": -1.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t99",
+          "pnl": -1.0,
+          "cum_pnl": 36.0
+        },
+        {
+          "date": "t100",
+          "pnl": 0.0,
+          "cum_pnl": 36.0
+        },
+        {
+          "date": "t101",
+          "pnl": 0.0,
+          "cum_pnl": 36.0
+        },
+        {
+          "date": "t102",
+          "pnl": 1.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t103",
+          "pnl": 1.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t104",
+          "pnl": -1.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t105",
+          "pnl": -1.0,
+          "cum_pnl": 36.0
+        },
+        {
+          "date": "t106",
+          "pnl": 0.0,
+          "cum_pnl": 36.0
+        },
+        {
+          "date": "t107",
+          "pnl": 1.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t108",
+          "pnl": 1.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t109",
+          "pnl": 0.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t110",
+          "pnl": 0.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t111",
+          "pnl": 0.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t112",
+          "pnl": -1.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t113",
+          "pnl": -1.0,
+          "cum_pnl": 36.0
+        },
+        {
+          "date": "t114",
+          "pnl": 1.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t115",
+          "pnl": 1.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t116",
+          "pnl": 1.0,
+          "cum_pnl": 39.0
+        },
+        {
+          "date": "t117",
+          "pnl": 1.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t118",
+          "pnl": 1.0,
+          "cum_pnl": 41.0
+        },
+        {
+          "date": "t119",
+          "pnl": -1.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t120",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t121",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t122",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t123",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t124",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t125",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t126",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t127",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t128",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t129",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t130",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t131",
+          "pnl": 0.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t132",
+          "pnl": -1.0,
+          "cum_pnl": 39.0
+        },
+        {
+          "date": "t133",
+          "pnl": -1.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t134",
+          "pnl": -1.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t135",
+          "pnl": 0.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t136",
+          "pnl": 0.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t137",
+          "pnl": 1.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t138",
+          "pnl": 0.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t139",
+          "pnl": 0.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t140",
+          "pnl": 0.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t141",
+          "pnl": 0.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t142",
+          "pnl": -1.0,
+          "cum_pnl": 37.0
+        },
+        {
+          "date": "t143",
+          "pnl": 1.0,
+          "cum_pnl": 38.0
+        },
+        {
+          "date": "t144",
+          "pnl": 1.0,
+          "cum_pnl": 39.0
+        },
+        {
+          "date": "t145",
+          "pnl": 1.0,
+          "cum_pnl": 40.0
+        },
+        {
+          "date": "t146",
+          "pnl": 1.0,
+          "cum_pnl": 41.0
+        },
+        {
+          "date": "t147",
+          "pnl": 1.0,
+          "cum_pnl": 42.0
+        },
+        {
+          "date": "t148",
+          "pnl": 1.0,
+          "cum_pnl": 43.0
+        },
+        {
+          "date": "t149",
+          "pnl": -1.0,
+          "cum_pnl": 42.0
+        },
+        {
+          "date": "t150",
+          "pnl": -1.0,
+          "cum_pnl": 41.0
+        },
+        {
+          "date": "t151",
+          "pnl": 1.0,
+          "cum_pnl": 42.0
+        },
+        {
+          "date": "t152",
+          "pnl": 1.0,
+          "cum_pnl": 43.0
+        },
+        {
+          "date": "t153",
+          "pnl": 1.0,
+          "cum_pnl": 44.0
+        },
+        {
+          "date": "t154",
+          "pnl": -1.0,
+          "cum_pnl": 43.0
+        },
+        {
+          "date": "t155",
+          "pnl": 0.0,
+          "cum_pnl": 43.0
+        },
+        {
+          "date": "t156",
+          "pnl": 0.0,
+          "cum_pnl": 43.0
+        },
+        {
+          "date": "t157",
+          "pnl": 1.0,
+          "cum_pnl": 44.0
+        },
+        {
+          "date": "t158",
+          "pnl": 1.0,
+          "cum_pnl": 45.0
+        },
+        {
+          "date": "t159",
+          "pnl": 1.0,
+          "cum_pnl": 46.0
+        },
+        {
+          "date": "t160",
+          "pnl": 1.0,
+          "cum_pnl": 47.0
+        },
+        {
+          "date": "t161",
+          "pnl": 1.0,
+          "cum_pnl": 48.0
+        },
+        {
+          "date": "t162",
+          "pnl": 1.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t163",
+          "pnl": 0.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t164",
+          "pnl": 0.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t165",
+          "pnl": 0.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t166",
+          "pnl": 0.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t167",
+          "pnl": 0.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t168",
+          "pnl": -1.0,
+          "cum_pnl": 48.0
+        },
+        {
+          "date": "t169",
+          "pnl": 0.0,
+          "cum_pnl": 48.0
+        },
+        {
+          "date": "t170",
+          "pnl": -1.0,
+          "cum_pnl": 47.0
+        },
+        {
+          "date": "t171",
+          "pnl": -1.0,
+          "cum_pnl": 46.0
+        },
+        {
+          "date": "t172",
+          "pnl": -1.0,
+          "cum_pnl": 45.0
+        },
+        {
+          "date": "t173",
+          "pnl": -1.0,
+          "cum_pnl": 44.0
+        },
+        {
+          "date": "t174",
+          "pnl": 0.0,
+          "cum_pnl": 44.0
+        },
+        {
+          "date": "t175",
+          "pnl": 0.0,
+          "cum_pnl": 44.0
+        },
+        {
+          "date": "t176",
+          "pnl": 0.0,
+          "cum_pnl": 44.0
+        },
+        {
+          "date": "t177",
+          "pnl": 1.0,
+          "cum_pnl": 45.0
+        },
+        {
+          "date": "t178",
+          "pnl": 1.0,
+          "cum_pnl": 46.0
+        },
+        {
+          "date": "t179",
+          "pnl": 1.0,
+          "cum_pnl": 47.0
+        },
+        {
+          "date": "t180",
+          "pnl": 1.0,
+          "cum_pnl": 48.0
+        },
+        {
+          "date": "t181",
+          "pnl": 1.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t182",
+          "pnl": 1.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t183",
+          "pnl": 1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t184",
+          "pnl": -1.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t185",
+          "pnl": 1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t186",
+          "pnl": 1.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t187",
+          "pnl": 1.0,
+          "cum_pnl": 53.0
+        },
+        {
+          "date": "t188",
+          "pnl": 1.0,
+          "cum_pnl": 54.0
+        },
+        {
+          "date": "t189",
+          "pnl": 1.0,
+          "cum_pnl": 55.0
+        },
+        {
+          "date": "t190",
+          "pnl": -1.0,
+          "cum_pnl": 54.0
+        },
+        {
+          "date": "t191",
+          "pnl": -1.0,
+          "cum_pnl": 53.0
+        },
+        {
+          "date": "t192",
+          "pnl": -1.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t193",
+          "pnl": -1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t194",
+          "pnl": 1.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t195",
+          "pnl": -1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t196",
+          "pnl": 0.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t197",
+          "pnl": 0.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t198",
+          "pnl": 0.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t199",
+          "pnl": 0.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t200",
+          "pnl": -1.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t201",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t202",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t203",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t204",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t205",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t206",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t207",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t208",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t209",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t210",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t211",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t212",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t213",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t214",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t215",
+          "pnl": 0.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t216",
+          "pnl": 1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t217",
+          "pnl": 0.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t218",
+          "pnl": 0.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t219",
+          "pnl": 0.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t220",
+          "pnl": 0.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t221",
+          "pnl": 1.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t222",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t223",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t224",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t225",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t226",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t227",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t228",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t229",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t230",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t231",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t232",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t233",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t234",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t235",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t236",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t237",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t238",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t239",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t240",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t241",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t242",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t243",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t244",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t245",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t246",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t247",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t248",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t249",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t250",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t251",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t252",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t253",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t254",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t255",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t256",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t257",
+          "pnl": 0.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t258",
+          "pnl": -1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t259",
+          "pnl": -1.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t260",
+          "pnl": -1.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t261",
+          "pnl": 1.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t262",
+          "pnl": 1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t263",
+          "pnl": 1.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t264",
+          "pnl": -1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t265",
+          "pnl": -1.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t266",
+          "pnl": -1.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t267",
+          "pnl": -1.0,
+          "cum_pnl": 48.0
+        },
+        {
+          "date": "t268",
+          "pnl": 1.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t269",
+          "pnl": 1.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t270",
+          "pnl": 1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t271",
+          "pnl": 1.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t272",
+          "pnl": 1.0,
+          "cum_pnl": 53.0
+        },
+        {
+          "date": "t273",
+          "pnl": -1.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t274",
+          "pnl": -1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t275",
+          "pnl": -1.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t276",
+          "pnl": -1.0,
+          "cum_pnl": 49.0
+        },
+        {
+          "date": "t277",
+          "pnl": 1.0,
+          "cum_pnl": 50.0
+        },
+        {
+          "date": "t278",
+          "pnl": 1.0,
+          "cum_pnl": 51.0
+        },
+        {
+          "date": "t279",
+          "pnl": 1.0,
+          "cum_pnl": 52.0
+        },
+        {
+          "date": "t280",
+          "pnl": 1.0,
+          "cum_pnl": 53.0
+        },
+        {
+          "date": "t281",
+          "pnl": 1.0,
+          "cum_pnl": 54.0
+        },
+        {
+          "date": "t282",
+          "pnl": 0.0,
+          "cum_pnl": 54.0
+        },
+        {
+          "date": "t283",
+          "pnl": 1.0,
+          "cum_pnl": 55.0
+        },
+        {
+          "date": "t284",
+          "pnl": 1.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t285",
+          "pnl": 1.0,
+          "cum_pnl": 57.0
+        },
+        {
+          "date": "t286",
+          "pnl": 1.0,
+          "cum_pnl": 58.0
+        },
+        {
+          "date": "t287",
+          "pnl": 0.0,
+          "cum_pnl": 58.0
+        },
+        {
+          "date": "t288",
+          "pnl": 1.0,
+          "cum_pnl": 59.0
+        },
+        {
+          "date": "t289",
+          "pnl": 0.0,
+          "cum_pnl": 59.0
+        },
+        {
+          "date": "t290",
+          "pnl": 0.0,
+          "cum_pnl": 59.0
+        },
+        {
+          "date": "t291",
+          "pnl": 0.0,
+          "cum_pnl": 59.0
+        },
+        {
+          "date": "t292",
+          "pnl": -1.0,
+          "cum_pnl": 58.0
+        },
+        {
+          "date": "t293",
+          "pnl": -1.0,
+          "cum_pnl": 57.0
+        },
+        {
+          "date": "t294",
+          "pnl": -1.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t295",
+          "pnl": -1.0,
+          "cum_pnl": 55.0
+        },
+        {
+          "date": "t296",
+          "pnl": 0.0,
+          "cum_pnl": 55.0
+        },
+        {
+          "date": "t297",
+          "pnl": 0.0,
+          "cum_pnl": 55.0
+        },
+        {
+          "date": "t298",
+          "pnl": 0.0,
+          "cum_pnl": 55.0
+        },
+        {
+          "date": "t299",
+          "pnl": 0.0,
+          "cum_pnl": 55.0
+        },
+        {
+          "date": "t300",
+          "pnl": 0.0,
+          "cum_pnl": 55.0
+        },
+        {
+          "date": "t301",
+          "pnl": 1.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t302",
+          "pnl": 0.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t303",
+          "pnl": 0.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t304",
+          "pnl": 0.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t305",
+          "pnl": 0.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t306",
+          "pnl": 0.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t307",
+          "pnl": 0.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t308",
+          "pnl": 0.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t309",
+          "pnl": 0.0,
+          "cum_pnl": 56.0
+        },
+        {
+          "date": "t310",
+          "pnl": 1.0,
+          "cum_pnl": 57.0
+        },
+        {
+          "date": "t311",
+          "pnl": 1.0,
+          "cum_pnl": 58.0
+        },
+        {
+          "date": "t312",
+          "pnl": 1.0,
+          "cum_pnl": 59.0
+        },
+        {
+          "date": "t313",
+          "pnl": -1.0,
+          "cum_pnl": 58.0
+        },
+        {
+          "date": "t314",
+          "pnl": 1.0,
+          "cum_pnl": 59.0
+        },
+        {
+          "date": "t315",
+          "pnl": 1.0,
+          "cum_pnl": 60.0
+        },
+        {
+          "date": "t316",
+          "pnl": 1.0,
+          "cum_pnl": 61.0
+        },
+        {
+          "date": "t317",
+          "pnl": 1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t318",
+          "pnl": 1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t319",
+          "pnl": 1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t320",
+          "pnl": 1.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t321",
+          "pnl": 1.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t322",
+          "pnl": 1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t323",
+          "pnl": -1.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t324",
+          "pnl": 1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t325",
+          "pnl": -1.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t326",
+          "pnl": 1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t327",
+          "pnl": 1.0,
+          "cum_pnl": 68.0
+        },
+        {
+          "date": "t328",
+          "pnl": -1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t329",
+          "pnl": 0.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t330",
+          "pnl": 1.0,
+          "cum_pnl": 68.0
+        },
+        {
+          "date": "t331",
+          "pnl": -1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t332",
+          "pnl": -1.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t333",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t334",
+          "pnl": -1.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t335",
+          "pnl": -1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t336",
+          "pnl": -1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t337",
+          "pnl": -1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t338",
+          "pnl": -1.0,
+          "cum_pnl": 61.0
+        },
+        {
+          "date": "t339",
+          "pnl": 1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t340",
+          "pnl": 1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t341",
+          "pnl": 1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t342",
+          "pnl": 1.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t343",
+          "pnl": -1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t344",
+          "pnl": -1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t345",
+          "pnl": -1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t346",
+          "pnl": -1.0,
+          "cum_pnl": 61.0
+        },
+        {
+          "date": "t347",
+          "pnl": 1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t348",
+          "pnl": 1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t349",
+          "pnl": 1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t350",
+          "pnl": 1.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t351",
+          "pnl": -1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t352",
+          "pnl": 1.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t353",
+          "pnl": 1.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t354",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t355",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t356",
+          "pnl": 1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t357",
+          "pnl": 0.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t358",
+          "pnl": -1.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t359",
+          "pnl": -1.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t360",
+          "pnl": -1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t361",
+          "pnl": -1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t362",
+          "pnl": 0.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t363",
+          "pnl": 0.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t364",
+          "pnl": -1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t365",
+          "pnl": -1.0,
+          "cum_pnl": 61.0
+        },
+        {
+          "date": "t366",
+          "pnl": -1.0,
+          "cum_pnl": 60.0
+        },
+        {
+          "date": "t367",
+          "pnl": -1.0,
+          "cum_pnl": 59.0
+        },
+        {
+          "date": "t368",
+          "pnl": -1.0,
+          "cum_pnl": 58.0
+        },
+        {
+          "date": "t369",
+          "pnl": 1.0,
+          "cum_pnl": 59.0
+        },
+        {
+          "date": "t370",
+          "pnl": 1.0,
+          "cum_pnl": 60.0
+        },
+        {
+          "date": "t371",
+          "pnl": 1.0,
+          "cum_pnl": 61.0
+        },
+        {
+          "date": "t372",
+          "pnl": 1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t373",
+          "pnl": -1.0,
+          "cum_pnl": 61.0
+        },
+        {
+          "date": "t374",
+          "pnl": 1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t375",
+          "pnl": 1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t376",
+          "pnl": 1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t377",
+          "pnl": -1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t378",
+          "pnl": 1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t379",
+          "pnl": -1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t380",
+          "pnl": 1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t381",
+          "pnl": -1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t382",
+          "pnl": 1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t383",
+          "pnl": -1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t384",
+          "pnl": -1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t385",
+          "pnl": 1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t386",
+          "pnl": -1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t387",
+          "pnl": -1.0,
+          "cum_pnl": 61.0
+        },
+        {
+          "date": "t388",
+          "pnl": 0.0,
+          "cum_pnl": 61.0
+        },
+        {
+          "date": "t389",
+          "pnl": 1.0,
+          "cum_pnl": 62.0
+        },
+        {
+          "date": "t390",
+          "pnl": 1.0,
+          "cum_pnl": 63.0
+        },
+        {
+          "date": "t391",
+          "pnl": 1.0,
+          "cum_pnl": 64.0
+        },
+        {
+          "date": "t392",
+          "pnl": 1.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t393",
+          "pnl": 1.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t394",
+          "pnl": 1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t395",
+          "pnl": 1.0,
+          "cum_pnl": 68.0
+        },
+        {
+          "date": "t396",
+          "pnl": -1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t397",
+          "pnl": 1.0,
+          "cum_pnl": 68.0
+        },
+        {
+          "date": "t398",
+          "pnl": 1.0,
+          "cum_pnl": 69.0
+        },
+        {
+          "date": "t399",
+          "pnl": 1.0,
+          "cum_pnl": 70.0
+        },
+        {
+          "date": "t400",
+          "pnl": 1.0,
+          "cum_pnl": 71.0
+        },
+        {
+          "date": "t401",
+          "pnl": 1.0,
+          "cum_pnl": 72.0
+        },
+        {
+          "date": "t402",
+          "pnl": 0.0,
+          "cum_pnl": 72.0
+        },
+        {
+          "date": "t403",
+          "pnl": -1.0,
+          "cum_pnl": 71.0
+        },
+        {
+          "date": "t404",
+          "pnl": -1.0,
+          "cum_pnl": 70.0
+        },
+        {
+          "date": "t405",
+          "pnl": -1.0,
+          "cum_pnl": 69.0
+        },
+        {
+          "date": "t406",
+          "pnl": 1.0,
+          "cum_pnl": 70.0
+        },
+        {
+          "date": "t407",
+          "pnl": 1.0,
+          "cum_pnl": 71.0
+        },
+        {
+          "date": "t408",
+          "pnl": 1.0,
+          "cum_pnl": 72.0
+        },
+        {
+          "date": "t409",
+          "pnl": 1.0,
+          "cum_pnl": 73.0
+        },
+        {
+          "date": "t410",
+          "pnl": 1.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t411",
+          "pnl": 1.0,
+          "cum_pnl": 75.0
+        },
+        {
+          "date": "t412",
+          "pnl": 0.0,
+          "cum_pnl": 75.0
+        },
+        {
+          "date": "t413",
+          "pnl": -1.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t414",
+          "pnl": 0.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t415",
+          "pnl": 0.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t416",
+          "pnl": 0.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t417",
+          "pnl": 0.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t418",
+          "pnl": 0.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t419",
+          "pnl": -1.0,
+          "cum_pnl": 73.0
+        },
+        {
+          "date": "t420",
+          "pnl": 0.0,
+          "cum_pnl": 73.0
+        },
+        {
+          "date": "t421",
+          "pnl": 0.0,
+          "cum_pnl": 73.0
+        },
+        {
+          "date": "t422",
+          "pnl": 0.0,
+          "cum_pnl": 73.0
+        },
+        {
+          "date": "t423",
+          "pnl": -1.0,
+          "cum_pnl": 72.0
+        },
+        {
+          "date": "t424",
+          "pnl": 0.0,
+          "cum_pnl": 72.0
+        },
+        {
+          "date": "t425",
+          "pnl": 0.0,
+          "cum_pnl": 72.0
+        },
+        {
+          "date": "t426",
+          "pnl": -1.0,
+          "cum_pnl": 71.0
+        },
+        {
+          "date": "t427",
+          "pnl": 0.0,
+          "cum_pnl": 71.0
+        },
+        {
+          "date": "t428",
+          "pnl": 0.0,
+          "cum_pnl": 71.0
+        },
+        {
+          "date": "t429",
+          "pnl": -1.0,
+          "cum_pnl": 70.0
+        },
+        {
+          "date": "t430",
+          "pnl": -1.0,
+          "cum_pnl": 69.0
+        },
+        {
+          "date": "t431",
+          "pnl": -1.0,
+          "cum_pnl": 68.0
+        },
+        {
+          "date": "t432",
+          "pnl": -1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t433",
+          "pnl": -1.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t434",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t435",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t436",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t437",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t438",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t439",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t440",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t441",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t442",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t443",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t444",
+          "pnl": -1.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t445",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t446",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t447",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t448",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t449",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t450",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t451",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t452",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t453",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t454",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t455",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t456",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t457",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t458",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t459",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t460",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t461",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t462",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t463",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t464",
+          "pnl": 0.0,
+          "cum_pnl": 65.0
+        },
+        {
+          "date": "t465",
+          "pnl": 1.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t466",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t467",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t468",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t469",
+          "pnl": 0.0,
+          "cum_pnl": 66.0
+        },
+        {
+          "date": "t470",
+          "pnl": 1.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t471",
+          "pnl": 0.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t472",
+          "pnl": 0.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t473",
+          "pnl": 0.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t474",
+          "pnl": 0.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t475",
+          "pnl": 0.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t476",
+          "pnl": 0.0,
+          "cum_pnl": 67.0
+        },
+        {
+          "date": "t477",
+          "pnl": 1.0,
+          "cum_pnl": 68.0
+        },
+        {
+          "date": "t478",
+          "pnl": 1.0,
+          "cum_pnl": 69.0
+        },
+        {
+          "date": "t479",
+          "pnl": 1.0,
+          "cum_pnl": 70.0
+        },
+        {
+          "date": "t480",
+          "pnl": 1.0,
+          "cum_pnl": 71.0
+        },
+        {
+          "date": "t481",
+          "pnl": 1.0,
+          "cum_pnl": 72.0
+        },
+        {
+          "date": "t482",
+          "pnl": 1.0,
+          "cum_pnl": 73.0
+        },
+        {
+          "date": "t483",
+          "pnl": 1.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t484",
+          "pnl": -1.0,
+          "cum_pnl": 73.0
+        },
+        {
+          "date": "t485",
+          "pnl": 1.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t486",
+          "pnl": 1.0,
+          "cum_pnl": 75.0
+        },
+        {
+          "date": "t487",
+          "pnl": -1.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t488",
+          "pnl": -1.0,
+          "cum_pnl": 73.0
+        },
+        {
+          "date": "t489",
+          "pnl": -1.0,
+          "cum_pnl": 72.0
+        },
+        {
+          "date": "t490",
+          "pnl": 1.0,
+          "cum_pnl": 73.0
+        },
+        {
+          "date": "t491",
+          "pnl": 1.0,
+          "cum_pnl": 74.0
+        },
+        {
+          "date": "t492",
+          "pnl": 1.0,
+          "cum_pnl": 75.0
+        },
+        {
+          "date": "t493",
+          "pnl": 1.0,
+          "cum_pnl": 76.0
+        },
+        {
+          "date": "t494",
+          "pnl": 1.0,
+          "cum_pnl": 77.0
+        },
+        {
+          "date": "t495",
+          "pnl": 1.0,
+          "cum_pnl": 78.0
+        },
+        {
+          "date": "t496",
+          "pnl": 1.0,
+          "cum_pnl": 79.0
+        },
+        {
+          "date": "t497",
+          "pnl": -1.0,
+          "cum_pnl": 78.0
+        },
+        {
+          "date": "t498",
+          "pnl": -1.0,
+          "cum_pnl": 77.0
+        },
+        {
+          "date": "t499",
+          "pnl": -1.0,
+          "cum_pnl": 76.0
+        },
+        {
+          "date": "t500",
+          "pnl": 1.0,
+          "cum_pnl": 77.0
+        },
+        {
+          "date": "t501",
+          "pnl": 1.0,
+          "cum_pnl": 78.0
+        },
+        {
+          "date": "t502",
+          "pnl": 1.0,
+          "cum_pnl": 79.0
+        },
+        {
+          "date": "t503",
+          "pnl": -1.0,
+          "cum_pnl": 78.0
+        },
+        {
+          "date": "t504",
+          "pnl": 0.0,
+          "cum_pnl": 78.0
+        },
+        {
+          "date": "t505",
+          "pnl": 0.0,
+          "cum_pnl": 78.0
+        },
+        {
+          "date": "t506",
+          "pnl": 1.0,
+          "cum_pnl": 79.0
+        },
+        {
+          "date": "t507",
+          "pnl": 1.0,
+          "cum_pnl": 80.0
+        },
+        {
+          "date": "t508",
+          "pnl": 1.0,
+          "cum_pnl": 81.0
+        },
+        {
+          "date": "t509",
+          "pnl": 1.0,
+          "cum_pnl": 82.0
+        },
+        {
+          "date": "t510",
+          "pnl": 1.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t511",
+          "pnl": 0.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t512",
+          "pnl": 0.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t513",
+          "pnl": 0.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t514",
+          "pnl": 0.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t515",
+          "pnl": 0.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t516",
+          "pnl": -1.0,
+          "cum_pnl": 82.0
+        },
+        {
+          "date": "t517",
+          "pnl": -1.0,
+          "cum_pnl": 81.0
+        },
+        {
+          "date": "t518",
+          "pnl": 0.0,
+          "cum_pnl": 81.0
+        },
+        {
+          "date": "t519",
+          "pnl": 0.0,
+          "cum_pnl": 81.0
+        },
+        {
+          "date": "t520",
+          "pnl": -1.0,
+          "cum_pnl": 80.0
+        },
+        {
+          "date": "t521",
+          "pnl": -1.0,
+          "cum_pnl": 79.0
+        },
+        {
+          "date": "t522",
+          "pnl": 0.0,
+          "cum_pnl": 79.0
+        },
+        {
+          "date": "t523",
+          "pnl": 1.0,
+          "cum_pnl": 80.0
+        },
+        {
+          "date": "t524",
+          "pnl": 1.0,
+          "cum_pnl": 81.0
+        },
+        {
+          "date": "t525",
+          "pnl": 1.0,
+          "cum_pnl": 82.0
+        },
+        {
+          "date": "t526",
+          "pnl": 1.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t527",
+          "pnl": 1.0,
+          "cum_pnl": 84.0
+        },
+        {
+          "date": "t528",
+          "pnl": -1.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t529",
+          "pnl": 1.0,
+          "cum_pnl": 84.0
+        },
+        {
+          "date": "t530",
+          "pnl": -1.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t531",
+          "pnl": 0.0,
+          "cum_pnl": 83.0
+        },
+        {
+          "date": "t532",
+          "pnl": 1.0,
+          "cum_pnl": 84.0
+        },
+        {
+          "date": "t533",
+          "pnl": 1.0,
+          "cum_pnl": 85.0
+        },
+        {
+          "date": "t534",
+          "pnl": 1.0,
+          "cum_pnl": 86.0
+        },
+        {
+          "date": "t535",
+          "pnl": 1.0,
+          "cum_pnl": 87.0
+        },
+        {
+          "date": "t536",
+          "pnl": 0.0,
+          "cum_pnl": 87.0
+        },
+        {
+          "date": "t537",
+          "pnl": 1.0,
+          "cum_pnl": 88.0
+        },
+        {
+          "date": "t538",
+          "pnl": 1.0,
+          "cum_pnl": 89.0
+        },
+        {
+          "date": "t539",
+          "pnl": 1.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t540",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t541",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t542",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t543",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t544",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t545",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t546",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t547",
+          "pnl": 1.0,
+          "cum_pnl": 91.0
+        },
+        {
+          "date": "t548",
+          "pnl": 0.0,
+          "cum_pnl": 91.0
+        },
+        {
+          "date": "t549",
+          "pnl": -1.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t550",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t551",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t552",
+          "pnl": 0.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t553",
+          "pnl": 1.0,
+          "cum_pnl": 91.0
+        },
+        {
+          "date": "t554",
+          "pnl": 1.0,
+          "cum_pnl": 92.0
+        },
+        {
+          "date": "t555",
+          "pnl": 1.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t556",
+          "pnl": 0.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t557",
+          "pnl": 0.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t558",
+          "pnl": 0.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t559",
+          "pnl": 0.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t560",
+          "pnl": 0.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t561",
+          "pnl": 0.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t562",
+          "pnl": 0.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t563",
+          "pnl": 0.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t564",
+          "pnl": 0.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t565",
+          "pnl": -1.0,
+          "cum_pnl": 92.0
+        },
+        {
+          "date": "t566",
+          "pnl": -1.0,
+          "cum_pnl": 91.0
+        },
+        {
+          "date": "t567",
+          "pnl": 0.0,
+          "cum_pnl": 91.0
+        },
+        {
+          "date": "t568",
+          "pnl": 0.0,
+          "cum_pnl": 91.0
+        },
+        {
+          "date": "t569",
+          "pnl": 0.0,
+          "cum_pnl": 91.0
+        },
+        {
+          "date": "t570",
+          "pnl": 0.0,
+          "cum_pnl": 91.0
+        },
+        {
+          "date": "t571",
+          "pnl": -1.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t572",
+          "pnl": -1.0,
+          "cum_pnl": 89.0
+        },
+        {
+          "date": "t573",
+          "pnl": 1.0,
+          "cum_pnl": 90.0
+        },
+        {
+          "date": "t574",
+          "pnl": 1.0,
+          "cum_pnl": 91.0
+        },
+        {
+          "date": "t575",
+          "pnl": 1.0,
+          "cum_pnl": 92.0
+        },
+        {
+          "date": "t576",
+          "pnl": 1.0,
+          "cum_pnl": 93.0
+        },
+        {
+          "date": "t577",
+          "pnl": 1.0,
+          "cum_pnl": 94.0
+        },
+        {
+          "date": "t578",
+          "pnl": 1.0,
+          "cum_pnl": 95.0
+        },
+        {
+          "date": "t579",
+          "pnl": 1.0,
+          "cum_pnl": 96.0
+        },
+        {
+          "date": "t580",
+          "pnl": 1.0,
+          "cum_pnl": 97.0
+        },
+        {
+          "date": "t581",
+          "pnl": 1.0,
+          "cum_pnl": 98.0
+        },
+        {
+          "date": "t582",
+          "pnl": 1.0,
+          "cum_pnl": 99.0
+        },
+        {
+          "date": "t583",
+          "pnl": 0.0,
+          "cum_pnl": 99.0
+        },
+        {
+          "date": "t584",
+          "pnl": 1.0,
+          "cum_pnl": 100.0
+        },
+        {
+          "date": "t585",
+          "pnl": -1.0,
+          "cum_pnl": 99.0
+        },
+        {
+          "date": "t586",
+          "pnl": 1.0,
+          "cum_pnl": 100.0
+        },
+        {
+          "date": "t587",
+          "pnl": -1.0,
+          "cum_pnl": 99.0
+        },
+        {
+          "date": "t588",
+          "pnl": -1.0,
+          "cum_pnl": 98.0
+        },
+        {
+          "date": "t589",
+          "pnl": 0.0,
+          "cum_pnl": 98.0
+        },
+        {
+          "date": "t590",
+          "pnl": 0.0,
+          "cum_pnl": 98.0
+        },
+        {
+          "date": "t591",
+          "pnl": 0.0,
+          "cum_pnl": 98.0
+        },
+        {
+          "date": "t592",
+          "pnl": 0.0,
+          "cum_pnl": 98.0
+        },
+        {
+          "date": "t593",
+          "pnl": 0.0,
+          "cum_pnl": 98.0
+        },
+        {
+          "date": "t594",
+          "pnl": 1.0,
+          "cum_pnl": 99.0
+        },
+        {
+          "date": "t595",
+          "pnl": 0.0,
+          "cum_pnl": 99.0
+        },
+        {
+          "date": "t596",
+          "pnl": 0.0,
+          "cum_pnl": 99.0
+        },
+        {
+          "date": "t597",
+          "pnl": 1.0,
+          "cum_pnl": 100.0
+        },
+        {
+          "date": "t598",
+          "pnl": 1.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t599",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t600",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t601",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t602",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t603",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t604",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t605",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t606",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t607",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t608",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t609",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t610",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t611",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t612",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t613",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t614",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t615",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t616",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t617",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t618",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t619",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t620",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t621",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t622",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t623",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t624",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t625",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t626",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t627",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t628",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t629",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t630",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t631",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t632",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t633",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t634",
+          "pnl": 0.0,
+          "cum_pnl": 101.0
+        },
+        {
+          "date": "t635",
+          "pnl": 1.0,
+          "cum_pnl": 102.0
+        },
+        {
+          "date": "t636",
+          "pnl": 1.0,
+          "cum_pnl": 103.0
+        },
+        {
+          "date": "t637",
+          "pnl": 1.0,
+          "cum_pnl": 104.0
+        },
+        {
+          "date": "t638",
+          "pnl": -1.0,
+          "cum_pnl": 103.0
+        },
+        {
+          "date": "t639",
+          "pnl": -1.0,
+          "cum_pnl": 102.0
+        },
+        {
+          "date": "t640",
+          "pnl": 1.0,
+          "cum_pnl": 103.0
+        },
+        {
+          "date": "t641",
+          "pnl": 1.0,
+          "cum_pnl": 104.0
+        },
+        {
+          "date": "t642",
+          "pnl": 1.0,
+          "cum_pnl": 105.0
+        },
+        {
+          "date": "t643",
+          "pnl": 1.0,
+          "cum_pnl": 106.0
+        },
+        {
+          "date": "t644",
+          "pnl": 1.0,
+          "cum_pnl": 107.0
+        },
+        {
+          "date": "t645",
+          "pnl": 1.0,
+          "cum_pnl": 108.0
+        },
+        {
+          "date": "t646",
+          "pnl": 1.0,
+          "cum_pnl": 109.0
+        },
+        {
+          "date": "t647",
+          "pnl": 1.0,
+          "cum_pnl": 110.0
+        },
+        {
+          "date": "t648",
+          "pnl": 0.0,
+          "cum_pnl": 110.0
+        },
+        {
+          "date": "t649",
+          "pnl": -1.0,
+          "cum_pnl": 109.0
+        },
+        {
+          "date": "t650",
+          "pnl": 1.0,
+          "cum_pnl": 110.0
+        },
+        {
+          "date": "t651",
+          "pnl": 1.0,
+          "cum_pnl": 111.0
+        },
+        {
+          "date": "t652",
+          "pnl": 1.0,
+          "cum_pnl": 112.0
+        },
+        {
+          "date": "t653",
+          "pnl": 1.0,
+          "cum_pnl": 113.0
+        },
+        {
+          "date": "t654",
+          "pnl": 1.0,
+          "cum_pnl": 114.0
+        },
+        {
+          "date": "t655",
+          "pnl": 1.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t656",
+          "pnl": 0.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t657",
+          "pnl": 0.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t658",
+          "pnl": 0.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t659",
+          "pnl": 0.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t660",
+          "pnl": 0.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t661",
+          "pnl": 0.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t662",
+          "pnl": 0.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t663",
+          "pnl": -1.0,
+          "cum_pnl": 114.0
+        },
+        {
+          "date": "t664",
+          "pnl": -1.0,
+          "cum_pnl": 113.0
+        },
+        {
+          "date": "t665",
+          "pnl": 1.0,
+          "cum_pnl": 114.0
+        },
+        {
+          "date": "t666",
+          "pnl": 1.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t667",
+          "pnl": 1.0,
+          "cum_pnl": 116.0
+        },
+        {
+          "date": "t668",
+          "pnl": -1.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t669",
+          "pnl": -1.0,
+          "cum_pnl": 114.0
+        },
+        {
+          "date": "t670",
+          "pnl": 0.0,
+          "cum_pnl": 114.0
+        },
+        {
+          "date": "t671",
+          "pnl": 0.0,
+          "cum_pnl": 114.0
+        },
+        {
+          "date": "t672",
+          "pnl": 0.0,
+          "cum_pnl": 114.0
+        },
+        {
+          "date": "t673",
+          "pnl": -1.0,
+          "cum_pnl": 113.0
+        },
+        {
+          "date": "t674",
+          "pnl": -1.0,
+          "cum_pnl": 112.0
+        },
+        {
+          "date": "t675",
+          "pnl": -1.0,
+          "cum_pnl": 111.0
+        },
+        {
+          "date": "t676",
+          "pnl": -1.0,
+          "cum_pnl": 110.0
+        },
+        {
+          "date": "t677",
+          "pnl": 1.0,
+          "cum_pnl": 111.0
+        },
+        {
+          "date": "t678",
+          "pnl": 1.0,
+          "cum_pnl": 112.0
+        },
+        {
+          "date": "t679",
+          "pnl": 1.0,
+          "cum_pnl": 113.0
+        },
+        {
+          "date": "t680",
+          "pnl": 1.0,
+          "cum_pnl": 114.0
+        },
+        {
+          "date": "t681",
+          "pnl": 1.0,
+          "cum_pnl": 115.0
+        },
+        {
+          "date": "t682",
+          "pnl": 1.0,
+          "cum_pnl": 116.0
+        },
+        {
+          "date": "t683",
+          "pnl": 0.0,
+          "cum_pnl": 116.0
+        },
+        {
+          "date": "t684",
+          "pnl": 0.0,
+          "cum_pnl": 116.0
+        },
+        {
+          "date": "t685",
+          "pnl": 0.0,
+          "cum_pnl": 116.0
+        },
+        {
+          "date": "t686",
+          "pnl": 1.0,
+          "cum_pnl": 117.0
+        },
+        {
+          "date": "t687",
+          "pnl": 1.0,
+          "cum_pnl": 118.0
+        },
+        {
+          "date": "t688",
+          "pnl": 1.0,
+          "cum_pnl": 119.0
+        },
+        {
+          "date": "t689",
+          "pnl": 1.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t690",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t691",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t692",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t693",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t694",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t695",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t696",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t697",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t698",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t699",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t700",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t701",
+          "pnl": 0.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t702",
+          "pnl": 1.0,
+          "cum_pnl": 121.0
+        },
+        {
+          "date": "t703",
+          "pnl": 1.0,
+          "cum_pnl": 122.0
+        },
+        {
+          "date": "t704",
+          "pnl": 0.0,
+          "cum_pnl": 122.0
+        },
+        {
+          "date": "t705",
+          "pnl": 0.0,
+          "cum_pnl": 122.0
+        },
+        {
+          "date": "t706",
+          "pnl": 0.0,
+          "cum_pnl": 122.0
+        },
+        {
+          "date": "t707",
+          "pnl": 0.0,
+          "cum_pnl": 122.0
+        },
+        {
+          "date": "t708",
+          "pnl": 0.0,
+          "cum_pnl": 122.0
+        },
+        {
+          "date": "t709",
+          "pnl": 0.0,
+          "cum_pnl": 122.0
+        },
+        {
+          "date": "t710",
+          "pnl": 0.0,
+          "cum_pnl": 122.0
+        },
+        {
+          "date": "t711",
+          "pnl": -1.0,
+          "cum_pnl": 121.0
+        },
+        {
+          "date": "t712",
+          "pnl": -1.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t713",
+          "pnl": -1.0,
+          "cum_pnl": 119.0
+        },
+        {
+          "date": "t714",
+          "pnl": 0.0,
+          "cum_pnl": 119.0
+        },
+        {
+          "date": "t715",
+          "pnl": 1.0,
+          "cum_pnl": 120.0
+        },
+        {
+          "date": "t716",
+          "pnl": 1.0,
+          "cum_pnl": 121.0
+        },
+        {
+          "date": "t717",
+          "pnl": 1.0,
+          "cum_pnl": 122.0
+        },
+        {
+          "date": "t718",
+          "pnl": 1.0,
+          "cum_pnl": 123.0
+        },
+        {
+          "date": "t719",
+          "pnl": 1.0,
+          "cum_pnl": 124.0
+        },
+        {
+          "date": "t720",
+          "pnl": 1.0,
+          "cum_pnl": 125.0
+        },
+        {
+          "date": "t721",
+          "pnl": -1.0,
+          "cum_pnl": 124.0
+        },
+        {
+          "date": "t722",
+          "pnl": 1.0,
+          "cum_pnl": 125.0
+        },
+        {
+          "date": "t723",
+          "pnl": 1.0,
+          "cum_pnl": 126.0
+        },
+        {
+          "date": "t724",
+          "pnl": 1.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t725",
+          "pnl": 1.0,
+          "cum_pnl": 128.0
+        },
+        {
+          "date": "t726",
+          "pnl": -1.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t727",
+          "pnl": -1.0,
+          "cum_pnl": 126.0
+        },
+        {
+          "date": "t728",
+          "pnl": -1.0,
+          "cum_pnl": 125.0
+        },
+        {
+          "date": "t729",
+          "pnl": -1.0,
+          "cum_pnl": 124.0
+        },
+        {
+          "date": "t730",
+          "pnl": 1.0,
+          "cum_pnl": 125.0
+        },
+        {
+          "date": "t731",
+          "pnl": 1.0,
+          "cum_pnl": 126.0
+        },
+        {
+          "date": "t732",
+          "pnl": -1.0,
+          "cum_pnl": 125.0
+        },
+        {
+          "date": "t733",
+          "pnl": 1.0,
+          "cum_pnl": 126.0
+        },
+        {
+          "date": "t734",
+          "pnl": 1.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t735",
+          "pnl": 0.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t736",
+          "pnl": 0.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t737",
+          "pnl": 0.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t738",
+          "pnl": 0.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t739",
+          "pnl": 0.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t740",
+          "pnl": 0.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t741",
+          "pnl": 1.0,
+          "cum_pnl": 128.0
+        },
+        {
+          "date": "t742",
+          "pnl": 1.0,
+          "cum_pnl": 129.0
+        },
+        {
+          "date": "t743",
+          "pnl": -1.0,
+          "cum_pnl": 128.0
+        },
+        {
+          "date": "t744",
+          "pnl": -1.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t745",
+          "pnl": 1.0,
+          "cum_pnl": 128.0
+        },
+        {
+          "date": "t746",
+          "pnl": 0.0,
+          "cum_pnl": 128.0
+        },
+        {
+          "date": "t747",
+          "pnl": -1.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t748",
+          "pnl": -1.0,
+          "cum_pnl": 126.0
+        },
+        {
+          "date": "t749",
+          "pnl": -1.0,
+          "cum_pnl": 125.0
+        },
+        {
+          "date": "t750",
+          "pnl": 1.0,
+          "cum_pnl": 126.0
+        },
+        {
+          "date": "t751",
+          "pnl": 1.0,
+          "cum_pnl": 127.0
+        },
+        {
+          "date": "t752",
+          "pnl": 1.0,
+          "cum_pnl": 128.0
+        },
+        {
+          "date": "t753",
+          "pnl": 1.0,
+          "cum_pnl": 129.0
+        },
+        {
+          "date": "t754",
+          "pnl": 1.0,
+          "cum_pnl": 130.0
+        },
+        {
+          "date": "t755",
+          "pnl": 1.0,
+          "cum_pnl": 131.0
+        },
+        {
+          "date": "t756",
+          "pnl": 1.0,
+          "cum_pnl": 132.0
+        },
+        {
+          "date": "t757",
+          "pnl": -1.0,
+          "cum_pnl": 131.0
+        },
+        {
+          "date": "t758",
+          "pnl": 0.0,
+          "cum_pnl": 131.0
+        },
+        {
+          "date": "t759",
+          "pnl": -1.0,
+          "cum_pnl": 130.0
+        },
+        {
+          "date": "t760",
+          "pnl": 0.0,
+          "cum_pnl": 130.0
+        },
+        {
+          "date": "t761",
+          "pnl": 1.0,
+          "cum_pnl": 131.0
+        },
+        {
+          "date": "t762",
+          "pnl": 1.0,
+          "cum_pnl": 132.0
+        },
+        {
+          "date": "t763",
+          "pnl": 1.0,
+          "cum_pnl": 133.0
+        },
+        {
+          "date": "t764",
+          "pnl": 1.0,
+          "cum_pnl": 134.0
+        },
+        {
+          "date": "t765",
+          "pnl": 1.0,
+          "cum_pnl": 135.0
+        },
+        {
+          "date": "t766",
+          "pnl": -1.0,
+          "cum_pnl": 134.0
+        },
+        {
+          "date": "t767",
+          "pnl": -1.0,
+          "cum_pnl": 133.0
+        },
+        {
+          "date": "t768",
+          "pnl": 0.0,
+          "cum_pnl": 133.0
+        },
+        {
+          "date": "t769",
+          "pnl": 0.0,
+          "cum_pnl": 133.0
+        },
+        {
+          "date": "t770",
+          "pnl": 0.0,
+          "cum_pnl": 133.0
+        },
+        {
+          "date": "t771",
+          "pnl": 0.0,
+          "cum_pnl": 133.0
+        },
+        {
+          "date": "t772",
+          "pnl": 0.0,
+          "cum_pnl": 133.0
+        },
+        {
+          "date": "t773",
+          "pnl": 1.0,
+          "cum_pnl": 134.0
+        },
+        {
+          "date": "t774",
+          "pnl": 0.0,
+          "cum_pnl": 134.0
+        },
+        {
+          "date": "t775",
+          "pnl": 0.0,
+          "cum_pnl": 134.0
+        },
+        {
+          "date": "t776",
+          "pnl": 0.0,
+          "cum_pnl": 134.0
+        },
+        {
+          "date": "t777",
+          "pnl": -1.0,
+          "cum_pnl": 133.0
+        },
+        {
+          "date": "t778",
+          "pnl": -1.0,
+          "cum_pnl": 132.0
+        },
+        {
+          "date": "t779",
+          "pnl": -1.0,
+          "cum_pnl": 131.0
+        },
+        {
+          "date": "t780",
+          "pnl": -1.0,
+          "cum_pnl": 130.0
+        },
+        {
+          "date": "t781",
+          "pnl": -1.0,
+          "cum_pnl": 129.0
+        },
+        {
+          "date": "t782",
+          "pnl": 0.0,
+          "cum_pnl": 129.0
+        }
+      ],
+      "coverage": 0.5895140664961637,
+      "mean_return": 0.279826464208243,
+      "sharpe": 4.621930238828312
+    },
+    "calibration": {
+      "ok": true,
+      "method": "platt",
+      "family": "nn"
+    }
+  }
+}

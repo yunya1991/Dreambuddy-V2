@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer for binance-ingest@2.service
+
+[Timer]
+OnCalendar=*:30
+Unit=binance-ingest@2.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+

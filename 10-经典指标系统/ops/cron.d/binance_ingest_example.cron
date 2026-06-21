@@ -1,0 +1,11 @@
+# 每小时分四批拉取 Top 100 USDT 对（25/批），分钟 0/15/30/45 错峰执行。
+# 请将 <PROJECT_DIR> 替换为实际项目路径，并根据需要调整 Python 可执行文件与日志路径。
+
+0 * * * * BINANCE_TOP_N=100 BINANCE_BATCH_SIZE=25 BINANCE_BATCH_INDEX=0 BINANCE_REQ_DELAY_SEC=1 BINANCE_SYMBOL_DELAY_SEC=0.5 PYTHONPATH=<PROJECT_DIR> <PROJECT_DIR>/venv/bin/python <PROJECT_DIR>/scripts/binance_tsdb_incremental.py >> /var/log/binance_ingest_0.log 2>&1
+15 * * * * BINANCE_TOP_N=100 BINANCE_BATCH_SIZE=25 BINANCE_BATCH_INDEX=1 BINANCE_REQ_DELAY_SEC=1 BINANCE_SYMBOL_DELAY_SEC=0.5 PYTHONPATH=<PROJECT_DIR> <PROJECT_DIR>/venv/bin/python <PROJECT_DIR>/scripts/binance_tsdb_incremental.py >> /var/log/binance_ingest_1.log 2>&1
+30 * * * * BINANCE_TOP_N=100 BINANCE_BATCH_SIZE=25 BINANCE_BATCH_INDEX=2 BINANCE_REQ_DELAY_SEC=1 BINANCE_SYMBOL_DELAY_SEC=0.5 PYTHONPATH=<PROJECT_DIR> <PROJECT_DIR>/venv/bin/python <PROJECT_DIR>/scripts/binance_tsdb_incremental.py >> /var/log/binance_ingest_2.log 2>&1
+45 * * * * BINANCE_TOP_N=100 BINANCE_BATCH_SIZE=25 BINANCE_BATCH_INDEX=3 BINANCE_REQ_DELAY_SEC=1 BINANCE_SYMBOL_DELAY_SEC=0.5 PYTHONPATH=<PROJECT_DIR> <PROJECT_DIR>/venv/bin/python <PROJECT_DIR>/scripts/binance_tsdb_incremental.py >> /var/log/binance_ingest_3.log 2>&1
+
+# Hyperliquid 衍生品指标（每 5 分钟一次快照）：
+*/5 * * * * PYTHONPATH=<PROJECT_DIR> <PROJECT_DIR>/venv/bin/python <PROJECT_DIR>/scripts/hl_deriv_metrics_ingest.py >> /var/log/hl_deriv_metrics.log 2>&1
+

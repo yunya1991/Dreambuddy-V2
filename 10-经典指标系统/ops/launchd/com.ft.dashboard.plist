@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>__LABEL__</string>
+
+  <key>WorkingDirectory</key>
+  <string>__PROJECT_DIR__/frontend</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>VITE_PROXY_TARGET=http://127.0.0.1:8092 if [ ! -x "./node_modules/.bin/vite" ]; then if [ -f "./package-lock.json" ]; then npm ci --include=dev; else npm install --include=dev; fi; fi; if [ ! -f "./dist/index.html" ]; then npm run build; fi; npm run preview -- --host 127.0.0.1 --port __UI_PORT__</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>__PROJECT_DIR__/user_data/logs/dashboard___UI_PORT__.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__PROJECT_DIR__/user_data/logs/dashboard___UI_PORT__.err.log</string>
+
+  <key>ThrottleInterval</key>
+  <integer>3</integer>
+</dict>
+</plist>

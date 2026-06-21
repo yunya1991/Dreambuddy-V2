@@ -1,0 +1,23 @@
+{
+  "pass": true,
+  "source_mode": "file:/tmp/signals_open_post200.json",
+  "config_check": {
+    "has_fsid_trend": true,
+    "has_fsid_breakout": true,
+    "len_fsid_trend": 58,
+    "len_fsid_breakout": 59,
+    "subset_lr_trend": 8,
+    "subset_rf_trend": 15,
+    "subset_xgb_breakout": 16,
+    "subset_nn_breakout": 12
+  },
+  "runtime_check": {
+    "events": 14,
+    "with_gate": 9,
+    "zero_take_rate": 0.7777777777777778,
+    "arena_no_taker_rate": 0.21428571428571427,
+    "pc_below_threshold_rate": 0.6428571428571429,
+    "feature_cov_events": 0,
+    "feature_cov_low_rate": null
+  }
+}

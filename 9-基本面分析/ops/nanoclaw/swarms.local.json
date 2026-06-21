@@ -1,0 +1,43 @@
+{
+  "swarms": [
+    {
+      "id": "market_intel_swarm",
+      "goal": "输出可执行的市场情报摘要并标注证据可信度",
+      "agents": [
+        {"name": "sentiment_agent", "focus": "舆情与新闻热度变化"},
+        {"name": "macro_agent", "focus": "宏观事件与风险偏好变化"},
+        {"name": "onchain_agent", "focus": "链上资金与地址行为"},
+        {"name": "strategy_review_agent", "focus": "策略表现与风险归因"}
+      ],
+      "output_contract": {
+        "required_fields": ["trace_id", "summary", "evidence", "risk_flags", "actions"],
+        "max_actions": 5
+      }
+    },
+    {
+      "id": "ops_guard_swarm",
+      "goal": "在不改交易执行面的前提下给出运维止血建议",
+      "agents": [
+        {"name": "ops_guard_agent", "focus": "系统健康与告警聚合"},
+        {"name": "execution_agent", "focus": "执行质量与异常重试"},
+        {"name": "governance_agent", "focus": "审批链与合规检查"}
+      ],
+      "output_contract": {
+        "required_fields": ["trace_id", "incident_level", "recommendations", "approval_required", "rollback_hint"],
+        "max_recommendations": 6
+      }
+    },
+    {
+      "id": "meta_evolution_swarm",
+      "goal": "融合 L3_memory.json 的日志，生成达利欧式的系统体检报告并对执行链路发起修复与演化",
+      "agents": [
+        {"name": "critic_agent", "focus": "依据达利欧原则寻找系统与策略 Bug，审视交易日志及 KPI 达标情况，评估回撤。使用 agent-browser 监控网页状态"},
+        {"name": "auto_fixer_agent", "focus": "综合不同 AI 模型 (Trae/Grok/Gemini) 的策略，联网搜索报错文档，自动在沙盒中修改 Python 策略代码及进行 pytest 回测"}
+      ],
+      "output_contract": {
+        "required_fields": ["critic_report", "bugs_found", "fixer_actions", "rollback_status"],
+        "max_actions": 3
+      }
+    }
+  ]
+}

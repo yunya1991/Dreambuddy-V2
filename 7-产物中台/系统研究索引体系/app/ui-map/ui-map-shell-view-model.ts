@@ -12,7 +12,14 @@ export interface UIMapShellOverrides {
 export interface UIMapShellViewModel {
   hero: { title: string; subtitle: string };
   sourceLayer: Array<{ title: string; description: string; bullets: string[] }>;
-  mainlineLayer: { title: string; convergenceLabel: string; chain: string };
+  mainlineLayer: { title: string; convergenceLabel: string; chain: string; summaryNote?: string };
+  businessPrecipitation: {
+    title: string;
+    description: string;
+    aggregatedAt?: string;
+    statsCards: Array<{ label: string; value: string; detail?: string }>;
+    cards: Array<{ label: string; detail: string }>;
+  };
   indexFoundation: {
     userContext: {
       title: string;
@@ -60,6 +67,13 @@ export function buildUIMapShellViewModel(
       title: "策略主线",
       convergenceLabel: "通过交易设置实现策略收口",
       chain: "策略设置成功 → 策略任务单 → 交易链条 → 交易执行 → 结果产物 → 索引",
+    },
+    businessPrecipitation: {
+      title: "业务数据沉淀层",
+      description:
+        "当前为占位模式：用户、策略、任务、执行记录、交易数据等业务沉淀数据暂未接入。接入后此处将展示最新的业务沉淀与只读入口。",
+      statsCards: [],
+      cards: [],
     },
     indexFoundation: {
       userContext: {

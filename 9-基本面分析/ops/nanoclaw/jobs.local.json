@@ -1,0 +1,40 @@
+{
+  "jobs": [
+    {
+      "id": "market_news_digest_daily",
+      "cron": "0 9 * * 1-5",
+      "group": "research-main",
+      "task": "抓取主流财经与加密新闻，输出 8 条以内的结构化摘要与风险提示，附来源链接与时间戳。"
+    },
+    {
+      "id": "market_news_digest_push_hourly",
+      "cron": "0 */8 * * *",
+      "group": "research-main",
+      "task": "执行“新闻简报落盘+日报中转V3+生产研报 API 推送+回执写回”每 8 小时任务。固定 6 步顺序：0) 启动前自检：cd ops/nanoclaw/core_task1 && bash scripts/preflight_report_push.sh，要求 env_exists/api_key_present/api_reachable 全为 true。1) 先生成简报：python3 scripts/news_digest_v2.py --hours 8 --update-mode auto --use-ollama --ollama-model qwen2.5:7b-instruct。2) 日报中转发布：push_report_api 使用 daily_report_v3_llm 模版重构对外版（sell-side 结构、Top3 固定主题结论句、核心影响事件带来源、删除“观察清单/说明”章节、补充 2.3 技术指标与解读；TAVILY_API_KEY 缺失或失败时自动降级）。3) 生产推送：python3 scripts/push_report_api.py --api-base http://8.209.238.108/api/v1 --transform-profile daily_report_v3_llm（鉴权头 X-API-Key，读取 INTERNAL_API_KEY）。4) 幂等更新：若 state 中已有 report_id 则 PUT /admin/reports/{id}，否则 POST /admin/reports。5) 失败重试：401 立即失败且不重试；5xx/超时指数退避重试（10s/30s/90s，最多 3 次），并写 outbox 回执包含 report_id、trace_id、artifact_path_raw、artifact_path_public、tavily_used、source_urls、qa_gate/qa_score/diff_audit。"
+    },
+    {
+      "id": "risk_monitor_hourly",
+      "cron": "5 * * * *",
+      "group": "ops-main",
+      "task": "读取 outbox 风险相关事件，按 trace_id 聚合，输出过去 1 小时告警摘要、潜在根因和建议处置。"
+    },
+    {
+      "id": "weekly_strategy_review",
+      "cron": "30 10 * * 1",
+      "group": "strategy-review",
+      "task": "回顾过去一周策略表现，重点列出最大回撤区间、失败交易样本、可执行的降风险建议。"
+    },
+    {
+      "id": "multi_agent_bridge_6h",
+      "cron": "10 */6 * * *",
+      "group": "research-main",
+      "task": "执行多Agent桥接，汇总 flow/narrative/skill 快照并生成 evidence_chain 与 meeting 产物，写入 core_task1/outputs/multi_agent。"
+    },
+    {
+      "id": "meta_evolution_monitor_hourly",
+      "cron": "0 * * * *",
+      "group": "evolution-main",
+      "task": "启动 Meta-Evolution Supervisor 监控链路：1. 调用 l3_command_center/main.py 运行 KPI 回测并读取内存日志。2. 若回测不达标，触发 auto-fixer 进行异常定位与沙盒修复。3. 打开监控网页截图保存。严格按照达利欧系统化机器原则产出《系统/策略体检报告》。"
+    }
+  ]
+}

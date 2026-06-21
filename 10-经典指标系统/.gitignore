@@ -1,0 +1,62 @@
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+**/node_modules/
+**/dist/
+**/build/
+
+# Logs
+*.log
+
+# Local env
+.env.local
+.env
+user_data*/.env
+.env.*.local
+.env.*.bak
+.env.bak
+
+# Data / artifacts (avoid IDE indexing)
+user_data/datasets/
+user_data/backtest_results/
+user_data/agent_outbox/
+user_data/logs/
+user_data_prod/
+backups/
+archive/
+
+# Runtime data snapshots: keep repo lightweight
+user_data_prod/*
+!user_data_prod/ml_config.json
+!user_data_prod/replay_reports/
+!user_data_prod/replay_reports/*.json
+
+# Local DB
+*.sqlite
+*.sqlite-journal
+*.db
+*.db-shm
+*.db-wal
+
+# Continue / AI Context Safety (project-level)
+**/secrets/
+**/keys/
+**/*.parquet
+**/*.csv
+**/.cache/
+
+# Nested git repos tracked separately
+ops/nanoclaw/core_task1/
+user_data/agent_repo/8abe4712cde3cb5b/
+user_data/agent_repo/a969626af38c43a5/
+user_data/agent_repo/nanoclaw/
+user_data/local_repo_freqtrade/

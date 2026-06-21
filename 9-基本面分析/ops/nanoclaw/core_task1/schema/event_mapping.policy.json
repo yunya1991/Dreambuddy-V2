@@ -1,0 +1,36 @@
+{
+  "version": "event_mapping.v1",
+  "topic_to_event_type": {
+    "geopolitics": "geopolitics",
+    "fed": "monetary_policy",
+    "us_data": "us_data",
+    "market_analysis": "market_analysis",
+    "us_policy": "market_analysis"
+  },
+  "category_to_event_type": {
+    "onchain_data": "onchain_data",
+    "kols_view": "kols_view",
+    "project_update": "project_update"
+  },
+  "keyword_rules": [
+    {
+      "event_type": "crypto_regulation",
+      "patterns": ["监管", "法案", "etf", "稳定币", "税务", "法院", "sec", "执法"]
+    },
+    {
+      "event_type": "protocol_tech",
+      "patterns": ["升级", "硬分叉", "减半", "主网", "协议", "fork", "l2", "rollup"]
+    },
+    {
+      "event_type": "security_incident",
+      "patterns": ["黑客", "被盗", "漏洞", "攻击", "桥攻击", "exploit", "hack", "ransomware"]
+    },
+    {
+      "event_type": "meme_culture",
+      "patterns": ["meme", "梗", "社区", "迷因", "主题轮动", "热度"]
+    }
+  ],
+  "macro_topics_for_expectation": ["fed", "us_data", "geopolitics", "us_policy", "market_analysis"],
+  "high_grade_event_types": ["geopolitics", "monetary_policy", "us_data", "crypto_regulation", "security_incident"],
+  "near_window_ranges": ["[0,+4h]", "[-6h,+6h]"]
+}

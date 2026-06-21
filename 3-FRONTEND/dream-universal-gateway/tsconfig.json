@@ -27,10 +27,10 @@
         "./src/*"
       ],
       "@yunya/graph-context-compressor": [
-        "../../../graph-compressor/src/index.ts"
+        "../../../6-图结构上下文压缩/index.ts"
       ],
       "@yunya/graph-context-compressor/*": [
-        "../../../graph-compressor/src/*"
+        "../../../6-图结构上下文压缩/*"
       ]
     }
   },
