@@ -1,0 +1,36 @@
+{
+  "current_version": "V9.7 Direct",
+  "updated_at": "2026-03-09T02:01:00+08:00",
+  "ledger_file": "raw/event_ledger_v97_direct.jsonl",
+  "pipeline_ledger_version": "9.7_direct",
+  "pipeline_ledger_file_pattern": "raw/event_ledger_{YYYYMMDD_HHMM}.jsonl",
+  "pipeline_entrypoint": "scripts/news_digest_v2.py --ledger-version auto",
+  "strategy_baseline": "V9.3",
+  "strategy_overlay_priority": "V9.8 Onchain",
+  "strategy_overlay_secondary": "V9.7 Direct",
+  "output_template_baseline": "V9.3",
+  "backtest_result": {
+    "total_return": "5.30%",
+    "annualized_return": "23.32%",
+    "sharpe_ratio": 0.67,
+    "max_drawdown": "15.96%",
+    "total_trades": 1
+  },
+  "comparison": {
+    "V9.3": {"total_return": "5.26%", "annualized_return": "23.12%", "sharpe_ratio": 0.68},
+    "V9.7 Direct": {"total_return": "5.30%", "annualized_return": "23.32%", "sharpe_ratio": 0.67},
+    "V9.8 Onchain": {"total_return": "5.22%", "annualized_return": "22.92%", "sharpe_ratio": 0.68}
+  },
+  "decision": "V9.7 Direct 为最终版本 (+0.04% vs V9.3)",
+  "strategy_decision_note": "运行策略口径：主策略基线 V9.3；研究与灰度叠加优先 V9.8 Onchain。",
+  "features": [
+    "V9.3 原始账本",
+    "+ 18 条顶级大 V 观点 (Vitalik/a16z/CZ)",
+    "每 5 天 1 条大 V 观点",
+    "正负信号均衡"
+  ],
+  "brief_version": "V2",
+  "brief_generator": "scripts/brief_v2_generator.py",
+  "confirmation_rule": "≥2 个不同来源一致",
+  "narrative_changelog": "raw/narrative_changelog.jsonl"
+}

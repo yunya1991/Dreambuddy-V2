@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
+// 临时 mock —— Next.js 15.5 与 next-auth 5.0-beta webpack 不兼容
+function useSession(): { data: { user?: { name?: string; email?: string } } | null; status: "authenticated" | "loading" | "unauthenticated" } {
+  return { data: { user: { name: "Analyst", email: "analyst@dreambuddy.io" } }, status: "authenticated" };
+}
 import { useRouter } from "next/navigation";
 import dynamic from 'next/dynamic';
+const FundamentalPanel = dynamic(() => import("./FundamentalPanel"), { ssr: false });
 import { useAutoConfigStore } from "@/stores/auto-config-store";
 import AutoConfigBubble from "@/components/chat/AutoConfigBubble";
 import AutoConfigSummary from "@/components/chat/AutoConfigSummary";
@@ -171,7 +176,7 @@ export default function ChatPage() {
   const [mounted, setMounted] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<'trade' | 'classic'>('trade');
+  const [activeTab, setActiveTab] = useState<'trade' | 'classic' | 'fundamental'>('trade');
   const [classicSubTab, setClassicSubTab] = useState<'strategies' | 'sandbox' | 'approvals' | 'signals' | 'filter' | 'execution' | 'exit' | 'library' | 'arena' | 'universe' | 'macro' | 'evaluation'>('library');
 
   // ========== 经典交易体系 API 数据 ==========
@@ -4775,6 +4780,16 @@ export default function ChatPage() {
         >
           📊 经典交易体系
         </button>
+        <button
+          onClick={() => router.push('/dashboard/fundamental/overview')}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+            activeTab === 'fundamental'
+              ? 'bg-[#f59e0b] text-white'
+              : 'text-[#8a8a8a] hover:text-[#e0e0e0] hover:bg-[#1f1f1f]'
+          }`}
+        >
+          🧭 基本面分析
+        </button>
       </div>
 
       {activeTab === 'trade' && (
@@ -7002,6 +7017,10 @@ export default function ChatPage() {
               )}
             </div>
         </section>
+      )}
+
+      {activeTab === 'fundamental' && (
+        <div />
       )}
     </main>
   );

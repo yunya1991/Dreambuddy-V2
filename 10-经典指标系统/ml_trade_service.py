@@ -39846,6 +39846,155 @@ def signals_hyperliquid_regime_hybrid():
     ingested, status = _emit_signal_v1(signal_payload, trigger, {"source": "api"})
     return jsonify({"ok": True, "signal": signal_payload, "ingested": ingested, "diagnostic": out}), status
 
+
+@app.route("/signals/aster/bot2trend", methods=["POST"])
+def signals_aster_bot2trend():
+    """Bot2StrategyTrend 1h → aster 执行端点。
+
+    工作流程:
+    1. 运行 Bot2StrategyTrend 策略计算信号
+    2. 通过 _emit_signal_v1 走完整信号管线
+    3. 触发 aster 实盘交易
+
+    请求参数:
+      coin         - 币种 (默认 BTC)
+      execute      - 是否实际执行 (默认 False dry-run)
+      confirm_execute - execute=True 时必须 True
+      confirm_live - 必须 True
+      notional_usdc - 名义价值 USDC (默认 15)
+      emit         - 是否注入信号 (默认 True)
+      trigger_decision - 是否触发交易 (默认 True)
+    """
+    data = request.get_json(force=True) or {}
+    if not _is_local_request():
+        return jsonify({"ok": False, "error": "forbidden", "ts": int(_now_ms())}), 403
+    if not bool(data.get("confirm_live", False)):
+        return jsonify({"ok": False, "error": "confirm_live_required"}), 400
+    guard = _check_execute_guard(data)
+    if guard is not None:
+        return guard
+
+    coin = str(data.get("coin") or data.get("pair") or "BTC")
+    coin = _hl_coin_from_pair(coin)
+
+    # 运行 Bot2StrategyTrend 策略
+    out = _run_freqtrade_strategy_signal_hyperliquid(
+        "user_data.strategies.Bot2StrategyTrend",
+        "Bot2StrategyTrend",
+        coin,
+        param_names=[
+            "adx_threshold",
+            "atr_period",
+            "atr_pct_threshold",
+            "atr_pct_quantile_threshold",
+            "atr_mult_coef",
+            "bb_period",
+            "bb_std",
+            "chop_threshold",
+            "ema_fast",
+            "ema_slow",
+            "ewo_htf_threshold",
+            "ewo_htf_period",
+            "ewo_htf_tf",
+            "ewo_ltf_threshold",
+            "ewo_ltf_period",
+            "ewo_ltf_tf",
+            "ma_trend_period",
+            "max_daily_loss",
+            "min_fomo_rsi",
+            "profit_threshold",
+            "rsi_entry_long",
+            "rsi_entry_short",
+            "rsi_period",
+            "trend_ema_period",
+            "volume_ma_period",
+            "volume_threshold",
+        ],
+    )
+    if not bool(out.get("ok")):
+        return jsonify({"ok": False, "signal": None, "diagnostic": out}), 400
+
+    # 无信号 → observe
+    if out.get("side") not in ("long", "short"):
+        return jsonify({
+            "ok": True,
+            "signal": None,
+            "action": "observe",
+            "reason": "no_signal",
+            "diagnostic": out,
+        })
+
+    # K 线未关闭 → observe
+    if not bool(out.get("bar_closed", False)):
+        return jsonify({
+            "ok": True,
+            "signal": None,
+            "action": "observe",
+            "reason": "bar_not_closed",
+            "diagnostic": out,
+        })
+
+    emit = bool(data.get("emit", True))
+    trigger = bool(data.get("trigger_decision", True))
+
+    strategy_id = "Bot2StrategyTrend"
+    meta = _get_strategy_meta(strategy_id)
+    strategy_version = str(meta.get("strategy_version") or "1.0.0")
+    group_id = str(meta.get("group_id") or "bot2_trend_1h")
+    feature_set_id = str(meta.get("feature_set_id") or "bot2_trend_1h_v1")
+
+    features = _build_features_fixed(
+        feature_set_id,
+        out.get("row") or {},
+        prev_row=(out.get("prev_row") or None),
+        params=(out.get("params") or None),
+    )
+    signal_payload = _build_signal_schema_v1(
+        venue="aster",
+        pair=str(out.get("pair")),
+        side=str(out.get("side")),
+        action="open",
+        timeframe=str(out.get("timeframe")),
+        bar_open_ms=int(out.get("bar_open_ms") or out.get("ts") or 0),
+        bar_close_ms=int(out.get("bar_close_ms") or 0),
+        bar_closed=True,
+        strategy_id=strategy_id,
+        strategy_version=strategy_version,
+        group_id=group_id,
+        feature_set_id=feature_set_id,
+        tag=(None if out.get("tag") is None else str(out.get("tag"))),
+        confidence=float(_signal_confidence(strategy_id, group_id, out.get("tag"), features)),
+        features=features,
+    )
+    # 强制使用 strategy ab_owner，走 aster
+    signal_payload["ab_owner"] = "strategy"
+    signal_payload["system_id"] = "strategy"
+    signal_payload["book_id"] = "strategy"
+    signal_payload["owner_contrib"] = {"strategy": 1.0, "quant": 0.0, "carry": 0.0, "three_screen": 0.0}
+
+    ingested = None
+    status_code = 200
+    if emit:
+        # 通过 data['execute'] 控制是否真实下单（默认 dry-run）
+        data_with_exec = dict(data)
+        data_with_exec["size"] = float(data.get("notional_usdc", data.get("size", 15.0)))
+        try:
+            ingested, status_code = _emit_signal_v1(signal_payload, trigger, {
+                "source": "signals_aster_bot2trend",
+                "data": data_with_exec,
+            })
+        except Exception as e:
+            ingested = {"ok": False, "error": str(e)}
+            status_code = 500
+
+    return jsonify({
+        "ok": True,
+        "signal": signal_payload,
+        "ingested": ingested,
+        "diagnostic": out,
+    }), status_code
+
+
 @app.route("/execution/hyperliquid/market_open", methods=["POST"])
 def hyperliquid_market_open():
     data = request.get_json(force=True) or {}

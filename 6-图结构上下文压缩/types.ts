@@ -1,148 +1,374 @@
 /**
- * 图文笔记压缩模型 — 类型定义
- * B→A→C 三层模型: Blueprint (架构层) → Architecture (DAG层) → Chronicle (执行层)
+ * 图架构压缩模块 - 基础类型定义
+ *
+ * 位置: 6-图结构上下文压缩/types.ts
+ *
+ * 定义图架构压缩模块中使用的基础类型
+ * 这些类型会在 enhanced-compressor.ts 中被扩展
  */
 
-export type NodeId = string;
+// ============================================================
+// 节点类型
+// ============================================================
 
-export type NodeStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'skipped'
-  | 'compressed'
-  | 'failed';
+/** 节点类型 */
+export type NodeType =
+  | 'blueprint'       // 蓝图节点
+  | 'architecture'    // 架构节点
+  | 'chronicle'       // 编年节点
+  | 'thinking-step'   // 思维步骤节点
+  | 'skill-call'      // 技能调用节点
+  | 'cross-validation' // 交叉验证节点
+  | 'decision'        // 决策节点
+  | 'input'           // 输入节点
+  | 'output';         // 输出节点
 
-export interface DataFlow {
-  type: string;
-  schema: string;
-  description: string;
-}
+/** 节点层级 */
+export type NodeLevel = 'B' | 'A' | 'C';
 
-export interface NodeMetadata {
-  tokenCost: number;
-  latencyMs: number;
+/** 节点状态 */
+export type NodeStatus = 'pending' | 'running' | 'completed' | 'skipped' | 'failed' | 'cancelled';
+
+/**
+ * 序列化节点
+ * 用于存储到压缩图结构中
+ */
+export interface SerializedNode {
+  /** 节点ID */
+  id: string;
+
+  /** 节点类型 */
+  type: NodeType;
+
+  /** 节点名称 */
+  name: string;
+
+  /** 节点层级 */
+  level: NodeLevel;
+
+  /** 节点状态 */
   status: NodeStatus;
-  skipReason?: string;
-  outputSummary?: string;
-  timestamp?: number;
-  tags?: string[];
-}
 
-// ============= B 层: Blueprint =============
-export interface BNode {
-  id: NodeId;
-  type: 'component' | 'module' | 'service';
-  name: string;
-  description: string;
-  metadata: NodeMetadata;
-  children?: NodeId[];
-}
+  /** Token消耗 */
+  tokens?: number;
 
-export interface BEdge {
-  source: NodeId;
-  target: NodeId;
-  dataFlow: DataFlow;
-  label?: string;
-}
+  /** 执行延迟（毫秒） */
+  latencyMs?: number;
 
-export interface BlueprintGraph {
-  id: string;
-  name: string;
-  version: string;
-  nodes: Map<NodeId, BNode>;
-  edges: BEdge[];
-  rootId: NodeId;
-  createdAt: number;
-}
+  /** 摘要描述 */
+  summary?: string;
 
-// ============= A 层: Architecture (DAG) =============
-export interface ANode {
-  id: NodeId;
-  type: 'step' | 'decision' | 'parallel';
-  name: string;
-  parentNodeId: NodeId;
-  metadata: NodeMetadata;
-  requires?: NodeId[];
-  branches?: { condition: string; target: NodeId }[];
-}
+  /** 节点元数据 */
+  meta?: Record<string, unknown>;
 
-export interface AEdge {
-  source: NodeId;
-  target: NodeId;
-  dataFlow: DataFlow;
-  isConditional?: boolean;
-}
+  /** 父节点ID */
+  parentId?: string;
 
-export interface ArchitectureGraph {
-  id: string;
-  blueprintId: string;
-  nodes: Map<NodeId, ANode>;
-  edges: AEdge[];
-  entryPoint: NodeId;
-  createdAt: number;
-}
+  /** 子节点ID列表 */
+  children?: string[];
 
-// ============= C 层: Chronicle =============
-export interface CNode {
-  id: NodeId;
-  architectureNodeId: NodeId;
-  executionId: string;
-  startTime: number;
-  endTime?: number;
-  metadata: NodeMetadata;
-  inputs: Record<string, any>;
-  outputs: Record<string, any>;
-  logs: string[];
-}
+  /** 创建时间 */
+  createdAt?: number;
 
-export interface CEdge {
-  source: NodeId;
-  target: NodeId;
-  timestamp: number;
-  dataFlow: DataFlow;
-  payloadSummary: string;
-}
-
-export interface ChronicleGraph {
-  id: string;
-  architectureId: string;
-  nodes: Map<NodeId, CNode>;
-  edges: CEdge[];
-  executionId: string;
-  startedAt: number;
+  /** 完成时间 */
   completedAt?: number;
-  /** 原始大小（字节）—— 用于压缩对比 */
-  rawSizeBytes?: number;
 }
 
-// ============= 压缩结果 =============
-export interface CompressionResult {
-  compressedChronicle: ChronicleGraph;
-  compressedArchitecture: ArchitectureGraph;
-  blueprint: BlueprintGraph;
-  /** 压缩后大小 / 原始大小 */
+// ============================================================
+// 边类型
+// ============================================================
+
+/** 边类型 */
+export type EdgeType =
+  | 'flow'           // 执行流
+  | 'requires'        // 依赖关系
+  | 'supports'        // 支持关系
+  | 'conflicts'       // 冲突关系
+  | 'extends'         // 扩展关系
+  | 'references';     // 引用关系
+
+/**
+ * 序列化边
+ */
+export interface SerializedEdge {
+  /** 边ID */
+  id: string;
+
+  /** 源节点ID */
+  sourceId: string;
+
+  /** 目标节点ID */
+  targetId: string;
+
+  /** 边类型 */
+  type: EdgeType;
+
+  /** 权重 */
+  weight?: number;
+
+  /** 标签 */
+  label?: string;
+
+  /** 元数据 */
+  meta?: Record<string, unknown>;
+}
+
+// ============================================================
+// 图数据
+// ============================================================
+
+/**
+ * 图数据
+ */
+export interface GraphData {
+  /** 节点映射 */
+  nodes: Map<string, SerializedNode>;
+
+  /** 边列表 */
+  edges: SerializedEdge[];
+
+  /** 根节点ID */
+  rootId?: string;
+
+  /** 元数据 */
+  meta?: Record<string, unknown>;
+}
+
+// ============================================================
+// 压缩结果
+// ============================================================
+
+/**
+ * 压缩结果
+ */
+export interface CompressResult {
+  /** 是否成功 */
+  ok: boolean;
+
+  /** 压缩后的图数据 */
+  graphData: GraphData;
+
+  /** 压缩统计 */
+  stats: CompressionStats;
+
+  /** 错误信息 */
+  error?: string;
+}
+
+/**
+ * 压缩统计
+ */
+export interface CompressionStats {
+  /** 原始节点数 */
+  originalNodes: number;
+
+  /** 压缩后节点数 */
+  compressedNodes: number;
+
+  /** 原始Token数 */
+  originalTokens: number;
+
+  /** 压缩后Token数 */
+  compressedTokens: number;
+
+  /** 压缩率 */
   compressionRatio: number;
-  /** 保留的上下文信息比例 */
-  retainedContext: number;
-  /** 被丢弃的详细信息 */
-  discardedDetails: { nodeId: string; reason: string }[];
-  /** 价值评分（用于调试） */
-  nodeScores?: Map<NodeId, number>;
+
+  /** 保留的关键节点 */
+  preservedCriticalNodes: string[];
+
+  /** 丢弃的节点 */
+  discardedNodes: string[];
 }
 
-export interface CompressionOptions {
-  /** 目标压缩比 0-1，默认 0.5 */
-  targetRatio?: number;
-  /** 各指标权重 */
-  weights?: {
-    tokenCost: number;
-    latency: number;
-    structuralPosition: number;
-    semanticImportance: number;
+// ============================================================
+// 推理结果
+// ============================================================
+
+/**
+ * 决策节点
+ */
+export interface DecisionNode {
+  /** 节点ID */
+  id: string;
+
+  /** 决策类型 */
+  type: 'entry' | 'branch' | 'conclusion' | 'reversal';
+
+  /** 决策描述 */
+  description: string;
+
+  /** 决策置信度 */
+  confidence: number;
+
+  /** 关联的节点ID */
+  relatedNodeIds: string[];
+}
+
+/**
+ * 推理路径
+ */
+export interface ReasoningPath {
+  /** 路径ID */
+  id: string;
+
+  /** 路径节点序列 */
+  nodeIds: string[];
+
+  /** 路径描述 */
+  description: string;
+
+  /** 路径置信度 */
+  confidence: number;
+
+  /** 路径权重 */
+  weight: number;
+}
+
+/**
+ * 冲突检测
+ */
+export interface ConflictDetection {
+  /** 冲突ID */
+  id: string;
+
+  /** 冲突类型 */
+  type: 'direction' | 'confidence' | 'logic' | 'data';
+
+  /** 涉及的节点ID */
+  involvedNodeIds: string[];
+
+  /** 冲突描述 */
+  description: string;
+
+  /** 冲突严重程度 */
+  severity: 'low' | 'medium' | 'high';
+
+  /** 建议的解决方案 */
+  suggestedResolution?: string;
+}
+
+/**
+ * 下一步建议
+ */
+export interface NextStepSuggestion {
+  /** 建议ID */
+  id: string;
+
+  /** 建议动作 */
+  action: 'call_skill' | 'collect_data' | 'validate' | 'execute' | 'wait' | 'ask_user';
+
+  /** 建议描述 */
+  description: string;
+
+  /** 建议的技能ID */
+  suggestedSkillId?: string;
+
+  /** 预期置信度提升 */
+  expectedConfidenceBoost?: number;
+
+  /** 优先级 */
+  priority: 'high' | 'medium' | 'low';
+}
+
+/**
+ * 推理结果
+ */
+export interface InferenceResult {
+  /** 会话ID */
+  sessionId: string;
+
+  /** 关键决策节点 */
+  keyDecisionNodes: DecisionNode[];
+
+  /** 推理路径 */
+  reasoningPaths: ReasoningPath[];
+
+  /** 冲突检测 */
+  conflicts: ConflictDetection[];
+
+  /** 下一步建议 */
+  nextSteps: NextStepSuggestion[];
+
+  /** 综合风险评分 (0-100) */
+  riskScore: number;
+
+  /** 推理摘要 */
+  summary: string;
+
+  /** 生成时间 */
+  generatedAt: number;
+}
+
+// ============================================================
+// 工具函数
+// ============================================================
+
+/**
+ * 创建空节点
+ */
+export function createEmptyNode(
+  id: string,
+  type: NodeType,
+  name: string,
+  level: NodeLevel = 'A'
+): SerializedNode {
+  return {
+    id,
+    type,
+    name,
+    level,
+    status: 'pending',
+    createdAt: Date.now(),
   };
-  /** 是否保留所有边（即便源/目标被压缩） */
-  keepAllEdges?: boolean;
-  /** 最小保留节点数 */
-  minNodes?: number;
+}
+
+/**
+ * 创建空边
+ */
+export function createEmptyEdge(
+  id: string,
+  sourceId: string,
+  targetId: string,
+  type: EdgeType = 'flow'
+): SerializedEdge {
+  return {
+    id,
+    sourceId,
+    targetId,
+    type,
+  };
+}
+
+/**
+ * 节点状态转中文
+ */
+export function getNodeStatusLabel(status: NodeStatus): string {
+  const labels: Record<NodeStatus, string> = {
+    pending: '等待中',
+    running: '执行中',
+    completed: '已完成',
+    skipped: '已跳过',
+    failed: '失败',
+    cancelled: '已取消',
+  };
+  return labels[status] || status;
+}
+
+/**
+ * 节点类型转中文
+ */
+export function getNodeTypeLabel(type: NodeType): string {
+  const labels: Record<NodeType, string> = {
+    blueprint: '蓝图',
+    architecture: '架构',
+    chronicle: '编年',
+    'thinking-step': '思维步骤',
+    'skill-call': '技能调用',
+    'cross-validation': '交叉验证',
+    decision: '决策',
+    input: '输入',
+    output: '输出',
+  };
+  return labels[type] || type;
 }

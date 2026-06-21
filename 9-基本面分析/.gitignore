@@ -1,0 +1,77 @@
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.venv*/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+**/node_modules/
+**/dist/
+**/build/
+
+# Logs
+*.log
+*.pid
+*.zip
+
+# Local env
+.env.local
+.env
+user_data*/.env
+.env.*.local
+.env.*.bak
+.env.bak
+
+# Data / artifacts (avoid IDE indexing)
+user_data/
+user_data/datasets/
+user_data/backtest_results/
+user_data/agent_outbox/
+user_data/logs/
+backups/
+archive/
+ops/nanoclaw/core_task1/**/outputs/
+ops/nanoclaw/core_task1/**/raw/*
+!ops/nanoclaw/core_task1/**/raw/.gitkeep
+ops/nanoclaw/core_task1/**/.ipynb_checkpoints/
+ops/nanoclaw/core_task1/**/.cache/
+ops/nanoclaw/core_task1/flow/historical_data/historical_data/
+
+# Local DB
+*.sqlite
+*.sqlite-journal
+*.db
+
+# ML artifacts
+models/**/*.xgb
+models/**/*.pkl
+models/**/*.joblib
+
+# Continue / AI Context Safety (project-level)
+**/secrets/
+**/keys/
+**/*.parquet
+**/*.csv
+**/.cache/
+
+# IDE & AI Assistants local states
+.continue/
+.continueignore
+.superpowers/
+.trae/
+
+# Pipeline local artifacts and history
+ops/nanoclaw/core_task1/historical_data/
+ops/nanoclaw/core_task1/narrative/history/
+
+# Runtime data snapshots
+storage/
+ops/nanoclaw/cache/
+EOF; __tr_native_ec=$?; pwd -P >| '/var/folders/bq/2szq0m2s51s_mq6l3rywb50m0000gn/T/agent-toolhost/jobs/job-00745546ab9f43148c7f87f52ba5f7f6/cwd.txt'; exit "$__tr_native_ec"

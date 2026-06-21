@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/nanoclaw/core_task1/anchor_registry.schema.json",
+  "title": "anchor registry",
+  "type": "object",
+  "required": [
+    "version",
+    "anchor_id",
+    "anchor_date",
+    "anchor_key",
+    "anchor_session",
+    "generated_at",
+    "file_ts",
+    "hours",
+    "market_trend_state",
+    "params",
+    "signal_snapshot",
+    "event_count",
+    "event_map",
+    "top_narratives"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "anchor_id": { "type": "string" },
+    "anchor_date": { "type": "string" },
+    "anchor_key": { "type": "string" },
+    "anchor_session": { "type": "string", "enum": ["apac", "eu", "us"] },
+    "generated_at": { "type": "string" },
+    "file_ts": { "type": "string" },
+    "hours": { "type": "integer", "minimum": 1 },
+    "anchor_source": { "type": "string" },
+    "market_trend_state": { "type": "string" },
+    "market_trend_meta": { "type": "object" },
+    "params": { "type": "object" },
+    "params_ema": { "type": "object" },
+    "adaptive_thresholds": { "type": "object" },
+    "signal_snapshot": { "type": "object" },
+    "event_count": { "type": "integer", "minimum": 0 },
+    "event_map": { "type": "object" },
+    "top_narratives": { "type": "array", "items": { "type": "object" } }
+  }
+}

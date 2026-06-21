@@ -69,3 +69,12 @@ temp/
 
 # Wiki temp files
 wiki_tmp/
+
+# Runtime data and caches
+**/user_data/
+data/knowledge_vector_cache_v2.json
+10-经典指标系统/user_data/
+9-基本面分析/.tmp_*.sh
+
+# Test outputs
+**/stress_test_output/

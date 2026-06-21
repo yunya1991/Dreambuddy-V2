@@ -30,6 +30,19 @@ export type {
   SessionData,
 } from './types';
 
+// ==================== 编排器适配器 ====================
+export {
+  OrchestrateAdapter,
+  getOrchestrateAdapter,
+  createOrchestrateAdapter,
+} from './orchestrate-adapter';
+export type {
+  OrchestrateConfig,
+  OrchestrateRequest,
+  OrchestrateResponse,
+  OrchestrateStatus,
+} from './orchestrate-adapter';
+
 // ==================== 全局单例（应用级共享） ====================
 
 let _adapter: CompressorAdapter | null = null;

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/nanoclaw/core_task1/flow_brief_request.schema.json",
+  "title": "core_task1 flow brief request contract",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event": {
+      "type": "string",
+      "const": "flow.brief.generate.request"
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 8
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 16
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "flow_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "with_news": {
+          "type": "boolean"
+        },
+        "output_path": {
+          "type": ["string", "null"]
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["flow_root", "with_news", "output_path", "timezone", "policy_version"]
+    }
+  },
+  "required": ["event", "trace_id", "idempotency_key", "requested_at", "payload"]
+}

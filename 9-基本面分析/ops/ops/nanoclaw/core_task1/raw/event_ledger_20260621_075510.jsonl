@@ -1,0 +1,6 @@
+{"ts_ms": 1782021310101, "published_at": "2026-06-21T05:55:10.101181+00:00", "event_type": "risk_action", "title": "BTC 突破 65K 阻力位", "reason": "大量市价买入单推动 BTC 快速突破 65K 阻力，短时资金流入 +0.4%。", "source": "binance_tape", "risk_action": "hold"}
+{"ts_ms": 1782010510101, "published_at": "2026-06-21T02:55:10.101181+00:00", "event_type": "news", "title": "贝莱德 IBIT 净流入创近三周新高", "reason": "IBIT 单日净流入 480 M USD，机构仓位持续扩张。", "source": "farside.co", "risk_action": "accumulate_on_dip"}
+{"ts_ms": 1781999710101, "published_at": "2026-06-20T23:55:10.101181+00:00", "event_type": "alert", "title": "RSI 超买信号（4h）", "reason": "4h RSI 上升至 76，警惕技术性回调风险。", "source": "derived", "risk_action": "partial_take_profit"}
+{"ts_ms": 1781985310101, "published_at": "2026-06-20T19:55:10.101181+00:00", "event_type": "news", "title": "美联储官员讲话暗示下半年降息", "reason": "美元指数回落至 101.5，风险资产整体受益。", "source": "reuters", "risk_action": "hold"}
+{"ts_ms": 1781963710101, "published_at": "2026-06-20T13:55:10.101181+00:00", "event_type": "position", "title": "ETH 现货 ETF 获批传闻升温", "reason": "多位 KOL 引用 SEC 流程进展，ETH Gas 价格同步上行。", "source": "twitter_snapshot", "risk_action": "accumulate"}
+{"ts_ms": 1781949310101, "published_at": "2026-06-20T09:55:10.101181+00:00", "event_type": "news", "title": "交易所净流出 -12K BTC", "reason": "过去 24 小时交易所出现明显净流出，投资者倾向持仓离场。", "source": "glassnode", "risk_action": "hodl"}
