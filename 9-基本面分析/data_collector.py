@@ -14,6 +14,13 @@ import hashlib
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 
+# 加载同目录 .env（若存在）
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+except Exception:
+    pass
+
 # ============== 全局配置 ==============
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 
