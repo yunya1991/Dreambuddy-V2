@@ -70416,6 +70416,11 @@ def _multifamily_train_cycle(now_ms: Optional[int] = None) -> Dict[str, Any]:
     TRACKER_STATE["multifamily_training_last"] = _json_sanitize(out)
     return out
 
+def _evaluation_acceptance_status(window: int = 1200, recent_minutes: int = 60, profit_days: int = 30) -> Optional[Dict[str, Any]]:
+    # Stub: referenced by _evaluation_daily_audit_compute but not defined in this file.
+    # Returns None so callers that guard with isinstance(acc, dict) degrade gracefully.
+    return None
+
 def _evaluation_daily_audit_compute(window: int = 1200, folds: int = 3, include_wfo: bool = True) -> Dict[str, Any]:
     now_ms = int(_now_ms())
     window = max(300, min(20000, int(window)))
