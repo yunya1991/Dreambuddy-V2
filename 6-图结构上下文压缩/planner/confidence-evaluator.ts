@@ -14,17 +14,17 @@
 import {
   SkillResult,
   SkillOutputs,
-} from './skill-types';
+} from './skill-types.ts';
 import {
   ThinkingStepDefinition,
   StepExecutionResult,
   Gap,
   GapType,
-} from './step-types';
+} from './step-types.ts';
 import {
   ExecutionContext,
   ConfidenceDimensions,
-} from './skill-types';
+} from './skill-types.ts';
 
 // ============================================================
 // 置信度评估结果

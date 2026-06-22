@@ -35,7 +35,7 @@ export {
   createSuccessResult,
   createFailureResult,
   createFallbackResult,
-} from './skill-types';
+} from './skill-types.ts';
 
 // 步骤类型
 export {
@@ -60,7 +60,7 @@ export {
   shouldIterate,
   shouldWarn,
   getDecision,
-} from './step-types';
+} from './step-types.ts';
 
 // 规划器类型
 export {
@@ -88,7 +88,7 @@ export {
   inferComplexity,
   inferPrimaryChain,
   calculatePlanCost,
-} from './planner-types';
+} from './planner-types.ts';
 
 // 交叉验证类型
 export {
@@ -112,28 +112,28 @@ export {
   shouldTriggerCrossValidation,
   getDirectionLabel,
   getAgreementLevelLabel,
-} from './cross-validation-types';
+} from './cross-validation-types.ts';
 
 // ============================================================
 // 类导出
 // ============================================================
 
-export { SkillsRegistry } from './skills-registry';
-export { ExecutionPlanner } from './planner';
-export { ConfidenceEvaluator } from './confidence-evaluator';
-export { SkillSelector } from './skill-selector';
-export { VotingCalculator } from './voting-calculator';
-export { CrossValidator } from './cross-validator';
+export { SkillsRegistry } from './skills-registry.ts';
+export { ExecutionPlanner } from './planner.ts';
+export { ConfidenceEvaluator } from './confidence-evaluator.ts';
+export { SkillSelector } from './skill-selector.ts';
+export { VotingCalculator } from './voting-calculator.ts';
+export { CrossValidator } from './cross-validator.ts';
 
 // ============================================================
 // 单例函数导出
 // ============================================================
 
-export { getSkillsRegistry, createSkillsRegistry } from './skills-registry';
-export { getConfidenceEvaluator } from './confidence-evaluator';
-export { getVotingCalculator } from './voting-calculator';
-export { getCrossValidator } from './cross-validator';
-export { orchestrate } from './planner';
+export { getSkillsRegistry, createSkillsRegistry } from './skills-registry.ts';
+export { getConfidenceEvaluator } from './confidence-evaluator.ts';
+export { getVotingCalculator } from './voting-calculator.ts';
+export { getCrossValidator } from './cross-validator.ts';
+export { orchestrate } from './planner.ts';
 
 // 技能注册模块 - 提供 A 系列核心技能注册功能
 export {
@@ -142,7 +142,7 @@ export {
   getSkillsSummary,
   ensureRegistryInitialized,
   A_SERIES_SKILLS,
-} from './skills-registry-init';
+} from './skills-registry-init.ts';
 
 // C/F 链技能模块
 export {
@@ -160,13 +160,13 @@ export {
   getAllFSkills,
   getAllChainSkills,
   getChainSummary,
-} from './chains-registry';
+} from './chains-registry.ts';
 
 // ============================================================
 // 工具函数
 // ============================================================
 
-import { createSuccessResult, createFailureResult } from './skill-types';
+import { createSuccessResult, createFailureResult } from './skill-types.ts';
 
 export const utils = {
   createSuccessResult,

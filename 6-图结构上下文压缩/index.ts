@@ -42,3 +42,14 @@ export { expandToArchitecture, getDependencies, getPathTo } from './architecture
 export { expandToChronicle, calculateSize, getTotalLatency, getTotalTokens } from './chronicle';
 export { compress, generateCompressionReport } from './compressor';
 export * from './types';
+
+// 双维度编排架构 planner（统一从根入口导出，避免子路径 alias 问题）
+export {
+  ExecutionPlanner,
+  ensureRegistryInitialized,
+  getSkillsSummary,
+  createDefaultContext,
+  createSuccessResult,
+  createFailureResult,
+  orchestrate,
+} from './planner/index.ts';

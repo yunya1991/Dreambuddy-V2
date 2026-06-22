@@ -19,7 +19,7 @@ import {
   createSuccessResult,
   createFailureResult,
   createFallbackResult,
-} from './skill-types';
+} from './skill-types.ts';
 import {
   ThinkingStepDefinition,
   StepExecutionResult,
@@ -29,7 +29,7 @@ import {
   C_CHAIN_STEPS,
   F_CHAIN_STEPS,
   getStepDefinition,
-} from './step-types';
+} from './step-types.ts';
 import {
   PlannerContext,
   ExecutionPlan,
@@ -40,22 +40,23 @@ import {
   PlannerConclusion,
   createDefaultPlannerContext,
   inferComplexity,
+  inferPrimaryChain,
   calculatePlanCost,
   IntentType,
-} from './planner-types';
+} from './planner-types.ts';
 import {
   SkillsRegistry,
   getSkillsRegistry,
-} from './skills-registry';
-import { SkillSelector } from './skill-selector';
-import { ConfidenceEvaluator } from './confidence-evaluator';
-import { VotingCalculator } from './voting-calculator';
-import { CrossValidator, getCrossValidator } from './cross-validator';
+} from './skills-registry.ts';
+import { SkillSelector } from './skill-selector.ts';
+import { ConfidenceEvaluator } from './confidence-evaluator.ts';
+import { VotingCalculator } from './voting-calculator.ts';
+import { CrossValidator, getCrossValidator } from './cross-validator.ts';
 import {
   CROSS_VALIDATION_CONFIGS,
   SignalDirection,
-} from './cross-validation-types';
-import { SerializedNode } from '../types';
+} from './cross-validation-types.ts';
+import { SerializedNode } from '../types.ts';
 
 // ============================================================
 // 执行规划器
@@ -142,8 +143,8 @@ export class ExecutionPlanner {
     // 1. 确定使用的链
     const chains = this.determineChains(context);
 
-    // 2. 选择主要链（使用 S 链作为主链）
-    const primaryChain = 'S';
+    // 2. 根据意图和模式推断主链
+    const primaryChain = inferPrimaryChain(context.intent, context.preferences?.tradingMode || 'ai_skill');
 
     // 3. 获取步骤定义
     const steps = this.getStepsForChain(primaryChain, context);
