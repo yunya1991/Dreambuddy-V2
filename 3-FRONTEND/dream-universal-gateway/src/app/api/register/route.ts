@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
           dailyLossPercent: 0.05,
           accountLossLimit: 2000,
           accountLossPercent: 0.2,
-          allowedSymbols: ["BTC-USDT-SWAP"],
+          allowedSymbols: JSON.stringify(["BTC-USDT-SWAP"]),
           isTradingEnabled: false,
           riskTolerance: "MODERATE",
         },
