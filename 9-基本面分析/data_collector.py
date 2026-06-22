@@ -15,10 +15,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 
 # ============== 全局配置 ==============
-TAVILY_API_KEY = os.environ.get(
-    "TAVILY_API_KEY",
-    "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",
-)
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 
 # 模块共享上下文：供 signal_engine 跨模块引用
 _MODULE_CONTEXT: Dict[str, Any] = {
