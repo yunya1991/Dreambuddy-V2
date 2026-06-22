@@ -20,7 +20,7 @@ import {
   createDefaultContext,
   createSuccessResult,
   createFailureResult,
-} from '../../../../../6-图结构上下文压缩/planner/index.ts';
+} from '@yunya/graph-context-compressor';
 
 // ============================================================
 // 类型定义
@@ -257,6 +257,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Orchestra
           skillName: sc.skillName,
           confidence: sc.result?.confidence || 0,
           latencyMs: sc.latencyMs,
+          output: sc.result?.outputs || null,
         })),
         decision: step.decision,
       }));

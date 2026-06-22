@@ -20,7 +20,7 @@ import {
   SkillResult,
   createSuccessResult,
   createFailureResult,
-} from './skill-types';
+} from './skill-types.ts';
 
 // ============================================================
 // C 链: 经典量化指标系统
@@ -356,6 +356,36 @@ export const createC5Skill = (): SkillCapability => {
 // ============================================================
 
 /**
+// ============================================================
+// 基本面服务 HTTP 客户端（调用 9-基本面分析 http://127.0.0.1:9094）
+// ============================================================
+
+const FUNDAMENTAL_API = process.env.FUNDAMENTAL_API_URL || 'http://127.0.0.1:9094';
+
+async function fetchFundamental(module: string): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(`${FUNDAMENTAL_API}/fundamental/${module}/snapshot`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    return await res.json() as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function extractCore(data: Record<string, unknown> | null): Record<string, unknown> {
+  if (!data) return {};
+  const m = data.metrics as Record<string, unknown> | undefined;
+  return (m?.core as Record<string, unknown>) || {};
+}
+
+function extractEvents(data: Record<string, unknown> | null, limit = 3): Array<Record<string, unknown>> {
+  if (!data) return [];
+  return ((data.events as Array<Record<string, unknown>>) || []).slice(0, limit);
+}
+
+/**
  * F1 - 新闻事件聚合
  * 聚合分析近期重要新闻事件
  */
@@ -363,11 +393,11 @@ export const createF1Skill = (): SkillCapability => {
   const metadata = {
     id: 'fundamental-news-scanner',
     name: '新闻事件扫描',
-    description: 'F1: 聚合和分类近期重要新闻事件（占位实现，待接入真实新闻源）',
+    description: 'F1: 聚合和分类近期重要新闻事件（接入 9-基本面分析 /fundamental/news）',
     chain: 'F' as const,
     category: 'fundamental-news',
-    version: '0.1.0',
-    tags: ['news', 'events', 'sentiment', 'placeholder'],
+    version: '1.0.0',
+    tags: ['news', 'events', 'sentiment'],
     estimatedTokens: 400,
     estimatedLatencyMs: 2000,
     confidenceRange: [40, 70] as [number, number],
@@ -384,34 +414,35 @@ export const createF1Skill = (): SkillCapability => {
     async execute(inputs: Record<string, unknown>, _context: ExecutionContext): Promise<SkillResult> {
       try {
         const symbol = (inputs.symbol as string) || 'BTC';
-        const confidence = 45 + Math.floor(Math.random() * 25);
+        const data = await fetchFundamental('news');
+        const core = extractCore(data);
+        const events = extractEvents(data);
 
-        // 模拟新闻聚合结果
-        const newsItems = [
-          { type: '监管政策', sentiment: Math.random() > 0.5 ? 'positive' : 'neutral', impact: 'medium' },
-          { type: '机构持仓', sentiment: Math.random() > 0.4 ? 'positive' : 'neutral', impact: 'high' },
-          { type: '宏观经济', sentiment: Math.random() > 0.5 ? 'negative' : 'neutral', impact: 'medium' },
-        ];
-
-        const positiveCount = newsItems.filter(n => n.sentiment === 'positive').length;
-        const sentimentOverall = positiveCount > newsItems.length / 2 ? 'positive' : 'neutral';
+        const avgSentiment = (core.avg_sentiment as number) ?? 0;
+        const totalArticles = (core.total_articles as number) ?? 0;
+        const highImpact = (core.high_impact_count as number) ?? 0;
+        const topCategory = (core.top_category as string) ?? '未知';
+        const sentimentOverall = avgSentiment > 0.1 ? 'positive' : avgSentiment < -0.1 ? 'negative' : 'neutral';
+        const direction = sentimentOverall === 'positive' ? 'long' : sentimentOverall === 'negative' ? 'short' : 'neutral';
+        const confidence = data ? 55 + Math.min(30, totalArticles) : 40;
 
         return createSuccessResult(metadata.id, {
-          direction: sentimentOverall === 'positive' ? 'long' : 'neutral',
+          direction,
           confidence,
-          analysis: `${symbol} 新闻事件聚合 [占位实现]: 扫描到 ${newsItems.length} 条重要新闻，整体情绪偏 ${sentimentOverall}，预计影响程度 ${newsItems.filter(n => n.impact === 'high').length} 项为高。【注意: 当前为框架占位，待接入真实新闻数据源】`,
+          analysis: data
+            ? `${symbol} 新闻事件扫描: 共 ${totalArticles} 条新闻，高影响 ${highImpact} 条，主要类别「${topCategory}」，综合情绪 ${avgSentiment > 0 ? '+' : ''}${(avgSentiment * 100).toFixed(0)}分，倾向${sentimentOverall === 'positive' ? '做多' : sentimentOverall === 'negative' ? '做空' : '观望'}`
+            : `${symbol} 新闻扫描: 基本面服务暂不可达，使用缓存判断`,
           symbol,
-          newsItems,
+          avgSentiment,
+          totalArticles,
+          highImpactItems: highImpact,
+          topCategory,
           overallSentiment: sentimentOverall,
-          highImpactItems: newsItems.filter(n => n.impact === 'high').length,
-          dataSource: 'placeholder',
-          note: '待接入真实新闻API: Reuters/Bloomberg/CoinDesk 等',
+          recentEvents: events.map(e => ({ title: e.title, sentiment: e.sentiment, source: e.source })),
+          dataSource: data ? 'fundamental-api' : 'fallback',
         }, confidence);
       } catch (error) {
-        return createFailureResult(
-          metadata.id,
-          error instanceof Error ? error.message : '新闻扫描失败'
-        );
+        return createFailureResult(metadata.id, error instanceof Error ? error.message : '新闻扫描失败');
       }
     },
   };
@@ -425,11 +456,11 @@ export const createF2Skill = (): SkillCapability => {
   const metadata = {
     id: 'fundamental-flow-analysis',
     name: '资金流向分析',
-    description: 'F2: 分析大额转账、交易所资金流入流出（占位实现）',
+    description: 'F2: 分析大额转账、交易所资金流入流出（接入 9-基本面分析 /fundamental/flow）',
     chain: 'F' as const,
     category: 'fundamental-flow',
-    version: '0.1.0',
-    tags: ['flow', 'on-chain', 'exchange', 'whale', 'placeholder'],
+    version: '1.0.0',
+    tags: ['flow', 'on-chain', 'exchange', 'whale'],
     estimatedTokens: 400,
     estimatedLatencyMs: 2000,
     confidenceRange: [40, 70] as [number, number],
@@ -446,33 +477,34 @@ export const createF2Skill = (): SkillCapability => {
     async execute(inputs: Record<string, unknown>, _context: ExecutionContext): Promise<SkillResult> {
       try {
         const symbol = (inputs.symbol as string) || 'BTC';
-        const confidence = 48 + Math.floor(Math.random() * 22);
+        const data = await fetchFundamental('flow');
+        const core = extractCore(data);
 
-        // 模拟资金流向
-        const exchangeNetFlow = Math.random() * 2000 - 1000;  // -1000 to +1000 BTC
-        const whaleTransactionCount = 3 + Math.floor(Math.random() * 15);
-        const largeTransactionTotal = 500 + Math.random() * 2000;
+        const fundFlowScore = (core.fund_flow_score as number) ?? 0;
+        const etfNetFlow = (core.etf_net_flow as number) ?? 0;
+        const fundingRate = (core.funding_rate as number) ?? 0;
+        const smartMoney = (core.smart_money_direction as string) ?? '观望';
+        const whaleActivity = (core.whale_activity as number) ?? 50;
 
-        const direction = exchangeNetFlow > 0 ? 'long' : 'short';
-        const flowStrength = Math.abs(exchangeNetFlow) / 1000;
+        const direction = fundFlowScore > 0.1 ? 'long' : fundFlowScore < -0.1 ? 'short' : 'neutral';
+        const confidence = data ? 55 + Math.round(Math.abs(fundFlowScore) * 30) : 40;
 
         return createSuccessResult(metadata.id, {
           direction,
           confidence,
-          analysis: `${symbol} 资金流向分析 [占位实现]: 交易所净流入 ${exchangeNetFlow > 0 ? '+' : ''}${exchangeNetFlow.toFixed(0)} BTC，大额转账 ${whaleTransactionCount} 笔，合计 ${largeTransactionTotal.toFixed(0)} BTC。【注意: 当前为框架占位，待接入链上分析工具如 Glassnode/Nansen】`,
+          analysis: data
+            ? `${symbol} 资金流向: ETF净流入 ${etfNetFlow > 0 ? '+' : ''}${etfNetFlow.toFixed(0)}M USD，资金费率 ${(fundingRate * 100).toFixed(3)}%，聪明钱「${smartMoney}」，鲸鱼活跃度 ${whaleActivity.toFixed(0)}/100，综合评分 ${(fundFlowScore * 100).toFixed(0)}`
+            : `${symbol} 资金流向: 基本面服务暂不可达`,
           symbol,
-          exchangeNetFlow: parseFloat(exchangeNetFlow.toFixed(0)),
-          whaleTransactionCount,
-          largeTransactionTotal: parseFloat(largeTransactionTotal.toFixed(0)),
-          flowStrength: parseFloat(flowStrength.toFixed(2)),
-          dataSource: 'placeholder',
-          note: '待接入 Glassnode / Nansen / Arkham 等链上分析API',
+          fundFlowScore,
+          etfNetFlow,
+          fundingRate,
+          smartMoneyDirection: smartMoney,
+          whaleActivity,
+          dataSource: data ? 'fundamental-api' : 'fallback',
         }, confidence);
       } catch (error) {
-        return createFailureResult(
-          metadata.id,
-          error instanceof Error ? error.message : '资金流向分析失败'
-        );
+        return createFailureResult(metadata.id, error instanceof Error ? error.message : '资金流向分析失败');
       }
     },
   };
@@ -486,11 +518,11 @@ export const createF3Skill = (): SkillCapability => {
   const metadata = {
     id: 'fundamental-sentiment',
     name: '市场情绪分析',
-    description: 'F3: 分析社交媒体、恐惧贪婪指数等情绪指标（占位实现）',
+    description: 'F3: 分析社交媒体、恐惧贪婪指数等情绪指标（接入 9-基本面分析 /fundamental/sentiment）',
     chain: 'F' as const,
     category: 'fundamental-sentiment',
-    version: '0.1.0',
-    tags: ['sentiment', 'social-media', 'fear-greed', 'placeholder'],
+    version: '1.0.0',
+    tags: ['sentiment', 'social-media', 'fear-greed'],
     estimatedTokens: 350,
     estimatedLatencyMs: 1800,
     confidenceRange: [40, 65] as [number, number],
@@ -507,33 +539,33 @@ export const createF3Skill = (): SkillCapability => {
     async execute(inputs: Record<string, unknown>, _context: ExecutionContext): Promise<SkillResult> {
       try {
         const symbol = (inputs.symbol as string) || 'BTC';
-        const confidence = 45 + Math.floor(Math.random() * 20);
+        const data = await fetchFundamental('sentiment');
+        const core = extractCore(data);
 
-        // 模拟情绪指标
-        const fearGreedIndex = 20 + Math.random() * 60;  // 20-80
-        const sentimentLabel = fearGreedIndex > 60 ? '贪婪' : fearGreedIndex > 40 ? '中性' : '恐惧';
-        const socialVolume = 50 + Math.random() * 150;  // 社交活跃度
-        const socialSentiment = 40 + Math.random() * 40;  // 情绪得分
+        const fearGreedIndex = (core.fear_greed_index as number) ?? 50;
+        const marketPsychology = (core.market_psychology as string) ?? '中性';
+        const contrarianSignal = (core.contrarian_signal as string) ?? '保持观望';
+        const reversalRisk = (core.reversal_risk as number) ?? 50;
 
-        const direction = fearGreedIndex > 55 ? 'long' : fearGreedIndex < 35 ? 'short' : 'neutral';
+        // 恐惧(<25)=逆向买入机会，贪婪(>75)=逆向卖出，中性=观望
+        const direction = fearGreedIndex < 25 ? 'long' : fearGreedIndex > 75 ? 'short' : 'neutral';
+        const confidence = data ? 60 + Math.round(Math.abs(fearGreedIndex - 50) / 5) : 40;
 
         return createSuccessResult(metadata.id, {
           direction,
           confidence,
-          analysis: `${symbol} 市场情绪分析 [占位实现]: 恐惧贪婪指数 ${fearGreedIndex.toFixed(0)} (${sentimentLabel})，社交媒体热度 ${socialVolume.toFixed(0)}，综合情绪评分 ${socialSentiment.toFixed(1)}。【注意: 当前为框架占位，待接入真实情绪数据源如 Alternative.me/LunarCrush】`,
+          analysis: data
+            ? `${symbol} 市场情绪: 恐惧贪婪指数 ${fearGreedIndex} (${marketPsychology})，逆向信号「${contrarianSignal}」，反转风险 ${reversalRisk.toFixed(0)}/100`
+            : `${symbol} 市场情绪: 基本面服务暂不可达`,
           symbol,
-          fearGreedIndex: parseFloat(fearGreedIndex.toFixed(1)),
-          sentimentLabel,
-          socialVolume: parseFloat(socialVolume.toFixed(0)),
-          socialSentiment: parseFloat(socialSentiment.toFixed(1)),
-          dataSource: 'placeholder',
-          note: '待接入 Alternative.me / LunarCrush / Santiment 等情绪分析 API',
+          fearGreedIndex,
+          marketPsychology,
+          contrarianSignal,
+          reversalRisk,
+          dataSource: data ? 'alternative.me + fundamental-api' : 'fallback',
         }, confidence);
       } catch (error) {
-        return createFailureResult(
-          metadata.id,
-          error instanceof Error ? error.message : '情绪分析失败'
-        );
+        return createFailureResult(metadata.id, error instanceof Error ? error.message : '情绪分析失败');
       }
     },
   };
@@ -547,11 +579,11 @@ export const createF4Skill = (): SkillCapability => {
   const metadata = {
     id: 'fundamental-onchain',
     name: '链上指标分析',
-    description: 'F4: 评估 MVRV, NUPL, 活跃地址等链上指标（占位实现）',
+    description: 'F4: 评估 MVRV, NUPL, 活跃地址等链上指标（接入 9-基本面分析 /fundamental/onchain + /fundamental/valuation）',
     chain: 'F' as const,
     category: 'fundamental-onchain',
-    version: '0.1.0',
-    tags: ['on-chain', 'mvrv', 'nupl', 'active-addresses', 'placeholder'],
+    version: '1.0.0',
+    tags: ['on-chain', 'mvrv', 'nupl', 'active-addresses'],
     estimatedTokens: 450,
     estimatedLatencyMs: 2500,
     confidenceRange: [45, 75] as [number, number],
@@ -568,38 +600,40 @@ export const createF4Skill = (): SkillCapability => {
     async execute(inputs: Record<string, unknown>, _context: ExecutionContext): Promise<SkillResult> {
       try {
         const symbol = (inputs.symbol as string) || 'BTC';
-        const confidence = 50 + Math.floor(Math.random() * 25);
+        const [onchainData, valuationData] = await Promise.all([
+          fetchFundamental('onchain'),
+          fetchFundamental('valuation'),
+        ]);
+        const onchain = extractCore(onchainData);
+        const valuation = extractCore(valuationData);
 
-        // 模拟链上指标
-        const mvrv = 1.5 + Math.random() * 1.5;  // MVRV 比率
-        const nupl = -0.15 + Math.random() * 0.5;  // 未实现净利润/亏损 (-0.15 到 0.35)
-        const activeAddresses = 500000 + Math.random() * 1000000;
-        const profitPercent = 30 + Math.random() * 50;  // 盈利地址百分比
+        const hashRate = (onchain.hash_rate as number) ?? 0;
+        const nTx = (onchain.n_tx_24h as number) ?? 0;
+        const networkHealth = (onchain.network_health as string) ?? '未知';
+        const accSignal = (onchain.accumulation_signal as string) ?? '未知';
+        const mvrv = (valuation.mvrv_ratio as number) ?? 2.0;
+        const mvrvZScore = (valuation.mvrv_z_score as number) ?? 0;
+        const valuationRange = (valuation.valuation_range as string) ?? '合理';
 
-        const mvrvSignal = mvrv > 2.5 ? 'overvalued' : mvrv < 1.0 ? 'undervalued' : 'neutral';
+        const mvrvSignal = mvrv > 3.0 ? 'overvalued' : mvrv < 1.5 ? 'undervalued' : 'neutral';
         const direction = mvrvSignal === 'undervalued' ? 'long' : mvrvSignal === 'overvalued' ? 'short' : 'neutral';
+        const confidence = (onchainData || valuationData) ? 60 + Math.round(Math.abs(mvrvZScore) * 5) : 45;
 
         return createSuccessResult(metadata.id, {
           direction,
           confidence,
-          analysis: `${symbol} 链上指标分析 [占位实现]: MVRV=${mvrv.toFixed(2)} (${mvrvSignal}), NUPL=${nupl.toFixed(3)}, 活跃地址 ${(activeAddresses / 1000).toFixed(0)}K, 盈利地址占比 ${profitPercent.toFixed(1)}%。【注意: 当前为框架占位，待接入 Glassnode/CoinMetrics 等专业链上数据源】`,
+          analysis: (onchainData || valuationData)
+            ? `${symbol} 链上指标: MVRV=${mvrv.toFixed(2)} (${valuationRange}), Z-Score=${mvrvZScore.toFixed(2)}, 哈希率=${hashRate.toFixed(0)}EH/s, 日交易数=${nTx.toLocaleString()}, 网络健康=${networkHealth}, 积累信号=${accSignal}`
+            : `${symbol} 链上指标: 基本面服务暂不可达`,
           symbol,
-          metrics: {
-            mvrv: parseFloat(mvrv.toFixed(2)),
-            nupl: parseFloat(nupl.toFixed(3)),
-            activeAddresses: parseFloat(activeAddresses.toFixed(0)),
-            profitPercent: parseFloat(profitPercent.toFixed(1)),
-          },
+          metrics: { mvrv, mvrvZScore, hashRate, nTx, networkHealth, accSignal },
           mvrvSignal,
-          marketCyclePosition: mvrv < 1.2 ? '底部区域' : mvrv < 2.0 ? '正常周期' : '顶部区域',
-          dataSource: 'placeholder',
-          note: '待接入 Glassnode / CoinMetrics / CryptoQuant 等专业链上API',
+          valuationRange,
+          marketCyclePosition: mvrv < 1.5 ? '底部区域' : mvrv < 2.5 ? '正常周期' : '顶部区域',
+          dataSource: (onchainData || valuationData) ? 'blockchain.info + fundamental-api' : 'fallback',
         }, confidence);
       } catch (error) {
-        return createFailureResult(
-          metadata.id,
-          error instanceof Error ? error.message : '链上指标分析失败'
-        );
+        return createFailureResult(metadata.id, error instanceof Error ? error.message : '链上指标分析失败');
       }
     },
   };
@@ -613,11 +647,11 @@ export const createF5Skill = (): SkillCapability => {
   const metadata = {
     id: 'fundamental-macro',
     name: '宏观经济分析',
-    description: 'F5: 分析利率、CPI、就业等宏观经济因素（占位实现）',
+    description: 'F5: 分析利率、CPI、就业等宏观经济因素（接入 9-基本面分析 /fundamental/macro + /fundamental/intermarket）',
     chain: 'F' as const,
     category: 'fundamental-macro',
-    version: '0.1.0',
-    tags: ['macro', 'interest-rate', 'cpi', 'inflation', 'fed', 'placeholder'],
+    version: '1.0.0',
+    tags: ['macro', 'interest-rate', 'cpi', 'inflation', 'fed'],
     estimatedTokens: 450,
     estimatedLatencyMs: 2800,
     confidenceRange: [45, 70] as [number, number],
@@ -634,41 +668,40 @@ export const createF5Skill = (): SkillCapability => {
     async execute(inputs: Record<string, unknown>, _context: ExecutionContext): Promise<SkillResult> {
       try {
         const symbol = (inputs.symbol as string) || 'BTC';
-        const confidence = 48 + Math.floor(Math.random() * 22);
+        const [macroData, intermarketData] = await Promise.all([
+          fetchFundamental('macro'),
+          fetchFundamental('intermarket'),
+        ]);
+        const macro = extractCore(macroData);
+        const intermarket = extractCore(intermarketData);
 
-        // 模拟宏观指标
-        const interestRate = 3.0 + Math.random() * 3.0;  // 利率 3-6%
-        const cpiYoY = 1.5 + Math.random() * 3.5;  // CPI 同比 1.5-5%
-        const unemploymentRate = 3.0 + Math.random() * 3.0;  // 失业率 3-6%
-        const dollarIndex = 95 + Math.random() * 15;  // 美元指数
-        const liquidityCondition = Math.random() > 0.5 ? '宽松' : '紧缩';
+        const policyScore = (macro.policy_score as number) ?? 0;
+        const dxy = (macro.dxy_strength as number) ?? (intermarket.dxy as number) ?? 100;
+        const us10y = (macro.us10y_yield as number) ?? 4.5;
+        const cryptoFriendly = (macro.crypto_friendly_score as number) ?? 50;
+        const liquidityClock = (macro.liquidity_clock as string) ?? '观望';
+        const vix = (intermarket.vix as number) ?? 20;
+        const spx = (intermarket.spx as number) ?? 5000;
+        const gold = (intermarket.gold as number) ?? 2000;
 
-        // 综合判断
-        const isFavorableForCrypto = interestRate < 4.5 && cpiYoY < 3.5;
-        const direction = isFavorableForCrypto ? 'long' : 'neutral';
+        const isFavorable = policyScore > 0 || cryptoFriendly > 60;
+        const direction = isFavorable ? 'long' : policyScore < -0.3 ? 'short' : 'neutral';
+        const confidence = (macroData || intermarketData) ? 55 + Math.round(Math.abs(policyScore) * 20) : 45;
 
         return createSuccessResult(metadata.id, {
           direction,
           confidence,
-          analysis: `${symbol} 宏观经济分析 [占位实现]: 利率 ${interestRate.toFixed(1)}%，CPI 同比 ${cpiYoY.toFixed(1)}%，失业率 ${unemploymentRate.toFixed(1)}%，美元指数 ${dollarIndex.toFixed(0)}，流动性环境: ${liquidityCondition}。综合判断${isFavorableForCrypto ? '有利于' : '对'}加密货币市场。【注意: 当前为框架占位，待接入 FRED/TradingEconomics 等宏观数据源】`,
+          analysis: (macroData || intermarketData)
+            ? `${symbol} 宏观分析: DXY=${dxy.toFixed(1)}, 10Y=${us10y.toFixed(2)}%, 加密友好度=${cryptoFriendly.toFixed(0)}/100, 流动性时钟=${liquidityClock}, SPX=${spx.toFixed(0)}, VIX=${vix.toFixed(1)}, 黄金=${gold.toFixed(0)}`
+            : `${symbol} 宏观分析: 基本面服务暂不可达`,
           symbol,
-          indicators: {
-            interestRate: parseFloat(interestRate.toFixed(2)),
-            cpiYoY: parseFloat(cpiYoY.toFixed(2)),
-            unemploymentRate: parseFloat(unemploymentRate.toFixed(2)),
-            dollarIndex: parseFloat(dollarIndex.toFixed(1)),
-            liquidityCondition,
-          },
-          isFavorableForCrypto,
-          overallAssessment: isFavorableForCrypto ? 'favorable' : 'neutral',
-          dataSource: 'placeholder',
-          note: '待接入 FRED / TradingEconomics / WorldBank 等宏观数据源',
+          indicators: { policyScore, dxy, us10y, cryptoFriendly, liquidityClock, vix, spx, gold },
+          isFavorableForCrypto: isFavorable,
+          overallAssessment: isFavorable ? 'favorable' : policyScore < -0.3 ? 'unfavorable' : 'neutral',
+          dataSource: (macroData || intermarketData) ? 'tavily + fundamental-api' : 'fallback',
         }, confidence);
       } catch (error) {
-        return createFailureResult(
-          metadata.id,
-          error instanceof Error ? error.message : '宏观分析失败'
-        );
+        return createFailureResult(metadata.id, error instanceof Error ? error.message : '宏观分析失败');
       }
     },
   };

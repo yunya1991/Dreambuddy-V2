@@ -16,9 +16,9 @@ import {
   SkillResult,
   createSuccessResult,
   createFailureResult,
-} from './skill-types';
-import { SkillsRegistry, getSkillsRegistry } from './skills-registry';
-import { getAllCSkills, getAllFSkills } from './chains-registry';
+} from './skill-types.ts';
+import { SkillsRegistry, getSkillsRegistry } from './skills-registry.ts';
+import { getAllCSkills, getAllFSkills } from './chains-registry.ts';
 
 // ============================================================
 // 技能工厂函数 - 统一创建 SkillCapability 的工具
@@ -480,21 +480,43 @@ const fundamentalNewsSkill = createSkill({
 
   async execute(inputs, context): Promise<SkillResult> {
     const symbol = (inputs.symbol as string) || context.symbol || 'BTC';
-    const confidence = 60 + Math.floor(Math.random() * 20);
-    const newsCount = 3 + Math.floor(Math.random() * 5);
-
+    try {
+      const FUNDAMENTAL_API = process.env.FUNDAMENTAL_API_URL || 'http://127.0.0.1:9094';
+      const res = await fetch(`${FUNDAMENTAL_API}/fundamental/news/snapshot`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok) {
+        const data = await res.json() as Record<string, unknown>;
+        const core = ((data.metrics as Record<string, unknown>)?.core as Record<string, unknown>) || {};
+        const events = (data.events as Array<Record<string, unknown>>) || [];
+        const avgSentiment = (core.avg_sentiment as number) ?? 0;
+        const totalArticles = (core.total_articles as number) ?? 0;
+        const highImpact = (core.high_impact_count as number) ?? 0;
+        const topCategory = (core.top_category as string) ?? '未知';
+        const sentimentLabel = avgSentiment > 0.1 ? '积极' : avgSentiment < -0.1 ? '消极' : '中性';
+        const direction = avgSentiment > 0.1 ? 'long' : avgSentiment < -0.1 ? 'short' : 'neutral';
+        const confidence = Math.min(85, 60 + totalArticles);
+        return createSuccessResult('dream-fundamental-news', {
+          direction,
+          confidence,
+          analysis: `${symbol} 新闻聚合: ${totalArticles} 条新闻，高影响 ${highImpact} 条，主类别「${topCategory}」，综合情绪${sentimentLabel}`,
+          symbol,
+          newsCount: totalArticles,
+          avgSentiment,
+          highImpactCount: highImpact,
+          topCategory,
+          newsSentiment: sentimentLabel,
+          keyEvents: events.slice(0, 3).map((e: Record<string, unknown>) => e.title as string),
+          dataSource: 'fundamental-api',
+        }, confidence);
+      }
+    } catch (_e) { /* fallback below */ }
+    // fallback
+    const confidence = 55;
     return createSuccessResult('dream-fundamental-news', {
-      direction: 'neutral',
-      confidence,
-      analysis: `${symbol} 基本面分析: 近期有 ${newsCount} 条重要新闻，整体情绪偏${Math.random() > 0.5 ? '积极' : '中性'}`,
-      symbol,
-      newsCount,
-      newsSentiment: Math.random() > 0.5 ? 'positive' : 'neutral',
-      keyEvents: [
-        '监管政策更新',
-        '机构投资者动态',
-        '宏观经济指标发布',
-      ],
+      direction: 'neutral', confidence,
+      analysis: `${symbol} 新闻聚合: 基本面服务暂不可达，使用默认值`,
+      symbol, newsCount: 0, dataSource: 'fallback',
     }, confidence);
   },
 });

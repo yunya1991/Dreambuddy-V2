@@ -16,12 +16,12 @@ import {
   SkillRecommendation,
   ExecutionContext,
   SkillChain,
-} from './skill-types';
+} from './skill-types.ts';
 import {
   ThinkingStepDefinition,
   PlannedSkillCall,
-} from './planner-types';
-import { SkillsRegistry } from './skills-registry';
+} from './planner-types.ts';
+import { SkillsRegistry } from './skills-registry.ts';
 
 // ============================================================
 // 技能选择器

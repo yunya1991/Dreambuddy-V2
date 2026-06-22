@@ -7,9 +7,9 @@
  * 多源印证 → 高置信度 / 链间冲突 → 深入分析
  */
 
-import { SkillChain } from './skill-types';
-import { ThinkStage } from './step-types';
-import { SerializedNode } from '../types';
+import { SkillChain } from './skill-types.ts';
+import { ThinkStage } from './step-types.ts';
+import { SerializedNode } from '../types.ts';
 
 // ============================================================
 // 交叉验证配置
