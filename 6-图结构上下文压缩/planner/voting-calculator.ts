@@ -14,11 +14,11 @@
 import {
   ChainWeights,
   SignalDirection,
-} from './cross-validation-types';
+} from './cross-validation-types.ts';
 import {
   SkillChain,
   SkillResult,
-} from './skill-types';
+} from './skill-types.ts';
 import {
   DEFAULT_VOTING_CONFIG,
   VotingConfig,
@@ -26,7 +26,7 @@ import {
   VoteConsensus,
   Conflict,
   AgreementLevel,
-} from './cross-validation-types';
+} from './cross-validation-types.ts';
 
 // ============================================================
 // 投票结果

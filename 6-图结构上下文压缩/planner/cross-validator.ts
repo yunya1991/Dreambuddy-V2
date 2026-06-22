@@ -15,10 +15,10 @@
 import {
   SkillChain,
   SkillResult,
-} from './skill-types';
+} from './skill-types.ts';
 import {
   StepExecutionResult,
-} from './step-types';
+} from './step-types.ts';
 import {
   CrossValidationConfig,
   CrossValidationNode,
@@ -28,9 +28,9 @@ import {
   CROSS_VALIDATION_CONFIGS,
   getDirectionLabel,
   getAgreementLevelLabel,
-} from './cross-validation-types';
-import { VotingCalculator } from './voting-calculator';
-import { SerializedNode } from '../types';
+} from './cross-validation-types.ts';
+import { VotingCalculator } from './voting-calculator.ts';
+import { SerializedNode } from '../types.ts';
 
 // ============================================================
 // 交叉验证器

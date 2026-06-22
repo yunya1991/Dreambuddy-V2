@@ -23,7 +23,7 @@ import {
   SkillStatus,
   SkillResult,
   createFallbackResult,
-} from './skill-types';
+} from './skill-types.ts';
 
 // ============================================================
 // 技能注册表

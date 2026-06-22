@@ -7,8 +7,8 @@
  * 每步内部由 AI 推理动态决定：调用什么技能、如何评估、是否迭代
  */
 
-import { SkillChain, SkillResult, ThinkStage } from './skill-types';
-import { SerializedNode } from '../types';
+import { SkillChain, SkillResult, ThinkStage } from './skill-types.ts';
+import { SerializedNode } from '../types.ts';
 
 // ============================================================
 // 步骤定义
