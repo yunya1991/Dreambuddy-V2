@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AB Trading Monitor — DreamBuddy v2</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #7d8590; --green: #3fb950; --red: #f85149;
+    --yellow: #d29922; --blue: #58a6ff; --purple: #bc8cff;
+    --a-color: #58a6ff; --b-color: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, 'SF Pro Text', sans-serif; font-size: 13px; }
+
+  /* Layout */
+  .header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.3px; }
+  .header .live { display: flex; align-items: center; gap: 6px; color: var(--green); font-size: 12px; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .last-update { color: var(--muted); font-size: 11px; }
+
+  .main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px; max-width: 1400px; }
+  .full-width { grid-column: 1 / -1; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .card-title .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot-a { background: var(--a-color); }
+  .dot-b { background: var(--b-color); }
+  .dot-green { background: var(--green); }
+
+  /* Account stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stat { }
+  .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  .neutral { color: var(--yellow); }
+
+  /* Agent header */
+  .agent-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .agent-name { font-size: 14px; font-weight: 600; }
+  .agent-name.a { color: var(--a-color); }
+  .agent-name.b { color: var(--b-color); }
+  .badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600; text-transform: uppercase; }
+  .badge-perp { background: rgba(88,166,255,0.15); color: var(--a-color); border: 1px solid rgba(88,166,255,0.3); }
+  .badge-spot { background: rgba(188,140,255,0.15); color: var(--b-color); border: 1px solid rgba(188,140,255,0.3); }
+  .badge-long { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .badge-hold { background: rgba(125,133,144,0.15); color: var(--muted); border: 1px solid rgba(125,133,144,0.3); }
+  .badge-block { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+  .badge-pass { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+
+  /* Positions */
+  .position-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .position-row:last-child { border-bottom: none; }
+  .pos-coin { font-weight: 600; font-size: 14px; }
+  .pos-detail { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .pos-pnl { text-align: right; }
+  .pos-pnl-val { font-weight: 600; font-size: 14px; }
+  .no-position { color: var(--muted); font-style: italic; text-align: center; padding: 16px 0; }
+
+  /* Chart */
+  #pnl-chart { width: 100%; height: 200px; }
+  .chart-legend { display: flex; gap: 16px; margin-top: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .legend-line { width: 20px; height: 2px; border-radius: 2px; }
+
+  /* Trade log */
+  .log-table { width: 100%; border-collapse: collapse; }
+  .log-table th { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+  .log-table td { padding: 8px 8px; border-bottom: 1px solid rgba(48,54,61,0.5); vertical-align: top; }
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .agent-tag { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; }
+  .tag-a { background: rgba(88,166,255,0.2); color: var(--a-color); }
+  .tag-b { background: rgba(188,140,255,0.2); color: var(--b-color); }
+  .reasoning-text { color: var(--muted); font-size: 11px; line-height: 1.5; max-width: 320px; }
+  .reasoning-steps { list-style: none; }
+  .reasoning-steps li::before { content: "→ "; color: var(--muted); }
+  .reasoning-steps li { padding: 1px 0; }
+
+  /* Memory */
+  .memory-section { margin-bottom: 14px; }
+  .memory-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
+  .memory-tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin: 2px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+  .lessons-list { list-style: none; }
+  .lessons-list li { padding: 6px 0; border-bottom: 1px solid rgba(48,54,61,0.5); font-size: 12px; color: var(--muted); display: flex; gap: 8px; }
+  .lessons-list li:last-child { border-bottom: none; }
+  .lesson-num { color: var(--yellow); font-weight: 600; flex-shrink: 0; }
+  .empty-lessons { color: var(--muted); font-style: italic; font-size: 12px; text-align: center; padding: 12px 0; }
+  .master-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(210,153,34,0.15); border: 1px solid rgba(210,153,34,0.3); color: var(--yellow); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+  /* Confidence bar */
+  .conf-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .conf-bar-bg { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .conf-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+  .conf-value { font-size: 11px; font-weight: 600; width: 32px; text-align: right; flex-shrink: 0; }
+
+  /* Gate indicator */
+  .gate-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+  .gate-label { font-size: 12px; color: var(--muted); }
+
+  /* Scrollable */
+  .scrollable { max-height: 320px; overflow-y: auto; }
+  .scrollable::-webkit-scrollbar { width: 4px; }
+  .scrollable::-webkit-scrollbar-track { background: transparent; }
+  .scrollable::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+  /* Comparison */
+  .compare-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(48,54,61,0.5); }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-metric { width: 140px; font-size: 12px; color: var(--muted); flex-shrink: 0; }
+  .compare-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .compare-bar-row { display: flex; align-items: center; gap: 6px; }
+  .compare-bar-label { width: 14px; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .compare-bar-label.a { color: var(--a-color); }
+  .compare-bar-label.b { color: var(--b-color); }
+  .bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .bar-fill-a { height: 100%; border-radius: 3px; background: var(--a-color); }
+  .bar-fill-b { height: 100%; border-radius: 3px; background: var(--b-color); }
+  .compare-val { width: 40px; font-size: 11px; text-align: right; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ AB Trading Monitor — DreamBuddy v2 实验</h1>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="live"><div class="live-dot"></div>实盘运行中</div>
+    <div class="last-update" id="last-update">加载中...</div>
+    <button onclick="loadData()" style="background:var(--border);border:none;color:var(--text);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px">刷新</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- 账户总览 -->
+  <div class="card full-width">
+    <div class="card-title"><div class="dot dot-green"></div>账户总览</div>
+    <div class="stats-grid" id="account-stats">
+      <div class="stat"><div class="stat-label">合约账户（Agent A）</div><div class="stat-value" id="perp-equity">--</div><div class="stat-sub" id="perp-positions">加载中...</div></div>
+      <div class="stat"><div class="stat-label">现货账户（Agent B）</div><div class="stat-value" id="spot-usdc">--</div><div class="stat-sub">BTC/ETH/SOL 现货</div></div>
+      <div class="stat"><div class="stat-label">总资产</div><div class="stat-value" id="total-equity">--</div><div class="stat-sub" id="total-change">初始资金 $125</div></div>
+    </div>
+  </div>
+
+  <!-- Agent A 状态 -->
+  <div class="card">
+    <div class="agent-header">
+      <div class="agent-name a">Agent A — Raw Claude</div>
+      <span class="badge badge-perp">合约 3x</span>
+    </div>
+    <div id="agent-a-positions"></div>
+    <div class="divider"></div>
+    <div class="gate-row">
+      <span class="gate-label">最新决策</span>
+      <span id="a-last-action" class="badge">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">置信度</span>
+      <div class="conf-bar-wrap" style="flex:1;margin-left:8px">
+        <div class="conf-bar-bg"><div class="conf-bar-fill" id="a-conf-bar" style="width:0%;background:var(--a-color)"></div></div>
+        <span class="conf-value" id="a-conf-val">--</span>
+      </div>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">当前大师</span>
+      <span class="master-badge">📈 Jesse Livermore</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">本轮标的</span>
+      <span id="a-coin" style="font-weight:600">--</span>
+    </div>
+  </div>
+
+  <!-- Agent B 状态 -->
+  <div class="card">
+    <div class="agent-header">
+      <div class="agent-name b">Agent B — DreamBuddy v2</div>
+      <span class="badge badge-spot">现货 1x</span>
+    </div>
+    <div id="agent-b-positions">
+      <div class="no-position">无持仓（观望中）</div>
+    </div>
+    <div class="divider"></div>
+    <div class="gate-row">
+      <span class="gate-label">最新决策</span>
+      <span id="b-last-action" class="badge">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">置信度</span>
+      <div class="conf-bar-wrap" style="flex:1;margin-left:8px">
+        <div class="conf-bar-bg"><div class="conf-bar-fill" id="b-conf-bar" style="width:0%;background:var(--b-color)"></div></div>
+        <span class="conf-value" id="b-conf-val">--</span>
+      </div>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">A7门禁</span>
+      <span id="b-gate" class="badge">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">矛盾面</span>
+      <span id="b-regime" style="font-size:12px;color:var(--muted)">--</span>
+    </div>
+  </div>
+
+  <!-- PnL 收益率对比图 -->
+  <div class="card full-width">
+    <div class="card-title"><div class="dot dot-green"></div>收益率对比（每轮权益变化）</div>
+    <canvas id="pnl-chart"></canvas>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-line" style="background:var(--a-color)"></div>Agent A（Raw Claude）</div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--b-color)"></div>Agent B（DreamBuddy v2）</div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--border);border-top:1px dashed var(--muted)"></div>基准（$125）</div>
+    </div>
+  </div>
+
+  <!-- 操作记录 + 推理过程 -->
+  <div class="card full-width">
+    <div class="card-title"><div class="dot dot-green"></div>操作记录 & 推理过程（最近20条）</div>
+    <div class="scrollable">
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>Agent</th>
+            <th>标的</th>
+            <th>决策</th>
+            <th>置信度</th>
+            <th>Regime</th>
+            <th>推理依据</th>
+            <th>执行结果</th>
+          </tr>
+        </thead>
+        <tbody id="log-tbody">
+          <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Agent B 记忆系统 -->
+  <div class="card">
+    <div class="card-title"><div class="dot dot-b"></div>Agent B — 记忆 & 系统状态</div>
+    <div class="memory-section">
+      <div class="memory-label">调用的系统模块</div>
+      <div id="b-features"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="memory-section">
+      <div class="memory-label">矛盾维度分析</div>
+      <div id="b-contradictions" style="font-size:12px;line-height:1.8;color:var(--muted)">--</div>
+    </div>
+    <div class="divider"></div>
+    <div class="memory-section">
+      <div class="memory-label">经验教训（Lessons）</div>
+      <div id="b-lessons">
+        <div class="empty-lessons">暂无教训记录，等待交易结果回填</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AB 对比指标 -->
+  <div class="card">
+    <div class="card-title"><div class="dot dot-green"></div>AB 对比指标</div>
+    <div id="compare-metrics">
+      <div class="compare-row">
+        <div class="compare-metric">总交易次数</div>
+        <div class="compare-bars">
+          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-trades" style="width:0%"></div></div><span class="compare-val" id="val-a-trades">0</span></div>
+          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-trades" style="width:0%"></div></div><span class="compare-val" id="val-b-trades">0</span></div>
+        </div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-metric">平均置信度</div>
+        <div class="compare-bars">
+          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-conf" style="width:0%"></div></div><span class="compare-val" id="val-a-conf">--</span></div>
+          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-conf" style="width:0%"></div></div><span class="compare-val" id="val-b-conf">--</span></div>
+        </div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-metric">A7拦截率</div>
+        <div class="compare-bars">
+          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-hold" style="width:0%"></div></div><span class="compare-val" id="val-a-hold">--</span></div>
+          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-hold" style="width:0%"></div></div><span class="compare-val" id="val-b-hold">--</span></div>
+        </div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-metric">推理步骤深度</div>
+        <div class="compare-bars">
+          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-depth" style="width:0%"></div></div><span class="compare-val" id="val-a-depth">--</span></div>
+          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-depth" style="width:0%"></div></div><span class="compare-val" id="val-b-depth">--</span></div>
+        </div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-metric">系统模块调用</div>
+        <div class="compare-bars">
+          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-feat" style="width:0%"></div></div><span class="compare-val" id="val-a-feat">--</span></div>
+          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-feat" style="width:0%"></div></div><span class="compare-val" id="val-b-feat">--</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── 数据加载（从本地 JSON 文件读取）─────────────────────────────────────────
+// 生产环境：通过 data-server.py 提供 /api/logs 接口
+// 开发环境：直接内嵌（下方 MOCK_DATA 会被替换）
+
+const LOG_DIR_A = './logs/agent_a/';
+const LOG_DIR_B = './logs/agent_b/';
+
+// 内嵌最新数据（由 data-server.py 或刷新脚本注入）
+let STATE = {
+  perp_equity: 0,
+  perp_positions: [],
+  spot_usdc: 0,
+  logs_a: [],
+  logs_b: [],
+  loaded: false
+};
+
+// ── 工具函数 ──────────────────────────────────────────────────────────────
+function fmt(n, d=2) { return n != null ? Number(n).toFixed(d) : '--'; }
+function fmtTime(ts) {
+  if (!ts) return '--';
+  const d = new Date(ts.replace('T',' ')+'Z');
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function pct(n) { return n != null ? `${(n*100).toFixed(1)}%` : '--'; }
+function colorClass(v) { return v > 0 ? 'up' : v < 0 ? 'down' : 'neutral'; }
+function actionBadge(action) {
+  const map = { LONG:'badge-long', BUY:'badge-long', HOLD:'badge-hold', BLOCK:'badge-block', PASS:'badge-pass', SHORT:'badge-block', SELL:'badge-block' };
+  return `<span class="badge ${map[action]||'badge-hold'}">${action||'--'}</span>`;
+}
+
+// ── 画收益率图 ────────────────────────────────────────────────────────────
+function drawChart(logsA, logsB) {
+  const canvas = document.getElementById('pnl-chart');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = 200 * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const W = canvas.offsetWidth, H = 200;
+  ctx.clearRect(0, 0, W, H);
+
+  // 生成收益率序列（以权益变化模拟，后续接真实PnL）
+  const baseA = 62, baseB = 63;
+  const ptA = logsA.map((l,i) => ({ x: i, y: baseA + (l.pnl_pct || 0) * baseA }));
+  const ptB = logsB.map((l,i) => ({ x: i, y: baseB + (l.pnl_pct || 0) * baseB }));
+
+  const allPts = [...ptA, ...ptB];
+  const maxY = Math.max(baseA * 1.1, baseB * 1.1, ...allPts.map(p=>p.y));
+  const minY = Math.min(baseA * 0.9, baseB * 0.9, ...allPts.map(p=>p.y));
+  const maxX = Math.max(logsA.length, logsB.length, 4) - 1;
+  const pad = { t:10, r:16, b:24, l:40 };
+  const scaleX = (x) => pad.l + (maxX > 0 ? x / maxX : 0.5) * (W - pad.l - pad.r);
+  const scaleY = (y) => pad.t + (1 - (y - minY) / (maxY - minY + 0.001)) * (H - pad.t - pad.b);
+
+  // Grid
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + i * (H - pad.t - pad.b) / 4;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    const val = maxY - (maxY - minY) * i / 4;
+    ctx.fillStyle = '#7d8590'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('$' + fmt(val, 1), pad.l - 4, y + 3);
+  }
+
+  // Baseline
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  const byBase = scaleY(125);
+  ctx.beginPath(); ctx.moveTo(pad.l, byBase); ctx.lineTo(W - pad.r, byBase); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw line
+  const drawLine = (pts, color) => {
+    if (pts.length < 1) return;
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const x = scaleX(p.x), y = scaleY(p.y);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // Dots
+    pts.forEach(p => {
+      ctx.beginPath(); ctx.arc(scaleX(p.x), scaleY(p.y), 3, 0, Math.PI*2);
+      ctx.fillStyle = color; ctx.fill();
+    });
+  };
+
+  drawLine(ptA, '#58a6ff');
+  drawLine(ptB, '#bc8cff');
+}
+
+// ── 更新页面 ──────────────────────────────────────────────────────────────
+function render(data) {
+  // 账户
+  document.getElementById('perp-equity').innerHTML = `<span class="${colorClass(data.perp_equity - 62)}">$${fmt(data.perp_equity)}</span>`;
+  document.getElementById('spot-usdc').innerHTML = `<span>$${fmt(data.spot_usdc)}</span>`;
+  const total = data.perp_equity + data.spot_usdc;
+  const totalChg = total - 125;
+  document.getElementById('total-equity').innerHTML = `<span class="${colorClass(totalChg)}">$${fmt(total)}</span>`;
+  document.getElementById('total-change').textContent = `${totalChg >= 0 ? '+' : ''}$${fmt(totalChg)} (${fmt(totalChg/125*100, 2)}%)`;
+
+  // Agent A 持仓
+  const posHtml = data.perp_positions.length > 0
+    ? data.perp_positions.map(p => `
+      <div class="position-row">
+        <div><div class="pos-coin">${p.coin} ${p.size > 0 ? '📈 多' : '📉 空'}</div>
+          <div class="pos-detail">入场 $${fmt(p.entry_px)} · sz ${Math.abs(p.size)} · 3x</div></div>
+        <div class="pos-pnl"><div class="pos-pnl-val ${colorClass(p.upnl)}">$${fmt(p.upnl)}</div>
+          <div class="pos-detail ${colorClass(p.upnl)}">${fmt(p.upnl/p.entry_px/Math.abs(p.size)*100, 2)}%</div></div>
+      </div>`).join('')
+    : '<div class="no-position">无持仓</div>';
+  document.getElementById('agent-a-positions').innerHTML = posHtml;
+
+  // Agent A 最新决策
+  const lastA = data.logs_a[data.logs_a.length - 1];
+  if (lastA) {
+    document.getElementById('a-last-action').outerHTML = `<span id="a-last-action">${actionBadge(lastA.action || 'HOLD')}</span>`;
+    const conf = lastA.confidence || 0;
+    document.getElementById('a-conf-bar').style.width = (conf * 100) + '%';
+    document.getElementById('a-conf-val').textContent = pct(conf);
+    document.getElementById('a-coin').textContent = lastA.coin || lastA.entry_price ? `${lastA.coin || '?'} @ $${fmt(lastA.entry_price)}` : '--';
+  }
+
+  // Agent B 最新决策
+  const lastB = data.logs_b[data.logs_b.length - 1];
+  if (lastB) {
+    document.getElementById('b-last-action').outerHTML = `<span id="b-last-action">${actionBadge(lastB.action || 'HOLD')}</span>`;
+    const conf = lastB.confidence || 0;
+    document.getElementById('b-conf-bar').style.width = (conf * 100) + '%';
+    document.getElementById('b-conf-val').textContent = pct(conf);
+    const gatePass = lastB.action !== 'HOLD';
+    document.getElementById('b-gate').outerHTML = `<span id="b-gate" class="badge ${gatePass ? 'badge-pass' : 'badge-block'}">${gatePass ? '✅ PASS' : '❌ BLOCK'}</span>`;
+    document.getElementById('b-regime').textContent = lastB.market_regime || '--';
+
+    // 矛盾维度
+    const contradictions = lastB.key_contradictions || [];
+    document.getElementById('b-contradictions').innerHTML = contradictions.length
+      ? contradictions.map(c => `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;background:rgba(255,255,255,0.05);border-radius:4px;font-size:11px">${c}</span>`).join('')
+      : '<span style="color:var(--muted);font-style:italic">无矛盾数据</span>';
+
+    // 系统模块
+    const features = lastB.system_features_used || [];
+    document.getElementById('b-features').innerHTML = features.length
+      ? features.map(f => `<span class="memory-tag">${f.replace('_', ' ')}</span>`).join('')
+      : '<span style="color:var(--muted);font-size:11px">未调用系统模块</span>';
+  }
+
+  // 操作日志
+  const allLogs = [
+    ...data.logs_a.map(l => ({...l, _agent: 'a'})),
+    ...data.logs_b.map(l => ({...l, _agent: 'b'}))
+  ].sort((a, b) => b.ts_utc?.localeCompare(a.ts_utc || '') || 0).slice(0, 20);
+
+  const tbody = document.getElementById('log-tbody');
+  if (allLogs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">暂无记录</td></tr>';
+  } else {
+    tbody.innerHTML = allLogs.map(l => {
+      const steps = (l.reasoning_steps || []).slice(0, 4);
+      const execOk = l.execution?.ok;
+      const execFilled = l.execution?.filled;
+      let execText = '未执行';
+      if (execOk && execFilled) {
+        const f = execFilled.filled || execFilled;
+        execText = `✅ ${f.totalSz || '?'} @ $${f.avgPx || '?'}`;
+      } else if (l.action === 'HOLD') {
+        execText = '⏸ 观望';
+      }
+      return `<tr>
+        <td style="white-space:nowrap;color:var(--muted)">${fmtTime(l.ts_utc)}</td>
+        <td><span class="agent-tag tag-${l._agent}">${l._agent.toUpperCase()}</span></td>
+        <td style="font-weight:600">${l.coin || (l.entry_price ? '?' : '—')}</td>
+        <td>${actionBadge(l.action)}</td>
+        <td><span class="${l.confidence >= 0.65 ? 'up' : 'neutral'}">${pct(l.confidence)}</span></td>
+        <td style="color:var(--muted);font-size:11px">${l.market_regime || '--'}</td>
+        <td class="reasoning-text">
+          <ul class="reasoning-steps">${steps.map(s=>`<li>${s}</li>`).join('')}</ul>
+          ${steps.length < (l.reasoning_steps||[]).length ? `<span style="color:var(--muted)">...共${l.reasoning_steps.length}步</span>` : ''}
+        </td>
+        <td style="white-space:nowrap;font-size:11px">${execText}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // 对比指标
+  const tradesA = data.logs_a.filter(l => l.action !== 'HOLD').length;
+  const tradesB = data.logs_b.filter(l => l.action !== 'HOLD').length;
+  const maxTrades = Math.max(tradesA, tradesB, 1);
+  document.getElementById('bar-a-trades').style.width = (tradesA/maxTrades*100)+'%';
+  document.getElementById('bar-b-trades').style.width = (tradesB/maxTrades*100)+'%';
+  document.getElementById('val-a-trades').textContent = tradesA;
+  document.getElementById('val-b-trades').textContent = tradesB;
+
+  const confA = data.logs_a.reduce((s,l) => s + (l.confidence||0), 0) / Math.max(data.logs_a.length, 1);
+  const confB = data.logs_b.reduce((s,l) => s + (l.confidence||0), 0) / Math.max(data.logs_b.length, 1);
+  document.getElementById('bar-a-conf').style.width = (confA*100)+'%';
+  document.getElementById('bar-b-conf').style.width = (confB*100)+'%';
+  document.getElementById('val-a-conf').textContent = pct(confA);
+  document.getElementById('val-b-conf').textContent = pct(confB);
+
+  const holdA = data.logs_a.filter(l => l.action === 'HOLD').length / Math.max(data.logs_a.length, 1);
+  const holdB = data.logs_b.filter(l => l.action === 'HOLD').length / Math.max(data.logs_b.length, 1);
+  document.getElementById('bar-a-hold').style.width = (holdA*100)+'%';
+  document.getElementById('bar-b-hold').style.width = (holdB*100)+'%';
+  document.getElementById('val-a-hold').textContent = pct(holdA);
+  document.getElementById('val-b-hold').textContent = pct(holdB);
+
+  const depthA = data.logs_a.reduce((s,l) => s + (l.reasoning_steps||[]).length, 0) / Math.max(data.logs_a.length, 1);
+  const depthB = data.logs_b.reduce((s,l) => s + (l.reasoning_steps||[]).length, 0) / Math.max(data.logs_b.length, 1);
+  const maxDepth = Math.max(depthA, depthB, 1);
+  document.getElementById('bar-a-depth').style.width = (depthA/maxDepth*100)+'%';
+  document.getElementById('bar-b-depth').style.width = (depthB/maxDepth*100)+'%';
+  document.getElementById('val-a-depth').textContent = fmt(depthA, 1);
+  document.getElementById('val-b-depth').textContent = fmt(depthB, 1);
+
+  const featA = data.logs_a.reduce((s,l) => s + (l.system_features_used||[]).length, 0) / Math.max(data.logs_a.length, 1);
+  const featB = data.logs_b.reduce((s,l) => s + (l.system_features_used||[]).length, 0) / Math.max(data.logs_b.length, 1);
+  const maxFeat = Math.max(featA, featB, 1);
+  document.getElementById('bar-a-feat').style.width = (featA/maxFeat*100)+'%';
+  document.getElementById('bar-b-feat').style.width = (featB/maxFeat*100)+'%';
+  document.getElementById('val-a-feat').textContent = fmt(featA, 1);
+  document.getElementById('val-b-feat').textContent = fmt(featB, 1);
+
+  // 收益图
+  drawChart(data.logs_a, data.logs_b);
+
+  document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
+}
+
+// ── 数据加载（通过 data-server.py API）──────────────────────────────────
+async function loadData() {
+  try {
+    const res = await fetch('/api/state', { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    render(data);
+  } catch (e) {
+    document.getElementById('last-update').textContent = '⚠️ 无法连接服务器，请启动 data_server.py';
+  }
+}
+
+// 初始加载 + 每30秒自动刷新
+loadData();
+setInterval(loadData, 30000);
+window.addEventListener('resize', () => { if (STATE.loaded) drawChart(STATE.logs_a, STATE.logs_b); });
+</script>
+</body>
+</html>
