@@ -87,8 +87,8 @@ export interface SkillMetadata {
   /** 所属链: A=AI技能, C=经典量化, F=基本面 */
   chain: SkillChain;
 
-  /** 技能分类 */
-  category: SkillCategory;
+  /** 技能分类（开放 string 以兼容外部扩展，SkillCategory 为标准枚举） */
+  category: SkillCategory | string;
 
   /** 版本号 */
   version: string;
@@ -178,8 +178,67 @@ export interface ExecutionContext {
   /** 用户偏好 */
   userPreferences?: UserPreferences;
 
+  // ── 知识库 & 记忆系统增援 ──────────────────────────────────
+
+  /**
+   * 从 dream-knowledge 检索到的相关策略/规则（本轮推理开始前注入）
+   * 格式：{ id, name, score, summary }[]
+   */
+  knowledgeHits?: KnowledgeHit[];
+
+  /**
+   * 从 learning-recall-pack 召回的经验教训（Lesson）
+   * 已通过 min_freq≥3 过滤，高可信教训优先
+   */
+  recalledLessons?: RecalledLesson[];
+
+  /**
+   * 最近 N 轮 Episode 摘要（由图压缩模块提供的压缩历史）
+   * 供推理步骤感知历史决策模式
+   */
+  episodeSummary?: EpisodeSummary[];
+
   /** 扩展字段 */
   [key: string]: unknown;
+}
+
+// ── 知识库/记忆辅助类型 ─────────────────────────────────────
+
+/** 知识库命中条目 */
+export interface KnowledgeHit {
+  id: string;
+  name: string;
+  /** 100分制知识评分 */
+  score: number;
+  summary: string;
+  /** 关联的 regime 或场景标签 */
+  tags?: string[];
+  /** 来源：dream-knowledge 或 2-KNOWLEDGE/ */
+  source?: string;
+}
+
+/** 经验教训条目 */
+export interface RecalledLesson {
+  id: string;
+  category: 'technical' | 'strategic' | 'risk' | 'execution';
+  rule: string;
+  /** 出现频次（min_freq≥3 才召回） */
+  frequency: number;
+  /** 置信度 0-1 */
+  confidence: number;
+  /** 原始 episode 引用 */
+  sourceEpisodes?: string[];
+}
+
+/** Episode 摘要条目（图压缩模块输出） */
+export interface EpisodeSummary {
+  episodeId: string;
+  timestamp: number;
+  intent: string;
+  direction: string;
+  outcome: 'profit' | 'loss' | 'neutral' | 'skip';
+  overallConfidence: number;
+  keyLesson?: string;
 }
 
 /** 链权重配置 */

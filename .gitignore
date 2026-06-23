@@ -78,3 +78,9 @@ data/knowledge_vector_cache_v2.json
 
 # Test outputs
 **/stress_test_output/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+*/.venv/

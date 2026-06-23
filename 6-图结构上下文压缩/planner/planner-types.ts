@@ -436,11 +436,10 @@ export function inferPrimaryChain(intent: IntentType, tradingMode: string): Skil
   // hybrid 模式根据 intent 决定主链
   if (tradingMode === 'hybrid') {
     if (intent === 'deep_analysis' || intent === 'strategy_verify') return 'F';
-    return 'S';
+    return 'A';
   }
-  // ai_skill 或默认：deep_analysis 倾向 F 链（基本面驱动），其余走 S 链
-  if (intent === 'deep_analysis' || intent === 'strategy_verify') return 'F';
-  return 'S';
+  // ai_skill 或默认：走 A 链（AI技能交易思维）
+  return 'A';
 }
 
 /**
