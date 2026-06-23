@@ -103,8 +103,23 @@ export type StepStatus = 'pending' | 'running' | 'completed' | 'skipped' | 'fail
 
 /**
  * 步骤执行决策
+ *
+ * proceed   - 置信度高，直接进入下一步
+ * iterate   - 置信度中，补充技能再评估（最多 maxIterations 次）
+ * warn      - 置信度低但勉强可用，继续并标记风险
+ * skip      - 置信度极低，跳过本步骤（后续步骤不依赖本步数据）
+ * backtrack - 发现逻辑冲突或关键数据缺失，回退到上一步重新执行
+ * terminate - 高优先级门禁硬阻断，终止整条链（如 A7-SKIP、GateC-BLOCK）
+ * escalate  - 置信度长期无法收敛，暂停并上报人工审核
  */
-export type StepDecision = 'proceed' | 'iterate' | 'skip' | 'warn' | 'escalate';
+export type StepDecision =
+  | 'proceed'
+  | 'iterate'
+  | 'warn'
+  | 'skip'
+  | 'backtrack'
+  | 'terminate'
+  | 'escalate';
 
 /**
  * 信息缺口类型
@@ -289,7 +304,7 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
   {
     id: 'S1',
     stage: 'research',
-    chain: 'S',
+    chain: 'A',
     label: 'S1_调研',
     icon: '🔍',
     description: '市场数据、行情、技术指标、新闻收集',
@@ -300,12 +315,12 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     allowIteration: true,
     maxIterations: 2,
     isCrossValidationPoint: true,
-    crossValidationChains: ['S', 'C', 'F'],
+    crossValidationChains: ['A', 'C', 'F'],
   },
   {
     id: 'S2',
     stage: 'analysis',
-    chain: 'S',
+    chain: 'A',
     label: 'S2_分析',
     icon: '🧠',
     description: '多维度分析（技术面、基本面、情绪面）',
@@ -317,12 +332,12 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     allowIteration: true,
     maxIterations: 3,
     isCrossValidationPoint: true,
-    crossValidationChains: ['S', 'C', 'F'],
+    crossValidationChains: ['A', 'C', 'F'],
   },
   {
     id: 'S3',
     stage: 'design',
-    chain: 'S',
+    chain: 'A',
     label: 'S3_设计',
     icon: '🎯',
     description: '制定具体策略（入场点、止损、止盈、仓位）',
@@ -333,12 +348,12 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     allowIteration: true,
     maxIterations: 2,
     isCrossValidationPoint: true,
-    crossValidationChains: ['S', 'C'],
+    crossValidationChains: ['A', 'C'],
   },
   {
     id: 'S4',
     stage: 'validate',
-    chain: 'S',
+    chain: 'A',
     label: 'S4_验证',
     icon: '✅',
     description: '回测验证、风险评估、模拟推演',
@@ -350,12 +365,12 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     allowIteration: true,
     maxIterations: 2,
     isCrossValidationPoint: true,
-    crossValidationChains: ['S', 'C'],
+    crossValidationChains: ['A', 'C'],
   },
   {
     id: 'S5',
     stage: 'execute',
-    chain: 'S',
+    chain: 'A',
     label: 'S5_执行',
     icon: '⚡',
     description: '生成执行计划、跟踪调整',
@@ -365,7 +380,7 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     recommendedSkillCategories: ['execution'],
     allowIteration: false,
     isCrossValidationPoint: true,
-    crossValidationChains: ['S', 'C'],
+    crossValidationChains: ['A', 'C'],
   },
 ];
 
@@ -527,7 +542,7 @@ export function getStepDefinition(stepId: string): ThinkingStepDefinition | unde
  */
 export function getStepsByChain(chain: SkillChain): ThinkingStepDefinition[] {
   switch (chain) {
-    case 'S':
+    case 'A':
       return S_CHAIN_STEPS;
     case 'C':
       return C_CHAIN_STEPS;

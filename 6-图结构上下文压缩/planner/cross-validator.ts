@@ -256,11 +256,25 @@ export class CrossValidator {
       };
     }
 
-    // 3. 检查置信度
-    if (votingResult.overallConfidence < config.triggerCondition.threshold || 60) {
+    // agreementLevel === 'conflict'（无有效信号）→ deep_dive 而非 pause
+    if (votingResult.agreementLevel === 'conflict') {
       return {
-        recommendedAction: 'pause',
-        reason: `综合置信度过低: ${votingResult.overallConfidence}%`,
+        recommendedAction: 'deep_dive',
+        reason: `链间信号冲突或无有效投票，建议补充分析`,
+        deepDivePlan: {
+          additionalSkills: ['dual-agent-conflict-gate', 'dream-regime-detector'],
+          expectedImprovement: 15,
+          estimatedExtraCost: 300,
+        },
+      };
+    }
+
+    // 3. 检查置信度阈值（修复运算符优先级 bug）
+    const threshold = config.triggerCondition.threshold ?? 60;
+    if (votingResult.overallConfidence < threshold) {
+      return {
+        recommendedAction: 'deep_dive',
+        reason: `综合置信度 ${votingResult.overallConfidence}% 低于阈值 ${threshold}%，建议补充分析`,
       };
     }
 

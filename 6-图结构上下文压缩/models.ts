@@ -6,13 +6,30 @@ export interface DataFlow {
   description: string;
 }
 
+/** OKR 时间维度（与 intent-gateway 对齐） */
+export type OKRHorizon = 'long' | 'mid' | 'short';
+
 export interface NodeMetadata {
   tokenCost: number;
   latencyMs: number;
-  status: 'pending' | 'running' | 'completed' | 'skipped' | 'failed';
+  status: 'pending' | 'running' | 'completed' | 'skipped' | 'failed' | 'compressed';
   skipReason?: string;
   outputSummary?: string;
   timestamp?: number;
+  tags?: string[];
+  /**
+   * OKR 时间维度：
+   *   long  = B 层目标节点（跨多轮持久，由意图识别写入）
+   *   mid   = A 层执行步骤（当轮计划，由 Planner 生成）
+   *   short = C 层执行记录（当步实际执行，Chronicle 节点）
+   */
+  horizon?: OKRHorizon;
+  /** 所属意图目标 ID（来自 IntentGateway） */
+  intentGoalId?: string;
+  /** 笔记本标题（当节点被作为笔记使用时） */
+  noteTitle?: string;
+  /** 笔记内容摘要（短任务便签） */
+  noteContent?: string;
 }
 
 export interface BNode {

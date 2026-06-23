@@ -14,17 +14,15 @@
 import {
   SkillResult,
   SkillOutputs,
-} from './skill-types.ts';
-import {
-  ThinkingStepDefinition,
-  StepExecutionResult,
-  Gap,
-  GapType,
-} from './step-types.ts';
-import {
   ExecutionContext,
   ConfidenceDimensions,
+  TradeDirection,
 } from './skill-types.ts';
+import type { KnowledgeHit, RecalledLesson } from './skill-types.ts';
+import {
+  ThinkingStepDefinition,
+  Gap,
+} from './step-types.ts';
 
 // ============================================================
 // 置信度评估结果
@@ -72,19 +70,25 @@ export class ConfidenceEvaluator {
     const crossSourceValidation = this.calculateCrossValidation(skillResults);
     const historicalAccuracy = this.calculateHistoricalAccuracy(skillResults);
 
-    // 2. 综合计算
+    // 2. 知识库命中加成（每命中一个高分条目 +2，上限 +10）
+    const knowledgeBoost = this.calculateKnowledgeBoost(context.knowledgeHits);
+
+    // 3. Lesson 教训加成（每条高置信度教训 +1.5，上限 +6）
+    const lessonBoost = this.calculateLessonBoost(context.recalledLessons);
+
+    // 4. 综合计算（主评分 + 增益，硬上限 100）
     const weights = { data: 0.2, logic: 0.25, cross: 0.25, history: 0.3 };
-    const overallScore = Math.round(
+    const baseScore =
       dataCompleteness * weights.data +
       logicalConsistency * weights.logic +
       crossSourceValidation * weights.cross +
-      historicalAccuracy * weights.history
-    );
+      historicalAccuracy * weights.history;
+    const overallScore = Math.min(100, Math.round(baseScore + knowledgeBoost + lessonBoost));
 
-    // 3. 识别缺口
-    const gaps = this.identifyGaps(skillResults, stepDefinition);
+    // 5. 识别缺口
+    const gaps = this.identifyGaps(skillResults, stepDefinition, context);
 
-    // 4. 决策建议
+    // 6. 决策建议
     const recommendation = this.makeRecommendation(
       overallScore,
       gaps,
@@ -101,8 +105,24 @@ export class ConfidenceEvaluator {
       },
       gaps,
       recommendation: recommendation.decision,
-      reason: recommendation.reason,
+      reason: recommendation.reason +
+        (knowledgeBoost > 0 ? ` [知识库+${knowledgeBoost.toFixed(1)}]` : '') +
+        (lessonBoost > 0 ? ` [Lesson+${lessonBoost.toFixed(1)}]` : ''),
     };
+  }
+
+  /** 知识库命中加成（0-10） */
+  private calculateKnowledgeBoost(hits: KnowledgeHit[] | undefined): number {
+    if (!hits || hits.length === 0) return 0;
+    const boost = hits.reduce((sum, h) => sum + (h.score >= 80 ? 2 : h.score >= 60 ? 1 : 0), 0);
+    return Math.min(10, boost);
+  }
+
+  /** Lesson 教训加成（0-6） */
+  private calculateLessonBoost(lessons: RecalledLesson[] | undefined): number {
+    if (!lessons || lessons.length === 0) return 0;
+    const boost = lessons.reduce((sum, l) => sum + (l.confidence >= 0.8 ? 1.5 : l.confidence >= 0.6 ? 0.8 : 0), 0);
+    return Math.min(6, boost);
   }
 
   /**

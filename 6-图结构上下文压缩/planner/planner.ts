@@ -13,12 +13,10 @@
  */
 
 import {
-  SkillCapability,
-  SkillResult,
   ExecutionContext,
+  SkillChain,
   createSuccessResult,
   createFailureResult,
-  createFallbackResult,
 } from './skill-types.ts';
 import {
   ThinkingStepDefinition,
@@ -144,7 +142,7 @@ export class ExecutionPlanner {
     const chains = this.determineChains(context);
 
     // 2. 根据意图和模式推断主链
-    const primaryChain = inferPrimaryChain(context.intent, context.preferences?.tradingMode || 'ai_skill');
+    const primaryChain = inferPrimaryChain(context.intent, context.tradingMode || 'ai_skill');
 
     // 3. 获取步骤定义
     const steps = this.getStepsForChain(primaryChain, context);
@@ -188,6 +186,15 @@ export class ExecutionPlanner {
 
   /**
    * 执行计划
+   *
+   * 动态链控制：
+   *   proceed   → 继续下一步
+   *   iterate   → 已在 executeStep 内部处理，这里只需继续
+   *   warn      → 继续但记录风险标记
+   *   skip      → 跳过本步，继续（不依赖该步数据的后续步骤仍执行）
+   *   backtrack → 回退到上一步重新执行（最多回退 MAX_BACKTRACK 次）
+   *   terminate → 硬终止整条链（门禁硬阻断：A7-SKIP、GateC-BLOCK 等）
+   *   escalate  → 暂停并记录 escalation，等待人工介入
    */
   private async executePlan(
     plan: ExecutionPlan,
@@ -197,27 +204,61 @@ export class ExecutionPlanner {
     const crossValidationResults: CrossValidationResult[] = [];
     const stepResultsMap = new Map<string, StepExecutionResult>();
 
-    // 构建执行上下文（累积前序结果）
-    let executionContext = { ...context };
+    // 注入知识库/记忆作为执行上下文的增援（从 priorHistory 中携带）
+    let executionContext = this.buildEnrichedContext(context, steps);
 
-    // 执行每个步骤
-    for (const plannedStep of plan.steps) {
+    const MAX_BACKTRACK = 2;
+    let backtrackCount = 0;
+    let plannedStepIndex = 0;
+
+    while (plannedStepIndex < plan.steps.length) {
+      const plannedStep = plan.steps[plannedStepIndex];
       const stepDef = plannedStep.definition!;
 
-      // 更新上下文，加入前序结果
-      executionContext = {
-        ...executionContext,
-        priorOutputs: Object.fromEntries(
-          steps.map(s => [s.stepId, createSuccessResult(s.stepId, { answer: s.answer }, s.confidence)])
-        ),
-      };
+      // 每步前刷新：累积前序结果 + knowledge/memory 增援
+      executionContext = this.buildEnrichedContext(context, steps);
 
       // 执行步骤
       const stepResult = await this.executeStep(stepDef, plannedStep, executionContext);
-      steps.push(stepResult);
       stepResultsMap.set(stepDef.id, stepResult);
 
-      // 检查是否到达交叉验证节点
+      // ── 动态链决策 ──────────────────────────────────────────
+      const decision = stepResult.decision;
+
+      if (decision === 'terminate') {
+        // 硬终止：门禁 BLOCK，整链停止，记录原因
+        steps.push(stepResult);
+        steps.push(this.createTerminationRecord(stepDef, stepResult.decisionReason));
+        break;
+      }
+
+      if (decision === 'escalate') {
+        // 暂停上报：记录 escalation 节点，等待人工
+        steps.push(stepResult);
+        steps.push(this.createEscalationRecord(stepDef, stepResult.confidence, stepResult.gaps ?? []));
+        break;
+      }
+
+      if (decision === 'backtrack' && backtrackCount < MAX_BACKTRACK) {
+        // 回退到上一步：弹出上一步结果，重新执行
+        backtrackCount++;
+        const prevResult = steps.pop();
+        if (prevResult) {
+          stepResultsMap.delete(prevResult.stepId);
+          // 回退指针到上一个步骤
+          plannedStepIndex = Math.max(0, plannedStepIndex - 1);
+          steps.push({
+            ...stepResult,
+            decisionReason: `[回退触发] ${stepResult.decisionReason} → 重新执行步骤 ${plan.steps[plannedStepIndex]?.definition?.id ?? '?'}`,
+          });
+          continue; // 不 push 当前结果，重新从回退位置执行
+        }
+      }
+
+      // proceed / warn / skip / iterate（已在 executeStep 内处理迭代）→ 正常推进
+      steps.push(stepResult);
+
+      // ── 交叉验证节点 ────────────────────────────────────────
       const cvConfig = CROSS_VALIDATION_CONFIGS.find(c => c.afterStep === stepDef.id);
       if (cvConfig) {
         const cvResult = this.crossValidator.execute(cvConfig, stepResultsMap, context.chainWeights);
@@ -241,19 +282,194 @@ export class ExecutionPlanner {
           deepDivePlan: cvResult.deepDivePlan,
         });
 
-        // 如果需要暂停，等待用户确认
         if (cvResult.recommendedAction === 'pause') {
           break;
         }
       }
 
-      // 如果决策是跳过，停止执行
-      if (stepResult.decision === 'skip') {
-        break;
-      }
+      plannedStepIndex++;
     }
 
     return { steps, crossValidationResults };
+  }
+
+  /**
+   * 构建富化的执行上下文：
+   *   1. priorHistory → knowledgeHits（历史结论转知识命中）
+   *   2. 已完成步骤 → recalledLessons（高置信步骤提炼为教训）
+   *   3. 图推理引擎 → 追加 nextActions 作为额外知识命中
+   *   4. 已完成步骤快照 → episodeSummary
+   */
+  private buildEnrichedContext(
+    context: PlannerContext,
+    completedSteps: StepExecutionResult[]
+  ): ExecutionContext {
+    // ── 1. 历史结论 → 知识命中 ─────────────────────────────
+    const histKnowledge = context.priorHistory?.previousConclusions?.map((c, i) => ({
+      id: `hist_${i}`,
+      name: `历史结论 #${i + 1}`,
+      score: (context.priorHistory?.previousConfidences?.[i] ?? 70),
+      summary: c,
+      source: 'priorHistory',
+    })) ?? [];
+
+    // ── 2. 图推理引擎：对已完成步骤做轻量推理 ───────────────
+    const inferenceKnowledge = this.runGraphInference(context, completedSteps);
+
+    const knowledgeHits = [...histKnowledge, ...inferenceKnowledge];
+
+    // ── 3. Lesson：从高置信步骤合成 ──────────────────────────
+    const recalledLessons = completedSteps
+      .filter(s => s.confidence >= 75 && s.decision !== 'skip')
+      .map(s => ({
+        id: `lesson_${s.stepId}`,
+        category: 'strategic' as const,
+        rule: `步骤 ${s.stepId} 结论: ${s.answer.slice(0, 60)}`,
+        frequency: 1,
+        confidence: s.confidence / 100,
+      }));
+
+    // ── 4. Episode 摘要：最近 3 步执行快照 ───────────────────
+    const episodeSummary = completedSteps.slice(-3).map(s => ({
+      episodeId: `ep_${s.stepId}`,
+      timestamp: Date.now(),
+      intent: context.intent,
+      direction: String(s.skillsCalled[0]?.result?.outputs?.direction ?? 'neutral'),
+      outcome: (s.confidence >= 75 ? 'profit' : 'neutral') as 'profit' | 'neutral',
+      overallConfidence: s.confidence,
+      keyLesson: s.decision !== 'proceed' ? s.decisionReason : undefined,
+    }));
+
+    return {
+      sessionId: context.sessionId,
+      intent: context.intent,
+      symbol: context.symbol,
+      userRole: 'PRO',
+      tradingMode: context.tradingMode,
+      budgetTokens: context.constraints?.maxTokens,
+      maxLatencyMs: context.constraints?.maxLatencyMs,
+      chainWeights: context.chainWeights,
+      priorOutputs: Object.fromEntries(
+        completedSteps.map(s => [s.stepId, createSuccessResult(s.stepId, { answer: s.answer }, s.confidence)])
+      ),
+      knowledgeHits,
+      recalledLessons,
+      episodeSummary,
+    };
+  }
+
+  /**
+   * 轻量图推理：把已完成步骤包装成 CompressMessage，
+   * 送入 GraphInferenceEngine，把 nextActions 转为 knowledgeHits 注入。
+   *
+   * 这是 graph-inference-engine.ts 与 Planner 的接线点：
+   *   completedSteps → 消息流 → 图推理 → nextActions → knowledgeHits
+   */
+  private runGraphInference(
+    context: PlannerContext,
+    completedSteps: StepExecutionResult[]
+  ): Array<{ id: string; name: string; score: number; summary: string; source: string }> {
+    if (completedSteps.length === 0) return [];
+
+    try {
+      // 动态 import 避免循环依赖（graph-inference-engine 依赖压缩模块）
+      // 这里使用同步的轻量实现代替，完整接入见 integration-test
+      const messages = completedSteps.map(s => ({
+        content: `[${s.stepId}/${s.chain}] conf=${s.confidence}% dec=${s.decision}: ${s.answer.slice(0, 120)}`,
+        role: 'assistant' as const,
+        id: s.stepId,
+        timestamp: Date.now(),
+      }));
+
+      // 提取高置信度步骤作为"推理发现"
+      const highConfSteps = completedSteps.filter(s => s.confidence >= 70);
+      const conflictSteps = completedSteps.filter(s =>
+        (s.gaps ?? []).some(g => g.type === 'logical-conflict')
+      );
+
+      const hits: Array<{ id: string; name: string; score: number; summary: string; source: string }> = [];
+
+      // 高置信步骤 → 正向知识命中
+      highConfSteps.slice(0, 3).forEach((s, i) => {
+        hits.push({
+          id: `infer_high_${s.stepId}`,
+          name: `推理确认: ${s.stepId}`,
+          score: s.confidence,
+          summary: `步骤 ${s.stepId} 高置信(${s.confidence}%)确认: ${s.answer.slice(0, 80)}`,
+          source: 'graph-inference',
+        });
+      });
+
+      // 冲突步骤 → 风险知识命中（低分，让评估器知道存在风险）
+      conflictSteps.slice(0, 2).forEach(s => {
+        const conflictGap = (s.gaps ?? []).find(g => g.type === 'logical-conflict');
+        hits.push({
+          id: `infer_conflict_${s.stepId}`,
+          name: `推理冲突: ${s.stepId}`,
+          score: 40,
+          summary: `步骤 ${s.stepId} 检测到逻辑冲突: ${conflictGap?.description ?? '未知冲突'}`,
+          source: 'graph-inference-conflict',
+        });
+      });
+
+      return hits;
+    } catch {
+      return [];
+    }
+  }
+
+  /** 创建 terminate 记录节点 */
+  private createTerminationRecord(stepDef: ThinkingStepDefinition, reason: string): StepExecutionResult {
+    return {
+      stepId: `TERMINATED_after_${stepDef.id}`,
+      stage: stepDef.stage,
+      chain: stepDef.chain,
+      status: 'failed',
+      coreQuestion: '链路终止检查',
+      answer: `[TERMINATED] ${reason}`,
+      skillsCalled: [],
+      confidence: 0,
+      decision: 'terminate',
+      decisionReason: reason,
+      tokensUsed: 0,
+      latencyMs: 0,
+      architectureNode: {
+        id: `terminate_${stepDef.id}`,
+        type: 'decision',
+        name: '链路终止',
+        level: 'A',
+        status: 'failed',
+        summary: reason,
+      },
+    };
+  }
+
+  /** 创建 escalate 记录节点 */
+  private createEscalationRecord(stepDef: ThinkingStepDefinition, confidence: number, gaps: Gap[]): StepExecutionResult {
+    const reason = `置信度 ${confidence}% 长期无法收敛，缺口: ${gaps.map(g => g.type).join(', ')}`;
+    return {
+      stepId: `ESCALATED_after_${stepDef.id}`,
+      stage: stepDef.stage,
+      chain: stepDef.chain,
+      status: 'failed',
+      coreQuestion: '人工介入检查',
+      answer: `[ESCALATED] ${reason}`,
+      skillsCalled: [],
+      confidence,
+      gaps,
+      decision: 'escalate',
+      decisionReason: reason,
+      tokensUsed: 0,
+      latencyMs: 0,
+      architectureNode: {
+        id: `escalate_${stepDef.id}`,
+        type: 'decision',
+        name: '上报人工审核',
+        level: 'A',
+        status: 'failed',
+        summary: reason,
+      },
+    };
   }
 
   /**
@@ -391,24 +607,24 @@ export class ExecutionPlanner {
   private determineChains(context: PlannerContext): SkillChain[] {
     switch (context.tradingMode) {
       case 'ai_skill':
-        return ['S'];
+        return ['A'];
       case 'classic':
         return ['C'];
       case 'hybrid':
-        return ['S', 'C', 'F'];
+        return ['A', 'C', 'F'];
       default:
-        return ['S'];
+        return ['A'];
     }
   }
 
   /**
-   * 获取链的步骤
+   * 获取链的步骤（A = AI技能链 / S链步骤，C = 经典量化，F = 基本面）
    */
   private getStepsForChain(chain: SkillChain, context: PlannerContext): ThinkingStepDefinition[] {
     let steps: ThinkingStepDefinition[];
 
     switch (chain) {
-      case 'S':
+      case 'A':
         steps = [...S_CHAIN_STEPS];
         break;
       case 'C':
@@ -417,16 +633,20 @@ export class ExecutionPlanner {
       case 'F':
         steps = [...F_CHAIN_STEPS];
         break;
+      default:
+        steps = [...S_CHAIN_STEPS];
     }
 
     // 根据复杂度调整步骤数量
     switch (context.complexity) {
       case 'quick':
-        return steps.slice(0, 1); // 只执行第一步
+        return steps.slice(0, 1);
       case 'standard':
-        return steps.slice(0, 3); // 执行前3步
+        return steps.slice(0, 3);
       case 'deep':
-        return steps; // 执行全部
+        return steps;
+      default:
+        return steps.slice(0, 3);
     }
   }
 
@@ -434,8 +654,17 @@ export class ExecutionPlanner {
    * 创建计划的步骤
    */
   private createPlannedStep(stepDef: ThinkingStepDefinition, context: PlannerContext): PlannedStep {
-    const recommendations = this.registry.recommend(context);
-    const selectedSkills = this.skillSelector.select(stepDef, context);
+    const execCtx: ExecutionContext = {
+      sessionId: context.sessionId,
+      intent: context.intent,
+      symbol: context.symbol,
+      userRole: 'PRO',
+      tradingMode: context.tradingMode,
+      budgetTokens: context.constraints?.maxTokens,
+      maxLatencyMs: context.constraints?.maxLatencyMs,
+      chainWeights: context.chainWeights,
+    };
+    const selectedSkills = this.skillSelector.select(stepDef, execCtx);
 
     return {
       stepId: stepDef.id,
@@ -636,7 +865,7 @@ export class ExecutionPlanner {
     return {
       direction,
       confidence: lastCV?.consensus.overallConfidence || this.calculateOverallConfidence(steps),
-      participatingChains: ['S', 'C', 'F'],
+      participatingChains: ['A', 'C', 'F'],
       keyDecisionPoints,
       reasoningPath,
       nextSteps,
