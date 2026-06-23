@@ -193,7 +193,40 @@ def run():
 
     path = log.save()
     print(f"[Agent A] 日志: {path}")
+
+    # ── 自主调度：根据本轮信号决定下次触发时机 ──────────────────────────
+    _self_schedule(decision, mkt)
+
     return log.data
+
+
+def _self_schedule(decision: dict, mkt: dict):
+    """Agent A 自主申请提前触发的逻辑"""
+    import time as _t
+    now = _t.time()
+    action = decision.get("action", "HOLD")
+    conf   = decision.get("confidence", 0.5)
+
+    # 场景1：高置信度信号但资金不足/未入场 → 1H后复查
+    if action != "HOLD" and conf >= 0.75:
+        request_early_run(
+            reason=f"A高置信度{conf:.0%}信号，1H后复查仓位",
+            run_at_ts=now + 3600,
+            priority="normal"
+        )
+
+    # 场景2：市场正在加速（量比 > 2x）→ 2H后复查
+    for coin, d in mkt.get("coins", {}).items():
+        if d.get("vol_ratio", 0) > 2.5:
+            request_early_run(
+                reason=f"{coin}成交量异常放大{d['vol_ratio']:.1f}x，2H后复查",
+                run_at_ts=now + 7200,
+                priority="normal"
+            )
+            break
+
+    # 场景3：持有仓位且价格靠近止损 → 申请1H后监控
+    # （持仓止损监控由 agent 主动申请，不依赖固定cron）
 
 
 if __name__ == "__main__":
