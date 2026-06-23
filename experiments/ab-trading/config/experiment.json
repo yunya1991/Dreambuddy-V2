@@ -1,0 +1,65 @@
+{
+  "_comment": "AB对比实验配置 - Agent A(Raw) vs Agent B(DreamBuddy)",
+  "experiment": {
+    "id": "ab-trading-v1",
+    "name": "Raw LLM vs DreamBuddy 交易能力对比",
+    "start_date": "2026-06-23",
+    "target_cycles": 84,
+    "cron_interval_hours": 4,
+    "asset": "BTC",
+    "market_type": "spot",
+    "inst_id": "BTC-USDT"
+  },
+  "position_sizing": {
+    "per_trade_pct": 0.05,
+    "max_position_pct": 0.20,
+    "hard_stop_loss_pct": 0.03,
+    "take_profit_pct": 0.06
+  },
+  "agents": {
+    "agent_a": {
+      "name": "Raw Claude",
+      "description": "无系统加持，仅依赖模型原生推理",
+      "account_env_key": "AGENT_A_OKX_KEY",
+      "account_env_secret": "AGENT_A_OKX_SECRET",
+      "account_env_passphrase": "AGENT_A_OKX_PASSPHRASE",
+      "features": []
+    },
+    "agent_b": {
+      "name": "DreamBuddy v2",
+      "description": "A0-A9流水线 + 图架构上下文压缩 + 记忆进化",
+      "account_env_key": "AGENT_B_OKX_KEY",
+      "account_env_secret": "AGENT_B_OKX_SECRET",
+      "account_env_passphrase": "AGENT_B_OKX_PASSPHRASE",
+      "features": [
+        "contradiction_theory_a0",
+        "first_principles_a2",
+        "master_seminar_a3",
+        "graph_context_compression",
+        "memory_evolution",
+        "a7_practice_gate",
+        "a8_theory_verification"
+      ]
+    }
+  },
+  "scoring": {
+    "dimensions": [
+      "pnl_pct",
+      "win_rate",
+      "decision_confidence",
+      "reasoning_depth",
+      "context_continuity",
+      "risk_execution",
+      "adaptation_score"
+    ],
+    "weights": {
+      "pnl_pct": 0.30,
+      "win_rate": 0.20,
+      "decision_confidence": 0.15,
+      "reasoning_depth": 0.10,
+      "context_continuity": 0.10,
+      "risk_execution": 0.10,
+      "adaptation_score": 0.05
+    }
+  }
+}
