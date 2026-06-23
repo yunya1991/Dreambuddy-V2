@@ -17,6 +17,7 @@ load_dotenv(str(Path(__file__).parent.parent / "config" / ".env"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles
 from scoring.scorecard import DecisionLog, _cycle_id
+from orchestrator import request_early_run
 
 # ─── 配置 ───────────────────────────────────────────────────────────────────
 AUTO_EXECUTE    = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
@@ -756,7 +757,46 @@ def run():
     # ── 更新记忆（本轮pnl留空，等结算脚本回填）───────────────────────────────
     save_memory(memory, log.data)
 
+    # ── 自主调度：根据系统信号决定下次触发时机 ──────────────────────────
+    _b_self_schedule(final, a0, a2, memory)
+
     return log.data
+
+
+def _b_self_schedule(final: dict, a0: dict, a2: dict, memory: dict):
+    """Agent B 自主申请提前触发——基于矛盾论 + 置信度 + 记忆"""
+    import time as _t
+    now = _t.time()
+
+    # 场景1：主要矛盾转化信号（C类信号冲突突然减少）→ 2H后复查
+    conflict_cnt = a0.get("conflict_count", 0)
+    bull_cnt     = a0.get("bull_count", 0)
+    bear_cnt     = a0.get("bear_count", 0)
+    if conflict_cnt == 0 and abs(bull_cnt - bear_cnt) >= 3:
+        dominant = "多" if bull_cnt > bear_cnt else "空"
+        request_early_run(
+            reason=f"B矛盾清晰：{dominant}头主导{max(bull_cnt,bear_cnt)}维，2H后入场机会",
+            run_at_ts=now + 7200,
+            priority="normal"
+        )
+
+    # 场景2：A2 判断阻力最小方向 UP 但置信度刚好在门槛附近（60-65%）→ 1H后再试
+    conf = final.get("confidence", 0)
+    if 0.58 <= conf < 0.65 and a2.get("least_resistance") == "UP":
+        request_early_run(
+            reason=f"B置信度{conf:.0%}接近门槛，1H后市场可能更清晰",
+            run_at_ts=now + 3600,
+            priority="normal"
+        )
+
+    # 场景3：连败保护解除后首次复盘 → 申请6H后重新尝试
+    loss_streaks = memory.get("loss_streaks", 0)
+    if loss_streaks == 3:
+        request_early_run(
+            reason="B连败保护触发，6H后强制复盘评估市场",
+            run_at_ts=now + 21600,
+            priority="urgent"
+        )
 
 
 if __name__ == "__main__":
