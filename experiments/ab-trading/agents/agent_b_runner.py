@@ -15,16 +15,17 @@ from dotenv import load_dotenv
 load_dotenv(str(Path(__file__).parent.parent / "config" / ".env"))
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from execution.okx_spot import OKXSpotClient, _PROXIES
+from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles
 from scoring.scorecard import DecisionLog, _cycle_id
 
 # ─── 配置 ───────────────────────────────────────────────────────────────────
-AUTO_EXECUTE   = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
-INST_ID        = "BTC-USDT"
-PER_TRADE_PCT  = float(os.environ.get("PER_TRADE_PCT", "0.05"))
-STOP_LOSS_PCT  = 0.03
-TP_PCT         = 0.06
-CONFIDENCE_GATE = 0.65   # A7门禁：低于此置信度不交易
+AUTO_EXECUTE    = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
+BUDGET_USDC     = 60.0        # 软隔离：现货账户预算上限
+PER_TRADE_PCT   = float(os.environ.get("PER_TRADE_PCT", "0.05"))
+STOP_LOSS_PCT   = 0.05        # 现货止损 5%（无杠杆）
+TP_PCT          = 0.10        # 现货止盈 10%
+CONFIDENCE_GATE = 0.65
+UNIVERSE_B      = ["BTC", "ETH", "SOL", "HYPE", "AVAX"]  # 现货流动性好的5个
 
 MEMORY_PATH = Path(__file__).parent.parent / "data" / "agent_b_memory.json"
 GRAPH_LOG   = Path(__file__).parent.parent / "data" / "agent_b_graph.json"
@@ -97,24 +98,30 @@ def apply_lessons(memory: Dict) -> float:
 
 # ─── 市场数据采集 ────────────────────────────────────────────────────────────
 
-def fetch_market_context(client: OKXSpotClient) -> Dict:
-    """采集多维市场数据供A0/A2分析"""
-    ticker = client.get_ticker(INST_ID)
-    price  = ticker.get("last", 0)
+def fetch_market_context(client: HyperliquidClient) -> Dict:
+    """采集多维市场数据供A0/A2分析（Hyperliquid数据源）"""
+    # Agent B 现货市场：只在 UNIVERSE_B 范围内选标的
+    opps = client.scan_opportunities()
+    mids = client.get_all_mids()
 
-    # K线：1H×48根、4H×14根
-    def get_candles(bar, limit):
-        url = "https://www.okx.com/api/v5/market/candles"
-        r = requests.get(url, params={"instId": INST_ID, "bar": bar, "limit": str(limit)},
-                         proxies=_PROXIES, timeout=10)
-        return r.json().get("data", [])
+    # 主分析标的：UNIVERSE_B 内资金费率信号最强的
+    primary_coin = "BTC"
+    for o in sorted(opps, key=lambda x: abs(x["funding"]), reverse=True):
+        if o["coin"] in UNIVERSE_B:
+            primary_coin = o["coin"]
+            break
 
-    candles_1h = get_candles("1H", 48)
-    candles_4h = get_candles("4H", 14)
+    price = mids.get(primary_coin, mids.get("BTC", 0))
 
-    closes_1h = [float(c[4]) for c in candles_1h if c]
-    closes_4h = [float(c[4]) for c in candles_4h if c]
-    vols_1h   = [float(c[5]) for c in candles_1h if c]
+    candles_1h_raw = get_candles(primary_coin, "1h", 48, client.proxies)
+    candles_4h_raw = get_candles(primary_coin, "4h", 14, client.proxies)
+
+    closes_1h = [float(c["c"]) for c in candles_1h_raw if "c" in c]
+    closes_4h = [float(c["c"]) for c in candles_4h_raw if "c" in c]
+    vols_1h   = [float(c["v"]) for c in candles_1h_raw if "v" in c]
+
+    # 扫描所有标的的机会
+    opp_map = {o["coin"]: o for o in opps}
 
     # 技术指标计算
     def ema(prices, n):
@@ -139,20 +146,22 @@ def fetch_market_context(client: OKXSpotClient) -> Dict:
         rs = avg_g / avg_l
         return 100 - 100 / (1 + rs)
 
-    def atr(candles, n=14):
-        if len(candles) < 2:
+    def atr(raw_candles, n=14):
+        if len(raw_candles) < 2:
             return 0
         trs = []
-        for i in range(1, min(n+1, len(candles))):
-            h, l, c_prev = float(candles[i][2]), float(candles[i][3]), float(candles[i-1][4])
+        for i in range(1, min(n+1, len(raw_candles))):
+            h = float(raw_candles[i].get("h", 0))
+            l = float(raw_candles[i].get("l", 0))
+            c_prev = float(raw_candles[i-1].get("c", 0))
             trs.append(max(h - l, abs(h - c_prev), abs(l - c_prev)))
         return sum(trs) / len(trs) if trs else 0
 
     ema20  = ema(closes_1h, 20)
     ema50  = ema(closes_1h, 50)
-    ema200 = ema(closes_4h, 20)   # 4H×20 ≈ 日线MA200代理
+    ema200 = ema(closes_4h, 20)
     rsi14  = rsi(closes_1h)
-    atr14  = atr(candles_1h)
+    atr14  = atr(candles_1h_raw)
 
     change_1h  = ((closes_1h[0] - closes_1h[1])  / closes_1h[1]  * 100) if len(closes_1h) > 1  else 0
     change_24h = ((closes_1h[0] - closes_1h[23]) / closes_1h[23] * 100) if len(closes_1h) > 23 else 0
@@ -161,28 +170,22 @@ def fetch_market_context(client: OKXSpotClient) -> Dict:
     avg_vol = sum(vols_1h) / len(vols_1h) if vols_1h else 0
     cur_vol = vols_1h[0] if vols_1h else 0
 
-    # 资金费率（现货实验中仅作参考，从合约接口取）
-    funding_rate = 0.0
-    try:
-        fr = requests.get("https://www.okx.com/api/v5/public/funding-rate",
-                          params={"instId": "BTC-USDT-SWAP"},
-                          proxies=_PROXIES, timeout=5).json()
-        funding_rate = float(fr["data"][0].get("fundingRate", 0))
-    except Exception:
-        pass
+    # 从 Hyperliquid 获取资金费率
+    funding_rate = opp_map.get(primary_coin, {}).get("funding", 0.0)
 
     return {
-        "price": price,
-        "bid": ticker.get("bid"), "ask": ticker.get("ask"),
-        "change_1h": round(change_1h, 3),
-        "change_4h": round(change_4h, 3),
-        "change_24h": round(change_24h, 3),
-        "ema20": round(ema20, 2), "ema50": round(ema50, 2), "ema200": round(ema200, 2),
-        "rsi14": round(rsi14, 1),
-        "atr14": round(atr14, 2),
-        "vol_ratio": round(cur_vol / avg_vol, 2) if avg_vol > 0 else 1.0,
+        "price":        price,
+        "coin":         primary_coin,
+        "opp_map":      opp_map,
+        "change_1h":    round(change_1h, 3),
+        "change_4h":    round(change_4h, 3),
+        "change_24h":   round(change_24h, 3),
+        "ema20":        round(ema20, 2), "ema50": round(ema50, 2), "ema200": round(ema200, 2),
+        "rsi14":        round(rsi14, 1),
+        "atr14":        round(atr14, 2),
+        "vol_ratio":    round(cur_vol / avg_vol, 2) if avg_vol > 0 else 1.0,
         "funding_rate": funding_rate,
-        "closes_1h": closes_1h[:8],
+        "closes_1h":    closes_1h[:8],
         "ts_utc": datetime.utcnow().isoformat(),
     }
 
@@ -609,16 +612,18 @@ def run():
     print(f"[Agent B] 记忆加载: {memory['total_cycles']}轮历史, {len(lessons)}条教训, "
           f"连败={memory.get('loss_streaks',0)}, 门槛={gate:.0%}")
 
-    client = OKXSpotClient("b")
+    client = HyperliquidClient("b")
 
-    balance = client.get_balance()
-    if not balance["ok"]:
-        print(f"[Agent B] 余额获取失败: {balance}")
-        return
+    # 软隔离：Agent B 用现货账户，取现货 USDC 余额
+    spot_bal = client.get_spot_balance()
+    usdc_avail = spot_bal.get("usdc_avail", 0)
+    equity = min(usdc_avail, BUDGET_USDC)   # 上限 60 USDC
+    print(f"[Agent B] 现货USDC={usdc_avail:.2f}  可用预算={equity:.2f}  "
+          f"持仓={list(spot_bal.get('balances', {}).keys())}")
 
     mkt = fetch_market_context(client)
-    print(f"[Agent B] BTC={mkt['price']}, 24H={mkt['change_24h']:+.1f}%, "
-          f"RSI={mkt['rsi14']}, EMA20={mkt['ema20']:.0f}")
+    print(f"[Agent B] 主标的={mkt['coin']} price={mkt['price']:.2f}, "
+          f"24H={mkt['change_24h']:+.1f}%, RSI={mkt['rsi14']}, EMA20={mkt['ema20']:.2f}")
 
     # ── A0 矛盾论 ───────────────────────────────────────────────────────────
     a0 = a0_contradiction_analysis(mkt, memory)
@@ -644,18 +649,36 @@ def run():
     action = raw_action if gate_pass else "HOLD"
     print(f"[Agent B/A7] {'✅ 通过' if gate_pass else '❌ 拦截'}: {gate_reason}")
 
-    # ── 仓位计算 ──────────────────────────────────────────────────────────────
-    usdt_avail = balance.get("assets", {}).get("USDT", {}).get("avail", 0)
-    position_size_usdt = round(usdt_avail * PER_TRADE_PCT, 2) if gate_pass else 0
+    # ── 仓位计算（现货，无杠杆）──────────────────────────────────────────────
+    position_size_usdt = round(equity * PER_TRADE_PCT, 2) if gate_pass else 0
     price = mkt["price"]
+    coin  = mkt.get("coin", "BTC")
+
+    # 现货只做 BUY/HOLD（无做空），若 A2 判断 SELL 则转为 HOLD
+    is_buy   = action in ("BUY", "LONG")
+    is_sell  = action in ("SELL", "SHORT")
+
+    # A0多标的：UNIVERSE_B 内资金费率信号最强且方向一致时切换标的
+    opp_map  = mkt.get("opp_map", {})
+    for o in sorted(opp_map.values(), key=lambda x: abs(x["funding"]), reverse=True):
+        if o.get("coin") in UNIVERSE_B and o["coin"] != coin and o.get("funding_signal"):
+            alt_side = "BUY" if o["funding_dir"] == "SHORT" else "SELL"
+            if is_buy and alt_side == "BUY":
+                coin = o["coin"]; price = o["price"]
+                break
+
+    sl_price = round(price * (1 - STOP_LOSS_PCT), 2) if is_buy else None
+    tp_price = round(price * (1 + TP_PCT), 2)        if is_buy else None
 
     final = {
-        "action":             action,
+        "action":             "BUY" if is_buy else ("SELL" if is_sell else "HOLD"),
+        "coin":               coin,
+        "leverage":           1,      # 现货无杠杆
         "confidence":         final_conf,
-        "position_size_usdt": position_size_usdt,
+        "position_size_usdt": position_size_usdt if is_buy else 0,
         "entry_price":        price,
-        "stop_loss_price":    round(price * (1 - STOP_LOSS_PCT), 2) if action == "BUY" else None,
-        "take_profit_price":  round(price * (1 + TP_PCT), 2)        if action == "BUY" else None,
+        "stop_loss_price":    sl_price,
+        "take_profit_price":  tp_price,
         "market_regime": (
             "TREND_UP"   if a2["trend"] in ("STRONG_UP", "WEAK_UP") else
             "TREND_DOWN" if a2["trend"] in ("STRONG_DOWN", "WEAK_DOWN") else "RANGE"
@@ -686,17 +709,20 @@ def run():
         ),
         "confidence":           final_conf,
         "supporting_evidence":  [
-            f"EMA排列: {mkt['ema20']:.0f}/{mkt['ema50']:.0f}/{mkt['ema200']:.0f}",
-            f"RSI14={mkt['rsi14']:.1f}, ATR={mkt['atr14']:.0f}",
+            f"标的: {coin}  杠杆: 1x(现货)",
+            f"EMA排列: {mkt['ema20']:.2f}/{mkt['ema50']:.2f}/{mkt['ema200']:.2f}",
+            f"RSI14={mkt['rsi14']:.1f}, ATR={mkt['atr14']:.4f}",
             f"资金费率={mkt['funding_rate']:.6f}",
         ],
         "action":               action,
+        "coin":                 coin,
+        "leverage":             1,
         "entry_price":          price,
         "position_size_usdt":   position_size_usdt,
         "stop_loss_price":      final["stop_loss_price"],
         "take_profit_price":    final["take_profit_price"],
         "decision_rationale":   gate_reason if not gate_pass else
-                                f"{a2['direction']}信号，{a3['verdict']}裁决，置信度{final_conf:.0%}",
+                                f"{coin} {a2['direction']} 1x(现货), {a3['verdict']}裁决, conf={final_conf:.0%}",
         "system_features_used": ["A0_contradiction", "A2_first_principles",
                                  "A3_master_seminar", "A7_gate", "graph_compression", "memory"],
         "graph_context_nodes":  graph_nodes,
@@ -704,19 +730,23 @@ def run():
         "prior_lessons_applied": lessons[-2:],
     })
 
-    # ── 执行 ──────────────────────────────────────────────────────────────────
-    if AUTO_EXECUTE and gate_pass and position_size_usdt > 0:
-        if action == "BUY":
-            exec_result = client.market_buy(INST_ID, position_size_usdt,
-                                            tag=f"agent_b_{cycle}")
-        elif action == "SELL":
-            btc_avail = balance.get("assets", {}).get("BTC", {}).get("avail", 0)
-            sell_btc  = round(btc_avail * PER_TRADE_PCT, 8)
-            exec_result = client.market_sell(INST_ID, sell_btc, tag=f"agent_b_{cycle}")
+    # ── 执行（现货买入，无杠杆）──────────────────────────────────────────────
+    exec_action = final["action"]
+    if AUTO_EXECUTE and gate_pass and final["position_size_usdt"] > 0:
+        tag = f"b_{cycle[:8]}"
+        if exec_action == "BUY":
+            exec_result = client.spot_market_buy(coin, final["position_size_usdt"], tag)
+        elif exec_action == "SELL":
+            # 现货卖出：卖出持仓的 coin
+            bal  = client.get_spot_balance()
+            held = bal["balances"].get(coin, {}).get("avail", 0)
+            sell_sz = round(held * PER_TRADE_PCT, 6)
+            exec_result = client.spot_market_sell(coin, sell_sz, tag) if sell_sz > 0 \
+                else {"ok": False, "error": "no_spot_holdings"}
         else:
             exec_result = {"ok": False, "error": "HOLD"}
         log.data["execution"] = exec_result
-        print(f"[Agent B] 执行结果: {exec_result}")
+        print(f"[Agent B] 执行: ok={exec_result.get('ok')} {exec_result.get('filled')}")
     else:
         print(f"[Agent B] 跳过执行（AUTO_EXECUTE={AUTO_EXECUTE}, gate={gate_pass}）")
 

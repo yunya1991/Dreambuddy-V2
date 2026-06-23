@@ -1,128 +1,145 @@
 #!/usr/bin/env python3
 """
-Agent A Runner - Raw Claude 交易决策
-无任何系统加持，仅依赖模型原生推理能力
-每次触发：获取市场数据 → 推理 → 决策 → 记录日志（不自动下单，需人工确认或设 AUTO_EXECUTE=true）
+Agent A Runner - Raw Claude 合约交易
+无系统加持，仅依赖模型原生推理。
+支持多币种 + 最大 5x 杠杆合约
 """
-import os, sys, json, requests
+import os, sys, json, requests, warnings
 from datetime import datetime
 from pathlib import Path
+
+warnings.filterwarnings("ignore")
 
 from dotenv import load_dotenv
 load_dotenv(str(Path(__file__).parent.parent / "config" / ".env"))
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from execution.okx_spot import OKXSpotClient, _PROXIES
+from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles
 from scoring.scorecard import DecisionLog, _cycle_id
 
-AUTO_EXECUTE = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
-INST_ID = "BTC-USDT"
+AUTO_EXECUTE  = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
+BUDGET_USDC   = 60.0       # 软隔离：合约账户预算上限
 PER_TRADE_PCT = float(os.environ.get("PER_TRADE_PCT", "0.05"))
-STOP_LOSS_PCT = 0.03
-TAKE_PROFIT_PCT = 0.06
+LEVERAGE      = 3
+STOP_LOSS_PCT = 0.04
+TP_PCT        = 0.08
+UNIVERSE_A    = ["BTC", "ETH", "SOL", "HYPE", "AVAX", "ARB", "SUI", "INJ", "LINK", "TIA"]
 
 
-def fetch_market_context(client: OKXSpotClient) -> dict:
-    """采集基础市场数据供 Agent A 推理"""
-    ticker = client.get_ticker(INST_ID)
+def fetch_market_context(client: HyperliquidClient) -> dict:
+    """采集所有标的的市场数据"""
+    mids = client.get_all_mids()
+    opps = client.scan_opportunities()
 
-    # 获取K线数据(1H x 24根)
-    url = "https://www.okx.com/api/v5/market/candles"
-    r = requests.get(url, params={"instId": INST_ID, "bar": "1H", "limit": "24"},
-                     proxies=_PROXIES, timeout=10)
-    candles = r.json().get("data", [])
+    # 对每个标的取 1H K线做简单指标（仅合约标的池 UNIVERSE_A）
+    coin_data = {}
+    for coin in UNIVERSE_A:
+        price = mids.get(coin, 0)
+        if price <= 0:
+            continue
+        try:
+            candles = get_candles(coin, "1h", 24, client.proxies)
+            closes  = [float(c["c"]) for c in candles if "c" in c]
+            vols    = [float(c["v"]) for c in candles if "v" in c]
+        except Exception:
+            closes, vols = [], []
 
-    # 计算简单技术指标
-    closes = [float(c[4]) for c in candles if c]
-    price_change_24h = ((closes[0] - closes[-1]) / closes[-1] * 100) if len(closes) > 1 else 0
-    vol_list = [float(c[5]) for c in candles if c]
-    avg_vol = sum(vol_list) / len(vol_list) if vol_list else 0
+        ch24 = ((closes[0] - closes[-1]) / closes[-1] * 100) if len(closes) > 1 else 0
+        ch4h = ((closes[0] - closes[3])  / closes[3]  * 100) if len(closes) > 3 else 0
+        avg_vol = sum(vols) / len(vols) if vols else 0
+        cur_vol = vols[0] if vols else 0
+
+        coin_data[coin] = {
+            "price":    price,
+            "ch24":     round(ch24, 2),
+            "ch4h":     round(ch4h, 2),
+            "vol_ratio": round(cur_vol / avg_vol, 2) if avg_vol > 0 else 1.0,
+        }
+
+    # 找资金费率信号
+    opp_map = {o["coin"]: o for o in opps}
 
     return {
-        "inst_id": INST_ID,
-        "current_price": ticker.get("last"),
-        "bid": ticker.get("bid"),
-        "ask": ticker.get("ask"),
-        "vol24h": ticker.get("vol24h"),
-        "price_change_24h_pct": round(price_change_24h, 2),
-        "avg_vol_1h": round(avg_vol, 2),
-        "recent_closes_24h": closes[:8],  # 最近8根K线收盘价
-        "ts_utc": datetime.utcnow().isoformat(),
+        "coins":     coin_data,
+        "opp_map":   opp_map,
+        "ts_utc":    datetime.utcnow().isoformat(),
     }
 
 
-def agent_a_decide(market_ctx: dict, balance: dict) -> dict:
+def agent_a_decide(mkt: dict, equity: float) -> dict:
     """
-    Agent A 决策逻辑：直接基于原始市场数据推理。
-    没有矛盾论、没有记忆、没有系统框架。
-
-    这是 Raw LLM 的基准实现：
-    - 仅使用价格变动、成交量、简单趋势
-    - 无历史记忆，每次从零判断
-    - 没有置信度门禁
+    Raw Claude 决策：简单动量 + 量价 + 资金费率反向
+    无矛盾论、无记忆、无门禁
     """
-    price = market_ctx["current_price"]
-    change_24h = market_ctx["price_change_24h_pct"]
-    vol24h = market_ctx["vol24h"]
-    avg_vol = market_ctx["avg_vol_1h"]
-    closes = market_ctx["recent_closes_24h"]
+    coins     = mkt["coins"]
+    opp_map   = mkt["opp_map"]
+    reasoning = []
 
-    reasoning_steps = []
-    reasoning_steps.append(f"当前BTC价格: {price} USDT")
-    reasoning_steps.append(f"24H涨跌幅: {change_24h}%")
-    reasoning_steps.append(f"24H成交量: {vol24h}")
+    best_coin   = None
+    best_score  = 0
+    best_side   = "LONG"
+    best_info   = {}
 
-    # 简单动量判断（无框架）
-    if len(closes) >= 3:
-        short_trend = closes[0] - closes[2]
-        reasoning_steps.append(f"近3H价格变动: {round(short_trend, 2)} USDT")
-    else:
-        short_trend = 0
+    for coin, d in coins.items():
+        score = 0
+        side  = "LONG"
 
-    # 量价判断
-    vol_signal = vol24h > avg_vol * 1.5 if avg_vol > 0 else False
-    reasoning_steps.append(f"成交量放大信号: {vol_signal}")
+        # 动量信号
+        if d["ch24"] > 3 and d["ch4h"] > 1:
+            score += 3; side = "LONG"
+        elif d["ch24"] < -3 and d["ch4h"] < -1:
+            score += 3; side = "SHORT"
+        elif abs(d["ch24"]) > 1.5:
+            score += 1; side = "LONG" if d["ch24"] > 0 else "SHORT"
 
-    # 原始决策逻辑
-    action = "HOLD"
-    confidence = 0.5
-    rationale = "无明确信号，观望"
+        # 量价配合
+        if d["vol_ratio"] > 1.5:
+            score += 1
 
-    if change_24h > 2 and short_trend > 0:
-        action = "BUY"
-        confidence = 0.6 + min(change_24h / 20, 0.2)
-        rationale = f"24H上涨{change_24h}%，近3H延续上涨趋势"
-        if vol_signal:
-            confidence = min(confidence + 0.1, 0.85)
-            rationale += "，量价配合"
-    elif change_24h < -2 and short_trend < 0:
-        action = "SELL"
-        confidence = 0.6 + min(abs(change_24h) / 20, 0.2)
-        rationale = f"24H下跌{abs(change_24h)}%，近3H延续下跌趋势"
-    elif change_24h > 1:
-        action = "BUY"
-        confidence = 0.52
-        rationale = f"小幅上涨{change_24h}%，弱多信号"
+        # 资金费率极值（拥挤做反向）
+        opp = opp_map.get(coin, {})
+        if opp.get("funding_signal"):
+            score += 2
+            side = "SHORT" if opp.get("funding_dir") == "LONG" else "LONG"
 
-    reasoning_steps.append(f"决策: {action}，置信度: {confidence:.2f}")
-    reasoning_steps.append(f"依据: {rationale}")
+        if score > best_score:
+            best_score = score
+            best_coin  = coin
+            best_side  = side
+            best_info  = d
 
-    # 计算仓位
-    usdt_avail = balance.get("assets", {}).get("USDT", {}).get("avail", 0)
-    position_size_usdt = round(usdt_avail * PER_TRADE_PCT, 2) if action != "HOLD" else 0
+    if best_score < 2 or best_coin is None:
+        reasoning.append("全市场无明确信号，观望")
+        return {"action": "HOLD", "coin": None, "confidence": 0.4,
+                "reasoning_steps": reasoning, "position_size_usdt": 0}
+
+    confidence = min(0.5 + best_score * 0.07, 0.85)
+    # 软隔离：合约账户预算上限 BUDGET_USDC
+    effective_equity = min(equity, BUDGET_USDC)
+    pos_usdt = max(round(effective_equity * PER_TRADE_PCT, 2), 5.0)  # 最小 $5，名义 $15
+
+    reasoning.append(f"扫描 {len(coins)} 个标的")
+    reasoning.append(f"最优标的: {best_coin} score={best_score}")
+    reasoning.append(f"方向: {best_side} | 24H={best_info['ch24']:+.1f}% 4H={best_info['ch4h']:+.1f}%")
+    reasoning.append(f"量比: {best_info['vol_ratio']:.2f}x")
+    reasoning.append(f"仓位: {pos_usdt} USDC × {LEVERAGE}x = {pos_usdt*LEVERAGE:.0f} 名义")
+
+    px = best_info["price"]
+    sl = round(px * (1 - STOP_LOSS_PCT) if best_side == "LONG" else px * (1 + STOP_LOSS_PCT), 2)
+    tp = round(px * (1 + TP_PCT)        if best_side == "LONG" else px * (1 - TP_PCT),        2)
 
     return {
-        "action": action,
-        "confidence": round(confidence, 3),
-        "reasoning_steps": reasoning_steps,
-        "rationale": rationale,
-        "position_size_usdt": position_size_usdt,
-        "stop_loss_price": round(price * (1 - STOP_LOSS_PCT), 2) if action == "BUY" else None,
-        "take_profit_price": round(price * (1 + TAKE_PROFIT_PCT), 2) if action == "BUY" else None,
-        "market_regime": (
-            "TREND_UP" if change_24h > 2 else
-            "TREND_DOWN" if change_24h < -2 else "RANGE"
-        ),
+        "action":             best_side,
+        "coin":               best_coin,
+        "confidence":         round(confidence, 3),
+        "reasoning_steps":    reasoning,
+        "position_size_usdt": pos_usdt,
+        "leverage":           LEVERAGE,
+        "entry_price":        px,
+        "stop_loss_price":    sl,
+        "take_profit_price":  tp,
+        "market_regime":      "TREND_UP" if best_side == "LONG" else "TREND_DOWN",
+        "decision_rationale": f"{best_coin} {best_side} score={best_score} conf={confidence:.0%}",
     }
 
 
@@ -130,56 +147,52 @@ def run():
     cycle = _cycle_id()
     print(f"[Agent A] 启动 cycle={cycle}")
 
-    client = OKXSpotClient("a")
+    client = HyperliquidClient("a")
 
-    # 获取账户余额
-    balance = client.get_balance()
-    if not balance["ok"]:
-        print(f"[Agent A] 余额获取失败: {balance}")
-        return
+    acct = client.get_account()
+    if not acct["ok"]:
+        print(f"[Agent A] 账户查询失败"); return
+    equity = acct["equity"]
+    print(f"[Agent A] 权益={equity:.2f} USDC  持仓={list(acct['positions'].keys())}")
 
-    # 获取市场数据
-    market_ctx = fetch_market_context(client)
-    print(f"[Agent A] BTC={market_ctx['current_price']}, 24H={market_ctx['price_change_24h_pct']}%")
+    mkt      = fetch_market_context(client)
+    decision = agent_a_decide(mkt, equity)
 
-    # 决策
-    decision = agent_a_decide(market_ctx, balance)
-    print(f"[Agent A] 决策: {decision['action']} | 置信度: {decision['confidence']}")
+    print(f"[Agent A] 决策={decision['action']} coin={decision.get('coin')} "
+          f"conf={decision['confidence']:.0%}")
 
-    # 记录决策日志
     log = DecisionLog("a", cycle)
     log.data.update({
-        "market_regime": decision["market_regime"],
-        "reasoning_steps": decision["reasoning_steps"],
-        "confidence": decision["confidence"],
-        "action": decision["action"],
-        "entry_price": market_ctx["current_price"],
-        "position_size_usdt": decision["position_size_usdt"],
-        "stop_loss_price": decision["stop_loss_price"],
-        "take_profit_price": decision["take_profit_price"],
-        "decision_rationale": decision["rationale"],
+        "market_regime":       decision.get("market_regime", "UNKNOWN"),
+        "reasoning_steps":     decision["reasoning_steps"],
+        "confidence":          decision["confidence"],
+        "action":              decision["action"],
+        "entry_price":         decision.get("entry_price"),
+        "position_size_usdt":  decision["position_size_usdt"],
+        "stop_loss_price":     decision.get("stop_loss_price"),
+        "take_profit_price":   decision.get("take_profit_price"),
+        "decision_rationale":  decision.get("decision_rationale", ""),
         "system_features_used": [],
-        "memory_loaded": False,
+        "memory_loaded":       False,
+        "coin":                decision.get("coin"),
+        "leverage":            decision.get("leverage", LEVERAGE),
     })
 
-    # 执行（仅在 AUTO_EXECUTE=true 时）
     if AUTO_EXECUTE and decision["action"] != "HOLD" and decision["position_size_usdt"] > 0:
-        if decision["action"] == "BUY":
-            exec_result = client.market_buy(INST_ID, decision["position_size_usdt"],
-                                            tag=f"agent_a_{cycle}")
-        elif decision["action"] == "SELL":
-            btc_avail = balance.get("assets", {}).get("BTC", {}).get("avail", 0)
-            sell_btc = round(btc_avail * PER_TRADE_PCT, 8)
-            exec_result = client.market_sell(INST_ID, sell_btc, tag=f"agent_a_{cycle}")
+        coin = decision["coin"]
+        lev  = decision.get("leverage", LEVERAGE)
+        tag  = f"a_{cycle[:8]}"
+        if decision["action"] == "LONG":
+            result = client.open_long(coin, decision["position_size_usdt"], lev, tag)
         else:
-            exec_result = {"ok": False, "error": "HOLD, no execution"}
-        log.data["execution"] = exec_result
-        print(f"[Agent A] 执行结果: {exec_result}")
+            result = client.open_short(coin, decision["position_size_usdt"], lev, tag)
+        log.data["execution"] = result
+        print(f"[Agent A] 执行: {result.get('ok')} {result.get('filled')}")
     else:
-        print(f"[Agent A] AUTO_EXECUTE=false, 跳过执行（人工确认模式）")
+        print(f"[Agent A] 跳过执行（AUTO_EXECUTE={AUTO_EXECUTE}）")
 
     path = log.save()
-    print(f"[Agent A] 日志已保存: {path}")
+    print(f"[Agent A] 日志: {path}")
     return log.data
 
 
