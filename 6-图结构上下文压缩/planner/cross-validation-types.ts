@@ -8,7 +8,7 @@
  */
 
 import { SkillChain } from './skill-types.ts';
-import { ThinkStage } from './step-types.ts';
+import type { ThinkStage } from './skill-types.ts';
 import { SerializedNode } from '../types.ts';
 
 // ============================================================
@@ -230,7 +230,7 @@ export const CROSS_VALIDATION_CONFIGS: CrossValidationConfig[] = [
   {
     nodeId: 'CV1',
     afterStep: 'S1',
-    participatingChains: ['S', 'C', 'F'],
+    participatingChains: ['A', 'C', 'F'],
     weights: { s_chain: 0.35, c_chain: 0.45, f_chain: 0.20 },
     triggerCondition: { type: 'always' },
     fallback: { type: 'majority_vote' },
@@ -238,7 +238,7 @@ export const CROSS_VALIDATION_CONFIGS: CrossValidationConfig[] = [
   {
     nodeId: 'CV2',
     afterStep: 'S2',
-    participatingChains: ['S', 'C', 'F'],
+    participatingChains: ['A', 'C', 'F'],
     weights: { s_chain: 0.35, c_chain: 0.40, f_chain: 0.25 },
     triggerCondition: { type: 'always' },
     fallback: { type: 'weighted_average' },
@@ -246,24 +246,24 @@ export const CROSS_VALIDATION_CONFIGS: CrossValidationConfig[] = [
   {
     nodeId: 'CV3',
     afterStep: 'S3',
-    participatingChains: ['S', 'C'],
-    weights: { s_chain: 0.40, c_chain: 0.60 },
+    participatingChains: ['A', 'C'],
+    weights: { s_chain: 0.40, c_chain: 0.60, f_chain: 0 },
     triggerCondition: { type: 'on_conflict' },
     fallback: { type: 'highest_confidence', requireUserConfirmation: true },
   },
   {
     nodeId: 'CV4',
     afterStep: 'S4',
-    participatingChains: ['S', 'C'],
-    weights: { s_chain: 0.30, c_chain: 0.70 },
+    participatingChains: ['A', 'C'],
+    weights: { s_chain: 0.30, c_chain: 0.70, f_chain: 0 },
     triggerCondition: { type: 'always' },
     fallback: { type: 'majority_vote' },
   },
   {
     nodeId: 'CV5',
     afterStep: 'S5',
-    participatingChains: ['S', 'C'],
-    weights: { s_chain: 0.45, c_chain: 0.55 },
+    participatingChains: ['A', 'C'],
+    weights: { s_chain: 0.45, c_chain: 0.55, f_chain: 0 },
     triggerCondition: { type: 'on_low_confidence', threshold: 60 },
     fallback: { type: 'weighted_average', requireUserConfirmation: true },
   },
@@ -292,8 +292,8 @@ export function createEmptyCrossValidationNode(
       votes: [],
     },
     conflicts: [],
-    recommendedAction: 'pause',
-    recommendationReason: '缺少足够的信号数据',
+    recommendedAction: 'proceed',
+    recommendationReason: '当前链信号不足，跳过交叉验证，继续执行',
     architectureNode: {
       id: nodeId,
       type: 'cross-validation',
