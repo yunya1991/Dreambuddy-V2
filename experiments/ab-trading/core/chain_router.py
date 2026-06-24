@@ -16,6 +16,16 @@ from dataclasses import dataclass, field
 
 warnings.filterwarnings("ignore")
 
+# LLM 客户端（Claude 优先 → DeepSeek → 规则降级，含每日配额）
+try:
+    from core.llm_client import llm_chat, llm_available, llm_quota_ok
+    _LLM_OK = True
+except ImportError:
+    _LLM_OK = False
+    def llm_chat(*a, **kw): return ""
+    def llm_available(): return "none"
+    def llm_quota_ok(*a, **kw): return False
+
 GRAPH_LOG = Path(__file__).parent.parent / "data" / "agent_b_graph.json"
 # 能力清单（节点注册表，可动态扩展，不修改代码）
 REGISTRY  = Path(__file__).parent.parent / "data" / "skill_registry.md"
@@ -395,9 +405,84 @@ class ChainRouter:
                           {"a2": a2, "trend": trend})
 
     def _node_a3_seminar(self, node_id: str) -> NodeResult:
-        """A3：大师研讨（三视角投票，中Token）"""
+        """A3：大师研讨 — LLM 版（Claude 优先 / DeepSeek fallback）
+        若 LLM 不可用，降级为内置硬编码逻辑
+        """
+        mkt = self.mkt
+        price   = mkt.get("price", 0)
+        coin    = self._coin
+        rsi     = mkt.get("rsi14", 50)
+        ch24    = mkt.get("change_24h", 0)
+        funding = mkt.get("funding_rate", 0)
+        regime  = mkt.get("regime", "UNKNOWN")
+        a2_dir  = self._direction
+        a2_conf = self._current_conf
+
+        # ── LLM 版大师研讨（配额预检，超限直接走规则）────────────────────
+        if _LLM_OK and llm_quota_ok("a3_seminar"):
+            prompt = f"""你是三位顶级交易大师的代表，对以下交易信号进行辩论并给出结论。
+
+【当前市场数据】
+- 标的: {coin}  价格: ${price:.4f}
+- 24H涨跌: {ch24:+.2f}%  Regime: {regime}
+- RSI14: {rsi:.1f}  资金费率: {funding*100:.4f}%
+- A2分析方向: {a2_dir}  当前置信度: {a2_conf:.0%}
+
+【三位大师立场】
+1. Jesse Livermore（趋势派）：只追顺势信号，逆势不入场
+2. Jim Simons（量化派）：看统计规律，RSI极端=均值回归机会
+3. Ray Dalio（风险派）：优先控制风险，不确定时观望
+
+请每位大师给出：投票（LONG/SHORT/HOLD）和一句核心理由（15字以内）。
+最后给出综合裁决（LONG/SHORT/HOLD）和置信度调整（-0.15到+0.15之间）。
+
+严格按以下格式输出（不要其他内容）：
+Livermore: LONG/SHORT/HOLD | 理由
+Simons: LONG/SHORT/HOLD | 理由
+Dalio: LONG/SHORT/HOLD | 理由
+裁决: LONG/SHORT/HOLD | 置信度调整: +0.05"""
+
+            try:
+                reply = llm_chat(prompt, max_tokens=200, purpose="a3_seminar")
+                if reply:
+                    # 解析 LLM 输出
+                    lines = [l.strip() for l in reply.strip().split("\n") if l.strip()]
+                    votes = {"LONG": 0, "SHORT": 0, "HOLD": 0}
+                    reasoning = [f"A3大师研讨(LLM/{llm_available()}):"]
+                    verdict, conf_adj = self._direction, 0.0
+
+                    for line in lines:
+                        for master in ["Livermore", "Simons", "Dalio"]:
+                            if master in line:
+                                for v in ["LONG", "SHORT", "HOLD"]:
+                                    if v in line:
+                                        votes[v] += 1
+                                        reason = line.split("|")[-1].strip() if "|" in line else ""
+                                        reasoning.append(f"  {master}: {v} {reason}")
+                                        break
+                        if "裁决:" in line or "裁决：" in line:
+                            for v in ["LONG", "SHORT", "HOLD"]:
+                                if v in line:
+                                    verdict = v
+                                    break
+                            try:
+                                adj_part = line.split("调整:")[-1].split("调整：")[-1].strip()
+                                conf_adj = float(adj_part.replace("+",""))
+                                conf_adj = max(-0.15, min(0.15, conf_adj))
+                            except Exception:
+                                pass
+
+                    new_conf = round(min(max(self._current_conf + conf_adj, 0), 1), 3)
+                    action = verdict if verdict != "HOLD" else self._direction
+                    reasoning.append(f"  裁决={verdict} 调整{conf_adj:+.2f} → conf={new_conf:.0%}")
+                    return NodeResult(node_id, new_conf, action, reasoning,
+                                      {"llm": True, "provider": llm_available(),
+                                       "votes": votes, "conf_adj": conf_adj})
+            except Exception as e:
+                pass  # LLM 失败，降级
+
+        # ── 降级：内置硬编码逻辑 ────────────────────────────────────────
         from agents.agent_b_runner import a3_master_seminar
-        # 取前序 A0/A2 数据
         a0_data = next(
             (r.data.get("a0", {}) for r in self.node_trace if "A0" in r.node_id),
             {"dominant_force": "NEUTRAL", "bull_count": 0, "bear_count": 0,
@@ -412,12 +497,11 @@ class ChainRouter:
         verdict  = a3.get("verdict", "HOLD")
         conf_adj = a3.get("confidence_adj", 0)
         new_conf = round(min(max(self._current_conf + conf_adj, 0), 1), 3)
-
-        action = verdict if verdict != "HOLD" else self._direction
-        votes = f"多{a3['buy_votes']}/空{a3['sell_votes']}/观望{a3['hold_votes']}"
+        action   = verdict if verdict != "HOLD" else self._direction
+        votes    = f"多{a3['buy_votes']}/空{a3['sell_votes']}/观望{a3['hold_votes']}"
         return NodeResult(node_id, new_conf, action,
-                          [f"A3大师研讨: {verdict} 投票={votes} 修正{conf_adj:+.0%}"],
-                          {"a3": a3, "conf_adj": conf_adj})
+                          [f"A3大师研讨(内置): {verdict} {votes} {conf_adj:+.0%}"],
+                          {"llm": False, "a3": a3, "conf_adj": conf_adj})
 
     def _node_a7_gate(self, node_id: str) -> NodeResult:
         """A7：置信度门禁（极低Token）"""
@@ -595,52 +679,107 @@ class ChainRouter:
                               [f"F5宏观: {e}"], skipped=True, skip_reason=str(e))
 
     def _node_a1_research(self, node_id: str) -> NodeResult:
-        """A1：深度市场调研（Tavily，高成本，仅UNCERTAIN时用）"""
-        if self._tavily_used >= 2:
-            return NodeResult(node_id, self._current_conf, self._direction,
-                              ["A1调研: Tavily预算已用完，跳过"],
-                              skipped=True, skip_reason="budget_exceeded")
-
+        """A1：深度市场调研 — Tavily + LLM 综合分析版
+        Tavily 搜新闻 → LLM 综合分析给出方向判断
+        LLM 不可用时降级为关键词情感分析
+        """
         import os
         from dotenv import load_dotenv
         load_dotenv(Path(__file__).parent.parent / "config" / ".env")
         api_key = os.environ.get("TAVILY_API_KEY", "")
-        if not api_key:
+
+        summaries = []
+        # Step1: Tavily 搜索
+        if api_key and self._tavily_used < 2:
+            try:
+                s = requests.Session(); s.trust_env = False
+                r = s.post("https://api.tavily.com/search", json={
+                    "api_key": api_key,
+                    "query":   f"{self._coin} crypto price analysis outlook 2026",
+                    "search_depth": "advanced", "max_results": 5,
+                }, timeout=12)
+                results = r.json().get("results", [])
+                self._tavily_used += 1
+                summaries = [
+                    (res.get("title", "")[:80] + " — " + res.get("content", "")[:120])
+                    for res in results[:3]
+                ]
+            except Exception:
+                pass
+
+        if not summaries:
             return NodeResult(node_id, self._current_conf, self._direction,
-                              ["A1调研: 未配置API"], skipped=True, skip_reason="no_api_key")
-        try:
-            s = requests.Session(); s.trust_env = False
-            r = s.post("https://api.tavily.com/search", json={
-                "api_key": api_key,
-                "query":   f"{self._coin} crypto market analysis trend 2026",
-                "search_depth": "advanced", "max_results": 5,
-            }, timeout=12)
-            results = r.json().get("results", [])
-            self._tavily_used += 1
-            summaries = [res.get("title", "")[:60] for res in results[:3]]
-            # 简单情感判断（标题中有利好/利空词）
-            bullish_kw = ["rally", "surge", "bullish", "up", "gain", "break"]
-            bearish_kw = ["drop", "fall", "bearish", "down", "crash", "dump"]
-            bull_cnt = sum(1 for t in summaries for w in bullish_kw if w in t.lower())
-            bear_cnt = sum(1 for t in summaries for w in bearish_kw if w in t.lower())
-            if bull_cnt > bear_cnt:
-                new_conf = min(self._current_conf + 0.08, 0.85)
-                direction = "LONG"
-                note = f"新闻偏多({bull_cnt}多/{bear_cnt}空)"
-            elif bear_cnt > bull_cnt:
-                new_conf = min(self._current_conf + 0.08, 0.85)
-                direction = "SHORT"
-                note = f"新闻偏空({bear_cnt}空/{bull_cnt}多)"
-            else:
-                new_conf = self._current_conf
-                direction = self._direction
-                note = "新闻中性"
-            return NodeResult(node_id, new_conf, direction,
-                              [f"A1深度调研({self._coin}): {note}"] + summaries[:2],
-                              {"news": summaries, "bull": bull_cnt, "bear": bear_cnt})
-        except Exception as e:
-            return NodeResult(node_id, self._current_conf, self._direction,
-                              [f"A1调研: {e}"], skipped=True, skip_reason=str(e))
+                              ["A1调研: 无数据源可用，跳过"],
+                              skipped=True, skip_reason="no_data")
+
+        # Step2: LLM 综合分析（配额预检，超限走关键词降级）
+        if _LLM_OK and llm_quota_ok("a1_research"):
+            news_text = "\n".join(f"- {s}" for s in summaries)
+            prompt = f"""根据以下{self._coin}最新新闻，给出交易方向判断。
+
+{news_text}
+
+当前技术面：价格${self.mkt.get('price',0):.4f}，24H={self.mkt.get('change_24h',0):+.1f}%，RSI={self.mkt.get('rsi14',50):.0f}
+
+请分析：
+1. 新闻整体情绪（看多/看空/中性）
+2. 对价格的短期影响（1-2句）
+3. 交易建议（LONG/SHORT/HOLD）和置信度变化（-0.10到+0.10）
+
+格式：
+情绪: 看多/看空/中性
+影响: xxx
+建议: LONG/SHORT/HOLD | 置信度调整: +0.05"""
+
+            try:
+                reply = llm_chat(prompt, max_tokens=200, purpose="a1_research")
+                if reply:
+                    direction = self._direction
+                    conf_adj  = 0.0
+                    reasoning = [f"A1调研(LLM/{llm_available()}) {self._coin}:"]
+
+                    for line in reply.strip().split("\n"):
+                        line = line.strip()
+                        if "建议:" in line or "建议：" in line:
+                            for v in ["LONG", "SHORT", "HOLD"]:
+                                if v in line:
+                                    direction = v; break
+                            try:
+                                adj = line.split("调整:")[-1].split("调整：")[-1].strip()
+                                conf_adj = max(-0.10, min(0.10, float(adj.replace("+",""))))
+                            except Exception:
+                                pass
+                        elif "情绪:" in line or "情绪：" in line:
+                            reasoning.append(f"  {line}")
+                        elif "影响:" in line or "影响：" in line:
+                            reasoning.append(f"  {line}")
+
+                    new_conf = round(min(max(self._current_conf + conf_adj, 0), 1), 3)
+                    reasoning.append(f"  → {direction} 调整{conf_adj:+.2f} conf={new_conf:.0%}")
+                    return NodeResult(node_id, new_conf, direction, reasoning,
+                                      {"llm": True, "provider": llm_available(),
+                                       "conf_adj": conf_adj, "news_count": len(summaries)})
+            except Exception:
+                pass
+
+        # Step3: 降级 — 关键词情感分析
+        bullish_kw = ["rally", "surge", "bullish", "up", "gain", "break", "high", "rise"]
+        bearish_kw = ["drop", "fall", "bearish", "down", "crash", "dump", "low", "decline"]
+        full_text  = " ".join(summaries).lower()
+        bull_cnt   = sum(full_text.count(w) for w in bullish_kw)
+        bear_cnt   = sum(full_text.count(w) for w in bearish_kw)
+        if bull_cnt > bear_cnt + 2:
+            new_conf, direction = min(self._current_conf + 0.06, 0.85), "LONG"
+            note = f"关键词偏多({bull_cnt}多/{bear_cnt}空)"
+        elif bear_cnt > bull_cnt + 2:
+            new_conf, direction = min(self._current_conf + 0.06, 0.85), "SHORT"
+            note = f"关键词偏空({bear_cnt}空/{bull_cnt}多)"
+        else:
+            new_conf, direction = self._current_conf, self._direction
+            note = "关键词中性"
+        return NodeResult(node_id, new_conf, direction,
+                          [f"A1调研(关键词) {self._coin}: {note}"] + [s[:60] for s in summaries[:2]],
+                          {"llm": False, "bull": bull_cnt, "bear": bear_cnt})
 
     # ── 图压缩记录 ───────────────────────────────────────────────────────────
 
