@@ -638,13 +638,28 @@ def run():
     import sys as _sys
     _sys.path.insert(0, str(Path(__file__).parent.parent))
     from core.intent_gateway import detect_intent
+    from core.chain_planner import ChainPlanner
     from core.chain_router import ChainRouter
 
     intent = detect_intent(mkt, memory)
     print(f"[Agent B/Intent] {intent.intent_type} conf={intent.confidence:.0%} | {intent.rationale[:60]}")
-    print(f"[Agent B/Chain]  基础链: {intent.base_chain}")
-    if intent.extend_nodes:
-        print(f"[Agent B/Chain]  扩展节点池: {intent.extend_nodes}")
+
+    # ── 链路规划（零Token）──────────────────────────────────────────────────
+    token_budget = int(os.environ.get("TOKEN_BUDGET", "6000"))
+    planner = ChainPlanner(token_budget=token_budget)
+    plan    = planner.plan(intent, mkt, memory)
+
+    print(f"[Agent B/Plan]   模式={plan.budget_mode} 预估={plan.estimated_tokens}t"
+          f"{' 快捷路径' if plan.shortcut_taken else ''}")
+    print(f"[Agent B/Plan]   链路: {plan.planned_chain}")
+    if plan.pruned_nodes:
+        print(f"[Agent B/Plan]   剪枝: {[p.split('（')[0] for p in plan.pruned_nodes]}")
+    if plan.added_nodes:
+        print(f"[Agent B/Plan]   追加: {plan.added_nodes}")
+
+    # 把规划结果注入 intent（链路规划器的输出替换基础链）
+    intent.base_chain    = plan.planned_chain
+    intent.extend_nodes  = []  # 规划器已经合并了扩展节点
 
     # ── 动态思维链执行 ──────────────────────────────────────────────────────
     router = ChainRouter(client, mkt, memory, intent, BUDGET_USDC)
@@ -686,6 +701,9 @@ def run():
             f"标的: {coin}  杠杆: {leverage}x  意图: {intent.intent_type}",
             f"EMA: {mkt['ema20']:.2f}/{mkt['ema50']:.2f}/{mkt['ema200']:.2f}",
             f"RSI={mkt['rsi14']:.1f} 资金费率={mkt['funding_rate']:.6f}",
+            f"规划: {plan.budget_mode}模式 ~{plan.estimated_tokens}t"
+            + (f" 快捷路径" if plan.shortcut_taken else ""),
+            f"规划理由: {plan.plan_rationale[:100]}",
             f"动态追加节点: {chain_result.dynamic_nodes_added or '无'}",
         ],
         "action":               action,
@@ -698,7 +716,7 @@ def run():
         "decision_rationale":   (gate_reason if not gate_pass else
                                  f"{coin} {action} {leverage}x | {intent.intent_type} | conf={final_conf:.0%}"),
         "system_features_used": (
-            ["intent_gateway", "chain_router", "graph_compression", "memory"]
+            ["intent_gateway", "chain_planner", "chain_router", "graph_compression", "memory"]
             + [r.node_id for r in chain_result.node_trace if not r.skipped]
         ),
         "graph_context_nodes":  len(chain_result.node_trace),
@@ -706,6 +724,12 @@ def run():
         "prior_lessons_applied": lessons[-2:],
         "intent_type":          intent.intent_type,
         "dynamic_nodes_added":  chain_result.dynamic_nodes_added,
+        "plan_budget_mode":     plan.budget_mode,
+        "plan_estimated_tokens": plan.estimated_tokens,
+        "plan_pruned_nodes":    [p.split("（")[0] for p in plan.pruned_nodes],
+        "plan_added_nodes":     plan.added_nodes,
+        "plan_shortcut":        plan.shortcut_taken,
+        "plan_rationale":       plan.plan_rationale,
     })
 
     # ── 执行 ─────────────────────────────────────────────────────────────────
