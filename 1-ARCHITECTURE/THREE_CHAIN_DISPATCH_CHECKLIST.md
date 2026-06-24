@@ -187,17 +187,17 @@ A0矛盾识别 → A1深度调研 → A2第一性原理 → A3沙盘推演
 
 ## 二、经典技术指标系统功能模块
 
-### 2.1 基础技术指标（已验证 - 12个纯Python实现 ⚠️缺少2个）
+### 2.1 基础技术指标（已验证 - 14个纯Python实现 ✅）
 
 | 类别 | 指标 | 实现方式 | 状态 |
 |------|------|----------|------|
 | 趋势类 | EMA, TEMA, SAR, MACD | 纯numpy+pandas | ✅ |
 | 震荡类 | RSI, STOCHRSI, WILLR | 纯numpy+pandas | ✅ |
 | 波动率 | ATR, BBANDS, TRANGE | 纯numpy+pandas | ✅ |
-| 趋势强度 | ADX | 纯numpy+pandas | ✅ |
+| 趋势强度 | ADX, PLUS_DI, MINUS_DI | 纯numpy+pandas | ✅ |
 | 量价类 | OBV | 纯numpy+pandas | ✅ |
 
-> ⚠️ **待补充**: PLUS_DI, MINUS_DI（清单中列出但实际未实现）
+> ✅ **已全部实现**: 14个指标全部在 `talib/abstract.py` 中实现并通过测试
 
 **实现文件**: [talib/abstract.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/talib/abstract.py)
 
@@ -563,8 +563,8 @@ deployed_canary                            deployed_full
 | 风控系SKILL | 3个 | ✅ 3个 | 完整 |
 | 支撑系SKILL | 6个 | ✅ 6个 | 完整 |
 | **SKILL总计** | **43个** | **29个+14个集成文档** | 清单含集成文档 |
-| 基础技术指标 | 14个 | ⚠️ 12个 | 缺少 PLUS_DI, MINUS_DI |
-| 复杂策略 | 7个 | ✅ 7个 | 需验证实现 |
+| **基础技术指标** | **14个** | ✅ **14个** | 全部实现 |
+| 复杂策略 | 7个 | ✅ 7个 | 全部实现 |
 | 基本面扩展模块 | 6个 | ✅ 6个 | 完整 |
 | 数据契约Schema | 9个 | ✅ 9个 | 完整 |
 | 扩展脚本 | 8+个 | ✅ 8+个 | 完整 |
@@ -598,9 +598,9 @@ deployed_canary                            deployed_full
 
 | 项目 | 清单 | 实际 | 状态 |
 |------|------|------|------|
-| 基础技术指标 | 14个 | 12个 | ⚠️ 缺少 PLUS_DI, MINUS_DI |
+| 基础技术指标 | 14个 | ✅ 14个 | 全部实现 |
 | SKILL统计 | 43个 | 29个+14个集成文档 | ⚠️ 清单含集成文档 |
-| API端点 | 130+个 | 970+个 | ✅ 远超预期 |
+| API端点 | 130+个 | ✅ 970+个 | 远超预期 |
 
 ---
 
