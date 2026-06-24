@@ -21,12 +21,15 @@ from orchestrator import request_early_run
 
 # ─── 配置 ───────────────────────────────────────────────────────────────────
 AUTO_EXECUTE    = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
-BUDGET_USDC     = 60.0        # 软隔离：现货账户预算上限
+BUDGET_USDC     = 60.0        # 子账户预算（合约）
 PER_TRADE_PCT   = float(os.environ.get("PER_TRADE_PCT", "0.05"))
-STOP_LOSS_PCT   = 0.05        # 现货止损 5%（无杠杆）
-TP_PCT          = 0.10        # 现货止盈 10%
+STOP_LOSS_PCT   = 0.04        # 合约止损 4%
+TP_PCT          = 0.08        # 合约止盈 8%
 CONFIDENCE_GATE = 0.65
-UNIVERSE_B      = ["BTC", "ETH", "SOL", "HYPE", "AVAX"]  # 现货流动性好的5个
+MAX_LEVERAGE    = 5
+DEFAULT_LEVERAGE = 3
+# Agent B 用合约，可交易全部标的池（与 A 相同，但决策框架不同）
+UNIVERSE_B = ["BTC", "ETH", "SOL", "HYPE", "AVAX", "ARB", "SUI", "INJ", "LINK", "TIA"]
 
 MEMORY_PATH = Path(__file__).parent.parent / "data" / "agent_b_memory.json"
 GRAPH_LOG   = Path(__file__).parent.parent / "data" / "agent_b_graph.json"
@@ -615,135 +618,103 @@ def run():
 
     client = HyperliquidClient("b")
 
-    # 软隔离：Agent B 用现货账户，取现货 USDC 余额
-    spot_bal = client.get_spot_balance()
-    usdc_avail = spot_bal.get("usdc_avail", 0)
-    equity = min(usdc_avail, BUDGET_USDC)   # 上限 60 USDC
-    print(f"[Agent B] 现货USDC={usdc_avail:.2f}  可用预算={equity:.2f}  "
-          f"持仓={list(spot_bal.get('balances', {}).keys())}")
+    # Agent B 子账户：合约账户权益
+    acct = client.get_account()
+    if not acct["ok"]:
+        print(f"[Agent B] 账户查询失败"); return
+    equity = min(acct["equity"], BUDGET_USDC)
+    print(f"[Agent B] 权益={equity:.2f} USDC  持仓={list(acct['positions'].keys())}")
 
     mkt = fetch_market_context(client)
+    # 注入 Regime 到 mkt 供意图识别使用
+    mkt["regime"] = (
+        "TREND_UP"   if mkt.get("change_24h", 0) > 2 else
+        "TREND_DOWN" if mkt.get("change_24h", 0) < -2 else "RANGE"
+    )
     print(f"[Agent B] 主标的={mkt['coin']} price={mkt['price']:.2f}, "
-          f"24H={mkt['change_24h']:+.1f}%, RSI={mkt['rsi14']}, EMA20={mkt['ema20']:.2f}")
+          f"24H={mkt['change_24h']:+.1f}%, RSI={mkt['rsi14']}, regime={mkt['regime']}")
 
-    # ── A0 矛盾论 ───────────────────────────────────────────────────────────
-    a0 = a0_contradiction_analysis(mkt, memory)
-    print(f"[Agent B/A0] 主要矛盾={a0['primary_contradiction']['dim']}({a0['primary_contradiction']['name']}), "
-          f"多:{a0['bull_count']} 空:{a0['bear_count']} 冲突:{a0['conflict_count']}")
+    # ── 意图识别层 ──────────────────────────────────────────────────────────
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).parent.parent))
+    from core.intent_gateway import detect_intent
+    from core.chain_router import ChainRouter
 
-    # ── A2 第一性原理 ────────────────────────────────────────────────────────
-    a2 = a2_first_principles(mkt, a0)
-    print(f"[Agent B/A2] 方向={a2['direction']}, 置信度={a2['confidence']:.0%}, "
-          f"阻力最小={a2['least_resistance']}, 趋势={a2['trend']}")
+    intent = detect_intent(mkt, memory)
+    print(f"[Agent B/Intent] {intent.intent_type} conf={intent.confidence:.0%} | {intent.rationale[:60]}")
+    print(f"[Agent B/Chain]  基础链: {intent.base_chain}")
+    if intent.extend_nodes:
+        print(f"[Agent B/Chain]  扩展节点池: {intent.extend_nodes}")
 
-    # ── A3 大师研讨 ──────────────────────────────────────────────────────────
-    a3 = a3_master_seminar(mkt, a0, a2)
-    print(f"[Agent B/A3] 裁决={a3['verdict']}, 投票=多{a3['buy_votes']}/空{a3['sell_votes']}/观望{a3['hold_votes']}, "
-          f"置信度修正{a3['confidence_adj']:+.0%}")
+    # ── 动态思维链执行 ──────────────────────────────────────────────────────
+    router = ChainRouter(client, mkt, memory, intent, BUDGET_USDC)
+    chain_result = router.execute()
 
-    # ── 综合置信度 ────────────────────────────────────────────────────────────
-    raw_action    = a3["verdict"] if a3["verdict"] != "HOLD" else a2["direction"]
-    final_conf    = round(min(max(a2["confidence"] + a3["confidence_adj"], 0), 1), 3)
+    print(f"[Agent B/Chain]  执行了 {len(chain_result.node_trace)} 个节点"
+          f"{' (+' + str(len(chain_result.dynamic_nodes_added)) + '动态追加)' if chain_result.dynamic_nodes_added else ''}")
+    print(f"[Agent B/Chain]  最终: {chain_result.final_action} {chain_result.coin} "
+          f"conf={chain_result.final_confidence:.0%} gate={'✅' if chain_result.gate_passed else '❌'}")
+    print(f"[Agent B/A7]  {'✅ 通过' if chain_result.gate_passed else '❌ 拦截'}: {chain_result.gate_reason}")
 
-    # ── A7 门禁 ───────────────────────────────────────────────────────────────
-    gate_pass, gate_reason = a7_gate(final_conf, raw_action, gate, memory)
-    action = raw_action if gate_pass else "HOLD"
-    print(f"[Agent B/A7] {'✅ 通过' if gate_pass else '❌ 拦截'}: {gate_reason}")
-
-    # ── 仓位计算（现货，无杠杆）──────────────────────────────────────────────
-    position_size_usdt = round(equity * PER_TRADE_PCT, 2) if gate_pass else 0
+    action     = chain_result.final_action
+    coin       = chain_result.coin
+    leverage   = chain_result.leverage
+    final_conf = chain_result.final_confidence
+    gate_pass  = chain_result.gate_passed
+    gate_reason = chain_result.gate_reason
+    position_size_usdt = chain_result.position_size_usdt
     price = mkt["price"]
-    coin  = mkt.get("coin", "BTC")
-
-    # 现货只做 BUY/HOLD（无做空），若 A2 判断 SELL 则转为 HOLD
-    is_buy   = action in ("BUY", "LONG")
-    is_sell  = action in ("SELL", "SHORT")
-
-    # A0多标的：UNIVERSE_B 内资金费率信号最强且方向一致时切换标的
-    opp_map  = mkt.get("opp_map", {})
-    for o in sorted(opp_map.values(), key=lambda x: abs(x["funding"]), reverse=True):
-        if o.get("coin") in UNIVERSE_B and o["coin"] != coin and o.get("funding_signal"):
-            alt_side = "BUY" if o["funding_dir"] == "SHORT" else "SELL"
-            if is_buy and alt_side == "BUY":
-                coin = o["coin"]; price = o["price"]
-                break
-
-    sl_price = round(price * (1 - STOP_LOSS_PCT), 2) if is_buy else None
-    tp_price = round(price * (1 + TP_PCT), 2)        if is_buy else None
-
-    final = {
-        "action":             "BUY" if is_buy else ("SELL" if is_sell else "HOLD"),
-        "coin":               coin,
-        "leverage":           1,      # 现货无杠杆
-        "confidence":         final_conf,
-        "position_size_usdt": position_size_usdt if is_buy else 0,
-        "entry_price":        price,
-        "stop_loss_price":    sl_price,
-        "take_profit_price":  tp_price,
-        "market_regime": (
-            "TREND_UP"   if a2["trend"] in ("STRONG_UP", "WEAK_UP") else
-            "TREND_DOWN" if a2["trend"] in ("STRONG_DOWN", "WEAK_DOWN") else "RANGE"
-        ),
-        "gate_passed": gate_pass,
-        "cycle_id":    cycle,
-    }
-
-    # ── 图上下文压缩记录 ──────────────────────────────────────────────────────
-    graph_nodes = record_graph_context(cycle, a0, a2, a3, final, memory)
-    print(f"[Agent B] 图节点已记录: {graph_nodes} nodes")
 
     # ── 写决策日志 ────────────────────────────────────────────────────────────
     log = DecisionLog("b", cycle)
     log.data.update({
-        "market_regime":         final["market_regime"],
+        "market_regime":         mkt["regime"],
         "key_contradictions":    [
-            f"{c['dim']}({c['name']}): {c['dominance']}" for c in a0["contradictions"]
+            f"{r.node_id}: {r.direction}({r.confidence:.0%})"
+            for r in chain_result.node_trace if "A0" in r.node_id or "矛盾" in r.node_id
         ],
         "reasoning_steps": (
-            [f"A0: {a0['dominant_force']} 多{a0['bull_count']}空{a0['bear_count']}"]
-            + [f"A0_{c['dim']}: {c['bull'] if c['dominance']=='A' else c['bear']}"
-               for c in a0["contradictions"]]
-            + a2["reasoning"]
-            + [f"A3_{o['master']}: {o['vote']} ({o['score']}/10) {o['reason']}"
-               for o in a3["opinions"]]
-            + [f"A7门禁: {gate_reason}"]
+            [f"[Intent] {intent.intent_type} conf={intent.confidence:.0%}: {intent.rationale[:80]}"]
+            + [f"  [{r.node_id}] {r.direction} conf={r.confidence:.0%}"
+               + (f" (SKIP:{r.skip_reason})" if r.skipped else "")
+               + (" ← 动态追加" if r.node_id in chain_result.dynamic_nodes_added else "")
+               for r in chain_result.node_trace]
+            + [f"[A7门禁] {gate_reason}"]
         ),
         "confidence":           final_conf,
         "supporting_evidence":  [
-            f"标的: {coin}  杠杆: 1x(现货)",
-            f"EMA排列: {mkt['ema20']:.2f}/{mkt['ema50']:.2f}/{mkt['ema200']:.2f}",
-            f"RSI14={mkt['rsi14']:.1f}, ATR={mkt['atr14']:.4f}",
-            f"资金费率={mkt['funding_rate']:.6f}",
+            f"标的: {coin}  杠杆: {leverage}x  意图: {intent.intent_type}",
+            f"EMA: {mkt['ema20']:.2f}/{mkt['ema50']:.2f}/{mkt['ema200']:.2f}",
+            f"RSI={mkt['rsi14']:.1f} 资金费率={mkt['funding_rate']:.6f}",
+            f"动态追加节点: {chain_result.dynamic_nodes_added or '无'}",
         ],
         "action":               action,
         "coin":                 coin,
-        "leverage":             1,
+        "leverage":             leverage,
         "entry_price":          price,
         "position_size_usdt":   position_size_usdt,
-        "stop_loss_price":      final["stop_loss_price"],
-        "take_profit_price":    final["take_profit_price"],
-        "decision_rationale":   gate_reason if not gate_pass else
-                                f"{coin} {a2['direction']} 1x(现货), {a3['verdict']}裁决, conf={final_conf:.0%}",
-        "system_features_used": ["A0_contradiction", "A2_first_principles",
-                                 "A3_master_seminar", "A7_gate", "graph_compression", "memory"],
-        "graph_context_nodes":  graph_nodes,
+        "stop_loss_price":      chain_result.stop_loss,
+        "take_profit_price":    chain_result.take_profit,
+        "decision_rationale":   (gate_reason if not gate_pass else
+                                 f"{coin} {action} {leverage}x | {intent.intent_type} | conf={final_conf:.0%}"),
+        "system_features_used": (
+            ["intent_gateway", "chain_router", "graph_compression", "memory"]
+            + [r.node_id for r in chain_result.node_trace if not r.skipped]
+        ),
+        "graph_context_nodes":  len(chain_result.node_trace),
         "memory_loaded":        True,
         "prior_lessons_applied": lessons[-2:],
+        "intent_type":          intent.intent_type,
+        "dynamic_nodes_added":  chain_result.dynamic_nodes_added,
     })
 
-    # ── 执行（现货买入，无杠杆）──────────────────────────────────────────────
-    exec_action = final["action"]
-    if AUTO_EXECUTE and gate_pass and final["position_size_usdt"] > 0:
+    # ── 执行 ─────────────────────────────────────────────────────────────────
+    if AUTO_EXECUTE and gate_pass and position_size_usdt > 0:
         tag = f"b_{cycle[:8]}"
-        if exec_action == "BUY":
-            exec_result = client.spot_market_buy(coin, final["position_size_usdt"], tag)
-        elif exec_action == "SELL":
-            # 现货卖出：卖出持仓的 coin
-            bal  = client.get_spot_balance()
-            held = bal["balances"].get(coin, {}).get("avail", 0)
-            sell_sz = round(held * PER_TRADE_PCT, 6)
-            exec_result = client.spot_market_sell(coin, sell_sz, tag) if sell_sz > 0 \
-                else {"ok": False, "error": "no_spot_holdings"}
+        if action in ("BUY", "LONG"):
+            exec_result = client.open_long(coin, position_size_usdt, leverage, tag)
+        elif action in ("SELL", "SHORT"):
+            exec_result = client.open_short(coin, position_size_usdt, leverage, tag)
         else:
             exec_result = {"ok": False, "error": "HOLD"}
         log.data["execution"] = exec_result
@@ -754,11 +725,16 @@ def run():
     path = log.save()
     print(f"[Agent B] 日志已保存: {path}")
 
-    # ── 更新记忆（本轮pnl留空，等结算脚本回填）───────────────────────────────
+    # ── 更新记忆 ──────────────────────────────────────────────────────────────
     save_memory(memory, log.data)
 
-    # ── 自主调度：根据系统信号决定下次触发时机 ──────────────────────────
-    _b_self_schedule(final, a0, a2, memory)
+    # ── 自主调度 ──────────────────────────────────────────────────────────────
+    a0_stub = {"conflict_count": 0, "bull_count": 0, "bear_count": 0}
+    a2_stub = {"least_resistance": "NEUTRAL", "confidence": final_conf}
+    for r in chain_result.node_trace:
+        if "A0" in r.node_id: a0_stub.update(r.data.get("a0", {}))
+        if "A2" in r.node_id: a2_stub.update(r.data.get("a2", {}))
+    _b_self_schedule(log.data, a0_stub, a2_stub, memory)
 
     return log.data
 
