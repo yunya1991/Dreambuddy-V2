@@ -10,9 +10,9 @@
     "market_type": "perp"
   },
   "isolation": {
-    "agent_a": {"market": "perp",  "account": "contract", "budget_usdc": 60},
-    "agent_b": {"market": "spot",  "account": "spot",     "budget_usdc": 60},
-    "note": "软隔离：A用合约账户做永续合约，B用现货账户做现货，共用同一钱包地址"
+    "agent_a": {"market": "perp", "account": "main",    "address": "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934", "budget_usdc": 60},
+    "agent_b": {"market": "perp", "account": "sub",     "address": "0x9b56f46b0ac993bff2277cf6135f49c25c37d40b", "budget_usdc": 60},
+    "note": "真实账户隔离：A主账户合约 vs B子账户合约，同市场、不同决策框架"
   },
   "universe": {
     "agent_a_coins": ["BTC", "ETH", "SOL", "HYPE", "AVAX", "ARB", "SUI", "INJ", "LINK", "TIA"],
