@@ -148,7 +148,7 @@
     <div class="card-title"><div class="dot dot-green"></div>账户总览</div>
     <div class="stats-grid" id="account-stats">
       <div class="stat"><div class="stat-label">合约账户（Agent A）</div><div class="stat-value" id="perp-equity">--</div><div class="stat-sub" id="perp-positions">加载中...</div></div>
-      <div class="stat"><div class="stat-label">现货账户（Agent B）</div><div class="stat-value" id="spot-usdc">--</div><div class="stat-sub">BTC/ETH/SOL 现货</div></div>
+      <div class="stat"><div class="stat-label">合约账户·子账户（Agent B）</div><div class="stat-value" id="spot-usdc">--</div><div class="stat-sub">0x9b56...d40b</div></div>
       <div class="stat"><div class="stat-label">总资产</div><div class="stat-value" id="total-equity">--</div><div class="stat-sub" id="total-change">初始资金 $125</div></div>
     </div>
   </div>
@@ -186,7 +186,7 @@
   <div class="card">
     <div class="agent-header">
       <div class="agent-name b">Agent B — DreamBuddy v2</div>
-      <span class="badge badge-spot">现货 1x</span>
+      <span class="badge badge-perp">合约 子账户</span>
     </div>
     <div id="agent-b-positions">
       <div class="no-position">无持仓（观望中）</div>
@@ -251,6 +251,23 @@
   <!-- Agent B 记忆系统 -->
   <div class="card">
     <div class="card-title"><div class="dot dot-b"></div>Agent B — 记忆 & 系统状态</div>
+
+    <!-- 三层架构流程展示 -->
+    <div class="memory-section">
+      <div class="memory-label">决策流程（三环架构）</div>
+      <div id="b-pipeline" style="font-size:11px;line-height:1.8">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+          <span class="memory-tag" style="background:rgba(88,166,255,0.15);border-color:rgba(88,166,255,0.3);color:var(--a-color)">意图识别</span>
+          <span style="color:var(--muted)">→</span>
+          <span class="memory-tag" style="background:rgba(63,185,80,0.15);border-color:rgba(63,185,80,0.3);color:var(--green)">ChainPlanner <span id="b-plan-badge">--</span></span>
+          <span style="color:var(--muted)">→</span>
+          <span class="memory-tag" style="background:rgba(188,140,255,0.15);border-color:rgba(188,140,255,0.3);color:var(--b-color)">ChainRouter</span>
+        </div>
+        <div id="b-plan-detail" style="color:var(--muted);font-size:10px;padding:4px 6px;background:rgba(255,255,255,0.03);border-radius:4px;border:1px solid var(--border)">加载中...</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+
     <div class="memory-section">
       <div class="memory-label">调用的系统模块</div>
       <div id="b-features"></div>
@@ -409,23 +426,26 @@ function drawChart(logsA, logsB) {
 function render(data) {
   // 账户
   document.getElementById('perp-equity').innerHTML = `<span class="${colorClass(data.perp_equity - 62)}">$${fmt(data.perp_equity)}</span>`;
-  document.getElementById('spot-usdc').innerHTML = `<span>$${fmt(data.spot_usdc)}</span>`;
-  const total = data.perp_equity + data.spot_usdc;
+  document.getElementById('spot-usdc').innerHTML = `<span class="${colorClass(data.b_equity - 63)}">$${fmt(data.b_equity)}</span>`;
+  const total = data.perp_equity + data.b_equity;
   const totalChg = total - 125;
   document.getElementById('total-equity').innerHTML = `<span class="${colorClass(totalChg)}">$${fmt(total)}</span>`;
   document.getElementById('total-change').textContent = `${totalChg >= 0 ? '+' : ''}$${fmt(totalChg)} (${fmt(totalChg/125*100, 2)}%)`;
 
-  // Agent A 持仓
-  const posHtml = data.perp_positions.length > 0
-    ? data.perp_positions.map(p => `
+  // Agent A 持仓（主账户合约）
+  const renderPos = (positions) => positions.length > 0
+    ? positions.map(p => `
       <div class="position-row">
         <div><div class="pos-coin">${p.coin} ${p.size > 0 ? '📈 多' : '📉 空'}</div>
-          <div class="pos-detail">入场 $${fmt(p.entry_px)} · sz ${Math.abs(p.size)} · 3x</div></div>
+          <div class="pos-detail">入场 $${fmt(p.entry_px)} · sz ${Math.abs(p.size)} · ${p.leverage}x</div></div>
         <div class="pos-pnl"><div class="pos-pnl-val ${colorClass(p.upnl)}">$${fmt(p.upnl)}</div>
           <div class="pos-detail ${colorClass(p.upnl)}">${fmt(p.upnl/p.entry_px/Math.abs(p.size)*100, 2)}%</div></div>
       </div>`).join('')
     : '<div class="no-position">无持仓</div>';
-  document.getElementById('agent-a-positions').innerHTML = posHtml;
+  document.getElementById('agent-a-positions').innerHTML = renderPos(data.perp_positions || []);
+
+  // Agent B 持仓（子账户合约）
+  document.getElementById('agent-b-positions').innerHTML = renderPos(data.b_positions || []);
 
   // Agent A 最新决策
   const lastA = data.logs_a[data.logs_a.length - 1];
@@ -448,16 +468,42 @@ function render(data) {
     document.getElementById('b-gate').outerHTML = `<span id="b-gate" class="badge ${gatePass ? 'badge-pass' : 'badge-block'}">${gatePass ? '✅ PASS' : '❌ BLOCK'}</span>`;
     document.getElementById('b-regime').textContent = lastB.market_regime || '--';
 
+    // ChainPlanner 规划信息
+    const budgetMode    = lastB.plan_budget_mode || '--';
+    const estTokens     = lastB.plan_estimated_tokens || 0;
+    const shortcut      = lastB.plan_shortcut || false;
+    const pruned        = lastB.plan_pruned_nodes || [];
+    const planAdded     = lastB.plan_added_nodes || [];
+    const planRationale = lastB.plan_rationale || '--';
+    const modeColor     = budgetMode === 'full' ? 'var(--green)' : budgetMode === 'lean' ? 'var(--red)' : 'var(--yellow)';
+    document.getElementById('b-plan-badge').innerHTML =
+      `<span style="color:${modeColor}">${budgetMode}</span> ~${estTokens}t${shortcut ? ' ⚡快捷' : ''}`;
+    const planLines = [
+      `<span style="color:var(--text)">理由:</span> ${planRationale.split('|').slice(1,3).join(' | ')}`,
+      pruned.length ? `<span style="color:var(--red)">剪枝:</span> ${pruned.join(', ')}` : '',
+      planAdded.length ? `<span style="color:var(--green)">追加:</span> ${planAdded.join(', ')}` : '',
+    ].filter(Boolean);
+    document.getElementById('b-plan-detail').innerHTML = planLines.join('<br>') || planRationale.slice(0, 100);
+
     // 矛盾维度
     const contradictions = lastB.key_contradictions || [];
     document.getElementById('b-contradictions').innerHTML = contradictions.length
       ? contradictions.map(c => `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 6px;background:rgba(255,255,255,0.05);border-radius:4px;font-size:11px">${c}</span>`).join('')
       : '<span style="color:var(--muted);font-style:italic">无矛盾数据</span>';
 
-    // 系统模块
+    // 系统模块（按层分组显示）
     const features = lastB.system_features_used || [];
+    const coreModules   = features.filter(f => ['intent_gateway','chain_planner','chain_router','graph_compression','memory'].includes(f));
+    const chainNodes    = features.filter(f => !coreModules.includes(f));
+    const coreHtml = coreModules.map(f => {
+      const color = f === 'chain_planner' ? 'rgba(63,185,80,0.2);border-color:rgba(63,185,80,0.4);color:var(--green)'
+                  : f === 'intent_gateway' ? 'rgba(88,166,255,0.2);border-color:rgba(88,166,255,0.4);color:var(--a-color)'
+                  : '';
+      return `<span class="memory-tag" style="${color ? 'background:'+color : ''}">${f.replace(/_/g,' ')}</span>`;
+    }).join('');
+    const nodesHtml = chainNodes.map(f => `<span class="memory-tag">${f.replace(/_/g,' ')}</span>`).join('');
     document.getElementById('b-features').innerHTML = features.length
-      ? features.map(f => `<span class="memory-tag">${f.replace('_', ' ')}</span>`).join('')
+      ? `<div style="margin-bottom:4px">${coreHtml}</div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">链路节点：</div>${nodesHtml}`
       : '<span style="color:var(--muted);font-size:11px">未调用系统模块</span>';
   }
 
