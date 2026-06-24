@@ -24,6 +24,15 @@ KNOWLEDGE_DIR  = Path("/Users/luke.zhang/dream-v2/6-TRADING/knowledge")
 REGIME_DIR     = Path("/Users/luke.zhang/dream-v2/6-TRADING/sessions/regime_patterns")
 
 # ── 节点成本表（Token估算，规划时用于预算校验）──────────────────────────
+def _llm_quota_ok(purpose: str) -> bool:
+    """预检 LLM 配额（无配额时节点回退规则，Token成本视为0）"""
+    try:
+        from core.llm_client import llm_quota_ok
+        return llm_quota_ok(purpose)
+    except Exception:
+        return False
+
+
 NODE_COST = {
     # 零成本节点
     "C1_技术扫描":          0,
@@ -146,8 +155,20 @@ class ChainPlanner:
         if pruned_coverage:
             rationale_parts.append(f"[覆盖] 跳过{[p.split('（')[0] for p in pruned_coverage]}")
 
-        # ── 计算预估 Token ───────────────────────────────────────────────
-        estimated = sum(self._skill_costs.get(n, 300) for n in chain)
+        # ── 计算预估 Token（LLM 配额不足时，相关节点成本降为0）──────────
+        purpose_map = {
+            "A3_策略设计(含A0)": "a3_seminar",
+            "S2_A3大师研讨":     "a3_seminar",
+            "A1_调研(含A0)":     "a1_research",
+            "S1_A1深度调研":     "a1_research",
+        }
+        estimated = 0
+        for n in chain:
+            cost = self._skill_costs.get(n, 300)
+            p = purpose_map.get(n)
+            if p and not _llm_quota_ok(p):
+                cost = 0   # 配额耗尽，走规则降级，不消耗Token预算
+            estimated += cost
 
         return PlanResult(
             planned_chain    = chain,

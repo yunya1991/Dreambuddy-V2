@@ -259,11 +259,36 @@ class HyperliquidClient:
                     "upnl":     float(pos.get("unrealizedPnl") or 0),
                     "leverage": float((pos.get("leverage") or {}).get("value", 1)),
                 }
+
+        perp_equity = float(margin.get("accountValue", 0))
+        avail       = float(margin.get("marginAvailable") or 0)
+
+        # 统一账户模式：现货 USDC 也可作为保证金，合并计算
+        if avail == 0 and perp_equity == 0:
+            try:
+                r2    = self._info({"type": "spotClearinghouseState", "user": self.user_addr})
+                spot_usdc = next(
+                    (float(b["total"]) for b in r2.get("balances", [])
+                     if b.get("coin") == "USDC"), 0
+                )
+                if spot_usdc > 0:
+                    # 统一账户：现货 USDC 视为可用保证金
+                    return {
+                        "ok":        True,
+                        "equity":    spot_usdc,
+                        "avail":     spot_usdc,
+                        "positions": positions,
+                        "mode":      "unified_spot",
+                    }
+            except Exception:
+                pass
+
         return {
             "ok":        True,
-            "equity":    float(margin.get("accountValue", 0)),
-            "avail":     float(margin.get("marginAvailable") or 0),
+            "equity":    perp_equity,
+            "avail":     avail,
             "positions": positions,
+            "mode":      "perp",
         }
 
     def get_mid_price(self, coin: str) -> float:

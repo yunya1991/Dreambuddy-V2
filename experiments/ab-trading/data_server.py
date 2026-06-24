@@ -57,9 +57,26 @@ def get_perp_state(user: str) -> dict:
                 "upnl":     float(pos.get("unrealizedPnl") or 0),
                 "leverage": float((pos.get("leverage") or {}).get("value", 1)),
             })
+    equity = float(m.get("accountValue", 0))
+    avail  = float(m.get("marginAvailable") or 0)
+
+    # 统一账户模式：合约权益为0时，查现货 USDC 余额补充
+    if equity == 0:
+        try:
+            r2 = s.post("https://api.hyperliquid.xyz/info",
+                        json={"type": "spotClearinghouseState", "user": user}, timeout=8).json()
+            spot_usdc = next(
+                (float(b["total"]) for b in r2.get("balances", []) if b.get("coin") == "USDC"), 0
+            )
+            if spot_usdc > 0:
+                equity = spot_usdc
+                avail  = spot_usdc
+        except Exception:
+            pass
+
     return {
-        "equity":    float(m.get("accountValue", 0)),
-        "avail":     float(m.get("marginAvailable") or 0),
+        "equity":    equity,
+        "avail":     avail,
         "positions": positions,
     }
 
