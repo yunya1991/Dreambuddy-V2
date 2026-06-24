@@ -16,6 +16,7 @@ load_dotenv(str(Path(__file__).parent.parent / "config" / ".env"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles
 from scoring.scorecard import DecisionLog, _cycle_id
+from orchestrator import request_early_run
 
 AUTO_EXECUTE  = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
 BUDGET_USDC   = 60.0       # 软隔离：合约账户预算上限

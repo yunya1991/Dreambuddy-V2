@@ -338,16 +338,21 @@ class HyperliquidClient:
 
     def open_long(self, coin: str, usdt_amount: float,
                   leverage: int = DEFAULT_LEVERAGE, tag: str = "ab") -> Dict:
-        """开多：指定 USDT 名义价值"""
+        """开多：指定 USDT 名义价值，自动保证最小名义 $11"""
         px = self.get_mid_price(coin)
         sz = usdt_amount * leverage / px
+        # 保证名义价值 ≥ $11（Hyperliquid 最低 $10）
+        min_sz = _min_notional_sz(coin, px)
+        sz = max(sz, min_sz)
         return self.market_order(coin, True, sz, leverage, False, tag)
 
     def open_short(self, coin: str, usdt_amount: float,
                    leverage: int = DEFAULT_LEVERAGE, tag: str = "ab") -> Dict:
-        """开空：指定 USDT 名义价值"""
+        """开空：指定 USDT 名义价值，自动保证最小名义 $11"""
         px = self.get_mid_price(coin)
         sz = usdt_amount * leverage / px
+        min_sz = _min_notional_sz(coin, px)
+        sz = max(sz, min_sz)
         return self.market_order(coin, False, sz, leverage, False, tag)
 
     def close_position(self, coin: str, tag: str = "ab") -> Dict:
@@ -453,7 +458,7 @@ _ASSET_INDEX = {
     "BTC": 0, "ETH": 1, "ATOM": 2, "MATIC": 3, "DYDX": 4,
     "SOL": 5, "AVAX": 6, "BNB": 7, "APE": 8, "OP": 9,
     "LTC": 10, "ARB": 11, "DOGE": 12, "INJ": 13, "SUI": 14,
-    "TIA": 17, "LINK": 25, "HYPE": 159,
+    "TIA": 17, "LINK": 25, "HYPE": 159, "WIF": 23,
 }
 
 # 现货 token ID（Hyperliquid spot，asset = token_id + 10000）
@@ -476,7 +481,19 @@ def _price_decimals(coin: str) -> int:
     return {"BTC": 1, "ETH": 2, "SOL": 3, "HYPE": 3}.get(coin, 4)
 
 def _size_decimals(coin: str) -> int:
-    return {"BTC": 5, "ETH": 4, "SOL": 2}.get(coin, 3)
+    return {
+        "BTC": 5, "ETH": 4, "SOL": 2, "AVAX": 2,
+        "TIA": 1, "INJ": 1, "SUI": 1, "ARB": 0,
+        "LINK": 1, "HYPE": 2,
+    }.get(coin, 2)
+
+
+def _min_notional_sz(coin: str, px: float, min_usd: float = 11.0) -> float:
+    """计算满足最小名义价值的 size"""
+    if px <= 0:
+        return 0
+    sz = min_usd / px
+    return round(sz + 10 ** (-_size_decimals(coin)), _size_decimals(coin))
 
 
 # ── 快速连通测试 ──────────────────────────────────────────────────────────────

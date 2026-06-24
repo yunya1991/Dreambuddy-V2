@@ -148,7 +148,7 @@
     <div class="card-title"><div class="dot dot-green"></div>账户总览</div>
     <div class="stats-grid" id="account-stats">
       <div class="stat"><div class="stat-label">合约账户（Agent A）</div><div class="stat-value" id="perp-equity">--</div><div class="stat-sub" id="perp-positions">加载中...</div></div>
-      <div class="stat"><div class="stat-label">现货账户（Agent B）</div><div class="stat-value" id="spot-usdc">--</div><div class="stat-sub">BTC/ETH/SOL 现货</div></div>
+      <div class="stat"><div class="stat-label">合约账户·子账户（Agent B）</div><div class="stat-value" id="spot-usdc">--</div><div class="stat-sub">0x9b56...d40b</div></div>
       <div class="stat"><div class="stat-label">总资产</div><div class="stat-value" id="total-equity">--</div><div class="stat-sub" id="total-change">初始资金 $125</div></div>
     </div>
   </div>
@@ -186,7 +186,7 @@
   <div class="card">
     <div class="agent-header">
       <div class="agent-name b">Agent B — DreamBuddy v2</div>
-      <span class="badge badge-spot">现货 1x</span>
+      <span class="badge badge-perp">合约 子账户</span>
     </div>
     <div id="agent-b-positions">
       <div class="no-position">无持仓（观望中）</div>
@@ -409,23 +409,26 @@ function drawChart(logsA, logsB) {
 function render(data) {
   // 账户
   document.getElementById('perp-equity').innerHTML = `<span class="${colorClass(data.perp_equity - 62)}">$${fmt(data.perp_equity)}</span>`;
-  document.getElementById('spot-usdc').innerHTML = `<span>$${fmt(data.spot_usdc)}</span>`;
-  const total = data.perp_equity + data.spot_usdc;
+  document.getElementById('spot-usdc').innerHTML = `<span class="${colorClass(data.b_equity - 63)}">$${fmt(data.b_equity)}</span>`;
+  const total = data.perp_equity + data.b_equity;
   const totalChg = total - 125;
   document.getElementById('total-equity').innerHTML = `<span class="${colorClass(totalChg)}">$${fmt(total)}</span>`;
   document.getElementById('total-change').textContent = `${totalChg >= 0 ? '+' : ''}$${fmt(totalChg)} (${fmt(totalChg/125*100, 2)}%)`;
 
-  // Agent A 持仓
-  const posHtml = data.perp_positions.length > 0
-    ? data.perp_positions.map(p => `
+  // Agent A 持仓（主账户合约）
+  const renderPos = (positions) => positions.length > 0
+    ? positions.map(p => `
       <div class="position-row">
         <div><div class="pos-coin">${p.coin} ${p.size > 0 ? '📈 多' : '📉 空'}</div>
-          <div class="pos-detail">入场 $${fmt(p.entry_px)} · sz ${Math.abs(p.size)} · 3x</div></div>
+          <div class="pos-detail">入场 $${fmt(p.entry_px)} · sz ${Math.abs(p.size)} · ${p.leverage}x</div></div>
         <div class="pos-pnl"><div class="pos-pnl-val ${colorClass(p.upnl)}">$${fmt(p.upnl)}</div>
           <div class="pos-detail ${colorClass(p.upnl)}">${fmt(p.upnl/p.entry_px/Math.abs(p.size)*100, 2)}%</div></div>
       </div>`).join('')
     : '<div class="no-position">无持仓</div>';
-  document.getElementById('agent-a-positions').innerHTML = posHtml;
+  document.getElementById('agent-a-positions').innerHTML = renderPos(data.perp_positions || []);
+
+  // Agent B 持仓（子账户合约）
+  document.getElementById('agent-b-positions').innerHTML = renderPos(data.b_positions || []);
 
   // Agent A 最新决策
   const lastA = data.logs_a[data.logs_a.length - 1];
