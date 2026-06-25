@@ -84,3 +84,4 @@ data/knowledge_vector_cache_v2.json
 venv/
 env/
 */.venv/
+*.png
