@@ -55,6 +55,7 @@ import {
   SignalDirection,
 } from './cross-validation-types.ts';
 import { SerializedNode } from '../types.ts';
+import { ChainPlanner, DynamicInsertionPlanner } from './chain-planner.ts';
 
 // ============================================================
 // 执行规划器
@@ -78,12 +79,16 @@ export class ExecutionPlanner {
   private skillSelector: SkillSelector;
   private confidenceEvaluator: ConfidenceEvaluator;
   private crossValidator: CrossValidator;
+  private chainPlanner: ChainPlanner;
+  private dynamicInsertionPlanner: DynamicInsertionPlanner;
 
-  constructor(registry?: SkillsRegistry) {
+  constructor(registry?: SkillsRegistry, tokenBudget?: number) {
     this.registry = registry || getSkillsRegistry();
     this.skillSelector = new SkillSelector(this.registry);
     this.confidenceEvaluator = new ConfidenceEvaluator();
     this.crossValidator = getCrossValidator();
+    this.chainPlanner = new ChainPlanner(tokenBudget);
+    this.dynamicInsertionPlanner = new DynamicInsertionPlanner(tokenBudget);
   }
 
   // ============================================================
@@ -136,16 +141,27 @@ export class ExecutionPlanner {
 
   /**
    * 创建执行计划
+   * 
+   * 使用 ChainPlanner 四维规划：
+   *   1. Token预算过滤
+   *   2. 知识库命中提升
+   *   3. 历史表现过滤
+   *   4. 标的覆盖检查
    */
   createPlan(context: PlannerContext): ExecutionPlan {
-    // 1. 确定使用的链
-    const chains = this.determineChains(context);
-
-    // 2. 根据意图和模式推断主链
+    // 1. 根据意图和模式推断主链
     const primaryChain = inferPrimaryChain(context.intent, context.tradingMode || 'ai_skill');
 
-    // 3. 获取步骤定义
-    const steps = this.getStepsForChain(primaryChain, context);
+    // 2. 使用 ChainPlanner 进行四维规划
+    const chainPlan = this.chainPlanner.plan(
+      context.intent,
+      context.complexity,
+      primaryChain,
+      context
+    );
+
+    // 3. 获取规划后的步骤定义
+    const steps = chainPlan.plannedSteps;
 
     // 4. 确定交叉验证节点
     const crossValidationNodes = this.determineCrossValidationNodes(steps);
@@ -174,8 +190,15 @@ export class ExecutionPlanner {
       metadata: {
         intent: context.intent,
         complexity: context.complexity,
-        chains,
+        chains: this.determineChains(context),
         primaryChain,
+        chainPlanRationale: chainPlan.planRationale,
+        shortcutTaken: chainPlan.shortcutTaken,
+        knowledgeHit: chainPlan.knowledgeHit,
+        prunedNodes: chainPlan.prunedNodes,
+        addedNodes: chainPlan.addedNodes,
+        budgetMode: chainPlan.budgetMode,
+        dynamicInsertionsEnabled: chainPlan.dynamicInsertionsEnabled,
       },
     };
   }
@@ -192,6 +215,7 @@ export class ExecutionPlanner {
    *   iterate   → 已在 executeStep 内部处理，这里只需继续
    *   warn      → 继续但记录风险标记
    *   skip      → 跳过本步，继续（不依赖该步数据的后续步骤仍执行）
+   *   insert    → 动态插入其他链的步骤补充（三链动态插入机制）
    *   backtrack → 回退到上一步重新执行（最多回退 MAX_BACKTRACK 次）
    *   terminate → 硬终止整条链（门禁硬阻断：A7-SKIP、GateC-BLOCK 等）
    *   escalate  → 暂停并记录 escalation，等待人工介入
@@ -209,10 +233,13 @@ export class ExecutionPlanner {
 
     const MAX_BACKTRACK = 2;
     let backtrackCount = 0;
+
+    // 使用可修改的计划步骤数组（支持动态插入）
+    let plannedSteps = [...plan.steps];
     let plannedStepIndex = 0;
 
-    while (plannedStepIndex < plan.steps.length) {
-      const plannedStep = plan.steps[plannedStepIndex];
+    while (plannedStepIndex < plannedSteps.length) {
+      const plannedStep = plannedSteps[plannedStepIndex];
       const stepDef = plannedStep.definition!;
 
       // 每步前刷新：累积前序结果 + knowledge/memory 增援
@@ -249,10 +276,32 @@ export class ExecutionPlanner {
           plannedStepIndex = Math.max(0, plannedStepIndex - 1);
           steps.push({
             ...stepResult,
-            decisionReason: `[回退触发] ${stepResult.decisionReason} → 重新执行步骤 ${plan.steps[plannedStepIndex]?.definition?.id ?? '?'}`,
+            decisionReason: `[回退触发] ${stepResult.decisionReason} → 重新执行步骤 ${plannedSteps[plannedStepIndex]?.definition?.id ?? '?'}`,
           });
           continue; // 不 push 当前结果，重新从回退位置执行
         }
+      }
+
+      if (decision === 'insert' && stepResult.dynamicInsertions && stepResult.dynamicInsertions.length > 0) {
+        // 动态插入：将其他链的步骤插入到当前位置之后
+        steps.push(stepResult);
+
+        const insertions = stepResult.dynamicInsertions;
+        const insertedSteps = this.createInsertedPlannedSteps(insertions, context);
+
+        if (insertedSteps.length > 0) {
+          // 在当前位置之后插入新步骤
+          plannedSteps = [
+            ...plannedSteps.slice(0, plannedStepIndex + 1),
+            ...insertedSteps,
+            ...plannedSteps.slice(plannedStepIndex + 1),
+          ];
+
+          steps.push(this.createInsertionRecord(stepDef, insertions, stepResult.insertionRationale));
+        }
+
+        plannedStepIndex++;
+        continue;
       }
 
       // proceed / warn / skip / iterate（已在 executeStep 内处理迭代）→ 正常推进
@@ -561,6 +610,25 @@ export class ExecutionPlanner {
     // 6. 做出决策
     const decision = this.makeDecision(currentConfidence, currentGaps, stepDef, iteration);
 
+    // 6.1 如果是 insert 决策，生成动态插入计划
+    let dynamicInsertions: StepExecutionResult['dynamicInsertions'];
+    let insertionRationale: string | undefined;
+    if (decision === 'insert' && currentGaps.length > 0) {
+      const remainingBudget = (context.budgetTokens || 8000) -
+        skillCallRecords.reduce((sum, r) => sum + (r.result.tokensUsed || 0), 0);
+      const primaryGap = currentGaps[0];
+      const insertionPlan = this.dynamicInsertionPlanner.planInsertions(
+        stepDef.id,
+        currentConfidence,
+        stepDef.chain,
+        primaryGap.type,
+        remainingBudget,
+        [] // 已执行步骤，后续可以补充完整
+      );
+      dynamicInsertions = insertionPlan.insertions;
+      insertionRationale = insertionPlan.rationale;
+    }
+
     // 7. 创建架构节点
     const architectureNode = this.createArchitectureNode(
       stepDef,
@@ -594,12 +662,65 @@ export class ExecutionPlanner {
       tokensUsed: skillCallRecords.reduce((sum, r) => sum + (r.result.tokensUsed || 0), 0),
       latencyMs: endTime - startTime,
       architectureNode,
+      dynamicInsertions,
+      insertionRationale,
     };
   }
 
   // ============================================================
   // 辅助方法
   // ============================================================
+
+  /**
+   * 从动态插入配置创建计划步骤
+   */
+  private createInsertedPlannedSteps(
+    insertions: NonNullable<StepExecutionResult['dynamicInsertions']>,
+    context: PlannerContext
+  ): PlannedStep[] {
+    const result: PlannedStep[] = [];
+
+    for (const ins of insertions) {
+      const stepDef = getStepDefinition(ins.stepId, ins.chain);
+      if (stepDef) {
+        result.push(this.createPlannedStep(stepDef, context));
+      }
+    }
+
+    return result;
+  }
+
+  /** 创建动态插入记录节点 */
+  private createInsertionRecord(
+    sourceStep: ThinkingStepDefinition,
+    insertions: NonNullable<StepExecutionResult['dynamicInsertions']>,
+    rationale?: string
+  ): StepExecutionResult {
+    const insertionList = insertions.map(i => `[${i.chain}链] ${i.stepId} - ${i.reason}`).join(', ');
+
+    return {
+      stepId: `INSERTED_after_${sourceStep.id}`,
+      stage: sourceStep.stage,
+      chain: sourceStep.chain,
+      status: 'completed',
+      coreQuestion: '动态插入其他链步骤',
+      answer: `[动态插入] 在 ${sourceStep.id} 之后插入 ${insertions.length} 个步骤: ${insertionList}`,
+      skillsCalled: [],
+      confidence: 0,
+      decision: 'proceed',
+      decisionReason: `动态插入触发: ${rationale || '置信度不足，补充其他链分析'}`,
+      tokensUsed: 0,
+      latencyMs: 0,
+      architectureNode: {
+        id: `insertion_${sourceStep.id}`,
+        type: 'insertion',
+        name: `动态插入 (${insertions.length}步)`,
+        level: 'A',
+        status: 'completed',
+        summary: `插入 ${insertions.length} 个步骤: ${insertions.map(i => i.stepId).join(', ')}`,
+      },
+    };
+  }
 
   /**
    * 确定使用的链
@@ -752,6 +873,18 @@ export class ExecutionPlanner {
       return 'iterate';
     }
 
+    // 置信度在中低之间，且有明显缺口时，考虑动态插入其他链步骤
+    if (confidence >= low && confidence < medium && gaps.length > 0) {
+      const hasInsertableGap = gaps.some(g =>
+        g.type === 'missing-data' ||
+        g.type === 'logical-conflict' ||
+        g.type === 'low-confidence'
+      );
+      if (hasInsertableGap) {
+        return 'insert';
+      }
+    }
+
     if (confidence >= low) {
       return 'warn';
     }
@@ -772,6 +905,14 @@ export class ExecutionPlanner {
         return `置信度 ${confidence}% >= 低阈值 ${stepDef.confidenceThresholds.low}%，警告继续`;
       case 'skip':
         return `置信度 ${confidence}% < 低阈值 ${stepDef.confidenceThresholds.low}%，跳过`;
+      case 'insert':
+        return `置信度 ${confidence}% 不足，动态插入其他链步骤补充分析`;
+      case 'backtrack':
+        return `检测到关键缺口，回退重新执行`;
+      case 'terminate':
+        return `高优先级门禁阻断，终止链路`;
+      case 'escalate':
+        return `置信度无法收敛，上报人工审核`;
       default:
         return '未知决策';
     }
