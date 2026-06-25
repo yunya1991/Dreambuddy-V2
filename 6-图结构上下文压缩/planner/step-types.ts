@@ -109,6 +109,7 @@ export type StepStatus = 'pending' | 'running' | 'completed' | 'skipped' | 'fail
  * warn      - 置信度低但勉强可用，继续并标记风险
  * skip      - 置信度极低，跳过本步骤（后续步骤不依赖本步数据）
  * backtrack - 发现逻辑冲突或关键数据缺失，回退到上一步重新执行
+ * insert    - 置信度不足或有缺口，动态插入其他链的步骤补充
  * terminate - 高优先级门禁硬阻断，终止整条链（如 A7-SKIP、GateC-BLOCK）
  * escalate  - 置信度长期无法收敛，暂停并上报人工审核
  */
@@ -118,6 +119,7 @@ export type StepDecision =
   | 'warn'
   | 'skip'
   | 'backtrack'
+  | 'insert'
   | 'terminate'
   | 'escalate';
 
@@ -286,6 +288,21 @@ export interface StepExecutionResult {
 
   /** 跨链引用 */
   crossChainReferences?: CrossChainReference[];
+
+  // ---- 动态插入 ----
+
+  /** 动态插入的步骤列表（insert 决策时使用） */
+  dynamicInsertions?: Array<{
+    stepId: string;
+    chain: SkillChain;
+    insertAfter: string;
+    reason: string;
+    priority: 'high' | 'medium' | 'low';
+    cost: number;
+  }>;
+
+  /** 动态插入原因 */
+  insertionRationale?: string;
 
   // ---- 图架构 ----
 
