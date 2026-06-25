@@ -13,7 +13,7 @@
     "ret_lag_5"
   ],
   "feature_set_version": "v1",
-  "feature_set_id": "v1:2ec992ea5ab279f0",
+  "feature_set_id": "trend_4h_mtf_v1",
   "feature_set_sig": "v1:2ec992ea5ab279f0",
   "seq_len": 3,
   "out_dim": 3,

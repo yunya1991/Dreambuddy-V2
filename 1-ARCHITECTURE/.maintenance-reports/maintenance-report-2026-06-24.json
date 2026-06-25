@@ -1,0 +1,127 @@
+{
+  "timestamp": "2026-06-24T17:22:57.435Z",
+  "period": "2026-06-21 ~ 2026-06-24",
+  "overallHealth": "A",
+  "overallScore": 94,
+  "checks": [
+    {
+      "module": "骨架层（三链定义）",
+      "chapter": "第二章",
+      "status": "🟢",
+      "score": 100,
+      "expected": "90%",
+      "actual": "100%",
+      "issues": [],
+      "action": "无需处理"
+    },
+    {
+      "module": "血肉层（SKILL库）",
+      "chapter": "第五章",
+      "status": "🟡",
+      "score": 67,
+      "expected": "75%",
+      "actual": "67%",
+      "issues": [
+        "SKILL数量不足: 0/30"
+      ],
+      "action": "待完善"
+    },
+    {
+      "module": "灵魂层（动态执行）",
+      "chapter": "第六章",
+      "status": "🟢",
+      "score": 100,
+      "expected": "60%",
+      "actual": "100%",
+      "issues": [],
+      "action": "无需处理"
+    },
+    {
+      "module": "BAC图结构",
+      "chapter": "第三章",
+      "status": "🟢",
+      "score": 100,
+      "expected": "85%",
+      "actual": "100%",
+      "issues": [],
+      "action": "无需处理"
+    },
+    {
+      "module": "ChainPlanner",
+      "chapter": "第四章",
+      "status": "🟢",
+      "score": 100,
+      "expected": "55%",
+      "actual": "100%",
+      "issues": [],
+      "action": "无需处理"
+    },
+    {
+      "module": "三链交叉验证",
+      "chapter": "第四章",
+      "status": "🟢",
+      "score": 100,
+      "expected": "80%",
+      "actual": "100%",
+      "issues": [],
+      "action": "无需处理"
+    },
+    {
+      "module": "进化系统（动力引擎）",
+      "chapter": "第七章",
+      "status": "🟡",
+      "score": 75,
+      "expected": "55%",
+      "actual": "75%",
+      "issues": [
+        "知识库文件不足: 1/20"
+      ],
+      "action": "待完善"
+    },
+    {
+      "module": "DZE开发链",
+      "chapter": "第八章",
+      "status": "🟢",
+      "score": 100,
+      "expected": "70%",
+      "actual": "100%",
+      "issues": [],
+      "action": "无需处理"
+    },
+    {
+      "module": "Dream-Agent协作网络",
+      "chapter": "第九章",
+      "status": "🟢",
+      "score": 100,
+      "expected": "65%",
+      "actual": "100%",
+      "issues": [],
+      "action": "无需处理"
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "healthy": 7,
+    "warning": 2,
+    "critical": 0
+  },
+  "nextActions": [
+    {
+      "priority": "medium",
+      "issue": "血肉层（SKILL库） (67%)",
+      "action": "补充实现",
+      "trigger": "下期迭代"
+    },
+    {
+      "priority": "medium",
+      "issue": "进化系统（动力引擎） (75%)",
+      "action": "补充实现",
+      "trigger": "下期迭代"
+    }
+  ],
+  "trend": {
+    "lastWeek": "未知",
+    "thisWeek": "94分",
+    "direction": "→"
+  }
+}
