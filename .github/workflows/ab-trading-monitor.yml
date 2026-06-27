@@ -60,6 +60,11 @@ jobs:
             (git commit -m "chore(monitor): auto-update state snapshot" && git push)
           # Sync to gh-pages
           git push --force origin main:gh-pages || echo "gh-pages push skipped"
+          # Ensure .nojekyll exists on gh-pages to disable Jekyll processing
+          git fetch origin gh-pages
+          git checkout origin/gh-pages -- .nojekyll 2>/dev/null || echo ".nojekyll not in gh-pages, creating"
+          git add .nojekyll 2>/dev/null && git commit -m "chore: ensure .nojekyll" --allow-empty 2>/dev/null || true
+          git push origin gh-pages 2>/dev/null || true
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
