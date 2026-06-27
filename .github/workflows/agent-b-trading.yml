@@ -1,0 +1,56 @@
+name: "Agent B Trading — Dreambuddy OS"
+
+on:
+  schedule:
+    # 每 4 小时执行一次（UTC 0,4,8,12,16,20 点）
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/ab-trading/agents/agent_b_runner.py'
+      - 'experiments/ab-trading/core/**'
+      - '1-ARCHITECTURE/skills/dreambuddy-os/**'
+      - '.github/workflows/agent-b-trading.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  agent-b-trading:
+    runs-on: ubuntu-latest
+    environment:
+      name: agent-b-trading
+      url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests eth-account web3 tavily
+
+      - name: Run Agent B (Dreambuddy OS)
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          AGENT_B_ASTER_USER: ${{ secrets.AGENT_B_ASTER_USER }}
+          AGENT_B_ASTER_SIGNER: ${{ secrets.AGENT_B_ASTER_SIGNER }}
+          AGENT_B_ASTER_SIGNER_PRIVATE_KEY: ${{ secrets.AGENT_B_ASTER_SIGNER_PRIVATE_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+        run: |
+          cd experiments/ab-trading
+          python3 agents/agent_b_runner.py
+
+      - name: Report result
+        if: always()
+        run: |
+          echo "Agent B execution completed. Check PR #52 for trade report."
+          echo "Run ID: ${{ github.run_id }}"
+          echo "Status: ${{ job.status }}"

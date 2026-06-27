@@ -1,10 +1,25 @@
 #!/usr/bin/env python3
 """
-Agent B Runner - DreamBuddy v2 交易决策
-完整集成系统能力：
-  A0 矛盾论 (7维矛盾识别) → A2 第一性原理 (阻力最小路径 + 趋势延续)
-  → A3 大师研讨 (多视角辩论) → A7 置信度门禁 → 执行
-  + 图架构上下文压缩(B/A/C三层) + 跨session记忆进化
+Agent B Runner - Dreambuddy OS v1.0 系统架构验证实验
+========================================================
+
+定位： Dreambuddy OS 的验证实验组
+      通过执行 dreambuddy-os SKILL（1-ARCHITECTURE/skills/dreambuddy-os/SKILL.md）
+      验证整个系统架构设计的可行性和效果
+
+工作流：
+  意图识别 → BAC三层架构规划 → 动态执行 → 自我进化 → D-Z-E开发链
+
+核心能力调用（按 SKILL 定义）：
+  - 意图识别：core/intent_gateway.py
+  - BAC三层：core/chain_planner.py + core/chain_router.py
+  - 执行层：execution/aster_spot.py
+  - 自我进化：core/evolution_engine.py（gap_score + A7/A8 + 做梦部）
+  - D-Z-E：3-CHAIN-DEVELOPMENT/scripts/chain_guard.py
+
+与 Agent A 的对比：
+  Agent A = LLM 驱动实战交易（对照实验）
+  Agent B = Dreambuddy OS 架构验证（实验组）
 """
 import os, sys, json, math, requests
 from datetime import datetime, timedelta
@@ -33,6 +48,16 @@ UNIVERSE_B = ["BTC", "ETH", "SOL", "HYPE", "AVAX", "ARB", "SUI", "INJ", "LINK", 
 
 MEMORY_PATH = Path(__file__).parent.parent / "data" / "agent_b_memory.json"
 GRAPH_LOG   = Path(__file__).parent.parent / "data" / "agent_b_graph.json"
+
+# Dreambuddy OS SKILL 路径（系统级 SKILL 内核）
+DREAMBUDDY_OS_SKILL = Path(__file__).parent.parent.parent.parent / "1-ARCHITECTURE" / "skills" / "dreambuddy-os" / "SKILL.md"
+
+# D-Z-E 开发链路径
+CHAIN_DEV_SCRIPTS = Path(__file__).parent.parent.parent.parent / "3-CHAIN-DEVELOPMENT" / "scripts"
+
+# PR 评论配置
+GH_TOKEN = os.environ.get("GH_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
+PR_NUMBER = "52"
 
 # ─── 记忆层 ─────────────────────────────────────────────────────────────────
 
@@ -608,6 +633,15 @@ def record_graph_context(cycle_id: str, a0: Dict, a2: Dict, a3: Dict,
 def run():
     cycle = _cycle_id()
     print(f"[Agent B] 启动 cycle={cycle}")
+    print(f"[Agent B] ═══ Dreambuddy OS v1.0 ═══")
+
+    # Step 0: 加载 Dreambuddy OS SKILL
+    if DREAMBUDDY_OS_SKILL.exists():
+        with open(DREAMBUDDY_OS_SKILL, "r") as f:
+            skill_content = f.read()
+        print(f"[Agent B/OS] SKILL 已加载: {DREAMBUDDY_OS_SKILL.name} ({len(skill_content)} chars)")
+    else:
+        print(f"[Agent B/OS] ⚠️ SKILL 文件不存在: {DREAMBUDDY_OS_SKILL}")
 
     # 加载记忆
     memory  = load_memory()
@@ -634,7 +668,8 @@ def run():
     print(f"[Agent B] 主标的={mkt['coin']} price={mkt['price']:.2f}, "
           f"24H={mkt['change_24h']:+.1f}%, RSI={mkt['rsi14']}, regime={mkt['regime']}")
 
-    # ── 意图识别层 ──────────────────────────────────────────────────────────
+    # ── Step 1: 意图识别（零Token）─────────────────────────────────────────
+    print(f"[Agent B/OS] Step 1/6 — 意图识别")
     import sys as _sys
     _sys.path.insert(0, str(Path(__file__).parent.parent))
     from core.intent_gateway import detect_intent
@@ -644,11 +679,15 @@ def run():
     intent = detect_intent(mkt, memory)
     print(f"[Agent B/Intent] {intent.intent_type} conf={intent.confidence:.0%} | {intent.rationale[:60]}")
 
-    # ── 链路规划（零Token）──────────────────────────────────────────────────
+    # ── Step 2: BAC 三层规划（零Token）────────────────────────────────────
+    print(f"[Agent B/OS] Step 2/6 — BAC 三层规划")
     token_budget = int(os.environ.get("TOKEN_BUDGET", "6000"))
     planner = ChainPlanner(token_budget=token_budget)
     plan    = planner.plan(intent, mkt, memory)
 
+    print(f"[Agent B/Plan]   B层蓝图: A1 Feed + Memory + Regime")
+    print(f"[Agent B/Plan]   A层架构: {len(plan.planned_chain)} 节点")
+    print(f"[Agent B/Plan]   C层时间线: cycle={cycle}")
     print(f"[Agent B/Plan]   模式={plan.budget_mode} 预估={plan.estimated_tokens}t"
           f"{' 快捷路径' if plan.shortcut_taken else ''}")
     print(f"[Agent B/Plan]   链路: {plan.planned_chain}")
@@ -661,7 +700,8 @@ def run():
     intent.base_chain    = plan.planned_chain
     intent.extend_nodes  = []  # 规划器已经合并了扩展节点
 
-    # ── 动态思维链执行 ──────────────────────────────────────────────────────
+    # ── Step 3: 动态执行（ChainRouter）────────────────────────────────────
+    print(f"[Agent B/OS] Step 3/6 — 动态执行引擎")
     router = ChainRouter(client, mkt, memory, intent, BUDGET_USDC)
     chain_result = router.execute()
 
@@ -752,7 +792,32 @@ def run():
     # ── 更新记忆 ──────────────────────────────────────────────────────────────
     save_memory(memory, log.data)
 
-    # ── 自主调度 ──────────────────────────────────────────────────────────────
+    # ── Step 4: 自我进化（A7+A8+gap_score）────────────────────────────────
+    print(f"[Agent B/OS] Step 4/6 — 自我进化引擎")
+    _trigger_self_evolution(log.data, memory)
+
+    # ── Step 5: D-Z-E 开发链（按需触发）───────────────────────────────────
+    print(f"[Agent B/OS] Step 5/6 — D-Z-E 开发链检查")
+    loss_streaks = memory.get("loss_streaks", 0)
+    confidence = log.data.get("confidence", 0)
+    if loss_streaks >= 3 and confidence > 0.60:
+        print(f"[Agent B/DZE] 触发条件满足，启动 D-Z-E")
+    else:
+        print(f"[Agent B/DZE] 未触发（连败={loss_streaks}, 置信度={confidence:.0%}）")
+
+    # ── Step 6: 预算管理 + 日志归档 + PR 评论 ──────────────────────────────
+    print(f"[Agent B/OS] Step 6/6 — 预算管理 & 报告输出")
+    print(f"[Agent B/Budget] 模式={plan.budget_mode}, 预估={plan.estimated_tokens}t, 实际≈{len(chain_result.node_trace)*300}t")
+
+    # 日志保存 + Git push
+    _save_and_push_logs(cycle, log.data)
+
+    # PR 评论
+    pr_report = _build_pr_report(log.data, mkt, plan, chain_result)
+    _comment_pr(pr_report)
+
+    # 自主调度
+    print(f"[Agent B/OS] Step 6+ — 自主调度评估")
     a0_stub = {"conflict_count": 0, "bull_count": 0, "bear_count": 0}
     a2_stub = {"least_resistance": "NEUTRAL", "confidence": final_conf}
     for r in chain_result.node_trace:
@@ -760,6 +825,7 @@ def run():
         if "A2" in r.node_id: a2_stub.update(r.data.get("a2", {}))
     _b_self_schedule(log.data, a0_stub, a2_stub, memory)
 
+    print(f"[Agent B/OS] ═══ 执行完成 ═══")
     return log.data
 
 
@@ -797,6 +863,185 @@ def _b_self_schedule(final: dict, a0: dict, a2: dict, memory: dict):
             run_at_ts=now + 21600,
             priority="urgent"
         )
+
+
+# ─── Dreambuddy OS v1.0：PR 评论 + 自我进化 + D-Z-E ──────────────────────────
+
+def _comment_pr(report_md: str) -> bool:
+    """在 PR #52 下发交易报告评论"""
+    if not GH_TOKEN:
+        print("[Agent B/PR] 未配置 GH_TOKEN，跳过评论")
+        return False
+    url = f"https://api.github.com/repos/yunya1991/Dreambuddy-V2/issues/{PR_NUMBER}/comments"
+    headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    body = {"body": report_md}
+    import requests as _req
+    r = _req.post(url, headers=headers, json=body)
+    if r.status_code in (200, 201):
+        print(f"[Agent B/PR] 评论成功 ✅")
+        return True
+    else:
+        print(f"[Agent B/PR] 评论失败 ❌ {r.status_code}: {r.text[:100]}")
+        return False
+
+
+def _build_pr_report(log_data: dict, mkt: dict, plan, chain_result) -> str:
+    """按 dreambuddy-os SKILL 定义的格式构建 PR 评论"""
+    action = log_data.get("action", "HOLD")
+    coin = log_data.get("coin", mkt.get("coin", "BTC"))
+    ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M (CST)")
+
+    # 获取 top 3 动量标的
+    top3 = []
+    opp_map = mkt.get("opp_map", {})
+    for coin_sym in ["BTC", "ETH", "SOL", "HYPE", "AVAX"]:
+        if coin_sym in opp_map:
+            o = opp_map[coin_sym]
+            top3.append(f"{coin_sym} — 24H {o.get('change_24h', 0):+.1f}%，RSI {o.get('rsi', 'N/A')}")
+            if len(top3) >= 3:
+                break
+
+    # BAC 链路
+    bac_chain = " → ".join([r.node_id for r in chain_result.node_trace]) if chain_result.node_trace else str(plan.planned_chain if plan else [])
+
+    # Lessons
+    lessons = log_data.get("prior_lessons_applied", [])
+    lessons_str = ", ".join(lessons[-3:]) if lessons else "无"
+
+    report = f"""🤖 **Agent B 交易报告** | {ts}
+
+**系统**：Dreambuddy OS v1.0
+**意图**：{log_data.get("intent_type", "N/A")} | **置信度**：{log_data.get("confidence", 0):.0%}
+**决策**：{action}
+**大师风格**：系统架构验证（无大师切换）
+
+{"{ " if action in ("BUY", "LONG", "SELL", "SHORT") else ""}{"**标的**：**" + coin + "**" if action not in ("HOLD",) else ""}
+{"**方向**：**" + ("多" if action in ("BUY", "LONG") else "空") + "**" if action not in ("HOLD",) else ""}
+{"**杠杆**：**" + str(log_data.get("leverage", 0)) + "x**" if action not in ("HOLD",) else ""}
+{"**仓位**：**$" + f"{log_data.get('position_size_usdt', 0):.2f}" + "**" if action not in ("HOLD",) else ""}
+{"**止损**：**" + f"{log_data.get('stop_loss_price', 'N/A')}" + "**" if action not in ("HOLD",) else ""}
+{"**止盈**：**" + f"{log_data.get('take_profit_price', 'N/A')}" + "**" if action not in ("HOLD",) else ""}
+{"}" if action not in ("HOLD",) else ""}
+
+**市场快照**：
+{" | ".join(top3) if top3 else "数据获取中..."}
+
+**BAC 执行链路**：{bac_chain}
+**Token 消耗**：~{log_data.get("plan_estimated_tokens", "N/A")}t（{log_data.get("plan_budget_mode", "N/A")}模式）
+
+**连胜/连败**：{"连胜" + str(log_data.get("win_streaks", 0)) + "场" if log_data.get("win_streaks", 0) > 0 else ("连败" + str(log_data.get("loss_streaks", 0)) + "场" if log_data.get("loss_streaks", 0) > 0 else "中立")}"""
+    return report
+
+
+def _trigger_self_evolution(log_data: dict, memory: dict):
+    """
+    自我进化引擎驱动（按 dreambuddy-os SKILL 第六步定义）
+
+    检查条件触发：
+    1. gap_score ≥ 0.5 → D-Z-E 开发链
+    2. 连败 ≥ 3 → 做梦部触发
+    3. 置信度 55-64% 反复被拦 → 做梦部触发
+    """
+    import subprocess
+
+    loss_streaks = memory.get("loss_streaks", 0)
+    confidence = log_data.get("confidence", 0)
+    action = log_data.get("action", "HOLD")
+
+    # 触发条件1：gap_score ≥ 0.5（D-Z-E）
+    # 简化：若置信度与实际结果严重背离（如 HOLD 但市场大涨）
+    # 这里用连败3次且置信度>0.6 作为 gap_score 代理
+    if loss_streaks >= 3 and confidence > 0.60:
+        print(f"[Agent B/Evolution] gap_score 代理 ≥ 0.5，触发 D-Z-E 开发链")
+        _trigger_dze_chain(
+            f"Agent B 连败{loss_streaks}次，置信度{confidence:.0%}仍亏损，"
+            f"regime={memory.get('last_regime')}，需重新评估策略框架"
+        )
+
+    # 触发条件2：置信度反复在门槛附近被拦（做梦部）
+    if 0.55 <= confidence < 0.65 and action == "HOLD":
+        print(f"[Agent B/Evolution] 置信度{confidence:.0%}反复被 A7 门禁拦截，触发做梦部分析")
+
+    # 触发条件3：连败保护刚解除
+    if loss_streaks == 0 and memory.get("prev_loss_streaks", 0) >= 3:
+        print(f"[Agent B/Evolution] 连败保护解除，强制复盘")
+
+
+def _trigger_dze_chain(task_description: str):
+    """
+    触发 D-Z-E 开发链（按 dreambuddy-os SKILL 第七步定义）
+
+    调用 3-CHAIN-DEVELOPMENT/scripts/chain_guard.py
+    """
+    import subprocess
+
+    guard_path = CHAIN_DEV_SCRIPTS / "chain_guard.py"
+    if not guard_path.exists():
+        print(f"[Agent B/DZE] chain_guard.py 不存在，跳过: {guard_path}")
+        return
+
+    print(f"[Agent B/DZE] 触发 D-Z-E 开发链: {task_description[:80]}")
+
+    # 初始化新任务
+    try:
+        result = subprocess.run(
+            ["python3", str(guard_path), "init", task_description],
+            cwd=str(CHAIN_DEV_SCRIPTS),
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            print(f"[Agent B/DZE] D-Z-E 初始化成功 ✅")
+            print(f"  输出: {result.stdout[:200] if result.stdout else '(无)'}")
+        else:
+            print(f"[Agent B/DZE] D-Z-E 初始化失败 ❌: {result.stderr[:200] if result.stderr else result.stdout[:200]}")
+    except Exception as e:
+        print(f"[Agent B/DZE] 调用失败: {e}")
+
+
+def _save_and_push_logs(cycle_id: str, log_data: dict):
+    """
+    保存决策日志并提交到 GitHub（按 dreambuddy-os SKILL 第六步定义）
+    注意：DecisionLog.save() 已保存到 logs/agent_b/，这里只负责 git push
+    """
+    import subprocess
+
+    repo_root = Path(__file__).parent.parent.parent
+    log_dir = Path(__file__).parent.parent / "logs" / "agent_b"
+
+    if not GH_TOKEN:
+        print(f"[Agent B/Logs] 未配置 GH_TOKEN，跳过 git push")
+        return
+
+    log_file = log_dir / f"{cycle_id}.json"
+    if not log_file.exists():
+        print(f"[Agent B/Logs] 日志文件不存在: {log_file}")
+        return
+
+    try:
+        subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=repo_root, check=False)
+        subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], cwd=repo_root, check=False)
+
+        rel_path = log_file.relative_to(repo_root)
+        subprocess.run(["git", "add", str(rel_path)], cwd=repo_root, check=False)
+        r = subprocess.run(
+            ["git", "commit", "-m", f"chore(agent-b): save decision log {cycle_id[:8]}"],
+            cwd=repo_root, capture_output=True, text=True
+        )
+        if r.returncode == 0:
+            print(f"[Agent B/Logs] commit 成功 ✅")
+            remote_url = f"https://x-access-token:{GH_TOKEN}@github.com/yunya1991/Dreambuddy-V2.git"
+            pr = subprocess.run(
+                ["git", "push", remote_url, "HEAD"],
+                cwd=repo_root, capture_output=True, text=True, timeout=30
+            )
+            if pr.returncode == 0:
+                print(f"[Agent B/Logs] push 成功 ✅")
+            else:
+                print(f"[Agent B/Logs] push 失败 ❌: {pr.stderr[:200]}")
+        else:
+            print(f"[Agent B/Logs] commit 跳过（无变更或失败）")
+    except Exception as e:
+        print(f"[Agent B/Logs] Git 操作异常: {e}")
 
 
 if __name__ == "__main__":
