@@ -35,13 +35,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests eth-account web3 t avily
+          pip install requests eth-account web3 tavily
 
       - name: Run Agent B (Dreambuddy OS)
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          HYPERLIQUID_API_KEY: ${{ secrets.AGENT_B_ASTER_HYPERLIQUID_API_KEY }}
-          HYPERLIQUID_API_SECRET: ${{ secrets.AGENT_B_ASTER_HYPERLIQUID_API_SECRET }}
+          AGENT_B_ASTER_USER: ${{ secrets.AGENT_B_ASTER_USER }}
+          AGENT_B_ASTER_SIGNER: ${{ secrets.AGENT_B_ASTER_SIGNER }}
+          AGENT_B_ASTER_SIGNER_PRIVATE_KEY: ${{ secrets.AGENT_B_ASTER_SIGNER_PRIVATE_KEY }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
         run: |
           cd experiments/ab-trading
