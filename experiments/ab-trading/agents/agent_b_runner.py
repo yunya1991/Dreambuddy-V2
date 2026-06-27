@@ -33,6 +33,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles
 from scoring.scorecard import DecisionLog, _cycle_id
 from orchestrator import request_early_run
+from core.exit_module import (
+    run_exit_check, init_position, update_position_exit_levels,
+    check_classical_indicator_exits, execute_exit,
+)
 
 # ─── 配置 ───────────────────────────────────────────────────────────────────
 AUTO_EXECUTE    = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
@@ -72,9 +76,13 @@ def load_memory() -> Dict:
             "loss_streaks": 0,
             "last_regime": None,
             "total_cycles": 0,
+            "active_positions": {},
         }
     with open(MEMORY_PATH) as f:
-        return json.load(f)
+        mem = json.load(f)
+    if "active_positions" not in mem:
+        mem["active_positions"] = {}
+    return mem
 
 def save_memory(memory: Dict, decision: Dict, pnl_pct: Optional[float] = None):
     """将本次决策写回记忆，提炼教训"""
@@ -659,6 +667,48 @@ def run():
     equity = min(acct["equity"], BUDGET_USDC)
     print(f"[Agent B] 权益={equity:.2f} USDC  持仓={list(acct['positions'].keys())}")
 
+    # ── L1 基础离场检查（止损止盈 + 移动止损）──────────────────────────
+    print(f"\n[Agent B/Exit] L1 基础离场检查...")
+    memory["active_positions"], l1_closed = run_exit_check(
+        client, memory.get("active_positions", {}),
+        agent_id="b", enable_trailing=True
+    )
+    if l1_closed:
+        for ct in l1_closed:
+            print(f"[Agent B/Exit] L1平仓 {ct['coin']}: {ct['exit_reason']} "
+                  f"PnL={ct['pnl_pct']*100:+.2f}%")
+    else:
+        print(f"[Agent B/Exit] L1无触发，持仓: {list(memory['active_positions'].keys()) or '无'}")
+
+    # ── L3 经典指标离场检查（无 LLM 时的回退方案）───────────────────────
+    l3_closed = []
+    if memory.get("active_positions"):
+        print(f"[Agent B/Exit] L3 经典指标离场检查...")
+        mids = client.get_all_mids()
+        for coin in list(memory["active_positions"].keys()):
+            pos = memory["active_positions"][coin]
+            price = mids.get(coin, 0)
+            if price <= 0:
+                continue
+            try:
+                candles = get_candles(coin, "1h", 48, client.proxies)
+            except Exception:
+                candles = []
+            should_exit, reason, _ = check_classical_indicator_exits(
+                coin, price, pos["action"], candles
+            )
+            if should_exit and AUTO_EXECUTE:
+                memory["active_positions"], closed_info, exec_res = execute_exit(
+                    client, memory["active_positions"], coin,
+                    f"CLASSIC_{reason[:20]}", tag=f"b_exit_classic"
+                )
+                if closed_info:
+                    l3_closed.append(closed_info)
+                    print(f"[Agent B/Exit] L3经典平仓 {coin}: {reason} "
+                          f"PnL={closed_info['pnl_pct']*100:+.2f}%")
+        if not l3_closed:
+            print(f"[Agent B/Exit] L3无触发")
+
     mkt = fetch_market_context(client)
     # 注入 Regime 到 mkt 供意图识别使用
     mkt["regime"] = (
@@ -710,6 +760,39 @@ def run():
     print(f"[Agent B/Chain]  最终: {chain_result.final_action} {chain_result.coin} "
           f"conf={chain_result.final_confidence:.0%} gate={'✅' if chain_result.gate_passed else '❌'}")
     print(f"[Agent B/A7]  {'✅ 通过' if chain_result.gate_passed else '❌ 拦截'}: {chain_result.gate_reason}")
+
+    # ── Step 3.5: 处理 A9 离场评估结果（智能离场）─────────────────────
+    a9_exits = []
+    if AUTO_EXECUTE and memory.get("active_positions"):
+        for node in chain_result.node_trace:
+            if "A9" in node.node_id and not node.skipped:
+                exit_sugs = node.data.get("exits", [])
+                update_sugs = node.data.get("updates", [])
+                # 执行离场建议
+                for sug in exit_sugs:
+                    coin = sug.get("coin")
+                    reason = sug.get("reason", "A9_EXIT")
+                    if coin and coin in memory["active_positions"]:
+                        memory["active_positions"], closed_info, _ = execute_exit(
+                            client, memory["active_positions"], coin,
+                            f"A9_{reason[:20]}", tag=f"b_exit_a9"
+                        )
+                        if closed_info:
+                            a9_exits.append(closed_info)
+                            print(f"[Agent B/Exit] A9智能平仓 {coin}: {reason} "
+                                  f"PnL={closed_info['pnl_pct']*100:+.2f}%")
+                # 调整止损止盈
+                for sug in update_sugs:
+                    coin = sug.get("coin")
+                    new_sl = sug.get("new_stop_loss")
+                    new_tp = sug.get("new_take_profit")
+                    if coin and coin in memory["active_positions"]:
+                        memory["active_positions"] = update_position_exit_levels(
+                            memory["active_positions"], coin, new_sl, new_tp,
+                            sl_source="a9_smart", tp_source="a9_smart"
+                        )
+                        print(f"[Agent B/Exit] A9调整 {coin}: SL→{new_sl}, TP→{new_tp}")
+                break
 
     action     = chain_result.final_action
     coin       = chain_result.coin
@@ -770,6 +853,10 @@ def run():
         "plan_added_nodes":     plan.added_nodes,
         "plan_shortcut":        plan.shortcut_taken,
         "plan_rationale":       plan.plan_rationale,
+        "active_positions":     memory.get("active_positions", {}),
+        "l1_exits":             l1_closed,
+        "l3_exits":             l3_closed,
+        "a9_exits":             a9_exits,
     })
 
     # ── 执行 ─────────────────────────────────────────────────────────────────
@@ -783,6 +870,29 @@ def run():
             exec_result = {"ok": False, "error": "HOLD"}
         log.data["execution"] = exec_result
         print(f"[Agent B] 执行: ok={exec_result.get('ok')} {exec_result.get('filled')}")
+
+        # 开仓成功后初始化 active_positions（L1 基础离场）
+        if exec_result.get("ok"):
+            entry_px = price
+            custom_sl = chain_result.stop_loss
+            custom_tp = chain_result.take_profit
+            memory["active_positions"] = init_position(
+                memory.get("active_positions", {}),
+                coin=coin,
+                entry_price=entry_px,
+                action=action,
+                position_size_usdt=position_size_usdt,
+                leverage=leverage,
+                stop_loss_price=custom_sl,
+                take_profit_price=custom_tp,
+                cycle_id=cycle,
+                proxies=client.proxies,
+            )
+            pos_info = memory["active_positions"][coin]
+            print(f"[Agent B/Exit] L1预设: SL={pos_info['stop_loss_price']} "
+                  f"({pos_info['sl_source']}), "
+                  f"TP={pos_info['take_profit_price']} "
+                  f"({pos_info['tp_source']})")
     else:
         print(f"[Agent B] 跳过执行（AUTO_EXECUTE={AUTO_EXECUTE}, gate={gate_pass}）")
 
