@@ -681,7 +681,7 @@ def run():
 
     # ── Step 2: BAC 三层规划（零Token）────────────────────────────────────
     print(f"[Agent B/OS] Step 2/6 — BAC 三层规划")
-    token_budget = int(os.environ.get("TOKEN_BUDGET", "6000"))
+    token_budget = int(os.environ.get("TOKEN_BUDGET", "30000"))
     planner = ChainPlanner(token_budget=token_budget)
     plan    = planner.plan(intent, mkt, memory)
 
