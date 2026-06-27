@@ -1,71 +1,71 @@
 {
-  "perp_equity": 66.390286,
+  "perp_equity": 66.412996,
   "perp_avail": 0.0,
   "perp_positions": [
     {
       "coin": "BTC",
       "size": 0.00045,
       "entry_px": 59717.1,
-      "upnl": 0.2614,
+      "upnl": 0.25555,
       "leverage": 3.0
     },
     {
       "coin": "SOL",
       "size": -0.42,
       "entry_px": 71.977,
-      "upnl": -0.01386,
+      "upnl": -0.02058,
       "leverage": 3.0
     },
     {
       "coin": "LINK",
       "size": 8.1,
       "entry_px": 7.384,
-      "upnl": -0.0729,
+      "upnl": -0.12312,
       "leverage": 6.0
     },
     {
       "coin": "HYPE",
       "size": -1.14,
       "entry_px": 64.8616,
-      "upnl": 1.676524,
+      "upnl": 1.762024,
       "leverage": 3.0
     }
   ],
-  "b_equity": 62.198827,
+  "b_equity": 62.181727,
   "b_avail": 0.0,
   "b_positions": [
     {
       "coin": "BTC",
       "size": 0.00031,
       "entry_px": 59936.1,
-      "upnl": 0.11218,
+      "upnl": 0.10815,
       "leverage": 3.0
     },
     {
       "coin": "ETH",
       "size": 0.0071,
       "entry_px": 1578.5,
-      "upnl": 0.01633,
+      "upnl": 0.0142,
       "leverage": 2.0
     },
     {
       "coin": "SOL",
       "size": 0.16,
       "entry_px": 71.393,
-      "upnl": 0.09872,
+      "upnl": 0.10128,
       "leverage": 2.0
     },
     {
       "coin": "HYPE",
       "size": 0.18,
       "entry_px": 63.6915,
-      "upnl": -0.05409,
+      "upnl": -0.06759,
       "leverage": 2.0
     }
   ],
   "spot_usdc": 0,
-  "total_equity": 128.589113,
+  "total_equity": 128.59472300000002,
   "logs_a": [],
   "logs_b": [],
-  "generated_at": "2026-06-27T07:08:12.522545Z"
+  "generated_at": "2026-06-27T07:14:27.365047Z"
 }
