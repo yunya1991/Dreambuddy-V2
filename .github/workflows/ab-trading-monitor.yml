@@ -47,7 +47,7 @@ jobs:
           python3 export_state.py
 
       - name: Commit and push snapshot
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event_name != 'pull_request'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
