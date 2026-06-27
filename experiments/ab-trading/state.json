@@ -1,440 +1,71 @@
 {
-  "perp_equity": 66.020148,
+  "perp_equity": 66.325546,
   "perp_avail": 0.0,
   "perp_positions": [
     {
       "coin": "BTC",
       "size": 0.00045,
       "entry_px": 59717.1,
-      "upnl": 0.3334,
+      "upnl": 0.26815,
       "leverage": 3.0
     },
     {
       "coin": "SOL",
       "size": -0.42,
       "entry_px": 71.977,
-      "upnl": -0.10878,
+      "upnl": -0.03822,
       "leverage": 3.0
     },
     {
       "coin": "LINK",
       "size": 8.1,
       "entry_px": 7.384,
-      "upnl": 0.1215,
+      "upnl": -0.02997,
       "leverage": 6.0
     },
     {
       "coin": "HYPE",
       "size": -1.14,
       "entry_px": 64.8616,
-      "upnl": 1.135024,
+      "upnl": 1.586464,
       "leverage": 3.0
     }
   ],
-  "b_equity": 62.384959,
+  "b_equity": 62.230527,
   "b_avail": 0.0,
   "b_positions": [
     {
       "coin": "BTC",
       "size": 0.00031,
       "entry_px": 59936.1,
-      "upnl": 0.15899,
+      "upnl": 0.11683,
       "leverage": 3.0
     },
     {
       "coin": "ETH",
       "size": 0.0071,
       "entry_px": 1578.5,
-      "upnl": 0.03408,
+      "upnl": 0.01988,
       "leverage": 2.0
     },
     {
       "coin": "SOL",
       "size": 0.16,
       "entry_px": 71.393,
-      "upnl": 0.13504,
+      "upnl": 0.108,
       "leverage": 2.0
     },
     {
       "coin": "HYPE",
       "size": 0.18,
       "entry_px": 63.6915,
-      "upnl": 0.03123,
+      "upnl": -0.03987,
       "leverage": 2.0
     }
   ],
   "spot_usdc": 0,
-  "total_equity": 128.40510700000002,
-  "logs_a": [
-    {
-      "agent_id": "a",
-      "cycle_id": "20260627_034533",
-      "ts_utc": "2026-06-27T03:45:55.010118",
-      "market_regime": "TREND_UP",
-      "key_contradictions": [],
-      "reasoning_steps": [
-        "[规则引擎] 扫描 10 个标的",
-        "最优标的: ARB score=2",
-        "方向: LONG | 24H=+6.5% 4H=-1.8%",
-        "量比: 2.05x",
-        "仓位: 5.0 USDC × 3x = 15 名义"
-      ],
-      "confidence": 0.64,
-      "supporting_evidence": [],
-      "action": "LONG",
-      "entry_price": 0.07531,
-      "position_size_usdt": 5.0,
-      "stop_loss_price": 0.07,
-      "take_profit_price": 0.08,
-      "decision_rationale": "[规则引擎] ARB LONG score=2 conf=64%",
-      "execution": {
-        "ok": false,
-        "ord_id": null,
-        "filled_price": null,
-        "filled_size": null,
-        "error": null
-      },
-      "system_features_used": [
-        "llm_provider:rule",
-        "skill:agent-a-trading",
-        "memory_system",
-        "master_style:Jesse Livermore",
-        "sim_mode"
-      ],
-      "graph_context_nodes": 0,
-      "memory_loaded": true,
-      "prior_lessons_applied": [],
-      "pnl_pct": null,
-      "exit_price": null,
-      "exit_ts": null,
-      "exit_reason": null,
-      "was_correct": null,
-      "coin": "ARB",
-      "leverage": 3,
-      "sim_mode": true,
-      "current_master": "Jesse Livermore",
-      "llm_provider": "rule",
-      "top_lessons": [
-        "测试：高资金费率时不追多"
-      ]
-    },
-    {
-      "agent_id": "a",
-      "cycle_id": "20260627_034826",
-      "ts_utc": "2026-06-27T03:48:46.867277",
-      "market_regime": "TREND_UP",
-      "key_contradictions": [],
-      "reasoning_steps": [
-        "[规则引擎] 扫描 10 个标的",
-        "最优标的: ARB score=2",
-        "方向: LONG | 24H=+6.5% 4H=-1.8%",
-        "量比: 2.05x",
-        "仓位: 5.0 USDC × 3x = 15 名义"
-      ],
-      "confidence": 0.64,
-      "supporting_evidence": [],
-      "action": "LONG",
-      "entry_price": 0.07532,
-      "position_size_usdt": 5.0,
-      "stop_loss_price": 0.07,
-      "take_profit_price": 0.08,
-      "decision_rationale": "[规则引擎] ARB LONG score=2 conf=64%",
-      "execution": {
-        "ok": false,
-        "ord_id": null,
-        "filled_price": null,
-        "filled_size": null,
-        "error": null
-      },
-      "system_features_used": [
-        "llm_provider:rule",
-        "skill:agent-a-trading",
-        "memory_system",
-        "master_style:Jesse Livermore",
-        "sim_mode"
-      ],
-      "graph_context_nodes": 0,
-      "memory_loaded": true,
-      "prior_lessons_applied": [],
-      "pnl_pct": null,
-      "exit_price": null,
-      "exit_ts": null,
-      "exit_reason": null,
-      "was_correct": null,
-      "coin": "ARB",
-      "leverage": 3,
-      "sim_mode": true,
-      "current_master": "Jesse Livermore",
-      "llm_provider": "rule",
-      "top_lessons": [
-        "测试：高资金费率时不追多"
-      ]
-    },
-    {
-      "agent_id": "a",
-      "cycle_id": "20260627_035241",
-      "ts_utc": "2026-06-27T03:53:02.223240",
-      "market_regime": "TREND_UP",
-      "key_contradictions": [],
-      "reasoning_steps": [
-        "[规则引擎] 扫描 10 个标的",
-        "最优标的: ARB score=2",
-        "方向: LONG | 24H=+6.5% 4H=-1.8%",
-        "量比: 2.05x",
-        "仓位: 5.0 USDC × 3x = 15 名义"
-      ],
-      "confidence": 0.64,
-      "supporting_evidence": [],
-      "action": "LONG",
-      "entry_price": 0.07522,
-      "position_size_usdt": 5.0,
-      "stop_loss_price": 0.07,
-      "take_profit_price": 0.08,
-      "decision_rationale": "[规则引擎] ARB LONG score=2 conf=64%",
-      "execution": {
-        "ok": false,
-        "ord_id": null,
-        "filled_price": null,
-        "filled_size": null,
-        "error": null
-      },
-      "system_features_used": [
-        "llm_provider:rule",
-        "skill:agent-a-trading",
-        "memory_system",
-        "master_style:Jesse Livermore",
-        "live_mode"
-      ],
-      "graph_context_nodes": 0,
-      "memory_loaded": true,
-      "prior_lessons_applied": [],
-      "pnl_pct": null,
-      "exit_price": null,
-      "exit_ts": null,
-      "exit_reason": null,
-      "was_correct": null,
-      "coin": "ARB",
-      "leverage": 3,
-      "sim_mode": false,
-      "current_master": "Jesse Livermore",
-      "llm_provider": "rule",
-      "top_lessons": [
-        "测试：高资金费率时不追多"
-      ]
-    },
-    {
-      "agent_id": "a",
-      "cycle_id": "20260627_035500",
-      "ts_utc": "2026-06-27T03:55:21.021464",
-      "market_regime": "TREND_UP",
-      "key_contradictions": [],
-      "reasoning_steps": [
-        "[规则引擎] 扫描 10 个标的",
-        "最优标的: ARB score=2",
-        "方向: LONG | 24H=+6.5% 4H=-1.8%",
-        "量比: 2.05x",
-        "仓位: 5.0 USDC × 3x = 15 名义"
-      ],
-      "confidence": 0.64,
-      "supporting_evidence": [],
-      "action": "LONG",
-      "entry_price": 0.07522,
-      "position_size_usdt": 5.0,
-      "stop_loss_price": 0.07,
-      "take_profit_price": 0.08,
-      "decision_rationale": "[规则引擎] ARB LONG score=2 conf=64%",
-      "execution": {
-        "ok": true,
-        "coin": "ARB",
-        "side": "BUY",
-        "sz": 199.33554817275748,
-        "leverage": 3,
-        "filled": {
-          "error": "Order has invalid price."
-        },
-        "raw": {
-          "status": "ok",
-          "response": {
-            "type": "order",
-            "data": {
-              "statuses": [
-                {
-                  "error": "Order has invalid price."
-                }
-              ]
-            }
-          }
-        }
-      },
-      "system_features_used": [
-        "llm_provider:rule",
-        "skill:agent-a-trading",
-        "memory_system",
-        "master_style:Jesse Livermore",
-        "live_mode"
-      ],
-      "graph_context_nodes": 0,
-      "memory_loaded": true,
-      "prior_lessons_applied": [],
-      "pnl_pct": null,
-      "exit_price": null,
-      "exit_ts": null,
-      "exit_reason": null,
-      "was_correct": null,
-      "coin": "ARB",
-      "leverage": 3,
-      "sim_mode": false,
-      "current_master": "Jesse Livermore",
-      "llm_provider": "rule",
-      "top_lessons": [
-        "测试：高资金费率时不追多"
-      ]
-    },
-    {
-      "agent_id": "a",
-      "cycle_id": "20260627_040035",
-      "ts_utc": "2026-06-27T04:00:58.915944",
-      "market_regime": "RANGE",
-      "key_contradictions": [],
-      "reasoning_steps": [
-        "全市场无明确信号，观望"
-      ],
-      "confidence": 0.4,
-      "supporting_evidence": [],
-      "action": "HOLD",
-      "entry_price": null,
-      "position_size_usdt": 0.0,
-      "stop_loss_price": null,
-      "take_profit_price": null,
-      "decision_rationale": "规则引擎：信号不足，观望",
-      "execution": {
-        "ok": false,
-        "ord_id": null,
-        "filled_price": null,
-        "filled_size": null,
-        "error": null
-      },
-      "system_features_used": [
-        "llm_provider:rule",
-        "skill:agent-a-trading",
-        "memory_system",
-        "master_style:Jesse Livermore",
-        "live_mode"
-      ],
-      "graph_context_nodes": 0,
-      "memory_loaded": true,
-      "prior_lessons_applied": [],
-      "pnl_pct": null,
-      "exit_price": null,
-      "exit_ts": null,
-      "exit_reason": null,
-      "was_correct": null,
-      "coin": null,
-      "leverage": 1,
-      "sim_mode": false,
-      "current_master": "Jesse Livermore",
-      "llm_provider": "rule",
-      "top_lessons": [
-        "测试：高资金费率时不追多"
-      ]
-    },
-    {
-      "agent_id": "a",
-      "cycle_id": "20260627_042516",
-      "ts_utc": "2026-06-27T04:25:33.149065",
-      "market_regime": "RANGE",
-      "key_contradictions": [],
-      "reasoning_steps": [
-        "全市场无明确信号，观望"
-      ],
-      "confidence": 0.4,
-      "supporting_evidence": [],
-      "action": "HOLD",
-      "entry_price": null,
-      "position_size_usdt": 0.0,
-      "stop_loss_price": null,
-      "take_profit_price": null,
-      "decision_rationale": "规则引擎：信号不足，观望",
-      "execution": {
-        "ok": false,
-        "ord_id": null,
-        "filled_price": null,
-        "filled_size": null,
-        "error": null
-      },
-      "system_features_used": [
-        "llm_provider:rule",
-        "skill:agent-a-trading",
-        "memory_system",
-        "master_style:Jesse Livermore",
-        "live_mode"
-      ],
-      "graph_context_nodes": 0,
-      "memory_loaded": true,
-      "prior_lessons_applied": [],
-      "pnl_pct": null,
-      "exit_price": null,
-      "exit_ts": null,
-      "exit_reason": null,
-      "was_correct": null,
-      "coin": null,
-      "leverage": 1,
-      "sim_mode": false,
-      "current_master": "Jesse Livermore",
-      "llm_provider": "rule",
-      "top_lessons": [
-        "测试：高资金费率时不追多"
-      ]
-    },
-    {
-      "agent_id": "a",
-      "cycle_id": "20260627_042853",
-      "ts_utc": "2026-06-27T04:29:12.859004",
-      "market_regime": "RANGE",
-      "key_contradictions": [],
-      "reasoning_steps": [
-        "全市场无明确信号，观望"
-      ],
-      "confidence": 0.4,
-      "supporting_evidence": [],
-      "action": "HOLD",
-      "entry_price": null,
-      "position_size_usdt": 0.0,
-      "stop_loss_price": null,
-      "take_profit_price": null,
-      "decision_rationale": "规则引擎：信号不足，观望",
-      "execution": {
-        "ok": false,
-        "ord_id": null,
-        "filled_price": null,
-        "filled_size": null,
-        "error": null
-      },
-      "system_features_used": [
-        "llm_provider:rule",
-        "skill:agent-a-trading",
-        "memory_system",
-        "master_style:Jesse Livermore",
-        "live_mode"
-      ],
-      "graph_context_nodes": 0,
-      "memory_loaded": true,
-      "prior_lessons_applied": [],
-      "pnl_pct": null,
-      "exit_price": null,
-      "exit_ts": null,
-      "exit_reason": null,
-      "was_correct": null,
-      "coin": null,
-      "leverage": 1,
-      "sim_mode": false,
-      "current_master": "Jesse Livermore",
-      "llm_provider": "rule",
-      "top_lessons": [
-        "测试：高资金费率时不追多"
-      ]
-    }
-  ],
+  "total_equity": 128.556073,
+  "logs_a": [],
   "logs_b": [],
-  "generated_at": "2026-06-27T06:48:19.169925Z"
+  "generated_at": "2026-06-27T07:05:57.836622Z"
 }
