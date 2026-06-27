@@ -55,8 +55,8 @@ jobs:
           git add experiments/ab-trading/state.json
           git diff --cached --quiet && echo "No changes to commit on main" || \
             (git commit -m "chore(monitor): auto-update state snapshot" && git push)
-          # Also sync to gh-pages
-          git push origin main:gh-pages || echo "gh-pages push skipped"
+          # Also sync to gh-pages (for legacy Pages mode fallback)
+          git push --force origin main:gh-pages || echo "gh-pages push skipped"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
