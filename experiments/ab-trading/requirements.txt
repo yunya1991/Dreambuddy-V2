@@ -1,0 +1,11 @@
+# Core dependencies for Agent A Trading
+python-dotenv>=1.0.0
+requests>=2.31.0
+msgpack>=1.0.7
+
+# Ethereum/Hyperliquid signing
+eth-account>=0.9.0
+eth-utils>=2.3.0
+
+# Hyperliquid SDK (official)
+hyperliquid>=1.0.0

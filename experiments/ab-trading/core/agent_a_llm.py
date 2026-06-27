@@ -1,0 +1,480 @@
+#!/usr/bin/env python3
+"""
+Agent A 专用 LLM 客户端 — 三级回退机制
+优先级：Trae (免费额度) → DeepSeek V4 → 基本规则引擎
+
+每日配额控制：超出后自动回落下一级，系统不中断。
+
+三级回退：
+  1. Trae (trae.ai) — 免费额度，优先使用
+  2. DeepSeek V4 (api.deepseek.com) — 付费备用
+  3. 基本规则引擎 — 硬编码兜底（0 Token）
+"""
+import os, json, time, requests, warnings
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Optional, Tuple
+
+warnings.filterwarnings("ignore")
+
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent / "config" / ".env")
+
+# ── 配置 ─────────────────────────────────────────────────────────────────
+TRAE_API_KEY     = os.environ.get("TRAE_API_KEY", "")
+TRAE_BASE_URL    = os.environ.get("TRAE_BASE_URL", "https://api.trae.ai/v1")
+TRAE_MODEL       = os.environ.get("TRAE_MODEL", "claude-sonnet-4-5")
+
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE    = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+DEEPSEEK_MODEL   = os.environ.get("DEEPSEEK_MODEL_V4", "deepseek-chat")
+
+DAILY_LIMIT_TRAE     = int(os.environ.get("AGENT_A_TRAE_DAILY_LIMIT",   "12"))
+DAILY_LIMIT_DEEPSEEK = int(os.environ.get("AGENT_A_DEEPSEEK_DAILY_LIMIT", "24"))
+
+QUOTA_FILE = Path(__file__).parent.parent / "data" / "agent_a_llm_quota.json"
+SKILL_PATH = Path(__file__).parent.parent / "skills" / "agent-a-trading" / "SKILL.md"
+
+# ── 配额管理 ──────────────────────────────────────────────────────────────
+
+def _today() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _load_quota() -> dict:
+    if QUOTA_FILE.exists():
+        try:
+            with open(QUOTA_FILE) as f:
+                d = json.load(f)
+            if d.get("date") == _today():
+                return d
+        except Exception:
+            pass
+    return {
+        "date":      _today(),
+        "trae":      0,
+        "deepseek":  0,
+        "rule_fallback": 0,
+    }
+
+
+def _save_quota(q: dict):
+    QUOTA_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(QUOTA_FILE, "w") as f:
+        json.dump(q, f, indent=2, ensure_ascii=False)
+
+
+def _record_usage(provider: str):
+    q = _load_quota()
+    q[provider] = q.get(provider, 0) + 1
+    _save_quota(q)
+
+
+def _can_use(provider: str) -> Tuple[bool, str]:
+    q = _load_quota()
+    if provider == "trae":
+        if not TRAE_API_KEY:
+            return False, "未配置 TRAE_API_KEY"
+        if q.get("trae", 0) >= DAILY_LIMIT_TRAE:
+            return False, f"Trae日配额已满({DAILY_LIMIT_TRAE}次)"
+        return True, "ok"
+    elif provider == "deepseek":
+        if not DEEPSEEK_API_KEY:
+            return False, "未配置 DEEPSEEK_API_KEY"
+        if q.get("deepseek", 0) >= DAILY_LIMIT_DEEPSEEK:
+            return False, f"DeepSeek日配额已满({DAILY_LIMIT_DEEPSEEK}次)"
+        return True, "ok"
+    return False, "unknown provider"
+
+
+def get_quota_status() -> dict:
+    """查询当日用量"""
+    q = _load_quota()
+    return {
+        "date":          q["date"],
+        "trae":          f"{q.get('trae',0)}/{DAILY_LIMIT_TRAE}",
+        "deepseek":      f"{q.get('deepseek',0)}/{DAILY_LIMIT_DEEPSEEK}",
+        "rule_fallback": q.get("rule_fallback", 0),
+    }
+
+
+def get_available_provider() -> str:
+    """返回当前可用的最高优先级 provider"""
+    if _can_use("trae")[0]:
+        return "trae"
+    if _can_use("deepseek")[0]:
+        return "deepseek"
+    return "rule"
+
+# ── LLM 调用实现 ──────────────────────────────────────────────────────────
+
+def _call_trae(prompt: str, system: str, max_tokens: int) -> str:
+    s = requests.Session()
+    s.trust_env = False
+    resp = s.post(
+        f"{TRAE_BASE_URL}/chat/completions",
+        headers={
+            "Authorization": f"Bearer {TRAE_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model":       TRAE_MODEL,
+            "messages":    [
+                {"role": "system", "content": system},
+                {"role": "user",   "content": prompt},
+            ],
+            "max_tokens":  max_tokens,
+            "temperature": 0.3,
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    return data["choices"][0]["message"]["content"].strip()
+
+
+def _call_deepseek(prompt: str, system: str, max_tokens: int) -> str:
+    s = requests.Session()
+    s.trust_env = False
+    resp = s.post(
+        f"{DEEPSEEK_BASE}/chat/completions",
+        headers={
+            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model":       DEEPSEEK_MODEL,
+            "messages":    [
+                {"role": "system", "content": system},
+                {"role": "user",   "content": prompt},
+            ],
+            "max_tokens":  max_tokens,
+            "temperature": 0.3,
+        },
+        timeout=20,
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"].strip()
+
+
+def _load_skill_content() -> str:
+    """加载 SKILL 文档内容作为 system prompt 的一部分"""
+    try:
+        if SKILL_PATH.exists():
+            with open(SKILL_PATH) as f:
+                return f.read()
+    except Exception:
+        pass
+    return ""
+
+# ── 主入口：三级回退 ─────────────────────────────────────────────────────
+
+def agent_a_llm_decide(
+    market_data: dict,
+    memory: dict,
+    account_data: dict,
+    max_tokens: int = 1500,
+) -> Tuple[dict, str]:
+    """
+    Agent A 交易决策主入口
+    三级回退：Trae → DeepSeek → 基本规则
+
+    返回: (decision_dict, provider_used)
+    provider_used: "trae" / "deepseek" / "rule"
+    """
+    skill_content = _load_skill_content()
+
+    system_prompt = f"""你是 Agent A — 一位顶级加密货币合约交易大师。
+你严格按照以下 SKILL 框架进行每一轮交易决策。
+
+【SKILL 框架】
+{skill_content}
+
+【重要】
+- 严格按照 SKILL 中第九节的 JSON 格式输出，不要输出任何其他内容
+- 从市场数据出发，结合记忆中的教训和当前大师风格做决策
+- 不要编造数据，只使用提供的市场数据
+- 如果信号不明确，选择 HOLD
+"""
+
+    user_prompt = _build_user_prompt(market_data, memory, account_data)
+
+    # ── Level 1: Trae ──────────────────────────────────────────────
+    ok, reason = _can_use("trae")
+    if ok:
+        try:
+            reply = _call_trae(user_prompt, system_prompt, max_tokens)
+            decision = _parse_llm_output(reply)
+            if decision and decision.get("action") in ("LONG", "SHORT", "HOLD"):
+                _record_usage("trae")
+                return decision, "trae"
+        except Exception as e:
+            err = str(e)
+            if any(c in err for c in ["429", "quota", "credit", "rate limit"]):
+                pass
+            else:
+                _record_usage("trae")
+
+    # ── Level 2: DeepSeek V4 ───────────────────────────────────────
+    ok, reason = _can_use("deepseek")
+    if ok:
+        try:
+            reply = _call_deepseek(user_prompt, system_prompt, max_tokens)
+            decision = _parse_llm_output(reply)
+            if decision and decision.get("action") in ("LONG", "SHORT", "HOLD"):
+                _record_usage("deepseek")
+                return decision, "deepseek"
+        except Exception as e:
+            err = str(e)
+            if any(c in err for c in ["429", "quota", "credit", "rate limit"]):
+                pass
+            else:
+                _record_usage("deepseek")
+
+    # ── Level 3: 基本规则引擎（兜底）───────────────────────────────
+    decision = _rule_based_decision(market_data, memory, account_data)
+    _record_usage("rule_fallback")
+    return decision, "rule"
+
+
+def _build_user_prompt(mkt: dict, memory: dict, acct: dict) -> str:
+    """构建用户 prompt，包含市场数据、记忆、账户信息"""
+    coins_info = ""
+    for coin, d in mkt.get("coins", {}).items():
+        coins_info += f"""
+  - {coin}: 价格=${d.get('price', 0):.2f}, 24H={d.get('ch24', 0):+.2f}%, 4H={d.get('ch4h', 0):+.2f}%, 量比={d.get('vol_ratio', 1):.2f}x"""
+
+    opp_info = ""
+    for coin, o in mkt.get("opp_map", {}).items():
+        fr = o.get("funding", 0)
+        opp_info += f"  - {coin}: 资金费率={fr*100:.4f}%\n"
+
+    lessons_str = ""
+    for i, lesson in enumerate(memory.get("lessons", [])[:10]):
+        lessons_str += f"  {i+1}. {lesson.get('content', '')} (score={lesson.get('score', 0)})\n"
+
+    recent_trades = ""
+    for t in memory.get("recent_trades", [])[-5:]:
+        recent_trades += (
+            f"  - {t.get('timestamp','')[:10]} {t.get('coin','')} {t.get('action','')} "
+            f"PnL={t.get('pnl_pct',0):+.2f}% master={t.get('master','')}\n"
+        )
+
+    return f"""
+【账户状态】
+- 权益: ${acct.get('equity', 0):.2f} USDC
+- 当前持仓: {list(acct.get('positions', {}).keys()) if acct.get('positions') else '无'}
+- 连胜: {memory.get('win_streak', 0)} | 连败: {memory.get('loss_streak', 0)}
+- 总交易数: {memory.get('total_trades', 0)}
+
+【当前大师风格】
+{memory.get('current_master', 'Jesse Livermore')}
+
+【教训列表（Top 10）】
+{lessons_str or '  暂无教训'}
+
+【近期交易记录（最近5笔）】
+{recent_trades or '  暂无记录'}
+
+【市场扫描 — 所有标的】
+{coins_info}
+
+【资金费率信号】
+{opp_info or '  无数据'}
+
+【请基于以上信息，严格按照 SKILL 框架的六维分析进行决策，并输出 JSON 格式的结果。】
+"""
+
+
+def _parse_llm_output(reply: str) -> Optional[dict]:
+    """解析 LLM 输出的 JSON"""
+    if not reply:
+        return None
+
+    text = reply.strip()
+
+    # 尝试直接解析
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    # 尝试提取 ```json ... ``` 块
+    if "```json" in text:
+        start = text.index("```json") + 7
+        end = text.index("```", start)
+        try:
+            return json.loads(text[start:end].strip())
+        except Exception:
+            pass
+
+    if "```" in text:
+        start = text.index("```") + 3
+        end = text.index("```", start)
+        try:
+            return json.loads(text[start:end].strip())
+        except Exception:
+            pass
+
+    # 尝试找到第一个 { 和最后一个 }
+    if "{" in text and "}" in text:
+        start = text.index("{")
+        end = text.rindex("}") + 1
+        try:
+            return json.loads(text[start:end].strip())
+        except Exception:
+            pass
+
+    return None
+
+# ── 基本规则引擎（兜底）─────────────────────────────────────────────────
+
+def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
+    """
+    基本规则引擎 — 当所有 LLM 都不可用时的兜底策略
+    三因子：动量 + 量价 + 资金费率反向
+    """
+    coins   = mkt.get("coins", {})
+    opp_map = mkt.get("opp_map", {})
+    reasoning = []
+
+    best_coin  = None
+    best_score = 0
+    best_side  = "LONG"
+    best_info  = {}
+
+    for coin, d in coins.items():
+        score = 0
+        side  = "LONG"
+
+        ch24 = d.get("ch24", 0)
+        ch4  = d.get("ch4h", 0)
+        vr   = d.get("vol_ratio", 1.0)
+
+        # 动量信号
+        if ch24 > 3 and ch4 > 1:
+            score += 3; side = "LONG"
+        elif ch24 < -3 and ch4 < -1:
+            score += 3; side = "SHORT"
+        elif abs(ch24) > 1.5:
+            score += 1; side = "LONG" if ch24 > 0 else "SHORT"
+
+        # 量价配合
+        if vr > 1.5:
+            score += 1
+
+        # 资金费率极值（拥挤做反向）
+        opp = opp_map.get(coin, {})
+        fr = opp.get("funding", 0)
+        if abs(fr) > 0.0003:
+            score += 2
+            side = "SHORT" if fr > 0 else "LONG"
+
+        # 连败保护：连败≥3次，提高门槛
+        loss_streak = memory.get("loss_streak", 0)
+        if loss_streak >= 3:
+            score = max(0, score - 1)
+
+        if score > best_score:
+            best_score = score
+            best_coin  = coin
+            best_side  = side
+            best_info  = d
+
+    # 入场门槛
+    min_score = 3 if memory.get("loss_streak", 0) >= 3 else 2
+
+    if best_score < min_score or best_coin is None:
+        reasoning.append("全市场无明确信号，观望")
+        return {
+            "action": "HOLD",
+            "coin": None,
+            "confidence": 0.4,
+            "leverage": 1,
+            "position_size_usdt": 0,
+            "entry_price": None,
+            "stop_loss_price": None,
+            "take_profit_price": None,
+            "market_regime": "RANGE",
+            "current_master": memory.get("current_master", "Jesse Livermore"),
+            "master_switch_reason": "",
+            "decision_rationale": "规则引擎：信号不足，观望",
+            "reasoning_steps": reasoning,
+            "new_lesson": "",
+            "lesson_score_universal": 0,
+            "lesson_score_importance": 0,
+        }
+
+    confidence = min(0.5 + best_score * 0.07, 0.80)
+    equity = min(acct.get("equity", 60.0), 60.0)
+    pos_usdt = max(round(equity * 0.05, 2), 5.0)
+    leverage = min(5, max(1, int(confidence * 5)))
+
+    px = best_info.get("price", 0)
+    sl_pct = 0.04
+    tp_pct = 0.08
+    sl = round(px * (1 - sl_pct) if best_side == "LONG" else px * (1 + sl_pct), 2)
+    tp = round(px * (1 + tp_pct) if best_side == "LONG" else px * (1 - tp_pct), 2)
+
+    regime = "TREND_UP" if best_side == "LONG" else "TREND_DOWN"
+
+    reasoning.append(f"[规则引擎] 扫描 {len(coins)} 个标的")
+    reasoning.append(f"最优标的: {best_coin} score={best_score}")
+    reasoning.append(f"方向: {best_side} | 24H={best_info.get('ch24',0):+.1f}% 4H={best_info.get('ch4h',0):+.1f}%")
+    reasoning.append(f"量比: {best_info.get('vol_ratio',1):.2f}x")
+    reasoning.append(f"仓位: {pos_usdt} USDC × {leverage}x = {pos_usdt*leverage:.0f} 名义")
+
+    return {
+        "action":             best_side,
+        "coin":               best_coin,
+        "confidence":         round(confidence, 3),
+        "leverage":           leverage,
+        "position_size_usdt": pos_usdt,
+        "entry_price":        px,
+        "stop_loss_price":    sl,
+        "take_profit_price":  tp,
+        "market_regime":      regime,
+        "current_master":     memory.get("current_master", "Jesse Livermore"),
+        "master_switch_reason": "",
+        "decision_rationale": f"[规则引擎] {best_coin} {best_side} score={best_score} conf={confidence:.0%}",
+        "reasoning_steps":    reasoning,
+        "new_lesson":         "",
+        "lesson_score_universal": 0,
+        "lesson_score_importance": 0,
+    }
+
+
+# ── 快速测试 ──────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    print("=== Agent A LLM 客户端测试 ===")
+    print(f"可用 Provider: {get_available_provider()}")
+    print(f"配额状态: {get_quota_status()}")
+    print()
+
+    test_mkt = {
+        "coins": {
+            "BTC": {"price": 65000, "ch24": 3.5, "ch4h": 1.2, "vol_ratio": 1.8},
+            "ETH": {"price": 3500,  "ch24": 5.2, "ch4h": 2.1, "vol_ratio": 2.2},
+        },
+        "opp_map": {
+            "BTC": {"funding": 0.0001},
+            "ETH": {"funding": -0.0002},
+        },
+    }
+    test_mem = {
+        "current_master": "Jesse Livermore",
+        "lessons": [],
+        "recent_trades": [],
+        "win_streak": 0,
+        "loss_streak": 0,
+        "total_trades": 0,
+    }
+    test_acct = {"equity": 60.0, "positions": {}}
+
+    decision, provider = agent_a_llm_decide(test_mkt, test_mem, test_acct)
+    print(f"使用 Provider: {provider}")
+    print(f"决策: {decision.get('action')} {decision.get('coin')} conf={decision.get('confidence'):.0%}")
+    print(f"理由: {decision.get('decision_rationale')}")
+    print()
+    print(f"调用后配额: {get_quota_status()}")
