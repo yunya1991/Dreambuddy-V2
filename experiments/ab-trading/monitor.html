@@ -22,7 +22,7 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .last-update { color: var(--muted); font-size: 11px; }
 
-  .main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px; max-width: 1400px; }
+  .main { padding: 16px 24px; max-width: 1400px; margin: 0 auto; }
   .full-width { grid-column: 1 / -1; }
 
   /* Cards */
@@ -134,8 +134,10 @@
   .tab { padding: 12px 20px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--text); border-bottom-color: var(--blue); }
-  .tab-content { display: none; }
+  .tab-content { display: none; width: 100%; }
   .tab-content.active { display: block; }
+  .tab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .tab-grid .full-width { grid-column: 1 / -1; }
 
   /* Schedule Tab */
   .schedule-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -184,6 +186,7 @@
 
   <!-- 本地监控 Tab -->
   <div id="tab-local" class="tab-content active">
+  <div class="tab-grid">
 
   <!-- 账户总览 -->
   <div class="card full-width">
@@ -369,9 +372,12 @@
       </div>
     </div>
   </div>
+  </div>
+</div>
 
   <!-- 云端调度 Tab -->
   <div id="tab-cloud" class="tab-content">
+  <div class="tab-grid">
 
     <!-- 三级调度架构 -->
     <div class="card full-width">
@@ -414,6 +420,7 @@
       </div>
     </div>
 
+  </div>
   </div>
 
 </div>
