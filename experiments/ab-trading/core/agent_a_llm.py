@@ -173,7 +173,7 @@ def agent_a_llm_decide(
     market_data: dict,
     memory: dict,
     account_data: dict,
-    max_tokens: int = 1500,
+    max_tokens: int = 8000,
 ) -> Tuple[dict, str]:
     """
     Agent A 交易决策主入口

@@ -82,12 +82,12 @@ class ChainPlanner:
     """
     零Token链路规划器
     调用方式：
-        planner = ChainPlanner(token_budget=6000)
+        planner = ChainPlanner(token_budget=30000)
         plan = planner.plan(intent, mkt, memory)
         # 把 plan.planned_chain 传给 ChainRouter
     """
 
-    def __init__(self, token_budget: int = 6000):
+    def __init__(self, token_budget: int = 30000):
         self.token_budget = token_budget
         self._skill_costs = NODE_COST.copy()
 
@@ -221,11 +221,11 @@ class ChainPlanner:
         """根据 token_budget 决定预算模式，剪掉超出预算的节点"""
         pruned = []
 
-        if self.token_budget >= 8000:
-            # full 模式：基础链 + 扩展池全部保留
+        if self.token_budget >= 25000:
+            # full 模式：基础链 + 扩展池全部保留（TRAE按次计费，Token预算充足）
             mode = "full"
             combined = chain + extend_pool
-        elif self.token_budget >= 4000:
+        elif self.token_budget >= 12000:
             # standard 模式：基础链 + 低成本扩展
             mode = "standard"
             affordable_extend = [
