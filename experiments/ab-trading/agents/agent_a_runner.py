@@ -34,7 +34,9 @@ from orchestrator import request_early_run
 from core.agent_a_memory import (
     load_memory, save_memory, add_lesson, record_trade,
     update_equity_stats, maybe_switch_master, get_top_lessons,
+    record_closed_trade,
 )
+from core.exit_module import run_exit_check, init_position, update_position_exit_levels
 from core.agent_a_llm import agent_a_llm_decide, get_quota_status, get_available_provider
 
 # ── 配置 ───────────────────────────────────────────────────────────────────
@@ -166,6 +168,24 @@ def run():
     # 更新权益统计
     memory = update_equity_stats(memory, equity)
 
+    # 确保 active_positions 存在（旧版本兼容）
+    if "active_positions" not in memory:
+        memory["active_positions"] = {}
+
+    # ── 2.5 L1 离场检查（基础止损止盈 + 移动止损）──────────────────────
+    print(f"\n[离场] L1 基础离场检查...")
+    memory["active_positions"], closed_trades = run_exit_check(
+        client, memory.get("active_positions", {}), agent_id="a", enable_trailing=True
+    )
+    if closed_trades:
+        for ct in closed_trades:
+            print(f"[离场] 平仓 {ct['coin']}: {ct['exit_reason']} "
+                  f"PnL={ct['pnl_pct']*100:+.2f}% "
+                  f"@ {ct['exit_price']}")
+            memory = record_closed_trade(memory, ct, 0.0, memory["current_master"])
+    else:
+        print(f"[离场] 无触发，当前持仓: {list(memory['active_positions'].keys()) or '无'}")
+
     # 最大回撤保护：回撤≥15% 暂停交易
     max_dd = memory.get("max_drawdown_pct", 0)
     if max_dd >= 15:
@@ -192,6 +212,7 @@ def run():
     account_data = {
         "equity": equity,
         "positions": positions,
+        "active_positions": memory.get("active_positions", {}),
     }
 
     print(f"\n[决策] 调用 LLM 进行决策（SKILL 框架）...")
@@ -210,6 +231,45 @@ def run():
             f"连败保护：已连败{memory['loss_streak']}次，本轮强制观望"
         ]
         decision["decision_rationale"] = "连败保护触发，强制HOLD"
+
+    # ── 4.5 L2 智能离场（LLM 给出持仓调整建议）───────────────────────
+    smart_exits = []
+    active_pos = memory.get("active_positions", {})
+    if active_pos and AUTO_EXECUTE and not sim_mode:
+        # 检查 LLM 是否给出了离场建议
+        exit_suggestions = decision.get("exit_suggestions", [])
+        update_suggestions = decision.get("update_exit_levels", [])
+
+        # 处理主动离场建议
+        for sug in exit_suggestions:
+            coin = sug.get("coin")
+            reason = sug.get("reason", "LLM_SIGNAL_EXIT")
+            if coin and coin in active_pos:
+                from core.exit_module import execute_exit
+                memory["active_positions"], closed_info, exec_res = execute_exit(
+                    client, memory["active_positions"], coin,
+                    f"SMART_{reason[:20]}", tag=f"a_exit_smart"
+                )
+                if closed_info:
+                    smart_exits.append(closed_info)
+                    memory = record_closed_trade(
+                        memory, closed_info, decision.get("confidence", 0),
+                        memory["current_master"]
+                    )
+                    print(f"[离场] L2智能平仓 {coin}: {reason} "
+                          f"PnL={closed_info['pnl_pct']*100:+.2f}%")
+
+        # 处理止损止盈调整建议
+        for sug in update_suggestions:
+            coin = sug.get("coin")
+            new_sl = sug.get("new_stop_loss")
+            new_tp = sug.get("new_take_profit")
+            if coin and coin in memory["active_positions"]:
+                memory["active_positions"] = update_position_exit_levels(
+                    memory["active_positions"], coin, new_sl, new_tp,
+                    sl_source="llm_smart", tp_source="llm_smart"
+                )
+                print(f"[离场] L2调整 {coin}: SL→{new_sl}, TP→{new_tp}")
 
     # ── 5. 执行交易 ──────────────────────────────────────────────
     action = decision.get("action", "HOLD")
@@ -232,6 +292,29 @@ def run():
 
         print(f"[执行] {action} {coin} {pos_usdt} USDC × {leverage}x")
         print(f"[执行] 结果: ok={exec_result.get('ok')} filled={exec_result.get('filled')}")
+
+        # 开仓成功后初始化 active_positions（L1 基础离场）
+        if exec_result.get("ok"):
+            entry_px = decision.get("entry_price", 0) or client.get_mid_price(coin)
+            custom_sl = decision.get("stop_loss_price")
+            custom_tp = decision.get("take_profit_price")
+            memory["active_positions"] = init_position(
+                memory.get("active_positions", {}),
+                coin=coin,
+                entry_price=entry_px,
+                action=action,
+                position_size_usdt=pos_usdt,
+                leverage=leverage,
+                stop_loss_price=custom_sl,
+                take_profit_price=custom_tp,
+                cycle_id=cycle,
+                proxies=client.proxies,
+            )
+            pos_info = memory["active_positions"][coin]
+            print(f"[离场] L1 预设: SL={pos_info['stop_loss_price']} "
+                  f"({pos_info['sl_source']}), "
+                  f"TP={pos_info['take_profit_price']} "
+                  f"({pos_info['tp_source']})")
     elif sim_mode and action in ("LONG", "SHORT") and coin and pos_usdt > 0:
         effective_equity = min(equity, BUDGET_USDC)
         pos_usdt = max(min(pos_usdt, effective_equity * PER_TRADE_PCT), 5.0)
@@ -257,6 +340,7 @@ def run():
             f"llm_provider:{provider}",
             "skill:agent-a-trading",
             "memory_system",
+            "exit_module:l1+l2",
             "master_style:" + str(decision.get("current_master", memory["current_master"])),
             "sim_mode" if sim_mode else "live_mode",
         ],
@@ -265,6 +349,8 @@ def run():
         "current_master":      decision.get("current_master", memory["current_master"]),
         "llm_provider":        provider,
         "top_lessons":         [l["content"] for l in top_lessons[:5]],
+        "active_positions":    memory.get("active_positions", {}),
+        "smart_exits":         smart_exits,
     })
     if exec_result:
         log.data["execution"] = exec_result
