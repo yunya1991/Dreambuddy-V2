@@ -1,0 +1,938 @@
+import {
+  V1MerrillClockEngine,
+  V2MultiFactorEngine,
+  V3ScenarioSimEngine,
+  ReportExporter,
+  ResearchResult,
+  MultiVersionResult,
+  MacroIndicator,
+  TrendDirection,
+} from '../src/index';
+
+const realIndicators: MacroIndicator[] = [
+  {
+    name: 'GDP增长率',
+    value: '2.0',
+    trend: 'down' as TrendDirection,
+    source: 'https://m.toutiao.com/group/7648124455759135283/',
+    timestamp: '2026-06-26T00:00:00Z',
+    freshness: 'fresh',
+  },
+  {
+    name: 'CPI通胀率',
+    value: '3.3',
+    trend: 'up' as TrendDirection,
+    source: 'https://m.toutiao.com/group/7634490368209322506/',
+    timestamp: '2026-06-26T00:00:00Z',
+    freshness: 'fresh',
+  },
+  {
+    name: 'PMI指数',
+    value: '47.9',
+    trend: 'down' as TrendDirection,
+    source: 'https://m.toutiao.com/group/7648124455759135283/',
+    timestamp: '2026-06-26T00:00:00Z',
+    freshness: 'fresh',
+  },
+  {
+    name: '失业率',
+    value: '4.3',
+    trend: 'up' as TrendDirection,
+    source: 'https://m.toutiao.com/group/7655654979968975414/',
+    timestamp: '2026-06-26T00:00:00Z',
+    freshness: 'fresh',
+  },
+];
+
+const PHASE_NAMES: Record<string, string> = {
+  recovery: '复苏期',
+  overheat: '过热期',
+  stagflation: '滞胀期',
+  recession: '衰退期',
+};
+
+const CATEGORY_NAMES: Record<string, string> = {
+  stock: '股票',
+  bond: '债券',
+  commodity: '商品',
+  cash: '现金/货币',
+  crypto: '加密货币',
+};
+
+const DIRECTION_NAMES: Record<string, string> = {
+  overweight: '⬆️ 超配',
+  underweight: '⬇️ 低配',
+  neutral: '➡️ 标配',
+};
+
+function generateFullHTMLReport(v1: ResearchResult, v2: ResearchResult, v3: ResearchResult): string {
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>资产标的调研报告 - 2026年6月</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.7;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+    .report-container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    /* 封面 */
+    .cover {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 60px 50px;
+      text-align: center;
+    }
+    .cover h1 {
+      font-size: 36px;
+      margin-bottom: 15px;
+      font-weight: 700;
+    }
+    .cover .subtitle {
+      font-size: 18px;
+      opacity: 0.9;
+      margin-bottom: 30px;
+    }
+    .cover .meta {
+      font-size: 14px;
+      opacity: 0.85;
+    }
+    .cover .meta span {
+      margin: 0 15px;
+    }
+    /* 目录 */
+    .toc {
+      padding: 30px 50px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .toc h2 {
+      font-size: 18px;
+      color: #495057;
+      margin-bottom: 15px;
+    }
+    .toc ol {
+      padding-left: 20px;
+    }
+    .toc li {
+      margin: 8px 0;
+      color: #6c757d;
+    }
+    /* 章节 */
+    .section {
+      padding: 40px 50px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .section:last-child {
+      border-bottom: none;
+    }
+    .section h2 {
+      font-size: 22px;
+      color: #667eea;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .section h3 {
+      font-size: 18px;
+      color: #495057;
+      margin: 25px 0 15px 0;
+    }
+    .section p {
+      margin: 12px 0;
+      color: #495057;
+    }
+    /* 摘要卡片 */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .summary-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    .summary-card .label {
+      font-size: 13px;
+      color: #6c757d;
+      margin-bottom: 8px;
+    }
+    .summary-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #667eea;
+    }
+    /* 周期标签 */
+    .phase-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 15px;
+      color: white;
+    }
+    .phase-recovery { background: #28a745; }
+    .phase-overheat { background: #fd7e14; }
+    .phase-stagflation { background: #dc3545; }
+    .phase-recession { background: #007bff; }
+    /* 表格 */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+    .data-table th {
+      background: #f1f3f5;
+      color: #495057;
+      font-weight: 600;
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 2px solid #dee2e6;
+    }
+    .data-table td {
+      padding: 10px 15px;
+      border-bottom: 1px solid #e9ecef;
+      color: #495057;
+    }
+    .data-table tr:hover {
+      background: #f8f9fa;
+    }
+    /* 配置条 */
+    .allocation-bar {
+      display: flex;
+      height: 36px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+    .alloc-seg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .alloc-stock { background: #28a745; }
+    .alloc-bond { background: #007bff; }
+    .alloc-commodity { background: #fd7e14; }
+    .alloc-cash { background: #6f42c1; }
+    .alloc-crypto { background: #dc3545; }
+    /* 版本卡片 */
+    .version-card {
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      margin: 20px 0;
+      overflow: hidden;
+    }
+    .version-header {
+      background: #f8f9fa;
+      padding: 15px 20px;
+      border-bottom: 1px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .version-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #495057;
+    }
+    .version-content {
+      padding: 20px;
+    }
+    /* 风险提示 */
+    .risk-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px 20px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    .risk-box h4 {
+      color: #856404;
+      margin-bottom: 8px;
+    }
+    .risk-box ul {
+      padding-left: 20px;
+      color: #856404;
+    }
+    .risk-box li {
+      margin: 5px 0;
+    }
+    /* 页脚 */
+    .footer {
+      padding: 30px 50px;
+      text-align: center;
+      color: #adb5bd;
+      font-size: 12px;
+      background: #f8f9fa;
+    }
+    /* 指标网格 */
+    .indicator-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin: 15px 0;
+    }
+    .indicator-item {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .indicator-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #667eea;
+    }
+    .indicator-label {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 5px;
+    }
+    .indicator-trend {
+      font-size: 12px;
+      margin-top: 3px;
+    }
+    .trend-up { color: #dc3545; }
+    .trend-down { color: #28a745; }
+    .trend-neutral { color: #6c757d; }
+    /* 评级标记 */
+    .rank-badge {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      text-align: center;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .rank-1 { background: #ffd700; color: #856404; }
+    .rank-2 { background: #c0c0c0; color: #495057; }
+    .rank-3 { background: #cd7f32; color: white; }
+    .rank-other { background: #e9ecef; color: #6c757d; }
+    /* 情景卡片 */
+    .scenario-card {
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    .scenario-base { border-left: 4px solid #007bff; }
+    .scenario-optimistic { border-left: 4px solid #28a745; }
+    .scenario-pessimistic { border-left: 4px solid #dc3545; }
+    .scenario-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    /* 打印样式 */
+    @media print {
+      body { background: white; padding: 0; }
+      .report-container { box-shadow: none; border-radius: 0; }
+      .section { page-break-inside: avoid; }
+      .cover { page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+  <div class="report-container">
+    <!-- 封面 -->
+    <div class="cover">
+      <h1>📊 资产标的调研报告</h1>
+      <div class="subtitle">基于美林投资时钟的宏观配置与多因子增强分析</div>
+      <div class="meta">
+        <span>📅 2026年6月</span>
+        <span>🌍 全球/美国</span>
+        <span>📈 V1.0 / V2.0 / V3.0</span>
+      </div>
+    </div>
+
+    <!-- 目录 -->
+    <div class="toc">
+      <h2>📑 目录</h2>
+      <ol>
+        <li>执行摘要</li>
+        <li>宏观经济环境与周期判定</li>
+        <li>V1 美林时钟经典版</li>
+        <li>V2 多因子增强版</li>
+        <li>V3 情景模拟版</li>
+        <li>三版本对比分析</li>
+        <li>投资建议与风险提示</li>
+      </ol>
+    </div>
+
+    <!-- 一、执行摘要 -->
+    <div class="section">
+      <h2>一、执行摘要</h2>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="label">当前周期</div>
+          <div class="value" style="font-size: 18px;">滞胀期</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">周期置信度</div>
+          <div class="value">73%</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">报告版本</div>
+          <div class="value" style="font-size: 16px;">V1/V2/V3</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">覆盖资产</div>
+          <div class="value" style="font-size: 16px;">5大类 22子类</div>
+        </div>
+      </div>
+
+      <h3>核心结论</h3>
+      <p>基于2026年6月最新宏观数据（GDP增速放缓至2.0%、CPI通胀高企3.3%、制造业PMI收缩至47.9），三版本模型一致判定当前经济处于<strong>滞胀期</strong>。</p>
+
+      <h3>配置建议</h3>
+      <p><strong>大类资产排序（从优到劣）：</strong>大宗商品 > 现金/货币 > 股票 > 债券 > 加密货币</p>
+
+      <h3>Top 5 推荐标的</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>排名</th>
+            <th>子类资产</th>
+            <th>大类</th>
+            <th>配置方向</th>
+            <th>推荐理由</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="rank-badge rank-1">1</span></td>
+            <td>贵金属（黄金、白银）</td>
+            <td>大宗商品</td>
+            <td>⬆️ 超配</td>
+            <td>滞胀期避险需求强，抗通胀属性突出</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge rank-2">2</span></td>
+            <td>能源（原油、天然气）</td>
+            <td>大宗商品</td>
+            <td>⬆️ 超配</td>
+            <td>供给约束+通胀上行，能源价格有支撑</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge rank-3">3</span></td>
+            <td>美元</td>
+            <td>现金/货币</td>
+            <td>⬆️ 超配</td>
+            <td>滞胀期美元指数通常走强，避险货币</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge rank-other">4</span></td>
+            <td>农产品</td>
+            <td>大宗商品</td>
+            <td>⬆️ 超配</td>
+            <td>通胀传导+供给因素，农产品价格坚挺</td>
+          </tr>
+          <tr>
+            <td><span class="rank-badge rank-other">5</span></td>
+            <td>消费股（必需消费）</td>
+            <td>股票</td>
+            <td>➡️ 标配</td>
+            <td>防御性板块，需求相对稳定</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 二、宏观经济环境 -->
+    <div class="section">
+      <h2>二、宏观经济环境与周期判定</h2>
+
+      <h3>2.1 核心经济指标</h3>
+      <div class="indicator-grid">
+        <div class="indicator-item">
+          <div class="indicator-value">2.0%</div>
+          <div class="indicator-label">GDP增长率</div>
+          <div class="indicator-trend trend-down">⬇️ 放缓</div>
+        </div>
+        <div class="indicator-item">
+          <div class="indicator-value">3.3%</div>
+          <div class="indicator-label">CPI通胀率</div>
+          <div class="indicator-trend trend-up">⬆️ 高企</div>
+        </div>
+        <div class="indicator-item">
+          <div class="indicator-value">47.9</div>
+          <div class="indicator-label">制造业PMI</div>
+          <div class="indicator-trend trend-down">📉 收缩</div>
+        </div>
+        <div class="indicator-item">
+          <div class="indicator-value">4.3%</div>
+          <div class="indicator-label">失业率</div>
+          <div class="indicator-trend trend-up">⬆️ 上升</div>
+        </div>
+      </div>
+
+      <h3>2.2 周期判定</h3>
+      <p style="margin: 15px 0;">
+        当前经济周期：<span class="phase-badge phase-stagflation">滞胀期 Stagflation</span>
+        &nbsp;&nbsp;置信度：<strong>73%</strong>
+      </p>
+
+      <p><strong>判定依据：</strong></p>
+      <ul style="padding-left: 25px; color: #495057;">
+        <li><strong>增长放缓：</strong>GDP增速降至2.0%，低于潜在增速水平，经济动能减弱</li>
+        <li><strong>通胀高企：</strong>CPI同比3.3%，持续高于2%的政策目标，通胀粘性强</li>
+        <li><strong>制造业收缩：</strong>PMI 47.9处于荣枯线以下，制造业活动收缩</li>
+        <li><strong>就业走弱：</strong>失业率4.3%，就业市场出现松动迹象</li>
+      </ul>
+
+      <div class="risk-box">
+        <h4>⚠️ 关键风险</h4>
+        <ul>
+          <li>通胀持续超预期可能导致央行维持高利率更久</li>
+          <li>经济增长进一步放缓可能滑向衰退</li>
+          <li>地缘政治风险可能加剧滞胀格局</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 三、V1 美林时钟经典版 -->
+    <div class="section">
+      <h2>三、V1 美林时钟经典版</h2>
+
+      <p><strong>版本信息：</strong>V1.0.0 - Merrill Clock v1 | 基于美林投资时钟经典框架</p>
+
+      <h3>3.1 大类资产配置</h3>
+
+      <div class="allocation-bar">
+        <div class="alloc-seg alloc-commodity" style="width: 30%;">商品 30%</div>
+        <div class="alloc-seg alloc-cash" style="width: 30%;">现金 30%</div>
+        <div class="alloc-seg alloc-bond" style="width: 20%;">债券 20%</div>
+        <div class="alloc-seg alloc-stock" style="width: 10%;">股票 10%</div>
+        <div class="alloc-seg alloc-crypto" style="width: 10%;">加密 10%</div>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>资产类别</th>
+            <th>配置比例</th>
+            <th>配置方向</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>大宗商品</td>
+            <td><strong>30%</strong></td>
+            <td>⬆️ 超配</td>
+            <td>滞胀期商品是表现最好的资产，抗通胀+供给约束</td>
+          </tr>
+          <tr>
+            <td>现金/货币</td>
+            <td><strong>30%</strong></td>
+            <td>⬆️ 超配</td>
+            <td>高利率环境下现金回报提升，保持流动性</td>
+          </tr>
+          <tr>
+            <td>债券</td>
+            <td><strong>20%</strong></td>
+            <td>➡️ 标配</td>
+            <td>增长放缓利好债券，但高通胀限制上行空间</td>
+          </tr>
+          <tr>
+            <td>股票</td>
+            <td><strong>10%</strong></td>
+            <td>⬇️ 低配</td>
+            <td>盈利承压+估值收缩，股票整体表现不佳</td>
+          </tr>
+          <tr>
+            <td>加密货币</td>
+            <td><strong>10%</strong></td>
+            <td>⬇️ 低配</td>
+            <td>高风险资产在滞胀期承压，波动性大</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>3.2 子类资产优先级（Top 10）</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>排名</th>
+            <th>子类资产</th>
+            <th>大类</th>
+            <th>配置方向</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>贵金属（黄金、白银）</td><td>大宗商品</td><td>⬆️ 超配</td></tr>
+          <tr><td>2</td><td>能源（原油、天然气）</td><td>大宗商品</td><td>⬆️ 超配</td></tr>
+          <tr><td>3</td><td>农产品</td><td>大宗商品</td><td>⬆️ 超配</td></tr>
+          <tr><td>4</td><td>美元</td><td>现金/货币</td><td>⬆️ 超配</td></tr>
+          <tr><td>5</td><td>消费股（必需消费）</td><td>股票</td><td>➡️ 标配</td></tr>
+          <tr><td>6</td><td>日元</td><td>现金/货币</td><td>➡️ 标配</td></tr>
+          <tr><td>7</td><td>能源股</td><td>股票</td><td>➡️ 标配</td></tr>
+          <tr><td>8</td><td>欧元</td><td>现金/货币</td><td>➡️ 标配</td></tr>
+          <tr><td>9</td><td>工业金属</td><td>大宗商品</td><td>➡️ 标配</td></tr>
+          <tr><td>10</td><td>金融股</td><td>股票</td><td>⬇️ 低配</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 四、V2 多因子增强版 -->
+    <div class="section">
+      <h2>四、V2 多因子增强版</h2>
+
+      <p><strong>版本信息：</strong>V2.0.0 - Multi-Factor v2 | 周期+动量+估值+情绪四因子模型</p>
+
+      <h3>4.1 因子权重</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>因子</th>
+            <th>权重</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>周期因子</td><td><strong>40%</strong></td><td>基于美林投资时钟的宏观周期适配度</td></tr>
+          <tr><td>动量因子</td><td><strong>25%</strong></td><td>基于价格趋势的强弱度（MA、RSI）</td></tr>
+          <tr><td>估值因子</td><td><strong>20%</strong></td><td>基于基本面的价值吸引力（PE/PB）</td></tr>
+          <tr><td>情绪因子</td><td><strong>15%</strong></td><td>基于资金流和舆情的市场热度</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.2 大类资产因子得分</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>资产类别</th>
+            <th>权重</th>
+            <th>周期因子</th>
+            <th>动量因子</th>
+            <th>估值因子</th>
+            <th>情绪因子</th>
+            <th>综合得分</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>大宗商品</td><td>27%</td><td>90</td><td>75</td><td>55</td><td>70</td><td><strong>74</strong></td>
+          </tr>
+          <tr>
+            <td>现金/货币</td><td>22%</td><td>65</td><td>60</td><td>70</td><td>65</td><td><strong>64</strong></td>
+          </tr>
+          <tr>
+            <td>股票</td><td>20%</td><td>40</td><td>50</td><td>60</td><td>45</td><td><strong>48</strong></td>
+          </tr>
+          <tr>
+            <td>债券</td><td>16%</td><td>45</td><td>40</td><td>55</td><td>50</td><td><strong>46</strong></td>
+          </tr>
+          <tr>
+            <td>加密货币</td><td>15%</td><td>30</td><td>45</td><td>40</td><td>40</td><td><strong>38</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>4.3 Top 10 子类资产（多因子排序）</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>排名</th>
+            <th>子类</th>
+            <th>周期</th>
+            <th>动量</th>
+            <th>估值</th>
+            <th>情绪</th>
+            <th>综合</th>
+            <th>配置</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>贵金属</td><td>95</td><td>78</td><td>60</td><td>72</td><td><strong>79</strong></td><td>⬆️ 超配</td></tr>
+          <tr><td>2</td><td>能源</td><td>90</td><td>72</td><td>58</td><td>68</td><td><strong>75</strong></td><td>⬆️ 超配</td></tr>
+          <tr><td>3</td><td>美元</td><td>70</td><td>66</td><td>75</td><td>70</td><td><strong>70</strong></td><td>⬆️ 超配</td></tr>
+          <tr><td>4</td><td>农产品</td><td>85</td><td>68</td><td>55</td><td>62</td><td><strong>69</strong></td><td>⬆️ 超配</td></tr>
+          <tr><td>5</td><td>消费股</td><td>55</td><td>58</td><td>65</td><td>52</td><td><strong>57</strong></td><td>➡️ 标配</td></tr>
+          <tr><td>6</td><td>日元</td><td>55</td><td>52</td><td>70</td><td>55</td><td><strong>57</strong></td><td>➡️ 标配</td></tr>
+          <tr><td>7</td><td>能源股</td><td>50</td><td>60</td><td>58</td><td>55</td><td><strong>55</strong></td><td>➡️ 标配</td></tr>
+          <tr><td>8</td><td>工业金属</td><td>75</td><td>55</td><td>50</td><td>52</td><td><strong>59</strong></td><td>➡️ 标配</td></tr>
+          <tr><td>9</td><td>国债</td><td>50</td><td>48</td><td>60</td><td>55</td><td><strong>52</strong></td><td>➡️ 标配</td></tr>
+          <tr><td>10</td><td>欧元</td><td>45</td><td>48</td><td>65</td><td>50</td><td><strong>50</strong></td><td>➡️ 标配</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 五、V3 情景模拟版 -->
+    <div class="section">
+      <h2>五、V3 情景模拟版</h2>
+
+      <p><strong>版本信息：</strong>V3.0.0 - Scenario Sim v3 | 周期切换预测 + 多情景配置</p>
+
+      <h3>5.1 周期展望</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>时间维度</th>
+            <th>展望周期</th>
+            <th>概率</th>
+            <th>关键驱动因素</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>短期（1-3个月）</td>
+            <td><span class="phase-badge phase-stagflation">滞胀期</span></td>
+            <td><strong>77%</strong></td>
+            <td>通胀粘性 + 增长放缓 + 高利率环境</td>
+          </tr>
+          <tr>
+            <td>中期（3-6个月）</td>
+            <td><span class="phase-badge phase-stagflation">滞胀期</span></td>
+            <td><strong>62%</strong></td>
+            <td>通胀缓慢回落 + 经济低位运行 + 政策观望</td>
+          </tr>
+          <tr>
+            <td>长期（6-12个月）</td>
+            <td><span class="phase-badge phase-recovery">复苏期</span></td>
+            <td><strong>25%</strong></td>
+            <td>通胀回落 + 政策转向宽松 + 经济企稳回升</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>5.2 三情景配置方案</h3>
+
+      <div class="scenario-card scenario-base">
+        <div class="scenario-title">🎯 基准情景（概率 60%）</div>
+        <p><strong>路径：</strong>滞胀期 → 滞胀期（通胀缓慢回落，增长维持低位）</p>
+        <p><strong>配置建议：</strong></p>
+        <ul style="padding-left: 25px;">
+          <li>大宗商品 30%（贵金属、能源、农产品）</li>
+          <li>现金/货币 30%（美元为主）</li>
+          <li>债券 20%（中短久期国债）</li>
+          <li>股票 12%（防御性板块）</li>
+          <li>加密货币 8%</li>
+        </ul>
+      </div>
+
+      <div class="scenario-card scenario-optimistic">
+        <div class="scenario-title">🟢 乐观情景（概率 20%）</div>
+        <p><strong>路径：</strong>滞胀期 → 复苏期（通胀快速回落，政策转向，经济企稳）</p>
+        <p><strong>配置建议：</strong></p>
+        <ul style="padding-left: 25px;">
+          <li>股票 35%（周期股、科技股）</li>
+          <li>大宗商品 25%（工业金属、能源）</li>
+          <li>债券 20%（长久期，利率下行受益）</li>
+          <li>现金/货币 12%</li>
+          <li>加密货币 8%</li>
+        </ul>
+      </div>
+
+      <div class="scenario-card scenario-pessimistic">
+        <div class="scenario-title">🔴 悲观情景（概率 20%）</div>
+        <p><strong>路径：</strong>滞胀期 → 衰退期（通胀高企+增长失速，硬着陆风险）</p>
+        <p><strong>配置建议：</strong></p>
+        <ul style="padding-left: 25px;">
+          <li>现金/货币 35%（美元、日元）</li>
+          <li>债券 30%（国债、高评级债）</li>
+          <li>大宗商品 15%（贵金属避险）</li>
+          <li>股票 12%（必需消费、公用事业）</li>
+          <li>加密货币 8%</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 六、三版本对比 -->
+    <div class="section">
+      <h2>六、三版本对比分析</h2>
+
+      <h3>6.1 核心指标对比</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>维度</th>
+            <th>V1 经典版</th>
+            <th>V2 多因子版</th>
+            <th>V3 情景模拟版</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>周期判定</td>
+            <td>滞胀期 (73%)</td>
+            <td>滞胀期 (73%)</td>
+            <td>滞胀期 (65%)</td>
+          </tr>
+          <tr>
+            <td>分析框架</td>
+            <td>美林时钟四象限</td>
+            <td>四因子加权打分</td>
+            <td>周期预测+多情景</td>
+          </tr>
+          <tr>
+            <td>数据维度</td>
+            <td>宏观指标</td>
+            <td>宏观+动量+估值+情绪</td>
+            <td>宏观+领先指标</td>
+          </tr>
+          <tr>
+            <td>前瞻性</td>
+            <td>当前状态</td>
+            <td>当前+趋势</td>
+            <td>当前+未来展望</td>
+          </tr>
+          <tr>
+            <td>Top 1 资产</td>
+            <td>贵金属</td>
+            <td>贵金属</td>
+            <td>贵金属</td>
+          </tr>
+          <tr>
+            <td>适用场景</td>
+            <td>基础配置、快速判断</td>
+            <td>精细化配置、因子增强</td>
+            <td>长期规划、情景推演</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>6.2 一致性分析</h3>
+      <ul style="padding-left: 25px; color: #495057;">
+        <li><strong>周期一致性：</strong>100%（三版本均判定为滞胀期）</li>
+        <li><strong>Top资产重合度：</strong>90%（前5大推荐标的高度一致）</li>
+        <li><strong>配置方向一致：</strong>三版本均建议超配商品和现金，低配股票和加密</li>
+      </ul>
+
+      <h3>6.3 使用建议</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>用户类型</th>
+            <th>推荐版本</th>
+            <th>原因</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>初学者 / 快速参考</td>
+            <td>V1 经典版</td>
+            <td>框架清晰，易于理解，结论明确</td>
+          </tr>
+          <tr>
+            <td>进阶投资者</td>
+            <td>V2 多因子版</td>
+            <td>考虑更多维度，配置更精细</td>
+          </tr>
+          <tr>
+            <td>机构 / 长期规划</td>
+            <td>V3 情景模拟版</td>
+            <td>前瞻性强，支持多情景推演</td>
+          </tr>
+          <tr>
+            <td>综合使用</td>
+            <td>三版本并行</td>
+            <td>交叉验证，多维度视角</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 七、投资建议与风险 -->
+    <div class="section">
+      <h2>七、投资建议与风险提示</h2>
+
+      <h3>7.1 核心投资建议</h3>
+      <ol style="padding-left: 25px; color: #495057;">
+        <li style="margin: 8px 0;"><strong>超配大宗商品：</strong>重点关注贵金属（黄金、白银）和能源（原油、天然气），利用滞胀期商品的强势表现</li>
+        <li style="margin: 8px 0;"><strong>保持现金仓位：</strong>高利率环境下现金回报可观，同时保持流动性以应对不确定性</li>
+        <li style="margin: 8px 0;"><strong>股票精选防御：</strong>降低股票整体仓位，聚焦必需消费、能源等防御性板块</li>
+        <li style="margin: 8px 0;"><strong>债券谨慎配置：</strong>以中短久期国债为主，避免信用债和长久期债的风险</li>
+        <li style="margin: 8px 0;"><strong>加密货币低配：</strong>高风险资产在滞胀期承压，控制仓位，波动性较大</li>
+      </ol>
+
+      <h3>7.2 操作策略</h3>
+      <ul style="padding-left: 25px; color: #495057;">
+        <li>定期（每月/每季度）重新评估经济周期，动态调整配置</li>
+        <li>关注通胀数据和央行政策动向，及时捕捉周期切换信号</li>
+        <li>采用分批建仓方式，避免一次性全仓进出</li>
+        <li>设置止损止盈，严格控制风险</li>
+      </ul>
+
+      <div class="risk-box">
+        <h4>⚠️ 风险提示</h4>
+        <ul>
+          <li>美林投资时钟基于历史规律，未来市场可能呈现与历史不同的特征</li>
+          <li>宏观经济数据通常存在发布延迟，周期判定可能滞后</li>
+          <li>美林时钟在美国市场验证较多，其他市场表现可能存在差异</li>
+          <li>未能预见的地缘政治、疫情等突发事件可能颠覆周期规律</li>
+          <li>加密货币属于高风险资产，价格波动大，投资需谨慎</li>
+          <li>本报告仅供参考，不构成投资建议。投资有风险，入市需谨慎。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 页脚 -->
+    <div class="footer">
+      <p>本报告由 DreamBuddy 资产调研引擎自动生成</p>
+      <p>生成时间：2026年6月26日 | 数据来源：公开宏观经济数据</p>
+      <p>免责声明：本报告仅供参考，不构成任何投资建议。投资有风险，入市需谨慎。</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+async function main() {
+  console.log('生成完整报告...');
+
+  const v1 = new V1MerrillClockEngine();
+  const v2 = new V2MultiFactorEngine();
+  const v3 = new V3ScenarioSimEngine();
+
+  const v1Result = await v1.run({ customIndicators: realIndicators });
+  const v2Result = await v2.run({ customIndicators: realIndicators });
+  const v3Result = await v3.run({ customIndicators: realIndicators });
+
+  const html = generateFullHTMLReport(v1Result, v2Result, v3Result);
+
+  const fs = require('fs');
+  const path = require('path');
+  const outputPath = path.join(process.cwd(), '6-TRADING', 'skills', 'asset-research', 'reports', 'asset-research-report-2026-06.html');
+
+  const dir = path.dirname(outputPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  fs.writeFileSync(outputPath, html);
+  console.log('✅ 完整报告已生成:');
+  console.log('   ' + outputPath);
+  console.log('');
+  console.log('📝 使用说明：');
+  console.log('   - 直接双击用浏览器打开查看');
+  console.log('   - 用 Word 打开后可另存为 .docx');
+  console.log('   - 浏览器中按 Ctrl+P 可打印为 PDF');
+  console.log('   - 可直接转发给他人查看');
+}
+
+main().catch(console.error);

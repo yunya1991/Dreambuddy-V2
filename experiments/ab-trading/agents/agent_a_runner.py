@@ -1,11 +1,25 @@
 #!/usr/bin/env python3
 """
-Agent A Runner - Raw Claude 合约交易
-无系统加持，仅依赖模型原生推理。
-支持多币种 + 最大 5x 杠杆合约
+Agent A Runner — 完整升级版
+集成：
+  - Agent A 交易 SKILL（六维分析框架）
+  - 三级 LLM 回退：Trae → DeepSeek V4 → 基本规则
+  - 记忆系统：Lessons、交易记录、大师切换、连胜连败
+  - 风险控制：止损止盈、连败保护、最大回撤保护
+  - PR 评论同步：执行后写评论到固定交易 PR
+
+每轮执行流程：
+  1. 加载记忆 + 账户状态
+  2. 扫描市场数据
+  3. 调用 LLM（按 SKILL 框架）做决策
+  4. 执行交易（AUTO_EXECUTE=true 时）
+  5. 更新记忆 + Lessons
+  6. 评估是否切换大师风格
+  7. 自主调度（申请提前触发）
+  8. 同步评论到 GitHub PR（可选）
 """
-import os, sys, json, requests, warnings
-from datetime import datetime
+import os, sys, json, warnings
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
@@ -17,217 +31,412 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles
 from scoring.scorecard import DecisionLog, _cycle_id
 from orchestrator import request_early_run
+from core.agent_a_memory import (
+    load_memory, save_memory, add_lesson, record_trade,
+    update_equity_stats, maybe_switch_master, get_top_lessons,
+)
+from core.agent_a_llm import agent_a_llm_decide, get_quota_status, get_available_provider
 
+# ── 配置 ───────────────────────────────────────────────────────────────────
 AUTO_EXECUTE  = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
-BUDGET_USDC   = 60.0       # 软隔离：合约账户预算上限
+BUDGET_USDC   = 60.0
 PER_TRADE_PCT = float(os.environ.get("PER_TRADE_PCT", "0.05"))
-LEVERAGE      = 3
+DEFAULT_LEV   = 3
 STOP_LOSS_PCT = 0.04
 TP_PCT        = 0.08
-UNIVERSE_A    = ["BTC", "ETH", "SOL", "HYPE", "AVAX", "ARB", "SUI", "INJ", "LINK", "TIA"]
 
+UNIVERSE_A = [
+    "BTC", "ETH", "SOL", "HYPE", "AVAX",
+    "ARB", "SUI", "INJ", "LINK", "TIA",
+]
+
+
+# ── 市场数据采集 ──────────────────────────────────────────────────────────
 
 def fetch_market_context(client: HyperliquidClient) -> dict:
-    """采集所有标的的市场数据"""
+    """采集所有标的的市场数据（1H K线 + 资金费率）"""
     mids = client.get_all_mids()
     opps = client.scan_opportunities()
 
-    # 对每个标的取 1H K线做简单指标（仅合约标的池 UNIVERSE_A）
     coin_data = {}
     for coin in UNIVERSE_A:
         price = mids.get(coin, 0)
         if price <= 0:
             continue
         try:
-            candles = get_candles(coin, "1h", 24, client.proxies)
+            candles = get_candles(coin, "1h", 48, client.proxies)
             closes  = [float(c["c"]) for c in candles if "c" in c]
             vols    = [float(c["v"]) for c in candles if "v" in c]
         except Exception:
             closes, vols = [], []
 
-        ch24 = ((closes[0] - closes[-1]) / closes[-1] * 100) if len(closes) > 1 else 0
-        ch4h = ((closes[0] - closes[3])  / closes[3]  * 100) if len(closes) > 3 else 0
+        ch24 = ((closes[0] - closes[23]) / closes[23] * 100) if len(closes) > 23 else 0
+        ch4h = ((closes[0] - closes[3])  / closes[3]  * 100) if len(closes) > 3  else 0
+        ch1h = ((closes[0] - closes[1])  / closes[1]  * 100) if len(closes) > 1  else 0
+
         avg_vol = sum(vols) / len(vols) if vols else 0
         cur_vol = vols[0] if vols else 0
 
+        # 简化 EMA 计算
+        def ema(prices, n):
+            if len(prices) < n:
+                return prices[-1] if prices else 0
+            k = 2 / (n + 1)
+            e = prices[-n]
+            for p in prices[-n+1:]:
+                e = p * k + e * (1 - k)
+            return e
+
+        ema20  = ema(closes[::-1], 20)
+        ema50  = ema(closes[::-1], 50) if len(closes) >= 50 else ema20
+        ema200 = ema(closes[::-1], min(200, len(closes)))
+
+        # RSI(14)
+        def rsi(prices, n=14):
+            if len(prices) < n + 1:
+                return 50.0
+            deltas = [prices[i] - prices[i-1] for i in range(1, min(n+1, len(prices)))]
+            gains  = [max(d, 0) for d in deltas]
+            losses = [max(-d, 0) for d in deltas]
+            avg_g  = sum(gains) / n
+            avg_l  = sum(losses) / n
+            if avg_l == 0:
+                return 100.0
+            rs = avg_g / avg_l
+            return 100 - 100 / (1 + rs)
+
+        rsi14 = rsi(closes[::-1])
+
         coin_data[coin] = {
-            "price":    price,
-            "ch24":     round(ch24, 2),
-            "ch4h":     round(ch4h, 2),
+            "price":     price,
+            "ch24":      round(ch24, 2),
+            "ch4h":      round(ch4h, 2),
+            "ch1h":      round(ch1h, 2),
             "vol_ratio": round(cur_vol / avg_vol, 2) if avg_vol > 0 else 1.0,
+            "ema20":     round(ema20, 2),
+            "ema50":     round(ema50, 2),
+            "ema200":    round(ema200, 2),
+            "rsi14":     round(rsi14, 1),
         }
 
-    # 找资金费率信号
     opp_map = {o["coin"]: o for o in opps}
 
     return {
-        "coins":     coin_data,
-        "opp_map":   opp_map,
-        "ts_utc":    datetime.utcnow().isoformat(),
+        "coins":   coin_data,
+        "opp_map": opp_map,
+        "ts_utc":  datetime.utcnow().isoformat(),
     }
 
 
-def agent_a_decide(mkt: dict, equity: float) -> dict:
-    """
-    Raw Claude 决策：简单动量 + 量价 + 资金费率反向
-    无矛盾论、无记忆、无门禁
-    """
-    coins     = mkt["coins"]
-    opp_map   = mkt["opp_map"]
-    reasoning = []
-
-    best_coin   = None
-    best_score  = 0
-    best_side   = "LONG"
-    best_info   = {}
-
-    for coin, d in coins.items():
-        score = 0
-        side  = "LONG"
-
-        # 动量信号
-        if d["ch24"] > 3 and d["ch4h"] > 1:
-            score += 3; side = "LONG"
-        elif d["ch24"] < -3 and d["ch4h"] < -1:
-            score += 3; side = "SHORT"
-        elif abs(d["ch24"]) > 1.5:
-            score += 1; side = "LONG" if d["ch24"] > 0 else "SHORT"
-
-        # 量价配合
-        if d["vol_ratio"] > 1.5:
-            score += 1
-
-        # 资金费率极值（拥挤做反向）
-        opp = opp_map.get(coin, {})
-        if opp.get("funding_signal"):
-            score += 2
-            side = "SHORT" if opp.get("funding_dir") == "LONG" else "LONG"
-
-        if score > best_score:
-            best_score = score
-            best_coin  = coin
-            best_side  = side
-            best_info  = d
-
-    if best_score < 2 or best_coin is None:
-        reasoning.append("全市场无明确信号，观望")
-        return {"action": "HOLD", "coin": None, "confidence": 0.4,
-                "reasoning_steps": reasoning, "position_size_usdt": 0}
-
-    confidence = min(0.5 + best_score * 0.07, 0.85)
-    # 软隔离：合约账户预算上限 BUDGET_USDC
-    effective_equity = min(equity, BUDGET_USDC)
-    pos_usdt = max(round(effective_equity * PER_TRADE_PCT, 2), 5.0)  # 最小 $5，名义 $15
-
-    reasoning.append(f"扫描 {len(coins)} 个标的")
-    reasoning.append(f"最优标的: {best_coin} score={best_score}")
-    reasoning.append(f"方向: {best_side} | 24H={best_info['ch24']:+.1f}% 4H={best_info['ch4h']:+.1f}%")
-    reasoning.append(f"量比: {best_info['vol_ratio']:.2f}x")
-    reasoning.append(f"仓位: {pos_usdt} USDC × {LEVERAGE}x = {pos_usdt*LEVERAGE:.0f} 名义")
-
-    px = best_info["price"]
-    sl = round(px * (1 - STOP_LOSS_PCT) if best_side == "LONG" else px * (1 + STOP_LOSS_PCT), 2)
-    tp = round(px * (1 + TP_PCT)        if best_side == "LONG" else px * (1 - TP_PCT),        2)
-
-    return {
-        "action":             best_side,
-        "coin":               best_coin,
-        "confidence":         round(confidence, 3),
-        "reasoning_steps":    reasoning,
-        "position_size_usdt": pos_usdt,
-        "leverage":           LEVERAGE,
-        "entry_price":        px,
-        "stop_loss_price":    sl,
-        "take_profit_price":  tp,
-        "market_regime":      "TREND_UP" if best_side == "LONG" else "TREND_DOWN",
-        "decision_rationale": f"{best_coin} {best_side} score={best_score} conf={confidence:.0%}",
-    }
-
+# ── 主流程 ────────────────────────────────────────────────────────────────
 
 def run():
     cycle = _cycle_id()
+    print(f"{'='*60}")
     print(f"[Agent A] 启动 cycle={cycle}")
+    print(f"{'='*60}")
 
+    # ── 1. 加载记忆 ───────────────────────────────────────────────
+    memory = load_memory()
+    top_lessons = get_top_lessons(memory, 10)
+    print(f"[记忆] 当前大师: {memory['current_master']}")
+    print(f"[记忆] 总交易: {memory['total_trades']} | "
+          f"连胜: {memory['win_streak']} | 连败: {memory['loss_streak']}")
+    print(f"[记忆] Lessons: {len(memory['lessons'])} 条 | "
+          f"最大回撤: {memory.get('max_drawdown_pct', 0):.1f}%")
+    print(f"[LLM]  可用: {get_available_provider()} | 配额: {get_quota_status()}")
+
+    # ── 2. 获取账户状态 ───────────────────────────────────────────
     client = HyperliquidClient("a")
+    sim_mode = False
+    try:
+        acct = client.get_account()
+        if not acct.get("ok"):
+            raise ValueError("账户查询失败")
+        equity = acct["equity"]
+        positions = acct.get("positions", {})
+    except Exception as e:
+        # 模拟模式：无有效账户时使用虚拟资金
+        sim_mode = True
+        equity = max(memory.get("peak_equity", BUDGET_USDC), BUDGET_USDC)
+        positions = {}
+        print(f"[账户] 模拟模式（无有效账户）: {e}")
+    print(f"[账户] 权益: {equity:.2f} USDC | 持仓: {list(positions.keys()) or '无'} | 模式: {'模拟' if sim_mode else '实盘'}")
 
-    acct = client.get_account()
-    if not acct["ok"]:
-        print(f"[Agent A] 账户查询失败"); return
-    equity = acct["equity"]
-    print(f"[Agent A] 权益={equity:.2f} USDC  持仓={list(acct['positions'].keys())}")
+    # 更新权益统计
+    memory = update_equity_stats(memory, equity)
 
-    mkt      = fetch_market_context(client)
-    decision = agent_a_decide(mkt, equity)
+    # 最大回撤保护：回撤≥15% 暂停交易
+    max_dd = memory.get("max_drawdown_pct", 0)
+    if max_dd >= 15:
+        print(f"[风控] 最大回撤{max_dd:.1f}%≥15%，暂停交易，全面复盘")
+        log = DecisionLog("a", cycle)
+        log.data.update({
+            "action": "HOLD",
+            "confidence": 0,
+            "reasoning_steps": [f"最大回撤保护：{max_dd:.1f}%≥15%，强制暂停"],
+            "decision_rationale": "最大回撤保护触发",
+            "memory_loaded": True,
+            "system_features_used": ["max_drawdown_protection"],
+        })
+        path = log.save()
+        save_memory(memory)
+        print(f"[Agent A] 日志: {path}")
+        return log.data
 
-    print(f"[Agent A] 决策={decision['action']} coin={decision.get('coin')} "
-          f"conf={decision['confidence']:.0%}")
+    # ── 3. 扫描市场 ──────────────────────────────────────────────
+    mkt = fetch_market_context(client)
+    print(f"[市场] 扫描到 {len(mkt['coins'])} 个标的")
 
+    # ── 4. LLM 决策（三级回退）───────────────────────────────────
+    account_data = {
+        "equity": equity,
+        "positions": positions,
+    }
+
+    print(f"\n[决策] 调用 LLM 进行决策（SKILL 框架）...")
+    decision, provider = agent_a_llm_decide(mkt, memory, account_data, max_tokens=1500)
+    print(f"[决策] Provider: {provider}")
+    print(f"[决策] 结果: {decision.get('action')} {decision.get('coin','')} "
+          f"conf={decision.get('confidence',0):.0%}")
+    print(f"[决策] 理由: {decision.get('decision_rationale','')[:80]}")
+
+    # 连败保护：连败≥3 时强制 HOLD（即使 LLM 说要做）
+    if memory.get("loss_streak", 0) >= 3 and decision.get("action") != "HOLD":
+        print(f"[风控] 连败{memory['loss_streak']}次，强制观望一轮")
+        decision["action"] = "HOLD"
+        decision["confidence"] = 0
+        decision["reasoning_steps"] = decision.get("reasoning_steps", []) + [
+            f"连败保护：已连败{memory['loss_streak']}次，本轮强制观望"
+        ]
+        decision["decision_rationale"] = "连败保护触发，强制HOLD"
+
+    # ── 5. 执行交易 ──────────────────────────────────────────────
+    action = decision.get("action", "HOLD")
+    coin = decision.get("coin")
+    conf = decision.get("confidence", 0)
+    leverage = int(decision.get("leverage", DEFAULT_LEV))
+    leverage = min(5, max(1, leverage))
+    pos_usdt = float(decision.get("position_size_usdt", 0))
+
+    exec_result = None
+    if not sim_mode and AUTO_EXECUTE and action in ("LONG", "SHORT") and coin and pos_usdt > 0:
+        effective_equity = min(equity, BUDGET_USDC)
+        pos_usdt = max(min(pos_usdt, effective_equity * PER_TRADE_PCT), 5.0)
+        tag = f"a_{cycle[:8]}"
+
+        if action == "LONG":
+            exec_result = client.open_long(coin, pos_usdt, leverage, tag)
+        else:
+            exec_result = client.open_short(coin, pos_usdt, leverage, tag)
+
+        print(f"[执行] {action} {coin} {pos_usdt} USDC × {leverage}x")
+        print(f"[执行] 结果: ok={exec_result.get('ok')} filled={exec_result.get('filled')}")
+    elif sim_mode and action in ("LONG", "SHORT") and coin and pos_usdt > 0:
+        effective_equity = min(equity, BUDGET_USDC)
+        pos_usdt = max(min(pos_usdt, effective_equity * PER_TRADE_PCT), 5.0)
+        print(f"[执行] [模拟] {action} {coin} {pos_usdt} USDC × {leverage}x（模拟模式，不下单）")
+    else:
+        print(f"[执行] 跳过（模式:{'模拟' if sim_mode else '实盘'}, AUTO_EXECUTE={AUTO_EXECUTE}, action={action}）")
+
+    # ── 6. 记录决策日志 ──────────────────────────────────────────
     log = DecisionLog("a", cycle)
     log.data.update({
         "market_regime":       decision.get("market_regime", "UNKNOWN"),
-        "reasoning_steps":     decision["reasoning_steps"],
-        "confidence":          decision["confidence"],
-        "action":              decision["action"],
+        "reasoning_steps":     decision.get("reasoning_steps", []),
+        "confidence":          conf,
+        "action":              action,
+        "coin":                coin,
+        "leverage":            leverage,
         "entry_price":         decision.get("entry_price"),
-        "position_size_usdt":  decision["position_size_usdt"],
+        "position_size_usdt":  pos_usdt,
         "stop_loss_price":     decision.get("stop_loss_price"),
         "take_profit_price":   decision.get("take_profit_price"),
         "decision_rationale":  decision.get("decision_rationale", ""),
-        "system_features_used": [],
-        "memory_loaded":       False,
-        "coin":                decision.get("coin"),
-        "leverage":            decision.get("leverage", LEVERAGE),
+        "system_features_used": [
+            f"llm_provider:{provider}",
+            "skill:agent-a-trading",
+            "memory_system",
+            "master_style:" + str(decision.get("current_master", memory["current_master"])),
+            "sim_mode" if sim_mode else "live_mode",
+        ],
+        "memory_loaded":       True,
+        "sim_mode":            sim_mode,
+        "current_master":      decision.get("current_master", memory["current_master"]),
+        "llm_provider":        provider,
+        "top_lessons":         [l["content"] for l in top_lessons[:5]],
     })
-
-    if AUTO_EXECUTE and decision["action"] != "HOLD" and decision["position_size_usdt"] > 0:
-        coin = decision["coin"]
-        lev  = decision.get("leverage", LEVERAGE)
-        tag  = f"a_{cycle[:8]}"
-        if decision["action"] == "LONG":
-            result = client.open_long(coin, decision["position_size_usdt"], lev, tag)
-        else:
-            result = client.open_short(coin, decision["position_size_usdt"], lev, tag)
-        log.data["execution"] = result
-        print(f"[Agent A] 执行: {result.get('ok')} {result.get('filled')}")
-    else:
-        print(f"[Agent A] 跳过执行（AUTO_EXECUTE={AUTO_EXECUTE}）")
+    if exec_result:
+        log.data["execution"] = exec_result
 
     path = log.save()
-    print(f"[Agent A] 日志: {path}")
+    print(f"\n[日志] 已保存: {path}")
 
-    # ── 自主调度：根据本轮信号决定下次触发时机 ──────────────────────────
-    _self_schedule(decision, mkt)
+    # ── 7. 更新记忆 ──────────────────────────────────────────────
+    # 处理新 lesson
+    new_lesson = decision.get("new_lesson", "")
+    if new_lesson:
+        u = int(decision.get("lesson_score_universal", 3))
+        i = int(decision.get("lesson_score_importance", 3))
+        memory = add_lesson(memory, new_lesson, universality=u, importance=i)
+        print(f"[记忆] 新 Lesson: {new_lesson[:50]} (score={u*i})")
 
+    # 处理大师切换
+    switch_reason = decision.get("master_switch_reason", "")
+    new_master = decision.get("current_master", memory["current_master"])
+    if switch_reason and new_master != memory.get("current_master"):
+        memory["current_master"] = new_master
+        print(f"[记忆] 大师切换: {memory.get('current_master')} → {new_master}")
+        print(f"[记忆] 切换原因: {switch_reason}")
+
+    # 如果开仓了，记录交易（exit_price 先填 entry，pnl 先为0，后续平仓更新）
+    if action in ("LONG", "SHORT") and coin:
+        entry_px = decision.get("entry_price", 0)
+        memory = record_trade(
+            memory,
+            coin=coin,
+            action=action,
+            entry_price=entry_px,
+            exit_price=None,
+            pnl_pct=0,
+            confidence=conf,
+            master=decision.get("current_master", memory["current_master"]),
+            lesson=decision.get("decision_rationale", "")[:80],
+        )
+
+    # 根据市场环境评估是否切换大师
+    regime = decision.get("market_regime", "RANGE")
+    memory = maybe_switch_master(memory, regime)
+
+    save_memory(memory)
+    print(f"[记忆] 已更新并保存")
+
+    # ── 8. 自主调度 ──────────────────────────────────────────────
+    _self_schedule(decision, mkt, memory)
+
+    # ── 9. 同步到 GitHub PR 评论（可选） ─────────────────────────
+    _post_to_github_pr(log.data, sim_mode)
+
+    print(f"\n{'='*60}")
+    print(f"[Agent A] 本轮完成 | action={action} | provider={provider}")
+    print(f"{'='*60}")
     return log.data
 
 
-def _self_schedule(decision: dict, mkt: dict):
-    """Agent A 自主申请提前触发的逻辑"""
+# ── 自主调度 ──────────────────────────────────────────────────────────────
+
+def _self_schedule(decision: dict, mkt: dict, memory: dict):
+    """根据本轮信号决定下次触发时机"""
     import time as _t
     now = _t.time()
     action = decision.get("action", "HOLD")
     conf   = decision.get("confidence", 0.5)
+    loss_streak = memory.get("loss_streak", 0)
 
-    # 场景1：高置信度信号但资金不足/未入场 → 1H后复查
+    # 场景1：高置信度信号 → 1H后复查
     if action != "HOLD" and conf >= 0.75:
         request_early_run(
             reason=f"A高置信度{conf:.0%}信号，1H后复查仓位",
             run_at_ts=now + 3600,
-            priority="normal"
+            priority="normal",
         )
 
-    # 场景2：市场正在加速（量比 > 2x）→ 2H后复查
+    # 场景2：成交量异常放大 → 2H后复查
     for coin, d in mkt.get("coins", {}).items():
         if d.get("vol_ratio", 0) > 2.5:
             request_early_run(
                 reason=f"{coin}成交量异常放大{d['vol_ratio']:.1f}x，2H后复查",
                 run_at_ts=now + 7200,
-                priority="normal"
+                priority="normal",
             )
             break
 
-    # 场景3：持有仓位且价格靠近止损 → 申请1H后监控
-    # （持仓止损监控由 agent 主动申请，不依赖固定cron）
+    # 场景3：连败保护解除 → 6H后复盘
+    if loss_streak >= 3:
+        request_early_run(
+            reason=f"A连败{loss_streak}次，6H后强制复盘评估市场",
+            run_at_ts=now + 21600,
+            priority="urgent",
+        )
+
+    # 场景4：置信度接近门槛（60-65%）→ 1H后再试
+    if 0.58 <= conf < 0.65 and action == "HOLD":
+        request_early_run(
+            reason=f"A置信度{conf:.0%}接近门槛，1H后市场可能更清晰",
+            run_at_ts=now + 3600,
+            priority="normal",
+        )
+
+
+# ── GitHub PR 评论同步 ────────────────────────────────────────────────────
+
+def _post_to_github_pr(log_data: dict, sim_mode: bool):
+    """执行完成后，写评论到固定交易 PR（用于 Actions 检查新鲜度）"""
+    import requests
+
+    gh_token = os.environ.get("GITHUB_TOKEN")
+    gh_repo = os.environ.get("GITHUB_REPOSITORY")
+    pr_number = os.environ.get("PR_NUMBER")
+
+    if not gh_token or not gh_repo or not pr_number:
+        return
+
+    try:
+        pr_number = int(pr_number)
+    except (ValueError, TypeError):
+        return
+
+    beijing_tz = timezone(timedelta(hours=8))
+    now_bj = datetime.now(beijing_tz).strftime("%Y-%m-%d %H:%M:%S")
+
+    action = log_data.get("action", "HOLD")
+    coin = log_data.get("coin", "N/A")
+    conf = log_data.get("confidence", 0)
+    provider = log_data.get("llm_provider", "rule")
+    master = log_data.get("current_master", "N/A")
+    rationale = log_data.get("decision_rationale", "N/A")
+    pos_usdt = log_data.get("position_size_usdt", 0)
+    leverage = log_data.get("leverage", 1)
+
+    mode_label = "模拟" if sim_mode else "实盘"
+    source_label = os.environ.get("PR_COMMENT_SOURCE", "Trae")
+
+    comment = f"""## {source_label} 执行记录 - {now_bj} (GMT+8)
+
+### 交易决策
+- **操作**: {action}
+- **币种**: {coin}
+- **置信度**: {conf:.0%}
+- **理由**: {rationale[:120]}
+
+### 账户状态
+- **持仓**: {coin + ' ' + str(pos_usdt) + ' USDT' if action in ('LONG', 'SHORT') else '无新持仓'}
+- **杠杆**: {leverage}x
+
+### 执行详情
+- **模式**: {mode_label} ({source_label})
+- **Provider**: {provider}
+- **大师风格**: {master}
+
+---
+*🤖 自动执行于 {source_label}*
+"""
+
+    url = f"https://api.github.com/repos/{gh_repo}/issues/{pr_number}/comments"
+    headers = {
+        "Authorization": f"token {gh_token}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    data = {"body": comment}
+
+    try:
+        resp = requests.post(url, headers=headers, json=data, timeout=15)
+        if resp.status_code == 201:
+            print(f"[PR] 已写评论到 PR #{pr_number}")
+        else:
+            print(f"[PR] 写评论失败: {resp.status_code} {resp.text[:100]}")
+    except Exception as e:
+        print(f"[PR] 写评论异常: {e}")
 
 
 if __name__ == "__main__":
