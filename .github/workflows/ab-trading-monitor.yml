@@ -51,9 +51,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Commit to main
           git add experiments/ab-trading/state.json
-          git diff --cached --quiet && echo "No changes to commit" || \
+          git diff --cached --quiet && echo "No changes to commit on main" || \
             (git commit -m "chore(monitor): auto-update state snapshot" && git push)
+          # Also sync to gh-pages
+          git push origin main:gh-pages || echo "gh-pages push skipped"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
