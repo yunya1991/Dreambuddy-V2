@@ -32,6 +32,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Fetch latest logs from main branch
+        run: |
+          # Fetch main branch (gh-pages is already checked out)
+          git fetch origin main
+          # Checkout logs from main branch into current working tree
+          git checkout FETCH_HEAD -- experiments/ab-trading/logs/ 2>/dev/null || \
+            git checkout origin/main -- experiments/ab-trading/logs/
+          echo "Agent A logs: $(ls experiments/ab-trading/logs/agent_a/ 2>/dev/null | wc -l | tr -d ' ') files"
+          echo "Agent B logs: $(ls experiments/ab-trading/logs/agent_b/ 2>/dev/null | wc -l | tr -d ' ') files"
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
