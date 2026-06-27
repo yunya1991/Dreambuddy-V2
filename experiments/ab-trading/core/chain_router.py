@@ -107,6 +107,7 @@ class ChainRouter:
             # 治理环专用节点
             "A7_实践记录":         self._node_a7_gate,
             "A8_知行合一":         self._node_a8_verify,
+            "A9_离场评估":         self._node_a9_exit_eval,
             "做梦部":              self._node_oneirology,
             # 旧节点兼容（渐进迁移）
             "S2_A0矛盾":           self._node_a0_contradiction,
@@ -516,6 +517,147 @@ Dalio: LONG/SHORT/HOLD | 理由
         return NodeResult(node_id, self._current_conf, self._direction,
                           [f"A7门禁: ✅ {reason}"],
                           {"gate_passed": True, "reason": reason})
+
+    def _node_a9_exit_eval(self, node_id: str) -> NodeResult:
+        """
+        A9：离场评估（治理环扩展节点）
+        评估现有持仓的离场条件，给出离场或调整止损止盈建议
+
+        触发场景：
+        - 有活跃持仓时，作为链路上的常驻节点
+        - AI 驱动时给出智能离场建议
+        - 无 AI 时回退到经典指标系统
+        """
+        active_positions = self.memory.get("active_positions", {})
+        reasoning = [f"A9离场评估: 持仓={list(active_positions.keys()) or '无'}"]
+
+        if not active_positions:
+            reasoning.append("  无持仓，跳过离场评估")
+            return NodeResult(node_id, self._current_conf, self._direction,
+                              reasoning, {"exits": [], "updates": []})
+
+        exit_suggestions = []
+        update_suggestions = []
+
+        # ── LLM 版智能离场评估（有额度时调用）───────────────────────
+        if _LLM_OK and llm_quota_ok("a9_exit"):
+            mkt = self.mkt
+            coin = self._coin
+            price = mkt.get("price", 0)
+            rsi = mkt.get("rsi14", 50)
+            ch24 = mkt.get("change_24h", 0)
+            regime = mkt.get("regime", "UNKNOWN")
+
+            pos_info = ""
+            for c, p in active_positions.items():
+                pnl_pct = 0
+                if price > 0 and p["entry_price"] > 0:
+                    if p["action"] in ("LONG", "BUY"):
+                        pnl_pct = (price - p["entry_price"]) / p["entry_price"] * 100
+                    else:
+                        pnl_pct = (p["entry_price"] - price) / p["entry_price"] * 100
+                pos_info += (f"- {c}: {p['action']} @ {p['entry_price']}, "
+                             f"SL={p['stop_loss_price']}, TP={p['take_profit_price']}, "
+                             f"浮盈={pnl_pct:+.2f}%\n")
+
+            prompt = f"""你是专业的交易风控经理，负责评估现有持仓的离场策略。
+
+【当前市场】
+- 标的: {coin}  价格: ${price:.4f}
+- 24H涨跌: {ch24:+.2f}%  Regime: {regime}
+- RSI14: {rsi:.1f}
+
+【现有持仓】
+{pos_info}
+
+请逐一评估每个持仓，给出建议：
+1. 是否需要立即离场？(EXIT/HOLD)
+2. 是否需要调整止损/止盈位置？(NEW_SL/NEW_TP/NO_CHANGE)
+3. 给出具体理由（20字以内）
+
+严格按以下格式输出（每个持仓一行）：
+COIN: EXIT/HOLD | 理由
+COIN_SL: 新止损价 或 NO_CHANGE
+COIN_TP: 新止盈价 或 NO_CHANGE"""
+
+            try:
+                reply = llm_chat(prompt, max_tokens=300, purpose="a9_exit")
+                if reply:
+                    lines = [l.strip() for l in reply.strip().split("\n") if l.strip()]
+                    for line in lines:
+                        for c in active_positions.keys():
+                            # 解析离场建议
+                            if line.startswith(f"{c}:") or line.startswith(f"{c}："):
+                                if "EXIT" in line.upper() or "离场" in line:
+                                    reason = line.split("|")[-1].strip() if "|" in line else "LLM评估离场"
+                                    exit_suggestions.append({
+                                        "coin": c, "reason": reason[:30],
+                                        "source": "llm_a9"
+                                    })
+                            # 解析止损调整
+                            if f"{c}_SL:" in line.upper() or f"{c}_SL：" in line:
+                                try:
+                                    val = line.split(":")[-1].split("：")[-1].strip()
+                                    if val.upper() != "NO_CHANGE" and val.replace(".", "").isdigit():
+                                        update_suggestions.append({
+                                            "coin": c, "new_stop_loss": float(val),
+                                            "source": "llm_a9"
+                                        })
+                                except (ValueError, IndexError):
+                                    pass
+                            # 解析止盈调整
+                            if f"{c}_TP:" in line.upper() or f"{c}_TP：" in line:
+                                try:
+                                    val = line.split(":")[-1].split("：")[-1].strip()
+                                    if val.upper() != "NO_CHANGE" and val.replace(".", "").isdigit():
+                                        update_suggestions.append({
+                                            "coin": c, "new_take_profit": float(val),
+                                            "source": "llm_a9"
+                                        })
+                                except (ValueError, IndexError):
+                                    pass
+
+                    reasoning.append(f"  LLM评估: 建议离场{len(exit_suggestions)}个, 调整{len(update_suggestions)}个")
+                    return NodeResult(node_id, self._current_conf, self._direction,
+                                      reasoning,
+                                      {"exits": exit_suggestions,
+                                       "updates": update_suggestions,
+                                       "llm": True})
+            except Exception as e:
+                reasoning.append(f"  LLM评估失败，降级到经典指标: {e}")
+
+        # ── 降级：经典指标离场评估 ────────────────────────────────────
+        from core.exit_module import check_classical_indicator_exits
+        from execution.aster_spot import get_candles
+
+        for coin, pos in active_positions.items():
+            try:
+                candles = get_candles(coin, "1h", 48, self.client.proxies)
+            except Exception:
+                candles = []
+            price = 0
+            try:
+                price = self.client.get_mid_price(coin)
+            except Exception:
+                pass
+            if price <= 0:
+                continue
+
+            should_exit, reason, _ = check_classical_indicator_exits(
+                coin, price, pos["action"], candles
+            )
+            if should_exit:
+                exit_suggestions.append({
+                    "coin": coin, "reason": reason, "source": "classic_a9"
+                })
+                reasoning.append(f"  {coin}: 经典指标信号 → {reason}")
+
+        reasoning.append(f"  经典指标: 建议离场{len(exit_suggestions)}个")
+        return NodeResult(node_id, self._current_conf, self._direction,
+                          reasoning,
+                          {"exits": exit_suggestions,
+                           "updates": update_suggestions,
+                           "llm": False})
 
     def _node_a8_verify(self, node_id: str) -> NodeResult:
         """A8：知行合一验证（治理环核心）

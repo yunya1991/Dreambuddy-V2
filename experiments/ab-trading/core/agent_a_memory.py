@@ -47,6 +47,7 @@ def load_memory() -> Dict:
         "recent_trades": [],
         "pending_strategies": [],
         "master_switch_history": [],
+        "active_positions": {},
     }
 
 
@@ -146,6 +147,50 @@ def record_trade(
     if pnl_pct != 0:
         memory["total_trades"] = memory.get("total_trades", 0) + 1
         if pnl_pct > 0:
+            memory["win_streak"] = memory.get("win_streak", 0) + 1
+            memory["loss_streak"] = 0
+        else:
+            memory["loss_streak"] = memory.get("loss_streak", 0) + 1
+            memory["win_streak"] = 0
+
+    return memory
+
+
+def record_closed_trade(
+    memory: Dict,
+    closed_info: Dict,
+    confidence: float = 0.0,
+    master: str = "",
+) -> Dict:
+    """
+    记录一笔已平仓的交易（从离场模块返回的 closed_info）
+    会更新 recent_trades 以及连胜连败统计
+    """
+    trade = {
+        "timestamp": closed_info.get("exit_ts", _now_iso()),
+        "coin": closed_info.get("coin", ""),
+        "action": closed_info.get("action", ""),
+        "entry_price": closed_info.get("entry_price", 0),
+        "exit_price": closed_info.get("exit_price", 0),
+        "pnl_pct": closed_info.get("pnl_pct", 0),
+        "confidence": confidence,
+        "master": master,
+        "lesson": f"离场原因:{closed_info.get('exit_reason', 'N/A')}",
+        "exit_reason": closed_info.get("exit_reason", ""),
+    }
+
+    trades = memory.get("recent_trades", [])
+    trades.append(trade)
+    if len(trades) > MAX_RECENT_TRADES:
+        trades = trades[-MAX_RECENT_TRADES:]
+    memory["recent_trades"] = trades
+
+    # 更新统计（只有有实际盈亏才更新）
+    pnl = closed_info.get("pnl_pct", 0)
+    if pnl != 0:
+        memory["total_trades"] = memory.get("total_trades", 0) + 1
+        memory["total_pnl_usdt"] = memory.get("total_pnl_usdt", 0) + pnl * closed_info.get("position_size_usdt", 0)
+        if pnl > 0:
             memory["win_streak"] = memory.get("win_streak", 0) + 1
             memory["loss_streak"] = 0
         else:
