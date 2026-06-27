@@ -684,15 +684,37 @@ function render(data) {
   document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
 }
 
-// ── 数据加载（通过 data-server.py API）──────────────────────────────────
+// ── 数据加载：优先本地实时 API，fallback 到静态 state.json ────────────────
 async function loadData() {
-  try {
-    const res = await fetch('/api/state', { signal: AbortSignal.timeout(5000) });
-    const data = await res.json();
-    render(data);
-  } catch (e) {
-    document.getElementById('last-update').textContent = '⚠️ 无法连接服务器，请启动 data_server.py';
+  const candidates = [
+    { url: '/api/state',  label: '本地实时 API',   mode: 'live'  },
+    { url: 'state.json',  label: '静态快照',        mode: 'snap'  },
+  ];
+  for (const src of candidates) {
+    try {
+      const res = await fetch(src.url, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      render(data);
+      const tag = src.mode === 'live' ? '实盘运行中' : '快照模式';
+      const dot = src.mode === 'live' ? '' : '<div class="live-dot" style="background:var(--yellow)"></div>';
+      const color = src.mode === 'live' ? 'var(--green)' : 'var(--yellow)';
+      const liveEl = document.querySelector('.header .live');
+      if (liveEl) {
+        liveEl.style.color = color;
+        liveEl.innerHTML = dot + tag;
+      }
+      if (src.mode === 'snap' && data.generated_at) {
+        const d = new Date(data.generated_at);
+        document.getElementById('last-update').textContent =
+          '快照生成于 ' + d.toLocaleString('zh-CN');
+      }
+      return;
+    } catch (e) {
+      // 尝试下一个
+    }
   }
+  document.getElementById('last-update').textContent = '⚠️ 无法加载数据';
 }
 
 // 初始加载 + 每30秒自动刷新
