@@ -22,7 +22,7 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .last-update { color: var(--muted); font-size: 11px; }
 
-  .main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px; max-width: 1400px; }
+  .main { padding: 16px 24px; max-width: 1400px; margin: 0 auto; }
   .full-width { grid-column: 1 / -1; }
 
   /* Cards */
@@ -128,6 +128,42 @@
   .bar-fill-a { height: 100%; border-radius: 3px; background: var(--a-color); }
   .bar-fill-b { height: 100%; border-radius: 3px; background: var(--b-color); }
   .compare-val { width: 40px; font-size: 11px; text-align: right; flex-shrink: 0; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 24px; }
+  .tab { padding: 12px 20px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--blue); }
+  .tab-content { display: none; width: 100%; }
+  .tab-content.active { display: block; }
+  .tab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .tab-grid .full-width { grid-column: 1 / -1; }
+
+  /* Schedule Tab */
+  .schedule-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .schedule-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+  .schedule-source { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .schedule-source.trae { color: var(--blue); }
+  .schedule-source.actions { color: var(--purple); }
+  .schedule-source.local { color: var(--yellow); }
+  .schedule-cron { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .schedule-status { font-size: 12px; }
+  .status-active { color: var(--green); }
+  .status-pending { color: var(--yellow); }
+  .status-idle { color: var(--muted); }
+
+  .pr-comment { border-left: 3px solid var(--blue); padding: 12px 16px; margin-bottom: 12px; background: rgba(255,255,255,0.02); border-radius: 0 6px 6px 0; }
+  .pr-comment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .pr-comment-source { font-weight: 600; font-size: 12px; }
+  .pr-comment-source.trae { color: var(--blue); }
+  .pr-comment-source.actions { color: var(--purple); }
+  .pr-comment-time { font-size: 11px; color: var(--muted); }
+  .pr-comment-body { font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+
+  .workflow-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .workflow-row:last-child { border-bottom: none; }
+  .workflow-name { font-weight: 600; font-size: 13px; }
+  .workflow-time { font-size: 11px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -137,11 +173,20 @@
   <div style="display:flex;align-items:center;gap:16px">
     <div class="live"><div class="live-dot"></div>实盘运行中</div>
     <div class="last-update" id="last-update">加载中...</div>
-    <button onclick="loadData()" style="background:var(--border);border:none;color:var(--text);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px">刷新</button>
+    <button onclick="currentTabRefresh()" style="background:var(--border);border:none;color:var(--text);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px">刷新</button>
   </div>
 </div>
 
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('local')">📊 本地监控</div>
+  <div class="tab" onclick="switchTab('cloud')">☁️ 云端调度</div>
+</div>
+
 <div class="main">
+
+  <!-- 本地监控 Tab -->
+  <div id="tab-local" class="tab-content active">
+  <div class="tab-grid">
 
   <!-- 账户总览 -->
   <div class="card full-width">
@@ -326,6 +371,56 @@
         </div>
       </div>
     </div>
+  </div>
+  </div>
+</div>
+
+  <!-- 云端调度 Tab -->
+  <div id="tab-cloud" class="tab-content">
+  <div class="tab-grid">
+
+    <!-- 三级调度架构 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot dot-green"></div>三级调度架构</div>
+      <div class="schedule-grid-3">
+        <div class="schedule-card">
+          <div class="schedule-source trae">Trae 云端任务</div>
+          <div class="schedule-cron">北京时间 0/4/8/12/16/20:00</div>
+          <div class="schedule-status status-active">✅ 已启用</div>
+        </div>
+        <div class="schedule-card">
+          <div class="schedule-source actions">GitHub Actions</div>
+          <div class="schedule-cron">北京时间 2/6/10/14/18/22:00</div>
+          <div class="schedule-status status-active">✅ 已启用</div>
+        </div>
+        <div class="schedule-card">
+          <div class="schedule-source local">本地 Crontab</div>
+          <div class="schedule-cron">最后兜底</div>
+          <div class="schedule-status status-idle">⏸ 待配置</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 执行统计 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot dot-green"></div>云端执行统计</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-label">总执行次数</div><div class="stat-value" id="cloud-total">--</div><div class="stat-sub">从 PR #52 评论统计</div></div>
+        <div class="stat"><div class="stat-label">Trae 执行</div><div class="stat-value" id="cloud-trae" style="color:var(--blue)">--</div><div class="stat-sub">云端定时任务</div></div>
+        <div class="stat"><div class="stat-label">Actions 执行</div><div class="stat-value" id="cloud-actions" style="color:var(--purple)">--</div><div class="stat-sub">兜底执行</div></div>
+        <div class="stat"><div class="stat-label">最后执行</div><div class="stat-value" id="cloud-last">--</div><div class="stat-sub">距今时间</div></div>
+      </div>
+    </div>
+
+    <!-- 执行记录 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot dot-green"></div>云端执行记录（最近 10 条）</div>
+      <div id="cloud-comments">
+        <div style="text-align:center;color:var(--muted);padding:30px">加载中...</div>
+      </div>
+    </div>
+
+  </div>
   </div>
 
 </div>
@@ -589,21 +684,171 @@ function render(data) {
   document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
 }
 
-// ── 数据加载（通过 data-server.py API）──────────────────────────────────
+// ── 数据加载：优先本地实时 API，fallback 到静态 state.json ────────────────
 async function loadData() {
-  try {
-    const res = await fetch('/api/state', { signal: AbortSignal.timeout(5000) });
-    const data = await res.json();
-    render(data);
-  } catch (e) {
-    document.getElementById('last-update').textContent = '⚠️ 无法连接服务器，请启动 data_server.py';
+  const candidates = [
+    { url: '/api/state',  label: '本地实时 API',   mode: 'live'  },
+    { url: 'state.json',  label: '静态快照',        mode: 'snap'  },
+  ];
+  for (const src of candidates) {
+    try {
+      const res = await fetch(src.url, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      render(data);
+      const tag = src.mode === 'live' ? '实盘运行中' : '快照模式';
+      const dot = src.mode === 'live' ? '' : '<div class="live-dot" style="background:var(--yellow)"></div>';
+      const color = src.mode === 'live' ? 'var(--green)' : 'var(--yellow)';
+      const liveEl = document.querySelector('.header .live');
+      if (liveEl) {
+        liveEl.style.color = color;
+        liveEl.innerHTML = dot + tag;
+      }
+      if (src.mode === 'snap' && data.generated_at) {
+        const d = new Date(data.generated_at);
+        document.getElementById('last-update').textContent =
+          '快照生成于 ' + d.toLocaleString('zh-CN');
+      }
+      return;
+    } catch (e) {
+      // 尝试下一个
+    }
   }
+  document.getElementById('last-update').textContent = '⚠️ 无法加载数据';
 }
 
 // 初始加载 + 每30秒自动刷新
 loadData();
 setInterval(loadData, 30000);
 window.addEventListener('resize', () => { if (STATE.loaded) drawChart(STATE.logs_a, STATE.logs_b); });
+
+// ── Tab 切换 ────────────────────────────────────────────────────────────
+let currentTab = 'local';
+let cloudDataLoaded = false;
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  
+  event.target.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  
+  if (tab === 'cloud' && !cloudDataLoaded) {
+    loadCloudData();
+  }
+}
+
+function currentTabRefresh() {
+  if (currentTab === 'local') {
+    loadData();
+  } else {
+    loadCloudData();
+  }
+}
+
+// ── 云端调度数据加载 ──────────────────────────────────────────────────────
+const GITHUB_API = 'https://api.github.com';
+const GITHUB_REPO = 'yunya1991/Dreambuddy-V2';
+const PR_NUMBER = 52;
+
+function cloudTimeAgo(dateStr) {
+  if (!dateStr) return '--';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = (now - date) / 1000;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return Math.floor(diff/60) + ' 分钟前';
+  if (diff < 86400) return Math.floor(diff/3600) + ' 小时前';
+  return Math.floor(diff/86400) + ' 天前';
+}
+
+function cloudFormatDate(dateStr) {
+  if (!dateStr) return '--';
+  const date = new Date(dateStr);
+  return `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+}
+
+function parseCloudComment(body) {
+  const result = { action: '--', coin: '--', confidence: 0, source: 'Unknown', summary: body };
+  
+  if (body.includes('Trae') || body.includes('trae')) result.source = 'Trae';
+  else if (body.includes('GitHub Actions') || body.includes('Actions')) result.source = 'Actions';
+  
+  if (body.includes('LONG')) result.action = 'LONG';
+  else if (body.includes('SHORT')) result.action = 'SHORT';
+  else if (body.includes('CLOSE')) result.action = 'CLOSE';
+  else if (body.includes('HOLD')) result.action = 'HOLD';
+  
+  const coinMatch = body.match(/\*\*币种\*\*:\s*(\S+)/);
+  if (coinMatch) result.coin = coinMatch[1];
+  
+  const confMatch = body.match(/\*\*置信度\*\*:\s*(\d+)%/);
+  if (confMatch) result.confidence = parseInt(confMatch[1]);
+  
+  const lines = body.split('\n').filter(l => l.trim()).slice(0, 6);
+  result.summary = lines.join('\n');
+  
+  return result;
+}
+
+async function loadCloudData() {
+  const container = document.getElementById('cloud-comments');
+  container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px">加载中...</div>';
+  
+  try {
+    const res = await fetch(`${GITHUB_API}/repos/${GITHUB_REPO}/issues/${PR_NUMBER}/comments?per_page=20&sort=created&direction=desc`, {
+      headers: { 'Accept': 'application/vnd.github.v3+json' }
+    });
+    
+    if (!res.ok) throw new Error('GitHub API 请求失败: ' + res.status);
+    
+    const comments = await res.json();
+    
+    let traeCount = 0, actionsCount = 0;
+    comments.forEach(c => {
+      const parsed = parseCloudComment(c.body);
+      if (parsed.source === 'Trae') traeCount++;
+      else if (parsed.source === 'Actions') actionsCount++;
+    });
+    
+    document.getElementById('cloud-total').textContent = comments.length;
+    document.getElementById('cloud-trae').textContent = traeCount;
+    document.getElementById('cloud-actions').textContent = actionsCount;
+    
+    if (comments.length > 0) {
+      const hours = ((new Date() - new Date(comments[0].created_at)) / 3600000).toFixed(1);
+      document.getElementById('cloud-last').textContent = hours + 'h';
+    }
+    
+    const recent = comments.slice(0, 10);
+    if (recent.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-style:italic">暂无执行记录</div>';
+    } else {
+      container.innerHTML = recent.map(c => {
+        const parsed = parseCloudComment(c.body);
+        const sourceClass = parsed.source === 'Trae' ? 'trae' : 'actions';
+        const actionColor = parsed.action === 'LONG' ? 'var(--green)' : 
+                            parsed.action === 'SHORT' ? 'var(--red)' : 'var(--muted)';
+        return `
+          <div class="pr-comment">
+            <div class="pr-comment-header">
+              <span class="pr-comment-source ${sourceClass}">${parsed.source} · ${parsed.coin} · <span style="color:${actionColor}">${parsed.action}</span></span>
+              <span class="pr-comment-time">${cloudTimeAgo(c.created_at)} · ${cloudFormatDate(c.created_at)}</span>
+            </div>
+            <div class="pr-comment-body">${parsed.summary}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    cloudDataLoaded = true;
+    document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = `<div style="text-align:center;color:var(--red);padding:30px">加载失败: ${e.message}<br><span style="font-size:11px;color:var(--muted)">可能是 GitHub API 限流，请稍后再试</span></div>`;
+  }
+}
 </script>
 </body>
 </html>
