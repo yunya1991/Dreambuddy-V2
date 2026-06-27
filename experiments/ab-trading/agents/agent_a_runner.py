@@ -195,7 +195,7 @@ def run():
     }
 
     print(f"\n[决策] 调用 LLM 进行决策（SKILL 框架）...")
-    decision, provider = agent_a_llm_decide(mkt, memory, account_data, max_tokens=1500)
+    decision, provider = agent_a_llm_decide(mkt, memory, account_data, max_tokens=8000)
     print(f"[决策] Provider: {provider}")
     print(f"[决策] 结果: {decision.get('action')} {decision.get('coin','')} "
           f"conf={decision.get('confidence',0):.0%}")
