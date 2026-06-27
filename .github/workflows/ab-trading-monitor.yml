@@ -51,11 +51,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Commit to main
+          git fetch origin main
+          git stash
+          git rebase origin/main || git merge origin/main
+          git stash pop || true
           git add experiments/ab-trading/state.json
           git diff --cached --quiet && echo "No changes to commit on main" || \
             (git commit -m "chore(monitor): auto-update state snapshot" && git push)
-          # Also sync to gh-pages (for legacy Pages mode fallback)
+          # Sync to gh-pages
           git push --force origin main:gh-pages || echo "gh-pages push skipped"
 
       - name: Setup Pages
