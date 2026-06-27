@@ -128,7 +128,6 @@ jobs:
           HL_SIGNER_PRIVATE_KEY: ${{ secrets.HL_SIGNER_PRIVATE_KEY }}
           HL_SIGNER_ADDRESS: ${{ secrets.HL_SIGNER_ADDRESS }}
           HL_USER_ADDRESS: ${{ secrets.HL_USER_ADDRESS }}
-          TRAE_API_KEY: ${{ secrets.TRAE_API_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           AUTO_EXECUTE: 'true'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
