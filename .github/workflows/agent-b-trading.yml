@@ -35,7 +35,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests eth-account web3 tavily
+          pip install -r experiments/ab-trading/requirements.txt
 
       - name: Run Agent B (Dreambuddy OS)
         env:
