@@ -35,8 +35,9 @@ from scoring.scorecard import DecisionLog, _cycle_id
 from orchestrator import request_early_run
 from core.exit_module import (
     run_exit_check, init_position, update_position_exit_levels,
-    check_classical_indicator_exits, execute_exit,
+    check_classical_indicator_exits, check_l3_classical_exits_api, execute_exit,
 )
+from core.classic_driver import ClassicDriver, should_use_classic_driver
 
 # ─── 配置 ───────────────────────────────────────────────────────────────────
 AUTO_EXECUTE    = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
@@ -137,11 +138,10 @@ def apply_lessons(memory: Dict) -> float:
 
 def fetch_market_context(client: HyperliquidClient) -> Dict:
     """采集多维市场数据供A0/A2分析（Hyperliquid数据源）"""
-    # Agent B 现货市场：只在 UNIVERSE_B 范围内选标的
     opps = client.scan_opportunities()
-    mids = client.get_all_mids()
+    opp_map = {o["coin"]: o for o in opps}
+    mids = {k: v["price"] for k, v in opp_map.items()}
 
-    # 主分析标的：UNIVERSE_B 内资金费率信号最强的
     primary_coin = "BTC"
     for o in sorted(opps, key=lambda x: abs(x["funding"]), reverse=True):
         if o["coin"] in UNIVERSE_B:
@@ -156,9 +156,6 @@ def fetch_market_context(client: HyperliquidClient) -> Dict:
     closes_1h = [float(c["c"]) for c in candles_1h_raw if "c" in c]
     closes_4h = [float(c["c"]) for c in candles_4h_raw if "c" in c]
     vols_1h   = [float(c["v"]) for c in candles_1h_raw if "v" in c]
-
-    # 扫描所有标的的机会
-    opp_map = {o["coin"]: o for o in opps}
 
     # 技术指标计算
     def ema(prices, n):
@@ -636,6 +633,202 @@ def record_graph_context(cycle_id: str, a0: Dict, a2: Dict, a3: Dict,
 
     return len(a0["contradictions"]) + 3  # 矛盾节点 + A层节点数
 
+# ─── 经典指标驱动模式 ────────────────────────────────────────────────────────
+
+def _run_classic_mode(
+    cycle: str,
+    client,
+    memory: Dict,
+    equity: float,
+    l1_closed: List[Dict],
+) -> Dict:
+    """
+    经典指标系统驱动模式（无 LLM 时的完整回退方案）
+    
+    通过 ClassicDriver 调用 ml_trade_service 完成：
+    - 入场信号扫描 + 决策
+    - 离场评估（L0~P3 全优先级）
+    - 持仓管理
+    
+    设计原则：只做驱动不做实现，全部逻辑由 ml_trade_service 负责
+    """
+    print(f"\n[Agent B/Classic] ═══ 经典指标系统驱动模式 ═══")
+    print(f"[Agent B/Classic] 目标: 无 LLM 时完整接管交易")
+    print(f"[Agent B/Classic] 数据源: ml_trade_service (10-经典指标系统)")
+    
+    # 初始化 ClassicDriver
+    driver = ClassicDriver(
+        per_trade_usdc=BUDGET_USDC * PER_TRADE_PCT,
+        max_positions=3,
+        leverage=DEFAULT_LEVERAGE,
+        coins=UNIVERSE_B,
+    )
+    
+    # 检查 API 可用性
+    api_ok = driver.is_available()
+    print(f"[Agent B/Classic] 服务状态: {'✅ 可用' if api_ok else '❌ 不可用'} "
+          f"({driver.get_status().last_error or 'ok'})")
+    
+    if not api_ok:
+        # API 不可用时的兜底：保留 L1 基础离场，不做入场
+        print(f"[Agent B/Classic] ⚠️ ml_trade_service 不可用，仅保留 L1 基础风控")
+        log = DecisionLog("b", cycle)
+        log.data.update({
+            "driver_mode": "CLASSIC",
+            "api_available": False,
+            "api_error": driver.get_status().last_error,
+            "action": "HOLD",
+            "coin": "BTC",
+            "confidence": 0.0,
+            "decision_rationale": "ml_trade_service 不可用，经典模式降级为仅L1风控",
+            "active_positions": memory.get("active_positions", {}),
+            "l1_exits": l1_closed,
+            "l3_exits": [],
+            "a9_exits": [],
+            "market_regime": "UNKNOWN",
+        })
+        path = log.save()
+        save_memory(memory, log.data)
+        print(f"[Agent B/Classic] 日志已保存: {path}")
+        return log.data
+    
+    # 获取策略能力
+    caps = driver.get_strategy_capabilities()
+    print(f"[Agent B/Classic] 支持策略: {len(caps)} 个")
+    for c in caps[:4]:
+        print(f"  - {c.get('strategy_id')}: {c.get('direction_capability')}")
+    
+    # 获取价格函数
+    def _get_price(coin: str) -> float:
+        try:
+            mids = client.get_all_mids()
+            return float(mids.get(coin, 0) or 0)
+        except Exception:
+            return 0.0
+    
+    # 执行开仓函数
+    def _execute_entry(coin: str, side: str, size_usdc: float, leverage: int, tag: str) -> Dict:
+        if not AUTO_EXECUTE:
+            return {"ok": False, "error": "auto_execute_disabled"}
+        try:
+            if side in ("LONG", "BUY"):
+                return client.open_long(coin, size_usdc, leverage, tag)
+            elif side in ("SHORT", "SELL"):
+                return client.open_short(coin, size_usdc, leverage, tag)
+            return {"ok": False, "error": f"invalid_side_{side}"}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+    
+    # 执行平仓函数
+    def _execute_exit(coin: str, reason: str, tag: str) -> Dict:
+        if not AUTO_EXECUTE:
+            return {"ok": False, "error": "auto_execute_disabled"}
+        try:
+            nonlocal memory
+            memory["active_positions"], closed_info, exec_res = execute_exit(
+                client, memory.get("active_positions", {}), coin,
+                f"CLASSIC_{reason[:20]}", tag=f"b_classic_{tag}"
+            )
+            return {"ok": bool(closed_info), "closed": closed_info, "execution": exec_res}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+    
+    # 执行完整周期
+    print(f"\n[Agent B/Classic] 执行完整交易周期...")
+    cycle_result = driver.run_full_cycle(
+        active_positions=memory.get("active_positions", {}),
+        get_price_fn=_get_price,
+        execute_entry_fn=_execute_entry,
+        execute_exit_fn=_execute_exit,
+    )
+    
+    # 处理开仓结果：初始化 active_positions
+    classic_entries = []
+    for entry in cycle_result.get("entries", []):
+        result = entry.get("result", {})
+        if result.get("ok"):
+            coin = entry["coin"]
+            price = _get_price(coin)
+            # 估算入场价
+            memory["active_positions"] = init_position(
+                memory.get("active_positions", {}),
+                coin=coin,
+                entry_price=price,
+                action=entry["side"].upper(),
+                position_size_usdt=driver.per_trade_usdc,
+                leverage=driver.leverage,
+                stop_loss_price=price * (1 - 0.04 / driver.leverage) if entry["side"].upper() in ("LONG", "BUY") else price * (1 + 0.04 / driver.leverage),
+                take_profit_price=price * (1 + 0.08 / driver.leverage) if entry["side"].upper() in ("LONG", "BUY") else price * (1 - 0.08 / driver.leverage),
+                cycle_id=cycle,
+                proxies=client.proxies,
+            )
+            classic_entries.append(entry)
+            print(f"[Agent B/Classic] ✅ 开仓 {coin} {entry['side']} "
+                  f"({entry['strategy']}, conf={entry['confidence']:.0%})")
+    
+    # 处理平仓结果
+    classic_exits = []
+    for exit_info in cycle_result.get("exits", []):
+        result = exit_info.get("result", {})
+        if result.get("ok"):
+            classic_exits.append(exit_info)
+            closed = result.get("closed", {})
+            print(f"[Agent B/Classic] 📤 平仓 {exit_info['coin']}: "
+                  f"{exit_info['reason']} "
+                  f"PnL={closed.get('pnl_pct', 0)*100:+.2f}%")
+    
+    # 输出信号概览
+    signals = cycle_result.get("signals", [])
+    print(f"\n[Agent B/Classic] 信号扫描: 共 {len(signals)} 个信号")
+    for s in signals[:5]:
+        print(f"  - {s['coin']} {s['side']} ({s['strategy']}): conf={s['conf']:.0%}")
+    
+    # 写决策日志
+    log = DecisionLog("b", cycle)
+    top_signal = signals[0] if signals else {"coin": "BTC", "side": "hold", "strategy": "none", "conf": 0.0}
+    
+    log.data.update({
+        "driver_mode": "CLASSIC",
+        "api_available": True,
+        "strategies_used": driver.strategies,
+        "coins_scanned": driver.coins,
+        "signals_found": len(signals),
+        "top_signal": top_signal,
+        "classic_entries": classic_entries,
+        "classic_exits": classic_exits,
+        "market_regime": "CLASSIC_DRIVEN",
+        "action": top_signal["side"].upper() if signals else "HOLD",
+        "coin": top_signal["coin"],
+        "leverage": driver.leverage,
+        "confidence": top_signal.get("conf", 0.0),
+        "position_size_usdt": driver.per_trade_usdc,
+        "decision_rationale": (
+            f"经典指标系统驱动模式 | {len(signals)}个信号 | "
+            f"开仓{len(classic_entries)}笔 | 平仓{len(classic_exits)}笔"
+        ),
+        "system_features_used": [
+            "classic_driver", "ml_trade_service", "strategy_feeders",
+            "classic_exit_system", "l1_stop_loss",
+        ],
+        "active_positions": memory.get("active_positions", {}),
+        "l1_exits": l1_closed,
+        "l3_exits": classic_exits,
+        "a9_exits": [],
+        "intent_type": "CLASSIC_FALLBACK",
+        "plan_budget_mode": "classic",
+        "plan_estimated_tokens": 0,
+        "plan_shortcut": True,
+        "plan_rationale": "无LLM时自动回退到经典指标系统驱动",
+    })
+    
+    path = log.save()
+    save_memory(memory, log.data)
+    print(f"\n[Agent B/Classic] 日志已保存: {path}")
+    print(f"[Agent B/Classic] ═══ 经典模式执行完成 ═══")
+    
+    return log.data
+
+
 # ─── 主流程 ──────────────────────────────────────────────────────────────────
 
 def run():
@@ -671,7 +864,8 @@ def run():
     print(f"\n[Agent B/Exit] L1 基础离场检查...")
     memory["active_positions"], l1_closed = run_exit_check(
         client, memory.get("active_positions", {}),
-        agent_id="b", enable_trailing=True
+        agent_id="b", enable_trailing=True,
+        account_data=acct,
     )
     if l1_closed:
         for ct in l1_closed:
@@ -680,34 +874,59 @@ def run():
     else:
         print(f"[Agent B/Exit] L1无触发，持仓: {list(memory['active_positions'].keys()) or '无'}")
 
-    # ── L3 经典指标离场检查（无 LLM 时的回退方案）───────────────────────
+    # ── 模式判断：LLM 驱动 vs 经典指标驱动 ─────────────────────────────
+    use_classic = should_use_classic_driver()
+    driver_mode = "CLASSIC" if use_classic else "LLM"
+    print(f"\n[Agent B/Mode] 驱动模式: {driver_mode} "
+          f"({'无LLM，经典指标系统接管' if use_classic else 'LLM可用，BAC架构驱动'})")
+
+    # ── 经典指标驱动模式：完整接管入场+离场 ───────────────────────────
+    if use_classic:
+        return _run_classic_mode(
+            cycle=cycle,
+            client=client,
+            memory=memory,
+            equity=equity,
+            l1_closed=l1_closed,
+        )
+
+    # ── L3 经典指标离场检查（有 LLM 时跳过，由 A9 智能离场接管）─────
     l3_closed = []
     if memory.get("active_positions"):
-        print(f"[Agent B/Exit] L3 经典指标离场检查...")
-        mids = client.get_all_mids()
-        for coin in list(memory["active_positions"].keys()):
-            pos = memory["active_positions"][coin]
-            price = mids.get(coin, 0)
-            if price <= 0:
-                continue
-            try:
-                candles = get_candles(coin, "1h", 48, client.proxies)
-            except Exception:
-                candles = []
-            should_exit, reason, _ = check_classical_indicator_exits(
-                coin, price, pos["action"], candles
-            )
-            if should_exit and AUTO_EXECUTE:
-                memory["active_positions"], closed_info, exec_res = execute_exit(
-                    client, memory["active_positions"], coin,
-                    f"CLASSIC_{reason[:20]}", tag=f"b_exit_classic"
+        try:
+            from core.llm_client import llm_available, llm_quota_ok
+            has_llm = llm_available() and llm_quota_ok("a9_exit")
+        except Exception:
+            has_llm = False
+
+        if has_llm:
+            print(f"[Agent B/Exit] L3跳过（有LLM，将在A9节点执行智能离场评估）")
+        else:
+            print(f"[Agent B/Exit] L3 经典指标离场检查（无LLM，回退模式）...")
+            mids = client.get_all_mids()
+            for coin in list(memory["active_positions"].keys()):
+                pos = memory["active_positions"][coin]
+                price = mids.get(coin, 0)
+                if price <= 0:
+                    continue
+                try:
+                    candles = get_candles(coin, "1h", 48, client.proxies)
+                except Exception:
+                    candles = []
+                should_exit, reason, _ = check_l3_classical_exits_api(
+                    coin, price, pos["action"], candles
                 )
-                if closed_info:
-                    l3_closed.append(closed_info)
-                    print(f"[Agent B/Exit] L3经典平仓 {coin}: {reason} "
-                          f"PnL={closed_info['pnl_pct']*100:+.2f}%")
-        if not l3_closed:
-            print(f"[Agent B/Exit] L3无触发")
+                if should_exit and AUTO_EXECUTE:
+                    memory["active_positions"], closed_info, exec_res = execute_exit(
+                        client, memory["active_positions"], coin,
+                        f"CLASSIC_{reason[:20]}", tag=f"b_exit_classic"
+                    )
+                    if closed_info:
+                        l3_closed.append(closed_info)
+                        print(f"[Agent B/Exit] L3经典平仓 {coin}: {reason} "
+                              f"PnL={closed_info['pnl_pct']*100:+.2f}%")
+            if not l3_closed:
+                print(f"[Agent B/Exit] L3无触发")
 
     mkt = fetch_market_context(client)
     # 注入 Regime 到 mkt 供意图识别使用
@@ -726,7 +945,7 @@ def run():
     from core.chain_planner import ChainPlanner
     from core.chain_router import ChainRouter
 
-    intent = detect_intent(mkt, memory)
+    intent = detect_intent(mkt, memory, memory.get("active_positions"))
     print(f"[Agent B/Intent] {intent.intent_type} conf={intent.confidence:.0%} | {intent.rationale[:60]}")
 
     # ── Step 2: BAC 三层规划（零Token）────────────────────────────────────
