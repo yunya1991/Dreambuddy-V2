@@ -254,7 +254,7 @@ class NodeRegistry:
     - 与适配器框架对接
     """
 
-    def __init__(self):
+    def __init__(self, auto_load: bool = True):
         self._lock = threading.RLock()
         self._nodes: Dict[str, NodeInfo] = {}
 
@@ -269,6 +269,10 @@ class NodeRegistry:
         # 执行统计
         self._call_count: Dict[str, int] = {}
         self._total_latency: Dict[str, float] = {}
+
+        # 自动加载预定义节点（文档要求：支持从node_definitions自动初始化）
+        if auto_load:
+            self._load_default_nodes()
 
     # ============================================================
     # 注册 / 注销
@@ -549,6 +553,34 @@ class NodeRegistry:
         for node in self._nodes.values():
             if not node.deprecated:
                 self._index_node(node)
+
+    def _load_default_nodes(self):
+        """自动加载 node_definitions.py 中定义的所有节点
+        Bug Fix: 原代码 __init__ 未调用此方法，导致 get_all() 返回空列表
+        """
+        try:
+            from .node_definitions import get_all_node_definitions
+            definitions = get_all_node_definitions()
+            for d in definitions:
+                try:
+                    d = dict(d)  # 避免修改原始数据
+                    retry_cfg    = d.pop("retry_policy", None)
+                    fallback_cfg = d.pop("fallback_policy", None)
+                    input_cfg    = d.pop("input_schema", None)
+                    output_cfg   = d.pop("output_schema", None)
+                    valid_fields = set(NodeInfo.__dataclass_fields__.keys())
+                    node = NodeInfo(
+                        **{k: v for k, v in d.items() if k in valid_fields},
+                        retry_policy=NodeRetryPolicy(**retry_cfg) if isinstance(retry_cfg, dict) else NodeRetryPolicy(),
+                        fallback_policy=NodeFallbackPolicy.from_dict(fallback_cfg) if fallback_cfg else NodeFallbackPolicy(),
+                        input_schema=IOSchema.from_dict(input_cfg),
+                        output_schema=IOSchema.from_dict(output_cfg),
+                    )
+                    self.register(node)
+                except Exception:
+                    pass
+        except ImportError:
+            pass
 
 
 # ============================================================
