@@ -1,0 +1,1485 @@
+#!/usr/bin/env python3
+"""
+生成 WorkBuddy OS 模块化注册表 module_registry.yaml
+整合 TS 侧 36 个 SKILL + Python 侧 11 个节点
+作为双端唯一真相源
+"""
+
+import yaml
+import json
+from datetime import datetime
+
+registry = {
+    "version": "2.0.0",
+    "updated_at": datetime.now().isoformat(),
+    "schema_version": "2.0",
+    "total_modules": 36,
+
+    "domains": {
+        "A_domain": {
+            "name": "AI交易能力",
+            "description": "基于AI的交易分析与执行能力集（A链：三大闭环 + 三屏交易）",
+            "color": "#8b5cf6",
+
+            "categories": {
+                "三屏交易系统": {
+                    "name": "三屏交易系统",
+                    "description": "Elder三屏交易体系：周线方向 + 日线预设 + 实时执行",
+
+                    "modules": {
+                        "Screen1_周线方向": {
+                            "id": "dream-screen1-first",
+                            "name": "Screen1-屏1筛选",
+                            "description": "第一屏：市场扫描与初选，识别潜在交易机会",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["screening", "market-scan", "opportunity-detection"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R2",
+                            "estimated_tokens": 8000,
+                            "estimated_latency_ms": 120000,
+                            "confidence_range": [70, 85],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["market_query", "deep_analysis"],
+                            "market_conditions": ["trending", "ranging"],
+                            "historical_accuracy": 72,
+                            "historical_calls": 0,
+                            "dependencies": [
+                                "dream-contradiction-theory",
+                                "dream-strategy-research",
+                                "dream-first-principles",
+                                "dream-strategy-designer",
+                                "master-seminar"
+                            ],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "skill_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "factory_function": "createSkill (screen1Skill)"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_module": "dream-first-principles",
+                                "fallback_reason": "Screen1不可用时降级到A2独立分析"
+                            }
+                        },
+                        "Screen2_日线预设": {
+                            "id": "dream-screen2-second",
+                            "name": "Screen2-屏2技术分析",
+                            "description": "第二屏：深入技术分析和策略匹配",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["technical-analysis", "strategy-matching", "trend"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R2",
+                            "estimated_tokens": 6000,
+                            "estimated_latency_ms": 90000,
+                            "confidence_range": [65, 85],
+                            "applicable_stages": ["analysis", "design"],
+                            "applicable_intents": ["deep_analysis", "execute_trade"],
+                            "market_conditions": ["trending", "volatile"],
+                            "historical_accuracy": 70,
+                            "historical_calls": 0,
+                            "dependencies": [
+                                "dream-regime-detector",
+                                "dream-signal-scoring-spec",
+                                "dream-strategy-designer"
+                            ],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "skill_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "factory_function": "createSkill (screen2Skill)"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_module": "classic-indicator-scan",
+                                "fallback_reason": "Screen2不可用时降级到C链技术指标"
+                            }
+                        },
+                        "Screen3_实时执行": {
+                            "id": "dream-screen3-third",
+                            "name": "Screen3-屏3执行确认",
+                            "description": "第三屏：最终执行确认与风控检查",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["execution", "risk-check", "confirmation"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R3",
+                            "estimated_tokens": 4000,
+                            "estimated_latency_ms": 60000,
+                            "confidence_range": [60, 80],
+                            "applicable_stages": ["validate", "execute"],
+                            "applicable_intents": ["execute_trade", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 68,
+                            "historical_calls": 0,
+                            "dependencies": [
+                                "A7-practice-theory",
+                                "dream-tactical-validator",
+                                "dual-agent-conflict-gate",
+                                "dream-tactical-executor",
+                                "dream-intelligence-monitor",
+                                "dream-exit-skill-v2"
+                            ],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "skill_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "factory_function": "createSkill (screen3Skill)"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_module": "dream-pretrade-gatekeeper",
+                                "fallback_reason": "Screen3不可用时降级到前置门禁检查"
+                            }
+                        }
+                    }
+                },
+
+                "执行闭环": {
+                    "name": "执行闭环",
+                    "description": "A0-A9完整执行链路：矛盾→调研→分析→策略→验证→执行→门禁→离场",
+
+                    "modules": {
+                        "A0_矛盾论": {
+                            "id": "dream-contradiction-theory",
+                            "name": "A0-矛盾论分析OS",
+                            "description": "A0: 蒸馏自矛盾论+孙子兵法+战争论的统一矛盾操作系统，为A1/A2/A3提供识别主要矛盾的分析框架",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "research",
+                            "tags": ["contradiction", "matrix", "primary-contradiction", "a0"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 2000,
+                            "estimated_latency_ms": 15000,
+                            "confidence_range": [70, 90],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["deep_analysis", "market_query", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 76,
+                            "historical_calls": 1247,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "both",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/a0_contradiction.py",
+                                "skill_md": "6-TRADING/skills/dream-contradiction-theory/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "local_rules",
+                                "fallback_reason": "本地规则降级：多维度评分取主矛盾"
+                            }
+                        },
+                        "A1_深度调研": {
+                            "id": "dream-strategy-research",
+                            "name": "策略研究",
+                            "description": "A1: 深度调研，Tavily宏观+OKX行情+链上+ETF+FGI",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "research",
+                            "tags": ["research", "strategy-dev", "backtesting"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 5000,
+                            "estimated_latency_ms": 30000,
+                            "confidence_range": [65, 85],
+                            "applicable_stages": ["research", "analysis", "design"],
+                            "applicable_intents": ["deep_analysis", "scenario_sim", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 74,
+                            "historical_calls": 0,
+                            "dependencies": ["tavily-search"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "both",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/a1_research.py",
+                                "skill_md": "6-TRADING/skills/dream-strategy-research/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "local_cache",
+                                "fallback_reason": "无网络时使用缓存数据"
+                            }
+                        },
+                        "A2_第一性原理": {
+                            "id": "dream-first-principles",
+                            "name": "A2-第一性原理",
+                            "description": "A2: 基于阻力最小方向和趋势延续性两大原理，双维度分析抓住主要矛盾",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "research",
+                            "tags": ["first-principles", "resistance", "trend", "a2", "dual-dimension"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 3000,
+                            "estimated_latency_ms": 20000,
+                            "confidence_range": [68, 88],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["deep_analysis", "market_query"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 74,
+                            "historical_calls": 0,
+                            "dependencies": ["dream-contradiction-theory"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "both",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/a2_analysis.py",
+                                "skill_md": "6-TRADING/skills/dream-first-principles/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "local_rules",
+                                "fallback_reason": "MA趋势+RSI超买超卖本地判断"
+                            }
+                        },
+                        "A3_策略设计": {
+                            "id": "dream-strategy-designer",
+                            "name": "策略设计器",
+                            "description": "A3: 多情景合成(S1/S2/S3) + IA红队分析 + phase7_contingency输出",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "research",
+                            "tags": ["strategy-design", "scenario-analysis", "red-team"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R2",
+                            "estimated_tokens": 4000,
+                            "estimated_latency_ms": 25000,
+                            "confidence_range": [65, 85],
+                            "applicable_stages": ["research", "design"],
+                            "applicable_intents": ["deep_analysis", "scenario_sim", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 71,
+                            "historical_calls": 0,
+                            "dependencies": [
+                                "dream-contradiction-theory",
+                                "dream-first-principles",
+                                "master-seminar"
+                            ],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "both",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/a3_strategy.py",
+                                "skill_md": "6-TRADING/skills/dream-strategy-designer/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_module": "classic-strategy-match",
+                                "fallback_reason": "降级到经典策略匹配"
+                            }
+                        },
+                        "A4_战术验证": {
+                            "id": "dream-tactical-validator",
+                            "name": "战术验证器",
+                            "description": "B7/A4: Demo账户3层索引验证，确认入场条件成立",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["validation", "pre-entry", "demo-account"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R2",
+                            "estimated_tokens": 1500,
+                            "estimated_latency_ms": 10000,
+                            "confidence_range": [65, 90],
+                            "applicable_stages": ["validate"],
+                            "applicable_intents": ["execute_trade", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 78,
+                            "historical_calls": 0,
+                            "dependencies": ["dream-pretrade-gatekeeper"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "both",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/a4_gate.py",
+                                "skill_md": "6-TRADING/skills/dream-tactical-validator/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "local_rules",
+                                "fallback_reason": "本地规则：信号+风控+流动性三层检查"
+                            }
+                        },
+                        "A5_战术执行": {
+                            "id": "dream-tactical-executor",
+                            "name": "战术执行器",
+                            "description": "B8/A5: 综合A4验证+A6情报，生成最终执行决策",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["execution", "order", "final-decision"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "beta",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R3",
+                            "estimated_tokens": 1000,
+                            "estimated_latency_ms": 5000,
+                            "confidence_range": [60, 85],
+                            "applicable_stages": ["execute"],
+                            "applicable_intents": ["execute_trade"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 70,
+                            "historical_calls": 0,
+                            "dependencies": [
+                                "dream-tactical-validator",
+                                "dream-intelligence-monitor"
+                            ],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/dream-tactical-executor/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": False,
+                                "fallback_reason": "执行模块不允许降级，必须人工确认"
+                            }
+                        },
+                        "A7_实践门禁": {
+                            "id": "A7-practice-theory",
+                            "name": "A7-实践论门禁",
+                            "description": "A7: 基于实践论，A4/A5执行前必须通过的理论-实践一致性门禁检查",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "governance",
+                            "tags": ["practice-theory", "gate", "a7", "consistency-check", "mao"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R3",
+                            "estimated_tokens": 1500,
+                            "estimated_latency_ms": 8000,
+                            "confidence_range": [70, 95],
+                            "applicable_stages": ["validate"],
+                            "applicable_intents": ["execute_trade", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 80,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/A7-practice-theory/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": False,
+                                "fallback_reason": "门禁模块不允许降级，必须严格检查"
+                            }
+                        },
+                        "A9_离场决策": {
+                            "id": "dream-exit-skill-v2",
+                            "name": "离场决策 v2",
+                            "description": "C3/A9: 四层离场决策链(TP/SL/风险事件/A6联动/强制审计) + 21事件风险库",
+                            "version": "2.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["exit", "stop-loss", "take-profit", "risk-event"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R2",
+                            "estimated_tokens": 2000,
+                            "estimated_latency_ms": 12000,
+                            "confidence_range": [70, 92],
+                            "applicable_stages": ["execute"],
+                            "applicable_intents": ["execute_trade", "risk_alert"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 76,
+                            "historical_calls": 0,
+                            "dependencies": ["dream-intelligence-monitor"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "both",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/a9_exit.py",
+                                "skill_md": "6-TRADING/skills/dream-exit-skill-v2/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "local_rules",
+                                "fallback_reason": "本地硬止损止盈规则"
+                            }
+                        }
+                    }
+                },
+
+                "情报闭环": {
+                    "name": "情报闭环",
+                    "description": "A6情报监控 + 大师辩论 + 做梦部",
+
+                    "modules": {
+                        "A6_情报监控": {
+                            "id": "dream-intelligence-monitor",
+                            "name": "情报监控",
+                            "description": "监控市场情报、新闻事件、关键指标变化",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "intelligence",
+                            "tags": ["monitoring", "news", "market-signal", "alert"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "beta",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 3000,
+                            "estimated_latency_ms": 15000,
+                            "confidence_range": [60, 85],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["market_query", "deep_analysis", "risk_alert"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 70,
+                            "historical_calls": 0,
+                            "dependencies": ["fundamental-news-scanner"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/dream-intelligence-monitor/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_module": "fundamental-news-scanner",
+                                "fallback_reason": "降级到F链新闻扫描"
+                            }
+                        },
+                        "大师辩论": {
+                            "id": "master-seminar",
+                            "name": "A3内-大师研讨",
+                            "description": "A3内组件: 已蒸馏的交易大师分阵营辩论，多空阵营挑刺追问",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "research",
+                            "tags": ["master", "seminar", "debate", "multi-perspective", "a3"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 6000,
+                            "estimated_latency_ms": 45000,
+                            "confidence_range": [65, 85],
+                            "applicable_stages": ["analysis", "design"],
+                            "applicable_intents": ["deep_analysis", "scenario_sim"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 72,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/master-seminar/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "single_analysis",
+                                "fallback_reason": "降级为单视角分析"
+                            }
+                        },
+                        "做梦部": {
+                            "id": "dream-oneirology",
+                            "name": "梦境分析部",
+                            "description": "学习进化闭环: 基于弗洛伊德梦的解析，分析被压制的判断/强迫性重复",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "intelligence",
+                            "tags": ["oneirology", "freud", "subconscious", "pattern", "dream"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 2500,
+                            "estimated_latency_ms": 20000,
+                            "confidence_range": [55, 78],
+                            "applicable_stages": ["analysis", "validate"],
+                            "applicable_intents": ["deep_analysis", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 62,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "both",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/oneirology.py",
+                                "skill_md": "6-TRADING/skills/dream-oneirology/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "skip",
+                                "fallback_reason": "顾问模块，跳过不影响主流程"
+                            }
+                        }
+                    }
+                },
+
+                "复盘进化": {
+                    "name": "复盘进化",
+                    "description": "A8知行合一 + 数据分析 + 知识库",
+
+                    "modules": {
+                        "A8_知行合一": {
+                            "id": "A8-theory-practice-verification",
+                            "name": "A8-知行合一验证",
+                            "description": "A8: 纯粹的理性内部批评自循环，检查A0-A7的理论与实践结合情况",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "research",
+                            "tags": ["a8", "theory-practice", "self-criticism", "system-evolution", "zhixing-heyi"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "beta",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 3000,
+                            "estimated_latency_ms": 20000,
+                            "confidence_range": [65, 88],
+                            "applicable_stages": ["validate", "execute"],
+                            "applicable_intents": ["deep_analysis", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 73,
+                            "historical_calls": 0,
+                            "dependencies": ["learning-episode-writer"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/A8-theory-practice-verification/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "skip",
+                                "fallback_reason": "复盘模块可跳过"
+                            }
+                        },
+                        "绩效复盘": {
+                            "id": "dream-performance-review",
+                            "name": "绩效复盘",
+                            "description": "回顾和评估交易表现，识别改进机会",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "governance",
+                            "tags": ["performance", "review", "backtest", "analysis"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 2000,
+                            "estimated_latency_ms": 15000,
+                            "confidence_range": [70, 90],
+                            "applicable_stages": ["validate", "execute"],
+                            "applicable_intents": ["deep_analysis", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 76,
+                            "historical_calls": 0,
+                            "dependencies": ["dream-backtest"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/dream-performance-review/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_module": "classic-backtest",
+                                "fallback_reason": "降级到C链回测"
+                            }
+                        },
+                        "Episode记录器": {
+                            "id": "learning-episode-writer",
+                            "name": "Episode记录器",
+                            "description": "学习进化闭环: 将每轮决策与结果固化为episode",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "governance",
+                            "tags": ["episode", "learning", "record", "skip-detection", "p006"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 500,
+                            "estimated_latency_ms": 2000,
+                            "confidence_range": [80, 98],
+                            "applicable_stages": ["execute"],
+                            "applicable_intents": ["execute_trade", "deep_analysis"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 95,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts"
+                            },
+                            "fallback": {
+                                "enabled": False,
+                                "fallback_reason": "记录模块不能失败，需保证写入"
+                            }
+                        }
+                    }
+                },
+
+                "策略工具": {
+                    "name": "策略工具",
+                    "description": "Regime识别/信号评分/风险仓位/执行成本",
+
+                    "modules": {
+                        "市场状态识别": {
+                            "id": "dream-regime-detector",
+                            "name": "市场状态识别器",
+                            "description": "识别当前市场状态（趋势/震荡/波动率），确定最适合的策略家族",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["regime-detection", "market-state", "trend", "range"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 1500,
+                            "estimated_latency_ms": 8000,
+                            "confidence_range": [70, 90],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["market_query", "deep_analysis"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 78,
+                            "historical_calls": 0,
+                            "dependencies": ["classic-regime-detection"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/dream-regime-detector/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_module": "classic-regime-detection",
+                                "fallback_reason": "降级到C链Regime识别"
+                            }
+                        },
+                        "信号评分": {
+                            "id": "dream-signal-scoring-spec",
+                            "name": "信号评分系统",
+                            "description": "综合评估交易信号的强度、可靠性和风险收益比",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["signal-scoring", "risk-reward", "strength-analysis"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 1500,
+                            "estimated_latency_ms": 10000,
+                            "confidence_range": [65, 85],
+                            "applicable_stages": ["analysis", "design"],
+                            "applicable_intents": ["deep_analysis", "execute_trade", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 72,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/dream-signal-scoring-spec/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "simple_score",
+                                "fallback_reason": "简单加权评分"
+                            }
+                        },
+                        "风险仓位": {
+                            "id": "dream-risk-position-sizing",
+                            "name": "仓位风险管理",
+                            "description": "基于风险偏好和市场条件计算最优仓位大小",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["position-sizing", "risk-management", "money-management"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R2",
+                            "estimated_tokens": 1000,
+                            "estimated_latency_ms": 5000,
+                            "confidence_range": [60, 85],
+                            "applicable_stages": ["design", "validate"],
+                            "applicable_intents": ["execute_trade", "strategy_verify", "risk_alert"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 75,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/dream-risk-position-sizing/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "fixed_size",
+                                "fallback_reason": "固定1%风险仓位"
+                            }
+                        },
+                        "策略解析器": {
+                            "id": "dream-strategy-parser",
+                            "name": "策略解析器",
+                            "description": "B2: Regime→策略路由，将市场状态映射为directive_bias",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "execution",
+                            "tags": ["strategy-routing", "regime", "directive-bias"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 800,
+                            "estimated_latency_ms": 3000,
+                            "confidence_range": [70, 88],
+                            "applicable_stages": ["design"],
+                            "applicable_intents": ["execute_trade", "deep_analysis"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 74,
+                            "historical_calls": 0,
+                            "dependencies": ["dream-regime-detector"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_module": "classic-strategy-match",
+                                "fallback_reason": "降级到经典策略匹配"
+                            }
+                        },
+                        "回测引擎": {
+                            "id": "dream-backtest",
+                            "name": "回测引擎",
+                            "description": "A8s: 历史回测验证策略，输出结构化指标报告",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "research",
+                            "tags": ["backtest", "historical", "validation", "sharpe"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 2000,
+                            "estimated_latency_ms": 15000,
+                            "confidence_range": [72, 92],
+                            "applicable_stages": ["validate"],
+                            "applicable_intents": ["strategy_verify", "deep_analysis"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 80,
+                            "historical_calls": 0,
+                            "dependencies": ["classic-backtest"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_md": "6-TRADING/skills/dream-backtest/SKILL.md"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_module": "classic-backtest",
+                                "fallback_reason": "降级到C链回测"
+                            }
+                        },
+                        "贝叶斯优化": {
+                            "id": "dream-bayesian-opt",
+                            "name": "贝叶斯优化器",
+                            "description": "A9s: 依赖backtest结果，贝叶斯优化策略参数",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "research",
+                            "tags": ["optimization", "bayesian", "hyperparameter", "martingale"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "beta",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R1",
+                            "estimated_tokens": 3000,
+                            "estimated_latency_ms": 20000,
+                            "confidence_range": [70, 90],
+                            "applicable_stages": ["validate", "design"],
+                            "applicable_intents": ["strategy_verify", "deep_analysis"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 77,
+                            "historical_calls": 0,
+                            "dependencies": ["dream-backtest"],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "default_params",
+                                "fallback_reason": "使用默认策略参数"
+                            }
+                        }
+                    }
+                },
+
+                "门禁系统": {
+                    "name": "门禁系统",
+                    "description": "预交易门禁+双代理冲突门禁+实践门禁",
+
+                    "modules": {
+                        "前置门禁": {
+                            "id": "dream-pretrade-gatekeeper",
+                            "name": "前置门禁检查",
+                            "description": "交易执行前的综合门禁检查，确保所有条件满足",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "governance",
+                            "tags": ["gatekeeping", "compliance", "risk-check"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R3",
+                            "estimated_tokens": 1000,
+                            "estimated_latency_ms": 5000,
+                            "confidence_range": [70, 95],
+                            "applicable_stages": ["validate"],
+                            "applicable_intents": ["execute_trade", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 82,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts"
+                            },
+                            "fallback": {
+                                "enabled": False,
+                                "fallback_reason": "门禁模块不允许降级"
+                            }
+                        },
+                        "双代理冲突门": {
+                            "id": "dual-agent-conflict-gate",
+                            "name": "双代理冲突检测门",
+                            "description": "治理: 检测A/B链间信号冲突，防止矛盾决策执行",
+                            "version": "1.0.0",
+                            "chain": "A",
+                            "category": "governance",
+                            "tags": ["conflict-detection", "gate", "dual-agent", "governance"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R3",
+                            "estimated_tokens": 500,
+                            "estimated_latency_ms": 2000,
+                            "confidence_range": [75, 95],
+                            "applicable_stages": ["validate"],
+                            "applicable_intents": ["execute_trade", "strategy_verify", "risk_alert"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 83,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "skill",
+                                "execution_engine": "typescript",
+                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts"
+                            },
+                            "fallback": {
+                                "enabled": False,
+                                "fallback_reason": "冲突检测必须严格执行"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+
+        "C_domain": {
+            "name": "经典量化能力",
+            "description": "经典技术指标和量化策略能力集",
+            "color": "#3b82f6",
+
+            "categories": {
+                "指标库": {
+                    "name": "指标库",
+                    "description": "RSI/MACD/MA/布林带/ATR等经典技术指标",
+
+                    "modules": {
+                        "C1_技术扫描": {
+                            "id": "classic-indicator-scan",
+                            "name": "技术指标扫描",
+                            "description": "C1: 多周期技术指标扫描（RSI/MACD/MA/布林带/波动率）",
+                            "version": "2.0.0",
+                            "chain": "C",
+                            "category": "classic-indicators",
+                            "tags": ["rsi", "macd", "moving-average", "bollinger-bands", "volatility"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 300,
+                            "estimated_latency_ms": 1500,
+                            "confidence_range": [60, 85],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["market_query", "deep_analysis", "execute_trade"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 70,
+                            "historical_calls": 5280,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "both",
+                                "base_url": "http://127.0.0.1:8092",
+                                "endpoint": "/three_screen/daily/signal",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/c1_tech_scan.py",
+                                "py_module": "core.modules.classic_indicators.ClassicIndicatorsClient"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "local_calculation",
+                                "fallback_reason": "API不可用时本地TA-lib计算"
+                            }
+                        },
+                        "C2_Regime识别": {
+                            "id": "classic-regime-detection",
+                            "name": "市场状态识别",
+                            "description": "C2: 自动识别市场状态（趋势/震荡/波动率）",
+                            "version": "1.0.0",
+                            "chain": "C",
+                            "category": "classic-indicators",
+                            "tags": ["regime-detection", "trend", "range", "market-state"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 400,
+                            "estimated_latency_ms": 2000,
+                            "confidence_range": [65, 85],
+                            "applicable_stages": ["analysis", "design"],
+                            "applicable_intents": ["market_query", "deep_analysis", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 72,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "typescript",
+                                "base_url": "http://127.0.0.1:8092",
+                                "endpoint": "/signals/hyperliquid/regime_hybrid",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "local_calculation",
+                                "fallback_reason": "MA斜率+ATR本地判断"
+                            }
+                        }
+                    }
+                },
+
+                "策略库": {
+                    "name": "策略库",
+                    "description": "经典10策略/马丁/突破等量化策略",
+
+                    "modules": {
+                        "C3_策略匹配": {
+                            "id": "classic-strategy-match",
+                            "name": "经典策略匹配",
+                            "description": "C3: 从策略库中匹配最适合当前市场状态的经典策略",
+                            "version": "1.0.0",
+                            "chain": "C",
+                            "category": "classic-strategy",
+                            "tags": ["strategy", "backtest", "classic-algorithms"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 350,
+                            "estimated_latency_ms": 1800,
+                            "confidence_range": [60, 80],
+                            "applicable_stages": ["design", "validate"],
+                            "applicable_intents": ["deep_analysis", "execute_trade", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 68,
+                            "historical_calls": 0,
+                            "dependencies": ["classic-regime-detection"],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "typescript",
+                                "base_url": "http://127.0.0.1:8092",
+                                "endpoint": "/strategy/feeder/capabilities",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "static_list",
+                                "fallback_reason": "静态策略列表"
+                            }
+                        }
+                    }
+                },
+
+                "回测引擎": {
+                    "name": "回测引擎",
+                    "description": "历史回测与参数优化",
+
+                    "modules": {
+                        "C4_回测验证": {
+                            "id": "classic-backtest",
+                            "name": "历史回测验证",
+                            "description": "C4: 基于历史数据回测验证策略表现",
+                            "version": "1.0.0",
+                            "chain": "C",
+                            "category": "classic-backtest",
+                            "tags": ["backtest", "performance", "risk-metrics"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 500,
+                            "estimated_latency_ms": 3000,
+                            "confidence_range": [70, 90],
+                            "applicable_stages": ["validate", "execute"],
+                            "applicable_intents": ["strategy_verify", "execute_trade", "risk_alert"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 75,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "typescript",
+                                "base_url": "http://127.0.0.1:8092",
+                                "endpoint": "/three_screen/weekly/status",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "static_metrics",
+                                "fallback_reason": "静态指标估算"
+                            }
+                        }
+                    }
+                },
+
+                "执行引擎": {
+                    "name": "执行引擎",
+                    "description": "参数优化与条件单执行",
+
+                    "modules": {
+                        "C5_参数优化": {
+                            "id": "classic-parameter-optimization",
+                            "name": "参数优化",
+                            "description": "C5: 优化策略参数，确定最佳入场/离场阈值",
+                            "version": "1.0.0",
+                            "chain": "C",
+                            "category": "classic-execution",
+                            "tags": ["optimization", "parameters", "tuning"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 400,
+                            "estimated_latency_ms": 2500,
+                            "confidence_range": [65, 85],
+                            "applicable_stages": ["execute", "validate"],
+                            "applicable_intents": ["execute_trade", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 70,
+                            "historical_calls": 0,
+                            "dependencies": ["classic-backtest"],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "typescript",
+                                "base_url": "http://127.0.0.1:8092",
+                                "endpoint": "/three_screen/daily/signal",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "default_params",
+                                "fallback_reason": "保守默认参数"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+
+        "F_domain": {
+            "name": "基本面能力",
+            "description": "基本面分析能力集：新闻、资金、情绪、链上、宏观",
+            "color": "#10b981",
+
+            "categories": {
+                "新闻聚合": {
+                    "name": "新闻聚合",
+                    "description": "新闻采集与摘要分析",
+
+                    "modules": {
+                        "F1_新闻": {
+                            "id": "fundamental-news-scanner",
+                            "name": "新闻事件扫描",
+                            "description": "F1: 聚合和分类近期重要新闻事件",
+                            "version": "1.0.0",
+                            "chain": "F",
+                            "category": "fundamental-news",
+                            "tags": ["news", "events", "sentiment"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 400,
+                            "estimated_latency_ms": 2000,
+                            "confidence_range": [40, 70],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["market_query", "deep_analysis", "risk_alert"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 55,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "both",
+                                "base_url": "http://127.0.0.1:9094",
+                                "endpoint": "/fundamental/news/snapshot",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/f1_news.py",
+                                "py_module": "core.modules.fundamental_api.FundamentalAPIClient"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "cached_data",
+                                "fallback_reason": "使用缓存新闻数据"
+                            }
+                        }
+                    }
+                },
+
+                "资金流分析": {
+                    "name": "资金流分析",
+                    "description": "ETF资金流、交易所净流入、大额转账",
+
+                    "modules": {
+                        "F2_资金流": {
+                            "id": "fundamental-flow-analysis",
+                            "name": "资金流向分析",
+                            "description": "F2: 分析大额转账、交易所资金流入流出",
+                            "version": "1.0.0",
+                            "chain": "F",
+                            "category": "fundamental-flow",
+                            "tags": ["flow", "on-chain", "exchange", "whale"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 400,
+                            "estimated_latency_ms": 2000,
+                            "confidence_range": [40, 70],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["market_query", "deep_analysis", "risk_alert"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 58,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "both",
+                                "base_url": "http://127.0.0.1:9094",
+                                "endpoint": "/fundamental/flow/snapshot",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/f2_fund_flow.py",
+                                "py_module": "core.modules.fundamental_api.FundamentalAPIClient"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "local_estimate",
+                                "fallback_reason": "本地估算资金流向"
+                            }
+                        }
+                    }
+                },
+
+                "情绪分析": {
+                    "name": "情绪分析",
+                    "description": "恐惧贪婪指数、社交媒体情绪",
+
+                    "modules": {
+                        "F3_情绪": {
+                            "id": "fundamental-sentiment",
+                            "name": "市场情绪分析",
+                            "description": "F3: 分析社交媒体、恐惧贪婪指数等情绪指标",
+                            "version": "1.0.0",
+                            "chain": "F",
+                            "category": "fundamental-sentiment",
+                            "tags": ["sentiment", "social-media", "fear-greed"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "production",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 350,
+                            "estimated_latency_ms": 1800,
+                            "confidence_range": [40, 65],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["market_query", "deep_analysis"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 52,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "both",
+                                "base_url": "http://127.0.0.1:9094",
+                                "endpoint": "/fundamental/sentiment/snapshot",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "py_path": "experiments/ab-trading/core/nodes/f3_sentiment.py",
+                                "py_module": "core.modules.fundamental_api.FundamentalAPIClient"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "default_neutral",
+                                "fallback_reason": "默认中性情绪"
+                            }
+                        }
+                    }
+                },
+
+                "链上指标": {
+                    "name": "链上指标",
+                    "description": "MVRV、NUPL、活跃地址等链上指标",
+
+                    "modules": {
+                        "F4_链上": {
+                            "id": "fundamental-onchain",
+                            "name": "链上指标分析",
+                            "description": "F4: 评估MVRV, NUPL, 活跃地址等链上指标",
+                            "version": "1.0.0",
+                            "chain": "F",
+                            "category": "fundamental-onchain",
+                            "tags": ["on-chain", "mvrv", "nupl", "active-addresses"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "beta",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 450,
+                            "estimated_latency_ms": 2500,
+                            "confidence_range": [45, 75],
+                            "applicable_stages": ["analysis", "validate"],
+                            "applicable_intents": ["deep_analysis", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 60,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "typescript",
+                                "base_url": "http://127.0.0.1:9094",
+                                "endpoint": "/fundamental/onchain/snapshot",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "skip",
+                                "fallback_reason": "链上数据非必须，可跳过"
+                            }
+                        }
+                    }
+                },
+
+                "宏观数据": {
+                    "name": "宏观数据",
+                    "description": "利率、CPI、就业、DXY等宏观因素",
+
+                    "modules": {
+                        "F5_宏观": {
+                            "id": "fundamental-macro",
+                            "name": "宏观经济分析",
+                            "description": "F5: 分析利率、CPI、就业等宏观经济因素",
+                            "version": "1.0.0",
+                            "chain": "F",
+                            "category": "fundamental-macro",
+                            "tags": ["macro", "interest-rate", "cpi", "inflation", "fed"],
+                            "lifecycle": {
+                                "status": "active",
+                                "phase": "beta",
+                                "deprecated": False,
+                                "replaced_by": None
+                            },
+                            "security_level": "R0",
+                            "estimated_tokens": 450,
+                            "estimated_latency_ms": 2800,
+                            "confidence_range": [45, 70],
+                            "applicable_stages": ["research", "analysis"],
+                            "applicable_intents": ["deep_analysis", "strategy_verify"],
+                            "market_conditions": ["trending", "ranging", "volatile"],
+                            "historical_accuracy": 55,
+                            "historical_calls": 0,
+                            "dependencies": [],
+                            "adapter": {
+                                "type": "api",
+                                "execution_engine": "typescript",
+                                "base_url": "http://127.0.0.1:9094",
+                                "endpoint": "/fundamental/macro/snapshot",
+                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts"
+                            },
+                            "fallback": {
+                                "enabled": True,
+                                "fallback_type": "skip",
+                                "fallback_reason": "宏观数据非必须，可跳过"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+output_path = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/registry/module_registry.yaml"
+json_output_path = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/registry/module_registry.json"
+
+with open(output_path, 'w', encoding='utf-8') as f:
+    yaml.dump(registry, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+with open(json_output_path, 'w', encoding='utf-8') as f:
+    json.dump(registry, f, ensure_ascii=False, indent=2)
+
+print(f"✅ 注册表已生成: {output_path}")
+print(f"✅ JSON版本已生成: {json_output_path}")
+
+# 统计模块数
+count = 0
+for domain in registry['domains'].values():
+    for cat in domain['categories'].values():
+        count += len(cat['modules'])
+
+print(f"📊 总模块数: {count}")
+print(f"   - A_domain: {sum(len(c['modules']) for c in registry['domains']['A_domain']['categories'].values())}")
+print(f"   - C_domain: {sum(len(c['modules']) for c in registry['domains']['C_domain']['categories'].values())}")
+print(f"   - F_domain: {sum(len(c['modules']) for c in registry['domains']['F_domain']['categories'].values())}")

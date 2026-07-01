@@ -1,0 +1,296 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WorkBuddy OS Module Registry Schema",
+  "description": "WorkBuddy OS 模块化注册表 Schema v2.0",
+  "type": "object",
+  "required": ["version", "updated_at", "schema_version", "total_modules", "domains"],
+  "additionalProperties": false,
+
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "注册表版本号（语义化版本）",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "updated_at": {
+      "type": "string",
+      "description": "最后更新时间（ISO 8601格式）",
+      "format": "date-time"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "Schema版本号"
+    },
+    "total_modules": {
+      "type": "integer",
+      "description": "模块总数",
+      "minimum": 0
+    },
+
+    "domains": {
+      "type": "object",
+      "description": "粗粒度：领域层（A/C/F/G/T）",
+      "patternProperties": {
+        "^[A-Z]_domain$": {
+          "$ref": "#/definitions/Domain"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+
+  "definitions": {
+    "Domain": {
+      "type": "object",
+      "description": "领域定义（粗粒度）",
+      "required": ["name", "description", "color", "categories"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "color": { "type": "string" },
+        "categories": {
+          "type": "object",
+          "description": "中粒度：子系统分类",
+          "additionalProperties": { "$ref": "#/definitions/Category" }
+        }
+      }
+    },
+
+    "Category": {
+      "type": "object",
+      "description": "子系统分类（中粒度）",
+      "required": ["name", "description", "modules"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "modules": {
+          "type": "object",
+          "description": "细粒度：模块列表",
+          "additionalProperties": { "$ref": "#/definitions/Module" }
+        }
+      }
+    },
+
+    "Module": {
+      "type": "object",
+      "description": "模块定义（细粒度）",
+      "required": [
+        "id", "name", "description", "version", "chain", "category",
+        "tags", "lifecycle", "security_level",
+        "estimated_tokens", "estimated_latency_ms", "confidence_range",
+        "applicable_stages", "applicable_intents",
+        "market_conditions", "historical_accuracy", "historical_calls",
+        "dependencies", "adapter", "fallback"
+      ],
+      "additionalProperties": false,
+
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "全局唯一模块ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "可读名称"
+        },
+        "description": {
+          "type": "string",
+          "description": "简短描述"
+        },
+        "version": {
+          "type": "string",
+          "description": "模块版本号（语义化版本）",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "chain": {
+          "type": "string",
+          "description": "所属链",
+          "enum": ["A", "C", "F", "G", "T"]
+        },
+        "category": {
+          "type": "string",
+          "description": "子系统分类"
+        },
+        "tags": {
+          "type": "array",
+          "description": "标签列表，用于检索",
+          "items": { "type": "string" },
+          "minItems": 0
+        },
+
+        "lifecycle": {
+          "$ref": "#/definitions/Lifecycle"
+        },
+
+        "security_level": {
+          "type": "string",
+          "description": "安全等级（R0=公开/R1=内部/R2=敏感/R3=关键）",
+          "enum": ["R0", "R1", "R2", "R3"]
+        },
+
+        "estimated_tokens": {
+          "type": "integer",
+          "description": "预估token消耗",
+          "minimum": 0
+        },
+        "estimated_latency_ms": {
+          "type": "integer",
+          "description": "预估执行延迟(毫秒)",
+          "minimum": 0
+        },
+        "confidence_range": {
+          "type": "array",
+          "description": "典型置信度范围[min, max]",
+          "items": { "type": "number", "minimum": 0, "maximum": 100 },
+          "minItems": 2,
+          "maxItems": 2
+        },
+
+        "applicable_stages": {
+          "type": "array",
+          "description": "适用的思维阶段",
+          "items": {
+            "type": "string",
+            "enum": ["research", "analysis", "design", "validate", "execute"]
+          },
+          "minItems": 1
+        },
+        "applicable_intents": {
+          "type": "array",
+          "description": "适用的意图类型",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "market_conditions": {
+          "type": "array",
+          "description": "适用的市场条件",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+
+        "historical_accuracy": {
+          "type": "number",
+          "description": "历史准确率(0-100)",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "historical_calls": {
+          "type": "integer",
+          "description": "历史调用次数",
+          "minimum": 0
+        },
+
+        "dependencies": {
+          "type": "array",
+          "description": "依赖的其他模块ID列表",
+          "items": { "type": "string" }
+        },
+
+        "adapter": {
+          "$ref": "#/definitions/Adapter"
+        },
+
+        "fallback": {
+          "$ref": "#/definitions/Fallback"
+        }
+      }
+    },
+
+    "Lifecycle": {
+      "type": "object",
+      "description": "生命周期信息",
+      "required": ["status", "phase", "deprecated", "replaced_by"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "状态",
+          "enum": ["active", "inactive", "deprecated", "experimental"]
+        },
+        "phase": {
+          "type": "string",
+          "description": "阶段",
+          "enum": ["prototype", "beta", "production", "eol"]
+        },
+        "deprecated": {
+          "type": "boolean",
+          "description": "是否已废弃"
+        },
+        "replaced_by": {
+          "type": ["string", "null"],
+          "description": "替代模块ID（如果废弃）"
+        }
+      }
+    },
+
+    "Adapter": {
+      "type": "object",
+      "description": "适配器配置",
+      "required": ["type", "execution_engine"],
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "适配器类型",
+          "enum": ["skill", "api", "local", "external", "mcp"]
+        },
+        "execution_engine": {
+          "type": "string",
+          "description": "执行引擎",
+          "enum": ["python", "typescript", "both", "external"]
+        },
+        "skill_md": {
+          "type": "string",
+          "description": "SKILL.md路径（type=skill时）"
+        },
+        "base_url": {
+          "type": "string",
+          "description": "API基础URL（type=api时）"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "API端点（type=api时）"
+        },
+        "ts_path": {
+          "type": "string",
+          "description": "TS侧实现路径"
+        },
+        "py_path": {
+          "type": "string",
+          "description": "Python侧实现路径"
+        },
+        "py_module": {
+          "type": "string",
+          "description": "Python模块路径"
+        }
+      }
+    },
+
+    "Fallback": {
+      "type": "object",
+      "description": "降级配置",
+      "required": ["enabled"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "是否启用降级"
+        },
+        "fallback_module": {
+          "type": "string",
+          "description": "降级到的模块ID"
+        },
+        "fallback_type": {
+          "type": "string",
+          "description": "降级类型"
+        },
+        "fallback_reason": {
+          "type": "string",
+          "description": "降级说明"
+        }
+      }
+    }
+  }
+}

@@ -3,11 +3,18 @@
 链路规划器 (ChainPlanner) — 零Token，纯本地计算
 
 职责：夹在 IntentGateway 和 ChainRouter 之间，
-过一遍技能清单，基于四个维度规划最优动态思维链路径：
+过一遍技能清单，基于五个维度规划最优动态思维链路径：
+  0. 模式自适应升级：连续HOLD/强迫性重复时自动升级预算模式
   1. Token预算过滤：剪掉超预算的高成本节点
   2. 知识库命中提升：有高分策略时升级为快速路径
   3. 历史表现过滤：当前Regime+标的组合的节点命中率
   4. 标的覆盖检查：小币/冷门标的标记可能无数据的节点
+
+模式自适应机制：
+  - 连续3次HOLD → lean升级为standard
+  - 连续5次HOLD → standard升级为full
+  - 做梦部检测到强迫性重复 → 强制升级一档
+  - 升级后本轮生效，下轮自动复位（避免持续高成本）
 
 输出 PlanResult：最优节点序列 + 剪枝记录 + 规划理由
 （规划理由会写入图压缩节点，确保链路可追溯）
@@ -76,6 +83,10 @@ class PlanResult:
     plan_rationale: str               # 规划理由（写入图节点）
     knowledge_hit:  Optional[Dict]    # 命中的知识库策略（如有）
     shortcut_taken: bool = False      # 是否走了快捷路径
+    auto_escalated: bool = False      # 是否触发了模式自动升级
+    escalation_reason: str = ""              # 模式升级原因
+    original_mode: str = ""               # 升级前的原始模式
+    escalation_level: int = 0            # 升级档数（0=未升级, 1=升1档, 2=升2档）
 
 
 class ChainPlanner:
@@ -87,16 +98,25 @@ class ChainPlanner:
         # 把 plan.planned_chain 传给 ChainRouter
     """
 
-    def __init__(self, token_budget: int = 30000):
+    def __init__(self, token_budget: int = 30000, auto_escalation: bool = True):
         self.token_budget = token_budget
         self._skill_costs = NODE_COST.copy()
+        self.auto_escalation = auto_escalation
+        self._original_budget = token_budget
 
     # ── 主入口 ────────────────────────────────────────────────────────────
 
-    def plan(self, intent, mkt: Dict, memory: Dict) -> PlanResult:
+    def plan(self, intent, mkt: Dict, memory: Dict,
+             force_escalation: bool = False) -> PlanResult:
         """
-        四维规划：预算 → 知识库 → 历史表现 → 标的覆盖
+        五维规划：模式自适应 → 知识库 → 预算 → 历史表现 → 标的覆盖
         全部本地计算，零 Token 消耗
+
+        Args:
+            intent: 意图识别结果
+            mkt: 市场数据
+            memory: 记忆数据
+            force_escalation: 强制升级一档（做梦部触发时使用）
         """
         coin    = mkt.get("coin", "BTC").upper()
         regime  = mkt.get("regime", "UNKNOWN")
@@ -112,6 +132,19 @@ class ChainPlanner:
         # 从意图层拿到基础链和扩展池
         chain = list(intent.base_chain)
         extend_pool = list(intent.extend_nodes)
+
+        # ── 维度0：模式自适应升级（连续HOLD/强迫性重复时自动升级）──
+        auto_esc = False
+        esc_reason = ""
+        esc_level = 0
+        orig_mode = ""
+
+        if self.auto_escalation or force_escalation:
+            auto_esc, esc_reason, esc_level, orig_mode = self._apply_auto_escalation(
+                memory, force_escalation, mkt
+            )
+            if auto_esc:
+                rationale_parts.append(f"[自适应] {esc_reason}（升{esc_level}档：{orig_mode}→{self._budget_mode_name()}）")
 
         # ── 维度1：知识库命中检查（最高优先级）──────────────────────────
         kb_hit = self._check_knowledge_base(regime, coin)
@@ -179,7 +212,88 @@ class ChainPlanner:
             plan_rationale   = " | ".join(rationale_parts),
             knowledge_hit    = kb_hit,
             shortcut_taken   = bool(kb_hit and kb_hit.get("score", 0) >= 80),
+            auto_escalated   = auto_esc,
+            escalation_reason= esc_reason,
+            original_mode    = orig_mode or budget_mode,
+            escalation_level = esc_level,
         )
+
+    # ── 维度0：模式自适应升级 ─────────────────────────────────────────
+
+    def _budget_mode_name(self) -> str:
+        """根据当前 token_budget 返回模式名称"""
+        if self.token_budget >= 25000:
+            return "full"
+        elif self.token_budget >= 12000:
+            return "standard"
+        else:
+            return "lean"
+
+    def _escalate_one_level(self) -> bool:
+        """升级一档预算模式，返回是否成功升级"""
+        current_mode = self._budget_mode_name()
+        if current_mode == "lean":
+            self.token_budget = 15000  # standard
+            return True
+        elif current_mode == "standard":
+            self.token_budget = 30000  # full
+            return True
+        else:  # full 已是最高
+            return False
+
+    def _apply_auto_escalation(
+        self, memory: Dict, force_escalation: bool, mkt: Dict
+    ) -> Tuple[bool, str, int, str]:
+        """
+        模式自适应升级逻辑：
+        - 连续3次HOLD → lean升级为standard（auto_escalation=True时）
+        - 连续5次HOLD → standard升级为full（auto_escalation=True时）
+        - force_escalation=True → 强制升级一档（做梦部触发，不受auto_escalation开关影响）
+
+        返回: (是否升级, 升级原因, 升级档数, 原始模式名)
+        """
+        original_mode = self._budget_mode_name()
+        recent = memory.get("recent_decisions", [])[-10:]
+
+        # 计算连续HOLD次数（从最近倒推，兼容多种HOLD写法）
+        consecutive_holds = 0
+        for d in reversed(recent):
+            action = (d.get("action") or "").upper()
+            if action in ("HOLD", "HOLD_WAIT", "WAIT", "NONE"):
+                consecutive_holds += 1
+            else:
+                break
+
+        escalated_level = 0
+        reason = ""
+
+        # 自动升级规则（仅当 auto_escalation=True 时生效）
+        if self.auto_escalation:
+            # 规则1：连续3次HOLD → 升1档
+            if consecutive_holds >= 3 and self._budget_mode_name() == "lean":
+                if self._escalate_one_level():
+                    escalated_level = 1
+                    reason = f"连续{consecutive_holds}次HOLD，自动升级预算模式"
+
+            # 规则2：连续5次HOLD → 再升1档（共2档）
+            if consecutive_holds >= 5 and self._budget_mode_name() == "standard":
+                if self._escalate_one_level():
+                    escalated_level = 2
+                    reason = f"连续{consecutive_holds}次HOLD，自动升级至full模式"
+
+        # 规则3：强制升级（做梦部触发强迫性重复检测，不受auto_escalation影响）
+        if force_escalation and self._budget_mode_name() != "full":
+            prev_level = escalated_level
+            if self._escalate_one_level():
+                escalated_level = prev_level + 1
+                if reason:
+                    reason += " + 做梦部强迫性重复检测触发"
+                else:
+                    reason = "做梦部强迫性重复检测触发，强制升级预算模式"
+
+        if escalated_level > 0:
+            return True, reason, escalated_level, original_mode
+        return False, "", 0, original_mode
 
     # ── 维度1：知识库命中 ────────────────────────────────────────────────
 
@@ -266,7 +380,9 @@ class ChainPlanner:
 
         # 统计各节点在当前 Regime 下的贡献
         # 简化：如果近期相同 regime 下 HOLD 率 > 80%，说明链路效果差，不剪节点但记录
-        hold_rate = sum(1 for d in recent if d.get("action") == "HOLD"
+        def _is_hold(act):
+            return (act or "").upper() in ("HOLD", "HOLD_WAIT", "WAIT", "NONE")
+        hold_rate = sum(1 for d in recent if _is_hold(d.get("action"))
                         and d.get("regime", "") == regime) / max(len(recent), 1)
 
         if hold_rate > 0.8 and len(recent) >= 5:
