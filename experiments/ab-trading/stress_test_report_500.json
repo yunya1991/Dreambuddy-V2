@@ -1,0 +1,251 @@
+{
+  "test_id": "stress_test_20260701_145020",
+  "test_name": "Dreambuddy OS 500轮多场景压力测试",
+  "start_time": "2026-07-01T14:50:20.770094",
+  "end_time": "2026-07-01T14:50:20.774801",
+  "total_rounds": 488,
+  "total_time_ms": "4.69",
+  "total_time_seconds": "0.00",
+  "overall_tps": "103989.25",
+  "overall_success_rate": "99.18%",
+  "scenarios": [
+    {
+      "scenario_id": "S01",
+      "scenario_name": "S层三层递进测试",
+      "total_rounds": 50,
+      "success_rounds": 50,
+      "failed_rounds": 0,
+      "success_rate": "100.00%",
+      "total_time_ms": "0.21",
+      "avg_latency_ms": "0.00",
+      "p50_ms": "0.00",
+      "p95_ms": "0.01",
+      "p99_ms": "0.03",
+      "tps": "233796.21",
+      "errors": [],
+      "details": {
+        "test_queries_count": 10,
+        "average_objective_extraction_ms": 0.004277229309082031
+      }
+    },
+    {
+      "scenario_id": "S02",
+      "scenario_name": "意图识别引擎测试(6种类型)",
+      "total_rounds": 50,
+      "success_rounds": 50,
+      "failed_rounds": 0,
+      "success_rate": "100.00%",
+      "total_time_ms": "0.15",
+      "avg_latency_ms": "0.00",
+      "p50_ms": "0.00",
+      "p95_ms": "0.00",
+      "p99_ms": "0.01",
+      "tps": "330781.07",
+      "errors": [],
+      "details": {
+        "intent_distribution": {
+          "deep_analysis": 9,
+          "market_query": 8,
+          "risk_alert": 10,
+          "strategy_verify": 7,
+          "scenario_sim": 6,
+          "execute_trade": 10
+        }
+      }
+    },
+    {
+      "scenario_id": "A01",
+      "scenario_name": "图编排引擎测试(四维规划)",
+      "total_rounds": 50,
+      "success_rounds": 50,
+      "failed_rounds": 0,
+      "success_rate": "100.00%",
+      "total_time_ms": "0.10",
+      "avg_latency_ms": "0.00",
+      "p50_ms": "0.00",
+      "p95_ms": "0.00",
+      "p99_ms": "0.00",
+      "tps": "520385.11",
+      "errors": [],
+      "details": {
+        "available_nodes_count": 0,
+        "registry_stats": {
+          "total_nodes": 0,
+          "nodes": []
+        }
+      }
+    },
+    {
+      "scenario_id": "A02",
+      "scenario_name": "三链结合策略测试",
+      "total_rounds": 50,
+      "success_rounds": 50,
+      "failed_rounds": 0,
+      "success_rate": "100.00%",
+      "total_time_ms": "0.31",
+      "avg_latency_ms": "0.01",
+      "p50_ms": "0.00",
+      "p95_ms": "0.01",
+      "p99_ms": "0.06",
+      "tps": "160210.24",
+      "errors": [],
+      "details": {
+        "phase2_trigger_count": 45
+      }
+    },
+    {
+      "scenario_id": "C01",
+      "scenario_name": "反思决策引擎测试(5种决策)",
+      "total_rounds": 50,
+      "success_rounds": 50,
+      "failed_rounds": 0,
+      "success_rate": "100.00%",
+      "total_time_ms": "0.07",
+      "avg_latency_ms": "0.00",
+      "p50_ms": "0.00",
+      "p95_ms": "0.00",
+      "p99_ms": "0.00",
+      "tps": "710898.98",
+      "errors": [],
+      "details": {
+        "decision_distribution": {
+          "REDO": 31,
+          "CONTINUE": 13,
+          "INSERT_BEFORE": 5,
+          "EARLY_TERMINATE": 1
+        },
+        "expected_distribution": {
+          "CONTINUE": "40-50%",
+          "REDO": "15-20%",
+          "INSERT_BEFORE": "10-15%",
+          "JUMP_TO": "10-20%",
+          "EARLY_TERMINATE": "5-10%"
+        }
+      }
+    },
+    {
+      "scenario_id": "C02",
+      "scenario_name": "C层节点执行测试",
+      "total_rounds": 70,
+      "success_rounds": 70,
+      "failed_rounds": 0,
+      "success_rate": "100.00%",
+      "total_time_ms": "0.64",
+      "avg_latency_ms": "0.01",
+      "p50_ms": "0.01",
+      "p95_ms": "0.01",
+      "p99_ms": "0.02",
+      "tps": "108781.50",
+      "errors": [],
+      "details": {
+        "tested_nodes": [
+          "classic-indicator-scan",
+          "fundamental-fund-flow",
+          "fundamental-sentiment",
+          "dream-contradiction-theory",
+          "dream-first-principles"
+        ],
+        "execution_mode": "UnifiedNodeExecutor"
+      }
+    },
+    {
+      "scenario_id": "G01",
+      "scenario_name": "G层BAC三层压缩测试",
+      "total_rounds": 40,
+      "success_rounds": 40,
+      "failed_rounds": 0,
+      "success_rate": "100.00%",
+      "total_time_ms": "1.07",
+      "avg_latency_ms": "0.03",
+      "p50_ms": "0.03",
+      "p95_ms": "0.04",
+      "p99_ms": "0.05",
+      "tps": "37307.57",
+      "errors": [],
+      "details": {
+        "compression_strategies_tested": [
+          "VALUE_PRIORITY",
+          "PATH_PRESERVE",
+          "CRITICAL_ONLY",
+          "SEMANTIC_AWARE"
+        ],
+        "avg_compression_by_strategy": {
+          "CRITICAL_ONLY": "avg_ratio=0.53, samples=13",
+          "VALUE_PRIORITY": "avg_ratio=0.63, samples=9",
+          "SEMANTIC_AWARE": "avg_ratio=0.42, samples=10",
+          "PATH_PRESERVE": "avg_ratio=0.47, samples=8"
+        }
+      }
+    },
+    {
+      "scenario_id": "E01",
+      "scenario_name": "自我进化闭环测试",
+      "total_rounds": 40,
+      "success_rounds": 40,
+      "failed_rounds": 0,
+      "success_rate": "100.00%",
+      "total_time_ms": "0.21",
+      "avg_latency_ms": "0.01",
+      "p50_ms": "0.01",
+      "p95_ms": "0.01",
+      "p99_ms": "0.01",
+      "tps": "193508.84",
+      "errors": [],
+      "details": {
+        "lessons_generated": 19,
+        "lesson_types": {
+          "S_成功规律": 12,
+          "F_失败规律": 7
+        }
+      }
+    },
+    {
+      "scenario_id": "P01",
+      "scenario_name": "并发执行压测",
+      "total_rounds": 48,
+      "success_rounds": 48,
+      "failed_rounds": 0,
+      "success_rate": "100.00%",
+      "total_time_ms": "0.54",
+      "avg_latency_ms": "0.01",
+      "p50_ms": "0.01",
+      "p95_ms": "0.02",
+      "p99_ms": "0.04",
+      "tps": "88223.75",
+      "errors": [],
+      "details": {
+        "threads": 6,
+        "rounds_per_thread": 8,
+        "wall_clock_time_ms": "1.41",
+        "effective_tps": "34128.94"
+      }
+    },
+    {
+      "scenario_id": "E02",
+      "scenario_name": "错误注入与降级测试",
+      "total_rounds": 40,
+      "success_rounds": 36,
+      "failed_rounds": 4,
+      "success_rate": "90.00%",
+      "total_time_ms": "0.02",
+      "avg_latency_ms": "0.00",
+      "p50_ms": "0.00",
+      "p95_ms": "0.00",
+      "p99_ms": "0.00",
+      "tps": "1823610.43",
+      "errors": [],
+      "details": {
+        "error_handling_stats": {
+          "injected_errors": 16,
+          "retry_success": 7,
+          "fallback_success": 5,
+          "final_failure": 4
+        }
+      }
+    }
+  ],
+  "system_stats": {
+    "total_nodes": 0,
+    "nodes": []
+  }
+}
