@@ -691,6 +691,9 @@ def get_module_executor() -> ModuleExecutor:
     return _global_executor
 
 
+# 别名：文档中使用 AdapterFramework，实际实现是 ModuleExecutor
+AdapterFramework = ModuleExecutor
+
 __all__ = [
     'BaseModuleAdapter',
     'SkillAdapter',
@@ -698,5 +701,6 @@ __all__ = [
     'LocalAdapter',
     'NodeAdapter',
     'ModuleExecutor',
+    'AdapterFramework',  # 文档别名
     'get_module_executor',
 ]
