@@ -58,6 +58,8 @@ class ChainResult:
     stop_loss:    Optional[float]
     take_profit:  Optional[float]
     dynamic_nodes_added: List[str]   # 记录哪些节点是动态追加的
+    compulsive_repetition_detected: bool = False  # 做梦部检测到强迫性重复
+    dream_department_reason: str = ""              # 做梦部原因说明
 
 
 class ChainRouter:
@@ -84,7 +86,33 @@ class ChainRouter:
     # ── 节点执行分发 ─────────────────────────────────────────────────────────
 
     def _run_node(self, node_id: str) -> NodeResult:
-        """根据节点ID分发到对应的实现函数"""
+        """根据节点ID分发到对应的实现函数
+        优先使用 core/nodes/ 独立模块（支持 Trae 直接调用）
+        降级到内部方法实现
+        """
+        # 节点数据累积（供下一个节点使用）
+        node_data = {}
+        for r in self.node_trace:
+            if r.data:
+                node_data.update(r.data)
+
+        # ── 优先：调用独立节点模块（使用统一注册表） ─────────────────────
+        try:
+            from core.nodes import get_node_handler
+            handler = get_node_handler(node_id)
+            if handler:
+                result = handler(self.mkt, self.memory, node_data)
+                return NodeResult(
+                    node_id,
+                    result.get("confidence", self._current_conf),
+                    result.get("direction", self._direction),
+                    result.get("rationale", []),
+                    result.get("data", {}),
+                )
+        except Exception as e:
+            pass  # 降级到内部实现
+
+        # ── 降级：内部方法实现 ─────────────────────────────────────────
         handlers = {
             # 技术/量化节点
             "C1_技术扫描":         self._node_c1_technical,
@@ -92,10 +120,10 @@ class ChainRouter:
             "C3_策略匹配":         self._node_c3_strategy,
             "C4_回测验证":         self._node_c4_backtest,
             # 执行环节点（A0内置于A2/A3，遵循三环架构）
-            "A1_调研(含A0)":       self._node_a1_with_a0,   # A1深度调研 + A0矛盾检测
-            "A2_分析(含A0)":       self._node_a2_with_a0,   # A2第一性原理 + A0矛盾排序
-            "A3_策略设计(含A0)":   self._node_a3_with_a0,   # A3策略设计 + A0矛盾验证
-            "A4_门禁":             self._node_a7_gate,       # A4战术验证门禁
+            "A1_调研(含A0)":       self._node_a1_with_a0,
+            "A2_分析(含A0)":       self._node_a2_with_a0,
+            "A3_策略设计(含A0)":   self._node_a3_with_a0,
+            "A4_门禁":             self._node_a7_gate,
             # 基本面节点
             "F2_资金流":           self._node_f2_fund_flow,
             "F3_情绪":             self._node_f3_sentiment,
@@ -150,6 +178,26 @@ class ChainRouter:
                         self.dynamic_added.append(n)
                 extend_injected = True
 
+        # ── 做梦部自动触发：连续HOLD + 最终结果仍为HOLD → 做潜意识分析 ──
+        recent = self.memory.get("recent_decisions", [])[-10:]
+        hold_streak = 0
+        for d in reversed(recent):
+            action = d.get("action", "")
+            if action in ("HOLD", "hold", "HOLD_WAIT"):
+                hold_streak += 1
+            else:
+                break
+        final_is_hold = (self._direction == "HOLD" or self._current_conf < 0.65)
+        dream_in_base = any("做梦部" in n for n in self.intent.base_chain)
+
+        if hold_streak >= 3 and final_is_hold and not dream_in_base:
+            dream_result = self._run_node("做梦部")
+            self.node_trace.append(dream_result)
+            self.dynamic_added.append("做梦部")
+            if dream_result.direction != "HOLD":
+                self._direction = dream_result.direction
+            self._current_conf = dream_result.confidence
+
         # 读取 A7 门禁结果
         gate_result = next((r for r in reversed(self.node_trace)
                             if "A7" in r.node_id or "A4_门禁" in r.node_id), None)
@@ -175,6 +223,17 @@ class ChainRouter:
         # 记录图压缩节点
         self._record_graph(gate_passed, pos_usdt)
 
+        # 检查做梦部是否检测到强迫性重复
+        compulsive_detected = False
+        dream_reason = ""
+        for node in self.node_trace:
+            if node.data and node.data.get("oneirology"):
+                hold_streak = node.data.get("hold_streak", 0)
+                if hold_streak >= 3:
+                    compulsive_detected = True
+                    dream_reason = f"做梦部检测到连续{hold_streak}次HOLD的强迫性重复模式"
+                    break
+
         return ChainResult(
             intent_type       = self.intent.intent_type,
             final_action      = self._direction if gate_passed else "HOLD",
@@ -188,6 +247,8 @@ class ChainRouter:
             stop_loss         = sl,
             take_profit       = tp,
             dynamic_nodes_added = self.dynamic_added,
+            compulsive_repetition_detected = compulsive_detected,
+            dream_department_reason = dream_reason,
         )
 
     # ── 节点实现 ─────────────────────────────────────────────────────────────
@@ -626,8 +687,8 @@ COIN_TP: 新止盈价 或 NO_CHANGE"""
             except Exception as e:
                 reasoning.append(f"  LLM评估失败，降级到经典指标: {e}")
 
-        # ── 降级：经典指标离场评估 ────────────────────────────────────
-        from core.exit_module import check_classical_indicator_exits
+        # ── 降级：经典指标离场评估（优先调用10-经典指标系统API）──────────
+        from core.exit_module import check_l3_classical_exits_api
         from execution.aster_spot import get_candles
 
         for coin, pos in active_positions.items():
@@ -643,14 +704,14 @@ COIN_TP: 新止盈价 或 NO_CHANGE"""
             if price <= 0:
                 continue
 
-            should_exit, reason, _ = check_classical_indicator_exits(
+            should_exit, reason, _ = check_l3_classical_exits_api(
                 coin, price, pos["action"], candles
             )
             if should_exit:
                 exit_suggestions.append({
-                    "coin": coin, "reason": reason, "source": "classic_a9"
+                    "coin": coin, "reason": reason, "source": "classic_l3_api"
                 })
-                reasoning.append(f"  {coin}: 经典指标信号 → {reason}")
+                reasoning.append(f"  {coin}: L3经典指标API信号 → {reason}")
 
         reasoning.append(f"  经典指标: 建议离场{len(exit_suggestions)}个")
         return NodeResult(node_id, self._current_conf, self._direction,
@@ -697,7 +758,13 @@ COIN_TP: 新止盈价 或 NO_CHANGE"""
         reasoning     = ["[做梦部] 弗洛伊德梦的解析启动"]
 
         # 强迫性重复检测：连续HOLD且同原因
-        hold_streak = sum(1 for d in recent if d.get("action") == "HOLD")
+        hold_streak = 0
+        for d in reversed(recent):
+            action = d.get("action", "")
+            if action in ("HOLD", "hold", "HOLD_WAIT"):
+                hold_streak += 1
+            else:
+                break
         if hold_streak >= 3:
             reasoning.append(f"⚠️ [强迫性重复] 连续{hold_streak}次HOLD，系统在回避什么？")
             # 反事实推演：如果门禁不存在会怎样

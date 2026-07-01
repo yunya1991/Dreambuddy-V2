@@ -612,13 +612,16 @@ def check_llm_available() -> bool:
     """检查 LLM 是否可用（与 experiments 侧保持一致）"""
     try:
         from core.llm_client import llm_available, llm_quota_ok
-        return bool(llm_available()) and llm_quota_ok("a9_exit")
+        return llm_available() != "none" and llm_quota_ok("a9_exit")
     except Exception:
         return False
 
 
 def should_use_classic_driver() -> bool:
-    """判断是否应该使用经典指标驱动（无 LLM 时使用）"""
+    """判断是否应该使用经典指标驱动（无 BAC 架构时使用）
+    默认走 BAC 全量链路，LLM 只是增强选项。
+    只有显式设置 FORCE_CLASSIC_DRIVER 时才走经典模式。
+    """
     if os.environ.get("FORCE_CLASSIC_DRIVER", "").lower() in ("1", "true", "yes"):
         return True
-    return not check_llm_available()
+    return False

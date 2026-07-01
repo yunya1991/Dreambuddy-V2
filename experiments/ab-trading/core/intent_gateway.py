@@ -173,17 +173,20 @@ def _score_intent(mkt: Dict, memory: Dict, graph_ctx: List[Dict]) -> List[Tuple[
 
 
 def _build_chain(intent_type: str, confidence: float,
-                 memory: Dict, context: Dict) -> Tuple[List[str], List[str]]:
+                 memory: Dict, context: Dict,
+                 active_positions: Optional[Dict] = None) -> Tuple[List[str], List[str]]:
     """
     根据意图类型和置信度，从 skill_registry 构建 base_chain + extend_nodes
     base_chain: 必走（低成本）
     extend_nodes: 置信度不足时追加
     """
     loss_streaks = memory.get("loss_streaks", 0)
+    has_positions = bool(active_positions) and len(active_positions) > 0
 
     # ── 基础链（执行环最小闭环，遵循三环架构）────────────────────────────
     # A0矛盾Skill内置于A2/A3，节点名带"(含A0)"标识
     # chain_router._run_node 会自动在 A2/A3 内调用 A0 矛盾逻辑
+    # 有持仓时，A9 离场评估插入在 A4 门禁之前（先评估离场再开新仓）
     BASE_CHAINS = {
         # 趋势跟踪：技术+情绪零成本验证，再进A2(含A0内置)
         "TREND_FOLLOWING":  ["C1_技术扫描", "F2_资金流", "F3_情绪", "A2_分析(含A0)", "A4_门禁"],
@@ -230,7 +233,15 @@ def _build_chain(intent_type: str, confidence: float,
         },
     }
 
-    base = BASE_CHAINS.get(intent_type, BASE_CHAINS["UNCERTAIN"])
+    base = list(BASE_CHAINS.get(intent_type, BASE_CHAINS["UNCERTAIN"]))
+
+    # 有持仓时，在 A4 门禁之前插入 A9 离场评估节点
+    if has_positions and "A9_离场评估" not in base:
+        try:
+            idx = base.index("A4_门禁")
+            base.insert(idx, "A9_离场评估")
+        except ValueError:
+            base.append("A9_离场评估")
     extend = []
 
     rules = EXTEND_RULES.get(intent_type, {})
@@ -249,7 +260,8 @@ def _build_chain(intent_type: str, confidence: float,
     return base, extend
 
 
-def detect_intent(mkt: Dict, memory: Optional[Dict] = None) -> IntentResult:
+def detect_intent(mkt: Dict, memory: Optional[Dict] = None,
+                  active_positions: Optional[Dict] = None) -> IntentResult:
     """
     主入口：综合市场数据+记忆+图上下文，识别意图并构建链路
     """
@@ -268,7 +280,7 @@ def detect_intent(mkt: Dict, memory: Optional[Dict] = None) -> IntentResult:
         rationale += " [意图切换，置信度折扣]"
 
     # 3. 构建链路
-    base_chain, extend_nodes = _build_chain(top_intent, top_score, memory, {})
+    base_chain, extend_nodes = _build_chain(top_intent, top_score, memory, {}, active_positions)
 
     # 4. 附加上下文（传给链路各节点使用）
     context = {
