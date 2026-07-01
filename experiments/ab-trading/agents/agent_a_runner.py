@@ -57,8 +57,8 @@ UNIVERSE_A = [
 
 def fetch_market_context(client: HyperliquidClient) -> dict:
     """采集所有标的的市场数据（1H K线 + 资金费率）"""
-    mids = client.get_all_mids()
     opps = client.scan_opportunities()
+    mids = {o["coin"]: o["price"] for o in opps}
 
     coin_data = {}
     for coin in UNIVERSE_A:
@@ -81,8 +81,10 @@ def fetch_market_context(client: HyperliquidClient) -> dict:
 
         # 简化 EMA 计算
         def ema(prices, n):
-            if len(prices) < n:
+            if not prices or n <= 0:
                 return prices[-1] if prices else 0
+            if len(prices) < n:
+                return prices[-1]
             k = 2 / (n + 1)
             e = prices[-n]
             for p in prices[-n+1:]:
@@ -174,8 +176,11 @@ def run():
 
     # ── 2.5 L1 离场检查（基础止损止盈 + 移动止损）──────────────────────
     print(f"\n[离场] L1 基础离场检查...")
+    acct_for_exit = acct if not sim_mode else None
     memory["active_positions"], closed_trades = run_exit_check(
-        client, memory.get("active_positions", {}), agent_id="a", enable_trailing=True
+        client, memory.get("active_positions", {}),
+        agent_id="a", enable_trailing=True,
+        account_data=acct_for_exit,
     )
     if closed_trades:
         for ct in closed_trades:
@@ -267,7 +272,8 @@ def run():
             if coin and coin in memory["active_positions"]:
                 memory["active_positions"] = update_position_exit_levels(
                     memory["active_positions"], coin, new_sl, new_tp,
-                    sl_source="llm_smart", tp_source="llm_smart"
+                    sl_source="llm_smart", tp_source="llm_smart",
+                    client=client if (not sim_mode and AUTO_EXECUTE) else None
                 )
                 print(f"[离场] L2调整 {coin}: SL→{new_sl}, TP→{new_tp}")
 
@@ -309,6 +315,7 @@ def run():
                 take_profit_price=custom_tp,
                 cycle_id=cycle,
                 proxies=client.proxies,
+                client=client,
             )
             pos_info = memory["active_positions"][coin]
             print(f"[离场] L1 预设: SL={pos_info['stop_loss_price']} "
