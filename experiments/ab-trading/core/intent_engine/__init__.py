@@ -18,6 +18,9 @@ from .types import (
 )
 from .engine import IntentRecognitionEngine
 
+# 别名修复：文档/外部调用使用 IntentEngine，实际实现是 IntentRecognitionEngine
+IntentEngine = IntentRecognitionEngine
+
 __all__ = [
     'Objective',
     'KeyResult',
@@ -25,4 +28,5 @@ __all__ = [
     'ExecutionBlueprint',
     'IntentRecognitionResult',
     'IntentRecognitionEngine',
+    'IntentEngine',  # 别名，与文档保持一致
 ]
