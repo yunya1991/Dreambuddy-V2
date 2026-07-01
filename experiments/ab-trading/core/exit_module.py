@@ -43,6 +43,7 @@ from dataclasses import dataclass, field
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from execution.aster_spot import HyperliquidClient, get_candles
+from execution.onchain_tpsl import ensure_tpsl, update_tpsl, remove_tpsl, sync_all_tpsl, get_position_tpsl_status
 
 
 # ── 离场原因枚举 ──────────────────────────────────────────────────────────
@@ -148,10 +149,12 @@ def init_position(
     take_profit_price: Optional[float] = None,
     cycle_id: str = "",
     proxies=None,
+    client=None,
 ) -> Dict:
     """
     开仓时初始化持仓记录，自动计算 L1 基础止损止盈
     如果传入了自定义 SL/TP，则覆盖基础值
+    如果传入了 client，则同步设置链上 trigger order（原生止盈止损）
     """
     action = action.upper()
 
@@ -183,6 +186,26 @@ def init_position(
         "cycle_id": cycle_id,
     }
 
+    # 如果有 client，同步设置链上条件单（使用统一模块 onchain_tpsl）
+    if client is not None:
+        try:
+            result = ensure_tpsl(
+                client,
+                coin,
+                sl_price=sl_price,
+                tp_price=tp_price,
+            )
+            if result.get('ok'):
+                active_positions[coin]["onchain_tpsl"] = True
+                active_positions[coin]["tpsl_oids"] = result.get('oids', [])
+                active_positions[coin]["tpsl_action"] = result.get('action')
+            else:
+                active_positions[coin]["onchain_tpsl"] = False
+                active_positions[coin]["tpsl_error"] = result.get('error', 'unknown')
+        except Exception as e:
+            active_positions[coin]["onchain_tpsl"] = False
+            active_positions[coin]["tpsl_error"] = str(e)
+
     return active_positions
 
 
@@ -193,15 +216,18 @@ def update_position_exit_levels(
     new_take_profit: Optional[float] = None,
     sl_source: str = "smart_override",
     tp_source: str = "smart_override",
+    client=None,
 ) -> Dict:
     """
     L2/L3 层更新止损止盈（智能调整）
     保留 L1 基础值作为兜底（不清除，只是覆盖显示值）
+    如果传入了 client，则同步更新链上 trigger order
     """
     if coin not in active_positions:
         return active_positions
 
     pos = active_positions[coin]
+    updated = False
 
     if new_stop_loss is not None and new_stop_loss > 0:
         # 移动止损：只允许向有利方向移动
@@ -210,14 +236,37 @@ def update_position_exit_levels(
             if new_stop_loss > pos["stop_loss_price"]:
                 pos["stop_loss_price"] = new_stop_loss
                 pos["sl_source"] = sl_source
+                updated = True
         else:
             if new_stop_loss < pos["stop_loss_price"]:
                 pos["stop_loss_price"] = new_stop_loss
                 pos["sl_source"] = sl_source
+                updated = True
 
     if new_take_profit is not None and new_take_profit > 0:
         pos["take_profit_price"] = new_take_profit
         pos["tp_source"] = tp_source
+        updated = True
+
+    # 如果有 client 且有更新，同步修改链上条件单（使用统一模块 onchain_tpsl）
+    if updated and client is not None:
+        try:
+            result = update_tpsl(
+                client,
+                coin,
+                new_sl=pos["stop_loss_price"],
+                new_tp=pos["take_profit_price"],
+            )
+            if result.get('ok'):
+                pos["onchain_tpsl"] = True
+                pos["tpsl_oids"] = result.get('oids', [])
+                pos["tpsl_action"] = result.get('action')
+            else:
+                pos["onchain_tpsl"] = False
+                pos["tpsl_error"] = result.get('error', 'unknown')
+        except Exception as e:
+            pos["onchain_tpsl"] = False
+            pos["tpsl_error"] = str(e)
 
     active_positions[coin] = pos
     return active_positions
@@ -418,7 +467,82 @@ def check_classical_indicator_exits(
     return False, "", 0.0
 
 
-# ── 移动止损（Trailing Stop）─────────────────────────────────────────────
+# ── L3: 统一经典指标离场模块（代理调用 10-经典指标系统）──────────────────
+
+# 尝试从 10-经典指标系统 导入统一离场模块
+_L3_SYSTEM = None
+_L3_AVAILABLE = False
+
+try:
+    # 动态导入统一离场模块
+    _sys_path = str(Path(__file__).parent.parent.parent / "10-经典指标系统")
+    if _sys_path not in sys.path:
+        sys.path.insert(0, _sys_path)
+
+    from classic_exit_system import ClassicExitSystem, evaluate_exit, ExitResult
+
+    _L3_SYSTEM = ClassicExitSystem()
+    _L3_AVAILABLE = True
+except ImportError:
+    # 回退：使用本地实现
+    _L3_SYSTEM = None
+    _L3_AVAILABLE = False
+
+
+def check_l3_classical_exits_api(
+    coin: str,
+    current_price: float,
+    position_action: str,
+    candles_1h: List[Dict],
+) -> Tuple[bool, str, float]:
+    """
+    L3 经典指标离场（调用统一离场模块）
+
+    优先使用 10-经典指标系统 的 ClassicExitSystem 统一模块，
+    该模块内部已实现：
+    - API 模式：调用 ml_trade_service.py 的离场评估 API
+    - Local 模式：使用本地指标计算（API 不可用时的回退）
+
+    统一模块源码位置：10-经典指标系统/classic_exit_system.py
+
+    返回: (should_exit, reason, suggested_exit_price)
+    """
+    if _L3_AVAILABLE and _L3_SYSTEM is not None:
+        try:
+            result = _L3_SYSTEM.evaluate(
+                coin=coin,
+                current_price=current_price,
+                position_action=position_action,
+                candles_1h=candles_1h,
+            )
+            return (
+                result.should_exit,
+                result.reason,
+                result.exit_price,
+            )
+        except Exception:
+            # 降级到本地实现
+            pass
+
+    # 回退到本地简单实现
+    return check_classical_indicator_exits(coin, current_price, position_action, candles_1h)
+
+
+def check_l3_classical_exits_local(
+    coin: str,
+    current_price: float,
+    position_action: str,
+    candles_1h: List[Dict],
+) -> Tuple[bool, str, float]:
+    """
+    L3 本地模式离场（直接使用本地指标）
+
+    当统一模块不可用或需要强制使用本地实现时调用。
+
+    返回: (should_exit, reason, suggested_exit_price)
+    """
+    return check_classical_indicator_exits(coin, current_price, position_action, candles_1h)
+
 
 def update_trailing_stop(
     active_positions: Dict,
@@ -474,7 +598,14 @@ def execute_exit(
 ) -> Tuple[Dict, Optional[Dict], Dict]:
     """
     执行平仓操作，返回 (active_positions, closed_info, exec_result)
+    先取消链上条件单（使用统一模块），再市价平仓
     """
+    # 先取消所有条件单（防止平仓后还有挂单残留）
+    try:
+        remove_tpsl(client, coin)
+    except Exception:
+        pass
+
     exec_result = client.close_position(coin, tag)
 
     if not exec_result.get("ok"):
@@ -498,12 +629,16 @@ def execute_exit(
 def sync_positions_from_exchange(
     client: HyperliquidClient,
     active_positions: Dict,
+    account_data: Optional[Dict] = None,
 ) -> Dict:
     """
     将内存中的 active_positions 与交易所实际持仓同步
     防止因异常退出导致的记录不一致
     """
-    acct = client.get_account()
+    if account_data is not None:
+        acct = account_data
+    else:
+        acct = client.get_account()
     real_positions = acct.get("positions", {})
 
     # 1. 移除交易所已不存在的持仓
@@ -549,6 +684,7 @@ def run_exit_check(
     active_positions: Dict,
     agent_id: str = "a",
     enable_trailing: bool = True,
+    account_data: Optional[Dict] = None,
 ) -> Tuple[Dict, List[Dict]]:
     """
     执行完整的离场检查流程（L1 基础层）
@@ -564,7 +700,7 @@ def run_exit_check(
     closed_trades = []
 
     # 1. 同步持仓
-    active_positions = sync_positions_from_exchange(client, active_positions)
+    active_positions = sync_positions_from_exchange(client, active_positions, account_data)
 
     if not active_positions:
         return active_positions, closed_trades

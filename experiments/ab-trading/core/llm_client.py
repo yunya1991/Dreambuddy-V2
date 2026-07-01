@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 LLM 客户端 — 精打细算版
-优先级：Claude → DeepSeek → 规则降级
+优先级：Trae(免费额度) → Claude → DeepSeek → 规则降级
 每日配额控制：超出后自动回落规则引擎，系统不中断
 
 每日上限（可在 .env 中覆盖）：
+  LLM_DAILY_TRAE_LIMIT     = 24  次  (Trae 免费额度优先)
   LLM_DAILY_CLAUDE_LIMIT   = 10  次
   LLM_DAILY_DEEPSEEK_LIMIT = 20  次
 
@@ -23,14 +24,18 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / "config" / ".env")
 
 # ── 配置 ─────────────────────────────────────────────────────────────────
+TRAE_KEY       = os.environ.get("TRAE_API_KEY", "")
 ANTHROPIC_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
 DEEPSEEK_KEY   = os.environ.get("DEEPSEEK_API_KEY", "")
 
+TRAE_BASE      = os.environ.get("TRAE_BASE_URL", "https://api.trae.ai/v1")
+TRAE_MODEL     = os.environ.get("TRAE_MODEL", "claude-sonnet-4-5")
 DEEPSEEK_BASE  = "https://api.deepseek.com/v1"
 DEEPSEEK_MODEL = "deepseek-chat"
 ANTHROPIC_BASE = "https://api.anthropic.com/v1"
 CLAUDE_MODEL   = "claude-haiku-4-5-20251001"
 
+TRAE_DAILY_LIMIT     = int(os.environ.get("LLM_DAILY_TRAE_LIMIT",     "24"))
 CLAUDE_DAILY_LIMIT   = int(os.environ.get("LLM_DAILY_CLAUDE_LIMIT",   "10"))
 DEEPSEEK_DAILY_LIMIT = int(os.environ.get("LLM_DAILY_DEEPSEEK_LIMIT", "20"))
 
@@ -63,6 +68,7 @@ def _load_quota() -> dict:
     # 新的一天，重置
     return {
         "date":    _today(),
+        "trae":    0,
         "claude":  0,
         "deepseek": 0,
         "by_purpose": {},
@@ -80,6 +86,8 @@ def _can_use(provider: str, purpose: str) -> tuple[bool, str]:
     q = _load_quota()
 
     # 检查 provider 日总量
+    if provider == "trae" and q["trae"] >= TRAE_DAILY_LIMIT:
+        return False, f"Trae日配额已满({TRAE_DAILY_LIMIT}次)"
     if provider == "claude" and q["claude"] >= CLAUDE_DAILY_LIMIT:
         return False, f"Claude日配额已满({CLAUDE_DAILY_LIMIT}次)"
     if provider == "deepseek" and q["deepseek"] >= DEEPSEEK_DAILY_LIMIT:
@@ -108,6 +116,7 @@ def get_quota_status() -> dict:
     q = _load_quota()
     return {
         "date":      q["date"],
+        "trae":      f"{q.get('trae',0)}/{TRAE_DAILY_LIMIT}",
         "claude":    f"{q.get('claude',0)}/{CLAUDE_DAILY_LIMIT}",
         "deepseek":  f"{q.get('deepseek',0)}/{DEEPSEEK_DAILY_LIMIT}",
         "by_purpose": q.get("by_purpose", {}),
@@ -115,6 +124,25 @@ def get_quota_status() -> dict:
 
 
 # ── LLM 调用 ─────────────────────────────────────────────────────────────
+
+def _call_trae(prompt: str, system: str, max_tokens: int) -> str:
+    s = requests.Session(); s.trust_env = False
+    resp = s.post(
+        f"{TRAE_BASE}/chat/completions",
+        headers={"Authorization": f"Bearer {TRAE_KEY}",
+                 "Content-Type": "application/json"},
+        json={
+            "model":       TRAE_MODEL,
+            "messages":    [{"role": "system", "content": system},
+                            {"role": "user",   "content": prompt}],
+            "max_tokens":  max_tokens,
+            "temperature": 0.3,
+        },
+        timeout=20,
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"].strip()
+
 
 def _call_deepseek(prompt: str, system: str, max_tokens: int) -> str:
     s = requests.Session(); s.trust_env = False
@@ -161,16 +189,30 @@ def llm_chat(prompt: str,
              max_tokens: int = 300,
              purpose: str = "default") -> str:
     """
-    调用 LLM，内置三层保障：
+    调用 LLM，内置四层保障：
       1. 配额检查（超出 → 直接返回空，不调用）
-      2. Claude 优先（有 key + 未超配额）
-      3. DeepSeek fallback
-      4. 两者都不可用/超配额 → 返回空（调用方走规则降级）
+      2. Trae 优先（免费额度，最高优先级）
+      3. Claude fallback
+      4. DeepSeek fallback
+      5. 三者都不可用/超配额 → 返回空（调用方走规则降级）
 
     purpose 参数控制专项配额：
       "a3_seminar" / "a1_research" / "a8_governance" / "default"
     """
-    # ── 尝试 Claude ──────────────────────────────────────────────────────
+    # ── 尝试 Trae（免费额度优先）──────────────────────────────────────
+    if TRAE_KEY:
+        ok, reason = _can_use("trae", purpose)
+        if ok:
+            try:
+                reply = _call_trae(prompt, system, max_tokens)
+                _record_usage("trae", purpose)
+                return reply
+            except Exception as e:
+                err = str(e)
+                if not any(c in err for c in ["429", "529", "quota", "credit", "overloaded"]):
+                    _record_usage("trae", purpose)
+
+    # ── Fallback: Claude ──────────────────────────────────────────────
     if ANTHROPIC_KEY:
         ok, reason = _can_use("claude", purpose)
         if ok:
@@ -180,11 +222,10 @@ def llm_chat(prompt: str,
                 return reply
             except Exception as e:
                 err = str(e)
-                # 配额/速率错误不记录用量
                 if not any(c in err for c in ["429", "529", "quota", "credit", "overloaded"]):
-                    _record_usage("claude", purpose)  # 其他错误也算消耗
+                    _record_usage("claude", purpose)
 
-    # ── Fallback: DeepSeek ───────────────────────────────────────────────
+    # ── Fallback: DeepSeek ───────────────────────────────────────────
     if DEEPSEEK_KEY:
         ok, reason = _can_use("deepseek", purpose)
         if ok:
@@ -203,13 +244,17 @@ def llm_chat(prompt: str,
 
 def llm_available() -> str:
     """当前可用提供商（不考虑配额）"""
-    if ANTHROPIC_KEY: return "claude"
-    if DEEPSEEK_KEY:  return "deepseek"
+    if TRAE_KEY:       return "trae"
+    if ANTHROPIC_KEY:  return "claude"
+    if DEEPSEEK_KEY:   return "deepseek"
     return "none"
 
 
 def llm_quota_ok(purpose: str = "default") -> bool:
     """快速检查当前 purpose 是否还有配额（供 ChainPlanner 预判）"""
+    if TRAE_KEY:
+        ok, _ = _can_use("trae", purpose)
+        if ok: return True
     if ANTHROPIC_KEY:
         ok, _ = _can_use("claude", purpose)
         if ok: return True
