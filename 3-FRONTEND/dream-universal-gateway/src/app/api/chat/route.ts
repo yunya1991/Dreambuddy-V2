@@ -4702,6 +4702,125 @@ export async function POST(request: NextRequest) {
       cleanupSession(chatTraceId);
     }
 
+    // 构建编排追踪数据 (三层架构可视化)
+    const stepMeta: Record<string, { label: string; icon: string }> = {
+      'S0_DIRECT_ANSWER': { label: '快速回答', icon: '💬' },
+      'S1_RESEARCH':       { label: '调研', icon: '🔍' },
+      'S2_ANALYSIS':       { label: '分析', icon: '🧠' },
+      'S3_DESIGN':         { label: '设计', icon: '📐' },
+      'S4_VALIDATE':       { label: '验证', icon: '✅' },
+      'S5_EXECUTE':        { label: '执行', icon: '⚡' },
+    };
+
+    const strategySteps = response.strategyChainState?.steps || [];
+    const executedChain = chain.length > 0 ? chain : routing.chain;
+
+    const chain_trace = {
+      intent: {
+        type: intentResult.intent,
+        confidence: intentResult.confidence,
+        method: intentResult.method,
+        entities: intentResult.entities || {},
+      },
+      plan: {
+        chain_id: routing.loop_type || 'execution',
+        chain_name: executedChain.map((s: string) => stepMeta[s]?.label || s).join(' → '),
+        complexity: intentResult.complexity || 'moderate',
+        total_budget: costReport?.budgetTokens || 6000,
+        rationale: routing.reasoning || `链路=${routing.loop_type}，节点=${executedChain.length}`,
+      },
+      nodes: [
+        // B层 — 意图蓝图
+        {
+          id: 'B1_intent',
+          name: '意图识别',
+          icon: '🎯',
+          layer: 'B' as const,
+          status: 'done' as const,
+          confidence: intentResult.confidence,
+        },
+        {
+          id: 'B2_route',
+          name: '链路选择',
+          icon: '🔀',
+          layer: 'B' as const,
+          status: 'done' as const,
+        },
+        {
+          id: 'B3_complexity',
+          name: '复杂度评估',
+          icon: '📏',
+          layer: 'B' as const,
+          status: 'done' as const,
+        },
+        // A层 — 编排计划 (链路中的节点)
+        ...executedChain.map((stepId: string, idx: number) => {
+          const meta = stepMeta[stepId] || { label: stepId, icon: '⚙️' };
+          const sStep = strategySteps.find((s: any) => s.id === stepId);
+          const nodeStatus = sStep?.status === 'done' ? 'done'
+            : sStep?.status === 'active' ? 'active'
+            : sStep?.status === 'skipped' ? 'skipped'
+            : idx === 0 ? 'done'
+            : 'done';
+          return {
+            id: stepId,
+            name: meta.label,
+            icon: meta.icon,
+            layer: 'A' as const,
+            status: nodeStatus as any,
+            confidence: sStep?.output ? undefined : undefined,
+            tokens_budget: costReport?.budgetTokens
+              ? Math.floor(costReport.budgetTokens / executedChain.length)
+              : undefined,
+            artifact: sStep?.artifacts?.length ? sStep.artifacts[0] : undefined,
+          };
+        }),
+        // C层 — 执行记录
+        {
+          id: 'C1_execute',
+          name: '链路执行',
+          icon: '⚡',
+          layer: 'C' as const,
+          status: 'done' as const,
+          tokens_used: costReport?.totalTokens,
+          latency_ms: undefined,
+        },
+        {
+          id: 'C2_reflect',
+          name: '反射决策',
+          icon: '🔄',
+          layer: 'C' as const,
+          status: 'done' as const,
+        },
+        {
+          id: 'C3_aggregate',
+          name: '结果聚合',
+          icon: '📦',
+          layer: 'C' as const,
+          status: 'done' as const,
+        },
+      ],
+      cost_report: costReport ? {
+        total_tokens: costReport.totalTokens,
+        prompt_tokens: costReport.promptTokens,
+        completion_tokens: costReport.completionTokens,
+        skipped_steps: costReport.skippedSteps || [],
+        budget_tokens: costReport.budgetTokens,
+        status: costReport.status || 'completed',
+      } : undefined,
+      compression: compressionResult ? {
+        original_tokens: compressionResult.originalTokens,
+        compressed_tokens: compressionResult.compressedTokens,
+        ratio: compressionResult.compressionRatio,
+      } : undefined,
+      final: {
+        execution_chain: executedChain.join(' → '),
+        quality_score: intentResult.confidence,
+        risk_score: 0.3,
+        grade: intentResult.confidence > 0.8 ? 'good' : 'degraded',
+      },
+    };
+
     return NextResponse.json({
       success: true,
       data: {
@@ -4721,6 +4840,7 @@ export async function POST(request: NextRequest) {
         needsConfirmation: response.needsConfirmation,
         nextStep: response.nextStep,
         cost_report: costReport,
+        chain_trace,
         compression: compressionResult ? {
           originalTokens: compressionResult.originalTokens,
           compressedTokens: compressionResult.compressedTokens,

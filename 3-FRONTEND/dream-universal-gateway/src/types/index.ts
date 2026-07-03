@@ -417,3 +417,59 @@ export const PUSH_TYPE_LABELS: Record<PushMessageType, string> = {
   system_notice: "系统通知",
   verification_code: "验证码",
 };
+
+// === 编排追踪类型 (三层架构可视化) ===
+
+export type OrchestrationNodeStatus = "pending" | "active" | "done" | "skipped" | "failed";
+
+export interface OrchestrationNode {
+  id: string;
+  name: string;
+  icon: string;
+  layer: "B" | "A" | "C";
+  status: OrchestrationNodeStatus;
+  confidence?: number;
+  risk?: number;
+  latency_ms?: number;
+  tokens_used?: number;
+  tokens_budget?: number;
+  skip_reason?: string;
+  reflect_action?: string;
+  artifact?: string;
+}
+
+export interface ChainTrace {
+  intent: {
+    type: string;
+    confidence: number;
+    method: string;
+    entities: Record<string, string>;
+  };
+  plan: {
+    chain_id: string;
+    chain_name: string;
+    complexity: string;
+    total_budget: number;
+    rationale: string;
+  };
+  nodes: OrchestrationNode[];
+  cost_report?: {
+    total_tokens: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+    skipped_steps: string[];
+    budget_tokens: number;
+    status: string;
+  };
+  compression?: {
+    original_tokens: number;
+    compressed_tokens: number;
+    ratio: number;
+  };
+  final: {
+    execution_chain: string;
+    quality_score: number;
+    risk_score: number;
+    grade: string;
+  };
+}
