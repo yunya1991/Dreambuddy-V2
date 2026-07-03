@@ -135,8 +135,11 @@ interface ApiConfigItem {
   label: string;
   keyHint: string;
   environment?: string;
+  baseUrl?: string | null;
   isVerified: boolean;
   lastVerifiedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // 行情数据类型
@@ -397,7 +400,16 @@ export default function ChatPage() {
     environment: 'demo',
   });
   const [apiTesting, setApiTesting] = useState<string | null>(null);
-  const [apiTestResult, setApiTestResult] = useState<Record<string, { success: boolean; message: string }> | null>(null);
+  const [apiTestResult, setApiTestResult] = useState<Record<string, { success: boolean; message: string; latency?: number }> | null>(null);
+
+  // LLM配置状态
+  const [showAddLlmForm, setShowAddLlmForm] = useState(false);
+  const [addLlmForm, setAddLlmForm] = useState({
+    provider: 'openai',
+    label: '',
+    apiKey: '',
+    baseUrl: '',
+  });
 
   // 交易参数状态
   const [tradingParams, setTradingParams] = useState<TradingPanelData | null>(null);
@@ -1870,6 +1882,37 @@ export default function ChatPage() {
     );
   };
 
+  // LLM 提供商图标和名称映射
+  const getProviderIcon = (provider: string) => {
+    const map: Record<string, string> = {
+      openai: '🤖',
+      deepseek: '🔍',
+      dashscope: '☁️',
+      aliyun: '☁️',
+      qwen: '☁️',
+      anthropic: '🧠',
+      claude: '🧠',
+      custom: '⚙️',
+      'openai-compatible': '⚙️',
+    };
+    return map[provider?.toLowerCase()] || '🤖';
+  };
+
+  const getProviderLabel = (provider: string) => {
+    const map: Record<string, string> = {
+      openai: 'OpenAI',
+      deepseek: 'DeepSeek',
+      dashscope: '阿里云百炼',
+      aliyun: '阿里云百炼',
+      qwen: '通义千问',
+      anthropic: 'Anthropic',
+      claude: 'Claude',
+      custom: '自定义',
+      'openai-compatible': 'OpenAI兼容',
+    };
+    return map[provider?.toLowerCase()] || provider;
+  };
+
   const renderRightPanel = () => {
     switch (rightPanelContent) {
       case 'graph-compression':
@@ -1899,11 +1942,20 @@ export default function ChatPage() {
           </div>
         );
       case 'llm':
+        const llmConfigs = apiConfigs.filter(c => c.category === 'LLM');
         return (
           <div>
-            <div className="panel-title">🤖 大模型配置</div>
-            
-            {/* 状态总览 */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="panel-title" style={{ marginBottom: 0 }}>🤖 大模型配置</div>
+              <button
+                onClick={() => setShowAddLlmForm(!showAddLlmForm)}
+                className="px-3 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition font-medium"
+              >
+                ➕ 添加
+              </button>
+            </div>
+
+            {/* 服务状态总览 */}
             <div className="config-section">
               <div className="font-semibold mb-2">📊 服务状态</div>
               <div className="flex items-center justify-between mb-2">
@@ -1922,37 +1974,16 @@ export default function ChatPage() {
               </div>
               {llmStatus === 'degraded' && (
                 <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs text-yellow-500">
-                  ⚠️ 免费额度已用完，已降级为规则识别。请在百炼控制台关闭"仅使用免费额度"。
+                  ⚠️ 免费额度已用完，已降级为规则识别。请配置您的 API Key。
                 </div>
               )}
-              {llmStatus === 'offline' && (
+              {llmStatus === 'offline' && llmConfigs.length === 0 && (
                 <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-500">
-                  ❌ LLM 不可用，请检查网络或API配置。
+                  ❌ 未配置大模型 API，请添加配置后使用。
                 </div>
               )}
             </div>
-            
-            {/* 模型选择 */}
-            <div className="config-section">
-              <div className="font-semibold mb-2">🔧 模型选择</div>
-              <div className="space-y-1.5">
-                {QWEN_MODELS.map((model) => (
-                  <button
-                    key={model.id}
-                    onClick={() => switchModel(model.id)}
-                    className={`w-full text-left px-3 py-2 rounded-md text-xs transition ${
-                      llmModel === model.id
-                        ? 'bg-[#0066ff] text-white'
-                        : 'bg-[#141414] text-[#8a8a8a] hover:bg-[#1f1f1f] hover:text-[#e0e0e0]'
-                    }`}
-                  >
-                    <div className="font-semibold">{model.name}</div>
-                    <div className={`${llmModel === model.id ? 'text-white/70' : 'text-[#8a8a8a]'}`}>{model.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            
+
             {/* 识别方法切换 */}
             <div className="config-section">
               <div className="font-semibold mb-2">🧠 识别方法</div>
@@ -1979,26 +2010,253 @@ export default function ChatPage() {
                 </button>
               </div>
               <div className="text-xs text-[#8a8a8a] mt-2">
-                {intentMethod === 'llm' 
+                {intentMethod === 'llm'
                   ? '使用大模型进行意图识别，更精准但消耗API额度'
                   : '基于关键词规则匹配，不消耗API额度'}
               </div>
             </div>
-            
-            {/* API 配置 */}
-            <div className="config-section">
-              <div className="font-semibold mb-2">🔑 API Key</div>
-              <div className="text-xs text-[#8a8a8a] mb-2">
-                <div>Key: sk-***•••***8cb8 <span className="text-[#3b82f6] cursor-pointer">[👁]</span></div>
-                <div>Endpoint: dashscope.aliyuncs.com</div>
+
+            {/* 添加LLM配置表单 */}
+            {showAddLlmForm && (
+              <div className="config-section" style={{ borderLeft: '3px solid #8b5cf6' }}>
+                <div className="font-semibold mb-2">➕ 新增大模型配置</div>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-[#8a8a8a]">提供商</label>
+                    <select
+                      value={addLlmForm.provider}
+                      onChange={(e) => setAddLlmForm({ ...addLlmForm, provider: e.target.value })}
+                      className="w-full mt-1 bg-[#141414] border border-[#2a2a2a] rounded-md px-2.5 py-1.5 text-xs text-[#e0e0e0] focus:outline-none focus:border-[#8b5cf6]"
+                    >
+                      <option value="openai">OpenAI (GPT)</option>
+                      <option value="deepseek">DeepSeek</option>
+                      <option value="dashscope">阿里云百炼 (Qwen)</option>
+                      <option value="anthropic">Anthropic (Claude)</option>
+                      <option value="custom">自定义 (OpenAI兼容)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#8a8a8a]">
+                      配置名称 <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      value={addLlmForm.label}
+                      onChange={(e) => setAddLlmForm({ ...addLlmForm, label: e.target.value })}
+                      placeholder="如: 默认模型 / GPT-4o / 工作号"
+                      className="w-full mt-1 bg-[#141414] border border-[#2a2a2a] rounded-md px-2.5 py-1.5 text-xs text-[#e0e0e0] focus:outline-none focus:border-[#8b5cf6]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#8a8a8a]">
+                      API Key <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      value={addLlmForm.apiKey}
+                      onChange={(e) => setAddLlmForm({ ...addLlmForm, apiKey: e.target.value })}
+                      placeholder="输入 API Key"
+                      type="password"
+                      className="w-full mt-1 bg-[#141414] border border-[#2a2a2a] rounded-md px-2.5 py-1.5 text-xs text-[#e0e0e0] focus:outline-none focus:border-[#8b5cf6]"
+                    />
+                  </div>
+                  {addLlmForm.provider === 'custom' && (
+                    <div>
+                      <label className="text-xs text-[#8a8a8a]">
+                        API Base URL <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        value={addLlmForm.baseUrl}
+                        onChange={(e) => setAddLlmForm({ ...addLlmForm, baseUrl: e.target.value })}
+                        placeholder="如: https://api.example.com/v1"
+                        className="w-full mt-1 bg-[#141414] border border-[#2a2a2a] rounded-md px-2.5 py-1.5 text-xs text-[#e0e0e0] focus:outline-none focus:border-[#8b5cf6]"
+                      />
+                      <div className="text-xs text-[#666] mt-1">
+                        支持所有 OpenAI 兼容的 API 中转服务
+                      </div>
+                    </div>
+                  )}
+                  {addLlmForm.provider !== 'custom' && addLlmForm.provider !== 'openai' && (
+                    <div>
+                      <label className="text-xs text-[#8a8a8a]">自定义 Base URL（可选）</label>
+                      <input
+                        value={addLlmForm.baseUrl}
+                        onChange={(e) => setAddLlmForm({ ...addLlmForm, baseUrl: e.target.value })}
+                        placeholder="留空使用官方地址"
+                        className="w-full mt-1 bg-[#141414] border border-[#2a2a2a] rounded-md px-2.5 py-1.5 text-xs text-[#e0e0e0] focus:outline-none focus:border-[#8b5cf6]"
+                      />
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={async () => {
+                        if (!addLlmForm.label.trim()) {
+                          alert('请输入配置名称');
+                          return;
+                        }
+                        if (!addLlmForm.apiKey.trim()) {
+                          alert('请输入 API Key');
+                          return;
+                        }
+                        if (addLlmForm.provider === 'custom' && !addLlmForm.baseUrl.trim()) {
+                          alert('自定义 API 需要填写 Base URL');
+                          return;
+                        }
+                        try {
+                          const res = await fetch('/api/config/api-keys', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              category: 'LLM',
+                              provider: addLlmForm.provider,
+                              label: addLlmForm.label,
+                              apiKey: addLlmForm.apiKey,
+                              secretKey: addLlmForm.apiKey,
+                              baseUrl: addLlmForm.baseUrl || null,
+                            }),
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            setShowAddLlmForm(false);
+                            setAddLlmForm({ provider: 'openai', label: '', apiKey: '', baseUrl: '' });
+                            fetchApiConfigs();
+                            showToast('success', '大模型配置添加成功');
+                          } else {
+                            alert(data.error || '添加失败');
+                          }
+                        } catch (error) {
+                          alert('添加失败: ' + (error instanceof Error ? error.message : '未知错误'));
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 text-xs bg-[#8b5cf6] text-white rounded-md hover:bg-purple-700 transition font-medium"
+                    >
+                      💾 保存
+                    </button>
+                    <button
+                      onClick={() => setShowAddLlmForm(false)}
+                      className="px-3 py-2 text-xs bg-[#2a2a2a] text-[#8a8a8a] rounded-md hover:bg-[#1a1a1a] transition"
+                    >
+                      取消
+                    </button>
+                  </div>
+                </div>
               </div>
-              <button 
-                onClick={fetchLLMStatus}
-                className="px-3 py-1.5 text-xs bg-[#0066ff] text-white rounded hover:bg-blue-700 transition"
-              >
-                🔄 测试连接
-              </button>
-            </div>
+            )}
+
+            {/* LLM配置列表 */}
+            {llmConfigs.length === 0 ? (
+              <div className="config-section text-center">
+                <div className="text-xs text-[#8a8a8a] mb-2">暂无大模型配置</div>
+                <div className="text-xs text-[#8a8a8a] mb-3">点击上方"➕ 添加"按钮配置您的大模型 API</div>
+                <div className="text-xs text-[#666]">
+                  支持 OpenAI / DeepSeek / 百炼 / Claude 及所有 OpenAI 兼容接口
+                </div>
+              </div>
+            ) : (
+              llmConfigs.map((config) => (
+                <div key={config.id} className="config-section">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="font-semibold">
+                      {getProviderIcon(config.provider)} {getProviderLabel(config.provider)}
+                    </div>
+                    <div className="flex gap-1.5 items-center">
+                      {config.isVerified ? (
+                        <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-500/20 text-green-400">
+                          ✅ 已验证
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-xs font-semibold bg-yellow-500/20 text-yellow-400">
+                          ⚠️ 未验证
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-xs text-[#8a8a8a] mb-1">
+                    <span className="text-[#8b5cf6]">名称: {config.label}</span>
+                  </div>
+                  <div className="text-xs mb-1">
+                    API Key: {config.keyHint || '•••••••'}
+                  </div>
+                  {config.baseUrl && (
+                    <div className="text-xs text-[#666] mb-2">
+                      Endpoint: {config.baseUrl}
+                    </div>
+                  )}
+                  {config.lastVerifiedAt && (
+                    <div className="text-xs text-[#666] mb-2">
+                      最后验证: {new Date(config.lastVerifiedAt).toLocaleString('zh-CN')}
+                    </div>
+                  )}
+                  {/* 测试结果显示 */}
+                  {apiTestResult && apiTestResult[config.id] && (
+                    <div className={`text-xs mb-2 p-2 rounded ${
+                      apiTestResult[config.id].success
+                        ? 'bg-green-500/10 text-green-400'
+                        : 'bg-red-500/10 text-red-400'
+                    }`}>
+                      {apiTestResult[config.id].success ? '✅' : '❌'}{' '}
+                      {apiTestResult[config.id].message}
+                      {apiTestResult[config.id].latency !== undefined && (
+                        <span className="ml-2 opacity-70">({apiTestResult[config.id].latency}ms)</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={async () => {
+                        setApiTesting(config.id);
+                        try {
+                          const res = await fetch('/api/config/api-keys/test', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              configId: config.id,
+                              provider: config.provider,
+                              category: 'LLM',
+                            }),
+                          });
+                          const data = await res.json();
+                          setApiTestResult(prev => ({
+                            ...prev,
+                            [config.id]: data.data || { success: false, message: data.error || '测试失败' }
+                          }));
+                          if (data.success && data.data?.success) {
+                            fetchApiConfigs();
+                            showToast('success', '连接测试成功');
+                          }
+                        } catch {} finally {
+                          setApiTesting(null);
+                        }
+                      }}
+                      disabled={apiTesting === config.id}
+                      className="px-3 py-1.5 text-xs bg-[#0066ff] text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
+                    >
+                      {apiTesting === config.id ? '⏳ 测试中...' : '🔄 测试连接'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        switchModel(config.id);
+                        showToast('success', `已切换到 ${config.label}`);
+                      }}
+                      className="px-3 py-1.5 text-xs bg-[#8b5cf6] text-white rounded hover:bg-purple-700 transition"
+                    >
+                      ⭐ 设为默认
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('确定删除此大模型配置？')) return;
+                        try {
+                          await fetch(`/api/config/api-keys?id=${config.id}`, { method: 'DELETE' });
+                          fetchApiConfigs();
+                          showToast('success', '配置已删除');
+                        } catch {}
+                      }}
+                      className="px-3 py-1.5 text-xs bg-red-500/80 text-white rounded hover:bg-red-600 transition"
+                    >
+                      🗑 删除
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         );
       case 'market':
