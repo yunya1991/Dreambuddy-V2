@@ -55,6 +55,9 @@ const GraphCompressionPanel = dynamic(() => import("@/components/graph-compressi
 // 编排追踪面板 (三层架构可视化)
 const OrchestrationPanel = dynamic(() => import("@/components/orchestration/OrchestrationPanel"), { ssr: false });
 
+// 对话内嵌思考卡
+const ThinkingCard = dynamic(() => import("@/components/chat/ThinkingCard"), { ssr: false });
+
 function NotebookPanelWrapper() {
   return <NotebookPanel />;
 }
@@ -1367,6 +1370,10 @@ export default function ChatPage() {
         const artifacts = createData.data.artifacts_produced || [];
         const summary = createData.data.execution_summary;
         const isTrade = createData.data.trade_requires_confirmation;
+
+        if ((createData.data as any).chain_trace) {
+          setOrchestrationTrace((createData.data as any).chain_trace);
+        }
         
         // 🔗 更新分析链路：根据实际执行的chain标记所有步骤完成
         if (summary?.chain_executed) {
@@ -1424,6 +1431,7 @@ export default function ChatPage() {
             chain: summary?.chain_executed || [],
             task_id: taskId,
             artifacts: artifacts.length > 0 ? artifacts : undefined,
+            chain_trace: (createData.data as any).chain_trace,
             trade_task_id: isTrade ? taskId : undefined,
             trade_confirmed: false,
             strategyChain: isSChain ? {
@@ -5391,6 +5399,13 @@ export default function ChatPage() {
                       </span>
                     )}
                   </div>
+                )}
+                {/* 🧠 思考卡 */}
+                {msg.role === "assistant" && ((msg as any).chain_trace || msg.intent === 'thinking') && msg.intent !== 'error' && (
+                  <ThinkingCard
+                    trace={(msg as any).chain_trace}
+                    isLoading={msg.intent === 'thinking'}
+                  />
                 )}
                 {msg.role === "user" && (
                   <div className="text-right text-xs mb-1.5 opacity-70">👤 你</div>

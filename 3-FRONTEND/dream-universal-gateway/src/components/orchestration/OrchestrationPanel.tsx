@@ -31,13 +31,42 @@ export default function OrchestrationPanel({ trace }: Props) {
 
   if (!trace) {
     return (
-      <div style={{ padding: 16, textAlign: "center" }}>
-        <div style={{ fontSize: 28, marginBottom: 8 }}>🔀</div>
-        <div style={{ fontSize: 12, color: "#666" }}>
-          编排追踪面板空闲
+      <div style={{ padding: 20, textAlign: "center" }}>
+        <div style={{
+          width: 64,
+          height: 64,
+          margin: "0 auto 12px",
+          borderRadius: 16,
+          backgroundColor: "#1a1a1a",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 28,
+        }}>
+          🔀
         </div>
-        <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>
-          发送消息后将展示三层编排过程
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#ccc", marginBottom: 4 }}>
+          编排追踪面板
+        </div>
+        <div style={{ fontSize: 11, color: "#666", marginBottom: 12 }}>
+          发送一条消息开始追踪
+        </div>
+        <div style={{
+          padding: 10,
+          backgroundColor: "#0d0d0d",
+          border: "1px solid #1a1a1a",
+          borderRadius: 8,
+          fontSize: 10,
+          color: "#888",
+          textAlign: "left",
+          lineHeight: 1.6,
+        }}>
+          <div style={{ color: "#6366f1", fontWeight: 600, marginBottom: 4 }}>🔵 B层 · 意图蓝图</div>
+          <div style={{ color: "#f59e0b", fontWeight: 600, marginBottom: 4 }}>🟠 A层 · 编排计划</div>
+          <div style={{ color: "#0ea5e9", fontWeight: 600 }}>🔵 C层 · 执行记录</div>
+        </div>
+        <div style={{ fontSize: 10, color: "#444", marginTop: 10 }}>
+          试试输入「分析BTC」
         </div>
       </div>
     );
