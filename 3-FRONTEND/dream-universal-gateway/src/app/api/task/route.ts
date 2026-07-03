@@ -124,6 +124,112 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // 构建编排追踪数据 (三层架构可视化)
+    const stepMeta: Record<string, { label: string; icon: string }> = {
+      'S0_DIRECT_ANSWER': { label: '快速回答', icon: '💬' },
+      'S1_RESEARCH':       { label: '调研', icon: '🔍' },
+      'S2_ANALYSIS':       { label: '分析', icon: '🧠' },
+      'S3_DESIGN':         { label: '设计', icon: '📐' },
+      'S4_VALIDATE':       { label: '验证', icon: '✅' },
+      'S5_EXECUTE':        { label: '执行', icon: '⚡' },
+    };
+
+    const summary = result!.execution_summary;
+    const executedChain = summary?.chain_executed || [];
+    const stepMetaList = summary?.step_metadata || [];
+    const quality = summary?.quality;
+
+    const chain_trace = {
+      intent: {
+        type: task.intent.type,
+        confidence: task.intent.confidence,
+        method: 'llm' as const,
+        entities: task.intent.entities || {},
+      },
+      plan: {
+        chain_id: task.intent.type,
+        chain_name: executedChain.map((s: string) => stepMeta[s]?.label || s).join(' → '),
+        complexity: summary?.thinking_depth || task.thinking_mode || 'moderate',
+        total_budget: 6000,
+        rationale: `链路=${task.thinking_mode}，节点=${executedChain.length}`,
+      },
+      nodes: [
+        // B层 — 意图蓝图
+        {
+          id: 'B1_intent',
+          name: '意图识别',
+          icon: '🎯',
+          layer: 'B' as const,
+          status: 'done' as const,
+          confidence: task.intent.confidence,
+        },
+        {
+          id: 'B2_route',
+          name: '链路选择',
+          icon: '🔀',
+          layer: 'B' as const,
+          status: 'done' as const,
+        },
+        {
+          id: 'B3_complexity',
+          name: '复杂度评估',
+          icon: '📏',
+          layer: 'B' as const,
+          status: 'done' as const,
+        },
+        // A层 — 编排计划 (链路中的节点)
+        ...executedChain.map((stepId: string, idx: number) => {
+          const meta = stepMeta[stepId] || { label: stepId, icon: '⚙️' };
+          const stepData = stepMetaList.find((s: any) => s.step === stepId);
+          const isSkipped = summary?.skipped_steps?.includes(stepId);
+          return {
+            id: stepId,
+            name: meta.label,
+            icon: meta.icon,
+            layer: 'A' as const,
+            status: isSkipped ? 'skipped' : 'done',
+            confidence: stepData?.confidence,
+            risk: stepData?.risk,
+            artifact: result!.artifacts_produced?.find((a: any) =>
+              a.chain_phase?.toLowerCase() === stepId.toLowerCase() ||
+              a.chain_phase?.toLowerCase() === stepId.replace(/^S\d+_/, '').toLowerCase()
+            )?.file,
+          };
+        }),
+        // C层 — 执行记录
+        {
+          id: 'C1_execute',
+          name: '链路执行',
+          icon: '⚡',
+          layer: 'C' as const,
+          status: 'done' as const,
+          latency_ms: result!.execution_time_ms,
+        },
+        {
+          id: 'C2_reflect',
+          name: '反射决策',
+          icon: '🔄',
+          layer: 'C' as const,
+          status: 'done' as const,
+        },
+        {
+          id: 'C3_aggregate',
+          name: '结果聚合',
+          icon: '📦',
+          layer: 'C' as const,
+          status: 'done' as const,
+        },
+      ],
+      cost_report: undefined,
+      compression: undefined,
+      final: {
+        execution_chain: executedChain.join(' → '),
+        quality_score: quality?.average_confidence || task.intent.confidence,
+        risk_score: quality?.max_risk || 0.3,
+        grade: quality?.overall_quality || 'good',
+      },
+    };
+
     // 同步完成（对话任务）或待确认（交易任务）
     const responseData: Record<string, unknown> = {
       task_id: task.task_id,
@@ -139,6 +245,7 @@ export async function POST(request: NextRequest) {
       artifacts_produced: result!.artifacts_produced,
       execution_summary: result!.execution_summary,
       metadata: result!.metadata,
+      chain_trace,
     };
 
     // 步进确认任务（D/Z/E 链中途等待用户选择）
