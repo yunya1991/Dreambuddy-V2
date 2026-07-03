@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import dynamic from 'next/dynamic';
 const FundamentalPanel = dynamic(() => import("./FundamentalPanel"), { ssr: false });
 import { useAutoConfigStore } from "@/stores/auto-config-store";
+import type { ChainTrace } from "@/types";
 import AutoConfigBubble from "@/components/chat/AutoConfigBubble";
 import AutoConfigSummary from "@/components/chat/AutoConfigSummary";
 import { useAuthStore } from "@/stores";
@@ -51,6 +52,9 @@ const NotebookPanel = dynamic(() => import("@/components/notebook/NotebookPanel"
 // 图结构上下文压缩面板
 const GraphCompressionPanel = dynamic(() => import("@/components/graph-compression-viz/GraphContextCompressionPanel"), { ssr: false });
 
+// 编排追踪面板 (三层架构可视化)
+const OrchestrationPanel = dynamic(() => import("@/components/orchestration/OrchestrationPanel"), { ssr: false });
+
 function NotebookPanelWrapper() {
   return <NotebookPanel />;
 }
@@ -75,7 +79,7 @@ const QWEN_MODELS = [
   { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', desc: '最强推理·金融分析', provider: 'deepseek' },
 ];
 
-type RightPanelType = 'analysis' | 'market' | 'signal' | 'position' | 'api' | 'trading' | 'strategy' | 'communication' | 'llm' | 'report' | 'monitor' | 'memory' | 'notebook' | 'graph-compression';
+type RightPanelType = 'analysis' | 'market' | 'signal' | 'position' | 'api' | 'trading' | 'strategy' | 'communication' | 'llm' | 'report' | 'monitor' | 'memory' | 'notebook' | 'graph-compression' | 'orchestration';
 
 // 链路步骤定义 (v2 三闭环架构)
 // Phase 0: 统一使用 S 系列，A 系列已迁移到后端
@@ -292,6 +296,7 @@ export default function ChatPage() {
   const [dataCardExpanded, setDataCardExpanded] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [rightPanelContent, setRightPanelContent] = useState<RightPanelType>('analysis');
+  const [orchestrationTrace, setOrchestrationTrace] = useState<ChainTrace | null>(null);
   
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -1743,6 +1748,7 @@ export default function ChatPage() {
       if (result.data?.llm_status) setLlmStatus(result.data.llm_status);
       if (result.data?.llm_model) setLlmModel(result.data.llm_model);
       if (result.data?.intent_method) setIntentMethod(result.data.intent_method);
+      if (result.data?.chain_trace) setOrchestrationTrace(result.data.chain_trace);
 
       // 🔗 根据返回的chain更新分析链路
       const returnedChain = result.data?.chain || [];
@@ -1915,6 +1921,15 @@ export default function ChatPage() {
 
   const renderRightPanel = () => {
     switch (rightPanelContent) {
+      case 'orchestration':
+        return (
+          <div>
+            <div className="panel-title" style={{ marginBottom: 12 }}>
+              🔀 编排追踪 · 三层架构
+            </div>
+            <OrchestrationPanel trace={orchestrationTrace} />
+          </div>
+        );
       case 'graph-compression':
         return (
           <div>
@@ -6096,6 +6111,7 @@ export default function ChatPage() {
              rightPanelContent === 'llm' ? '🤖 大模型配置' :
              rightPanelContent === 'monitor' ? '📡 传递监控' :
              rightPanelContent === 'memory' ? '🧠 意图记忆库' :
+             rightPanelContent === 'orchestration' ? '🔀 编排追踪' :
              rightPanelContent === 'report' ? '📄 研报详情' :
              rightPanelContent === 'graph-compression' ? '🗜️ 图压缩面板' : '面板'}
           </h2>
@@ -6164,6 +6180,16 @@ export default function ChatPage() {
             }`}
           >
             📡 监控
+          </button>
+          <button
+            onClick={() => setRightPanelContent('orchestration')}
+            className={`px-2 py-1 rounded text-[11px] transition ${
+              rightPanelContent === 'orchestration'
+                ? 'bg-[#6366f1] text-white'
+                : 'bg-[#1a1a1a] text-[#8a8a8a] hover:text-[#e0e0e0] hover:bg-[#2a2a2a]'
+            }`}
+          >
+            🔀 编排
           </button>
           <button
             onClick={() => setRightPanelContent('llm')}
