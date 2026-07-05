@@ -223,4 +223,4 @@ export type {
   VizEdge,
   TimelineItem,
   DiffSummary,
-} from '../../../../../6-图结构上下文压缩/index.ts';
+} from '../../../../../6-图结构上下文压缩/index';

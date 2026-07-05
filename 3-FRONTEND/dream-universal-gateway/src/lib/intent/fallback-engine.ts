@@ -275,7 +275,7 @@ const HARDCODED_INTENT_RULES: Array<{
     intent: 'market_query',
     complexity: 'simple',
     confidence: 0.85,
-    keywords: ['行情', '价格', '现在', '当前', '实时', '最新', '查询', '多少', '报价', '实时行情', '现价'],
+    keywords: ['行情', '价格', '现在', '当前', '实时', '最新', '查询', '多少', '报价', '实时行情', '现价', '市场概况', '走势', '行情分析', '市场分析', '价格走势', '行情走势', '市场状态', '市场情况', '概况', '市场数据', 'ticker', 'market', 'price', 'quote'],
   },
   {
     id: 'hc_triple_chain',

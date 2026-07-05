@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+
+// 注意：next-auth/jwt 的 getToken 在 Next.js 15.5 + next-auth 5.0-beta 环境下会导致
+// 客户端 chunk 加载失败（"Cannot find the middleware module"），从而出现浏览器白屏。
+// 因此 middleware 不再引入 next-auth，鉴权改由页面/接口层自行处理。
 
 function isLocalPreviewHost(host: string | null) {
   if (!host) {
@@ -45,53 +48,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 检查 JWT token
-  try {
-    const token = await getToken({
-      req: request,
-      secret: process.env.AUTH_SECRET,
-    });
-
-    // 受保护路由: 需要登录
-    const protectedPaths = [
-      "/credits",
-      "/settings",
-      "/recharge",
-      "/dashboard",  // 添加 /dashboard 到受保护路由
-      "/market",
-      "/api/config",
-      "/api/user",
-      "/api/market",
-    ];
-    
-    const isProtectedPath = protectedPaths.some((p) => pathname.startsWith(p));
-    
-    // 如果是受保护路由但没有 token，重定向到登录页
-    if (isProtectedPath && !token) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // 需要邮箱验证的路由
-    const verifiedPaths = ["/recharge", "/api/config/strategies"];
-    if (verifiedPaths.some((p) => pathname.startsWith(p))) {
-      if (token && !token.emailVerified) {
-        return NextResponse.redirect(new URL("/verify-email", request.url));
-      }
-    }
-
-    // 已登录用户访问登录/注册页，重定向到 dashboard
-    if (token && (pathname === "/login" || pathname === "/register")) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-
-    return NextResponse.next();
-  } catch (error) {
-    // 如果 token 验证失败，允许请求继续（不阻塞）
-    console.error("Middleware token verification error:", error);
-    return NextResponse.next();
-  }
+  // 受保护路由: 需要登录
+  // 由于 next-auth 5.0-beta 与 Next.js 15.5 不兼容，middleware 不再进行 JWT 校验。
+  // 鉴权改由页面/接口层自行处理（参考 providers.tsx 的注释）。
+  // 本地开发环境：shouldBypassPreviewAuth 已经放行 dashboard 相关路由；
+  // 生产环境：未携带登录态时由页面层自行重定向到 /login。
+  return NextResponse.next();
 }
 
 export const config = {
