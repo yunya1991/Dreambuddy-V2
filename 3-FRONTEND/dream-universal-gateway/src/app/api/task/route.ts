@@ -139,96 +139,168 @@ export async function POST(request: NextRequest) {
     const stepMetaList = summary?.step_metadata || [];
     const quality = summary?.quality;
 
-    const chain_trace = {
-      intent: {
-        type: task.intent.type,
-        confidence: task.intent.confidence,
-        method: 'llm' as const,
-        entities: task.intent.entities || {},
-      },
-      plan: {
-        chain_id: task.intent.type,
-        chain_name: executedChain.map((s: string) => stepMeta[s]?.label || s).join(' → '),
-        complexity: summary?.thinking_depth || task.thinking_mode || 'moderate',
-        total_budget: 6000,
-        rationale: `链路=${task.thinking_mode}，节点=${executedChain.length}`,
-      },
-      nodes: [
-        // B层 — 意图蓝图
-        {
-          id: 'B1_intent',
-          name: '意图识别',
-          icon: '🎯',
-          layer: 'B' as const,
-          status: 'done' as const,
+    // 检查是否来自 ExecutionPlanner
+    const plannerResult = (summary as any)?.planner_result;
+
+    let chain_trace: Record<string, unknown>;
+
+    if (plannerResult) {
+      // ============================================================
+      // 动态编排模式 — 从 ExecutionPlanner 结果构建 chain_trace
+      // A层 = 思维阶段 + 动态选中技能（跨A/C/F链）
+      // ============================================================
+      const STAGE_ICONS: Record<string, string> = {
+        research: '🔍', analysis: '🧠', design: '📐', validate: '✅', execute: '⚡',
+      };
+
+      // 技能链图标
+      const getSkillIcon = (skillId: string): string => {
+        if (skillId.startsWith('dream-')) return '🤖';
+        if (skillId.startsWith('Regime') || skillId.startsWith('Classic')) return '📊';
+        if (skillId.includes('fundamental') || skillId.includes('news')) return '📰';
+        return '⚙️';
+      };
+
+      // A层节点：思维阶段 + 技能
+      const plannerSteps = plannerResult.steps || [];
+      const aNodes: any[] = [];
+
+      for (const step of plannerSteps) {
+        // 思维阶段节点
+        const stepDef = step.definition || {};
+        aNodes.push({
+          id: step.stepId,
+          name: stepDef.label || step.stepId,
+          icon: stepDef.icon || STAGE_ICONS[step.stage] || '⚙️',
+          layer: 'A',
+          stage: step.stage,
+          chain: step.chain,
+          is_skill: false,
+          status: step.status === 'completed' ? 'done' : step.status === 'running' ? 'active' : step.status,
+          confidence: step.confidence ? step.confidence / 100 : undefined,
+          tokens_used: step.tokensUsed,
+          reflect_action: step.decision,
+          artifact: result!.artifacts_produced?.find((a: any) =>
+            a.chain_phase?.toLowerCase() === step.stepId.toLowerCase()
+          )?.file,
+        });
+
+        // 技能子节点
+        for (const skillCall of (step.skillsCalled || [])) {
+          aNodes.push({
+            id: skillCall.skillId,
+            name: skillCall.skillName,
+            icon: getSkillIcon(skillCall.skillId),
+            layer: 'A',
+            stage: step.stage,
+            chain: step.chain,
+            is_skill: true,
+            status: 'done',
+            confidence: skillCall.result?.confidence ? skillCall.result.confidence / 100 : undefined,
+            tokens_used: skillCall.result?.tokensUsed,
+            latency_ms: skillCall.latencyMs,
+          });
+        }
+      }
+
+      chain_trace = {
+        intent: {
+          type: task.intent.type,
           confidence: task.intent.confidence,
+          method: 'llm' as const,
+          entities: task.intent.entities || {},
         },
-        {
-          id: 'B2_route',
-          name: '链路选择',
-          icon: '🔀',
-          layer: 'B' as const,
-          status: 'done' as const,
+        plan: {
+          chain_id: plannerResult.planId || 'dynamic',
+          chain_name: plannerSteps.map((s: any) => s.stepId).join(' → '),
+          planned_steps: plannerSteps.map((s: any) => ({
+            step_id: s.stepId,
+            stage: s.stage,
+            chain: s.chain,
+            selected_skills: (s.skillsCalled || []).map((sk: any) => sk.skillId),
+          })),
+          complexity: summary?.thinking_depth || task.thinking_mode || 'standard',
+          total_budget: plannerResult.totalTokensUsed || 6000,
+          rationale: 'ExecutionPlanner 动态编排',
         },
-        {
-          id: 'B3_complexity',
-          name: '复杂度评估',
-          icon: '📏',
-          layer: 'B' as const,
-          status: 'done' as const,
+        nodes: [
+          // B层 — 意图蓝图
+          { id: 'B1_intent', name: '意图识别', icon: '🎯', layer: 'B', status: 'done', confidence: task.intent.confidence },
+          { id: 'B2_route', name: '链路选择', icon: '🔀', layer: 'B', status: 'done' },
+          { id: 'B3_complexity', name: '复杂度评估', icon: '📏', layer: 'B', status: 'done' },
+          // A层 — 动态编排的步骤+技能
+          ...aNodes,
+          // C层 — 执行记录
+          { id: 'C1_execute', name: '链路执行', icon: '⚡', layer: 'C', status: 'done', latency_ms: result!.execution_time_ms },
+          { id: 'C2_reflect', name: '反射决策', icon: '🔄', layer: 'C', status: 'done' },
+          { id: 'C3_aggregate', name: '结果聚合', icon: '📦', layer: 'C', status: 'done' },
+        ],
+        cost_report: undefined,
+        compression: undefined,
+        final: {
+          execution_chain: plannerSteps.map((s: any) => s.stepId).join(' → '),
+          quality_score: plannerResult.overallConfidence ? plannerResult.overallConfidence / 100 : (quality?.average_confidence || task.intent.confidence),
+          risk_score: quality?.max_risk || 0.3,
+          grade: quality?.overall_quality || 'good',
         },
-        // A层 — 编排计划 (链路中的节点)
-        ...executedChain.map((stepId: string, idx: number) => {
-          const meta = stepMeta[stepId] || { label: stepId, icon: '⚙️' };
-          const stepData = stepMetaList.find((s: any) => s.step === stepId);
-          const isSkipped = summary?.skipped_steps?.includes(stepId);
-          return {
-            id: stepId,
-            name: meta.label,
-            icon: meta.icon,
-            layer: 'A' as const,
-            status: isSkipped ? 'skipped' : 'done',
-            confidence: stepData?.confidence,
-            risk: stepData?.risk,
-            artifact: result!.artifacts_produced?.find((a: any) =>
-              a.chain_phase?.toLowerCase() === stepId.toLowerCase() ||
-              a.chain_phase?.toLowerCase() === stepId.replace(/^S\d+_/, '').toLowerCase()
-            )?.file,
-          };
-        }),
-        // C层 — 执行记录
-        {
-          id: 'C1_execute',
-          name: '链路执行',
-          icon: '⚡',
-          layer: 'C' as const,
-          status: 'done' as const,
-          latency_ms: result!.execution_time_ms,
+      };
+    } else {
+      // ============================================================
+      // S 链模式 — 保留原有逻辑（降级路径）
+      // ============================================================
+      chain_trace = {
+        intent: {
+          type: task.intent.type,
+          confidence: task.intent.confidence,
+          method: 'llm' as const,
+          entities: task.intent.entities || {},
         },
-        {
-          id: 'C2_reflect',
-          name: '反射决策',
-          icon: '🔄',
-          layer: 'C' as const,
-          status: 'done' as const,
+        plan: {
+          chain_id: task.intent.type,
+          chain_name: executedChain.map((s: string) => stepMeta[s]?.label || s).join(' → '),
+          complexity: summary?.thinking_depth || task.thinking_mode || 'moderate',
+          total_budget: 6000,
+          rationale: `链路=${task.thinking_mode}，节点=${executedChain.length}`,
         },
-        {
-          id: 'C3_aggregate',
-          name: '结果聚合',
-          icon: '📦',
-          layer: 'C' as const,
-          status: 'done' as const,
+        nodes: [
+          // B层 — 意图蓝图
+          { id: 'B1_intent', name: '意图识别', icon: '🎯', layer: 'B', status: 'done', confidence: task.intent.confidence },
+          { id: 'B2_route', name: '链路选择', icon: '🔀', layer: 'B', status: 'done' },
+          { id: 'B3_complexity', name: '复杂度评估', icon: '📏', layer: 'B', status: 'done' },
+          // A层 — 编排计划 (链路中的节点)
+          ...executedChain.map((stepId: string) => {
+            const meta = stepMeta[stepId] || { label: stepId, icon: '⚙️' };
+            const stepData = stepMetaList.find((s: any) => s.step === stepId);
+            const isSkipped = summary?.skipped_steps?.includes(stepId);
+            return {
+              id: stepId,
+              name: meta.label,
+              icon: meta.icon,
+              layer: 'A' as const,
+              status: isSkipped ? 'skipped' : 'done',
+              confidence: stepData?.confidence,
+              risk: stepData?.risk,
+              artifact: result!.artifacts_produced?.find((a: any) =>
+                a.chain_phase?.toLowerCase() === stepId.toLowerCase() ||
+                a.chain_phase?.toLowerCase() === stepId.replace(/^S\d+_/, '').toLowerCase()
+              )?.file,
+            };
+          }),
+          // C层 — 执行记录
+          { id: 'C1_execute', name: '链路执行', icon: '⚡', layer: 'C', status: 'done', latency_ms: result!.execution_time_ms },
+          { id: 'C2_reflect', name: '反射决策', icon: '🔄', layer: 'C', status: 'done' },
+          { id: 'C3_aggregate', name: '结果聚合', icon: '📦', layer: 'C', status: 'done' },
+        ],
+        cost_report: undefined,
+        compression: undefined,
+        final: {
+          execution_chain: executedChain.join(' → '),
+          quality_score: quality?.average_confidence || task.intent.confidence,
+          risk_score: quality?.max_risk || 0.3,
+          grade: quality?.overall_quality || 'good',
         },
-      ],
-      cost_report: undefined,
-      compression: undefined,
-      final: {
-        execution_chain: executedChain.join(' → '),
-        quality_score: quality?.average_confidence || task.intent.confidence,
-        risk_score: quality?.max_risk || 0.3,
-        grade: quality?.overall_quality || 'good',
-      },
-    };
+      };
+    }
 
     // 同步完成（对话任务）或待确认（交易任务）
     const responseData: Record<string, unknown> = {

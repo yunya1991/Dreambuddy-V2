@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ChainTrace, OrchestrationNode } from "@/types";
+import type { ChainTrace, OrchestrationNode, PlannedStep } from "@/types";
 
 // ============================================================
 // 三层架构可视化面板
@@ -21,6 +21,33 @@ const STATUS_STYLES: Record<string, { bg: string; border: string; text: string; 
   skipped:  { bg: "#4a4a4a22", border: "#4a4a4a", text: "#999", icon: "⏭" },
   failed:   { bg: "#ff3b3022", border: "#ff3b30", text: "#ff3b30", icon: "✗" },
 };
+
+// 思维阶段图标（动态编排模式）
+const STAGE_ICONS: Record<string, string> = {
+  research: "🔍",
+  analysis: "🧠",
+  design: "📐",
+  validate: "✅",
+  execute: "⚡",
+};
+
+const STAGE_LABELS: Record<string, string> = {
+  research: "调研",
+  analysis: "分析",
+  design: "设计",
+  validate: "验证",
+  execute: "执行",
+};
+
+// 根据技能 ID 推断图标
+function getSkillIcon(skillId: string): string {
+  if (skillId.startsWith("dream-")) return "🤖";
+  if (skillId.startsWith("Regime") || skillId.startsWith("Classic")) return "📊";
+  if (skillId.includes("fundamental") || skillId.includes("news")) return "📰";
+  if (skillId.includes("risk")) return "🛡️";
+  if (skillId.includes("execute") || skillId.includes("order")) return "🎯";
+  return "⚙️";
+}
 
 interface Props {
   trace: ChainTrace | null;
@@ -78,6 +105,9 @@ export default function OrchestrationPanel({ trace }: Props) {
   const totalTokens = trace.cost_report?.total_tokens ?? 0;
   const budgetTokens = trace.plan.total_budget || trace.cost_report?.budget_tokens || 0;
   const tokenPct = budgetTokens > 0 ? Math.min(100, (totalTokens / budgetTokens) * 100) : 0;
+
+  // 是否为动态编排模式（A 层节点带 stage 字段）
+  const isDynamicOrchestration = aNodes.some((n) => n.stage);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -152,13 +182,26 @@ export default function OrchestrationPanel({ trace }: Props) {
         <LayerSection
           title="A层 · Architecture 编排计划"
           color={LAYER_COLORS.A}
-          desc="节点选择 → 预算分配 → 执行图构建"
+          desc={
+            isDynamicOrchestration
+              ? "动态编排 → 技能选择 → 执行图构建"
+              : "节点选择 → 预算分配 → 执行图构建"
+          }
         >
-          <NodeRow
-            nodes={aNodes}
-            expandedNode={expandedNode}
-            onToggle={setExpandedNode}
-          />
+          {isDynamicOrchestration ? (
+            <ANodeGrouped
+              nodes={aNodes}
+              plannedSteps={trace.plan.planned_steps}
+              expandedNode={expandedNode}
+              onToggle={setExpandedNode}
+            />
+          ) : (
+            <NodeRow
+              nodes={aNodes}
+              expandedNode={expandedNode}
+              onToggle={setExpandedNode}
+            />
+          )}
         </LayerSection>
       )}
 
@@ -309,7 +352,7 @@ function NodeRow({
           const style = STATUS_STYLES[node.status] || STATUS_STYLES.pending;
           const isExpanded = expandedNode === node.id;
           return (
-            <div key={node.id} style={{ display: "flex", alignItems: "center" }}>
+            <div key={`${idx}-${node.id}`} style={{ display: "flex", alignItems: "center" }}>
               <div
                 onClick={() => onToggle(isExpanded ? null : node.id)}
                 style={{
@@ -406,6 +449,193 @@ function NodeRow({
           </div>
         );
       })()}
+    </div>
+  );
+}
+
+// ── A 层动态编排分组（按思维阶段） ─────────────────
+
+function ANodeGrouped({
+  nodes,
+  plannedSteps,
+  expandedNode,
+  onToggle,
+}: {
+  nodes: OrchestrationNode[];
+  plannedSteps?: PlannedStep[];
+  expandedNode: string | null;
+  onToggle: (id: string | null) => void;
+}) {
+  const stageOrder = ["research", "analysis", "design", "validate", "execute"];
+  const grouped = new Map<string, OrchestrationNode[]>();
+  for (const node of nodes) {
+    const key = node.stage || "other";
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(node);
+  }
+
+  const orderedStages = [
+    ...stageOrder.filter((s) => grouped.has(s)),
+    ...[...grouped.keys()].filter((s) => !stageOrder.includes(s)),
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {orderedStages.map((stage, stageIdx) => {
+        const stageNodes = grouped.get(stage) || [];
+        const stageNode = stageNodes.find((n) => !n.is_skill);
+        const skillNodes = stageNodes.filter((n) => n.is_skill);
+        const stageStyle = STATUS_STYLES[stageNode?.status || "done"] || STATUS_STYLES.done;
+        const stageIcon = stageNode?.icon || STAGE_ICONS[stage] || "⚙️";
+        const stageLabel = stageNode?.name || STAGE_LABELS[stage] || stage;
+        const plannedStep = plannedSteps?.find((p) => p.stage === stage);
+
+        return (
+          <div key={stage}>
+            {/* 阶段头 */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 8px",
+                borderRadius: 6,
+                backgroundColor: stageStyle.bg,
+                border: `1px solid ${stageStyle.border}55`,
+              }}
+            >
+              <span style={{ fontSize: 16 }}>{stageIcon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: stageStyle.text }}>
+                  {stageLabel}
+                </div>
+                {plannedStep && (
+                  <div style={{ fontSize: 9, color: "#666", marginTop: 1 }}>
+                    {plannedStep.chain}链 · {plannedStep.selected_skills.length}个技能
+                  </div>
+                )}
+              </div>
+              {stageNode?.confidence !== undefined && (
+                <span style={{ fontSize: 10, color: "#00c853", fontWeight: 600 }}>
+                  {(stageNode.confidence * 100).toFixed(0)}%
+                </span>
+              )}
+              {stageNode?.tokens_used !== undefined && stageNode.tokens_used > 0 && (
+                <span style={{ fontSize: 9, color: "#888" }}>
+                  {stageNode.tokens_used.toLocaleString()}t
+                </span>
+              )}
+            </div>
+
+            {/* 技能横向流 */}
+            {skillNodes.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  flexWrap: "wrap",
+                  marginTop: 4,
+                  marginLeft: 12,
+                }}
+              >
+                {skillNodes.map((node, idx) => {
+                  const style = STATUS_STYLES[node.status] || STATUS_STYLES.pending;
+                  const isExpanded = expandedNode === node.id;
+                  const skillIcon = node.icon || getSkillIcon(node.id);
+                  return (
+                    <div key={`${idx}-${node.id}`} style={{ display: "flex", alignItems: "center" }}>
+                      <div
+                        onClick={() => onToggle(isExpanded ? null : node.id)}
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 6,
+                          backgroundColor: style.bg,
+                          border: `1.5px solid ${style.border}`,
+                          color: style.text,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          flexShrink: 0,
+                        }}
+                        title={node.name}
+                      >
+                        <span style={{ fontSize: 13 }}>{skillIcon}</span>
+                        <span style={{ fontSize: 8, marginTop: 1, textAlign: "center", lineHeight: 1.1, maxWidth: 40, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {node.name.slice(0, 6)}
+                        </span>
+                      </div>
+                      {idx < skillNodes.length - 1 && (
+                        <div
+                          style={{
+                            width: 8,
+                            height: 1.5,
+                            backgroundColor: skillNodes[idx + 1].status !== "pending" ? "#3b82f6" : "#2a2a2a",
+                          }}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 展开的技能节点详情 */}
+            {expandedNode && skillNodes.some((n) => n.id === expandedNode) && (() => {
+              const node = skillNodes.find((n) => n.id === expandedNode);
+              if (!node) return null;
+              const style = STATUS_STYLES[node.status] || STATUS_STYLES.pending;
+              return (
+                <div
+                  style={{
+                    marginTop: 4,
+                    marginLeft: 12,
+                    padding: 8,
+                    backgroundColor: "#141414",
+                    border: `1px solid ${style.border}44`,
+                    borderRadius: 6,
+                    fontSize: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600, color: "#ccc" }}>
+                      {getSkillIcon(node.id)} {node.name}
+                    </span>
+                    <span style={{ color: style.text, fontWeight: 600 }}>
+                      {style.icon} {node.status}
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, color: "#888" }}>
+                    {node.confidence !== undefined && (
+                      <div>置信度: <span style={{ color: "#00c853" }}>{(node.confidence * 100).toFixed(0)}%</span></div>
+                    )}
+                    {node.latency_ms !== undefined && node.latency_ms > 0 && (
+                      <div>延迟: <span style={{ color: "#aaa" }}>{node.latency_ms.toFixed(0)}ms</span></div>
+                    )}
+                    {node.tokens_used !== undefined && node.tokens_used > 0 && (
+                      <div>Token: <span style={{ color: "#aaa" }}>{node.tokens_used.toLocaleString()}</span></div>
+                    )}
+                    {node.chain && (
+                      <div>链路: <span style={{ color: "#f59e0b" }}>{node.chain}</span></div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 阶段间连接线 */}
+            {stageIdx < orderedStages.length - 1 && (
+              <div style={{ display: "flex", justifyContent: "center", margin: "2px 0" }}>
+                <div style={{ width: 1.5, height: 8, backgroundColor: "#3b82f655" }} />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
