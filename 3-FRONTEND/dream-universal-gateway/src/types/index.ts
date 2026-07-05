@@ -436,6 +436,19 @@ export interface OrchestrationNode {
   skip_reason?: string;
   reflect_action?: string;
   artifact?: string;
+  /** 思维阶段（research/analysis/design/validate/execute），仅 A 层动态编排节点 */
+  stage?: string;
+  /** 所属链路（A/C/F），仅 A 层动态编排节点 */
+  chain?: string;
+  /** 标记是否为技能子节点（动态编排时 A 层包含思维阶段+技能两类节点） */
+  is_skill?: boolean;
+}
+
+export interface PlannedStep {
+  step_id: string;
+  stage: string;
+  chain: string;
+  selected_skills: string[];
 }
 
 export interface ChainTrace {
@@ -451,6 +464,8 @@ export interface ChainTrace {
     complexity: string;
     total_budget: number;
     rationale: string;
+    /** 动态编排模式下的计划步骤（ExecutionPlanner 结果） */
+    planned_steps?: PlannedStep[];
   };
   nodes: OrchestrationNode[];
   cost_report?: {

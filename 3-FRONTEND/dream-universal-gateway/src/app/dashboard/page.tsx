@@ -301,10 +301,19 @@ export default function ChatPage() {
   const [rightPanelContent, setRightPanelContent] = useState<RightPanelType>('analysis');
   const [orchestrationTrace, setOrchestrationTrace] = useState<ChainTrace | null>(null);
   
+  // 流式进度状态（实时更新思考卡）
+  const [streamProgress, setStreamProgress] = useState<{
+    isStreaming: boolean;
+    currentStep: string | null;
+    currentSkill: string | null;
+    planSteps: Array<{ stepId: string; stage: string; chain: string; label?: string; status: 'pending' | 'active' | 'done' | 'skipped' }>;
+    skillStatuses: Record<string, { status: 'pending' | 'active' | 'done'; confidence?: number; latencyMs?: number }>;
+    contentAccumulated: string;
+  } | null>(null);
+  
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [thinkingMode, setThinkingMode] = useState<'quick' | 'deep'>('quick');
-  const [workbuddyMode, setWorkbuddyMode] = useState(true); // WorkBuddy桥接模式
   const [lang, setLang] = useState<'zh' | 'en'>('zh'); // 语言设置，默认中文
 
   // P2-双交易模式
@@ -389,7 +398,7 @@ export default function ChatPage() {
   }>>([
     {
       role: "assistant",
-      content: "你好！我是 Dream Gateway 智能交易助手。我可以帮你分析市场、制定策略、管理交易。\n\n⚡ **智能思考**：轻量级 (S1→S2) 即时响应\n🧠 **深度思考**：完整 S1→S2→S3→S4 闭环深度调研\n\n🔗 **桥接模式**：中台即时执行，秒级响应\n💬 **直接模式**：LLM/Mock即时对话\n\n⚠️ 交易任务需确认执行时间，不会自动执行\n\n试试输入「/行情」或「分析BTC」",
+      content: "你好！我是 Dream Gateway 智能交易助手。\n\n可以帮你分析市场、制定策略、管理交易。下方可切换思考深度与响应模式，交易任务执行前会要求确认。\n\n试试输入「分析BTC」或「/行情」",
     },
   ]);
 
@@ -652,10 +661,12 @@ export default function ChatPage() {
         setApiConfigs(data.data);
         
         // 自动选择第一个模拟盘配置并获取余额（优先模拟盘，避免默认显示0）
-        if (data.data.length > 0) {
+        // 仅从交易所配置中选择，排除 LLM / 数据源配置
+        const exchangeOnly = (data.data as ApiConfigItem[]).filter((c: ApiConfigItem) => c.category === 'EXCHANGE');
+        if (exchangeOnly.length > 0) {
           // 优先选择模拟盘配置
-          const demoConfig = data.data.find((c: ApiConfigItem) => c.environment === 'demo');
-          const firstConfig = demoConfig || data.data[0];
+          const demoConfig = exchangeOnly.find((c: ApiConfigItem) => c.environment === 'demo');
+          const firstConfig = demoConfig || exchangeOnly[0];
           setExchangeSelect({
             exchange: firstConfig.provider,
             configId: firstConfig.id,  // 保存配置ID用于数据库查询
@@ -1136,6 +1147,32 @@ export default function ChatPage() {
       }
     }
 
+    // 🔍 检测用户是否在回复意图澄清（数字选择澄清选项）
+    if (lastAssistantMsg?.clarification_state?.options && lastAssistantMsg.clarification_state.options.length > 0) {
+      const options = lastAssistantMsg.clarification_state.options;
+      const trimmed = userMessage.trim();
+      const numMatch = trimmed.match(/^(\d+)$/);
+      let selectedOpt: any = null;
+
+      if (numMatch) {
+        const idx = parseInt(numMatch[1], 10) - 1;
+        if (idx >= 0 && idx < options.length) {
+          selectedOpt = options[idx];
+        }
+      } else {
+        selectedOpt = options.find((opt: any) =>
+          trimmed === opt.label || trimmed === opt.key || trimmed.includes(opt.label)
+        );
+      }
+
+      if (selectedOpt) {
+        setInput("");
+        await handleClarificationChoice(lastAssistantMsg, selectedOpt, options.indexOf(selectedOpt));
+        submittingRef.current = false;
+        return;
+      }
+    }
+
     // 🛡️ 二次防御：若 messages 末尾已有相同内容的 user 消息 (state更新延迟场景)，跳过添加
     if (messages.length > 0) {
       const tail = messages[messages.length - 1];
@@ -1151,13 +1188,7 @@ export default function ChatPage() {
     resetAnalysisChain(); // 清除上一轮分析链路
 
     try {
-      if (workbuddyMode) {
-        // ========== WorkBuddy 异步桥接模式 ==========
-        await handleWorkbuddyTask(userMessage);
-      } else {
-        // ========== 原有同步Mock/LLM模式 ==========
-        await handleDirectChat(userMessage);
-      }
+      await handleWorkbuddyTask(userMessage);
     } finally {
       // 🔓 释放同步锁，isLoading 也会在子流程的 finally 中重置
       submittingRef.current = false;
@@ -1258,24 +1289,23 @@ export default function ChatPage() {
 
   /**
    * 处理用户点击澄清选项（意图识别不确定时）
-   * 用户点击后，以选项的 label 作为新消息发送到后端
+   * 用户点击后，构造更明确的消息发送到后端（结合原始问题和选择）
    * 后端会重新走意图识别→执行链路
    */
   const handleClarificationChoice = async (msg: any, opt: any, _idx: number) => {
-    const newUserMessage = opt.label || opt.target_intent || opt.key;
-    // 过滤掉当前的"需要澄清"消息，然后发送用户选择的内容
+    const choiceLabel = opt.label || opt.key || '';
+    let newUserMessage = choiceLabel;
+    const userMessages = messages.filter((m: any) => m.role === 'user');
+    const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
+    if (lastUserMsg && lastUserMsg !== choiceLabel) {
+      newUserMessage = `${lastUserMsg} - ${choiceLabel}`;
+    }
     setMessages((prev) => {
       const filtered = prev.filter((m: any) => !(m.clarification_state && m.clarification_state.options));
-      return [...filtered, { role: "user", content: newUserMessage }];
+      return [...filtered, { role: "user", content: choiceLabel }];
     });
     setIsLoading(true);
-
-    // 走 WorkBuddy 模式发送消息
-    if (workbuddyMode) {
-      await handleWorkbuddyTask(newUserMessage);
-    } else {
-      await handleDirectChat(newUserMessage);
-    }
+    await handleWorkbuddyTask(newUserMessage);
   };
 
   /**
@@ -1293,11 +1323,7 @@ export default function ChatPage() {
       return [...filtered, { role: "user", content: choiceMessage }];
     });
     setIsLoading(true);
-    if (workbuddyMode) {
-      await handleWorkbuddyTask(choiceMessage);
-    } else {
-      await handleDirectChat(choiceMessage);
-    }
+    await handleWorkbuddyTask(choiceMessage);
   };
 
   /**
@@ -1319,7 +1345,6 @@ export default function ChatPage() {
 
     // 🛡️ 防御性添加 thinking 消息：用 setMessages 回调式更新，避免闭包旧值问题
     setMessages((prev) => {
-      // 如果最后一条已经是 thinking，则不再追加
       const last = prev[prev.length - 1];
       if (last && last.role === 'assistant' && last.intent === 'thinking') {
         return prev;
@@ -1329,14 +1354,464 @@ export default function ChatPage() {
 
     // 🔗 初始化分析链路追踪
     initAnalysisChain('deep_analysis', thinkingMode);
-    // 深度模式启动分步进度模拟
-    if (thinkingMode === 'deep') {
-      const deepSteps = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'];
-      simulateDeepProgress(deepSteps);
-    }
+
+    // 重置流式进度状态
+    setStreamProgress({
+      isStreaming: true,
+      currentStep: null,
+      currentSkill: null,
+      planSteps: [],
+      skillStatuses: {},
+      contentAccumulated: '',
+    });
 
     try {
-      // Step 1: 创建任务并立即执行（v2.0 中台即时触发）
+      // ========== SSE 流式执行（优先） ==========
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3分钟超时
+
+      const response = await fetch("/api/task/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage,
+          session_id: "dashboard-session",
+          thinking_mode: thinkingMode,
+          llm_model: llmModel,
+          intent_method: intentMethod,
+          lang: lang,
+          trading_mode: tradingMode,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        // 如果流式接口不可用，降级到原有模式
+        console.warn('[SSE] 流式接口不可用，降级到同步模式');
+        await handleWorkbuddyTaskLegacy(userMessage);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalData: any = null;
+      let accumulatedContent = '';
+
+      if (!reader) {
+        throw new Error('无法读取响应流');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // 解析 SSE 事件
+        const eventLines = buffer.split('\n\n');
+        buffer = eventLines.pop() || '';
+
+        for (const eventBlock of eventLines) {
+          if (!eventBlock.trim()) continue;
+
+          const lines = eventBlock.split('\n');
+          let eventType = 'message';
+          let eventData = '';
+
+          for (const line of lines) {
+            if (line.startsWith('event: ')) {
+              eventType = line.slice(7).trim();
+            } else if (line.startsWith('data: ')) {
+              eventData += line.slice(6);
+            }
+          }
+
+          if (!eventData) continue;
+
+          try {
+            const data = JSON.parse(eventData);
+            
+            switch (eventType) {
+              case 'started':
+                console.log('[SSE] 任务开始');
+                break;
+
+              case 'progress':
+                // 处理进度事件
+                handleProgressEvent(data);
+                break;
+
+              case 'done':
+                finalData = data;
+                break;
+
+              case 'error':
+                throw new Error(data.error || '执行错误');
+            }
+          } catch (e) {
+            console.warn('[SSE] 解析事件失败:', e, eventData.slice(0, 100));
+          }
+        }
+      }
+
+      // 流式读取完成
+      if (finalData && finalData.status === 'completed' && finalData.content) {
+        handleStreamSuccess(finalData);
+      } else if (finalData && finalData.status === 'processing') {
+        // 需要异步执行，走轮询降级
+        const taskId = finalData.task_id;
+        await pollTaskResult(taskId);
+      } else {
+        // 没有得到有效结果，降级到同步模式
+        console.warn('[SSE] 未获取到有效结果，降级到同步模式');
+        await handleWorkbuddyTaskLegacy(userMessage);
+      }
+
+    } catch (error) {
+      console.error("WorkBuddy task error:", error);
+      
+      // 网络错误或超时，尝试降级到同步模式
+      if (error instanceof Error && (error.name === 'AbortError' || error.message === 'Failed to fetch')) {
+        console.warn('[SSE] 流式请求失败，尝试降级模式');
+        try {
+          await handleWorkbuddyTaskLegacy(userMessage);
+          return;
+        } catch {
+          // 降级也失败，继续下面的错误处理
+        }
+      }
+
+      // 友好错误提示
+      let errorMsg = "未知错误";
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMsg = '请求超时（3分钟），任务可能仍在后台执行';
+        } else if (error.message === 'Failed to fetch') {
+          errorMsg = '网络连接失败，服务器可能正在重启或响应过长，请稍后重试';
+        } else {
+          errorMsg = error.message;
+        }
+      }
+      setMessages((prev) => {
+        const filtered = prev.filter((m) => m.intent !== "thinking");
+        return [
+          ...filtered,
+          {
+            role: "assistant",
+            content: `❌ 任务请求失败：${errorMsg}\n\n请稍后重试。`,
+            intent: "error",
+          },
+        ];
+      });
+      setIsLoading(false);
+      setStreamProgress(null);
+    }
+  };
+
+  // ========== 处理进度事件 ==========
+  const handleProgressEvent = (event: any) => {
+    setStreamProgress((prev) => {
+      if (!prev) return prev;
+      let updated = { ...prev };
+
+      switch (event.type) {
+        case 'plan_created':
+          updated.planSteps = event.plan.steps.map((s: any) => ({
+            stepId: s.stepId,
+            stage: s.stage,
+            chain: s.chain,
+            label: s.label,
+            status: 'pending' as const,
+          }));
+          break;
+
+        case 'step_start':
+          updated.currentStep = event.stepId;
+          updated.planSteps = updated.planSteps.map(s =>
+            s.stepId === event.stepId ? { ...s, status: 'active' as const } : s
+          );
+          break;
+
+        case 'step_skill_start':
+          updated.currentSkill = event.skillName;
+          const skillKeyStart = `${event.stepId}_${event.skillId}`;
+          updated.skillStatuses = {
+            ...updated.skillStatuses,
+            [skillKeyStart]: { status: 'active' as const },
+          };
+          break;
+
+        case 'step_skill_end':
+          const skillKeyEnd = `${event.stepId}_${event.skillId}`;
+          updated.skillStatuses = {
+            ...updated.skillStatuses,
+            [skillKeyEnd]: {
+              status: 'done' as const,
+              confidence: event.confidence,
+              latencyMs: event.latencyMs,
+            },
+          };
+          break;
+
+        case 'step_end':
+          updated.planSteps = updated.planSteps.map(s =>
+            s.stepId === event.stepId
+              ? { ...s, status: event.status === 'completed' ? 'done' as const : event.status === 'skipped' ? 'skipped' as const : 'done' as const }
+              : s
+          );
+          if (event.status === 'completed' || event.status === 'skipped') {
+            updated.currentStep = null;
+            updated.currentSkill = null;
+          }
+          break;
+
+        case 'content_delta':
+          updated.contentAccumulated += event.delta;
+          break;
+
+        case 'done':
+          updated.isStreaming = false;
+          break;
+      }
+
+      return updated;
+    });
+
+    // 同步更新 thinking 消息的内容（打字机效果）
+    if (event.type === 'content_delta' && event.delta) {
+      setMessages((prev) => {
+        const lastIdx = prev.length - 1;
+        if (lastIdx < 0) return prev;
+        const last = prev[lastIdx];
+        if (last.role !== 'assistant' || last.intent !== 'thinking') return prev;
+
+        const currentContent = (last as any).streaming_content || '';
+        const updated = [...prev];
+        updated[lastIdx] = {
+          ...last,
+          content: currentContent + event.delta,
+          streaming_content: currentContent + event.delta,
+        };
+        return updated;
+      });
+    }
+  };
+
+  // ========== 流式成功处理 ==========
+  const handleStreamSuccess = (data: any) => {
+    const content = data.content;
+    const artifacts = data.artifacts_produced || [];
+    const summary = data.execution_summary;
+    const isTrade = data.trade_requires_confirmation;
+    const taskId = data.task_id;
+    const intentType = data.intent?.type || data.intent;
+
+    if (data.chain_trace) {
+      setOrchestrationTrace(data.chain_trace);
+    }
+
+    // 🔗 更新分析链路
+    if (summary?.chain_executed) {
+      const executedChain = summary.chain_executed as string[];
+      setAnalysisChain(prev => prev.map(step => {
+        if (executedChain.includes(step.id)) {
+          return {
+            ...step,
+            status: 'completed' as const,
+            timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          };
+        }
+        if (step.status === 'running') {
+          return { ...step, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) };
+        }
+        return step;
+      }));
+      setAnalysisEndTime(Date.now());
+    }
+    if (data.intent?.confidence) {
+      setAnalysisConfidence(data.intent.confidence);
+    }
+    
+    let resultContent = content;
+    if (artifacts.length > 0) {
+      resultContent += `\n\n📎 生成产物: ${artifacts.map((a: any) => `${a.chain_phase}: ${a.file}`).join(' | ')}`;
+    }
+    if (summary) {
+      resultContent += `\n🔗 执行链路: ${summary.chain_executed?.join(' → ') || 'N/A'}`;
+    }
+
+    const isSChain = summary?.chain_executed && summary.chain_executed.some((s: string) => s.startsWith('S'));
+    
+    setMessages((prev) => {
+      const filtered = prev.filter((m) => m.intent !== "thinking");
+      const existingIdx = filtered.findIndex((m: any) => m.task_id === taskId);
+      const newMsg = {
+        role: "assistant",
+        content: resultContent,
+        intent: isTrade ? 'execute_trade' : intentType,
+        confidence: data.intent?.confidence,
+        thinking_mode: thinkingMode,
+        chain: summary?.chain_executed || [],
+        task_id: taskId,
+        artifacts: artifacts.length > 0 ? artifacts : undefined,
+        chain_trace: data.chain_trace,
+        trade_task_id: isTrade ? taskId : undefined,
+        trade_confirmed: false,
+        strategyChain: isSChain ? {
+          scope: `${data.intent?.entities?.symbol || 'BTC'} 策略分析`,
+          currentStep: summary?.chain_executed?.[summary.chain_executed.length - 1] || null,
+          steps: ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE', 'S5_EXECUTE'].map((stepId, idx) => {
+            const isExecuted = summary?.chain_executed?.includes(stepId);
+            const isCurrent = stepId === summary?.chain_executed?.[summary.chain_executed.length - 1];
+            let status = 'pending';
+            if (isExecuted && !isCurrent) status = 'done';
+            else if (isCurrent) status = 'active';
+            const nameMap: Record<string, string> = {
+              'S1_RESEARCH': 'S1 调研',
+              'S2_ANALYSIS': 'S2 分析',
+              'S3_DESIGN': 'S3 设计',
+              'S4_VALIDATE': 'S4 验证',
+              'S5_EXECUTE': 'S5 执行',
+            };
+            return {
+              id: stepId,
+              number: idx + 1,
+              name: nameMap[stepId] || stepId,
+              status,
+            };
+          }),
+          complexity: (summary?.chain_executed?.length || 0) <= 2 ? 'quick' : (summary?.chain_executed?.length || 0) <= 3 ? 'standard' : 'deep',
+        } : undefined,
+      };
+      if (existingIdx >= 0) {
+        const next = [...filtered];
+        next[existingIdx] = { ...next[existingIdx], ...newMsg };
+        return next;
+      }
+      return [...filtered, newMsg];
+    });
+    setIsLoading(false);
+    setStreamProgress(null);
+  };
+
+  // ========== 轮询任务结果（降级路径） ==========
+  const pollTaskResult = async (taskId: string) => {
+    const pollInterval = 3000;
+    const maxPollTime = 5 * 60 * 1000;
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxPollTime) {
+      await new Promise(r => setTimeout(r, pollInterval));
+
+      const pollRes = await fetch(`/api/task?id=${taskId}`);
+      if (!pollRes.ok) continue;
+
+      const pollData = await pollRes.json();
+      const pollStatus = pollData.data.status;
+
+      if (pollStatus === 'completed') {
+        const content = pollData.data.content || '执行完成，但未返回内容';
+        const artifacts = pollData.data.artifacts_produced || [];
+        const summary = pollData.data.execution_summary;
+        const intentType = pollData.data.intent?.type || pollData.data.intent;
+        
+        if (pollData.data.chain_trace) {
+          setOrchestrationTrace(pollData.data.chain_trace);
+        }
+        
+        if (summary?.chain_executed) {
+          const executedChain = summary.chain_executed as string[];
+          setAnalysisChain(prev => prev.map(step => {
+            if (executedChain.includes(step.id)) {
+              return { ...step, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) };
+            }
+            if (step.status === 'running') {
+              return { ...step, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) };
+            }
+            return step;
+          }));
+        }
+        if (pollData.data.intent?.confidence) setAnalysisConfidence(pollData.data.intent.confidence);
+        
+        let resultContent = content;
+        if (artifacts.length > 0) {
+          resultContent += `\n\n📎 生成产物: ${artifacts.map((a: any) => `${a.chain_phase}: ${a.file}`).join(' | ')}`;
+        }
+        if (summary) {
+          resultContent += `\n🔗 执行链路: ${summary.chain_executed?.join(' → ') || 'N/A'}`;
+        }
+
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => m.intent !== "thinking");
+          const existingIdx = filtered.findIndex((m: any) => m.task_id === taskId);
+          const newMsg = {
+            role: "assistant",
+            content: resultContent,
+            intent: intentType,
+            confidence: pollData.data.intent?.confidence,
+            thinking_mode: thinkingMode,
+            chain: summary?.chain_executed || [],
+            task_id: taskId,
+          };
+          if (existingIdx >= 0) {
+            const next = [...filtered];
+            next[existingIdx] = { ...next[existingIdx], ...newMsg };
+            return next;
+          }
+          return [...filtered, newMsg];
+        });
+        setIsLoading(false);
+        setStreamProgress(null);
+        return;
+      }
+
+      if (pollStatus === 'failed') {
+        setMessages((prev) => {
+          const filtered = prev.filter((m) => m.intent !== "thinking");
+          const existingIdx = filtered.findIndex((m: any) => m.task_id === taskId);
+          const newMsg = {
+            role: "assistant",
+            content: `❌ 任务执行失败\n\n📋 任务ID: ${taskId}\n💥 错误: ${pollData.data.error || '未知错误'}`,
+            intent: "error",
+            task_id: taskId,
+          };
+          if (existingIdx >= 0) {
+            const next = [...filtered];
+            next[existingIdx] = { ...next[existingIdx], ...newMsg };
+            return next;
+          }
+          return [...filtered, newMsg];
+        });
+        setIsLoading(false);
+        setStreamProgress(null);
+        return;
+      }
+    }
+
+    // 轮询超时
+    setMessages((prev) => {
+      const filtered = prev.filter((m) => m.intent !== "thinking");
+      return [
+        ...filtered,
+        {
+          role: "assistant",
+          content: `⏰ 等待超时（5分钟）\n\n任务仍在后台执行，你可以稍后查看结果。`,
+          intent: "timeout",
+        },
+      ];
+    });
+    setIsLoading(false);
+    setStreamProgress(null);
+  };
+
+  // ========== 旧版同步模式（降级路径） ==========
+  const handleWorkbuddyTaskLegacy = async (userMessage: string) => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000);
       const createRes = await fetch("/api/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1347,10 +1822,11 @@ export default function ChatPage() {
           llm_model: llmModel,
           intent_method: intentMethod,
           lang: lang,
-          // P2-双交易模式：前端选择的模式传递到后端
           trading_mode: tradingMode,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (!createRes.ok) {
         if (createRes.status === 429) {
@@ -1364,7 +1840,6 @@ export default function ChatPage() {
       const intentType = createData.data.intent?.type || createData.data.intent;
       const taskId = createData.data.task_id;
 
-      // Step 2a: 同步完成（对话任务 / 交易待确认）→ 直接显示结果
       if (taskStatus === 'completed' && createData.data.content) {
         const content = createData.data.content;
         const artifacts = createData.data.artifacts_produced || [];
@@ -1375,12 +1850,10 @@ export default function ChatPage() {
           setOrchestrationTrace((createData.data as any).chain_trace);
         }
         
-        // 🔗 更新分析链路：根据实际执行的chain标记所有步骤完成
         if (summary?.chain_executed) {
           const executedChain = summary.chain_executed as string[];
           setAnalysisChain(prev => prev.map(step => {
             if (executedChain.includes(step.id)) {
-              // artifact 匹配：同时支持大小写和带/不带前缀
               const stepIdLower = step.id.toLowerCase();
               const stepIdNormalized = step.id.replace(/^S\d+_/, '').toLowerCase();
               const artifact = artifacts?.find((a: any) => {
@@ -1394,13 +1867,11 @@ export default function ChatPage() {
                 timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
               };
             }
-            // 未执行的步骤标为idle
             if (step.status === 'running') {
               return { ...step, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) };
             }
             return step;
           }));
-          // 标记剩余running步骤完成
           setAnalysisChain(prev => prev.map(s => s.status === 'running' ? { ...s, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) } : s));
           setAnalysisEndTime(Date.now());
         }
@@ -1420,7 +1891,6 @@ export default function ChatPage() {
         
         setMessages((prev) => {
           const filtered = prev.filter((m) => m.intent !== "thinking");
-          // 📌 去重：若已存在同 taskId 的结果消息，更新而非新增
           const existingIdx = filtered.findIndex((m: any) => m.task_id === taskId);
           const newMsg = {
             role: "assistant",
@@ -1461,7 +1931,6 @@ export default function ChatPage() {
             } : undefined,
           };
           if (existingIdx >= 0) {
-            // 更新已存在的消息
             const next = [...filtered];
             next[existingIdx] = { ...next[existingIdx], ...newMsg };
             return next;
@@ -1472,7 +1941,6 @@ export default function ChatPage() {
         return;
       }
 
-      // Step 2b: 澄清状态（意图识别不确定，需要用户选择）
       if (taskStatus === 'awaiting_clarification') {
         const content = createData.data.content || '';
         const clarificationState = createData.data.clarification_state;
@@ -1514,13 +1982,11 @@ export default function ChatPage() {
         return;
       }
 
-      // Step 2c: 步进确认状态（D/Z/E 思维链等待用户选择）
       if (taskStatus === 'awaiting_confirmation') {
         const content = createData.data.content || '';
         const summary = createData.data.execution_summary;
         const stepConfirmation = createData.data.step_confirmation;
 
-        // 🔗 更新分析链路：标记当前步骤完成
         if (summary?.chain_executed) {
           const executedChain = summary.chain_executed as string[];
           setAnalysisChain(prev => prev.map((step, idx) => {
@@ -1531,7 +1997,6 @@ export default function ChatPage() {
                 timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
               };
             }
-            // 下一个未执行的步骤标记为 running
             const executedSet = new Set(executedChain);
             const nextIdx = prev.findIndex((s, i) => i > idx && !executedSet.has(s.id));
             if (idx === nextIdx - 1 && step.status === 'idle') {
@@ -1542,7 +2007,6 @@ export default function ChatPage() {
           setAnalysisEndTime(Date.now());
         }
 
-        // 标记步进确认信息到消息上，供下次回复时识别
         setMessages((prev) => {
           const filtered = prev.filter((m) => m.intent !== "thinking");
           return [
@@ -1565,258 +2029,12 @@ export default function ChatPage() {
         return;
       }
 
-      // Step 2b: 异步执行（回退模式）→ 轮询结果
       if (taskStatus === 'processing') {
-        setMessages((prev) => {
-          const filtered = prev.filter((m) => m.intent !== "thinking");
-          return [
-            ...filtered,
-            {
-              role: "assistant",
-              content: `🔄 任务已创建(异步模式)\n\n📋 任务ID: ${taskId}\n🎯 意图: ${intentType}\n\nWorkBuddy正在异步执行...`,
-              intent: "thinking",
-              thinking_mode: thinkingMode,
-            },
-          ];
-        });
-
-        const pollInterval = 3000;
-        const maxPollTime = 5 * 60 * 1000;
-        const startTime = Date.now();
-
-        while (Date.now() - startTime < maxPollTime) {
-          await new Promise(r => setTimeout(r, pollInterval));
-
-          const pollRes = await fetch(`/api/task?id=${taskId}`);
-          if (!pollRes.ok) continue;
-
-          const pollData = await pollRes.json();
-          const pollStatus = pollData.data.status;
-
-          if (pollStatus === 'completed') {
-            const content = pollData.data.content || '执行完成，但未返回内容';
-            const artifacts = pollData.data.artifacts_produced || [];
-            const summary = pollData.data.execution_summary;
-            
-            // 🔗 更新分析链路：标记全部完成
-            if (summary?.chain_executed) {
-              const executedChain = summary.chain_executed as string[];
-              setAnalysisChain(prev => prev.map(step => {
-                if (executedChain.includes(step.id)) {
-                  return { ...step, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) };
-                }
-                if (step.status === 'running') {
-                  return { ...step, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) };
-                }
-                return step;
-              }));
-            } else {
-              setAnalysisChain(prev => prev.map(s => s.status === 'running' ? { ...s, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) } : s));
-            }
-            if (pollData.data.intent?.confidence) setAnalysisConfidence(pollData.data.intent.confidence);
-            
-            let resultContent = content;
-            if (artifacts.length > 0) {
-              resultContent += `\n\n📎 生成产物: ${artifacts.map((a: any) => `${a.chain_phase}: ${a.file}`).join(' | ')}`;
-            }
-            if (summary) {
-              resultContent += `\n🔗 执行链路: ${summary.chain_executed?.join(' → ') || 'N/A'}`;
-            }
-
-            setMessages((prev) => {
-              const filtered = prev.filter((m) => m.intent !== "thinking");
-              // 📌 去重：若已存在同 taskId 的结果消息，更新而非新增
-              const existingIdx = filtered.findIndex((m: any) => m.task_id === taskId);
-              const newMsg = {
-                role: "assistant",
-                content: resultContent,
-                intent: intentType,
-                confidence: pollData.data.intent?.confidence,
-                thinking_mode: thinkingMode,
-                chain: summary?.chain_executed || [],
-                task_id: taskId,
-              };
-              if (existingIdx >= 0) {
-                const next = [...filtered];
-                next[existingIdx] = { ...next[existingIdx], ...newMsg };
-                return next;
-              }
-              return [...filtered, newMsg];
-            });
-            setIsLoading(false);
-            return;
-          }
-
-          if (pollStatus === 'failed') {
-            setMessages((prev) => {
-              const filtered = prev.filter((m) => m.intent !== "thinking");
-              // 📌 去重：若已存在同 taskId 的错误消息，更新而非新增
-              const existingIdx = filtered.findIndex((m: any) => m.task_id === taskId);
-              const newMsg = {
-                role: "assistant",
-                content: `❌ 任务执行失败\n\n📋 任务ID: ${taskId}\n💥 错误: ${pollData.data.error || '未知错误'}`,
-                intent: "error",
-                task_id: taskId,
-              };
-              if (existingIdx >= 0) {
-                const next = [...filtered];
-                next[existingIdx] = { ...next[existingIdx], ...newMsg };
-                return next;
-              }
-              return [...filtered, newMsg];
-            });
-            setIsLoading(false);
-            return;
-          }
-
-          if (pollStatus === 'timeout') {
-            setMessages((prev) => {
-              const filtered = prev.filter((m) => m.intent !== "thinking");
-              return [
-                ...filtered,
-                {
-                  role: "assistant",
-                  content: `⏰ 任务超时\n\n可以切换到「直接模式」获取即时响应。`,
-                  intent: "timeout",
-                },
-              ];
-            });
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        // 轮询超时
-        setMessages((prev) => {
-          const filtered = prev.filter((m) => m.intent !== "thinking");
-          return [
-            ...filtered,
-            {
-              role: "assistant",
-              content: `⏰ 等待超时（5分钟）\n\n任务仍在后台执行，你可以稍后查看结果。\n💡 提示：切换到「直接模式」可获取即时响应。`,
-              intent: "timeout",
-            },
-          ];
-        });
+        await pollTaskResult(taskId);
+        return;
       }
     } catch (error) {
-      console.error("WorkBuddy task error:", error);
-      setMessages((prev) => {
-        const filtered = prev.filter((m) => m.intent !== "thinking");
-        return [
-          ...filtered,
-          {
-            role: "assistant",
-            content: `❌ 任务请求失败：${error instanceof Error ? error.message : "未知错误"}\n\n可以切换到「直接模式」或稍后重试。`,
-            intent: "error",
-          },
-        ];
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * 原有同步模式（作为fallback）
-   */
-  const handleDirectChat = async (userMessage: string) => {
-    const thinkingText = thinkingMode === 'quick' 
-      ? "⏳ ⚡ 智能思考中..." 
-      : "⏳ 🧠 深度思考中...";
-    setMessages((prev) => [
-      ...prev,
-      { role: "assistant", content: thinkingText, intent: "thinking" },
-    ]);
-
-    // 🔗 初始化分析链路追踪
-    initAnalysisChain('deep_analysis', thinkingMode);
-    if (thinkingMode === 'deep') {
-      const deepSteps = ['S1_RESEARCH', 'S2_ANALYSIS', 'S3_DESIGN', 'S4_VALIDATE'];
-      simulateDeepProgress(deepSteps);
-    }
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMessage,
-          session_id: "demo-session",
-          thinking_mode: thinkingMode,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.data?.llm_status) setLlmStatus(result.data.llm_status);
-      if (result.data?.llm_model) setLlmModel(result.data.llm_model);
-      if (result.data?.intent_method) setIntentMethod(result.data.intent_method);
-      if (result.data?.chain_trace) setOrchestrationTrace(result.data.chain_trace);
-
-      // 🔗 根据返回的chain更新分析链路
-      const returnedChain = result.data?.chain || [];
-      if (returnedChain.length > 0) {
-        setAnalysisChain(prev => prev.map(step => {
-          if (returnedChain.includes(step.id)) {
-            return {
-              ...step,
-              status: 'completed' as const,
-              timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            };
-          }
-          if (step.status === 'running') {
-            return { ...step, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) };
-          }
-          return step;
-        }));
-      } else {
-        // 无chain信息，全部标记完成
-        setAnalysisChain(prev => prev.map(s => s.status === 'running' ? { ...s, status: 'completed' as const, timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) } : s));
-        setAnalysisEndTime(Date.now());
-      }
-      if (result.data?.confidence) setAnalysisConfidence(result.data.confidence);
-
-      setMessages((prev) => {
-        const filtered = prev.filter((m) => m.intent !== "thinking");
-        return [
-          ...filtered,
-          {
-            role: "assistant",
-            content: result.data?.content || "抱歉，我没有收到有效响应。",
-            intent: result.data?.intent || "unknown",
-            confidence: result.data?.confidence,
-            context_aware: result.data?.context_aware || false,
-            chain: result.data?.chain || [],
-            thinking_mode: result.data?.thinking_mode || thinkingMode,
-            chainState: result.data?.chainState,
-            strategyChain: result.data?.strategyChainState,
-            stepProgress: result.data?.stepProgress,
-            market: result.data?.market,
-          },
-        ];
-      });
-    } catch (error) {
-      console.error("Chat API error:", error);
-      // 🔗 错误时标记当前running步骤为error
-      setAnalysisChain(prev => prev.map(s => s.status === 'running' ? { ...s, status: 'error' as const } : s));
-      setMessages((prev) => {
-        const filtered = prev.filter((m) => m.intent !== "thinking");
-        return [
-          ...filtered,
-          {
-            role: "assistant",
-            content: `❌ 请求失败：${error instanceof Error ? error.message : "未知错误"}\n\n请检查网络连接或稍后重试。`,
-            intent: "error",
-          },
-        ];
-      });
-    } finally {
-      setIsLoading(false);
+      throw error;
     }
   };
 
@@ -2460,10 +2678,11 @@ export default function ChatPage() {
           </div>
         );
       case 'api':
+        const exchangeConfigs = apiConfigs.filter(c => c.category === 'EXCHANGE');
         return (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <div className="panel-title" style={{ marginBottom: 0 }}>⚙️ API配置</div>
+              <div className="panel-title" style={{ marginBottom: 0 }}>⚙️ 交易所API</div>
               <button
                 onClick={() => setShowAddApiForm(!showAddApiForm)}
                 className="px-3 py-1.5 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition font-medium"
@@ -2475,31 +2694,16 @@ export default function ChatPage() {
             {/* 添加API表单 */}
             {showAddApiForm && (
               <div className="config-section" style={{ borderLeft: '3px solid #22c55e' }}>
-                <div className="font-semibold mb-2">➕ 新增API配置</div>
+                <div className="font-semibold mb-2">➕ 新增交易所API</div>
                 <div className="space-y-2">
                   <div>
-                    <label className="text-xs text-[#8a8a8a]">类别</label>
-                    <select
-                      value={addApiForm.category}
-                      onChange={(e) => setAddApiForm({ ...addApiForm, category: e.target.value })}
-                      className="w-full mt-1 bg-[#141414] border border-[#2a2a2a] rounded-md px-2.5 py-1.5 text-xs text-[#e0e0e0] focus:outline-none focus:border-[#0066ff]"
-                    >
-                      <option value="EXCHANGE">交易所</option>
-                      <option value="LLM">AI模型</option>
-                      <option value="DATA_SOURCE">数据源</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-[#8a8a8a]">提供商</label>
+                    <label className="text-xs text-[#8a8a8a]">交易所</label>
                     <select
                       value={addApiForm.provider}
-                      onChange={(e) => setAddApiForm({ ...addApiForm, provider: e.target.value })}
+                      onChange={(e) => setAddApiForm({ ...addApiForm, provider: e.target.value, category: 'EXCHANGE' })}
                       className="w-full mt-1 bg-[#141414] border border-[#2a2a2a] rounded-md px-2.5 py-1.5 text-xs text-[#e0e0e0] focus:outline-none focus:border-[#0066ff]"
                     >
                       <option value="okx">OKX</option>
-                      <option value="openai">OpenAI</option>
-                      <option value="dashscope">百炼/DashScope</option>
-                      <option value="coinglass">CoinGlass</option>
                     </select>
                   </div>
                   <div>
@@ -2605,14 +2809,14 @@ export default function ChatPage() {
               </div>
             )}
 
-            {/* API配置列表 */}
-            {apiConfigs.length === 0 ? (
+            {/* 交易所API配置列表 */}
+            {exchangeConfigs.length === 0 ? (
               <div className="config-section text-center">
-                <div className="text-xs text-[#8a8a8a] mb-2">暂无API配置</div>
-                <div className="text-xs text-[#8a8a8a]">点击上方"➕ 添加"按钮添加新的API配置</div>
+                <div className="text-xs text-[#8a8a8a] mb-2">暂无交易所API配置</div>
+                <div className="text-xs text-[#8a8a8a]">点击上方"➕ 添加"按钮配置交易所 API（大模型配置请切换到 🤖 LLM 面板）</div>
               </div>
             ) : (
-              apiConfigs.map((config) => (
+              exchangeConfigs.map((config) => (
                 <div key={config.id} className="config-section">
                   <div className="flex justify-between items-center mb-2">
                     <div className="font-semibold">{config.provider.toUpperCase()}</div>
@@ -2895,7 +3099,7 @@ export default function ChatPage() {
                         onClick={() => setRightPanelContent('api')}
                         className="text-xs text-[#3b82f6] hover:underline mt-1"
                       >
-                        → 前往API配置
+                        → 前往交易所API配置
                       </button>
                     </>
                   )}
@@ -5142,7 +5346,7 @@ export default function ChatPage() {
             </div>
             <div className={`collapsible-content ${settingsExpanded ? 'expanded' : ''}`}>
               <div className="collapsible-item" onClick={() => handleShowRightPanel('llm')}>🤖 大模型配置</div>
-              <div className="collapsible-item" onClick={() => handleShowRightPanel('api')}>⚙️ API配置</div>
+              <div className="collapsible-item" onClick={() => handleShowRightPanel('api')}>⚙️ 交易所API</div>
               <div className="collapsible-item" onClick={() => handleShowRightPanel('trading')}>💰 交易设置</div>
               <div className="collapsible-item" onClick={() => handleShowRightPanel('strategy')}>🎯 策略设置</div>
               <div className="collapsible-item" onClick={() => handleShowRightPanel('communication')}>📡 通信渠道</div>
@@ -5274,32 +5478,6 @@ export default function ChatPage() {
               📊 经典交易
             </button>
           </div>
-          
-          {/* WorkBuddy桥接模式切换 */}
-          <div className="flex items-center space-x-1 bg-[#1a1a1a] rounded-lg p-0.5">
-            <button
-              onClick={() => setWorkbuddyMode(true)}
-              className={`px-3 py-1.5 text-xs rounded-md transition ${
-                workbuddyMode
-                  ? 'bg-[#22c55e] text-white shadow-lg shadow-green-500/20'
-                  : 'text-[#8a8a8a] hover:text-[#e0e0e0]'
-              }`}
-              title="WorkBuddy桥接：中台即时执行，对话任务秒级响应，交易任务需确认"
-            >
-              🔗 桥接
-            </button>
-            <button
-              onClick={() => setWorkbuddyMode(false)}
-              className={`px-3 py-1.5 text-xs rounded-md transition ${
-                !workbuddyMode
-                  ? 'bg-[#0066ff] text-white shadow-lg shadow-blue-500/20'
-                  : 'text-[#8a8a8a] hover:text-[#e0e0e0]'
-              }`}
-              title="直接模式：使用LLM/Mock即时响应"
-            >
-              💬 直接
-            </button>
-          </div>
 
           {/* 语言切换 */}
           <div className="flex items-center space-x-1 bg-[#1a1a1a] rounded-lg p-0.5">
@@ -5405,6 +5583,7 @@ export default function ChatPage() {
                   <ThinkingCard
                     trace={(msg as any).chain_trace}
                     isLoading={msg.intent === 'thinking'}
+                    streamProgress={msg.intent === 'thinking' && i === finalMessages.length - 1 ? streamProgress : undefined}
                   />
                 )}
                 {msg.role === "user" && (
@@ -6064,7 +6243,12 @@ export default function ChatPage() {
               <button
                 key={cmd}
                 onClick={() => setInput(cmd)}
-                className="px-3 py-1 text-xs bg-[#1a1a1a] text-[#8a8a8a] rounded-full hover:bg-[#1f1f1f] transition"
+                disabled={isLoading}
+                className={`px-3 py-1 text-xs rounded-full transition ${
+                  isLoading
+                    ? 'bg-[#1a1a1a] text-[#52525b] cursor-not-allowed'
+                    : 'bg-[#1a1a1a] text-[#8a8a8a] hover:bg-[#1f1f1f] cursor-pointer'
+                }`}
               >
                 {cmd}
               </button>
@@ -6073,22 +6257,38 @@ export default function ChatPage() {
         </div>
         
         {/* Input */}
-        <form onSubmit={handleSubmit} className="p-4 border-t border-[#1a1a1a]">
-          <div className="flex items-center space-x-2 bg-[#1a1a1a] rounded-lg px-4 py-3">
+        <form onSubmit={handleSubmit} className={`p-4 border-t border-[#1a1a1a] transition-opacity ${isLoading ? 'opacity-70' : ''}`}>
+          <div className={`flex items-center space-x-2 bg-[#1a1a1a] rounded-lg px-4 py-3 transition ${isLoading ? 'ring-1 ring-[#0066ff]/50' : ''}`}>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={`输入消息... (${
-                workbuddyMode ? '🔗桥接' : '💬直接'
-              } | ${
+              disabled={isLoading}
+              placeholder={isLoading ? '⏳ 处理中，请稍候...' : `输入消息... (${
                 thinkingMode === 'quick' ? '⚡智能' : '🧠深度'
               } | 支持 /命令)`}
-              className="flex-1 bg-transparent text-sm text-[#e0e0e0] placeholder-[#a1a1aa] focus:outline-none"
+              className="flex-1 bg-transparent text-sm text-[#e0e0e0] placeholder-[#a1a1aa] focus:outline-none disabled:cursor-not-allowed"
             />
-            <button type="submit" className="p-2 bg-[#0066ff] rounded-md hover:bg-blue-700 transition">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className={`p-2 rounded-md transition ${
+                isLoading
+                  ? 'bg-[#0066ff]/70 cursor-wait'
+                  : input.trim()
+                  ? 'bg-[#0066ff] hover:bg-blue-700 cursor-pointer'
+                  : 'bg-[#2a2a2a] cursor-not-allowed'
+              }`}
+            >
+              {isLoading ? (
+                <svg className="w-4 h-4 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              )}
             </button>
           </div>
           <div className="flex items-center justify-between mt-2 text-xs text-[#8a8a8a]">
@@ -6096,11 +6296,7 @@ export default function ChatPage() {
               模型: {llmModel}
               {renderStatusDot(llmStatus)}
               | 方法: {intentMethod === 'llm' ? '🧠 LLM' : '📋 规则'}
-              |               {workbuddyMode ? (
-                <span className="text-green-500 font-semibold">🔗 中台即时</span>
-              ) : (
-                <span className="text-blue-400">💬 直接模式</span>
-              )}
+              | <span className="text-green-500 font-semibold">🔗 中台即时</span>
             </span>
             <span>
               模式: {thinkingMode === 'quick' ? '⚡ 智能思考' : '🧠 深度思考'}
@@ -6119,7 +6315,7 @@ export default function ChatPage() {
              rightPanelContent === 'market' ? '📈 行情卡片' :
              rightPanelContent === 'signal' ? '🎯 评分卡片' :
              rightPanelContent === 'position' ? '💼 持仓卡片' :
-             rightPanelContent === 'api' ? '⚙️ API配置' :
+             rightPanelContent === 'api' ? '⚙️ 交易所API' :
              rightPanelContent === 'trading' ? '💰 交易设置' :
              rightPanelContent === 'strategy' ? '🎯 策略设置' :
              rightPanelContent === 'communication' ? '📡 通信渠道' :

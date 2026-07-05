@@ -24,7 +24,7 @@ import {
   createCompressor,
   VERSION as MODULE_VERSION,
   PROTOCOL_VERSION,
-} from '../../../../../6-图结构上下文压缩/index.ts';
+} from '../../../../../6-图结构上下文压缩/index';
 import type {
   CompressInput,
   CompressResult,
@@ -33,7 +33,7 @@ import type {
   CompressorStats,
   HealthStatus,
   VisualizationData,
-} from '../../../../../6-图结构上下文压缩/index.ts';
+} from '../../../../../6-图结构上下文压缩/index';
 
 // 注意：上面的 `createCompressor` 返回的是通用模块的 `Compressor` 类型，
 // 它和我们 adapter 中使用的 `CompressInput / CompressResult` 结构一致，

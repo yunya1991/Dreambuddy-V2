@@ -88,6 +88,41 @@ import {
   SystemHealthAPI,
 } from './classic-system-api';
 
+// ExecutionPlanner — 动态编排引擎
+import { ExecutionPlanner } from '../../../../6-图结构上下文压缩/planner/planner';
+import { ensureRegistryInitialized } from '../../../../6-图结构上下文压缩/planner/skills-registry-init';
+import type { PlannerContext, PlannerExecutionResult, PlannerProgressEvent } from '../../../../6-图结构上下文压缩/planner/planner-types';
+import { createSkillLLMBridge } from './orchestration/skill-llm-bridge-adapter';
+import { callLLM } from './orchestration/llm-bridge';
+
+// Superpower 模式 — 意图澄清 + 节点补充 + 记忆进化
+import {
+  IntentClarificationEngine,
+  buildClarificationContent,
+} from '../../../../6-图结构上下文压缩/planner/intent-clarification-engine';
+import {
+  NodeGapSupplementer,
+} from '../../../../6-图结构上下文压缩/planner/node-gap-supplementer';
+import {
+  getSupplementMemoryStore,
+} from '../../../../6-图结构上下文压缩/planner/supplement-memory-store';
+import {
+  createClarificationLLMBridge,
+  createNodeSupplementLLMBridge,
+} from './orchestration/superpower-llm-bridge';
+import {
+  IntentSpecWriter,
+} from '../../../../6-图结构上下文压缩/planner/intent-spec-writer';
+
+// 全局 Spec Writer 实例（懒加载）
+let _specWriter: IntentSpecWriter | null = null;
+function getSpecWriter(): IntentSpecWriter {
+  if (!_specWriter) {
+    _specWriter = new IntentSpecWriter(ARTIFACTS_DIR);
+  }
+  return _specWriter;
+}
+
 function resolveRepoRoot(): string {
   const cwd = process.cwd();
   const candidates = [
@@ -118,7 +153,7 @@ export const RESULTS_DIR = path.join(ARTIFACTS_DIR, 'results');
 const TASK_TIMEOUT_MS = 30 * 60 * 1000;
 
 // 最大并发任务数
-const MAX_CONCURRENT_TASKS = 3;
+const MAX_CONCURRENT_TASKS = 10;
 
 const GATEWAY_DIR = path.join(REPO_ROOT, '3-FRONTEND', 'dream-universal-gateway');
 const POLLER_SCRIPT = path.join(GATEWAY_DIR, 'scripts', 'task_poller.py');
@@ -485,17 +520,31 @@ export function listTasks(limit: number = 20, status?: TaskStatus): Array<{
 }
 
 /**
- * 获取当前pending任务数
+ * 获取当前pending任务数（忽略超过5分钟的僵尸任务）
+ * 注意：awaiting_clarification 状态的任务不计入并发（它们在等待用户输入，不占资源）
  */
 export function getPendingCount(): number {
   ensureDir(TASKS_DIR);
+  const staleCutoff = Date.now() - 5 * 60 * 1000; // 5分钟前的视为僵尸
   try {
     const files = fs.readdirSync(TASKS_DIR).filter(f => f.endsWith('.json'));
     return files.filter(f => {
       try {
-        const content = fs.readFileSync(path.join(TASKS_DIR, f), 'utf-8');
+        const filePath = path.join(TASKS_DIR, f);
+        const content = fs.readFileSync(filePath, 'utf-8');
         const task = JSON.parse(content) as TaskFile;
-        return task.status === 'pending';
+        if (task.status !== 'pending') return false;
+        // 澄清等待中的任务不占用并发名额
+        if ((task as any).status === 'awaiting_clarification') return false;
+        // 僵尸任务清理：pending 超过 5 分钟，自动标记为 failed 并不计入
+        const stat = fs.statSync(filePath);
+        if (stat.mtimeMs < staleCutoff) {
+          task.status = 'failed' as TaskStatus;
+          task.error = 'Task timed out (stale pending > 5min)';
+          fs.writeFileSync(filePath, JSON.stringify(task, null, 2), 'utf-8');
+          return false;
+        }
+        return true;
       } catch {
         return false;
       }
@@ -581,11 +630,611 @@ export function isTradeIntent(intentType: IntentType): boolean {
 }
 
 /**
+ * Superpower 模式：意图模糊度检测 + 澄清问题生成
+ *
+ * 借鉴 Claude Code Superpower 的 "多问后做" 机制：
+ *   1. 使用 IntentClarificationEngine 评估意图模糊度
+ *   2. 如果模糊度评分 >= 50（ambiguous 级别）→ 生成澄清问题
+ *   3. 返回 awaiting_clarification 状态的 ResultFile
+ *   4. 如果模糊度低（clear/moderate）→ 返回 null，继续执行
+ *
+ * @returns 返回澄清结果（ResultFile）或 null（不需要澄清）
+ */
+async function checkIntentAmbiguity(
+  task: TaskFile,
+  message: string,
+  intentType: string,
+  symbol: string,
+  lang: 'zh' | 'en',
+  startTime: number,
+): Promise<ResultFile | null> {
+  try {
+    const registry = ensureRegistryInitialized();
+    const llmBridge = createClarificationLLMBridge();
+    const engine = new IntentClarificationEngine(registry, llmBridge, 3);
+
+    // 评估模糊度
+    const entities = task.intent.entities || {};
+    const availableSkillIds = registry.getAll().map(s => s.metadata.id);
+
+    const assessment = engine.assessAmbiguity(
+      message,
+      intentType as any,
+      task.intent.confidence,
+      { symbol: entities.symbol || symbol, timeframe: entities.timeframe || '' },
+      availableSkillIds,
+    );
+
+    // 模糊度评分 < 50（clear/moderate 级别）→ 不需要澄清，直接执行
+    if (!assessment.needsClarification || assessment.ambiguityScore < 50) {
+      console.log(`[Superpower] 意图清晰（模糊度 ${assessment.ambiguityScore}），跳过澄清`);
+      return null;
+    }
+
+    console.log(`[Superpower] 意图模糊（模糊度 ${assessment.ambiguityScore}），生成澄清问题`);
+
+    // 创建意图 Spec 文档（澄清过程的结构化记录）
+    const specWriter = getSpecWriter();
+    const spec = specWriter.createInitialSpec(
+      task.task_id,
+      task.session_id,
+      message,
+      intentType as any,
+      { ...(task.intent.entities || {}), symbol: entities.symbol || symbol },
+      task.intent.confidence,
+      assessment,
+    );
+
+    // 生成澄清问题（LLM 驱动，one-at-a-time）
+    const question = await engine.generateClarificationQuestion(
+      message,
+      assessment,
+      0, // 第一轮
+      { symbol, intent: intentType } as any,
+    );
+
+    if (!question) {
+      return null;
+    }
+
+    // 构建澄清内容
+    const { content, options } = buildClarificationContent(question, lang);
+
+    // 构建 awaiting_clarification 结果
+    const result: ResultFile = {
+      task_id: task.task_id,
+      session_id: task.session_id,
+      status: 'awaiting_clarification',
+      created_at: new Date().toISOString(),
+      content,
+      content_type: 'markdown',
+      execution_time_ms: Date.now() - startTime,
+      intent: {
+        type: intentType as any,
+        confidence: task.intent.confidence,
+        method: 'superpower_clarification',
+        reasoning: assessment.ambiguityReasons.join('; '),
+        entities: task.intent.entities,
+        complexity: assessment.ambiguity,
+      },
+      clarification_state: {
+        question: question.question,
+        options: options.map(opt => ({
+          key: opt.key,
+          label: opt.label,
+          target_intent: opt.target_intent,
+          entities: opt.entities,
+        })),
+      },
+      execution_summary: {
+        chain_executed: [],
+        total_steps: 0,
+        skipped_steps: [],
+        intent_recognized: intentType,
+        total_time_ms: Date.now() - startTime,
+        current_step: 'awaiting_clarification',
+      },
+      metadata: {
+        executor: 'superpower_clarification_v1',
+        ambiguity_score: assessment.ambiguityScore,
+        ambiguity_level: assessment.ambiguity,
+        clarification_dimensions: assessment.clarificationDimensions,
+      },
+      persisted: false,
+    };
+
+    // 写入 result 文件
+    ensureDir(RESULTS_DIR);
+    const resultPath = path.join(RESULTS_DIR, `result_${task.task_id}.json`);
+    fs.writeFileSync(resultPath, JSON.stringify(result, null, 2), 'utf-8');
+
+    // 更新 task 状态
+    task.status = 'awaiting_clarification';
+    task.updated_at = new Date().toISOString();
+    const taskPath = path.join(TASKS_DIR, `${task.task_id}.json`);
+    fs.writeFileSync(taskPath, JSON.stringify(task, null, 2), 'utf-8');
+
+    emitMonitorEvent({
+      trace_id: task.task_id,
+      uid: task.session_id,
+      layer: 'gateway',
+      phase: 'clarification_requested',
+      status: 'completed',
+      intent: intentType,
+      duration_ms: Date.now() - startTime,
+    });
+
+    return result;
+  } catch (err) {
+    console.warn(`[Superpower] 意图澄清异常，跳过澄清: ${err instanceof Error ? err.message : err}`);
+    return null;
+  }
+}
+
+// ============================================================
+// LLM 汇总辅助函数 - 结构化指标提取与输入构建
+// ============================================================
+
+interface StructuredMetrics {
+  technical: Array<{ name: string; value: string; source: string }>;
+  flow: Array<{ name: string; value: string; source: string }>;
+  sentiment: Array<{ name: string; value: string; source: string }>;
+  onchain: Array<{ name: string; value: string; source: string }>;
+  macro: Array<{ name: string; value: string; source: string }>;
+  backtest: Array<{ name: string; value: string; source: string }>;
+  regime: Array<{ name: string; value: string; source: string }>;
+  other: Array<{ name: string; value: string; source: string }>;
+}
+
+export function buildStructuredMetrics(stepResults: Array<{
+  stepId: string;
+  label: string;
+  chain: string;
+  skillsDetailed: Array<{
+    skillId: string;
+    skillName: string;
+    confidence: number;
+    outputs: Record<string, unknown>;
+  }>;
+}>): StructuredMetrics {
+  const metrics: StructuredMetrics = {
+    technical: [],
+    flow: [],
+    sentiment: [],
+    onchain: [],
+    macro: [],
+    backtest: [],
+    regime: [],
+    other: [],
+  };
+
+  const technicalKeys = ['rsi', 'macd', 'ma', 'bollinger', 'kdj', 'volume', 'volatility', 'atr', 'indicators', 'technicalSignals', 'signalScore', 'signalScore'];
+  const flowKeys = ['fundFlowScore', 'etfNetFlow', 'fundingRate', 'smartMoneyDirection', 'whaleActivity', 'positions', 'openInterest'];
+  const sentimentKeys = ['fearGreedIndex', 'marketPsychology', 'contrarianSignal', 'reversalRisk', 'avgSentiment', 'newsSentiment', 'overallSentiment'];
+  const onchainKeys = ['mvrv', 'mvrvZScore', 'hashRate', 'nTx', 'networkHealth', 'accSignal', 'valuationRange', 'marketCyclePosition', 'activeAddresses', 'nupl'];
+  const macroKeys = ['policyScore', 'dxy', 'us10y', 'cryptoFriendly', 'liquidityClock', 'vix', 'spx', 'gold', 'dxyStrength', 'us10yYield'];
+  const backtestKeys = ['winRate', 'sharpeRatio', 'maxDrawdown', 'sharpe', 'metrics', 'backtestResult', 'passed'];
+  const regimeKeys = ['regime', 'regimeDetection', 'recommendedStrategies', 'marketState'];
+
+  function categorize(key: string, value: string, source: string): void {
+    const keyLower = key.toLowerCase();
+    if (technicalKeys.some(k => keyLower.includes(k.toLowerCase()))) {
+      metrics.technical.push({ name: key, value, source });
+    } else if (flowKeys.some(k => keyLower.includes(k.toLowerCase()))) {
+      metrics.flow.push({ name: key, value, source });
+    } else if (sentimentKeys.some(k => keyLower.includes(k.toLowerCase()))) {
+      metrics.sentiment.push({ name: key, value, source });
+    } else if (onchainKeys.some(k => keyLower.includes(k.toLowerCase()))) {
+      metrics.onchain.push({ name: key, value, source });
+    } else if (macroKeys.some(k => keyLower.includes(k.toLowerCase()))) {
+      metrics.macro.push({ name: key, value, source });
+    } else if (backtestKeys.some(k => keyLower.includes(k.toLowerCase()))) {
+      metrics.backtest.push({ name: key, value, source });
+    } else if (regimeKeys.some(k => keyLower.includes(k.toLowerCase()))) {
+      metrics.regime.push({ name: key, value, source });
+    } else if (key !== 'direction' && key !== 'confidence' && key !== 'analysis' && key !== 'symbol' && key !== 'timestamp' && key !== 'tokensUsed' && key !== 'dataSource' && key !== 'signalSource' && key !== 'raw' && key !== 'executionReady') {
+      metrics.other.push({ name: key, value, source });
+    }
+  }
+
+  function flattenObject(obj: Record<string, unknown>, prefix: string, source: string): void {
+    for (const [key, value] of Object.entries(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      if (value === null || value === undefined) continue;
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        flattenObject(value as Record<string, unknown>, fullKey, source);
+      } else if (Array.isArray(value)) {
+        if (value.length <= 5) {
+          categorize(fullKey, JSON.stringify(value), source);
+        } else {
+          categorize(fullKey, `[${value.length} items]`, source);
+        }
+      } else {
+        categorize(fullKey, String(value), source);
+      }
+    }
+  }
+
+  for (const step of stepResults) {
+    for (const skill of step.skillsDetailed) {
+      flattenObject(skill.outputs, '', skill.skillName);
+    }
+  }
+
+  return metrics;
+}
+
+export function buildLLMInputText(
+  validResults: Array<{ stepId: string; label: string; answer: string }>,
+  metrics: StructuredMetrics,
+  lang: 'zh' | 'en'
+): string {
+  const sections: string[] = [];
+
+  // 步骤分析摘要
+  const stepSummary = validResults.map(s =>
+    `## ${s.label || s.stepId}\n${s.answer}`
+  ).join('\n\n');
+
+  if (stepSummary) {
+    sections.push(lang === 'zh' ? '--- 各维度分析摘要 ---' : '--- Analysis Summaries ---');
+    sections.push(stepSummary);
+  }
+
+  // 结构化指标
+  const metricSections: Array<{ key: keyof StructuredMetrics; titleZh: string; titleEn: string }> = [
+    { key: 'technical', titleZh: '技术面指标', titleEn: 'Technical Indicators' },
+    { key: 'flow', titleZh: '资金流向数据', titleEn: 'Fund Flow Data' },
+    { key: 'sentiment', titleZh: '市场情绪指标', titleEn: 'Market Sentiment' },
+    { key: 'onchain', titleZh: '链上数据', titleEn: 'On-chain Data' },
+    { key: 'macro', titleZh: '宏观经济指标', titleEn: 'Macro Indicators' },
+    { key: 'backtest', titleZh: '回测绩效指标', titleEn: 'Backtest Metrics' },
+    { key: 'regime', titleZh: '市场状态识别', titleEn: 'Market Regime' },
+    { key: 'other', titleZh: '其他数据', titleEn: 'Other Data' },
+  ];
+
+  for (const { key, titleZh, titleEn } of metricSections) {
+    const items = metrics[key];
+    if (items.length === 0) continue;
+
+    const title = lang === 'zh' ? titleZh : titleEn;
+    sections.push(`\n--- ${title} ---`);
+
+    const lines = items.map(item => {
+      const source = item.source ? ` (来源: ${item.source})` : '';
+      return `- ${item.name}: ${item.value}${source}`;
+    });
+    sections.push(lines.join('\n'));
+  }
+
+  return sections.join('\n\n');
+}
+
+/**
+ * 使用 ExecutionPlanner 动态编排执行
+ * 失败时返回 null，调用方降级到 S 链
+ */
+async function executeWithPlanner(
+  task: TaskFile,
+  intentType: string,
+  thinkingMode: string,
+  rawSymbol: string,
+  displayName: string,
+  category: string,
+  instId: string,
+  message: string,
+  lang: 'zh' | 'en',
+  startTime: number,
+  onProgress?: (event: PlannerProgressEvent) => void,
+): Promise<ResultFile | null> {
+  try {
+    // 1. 创建 SkillLLMBridge
+    const skillBridge = createSkillLLMBridge(undefined, {
+      symbol: rawSymbol,
+      instId,
+      category: category as 'crypto' | 'macro',
+      displayName,
+    });
+
+    // 2. 初始化 Registry
+    const registry = ensureRegistryInitialized();
+
+    // 2.5 Superpower 模式：节点缺失检测 + LLM 驱动补充
+    //     借鉴 Claude Code Superpower：形成完整方案时，有节点注册就直接调用，
+    //     如果没有则通过大模型驱动搜索最佳实践完善补充节点，后期存入记忆
+    const memoryStore = getSupplementMemoryStore();
+    const supplementLLMBridge = createNodeSupplementLLMBridge();
+    const supplementer = new NodeGapSupplementer(registry, memoryStore, supplementLLMBridge, 3);
+
+    const gapResult = supplementer.detectGap(
+      (intentType as any),
+      { symbol: rawSymbol, intent: intentType } as any,
+    );
+
+    let supplementInfo: string = '';
+    let memoryEntryIds: string[] = [];
+
+    if (gapResult.hasGap && gapResult.severity !== 'none') {
+      console.log(`[Superpower] 检测到节点缺口（${gapResult.severity}）：${gapResult.missingCapabilities.length} 个能力缺失`);
+
+      try {
+        const supplementResult = await supplementer.supplement(
+          intentType as any,
+          message,
+          gapResult,
+          { symbol: rawSymbol, intent: intentType } as any,
+        );
+
+        if (supplementResult.supplemented && supplementResult.stepDefinitions.length > 0) {
+          supplementInfo = `\n\n---\n\n**Superpower 补充节点**：${supplementResult.supplementNodes.map(n => `「${n.name}」`).join('、')}\n来源：${supplementResult.source}\n${supplementResult.reasons.map(r => `- ${r}`).join('\n')}`;
+          memoryEntryIds = supplementResult.memoryEntryIds;
+          console.log(`[Superpower] 补充了 ${supplementResult.stepDefinitions.length} 个节点（来源：${supplementResult.source}）`);
+        }
+      } catch (err) {
+        console.warn(`[Superpower] 节点补充失败，使用降级执行: ${err instanceof Error ? err.message : err}`);
+      }
+    } else {
+      console.log(`[Superpower] 节点覆盖完整，无需补充`);
+    }
+
+    // 3. 创建 ExecutionPlanner
+    const planner = new ExecutionPlanner(registry);
+
+    // 4. 意图映射
+    const intentMap: Record<string, string> = {
+      'market_query': 'market_query',
+      'deep_analysis': 'deep_analysis',
+      'scenario_sim': 'scenario_sim',
+      'strategy_verify': 'strategy_verify',
+      'execute_trade': 'execute_trade',
+      'risk_alert': 'risk_alert',
+      'simple_qa': 'simple_qa',
+      'command': 'command',
+    };
+
+    // 5. 复杂度映射
+    const complexityMap: Record<string, string> = {
+      'quick': 'quick',
+      'fast': 'quick',
+      'standard': 'standard',
+      'deep': 'deep',
+    };
+
+    // 6. 构造 PlannerContext
+    const context: PlannerContext = {
+      sessionId: task.session_id,
+      userRequest: message,
+      intent: (intentMap[intentType] || 'deep_analysis') as any,
+      complexity: (complexityMap[thinkingMode] || 'standard') as any,
+      symbol: rawSymbol,
+      tradingMode: task.trading_mode || 'ai_skill',
+      chainWeights: { s_chain: 0.5, c_chain: 0.3, f_chain: 0.2 },
+      extensions: {
+        __skillLLMBridge: skillBridge,
+        __userRequest: message,
+      },
+      onProgress,
+    };
+
+    // 7. 执行
+    const execResult = await planner.execute(context);
+
+    if (!execResult.success) {
+      console.warn('[ExecutionPlanner] 执行失败:', execResult.error);
+      return null;
+    }
+
+    // 8. 收集各步骤执行结果（用于 LLM 汇总）
+    const stepRawResults = execResult.steps.map(step => {
+      const skillNames = step.skillsCalled.map(s => s.skillName).join(', ');
+      const stepDef = step as any;
+      return {
+        stepId: step.stepId,
+        label: stepDef.definition?.label || '',
+        skillsCalled: skillNames,
+        answer: step.answer || '',
+        confidence: step.confidence,
+        decision: step.decision,
+        chain: step.chain,
+        skillsDetailed: step.skillsCalled.map(s => ({
+          skillId: s.skillId,
+          skillName: s.skillName,
+          confidence: s.result.confidence,
+          outputs: s.result.outputs || {},
+        })),
+      };
+    });
+
+    // 9. 调用 LLM 生成用户友好的综合分析报告
+    //    将编排器内部多步骤结果汇总为一份自然语言分析报告
+    const isAnalysisIntent = ['market_query', 'deep_analysis', 'risk_alert'].includes(intentType);
+    let summaryReport = '';
+
+    // 拼接各步骤有效结果作为 LLM 输入
+    const validResults = stepRawResults.filter(s => s.answer && s.decision !== 'skip');
+
+    // 从所有技能输出中提取结构化指标，按维度组织
+    const structuredMetrics = buildStructuredMetrics(stepRawResults);
+
+    const stepOutputsText = buildLLMInputText(validResults, structuredMetrics, lang);
+
+    if (stepOutputsText.trim() && isAnalysisIntent) {
+      try {
+        const summarySystemPrompt = lang === 'zh'
+          ? `你是一位资深的数字资产分析师，擅长将技术面、基本面、资金流向、市场情绪等多维度数据整合成有深度的行情分析报告。
+
+核心要求：
+1. **数据驱动**：必须基于提供的具体指标数据进行分析，不能泛泛而谈。引用具体数值（如"RSI为55"、"资金费率为0.01%"等）来支撑你的判断。
+2. **结构清晰**：
+   - 用 \`## 核心结论\` 开头，用2-3句话给出明确方向和关键依据
+   - 然后用 \`## 详细分析\` 分段展开：**技术面分析**、**资金流向**、**市场情绪**、**链上与基本面**、**宏观环境**（有数据的维度就写，没有的跳过）
+   - 最后用 \`## 操作建议与风险提示\` 结尾
+3. **有深度**：不仅说"看涨/看跌"，要说明为什么——指标处于什么水平、历史上这种情况通常意味着什么、各维度是否有矛盾
+4. **语气专业但易懂**，类似专业分析师的口头汇报风格
+5. 用 **加粗** 标注分段标题，不要使用 "###" Markdown 标题
+6. 控制在 800-1200 字，信息密度要高
+7. 不要暴露内部调度信息（如"调用了XX技能"、"置信度XX%"等）`
+          : `You are a senior digital asset analyst skilled at integrating technical, fundamental, flow, and sentiment data into in-depth market reports.
+
+Core requirements:
+1. **Data-driven**: Base your analysis on the specific metrics provided, not vague statements. Cite concrete numbers (e.g. "RSI at 55", "funding rate 0.01%") to support your judgment.
+2. **Clear structure**:
+   - Start with \`## Core Conclusion\` — 2-3 sentences with clear direction and key rationale
+   - Then \`## Detailed Analysis\` with sections: **Technical Analysis**, **Fund Flows**, **Market Sentiment**, **On-chain & Fundamentals**, **Macro Environment** (only include sections with data)
+   - End with \`## Actionable Advice & Risk Warnings\`
+3. **Depth**: Don't just say "bullish/bearish" — explain why: what level are indicators at, what does this historically mean, are there contradictions across dimensions
+4. Professional but accessible tone
+5. Use **bold** for section headers, not "###" markdown headers
+6. Keep at 800-1200 words, high information density
+7. Don't expose internal scheduling info (e.g. "called XX skill", "confidence XX%", etc.)`;
+
+        const summaryUserPrompt = lang === 'zh'
+          ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n\n以下是多维度分析数据（请充分利用这些具体指标）：\n\n${stepOutputsText}\n\n请基于以上数据，生成一份专业、有深度的行情分析报告。`
+          : `User question: ${message}\nAsset: ${displayName || rawSymbol}\n\nMulti-dimensional analysis data (please make full use of these specific metrics):\n\n${stepOutputsText}\n\nBased on the above data, generate a professional, in-depth market analysis report.`;
+
+        const llmResult = await callLLM({
+          prompt: summaryUserPrompt,
+          systemPrompt: summarySystemPrompt,
+          temperature: 0.4,
+          timeoutMs: 60000,
+        });
+        summaryReport = llmResult.content;
+        console.log(`[executeWithPlanner] LLM 汇总报告生成成功，${llmResult.tokensUsed} tokens, ${llmResult.latencyMs}ms`);
+      } catch (err) {
+        console.warn('[executeWithPlanner] LLM 汇总失败，降级为拼接模式:', err instanceof Error ? err.message : err);
+        // 降级：取第一个有效结果作为主要输出
+        summaryReport = validResults[0]?.answer || '分析完成，但未能生成综合报告。';
+      }
+    } else {
+      // 非分析类意图或无有效结果，直接拼接
+      summaryReport = validResults.map(s => s.answer).join('\n\n') || '执行完成。';
+    }
+
+    // 10. 构建调度器内部详情（折叠区域，默认不展开）
+    const overallConfidence = execResult.overallConfidence / 100;
+    const internalDetails = stepRawResults.map(s =>
+      `### ${s.stepId} (${s.label})\n\n**调用技能**: ${s.skillsCalled}\n\n置信度: ${s.confidence}% | 决策: ${s.decision}\n\n${s.answer}`
+    ).join('\n\n---\n\n');
+
+    const summaryStats = `整体置信度: ${(overallConfidence * 100).toFixed(0)}% | Token消耗: ${execResult.totalTokensUsed} | 耗时: ${execResult.totalLatencyMs}ms | 执行步骤: ${execResult.steps.length}（跳过 ${execResult.steps.filter(s => s.decision === 'skip').length} 个）`;
+
+    // 11. 分析类结果追加深化选项
+    const deepenOptions = isAnalysisIntent
+      ? buildDeepenOptions(intentType, rawSymbol, lang)
+      : '';
+
+    // 12. 拼装最终内容：核心观点前置 + 详细分析 + 深化选项 + 报告链接 + 折叠的调度详情
+    const reportLink = isAnalysisIntent && execResult.steps.length > 0
+      ? `\n\n🔗 [查看完整报告](/reports/${task.task_id})`
+      : '';
+
+    let coreView = '';
+    let detailedAnalysis = summaryReport;
+
+    if (isAnalysisIntent && summaryReport) {
+      const coreMatchZh = summaryReport.match(/##\s*核心结论\n([\s\S]*?)(?=\n##\s|$)/);
+      const coreMatchEn = summaryReport.match(/##\s*Core Conclusion\n([\s\S]*?)(?=\n##\s|$)/);
+      const coreMatch = coreMatchZh || coreMatchEn;
+
+      if (coreMatch && coreMatch[1]) {
+        const coreText = coreMatch[1].trim();
+        const title = coreMatchZh ? '💡 核心观点' : '💡 Core View';
+        coreView = `**${title}**\n\n${coreText}\n\n---\n`;
+        detailedAnalysis = summaryReport.replace(coreMatch[0], '').trim();
+        detailedAnalysis = detailedAnalysis.replace(/^##\s*(详细分析|Detailed Analysis)\n*/i, '').trim();
+        const detailTitle = coreMatchZh ? '📊 详细分析' : '📊 Detailed Analysis';
+        detailedAnalysis = `**${detailTitle}**\n\n${detailedAnalysis}`;
+      }
+    }
+
+    const finalContent = coreView
+      + detailedAnalysis
+      + deepenOptions
+      + reportLink
+      + (internalDetails ? `\n\n<details>\n<summary>📊 编排详情（${summaryStats}）</summary>\n\n${internalDetails}\n\n${supplementInfo ? supplementInfo + '\n' : ''}</details>` : '');
+
+    // 9.6 Superpower 模式：上报补充节点执行结果到记忆存储（用于后期进化）
+    if (memoryEntryIds.length > 0) {
+      try {
+        const outcomeResults = memoryEntryIds.map(entryId => ({
+          entryId,
+          success: execResult.success,
+          confidenceContribution: Math.max(0, execResult.overallConfidence - 50),
+        }));
+        supplementer.reportExecutionOutcome(memoryEntryIds, outcomeResults);
+        console.log(`[Superpower] 已上报 ${memoryEntryIds.length} 个补充节点的执行结果到记忆存储`);
+      } catch (err) {
+        console.warn(`[Superpower] 记忆反馈失败: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+
+    // 10. 构建 ResultFile
+    const result: ResultFile = {
+      task_id: task.task_id,
+      session_id: task.session_id,
+      status: 'completed',
+      created_at: new Date().toISOString(),
+      content: finalContent,
+      content_type: 'markdown',
+      execution_time_ms: Date.now() - startTime,
+      artifacts_produced: [],
+      execution_summary: {
+        chain_executed: execResult.steps.map(s => s.stepId),
+        total_steps: execResult.steps.length,
+        skipped_steps: execResult.steps.filter(s => s.decision === 'skip').map(s => s.stepId),
+        confidence: Math.max(task.intent.confidence || 0.5, overallConfidence),
+        quality: {
+          average_confidence: overallConfidence,
+          max_risk: 0.3,
+          total_issues: 0,
+          total_corrections: 0,
+          overall_quality: 'good' as const,
+        },
+        planner_result: execResult as any,
+      },
+      metadata: {
+        executor: 'execution_planner_v1',
+        model: task.metadata.llm_model,
+        thinking_depth: thinkingMode as any,
+        self_criticism_enabled: true,
+        rollbacks: [],
+        step_metadata: execResult.steps.map(s => ({
+          step: s.stepId,
+          confidence: s.confidence / 100,
+          risk: 0.3,
+          uncertainty: [] as string[],
+          corrections: [] as string[],
+        })) as any,
+        // Superpower 模式元信息
+        superpower: {
+          gap_detected: gapResult.hasGap,
+          gap_severity: gapResult.severity,
+          gap_missing_count: gapResult.missingCapabilities.length,
+          supplemented: memoryEntryIds.length > 0,
+          supplement_source: gapResult.hasGap ? (memoryEntryIds.length > 0 ? 'active' : 'failed') : 'none',
+          memory_entry_ids: memoryEntryIds,
+        },
+      },
+      persisted: false,
+    };
+
+    return result;
+  } catch (error) {
+    console.warn('[ExecutionPlanner] 异常，降级到 S链:', error);
+    return null;
+  }
+}
+
+/**
  * 中台内联执行对话任务（秒级响应）
  * 直接在Node.js进程中执行，无需调用外部脚本
  * 支持 D/Z/E 步进确认机制
  */
-export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' | 'en' = 'zh'): Promise<ResultFile> {
+export async function executeConversationTaskInline(
+  task: TaskFile,
+  lang: 'zh' | 'en' = 'zh',
+  onProgress?: (event: PlannerProgressEvent) => void,
+): Promise<ResultFile> {
   const startTime = Date.now();
   let intentType = task.intent.type;
   let thinkingMode = task.thinking_mode;
@@ -662,17 +1311,6 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
   const DYNAMIC_INTENT_TYPES: DynamicChainIntent[] = [
     'deep_analysis', 'scenario_sim', 'strategy_verify', 'execute_trade',
   ];
-  if (routing.is_dynamic && DYNAMIC_INTENT_TYPES.includes(intentType as DynamicChainIntent)) {
-    const symbolDef = extractSymbolFromMessage(message);
-    const rawSymbol = symbolDef?.symbol || symbol;
-    const displayName = symbolDef?.display || rawSymbol;
-    const category = symbolDef?.category || 'crypto';
-    const instId = symbolDef?.instId || `${rawSymbol}-USDT-SWAP`;
-    return executeDynamicChain(
-      task, message, intentType as DynamicChainIntent, thinkingMode, lang,
-      rawSymbol, displayName, category, instId, startTime,
-    );
-  }
 
   // 使用 adapter 从消息中提取品种信息（统一数据源）
   const symbolDef = extractSymbolFromMessage(message);
@@ -680,6 +1318,67 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
   const displayName = symbolDef?.display || rawSymbol;
   const category = symbolDef?.category || 'crypto';
   const instId = symbolDef?.instId || `${rawSymbol}-USDT-SWAP`;
+
+  // ============================================================
+  // Superpower 模式：意图澄清（多问后做）
+  // 借鉴 Claude Code Superpower 的 HARD-GATE 机制：
+  //   - 分析/策略类意图如果模糊度评分 >= 50，先生成澄清问题
+  //   - 简单问答/命令类不触发澄清（直接执行）
+  //   - 澄清问题由 LLM 动态生成，每次只问一个
+  // ============================================================
+  const CLARIFY_INTENTS = ['deep_analysis', 'market_query', 'scenario_sim', 'strategy_verify', 'execute_trade', 'risk_alert'];
+  if (CLARIFY_INTENTS.includes(intentType)) {
+    const clarifyResult = await checkIntentAmbiguity(
+      task, message, intentType, rawSymbol, lang, startTime,
+    );
+    if (clarifyResult) {
+      return clarifyResult;
+    }
+  }
+
+  // ============================================================
+  // ExecutionPlanner 动态编排（最高优先级）
+  // 对所有非 simple_qa/command 意图优先尝试，成功直接返回，失败降级
+  // ============================================================
+  if (intentType !== 'simple_qa' && intentType !== 'command' && intentType !== 'developer') {
+    const plannerResult = await executeWithPlanner(
+      task, intentType, thinkingMode, rawSymbol, displayName, category, instId, message, lang, startTime, onProgress
+    );
+    if (plannerResult) {
+      // 写入 result 文件
+      ensureDir(RESULTS_DIR);
+      const plannerResultPath = path.join(RESULTS_DIR, `result_${task.task_id}.json`);
+      fs.writeFileSync(plannerResultPath, JSON.stringify(plannerResult, null, 2), 'utf-8');
+
+      // 更新 task 状态为 completed（避免占用 pending 槽位）
+      task.status = 'completed';
+      task.updated_at = Date.now();
+      const plannerTaskPath = path.join(TASKS_DIR, `${task.task_id}.json`);
+      fs.writeFileSync(plannerTaskPath, JSON.stringify(task, null, 2), 'utf-8');
+
+      emitMonitorEvent({
+        trace_id: task.task_id,
+        uid: task.session_id,
+        layer: 'gateway',
+        phase: 'inline_exec_done',
+        status: 'completed',
+        intent: intentType,
+        thinking_mode: thinkingMode,
+        duration_ms: Date.now() - startTime,
+        chain: ['execution_planner'],
+      });
+      console.log(`[TaskManager] ExecutionPlanner completed: ${task.task_id} (${plannerResult.execution_time_ms}ms)`);
+      return plannerResult;
+    }
+    console.warn('[ExecutionPlanner] 降级到后续路径（DynamicChain 或 S链）');
+  }
+
+  if (routing.is_dynamic && DYNAMIC_INTENT_TYPES.includes(intentType as DynamicChainIntent)) {
+    return executeDynamicChain(
+      task, message, intentType as DynamicChainIntent, thinkingMode, lang,
+      rawSymbol, displayName, category, instId, startTime,
+    );
+  }
 
   // 📡 监控埋点: 内联执行开始
   emitMonitorEvent({
@@ -730,6 +1429,9 @@ export async function executeConversationTaskInline(task: TaskFile, lang: 'zh' |
   if (isSChain) {
     graphState = createGraphReflectionState(task.session_id);
   }
+  // ExecutionPlanner 已在前面（DynamicChain 分支前）尝试过，
+  // 到这里说明 ExecutionPlanner 失败且不属于 DynamicChain，继续走 S 链执行
+
   let effectiveChain: string[] = chain;
 
   if (isSChain) {
@@ -2068,6 +2770,7 @@ export async function createAndExecuteTask(params: {
   intent_method?: string;
   lang?: 'zh' | 'en';
   trading_mode?: 'ai_skill' | 'classic';
+  onProgress?: (event: PlannerProgressEvent) => void;
 }): Promise<{ task: TaskFile; result: ResultFile | null; needAsync: boolean }> {
   // 1. 创建任务文件 (now async due to intent recognition)
   const task = await createTask(params);
@@ -2104,7 +2807,7 @@ export async function createAndExecuteTask(params: {
 
   // 2. 对话任务 → 内联执行，同步返回结果
   if (isConversationIntent(intentType)) {
-    const result = await executeConversationTaskInline(task, params.lang || 'zh');
+    const result = await executeConversationTaskInline(task, params.lang || 'zh', params.onProgress);
     return { task, result, needAsync: false };
   }
 
@@ -2846,6 +3549,59 @@ ${hint}`;
     persisted: false,
     artifacts_produced: [],
   };
+}
+
+/**
+ * 构建深化选项（分析结果结尾追加）
+ * 调研主流大模型后的设计：先交付价值，再引导深入
+ * 用户点击选项后以新消息发送，后端重新走意图识别→执行
+ */
+function buildDeepenOptions(intentType: string, symbol: string, lang: 'zh' | 'en'): string {
+  const isZh = lang === 'zh';
+  const displaySymbol = symbol ? ` ${symbol}` : '';
+
+  const optionsConfig: Record<string, Array<{ label: string; keyword: string }>> = {
+    market_query: isZh ? [
+      { label: `深度分析${displaySymbol}走势`, keyword: '深度分析' },
+      { label: `查看${displaySymbol}技术指标`, keyword: '技术指标' },
+      { label: `${displaySymbol}资金流向分析`, keyword: '资金流向' },
+    ] : [
+      { label: `Deep analysis${displaySymbol}`, keyword: 'deep analysis' },
+      { label: `Technical indicators${displaySymbol}`, keyword: 'technical' },
+      { label: `Fund flow${displaySymbol}`, keyword: 'fund flow' },
+    ],
+    deep_analysis: isZh ? [
+      { label: `${displaySymbol}策略建议`, keyword: '策略建议' },
+      { label: `${displaySymbol}情景推演`, keyword: '情景推演' },
+      { label: `${displaySymbol}链上数据深入`, keyword: '链上数据' },
+    ] : [
+      { label: `Strategy for${displaySymbol}`, keyword: 'strategy' },
+      { label: `Scenario simulation${displaySymbol}`, keyword: 'scenario' },
+      { label: `On-chain deep dive${displaySymbol}`, keyword: 'on-chain' },
+    ],
+    risk_alert: isZh ? [
+      { label: `${displaySymbol}详细风险评估`, keyword: '风险评估' },
+      { label: `${displaySymbol}对冲策略`, keyword: '对冲策略' },
+      { label: `${displaySymbol}止损方案`, keyword: '止损' },
+    ] : [
+      { label: `Detailed risk${displaySymbol}`, keyword: 'risk' },
+      { label: `Hedging strategy${displaySymbol}`, keyword: 'hedging' },
+      { label: `Stop loss${displaySymbol}`, keyword: 'stop loss' },
+    ],
+  };
+
+  const options = optionsConfig[intentType] || optionsConfig.deep_analysis;
+  const optionLines = options.map((opt, i) => `- [${i + 1}] ${opt.label}`).join('\n');
+
+  const header = isZh
+    ? '\n\n---\n\n<details>\n<summary>📋 想要更深入？点击展开</summary>\n\n'
+    : '\n\n---\n\n<details>\n<summary>📋 Want to go deeper? Click to expand</summary>\n\n';
+
+  const hint = isZh
+    ? '\n\n> 回复数字或点击选项可继续深入分析\n'
+    : '\n\n> Reply number or click option to dive deeper\n';
+
+  return `${header}${optionLines}${hint}</details>`;
 }
 
 /**
