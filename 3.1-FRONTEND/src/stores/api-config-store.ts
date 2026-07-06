@@ -1,28 +1,42 @@
 import { create } from 'zustand';
-import type { UserProfileView } from '@/types';
+
+export interface ApiProfile {
+  id: string;
+  name: string;
+  provider: string;
+  baseUrl: string;
+  apiKey: string;
+  category: string;
+  status: 'active' | 'inactive' | 'error';
+  environment: 'dev' | 'staging' | 'prod';
+}
 
 interface ApiConfigState {
-  profile: UserProfileView | null;
+  profiles: ApiProfile[];
   isLoading: boolean;
   isSaving: boolean;
-  error: string | null;
 
-  setProfile: (profile: UserProfileView) => void;
+  loadProfiles: () => void;
+  addProfile: (profile: Omit<ApiProfile, 'id'>) => void;
+  updateProfile: (id: string, update: Partial<ApiProfile>) => void;
+  deleteProfile: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setSaving: (saving: boolean) => void;
-  setError: (error: string | null) => void;
-  clearProfile: () => void;
 }
 
 export const useApiConfigStore = create<ApiConfigState>((set) => ({
-  profile: null,
-  isLoading: false,
-  isSaving: false,
-  error: null,
+  profiles: [], isLoading: false, isSaving: false,
 
-  setProfile: (profile) => set({ profile, isLoading: false, error: null }),
+  loadProfiles: () => set({ isLoading: true }),
+  addProfile: (profile) => set(s => ({
+    profiles: [...s.profiles, { ...profile, id: `api_${Date.now()}` }],
+  })),
+  updateProfile: (id, update) => set(s => ({
+    profiles: s.profiles.map(p => p.id === id ? { ...p, ...update } : p),
+  })),
+  deleteProfile: (id) => set(s => ({
+    profiles: s.profiles.filter(p => p.id !== id),
+  })),
   setLoading: (loading) => set({ isLoading: loading }),
   setSaving: (saving) => set({ isSaving: saving }),
-  setError: (error) => set({ error }),
-  clearProfile: () => set({ profile: null, isLoading: false, error: null }),
 }));

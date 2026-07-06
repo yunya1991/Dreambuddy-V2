@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { ReflectorAction } from '@/stores';
-import { V3Badge } from '@/components/V3Badge';
+import { V3Badge } from '@/components';
 
 interface ReflectorDecisionBadgeProps {
   action: ReflectorAction;

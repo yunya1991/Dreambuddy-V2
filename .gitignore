@@ -85,3 +85,21 @@ venv/
 env/
 */.venv/
 *.png
+
+# Intent memory runtime data
+**/intent-memory/records.json
+**/intent-memory/stats.json
+
+# AB trading runtime state
+experiments/ab-trading/state.json
+experiments/ab-trading/decision.json
+experiments/ab-trading/data/agent_a_memory.md
+experiments/ab-trading/data/agent_b_memory.md
+
+# Research scheduler
+.research-scheduler/
+.asset-research-history/
+
+# Local feature flags / config
+features/
+feed

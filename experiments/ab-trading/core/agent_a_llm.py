@@ -238,11 +238,54 @@ def agent_a_llm_decide(
 
 
 def _build_user_prompt(mkt: dict, memory: dict, acct: dict) -> str:
-    """构建用户 prompt，包含市场数据、记忆、账户信息"""
+    """构建用户 prompt，包含市场数据、记忆、账户信息、A系列研报"""
+    coins = mkt.get("coins", {})
+
+    # ── 读取 A系列研报（Top3币种）────────────────────────────────────
+    a1_a6_section = ""
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent / "core" / "nodes"))
+        from a1_research import _load_latest_a1_report, _load_latest_a6_report
+
+        # 按24h涨跌幅绝对值排序，选Top3币种加载研报
+        sorted_coins = sorted(
+            coins.items(),
+            key=lambda x: abs(x[1].get("ch24", 0)),
+            reverse=True
+        )
+        top3_for_report = [name for name, _ in sorted_coins[:3]]
+        if "BTC" not in top3_for_report:
+            top3_for_report.append("BTC")
+
+        for report_coin in top3_for_report[:3]:
+            reasoning = []
+            a1 = _load_latest_a1_report(report_coin, reasoning)
+            if a1:
+                a1_a6_section += f"""
+【A1战略研报 - {report_coin}】（本地 {a1.get('report_time', '')}）
+- 方向: {a1.get('direction', 'N/A')}
+- 置信度: {a1.get('confidence', 0):.0%}
+- 市场状态: {a1.get('market_regime', 'N/A')}
+- 核心信号: {a1.get('core_signals', 'N/A')}"""
+
+            a6 = _load_latest_a6_report(report_coin, reasoning)
+            if a6:
+                a1_a6_section += f"""
+【A6情报监控 - {report_coin}】（本地 {a6.get('report_time', '')}）
+- 方向: {a6.get('direction', 'N/A')}
+- 风险等级: {a6.get('risk_level', 'N/A')}
+- 告警: {a6.get('risk_warning', '无')}"""
+        if reasoning:
+            a1_a6_section += "\n---\n" + "\n".join(reasoning)
+    except Exception:
+        pass  # 读取失败不影响主流程
+
     coins_info = ""
-    for coin, d in mkt.get("coins", {}).items():
+    for coin, d in coins.items():
         coins_info += f"""
-  - {coin}: 价格=${d.get('price', 0):.2f}, 24H={d.get('ch24', 0):+.2f}%, 4H={d.get('ch4h', 0):+.2f}%, 量比={d.get('vol_ratio', 1):.2f}x"""
+  - {coin}: 价格=${d.get('price', 0):.2f}, 24H={d.get('ch24', 0):+.2f}%, 4H={d.get('ch4h', 0):+.2f}%, 量比={d.get('vol_ratio', 1):.2f}x, RSI={d.get('rsi14', 50):.0f}"""
 
     opp_info = ""
     for coin, o in mkt.get("opp_map", {}).items():
@@ -276,13 +319,52 @@ def _build_user_prompt(mkt: dict, memory: dict, acct: dict) -> str:
 【近期交易记录（最近5笔）】
 {recent_trades or '  暂无记录'}
 
+{a1_a6_section}
+
 【市场扫描 — 所有标的】
 {coins_info}
 
 【资金费率信号】
 {opp_info or '  无数据'}
 
-【请基于以上信息，严格按照 SKILL 框架的六维分析进行决策，并输出 JSON 格式的结果。】
+【决策要求】
+1. 必须遍历上面所有 {len(coins)} 个币种，逐一评估其交易机会
+2. 对每个币种给出评分（0-100分），明确做多/做空/观望方向
+3. 选择评分最高的币种作为最终决策标的
+4. 不要默认选择BTC，必须基于数据客观评估每个币种的机会
+5. 如果当前已有持仓，优先评估持仓币种的离场条件，再评估其他币种的新开仓机会
+6. 严格按照 SKILL 框架的六维分析进行决策
+
+【输出 JSON 格式】
+{{
+  "action": "LONG/SHORT/HOLD",
+  "coin": "币种名称",
+  "confidence": 0.0-1.0,
+  "entry_price": 0,
+  "stop_loss_price": 0,
+  "take_profit_price": 0,
+  "position_size_usdt": 0,
+  "leverage": 3,
+  "market_regime": "TREND_UP/TREND_DOWN/RANGE",
+  "decision_rationale": "决策理由简述",
+  "reasoning_steps": ["步骤1", "步骤2", ...],
+  "per_coin_scores": {{
+    "BTC": {{"score": 60, "direction": "LONG/SHORT/HOLD", "reason": "理由"}},
+    "ETH": {{"score": 55, "direction": "HOLD", "reason": "理由"}},
+    ...（所有币种）
+  }},
+  "current_master": "大师名称",
+  "new_lesson": "",
+  "lesson_score_universal": 3,
+  "lesson_score_importance": 3,
+  "master_switch_reason": "",
+  "exit_suggestions": [
+    {{"coin": "BTC", "reason": "离场原因"}}
+  ],
+  "update_exit_levels": [
+    {{"coin": "BTC", "new_stop_loss": 0, "new_take_profit": 0}}
+  ]
+}}
 """
 
 

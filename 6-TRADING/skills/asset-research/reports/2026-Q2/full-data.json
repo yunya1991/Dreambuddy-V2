@@ -1,0 +1,3006 @@
+{
+  "v1": {
+    "version": "1.0.0",
+    "engineName": "Merrill Clock v1",
+    "timestamp": "2026-06-26T17:04:10.689Z",
+    "region": "global",
+    "cycle": {
+      "currentPhase": "overheat",
+      "confidence": 0.7300000000000001,
+      "indicators": [
+        {
+          "name": "GDP增长率",
+          "value": "2.5",
+          "trend": "up",
+          "source": "https://www.atlantafed.org/research-and-data/data/gdpnow",
+          "timestamp": "2026-06-26T17:04:10.685Z",
+          "freshness": "fresh"
+        },
+        {
+          "name": "PMI指数",
+          "value": "54",
+          "trend": "up",
+          "source": "https://tradingeconomics.com/united-states/business-confidence",
+          "timestamp": "2026-06-26T17:04:10.686Z",
+          "freshness": "fresh"
+        },
+        {
+          "name": "CPI通胀率",
+          "value": "8.0",
+          "trend": "up",
+          "source": "https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-",
+          "timestamp": "2026-06-26T17:04:10.685Z",
+          "freshness": "fresh"
+        }
+      ],
+      "rationale": "根据宏观指标分析，当前经济增长上行，通胀上行。符合过热期特征：经济上行，通胀上行。产能利用率高，通胀压力显现。"
+    },
+    "assetAllocation": [
+      {
+        "category": "commodity",
+        "displayName": "商品",
+        "weight": 35,
+        "direction": "overweight",
+        "subCategories": [
+          {
+            "name": "industrial_metal",
+            "displayName": "工业金属",
+            "priority": 1,
+            "direction": "overweight",
+            "rationale": "工业金属在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "recovery",
+              "overheat"
+            ]
+          },
+          {
+            "name": "energy_commodity",
+            "displayName": "能源",
+            "priority": 2,
+            "direction": "overweight",
+            "rationale": "能源在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "overheat",
+              "stagflation"
+            ]
+          },
+          {
+            "name": "precious_metal",
+            "displayName": "贵金属",
+            "priority": 4,
+            "direction": "underweight",
+            "rationale": "贵金属在过热期表现中性，可适度配置",
+            "cyclePreference": [
+              "stagflation"
+            ]
+          },
+          {
+            "name": "agricultural",
+            "displayName": "农产品",
+            "priority": 4,
+            "direction": "underweight",
+            "rationale": "农产品在过热期表现中性，可适度配置",
+            "cyclePreference": [
+              "stagflation"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "stock",
+        "displayName": "股票",
+        "weight": 25,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "energy",
+            "displayName": "能源股",
+            "priority": 1,
+            "direction": "overweight",
+            "rationale": "能源股在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "overheat",
+              "stagflation"
+            ]
+          },
+          {
+            "name": "cyclical",
+            "displayName": "周期股",
+            "priority": 2,
+            "direction": "overweight",
+            "rationale": "周期股在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "recovery",
+              "overheat"
+            ]
+          },
+          {
+            "name": "tech",
+            "displayName": "科技股",
+            "priority": 4,
+            "direction": "underweight",
+            "rationale": "科技股在过热期表现中性，可适度配置",
+            "cyclePreference": [
+              "recovery"
+            ]
+          },
+          {
+            "name": "financial",
+            "displayName": "金融股",
+            "priority": 4,
+            "direction": "underweight",
+            "rationale": "金融股在过热期表现中性，可适度配置",
+            "cyclePreference": [
+              "recovery"
+            ]
+          },
+          {
+            "name": "consumer",
+            "displayName": "消费股",
+            "priority": 4,
+            "direction": "underweight",
+            "rationale": "消费股在过热期表现中性，可适度配置",
+            "cyclePreference": [
+              "recession"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "crypto",
+        "displayName": "加密货币",
+        "weight": 20,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "mainstream_crypto",
+            "displayName": "主流币(BTC/ETH)",
+            "priority": 1,
+            "direction": "overweight",
+            "rationale": "主流币(BTC/ETH)在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "overheat"
+            ]
+          },
+          {
+            "name": "exchange_token",
+            "displayName": "平台币",
+            "priority": 2,
+            "direction": "overweight",
+            "rationale": "平台币在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "overheat"
+            ]
+          },
+          {
+            "name": "layer2",
+            "displayName": "二层网络",
+            "priority": 2,
+            "direction": "overweight",
+            "rationale": "二层网络在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "overheat"
+            ]
+          },
+          {
+            "name": "infrastructure",
+            "displayName": "基建公链",
+            "priority": 2,
+            "direction": "overweight",
+            "rationale": "基建公链在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "overheat"
+            ]
+          },
+          {
+            "name": "defi",
+            "displayName": "DeFi",
+            "priority": 4,
+            "direction": "underweight",
+            "rationale": "DeFi在过热期表现中性，可适度配置",
+            "cyclePreference": [
+              "recovery"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "bond",
+        "displayName": "债券",
+        "weight": 10,
+        "direction": "underweight",
+        "subCategories": [
+          {
+            "name": "convertible",
+            "displayName": "可转债",
+            "priority": 2,
+            "direction": "overweight",
+            "rationale": "可转债在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "recovery",
+              "overheat"
+            ]
+          },
+          {
+            "name": "high_yield",
+            "displayName": "高收益债",
+            "priority": 2,
+            "direction": "overweight",
+            "rationale": "高收益债在过热期表现最优，经济环境有利于该类资产",
+            "cyclePreference": [
+              "overheat"
+            ]
+          },
+          {
+            "name": "credit",
+            "displayName": "信用债",
+            "priority": 4,
+            "direction": "underweight",
+            "rationale": "信用债在过热期表现中性，可适度配置",
+            "cyclePreference": [
+              "recovery"
+            ]
+          },
+          {
+            "name": "treasury",
+            "displayName": "国债",
+            "priority": 5,
+            "direction": "underweight",
+            "rationale": "国债在过热期表现较弱，建议低配或回避",
+            "cyclePreference": [
+              "recession"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "cash",
+        "displayName": "现金/货币",
+        "weight": 10,
+        "direction": "underweight",
+        "subCategories": [
+          {
+            "name": "cny",
+            "displayName": "人民币",
+            "priority": 4,
+            "direction": "underweight",
+            "rationale": "人民币在过热期表现中性，可适度配置",
+            "cyclePreference": [
+              "recovery"
+            ]
+          },
+          {
+            "name": "usd",
+            "displayName": "美元",
+            "priority": 5,
+            "direction": "underweight",
+            "rationale": "美元在过热期表现较弱，建议低配或回避",
+            "cyclePreference": [
+              "stagflation",
+              "recession"
+            ]
+          },
+          {
+            "name": "eur",
+            "displayName": "欧元",
+            "priority": 5,
+            "direction": "underweight",
+            "rationale": "欧元在过热期表现较弱，建议低配或回避",
+            "cyclePreference": []
+          },
+          {
+            "name": "jpy",
+            "displayName": "日元",
+            "priority": 5,
+            "direction": "underweight",
+            "rationale": "日元在过热期表现较弱，建议低配或回避",
+            "cyclePreference": [
+              "recession"
+            ]
+          }
+        ]
+      }
+    ],
+    "topSubCategories": [
+      {
+        "name": "industrial_metal",
+        "displayName": "工业金属",
+        "priority": 0.65,
+        "direction": "overweight",
+        "rationale": "工业金属在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "recovery",
+          "overheat"
+        ]
+      },
+      {
+        "name": "energy",
+        "displayName": "能源股",
+        "priority": 0.75,
+        "direction": "overweight",
+        "rationale": "能源股在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "overheat",
+          "stagflation"
+        ]
+      },
+      {
+        "name": "mainstream_crypto",
+        "displayName": "主流币(BTC/ETH)",
+        "priority": 0.8,
+        "direction": "overweight",
+        "rationale": "主流币(BTC/ETH)在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "overheat"
+        ]
+      },
+      {
+        "name": "energy_commodity",
+        "displayName": "能源",
+        "priority": 1.65,
+        "direction": "overweight",
+        "rationale": "能源在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "overheat",
+          "stagflation"
+        ]
+      },
+      {
+        "name": "cyclical",
+        "displayName": "周期股",
+        "priority": 1.75,
+        "direction": "overweight",
+        "rationale": "周期股在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "recovery",
+          "overheat"
+        ]
+      },
+      {
+        "name": "exchange_token",
+        "displayName": "平台币",
+        "priority": 1.8,
+        "direction": "overweight",
+        "rationale": "平台币在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "overheat"
+        ]
+      },
+      {
+        "name": "layer2",
+        "displayName": "二层网络",
+        "priority": 1.8,
+        "direction": "overweight",
+        "rationale": "二层网络在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "overheat"
+        ]
+      },
+      {
+        "name": "infrastructure",
+        "displayName": "基建公链",
+        "priority": 1.8,
+        "direction": "overweight",
+        "rationale": "基建公链在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "overheat"
+        ]
+      },
+      {
+        "name": "convertible",
+        "displayName": "可转债",
+        "priority": 1.9,
+        "direction": "overweight",
+        "rationale": "可转债在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "recovery",
+          "overheat"
+        ]
+      },
+      {
+        "name": "high_yield",
+        "displayName": "高收益债",
+        "priority": 1.9,
+        "direction": "overweight",
+        "rationale": "高收益债在过热期表现最优，经济环境有利于该类资产",
+        "cyclePreference": [
+          "overheat"
+        ]
+      }
+    ],
+    "report": "# 资产标的调研报告\n\n**版本**: 1.0.0  \n**引擎**: Merrill Clock v1  \n**日期**: 2026年6月27日  \n**区域**: 全球  \n**置信度**: 73%  \n\n\n## 一、经济周期判定\n\n### 当前周期：过热期\n\n**置信度**: 73%\n\n**判定依据**:\n- **GDP增长率**: 2.5 (📈 上行)\n- **PMI指数**: 54 (📈 上行)\n- **CPI通胀率**: 8.0 (📈 上行)\n\n**分析**:\n根据宏观指标分析，当前经济增长上行，通胀上行。符合过热期特征：经济上行，通胀上行。产能利用率高，通胀压力显现。\n\n\n## 二、大类资产配置建议\n\n基于当前经济周期，各资产大类建议配置如下：\n\n| 资产类别 | 配置比例 | 配置方向 | 说明 |\n|---------|---------|---------|------|\n| 商品 | 35% | ⬆️ 超配 | 通胀对冲，实物资产保值 |\n| 股票 | 25% | ➡️ 标配 | 经济增长受益，风险资产首选 |\n| 加密货币 | 20% | ➡️ 标配 | 高风险高收益，成长型配置 |\n| 债券 | 10% | ⬇️ 低配 | 避险需求，固定收益稳定 |\n| 现金/货币 | 10% | ⬇️ 低配 | 流动性储备，防御性配置 |\n\n\n## 三、子类资产优先级\n\n### Top 10 推荐标的\n\n| 优先级 | 子类 | 大类 | 配置方向 | 推荐理由 |\n|-------|------|------|---------|---------|\n| 1 | 🏆工业金属 | 商品 | ⬆️ | 工业金属在过热期表现最优，经济环境有利于该类资产... |\n| 2 | 🏆能源股 | 股票 | ⬆️ | 能源股在过热期表现最优，经济环境有利于该类资产... |\n| 3 | 🏆主流币(BTC/ETH) | 加密货币 | ⬆️ | 主流币(BTC/ETH)在过热期表现最优，经济环境有利于该类... |\n| 4 | 🏆能源 | 商品 | ⬆️ | 能源在过热期表现最优，经济环境有利于该类资产... |\n| 5 | 🏆周期股 | 股票 | ⬆️ | 周期股在过热期表现最优，经济环境有利于该类资产... |\n| 6 | 🏆平台币 | 加密货币 | ⬆️ | 平台币在过热期表现最优，经济环境有利于该类资产... |\n| 7 | 🏆二层网络 | 加密货币 | ⬆️ | 二层网络在过热期表现最优，经济环境有利于该类资产... |\n| 8 | 🏆基建公链 | 加密货币 | ⬆️ | 基建公链在过热期表现最优，经济环境有利于该类资产... |\n| 9 | 🏆可转债 | 债券 | ⬆️ | 可转债在过热期表现最优，经济环境有利于该类资产... |\n| 10 | 🏆高收益债 | 债券 | ⬆️ | 高收益债在过热期表现最优，经济环境有利于该类资产... |\n| 11 | 贵金属 | 商品 | ⬇️ | 贵金属在过热期表现中性，可适度配置... |\n| 12 | 农产品 | 商品 | ⬇️ | 农产品在过热期表现中性，可适度配置... |\n| 13 | 科技股 | 股票 | ⬇️ | 科技股在过热期表现中性，可适度配置... |\n| 14 | 金融股 | 股票 | ⬇️ | 金融股在过热期表现中性，可适度配置... |\n| 15 | 消费股 | 股票 | ⬇️ | 消费股在过热期表现中性，可适度配置... |\n\n### 详细子类配置\n\n\n#### 商品\n\n- 🟢 **工业金属**: 工业金属在过热期表现最优，经济环境有利于该类资产\n- 🟢 **能源**: 能源在过热期表现最优，经济环境有利于该类资产\n- 🔴 **贵金属**: 贵金属在过热期表现中性，可适度配置\n- 🔴 **农产品**: 农产品在过热期表现中性，可适度配置\n\n#### 股票\n\n- 🟢 **能源股**: 能源股在过热期表现最优，经济环境有利于该类资产\n- 🟢 **周期股**: 周期股在过热期表现最优，经济环境有利于该类资产\n- 🔴 **科技股**: 科技股在过热期表现中性，可适度配置\n- 🔴 **金融股**: 金融股在过热期表现中性，可适度配置\n- 🔴 **消费股**: 消费股在过热期表现中性，可适度配置\n\n#### 加密货币\n\n- 🟢 **主流币(BTC/ETH)**: 主流币(BTC/ETH)在过热期表现最优，经济环境有利于该类资产\n- 🟢 **平台币**: 平台币在过热期表现最优，经济环境有利于该类资产\n- 🟢 **二层网络**: 二层网络在过热期表现最优，经济环境有利于该类资产\n- 🟢 **基建公链**: 基建公链在过热期表现最优，经济环境有利于该类资产\n- 🔴 **DeFi**: DeFi在过热期表现中性，可适度配置\n\n#### 债券\n\n- 🟢 **可转债**: 可转债在过热期表现最优，经济环境有利于该类资产\n- 🟢 **高收益债**: 高收益债在过热期表现最优，经济环境有利于该类资产\n- 🔴 **信用债**: 信用债在过热期表现中性，可适度配置\n- 🔴 **国债**: 国债在过热期表现较弱，建议低配或回避\n\n#### 现金/货币\n\n- 🔴 **人民币**: 人民币在过热期表现中性，可适度配置\n- 🔴 **美元**: 美元在过热期表现较弱，建议低配或回避\n- 🔴 **欧元**: 欧元在过热期表现较弱，建议低配或回避\n- 🔴 **日元**: 日元在过热期表现较弱，建议低配或回避\n\n\n\n## 四、数据来源\n\n暂无数据来源信息（使用模拟数据）\n\n## 五、风险提示\n\n1. **模型局限性**: 美林投资时钟基于历史规律，未来市场可能呈现与历史不同的特征\n2. **数据延迟**: 宏观经济数据通常存在发布延迟，周期判定可能滞后\n3. **地域差异**: 美林时钟在美国市场验证较多，其他市场表现可能存在差异\n4. **黑天鹅风险**: 未能预见的地缘政治、疫情等突发事件可能颠覆周期规律\n5. **执行风险**: 实际交易需考虑流动性、交易成本、滑点等因素\n\n---\n*本报告仅供参考，不构成投资建议。投资有风险，入市需谨慎。*\n",
+    "dataSources": [
+      {
+        "name": "https://www.atlantafed.org/research-and-data/data/gdpnow",
+        "timestamp": "2026-06-26T17:04:10.685Z"
+      },
+      {
+        "name": "https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-",
+        "timestamp": "2026-06-26T17:04:10.685Z"
+      },
+      {
+        "name": "https://tradingeconomics.com/united-states/business-confidence",
+        "timestamp": "2026-06-26T17:04:10.686Z"
+      },
+      {
+        "name": "https://tradingeconomics.com/united-states/unemployment-rate",
+        "timestamp": "2026-06-26T17:04:10.686Z"
+      }
+    ],
+    "confidence": 0.7300000000000001,
+    "metadata": {
+      "indicatorScores": {
+        "growthScore": 75,
+        "inflationScore": 100
+      }
+    }
+  },
+  "v2": {
+    "version": "2.0.0",
+    "engineName": "Multi-Factor v2",
+    "timestamp": "2026-06-26T17:04:29.627Z",
+    "region": "global",
+    "cycle": {
+      "currentPhase": "overheat",
+      "confidence": 0.68,
+      "indicators": [
+        {
+          "name": "GDP增长率",
+          "value": "1.7",
+          "trend": "down",
+          "source": "https://www.oecd.org/en/data/insights/statistical-releases/2026/02/gdp-growth-fourth-quarter-2025-oecd.html",
+          "timestamp": "2026-06-26T17:04:29.608Z",
+          "freshness": "fresh"
+        },
+        {
+          "name": "PMI指数",
+          "value": "54",
+          "trend": "up",
+          "source": "https://tradingeconomics.com/united-states/business-confidence",
+          "timestamp": "2026-06-26T17:04:29.609Z",
+          "freshness": "fresh"
+        },
+        {
+          "name": "CPI通胀率",
+          "value": "8.0",
+          "trend": "up",
+          "source": "https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-",
+          "timestamp": "2026-06-26T17:04:29.608Z",
+          "freshness": "fresh"
+        }
+      ],
+      "rationale": "根据宏观指标分析，当前经济增长上行，通胀上行。符合过热期特征：经济上行，通胀上行。产能利用率高，通胀压力显现。"
+    },
+    "assetAllocation": [
+      {
+        "category": "crypto",
+        "displayName": "加密货币",
+        "weight": 23,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "mainstream_crypto",
+            "displayName": "主流币(BTC/ETH)",
+            "priority": 3,
+            "direction": "overweight",
+            "rationale": "主流币(BTC/ETH)综合得分74分。优势：周期位置有利、动量强劲。",
+            "cyclePreference": []
+          },
+          {
+            "name": "exchange_token",
+            "displayName": "平台币",
+            "priority": 3,
+            "direction": "overweight",
+            "rationale": "平台币综合得分70分。优势：周期位置有利、动量强劲、市场情绪积极。",
+            "cyclePreference": []
+          },
+          {
+            "name": "infrastructure",
+            "displayName": "基建公链",
+            "priority": 3,
+            "direction": "overweight",
+            "rationale": "基建公链综合得分72分。优势：周期位置有利、动量强劲、市场情绪积极。",
+            "cyclePreference": []
+          },
+          {
+            "name": "layer2",
+            "displayName": "二层网络",
+            "priority": 4,
+            "direction": "overweight",
+            "rationale": "二层网络综合得分66分。优势：周期位置有利、动量强劲。风险：估值偏高。",
+            "cyclePreference": []
+          },
+          {
+            "name": "defi",
+            "displayName": "DeFi",
+            "priority": 7,
+            "direction": "neutral",
+            "rationale": "DeFi综合得分39分。",
+            "cyclePreference": []
+          }
+        ]
+      },
+      {
+        "category": "commodity",
+        "displayName": "商品",
+        "weight": 21,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "industrial_metal",
+            "displayName": "工业金属",
+            "priority": 3,
+            "direction": "overweight",
+            "rationale": "工业金属综合得分75分。优势：周期位置有利、动量强劲、市场情绪积极。",
+            "cyclePreference": []
+          },
+          {
+            "name": "energy_commodity",
+            "displayName": "能源",
+            "priority": 4,
+            "direction": "overweight",
+            "rationale": "能源综合得分69分。优势：周期位置有利、市场情绪积极。",
+            "cyclePreference": []
+          },
+          {
+            "name": "precious_metal",
+            "displayName": "贵金属",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "贵金属综合得分44分。",
+            "cyclePreference": []
+          },
+          {
+            "name": "agricultural",
+            "displayName": "农产品",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "农产品综合得分44分。",
+            "cyclePreference": []
+          }
+        ]
+      },
+      {
+        "category": "stock",
+        "displayName": "股票",
+        "weight": 20,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "energy",
+            "displayName": "能源股",
+            "priority": 3,
+            "direction": "overweight",
+            "rationale": "能源股综合得分75分。优势：周期位置有利、市场情绪积极。",
+            "cyclePreference": []
+          },
+          {
+            "name": "cyclical",
+            "displayName": "周期股",
+            "priority": 4,
+            "direction": "overweight",
+            "rationale": "周期股综合得分69分。优势：周期位置有利、市场情绪积极。",
+            "cyclePreference": []
+          },
+          {
+            "name": "tech",
+            "displayName": "科技股",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "科技股综合得分43分。",
+            "cyclePreference": []
+          },
+          {
+            "name": "financial",
+            "displayName": "金融股",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "金融股综合得分45分。",
+            "cyclePreference": []
+          },
+          {
+            "name": "consumer",
+            "displayName": "消费股",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "消费股综合得分41分。",
+            "cyclePreference": []
+          }
+        ]
+      },
+      {
+        "category": "bond",
+        "displayName": "债券",
+        "weight": 20,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "convertible",
+            "displayName": "可转债",
+            "priority": 3,
+            "direction": "overweight",
+            "rationale": "可转债综合得分71分。优势：周期位置有利、动量强劲、市场情绪积极。",
+            "cyclePreference": []
+          },
+          {
+            "name": "high_yield",
+            "displayName": "高收益债",
+            "priority": 4,
+            "direction": "overweight",
+            "rationale": "高收益债综合得分68分。优势：周期位置有利。",
+            "cyclePreference": []
+          },
+          {
+            "name": "credit",
+            "displayName": "信用债",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "信用债综合得分47分。",
+            "cyclePreference": []
+          },
+          {
+            "name": "treasury",
+            "displayName": "国债",
+            "priority": 7,
+            "direction": "underweight",
+            "rationale": "国债综合得分34分。风险：周期位置不利、市场情绪低迷。",
+            "cyclePreference": []
+          }
+        ]
+      },
+      {
+        "category": "cash",
+        "displayName": "现金/货币",
+        "weight": 15,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "usd",
+            "displayName": "美元",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "美元综合得分41分。风险：周期位置不利。",
+            "cyclePreference": []
+          },
+          {
+            "name": "cny",
+            "displayName": "人民币",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "人民币综合得分44分。",
+            "cyclePreference": []
+          },
+          {
+            "name": "eur",
+            "displayName": "欧元",
+            "priority": 7,
+            "direction": "neutral",
+            "rationale": "欧元综合得分37分。风险：周期位置不利。",
+            "cyclePreference": []
+          },
+          {
+            "name": "jpy",
+            "displayName": "日元",
+            "priority": 7,
+            "direction": "underweight",
+            "rationale": "日元综合得分30分。风险：周期位置不利、动量疲软、市场情绪低迷。",
+            "cyclePreference": []
+          }
+        ]
+      }
+    ],
+    "topSubCategories": [
+      {
+        "name": "mainstream_crypto",
+        "displayName": "主流币(BTC/ETH)",
+        "priority": 3,
+        "direction": "overweight",
+        "rationale": "主流币(BTC/ETH)综合得分74分。优势：周期位置有利、动量强劲。",
+        "cyclePreference": []
+      },
+      {
+        "name": "exchange_token",
+        "displayName": "平台币",
+        "priority": 3,
+        "direction": "overweight",
+        "rationale": "平台币综合得分70分。优势：周期位置有利、动量强劲、市场情绪积极。",
+        "cyclePreference": []
+      },
+      {
+        "name": "infrastructure",
+        "displayName": "基建公链",
+        "priority": 3,
+        "direction": "overweight",
+        "rationale": "基建公链综合得分72分。优势：周期位置有利、动量强劲、市场情绪积极。",
+        "cyclePreference": []
+      },
+      {
+        "name": "industrial_metal",
+        "displayName": "工业金属",
+        "priority": 3,
+        "direction": "overweight",
+        "rationale": "工业金属综合得分75分。优势：周期位置有利、动量强劲、市场情绪积极。",
+        "cyclePreference": []
+      },
+      {
+        "name": "energy",
+        "displayName": "能源股",
+        "priority": 3,
+        "direction": "overweight",
+        "rationale": "能源股综合得分75分。优势：周期位置有利、市场情绪积极。",
+        "cyclePreference": []
+      },
+      {
+        "name": "convertible",
+        "displayName": "可转债",
+        "priority": 3,
+        "direction": "overweight",
+        "rationale": "可转债综合得分71分。优势：周期位置有利、动量强劲、市场情绪积极。",
+        "cyclePreference": []
+      },
+      {
+        "name": "layer2",
+        "displayName": "二层网络",
+        "priority": 4,
+        "direction": "overweight",
+        "rationale": "二层网络综合得分66分。优势：周期位置有利、动量强劲。风险：估值偏高。",
+        "cyclePreference": []
+      },
+      {
+        "name": "energy_commodity",
+        "displayName": "能源",
+        "priority": 4,
+        "direction": "overweight",
+        "rationale": "能源综合得分69分。优势：周期位置有利、市场情绪积极。",
+        "cyclePreference": []
+      },
+      {
+        "name": "cyclical",
+        "displayName": "周期股",
+        "priority": 4,
+        "direction": "overweight",
+        "rationale": "周期股综合得分69分。优势：周期位置有利、市场情绪积极。",
+        "cyclePreference": []
+      },
+      {
+        "name": "high_yield",
+        "displayName": "高收益债",
+        "priority": 4,
+        "direction": "overweight",
+        "rationale": "高收益债综合得分68分。优势：周期位置有利。",
+        "cyclePreference": []
+      }
+    ],
+    "report": "# 资产标的调研报告\n\n**版本**: 2.0.0  \n**引擎**: Multi-Factor v2  \n**日期**: 2026年6月27日  \n**区域**: 全球  \n**置信度**: 68%  \n\n\n## 一、经济周期判定\n\n### 当前周期：过热期\n\n**置信度**: 68%\n\n**判定依据**:\n- **GDP增长率**: 1.7 (📉 下行)\n- **PMI指数**: 54 (📈 上行)\n- **CPI通胀率**: 8.0 (📈 上行)\n\n**分析**:\n根据宏观指标分析，当前经济增长上行，通胀上行。符合过热期特征：经济上行，通胀上行。产能利用率高，通胀压力显现。\n\n\n## 二、大类资产配置建议\n\n基于当前经济周期，各资产大类建议配置如下：\n\n| 资产类别 | 配置比例 | 配置方向 | 说明 |\n|---------|---------|---------|------|\n| 加密货币 | 23% | ➡️ 标配 | 高风险高收益，成长型配置 |\n| 商品 | 21% | ➡️ 标配 | 通胀对冲，实物资产保值 |\n| 股票 | 20% | ➡️ 标配 | 经济增长受益，风险资产首选 |\n| 债券 | 20% | ➡️ 标配 | 避险需求，固定收益稳定 |\n| 现金/货币 | 15% | ➡️ 标配 | 流动性储备，防御性配置 |\n\n\n## 三、子类资产优先级\n\n### Top 10 推荐标的\n\n| 优先级 | 子类 | 大类 | 配置方向 | 推荐理由 |\n|-------|------|------|---------|---------|\n| 1 | 🏆主流币(BTC/ETH) | 加密货币 | ⬆️ | 主流币(BTC/ETH)综合得分74分。优势：周期位置有利、... |\n| 2 | 🏆平台币 | 加密货币 | ⬆️ | 平台币综合得分70分。优势：周期位置有利、动量强劲、市场情绪... |\n| 3 | 🏆基建公链 | 加密货币 | ⬆️ | 基建公链综合得分72分。优势：周期位置有利、动量强劲、市场情... |\n| 4 | 🏆工业金属 | 商品 | ⬆️ | 工业金属综合得分75分。优势：周期位置有利、动量强劲、市场情... |\n| 5 | 🏆能源股 | 股票 | ⬆️ | 能源股综合得分75分。优势：周期位置有利、市场情绪积极。... |\n| 6 | 🏆可转债 | 债券 | ⬆️ | 可转债综合得分71分。优势：周期位置有利、动量强劲、市场情绪... |\n| 7 | 🏆二层网络 | 加密货币 | ⬆️ | 二层网络综合得分66分。优势：周期位置有利、动量强劲。风险：... |\n| 8 | 🏆能源 | 商品 | ⬆️ | 能源综合得分69分。优势：周期位置有利、市场情绪积极。... |\n| 9 | 🏆周期股 | 股票 | ⬆️ | 周期股综合得分69分。优势：周期位置有利、市场情绪积极。... |\n| 10 | 🏆高收益债 | 债券 | ⬆️ | 高收益债综合得分68分。优势：周期位置有利。... |\n| 11 | 贵金属 | 商品 | ➡️ | 贵金属综合得分44分。... |\n| 12 | 农产品 | 商品 | ➡️ | 农产品综合得分44分。... |\n| 13 | 科技股 | 股票 | ➡️ | 科技股综合得分43分。... |\n| 14 | 金融股 | 股票 | ➡️ | 金融股综合得分45分。... |\n| 15 | 消费股 | 股票 | ➡️ | 消费股综合得分41分。... |\n\n### 详细子类配置\n\n\n#### 加密货币\n\n- 🟢 **主流币(BTC/ETH)**: 主流币(BTC/ETH)综合得分74分。优势：周期位置有利、动量强劲。\n- 🟢 **平台币**: 平台币综合得分70分。优势：周期位置有利、动量强劲、市场情绪积极。\n- 🟢 **基建公链**: 基建公链综合得分72分。优势：周期位置有利、动量强劲、市场情绪积极。\n- 🟢 **二层网络**: 二层网络综合得分66分。优势：周期位置有利、动量强劲。风险：估值偏高。\n- 🟡 **DeFi**: DeFi综合得分39分。\n\n#### 商品\n\n- 🟢 **工业金属**: 工业金属综合得分75分。优势：周期位置有利、动量强劲、市场情绪积极。\n- 🟢 **能源**: 能源综合得分69分。优势：周期位置有利、市场情绪积极。\n- 🟡 **贵金属**: 贵金属综合得分44分。\n- 🟡 **农产品**: 农产品综合得分44分。\n\n#### 股票\n\n- 🟢 **能源股**: 能源股综合得分75分。优势：周期位置有利、市场情绪积极。\n- 🟢 **周期股**: 周期股综合得分69分。优势：周期位置有利、市场情绪积极。\n- 🟡 **科技股**: 科技股综合得分43分。\n- 🟡 **金融股**: 金融股综合得分45分。\n- 🟡 **消费股**: 消费股综合得分41分。\n\n#### 债券\n\n- 🟢 **可转债**: 可转债综合得分71分。优势：周期位置有利、动量强劲、市场情绪积极。\n- 🟢 **高收益债**: 高收益债综合得分68分。优势：周期位置有利。\n- 🟡 **信用债**: 信用债综合得分47分。\n- 🔴 **国债**: 国债综合得分34分。风险：周期位置不利、市场情绪低迷。\n\n#### 现金/货币\n\n- 🟡 **美元**: 美元综合得分41分。风险：周期位置不利。\n- 🟡 **人民币**: 人民币综合得分44分。\n- 🟡 **欧元**: 欧元综合得分37分。风险：周期位置不利。\n- 🔴 **日元**: 日元综合得分30分。风险：周期位置不利、动量疲软、市场情绪低迷。\n\n\n\n\n## 三、多因子分析\n\n> 因子权重：周期40% / 动量25% / 估值20% / 情绪15%\n\n### 大类资产因子得分\n\n| 资产类别 | 权重 | 周期因子 | 动量因子 | 估值因子 | 情绪因子 | 综合得分 |\n|---------|------|---------|---------|---------|---------|----------|\n| 加密货币 | 23% | 74 | 72 | 36 | 64 | **64** |\n| 商品 | 21% | 63 | 55 | 51 | 60 | **58** |\n| 股票 | 20% | 58 | 52 | 50 | 56 | **55** |\n| 债券 | 20% | 55 | 56 | 54 | 55 | **55** |\n| 现金/货币 | 15% | 30 | 41 | 53 | 37 | **38** |\n\n### 子类因子详情（Top 10）\n\n| 排名 | 子类 | 大类 | 周期 | 动量 | 估值 | 情绪 | 综合 | 配置方向 |\n|------|------|------|------|------|------|------|------|---------|\n| 1 | 能源股 | stock | 90 | 68 | 55 | 76 | **75** | ⬆️ 超配 |\n| 2 | 工业金属 | commodity | 90 | 76 | 45 | 72 | **75** | ⬆️ 超配 |\n| 3 | 主流币(BTC/ETH) | crypto | 90 | 86 | 35 | 60 | **74** | ⬆️ 超配 |\n| 4 | 基建公链 | crypto | 80 | 79 | 40 | 82 | **72** | ⬆️ 超配 |\n| 5 | 可转债 | bond | 80 | 75 | 45 | 76 | **71** | ⬆️ 超配 |\n| 6 | 平台币 | crypto | 80 | 72 | 40 | 82 | **70** | ⬆️ 超配 |\n| 7 | 周期股 | stock | 80 | 69 | 45 | 74 | **69** | ⬆️ 超配 |\n| 8 | 能源 | commodity | 80 | 65 | 50 | 73 | **69** | ⬆️ 超配 |\n| 9 | 高收益债 | bond | 80 | 69 | 50 | 60 | **68** | ⬆️ 超配 |\n| 10 | 二层网络 | crypto | 80 | 80 | 30 | 56 | **66** | ⬆️ 超配 |\n\n**说明**：\n- 周期因子：基于美林投资时钟的宏观周期适配度\n- 动量因子：基于价格趋势的强弱度\n- 估值因子：基于基本面的价值吸引力（分数越高越便宜）\n- 情绪因子：基于资金流和舆情的市场热度\n\n\n## 四、数据来源\n\n- [https://www.oecd.org/en/data/insights/statistical-releases/2026/02/gdp-growth-fourth-quarter-2025-oecd.html](#) - 2026/6/27\n- [https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-](#) - 2026/6/27\n- [https://tradingeconomics.com/united-states/business-confidence](#) - 2026/6/27\n- [https://www.nerdwallet.com/finance/learn/jobs-report-unemployment-rate](#) - 2026/6/27\n\n\n## 五、风险提示\n\n1. **模型局限性**: 美林投资时钟基于历史规律，未来市场可能呈现与历史不同的特征\n2. **数据延迟**: 宏观经济数据通常存在发布延迟，周期判定可能滞后\n3. **地域差异**: 美林时钟在美国市场验证较多，其他市场表现可能存在差异\n4. **黑天鹅风险**: 未能预见的地缘政治、疫情等突发事件可能颠覆周期规律\n5. **执行风险**: 实际交易需考虑流动性、交易成本、滑点等因素\n\n---\n*本报告仅供参考，不构成投资建议。投资有风险，入市需谨慎。*\n",
+    "dataSources": [
+      {
+        "name": "https://www.oecd.org/en/data/insights/statistical-releases/2026/02/gdp-growth-fourth-quarter-2025-oecd.html",
+        "timestamp": "2026-06-26T17:04:29.608Z"
+      },
+      {
+        "name": "https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-",
+        "timestamp": "2026-06-26T17:04:29.608Z"
+      },
+      {
+        "name": "https://tradingeconomics.com/united-states/business-confidence",
+        "timestamp": "2026-06-26T17:04:29.609Z"
+      },
+      {
+        "name": "https://www.nerdwallet.com/finance/learn/jobs-report-unemployment-rate",
+        "timestamp": "2026-06-26T17:04:29.610Z"
+      }
+    ],
+    "confidence": 0.68,
+    "metadata": {
+      "factorScores": [
+        {
+          "category": "crypto",
+          "displayName": "加密货币",
+          "weight": 23,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 74,
+            "momentum": 71.80707315886939,
+            "valuation": 36,
+            "sentiment": 63.55418366173526,
+            "total": 64.28489583897763
+          },
+          "subCategories": [
+            {
+              "subCategory": "mainstream_crypto",
+              "displayName": "主流币(BTC/ETH)",
+              "category": "crypto",
+              "scores": {
+                "cycle": 90,
+                "momentum": 86.25459793076334,
+                "valuation": 35,
+                "sentiment": 60.116231601540676,
+                "total": 73.58108422292193
+              },
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "主流币(BTC/ETH)综合得分74分。优势：周期位置有利、动量强劲。"
+            },
+            {
+              "subCategory": "exchange_token",
+              "displayName": "平台币",
+              "category": "crypto",
+              "scores": {
+                "cycle": 80,
+                "momentum": 72.13573063323201,
+                "valuation": 40,
+                "sentiment": 81.87102324905754,
+                "total": 70.31458614566664
+              },
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "平台币综合得分70分。优势：周期位置有利、动量强劲、市场情绪积极。"
+            },
+            {
+              "subCategory": "infrastructure",
+              "displayName": "基建公链",
+              "category": "crypto",
+              "scores": {
+                "cycle": 80,
+                "momentum": 79.0781887957528,
+                "valuation": 40,
+                "sentiment": 81.92438167693399,
+                "total": 72.0582044504783
+              },
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "基建公链综合得分72分。优势：周期位置有利、动量强劲、市场情绪积极。"
+            },
+            {
+              "subCategory": "layer2",
+              "displayName": "二层网络",
+              "category": "crypto",
+              "scores": {
+                "cycle": 80,
+                "momentum": 79.69170964671866,
+                "valuation": 30,
+                "sentiment": 56.05754857650754,
+                "total": 66.3315596981558
+              },
+              "priority": 4,
+              "direction": "overweight",
+              "rationale": "二层网络综合得分66分。优势：周期位置有利、动量强劲。风险：估值偏高。"
+            },
+            {
+              "subCategory": "defi",
+              "displayName": "DeFi",
+              "category": "crypto",
+              "scores": {
+                "cycle": 40,
+                "momentum": 41.87513878788013,
+                "valuation": 35,
+                "sentiment": 37.80173320463655,
+                "total": 39.13904467766552
+              },
+              "priority": 7,
+              "direction": "neutral",
+              "rationale": "DeFi综合得分39分。"
+            }
+          ]
+        },
+        {
+          "category": "commodity",
+          "displayName": "商品",
+          "weight": 21,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 62.5,
+            "momentum": 54.644874780051396,
+            "valuation": 51.25,
+            "sentiment": 60.469310240389404,
+            "total": 57.98161523107126
+          },
+          "subCategories": [
+            {
+              "subCategory": "industrial_metal",
+              "displayName": "工业金属",
+              "category": "commodity",
+              "scores": {
+                "cycle": 90,
+                "momentum": 75.53629485694546,
+                "valuation": 45,
+                "sentiment": 72.21533871534484,
+                "total": 74.71637452153809
+              },
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "工业金属综合得分75分。优势：周期位置有利、动量强劲、市场情绪积极。"
+            },
+            {
+              "subCategory": "energy_commodity",
+              "displayName": "能源",
+              "category": "commodity",
+              "scores": {
+                "cycle": 80,
+                "momentum": 64.7693860589934,
+                "valuation": 50,
+                "sentiment": 72.8350259037943,
+                "total": 69.1176004003175
+              },
+              "priority": 4,
+              "direction": "overweight",
+              "rationale": "能源综合得分69分。优势：周期位置有利、市场情绪积极。"
+            },
+            {
+              "subCategory": "precious_metal",
+              "displayName": "贵金属",
+              "category": "commodity",
+              "scores": {
+                "cycle": 40,
+                "momentum": 36.60080558486516,
+                "valuation": 55,
+                "sentiment": 55.452699725650746,
+                "total": 44.4681063550639
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "贵金属综合得分44分。"
+            },
+            {
+              "subCategory": "agricultural",
+              "displayName": "农产品",
+              "category": "commodity",
+              "scores": {
+                "cycle": 40,
+                "momentum": 41.67301261940156,
+                "valuation": 55,
+                "sentiment": 41.37417661676773,
+                "total": 43.62437964736555
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "农产品综合得分44分。"
+            }
+          ]
+        },
+        {
+          "category": "stock",
+          "displayName": "股票",
+          "weight": 20,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 58,
+            "momentum": 52.332194796713885,
+            "valuation": 50,
+            "sentiment": 55.63158291902731,
+            "total": 54.62778613703257
+          },
+          "subCategories": [
+            {
+              "subCategory": "energy",
+              "displayName": "能源股",
+              "category": "stock",
+              "scores": {
+                "cycle": 90,
+                "momentum": 68.13421074019789,
+                "valuation": 55,
+                "sentiment": 76.38877232274035,
+                "total": 75.49186853346052
+              },
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "能源股综合得分75分。优势：周期位置有利、市场情绪积极。"
+            },
+            {
+              "subCategory": "cyclical",
+              "displayName": "周期股",
+              "category": "stock",
+              "scores": {
+                "cycle": 80,
+                "momentum": 69.24896603222442,
+                "valuation": 45,
+                "sentiment": 73.95837244367885,
+                "total": 69.40599737460794
+              },
+              "priority": 4,
+              "direction": "overweight",
+              "rationale": "周期股综合得分69分。优势：周期位置有利、市场情绪积极。"
+            },
+            {
+              "subCategory": "tech",
+              "displayName": "科技股",
+              "category": "stock",
+              "scores": {
+                "cycle": 40,
+                "momentum": 49.60972377554572,
+                "valuation": 40,
+                "sentiment": 42.57162503412354,
+                "total": 42.78817469900496
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "科技股综合得分43分。"
+            },
+            {
+              "subCategory": "financial",
+              "displayName": "金融股",
+              "category": "stock",
+              "scores": {
+                "cycle": 40,
+                "momentum": 39.10544761964775,
+                "valuation": 60,
+                "sentiment": 47.444363250955575,
+                "total": 44.893016392555275
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "金融股综合得分45分。"
+            },
+            {
+              "subCategory": "consumer",
+              "displayName": "消费股",
+              "category": "stock",
+              "scores": {
+                "cycle": 40,
+                "momentum": 35.56262581595365,
+                "valuation": 50,
+                "sentiment": 37.79478154363824,
+                "total": 40.55987368553415
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "消费股综合得分41分。"
+            }
+          ]
+        },
+        {
+          "category": "bond",
+          "displayName": "债券",
+          "weight": 20,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 55,
+            "momentum": 56.44322757171358,
+            "valuation": 53.75,
+            "sentiment": 54.69056251381221,
+            "total": 55.06439127000023
+          },
+          "subCategories": [
+            {
+              "subCategory": "convertible",
+              "displayName": "可转债",
+              "category": "bond",
+              "scores": {
+                "cycle": 80,
+                "momentum": 74.76927023247845,
+                "valuation": 45,
+                "sentiment": 76.0929705597282,
+                "total": 71.10626314207884
+              },
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "可转债综合得分71分。优势：周期位置有利、动量强劲、市场情绪积极。"
+            },
+            {
+              "subCategory": "high_yield",
+              "displayName": "高收益债",
+              "category": "bond",
+              "scores": {
+                "cycle": 80,
+                "momentum": 68.73471911841625,
+                "valuation": 50,
+                "sentiment": 60.002587980618955,
+                "total": 68.18406797669691
+              },
+              "priority": 4,
+              "direction": "overweight",
+              "rationale": "高收益债综合得分68分。优势：周期位置有利。"
+            },
+            {
+              "subCategory": "credit",
+              "displayName": "信用债",
+              "category": "bond",
+              "scores": {
+                "cycle": 40,
+                "momentum": 45.89620443329113,
+                "valuation": 55,
+                "sentiment": 56.03702363226512,
+                "total": 46.87960465316255
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "信用债综合得分47分。"
+            },
+            {
+              "subCategory": "treasury",
+              "displayName": "国债",
+              "category": "bond",
+              "scores": {
+                "cycle": 20,
+                "momentum": 36.37271650266848,
+                "valuation": 65,
+                "sentiment": 26.629667882636568,
+                "total": 34.0876293080626
+              },
+              "priority": 7,
+              "direction": "underweight",
+              "rationale": "国债综合得分34分。风险：周期位置不利、市场情绪低迷。"
+            }
+          ]
+        },
+        {
+          "category": "cash",
+          "displayName": "现金/货币",
+          "weight": 15,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 30,
+            "momentum": 40.59905442657828,
+            "valuation": 52.5,
+            "sentiment": 36.8523429964539,
+            "total": 38.17761505611266
+          },
+          "subCategories": [
+            {
+              "subCategory": "usd",
+              "displayName": "美元",
+              "category": "cash",
+              "scores": {
+                "cycle": 30,
+                "momentum": 45.88403396513604,
+                "valuation": 50,
+                "sentiment": 50.16431354624547,
+                "total": 40.99565552322083
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "美元综合得分41分。风险：周期位置不利。"
+            },
+            {
+              "subCategory": "cny",
+              "displayName": "人民币",
+              "category": "cash",
+              "scores": {
+                "cycle": 40,
+                "momentum": 45.82924131866821,
+                "valuation": 55,
+                "sentiment": 38.73778125715398,
+                "total": 44.26797751824015
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "人民币综合得分44分。"
+            },
+            {
+              "subCategory": "eur",
+              "displayName": "欧元",
+              "category": "cash",
+              "scores": {
+                "cycle": 30,
+                "momentum": 41.870911606361915,
+                "valuation": 50,
+                "sentiment": 32.80072647502311,
+                "total": 37.38783687284395
+              },
+              "priority": 7,
+              "direction": "neutral",
+              "rationale": "欧元综合得分37分。风险：周期位置不利。"
+            },
+            {
+              "subCategory": "jpy",
+              "displayName": "日元",
+              "category": "cash",
+              "scores": {
+                "cycle": 20,
+                "momentum": 28.812030816146944,
+                "valuation": 55,
+                "sentiment": 25.706550707393035,
+                "total": 30.058990310145692
+              },
+              "priority": 7,
+              "direction": "underweight",
+              "rationale": "日元综合得分30分。风险：周期位置不利、动量疲软、市场情绪低迷。"
+            }
+          ]
+        }
+      ],
+      "indicatorScores": {
+        "growthScore": 57,
+        "inflationScore": 100
+      },
+      "isMultiFactor": true
+    }
+  },
+  "v3": {
+    "version": "3.0.0",
+    "engineName": "Scenario Sim v3",
+    "timestamp": "2026-06-26T17:04:56.085Z",
+    "region": "global",
+    "cycle": {
+      "currentPhase": "recovery",
+      "confidence": 0.7300000000000001,
+      "indicators": [
+        {
+          "name": "GDP增长率",
+          "value": "2.5",
+          "trend": "up",
+          "source": "https://www.atlantafed.org/research-and-data/data/gdpnow",
+          "timestamp": "2026-06-26T17:04:56.028Z",
+          "freshness": "fresh"
+        },
+        {
+          "name": "PMI指数",
+          "value": "54",
+          "trend": "up",
+          "source": "https://tradingeconomics.com/united-states/business-confidence",
+          "timestamp": "2026-06-26T17:04:56.028Z",
+          "freshness": "fresh"
+        },
+        {
+          "name": "CPI通胀率",
+          "value": "0.5",
+          "trend": "down",
+          "source": "https://www.bls.gov/cpi",
+          "timestamp": "2026-06-26T17:04:56.028Z",
+          "freshness": "fresh"
+        }
+      ],
+      "rationale": "根据宏观指标分析，当前经济增长上行，通胀下行。符合复苏期特征：经济上行，通胀下行。货币政策宽松，企业盈利改善。",
+      "phaseProbability": {
+        "recovery": 0.725,
+        "overheat": 0.265,
+        "stagflation": 0.009999999999999998,
+        "recession": 0
+      }
+    },
+    "assetAllocation": [
+      {
+        "category": "stock",
+        "displayName": "股票",
+        "weight": 23,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "tech",
+            "displayName": "科技股",
+            "priority": 3,
+            "direction": "overweight",
+            "rationale": "科技股综合得分77分。优势：周期位置有利、动量强劲、市场情绪积极。",
+            "cyclePreference": []
+          },
+          {
+            "name": "cyclical",
+            "displayName": "周期股",
+            "priority": 3,
+            "direction": "overweight",
+            "rationale": "周期股综合得分73分。优势：周期位置有利、动量强劲。",
+            "cyclePreference": []
+          },
+          {
+            "name": "financial",
+            "displayName": "金融股",
+            "priority": 4,
+            "direction": "overweight",
+            "rationale": "金融股综合得分69分。优势：周期位置有利。",
+            "cyclePreference": []
+          },
+          {
+            "name": "consumer",
+            "displayName": "消费股",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "消费股综合得分42分。",
+            "cyclePreference": []
+          },
+          {
+            "name": "energy",
+            "displayName": "能源股",
+            "priority": 7,
+            "direction": "neutral",
+            "rationale": "能源股综合得分38分。风险：周期位置不利、动量疲软。",
+            "cyclePreference": []
+          }
+        ]
+      },
+      {
+        "category": "bond",
+        "displayName": "债券",
+        "weight": 21,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "credit",
+            "displayName": "信用债",
+            "priority": 4,
+            "direction": "overweight",
+            "rationale": "信用债综合得分67分。优势：周期位置有利。",
+            "cyclePreference": []
+          },
+          {
+            "name": "convertible",
+            "displayName": "可转债",
+            "priority": 4,
+            "direction": "overweight",
+            "rationale": "可转债综合得分67分。优势：周期位置有利、动量强劲。",
+            "cyclePreference": []
+          },
+          {
+            "name": "high_yield",
+            "displayName": "高收益债",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "高收益债综合得分41分。",
+            "cyclePreference": []
+          },
+          {
+            "name": "treasury",
+            "displayName": "国债",
+            "priority": 7,
+            "direction": "underweight",
+            "rationale": "国债综合得分33分。风险：周期位置不利、动量疲软。",
+            "cyclePreference": []
+          }
+        ]
+      },
+      {
+        "category": "crypto",
+        "displayName": "加密货币",
+        "weight": 20,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "mainstream_crypto",
+            "displayName": "主流币(BTC/ETH)",
+            "priority": 4,
+            "direction": "overweight",
+            "rationale": "主流币(BTC/ETH)综合得分68分。优势：周期位置有利、动量强劲。",
+            "cyclePreference": []
+          },
+          {
+            "name": "defi",
+            "displayName": "DeFi",
+            "priority": 4,
+            "direction": "neutral",
+            "rationale": "DeFi综合得分64分。优势：周期位置有利。",
+            "cyclePreference": []
+          },
+          {
+            "name": "exchange_token",
+            "displayName": "平台币",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "平台币综合得分40分。",
+            "cyclePreference": []
+          },
+          {
+            "name": "infrastructure",
+            "displayName": "基建公链",
+            "priority": 6,
+            "direction": "neutral",
+            "rationale": "基建公链综合得分41分。",
+            "cyclePreference": []
+          },
+          {
+            "name": "layer2",
+            "displayName": "二层网络",
+            "priority": 7,
+            "direction": "neutral",
+            "rationale": "二层网络综合得分39分。风险：估值偏高。",
+            "cyclePreference": []
+          }
+        ]
+      },
+      {
+        "category": "commodity",
+        "displayName": "商品",
+        "weight": 18,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "industrial_metal",
+            "displayName": "工业金属",
+            "priority": 3,
+            "direction": "overweight",
+            "rationale": "工业金属综合得分71分。优势：周期位置有利、动量强劲、市场情绪积极。",
+            "cyclePreference": []
+          },
+          {
+            "name": "precious_metal",
+            "displayName": "贵金属",
+            "priority": 7,
+            "direction": "underweight",
+            "rationale": "贵金属综合得分30分。风险：周期位置不利、动量疲软。",
+            "cyclePreference": []
+          },
+          {
+            "name": "energy_commodity",
+            "displayName": "能源",
+            "priority": 7,
+            "direction": "neutral",
+            "rationale": "能源综合得分36分。风险：周期位置不利。",
+            "cyclePreference": []
+          },
+          {
+            "name": "agricultural",
+            "displayName": "农产品",
+            "priority": 7,
+            "direction": "neutral",
+            "rationale": "农产品综合得分40分。",
+            "cyclePreference": []
+          }
+        ]
+      },
+      {
+        "category": "cash",
+        "displayName": "现金/货币",
+        "weight": 17,
+        "direction": "neutral",
+        "subCategories": [
+          {
+            "name": "cny",
+            "displayName": "人民币",
+            "priority": 4,
+            "direction": "overweight",
+            "rationale": "人民币综合得分68分。优势：周期位置有利。",
+            "cyclePreference": []
+          },
+          {
+            "name": "eur",
+            "displayName": "欧元",
+            "priority": 7,
+            "direction": "neutral",
+            "rationale": "欧元综合得分37分。风险：周期位置不利。",
+            "cyclePreference": []
+          },
+          {
+            "name": "jpy",
+            "displayName": "日元",
+            "priority": 7,
+            "direction": "underweight",
+            "rationale": "日元综合得分32分。风险：周期位置不利、市场情绪低迷。",
+            "cyclePreference": []
+          },
+          {
+            "name": "usd",
+            "displayName": "美元",
+            "priority": 8,
+            "direction": "underweight",
+            "rationale": "美元综合得分29分。风险：周期位置不利、动量疲软。",
+            "cyclePreference": []
+          }
+        ]
+      }
+    ],
+    "topSubCategories": [
+      {
+        "name": "tech",
+        "displayName": "科技股",
+        "priority": 3,
+        "direction": "overweight",
+        "rationale": "科技股综合得分77分。优势：周期位置有利、动量强劲、市场情绪积极。",
+        "cyclePreference": []
+      },
+      {
+        "name": "cyclical",
+        "displayName": "周期股",
+        "priority": 3,
+        "direction": "overweight",
+        "rationale": "周期股综合得分73分。优势：周期位置有利、动量强劲。",
+        "cyclePreference": []
+      },
+      {
+        "name": "industrial_metal",
+        "displayName": "工业金属",
+        "priority": 3,
+        "direction": "overweight",
+        "rationale": "工业金属综合得分71分。优势：周期位置有利、动量强劲、市场情绪积极。",
+        "cyclePreference": []
+      },
+      {
+        "name": "financial",
+        "displayName": "金融股",
+        "priority": 4,
+        "direction": "overweight",
+        "rationale": "金融股综合得分69分。优势：周期位置有利。",
+        "cyclePreference": []
+      },
+      {
+        "name": "credit",
+        "displayName": "信用债",
+        "priority": 4,
+        "direction": "overweight",
+        "rationale": "信用债综合得分67分。优势：周期位置有利。",
+        "cyclePreference": []
+      },
+      {
+        "name": "convertible",
+        "displayName": "可转债",
+        "priority": 4,
+        "direction": "overweight",
+        "rationale": "可转债综合得分67分。优势：周期位置有利、动量强劲。",
+        "cyclePreference": []
+      },
+      {
+        "name": "mainstream_crypto",
+        "displayName": "主流币(BTC/ETH)",
+        "priority": 4,
+        "direction": "overweight",
+        "rationale": "主流币(BTC/ETH)综合得分68分。优势：周期位置有利、动量强劲。",
+        "cyclePreference": []
+      },
+      {
+        "name": "defi",
+        "displayName": "DeFi",
+        "priority": 4,
+        "direction": "neutral",
+        "rationale": "DeFi综合得分64分。优势：周期位置有利。",
+        "cyclePreference": []
+      },
+      {
+        "name": "cny",
+        "displayName": "人民币",
+        "priority": 4,
+        "direction": "overweight",
+        "rationale": "人民币综合得分68分。优势：周期位置有利。",
+        "cyclePreference": []
+      },
+      {
+        "name": "consumer",
+        "displayName": "消费股",
+        "priority": 6,
+        "direction": "neutral",
+        "rationale": "消费股综合得分42分。",
+        "cyclePreference": []
+      }
+    ],
+    "report": "# 资产标的调研报告\n\n**版本**: 3.0.0  \n**引擎**: Scenario Sim v3  \n**日期**: 2026年6月27日  \n**区域**: 全球  \n**置信度**: 65%  \n\n\n## 一、经济周期判定\n\n### 当前周期：复苏期\n\n**置信度**: 73%\n\n**判定依据**:\n- **GDP增长率**: 2.5 (📈 上行)\n- **PMI指数**: 54 (📈 上行)\n- **CPI通胀率**: 0.5 (📉 下行)\n\n**分析**:\n根据宏观指标分析，当前经济增长上行，通胀下行。符合复苏期特征：经济上行，通胀下行。货币政策宽松，企业盈利改善。\n\n\n## 二、大类资产配置建议\n\n基于当前经济周期，各资产大类建议配置如下：\n\n| 资产类别 | 配置比例 | 配置方向 | 说明 |\n|---------|---------|---------|------|\n| 股票 | 23% | ➡️ 标配 | 经济增长受益，风险资产首选 |\n| 债券 | 21% | ➡️ 标配 | 避险需求，固定收益稳定 |\n| 加密货币 | 20% | ➡️ 标配 | 高风险高收益，成长型配置 |\n| 商品 | 18% | ➡️ 标配 | 通胀对冲，实物资产保值 |\n| 现金/货币 | 17% | ➡️ 标配 | 流动性储备，防御性配置 |\n\n\n## 二、周期展望与预测\n\n### 当前周期：复苏期\n\n- **预期持续时间**：约 10 个月\n- **预测置信度**：46%\n- **时间范围**：未来1-2个季度\n\n### 下一周期概率分布\n\n| 周期 | 概率 | 说明 |\n|------|------|------|\n| 复苏期 | 72.5% | ███████████████░░░░░ |\n| 过热期 | 26.5% | █████░░░░░░░░░░░░░░░ |\n| 滞胀期 | 1.0% | ░░░░░░░░░░░░░░░░░░░░ |\n| 衰退期 | 0.0% | ░░░░░░░░░░░░░░░░░░░░ |\n\n**最可能路径**：复苏期 → 复苏期（概率 72.5%）\n\n### 多时间维度展望\n\n| 时间维度 | 展望周期 | 概率 | 关键驱动因素 |\n|---------|---------|------|-------------|\n| 短期展望（未来1-3个月） | 复苏期 | 88% | PMI指标向好、货币政策宽松见效、企业盈利预期改善 |\n| 中期展望（未来3-6个月） | 复苏期 | 73% | PMI指标向好、货币政策宽松见效、企业盈利预期改善 |\n| 长期展望（未来6-12个月） | 滞胀期 | 25% | PMI指标向好、通胀粘性超预期、经济增长动能减弱 |\n\n### 领先指标观察\n\n- 🟢 **PMI**：54（领先 3 个月）\n\n\n## 三、多情景配置方案\n\n### 🎯 基准情景（概率 72.5%）\n\n基于当前领先指标，最可能的路径是复苏期→复苏期\n\n**周期路径**：复苏期 → 复苏期\n\n**配置建议**：股票40%、债券20%、商品15%\n\n### 🟢 乐观情景（概率 21.2%）\n\n经济动能强劲，通胀温和，企业盈利超预期\n\n**周期路径**：复苏期 → 过热期\n\n**配置建议**：商品35%、股票25%、加密货币20%\n\n### 🔴 悲观情景（概率 0.7%）\n\n通胀粘性超预期，经济增长动能衰竭\n\n**周期路径**：复苏期 → 滞胀期\n\n**配置建议**：商品30%、现金/货币30%、债券20%\n\n> **策略建议**：以基准情景为核心配置，适度考虑乐观/悲观情景的对冲。建议定期（季度）重新评估情景概率，动态调整配置。\n\n\n## 三、子类资产优先级\n\n### Top 10 推荐标的\n\n| 优先级 | 子类 | 大类 | 配置方向 | 推荐理由 |\n|-------|------|------|---------|---------|\n| 1 | 🏆科技股 | 股票 | ⬆️ | 科技股综合得分77分。优势：周期位置有利、动量强劲、市场情绪... |\n| 2 | 🏆周期股 | 股票 | ⬆️ | 周期股综合得分73分。优势：周期位置有利、动量强劲。... |\n| 3 | 🏆工业金属 | 商品 | ⬆️ | 工业金属综合得分71分。优势：周期位置有利、动量强劲、市场情... |\n| 4 | 🏆金融股 | 股票 | ⬆️ | 金融股综合得分69分。优势：周期位置有利。... |\n| 5 | 🏆信用债 | 债券 | ⬆️ | 信用债综合得分67分。优势：周期位置有利。... |\n| 6 | 🏆可转债 | 债券 | ⬆️ | 可转债综合得分67分。优势：周期位置有利、动量强劲。... |\n| 7 | 🏆主流币(BTC/ETH) | 加密货币 | ⬆️ | 主流币(BTC/ETH)综合得分68分。优势：周期位置有利、... |\n| 8 | 🏆DeFi | 加密货币 | ➡️ | DeFi综合得分64分。优势：周期位置有利。... |\n| 9 | 🏆人民币 | 现金/货币 | ⬆️ | 人民币综合得分68分。优势：周期位置有利。... |\n| 10 | 🏆消费股 | 股票 | ➡️ | 消费股综合得分42分。... |\n| 11 | 高收益债 | 债券 | ➡️ | 高收益债综合得分41分。... |\n| 12 | 平台币 | 加密货币 | ➡️ | 平台币综合得分40分。... |\n| 13 | 基建公链 | 加密货币 | ➡️ | 基建公链综合得分41分。... |\n| 14 | 能源股 | 股票 | ➡️ | 能源股综合得分38分。风险：周期位置不利、动量疲软。... |\n| 15 | 国债 | 债券 | ⬇️ | 国债综合得分33分。风险：周期位置不利、动量疲软。... |\n\n### 详细子类配置\n\n\n#### 股票\n\n- 🟢 **科技股**: 科技股综合得分77分。优势：周期位置有利、动量强劲、市场情绪积极。\n- 🟢 **周期股**: 周期股综合得分73分。优势：周期位置有利、动量强劲。\n- 🟢 **金融股**: 金融股综合得分69分。优势：周期位置有利。\n- 🟡 **消费股**: 消费股综合得分42分。\n- 🟡 **能源股**: 能源股综合得分38分。风险：周期位置不利、动量疲软。\n\n#### 债券\n\n- 🟢 **信用债**: 信用债综合得分67分。优势：周期位置有利。\n- 🟢 **可转债**: 可转债综合得分67分。优势：周期位置有利、动量强劲。\n- 🟡 **高收益债**: 高收益债综合得分41分。\n- 🔴 **国债**: 国债综合得分33分。风险：周期位置不利、动量疲软。\n\n#### 加密货币\n\n- 🟢 **主流币(BTC/ETH)**: 主流币(BTC/ETH)综合得分68分。优势：周期位置有利、动量强劲。\n- 🟡 **DeFi**: DeFi综合得分64分。优势：周期位置有利。\n- 🟡 **平台币**: 平台币综合得分40分。\n- 🟡 **基建公链**: 基建公链综合得分41分。\n- 🟡 **二层网络**: 二层网络综合得分39分。风险：估值偏高。\n\n#### 商品\n\n- 🟢 **工业金属**: 工业金属综合得分71分。优势：周期位置有利、动量强劲、市场情绪积极。\n- 🔴 **贵金属**: 贵金属综合得分30分。风险：周期位置不利、动量疲软。\n- 🟡 **能源**: 能源综合得分36分。风险：周期位置不利。\n- 🟡 **农产品**: 农产品综合得分40分。\n\n#### 现金/货币\n\n- 🟢 **人民币**: 人民币综合得分68分。优势：周期位置有利。\n- 🟡 **欧元**: 欧元综合得分37分。风险：周期位置不利。\n- 🔴 **日元**: 日元综合得分32分。风险：周期位置不利、市场情绪低迷。\n- 🔴 **美元**: 美元综合得分29分。风险：周期位置不利、动量疲软。\n\n\n\n## 四、数据来源\n\n- [https://www.atlantafed.org/research-and-data/data/gdpnow](#) - 2026/6/27\n- [https://www.bls.gov/cpi](#) - 2026/6/27\n- [https://tradingeconomics.com/united-states/business-confidence](#) - 2026/6/27\n\n\n## 五、风险提示\n\n1. **模型局限性**: 美林投资时钟基于历史规律，未来市场可能呈现与历史不同的特征\n2. **数据延迟**: 宏观经济数据通常存在发布延迟，周期判定可能滞后\n3. **地域差异**: 美林时钟在美国市场验证较多，其他市场表现可能存在差异\n4. **黑天鹅风险**: 未能预见的地缘政治、疫情等突发事件可能颠覆周期规律\n5. **执行风险**: 实际交易需考虑流动性、交易成本、滑点等因素\n\n---\n*本报告仅供参考，不构成投资建议。投资有风险，入市需谨慎。*\n",
+    "dataSources": [
+      {
+        "name": "https://www.atlantafed.org/research-and-data/data/gdpnow",
+        "timestamp": "2026-06-26T17:04:56.028Z"
+      },
+      {
+        "name": "https://www.bls.gov/cpi",
+        "timestamp": "2026-06-26T17:04:56.028Z"
+      },
+      {
+        "name": "https://tradingeconomics.com/united-states/business-confidence",
+        "timestamp": "2026-06-26T17:04:56.028Z"
+      }
+    ],
+    "confidence": 0.649,
+    "metadata": {
+      "factorScores": [
+        {
+          "category": "stock",
+          "displayName": "股票",
+          "weight": 23,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 66,
+            "momentum": 58.51866735031281,
+            "valuation": 50,
+            "sentiment": 58.57560028620683,
+            "total": 59.81600688050922
+          },
+          "subCategories": [
+            {
+              "subCategory": "tech",
+              "displayName": "科技股",
+              "category": "stock",
+              "scores": {
+                "cycle": 90,
+                "momentum": 83.94705613530095,
+                "valuation": 40,
+                "sentiment": 82.44559271561593,
+                "total": 77.35360294116762
+              },
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "科技股综合得分77分。优势：周期位置有利、动量强劲、市场情绪积极。"
+            },
+            {
+              "subCategory": "cyclical",
+              "displayName": "周期股",
+              "category": "stock",
+              "scores": {
+                "cycle": 90,
+                "momentum": 75.58239885051808,
+                "valuation": 45,
+                "sentiment": 60.16834370741344,
+                "total": 72.92085126874153
+              },
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "周期股综合得分73分。优势：周期位置有利、动量强劲。"
+            },
+            {
+              "subCategory": "financial",
+              "displayName": "金融股",
+              "category": "stock",
+              "scores": {
+                "cycle": 80,
+                "momentum": 63.6517462717743,
+                "valuation": 60,
+                "sentiment": 63.346545002712446,
+                "total": 69.41491831835044
+              },
+              "priority": 4,
+              "direction": "overweight",
+              "rationale": "金融股综合得分69分。优势：周期位置有利。"
+            },
+            {
+              "subCategory": "consumer",
+              "displayName": "消费股",
+              "category": "stock",
+              "scores": {
+                "cycle": 40,
+                "momentum": 41.8577540789629,
+                "valuation": 50,
+                "sentiment": 35.00713685442315,
+                "total": 41.7155090479042
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "消费股综合得分42分。"
+            },
+            {
+              "subCategory": "energy",
+              "displayName": "能源股",
+              "category": "stock",
+              "scores": {
+                "cycle": 30,
+                "momentum": 27.55438141500781,
+                "valuation": 55,
+                "sentiment": 51.910383150869166,
+                "total": 37.67515282638233
+              },
+              "priority": 7,
+              "direction": "neutral",
+              "rationale": "能源股综合得分38分。风险：周期位置不利、动量疲软。"
+            }
+          ]
+        },
+        {
+          "category": "bond",
+          "displayName": "债券",
+          "weight": 21,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 55,
+            "momentum": 48.977940175974254,
+            "valuation": 53.75,
+            "sentiment": 47.023439739657206,
+            "total": 52.048001004942144
+          },
+          "subCategories": [
+            {
+              "subCategory": "credit",
+              "displayName": "信用债",
+              "category": "bond",
+              "scores": {
+                "cycle": 80,
+                "momentum": 63.02964048384274,
+                "valuation": 55,
+                "sentiment": 56.13906331019098,
+                "total": 67.17826961748933
+              },
+              "priority": 4,
+              "direction": "overweight",
+              "rationale": "信用债综合得分67分。优势：周期位置有利。"
+            },
+            {
+              "subCategory": "convertible",
+              "displayName": "可转债",
+              "category": "bond",
+              "scores": {
+                "cycle": 80,
+                "momentum": 70.04719543326564,
+                "valuation": 45,
+                "sentiment": 59.445512525093875,
+                "total": 67.4286257370805
+              },
+              "priority": 4,
+              "direction": "overweight",
+              "rationale": "可转债综合得分67分。优势：周期位置有利、动量强劲。"
+            },
+            {
+              "subCategory": "high_yield",
+              "displayName": "高收益债",
+              "category": "bond",
+              "scores": {
+                "cycle": 40,
+                "momentum": 35.28603557050519,
+                "valuation": 50,
+                "sentiment": 38.58360011383775,
+                "total": 40.60904890970196
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "高收益债综合得分41分。"
+            },
+            {
+              "subCategory": "treasury",
+              "displayName": "国债",
+              "category": "bond",
+              "scores": {
+                "cycle": 20,
+                "momentum": 27.548889216283442,
+                "valuation": 65,
+                "sentiment": 33.92558300950623,
+                "total": 32.97605975549679
+              },
+              "priority": 7,
+              "direction": "underweight",
+              "rationale": "国债综合得分33分。风险：周期位置不利、动量疲软。"
+            }
+          ]
+        },
+        {
+          "category": "crypto",
+          "displayName": "加密货币",
+          "weight": 20,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 56,
+            "momentum": 53.17289902661942,
+            "valuation": 36,
+            "sentiment": 50.00947679794226,
+            "total": 50.394646276346194
+          },
+          "subCategories": [
+            {
+              "subCategory": "mainstream_crypto",
+              "displayName": "主流币(BTC/ETH)",
+              "category": "crypto",
+              "scores": {
+                "cycle": 80,
+                "momentum": 76.23802492989489,
+                "valuation": 35,
+                "sentiment": 64.67978096491424,
+                "total": 67.76147337721086
+              },
+              "priority": 4,
+              "direction": "overweight",
+              "rationale": "主流币(BTC/ETH)综合得分68分。优势：周期位置有利、动量强劲。"
+            },
+            {
+              "subCategory": "defi",
+              "displayName": "DeFi",
+              "category": "crypto",
+              "scores": {
+                "cycle": 80,
+                "momentum": 68.92182117933407,
+                "valuation": 35,
+                "sentiment": 53.181687002059334,
+                "total": 64.20770834514242
+              },
+              "priority": 4,
+              "direction": "neutral",
+              "rationale": "DeFi综合得分64分。优势：周期位置有利。"
+            },
+            {
+              "subCategory": "exchange_token",
+              "displayName": "平台币",
+              "category": "crypto",
+              "scores": {
+                "cycle": 40,
+                "momentum": 39.10334814570706,
+                "valuation": 40,
+                "sentiment": 43.657135818433744,
+                "total": 40.32440740919183
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "平台币综合得分40分。"
+            },
+            {
+              "subCategory": "infrastructure",
+              "displayName": "基建公链",
+              "category": "crypto",
+              "scores": {
+                "cycle": 40,
+                "momentum": 35.1983925197128,
+                "valuation": 40,
+                "sentiment": 55.35326983569939,
+                "total": 41.10258860528311
+              },
+              "priority": 6,
+              "direction": "neutral",
+              "rationale": "基建公链综合得分41分。"
+            },
+            {
+              "subCategory": "layer2",
+              "displayName": "二层网络",
+              "category": "crypto",
+              "scores": {
+                "cycle": 40,
+                "momentum": 46.40290835844826,
+                "valuation": 30,
+                "sentiment": 33.17551036860459,
+                "total": 38.577053644902755
+              },
+              "priority": 7,
+              "direction": "neutral",
+              "rationale": "二层网络综合得分39分。风险：估值偏高。"
+            }
+          ]
+        },
+        {
+          "category": "commodity",
+          "displayName": "商品",
+          "weight": 18,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 42.5,
+            "momentum": 43.01146582722231,
+            "valuation": 51.25,
+            "sentiment": 42.908654771693364,
+            "total": 44.43916467255958
+          },
+          "subCategories": [
+            {
+              "subCategory": "industrial_metal",
+              "displayName": "工业金属",
+              "category": "commodity",
+              "scores": {
+                "cycle": 80,
+                "momentum": 77.18649750260374,
+                "valuation": 45,
+                "sentiment": 74.11048273387496,
+                "total": 71.41319678573218
+              },
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "工业金属综合得分71分。优势：周期位置有利、动量强劲、市场情绪积极。"
+            },
+            {
+              "subCategory": "precious_metal",
+              "displayName": "贵金属",
+              "category": "commodity",
+              "scores": {
+                "cycle": 20,
+                "momentum": 25.390597123390762,
+                "valuation": 55,
+                "sentiment": 31.78111720367906,
+                "total": 30.11481686139955
+              },
+              "priority": 7,
+              "direction": "underweight",
+              "rationale": "贵金属综合得分30分。风险：周期位置不利、动量疲软。"
+            },
+            {
+              "subCategory": "energy_commodity",
+              "displayName": "能源",
+              "category": "commodity",
+              "scores": {
+                "cycle": 30,
+                "momentum": 35.70284738497867,
+                "valuation": 50,
+                "sentiment": 35.501496116069575,
+                "total": 36.250936263655106
+              },
+              "priority": 7,
+              "direction": "neutral",
+              "rationale": "能源综合得分36分。风险：周期位置不利。"
+            },
+            {
+              "subCategory": "agricultural",
+              "displayName": "农产品",
+              "category": "commodity",
+              "scores": {
+                "cycle": 40,
+                "momentum": 33.765921297916066,
+                "valuation": 55,
+                "sentiment": 30.24152303314986,
+                "total": 39.9777087794515
+              },
+              "priority": 7,
+              "direction": "neutral",
+              "rationale": "农产品综合得分40分。"
+            }
+          ]
+        },
+        {
+          "category": "cash",
+          "displayName": "现金/货币",
+          "weight": 17,
+          "direction": "neutral",
+          "scores": {
+            "cycle": 37.5,
+            "momentum": 41.573961766744105,
+            "valuation": 52.5,
+            "sentiment": 36.50371027476339,
+            "total": 41.36904698290054
+          },
+          "subCategories": [
+            {
+              "subCategory": "cny",
+              "displayName": "人民币",
+              "category": "cash",
+              "scores": {
+                "cycle": 80,
+                "momentum": 65.61424678906042,
+                "valuation": 55,
+                "sentiment": 55.67089648694309,
+                "total": 67.75419617030657
+              },
+              "priority": 4,
+              "direction": "overweight",
+              "rationale": "人民币综合得分68分。优势：周期位置有利。"
+            },
+            {
+              "subCategory": "eur",
+              "displayName": "欧元",
+              "category": "cash",
+              "scores": {
+                "cycle": 30,
+                "momentum": 40.721622441356885,
+                "valuation": 50,
+                "sentiment": 30.595335135308687,
+                "total": 36.76970588063553
+              },
+              "priority": 7,
+              "direction": "neutral",
+              "rationale": "欧元综合得分37分。风险：周期位置不利。"
+            },
+            {
+              "subCategory": "jpy",
+              "displayName": "日元",
+              "category": "cash",
+              "scores": {
+                "cycle": 20,
+                "momentum": 38.254977253076504,
+                "valuation": 55,
+                "sentiment": 21.04698194886805,
+                "total": 31.720791605599334
+              },
+              "priority": 7,
+              "direction": "underweight",
+              "rationale": "日元综合得分32分。风险：周期位置不利、市场情绪低迷。"
+            },
+            {
+              "subCategory": "usd",
+              "displayName": "美元",
+              "category": "cash",
+              "scores": {
+                "cycle": 20,
+                "momentum": 21.705000583482615,
+                "valuation": 50,
+                "sentiment": 38.70162752793374,
+                "total": 29.231494275060715
+              },
+              "priority": 8,
+              "direction": "underweight",
+              "rationale": "美元综合得分29分。风险：周期位置不利、动量疲软。"
+            }
+          ]
+        }
+      ],
+      "cyclePrediction": {
+        "currentPhase": "recovery",
+        "nextPhaseProbability": {
+          "recovery": 0.725,
+          "overheat": 0.265,
+          "stagflation": 0.009999999999999998,
+          "recession": 0
+        },
+        "expectedDuration": 10,
+        "confidence": 0.45999999999999996,
+        "leadingIndicators": [
+          {
+            "name": "PMI",
+            "value": "54",
+            "trend": "up",
+            "leadTime": 3,
+            "signal": "bullish"
+          }
+        ],
+        "timeHorizon": "未来1-2个季度",
+        "timeHorizons": [
+          {
+            "horizon": "short_term",
+            "displayName": "短期展望",
+            "duration": "未来1-3个月",
+            "mostLikelyPhase": "recovery",
+            "probability": 0.875,
+            "keyDrivers": [
+              "PMI指标向好",
+              "货币政策宽松见效",
+              "企业盈利预期改善",
+              "消费者信心回升"
+            ]
+          },
+          {
+            "horizon": "medium_term",
+            "displayName": "中期展望",
+            "duration": "未来3-6个月",
+            "mostLikelyPhase": "recovery",
+            "probability": 0.725,
+            "keyDrivers": [
+              "PMI指标向好",
+              "货币政策宽松见效",
+              "企业盈利预期改善",
+              "消费者信心回升"
+            ]
+          },
+          {
+            "horizon": "long_term",
+            "displayName": "长期展望",
+            "duration": "未来6-12个月",
+            "mostLikelyPhase": "stagflation",
+            "probability": 0.25,
+            "keyDrivers": [
+              "PMI指标向好",
+              "通胀粘性超预期",
+              "经济增长动能减弱",
+              "供应链扰动"
+            ]
+          }
+        ]
+      },
+      "scenarios": [
+        {
+          "name": "基准情景",
+          "probability": 0.725,
+          "cycleSequence": [
+            "recovery",
+            "recovery"
+          ],
+          "description": "基于当前领先指标，最可能的路径是复苏期→复苏期"
+        },
+        {
+          "name": "乐观情景",
+          "probability": 0.21200000000000002,
+          "cycleSequence": [
+            "recovery",
+            "overheat"
+          ],
+          "description": "经济动能强劲，通胀温和，企业盈利超预期"
+        },
+        {
+          "name": "悲观情景",
+          "probability": 0.006999999999999998,
+          "cycleSequence": [
+            "recovery",
+            "stagflation"
+          ],
+          "description": "通胀粘性超预期，经济增长动能衰竭"
+        }
+      ],
+      "scenarioAllocations": [
+        {
+          "scenario": {
+            "name": "基准情景",
+            "probability": 0.725,
+            "cycleSequence": [
+              "recovery",
+              "recovery"
+            ],
+            "description": "基于当前领先指标，最可能的路径是复苏期→复苏期"
+          },
+          "allocations": [
+            {
+              "category": "stock",
+              "displayName": "股票",
+              "weight": 40,
+              "direction": "overweight",
+              "subCategories": [
+                {
+                  "name": "tech",
+                  "displayName": "科技股",
+                  "priority": 1,
+                  "direction": "overweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "financial",
+                  "displayName": "金融股",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "cyclical",
+                  "displayName": "周期股",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "consumer",
+                  "displayName": "消费股",
+                  "priority": 6,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "energy",
+                  "displayName": "能源股",
+                  "priority": 7,
+                  "direction": "underweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "bond",
+              "displayName": "债券",
+              "weight": 20,
+              "direction": "neutral",
+              "subCategories": [
+                {
+                  "name": "convertible",
+                  "displayName": "可转债",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "credit",
+                  "displayName": "信用债",
+                  "priority": 3,
+                  "direction": "overweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "high_yield",
+                  "displayName": "高收益债",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "treasury",
+                  "displayName": "国债",
+                  "priority": 8,
+                  "direction": "underweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "commodity",
+              "displayName": "商品",
+              "weight": 15,
+              "direction": "underweight",
+              "subCategories": [
+                {
+                  "name": "industrial_metal",
+                  "displayName": "工业金属",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "energy_commodity",
+                  "displayName": "能源",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "agricultural",
+                  "displayName": "农产品",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "precious_metal",
+                  "displayName": "贵金属",
+                  "priority": 8,
+                  "direction": "underweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "crypto",
+              "displayName": "加密货币",
+              "weight": 15,
+              "direction": "underweight",
+              "subCategories": [
+                {
+                  "name": "mainstream_crypto",
+                  "displayName": "主流币",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "layer2",
+                  "displayName": "二层网络",
+                  "priority": 3,
+                  "direction": "overweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "defi",
+                  "displayName": "DeFi",
+                  "priority": 3,
+                  "direction": "overweight",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "exchange_token",
+                  "displayName": "平台币",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "infrastructure",
+                  "displayName": "基建公链",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "cash",
+              "displayName": "现金/货币",
+              "weight": 10,
+              "direction": "underweight",
+              "subCategories": [
+                {
+                  "name": "usd",
+                  "displayName": "美元",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "cny",
+                  "displayName": "人民币",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "eur",
+                  "displayName": "欧元",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "jpy",
+                  "displayName": "日元",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于复苏期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            }
+          ],
+          "topSubCategories": [
+            {
+              "name": "tech",
+              "displayName": "科技股",
+              "priority": 1,
+              "direction": "overweight",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "financial",
+              "displayName": "金融股",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "cyclical",
+              "displayName": "周期股",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "convertible",
+              "displayName": "可转债",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "industrial_metal",
+              "displayName": "工业金属",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "mainstream_crypto",
+              "displayName": "主流币",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "credit",
+              "displayName": "信用债",
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "layer2",
+              "displayName": "二层网络",
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "defi",
+              "displayName": "DeFi",
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "high_yield",
+              "displayName": "高收益债",
+              "priority": 5,
+              "direction": "neutral",
+              "rationale": "基于复苏期周期偏好",
+              "cyclePreference": []
+            }
+          ]
+        },
+        {
+          "scenario": {
+            "name": "乐观情景",
+            "probability": 0.21200000000000002,
+            "cycleSequence": [
+              "recovery",
+              "overheat"
+            ],
+            "description": "经济动能强劲，通胀温和，企业盈利超预期"
+          },
+          "allocations": [
+            {
+              "category": "commodity",
+              "displayName": "商品",
+              "weight": 35,
+              "direction": "overweight",
+              "subCategories": [
+                {
+                  "name": "energy_commodity",
+                  "displayName": "能源",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "industrial_metal",
+                  "displayName": "工业金属",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "precious_metal",
+                  "displayName": "贵金属",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "agricultural",
+                  "displayName": "农产品",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "stock",
+              "displayName": "股票",
+              "weight": 25,
+              "direction": "neutral",
+              "subCategories": [
+                {
+                  "name": "energy",
+                  "displayName": "能源股",
+                  "priority": 1,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "cyclical",
+                  "displayName": "周期股",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "financial",
+                  "displayName": "金融股",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "consumer",
+                  "displayName": "消费股",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "tech",
+                  "displayName": "科技股",
+                  "priority": 6,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "crypto",
+              "displayName": "加密货币",
+              "weight": 20,
+              "direction": "neutral",
+              "subCategories": [
+                {
+                  "name": "mainstream_crypto",
+                  "displayName": "主流币",
+                  "priority": 1,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "exchange_token",
+                  "displayName": "平台币",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "layer2",
+                  "displayName": "二层网络",
+                  "priority": 3,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "infrastructure",
+                  "displayName": "基建公链",
+                  "priority": 3,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "defi",
+                  "displayName": "DeFi",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "bond",
+              "displayName": "债券",
+              "weight": 10,
+              "direction": "underweight",
+              "subCategories": [
+                {
+                  "name": "convertible",
+                  "displayName": "可转债",
+                  "priority": 3,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "high_yield",
+                  "displayName": "高收益债",
+                  "priority": 3,
+                  "direction": "overweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "credit",
+                  "displayName": "信用债",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "treasury",
+                  "displayName": "国债",
+                  "priority": 8,
+                  "direction": "underweight",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "cash",
+              "displayName": "现金/货币",
+              "weight": 10,
+              "direction": "underweight",
+              "subCategories": [
+                {
+                  "name": "usd",
+                  "displayName": "美元",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "cny",
+                  "displayName": "人民币",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "eur",
+                  "displayName": "欧元",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "jpy",
+                  "displayName": "日元",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于过热期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            }
+          ],
+          "topSubCategories": [
+            {
+              "name": "energy",
+              "displayName": "能源股",
+              "priority": 1,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "mainstream_crypto",
+              "displayName": "主流币",
+              "priority": 1,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "energy_commodity",
+              "displayName": "能源",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "industrial_metal",
+              "displayName": "工业金属",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "cyclical",
+              "displayName": "周期股",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "exchange_token",
+              "displayName": "平台币",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "layer2",
+              "displayName": "二层网络",
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "infrastructure",
+              "displayName": "基建公链",
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "convertible",
+              "displayName": "可转债",
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "high_yield",
+              "displayName": "高收益债",
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "基于过热期周期偏好",
+              "cyclePreference": []
+            }
+          ]
+        },
+        {
+          "scenario": {
+            "name": "悲观情景",
+            "probability": 0.006999999999999998,
+            "cycleSequence": [
+              "recovery",
+              "stagflation"
+            ],
+            "description": "通胀粘性超预期，经济增长动能衰竭"
+          },
+          "allocations": [
+            {
+              "category": "commodity",
+              "displayName": "商品",
+              "weight": 30,
+              "direction": "overweight",
+              "subCategories": [
+                {
+                  "name": "precious_metal",
+                  "displayName": "贵金属",
+                  "priority": 1,
+                  "direction": "overweight",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "energy_commodity",
+                  "displayName": "能源",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "agricultural",
+                  "displayName": "农产品",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "industrial_metal",
+                  "displayName": "工业金属",
+                  "priority": 8,
+                  "direction": "underweight",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "cash",
+              "displayName": "现金/货币",
+              "weight": 30,
+              "direction": "overweight",
+              "subCategories": [
+                {
+                  "name": "usd",
+                  "displayName": "美元",
+                  "priority": 3,
+                  "direction": "overweight",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "cny",
+                  "displayName": "人民币",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "eur",
+                  "displayName": "欧元",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "jpy",
+                  "displayName": "日元",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "bond",
+              "displayName": "债券",
+              "weight": 20,
+              "direction": "neutral",
+              "subCategories": [
+                {
+                  "name": "treasury",
+                  "displayName": "国债",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "credit",
+                  "displayName": "信用债",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "convertible",
+                  "displayName": "可转债",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "high_yield",
+                  "displayName": "高收益债",
+                  "priority": 8,
+                  "direction": "underweight",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "stock",
+              "displayName": "股票",
+              "weight": 10,
+              "direction": "underweight",
+              "subCategories": [
+                {
+                  "name": "energy",
+                  "displayName": "能源股",
+                  "priority": 2,
+                  "direction": "overweight",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "financial",
+                  "displayName": "金融股",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "consumer",
+                  "displayName": "消费股",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "tech",
+                  "displayName": "科技股",
+                  "priority": 8,
+                  "direction": "underweight",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "cyclical",
+                  "displayName": "周期股",
+                  "priority": 8,
+                  "direction": "underweight",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            },
+            {
+              "category": "crypto",
+              "displayName": "加密货币",
+              "weight": 10,
+              "direction": "underweight",
+              "subCategories": [
+                {
+                  "name": "exchange_token",
+                  "displayName": "平台币",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "layer2",
+                  "displayName": "二层网络",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "defi",
+                  "displayName": "DeFi",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "infrastructure",
+                  "displayName": "基建公链",
+                  "priority": 5,
+                  "direction": "neutral",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                },
+                {
+                  "name": "mainstream_crypto",
+                  "displayName": "主流币",
+                  "priority": 8,
+                  "direction": "underweight",
+                  "rationale": "基于滞胀期周期偏好",
+                  "cyclePreference": []
+                }
+              ]
+            }
+          ],
+          "topSubCategories": [
+            {
+              "name": "precious_metal",
+              "displayName": "贵金属",
+              "priority": 1,
+              "direction": "overweight",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "energy_commodity",
+              "displayName": "能源",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "energy",
+              "displayName": "能源股",
+              "priority": 2,
+              "direction": "overweight",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "usd",
+              "displayName": "美元",
+              "priority": 3,
+              "direction": "overweight",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "agricultural",
+              "displayName": "农产品",
+              "priority": 5,
+              "direction": "neutral",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "cny",
+              "displayName": "人民币",
+              "priority": 5,
+              "direction": "neutral",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "eur",
+              "displayName": "欧元",
+              "priority": 5,
+              "direction": "neutral",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "jpy",
+              "displayName": "日元",
+              "priority": 5,
+              "direction": "neutral",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "treasury",
+              "displayName": "国债",
+              "priority": 5,
+              "direction": "neutral",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            },
+            {
+              "name": "credit",
+              "displayName": "信用债",
+              "priority": 5,
+              "direction": "neutral",
+              "rationale": "基于滞胀期周期偏好",
+              "cyclePreference": []
+            }
+          ]
+        }
+      ],
+      "isScenarioBased": true
+    }
+  },
+  "generatedAt": "2026-06-26T17:04:56.138Z",
+  "quarter": "2026-Q2"
+}

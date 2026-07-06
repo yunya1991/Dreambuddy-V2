@@ -1,81 +1,101 @@
 import { create } from 'zustand';
-import type { ChatSession, ChatMessage, IntentRecognitionResult } from '@/types';
 
-interface SessionState {
-  // 会话列表
-  sessions: ChatSession[];
-  activeSessionId: string | null;
-  // 当前会话消息
-  messages: ChatMessage[];
-  // 流式状态
-  isStreaming: boolean;
-  currentStreamContent: string;
-  // 输入
-  inputValue: string;
-  inputMode: 'chat' | 'command';
-  // S层意图识别
-  lastIntent: IntentRecognitionResult | null;
-  // 错误
-  error: string | null;
-
-  // Actions
-  setSessions: (sessions: ChatSession[]) => void;
-  addSession: (session: ChatSession) => void;
-  switchSession: (id: string) => void;
-  removeSession: (id: string) => void;
-  setMessages: (messages: ChatMessage[]) => void;
-  addMessage: (message: ChatMessage) => void;
-  updateLastAssistantMessage: (content: string) => void;
-  setStreaming: (streaming: boolean) => void;
-  appendStreamDelta: (delta: string) => void;
-  setInputValue: (value: string) => void;
-  setInputMode: (mode: 'chat' | 'command') => void;
-  setLastIntent: (intent: IntentRecognitionResult | null) => void;
-  setError: (error: string | null) => void;
-  clearCurrentSession: () => void;
+export interface ChatMessage {
+  id: string;
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  tokens?: number;
+  artifacts?: Array<{ type: string; title: string; ref: string }>;
 }
 
-export const useSessionStore = create<SessionState>((set) => ({
+export interface ChatSession {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+}
+
+export interface IntentInfo {
+  type: string;
+  confidence: number;
+  method: string;
+  entities?: Record<string, unknown>;
+}
+
+interface SessionState {
+  sessions: ChatSession[];
+  activeSessionId: string | null;
+  messages: Record<string, ChatMessage[]>;
+  isStreaming: boolean;
+  streamingContent: string;
+  sLayerIntent: string | null;
+  currentTaskId: string | null;
+  lastIntent: IntentInfo | null;
+  lastTaskStatus: string | null;
+  lastReportId: string | null;
+
+  createSession: (title?: string) => string;
+  setActiveSession: (id: string) => void;
+  deleteSession: (id: string) => void;
+  addMessage: (sessionId: string, msg: ChatMessage) => void;
+  setStreaming: (isStreaming: boolean, content?: string) => void;
+  appendStreamingContent: (delta: string) => void;
+  finalizeStreaming: (sessionId: string) => void;
+  setSLayerIntent: (intent: string) => void;
+  setCurrentTaskId: (taskId: string | null) => void;
+  setLastIntent: (intent: IntentInfo | null) => void;
+  setLastTaskStatus: (status: string | null) => void;
+  setLastReportId: (reportId: string | null) => void;
+}
+
+export const useSessionStore = create<SessionState>((set, get) => ({
   sessions: [],
   activeSessionId: null,
-  messages: [],
+  messages: {},
   isStreaming: false,
-  currentStreamContent: '',
-  inputValue: '',
-  inputMode: 'chat',
+  streamingContent: '',
+  sLayerIntent: null,
+  currentTaskId: null,
   lastIntent: null,
-  error: null,
+  lastTaskStatus: null,
+  lastReportId: null,
 
-  setSessions: (sessions) => set({ sessions }),
-  addSession: (session) => set((s) => ({
-    sessions: [session, ...s.sessions],
-    activeSessionId: session.id,
-    messages: session.messages || [],
-  })),
-  switchSession: (id) => set({ activeSessionId: id }),
-  removeSession: (id) => set((s) => ({
-    sessions: s.sessions.filter(s => s.id !== id),
-    activeSessionId: s.activeSessionId === id ? null : s.activeSessionId,
-  })),
-  setMessages: (messages) => set({ messages }),
-  addMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
-  updateLastAssistantMessage: (content) => set((s) => {
-    const msgs = [...s.messages];
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      if (msgs[i].role === 'assistant') {
-        msgs[i] = { ...msgs[i], content: msgs[i].content + content };
-        break;
-      }
-    }
-    return { messages: msgs };
+  createSession: (title = '新会话') => {
+    const id = `sess_${Date.now()}`;
+    const session: ChatSession = {
+      id, title, createdAt: Date.now(), updatedAt: Date.now(), messageCount: 0,
+    };
+    set(s => ({ sessions: [session, ...s.sessions], activeSessionId: id, messages: { ...s.messages, [id]: [] }, isStreaming: false, streamingContent: '' }));
+    return id;
+  },
+
+  setActiveSession: (id) => set({ activeSessionId: id }),
+
+  deleteSession: (id) => set(s => {
+    const { [id]: _, ...rest } = s.messages;
+    return { sessions: s.sessions.filter(sess => sess.id !== id), messages: rest, activeSessionId: s.activeSessionId === id ? null : s.activeSessionId };
   }),
-  setStreaming: (streaming) => set({ isStreaming: streaming, currentStreamContent: streaming ? '' : '' }),
-  appendStreamDelta: (delta) => set((s) => ({
-    currentStreamContent: s.currentStreamContent + delta,
+
+  addMessage: (sessionId, msg) => set(s => ({
+    messages: { ...s.messages, [sessionId]: [...(s.messages[sessionId] || []), msg] },
+    sessions: s.sessions.map(sess => sess.id === sessionId ? { ...sess, updatedAt: Date.now(), messageCount: sess.messageCount + 1 } : sess),
   })),
-  setInputValue: (value) => set({ inputValue: value }),
-  setInputMode: (mode) => set({ inputMode: mode }),
+
+  setStreaming: (isStreaming, content = '') => set({ isStreaming, streamingContent: content }),
+  appendStreamingContent: (delta) => set(s => ({ streamingContent: s.streamingContent + delta })),
+  finalizeStreaming: (sessionId) => set(s => {
+    const msg: ChatMessage = { id: `msg_${Date.now()}`, role: 'assistant', content: s.streamingContent, timestamp: Date.now() };
+    return {
+      messages: { ...s.messages, [sessionId]: [...(s.messages[sessionId] || []), msg] },
+      isStreaming: false, streamingContent: '',
+      sessions: s.sessions.map(sess => sess.id === sessionId ? { ...sess, updatedAt: Date.now(), messageCount: sess.messageCount + 1 } : sess),
+    };
+  }),
+  setSLayerIntent: (intent) => set({ sLayerIntent: intent }),
+  setCurrentTaskId: (taskId) => set({ currentTaskId: taskId }),
   setLastIntent: (intent) => set({ lastIntent: intent }),
-  setError: (error) => set({ error }),
-  clearCurrentSession: () => set({ messages: [], isStreaming: false, currentStreamContent: '', lastIntent: null, error: null }),
+  setLastTaskStatus: (status) => set({ lastTaskStatus: status }),
+  setLastReportId: (reportId) => set({ lastReportId: reportId }),
 }));

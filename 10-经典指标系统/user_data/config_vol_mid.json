@@ -1,8 +1,0 @@
-{
-    "exchange": {
-        "pair_whitelist": [
-            "SOL/USDT",
-            "ADA/USDT"
-        ]
-    }
-}

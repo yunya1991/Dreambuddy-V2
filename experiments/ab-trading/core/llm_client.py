@@ -30,8 +30,8 @@ DEEPSEEK_KEY   = os.environ.get("DEEPSEEK_API_KEY", "")
 
 TRAE_BASE      = os.environ.get("TRAE_BASE_URL", "https://api.trae.ai/v1")
 TRAE_MODEL     = os.environ.get("TRAE_MODEL", "claude-sonnet-4-5")
-DEEPSEEK_BASE  = "https://api.deepseek.com/v1"
-DEEPSEEK_MODEL = "deepseek-chat"
+DEEPSEEK_BASE  = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 ANTHROPIC_BASE = "https://api.anthropic.com/v1"
 CLAUDE_MODEL   = "claude-haiku-4-5-20251001"
 

@@ -1,1 +1,0 @@
-/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/strategies/github/freqtrade-strategies/futures/FAdxSmaStrategy.py

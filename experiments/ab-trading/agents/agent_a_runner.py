@@ -48,8 +48,8 @@ STOP_LOSS_PCT = 0.04
 TP_PCT        = 0.08
 
 UNIVERSE_A = [
-    "BTC", "ETH", "SOL", "HYPE", "AVAX",
-    "ARB", "SUI", "INJ", "LINK", "TIA",
+    "BTC", "ETH", "HYPE", "UNI",
+    "LIT", "SOL", "XRP", "ZEC", "NEAR", "WLD", "ADA", "SUI", "ETHFI", "ENA", "JUP", "XLM", "GRASS", "EIGEN", "ZRO", "IMX",
 ]
 
 

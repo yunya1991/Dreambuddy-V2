@@ -1,9 +1,0 @@
-{"ts": 1771606937491, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771610537491}
-{"ts": 1771611969598, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771615569598}
-{"ts": 1771611969432, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771615569432}
-{"ts": 1771616054199, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771619654199}
-{"ts": 1771616053878, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771619653878}
-{"ts": 1771620195031, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771623795031}
-{"ts": 1771620195649, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771623795649}
-{"ts": 1771624427356, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771628027356}
-{"ts": 1771628470700, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771632070700}

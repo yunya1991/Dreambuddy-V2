@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { V3Badge } from '@/components/V3Badge';
+import { V3Badge } from '@/components';
 
 type SACGLayer = 'S' | 'A' | 'C' | 'G';
 

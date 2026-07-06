@@ -17,13 +17,20 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 set -a; source "$ENV_FILE"; set +a
 
-# 检查 keys 是否已填写
-if [[ -z "$AGENT_A_OKX_KEY" || -z "$AGENT_B_OKX_KEY" ]]; then
+# 检查 keys 是否已填写（Hyperliquid）
+if [[ -z "$AGENT_A_ASTER_SIGNER_PRIVATE_KEY" || -z "$AGENT_B_ASTER_SIGNER_PRIVATE_KEY" ]]; then
     echo "[ERROR] .env 中 API keys 未填写，请先配置"
     exit 1
 fi
 
 mkdir -p "$LOG_DIR"
+
+# ── 同步 A系列研报（最新 A1/A6 报告 → 本地目录）────────────────
+SYNC_LOG="$SCRIPT_DIR/logs/sync.log"
+echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] 同步A系列研报..." | tee -a "$SYNC_LOG"
+python3 "$SCRIPT_DIR/scripts/sync_a_reports.py" >> "$SYNC_LOG" 2>&1 \
+    && echo "[✓] A系列研报同步完成" \
+    || echo "[✗] A系列研报同步失败（查看 $SYNC_LOG）"
 
 echo "============================================================"
 echo "  AB实验 触发时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
