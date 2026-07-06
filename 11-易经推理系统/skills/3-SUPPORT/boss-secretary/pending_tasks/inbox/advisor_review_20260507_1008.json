@@ -1,0 +1,56 @@
+{
+  "scene": "SIGNAL_ASSESSMENT",
+  "timestamp": "2026-05-07T10:08:00+08:00",
+  "required_advisors": ["QT", "RM"],
+  "input_context": {
+    "regime": "TREND_EXHAUSTION",
+    "confidence": 65,
+    "btc_price": 81043.5,
+    "change_24h": -0.29,
+    "funding_rate": -0.00000705,
+    "fgi": 47,
+    "position": "无持仓",
+    "signal_sufficiency": "MODERATE",
+    "net_direction": "MIXED",
+    "primary_contradiction": "CX_001 (RSI=89.50极度超买)",
+    "contradiction_list_count": 6,
+    "action_pressure": "MODERATE (连续SKIP 6天)",
+    "dream_insights": {
+      "builder_dream": "16份报告 vs 0次执行",
+      "a7_deadlock": "75%可能性",
+      "rate_silence": "费率零轴=多空僵持"
+    }
+  },
+  "advisor_results": {
+    "QT": {
+      "verdict": "PARTIAL",
+      "confidence": 62,
+      "reasoning": "Regime=TREND_EXHAUSTION, C3技术面极度超买是主要矛盾, 但ETF流入+地缘缓和提供支撑, 区间震荡概率最高(45%)",
+      "recommendations": [
+        "维持空仓观望",
+        "若$82,800突破确认, 可PROBE做多",
+        "严格止损$80,000"
+      ]
+    },
+    "RM": {
+      "verdict": "PARTIAL",
+      "confidence": 58,
+      "reasoning": "RSI=89.50是明确回调信号, 但A7门禁死锁导致无法正常执行, 系统自身风险>市场风险",
+      "recommendations": [
+        "优先修复A7门禁死锁(P0)",
+        "回调风险可控($80K强支撑)",
+        "可小仓试探($0.1张PROBE)"
+      ]
+    }
+  },
+  "summary": {
+    "final_verdict": "PARTIAL",
+    "avg_confidence": 60,
+    "consensus": "区间震荡概率最高(45%), 回调风险30%, 建议观望+PROBE试探",
+    "priority_actions": [
+      "P0: 修复A7门禁死锁",
+      "P0: 处理04-30遗留P0",
+      "P1: 进行至少1次PROBE试探"
+    ]
+  }
+}

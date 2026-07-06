@@ -1,0 +1,175 @@
+{
+  "version": "1.1",
+  "updated_at": "2026-04-20",
+  "weights": {
+    "technical_score": 0.25,
+    "macro_score": 0.15,
+    "geopolitical_risk": 0.12,
+    "edge_score": 0.2,
+    "strategy_match": 0.15,
+    "volume_score": 0.1
+  },
+  "thresholds": {
+    "rsi_oversold": 28,
+    "rsi_overbought": 70,
+    "buy_score_min": 35,
+    "short_score_max": 15,
+    "edge_positive_min": 0,
+    "edge_negative_min": -20
+  },
+  "regime_weights": {
+    "TREND_STRONG": {
+      "technical_score": 0.3,
+      "macro_score": 0.1
+    },
+    "RANGE_BOUND": {
+      "technical_score": 0.15,
+      "edge_score": 0.25
+    },
+    "EXHAUSTION": {
+      "geopolitical_risk": 0.25,
+      "volume_score": 0.15
+    },
+    "BREAKOUT_PENDING": {
+      "edge_score": 0.3,
+      "volume_score": 0.15
+    },
+    "FALSE_BREAKOUT_RISK": {
+      "geopolitical_risk": 0.2,
+      "technical_score": 0.2
+    },
+    "EXTREME": {
+      "geopolitical_risk": 0.3,
+      "macro_score": 0.2
+    }
+  },
+  "strategy_tactics_arbitration": {
+    "version": "1.0",
+    "description": "战略-战术冲突裁决规则 v1.0 (EP35后修复)",
+    "ep35_lesson": {
+      "source": "EP35",
+      "conflict": "战略WAIT被战术SHORT覆盖",
+      "actual_outcome": "SHORT @ $74,525, 浮亏 -$0.07",
+      "counterfactual": "尊重WAIT → SKIP, 无损益",
+      "lesson": "战略WAIT被覆盖后实际表现更差"
+    },
+    "arbitration_rules": [
+      {
+        "id": "RULE_001",
+        "name": "HARD_BLOCK双向冲突",
+        "description": "战略LONG时战术SHORT，或战略SHORT时战术BUY",
+        "strategic_bias": ["LONG", "SHORT"],
+        "tactical_decision": ["SHORT", "BUY"],
+        "conflict_pairs": [
+          {"strategic": "LONG", "tactical": "SHORT"},
+          {"strategic": "SHORT", "tactical": "BUY"}
+        ],
+        "result": "BLOCK",
+        "risk_level": "HARD_BLOCK",
+        "action": "强制SKIP",
+        "verdict": "TACTICAL_OVERRIDDEN",
+        "rationale": "双向冲突时，尊重战略方向"
+      },
+      {
+        "id": "RULE_002",
+        "name": "升级版战略WAIT冲突",
+        "description": "战略WAIT时战术发出BUY/SHORT信号 - v1.1升级：默认HARD_BLOCK",
+        "strategic_bias": ["WAIT"],
+        "tactical_decision": ["BUY", "SHORT"],
+        "conflict_pairs": [
+          {"strategic": "WAIT", "tactical": "BUY"},
+          {"strategic": "WAIT", "tactical": "SHORT"}
+        ],
+        "result": "HARD_BLOCK",
+        "risk_level": "HARD_BLOCK",
+        "action": "默认阻断，除非极端条件+三重确认",
+        "verdict": "STRATEGY_OVERRIDDEN",
+        "override_allowed": false,
+        "override_conditions": [
+          "macro_score <= 1 AND edge < -60",
+          "vol_regime == 'high' AND atr_pct > 1.0"
+        ],
+        "extreme_condition_required": true,
+        "extreme_conditions": [
+          {"type": "quantitative", "check": "_check_quantitative_confirmation"},
+          {"type": "risk_management", "check": "_check_rm_confirmation"},
+          {"type": "strategic", "check": "_check_strategic_override_permission"}
+        ],
+        "triple_confirmation_threshold": 2,
+        "post_override_actions": [
+          "仓位降级50%",
+          "止损收紧50%",
+          "冷却期24h"
+        ],
+        "rationale": "EP35教训升级：WAIT从SOFT_WARN→HARD_BLOCK，逃生舱口为极端条件+三重确认"
+      },
+      {
+        "id": "RULE_003",
+        "name": "SOFT_WARN战略REDUCE",
+        "description": "战略REDUCE时战术发出BUY/SHORT信号",
+        "strategic_bias": ["REDUCE"],
+        "tactical_decision": ["BUY", "SHORT"],
+        "result": "DEGRADE",
+        "risk_level": "SOFT_WARN",
+        "action": "降级执行",
+        "verdict": "STRATEGY_OVERRIDDEN",
+        "override_allowed": true,
+        "override_conditions": [
+          "edge > 50 OR edge < -50"
+        ],
+        "post_override_actions": [
+          "仓位降级50%",
+          "止损收紧25%"
+        ],
+        "rationale": "REDUCE场景下允许极端信号覆盖"
+      },
+      {
+        "id": "RULE_004",
+        "name": "DIRECTION_MATCH",
+        "description": "战略和战术方向一致",
+        "conflict_pairs": [
+          {"strategic": "LONG", "tactical": "BUY"},
+          {"strategic": "SHORT", "tactical": "SHORT"},
+          {"strategic": "WAIT", "tactical": "SKIP"},
+          {"strategic": "LONG", "tactical": "SKIP"},
+          {"strategic": "SHORT", "tactical": "SKIP"}
+        ],
+        "result": "ALLOW",
+        "risk_level": "NONE",
+        "action": "正常执行",
+        "rationale": "方向一致时无需干预"
+      }
+    ],
+    "override_cooldown": {
+      "enabled": true,
+      "duration_hours": 24,
+      "description": "单次覆盖后24h内不允许多次覆盖"
+    },
+    "position_degradation": {
+      "enabled": true,
+      "override_reduction_pct": 50,
+      "description": "覆盖执行时仓位降级50%"
+    },
+    "sl_tightening": {
+      "enabled": true,
+      "reduction_pct": 50,
+      "description": "覆盖执行时止损收紧50%"
+    },
+    "override_event_log": {
+      "enabled": true,
+      "storage_path": ".workbuddy/override_events/",
+      "format": "JSON",
+      "schema": {
+        "episode": "string",
+        "timestamp": "ISO8601",
+        "strategic_directive": "string",
+        "tactical_decision": "string",
+        "override_result": "BLOCK|WARN_AND_LOG|DEGRADE|ALLOW",
+        "conflict_type": "string",
+        "risk_level": "HARD_BLOCK|SOFT_WARN|NONE",
+        "pnl_snap": "float|null",
+        "verdict": "string"
+      }
+    }
+  }
+}

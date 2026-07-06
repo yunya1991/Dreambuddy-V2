@@ -1,0 +1,39 @@
+{
+  "review_id": "advisor_review_20260508_023000",
+  "timestamp": "2026-05-08T02:30:00+08:00",
+  "scene": "STRATEGY_REVIEW",
+  "triggered_by": "A1_research_L_FUNDING_FLIP",
+  "summary": {
+    "final_verdict": "PARTIAL",
+    "avg_confidence": 68,
+    "review_type": "STRATEGY_REVIEW",
+    "recommendation": "小仓PROBE(0.1张)，止损$78K，目标$83K"
+  },
+  "advisors": [
+    {
+      "name": "SC",
+      "role": "战略顾问",
+      "verdict": "PARTIAL",
+      "confidence": 72,
+      "reasoning": "费率翻正(L_FUNDING_FLIP)是强烈看多信号，67天首次转正触发空头挤压预期。但200日均线($83,300)突破失败构成强阻力。建议小仓PROBE(0.1张)，止损$78K。"
+    },
+    {
+      "name": "QT",
+      "role": "量化交易顾问",
+      "verdict": "PARTIAL",
+      "confidence": 65,
+      "reasoning": "信号充分性MODERATE，方向UP。费率翻正+重新站上$80K构成做多条件。但连续SKIP≥7天，系统存在决策回避风险。建议立即PROBE打破循环。"
+    },
+    {
+      "name": "MR",
+      "role": "宏观研究员",
+      "verdict": "PARTIAL",
+      "confidence": 67,
+      "reasoning": "美伊接近框架+油价跌12%利好风险资产。但沃什5月15日接任美联储(鹰派)，CPI 3.3%高于目标，压制上涨空间。建议谨慎看多。"
+    }
+  ],
+  "a1_report": "a1_research_20260508_0230.md",
+  "key_signal": "L_FUNDING_FLIP (67天负费率首次转正)",
+  "action_pressure": "HIGH (连续SKIP≥7天)",
+  "next_step": "A3战略推演 + A4验证 + A5执行PROBE"
+}

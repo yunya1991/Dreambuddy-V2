@@ -1,0 +1,20 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "stage": "scenario",
+  "pass": false,
+  "metrics": {
+    "bull_market_score": 0.84,
+    "bear_market_score": 0.73,
+    "shock_market_score": 0.62
+  },
+  "violations": [
+    {
+      "code": "SCENARIO_SHOCK_REGRESSION",
+      "severity": "high"
+    }
+  ],
+  "artifacts": [
+    "artifacts/evolution/stress/stress_negative_20260512.json"
+  ],
+  "timestamp": "2026-05-12T10:27:00Z"
+}

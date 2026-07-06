@@ -1,0 +1,52 @@
+{
+  "review_type": "SIGNAL_ASSESSMENT",
+  "scene": "SIGNAL_ASSESSMENT",
+  "timestamp": "2026-04-30T02:30:00+08:00",
+  "review_source": "A1_RESEARCH_20260430_0230",
+  "required_advisors": ["QT", "RM"],
+  "context": {
+    "btc_price": 75027,
+    "eth_price": 2224,
+    "fgi": 26,
+    "funding_rate_btc": "+0.00409%",
+    "regime": "BEAR_TREND",
+    "regime_confidence": 0.78,
+    "net_direction": "DOWN",
+    "signal_sufficiency": "MODERATE",
+    "primary_contradiction": "C3技术面+C4宏观(空方主导)",
+    "position_status": "SHORT_0.01@$75472",
+    "strategic_alignment_gap": true,
+    "key_risk": "$74,766周线支撑破位",
+    "fomc_result": "Fed按兵不动,Powell鹰派",
+    "geopolitical": "霍尔木兹关闭,美伊和谈停滞,Brent$106.55",
+    "contradiction_count": 8,
+    "dream_contradictions": true
+  },
+  "advisors_review": {
+    "QT_quantitative_trader": {
+      "verdict": "AGREE",
+      "confidence": 0.75,
+      "reasoning": "三屏一致看空+C3/C4空方主导=技术面+宏观共振看空。信号充分性MODERATE合理，FGI=26虽逆向但未达极端(<20)。战略执行背离(0.31张→0.01张)需A3重新评估。$74,766是量化关键位，建议A3设置该位为加SHORT条件。"
+    },
+    "RM_risk_manager": {
+      "verdict": "AGREE_WITH_CONDITIONS",
+      "confidence": 0.70,
+      "reasoning": "方向DOWN同意，但需注意：(1)FGI=26逆向信号不可忽视，追空需谨慎；(2)战略执行背离需调查原因；(3)$74,766如果守住会有技术反弹，建议A3设置情景分支。风控条件：严禁超过2x杠杆，$74,700设硬止损。"
+    }
+  },
+  "summary": {
+    "final_verdict": "AGREE",
+    "consensus_level": "HIGH",
+    "actionable_items": [
+      "A3需重新评估：原HOLD SHORT 0.31张已失效",
+      "A3设置$74,766为关键监控位",
+      "调查SHORT 0.31张平仓原因",
+      "追空需谨慎：FGI=26逆向+支撑位近"
+    ],
+    "risk_flags": [
+      "战略执行背离(高)",
+      "FGI逆向信号(中)",
+      "$74,766支撑破位风险(高)"
+    ]
+  }
+}

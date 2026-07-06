@@ -1,0 +1,15 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "trace_id": "trace-p0-pos-001",
+  "priority_score": 30,
+  "priority_tier": "P3",
+  "breakdown": {
+    "base": 50,
+    "decision": -20,
+    "stages": 0,
+    "approval": 0,
+    "risk": 0,
+    "violations": 0
+  },
+  "schema_version": "evolution-p2-priority-score-v0.1"
+}

@@ -1,0 +1,10 @@
+{
+  "api_key": "6a37de4b-a02c-41af-bd9d-6adaa104bf10",
+  "secret_key": "5DDE98D4397F2318F3AD7C07C9A1A587",
+  "passphrase": "Zjt@199107293419",
+  "simulated": true,
+  "dry_run": false,
+  "base_url": "https://www.okx.com",
+  "default_inst_id": "BTC-USDT-SWAP",
+  "default_usdt_amount": 100
+}

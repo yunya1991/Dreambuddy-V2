@@ -1,0 +1,83 @@
+{
+  "date": "2026-05-09T01:05:00+08:00",
+  "regime": "TREND_EXHAUSTION",
+  "confidence": 72,
+  "previous_regime": "TREND_EXHAUSTION",
+  "previous_confidence": 68,
+  "regime_change": false,
+  "confidence_trend": "up",
+  "key_signals": {
+    "price_btc": 79759.7,
+    "price_eth": 2289.69,
+    "price_sol": 89.57,
+    "fgi": 38,
+    "fgi_trend": "falling",
+    "funding_rate_btc": 0.00000727,
+    "funding_rate_btc_trend": "volatile_3flips",
+    "funding_rate_eth": 0.00004955,
+    "funding_rate_sol": 0.00000860,
+    "etf_flow_btc": -3299,
+    "etf_flow_direction": "outflow",
+    "exchange_reserve_btc_m": 2.21,
+    "whale_accumulation_30d_btc": 270000,
+    "rsi_daily": 69.93,
+    "sma_200_daily": 83216,
+    "price_vs_sma200": "below",
+    "long_short_ratio": "36.7%/63.3%",
+    "open_interest_usd_b": 8.34
+  },
+  "macro_signals": {
+    "fed_rate": "3.50%-3.75%",
+    "fed_rate_trend": "hold_3rd",
+    "cpi_estimate": 3.3,
+    "warsh_confirmation": "week_of_may_11",
+    "warsh_stance": "hawkish",
+    "iran_deal_status": "rejected_by_trump",
+    "hormuz_status": "us_blockade",
+    "oil_price": "100+"
+  },
+  "contradictions": {
+    "CX_001": {
+      "name": "费率信号不稳定",
+      "strength": "extreme",
+      "direction": "deteriorating",
+      "action_implication": "observe_over_act"
+    },
+    "CX_002": {
+      "name": "ETF短期流出vs长期积累",
+      "strength": "strong",
+      "direction": "short_term_bearish",
+      "action_implication": "caution"
+    },
+    "CX_003": {
+      "name": "宏观鹰派vs鲸鱼积累",
+      "strength": "strong",
+      "direction": "hawkish_escalating",
+      "action_implication": "wait_for_clarity"
+    },
+    "CX_005": {
+      "name": "地缘升级vs油价风险",
+      "strength": "strong",
+      "direction": "escalating",
+      "action_implication": "risk_premium_high"
+    }
+  },
+  "scenario_probabilities": {
+    "A_range_bound_77_81": 0.45,
+    "B_breakdown_below_77": 0.35,
+    "C_breakout_above_83": 0.15,
+    "D_crash_below_74": 0.05
+  },
+  "signal_sufficiency": "MODERATE",
+  "action_pressure": "HIGH",
+  "position_status": "FLAT",
+  "consecutive_skip": 9,
+  "next_actions": [
+    "Wait for funding rate stability (3 consecutive same-direction periods)",
+    "Monitor Warsh confirmation and first policy signals (week of May 11)",
+    "Watch Iran response to US proposal",
+    "Track ETF flow for reversal signal"
+  ],
+  "support_levels": [79717, 78334, 77169, 74612],
+  "resistance_levels": [80301, 81527, 83216]
+}

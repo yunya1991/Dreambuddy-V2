@@ -1,0 +1,55 @@
+{
+  "template_name": "A4实践日志模板",
+  "version": "1.0",
+  "created": "2026-04-26",
+  "description": "A4战术验证阶段使用，记录小仓试探的每次实践",
+  
+  "practice_log": {
+    "verification_id": "A4_[日期]_[序号]",
+    "based_on": "recognition_report.json",
+    "practice_design": "a4_verification_plan.json",
+    
+    "trials": [
+      {
+        "trial_id": 1,
+        "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+        "direction": "LONG/SHORT",
+        "entry_price": 0.00,
+        "exit_price": 0.00,
+        "position_size": "0.1张",
+        "P&L": 0.00,
+        "P&L_percentage": 0.00,
+        "reason": "入场理由 (基于认识)",
+        "exit_reason": "出场理由 (止盈/止损/主动)",
+        "feedback": "实践反馈 (与认识对比)",
+        "recognition_correction": "是否需要修正认识? 如何修正?"
+      }
+    ],
+    
+    "summary": {
+      "total_trials": 0,
+      "win_trials": 0,
+      "loss_trials": 0,
+      "win_rate": 0.0,
+      "total_P&L": 0.00,
+      "average_P&L": 0.00,
+      "max_drawdown": 0.00,
+      "max_drawdown_percentage": 0.00,
+      
+      "truth_verification": {
+        "P&L_pass": "PASS/FAIL",
+        "win_rate_pass": "PASS/FAIL",
+        "max_drawdown_pass": "PASS/FAIL",
+        "overall": "PASS/FAIL"
+      },
+      
+      "recognition_validation": {
+        "confirmed": "哪些认识被实践验证正确?",
+        "refuted": "哪些认识被实践验证错误?",
+        "new_insights": "实践中有哪些新认识?"
+      }
+    },
+    
+    "next_action": "进入A5 / 重新A1-A3 / 调整策略"
+  }
+}

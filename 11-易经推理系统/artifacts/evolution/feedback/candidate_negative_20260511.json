@@ -1,0 +1,17 @@
+{
+  "candidate_id": "cand-20260511-neg-001",
+  "trace_id": "trace-p0-neg-001",
+  "constraint_version_base": "v0.1",
+  "source_type": "theory_practice",
+  "source_refs": [
+    "artifacts/trading/a8_feedback_p0_neg_001.json"
+  ],
+  "hypothesis": "aggressively loosen signal threshold to increase exposure",
+  "expected_effect": "increase entry frequency",
+  "risk_assessment": {
+    "risk_level": "high",
+    "main_risk": "tail-risk amplification under volatility spike"
+  },
+  "evidence_refs": [],
+  "schema_version": "evolution-p0-candidate-v0.1"
+}

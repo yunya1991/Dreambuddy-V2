@@ -1,0 +1,70 @@
+{
+  "test_case_001": {
+    "name": "A4门禁检查-完整数据测试",
+    "a1_report": {
+      "exists": true,
+      "freshness": "<4h",
+      "completeness": "完整",
+      "data_sources": ["OKX", "TradingView", "Twitter"],
+      "conclusion": "BTC处于上升趋势，RSI中性，MACD金叉"
+    },
+    "a2_analysis": {
+      "exists": true,
+      "resistance_path": "清晰",
+      "trend_strength": "强",
+      "key_levels": [78000, 79500, 81000],
+      "first_principles": "市场沿着阻力最小方向运行"
+    },
+    "a3_strategy": {
+      "exists": true,
+      "direction": "LONG",
+      "entry_strategy": "breakout",
+      "truth_criteria": ["P&L>0", "win_rate>50%", "max_drawdown<10%", "RR_ratio>2"]
+    },
+    "practice_log": [
+      {
+        "timestamp": "2026-04-26T10:00:00",
+        "action": "开始A4验证",
+        "result": "待定"
+      }
+    ]
+  },
+  "test_case_002": {
+    "name": "A5门禁检查-完整数据测试",
+    "a4_scout_report": {
+      "exists": true,
+      "verification_samples": 5,
+      "success_rate": "80%",
+      "recommendation": "可执行",
+      "recognition_corrected": true,
+      "feedback": "市场确认上升趋势，A3战略方向正确"
+    },
+    "a3_strategy": {
+      "exists": true,
+      "direction": "LONG",
+      "entry_price": 79500.0,
+      "truth_criteria": ["P&L>0", "win_rate>50%", "max_drawdown<10%", "RR_ratio>2"]
+    },
+    "execution_plan": {
+      "stop_loss": 78000.0,
+      "take_profit": 82000.0,
+      "position_size": "30%",
+      "position_discipline": "分批入场，每次10%",
+      "risk_level": "medium",
+      "real_time_monitoring": true
+    },
+    "practice_log": [
+      {
+        "timestamp": "2026-04-26T10:30:00",
+        "action": "A4验证完成",
+        "result": "成功",
+        "sample_count": 5
+      },
+      {
+        "timestamp": "2026-04-26T10:45:00",
+        "action": "准备A5执行",
+        "result": "待定"
+      }
+    ]
+  }
+}

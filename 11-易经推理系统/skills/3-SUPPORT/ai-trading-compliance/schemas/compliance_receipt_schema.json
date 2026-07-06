@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Compliance Receipt Schema",
+  "description": "AI Trading Compliance - 合规回执 JSON Schema",
+  "type": "object",
+  "required": ["decision", "change_classification", "audit_fields"],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "description": "合规审查决策",
+      "enum": ["pass", "warn", "fail"]
+    },
+    "change_classification": {
+      "type": "object",
+      "description": "变更分类",
+      "required": ["change_type", "risk_level"],
+      "properties": {
+        "change_type": {
+          "type": "string",
+          "description": "变更类型 R0-R3",
+          "enum": ["R0", "R1", "R2", "R3"]
+        },
+        "risk_level": {
+          "type": "string",
+          "description": "风险等级 P0/P1/P3",
+          "enum": ["P0", "P1", "P3"]
+        },
+        "environment": {
+          "type": "string",
+          "description": "环境",
+          "enum": ["Explore", "Pilot", "Prod"]
+        },
+        "tighten_only": {
+          "type": "boolean",
+          "description": "是否为收紧型变更（非风险扩张）"
+        }
+      }
+    },
+    "hard_constraints_checked": {
+      "type": "object",
+      "description": "硬约束检查结果",
+      "properties": {
+        "prod_write_prohibited_without_approval": {
+          "type": "boolean"
+        },
+        "sandbox_no_network_no_secrets": {
+          "type": "boolean"
+        },
+        "gate_result_present": {
+          "type": "boolean"
+        },
+        "baseline_ref_present": {
+          "type": "boolean"
+        },
+        "rollback_defined": {
+          "type": "boolean"
+        },
+        "audit_replayable": {
+          "type": "boolean"
+        },
+        "external_publish_outbox_only": {
+          "type": "boolean"
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "description": "阻断项（任一存在则 decision=fail）",
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "警告项",
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "required_actions": {
+      "type": "array",
+      "description": "需要执行的动作",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "how"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "how": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rollout_requirements": {
+      "type": "object",
+      "description": "发布要求",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["canary", "disabled", "full"]
+        },
+        "must_monitor": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "auto_rollback_triggers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "second_approval_required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "audit_fields": {
+      "type": "object",
+      "description": "审计字段",
+      "required": ["doc_refs", "artifacts", "approver_roles"],
+      "properties": {
+        "doc_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trace_id": {
+          "type": ["string", "null"]
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "approver_roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

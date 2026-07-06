@@ -1,0 +1,249 @@
+# 老板秘书 SKILL - 风险阈值配置
+# Boss Secretary - Risk Thresholds Configuration
+#
+# 版本: v1.0
+# 日期: 2026-04-18
+# 用途: 定义各类风险触发的阈值参数
+
+# ============================================================
+# 第一性原理分析阈值
+# ============================================================
+first_principles:
+  # 六本质权重
+  weights:
+    market_essence: 0.25    # 市场本质权重
+    risk_essence: 0.25     # 风险本质权重
+    execution_essence: 0.20 # 执行本质权重
+    capital_essence: 0.15  # 资本本质权重
+    information_essence: 0.10  # 信息本质权重
+    psychology_essence: 0.05  # 心理本质权重
+
+  # 分析深度阈值
+  analysis_depth:
+    basic: 0.6   # 基础分析 (0.6-0.75)
+    medium: 0.75 # 中等分析 (0.75-0.85)
+    deep: 0.85   # 深度分析 (0.85+)
+
+# ============================================================
+# 五大风险场景阈值
+# ============================================================
+risk_scenarios:
+  market_crash:
+    name: "市场暴跌"
+    probability_threshold: 0.30   # 概率阈值
+    impact_threshold: 0.20        # 影响阈值
+    velocity_threshold: 0.05      # 速度阈值 (%/小时)
+    indicators:
+      - "BTC 1小时跌幅 > 5%"
+      - "恐慌贪婪指数 < 20"
+      - "交易所大量爆仓"
+      - "做空比例 > 80%"
+
+  liquidity_drought:
+    name: "流动性枯竭"
+    probability_threshold: 0.25
+    impact_threshold: 0.15
+    velocity_threshold: 0.03
+    indicators:
+      - "买卖价差 > 正常值 3倍"
+      - "市场深度下降 > 50%"
+      - "交易所提币排队 > 1小时"
+      - "稳定币流动性异常"
+
+  leverage_liquidation:
+    name: "杠杆清算"
+    probability_threshold: 0.40
+    impact_threshold: 0.30
+    velocity_threshold: 0.02
+    indicators:
+      - "持仓保证金率 < 150%"
+      - "当前价格距强平价 < 10%"
+      - "合约持仓量异常增加"
+      - "连环爆仓预警"
+
+  system_failure:
+    name: "系统故障"
+    probability_threshold: 0.10
+    impact_threshold: 0.50
+    velocity_threshold: 1.0    # 瞬时
+    indicators:
+      - "API 响应时间 > 5秒"
+      - "订单失败率 > 10%"
+      - "数据延迟 > 30秒"
+      - "交易所系统公告"
+
+  strategy_failure:
+    name: "策略失效"
+    probability_threshold: 0.35
+    impact_threshold: 0.25
+    velocity_threshold: 0.01
+    indicators:
+      - "连续亏损 > 5次"
+      - "胜率下降 > 20%"
+      - "夏普比率 < 0.5"
+      - "最大回撤超阈值"
+
+# ============================================================
+# 评分与决策阈值
+# ============================================================
+scoring:
+  # 风险评分 (0-100)
+  risk_score:
+    extreme: 80    # 极高风险 (80-100)
+    high: 60      # 高风险 (60-80)
+    medium: 40    # 中风险 (40-60)
+    low: 20       # 低风险 (20-40)
+    minimal: 0   # 极低风险 (0-20)
+
+  # 操作决策阈值
+  decision:
+    immediate_action: 75   # 立即行动 (>= 75)
+    urgent_review: 60      # 紧急审查 (60-75)
+    careful_monitoring: 40 # 谨慎监控 (40-60)
+    routine_tracking: 20   # 常规跟踪 (20-40)
+    no_action: 0           # 无需行动 (< 20)
+
+# ============================================================
+# 假设验证框架阈值
+# ============================================================
+hypothesis_verification:
+  # 假设可信度阈值
+  credibility:
+    high: 0.80    # 高可信 (> 0.80)
+    medium: 0.60  # 中可信 (0.60-0.80)
+    low: 0.40     # 低可信 (0.40-0.60)
+    unreliable: 0 # 不可信 (< 0.40)
+
+  # 验证所需置信度
+  required_confidence:
+    confirm_hypothesis: 0.75  # 确认假设
+    reject_hypothesis: 0.70   # 否定假设
+    need_more_data: 0.60     # 需要更多数据
+
+  # 数据质量最低要求
+  min_data_quality:
+    completeness: 0.70  # 完整性 >= 70%
+    accuracy: 0.85      # 准确性 >= 85%
+    timeliness: 0.80     # 时效性 >= 80%
+
+# ============================================================
+# 紧急响应阈值
+# ============================================================
+emergency_response:
+  # 升级计时器
+  escalation_timer:
+    normal_minutes: 30    # 正常响应时间
+    urgent_minutes: 10   # 紧急升级时间
+    critical_seconds: 60 # 极紧急秒级响应
+
+  # 紧急程度判断
+  urgency_levels:
+    P0_critical:
+      response_time: "即时"
+      auto_action: true
+      notification_scope: "所有人"
+    P1_urgent:
+      response_time: "5分钟"
+      auto_action: false
+      notification_scope: "核心团队"
+    P2_important:
+      response_time: "30分钟"
+      auto_action: false
+      notification_scope: "负责人"
+    P3_normal:
+      response_time: "2小时"
+      auto_action: false
+      notification_scope: "相关人"
+
+# ============================================================
+# 止损与仓位阈值
+# ============================================================
+position_management:
+  # 止损阈值
+  stop_loss:
+    hard_stop: 0.10       # 硬止损 10%
+    soft_stop: 0.05       # 软止损 5%
+    trailing_stop: 0.03   # 追踪止损 3%
+
+  # 仓位限制
+  position_size:
+    max_single_position: 0.30  # 单品种最大仓位 30%
+    max_total_long: 0.80       # 多头总仓位 80%
+    max_total_short: 0.50     # 空头总仓位 50%
+    max_leverage: 3           # 最大杠杆 3x
+
+  # 回撤阈值
+  drawdown:
+    warning: 0.10         # 警告回撤 10%
+    limit: 0.15           # 限制回撤 15%
+    stop_trading: 0.20   # 停止交易 20%
+
+# ============================================================
+# 情感分析阈值
+# ============================================================
+sentiment:
+  # 恐慌贪婪指数
+  fear_greed:
+    extreme_fear: 20     # 极度恐慌
+    fear: 30             # 恐慌
+    neutral: 50          # 中性
+    greed: 70             # 贪婪
+    extreme_greed: 80    # 极度贪婪
+
+  # 市场情绪分类
+  market_emotion:
+    bullish_threshold: 0.60   # 看涨情绪
+    bearish_threshold: 0.40   # 看跌情绪
+    divergence_threshold: 0.20 # 多空分歧
+
+# ============================================================
+# 数据质量阈值
+# ============================================================
+data_quality:
+  # 最低数据要求
+  minimum_requirements:
+    etf_flow:
+      min_age_hours: 24   # 数据时效 <= 24小时
+      min_confidence: 0.70
+    onchain:
+      min_age_hours: 1    # 链上数据 <= 1小时
+      min_confidence: 0.60
+    sentiment:
+      min_age_hours: 6    # 情绪数据 <= 6小时
+      min_confidence: 0.65
+    technical:
+      min_age_hours: 1    # 技术数据 <= 1小时
+      min_confidence: 0.80
+
+  # 数据来源权重
+  source_weights:
+    official_api: 0.40    # 官方API
+    premium_data: 0.30    # 付费数据
+    public_data: 0.20     # 公开数据
+    estimated: 0.10       # 估算数据
+
+# ============================================================
+# 顾问评审阈值
+# ============================================================
+advisor_review:
+  # 强制评审条件
+  mandatory_review:
+    position_size_over: 0.25    # 仓位 > 25%
+    risk_score_above: 60        # 风险评分 > 60
+    consecutive_losses: 3       # 连续亏损 > 3次
+    new_strategy: true         # 新策略上线
+
+  # 评审意见权重
+  advisor_weights:
+    ADVISOR-QT: 0.30   # 量化顾问
+    ADVISOR-RM: 0.25  # 风控顾问
+    ADVISOR-MR: 0.20  # 市场顾问
+    ADVISOR-EE: 0.15  # 执行顾问
+    ADVISOR-SA: 0.10  # 架构顾问
+
+  # 决策聚合阈值
+  consensus:
+    strong_consensus: 0.80  # 强一致 (> 80%)
+    majority: 0.60          # 多数同意 (60-80%)
+    split: 0.40             # 分歧 (40-60%)
+    tie: 0.20               # 平局 (< 40%)

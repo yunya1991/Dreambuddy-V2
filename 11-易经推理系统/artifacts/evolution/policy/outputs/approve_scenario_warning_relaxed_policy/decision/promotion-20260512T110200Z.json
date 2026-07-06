@@ -1,0 +1,11 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "from_version": "v0.1",
+  "to_version": "v0.1.2",
+  "decision": "approve",
+  "rollback_pointer": "artifacts/evolution/policy/outputs/approve_scenario_warning_relaxed_policy/rollback/rollback-pointer-20260512T110200Z.json",
+  "evidence_refs": [
+    "artifacts/evolution/feedback/evidence_pack_pos_001.json"
+  ],
+  "timestamp": "2026-05-12T11:02:00Z"
+}
