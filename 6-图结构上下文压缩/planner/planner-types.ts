@@ -79,7 +79,7 @@ export interface PlannerContext {
 
   /** 动态权重 */
   chainWeights: {
-    s_chain: number;
+    a_chain: number;
     c_chain: number;
     f_chain: number;
   };
@@ -396,9 +396,9 @@ export function createDefaultPlannerContext(
     complexity: intent === 'simple_qa' ? 'quick' : intent === 'execute_trade' ? 'deep' : 'standard',
     tradingMode: 'hybrid',
     chainWeights: {
-      s_chain: 0.35,
-      c_chain: 0.45,
-      f_chain: 0.20,
+      a_chain: 0.60,
+      c_chain: 0.25,
+      f_chain: 0.15,
     },
   };
 }

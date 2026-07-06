@@ -1,0 +1,30 @@
+{
+  "specId": "spec_task_20260705161945_mcj1",
+  "taskId": "task_20260705161945_mcj1",
+  "sessionId": "test_e2e_002",
+  "createdAt": "2026-07-05T16:19:45.021Z",
+  "updatedAt": "2026-07-05T16:19:45.021Z",
+  "originalMessage": "分析BTC价格趋势",
+  "finalIntent": "market_query",
+  "finalEntities": {
+    "symbol": "BTC"
+  },
+  "confidence": 0.85,
+  "clarificationRounds": [],
+  "initialAssessment": {
+    "ambiguityScore": 55,
+    "ambiguityLevel": "ambiguous",
+    "reasons": [
+      "消息过短（9字符），意图可能不完整",
+      "包含泛化关键词且缺少具体方向",
+      "存在 2 种合理解读：market_query、deep_analysis"
+    ]
+  },
+  "scope": {
+    "included": [],
+    "excluded": []
+  },
+  "successCriteria": [],
+  "constraints": [],
+  "status": "draft"
+}

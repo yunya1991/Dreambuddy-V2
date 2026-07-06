@@ -1,0 +1,21 @@
+{
+  "session_id": "test_e2e_002",
+  "created_at": "2026-07-05T16:19:44.850Z",
+  "updated_at": "2026-07-05T16:19:48.407Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "分析BTC价格趋势",
+      "timestamp": "2026-07-05T16:19:44.850Z"
+    },
+    {
+      "role": "assistant",
+      "content": "🤔 **你希望分析BTC价格趋势的目的是什么？**\n\n- [1] 快速了解当前行情\n  _获取最新价格、涨跌幅和短期走势_\n\n- [2] 深度技术分析\n  _包括支撑阻力、指标信号和趋势预测_\n\n- [3] 交易决策参考\n  _结合策略给出买卖建议或风险提示_\n\n> 请点击选项按钮，或输入数字选择",
+      "timestamp": "2026-07-05T16:19:48.407Z",
+      "task_id": "task_20260705161945_mcj1",
+      "intent_type": "market_query"
+    }
+  ],
+  "summary_level": 0,
+  "total_tokens": 0
+}

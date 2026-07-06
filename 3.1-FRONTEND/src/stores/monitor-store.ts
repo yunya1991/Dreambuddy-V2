@@ -1,85 +1,60 @@
 import { create } from 'zustand';
+import type { SACELayer } from './chain-store';
 
-export interface MonitorEvent {
+export interface SACGLayerEvent {
   id: string;
-  layer: 'S' | 'A' | 'C' | 'G';
+  layer: SACELayer;
   type: string;
-  message: string;
-  severity: 'info' | 'warning' | 'error';
-  timestamp: string;
+  description: string;
+  timestamp: number;
+  duration?: number;
 }
 
-export interface PipelineStatus {
-  pipelineId: string;
-  name: string;
-  status: 'idle' | 'running' | 'error';
-  throughput: number;
+export interface PipelineThroughput {
+  totalProcessed: number;
+  successRate: number;
   avgLatencyMs: number;
+  activeCount: number;
+}
+
+export interface SSEConnectionState {
+  status: 'disconnected' | 'connecting' | 'connected' | 'error';
+  lastEventAt: number | null;
+  reconnectCount: number;
 }
 
 interface MonitorState {
-  layers: {
-    S: { status: 'idle' | 'active' | 'error'; events: MonitorEvent[] };
-    A: { status: 'idle' | 'active' | 'error'; events: MonitorEvent[] };
-    C: { status: 'idle' | 'active' | 'error'; events: MonitorEvent[] };
-    G: { status: 'idle' | 'active' | 'error'; events: MonitorEvent[] };
-  };
-  pipeline: {
-    activePipelines: PipelineStatus[];
-    throughput: { rps: number; avgLatencyMs: number };
-  };
-  sseConnection: 'disconnected' | 'connecting' | 'connected' | 'error';
+  sLayerEvents: SACGLayerEvent[];
+  aLayerEvents: SACGLayerEvent[];
+  cLayerEvents: SACGLayerEvent[];
+  gLayerEvents: SACGLayerEvent[];
+  pipelineThroughput: PipelineThroughput;
+  sseConnection: SSEConnectionState;
 
-  pushEvent: (layer: 'S' | 'A' | 'C' | 'G', event: MonitorEvent) => void;
-  setLayerStatus: (layer: 'S' | 'A' | 'C' | 'G', status: 'idle' | 'active' | 'error') => void;
-  setSSEStatus: (status: MonitorState['sseConnection']) => void;
-  updatePipeline: (pipelines: PipelineStatus[]) => void;
-  setThroughput: (t: { rps: number; avgLatencyMs: number }) => void;
-  clearEvents: (layer?: 'S' | 'A' | 'C' | 'G') => void;
+  addEvent: (layer: SACELayer, event: SACGLayerEvent) => void;
+  setThroughput: (tp: PipelineThroughput) => void;
+  setSSEStatus: (status: SSEConnectionState['status']) => void;
+  clearEvents: (layer?: SACELayer) => void;
 }
 
-export const useMonitorStore = create<MonitorState>((set) => ({
-  layers: {
-    S: { status: 'idle', events: [] },
-    A: { status: 'idle', events: [] },
-    C: { status: 'idle', events: [] },
-    G: { status: 'idle', events: [] },
-  },
-  pipeline: { activePipelines: [], throughput: { rps: 0, avgLatencyMs: 0 } },
-  sseConnection: 'disconnected',
+const initialThroughput: PipelineThroughput = { totalProcessed: 0, successRate: 0, avgLatencyMs: 0, activeCount: 0 };
 
-  pushEvent: (layer, event) => set((s) => ({
-    layers: {
-      ...s.layers,
-      [layer]: {
-        ...s.layers[layer],
-        events: [event, ...s.layers[layer].events].slice(0, 200),
-      },
-    },
-  })),
-  setLayerStatus: (layer, status) => set((s) => ({
-    layers: { ...s.layers, [layer]: { ...s.layers[layer], status } },
-  })),
-  setSSEStatus: (status) => set({ sseConnection: status }),
-  updatePipeline: (pipelines) => set((s) => ({
-    pipeline: { ...s.pipeline, activePipelines: pipelines },
-  })),
-  setThroughput: (t) => set((s) => ({
-    pipeline: { ...s.pipeline, throughput: t },
-  })),
-  clearEvents: (layer) => set((s) => {
-    if (!layer) {
-      return {
-        layers: {
-          S: { ...s.layers.S, events: [] },
-          A: { ...s.layers.A, events: [] },
-          C: { ...s.layers.C, events: [] },
-          G: { ...s.layers.G, events: [] },
-        },
-      };
-    }
-    return {
-      layers: { ...s.layers, [layer]: { ...s.layers[layer], events: [] } },
-    };
+export const useMonitorStore = create<MonitorState>((set) => ({
+  sLayerEvents: [], aLayerEvents: [], cLayerEvents: [], gLayerEvents: [],
+  pipelineThroughput: initialThroughput,
+  sseConnection: { status: 'disconnected', lastEventAt: null, reconnectCount: 0 },
+
+  addEvent: (layer, event) => set(s => {
+    const key = `${layer.toLowerCase()}LayerEvents` as keyof MonitorState;
+    return { [key]: [...(s[key] as SACGLayerEvent[]), event] };
   }),
+  setThroughput: (tp) => set({ pipelineThroughput: tp }),
+  setSSEStatus: (status) => set(s => ({
+    sseConnection: { ...s.sseConnection, status, lastEventAt: Date.now() },
+  })),
+  clearEvents: (layer) => {
+    if (!layer) return set({ sLayerEvents: [], aLayerEvents: [], cLayerEvents: [], gLayerEvents: [] });
+    const key = `${layer.toLowerCase()}LayerEvents` as keyof MonitorState;
+    return set(s => ({ [key]: [] }));
+  },
 }));

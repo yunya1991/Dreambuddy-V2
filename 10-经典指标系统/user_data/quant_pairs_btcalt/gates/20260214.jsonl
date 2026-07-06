@@ -1,3 +1,0 @@
-{"ts": 1771027752006, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771031352006}
-{"ts": 1771027757312, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771031357312}
-{"ts": 1771028725943, "type": "btcalt_op_gate", "blocked": true, "reason": "execution:exec_fill_rate_low", "until_ms": 1771032325943}

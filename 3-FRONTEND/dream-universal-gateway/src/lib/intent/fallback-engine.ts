@@ -452,7 +452,13 @@ ${allIntents}
   if (context?.last_symbol) contextLines.push(`上一轮品种: ${context.last_symbol}`);
   if (context?.last_analysis_result) contextLines.push(`上一轮结果摘要: ${context.last_analysis_result.slice(0, 80)}`);
   if (context?.message_history && context.message_history.length > 0) {
-    const lastMessages = context.message_history.slice(-3);
+    let lastMessages: string[] = [];
+    if (Array.isArray(context.message_history)) {
+      lastMessages = context.message_history.slice(-3);
+    } else {
+      const msgStr = String(context.message_history);
+      lastMessages = msgStr.split('\n\n').slice(-3);
+    }
     contextLines.push(`对话历史: ${lastMessages.map((m, i) => `[${i + 1}] ${m.slice(0, 60)}`).join(' | ')}`);
   }
 

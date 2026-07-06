@@ -1,0 +1,21 @@
+{
+  "session_id": "test-session-001",
+  "created_at": "2026-07-05T16:10:12.440Z",
+  "updated_at": "2026-07-05T16:10:23.355Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "分析一下BTC当前价格",
+      "timestamp": "2026-07-05T16:10:12.440Z"
+    },
+    {
+      "role": "assistant",
+      "content": "**💡 核心观点**\n\nBTC当前处于多空力量激烈博弈的“过渡期”，短期方向不明确但偏多信号略占优势。核心依据是：多个独立分析模块（情报监控、回测引擎、贝叶斯优化器）均给出“long”信号，综合置信度达72%；但市场状态识别器频繁在“neutral”与“long”之间切换，且A2-第一性原理明确指出趋势强度正在“weakening”，表明上涨动能衰减。因此，短期不宜追高，但回调后存在结构性做多机会。\n\n---\n\n🔗 [查看完整报告](/reports/task_20260705161013_yh7n)",
+      "timestamp": "2026-07-05T16:10:23.355Z",
+      "task_id": "task_20260705161013_yh7n",
+      "intent_type": "market_query"
+    }
+  ],
+  "summary_level": 0,
+  "total_tokens": 0
+}

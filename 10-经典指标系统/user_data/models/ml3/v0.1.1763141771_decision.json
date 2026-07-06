@@ -1,1 +1,0 @@
-{"weights": {"ml_trend_strength": 1.0, "long_trend_strength": 1.2, "short_signal_strength": 0.8, "volatility": -0.4, "risk": -0.6, "momentum": 0.6, "spread": -0.2, "dim_onchain": 0.3, "dim_macro": 0.2, "dim_sentiment": 0.3, "dim_trading": 0.3}, "bias": 0.0, "leverage_base": 2.0}

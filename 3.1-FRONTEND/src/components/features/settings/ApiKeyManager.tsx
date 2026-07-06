@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api-client';
-import { V3Card } from '@/components/V3Card';
-import { V3Button } from '@/components/V3Button';
-import { V3Badge } from '@/components/V3Badge';
-import { V3StatusDot } from '@/components/V3StatusDot';
-import { IconPlus, IconRefresh, IconSearch } from '@/components/V3InlineSVG';
+import { V3Card } from '@/components';
+import { V3Button } from '@/components';
+import { V3Badge } from '@/components';
+import { V3StatusDot } from '@/components';
+import { IconPlus, IconRefresh, IconSearch } from '@/components';
 
 interface ApiKeyEntry {
   category: string;

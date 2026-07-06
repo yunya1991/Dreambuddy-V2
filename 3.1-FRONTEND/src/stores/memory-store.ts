@@ -3,71 +3,57 @@ import { create } from 'zustand';
 export interface MemoryRecord {
   id: string;
   chain: 'D' | 'Z' | 'E';
-  title: string;
+  category: string;
   content: string;
-  tags: string[];
-  createdAt: string;
+  importance: number;
+  createdAt: number;
   compressed: boolean;
 }
 
-export interface UserPreference {
-  id: string;
-  key: string;
-  value: string | number | boolean;
-  category: string;
-  updatedAt: string;
+export interface CompressionStats {
+  blueprintCount: number;
+  architectureCount: number;
+  chronicleCount: number;
+  compressionRatio: number;
+  lastCompressedAt: number | null;
 }
 
 export interface DZEChainStatus {
+  chain: 'D' | 'Z' | 'E';
+  label: string;
+  currentStep: number;
+  totalSteps: number;
   status: 'idle' | 'running' | 'done' | 'error';
-  records: MemoryRecord[];
-  lastRunAt?: string;
 }
 
 interface MemoryState {
-  dzeChains: {
-    D: DZEChainStatus;
-    Z: DZEChainStatus;
-    E: DZEChainStatus;
-  };
-  preferences: UserPreference[];
-  stats: {
-    totalMemories: number;
-    compressionRatio: number;
-    lastEvolutionAt: string;
-  };
-  isLoading: boolean;
+  dzeChains: DZEChainStatus[];
+  records: MemoryRecord[];
+  preferences: Record<string, string>;
+  compressionStats: CompressionStats;
 
-  updateDZEChain: (chain: 'D' | 'Z' | 'E', update: Partial<DZEChainStatus>) => void;
-  addMemoryRecord: (chain: 'D' | 'Z' | 'E', record: MemoryRecord) => void;
-  setPreferences: (prefs: UserPreference[]) => void;
-  setStats: (stats: Partial<MemoryState['stats']>) => void;
-  setLoading: (loading: boolean) => void;
+  updateChainStatus: (chain: 'D' | 'Z' | 'E', update: Partial<DZEChainStatus>) => void;
+  addRecord: (record: Omit<MemoryRecord, 'id' | 'createdAt'>) => void;
+  setPreferences: (prefs: Record<string, string>) => void;
+  setCompressionStats: (stats: Partial<CompressionStats>) => void;
 }
 
 export const useMemoryStore = create<MemoryState>((set) => ({
-  dzeChains: {
-    D: { status: 'idle', records: [] },
-    Z: { status: 'idle', records: [] },
-    E: { status: 'idle', records: [] },
-  },
-  preferences: [],
-  stats: { totalMemories: 0, compressionRatio: 0, lastEvolutionAt: '' },
-  isLoading: false,
+  dzeChains: [
+    { chain: 'D', label: '设计链 D1-D4', currentStep: 0, totalSteps: 4, status: 'idle' },
+    { chain: 'Z', label: '工程链 Z1-Z4', currentStep: 0, totalSteps: 4, status: 'idle' },
+    { chain: 'E', label: '评估链 E1-E3', currentStep: 0, totalSteps: 3, status: 'idle' },
+  ],
+  records: [],
+  preferences: {},
+  compressionStats: { blueprintCount: 0, architectureCount: 0, chronicleCount: 0, compressionRatio: 0, lastCompressedAt: null },
 
-  updateDZEChain: (chain, update) => set((s) => ({
-    dzeChains: { ...s.dzeChains, [chain]: { ...s.dzeChains[chain], ...update } },
+  updateChainStatus: (chain, update) => set(s => ({
+    dzeChains: s.dzeChains.map(c => c.chain === chain ? { ...c, ...update } : c),
   })),
-  addMemoryRecord: (chain, record) => set((s) => ({
-    dzeChains: {
-      ...s.dzeChains,
-      [chain]: {
-        ...s.dzeChains[chain],
-        records: [record, ...s.dzeChains[chain].records].slice(0, 200),
-      },
-    },
+  addRecord: (record) => set(s => ({
+    records: [...s.records, { ...record, id: `mem_${Date.now()}`, createdAt: Date.now() }],
   })),
-  setPreferences: (prefs) => set({ preferences: prefs }),
-  setStats: (stats) => set((s) => ({ stats: { ...s.stats, ...stats } })),
-  setLoading: (loading) => set({ isLoading: loading }),
+  setPreferences: (prefs) => set(s => ({ preferences: { ...s.preferences, ...prefs } })),
+  setCompressionStats: (stats) => set(s => ({ compressionStats: { ...s.compressionStats, ...stats } })),
 }));

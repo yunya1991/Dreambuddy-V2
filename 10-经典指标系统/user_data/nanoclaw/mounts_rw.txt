@@ -1,5 +1,0 @@
-/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/nanoclaw/workspace
-/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/nanoclaw/state
-/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/nanoclaw/logs
-/Users/zhangjiangtao/ft_userdata/基本面分析_fundamental
-/Users/zhangjiangtao/ft_userdata/工作文件处理工具

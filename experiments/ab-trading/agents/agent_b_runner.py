@@ -50,7 +50,7 @@ CONFIDENCE_GATE = 0.65
 MAX_LEVERAGE    = 5
 DEFAULT_LEVERAGE = 3
 # Agent B 用合约，可交易全部标的池（与 A 相同，但决策框架不同）
-UNIVERSE_B = ["BTC", "ETH", "SOL", "HYPE", "AVAX", "ARB", "SUI", "INJ", "LINK", "TIA"]
+UNIVERSE_B = ["BTC", "ETH", "HYPE", "UNI", "LIT", "SOL", "XRP", "ZEC", "NEAR", "WLD", "ADA", "SUI", "ETHFI", "ENA", "JUP", "XLM", "GRASS", "EIGEN", "ZRO", "IMX"]
 
 MEMORY_PATH = Path(__file__).parent.parent / "data" / "agent_b_memory.json"
 GRAPH_LOG   = Path(__file__).parent.parent / "data" / "agent_b_graph.json"
@@ -169,17 +169,175 @@ def apply_lessons(memory: Dict) -> float:
 
 # ─── 市场数据采集 ────────────────────────────────────────────────────────────
 
-def fetch_market_context(client: HyperliquidClient) -> Dict:
+def _score_coin(price: float, ch24: float, ch1h: float, vol_ratio: float,
+                rsi: float, funding_rate: float, ema20: float,
+                ema50: float, ema200: float) -> Dict:
+    """
+    快速扫描评分（0-100分）：评估币种的交易机会强度
+    维度：趋势强度(30%) + 动量(20%) + 量能(15%) + 资金费率(15%) + RSI位置(10%) + EMA排列(10%)
+    """
+    score = 0.0
+    signals = []
+
+    # 1. 趋势强度（24h涨跌幅绝对值，越大趋势越强）
+    trend_abs = min(abs(ch24) / 8.0, 1.0)
+    score += trend_abs * 30
+    if ch24 > 3:
+        signals.append("强上涨趋势")
+    elif ch24 < -3:
+        signals.append("强下跌趋势")
+
+    # 2. 动量（1h与24h方向一致性，确认趋势延续）
+    if ch24 > 0 and ch1h > 0:
+        score += 15
+        signals.append("短长共振上涨")
+    elif ch24 < 0 and ch1h < 0:
+        score += 15
+        signals.append("短长共振下跌")
+    elif abs(ch1h) > 1.5:
+        score += 5
+
+    # 3. 量能（成交量放大 = 趋势确认/反转信号）
+    if vol_ratio > 2.0:
+        score += 15
+        signals.append(f"放量{vol_ratio:.1f}x")
+    elif vol_ratio > 1.3:
+        score += 8
+
+    # 4. 资金费率偏离（极端负费率 = 空头拥挤/潜在轧空，极端正费率 = 多头拥挤）
+    fr_abs = min(abs(funding_rate) * 10000 / 5, 1.0)
+    score += fr_abs * 15
+    if funding_rate < -0.0003:
+        signals.append(f"负费率偏离({funding_rate*100:.4f}%)")
+    elif funding_rate > 0.0005:
+        signals.append(f"正费率偏高({funding_rate*100:.4f}%)")
+
+    # 5. RSI极端位置（超卖反弹或超买回调机会）
+    if rsi < 30:
+        score += 10
+        signals.append(f"RSI超卖{rsi:.0f}")
+    elif rsi > 70:
+        score += 10
+        signals.append(f"RSI超买{rsi:.0f}")
+    elif rsi < 40 or rsi > 60:
+        score += 5
+
+    # 6. EMA排列（趋势结构）
+    if price > ema20 > ema50:
+        score += 8
+        if price > ema200:
+            score += 2
+            signals.append("EMA多头排列+MA200上方")
+    elif price < ema20 < ema50:
+        score += 8
+        if price < ema200:
+            score += 2
+            signals.append("EMA空头排列+MA200下方")
+
+    direction = "LONG" if ch24 > 0 else "SHORT"
+    return {
+        "score": round(min(score, 100), 1),
+        "direction": direction,
+        "signals": signals,
+        "price": price,
+        "ch24": round(ch24, 2),
+        "ch1h": round(ch1h, 2),
+        "vol_ratio": round(vol_ratio, 2),
+        "rsi": round(rsi, 1),
+        "funding_rate": funding_rate,
+    }
+
+
+def scan_all_coins(client: HyperliquidClient) -> Dict:
+    """扫描全币种池，快速评分排序，选出Top候选"""
+    opps = client.scan_opportunities()
+    opp_map = {o["coin"]: o for o in opps}
+
+    all_scores = {}
+    for coin in UNIVERSE_B:
+        if coin not in opp_map:
+            continue
+        price = opp_map[coin]["price"]
+        if price <= 0:
+            continue
+        try:
+            candles_1h = get_candles(coin, "1h", 48, client.proxies)
+            closes = [float(c["c"]) for c in candles_1h if "c" in c]
+            vols = [float(c["v"]) for c in candles_1h if "v" in c]
+            if len(closes) < 24:
+                continue
+
+            ch24 = (closes[0] - closes[23]) / closes[23] * 100 if len(closes) > 23 else 0
+            ch1h = (closes[0] - closes[1]) / closes[1] * 100 if len(closes) > 1 else 0
+
+            avg_vol = sum(vols) / len(vols) if vols else 0
+            cur_vol = vols[0] if vols else 0
+            vol_ratio = cur_vol / avg_vol if avg_vol > 0 else 1.0
+
+            # 简化指标计算
+            def ema(prices, n):
+                if len(prices) < n:
+                    return prices[-1]
+                k = 2 / (n + 1)
+                e = prices[-n]
+                for p in prices[-n + 1:]:
+                    e = p * k + e * (1 - k)
+                return e
+
+            closes_rev = closes[::-1]
+            ema20 = ema(closes_rev, 20)
+            ema50 = ema(closes_rev, 50) if len(closes) >= 50 else ema20
+            ema200 = ema(closes_rev, min(200, len(closes)))
+
+            def rsi(prices, n=14):
+                if len(prices) < n + 1:
+                    return 50.0
+                deltas = [prices[i] - prices[i - 1] for i in range(1, min(n + 1, len(prices)))]
+                gains = [max(d, 0) for d in deltas]
+                losses = [max(-d, 0) for d in deltas]
+                avg_g = sum(gains) / n
+                avg_l = sum(losses) / n
+                if avg_l == 0:
+                    return 100.0
+                rs = avg_g / avg_l
+                return 100 - 100 / (1 + rs)
+
+            rsi14 = rsi(closes_rev)
+
+            funding_rate = opp_map[coin].get("funding", 0.0)
+
+            result = _score_coin(
+                price, ch24, ch1h, vol_ratio, rsi14,
+                funding_rate, ema20, ema50, ema200
+            )
+            all_scores[coin] = result
+        except Exception:
+            continue
+
+    # 按评分排序
+    ranked = sorted(all_scores.items(), key=lambda x: x[1]["score"], reverse=True)
+    top3 = [name for name, _ in ranked[:3]]
+
+    return {
+        "all_scores": all_scores,
+        "ranked": ranked,
+        "top3": top3,
+        "total_scanned": len(all_scores),
+    }
+
+
+def fetch_market_context(client: HyperliquidClient, primary_coin: Optional[str] = None) -> Dict:
     """采集多维市场数据供A0/A2分析（Hyperliquid数据源）"""
     opps = client.scan_opportunities()
     opp_map = {o["coin"]: o for o in opps}
     mids = {k: v["price"] for k, v in opp_map.items()}
 
-    primary_coin = "BTC"
-    for o in sorted(opps, key=lambda x: abs(x["funding"]), reverse=True):
-        if o["coin"] in UNIVERSE_B:
-            primary_coin = o["coin"]
-            break
+    if not primary_coin:
+        primary_coin = "BTC"
+        for o in sorted(opps, key=lambda x: abs(x["funding"]), reverse=True):
+            if o["coin"] in UNIVERSE_B:
+                primary_coin = o["coin"]
+                break
 
     price = mids.get(primary_coin, mids.get("BTC", 0))
 
@@ -989,7 +1147,24 @@ def run():
             if not l3_closed:
                 print(f"[Agent B/Exit] L3无触发")
 
-    mkt = fetch_market_context(client)
+    # ── 全币种扫描预筛选：先快速扫描所有币种，选出最优标的做深度分析 ──
+    print(f"\n[Agent B/Scan] 全币种扫描预筛选...")
+    scan_result = scan_all_coins(client)
+    print(f"[Agent B/Scan] 扫描 {scan_result['total_scanned']} 个币种")
+    print(f"[Agent B/Scan] Top 5:")
+    for coin, data in scan_result["ranked"][:5]:
+        print(f"  #{data['score']:5.1f}  {coin:6s}  "
+              f"{data['direction']:5s}  24H={data['ch24']:+6.2f}%  "
+              f"RSI={data['rsi']:5.1f}  vol={data['vol_ratio']:.2f}x  "
+              f"{' | '.join(data['signals'][:2])}")
+    top_coin = scan_result["top3"][0] if scan_result["top3"] else "BTC"
+    print(f"[Agent B/Scan] 选定主标的: {top_coin} (评分最高)")
+
+    mkt = fetch_market_context(client, primary_coin=top_coin)
+    # 注入全币种扫描结果到 mkt（供后续节点使用）
+    mkt["scan_result"] = scan_result
+    mkt["top3_coins"] = scan_result["top3"]
+    mkt["all_coin_scores"] = scan_result["all_scores"]
     # 注入 Regime 到 mkt 供意图识别使用
     mkt["regime"] = (
         "TREND_UP"   if mkt.get("change_24h", 0) > 2 else

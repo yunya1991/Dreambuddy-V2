@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api-client';
 import { useApiConfigStore } from '@/stores';
-import { V3Card } from '@/components/V3Card';
-import { V3Button } from '@/components/V3Button';
-import { V3Badge } from '@/components/V3Badge';
+import { V3Card } from '@/components';
+import { V3Button } from '@/components';
+import { V3Badge } from '@/components';
 
 export function TradingParamsPanel() {
   const { profile, isLoading } = useApiConfigStore();

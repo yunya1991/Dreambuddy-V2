@@ -312,6 +312,7 @@ export async function POST(request: NextRequest) {
       updated_at: task.updated_at,
       // 直接携带结果内容，前端无需轮询
       content: result!.content,
+      chat_content: result!.chat_content,
       content_type: result!.content_type,
       execution_time_ms: result!.execution_time_ms,
       artifacts_produced: result!.artifacts_produced,

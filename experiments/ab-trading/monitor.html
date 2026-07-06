@@ -178,8 +178,10 @@
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('local')">📊 本地监控</div>
-  <div class="tab" onclick="switchTab('cloud')">☁️ 云端调度</div>
+  <div class="tab active" onclick="switchTab('local', event)">📊 本地监控</div>
+  <div class="tab" onclick="switchTab('cloud', event)">☁️ 云端调度</div>
+  <div class="tab" onclick="switchTab('screen', event)">🎯 三屏马丁</div>
+  <div class="tab" onclick="switchTab('yijing', event)">🗼 易经推理</div>
 </div>
 
 <div class="main">
@@ -193,7 +195,7 @@
     <div class="card-title"><div class="dot dot-green"></div>账户总览</div>
     <div class="stats-grid" id="account-stats">
       <div class="stat"><div class="stat-label">合约账户（Agent A）</div><div class="stat-value" id="perp-equity">--</div><div class="stat-sub" id="perp-positions">加载中...</div></div>
-      <div class="stat"><div class="stat-label">合约账户·子账户（Agent B）</div><div class="stat-value" id="spot-usdc">--</div><div class="stat-sub">0x9b56...d40b</div></div>
+      <div class="stat"><div class="stat-label">合约账户·子账户（Agent B）</div><div class="stat-value" id="spot-usdc">--</div><div class="stat-sub">0x6632...004A</div></div>
       <div class="stat"><div class="stat-label">总资产</div><div class="stat-value" id="total-equity">--</div><div class="stat-sub" id="total-change">初始资金 $125</div></div>
     </div>
   </div>
@@ -423,6 +425,287 @@
   </div>
   </div>
 
+  <!-- 三屏马丁交易 Tab -->
+  <div id="tab-screen" class="tab-content">
+  <div class="tab-grid">
+
+    <!-- 系统模式状态 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" id="mode-dot" style="background:var(--purple)"></div>
+        系统模式
+        <span id="mode-badge" style="margin-left:8px;font-size:10px;padding:2px 10px;border-radius:12px;background:rgba(125,108,245,0.15);color:var(--purple)">检测中...</span>
+        <button onclick="checkModeNow()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">立即检测</button>
+        <button onclick="toggleModeManual()" id="mode-toggle-btn" style="margin-left:6px;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">切换模式</button>
+      </div>
+      <div id="mode-status" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:12px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 候选币种 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>候选币种 <span id="screen-best-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(210,153,34,0.15);color:var(--yellow)">--</span></div>
+      <div id="screen-candidates" style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="color:var(--muted);font-size:12px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 基本面参考信号 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:var(--purple)"></div>基本面参考信号
+        <span id="fund-role-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(125,108,245,0.15);color:var(--purple)">--</span>
+        <button onclick="loadFundamentalSignals()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div id="fund-signals" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 经典指标执行器 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" id="classic-dot" style="background:var(--blue)"></div>经典指标执行器
+        <span id="classic-action-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(59,130,246,0.15);color:var(--blue)">--</span>
+        <button onclick="loadClassicExecutor()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div id="classic-executor" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:16px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- Screen 1: 战略层 - 六维评分 -->
+    <div class="card">
+      <div class="card-title"><div class="dot dot-blue"></div>Screen 1 · 战略层 <span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:12px" id="s1-direction">--</span></div>
+      <div id="screen1">
+        <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- Screen 2: 战术层 - 入场档位 -->
+    <div class="card">
+      <div class="card-title"><div class="dot dot-green"></div>Screen 2 · 战术层 <span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(125,133,144,0.2);color:var(--muted)" id="s2-volmult">vol x1.0</span></div>
+      <div id="screen2">
+        <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- Screen 3: 执行层 - 持仓监控 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:var(--purple)"></div>Screen 3 · 执行层 <span style="margin-left:auto;font-size:11px" id="s3-equity">账户: --</span></div>
+      <div id="screen3">
+        <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 三屏状态总览 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:var(--blue)"></div>三屏状态总览</div>
+      <div id="screen-overview" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:16px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 交易执行日志 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:var(--green)"></div>交易执行日志</div>
+      <div id="trade-log" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:16px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 指令与约束 + 手动操作 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--purple)"></div>指令与约束</div>
+      <div id="directive-panel" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:12px">加载中...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>手动操作</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="triggerScreen()" style="background:var(--green);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px">🎯 执行三屏</button>
+        <button onclick="triggerScreenOrchestrator()" style="background:var(--blue);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px">🔄 触发编排</button>
+        <button onclick="forceStopLoss()" style="background:var(--red);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px">⚠️ 强制止损</button>
+        <button onclick="loadScreenData()" style="background:var(--border);color:var(--text);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px">📊 刷新数据</button>
+      </div>
+      <div id="screen-trigger-result" style="margin-top:8px;font-size:11px;color:var(--muted)"></div>
+      <div style="margin-top:8px;">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">模式切换</div>
+        <button onclick="toggleModeManual()" id="mode-toggle-btn-panel" style="background:var(--border);color:var(--text);border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:11px">切换模式</button>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <!-- 易经推理模型 Tab -->
+  <div id="tab-yijing" class="tab-content">
+    <div style="max-width:1400px;margin:0 auto">
+
+    <!-- 顶部门禁状态条 -->
+    <div class="card full-width" style="margin-bottom:16px">
+      <div class="card-title"><div class="dot" style="background:var(--purple)"></div>易经推理交易模型 · 系统门禁<button onclick="loadYijingData()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button></div>
+      <div id="yj-gate-bar" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:6px">
+          <div style="font-size:10px;color:var(--muted)">L4 状态机</div>
+          <div id="yj-l4-status" style="font-size:16px;font-weight:700;margin-top:4px">--</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:6px">
+          <div style="font-size:10px;color:var(--muted)">QMM 门禁</div>
+          <div id="yj-qmm-gate" style="font-size:16px;font-weight:700;margin-top:4px">--</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:6px">
+          <div style="font-size:10px;color:var(--muted)">BCRM fail-closed</div>
+          <div id="yj-bcrm-gate" style="font-size:16px;font-weight:700;margin-top:4px">--</div>
+        </div>
+        <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:6px">
+          <div style="font-size:10px;color:var(--muted)">总线事件</div>
+          <div id="yj-bus-count" style="font-size:16px;font-weight:700;margin-top:4px">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第一层：L4 记忆系统底座 -->
+    <div class="card full-width" style="margin-bottom:16px">
+      <div class="card-title"><div class="dot" style="background:var(--blue)"></div>第一层 · L4 记忆系统底座<span style="margin-left:8px;font-size:10px;color:var(--muted)">案例/复盘/蒸馏/统计/总线</span></div>
+
+      <!-- L4 总线健康度 -->
+      <div style="margin-bottom:14px">
+        <div class="memory-label">总线健康度（SharedMemoryBus）</div>
+        <div id="yj-l4-bus" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+      </div>
+      <div class="divider"></div>
+
+      <!-- L4 案例库 + 状态机 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+        <div>
+          <div class="memory-label">案例库（TradeCase v0.2）</div>
+          <div id="yj-l4-cases" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+        <div>
+          <div class="memory-label">复盘 + 蒸馏（Review + Distill）</div>
+          <div id="yj-l4-reviews" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+
+      <!-- L4 元学习路由表 -->
+      <div>
+        <div class="memory-label">元学习路由表（MetaLearningRouter · 三方胜率矩阵）</div>
+        <div id="yj-l4-routing" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+      </div>
+    </div>
+
+    <!-- 第二层：QMM 量化内核 -->
+    <div class="card full-width" style="margin-bottom:16px">
+      <div class="card-title"><div class="dot" style="background:var(--green)"></div>第二层 · QMM 量化内核（Sidecar）<span style="margin-left:8px;font-size:10px;color:var(--muted)">六契约信号 + 门禁 + 版本三元组</span></div>
+
+      <!-- QMM 六契约核心信号 -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+        <div style="padding:12px;background:rgba(0,0,0,0.2);border-radius:6px">
+          <div style="font-size:10px;color:var(--muted)">趋势状态</div>
+          <div id="yj-qmm-trend" style="font-size:18px;font-weight:700;margin-top:4px">--</div>
+          <div id="yj-qmm-changepoint" style="font-size:11px;color:var(--muted);margin-top:2px">--</div>
+        </div>
+        <div style="padding:12px;background:rgba(0,0,0,0.2);border-radius:6px">
+          <div style="font-size:10px;color:var(--muted)">MRD 阻力最小方向</div>
+          <div id="yj-qmm-mrd" style="font-size:18px;font-weight:700;margin-top:4px">--</div>
+          <div id="yj-qmm-mrd-detail" style="font-size:11px;color:var(--muted);margin-top:2px">--</div>
+        </div>
+        <div style="padding:12px;background:rgba(0,0,0,0.2);border-radius:6px">
+          <div style="font-size:10px;color:var(--muted)">不确定性</div>
+          <div id="yj-qmm-uncertainty" style="font-size:18px;font-weight:700;margin-top:4px">--</div>
+          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px"><div id="yj-qmm-unc-bar" style="height:100%;width:0%;background:var(--green);border-radius:3px;transition:width 0.5s"></div></div>
+        </div>
+      </div>
+
+      <!-- QMM 三屏对齐 + 门禁质量 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+        <div>
+          <div class="memory-label">三屏对齐（TripleScreen）</div>
+          <div id="yj-qmm-triple" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+        <div>
+          <div class="memory-label">门禁质量（Gate · 回测/过拟合/漂移）</div>
+          <div id="yj-qmm-gate-detail" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+      </div>
+
+      <!-- QMM 版本三元组 + 原因代码 -->
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted)">
+        <div id="yj-qmm-versions">版本: --</div>
+        <div id="yj-qmm-reasons">原因代码: --</div>
+        <div id="yj-qmm-evidence">证据: --</div>
+      </div>
+    </div>
+
+    <!-- 第三层：BCRM 推理引擎 -->
+    <div class="card full-width" style="margin-bottom:16px">
+      <div class="card-title"><div class="dot" style="background:var(--purple)"></div>第三层 · BCRM 推理引擎<span style="margin-left:8px;font-size:10px;color:var(--muted)">八卦力学 + 矛盾论 + 五维方向投票</span></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+        <!-- 八卦力学 -->
+        <div>
+          <div class="memory-label">八卦力学（BaguaEngine · 第一性原理）</div>
+          <div id="yj-bcrm-bagua" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+        <!-- BCRM 决策 -->
+        <div>
+          <div class="memory-label">BCRM 决策（卦象 + 变卦 + 置信度）</div>
+          <div id="yj-bcrm-decision" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+        <!-- 三方一致性 -->
+        <div>
+          <div class="memory-label">三方一致性（AB vs BCRM vs Bagua）</div>
+          <div id="yj-bcrm-agreement" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第四层：执行与反馈 -->
+    <div class="card full-width" style="margin-bottom:16px">
+      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>第四层 · 执行与反馈<span style="margin-left:8px;font-size:10px;color:var(--muted)">OKX模拟盘 + 交易统计 + 失败分析</span></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <!-- OKX 模拟盘 -->
+        <div>
+          <div class="memory-label">OKX 模拟盘（持仓/余额/Algo单）</div>
+          <div id="yj-exec-okx" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+        <!-- 模拟交易统计 -->
+        <div>
+          <div class="memory-label">模拟交易统计（action分布 / top卦象）</div>
+          <div id="yj-exec-stats" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第五层：知识库（A1/A6/周报） -->
+    <div class="card full-width" style="margin-bottom:16px">
+      <div class="card-title"><div class="dot" style="background:var(--blue)"></div>第五层 · 知识库<span style="margin-left:8px;font-size:10px;color:var(--muted)">A1/A6/周报研报（a_research_bridge 接入总线）</span></div>
+
+      <!-- A1 研报核心结论 -->
+      <div id="yj-research-a1" style="margin-bottom:14px">
+        <div style="color:var(--muted);padding:8px;font-size:12px">加载中...</div>
+      </div>
+
+      <!-- A6 情报监控 -->
+      <div id="yj-research-a6" style="margin-bottom:14px">
+        <div style="color:var(--muted);padding:8px;font-size:12px">加载中...</div>
+      </div>
+
+      <!-- 三屏马丁摘要 -->
+      <div id="yj-research-screen">
+        <div style="color:var(--muted);padding:8px;font-size:12px">加载中...</div>
+      </div>
+    </div>
+
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -526,6 +809,21 @@ function render(data) {
   const totalChg = total - 125;
   document.getElementById('total-equity').innerHTML = `<span class="${colorClass(totalChg)}">$${fmt(total)}</span>`;
   document.getElementById('total-change').textContent = `${totalChg >= 0 ? '+' : ''}$${fmt(totalChg)} (${fmt(totalChg/125*100, 2)}%)`;
+
+  // Agent A 持仓摘要（stat-sub）
+  const aPos = data.perp_positions || [];
+  const aPosSummary = aPos.length > 0
+    ? aPos.map(p => `${p.coin} ${p.size > 0 ? '多' : '空'} ${Math.abs(p.size)} @ $${fmt(p.entry_px)}`).join(' · ')
+    : '无持仓';
+  document.getElementById('perp-positions').textContent = aPosSummary;
+
+  // Agent B 持仓摘要（stat-sub）
+  const bPos = data.b_positions || [];
+  const bPosSummary = bPos.length > 0
+    ? bPos.map(p => `${p.coin} ${p.size > 0 ? '多' : '空'} ${Math.abs(p.size)} @ $${fmt(p.entry_px)}`).join(' · ')
+    : '无持仓';
+  const bSub = document.querySelector('#spot-usdc').nextElementSibling;
+  if (bSub && bSub.classList.contains('stat-sub')) bSub.textContent = bPosSummary;
 
   // Agent A 持仓（主账户合约）
   const renderPos = (positions) => positions.length > 0
@@ -692,7 +990,10 @@ async function loadData() {
   ];
   for (const src of candidates) {
     try {
-      const res = await fetch(src.url, { signal: AbortSignal.timeout(5000) });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30000);
+      const res = await fetch(src.url, { signal: controller.signal });
+      clearTimeout(timer);
       if (!res.ok) continue;
       const data = await res.json();
       render(data);
@@ -725,23 +1026,43 @@ window.addEventListener('resize', () => { if (STATE.loaded) drawChart(STATE.logs
 // ── Tab 切换 ────────────────────────────────────────────────────────────
 let currentTab = 'local';
 let cloudDataLoaded = false;
+let screenDataLoaded = false;
+let yijingDataLoaded = false;
+let currentScreenSymbol = 'BTC';
 
-function switchTab(tab) {
+function switchTab(tab, evt) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  
-  event.target.classList.add('active');
+
+  if (evt && evt.target) {
+    evt.target.classList.add('active');
+  } else {
+    const tabs = document.querySelectorAll('.tab');
+    const tabNames = ['local', 'cloud', 'screen', 'yijing'];
+    const idx = tabNames.indexOf(tab);
+    if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
+  }
   document.getElementById('tab-' + tab).classList.add('active');
-  
+
   if (tab === 'cloud' && !cloudDataLoaded) {
     loadCloudData();
+  }
+  if (tab === 'screen' && !screenDataLoaded) {
+    loadScreenData();
+  }
+  if (tab === 'yijing' && !yijingDataLoaded) {
+    loadYijingData();
   }
 }
 
 function currentTabRefresh() {
   if (currentTab === 'local') {
     loadData();
+  } else if (currentTab === 'screen') {
+    loadScreenData();
+  } else if (currentTab === 'yijing') {
+    loadYijingData();
   } else {
     loadCloudData();
   }
@@ -849,6 +1170,1372 @@ async function loadCloudData() {
     container.innerHTML = `<div style="text-align:center;color:var(--red);padding:30px">加载失败: ${e.message}<br><span style="font-size:11px;color:var(--muted)">可能是 GitHub API 限流，请稍后再试</span></div>`;
   }
 }
+
+// ── 三屏马丁交易数据加载 ──────────────────────────────────────────────────
+function selectCandidate(symbol) {
+  currentScreenSymbol = symbol;
+  loadScreenData(symbol);
+}
+
+async function loadScreenData(symbol) {
+  const targetSymbol = symbol || currentScreenSymbol || 'BTC';
+  try {
+    const fetchJson = async (url) => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        return await res.json();
+      } catch (e) {
+        return null;
+      }
+    };
+
+    const [orch, exec, trade, fund, mode, classic] = await Promise.all([
+      fetchJson('/api/screen-orchestrator'),
+      fetchJson('/api/screen-executor'),
+      fetchJson('/api/screen-trade?symbol=' + targetSymbol),
+      fetchJson('/api/fundamental-signals?symbol=' + targetSymbol),
+      fetchJson('/api/mode/status'),
+      fetchJson('/api/classic-executor'),
+    ]);
+
+    // 基本面参考信号
+    renderFundamentalSignals(fund, targetSymbol);
+
+    // 系统模式状态
+    renderModeStatus(mode);
+
+    // 经典指标执行器
+    renderClassicExecutor(classic, targetSymbol);
+
+    // 三屏状态总览
+    renderScreenOverview(trade, classic, mode);
+
+    // 交易执行日志
+    renderTradeLog(exec);
+
+    // 指令与约束
+    renderDirectivePanel(mode, classic);
+
+    // 更新模式切换按钮文本
+    updateModeToggleBtn(mode);
+
+    // 三屏数据
+    if (trade && !trade.error) {
+      renderScreen(trade, targetSymbol);
+    } else if (trade && trade.error) {
+      document.getElementById('screen1').innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${trade.error}</div>`;
+      document.getElementById('screen2').innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${trade.error}</div>`;
+      document.getElementById('screen3').innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${trade.error}</div>`;
+    } else {
+      document.getElementById('screen1').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">三屏数据不可用</div>';
+      document.getElementById('screen2').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">三屏数据不可用</div>';
+      document.getElementById('screen3').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">三屏数据不可用</div>';
+    }
+
+    screenDataLoaded = true;
+  } catch (e) {
+    console.error('三屏数据加载失败:', e);
+  }
+}
+
+// ── 系统模式状态 ──────────────────────────────────────────────────────
+function renderModeStatus(data) {
+  const el = document.getElementById('mode-status');
+  const badge = document.getElementById('mode-badge');
+  const dot = document.getElementById('mode-dot');
+  const toggleBtn = document.getElementById('mode-toggle-btn');
+
+  if (!data || data.error) {
+    el.innerHTML = `<div style="text-align:center;color:var(--muted);padding:12px">${data ? data.error : '加载失败'}</div>`;
+    badge.textContent = '错误';
+    badge.style.background = 'rgba(255,99,99,0.15)';
+    badge.style.color = 'var(--red)';
+    return;
+  }
+
+  const isAI = data.mode === 'ai_directed';
+  const modeColor = isAI ? 'var(--green)' : 'var(--orange)';
+  const modeText = isAI ? 'AI 主导' : '经典接管';
+  const modeDesc = isAI
+    ? 'AI 负责前两屏战略决策，经典指标执行第三屏'
+    : 'A1日报过期，经典指标接管全部三屏';
+
+  badge.textContent = modeText;
+  badge.style.background = isAI ? 'rgba(59,194,132,0.15)' : 'rgba(255,159,67,0.15)';
+  badge.style.color = modeColor;
+  dot.style.background = modeColor;
+  toggleBtn.textContent = isAI ? '切到经典接管' : '切到AI主导';
+
+  const fresh = data.freshness || {};
+  const a1 = fresh.a1_daily || {};
+  const a6 = fresh.a6_intel || {};
+  const wk = fresh.weekly || {};
+
+  const rptItem = (label, item, maxH) => {
+    const isFresh = item.fresh;
+    const color = isFresh ? 'var(--green)' : 'var(--red)';
+    const icon = isFresh ? '✅' : '❌';
+    const age = item.age_hours != null ? `${item.age_hours}h` : '未知';
+    return `<div style="display:flex;align-items:center;gap:6px;font-size:11px">
+      <span style="color:${color}">${icon}</span>
+      <span style="color:var(--muted)">${label}</span>
+      <span style="color:${color};font-weight:600">${age}/${maxH}h</span>
+    </div>`;
+  };
+
+  const aiDir = data.ai_directive || {};
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start">
+      <!-- 左：模式信息 -->
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">当前模式</div>
+        <div style="font-size:18px;font-weight:700;color:${modeColor};margin-bottom:4px">${modeText}</div>
+        <div style="font-size:10px;color:var(--muted);line-height:1.4">${modeDesc}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">切换原因: ${data.reason || '--'}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">累计切换: ${data.switch_count || 0} 次</div>
+      </div>
+
+      <!-- 中：研报新鲜度 -->
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">研报新鲜度</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${rptItem('A1日报 (关键)', a1, 24)}
+          ${rptItem('A6情报', a6, 6)}
+          ${rptItem('周报', wk, 168)}
+        </div>
+      </div>
+
+      <!-- 右：AI 指令 -->
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">AI 指令</div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-size:11px">
+          <div><span style="color:var(--muted)">方向:</span> <span style="color:var(--text);font-weight:600">${aiDir.direction || '未指定'}</span></div>
+          <div><span style="color:var(--muted)">币种池:</span> <span style="color:var(--text)">${(aiDir.symbol_pool || []).join(', ') || '--'}</span></div>
+          <div><span style="color:var(--muted)">置信度:</span> <span style="color:var(--text)">${((aiDir.confidence || 0) * 100).toFixed(0)}%</span></div>
+          <div><span style="color:var(--muted)">风险等级:</span> <span style="color:var(--text)">${aiDir.risk_level || '--'}</span></div>
+          <div><span style="color:var(--muted)">来源:</span> <span style="color:var(--muted)">${aiDir.source || '--'}</span></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function checkModeNow() {
+  try {
+    const res = await fetch('/api/mode/check', { method: 'POST' });
+    const data = await res.json();
+    if (data.switched) {
+      alert(`模式已切换: ${data.old_mode} → ${data.new_mode}\n原因: ${data.reason}`);
+    } else {
+      alert('模式未变化: ' + (data.current_mode || data.reason));
+    }
+    loadScreenData();
+  } catch (e) {
+    alert('检测失败: ' + e.message);
+  }
+}
+
+async function toggleModeManual() {
+  const current = document.getElementById('mode-badge').textContent;
+  const target = current.includes('AI') ? 'classic_takeover' : 'ai_directed';
+  const targetText = target === 'ai_directed' ? 'AI 主导' : '经典接管';
+  if (!confirm(`确认手动切换到「${targetText}」模式？`)) return;
+  try {
+    const res = await fetch('/api/mode/switch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: target, reason: '页面手动切换' })
+    });
+    const data = await res.json();
+    if (data.switched) {
+      alert('切换成功');
+      loadScreenData();
+    } else {
+      alert('切换失败: ' + (data.error || '未知错误'));
+    }
+  } catch (e) {
+    alert('切换失败: ' + e.message);
+  }
+}
+
+// ── 经典指标执行器 ──────────────────────────────────────────────────────
+async function loadClassicExecutor() {
+  const symbol = currentScreenSymbol || 'BTC';
+  try {
+    const res = await fetch('/api/classic-executor');
+    const data = await res.json();
+    renderClassicExecutor(data, symbol);
+  } catch (e) {
+    document.getElementById('classic-executor').innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px">加载失败</div>';
+  }
+}
+
+function renderClassicExecutor(data, symbol) {
+  const el = document.getElementById('classic-executor');
+  const badge = document.getElementById('classic-action-badge');
+  const dot = document.getElementById('classic-dot');
+
+  if (!data || data.error) {
+    el.innerHTML = `<div style="text-align:center;color:var(--muted);padding:16px">${data ? data.error : '加载失败'}</div>`;
+    badge.textContent = '错误';
+    badge.style.background = 'rgba(255,99,99,0.15)';
+    badge.style.color = 'var(--red)';
+    return;
+  }
+
+  const signals = data.signals || {};
+  const indicators = signals.indicators || {};
+  const positions = data.positions || [];
+  const action = signals.recommended_action || 'hold';
+
+  // 操作徽章颜色
+  const actionColors = {
+    'enter_long': { text: '买入', color: 'var(--green)', bg: 'rgba(59,194,132,0.15)' },
+    'enter_short': { text: '卖出', color: 'var(--red)', bg: 'rgba(255,99,99,0.15)' },
+    'hold': { text: '持有', color: 'var(--yellow)', bg: 'rgba(210,153,34,0.15)' },
+    'exit_long': { text: '平多', color: 'var(--red)', bg: 'rgba(255,99,99,0.15)' },
+    'exit_short': { text: '平空', color: 'var(--green)', bg: 'rgba(59,194,132,0.15)' },
+  };
+  const ac = actionColors[action] || actionColors['hold'];
+  badge.textContent = ac.text;
+  badge.style.color = ac.color;
+  badge.style.background = ac.bg;
+  dot.style.background = ac.color;
+
+  // RSI 颜色
+  const rsiColor = (v) => v < 30 ? 'var(--green)' : v > 70 ? 'var(--red)' : 'var(--text)';
+  const rsiBar = (v) => `<div style="width:${Math.min(v, 100)}%;height:6px;border-radius:3px;background:${rsiColor(v)}"></div>`;
+
+  // MACD 状态
+  const macdState = (m) => {
+    if (m.hist > 0 && m.hist > m.hist_prev) return { text: '多头增强', color: 'var(--green)' };
+    if (m.hist > 0) return { text: '多头', color: 'var(--green)' };
+    if (m.hist < 0 && m.hist < m.hist_prev) return { text: '空头增强', color: 'var(--red)' };
+    if (m.hist < 0) return { text: '空头', color: 'var(--red)' };
+    return { text: '中性', color: 'var(--muted)' };
+  };
+  const m1h = macdState(indicators.macd_1h || {});
+
+  // 信号列表
+  const sigList = (signals.signals || []).slice(0, 4).map(s => {
+    const st = s.type.includes('long') ? 'var(--green)' : s.type.includes('short') ? 'var(--red)' : 'var(--yellow)';
+    const label = s.type === 'enter_long' ? '买入' : s.type === 'enter_short' ? '卖出' :
+                  s.type === 'trend_long' ? '多头趋势' : s.type === 'trend_short' ? '空头趋势' :
+                  s.type === 'breakout_long' ? '突破做多' : s.type === 'breakout_short' ? '跌破做空' :
+                  s.type === 'volatility_surge' ? '波动放大' : s.type;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px">
+      <span style="color:${st};font-weight:600">${label}</span>
+      <span style="color:var(--muted);flex:1">${s.reason || ''}</span>
+      <span style="color:var(--muted)">${(s.strength*100).toFixed(0)}%</span>
+    </div>`;
+  }).join('') || '<div style="font-size:11px;color:var(--muted)">当前无明确信号</div>';
+
+  // 持仓列表
+  const posList = positions.length > 0
+    ? positions.map(p => {
+        const pnlColor = p.pnl_pct >= 0 ? 'var(--green)' : 'var(--red)';
+        const sideColor = p.pos_side === 'long' ? 'var(--green)' : 'var(--red)';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:12px;font-weight:600;color:${sideColor}">${p.pos_side.toUpperCase()}</span>
+          <span style="font-size:11px;color:var(--text)">${p.symbol}: ${p.pos}</span>
+          <span style="font-size:11px;color:var(--muted)">入场: ${p.avg_price}</span>
+          <span style="font-size:11px;color:var(--text)">现价: ${p.mark_price}</span>
+          <span style="font-size:11px;font-weight:600;color:${pnlColor}">${p.pnl_pct >= 0 ? '+' : ''}${p.pnl_pct}%</span>
+        </div>`;
+      }).join('')
+    : '<div style="font-size:11px;color:var(--muted);padding:8px 0">当前无持仓</div>';
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start">
+      <!-- 左：技术指标 -->
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">技术指标</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+              <span style="color:var(--muted)">RSI 1H</span>
+              <span style="color:${rsiColor(indicators.rsi_1h || 50)}">${indicators.rsi_1h || '--'}</span>
+            </div>
+            ${rsiBar(indicators.rsi_1h || 50)}
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+              <span style="color:var(--muted)">RSI 4H</span>
+              <span style="color:${rsiColor(indicators.rsi_4h || 50)}">${indicators.rsi_4h || '--'}</span>
+            </div>
+            ${rsiBar(indicators.rsi_4h || 50)}
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10px">
+              <span style="color:var(--muted)">MACD 1H</span>
+              <span style="color:${m1h.color}">${m1h.text}</span>
+            </div>
+            <div style="font-size:10px;color:var(--muted)">柱: ${(indicators.macd_1h?.hist || 0).toFixed(2)}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted)">ATR 1H</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${indicators.atr_1h || '--'}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted)">布林带 %</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${indicators.bollinger_1h?.pct || '--'}%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中：信号列表 -->
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Top 信号</div>
+        ${sigList}
+        ${signals.long_score != null ? `<div style="margin-top:8px;font-size:10px;color:var(--muted)">
+          多空评分: <span style="color:var(--green)">${signals.long_score}</span> vs <span style="color:var(--red)">${signals.short_score}</span>
+        </div>` : ''}
+      </div>
+
+      <!-- 右：持仓 & 目标价 -->
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">持仓 & 目标价</div>
+        ${posList}
+        ${signals.entry_price != null ? `
+          <div style="margin-top:8px;padding:8px;background:rgba(0,0,0,0.15);border-radius:6px">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">目标价位</div>
+            <div style="font-size:11px;color:var(--text);padding:2px 0">
+              入场: <span style="font-weight:600">${signals.entry_price}</span>
+            </div>
+            <div style="font-size:11px;color:var(--red);padding:2px 0">
+              止损: <span style="font-weight:600">${signals.stop_loss || '--'}</span>
+            </div>
+            <div style="font-size:11px;color:var(--green);padding:2px 0">
+              止盈: <span style="font-weight:600">${signals.take_profit || '--'}</span>
+            </div>
+          </div>
+        ` : ''}
+        <div style="margin-top:8px;font-size:10px;color:var(--muted)">
+          执行次数: ${data.exec_count || 0} · 错误: ${data.error_count || 0}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── 三屏状态总览 ──────────────────────────────────────────────────────
+function renderScreenOverview(trade, classic, mode) {
+  const el = document.getElementById('screen-overview');
+  if (!trade || trade.error) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px">加载失败</div>';
+    return;
+  }
+
+  const s1 = trade.screen1 || {};
+  const s2 = trade.screen2 || {};
+  const s3 = trade.screen3 || {};
+  const positions = classic?.positions || [];
+  const signals = classic?.signals || {};
+
+  const s1Dir = s1.direction || '--';
+  const s1Score = s1.total_score != null ? s1.total_score : '--';
+  const s1Color = s1Dir === 'BULL' ? 'var(--green)' : s1Dir === 'BEAR' ? 'var(--red)' : 'var(--muted)';
+
+  const volMult = s2.volatility_multiplier || 1.0;
+  const addSpacing = s2.martingale_spacing != null ? s2.martingale_spacing : '--';
+  const takeProfit = s2.take_profit_pct != null ? (s2.take_profit_pct * 100).toFixed(1) : '--';
+
+  const equity = s3.equity || '--';
+  const posCount = positions.length;
+  const posInfo = posCount > 0
+    ? positions.map(p => {
+        const pnlColor = p.pnl_pct >= 0 ? 'var(--green)' : 'var(--red)';
+        return `${p.symbol} ${p.pos_side.toUpperCase()} ${p.pos} @ ${p.pnl_pct >= 0 ? '+' : ''}${p.pnl_pct}%`;
+      }).join(', ')
+    : '无持仓';
+
+  const entryPrice = signals.entry_price || '--';
+  const stopLoss = signals.stop_loss || '--';
+  const takeProfitPrice = signals.take_profit || '--';
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <!-- Screen 1 -->
+      <div style="padding:8px;background:rgba(0,0,0,0.15);border-radius:8px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Screen 1 · 战略层</div>
+        <div style="font-size:14px;font-weight:700;color:${s1Color};margin-bottom:4px">${s1Dir}</div>
+        <div style="font-size:11px;color:var(--text)">评分: ${s1Score}/100</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${s1.summary || '--'}</div>
+      </div>
+
+      <!-- Screen 2 -->
+      <div style="padding:8px;background:rgba(0,0,0,0.15);border-radius:8px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Screen 2 · 战术层</div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">波动率: <span style="font-weight:600">x${volMult}</span></div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">加仓间距: <span style="font-weight:600">${addSpacing}</span></div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">止盈: <span style="font-weight:600">${takeProfit}%</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${s2.num_levels || 0}级加仓计划</div>
+      </div>
+
+      <!-- Screen 3 -->
+      <div style="padding:8px;background:rgba(0,0,0,0.15);border-radius:8px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Screen 3 · 执行层</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">权益: $${equity}</div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">持仓: ${posCount}个</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;max-height:60px;overflow:hidden">${posInfo}</div>
+        ${stopLoss !== '--' ? `
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--red)">止损: ${stopLoss}</div>
+            <div style="font-size:10px;color:var(--green)">止盈: ${takeProfitPrice}</div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ── 交易执行日志 ──────────────────────────────────────────────────────
+function renderTradeLog(exec) {
+  const el = document.getElementById('trade-log');
+  if (!exec || exec.error) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px">加载失败</div>';
+    return;
+  }
+
+  const history = exec.position_history || exec.executions || [];
+  const execCount = exec.exec_count || 0;
+  const errorCount = exec.error_count || 0;
+
+  if (history.length === 0) {
+    el.innerHTML = `
+      <div style="text-align:center;color:var(--muted);padding:16px">暂无交易记录</div>
+      <div style="text-align:center;font-size:10px;color:var(--muted)">总执行: ${execCount} · 错误: ${errorCount}</div>
+    `;
+    return;
+  }
+
+  const rows = history.slice(-10).reverse().map(h => {
+    const action = h.action || h.type || '--';
+    const symbol = h.symbol || '--';
+    const dir = h.pos_side || h.direction || '--';
+    const size = h.pos || h.size || '--';
+    const pnl = h.pnl_pct != null ? `${h.pnl_pct >= 0 ? '+' : ''}${h.pnl_pct}%` : '--';
+    const pnlColor = h.pnl_pct != null ? (h.pnl_pct >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--muted)';
+    const ts = h.timestamp ? h.timestamp.slice(11, 19) : '--';
+    const orderType = h.order_type || '';
+
+    return `<div style="display:grid;grid-template-columns:70px 60px 60px 60px 50px 60px;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px">
+      <span style="color:var(--muted)">${ts}</span>
+      <span style="color:var(--text);font-weight:600">${action}</span>
+      <span style="color:var(--text)">${symbol}</span>
+      <span style="color:${dir === 'long' ? 'var(--green)' : dir === 'short' ? 'var(--red)' : 'var(--muted)'}">${dir.toUpperCase()}</span>
+      <span style="color:var(--text)">${size}</span>
+      <span style="color:${pnlColor}">${pnl}</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:70px 60px 60px 60px 50px 60px;gap:8px;padding:6px 0;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border)">
+      <span>时间</span>
+      <span>操作</span>
+      <span>币种</span>
+      <span>方向</span>
+      <span>数量</span>
+      <span>P&L</span>
+    </div>
+    ${rows}
+    <div style="margin-top:8px;font-size:10px;color:var(--muted);text-align:right">总执行: ${execCount} · 错误: ${errorCount}</div>
+  `;
+}
+
+// ── 指令与约束 ──────────────────────────────────────────────────────
+function renderDirectivePanel(mode, classic) {
+  const el = document.getElementById('directive-panel');
+  if (!mode) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:12px">加载失败</div>';
+    return;
+  }
+
+  const directive = mode.ai_directive || {};
+  const currentMode = mode.mode || '--';
+  const conflict = mode.position_conflict;
+
+  const dirColor = directive.direction === 'long' ? 'var(--green)' : directive.direction === 'short' ? 'var(--red)' : 'var(--muted)';
+  const modeColor = currentMode === 'ai_directed' ? 'var(--green)' : 'var(--orange)';
+
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:11px">
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">运行模式</span>
+        <span style="color:${modeColor};font-weight:600">${currentMode === 'ai_directed' ? 'AI 主导' : '经典接管'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">AI 方向</span>
+        <span style="color:${dirColor};font-weight:600">${directive.direction || '--'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">置信度</span>
+        <span style="color:var(--text)">${((directive.confidence || 0) * 100).toFixed(0)}%</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">风险等级</span>
+        <span style="color:var(--text)">${directive.risk_level || '--'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">币种池</span>
+        <span style="color:var(--text)">${(directive.symbol_pool || []).join(', ') || '--'}</span>
+      </div>
+      ${conflict ? `
+        <div style="margin-top:8px;padding:6px;background:rgba(255,99,99,0.1);border-radius:4px;border-left:3px solid var(--red)">
+          <div style="font-size:10px;color:var(--red)">⚠️ 持仓冲突</div>
+          <div style="font-size:11px;color:var(--text)">${conflict}</div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// ── 更新模式切换按钮 ──────────────────────────────────────────────────
+function updateModeToggleBtn(mode) {
+  const btn = document.getElementById('mode-toggle-btn-panel');
+  if (!btn || !mode) return;
+  const currentMode = mode.mode || '--';
+  btn.textContent = currentMode === 'ai_directed' ? '切到经典接管' : '切到AI主导';
+}
+
+// ── 强制止损 ──────────────────────────────────────────────────────────
+async function forceStopLoss() {
+  const symbol = currentScreenSymbol || 'BTC';
+  try {
+    const res = await fetch('/api/classic-executor');
+    const data = await res.json();
+    const positions = data.positions || [];
+    if (positions.length === 0) {
+      alert('当前无持仓');
+      return;
+    }
+    for (const p of positions) {
+      const confirmClose = confirm(`确认强制平仓 ${p.symbol} ${p.pos_side} ${p.pos} ?`);
+      if (confirmClose) {
+        const closeRes = await fetch('/api/mode/switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'ai_directed', reason: '强制止损' })
+        });
+        const closeData = await closeRes.json();
+        alert(closeData.ok ? '平仓成功' : '平仓失败: ' + closeData.error);
+      }
+    }
+    loadScreenData();
+  } catch (e) {
+    alert('强制止损失败: ' + e.message);
+  }
+}
+
+// ── 基本面参考信号 ──────────────────────────────────────────────────────
+async function loadFundamentalSignals() {
+  const symbol = currentScreenSymbol || 'BTC';
+  try {
+    const res = await fetch('/api/fundamental-signals?symbol=' + symbol);
+    const data = await res.json();
+    renderFundamentalSignals(data, symbol);
+  } catch (e) {
+    document.getElementById('fund-signals').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">加载失败</div>';
+  }
+}
+
+function renderFundamentalSignals(data, symbol) {
+  const el = document.getElementById('fund-signals');
+  const badge = document.getElementById('fund-role-badge');
+
+  if (!data || data.error) {
+    el.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${data ? data.error : '数据不可用'}</div>`;
+    badge.textContent = '不可用';
+    badge.style.background = 'rgba(255,99,99,0.15)';
+    badge.style.color = 'var(--red)';
+    return;
+  }
+
+  if (!data.available || !data.engines_ok) {
+    el.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">引擎不可用: ${data.error || ''}</div>`;
+    badge.textContent = '引擎离线';
+    return;
+  }
+
+  // 角色徽章
+  const roleMap = {
+    'fallback': { text: '研报缺失·基本面兜底', bg: 'rgba(255,99,99,0.15)', color: 'var(--red)' },
+    'primary': { text: '研报部分缺失·基本面补充', bg: 'rgba(210,153,34,0.15)', color: 'var(--yellow)' },
+    'reference': { text: '研报可用·基本面参考', bg: 'rgba(125,108,245,0.15)', color: 'var(--purple)' },
+  };
+  const role = roleMap[data.role] || roleMap['reference'];
+  badge.textContent = role.text;
+  badge.style.background = role.bg;
+  badge.style.color = role.color;
+
+  const comp = data.composite || {};
+  const sent = data.sentiment || {};
+  const signals = data.signals || [];
+  const metrics = data.metrics_used || {};
+  const r3d = data.resistance_3d || {};
+  const reportsFresh = data.reports_fresh || {};
+
+  // 综合推荐颜色
+  const recColor = (comp.recommendation || '').includes('买入') ? 'var(--green)' :
+                   (comp.recommendation || '').includes('卖出') || (comp.recommendation || '').includes('减仓') ? 'var(--red)' :
+                   'var(--yellow)';
+
+  // 恐惧贪婪等级翻译
+  const fgMap = { extreme_greed: '极度贪婪', greed: '贪婪', neutral: '中性', fear: '恐惧', extreme_fear: '极度恐惧' };
+  const fgColor = (sent.fear_greed || '').includes('greed') ? 'var(--red)' :
+                  (sent.fear_greed || '').includes('fear') ? 'var(--green)' : 'var(--yellow)';
+
+  // 研报新鲜度状态灯
+  const rptStatus = (label, fresh) => {
+    const dot = fresh ? 'dot-green' : '';
+    const color = fresh ? 'var(--green)' : 'var(--red)';
+    const icon = fresh ? '✅' : '❌';
+    return `<span style="font-size:11px;color:var(--muted)">${icon} ${label}</span>`;
+  };
+
+  // 信号类型翻译
+  const sigTypeMap = {
+    strong_buy: { text: '强烈买入', color: 'var(--green)' },
+    buy: { text: '买入', color: 'var(--green)' },
+    hold: { text: '观望', color: 'var(--yellow)' },
+    sell: { text: '卖出', color: 'var(--red)' },
+    strong_sell: { text: '强烈卖出', color: 'var(--red)' },
+    reduce: { text: '减仓', color: 'var(--red)' },
+    risk_alert: { text: '风险提示', color: 'var(--yellow)' },
+  };
+
+  const sigList = signals.length > 0
+    ? signals.map(s => {
+        const st = sigTypeMap[s.type] || { text: s.type, color: 'var(--muted)' };
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${st.color}22;color:${st.color};white-space:nowrap;min-width:60px;text-align:center">${st.text}</span>
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--text)">${s.reason || ''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">模块: ${s.module || ''} · 强度: ${(s.strength*100).toFixed(0)}% · 置信: ${(s.confidence*100).toFixed(0)}%</div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div style="font-size:11px;color:var(--muted);padding:8px 0">当前无明确交易信号</div>';
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
+      <!-- 左：综合信号 -->
+      <div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)">综合评估</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div style="font-size:28px;font-weight:700;color:${recColor}">${comp.recommendation || '观望'}</div>
+          <div style="font-size:12px;color:var(--muted)">
+            评分 <span style="color:var(--text);font-weight:600">${(comp.score || 0).toFixed(3)}</span> ·
+            强度 <span style="color:var(--text);font-weight:600">${comp.strength || 0}/100</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">模块共识:</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          ${Object.entries(comp.module_consensus || {}).map(([m, d]) => {
+            const c = d === 'bullish' ? 'var(--green)' : d === 'bearish' ? 'var(--red)' : 'var(--muted)';
+            const label = d === 'bullish' ? '偏多' : d === 'bearish' ? '偏空' : '中性';
+            return `<span style="font-size:10px;padding:2px 8px;border-radius:8px;background:${c}22;color:${c}">${m}: ${label}</span>`;
+          }).join('')}
+        </div>
+        ${(comp.reasons || []).map(r => `<div style="font-size:11px;color:var(--muted);padding:1px 0">• ${r}</div>`).join('')}
+      </div>
+
+      <!-- 右：情绪+指标 -->
+      <div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)">情绪与指标</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div style="background:rgba(0,0,0,0.2);padding:8px;border-radius:6px">
+            <div style="font-size:10px;color:var(--muted)">情绪指数</div>
+            <div style="font-size:16px;font-weight:700;color:var(--text)">${sent.sentiment_index || 50}</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);padding:8px;border-radius:6px">
+            <div style="font-size:10px;color:var(--muted)">恐惧贪婪</div>
+            <div style="font-size:16px;font-weight:700;color:${fgColor}">${fgMap[sent.fear_greed] || '中性'}</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);padding:8px;border-radius:6px">
+            <div style="font-size:10px;color:var(--muted)">资金费率</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text)">${(metrics.funding_rate_pct || 0).toFixed(4)}%</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);padding:8px;border-radius:6px">
+            <div style="font-size:10px;color:var(--muted)">新闻情绪</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text)">${(metrics.news_sentiment || 0).toFixed(2)} (${sent.news_count || 0}条)</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">趋势: ${r3d.trend_summary || '--'} · 方向得分: ${(r3d.direction_score || 0).toFixed(3)}</div>
+      </div>
+    </div>
+
+    <!-- 研报新鲜度状态条 -->
+    <div style="display:flex;gap:12px;padding:6px 10px;background:rgba(0,0,0,0.15);border-radius:6px;margin-bottom:10px">
+      <span style="font-size:10px;color:var(--muted)">研报状态:</span>
+      ${rptStatus('周报', reportsFresh.weekly)}
+      ${rptStatus('A1日报', reportsFresh.a1_daily)}
+      ${rptStatus('A6情报', reportsFresh.a6_intel)}
+    </div>
+
+    <!-- Top 信号列表 -->
+    <div style="font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text)">Top 信号</div>
+    ${sigList}
+
+    <!-- 风险警告 -->
+    ${(comp.risk_warnings || []).length > 0 ? `
+      <div style="margin-top:8px;padding:8px;background:rgba(255,99,99,0.08);border-radius:6px;border-left:3px solid var(--red)">
+        <div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:4px">⚠️ 风险警告</div>
+        ${(comp.risk_warnings || []).map(w => `<div style="font-size:10px;color:var(--muted);padding:1px 0">• ${w}</div>`).join('')}
+      </div>
+    ` : ''}
+
+    <!-- 总结 -->
+    ${data.summary ? `
+      <div style="margin-top:8px;padding:8px;background:rgba(0,0,0,0.15);border-radius:6px">
+        <div style="font-size:11px;color:var(--muted);white-space:pre-wrap">${data.summary}</div>
+      </div>
+    ` : ''}
+  `;
+}
+
+function renderScreen(data, symbol) {
+  const s1 = data.screen1 || {};
+  const s2 = data.screen2 || {};
+  const s3 = data.screen3 || {};
+  const candidates = data.candidates || [];
+  const best = data.best_candidate;
+
+  // 候选币种
+  const candEl = document.getElementById('screen-candidates');
+  if (candidates.length > 0) {
+    candEl.innerHTML = candidates.map(c => {
+      const isActive = c.symbol === symbol;
+      const isBest = c.symbol === best;
+      const dirColor = c.direction === 'BULL' ? 'var(--green)' : c.direction === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+      const bestBadge = isBest ? '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(210,153,34,0.2);color:var(--yellow);margin-left:4px">最优</span>' : '';
+      return `<div onclick="selectCandidate('${c.symbol}')" style="padding:8px 14px;border-radius:6px;cursor:pointer;border:1px solid ${isActive ? 'var(--blue)' : 'var(--border)'};background:${isActive ? 'rgba(88,166,255,0.1)' : 'rgba(255,255,255,0.03)'};transition:all 0.2s">
+        <div style="font-weight:600;font-size:13px">${c.symbol}${bestBadge}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">
+          <span style="color:${dirColor}">${c.direction}</span> · ${c.score_pct}分 · vol x${c.vol_mult}
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById('screen-best-badge').textContent = best ? '最优: ' + best : '暂无最优';
+  }
+
+  // Screen 1: 六维评分
+  const s1El = document.getElementById('screen1');
+  const s1Dir = s1.direction || 'NEUTRAL';
+  const s1Color = s1Dir === 'BULL' ? 'var(--green)' : s1Dir === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+  document.getElementById('s1-direction').textContent = s1Dir + ' · ' + (s1.confidence || '');
+  document.getElementById('s1-direction').style.background = s1Dir === 'BULL' ? 'rgba(63,185,80,0.15)' : s1Dir === 'BEAR' ? 'rgba(248,81,73,0.15)' : 'rgba(210,153,34,0.15)';
+  document.getElementById('s1-direction').style.color = s1Color;
+
+  const dims = s1.dimensions || {};
+  const dimLabels = {
+    technical: '技术指标',
+    onchain: '链上数据',
+    cycle: '减半周期',
+    miner: '矿工经济',
+    macro: '宏观金融',
+    cross_market: '跨市场联动'
+  };
+  const dimOrder = ['technical', 'onchain', 'cycle', 'miner', 'macro', 'cross_market'];
+  let dimsHtml = '';
+  for (const key of dimOrder) {
+    const d = dims[key];
+    if (!d) continue;
+    if (d.not_applicable) continue;
+    const score = d.score || 0;
+    const weight = d.weight || 0;
+    const pct = weight > 0 ? (score / weight * 100) : 0;
+    const barColor = pct >= 60 ? 'var(--green)' : pct >= 40 ? 'var(--yellow)' : 'var(--red)';
+    dimsHtml += `
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+          <span>${dimLabels[key] || key} (${weight}%)</span>
+          <span style="font-weight:600">${score.toFixed(1)}/${weight}</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width 0.5s"></div>
+        </div>
+      </div>`;
+  }
+
+  s1El.innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:32px;font-weight:700;color:${s1Color}">${s1.score_pct || '--'}<span style="font-size:14px;color:var(--muted)">/100</span></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">综合评分 · ${s1.symbol || symbol} · $${s1.price || '--'}</div>
+    </div>
+    ${dimsHtml}
+  `;
+
+  // Screen 2: 入场档位
+  const s2El = document.getElementById('screen2');
+  document.getElementById('s2-volmult').textContent = 'vol x' + (s2.vol_mult || 1.0);
+  const entryLevels = s2.entry_levels || [];
+  const tpPrice = s2.tp_price || 0;
+  const s2Dir = s2.direction || 'BULL';
+
+  let levelsHtml = `<div style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+      <span style="color:var(--muted)">止盈价</span>
+      <span style="font-weight:600;color:var(--green)">$${fmt(tpPrice)} (+${s2.tp_pct || '--'}%)</span>
+    </div>
+  </div>`;
+
+  const sortedLevels = s2Dir === 'BEAR' ? [...entryLevels].reverse() : entryLevels;
+  for (const lvl of sortedLevels) {
+    const isTriggered = lvl.status === '已触发';
+    const statusColor = isTriggered ? 'var(--green)' : lvl.status === '待触发' ? 'var(--yellow)' : 'var(--muted)';
+    levelsHtml += `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div>
+          <div style="font-size:12px;font-weight:600">${lvl.level}</div>
+          <div style="font-size:10px;color:var(--muted)">间距 ${lvl.spacing}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:600">$${fmt(lvl.price)}</div>
+          <div style="font-size:10px;color:${statusColor}">${lvl.status}</div>
+        </div>
+      </div>`;
+  }
+
+  s2El.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
+      <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:16px;font-weight:700">${s2.max_addons + 1 || 4}</div>
+        <div style="font-size:10px;color:var(--muted)">总档位</div>
+      </div>
+      <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:16px;font-weight:700">${s2.addon_pct || '--'}%</div>
+        <div style="font-size:10px;color:var(--muted)">加仓间距</div>
+      </div>
+    </div>
+    ${levelsHtml}
+  `;
+
+  // Screen 3: 持仓监控
+  const s3El = document.getElementById('screen3');
+  document.getElementById('s3-equity').textContent = '账户: $' + fmt(s3.equity || 0);
+  const positions = s3.positions || [];
+
+  if (positions.length > 0) {
+    s3El.innerHTML = positions.map(p => {
+      const sideColor = p.side === 'LONG' ? 'var(--green)' : 'var(--red)';
+      const pnlColor = p.upnl >= 0 ? 'var(--green)' : 'var(--red)';
+      const martingaleLvl = p.martingale_level || 0;
+      const maxLvls = p.max_levels || 4;
+      const lvlProgress = (martingaleLvl / maxLvls) * 100;
+      const entryLevels = p.entry_levels || [];
+
+      let entryLevelsHtml = '';
+      for (let i = 0; i < entryLevels.length; i++) {
+        const lvl = entryLevels[i];
+        const isPassed = i < martingaleLvl;
+        const isCurrent = i === martingaleLvl;
+        const lvlBg = isPassed ? 'rgba(63,185,80,0.2)' : isCurrent ? 'rgba(210,153,34,0.2)' : 'rgba(255,255,255,0.03)';
+        const lvlBorder = isPassed ? '1px solid var(--green)' : isCurrent ? '1px solid var(--yellow)' : '1px solid var(--border)';
+        entryLevelsHtml += `
+          <div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:4px;background:${lvlBg};border:${lvlBorder};font-size:11px">
+            <span>${lvl.level}</span>
+            <span>$${fmt(lvl.price)}</span>
+            <span style="color:var(--muted)">${lvl.spacing}</span>
+          </div>`;
+      }
+
+      return `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+        <div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:8px;color:${sideColor}">
+            ${p.coin} ${p.side === 'LONG' ? '📈 多' : '📉 空'}
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:11px">
+            <div><span style="color:var(--muted)">入场价</span><div style="font-weight:600">$${fmt(p.entry_px)}</div></div>
+            <div><span style="color:var(--muted)">现价</span><div style="font-weight:600">$${fmt(p.current_price)}</div></div>
+            <div><span style="color:var(--muted)">数量</span><div style="font-weight:600">${fmt(p.size)} 张</div></div>
+            <div><span style="color:var(--muted)">杠杆</span><div style="font-weight:600">${p.leverage}x</div></div>
+          </div>
+          <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+              <span style="color:var(--muted)">浮动盈亏</span>
+              <span style="font-weight:700;color:${pnlColor}">$${fmt(p.upnl)} (${p.pnl_pct}%)</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:12px;font-weight:600;margin-bottom:8px">🎰 马丁策略</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:11px;margin-bottom:10px">
+            <div><span style="color:var(--muted)">当前档位</span><div style="font-weight:600">${martingaleLvl}/${maxLvls}</div></div>
+            <div><span style="color:var(--muted)">波动率</span><div style="font-weight:600">x${p.vol_mult || 1.0}</div></div>
+            <div><span style="color:var(--muted)">加仓间距</span><div style="font-weight:600">${p.addon_pct || '--'}%</div></div>
+            <div><span style="color:var(--muted)">止盈比例</span><div style="font-weight:600">${p.tp_pct || '--'}%</div></div>
+          </div>
+          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:8px">
+            <div style="height:100%;width:${lvlProgress}%;background:var(--purple);border-radius:3px"></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">
+            下一档: $${fmt(p.next_entry_price || 0)} (${p.next_entry_pct || '--'}%)
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">
+            止盈价: <span style="color:var(--green);font-weight:600">$${fmt(p.tp_price || 0)}</span>
+            (距止盈 ${p.distance_to_tp || '--'}%)
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:12px;font-weight:600;margin-bottom:8px">📊 加仓计划表</div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            ${entryLevelsHtml}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    s3El.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px">无持仓（观望中）</div>';
+  }
+}
+
+async function triggerScreen() {
+  const resEl = document.getElementById('screen-trigger-result');
+  resEl.textContent = '执行中...';
+  try {
+    const res = await fetch('/api/screen-trigger', { signal: AbortSignal.timeout(60000) });
+    const data = await res.json();
+    resEl.innerHTML = `<span style="color:var(--green)">✅ 完成</span>`;
+    loadScreenData();
+  } catch (e) {
+    resEl.innerHTML = `<span style="color:var(--red)">❌ ${e.message}</span>`;
+  }
+}
+
+async function triggerScreenOrchestrator() {
+  const resEl = document.getElementById('screen-trigger-result');
+  resEl.textContent = '触发编排器...';
+  try {
+    const res = await fetch('/api/screen-orchestrator/trigger', { signal: AbortSignal.timeout(60000) });
+    const data = await res.json();
+    resEl.innerHTML = `<span style="color:var(--green)">✅ 编排器已触发</span>`;
+    loadScreenData();
+  } catch (e) {
+    resEl.innerHTML = `<span style="color:var(--red)">❌ ${e.message}</span>`;
+  }
+}
+
+// ── 易经推理模型数据加载（五层架构：L4底座/QMM内核/BCRM推理/执行反馈/知识库）──
+async function loadYijingData() {
+  try {
+    const res = await fetch('/api/yijing', { signal: AbortSignal.timeout(60000) });
+    const d = await res.json();
+
+    // ===== 顶部门禁状态条 =====
+    const busStats = d.bus_stats || {};
+    const totalEvents = busStats.total_events || 0;
+    const l4Status = totalEvents > 0 ? 'M0+ 运行中' : '空';
+    document.getElementById('yj-l4-status').innerHTML = `<span style="color:${totalEvents > 0 ? 'var(--green)' : 'var(--muted)'}">${l4Status}</span>`;
+
+    const qmm = d.qmm || {};
+    const qmmGate = qmm.gate_status || 'OFFLINE';
+    const qmmGateColor = qmmGate === 'PASSED' ? 'var(--green)' : qmmGate === 'FAILED' ? 'var(--red)' : 'var(--muted)';
+    document.getElementById('yj-qmm-gate').innerHTML = `<span style="color:${qmmGateColor}">${qmmGate}</span>`;
+
+    const latestBcrm = d.latest_bcrm;
+    const bcrmFailClosed = latestBcrm?.bcrm_decision?.fail_closed;
+    const bcrmGateText = latestBcrm ? (bcrmFailClosed ? 'BLOCKED' : 'OPEN') : '无推理';
+    const bcrmGateColor = latestBcrm ? (bcrmFailClosed ? 'var(--red)' : 'var(--green)') : 'var(--muted)';
+    document.getElementById('yj-bcrm-gate').innerHTML = `<span style="color:${bcrmGateColor}">${bcrmGateText}</span>`;
+
+    document.getElementById('yj-bus-count').innerHTML = `<span style="color:${totalEvents > 0 ? 'var(--green)' : 'var(--muted)'}">${totalEvents}</span>`;
+
+    // ===== 第一层：L4 记忆系统底座 =====
+    renderL4Bus(busStats, d.event_types || {});
+    renderL4Cases(d.learn_stats || {}, d.routing_table || {}, d.routing_entries || 0);
+
+    // ===== 第二层：QMM 量化内核 =====
+    renderQMM(qmm);
+
+    // ===== 第三层：BCRM 推理引擎 =====
+    renderBCRM(latestBcrm, d.agreement_stats || {}, d.recent_bcrm_count || 0);
+
+    // ===== 第四层：执行与反馈 =====
+    renderExecution(d.sim_trade || {}, d.trading || {});
+
+    // ===== 第五层：知识库 =====
+    renderResearch(d.research || {}, d.screen_martin || {});
+
+    yijingDataLoaded = true;
+    document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
+  } catch (e) {
+    console.error('易经数据加载失败:', e);
+    ['yj-l4-bus','yj-l4-cases','yj-l4-routing','yj-qmm-triple','yj-qmm-gate-detail','yj-bcrm-bagua','yj-bcrm-decision','yj-bcrm-agreement','yj-exec-okx','yj-exec-stats','yj-research-a1','yj-research-a6','yj-research-screen'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:12px">加载失败: ${e.message}</div>`;
+    });
+  }
+}
+
+// ── L4 总线健康度 ──
+function renderL4Bus(busStats, eventTypes) {
+  const el = document.getElementById('yj-l4-bus');
+  const total = busStats.total_events || 0;
+  if (total === 0) {
+    el.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 总线无事件 — AB 交易决策尚未发布到 SharedMemoryBus。需运行 <code style="background:rgba(0,0,0,0.3);padding:1px 4px;border-radius:3px">ab_bridge publish</code> 触发数据汇入。</div>`;
+    return;
+  }
+  const aEvents = busStats.agent_a_events || 0;
+  const bEvents = busStats.agent_b_events || 0;
+  const aDist = busStats.a_action_distribution || {};
+  const bDist = busStats.b_action_distribution || {};
+  const typeHtml = Object.entries(eventTypes).map(([k,v]) => `<span class="memory-tag">${k}: ${v}</span>`).join('');
+  const distHtml = (dist, color) => Object.entries(dist).map(([k,v]) => `<span class="memory-tag" style="background:rgba(${color},0.15);border-color:rgba(${color},0.3);color:var(--${color === '88,166,255' ? 'a-color' : 'b-color'})">${k}: ${v}</span>`).join('');
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:10px">
+      <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:18px;font-weight:700;color:var(--green)">${total}</div><div style="font-size:10px;color:var(--muted)">总事件</div>
+      </div>
+      <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:18px;font-weight:700;color:var(--a-color)">${aEvents}</div><div style="font-size:10px;color:var(--muted)">Agent A</div>
+      </div>
+      <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:18px;font-weight:700;color:var(--b-color)">${bEvents}</div><div style="font-size:10px;color:var(--muted)">Agent B</div>
+      </div>
+    </div>
+    <div style="margin-bottom:6px"><span style="color:var(--a-color);font-size:10px">A决策:</span> ${distHtml(aDist, '88,166,255') || '<span style="color:var(--muted);font-size:11px">无</span>'}</div>
+    <div style="margin-bottom:6px"><span style="color:var(--b-color);font-size:10px">B决策:</span> ${distHtml(bDist, '188,140,255') || '<span style="color:var(--muted);font-size:11px">无</span>'}</div>
+    <div><span style="color:var(--muted);font-size:10px">事件类型:</span> ${typeHtml || '<span style="color:var(--muted);font-size:11px">无</span>'}</div>
+  `;
+}
+
+// ── L4 案例库 + 复盘/蒸馏 + 路由表 ──
+function renderL4Cases(learnStats, routingTable, routingEntries) {
+  // 案例库（用 learn_stats 代理，因为 cases 目录当前为空）
+  const casesEl = document.getElementById('yj-l4-cases');
+  const validCases = learnStats.valid_cases || 0;
+  const learnedCombos = learnStats.learned_combos || 0;
+  if (validCases === 0 && learnStats.note) {
+    casesEl.innerHTML = `
+      <div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 尚无已平仓案例</div>
+      <div style="font-size:11px;color:var(--muted);padding:0 8px 8px">${learnStats.note}</div>
+      <div style="font-size:11px;color:var(--muted);padding:0 8px">案例库状态机: M0(注册)→M1(复盘)→M2(蒸馏)→M3(统计)→M4(候选)</div>
+    `;
+  } else {
+    casesEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="text-align:center;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:14px;font-weight:700">${validCases}</div><div style="font-size:10px;color:var(--muted)">有效案例</div></div>
+        <div style="text-align:center;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:14px;font-weight:700">${learnedCombos}</div><div style="font-size:10px;color:var(--muted)">学习组合</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">组合详情: ${Object.keys(learnStats.combo_details || {}).length} 条</div>
+    `;
+  }
+
+  // 复盘 + 蒸馏（当前为空）
+  const reviewsEl = document.getElementById('yj-l4-reviews');
+  reviewsEl.innerHTML = `
+    <div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 尚无复盘/蒸馏记录</div>
+    <div style="font-size:11px;color:var(--muted);padding:0 8px 8px">ReviewRecord(双向分析) + DistillRecord(三问结构: 是什么/为什么/怎么做) 需案例跑 pipeline.py 后生成</div>
+    <div style="font-size:11px;color:var(--muted);padding:0 8px">状态机: M1_REVIEW_COMPLETED → M2_DISTILL_COMPLETED</div>
+  `;
+
+  // 元学习路由表
+  const routingEl = document.getElementById('yj-l4-routing');
+  if (routingEntries === 0) {
+    routingEl.innerHTML = `
+      <div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 路由表为空</div>
+      <div style="font-size:11px;color:var(--muted);padding:0 8px">MetaLearningRouter 按 (regime, macro_phase, micro_phase) 三维统计 agent_a/agent_b/bcrm_engine 胜率，最少 3 样本才纳入。需运行 <code style="background:rgba(0,0,0,0.3);padding:1px 4px;border-radius:3px">ab_bridge route</code> 生成。</div>
+    `;
+  } else {
+    const rows = Object.entries(routingTable).slice(0, 10).map(([k,v]) => {
+      const aWin = v.agent_a?.win_rate ? (v.agent_a.win_rate*100).toFixed(0)+'%' : '--';
+      const bWin = v.agent_b?.win_rate ? (v.agent_b.win_rate*100).toFixed(0)+'%' : '--';
+      const cWin = v.bcrm_engine?.win_rate ? (v.bcrm_engine.win_rate*100).toFixed(0)+'%' : '--';
+      return `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.5);font-size:11px">
+        <span style="color:var(--muted)">${k}</span>
+        <span style="color:var(--a-color)">A:${aWin}</span>
+        <span style="color:var(--b-color)">B:${bWin}</span>
+        <span style="color:var(--purple)">BCRM:${cWin}</span>
+      </div>`;
+    }).join('');
+    routingEl.innerHTML = `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;padding:4px 0;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border)"><span>场景</span><span>Agent A</span><span>Agent B</span><span>BCRM</span></div>${rows}`;
+  }
+}
+
+// ── QMM 量化内核 ──
+function renderQMM(qmm) {
+  // 六契约核心信号
+  const trendEl = document.getElementById('yj-qmm-trend');
+  const mrdEl = document.getElementById('yj-qmm-mrd');
+  const uncEl = document.getElementById('yj-qmm-uncertainty');
+
+  if (!qmm.available) {
+    trendEl.innerHTML = `<span style="color:var(--muted);font-size:14px">OFFLINE</span>`;
+    mrdEl.innerHTML = `<span style="color:var(--muted);font-size:14px">--</span>`;
+    uncEl.innerHTML = `<span style="color:var(--muted);font-size:14px">--</span>`;
+    document.getElementById('yj-qmm-changepoint').textContent = qmm.note || 'QMM 未运行';
+    document.getElementById('yj-qmm-mrd-detail').textContent = '';
+    document.getElementById('yj-qmm-triple').innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ QMM 未运行 — 需先调用 <code style="background:rgba(0,0,0,0.3);padding:1px 4px;border-radius:3px">run_qmm_with_gate()</code>（要求 ≥15 个 case 通过门禁）</div>`;
+    document.getElementById('yj-qmm-gate-detail').innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">门禁 OFFLINE — 回测/过拟合/漂移检查均未执行</div>`;
+    document.getElementById('yj-qmm-versions').textContent = '版本: --';
+    document.getElementById('yj-qmm-reasons').textContent = '原因代码: --';
+    document.getElementById('yj-qmm-evidence').textContent = '证据: --';
+    return;
+  }
+
+  // 趋势状态
+  const trend = qmm.trend_state || 'UNKNOWN';
+  const trendColor = trend === 'UP' ? 'var(--green)' : trend === 'DOWN' ? 'var(--red)' : trend === 'FLAT' ? 'var(--yellow)' : 'var(--muted)';
+  trendEl.innerHTML = `<span style="color:${trendColor}">${trend}</span>`;
+  document.getElementById('yj-qmm-changepoint').textContent = qmm.trend_change_point || 'STABLE';
+
+  // MRD
+  const mrd = qmm.mrd_vector || {};
+  const mrdDir = mrd.direction || 'neutral';
+  const mrdColor = mrdDir === 'long' ? 'var(--green)' : mrdDir === 'short' ? 'var(--red)' : 'var(--muted)';
+  mrdEl.innerHTML = `<span style="color:${mrdColor}">${mrdDir.toUpperCase()}</span>`;
+  document.getElementById('yj-qmm-mrd-detail').innerHTML = `↑${mrd.resistance_up?.toFixed(0)||'--'} ↓${mrd.resistance_down?.toFixed(0)||'--'} conf ${(mrd.confidence*100||0).toFixed(0)}%`;
+
+  // 不确定性
+  const unc = qmm.uncertainty || 0;
+  const uncColor = unc > 0.7 ? 'var(--red)' : unc > 0.4 ? 'var(--yellow)' : 'var(--green)';
+  uncEl.innerHTML = `<span style="color:${uncColor}">${(unc*100).toFixed(0)}%</span>`;
+  document.getElementById('yj-qmm-unc-bar').style.width = (unc*100)+'%';
+  document.getElementById('yj-qmm-unc-bar').style.background = uncColor;
+
+  // 三屏对齐
+  const ts = qmm.triple_screen || {};
+  const tsEl = document.getElementById('yj-qmm-triple');
+  if (ts.long && ts.mid && ts.short) {
+    const screenHtml = (s, label) => {
+      const dir = s.direction || 'UNKNOWN';
+      const color = dir === 'UP' ? 'var(--green)' : dir === 'DOWN' ? 'var(--red)' : 'var(--yellow)';
+      return `<div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px;margin-bottom:4px">
+        <div style="display:flex;justify-content:space-between"><span style="font-size:11px">${label}</span><span style="color:${color};font-weight:600">${dir}</span></div>
+        <div style="font-size:10px;color:var(--muted)">conf ${(s.confidence*100||0).toFixed(0)}% · 胜率 ${(s.profit_rate*100||0).toFixed(0)}% · ${s.case_count||0}案例</div>
+      </div>`;
+    };
+    const align = ts.alignment || 0;
+    const alignColor = align > 0.5 ? 'var(--green)' : align > 0.2 ? 'var(--yellow)' : 'var(--red)';
+    tsEl.innerHTML = `${screenHtml(ts.long,'长屏')}${screenHtml(ts.mid,'中屏')}${screenHtml(ts.short,'短屏')}<div style="font-size:11px;margin-top:4px">对齐度: <span style="color:${alignColor};font-weight:600">${(align*100).toFixed(0)}%</span></div>`;
+  } else {
+    tsEl.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">三屏数据不完整</div>`;
+  }
+
+  // 门禁质量
+  const gateEl = document.getElementById('yj-qmm-gate-detail');
+  const gateResults = qmm.gate_results || {};
+  const bt = gateResults.backtest || {};
+  const of = gateResults.overfitting || {};
+  const dr = gateResults.drift || {};
+  gateEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">回测准确率</div><div style="font-size:14px;font-weight:700">${bt.overall_accuracy ? (bt.overall_accuracy*100).toFixed(0)+'%' : '--'}</div><div style="font-size:10px;color:var(--muted)">目标>55%</div></div>
+      <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">高置信准确率</div><div style="font-size:14px;font-weight:700">${bt.high_confidence_accuracy ? (bt.high_confidence_accuracy*100).toFixed(0)+'%' : '--'}</div><div style="font-size:10px;color:var(--muted)">目标>65%</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">过拟合</div><div style="font-size:13px;font-weight:600;color:${of.is_overfit ? 'var(--red)':'var(--green)'}">${of.is_overfit ? 'YES' : 'NO'}</div><div style="font-size:10px;color:var(--muted)">${of.recommendation||'--'}</div></div>
+      <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">漂移</div><div style="font-size:13px;font-weight:600;color:${dr.drift_detected ? 'var(--red)':'var(--green)'}">${dr.drift_detected ? 'YES' : 'NO'}</div><div style="font-size:10px;color:var(--muted)">${dr.drift_type||'NONE'}</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted)">train/test gap: ${bt.train_test_gap ? (bt.train_test_gap*100).toFixed(1)+'%' : '--'} (目标<10%)</div>
+  `;
+
+  // 版本三元组 + 原因代码 + 证据
+  const vt = qmm.version_triple || {};
+  document.getElementById('yj-qmm-versions').textContent = `版本: ${vt.data_version||'--'} | ${vt.feature_def_version||'--'} | ${vt.qmm_version||'--'}`;
+  document.getElementById('yj-qmm-reasons').textContent = `原因代码: ${(qmm.reason_codes||[]).join(', ') || '--'}`;
+  document.getElementById('yj-qmm-evidence').textContent = `证据: ${(qmm.evidence_refs||[]).length} 条`;
+}
+
+// ── BCRM 推理引擎 ──
+function renderBCRM(latest, agreementStats, recentCount) {
+  const baguaEl = document.getElementById('yj-bcrm-bagua');
+  const decisionEl = document.getElementById('yj-bcrm-decision');
+  const agreeEl = document.getElementById('yj-bcrm-agreement');
+
+  if (!latest) {
+    baguaEl.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 无 BCRM 推理</div><div style="font-size:11px;color:var(--muted);padding:0 8px">需总线有事件后运行 <code style="background:rgba(0,0,0,0.3);padding:1px 4px;border-radius:3px">ab_bridge simulate</code> 触发推理</div>`;
+    decisionEl.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 无 BCRM 决策</div>`;
+    agreeEl.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 无一致性统计</div><div style="font-size:11px;color:var(--muted);padding:0 8px">最近 ${recentCount} 条推理</div>`;
+    return;
+  }
+
+  // 八卦力学
+  const be = latest.bagua_engine || {};
+  const six = be.sixiang || {};
+  const pf = be.potential_field || {};
+  const baguaDir = be.primary_direction || 'neutral';
+  const baguaColor = baguaDir === 'long' ? 'var(--green)' : baguaDir === 'short' ? 'var(--red)' : 'var(--muted)';
+  baguaEl.innerHTML = `
+    <div style="text-align:center;margin-bottom:10px;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+      <div style="font-size:20px;font-weight:700">${be.hexagram_name_cn || be.current_gua_cn || '--'}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${be.hexagram_name || '--'}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+      <div><span style="color:var(--muted);font-size:10px">两仪</span><div style="font-size:12px;font-weight:600;color:${be.liangyi_state === 'yang' ? 'var(--green)' : 'var(--red)'}">${be.liangyi_state || '--'} (${(be.liangyi_strength||0).toFixed(2)})</div></div>
+      <div><span style="color:var(--muted);font-size:10px">第一性原理方向</span><div style="font-size:12px;font-weight:600;color:${baguaColor}">${baguaDir} (${(be.primary_confidence||0).toFixed(2)})</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px">四象: 时${six.time_force?.toFixed(2)||'--'} 空${six.space_force?.toFixed(2)||'--'} 表${six.surface_force?.toFixed(2)||'--'} 里${six.core_force?.toFixed(2)||'--'}</div>
+    <div style="font-size:10px;color:var(--muted)">势能场: ${pf.least_resistance_dir||'--'} (gap=${pf.resistance_gap?.toFixed(2)||'--'})</div>
+  `;
+
+  // BCRM 决策
+  const bd = latest.bcrm_decision || {};
+  const dir = bd.direction_hint || bd.direction || 'FLAT';
+  const dirColor = dir === 'UP' ? 'var(--green)' : dir === 'DOWN' ? 'var(--red)' : 'var(--yellow)';
+  const failClosed = bd.fail_closed;
+  decisionEl.innerHTML = `
+    <div style="text-align:center;margin-bottom:10px;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+      <div style="font-size:20px;font-weight:700;color:${dirColor}">${dir}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">卦象: ${bd.hexagram || '--'}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+      <div><span style="color:var(--muted);font-size:10px">置信度</span><div style="font-size:14px;font-weight:700">${bd.hexagram_confidence != null ? (bd.hexagram_confidence*100).toFixed(0)+'%' : (bd.confidence != null ? (bd.confidence*100).toFixed(0)+'%' : '--')}</div></div>
+      <div><span style="color:var(--muted);font-size:10px">fail-closed</span><div style="font-size:14px;font-weight:700;color:${failClosed ? 'var(--red)':'var(--green)'}">${failClosed ? 'BLOCKED' : 'OPEN'}</div></div>
+    </div>
+    ${bd.changed_hexagram ? `<div style="font-size:11px;color:var(--muted);margin-bottom:4px">变卦: ${bd.changed_hexagram}</div>` : ''}
+    ${(bd.reason_codes||[]).length ? `<div style="font-size:10px;color:var(--muted)">原因: ${bd.reason_codes.join(', ')}</div>` : ''}
+  `;
+
+  // 三方一致性
+  const agree = latest.agreement || '--';
+  const agreeColor = agree === 'AGREE' ? 'var(--green)' : agree === 'PARTIAL' ? 'var(--yellow)' : agree === 'DISAGREE' ? 'var(--red)' : 'var(--muted)';
+  const ab = latest.ab_decision || {};
+  const fd = latest.final_decision || {};
+  agreeEl.innerHTML = `
+    <div style="text-align:center;margin-bottom:10px;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+      <div style="font-size:16px;font-weight:700;color:${agreeColor}">${agree}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">最近 ${recentCount} 条推理</div>
+    </div>
+    <div style="font-size:11px;margin-bottom:4px"><span style="color:var(--a-color)">AB决策:</span> ${ab.action || '--'} conf ${(ab.confidence*100||0).toFixed(0)}%</div>
+    <div style="font-size:11px;margin-bottom:4px"><span style="color:var(--purple)">BCRM:</span> ${bd.direction||'--'} conf ${(bd.confidence*100||0).toFixed(0)}%</div>
+    <div style="font-size:11px;margin-bottom:8px"><span style="color:var(--green)">最终:</span> ${fd.direction||'--'} conf ${(fd.confidence*100||0).toFixed(0)}%</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;font-size:10px">
+      <div style="text-align:center;padding:4px;background:rgba(63,185,80,0.1);border-radius:4px"><div style="font-weight:700;color:var(--green)">${agreementStats.agree||0}</div><div style="color:var(--muted)">AGREE</div></div>
+      <div style="text-align:center;padding:4px;background:rgba(210,153,34,0.1);border-radius:4px"><div style="font-weight:700;color:var(--yellow)">${agreementStats.partial||0}</div><div style="color:var(--muted)">PARTIAL</div></div>
+      <div style="text-align:center;padding:4px;background:rgba(248,81,73,0.1);border-radius:4px"><div style="font-weight:700;color:var(--red)">${agreementStats.disagree||0}</div><div style="color:var(--muted)">DISAGREE</div></div>
+    </div>
+  `;
+}
+
+// ── 执行与反馈 ──
+function renderExecution(simTrade, trading) {
+  const okxEl = document.getElementById('yj-exec-okx');
+  const statsEl = document.getElementById('yj-exec-stats');
+
+  // OKX 模拟盘
+  if (trading.error) {
+    okxEl.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ ${trading.error}</div>`;
+  } else if (!trading.connection_ok) {
+    okxEl.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ OKX 凭证未配置</div>`;
+  } else {
+    const bal = trading.balance || {};
+    const pos = trading.positions || {};
+    const perf = trading.performance || {};
+    const balOk = bal.ok !== false;
+    const posOk = pos.ok !== false;
+    okxEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">模式</div><div style="font-size:12px;font-weight:600">${trading.dry_run ? 'dry_run' : 'live'} / ${trading.simulated ? 'simulated' : 'real'}</div></div>
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">余额</div><div style="font-size:12px;font-weight:600">${balOk ? '$'+(bal.total_eq||0).toFixed(2) : '⚠️ '+bal.error}</div></div>
+      </div>
+      <div style="font-size:11px;margin-bottom:6px"><span style="color:var(--muted)">持仓:</span> ${posOk ? (pos.count||0)+' 张' : '⚠️ '+pos.error}</div>
+      ${posOk && pos.positions?.length ? pos.positions.map(p => `<div style="font-size:10px;color:var(--muted);padding:2px 0;border-bottom:1px solid rgba(48,54,61,0.3)">${p.inst_id} ${p.pos_side} ${p.pos} @ $${p.avg_px}</div>`).join('') : ''}
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">订单总数: ${perf.total_orders||0} (dry ${perf.dry_run_orders||0} / sim ${perf.simulated_orders||0})</div>
+    `;
+  }
+
+  // 模拟交易统计
+  const count = simTrade.sim_trade_count || 0;
+  const actionDist = simTrade.action_distribution || {};
+  const topHex = simTrade.top_hexagrams || {};
+  const latest = simTrade.latest || {};
+  if (count === 0 && !latest.action) {
+    statsEl.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 无模拟交易记录</div><div style="font-size:11px;color:var(--muted);padding:0 8px">需运行 <code style="background:rgba(0,0,0,0.3);padding:1px 4px;border-radius:3px">ab_bridge sim-trade</code> 触发 BCRM→OKX 闭环</div>`;
+  } else {
+    const distHtml = Object.entries(actionDist).map(([k,v]) => {
+      const color = k.includes('long') ? 'var(--green)' : k.includes('short') ? 'var(--red)' : 'var(--muted)';
+      return `<span class="memory-tag" style="color:${color}">${k}: ${v}</span>`;
+    }).join('');
+    const hexHtml = Object.entries(topHex).slice(0,5).map(([k,v]) => `<span class="memory-tag">${k}: ${v}</span>`).join('');
+    statsEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:14px;font-weight:700">${count}</div><div style="font-size:10px;color:var(--muted)">总交易数</div></div>
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:12px;font-weight:600">${latest.action||'--'}</div><div style="font-size:10px;color:var(--muted)">最近: ${latest.hexagram||'--'} ${latest.ts||''}</div></div>
+      </div>
+      <div style="margin-bottom:6px"><span style="color:var(--muted);font-size:10px">action分布:</span> ${distHtml || '<span style="color:var(--muted);font-size:11px">无</span>'}</div>
+      <div><span style="color:var(--muted);font-size:10px">top卦象:</span> ${hexHtml || '<span style="color:var(--muted);font-size:11px">无</span>'}</div>
+    `;
+  }
+}
+
+// ── 知识库（A1/A6/周报/三屏马丁）──
+function renderResearch(research, screen) {
+  const a1El = document.getElementById('yj-research-a1');
+  const a6El = document.getElementById('yj-research-a6');
+  const screenEl = document.getElementById('yj-research-screen');
+
+  const latest = research.latest || {};
+
+  // A1 研报
+  const a1 = latest.a1 || {};
+  if (!a1.ok) {
+    a1El.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 无 A1 研报</div>`;
+  } else {
+    const ts = a1.triple_screen || {};
+    const pc = a1.primary_contradiction || {};
+    const ap = a1.action_pressure || {};
+    const kl = a1.key_levels || {};
+    const dirColor = ts.S1_week?.direction === 'BULLISH' ? 'var(--green)' : ts.S1_week?.direction === 'BEARISH' ? 'var(--red)' : 'var(--yellow)';
+    a1El.innerHTML = `
+      <div class="memory-label">A1 研报 · ${a1.date || '--'} <span style="margin-left:8px;font-size:10px;padding:2px 6px;border-radius:8px;background:rgba(88,166,255,0.15);color:var(--a-color)">${a1.regime || '--'}</span> <span style="font-size:10px;color:var(--muted)">置信度 ${(a1.regime_confidence*100||0).toFixed(0)}%</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">综合评分</div><div style="font-size:14px;font-weight:700">${a1.composite_score||'--'}/100</div></div>
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">SI 指数</div><div style="font-size:14px;font-weight:700">${a1.si_score||'--'} (${a1.si_range||'--'})</div></div>
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">矛盾数量</div><div style="font-size:14px;font-weight:700">${a1.total_contradictions||0}</div></div>
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">操作压力</div><div style="font-size:12px;font-weight:700;color:${ap.pressure_level === 'HIGH' ? 'var(--red)' : 'var(--yellow)'}">${ap.pressure_level||'--'}</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">周线 S1</div><div style="font-size:11px;font-weight:600;color:${dirColor}">${ts.S1_week?.direction||'--'} (${ts.S1_week?.score||0})</div><div style="font-size:10px;color:var(--muted)">${ts.S1_week?.detail||''}</div></div>
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">日线 S2</div><div style="font-size:11px;font-weight:600">${ts.S2_day?.direction||'--'} (${ts.S2_day?.score||0})</div><div style="font-size:10px;color:var(--muted)">${ts.S2_day?.detail||''}</div></div>
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">小时 S3</div><div style="font-size:11px;font-weight:600">${ts.S3_hour?.direction||'--'} (${ts.S3_hour?.score||0})</div><div style="font-size:10px;color:var(--muted)">${ts.S3_hour?.detail||''}</div></div>
+      </div>
+      <div style="font-size:11px;margin-bottom:6px"><span style="color:var(--muted)">主矛盾:</span> ${pc.description||'--'} <span style="color:var(--muted)">→</span> <span style="color:${pc.direction === 'UP' ? 'var(--green)' : 'var(--red)'}">${pc.direction||'--'}</span> (conf ${(pc.confidence*100||0).toFixed(0)}%)</div>
+      ${ap.probe_recommendation ? `<div style="font-size:11px;color:var(--yellow);margin-bottom:6px;padding:6px;background:rgba(210,153,34,0.1);border-radius:4px;border-left:3px solid var(--yellow)">⚠️ ${ap.probe_recommendation}</div>` : ''}
+      <div style="font-size:10px;color:var(--muted)">支撑: ${(kl.support||[]).map(s=>'$'+s).join(' / ')||'--'} | 阻力: ${(kl.resistance||[]).map(r=>'$'+r).join(' / ')||'--'}</div>
+    `;
+  }
+
+  // A6 情报
+  const a6 = latest.a6 || {};
+  if (!a6.ok) {
+    a6El.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 无 A6 情报</div>`;
+  } else {
+    const dirColor = a6.direction === 'BULLISH' ? 'var(--green)' : a6.direction === 'BEARISH' ? 'var(--red)' : 'var(--yellow)';
+    a6El.innerHTML = `
+      <div class="memory-label">A6 情报监控 · ${a6.date || '--'} <span style="margin-left:8px;font-size:10px;padding:2px 6px;border-radius:8px;background:rgba(188,140,255,0.15);color:var(--b-color)">${a6.regime||'--'}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">方向</div><div style="font-size:13px;font-weight:700;color:${dirColor}">${a6.direction||'--'}</div></div>
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">BTC 价格</div><div style="font-size:13px;font-weight:700">$${a6.btc_price||'--'}</div></div>
+        <div style="padding:6px;background:rgba(0,0,0,0.2);border-radius:4px"><div style="font-size:10px;color:var(--muted)">FGI</div><div style="font-size:13px;font-weight:700">${a6.fgi_status||'--'}</div></div>
+      </div>
+      <details style="margin-top:8px"><summary style="font-size:11px;color:var(--muted);cursor:pointer">详细内容 (${a6.content_length||0} 字符)</summary><pre style="font-size:10px;max-height:300px;overflow:auto;color:var(--text);background:rgba(0,0,0,0.2);padding:8px;border-radius:4px;margin-top:6px;white-space:pre-wrap">${(a6.summary||'').substring(0,2000)}</pre></details>
+    `;
+  }
+
+  // 三屏马丁摘要
+  if (!screen.overall_score) {
+    screenEl.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 无三屏马丁数据</div>`;
+  } else {
+    const dirColor = screen.direction === 'BULLISH' ? 'var(--green)' : screen.direction === 'BEARISH' ? 'var(--red)' : 'var(--yellow)';
+    screenEl.innerHTML = `
+      <div class="memory-label">三屏马丁摘要 <span style="margin-left:8px;font-size:10px;padding:2px 6px;border-radius:8px;background:rgba(210,153,34,0.15);color:var(--yellow)">${screen.recommendation||'--'}</span></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="text-align:center;padding:8px 16px;background:rgba(0,0,0,0.2);border-radius:6px"><div style="font-size:20px;font-weight:700;color:${dirColor}">${screen.overall_score||'--'}</div><div style="font-size:10px;color:var(--muted)">综合评分</div></div>
+        <div style="font-size:12px;color:var(--muted)">方向: <span style="color:${dirColor};font-weight:600">${screen.direction||'--'}</span></div>
+      </div>
+    `;
+  }
+}
+
+// 三屏tab自动刷新
+setInterval(() => { if (currentTab === 'screen') loadScreenData(); }, 60000);
 </script>
 </body>
 </html>
