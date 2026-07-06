@@ -1,0 +1,81 @@
+criticisms:
+- evidence: []
+  issue: 数据采集延迟超过预期，影响决策时效
+  method_ref: 批评与自我批评方法论
+  severity: 4
+  suggestion: 优化数据采集流程，增加备用数据源
+  target: 市场情报部
+  type: ai_criticism
+- evidence: []
+  issue: '日报生成时间过晚
+
+    影响: 老板无法及时获取信息
+
+    原因: 各部门数据汇总效率低
+
+    改进: 建立自动化数据采集机制'
+  method_ref: 自我批评模板
+  severity: 3
+  suggestion: 建立自动化数据采集机制
+  target: 本人/本部门
+  type: self_criticism
+- evidence: []
+  issue: 数据采集延迟超过预期，影响决策时效
+  method_ref: 批评与自我批评方法论
+  severity: 4
+  suggestion: 优化数据采集流程，增加备用数据源
+  target: 市场情报部
+  type: ai_criticism
+- evidence: []
+  issue: '日报生成时间过晚
+
+    影响: 老板无法及时获取信息
+
+    原因: 各部门数据汇总效率低
+
+    改进: 建立自动化数据采集机制'
+  method_ref: 自我批评模板
+  severity: 3
+  suggestion: 建立自动化数据采集机制
+  target: 本人/本部门
+  type: self_criticism
+- evidence: []
+  issue: 数据采集延迟超过预期，影响决策时效
+  method_ref: 批评与自我批评方法论
+  severity: 4
+  suggestion: 优化数据采集流程，增加备用数据源
+  target: 市场情报部
+  type: ai_criticism
+- evidence: []
+  issue: '日报生成时间过晚
+
+    影响: 老板无法及时获取信息
+
+    原因: 各部门数据汇总效率低
+
+    改进: 建立自动化数据采集机制'
+  method_ref: 自我批评模板
+  severity: 3
+  suggestion: 建立自动化数据采集机制
+  target: 本人/本部门
+  type: self_criticism
+- evidence: []
+  issue: 数据采集延迟超过预期，影响决策时效
+  method_ref: 批评与自我批评方法论
+  severity: 4
+  suggestion: 优化数据采集流程，增加备用数据源
+  target: 市场情报部
+  type: ai_criticism
+- evidence: []
+  issue: '日报生成时间过晚
+
+    影响: 老板无法及时获取信息
+
+    原因: 各部门数据汇总效率低
+
+    改进: 建立自动化数据采集机制'
+  method_ref: 自我批评模板
+  severity: 3
+  suggestion: 建立自动化数据采集机制
+  target: 本人/本部门
+  type: self_criticism

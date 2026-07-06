@@ -71,10 +71,35 @@ temp/
 wiki_tmp/
 
 # Runtime data and caches
-**/user_data/
 data/knowledge_vector_cache_v2.json
-10-经典指标系统/user_data/
 9-基本面分析/.tmp_*.sh
+
+# 经典指标系统 - 运行时数据（保留策略代码和核心配置）
+10-经典指标系统/user_data/data/
+10-经典指标系统/user_data/backtest_results/
+10-经典指标系统/user_data/hyperopt_results/
+10-经典指标系统/user_data/plot/
+10-经典指标系统/user_data/logs/
+10-经典指标系统/user_data/database/
+10-经典指标系统/user_data/agent_sandbox/
+10-经典指标系统/user_data/ai_integration/
+10-经典指标系统/user_data/notebooks/
+10-经典指标系统/user_data/hyperopt_results_v2/
+10-经典指标系统/user_data/ml_models/
+10-经典指标系统/user_data/online_models/
+10-经典指标系统/user_data/lstm/
+10-经典指标系统/user_data/bt_results/
+10-经典指标系统/user_data/archive/
+10-经典指标系统/user_data/strategies/.trae/
+10-经典指标系统/user_data/strategies/_backups/
+10-经典指标系统/user_data/strategies/tradingview/research/
+10-经典指标系统/user_data/strategies/github/_reports/
+10-经典指标系统/user_data/arena_state.json
+10-经典指标系统/user_data/committee_reward_penalty.json
+10-经典指标系统/user_data/performance_log.json
+10-经典指标系统/user_data/kalman_state.json
+10-经典指标系统/user_data/*.bak
+10-经典指标系统/user_data/strategies/ShortTGEStrategy_plan.txt
 
 # Test outputs
 **/stress_test_output/

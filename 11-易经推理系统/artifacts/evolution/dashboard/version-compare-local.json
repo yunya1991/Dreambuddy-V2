@@ -1,0 +1,47 @@
+{
+  "summary": {
+    "total_decisions": 4,
+    "approved": 2,
+    "rejected": 2,
+    "promotion_count": 2,
+    "rollback_pointer_count": 2,
+    "approval_reject_count": 0
+  },
+  "top_reason_codes": [
+    {
+      "code": "REPORT_VIOLATION_FOUND",
+      "count": 2
+    },
+    {
+      "code": "EVIDENCE_MISSING",
+      "count": 1
+    },
+    {
+      "code": "REPORT_NOT_PASSED",
+      "count": 1
+    },
+    {
+      "code": "REPORT_STAGE_MISSING",
+      "count": 1
+    },
+    {
+      "code": "REPORT_VIOLATION_COUNT_EXCEEDED",
+      "count": 1
+    },
+    {
+      "code": "REPORT_SEVERITY_BLOCKED",
+      "count": 1
+    }
+  ],
+  "version_pairs": [
+    {
+      "pair": "v0.1->v0.1.1",
+      "count": 1
+    },
+    {
+      "pair": "v0.1->v0.1.2",
+      "count": 1
+    }
+  ],
+  "schema_version": "evolution-p2-version-compare-dashboard-v0.1"
+}

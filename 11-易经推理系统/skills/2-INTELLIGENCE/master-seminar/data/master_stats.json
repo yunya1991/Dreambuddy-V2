@@ -1,0 +1,107 @@
+{
+  "soros": {
+    "total_seminars": 1,
+    "total_adoptions": 0.634,
+    "weight_history": [
+      1.0,
+      1.0
+    ],
+    "regime_performance": {},
+    "avg_adoption": 0.634
+  },
+  "druckenmiller": {
+    "total_seminars": 3,
+    "total_adoptions": 1.9020000000000001,
+    "weight_history": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "regime_performance": {},
+    "avg_adoption": 0.634
+  },
+  "buffett": {
+    "total_seminars": 0,
+    "total_adoptions": 0,
+    "weight_history": [
+      1.0
+    ],
+    "regime_performance": {}
+  },
+  "ptj": {
+    "total_seminars": 3,
+    "total_adoptions": 1.9020000000000001,
+    "weight_history": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "regime_performance": {},
+    "avg_adoption": 0.634
+  },
+  "dalio": {
+    "total_seminars": 3,
+    "total_adoptions": 1.9020000000000001,
+    "weight_history": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "regime_performance": {},
+    "avg_adoption": 0.634
+  },
+  "livermore": {
+    "total_seminars": 3,
+    "total_adoptions": 1.9020000000000001,
+    "weight_history": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "regime_performance": {},
+    "avg_adoption": 0.634
+  },
+  "tharp": {
+    "total_seminars": 3,
+    "total_adoptions": 1.9020000000000001,
+    "weight_history": [
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "regime_performance": {},
+    "avg_adoption": 0.634
+  },
+  "oneil": {
+    "total_seminars": 2,
+    "total_adoptions": 1.268,
+    "weight_history": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "regime_performance": {},
+    "avg_adoption": 0.634
+  },
+  "talmans": {
+    "total_seminars": 0,
+    "total_adoptions": 0,
+    "weight_history": [
+      1.0
+    ],
+    "regime_performance": {}
+  },
+  "michele": {
+    "total_seminars": 0,
+    "total_adoptions": 0,
+    "weight_history": [
+      1.0
+    ],
+    "regime_performance": {}
+  }
+}

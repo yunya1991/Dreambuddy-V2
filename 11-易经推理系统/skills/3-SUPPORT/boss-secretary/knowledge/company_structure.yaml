@@ -1,0 +1,682 @@
+# 老板秘书 - 公司架构认知知识库
+
+departments:
+  market_intelligence:
+    name: "市场情报部"
+    description: "负责市场数据收集、行情监控、宏观信息追踪"
+    head: "ADVISOR-MR"
+    skills:
+      - id: "tavily"
+        name: "Tavily搜索"
+        purpose: "宏观/行业新闻搜索"
+      - id: "odaily"
+        name: "Odaily"
+        purpose: "加密市场资讯"
+      - id: "neodata-financial-search"
+        name: "NeoData"
+        purpose: "金融数据查询"
+
+  research:
+    name: "研究部"
+    description: "负责信号设计、技术分析、策略评分"
+    head: "ADVISOR-QT"
+    skills:
+      - id: "dream-signal-scoring-spec"
+        name: "信号评分"
+      - id: "technical-analyst"
+        name: "技术分析"
+      - id: "stock-analysis"
+        name: "股票分析"
+
+  risk_management:
+    name: "风控部"
+    description: "负责仓位计算、风险评估、执行前门禁"
+    head: "ADVISOR-RM"
+    skills:
+      - id: "dream-risk-position-sizing"
+        name: "仓位管理"
+      - id: "dream-pretrade-gatekeeper"
+        name: "执行前门禁"
+      - id: "dream-execution-cost-model"
+        name: "执行成本模型"
+    constraints:
+      max_leverage: 3
+      max_single_position: 0.3
+      daily_drawdown_limit: 0.08
+
+  execution:
+    name: "执行部"
+    description: "负责订单执行、仓位管理、交易回报"
+    head: "ADVISOR-EE"
+    skills:
+      - id: "okx-trade-cli"
+        name: "OKX交易CLI"
+    config:
+      api_config: "~/.okx/config.toml"
+      account_mode: "双向持仓"
+      default_leverage: 2
+
+  operations:
+    name: "运营总监"
+    description: "负责流程协调、任务分配、跨部门沟通"
+    head: "dream-operation-director"
+    skills:
+      - id: "dream-operation-director"
+        name: "运营总监"
+      - id: "smart-skill-manager"
+        name: "Skill管理"
+
+  compliance:
+    name: "合规部"
+    description: "负责输出质检、安全审计、问题上报"
+    head: "dream-output-quality-gate"
+    skills:
+      - id: "dream-output-quality-gate"
+        name: "输出质量门禁"
+      - id: "dream-posttrade-mrm-audit"
+        name: "盘后审计"
+
+advisory_board:
+  ADVISOR-QT:
+    name: "量化交易顾问"
+    rating: "A"
+    weight: "30-40%"
+    expertise:
+      - "技术指标优化"
+      - "趋势跟踪"
+      - "均值回归"
+    trigger_keywords:
+      - "指标"
+      - "策略"
+      - "信号"
+      - "回测"
+
+  ADVISOR-RM:
+    name: "风险管理顾问"
+    rating: "C (待优化)"
+    weight: "35-45%"
+    expertise:
+      - "VaR/CVaR"
+      - "仓位缩放"
+      - "回撤控制"
+    trigger_keywords:
+      - "仓位"
+      - "风险"
+      - "杠杆"
+      - "回撤"
+
+  ADVISOR-EE:
+    name: "执行工程顾问"
+    rating: "A"
+    weight: "25-35%"
+    expertise:
+      - "订单簿分析"
+      - "滑点优化"
+      - "执行算法"
+    trigger_keywords:
+      - "成交"
+      - "滑点"
+      - "流动性"
+
+  ADVISOR-MR:
+    name: "宏观研究顾问"
+    rating: "B"
+    weight: "20-30%"
+    expertise:
+      - "利率政策"
+      - "地缘风险"
+      - "加密市场联动"
+    trigger_keywords:
+      - "宏观"
+      - "FOMC"
+      - "CPI"
+
+  ADVISOR-SA:
+    name: "系统架构顾问"
+    rating: "S"
+    weight: "30-40%"
+    sop_document: "knowledge/architect_review_sop.md"
+    expertise:
+      - "模块化设计"
+      - "接口契约"
+      - "安全审查"
+      - "架构评审"
+    review_levels:
+      P0:
+        name: "紧急"
+        time: "5分钟"
+        scope: "安全漏洞、系统崩溃"
+      P1:
+        name: "高"
+        time: "24小时"
+        scope: "Skill安装、API配置"
+      P2:
+        name: "中"
+        time: "48小时"
+        scope: "自动化任务"
+      P3:
+        name: "低"
+        time: "自审"
+        scope: "文档更新"
+    red_lines:
+      - "硬编码密钥"
+      - "删除围栏"
+      - "绕过审批"
+      - "数据泄露"
+      - "权限提升"
+    trigger_keywords:
+      - "架构"
+      - "接口"
+      - "安全"
+      - "Skill"
+      - "评审"
+      - "审查"
+      - "SOP"
+
+  ADVISOR-KB:
+    name: "大师知识库"
+    rating: "A"
+    weight: "15-25%"
+    knowledge_base_path: "knowledge/masters/"
+    distill_integration:
+      status: "已集成"
+      state_source: "~/.workbuddy/skills/dream-distill-department/master-factory-orchestrator/reports/"
+      state_machine: "5态 (observe/candidate/primary/degraded/frozen)"
+      current_masters:
+        - id: "livermore"
+          name: "Edwin Lefevre (大作手)"
+          distill_state: "observe"
+          regime_fit_score: 84.0
+          position_cap_pct: 12
+          replay_status: "3/3 pass (Round4.1修复后)"
+        - id: "tharp"
+          name: "Van Tharp (期望值)"
+          distill_state: "candidate"
+          regime_fit_score: 88.0
+          position_cap_pct: 18
+          replay_status: "2/3 pass"
+    masters:
+      - id: "turtle"
+        name: "Richard Dennis (海龟)"
+        status: "✅ 已完成"
+        file: "masters/turtle/rules.md"
+        expertise:
+          - "趋势跟踪"
+          - "突破系统"
+          - "仓位管理"
+          - "ATR波动率"
+      - id: "livermore"
+        name: "Edwin Lefevre (大作手)"
+        status: "⚠️ 待填充"
+        file: "masters/livermore/summary.md"
+        expertise:
+          - "投机哲学"
+          - "市场本质"
+          - "时机把握"
+      - id: "douglas"
+        name: "Mark Douglas (心理)"
+        status: "⚠️ 待填充"
+        file: "masters/douglas/summary.md"
+        expertise:
+          - "交易心理"
+          - "概率思维"
+          - "纪律执行"
+      - id: "tharp"
+        name: "Van Tharp (期望值)"
+        status: "⚠️ 待填充"
+        file: "masters/tharp/summary.md"
+        expertise:
+          - "期望值公式"
+          - "头寸规模"
+          - "系统设计"
+    trigger_keywords:
+      - "大师"
+      - "前辈"
+      - "历史经验"
+      - "海龟"
+      - "大作手"
+      - "Van Tharp"
+      - "Mark Douglas"
+
+processes:
+  trading_8step:
+    name: "OKX 8步交易模板"
+    version: "v3.1"
+    steps:
+      - id: 0
+        name: "路由"
+      - id: 1
+        name: "行情"
+      - id: 2
+        name: "情绪"
+      - id: 3
+        name: "评分"
+      - id: 4
+        name: "决策"
+      - id: 5
+        name: "止损止盈"
+      - id: 5.5
+        name: "Episode"
+      - id: 6
+        name: "质量门禁"
+
+  advisor_review:
+    name: "顾问评审流程"
+    steps:
+      - "调查: 收集相关信息"
+      - "评审: 顾问给出意见"
+      - "检验: 执行并验证"
+
+  learning_loop:
+    name: "复盘学习闭环"
+    components:
+      - "Episode (决策快照)"
+      - "Lesson (教训蒸馏)"
+      - "Proposal (变更提案)"
+      - "Rollback (回滚机制)"
+
+configurations:
+  okx_api:
+    path: "~/.okx/config.toml"
+    account_mode: "双向持仓"
+    default_leverage: 2
+    current_leverage: 3
+  automation:
+    frequency: "HOURLY"
+    push_channel: "WeChat"
+  skills:
+    total_count: 42
+    core_count: 6
+  system:
+    script_version: "v3.1"
+
+# ============================================================
+# v2.0 新增部门 - 绩效考核与培训
+# ============================================================
+  performance:
+    name: "绩效考核部"
+    description: "负责各部门/技能表现评估、KPI考核、能力盘点、顾问团考核"
+    head: "dream-performance-review"
+    skills:
+      - id: "dream-performance-review"
+        name: "绩效评估"
+      - id: "dream-hr-recruitment"
+        name: "招聘管理"
+    triggers:
+      - "CRITICISM"
+      - "PERFORMANCE_QUERY"
+      - "STATS_QUERY"
+
+  training:
+    name: "培训部"
+    description: "负责教训蒸馏、知识管理、学习闭环"
+    head: "learning-lesson-distiller"
+    skills:
+      - id: "learning-lesson-distiller"
+        name: "教训蒸馏"
+      - id: "learning-episode-writer"
+        name: "Episode管理"
+      - id: "learning-recall-pack"
+        name: "经验召回"
+    triggers:
+      - "SELF_CRITICISM"
+      - "LESSON_CHECK"
+      - "MASTER_ADVICE"
+
+  distill:
+    name: "蒸馏部"
+    description: "负责人才评估、淘汰决策、深度蒸馏、经验提炼与入职。将退役Skill/顾问的核心价值提取为可复用知识，通过双脑协同+状态机治理实现大师级能力包的标准化生产"
+    head: "master-distillation-orchestrator"
+    skills:
+      # 蒸馏核心流水线
+      - id: "master-distillation-orchestrator"
+        name: "大师蒸馏编排器"
+        purpose: "调度单大师蒸馏全流程 (认知建模→推演→门禁→发布)"
+        role: "部门负责人"
+      - id: "master-factory-orchestrator"
+        name: "大师蒸馏工厂"
+        purpose: "批量蒸馏1-3位大师的统一流水线"
+        role: "批量处理"
+      - id: "neuro-cognitive-modeler"
+        name: "神经认知建模器"
+        purpose: "将大师方法拆解为左脑/右脑/元认知三维认知结构"
+      - id: "market-practice-simulator"
+        name: "市场实践模拟器"
+        purpose: "将认知模型转为可执行playbook，多情景推演"
+      - id: "distillation-quality-gate"
+        name: "蒸馏质量门禁"
+        purpose: "发布前最终审核 (契约/证据/风险/回滚四层检查)"
+        role: "质量把关"
+      - id: "master-template-registry"
+        name: "大师模板注册表"
+        purpose: "标准化大师输入模板 (资料/案例/风格权重)"
+      # 双脑协同决策
+      - id: "shared-memory-kernel"
+        name: "共享记忆内核"
+        purpose: "统一双脑证据图谱与记忆上下文包"
+      - id: "left-brain-executor"
+        name: "左脑执行器"
+        purpose: "确定性规则、门禁与风险硬约束校验"
+      - id: "right-brain-strategist"
+        name: "右脑策略师"
+        purpose: "情景推演、概率判断、策略温度输出"
+      # 状态机治理
+      - id: "master-state-machine-governor"
+        name: "大师状态机治理"
+        purpose: "5态迁移 (observe/candidate/primary/degraded/frozen)"
+      - id: "master-regime-fit-scorer"
+        name: "大师拟合评分器"
+        purpose: "统一计算多大师的regime_fit_score及分解项"
+      - id: "master-switch-policy-engine"
+        name: "大师切换策略引擎"
+        purpose: "生成多大师切换方案 (目标主用/候选/权重)"
+      - id: "master-freeze-controller"
+        name: "大师冻结控制器"
+        purpose: "冻结/解冻流程治理 (触发/审批/回放前置)"
+      # 记忆治理
+      - id: "memory-governance-evaluator"
+        name: "记忆治理评估器"
+        purpose: "评估记忆价值/老化/冲突密度"
+      - id: "memory-tier-manager"
+        name: "记忆分层管理器"
+        purpose: "L0/L1/L2分层晋升降级"
+      - id: "memory-revalidation-gate"
+        name: "记忆重验证门禁"
+        purpose: "对过时/冲突记忆触发重验证"
+    skill_path: "~/.workbuddy/skills/dream-distill-department/"
+    scripts_path: "~/.workbuddy/skills/dream-distill-department/master-factory-orchestrator/scripts/"
+    reports_path: "~/.workbuddy/skills/dream-distill-department/master-factory-orchestrator/reports/"
+    triggers:
+      - "SKILL_RETIRE"
+      - "ADVISOR_RETIRE"
+      - "KNOWLEDGE_DISTILL"
+      - "TALENT_SCREEN"
+      - "MASTER_DISTILL"
+      - "MASTER_STATE_QUERY"
+    upstream:
+      - "绩效考核部 (D级Skill/顾问 → 评估 → 移交)"
+      - "HR招聘部 (退役Skill → 交接 → 蒸馏)"
+    downstream:
+      - "HR招聘部 (蒸馏产物 → SOP-4继承入职)"
+      - "培训部 (蒸馏规则 → 经验库)"
+      - "风控部 (大师playbook → 仓位/门禁参考)"
+    principles:
+      - "Fail-Closed: 信息不足即拒绝发布，不得猜测补齐"
+      - "左脑优先: 左脑硬约束 > 右脑机会判断"
+      - "证据可追溯: 每条规则必须有evidence_refs"
+      - "5态状态机: frozen解锁仅允许回到observe"
+
+# ============================================================
+# v4.0 战略交易体系 - 核心骨干架构 (2026-04-20)
+# 基于第一性原理：阻力最小路径 + 趋势延续性
+# ============================================================
+  strategic_trading:
+    name: "战略交易部"
+    description: "基于第一性原理的战略交易闭环体系，战术服从战略"
+    version: "v1.0"
+    principles:
+      - "第一性原理: 市场总是沿着阻力最小的方向运行"
+      - "趋势延续性: 趋势一旦形成，具有惯性延续"
+      - "战略优先: 战术决策必须服从战略框架"
+      - "调研前置: 市场+经典战役+金融+情绪"
+      - "实事求是: 根据市场变化适度调整"
+    
+    phases:
+      phase_1:
+        id: "A1"
+        name: "深度调研"
+        description: "形成完整的《市场调研报告》"
+        trigger: "每周一 09:00 | 战略周期启动时"
+        duration: "3-7天"
+        outputs:
+          - "research_report_YYYYMMDD.md"
+          - "market_regime_classification"
+          - "historical_cases"
+          - "risk_factors"
+        modules:
+          - name: "市场行情调研"
+            source: "OKX行情 + TradingView + 链上数据"
+            frequency: "实时"
+          - name: "经典战役调研"
+            source: "历史类似形态案例库 + 大师交割单"
+            frequency: "按需"
+          - name: "金融市场调研"
+            source: "宏观指标 + ETF流向 + 期货持仓"
+            frequency: "每日"
+          - name: "市场情绪调研"
+            source: "恐惧贪婪 + 资金费率 + 社交媒体"
+            frequency: "每日"
+        automation: "dream-strategy-research"
+        
+      phase_2:
+        id: "A2"
+        name: "第一性原理分析"
+        description: "将调研结论锚定到核心理论"
+        trigger: "第一步完成后自动触发"
+        outputs:
+          - "first_principles_analysis_YYYYMMDD.md"
+          - "resistance_minimum_direction"
+          - "trend_continuation_probability"
+          - "key_levels"
+        analysis_framework:
+          - name: "阻力最小路径识别"
+            items:
+              - "当前价格位置: 支撑/阻力/中位?"
+              - "多周期共振方向: 1H/4H/D1"
+              - "关键价位: 谁在买？谁在卖？"
+          - name: "趋势延续性评估"
+            items:
+              - "趋势强度: 强/弱/震荡"
+              - "趋势周期: 日内/短期/中期"
+              - "趋势衰竭信号: RSI超买/背离/成交量萎缩？"
+          - name: "矛盾识别"
+            items:
+              - "多空逻辑矛盾点"
+              - "预期与实际偏差"
+              - "可能的反转触发条件"
+        automation: "dream-first-principles"
+        
+      phase_3:
+        id: "A3"
+        name: "战略制定"
+        description: "形成《交易战略方案》"
+        trigger: "第二步完成后 | 每日开盘前"
+        participants:
+          - "战略制定者 (AI)"
+          - "顾问团讨论 (13顾问)"
+          - "人工确认 (可选)"
+        outputs:
+          - "strategy_plan_YYYYMMDD.md"
+          - "tactical_scenarios.json"
+          - "advisor_consultation_record.md"
+        strategy_document:
+          sections:
+            - "战略背景 (调研摘要 + 第一性原理结论 + 市场形态)"
+            - "战略框架 (主方向/战略指令/时间框架)"
+            - "关键价位 (进场/止损/目标1/目标2)"
+            - "战术预案 (情形A/B/C及对应方案)"
+            - "仓位策略 (初始仓位/加仓/减仓条件)"
+            - "风险预案 (极端情况/流动性/黑天鹅)"
+            - "战略有效期 (生效/失效/复核时间)"
+        automation: "dream-strategy-designer"
+        
+      phase_4:
+        id: "A4"
+        name: "战术验证"
+        description: "用小额试探验证战略方向"
+        trigger: "战略制定完成后"
+        validation_process:
+          - name: "触发条件检查"
+            desc: "行情是否达到战略入场条件？"
+          - name: "仓位计算"
+            desc: "验证仓位 = 总仓位 × 10-20%，亏损≤2%账户"
+          - name: "执行验证单"
+            desc: "小额 SHORT/LONG (1张起)，48小时内必须验证结论"
+          - name: "验证结果"
+            results:
+              - "PASS → 进入第五步"
+              - "FAIL → 修订战略或等待"
+              - "PENDING → 扩大验证样本"
+        outputs:
+          - "validation_trade_YYYYMMDD.md"
+          - "validation_result: PASS/FAIL/PENDING"
+          - "strategy_revision (如需修订)"
+        automation: "dream-tactical-validator"
+        
+      phase_5:
+        id: "A5"
+        name: "战术实践"
+        description: "多工具、多策略实现战略目标"
+        trigger: "第四步验证通过"
+        execution_dimensions:
+          - dimension: "多币种"
+            tools: "BTC + ETH + SOL (按战略分配)"
+          - dimension: "多工具"
+            tools: "永续合约 + 期权 + 现货"
+          - dimension: "多策略"
+            tools: "趋势跟踪 + 区间震荡 + 突破策略"
+          - dimension: "多周期"
+            tools: "1H决策 + 4H确认 + D1趋势"
+        principles:
+          - "仓位总风险 ≤ 战略设定上限"
+          - "遵守战略方向，不越界"
+          - "定期复核战略有效性"
+        automation: "dream-tactical-executor"
+        
+      phase_6:
+        id: "A6"
+        name: "情报监控与战术调整"
+        description: "实时监控 + 动态调整"
+        trigger: "实时监控 + 每日定频复核"
+        monitor_items:
+          - name: "价格异动"
+            threshold: "突破关键位±1%"
+            action: "触发战术预案"
+          - name: "趋势衰竭"
+            threshold: "RSI>80 或 RSI<20"
+            action: "考虑减仓"
+          - name: "止损预警"
+            threshold: "价格距止损<2%"
+            action: "提醒关注"
+          - name: "战略偏离"
+            threshold: "持仓方向与战略冲突"
+            action: "告警"
+          - name: "市场形态变化"
+            threshold: "Regime切换"
+            action: "触发战略复核"
+        adjustment_mechanism:
+          - "轻微波动 → 忽略，继续执行"
+          - "中度变化 → 微调止损/目标"
+          - "重大变化 → 战略复核，判断是否退出"
+          - "极端情况 → 立即止损，启动新调研"
+        outputs:
+          - "intelligence_report_YYYYMMDD.md"
+          - "adjustment_decisions.json"
+          - "emergency_exit_triggered (如触发)"
+        automation: "dream-intelligence-monitor"
+
+    scheduling:
+      weekly_cycle:
+        monday_09: "A1 深度调研"
+        monday_14: "A2 第一性分析"
+        monday_18: "A3 战略制定"
+        tuesday: "A4 战术验证"
+        ongoing: "A5+A6 战术实践+情报监控"
+      real_time:
+        - "A5 实时交易执行"
+        - "A6 实时行情监控"
+
+    existing_integration:
+      - name: "dream-multiskill (1h)"
+        integrates_to: "A5 战术执行"
+      - name: "auto-repair (2h)"
+        integrates_to: "A6 情报监控"
+      - name: "dream_main_v4.py"
+        integrates_to: "A5 战术实践 (升级)"
+      - name: "strategy_library.yaml"
+        integrates_to: "A3 战略制定"
+      - name: "macro-monitor"
+        integrates_to: "A1 深度调研"
+
+  risk_prediction:
+    name: "风险预判部"
+    description: "负责第一性原理分析、风险场景推演、假设验证"
+    head: "risk_emergency_system"
+    skills:
+      - id: "risk_emergency_system"
+        name: "风险预判"
+      - id: "dream-pretrade-gatekeeper"
+        name: "风险门禁"
+      - id: "macro-monitor"
+        name: "宏观监控"
+    processes:
+      - "六本质分析 (市场/风险/执行/资本/信息/心理)"
+      - "五大风险场景 (暴跌/流动性/杠杆/系统/策略)"
+      - "假设验证循环"
+    triggers:
+      - "RISK_PREDICTION"
+      - "URGENT_RISK"
+    name: "风险预判部"
+    description: "负责第一性原理分析、风险场景推演、假设验证"
+    head: "risk_emergency_system"
+    skills:
+      - id: "risk_emergency_system"
+        name: "风险预判"
+      - id: "dream-pretrade-gatekeeper"
+        name: "风险门禁"
+      - id: "macro-monitor"
+        name: "宏观监控"
+    processes:
+      - "六本质分析 (市场/风险/执行/资本/信息/心理)"
+      - "五大风险场景 (暴跌/流动性/杠杆/系统/策略)"
+      - "假设验证循环"
+    triggers:
+      - "RISK_PREDICTION"
+      - "URGENT_RISK"
+
+  emergency_response:
+    name: "紧急响应小组"
+    description: "负责重大风险事件的快速响应与决策"
+    head: "risk_emergency_system"
+    members:
+      - "ADVISOR-RM (风控)"
+      - "ADVISOR-MR (市场)"
+      - "ADVISOR-EE (执行)"
+      - "ADVISOR-QT (量化)"
+      - "ADVISOR-SA (架构)"
+      - "ADVISOR-KB (知识)"
+    timeout_minutes: 10
+    principles:
+      - "资本保全优先"
+      - "风险分散"
+      - "仓位管理"
+      - "止损纪律"
+      - "流动性管理"
+      - "趋势跟随"
+    checklists:
+      - "市场暴跌响应"
+      - "流动性危机响应"
+      - "系统故障响应"
+      - "仓位过载响应"
+      - "突发新闻响应"
+      - "回撤超限响应"
+    triggers:
+      - "EMERGENCY_RESPONSE"
+      - "URGENT_RISK (超时升级)"
+
+boss_preferences:
+  communication:
+    style: "简洁"
+    emoji: "可选"
+    detail_level: "中等"
+  risk:
+    max_leverage: 3
+    max_position: "30%"
+    confirm_threshold: "高"
+  execution:
+    auto_low_risk: true
+    consult_first: true
+  abbreviations:
+    BTC: "BTC/USDT:USDT"
+    ETH: "ETH/USDT:USDT"
+    SOL: "SOL/USDT:USDT"

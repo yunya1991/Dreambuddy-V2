@@ -1,0 +1,45 @@
+{
+  "decision": "pass",
+  "change_classification": {
+    "change_type": "R2",
+    "risk_level": "P1",
+    "environment": "Pilot",
+    "tighten_only": true
+  },
+  "hard_constraints_checked": {
+    "prod_write_prohibited_without_approval": true,
+    "sandbox_no_network_no_secrets": true,
+    "gate_result_present": true,
+    "baseline_ref_present": true,
+    "rollback_defined": true,
+    "audit_replayable": true,
+    "external_publish_outbox_only": true
+  },
+  "blockers": [],
+  "warnings": [],
+  "required_actions": [],
+  "rollout_requirements": {
+    "mode": "canary",
+    "must_monitor": [
+      "pnl",
+      "max_drawdown"
+    ],
+    "auto_rollback_triggers": [
+      "Hard-Reject"
+    ],
+    "second_approval_required": false
+  },
+  "audit_fields": {
+    "doc_refs": [
+      "docs/risk_management_v2.0.md",
+      "constitution_section_8.md"
+    ],
+    "trace_id": "trace_20260506_001",
+    "artifacts": [],
+    "approver_roles": [
+      "risk_owner"
+    ]
+  },
+  "audit_id": "AUDIT_20260506_022958_34821",
+  "audit_timestamp": "2026-05-06T02:29:58.512780"
+}

@@ -1,0 +1,63 @@
+action_items:
+- assignee: 市场情报部
+  deadline: 今日
+  status: pending
+  task: 监控BTC回调点位
+- assignee: 研究部
+  deadline: 今日14:00前
+  status: pending
+  task: 准备开多策略参数
+agenda:
+- 行情回顾
+- 信号分析
+- 决策讨论
+- 行动确认
+criticism: 👍 会议质量良好，可以继续优化。
+decisions:
+- 短期看多，但不追高，等回调
+- 若回调至105000附近，考虑20%仓位开多
+discussion:
+- content: BTC当前处于上升趋势，ETF资金持续流入
+  timestamp: '2026-04-19T03:00:54.249356'
+- content: 信号评分78分，可以考虑小仓开多
+  timestamp: '2026-04-19T03:00:54.249358'
+- content: 建议等待回调后再入场
+  timestamp: '2026-04-19T03:00:54.249359'
+end_time: '2026-04-19T03:00:54.249362'
+meeting_id: meeting_0004
+meeting_type: brainstorm
+participants:
+- 老板
+- 市场情报部
+- 研究部
+quality_grade: good
+quality_score: 70.25
+self_criticism: '
+
+  👍 **自我肯定**
+
+
+  这次会议评分 70.2，整体表现良好。
+
+
+  **做得好的地方:**
+
+
+  1. 会议有明确的议程
+
+  2. 讨论比较充分
+
+  3. 有明确的行动项
+
+
+  **可以继续优化的地方:**
+
+
+  1. 提高决策效率
+
+  2. 减少不必要的讨论
+
+  '
+start_time: '2026-04-19T03:00:54.249344'
+tags: []
+title: BTC行情分析与交易决策

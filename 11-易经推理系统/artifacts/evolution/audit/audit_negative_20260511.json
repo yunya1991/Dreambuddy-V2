@@ -1,0 +1,18 @@
+{
+  "candidate_id": "cand-20260511-neg-001",
+  "stage": "audit",
+  "pass": false,
+  "metrics": {
+    "required_fields_coverage": 0.9,
+    "source_ref_count": 1,
+    "evidence_ref_count": 0
+  },
+  "violations": [
+    "AUDIT_FAILED:EVIDENCE_INCOMPLETE",
+    "CANDIDATE_INVALID:EMPTY_EVIDENCE_REFS"
+  ],
+  "artifacts": [
+    "artifacts/evolution/feedback/candidate_negative_20260511.json"
+  ],
+  "timestamp": "2026-05-11T16:21:00Z"
+}

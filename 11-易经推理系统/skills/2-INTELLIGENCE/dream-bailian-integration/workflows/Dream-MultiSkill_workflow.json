@@ -1,0 +1,127 @@
+{
+  "name": "Dream-MultiSkill 合规审查工作流",
+  "version": "v1.0",
+  "description": "系统变更的合规性审查",
+  "trigger": {
+    "type": "manual",
+    "description": "变更提交时触发"
+  },
+  "nodes": [
+    {
+      "id": "input",
+      "type": "start",
+      "name": "变更输入",
+      "output": {
+        "change_description": "string",
+        "change_type": "string",
+        "change_plan": "object"
+      }
+    },
+    {
+      "id": "risk_assess",
+      "type": "llm",
+      "name": "风险评估",
+      "model": "qwen-plus",
+      "description": "评估变更风险",
+      "prompt_template": "你是一个合规审查专家。请评估以下变更的风险：\n\n变更描述：{change_description}\n变更类型：{change_type}\n\n风险维度：\n1. 技术风险 - 代码质量、测试覆盖率\n2. 业务风险 - 对现有流程的影响\n3. 资金风险 - 对账户/仓位的影响\n\n请给出：\n1. 综合风险评分 (0-100)\n2. 风险等级 (LOW/MEDIUM/HIGH/CRITICAL)\n3. 风险说明\n4. 建议的操作 (BLOCK/REVIEW/AUTO)\n",
+      "input": {
+        "change_description": "input.change_description",
+        "change_type": "input.change_type"
+      },
+      "output": {
+        "risk_score": "int",
+        "risk_level": "string",
+        "risk_reasons": "array",
+        "suggested_action": "string"
+      }
+    },
+    {
+      "id": "gate_check",
+      "type": "gate",
+      "name": "门禁判断",
+      "description": "根据风险等级决定后续流程",
+      "checks": [
+        {
+          "name": "P0/P1必须人工",
+          "check": "input.change_type in ['P0', 'P1']"
+        },
+        {
+          "name": "CRITICAL阻止",
+          "check": "risk_assess.risk_level != 'CRITICAL'"
+        }
+      ],
+      "input": {
+        "change_type": "input.change_type",
+        "risk": "risk_assess"
+      },
+      "output": {
+        "gate_result": "object"
+      }
+    },
+    {
+      "id": "human_review",
+      "type": "action",
+      "name": "人工审批",
+      "description": "触发人工审批流程",
+      "input": {
+        "gate_result": "gate_check.gate_result"
+      },
+      "output": {
+        "review_result": "object"
+      }
+    },
+    {
+      "id": "auto_approve",
+      "type": "action",
+      "name": "自动通过",
+      "description": "低风险变更自动通过",
+      "input": {
+        "gate_result": "gate_check.gate_result"
+      },
+      "output": {
+        "approval": "object"
+      }
+    },
+    {
+      "id": "output",
+      "type": "end",
+      "name": "审查结果",
+      "input": {
+        "decision": "gate_check.gate_result.decision",
+        "reason": "gate_check.gate_result.reason"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "input",
+      "to": "risk_assess",
+      "condition": null
+    },
+    {
+      "from": "risk_assess",
+      "to": "gate_check",
+      "condition": null
+    },
+    {
+      "from": "gate_check",
+      "to": "human_review",
+      "condition": "gate_result.requires_human == true"
+    },
+    {
+      "from": "gate_check",
+      "to": "auto_approve",
+      "condition": "gate_result.requires_human == false"
+    },
+    {
+      "from": "human_review",
+      "to": "output",
+      "condition": null
+    },
+    {
+      "from": "auto_approve",
+      "to": "output",
+      "condition": null
+    }
+  ]
+}

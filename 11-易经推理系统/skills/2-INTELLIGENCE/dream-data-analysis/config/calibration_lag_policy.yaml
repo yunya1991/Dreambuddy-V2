@@ -1,0 +1,201 @@
+# dream-data-analysis/config/calibration_lag_policy.yaml
+# 归因时滞策略配置
+# 定义何时触发校准、等待多少轮、证据阈值
+
+# ============== 校准策略定义 ==============
+calibration_policies:
+
+  # 快速校准 (event_driven)
+  # 触发条件: 单次极端事件
+  # 等待轮数: 0 (立即触发)
+  event_driven:
+    name: "事件驱动校准"
+    min_rounds: 0
+    max_rounds: 0
+    evidence_threshold: 1
+    trigger_conditions:
+      - type: "single_extreme_loss"
+        threshold: 5.0  # 单次亏损超过 5%
+        unit: "percent"
+      - type: "single_extreme_gain"
+        threshold: 10.0  # 单次盈利超过 10%
+        unit: "percent"
+      - type: "consecutive_losses"
+        count: 3  # 连续3次亏损
+      - type: "black swan"
+        description: "黑天鹅事件检测"
+
+  # 标准校准 (standard)
+  # 触发条件: 趋势驱动积累
+  # 等待轮数: 5-20
+  standard:
+    name: "标准校准"
+    min_rounds: 5
+    max_rounds: 20
+    evidence_threshold: 3
+    trigger_conditions:
+      - type: "expected_return_mismatch"
+        description: "E[R] 映射失配"
+      - type: "score_result_divergence"
+        min_divergence: 15  # 评分与结果偏离超过 15 分
+      - type: "regime_shift"
+        description: "市场状态切换"
+    bucket_comparison:
+      high_score_buckets: 3    # 评分 >= 80 的桶
+      low_score_buckets: 3     # 评分 < 50 的桶
+      required_bucket_size: 5  # 每桶至少 5 个样本
+
+  # 保守校准 (conservative)
+  # 触发条件: 均值回复验证
+  # 等待轮数: 10-30
+  conservative:
+    name: "保守校准"
+    min_rounds: 10
+    max_rounds: 30
+    evidence_threshold: 5
+    trigger_conditions:
+      - type: "persistent_mismatch"
+        description: "持续性 E[R] 失配"
+      - type: "strategy_drift"
+        window: 20  # 20轮窗口内漂移
+      - type: "correlation_breakdown"
+        min_correlation: 0.3  # 评分-结果相关性跌破 0.3
+    bucket_comparison:
+      high_score_buckets: 5
+      low_score_buckets: 5
+      required_bucket_size: 8
+
+  # 自动选择策略
+  auto_select:
+    enabled: true
+    default_policy: "standard"
+    policy_selection_rules:
+      - condition: "recent_extreme_event"
+        select_policy: "event_driven"
+      - condition: "low_sample_count"
+        min_samples: 20
+        select_policy: "conservative"
+      - condition: "normal_operation"
+        select_policy: "standard"
+
+# ============== E[R] 映射检测规则 ==============
+expected_return_mapping:
+
+  # 期望收益状态
+  statuses:
+    keep:
+      description: "E[R] 映射正常，保持不变"
+      action: "no_change"
+    tighten:
+      description: "高评分组期望收益偏低，收紧"
+      action: "increase_threshold"
+    loosen:
+      description: "高评分组期望收益偏高，可放松"
+      action: "decrease_threshold"
+    rebuild:
+      description: "E[R] 映射严重失配，需重建"
+      action: "full_recalibration"
+
+  # 失配检测阈值
+  mismatch_thresholds:
+    # 高评分组 vs 低评分组期望收益差距
+    er_gap_high_low: 2.0  # 百分点
+    # 高评分组期望收益下限
+    high_score_min_er: 1.0  # %/trade
+    # 低评分组期望收益上限
+    low_score_max_er: 0.0  # %/trade
+    # 相关性阈值
+    min_correlation: 0.4
+
+# ============== λ 风险调节建议 ==============
+lambda_risk:
+
+  statuses:
+    keep:
+      description: "λ 风险敏感度正常"
+      action: "no_change"
+    up:
+      description: "建议提高 λ (更敏感)"
+      action: "increase_lambda"
+      conditions:
+        - "high_volatility_regime"
+        - "consecutive_losses"
+        - "large_drawdown"
+    down:
+      description: "建议降低 λ (更迟钝)"
+      action: "decrease_lambda"
+      conditions:
+        - "low_volatility_regime"
+        - "stable_trend"
+        - "strategy_validation"
+
+  # λ 调整步长
+  adjustment_step: 0.1  # 每次调整 0.1
+  max_lambda: 2.0
+  min_lambda: 0.1
+
+# ============== 阈值校准建议 ==============
+threshold_suggestions:
+
+  # edge_min_bps (最小边缘阈值)
+  edge_min_bps:
+    default: 20
+    min: 10
+    max: 50
+    step: 5
+    adjustment_rules:
+      tighten_when:
+        - "high_cost_environment"
+        - "low_liquidity"
+        - "recent_edge_erosion"
+      loosen_when:
+        - "low_cost_environment"
+        - "high_liquidity"
+        - "strong_historical_edge"
+
+  # max_worst_slippage_bps (最大允许滑点)
+  max_worst_slippage_bps:
+    default: 30
+    min: 15
+    max: 100
+    step: 5
+    adjustment_rules:
+      tighten_when:
+        - "volatile_market"
+        - "large_order"
+      loosen_when:
+        - "stable_market"
+        - "small_order"
+
+  # blackout_windows (禁止交易时段)
+  blackout_windows:
+    default: []
+    candidates:
+      - "high_spread_periods"
+      - "extreme_volatility"
+      - "major_news_events"
+      - "market_close_overlap"
+
+# ============== 证据收集规则 ==============
+evidence_collection:
+
+  # 必须包含的证据类型
+  required_evidence_types:
+    - "episode_trace_ids"
+    - "bucket_statistics"
+    - "correlation_analysis"
+    - "regime_labels"
+
+  # 证据保留策略
+  retention:
+    max_evidence_age_days: 90
+    min_evidence_per_calibration: 5
+    archive_old_evidence: true
+
+# ============== 日志配置 ==============
+logging:
+  enabled: true
+  level: "INFO"
+  log_calibration_decisions: true
+  log_evidence_refs: true
+  log_bucket_statistics: true

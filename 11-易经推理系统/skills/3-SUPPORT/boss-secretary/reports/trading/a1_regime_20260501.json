@@ -1,0 +1,116 @@
+{
+  "report_type": "a1_regime",
+  "generated_at": "2026-05-01T01:00:00+08:00",
+  "market": "CRYPTO",
+  "symbols": ["BTC", "ETH", "SOL"],
+
+  "regime_analysis": {
+    "regime": "ACCUMULATION_CLEAR",
+    "confidence": 72,
+    "trend_direction": "BULLISH_BIAS",
+    "time_horizon": "MEDIUM_TERM"
+  },
+
+  "price_data": {
+    "BTC_USDT": {
+      "current": 76190,
+      "change_24h": 0.0047,
+      "range_24h_low": 74893.3,
+      "range_24h_high": 76621,
+      "ma50": 77200,
+      "ma200": 87519
+    },
+    "ETH_USDT": {
+      "current": 2257.12,
+      "change_24h": -0.0048
+    },
+    "SOL_USDT": {
+      "current": 83.04,
+      "change_24h": -0.0017
+    }
+  },
+
+  "key_levels": {
+    "support_1": 76000,
+    "support_2": 74000,
+    "resistance_1": 77500,
+    "resistance_2": 78500,
+    "major_resistance": 87519
+  },
+
+  "sentiment": {
+    "fear_greed_index": 29,
+    "sentiment_label": "FEAR",
+    "trend": "IMPROVING"
+  },
+
+  "institutional_data": {
+    "etf_net_flow_april": 2440000000,
+    "currency": "USD",
+    "ibit_holdings_btc": 810000,
+    "ibit_aum_usd": 62000000000,
+    "cumulative_etf_aum": 102000000000,
+    "consecutive_inflow_days": 9
+  },
+
+  "onchain_data": {
+    "exchange_reserves_btc": 2210000,
+    "reserve_status": "7_YEAR_LOW",
+    "whale_supply_control_pct": 21.3,
+    "single_day_accumulation_btc": 27652,
+    "accumulation_value_usd": 2000000000
+  },
+
+  "funding_rates": {
+    "BTC": -0.0000706637987622,
+    "ETH": -0.00005,
+    "SOL": -0.00003
+  },
+
+  "scenarios": {
+    "bullish": {
+      "probability": 45,
+      "trigger": "break_78500",
+      "target_1": 82000,
+      "target_2": 87519
+    },
+    "neutral": {
+      "probability": 35,
+      "trigger": "hold_76000",
+      "range": [74000, 78500]
+    },
+    "bearish": {
+      "probability": 20,
+      "trigger": "break_74000",
+      "target_1": 72000,
+      "target_2": 68000
+    }
+  },
+
+  "contradiction_analysis": {
+    "primary": "INSTITUTIONAL_ACCUMULATION vs RETAIL_FEAR",
+    "dominant_side": "INSTITUTIONAL",
+    "evolution": "ACCUMULATION_LATE_STAGE"
+  },
+
+  "risk_factors": {
+    "upside_risks": ["ETF_breakout", "rate_cut_expectation", "institutional_fomo"],
+    "downside_risks": ["fed_hawkish", "etf_profit_taking", "geo_shock"],
+    "black_swan_probability": 15
+  },
+
+  "actionable": {
+    "entry_zone": [75500, 76500],
+    "breakout_confirmation": 78500,
+    "stop_loss": 74000,
+    "position_recommendation": "ACCUMULATE_ON_DIP"
+  },
+
+  "data_sources": [
+    "OKX_CLI",
+    "alternative.me",
+    "Tokenist",
+    "TruthCartographer",
+    "FRED"
+  ]
+}

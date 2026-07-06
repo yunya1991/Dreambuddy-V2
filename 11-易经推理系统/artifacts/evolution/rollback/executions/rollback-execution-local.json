@@ -1,0 +1,12 @@
+{
+  "pointer_id": "rp-cand-20260511-pos-001-v0.1-to-v0.1.2",
+  "candidate_id": "cand-20260511-pos-001",
+  "execution_mode": "dry-run",
+  "executed": false,
+  "status": "planned",
+  "restore_ref": "constraints/releases/v0.1.json",
+  "reason_codes": [],
+  "rto_seconds": 0,
+  "timestamp": "2026-05-12T10:30:00Z",
+  "schema_version": "evolution-p2-rollback-execution-v0.1"
+}

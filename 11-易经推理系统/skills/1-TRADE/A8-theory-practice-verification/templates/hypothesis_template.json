@@ -1,0 +1,80 @@
+{
+  "hypothesis_id": "HXXX",
+  "name": "假说名称",
+  "description": "假说详细描述：如果[改进措施]，那么[预期效果]，因为[理论依据]",
+  "rationale": "理论依据（基于哪本书的哪个理论）",
+  "testable": true,
+  "prediction": "具体、可测量的预测",
+  "proposed_by": "A8",
+  "date": "YYYY-MM-DD",
+  "related_contradictions": [
+    {
+      "contradiction_id": "CXXX",
+      "description": "相关矛盾描述"
+    }
+  ],
+  "related_issues": [
+    {
+      "issue_id": "IXXX",
+      "description": "相关问题描述"
+    }
+  ],
+  "experiment_design": {
+    "experiment_type": "回测实验/模拟盘实验/A-B测试/影子模式",
+    "duration": "实验时长",
+    "sample_size": "样本量",
+    "control_group": "对照组描述",
+    "treatment_group": "处理组描述",
+    "success_criteria": "成功标准",
+    "risk_mitigation": "风险缓解措施"
+  },
+  "theoretical_basis": {
+    "primary_source": "主要理论来源（书名+作者）",
+    "key_concepts": [
+      "关键概念1",
+      "关键概念2"
+    ],
+    "application_method": "如何应用这个理论"
+  },
+  "expected_outcome": {
+    "best_case": "最好情况",
+    "most_likely": "最可能情况",
+    "worst_case": "最坏情况"
+  },
+  "validation_plan": {
+    "validation_method": "验证方法（统计检验类型）",
+    "significance_level": 0.05,
+    "effect_size_threshold": 0,
+    "sample_size_calculation": "样本量计算依据"
+  },
+  "next_steps_if_verified": [
+    "如果验证通过，下一步行动1",
+    "如果验证通过，下一步行动2"
+  ],
+  "next_steps_if_failed": [
+    "如果验证失败，下一步行动1",
+    "如果验证失败，下一步行动2"
+  ],
+  "status": "提出/实验中/验证通过/验证失败",
+  "results": {
+    "verification_date": "验证日期",
+    "verification_status": "PASSED/FAILED/INCONCLUSIVE",
+    "statistical_significance": true,
+    "p_value": 0,
+    "effect_size": 0,
+    "confidence_interval": [0, 0],
+    "conclusion": "验证结论"
+  },
+  "metadata": {
+    "created_date": "YYYY-MM-DD",
+    "last_modified": "YYYY-MM-DD",
+    "version": "v1.0",
+    "related_hypotheses": [
+      "相关假说ID"
+    ],
+    "tags": [
+      "标签1",
+      "标签2"
+    ]
+  }
+}

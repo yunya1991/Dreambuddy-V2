@@ -1,0 +1,48 @@
+{
+  "intent": {
+    "what": "调整杠杆参数并修复风控逻辑",
+    "why": "收紧风险控制，修复当前代码 bug",
+    "impact_scope": ["parameter", "system"]
+  },
+  "change_type": "R2",
+  "risk_level": "P1",
+  "doc_refs": [
+    "docs/risk_management_v2.0.md",
+    "constitution_section_8.md"
+  ],
+  "artifacts": {
+    "data_snapshot_id": "snapshot_20260506",
+    "config_version": "v2.1.0",
+    "strategy_key": "momentum_v2",
+    "gating_report": {
+      "gate_result": {"decision": "PASS"},
+      "baseline_ref": "baseline_v2.0"
+    }
+  },
+  "rollout_plan": {
+    "mode": "canary",
+    "canary_percentage": 10,
+    "monitoring_window": "24h",
+    "success_metrics": ["pnl", "max_drawdown"],
+    "exit_conditions": ["连续3次失败"]
+  },
+  "rollback_plan": {
+    "rollback_plan_id": "ROLLBACK_001",
+    "rollback_points": ["v2.0", "snapshot_20260505"],
+    "triggers": ["pnl < -100", "max_drawdown > 0.05"],
+    "actions": ["restore_config", "revert_commit"],
+    "manual_trigger": "风险负责人确认"
+  },
+  "external_publish": {
+    "channel": "telegram",
+    "content_template": "策略更新通知...",
+    "outbox_idempotent_key": "outbox_001",
+    "approval_status": "approved"
+  },
+  "trace_id": "trace_20260506_001",
+  "parents": ["trace_20260505_001"],
+  "evidence": [
+    "backtest_result_20260506.pdf",
+    "risk_analysis_20260506.xlsx"
+  ]
+}

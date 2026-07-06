@@ -1,0 +1,16 @@
+{
+  "ticket_id": "appr-20260512-pos-001",
+  "candidate_id": "cand-20260511-pos-001",
+  "trace_id": "trace-p0-pos-001",
+  "policy_version": "embedded.v0",
+  "decision_ref": "artifacts/evolution/decision/decision-20260512T080000Z.json",
+  "approver": "risk-committee",
+  "approved_at": "2026-05-12T00:00:00Z",
+  "expires_at": "2027-05-12T00:00:00Z",
+  "scope": {
+    "to_versions": [
+      "v0.1.1"
+    ]
+  },
+  "schema_version": "evolution-p2-approval-ticket-v0.1"
+}

@@ -1,0 +1,53 @@
+{
+  "strategy_name": "OttStrategy",
+  "params": {
+    "roi": {
+      "0": 0.2,
+      "60": 0.12,
+      "240": 0.06,
+      "720": 0
+    },
+    "stoploss": {
+      "stoploss": -0.15
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.02,
+      "trailing_stop_positive_offset": 0.04,
+      "trailing_only_offset_is_reached": true
+    },
+    "max_open_trades": {
+      "max_open_trades": 2
+    },
+    "buy": {
+      "adx_period": 10,
+      "adx_threshold": 19,
+      "atr_min_ratio": 0.001,
+      "atr_period": 28,
+      "btc_ema_period": 189,
+      "btc_ema_slope_lookback": 18,
+      "ema_regime_period": 408,
+      "ema_trend_period": 195,
+      "enable_btc_filter": true,
+      "enable_rs_filter": true,
+      "ott_shift": 5,
+      "pds": 4,
+      "percent": 2.984,
+      "regime_slope_lookback": 35,
+      "rs_ema_period": 73,
+      "rs_slope_lookback": 7,
+      "rsi_max_long": 68,
+      "rsi_oversold": 30,
+      "rsi_period": 10,
+      "volume_multiplier": 1.164
+    },
+    "sell": {
+      "enable_short": true,
+      "rsi_max_short": 33,
+      "rsi_min_short": 23,
+      "rsi_overbought": 75
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2026-01-07 14:20:22.809754+00:00"
+}

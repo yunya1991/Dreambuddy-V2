@@ -1,0 +1,17 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "trace_id": "trace-p0-pos-001",
+  "decision": "approve",
+  "reason_codes": [],
+  "required_stages": [
+    "audit",
+    "sandbox"
+  ],
+  "stage_results": {
+    "audit": true,
+    "sandbox": true
+  },
+  "rollback_pointer_id": "rp-cand-20260511-pos-001-v0.1-to-v0.1.1",
+  "timestamp": "2026-05-12T09:00:00Z",
+  "schema_version": "evolution-p0-decision-record-v0.1"
+}

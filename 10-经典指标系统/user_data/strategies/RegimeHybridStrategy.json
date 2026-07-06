@@ -1,0 +1,39 @@
+{
+  "strategy_name": "RegimeHybridStrategy",
+  "params": {
+    "roi": {
+      "0": 0.1,
+      "120": 0.05,
+      "360": 0
+    },
+    "stoploss": {
+      "stoploss": -0.25
+    },
+    "trailing": {
+      "trailing_stop": false,
+      "trailing_stop_positive": null,
+      "trailing_stop_positive_offset": 0.0,
+      "trailing_only_offset_is_reached": false
+    },
+    "max_open_trades": {
+      "max_open_trades": 2
+    },
+    "buy": {
+      "adx_threshold": 24,
+      "buy_rsi": 25,
+      "ema_fast": 40,
+      "ema_medium": 42,
+      "ema_slow": 94,
+      "entry_votes_required": 4,
+      "tolerance_atr_mult": 1.689,
+      "volume_mult": 2.245
+    },
+    "sell": {
+      "atr_multiplier": 1.514,
+      "sell_rsi": 76,
+      "trail_atr_multiplier": 1.115
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2026-01-02 18:08:51.240350+00:00"
+}

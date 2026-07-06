@@ -1,0 +1,123 @@
+{
+  "trace_id": "INTEGRATION-TEST-001",
+  "intent": {
+    "what": "优化杠杆管理模块日志输出",
+    "why": "当前日志级别过低，调试困难",
+    "impact_scope": ["parameter"]
+  },
+  "change_type": "R2",
+  "risk_level": "P1",
+  "target": {
+    "file": "scripts/hard_gate_checker.py",
+    "section": "leverage_check",
+    "old_value": "MAX_LEVERAGE = 2.0",
+    "new_value": "MAX_LEVERAGE = 3.0"
+  },
+  "doc_refs": [
+    "docs/CONSTITUTION.md"
+  ],
+  "artifacts": {
+    "run_command": "python3 scripts/hard_gate_checker_test.py --baseline v2.0-baseline --target MAX_LEVERAGE=3.0",
+    "data_snapshot_id": "snapshot_20260506",
+    "config_version": "v2.1",
+    "strategy_key": "leverage_management",
+    "gating_report": {
+      "gate_result": {"decision": "PASS"},
+      "baseline_ref": "baseline_v2.0"
+    }
+  },
+  "rollback_plan": {
+    "rollback_plan_id": "ROLLBACK-LEVERAGE-001",
+    "rollback_points": [
+      {
+        "type": "file_restore",
+        "file": "scripts/hard_gate_checker.py",
+        "backup_id": "BACKUP-20260506-001"
+      }
+    ],
+    "triggers": ["P0 指标触发", "人工审核"],
+    "actions": [
+      "恢复 MAX_LEVERAGE = 2.0",
+      "重启合规检查引擎",
+      "验证硬门禁行为"
+    ],
+    "validation": "hard_gate_checker_test.py",
+    "max_rollback_time": 300
+  },
+  "triggers": {
+    "auto": ["trade_signal", "position_open"],
+    "manual": ["user_command"]
+  },
+  "sandbox_ok": true,
+  "prod_ok": false,
+  "outbound_ok": false,
+  "baseline_ref": "v2.0-baseline",
+  "affected_rules": [
+    "leverage_cap_check"
+  ],
+  "data_privacy_review": "N/A (no PII involved)",
+  "external_reviewers": [],
+  "risk_expansion": false,
+  "execution_context": {
+    "strategy_directive": {
+      "matched_strategy": "trend_following_v1",
+      "directive_bias": "LONG",
+      "position_modifier": 1.0,
+      "leverage_cap": 3.0,
+      "exclusion_conditions_checked": [],
+      "match_confidence": 0.85
+    },
+    "data_health": {
+      "candles_ok": true,
+      "funding_ok": true,
+      "oi_ok": true,
+      "macro_ok": true
+    },
+    "scores_result": {
+      "scores": {
+        "trend_strength": 7,
+        "macro_fund_tailwind": 6,
+        "memory_safety": 8,
+        "strategy_match": 7,
+        "total": 28
+      },
+      "expected_return": {
+        "expected_return_bps": 50,
+        "expected_return_range_bps": {
+          "low": 30,
+          "high": 70
+        }
+      },
+      "gates": {
+        "pass": true,
+        "reason_codes": []
+      }
+    },
+    "position_result": {
+      "pass": true,
+      "reason_codes": [],
+      "position": {
+        "notional_usdt": 5000,
+        "lever": 2.5
+      }
+    },
+    "execution_cost_result": {
+      "pass": true,
+      "reason_codes": [],
+      "costs": {
+        "worst_case_slippage_bps": 30,
+        "total_cost_bps_est": 35
+      }
+    },
+    "validation_result": {
+      "hit_ratio_rolling": 0.65,
+      "profit_factor_rolling": 1.8,
+      "stability_flag": "stable"
+    },
+    "account_snapshot": {
+      "today_drawdown_pct": -0.02,
+      "dream_mode_active": false
+    },
+    "total_equity": 10000
+  }
+}

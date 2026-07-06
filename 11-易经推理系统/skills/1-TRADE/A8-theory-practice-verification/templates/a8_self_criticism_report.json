@@ -1,0 +1,190 @@
+{
+  "report_id": "A8_YYYYMMDD",
+  "date": "YYYY-MM-DD",
+  "target_period": "YYYY-MM-DD",
+  "executive_summary": "摘要...",
+  
+  "critical_thinking_issues": {
+    "description": "基于Paul《批判性思维工具》的发现",
+    "issues_found": [
+      {
+        "issue_id": "I001",
+        "source": "A2",
+        "element": "推断（Inference）",
+        "standard": "逻辑性（Logic）",
+        "description": "问题描述",
+        "severity": "高/中/低",
+        "evidence": "证据...",
+        "recommendation": "改进建议..."
+      }
+    ],
+    "summary": {
+      "total_issues": 0,
+      "high_severity": 0,
+      "medium_severity": 0,
+      "low_severity": 0
+    }
+  },
+  
+  "cognitive_biases": {
+    "description": "基于Kahneman《思考快与慢》的发现",
+    "biases_detected": [
+      {
+        "bias_id": "B001",
+        "type": "锚定效应",
+        "source": "A4",
+        "description": "偏差描述",
+        "impact": "高/中/低",
+        "evidence": "证据...",
+        "alternative": "替代方案...",
+        "debiasing_method": "去偏差化方法..."
+      }
+    ],
+    "cognitive_miser_behaviors": [
+      {
+        "behavior_id": "M001",
+        "type": "过早停止信息搜索",
+        "source": "A3",
+        "description": "行为描述",
+        "impact": "高/中/低"
+      }
+    ],
+    "summary": {
+      "total_biases": 0,
+      "total_miser_behaviors": 0,
+      "most_common_bias": "偏差类型"
+    }
+  },
+  
+  "rationality_assessment": {
+    "description": "基于Stanovich《超越智商的思维》的评估",
+    "cognitive_rationality": {
+      "belief_formation": 0,
+      "evidence_updating": 0,
+      "bias_avoidance": 0,
+      "probabilistic_reasoning": 0,
+      "average": 0
+    },
+    "instrumental_rationality": {
+      "goal_consistency": 0,
+      "strategy_effectiveness": 0,
+      "environmental_adaptation": 0,
+      "goal_achievement": 0,
+      "average": 0
+    },
+    "cognitive_miser_score": 0,
+    "mindware_adequacy": 0,
+    "overall_rationality_score": 0,
+    "rationality_level": "高/中/低",
+    "improvement_areas": [
+      "需要改进的方面..."
+    ]
+  },
+  
+  "contradictions": {
+    "description": "基于毛泽东《矛盾论》的分析",
+    "contradictions_identified": [
+      {
+        "contradiction_id": "C001",
+        "description": "矛盾描述",
+        "universality": "普遍存在/特殊情况",
+        "specialty": "特殊性质",
+        "main_contradiction": false,
+        "main_aspect": "主要方面",
+        "resolution_direction": "解决方向...",
+        "urgency": "高/中/低"
+      }
+    ],
+    "main_contradiction": {
+      "contradiction_id": "C001",
+      "description": "主要矛盾描述",
+      "resolution_priority": "高/中/低",
+      "suggested_actions": [
+        "建议行动..."
+      ]
+    },
+    "summary": {
+      "total_contradictions": 0,
+      "main_contradiction_count": 0,
+      "resolution_priority": "高/中/低"
+    }
+  },
+  
+  "theory_practice_alignment": {
+    "description": "基于毛泽东《实践论》的评估",
+    "alignment_score": 0,
+    "alignment_level": "高/中/低",
+    "issues_identified": [
+      {
+        "issue_id": "TP001",
+        "description": "知行合一问题",
+        "evidence": "证据...",
+        "recommendation": "改进建议..."
+      }
+    ],
+    "positive_examples": [
+      {
+        "example_id": "TP001",
+        "description": "知行合一正面案例",
+        "evidence": "证据..."
+      }
+    ]
+  },
+  
+  "improvement_suggestions": [
+    {
+      "suggestion_id": "S001",
+      "category": "批判性思维/认知偏差/理性提升/矛盾解决/知行合一",
+      "target_system": "A0/A1/A2/.../A7",
+      "description": "建议描述",
+      "rationale": "理论依据...",
+      "expected_effect": "预期效果...",
+      "priority": "高/中/低",
+      "implementation_complexity": "高/中/低",
+      "estimated_effort": "人天"
+    }
+  ],
+  
+  "theory_refinement_proposals": [
+    {
+      "proposal_id": "TRP001",
+      "hypothesis_id": "H001",
+      "target_system": "A2",
+      "current_theory": "当前理论描述...",
+      "refinement": "改进内容...",
+      "rationale": "改进依据...",
+      "implementation_plan": "实施计划...",
+      "expected_benefit": "预期收益...",
+      "risk_assessment": "风险评估..."
+    }
+  ],
+  
+  "next_actions": [
+    {
+      "action_id": "A001",
+      "description": "行动描述",
+      "owner": "A8/A0/A2/...",
+      "due_date": "YYYY-MM-DD",
+      "priority": "高/中/低",
+      "dependencies": [
+        "依赖的行动..."
+      ]
+    }
+  ],
+  
+  "appendices": {
+    "referenced_books": [
+      "《批判性思维工具》(Richard Paul)",
+      "《思考快与慢》(Daniel Kahneman)",
+      "《超越智商的思维》(Keith Stanovich)",
+      "《实践论》(毛泽东)",
+      "《矛盾论》(毛泽东)"
+    ],
+    "data_sources": [
+      "A0-A7昨日输出",
+      "系统运行日志",
+      "市场数据"
+    ],
+    "methodology": "基于五本书理论基础的系统分析方法"
+  }
+}

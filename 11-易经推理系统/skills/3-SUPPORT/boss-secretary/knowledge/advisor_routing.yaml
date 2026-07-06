@@ -1,0 +1,348 @@
+# 老板秘书 - 顾问路由规则
+
+advisor_trigger_matrix:
+  ADVISOR-QT:
+    name: "量化交易顾问"
+    rating: "A"
+    base_weight: 0.35
+    mandatory_triggers:
+      - intent: "EXECUTE_LONG"
+        condition: "信号置信度 < 70%"
+      - intent: "EXECUTE_SHORT"
+        condition: "信号置信度 < 70%"
+      - intent: "OPPORTUNITY_SCAN"
+        condition: "always"
+      - intent: "PARAM_ADJUST"
+        condition: "涉及指标/策略参数"
+    expected_output:
+      - "信号有效性评估"
+      - "置信度评分"
+      - "落地建议"
+
+  ADVISOR-RM:
+    name: "风险管理顾问"
+    rating: "C (待优化)"
+    base_weight: 0.40
+    mandatory_triggers:
+      - intent: "EXECUTE_LONG"
+        condition: "always"
+      - intent: "EXECUTE_SHORT"
+        condition: "always"
+      - intent: "EXECUTE_CLOSE"
+        condition: "always"
+      - intent: "PARAM_ADJUST"
+        condition: "涉及杠杆/仓位参数"
+    expected_output:
+      - "风险等级"
+      - "仓位建议区间"
+      - "VaR估算"
+      - "熔断条件"
+
+  ADVISOR-EE:
+    name: "执行工程顾问"
+    rating: "A"
+    base_weight: 0.30
+    mandatory_triggers:
+      - intent: "EXECUTE_LONG"
+        condition: "仓位 > 20%"
+      - intent: "EXECUTE_SHORT"
+        condition: "仓位 > 20%"
+    expected_output:
+      - "建议订单类型"
+      - "预期滑点"
+      - "降级策略"
+
+  ADVISOR-MR:
+    name: "宏观研究顾问"
+    rating: "B"
+    base_weight: 0.25
+    mandatory_triggers:
+      - intent: "MARKET_ANALYSIS"
+        condition: "always"
+      - intent: "OPPORTUNITY_SCAN"
+        condition: "always"
+    expected_output:
+      - "宏观方向"
+      - "置信度"
+      - "风险窗口"
+
+  ADVISOR-SA:
+    name: "系统架构顾问"
+    rating: "S"
+    base_weight: 0.35
+    mandatory_triggers:
+      - intent: "FEATURE_REQUEST"
+        condition: "always"
+      - intent: "AUTOMATION_CREATE"
+        condition: "always"
+      - intent: "AUTOMATION_OPTIMIZE"
+        condition: "always"
+    expected_output:
+      - "架构合规性"
+      - "安全状态"
+      - "影响范围"
+
+  ADVISOR-KB:
+    name: "大师知识库"
+    rating: "A"
+    base_weight: 0.20
+    mandatory_triggers:
+      - intent: "MASTER_ADVICE"
+        condition: "always"
+      - intent: "HISTORY_RETRIEVE"
+        condition: "always"
+      - intent: "LESSON_CHECK"
+        condition: "always"
+    expected_output:
+      - "大师观点"
+      - "适用条件"
+      - "局限性"
+
+advisor_combinations:
+  execution_combo:
+    required:
+      - "ADVISOR-QT"
+      - "ADVISOR-RM"
+    optional:
+      - "ADVISOR-MR"
+      - "ADVISOR-EE"
+  analysis_combo:
+    required:
+      - "ADVISOR-MR"
+      - "ADVISOR-QT"
+    optional:
+      - "ADVISOR-KB"
+  system_combo:
+    required:
+      - "ADVISOR-SA"
+    optional:
+      - "ADVISOR-QT"
+      - "ADVISOR-RM"
+  automation_combo:
+    required:
+      - "ADVISOR-SA"
+    conditional:
+      - "ADVISOR-RM"
+      - "ADVISOR-QT"
+  reflection_combo:
+    required:
+      - "ADVISOR-KB"
+    optional:
+      - "ADVISOR-RM"
+      - "ADVISOR-QT"
+
+dynamic_weight_adjustment:
+  high_volatility:
+    condition: "ATR > 2x 均值"
+    ADVISOR-RM: 0.15
+    ADVISOR-EE: 0.10
+    ADVISOR-QT: -0.05
+  macro_event_window:
+    condition: "FOMC/CPI发布前后24h"
+    ADVISOR-MR: 0.20
+    ADVISOR-RM: 0.10
+    ADVISOR-QT: -0.10
+  post_loss:
+    condition: "近期亏损 > 5%"
+    ADVISOR-RM: 0.20
+    ADVISOR-KB: 0.10
+
+response_timing:
+  urgent:
+    time_limit: "5分钟"
+    applicable:
+      - "市场剧烈波动"
+      - "系统异常"
+  normal:
+    time_limit: "30分钟"
+    applicable:
+      - "日常交易决策"
+      - "参数调整"
+  research:
+    time_limit: "2小时"
+    applicable:
+      - "策略评审"
+      - "系统设计"
+
+# ============================================================
+# v2.0 新增顾问 - 绩效考核与培训
+# ============================================================
+  ADVISOR-HR:
+    name: "绩效考核顾问"
+    rating: "B"
+    base_weight: 0.25
+    mandatory_triggers:
+      - intent: "CRITICISM"
+        condition: "always"
+      - intent: "PERFORMANCE_QUERY"
+        condition: "always"
+    expected_output:
+      - "绩效评估"
+      - "问题定位"
+      - "改进建议"
+
+  ADVISOR-TR:
+    name: "培训顾问"
+    rating: "A"
+    base_weight: 0.20
+    mandatory_triggers:
+      - intent: "SELF_CRITICISM"
+        condition: "always"
+      - intent: "LESSON_CHECK"
+        condition: "always"
+    expected_output:
+      - "教训蒸馏"
+      - "知识沉淀"
+      - "培训建议"
+
+# ============================================================
+# v3.0 新增顾问 - 风险与紧急响应
+# ============================================================
+  ADVISOR-RP:
+    name: "风险预判顾问"
+    rating: "S"
+    base_weight: 0.40
+    mandatory_triggers:
+      - intent: "RISK_PREDICTION"
+        condition: "always"
+      - intent: "URGENT_RISK"
+        condition: "always"
+    expected_output:
+      - "第一性原理分析"
+      - "场景推演"
+      - "风险评分"
+      - "应对策略"
+
+  ADVISOR-ER:
+    name: "紧急响应顾问"
+    rating: "S"
+    base_weight: 0.50
+    mandatory_triggers:
+      - intent: "EMERGENCY_RESPONSE"
+        condition: "always"
+      - intent: "URGENT_RISK"
+        condition: "time_elapsed > 10min"
+    expected_output:
+      - "紧急评估"
+      - "决策建议"
+      - "执行方案"
+      - "事后复盘"
+
+# ============================================================
+# v2.0/v3.0 新增顾问组合
+# ============================================================
+  reflection_combo:
+    required:
+      - "ADVISOR-KB"
+      - "ADVISOR-HR"
+    optional:
+      - "ADVISOR-RM"
+      - "ADVISOR-QT"
+
+  risk_combo:
+    required:
+      - "ADVISOR-RP"
+      - "ADVISOR-RM"
+    optional:
+      - "ADVISOR-MR"
+      - "ADVISOR-ER"
+
+  emergency_combo:
+    required:
+      - "ADVISOR-ER"
+      - "ADVISOR-RM"
+    optional:
+      - "ADVISOR-QT"
+      - "ADVISOR-EE"
+      - "ADVISOR-SA"
+      - "ADVISOR-KB"
+
+# ============================================================
+# v1.0 新增顾问 - 数据分析部
+# ============================================================
+  ADVISOR-DA:
+    name: "数据分析顾问"
+    rating: "A"
+    base_weight: 0.30
+    mandatory_triggers:
+      - intent: "DATA_ANALYSIS"
+        condition: "always"
+      - intent: "TREND_ANALYSIS"
+        condition: "always"
+      - intent: "RESISTANCE_ANALYSIS"
+        condition: "always"
+      - intent: "CALIBRATION_SUGGESTION"
+        condition: "always"
+      - intent: "CHART_REQUEST"
+        condition: "always"
+      - intent: "DASHBOARD_VIEW"
+        condition: "always"
+      - intent: "EPISODE_REVIEW"
+        condition: "always"
+    expected_output:
+      - "趋势分析"
+      - "阻力分解"
+      - "校准建议"
+      - "可视化图表"
+      - "E[R]映射状态"
+
+  data_analysis_combo:
+    required:
+      - "ADVISOR-DA"
+    optional:
+      - "ADVISOR-KB"
+      - "ADVISOR-HR"
+    description: "数据分析与复盘组合"
+
+  calibration_combo:
+    required:
+      - "ADVISOR-DA"
+      - "ADVISOR-RM"
+    optional:
+      - "ADVISOR-QT"
+    description: "校准决策组合"
+
+# ============================================================
+# 意图触发关键词映射 (用于自动路由)
+# ============================================================
+intent_keywords:
+  DATA_ANALYSIS:
+    - "数据分析"
+    - "数据分析部"
+    - "分析报告"
+    - "数据驱动"
+    - "统计"
+  TREND_ANALYSIS:
+    - "趋势分析"
+    - "趋势图"
+    - "MA"
+    - "EMA"
+    - "趋势强度"
+    - "趋势惯性"
+  RESISTANCE_ANALYSIS:
+    - "阻力分析"
+    - "阻力分解"
+    - "摩擦分析"
+    - "流动性分析"
+  CALIBRATION_SUGGESTION:
+    - "校准建议"
+    - "阈值调整"
+    - "参数校准"
+    - "E[R]映射"
+    - "λ调整"
+  CHART_REQUEST:
+    - "图表"
+    - "雷达图"
+    - "可视化"
+    - "生成图表"
+    - "画图"
+  DASHBOARD_VIEW:
+    - "Dashboard"
+    - "仪表盘"
+    - "监控面板"
+    - "总览"
+  EPISODE_REVIEW:
+    - "episode"
+    - "复盘"
+    - "回放"
+    - "历史分析"

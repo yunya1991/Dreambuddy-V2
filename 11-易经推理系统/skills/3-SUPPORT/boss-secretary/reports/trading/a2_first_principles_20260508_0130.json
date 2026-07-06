@@ -1,0 +1,234 @@
+{
+  "first_principles_analysis": {
+    "dual_dimension_analysis": {
+      "fundamental": {
+        "capital_flow": {
+          "macro_liquidity": {
+            "dxy": "96.47(-1.7%)",
+            "fed_policy": "利率3.5%-3.75%, 维持不变",
+            "global_liquidity": "待评估"
+          },
+          "etf_flow": {
+            "status": "MIXED",
+            "latest": "$284M流入(BlackRock 05-01)",
+            "3day_sum": "-$491M(前3天流出)",
+            "signal": "不稳定"
+          },
+          "oi_change": {
+            "status": "待获取",
+            "signal": "unknown"
+          },
+          "micro_liquidity": {
+            "order_book_depth": "待获取",
+            "spread": "待获取",
+            "signal": "unknown"
+          }
+        },
+        "sentiment": {
+          "fear_greed": 45,
+          "fgi_classification": "NEUTRAL(中性偏恐惧)",
+          "funding_rate": "0.0071%",
+          "funding_rate_signal": "接近零轴，轻微偏多",
+          "long_short_ratio": "待获取"
+        },
+        "geopolitical": {
+          "key_events": [
+            "美伊接近框架，油价稳定",
+            "中东局势缓和"
+          ],
+          "impact": "POSITIVE",
+          "details": "地缘缓和利好风险资产"
+        },
+        "policy": {
+          "central_bank": "EASING(降息预期)",
+          "dxy_trend": "走弱(-1.7% 5月)",
+          "details": "DXY下跌利好BTC"
+        },
+        "synthesis": {
+          "fundamental_direction": "NEUTRAL",
+          "fundamental_score": 50
+        }
+      },
+      "technical": {
+        "trend_indicators": {
+          "ema_alignment": "BEARISH(空头排列: MA5<MA10<MA20)",
+          "ma_trajectory": "DOWN",
+          "ma5": 79950,
+          "ma10": 80200,
+          "ma20": 80850,
+          "ma60": 79200
+        },
+        "momentum": {
+          "rsi": 78.5,
+          "rsi_signal": "OVERBOUGHT(超买，但从89.5回落)",
+          "macd": -850,
+          "macd_signal": "DEATH_CROSS(死叉，空头信号)",
+          "macd_histogram": 70,
+          "macd_status": "CONVERGING(收敛中)"
+        },
+        "volatility": {
+          "atr": "1850",
+          "atr_percent": "2.3%",
+          "bollinger_position": "待计算"
+        },
+        "support_resistance": {
+          "key_levels": [
+            {"type": "support", "price": 79000, "strength": "HIGH"},
+            {"type": "support", "price": 77500, "strength": "MEDIUM"},
+            {"type": "resistance", "price": 80500, "strength": "MEDIUM"},
+            {"type": "resistance", "price": 82000, "strength": "HIGH"}
+          ]
+        },
+        "synthesis": {
+          "technical_direction": "BEARISH",
+          "technical_score": 40
+        }
+      },
+      "cross_dimension": {
+        "alignment": "OPPOSITE",
+        "details": "基本面中性 vs 技术面偏空"
+      }
+    },
+    "macro_asset_analysis": {
+      "assets": [
+        {"name": "Gold", "instId": "XAU-USDT-SWAP", "price": 4700.0, "change_24h": 0.38, "trend": "UP", "correlation_with_btc": "NEGATIVE"},
+        {"name": "Oil", "instId": "CL-USDT-SWAP", "price": 96.48, "change_24h": 1.44, "trend": "UP(反弹)", "correlation_with_btc": "WEAK"},
+        {"name": "Copper", "instId": "XCU-USDT-SWAP", "price": 6.1639, "change_24h": -0.36, "trend": "DOWN", "correlation_with_btc": "POSITIVE"},
+        {"name": "Tesla", "instId": "TSLA-USDT-SWAP", "price": 405.58, "change_24h": 1.73, "trend": "UP", "correlation_with_btc": "POSITIVE"},
+        {"name": "Coinbase", "instId": "COIN-USDT-SWAP", "price": 191.02, "change_24h": -2.76, "trend": "DOWN", "correlation_with_btc": "STRONG_POSITIVE"}
+      ],
+      "resonance_signals": [
+        {
+          "signal_type": "MIXED",
+          "trigger_condition": "Gold↑ + TSLA↑ + Copper↓ + COIN↓",
+          "meaning": "风险偏好分化",
+          "action_advice": "谨慎，观察板块轮动"
+        }
+      ],
+      "macro_trend_score": -0.8,
+      "divergence_detected": true,
+      "divergence_details": "BTC↓但Gold↑ = 可能避险驱动; COIN↓ = 加密板块弱"
+    },
+    "brain_analysis": {
+      "left_brain": {
+        "deterministic_score": 10,
+        "direction": "DOWN",
+        "details": "RSI>70(-15) + EMA空头排列(-15) + MACD死叉(-10) = 10/100"
+      },
+      "right_brain": {
+        "fuzzy_bias": "BEARISH",
+        "pattern_detected": "头肩顶可能性, RSI从89.5回落但仍在70+",
+        "confidence_interval": [75000, 79000, 85000]
+      },
+      "contradiction": {
+        "reconciled_direction": "DOWN",
+        "confidence": 0.60,
+        "action_advice": "小仓试探做空或WAIT观望",
+        "probe_conditions": ["RSI跌破70确认", "跌破$79K确认"]
+      },
+      "main_contradiction": {
+        "id": "CX_001",
+        "dimension": "C3",
+        "name": "技术面矛盾",
+        "description": "RSI=78.5仍超买 vs 价格跌破MA20",
+        "dominant_side": "B(空方, 技术回调压力)",
+        "direction_implication": "DOWN",
+        "confidence": 0.60,
+        "transformation_condition": "RSI跌破70",
+        "transformation_probability": "HIGH"
+      },
+      "a0_contradiction_analysis": {
+        "primary_contradiction": {
+          "id": "CX_001",
+          "dominant_side": "B",
+          "direction_implication": "DOWN"
+        },
+        "action_pressure_from_a1": {
+          "consecutive_skip_days": 7,
+          "pressure_level": "HIGH",
+          "note": "连续SKIP≥7 → 禁止WAIT, 必须PROBE"
+        }
+      }
+    },
+    "resistance_analysis": {
+      "resistance_score": 69,
+      "resistance_direction": "DOWN",
+      "details": "RSI超买(+15) + MACD死叉(+10) + ATR波动(-5) = 69/100",
+      "contrarian_compensation": {
+        "triggered": false,
+        "reason": "FGI=45(不满足<40或>70)",
+        "adjustment": 0
+      }
+    },
+    "trend_analysis": {
+      "ma_trajectory_method": {
+        "ma5_slope": -0.0025,
+        "ma20_slope": -0.0025,
+        "ma60_slope": 0.0013,
+        "trajectory_normalized": "-1.5σ",
+        "trend_strength": "MODERATE(中趋势, |轨迹|>1σ)"
+      },
+      "trend_direction": "BEAR"
+    },
+    "synthesis": {
+      "least_resistance_path": "DOWN",
+      "action_recommendation": "WAIT_OR_PROBE_SHORT",
+      "confidence": 0.57,
+      "alternative_scenarios": [
+        {
+          "scenario": "技术反弹",
+          "probability": 0.25,
+          "condition": "RSI跌破70+守住$79K",
+          "target": "$80,500"
+        },
+        {
+          "scenario": "区间延续",
+          "probability": 0.50,
+          "condition": "$79K-$80.5K震荡",
+          "target": "$79K-$80.5K"
+        },
+        {
+          "scenario": "技术回调",
+          "probability": 0.25,
+          "condition": "跌破$79K",
+          "target": "$77,500-$75,000"
+        }
+      ],
+      "key_uncertainty": [
+        "ETF流量方向不明确(混合信号)",
+        "FGI是否继续下跌(当前45)",
+        "宏观资产背离是否持续(Gold↑+COIN↓)"
+      ]
+    }
+  },
+  "market_regime_classification": {
+    "regime": "TREND_EXHAUSTION",
+    "confidence": 0.65,
+    "reason": [
+      "RSI=78.5仍超买，但从89.5回落 → 衰竭进行中",
+      "价格跌破$80K → 多头力量减弱",
+      "MACD死叉 → 动量转向下"
+    ]
+  },
+  "advisor_review": {
+    "status": "PENDING",
+    "note": "需要在实际执行时调用advisor_direct_call.advisors_review",
+    "scene": "MACRO_ANALYSIS",
+    "required_advisors": ["advisor-mr", "advisor-tr"],
+    "simulated_output": {
+      "advisor-mr": {"verdict": "PARTIAL", "confidence": 60},
+      "advisor-tr": {"verdict": "PARTIAL", "confidence": 55},
+      "final_verdict": "PARTIAL",
+      "avg_confidence": 57.5
+    }
+  },
+  "metadata": {
+    "execution_time": "2026-05-08T01:30:00+08:00",
+    "btc_price": 79718.7,
+    "change_24h": "-1.62%",
+    "report_version": "v2.6",
+    "a0_integration": "PASSED",
+    "phases_completed": [0, 1, 2, 2.5, 3, 4, 5, 6, 7],
+    "phase8_status": "PENDING(advisor Direct Call needed)"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "matrix_version": "p1.5-regression-v1",
+  "cases": [
+    {
+      "case_id": "reject_scenario_warning_default_policy",
+      "expected_decision": "reject",
+      "candidate_path": "artifacts/evolution/feedback/candidate_positive_20260511.json",
+      "report_paths": [
+        "artifacts/evolution/audit/audit_positive_20260511.json",
+        "artifacts/evolution/sandbox/sandbox_positive_20260511.json",
+        "artifacts/evolution/stress/stress_positive_20260512.json",
+        "artifacts/evolution/scenario/scenario_positive_20260512.json",
+        "artifacts/evolution/backtest/backtest_positive_20260512.json"
+      ],
+      "policy_version": "p1.default.v1"
+    },
+    {
+      "case_id": "reject_high_severity_default_policy",
+      "expected_decision": "reject",
+      "candidate_path": "artifacts/evolution/feedback/candidate_positive_20260511.json",
+      "report_paths": [
+        "artifacts/evolution/audit/audit_positive_20260511.json",
+        "artifacts/evolution/sandbox/sandbox_positive_20260511.json",
+        "artifacts/evolution/stress/stress_positive_20260512.json",
+        "artifacts/evolution/scenario/scenario_positive_20260512.json",
+        "artifacts/evolution/backtest/backtest_negative_20260512.json"
+      ],
+      "policy_version": "p1.default.v1"
+    },
+    {
+      "case_id": "approve_scenario_warning_relaxed_policy",
+      "expected_decision": "approve",
+      "candidate_path": "artifacts/evolution/feedback/candidate_positive_20260511.json",
+      "report_paths": [
+        "artifacts/evolution/audit/audit_positive_20260511.json",
+        "artifacts/evolution/sandbox/sandbox_positive_20260511.json",
+        "artifacts/evolution/stress/stress_positive_20260512.json",
+        "artifacts/evolution/scenario/scenario_positive_20260512.json",
+        "artifacts/evolution/backtest/backtest_positive_20260512.json"
+      ],
+      "policy_version": "p1.relaxed-scenario.v1"
+    }
+  ]
+}

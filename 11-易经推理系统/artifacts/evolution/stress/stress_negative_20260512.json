@@ -1,0 +1,20 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "stage": "stress",
+  "pass": false,
+  "metrics": {
+    "p99_latency_ms": 210,
+    "error_rate": 0.019,
+    "retry_rate": 0.084
+  },
+  "violations": [
+    {
+      "code": "STRESS_LATENCY_SPIKE",
+      "severity": "high"
+    }
+  ],
+  "artifacts": [
+    "artifacts/evolution/sandbox/sandbox_positive_20260511.json"
+  ],
+  "timestamp": "2026-05-12T10:26:00Z"
+}
