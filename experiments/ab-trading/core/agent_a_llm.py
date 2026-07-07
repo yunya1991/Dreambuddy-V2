@@ -303,6 +303,13 @@ def _build_user_prompt(mkt: dict, memory: dict, acct: dict) -> str:
             f"PnL={t.get('pnl_pct',0):+.2f}% master={t.get('master','')}\n"
         )
 
+    evolution_params = memory.get("evolution", {}).get("adopted_params", {})
+    evolution_str = ""
+    if evolution_params:
+        evolution_str = "\n".join(
+            f"  - {k}: {v}" for k, v in evolution_params.items()
+        )
+
     return f"""
 【账户状态】
 - 权益: ${acct.get('equity', 0):.2f} USDC
@@ -318,6 +325,9 @@ def _build_user_prompt(mkt: dict, memory: dict, acct: dict) -> str:
 
 【近期交易记录（最近5笔）】
 {recent_trades or '  暂无记录'}
+
+【进化系统采纳参数】
+{evolution_str or '  暂无已采纳的进化参数'}
 
 {a1_a6_section}
 
@@ -414,11 +424,21 @@ def _parse_llm_output(reply: str) -> Optional[dict]:
 def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
     """
     基本规则引擎 — 当所有 LLM 都不可用时的兜底策略
-    三因子：动量 + 量价 + 资金费率反向
+    多因子：动量 + 量价 + 资金费率反向 + RSI + EMA
+    支持进化系统动态调整参数
     """
     coins   = mkt.get("coins", {})
     opp_map = mkt.get("opp_map", {})
     reasoning = []
+
+    evo_params = memory.get("evolution", {}).get("adopted_params", {})
+    momentum_threshold = float(evo_params.get("momentum_threshold", 0.02))
+    volume_threshold = float(evo_params.get("volume_threshold", 1.2))
+    rsi_oversold = float(evo_params.get("rsi_oversold", 40))
+    rsi_overbought = float(evo_params.get("rsi_overbought", 60))
+    use_ema_cross = bool(evo_params.get("use_ema_cross", True))
+    take_profit_pct = float(evo_params.get("take_profit_pct", 0.08))
+    stop_loss_pct = float(evo_params.get("stop_loss_pct", 0.04))
 
     best_coin  = None
     best_score = 0
@@ -432,27 +452,43 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
         ch24 = d.get("ch24", 0)
         ch4  = d.get("ch4h", 0)
         vr   = d.get("vol_ratio", 1.0)
+        rsi  = d.get("rsi14", 50)
+        ema20 = d.get("ema20", 0)
+        ema50 = d.get("ema50", 0)
+        price = d.get("price", 0)
 
-        # 动量信号
-        if ch24 > 3 and ch4 > 1:
-            score += 3; side = "LONG"
-        elif ch24 < -3 and ch4 < -1:
-            score += 3; side = "SHORT"
-        elif abs(ch24) > 1.5:
+        mom_ch24 = momentum_threshold * 100
+        mom_ch4 = momentum_threshold * 25
+
+        if ch24 > mom_ch24 and ch4 > mom_ch4:
+            score += 2; side = "LONG"
+        elif ch24 < -mom_ch24 and ch4 < -mom_ch4:
+            score += 2; side = "SHORT"
+        elif abs(ch24) > mom_ch24 * 0.5:
             score += 1; side = "LONG" if ch24 > 0 else "SHORT"
 
-        # 量价配合
-        if vr > 1.5:
+        if vr > volume_threshold:
             score += 1
+        elif vr > volume_threshold * 0.67:
+            score += 0.5
 
-        # 资金费率极值（拥挤做反向）
         opp = opp_map.get(coin, {})
         fr = opp.get("funding", 0)
-        if abs(fr) > 0.0003:
-            score += 2
+        if abs(fr) > 0.0002:
+            score += 1
             side = "SHORT" if fr > 0 else "LONG"
 
-        # 连败保护：连败≥3次，提高门槛
+        if rsi < rsi_oversold:
+            score += 1; side = "LONG"
+        elif rsi > rsi_overbought:
+            score += 1; side = "SHORT"
+
+        if use_ema_cross and price > 0 and ema20 > 0 and ema50 > 0:
+            if ema20 > ema50:
+                score += 1; side = "LONG"
+            elif ema20 < ema50:
+                score += 1; side = "SHORT"
+
         loss_streak = memory.get("loss_streak", 0)
         if loss_streak >= 3:
             score = max(0, score - 1)
@@ -463,8 +499,7 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
             best_side  = side
             best_info  = d
 
-    # 入场门槛
-    min_score = 3 if memory.get("loss_streak", 0) >= 3 else 2
+    min_score = 2 if memory.get("loss_streak", 0) >= 3 else 1
 
     if best_score < min_score or best_coin is None:
         reasoning.append("全市场无明确信号，观望")
@@ -493,10 +528,8 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
     leverage = min(5, max(1, int(confidence * 5)))
 
     px = best_info.get("price", 0)
-    sl_pct = 0.04
-    tp_pct = 0.08
-    sl = round(px * (1 - sl_pct) if best_side == "LONG" else px * (1 + sl_pct), 2)
-    tp = round(px * (1 + tp_pct) if best_side == "LONG" else px * (1 - tp_pct), 2)
+    sl = round(px * (1 - stop_loss_pct) if best_side == "LONG" else px * (1 + stop_loss_pct), 2)
+    tp = round(px * (1 + take_profit_pct) if best_side == "LONG" else px * (1 - take_profit_pct), 2)
 
     regime = "TREND_UP" if best_side == "LONG" else "TREND_DOWN"
 
@@ -505,6 +538,8 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
     reasoning.append(f"方向: {best_side} | 24H={best_info.get('ch24',0):+.1f}% 4H={best_info.get('ch4h',0):+.1f}%")
     reasoning.append(f"量比: {best_info.get('vol_ratio',1):.2f}x")
     reasoning.append(f"仓位: {pos_usdt} USDC × {leverage}x = {pos_usdt*leverage:.0f} 名义")
+    if evo_params:
+        reasoning.append(f"进化参数: {evo_params}")
 
     return {
         "action":             best_side,

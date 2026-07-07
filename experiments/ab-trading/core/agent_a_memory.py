@@ -32,7 +32,20 @@ def load_memory() -> Dict:
     if MEMORY_PATH.exists():
         try:
             with open(MEMORY_PATH) as f:
-                return json.load(f)
+                data = json.load(f)
+                if "hold_streak" not in data:
+                    data["hold_streak"] = 0
+                if "evolution" not in data:
+                    data["evolution"] = {
+                        "adopted_params": {},
+                        "a8_last_inspection": None,
+                        "dream_last_analysis": None,
+                        "github_last_search": None,
+                        "evolution_count": 0,
+                        "successful_evolutions": 0,
+                        "failed_evolutions": 0,
+                    }
+                return data
         except Exception:
             pass
     return {
@@ -40,6 +53,7 @@ def load_memory() -> Dict:
         "total_trades": 0,
         "win_streak": 0,
         "loss_streak": 0,
+        "hold_streak": 0,
         "max_drawdown_pct": 0.0,
         "peak_equity": 60.0,
         "total_pnl_usdt": 0.0,
@@ -48,6 +62,15 @@ def load_memory() -> Dict:
         "pending_strategies": [],
         "master_switch_history": [],
         "active_positions": {},
+        "evolution": {
+            "adopted_params": {},
+            "a8_last_inspection": None,
+            "dream_last_analysis": None,
+            "github_last_search": None,
+            "evolution_count": 0,
+            "successful_evolutions": 0,
+            "failed_evolutions": 0,
+        },
     }
 
 
@@ -212,6 +235,19 @@ def update_equity_stats(memory: Dict, current_equity: float) -> Dict:
     return memory
 
 
+def update_hold_streak(memory: Dict, action: str) -> Dict:
+    """
+    更新连续HOLD计数
+    - action == "HOLD" 时递增
+    - action == "LONG/SHORT" 时重置为0
+    """
+    if action == "HOLD":
+        memory["hold_streak"] = memory.get("hold_streak", 0) + 1
+    else:
+        memory["hold_streak"] = 0
+    return memory
+
+
 # ── 大师风格切换 ─────────────────────────────────────────────────────────
 
 def maybe_switch_master(memory: Dict, market_regime: str = "RANGE") -> Dict:
@@ -221,9 +257,11 @@ def maybe_switch_master(memory: Dict, market_regime: str = "RANGE") -> Dict:
       - 连亏3笔 → 大概率切换
       - 累计回撤≥15% → 强制切换
       - 错过10%以上单边行情 → 切换到趋势追踪型
+      - 连续15轮HOLD → 强制切换（打破过度保守死循环）
     """
     current = memory.get("current_master", "Jesse Livermore")
     loss_streak = memory.get("loss_streak", 0)
+    hold_streak = memory.get("hold_streak", 0)
     max_dd = memory.get("max_drawdown_pct", 0)
     switch_reason = ""
 
@@ -234,6 +272,8 @@ def maybe_switch_master(memory: Dict, market_regime: str = "RANGE") -> Dict:
         switch_reason = f"连败{loss_streak}次且震荡市，切换风格"
     elif loss_streak >= 5:
         switch_reason = f"连败{loss_streak}次，必须切换"
+    elif hold_streak >= 15:
+        switch_reason = f"连续{hold_streak}轮HOLD，过度保守，强制切换风格"
 
     if not switch_reason:
         return memory
@@ -310,6 +350,43 @@ def verify_strategy(memory: Dict, strategy_idx: int, correct: bool) -> Dict:
         pending.pop(strategy_idx)
 
     memory["pending_strategies"] = pending
+    return memory
+
+
+# ── 进化系统记忆 ──────────────────────────────────────────────────────────
+
+def get_evolution_params(memory: Dict) -> Dict:
+    """获取已采纳的进化参数"""
+    return memory.get("evolution", {}).get("adopted_params", {})
+
+
+def update_evolution_params(memory: Dict, params: Dict) -> Dict:
+    """更新进化参数"""
+    if "evolution" not in memory:
+        memory["evolution"] = {}
+    if "adopted_params" not in memory["evolution"]:
+        memory["evolution"]["adopted_params"] = {}
+    memory["evolution"]["adopted_params"].update(params)
+    return memory
+
+
+def record_evolution_result(memory: Dict, success: bool) -> Dict:
+    """记录一次进化结果"""
+    evo = memory.get("evolution", {})
+    evo["evolution_count"] = evo.get("evolution_count", 0) + 1
+    if success:
+        evo["successful_evolutions"] = evo.get("successful_evolutions", 0) + 1
+    else:
+        evo["failed_evolutions"] = evo.get("failed_evolutions", 0) + 1
+    memory["evolution"] = evo
+    return memory
+
+
+def set_evolution_timestamp(memory: Dict, key: str) -> Dict:
+    """设置进化检查时间戳"""
+    if "evolution" not in memory:
+        memory["evolution"] = {}
+    memory["evolution"][key] = _now_iso()
     return memory
 
 
