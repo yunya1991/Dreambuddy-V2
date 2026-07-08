@@ -316,6 +316,55 @@ export default function ChatPage() {
   const [thinkingMode, setThinkingMode] = useState<'quick' | 'deep'>('quick');
   const [lang, setLang] = useState<'zh' | 'en'>('zh'); // 语言设置，默认中文
 
+  const [sessionId, setSessionId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dream_gateway_session_id');
+      if (saved) return saved;
+    }
+    const newId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dream_gateway_session_id', newId);
+    }
+    return newId;
+  });
+
+  const handleNewChat = () => {
+    if (isLoading) return;
+    const newId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    setSessionId(newId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dream_gateway_session_id', newId);
+    }
+    setMessages([
+      {
+        role: "assistant",
+        content: "你好！我是 Dream Gateway 智能交易助手。\n\n可以帮你分析市场、制定策略、管理交易。下方可切换思考深度与响应模式，交易任务执行前会要求确认。\n\n试试输入「分析BTC」或「/行情」",
+      },
+    ]);
+    setAnalysisChain(null);
+    setStreamProgress(null);
+  };
+
+  const loadChatHistory = useCallback(async (sessId: string) => {
+    try {
+      const res = await fetch(`/api/chat/history?session_id=${encodeURIComponent(sessId)}`);
+      const data = await res.json();
+      if (data.success && data.data && data.data.messages && data.data.messages.length > 0) {
+        const formatted = data.data.messages.map((m: any) => ({
+          role: m.role,
+          content: m.content,
+          intent: m.intent_type,
+          task_id: m.task_id,
+        }));
+        setMessages(formatted);
+        return true;
+      }
+    } catch (err) {
+      console.warn('[loadChatHistory] 加载会话历史失败:', err);
+    }
+    return false;
+  }, []);
+
   // P2-双交易模式
   //   ai_skill: AI SKILL 模式 (自然语言 → OKX Agent CLI → 交易所)，灵活但消耗 Token
   //   classic:  经典交易体系 (策略代码 → Freqtrade → 沙箱测试 → 治理上线)，结构化可回测
@@ -848,6 +897,11 @@ export default function ChatPage() {
     };
   }, [fetchLLMStatus, fetchApiConfigs, fetchTradingParams, fetchStrategies, fetchChannels, fetchMarketData, fetchReportList, fetchCreditsStatus]);
 
+  useEffect(() => {
+    if (!mounted) return;
+    loadChatHistory(sessionId);
+  }, [mounted, sessionId, loadChatHistory]);
+
   // ========== 监控面板 SSE 连接 ==========
   useEffect(() => {
     // 只在右面板切到 monitor 时连接
@@ -1226,7 +1280,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: continueMessage,
-          session_id: "dashboard-session",
+          session_id: sessionId,
           thinking_mode: lastMsg.thinking_mode || 'deep',
           llm_model: llmModel,
           intent_method: intentMethod,
@@ -1375,7 +1429,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage,
-          session_id: "dashboard-session",
+          session_id: sessionId,
           thinking_mode: thinkingMode,
           llm_model: llmModel,
           intent_method: intentMethod,
@@ -1602,7 +1656,7 @@ export default function ChatPage() {
 
   // ========== 流式成功处理 ==========
   const handleStreamSuccess = (data: any) => {
-    const content = data.content;
+    const content = data.chat_content || data.content;
     const artifacts = data.artifacts_produced || [];
     const summary = data.execution_summary;
     const isTrade = data.trade_requires_confirmation;
@@ -1713,7 +1767,7 @@ export default function ChatPage() {
       const pollStatus = pollData.data.status;
 
       if (pollStatus === 'completed') {
-        const content = pollData.data.content || '执行完成，但未返回内容';
+        const content = pollData.data.chat_content || pollData.data.content || '执行完成，但未返回内容';
         const artifacts = pollData.data.artifacts_produced || [];
         const summary = pollData.data.execution_summary;
         const intentType = pollData.data.intent?.type || pollData.data.intent;
@@ -1817,7 +1871,7 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage,
-          session_id: "dashboard-session",
+          session_id: sessionId,
           thinking_mode: thinkingMode,
           llm_model: llmModel,
           intent_method: intentMethod,
@@ -5425,6 +5479,17 @@ export default function ChatPage() {
               </button>
             )}
             <span className="text-sm font-medium">BTC 行情分析</span>
+            <button
+              onClick={handleNewChat}
+              disabled={isLoading}
+              className="ml-2 px-3 py-1 text-xs bg-[#1a1a1a] hover:bg-[#2a2a2a] rounded-md text-[#e0e0e0] hover:text-white transition flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="开启新对话，清空历史记录"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              新对话
+            </button>
           </div>
           
           {/* 思考模式切换 */}
@@ -5589,7 +5654,36 @@ export default function ChatPage() {
                 {msg.role === "user" && (
                   <div className="text-right text-xs mb-1.5 opacity-70">👤 你</div>
                 )}
-                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                <div className="text-sm prose prose-invert prose-sm max-w-none chat-markdown">
+                  <ReactMarkdown
+                    components={{
+                      a: ({ node, ...props }) => {
+                        const isReportLink = props.href?.startsWith('/reports/');
+                        const isInternal = props.href?.startsWith('/');
+                        return (
+                          <a
+                            {...props}
+                            target={isReportLink ? '_blank' : (isInternal ? undefined : '_blank')}
+                            rel={isInternal && !isReportLink ? undefined : 'noopener noreferrer'}
+                            className="text-blue-400 hover:text-blue-300 underline"
+                          />
+                        );
+                      },
+                      details: ({ node, children, ...props }) => (
+                        <details className="my-2 text-xs" {...props}>
+                          {children}
+                        </details>
+                      ),
+                      summary: ({ node, children, ...props }) => (
+                        <summary className="cursor-pointer text-gray-400 hover:text-gray-300" {...props}>
+                          {children}
+                        </summary>
+                      ),
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
                 {/* 🏆 笔记本 7 步进度条 */}
                 {msg.role === "assistant" && ((msg as any).stepProgress || (msg as any).step_progress) && (() => {
                   const sp = (msg as any).stepProgress || (msg as any).step_progress;

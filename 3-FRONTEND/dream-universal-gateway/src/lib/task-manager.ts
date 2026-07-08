@@ -94,6 +94,13 @@ import { ensureRegistryInitialized } from '../../../../6-图结构上下文压�
 import type { PlannerContext, PlannerExecutionResult, PlannerProgressEvent } from '../../../../6-图结构上下文压缩/planner/planner-types';
 import { createSkillLLMBridge } from './orchestration/skill-llm-bridge-adapter';
 import { callLLM } from './orchestration/llm-bridge';
+import {
+  addUserMessage,
+  addAssistantMessage,
+  clearSessionHistory,
+  loadSessionHistory,
+} from './chat-history';
+import { getContextForLLM } from './context-compression';
 
 // Superpower 模式 — 意图澄清 + 节点补充 + 记忆进化
 import {
@@ -237,6 +244,7 @@ export interface ResultFile {
   created_at: string;
   execution_time_ms?: number;
   content: string;
+  chat_content?: string;
   content_type: 'markdown' | 'json' | 'text';
   // 意图信息（用于前端判断意图类型）
   intent?: {
@@ -372,14 +380,18 @@ export async function createTask(params: {
   ensureDir(RESULTS_DIR);
 
   const thinkingMode = params.thinking_mode || 'quick';
+  const sessionId = params.session_id || `sess_${Date.now()}`;
 
-  // 使用统一意图识别引擎 (LLM → rule → fallback)
+  addUserMessage(sessionId, params.message);
+
+  const context = await getContextForLLM(sessionId);
+
   const intentResult = await recognizeIntent(params.message, {
-    session_id: params.session_id || `sess_${Date.now()}`,
-    user_role: 'FREE', // TODO: from auth context
+    session_id: sessionId,
+    user_role: 'FREE',
     thinking_mode: thinkingMode,
     trading_mode: params.trading_mode || 'ai_skill',
-    message_history: [],
+    message_history: context.type === 'raw' ? context.content : context.content,
   });
 
   const intent = convertIntentToTaskFile(intentResult);
@@ -911,6 +923,110 @@ export function buildLLMInputText(
 }
 
 /**
+ * 简单意图：直接调用 LLM 回答，不走技能编排
+ * 适用于 simple_qa / command / credits_query / system_config / artifact_query 等
+ */
+async function executeSimpleLLM(
+  task: TaskFile,
+  message: string,
+  intentType: string,
+  lang: 'zh' | 'en',
+  startTime: number,
+): Promise<ResultFile | null> {
+  try {
+    const systemPrompt = lang === 'zh'
+      ? `你是 Dream Gateway 智能交易助手，专注于金融和加密货币领域。
+
+回答要求：
+1. 简洁明了，直接回答用户问题，不要冗长
+2. 如果是金融/交易相关问题，给出专业但易懂的回答
+3. 如果是系统操作类问题，给出明确的操作指引
+4. 不要编造数据，不确定的就说明
+5. 控制在 200 字以内，除非问题确实需要详细解释`
+      : `You are Dream Gateway AI trading assistant, focused on finance and crypto.
+
+Answer requirements:
+1. Be concise, answer directly, no verbosity
+2. For finance/trading questions, give professional but accessible answers
+3. For system operation questions, give clear guidance
+4. Don't make up data, say so if unsure
+5. Keep under 200 words unless detail is truly needed`;
+
+    const userPrompt = lang === 'zh'
+      ? `用户问题：${message}\n\n意图类型：${intentType}\n\n请直接回答用户的问题。`
+      : `User question: ${message}\n\nIntent type: ${intentType}\n\nPlease answer the user's question directly.`;
+
+    const llmResult = await callLLM({
+      prompt: userPrompt,
+      systemPrompt,
+      temperature: 0.3,
+      timeoutMs: 30000,
+    });
+
+    const result: ResultFile = {
+      task_id: task.task_id,
+      session_id: task.session_id,
+      status: 'completed',
+      created_at: new Date().toISOString(),
+      intent: { type: intentType as any, confidence: 0.8, method: 'simple_llm' },
+      content: llmResult.content,
+      chat_content: llmResult.content,
+      content_type: 'markdown',
+      execution_time_ms: Date.now() - startTime,
+      artifacts_produced: [],
+      execution_summary: {
+        chain_executed: [],
+        total_steps: 0,
+        skipped_steps: [],
+        confidence: 0.8,
+        quality: {
+          average_confidence: 0.8,
+          max_risk: 0.1,
+          total_issues: 0,
+          total_corrections: 0,
+          overall_quality: 'good',
+        },
+        thinking_depth: 'quick',
+      },
+      metadata: {
+        executor: 'simple_llm',
+        model: llmResult.model || 'unknown',
+        thinking_depth: 'quick',
+        tokens_used: llmResult.tokensUsed,
+      },
+    };
+
+    // 写入 result 文件
+    ensureDir(RESULTS_DIR);
+    const resultPath = path.join(RESULTS_DIR, `result_${task.task_id}.json`);
+    fs.writeFileSync(resultPath, JSON.stringify(result, null, 2), 'utf-8');
+
+    // 更新 task 状态
+    task.status = 'completed';
+    task.updated_at = Date.now();
+    const taskPath = path.join(TASKS_DIR, `${task.task_id}.json`);
+    fs.writeFileSync(taskPath, JSON.stringify(task, null, 2), 'utf-8');
+
+    emitMonitorEvent({
+      trace_id: task.task_id,
+      uid: task.session_id,
+      layer: 'gateway',
+      phase: 'simple_llm_done',
+      status: 'completed',
+      intent: intentType,
+      duration_ms: Date.now() - startTime,
+      chain: ['simple_llm'],
+    });
+
+    console.log(`[TaskManager] Simple LLM completed: ${task.task_id} (${llmResult.tokensUsed} tokens, ${llmResult.latencyMs}ms)`);
+    return result;
+  } catch (err) {
+    console.warn('[executeSimpleLLM] 失败，降级到后续路径:', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+/**
  * 使用 ExecutionPlanner 动态编排执行
  * 失败时返回 null，调用方降级到 S 链
  */
@@ -927,6 +1043,11 @@ async function executeWithPlanner(
   startTime: number,
   onProgress?: (event: PlannerProgressEvent) => void,
 ): Promise<ResultFile | null> {
+  const sessionId = task.session_id || 'default';
+  let chatContext: Awaited<ReturnType<typeof getContextForLLM>> | null = null;
+  try {
+    chatContext = await getContextForLLM(sessionId);
+  } catch {}
   try {
     // 1. 创建 SkillLLMBridge
     const skillBridge = createSkillLLMBridge(undefined, {
@@ -1008,10 +1129,12 @@ async function executeWithPlanner(
       complexity: (complexityMap[thinkingMode] || 'standard') as any,
       symbol: rawSymbol,
       tradingMode: task.trading_mode || 'ai_skill',
-      chainWeights: { s_chain: 0.5, c_chain: 0.3, f_chain: 0.2 },
+      chainWeights: { a_chain: 0.6, c_chain: 0.25, f_chain: 0.15 },
       extensions: {
         __skillLLMBridge: skillBridge,
         __userRequest: message,
+        __chatHistory: chatContext?.content || '',
+        __chatHistoryType: chatContext?.type || 'raw',
       },
       onProgress,
     };
@@ -1088,9 +1211,15 @@ Core requirements:
 6. Keep at 800-1200 words, high information density
 7. Don't expose internal scheduling info (e.g. "called XX skill", "confidence XX%", etc.)`;
 
+        const historyContext = chatContext && chatContext.message_count > 0
+          ? (lang === 'zh'
+              ? `\n\n【对话历史上下文（${chatContext.type === 'raw' ? '原文' : chatContext.type === 'summary' ? '摘要' : '图结构压缩'}）】\n${chatContext.content}\n`
+              : `\n\n[Conversation History Context (${chatContext.type})]\n${chatContext.content}\n`)
+          : '';
+
         const summaryUserPrompt = lang === 'zh'
-          ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n\n以下是多维度分析数据（请充分利用这些具体指标）：\n\n${stepOutputsText}\n\n请基于以上数据，生成一份专业、有深度的行情分析报告。`
-          : `User question: ${message}\nAsset: ${displayName || rawSymbol}\n\nMulti-dimensional analysis data (please make full use of these specific metrics):\n\n${stepOutputsText}\n\nBased on the above data, generate a professional, in-depth market analysis report.`;
+          ? `用户问题：${message}\n标的：${displayName || rawSymbol}${historyContext}\n以下是多维度分析数据（请充分利用这些具体指标）：\n\n${stepOutputsText}\n\n请基于以上数据，生成一份专业、有深度的行情分析报告。`
+          : `User question: ${message}\nAsset: ${displayName || rawSymbol}${historyContext}\nMulti-dimensional analysis data (please make full use of these specific metrics):\n\n${stepOutputsText}\n\nBased on the above data, generate a professional, in-depth market analysis report.`;
 
         const llmResult = await callLLM({
           prompt: summaryUserPrompt,
@@ -1147,11 +1276,18 @@ Core requirements:
       }
     }
 
-    const finalContent = coreView
+    const fullReportContent = coreView
       + detailedAnalysis
       + deepenOptions
       + reportLink
       + (internalDetails ? `\n\n<details>\n<summary>📊 编排详情（${summaryStats}）</summary>\n\n${internalDetails}\n\n${supplementInfo ? supplementInfo + '\n' : ''}</details>` : '');
+
+    let chatContent = '';
+    if (isAnalysisIntent && coreView) {
+      chatContent = coreView.trim() + reportLink;
+    } else {
+      chatContent = fullReportContent;
+    }
 
     // 9.6 Superpower 模式：上报补充节点执行结果到记忆存储（用于后期进化）
     if (memoryEntryIds.length > 0) {
@@ -1174,7 +1310,8 @@ Core requirements:
       session_id: task.session_id,
       status: 'completed',
       created_at: new Date().toISOString(),
-      content: finalContent,
+      content: fullReportContent,
+      chat_content: chatContent,
       content_type: 'markdown',
       execution_time_ms: Date.now() - startTime,
       artifacts_produced: [],
@@ -1337,8 +1474,25 @@ export async function executeConversationTaskInline(
   }
 
   // ============================================================
+  // 简单意图：直接 LLM 回答，不走技能编排
+  // - simple_qa: 简单问答（概念解释、信息查询等）
+  // - command: 系统命令
+  // - credits_query: 积分查询
+  // - system_config: 系统配置
+  // - artifact_query: 产物查询
+  // ============================================================
+  const SIMPLE_INTENTS = ['simple_qa', 'command', 'credits_query', 'system_config', 'artifact_query'];
+  if (SIMPLE_INTENTS.includes(intentType)) {
+    console.log(`[TaskManager] 简单意图 ${intentType}，直接 LLM 回答`);
+    const simpleResult = await executeSimpleLLM(task, message, intentType, lang, startTime);
+    if (simpleResult) {
+      return simpleResult;
+    }
+  }
+
+  // ============================================================
   // ExecutionPlanner 动态编排（最高优先级）
-  // 对所有非 simple_qa/command 意图优先尝试，成功直接返回，失败降级
+  // 对复杂意图（market_query/deep_analysis 等）优先尝试，成功直接返回，失败降级
   // ============================================================
   if (intentType !== 'simple_qa' && intentType !== 'command' && intentType !== 'developer') {
     const plannerResult = await executeWithPlanner(
@@ -2802,23 +2956,40 @@ export async function createAndExecuteTask(params: {
   // 当 trading_mode === 'classic' 时，所有意图（包括 execute_trade）都走 C 系列链
   if (params.trading_mode === 'classic') {
     const result = await executeClassicChain(task, params.lang || 'zh');
+    saveAssistantReply(task, result);
     return { task, result, needAsync: false };
   }
 
   // 2. 对话任务 → 内联执行，同步返回结果
   if (isConversationIntent(intentType)) {
     const result = await executeConversationTaskInline(task, params.lang || 'zh', params.onProgress);
+    saveAssistantReply(task, result);
     return { task, result, needAsync: false };
   }
 
   // 3. 交易任务 → 返回待确认，不需要异步
   if (isTradeIntent(intentType)) {
     const result = generateTradePendingResult(task);
+    saveAssistantReply(task, result);
     return { task, result, needAsync: false };
   }
 
   // 4. 未知类型 → 标记pending，前端轮询
   return { task, result: null, needAsync: true };
+}
+
+function saveAssistantReply(task: TaskFile, result: ResultFile | null): void {
+  if (!result || !task.session_id) return;
+  const replyContent = result.chat_content || result.content;
+  if (!replyContent) return;
+  try {
+    addAssistantMessage(task.session_id, replyContent, {
+      task_id: task.task_id,
+      intent_type: task.intent.type,
+    });
+  } catch (err) {
+    console.warn('[TaskManager] 保存助手回复失败:', err instanceof Error ? err.message : err);
+  }
 }
 
 // ============================================================

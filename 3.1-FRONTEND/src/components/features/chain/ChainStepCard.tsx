@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import type { ChainStep } from '@/stores';
-import { V3StatusDot } from '@/components/V3StatusDot';
-import { V3Badge } from '@/components/V3Badge';
-import { IconChevronDown } from '@/components/V3InlineSVG';
+import { V3StatusDot } from '@/components';
+import { V3Badge } from '@/components';
+import { IconChevronDown } from '@/components';
 
 interface ChainStepCardProps {
   step: ChainStep;

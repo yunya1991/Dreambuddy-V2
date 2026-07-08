@@ -315,14 +315,15 @@ export interface StepExecutionResult {
 // ============================================================
 
 /**
- * S 链（通用交易思维）的步骤定义
+ * A 链（分析思维链）的步骤定义
+ * 注：内部 ID 仍用 S1-S5 保持向后兼容，但展示名称为中文阶段名
  */
 export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
   {
     id: 'S1',
     stage: 'research',
     chain: 'A',
-    label: 'S1_调研',
+    label: '数据收集',
     icon: '🔍',
     description: '市场数据、行情、技术指标、新闻收集',
     coreQuestion: '当前市场发生了什么？趋势是什么？有哪些关键事件？数据充分吗？',
@@ -338,9 +339,9 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     id: 'S2',
     stage: 'analysis',
     chain: 'A',
-    label: 'S2_分析',
+    label: '矛盾识别',
     icon: '🧠',
-    description: '多维度分析（技术面、基本面、情绪面）',
+    description: '多维度分析（技术面、基本面、情绪面），识别核心矛盾',
     coreQuestion: '这意味着什么？信号强度如何？市场状态是什么？有哪些风险？信息缺口？',
     expectedOutputs: ['分析结论', '信号强度评分', '市场状态', '风险评级', '信息缺口列表'],
     confidenceThresholds: { high: 80, medium: 50, low: 30 },
@@ -355,9 +356,9 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     id: 'S3',
     stage: 'design',
     chain: 'A',
-    label: 'S3_设计',
+    label: '假设验证',
     icon: '🎯',
-    description: '制定具体策略（入场点、止损、止盈、仓位）',
+    description: '制定具体策略（入场点、止损、止盈、仓位）并验证假设',
     coreQuestion: '应该怎么做？方向？入场点？止损？止盈？仓位？策略类型？',
     expectedOutputs: ['交易计划', '入场点位', '止损点位', '止盈策略', '仓位方案', '策略类型'],
     confidenceThresholds: { high: 75, medium: 50, low: 25 },
@@ -371,9 +372,9 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     id: 'S4',
     stage: 'validate',
     chain: 'A',
-    label: 'S4_验证',
+    label: '策略形成',
     icon: '✅',
-    description: '回测验证、风险评估、模拟推演',
+    description: '回测验证、风险评估、模拟推演，形成最终策略',
     coreQuestion: '这个方案经得起检验吗？历史回测如何？模拟推演暴露了什么风险？',
     expectedOutputs: ['验证报告', '回测结果', '风险评估', '置信度评分', '通过/否决标记'],
     confidenceThresholds: { high: 80, medium: 55, low: 35 },
@@ -388,7 +389,7 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     id: 'S5',
     stage: 'execute',
     chain: 'A',
-    label: 'S5_执行',
+    label: '执行落地',
     icon: '⚡',
     description: '生成执行计划、跟踪调整',
     coreQuestion: '怎么落地？下单指令？监控什么？离场条件？',

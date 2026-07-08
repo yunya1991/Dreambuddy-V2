@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>资产调研季度深度报告 - 2026年Q2</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, "PingFang SC", sans-serif; line-height: 1.7; color: #333; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 960px; margin: 0 auto; background: white; box-shadow: 0 2px 20px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+    .cover { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 50px; text-align: center; }
+    .cover h1 { font-size: 32px; margin-bottom: 10px; }
+    .cover .subtitle { font-size: 16px; opacity: 0.9; }
+    .section { padding: 40px 50px; border-bottom: 1px solid #eee; }
+    .section h2 { font-size: 20px; color: #667eea; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #eee; }
+    .section h3 { font-size: 16px; color: #444; margin: 20px 0 10px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+    .summary-card { background: #f9f9f9; padding: 20px; border-radius: 8px; text-align: center; }
+    .summary-value { font-size: 22px; font-weight: 700; color: #667eea; }
+    .summary-label { font-size: 12px; color: #999; margin-top: 5px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px; }
+    th { background: #f1f3f5; padding: 10px; text-align: left; border-bottom: 2px solid #ddd; }
+    td { padding: 10px; border-bottom: 1px solid #eee; }
+    .phase-badge { display: inline-block; padding: 4px 12px; border-radius: 15px; font-weight: 600; color: white; font-size: 13px; }
+    .phase-stagflation { background: #dc3545; }
+    .phase-recovery { background: #28a745; }
+    .phase-overheat { background: #fd7e14; }
+    .phase-recession { background: #007bff; }
+    .footer { padding: 30px 50px; text-align: center; color: #aaa; font-size: 12px; background: #f9f9f9; }
+    .risk-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px 20px; margin: 15px 0; }
+    @media print { body { background: white; } .section { page-break-inside: avoid; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="cover">
+      <h1>📊 资产调研季度深度报告</h1>
+      <div class="subtitle">2026年第2季度 | 美林时钟三版本对比分析</div>
+    </div>
+    <div class="section">
+      <h2>一、执行摘要</h2>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-value">过热期</div>
+          <div class="summary-label">当前周期</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-value">73%</div>
+          <div class="summary-label">置信度</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-value">工业金属</div>
+          <div class="summary-label">Top 1 标的</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-value">3</div>
+          <div class="summary-label">分析版本</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <h2>二、周期判定</h2>
+      <p>当前经济周期：<span class="phase-badge phase-overheat">过热期</span></p>
+      <p style="margin-top: 10px;">置信度：73%</p>
+      <h3>核心指标</h3>
+      <table>
+        <tr><th>指标</th><th>数值</th><th>趋势</th><th>来源</th></tr>
+        <tr><td>GDP增长率</td><td>2.5%</td><td>⬆️</td><td>https://www.atlantafed.org/research-and-data/data/gdpnow</td></tr><tr><td>PMI指数</td><td>54</td><td>⬆️</td><td>https://tradingeconomics.com/united-states/business-confidence</td></tr><tr><td>CPI通胀率</td><td>8.0%</td><td>⬆️</td><td>https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-</td></tr>
+      </table>
+    </div>
+    <div class="section">
+      <h2>三、三版本对比</h2>
+      <table>
+        <tr><th>版本</th><th>周期判定</th><th>置信度</th><th>Top 1 标的</th></tr>
+        <tr><td>V1 经典版</td><td>过热期</td><td>73%</td><td>工业金属</td></tr>
+        <tr><td>V2 多因子版</td><td>过热期</td><td>68%</td><td>主流币(BTC/ETH)</td></tr>
+        <tr><td>V3 情景模拟版</td><td>复苏期</td><td>65%</td><td>科技股</td></tr>
+      </table>
+    </div>
+    <div class="section">
+      <h2>四、大类资产配置</h2>
+      <table>
+        <tr><th>资产类别</th><th>V1配置</th><th>V2配置</th><th>V3基准</th></tr>
+        <tr><td>商品</td><td>35%</td><td>21%</td><td>35%</td></tr><tr><td>股票</td><td>25%</td><td>20%</td><td>25%</td></tr><tr><td>加密货币</td><td>20%</td><td>23%</td><td>20%</td></tr><tr><td>债券</td><td>10%</td><td>20%</td><td>10%</td></tr><tr><td>现金/货币</td><td>10%</td><td>15%</td><td>10%</td></tr>
+      </table>
+    </div>
+    <div class="section">
+      <h2>五、风险提示</h2>
+      <div class="risk-box">
+        <p>美林投资时钟基于历史规律，未来市场可能呈现与历史不同的特征</p>
+        <p>宏观经济数据通常存在发布延迟，周期判定可能滞后</p>
+        <p>未能预见的地缘政治、疫情等突发事件可能颠覆周期规律</p>
+      </div>
+    </div>
+    <div class="footer">
+      <p>本报告由DreamBuddy资产调研引擎自动生成</p>
+      <p>生成时间：2026/6/27 01:04:56</p>
+      <p>免责声明：本报告仅供参考，不构成投资建议</p>
+    </div>
+  </div>
+</body>
+</html>

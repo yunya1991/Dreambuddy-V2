@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { V3StatusDot } from '@/components/V3StatusDot';
-import { V3Badge } from '@/components/V3Badge';
+import { V3StatusDot } from '@/components';
+import { V3Badge } from '@/components';
 
 interface StreamingIndicatorProps {
   /** 是否处于流式输出状态 */

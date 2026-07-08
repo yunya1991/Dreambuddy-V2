@@ -1,0 +1,977 @@
+# 老板秘书 - 意图关键词映射
+
+intents:
+  EXECUTE_LONG:
+    name: "开多仓"
+    keywords:
+      primary:
+        - "开多"
+        - "做多"
+        - "买入"
+        - "买入开多"
+        - "做多开仓"
+      secondary:
+        - "多"
+        - "看多"
+        - "买"
+        - "进场做多"
+    examples:
+      - "开多BTC"
+      - "做多ETH"
+      - "买入开多"
+      - "帮我做多"
+    confidence_boost: 0.1
+    risk_level: "high"
+    requires_confirmation: true
+
+  EXECUTE_SHORT:
+    name: "开空仓"
+    keywords:
+      primary:
+        - "开空"
+        - "做空"
+        - "卖出"
+        - "做空开仓"
+        - "卖空"
+      secondary:
+        - "空"
+        - "看空"
+        - "做空"
+    examples:
+      - "开空BTC"
+      - "做空ETH"
+      - "帮我做空"
+    confidence_boost: 0.1
+    risk_level: "high"
+    requires_confirmation: true
+
+  EXECUTE_CLOSE:
+    name: "平仓"
+    keywords:
+      primary:
+        - "平仓"
+        - "了结"
+        - "关仓"
+        - "平掉"
+        - "全部平"
+      secondary:
+        - "结束"
+        - "结束这笔"
+        - "关了"
+        - "止盈了"
+        - "止损了"
+    examples:
+      - "平仓BTC"
+      - "平掉所有"
+      - "帮我了结"
+    confidence_boost: 0.1
+    risk_level: "high"
+    requires_confirmation: true
+
+  QUERY_POSITION:
+    name: "查询仓位"
+    keywords:
+      primary:
+        - "仓位"
+        - "持仓"
+        - "当前仓位"
+        - "持仓情况"
+      secondary:
+        - "有几成"
+        - "多少仓位"
+        - "仓位多少"
+    examples:
+      - "看看当前仓位"
+      - "BTC仓位多少"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  QUERY_ORDER_STATUS:
+    name: "查询订单状态"
+    keywords:
+      primary:
+        - "订单"
+        - "挂单"
+        - "成交"
+        - "订单状态"
+      secondary:
+        - "成交了吗"
+        - "下了吗"
+        - "挂上了吗"
+        - "有没有成交"
+    examples:
+      - "刚才那单成交了吗"
+      - "看看挂单"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  QUOTE_PRICE:
+    name: "行情报价"
+    keywords:
+      primary:
+        - "价格"
+        - "多少"
+        - "行情"
+        - "报价"
+        - "现在"
+      secondary:
+        - "现在多少"
+        - "价格多少"
+        - "啥价"
+        - "几个"
+    examples:
+      - "BTC现在多少"
+      - "ETH价格"
+      - "BTC行情"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  MARKET_ANALYSIS:
+    name: "市场分析"
+    keywords:
+      primary:
+        - "分析"
+        - "怎么样"
+        - "走势"
+        - "趋势"
+      secondary:
+        - "怎么看"
+        - "趋势如何"
+        - "最近怎么样"
+        - "市场如何"
+    examples:
+      - "BTC走势分析一下"
+      - "最近行情怎么样"
+      - "帮我分析下"
+    confidence_boost: 0.0
+    risk_level: "low"
+    requires_confirmation: false
+
+  OPPORTUNITY_SCAN:
+    name: "机会扫描"
+    keywords:
+      primary:
+        - "机会"
+        - "信号"
+        - "方向"
+        - "有吗"
+      secondary:
+        - "有什么机会"
+        - "有没有信号"
+        - "方向在哪"
+        - "可以进场吗"
+    examples:
+      - "有什么机会"
+      - "找找信号"
+      - "方向在哪"
+    confidence_boost: 0.0
+    risk_level: "low"
+    requires_confirmation: false
+
+  DATA_QUERY:
+    name: "数据查询"
+    keywords:
+      primary:
+        - "数据"
+        - "资金"
+        - "ETF"
+        - "链上"
+        - "资金流"
+      secondary:
+        - "资金流向"
+        - "ETF净流入"
+        - "链上数据"
+        - "查下数据"
+    examples:
+      - "ETF资金流"
+      - "BTC链上数据"
+      - "查下资金费率"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  PARAM_ADJUST:
+    name: "参数调整"
+    keywords:
+      primary:
+        - "参数"
+        - "调整"
+        - "设置"
+        - "改动"
+        - "改一下"
+      secondary:
+        - "改参数"
+        - "调一下"
+        - "调整下"
+        - "改改"
+    examples:
+      - "把杠杆调高"
+      - "改下止损距离"
+      - "调整参数"
+    confidence_boost: 0.0
+    risk_level: "medium"
+    requires_confirmation: true
+
+  SKILL_QUERY:
+    name: "Skill查询"
+    keywords:
+      primary:
+        - "Skill"
+        - "功能"
+        - "怎么用"
+        - "是什么"
+      secondary:
+        - "这个Skill"
+        - "那是什么功能"
+        - "怎么用这个"
+    examples:
+      - "这个Skill怎么用"
+      - "有什么功能"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  FEATURE_REQUEST:
+    name: "功能请求"
+    keywords:
+      primary:
+        - "加"
+        - "新增"
+        - "想要"
+        - "能不能"
+        - "做个"
+      secondary:
+        - "能不能加个"
+        - "我想加"
+        - "可以做个吗"
+    examples:
+      - "想加个功能"
+      - "能不能做个通知"
+    confidence_boost: 0.0
+    risk_level: "medium"
+    requires_confirmation: true
+
+  SYSTEM_STATUS:
+    name: "系统状态"
+    keywords:
+      primary:
+        - "状态"
+        - "健康"
+        - "正常"
+        - "检查"
+      secondary:
+        - "系统正常吗"
+        - "看看状态"
+        - "健康检查"
+    examples:
+      - "系统状态"
+      - "帮我检查下"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  ADVISOR_CONSULT:
+    name: "顾问咨询"
+    keywords:
+      primary:
+        - "问"
+        - "咨询"
+        - "问问"
+        - "问一下"
+      secondary:
+        - "帮我问问"
+        - "想问下"
+        - "咨询下"
+    examples:
+      - "问问风控顾问"
+      - "咨询下"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  ADVISOR_REVIEW:
+    name: "顾问评审"
+    keywords:
+      primary:
+        - "评审"
+        - "看法"
+        - "意见"
+        - "让顾问"
+      secondary:
+        - "让顾问看看"
+        - "评审一下"
+        - "给个意见"
+    examples:
+      - "让量化顾问评审下"
+      - "顾问怎么看"
+    confidence_boost: 0.0
+    risk_level: "low"
+    requires_confirmation: false
+
+  MASTER_ADVICE:
+    name: "大师建议"
+    keywords:
+      primary:
+        - "大师"
+        - "前辈"
+        - "历史"
+        - "以前"
+      secondary:
+        - "大师们"
+        - "前辈们"
+        - "历史上"
+        - "以前怎么做的"
+    examples:
+      - "大师们怎么说"
+      - "历史上类似情况"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  HISTORY_RETRIEVE:
+    name: "历史检索"
+    keywords:
+      primary:
+        - "历史"
+        - "以前"
+        - "之前"
+        - "查一下"
+      secondary:
+        - "历史记录"
+        - "以前的情况"
+        - "之前怎么处理的"
+    examples:
+      - "历史上有类似吗"
+      - "查下之前的"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  PERFORMANCE_QUERY:
+    name: "绩效查询"
+    keywords:
+      primary:
+        - "收益"
+        - "赚"
+        - "亏"
+        - "盈亏"
+      secondary:
+        - "今天赚了多少"
+        - "收益怎么样"
+        - "赚了还是亏了"
+    examples:
+      - "今天收益"
+      - "赚了多少"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  STATS_QUERY:
+    name: "统计查询"
+    keywords:
+      primary:
+        - "胜率"
+        - "统计"
+        - "数据"
+        - "成功率"
+      secondary:
+        - "胜率多少"
+        - "统计数据"
+        - "成功率"
+    examples:
+      - "这周胜率"
+      - "统计数据"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  LESSON_CHECK:
+    name: "教训检查"
+    keywords:
+      primary:
+        - "复盘"
+        - "总结"
+        - "教训"
+        - "踩坑"
+      secondary:
+        - "复盘一下"
+        - "有什么教训"
+        - "踩坑了吗"
+    examples:
+      - "复盘下这笔"
+      - "有什么教训"
+    confidence_boost: 0.0
+    risk_level: "low"
+    requires_confirmation: false
+
+  REPORT_GENERATE:
+    name: "报告生成"
+    keywords:
+      primary:
+        - "报告"
+        - "整理"
+        - "生成"
+        - "写"
+      secondary:
+        - "帮我写个报告"
+        - "生成报告"
+        - "整理一下"
+    examples:
+      - "写个交易报告"
+      - "生成周报"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  AUTOMATION_CREATE:
+    name: "自动化创建"
+    keywords:
+      primary:
+        - "提醒"
+        - "定时"
+        - "每天"
+        - "自动化"
+        - "设个"
+      secondary:
+        - "帮我设个提醒"
+        - "每天提醒我"
+        - "定时执行"
+    examples:
+      - "设个每日提醒"
+      - "创建自动化任务"
+    confidence_boost: 0.0
+    risk_level: "medium"
+    requires_confirmation: true
+
+  AUTOMATION_PAUSE:
+    name: "自动化暂停"
+    keywords:
+      primary:
+        - "暂停"
+        - "停止"
+        - "取消"
+        - "关掉"
+      secondary:
+        - "暂停自动化"
+        - "停一下"
+        - "先取消"
+    examples:
+      - "暂停自动化"
+      - "停止提醒"
+    confidence_boost: 0.0
+    risk_level: "medium"
+    requires_confirmation: true
+
+  AUTOMATION_LIST:
+    name: "自动化列表"
+    keywords:
+      primary:
+        - "自动化"
+        - "任务"
+        - "有哪些"
+        - "看看"
+      secondary:
+        - "有哪些自动化"
+        - "看看任务"
+        - "任务列表"
+    examples:
+      - "有哪些自动化"
+      - "看看自动化"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  AUTOMATION_OPTIMIZE:
+    name: "自动化优化"
+    keywords:
+      primary:
+        - "优化"
+        - "改进"
+        - "改善"
+        - "调整"
+      secondary:
+        - "优化下自动化"
+        - "改进任务"
+    examples:
+      - "帮我优化自动化"
+      - "改进下"
+    confidence_boost: 0.0
+    risk_level: "medium"
+    requires_confirmation: true
+
+  CONFUSION_SIGNAL:
+    name: "模糊信号"
+    keywords:
+      primary:
+        - "感觉"
+        - "好像"
+        - "不太对"
+        - "怎么了"
+      secondary:
+        - "感觉不太对"
+        - "好像有问题"
+        - "不太对劲"
+    examples:
+      - "感觉不太对"
+      - "好像有问题"
+    confidence_base: 0.5
+    risk_level: "unknown"
+    requires_confirmation: true
+
+  MULTI_INTENT:
+    name: "多意图冲突"
+    keywords:
+      primary: []
+      secondary: []
+    examples:
+      - "开多但我觉得不稳"
+      - "想买但又担心"
+    confidence_base: 0.6
+    risk_level: "mixed"
+    requires_confirmation: true
+
+confidence_thresholds:
+  high: 0.85
+  medium: 0.70
+  low: 0.60
+  requires_confirmation: 0.60
+
+# ============================================================
+# v2.0 新增意图 - 日报与会议类
+# ============================================================
+
+  DAILY_REPORT:
+    name: "日报汇总"
+    keywords:
+      primary:
+        - "日报"
+        - "工作汇总"
+        - "工作总结"
+        - "每日汇报"
+        - "部门报告"
+      secondary:
+        - "今天的总结"
+        - "各部门情况"
+        - "今日工作"
+        - "汇报一下"
+    examples:
+      - "看看今天的日报"
+      - "各部门工作汇总"
+      - "做个工作总结"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  MEETING_START:
+    name: "会议开始"
+    keywords:
+      primary:
+        - "开会"
+        - "会议"
+        - "头脑风暴"
+        - "讨论"
+        - "评审会"
+      secondary:
+        - "讨论一下"
+        - "开个会"
+        - "头脑风暴下"
+        - "复盘会"
+    examples:
+      - "开个会讨论下策略"
+      - "头脑风暴一下"
+      - "开始评审"
+    confidence_boost: 0.0
+    risk_level: "low"
+    requires_confirmation: false
+
+  MEETING_RECORD:
+    name: "会议记录"
+    keywords:
+      primary:
+        - "记录"
+        - "记一下"
+        - "会议纪要"
+        - "纪要"
+        - "讨论结果"
+      secondary:
+        - "记下来"
+        - "记一下刚才说的"
+        - "生成纪要"
+    examples:
+      - "把刚才说的记一下"
+      - "生成会议纪要"
+      - "记录讨论结果"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+
+  CRITICISM:
+    name: "批评指导"
+    keywords:
+      primary:
+        - "批评"
+        - "骂"
+        - "不足"
+        - "问题"
+        - "反思"
+      secondary:
+        - "哪里不对"
+        - "有什么问题"
+        - "需要改进"
+        - "批评一下"
+    examples:
+      - "批评一下这个策略"
+      - "有什么不足"
+      - "骂骂团队"
+    confidence_boost: 0.0
+    risk_level: "medium"
+    requires_confirmation: false
+
+  SELF_CRITICISM:
+    name: "自我批评"
+    keywords:
+      primary:
+        - "自我批评"
+        - "自省"
+        - "复盘"
+        - "教训"
+        - "踩坑"
+      secondary:
+        - "我哪里做错了"
+        - "总结教训"
+        - "哪里可以改进"
+    examples:
+      - "复盘一下这笔交易"
+      - "总结教训"
+      - "自我批评"
+    confidence_boost: 0.0
+    risk_level: "low"
+    requires_confirmation: false
+
+# ============================================================
+# v3.0 新增意图 - 风险与紧急类
+# ============================================================
+
+  RISK_PREDICTION:
+    name: "风险预判"
+    keywords:
+      primary:
+        - "风险"
+        - "预判"
+        - "推演"
+        - "最坏情况"
+        - "风险分析"
+        - "情景分析"
+      secondary:
+        - "如果暴跌"
+        - "最坏会怎样"
+        - "风险点在哪"
+        - "推演一下"
+        - "假设验证"
+    examples:
+      - "风险分析一下"
+      - "推演最坏情况"
+      - "如果暴跌会怎样"
+    confidence_boost: 0.0
+    risk_level: "medium"
+    requires_confirmation: false
+
+  URGENT_RISK:
+    name: "紧急风险"
+    keywords:
+      primary:
+        - "暴跌"
+        - "爆仓"
+        - "紧急"
+        - "危险"
+        - "崩盘"
+        - "止损"
+      secondary:
+        - "完了"
+        - "出事了"
+        - "要亏了"
+        - "扛不住了"
+        - "快跑"
+        - "止损线"
+    examples:
+      - "BTC暴跌了"
+      - "要爆仓了"
+      - "快止损"
+    confidence_boost: 0.15
+    risk_level: "critical"
+    requires_confirmation: true
+
+  EMERGENCY_RESPONSE:
+    name: "紧急响应"
+    keywords:
+      primary:
+        - "响应"
+        - "召集"
+        - "顾问"
+        - "团队"
+        - "紧急会议"
+      secondary:
+        - "召集顾问"
+        - "响应小组"
+        - "启动应急"
+        - "紧急处理"
+    examples:
+      - "召集顾问团队"
+      - "启动紧急响应"
+      - "紧急处理小组"
+    confidence_boost: 0.1
+    risk_level: "critical"
+    requires_confirmation: true
+
+# ============================================================
+# 新增意图 - 架构评审与大师知识库
+# ============================================================
+
+  ARCHITECT_REVIEW:
+    name: "架构评审"
+    keywords:
+      primary:
+        - "评审"
+        - "审查"
+        - "审批"
+        - "SOP"
+        - "架构"
+      secondary:
+        - "评审一下"
+        - "安全审查"
+        - "代码审查"
+        - "接口检查"
+        - "制定SOP"
+        - "评审流程"
+    examples:
+      - "评审一下这个Skill"
+      - "制定架构评审SOP"
+      - "安全审查一下"
+    confidence_boost: 0.0
+    risk_level: "medium"
+    requires_confirmation: false
+    advisor: "ADVISOR-SA"
+
+  MASTER_ADVICE:
+    name: "大师指导"
+    keywords:
+      primary:
+        - "大师"
+        - "前辈"
+        - "海龟"
+        - "大作手"
+        - "Richard"
+        - "Van Tharp"
+        - "Mark Douglas"
+      secondary:
+        - "海龟法则"
+        - "前辈经验"
+        - "大师怎么说"
+        - "如果前辈"
+        - "历史经验"
+        - "经典案例"
+    examples:
+      - "海龟法则怎么说"
+      - "Richard Dennis 怎么做的"
+      - "前辈有什么经验"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+    advisor: "ADVISOR-KB"
+
+  LESSON_CHECK:
+    name: "教训检查"
+    keywords:
+      primary:
+        - "教训"
+        - "经验"
+        - "坑"
+        - "注意事项"
+        - "避免"
+      secondary:
+        - "有什么教训"
+        - "别踩坑"
+        - "需要注意什么"
+        - "避免什么"
+        - "经验之谈"
+    examples:
+      - "这笔交易有什么教训"
+      - "别踩坑了"
+      - "有什么注意事项"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+    advisor: "ADVISOR-KB"
+
+# ============================================================
+# v1.0 新增意图 - 数据分析部
+# ============================================================
+
+  DATA_ANALYSIS:
+    name: "数据分析"
+    keywords:
+      primary:
+        - "数据分析"
+        - "分析"
+        - "数据驱动"
+        - "统计分析"
+        - "统计"
+      secondary:
+        - "做下分析"
+        - "分析一下"
+        - "数据分析部"
+        - "数据部门"
+    examples:
+      - "帮我做数据分析"
+      - "分析一下近期数据"
+      - "数据分析部怎么看"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+    advisor: "ADVISOR-DA"
+
+  TREND_ANALYSIS:
+    name: "趋势分析"
+    keywords:
+      primary:
+        - "趋势分析"
+        - "趋势图"
+        - "MA"
+        - "EMA"
+        - "趋势强度"
+        - "趋势惯性"
+        - "趋势"
+      secondary:
+        - "画个趋势图"
+        - "生成趋势图"
+        - "MA怎么走"
+        - "EMA分析"
+    examples:
+      - "画个趋势图"
+      - "MA分析一下"
+      - "趋势强度怎么样"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+    advisor: "ADVISOR-DA"
+
+  RESISTANCE_ANALYSIS:
+    name: "阻力分析"
+    keywords:
+      primary:
+        - "阻力分析"
+        - "阻力分解"
+        - "摩擦分析"
+        - "流动性分析"
+        - "阻力"
+        - "摩擦"
+      secondary:
+        - "流动性怎么样"
+        - "阻力大吗"
+        - "摩擦成本"
+    examples:
+      - "阻力分析一下"
+      - "流动性怎么样"
+      - "摩擦成本有多高"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+    advisor: "ADVISOR-DA"
+
+  CALIBRATION_SUGGESTION:
+    name: "校准建议"
+    keywords:
+      primary:
+        - "校准建议"
+        - "阈值调整"
+        - "参数校准"
+        - "E[R]映射"
+        - "lambda"
+        - "λ"
+        - "校准"
+      secondary:
+        - "需要调整阈值吗"
+        - "E[R]映射正常吗"
+        - "λ要不要调"
+        - "校准下参数"
+    examples:
+      - "校准建议是什么"
+      - "阈值要调吗"
+      - "E[R]映射怎么看"
+    confidence_boost: 0.0
+    risk_level: "low"
+    requires_confirmation: true
+    advisor: "ADVISOR-DA"
+
+  CHART_REQUEST:
+    name: "图表请求"
+    keywords:
+      primary:
+        - "图表"
+        - "画图"
+        - "雷达图"
+        - "可视化"
+        - "生成图表"
+        - "画个图"
+      secondary:
+        - "画个趋势图"
+        - "生成雷达图"
+        - "可视化展示"
+        - "做个图"
+    examples:
+      - "画个趋势图"
+      - "生成雷达图"
+      - "做个可视化"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+    advisor: "ADVISOR-DA"
+
+  DASHBOARD_VIEW:
+    name: "Dashboard查看"
+    keywords:
+      primary:
+        - "Dashboard"
+        - "仪表盘"
+        - "监控面板"
+        - "总览"
+        - "概览"
+      secondary:
+        - "打开Dashboard"
+        - "看看仪表盘"
+        - "总览一下"
+        - "全局视图"
+    examples:
+      - "打开Dashboard"
+      - "看看仪表盘"
+      - "做个总览"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+    advisor: "ADVISOR-DA"
+
+  EPISODE_REVIEW:
+    name: "Episode复盘"
+    keywords:
+      primary:
+        - "episode"
+        - "复盘"
+        - "回放"
+        - "历史分析"
+        - "回溯"
+      secondary:
+        - "历史回放"
+        - "回溯分析"
+        - "复盘一下"
+        - "episode分析"
+    examples:
+      - "复盘下episode"
+      - "回放历史"
+      - "episode分析"
+    confidence_boost: 0.0
+    risk_level: "none"
+    requires_confirmation: false
+    advisor: "ADVISOR-DA"

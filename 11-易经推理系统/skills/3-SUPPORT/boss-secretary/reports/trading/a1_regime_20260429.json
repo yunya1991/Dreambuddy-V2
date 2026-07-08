@@ -1,0 +1,108 @@
+{
+  "report_date": "2026-04-29",
+  "report_time": "07:18",
+  "regime": "BEAR_TREND",
+  "confidence": 72,
+  "expected_duration": "2-4周",
+  "key_levels": {
+    "btc": {
+      "current": 76287,
+      "resistance": [77500, 78000],
+      "support": [75000, 72000],
+      "breakdown_level": 77000
+    },
+    "eth": {
+      "current": 2286,
+      "resistance": [2350, 2400],
+      "support": [2250, 2050],
+      "breakdown_level": 2300
+    },
+    "sol": {
+      "current": 83.77,
+      "resistance": [86, 88],
+      "support": [82, 78],
+      "breakdown_level": 85
+    }
+  },
+  "sentiment": {
+    "fgi": 33,
+    "fgi_status": "FEAR",
+    "funding_btc": 0.0043,
+    "funding_eth": -0.0003,
+    "direction": "mixed"
+  },
+  "macro": {
+    "geopolitical_risk": "HIGH",
+    "main_event": "伊朗控制霍尔木兹海峡",
+    "polymarket_ceasefire_prob": 63,
+    "us_market": "WEAK",
+    "correlations": {
+      "btc_sp500": 0.72,
+      "btc_gold": 0.14,
+      "btc_oil": 0.45
+    }
+  },
+  "whale_signals": {
+    "matrixport_whale": {
+      "action": "做多ETH",
+      "size": 30000,
+      "leverage": 15,
+      "value_usd": 68000000,
+      "direction": "bullish"
+    },
+    "fidelity": {
+      "action": "减持ETH",
+      "size": 19934,
+      "value_usd": 45290000,
+      "direction": "bearish"
+    }
+  },
+  "market_cap": {
+    "total": 2640000000000,
+    "btc_dominance": 57.98,
+    "change_24h": -0.96
+  },
+  "liquidation_data": {
+    "total_24h": 195000000,
+    "long_liquidations": 129000000,
+    "short_liquidations": 65740000,
+    "ratio_long_short": 1.96,
+    "signal": "空方占优"
+  },
+  "position_status": {
+    "account": "dreamdemo",
+    "btc_position": {
+      "side": "short",
+      "size": 0.31,
+      "entry": 76764.5,
+      "upl": 1.57,
+      "direction_correct": true
+    }
+  },
+  "contradiction_analysis": {
+    "main_contradiction": "地缘风险 vs 流动性收紧",
+    "contradiction_direction": "空方",
+    "scenarios": [
+      {"name": "情景A-和平", "prob": 40, "outcome": "风险资产反弹"},
+      {"name": "情景B-对峙", "prob": 45, "outcome": "油价飙升→加密承压"},
+      {"name": "情景C-冲突", "prob": 15, "outcome": "流动性危机"}
+    ]
+  },
+  "recommendation": {
+    "direction": "SHORT",
+    "primary_target": {
+      "btc": 74000,
+      "eth": 2150,
+      "sol": 78
+    },
+    "stop_loss": {
+      "btc": 78500,
+      "eth": 2400,
+      "sol": 88
+    },
+    "risk_reward": "1:1.8"
+  },
+  "data_sources": ["OKX CLI", "Odaily", "Polymarket", "Alternative.me"],
+  "report_version": "v1.7",
+  "generated_at": "2026-04-29T07:18:00+08:00"
+}

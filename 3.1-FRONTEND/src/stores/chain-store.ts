@@ -1,41 +1,32 @@
 import { create } from 'zustand';
 
-// === 链路追踪类型 ===
-
-export type ChainType = 'S' | 'C' | 'A' | 'F' | 'D' | 'Z' | 'E';
-export type ChainStatus = 'idle' | 'running' | 'paused' | 'completed' | 'failed';
-export type StepStatus = 'pending' | 'active' | 'done' | 'skipped' | 'failed';
+export type ChainType = 'research' | 'trading' | 'fundamental' | 'risk' | 'custom';
 export type ReflectorAction = 'CONTINUE' | 'REDO' | 'INSERT_BEFORE' | 'JUMP_TO' | 'EARLY_TERMINATE' | 'SKIP';
+export type SACELayer = 'S' | 'A' | 'C' | 'G';
 
 export interface ChainStep {
   id: string;
+  index: number;
   name: string;
-  chainType: ChainType;
-  status: StepStatus;
-  startedAt?: string;
-  completedAt?: string;
-  reflectorAction?: ReflectorAction;
-  reflectorReason?: string;
-  artifact?: string;
-  tokensUsed?: number;
+  layer: SACELayer;
+  status: 'pending' | 'running' | 'done' | 'failed' | 'skipped';
+  inputSummary?: string;
+  outputSummary?: string;
+  tokens?: number;
   latencyMs?: number;
-}
-
-export interface ReflectorDecision {
-  stepId: string;
-  action: ReflectorAction;
-  reason: string;
-  confidence: number;
-  timestamp: string;
+  reflectorDecision?: ReflectorAction;
+  reflectorReason?: string;
+  startedAt?: number;
+  completedAt?: number;
 }
 
 export interface DAGNode {
   id: string;
   label: string;
-  status: StepStatus;
-  layer: 'S' | 'A' | 'C' | 'G';
-  isSkill?: boolean;
-  confidence?: number;
+  layer: SACELayer;
+  status: 'idle' | 'active' | 'done' | 'error';
+  x?: number;
+  y?: number;
 }
 
 export interface DAGEdge {
@@ -44,90 +35,95 @@ export interface DAGEdge {
   label?: string;
 }
 
-export interface ChainArtifact {
+export interface CrossValidation {
+  chainId: string;
+  result: 'pass' | 'fail' | 'partial';
+  confidence: number;
+  disagreements: string[];
+}
+
+// chain_trace 中的节点结构 (来自后端 /api/task/stream 的 done 事件)
+export interface ChainTraceNode {
   id: string;
-  type: 'text' | 'data' | 'chart' | 'report';
-  title: string;
-  content: string;
-  createdAt: string;
+  name: string;
+  icon?: string;
+  layer: string;
+  stage?: string;
+  chain?: string;
+  is_skill?: boolean;
+  status: string;
+  confidence?: number;
+  tokens_used?: number;
+  latency_ms?: number;
+  reflect_action?: string;
+}
+
+export interface ChainTrace {
+  intent?: { type: string; confidence: number; method: string; entities?: Record<string, unknown> };
+  plan?: { chain_id: string; chain_name: string; planned_steps: Array<Record<string, unknown>>; complexity: string; total_budget: number; rationale: string };
+  nodes: ChainTraceNode[];
+  final?: { execution_chain: string; quality_score: number; risk_score: number; grade: string };
 }
 
 interface ChainState {
-  // 活跃链
-  activeChain: {
-    chainId: string;
-    chainType: ChainType;
-    chainName: string;
-    status: ChainStatus;
-    startedAt: string;
-    completedAt?: string;
-  } | null;
-  // 步骤
+  activeChain: ChainType | null;
+  chainId: string | null;
   steps: ChainStep[];
-  activeStepIndex: number;
-  // Reflector 历史
-  reflectorHistory: ReflectorDecision[];
-  // DAG (A层)
+  currentStepIndex: number;
+  reflectorHistory: Array<{ stepId: string; action: ReflectorAction; reason: string; timestamp: number }>;
   dagNodes: DAGNode[];
   dagEdges: DAGEdge[];
-  // 产物
-  artifacts: ChainArtifact[];
-  // 交叉验证
-  crossValidation: {
-    enabled: boolean;
-    votes: { chainType: string; decision: string; confidence: number }[];
-    finalDecision?: string;
-  };
+  crossValidations: CrossValidation[];
+  artifacts: Array<{ id: string; type: string; title: string; createdAt: number }>;
+  chainTrace: ChainTrace | null;
+  qualityScore: number | null;
 
-  // Actions
-  setActiveChain: (chain: ChainState['activeChain']) => void;
-  clearActiveChain: () => void;
-  setSteps: (steps: ChainStep[]) => void;
+  startChain: (type: ChainType, steps: Omit<ChainStep, 'status'>[]) => void;
   updateStep: (stepId: string, update: Partial<ChainStep>) => void;
-  setActiveStepIndex: (index: number) => void;
-  addReflectorDecision: (decision: ReflectorDecision) => void;
-  setDAGNodes: (nodes: DAGNode[]) => void;
-  setDAGEdges: (edges: DAGEdge[]) => void;
-  updateDAGNode: (nodeId: string, update: Partial<DAGNode>) => void;
-  addArtifact: (artifact: ChainArtifact) => void;
-  setCrossValidation: (cv: Partial<ChainState['crossValidation']>) => void;
-  reset: () => void;
+  reflectorDecision: (stepId: string, action: ReflectorAction, reason: string) => void;
+  setDAG: (nodes: DAGNode[], edges: DAGEdge[]) => void;
+  addCrossValidation: (cv: CrossValidation) => void;
+  addArtifact: (artifact: { id: string; type: string; title: string }) => void;
+  setChainTrace: (trace: ChainTrace) => void;
+  resetChain: () => void;
 }
 
-export const useChainStore = create<ChainState>((set) => ({
-  activeChain: null,
-  steps: [],
-  activeStepIndex: -1,
-  reflectorHistory: [],
-  dagNodes: [],
-  dagEdges: [],
-  artifacts: [],
-  crossValidation: { enabled: false, votes: [] },
+export const useChainStore = create<ChainState>((set, get) => ({
+  activeChain: null, chainId: null, steps: [], currentStepIndex: -1,
+  reflectorHistory: [], dagNodes: [], dagEdges: [], crossValidations: [], artifacts: [],
+  chainTrace: null, qualityScore: null,
 
-  setActiveChain: (chain) => set({ activeChain: chain, steps: [], activeStepIndex: -1, reflectorHistory: [], artifacts: [] }),
-  clearActiveChain: () => set({ activeChain: null, steps: [], activeStepIndex: -1 }),
-  setSteps: (steps) => set({ steps }),
-  updateStep: (stepId, update) => set((s) => ({
+  startChain: (type, steps) => set({
+    activeChain: type, chainId: `chain_${Date.now()}`, currentStepIndex: 0,
+    steps: steps.map(s => ({ ...s, status: 'pending' as const })),
+    reflectorHistory: [], crossValidations: [], artifacts: [],
+  }),
+
+  updateStep: (stepId, update) => set(s => ({
     steps: s.steps.map(st => st.id === stepId ? { ...st, ...update } : st),
   })),
-  setActiveStepIndex: (index) => set({ activeStepIndex: index }),
-  addReflectorDecision: (decision) => set((s) => ({
-    reflectorHistory: [...s.reflectorHistory, decision],
+
+  reflectorDecision: (stepId, action, reason) => set(s => ({
+    reflectorHistory: [...s.reflectorHistory, { stepId, action, reason, timestamp: Date.now() }],
   })),
-  setDAGNodes: (nodes) => set({ dagNodes: nodes }),
-  setDAGEdges: (edges) => set({ dagEdges: edges }),
-  updateDAGNode: (nodeId, update) => set((s) => ({
-    dagNodes: s.dagNodes.map(n => n.id === nodeId ? { ...n, ...update } : n),
-  })),
-  addArtifact: (artifact) => set((s) => ({
-    artifacts: [...s.artifacts, artifact],
-  })),
-  setCrossValidation: (cv) => set((s) => ({
-    crossValidation: { ...s.crossValidation, ...cv },
-  })),
-  reset: () => set({
-    activeChain: null, steps: [], activeStepIndex: -1,
-    reflectorHistory: [], dagNodes: [], dagEdges: [],
-    artifacts: [], crossValidation: { enabled: false, votes: [] },
+
+  setDAG: (nodes, edges) => set({ dagNodes: nodes, dagEdges: edges }),
+  addCrossValidation: (cv) => set(s => ({ crossValidations: [...s.crossValidations, cv] })),
+  addArtifact: (artifact) => set(s => ({ artifacts: [...s.artifacts, { ...artifact, createdAt: Date.now() }] })),
+  setChainTrace: (trace) => set({
+    chainTrace: trace,
+    qualityScore: trace.final?.quality_score ?? null,
+    // 同步更新 DAG nodes
+    dagNodes: trace.nodes.map(n => ({
+      id: n.id,
+      label: n.name,
+      layer: (['S', 'A', 'C', 'G'].includes(n.layer) ? n.layer : 'A') as SACELayer,
+      status: n.status === 'done' ? 'done' : n.status === 'active' ? 'active' : n.status === 'error' ? 'error' : 'idle',
+    })),
+    dagEdges: trace.nodes.slice(1).map((n, i) => ({
+      from: trace.nodes[i].id,
+      to: n.id,
+    })),
   }),
+  resetChain: () => set({ activeChain: null, chainId: null, steps: [], currentStepIndex: -1, reflectorHistory: [], dagNodes: [], dagEdges: [], crossValidations: [], artifacts: [], chainTrace: null, qualityScore: null }),
 }));

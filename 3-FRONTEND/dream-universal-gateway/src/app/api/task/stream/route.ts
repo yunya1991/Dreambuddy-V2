@@ -180,6 +180,7 @@ export async function POST(request: NextRequest) {
           intent: task.intent,
           thinking_mode: task.thinking_mode,
           content: result.content,
+          chat_content: result.chat_content,
           content_type: result.content_type,
           execution_time_ms: result.execution_time_ms,
           artifacts_produced: result.artifacts_produced,

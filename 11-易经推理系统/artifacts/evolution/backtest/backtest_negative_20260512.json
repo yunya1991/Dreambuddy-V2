@@ -1,0 +1,20 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "stage": "backtest",
+  "pass": true,
+  "metrics": {
+    "sharpe_delta": -0.05,
+    "max_drawdown_delta": 0.031,
+    "cost_sensitivity_pass": false
+  },
+  "violations": [
+    {
+      "code": "BACKTEST_TAIL_RISK_SPIKE",
+      "severity": "high"
+    }
+  ],
+  "artifacts": [
+    "artifacts/evolution/scenario/scenario_positive_20260512.json"
+  ],
+  "timestamp": "2026-05-12T10:28:00Z"
+}

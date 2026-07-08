@@ -243,9 +243,9 @@ export interface EpisodeSummary {
 
 /** 链权重配置 */
 export interface ChainWeights {
-  s_chain: number;  // AI 技能权重
-  c_chain: number;  // 经典指标权重
-  f_chain: number;  // 基本面权重
+  a_chain: number;  // AI 技能/分析链权重
+  c_chain: number;  // 经典指标链权重
+  f_chain: number;  // 基本面/风控链权重
 }
 
 /** 用户偏好 */
@@ -475,9 +475,9 @@ export function createDefaultContext(sessionId: string): ExecutionContext {
     userRole: 'FREE',
     tradingMode: 'ai_skill',
     chainWeights: {
-      s_chain: 0.35,
-      c_chain: 0.45,
-      f_chain: 0.20,
+      a_chain: 0.60,
+      c_chain: 0.25,
+      f_chain: 0.15,
     },
   };
 }

@@ -5,55 +5,40 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   title: string;
   message: string;
-  duration?: number;
-  createdAt: string;
+  timestamp: number;
+  read: boolean;
 }
 
 interface UIState {
-  // 布局
   sidebarCollapsed: boolean;
-  rightPanelCollapsed: boolean;
-  activeRightTab: 'analysis' | 'market' | 'reports' | 'settings';
-  // 主题
   theme: 'dark' | 'light';
-  // 语言
-  locale: 'zh-CN' | 'en-US';
-  // Command Palette
+  locale: 'zh' | 'en';
   commandPaletteOpen: boolean;
-  // 通知
   notifications: Notification[];
+  activeTab: string;
 
   toggleSidebar: () => void;
-  toggleRightPanel: () => void;
-  setRightTab: (tab: UIState['activeRightTab']) => void;
   setTheme: (theme: 'dark' | 'light') => void;
-  setLocale: (locale: UIState['locale']) => void;
-  toggleCommandPalette: () => void;
-  addNotification: (n: Notification) => void;
-  removeNotification: (id: string) => void;
-  clearNotifications: () => void;
+  setLocale: (locale: 'zh' | 'en') => void;
+  setCommandPaletteOpen: (open: boolean) => void;
+  addNotification: (n: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+  markNotificationRead: (id: string) => void;
+  setActiveTab: (tab: string) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  sidebarCollapsed: false,
-  rightPanelCollapsed: false,
-  activeRightTab: 'analysis',
-  theme: 'dark',
-  locale: 'zh-CN',
-  commandPaletteOpen: false,
-  notifications: [],
+  sidebarCollapsed: false, theme: 'dark', locale: 'zh',
+  commandPaletteOpen: false, notifications: [], activeTab: 'dashboard',
 
-  toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
-  toggleRightPanel: () => set((s) => ({ rightPanelCollapsed: !s.rightPanelCollapsed })),
-  setRightTab: (tab) => set({ activeRightTab: tab }),
+  toggleSidebar: () => set(s => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setTheme: (theme) => set({ theme }),
   setLocale: (locale) => set({ locale }),
-  toggleCommandPalette: () => set((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
-  addNotification: (n) => set((s) => ({
-    notifications: [n, ...s.notifications].slice(0, 50),
+  setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
+  addNotification: (n) => set(s => ({
+    notifications: [{ ...n, id: `notif_${Date.now()}`, timestamp: Date.now(), read: false }, ...s.notifications],
   })),
-  removeNotification: (id) => set((s) => ({
-    notifications: s.notifications.filter(n => n.id !== id),
+  markNotificationRead: (id) => set(s => ({
+    notifications: s.notifications.map(n => n.id === id ? { ...n, read: true } : n),
   })),
-  clearNotifications: () => set({ notifications: [] }),
+  setActiveTab: (tab) => set({ activeTab: tab }),
 }));

@@ -29,10 +29,11 @@ function sanitizeId(id: string): string {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const taskId = sanitizeId(params.id);
+    const { id } = await params;
+    const taskId = sanitizeId(id);
     if (!taskId) {
       return NextResponse.json(
         { success: false, error: '无效的任务ID' },
@@ -109,7 +110,7 @@ export async function GET(
     }
 
     const report = {
-      taskId: raw.task_id || params.id,
+      taskId: raw.task_id || id,
       taskType: raw.intent?.type || taskData?.intent?.type || 'analysis',
       intent: raw.intent?.type || taskData?.intent?.type || 'market_query',
       input: taskData?.message || raw.message || raw.input || raw.task_id || '',

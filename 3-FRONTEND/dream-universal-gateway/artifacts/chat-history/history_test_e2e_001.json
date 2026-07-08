@@ -1,0 +1,21 @@
+{
+  "session_id": "test_e2e_001",
+  "created_at": "2026-07-05T16:19:12.515Z",
+  "updated_at": "2026-07-05T16:19:12.904Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "你好",
+      "timestamp": "2026-07-05T16:19:12.515Z"
+    },
+    {
+      "role": "assistant",
+      "content": "本系统仅聚焦于金融/加密市场相关分析与问答。你的问题不在范围内，已跳过。",
+      "timestamp": "2026-07-05T16:19:12.904Z",
+      "task_id": "task_20260705161912_yagj",
+      "intent_type": "simple_qa"
+    }
+  ],
+  "summary_level": 0,
+  "total_tokens": 0
+}

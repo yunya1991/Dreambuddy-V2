@@ -1,0 +1,164 @@
+[
+  {
+    "timestamp": "2026-04-29T10:40:19.108107",
+    "seminar_id": "SEM_20260429_104019",
+    "master_id": "druckenmiller",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:19.108113",
+    "seminar_id": "SEM_20260429_104019",
+    "master_id": "oneil",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:19.108117",
+    "seminar_id": "SEM_20260429_104019",
+    "master_id": "ptj",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:19.108120",
+    "seminar_id": "SEM_20260429_104019",
+    "master_id": "dalio",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:19.108123",
+    "seminar_id": "SEM_20260429_104019",
+    "master_id": "tharp",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:19.108125",
+    "seminar_id": "SEM_20260429_104019",
+    "master_id": "livermore",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:41.648990",
+    "seminar_id": "SEM_20260429_104041",
+    "master_id": "druckenmiller",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:41.649000",
+    "seminar_id": "SEM_20260429_104041",
+    "master_id": "oneil",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:41.649005",
+    "seminar_id": "SEM_20260429_104041",
+    "master_id": "ptj",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:41.649009",
+    "seminar_id": "SEM_20260429_104041",
+    "master_id": "dalio",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:41.649012",
+    "seminar_id": "SEM_20260429_104041",
+    "master_id": "tharp",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:40:41.649014",
+    "seminar_id": "SEM_20260429_104041",
+    "master_id": "livermore",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:44:53.188122",
+    "seminar_id": "SEM_20260429_104453",
+    "master_id": "soros",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:44:53.188131",
+    "seminar_id": "SEM_20260429_104453",
+    "master_id": "druckenmiller",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:44:53.188136",
+    "seminar_id": "SEM_20260429_104453",
+    "master_id": "ptj",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:44:53.188139",
+    "seminar_id": "SEM_20260429_104453",
+    "master_id": "dalio",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:44:53.188142",
+    "seminar_id": "SEM_20260429_104453",
+    "master_id": "tharp",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  },
+  {
+    "timestamp": "2026-04-29T10:44:53.188144",
+    "seminar_id": "SEM_20260429_104453",
+    "master_id": "livermore",
+    "old_weight": 1.0,
+    "new_weight": 1.0,
+    "reason": "建议采纳率中等(63%)，权重保持",
+    "adoption_rate": 0.634
+  }
+]

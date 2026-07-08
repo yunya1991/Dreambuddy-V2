@@ -1,0 +1,252 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Change Bundle Schema",
+  "description": "AI Trading Compliance - 变更包 JSON Schema",
+  "type": "object",
+  "required": ["intent", "change_type", "risk_level"],
+  "properties": {
+    "intent": {
+      "type": "object",
+      "description": "变更意图",
+      "required": ["what", "why", "impact_scope"],
+      "properties": {
+        "what": {
+          "type": "string",
+          "description": "要做什么"
+        },
+        "why": {
+          "type": "string",
+          "description": "为什么做"
+        },
+        "impact_scope": {
+          "type": "array",
+          "description": "影响范围",
+            "items": {
+              "type": "string",
+              "enum": ["strategy", "parameter", "system", "external", "automation", "risk"]
+            }
+        }
+      }
+    },
+    "change_type": {
+      "type": "string",
+      "description": "变更类型 R0-R3",
+      "enum": ["R0", "R1", "R2", "R3"]
+    },
+    "risk_level": {
+      "type": "string",
+      "description": "风险等级 P0/P1/P3",
+      "enum": ["P0", "P1", "P3"]
+    },
+    "doc_refs": {
+      "type": "array",
+      "description": "对齐的 SSoT 文档引用",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "description": "沙箱输入/输出产物",
+      "properties": {
+        "data_snapshot_id": {
+          "type": "string",
+          "description": "数据快照ID"
+        },
+        "config_version": {
+          "type": "string",
+          "description": "配置版本"
+        },
+        "strategy_key": {
+          "type": "string",
+          "description": "策略标识"
+        },
+        "backtest_summary": {
+          "type": "object",
+          "description": "回测摘要"
+        },
+        "robustness": {
+          "type": "object",
+          "description": "稳健性分析"
+        },
+        "gating_report": {
+          "type": "object",
+          "description": "门禁报告，必须包含 gate_result 和 baseline_ref"
+        }
+      }
+    },
+    "rollout_plan": {
+      "type": "object",
+      "description": "灰度发布计划",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["canary", "disabled", "full"]
+        },
+        "canary_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "monitoring_window": {
+          "type": "string"
+        },
+        "success_metrics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exit_conditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rollback_plan": {
+      "type": "object",
+      "description": "回滚计划",
+      "required": ["rollback_points", "triggers", "actions"],
+      "properties": {
+        "rollback_plan_id": {
+          "type": "string",
+          "description": "回滚计划ID"
+        },
+        "rollback_points": {
+          "type": "array",
+          "description": "回滚点（版本/快照）",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {"type": "string", "description": "回滚点类型 (file_restore, config_restore, etc.)"},
+              "file": {"type": "string", "description": "文件路径"},
+              "backup_id": {"type": "string", "description": "备份ID"}
+            }
+          }
+        },
+        "triggers": {
+          "type": "array",
+          "description": "自动触发条件",
+          "items": {
+            "type": "string"
+          }
+        },
+        "actions": {
+          "type": "array",
+          "description": "回滚动作",
+          "items": {
+            "type": "string"
+          }
+        },
+        "manual_trigger": {
+          "type": "string",
+          "description": "人工触发口径"
+        }
+      }
+    },
+    "external_publish": {
+      "type": "object",
+      "description": "外联发布（如涉及）",
+      "properties": {
+        "channel": {
+          "type": "string"
+        },
+        "content_template": {
+          "type": "string"
+        },
+        "outbox_idempotent_key": {
+          "type": "string"
+        },
+        "approval_status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"]
+        }
+      }
+    },
+    "trace_id": {
+      "type": "string",
+      "description": "追踪ID"
+    },
+    "parents": {
+      "type": "array",
+      "description": "父级 trace ID",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "证据引用路径/URL/快照ID（不包含密钥）",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rule_version": {
+      "type": "string",
+      "description": "规则版本（如变更涉及规则治理）"
+    },
+    "config_version": {
+      "type": "string",
+      "description": "配置版本（如变更涉及配置治理）"
+    },
+    "target": {
+      "type": "object",
+      "description": "变更目标",
+      "properties": {
+        "file": {"type": "string"},
+        "section": {"type": "string"},
+        "old_value": {"type": "string"},
+        "new_value": {"type": "string"}
+      }
+    },
+    "sandbox_ok": {
+      "type": "boolean",
+      "description": "是否允许在沙箱环境执行"
+    },
+    "prod_ok": {
+      "type": "boolean",
+      "description": "是否允许在生产环境执行"
+    },
+    "outbound_ok": {
+      "type": "boolean",
+      "description": "是否允许外联发布"
+    },
+    "baseline_ref": {
+      "type": "string",
+      "description": "基线引用"
+    },
+    "affected_rules": {
+      "type": "array",
+      "description": "受影响的规则列表",
+      "items": {"type": "string"}
+    },
+    "data_privacy_review": {
+      "type": "string",
+      "description": "数据隐私审查结果"
+    },
+    "external_reviewers": {
+      "type": "array",
+      "description": "外部审核者列表",
+      "items": {"type": "string"}
+    },
+    "risk_expansion": {
+      "type": "boolean",
+      "description": "是否为风险扩张型变更"
+    },
+    "triggers": {
+      "type": "object",
+      "description": "触发条件",
+      "properties": {
+        "auto": {"type": "array", "items": {"type": "string"}},
+        "manual": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "execution_context": {
+      "type": "object",
+      "description": "执行上下文（传递给交易前门禁）"
+    }
+  },
+  "additionalProperties": false
+}

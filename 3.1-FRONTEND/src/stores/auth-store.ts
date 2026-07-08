@@ -1,35 +1,23 @@
 import { create } from 'zustand';
 
 interface AuthState {
-  isAuthenticated: boolean;
   uid: string | null;
   email: string | null;
-  role: string | null;
-  emailVerified: boolean;
+  role: 'admin' | 'user' | 'guest' | null;
+  isVerified: boolean;
+  isLoading: boolean;
 
-  setAuth: (data: { uid: string; email: string; role: string; emailVerified: boolean }) => void;
-  clearAuth: () => void;
+  setAuth: (uid: string, email: string, role: 'admin' | 'user' | 'guest') => void;
+  setVerified: (verified: boolean) => void;
+  logout: () => void;
+  setLoading: (loading: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: false,
-  uid: null,
-  email: null,
-  role: null,
-  emailVerified: false,
+  uid: null, email: null, role: null, isVerified: false, isLoading: false,
 
-  setAuth: (data) => set({
-    isAuthenticated: true,
-    uid: data.uid,
-    email: data.email,
-    role: data.role,
-    emailVerified: data.emailVerified,
-  }),
-  clearAuth: () => set({
-    isAuthenticated: false,
-    uid: null,
-    email: null,
-    role: null,
-    emailVerified: false,
-  }),
+  setAuth: (uid, email, role) => set({ uid, email, role, isVerified: true }),
+  setVerified: (verified) => set({ isVerified: verified }),
+  logout: () => set({ uid: null, email: null, role: null, isVerified: false }),
+  setLoading: (loading) => set({ isLoading: loading }),
 }));

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useRef, useCallback } from 'react';
-import { V3Button } from '@/components/V3Button';
-import { IconSend, IconPlus } from '@/components/V3InlineSVG';
+import { V3Button } from '@/components';
+import { IconSend, IconPlus } from '@/components';
 
 interface ChatInputProps {
   /** 当前输入值 */

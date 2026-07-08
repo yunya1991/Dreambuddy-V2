@@ -1,0 +1,148 @@
+{
+  "directive_id": "dir_20260426_001",
+  "timestamp": "2026-04-26T02:30:00+08:00",
+  "signal": "PROBE",
+  "regime": "RANGE_BOUND",
+  "direction": "BULL",
+  "confidence": 0.61,
+
+  "score_breakdown": {
+    "trend_strength": 3,
+    "macro_tailwind": 4,
+    "memory_safety": 7,
+    "strategy_match": 4,
+    "technical": 3,
+    "sentiment": 5,
+    "funding_rate": 4,
+    "total": 30,
+    "max": 70
+  },
+
+  "edge": 5,
+
+  "key_levels": {
+    "resistance": ["$78,600", "$78,200", "$78,000"],
+    "support": ["$77,200", "$77,000", "$76,500"],
+    "pivot": "$77,500",
+    "stop_loss": "$77,000",
+    "entry_range": ["$77,200", "$77,300"],
+    "take_profit_1": "$77,800",
+    "take_profit_2": "$78,600"
+  },
+
+  "position_recommendations": {
+    "dreamdemo": {
+      "account": "dreamdemo",
+      "current": {
+        "net_position": 0,
+        "available_usdt": 5705.56,
+        "status": "空仓"
+      },
+      "action": "PROBE_LONG",
+      "target_size": 0.1,
+      "entry_range": ["$77,200", "$77,300"],
+      "leverage": 2,
+      "stop_loss": "$77,000",
+      "take_profit_1": "$77,800 (减仓50%)",
+      "take_profit_2": "$78,600 (全平)",
+      "usdt_risk": 30,
+      "max_loss_usdt": 6,
+      "reason": "矛盾共识3/5偏多+FGI Fear逆向+$77,200三底支撑"
+    },
+    "A5": {
+      "account": "A5",
+      "action": "HOLD",
+      "reason": "实盘暂停，系统开发期"
+    }
+  },
+
+  "probe_config": {
+    "direction": "UP",
+    "max_position_usdt": 30,
+    "stop_loss_pct": 2.4,
+    "entry_conditions": [
+      "BTC触及$77,200-$77,300支撑区",
+      "出现反弹K线(阳线>0.3%)",
+      "08:00费率结算后转正优先"
+    ],
+    "exit_conditions": [
+      "止损: 收盘跌破$77,000",
+      "止盈1: 反弹至$77,800减仓50%",
+      "止盈2: 突破$78,600全平",
+      "时间止损: 持仓24h未达目标→平仓"
+    ]
+  },
+
+  "a0_contradiction_strategy": {
+    "clarity": "MODERATE",
+    "consensus": "3/5偏多",
+    "primary_action": "顺C1机构方向做多",
+    "position_modifier": 0.5,
+    "monitoring_points": [
+      {"id": "C1", "watch": "ETF周流入<5亿", "action": "止损观望"},
+      {"id": "C2", "watch": "周线MA拐头", "action": "全平WAIT"},
+      {"id": "C3", "watch": "费率>-0.001%", "action": "减仓50%"},
+      {"id": "C4", "watch": "4/28停火到期", "action": "全平WAIT"},
+      {"id": "C5", "watch": "FGI<25", "action": "加仓0.75x"}
+    ]
+  },
+
+  "tool_recommendations": [
+    {
+      "tool": "条件限价单",
+      "priority": "P1",
+      "params": {
+        "instId": "BTC-USDT-SWAP",
+        "side": "buy",
+        "trigger_price": 77200,
+        "order_price": 77250,
+        "sz": "0.1",
+        "lever": "2",
+        "mgnMode": "cross"
+      }
+    },
+    {
+      "tool": "止损单",
+      "priority": "P0",
+      "condition": "PROBE仓位开仓后立即挂",
+      "params": {
+        "instId": "BTC-USDT-SWAP",
+        "side": "sell",
+        "trigger_price": 77000,
+        "sz": "0.1"
+      }
+    }
+  ],
+
+  "circuit_breakers": [
+    {"trigger": "BTC收盘<=$77,000", "action": "全平PROBE仓位", "priority": "P0"},
+    {"trigger": "美伊停火到期且无新协议(4/28)", "action": "平仓+WAIT", "priority": "P0"},
+    {"trigger": "费率扩大至-0.002%+", "action": "减仓50%", "priority": "P1"},
+    {"trigger": "持仓24h未达目标", "action": "平仓观望", "priority": "P2"}
+  ],
+
+  "events_to_watch": [
+    {"date": "2026-04-26", "event": "费率结算08:00", "watch": "转正=做多信号增强"},
+    {"date": "2026-04-27", "event": "周线收盘", "watch": "$78K以上=看涨K线"},
+    {"date": "2026-04-28", "event": "美伊停火到期+ETF周数据", "watch": "停火+流入延续=偏多"},
+    {"date": "2026-04-30", "event": "FOMC会议纪要", "watch": "鹰派=风险偏好下降"}
+  ],
+
+  "advisor_review": {
+    "SC": {"verdict": "PARTIAL_AGREE", "confidence": 68, "key_rec": "推迟至周一入场，4/28前必须平仓"},
+    "QT": {"verdict": "PARTIAL_AGREE", "confidence": 70, "key_rec": "补充RSI数据，用条件单入场"},
+    "combined": {"verdict": "PARTIAL_AGREE", "confidence": 69}
+  },
+
+  "conclusion": {
+    "signal": "PROBE",
+    "action": "小仓试探做多 @$77,200-$77,300",
+    "primary_tasks": [
+      "4/26 08:00费率结算后确认方向",
+      "条件单@$77,200入场(0.1张/2x)",
+      "止损$77,000硬止损",
+      "4/28前未盈利必须平仓"
+    ],
+    "next_review": "2026-04-26 09:00 CST"
+  }
+}

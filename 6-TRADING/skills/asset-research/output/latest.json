@@ -1,0 +1,216 @@
+{
+  "metadata": {
+    "generatedAt": "2026-06-26T17:04:56.100Z",
+    "engineVersion": "1.0.0",
+    "region": "global",
+    "dataSource": "https://www.atlantafed.org/research-and-data/data/gdpnow, https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-, https://tradingeconomics.com/united-states/business-confidence, https://tradingeconomics.com/united-states/unemployment-rate",
+    "reportType": "quarterly"
+  },
+  "cycle": {
+    "currentPhase": "overheat",
+    "phaseName": "过热期",
+    "confidence": 0.7300000000000001,
+    "indicators": [
+      {
+        "name": "GDP增长率",
+        "value": "2.5",
+        "trend": "up",
+        "source": "https://www.atlantafed.org/research-and-data/data/gdpnow"
+      },
+      {
+        "name": "PMI指数",
+        "value": "54",
+        "trend": "up",
+        "source": "https://tradingeconomics.com/united-states/business-confidence"
+      },
+      {
+        "name": "CPI通胀率",
+        "value": "8.0",
+        "trend": "up",
+        "source": "https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-"
+      }
+    ],
+    "rationale": "根据宏观指标分析，当前经济增长上行，通胀上行。符合过热期特征：经济上行，通胀上行。产能利用率高，通胀压力显现。"
+  },
+  "allocation": {
+    "commodity": 35,
+    "stock": 25,
+    "crypto": 20,
+    "bond": 10,
+    "cash": 10
+  },
+  "topAssets": [
+    {
+      "rank": 1,
+      "name": "industrial_metal",
+      "displayName": "工业金属",
+      "category": "",
+      "categoryName": "商品",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "工业金属在过热期表现最优，经济环境有利于该类资产"
+    },
+    {
+      "rank": 2,
+      "name": "energy",
+      "displayName": "能源股",
+      "category": "",
+      "categoryName": "股票",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "能源股在过热期表现最优，经济环境有利于该类资产"
+    },
+    {
+      "rank": 3,
+      "name": "mainstream_crypto",
+      "displayName": "主流币(BTC/ETH)",
+      "category": "",
+      "categoryName": "加密货币",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "主流币(BTC/ETH)在过热期表现最优，经济环境有利于该类资产"
+    },
+    {
+      "rank": 4,
+      "name": "energy_commodity",
+      "displayName": "能源",
+      "category": "",
+      "categoryName": "商品",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "能源在过热期表现最优，经济环境有利于该类资产"
+    },
+    {
+      "rank": 5,
+      "name": "cyclical",
+      "displayName": "周期股",
+      "category": "",
+      "categoryName": "股票",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "周期股在过热期表现最优，经济环境有利于该类资产"
+    },
+    {
+      "rank": 6,
+      "name": "exchange_token",
+      "displayName": "平台币",
+      "category": "",
+      "categoryName": "加密货币",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "平台币在过热期表现最优，经济环境有利于该类资产"
+    },
+    {
+      "rank": 7,
+      "name": "layer2",
+      "displayName": "二层网络",
+      "category": "",
+      "categoryName": "加密货币",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "二层网络在过热期表现最优，经济环境有利于该类资产"
+    },
+    {
+      "rank": 8,
+      "name": "infrastructure",
+      "displayName": "基建公链",
+      "category": "",
+      "categoryName": "加密货币",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "基建公链在过热期表现最优，经济环境有利于该类资产"
+    },
+    {
+      "rank": 9,
+      "name": "convertible",
+      "displayName": "可转债",
+      "category": "",
+      "categoryName": "债券",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "可转债在过热期表现最优，经济环境有利于该类资产"
+    },
+    {
+      "rank": 10,
+      "name": "high_yield",
+      "displayName": "高收益债",
+      "category": "",
+      "categoryName": "债券",
+      "direction": "overweight",
+      "directionName": "超配",
+      "rationale": "高收益债在过热期表现最优，经济环境有利于该类资产"
+    }
+  ],
+  "bottomAssets": [
+    {
+      "rank": 6,
+      "name": "high_yield",
+      "displayName": "高收益债",
+      "category": "",
+      "direction": "overweight"
+    },
+    {
+      "rank": 7,
+      "name": "convertible",
+      "displayName": "可转债",
+      "category": "",
+      "direction": "overweight"
+    },
+    {
+      "rank": 8,
+      "name": "infrastructure",
+      "displayName": "基建公链",
+      "category": "",
+      "direction": "overweight"
+    },
+    {
+      "rank": 9,
+      "name": "layer2",
+      "displayName": "二层网络",
+      "category": "",
+      "direction": "overweight"
+    },
+    {
+      "rank": 10,
+      "name": "exchange_token",
+      "displayName": "平台币",
+      "category": "",
+      "direction": "overweight"
+    }
+  ],
+  "outlook": {
+    "shortTerm": {
+      "phase": "overheat",
+      "phaseName": "过热期",
+      "probability": 0.7300000000000001,
+      "keyDrivers": [
+        "经济增长趋势",
+        "通胀走势",
+        "政策动向"
+      ]
+    },
+    "midTerm": {
+      "phase": "overheat",
+      "phaseName": "过热期",
+      "probability": 0.7300000000000001,
+      "keyDrivers": [
+        "经济周期演进",
+        "政策周期",
+        "外部环境"
+      ]
+    },
+    "longTerm": {
+      "phase": "overheat",
+      "phaseName": "过热期",
+      "probability": 0.7300000000000001,
+      "keyDrivers": [
+        "结构性因素",
+        "长期趋势"
+      ]
+    }
+  },
+  "riskAlerts": [
+    "美林投资时钟基于历史规律，未来市场可能呈现不同特征",
+    "宏观经济数据存在发布延迟，周期判定可能滞后"
+  ]
+}

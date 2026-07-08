@@ -1,0 +1,102 @@
+{
+  "template_name": "A5实践执行报告模板",
+  "version": "1.0",
+  "created": "2026-04-26",
+  "description": "A5战术执行阶段使用，记录大仓执行的实践和结果",  
+  "execution_report": {
+    "execution_id": "A5_[日期]_[序号]",
+    "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+    
+    "input": {
+      "verification_report": "verification_report.json",
+      "recognition_correction": "recognition_correction.json",
+      "a7_gate_result": "a7_a5_gate_result.json"
+    },
+    
+    "execution_plan": {
+      "based_on": "A4验证通过",
+      "position_plan": "a5_execution_plan.json",
+      "instrument": "BTC-USDT-SWAP",
+      "total_position": "0.5张",
+      "entry_strategy": "分批入场",
+      "stop_loss": "$76,000",
+      "take_profit": ["$78,500", "$80,000"]
+    },
+    
+    "execution_log": {
+      "entries": [
+        {
+          "entry_id": 1,
+          "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+          "direction": "LONG/SHORT",
+          "size": "0.17张",
+          "price": 0.00,
+          "reason": "入场理由"
+        }
+      ],
+      
+      "adjustments": [
+        {
+          "adjustment_id": 1,
+          "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+          "type": "STOP_LOSS/ENTRY/EXIT/POSITION",
+          "before": "调整前",
+          "after": "调整后",
+          "reason": "调整原因 (必须基于实践反馈)"
+        }
+      ],
+      
+      "exits": [
+        {
+          "exit_id": 1,
+          "timestamp": "YYYY-MM-DDTHH:MM:SSZ",
+          "direction": "LONG/SHORT",
+          "size": "0.25张",
+          "price": 0.00,
+          "reason": "止盈/止损/主动"
+        }
+      ]
+    },
+    
+    "execution_result": {
+      "total_P&L": 0.00,
+      "realized_P&L": 0.00,
+      "unrealized_P&L": 0.00,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "win_trades": 0,
+      "loss_trades": 0,
+      "max_drawdown": 0.00,
+      "max_drawdown_percentage": 0.00,
+      "discipline_violation": 0
+    },
+    
+    "truth_verification": {
+      "P&L": "PASS/FAIL",
+      "win_rate": "PASS/FAIL",
+      "max_drawdown": "PASS/FAIL",
+      "discipline": "PASS/FAIL",
+      "overall": "PASS/FAIL: 真理验证通过/失败"
+    },
+    
+    "new_recognition": {
+      "market_view": "更新后的市场认识",
+      "strategy_validation": "策略验证结果",
+      "lessons_learned": [
+        "教训1",
+        "教训2"
+      ],
+      "rules_to_add": [
+        "新增规则1",
+        "新增规则2"
+      ],
+      "rules_to_modify": [
+        "修改规则1",
+        "修改规则2"
+      ]
+    },
+    
+    "next_stage": "复盘 (再认识)",
+    "a7_gate_status": "PASS/FAIL"
+  }
+}

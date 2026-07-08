@@ -1,0 +1,76 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "trace_id": "trace-p0-pos-001",
+  "decision": "reject",
+  "reason_codes": [
+    "REPORT_VIOLATION_COUNT_EXCEEDED",
+    "REPORT_VIOLATION_FOUND",
+    "REPORT_SEVERITY_BLOCKED"
+  ],
+  "policy_version": "p1.default.v1",
+  "policy_source": "artifacts/evolution/policy/templates/p1.default.v1.json",
+  "required_stages": [
+    "audit",
+    "sandbox",
+    "stress",
+    "scenario",
+    "backtest"
+  ],
+  "stage_policy_snapshot": {
+    "audit": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    },
+    "sandbox": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    },
+    "stress": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    },
+    "scenario": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    },
+    "backtest": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    }
+  },
+  "stage_results": {
+    "audit": true,
+    "sandbox": true,
+    "stress": true,
+    "scenario": false,
+    "backtest": false
+  },
+  "rollback_pointer_id": "",
+  "timestamp": "2026-05-12T11:01:00Z",
+  "schema_version": "evolution-p0-decision-record-v0.1"
+}

@@ -1,0 +1,15 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "stage": "sandbox",
+  "pass": true,
+  "metrics": {
+    "max_drawdown_delta": -0.012,
+    "tail_loss_frequency_delta": -0.018,
+    "signal_stability_score": 0.91
+  },
+  "violations": [],
+  "artifacts": [
+    "artifacts/evolution/audit/audit_positive_20260511.json"
+  ],
+  "timestamp": "2026-05-11T16:24:00Z"
+}

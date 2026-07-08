@@ -1,0 +1,15 @@
+{
+  "pointer_id": "rp-cand-20260511-pos-001-v0.1-to-v0.1.1",
+  "candidate_id": "cand-20260511-pos-001",
+  "trace_id": "trace-p0-pos-001",
+  "from_version": "v0.1",
+  "to_version": "v0.1.1",
+  "constraint_snapshot_ref": "constraints/releases/v0.1.json",
+  "restore_ref": "constraints/releases/v0.1.json",
+  "restore_command": "python scripts/ci/constraint_rollback.py --restore-ref constraints/releases/v0.1.json",
+  "evidence_refs": [
+    "artifacts/evolution/feedback/evidence_pack_pos_001.json"
+  ],
+  "created_at": "2026-05-12T09:00:00Z",
+  "schema_version": "evolution-p0-rollback-pointer-v0.1"
+}

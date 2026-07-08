@@ -1,0 +1,187 @@
+# Dream-MultiSkill 教训库 (Lessons)
+# 记录从Episode和复盘中提炼的经验教训
+# 格式: 教训按频次+严重度阈值自动晋升/降级
+
+version: "1.0"
+last_updated: "2026-04-19"
+
+# ============================================================
+# 教训库 (Lessons)
+# ============================================================
+lessons:
+  # ----------------------------------------------------------
+  # P0 致命教训 (1次即触发)
+  # ----------------------------------------------------------
+  - id: "L000"
+    severity: "P0"
+    title: "爆仓风险"
+    description: "保证金率<100%时立即面临清算风险，任何情况下不得让保证金率低于此阈值"
+    evidence:
+      - "EP18: 保证金率从104%→208%，差点触发追加保证金"
+    rule: "保证金率<120%时必须立即减仓"
+    created_at: "2026-04-18"
+    frequency: 1
+    status: "active"
+
+  # ----------------------------------------------------------
+  # P1 严重教训 (2次以上触发)
+  # ----------------------------------------------------------
+  - id: "L001"
+    severity: "P1"
+    title: "数据源必须有fallback机制"
+    description: "任何数据源必须有fallback机制，否则退化时影响决策准确性"
+    evidence:
+      - "2026-04-18: ETF数据退化11小时，评分被迫降级"
+      - "2026-04-18: Odaily API超时9.5小时"
+    rule: "数据源退化超过2小时必须自动切换fallback"
+    created_at: "2026-04-18"
+    frequency: 2
+    status: "active"
+
+  - id: "L002"
+    severity: "P1"
+    title: "Episode格式必须统一"
+    description: "所有Episode必须包含skills_called字段，否则审计无法完整"
+    evidence:
+      - "2026-04-18: AI Agent路径57% Episode缺失skills_called"
+    rule: "脚本v3.1和AI Agent必须使用统一Episode模板"
+    created_at: "2026-04-18"
+    frequency: 1
+    status: "active"
+
+  # ----------------------------------------------------------
+  # P2 重要教训 (3次以上触发)
+  # ----------------------------------------------------------
+  - id: "L003"
+    severity: "P2"
+    title: "周末应降频执行"
+    description: "周末非交易时段应降频执行，节省成本"
+    evidence:
+      - "2026-04-18: 周六每小时执行，资源浪费"
+    rule: "周末(周六14:00-周一08:00)降频至每4小时"
+    created_at: "2026-04-18"
+    frequency: 1
+    status: "pending_activation"
+
+  - id: "L004"
+    severity: "P2"
+    title: "监控发现问题必须有自动修复"
+    description: "监控发现问题后，24小时内必须有修复方案或自动修复能力"
+    evidence:
+      - "ETF退化11小时无人修复"
+      - "Odaily超时9.5小时无人修复"
+    rule: "运营总监必须配备自动修复工具"
+    created_at: "2026-04-18"
+    frequency: 2
+    status: "active"
+
+  # ----------------------------------------------------------
+  # P3 一般教训 (5次以上触发)
+  # ----------------------------------------------------------
+  - id: "L005"
+    severity: "P3"
+    title: "知识库必须被主动引用"
+    description: "知识库内容必须在决策中被主动引用才有价值"
+    evidence:
+      - "海龟/Livermore/Douglas/Tharp内容已填充但0引用"
+    rule: "ontology配置主动召回大师规则"
+    created_at: "2026-04-18"
+    frequency: 1
+    status: "pending_activation"
+
+  - id: "L006"
+    severity: "P3"
+    title: "止损设置需留足安全距离"
+    description: "止损设置不能过于接近当前价格，应留足波动空间"
+    evidence:
+      - "2026-04-18: 止损$76,015距当前价仅0.04%"
+    rule: "止损应至少距离当前价1%以上"
+    created_at: "2026-04-18"
+    frequency: 1
+    status: "active"
+
+# ============================================================
+# 晋升/降级规则
+# ============================================================
+rules:
+  promotion:
+    - condition: "frequency >= 5 AND severity != P0"
+      action: "晋升到更高级别"
+    - condition: "1次P0事件"
+      action: "立即告警并暂停策略"
+
+  demotion:
+    - condition: "frequency == 0 for 30 days"
+      action: "降级或淘汰"
+    - condition: "已实施有效修复"
+      action: "状态改为monitoring"
+
+# ============================================================
+# 禁用规则库 (Red Lines)
+# ============================================================
+prohibitions:
+  - id: "R001"
+    title: "禁止让保证金率<100%"
+    severity: "P0"
+    description: "任何情况下不得让保证金率低于清算阈值"
+    penalty: "立即告警+人工介入"
+
+  - id: "R002"
+    title: "禁止在数据源退化时开仓"
+    severity: "P1"
+    description: "任意P1数据源退化时禁止新开仓"
+    penalty: "Gate强制拦截"
+
+  - id: "R003"
+    title: "禁止不记录Episode"
+    severity: "P1"
+    description: "所有执行决策必须生成完整Episode"
+    penalty: "Gate告警"
+
+# ============================================================
+# 偏好规则 (Preferences)
+# ============================================================
+preferences:
+  - id: "P001"
+    title: "周末降频偏好"
+    description: "周末非交易时段降频至每4小时"
+    weight: 0.8
+
+  - id: "P002"
+    title: "大师规则召回偏好"
+    description: "决策时主动召回大师规则"
+    weight: 0.6
+
+  - id: "P003"
+    title: "主动减仓偏好"
+    description: "不确定时应主动减仓而非观望"
+    weight: 0.7
+
+# ============================================================
+# 踩坑经验 (API调用经验)
+# ============================================================
+api_experience:
+  - api: "ETF资金流API"
+    scenario: "数据退化"
+    lesson: "必须添加本地缓存+fallback估算机制"
+    created_at: "2026-04-18"
+
+  - api: "Odaily API"
+    scenario: "SSL握手超时"
+    lesson: "增加重试机制+估算值fallback"
+    created_at: "2026-04-18"
+
+  - api: "Episode写入"
+    scenario: "AI Agent路径格式不一致"
+    lesson: "统一JSON模板，强制包含skills_called字段"
+    created_at: "2026-04-18"
+
+# ============================================================
+# 元数据
+# ============================================================
+metadata:
+  total_lessons: 6
+  active_lessons: 4
+  pending_lessons: 2
+  last_review: "2026-04-19 03:00"
+  next_review: "2026-04-26 03:00"
