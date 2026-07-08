@@ -591,6 +591,14 @@ class LiangyiEngine:
         self._learned_stats = combo_stats
         self._learned_season_stats = season_stats
 
+        # Bug Y5 修复: 原函数无返回值（隐式 None）
+        return {
+            "ok": True,
+            "learned_combos": len(combo_stats),
+            "learned_seasons": len(season_stats),
+            "total_cases": len(cases),
+        }
+
     def _apply_learned_adjustment(self,
                                     params: ScaleParams,
                                     state: LiangyiState) -> ScaleParams:

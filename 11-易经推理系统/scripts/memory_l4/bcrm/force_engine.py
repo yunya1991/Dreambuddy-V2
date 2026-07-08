@@ -478,13 +478,16 @@ class ForceEngine:
     # Step 6: 趋势方向判定
     # ============================================================
     def _direction_from_velocity(self, velocity: float) -> str:
-        """从速度判定趋势方向。"""
-        threshold = 0.05  # 速度阈值
+        """从速度判定趋势方向。
+        P1 修复: 降低阈值 0.05→0.02，减少过度 FLAT 输出
+        参考 Backtrader 的信号阈值动态调整原则。
+        """
+        threshold = 0.02  # P1修复: 原0.05过于宽松导致全部FLAT
         if velocity > threshold:
             return DIR_UP
         elif velocity < -threshold:
             return DIR_DOWN
-        elif abs(velocity) < threshold * 0.5:
+        elif abs(velocity) < threshold * 0.3:
             return DIR_FLAT
         else:
             return DIR_TRANSITIONING
@@ -551,11 +554,11 @@ class ForceEngine:
         else:
             agreement = 0.5
 
-        # 3. 综合置信度
-        # 力的归一化：合力最大约 1.0（四象全同向），放大到合理范围
-        force_mag_norm = min(1.0, force_mag * FORCE_MAGNITUDE_NORM_FACTOR)
-        # 速度归一化：速度可以累积，趋势一旦形成就有惯性
-        velocity_norm = min(1.0, trend_strength * VELOCITY_NORM_FACTOR)
+        # 3. 综合置信度（P1修复：用 tanh 替代线性截断，小信号更敏感）
+        import math
+        force_mag_norm = math.tanh(force_mag * FORCE_MAGNITUDE_NORM_FACTOR)
+        # tanh(velocity * k): 当 velocity=0.02, k=8 → 0.158; k=3 → 0.06（原设计过低）
+        velocity_norm = math.tanh(trend_strength * VELOCITY_NORM_FACTOR)
         confidence = (force_mag_norm * CONFIDENCE_WEIGHT_FORCE +
                       agreement * CONFIDENCE_WEIGHT_AGREEMENT +
                       velocity_norm * CONFIDENCE_WEIGHT_VELOCITY)
