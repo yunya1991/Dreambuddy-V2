@@ -1,0 +1,98 @@
+nodes:
+  - node_id: A1_intent
+    name: 意图识别节点
+    chain: A
+    adapter: function
+    function_path: dreamos.nodes.a1_intent.A1IntentNode
+    description: 解析用户意图，确定交易方向
+
+  - node_id: A2_graph_planner
+    name: 图编排节点
+    chain: A
+    adapter: function
+    function_path: dreamos.nodes.a2_graph_planner.A2GraphPlannerNode
+    description: 根据意图构建执行图
+
+  - node_id: A3_resource_allocator
+    name: 资源分配节点
+    chain: A
+    adapter: function
+    function_path: dreamos.nodes.a3_resource_allocator.A3ResourceAllocatorNode
+    description: 分配资金和杠杆
+
+  - node_id: A4_risk_manager
+    name: 风险管理节点
+    chain: A
+    adapter: function
+    function_path: dreamos.nodes.a4_risk_manager.A4RiskManagerNode
+    description: 设置止损、止盈、仓位控制
+
+  - node_id: A5_execution
+    name: 执行指令节点
+    chain: A
+    adapter: function
+    function_path: dreamos.nodes.a5_execution.A5ExecutionNode
+    description: 生成最终交易指令
+
+  - node_id: A6_regime_monitor
+    name: 市场状态监控节点
+    chain: A
+    adapter: function
+    function_path: dreamos.nodes.a6_regime_monitor.A6RegimeMonitorNode
+    description: 监控市场状态变化
+
+  - node_id: A9_exit_strategy
+    name: 离场策略节点
+    chain: A
+    adapter: function
+    function_path: dreamos.nodes.a9_exit_strategy.A9ExitStrategyNode
+    description: 四层离场决策链
+
+  - node_id: C1_price_action
+    name: 价格行为节点
+    chain: C
+    adapter: function
+    function_path: dreamos.nodes.c1_price_action.C1PriceActionNode
+    description: 价格行为分析
+
+  - node_id: C2_momentum
+    name: 动量分析节点
+    chain: C
+    adapter: function
+    function_path: dreamos.nodes.c2_momentum.C2MomentumNode
+    description: 多周期动量分析
+
+  - node_id: C3_volatility
+    name: 波动率节点
+    chain: C
+    adapter: function
+    function_path: dreamos.nodes.c3_volatility.C3VolatilityNode
+    description: 波动率周期判定
+
+  - node_id: F1_onchain
+    name: 链上指标节点
+    chain: F
+    adapter: function
+    function_path: dreamos.nodes.f1_onchain.F1OnchainNode
+    description: 链上数据综合分析
+
+  - node_id: F2_sentiment
+    name: 情绪分析节点
+    chain: F
+    adapter: function
+    function_path: dreamos.nodes.f2_sentiment.F2SentimentNode
+    description: 市场情绪分析
+
+  - node_id: F3_macro
+    name: 宏观分析节点
+    chain: F
+    adapter: function
+    function_path: dreamos.nodes.f3_macro.F3MacroNode
+    description: 宏观经济分析
+
+  - node_id: F4_news
+    name: 新闻事件节点
+    chain: F
+    adapter: function
+    function_path: dreamos.nodes.f4_news.F4NewsNode
+    description: 新闻事件驱动分析

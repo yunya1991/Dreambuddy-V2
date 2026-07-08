@@ -27,10 +27,10 @@ STATE_FILE = BASE_DIR / "data" / "screen_orchestrator_state.json"
 SCHED_FILE = BASE_DIR / "data" / "screen_self_schedule.json"
 LOG_FILE = BASE_DIR / "logs" / "screen_orchestrator.log"
 
-NORMAL_INTERVAL_H = 4
-VOLATILITY_PCT = 3.0
-EVENT_WINDOW_H = 1
-INTEL_CHECK_INTERVAL_H = 4
+NORMAL_INTERVAL_H = 1      # 放宽验证阶段：1H心跳
+VOLATILITY_PCT = 2.0       # 降低波动阈值，更易触发
+EVENT_WINDOW_H = 0.5       # 缩短事件窗口
+INTEL_CHECK_INTERVAL_H = 1 # 研报检查间隔缩短
 
 HOME_BIN = "/opt/homebrew/bin"
 os.environ["PATH"] = HOME_BIN + ":" + os.environ.get("PATH", "")

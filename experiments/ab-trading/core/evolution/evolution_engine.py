@@ -287,6 +287,24 @@ class EvolutionEngine:
             if p["status"] == EvolutionStatus.OBSERVATION.value
         ]
 
+    def evaluate_observation_period(self) -> int:
+        """
+        评估所有处于观察期的提议，对到期的提议执行最终评估
+
+        Returns:
+            通过观察期评估并采纳的提议数量
+        """
+        obs_proposals = self.get_observation_proposals()
+        adopted_count = 0
+        for proposal in obs_proposals:
+            try:
+                result = self.check_observation(proposal["id"])
+                if isinstance(result, dict) and result.get("final_verdict") == "passed":
+                    adopted_count += 1
+            except Exception as e:
+                print(f"[进化] 观察期评估失败 {proposal.get('id', '?')}: {e}")
+        return adopted_count
+
     def get_evolution_stats(self) -> Dict:
         """获取进化统计"""
         pool = self._load_pool()

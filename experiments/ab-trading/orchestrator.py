@@ -4,7 +4,7 @@
 每15分钟被 cron 调用，决定是否触发 Agent A / B
 
 自主性逻辑：
-1. 常规心跳：距上次运行 > 4H 自动触发
+1. 常规心跳：距上次运行 > 1H 自动触发
 2. 事件驱动：重要经济事件前后 1H 内主动触发
 3. Agent 自主申请：agents 写入 self_schedule.json 申请提前运行
 4. 紧急信号：市场波动超阈值时触发（BTC 1H变动 > 3%）
@@ -20,9 +20,9 @@ SCHED_FILE = BASE_DIR / "data" / "self_schedule.json"
 STATE_FILE = BASE_DIR / "data" / "orchestrator_state.json"
 LOG_FILE   = BASE_DIR / "logs" / "orchestrator.log"
 
-NORMAL_INTERVAL_H = 4          # 常规间隔
-EVENT_WINDOW_H    = 1          # 重要事件前后触发窗口
-VOLATILITY_PCT    = 3.0        # BTC 1H 波动触发阈值
+NORMAL_INTERVAL_H = 1          # 常规间隔（放宽验证阶段：1H）
+EVENT_WINDOW_H    = 0.5        # 重要事件前后触发窗口（放宽为30分钟）
+VOLATILITY_PCT    = 2.0        # BTC 1H 波动触发阈值（降低到2%更易触发）
 
 TAVILY_KEY = None
 try:

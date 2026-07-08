@@ -1,0 +1,105 @@
+{
+  "version": "1.0",
+  "repo": {
+    "repo_url": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/local_repo_freqtrade",
+    "repo_id": "8abe4712cde3cb5b",
+    "commit": "a8c5bd1b14e41b20d4b3f468e30e9da684c1efd7",
+    "path": "user_data/strategies"
+  },
+  "sandbox": {
+    "sandbox_path": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/agent_sandbox/8abe4712cde3cb5b/a8c5bd1b14e41b20d4b3f468e30e9da684c1efd7",
+    "files": [
+      "Strategy004.py"
+    ]
+  },
+  "signature_check": [
+    {
+      "file": "Strategy004.py",
+      "signature": {
+        "file": "Strategy004.py",
+        "class_name": "_1hBreakoutStrategy004",
+        "timeframe": "1h",
+        "pairlist_mode": null,
+        "required_parameters": null
+      },
+      "schema_compat": {
+        "status": "pass",
+        "reasons": []
+      }
+    }
+  ],
+  "forbidden_scan": {
+    "hits": []
+  },
+  "dependency_check": [
+    {
+      "file": "Strategy004.py",
+      "imports": [
+        "numpy",
+        "pandas",
+        "typing",
+        "datetime",
+        "freqtrade",
+        "talib",
+        "technical"
+      ],
+      "unknown": [],
+      "allowlist": [
+        "collections",
+        "copy",
+        "dataclasses",
+        "datetime",
+        "decimal",
+        "enum",
+        "freqtrade",
+        "functools",
+        "itertools",
+        "json",
+        "logging",
+        "math",
+        "numpy",
+        "operator",
+        "os",
+        "pandas",
+        "pathlib",
+        "pprint",
+        "qtpylib",
+        "random",
+        "re",
+        "statistics",
+        "talib",
+        "technical",
+        "time",
+        "typing",
+        "uuid"
+      ]
+    }
+  ],
+  "futures_risk": [
+    {
+      "file": "Strategy004.py",
+      "flags": [
+        "mentions_can_short"
+      ],
+      "signals": {
+        "explicit_futures": false,
+        "has_can_short_attr": true,
+        "has_can_short": false,
+        "has_leverage": false,
+        "has_stoploss": true,
+        "has_minimal_roi": true,
+        "has_trailing_stop": true,
+        "has_protections": false
+      },
+      "timeframe": "1h",
+      "pairlist_mode": null
+    }
+  ],
+  "gate": {
+    "forbidden_ok": true,
+    "dependency_ok": true,
+    "futures_ok": true,
+    "dependency_unknown": [],
+    "futures_block": []
+  }
+}

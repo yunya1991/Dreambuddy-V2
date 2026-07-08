@@ -5,7 +5,7 @@
     "name": "Raw LLM vs DreamBuddy 交易能力对比 (Hyperliquid Perp)",
     "start_date": "2026-06-23",
     "target_cycles": 84,
-    "cron_interval_hours": 4,
+    "cron_interval_hours": 1,
     "venue": "hyperliquid",
     "market_type": "perp"
   },
@@ -16,8 +16,8 @@
   },
   "universe": {
     "agent_a_coins": ["BTC", "ETH", "SOL", "HYPE", "AVAX", "ARB", "SUI", "INJ", "LINK", "TIA"],
-    "agent_b_coins": ["BTC", "ETH", "SOL", "HYPE", "AVAX"],
-    "note": "A扫描合约市场，B做现货；B只选流动性最好的5个"
+    "agent_b_coins": ["BTC", "ETH", "SOL", "HYPE", "UNI", "LIT", "XRP", "ZEC", "NEAR", "WLD", "ADA", "SUI", "ETHFI", "ENA", "JUP", "XLM", "GRASS", "EIGEN", "ZRO", "IMX"],
+    "note": "A/B均扫描合约市场，B使用完整20币种池"
   },
   "position_sizing": {
     "per_trade_pct": 0.05,
@@ -35,7 +35,7 @@
     },
     "agent_b": {
       "name": "DreamBuddy v2",
-      "description": "A0矛盾论+A2第一性原理+A3大师研讨+A7门禁+图压缩+记忆进化，现货市场",
+      "description": "A0矛盾论+A2第一性原理+A3大师研讨+A7门禁+图压缩+记忆进化，合约市场",
       "features": [
         "contradiction_theory_a0",
         "first_principles_a2",

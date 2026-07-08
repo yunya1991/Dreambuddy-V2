@@ -128,6 +128,9 @@ class A8TheoryPracticeEvolution:
 
         total_trades = memory.get("total_trades", 0)
         if total_trades >= 5:
+            # 确保 win_rate 有值：优先从 recent_trades 计算，否则从记忆中读取
+            if "win_rate" not in dir():
+                win_rate = memory.get("win_rate", 0)
             alignment["truth_verification"] = "PASS" if win_rate >= 0.45 else "FAIL"
         else:
             alignment["truth_verification"] = "INSUFFICIENT_DATA"

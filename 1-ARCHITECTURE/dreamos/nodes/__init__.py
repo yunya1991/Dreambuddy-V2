@@ -213,6 +213,56 @@ try:
 except Exception:
     F3SentimentNode = None  # type: ignore[misc,assignment]
 
+try:
+    from .a3_strategy import A3StrategyNode
+except Exception:
+    A3StrategyNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .a4_gate import A4GateNode
+except Exception:
+    A4GateNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .a5_execution import A5ExecutionNode
+except Exception:
+    A5ExecutionNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .a6_regime_monitor import A6RegimeMonitorNode
+except Exception:
+    A6RegimeMonitorNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .a9_exit_strategy import A9ExitStrategyNode
+except Exception:
+    A9ExitStrategyNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .c2_momentum import C2MomentumNode
+except Exception:
+    C2MomentumNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .c3_volatility import C3VolatilityNode
+except Exception:
+    C3VolatilityNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .f1_news import F1NewsSentimentNode
+except Exception:
+    F1NewsSentimentNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .f4_onchain import F4OnchainNode
+except Exception:
+    F4OnchainNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .f5_macro import F5MacroNode
+except Exception:
+    F5MacroNode = None  # type: ignore[misc,assignment]
+
 
 __all__ = [
     # 动态注册
@@ -222,9 +272,19 @@ __all__ = [
     "get_all_node_classes",
     # 节点类（向后兼容，可能为 None）
     "C1TechScanNode",
+    "C2MomentumNode",
+    "C3VolatilityNode",
     "A0ContradictionNode",
     "A1DeepResearchNode",
     "A2ComprehensiveNode",
+    "A3StrategyNode",
+    "A4GateNode",
+    "A5ExecutionNode",
+    "A6RegimeMonitorNode",
+    "A9ExitStrategyNode",
+    "F1NewsSentimentNode",
     "F2FundFlowNode",
     "F3SentimentNode",
+    "F4OnchainNode",
+    "F5MacroNode",
 ]

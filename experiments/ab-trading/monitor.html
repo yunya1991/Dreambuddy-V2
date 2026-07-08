@@ -182,6 +182,7 @@
   <div class="tab" onclick="switchTab('cloud', event)">☁️ 云端调度</div>
   <div class="tab" onclick="switchTab('screen', event)">🎯 三屏马丁</div>
   <div class="tab" onclick="switchTab('yijing', event)">🗼 易经推理</div>
+  <div class="tab" onclick="switchTab('dreamos', event)">⚙️ Dream OS</div>
 </div>
 
 <div class="main">
@@ -706,6 +707,89 @@
     </div>
   </div>
 
+  <!-- Dream OS Tab -->
+  <div id="tab-dreamos" class="tab-content">
+  <div class="tab-grid">
+
+    <!-- Dream OS 概览 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#10b981"></div>⚙️ Dream OS 内核状态</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-label">已注册节点</div><div class="stat-value" id="dos-node-count" style="color:#10b981">--</div><div class="stat-sub">A/C/F 链</div></div>
+        <div class="stat"><div class="stat-label">账户权益</div><div class="stat-value" id="dos-equity">--</div><div class="stat-sub">Agent C</div></div>
+        <div class="stat"><div class="stat-label">活跃持仓</div><div class="stat-value" id="dos-positions">--</div><div class="stat-sub">实时持仓</div></div>
+      </div>
+    </div>
+
+    <!-- 节点注册表 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#3b82f6"></div>节点注册表（S-A-C-G 架构）</div>
+      <div id="dos-nodes" style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="color:var(--muted);font-size:12px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 调度编排流程 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#f59e0b"></div>调度编排流程（S层→A层→C层→G层）</div>
+      <div id="dos-orchestration" style="padding:8px 0">
+        <div style="text-align:center;color:var(--muted);padding:16px">点击下方按钮执行一次完整编排分析</div>
+      </div>
+      <div id="dos-order" style="margin-top:12px"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="dosAnalyze('BTC')" style="background:#3b82f6;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">📊 分析 BTC</button>
+        <button onclick="dosAnalyze('ETH')" style="background:#8b5cf6;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">📊 分析 ETH</button>
+        <button onclick="dosAnalyze('SOL')" style="background:#10b981;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">📊 分析 SOL</button>
+        <button onclick="dosRefresh()" style="background:var(--border);color:var(--text);border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">🔄 刷新</button>
+      </div>
+    </div>
+
+    <!-- 交易执行记录 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:#10b981"></div>交易执行记录（最近10条）</div>
+      <div id="dos-trade-history" style="max-height:280px;overflow-y:auto">
+        <div style="text-align:center;color:var(--muted);padding:16px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 当前持仓 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:#8b5cf6"></div>当前持仓</div>
+      <div id="dos-positions-detail">
+        <div style="text-align:center;color:var(--muted);padding:16px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 记忆与进化系统 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#ec4899"></div>记忆与自进化系统</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div class="memory-label">最近决策记录</div>
+          <div id="dos-recent-decisions" style="font-size:11px;max-height:180px;overflow-y:auto">
+            <div style="color:var(--muted);padding:8px">加载中...</div>
+          </div>
+        </div>
+        <div>
+          <div class="memory-label">系统统计</div>
+          <div id="dos-stats" style="font-size:11px">
+            <div style="color:var(--muted);padding:8px">加载中...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 推理过程可视化 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#f59e0b"></div>推理过程（最新一次分析）</div>
+      <div id="dos-reasoning" style="max-height:320px;overflow-y:auto;padding:8px 0">
+        <div style="text-align:center;color:var(--muted);padding:16px">执行分析后显示推理过程</div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
 </div>
 
 <script>
@@ -1180,9 +1264,12 @@ function selectCandidate(symbol) {
 async function loadScreenData(symbol) {
   const targetSymbol = symbol || currentScreenSymbol || 'BTC';
   try {
-    const fetchJson = async (url) => {
+    const fetchJson = async (url, timeoutMs = 10000) => {
       try {
-        const res = await fetch(url);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
         if (!res.ok) return null;
         return await res.json();
       } catch (e) {
@@ -1190,50 +1277,56 @@ async function loadScreenData(symbol) {
       }
     };
 
-    const [orch, exec, trade, fund, mode, classic] = await Promise.all([
-      fetchJson('/api/screen-orchestrator'),
-      fetchJson('/api/screen-executor'),
-      fetchJson('/api/screen-trade?symbol=' + targetSymbol),
-      fetchJson('/api/fundamental-signals?symbol=' + targetSymbol),
-      fetchJson('/api/mode/status'),
-      fetchJson('/api/classic-executor'),
+    // 第一阶段：快速API先渲染（orchestrator/executor/mode/classic 通常 < 2s）
+    const [orch, exec, mode, classic] = await Promise.all([
+      fetchJson('/api/screen-orchestrator', 10000),
+      fetchJson('/api/screen-executor', 10000),
+      fetchJson('/api/mode/status', 10000),
+      fetchJson('/api/classic-executor', 10000),
+    ]);
+
+    // 用 executor 数据立即渲染可用的部分
+    renderModeStatus(mode);
+    renderClassicExecutor(classic, targetSymbol);
+    renderTradeLog(exec);
+    renderDirectivePanel(mode, classic);
+    updateModeToggleBtn(mode);
+
+    // 用 executor 数据渲染候选币种（不等慢速 screen-trade）
+    renderCandidatesFromExec(exec, targetSymbol);
+
+    // 用 executor 数据先渲染三屏状态总览
+    renderScreenOverviewFromExec(exec, classic, mode);
+
+    // 用 executor 数据先渲染 Screen2/Screen3 概要
+    renderScreenFromExec(exec, targetSymbol);
+
+    screenDataLoaded = true;
+
+    // 第二阶段：慢速API异步补充（screen-trade/fundamental，30s超时）
+    const [trade, fund] = await Promise.all([
+      fetchJson('/api/screen-trade?symbol=' + targetSymbol, 30000),
+      fetchJson('/api/fundamental-signals?symbol=' + targetSymbol, 15000),
     ]);
 
     // 基本面参考信号
     renderFundamentalSignals(fund, targetSymbol);
 
-    // 系统模式状态
-    renderModeStatus(mode);
-
-    // 经典指标执行器
-    renderClassicExecutor(classic, targetSymbol);
-
-    // 三屏状态总览
-    renderScreenOverview(trade, classic, mode);
-
-    // 交易执行日志
-    renderTradeLog(exec);
-
-    // 指令与约束
-    renderDirectivePanel(mode, classic);
-
-    // 更新模式切换按钮文本
-    updateModeToggleBtn(mode);
-
-    // 三屏数据
+    // 用完整 trade 数据覆盖渲染三屏状态总览
     if (trade && !trade.error) {
+      renderScreenOverview(trade, classic, mode);
       renderScreen(trade, targetSymbol);
     } else if (trade && trade.error) {
       document.getElementById('screen1').innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${trade.error}</div>`;
       document.getElementById('screen2').innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${trade.error}</div>`;
       document.getElementById('screen3').innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${trade.error}</div>`;
-    } else {
-      document.getElementById('screen1').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">三屏数据不可用</div>';
-      document.getElementById('screen2').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">三屏数据不可用</div>';
-      document.getElementById('screen3').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">三屏数据不可用</div>';
+    }
+    // trade 为 null（超时）则保留 executor 渲染的结果，更新提示文字
+    if (!trade) {
+      const hintEl = document.getElementById('screen1')?.querySelector('[style*="yellow"]');
+      if (hintEl) hintEl.textContent = '⚠️ 六维评分获取超时，显示快速视图数据';
     }
 
-    screenDataLoaded = true;
   } catch (e) {
     console.error('三屏数据加载失败:', e);
   }
@@ -1520,6 +1613,203 @@ function renderClassicExecutor(data, symbol) {
   `;
 }
 
+// ── 从 executor 数据渲染候选币种 ─────────────────────────────────────
+function renderCandidatesFromExec(exec, activeSymbol) {
+  const candEl = document.getElementById('screen-candidates');
+  const badgeEl = document.getElementById('screen-best-badge');
+  if (!exec) return;
+  const candidates = exec.candidates || [];
+  if (candidates.length === 0) return;
+
+  const best = candidates.reduce((a, b) => {
+    const sa = a.direction === 'BEAR' ? 100 - a.score_pct : a.score_pct;
+    const sb = b.direction === 'BEAR' ? 100 - b.score_pct : b.score_pct;
+    return sa > sb ? a : b;
+  }, candidates[0]);
+
+  candEl.innerHTML = candidates.map(c => {
+    const isActive = c.symbol === activeSymbol;
+    const isBest = c.symbol === best.symbol;
+    const dirColor = c.direction === 'BULL' ? 'var(--green)' : c.direction === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+    const bestBadge = isBest ? '<span style="font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(210,153,34,0.2);color:var(--yellow);margin-left:4px">最优</span>' : '';
+    return `<div onclick="selectCandidate('${c.symbol}')" style="padding:8px 14px;border-radius:6px;cursor:pointer;border:1px solid ${isActive ? 'var(--blue)' : 'var(--border)'};background:${isActive ? 'rgba(88,166,255,0.1)' : 'rgba(255,255,255,0.03)'};transition:all 0.2s">
+      <div style="font-weight:600;font-size:13px">${c.symbol}${bestBadge}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">
+        <span style="color:${dirColor}">${c.direction}</span> · ${c.score_pct}分 · vol x${c.vol_mult}
+      </div>
+    </div>`;
+  }).join('');
+  badgeEl.textContent = best ? '最优: ' + best.symbol : '暂无最优';
+}
+
+// ── 从 executor 数据渲染三屏状态总览 ────────────────────────────────
+function renderScreenOverviewFromExec(exec, classic, mode) {
+  const el = document.getElementById('screen-overview');
+  if (!exec) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px">加载中...</div>';
+    return;
+  }
+
+  const dir = exec.direction || 'NEUTRAL';
+  const dirColor = dir === 'BULL' ? 'var(--green)' : dir === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+  const dirLabel = dir === 'BULL' ? 'BULL' : dir === 'BEAR' ? 'BEAR' : 'NEUTRAL';
+  const volMult = exec.vol_mult || 1.0;
+  const addonPct = exec.addon_pct || '--';
+  const tpPct = exec.tp_pct || '--';
+  const tpPrice = exec.tp_price || 0;
+  const avgEntry = exec.avg_entry || 0;
+  const totalSize = exec.total_size || 0;
+  const currentLevel = exec.current_level || 0;
+  const entryLevels = exec.entry_levels || [];
+  const modeInfo = mode?.mode || {};
+  const isAI = modeInfo.mode === 'ai_directed';
+  const modeLabel = isAI ? 'AI主导' : '经典接管';
+  const positions = classic?.positions || [];
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div style="padding:8px;background:rgba(0,0,0,0.15);border-radius:8px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Screen 1 · 战略层</div>
+        <div style="font-size:14px;font-weight:700;color:${dirColor};margin-bottom:4px">${dirLabel}</div>
+        <div style="font-size:11px;color:var(--text)">模式: <span style="font-weight:600">${modeLabel}</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">详细评分加载中...</div>
+      </div>
+      <div style="padding:8px;background:rgba(0,0,0,0.15);border-radius:8px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Screen 2 · 战术层</div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">波动率: <span style="font-weight:600">x${volMult}</span></div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">加仓间距: <span style="font-weight:600">${addonPct}%</span></div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">止盈: <span style="font-weight:600">${tpPct}%</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${entryLevels.length}级加仓计划 · 当前第${currentLevel}级</div>
+      </div>
+      <div style="padding:8px;background:rgba(0,0,0,0.15);border-radius:8px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Screen 3 · 执行层</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">持仓: ${totalSize}</div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">均入场: $${avgEntry}</div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">止盈价: <span style="color:var(--green);font-weight:600">$${tpPrice}</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">活跃: ${exec.active ? '✅' : '❌'}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── 从 executor 数据渲染 Screen 概要 ────────────────────────────────
+function renderScreenFromExec(exec, symbol) {
+  if (!exec) return;
+
+  const dir = exec.direction || 'NEUTRAL';
+  const dirColor = dir === 'BULL' ? 'var(--green)' : dir === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+  const volMult = exec.vol_mult || 1.0;
+  const addonPct = exec.addon_pct || '--';
+  const tpPct = exec.tp_pct || '--';
+  const tpPrice = exec.tp_price || 0;
+  const avgEntry = exec.avg_entry || 0;
+  const totalSize = exec.total_size || 0;
+  const currentLevel = exec.current_level || 0;
+  const entryLevels = exec.entry_levels || [];
+  const maxAddons = entryLevels.length - 1;
+  const candidates = exec.candidates || [];
+  const activeSymbol = exec.active_symbol || symbol;
+
+  // Screen 1: 用 executor 概要信息
+  const s1El = document.getElementById('screen1');
+  const s1DirEl = document.getElementById('s1-direction');
+  s1DirEl.textContent = dir + ' · 快速视图';
+  s1DirEl.style.background = dir === 'BULL' ? 'rgba(63,185,80,0.15)' : dir === 'BEAR' ? 'rgba(248,81,73,0.15)' : 'rgba(210,153,34,0.15)';
+  s1DirEl.style.color = dirColor;
+
+  // 候选币种评分排行
+  let candRows = candidates.slice(0, 8).map(c => {
+    const cDir = c.direction || 'NEUTRAL';
+    const cColor = cDir === 'BULL' ? 'var(--green)' : cDir === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+    return `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0">
+      <span style="font-weight:600">${c.symbol}</span>
+      <span style="color:${cColor}">${cDir}</span>
+      <span style="color:var(--muted)">${c.score_pct}分</span>
+      <span style="color:var(--muted)">x${c.vol_mult}</span>
+    </div>`;
+  }).join('');
+
+  s1El.innerHTML = `
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-size:28px;font-weight:700;color:${dirColor}">${dir}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">当前方向 · ${activeSymbol} · 快速视图</div>
+    </div>
+    <div style="padding:8px;background:rgba(0,0,0,0.15);border-radius:6px;margin-bottom:8px">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">候选币种排行</div>
+      ${candRows || '<div style="color:var(--muted);font-size:11px">暂无数据</div>'}
+    </div>
+    <div style="font-size:10px;color:var(--yellow);text-align:center;padding:4px">⏳ 六维评分详情加载中...</div>
+  `;
+
+  // Screen 2: 入场档位
+  const s2El = document.getElementById('screen2');
+  const s2VolEl = document.getElementById('s2-volmult');
+  s2VolEl.textContent = 'vol x' + volMult;
+
+  let levelsHtml = `<div style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+      <span style="color:var(--muted)">止盈价</span>
+      <span style="font-weight:600;color:var(--green)">$${fmt(tpPrice)} (+${tpPct}%)</span>
+    </div>
+  </div>`;
+
+  const isBear = dir === 'BEAR';
+  const sortedLevels = isBear ? [...entryLevels].reverse() : entryLevels;
+  for (const lvl of sortedLevels) {
+    levelsHtml += `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div>
+          <div style="font-size:12px;font-weight:600">${lvl.level || lvl}</div>
+        </div>
+        <div style="font-size:13px;font-weight:600">$${fmt(typeof lvl.price === 'number' ? lvl.price : lvl)}</div>
+      </div>`;
+  }
+
+  s2El.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
+      <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:16px;font-weight:700">${maxAddons + 1}</div>
+        <div style="font-size:10px;color:var(--muted)">总档位</div>
+      </div>
+      <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:16px;font-weight:700">${addonPct}%</div>
+        <div style="font-size:10px;color:var(--muted)">加仓间距</div>
+      </div>
+    </div>
+    ${levelsHtml}
+  `;
+
+  // Screen 3: 持仓概要
+  const s3El = document.getElementById('screen3');
+  const s3EqEl = document.getElementById('s3-equity');
+  s3EqEl.textContent = '持仓: ' + totalSize;
+
+  if (totalSize > 0 && avgEntry > 0) {
+    const sideColor = dir === 'BEAR' ? 'var(--red)' : 'var(--green)';
+    s3El.innerHTML = `
+      <div style="text-align:center;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;color:${sideColor}">${activeSymbol} ${dir === 'BEAR' ? '📉 空' : '📈 多'}</div>
+        <div style="font-size:12px;color:var(--text);margin-top:4px">均入场: $${fmt(avgEntry)}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:11px;margin-bottom:8px">
+        <div><span style="color:var(--muted)">数量</span><div style="font-weight:600">${totalSize}</div></div>
+        <div><span style="color:var(--muted)">当前级</span><div style="font-weight:600">${currentLevel}/${maxAddons + 1}</div></div>
+        <div><span style="color:var(--muted)">波动率</span><div style="font-weight:600">x${volMult}</div></div>
+        <div><span style="color:var(--muted)">止盈</span><div style="font-weight:600;color:var(--green)">${tpPct}%</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">止盈价: <span style="color:var(--green);font-weight:600">$${fmt(tpPrice)}</span></div>
+    `;
+  } else {
+    s3El.innerHTML = `
+      <div style="text-align:center;color:var(--muted);padding:20px">
+        <div style="font-size:14px;margin-bottom:8px">无活跃持仓</div>
+        <div style="font-size:11px">方向: <span style="color:${dirColor};font-weight:600">${dir}</span></div>
+        <div style="font-size:11px;margin-top:4px">止盈: ${tpPct}% · 波动: x${volMult}</div>
+      </div>
+    `;
+  }
+}
+
 // ── 三屏状态总览 ──────────────────────────────────────────────────────
 function renderScreenOverview(trade, classic, mode) {
   const el = document.getElementById('screen-overview');
@@ -1599,8 +1889,8 @@ function renderTradeLog(exec) {
     return;
   }
 
-  const history = exec.position_history || exec.executions || [];
-  const execCount = exec.exec_count || 0;
+  const history = exec.trade_history || exec.position_history || exec.executions || [];
+  const execCount = exec.run_count || exec.exec_count || 0;
   const errorCount = exec.error_count || 0;
 
   if (history.length === 0) {
@@ -2536,6 +2826,210 @@ function renderResearch(research, screen) {
 
 // 三屏tab自动刷新
 setInterval(() => { if (currentTab === 'screen') loadScreenData(); }, 60000);
+setInterval(() => { if (currentTab === 'yijing') loadYijingData(); }, 60000);
+
+// ── Dream OS Tab ──────────────────────────────────────────────────────────
+let dreamosData = null;
+
+async function dosRefresh() {
+  try {
+    const res = await fetch('/api/dreamos');
+    dreamosData = await res.json();
+    renderDreamOS(dreamosData);
+  } catch (e) {
+    console.error('Dream OS 加载失败:', e);
+  }
+}
+
+async function dosAnalyze(symbol) {
+  const btn = document.querySelector(`button[onclick="dosAnalyze('${symbol}')"]`);
+  if (btn) btn.disabled = true;
+  
+  try {
+    const res = await fetch(`/api/dreamos/analyze?symbol=${symbol}`);
+    const decision = await res.json();
+    renderDOSDecision(decision);
+    dosRefresh();
+  } catch (e) {
+    console.error('Dream OS 分析失败:', e);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function renderDreamOS(data) {
+  if (!data) return;
+
+  // 概览
+  document.getElementById('dos-node-count').textContent = data.total_nodes || '--';
+  document.getElementById('dos-equity').textContent = '$' + (data.account?.equity || 0).toFixed(2);
+  
+  const positions = data.account?.positions || {};
+  const memory = data.memory || {};
+  const posCount = Object.keys(positions).length;
+  document.getElementById('dos-positions').textContent = posCount + ' 个';
+
+  // 节点注册表
+  const nodesEl = document.getElementById('dos-nodes');
+  if (data.nodes && data.nodes.length > 0) {
+    nodesEl.innerHTML = data.nodes.map(n => {
+      const chainColor = n.chain === 'A' ? 'rgba(88,166,255,0.2);border-color:rgba(88,166,255,0.4);color:#58a6ff'
+                      : n.chain === 'C' ? 'rgba(63,185,80,0.2);border-color:rgba(63,185,80,0.4);color:#3fb950'
+                      : n.chain === 'F' ? 'rgba(188,140,255,0.2);border-color:rgba(188,140,255,0.4);color:#bc8cff'
+                      : '';
+      return `<span class="memory-tag" style="${chainColor}">${n.node_id} · ${n.name}</span>`;
+    }).join('');
+  }
+
+  // 当前持仓 - 仅展示真实持仓
+  const posEl = document.getElementById('dos-positions-detail');
+  if (posCount > 0) {
+    posEl.innerHTML = Object.entries(positions).map(([coin, pos]) => {
+      const isLong = pos.size > 0;
+      const pnlColor = pos.upnl >= 0 ? 'var(--green)' : 'var(--red)';
+      return `
+        <div class="position-row">
+          <div><div class="pos-coin">${coin} ${isLong ? '📈 多' : '📉 空'}</div>
+            <div class="pos-detail">入场 $${(pos.entry_px||0).toFixed(2)} · sz ${Math.abs(pos.size)} · ${pos.leverage}x</div></div>
+          <div class="pos-pnl"><div class="pos-pnl-val" style="color:${pnlColor}">$${(pos.upnl||0).toFixed(2)}</div></div>
+        </div>`;
+    }).join('');
+  } else {
+    posEl.innerHTML = '<div class="no-position">无持仓</div>';
+  }
+
+  // 记忆与进化
+  const recentDecisions = memory.recent_decisions || [];
+  const decEl = document.getElementById('dos-recent-decisions');
+  if (recentDecisions.length > 0) {
+    decEl.innerHTML = recentDecisions.slice(-10).reverse().map(d => {
+      const time = d.timestamp ? fmtTime(d.timestamp) : '--';
+      const conf = d.confidence ? (d.confidence * 100).toFixed(0) + '%' : '--';
+      const color = d.action === 'LONG' ? 'var(--green)' : d.action === 'SHORT' ? 'var(--red)' : 'var(--muted)';
+      return `<div style="padding:4px 0;border-bottom:1px solid rgba(48,54,61,0.3)">
+        <span style="color:var(--muted);font-size:10px">${time}</span> · 
+        <span style="font-weight:600;color:${color}">${d.action}</span> · 
+        <span style="color:var(--text)">${d.symbol}</span> · 
+        <span style="color:var(--yellow)">${conf}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // 系统统计
+  const statsEl = document.getElementById('dos-stats');
+  statsEl.innerHTML = `
+    <div style="padding:4px 0"><span style="color:var(--muted)">总周期:</span> <span style="color:var(--text);font-weight:600">${memory.total_cycles || 0}</span></div>
+    <div style="padding:4px 0"><span style="color:var(--muted)">最近决策:</span> <span style="color:var(--text);font-weight:600">${recentDecisions.length}</span></div>
+    <div style="padding:4px 0"><span style="color:var(--muted)">活跃持仓:</span> <span style="color:var(--text);font-weight:600">${posCount}</span></div>
+  `;
+}
+
+function renderDOSDecision(decision) {
+  const orchEl = document.getElementById('dos-orchestration');
+  const reasoningEl = document.getElementById('dos-reasoning');
+  const orderEl = document.getElementById('dos-order');
+
+  const actionColor = decision.action === 'LONG' ? 'var(--green)' : decision.action === 'SHORT' ? 'var(--red)' : 'var(--muted)';
+
+  // 调度编排流程 - 状态追踪
+  if (decision.state_trace && decision.state_trace.length > 0) {
+    const chainColors = { 'A': '#58a6ff', 'C': '#3fb950', 'F': '#bc8cff' };
+    const nodeNames = { 'A1': '深度研究', 'A2': '综合分析', 'A3': '策略设计', 'A4': '门禁', 'A5': '交易执行', 'A6': '情报监控', 'A9': '离场决策', 'C1': '技术扫描', 'C2': '动量分析', 'C3': '波动率' };
+    
+    orchEl.innerHTML = `
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${decision.state_trace.map((node, idx) => {
+          const chain = node.node_id.charAt(0);
+          const color = chainColors[chain] || '#9ca3af';
+          const dirColor = node.direction === 'LONG' ? 'var(--green)' : node.direction === 'SHORT' ? 'var(--red)' : 'var(--muted)';
+          const nodeName = nodeNames[node.node_id] || node.node_id;
+          const conf = (node.confidence * 100).toFixed(0);
+          return `
+            <div style="flex:1;min-width:140px;padding:8px;background:rgba(0,0,0,0.2);border:1px solid ${color};border-radius:6px;position:relative">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="color:${color};font-weight:600;font-size:12px">${node.node_id}</span>
+                <span style="font-size:10px;color:var(--muted)">${nodeName}</span>
+              </div>
+              <div style="font-size:14px;font-weight:700;color:${dirColor};margin:4px 0">${node.direction}</div>
+              <div style="font-size:10px;color:var(--muted)">置信度 ${conf}%</div>
+              ${idx < decision.state_trace.length - 1 ? '<div style="position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:8px;height:8px;background:' + color + ';border-radius:50%;z-index:1"></div>' : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>`;
+  }
+
+  // 交易指令
+  if (decision.trade_order && Object.keys(decision.trade_order).length > 0) {
+    const o = decision.trade_order;
+    orderEl.innerHTML = `
+      <div style="padding:12px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">交易指令</div>
+        <div style="display:flex;gap:16px;font-size:12px;flex-wrap:wrap">
+          <span><strong>方向:</strong> <span style="color:${actionColor};font-weight:600">${decision.action}</span></span>
+          <span><strong>置信度:</strong> <span style="color:var(--yellow)">${(decision.confidence * 100).toFixed(1)}%</span></span>
+          <span><strong>入场:</strong> $${(o.entry_price || 0).toFixed(2)}</span>
+          <span><strong>止损:</strong> $${(o.stop_loss || 0).toFixed(2)}</span>
+          <span><strong>止盈:</strong> $${(o.take_profit || 0).toFixed(2)}</span>
+          <span><strong>杠杆:</strong> ${o.leverage}x</span>
+          <span><strong>R:R:</strong> ${o.rr_ratio}:1</span>
+        </div>
+      </div>`;
+  } else {
+    orderEl.innerHTML = `<div style="padding:12px;background:rgba(0,0,0,0.2);border-radius:6px;color:var(--muted);font-size:12px">无交易指令 (${decision.action})</div>`;
+  }
+
+  // 推理过程
+  if (decision.rationale && decision.rationale.length > 0) {
+    reasoningEl.innerHTML = decision.rationale.map(r => {
+      const color = r.includes('[A1') ? '#58a6ff'
+                  : r.includes('[A2') ? '#3fb950'
+                  : r.includes('[A3') ? '#bc8cff'
+                  : r.includes('[A4') ? '#d29922'
+                  : r.includes('[A5') ? '#10b981'
+                  : r.includes('[A6') ? '#8b5cf6'
+                  : r.includes('[A9') ? '#ef4444'
+                  : r.includes('[C1') ? '#3fb950'
+                  : r.includes('[C2') ? '#10b981'
+                  : r.includes('[C3') ? '#06b6d4'
+                  : r.includes('[F1') ? '#bc8cff'
+                  : r.includes('[F2') ? '#8b5cf6'
+                  : r.includes('[F3') ? '#ec4899'
+                  : 'var(--muted)';
+      return `<div style="padding:4px 0;color:${color};font-size:11px;line-height:1.6">${r}</div>`;
+    }).join('');
+  }
+}
+
+// Dream OS tab 切换时自动加载
+function switchTab(tab, evt) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+  if (evt && evt.target) {
+    evt.target.classList.add('active');
+  } else {
+    const tabs = document.querySelectorAll('.tab');
+    const tabNames = ['local', 'cloud', 'screen', 'yijing', 'dreamos'];
+    const idx = tabNames.indexOf(tab);
+    if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
+  }
+  document.getElementById('tab-' + tab).classList.add('active');
+
+  if (tab === 'cloud' && !cloudDataLoaded) {
+    loadCloudData();
+  }
+  if (tab === 'screen' && !screenDataLoaded) {
+    loadScreenData();
+  }
+  if (tab === 'yijing' && !yijingDataLoaded) {
+    loadYijingData();
+  }
+  if (tab === 'dreamos') {
+    dosRefresh();
+  }
+}
 </script>
 </body>
 </html>

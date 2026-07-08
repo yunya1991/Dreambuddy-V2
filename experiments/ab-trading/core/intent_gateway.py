@@ -53,8 +53,8 @@ def _check_knowledge_match(market_regime: str, coin: str) -> Optional[Dict]:
     零Token：查本地知识库和regime_patterns是否有高分匹配策略
     返回匹配到的策略信息，或 None
     """
-    regime_dir = Path("/Users/luke.zhang/dream-v2/6-TRADING/sessions/regime_patterns")
-    knowledge_dir = Path("/Users/luke.zhang/dream-v2/6-TRADING/knowledge")
+    regime_dir = Path(__file__).parent.parent.parent.parent / "6-TRADING" / "sessions" / "regime_patterns"
+    knowledge_dir = Path(__file__).parent.parent.parent.parent / "6-TRADING" / "knowledge"
 
     # 简单文件匹配（无需 Token）
     patterns = {}

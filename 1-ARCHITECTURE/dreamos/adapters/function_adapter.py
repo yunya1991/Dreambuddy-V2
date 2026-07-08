@@ -75,6 +75,18 @@ class FunctionAdapter(BaseAdapter):
     def can_handle(self, config: Dict[str, Any]) -> bool:
         return config.get("type") == "function" and "handler" in config
 
+    def wrap(self, handler: Callable[[State], Any], **kwargs) -> FunctionNode:
+        """便捷包装方法 — 直接传入函数和关键字参数"""
+        return FunctionNode(
+            handler=handler,
+            node_id=kwargs.get("node_id", ""),
+            name=kwargs.get("name", ""),
+            chain=kwargs.get("chain", ""),
+            tags=kwargs.get("tags"),
+            **{k: v for k, v in kwargs.items()
+               if k not in ("node_id", "name", "chain", "tags")}
+        )
+
     def to_node(self, config: Dict[str, Any]) -> FunctionNode:
         if not self.can_handle(config):
             raise ValueError(f"FunctionAdapter 无法处理配置: {config}")

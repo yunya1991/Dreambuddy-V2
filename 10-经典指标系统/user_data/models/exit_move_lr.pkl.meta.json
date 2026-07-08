@@ -1,0 +1,394 @@
+{
+  "metrics": {
+    "auc": 0.5106951871657754,
+    "brier": 0.4925373134328358,
+    "win_rate": 0.5074626865671642,
+    "confusion": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 34,
+      "fn": 33
+    },
+    "calibration": [
+      {
+        "prob": 0.1,
+        "actual": 0.493
+      },
+      {
+        "prob": 0.2,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.3,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.4,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.5,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.6,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.7,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.8,
+        "actual": 0.0
+      },
+      {
+        "prob": 0.9,
+        "actual": 0.0
+      }
+    ],
+    "ece": 0.3925373134328358,
+    "pr_auc": 0.5112480866449358,
+    "pnl": [
+      {
+        "date": "t1",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t2",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t3",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t4",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t5",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t6",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t7",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t8",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t9",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t10",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t11",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t12",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t13",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t14",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t15",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t16",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t17",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t18",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t19",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t20",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t21",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t22",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t23",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t24",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t25",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t26",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t27",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t28",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t29",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t30",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t31",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t32",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t33",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t34",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t35",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t36",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t37",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t38",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t39",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t40",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t41",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t42",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t43",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t44",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t45",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t46",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t47",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t48",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t49",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t50",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t51",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t52",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t53",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t54",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t55",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t56",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t57",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t58",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t59",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t60",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t61",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t62",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t63",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t64",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t65",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t66",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      },
+      {
+        "date": "t67",
+        "pnl": 0.0,
+        "cum_pnl": 0.0
+      }
+    ],
+    "coverage": 0.0,
+    "mean_return": 0.0,
+    "sharpe": 0.0
+  },
+  "family": "lr"
+}

@@ -4,7 +4,7 @@
 启动：python3 data_server.py
 访问：http://localhost:8765
 """
-import json, os, requests, warnings, subprocess, subprocess, sys
+import json, os, requests, warnings, subprocess, subprocess, sys, datetime
 from pathlib import Path
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qsl
@@ -348,6 +348,98 @@ class Handler(BaseHTTPRequestHandler):
                 symbol = self._get_query_param("symbol") or "BTC"
                 signals = generate_signals(symbol)
                 self._json(signals)
+            except Exception as e:
+                self._json({"error": str(e)})
+
+        # ── API: Dream OS 状态 ────────────────────────────────────────
+        elif path == "/api/dreamos":
+            try:
+                sys.path.insert(0, "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE")
+                from dreamos.nodes import list_available_nodes, register_all
+                from dreamos.registry import get_default_registry
+
+                registry = get_default_registry()
+                register_all(registry)
+                nodes = registry.list_nodes()
+                registered = [{"node_id": n.node_id, "name": getattr(n, "name", ""),
+                               "chain": getattr(n, "chain", ""), "description": getattr(n, "description", "")}
+                              for n in nodes]
+
+                from dreamos.shared.state import State, new_state
+
+                sys.path.insert(0, str(BASE_DIR))
+                from execution.aster_spot import HyperliquidClient
+                client = HyperliquidClient('b')
+                acct = client.get_account()
+
+                try:
+                    from experiments.agent_c.agent_c import AgentC
+                    agent_c = AgentC(agent_id='b')
+                    memory = agent_c.get_memory()
+                except Exception:
+                    memory = {}
+
+                self._json({
+                    "nodes": registered,
+                    "total_nodes": len(registered),
+                    "account": acct,
+                    "memory": memory,
+                    "timestamp": datetime.datetime.now().isoformat(),
+                })
+            except Exception as e:
+                self._json({"error": str(e)})
+
+        # ── API: Dream OS 调度历史 ────────────────────────────────────────
+        elif path == "/api/dreamos/history":
+            try:
+                from pathlib import Path
+                history_dir = BASE_DIR / "data" / "agent_c_b"
+                logs = []
+                if history_dir.exists():
+                    for f in sorted(history_dir.glob("*.json"))[-20:]:
+                        try:
+                            with open(f) as fp:
+                                logs.append(json.load(fp))
+                        except Exception:
+                            pass
+                self._json({"logs": logs, "count": len(logs)})
+            except Exception as e:
+                self._json({"error": str(e)})
+
+        # ── API: Dream OS 执行一次分析 ────────────────────────────────────────
+        elif path == "/api/dreamos/analyze":
+            try:
+                symbol = self._get_query_param("symbol") or "BTC"
+                sys.path.insert(0, "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE")
+                sys.path.insert(0, "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2")
+                from experiments.agent_c.agent_c import AgentC
+
+                agent_c = AgentC(agent_id='b')
+                mkt_data = agent_c.fetch_market_data(symbol)
+                if not mkt_data:
+                    self._json({"error": f"无法获取 {symbol} 的市场数据"}, status=400)
+                    return
+
+                decision = agent_c.analyze(symbol, mkt_data)
+
+                history_dir = BASE_DIR / "data" / "agent_c_b"
+                history_dir.mkdir(parents=True, exist_ok=True)
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                history_file = history_dir / f"{ts}_{symbol}.json"
+                with open(history_file, 'w') as f:
+                    json.dump(decision, f, indent=2, default=str)
+
+                self._json(decision)
+            except Exception as e:
+                self._json({"error": str(e)})
+
+        # ── API: Dream OS 节点执行状态 ────────────────────────────────────────
+        elif path == "/api/dreamos/nodes":
+            try:
+                sys.path.insert(0, "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE")
+                from dreamos.nodes import list_available_nodes
+                nodes = list_available_nodes()
+                self._json(nodes)
             except Exception as e:
                 self._json({"error": str(e)})
 

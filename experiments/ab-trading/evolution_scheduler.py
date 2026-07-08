@@ -59,7 +59,8 @@ class EvolutionScheduler:
         if force or self._should_run(memory, "a8_last_inspection", A8_CHECK_INTERVAL_HOURS):
             print("[进化调度器] 执行A8理论与实践验证...")
             try:
-                report = self.a8.run_daily_inspection(memory)
+                recent_decisions = self._get_recent_decisions(memory)
+                report = self.a8.run_daily_inspection(memory, recent_decisions)
                 proposals = report.get("evolution_proposals", [])
                 results["a8"] = {
                     "ran": True,
@@ -113,22 +114,24 @@ class EvolutionScheduler:
             print(f"[进化调度器] 运行{len(pending)}个提议的回测验证...")
             try:
                 bt_results = self.github.run_backtest_on_pending()
+                # 检查回测结果中是否有进入观察期或被采纳的提议
                 adopted = sum(
                     1 for r in bt_results
-                    if r.get("result", {}).get("status") == "adopted"
+                    if r.get("overall_improvement", False) is True
                 )
                 results["backtest"] = {
                     "ran": True,
                     "total": len(bt_results),
                     "adopted": adopted,
                 }
-                # 更新记忆中的采纳参数
+                # 更新记忆中的采纳参数（回测通过进入观察期的提议参数先预加载）
                 if adopted > 0:
                     memory = load_memory()  # 重新加载最新状态
                     adopted_params = self.engine.get_adopted_params()
-                    memory = update_evolution_params(memory, adopted_params)
-                    memory = record_evolution_result(memory, True)
-                    save_memory(memory)
+                    if adopted_params:
+                        memory = update_evolution_params(memory, adopted_params)
+                        memory = record_evolution_result(memory, True)
+                        save_memory(memory)
             except Exception as e:
                 print(f"[进化调度器] 回测失败: {e}")
                 results["backtest"]["error"] = str(e)
@@ -161,7 +164,7 @@ class EvolutionScheduler:
             "dream_last_analysis": evo.get("dream_last_analysis"),
             "github_last_search": evo.get("github_last_search"),
             "pending_proposals": len(self.engine.get_pending_proposals()),
-            "adopted_proposals": len(self.engine.get_adopted_params()),
+            "adopted_proposals": len(self.engine._load_pool().get("adopted", [])),
         }
 
     def _should_run(self, memory: Dict, timestamp_key: str, interval_hours: int) -> bool:
@@ -205,6 +208,57 @@ class EvolutionScheduler:
         return decisions
 
 
+def _export_to_shared_knowledge(scheduler: EvolutionScheduler):
+    """
+    将进化结果导出到共享知识目录，供易经推理系统使用
+    """
+    try:
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+        import importlib.util
+        yijing_dir = Path(__file__).parent.parent.parent / "11-易经推理系统"
+        bridge_path = yijing_dir / "scripts" / "memory_l4" / "knowledge_bridge.py"
+        spec = importlib.util.spec_from_file_location("knowledge_bridge", str(bridge_path))
+        knowledge_bridge = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(knowledge_bridge)
+        bridge = knowledge_bridge.KnowledgeBridge()
+        
+        status = scheduler.get_evolution_status()
+        adopted_params = status.get("adopted_params", {})
+        
+        if adopted_params:
+            result = bridge.export_ab_evolved_params(
+                adopted_params=adopted_params,
+                source="ab_trading_evolution",
+                description="AB Trading三层反思进化系统已采纳的参数",
+            )
+            if result["ok"]:
+                print(f"[进化调度器] ✅ 已导出 {result['params_count']} 个进化参数到共享目录")
+            else:
+                print(f"[进化调度器] ❌ 参数导出失败: {result.get('error')}")
+        
+        memory = load_memory()
+        contradictions = memory.get("contradictions", [])
+        if contradictions:
+            result = bridge.export_ab_contradictions(
+                contradictions=contradictions,
+                source="a8_theory_practice",
+            )
+            if result["ok"]:
+                print(f"[进化调度器] ✅ 已导出 {result['patterns_count']} 个矛盾模式")
+        
+        regime = {
+            "state": memory.get("market_state", "neutral"),
+            "trend_strength": memory.get("trend_strength", 0.5),
+            "volatility": memory.get("volatility", 0.5),
+        }
+        bridge.export_market_regime(regime)
+        print(f"[进化调度器] ✅ 已导出市场状态: {regime['state']}")
+
+    except Exception as e:
+        print(f"[进化调度器] 共享知识导出失败: {e}")
+
+
 def run_evolution_cycle():
     """运行一个进化周期"""
     print("=" * 60)
@@ -213,6 +267,8 @@ def run_evolution_cycle():
 
     scheduler = EvolutionScheduler()
     results = scheduler.run_all_evolution_checks()
+
+    _export_to_shared_knowledge(scheduler)
 
     print("\n" + "=" * 60)
     print("[进化调度器] 进化周期完成")

@@ -95,11 +95,13 @@ def fetch_market_context(client: HyperliquidClient) -> dict:
         ema50  = ema(closes[::-1], 50) if len(closes) >= 50 else ema20
         ema200 = ema(closes[::-1], min(200, len(closes)))
 
-        # RSI(14)
+        # RSI(14) — 使用最新数据
         def rsi(prices, n=14):
             if len(prices) < n + 1:
                 return 50.0
-            deltas = [prices[i] - prices[i-1] for i in range(1, min(n+1, len(prices)))]
+            # 取最新 n+1 根 K 线计算差分
+            recent = prices[-(n+1):]
+            deltas = [recent[i] - recent[i-1] for i in range(1, len(recent))]
             gains  = [max(d, 0) for d in deltas]
             losses = [max(-d, 0) for d in deltas]
             avg_g  = sum(gains) / n
@@ -435,7 +437,11 @@ def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_da
     """
     当连续多轮HOLD时，降低入场门槛，强制寻找交易机会
     机制：使用简化规则引擎，选择评分最高的标的（即使低于常规门槛）
+    使用进化参数动态调整阈值
     """
+    from core.agent_a_memory import get_evolution_params
+    evo_params = get_evolution_params(memory)
+
     coins = mkt.get("coins", {})
     opp_map = mkt.get("opp_map", {})
     
@@ -444,6 +450,13 @@ def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_da
     best_side = "LONG"
     best_info = {}
     
+    # 使用进化参数，回退到默认值
+    mom_threshold = evo_params.get("momentum_threshold", 0.02)
+    vol_threshold = evo_params.get("volume_threshold", 1.2)
+    rsi_oversold = evo_params.get("rsi_oversold", 40)
+    rsi_overbought = evo_params.get("rsi_overbought", 60)
+    use_ema_cross = evo_params.get("use_ema_cross", True)
+    
     for coin, d in coins.items():
         score = 0
         side = "LONG"
@@ -451,30 +464,47 @@ def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_da
         ch24 = d.get("ch24", 0)
         ch4h = d.get("ch4h", 0)
         vr = d.get("vol_ratio", 1.0)
-        rsi = d.get("rsi14", 50)
+        rsi_val = d.get("rsi14", 50)
+        ema20 = d.get("ema20", 0)
+        ema50 = d.get("ema50", 0)
         
-        if ch24 > 2 or ch4h > 0.8:
+        # 动量信号（使用进化阈值）
+        if ch24 > mom_threshold * 100 or ch4h > mom_threshold * 100 * 0.4:
             score += 2
             side = "LONG"
-        elif ch24 < -2 or ch4h < -0.8:
+        elif ch24 < -mom_threshold * 100 or ch4h < -mom_threshold * 100 * 0.4:
             score += 2
             side = "SHORT"
         
-        if vr > 1.2:
+        # 量比信号（使用进化阈值）
+        if vr > vol_threshold:
             score += 1
         
+        # 资金费率信号
         opp = opp_map.get(coin, {})
         fr = opp.get("funding", 0)
         if abs(fr) > 0.0002:
             score += 1
             side = "SHORT" if fr > 0 else "LONG"
         
-        if rsi < 45:
+        # RSI 信号（使用进化阈值）
+        if rsi_val < rsi_oversold:
             score += 1
             side = "LONG"
-        elif rsi > 55:
+        elif rsi_val > rsi_overbought:
             score += 1
             side = "SHORT"
+        
+        # EMA 交叉信号（使用进化开关）
+        if use_ema_cross and ema20 > 0 and ema50 > 0:
+            if ema20 > ema50:
+                score += 1
+                if side != "SHORT":
+                    side = "LONG"
+            elif ema20 < ema50:
+                score += 1
+                if side != "LONG":
+                    side = "SHORT"
         
         if score > best_score:
             best_score = score
@@ -482,7 +512,8 @@ def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_da
             best_side = side
             best_info = d
     
-    if best_score >= 2 and best_coin:
+    # 保守循环打破时入场门槛应低于正常（正常=1，此处用1）
+    if best_score >= 1 and best_coin:
         confidence = min(0.4 + best_score * 0.05, 0.6)
         equity = min(account_data.get("equity", 60.0), 60.0)
         pos_usdt = max(round(equity * 0.03, 2), 3.0)

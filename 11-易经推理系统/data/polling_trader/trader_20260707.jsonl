@@ -1,0 +1,397 @@
+{"ts": "2026-07-07 16:55:45", "level": "INFO", "msg": "[持仓同步] 检查 OKX 已有持仓..."}
+{"ts": "2026-07-07 16:55:48", "level": "INFO", "msg": "[持仓同步] 完成，共 0 个持仓"}
+{"ts": "2026-07-07 16:55:48", "level": "INFO", "msg": "轮询交易器启动 | 间隔=3600s 币种=['BTC', 'ETH', 'SOL', 'BNB', 'UNI', 'LINK', 'ATOM', 'ARB', 'PEPE', 'WIF', 'DOGE', 'HYPE'] 周期=1H | 置信度阈值=0.4 最大持仓=3 | dry_run=False simulated=True"}
+{"ts": "2026-07-07 16:55:48", "level": "INFO", "msg": "[风控] 日亏损上限=-100.0USDT | 最大连续亏损=5 | 默认仓位=10.0%"}
+{"ts": "2026-07-07 16:55:48", "level": "INFO", "msg": "[绩效] 初始权益=10000.0 | 当前权益=9960.78 | 历史交易=1笔"}
+{"ts": "2026-07-07 16:55:48", "level": "INFO", "msg": "═══ 轮询 #1 开始 ═══"}
+{"ts": "2026-07-07 16:55:48", "level": "INFO", "msg": "[状态] 日盈亏=-39.22 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-07 16:55:49", "level": "INFO", "msg": "[BTC] 价格=63017.3 | 卦象=震兑 | 方向=UP | 置信度=0.15 | 八卦=long(0.26) | 震荡=True | 波动率=0.0062 | fail=True"}
+{"ts": "2026-07-07 16:55:49", "level": "INFO", "msg": "[BTC] fail-closed 跳过 | 卦象=震兑"}
+{"ts": "2026-07-07 16:55:49", "level": "INFO", "msg": "[ETH] 价格=1768.5 | 卦象=兑离 | 方向=DOWN | 置信度=0.22 | 八卦=short(0.37) | 震荡=True | 波动率=0.0086 | fail=True"}
+{"ts": "2026-07-07 16:55:49", "level": "INFO", "msg": "[ETH] fail-closed 跳过 | 卦象=兑离"}
+{"ts": "2026-07-07 16:55:50", "level": "INFO", "msg": "[SOL] 价格=81.24 | 卦象=震为雷 | 方向=FLAT | 置信度=0.16 | 八卦=neutral(0.32) | 震荡=True | 波动率=0.0082 | fail=False"}
+{"ts": "2026-07-07 16:55:50", "level": "INFO", "msg": "[SOL] 震荡市 | 置信度要求提高至 0.5"}
+{"ts": "2026-07-07 16:55:50", "level": "INFO", "msg": "[SOL] 置信度不足 0.16 < 0.5 | 方向=FLAT 卦象=震为雷"}
+{"ts": "2026-07-07 16:55:52", "level": "INFO", "msg": "[BNB] 价格=576.6 | 卦象=坤为地 | 方向=DOWN | 置信度=0.43 | 八卦=short(0.71) | 震荡=True | 波动率=0.0051 | fail=True"}
+{"ts": "2026-07-07 16:55:52", "level": "INFO", "msg": "[BNB] fail-closed 跳过 | 卦象=坤为地"}
+{"ts": "2026-07-07 16:55:52", "level": "INFO", "msg": "[UNI] 价格=3.156 | 卦象=离兑 | 方向=DOWN | 置信度=0.25 | 八卦=short(0.42) | 震荡=True | 波动率=0.0101 | fail=True"}
+{"ts": "2026-07-07 16:55:53", "level": "INFO", "msg": "[UNI] fail-closed 跳过 | 卦象=离兑"}
+{"ts": "2026-07-07 16:55:53", "level": "INFO", "msg": "[LINK] 价格=7.888 | 卦象=泽天夬 | 方向=DOWN | 置信度=0.41 | 八卦=short(0.68) | 震荡=True | 波动率=0.0080 | fail=True"}
+{"ts": "2026-07-07 16:55:53", "level": "INFO", "msg": "[LINK] fail-closed 跳过 | 卦象=泽天夬"}
+{"ts": "2026-07-07 16:55:54", "level": "INFO", "msg": "[ATOM] 价格=1.584 | 卦象=兑离 | 方向=DOWN | 置信度=0.16 | 八卦=short(0.26) | 震荡=True | 波动率=0.0082 | fail=True"}
+{"ts": "2026-07-07 16:55:54", "level": "INFO", "msg": "[ATOM] fail-closed 跳过 | 卦象=兑离"}
+{"ts": "2026-07-07 16:55:55", "level": "INFO", "msg": "[ARB] 价格=0.07853 | 卦象=震为雷 | 方向=DOWN | 置信度=0.41 | 八卦=short(0.68) | 震荡=True | 波动率=0.0111 | fail=True"}
+{"ts": "2026-07-07 16:55:55", "level": "INFO", "msg": "[ARB] fail-closed 跳过 | 卦象=震为雷"}
+{"ts": "2026-07-07 16:55:56", "level": "INFO", "msg": "[PEPE] 价格=2.674e-06 | 卦象=震兑 | 方向=DOWN | 置信度=0.36 | 八卦=short(0.61) | 震荡=True | 波动率=0.0119 | fail=True"}
+{"ts": "2026-07-07 16:55:56", "level": "INFO", "msg": "[PEPE] fail-closed 跳过 | 卦象=震兑"}
+{"ts": "2026-07-07 16:55:56", "level": "INFO", "msg": "[WIF] 价格=0.1676 | 卦象=乾为天 | 方向=DOWN | 置信度=0.57 | 八卦=short(0.95) | 震荡=True | 波动率=0.0122 | fail=True"}
+{"ts": "2026-07-07 16:55:57", "level": "INFO", "msg": "[WIF] fail-closed 跳过 | 卦象=乾为天"}
+{"ts": "2026-07-07 16:55:57", "level": "INFO", "msg": "[DOGE] 价格=0.07474 | 卦象=离兑 | 方向=DOWN | 置信度=0.72 | 八卦=short(0.79) | 震荡=True | 波动率=0.0092 | fail=False"}
+{"ts": "2026-07-07 16:55:57", "level": "INFO", "msg": "[DOGE] 震荡市 | 置信度要求提高至 0.5"}
+{"ts": "2026-07-07 16:56:01", "level": "INFO", "msg": "[DOGE] 开仓 open_short | 置信度=0.72 卦象=离兑 | 仓位=1992.16USDT (20.0%) | 价格=0.07474 止损=0.07578636 止盈=0.07264728 | 原因=conf=0.72 vol=0.0092 -> size=20.0%"}
+{"ts": "2026-07-07 16:56:01", "level": "ERROR", "msg": "[DOGE] 开仓失败 | "}
+{"ts": "2026-07-07 16:56:02", "level": "INFO", "msg": "[HYPE] 价格=70.791 | 卦象=兑离 | 方向=UP | 置信度=0.17 | 八卦=long(0.29) | 震荡=True | 波动率=0.0116 | fail=True"}
+{"ts": "2026-07-07 16:56:02", "level": "INFO", "msg": "[HYPE] fail-closed 跳过 | 卦象=兑离"}
+{"ts": "2026-07-07 16:56:02", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-07 16:56:02", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-07 16:56:02", "level": "INFO", "msg": "═══ 轮询 #1 结束 ═══\n"}
+{"ts": "2026-07-07 17:06:48", "level": "WARN", "msg": "收到退出信号，正在停止..."}
+{"ts": "2026-07-07 17:06:49", "level": "INFO", "msg": "轮询交易器已停止"}
+{"ts": "2026-07-07 17:06:50", "level": "INFO", "msg": "[持仓同步] 检查 OKX 已有持仓..."}
+{"ts": "2026-07-07 17:06:55", "level": "INFO", "msg": "[持仓同步] 完成，共 0 个持仓"}
+{"ts": "2026-07-07 17:06:55", "level": "INFO", "msg": "轮询交易器启动 | 间隔=3600s 币种=['BTC', 'ETH', 'SOL', 'BNB', 'UNI', 'LINK', 'ATOM', 'ARB', 'PEPE', 'WIF', 'DOGE', 'HYPE'] 周期=1H | 置信度阈值=0.4 最大持仓=3 | dry_run=False simulated=True"}
+{"ts": "2026-07-07 17:06:55", "level": "INFO", "msg": "[风控] 日亏损上限=-100.0USDT | 最大连续亏损=5 | 默认仓位=10.0%"}
+{"ts": "2026-07-07 17:06:55", "level": "INFO", "msg": "[绩效] 初始权益=10000.0 | 当前权益=9960.78 | 历史交易=1笔"}
+{"ts": "2026-07-07 17:06:55", "level": "INFO", "msg": "═══ 轮询 #1 开始 ═══"}
+{"ts": "2026-07-07 17:06:55", "level": "INFO", "msg": "[状态] 日盈亏=-39.22 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-07 17:06:56", "level": "INFO", "msg": "[BTC] 价格=63113.9 | 卦象=震为雷 | 方向=UP | 置信度=0.26 | 八卦=long(0.43) | 震荡=True | 波动率=0.0061 | fail=False"}
+{"ts": "2026-07-07 17:06:56", "level": "INFO", "msg": "[BTC] 震荡市 | 置信度要求提高至 0.5"}
+{"ts": "2026-07-07 17:06:56", "level": "INFO", "msg": "[BTC] 置信度不足 0.26 < 0.5 | 方向=UP 卦象=震为雷"}
+{"ts": "2026-07-07 17:06:56", "level": "INFO", "msg": "[ETH] 价格=1770.67 | 卦象=泽天夬 | 方向=DOWN | 置信度=0.16 | 八卦=short(0.27) | 震荡=True | 波动率=0.0084 | fail=False"}
+{"ts": "2026-07-07 17:06:57", "level": "INFO", "msg": "[ETH] 震荡市 | 置信度要求提高至 0.5"}
+{"ts": "2026-07-07 17:06:57", "level": "INFO", "msg": "[ETH] 置信度不足 0.16 < 0.5 | 方向=DOWN 卦象=泽天夬"}
+{"ts": "2026-07-07 17:06:57", "level": "INFO", "msg": "[SOL] 价格=81.3 | 卦象=震为雷 | 方向=FLAT | 置信度=0.15 | 八卦=neutral(0.34) | 震荡=True | 波动率=0.0082 | fail=False"}
+{"ts": "2026-07-07 17:06:57", "level": "INFO", "msg": "[SOL] 震荡市 | 置信度要求提高至 0.5"}
+{"ts": "2026-07-07 17:06:57", "level": "INFO", "msg": "[SOL] 置信度不足 0.15 < 0.5 | 方向=FLAT 卦象=震为雷"}
+{"ts": "2026-07-07 17:06:58", "level": "INFO", "msg": "[BNB] 价格=577.4 | 卦象=震为雷 | 方向=DOWN | 置信度=0.30 | 八卦=short(0.50) | 震荡=True | 波动率=0.0051 | fail=True"}
+{"ts": "2026-07-07 17:06:58", "level": "INFO", "msg": "[BNB] fail-closed 跳过 | 卦象=震为雷"}
+{"ts": "2026-07-07 17:06:58", "level": "INFO", "msg": "[UNI] 价格=3.156 | 卦象=离兑 | 方向=DOWN | 置信度=0.23 | 八卦=short(0.39) | 震荡=True | 波动率=0.0098 | fail=True"}
+{"ts": "2026-07-07 17:06:58", "level": "INFO", "msg": "[UNI] fail-closed 跳过 | 卦象=离兑"}
+{"ts": "2026-07-07 17:06:59", "level": "INFO", "msg": "[LINK] 价格=7.901 | 卦象=兑离 | 方向=DOWN | 置信度=0.20 | 八卦=short(0.33) | 震荡=True | 波动率=0.0078 | fail=True"}
+{"ts": "2026-07-07 17:06:59", "level": "INFO", "msg": "[LINK] fail-closed 跳过 | 卦象=兑离"}
+{"ts": "2026-07-07 17:07:00", "level": "INFO", "msg": "[ATOM] 价格=1.584 | 卦象=兑离 | 方向=DOWN | 置信度=0.16 | 八卦=short(0.26) | 震荡=True | 波动率=0.0077 | fail=True"}
+{"ts": "2026-07-07 17:07:00", "level": "INFO", "msg": "[ATOM] fail-closed 跳过 | 卦象=兑离"}
+{"ts": "2026-07-07 17:07:00", "level": "INFO", "msg": "[ARB] 价格=0.07877 | 卦象=震为雷 | 方向=DOWN | 置信度=0.26 | 八卦=short(0.44) | 震荡=True | 波动率=0.0110 | fail=True"}
+{"ts": "2026-07-07 17:07:01", "level": "INFO", "msg": "[ARB] fail-closed 跳过 | 卦象=震为雷"}
+{"ts": "2026-07-07 17:07:01", "level": "INFO", "msg": "[PEPE] 价格=2.683e-06 | 卦象=震兑 | 方向=DOWN | 置信度=0.33 | 八卦=short(0.55) | 震荡=True | 波动率=0.0115 | fail=True"}
+{"ts": "2026-07-07 17:07:02", "level": "INFO", "msg": "[PEPE] fail-closed 跳过 | 卦象=震兑"}
+{"ts": "2026-07-07 17:07:04", "level": "INFO", "msg": "[WIF] 价格=0.1682 | 卦象=乾为天 | 方向=DOWN | 置信度=0.53 | 八卦=short(0.89) | 震荡=True | 波动率=0.0115 | fail=True"}
+{"ts": "2026-07-07 17:07:04", "level": "INFO", "msg": "[WIF] fail-closed 跳过 | 卦象=乾为天"}
+{"ts": "2026-07-07 17:07:05", "level": "INFO", "msg": "[DOGE] 价格=0.07486 | 卦象=离兑 | 方向=DOWN | 置信度=0.48 | 八卦=short(0.79) | 震荡=True | 波动率=0.0090 | fail=True"}
+{"ts": "2026-07-07 17:07:05", "level": "INFO", "msg": "[DOGE] fail-closed 跳过 | 卦象=离兑"}
+{"ts": "2026-07-07 17:07:05", "level": "INFO", "msg": "[HYPE] 价格=71.468 | 卦象=兑离 | 方向=UP | 置信度=0.29 | 八卦=long(0.48) | 震荡=True | 波动率=0.0116 | fail=True"}
+{"ts": "2026-07-07 17:07:06", "level": "INFO", "msg": "[HYPE] fail-closed 跳过 | 卦象=兑离"}
+{"ts": "2026-07-07 17:07:06", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-07 17:07:06", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-07 17:07:06", "level": "INFO", "msg": "═══ 轮询 #1 结束 ═══\n"}
+{"ts": "2026-07-07 18:07:22", "level": "INFO", "msg": "═══ 轮询 #2 开始 ═══"}
+{"ts": "2026-07-07 18:07:22", "level": "INFO", "msg": "[状态] 日盈亏=-39.22 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-07 18:07:22", "level": "INFO", "msg": "[BTC] 价格=63352.6 | 卦象=震为雷 | 方向=UP | 置信度=0.27 | 八卦=long(0.44) | 震荡=True | 波动率=0.0062 | fail=False"}
+{"ts": "2026-07-07 18:07:23", "level": "INFO", "msg": "[BTC] 震荡市 | 置信度要求提高至 0.5"}
+{"ts": "2026-07-07 18:07:23", "level": "INFO", "msg": "[BTC] 置信度不足 0.27 < 0.5 | 方向=UP 卦象=震为雷"}
+{"ts": "2026-07-07 18:07:23", "level": "INFO", "msg": "[ETH] 价格=1780.41 | 卦象=泽天夬 | 方向=UNKNOWN | 置信度=0.00 | 八卦=neutral(0.16) | 震荡=True | 波动率=0.0089 | fail=True"}
+{"ts": "2026-07-07 18:07:23", "level": "INFO", "msg": "[ETH] fail-closed 跳过 | 卦象=泽天夬"}
+{"ts": "2026-07-07 18:07:24", "level": "INFO", "msg": "[SOL] 价格=81.42 | 卦象=震为雷 | 方向=UP | 置信度=0.25 | 八卦=long(0.42) | 震荡=True | 波动率=0.0080 | fail=True"}
+{"ts": "2026-07-07 18:07:24", "level": "INFO", "msg": "[SOL] fail-closed 跳过 | 卦象=震为雷"}
+{"ts": "2026-07-07 18:07:24", "level": "INFO", "msg": "[BNB] 价格=578.6 | 卦象=坤为地 | 方向=DOWN | 置信度=0.32 | 八卦=short(0.54) | 震荡=True | 波动率=0.0050 | fail=True"}
+{"ts": "2026-07-07 18:07:24", "level": "INFO", "msg": "[BNB] fail-closed 跳过 | 卦象=坤为地"}
+{"ts": "2026-07-07 18:07:25", "level": "INFO", "msg": "[UNI] 价格=3.177 | 卦象=离兑 | 方向=DOWN | 置信度=0.20 | 八卦=short(0.34) | 震荡=True | 波动率=0.0099 | fail=True"}
+{"ts": "2026-07-07 18:07:25", "level": "INFO", "msg": "[UNI] fail-closed 跳过 | 卦象=离兑"}
+{"ts": "2026-07-07 18:07:25", "level": "INFO", "msg": "[LINK] 价格=7.926 | 卦象=震为雷 | 方向=UNKNOWN | 置信度=0.00 | 八卦=neutral(0.32) | 震荡=True | 波动率=0.0079 | fail=True"}
+{"ts": "2026-07-07 18:07:25", "level": "INFO", "msg": "[LINK] fail-closed 跳过 | 卦象=震为雷"}
+{"ts": "2026-07-07 18:07:26", "level": "INFO", "msg": "[ATOM] 价格=1.591 | 卦象=兑离 | 方向=UNKNOWN | 置信度=0.00 | 八卦=neutral(0.21) | 震荡=True | 波动率=0.0075 | fail=True"}
+{"ts": "2026-07-07 18:07:26", "level": "INFO", "msg": "[ATOM] fail-closed 跳过 | 卦象=兑离"}
+{"ts": "2026-07-07 18:07:26", "level": "INFO", "msg": "[ARB] 价格=0.07913 | 卦象=震兑 | 方向=UP | 置信度=0.21 | 八卦=long(0.35) | 震荡=True | 波动率=0.0112 | fail=True"}
+{"ts": "2026-07-07 18:07:27", "level": "INFO", "msg": "[ARB] fail-closed 跳过 | 卦象=震兑"}
+{"ts": "2026-07-07 18:07:27", "level": "INFO", "msg": "[PEPE] 价格=2.707e-06 | 卦象=震为雷 | 方向=DOWN | 置信度=0.23 | 八卦=short(0.38) | 震荡=True | 波动率=0.0120 | fail=True"}
+{"ts": "2026-07-07 18:07:27", "level": "INFO", "msg": "[PEPE] fail-closed 跳过 | 卦象=震为雷"}
+{"ts": "2026-07-07 18:07:28", "level": "INFO", "msg": "[WIF] 价格=0.1684 | 卦象=乾为天 | 方向=DOWN | 置信度=0.52 | 八卦=short(0.86) | 震荡=True | 波动率=0.0114 | fail=True"}
+{"ts": "2026-07-07 18:07:28", "level": "INFO", "msg": "[WIF] fail-closed 跳过 | 卦象=乾为天"}
+{"ts": "2026-07-07 18:07:28", "level": "INFO", "msg": "[DOGE] 价格=0.07502 | 卦象=离兑 | 方向=DOWN | 置信度=0.47 | 八卦=short(0.78) | 震荡=True | 波动率=0.0090 | fail=True"}
+{"ts": "2026-07-07 18:07:28", "level": "INFO", "msg": "[DOGE] fail-closed 跳过 | 卦象=离兑"}
+{"ts": "2026-07-07 18:07:29", "level": "INFO", "msg": "[HYPE] 价格=71.807 | 卦象=震为雷 | 方向=UP | 置信度=0.39 | 八卦=long(0.66) | 震荡=True | 波动率=0.0116 | fail=True"}
+{"ts": "2026-07-07 18:07:29", "level": "INFO", "msg": "[HYPE] fail-closed 跳过 | 卦象=震为雷"}
+{"ts": "2026-07-07 18:07:29", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-07 18:07:29", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-07 18:07:29", "level": "INFO", "msg": "═══ 轮询 #2 结束 ═══\n"}
+{"ts": "2026-07-07 19:07:44", "level": "INFO", "msg": "═══ 轮询 #3 开始 ═══"}
+{"ts": "2026-07-07 19:07:44", "level": "INFO", "msg": "[状态] 日盈亏=-39.22 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 19:07:44", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-07 19:07:44", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-07 19:07:44", "level": "INFO", "msg": "═══ 轮询 #3 结束 ═══\n"}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "[持仓同步] 检查 OKX 已有持仓..."}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "[持仓同步] 完成，共 0 个持仓"}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "轮询交易器启动 | 间隔=3600s 币种=['BTC', 'ETH', 'SOL', 'BNB', 'UNI', 'LINK', 'ATOM', 'ARB', 'PEPE', 'WIF', 'DOGE', 'HYPE'] 周期=1H | 置信度阈值=0.45 最大持仓=3 | dry_run=False simulated=True"}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "[风控] 日亏损上限=-100.0USDT | 最大连续亏损=5 | 默认仓位=10.0%"}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "[绩效] 初始权益=10000.0 | 当前权益=9960.78 | 历史交易=1笔"}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "═══ 轮询 #1 开始 ═══"}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "[状态] 日盈亏=-39.22 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-07 20:00:25", "level": "INFO", "msg": "═══ 轮询 #1 结束 ═══\n"}
+{"ts": "2026-07-07 20:08:06", "level": "INFO", "msg": "═══ 轮询 #4 开始 ═══"}
+{"ts": "2026-07-07 20:08:06", "level": "INFO", "msg": "[状态] 日盈亏=-39.22 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 20:08:06", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-07 20:08:06", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-07 20:08:06", "level": "INFO", "msg": "═══ 轮询 #4 结束 ═══\n"}
+{"ts": "2026-07-07 21:08:26", "level": "INFO", "msg": "═══ 轮询 #5 开始 ═══"}
+{"ts": "2026-07-07 21:08:26", "level": "INFO", "msg": "[状态] 日盈亏=-39.22 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 21:08:26", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-07 21:08:26", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-07 21:08:26", "level": "INFO", "msg": "═══ 轮询 #5 结束 ═══\n"}
+{"ts": "2026-07-07 22:08:42", "level": "INFO", "msg": "═══ 轮询 #6 开始 ═══"}
+{"ts": "2026-07-07 22:08:42", "level": "INFO", "msg": "[状态] 日盈亏=-39.22 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 22:08:42", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-07 22:08:42", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-07 22:08:42", "level": "INFO", "msg": "═══ 轮询 #6 结束 ═══\n"}
+{"ts": "2026-07-07 23:08:54", "level": "INFO", "msg": "═══ 轮询 #7 开始 ═══"}
+{"ts": "2026-07-07 23:08:54", "level": "INFO", "msg": "[状态] 日盈亏=-39.22 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-07 23:08:54", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-07 23:08:54", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-07 23:08:54", "level": "INFO", "msg": "═══ 轮询 #7 结束 ═══\n"}
+{"ts": "2026-07-08 00:09:10", "level": "INFO", "msg": "[风控] 新的一天 2026-07-08，重置每日风控统计"}
+{"ts": "2026-07-08 00:09:10", "level": "INFO", "msg": "═══ 轮询 #8 开始 ═══"}
+{"ts": "2026-07-08 00:09:10", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 00:09:10", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 00:09:10", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 00:09:10", "level": "INFO", "msg": "═══ 轮询 #8 结束 ═══\n"}
+{"ts": "2026-07-08 01:09:34", "level": "INFO", "msg": "═══ 轮询 #9 开始 ═══"}
+{"ts": "2026-07-08 01:09:34", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 01:09:34", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 01:09:34", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 01:09:34", "level": "INFO", "msg": "═══ 轮询 #9 结束 ═══\n"}
+{"ts": "2026-07-08 02:09:58", "level": "INFO", "msg": "═══ 轮询 #10 开始 ═══"}
+{"ts": "2026-07-08 02:09:58", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 02:09:58", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 02:09:58", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 02:09:58", "level": "INFO", "msg": "═══ 轮询 #10 结束 ═══\n"}
+{"ts": "2026-07-08 03:10:22", "level": "INFO", "msg": "═══ 轮询 #11 开始 ═══"}
+{"ts": "2026-07-08 03:10:22", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 03:10:22", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 03:10:22", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 03:10:22", "level": "INFO", "msg": "═══ 轮询 #11 结束 ═══\n"}
+{"ts": "2026-07-08 04:10:46", "level": "INFO", "msg": "═══ 轮询 #12 开始 ═══"}
+{"ts": "2026-07-08 04:10:46", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 04:10:46", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 04:10:46", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 04:10:46", "level": "INFO", "msg": "═══ 轮询 #12 结束 ═══\n"}
+{"ts": "2026-07-08 05:11:09", "level": "INFO", "msg": "═══ 轮询 #13 开始 ═══"}
+{"ts": "2026-07-08 05:11:09", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 05:11:09", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 05:11:09", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 05:11:09", "level": "INFO", "msg": "═══ 轮询 #13 结束 ═══\n"}
+{"ts": "2026-07-08 06:11:33", "level": "INFO", "msg": "═══ 轮询 #14 开始 ═══"}
+{"ts": "2026-07-08 06:11:33", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 06:11:33", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 06:11:33", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 06:11:33", "level": "INFO", "msg": "═══ 轮询 #14 结束 ═══\n"}
+{"ts": "2026-07-08 07:11:57", "level": "INFO", "msg": "═══ 轮询 #15 开始 ═══"}
+{"ts": "2026-07-08 07:11:57", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 07:11:57", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 07:11:57", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 07:11:57", "level": "INFO", "msg": "═══ 轮询 #15 结束 ═══\n"}
+{"ts": "2026-07-08 08:12:20", "level": "INFO", "msg": "═══ 轮询 #16 开始 ═══"}
+{"ts": "2026-07-08 08:12:20", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-08 08:12:20", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 08:12:20", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 08:12:20", "level": "INFO", "msg": "═══ 轮询 #16 结束 ═══\n"}
+{"ts": "2026-07-08 09:12:38", "level": "INFO", "msg": "═══ 轮询 #17 开始 ═══"}
+{"ts": "2026-07-08 09:12:38", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=1/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-08 09:12:39", "level": "INFO", "msg": "[BTC] 价格=63542.9 | 卦象=坤为地 | 方向=UP | 置信度=0.35 | 八卦=long(0.59) | 震荡=True | 波动率=0.0077 | fail=True"}
+{"ts": "2026-07-08 09:12:39", "level": "INFO", "msg": "[BTC] fail-closed 跳过 | 卦象=坤为地"}
+{"ts": "2026-07-08 09:12:39", "level": "INFO", "msg": "[ETH] 价格=1777.81 | 卦象=坤为地 | 方向=DOWN | 置信度=0.34 | 八卦=short(0.57) | 震荡=True | 波动率=0.0097 | fail=False"}
+{"ts": "2026-07-08 09:12:40", "level": "INFO", "msg": "[ETH] 震荡市 | 置信度要求提高至 0.5"}
+{"ts": "2026-07-08 09:12:40", "level": "INFO", "msg": "[ETH] 置信度不足 0.34 < 0.5 | 方向=DOWN 卦象=坤为地"}
+{"ts": "2026-07-08 09:12:40", "level": "INFO", "msg": "[SOL] 价格=80.28 | 卦象=震为雷 | 方向=DOWN | 置信度=0.40 | 八卦=short(0.67) | 震荡=True | 波动率=0.0098 | fail=True"}
+{"ts": "2026-07-08 09:12:40", "level": "INFO", "msg": "[SOL] fail-closed 跳过 | 卦象=震为雷"}
+{"ts": "2026-07-08 09:12:40", "level": "INFO", "msg": "[BNB] 价格=578.2 | 卦象=艮坎 | 方向=DOWN | 置信度=0.24 | 八卦=short(0.40) | 震荡=True | 波动率=0.0062 | fail=True"}
+{"ts": "2026-07-08 09:12:41", "level": "INFO", "msg": "[BNB] fail-closed 跳过 | 卦象=艮坎"}
+{"ts": "2026-07-08 09:12:41", "level": "INFO", "msg": "[UNI] 价格=3.253 | 卦象=坤为地 | 方向=UP | 置信度=0.41 | 八卦=long(0.68) | 震荡=True | 波动率=0.0173 | fail=True"}
+{"ts": "2026-07-08 09:12:41", "level": "INFO", "msg": "[UNI] fail-closed 跳过 | 卦象=坤为地"}
+{"ts": "2026-07-08 09:12:42", "level": "INFO", "msg": "[LINK] 价格=7.868 | 卦象=艮坎 | 方向=DOWN | 置信度=0.37 | 八卦=short(0.61) | 震荡=True | 波动率=0.0093 | fail=True"}
+{"ts": "2026-07-08 09:12:42", "level": "INFO", "msg": "[LINK] fail-closed 跳过 | 卦象=艮坎"}
+{"ts": "2026-07-08 09:12:42", "level": "INFO", "msg": "[ATOM] 价格=1.579 | 卦象=地水师 | 方向=DOWN | 置信度=0.31 | 八卦=short(0.52) | 震荡=True | 波动率=0.0086 | fail=True"}
+{"ts": "2026-07-08 09:12:42", "level": "INFO", "msg": "[ATOM] fail-closed 跳过 | 卦象=地水师"}
+{"ts": "2026-07-08 09:12:43", "level": "INFO", "msg": "[ARB] 价格=0.07774 | 卦象=艮坎 | 方向=DOWN | 置信度=0.33 | 八卦=short(0.56) | 震荡=True | 波动率=0.0125 | fail=True"}
+{"ts": "2026-07-08 09:12:43", "level": "INFO", "msg": "[ARB] fail-closed 跳过 | 卦象=艮坎"}
+{"ts": "2026-07-08 09:12:43", "level": "INFO", "msg": "[PEPE] 价格=2.67e-06 | 卦象=艮坎 | 方向=DOWN | 置信度=0.36 | 八卦=short(0.60) | 震荡=True | 波动率=0.0132 | fail=True"}
+{"ts": "2026-07-08 09:12:43", "level": "INFO", "msg": "[PEPE] fail-closed 跳过 | 卦象=艮坎"}
+{"ts": "2026-07-08 09:12:44", "level": "INFO", "msg": "[WIF] 价格=0.1659 | 卦象=巽为风 | 方向=DOWN | 置信度=0.49 | 八卦=short(0.82) | 震荡=True | 波动率=0.0123 | fail=True"}
+{"ts": "2026-07-08 09:12:44", "level": "INFO", "msg": "[WIF] fail-closed 跳过 | 卦象=巽为风"}
+{"ts": "2026-07-08 09:12:44", "level": "INFO", "msg": "[DOGE] 价格=0.07418 | 卦象=艮坎 | 方向=DOWN | 置信度=0.42 | 八卦=short(0.70) | 震荡=True | 波动率=0.0099 | fail=True"}
+{"ts": "2026-07-08 09:12:45", "level": "INFO", "msg": "[DOGE] fail-closed 跳过 | 卦象=艮坎"}
+{"ts": "2026-07-08 09:12:45", "level": "INFO", "msg": "[HYPE] 价格=69.248 | 卦象=坎巽 | 方向=DOWN | 置信度=0.45 | 八卦=short(0.75) | 震荡=True | 波动率=0.0134 | fail=True"}
+{"ts": "2026-07-08 09:12:45", "level": "INFO", "msg": "[HYPE] fail-closed 跳过 | 卦象=坎巽"}
+{"ts": "2026-07-08 09:12:45", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-07-08 09:12:45", "level": "INFO", "msg": "[学习] 当前案例=401 | 新增自上次重训=0 | 上次重训=2026-07-07 08:30:40"}
+{"ts": "2026-07-08 09:12:45", "level": "INFO", "msg": "═══ 轮询 #17 结束 ═══\n"}

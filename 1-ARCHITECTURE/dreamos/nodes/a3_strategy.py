@@ -140,10 +140,10 @@ class A3StrategyNode(BaseNode):
         return {}
 
     def _get_market_data(self, state: State) -> Dict[str, Any]:
+        if hasattr(state, "market") and state.market:
+            return state.market
         if hasattr(state, "market_data") and state.market_data:
             return state.market_data
-        if isinstance(state.inputs, dict) and "mkt" in state.inputs:
-            return state.inputs["mkt"]
-        if isinstance(state.inputs, dict):
-            return state.inputs
+        if isinstance(state.intent, dict) and "mkt" in state.intent:
+            return state.intent["mkt"]
         return {}

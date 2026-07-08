@@ -27,8 +27,8 @@ from dataclasses import dataclass, field
 REGISTRY_PATH  = Path(__file__).parent.parent / "data" / "skill_registry.md"
 MEMORY_PATH    = Path(__file__).parent.parent / "data" / "agent_b_memory.json"
 GRAPH_LOG      = Path(__file__).parent.parent / "data" / "agent_b_graph.json"
-KNOWLEDGE_DIR  = Path("/Users/luke.zhang/dream-v2/6-TRADING/knowledge")
-REGIME_DIR     = Path("/Users/luke.zhang/dream-v2/6-TRADING/sessions/regime_patterns")
+KNOWLEDGE_DIR  = Path(__file__).parent.parent.parent.parent / "6-TRADING" / "knowledge"
+REGIME_DIR     = Path(__file__).parent.parent.parent.parent / "6-TRADING" / "sessions" / "regime_patterns"
 
 # ── 节点成本表（Token估算，规划时用于预算校验）──────────────────────────
 def _llm_quota_ok(purpose: str) -> bool:
@@ -312,7 +312,7 @@ class ChainPlanner:
                     pass
 
         # 检查 strategy_scores
-        score_dir = Path("/Users/luke.zhang/dream-v2/6-TRADING/sessions/strategy_scores")
+        score_dir = Path(__file__).parent.parent.parent.parent / "6-TRADING" / "sessions" / "strategy_scores"
         if score_dir.exists():
             for f in sorted(score_dir.glob("*.json"), reverse=True)[:3]:
                 try:

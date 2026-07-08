@@ -1,0 +1,111 @@
+{
+    "max_open_trades": 5,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "liquidation_buffer": 0.05,
+    "stake_currency": "USDT",
+    "stake_amount": 50,
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "USD",
+    "timeframe": "1h",
+    "dry_run": false,
+    "cancel_open_orders_on_exit": false,
+    "exchange": {
+        "name": "gate",
+        "key": "c50f940ea36e04149c5b7350b9f27739",
+        "secret": "9d4c4162b359400e51265e177a0e93fdcb5294d1364204934f6acad55c86bd81",
+        "ccxt_config": {
+            "enableRateLimit": true,
+            "timeout": 180000,
+            "options": {
+                "defaultType": "swap"
+            }
+        },
+        "ccxt_async_config": {},
+        "pair_whitelist": [
+            "BTC/USDT:USDT",
+            "ETH/USDT:USDT",
+            "SOL/USDT:USDT",
+            "HYPE/USDT:USDT",
+            "XRP/USDT:USDT",
+            "BNB/USDT:USDT",
+            "PUMP/USDT:USDT",
+            "UNI/USDT:USDT",
+            "EIGEN/USDT:USDT",
+            "ENA/USDT:USDT",
+            "ZEC/USDT:USDT",
+            "AAVE/USDT:USDT",
+            "LINK/USDT:USDT",
+            "VIRTUAL/USDT:USDT",
+            "ZK/USDT:USDT",
+            "ARB/USDT:USDT",
+            "OP/USDT:USDT",
+            "PYTH/USDT:USDT",
+            "COMP/USDT:USDT",
+            "AIXBT/USDT:USDT",
+            "XAUT/USDT:USDT",
+            "XPL/USDT:USDT",
+            "WLFI/USDT:USDT",
+            "LINEA/USDT:USDT",
+            "OKB/USDT:USDT",
+            "ADA/USDT:USDT",
+            "AR/USDT:USDT",
+            "ASTER/USDT:USDT",
+            "AVAX/USDT:USDT",
+            "STX/USDT:USDT"
+        ],
+        "pair_blacklist": []
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exchange_rate_conversion_threshold": 0.05,
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_unfilledtimeout": {
+        "entry_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "check_open_orders_on_entry": true,
+    "telegram": {
+        "enabled": false,
+        "token": "",
+        "chat_id": ""
+    },
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8083,
+        "username": "freqtrader",
+        "password": "SuperSecurePassword",
+        "verbosity": "error",
+        "jwt_secret_key": "somethingrandom_breakout"
+    },
+    "db_url": "sqlite:///user_data/trades_breakout.sqlite",
+    "bot_name": "freqtrade_breakout",
+    "strategy": "BreakoutStrategy",
+    "initial_state": "running",
+    "force_entry_enable": true,
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}
