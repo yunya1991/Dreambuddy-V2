@@ -105,6 +105,10 @@ class BCRMEngine:
                                             datetime.now().isoformat()),
         )
 
+        # P0 修复: 自动预处理行情数据，解决 ForceEngine 信号断层
+        from .market_preprocessor import normalize_snapshot
+        market_snapshot = normalize_snapshot(market_snapshot)
+
         # Fail-fast 检查
         if qmm_output and qmm_output.get("uncertainty", 0) > DEFAULT_HIGH_UNCERTAINTY:
             output.fail_closed(REASON_HIGH_UNCERTAINTY)

@@ -478,13 +478,16 @@ class ForceEngine:
     # Step 6: 趋势方向判定
     # ============================================================
     def _direction_from_velocity(self, velocity: float) -> str:
-        """从速度判定趋势方向。"""
-        threshold = 0.05  # 速度阈值
+        """从速度判定趋势方向。
+        P1 修复: 降低阈值 0.05→0.02，减少过度 FLAT 输出
+        参考 Backtrader 的信号阈值动态调整原则。
+        """
+        threshold = 0.02  # P1修复: 原0.05过于宽松导致全部FLAT
         if velocity > threshold:
             return DIR_UP
         elif velocity < -threshold:
             return DIR_DOWN
-        elif abs(velocity) < threshold * 0.5:
+        elif abs(velocity) < threshold * 0.3:
             return DIR_FLAT
         else:
             return DIR_TRANSITIONING
