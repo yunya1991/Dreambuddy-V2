@@ -54,8 +54,10 @@ FEATURE_NAMES = [
 ]
 
 # 分类标签映射
-LABEL_MAP = {"DOWN": 0, "FLAT": 1, "UP": 2}
-LABEL_INVERSE = {v: k for k, v in LABEL_MAP.items()}
+# Bug Y4 修复: 使用二元标签（盈利=1/亏损=0）替代三分类（DOWN=0/FLAT=1/UP=2）
+# 原三分类导致 XGBClassifier 期望 [0,1] 但收到 [0,2]，训练报错
+LABEL_MAP = {"DOWN": 0, "FLAT": 0, "UP": 1}   # 合并 FLAT 到 DOWN（保守）
+LABEL_INVERSE = {0: "DOWN_OR_FLAT", 1: "UP"}
 
 # Phase 编码
 MACRO_PHASE_ENC = {"recession": 0, "recovery": 1, "overheat": 2, "stagflation": 3}
@@ -211,8 +213,8 @@ class QMMPredictor:
 
         # 默认参数（偏保守，减少过拟合）
         default_params = {
-            "objective": "multi:softprob",
-            "num_class": 3,
+            "objective": "binary:logistic",   # Bug Y4 修复: 改为二元分类
+            # "num_class": 3,                 # 已移除，二元不需要
             "max_depth": 3,
             "learning_rate": 0.05,
             "n_estimators": 80,
