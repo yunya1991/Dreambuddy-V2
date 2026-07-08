@@ -197,14 +197,25 @@ class BCRMEngine:
             force_result, is_qualitative_change, tension)
         output.next_state = next_state
 
-        # 置信度过滤（体量调整阈值）
-        # 特殊处理：FLAT 方向使用更宽松的阈值（震荡是有效状态，非信号不足）
-        conf_threshold = scale_params.confidence_threshold
+        # 置信度分层处理（借鉴 LEAN 的信号强度分级）
+        # 硬门槛（绝对不处理）: min_confidence_threshold * 0.7
+        # 软门槛（轻仓试探）:    min_confidence_threshold
+        # 正常门槛（标准仓位）:  scale_params.confidence_threshold * 0.8
+        hard_threshold = self.min_confidence_threshold * 0.7   # ~0.175
+        soft_threshold = self.min_confidence_threshold          # 0.25
         if next_state.direction == DIR_FLAT:
-            conf_threshold *= 0.3  # FLAT 阈值大幅降低（震荡市是有效状态）
-        if next_state.confidence < conf_threshold:
+            hard_threshold *= 0.3
+            soft_threshold *= 0.3
+
+        if next_state.confidence < hard_threshold:
+            # 完全无信号，fail_closed
             output.fail_closed(REASON_LOW_CONFIDENCE)
             return output
+        elif next_state.confidence < soft_threshold:
+            # 弱信号：标记为低置信度，继续执行但后续策略分支会生成轻仓版本
+            output.reason_codes = output.reason_codes or []
+            output.reason_codes.append("WEAK_SIGNAL_LIGHT_POSITION")
+            # 不 return，继续走完流程
 
         # Step 5: 螺旋定位
         spiral = self._step5_spiral_position(
