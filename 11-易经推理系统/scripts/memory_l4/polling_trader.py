@@ -43,25 +43,26 @@ from scripts.memory_l4.trading_utils import (
 )
 from scripts.memory_l4.learning_scheduler import LearningScheduler
 from scripts.memory_l4.process_guardian import ProcessGuardian
+from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
 
 
 class PollingTrader:
     """易经推理轮询交易器（P2 完整版）"""
 
     def __init__(self,
-                 interval: int = 300,
+                 interval: int = 3600,
                  coins: list = None,
                  bar: str = "1H",
                  confidence_threshold: float = 0.45,
                  max_positions: int = 3,
                  kline_limit: int = 200,
-                 initial_equity: float = 10000.0,
-                 daily_loss_limit: float = -100.0,
+                 initial_equity: float = 100.0,
+                 daily_loss_limit: float = -50.0,
                  max_consecutive_losses: int = 5,
                  default_position_pct: float = 0.10,
                  guardian: ProcessGuardian = None):
         self.interval = interval
-        self.coins = coins or ["BTC", "ETH"]
+        self.coins = coins or ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "GOLD", "OIL", "SPX", "NAS"]
         self.bar = bar
         self.confidence_threshold = confidence_threshold
         self.max_positions = max_positions
@@ -89,6 +90,9 @@ class PollingTrader:
             on_retrain_complete=self._on_retrain_complete,
         )
         self.guardian = guardian
+
+        self.knowledge_bridge = KnowledgeBridge()
+        self.external_knowledge = {}
 
         self.log_dir = Path("data/polling_trader")
         self.log_dir.mkdir(parents=True, exist_ok=True)
@@ -340,7 +344,7 @@ class PollingTrader:
             self._log(f"[{coin}] 警告：平仓但无对应开仓记录 {inst_id}", "WARN")
             return {}
 
-    def _execute_trade(self, inference: dict):
+    def _execute_trade(self, inference: dict, confidence_threshold: float = None):
         """根据推理结果执行交易决策（P2 完整版）"""
         coin = inference["coin"]
         inst_id = inference["inst_id"]
@@ -349,6 +353,8 @@ class PollingTrader:
         fail_closed = inference["fail_closed"]
         is_ranging = inference["is_ranging"]
         volatility = inference.get("volatility", 0.03)
+
+        effective_threshold = confidence_threshold or self.confidence_threshold
 
         pos_info = self._check_positions(coin)
 
@@ -359,10 +365,10 @@ class PollingTrader:
 
             signal_reverse = (
                 (pos_side == "long" and direction == "DOWN"
-                 and confidence >= self.confidence_threshold)
+                 and confidence >= effective_threshold)
                 or
                 (pos_side == "short" and direction == "UP"
-                 and confidence >= self.confidence_threshold)
+                 and confidence >= effective_threshold)
             )
 
             if signal_reverse:
@@ -412,14 +418,25 @@ class PollingTrader:
             self._log(f"[{coin}] fail-closed 跳过 | 卦象={inference['hexagram']}")
             return
 
-        effective_threshold = self.confidence_threshold
-        if is_ranging:
-            effective_threshold = max(self.confidence_threshold, 0.5)
-            self._log(f"[{coin}] 震荡市 | 置信度要求提高至 {effective_threshold}")
+        trend_strength = inference.get("trend_strength", 0.5)
+        is_trial = False
 
-        if confidence < effective_threshold:
+        if is_ranging:
+            effective_threshold = max(effective_threshold, 0.5)
+            self._log(f"[{coin}] 震荡市 | 置信度要求提高至 {effective_threshold}")
+        elif trend_strength > 0.6:
+            effective_threshold = max(0.3, self.confidence_threshold - 0.1)
+            self._log(f"[{coin}] 趋势明确(强度={trend_strength:.2f}) | 置信度要求放宽至 {effective_threshold}")
+
+        trial_threshold = max(0.25, effective_threshold - 0.15)
+        if confidence >= effective_threshold:
+            pass
+        elif confidence >= trial_threshold:
+            is_trial = True
+            self._log(f"[{coin}] 轻仓试错模式 | 置信度={confidence:.2f} 在试错区间 [{trial_threshold}, {effective_threshold})")
+        else:
             self._log(f"[{coin}] 置信度不足 "
-                      f"{confidence:.2f} < {effective_threshold} | "
+                      f"{confidence:.2f} < {trial_threshold} | "
                       f"方向={direction} 卦象={inference['hexagram']}")
             return
 
@@ -436,9 +453,9 @@ class PollingTrader:
             self._log(f"[{coin}] 已达最大持仓数 {self.max_positions} 跳过")
             return
 
-        self._open_position(inference, is_reverse=False)
+        self._open_position(inference, is_reverse=False, is_trial=is_trial)
 
-    def _open_position(self, inference: dict, is_reverse: bool = False):
+    def _open_position(self, inference: dict, is_reverse: bool = False, is_trial: bool = False):
         """开仓（动态仓位 + 持仓跟踪）"""
         coin = inference["coin"]
         inst_id = inference["inst_id"]
@@ -454,13 +471,17 @@ class PollingTrader:
         position_usdt = pos_size_info["position_usdt"]
         position_pct = pos_size_info["position_pct"]
 
+        if is_trial:
+            position_usdt *= 0.4
+            position_pct *= 0.4
+
         action = "open_long" if direction == "UP" else "open_short"
         pos_side = "long" if direction == "UP" else "short"
         sl_px = inference["stop_loss_px"]
         tp_px = inference["take_profit_px"]
 
         self._log(
-            f"[{coin}] {'反手' if is_reverse else ''}开仓 {action} | "
+            f"[{coin}] {'反手' if is_reverse else ''}开仓 {'[轻仓试错]' if is_trial else ''} {action} | "
             f"置信度={confidence:.2f} 卦象={inference['hexagram']} | "
             f"仓位={position_usdt:.2f}USDT ({position_pct:.1%}) | "
             f"价格={inference['price']} 止损={sl_px} 止盈={tp_px} | "
@@ -513,9 +534,41 @@ class PollingTrader:
                 self.guardian.record_error(RuntimeError(f"开仓失败: {err}"),
                                            context=f"open_position:{coin}")
 
+    def _load_external_knowledge(self):
+        """加载 AB Trading 导出的外部知识"""
+        try:
+            self.external_knowledge = self.knowledge_bridge.get_knowledge_summary()
+            if self.external_knowledge["evolved_params_count"] > 0:
+                self._log(
+                    f"[外部知识] 已加载 {self.external_knowledge['evolved_params_count']} 个进化参数 | "
+                    f"灵敏度={self.external_knowledge['trend_sensitivity']:.2f} | "
+                    f"风险厌恶={self.external_knowledge['risk_aversion']:.2f} | "
+                    f"市场倾向={self.external_knowledge['market_bias']}"
+                )
+        except Exception as e:
+            self._log(f"[外部知识] 加载失败: {e}", "ERROR")
+            self.external_knowledge = {}
+
+    def _adjust_confidence_threshold(self) -> float:
+        """根据外部知识调整置信度阈值"""
+        base_threshold = self.confidence_threshold
+
+        if self.external_knowledge.get("risk_aversion", 0.5) > 0.8:
+            adjusted = base_threshold + 0.05
+            self._log(f"[外部知识] 风险厌恶高，置信度阈值提高至 {adjusted:.2f}")
+            return adjusted
+
+        if self.external_knowledge.get("market_bias") == "bear":
+            adjusted = base_threshold + 0.03
+            self._log(f"[外部知识] 熊市环境，置信度阈值提高至 {adjusted:.2f}")
+            return adjusted
+
+        return base_threshold
+
     def run_once(self):
         """执行一轮推理 + 交易"""
         self._check_date_rollover()
+        self._load_external_knowledge()
         self.cycle_count += 1
         self._log(f"═══ 轮询 #{self.cycle_count} 开始 ═══")
 
@@ -527,6 +580,8 @@ class PollingTrader:
             f"交易暂停={risk_state['trading_halted']} | "
             f"今日交易={perf_stats.get('total_trades', 0)}笔"
         )
+
+        effective_threshold = self._adjust_confidence_threshold()
 
         cycle_success = True
         for coin in self.coins:
@@ -548,7 +603,7 @@ class PollingTrader:
                     f"fail={inference['fail_closed']}"
                 )
 
-                self._execute_trade(inference)
+                self._execute_trade(inference, confidence_threshold=effective_threshold)
 
             except Exception as e:
                 cycle_success = False
@@ -657,22 +712,22 @@ class PollingTrader:
 
 def main():
     parser = argparse.ArgumentParser(description="易经推理轮询交易器（P2 完整版）")
-    parser.add_argument("--interval", type=int, default=300,
-                        help="轮询间隔（秒），默认 300")
-    parser.add_argument("--coins", type=str, default="BTC,ETH",
-                        help="币种列表，逗号分隔，默认 BTC,ETH")
+    parser.add_argument("--interval", type=int, default=3600,
+                        help="轮询间隔（秒），默认 3600(1h)")
+    parser.add_argument("--coins", type=str, default="BTC,ETH,SOL,BNB,XRP,DOGE,GOLD,OIL,SPX,NAS",
+                        help="币种列表，逗号分隔，默认 BTC,ETH,SOL,BNB,XRP,DOGE,GOLD,OIL,SPX,NAS")
     parser.add_argument("--bar", type=str, default="1H",
                         help="K线周期，默认 1H")
-    parser.add_argument("--confidence", type=float, default=0.45,
-                        help="置信度阈值，默认 0.45")
-    parser.add_argument("--max-positions", type=int, default=3,
-                        help="最大同时持仓数，默认 3")
+    parser.add_argument("--confidence", type=float, default=0.35,
+                        help="置信度阈值，默认 0.35")
+    parser.add_argument("--max-positions", type=int, default=5,
+                        help="最大同时持仓数，默认 5")
     parser.add_argument("--once", action="store_true",
                         help="只执行一次，不循环")
-    parser.add_argument("--initial-equity", type=float, default=10000.0,
-                        help="初始权益（USDT），默认 10000")
-    parser.add_argument("--daily-loss-limit", type=float, default=-100.0,
-                        help="日最大亏损（USDT），默认 -100")
+    parser.add_argument("--initial-equity", type=float, default=100.0,
+                        help="初始权益（USDT），默认 100")
+    parser.add_argument("--daily-loss-limit", type=float, default=-50.0,
+                        help="日最大亏损（USDT），默认 -50")
     parser.add_argument("--max-consecutive-losses", type=int, default=5,
                         help="最大连续亏损次数，默认 5")
     parser.add_argument("--position-pct", type=float, default=0.10,

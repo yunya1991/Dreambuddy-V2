@@ -1,0 +1,41 @@
+{
+    "max_open_trades": 3,
+    "stake_currency": "USDT",
+    "stake_amount": 50,
+    "tradable_balance_ratio": 0.05,
+    "fiat_display_currency": "USD",
+    "timeframe": "1h",
+    "dry_run": true,
+    "cancel_open_orders_on_exit": true,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "liquidation_buffer": 0.05,
+    "exchange": {
+        "name": "gate",
+        "key": "c50f940ea36e04149c5b7350b9f27739",
+        "secret": "9d4c4162b359400e51265e177a0e93fdcb5294d1364204934f6acad55c86bd81",
+        "ccxt_config": {
+            "enableRateLimit": true,
+            "timeout": 30000,
+            "options": {
+                "defaultType": "swap"
+            }
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": true,
+            "timeout": 30000
+        },
+        "pair_whitelist": [
+            "BTC/USDT:USDT",
+            "SOL/USDT:USDT", 
+            "ETH/USDT:USDT"
+        ]
+    },
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        }
+    ],
+    "strategy": "Strategy005",
+    "initial_state": "running"
+}

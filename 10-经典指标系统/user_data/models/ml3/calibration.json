@@ -1,0 +1,20 @@
+{
+  "lr_short": {
+    "type": "sigmoid",
+    "threshold_trend": 0.65,
+    "threshold_chop": 0.7000000000000001,
+    "metrics": {
+      "auc": 0.9416666666666667,
+      "brier": 0.5799918364760211
+    }
+  },
+  "rf_short": {
+    "type": "sigmoid",
+    "threshold_trend": 0.65,
+    "threshold_chop": 0.7000000000000001,
+    "metrics": {
+      "auc": 0.052083333333333336,
+      "brier": 0.5772592910765143
+    }
+  }
+}

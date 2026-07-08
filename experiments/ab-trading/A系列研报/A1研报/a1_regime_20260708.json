@@ -1,0 +1,143 @@
+{
+  "date": "2026-07-08",
+  "regime": "BULL_RECOVERY",
+  "level": 2,
+  "confidence": 72,
+  "si_index": 45,
+  "si_index_components": {
+    "funding_flip": 15,
+    "etf_inflows": 10,
+    "fgi_contrarian": 8,
+    "institutional_accumulation": 12,
+    "negative_funding": 0,
+    "range_breakdown": 0
+  },
+  "three_screen": {
+    "weekly": -1,
+    "daily": 2,
+    "hourly": 1,
+    "composite": 2
+  },
+  "btc_price": 63967.4,
+  "eth_price": 1801.38,
+  "sol_price": 82.18,
+  "fgi": 27,
+  "funding_rate_btc": 0.0000669313448071,
+  "funding_rate_eth": 0.0000371426643869,
+  "funding_rate_sol": -0.0000056275810076,
+  "etf_1d_usd": 265.7,
+  "etf_7d_usd": -31.2,
+  "etf_30d_usd": -2548.0,
+  "dominant_contradiction": "CX_031",
+  "key_levels": {
+    "breakout": 65000,
+    "resistance1": 64000,
+    "support1": 62000,
+    "support2": 61800,
+    "hard_support": 60000,
+    "low": 58200
+  },
+  "contradictions": [
+    {
+      "id": "CX_021",
+      "name": "Stagflation vs BTC 通胀对冲",
+      "bias": "bullish",
+      "change": "neutral"
+    },
+    {
+      "id": "CX_027",
+      "name": "黄金避险 vs BTC 风险偏好",
+      "bias": "bullish",
+      "change": "up"
+    },
+    {
+      "id": "CX_030",
+      "name": "鲸鱼 OTC 积累 vs ETF 散户流出",
+      "bias": "bullish",
+      "change": "up"
+    },
+    {
+      "id": "CX_031",
+      "name": "极度恐惧 vs V 型反弹",
+      "bias": "bullish",
+      "change": "dominant"
+    },
+    {
+      "id": "CX_032",
+      "name": "FOMC 鹰派风险 vs 技术面强势",
+      "bias": "neutral",
+      "change": "neutral"
+    }
+  ],
+  "market_snapshot": {
+    "btc": {
+      "last": 63967.4,
+      "open_24h": 63666.2,
+      "high_24h": 64729,
+      "low_24h": 62638.6,
+      "change_24h_pct": 0.47,
+      "change_7d_pct": 9.6,
+      "ma5": 63402.8,
+      "ma10": 61876.89,
+      "ma20": 61915.06,
+      "ma30": 62589.26,
+      "rsi14": 67.73,
+      "atr14": 1897.36,
+      "oi_usdt_contracts": 3052527.21,
+      "oi_usdt_btc": 30525.2721
+    },
+    "eth": {
+      "last": 1801.38,
+      "open_24h": 1790.18,
+      "high_24h": 1834,
+      "low_24h": 1756.33,
+      "change_24h_pct": 0.63,
+      "change_7d_pct": 14.1,
+      "oi_usdt_contracts": 7105020.23,
+      "oi_usdt_eth": 710502.023
+    },
+    "sol": {
+      "last": 82.18,
+      "open_24h": 82.04,
+      "high_24h": 83.74,
+      "low_24h": 80.41,
+      "change_24h_pct": 0.17,
+      "change_7d_pct": 11.2,
+      "oi_usdt_contracts": 3059294.02
+    }
+  },
+  "macro": {
+    "fed_funds_rate": "3.50%-3.75%",
+    "fed_hike_expectation": "约半数委员预计年内加息",
+    "nyfed_1y_inflation_expectation": 3.67,
+    "nyfed_3y_inflation_expectation": 3.3,
+    "nyfed_5y_inflation_expectation": 3.0,
+    "us10y_yield": 4.50,
+    "dxy": 100.98,
+    "sp500_status": "近历史高位",
+    "gold": 4145.09,
+    "wti": 68.95
+  },
+  "next_catalysts": [
+    "7/14 美国 CPI",
+    "7/8-7/9 ETF 连续流入确认",
+    "FOMC 官员讲话/纪要措辞"
+  ],
+  "risk_summary": {
+    "upside_risks": [
+      "CPI 回落",
+      "ETF 连续净流入",
+      "交易所储备下降"
+    ],
+    "downside_risks": [
+      "CPI 反弹",
+      "FOMC 鹰派信号",
+      "中东局势升级",
+      "$64K-$66K 期权抛压"
+    ],
+    "black_swan": [
+      "霍尔木兹海峡关闭",
+      "交易所/稳定币突发事件"
+    ]
+  }
+}

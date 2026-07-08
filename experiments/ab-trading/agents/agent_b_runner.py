@@ -46,7 +46,7 @@ BUDGET_USDC     = 60.0        # 子账户预算（合约）
 PER_TRADE_PCT   = float(os.environ.get("PER_TRADE_PCT", "0.05"))
 STOP_LOSS_PCT   = 0.04        # 合约止损 4%
 TP_PCT          = 0.08        # 合约止盈 8%
-CONFIDENCE_GATE = 0.65
+CONFIDENCE_GATE = 0.55
 MAX_LEVERAGE    = 5
 DEFAULT_LEVERAGE = 3
 # Agent B 用合约，可交易全部标的池（与 A 相同，但决策框架不同）
@@ -126,6 +126,8 @@ def save_memory(memory: Dict, decision: Dict, pnl_pct: Optional[float] = None,
 
     # 更新连胜/连败
     if pnl_pct is not None:
+        # 保存上一轮连败计数（用于连败保护解除检测）
+        memory["prev_loss_streaks"] = memory.get("loss_streaks", 0)
         if pnl_pct > 0:
             memory["win_streaks"]  = memory.get("win_streaks", 0) + 1
             memory["loss_streaks"] = 0
@@ -757,16 +759,22 @@ def a7_gate(final_confidence: float, action: str, gate: float,
     检查置信度、连败保护、信号一致性
     返回 (pass, reason)
     """
-    if action == "HOLD":
-        return False, "HOLD信号，不入场"
-
-    if final_confidence < gate:
-        return False, f"置信度{final_confidence:.0%} < 门槛{gate:.0%}，未过A7门禁"
-
     # 连败保护：连败3次后暂停一轮
     if memory.get("loss_streaks", 0) >= 3:
         loss_n = memory["loss_streaks"]
         return False, f"连败保护：已连败{loss_n}次，本轮强制观望"
+
+    if action == "HOLD":
+        # 置信度高于最低门槛时，允许微仓试探
+        if final_confidence >= gate - 0.10:
+            return True, f"微仓试探：方向HOLD但置信度{final_confidence:.0%}接近门槛，允许小仓位"
+        return False, "HOLD信号，不入场"
+
+    if final_confidence < gate:
+        # 置信度接近门槛时，允许小仓位试探
+        if final_confidence >= gate - 0.08:
+            return True, f"微仓试探：置信度{final_confidence:.0%}接近门槛{gate:.0%}，允许小仓位"
+        return False, f"置信度{final_confidence:.0%} < 门槛{gate:.0%}，未过A7门禁"
 
     return True, "A7门禁通过"
 
@@ -1057,12 +1065,17 @@ def run():
           f"累计建议{tm_stats['total_suggestions']}个")
 
     client = HyperliquidClient("b")
+    sim_mode = False
 
     # Agent B 子账户：合约账户权益
     acct = client.get_account()
     if not acct["ok"]:
-        print(f"[Agent B] 账户查询失败"); return
-    equity = min(acct["equity"], BUDGET_USDC)
+        # 模拟模式：无有效账户时使用虚拟资金
+        sim_mode = True
+        equity = BUDGET_USDC
+        print(f"[Agent B] 模拟模式（账户查询失败），使用虚拟资金: {equity:.2f} USDC")
+    else:
+        equity = min(acct["equity"], BUDGET_USDC)
     print(f"[Agent B] 权益={equity:.2f} USDC  持仓={list(acct['positions'].keys())}")
 
     # ── L1 基础离场检查（止损止盈 + 移动止损）──────────────────────────
@@ -1512,9 +1525,9 @@ def _b_self_schedule(final: dict, a0: dict, a2: dict, memory: dict):
             priority="normal"
         )
 
-    # 场景3：连败保护解除后首次复盘 → 申请6H后重新尝试
+    # 场景3：连败保护触发后 → 申请6H后重新尝试
     loss_streaks = memory.get("loss_streaks", 0)
-    if loss_streaks == 3:
+    if loss_streaks >= 3:
         request_early_run(
             reason="B连败保护触发，6H后强制复盘评估市场",
             run_at_ts=now + 21600,

@@ -64,6 +64,13 @@ class AdapterRegistry:
         self._adapters.append(adapter)
         return self
 
+    def get(self, adapter_type: str) -> Optional[BaseAdapter]:
+        """按类型获取适配器"""
+        for adapter in self._adapters:
+            if getattr(adapter, "adapter_type", "") == adapter_type:
+                return adapter
+        return None
+
     def to_node(self, config: Dict[str, Any]) -> Optional[Node]:
         """根据配置找到合适的适配器，转换为 Node
 
@@ -98,4 +105,10 @@ def get_default_adapter_registry() -> AdapterRegistry:
     global _default_adapter_registry
     if _default_adapter_registry is None:
         _default_adapter_registry = AdapterRegistry()
+        from .function_adapter import FunctionAdapter
+        from .skill_adapter import SkillAdapter
+        from .api_adapter import APIAdapter
+        _default_adapter_registry.register(FunctionAdapter())
+        _default_adapter_registry.register(SkillAdapter())
+        _default_adapter_registry.register(APIAdapter())
     return _default_adapter_registry

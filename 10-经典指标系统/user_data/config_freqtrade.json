@@ -1,0 +1,109 @@
+{
+    "max_open_trades": 3,
+    "trading_mode": "spot",
+    "stake_currency": "USDT",
+    "stake_amount": 60,
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "USD",
+    "timeframe": "1h",
+    "datadir": "user_data/data",
+    "dataformat_ohlcv": "json",
+    "dataformat_trades": "jsongz",
+    "dry_run": false,
+    "cancel_open_orders_on_exit": false,
+    "exchange": {
+        "name": "gateio",
+        "key": "",
+        "secret": "",
+        "ccxt_config": {
+            "enableRateLimit": true,
+            "rateLimit": 2500,
+            "timeout": 60000,
+            "options": {
+                "defaultType": "spot"
+            }
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": true,
+            "rateLimit": 2500,
+            "timeout": 60000,
+            "options": {
+                "defaultType": "spot"
+            }
+        },
+        "pair_whitelist": [
+            "BTC/USDT"
+        ],
+        "pair_blacklist": []
+    },
+    "bid_strategy": {
+        "price_side": "bid",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "ask_strategy": {
+        "price_side": "bid",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "bid",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exchange_rate_conversion_threshold": 0.05,
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_unfilledtimeout": {
+        "entry_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "check_open_orders_on_entry": true,
+    "telegram": {
+        "enabled": false,
+        "token": "",
+        "chat_id": ""
+    },
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8083,
+        "username": "freqtrader",
+        "password": "SuperSecurePassword",
+        "verbosity": "error",
+        "jwt_secret_key": "somethingrandom"
+    },
+    "bot_name": "freqtrade",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

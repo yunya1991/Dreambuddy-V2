@@ -207,11 +207,11 @@ class ChainRouter:
                 self._direction = dream_result.direction
             self._current_conf = dream_result.confidence
 
-        # 读取 A7 门禁结果
-        gate_result = next((r for r in reversed(self.node_trace)
-                            if "A7" in r.node_id or "A4_门禁" in r.node_id), None)
-        gate_passed = gate_result.data.get("gate_passed", False) if gate_result else False
-        gate_reason = gate_result.data.get("reason", "未执行A7") if gate_result else "未执行A7"
+        # 重新评估门禁：基于最终状态，而非中间节点结果
+        from agents.agent_b_runner import a7_gate, apply_lessons
+        gate_threshold = apply_lessons(self.memory)
+        gate_passed, gate_reason = a7_gate(self._current_conf, self._direction,
+                                           gate_threshold, self.memory)
 
         # 仓位计算
         pos_usdt = 0.0
@@ -415,7 +415,7 @@ class ChainRouter:
     def _node_c4_backtest(self, node_id: str) -> NodeResult:
         """C4：简化回测验证（本地历史数据）"""
         # 简化：检查本地 sessions/strategy_scores
-        scores_dir = Path("/Users/luke.zhang/dream-v2/6-TRADING/sessions/strategy_scores")
+        scores_dir = Path(__file__).parent.parent.parent.parent / "6-TRADING" / "sessions" / "strategy_scores"
         if scores_dir.exists():
             files = list(scores_dir.glob("*.json"))
             if files:

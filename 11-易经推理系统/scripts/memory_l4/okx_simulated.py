@@ -207,6 +207,37 @@ class OKXSimulatedClient:
             "ts": d.get("ts"),
         }
 
+    def get_instrument(self, inst_id: str = None) -> Dict:
+        inst_id = inst_id or self.cfg["default_inst_id"]
+        r = self._get("/api/v5/market/instruments", {"instId": inst_id}, auth=False)
+        if r.get("code") != "0":
+            return {"ok": False, "error": r.get("msg", "unknown")}
+        d = r["data"][0]
+        return {
+            "ok": True,
+            "inst_id": inst_id,
+            "ct_val": float(d.get("ctVal", 1)),
+            "ct_mult": float(d.get("ctMult", 1)),
+            "ct_type": d.get("ctType"),
+            "tick_sz": float(d.get("tickSz", 0.0001)),
+            "lot_sz": float(d.get("lotSz", 1)),
+        }
+
+    def _usdt_to_sz(self, inst_id: str, usdt_amount: float) -> float:
+        ticker = self.get_ticker(inst_id)
+        if not ticker["ok"]:
+            return usdt_amount
+        instrument = self.get_instrument(inst_id)
+        if not instrument["ok"]:
+            return usdt_amount
+        last_price = ticker["last"]
+        ct_val = instrument["ct_val"]
+        ct_mult = instrument["ct_mult"]
+        contract_value = last_price * ct_val * ct_mult
+        if contract_value <= 0:
+            return usdt_amount
+        return usdt_amount / contract_value
+
     def get_kline(self, inst_id: str = None, bar: str = "1H",
                   limit: int = 100) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
@@ -370,23 +401,23 @@ class OKXSimulatedClient:
 
     def market_open_long(self, inst_id: str = None, usdt_amount: float = None,
                          reason: str = "") -> Dict:
-        """市价开多"""
         inst_id = inst_id or self.cfg["default_inst_id"]
         usdt_amount = usdt_amount or self.cfg["default_usdt_amount"]
+        sz = self._usdt_to_sz(inst_id, usdt_amount)
         return self.place_order(
             inst_id=inst_id, side="buy", ord_type="market",
-            sz=usdt_amount, pos_side="long", td_mode="cross",
+            sz=sz, pos_side="long", td_mode="cross",
             reason=reason or "bcrm_reasoning_open_long"
         )
 
     def market_open_short(self, inst_id: str = None, usdt_amount: float = None,
                           reason: str = "") -> Dict:
-        """市价开空"""
         inst_id = inst_id or self.cfg["default_inst_id"]
         usdt_amount = usdt_amount or self.cfg["default_usdt_amount"]
+        sz = self._usdt_to_sz(inst_id, usdt_amount)
         return self.place_order(
             inst_id=inst_id, side="sell", ord_type="market",
-            sz=usdt_amount, pos_side="short", td_mode="cross",
+            sz=sz, pos_side="short", td_mode="cross",
             reason=reason or "bcrm_reasoning_open_short"
         )
 

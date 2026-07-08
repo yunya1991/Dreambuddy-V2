@@ -38,7 +38,13 @@ V15_VOL_MULT = 1.875
 BASE_POSITION_PCT = 0.05
 MAX_POSITION_PCT = 0.25
 
-OPEN_CONFIDENCE_THRESHOLD = 70
+OPEN_CONFIDENCE_THRESHOLD = 60
+TRIAL_CONFIDENCE_THRESHOLD = 45
+TRIAL_POSITION_PCT = 0.02
+STOP_LOSS_PCT = 0.06
+
+SKIP_THRESHOLD_FOR_SIMPLE_MODE = 5
+LOSS_THRESHOLD_FOR_SIMPLE_MODE = 3
 
 AUTO_EXECUTE = os.environ.get("SCREEN_AUTO_EXECUTE", "true").lower() == "true"
 
@@ -295,6 +301,54 @@ def _call_deepseek(prompt: str, system: str, max_tokens: int = 800) -> Optional[
     except Exception as e:
         _log("WARN", f"DeepSeek调用异常: {e}")
         return None
+
+
+def _simple_mode_decision(screen1: dict, screen2: dict, price: float) -> dict:
+    """
+    简单模式决策：基于日线+1h双维度，简化决策逻辑
+    当连续跳过或连续亏损次数过多时触发，扩大交易频率
+    """
+    reasons = []
+    confidence = 50
+    
+    score_pct = screen1.get("score_pct", 50)
+    direction = screen1.get("direction", "NEUTRAL")
+    
+    daily_trend = screen2.get("trend", "FLAT")
+    hourly_signal = screen2.get("hourly_signal", "FLAT")
+    
+    if direction in ("BULL", "BEAR"):
+        if daily_trend == direction.lower():
+            confidence += 15
+            reasons.append(f"日线趋势{daily_trend}与Screen1方向{direction}一致")
+        if hourly_signal == direction.lower():
+            confidence += 10
+            reasons.append(f"1h信号{hourly_signal}与Screen1方向{direction}一致")
+    
+    if score_pct >= 60:
+        confidence += 10
+        reasons.append(f"Screen1评分{score_pct:.1f}%较高")
+    elif score_pct >= 45:
+        confidence += 5
+        reasons.append(f"Screen1评分{score_pct:.1f}%中等")
+    
+    confidence = min(100, max(30, confidence))
+    
+    if direction == "BULL" and confidence >= 40:
+        action = "OPEN_BULL"
+    elif direction == "BEAR" and confidence >= 40:
+        action = "OPEN_BEAR"
+    else:
+        action = "WAIT"
+        reasons.append("方向不明确或置信度不足")
+    
+    return {
+        "action": action,
+        "confidence": confidence,
+        "reasons": reasons,
+        "mode": "simple",
+        "vol_mult": BASE_VOL_MULT,
+    }
 
 
 def llm_decision(screen1: dict, screen2: dict, screen3: dict, reports: dict) -> dict:
@@ -607,8 +661,9 @@ def get_lot_size(inst_id: str) -> float:
     return lot_sz
 
 
-def _calc_position_size(equity: float, level: int, direction: str, entry_price: float, inst_id: str = INST_SWAP) -> float:
-    pos_usdt = equity * BASE_POSITION_PCT
+def _calc_position_size(equity: float, level: int, direction: str, entry_price: float, inst_id: str = INST_SWAP, position_pct: float = None) -> float:
+    pct = position_pct if position_pct is not None else BASE_POSITION_PCT
+    pos_usdt = equity * pct
     size = pos_usdt / entry_price
     lot_sz = get_lot_size(inst_id)
     size = math.floor(size / lot_sz) * lot_sz
@@ -698,10 +753,24 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
         pos_str = f"{pos['side']} {pos['size']} {current_symbol}" if pos else "无"
         _log("INFO", f"账户: 权益=${equity:.2f}, 可用=${available:.2f}, 持仓={pos_str}")
 
-        decision = llm_decision(s1, s2, s3, reports)
+        simple_mode = False
+        consecutive_skips = state.get("consecutive_skips", 0)
+        consecutive_losses = state.get("consecutive_losses", 0)
+        
+        if consecutive_skips >= SKIP_THRESHOLD_FOR_SIMPLE_MODE or consecutive_losses >= LOSS_THRESHOLD_FOR_SIMPLE_MODE:
+            simple_mode = True
+            _log("INFO", f"进入简单模式: 连续跳过{consecutive_skips}次, 连续亏损{consecutive_losses}次")
+        
+        state["simple_mode"] = simple_mode
+        
+        if simple_mode:
+            decision = _simple_mode_decision(s1, s2, price)
+        else:
+            decision = llm_decision(s1, s2, s3, reports)
+        
         state["last_mode"] = decision.get("mode", "v9")
         state["last_symbol"] = current_symbol
-        _log("INFO", f"决策层: mode={decision['mode']}, action={decision['action']}, 置信{decision['confidence']}%")
+        _log("INFO", f"决策层: mode={decision['mode']}, action={decision['action']}, 置信{decision['confidence']}%, 简单模式={simple_mode}")
 
         vol_mult = decision.get("vol_mult", BASE_VOL_MULT)
         vol_mult = _adjust_vol_mult_from_reports(vol_mult, weekly, a1_daily, a6_intel, decision.get("mode", "v9"))
@@ -798,6 +867,51 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                 else:
                     _log("INFO", "[模拟] AUTO_EXECUTE=false，跳过")
 
+            reached_sl = False
+            sl_target = state.get("sl_price", 0)
+            if sl_target > 0:
+                if state["direction"] == "BULL" and price <= sl_target:
+                    reached_sl = True
+                elif state["direction"] == "BEAR" and price >= sl_target:
+                    reached_sl = True
+
+            if reached_sl and pos and not reached_tp:
+                pnl = pos.get("upnl", 0)
+                _log("ACTION", f"止损: ${price:.2f}跌破${sl_target:.2f}, PnL=${pnl:.2f}")
+
+                if AUTO_EXECUTE:
+                    close_size = pos["size"]
+                    res = _place_order(current_swap, side_close, pos_side, close_size, reduce_only=True)
+                    if res["ok"]:
+                        _log("SUCCESS", f"止损成功: PnL≈${pnl:.2f}")
+                        state["active"] = False
+                        state["active_symbol"] = None
+                        state["active_swap"] = None
+                        state["direction"] = None
+                        state["current_level"] = 0
+                        state["total_size"] = 0
+                        state["avg_entry"] = 0
+                        state["tp_price"] = 0
+                        state["sl_price"] = 0
+                        state["entry_levels"] = []
+                        state["last_action"] = "SL_CLOSE"
+                        state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
+                        state["last_reason"] = f"止损@${price:.2f}, PnL=${pnl:.2f}"
+                        state["trade_history"].append({
+                            "ts": datetime.now(timezone.utc).isoformat(),
+                            "action": "SL_CLOSE",
+                            "side": "N/A",
+                            "price": price,
+                            "size": close_size,
+                            "pnl": pnl,
+                            "mode": decision["mode"],
+                            "reason": state["last_reason"],
+                        })
+                    else:
+                        _log("ERROR", f"平仓失败: {res.get('err')}")
+                else:
+                    _log("INFO", "[模拟] AUTO_EXECUTE=false，跳过")
+
         else:
             action = decision.get("action", "WAIT")
             conf = decision.get("confidence", 0)
@@ -807,14 +921,28 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
             for r in reasons:
                 _log("INFO", f"  - {r}")
 
-            if action in ("OPEN_BULL", "OPEN_BEAR") and conf >= OPEN_CONFIDENCE_THRESHOLD and not pos:
+            if action in ("OPEN_BULL", "OPEN_BEAR") and conf >= TRIAL_CONFIDENCE_THRESHOLD and not pos:
                 direction = "BULL" if "BULL" in action else "BEAR"
                 levels, tp_price, addon_pct, tp_pct = _calc_levels(direction, price, vol_mult)
-                entry_size = _calc_position_size(equity, 0, direction, price, current_swap)
+                
+                if conf >= OPEN_CONFIDENCE_THRESHOLD:
+                    position_pct = BASE_POSITION_PCT
+                    is_trial = False
+                elif conf >= TRIAL_CONFIDENCE_THRESHOLD:
+                    position_pct = TRIAL_POSITION_PCT
+                    is_trial = True
+                else:
+                    position_pct = BASE_POSITION_PCT
+                    is_trial = False
+                
+                entry_size = _calc_position_size(equity, 0, direction, price, current_swap, position_pct=position_pct)
                 pos_side = "long" if direction == "BULL" else "short"
                 side = "buy" if direction == "BULL" else "sell"
 
-                _log("ACTION", f"开仓: {direction} {current_symbol} ${price:.2f}, 止盈${tp_price:.2f}, 首仓{entry_size}, vol_mult={vol_mult}")
+                sl_price = price * (1 - STOP_LOSS_PCT) if direction == "BULL" else price * (1 + STOP_LOSS_PCT)
+
+                mode_text = "轻仓试错" if is_trial else "标准开仓"
+                _log("ACTION", f"开仓[{mode_text}]: {direction} {current_symbol} ${price:.2f}, 止盈${tp_price:.2f}, 止损${sl_price:.2f}, 首仓{entry_size}, vol_mult={vol_mult}, 置信{conf}%")
 
                 if AUTO_EXECUTE:
                     res = _place_order(current_swap, side, pos_side, entry_size)
@@ -827,10 +955,12 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                         state["total_size"] = entry_size
                         state["avg_entry"] = price
                         state["tp_price"] = tp_price
+                        state["sl_price"] = sl_price
                         state["entry_levels"] = [l["price"] for l in levels]
+                        state["is_trial"] = is_trial
                         state["last_action"] = "OPEN_" + direction
                         state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
-                        state["last_reason"] = f"{decision['mode']}决策置信{conf}%"
+                        state["last_reason"] = f"{decision['mode']}决策{mode_text}置信{conf}%"
                         _log("SUCCESS", f"开仓成功: ordId={res['ordId']}")
                         state["trade_history"].append({
                             "ts": datetime.now(timezone.utc).isoformat(),
@@ -841,6 +971,8 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                             "confidence": conf,
                             "mode": decision["mode"],
                             "reasons": reasons,
+                            "is_trial": is_trial,
+                            "sl_price": sl_price,
                         })
                     else:
                         _log("ERROR", f"开仓失败: {res.get('err')}")
@@ -848,7 +980,7 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                     _log("INFO", "[模拟] AUTO_EXECUTE=false，仅记录信号")
                     state["last_action"] = "SIGNAL_" + direction
                     state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
-                    state["last_reason"] = f"{decision['mode']}决策置信{conf}% (模拟)"
+                    state["last_reason"] = f"{decision['mode']}决策{mode_text}置信{conf}% (模拟)"
 
     except Exception as e:
         _log("ERROR", f"执行异常: {e}")
@@ -857,6 +989,29 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
         save_state(state)
         return {"ok": False, "error": str(e)}
 
+    action = decision.get("action", "WAIT")
+    last_action = state.get("last_action", "")
+    
+    if action == "WAIT" and not pos:
+        state["consecutive_skips"] = state.get("consecutive_skips", 0) + 1
+        _log("INFO", f"连续跳过次数: {state['consecutive_skips']}")
+    elif action in ("OPEN_BULL", "OPEN_BEAR"):
+        state["consecutive_skips"] = 0
+    
+    if "CLOSE" in last_action and "PnL" in state.get("last_reason", ""):
+        pnl_str = state["last_reason"]
+        if "-" in pnl_str and "$" in pnl_str:
+            pnl_parts = pnl_str.split("$")
+            for part in pnl_parts:
+                if part and part.replace("-", "").replace(".", "").isdigit():
+                    pnl_val = float(part.replace(",", ""))
+                    if pnl_val < 0:
+                        state["consecutive_losses"] = state.get("consecutive_losses", 0) + 1
+                        _log("INFO", f"连续亏损次数: {state['consecutive_losses']}")
+                    else:
+                        state["consecutive_losses"] = 0
+                    break
+    
     save_state(state)
     _log("INFO", f"=== 第{state['run_count']}轮完成 | action={state.get('last_action', 'NONE')} mode={state.get('last_mode', '?')} ===")
 

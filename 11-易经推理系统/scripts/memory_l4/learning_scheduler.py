@@ -11,6 +11,7 @@ from pathlib import Path
 
 from scripts.memory_l4.paths import memory_l4_dir, memory_l4_cases_dir
 from scripts.memory_l4.bcrm.engine import BCRMEngine
+from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
 
 
 class LearningScheduler:
@@ -22,6 +23,7 @@ class LearningScheduler:
     - 达到阈值时触发两仪引擎重训
     - 触发 QMM 模型重训（如果有足够案例）
     - 持久化学习结果
+    - 导入 AB Trading 进化参数作为外部参考
     """
 
     def __init__(self,
@@ -42,8 +44,12 @@ class LearningScheduler:
         self.last_case_count = 0
         self.retrain_count = 0
 
+        self.knowledge_bridge = KnowledgeBridge()
+        self.external_params = {}
+
         self._lock = threading.Lock()
         self._load_state()
+        self._load_external_params()
 
     def _load_state(self):
         if self.state_file.exists():
@@ -70,6 +76,46 @@ class LearningScheduler:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
+
+    def _load_external_params(self):
+        """
+        加载 AB Trading 导出的进化参数作为外部参考
+        """
+        try:
+            result = self.knowledge_bridge.load_ab_evolved_params()
+            if result["ok"]:
+                self.external_params = result.get("transformed", {})
+                print(f"[LearningScheduler] 已加载 {len(self.external_params)} 个外部进化参数")
+            else:
+                self.external_params = {}
+        except Exception as e:
+            print(f"[LearningScheduler] 加载外部参数失败: {e}")
+            self.external_params = {}
+
+    def _apply_external_params_to_learning(self):
+        """
+        将外部进化参数应用到学习过程中
+
+        外部参数影响：
+        - trend_sensitivity → 调整学习率（灵敏度高时学习率降低，避免过度拟合）
+        - risk_aversion → 调整权重学习率（风险厌恶高时更保守）
+        - signal_confidence_bias → 调整置信度阈值
+        """
+        if not self.external_params:
+            return
+
+        liangyi = self.bcrm_engine.liangyi_engine
+
+        trend_sensitivity = self.external_params.get("trend_sensitivity", 1.0)
+        risk_aversion = self.external_params.get("risk_aversion", 0.5)
+
+        if hasattr(liangyi, "LEARN_RATE") and trend_sensitivity > 1.5:
+            liangyi.LEARN_RATE = min(0.3, liangyi.LEARN_RATE * (2.0 - trend_sensitivity / 2.0))
+            print(f"[LearningScheduler] 外部灵敏度高，降低学习率至 {liangyi.LEARN_RATE:.4f}")
+
+        if hasattr(liangyi, "WEIGHT_LEARN_RATE") and risk_aversion > 0.8:
+            liangyi.WEIGHT_LEARN_RATE = min(0.2, liangyi.WEIGHT_LEARN_RATE * 0.7)
+            print(f"[LearningScheduler] 外部风险厌恶高，降低权重学习率至 {liangyi.WEIGHT_LEARN_RATE:.4f}")
 
     def _count_cases(self) -> int:
         """统计当前案例总数"""
@@ -149,6 +195,9 @@ class LearningScheduler:
                 return {"ok": False, "retrained": False,
                         "reason": f"案例不足 {len(cases)} < 5",
                         "case_count": len(cases)}
+
+            self._load_external_params()
+            self._apply_external_params_to_learning()
 
             liangyi_updated = False
             try:

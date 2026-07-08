@@ -1,0 +1,85 @@
+{
+    "initial_state": "running",
+    "datadir": "user_data/data",
+    "max_open_trades": 2,
+    "stake_currency": "USDT",
+    "stake_amount": "unlimited",
+    "tradable_balance_ratio": 0.99,
+    "fiat_display_currency": "USD",
+    "dry_run": true,
+    "dry_run_wallet": 10000,
+    "cancel_entry_after": 300,
+    "cancel_exit_after": 300,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "unfilledtimeout": {
+        "entry": 30,
+        "exit": 30,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "other",
+        "use_order_book": false,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "other",
+        "use_order_book": false
+    },
+    "order_types": {
+        "entry": "limit",
+        "exit": "limit",
+        "stoploss": "limit",
+        "stoploss_on_exchange": false
+    },
+    "exchange": {
+        "name": "gateio",
+        "key": "test",
+        "secret": "test",
+        "skip_pair_validation": true,
+        "pair_whitelist": [
+            "BTC/USDT:USDT",
+            "SOL/USDT:USDT",
+            "BNB/USDT:USDT"
+        ],
+        "ccxt_config": {
+            "enableRateLimit": true,
+            "timeout": 180000,
+            "options": {
+                "defaultType": "swap"
+            }
+        },
+        "ccxt_async_config": {
+            "timeout": 180000
+        }
+    },
+    "pairlists": [
+        {
+            "method": "RemotePairList",
+            "pairlist_url": "http://localhost:8092/universe/core",
+            "json_key": "pairs",
+            "number_assets": 50,
+            "refresh_period": 60,
+            "keep_pairlist_on_failure": true,
+            "read_timeout": 10,
+            "pair_prefix": "",
+            "pair_suffix": ""
+        }
+    ],
+    "timeframe": "1h",
+    "strategy": "Strategy005",
+    "dataformat_ohlcv": "json",
+    "dataformat_trades": "jsongz",
+    "api_server": {
+        "enabled": false,
+        "listen_ip_address": "0.0.0.0",
+        "listen_port": 8080,
+        "username": "freqtrader",
+        "password": "SuperSecurePassword",
+        "jwt_secret_key": "supersecretjwtkey"
+    }
+}

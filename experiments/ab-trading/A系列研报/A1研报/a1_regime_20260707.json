@@ -1,0 +1,191 @@
+{
+  "artifact_id": "a1_regime_20260707",
+  "timestamp": "2026-07-07T00:55:00+08:00",
+  "regime": {
+    "name": "BEAR_RECOVERY",
+    "level": 3,
+    "level_desc": "⚠️⚠️⚠️",
+    "confidence": 0.78,
+    "confidence_change": "+4pp",
+    "description": "市场从极端恐惧(FGI=24)中V型反弹9.1%，MA5/MA10金叉持续扩大，ETF结束10天流出转为1日净流入。鲸鱼270K BTC积累提供硬支撑。但FOMC纪要和CPI仍为未落地风险，反弹尚未被机构资金回流完全确认。",
+    "upgrade_conditions": [
+      "FGI突破30 (当前24, +6点)",
+      "ETF连续3天净流入 (7/2首日, 需7/7+7/8确认)",
+      "BTC站稳$64,000 (当前$63,713, 距突破0.45%)"
+    ],
+    "downgrade_conditions": [
+      "CPI > 4.5% (7/14)",
+      "BTC跌破$61,000",
+      "ETF重新转为连续流出"
+    ]
+  },
+  "si_index": {
+    "value": 40,
+    "category": "MODERATE_BULL",
+    "change": "+6",
+    "previous": 34,
+    "decomposition": {
+      "funding_rate_flip": {"score": 15, "reason": "6/13翻转后持续24天正值, 最新+0.00444%"},
+      "etf_inflow": {"score": 5, "reason": "7/2转正$223.5M但仅1天, 降级从+10"},
+      "fgi_contrarian": {"score": 8, "reason": "FGI=24 Extreme Fear → 经典反向买入信号"},
+      "institution_building": {"score": 12, "reason": "BlackRock累计$71B, 鲸鱼270K BTC OTC积累"},
+      "funding_negative": {"score": 0, "reason": "无"},
+      "range_breakdown": {"score": 0, "reason": "无"}
+    }
+  },
+  "three_screen": {
+    "weekly": -2,
+    "weekly_desc": "4周2阳2阴, 仍处下降通道但正在突破上轨",
+    "daily": 1,
+    "daily_desc": "V型反弹, MA5($62,553)>MA10($61,471)金叉",
+    "hourly": 0,
+    "hourly_desc": "缩量整理, 方向待选择",
+    "overall": -1,
+    "overall_desc": "NEUTRAL偏BEAR, 但日线改善中"
+  },
+  "price": {
+    "btc_spot": 63713.2,
+    "btc_swap": 63665.9,
+    "eth": 1791.61,
+    "sol": 82.0,
+    "btc_24h_change_pct": 1.69,
+    "btc_7d_change_pct": 5.9,
+    "btc_recovery_from_low_pct": 9.1,
+    "btc_24h_high": 63999.8,
+    "btc_24h_low": 61318.3,
+    "btc_support_ma5": 62553,
+    "btc_support_ma10": 61471
+  },
+  "funding": {
+    "btc_swap_rate": 0.0000444,
+    "btc_swap_rate_pct": 0.00444,
+    "prev_settled": 0.0000436,
+    "rate_trend": "increasing",
+    "sustained_days": 24,
+    "premium": -0.000399,
+    "premium_pct": -0.04
+  },
+  "fgi": {
+    "value": 24,
+    "category": "Extreme Fear",
+    "source": "Alternative.me (权威源)",
+    "yesterday": 23,
+    "last_week": 12,
+    "last_month": 12,
+    "correction_note": "此前CFGI=55已被证伪，以Alternative.me=24为准。MacroMicro=23接近真实值。",
+    "trend": "slowly_recovering",
+    "signal": "CONTRARIAN_BULLISH"
+  },
+  "etf_flows": {
+    "btc_daily_latest": 223.5,
+    "btc_daily_latest_millions": 223.5,
+    "btc_daily_latest_date": "2026-07-02",
+    "all_crypto_daily_latest": 263.4,
+    "june_total": -4060,
+    "june_record": true,
+    "outflow_streak_ended": true,
+    "outflow_streak_days": 10,
+    "five_day_trend": -950.5,
+    "five_day_trend_desc": "仍为净流出(5日窗口)",
+    "next_data_date": "2026-07-07",
+    "key_observation": "FBTC +$166M领涨回流, 但IBIT仍在-$40.4M流出"
+  },
+  "onchain": {
+    "whale_accumulation_btc": 270000,
+    "whale_accumulation_usd_billions": 16.7,
+    "whale_cost_basis": 59000,
+    "exchange_reserves_btc": 2210000,
+    "exchange_reserves_desc": "7年低点",
+    "lth_percentage": 78,
+    "spot_premium_during_accumulation": "negative",
+    "interpretation": "OTC战略性买入，非散户FOMO，供应持续收紧"
+  },
+  "macro": {
+    "sp500": 7535,
+    "sp500_change_pct": 0.69,
+    "sp500_ytd_pct": 10.07,
+    "sp500_52w_high": 7620.9,
+    "gold": 4154.4,
+    "gold_change_pct": -0.47,
+    "gold_ath": 4181,
+    "dxy_estimate": "104-105",
+    "pce_latest_pct": 3.6,
+    "gdp_latest_pct": 2.2,
+    "fed_chair": "Warsh (新任)",
+    "fomc_rate_hike_probability_pct": 55,
+    "key_events": [
+      {"date": "2026-07-07", "event": "FOMC会议纪要(沃什首次)", "importance": 5},
+      {"date": "2026-07-09", "event": "中国CPI/PPI", "importance": 2},
+      {"date": "2026-07-14", "event": "美国6月CPI", "importance": 5},
+      {"date": "2026-07-30", "event": "FOMC利率决议", "importance": 4}
+    ]
+  },
+  "contradictions": {
+    "dominant": {
+      "id": "CX_031",
+      "title": "极度恐惧 vs V型反转",
+      "multi_side": "多方(极度恐惧=反向买入信号, 价格+9.1%)",
+      "short_side": "空方(散户恐惧仍深, FGI仅24)",
+      "direction": "NEUTRAL_BULLISH",
+      "is_dominant": true,
+      "note": "本周主导矛盾, FOMC纪要将直接作用于此矛盾"
+    },
+    "secondary": [
+      {
+        "id": "CX_021",
+        "title": "Stagflation vs BTC通胀对冲",
+        "direction": "BULLISH_EDGE",
+        "status": "降为次要",
+        "catalyst": "7/14 CPI"
+      },
+      {
+        "id": "CX_027",
+        "title": "黄金避险 vs BTC风险偏好",
+        "direction": "EASING",
+        "status": "BTC跑赢黄金, 缓解中"
+      },
+      {
+        "id": "CX_030",
+        "title": "鲸鱼积累 vs ETF流出",
+        "direction": "CONVERGING",
+        "status": "ETF转正, 背离收窄"
+      },
+      {
+        "id": "CX_032",
+        "title": "FOMC纪要鹰派风险 vs 技术面强势",
+        "direction": "PENDING",
+        "status": "今日揭晓",
+        "catalyst": "今日FOMC纪要"
+      }
+    ]
+  },
+  "levels": {
+    "breakout_confirm": 64000,
+    "first_resistance": 66000,
+    "second_target": 72000,
+    "short_term_support": 62000,
+    "ma10_support": 61471,
+    "psychological_support": 60000,
+    "whale_cost_basis": 59000,
+    "hard_support": 57750
+  },
+  "action_framework": {
+    "position_multiplier": "0.5-0.7x",
+    "direction": "LONG_BIAS",
+    "stop_loss": 61000,
+    "entry_zones": ["62000-62500 (回调)", "63600-64000 (突破)"],
+    "decision_nodes": [
+      {"trigger": "FOMC纪要鸽派(7/7)", "action": "加仓至0.7x"},
+      {"trigger": "FOMC纪要鹰派(7/7)", "action": "维持0.5x或减至0.3x"},
+      {"trigger": "ETF连续流入(7/8-9)", "action": "0.7x持仓"},
+      {"trigger": "ETF再流出(7/8-9)", "action": "降至0.3x"},
+      {"trigger": "CPI<4.0%(7/14)", "action": "激进加仓, 目标$72K"},
+      {"trigger": "CPI>4.5%(7/14)", "action": "全面防御, 止损$60K"}
+    ]
+  },
+  "skip_status": {
+    "consecutive_skips": "~33天 (EP061-EP099)",
+    "action_pressure": "HIGH",
+    "a3_constraint": "禁止WAIT, 必须PROBE(5-10%仓位UP方向)"
+  }
+}

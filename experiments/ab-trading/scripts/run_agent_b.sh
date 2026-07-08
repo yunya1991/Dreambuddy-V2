@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Agent B 定时执行脚本（Dreambuddy OS）
-# 用法：每4小时执行一次
+# 用法：每1小时执行一次
 
 set -e
 

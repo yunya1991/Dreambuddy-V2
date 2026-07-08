@@ -1,0 +1,6 @@
+{"ts": 1772154483412, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772158083483}
+{"ts": 1772158384119, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KBONK", "until_ms": 1772161985044}
+{"ts": 1772169990478, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:PENDLE", "until_ms": 1772173590515}
+{"ts": 1772179049565, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772182649661}
+{"ts": 1772179049531, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772182650448}
+{"ts": 1772187355969, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772190956034}
