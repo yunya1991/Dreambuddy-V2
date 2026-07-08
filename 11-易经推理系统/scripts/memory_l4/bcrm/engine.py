@@ -62,7 +62,7 @@ class BCRMEngine:
     易经引擎负责把物理结果翻译成卦象符号。
     """
 
-    min_confidence_threshold: float = 0.36
+    min_confidence_threshold: float = 0.25   # P1修复: 原0.36过高，tanh修正后有效范围降至0.2-0.8
     qualitative_threshold: float = DEFAULT_QUALITATIVE_THRESHOLD
     sixiang_weights: Dict[str, float] = field(default_factory=dict)
 

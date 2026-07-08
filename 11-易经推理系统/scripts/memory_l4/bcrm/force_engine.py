@@ -554,11 +554,11 @@ class ForceEngine:
         else:
             agreement = 0.5
 
-        # 3. 综合置信度
-        # 力的归一化：合力最大约 1.0（四象全同向），放大到合理范围
-        force_mag_norm = min(1.0, force_mag * FORCE_MAGNITUDE_NORM_FACTOR)
-        # 速度归一化：速度可以累积，趋势一旦形成就有惯性
-        velocity_norm = min(1.0, trend_strength * VELOCITY_NORM_FACTOR)
+        # 3. 综合置信度（P1修复：用 tanh 替代线性截断，小信号更敏感）
+        import math
+        force_mag_norm = math.tanh(force_mag * FORCE_MAGNITUDE_NORM_FACTOR)
+        # tanh(velocity * k): 当 velocity=0.02, k=8 → 0.158; k=3 → 0.06（原设计过低）
+        velocity_norm = math.tanh(trend_strength * VELOCITY_NORM_FACTOR)
         confidence = (force_mag_norm * CONFIDENCE_WEIGHT_FORCE +
                       agreement * CONFIDENCE_WEIGHT_AGREEMENT +
                       velocity_norm * CONFIDENCE_WEIGHT_VELOCITY)
