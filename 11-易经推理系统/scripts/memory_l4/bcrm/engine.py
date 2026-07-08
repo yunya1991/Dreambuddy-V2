@@ -224,6 +224,34 @@ class BCRMEngine:
             price=market_snapshot.get("price", 0),
             volatility=volatility,
             confidence=next_state.confidence)
+
+        # Step 6.5: 多样性扩展（借鉴 LEAN 多策略组合）
+        # 当 B1 占比 > 80% 时自动补充互补策略
+        try:
+            from .strategy_diversity import StrategyDiversityManager
+            sdm = StrategyDiversityManager()
+            diversity_report = sdm.check_and_expand(market_snapshot, branches)
+            if diversity_report.triggered and diversity_report.new_branches:
+                for nb in diversity_report.new_branches:
+                    from .output_contract import StrategyBranch
+                    extra = StrategyBranch(
+                        branch_id=nb["branch_id"],
+                        condition=nb["condition"],
+                        action=nb["action"],
+                        position_modifier=nb.get("position_modifier", 0.3),
+                        stop_condition=nb["stop_condition"],
+                        rationale=nb["rationale"],
+                        stop_loss_px=nb.get("stop_loss_px", 0),
+                        take_profit_px=nb.get("take_profit_px", 0),
+                        reduce_ratio=nb.get("reduce_ratio", 0),
+                    )
+                    branches.append(extra)
+                output.bagua_meaning = (
+                    output.bagua_meaning or ""
+                ) + f" [多样性扩展: {[b['branch_id'] for b in diversity_report.new_branches]}]"
+        except Exception:
+            pass  # 多样性模块失败不影响主流程
+
         output.strategy_branches = branches
 
         # Step 7: 实践指令
