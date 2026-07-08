@@ -1,0 +1,14 @@
+name: Trading A6 Intelligence
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+jobs:
+  a6-intelligence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run A6 Intelligence Monitor
+        run: python3 -m scripts.memory_l4.ab_bridge stats
