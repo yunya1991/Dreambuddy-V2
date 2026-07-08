@@ -253,8 +253,46 @@ def run_screen_trade(reason: str):
 
 # ── 主函数 ────────────────────────────────────────────────────────────────
 
+def _validate_candidates_config():
+    """
+    启动时校验候选币种配置一致性
+    防止状态文件中的candidates与当前代码配置不一致导致显示问题
+    """
+    try:
+        from screen_engine import CANDIDATE_COINS, scan_candidates
+        from screen_executor import STATE_FILE as EXEC_STATE_FILE
+        
+        config_count = len(CANDIDATE_COINS)
+        
+        if EXEC_STATE_FILE.exists():
+            try:
+                with open(EXEC_STATE_FILE) as f:
+                    exec_state = json.load(f)
+                saved_candidates = exec_state.get("candidates", [])
+                saved_count = len(saved_candidates)
+                
+                if saved_count != config_count:
+                    log(f"⚠️ 候选币种配置不一致！状态文件={saved_count}个，当前配置={config_count}个，重新扫描...")
+                    new_candidates = scan_candidates()
+                    exec_state["candidates"] = [
+                        {"symbol": c["symbol"], "direction": c["direction"], 
+                         "score_pct": c["score_pct"], "vol_mult": c["vol_mult"]}
+                        for c in new_candidates
+                    ]
+                    with open(EXEC_STATE_FILE, "w") as f:
+                        json.dump(exec_state, f, indent=2, ensure_ascii=False)
+                    log(f"✅ 候选币种已重新同步: {config_count}个")
+            except Exception as e:
+                log(f"⚠️ 校验候选币种配置失败: {e}")
+    except Exception as e:
+        log(f"⚠️ 跳过候选币种校验: {e}")
+
+
 def main():
     state = load_state()
+
+    # 启动时校验候选币种配置一致性
+    _validate_candidates_config()
 
     # 模式检测（每轮都检测，必要时切换）
     try:
