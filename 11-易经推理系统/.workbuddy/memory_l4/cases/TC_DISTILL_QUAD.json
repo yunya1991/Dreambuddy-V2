@@ -1,0 +1,83 @@
+{
+  "case_id": "TC_DISTILL_QUAD",
+  "version": "v0.2",
+  "ts_start": "2026-07-08T08:55:15.412733+00:00",
+  "ts_end": null,
+  "inst_id": "TC_DISTILL_QUAD_INST",
+  "tags": [
+    "auto_case",
+    "episode_ref"
+  ],
+  "intent": {
+    "question": "",
+    "goal": "",
+    "constraints": []
+  },
+  "investigation": {
+    "summary": "",
+    "sources": []
+  },
+  "theory_refs": [],
+  "environment_snapshot": {
+    "regime": "bull"
+  },
+  "thinking_chain": [],
+  "evidence_chain": {
+    "market_data_refs": [],
+    "signal_refs": [],
+    "strategy_refs": [],
+    "historical_refs": [],
+    "constraint_refs": []
+  },
+  "decision_outcome": {
+    "pnl_pct": 5.0,
+    "pnl_usdt": 500.0,
+    "drawdown": 2.5,
+    "exit_reason": null,
+    "goal_achieved": null
+  },
+  "l4_status": "M0_CASE_REGISTERED",
+  "plan": {
+    "minimal_change": "",
+    "max_future_space": "",
+    "steps": [
+      "补全意图/调查/复盘/象限坐标"
+    ]
+  },
+  "execution": {
+    "episode_refs": [
+      {
+        "trace_id": "TC_DISTILL_QUAD",
+        "path": ""
+      }
+    ],
+    "result": "closed"
+  },
+  "online_pressure_test": null,
+  "rollout_monitoring": null,
+  "backtest": null,
+  "review": {
+    "summary": "",
+    "theory_practice_consistency": "consistent",
+    "lessons": [],
+    "mistakes": [],
+    "successes": [],
+    "review_record_id": "REV_TEST"
+  },
+  "dream_reflection": null,
+  "quadrant": {
+    "x": 0.8,
+    "y": 0.7,
+    "evidence": {
+      "weights": {
+        "perf": 0.4,
+        "consistency": 0.4,
+        "human": 0.2
+      },
+      "y_perf": 0.0,
+      "y_consistency": 0.0,
+      "y_human": 0.0,
+      "notes": ""
+    }
+  }
+}

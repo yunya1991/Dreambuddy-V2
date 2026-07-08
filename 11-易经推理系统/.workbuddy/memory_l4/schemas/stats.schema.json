@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "required": ["snapshot_ts", "points"],
+  "properties": {
+    "snapshot_ts": {"type": "string"},
+    "points": {"type": "array"}
+  }
+}

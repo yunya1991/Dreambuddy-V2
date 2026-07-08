@@ -1,0 +1,83 @@
+{
+  "snapshot_id": "STATS_20260708T165515",
+  "snapshot_ts": "2026-07-08T16:55:15+08:00",
+  "version": "v0.2",
+  "stage_coverage": {
+    "total_cases": 4,
+    "stage_counts": {
+      "A0": 0,
+      "A1": 0,
+      "A2": 0,
+      "A3": 0,
+      "A4": 0,
+      "A5": 0,
+      "A6": 0,
+      "A7": 0,
+      "A8": 0,
+      "A9": 0
+    },
+    "stage_rates": {
+      "A0": 0.0,
+      "A1": 0.0,
+      "A2": 0.0,
+      "A3": 0.0,
+      "A4": 0.0,
+      "A5": 0.0,
+      "A6": 0.0,
+      "A7": 0.0,
+      "A8": 0.0,
+      "A9": 0.0
+    }
+  },
+  "quadrant_distribution": {
+    "count": 4,
+    "x_mean": 0.2,
+    "y_mean": 0.175,
+    "x_range": [
+      0.0,
+      0.8
+    ],
+    "y_range": [
+      0.0,
+      0.7
+    ]
+  },
+  "pnl_stats": {
+    "count": 4,
+    "mean": 1.0,
+    "median": 0.75,
+    "win_rate": 0.5,
+    "max": 5.0,
+    "min": -2.5
+  },
+  "l4_status_distribution": {
+    "total": 4,
+    "distribution": {
+      "M0_CASE_REGISTERED": 4
+    },
+    "rates": {
+      "M0_CASE_REGISTERED": 1.0
+    }
+  },
+  "event_library": {
+    "total_events": 4,
+    "by_regime": {
+      "bull": 3,
+      "bear": 1
+    },
+    "by_category": {
+      "uncategorized": 4
+    },
+    "quadrant_density": {
+      "mid_low": 3,
+      "high_high": 1
+    }
+  },
+  "evolution_metrics": {
+    "y_growth_rate": null,
+    "pattern_stability": null,
+    "emerging_patterns": []
+  },
+  "distill_count": 0,
+  "review_count": 4
+}
