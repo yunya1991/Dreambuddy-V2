@@ -3,7 +3,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Optional, Any, Dict, List
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -48,7 +48,7 @@ def _count_violations(reports_payload: Dict[str, Any]) -> int:
     return total
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: List[str] = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
     candidate = _load_json(Path(args.candidate_json))
     decision = _load_json(Path(args.decision_json))
