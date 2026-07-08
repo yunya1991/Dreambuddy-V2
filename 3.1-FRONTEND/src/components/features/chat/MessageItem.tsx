@@ -2,8 +2,8 @@
 
 import React from 'react';
 import type { ChatMessage } from '@/types';
-import { V3Badge } from '@/components/V3Badge';
-import { IconCopy } from '@/components/V3InlineSVG';
+import { V3Badge } from '@/components';
+import { IconCopy } from '@/components';
 
 interface MessageItemProps {
   /** 消息数据 */

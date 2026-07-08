@@ -1,0 +1,115 @@
+{
+  "consultation_id": "A1-20260506-002",
+  "scene": "SIGNAL_ASSESSMENT",
+  "source": "dream-strategy-research",
+  "timestamp": "2026-05-06T02:45:00.000000Z",
+  "required_advisors": [
+    "advisor-qt",
+    "advisor-rm"
+  ],
+  "optional_advisors": [],
+  "responses": {
+    "advisor-qt": {
+      "consultation_id": "A1-20260506-002",
+      "advisor_id": "advisor-qt",
+      "advisor_name": "量化交易顾问",
+      "response_source": "direct_call",
+      "confidence": 72,
+      "assessment": {
+        "verdict": "PARTIAL",
+        "confidence": 72,
+        "reasoning": "[advisor-qt] Regime=TREND_STRONG_UP，价格突破$80K确认，信号充分性MODERATE。C3技术面矛盾主导（EMA多头排列），但C2费率翻转构成警告。建议Partial Action（部分行动）。"
+      },
+      "scoring": {
+        "signal_quality": 72,
+        "momentum": "UP",
+        "trend_strength": "STRONG"
+      },
+      "recommendations": [
+        {
+          "action": "维持当前LONG 0.1张，可加仓至0.2张（0.5x）",
+          "priority": "P1",
+          "rationale": "SI_Index +10.1 (MODERATE_BULL)，当前0.25x低于建议下限"
+        }
+      ],
+      "circuit_breakers": [],
+      "evidence_refs": [
+        "btc_price=81394",
+        "regime=TREND_STRONG_UP",
+        "signal_sufficiency=MODERATE",
+        "fgI=50"
+      ],
+      "limitations": [
+        "此为内联规则引擎评审",
+        "建议与实际市场数据交叉验证"
+      ],
+      "timestamp": "2026-05-06T02:45:00.000000Z"
+    },
+    "advisor-rm": {
+      "consultation_id": "A1-20260506-002",
+      "advisor_id": "advisor-rm",
+      "advisor_name": "风险管理顾问",
+      "response_source": "direct_call",
+      "confidence": 68,
+      "assessment": {
+        "verdict": "PARTIAL",
+        "confidence": 68,
+        "reasoning": "[advisor-rm] 基于风险等级分析，Regime=TREND_STRONG_UP。C2费率翻转（负→正→负）警告杠杆过热，200日EMA $82,228构成阻力。建议Partial Action（部分行动+严格止损）。"
+      },
+      "scoring": {
+        "risk_level": "MEDIUM",
+        "position_size": "0.5-0.7x",
+        "var_estimate": "基于ATR $1,500"
+      },
+      "recommendations": [
+        {
+          "action": "加仓至0.2张（0.5x），严格止损$80,000",
+          "priority": "P1",
+          "rationale": "SI_Index +10.1支持MODERATE_BULL仓位"
+        },
+        {
+          "action": "警惕200日EMA $82,228阻力，突破失败则减仓",
+          "priority": "P2",
+          "rationale": "技术面关键阻力位"
+        }
+      ],
+      "circuit_breakers": [],
+      "evidence_refs": [
+        "btc_price=81394",
+        "regime=TREND_STRONG_UP",
+        "funding_rate=-0.00002493",
+        "ema200=82228"
+      ],
+      "limitations": [
+        "此为内联规则引擎评审",
+        "建议与实际市场数据交叉验证"
+      ],
+      "timestamp": "2026-05-06T02:45:00.000000Z"
+    }
+  },
+  "summary": {
+    "final_verdict": "PARTIAL",
+    "avg_confidence": 70,
+    "advisor_count": 2,
+    "required_met": true
+  },
+  "recommendations": [
+    {
+      "action": "加仓至0.2张（0.5x），严格止损$80,000",
+      "priority": "P1",
+      "rationale": "QT+RM共识PARTIAL，SI_Index +10.1支持加仓"
+    },
+    {
+      "action": "警惕200日EMA $82,228阻力，突破失败则减仓",
+      "priority": "P2",
+      "rationale": "技术面关键阻力位"
+    }
+  ],
+  "context": {
+    "regime": "TREND_STRONG_UP",
+    "net_direction": "UP",
+    "signal_sufficiency": "MODERATE",
+    "action_pressure": "LOW",
+    "report_path": "/Users/zhangjiangtao/.workbuddy/skills/boss-secretary/reports/trading/a1_research_20260506_0233.md"
+  }
+}

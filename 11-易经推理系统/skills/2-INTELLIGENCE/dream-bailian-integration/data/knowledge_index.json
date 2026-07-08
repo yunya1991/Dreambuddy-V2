@@ -1,0 +1,12 @@
+{
+  "documents": [
+    {
+      "name": "Dream-MultiSkill技术文档",
+      "category": "system",
+      "deployed_at": "2026-05-07T22:28:18+08:00",
+      "file": "/Users/zhangjiangtao/.workbuddy/skills/dream-bailian-integration/deploy_docs/dream_multiskill_technical_doc.md",
+      "embedding_dim": 1024,
+      "content_preview": "# Dream-MultiSkill 系统技术文档\n**版本**: v1.0\n**日期**: 2026-05-07\n**分类**: 核心治理文档\n**部门**: governance\n## 二、A系列决策链\n### 2.1 A0 矛盾分析理论\n**定位**: A1/A2/A3的统一矛盾操作系统\n**核心方法**:\n- 蒸馏毛泽东《矛盾论》+《孙子兵法》+克劳塞维茨《战争论》\n- 8维度矛盾分析: 趋势/震荡、主要/次要、内部/外部、渐进/突变\n- 5条铁律: 抓主要矛盾、矛盾转化、两点论、重点论、实践检验\n**输出**: CX编号 + 矛盾描述\n### 2.2 A1 深度调研\n**定位**: 战略制定前的侦察兵\n**职责**:\n- 市场情报收集\n- 档案数据研究\n- 链上信号分析\n- 宏观环境评估\n**数据源**: NeoData（唯一合规数据源）\n### 2.3 A2 第一性原理\n**定位**: 战略制定的哲学根基\n**核心原理**:\n1. 阻力最小方向\n2. 趋势延续性\n3. 关键点突破\n4. 矛盾转化时机\n### 2.4 A3 沙盘推演\n**定位**: 多情景模拟验证\n**方法*..."
+    }
+  ]
+}

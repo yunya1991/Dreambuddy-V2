@@ -1,0 +1,32 @@
+{
+  "specId": "spec_task_20260704164757_6b2t",
+  "taskId": "task_20260704164757_6b2t",
+  "sessionId": "dashboard-session",
+  "createdAt": "2026-07-04T16:47:57.094Z",
+  "updatedAt": "2026-07-04T16:47:57.094Z",
+  "originalMessage": "分析比特币",
+  "finalIntent": "deep_analysis",
+  "finalEntities": {
+    "symbol": "BTC"
+  },
+  "confidence": 0.65,
+  "clarificationRounds": [],
+  "initialAssessment": {
+    "ambiguityScore": 80,
+    "ambiguityLevel": "ambiguous",
+    "reasons": [
+      "意图置信度中等（65%），存在解读空间",
+      "缺少时间框架，将使用默认值",
+      "消息过短（5字符），意图可能不完整",
+      "包含泛化关键词且缺少具体方向",
+      "存在 2 种合理解读：market_query、deep_analysis"
+    ]
+  },
+  "scope": {
+    "included": [],
+    "excluded": []
+  },
+  "successCriteria": [],
+  "constraints": [],
+  "status": "draft"
+}

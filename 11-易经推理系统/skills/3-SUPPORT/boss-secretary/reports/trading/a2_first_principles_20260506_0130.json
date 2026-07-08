@@ -1,0 +1,299 @@
+{
+  "first_principles_analysis": {
+    "dual_dimension_analysis": {
+      "fundamental": {
+        "capital_flow": {
+          "macro_liquidity": {
+            "fed_rate": "3.75%",
+            "dxy": "neutral_weak",
+            "signal": "neutral"
+          },
+          "etf_flow": {
+            "april_total": "$2.44B",
+            "today_estimate": "-$85.7M",
+            "signal": "positive_but_fading"
+          },
+          "oi_change": {
+            "status": "unknown",
+            "signal": "neutral"
+          },
+          "micro_liquidity": {
+            "24h_volume": "8.3M BTC",
+            "signal": "active"
+          }
+        },
+        "sentiment": {
+          "fear_greed": 50,
+          "fgi_change_4d": "+10 points",
+          "fgi_history": "12→33→40→50",
+          "funding_rate": "-0.0035%",
+          "long_short_ratio": "unknown"
+        },
+        "geopolitical": {
+          "key_events": [
+            "Fed rate hold, hawkish disagreements",
+            "US-China relations monitoring"
+          ],
+          "impact": "NEUTRAL"
+        },
+        "policy": {
+          "central_bank": "NEUTRAL",
+          "btc_etf": "positive"
+        },
+        "synthesis": {
+          "fundamental_direction": "NEUTRAL",
+          "fundamental_score": 55
+        }
+      },
+      "technical": {
+        "trend_indicators": {
+          "price": 81360,
+          "ma5": 81542.3,
+          "ma10": 81532.61,
+          "ma20": 81526.78,
+          "ema12": 81535.49,
+          "ema26": 81502.44,
+          "ema_alignment": "BEARISH",
+          "ma_trajectory": "DOWN"
+        },
+        "momentum": {
+          "rsi": 57.82,
+          "rsi_signal": "neutral_bullish"
+        },
+        "volatility": {
+          "24h_high": 81688,
+          "24h_low": 79706.5,
+          "24h_change_pct": "1.20%",
+          "atr_estimate": "~$1,000"
+        },
+        "support_resistance": {
+          "support_1": 80000,
+          "support_2": 79706.5,
+          "resistance_1": 81688,
+          "resistance_2": 81526.78,
+          "resistance_3": 82000
+        },
+        "synthesis": {
+          "technical_direction": "NEUTRAL",
+          "technical_score": 52
+        }
+      },
+      "cross_dimension": {
+        "alignment": "MIXED"
+      }
+    },
+    "macro_asset_analysis": {
+      "assets": [
+        {"symbol": "XAU", "price": 4561.8, "change_pct": 0.65, "signal": "bullish"},
+        {"symbol": "CL", "price": 101.73, "change_pct": -3.17, "signal": "bearish"},
+        {"symbol": "XCU", "price": 5.992, "change_pct": 1.86, "signal": "bullish"},
+        {"symbol": "TSLA", "price": 392.86, "change_pct": -0.31, "signal": "bearish"},
+        {"symbol": "COIN", "price": 195.8, "change_pct": -4.48, "signal": "strongly_bearish"}
+      ],
+      "resonance_signals": [
+        {
+          "type": "INFLATION_EXPECTATION",
+          "triggered": false,
+          "note": "Gold up but BTC not following"
+        },
+        {
+          "type": "RISK_OFF",
+          "triggered": "partial",
+          "note": "Gold up, BTC range-bound"
+        },
+        {
+          "type": "INDUSTRY_BETA_CONFIRM",
+          "triggered": false,
+          "note": "COIN -4.48% severe divergence"
+        },
+        {
+          "type": "CORRELATION_BREAK",
+          "triggered": true,
+          "note": "Gold up + BTC sideways > 4h"
+        }
+      ],
+      "macro_trend_score": -0.25,
+      "divergence_detected": true,
+      "divergence_details": "COIN -4.48% vs BTC +1.20% - sector rotation warning"
+    },
+    "brain_analysis": {
+      "left_brain": {
+        "deterministic_score": 20,
+        "direction": "NEUTRAL",
+        "confidence": 0.45,
+        "factors": {
+          "rsi_57": 15,
+          "below_ma20": -10,
+          "etf_244B": 25,
+          "funding_rate_neg": -10,
+          "fgi_recovery": 15,
+          "coin_drop": -15
+        }
+      },
+      "right_brain": {
+        "fuzzy_bias": "NEUTRAL",
+        "confidence_interval": {
+          "pessimistic": 79500,
+          "base": 81500,
+          "optimistic": 84000
+        },
+        "pattern_recognition": "range_bound_pattern"
+      },
+      "contradiction": {
+        "reconciled_direction": "UP",
+        "confidence": 0.45,
+        "action_advice": "PROBE_LONG",
+        "probe_conditions": [
+          "BTC突破$82K",
+          "ETF持续净流入",
+          "COIN反弹"
+        ]
+      },
+      "main_contradiction": {
+        "primary": "C1资金面矛盾",
+        "description": "ETF净流入$2.44B vs 资金费率接近零轴",
+        "dominant_side": "A",
+        "dominance_score": 0.6
+      },
+      "a0_contradiction_analysis": {
+        "primary_contradiction": {
+          "id": "CX_001",
+          "dimension": "C1",
+          "name": "资金面矛盾",
+          "description": "ETF强劲流入vs市场OI不增反减",
+          "scores": {
+            "force_balance": 2.1,
+            "time_urgency": 2,
+            "evidence_consistency": 0.65,
+            "market_weight": 0.25
+          },
+          "total_score": 4.85,
+          "dominant_side": "A",
+          "direction_implication": "UP",
+          "confidence": 0.65,
+          "transformation": {
+            "condition": "ETF连续3日流出",
+            "probability": "MODERATE",
+            "monitoring_point": "每日ETF流量数据"
+          }
+        },
+        "secondary_contradictions": [
+          {
+            "id": "CX_002",
+            "dimension": "C2",
+            "name": "情绪面矛盾",
+            "description": "FGI快速反弹vs COIN大跌"
+          },
+          {
+            "id": "CX_003",
+            "dimension": "C3",
+            "name": "技术面矛盾",
+            "description": "均线空头排列vs RSI中性偏多"
+          }
+        ],
+        "action_pressure_from_a1": {
+          "consecutive_skip_days": 0,
+          "pressure_level": "LOW"
+        }
+      }
+    },
+    "resistance_analysis": {
+      "resistance_score": 25,
+      "resistance_direction": "UP",
+      "components": {
+        "cost_resistance": 20,
+        "liquidity_resistance": 30,
+        "crowding_resistance": 25,
+        "volatility_resistance": 25
+      },
+      "contrarian_compensation": {
+        "triggered": false,
+        "adjustment": 0
+      },
+      "path_threshold": {
+        "up_threshold": 40,
+        "down_threshold": 60,
+        "current_score": 25,
+        "signal": "UP"
+      }
+    },
+    "trend_analysis": {
+      "ma_trajectory_method": {
+        "trajectory_value": -0.012,
+        "trajectory_normalized": "-0.012σ",
+        "trend_strength": "WEAK_CONSOLIDATION",
+        "components": {
+          "short_term_slope": -0.02,
+          "mid_term_slope": -0.01,
+          "long_term_slope": 0.00
+        }
+      },
+      "trend_direction": "NEUTRAL"
+    },
+    "synthesis": {
+      "least_resistance_path": "UP",
+      "least_resistance_score": 25,
+      "action_recommendation": "PROBE_LONG",
+      "position_sizing": "0.3-0.5x",
+      "alternative_scenarios": [
+        {
+          "scenario": "optimistic",
+          "probability": 0.25,
+          "triggers": ["ETF持续流入", "COIN反弹", "BTC突破$82K"],
+          "target": 84000
+        },
+        {
+          "scenario": "base",
+          "probability": 0.50,
+          "triggers": ["维持$80K-$82K震荡"],
+          "target": 81500
+        },
+        {
+          "scenario": "pessimistic",
+          "probability": 0.25,
+          "triggers": ["COIN继续拖累", "ETF流出", "$80K失守"],
+          "target": 79500
+        }
+      ]
+    }
+  },
+  "market_regime_classification": {
+    "regime": "RANGE_BOUND",
+    "confidence": 0.55,
+    "support_zone": 80000,
+    "resistance_zone": 82000,
+    "signals": [
+      "MA5/10/20粘合，价格围绕均线波动",
+      "RSI中性，无明显超买超卖",
+      "COIN大幅波动显示板块分化"
+    ]
+  },
+  "monitoring_points": [
+    {
+      "contradiction_id": "CX_001",
+      "watch": "ETF连续3日流出",
+      "action": "减仓50%"
+    },
+    {
+      "contradiction_id": "CX_002",
+      "watch": "COIN跌破$190",
+      "action": "全平观望"
+    },
+    {
+      "contradiction_id": "CX_003",
+      "watch": "BTC跌破$80K",
+      "action": "止损"
+    }
+  ],
+  "key_uncertainties": [
+    "COIN与BTC背离: COIN单日-4.48%是否预示板块轮动结束？",
+    "ETF持续性: 4月$2.44B流入能否持续？",
+    "FGI快速反弹: 从12到50，情绪修复是否过快？"
+  ],
+  "metadata": {
+    "report_version": "2.6",
+    "timestamp": "2026-05-06T01:30:29+08:00",
+    "a0_integration": "PASSED",
+    "advisor_review": "PENDING"
+  }
+}

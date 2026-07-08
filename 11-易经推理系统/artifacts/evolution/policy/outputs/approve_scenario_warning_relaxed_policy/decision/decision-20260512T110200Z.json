@@ -1,0 +1,72 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "trace_id": "trace-p0-pos-001",
+  "decision": "approve",
+  "reason_codes": [],
+  "policy_version": "p1.relaxed-scenario.v1",
+  "policy_source": "artifacts/evolution/policy/templates/p1.relaxed-scenario.v1.json",
+  "required_stages": [
+    "audit",
+    "sandbox",
+    "stress",
+    "scenario",
+    "backtest"
+  ],
+  "stage_policy_snapshot": {
+    "audit": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    },
+    "sandbox": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    },
+    "stress": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    },
+    "scenario": {
+      "require_pass": true,
+      "allow_warnings": true,
+      "max_violation_count": 1,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    },
+    "backtest": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": [
+        "high",
+        "critical"
+      ]
+    }
+  },
+  "stage_results": {
+    "audit": true,
+    "sandbox": true,
+    "stress": true,
+    "scenario": true,
+    "backtest": true
+  },
+  "rollback_pointer_id": "rp-cand-20260511-pos-001-v0.1-to-v0.1.2",
+  "timestamp": "2026-05-12T11:02:00Z",
+  "schema_version": "evolution-p0-decision-record-v0.1"
+}

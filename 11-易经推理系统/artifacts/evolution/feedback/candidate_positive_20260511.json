@@ -1,0 +1,20 @@
+{
+  "candidate_id": "cand-20260511-pos-001",
+  "trace_id": "trace-p0-pos-001",
+  "constraint_version_base": "v0.1",
+  "source_type": "hybrid",
+  "source_refs": [
+    "artifacts/memory/episode/ep_p0_pos_001.json",
+    "artifacts/trading/a8_feedback_p0_pos_001.json"
+  ],
+  "hypothesis": "tighten regime filter and keep evidence strictness to reduce false-positive entries",
+  "expected_effect": "lower tail-loss frequency while maintaining acceptable trade opportunity",
+  "risk_assessment": {
+    "risk_level": "medium",
+    "main_risk": "possible under-trading during high-momentum windows"
+  },
+  "evidence_refs": [
+    "artifacts/evolution/feedback/evidence_pack_pos_001.json"
+  ],
+  "schema_version": "evolution-p0-candidate-v0.1"
+}

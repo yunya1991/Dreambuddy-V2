@@ -1,0 +1,176 @@
+# 大师研讨SKILL - 大师配置
+
+masters:
+  soros:
+    name: "George Soros"
+    camp: "bullish"
+    core_style: "反身性理论、宏观择时"
+    strong_regimes:
+      - HIGH_VOL
+      - BEAR
+      - CRISIS_RECOVERY
+    weak_regimes:
+      - STABLE_BULL
+      - DEFLATION
+    weight: 1.0
+    tags:
+      - macro
+      - contrarian
+
+  druckenmiller:
+    name: "Stanley Druckenmiller"
+    camp: "bullish"
+    core_style: "趋势追踪、杠杆大师"
+    strong_regimes:
+      - TREND_BULL
+      - HIGH_VOL
+      - BULL
+    weak_regimes:
+      - BEAR
+      - RANGE
+    weight: 1.0
+    tags:
+      - trend_follower
+      - aggressive
+
+  buffett:
+    name: "Warren Buffett"
+    camp: "bullish"
+    core_style: "价值投资、长期持有"
+    strong_regimes:
+      - NEUTRAL
+      - BULL_REGIME
+      - STABLE_BULL
+    weak_regimes:
+      - HIGH_VOL
+      - CRISIS
+    weight: 1.0
+    tags:
+      - value_investor
+      - long_term
+
+  oneil:
+    name: "William O'Neil"
+    camp: "bullish"
+    core_style: "CANSLIM、成长股投资"
+    strong_regimes:
+      - BULL_REGIME
+      - TREND_BULL
+    weak_regimes:
+      - BEAR
+      - HIGH_VOL
+    weight: 1.0
+    tags:
+      - growth_investor
+      - technical
+
+  ptj:
+    name: "Paul Tudor Jones"
+    camp: "bearish"
+    core_style: "宏观择时、危机Alpha"
+    strong_regimes:
+      - HIGH_VOL
+      - BEAR
+      - CRISIS
+    weak_regimes:
+      - STABLE_BULL
+      - BULL_REGIME
+    weight: 1.0
+    tags:
+      - macro
+      - risk_manager
+
+  dalio:
+    name: "Ray Dalio"
+    camp: "bearish"
+    core_style: "宏观对冲、风险平价"
+    strong_regimes:
+      - CRISIS
+      - DEFLATION
+      - HIGH_VOL
+    weak_regimes:
+      - INFLATION
+      - BULL_REGIME
+    weight: 1.0
+    tags:
+      - macro_hedge
+      - systematic
+
+  livermore:
+    name: "Jesse Livermore"
+    camp: "neutral"
+    core_style: "趋势识别、关键点交易"
+    strong_regimes:
+      - TREND
+      - RANGE
+      - BREAKOUT
+    weak_regimes:
+      - CRISIS
+      - SIDEWAYS
+    weight: 1.0
+    tags:
+      - trend_trader
+      - key_levels
+
+  tharp:
+    name: "Van Tharp"
+    camp: "neutral"
+    core_style: "交易系统、仓位管理"
+    strong_regimes:
+      - ALL
+    weak_regimes: []
+    weight: 1.0
+    tags:
+      - system_trader
+      - risk_manager
+
+  talmans:
+    name: "Walter Talmans"
+    camp: "neutral"
+    core_style: "技术分析、趋势跟踪"
+    strong_regimes:
+      - TREND
+      - BREAKOUT
+    weak_regimes:
+      - RANGE
+      - SIDEWAYS
+    weight: 1.0
+    tags:
+      - technical
+      - trend_follower
+
+  michele:
+    name: "Michele"
+    camp: "neutral"
+    core_style: "量化系统、统计套利"
+    strong_regimes:
+      - RANGE
+      - SIDEWAYS
+      - MEAN_REVERSION
+    weak_regimes:
+      - TREND
+      - CRISIS
+    weight: 1.0
+    tags:
+      - quantitative
+      - statistical
+
+# 阵营配置
+camps:
+  bullish:
+    display_name: "多方阵营"
+    emoji: "🟢"
+    default_thesis: "市场将延续上涨趋势"
+    color: "#22c55e"
+
+  neutral:
+    display_name: "中立阵营"
+    emoji: "🟡"
+    default_thesis: "市场方向不明，等待信号确认"
+    color: "#eab308"
+
+  bearish:
+    display_name: "空方阵营"
+    emoji: "🔴"
+    default_thesis: "市场面临回调或下跌风险"
+    color: "#ef4444"

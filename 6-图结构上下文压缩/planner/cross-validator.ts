@@ -52,7 +52,7 @@ export class CrossValidator {
   execute(
     config: CrossValidationConfig,
     stepResults: Map<string, StepExecutionResult>,
-    chainWeights?: { s_chain: number; c_chain: number; f_chain: number }
+    chainWeights?: { a_chain: number; c_chain: number; f_chain: number }
   ): CrossValidationNode {
     // 1. 收集参与的链的信号
     const signals = this.collectSignals(config, stepResults);
@@ -202,7 +202,7 @@ export class CrossValidator {
   private makeDecision(
     votingResult: ReturnType<VotingCalculator['calculate']>,
     config: CrossValidationConfig,
-    chainWeights?: { s_chain: number; c_chain: number; f_chain: number }
+    chainWeights?: { a_chain: number; c_chain: number; f_chain: number }
   ): {
     recommendedAction: 'proceed' | 'deep_dive' | 'pause' | 'override';
     reason: string;

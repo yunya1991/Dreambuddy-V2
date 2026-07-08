@@ -2156,11 +2156,28 @@ P0权限层级:
 | **部门名称** | 情报监控部 (A6) |
 | **目标邮箱** | 交易邮箱 (trading) — 统一路径 |
 | **邮箱路径** | `~/.workbuddy/skills/boss-secretary/reports/trading/` |
+| **A系列研报路径** | `experiments/ab-trading/A系列研报/A6研报/` ⭐新增 |
 | **投递方式** | 直接写入Markdown文件到指定目录 |
 | **文件名格式** | `intelligence_briefing_{YYYYMMDD}_{HHMM}.md` |
 | **frontmatter必须（完整7字段）** | 见下方YAML代码块 |
 | **双通道投递** | 秘书邮箱 + 前端产物中心（`artifact-alignment-manager` SKILL §一） |
+| **三通道投递** | 秘书邮箱 + 前端产物中心 + A系列研报目录 ⭐新增 |
 
+> **⭐ 新增 (2026-07-05)**: A6报告必须同时投递到 `experiments/ab-trading/A系列研报/A6研报/`，供Agent A和Agent B交易前读取。
+
+### 投递工作流
+
+```
+Phase 1-4: 监控执行
+    ↓
+Phase 5: 报告生成
+    ↓
+投递: 情报简报 → 交易邮箱 (trading/)  ← 统一路径
+    ↓
+投递: 情报简报 → A系列研报/A6研报/  ← 新增 ⭐
+    ↓
+流程完成
+```
 
 > **前端产物center文件frontmatter完整模板（双通道均需包含）**：
 > ```yaml
@@ -2182,11 +2199,42 @@ P0权限层级:
 - [ ] 文件名符合 `intelligence_briefing_{YYYYMMDD}_{HHMM}.md`
 - [ ] 包含完整 YAML frontmatter
 - [ ] 投递后通过 `ls reports/trading/intelligence_briefing_*` 验证
+- [ ] ⭐ 文件写入 `experiments/ab-trading/A系列研报/A6研报/` 目录
+- [ ] ⭐ 投递后通过 `ls experiments/ab-trading/A系列研报/A6研报/` 验证文件存在
+
+### 投递后验证（强制调用AD SKILL）
+
+完成秘书邮箱投递后，必须调用 `artifact-alignment-manager` SKILL 执行双通道验证：
+
+1. **调用方式**: 触发词「产物投递验证」或加载 `artifact-alignment-manager` SKILL
+2. **验证内容**:
+   - ✅ 秘书邮箱文件存在 + frontmatter完整（含 tags, by_a_phase）
+   - ✅ 前端产物中心文件存在（`~/.workbuddy/artifacts/trading/`）
+   - ✅ `index.json` 已更新（含 `chain_phase` + `tags`）
+   - ✅ 前端详情页返回 200
+   - ✅ ⭐ A系列研报目录文件存在 (`experiments/ab-trading/A系列研报/A6研报/`)
+3. **不通过**: 按 AD SKILL 第四章步骤修复，重新验证
+4. **通过**: 投递完成
+
+> ⚠️ 没有 AD SKILL 验证通过 = 投递未完成
 
 ### 代码入口
 
 - **投递方式**: 直接写入Markdown文件到 `~/.workbuddy/skills/boss-secretary/reports/trading/`
+- **A系列研报投递**: 直接写入Markdown文件到 `experiments/ab-trading/A系列研报/A6研报/` ⭐新增
 - **查看邮箱**: `ls ~/.workbuddy/skills/boss-secretary/reports/`
+- **查看A系列研报**: `ls experiments/ab-trading/A系列研报/A6研报/`
+
+**投递代码示例** (Phase 5 报告生成后执行):
+```python
+# 投递到交易邮箱
+trading_path = os.path.expanduser("~/.workbuddy/skills/boss-secretary/reports/trading/")
+write_report(trading_path, filename, content)
+
+# ⭐ 新增: 同时投递到A系列研报目录
+ab_report_path = os.path.join(WORKSPACE, "experiments/ab-trading/A系列研报/A6研报/")
+write_report(ab_report_path, filename, content)
+```
 
 ---
 

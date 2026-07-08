@@ -1,0 +1,87 @@
+{
+  "report_id": "a1_regime_20260506",
+  "timestamp": "2026-05-06T01:00:00+08:00",
+  "regime": "TREND_STRONG_UP",
+  "confidence": 0.80,
+  "previous_regime": "ACCUMULATION_CLEAR",
+  "previous_confidence": 0.72,
+  "regime_change": true,
+  "regime_change_reason": "BTC放量突破$80K关键点，连续3日上涨，ETF持续大规模流入，20日新高确认",
+  "price": {
+    "BTC": 81236.7,
+    "ETH": 2364.66,
+    "SOL": 85.26,
+    "BTC_24h_change_pct": 1.52,
+    "ETH_24h_change_pct": 0.44,
+    "SOL_24h_change_pct": 0.94
+  },
+  "key_levels": {
+    "resistance": [81700, 82228, 84766],
+    "support": [80000, 78400, 76500]
+  },
+  "fear_greed_index": {
+    "current": 50,
+    "classification": "Neutral",
+    "yesterday": 47,
+    "three_day_ago": 40,
+    "change_3d": 10
+  },
+  "funding_rate": {
+    "BTC": -0.000033506,
+    "ETH": 0.000025788,
+    "signal": "FLIP_NEGATIVE",
+    "note": "BTC费率从正转负，L_FUNDING_FLIP触发"
+  },
+  "etf_flow": {
+    "april_monthly": "2.44Bn",
+    "may_1st_daily": "629.8M",
+    "total_historical": "53B",
+    "trend": "STRONG_INFLOW"
+  },
+  "on_chain": {
+    "miner_sales_q1": "32000+ BTC",
+    "bitdeer": "sold_all",
+    "mara": "10000+ BTC",
+    "bhutan": "reduced_70pct",
+    "microstrategy": "halted_preferred_sales"
+  },
+  "macro": {
+    "fed_rate": "3.50%-3.75%",
+    "fomc_vote": "8-4",
+    "cpi_yoy": "3.3%",
+    "core_pce_yoy": "3.2%",
+    "june_cut_prob": "28%",
+    "wti_oil": 103.63,
+    "iran_war": "ongoing"
+  },
+  "position": {
+    "side": "long",
+    "size": 0.1,
+    "avgPx": 80500,
+    "upl": 0.745,
+    "upl_pct": 0.92,
+    "leverage": 2,
+    "upl_evaporation_pct": 53.8
+  },
+  "si_index": 10.1,
+  "si_grade": "MODERATE_BULL",
+  "position_advice": "HOLD 0.5-0.7x, current 0.25x below lower bound",
+  "a0_contradiction": {
+    "primary": "ETF institutional demand vs miner selling pressure",
+    "dominant_side": "institutional_demand",
+    "evolution": "short_term_bullish_midterm_depends_on_etf_sustainability"
+  },
+  "scenario_probability": {
+    "breakout_to_85k": 0.45,
+    "range_80k_82k": 0.35,
+    "pullback_to_78k": 0.15,
+    "crash_below_10pct": 0.05
+  },
+  "risk_flags": [
+    "FUNDING_RATE_FLIP_NEGATIVE",
+    "UPL_EVAPORATION_53PCT",
+    "MINER_SELLING_PRESSURE",
+    "MACRO_IRAN_WAR_UNCERTAINTY"
+  ],
+  "next_action": "HOLD - maintain position, monitor $81,700 resistance and funding rate trend"
+}

@@ -1,0 +1,16 @@
+{
+  "period": "week",
+  "window_start": "2026-05-04T17:50:43.087912Z",
+  "window_end": "2026-05-11T17:50:43.087912Z",
+  "summary": {
+    "total_decisions": 0,
+    "approve_count": 0,
+    "reject_count": 0,
+    "approval_reject_count": 0,
+    "rollback_execution_count": 1,
+    "rollback_applied_count": 0,
+    "avg_rto_seconds": 0
+  },
+  "top_reason_codes": [],
+  "schema_version": "evolution-p2-governance-report-v0.1"
+}

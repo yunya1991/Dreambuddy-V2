@@ -1,118 +1,85 @@
 import { create } from 'zustand';
 
-export type ClassicPhase = 'C0_DIRECT_ANSWER' | 'C1_MACRO_SCAN' | 'C2_UNIVERSE_SCAN' | 'C3_GATE_CHECK' | 'C4_ARENA_REVIEW' | 'C5_STRATEGY_SELECT' | 'C6_SIGNAL_REVIEW' | 'C7_EXIT_MONITOR' | 'C8_TRACKING_AUDIT';
-
-export type PhaseStatus = 'idle' | 'running' | 'done' | 'failed' | 'skipped';
-
-export interface PhaseState {
-  status: PhaseStatus;
-  startedAt?: string;
-  completedAt?: string;
-  result?: string;
-  error?: string;
-}
-
+export type ClassicPhase = 'C0' | 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'C6' | 'C7' | 'C8';
 export type GovernanceStage = 'draft' | 'gate' | 'approval' | 'apply' | 'audit';
 
-export interface GovernanceProposal {
-  id: string;
-  title: string;
-  description: string;
-  stage: GovernanceStage;
-  votes: { approved: boolean; voter: string; reason?: string }[];
-  createdAt: string;
-  updatedAt: string;
+export interface PhaseState {
+  phase: ClassicPhase;
+  name: string;
+  status: 'idle' | 'running' | 'done' | 'failed' | 'skipped';
+  output?: string;
+  startedAt?: number;
+  completedAt?: number;
 }
 
-export interface ClassicIndicator {
-  id: string;
+export interface GovernanceState {
+  stage: GovernanceStage;
+  status: 'pending' | 'active' | 'approved' | 'rejected';
+  reviewer?: string;
+  comment?: string;
+  timestamp?: number;
+}
+
+export interface IndicatorConfig {
   name: string;
-  category: string;
-  parameters: Record<string, number | string | boolean>;
-  isEnabled: boolean;
+  enabled: boolean;
+  params: Record<string, number>;
 }
 
 interface ClassicState {
-  // C0-C8 阶段
-  phases: Record<ClassicPhase, PhaseState>;
-  activePhase: ClassicPhase | null;
-  // 治理
-  governance: {
-    proposals: GovernanceProposal[];
-    activeProposalId: string | null;
-    currentStage: GovernanceStage;
-  };
-  // 配置
-  config: {
-    knowledgeSource: number;
-    indicatorSet: ClassicIndicator[];
-    timeframe: string;
-  };
-  isLoading: boolean;
+  activePhase: ClassicPhase;
+  phases: PhaseState[];
+  governance: GovernanceState[];
+  indicators: IndicatorConfig[];
+  timeframe: string;
 
-  setPhaseStatus: (phase: ClassicPhase, status: PhaseStatus) => void;
+  setActivePhase: (phase: ClassicPhase) => void;
   updatePhase: (phase: ClassicPhase, update: Partial<PhaseState>) => void;
-  setActivePhase: (phase: ClassicPhase | null) => void;
-  addProposal: (proposal: GovernanceProposal) => void;
-  updateProposalStage: (id: string, stage: GovernanceStage) => void;
-  setGovernanceStage: (stage: GovernanceStage) => void;
-  setIndicators: (indicators: ClassicIndicator[]) => void;
-  toggleIndicator: (id: string) => void;
+  setGovernance: (stages: GovernanceState[]) => void;
+  updateGovernance: (stage: GovernanceStage, update: Partial<GovernanceState>) => void;
+  toggleIndicator: (name: string) => void;
   setTimeframe: (tf: string) => void;
-  setLoading: (loading: boolean) => void;
-  resetPhases: () => void;
+  runPhase: (phase: ClassicPhase) => void;
 }
 
-const initialPhases: Record<ClassicPhase, PhaseState> = {
-  C0_DIRECT_ANSWER: { status: 'idle' },
-  C1_MACRO_SCAN: { status: 'idle' },
-  C2_UNIVERSE_SCAN: { status: 'idle' },
-  C3_GATE_CHECK: { status: 'idle' },
-  C4_ARENA_REVIEW: { status: 'idle' },
-  C5_STRATEGY_SELECT: { status: 'idle' },
-  C6_SIGNAL_REVIEW: { status: 'idle' },
-  C7_EXIT_MONITOR: { status: 'idle' },
-  C8_TRACKING_AUDIT: { status: 'idle' },
-};
+const PHASES: PhaseState[] = [
+  { phase: 'C0', name: '环境扫描', status: 'idle' },
+  { phase: 'C1', name: '品种筛选', status: 'idle' },
+  { phase: 'C2', name: '信号识别', status: 'idle' },
+  { phase: 'C3', name: '回测验证', status: 'idle' },
+  { phase: 'C4', name: '风险评估', status: 'idle' },
+  { phase: 'C5', name: '参数优化', status: 'idle' },
+  { phase: 'C6', name: '计划生成', status: 'idle' },
+  { phase: 'C7', name: '执行监控', status: 'idle' },
+  { phase: 'C8', name: '绩效归因', status: 'idle' },
+];
 
 export const useClassicStore = create<ClassicState>((set) => ({
-  phases: { ...initialPhases },
-  activePhase: null,
-  governance: { proposals: [], activeProposalId: null, currentStage: 'draft' },
-  config: { knowledgeSource: 10, indicatorSet: [], timeframe: '1d' },
-  isLoading: false,
+  activePhase: 'C0',
+  phases: [...PHASES],
+  governance: [],
+  indicators: [
+    { name: 'RSI', enabled: true, params: { period: 14 } },
+    { name: 'MACD', enabled: true, params: { fast: 12, slow: 26, signal: 9 } },
+    { name: 'BB', enabled: false, params: { period: 20, stdDev: 2 } },
+    { name: 'EMA', enabled: true, params: { period: 21 } },
+  ],
+  timeframe: '1D',
 
-  setPhaseStatus: (phase, status) => set((s) => ({
-    phases: { ...s.phases, [phase]: { ...s.phases[phase], status } },
-  })),
-  updatePhase: (phase, update) => set((s) => ({
-    phases: { ...s.phases, [phase]: { ...s.phases[phase], ...update } },
-  })),
   setActivePhase: (phase) => set({ activePhase: phase }),
-  addProposal: (proposal) => set((s) => ({
-    governance: { ...s.governance, proposals: [proposal, ...s.governance.proposals] },
+  updatePhase: (phase, update) => set(s => ({
+    phases: s.phases.map(p => p.phase === phase ? { ...p, ...update } : p),
   })),
-  updateProposalStage: (id, stage) => set((s) => ({
-    governance: {
-      ...s.governance,
-      proposals: s.governance.proposals.map(p => p.id === id ? { ...p, stage, updatedAt: new Date().toISOString() } : p),
-    },
+  setGovernance: (stages) => set({ governance: stages }),
+  updateGovernance: (stage, update) => set(s => ({
+    governance: s.governance.map(g => g.stage === stage ? { ...g, ...update } : g),
   })),
-  setGovernanceStage: (stage) => set((s) => ({
-    governance: { ...s.governance, currentStage: stage },
+  toggleIndicator: (name) => set(s => ({
+    indicators: s.indicators.map(ind => ind.name === name ? { ...ind, enabled: !ind.enabled } : ind),
   })),
-  setIndicators: (indicators) => set((s) => ({
-    config: { ...s.config, indicatorSet: indicators },
+  setTimeframe: (tf) => set({ timeframe: tf }),
+  runPhase: (phase) => set(s => ({
+    activePhase: phase,
+    phases: s.phases.map(p => p.phase === phase ? { ...p, status: 'running', startedAt: Date.now() } : p),
   })),
-  toggleIndicator: (id) => set((s) => ({
-    config: {
-      ...s.config,
-      indicatorSet: s.config.indicatorSet.map(ind =>
-        ind.id === id ? { ...ind, isEnabled: !ind.isEnabled } : ind
-      ),
-    },
-  })),
-  setTimeframe: (tf) => set((s) => ({ config: { ...s.config, timeframe: tf } })),
-  setLoading: (loading) => set({ isLoading: loading }),
-  resetPhases: () => set({ phases: { ...initialPhases }, activePhase: null }),
 }));

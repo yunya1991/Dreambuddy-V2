@@ -1,0 +1,261 @@
+{
+  "meta": {
+    "version": "2.6",
+    "timestamp": "2026-07-06T00:55:00+08:00",
+    "report_ref": "a1_research_20260706_0055.md",
+    "prev_regime_ref": "a1_regime_20260704.json"
+  },
+  "market_regime": {
+    "regime": "BEAR_RECOVERY",
+    "confidence": 0.74,
+    "technical_regime": "RANGE_BOUND",
+    "fundamental_regime": "BEAR_RECOVERY",
+    "composite_score": 45,
+    "triple_screen": {
+      "S1_week": {
+        "direction": "BEARISH",
+        "score": -2,
+        "detail": "4周2阳2阴，Price $62,621 < 周MA10 ~$64,000"
+      },
+      "S2_day": {
+        "direction": "BULLISH",
+        "score": 1,
+        "detail": "MA5>MA10金叉，价格>EMA20/EMA60，RSI 42.4回升"
+      },
+      "S3_hour": {
+        "direction": "NEUTRAL",
+        "score": 0,
+        "detail": "短期横盘$62,400-$63,450区间整理"
+      }
+    },
+    "regime_change_signals": [
+      "ETF 7/2 $221M流入结束10天流出",
+      "FGI 23→55大幅改善(需验证)",
+      "MA5>MA10日线金叉确认",
+      "价格站上EMA20/EMA60",
+      "BTC+Gold共振(通胀对冲逻辑)"
+    ],
+    "upgrade_triggers": {
+      "to_NEUTRAL_TRANSITION": [
+        "ETF连续3天正流入",
+        "FGI维持>40连续3天",
+        "BTC周线收阳且突破$63,641"
+      ],
+      "to_BEAR_MARKET": [
+        "BTC跌破$57,750",
+        "ETF恢复连续流出",
+        "CPI>3.6%确认stagflation"
+      ]
+    }
+  },
+  "si_index": {
+    "score": 34,
+    "range": "MODERATE_BULL",
+    "confidence": 0.65,
+    "notes": "FGI使用折中值39(CFGI 55 vs MacroMicro 23)，若CFGI 55确认则SI=+42",
+    "positive_components": {
+      "funding_rate_sustained": {
+        "score": 15,
+        "since": "2026-06-13",
+        "current": 0.0000353,
+        "status": "positive_low"
+      },
+      "etf_inflow_resumed": {
+        "score": 10,
+        "date": "2026-07-02",
+        "amount": 221720000,
+        "days_of_inflow": 1,
+        "need_confirmation": true
+      },
+      "fgi_improvement": {
+        "score": 5,
+        "from": 23,
+        "to_estimated": 39,
+        "cfgi_reading": 55,
+        "macromicro_reading": 23,
+        "discrepancy_note": "32点差异，使用折中值"
+      },
+      "whale_accumulation": {
+        "score": 12,
+        "amount_btc": 270000,
+        "amount_usd": 16700000000,
+        "avg_price": 59000,
+        "period": "2周"
+      }
+    },
+    "negative_components": {
+      "weekly_trend_weak": {
+        "score": -5,
+        "detail": "周线4周2阳2阴，趋势未确认转多"
+      },
+      "gold_safehaven_competition": {
+        "score": -3,
+        "gold_price": 4181.4,
+        "detail": "Gold ATH附近吸走避险资金"
+      }
+    },
+    "position_mapping": "0.5-0.7x 标准仓位"
+  },
+  "contradiction_list": [
+    {
+      "id": "CX_021",
+      "dimension": "C4",
+      "name": "宏观矛盾 — stagflation vs BTC对冲需求",
+      "side_a": "通胀3.6%+GDP放缓→BTC通胀对冲吸引力",
+      "side_b": "FOMC higher-for-longer压制风险资产",
+      "strength_a": "HIGH",
+      "strength_b": "HIGH",
+      "dominance": "A",
+      "is_primary": true,
+      "transformation_condition": "7/14 CPI",
+      "c4_c5_note": "C4=存在(短期通胀对冲需求vs中期利率压制时序矛盾); C5=不显著"
+    },
+    {
+      "id": "CX_022",
+      "dimension": "C6",
+      "name": "时序矛盾 — 短期改善 vs 长期承压",
+      "strength_a": "MODERATE",
+      "strength_b": "MODERATE",
+      "dominance": "EQUAL",
+      "is_primary": false,
+      "transformation_condition": "本周收盘>$63,450",
+      "c4_c5_note": "C4=不显著(C6本身是时序矛盾); C5=不显著"
+    },
+    {
+      "id": "CX_023",
+      "dimension": "C1",
+      "name": "资金面矛盾 — 鲸鱼积累 vs ETF流出",
+      "strength_a": "HIGH",
+      "strength_b": "MODERATE",
+      "dominance": "A",
+      "is_primary": false,
+      "transformation_condition": "ETF连续3天正流入",
+      "c4_c5_note": "C4=不显著(同时间框架); C5=不显著"
+    },
+    {
+      "id": "CX_024",
+      "dimension": "C2",
+      "name": "情绪面矛盾 — FGI改善速度 vs 可持续性",
+      "strength_a": "MODERATE",
+      "strength_b": "MODERATE",
+      "dominance": "EQUAL",
+      "is_primary": false,
+      "transformation_condition": "FGI连续3天>45或<35",
+      "c4_c5_note": "C4=不显著; C5=不显著"
+    },
+    {
+      "id": "CX_027",
+      "dimension": "C8",
+      "name": "宏观资产矛盾 — Gold避险 vs BTC风险偏好",
+      "strength_a": "HIGH",
+      "strength_b": "MODERATE",
+      "dominance": "A",
+      "is_primary": false,
+      "transformation_condition": "BTC>$63,641且Gold回落",
+      "c4_c5_note": "C4=不显著(同时间框架); C5=不显著"
+    }
+  ],
+  "contradiction_intensity": "MODERATE-HIGH",
+  "total_contradictions": 5,
+  "primary_contradiction": {
+    "id": "CX_021",
+    "description": "Stagflation环境下BTC作为通胀对冲 vs 利率压制风险资产",
+    "dominant_side": "A",
+    "direction_implication": "UP",
+    "confidence": 0.62,
+    "monitoring": "7/14 CPI + 7/28-29 FOMC"
+  },
+  "signal_sufficiency": {
+    "level": "MODERATE",
+    "directional_signals": [
+      "鲸鱼270K BTC积累@$59K",
+      "ETF $221M回流(7/2)",
+      "日线MA5>MA10金叉",
+      "FGI从23改善至中性区间",
+      "资金费率持续正且低位"
+    ],
+    "counter_signals": [
+      "周线趋势未确认转多",
+      "Gold $4,181 ATH吸走避险资金",
+      "FOMC stagflation risk",
+      "ETF仅1天流入需确认"
+    ],
+    "net_direction": "UP",
+    "sufficiency_rationale": "正向信号数量(5)>反向(4)，正向信号质量(HIGH×2: 鲸鱼+费率)>反向(MODERATE×4)。方向性足够但需更多确认点(ETF连续流入+CPI数据)"
+  },
+  "action_pressure": {
+    "consecutive_skip_days": 32,
+    "pressure_level": "HIGH",
+    "probe_recommendation": "连续SKIP已达32天，远超L_EXISTING_001阈值(7天)。强制A3输出PROBE。建议5-10%仓位UP方向侦察，止损$60,835(MA10)日线收盘。",
+    "probe_conditions": [
+      "BTC维持>$61,392(Fib 0.618)",
+      "ETF 7/3-7/5不恢复大幅流出",
+      "FGI维持>30"
+    ],
+    "constraint_on_a3": "A3禁止输出WAIT，必须PROBE"
+  },
+  "dream_insights": {
+    "incorporated": false,
+    "status": "MISSING",
+    "latest_file": "dream_brainstorm_daily_20260419.md",
+    "age_days": 77,
+    "impact": "C7隐性矛盾分析缺少做梦洞察支持，调研完整度降级",
+    "recommendation": "重新触发dream-oneirology获取最新潜意识分析"
+  },
+  "macro_assets": {
+    "gold": {"price": 4181.4, "trend": "UP_ATH", "signal": "避险+通胀对冲共振"},
+    "oil": {"price": 68.96, "trend": "SIDEWAYS", "signal": "通胀预期受控"},
+    "copper": {"price": 6.2515, "trend": "SIDEWAYS", "signal": "工业需求谨慎"},
+    "coin": {"price": 172.47, "trend": "UP", "signal": "加密板块信心改善"},
+    "tsla": {"price": 400.04, "trend": "SIDEWAYS", "signal": "风险偏好中性"},
+    "resonance": "INFLATION_EXPECTATION (Gold↑+BTC↑)",
+    "macro_trend_score": 3
+  },
+  "key_levels": {
+    "current": 62621.3,
+    "support": [62040, 61392, 60835, 59790, 57750],
+    "resistance": [63641, 65033, 67283],
+    "fib_0.5_pivot": 62516.5,
+    "whale_defense": 59000
+  },
+  "etf_flow": {
+    "latest": {"date": "2026-07-02", "net_flow_m": 221.72, "direction": "INFLOW"},
+    "prior_streak": {"days": 10, "total_outflow_b": 2.7},
+    "june_total_outflow_b": 4.06,
+    "total_aum_b": 74.37,
+    "confirmation_needed": "3-5 consecutive positive days"
+  },
+  "whale_data": {
+    "accumulation_btc": 270000,
+    "accumulation_usd_b": 16.7,
+    "avg_price": 59000,
+    "lth_supply_pct": 78,
+    "exchange_reserve_btc": 2210000,
+    "sopr": "below_1.0",
+    "exchange_net_flow_30d": -48500
+  },
+  "fomc_june_2026": {
+    "pce_2026": 3.6,
+    "core_pce_2026": 3.3,
+    "gdp_2026": 2.2,
+    "unemployment_2026": 4.3,
+    "fed_funds_2026": 3.8,
+    "fed_funds_2027": 3.6,
+    "fed_funds_long_run": 3.1,
+    "inflation_risk_upside_votes": "17/18",
+    "stagflation_signal": true
+  },
+  "fgi": {
+    "cfgi": 55,
+    "cfgi_classification": "Neutral",
+    "macromicro": 23,
+    "macromicro_classification": "Extreme Fear",
+    "discrepancy": 32,
+    "used_estimate": 39,
+    "note": "CFGI可能有方法论差异或实时性优势，取折中值"
+  },
+  "next_key_events": [
+    {"date": "2026-07-14", "event": "CPI June", "importance": "CRITICAL"},
+    {"date": "2026-07-28-29", "event": "FOMC July", "importance": "CRITICAL"}
+  ]
+}

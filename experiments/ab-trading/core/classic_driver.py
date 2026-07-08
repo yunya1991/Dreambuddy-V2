@@ -61,7 +61,12 @@ DEFAULT_STRATEGIES = [
 
 # 默认扫描币种
 DEFAULT_COINS = [
-    "BTC", "ETH", "SOL", "AVAX", "ARB", "SUI", "INJ", "LINK",
+    # 主流币
+    "BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "LINK",
+    # DeFi/热门币
+    "UNI", "SUI", "INJ", "ARB", "OP", "MATIC", "ATOM", "DOT",
+    # 新兴币（高波动）
+    "HYPE", "PEPE", "WIF", "BONK", "DOGE", "SHIB", "GRASS", "AERO",
 ]
 
 # ab_owner 标识：用于与其他策略体系隔离
@@ -265,7 +270,8 @@ class ClassicDriver:
         return signals
 
     def _query_single_signal(self, coin: str, strategy_id: str) -> Optional[ClassicEntrySignal]:
-        """查询单个币种+策略的信号（通过 decision/entry）"""
+        """查询单个币种+策略的信号（通过 decision/entry，同时查询多空两个方向）"""
+        # 先查询做多方向
         data = self._post("/decision/entry", {
             "pair": coin,
             "side": "long",
@@ -276,9 +282,31 @@ class ClassicDriver:
             "size": self.per_trade_usdc,
             "leverage": self.leverage,
         })
-        
-        if not data or not data.get("ok"):
+
+        # 再查询做空方向
+        data_short = self._post("/decision/entry", {
+            "pair": coin,
+            "side": "short",
+            "strategy_id": strategy_id,
+            "ab_owner": AB_OWNER,
+            "book_id": BOOK_ID,
+            "system_id": SYSTEM_ID,
+            "size": self.per_trade_usdc,
+            "leverage": self.leverage,
+        })
+
+        # 选择置信度更高的方向
+        best_data = None
+        if data and data.get("ok"):
+            best_data = data
+        if data_short and data_short.get("ok"):
+            if not best_data or float(data_short.get("pc", 0) or 0) > float(data.get("pc", 0) or 0):
+                best_data = data_short
+
+        if not best_data:
             return None
+
+        data = best_data
         
         confidence = float(data.get("pc", 0) or 0)
         side = str(data.get("side", "long") or "long").lower()

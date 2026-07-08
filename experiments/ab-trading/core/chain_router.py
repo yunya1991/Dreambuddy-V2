@@ -26,6 +26,15 @@ except ImportError:
     def llm_available(): return "none"
     def llm_quota_ok(*a, **kw): return False
 
+# A系列研报读取（优先本地目录，降级到API）
+try:
+    from core.nodes.a1_research import execute as _a1_research_execute
+    _A1_RESEARCH_OK = True
+except Exception:
+    _A1_RESEARCH_OK = False
+    def _a1_research_execute(*a, **kw):
+        return {"direction": "HOLD", "confidence": 0.0, "rationale": [], "data": {}}
+
 GRAPH_LOG = Path(__file__).parent.parent / "data" / "agent_b_graph.json"
 # 能力清单（节点注册表，可动态扩展，不修改代码）
 REGISTRY  = Path(__file__).parent.parent / "data" / "skill_registry.md"
@@ -198,11 +207,11 @@ class ChainRouter:
                 self._direction = dream_result.direction
             self._current_conf = dream_result.confidence
 
-        # 读取 A7 门禁结果
-        gate_result = next((r for r in reversed(self.node_trace)
-                            if "A7" in r.node_id or "A4_门禁" in r.node_id), None)
-        gate_passed = gate_result.data.get("gate_passed", False) if gate_result else False
-        gate_reason = gate_result.data.get("reason", "未执行A7") if gate_result else "未执行A7"
+        # 重新评估门禁：基于最终状态，而非中间节点结果
+        from agents.agent_b_runner import a7_gate, apply_lessons
+        gate_threshold = apply_lessons(self.memory)
+        gate_passed, gate_reason = a7_gate(self._current_conf, self._direction,
+                                           gate_threshold, self.memory)
 
         # 仓位计算
         pos_usdt = 0.0
@@ -406,7 +415,7 @@ class ChainRouter:
     def _node_c4_backtest(self, node_id: str) -> NodeResult:
         """C4：简化回测验证（本地历史数据）"""
         # 简化：检查本地 sessions/strategy_scores
-        scores_dir = Path("/Users/luke.zhang/dream-v2/6-TRADING/sessions/strategy_scores")
+        scores_dir = Path(__file__).parent.parent.parent.parent / "6-TRADING" / "sessions" / "strategy_scores"
         if scores_dir.exists():
             files = list(scores_dir.glob("*.json"))
             if files:
@@ -888,17 +897,45 @@ COIN_TP: 新止盈价 或 NO_CHANGE"""
                               [f"F5宏观: {e}"], skipped=True, skip_reason=str(e))
 
     def _node_a1_research(self, node_id: str) -> NodeResult:
-        """A1：深度市场调研 — Tavily + LLM 综合分析版
-        Tavily 搜新闻 → LLM 综合分析给出方向判断
+        """A1：深度市场调研 — 优先本地A系列研报，降级Tavily + LLM
+        读取优先级：
+        1. 本地 A系列研报目录（A1 + A6 报告）
+        2. Tavily 搜新闻 → LLM 综合分析
         LLM 不可用时降级为关键词情感分析
         """
+        # ── Step0: 优先读取本地 A系列研报 ──────────────────────────
+        if _A1_RESEARCH_OK:
+            try:
+                a1_result = _a1_research_execute(self.mkt, self.memory, {})
+                direction  = a1_result.get("direction", "HOLD")
+                confidence = a1_result.get("confidence", 0.0)
+                rationale = a1_result.get("rationale", [])
+                a1_data    = a1_result.get("data", {})
+
+                # 有效报告（方向非HOLD 或 confidence > 0）
+                if direction != "HOLD" or confidence > 0.3:
+                    reasoning = [f"[A1研报] {direction} conf={confidence:.0%}"]
+                    if rationale:
+                        reasoning += [f"  {r}" for r in rationale[:3]]
+                    # A6 情报注入
+                    a6_report = a1_data.get("a6_report", {})
+                    if a6_report.get("risk_warning"):
+                        reasoning.append(f"[A6告警] {a6_report['risk_warning']}")
+                    return NodeResult(
+                        node_id, round(confidence, 3), direction,
+                        reasoning,
+                        {"a1_report": a1_data, "source": "a_series_local"}
+                    )
+            except Exception as e:
+                pass  # 本地读取失败，走降级
+
+        # ── Step1: Tavily 搜索（降级）────────────────────────────────
         import os
         from dotenv import load_dotenv
         load_dotenv(Path(__file__).parent.parent / "config" / ".env")
         api_key = os.environ.get("TAVILY_API_KEY", "")
 
         summaries = []
-        # Step1: Tavily 搜索
         if api_key and self._tavily_used < 2:
             try:
                 s = requests.Session(); s.trust_env = False

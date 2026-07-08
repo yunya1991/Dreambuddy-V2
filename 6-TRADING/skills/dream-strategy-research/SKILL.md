@@ -807,12 +807,16 @@ advisor_review_summary:
 | **部门名称** | 深度调研部 (A1) |
 | **目标邮箱** | 交易邮箱 (trading) — 统一路径 |
 | **邮箱路径** | `~/.workbuddy/skills/boss-secretary/reports/trading/` |
+| **A系列研报路径** | `experiments/ab-trading/A系列研报/A1研报/` ⭐新增 |
 | **投递方式** | 直接写入Markdown文件到指定目录 |
 | **文件名格式** | `a1_research_{YYYYMMDD}_{HHMM}.md` |
 | **frontmatter必须（完整7字段）** | 见下方YAML代码块 |
 | **双通道投递** | 秘书邮箱 + 前端产物中心（`artifact-alignment-manager` SKILL §一） |
+| **三通道投递** | 秘书邮箱 + 前端产物中心 + A系列研报目录 ⭐新增 |
 
 > **已废弃**: 调研部邮箱(research/)不再使用。所有A系列产物统一投递到交易邮箱 trading/。
+> 
+> **⭐ 新增 (2026-07-05)**: A1报告必须同时投递到 `experiments/ab-trading/A系列研报/A1研报/`，供Agent A和Agent B交易前读取。
 
 ### 投递工作流
 
@@ -822,6 +826,8 @@ Phase 1-4: 调研执行
 Phase 5: 顾问评审
     ↓
 投递: 调研报告 → 交易邮箱 (trading/)  ← 统一路径
+    ↓
+投递: 调研报告 → A系列研报/A1研报/  ← 新增 ⭐
     ↓
 流程完成
 ```
@@ -847,6 +853,8 @@ Phase 5: 顾问评审
 - [ ] 文件名符合 `a1_research_{YYYYMMDD}_{HHMM}.md` 格式
 - [ ] 包含完整 YAML frontmatter (chain_phase: A1, department: trading, date)
 - [ ] 投递后通过 `ls reports/trading/a1_*` 验证文件存在
+- [ ] ⭐ 文件写入 `experiments/ab-trading/A系列研报/A1研报/` 目录
+- [ ] ⭐ 投递后通过 `ls experiments/ab-trading/A系列研报/A1研报/` 验证文件存在
 
 
 ### 投递后验证（强制调用AD SKILL）
@@ -859,6 +867,7 @@ Phase 5: 顾问评审
    - ✅ 前端产物中心文件存在（`~/.workbuddy/artifacts/trading/`）
    - ✅ `index.json` 已更新（含 `chain_phase` + `tags`）
    - ✅ 前端详情页返回 200
+   - ✅ ⭐ A系列研报目录文件存在 (`experiments/ab-trading/A系列研报/A1研报/`)
 3. **不通过**: 按 AD SKILL 第四章步骤修复，重新验证
 4. **通过**: 投递完成
 
@@ -868,4 +877,17 @@ Phase 5: 顾问评审
 ### 代码入口
 
 - **调研报告投递**: 直接写入Markdown文件到 `~/.workbuddy/skills/boss-secretary/reports/trading/`
+- **A系列研报投递**: 直接写入Markdown文件到 `experiments/ab-trading/A系列研报/A1研报/` ⭐新增
 - **查看邮箱**: `ls -la ~/.workbuddy/skills/boss-secretary/reports/trading/`
+- **查看A系列研报**: `ls -la experiments/ab-trading/A系列研报/A1研报/`
+
+**投递代码示例** (Phase 5 顾问评审后执行):
+```python
+# 投递到交易邮箱
+trading_path = os.path.expanduser("~/.workbuddy/skills/boss-secretary/reports/trading/")
+write_report(trading_path, filename, content)
+
+# ⭐ 新增: 同时投递到A系列研报目录
+ab_report_path = os.path.join(WORKSPACE, "experiments/ab-trading/A系列研报/A1研报/")
+write_report(ab_report_path, filename, content)
+```

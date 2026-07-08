@@ -1,0 +1,115 @@
+{
+  "consultation_id": "A1-20260501-001",
+  "scene": "SIGNAL_ASSESSMENT",
+  "source": "dream-strategy-research",
+  "timestamp": "2026-05-01T02:44:00.297391Z",
+  "required_advisors": [
+    "advisor-qt",
+    "advisor-rm"
+  ],
+  "optional_advisors": [],
+  "responses": {
+    "advisor-qt": {
+      "consultation_id": "A1-20260501-001",
+      "advisor_id": "advisor-qt",
+      "advisor_name": "量化交易顾问",
+      "response_source": "direct_call",
+      "confidence": 55,
+      "assessment": {
+        "verdict": "NEED_MORE_DATA",
+        "confidence": 55,
+        "reasoning": "[advisor-qt] 基于信号有效性分析，Regime=ACCUMULATION_CLEAR。"
+      },
+      "scoring": {
+        "signal_quality": 50,
+        "momentum": "NEUTRAL",
+        "trend_strength": "N/A"
+      },
+      "recommendations": [
+        {
+          "action": "持续观察，等待更明确信号",
+          "priority": "P2",
+          "rationale": "当前置信度55，不足以强力推荐"
+        }
+      ],
+      "circuit_breakers": [],
+      "evidence_refs": [
+        "signal_score=0",
+        "btc_price=0",
+        "edge=0",
+        "regime=ACCUMULATION_CLEAR"
+      ],
+      "limitations": [
+        "此为内联规则引擎评审",
+        "建议与实际市场数据交叉验证"
+      ],
+      "timestamp": "2026-05-01T02:44:00.296830Z"
+    },
+    "advisor-rm": {
+      "consultation_id": "A1-20260501-001",
+      "advisor_id": "advisor-rm",
+      "advisor_name": "风险管理顾问",
+      "response_source": "direct_call",
+      "confidence": 60,
+      "assessment": {
+        "verdict": "DISAGREE",
+        "confidence": 60,
+        "reasoning": "[advisor-rm] 基于风险等级分析，Regime=ACCUMULATION_CLEAR。"
+      },
+      "scoring": {
+        "risk_level": "MEDIUM",
+        "position_size": "5-10%",
+        "var_estimate": "需基于ATR计算"
+      },
+      "recommendations": [
+        {
+          "action": "风险等级MEDIUM，建议仓位5-10%",
+          "priority": "P1",
+          "rationale": "基于当前波动率和风险敞口"
+        },
+        {
+          "action": "当前方向不建议执行，建议WAIT或PROBE",
+          "priority": "P1",
+          "rationale": "顾问advisor-rm给出DISAGREE，置信度60"
+        }
+      ],
+      "circuit_breakers": [],
+      "evidence_refs": [
+        "signal_score=0",
+        "btc_price=0",
+        "edge=0",
+        "regime=ACCUMULATION_CLEAR"
+      ],
+      "limitations": [
+        "此为内联规则引擎评审",
+        "建议与实际市场数据交叉验证"
+      ],
+      "timestamp": "2026-05-01T02:44:00.296843Z"
+    }
+  },
+  "summary": {
+    "final_verdict": "DISAGREE",
+    "avg_confidence": 57.5,
+    "advisor_count": 2,
+    "required_met": true
+  },
+  "recommendations": [
+    {
+      "action": "风险等级MEDIUM，建议仓位5-10%",
+      "priority": "P1",
+      "rationale": "基于当前波动率和风险敞口"
+    },
+    {
+      "action": "当前方向不建议执行，建议WAIT或PROBE",
+      "priority": "P1",
+      "rationale": "顾问advisor-rm给出DISAGREE，置信度60"
+    }
+  ],
+  "context": {
+    "regime": "ACCUMULATION_CLEAR",
+    "net_direction": "UP",
+    "signal_sufficiency": "MODERATE",
+    "action_pressure": "LOW",
+    "report_path": "/Users/zhangjiangtao/.workbuddy/skills/boss-secretary/reports/trading/a1_research_20260501_0230.md"
+  }
+}

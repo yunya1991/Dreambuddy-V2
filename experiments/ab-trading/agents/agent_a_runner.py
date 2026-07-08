@@ -34,7 +34,7 @@ from orchestrator import request_early_run
 from core.agent_a_memory import (
     load_memory, save_memory, add_lesson, record_trade,
     update_equity_stats, maybe_switch_master, get_top_lessons,
-    record_closed_trade,
+    record_closed_trade, update_hold_streak, get_evolution_params,
 )
 from core.exit_module import run_exit_check, init_position, update_position_exit_levels
 from core.agent_a_llm import agent_a_llm_decide, get_quota_status, get_available_provider
@@ -48,8 +48,8 @@ STOP_LOSS_PCT = 0.04
 TP_PCT        = 0.08
 
 UNIVERSE_A = [
-    "BTC", "ETH", "SOL", "HYPE", "AVAX",
-    "ARB", "SUI", "INJ", "LINK", "TIA",
+    "BTC", "ETH", "HYPE", "UNI",
+    "LIT", "SOL", "XRP", "ZEC", "NEAR", "WLD", "ADA", "SUI", "ETHFI", "ENA", "JUP", "XLM", "GRASS", "EIGEN", "ZRO", "IMX",
 ]
 
 
@@ -95,11 +95,13 @@ def fetch_market_context(client: HyperliquidClient) -> dict:
         ema50  = ema(closes[::-1], 50) if len(closes) >= 50 else ema20
         ema200 = ema(closes[::-1], min(200, len(closes)))
 
-        # RSI(14)
+        # RSI(14) — 使用最新数据
         def rsi(prices, n=14):
             if len(prices) < n + 1:
                 return 50.0
-            deltas = [prices[i] - prices[i-1] for i in range(1, min(n+1, len(prices)))]
+            # 取最新 n+1 根 K 线计算差分
+            recent = prices[-(n+1):]
+            deltas = [recent[i] - recent[i-1] for i in range(1, len(recent))]
             gains  = [max(d, 0) for d in deltas]
             losses = [max(-d, 0) for d in deltas]
             avg_g  = sum(gains) / n
@@ -143,11 +145,14 @@ def run():
     # ── 1. 加载记忆 ───────────────────────────────────────────────
     memory = load_memory()
     top_lessons = get_top_lessons(memory, 10)
+    evolution_params = get_evolution_params(memory)
     print(f"[记忆] 当前大师: {memory['current_master']}")
     print(f"[记忆] 总交易: {memory['total_trades']} | "
           f"连胜: {memory['win_streak']} | 连败: {memory['loss_streak']}")
     print(f"[记忆] Lessons: {len(memory['lessons'])} 条 | "
           f"最大回撤: {memory.get('max_drawdown_pct', 0):.1f}%")
+    if evolution_params:
+        print(f"[进化] 已采纳参数: {evolution_params}")
     print(f"[LLM]  可用: {get_available_provider()} | 配额: {get_quota_status()}")
 
     # ── 2. 获取账户状态 ───────────────────────────────────────────
@@ -226,6 +231,12 @@ def run():
     print(f"[决策] 结果: {decision.get('action')} {decision.get('coin','')} "
           f"conf={decision.get('confidence',0):.0%}")
     print(f"[决策] 理由: {decision.get('decision_rationale','')[:80]}")
+
+    # 连续HOLD检测：超过10轮HOLD时降低入场门槛，打破保守死循环
+    hold_streak = memory.get("hold_streak", 0)
+    if hold_streak >= 10 and decision.get("action") == "HOLD":
+        print(f"[风控] 连续{hold_streak}轮HOLD，降低入场门槛以打破保守循环")
+        _break_conservative_loop(decision, mkt, memory, account_data)
 
     # 连败保护：连败≥3 时强制 HOLD（即使 LLM 说要做）
     if memory.get("loss_streak", 0) >= 3 and decision.get("action") != "HOLD":
@@ -401,6 +412,10 @@ def run():
     regime = decision.get("market_regime", "RANGE")
     memory = maybe_switch_master(memory, regime)
 
+    # 更新连续HOLD计数
+    memory = update_hold_streak(memory, action)
+    print(f"[记忆] 连续HOLD: {memory.get('hold_streak', 0)} 轮")
+
     save_memory(memory)
     print(f"[记忆] 已更新并保存")
 
@@ -414,6 +429,123 @@ def run():
     print(f"[Agent A] 本轮完成 | action={action} | provider={provider}")
     print(f"{'='*60}")
     return log.data
+
+
+# ── 打破保守循环机制 ──────────────────────────────────────────────────────
+
+def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_data: dict):
+    """
+    当连续多轮HOLD时，降低入场门槛，强制寻找交易机会
+    机制：使用简化规则引擎，选择评分最高的标的（即使低于常规门槛）
+    使用进化参数动态调整阈值
+    """
+    from core.agent_a_memory import get_evolution_params
+    evo_params = get_evolution_params(memory)
+
+    coins = mkt.get("coins", {})
+    opp_map = mkt.get("opp_map", {})
+    
+    best_coin = None
+    best_score = 0
+    best_side = "LONG"
+    best_info = {}
+    
+    # 使用进化参数，回退到默认值
+    mom_threshold = evo_params.get("momentum_threshold", 0.02)
+    vol_threshold = evo_params.get("volume_threshold", 1.2)
+    rsi_oversold = evo_params.get("rsi_oversold", 40)
+    rsi_overbought = evo_params.get("rsi_overbought", 60)
+    use_ema_cross = evo_params.get("use_ema_cross", True)
+    
+    for coin, d in coins.items():
+        score = 0
+        side = "LONG"
+        
+        ch24 = d.get("ch24", 0)
+        ch4h = d.get("ch4h", 0)
+        vr = d.get("vol_ratio", 1.0)
+        rsi_val = d.get("rsi14", 50)
+        ema20 = d.get("ema20", 0)
+        ema50 = d.get("ema50", 0)
+        
+        # 动量信号（使用进化阈值）
+        if ch24 > mom_threshold * 100 or ch4h > mom_threshold * 100 * 0.4:
+            score += 2
+            side = "LONG"
+        elif ch24 < -mom_threshold * 100 or ch4h < -mom_threshold * 100 * 0.4:
+            score += 2
+            side = "SHORT"
+        
+        # 量比信号（使用进化阈值）
+        if vr > vol_threshold:
+            score += 1
+        
+        # 资金费率信号
+        opp = opp_map.get(coin, {})
+        fr = opp.get("funding", 0)
+        if abs(fr) > 0.0002:
+            score += 1
+            side = "SHORT" if fr > 0 else "LONG"
+        
+        # RSI 信号（使用进化阈值）
+        if rsi_val < rsi_oversold:
+            score += 1
+            side = "LONG"
+        elif rsi_val > rsi_overbought:
+            score += 1
+            side = "SHORT"
+        
+        # EMA 交叉信号（使用进化开关）
+        if use_ema_cross and ema20 > 0 and ema50 > 0:
+            if ema20 > ema50:
+                score += 1
+                if side != "SHORT":
+                    side = "LONG"
+            elif ema20 < ema50:
+                score += 1
+                if side != "LONG":
+                    side = "SHORT"
+        
+        if score > best_score:
+            best_score = score
+            best_coin = coin
+            best_side = side
+            best_info = d
+    
+    # 保守循环打破时入场门槛应低于正常（正常=1，此处用1）
+    if best_score >= 1 and best_coin:
+        confidence = min(0.4 + best_score * 0.05, 0.6)
+        equity = min(account_data.get("equity", 60.0), 60.0)
+        pos_usdt = max(round(equity * 0.03, 2), 3.0)
+        leverage = min(3, max(1, int(confidence * 4)))
+        
+        px = best_info.get("price", 0)
+        sl_pct = 0.03
+        tp_pct = 0.06
+        sl = round(px * (1 - sl_pct) if best_side == "LONG" else px * (1 + sl_pct), 2)
+        tp = round(px * (1 + tp_pct) if best_side == "LONG" else px * (1 - tp_pct), 2)
+        
+        decision.update({
+            "action": best_side,
+            "coin": best_coin,
+            "confidence": confidence,
+            "leverage": leverage,
+            "position_size_usdt": pos_usdt,
+            "entry_price": px,
+            "stop_loss_price": sl,
+            "take_profit_price": tp,
+            "market_regime": "TREND_UP" if best_side == "LONG" else "TREND_DOWN",
+            "decision_rationale": f"[保守循环打破] {best_coin} {best_side} score={best_score} "
+                                 f"conf={confidence:.0%}（连续HOLD触发强制入场）",
+            "reasoning_steps": decision.get("reasoning_steps", []) + [
+                f"连续HOLD触发保守循环打破机制",
+                f"选择 {best_coin} {best_side} score={best_score}",
+                f"仓位: {pos_usdt} USDC × {leverage}x"
+            ],
+        })
+        print(f"[风控] 保守循环打破: {best_coin} {best_side} score={best_score} conf={confidence:.0%}")
+    else:
+        print(f"[风控] 保守循环打破: 无足够信号（最高score={best_score}），继续HOLD")
 
 
 # ── 自主调度 ──────────────────────────────────────────────────────────────

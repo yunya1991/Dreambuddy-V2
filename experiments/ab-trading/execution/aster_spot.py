@@ -67,7 +67,7 @@ except ImportError:
     HAS_ETH = False
 
 # ── 交易标的池（实验允许范围） ───────────────────────────────────────────────
-UNIVERSE = ["BTC", "ETH", "SOL", "HYPE", "AVAX", "LINK", "ARB", "SUI", "INJ", "TIA"]
+UNIVERSE = ["BTC", "ETH", "HYPE", "UNI", "LIT", "SOL", "XRP", "ZEC", "NEAR", "WLD", "ADA", "SUI", "ETHFI", "ENA", "JUP", "XLM", "GRASS", "EIGEN", "ZRO", "IMX"]
 MAX_LEVERAGE = 5
 DEFAULT_LEVERAGE = 3
 
@@ -795,10 +795,7 @@ class HyperliquidClient:
 
 # 永续合约 asset index
 _ASSET_INDEX = {
-    "BTC": 0, "ETH": 1, "ATOM": 2, "MATIC": 3, "DYDX": 4,
-    "SOL": 5, "AVAX": 6, "BNB": 7, "APE": 8, "OP": 9,
-    "LTC": 10, "ARB": 11, "DOGE": 12, "INJ": 13, "SUI": 14,
-    "TIA": 63, "LINK": 18, "HYPE": 159, "WIF": 98,
+    "BTC": 0, "ETH": 1, "HYPE": 159, "UNI": 39, "LIT": 223, "SOL": 5, "XRP": 25, "ZEC": 214, "NEAR": 74, "WLD": 31, "ADA": 65, "SUI": 14, "ETHFI": 121, "ENA": 122, "JUP": 90, "XLM": 154, "GRASS": 151, "EIGEN": 130, "ZRO": 46, "IMX": 84,
 }
 
 # 现货 token ID（Hyperliquid spot，asset = token_id + 10000）
@@ -818,13 +815,11 @@ def _price_to_wire(px: float) -> str:
     return float_to_wire(rounded)
 
 def _price_decimals(coin: str) -> int:
-    return {"BTC": 1, "ETH": 2, "SOL": 3, "HYPE": 3}.get(coin, 4)
+    return {"BTC": 1, "ETH": 2, "HYPE": 3, "UNI": 3, "LIT": 5, "SOL": 3, "XRP": 5, "ZEC": 3, "NEAR": 4, "WLD": 4, "ADA": 5, "SUI": 4, "ETHFI": 4, "ENA": 5, "JUP": 5, "XLM": 5, "GRASS": 4, "EIGEN": 3, "ZRO": 4, "IMX": 4}.get(coin, 4)
 
 def _size_decimals(coin: str) -> int:
     return {
-        "BTC": 5, "ETH": 4, "SOL": 2, "AVAX": 2,
-        "TIA": 1, "INJ": 1, "SUI": 1, "ARB": 0,
-        "LINK": 1, "HYPE": 2,
+        "BTC": 5, "ETH": 4, "HYPE": 2, "UNI": 1, "LIT": 0, "SOL": 2, "XRP": 0, "ZEC": 2, "NEAR": 1, "WLD": 1, "ADA": 0, "SUI": 1, "ETHFI": 1, "ENA": 0, "JUP": 0, "XLM": 0, "GRASS": 1, "EIGEN": 2, "ZRO": 1, "IMX": 1,
     }.get(coin, 2)
 
 

@@ -1,0 +1,33 @@
+{
+  "matrix_version": "p1.5-regression-v1",
+  "run_timestamp": "2026-05-11T17:07:57.487135Z",
+  "total_cases": 3,
+  "passed_cases": 3,
+  "failed_cases": 0,
+  "results": [
+    {
+      "case_id": "reject_scenario_warning_default_policy",
+      "expected_decision": "reject",
+      "actual_decision": "reject",
+      "return_code": 1,
+      "decision_path": "artifacts/evolution/policy/outputs/reject_scenario_warning_default_policy/decision/decision-20260512T110000Z.json",
+      "passed": true
+    },
+    {
+      "case_id": "reject_high_severity_default_policy",
+      "expected_decision": "reject",
+      "actual_decision": "reject",
+      "return_code": 1,
+      "decision_path": "artifacts/evolution/policy/outputs/reject_high_severity_default_policy/decision/decision-20260512T110100Z.json",
+      "passed": true
+    },
+    {
+      "case_id": "approve_scenario_warning_relaxed_policy",
+      "expected_decision": "approve",
+      "actual_decision": "approve",
+      "return_code": 0,
+      "decision_path": "artifacts/evolution/policy/outputs/approve_scenario_warning_relaxed_policy/decision/decision-20260512T110200Z.json",
+      "passed": true
+    }
+  ]
+}

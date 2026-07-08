@@ -1,0 +1,17 @@
+{
+  "policy_version": "p1.relaxed-scenario.v1",
+  "stage_policy": {
+    "scenario": {
+      "require_pass": true,
+      "allow_warnings": true,
+      "max_violation_count": 1,
+      "severity_blocklist": ["high", "critical"]
+    },
+    "backtest": {
+      "require_pass": true,
+      "allow_warnings": false,
+      "max_violation_count": 0,
+      "severity_blocklist": ["high", "critical"]
+    }
+  }
+}

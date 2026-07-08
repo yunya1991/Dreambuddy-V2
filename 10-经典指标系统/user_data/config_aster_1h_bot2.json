@@ -1,0 +1,119 @@
+{
+    "max_open_trades": 3,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "leverage": 3,
+    "stake_currency": "USDT",
+    "stake_amount": 15,
+    "tradable_balance_ratio": 0.8,
+    "fiat_display_currency": "USD",
+    "timeframe": "1h",
+    "datadir": "user_data/data",
+    "dataformat_ohlcv": "json",
+    "dataformat_trades": "jsongz",
+    "dry_run": true,
+    "dry_run_wallet": 27.67,
+    "cancel_open_orders_on_exit": false,
+    "strategy": "Bot2StrategyTrend",
+    "exchange": {
+        "name": "binance",
+        "key": "ff1b2cf3bc80257b41aec11d9d60b7b7a80e78bd2e1eee67e3def87cf459eedc",
+        "secret": "4efb3ef9009e97153136d4b9ef3d054be6f8259c5502c8445bed55bec4103fc6",
+        "ccxt_config": {
+            "enableRateLimit": true,
+            "rateLimit": 2500,
+            "timeout": 30000,
+            "options": {
+                "defaultType": "future",
+                "fetchCurrencies": false,
+                "testnet": false
+            },
+            "urls": {
+                "api": {
+                    "public": "https://fapi.asterdex.com",
+                    "private": "https://fapi.asterdex.com"
+                }
+            }
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": true,
+            "rateLimit": 2500,
+            "timeout": 30000,
+            "options": {
+                "defaultType": "future",
+                "fetchCurrencies": false
+            },
+            "urls": {
+                "api": {
+                    "public": "https://fapi.asterdex.com",
+                    "private": "https://fapi.asterdex.com"
+                }
+            }
+        },
+        "pair_whitelist": [
+            "BTC/USDT:USDT",
+            "ETH/USDT:USDT",
+            "SOL/USDT:USDT"
+        ],
+        "pair_blacklist": []
+    },
+    "entry_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "order_types": {
+        "entry": "limit",
+        "exit": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": false,
+        "stoploss_on_exchange_interval": 60
+    },
+    "exchange_rate_conversion_threshold": 0.05,
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
+    "unfilledtimeout": {
+        "entry": 30,
+        "exit": 30,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "entry_unfilledtimeout": {
+        "entry_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "check_open_orders_on_entry": true,
+    "position_adjustment_enable": true,
+    "max_entry_position_adjustment": 2,
+    "bot_name": "Classic1h_Aster",
+    "initial_state": "running",
+    "force_entry_enable": false,
+    "telegram": {
+        "enabled": false,
+        "token": "",
+        "chat_id": ""
+    },
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8084,
+        "username": "freqtrader",
+        "password": "FT_2026_Aster",
+        "verbosity": "error",
+        "jwt_secret_key": "classic_1h_aster_jwt_secret_2026"
+    },
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

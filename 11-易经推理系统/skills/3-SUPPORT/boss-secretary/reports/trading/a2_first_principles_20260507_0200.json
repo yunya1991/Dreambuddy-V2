@@ -1,0 +1,101 @@
+{
+  "first_principles_analysis": {
+    "timestamp": "2026-05-07T02:00:00+08:00",
+    "btc_price": 81116,
+    "btc_24h_change": -0.30,
+    "fundamental": {
+      "fgi": 47,
+      "fgi_4d_change": 1,
+      "fgi_7d_change": 18,
+      "fgi_30d_change": 36,
+      "funding_rate": -0.00000947,
+      "fundamental_direction": "BEARISH",
+      "fundamental_score": 35
+    },
+    "technical": {
+      "rsi": 89.50,
+      "ma5": 80576.28,
+      "ma10": 78806.44,
+      "ma20": 78806.44,
+      "ma_alignment": "BULLISH",
+      "atr_pct": 2.28,
+      "technical_direction": "BEARISH",
+      "technical_score": 30
+    },
+    "macro_assets": {
+      "gold": {"price": 4713.3, "change": 1.89},
+      "oil": {"price": 95.63, "change": -4.82},
+      "copper": {"price": 6.20, "change": 2.23},
+      "tsla": {"price": 397.62, "change": 2.73},
+      "coin": {"price": 196.78, "change": -0.72},
+      "macro_trend_score": 2.0,
+      "resonance_signal": "STAGFLATION_FEAR",
+      "divergence_detected": true
+    },
+    "a0_contradiction_analysis": {
+      "primary_contradiction": {
+        "id": "CX_001",
+        "dimension": "C2",
+        "name": "情绪面矛盾",
+        "description": "FGI从11强力反弹至47，但RSI高达89.50显示极度超买",
+        "dominant_side": "B",
+        "direction_implication": "DOWN",
+        "confidence": 0.60,
+        "transformation": {
+          "condition": "RSI从85以上回落至70以下",
+          "probability": "HIGH"
+        }
+      },
+      "contradiction_ranking": [
+        {"id": "CX_001", "score": 8.25, "rank": 1},
+        {"id": "CX_002", "score": 6.55, "rank": 2},
+        {"id": "CX_003", "score": 5.15, "rank": 3}
+      ]
+    },
+    "brain_analysis": {
+      "left_brain": {
+        "deterministic_score": -20,
+        "direction": "DOWN",
+        "confidence": 0.65,
+        "key_signal": "RSI=89.50极度超买"
+      },
+      "right_brain": {
+        "fuzzy_bias": "BEARISH",
+        "confidence_interval": [0.70, 0.55, 0.40],
+        "pattern": "反弹衰竭+旗形整理"
+      },
+      "contradiction_reconciled": {
+        "reconciled_direction": "DOWN",
+        "confidence": 0.55,
+        "action_advice": "小仓试探做空或观望等待",
+        "probe_conditions": ["RSI回落至<70", "FGI<40", "跌破$80K"]
+      }
+    },
+    "resistance_analysis": {
+      "resistance_score": 56,
+      "resistance_direction": "NEUTRAL",
+      "contrarian_compensation": {
+        "triggered": true,
+        "condition": "FGI 30日变化+36点",
+        "adjustment": 10,
+        "note": "逆向补偿: 情绪极端反弹=回调风险(L_FGI_001)"
+      }
+    },
+    "trend_analysis": {
+      "ma_trajectory": 0.34,
+      "trend_strength": "MODERATE",
+      "trend_direction": "NEUTRAL"
+    },
+    "synthesis": {
+      "least_resistance_path": "NEUTRAL",
+      "action_recommendation": "WAIT",
+      "alternative": "PROBE_SHORT (if RSI<70 confirmed)",
+      "regime": "TREND_EXHAUSTION"
+    }
+  },
+  "market_regime_classification": {
+    "regime": "TREND_EXHAUSTION",
+    "confidence": 0.60,
+    "alternative_regimes": ["RANGE_BOUND", "FALSE_BREAKOUT_RISK"]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "session_id": "test_e2e_003",
+  "created_at": "2026-07-05T16:21:45.974Z",
+  "updated_at": "2026-07-05T16:22:40.600Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "BTC现在怎么样",
+      "timestamp": "2026-07-05T16:21:45.975Z"
+    },
+    {
+      "role": "assistant",
+      "content": "**💡 核心观点**\n\n当前BTC市场呈现**震荡偏多**格局，但多空博弈激烈，短期方向不明。核心依据是：多维度信号中“long”与“neutral”交织，综合置信度在68%-71%之间，未形成压倒性共识；技术面显示市场处于“trending”与“volatile”双重状态，主要矛盾聚焦于多空力量对比，且矛盾强度为“high”；链上数据显示大额BTC从交易所转出（利好），但资金费率为正（多头成本高），两者形成对冲。整体上，市场处于方向选择前的关键阶段，需警惕高波动风险。\n\n---\n\n🔗 [查看完整报告](/reports/task_20260705162151_02bi)",
+      "timestamp": "2026-07-05T16:22:03.897Z",
+      "task_id": "task_20260705162151_02bi",
+      "intent_type": "market_query"
+    },
+    {
+      "role": "user",
+      "content": "那支撑位在哪里",
+      "timestamp": "2026-07-05T16:22:33.518Z"
+    },
+    {
+      "role": "assistant",
+      "content": "🤔 **你的问题有点模糊**\n\n> 你想查询哪个交易品种的支撑位？\n\n- [1] BTC 的支撑位\n- [2] ETH 的支撑位\n- [3] SOL 的支撑位\n\n> 请点击选项按钮，或在输入框输入数字进行选择",
+      "timestamp": "2026-07-05T16:22:40.600Z",
+      "task_id": "task_20260705162240_fdyw",
+      "intent_type": "need_clarification"
+    }
+  ],
+  "summary_level": 0,
+  "total_tokens": 0
+}
