@@ -4,7 +4,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Optional, Any, Dict, List
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -25,7 +25,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: List[str] = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
     start = time.monotonic()
 

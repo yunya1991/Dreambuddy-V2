@@ -1,0 +1,69 @@
+{
+  "version": "qmm-v1.0",
+  "snapshot_ts": "2026-07-08T15:21:22+08:00",
+  "data_version": "dv-20260708-001",
+  "feature_def_version": "fd-1.0",
+  "qmm_version": "qmm-v1.0",
+  "trend_state": "FLAT",
+  "trend_change_point": "STABLE",
+  "mrd_vector": {
+    "direction": "NEUTRAL",
+    "resistance_up": 0.0,
+    "resistance_down": 0.0,
+    "confidence": 0
+  },
+  "uncertainty": 0.425,
+  "triple_screen": {
+    "long": {
+      "timeframe": "long",
+      "direction": "FLAT",
+      "confidence": 0.25,
+      "x_mean": 0.0,
+      "y_mean": 0.5,
+      "profit_rate": 0.0,
+      "case_count": 20
+    },
+    "mid": {
+      "timeframe": "mid",
+      "direction": "FLAT",
+      "confidence": 0.125,
+      "x_mean": 0.0,
+      "y_mean": 0.5,
+      "profit_rate": 0.0,
+      "case_count": 10
+    },
+    "short": {
+      "timeframe": "short",
+      "direction": "FLAT",
+      "confidence": 0.0625,
+      "x_mean": 0.0,
+      "y_mean": 0.5,
+      "profit_rate": 0.0,
+      "case_count": 5
+    },
+    "alignment": 0.3
+  },
+  "velocity": {
+    "price": 0.0,
+    "confidence": 1.0
+  },
+  "acceleration": {
+    "price": 0.0
+  },
+  "reason_codes": [
+    "NEUTRAL"
+  ],
+  "evidence_refs": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "gate_status": "OFFLINE"
+}

@@ -1,0 +1,556 @@
+{
+  "metadata": {
+    "snapshot_ts": "2026-07-08T16:55:16+08:00",
+    "feature_version": "v0.2",
+    "weights": {
+      "struct": 0.4,
+      "num": 0.4,
+      "strategy": 0.2
+    }
+  },
+  "summary": {
+    "total_cases": 8,
+    "v02_count": 8,
+    "v02_ratio": 1.0,
+    "stage_coverage": {
+      "counts": {
+        "A0": 0,
+        "A1": 0,
+        "A2": 0,
+        "A3": 0,
+        "A4": 0,
+        "A5": 0,
+        "A6": 0,
+        "A7": 0,
+        "A8": 0,
+        "A9": 0
+      },
+      "rates": {
+        "A0": 0.0,
+        "A1": 0.0,
+        "A2": 0.0,
+        "A3": 0.0,
+        "A4": 0.0,
+        "A5": 0.0,
+        "A6": 0.0,
+        "A7": 0.0,
+        "A8": 0.0,
+        "A9": 0.0
+      }
+    },
+    "l4_status_distribution": {
+      "M0_CASE_REGISTERED": 6,
+      "M3_STATS_UPDATED": 2
+    },
+    "quadrant_center": {
+      "x_mean": 0.225,
+      "y_mean": 0.237
+    },
+    "distill_count": 0
+  },
+  "case_features": {
+    "TC_DISTILL_FULL": {
+      "inst_id": "TC_DISTILL_FULL_INST",
+      "regime": "bull",
+      "decision": null,
+      "reason_codes": [],
+      "tags": [
+        "auto_case",
+        "episode_ref"
+      ],
+      "scores": {},
+      "total_score": null,
+      "edge": null,
+      "matched_strategy": null,
+      "category": null,
+      "directive_bias": null,
+      "references": {
+        "case_lessons": []
+      },
+      "l4_status": "M0_CASE_REGISTERED",
+      "version": "v0.2",
+      "thinking_chain": {
+        "stages_present": [],
+        "stages_count": 0,
+        "stage_coverage_pct": 0.0,
+        "decision_count": 0,
+        "has_contradiction_analysis": false,
+        "has_theory_verification": false,
+        "chain_order": []
+      },
+      "evidence_chain": {
+        "market_data_count": 0,
+        "signal_count": 0,
+        "strategy_count": 0,
+        "historical_count": 0,
+        "constraint_count": 0,
+        "total_refs": 0
+      },
+      "decision_outcome": {
+        "pnl_pct": -2.5,
+        "pnl_usdt": -250.0,
+        "drawdown": 1.25,
+        "exit_reason": null,
+        "goal_achieved": null,
+        "is_profit": false
+      },
+      "quadrant_features": {
+        "x": 0.0,
+        "y": 0.0,
+        "y_perf": 0.0,
+        "y_consistency": 0.0,
+        "y_human": 0.0,
+        "quadrant_label": "neutral_low_certainty"
+      },
+      "review_detailed": {
+        "mistakes_count": 0,
+        "successes_count": 0,
+        "consistency": "partially_consistent",
+        "review_record_id": null,
+        "lessons": [],
+        "avg_mistake_severity": null
+      }
+    },
+    "TC_DISTILL_QUAD": {
+      "inst_id": "TC_DISTILL_QUAD_INST",
+      "regime": "bull",
+      "decision": null,
+      "reason_codes": [],
+      "tags": [
+        "auto_case",
+        "episode_ref"
+      ],
+      "scores": {},
+      "total_score": null,
+      "edge": null,
+      "matched_strategy": null,
+      "category": null,
+      "directive_bias": null,
+      "references": {
+        "case_lessons": []
+      },
+      "l4_status": "M0_CASE_REGISTERED",
+      "version": "v0.2",
+      "thinking_chain": {
+        "stages_present": [],
+        "stages_count": 0,
+        "stage_coverage_pct": 0.0,
+        "decision_count": 0,
+        "has_contradiction_analysis": false,
+        "has_theory_verification": false,
+        "chain_order": []
+      },
+      "evidence_chain": {
+        "market_data_count": 0,
+        "signal_count": 0,
+        "strategy_count": 0,
+        "historical_count": 0,
+        "constraint_count": 0,
+        "total_refs": 0
+      },
+      "decision_outcome": {
+        "pnl_pct": 5.0,
+        "pnl_usdt": 500.0,
+        "drawdown": 2.5,
+        "exit_reason": null,
+        "goal_achieved": null,
+        "is_profit": true
+      },
+      "quadrant_features": {
+        "x": 0.8,
+        "y": 0.7,
+        "y_perf": 0.0,
+        "y_consistency": 0.0,
+        "y_human": 0.0,
+        "quadrant_label": "benefit_medium_certainty"
+      },
+      "review_detailed": {
+        "mistakes_count": 0,
+        "successes_count": 0,
+        "consistency": "consistent",
+        "review_record_id": "REV_TEST",
+        "lessons": [],
+        "avg_mistake_severity": null
+      }
+    },
+    "TC_E2E_LOOP_01": {
+      "inst_id": "BTC-USDT-SWAP",
+      "regime": "trend",
+      "decision": null,
+      "reason_codes": [],
+      "tags": [
+        "momentum"
+      ],
+      "scores": {},
+      "total_score": null,
+      "edge": null,
+      "matched_strategy": null,
+      "category": null,
+      "directive_bias": null,
+      "references": {
+        "case_lessons": [
+          "good trade"
+        ]
+      },
+      "l4_status": "M3_STATS_UPDATED",
+      "version": "v0.2",
+      "thinking_chain": {
+        "stages_present": [],
+        "stages_count": 0,
+        "stage_coverage_pct": 0.0,
+        "decision_count": 0,
+        "has_contradiction_analysis": false,
+        "has_theory_verification": false,
+        "chain_order": []
+      },
+      "evidence_chain": {
+        "market_data_count": 0,
+        "signal_count": 0,
+        "strategy_count": 0,
+        "historical_count": 0,
+        "constraint_count": 0,
+        "total_refs": 0
+      },
+      "decision_outcome": {
+        "pnl_pct": 2.0,
+        "pnl_usdt": null,
+        "drawdown": null,
+        "exit_reason": null,
+        "goal_achieved": true,
+        "is_profit": true
+      },
+      "quadrant_features": {
+        "x": 0.5,
+        "y": 0.6,
+        "y_perf": 0.6,
+        "y_consistency": 0.6,
+        "y_human": 0.5,
+        "quadrant_label": "benefit_medium_certainty"
+      },
+      "review_detailed": {
+        "mistakes_count": 0,
+        "successes_count": 0,
+        "consistency": "consistent",
+        "review_record_id": null,
+        "lessons": [
+          "good trade"
+        ],
+        "avg_mistake_severity": null
+      }
+    },
+    "TC_E2E_LOOP_02": {
+      "inst_id": "BTC-USDT-SWAP",
+      "regime": "trend",
+      "decision": null,
+      "reason_codes": [],
+      "tags": [
+        "momentum"
+      ],
+      "scores": {},
+      "total_score": null,
+      "edge": null,
+      "matched_strategy": null,
+      "category": null,
+      "directive_bias": null,
+      "references": {
+        "case_lessons": [
+          "good trade"
+        ]
+      },
+      "l4_status": "M3_STATS_UPDATED",
+      "version": "v0.2",
+      "thinking_chain": {
+        "stages_present": [],
+        "stages_count": 0,
+        "stage_coverage_pct": 0.0,
+        "decision_count": 0,
+        "has_contradiction_analysis": false,
+        "has_theory_verification": false,
+        "chain_order": []
+      },
+      "evidence_chain": {
+        "market_data_count": 0,
+        "signal_count": 0,
+        "strategy_count": 0,
+        "historical_count": 0,
+        "constraint_count": 0,
+        "total_refs": 0
+      },
+      "decision_outcome": {
+        "pnl_pct": 1.5,
+        "pnl_usdt": null,
+        "drawdown": null,
+        "exit_reason": null,
+        "goal_achieved": true,
+        "is_profit": true
+      },
+      "quadrant_features": {
+        "x": 0.5,
+        "y": 0.6,
+        "y_perf": 0.6,
+        "y_consistency": 0.6,
+        "y_human": 0.5,
+        "quadrant_label": "benefit_medium_certainty"
+      },
+      "review_detailed": {
+        "mistakes_count": 0,
+        "successes_count": 0,
+        "consistency": "consistent",
+        "review_record_id": null,
+        "lessons": [
+          "good trade"
+        ],
+        "avg_mistake_severity": null
+      }
+    },
+    "TC_TC_FLOW_01": {
+      "inst_id": "TC_FLOW_01_INST",
+      "regime": "bull",
+      "decision": null,
+      "reason_codes": [],
+      "tags": [
+        "auto_case",
+        "episode_ref"
+      ],
+      "scores": {},
+      "total_score": null,
+      "edge": null,
+      "matched_strategy": null,
+      "category": null,
+      "directive_bias": null,
+      "references": {
+        "case_lessons": []
+      },
+      "l4_status": "M0_CASE_REGISTERED",
+      "version": "v0.2",
+      "thinking_chain": {
+        "stages_present": [],
+        "stages_count": 0,
+        "stage_coverage_pct": 0.0,
+        "decision_count": 0,
+        "has_contradiction_analysis": false,
+        "has_theory_verification": false,
+        "chain_order": []
+      },
+      "evidence_chain": {
+        "market_data_count": 0,
+        "signal_count": 0,
+        "strategy_count": 0,
+        "historical_count": 0,
+        "constraint_count": 0,
+        "total_refs": 0
+      },
+      "decision_outcome": {
+        "pnl_pct": 2.0,
+        "pnl_usdt": 200.0,
+        "drawdown": 1.0,
+        "exit_reason": null,
+        "goal_achieved": null,
+        "is_profit": true
+      },
+      "quadrant_features": {
+        "x": 0.0,
+        "y": 0.0,
+        "y_perf": 0.0,
+        "y_consistency": 0.0,
+        "y_human": 0.0,
+        "quadrant_label": "neutral_low_certainty"
+      },
+      "review_detailed": {
+        "mistakes_count": 0,
+        "successes_count": 0,
+        "consistency": "partially_consistent",
+        "review_record_id": null,
+        "lessons": [],
+        "avg_mistake_severity": null
+      }
+    },
+    "TC_TC_LOSS_01": {
+      "inst_id": "TC_LOSS_01_INST",
+      "regime": "bear",
+      "decision": null,
+      "reason_codes": [],
+      "tags": [
+        "auto_case",
+        "episode_ref"
+      ],
+      "scores": {},
+      "total_score": null,
+      "edge": null,
+      "matched_strategy": null,
+      "category": null,
+      "directive_bias": null,
+      "references": {
+        "case_lessons": []
+      },
+      "l4_status": "M0_CASE_REGISTERED",
+      "version": "v0.2",
+      "thinking_chain": {
+        "stages_present": [],
+        "stages_count": 0,
+        "stage_coverage_pct": 0.0,
+        "decision_count": 0,
+        "has_contradiction_analysis": false,
+        "has_theory_verification": false,
+        "chain_order": []
+      },
+      "evidence_chain": {
+        "market_data_count": 0,
+        "signal_count": 0,
+        "strategy_count": 0,
+        "historical_count": 0,
+        "constraint_count": 0,
+        "total_refs": 0
+      },
+      "decision_outcome": {
+        "pnl_pct": -2.0,
+        "pnl_usdt": -200.0,
+        "drawdown": 1.0,
+        "exit_reason": null,
+        "goal_achieved": null,
+        "is_profit": false
+      },
+      "quadrant_features": {
+        "x": 0.0,
+        "y": 0.0,
+        "y_perf": 0.0,
+        "y_consistency": 0.0,
+        "y_human": 0.0,
+        "quadrant_label": "neutral_low_certainty"
+      },
+      "review_detailed": {
+        "mistakes_count": 0,
+        "successes_count": 0,
+        "consistency": "partially_consistent",
+        "review_record_id": null,
+        "lessons": [],
+        "avg_mistake_severity": null
+      }
+    },
+    "TC_TC_PROFIT_01": {
+      "inst_id": "TC_PROFIT_01_INST",
+      "regime": "bull",
+      "decision": null,
+      "reason_codes": [],
+      "tags": [
+        "auto_case",
+        "episode_ref"
+      ],
+      "scores": {},
+      "total_score": null,
+      "edge": null,
+      "matched_strategy": null,
+      "category": null,
+      "directive_bias": null,
+      "references": {
+        "case_lessons": []
+      },
+      "l4_status": "M0_CASE_REGISTERED",
+      "version": "v0.2",
+      "thinking_chain": {
+        "stages_present": [],
+        "stages_count": 0,
+        "stage_coverage_pct": 0.0,
+        "decision_count": 0,
+        "has_contradiction_analysis": false,
+        "has_theory_verification": false,
+        "chain_order": []
+      },
+      "evidence_chain": {
+        "market_data_count": 0,
+        "signal_count": 0,
+        "strategy_count": 0,
+        "historical_count": 0,
+        "constraint_count": 0,
+        "total_refs": 0
+      },
+      "decision_outcome": {
+        "pnl_pct": 3.5,
+        "pnl_usdt": 350.0,
+        "drawdown": 1.75,
+        "exit_reason": null,
+        "goal_achieved": null,
+        "is_profit": true
+      },
+      "quadrant_features": {
+        "x": 0.0,
+        "y": 0.0,
+        "y_perf": 0.0,
+        "y_consistency": 0.0,
+        "y_human": 0.0,
+        "quadrant_label": "neutral_low_certainty"
+      },
+      "review_detailed": {
+        "mistakes_count": 0,
+        "successes_count": 0,
+        "consistency": "partially_consistent",
+        "review_record_id": null,
+        "lessons": [],
+        "avg_mistake_severity": null
+      }
+    },
+    "TC_TC_STATE_01": {
+      "inst_id": "TC_STATE_01_INST",
+      "regime": "bull",
+      "decision": null,
+      "reason_codes": [],
+      "tags": [
+        "auto_case",
+        "episode_ref"
+      ],
+      "scores": {},
+      "total_score": null,
+      "edge": null,
+      "matched_strategy": null,
+      "category": null,
+      "directive_bias": null,
+      "references": {
+        "case_lessons": []
+      },
+      "l4_status": "M0_CASE_REGISTERED",
+      "version": "v0.2",
+      "thinking_chain": {
+        "stages_present": [],
+        "stages_count": 0,
+        "stage_coverage_pct": 0.0,
+        "decision_count": 0,
+        "has_contradiction_analysis": false,
+        "has_theory_verification": false,
+        "chain_order": []
+      },
+      "evidence_chain": {
+        "market_data_count": 0,
+        "signal_count": 0,
+        "strategy_count": 0,
+        "historical_count": 0,
+        "constraint_count": 0,
+        "total_refs": 0
+      },
+      "decision_outcome": {
+        "pnl_pct": 1.5,
+        "pnl_usdt": 150.0,
+        "drawdown": 0.75,
+        "exit_reason": null,
+        "goal_achieved": null,
+        "is_profit": true
+      },
+      "quadrant_features": {
+        "x": 0.0,
+        "y": 0.0,
+        "y_perf": 0.0,
+        "y_consistency": 0.0,
+        "y_human": 0.0,
+        "quadrant_label": "neutral_low_certainty"
+      },
+      "review_detailed": {
+        "mistakes_count": 0,
+        "successes_count": 0,
+        "consistency": "partially_consistent",
+        "review_record_id": null,
+        "lessons": [],
+        "avg_mistake_severity": null
+      }
+    }
+  },
+  "distill_features": {}
+}

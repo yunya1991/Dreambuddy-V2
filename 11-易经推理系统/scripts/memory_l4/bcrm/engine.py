@@ -110,9 +110,9 @@ class BCRMEngine:
             output.fail_closed(REASON_HIGH_UNCERTAINTY)
             return output
 
+        # Bug Y1 修复: 无矛盾列表时自动从市场快照推导，而非直接 fail_closed
         if not contradiction_list:
-            output.fail_closed(REASON_NO_CONTRADICTION_DATA)
-            return output
+            contradiction_list = self._auto_generate_contradictions(market_snapshot)
 
         # 提取四维评分
         sd_score = market_snapshot.get("supply_demand_score", 0.5)
@@ -238,6 +238,37 @@ class BCRMEngine:
         output.uncertainty = 1.0 - next_state.confidence
 
         return output
+
+    def _auto_generate_contradictions(self, market_snapshot: Dict[str, Any]) -> list:
+        """从市场快照自动推导矛盾列表（Bug Y1 修复）。
+        当调用方未提供 A0 矛盾列表时，从价格/RSI/资金费率等自动生成。
+        """
+        contras = []
+        pct     = float(market_snapshot.get("price_change_pct", market_snapshot.get("ch24", 0)) or 0)
+        rsi     = float(market_snapshot.get("rsi", market_snapshot.get("rsi14", 50)) or 50)
+        funding = float(market_snapshot.get("funding_rate", 0) or 0)
+        vol     = float(market_snapshot.get("volume_ratio", 1.0) or 1.0)
+
+        if abs(pct) > 2:
+            contras.append({"id": "AUTO_C1", "type": "trend_countertrend",
+                            "dominant_side": "BULL" if pct > 0 else "BEAR",
+                            "tension": min(abs(pct) / 20.0, 1.0)})
+        if rsi > 70 or rsi < 30:
+            contras.append({"id": "AUTO_C2", "type": "sentiment_fear_greed",
+                            "dominant_side": "BEAR" if rsi > 70 else "BULL",
+                            "tension": abs(rsi - 50) / 50.0})
+        if abs(funding) > 0.0001:
+            contras.append({"id": "AUTO_C3", "type": "supply_demand",
+                            "dominant_side": "BEAR" if funding > 0 else "BULL",
+                            "tension": min(abs(funding) * 5000, 1.0)})
+        if vol > 1.5 and abs(pct) > 1:
+            contras.append({"id": "AUTO_C4", "type": "volume_price",
+                            "dominant_side": "BULL" if pct > 0 else "BEAR",
+                            "tension": min(vol / 3.0, 1.0)})
+        if not contras:
+            contras.append({"id": "AUTO_C0", "type": "supply_demand",
+                            "dominant_side": "EQUAL", "tension": 0.3})
+        return contras
 
     def infer_with_adapter(self,
                            market_snapshot: Dict[str, Any],

@@ -1,0 +1,27 @@
+{
+  "version": "qmm-v1.0",
+  "snapshot_ts": "2026-07-08T15:21:22+08:00",
+  "data_version": "dv-20260708-001",
+  "feature_def_version": "fd-1.0",
+  "qmm_version": "qmm-v1.0",
+  "trend_state": "FLAT",
+  "trend_change_point": "STABLE",
+  "uncertainty": 0.425,
+  "reason_codes": [
+    "NEUTRAL"
+  ],
+  "evidence_refs": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "gate_status": "OFFLINE",
+  "output_file": "/Users/luke.zhang/dream-v2/11-易经推理系统/.workbuddy/memory_l4/qmm/qmm_snapshot_2026-07-08T15-21-22+08-00.json"
+}
