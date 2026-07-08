@@ -230,10 +230,11 @@ TENSION_HIGH_THRESHOLD = 0.7       # 高张力阈值
 TENSION_MEDIUM_THRESHOLD = 0.6     # 中张力阈值
 
 # 力学引擎参数（force_engine.py 使用）
-FORCE_MAGNITUDE_NORM_FACTOR = 2.5  # 力幅值归一化系数
-VELOCITY_NORM_FACTOR = 3.0         # 速度归一化系数
-CONFIDENCE_WEIGHT_FORCE = 0.25     # 置信度：力幅值权重
-CONFIDENCE_WEIGHT_AGREEMENT = 0.25 # 置信度：一致性权重
+# P1修复: velocity_norm 对小趋势(0.02-0.1)不够灵敏，用 tanh 替代 min(1, x*k)
+FORCE_MAGNITUDE_NORM_FACTOR = 4.0  # 力幅值归一化系数（提高，增加中等信号敏感度）
+VELOCITY_NORM_FACTOR = 8.0         # tanh 缩放系数（原3.0 → 8.0，tanh(0.035*8)=0.27 vs 原0.107）
+CONFIDENCE_WEIGHT_FORCE = 0.30     # 置信度：力幅值权重（略微提高）
+CONFIDENCE_WEIGHT_AGREEMENT = 0.20 # 置信度：一致性权重
 CONFIDENCE_WEIGHT_VELOCITY = 0.50  # 置信度：速度权重
 VELOCITY_ZERO_THRESHOLD = 0.01     # 速度归零阈值
 REVERSAL_STRENGTH_THRESHOLD = 0.05 # 转折强度阈值

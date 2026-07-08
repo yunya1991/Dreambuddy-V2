@@ -1,0 +1,14 @@
+name: Trading A5 Execution
+on:
+  schedule:
+    - cron: "0 */8 * * *"
+  workflow_dispatch:
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+jobs:
+  a5-execution:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run A5 Execution
+        run: python3 -m scripts.memory_l4.ab_bridge sim-trade

@@ -6,7 +6,7 @@ import sys
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Optional, Any, Dict, List
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -18,7 +18,7 @@ def _write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _parse_iso_utc(value: str) -> datetime | None:
+def _parse_iso_utc(value: str) -> Optional[datetime]:
     text = str(value or "").strip()
     if not text:
         return None
@@ -47,7 +47,7 @@ def _window_start(period: str, now: datetime) -> datetime:
     return now - (timedelta(days=7) if period == "week" else timedelta(days=30))
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: List[str] = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
     now = _parse_iso_utc(args.now_iso) or datetime.now(timezone.utc)
     start = _window_start(args.period, now)

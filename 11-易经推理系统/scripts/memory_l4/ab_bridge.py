@@ -1493,6 +1493,10 @@ def cli():
 
     sub.add_parser("sim-trade-summary", help="获取模拟交易汇总数据")
 
+    # P4: 三层自进化
+    p_evolve = sub.add_parser("self-evolve", help="触发三层自进化（A8+做梦部+联网反思）")
+    p_evolve.add_argument("--force", action="store_true", help="强制触发（忽略停滞检测）")
+
     args = parser.parse_args()
 
     if args.command == "publish":
@@ -1580,6 +1584,54 @@ def cli():
         print("\n" + "=" * 60)
         print("全流程完成")
         print("=" * 60)
+
+    elif args.command == "self-evolve":
+        # P4: 三层自进化（A8 + 做梦部 + 联网反思）
+        print("=" * 60)
+        print("P4: 三层自进化引擎")
+        print("=" * 60)
+        try:
+            from scripts.memory_l4.self_evolution_engine import SelfEvolutionEngine
+            # 收集系统表现统计
+            bus_stats = get_bus_stats()
+            sim_summary_raw = json.loads(
+                __import__("subprocess").run(
+                    [sys.executable, "-m", "scripts.memory_l4.ab_bridge", "sim-trade-summary"],
+                    capture_output=True, text=True, cwd=str(_ROOT)
+                ).stdout or "{}"
+            )
+            dist = sim_summary_raw.get("action_distribution", {})
+            total = sum(dist.values()) or 1
+            hold_rate = dist.get("hold", 0) / total
+
+            stats = {
+                "win_rate":       0.5,   # 真实数据待接入
+                "hold_rate":      hold_rate,
+                "hold_streak":    hold_rate * 10,
+                "top_hexagrams":  sim_summary_raw.get("top_hexagrams", {}),
+                "total_trades":   total,
+            }
+
+            engine = SelfEvolutionEngine()
+            should, reason = engine.should_trigger(stats)
+            force = getattr(args, "force", False)
+
+            if should or force:
+                print(f"触发原因: {reason}")
+                result = engine.run_full_cycle(stats, [], force=force)
+                print(json.dumps({
+                    "adopted_count": len(result["adopted"]),
+                    "proposals":     [p["title"] for p in result["proposals"]],
+                    "adopted":       [p["title"] for p in result["adopted"]],
+                }, ensure_ascii=False, indent=2))
+            else:
+                print(f"无需触发: {reason}")
+                print(json.dumps({"should_trigger": False, "reason": reason},
+                                  ensure_ascii=False))
+        except Exception as e:
+            import traceback
+            print(json.dumps({"error": str(e), "traceback": traceback.format_exc()},
+                              ensure_ascii=False))
 
     elif args.command == "yijing-status":
         result = get_yijing_summary()

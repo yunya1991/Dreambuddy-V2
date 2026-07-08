@@ -5,7 +5,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Optional, Any, Dict, List
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -82,7 +82,7 @@ def _run_case(case: Dict[str, Any], index: int, matrix_dir: Path) -> Dict[str, A
     }
 
 
-def main(argv: List[str] | None = None) -> int:
+def main(argv: List[str] = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
     matrix_path = Path(args.matrix_json)
     matrix = _load_json(matrix_path)

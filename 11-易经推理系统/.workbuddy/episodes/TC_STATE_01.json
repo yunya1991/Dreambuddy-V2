@@ -1,0 +1,37 @@
+{
+  "trace_id": "TC_STATE_01",
+  "inst_id": "TC_STATE_01_INST",
+  "ts": "2026-07-08T08:55:15.462033+00:00",
+  "decision": "long",
+  "status": "closed",
+  "regime": "bull",
+  "pnl_pct": 1.5,
+  "pnl_usdt": 150.0,
+  "drawdown": 0.75,
+  "exit_reason": "take_profit",
+  "goal_achieved": true,
+  "outcome": {
+    "realized_pnl_pct": 1.5,
+    "realized_pnl_usdt": 150.0,
+    "max_drawdown": 0.75,
+    "exit_reason": "take_profit",
+    "goal_achieved": true
+  },
+  "reason_codes": [
+    "reason_TC_STATE_01"
+  ],
+  "total_score": 73.0,
+  "edge": 15.0,
+  "scores": {
+    "momentum": 0.7,
+    "volatility": 0.5,
+    "trend": 0.8
+  },
+  "strategy_result": {
+    "strategy_directive": {
+      "matched_strategy": "momentum_breakout",
+      "category": "trend_following",
+      "directive_bias": "bullish"
+    }
+  }
+}

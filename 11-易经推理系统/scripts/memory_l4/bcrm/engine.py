@@ -62,7 +62,7 @@ class BCRMEngine:
     易经引擎负责把物理结果翻译成卦象符号。
     """
 
-    min_confidence_threshold: float = 0.36
+    min_confidence_threshold: float = 0.25   # P1修复: 原0.36过高，tanh修正后有效范围降至0.2-0.8
     qualitative_threshold: float = DEFAULT_QUALITATIVE_THRESHOLD
     sixiang_weights: Dict[str, float] = field(default_factory=dict)
 
@@ -105,14 +105,18 @@ class BCRMEngine:
                                             datetime.now().isoformat()),
         )
 
+        # P0 修复: 自动预处理行情数据，解决 ForceEngine 信号断层
+        from .market_preprocessor import normalize_snapshot
+        market_snapshot = normalize_snapshot(market_snapshot)
+
         # Fail-fast 检查
         if qmm_output and qmm_output.get("uncertainty", 0) > DEFAULT_HIGH_UNCERTAINTY:
             output.fail_closed(REASON_HIGH_UNCERTAINTY)
             return output
 
+        # Bug Y1 修复: 无矛盾列表时自动从市场快照推导，而非直接 fail_closed
         if not contradiction_list:
-            output.fail_closed(REASON_NO_CONTRADICTION_DATA)
-            return output
+            contradiction_list = self._auto_generate_contradictions(market_snapshot)
 
         # 提取四维评分
         sd_score = market_snapshot.get("supply_demand_score", 0.5)
@@ -193,14 +197,25 @@ class BCRMEngine:
             force_result, is_qualitative_change, tension)
         output.next_state = next_state
 
-        # 置信度过滤（体量调整阈值）
-        # 特殊处理：FLAT 方向使用更宽松的阈值（震荡是有效状态，非信号不足）
-        conf_threshold = scale_params.confidence_threshold
+        # 置信度分层处理（借鉴 LEAN 的信号强度分级）
+        # 硬门槛（绝对不处理）: min_confidence_threshold * 0.7
+        # 软门槛（轻仓试探）:    min_confidence_threshold
+        # 正常门槛（标准仓位）:  scale_params.confidence_threshold * 0.8
+        hard_threshold = self.min_confidence_threshold * 0.7   # ~0.175
+        soft_threshold = self.min_confidence_threshold          # 0.25
         if next_state.direction == DIR_FLAT:
-            conf_threshold *= 0.3  # FLAT 阈值大幅降低（震荡市是有效状态）
-        if next_state.confidence < conf_threshold:
+            hard_threshold *= 0.3
+            soft_threshold *= 0.3
+
+        if next_state.confidence < hard_threshold:
+            # 完全无信号，fail_closed
             output.fail_closed(REASON_LOW_CONFIDENCE)
             return output
+        elif next_state.confidence < soft_threshold:
+            # 弱信号：标记为低置信度，继续执行但后续策略分支会生成轻仓版本
+            output.reason_codes = output.reason_codes or []
+            output.reason_codes.append("WEAK_SIGNAL_LIGHT_POSITION")
+            # 不 return，继续走完流程
 
         # Step 5: 螺旋定位
         spiral = self._step5_spiral_position(
@@ -220,6 +235,34 @@ class BCRMEngine:
             price=market_snapshot.get("price", 0),
             volatility=volatility,
             confidence=next_state.confidence)
+
+        # Step 6.5: 多样性扩展（借鉴 LEAN 多策略组合）
+        # 当 B1 占比 > 80% 时自动补充互补策略
+        try:
+            from .strategy_diversity import StrategyDiversityManager
+            sdm = StrategyDiversityManager()
+            diversity_report = sdm.check_and_expand(market_snapshot, branches)
+            if diversity_report.triggered and diversity_report.new_branches:
+                for nb in diversity_report.new_branches:
+                    from .output_contract import StrategyBranch
+                    extra = StrategyBranch(
+                        branch_id=nb["branch_id"],
+                        condition=nb["condition"],
+                        action=nb["action"],
+                        position_modifier=nb.get("position_modifier", 0.3),
+                        stop_condition=nb["stop_condition"],
+                        rationale=nb["rationale"],
+                        stop_loss_px=nb.get("stop_loss_px", 0),
+                        take_profit_px=nb.get("take_profit_px", 0),
+                        reduce_ratio=nb.get("reduce_ratio", 0),
+                    )
+                    branches.append(extra)
+                output.bagua_meaning = (
+                    output.bagua_meaning or ""
+                ) + f" [多样性扩展: {[b['branch_id'] for b in diversity_report.new_branches]}]"
+        except Exception:
+            pass  # 多样性模块失败不影响主流程
+
         output.strategy_branches = branches
 
         # Step 7: 实践指令
@@ -238,6 +281,37 @@ class BCRMEngine:
         output.uncertainty = 1.0 - next_state.confidence
 
         return output
+
+    def _auto_generate_contradictions(self, market_snapshot: Dict[str, Any]) -> list:
+        """从市场快照自动推导矛盾列表（Bug Y1 修复）。
+        当调用方未提供 A0 矛盾列表时，从价格/RSI/资金费率等自动生成。
+        """
+        contras = []
+        pct     = float(market_snapshot.get("price_change_pct", market_snapshot.get("ch24", 0)) or 0)
+        rsi     = float(market_snapshot.get("rsi", market_snapshot.get("rsi14", 50)) or 50)
+        funding = float(market_snapshot.get("funding_rate", 0) or 0)
+        vol     = float(market_snapshot.get("volume_ratio", 1.0) or 1.0)
+
+        if abs(pct) > 2:
+            contras.append({"id": "AUTO_C1", "type": "trend_countertrend",
+                            "dominant_side": "BULL" if pct > 0 else "BEAR",
+                            "tension": min(abs(pct) / 20.0, 1.0)})
+        if rsi > 70 or rsi < 30:
+            contras.append({"id": "AUTO_C2", "type": "sentiment_fear_greed",
+                            "dominant_side": "BEAR" if rsi > 70 else "BULL",
+                            "tension": abs(rsi - 50) / 50.0})
+        if abs(funding) > 0.0001:
+            contras.append({"id": "AUTO_C3", "type": "supply_demand",
+                            "dominant_side": "BEAR" if funding > 0 else "BULL",
+                            "tension": min(abs(funding) * 5000, 1.0)})
+        if vol > 1.5 and abs(pct) > 1:
+            contras.append({"id": "AUTO_C4", "type": "volume_price",
+                            "dominant_side": "BULL" if pct > 0 else "BEAR",
+                            "tension": min(vol / 3.0, 1.0)})
+        if not contras:
+            contras.append({"id": "AUTO_C0", "type": "supply_demand",
+                            "dominant_side": "EQUAL", "tension": 0.3})
+        return contras
 
     def infer_with_adapter(self,
                            market_snapshot: Dict[str, Any],

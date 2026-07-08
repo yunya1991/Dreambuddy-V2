@@ -1,0 +1,14 @@
+name: Trading A8 Governance
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+jobs:
+  a8-governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run A8 Theory-Practice Verification
+        run: python3 -m scripts.memory_l4.ab_bridge learn
