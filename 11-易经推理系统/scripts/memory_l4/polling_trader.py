@@ -62,7 +62,7 @@ class PollingTrader:
                  default_position_pct: float = 0.10,
                  guardian: ProcessGuardian = None):
         self.interval = interval
-        self.coins = coins or ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "GOLD", "OIL", "SPX", "NAS"]
+        self.coins = coins or ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE"]
         self.bar = bar
         self.confidence_threshold = confidence_threshold
         self.max_positions = max_positions
@@ -714,8 +714,8 @@ def main():
     parser = argparse.ArgumentParser(description="易经推理轮询交易器（P2 完整版）")
     parser.add_argument("--interval", type=int, default=3600,
                         help="轮询间隔（秒），默认 3600(1h)")
-    parser.add_argument("--coins", type=str, default="BTC,ETH,SOL,BNB,XRP,DOGE,GOLD,OIL,SPX,NAS",
-                        help="币种列表，逗号分隔，默认 BTC,ETH,SOL,BNB,XRP,DOGE,GOLD,OIL,SPX,NAS")
+    parser.add_argument("--coins", type=str, default="BTC,ETH,SOL,BNB,XRP,DOGE",
+                        help="币种列表，逗号分隔，默认 BTC,ETH,SOL,BNB,XRP,DOGE")
     parser.add_argument("--bar", type=str, default="1H",
                         help="K线周期，默认 1H")
     parser.add_argument("--confidence", type=float, default=0.35,
