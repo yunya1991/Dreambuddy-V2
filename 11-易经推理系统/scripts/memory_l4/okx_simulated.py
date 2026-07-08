@@ -12,6 +12,7 @@ import os
 import json
 import time
 import hmac
+import math
 import base64
 import hashlib
 import requests
@@ -233,10 +234,27 @@ class OKXSimulatedClient:
         last_price = ticker["last"]
         ct_val = instrument["ct_val"]
         ct_mult = instrument["ct_mult"]
+        lot_sz = instrument["lot_sz"]
         contract_value = last_price * ct_val * ct_mult
         if contract_value <= 0:
             return usdt_amount
-        return usdt_amount / contract_value
+        raw_sz = usdt_amount / contract_value
+        # 按 lot_sz 取整（向下取整，保证可成交）
+        if lot_sz > 0:
+            aligned_sz = math.floor(raw_sz / lot_sz) * lot_sz
+        else:
+            aligned_sz = raw_sz
+        # 保留有效精度
+        if lot_sz >= 1:
+            return float(int(aligned_sz))
+        elif lot_sz >= 0.1:
+            return round(aligned_sz, 1)
+        elif lot_sz >= 0.01:
+            return round(aligned_sz, 2)
+        elif lot_sz >= 0.001:
+            return round(aligned_sz, 3)
+        else:
+            return round(aligned_sz, 4)
 
     def get_kline(self, inst_id: str = None, bar: str = "1H",
                   limit: int = 100) -> Dict:
