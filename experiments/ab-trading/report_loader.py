@@ -126,52 +126,73 @@ def load_a1_daily() -> Optional[Dict]:
         with open(f, encoding="utf-8") as fp:
             raw = json.load(fp)
 
-        mr = raw.get("market_regime", {})
-        si = raw.get("si_index", {})
-        ss = raw.get("signal_sufficiency", {})
-        ap = raw.get("action_pressure", {})
-        kl = raw.get("key_levels", {})
-        pc = raw.get("primary_contradiction", {})
+        # 兼容两种格式：
+        #   新格式（实际）: 顶层 regime/confidence/si_index(int)/three_screen 等
+        #   旧格式（历史）: market_regime 嵌套字典
+        if "market_regime" in raw and isinstance(raw["market_regime"], dict):
+            # 旧格式
+            mr = raw.get("market_regime", {})
+            triple_raw = mr.get("triple_screen", {})
+            regime = mr.get("regime", "")
+            confidence = mr.get("confidence", 0)
+            si_raw = raw.get("si_index", {})
+            si_score = si_raw.get("score", 0) if isinstance(si_raw, dict) else int(si_raw or 0)
+            pc = raw.get("primary_contradiction", {})
+            pc_dict = {
+                "id": pc.get("id", "") if isinstance(pc, dict) else "",
+                "description": pc.get("description", "") if isinstance(pc, dict) else str(pc),
+                "dominant_side": pc.get("dominant_side", "") if isinstance(pc, dict) else "",
+                "direction_implication": pc.get("direction_implication", "") if isinstance(pc, dict) else "",
+            }
+            triple = {
+                "week": triple_raw.get("S1_week", triple_raw.get("weekly", {})),
+                "day": triple_raw.get("S2_day", triple_raw.get("daily", {})),
+                "hour": triple_raw.get("S3_hour", triple_raw.get("hourly", {})),
+            }
+        else:
+            # 新格式（2026-07 以后实际格式）
+            three = raw.get("three_screen", {})
+            triple = {
+                "week":  {"score": three.get("weekly", 0)},
+                "day":   {"score": three.get("daily", 0)},
+                "hour":  {"score": three.get("hourly", 0)},
+                "composite": three.get("composite", 0),
+            }
+            regime = raw.get("regime", "")
+            confidence = raw.get("confidence", 0)
+            si_score = int(raw.get("si_index", 0) or 0)
+            # 提取主要矛盾
+            dominant_id = raw.get("dominant_contradiction", "")
+            contradictions = raw.get("contradictions", [])
+            pc_item = next((c for c in contradictions if c.get("id") == dominant_id), {})
+            pc_dict = {
+                "id":                  dominant_id,
+                "description":         pc_item.get("name", ""),
+                "dominant_side":       pc_item.get("bias", ""),
+                "direction_implication": pc_item.get("change", ""),
+            }
 
-        triple = mr.get("triple_screen", {})
         data = {
-            "timestamp": raw.get("meta", {}).get("timestamp", ""),
-            "report_ref": raw.get("meta", {}).get("report_ref", ""),
-            "regime": mr.get("regime", ""),
-            "confidence": mr.get("confidence", 0),
-            "composite_score": mr.get("composite_score", 0),
-            "technical_regime": mr.get("technical_regime", ""),
-            "triple_screen": {
-                "week": triple.get("S1_week", {}),
-                "day": triple.get("S2_day", {}),
-                "hour": triple.get("S3_hour", {}),
-            },
+            "date":              raw.get("date", ""),
+            "regime":            regime,
+            "confidence":        confidence,
+            "level":             raw.get("level", 0),
+            "triple_screen":     triple,
             "si_index": {
-                "score": si.get("score", 0),
-                "range": si.get("range", ""),
-                "position_mapping": si.get("position_mapping", ""),
+                "score":           si_score,
+                "components":      raw.get("si_index_components", {}),
             },
-            "signal_sufficiency": {
-                "level": ss.get("level", ""),
-                "net_direction": ss.get("net_direction", ""),
-                "positive_count": len(ss.get("directional_signals", [])),
-                "negative_count": len(ss.get("counter_signals", [])),
-            },
-            "action_pressure": {
-                "level": ap.get("pressure_level", ""),
-                "consecutive_skip_days": ap.get("consecutive_skip_days", 0),
-                "probe_recommendation": ap.get("probe_recommendation", ""),
-            },
-            "key_levels": kl,
-            "primary_contradiction": {
-                "id": pc.get("id", ""),
-                "description": pc.get("description", ""),
-                "dominant_side": pc.get("dominant_side", ""),
-                "direction_implication": pc.get("direction_implication", ""),
-            },
-            "total_contradictions": raw.get("total_contradictions", 0),
-            "contradiction_intensity": raw.get("contradiction_intensity", ""),
-            "file": str(f),
+            "key_levels":        raw.get("key_levels", {}),
+            "primary_contradiction": pc_dict,
+            "contradictions":    raw.get("contradictions", []),
+            # 价格快照
+            "btc_price":         raw.get("btc_price", 0),
+            "eth_price":         raw.get("eth_price", 0),
+            "sol_price":         raw.get("sol_price", 0),
+            "fgi":               raw.get("fgi", 0),
+            "funding_rate_btc":  raw.get("funding_rate_btc", 0),
+            "etf_1d_usd":        raw.get("etf_1d_usd", 0),
+            "file":              str(f),
         }
         _cache["a1_daily"] = {**data, "_fetched_at": datetime.now(timezone.utc).isoformat()}
         return data
