@@ -7,7 +7,8 @@ export type EvolutionTriggerSource =
   | 'scheduled_audit'
   | 'lesson_distilled'
   | 'a8_reflection'
-  | 'dream_oneirology';
+  | 'dream_oneirology'
+  | 'orchestration_optimization';
 
 export type EvolutionPhase =
   | 'discovery'

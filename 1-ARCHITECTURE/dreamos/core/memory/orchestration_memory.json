@@ -1,0 +1,185 @@
+{
+  "version": "1.0.0",
+  "created_at": "2026-07-10T18:38:03.074684",
+  "last_backtest": "2026-07-10T18:38:03.074713",
+  "backtest_period": null,
+  "scenarios": {
+    "NEUTRAL_LOW_DECELERATING": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.4902,
+      "metrics": {
+        "sharpe": 0.1892,
+        "return": 0.0081,
+        "max_dd": 0.1649,
+        "win_rate": 0.4643
+      },
+      "sample_count": 84,
+      "confidence": "medium",
+      "sparse": false
+    },
+    "NEUTRAL_NORMAL_DECELERATING": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.8382,
+      "metrics": {
+        "sharpe": 14.2018,
+        "return": 0.3743,
+        "max_dd": 0.0508,
+        "win_rate": 0.7353
+      },
+      "sample_count": 34,
+      "confidence": "high",
+      "sparse": false
+    },
+    "NEUTRAL_NORMAL_ACCELERATING": {
+      "best_pattern": "f_chain",
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "score": 0.4801,
+      "metrics": {
+        "sharpe": -0.3438,
+        "return": -0.0003,
+        "max_dd": 0.0118,
+        "win_rate": 0.5
+      },
+      "sample_count": 2,
+      "confidence": "low",
+      "sparse": true
+    },
+    "NEUTRAL_LOW_ACCELERATING": {
+      "best_pattern": "f_chain",
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "score": 0.7496,
+      "metrics": {
+        "sharpe": 8.7135,
+        "return": 0.0498,
+        "max_dd": 0.0161,
+        "win_rate": 0.4286
+      },
+      "sample_count": 7,
+      "confidence": "low",
+      "sparse": true
+    },
+    "NEUTRAL_LOW_EXHAUSTION": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.8125,
+      "metrics": {
+        "sharpe": 58.7074,
+        "return": 0.0626,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 3,
+      "confidence": "low",
+      "sparse": true
+    },
+    "NEUTRAL_NORMAL_EXHAUSTION": {
+      "best_pattern": "full_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F2",
+        "G1"
+      ],
+      "score": 0.779,
+      "metrics": {
+        "sharpe": 16.2052,
+        "return": 0.112,
+        "max_dd": 0.0087,
+        "win_rate": 0.5833
+      },
+      "sample_count": 12,
+      "confidence": "medium",
+      "sparse": false
+    },
+    "NEUTRAL_HIGH_ACCELERATING": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.8066,
+      "metrics": {
+        "sharpe": 48.419,
+        "return": 0.0328,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 3,
+      "confidence": "low",
+      "sparse": true
+    },
+    "NEUTRAL_HIGH_DECELERATING": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.7859,
+      "metrics": {
+        "sharpe": 40.2467,
+        "return": 0.0553,
+        "max_dd": 0.0009,
+        "win_rate": 0.75
+      },
+      "sample_count": 4,
+      "confidence": "low",
+      "sparse": true
+    },
+    "NEUTRAL_HIGH_EXHAUSTION": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.8017,
+      "metrics": {
+        "sharpe": 231.1801,
+        "return": 0.0086,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 1,
+      "confidence": "low",
+      "sparse": true
+    }
+  },
+  "fallback_chain": [
+    "L0_exact",
+    "L1_trend_vol",
+    "L2_trend",
+    "L3_default"
+  ],
+  "default_pattern": "c_chain",
+  "default_nodes": [
+    "C1",
+    "C2",
+    "C3"
+  ]
+}

@@ -10,6 +10,21 @@ from typing import List, Optional
 
 from .base import Command, CommandContext, list_commands, get_command
 
+try:
+    from . import scheduler_commands
+except Exception:
+    pass
+
+try:
+    from . import auto_commands
+except Exception:
+    pass
+
+try:
+    from . import orchestration_commands
+except Exception:
+    pass
+
 
 class CLIApp:
     """Dreambuddy OS CLI 应用
