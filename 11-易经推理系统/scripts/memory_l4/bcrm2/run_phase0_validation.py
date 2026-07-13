@@ -298,6 +298,33 @@ def main():
         print(f"  组合交易明细已保存: {timeline_path}")
         print()
 
+    # 异常检测
+    if all_results:
+        print("=" * 70)
+        print("  异常检测 (混合架构)")
+        print("=" * 70)
+
+        from .anomaly_detector import HybridAnomalyDetector, create_anomaly_report
+
+        detector = HybridAnomalyDetector(
+            if_contamination=0.02,
+            enable_if=True,
+            enable_lgb=True,
+            enable_dl=False,
+        )
+
+        for symbol in symbols:
+            df = get_klines(symbol, args.timeframe, max_bars=args.max_bars or 2000)
+            if df is not None and len(df) > 100:
+                summary = detector.get_summary(df, symbol=symbol)
+                print(f"  {symbol}:")
+                print(f"    异常数: {summary['anomaly_count']} / {summary['total_bars']} 根K线")
+                print(f"    异常率: {summary['anomaly_rate']*100:.2f}%")
+                if summary['latest_anomaly']:
+                    latest = summary['latest_anomaly']
+                    print(f"    最新异常: {latest['type']} ({latest['severity']}) @ {latest['time']}")
+        print()
+
     # 增量学习闭环
     if args.enable_incremental and all_results:
         print("=" * 70)

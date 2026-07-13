@@ -135,6 +135,16 @@ class PollingTrader:
             retrain_sharpe_threshold=1.0,
         )
 
+        # 异常检测引擎 (Phase 2.1)
+        from scripts.memory_l4.bcrm2.anomaly_detector import HybridAnomalyDetector
+        self.anomaly_detector = HybridAnomalyDetector(
+            if_contamination=0.02,
+            enable_if=True,
+            enable_lgb=True,
+            enable_dl=False,
+        )
+        self._kline_cache = {}  # 缓存K线数据用于异常检测
+
         self._sync_existing_positions()
 
     def _sync_existing_positions(self):
@@ -817,6 +827,35 @@ class PollingTrader:
         )
 
         effective_threshold = self._adjust_confidence_threshold()
+
+        # 异常检测 (Phase 2.1)
+        anomaly_detected = False
+        anomaly_coins = []
+        try:
+            for coin in self.coins:
+                kline_data = _load_kline_from_okx(
+                    inst_id=f"{coin}-USDT-SWAP", bar=self.bar, limit=self.kline_limit)
+                if kline_data and len(kline_data) > 100:
+                    import pandas as pd
+                    df = pd.DataFrame(kline_data)
+                    df['timestamp'] = pd.to_datetime(df['ts'], unit='ms')
+                    df.set_index('timestamp', inplace=True)
+                    df.rename(columns={'o': 'open', 'h': 'high', 'l': 'low', 'c': 'close', 'v': 'volume'}, inplace=True)
+
+                    summary = self.anomaly_detector.get_summary(df, symbol=coin)
+                    critical_count = summary['by_severity'].get('critical', 0)
+                    high_count = summary['by_severity'].get('high', 0)
+
+                    if critical_count > 0 or high_count >= 2:
+                        anomaly_detected = True
+                        anomaly_coins.append(coin)
+                        self._log(f"[异常检测] {coin}: 检测到 {critical_count} 个严重异常, {high_count} 个高等级异常")
+
+            if anomaly_detected:
+                self._log(f"[异常检测] 市场环境异常，提高风控等级 | 涉及币种: {anomaly_coins}")
+                effective_threshold = min(0.8, effective_threshold + 0.15)
+        except Exception as e:
+            self._log(f"[异常检测] 检测失败: {e}", "WARN")
 
         cycle_success = True
         for coin in self.coins:

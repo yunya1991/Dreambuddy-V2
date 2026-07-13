@@ -10138,5 +10138,265 @@
       ],
       "final_result": "HOLD"
     }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:01.581875",
+    "symbol": "BTC",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:00.007550",
+      "symbol": "BTC",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.17039999999999997
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:03.278507",
+    "symbol": "ETH",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:01.595239",
+      "symbol": "ETH",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.488
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:05.156789",
+    "symbol": "SOL",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:03.286758",
+      "symbol": "SOL",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.634
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:06.782095",
+    "symbol": "AVAX",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:05.170351",
+      "symbol": "AVAX",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.488
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:08.379109",
+    "symbol": "LINK",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:06.790281",
+      "symbol": "LINK",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.554
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:09.857790",
+    "symbol": "DOT",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:08.385583",
+      "symbol": "DOT",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.484
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:11.519244",
+    "symbol": "MATIC",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:09.880532",
+      "symbol": "MATIC",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.492
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:13.245645",
+    "symbol": "BNB",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:11.532907",
+      "symbol": "BNB",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.17039999999999997
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:14.876942",
+    "symbol": "OP",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:13.258286",
+      "symbol": "OP",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.2376
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
+  },
+  {
+    "timestamp": "2026-07-13T14:00:16.961012",
+    "symbol": "ARB",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-07-13T14:00:14.884662",
+      "symbol": "ARB",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.514
+        },
+        {
+          "step": "decision",
+          "status": "hold",
+          "reason": "\u65b9\u5411\u4e3aHOLD"
+        }
+      ],
+      "final_result": "HOLD"
+    }
   }
 ]
