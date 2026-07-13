@@ -69,6 +69,8 @@ def main():
                         help="特征相关性阈值, 高于此值的冗余特征将被剔除, 默认0.85")
     parser.add_argument("--portfolio", action="store_true",
                         help="启用多币种组合回测 (资金分配+组合层指标)")
+    parser.add_argument("--enable-incremental", action="store_true",
+                        help="启用增量学习闭环 (交易数据存储+模型版本管理)")
 
     args = parser.parse_args()
     args.enable_pivot = not args.no_pivot
@@ -296,6 +298,58 @@ def main():
         print(f"  组合交易明细已保存: {timeline_path}")
         print()
 
+    # 增量学习闭环
+    if args.enable_incremental and all_results:
+        print("=" * 70)
+        print("  增量学习闭环")
+        print("=" * 70)
 
-if __name__ == "__main__":
-    main()
+        from .incremental_learner import IncrementalLearner
+
+        learner = IncrementalLearner()
+
+        # 记录所有交易
+        for symbol, result in all_results.items():
+            trades_data = []
+            for t in result.all_trades:
+                trades_data.append({
+                    "symbol": symbol,
+                    "direction": t.direction,
+                    "entry_time": str(df.index[t.entry_bar]) if 'df' in dir() and t.entry_bar < len(df) else "",
+                    "exit_time": str(df.index[t.exit_bar]) if 'df' in dir() and t.exit_bar < len(df) else "",
+                    "entry_price": t.entry_price,
+                    "exit_price": t.exit_price,
+                    "pnl_pct": t.pnl_pct,
+                    "hold_bars": t.hold_bars,
+                    "exit_reason": t.exit_reason,
+                    "confidence": t.confidence,
+                    "hexagram": t.hexagram_name,
+                    "upper_gua": t.upper_gua,
+                    "lower_gua": t.lower_gua,
+                    "position_factor": t.position_factor,
+                })
+
+            if trades_data:
+                n_saved = learner.log_trades_batch(trades_data)
+                print(f"  ✅ {symbol}: 记录{n_saved}笔交易")
+
+        # 检查是否需要再训练
+        for symbol in symbols:
+            should_retrain, reason = learner.should_retrain(symbol)
+            if should_retrain:
+                print(f"  🔄 {symbol}: 需要再训练 — {reason}")
+            else:
+                print(f"  ✅ {symbol}: 暂不需要再训练")
+
+        # 显示仪表盘数据
+        print("\n  【模型仪表盘】")
+        for symbol in symbols:
+            dashboard = learner.get_dashboard_data(symbol)
+            print(f"  {symbol}:")
+            print(f"    总交易数: {dashboard.get('total_trades', 0)}")
+            print(f"    版本数: {dashboard.get('n_versions', 0)}")
+            perf = dashboard.get("recent_performance", {})
+            if perf:
+                print(f"    最近胜率: {perf.get('win_rate', 0):.1f}%")
+                print(f"    平均收益: {perf.get('avg_pnl', 0):.3f}%")
+        print()
