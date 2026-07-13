@@ -398,9 +398,15 @@ class DialecticalMLEngine:
         """
         训练L2 Meta-Labeling模型 (反题)
 
-        否定之否定: L1给出方向(正题), L2判断"该不该按这个方向下单"(反题)
+        否定之否定: L1给出方向(正题), L2判断"这个方向的收益好不好"(反题)
 
-        V2版本: 使用与L1互补的特征体系
+        V3版本: 标签重定义
+          - 不再是简单的"对/错"，而是"相对收益高低"
+          - 做多: 收益 > 中位数 → 正样本；收益 < 中位数 → 负样本
+          - 做空: 收益 > 中位数 → 正样本；收益 < 中位数 → 负样本
+          - 目的: L2学习区分"好交易"和"坏交易"，而不是总是预测"对"
+
+        使用与L1互补的特征体系:
           - 时间维度特征 (周期相位、季节性、时段)
           - 宏观环境特征 (BTC.D趋势、风险偏好)
           - 信号稀有度特征 (近期同类信号频率)
@@ -426,22 +432,31 @@ class DialecticalMLEngine:
         ml_features = MetaLabelingFeaturesV2()
         X_l2 = ml_features.compute_base_features(df, l1_pred, l1_proba, ref_df, cycle_phase)
 
-        # 做多L2: 当L1预测UP时, 判断这个UP信号是否正确
+        # 计算每根K线的未来收益 (用于定义L2标签)
+        close = df['close'].values
+        future_return = np.zeros(len(close))
+        for i in range(len(close) - 20):
+            future_return[i] = (close[i + 20] - close[i]) / close[i]
+
+        # 做多L2: 当L1预测UP时, 判断这个UP信号的收益是否高于中位数
         long_mask = (l1_pred == 1)
-        if long_mask.sum() < 10:
+        if long_mask.sum() < 20:
             return {"ok": False, "reason": f"insufficient L1 long signals: {long_mask.sum()}"}
 
+        long_returns = future_return[long_mask]
+        long_median = np.median(long_returns)
+        y_long = (long_returns > long_median).astype(int)
+
         X_l2_long = X_l2[long_mask]
-        y_long = (y[long_mask] == 1).astype(int)
 
         self.l2_model_long = lgb.LGBMClassifier(**self.l2_params)
         self.l2_model_long.fit(X_l2_long, y_long)
         long_pred = self.l2_model_long.predict(X_l2_long)
         long_acc = (long_pred == y_long).mean()
 
-        # 做空L2: 当L1预测DOWN时, 判断这个DOWN信号是否正确
+        # 做空L2: 当L1预测DOWN时, 判断这个DOWN信号的收益是否高于中位数
         short_mask = (l1_pred == -1)
-        if short_mask.sum() < 10:
+        if short_mask.sum() < 20:
             self.l2_model_short = None
             return {
                 "ok": True,
@@ -450,14 +465,18 @@ class DialecticalMLEngine:
                 "long_train_accuracy": float(long_acc),
                 "long_positive_ratio": float(y_long.mean()),
                 "long_n_samples": int(long_mask.sum()),
+                "long_median_return": float(long_median),
                 "short_train_accuracy": None,
                 "short_positive_ratio": None,
                 "short_n_samples": int(short_mask.sum()),
                 "note": "short samples insufficient, only long L2 trained"
             }
 
+        short_returns = -future_return[short_mask]  # 做空收益 = -未来收益
+        short_median = np.median(short_returns)
+        y_short = (short_returns > short_median).astype(int)
+
         X_l2_short = X_l2[short_mask]
-        y_short = (y[short_mask] == -1).astype(int)
 
         self.l2_model_short = lgb.LGBMClassifier(**self.l2_params)
         self.l2_model_short.fit(X_l2_short, y_short)
@@ -475,9 +494,11 @@ class DialecticalMLEngine:
             "long_train_accuracy": float(long_acc),
             "long_positive_ratio": float(y_long.mean()),
             "long_n_samples": int(long_mask.sum()),
+            "long_median_return": float(long_median),
             "short_train_accuracy": float(short_acc),
             "short_positive_ratio": float(y_short.mean()),
             "short_n_samples": int(short_mask.sum()),
+            "short_median_return": float(short_median),
         }
 
     # --------------------------------------------------------
@@ -527,11 +548,10 @@ class DialecticalMLEngine:
             l1_confidence = float(np.max(l1_proba[i]))
 
             # L3: 辩证裁决 (合题)
-            # L2介入策略:
-            # - L1高自信(>0.7): L2不否决, 但可以增强
-            # - L1中等自信(0.35-0.7): L2完全裁决
-            # - L1低自信(<0.35): L2可以提升到可执行水平
-            # L2否决机制: 当L2强烈否定(meta_conf < 0.3)时, 直接拒绝交易
+            # 原始设计: L2仅在L1不确定区(0.4-0.7)介入裁决
+            # - L1高自信(>0.7): 直接执行, L2不介入
+            # - L1中等自信(0.4-0.7): L2完全裁决
+            # - L1低自信(<0.4): 直接拒绝, L2不介入
             if direction == 0:
                 final_confidence = l1_confidence * 0.5
                 action = "HOLD"
@@ -540,37 +560,29 @@ class DialecticalMLEngine:
             elif direction == 1:
                 # L1做多
                 meta_conf = float(l2_long_proba[i]) if l2_long_proba is not None else None
-                if l2_long_proba is not None:
+                if l2_long_proba is not None and 0.4 <= l1_confidence <= 0.7:
+                    # 不确定区域: L2介入裁决
                     mc = float(l2_long_proba[i])
-                    if mc < 0.3:
-                        # L2强烈否定: 直接拒绝
-                        final_confidence = l1_confidence * 0.2
-                    elif mc < 0.5:
-                        # L2弱否定: 降低置信度
-                        final_confidence = l1_confidence * (0.5 + mc)
-                    elif mc > 0.7:
-                        # L2强烈同意: 增强置信度
-                        final_confidence = min(1.0, l1_confidence * (0.9 + mc * 0.2))
-                    else:
-                        # L2中性: 保持L1置信度
+                    if mc >= 0.5:
+                        # L2同意: 保持L1置信度 (不额外增强, 避免过度拟合)
                         final_confidence = l1_confidence
+                    else:
+                        # L2反对: 降低置信度
+                        final_confidence = l1_confidence * mc
                 else:
+                    # L1高自信或低自信: L2不介入
                     final_confidence = l1_confidence
                 l2_conf = meta_conf
                 action = "OPEN" if final_confidence > 0.35 else "HOLD"
             else:  # direction == -1
                 # L1做空
                 meta_conf = float(l2_short_proba[i]) if l2_short_proba is not None else None
-                if l2_short_proba is not None:
+                if l2_short_proba is not None and 0.4 <= l1_confidence <= 0.7:
                     mc = float(l2_short_proba[i])
-                    if mc < 0.3:
-                        final_confidence = l1_confidence * 0.2
-                    elif mc < 0.5:
-                        final_confidence = l1_confidence * (0.5 + mc)
-                    elif mc > 0.7:
-                        final_confidence = min(1.0, l1_confidence * (0.9 + mc * 0.2))
-                    else:
+                    if mc >= 0.5:
                         final_confidence = l1_confidence
+                    else:
+                        final_confidence = l1_confidence * mc
                 else:
                     final_confidence = l1_confidence
                 l2_conf = meta_conf

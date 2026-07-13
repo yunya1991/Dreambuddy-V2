@@ -257,6 +257,9 @@ class WalkForwardBacktester:
         """
         result = BacktestResult(symbol=self.symbol, n_folds=self.n_folds)
 
+        # 初始化可选特征DataFrame
+        cycle_feats = None
+
         # 按市值等级自动配置特征 (如果开启auto_mcap)
         if auto_mcap_config:
             cfg = self.mcap_classifier.get_config(self.symbol, df)
@@ -467,6 +470,8 @@ class WalkForwardBacktester:
                 train_start, train_end, test_start, test_end,
                 feature_names, feature_names_by_gua,
                 verbose=verbose,
+                ref_df=ref_df,
+                cycle_feats=cycle_feats,
             )
             result.folds.append(fold_result)
             result.all_trades.extend(fold_result.trades)
@@ -522,6 +527,8 @@ class WalkForwardBacktester:
         feature_names: List[str],
         feature_names_by_gua: Dict[str, List[str]],
         verbose: bool = False,
+        ref_df: Optional[pd.DataFrame] = None,
+        cycle_feats: Optional[pd.DataFrame] = None,
     ) -> FoldResult:
         """运行单个fold"""
         fold_result = FoldResult(

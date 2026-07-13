@@ -112,22 +112,22 @@ class MetaLabelingFeaturesV2:
         timestamps = df.index
         
         # 1. 交易时段 (UTC)
-        hours = timestamps.dt.hour
+        hours = timestamps.hour
         features[:, 0] = np.where(
             (hours >= 0) & (hours < 8), 0.0,  # 亚洲时段
             np.where((hours >= 8) & (hours < 16), 0.5, 1.0)  # 欧洲/美洲时段
         )
         
         # 2. 星期几效应
-        dow = timestamps.dt.dayofweek
+        dow = timestamps.dayofweek
         features[:, 1] = dow / 6.0  # 0-1标准化
         
         # 3. 月内相位
-        dom = timestamps.dt.day
+        dom = timestamps.day
         features[:, 2] = dom / 31.0  # 月初0 → 月末1
         
         # 4. 季节性 (季度)
-        month = timestamps.dt.month
+        month = timestamps.month
         features[:, 3] = ((month - 1) % 3) / 3.0  # 季度内相位
         
         # 5. 距离上次价格极值的时间
