@@ -464,7 +464,7 @@ class OKXSimulatedClient:
 
     def place_order(self, inst_id: str, side: str, ord_type: str = "market",
                     sz: float = None, px: float = None,
-                    td_mode: str = "cross", pos_side: str = "net",
+                    td_mode: str = "isolated", pos_side: str = "net",
                     tag: str = "yijing_sim",
                     reason: str = "") -> Dict:
         """
@@ -538,7 +538,7 @@ class OKXSimulatedClient:
         sz = self._usdt_to_sz(inst_id, usdt_amount)
         return self.place_order(
             inst_id=inst_id, side="buy", ord_type="market",
-            sz=sz, pos_side="long", td_mode="cross",
+            sz=sz, pos_side="long", td_mode="isolated",
             reason=reason or "bcrm_reasoning_open_long"
         )
 
@@ -549,7 +549,7 @@ class OKXSimulatedClient:
         sz = self._usdt_to_sz(inst_id, usdt_amount)
         return self.place_order(
             inst_id=inst_id, side="sell", ord_type="market",
-            sz=sz, pos_side="short", td_mode="cross",
+            sz=sz, pos_side="short", td_mode="isolated",
             reason=reason or "bcrm_reasoning_open_short"
         )
 
@@ -566,7 +566,7 @@ class OKXSimulatedClient:
         sz = long_pos[0]["pos"]
         return self.place_order(
             inst_id=inst_id, side="sell", ord_type="market",
-            sz=sz, pos_side="long", td_mode="cross",
+            sz=sz, pos_side="long", td_mode="isolated",
             reason=reason or "bcrm_reasoning_close_long"
         )
 
@@ -583,7 +583,7 @@ class OKXSimulatedClient:
         sz = short_pos[0]["pos"]
         return self.place_order(
             inst_id=inst_id, side="buy", ord_type="market",
-            sz=sz, pos_side="short", td_mode="cross",
+            sz=sz, pos_side="short", td_mode="isolated",
             reason=reason or "bcrm_reasoning_close_short"
         )
 
@@ -631,7 +631,7 @@ class OKXSimulatedClient:
             side = "sell" if pos_side == "long" else "buy"
             body = {
                 "instId": inst_id,
-                "tdMode": "cross",
+                "tdMode": "isolated",
                 "side": side,
                 "ordType": "oco",
                 "sz": str(sz),
@@ -666,7 +666,7 @@ class OKXSimulatedClient:
             sl_side = "sell" if pos_side == "long" else "buy"
             body = {
                 "instId": inst_id,
-                "tdMode": "cross",
+                "tdMode": "isolated",
                 "side": sl_side,
                 "ordType": "conditional",
                 "sz": str(sz),
@@ -695,7 +695,7 @@ class OKXSimulatedClient:
         tp_side = "sell" if pos_side == "long" else "buy"
         body = {
             "instId": inst_id,
-            "tdMode": "cross",
+            "tdMode": "isolated",
             "side": tp_side,
             "ordType": "conditional",
             "sz": str(sz),
@@ -751,7 +751,7 @@ class OKXSimulatedClient:
         side = "sell" if pos_side == "long" else "buy"
         result = self.place_order(
             inst_id=inst_id, side=side, ord_type="market",
-            sz=reduce_sz, pos_side=pos_side, td_mode="cross",
+            sz=reduce_sz, pos_side=pos_side, td_mode="isolated",
             reason=reason or f"bcrm_reduce_{int(reduce_ratio*100)}pct"
         )
         result["reduce_ratio"] = reduce_ratio

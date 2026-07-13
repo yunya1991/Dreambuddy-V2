@@ -17,6 +17,13 @@ try:
 except Exception:
     pass
 
+try:
+    from bounce_potential_evaluator import evaluate_signals, monitor_bounce_signals, SIGNAL_THRESHOLDS, ACTIVE_SIGNALS
+    BOUNCE_MONITOR_ENABLED = True
+except ImportError:
+    BOUNCE_MONITOR_ENABLED = False
+    _log("警告: 无法导入 bounce_potential_evaluator, 信号监控功能禁用")
+
 BASE_DIR = Path(__file__).parent
 STATE_FILE = BASE_DIR / "data" / "v15ct_state.json"
 LOG_DIR = BASE_DIR / "logs" / "v15ct"
@@ -196,7 +203,7 @@ def execute_open_position(client, coin, decision, state):
                 inst_id=inst_id,
                 side="buy",
                 sz=sz,
-                td_mode="cross",
+                td_mode="isolated",
                 pos_side="long",
             )
             if r.get("ok"):
@@ -277,7 +284,7 @@ def execute_addon(client, coin, pos, state):
                 inst_id=inst_id,
                 side="buy",
                 sz=sz,
-                td_mode="cross",
+                td_mode="isolated",
                 pos_side="long",
             )
             if r.get("ok"):
@@ -355,8 +362,8 @@ def check_take_profit(client, coin, pos, state):
                     inst_id=inst_id,
                     side="sell",
                     sz=close_sz,
-                    td_mode="cross",
-                    pos_side="long",
+                    td_mode="isolated",
+                pos_side="long",
                 )
                 if r.get("ok"):
                     _log(f"[{coin}] 止盈平仓成功")
@@ -384,8 +391,8 @@ def check_take_profit(client, coin, pos, state):
                     inst_id=inst_id,
                     side="sell",
                     sz=close_sz,
-                    td_mode="cross",
-                    pos_side="long",
+                    td_mode="isolated",
+                pos_side="long",
                 )
                 if r.get("ok"):
                     _log(f"[{coin}] 止损平仓 ({sl_type})")
@@ -474,6 +481,24 @@ def run_poll_cycle():
     
     # 第二阶段：收集所有未持仓币种的信号，按置信度排序开仓
     _log("--- 阶段2: 信号收集与排序开仓 ---")
+    
+    # 异常信号监控（影子模式：只输出不决策）
+    if BOUNCE_MONITOR_ENABLED:
+        _log("--- 反弹潜力监控（影子模式）---")
+        try:
+            signal_result = monitor_bounce_signals(COINS, lookback=60, min_signals=1)
+            if signal_result["highlighted_count"] > 0:
+                for r in signal_result["highlighted"]:
+                    triggers = ", ".join(r["triggered_list"])
+                    _log(f"[{r['coin']}] 信号触发({triggers}): n_triggered={r['n_triggered']}")
+                highlighted_coins = ", ".join([r["coin"] for r in signal_result["highlighted"]])
+                _log(f"潜在高价值币种({signal_result['highlighted_count']}个): {highlighted_coins}")
+            else:
+                _log("无信号触发币种")
+        except Exception as e:
+            _log(f"信号监控异常: {e}")
+        _log("--- 监控结束 ---")
+    
     candidates = []
     for coin in COINS:
         if coin in state["positions"]:
