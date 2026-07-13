@@ -7,11 +7,11 @@
     "status": "done"
   },
   "screen_orchestrator": {
-    "last_run": 1783917806.522538,
-    "last_duration": 2.6618218421936035,
-    "run_count": 264,
+    "last_run": 1783918559.143857,
+    "last_duration": 2.551659107208252,
+    "run_count": 266,
     "last_exit_code": 0,
-    "status": "running"
+    "status": "done"
   },
   "screen_monitor": {
     "last_run": 1783913013.497982,
@@ -21,9 +21,9 @@
     "status": "done"
   },
   "ab_orchestrator": {
-    "last_run": 1783917611.802664,
-    "last_duration": 45.298813819885254,
-    "run_count": 270,
+    "last_run": 1783918274.997791,
+    "last_duration": 48.43274998664856,
+    "run_count": 271,
     "last_exit_code": 0,
     "status": "done"
   },

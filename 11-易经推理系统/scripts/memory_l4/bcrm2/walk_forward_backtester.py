@@ -51,6 +51,7 @@ class Trade:
     exit_reason: str  # tp/sl/time/close
     confidence: float
     hexagram_name: str = ""
+    position_factor: float = 1.0
 
 
 @dataclass
@@ -698,6 +699,10 @@ class WalkForwardBacktester:
                     slippage = abs(exit_price - entry_price) * self.slippage_rate
                     pnl_pct = ((exit_price - entry_price) * direction - fee - slippage) / entry_price
 
+                    # 仓位系数只记录，不直接影响PnL
+                    # 通过调整置信度阈值实现市态自适应开仓
+                    pf = position.get("position_factor", 1.0)
+
                     trade = Trade(
                         entry_bar=position["entry_bar"],
                         exit_bar=bar_idx,
@@ -709,6 +714,7 @@ class WalkForwardBacktester:
                         exit_reason=exit_reason,
                         confidence=position["confidence"],
                         hexagram_name=position.get("hexagram_name", ""),
+                        position_factor=pf,
                     )
                     trades.append(trade)
                     position = None
@@ -729,6 +735,11 @@ class WalkForwardBacktester:
                 allow_trade = True
                 regime_name = "DEFAULT"
 
+                # 仓位系数 (默认1.0)
+                # position_factor > 1: 高信心市态(FOMO/强趋势), 更容易开仓
+                # position_factor < 1: 低信心市态(横盘/反转), 更难开仓
+                position_factor = 1.0
+
                 if regime_names is not None and i < len(regime_names):
                     regime_name = regime_names[i]
                     rp = DEFAULT_REGIME_PARAMS.get(regime_name)
@@ -739,7 +750,7 @@ class WalkForwardBacktester:
                         if direction == -1 and not rp.allow_short:
                             allow_trade = False
 
-                        # 置信度阈值
+                        # 置信度阈值 (基础值)
                         if direction == 1:
                             effective_conf_thresh = rp.long_conf_threshold
                         else:
@@ -749,6 +760,19 @@ class WalkForwardBacktester:
                         effective_tp_atr = rp.tp_atr
                         effective_sl_atr = rp.sl_atr
                         effective_max_hold = rp.max_hold_bars
+
+                        # 仓位系数 (市态自适应)
+                        position_factor = rp.position_factor
+
+                        # 用仓位系数调整置信度阈值:
+                        # position_factor > 1: 降低阈值, 更容易开仓
+                        # position_factor < 1: 提高阈值, 更难开仓
+                        # 阈值调整幅度 = 0.20 * (1 - position_factor)
+                        # 例如: FOMO(position_factor=1.5) → 阈值降低0.10
+                        #       横盘(position_factor=0.5) → 阈值提高0.10
+                        conf_adjust = 0.20 * (1 - position_factor)
+                        effective_conf_thresh += conf_adjust
+                        effective_conf_thresh = max(0.20, min(0.70, effective_conf_thresh))
 
                 # 置信度过滤 (用市态调整后的阈值)
                 if confidence < effective_conf_thresh:
@@ -788,6 +812,7 @@ class WalkForwardBacktester:
                     "hexagram_name": hex_name,
                     "regime_name": regime_name,
                     "max_hold_bars": effective_max_hold,
+                    "position_factor": position_factor,
                 }
 
         # 如果最后还有持仓，强制平仓
@@ -800,6 +825,9 @@ class WalkForwardBacktester:
             slippage = abs(exit_price - position["entry_price"]) * self.slippage_rate
             pnl_pct = ((exit_price - position["entry_price"]) * direction - fee - slippage) / position["entry_price"]
 
+            # 仓位系数只记录
+            pf = position.get("position_factor", 1.0)
+
             trade = Trade(
                 entry_bar=position["entry_bar"],
                 exit_bar=bar_idx,
@@ -807,6 +835,7 @@ class WalkForwardBacktester:
                 entry_price=position["entry_price"],
                 exit_price=exit_price,
                 pnl_pct=pnl_pct * 100,
+                position_factor=pf,
                 hold_bars=hold_bars,
                 exit_reason="end",
                 confidence=position["confidence"],
