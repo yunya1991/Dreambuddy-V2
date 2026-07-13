@@ -131,15 +131,17 @@ SIXTY_FOUR_GUAS = {
 
 class HexagramMapper:
     """
-    卦象映射器 — 将ML输出映射为易经卦象解释
+    卦象映射器 — 将ML输出映射为易经卦象解释 (增强版)
 
     定位: 可解释层 (Interpretation Layer)
     不做决策，只做"ML输出的人类可读翻译"
 
-    映射方法:
-      - 上卦: 特征重要性最高的2个维度中，更高的那个
-      - 下卦: 特征重要性次高的维度
-      - 卦义: 64卦卦义 + ML置信度校准
+    增强功能:
+      - 爻位计算: 六爻各有阴阳，对应多空力量的强弱分布
+      - 卦辞/象辞/爻辞: 详细的语义解释
+      - 互卦: 矛盾内部的深层结构 (2-5爻)
+      - 变卦: 矛盾的对立面 (最强力量反转后的卦象)
+      - 卦象强度: 偏离均值的程度，对应"矛盾激化程度"
     """
 
     def __init__(self, feature_names_by_gua: Dict[str, List[str]]):
@@ -220,6 +222,24 @@ class HexagramMapper:
             (model_direction == 0 and gua_info["direction"] == "neutral")
         )
 
+        # 计算六爻 (上下卦各三爻)
+        # 爻位: 初爻(下卦初)→二爻(下卦中)→三爻(下卦上)→四爻(上卦初)→五爻(上卦中)→上爻(上卦上)
+        # 阳爻=看多/力量强, 阴爻=看空/力量弱
+        # 每个卦的三爻对应: 初爻=该维度的短期动量, 二爻=中期趋势, 三爻=长期结构
+        hexagram_lines = self._compute_hexagram_lines(
+            upper_gua, lower_gua, gua_activity, norm_vals, feature_names,
+            model_direction, model_confidence
+        )
+
+        # 计算互卦 (2-5爻, 矛盾内部的深层结构)
+        mutual_gua = self._compute_mutual_gua(hexagram_lines)
+
+        # 计算变卦 (最强力量反转后的卦象, 矛盾的对立面)
+        changed_gua = self._compute_changed_gua(hexagram_lines, gua_activity)
+
+        # 卦象强度 (整体偏离均值的程度 = 矛盾激化程度)
+        gua_intensity = float(np.mean(list(gua_activity.values()))) if gua_activity else 0.0
+
         # 生成解释
         direction_text = "看涨" if model_direction == 1 else (
             "看跌" if model_direction == -1 else "观望"
@@ -242,13 +262,207 @@ class HexagramMapper:
                  "strength": round(sorted_guas[i][1], 4)}
                 for i in range(min(4, len(sorted_guas)))
             ],
+            # 增强: 六爻
+            "hexagram_lines": hexagram_lines,
+            # 增强: 互卦 (矛盾内部深层结构)
+            "mutual_gua": mutual_gua,
+            # 增强: 变卦 (矛盾对立面)
+            "changed_gua": changed_gua,
+            # 增强: 卦象强度 (矛盾激化程度)
+            "gua_intensity": round(gua_intensity, 4),
             "narrative": self._generate_narrative(
                 gua_info, direction_text, confidence_pct,
-                direction_consistent, sorted_guas
+                direction_consistent, sorted_guas, hexagram_lines,
+                mutual_gua, changed_gua, gua_intensity
             ),
         }
 
         return interpretation
+
+    def _compute_hexagram_lines(
+        self,
+        upper_gua: str,
+        lower_gua: str,
+        gua_activity: Dict[str, float],
+        norm_vals: np.ndarray,
+        feature_names: List[str],
+        model_direction: int,
+        model_confidence: float,
+    ) -> List[Dict]:
+        """
+        计算六爻 (上下卦各三爻)
+
+        爻位映射:
+          下卦三爻 (内卦, 内在因素):
+            初爻 (位1): 短期动量/即时力量 (该卦维度的短期特征)
+            二爻 (位2): 中期趋势/核心力量 (该卦维度的中期特征)
+            三爻 (位3): 长期结构/基础力量 (该卦维度的长期特征)
+          上卦三爻 (外卦, 外在因素):
+            四爻 (位4): 短期外部影响
+            五爻 (位5): 中期外部趋势
+            上爻 (位6): 长期外部结构
+
+        阴阳判定:
+          阳爻 (━): 该爻位力量 > 中位数阈值，看多/力量强
+          阴爻 (╶╴): 该爻位力量 < 中位数阈值，看空/力量弱
+        """
+        lines = []
+
+        # 下卦三爻 (内卦)
+        lower_activity = gua_activity.get(lower_gua, 0.5)
+        for pos in range(3):  # 0=初, 1=二, 2=三
+            # 初爻: 短期波动 (高权重)
+            # 二爻: 中期趋势 (中权重)
+            # 三爻: 长期结构 (低权重)
+            weight = [1.2, 1.0, 0.8][pos]
+            strength = lower_activity * weight
+            is_yang = (model_direction > 0 and strength > 0.3) or (model_direction < 0 and strength < 0.5)
+            # 简化: 以活跃度为基础, 结合ML方向判定阴阳
+            # 活跃度越高, 力量越强; ML方向为正, 阳爻概率越大
+            yang_prob = 0.5 + (model_direction * 0.3) + (strength - 0.5) * 0.4
+            is_yang = yang_prob > 0.5
+
+            line_name = ["初爻", "二爻", "三爻", "四爻", "五爻", "上爻"]
+            line_type = "阳" if is_yang else "阴"
+            line_symbol = "━" if is_yang else "╶╴"
+            lines.append({
+                "position": pos + 1,
+                "name": line_name[pos],
+                "type": line_type,
+                "symbol": line_symbol,
+                "strength": round(strength, 4),
+                "yang_prob": round(min(1.0, max(0.0, yang_prob)), 4),
+                "gua_part": "lower",
+            })
+
+        # 上卦三爻 (外卦)
+        upper_activity = gua_activity.get(upper_gua, 0.5)
+        for pos in range(3):  # 0=四, 1=五, 2=上
+            weight = [1.2, 1.0, 0.8][pos]
+            strength = upper_activity * weight
+            yang_prob = 0.5 + (model_direction * 0.3) + (strength - 0.5) * 0.4
+            is_yang = yang_prob > 0.5
+
+            line_name = ["初爻", "二爻", "三爻", "四爻", "五爻", "上爻"]
+            line_type = "阳" if is_yang else "阴"
+            line_symbol = "━" if is_yang else "╶╴"
+            lines.append({
+                "position": pos + 4,
+                "name": line_name[pos + 3],
+                "type": line_type,
+                "symbol": line_symbol,
+                "strength": round(strength, 4),
+                "yang_prob": round(min(1.0, max(0.0, yang_prob)), 4),
+                "gua_part": "upper",
+            })
+
+        return lines
+
+    def _compute_mutual_gua(self, hexagram_lines: List[Dict]) -> Dict:
+        """
+        计算互卦 (矛盾内部的深层结构)
+
+        互卦取法: 取2、3、4爻为下互卦, 3、4、5爻为上互卦
+        含义: 事物发展过程中内部的深层矛盾结构
+        """
+        if len(hexagram_lines) < 6:
+            return {"name": "未知", "lines": []}
+
+        # 2-4爻为下互卦 (索引1-3)
+        lower_mutual_lines = [hexagram_lines[1], hexagram_lines[2], hexagram_lines[3]]
+        # 3-5爻为上互卦 (索引2-4)
+        upper_mutual_lines = [hexagram_lines[2], hexagram_lines[3], hexagram_lines[4]]
+
+        lower_mutual_gua = self._lines_to_trigram(lower_mutual_lines)
+        upper_mutual_gua = self._lines_to_trigram(upper_mutual_lines)
+
+        gua_key = (upper_mutual_gua, lower_mutual_gua)
+        gua_info = SIXTY_FOUR_GUAS.get(
+            gua_key,
+            {"name": "未命名互卦", "meaning": "内部结构待解", "direction": "neutral"}
+        )
+
+        return {
+            "upper_gua": GUA_DIMENSION_MAP.get(upper_mutual_gua, {}),
+            "lower_gua": GUA_DIMENSION_MAP.get(lower_mutual_gua, {}),
+            "name": gua_info["name"],
+            "meaning": gua_info["meaning"],
+            "direction": gua_info["direction"],
+            "lines_symbol": self._lines_to_symbol([l for l in lower_mutual_lines] + [l for l in upper_mutual_lines]),
+        }
+
+    def _compute_changed_gua(self, hexagram_lines: List[Dict], gua_activity: Dict[str, float]) -> Dict:
+        """
+        计算变卦 (矛盾的对立面)
+
+        变卦取法: 最活跃的爻发生变化 (阳变阴, 阴变阳)
+        含义: 事物发展到极点后的对立面, 即"物极必反"
+        """
+        if len(hexagram_lines) < 6:
+            return {"name": "未知", "changed_line": None}
+
+        # 找到力量最强的爻 (最可能发生变化)
+        max_strength_idx = max(range(6), key=lambda i: hexagram_lines[i]["strength"])
+        changed_line = hexagram_lines[max_strength_idx].copy()
+
+        # 阴阳反转
+        new_type = "阴" if changed_line["type"] == "阳" else "阳"
+        new_symbol = "╶╴" if changed_line["type"] == "阳" else "━"
+        changed_line["new_type"] = new_type
+        changed_line["new_symbol"] = new_symbol
+
+        # 构建变卦的六爻
+        changed_lines = [l.copy() for l in hexagram_lines]
+        changed_lines[max_strength_idx]["type"] = new_type
+        changed_lines[max_strength_idx]["symbol"] = new_symbol
+
+        # 解析变卦的上下卦
+        lower_changed = self._lines_to_trigram(changed_lines[:3])
+        upper_changed = self._lines_to_trigram(changed_lines[3:])
+
+        gua_key = (upper_changed, lower_changed)
+        gua_info = SIXTY_FOUR_GUAS.get(
+            gua_key,
+            {"name": "未命名变卦", "meaning": "变化方向待解", "direction": "neutral"}
+        )
+
+        return {
+            "name": gua_info["name"],
+            "meaning": gua_info["meaning"],
+            "direction": gua_info["direction"],
+            "changed_line_name": changed_line["name"],
+            "changed_line_pos": changed_line["position"],
+            "original_type": changed_line["type"],
+            "new_type": new_type,
+            "lines_symbol": self._lines_to_symbol(changed_lines),
+        }
+
+    def _lines_to_trigram(self, lines: List[Dict]) -> str:
+        """将三爻转换为八卦名称 (从下到上)"""
+        if len(lines) < 3:
+            return "qian"
+
+        # 八卦对应表 (从下到上: 初、二、三)
+        # 0=阴, 1=阳
+        trigram_map = {
+            (1, 1, 1): "qian",   # 乾 ☰
+            (0, 0, 0): "kun",    # 坤 ☷
+            (1, 0, 0): "zhen",   # 震 ☳
+            (0, 1, 1): "xun",    # 巽 ☴
+            (0, 1, 0): "kan",    # 坎 ☵
+            (1, 0, 1): "li",     # 离 ☲
+            (0, 0, 1): "gen",    # 艮 ☶
+            (1, 1, 0): "dui",    # 兑 ☱
+        }
+
+        line_types = tuple(1 if l["type"] == "阳" else 0 for l in lines)
+        return trigram_map.get(line_types, "qian")
+
+    def _lines_to_symbol(self, lines: List[Dict]) -> str:
+        """将六爻转换为符号字符串 (从上到下显示)"""
+        # 从上到下显示: 上爻→初爻 (与数组顺序相反)
+        reversed_lines = list(reversed(lines))
+        return "\n".join([f"  {l['symbol']}" for l in reversed_lines])
 
     def _generate_narrative(
         self,
@@ -257,11 +471,16 @@ class HexagramMapper:
         confidence_pct: str,
         consistent: bool,
         sorted_guas: List[Tuple[str, float]],
+        hexagram_lines: Optional[List[Dict]] = None,
+        mutual_gua: Optional[Dict] = None,
+        changed_gua: Optional[Dict] = None,
+        gua_intensity: float = 0.0,
     ) -> str:
-        """生成人类可读的卦象叙事"""
+        """生成人类可读的卦象叙事 (增强版)"""
         top2_names = [GUA_DIMENSION_MAP[sorted_guas[i][0]]["name"] for i in range(min(2, len(sorted_guas)))]
         top2_elements = [GUA_DIMENSION_MAP[sorted_guas[i][0]]["element"] for i in range(min(2, len(sorted_guas)))]
 
+        # 基础叙事
         if consistent:
             narrative = (
                 f"今日{gua_info['name']}卦，{gua_info['meaning']}。"
@@ -275,6 +494,28 @@ class HexagramMapper:
                 f"辩证ML引擎判定{direction_text}，置信度{confidence_pct}。"
                 f"注意：ML方向与卦义方向不一致，需警惕矛盾转化的可能。"
             )
+
+        # 增强: 卦象强度 (矛盾激化程度)
+        if gua_intensity > 0:
+            intensity_level = "低" if gua_intensity < 0.3 else ("中" if gua_intensity < 0.6 else "高")
+            narrative += f" 当前矛盾激化程度为{intensity_level}强度(强度指数{gua_intensity:.2f})。"
+
+        # 增强: 变卦提示 (物极必反)
+        if changed_gua and changed_gua.get("changed_line_name"):
+            line_name = changed_gua["changed_line_name"]
+            changed_name = changed_gua.get("name", "未知")
+            orig_type = changed_gua.get("original_type", "")
+            new_type = changed_gua.get("new_type", "")
+            narrative += (
+                f" 变卦提示：{line_name}力量最强，若{orig_type}转{new_type}，"
+                f"卦象将变为{changed_name}，需警惕物极必反。"
+            )
+
+        # 增强: 互卦提示 (内部深层结构)
+        if mutual_gua and mutual_gua.get("name"):
+            mutual_name = mutual_gua["name"]
+            mutual_meaning = mutual_gua.get("meaning", "")
+            narrative += f" 深层结构：互卦为{mutual_name}（{mutual_meaning}），揭示内在矛盾演化趋势。"
 
         return narrative
 

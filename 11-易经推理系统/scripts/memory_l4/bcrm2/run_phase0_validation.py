@@ -188,6 +188,9 @@ def main():
                 "exit_reason": t.exit_reason,
                 "confidence": t.confidence,
                 "hexagram": t.hexagram_name,
+                "upper_gua": t.upper_gua,
+                "lower_gua": t.lower_gua,
+                "position_factor": t.position_factor,
             }
             for t in result.all_trades
         ])

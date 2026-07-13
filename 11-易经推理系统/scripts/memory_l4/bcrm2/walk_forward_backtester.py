@@ -51,6 +51,8 @@ class Trade:
     exit_reason: str  # tp/sl/time/close
     confidence: float
     hexagram_name: str = ""
+    upper_gua: str = ""
+    lower_gua: str = ""
     position_factor: float = 1.0
 
 
@@ -131,6 +133,10 @@ class BacktestResult:
 
     # 卦象统计
     hexagram_stats: Dict[str, Dict] = field(default_factory=dict)
+    # 上卦分布 (八卦维度活跃度)
+    upper_gua_stats: Dict[str, int] = field(default_factory=dict)
+    # 下卦分布
+    lower_gua_stats: Dict[str, int] = field(default_factory=dict)
 
 
 # ============================================================
@@ -714,6 +720,8 @@ class WalkForwardBacktester:
                         exit_reason=exit_reason,
                         confidence=position["confidence"],
                         hexagram_name=position.get("hexagram_name", ""),
+                        upper_gua=position.get("upper_gua", ""),
+                        lower_gua=position.get("lower_gua", ""),
                         position_factor=pf,
                     )
                     trades.append(trade)
@@ -800,6 +808,8 @@ class WalkForwardBacktester:
                     sl_price = entry_price + sl_dist
 
                 hex_name = pred.get("hexagram", {}).get("hexagram_name", "")
+                upper_name = pred.get("hexagram", {}).get("upper_gua", {}).get("name", "")
+                lower_name = pred.get("hexagram", {}).get("lower_gua", {}).get("name", "")
 
                 position = {
                     "entry_bar": bar_idx,
@@ -810,6 +820,8 @@ class WalkForwardBacktester:
                     "sl_price": sl_price,
                     "confidence": confidence,
                     "hexagram_name": hex_name,
+                    "upper_gua": upper_name,
+                    "lower_gua": lower_name,
                     "regime_name": regime_name,
                     "max_hold_bars": effective_max_hold,
                     "position_factor": position_factor,
@@ -840,6 +852,8 @@ class WalkForwardBacktester:
                 exit_reason="end",
                 confidence=position["confidence"],
                 hexagram_name=position.get("hexagram_name", ""),
+                upper_gua=position.get("upper_gua", ""),
+                lower_gua=position.get("lower_gua", ""),
             )
             trades.append(trade)
 
@@ -889,10 +903,16 @@ class WalkForwardBacktester:
         # 卦象统计 (Top 10)
         gua_counts = {}
         gua_pnl = {}
+        upper_counts = {}
+        lower_counts = {}
         for t in trades:
             name = t.hexagram_name or "unknown"
             gua_counts[name] = gua_counts.get(name, 0) + 1
             gua_pnl[name] = gua_pnl.get(name, 0) + t.pnl_pct
+            if t.upper_gua:
+                upper_counts[t.upper_gua] = upper_counts.get(t.upper_gua, 0) + 1
+            if t.lower_gua:
+                lower_counts[t.lower_gua] = lower_counts.get(t.lower_gua, 0) + 1
 
         top_guas = sorted(gua_counts.items(), key=lambda x: x[1], reverse=True)[:10]
         for gua, cnt in top_guas:
@@ -902,6 +922,10 @@ class WalkForwardBacktester:
                 "avg_pnl": round(gua_pnl[gua] / cnt, 2),
                 "win_rate": round(sum(1 for t in trades if t.hexagram_name == gua and t.pnl_pct > 0) / cnt * 100, 1),
             }
+
+        # 上卦/下卦分布
+        result.upper_gua_stats = dict(sorted(upper_counts.items(), key=lambda x: x[1], reverse=True))
+        result.lower_gua_stats = dict(sorted(lower_counts.items(), key=lambda x: x[1], reverse=True))
 
     def _stats_for_trades(self, trades: List[Trade]) -> Dict:
         """为一组交易计算统计"""
@@ -967,6 +991,23 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
         for gua, stats in result.hexagram_stats.items():
             lines.append(f"  {gua:<15} {stats['count']:<6} {stats['win_rate']:<7.1f}% "
                         f"{stats['total_pnl']:<9.2f}% {stats['avg_pnl']:<7.2f}%")
+        lines.append("")
+
+    # 八卦维度分布
+    if result.upper_gua_stats:
+        lines.append("【上卦分布 (主导力量)】")
+        for gua, cnt in result.upper_gua_stats.items():
+            pct = cnt / result.total_trades * 100
+            bar = "█" * int(pct / 5)
+            lines.append(f"  {gua:<4}: {cnt:<4} ({pct:<5.1f}%) {bar}")
+        lines.append("")
+
+    if result.lower_gua_stats:
+        lines.append("【下卦分布 (基础力量)】")
+        for gua, cnt in result.lower_gua_stats.items():
+            pct = cnt / result.total_trades * 100
+            bar = "█" * int(pct / 5)
+            lines.append(f"  {gua:<4}: {cnt:<4} ({pct:<5.1f}%) {bar}")
         lines.append("")
 
     report = "\n".join(lines)
