@@ -266,8 +266,8 @@ class TradeDatabase:
                 SELECT COUNT(*) as n_trades,
                        AVG(pnl_pct) as avg_pnl,
                        SUM(CASE WHEN pnl_pct > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as win_rate
-                FROM trades WHERE symbol = ? AND entry_time >= datetime('now', '-? days')
-            """, (symbol, days))
+                FROM trades WHERE symbol = ?
+            """, (symbol,))
 
             row = cursor.fetchone()
             if row:
