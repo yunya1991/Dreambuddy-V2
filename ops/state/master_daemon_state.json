@@ -1,43 +1,43 @@
 {
   "yijing_monitor": {
-    "last_run": 1783912797.65234,
-    "last_duration": 1.5457501411437988,
-    "run_count": 13,
+    "last_run": 1783941660.851624,
+    "last_duration": 1.8092930316925049,
+    "run_count": 15,
     "last_exit_code": 0,
     "status": "done"
   },
   "screen_orchestrator": {
-    "last_run": 1783922489.440896,
-    "last_duration": 2.4962000846862793,
-    "run_count": 272,
+    "last_run": 1783950632.831756,
+    "last_duration": 152.79246306419373,
+    "run_count": 314,
     "last_exit_code": 0,
     "status": "done"
   },
   "screen_monitor": {
-    "last_run": 1783913013.497982,
-    "last_duration": 7.3755881786346436,
-    "run_count": 13,
+    "last_run": 1783941872.867281,
+    "last_duration": 3.801478147506714,
+    "run_count": 15,
     "last_exit_code": 0,
     "status": "done"
   },
   "ab_orchestrator": {
-    "last_run": 1783922249.997799,
-    "last_duration": 63.084372997283936,
-    "run_count": 277,
+    "last_run": 1783950302.222754,
+    "last_duration": 92.21952676773071,
+    "run_count": 317,
     "last_exit_code": 0,
     "status": "done"
   },
   "ab_monitor": {
-    "last_run": 1783912828.060097,
-    "last_duration": 1.9501128196716309,
-    "run_count": 13,
+    "last_run": 1783941692.6255329,
+    "last_duration": 3.5817809104919434,
+    "run_count": 15,
     "last_exit_code": 0,
     "status": "done"
   },
   "v15_martin": {
-    "last_run": 1783922611.2392802,
-    "last_duration": 94.29138016700745,
-    "run_count": 48,
+    "last_run": 1783948664.6881669,
+    "last_duration": 104.85829210281372,
+    "run_count": 55,
     "last_exit_code": 0,
     "status": "done"
   },
@@ -49,10 +49,10 @@
     "status": "running"
   },
   "capital_manager": {
-    "last_run": 1783854563.060089,
-    "last_duration": 91.23589205741882,
-    "run_count": 1,
-    "last_exit_code": 0,
+    "last_run": 1783940969.136128,
+    "last_duration": 0.17342901229858398,
+    "run_count": 2,
+    "last_exit_code": 1,
     "status": "done"
   }
 }
