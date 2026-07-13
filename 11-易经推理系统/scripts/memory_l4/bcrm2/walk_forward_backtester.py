@@ -575,8 +575,14 @@ class WalkForwardBacktester:
         # L2 Meta-Labeling训练 (反题: 对L1方向做"是否盈利"二次判断)
         if self.use_meta_labeling:
             if verbose:
-                print(f"  [{self.symbol}] 训练L2 Meta-Labeling模型...")
-            l2_result = engine.train_l2(X_train, y_train, df=df.iloc[train_start:train_end])
+                print(f"  [{self.symbol}] 训练L2 Meta-Labeling模型 (V2互补特征)...")
+            # V2版本: 需要传入ref_df和cycle_phase用于跨资产验证和周期特征
+            l2_result = engine.train_l2(
+                X_train, y_train, 
+                df=df.iloc[train_start:train_end],
+                ref_df=ref_df.iloc[train_start:train_end] if ref_df is not None else None,
+                cycle_phase=cycle_feats.iloc[train_start:train_end] if cycle_feats is not None else None,
+            )
             if verbose and l2_result.get("ok", True):
                 print(f"  L2训练完成: long_acc={l2_result.get('long_train_accuracy', 'N/A'):.3f}, "
                       f"short_acc={l2_result.get('short_train_accuracy', 'N/A'):.3f}")
@@ -585,8 +591,13 @@ class WalkForwardBacktester:
         X_test_df = features.iloc[test_start:test_end][current_feat_names].copy()
         X_test = X_test_df.fillna(0).values
 
-        # 预测
-        preds = engine.predict(X_test, with_gua=True, df=df.iloc[test_start:test_end])
+        # 预测 (V2版本: 需要传入ref_df和cycle_phase)
+        preds = engine.predict(
+            X_test, with_gua=True, 
+            df=df.iloc[test_start:test_end],
+            ref_df=ref_df.iloc[test_start:test_end] if ref_df is not None else None,
+            cycle_phase=cycle_feats.iloc[test_start:test_end] if cycle_feats is not None else None,
+        )
 
         # 市场模式分类 (如果启用)
         regime_names = None

@@ -394,40 +394,39 @@ class DialecticalMLEngine:
             "top_features": top_features,
         }
 
-    def train_l2(self, X: np.ndarray, y: np.ndarray, df: Optional[pd.DataFrame] = None) -> Dict:
+    def train_l2(self, X: np.ndarray, y: np.ndarray, df: Optional[pd.DataFrame] = None, ref_df: Optional[pd.DataFrame] = None, cycle_phase: Optional[pd.DataFrame] = None) -> Dict:
         """
         训练L2 Meta-Labeling模型 (反题)
 
         否定之否定: L1给出方向(正题), L2判断"该不该按这个方向下单"(反题)
 
-        增强版: 使用L2特征工程模块构建增强特征
-          - 信号置信度特征 (L1输出)
-          - 市场状态特征 (波动率、流动性、趋势)
-          - 历史同类信号胜率 (滚动窗口)
-          - 宏观周期交叉特征 (趋势×波动率等)
+        V2版本: 使用与L1互补的特征体系
+          - 时间维度特征 (周期相位、季节性、时段)
+          - 宏观环境特征 (BTC.D趋势、风险偏好)
+          - 信号稀有度特征 (近期同类信号频率)
+          - 市场结构特征 (趋势成熟度、反转概率)
+          - 跨资产验证特征 (Beta、相关性)
 
         分别训练做多/做空两个二元分类器
         """
         lgb = _get_lgb()
 
-        # 计算L2增强特征
-        from .meta_labeling_features import MetaLabelingFeatures
+        # 计算L2增强特征 (V2版本)
+        from .meta_labeling_features_v2 import MetaLabelingFeaturesV2
 
         # L1预测 (用于构建L2特征)
         if self.l1_model is not None:
             l1_proba = self.l1_model.predict_proba(X)
             l1_pred = np.argmax(l1_proba, axis=1) - 1
         else:
-            # 如果L1未训练, 用随机预测
             l1_proba = np.random.rand(len(X), 3)
             l1_proba = l1_proba / l1_proba.sum(axis=1, keepdims=True)
             l1_pred = np.argmax(l1_proba, axis=1) - 1
 
-        ml_features = MetaLabelingFeatures()
-        X_l2 = ml_features.compute_base_features(X, l1_proba, l1_pred, self.feature_names, df)
+        ml_features = MetaLabelingFeaturesV2()
+        X_l2 = ml_features.compute_base_features(df, l1_pred, l1_proba, ref_df, cycle_phase)
 
         # 做多L2: 当L1预测UP时, 判断这个UP信号是否正确
-        # 只有L1预测UP的样本才参与训练, 正样本=实际也是UP
         long_mask = (l1_pred == 1)
         if long_mask.sum() < 10:
             return {"ok": False, "reason": f"insufficient L1 long signals: {long_mask.sum()}"}
@@ -485,17 +484,16 @@ class DialecticalMLEngine:
     # 预测
     # --------------------------------------------------------
 
-    def predict(self, X: np.ndarray, with_gua: bool = False, df: Optional[pd.DataFrame] = None) -> List[Dict]:
+    def predict(self, X: np.ndarray, with_gua: bool = False, df: Optional[pd.DataFrame] = None, ref_df: Optional[pd.DataFrame] = None, cycle_phase: Optional[pd.DataFrame] = None) -> List[Dict]:
         """
         辩证预测 — 三层裁决
 
         L1(正题): 预测方向 UP/DOWN/FLAT
-        L2(反题): 对L1方向做"是否盈利"的二次判断 (使用增强特征)
+        L2(反题): 对L1方向做"是否盈利"的二次判断 (使用V2互补特征)
         L3(合题): L1置信度 × L2盈利概率 = 最终置信度
 
         否定之否定:
-          - L1说"做多" → L2说"但这个做多信号可能不赚钱" → 最终裁决
-          - L1说"做空" → L2说"但这个做空信号可能不赚钱" → 最终裁决
+          - L1说"做多" → L2说"但这个时机不好、环境不利" → 最终裁决
           - 只有L1和L2都同意, 才执行交易
 
         Returns:
@@ -511,13 +509,13 @@ class DialecticalMLEngine:
         l1_proba = self.l1_model.predict_proba(X)  # shape: (n, 3)
         l1_pred = np.argmax(l1_proba, axis=1) - 1  # 映射回 -1/0/1
 
-        # 计算L2增强特征
+        # 计算L2增强特征 (V2版本)
         l2_long_proba = None
         l2_short_proba = None
         if (self.l2_model_long is not None) or (self.l2_model_short is not None):
-            from .meta_labeling_features import MetaLabelingFeatures
-            ml_features = MetaLabelingFeatures()
-            X_l2 = ml_features.compute_base_features(X, l1_proba, l1_pred, self.feature_names, df)
+            from .meta_labeling_features_v2 import MetaLabelingFeaturesV2
+            ml_features = MetaLabelingFeaturesV2()
+            X_l2 = ml_features.compute_base_features(df, l1_pred, l1_proba, ref_df, cycle_phase)
 
             if self.l2_model_long is not None:
                 l2_long_proba = self.l2_model_long.predict_proba(X_l2)[:, 1]
