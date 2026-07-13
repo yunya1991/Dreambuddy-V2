@@ -59,12 +59,22 @@ def main():
                         help="禁用周/日/时三屏+量变积累特征")
     parser.add_argument("--wdh-weekly-only", action="store_true",
                         help="WDH仅保留周线量变积累层 (消融实验)")
+    parser.add_argument("--feature-selection", action="store_true", default=True,
+                        help="启用特征选择 (LightGBM重要性+相关性去冗余), 默认启用")
+    parser.add_argument("--no-feature-selection", action="store_true",
+                        help="禁用特征选择")
+    parser.add_argument("--fs-imp-threshold", type=float, default=0.05,
+                        help="特征重要性阈值 (占最高重要性的比例), 默认0.05")
+    parser.add_argument("--fs-corr-threshold", type=float, default=0.85,
+                        help="特征相关性阈值, 高于此值的冗余特征将被剔除, 默认0.85")
 
     args = parser.parse_args()
     args.enable_pivot = not args.no_pivot
     args.enable_rsi = not args.no_rsi
     args.enable_wdh = not args.no_wdh
     args.wdh_weekly_only = args.wdh_weekly_only
+    if args.no_feature_selection:
+        args.feature_selection = False
     symbols = [s.strip().upper() for s in args.symbols.split(",")]
 
     print("=" * 70)
@@ -80,6 +90,9 @@ def main():
     print(f"  枢纽点特征: {'ON' if args.enable_pivot else 'OFF'}")
     print(f"  RSI情绪特征: {'ON' if args.enable_rsi else 'OFF'}")
     print(f"  周/日/时+量变积累: {'ON' if args.enable_wdh else 'OFF'}")
+    print(f"  特征选择: {'ON' if args.feature_selection else 'OFF'}")
+    if args.feature_selection:
+        print(f"    重要性阈值: {args.fs_imp_threshold}, 相关性阈值: {args.fs_corr_threshold}")
     print()
 
     # 输出目录
@@ -131,6 +144,9 @@ def main():
             sl_atr=args.sl_atr,
             max_hold_bars=args.max_hold_bars,
             use_regime_switching=True,  # 启用市态切换（最优配置关键）
+            feature_selection=args.feature_selection,
+            fs_imp_threshold=args.fs_imp_threshold,
+            fs_corr_threshold=args.fs_corr_threshold,
         )
 
         try:
