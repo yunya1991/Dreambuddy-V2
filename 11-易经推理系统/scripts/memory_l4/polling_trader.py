@@ -50,6 +50,7 @@ from scripts.memory_l4.classic_exit_system import (
     ExitAction,
     ExitConfig,
 )
+from scripts.memory_l4.bcrm2.incremental_learner import IncrementalLearner
 
 
 class PollingTrader:
@@ -127,6 +128,12 @@ class PollingTrader:
         self.log_dir = Path("data/polling_trader")
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.log_file = self.log_dir / f"trader_{datetime.now().strftime('%Y%m%d')}.jsonl"
+
+        self.incremental_learner = IncrementalLearner(
+            retrain_trade_threshold=100,
+            retrain_win_rate_threshold=0.5,
+            retrain_sharpe_threshold=1.0,
+        )
 
         self._sync_existing_positions()
 
@@ -371,7 +378,7 @@ class PollingTrader:
     def _handle_close_position(self, inst_id: str, coin: str,
                                 pos_side: str, exit_price: float,
                                 exit_reason: str, pnl: float, pnl_pct: float):
-        """处理平仓：生成交易记录、更新绩效、生成 case、更新风控
+        """处理平仓：生成交易记录、更新绩效、生成 case、更新风控、增量学习
 
         Returns:
             trade summary dict
@@ -397,6 +404,42 @@ class PollingTrader:
                 f"日盈亏={perf_summary['daily_total_pnl']:.2f} "
                 f"连亏={perf_summary['consecutive_losses']}"
             )
+
+            try:
+                hold_bars = 0
+                if trade_rec.entry_time and trade_rec.exit_time:
+                    try:
+                        from datetime import datetime
+                        entry_dt = datetime.fromisoformat(trade_rec.entry_time.replace('Z', '+00:00'))
+                        exit_dt = datetime.fromisoformat(trade_rec.exit_time.replace('Z', '+00:00'))
+                        delta = exit_dt - entry_dt
+                        hold_bars = int(delta.total_seconds() / 3600)
+                    except Exception:
+                        pass
+
+                trade_data = {
+                    'symbol': coin,
+                    'direction': trade_rec.direction,
+                    'entry_time': trade_rec.entry_time,
+                    'exit_time': trade_rec.exit_time,
+                    'entry_price': trade_rec.entry_price,
+                    'exit_price': trade_rec.exit_price,
+                    'pnl_pct': trade_rec.pnl_pct,
+                    'hold_bars': hold_bars,
+                    'exit_reason': trade_rec.exit_reason,
+                    'confidence': trade_rec.confidence,
+                    'hexagram': trade_rec.hexagram,
+                    'upper_gua': '',
+                    'lower_gua': '',
+                    'position_factor': 1.0,
+                }
+                n_saved = self.incremental_learner.log_trades_batch([trade_data])
+
+                should_retrain, reason = self.incremental_learner.should_retrain(coin)
+                if should_retrain:
+                    self._log(f"[{coin}] 增量学习触发再训练: {reason}")
+            except Exception as e:
+                self._log(f"[{coin}] 增量学习记录失败: {e}", "WARN")
 
             retrain_result = self.learning_scheduler.trigger_retrain()
             if retrain_result.get("retrained"):
