@@ -67,6 +67,8 @@ def main():
                         help="特征重要性阈值 (占最高重要性的比例), 默认0.05")
     parser.add_argument("--fs-corr-threshold", type=float, default=0.85,
                         help="特征相关性阈值, 高于此值的冗余特征将被剔除, 默认0.85")
+    parser.add_argument("--portfolio", action="store_true",
+                        help="启用多币种组合回测 (资金分配+组合层指标)")
 
     args = parser.parse_args()
     args.enable_pivot = not args.no_pivot
@@ -236,6 +238,59 @@ def main():
             print("  🎯 Phase 0 验证: 部分通过 → 可推进Phase 1核心落地")
         else:
             print("  🔧 Phase 0 验证: 需优化 → 调整特征/参数后重试")
+        print()
+
+    # 多币种组合回测
+    if args.portfolio and all_results:
+        print("=" * 70)
+        print("  多币种组合回测")
+        print("=" * 70)
+
+        from .portfolio_backtester import PortfolioBacktester
+
+        # 收集所有币种的数据
+        data_dict = {}
+        btc_ref = None
+        for symbol in symbols:
+            df = get_klines(symbol, args.timeframe, max_bars=args.max_bars)
+            df = df.iloc[-args.max_bars:] if len(df) > args.max_bars else df
+            data_dict[symbol] = df
+            if symbol == "BTC":
+                btc_ref = df
+
+        # 运行组合回测
+        portfolio = PortfolioBacktester(
+            symbols=symbols,
+            n_folds=args.n_folds,
+            conf_threshold=args.conf_threshold,
+            tp_atr=args.tp_atr,
+            sl_atr=args.sl_atr,
+            max_hold_bars=args.max_hold_bars,
+            feature_selection=not args.no_feature_selection,
+            fs_imp_threshold=args.fs_imp_threshold,
+            fs_corr_threshold=args.fs_corr_threshold,
+            use_regime_switching=True,
+        )
+
+        portfolio_result = portfolio.run(
+            data_dict,
+            ref_df=btc_ref,
+            enable_pivot=args.enable_pivot,
+            enable_rsi=args.enable_rsi,
+            enable_wdh=args.enable_wdh,
+            wdh_weekly_only=args.wdh_weekly_only,
+            verbose=True,
+        )
+
+        # 生成组合报告
+        report = portfolio.generate_portfolio_report(portfolio_result)
+        print(report)
+
+        # 保存组合交易明细
+        timeline_df = pd.DataFrame(portfolio_result.timeline_trades)
+        timeline_path = output_dir / f"portfolio_timeline_{args.timeframe}.csv"
+        timeline_df.to_csv(timeline_path, index=False, encoding="utf-8-sig")
+        print(f"  组合交易明细已保存: {timeline_path}")
         print()
 
 
