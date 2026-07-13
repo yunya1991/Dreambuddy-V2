@@ -23,9 +23,12 @@ Evolution 层主入口，整合:
 
 from __future__ import annotations
 
+import logging
 from typing import Dict, List, Optional, Any
 
 from dreamos.shared.state import State
+
+logger = logging.getLogger(__name__)
 from dreamos.core.graph_store.types import HistoryEntry
 
 from .types import EvolutionReport, Lesson, GapAnalysis, OptimizationSuggestion

@@ -223,7 +223,12 @@ class AgentC:
             "confidence_gate": 0.65,
         }
 
-        intent_result = self._intent_engine.recognize(state)
+        intent_result = self._intent_engine.recognize(
+            market=state.market,
+            memory=state.memory,
+            context=state.config,
+            symbol=symbol,
+        )
         state.intent = intent_result.to_dict() if hasattr(intent_result, 'to_dict') else {}
 
         plan = self._planner.plan(state)

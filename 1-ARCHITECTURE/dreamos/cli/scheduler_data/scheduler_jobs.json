@@ -1,0 +1,19 @@
+[
+  {
+    "name": "scan_main",
+    "cron_expr": "0 * * * *",
+    "enabled": true,
+    "symbols": [
+      "BTC",
+      "ETH",
+      "SOL",
+      "AVAX",
+      "LINK",
+      "DOT",
+      "MATIC",
+      "BNB",
+      "OP",
+      "ARB"
+    ]
+  }
+]

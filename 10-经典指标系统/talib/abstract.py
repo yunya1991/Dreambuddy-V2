@@ -183,3 +183,170 @@ def OBV(close: Any, volume: Any = None) -> pd.Series:
     v = _as_series(volume if volume is not None else pd.Series(np.zeros(len(c)), index=c.index))
     direction = np.sign(c.diff().fillna(0.0))
     return (direction * v).cumsum().fillna(0.0)
+
+
+def SUPERTREND(v: Any, period: int = 10, multiplier: float = 3.0):
+    """超级趋势指标 (SuperTrend)。返回 dict: {"upperband", "lowerband", "direction"}
+    direction: 1=多头趋势, -1=空头趋势
+    """
+    high, low, close, _ = _ohlcv(v)
+    n = len(close)
+    if n == 0:
+        return {"upperband": pd.Series(dtype=float), "lowerband": pd.Series(dtype=float), "direction": pd.Series(dtype=float)}
+    atr = ATR(v, timeperiod=period)
+    hl2 = (high + low) / 2.0
+    basic_ub = hl2 + float(multiplier) * atr
+    basic_lb = hl2 - float(multiplier) * atr
+    ub = basic_ub.values
+    lb = basic_lb.values
+    c = close.values
+    final_ub = np.zeros(n, dtype=float)
+    final_lb = np.zeros(n, dtype=float)
+    trend = np.ones(n, dtype=int)
+    final_ub[0] = ub[0]
+    final_lb[0] = lb[0]
+    for i in range(1, n):
+        final_ub[i] = ub[i] if (ub[i] < final_ub[i - 1] or c[i - 1] > final_ub[i - 1]) else final_ub[i - 1]
+        final_lb[i] = lb[i] if (lb[i] > final_lb[i - 1] or c[i - 1] < final_lb[i - 1]) else final_lb[i - 1]
+        if trend[i - 1] == 1:
+            trend[i] = -1 if c[i] <= final_lb[i] else 1
+        else:
+            trend[i] = 1 if c[i] >= final_ub[i] else -1
+    idx = close.index
+    return {
+        "upperband": pd.Series(final_ub, index=idx, dtype=float),
+        "lowerband": pd.Series(final_lb, index=idx, dtype=float),
+        "direction": pd.Series(trend, index=idx, dtype=int),
+    }
+
+
+def ICHIMOKU(v: Any, tenkan: int = 9, kijun: int = 26, senkou_b: int = 52, displacement: int = 26):
+    """一目均衡表 (Ichimoku Cloud)。返回 dict:
+    {"tenkan_sen", "kijun_sen", "span_a", "span_b", "cloud_top", "cloud_bottom"}
+    """
+    high, low, close, _ = _ohlcv(v)
+    n = len(close)
+    if n == 0:
+        return {"tenkan_sen": pd.Series(dtype=float), "kijun_sen": pd.Series(dtype=float),
+                "span_a": pd.Series(dtype=float), "span_b": pd.Series(dtype=float),
+                "cloud_top": pd.Series(dtype=float), "cloud_bottom": pd.Series(dtype=float)}
+    t = max(1, int(tenkan))
+    k = max(1, int(kijun))
+    sb = max(1, int(senkou_b))
+    tenkan_sen = (high.rolling(t, min_periods=1).max() + low.rolling(t, min_periods=1).min()) / 2.0
+    kijun_sen = (high.rolling(k, min_periods=1).max() + low.rolling(k, min_periods=1).min()) / 2.0
+    span_a = (tenkan_sen + kijun_sen) / 2.0
+    span_b = (high.rolling(sb, min_periods=1).max() + low.rolling(sb, min_periods=1).min()) / 2.0
+    cloud_top = pd.concat([span_a, span_b], axis=1).max(axis=1)
+    cloud_bottom = pd.concat([span_a, span_b], axis=1).min(axis=1)
+    return {
+        "tenkan_sen": tenkan_sen,
+        "kijun_sen": kijun_sen,
+        "span_a": span_a,
+        "span_b": span_b,
+        "cloud_top": cloud_top,
+        "cloud_bottom": cloud_bottom,
+    }
+
+
+def KELTNER(v: Any, ema_period: int = 20, atr_period: int = 10, mult: float = 2.0):
+    """Keltner通道。返回 dict: {"upper", "middle", "lower"}
+    """
+    high, low, close, _ = _ohlcv(v)
+    n = len(close)
+    if n == 0:
+        return {"upper": pd.Series(dtype=float), "middle": pd.Series(dtype=float), "lower": pd.Series(dtype=float)}
+    middle = EMA(v, timeperiod=ema_period)
+    atr = ATR(v, timeperiod=atr_period)
+    upper = middle + float(mult) * atr
+    lower = middle - float(mult) * atr
+    return {"upper": upper, "middle": middle, "lower": lower}
+
+
+def DONCHIAN(v: Any, period: int = 20):
+    """Donchian通道。返回 dict: {"upper", "middle", "lower"}
+    """
+    high, low, close, _ = _ohlcv(v)
+    n = len(close)
+    if n == 0:
+        return {"upper": pd.Series(dtype=float), "middle": pd.Series(dtype=float), "lower": pd.Series(dtype=float)}
+    p = max(1, int(period))
+    upper = high.rolling(p, min_periods=1).max()
+    lower = low.rolling(p, min_periods=1).min()
+    middle = (upper + lower) / 2.0
+    return {"upper": upper, "middle": middle, "lower": lower}
+
+
+def ROC(v: Any, period: int = 10) -> pd.Series:
+    """变化率 Rate of Change。返回百分比变化序列。"""
+    s = _as_series(v if not isinstance(v, pd.DataFrame) else v.get("close"))
+    p = max(1, int(period))
+    return ((s - s.shift(p)) / s.shift(p) * 100).fillna(0.0)
+
+
+def AROON(v: Any, period: int = 25):
+    """Aroon 指标。返回 dict: {"aroondown", "aroonup"}
+    aroon_up 接近 100 表示近期创新高（多头强势）
+    aroon_down 接近 100 表示近期创新低（空头强势）
+    """
+    high, low, close, _ = _ohlcv(v)
+    n = len(close)
+    if n == 0:
+        return {"aroondown": pd.Series(dtype=float), "aroonup": pd.Series(dtype=float)}
+    p = max(1, int(period))
+    aroon_up = high.rolling(p, min_periods=1).apply(lambda x: (x.argmax()) / (len(x) - 1) * 100, raw=False).fillna(0.0)
+    aroon_down = low.rolling(p, min_periods=1).apply(lambda x: (x.argmin()) / (len(x) - 1) * 100, raw=False).fillna(0.0)
+    return {"aroondown": aroon_down, "aroonup": aroon_up}
+
+
+def VORTEX(v: Any, period: int = 14):
+    """Vortex 指标。返回 dict: {"plus_vi", "minus_vi"}
+    +VI > -VI 多头趋势，-VI > +VI 空头趋势
+    """
+    high, low, close, _ = _ohlcv(v)
+    n = len(close)
+    if n == 0:
+        return {"plus_vi": pd.Series(dtype=float), "minus_vi": pd.Series(dtype=float)}
+    p = max(1, int(period))
+    tr = TRANGE(v)
+    vm_plus = (high - low.shift(1)).abs()
+    vm_minus = (low - high.shift(1)).abs()
+    tr_sum = tr.rolling(p, min_periods=1).sum()
+    vi_plus = (vm_plus.rolling(p, min_periods=1).sum() / tr_sum * 100).fillna(0.0)
+    vi_minus = (vm_minus.rolling(p, min_periods=1).sum() / tr_sum * 100).fillna(0.0)
+    return {"plus_vi": vi_plus, "minus_vi": vi_minus}
+
+
+def VWAP(v: Any) -> pd.Series:
+    """成交量加权平均价 (Volume Weighted Average Price)"""
+    high, low, close, vol = _ohlcv(v)
+    if len(close) == 0:
+        return pd.Series(dtype=float)
+    typical = (high + low + close) / 3.0
+    cum_vol = vol.cumsum().replace(0, np.nan)
+    cum_pv = (typical * vol).cumsum()
+    return (cum_pv / cum_vol).fillna(close)
+
+
+def ELDER_RAY(v: Any, period: int = 13):
+    """
+    Elder-ray 指标（埃尔德原创指标）
+    用于判断趋势力度的衰竭和逆转
+    
+    Bull Power = High - EMA(13)
+    Bear Power = Low - EMA(13)
+    
+    返回 dict: {"bull_power", "bear_power", "ema"}
+    
+    解读：
+    - Bull Power > 0 且上升：多头力量增强
+    - Bull Power > 0 但下降：多头力量衰竭
+    - Bear Power < 0 且下降：空头力量增强
+    - Bear Power < 0 但上升：空头力量衰竭
+    """
+    high, low, close, _ = _ohlcv(v)
+    p = max(1, int(period))
+    ema = close.ewm(span=p, adjust=False).mean()
+    bull_power = high - ema
+    bear_power = low - ema
+    return {"bull_power": bull_power, "bear_power": bear_power, "ema": ema}

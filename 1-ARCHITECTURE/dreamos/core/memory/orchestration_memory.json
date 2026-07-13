@@ -1,100 +1,101 @@
 {
   "version": "1.0.0",
   "created_at": "2026-07-10T18:38:03.074684",
-  "last_backtest": "2026-07-10T18:38:03.074713",
+  "last_backtest": "2026-07-10T20:31:17.192393",
   "backtest_period": null,
   "scenarios": {
     "NEUTRAL_LOW_DECELERATING": {
+      "best_pattern": "c_f_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F1",
+        "F3"
+      ],
+      "score": 0.1556,
+      "metrics": {
+        "sharpe": -0.6399,
+        "return": -1.3647,
+        "max_dd": 2.0238,
+        "win_rate": 0.4677
+      },
+      "sample_count": 1736,
+      "confidence": "low",
+      "sparse": false
+    },
+    "NEUTRAL_NORMAL_DECELERATING": {
       "best_pattern": "c_g_chain",
       "nodes": [
         "C1",
         "C3",
         "G1"
       ],
-      "score": 0.4902,
+      "score": 0.6279,
       "metrics": {
-        "sharpe": 0.1892,
-        "return": 0.0081,
-        "max_dd": 0.1649,
-        "win_rate": 0.4643
+        "sharpe": 1.8465,
+        "return": 0.4312,
+        "max_dd": 0.6588,
+        "win_rate": 0.6571
       },
-      "sample_count": 84,
+      "sample_count": 105,
+      "confidence": "high",
+      "sparse": false
+    },
+    "NEUTRAL_NORMAL_ACCELERATING": {
+      "best_pattern": "c_f_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F1",
+        "F3"
+      ],
+      "score": 0.5783,
+      "metrics": {
+        "sharpe": 1.8445,
+        "return": 0.4264,
+        "max_dd": 0.8227,
+        "win_rate": 0.5
+      },
+      "sample_count": 92,
       "confidence": "medium",
       "sparse": false
     },
-    "NEUTRAL_NORMAL_DECELERATING": {
+    "NEUTRAL_LOW_ACCELERATING": {
       "best_pattern": "c_chain",
       "nodes": [
         "C1",
         "C2",
         "C3"
       ],
-      "score": 0.8382,
+      "score": 0.1517,
       "metrics": {
-        "sharpe": 14.2018,
-        "return": 0.3743,
-        "max_dd": 0.0508,
-        "win_rate": 0.7353
+        "sharpe": -0.7026,
+        "return": -1.5365,
+        "max_dd": 2.1041,
+        "win_rate": 0.4792
       },
-      "sample_count": 34,
-      "confidence": "high",
+      "sample_count": 1709,
+      "confidence": "low",
       "sparse": false
     },
-    "NEUTRAL_NORMAL_ACCELERATING": {
-      "best_pattern": "f_chain",
-      "nodes": [
-        "F1",
-        "F2",
-        "F3",
-        "F4"
-      ],
-      "score": 0.4801,
-      "metrics": {
-        "sharpe": -0.3438,
-        "return": -0.0003,
-        "max_dd": 0.0118,
-        "win_rate": 0.5
-      },
-      "sample_count": 2,
-      "confidence": "low",
-      "sparse": true
-    },
-    "NEUTRAL_LOW_ACCELERATING": {
-      "best_pattern": "f_chain",
-      "nodes": [
-        "F1",
-        "F2",
-        "F3",
-        "F4"
-      ],
-      "score": 0.7496,
-      "metrics": {
-        "sharpe": 8.7135,
-        "return": 0.0498,
-        "max_dd": 0.0161,
-        "win_rate": 0.4286
-      },
-      "sample_count": 7,
-      "confidence": "low",
-      "sparse": true
-    },
     "NEUTRAL_LOW_EXHAUSTION": {
-      "best_pattern": "c_g_chain",
+      "best_pattern": "full_chain",
       "nodes": [
         "C1",
-        "C3",
+        "C2",
+        "F2",
         "G1"
       ],
-      "score": 0.8125,
+      "score": 0.3933,
       "metrics": {
-        "sharpe": 58.7074,
-        "return": 0.0626,
-        "max_dd": 0,
-        "win_rate": 1.0
+        "sharpe": -0.3368,
+        "return": -0.028,
+        "max_dd": 0.4073,
+        "win_rate": 0.473
       },
-      "sample_count": 3,
+      "sample_count": 74,
       "confidence": "low",
-      "sparse": true
+      "sparse": false
     },
     "NEUTRAL_NORMAL_EXHAUSTION": {
       "best_pattern": "full_chain",
@@ -104,32 +105,33 @@
         "F2",
         "G1"
       ],
-      "score": 0.779,
+      "score": 0.7658,
       "metrics": {
-        "sharpe": 16.2052,
-        "return": 0.112,
-        "max_dd": 0.0087,
-        "win_rate": 0.5833
+        "sharpe": 6.9448,
+        "return": 0.1672,
+        "max_dd": 0.0556,
+        "win_rate": 0.4348
       },
-      "sample_count": 12,
+      "sample_count": 23,
       "confidence": "medium",
       "sparse": false
     },
     "NEUTRAL_HIGH_ACCELERATING": {
-      "best_pattern": "c_chain",
+      "best_pattern": "f_chain",
       "nodes": [
-        "C1",
-        "C2",
-        "C3"
+        "F1",
+        "F2",
+        "F3",
+        "F4"
       ],
-      "score": 0.8066,
+      "score": 0.8006,
       "metrics": {
-        "sharpe": 48.419,
-        "return": 0.0328,
+        "sharpe": 75.092,
+        "return": 0.0028,
         "max_dd": 0,
         "win_rate": 1.0
       },
-      "sample_count": 3,
+      "sample_count": 1,
       "confidence": "low",
       "sparse": true
     },
@@ -140,16 +142,16 @@
         "C2",
         "C3"
       ],
-      "score": 0.7859,
+      "score": 0.854,
       "metrics": {
-        "sharpe": 40.2467,
-        "return": 0.0553,
-        "max_dd": 0.0009,
-        "win_rate": 0.75
+        "sharpe": 16.2407,
+        "return": 0.417,
+        "max_dd": 0.0396,
+        "win_rate": 0.7857
       },
-      "sample_count": 4,
-      "confidence": "low",
-      "sparse": true
+      "sample_count": 14,
+      "confidence": "medium",
+      "sparse": false
     },
     "NEUTRAL_HIGH_EXHAUSTION": {
       "best_pattern": "c_chain",
@@ -158,16 +160,531 @@
         "C2",
         "C3"
       ],
-      "score": 0.8017,
+      "score": 0.8022,
       "metrics": {
-        "sharpe": 231.1801,
-        "return": 0.0086,
+        "sharpe": 46.0193,
+        "return": 0.0108,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 2,
+      "confidence": "low",
+      "sparse": true
+    },
+    "BEAR_LOW_ACCELERATING": {
+      "best_pattern": "f_chain",
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "score": 0.7668,
+      "metrics": {
+        "sharpe": 3.3286,
+        "return": 0.1726,
+        "max_dd": 0.123,
+        "win_rate": 0.5686
+      },
+      "sample_count": 51,
+      "confidence": "high",
+      "sparse": false
+    },
+    "BEAR_LOW_DECELERATING": {
+      "best_pattern": "f_chain",
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "score": 0.0519,
+      "metrics": {
+        "sharpe": -9.2907,
+        "return": -0.8373,
+        "max_dd": 0.9337,
+        "win_rate": 0.3867
+      },
+      "sample_count": 75,
+      "confidence": "low",
+      "sparse": false
+    },
+    "BULL_LOW_DECELERATING": {
+      "best_pattern": "f_chain",
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "score": 0.4962,
+      "metrics": {
+        "sharpe": 0.4467,
+        "return": 0.0267,
+        "max_dd": 0.2683,
+        "win_rate": 0.4884
+      },
+      "sample_count": 43,
+      "confidence": "medium",
+      "sparse": false
+    },
+    "BULL_LOW_ACCELERATING": {
+      "best_pattern": "f_chain",
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "score": 0.8264,
+      "metrics": {
+        "sharpe": 4.8838,
+        "return": 0.5672,
+        "max_dd": 0.212,
+        "win_rate": 0.5538
+      },
+      "sample_count": 65,
+      "confidence": "high",
+      "sparse": false
+    },
+    "BEAR_LOW_EXHAUSTION": {
+      "best_pattern": "f_chain",
+      "nodes": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "score": 0.1327,
+      "metrics": {
+        "sharpe": -5.457,
+        "return": -0.3873,
+        "max_dd": 0.6577,
+        "win_rate": 0.4167
+      },
+      "sample_count": 36,
+      "confidence": "low",
+      "sparse": false
+    },
+    "BEAR_NORMAL_DECELERATING": {
+      "best_pattern": "full_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F2",
+        "G1"
+      ],
+      "score": 0.4064,
+      "metrics": {
+        "sharpe": -0.7387,
+        "return": -0.0395,
+        "max_dd": 0.2329,
+        "win_rate": 0.6
+      },
+      "sample_count": 20,
+      "confidence": "medium",
+      "sparse": false
+    },
+    "BULL_LOW_EXHAUSTION": {
+      "best_pattern": "c_f_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F1",
+        "F3"
+      ],
+      "score": 0.8626,
+      "metrics": {
+        "sharpe": 6.117,
+        "return": 0.7005,
+        "max_dd": 0.1582,
+        "win_rate": 0.541
+      },
+      "sample_count": 61,
+      "confidence": "high",
+      "sparse": false
+    },
+    "BEAR_NORMAL_EXHAUSTION": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.7484,
+      "metrics": {
+        "sharpe": 5.3521,
+        "return": 0.0327,
+        "max_dd": 0.0407,
+        "win_rate": 0.5
+      },
+      "sample_count": 4,
+      "confidence": "low",
+      "sparse": true
+    },
+    "BEAR_NORMAL_ACCELERATING": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.7951,
+      "metrics": {
+        "sharpe": 27.78,
+        "return": 0.1117,
+        "max_dd": 0.0111,
+        "win_rate": 0.75
+      },
+      "sample_count": 4,
+      "confidence": "low",
+      "sparse": true
+    },
+    "BULL_NORMAL_ACCELERATING": {
+      "best_pattern": "full_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F2",
+        "G1"
+      ],
+      "score": 0.79,
+      "metrics": {
+        "sharpe": 5.8278,
+        "return": 0.3102,
+        "max_dd": 0.1818,
+        "win_rate": 0.6429
+      },
+      "sample_count": 28,
+      "confidence": "medium",
+      "sparse": false
+    },
+    "BULL_NORMAL_DECELERATING": {
+      "best_pattern": "full_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F2",
+        "G1"
+      ],
+      "score": 0.8362,
+      "metrics": {
+        "sharpe": 10.3163,
+        "return": 0.5048,
+        "max_dd": 0.1238,
+        "win_rate": 0.6
+      },
+      "sample_count": 20,
+      "confidence": "medium",
+      "sparse": false
+    },
+    "BEAR_HIGH_ACCELERATING": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.2911,
+      "metrics": {
+        "sharpe": -598.3133,
+        "return": -0.0221,
+        "max_dd": 0.0221,
+        "win_rate": 0.0
+      },
+      "sample_count": 1,
+      "confidence": "low",
+      "sparse": true
+    },
+    "BEAR_HIGH_DECELERATING": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.8027,
+      "metrics": {
+        "sharpe": 358.3619,
+        "return": 0.0133,
         "max_dd": 0,
         "win_rate": 1.0
       },
       "sample_count": 1,
       "confidence": "low",
       "sparse": true
+    },
+    "BULL_NORMAL_EXHAUSTION": {
+      "best_pattern": "full_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F2",
+        "G1"
+      ],
+      "score": 0.7906,
+      "metrics": {
+        "sharpe": 12.323,
+        "return": 0.1766,
+        "max_dd": 0.0807,
+        "win_rate": 0.7143
+      },
+      "sample_count": 7,
+      "confidence": "low",
+      "sparse": true
+    },
+    "BEAR_HIGH_EXHAUSTION": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.8082,
+      "metrics": {
+        "sharpe": 34.1829,
+        "return": 0.0412,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 2,
+      "confidence": "low",
+      "sparse": true
+    },
+    "BULL_HIGH_DECELERATING": {
+      "best_pattern": "full_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F2",
+        "G1"
+      ],
+      "score": 0.8335,
+      "metrics": {
+        "sharpe": 46.2722,
+        "return": 0.1675,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 2,
+      "confidence": "low",
+      "sparse": true
+    },
+    "BULL_HIGH_EXHAUSTION": {
+      "best_pattern": "full_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F2",
+        "G1"
+      ],
+      "score": 0.9073,
+      "metrics": {
+        "sharpe": 50.3837,
+        "return": 0.5366,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 5,
+      "confidence": "low",
+      "sparse": true
+    },
+    "BULL_HIGH_ACCELERATING": {
+      "best_pattern": "full_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "F2",
+        "G1"
+      ],
+      "score": 0.8677,
+      "metrics": {
+        "sharpe": 67.9955,
+        "return": 0.3383,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 2,
+      "confidence": "low",
+      "sparse": true
+    },
+    "NEUTRAL_EXTREME_DECELERATING": {
+      "best_pattern": "c_chain",
+      "nodes": [
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "score": 0.2825,
+      "metrics": {
+        "sharpe": -1182.6262,
+        "return": -0.0438,
+        "max_dd": 0.0438,
+        "win_rate": 0.0
+      },
+      "sample_count": 1,
+      "confidence": "low",
+      "sparse": true
+    },
+    "BULL_EXTREME_ACCELERATING": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.6942,
+      "metrics": {
+        "sharpe": 67.9955,
+        "return": 0.3383,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 0,
+      "confidence": "low",
+      "sparse": true,
+      "inferred": true,
+      "inferred_from": "BULL_HIGH_ACCELERATING"
+    },
+    "BULL_EXTREME_DECELERATING": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.6668,
+      "metrics": {
+        "sharpe": 46.2722,
+        "return": 0.1675,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 0,
+      "confidence": "low",
+      "sparse": true,
+      "inferred": true,
+      "inferred_from": "BULL_HIGH_DECELERATING"
+    },
+    "BULL_EXTREME_EXHAUSTION": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.7258,
+      "metrics": {
+        "sharpe": 50.3837,
+        "return": 0.5366,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 0,
+      "confidence": "low",
+      "sparse": true,
+      "inferred": true,
+      "inferred_from": "BULL_HIGH_EXHAUSTION"
+    },
+    "BEAR_EXTREME_ACCELERATING": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.2329,
+      "metrics": {
+        "sharpe": -598.3133,
+        "return": -0.0221,
+        "max_dd": 0.0221,
+        "win_rate": 0.0
+      },
+      "sample_count": 0,
+      "confidence": "low",
+      "sparse": true,
+      "inferred": true,
+      "inferred_from": "BEAR_HIGH_ACCELERATING"
+    },
+    "BEAR_EXTREME_DECELERATING": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.6422,
+      "metrics": {
+        "sharpe": 358.3619,
+        "return": 0.0133,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 0,
+      "confidence": "low",
+      "sparse": true,
+      "inferred": true,
+      "inferred_from": "BEAR_HIGH_DECELERATING"
+    },
+    "BEAR_EXTREME_EXHAUSTION": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.6466,
+      "metrics": {
+        "sharpe": 34.1829,
+        "return": 0.0412,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 0,
+      "confidence": "low",
+      "sparse": true,
+      "inferred": true,
+      "inferred_from": "BEAR_HIGH_EXHAUSTION"
+    },
+    "NEUTRAL_EXTREME_ACCELERATING": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.6405,
+      "metrics": {
+        "sharpe": 75.092,
+        "return": 0.0028,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 0,
+      "confidence": "low",
+      "sparse": true,
+      "inferred": true,
+      "inferred_from": "NEUTRAL_HIGH_ACCELERATING"
+    },
+    "NEUTRAL_EXTREME_EXHAUSTION": {
+      "best_pattern": "c_g_chain",
+      "nodes": [
+        "C1",
+        "C3",
+        "G1"
+      ],
+      "score": 0.6418,
+      "metrics": {
+        "sharpe": 46.0193,
+        "return": 0.0108,
+        "max_dd": 0,
+        "win_rate": 1.0
+      },
+      "sample_count": 0,
+      "confidence": "low",
+      "sparse": true,
+      "inferred": true,
+      "inferred_from": "NEUTRAL_HIGH_EXHAUSTION"
     }
   },
   "fallback_chain": [

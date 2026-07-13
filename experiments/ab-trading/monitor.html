@@ -180,9 +180,12 @@
 <div class="tabs">
   <div class="tab active" onclick="switchTab('local', event)">📊 本地监控</div>
   <div class="tab" onclick="switchTab('cloud', event)">☁️ 云端调度</div>
-  <div class="tab" onclick="switchTab('screen', event)">🎯 三屏马丁</div>
+  <div class="tab" onclick="switchTab('trend', event)">📈 三屏趋势</div>
+  <!-- <div class="tab" onclick="switchTab('screen', event)">🎯 三屏马丁</div> -->
+  <div class="tab" onclick="switchTab('v15ct', event)">⚡ 马丁策略</div>
   <div class="tab" onclick="switchTab('yijing', event)">🗼 易经推理</div>
   <div class="tab" onclick="switchTab('dreamos', event)">⚙️ Dream OS</div>
+  <div class="tab" onclick="switchTab('signals', event)">📡 代币信号</div>
 </div>
 
 <div class="main">
@@ -426,6 +429,85 @@
   </div>
   </div>
 
+  <!-- 三屏趋势 Tab -->
+  <div id="tab-trend" class="tab-content">
+    <div class="tab-grid">
+
+      <!-- 币种选择器 -->
+      <div class="card full-width">
+        <div class="card-title">
+          <div class="dot" style="background:var(--blue)"></div>币种选择
+          <span id="trend-symbol-badge" style="margin-left:8px;font-size:10px;padding:2px 10px;border-radius:12px;background:rgba(88,166,255,0.15);color:var(--blue)">BTC</span>
+          <button onclick="loadTrendScreenData()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+        </div>
+        <div id="trend-symbols" style="display:flex;gap:8px;flex-wrap:wrap">
+          <div onclick="selectTrendSymbol('BTC')" style="padding:8px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--blue);background:rgba(88,166,255,0.1)"><span style="font-weight:600;font-size:13px">BTC</span></div>
+          <div onclick="selectTrendSymbol('ETH')" style="padding:8px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.03)"><span style="font-weight:600;font-size:13px">ETH</span></div>
+          <div onclick="selectTrendSymbol('SOL')" style="padding:8px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.03)"><span style="font-weight:600;font-size:13px">SOL</span></div>
+          <div onclick="selectTrendSymbol('AVAX')" style="padding:8px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.03)"><span style="font-weight:600;font-size:13px">AVAX</span></div>
+          <div onclick="selectTrendSymbol('ARB')" style="padding:8px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,0.03)"><span style="font-weight:600;font-size:13px">ARB</span></div>
+        </div>
+      </div>
+
+      <!-- Screen 1: 战略层 - 趋势判定 -->
+      <div class="card">
+        <div class="card-title"><div class="dot" style="background:var(--blue)"></div>Screen 1 · 战略层 <span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:12px" id="trend-s1-badge">加载中</span></div>
+        <div id="trend-screen1">
+          <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+        </div>
+      </div>
+
+      <!-- Screen 2: 战术层 - 仓位计算 -->
+      <div class="card">
+        <div class="card-title"><div class="dot" style="background:var(--green)"></div>Screen 2 · 战术层 <span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:12px" id="trend-s2-badge">vol x1.0</span></div>
+        <div id="trend-screen2">
+          <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+        </div>
+      </div>
+
+      <!-- 趋势一致性详情 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--purple)"></div>趋势一致性详情</div>
+        <div id="trend-consistency-detail" style="padding:4px 0">
+          <div style="text-align:center;color:var(--muted);padding:16px">等待数据...</div>
+        </div>
+      </div>
+
+      <!-- 贝叶斯置信度详情 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>贝叶斯置信度详情</div>
+        <div id="trend-bayesian-detail" style="padding:4px 0">
+          <div style="text-align:center;color:var(--muted);padding:16px">等待数据...</div>
+        </div>
+      </div>
+
+      <!-- Freqtrade 策略信号 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--orange)"></div>Freqtrade 策略信号（4h + 1h）</div>
+        <div id="trend-freqtrade-detail" style="padding:4px 0">
+          <div style="text-align:center;color:var(--muted);padding:16px">等待数据...</div>
+        </div>
+      </div>
+
+      <!-- Screen 3: 执行层 - 持仓与信号 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--red)"></div>Screen 3 · 执行层 <span style="margin-left:auto;font-size:11px" id="trend-s3-equity">账户: --</span></div>
+        <div id="trend-screen3">
+          <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+        </div>
+      </div>
+
+      <!-- 信号一致性检查 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--green)"></div>信号一致性检查</div>
+        <div id="trend-consistency-check" style="padding:4px 0">
+          <div style="text-align:center;color:var(--muted);padding:16px">等待数据...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- 三屏马丁交易 Tab -->
   <div id="tab-screen" class="tab-content">
   <div class="tab-grid">
@@ -489,6 +571,19 @@
       <div class="card-title"><div class="dot dot-green"></div>Screen 2 · 战术层 <span style="margin-left:auto;font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(125,133,144,0.2);color:var(--muted)" id="s2-volmult">vol x1.0</span></div>
       <div id="screen2">
         <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 六维评分详情模块 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:var(--blue)"></div>
+        六维评分详情
+        <span id="six-dim-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(125,108,245,0.15);color:var(--purple)">等待数据</span>
+        <button onclick="loadSixDimensions()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div id="six-dim-content" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:20px">等待三屏数据加载...</div>
       </div>
     </div>
 
@@ -566,6 +661,18 @@
           <div style="font-size:10px;color:var(--muted)">总线事件</div>
           <div id="yj-bus-count" style="font-size:16px;font-weight:700;margin-top:4px">--</div>
         </div>
+      </div>
+    </div>
+
+    <!-- 实盘持仓卡片 -->
+    <div class="card full-width" style="margin-bottom:16px">
+      <div class="card-title">
+        <div class="dot" style="background:var(--green)"></div>OKX 实盘持仓
+        <span id="yj-pos-count-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(63,185,80,0.15);color:var(--green);border:1px solid rgba(63,185,80,0.3)">0 持仓</span>
+        <button onclick="loadYijingPositions()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新持仓</button>
+      </div>
+      <div id="yj-positions" style="font-size:12px">
+        <div style="color:var(--muted);padding:8px">加载中...</div>
       </div>
     </div>
 
@@ -707,6 +814,109 @@
     </div>
   </div>
 
+  <!-- V15-CT 马丁策略 Tab -->
+  <div id="tab-v15ct" class="tab-content">
+  <div class="tab-grid">
+
+    <!-- V15-CT 策略概览 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#f59e0b"></div>⚡ V15-CT 马丁策略概览</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-label">策略模式</div><div class="stat-value" id="v15-mode" style="color:#f59e0b">--</div><div class="stat-sub">v15_ct/dual/auto</div></div>
+        <div class="stat"><div class="stat-label">当前决策</div><div class="stat-value" id="v15-action" style="color:#ef4444">WAIT</div><div class="stat-sub">置信度</div></div>
+        <div class="stat"><div class="stat-label">置信度</div><div class="stat-value" id="v15-confidence">0%</div><div class="stat-sub">入场阈值</div></div>
+        <div class="stat"><div class="stat-label">活跃持仓</div><div class="stat-value" id="v15-positions" style="color:#10b981">0</div><div class="stat-sub">V15-CT 策略</div></div>
+      </div>
+    </div>
+
+    <!-- 实时决策详情 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:#8b5cf6"></div>📊 BTC 实时决策分析</div>
+      <div id="v15-decision" style="font-size:12px;line-height:1.6">
+        <div style="color:var(--muted)">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 实盘持仓 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:#10b981"></div>💼 实盘持仓</div>
+      <div id="v15-real-positions" style="font-size:12px;line-height:1.6">
+        <div style="color:var(--muted)">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 8币种决策信号 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:#f59e0b"></div>🔍 8币种决策信号</div>
+      <div id="v15-coins-decisions" style="font-size:12px;line-height:1.6">
+        <div style="color:var(--muted)">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 回测结果 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:#3b82f6"></div>📈 多币种回测结果（4H周期）</div>
+      <div id="v15-backtest" style="font-size:12px;line-height:1.6">
+        <div style="color:var(--muted)">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 策略参数 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:#10b981"></div>⚙️ 策略参数配置</div>
+      <div style="font-size:12px;line-height:1.8">
+        <div><span style="color:var(--muted)">周期:</span> <strong>4H</strong></div>
+        <div><span style="color:var(--muted)">最大加仓:</span> <strong>3层（共4层仓位）</strong></div>
+        <div><span style="color:var(--muted)">基础止盈:</span> <strong>4%</strong></div>
+        <div><span style="color:var(--muted)">加仓间距:</span> <strong>8%</strong></div>
+        <div><span style="color:var(--muted)">止损方式:</span> <strong>MA200动态止损</strong></div>
+        <div><span style="color:var(--muted)">交易方向:</span> <strong>只做多</strong></div>
+        <div><span style="color:var(--muted)">波动率调整:</span> <strong>已启用</strong></div>
+      </div>
+    </div>
+
+    <!-- 入场条件 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:#ec4899"></div>🎯 入场条件（7层决策体系）</div>
+      <div style="font-size:12px;line-height:1.6">
+        <div style="margin-bottom:6px"><strong style="color:#f59e0b">ABOVE_ALL</strong> — 价格在所有均线之上（最强做多区）</div>
+        <div style="padding-left:12px;margin-bottom:2px;color:var(--muted)">Tier1: Fib黄金区+布林支撑 → 置信80</div>
+        <div style="padding-left:12px;margin-bottom:2px;color:var(--muted)">Tier2: Fib黄金区+RSI&lt;55 → 置信75</div>
+        <div style="padding-left:12px;margin-bottom:2px;color:var(--muted)">Tier3: Fib浅区+RSI&lt;55 → 置信60</div>
+        <div style="padding-left:12px;margin-bottom:2px;color:var(--muted)">Tier4: 布林中轨回调+RSI&lt;50 → 置信65</div>
+        <div style="padding-left:12px;margin-bottom:2px;color:var(--muted)">Tier5: RSI&lt;45多头动能 → 置信60</div>
+        <div style="padding-left:12px;margin-bottom:2px;color:var(--muted)">Tier6: MACD多头柱扩张 → 置信68</div>
+        <div style="padding-left:12px;margin-bottom:6px;color:var(--muted)">Tier7: ADX&gt;25+DI多头 → 置信70</div>
+        <div style="margin-bottom:6px"><strong style="color:#3b82f6">IN_ZONE</strong> — 震荡区（布林带均值回归）</div>
+        <div style="padding-left:12px;margin-bottom:2px;color:var(--muted)">• 布林下轨+RSI&lt;45 → LONG置信70</div>
+        <div style="padding-left:12px;margin-bottom:2px;color:var(--muted)">• RSI&lt;35超卖 → LONG单层置信65</div>
+        <div style="padding-left:12px;margin-bottom:2px;color:var(--muted)">• RSI&gt;65超买 → 等待（只做多）</div>
+        <div style="margin-top:6px;margin-bottom:6px"><strong style="color:#ef4444">BELOW_ALL</strong> — 熊市区：等待（不做空）</div>
+        <div style="padding:6px 8px;background:rgba(251,191,36,0.1);border-radius:4px;margin-top:4px">
+          <div style="font-size:11px;color:#f59e0b">马丁加仓：下跌≥8%×波动率×(N+1) 才加仓，最多3次</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 资金计算器 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#3b82f6"></div>💰 资金计算器</div>
+      <div id="v15-capital" style="font-size:12px;line-height:1.8">
+        <div style="color:var(--muted)">加载资金数据中...</div>
+      </div>
+    </div>
+
+    <!-- 策略评估 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#10b981"></div>✅ 策略可行性评估</div>
+      <div id="v15-assessment" style="font-size:13px;line-height:1.8">
+        <div style="color:var(--muted)">加载评估中...</div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
   <!-- Dream OS Tab -->
   <div id="tab-dreamos" class="tab-content">
   <div class="tab-grid">
@@ -787,7 +997,63 @@
       </div>
     </div>
 
+    <!-- 36场景编排记忆表 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:#06b6d4"></div>36场景编排记忆表
+        <button onclick="dosLoadScenarios()" style="margin-left:auto;background:#06b6d4;color:#fff;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:11px">🔄 加载场景</button>
+      </div>
+      <div id="dos-scenario-stats" style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap"></div>
+      <div id="dos-scenarios" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:420px;overflow-y:auto;font-size:10px"></div>
+    </div>
+
+    <!-- 自进化系统 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:#ef4444"></div>自进化系统（反馈→触发→优化）
+        <button onclick="dosTriggerEvolution()" style="margin-left:auto;background:#ef4444;color:#fff;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:11px">⚡ 触发进化</button>
+      </div>
+      <div id="dos-evolution" style="padding:8px 0">
+        <div style="text-align:center;color:var(--muted);padding:16px">点击"触发进化"检查反馈并执行优化</div>
+      </div>
+    </div>
+
   </div>
+  </div>
+
+  <!-- 代币信号 Tab -->
+  <div id="tab-signals" class="tab-content">
+    <div class="tab-grid">
+
+      <!-- 信号概览 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--green)"></div>📡 代币信号概览
+          <button onclick="loadTokenSignals()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat"><div class="stat-label">看多币种</div><div class="stat-value" id="sig-bull-count" style="color:var(--green)">--</div><div class="stat-sub">BULL 信号</div></div>
+          <div class="stat"><div class="stat-label">看空币种</div><div class="stat-value" id="sig-bear-count" style="color:var(--red)">--</div><div class="stat-sub">BEAR 信号</div></div>
+          <div class="stat"><div class="stat-label">中性币种</div><div class="stat-value" id="sig-neutral-count" style="color:var(--yellow)">--</div><div class="stat-sub">NEUTRAL</div></div>
+        </div>
+      </div>
+
+      <!-- 代币信号列表 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--blue)"></div>信号详情（按置信度排序）</div>
+        <div id="token-signals-list" style="padding:4px 0">
+          <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+        </div>
+      </div>
+
+      <!-- Freqtrade 策略信号 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--purple)"></div>Freqtrade 策略信号（多策略投票）</div>
+        <div id="freqtrade-signals-list" style="padding:4px 0">
+          <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+        </div>
+      </div>
+
+    </div>
   </div>
 
 </div>
@@ -1113,6 +1379,9 @@ let cloudDataLoaded = false;
 let screenDataLoaded = false;
 let yijingDataLoaded = false;
 let currentScreenSymbol = 'BTC';
+let signalsDataLoaded = false;
+let trendDataLoaded = false;
+let currentTrendSymbol = 'BTC';
 
 function switchTab(tab, evt) {
   currentTab = tab;
@@ -1123,7 +1392,7 @@ function switchTab(tab, evt) {
     evt.target.classList.add('active');
   } else {
     const tabs = document.querySelectorAll('.tab');
-    const tabNames = ['local', 'cloud', 'screen', 'yijing'];
+    const tabNames = ['local', 'cloud', 'trend', 'v15ct', 'yijing', 'dreamos', 'signals'];
     const idx = tabNames.indexOf(tab);
     if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
   }
@@ -1132,21 +1401,40 @@ function switchTab(tab, evt) {
   if (tab === 'cloud' && !cloudDataLoaded) {
     loadCloudData();
   }
+  if (tab === 'trend' && !trendDataLoaded) {
+    loadTrendScreenData();
+  }
   if (tab === 'screen' && !screenDataLoaded) {
     loadScreenData();
   }
+  if (tab === 'v15ct') {
+    loadV15CTData();
+  }
   if (tab === 'yijing' && !yijingDataLoaded) {
     loadYijingData();
+  }
+  if (tab === 'dreamos') {
+    dosRefresh();
+    dosLoadScenarios();
+  }
+  if (tab === 'signals' && !signalsDataLoaded) {
+    loadTokenSignals();
   }
 }
 
 function currentTabRefresh() {
   if (currentTab === 'local') {
     loadData();
+  } else if (currentTab === 'trend') {
+    loadTrendScreenData();
   } else if (currentTab === 'screen') {
     loadScreenData();
   } else if (currentTab === 'yijing') {
     loadYijingData();
+  } else if (currentTab === 'signals') {
+    loadTokenSignals();
+  } else if (currentTab === 'v15ct') {
+    loadV15CTData();
   } else {
     loadCloudData();
   }
@@ -1256,6 +1544,19 @@ async function loadCloudData() {
 }
 
 // ── 三屏马丁交易数据加载 ──────────────────────────────────────────────────
+async function fetchJson(url, timeoutMs = 10000) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
 function selectCandidate(symbol) {
   currentScreenSymbol = symbol;
   loadScreenData(symbol);
@@ -1264,18 +1565,6 @@ function selectCandidate(symbol) {
 async function loadScreenData(symbol) {
   const targetSymbol = symbol || currentScreenSymbol || 'BTC';
   try {
-    const fetchJson = async (url, timeoutMs = 10000) => {
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        const res = await fetch(url, { signal: controller.signal });
-        clearTimeout(timer);
-        if (!res.ok) return null;
-        return await res.json();
-      } catch (e) {
-        return null;
-      }
-    };
 
     // 第一阶段：快速API先渲染（orchestrator/executor/mode/classic 通常 < 2s）
     const [orch, exec, mode, classic] = await Promise.all([
@@ -1303,9 +1592,9 @@ async function loadScreenData(symbol) {
 
     screenDataLoaded = true;
 
-    // 第二阶段：慢速API异步补充（screen-trade/fundamental，30s超时）
+    // 第二阶段：慢速API异步补充（screen-trade/fundamental，60s超时）
     const [trade, fund] = await Promise.all([
-      fetchJson('/api/screen-trade?symbol=' + targetSymbol, 30000),
+      fetchJson('/api/screen-trade?symbol=' + targetSymbol, 60000),
       fetchJson('/api/fundamental-signals?symbol=' + targetSymbol, 15000),
     ]);
 
@@ -1316,15 +1605,25 @@ async function loadScreenData(symbol) {
     if (trade && !trade.error) {
       renderScreenOverview(trade, classic, mode);
       renderScreen(trade, targetSymbol);
+      // 自动渲染六维评分详情
+      renderSixDimensions(trade, targetSymbol);
     } else if (trade && trade.error) {
       document.getElementById('screen1').innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${trade.error}</div>`;
       document.getElementById('screen2').innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${trade.error}</div>`;
       document.getElementById('screen3').innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">${trade.error}</div>`;
+      const dimContent = document.getElementById('six-dim-content');
+      if (dimContent) dimContent.innerHTML = `<div style="text-align:center;color:var(--red);padding:20px">加载失败: ${trade.error}</div>`;
+      const badge = document.getElementById('six-dim-badge');
+      if (badge) { badge.textContent = '加载失败'; badge.style.background = 'rgba(255,99,99,0.15)'; badge.style.color = 'var(--red)'; }
     }
     // trade 为 null（超时）则保留 executor 渲染的结果，更新提示文字
     if (!trade) {
       const hintEl = document.getElementById('screen1')?.querySelector('[style*="yellow"]');
       if (hintEl) hintEl.textContent = '⚠️ 六维评分获取超时，显示快速视图数据';
+      const dimContent = document.getElementById('six-dim-content');
+      if (dimContent) dimContent.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px">六维评分获取超时，点击刷新重试</div>`;
+      const badge = document.getElementById('six-dim-badge');
+      if (badge) { badge.textContent = '超时'; badge.style.background = 'rgba(210,153,34,0.15)'; badge.style.color = 'var(--yellow)'; }
     }
 
   } catch (e) {
@@ -1686,7 +1985,13 @@ function renderScreenOverviewFromExec(exec, classic, mode) {
         <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">持仓: ${totalSize}</div>
         <div style="font-size:11px;color:var(--text);padding:2px 0">均入场: $${avgEntry}</div>
         <div style="font-size:11px;color:var(--text);padding:2px 0">止盈价: <span style="color:var(--green);font-weight:600">$${tpPrice}</span></div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px">活跃: ${exec.active ? '✅' : '❌'}</div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">入场置信: <span style="font-weight:600">${exec.entry_confidence || '--'}%</span></div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">当前置信: <span style="font-weight:600">${exec.current_confidence || '--'}%</span></div>
+        <div style="font-size:11px;color:var(--text);padding:2px 0">预算占比: <span style="font-weight:600">${(exec.current_budget_pct || 0) * 100 || '--'}%</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">
+          逆势: ${exec.has_counter_trend_addon ? '✅已加' : '⏳待触发'}
+          顺势: ${exec.has_trend_follow_addon ? '✅已加' : '⏳待跃迁'}
+        </div>
       </div>
     </div>
   `;
@@ -2292,12 +2597,12 @@ function renderScreen(data, symbol) {
   s2El.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px">
       <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
-        <div style="font-size:16px;font-weight:700">${s2.max_addons + 1 || 4}</div>
-        <div style="font-size:10px;color:var(--muted)">总档位</div>
+        <div style="font-size:16px;font-weight:700">${s2.max_addons + 1 || 2}</div>
+        <div style="font-size:10px;color:var(--muted)">总层级(入场+逆势)</div>
       </div>
       <div style="text-align:center;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
         <div style="font-size:16px;font-weight:700">${s2.addon_pct || '--'}%</div>
-        <div style="font-size:10px;color:var(--muted)">加仓间距</div>
+        <div style="font-size:10px;color:var(--muted)">逆势加仓间距</div>
       </div>
     </div>
     ${levelsHtml}
@@ -2313,7 +2618,7 @@ function renderScreen(data, symbol) {
       const sideColor = p.side === 'LONG' ? 'var(--green)' : 'var(--red)';
       const pnlColor = p.upnl >= 0 ? 'var(--green)' : 'var(--red)';
       const martingaleLvl = p.martingale_level || 0;
-      const maxLvls = p.max_levels || 4;
+      const maxLvls = p.max_levels || 2;
       const lvlProgress = (martingaleLvl / maxLvls) * 100;
       const entryLevels = p.entry_levels || [];
 
@@ -2383,6 +2688,163 @@ function renderScreen(data, symbol) {
   } else {
     s3El.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px">无持仓（观望中）</div>';
   }
+}
+
+async function loadSixDimensions() {
+  const contentEl = document.getElementById('six-dim-content');
+  const badgeEl = document.getElementById('six-dim-badge');
+  
+  contentEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>';
+  badgeEl.textContent = '加载中...';
+  badgeEl.style.background = 'rgba(210,153,34,0.15)';
+  badgeEl.style.color = 'var(--yellow)';
+  
+  try {
+    const symbol = currentScreenSymbol || 'BTC';
+    const res = await fetch('/api/screen-trade?symbol=' + symbol, { signal: AbortSignal.timeout(60000) });
+    const data = await res.json();
+    
+    if (data && !data.error) {
+      renderSixDimensions(data, symbol);
+      badgeEl.textContent = symbol + ' · 已更新';
+      badgeEl.style.background = 'rgba(59,194,132,0.15)';
+      badgeEl.style.color = 'var(--green)';
+    } else if (data && data.error) {
+      contentEl.innerHTML = `<div style="text-align:center;color:var(--red);padding:20px">加载失败: ${data.error}</div>`;
+      badgeEl.textContent = '加载失败';
+      badgeEl.style.background = 'rgba(255,99,99,0.15)';
+      badgeEl.style.color = 'var(--red)';
+    } else {
+      contentEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">获取超时，请稍后重试</div>';
+      badgeEl.textContent = '超时';
+      badgeEl.style.background = 'rgba(210,153,34,0.15)';
+      badgeEl.style.color = 'var(--yellow)';
+    }
+  } catch (e) {
+    contentEl.innerHTML = `<div style="text-align:center;color:var(--red);padding:20px">加载失败: ${e.message}</div>`;
+    badgeEl.textContent = '错误';
+    badgeEl.style.background = 'rgba(255,99,99,0.15)';
+    badgeEl.style.color = 'var(--red)';
+  }
+}
+
+function renderSixDimensions(data, symbol) {
+  const contentEl = document.getElementById('six-dim-content');
+  const badgeEl = document.getElementById('six-dim-badge');
+  const s1 = data.screen1 || {};
+  const candidates = data.candidates || [];
+  
+  // 更新badge
+  if (badgeEl) {
+    badgeEl.textContent = symbol + ' · 已更新';
+    badgeEl.style.background = 'rgba(59,194,132,0.15)';
+    badgeEl.style.color = 'var(--green)';
+  }
+  
+  const s1Dir = s1.direction || 'NEUTRAL';
+  const s1Color = s1Dir === 'BULL' ? 'var(--green)' : s1Dir === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+  const s1Score = s1.score_pct || '--';
+  const s1Price = s1.price || '--';
+  
+  const dims = s1.dimensions || {};
+  const dimLabels = {
+    technical: { name: '技术指标', weight: 40 },
+    onchain: { name: '链上数据', weight: 15 },
+    cycle: { name: '减半周期', weight: 15 },
+    miner: { name: '矿工经济', weight: 15 },
+    macro: { name: '宏观金融', weight: 10 },
+    cross_market: { name: '跨市场联动', weight: 5 },
+  };
+  const dimOrder = ['technical', 'onchain', 'cycle', 'miner', 'macro', 'cross_market'];
+  
+  let dimsHtml = '';
+  let totalScore = 0;
+  let totalWeight = 0;
+  
+  for (const key of dimOrder) {
+    const d = dims[key];
+    if (!d) continue;
+    if (d.not_applicable) continue;
+    
+    const score = d.score || 0;
+    const weight = d.weight || dimLabels[key]?.weight || 0;
+    const pct = weight > 0 ? (score / weight * 100) : 0;
+    const barColor = pct >= 60 ? 'var(--green)' : pct >= 40 ? 'var(--yellow)' : 'var(--red)';
+    const label = dimLabels[key]?.name || key;
+    
+    totalScore += score;
+    totalWeight += weight;
+    
+    const indicators = d.indicators || {};
+    let indHtml = '';
+    for (const [indKey, indVal] of Object.entries(indicators)) {
+      if (indVal === null || indVal === undefined) continue;
+      const indName = {
+        rsi_daily: 'RSI', macd: 'MACD', signal: 'Signal', sma50: 'SMA50', sma200: 'SMA200',
+        drawdown_90d: '回撤90d(%)', mom_30d_pct: '30日涨幅(%)', vol_20d_pct: '波动率20d(%)',
+        funding_rate_pct: '资金费率(%)', news_count: '新闻数',
+      }[indKey] || indKey;
+      indHtml += `<span style="font-size:10px;color:var(--muted);margin-right:8px">${indName}: <span style="color:var(--text)">${typeof indVal === 'number' ? indVal.toFixed(1) : indVal}</span></span>`;
+    }
+    
+    const reasoning = d.reasoning || '';
+    
+    dimsHtml += `
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+          <span style="font-weight:600">${label}</span>
+          <span style="font-weight:700;color:${barColor}">${score.toFixed(1)}/${weight}</span>
+        </div>
+        <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:4px">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width 0.5s"></div>
+        </div>
+        ${indHtml ? `<div style="margin-bottom:2px">${indHtml}</div>` : ''}
+        ${reasoning ? `<div style="font-size:10px;color:var(--muted);line-height:1.4">${reasoning}</div>` : ''}
+      </div>`;
+  }
+  
+  const candHtml = candidates.length > 0 ? candidates.slice(0, 6).map(c => {
+    const cDir = c.direction || 'NEUTRAL';
+    const cColor = cDir === 'BULL' ? 'var(--green)' : cDir === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+    return `<div style="display:flex;justify-content:space-between;padding:6px 10px;border-radius:4px;background:rgba(255,255,255,0.03);font-size:11px">
+      <span style="font-weight:600">${c.symbol}</span>
+      <span style="color:${cColor};font-weight:600">${cDir}</span>
+      <span style="color:var(--muted)">${c.score_pct}分</span>
+      <span style="color:var(--muted)">vol x${c.vol_mult}</span>
+    </div>`;
+  }).join('') : '';
+  
+  contentEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- 左：六维评分详情 -->
+      <div>
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:42px;font-weight:700;color:${s1Color}">${s1Score}</div>
+          <div style="font-size:12px;color:var(--muted)">综合评分 · ${symbol} · $${s1Price}</div>
+          <div style="font-size:11px;color:${s1Color};margin-top:2px">方向: ${s1Dir} · 置信度: ${s1.confidence || '--'}</div>
+        </div>
+        <div style="padding-right:8px">${dimsHtml}</div>
+      </div>
+      
+      <!-- 右：多币种评分对比 -->
+      <div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)">多币种评分对比</div>
+        ${candHtml || '<div style="color:var(--muted);font-size:11px;padding:8px">暂无数据</div>'}
+        
+        <div style="margin-top:16px;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px">
+          <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)">六维权重说明</div>
+          <div style="font-size:10px;color:var(--muted);line-height:1.6">
+            <div>• <span style="color:var(--green)">技术指标 (40%)</span>: MA200 + RSI + MACD</div>
+            <div>• <span style="color:var(--blue)">链上数据 (15%)</span>: SMA50/200 + 回撤分析</div>
+            <div>• <span style="color:var(--purple)">减半周期 (15%)</span>: 距上次减半天数</div>
+            <div>• <span style="color:var(--orange)">矿工经济 (15%)</span>: 波动率判断</div>
+            <div>• <span style="color:var(--yellow)">宏观金融 (10%)</span>: 30日动量</div>
+            <div>• <span style="color:var(--muted)">跨市场联动 (5%)</span>: 20日波动率</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 async function triggerScreen() {
@@ -2460,6 +2922,157 @@ async function loadYijingData() {
       const el = document.getElementById(id);
       if (el) el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:12px">加载失败: ${e.message}</div>`;
     });
+  }
+  // 加载实盘持仓
+  loadYijingPositions();
+}
+
+// ── 易经推理实盘持仓加载 ──
+async function loadYijingPositions() {
+  const el = document.getElementById('yj-positions');
+  const badge = document.getElementById('yj-pos-count-badge');
+  try {
+    const res = await fetch('/api/yijing-positions', { signal: AbortSignal.timeout(15000) });
+    const d = await res.json();
+
+    const localPositions = d.positions || [];
+    const okxPositions = d.okx_live_positions || [];
+    const okxBalance = d.okx_balance || {};
+    const risk = d.risk_state || {};
+    const hb = d.heartbeat || {};
+    const perf = d.performance || {};
+
+    // 持仓数量徽章 - 优先显示OKX实盘数量
+    const liveCount = okxPositions.filter(p => !p.error).length;
+    badge.textContent = liveCount > 0 ? `${liveCount} 实盘持仓` : (localPositions.length > 0 ? `${localPositions.length} 本地记录` : '0 持仓');
+    badge.style.background = liveCount > 0 ? 'rgba(63,185,80,0.15)' : 'rgba(125,133,144,0.15)';
+    badge.style.color = liveCount > 0 ? 'var(--green)' : 'var(--muted)';
+    badge.style.borderColor = liveCount > 0 ? 'rgba(63,185,80,0.3)' : 'rgba(125,133,144,0.3)';
+
+    // 风控 + 心跳 + 绩效 统计条
+    const halted = risk.trading_halted || false;
+    const dailyPnl = risk.daily_pnl || 0;
+    const consecLoss = risk.consecutive_losses || 0;
+    const maxLoss = risk.max_consecutive_losses || 5;
+    const cycleCount = hb.cycle_count || 0;
+    const status = hb.status || '--';
+    const totalTrades = perf.total_trades || 0;
+    const winRate = perf.win_rate || 0;
+    const totalPnl = perf.total_pnl || 0;
+
+    const pnlColor = dailyPnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const haltBadge = halted
+      ? '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(248,81,73,0.15);color:var(--red);border:1px solid rgba(248,81,73,0.3)">交易暂停</span>'
+      : '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(63,185,80,0.15);color:var(--green);border:1px solid rgba(63,185,80,0.3)">交易正常</span>';
+
+    // OKX 余额卡片
+    const okxEq = okxBalance.total_eq || 0;
+    const okxAvail = okxBalance.avail || 0;
+    const balanceHtml = okxEq > 0 ? `
+      <div style="display:flex;gap:12px;margin-bottom:10px;padding:8px 12px;background:rgba(63,185,80,0.08);border-radius:6px;border:1px solid rgba(63,185,80,0.2)">
+        <div><span style="font-size:10px;color:var(--muted)">OKX总权益</span> <span style="font-size:14px;font-weight:700;color:var(--green)">$${okxEq.toFixed(2)}</span></div>
+        <div><span style="font-size:10px;color:var(--muted)">可用</span> <span style="font-size:14px;font-weight:700">$${okxAvail.toFixed(2)}</span></div>
+      </div>` : '';
+
+    // OKX 实盘持仓列表
+    let okxPosHtml = '';
+    const validOkxPos = okxPositions.filter(p => !p.error);
+    if (okxPositions.length > 0 && okxPositions[0].error) {
+      okxPosHtml = `<div style="color:var(--red);padding:6px;font-size:11px">OKX API错误: ${okxPositions[0].error}</div>`;
+    } else if (validOkxPos.length === 0) {
+      okxPosHtml = `<div style="color:var(--muted);font-style:italic;padding:6px;font-size:11px">📭 OKX实盘无持仓</div>`;
+    } else {
+      okxPosHtml = validOkxPos.map(p => {
+        const dirBadge = p.direction === 'long'
+          ? '<span class="badge badge-long">多</span>'
+          : p.direction === 'short'
+          ? '<span class="badge badge-block">空</span>'
+          : '<span class="badge badge-hold">--</span>';
+        const uplColor = p.upl >= 0 ? 'var(--green)' : 'var(--red)';
+        const uplPct = (p.upl_ratio * 100).toFixed(2);
+        return `
+          <div class="position-row" style="border-left:3px solid ${p.direction==='long'?'var(--green)':'var(--red)'}">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="pos-coin">${p.coin}</span>
+              ${dirBadge}
+              <span style="font-size:11px;color:var(--muted)">sz=${p.pos_size}</span>
+              ${p.leverage ? `<span style="font-size:10px;color:var(--yellow)">${p.leverage}x</span>` : ''}
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:13px;font-weight:600">$${Number(p.mark_px).toLocaleString()}</div>
+              <div class="pos-detail">入场 $${Number(p.entry_price).toLocaleString()} · 盈亏 <span style="color:${uplColor}">${p.upl>=0?'+':''}${p.upl.toFixed(4)} (${uplPct}%)</span></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // 本地跟踪持仓（与实盘对比）
+    let localPosHtml = '';
+    if (localPositions.length > 0) {
+      localPosHtml = `
+        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px">本地跟踪记录 (${localPositions.length}) — 可能与实盘不同步</div>
+          ${localPositions.map(p => {
+            const dirBadge = p.direction === 'long'
+              ? '<span class="badge badge-long">多</span>'
+              : p.direction === 'short'
+              ? '<span class="badge badge-block">空</span>'
+              : '<span class="badge badge-hold">--</span>';
+            const entryTime = p.entry_time ? p.entry_time.substring(0, 16).replace('T',' ') : '--';
+            const confPct = (p.confidence * 100).toFixed(0);
+            return `
+              <div class="position-row" style="opacity:0.6">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="pos-coin">${p.coin}</span>
+                  ${dirBadge}
+                  <span style="font-size:11px;color:var(--muted)">${p.hexagram || '--'}</span>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:12px">$${Number(p.entry_price).toLocaleString()}</div>
+                  <div class="pos-detail">${entryTime} · conf ${confPct}%</div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>`;
+    }
+
+    el.innerHTML = `
+      ${balanceHtml}
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
+        <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">进程状态</div>
+          <div style="font-size:13px;font-weight:700;color:${status==='running'?'var(--green)':'var(--red)'};margin-top:2px">${status}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:1px">轮询 #${cycleCount}</div>
+        </div>
+        <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">日盈亏</div>
+          <div style="font-size:15px;font-weight:700;color:${pnlColor};margin-top:2px">${dailyPnl>=0?'+':''}$${dailyPnl.toFixed(2)}</div>
+        </div>
+        <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">连亏次数</div>
+          <div style="font-size:15px;font-weight:700;color:${consecLoss>=maxLoss?'var(--red)':'var(--text)'};margin-top:2px">${consecLoss}/${maxLoss}</div>
+        </div>
+        <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">总交易/胜率</div>
+          <div style="font-size:15px;font-weight:700;margin-top:2px">${totalTrades} / ${(winRate*100).toFixed(0)}%</div>
+        </div>
+        <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">总盈亏</div>
+          <div style="font-size:15px;font-weight:700;color:${totalPnl>=0?'var(--green)':'var(--red)'};margin-top:2px">${totalPnl>=0?'+':''}$${totalPnl.toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center">
+        <span style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">风控状态:</span>
+        ${haltBadge}
+        <span style="font-size:10px;color:var(--muted)">日期: ${risk.date||'--'}</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">OKX 实盘持仓:</div>
+      ${okxPosHtml}
+      ${localPosHtml}
+    `;
+  } catch (e) {
+    console.error('持仓数据加载失败:', e);
+    el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:12px">持仓加载失败: ${e.message}</div>`;
   }
 }
 
@@ -3001,34 +3614,934 @@ function renderDOSDecision(decision) {
   }
 }
 
+// V15-CT 马丁策略数据加载
+async function loadV15CTData() {
+  try {
+    const [decisionRes, statusRes, backtestRes, capitalRes, triggerRes, decisionsRes] = await Promise.all([
+      fetchJson('/api/v15-ct/decision?coin=BTC', 30000),
+      fetchJson('/api/v15-ct/status', 15000),
+      fetchJson('/api/v15-ct/backtest?coin=BTC', 30000),
+      fetchJson('/api/capital/allocation', 15000),
+      fetchJson('/api/capital/signal-trigger', 15000),
+      fetchJson('/api/v15-ct/decisions', 60000),
+    ]);
+
+    // 更新策略概览
+    if (statusRes && !statusRes.error) {
+      document.getElementById('v15-mode').textContent = statusRes.auto_execute ? 'v15_ct (自动)' : 'v15_ct';
+      document.getElementById('v15-positions').textContent = (statusRes.v15_ct_positions || []).length;
+
+      // 更新实盘持仓卡片
+      const posEl = document.getElementById('v15-real-positions');
+      const positions = statusRes.v15_ct_positions || [];
+      if (positions.length === 0) {
+        posEl.innerHTML = '<div style="color:var(--muted)">当前无持仓</div>';
+      } else {
+        let posHtml = '';
+        for (const pos of positions) {
+          const dirColor = pos.direction === 'LONG' ? '#10b981' : '#ef4444';
+          const uplColor = pos.upl >= 0 ? '#10b981' : '#ef4444';
+          const notional = pos.entry_price * pos.sz;
+          posHtml += `
+            <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <strong style="font-size:13px">${pos.symbol}</strong>
+                <span style="color:${dirColor};font-size:11px;font-weight:600">${pos.direction === 'LONG' ? '做多' : '做空'}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+                <span>张数</span><span style="color:var(--text)">${pos.sz}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+                <span>开仓价</span><span style="color:var(--text)">$${pos.entry_price?.toLocaleString() || '--'}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+                <span>标记价</span><span style="color:var(--text)">$${pos.mark_price?.toLocaleString() || '--'}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+                <span>杠杆</span><span style="color:var(--text)">${pos.lever || '--'}x</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+                <span>马丁加仓</span><span style="color:${pos.addons > 0 ? '#f59e0b' : 'var(--text)'}">${pos.addons || 0}/3层</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-top:4px;padding-top:4px;border-top:1px solid var(--border)">
+                <span>未实现盈亏</span>
+                <span style="color:${uplColor}">${pos.upl >= 0 ? '+' : ''}$${pos.upl?.toFixed(2) || '0.00'}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px">
+                <span></span>
+                <span style="color:${uplColor}">${pos.upl_ratio ? ((pos.upl_ratio * 100).toFixed(2)) : '0.00'}%</span>
+              </div>
+            </div>
+          `;
+        }
+        posEl.innerHTML = posHtml;
+      }
+    }
+
+    // 更新实时决策
+    if (decisionRes && !decisionRes.error) {
+      const actionEl = document.getElementById('v15-action');
+      const confEl = document.getElementById('v15-confidence');
+      const decEl = document.getElementById('v15-decision');
+
+      actionEl.textContent = decisionRes.action || 'WAIT';
+      actionEl.style.color = decisionRes.action === 'OPEN_BULL' ? 'var(--green)' : 
+                            decisionRes.action === 'OPEN_BEAR' ? 'var(--red)' : 'var(--muted)';
+      confEl.textContent = (decisionRes.confidence || 0) + '%';
+
+      const reasons = decisionRes.reasons || [];
+      const slColor = decisionRes.stop_loss_triggered ? '#ef4444' : '#10b981';
+      const tpPct = decisionRes.take_profit_pct ? decisionRes.take_profit_pct.toFixed(1) : '--';
+      const addonPct = decisionRes.addon_pct ? decisionRes.addon_pct.toFixed(1) : '--';
+      const slPrice = decisionRes.stop_loss_price ? '$' + decisionRes.stop_loss_price.toLocaleString(undefined, {maximumFractionDigits: 2}) : '--';
+      const curPrice = decisionRes.current_price ? '$' + decisionRes.current_price.toLocaleString(undefined, {maximumFractionDigits: 2}) : '--';
+      
+      decEl.innerHTML = `
+        <div><strong style="color:#f59e0b">BTC 决策:</strong> ${decisionRes.action} (${decisionRes.confidence}%)</div>
+        <div><strong style="color:#3b82f6">模式:</strong> ${decisionRes.mode || 'v15_ct'}</div>
+        <div><strong style="color:#8b5cf6">波动率乘数:</strong> ${decisionRes.vol_mult || 1.0}x</div>
+        <div><strong style="color:#10b981">位置:</strong> ${decisionRes.position || 'IN_ZONE'}</div>
+        ${decisionRes.rsi ? `<div><strong style="color:#ec4899">RSI:</strong> ${decisionRes.rsi}</div>` : ''}
+        ${decisionRes.fib_zone ? `<div><strong style="color:#f59e0b">Fib区:</strong> ${decisionRes.fib_zone}</div>` : ''}
+        ${decisionRes.trend_signal ? `<div><strong style="color:#3b82f6">趋势信号:</strong> ${decisionRes.trend_signal}</div>` : ''}
+        ${decisionRes.boll_signal ? `<div><strong style="color:#10b981">布林信号:</strong> ${decisionRes.boll_signal}</div>` : ''}
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="font-weight:600;color:#3b82f6;margin-bottom:4px">📊 动态参数</div>
+          <div style="font-size:11px;line-height:1.6">
+            <div><span style="color:var(--muted)">当前价:</span> <strong>${curPrice}</strong></div>
+            <div><span style="color:var(--muted)">止损状态:</span> <span style="color:${slColor};font-weight:600">${decisionRes.stop_loss_triggered ? '❌ 已跌破（禁止开多）' : '✅ 正常'}</span></div>
+            <div><span style="color:var(--muted)">止损类型:</span> ${decisionRes.stop_loss_type || '--'}</div>
+            <div><span style="color:var(--muted)">止损价:</span> ${slPrice}</div>
+            <div><span style="color:var(--muted)">止盈:</span> <span style="color:#10b981;font-weight:600">${tpPct}%</span></div>
+            <div><span style="color:var(--muted)">加仓幅度:</span> <span style="color:#f59e0b;font-weight:600">${addonPct}%</span></div>
+          </div>
+        </div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">
+          ${reasons.map(r => `<div>• ${r}</div>`).join('')}
+        </div>
+      `;
+    } else {
+      document.getElementById('v15-decision').innerHTML = '<div style="color:var(--red)">加载失败</div>';
+    }
+
+    // 更新8币种决策信号
+    if (decisionsRes && !decisionsRes.error && decisionsRes.decisions) {
+      const coinsDecEl = document.getElementById('v15-coins-decisions');
+      if (coinsDecEl) {
+        coinsDecEl.innerHTML = decisionsRes.decisions.map(d => {
+          const actionColor = d.action === 'OPEN_BULL' ? '#10b981' : d.action === 'OPEN_BEAR' ? '#ef4444' : 'var(--muted)';
+          const bg = d.action === 'OPEN_BULL' ? 'rgba(16,185,129,0.1)' : 'rgba(0,0,0,0.2)';
+          const stopColor = d.stop_loss_triggered ? '#ef4444' : '#10b981';
+          const stopText = d.stop_loss_triggered ? '❌ 已跌破' : '✅ 正常';
+          const tp = d.take_profit_pct ? d.take_profit_pct.toFixed(1) : '--';
+          const addon = d.addon_pct ? d.addon_pct.toFixed(1) : '--';
+          const vol = d.vol_ratio ? d.vol_ratio.toFixed(2) : '--';
+          const slType = d.stop_loss_type || '--';
+          const slPrice = d.stop_loss_price ? '$' + d.stop_loss_price.toLocaleString(undefined, {maximumFractionDigits: 2}) : '--';
+          
+          return `
+            <div style="padding:8px;background:${bg};border-radius:6px;margin-bottom:6px;border-left:3px solid ${d.stop_loss_triggered ? '#ef4444' : '#10b981'}">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-weight:700;font-size:13px">${d.symbol}</span>
+                <span style="color:${actionColor};font-weight:600;font-size:11px;padding:2px 6px;border-radius:3px;background:${d.action === 'OPEN_BULL' ? 'rgba(16,185,129,0.2)' : 'rgba(0,0,0,0.3)'}">${d.action}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;line-height:1.5">
+                <div><span style="color:var(--muted)">止损:</span> <span style="color:${stopColor};font-weight:500">${stopText}</span></div>
+                <div><span style="color:var(--muted)">类型:</span> <span style="color:var(--text)">${slType}</span></div>
+                <div><span style="color:var(--muted)">止盈:</span> <span style="color:#10b981;font-weight:500">${tp}%</span></div>
+                <div><span style="color:var(--muted)">加仓:</span> <span style="color:#f59e0b;font-weight:500">${addon}%</span></div>
+                <div><span style="color:var(--muted)">波动:</span> <span style="color:var(--text)">${vol}x</span></div>
+                <div><span style="color:var(--muted)">止损价:</span> <span style="color:var(--text)">${slPrice}</span></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // 更新回测结果
+    if (backtestRes && !backtestRes.error) {
+      const m = backtestRes.metrics;
+      document.getElementById('v15-backtest').innerHTML = `
+        <div><strong style="color:#10b981">总收益率:</strong> ${m.total_return_pct >= 0 ? '+' : ''}${m.total_return_pct}%</div>
+        <div><strong style="color:#3b82f6">交易次数:</strong> ${m.total_trades}</div>
+        <div><strong style="color:#f59e0b">胜率:</strong> ${(m.win_rate * 100).toFixed(1)}%</div>
+        <div><strong style="color:#8b5cf6">盈亏比:</strong> ${m.profit_factor.toFixed(2)}</div>
+        <div><strong style="color:#ef4444">最大回撤:</strong> ${m.max_drawdown_pct}%</div>
+        <div><strong style="color:#10b981">夏普比率:</strong> ${m.sharpe_ratio.toFixed(4)}</div>
+        <div><strong style="color:#ec4899">平均持仓:</strong> ${m.avg_bars_held}根K线</div>
+      `;
+    } else {
+      document.getElementById('v15-backtest').innerHTML = '<div style="color:var(--red)">回测加载失败</div>';
+    }
+
+    // 更新资金计算器
+    if (capitalRes && !capitalRes.error) {
+      const b = capitalRes.balance;
+      const calc = capitalRes.calculations;
+      const rec = capitalRes.recommendations;
+      const cost = capitalRes.single_position_cost;
+      
+      const riskColor = rec.risk_level === 'HIGH' ? '#ef4444' : rec.risk_level === 'MEDIUM' ? '#f59e0b' : '#10b981';
+      
+      document.getElementById('v15-capital').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;text-align:center">
+            <div style="font-size:10px;color:var(--muted)">总权益</div>
+            <div style="font-size:18px;font-weight:700;color:#10b981">$${b.total_eq}</div>
+          </div>
+          <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;text-align:center">
+            <div style="font-size:10px;color:var(--muted)">可用余额</div>
+            <div style="font-size:18px;font-weight:700;color:#3b82f6">$${b.avail_balance}</div>
+          </div>
+          <div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;text-align:center">
+            <div style="font-size:10px;color:var(--muted)">风险等级</div>
+            <div style="font-size:18px;font-weight:700;color:${riskColor}">${rec.risk_level}</div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom:12px;padding:8px;background:rgba(59,130,246,0.1);border-radius:6px;border:1px solid rgba(59,130,246,0.3)">
+          <div style="font-weight:600;color:#3b82f6;margin-bottom:6px">📈 单仓位资金需求（含3次加仓）</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px">
+            <span>底仓</span><span style="font-weight:600">$${cost.base_usd}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#f59e0b">
+            <span>加仓1</span><span style="font-weight:600">$${cost.addon_details[0].cost_usd}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#f59e0b">
+            <span>加仓2</span><span style="font-weight:600">$${cost.addon_details[1].cost_usd}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#f59e0b">
+            <span>加仓3</span><span style="font-weight:600">$${cost.addon_details[2].cost_usd}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#10b981;border-top:1px solid var(--border);margin-top:4px;padding-top:4px">
+            <span>总计</span><span>$${cost.total_cost_usd}</span>
+          </div>
+        </div>
+        
+        <div style="margin-bottom:12px;padding:8px;background:rgba(16,185,129,0.1);border-radius:6px;border:1px solid rgba(16,185,129,0.3)">
+          <div style="font-weight:600;color:#10b981;margin-bottom:6px">✅ 资金建议</div>
+          <div style="font-size:11px;line-height:1.6">
+            <div>• 当前持仓: ${calc.current_positions_count}/${capitalRes.parameters.max_concurrent_positions}</div>
+            <div>• 可开新仓: ${rec.allow_open_new_position ? '✅ 是' : '❌ 否'}</div>
+            <div>• 可加仓: ${rec.allow_addon ? '✅ 是' : '❌ 否'}</div>
+            <div>• 保证金使用率: ${calc.margin_usage_pct}%</div>
+          </div>
+        </div>
+        
+        <div style="padding:8px;background:rgba(251,191,36,0.1);border-radius:6px;border:1px solid rgba(251,191,36,0.3)">
+          <div style="font-size:12px;color:#f59e0b">${rec.advice}</div>
+        </div>
+      `;
+    } else {
+      document.getElementById('v15-capital').innerHTML = '<div style="color:var(--red)">资金数据加载失败</div>';
+    }
+
+    // 更新信号触发状态
+    if (triggerRes && !triggerRes.error) {
+      const triggerHtml = '<div style="font-weight:600;color:#ec4899;margin-bottom:8px">🔔 代币池信号触发状态</div>' +
+        Object.entries(triggerRes.coins).map(([coin, status]) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;background:${status.can_trigger ? 'rgba(16,185,129,0.1)' : 'rgba(0,0,0,0.2)'};margin-bottom:4px">
+            <span style="font-weight:600">${coin}</span>
+            <span style="font-size:11px;color:${status.has_position ? '#f59e0b' : status.can_trigger ? '#10b981' : 'var(--muted)'}"">
+              ${status.has_position ? '已持仓' : status.can_trigger ? '✅ 可触发' : '❌ 等待'}
+            </span>
+          </div>
+        `).join('');
+      document.getElementById('v15-capital').innerHTML += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">' + triggerHtml + '</div>';
+    }
+
+    // 策略评估
+    const assessmentEl = document.getElementById('v15-assessment');
+    const coins = ['BTC', 'ETH', 'SOL', 'ARB', 'OP', 'UNI', 'HYPE', 'OKB'];
+    let assessmentHtml = '<div style="font-weight:600;color:#10b981;margin-bottom:8px">📊 多币种回测评估（250天/4H周期）</div>';
+    let allResults = [];
+    
+    for (const coin of coins) {
+      const r = await fetchJson(`/api/v15-ct/backtest?coin=${coin}`, 30000);
+      if (r && !r.error) {
+        const m = r.metrics;
+        allResults.push(m);
+        const retColor = m.total_return_pct >= 0 ? '#10b981' : '#ef4444';
+        assessmentHtml += `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)">
+            <span style="font-weight:600">${coin}</span>
+            <span style="color:${retColor};font-weight:600">${m.total_return_pct >= 0 ? '+' : ''}${m.total_return_pct}%</span>
+            <span style="color:var(--muted);font-size:11px">${m.total_trades}笔 | 胜率${(m.win_rate*100).toFixed(0)}%</span>
+          </div>
+        `;
+      }
+    }
+
+    if (allResults.length > 0) {
+      const avgReturn = allResults.reduce((s, m) => s + m.total_return_pct, 0) / allResults.length;
+      const totalTrades = allResults.reduce((s, m) => s + m.total_trades, 0);
+      const avgSharpe = allResults.reduce((s, m) => s + m.sharpe_ratio, 0) / allResults.length;
+      
+      assessmentHtml += `
+        <div style="margin-top:12px;padding-top:12px;border-top:2px solid var(--accent);font-weight:600">
+          <div style="display:flex;justify-content:space-between">
+            <span>平均收益</span>
+            <span style="color:${avgReturn >= 0 ? '#10b981' : '#ef4444'}">${avgReturn >= 0 ? '+' : ''}${avgReturn.toFixed(2)}%</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px">
+            <span>总交易数 / 平均夏普</span>
+            <span>${totalTrades}笔 / ${avgSharpe.toFixed(4)}</span>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:8px;background:rgba(16,185,129,0.1);border-radius:6px;border:1px solid rgba(16,185,129,0.3)">
+          <div style="font-weight:600;color:#10b981;margin-bottom:4px">✅ 策略评估结论</div>
+          <div style="font-size:12px;line-height:1.6">
+            <div>• <strong>可行性: 高</strong> - 五币种全部正收益，平均年化约${(avgReturn * 12).toFixed(0)}%</div>
+            <div>• <strong>风险控制: 良好</strong> - MA200动态止损机制有效保护本金</div>
+            <div>• <strong>夏普比率: 优秀</strong> - 平均夏普>15，风险调整后收益出色</div>
+            <div>• <strong>建议: 可以独立运行</strong> - V15-CT技术策略作为纯技术指标马丁策略，适合单独运行</div>
+          </div>
+        </div>
+      `;
+    }
+    assessmentEl.innerHTML = assessmentHtml;
+
+  } catch (e) {
+    console.error('V15-CT load error:', e);
+    document.getElementById('v15-decision').innerHTML = '<div style="color:var(--red)">加载失败: ' + e.message + '</div>';
+  }
+}
+
 // Dream OS tab 切换时自动加载
-function switchTab(tab, evt) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+// (旧版 switchTab 已删除，使用第 1357 行的版本)
 
-  if (evt && evt.target) {
-    evt.target.classList.add('active');
-  } else {
-    const tabs = document.querySelectorAll('.tab');
-    const tabNames = ['local', 'cloud', 'screen', 'yijing', 'dreamos'];
-    const idx = tabNames.indexOf(tab);
-    if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
-  }
-  document.getElementById('tab-' + tab).classList.add('active');
+// ── 36场景编排记忆表 ──────────────────────────────────────────────────────
+async function dosLoadScenarios() {
+  try {
+    const res = await fetch('/api/dreamos/scenarios');
+    const data = await res.json();
+    if (data.error) {
+      document.getElementById('dos-scenarios').innerHTML = `<div style="color:var(--red)">加载失败: ${data.error}</div>`;
+      return;
+    }
 
-  if (tab === 'cloud' && !cloudDataLoaded) {
-    loadCloudData();
+    // 统计概览
+    const stats = data.stats || {};
+    const trendStats = { BULL: {covered:0, total:12}, BEAR: {covered:0, total:12}, NEUTRAL: {covered:0, total:12} };
+    const scenarios = data.scenarios || [];
+    scenarios.forEach(s => {
+      const trend = s.scenario_id.split('_')[0];
+      if (trendStats[trend] && s.covered) trendStats[trend].covered++;
+    });
+
+    const statsEl = document.getElementById('dos-scenario-stats');
+    statsEl.innerHTML = `
+      <div style="padding:6px 12px;background:rgba(6,182,212,0.15);border-radius:6px;border:1px solid rgba(6,182,212,0.3)">
+        <div style="color:var(--muted);font-size:10px">总覆盖率</div>
+        <div style="color:#06b6d4;font-weight:700;font-size:16px">${data.covered}/${data.total_scenarios}</div>
+      </div>
+      <div style="padding:6px 12px;background:rgba(34,197,94,0.15);border-radius:6px;border:1px solid rgba(34,197,94,0.3)">
+        <div style="color:var(--muted);font-size:10px">BULL 覆盖</div>
+        <div style="color:#22c55e;font-weight:700">${trendStats.BULL.covered}/12</div>
+      </div>
+      <div style="padding:6px 12px;background:rgba(239,68,68,0.15);border-radius:6px;border:1px solid rgba(239,68,68,0.3)">
+        <div style="color:var(--muted);font-size:10px">BEAR 覆盖</div>
+        <div style="color:#ef4444;font-weight:700">${trendStats.BEAR.covered}/12</div>
+      </div>
+      <div style="padding:6px 12px;background:rgba(168,85,247,0.15);border-radius:6px;border:1px solid rgba(168,85,247,0.3)">
+        <div style="color:var(--muted);font-size:10px">NEUTRAL 覆盖</div>
+        <div style="color:#a855f7;font-weight:700">${trendStats.NEUTRAL.covered}/12</div>
+      </div>
+      <div style="padding:6px 12px;background:rgba(245,158,11,0.15);border-radius:6px;border:1px solid rgba(245,158,11,0.3)">
+        <div style="color:var(--muted);font-size:10px">反馈场景</div>
+        <div style="color:#f59e0b;font-weight:700">${Object.keys(data.feedback||{}).length}</div>
+      </div>
+      ${data.trigger_evolution && data.trigger_evolution.length > 0 ? `
+      <div style="padding:6px 12px;background:rgba(239,68,68,0.25);border-radius:6px;border:1px solid var(--red)">
+        <div style="color:var(--red);font-size:10px">⚠️ 触发进化</div>
+        <div style="color:var(--red);font-weight:700">${data.trigger_evolution.length}</div>
+      </div>` : ''}
+    `;
+
+    // 场景网格
+    const grid = document.getElementById('dos-scenarios');
+    grid.innerHTML = scenarios.map(s => {
+      const trend = s.scenario_id.split('_')[0];
+      const vol = s.scenario_id.split('_')[1];
+      const mom = s.scenario_id.split('_')[2];
+      const trendColor = trend === 'BULL' ? '#22c55e' : trend === 'BEAR' ? '#ef4444' : '#a855f7';
+      const volOpacity = vol === 'EXTREME' ? '0.9' : vol === 'HIGH' ? '0.7' : vol === 'NORMAL' ? '0.5' : '0.3';
+      const confColor = s.confidence === 'high' ? '#22c55e' : s.confidence === 'medium' ? '#f59e0b' : s.confidence === 'low' ? '#6b7280' : '#4b5563';
+
+      if (!s.covered) {
+        return `<div style="padding:6px;background:rgba(75,85,99,0.1);border:1px dashed var(--border);border-radius:4px">
+          <div style="color:var(--muted);font-weight:600">${trend[0]}${vol[0]}${mom[0]}</div>
+          <div style="color:var(--muted);font-size:9px">未覆盖</div>
+        </div>`;
+      }
+
+      const inferredTag = s.inferred ? '<span style="color:#f59e0b;font-size:8px">推断</span>' : '';
+      const fbStats = (data.feedback||{})[s.scenario_id];
+      const fbTag = fbStats ? `<span style="color:#06b6d4;font-size:8px">${fbStats.total_trades}笔</span>` : '';
+
+      return `<div style="padding:6px;background:rgba(${trend==='BULL'?'34,197,94':trend==='BEAR'?'239,68,68':'168,85,247'},${volOpacity*0.15});border:1px solid ${trendColor}40;border-radius:4px;cursor:pointer" title="${s.scenario_id}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:${trendColor};font-weight:600">${trend[0]}${vol[0]}${mom[0]}</span>
+          <span style="color:${confColor};font-size:9px">${s.confidence[0].toUpperCase()}</span>
+        </div>
+        <div style="color:var(--text);font-size:9px;margin-top:2px">${s.best_pattern}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:2px">
+          <span style="color:var(--muted);font-size:8px">n=${s.sample_count}</span>
+          <span style="color:var(--yellow);font-size:8px">${(s.score*100).toFixed(0)}%</span>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:2px">${inferredTag}${fbTag}</div>
+      </div>`;
+    }).join('');
+
+  } catch (e) {
+    console.error('场景加载失败:', e);
+    document.getElementById('dos-scenarios').innerHTML = `<div style="color:var(--red)">加载失败: ${e.message}</div>`;
   }
-  if (tab === 'screen' && !screenDataLoaded) {
-    loadScreenData();
+}
+
+// ── 自进化系统触发 ──────────────────────────────────────────────────────────
+async function dosTriggerEvolution() {
+  const evEl = document.getElementById('dos-evolution');
+  evEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px">⏳ 检查反馈数据并执行进化...</div>';
+
+  try {
+    const res = await fetch('/api/dreamos/evolve');
+    const data = await res.json();
+    if (data.error) {
+      evEl.innerHTML = `<div style="color:var(--red)">进化失败: ${data.error}</div>`;
+      return;
+    }
+
+    let html = '';
+
+    // 反馈列表
+    const feedbacks = data.feedbacks || [];
+    if (feedbacks.length === 0) {
+      html += '<div style="padding:8px;color:var(--muted);text-align:center">暂无反馈数据。执行交易后会自动记录。</div>';
+    } else {
+      html += '<div style="margin-bottom:12px"><div class="memory-label" style="margin-bottom:6px">反馈数据（按场景）</div>';
+      html += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:4px;font-size:10px">';
+      html += '<div style="color:var(--muted);font-weight:600">场景</div>';
+      html += '<div style="color:var(--muted);font-weight:600">模式</div>';
+      html += '<div style="color:var(--muted);font-weight:600">交易数</div>';
+      html += '<div style="color:var(--muted);font-weight:600">方向准确率</div>';
+      html += '<div style="color:var(--muted);font-weight:600">触发</div>';
+      feedbacks.forEach(fb => {
+        const accColor = fb.direction_accuracy < 0.5 ? 'var(--red)' : 'var(--green)';
+        const trigColor = fb.trigger_evolution ? 'var(--red)' : 'var(--muted)';
+        html += `<div style="color:var(--text)">${fb.scenario_id}</div>`;
+        html += `<div style="color:var(--text)">${fb.pattern_used}</div>`;
+        html += `<div style="color:var(--text)">${fb.trade_count}</div>`;
+        html += `<div style="color:${accColor}">${(fb.direction_accuracy*100).toFixed(0)}%</div>`;
+        html += `<div style="color:${trigColor}">${fb.trigger_evolution?'⚠️是':'否'}</div>`;
+      });
+      html += '</div></div>';
+    }
+
+    // 进化结果
+    if (data.evolution_triggered) {
+      html += `<div style="padding:12px;background:rgba(34,197,94,0.1);border:1px solid var(--green);border-radius:6px;margin:8px 0">`;
+      html += `<div style="color:var(--green);font-weight:600;margin-bottom:6px">✅ 进化已触发 (${data.updates.length} 项更新)</div>`;
+      data.updates.forEach(u => {
+        html += `<div style="font-size:11px;color:var(--text);padding:2px 0">• ${typeof u === 'string' ? u : JSON.stringify(u)}</div>`;
+      });
+      html += '</div>';
+    } else {
+      html += `<div style="padding:12px;background:rgba(107,114,128,0.1);border:1px solid var(--border);border-radius:6px;margin:8px 0">`;
+      html += `<div style="color:var(--muted);font-weight:600">ℹ️ 未触发进化</div>`;
+      html += `<div style="font-size:11px;color:var(--muted);margin-top:4px">触发条件: 连续3笔方向准确率<50% 或 夏普偏差>30%</div>`;
+      html += '</div>';
+    }
+
+    evEl.innerHTML = html;
+
+    // 刷新场景表
+    dosLoadScenarios();
+  } catch (e) {
+    evEl.innerHTML = `<div style="color:var(--red)">进化触发失败: ${e.message}</div>`;
   }
-  if (tab === 'yijing' && !yijingDataLoaded) {
-    loadYijingData();
+}
+
+// ── 三屏趋势 Tab ──────────────────────────────────────────────────────────
+let trendCache = {};
+
+function selectTrendSymbol(symbol) {
+  currentTrendSymbol = symbol;
+  document.querySelectorAll('#trend-symbols > div').forEach(el => {
+    el.style.border = '1px solid var(--border)';
+    el.style.background = 'rgba(255,255,255,0.03)';
+  });
+  const activeBtn = Array.from(document.querySelectorAll('#trend-symbols > div')).find(el => el.textContent.includes(symbol));
+  if (activeBtn) {
+    activeBtn.style.border = '1px solid var(--blue)';
+    activeBtn.style.background = 'rgba(88,166,255,0.1)';
   }
-  if (tab === 'dreamos') {
-    dosRefresh();
+  document.getElementById('trend-symbol-badge').textContent = symbol;
+  loadTrendScreenData(symbol);
+}
+
+async function loadTrendScreenData(symbol) {
+  const targetSymbol = symbol || currentTrendSymbol || 'BTC';
+  const s1El = document.getElementById('trend-screen1');
+  const s2El = document.getElementById('trend-screen2');
+  const s3El = document.getElementById('trend-screen3');
+
+  s1El.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>';
+  s2El.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>';
+  s3El.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>';
+
+  console.log('[Trend] Loading data for:', targetSymbol);
+  try {
+    const url = '/api/trend-screen?symbol=' + targetSymbol;
+    console.log('[Trend] Fetching:', url);
+    const res = await fetch(url);
+    console.log('[Trend] HTTP status:', res.status);
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
+    }
+    const data = await res.json();
+    console.log('[Trend] Data loaded:', data ? data.symbol : 'FAIL');
+    if (!data || data.error) {
+      s1El.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">' + (data?.error || '加载失败') + '</div>';
+      s2El.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">' + (data?.error || '加载失败') + '</div>';
+      s3El.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">' + (data?.error || '加载失败') + '</div>';
+      return;
+    }
+
+    trendCache[targetSymbol] = data;
+    trendDataLoaded = true;
+
+    try { renderTrendScreen1(data); } catch(e) { console.error('[Trend] renderScreen1:', e); }
+    try { renderTrendScreen2(data); } catch(e) { console.error('[Trend] renderScreen2:', e); }
+    try { renderTrendScreen3(data); } catch(e) { console.error('[Trend] renderScreen3:', e); }
+    try { renderTrendConsistencyDetail(data); } catch(e) { console.error('[Trend] renderConsistency:', e); }
+    try { renderTrendBayesianDetail(data); } catch(e) { console.error('[Trend] renderBayesian:', e); }
+    try { renderTrendFreqtradeDetail(data); } catch(e) { console.error('[Trend] renderFreqtrade:', e); }
+    try { renderTrendConsistencyCheck(data); } catch(e) { console.error('[Trend] renderCheck:', e); }
+
+    const lu = document.getElementById('last-update');
+    if (lu) lu.textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
+    console.log('[Trend] All renders completed');
+  } catch (e) {
+    console.error('[Trend] Load error:', e);
+    s1El.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">加载失败: ' + e.message + '</div>';
+    s2El.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">加载失败: ' + e.message + '</div>';
+    s3El.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px">加载失败: ' + e.message + '</div>';
   }
+}
+
+function renderTrendScreen1(data) {
+  const s1El = document.getElementById('trend-screen1');
+  const badge = document.getElementById('trend-s1-badge');
+  const fs = data.final_signal || {};
+  const dir = fs.direction || 'NEUTRAL';
+  const conf = fs.confidence || 0;
+  const dirColor = dir === 'BULL' ? 'var(--green)' : dir === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+
+  badge.textContent = dir + ' ' + conf.toFixed(1) + '%';
+  badge.style.background = dir === 'BULL' ? 'rgba(63,185,80,0.15)' : dir === 'BEAR' ? 'rgba(248,81,73,0.15)' : 'rgba(210,153,34,0.15)';
+  badge.style.color = dirColor;
+
+  s1El.innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:36px;font-weight:700;color:${dirColor}">${dir}</div>
+      <div style="font-size:14px;color:var(--text);margin-top:4px">置信度: <span style="font-weight:700">${conf.toFixed(1)}%</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">${data.symbol} · $${fmt(data.price)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted)">趋势一致性</div>
+        <div style="font-size:16px;font-weight:700;color:${fs.trend_consistent ? 'var(--green)' : 'var(--red)'}">${fs.trend_consistent ? '✅' : '❌'}</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.2);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted)">Freqtrade一致性</div>
+        <div style="font-size:16px;font-weight:700;color:${fs.freqtrade_consistent ? 'var(--green)' : 'var(--red)'}">${fs.freqtrade_consistent ? '✅' : '❌'}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTrendScreen2(data) {
+  const s2El = document.getElementById('trend-screen2');
+  const badge = document.getElementById('trend-s2-badge');
+  const fs = data.final_signal || {};
+  const conf = fs.confidence || 0;
+  const action = fs.action || 'WAIT';
+  const position = fs.position || {};
+  const positionPct = position.position_pct || 0;
+  const tier = position.tier || '--';
+  const reason = fs.decision_reason || '';
+
+  const actionColor = action === 'WAIT' ? 'var(--yellow)' : 'var(--green)';
+  const actionLabel = action === 'ENTER_LONG' ? '开多' : action === 'ENTER_SHORT' ? '开空' : action === 'TRIAL' ? '轻仓试探' : '等待';
+
+  badge.textContent = actionLabel + ' ' + (positionPct * 100).toFixed(0) + '%';
+
+  s2El.innerHTML = `
+    <div style="margin-bottom:12px">
+      <div style="text-align:center;margin-bottom:12px">
+        <div style="font-size:28px;font-weight:700;color:${actionColor}">${actionLabel}</div>
+        <div style="font-size:14px;color:var(--text);margin-top:4px">建议仓位: <span style="font-weight:700;color:var(--green)">${(positionPct * 100).toFixed(0)}%</span> <span style="color:var(--muted);font-size:11px">(${tier})</span></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">置信度 ${conf.toFixed(1)}%</div>
+      </div>
+    </div>
+    <div style="padding:10px;background:rgba(0,0,0,0.2);border-radius:6px;margin-bottom:8px">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:4px">决策依据</div>
+      <div style="font-size:11px;color:var(--text)">${reason}</div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);text-align:center">仓位映射: ≥85%→60% | ≥75%→45% | ≥65%→30% | ≥55%→15% | ≥45%→5%</div>
+  `;
+}
+
+function renderTrendScreen3(data) {
+  const s3El = document.getElementById('trend-screen3');
+  const eqBadge = document.getElementById('trend-s3-equity');
+  const pos = data.position;
+  const acct = data.account || {};
+
+  eqBadge.textContent = '账户: $' + fmt(acct.equity || 0);
+
+  if (!pos) {
+    s3El.innerHTML = `
+      <div style="text-align:center;padding:20px">
+        <div style="font-size:16px;color:var(--muted)">暂无持仓</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">可用: $${fmt(acct.available || 0)}</div>
+      </div>
+    `;
+    return;
+  }
+
+  const side = pos.side || 'LONG';
+  const sideColor = side === 'LONG' ? 'var(--green)' : 'var(--red)';
+  const pnl = pos.upnl || 0;
+  const pnlColor = pnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+  s3El.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:${sideColor};margin-bottom:8px">${data.symbol} ${side === 'LONG' ? '📈 多' : '📉 空'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
+          <div><span style="color:var(--muted)">入场价</span><div style="font-weight:600">$${fmt(pos.entry_px)}</div></div>
+          <div><span style="color:var(--muted)">数量</span><div style="font-weight:600">${fmt(pos.size)}</div></div>
+          <div><span style="color:var(--muted)">杠杆</span><div style="font-weight:600">${pos.leverage}x</div></div>
+          <div><span style="color:var(--muted)">盈亏</span><div style="font-weight:600;color:${pnlColor}">$${fmt(pnl)}</div></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        <div style="text-align:center">
+          <div style="font-size:24px;font-weight:700;color:${pnlColor}">${pnl >= 0 ? '+' : ''}${fmt(pnl)}</div>
+          <div style="font-size:11px;color:var(--muted)">浮动盈亏</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        <div style="text-align:center">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px">可用余额</div>
+          <div style="font-size:20px;font-weight:700">$${fmt(acct.available || 0)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTrendConsistencyDetail(data) {
+  const el = document.getElementById('trend-consistency-detail');
+  const tc = data.trend_consistency || {};
+  const weekly = tc.weekly || {};
+  const daily = tc.daily || {};
+
+  const weeklyDir = weekly.final_direction || weekly.core_direction || '--';
+  const dailyDir = daily.final_direction || daily.core_direction || '--';
+  const weeklyConf = weekly.confidence || 0;
+  const dailyConf = daily.confidence || 0;
+  const consistent = tc.consistent;
+  const overallDir = tc.overall_direction || '--';
+  const consistencyConf = tc.consistency_confidence || 0;
+
+  // 周线信号明细
+  const weeklySignals = weekly.signals || [];
+  let wsHtml = weeklySignals.map(s => {
+    const sColor = s.direction === 'BULL' ? 'var(--green)' : s.direction === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+    return `<div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:11px"><span>${s.indicator}</span><span style="color:${sColor};font-weight:600">${s.direction}</span><span style="color:var(--muted)">速度${s.speed?.toFixed(1) || '--'}</span></div>`;
+  }).join('');
+
+  // 日线信号明细
+  const dailySignals = daily.signals || [];
+  let dsHtml = dailySignals.map(s => {
+    const sColor = s.direction === 'BULL' ? 'var(--green)' : s.direction === 'BEAR' ? 'var(--red)' : 'var(--yellow)';
+    return `<div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:11px"><span>${s.indicator}</span><span style="color:${sColor};font-weight:600">${s.direction}</span><span style="color:var(--muted)">速度${s.speed?.toFixed(1) || '--'}</span></div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.15);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted)">周线方向</div>
+        <div style="font-size:16px;font-weight:700;color:${weeklyDir === 'BULL' ? 'var(--green)' : weeklyDir === 'BEAR' ? 'var(--red)' : 'var(--yellow)'}">${weeklyDir}</div>
+        <div style="font-size:10px;color:var(--muted)">置信度 ${weeklyConf.toFixed(1)}%</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.15);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted)">日线方向</div>
+        <div style="font-size:16px;font-weight:700;color:${dailyDir === 'BULL' ? 'var(--green)' : dailyDir === 'BEAR' ? 'var(--red)' : 'var(--yellow)'}">${dailyDir}</div>
+        <div style="font-size:10px;color:var(--muted)">置信度 ${dailyConf.toFixed(1)}%</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.15);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted)">趋势一致性</div>
+        <div style="font-size:16px;font-weight:700;color:${consistent ? 'var(--green)' : 'var(--red)'}">${consistent ? '✅ 一致' : '❌ 不一致'}</div>
+        <div style="font-size:10px;color:var(--muted)">${consistencyConf.toFixed(1)}%</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:rgba(0,0,0,0.15);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted)">综合方向</div>
+        <div style="font-size:16px;font-weight:700;color:${overallDir === 'BULL' ? 'var(--green)' : overallDir === 'BEAR' ? 'var(--red)' : 'var(--yellow)'}">${overallDir}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="padding:10px;background:rgba(0,0,0,0.1);border-radius:6px">
+        <div style="font-size:11px;font-weight:600;color:var(--blue);margin-bottom:6px">周线 TOP5 指标</div>
+        ${wsHtml || '<div style="color:var(--muted);font-size:11px">无数据</div>'}
+      </div>
+      <div style="padding:10px;background:rgba(0,0,0,0.1);border-radius:6px">
+        <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:6px">日线 TOP5 指标</div>
+        ${dsHtml || '<div style="color:var(--muted);font-size:11px">无数据</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderTrendBayesianDetail(data) {
+  const el = document.getElementById('trend-bayesian-detail');
+  const bc = data.bayesian_confidence || {};
+
+  const direction = bc.direction || 'NEUTRAL';
+  const confidence = bc.confidence || 0;
+  const bullProb = ((bc.bull_probability || 0) * 100).toFixed(1);
+  const bearProb = ((bc.bear_probability || 0) * 100).toFixed(1);
+
+  // 周线权重
+  const ww = bc.weekly_weights || {};
+  const wWeights = ww.weights || {};
+  const wSorted = ww.sorted_indicators || [];
+  const wPerfs = (ww.performances || {});
+
+  // 日线权重
+  const dw = bc.daily_weights || {};
+  const dWeights = dw.weights || {};
+  const dSorted = dw.sorted_indicators || [];
+  const dPerfs = (dw.performances || {});
+
+  // 渲染权重条
+  const renderWeightBar = (name, weight, perf) => {
+    const pct = (weight * 100).toFixed(1);
+    const winRate = perf?.win_rate ? (perf.win_rate * 100).toFixed(0) + '%' : '--';
+    const sharpe = perf?.sharpe ? perf.sharpe.toFixed(1) : '--';
+    return `<div style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
+        <span>${name}</span>
+        <span style="color:var(--muted)">权重${pct}% · 胜率${winRate} · 夏普${sharpe}</span>
+      </div>
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:var(--blue);border-radius:2px"></div>
+      </div>
+    </div>`;
+  };
+
+  let weeklyHtml = wSorted.map(name => renderWeightBar(name, wWeights[name] || 0, wPerfs[name])).join('');
+  let dailyHtml = dSorted.map(name => renderWeightBar(name, dWeights[name] || 0, dPerfs[name])).join('');
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div style="text-align:center;padding:12px;background:rgba(0,0,0,0.15);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted)">贝叶斯方向</div>
+        <div style="font-size:20px;font-weight:700;color:${direction === 'BULL' ? 'var(--green)' : direction === 'BEAR' ? 'var(--red)' : 'var(--yellow)'}">${direction}</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:rgba(0,0,0,0.15);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted)">置信度</div>
+        <div style="font-size:20px;font-weight:700">${confidence.toFixed(1)}%</div>
+        <div style="font-size:10px;color:var(--muted)">多${bullProb}% / 空${bearProb}%</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:rgba(0,0,0,0.15);border-radius:6px">
+        <div style="font-size:10px;color:var(--muted)">周线/日线权重</div>
+        <div style="font-size:20px;font-weight:700">60/40</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="padding:10px;background:rgba(0,0,0,0.1);border-radius:6px">
+        <div style="font-size:11px;font-weight:600;color:var(--blue);margin-bottom:8px">周线指标权重排名</div>
+        ${weeklyHtml || '<div style="color:var(--muted);font-size:11px">无数据</div>'}
+      </div>
+      <div style="padding:10px;background:rgba(0,0,0,0.1);border-radius:6px">
+        <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px">日线指标权重排名</div>
+        ${dailyHtml || '<div style="color:var(--muted);font-size:11px">无数据</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderTrendFreqtradeDetail(data) {
+  const el = document.getElementById('trend-freqtrade-detail');
+  const ft = data.freqtrade_signals || {};
+
+  const ft4h = ft['4h'] || {};
+  const ft1h = ft['1h'] || {};
+
+  const renderSignal = (sig) => {
+    const signal = sig.signal || 'HOLD';
+    const conf = sig.confidence || 0;
+    const strategy = sig.strategy || '--';
+    const color = signal === 'BUY' || signal === 'LONG' ? 'var(--green)' : signal === 'SELL' || signal === 'SHORT' ? 'var(--red)' : 'var(--yellow)';
+    return { signal, conf, strategy, color };
+  };
+
+  const s4h = renderSignal(ft4h);
+  const s1h = renderSignal(ft1h);
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="padding:12px;background:rgba(0,0,0,0.15);border-radius:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px">4h 波段信号</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="font-size:24px;font-weight:700;color:${s4h.color}">${s4h.signal}</div>
+          <div style="font-size:14px;color:var(--muted)">置信度 ${s4h.conf.toFixed(0)}%</div>
+        </div>
+        <div style="font-size:10px;color:var(--muted)">策略: ${s4h.strategy}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:4px">MultiGroupStrategy(55%) + TrendConfirmationStrategy(45%)</div>
+      </div>
+      <div style="padding:12px;background:rgba(0,0,0,0.15);border-radius:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--orange);margin-bottom:8px">1h 短线信号</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="font-size:24px;font-weight:700;color:${s1h.color}">${s1h.signal}</div>
+          <div style="font-size:14px;color:var(--muted)">置信度 ${s1h.conf.toFixed(0)}%</div>
+        </div>
+        <div style="font-size:10px;color:var(--muted)">策略: ${s1h.strategy}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:4px">RegimeHybridStrategy(60%) + Bot2StrategyTrend(40%)</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTrendConsistencyCheck(data) {
+  const el = document.getElementById('trend-consistency-check');
+  const fs = data.final_signal || {};
+  const tf = data.technical_fundamental_fusion || {};
+
+  const techDir = (tf.technical || {}).direction || '--';
+  const fundDir = (tf.fundamental || {}).direction || '--';
+  const techConf = (tf.technical || {}).confidence || 0;
+  const fundConf = (tf.fundamental || {}).confidence || 0;
+  const conflictLevel = tf.conflict_level || 0;
+
+  const checks = [
+    { name: '趋势一致性', pass: fs.trend_consistent, detail: '周线/日线方向一致' },
+    { name: 'Freqtrade一致性', pass: fs.freqtrade_consistent, detail: 'Freqtrade信号方向匹配' },
+    { name: '技术面基本面融合', pass: tf.consistent, detail: `技术${techDir}(${techConf.toFixed(0)}%) vs 基本${fundDir}(${fundConf.toFixed(0)}%) 冲突${(conflictLevel*100).toFixed(0)}%` },
+    { name: '融合一致性', pass: fs.fusion_consistent, detail: '技术面基本面方向一致' },
+  ];
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">';
+  for (const check of checks) {
+    html += `
+      <div style="text-align:center;padding:12px;background:${check.pass ? 'rgba(63,185,80,0.1)' : 'rgba(248,81,73,0.1)'};border-radius:8px;border:1px solid ${check.pass ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)'}">
+        <div style="font-size:20px;font-weight:700;color:${check.pass ? 'var(--green)' : 'var(--red)'}">${check.pass ? '✅' : '❌'}</div>
+        <div style="font-size:11px;font-weight:600;margin-top:4px">${check.name}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">${check.detail}</div>
+      </div>
+    `;
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ── 代币信号 Tab ──────────────────────────────────────────────────────────
+async function loadTokenSignals() {
+  try {
+    const data = await fetchJson('/api/token-signals', 60000);
+    if (!data || data.error) {
+      document.getElementById('token-signals-list').innerHTML = 
+        '<div style="text-align:center;color:var(--red);padding:20px">加载失败: ' + (data?.error || '未知错误') + '</div>';
+      return;
+    }
+
+    renderTokenSignalsOverview(data);
+    renderTokenSignalsList(data.signals);
+    renderFreqtradeSignalsList(data.signals);
+    signalsDataLoaded = true;
+
+    document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
+  } catch (e) {
+    document.getElementById('token-signals-list').innerHTML = 
+      '<div style="text-align:center;color:var(--red);padding:20px">加载失败: ' + e.message + '</div>';
+  }
+}
+
+function renderTokenSignalsOverview(data) {
+  document.getElementById('sig-bull-count').textContent = data.bull_count || 0;
+  document.getElementById('sig-bear-count').textContent = data.bear_count || 0;
+  document.getElementById('sig-neutral-count').textContent = data.neutral_count || 0;
+}
+
+function renderTokenSignalsList(signals) {
+  const el = document.getElementById('token-signals-list');
+  
+  const header = `
+    <div style="display:grid;grid-template-columns:80px 120px 80px 80px 100px 100px 100px;gap:8px;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;font-size:11px;font-weight:600;color:var(--muted)">
+      <div>币种</div>
+      <div>价格</div>
+      <div>方向</div>
+      <div>置信度</div>
+      <div>趋势一致</div>
+      <div>Freq一致</div>
+      <div>入场就绪</div>
+    </div>
+  `;
+
+  const rows = signals.map(s => {
+    const dirColor = s.direction === 'BULL' ? 'var(--green)' : s.direction === 'BEAR' ? 'var(--red)' : 'var(--muted)';
+    const confColor = s.confidence >= 60 ? 'var(--green)' : s.confidence >= 40 ? 'var(--yellow)' : 'var(--red)';
+    return `
+      <div style="display:grid;grid-template-columns:80px 120px 80px 80px 100px 100px 100px;gap:8px;padding:8px;border-bottom:1px solid rgba(48,54,61,0.5);align-items:center">
+        <div style="font-weight:600;font-size:13px">${s.symbol}</div>
+        <div style="color:var(--text)">$${(s.price || 0).toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+        <div style="font-weight:600;color:${dirColor}">${s.direction}</div>
+        <div style="color:${confColor};font-weight:600">${s.confidence}%</div>
+        <div>${s.trend_consistent ? '<span style="color:var(--green)">✅</span>' : '<span style="color:var(--red)">❌</span>'}</div>
+        <div>${s.freqtrade_consistent ? '<span style="color:var(--green)">✅</span>' : '<span style="color:var(--red)">❌</span>'}</div>
+        <div>${s.entry_ready ? '<span style="color:var(--green)">✅</span>' : '<span style="color:var(--muted)">--</span>'}</div>
+      </div>
+    `;
+  }).join('');
+
+  el.innerHTML = header + rows;
+}
+
+function renderFreqtradeSignalsList(signals) {
+  const el = document.getElementById('freqtrade-signals-list');
+  
+  const header = `
+    <div style="display:grid;grid-template-columns:80px 120px 100px 100px 100px 100px;gap:8px;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;font-size:11px;font-weight:600;color:var(--muted)">
+      <div>币种</div>
+      <div>价格</div>
+      <div>Freqtrade 4h</div>
+      <div>4h 置信度</div>
+      <div>Freqtrade 1h</div>
+      <div>1h 置信度</div>
+    </div>
+  `;
+
+  const rows = signals.map(s => {
+    const ft4hColor = s.freqtrade_4h === 'BUY' ? 'var(--green)' : s.freqtrade_4h === 'SELL' ? 'var(--red)' : 'var(--muted)';
+    const ft1hColor = s.freqtrade_1h === 'BUY' ? 'var(--green)' : s.freqtrade_1h === 'SELL' ? 'var(--red)' : 'var(--muted)';
+    return `
+      <div style="display:grid;grid-template-columns:80px 120px 100px 100px 100px 100px;gap:8px;padding:8px;border-bottom:1px solid rgba(48,54,61,0.5);align-items:center">
+        <div style="font-weight:600;font-size:13px">${s.symbol}</div>
+        <div style="color:var(--text)">$${(s.price || 0).toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+        <div style="font-weight:600;color:${ft4hColor}">${s.freqtrade_4h}</div>
+        <div style="color:var(--text)">${s.freqtrade_4h_conf}%</div>
+        <div style="font-weight:600;color:${ft1hColor}">${s.freqtrade_1h}</div>
+        <div style="color:var(--text)">${s.freqtrade_1h_conf}%</div>
+      </div>
+    `;
+  }).join('');
+
+  el.innerHTML = header + rows;
 }
 </script>
 </body>

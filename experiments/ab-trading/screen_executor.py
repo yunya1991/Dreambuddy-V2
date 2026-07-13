@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """
 三屏马丁交易执行引擎 v2
-- LLM 决策：DeepSeek API，配额用尽自动回退 V9/V15 基线
-- 三级回退：DeepSeek LLM → V15 高级规则 → V9 基线策略
+- LLM 决策：DeepSeek API，配额用尽自动回退 V9/AI-V15 基线
+- 三级回退：DeepSeek LLM → AI-V15 多因子评分 → V9 基线策略
 - 自主编排：事件驱动 + 4h 心跳 + 波动触发
 - 策略：V9马丁基线（可动态调整 vol_mult）
 """
-import json, os, subprocess, math, re, time
+import json, os, subprocess, math, re, time, sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 try:
     from dotenv import load_dotenv
@@ -29,31 +34,75 @@ os.environ["PATH"] = HOME_BIN + ":" + os.environ.get("PATH", "")
 OKX_PROFILE = os.environ.get("SCREEN_OKX_PROFILE", "screen_trade")
 INST_SWAP = "BTC-USDT-SWAP"
 
-MAX_ADDONS = 3
+MAX_ADDONS = 1
 BASE_ADDON_PCT = 0.08
 BASE_TP_PCT = 0.04
 BASE_VOL_MULT = 1.0
 V15_VOL_MULT = 1.875
 
-BASE_POSITION_PCT = 0.05
 MAX_POSITION_PCT = 0.25
+
+POSITION_MIN_BUDGET_PCT = 0.05
+POSITION_MAX_BUDGET_PCT = 0.60
+COUNTER_TREND_ADDON_BUDGET_PCT = 0.40
+TOTAL_POSITION_BUDGET_CAP = 0.80
+
+CONFIDENCE_JUMP_THRESHOLD = 15
 
 OPEN_CONFIDENCE_THRESHOLD = 60
 TRIAL_CONFIDENCE_THRESHOLD = 45
-TRIAL_POSITION_PCT = 0.02
-STOP_LOSS_PCT = 0.06
+STOP_LOSS_PCT = 0.10
+
+_POSITION_TIERS = [
+    (85, 0.60),
+    (75, 0.45),
+    (65, 0.30),
+    (55, 0.15),
+    (45, 0.05),
+    (0, 0.02),   # 低于45%也有最小仓位（2%），低置信度低仓位
+]
+
+
+def calc_entry_budget_pct(confidence: float) -> float:
+    for threshold, budget_pct in _POSITION_TIERS:
+        if confidence >= threshold:
+            return budget_pct
+    return _POSITION_TIERS[-1][1]
+
+
+def calc_actual_position_pct(budget_pct: float) -> float:
+    return round(budget_pct * MAX_POSITION_PCT, 4)
+
+
+def calc_target_total_budget_pct(
+    entry_confidence: float,
+    current_confidence: float,
+    has_counter_trend: bool = False,
+) -> float:
+    entry_pct = calc_entry_budget_pct(entry_confidence)
+    counter_pct = COUNTER_TREND_ADDON_BUDGET_PCT if has_counter_trend else 0.0
+    jump = current_confidence - entry_confidence
+    trend_pct = 0.0
+    if jump >= CONFIDENCE_JUMP_THRESHOLD:
+        new_entry_pct = calc_entry_budget_pct(current_confidence)
+        trend_pct = max(0.0, new_entry_pct - entry_pct)
+    total = entry_pct + counter_pct + trend_pct
+    return min(total, TOTAL_POSITION_BUDGET_CAP)
 
 SKIP_THRESHOLD_FOR_SIMPLE_MODE = 5
 LOSS_THRESHOLD_FOR_SIMPLE_MODE = 3
 
 AUTO_EXECUTE = os.environ.get("SCREEN_AUTO_EXECUTE", "true").lower() == "true"
 
+MIN_MARGIN_USD = float(os.environ.get("MIN_MARGIN_USD", 20))
+DEFAULT_LEVERAGE = float(os.environ.get("DEFAULT_LEVERAGE", 10))
+
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
 DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 LLM_DAILY_LIMIT = int(os.environ.get("SCREEN_LLM_DAILY_LIMIT", "12"))
 
-STRATEGY_MODE = os.environ.get("SCREEN_STRATEGY_MODE", "auto")  # auto/v9/v15
+STRATEGY_MODE = os.environ.get("SCREEN_STRATEGY_MODE", "auto")  # auto/v9/ai_v15
 
 
 def _run_okx(args):
@@ -101,7 +150,7 @@ def _load_quota() -> dict:
     return {
         "date": _today(),
         "deepseek": 0,
-        "v15_fallback": 0,
+        "ai_v15_fallback": 0,
         "v9_fallback": 0,
     }
 
@@ -123,7 +172,7 @@ def get_quota_status() -> dict:
     return {
         "date": q["date"],
         "deepseek": f"{q.get('deepseek', 0)}/{LLM_DAILY_LIMIT}",
-        "v15_fallback": q.get("v15_fallback", 0),
+        "ai_v15_fallback": q.get("ai_v15_fallback", 0),
         "v9_fallback": q.get("v9_fallback", 0),
     }
 
@@ -134,7 +183,10 @@ def load_state() -> dict:
     if STATE_FILE.exists():
         try:
             with open(STATE_FILE) as f:
-                return json.load(f)
+                state = json.load(f)
+            if "open_price" not in state:
+                state["open_price"] = state.get("avg_entry", 0)
+            return state
         except Exception:
             pass
     return {
@@ -144,6 +196,7 @@ def load_state() -> dict:
         "current_level": 0,
         "total_size": 0,
         "avg_entry": 0,
+        "open_price": 0,
         "tp_price": 0,
         "last_check_ts": 0,
         "last_action_ts": 0,
@@ -161,10 +214,29 @@ def load_state() -> dict:
     }
 
 
+def _convert_numpy_types(obj):
+    if isinstance(obj, dict):
+        return {k: _convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_numpy_types(item) for item in obj]
+    elif np is not None and isinstance(obj, (np.integer, np.int64, np.int32)):
+        return int(obj)
+    elif np is not None and isinstance(obj, (np.floating, np.float64, np.float32)):
+        return float(obj)
+    else:
+        return obj
+
+
 def save_state(state: dict):
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f, indent=2, ensure_ascii=False)
+    try:
+        state_clean = _convert_numpy_types(state)
+        with open(STATE_FILE, "w") as f:
+            json.dump(state_clean, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        _log("ERROR", f"状态保存失败: {e}")
+        with open(STATE_FILE, "w") as f:
+            json.dump({"error": f"save failed: {e}"}, f, indent=2)
 
 
 # ── 市场数据 ──────────────────────────────────────────────────────────────
@@ -303,6 +375,52 @@ def _call_deepseek(prompt: str, system: str, max_tokens: int = 800) -> Optional[
         return None
 
 
+def _check_and_trigger_evolution(state: dict) -> None:
+    """
+    检查并触发系统自进化
+    触发条件:
+    1. 连续亏损超过3笔
+    2. 每月定期进化
+    
+    进化能力: A8-做梦部—联网搜索，agent b 和系统有这个自进化系统
+    """
+    import subprocess
+    import time
+    
+    consecutive_losses = state.get("consecutive_losses", 0)
+    last_evolution_ts = state.get("last_evolution_ts", 0)
+    now_ts = time.time()
+    
+    should_evolve = False
+    reason = ""
+    
+    if consecutive_losses >= 3:
+        should_evolve = True
+        reason = f"连续亏损{consecutive_losses}笔，触发紧急进化"
+    else:
+        one_month = 30 * 24 * 3600
+        if now_ts - last_evolution_ts >= one_month:
+            should_evolve = True
+            reason = "每月定期进化"
+    
+    if should_evolve:
+        _log("EVOLUTION", f"触发系统进化: {reason}")
+        
+        try:
+            subprocess.Popen(
+                ["python", "-m", "evolution_scheduler", "--trigger", reason],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=True
+            )
+            _log("EVOLUTION", "进化任务已启动")
+            state["last_evolution_ts"] = now_ts
+            state["evolution_count"] = state.get("evolution_count", 0) + 1
+            save_state(state)
+        except Exception as e:
+            _log("WARN", f"进化任务启动失败: {e}")
+
+
 def _simple_mode_decision(screen1: dict, screen2: dict, price: float) -> dict:
     """
     简单模式决策：基于日线+1h双维度，简化决策逻辑
@@ -351,10 +469,135 @@ def _simple_mode_decision(screen1: dict, screen2: dict, price: float) -> dict:
     }
 
 
+def _five_algo_decision(full_signal: dict, screen1: dict, screen2: dict, screen3: dict, reports: dict) -> dict:
+    """
+    五大算法决策：基于 compute_full_trading_signal 的完整输出做决策
+    五大算法: 静态指标投票 + 三维动态融合 + 动态权重调整 + 贝叶斯概率计算 + 技术面+基本面撮合
+
+    决策逻辑（三屏趋势系统设计理念）:
+    1. 趋势一致性（Screen1）：趋势不一致时一律 WAIT — 入场前置条件
+    2. 置信度评估（Screen2）：决定仓位大小 — 置信度越高仓位越大
+    3. Freqtrade入场信号（Screen3）：具体入场时机触发 — 有信号才动手
+    4. 方向以五大算法为准，Screen1六维评分为参考
+    """
+    fs = full_signal["final_signal"]
+    tc = full_signal["trend_consistency"]
+    bc = full_signal["bayesian_confidence"]
+    tff = full_signal["technical_fundamental_fusion"]
+    ft_signals = full_signal.get("freqtrade_signals", {})
+
+    reasons = []
+    action = "WAIT"
+    confidence = int(round(fs["confidence"], 0))
+
+    weekly_dir = tc.get("weekly", {}).get("final_direction", "?")
+    daily_dir = tc.get("daily", {}).get("final_direction", "?")
+
+    # 前置条件1: 趋势一致性
+    if not fs["trend_consistent"]:
+        reasons.append(f"趋势不一致: 周线{weekly_dir} vs 日线{daily_dir}")
+        return {
+            "action": "WAIT",
+            "confidence": 0,
+            "reasons": reasons,
+            "mode": "five_algo",
+            "vol_mult": BASE_VOL_MULT,
+            "freqtrade_signals": ft_signals,
+        }
+
+    # 基本面一致性检查
+    if not fs.get("fusion_consistent", True):
+        fundamental_dir = tff.get("fundamental", {}).get("direction", "?")
+        reasons.append(f"技术面{bc.get('direction', '?')} vs 基本面{fundamental_dir}矛盾，置信度已扣减")
+
+    reasons.append(f"五大算法综合: {fs['direction']} 置信{confidence}%")
+    reasons.append(f"贝叶斯置信度: {bc.get('confidence', 0):.1f}%")
+    reasons.append(f"趋势一致性: {'一致' if tc.get('consistent') else '不一致'}")
+
+    # 前置条件2: Freqtrade 入场信号（Screen3 执行层触发）
+    # 1h或4h任一同向信号即可触发，4h信号权重更高
+    ft_bull = False
+    ft_bear = False
+    ft_trigger_tf = None
+    ft_trigger_conf = 0
+    for tf in ["4h", "1h"]:
+        sig = ft_signals.get(tf, {})
+        sig_dir = sig.get("signal", "HOLD")
+        sig_conf = float(sig.get("confidence", 0) or 0)
+        if sig_dir == "BUY" or sig_dir == "LONG":
+            ft_bull = True
+            if sig_conf > ft_trigger_conf:
+                ft_trigger_conf = sig_conf
+                ft_trigger_tf = tf
+        elif sig_dir == "SELL" or sig_dir == "SHORT":
+            ft_bear = True
+            if sig_conf > ft_trigger_conf:
+                ft_trigger_conf = sig_conf
+                ft_trigger_tf = tf
+
+    ft_consistent = fs.get("freqtrade_consistent", False)
+    if ft_signals:
+        reasons.append(f"Freqtrade信号: 1h={ft_signals.get('1h', {}).get('signal', 'HOLD')} 4h={ft_signals.get('4h', {}).get('signal', 'HOLD')}")
+    else:
+        reasons.append("Freqtrade信号: 无（经典系统不可用）")
+
+    # 决策逻辑：趋势一致 + 置信足够 + Freqtrade同向触发
+    if fs["direction"] == "BULL":
+        if ft_bull and ft_consistent:
+            action = "OPEN_BULL" if confidence >= 45 else "WAIT"
+            reasons.append(f"Freqtrade {ft_trigger_tf} 同向看多，触发入场")
+        elif not ft_signals:
+            # 经典系统不可用时降级：仅看置信度（保守）
+            action = "OPEN_BULL" if confidence >= 70 else "WAIT"
+            if confidence >= 70:
+                reasons.append("经典系统不可用，置信度≥70%降级入场")
+            else:
+                reasons.append("Freqtrade信号缺失+置信不足，等待")
+        else:
+            action = "WAIT"
+            reasons.append("Freqtrade无同向信号，等待入场时机")
+    elif fs["direction"] == "BEAR":
+        if ft_bear and ft_consistent:
+            action = "OPEN_BEAR" if confidence >= 45 else "WAIT"
+            reasons.append(f"Freqtrade {ft_trigger_tf} 同向看空，触发入场")
+        elif not ft_signals:
+            action = "OPEN_BEAR" if confidence >= 70 else "WAIT"
+            if confidence >= 70:
+                reasons.append("经典系统不可用，置信度≥70%降级入场")
+            else:
+                reasons.append("Freqtrade信号缺失+置信不足，等待")
+        else:
+            action = "WAIT"
+            reasons.append("Freqtrade无同向信号，等待入场时机")
+    else:
+        action = "WAIT"
+        reasons.append("方向中性，等待")
+
+    # 仓位大小由置信度决定（vol_mult 影响加仓间距）
+    vol_mult = BASE_VOL_MULT
+    if confidence >= 75:
+        vol_mult = V15_VOL_MULT * 1.2
+    elif confidence >= 60:
+        vol_mult = V15_VOL_MULT
+    elif confidence >= 45:
+        vol_mult = BASE_VOL_MULT * 0.8
+
+    return {
+        "action": action,
+        "confidence": confidence,
+        "reasons": reasons[:5],
+        "mode": "five_algo",
+        "vol_mult": round(vol_mult, 2),
+        "freqtrade_signals": ft_signals,
+        "freqtrade_trigger_tf": ft_trigger_tf,
+    }
+
+
 def llm_decision(screen1: dict, screen2: dict, screen3: dict, reports: dict) -> dict:
     """
-    三级决策：DeepSeek LLM → V15 高级规则 → V9 基线策略
-    返回: {"action": "OPEN_BULL/OPEN_BEAR/WAIT/HOLD", "confidence": int, "reasons": [...], "mode": "deepseek/v15/v9", "vol_mult": float}
+    三级决策：DeepSeek LLM → AI-V15 多因子评分 → V9 基线策略
+    支持模式: auto/v9/ai_v15
+    返回: {"action": "OPEN_BULL/OPEN_BEAR/WAIT/HOLD", "confidence": int, "reasons": [...], "mode": "deepseek/ai_v15/v9", "vol_mult": float}
     """
     weekly = reports.get("weekly") or {}
     a1_daily = reports.get("a1_daily") or {}
@@ -365,9 +608,9 @@ def llm_decision(screen1: dict, screen2: dict, screen3: dict, reports: dict) -> 
         result = _v9_baseline_decision(screen1, weekly, a1_daily, a6_intel)
         _record_usage("v9_fallback")
         return result
-    if STRATEGY_MODE == "v15":
+    if STRATEGY_MODE == "ai_v15":
         result = _v15_advanced_decision(screen1, weekly, a1_daily, a6_intel)
-        _record_usage("v15_fallback")
+        _record_usage("ai_v15_fallback")
         return result
 
     # Level 1: DeepSeek LLM
@@ -378,15 +621,15 @@ def llm_decision(screen1: dict, screen2: dict, screen3: dict, reports: dict) -> 
             _record_usage("deepseek")
             return result
 
-    # Level 2: V15 高级规则
-    _log("INFO", "LLM不可用，降级到 V15 高级规则")
+    # Level 2: AI-V15 多因子评分
+    _log("INFO", "LLM不可用，降级到 AI-V15 多因子评分")
     result = _v15_advanced_decision(screen1, weekly, a1_daily, a6_intel)
     if result and result.get("confidence", 0) >= OPEN_CONFIDENCE_THRESHOLD:
-        _record_usage("v15_fallback")
+        _record_usage("ai_v15_fallback")
         return result
 
     # Level 3: V9 基线策略（兜底）
-    _log("INFO", "V15置信不足，降级到 V9 基线策略")
+    _log("INFO", "AI-V15置信不足，降级到 V9 基线策略")
     result = _v9_baseline_decision(screen1, weekly, a1_daily, a6_intel)
     _record_usage("v9_fallback")
     return result
@@ -397,7 +640,7 @@ def _llm_decision_deepseek(screen1: dict, screen2: dict, reports: dict) -> Optio
     a1_daily = reports.get("a1_daily") or {}
     a6_intel = reports.get("a6_intel") or {}
 
-    system_prompt = """你是专业加密货币交易分析师，负责三屏马丁策略的入场决策。
+    system_prompt = """你是专业加密货币交易分析师，负责三屏趋势策略的入场决策。
 输出严格 JSON 格式，不要任何解释：
 {
   "action": "OPEN_BULL" | "OPEN_BEAR" | "WAIT",
@@ -408,19 +651,25 @@ def _llm_decision_deepseek(screen1: dict, screen2: dict, reports: dict) -> Optio
 }
 
 【核心铁律 - 必须遵守】
-1. 不轻易出手原则：马丁策略无止损，方向错了就是巨亏。宁可错过，不可做错。
-   - 只有高确认度（≥70%）才考虑开仓
+1. 入场前置条件：周线和日线的趋势方向必须一致（同向），不一致一律 WAIT。
+2. 不轻易出手原则：方向错了就是巨亏。宁可错过，不可做错。
+   - 无衰竭信号时，高确认度（≥70%）才考虑正常仓位开仓
+   - 有衰竭信号时，允许降低阈值（≥45%）轻仓入场（趋势末尾的轻仓机会）
    - 中间状态一律 WAIT，不猜方向，不赌反弹/回调
-2. Screen1 方向优先：方向以 Screen1 战略层为准，Screen2/3 只做确认和时机选择，不改变大方向。
-3. 多维度交叉确认：没有任何单一指标是万能的，必须多维度共振才动手。
-4. P0 告警绝对禁开：A6 有 P0 告警时绝对不开仓。
+3. Screen1 方向优先：方向以 Screen1 战略层为准，Screen2/3 只做确认和时机选择，不改变大方向。
+4. 多维度交叉确认：没有任何单一指标是万能的，必须多维度共振才动手。
+5. P0 告警绝对禁开：A6 有 P0 告警时绝对不开仓。
 
 决策依据：
-- OPEN_BULL：Screen1 看多 + 研报确认 + 无P0告警 + 综合置信≥70%
-- OPEN_BEAR：Screen1 看空 + 研报确认 + 无P0告警 + 综合置信≥70%
-- WAIT：方向矛盾、置信不足、有P0告警、或处于中性震荡区
+- OPEN_BULL：趋势一致 + Screen1 看多 + 研报确认 + 无P0告警 + 综合置信≥70%（无衰竭）/ ≥45%（有衰竭）
+- OPEN_BEAR：趋势一致 + Screen1 看空 + 研报确认 + 无P0告警 + 综合置信≥70%（无衰竭）/ ≥45%（有衰竭）
+- WAIT：趋势不一致、方向矛盾、置信不足、有P0告警、或处于中性震荡区
 
-注意：置信度低于70%一律输出 WAIT，不要"试试"、"碰碰运气"。"""
+注意：趋势不一致时绝对不开仓，不要"试试"、"碰碰运气"。"""
+
+    trend_c = screen1.get("trend_consistency", {})
+    trend_m = screen1.get("trend_metrics", {})
+    exhaust = screen1.get("exhaustion_signals", {})
 
     prompt = f"""三屏交易数据：
 
@@ -429,6 +678,25 @@ def _llm_decision_deepseek(screen1: dict, screen2: dict, reports: dict) -> Optio
 总分: {screen1.get('total_score', 0)}/100
 置信度: {screen1.get('confidence', 'N/A')}
 价格: ${screen1.get('price', 0):.2f}
+
+【趋势一致性评估 - 入场前置条件】
+一致性: {'✅一致' if trend_c.get('consistent') else '❌不一致'}
+周线方向: {trend_c.get('weekly_direction', 'N/A')}
+日线方向: {trend_c.get('daily_direction', 'N/A')}
+
+【日线趋势指标】
+EMA排列: {trend_m.get('daily', {}).get('direction', 'N/A')}
+7日动量: {trend_m.get('daily', {}).get('speed', {}).get('7d', 'N/A')}%
+14日动量: {trend_m.get('daily', {}).get('speed', {}).get('14d', 'N/A')}%
+加速度: {trend_m.get('daily', {}).get('acceleration', 'N/A')}
+
+【周线趋势指标】
+EMA排列: {trend_m.get('weekly', {}).get('direction', 'N/A')}
+7周动量: {trend_m.get('weekly', {}).get('speed', {}).get('7d', 'N/A')}%
+14周动量: {trend_m.get('weekly', {}).get('speed', {}).get('14d', 'N/A')}%
+
+【衰竭信号】
+{'有衰竭: ' + ', '.join(exhaust.get('signals', [])) if exhaust.get('has_exhaustion') else '无衰竭信号'}
 
 【Screen2 - 战术层】
 方向: {screen2.get('direction', 'N/A')}
@@ -496,12 +764,24 @@ P1告警: {a6_intel.get('p1_alerts', 0)}条
 
 def _v15_advanced_decision(screen1: dict, weekly: dict, a1_daily: dict, a6_intel: dict) -> dict:
     """
-    V15 高级规则：多因子加权评分
+    AI-V15 多因子评分：多因子加权评分
     - Screen1权重: 35%
     - A1日报权重: 30%
     - 周报权重: 20%
     - A6情报权重: 15%
+    前置条件：周线和日线趋势一致性
     """
+    # 前置条件1：趋势一致性
+    consistency = screen1.get("trend_consistency", {})
+    if not consistency.get("consistent", True):
+        return {
+            "action": "WAIT",
+            "confidence": 0,
+            "reasons": [f"趋势不一致: {consistency.get('reason', '周线vs日线方向矛盾')}"],
+            "mode": "ai_v15",
+            "vol_mult": 1.0,
+        }
+
     s1_dir = screen1.get("direction", "NEUTRAL")
     s1_score = screen1.get("total_score", 50)
 
@@ -564,7 +844,7 @@ def _v15_advanced_decision(screen1: dict, weekly: dict, a1_daily: dict, a6_intel
     # 计算最终方向和置信度
     total = score_bull + score_bear
     if total == 0:
-        return {"action": "WAIT", "confidence": 0, "reasons": ["信号不足，等待"], "mode": "v15", "vol_mult": 1.0}
+        return {"action": "WAIT", "confidence": 0, "reasons": ["信号不足，等待"], "mode": "ai_v15", "vol_mult": 1.0}
 
     if score_bull > score_bear:
         action = "OPEN_BULL"
@@ -576,17 +856,28 @@ def _v15_advanced_decision(screen1: dict, weekly: dict, a1_daily: dict, a6_intel
         action = "WAIT"
         confidence = 50
 
+    # 衰竭信号：降低置信度但允许轻仓入场
+    exhaustion = screen1.get("exhaustion_signals", {})
+    if exhaustion.get("has_exhaustion", False):
+        adj = exhaustion.get("confidence_adjustment", 0)
+        old_conf = confidence
+        confidence = max(30, confidence + adj)
+        reasons.append(f"衰竭信号({', '.join(exhaustion['signals'])}), 置信{old_conf}%→{confidence}%")
+
     vol_mult = V15_VOL_MULT
     if confidence < 50:
         vol_mult *= 0.8
     elif confidence > 75:
         vol_mult *= 1.2
 
+    # 有衰竭信号时降低入场阈值（允许轻仓）
+    entry_threshold = 35 if exhaustion.get("has_exhaustion", False) else 45
+
     return {
-        "action": action if confidence >= 45 else "WAIT",
+        "action": action if confidence >= entry_threshold else "WAIT",
         "confidence": confidence,
         "reasons": reasons,
-        "mode": "v15",
+        "mode": "ai_v15",
         "vol_mult": round(vol_mult, 2),
     }
 
@@ -594,8 +885,19 @@ def _v15_advanced_decision(screen1: dict, weekly: dict, a1_daily: dict, a6_intel
 def _v9_baseline_decision(screen1: dict, weekly: dict, a1_daily: dict, a6_intel: dict) -> dict:
     """
     V9 基线策略：纯 Screen1 驱动，vol_mult=1.0，简单可靠
-    入场条件：Screen1 非中性 + 无 P0 告警
+    入场条件：趋势一致 + Screen1 非中性 + 无 P0 告警
     """
+    # 前置条件：趋势一致性
+    consistency = screen1.get("trend_consistency", {})
+    if not consistency.get("consistent", True):
+        return {
+            "action": "WAIT",
+            "confidence": 0,
+            "reasons": [f"趋势不一致: {consistency.get('reason', '周线vs日线方向矛盾')}"],
+            "mode": "v9",
+            "vol_mult": BASE_VOL_MULT,
+        }
+
     s1_dir = screen1.get("direction", "NEUTRAL")
     s1_score = screen1.get("total_score", 50)
     p0 = a6_intel.get("p0_alerts", 0) if a6_intel else 0
@@ -607,14 +909,32 @@ def _v9_baseline_decision(screen1: dict, weekly: dict, a1_daily: dict, a6_intel:
         reasons.append(f"有P0告警({p0}条)，保守观望")
         return {"action": "WAIT", "confidence": 20, "reasons": reasons, "mode": "v9", "vol_mult": BASE_VOL_MULT}
 
+    # 衰竭信号处理
+    exhaustion = screen1.get("exhaustion_signals", {})
+    has_exhaustion = exhaustion.get("has_exhaustion", False)
+
     if s1_dir == "BULL":
         confidence = min(70, s1_score)
-        reasons.append(f"Screen1看多({s1_score}分)")
-        return {"action": "OPEN_BULL", "confidence": confidence, "reasons": reasons, "mode": "v9", "vol_mult": BASE_VOL_MULT}
+        if has_exhaustion:
+            adj = exhaustion.get("confidence_adjustment", 0)
+            confidence = max(30, confidence + adj)
+            reasons.append(f"Screen1看多({s1_score}分), 衰竭信号({', '.join(exhaustion['signals'])}), 置信→{confidence}%")
+        else:
+            reasons.append(f"Screen1看多({s1_score}分)")
+        entry_threshold = 35 if has_exhaustion else 50
+        action = "OPEN_BULL" if confidence >= entry_threshold else "WAIT"
+        return {"action": action, "confidence": confidence, "reasons": reasons, "mode": "v9", "vol_mult": BASE_VOL_MULT}
     elif s1_dir == "BEAR":
         confidence = min(70, s1_score)
-        reasons.append(f"Screen1看空({s1_score}分)")
-        return {"action": "OPEN_BEAR", "confidence": confidence, "reasons": reasons, "mode": "v9", "vol_mult": BASE_VOL_MULT}
+        if has_exhaustion:
+            adj = exhaustion.get("confidence_adjustment", 0)
+            confidence = max(30, confidence + adj)
+            reasons.append(f"Screen1看空({s1_score}分), 衰竭信号({', '.join(exhaustion['signals'])}), 置信→{confidence}%")
+        else:
+            reasons.append(f"Screen1看空({s1_score}分)")
+        entry_threshold = 35 if has_exhaustion else 50
+        action = "OPEN_BEAR" if confidence >= entry_threshold else "WAIT"
+        return {"action": action, "confidence": confidence, "reasons": reasons, "mode": "v9", "vol_mult": BASE_VOL_MULT}
     else:
         reasons.append("Screen1中性，观望")
         return {"action": "WAIT", "confidence": 30, "reasons": reasons, "mode": "v9", "vol_mult": BASE_VOL_MULT}
@@ -662,9 +982,11 @@ def get_lot_size(inst_id: str) -> float:
 
 
 def _calc_position_size(equity: float, level: int, direction: str, entry_price: float, inst_id: str = INST_SWAP, position_pct: float = None) -> float:
-    pct = position_pct if position_pct is not None else BASE_POSITION_PCT
-    pos_usdt = equity * pct
-    size = pos_usdt / entry_price
+    pct = position_pct if position_pct is not None else calc_actual_position_pct(0.30)
+    margin_usdt = equity * pct  # 保证金金额
+    margin_usdt = max(margin_usdt, MIN_MARGIN_USD)  # 不低于最低保证金
+    notional_usdt = margin_usdt * DEFAULT_LEVERAGE  # 名义价值
+    size = notional_usdt / entry_price
     lot_sz = get_lot_size(inst_id)
     size = math.floor(size / lot_sz) * lot_sz
     size = max(lot_sz, size)
@@ -682,6 +1004,11 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
 
     from screen_engine import scan_candidates, select_best_candidate, compute_screen3
     from report_loader import get_all_reports
+    
+    trend_system_path = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统"
+    if trend_system_path not in sys.path:
+        sys.path.insert(0, trend_system_path)
+    from engine import compute_full_trading_signal
 
     try:
         reports = get_all_reports()
@@ -745,6 +1072,27 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
         s3 = compute_screen3(s2)
         current_swap = s2.get("inst_id", INST_SWAP)
 
+        full_signal = None
+        current_candidate = None
+        for c in candidates:
+            if c["symbol"] == current_symbol:
+                current_candidate = c
+                break
+        
+        if current_candidate:
+            spot_inst = current_candidate.get("spot", f"{current_symbol}-USDT")
+            try:
+                full_signal = compute_full_trading_signal(spot_inst, current_candidate.get("is_btc", True))
+                if not full_signal.get("error"):
+                    fs_dir = full_signal["final_signal"]["direction"]
+                    fs_conf = full_signal["final_signal"]["confidence"]
+                    _log("INFO", f"五大算法信号 [{current_symbol}]: {fs_dir} 置信{fs_conf:.1f}%")
+                    state["full_trading_signal"] = full_signal
+                else:
+                    _log("WARN", f"五大算法计算失败: {full_signal['error']}")
+            except Exception as e:
+                _log("WARN", f"五大算法调用异常: {e}")
+
         acct = get_account_info()
         equity = acct.get("equity", 0)
         available = acct.get("available", 0)
@@ -763,7 +1111,20 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
         
         state["simple_mode"] = simple_mode
         
-        if simple_mode:
+        if full_signal and not full_signal.get("error"):
+            fs = full_signal["final_signal"]
+            decision = {
+                "action": "OPEN_BULL" if fs["action"] == "ENTER_LONG" else "OPEN_BEAR" if fs["action"] == "ENTER_SHORT" else "WAIT",
+                "confidence": fs["confidence"],
+                "reasons": [fs.get("decision_reason", "")],
+                "mode": "five_algo",
+                "vol_mult": BASE_VOL_MULT,
+                "freqtrade_signals": full_signal.get("freqtrade_signals", {}),
+            }
+            _log("INFO", f"五大算法决策: mode={decision['mode']}, action={decision['action']}, 置信{decision['confidence']}%")
+            if fs.get("decision_reason"):
+                _log("INFO", f"决策理由: {fs['decision_reason']}")
+        elif simple_mode:
             decision = _simple_mode_decision(s1, s2, price)
         else:
             decision = llm_decision(s1, s2, s3, reports)
@@ -779,13 +1140,14 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
         state["tp_pct"] = round(BASE_TP_PCT * vol_mult * 100, 2)
 
         if pos and state.get("active") and state["direction"]:
-            _log("INFO", f"持仓监控: {state['direction']} 层级{state['current_level']}/{MAX_ADDONS}, 入场=${state.get('avg_entry', 0):.2f}, 止盈=${state.get('tp_price', 0):.2f}")
+            _log("INFO", f"持仓监控: {state['direction']} 层级{state['current_level']}/{MAX_ADDONS}, 开仓=${state.get('open_price', 0):.2f}, 均价=${state.get('avg_entry', 0):.2f}, 止盈=${state.get('tp_price', 0):.2f}")
 
-            levels, tp_price, _, _ = _calc_levels(state["direction"], price, vol_mult)
+            open_price = state.get("open_price", state.get("avg_entry", price))
+            levels, _, _, _ = _calc_levels(state["direction"], open_price, vol_mult)
             pos_side = "long" if state["direction"] == "BULL" else "short"
 
             next_level = state["current_level"] + 1
-            if next_level <= MAX_ADDONS:
+            if next_level <= MAX_ADDONS and not state.get("has_counter_trend_addon", False):
                 next_px = levels[next_level]["price"]
                 should_add = False
                 if state["direction"] == "BULL" and price <= next_px:
@@ -794,8 +1156,13 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                     should_add = True
 
                 if should_add:
-                    add_size = _calc_position_size(equity, next_level, state["direction"], next_px, current_swap)
-                    _log("ACTION", f"加仓{next_level}: ${price:.2f}触发${next_px:.2f}, +{add_size}BTC")
+                    counter_budget_pct = COUNTER_TREND_ADDON_BUDGET_PCT
+                    current_budget = state.get("current_budget_pct", state.get("entry_budget_pct", 0.30))
+                    new_budget = min(current_budget + counter_budget_pct, TOTAL_POSITION_BUDGET_CAP)
+                    add_budget_pct = new_budget - current_budget
+                    add_position_pct = calc_actual_position_pct(add_budget_pct)
+                    add_size = _calc_position_size(equity, next_level, state["direction"], next_px, current_swap, position_pct=add_position_pct)
+                    _log("ACTION", f"逆势加仓{next_level}: ${price:.2f}触发${next_px:.2f}, +{add_size}币, 预算{current_budget*100:.0f}%→{new_budget*100:.0f}%")
 
                     if AUTO_EXECUTE:
                         side = "buy" if state["direction"] == "BULL" else "sell"
@@ -805,23 +1172,79 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                             state["total_size"] = round(state.get("total_size", 0) + add_size, 6)
                             total_cost = state.get("avg_entry", 0) * state.get("total_size", 0) + next_px * add_size
                             state["avg_entry"] = round(total_cost / state["total_size"], 2)
-                            state["last_action"] = f"ADDON_{next_level}"
+                            state["entry_levels"] = [l["price"] for l in levels]
+                            state["has_counter_trend_addon"] = True
+                            state["current_budget_pct"] = new_budget
+                            state["last_action"] = f"COUNTER_ADDON_{next_level}"
                             state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
-                            state["last_reason"] = f"价格${price:.2f}触发加仓{next_level}@${next_px:.2f} ({decision['mode']})"
-                            _log("SUCCESS", f"加仓成功: ordId={res['ordId']}")
+                            state["last_reason"] = f"价格${price:.2f}触发逆势加仓{next_level}@${next_px:.2f}, 预算{new_budget*100:.0f}%"
+                            _log("SUCCESS", f"逆势加仓成功: ordId={res['ordId']}, 均价=${state['avg_entry']:.2f}, 预算{new_budget*100:.0f}%")
                             state["trade_history"].append({
                                 "ts": datetime.now(timezone.utc).isoformat(),
-                                "action": f"ADDON_{next_level}",
+                                "action": f"COUNTER_ADDON_{next_level}",
                                 "side": state["direction"],
                                 "price": next_px,
                                 "size": add_size,
+                                "budget_pct": add_budget_pct,
+                                "total_budget_pct": new_budget,
                                 "mode": decision["mode"],
                                 "reason": state["last_reason"],
                             })
                         else:
-                            _log("ERROR", f"加仓失败: {res.get('err')}")
+                            _log("ERROR", f"逆势加仓失败: {res.get('err')}")
                     else:
                         _log("INFO", "[模拟] AUTO_EXECUTE=false，跳过")
+
+            # 顺势加仓：置信度跃迁
+            entry_conf = state.get("entry_confidence", conf)
+            current_conf = decision.get("confidence", conf)
+            state["current_confidence"] = current_conf
+            jump = current_conf - entry_conf
+            has_tf = state.get("has_trend_follow_addon", False)
+
+            if jump >= CONFIDENCE_JUMP_THRESHOLD and not has_tf and state.get("active"):
+                entry_budget = state.get("entry_budget_pct", calc_entry_budget_pct(entry_conf))
+                new_entry_budget = calc_entry_budget_pct(current_conf)
+                trend_add_budget = max(0.0, new_entry_budget - entry_budget)
+                if trend_add_budget > 0:
+                    current_budget = state.get("current_budget_pct", entry_budget)
+                    new_budget = min(current_budget + trend_add_budget, TOTAL_POSITION_BUDGET_CAP)
+                    actual_add = new_budget - current_budget
+                    if actual_add > 0:
+                        add_position_pct = calc_actual_position_pct(actual_add)
+                        add_size = _calc_position_size(equity, 99, state["direction"], price, current_swap, position_pct=add_position_pct)
+                        _log("ACTION", f"顺势加仓: 置信度{entry_conf}%→{current_conf}%(+{jump}%), 预算{current_budget*100:.0f}%→{new_budget*100:.0f}%, +{add_size}币")
+
+                        if AUTO_EXECUTE:
+                            side = "buy" if state["direction"] == "BULL" else "sell"
+                            res = _place_order(current_swap, side, pos_side, add_size)
+                            if res["ok"]:
+                                state["total_size"] = round(state.get("total_size", 0) + add_size, 6)
+                                total_cost = state.get("avg_entry", 0) * state.get("total_size", 0) + price * add_size
+                                state["avg_entry"] = round(total_cost / state["total_size"], 2)
+                                state["has_trend_follow_addon"] = True
+                                state["current_budget_pct"] = new_budget
+                                state["last_action"] = "TREND_FOLLOW_ADDON"
+                                state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
+                                state["last_reason"] = f"置信度跃迁{entry_conf}%→{current_conf}%, 预算{new_budget*100:.0f}%"
+                                _log("SUCCESS", f"顺势加仓成功: ordId={res['ordId']}, 均价=${state['avg_entry']:.2f}, 预算{new_budget*100:.0f}%")
+                                state["trade_history"].append({
+                                    "ts": datetime.now(timezone.utc).isoformat(),
+                                    "action": "TREND_FOLLOW_ADDON",
+                                    "side": state["direction"],
+                                    "price": price,
+                                    "size": add_size,
+                                    "budget_pct": actual_add,
+                                    "total_budget_pct": new_budget,
+                                    "entry_confidence": entry_conf,
+                                    "current_confidence": current_conf,
+                                    "mode": decision["mode"],
+                                    "reason": state["last_reason"],
+                                })
+                            else:
+                                _log("ERROR", f"顺势加仓失败: {res.get('err')}")
+                        else:
+                            _log("INFO", "[模拟] AUTO_EXECUTE=false，跳过")
 
             side_close = "sell" if state["direction"] == "BULL" else "buy"
             reached_tp = False
@@ -916,33 +1339,36 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
             action = decision.get("action", "WAIT")
             conf = decision.get("confidence", 0)
             reasons = decision.get("reasons", [])
+            mode = decision.get("mode", "v9")
 
-            _log("INFO", f"开仓评估: {action} 置信{conf}% mode={decision['mode']}")
+            _log("INFO", f"开仓评估: {action} 置信{conf}% mode={mode}")
             for r in reasons:
                 _log("INFO", f"  - {r}")
 
-            if action in ("OPEN_BULL", "OPEN_BEAR") and conf >= TRIAL_CONFIDENCE_THRESHOLD and not pos:
+            # 引擎已做完整三屏决策（趋势一致+Freqtrade同向→入场），执行器直接执行
+            if action in ("OPEN_BULL", "OPEN_BEAR") and not pos:
                 direction = "BULL" if "BULL" in action else "BEAR"
                 levels, tp_price, addon_pct, tp_pct = _calc_levels(direction, price, vol_mult)
-                
-                if conf >= OPEN_CONFIDENCE_THRESHOLD:
-                    position_pct = BASE_POSITION_PCT
-                    is_trial = False
-                elif conf >= TRIAL_CONFIDENCE_THRESHOLD:
-                    position_pct = TRIAL_POSITION_PCT
-                    is_trial = True
+
+                # 仓位计算：优先使用新引擎 final_signal.position（置信度→仓位映射统一）
+                full_signal = state.get("full_trading_signal", {})
+                fs_pos = full_signal.get("final_signal", {}).get("position", {})
+                if fs_pos and fs_pos.get("position_pct", 0) > 0:
+                    position_pct = fs_pos["position_pct"]
+                    entry_budget_pct = position_pct / MAX_POSITION_PCT if MAX_POSITION_PCT > 0 else position_pct
                 else:
-                    position_pct = BASE_POSITION_PCT
-                    is_trial = False
-                
+                    entry_budget_pct = calc_entry_budget_pct(conf)
+                    position_pct = calc_actual_position_pct(entry_budget_pct)
+                is_trial = conf < OPEN_CONFIDENCE_THRESHOLD
+
                 entry_size = _calc_position_size(equity, 0, direction, price, current_swap, position_pct=position_pct)
                 pos_side = "long" if direction == "BULL" else "short"
                 side = "buy" if direction == "BULL" else "sell"
 
                 sl_price = price * (1 - STOP_LOSS_PCT) if direction == "BULL" else price * (1 + STOP_LOSS_PCT)
 
-                mode_text = "轻仓试错" if is_trial else "标准开仓"
-                _log("ACTION", f"开仓[{mode_text}]: {direction} {current_symbol} ${price:.2f}, 止盈${tp_price:.2f}, 止损${sl_price:.2f}, 首仓{entry_size}, vol_mult={vol_mult}, 置信{conf}%")
+                mode_text = f"置信{conf}%预算占{entry_budget_pct*100:.0f}%"
+                _log("ACTION", f"开仓[{mode_text}]: {direction} {current_symbol} ${price:.2f}, 止盈${tp_price:.2f}, 止损${sl_price:.2f}, 首仓{entry_size}, vol_mult={vol_mult}, 账户占比{position_pct*100:.1f}%")
 
                 if AUTO_EXECUTE:
                     res = _place_order(current_swap, side, pos_side, entry_size)
@@ -954,10 +1380,17 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                         state["current_level"] = 0
                         state["total_size"] = entry_size
                         state["avg_entry"] = price
+                        state["open_price"] = price
                         state["tp_price"] = tp_price
                         state["sl_price"] = sl_price
                         state["entry_levels"] = [l["price"] for l in levels]
                         state["is_trial"] = is_trial
+                        state["entry_confidence"] = conf
+                        state["current_confidence"] = conf
+                        state["entry_budget_pct"] = entry_budget_pct
+                        state["current_budget_pct"] = entry_budget_pct
+                        state["has_counter_trend_addon"] = False
+                        state["has_trend_follow_addon"] = False
                         state["last_action"] = "OPEN_" + direction
                         state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
                         state["last_reason"] = f"{decision['mode']}决策{mode_text}置信{conf}%"
@@ -969,6 +1402,8 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                             "price": price,
                             "size": entry_size,
                             "confidence": conf,
+                            "budget_pct": entry_budget_pct,
+                            "position_pct": position_pct,
                             "mode": decision["mode"],
                             "reasons": reasons,
                             "is_trial": is_trial,
@@ -1014,6 +1449,8 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
     
     save_state(state)
     _log("INFO", f"=== 第{state['run_count']}轮完成 | action={state.get('last_action', 'NONE')} mode={state.get('last_mode', '?')} ===")
+
+    _check_and_trigger_evolution(state)
 
     return {
         "ok": True,

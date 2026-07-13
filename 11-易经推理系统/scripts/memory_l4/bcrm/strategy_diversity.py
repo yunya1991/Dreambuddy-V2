@@ -291,26 +291,33 @@ class StrategyDiversityManager:
     # ── 统计：B1 占比计算 ─────────────────────────────────────────────────────
 
     def _compute_b1_dominance(self) -> float:
-        """从 sim-trade 历史数据计算 B1 占比。"""
+        """从绩效统计历史数据计算 B1 占比。"""
         try:
-            sim_dir = BASE_DIR / "data" / "polling_trader"
-            files   = sorted(sim_dir.glob("*.json")) if sim_dir.exists() else []
+            from scripts.memory_l4.paths import memory_l4_stats_dir
+            trades_file = memory_l4_stats_dir() / "all_trades.jsonl"
 
             b1_count = 0
-            total    = 0
-            for f in files[-50:]:  # 最近50条
-                try:
-                    d = json.loads(f.read_text(encoding="utf-8"))
-                    branch = d.get("strategy_branch", d.get("branch_id", ""))
-                    total += 1
-                    if not branch or branch == "B1" or \
-                       "观望" in str(d.get("action", "")):
-                        b1_count += 1
-                except Exception:
-                    pass
+            total = 0
+            if trades_file.exists():
+                with open(trades_file, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                # 只取最近 100 条
+                for line in lines[-100:]:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        d = json.loads(line)
+                        branch = d.get("strategy_branch", d.get("branch_id", ""))
+                        total += 1
+                        if not branch or branch == "B1" or \
+                           "观望" in str(d.get("action", "")):
+                            b1_count += 1
+                    except Exception:
+                        continue
 
             if total == 0:
-                return 1.0   # 无历史 = 假设全 B1
+                return 1.0
             return b1_count / total
         except Exception:
             return 1.0

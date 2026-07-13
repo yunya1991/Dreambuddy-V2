@@ -67,7 +67,7 @@ except ImportError:
     HAS_ETH = False
 
 # ── 交易标的池（实验允许范围） ───────────────────────────────────────────────
-UNIVERSE = ["BTC", "ETH", "HYPE", "UNI", "LIT", "SOL", "XRP", "ZEC", "NEAR", "WLD", "ADA", "SUI", "ETHFI", "ENA", "JUP", "XLM", "GRASS", "EIGEN", "ZRO", "IMX"]
+UNIVERSE = ["BTC", "ETH", "HYPE", "UNI", "SOL", "ZEC", "LIT", "ARB", "XRP", "WLD", "NEAR", "SUI", "LDO", "ADA", "ZRO", "ENA", "ETHFI", "JUP", "JTO", "SYRUP"]
 MAX_LEVERAGE = 5
 DEFAULT_LEVERAGE = 3
 
@@ -795,7 +795,7 @@ class HyperliquidClient:
 
 # 永续合约 asset index
 _ASSET_INDEX = {
-    "BTC": 0, "ETH": 1, "HYPE": 159, "UNI": 39, "LIT": 223, "SOL": 5, "XRP": 25, "ZEC": 214, "NEAR": 74, "WLD": 31, "ADA": 65, "SUI": 14, "ETHFI": 121, "ENA": 122, "JUP": 90, "XLM": 154, "GRASS": 151, "EIGEN": 130, "ZRO": 46, "IMX": 84,
+    "BTC": 0, "ETH": 1, "HYPE": 159, "UNI": 39, "SOL": 5, "ZEC": 214, "LIT": 223, "ARB": 11, "XRP": 25, "WLD": 31, "NEAR": 74, "SUI": 14, "LDO": 17, "ADA": 65, "ZRO": 46, "ENA": 122, "ETHFI": 121, "JUP": 90, "JTO": 94, "SYRUP": 199,
 }
 
 # 现货 token ID（Hyperliquid spot，asset = token_id + 10000）
@@ -815,11 +815,11 @@ def _price_to_wire(px: float) -> str:
     return float_to_wire(rounded)
 
 def _price_decimals(coin: str) -> int:
-    return {"BTC": 1, "ETH": 2, "HYPE": 3, "UNI": 3, "LIT": 5, "SOL": 3, "XRP": 5, "ZEC": 3, "NEAR": 4, "WLD": 4, "ADA": 5, "SUI": 4, "ETHFI": 4, "ENA": 5, "JUP": 5, "XLM": 5, "GRASS": 4, "EIGEN": 3, "ZRO": 4, "IMX": 4}.get(coin, 4)
+    return {"BTC": 1, "ETH": 2, "HYPE": 3, "UNI": 3, "SOL": 3, "ZEC": 3, "LIT": 5, "ARB": 4, "XRP": 5, "WLD": 4, "NEAR": 4, "SUI": 4, "LDO": 4, "ADA": 5, "ZRO": 4, "ENA": 5, "ETHFI": 4, "JUP": 5, "JTO": 5, "SYRUP": 5}.get(coin, 4)
 
 def _size_decimals(coin: str) -> int:
     return {
-        "BTC": 5, "ETH": 4, "HYPE": 2, "UNI": 1, "LIT": 0, "SOL": 2, "XRP": 0, "ZEC": 2, "NEAR": 1, "WLD": 1, "ADA": 0, "SUI": 1, "ETHFI": 1, "ENA": 0, "JUP": 0, "XLM": 0, "GRASS": 1, "EIGEN": 2, "ZRO": 1, "IMX": 1,
+        "BTC": 5, "ETH": 4, "HYPE": 2, "UNI": 1, "SOL": 2, "ZEC": 2, "LIT": 0, "ARB": 1, "XRP": 0, "WLD": 1, "NEAR": 1, "SUI": 1, "LDO": 1, "ADA": 0, "ZRO": 1, "ENA": 0, "ETHFI": 1, "JUP": 0, "JTO": 0, "SYRUP": 0,
     }.get(coin, 2)
 
 

@@ -121,7 +121,12 @@ class KnowledgeBridge:
 
         if "stop_loss_pct" in ab_params:
             sl = ab_params["stop_loss_pct"]
-            transformed["risk_aversion"] = min(1.0, sl / 0.04)
+            # 紧止损 → 高风险厌恶；宽止损 → 低风险厌恶
+            # sl=0.01(1%) → risk_aversion=1.0; sl=0.04(4%) → 0.5; sl=0.08(8%) → 0.25
+            if sl > 0:
+                transformed["risk_aversion"] = min(1.0, 0.02 / sl)
+            else:
+                transformed["risk_aversion"] = 1.0
 
         if "take_profit_pct" in ab_params:
             tp = ab_params["take_profit_pct"]

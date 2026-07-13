@@ -44,6 +44,12 @@ from scripts.memory_l4.trading_utils import (
 from scripts.memory_l4.learning_scheduler import LearningScheduler
 from scripts.memory_l4.process_guardian import ProcessGuardian
 from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
+from scripts.memory_l4.classic_exit_system import (
+    ClassicExitSystem,
+    PositionState as ExitPositionState,
+    ExitAction,
+    ExitConfig,
+)
 
 
 class PollingTrader:
@@ -60,7 +66,8 @@ class PollingTrader:
                  daily_loss_limit: float = -50.0,
                  max_consecutive_losses: int = 5,
                  default_position_pct: float = 0.10,
-                 guardian: ProcessGuardian = None):
+                 guardian: ProcessGuardian = None,
+                 shared_dir=None):
         self.interval = interval
         self.coins = coins or ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE"]
         self.bar = bar
@@ -81,6 +88,7 @@ class PollingTrader:
             daily_loss_limit_usdt=daily_loss_limit,
             max_consecutive_losses=max_consecutive_losses,
             default_position_pct=default_position_pct,
+            min_position_usdt=20.0,
         )
         self.position_tracker = PositionTracker()
         self.learning_scheduler = LearningScheduler(
@@ -88,11 +96,33 @@ class PollingTrader:
             retrain_interval_cases=10,
             retrain_interval_hours=4,
             on_retrain_complete=self._on_retrain_complete,
+            shared_dir=shared_dir,
         )
         self.guardian = guardian
 
-        self.knowledge_bridge = KnowledgeBridge()
+        self.knowledge_bridge = KnowledgeBridge(shared_dir=shared_dir)
         self.external_knowledge = {}
+
+        # 经典指标离场系统
+        exit_cfg = ExitConfig(
+            l0_max_hold_sec=172800,
+            l0_max_loss_pct=-0.05,
+            tb_enabled=True,
+            tb_sl_atr_mult=1.5,
+            tb_tp_atr_mult=3.0,
+            tb_sl_min_pct=0.02,
+            tb_tp_min_pct=0.04,
+            trailing_enabled=True,
+            trailing_arm_profit_pct=0.04,
+            trailing_retrace_pct=0.02,
+            tstp_enabled=True,
+            l1_enabled=True,
+            l2_close_threshold=0.75,
+            l2_reduce_threshold=0.55,
+            apply_leverage_to_thresholds=False,
+            inflight_cooldown_sec=180,
+        )
+        self.exit_system = ClassicExitSystem(config=exit_cfg)
 
         self.log_dir = Path("data/polling_trader")
         self.log_dir.mkdir(parents=True, exist_ok=True)
@@ -122,11 +152,14 @@ class PollingTrader:
                     confidence=0.5,
                     hexagram="已存在持仓",
                     market_snapshot={"price": float(pos.get("mark_px", pos["avg_px"]))},
+                    strategy_source="external",
                 )
-                self._log(f"[持仓同步] 已同步 {coin} {pos['pos_side']} @ {pos['avg_px']}", "INFO")
+                self._log(f"[持仓同步] 已同步 {coin} {pos['pos_side']} @ {pos['avg_px']} [外部策略]", "INFO")
 
         open_count = len(self.position_tracker.all_open_positions())
-        self._log(f"[持仓同步] 完成，共 {open_count} 个持仓", "INFO")
+        external_count = sum(1 for p in self.position_tracker.all_open_positions()
+                             if p.strategy_source == "external")
+        self._log(f"[持仓同步] 完成，共 {open_count} 个持仓 (BCRM={open_count-external_count} 外部={external_count})", "INFO")
 
     def _log(self, msg: str, level: str = "INFO"):
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -181,6 +214,11 @@ class PollingTrader:
         ranging_info = _detect_ranging_market(snapshot, closes_window)
         snapshot["is_ranging"] = ranging_info.get("is_ranging", False)
         snapshot["ranging_confidence"] = ranging_info.get("confidence", 0)
+
+        # P0修复: 每币种推理前重置 ForceEngine 速度状态，防止跨币种污染
+        if hasattr(self.bcrm_engine, 'force_engine') and \
+           hasattr(self.bcrm_engine.force_engine, 'reset_velocity'):
+            self.bcrm_engine.force_engine.reset_velocity()
 
         qmm_output = {"uncertainty": 0.3}
         try:
@@ -242,6 +280,30 @@ class PollingTrader:
                 tp_px = b1.take_profit_px
                 reduce_ratio = b1.reduce_ratio
 
+        # 经典指标离场回退：BCRM 未产生止盈止损时，用 ATR 计算止损止盈
+        if sl_px == 0 or tp_px == 0:
+            price = snapshot.get("price", 0)
+            volatility = snapshot.get("volatility", 0.03)
+            if price > 0:
+                # ATR 近似：用波动率 × 价格作为 ATR 估计
+                atr = max(price * volatility, price * 0.005)  # 至少 0.5%
+                atr_mult_sl = 1.5   # 止损 = 1.5 × ATR
+                atr_mult_tp = 3.0   # 止盈 = 3.0 × ATR（盈亏比 2:1）
+                if direction == "UP":
+                    fallback_sl = round(price - atr * atr_mult_sl, 4)
+                    fallback_tp = round(price + atr * atr_mult_tp, 4)
+                else:
+                    fallback_sl = round(price + atr * atr_mult_sl, 4)
+                    fallback_tp = round(price - atr * atr_mult_tp, 4)
+                if sl_px == 0:
+                    sl_px = fallback_sl
+                if tp_px == 0:
+                    tp_px = fallback_tp
+                self._log(
+                    f"[{coin}] 经典指标离场 | ATR={atr:.2f} | "
+                    f"SL={sl_px} TP={tp_px} (盈亏比={atr_mult_tp/atr_mult_sl:.1f}:1)",
+                    "INFO")
+
         liangyi_dict = {}
         if hasattr(bcrm_result, 'liangyi_state') and bcrm_result.liangyi_state:
             if hasattr(bcrm_result.liangyi_state, 'to_dict'):
@@ -276,6 +338,7 @@ class PollingTrader:
             "snapshot": snapshot,
             "contradictions": contradictions,
             "volatility": snapshot.get("volatility", 0.03),
+            "kline_data": kline_data,
         }
 
     def _check_positions(self, coin: str) -> dict:
@@ -363,6 +426,13 @@ class PollingTrader:
             upl = pos_info.get("upl", 0)
             upl_ratio = pos_info.get("upl_ratio", 0)
 
+            tracker_pos = self.position_tracker.get_open_position(inst_id)
+            is_external = tracker_pos and tracker_pos.strategy_source == "external"
+
+            if is_external:
+                self._log(f"[{coin}] 外部策略持仓，BCRM 不干预", "INFO")
+                return
+
             signal_reverse = (
                 (pos_side == "long" and direction == "DOWN"
                  and confidence >= effective_threshold)
@@ -410,12 +480,109 @@ class PollingTrader:
                     self._open_position(inference, is_reverse=True)
                 return
 
-            self._log(f"[{coin}] 持仓中 {pos_side} | "
-                      f"浮动盈亏={upl:.2f}({upl_ratio:.2%}) | 维持持仓")
-            return
+            # 经典指标离场系统评估（完整四大优先级）
+            current_price = inference["price"]
+            entry_price = pos_info.get("avg_px", 0)
+            position_age_sec = 0
+            open_time = pos_info.get("open_time", 0)
+            if open_time > 0:
+                position_age_sec = time.time() - open_time
 
-        if fail_closed:
-            self._log(f"[{coin}] fail-closed 跳过 | 卦象={inference['hexagram']}")
+            kline_data = inference.get("kline_data", [])
+            is_ranging = inference.get("is_ranging", False)
+            regime = "chop" if is_ranging else "trend"
+
+            exit_pos = ExitPositionState(
+                coin=coin,
+                side=pos_side,
+                entry_price=float(entry_price) if entry_price else 0,
+                current_price=float(current_price),
+                position_age_sec=position_age_sec,
+                unrealized_pnl_pct=float(upl_ratio),
+                leverage=float(self.okx_client.cfg.get("default_leverage", 3)),
+                atr_pct=float(inference.get("volatility", 0.03)),
+                mfe_pnl_pct=max(0.0, float(upl_ratio)),
+            )
+
+            candles_1h = None
+            if kline_data and len(kline_data) >= 20:
+                candles_1h = [
+                    {
+                        "t": c.get("ts", c.get("t", 0)),
+                        "o": c.get("o", 0),
+                        "h": c.get("h", 0),
+                        "l": c.get("l", 0),
+                        "c": c.get("c", 0),
+                        "v": c.get("v", 0),
+                    }
+                    for c in kline_data
+                ]
+
+            exit_decision = self.exit_system.evaluate_full(
+                pos=exit_pos,
+                candles_1h=candles_1h,
+                regime=regime,
+            )
+
+            if exit_decision.action == ExitAction.CLOSE:
+                self._log(
+                    f"[{coin}] 经典指标离场 [CLOSE] {exit_decision.reason} | "
+                    f"优先级={exit_decision.priority.value} "
+                    f"置信度={exit_decision.confidence:.2f} "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%})")
+                if pos_side == "long":
+                    r = self.okx_client.market_close_long(
+                        inst_id, reason=f"经典离场:{exit_decision.reason}")
+                else:
+                    r = self.okx_client.market_close_short(
+                        inst_id, reason=f"经典离场:{exit_decision.reason}")
+                if r.get("ok") or r.get("dry_run"):
+                    self._handle_close_position(
+                        inst_id=inst_id, coin=coin, pos_side=pos_side,
+                        exit_price=current_price,
+                        exit_reason=f"classic_exit:{exit_decision.reason}",
+                        pnl=upl, pnl_pct=upl_ratio,
+                    )
+                return
+
+            elif exit_decision.action == ExitAction.REDUCE:
+                self._log(
+                    f"[{coin}] 经典指标离场 [REDUCE] {exit_decision.reason} | "
+                    f"减仓比例={exit_decision.reduce_frac:.0%} "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%})")
+                return
+
+            elif exit_decision.action == ExitAction.RAISE_TP:
+                new_tp_price = exit_decision.new_tp_price
+                new_tp_pct = exit_decision.new_tp_pct
+                self._log(
+                    f"[{coin}] 经典指标离场 [RAISE_TP] {exit_decision.reason} | "
+                    f"新止盈={new_tp_price:.2f}({new_tp_pct:.2%}) "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%})")
+                # 更新止盈价（通过 place_stop_loss_take_profit 覆盖式下单）
+                try:
+                    tp_result = self.okx_client.place_stop_loss_take_profit(
+                        inst_id=inst_id,
+                        pos_side=pos_side,
+                        stop_loss_px=None,
+                        take_profit_px=new_tp_price,
+                        reason=f"raise_tp:{exit_decision.reason}",
+                    )
+                    if tp_result.get("ok"):
+                        self._log(f"[{coin}] 止盈价已上调至 {new_tp_price:.2f}")
+                    else:
+                        self._log(f"[{coin}] 上调止盈失败: {tp_result.get('error', 'unknown')}", "WARN")
+                except Exception as e:
+                    self._log(f"[{coin}] 上调止盈异常: {e}", "WARN")
+                return
+
+            hold_risk = exit_decision.features.hold_risk if exit_decision.features else 0.5
+            hold_value = exit_decision.features.hold_value if exit_decision.features else 0.5
+            self._log(
+                f"[{coin}] 持仓中 {pos_side} | "
+                f"浮动盈亏={upl:.2f}({upl_ratio:.2%}) | "
+                f"持有风险={hold_risk:.2f} 持有价值={hold_value:.2f} "
+                f"行情={regime} | 维持持仓")
             return
 
         trend_strength = inference.get("trend_strength", 0.5)
@@ -427,6 +594,15 @@ class PollingTrader:
         elif trend_strength > 0.6:
             effective_threshold = max(0.3, self.confidence_threshold - 0.1)
             self._log(f"[{coin}] 趋势明确(强度={trend_strength:.2f}) | 置信度要求放宽至 {effective_threshold}")
+
+        if fail_closed:
+            # P0修复: fail-closed 硬约束，BCRM判定不交易则直接跳过，不用八卦方向软化
+            bagua_dir = inference.get("bagua_direction", "neutral")
+            self._log(
+                f"[{coin}] fail-closed 跳过 | 卦象={inference['hexagram']} "
+                f"BCRM不确定，不开仓 (八卦方向={bagua_dir} 不作为开仓依据)"
+            )
+            return
 
         trial_threshold = max(0.25, effective_threshold - 0.15)
         if confidence >= effective_threshold:
@@ -487,6 +663,22 @@ class PollingTrader:
             f"价格={inference['price']} 止损={sl_px} 止盈={tp_px} | "
             f"原因={pos_size_info['reason']}"
         )
+
+        # 检查下单量是否满足最小合约单位
+        leverage = self.okx_client.cfg.get("default_leverage", 3)
+        margin_needed = position_usdt / leverage
+        balance = self.okx_client.get_balance()
+        if balance.get("ok"):
+            avail_usdt = balance.get("assets", {}).get("USDT", {}).get("avail", 0)
+            if margin_needed > avail_usdt:
+                self._log(f"[{coin}] 可用保证金不足 | 需要={margin_needed:.2f}USDT 可用={avail_usdt:.2f}USDT 杠杆={leverage}x 跳过", "WARN")
+                return
+
+        # 检查下单量是否满足最小合约单位
+        sz = self.okx_client._usdt_to_sz(inst_id, position_usdt)
+        if sz <= 0:
+            self._log(f"[{coin}] 下单量不足最小合约单位 | 金额={position_usdt:.2f}USDT 跳过", "WARN")
+            return
 
         if direction == "UP":
             order_result = self.okx_client.market_open_long(
@@ -724,8 +916,8 @@ def main():
                         help="最大同时持仓数，默认 5")
     parser.add_argument("--once", action="store_true",
                         help="只执行一次，不循环")
-    parser.add_argument("--initial-equity", type=float, default=100.0,
-                        help="初始权益（USDT），默认 100")
+    parser.add_argument("--initial-equity", type=float, default=None,
+                        help="初始权益（USDT），不指定则从 OKX 读取实际余额")
     parser.add_argument("--daily-loss-limit", type=float, default=-50.0,
                         help="日最大亏损（USDT），默认 -50")
     parser.add_argument("--max-consecutive-losses", type=int, default=5,
@@ -737,6 +929,21 @@ def main():
     args = parser.parse_args()
 
     coins = [c.strip().upper() for c in args.coins.split(",")]
+
+    if args.initial_equity is None:
+        print("[初始化] 从 OKX 读取实际余额...")
+        try:
+            from scripts.memory_l4.okx_simulated import OKXSimulatedClient
+            client = OKXSimulatedClient()
+            balance = client.get_balance()
+            if balance.get("ok"):
+                args.initial_equity = balance.get("total_eq", 100.0)
+            else:
+                args.initial_equity = 100.0
+        except Exception as e:
+            print(f"[初始化] 读取余额失败，使用默认值: {e}")
+            args.initial_equity = 100.0
+        print(f"[初始化] 实际余额={args.initial_equity:.2f} USDT")
 
     guardian = None
     if not args.no_guardian:

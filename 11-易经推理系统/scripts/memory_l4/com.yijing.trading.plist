@@ -6,19 +6,17 @@
     <string>com.yijing.trading</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/bin/python3</string>
+        <string>/usr/bin/python3</string>
         <string>-m</string>
         <string>scripts.memory_l4.polling_trader</string>
         <string>--interval</string>
         <string>3600</string>
         <string>--coins</string>
-        <string>BTC,ETH,SOL,BNB,XRP,DOGE</string>
+        <string>BTC,ETH,SOL,BNB,XRP,DOGE,ADA,AVAX,LINK,LTC,DOT,NEAR,ATOM,UNI,APT,FIL,ARB,OP,INJ,SUI,SEI,TIA,AAVE,LDO,STX,IMX,GRT,SPX,XAU</string>
         <string>--confidence</string>
         <string>0.35</string>
         <string>--max-positions</string>
-        <string>5</string>
-        <string>--initial-equity</string>
-        <string>100</string>
+        <string>10</string>
         <string>--position-pct</string>
         <string>0.10</string>
     </array>

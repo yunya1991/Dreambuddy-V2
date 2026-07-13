@@ -1,0 +1,184 @@
+{
+  "report_date": "2026-07-12T11:09:22.972127+00:00",
+  "strategy": "底仓现货思维 + 黑天鹅加仓 + 三屏趋势过滤",
+  "backtest_summary": {
+    "total_trades": 82,
+    "level_stats": {
+      "1": {
+        "count": 78,
+        "total_pnl": -26.250000000000004,
+        "wins": 30,
+        "losses": 48
+      },
+      "2": {
+        "count": 2,
+        "total_pnl": 4.41,
+        "wins": 1,
+        "losses": 1
+      },
+      "3": {
+        "count": 0,
+        "total_pnl": 0,
+        "wins": 0,
+        "losses": 0
+      },
+      "4": {
+        "count": 2,
+        "total_pnl": -43.769999999999996,
+        "wins": 0,
+        "losses": 2
+      }
+    },
+    "coin_results": {
+      "BTC": {
+        "total_return_pct": -60.81,
+        "max_drawdown_pct": 60.8,
+        "sharpe_ratio": -1.2245,
+        "win_rate": 0.3333,
+        "total_trades": 3,
+        "level_distribution": {
+          "2": 1,
+          "1": 1,
+          "4": 1
+        }
+      },
+      "ETH": {
+        "total_return_pct": -35.64,
+        "max_drawdown_pct": 41.31,
+        "sharpe_ratio": -0.6376,
+        "win_rate": 0.4118,
+        "total_trades": 17,
+        "level_distribution": {
+          "1": 15,
+          "2": 1,
+          "4": 1
+        }
+      },
+      "SOL": {
+        "total_return_pct": -3.53,
+        "max_drawdown_pct": 4.88,
+        "sharpe_ratio": -1.5999,
+        "win_rate": 0.25,
+        "total_trades": 16,
+        "level_distribution": {
+          "1": 16
+        }
+      },
+      "ARB": {
+        "total_return_pct": -3.74,
+        "max_drawdown_pct": 6.98,
+        "sharpe_ratio": -0.6894,
+        "win_rate": 0.4516,
+        "total_trades": 31,
+        "level_distribution": {
+          "1": 31
+        }
+      },
+      "OP": {
+        "total_return_pct": -7.57,
+        "max_drawdown_pct": 7.6,
+        "sharpe_ratio": -1.6837,
+        "win_rate": 0.3333,
+        "total_trades": 15,
+        "level_distribution": {
+          "1": 15
+        }
+      }
+    }
+  },
+  "trend_status": {
+    "BTC": {
+      "blocked": true,
+      "mode": "both_bear",
+      "period": 104,
+      "weekly_ma": 87829.94230769231,
+      "daily_ma": 70658.46153846153,
+      "weekly_bear": true,
+      "daily_bear": true,
+      "reason": "周线+日线均看空(价格<MA104)，禁止做多",
+      "coin": "BTC",
+      "current_price": 63871.0
+    },
+    "ETH": {
+      "blocked": true,
+      "mode": "both_bear",
+      "period": 104,
+      "weekly_ma": 2800.1528846153847,
+      "daily_ma": 2017.646153846154,
+      "weekly_bear": true,
+      "daily_bear": true,
+      "reason": "周线+日线均看空(价格<MA104)，禁止做多",
+      "coin": "ETH",
+      "current_price": 1801.1
+    },
+    "SOL": {
+      "blocked": true,
+      "mode": "both_bear",
+      "period": 104,
+      "weekly_ma": 149.4131153846154,
+      "daily_ma": 80.44845192307692,
+      "weekly_bear": true,
+      "daily_bear": true,
+      "reason": "周线+日线均看空(价格<MA104)，禁止做多",
+      "coin": "SOL",
+      "current_price": 78.057
+    },
+    "ARB": {
+      "blocked": true,
+      "mode": "both_bear",
+      "period": 104,
+      "weekly_ma": 0.37955086538461535,
+      "daily_ma": 0.10308721153846154,
+      "weekly_bear": true,
+      "daily_bear": true,
+      "reason": "周线+日线均看空(价格<MA104)，禁止做多",
+      "coin": "ARB",
+      "current_price": 0.09061
+    },
+    "OP": {
+      "blocked": true,
+      "mode": "both_bear",
+      "period": 104,
+      "weekly_ma": 0.8106777884615385,
+      "daily_ma": 0.11705394230769231,
+      "weekly_bear": true,
+      "daily_bear": true,
+      "reason": "周线+日线均看空(价格<MA104)，禁止做多",
+      "coin": "OP",
+      "current_price": 0.10393
+    }
+  },
+  "optimization_result": {
+    "best_params": {
+      "leverage": 5.0,
+      "base_position_pct": 0.22,
+      "tp_pct_btc": 0.04,
+      "trend_filter_mode": "both_bear",
+      "trend_filter_period": 107,
+      "addon1_pct": 0.05,
+      "addon2_pct": 0.25,
+      "addon3_pct": 0.1,
+      "max_concurrent_positions": 6
+    },
+    "best_score": -148.92629020830256
+  },
+  "current_params": {
+    "leverage": 5.0,
+    "base_position_pct": 0.22,
+    "tp_pct_btc": 0.04,
+    "trend_filter_mode": "both_bear",
+    "trend_filter_period": 107,
+    "addon1_pct": 0.05,
+    "addon2_pct": 0.25,
+    "addon3_pct": 0.1,
+    "max_concurrent_positions": 6
+  },
+  "capital_allocation": {
+    "base_pct": 0.22,
+    "leverage": 5.0,
+    "addon1_pct": 0.05,
+    "addon2_pct": 0.25,
+    "addon3_pct": 0.1,
+    "max_positions": 6
+  }
+}

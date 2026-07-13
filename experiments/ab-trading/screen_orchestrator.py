@@ -274,6 +274,7 @@ def _validate_candidates_config():
                 if saved_count != config_count:
                     log(f"⚠️ 候选币种配置不一致！状态文件={saved_count}个，当前配置={config_count}个，重新扫描...")
                     new_candidates = scan_candidates()
+                    actual_count = len(new_candidates)
                     exec_state["candidates"] = [
                         {"symbol": c["symbol"], "direction": c["direction"], 
                          "score_pct": c["score_pct"], "vol_mult": c["vol_mult"]}
@@ -281,7 +282,7 @@ def _validate_candidates_config():
                     ]
                     with open(EXEC_STATE_FILE, "w") as f:
                         json.dump(exec_state, f, indent=2, ensure_ascii=False)
-                    log(f"✅ 候选币种已重新同步: {config_count}个")
+                    log(f"✅ 候选币种已重新同步: {actual_count}个（配置{config_count}个，{config_count - actual_count}个因下架/无数据被过滤）")
             except Exception as e:
                 log(f"⚠️ 校验候选币种配置失败: {e}")
     except Exception as e:

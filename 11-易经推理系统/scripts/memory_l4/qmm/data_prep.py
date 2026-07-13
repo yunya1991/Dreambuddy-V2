@@ -33,18 +33,30 @@ def prepare_events(
 def _extract_event(case: Dict[str, Any]) -> Optional[CleanedEvent]:
     """从单个 TradeCase 提取事件。"""
     do = case.get("decision_outcome") or {}
+    if not isinstance(do, dict):
+        do = {}
     ao = case.get("actual_outcome") or {}
+    if not isinstance(ao, dict):
+        ao = {}
     q = case.get("quadrant") or {}
+    if not isinstance(q, dict):
+        q = {}
     env = case.get("environment_snapshot") or {}
+    if not isinstance(env, dict):
+        env = {}
 
     # pnl_pct: 优先 decision_outcome, 其次 actual_outcome
     pnl = do.get("pnl_pct")
     if pnl is None:
         pnl = ao.get("pnl_pct")
+    if pnl is None:
+        pnl = do.get("pnl")
+    if pnl is None:
+        pnl = ao.get("pnl")
 
     # 象限: 优先 quadrant 字段, 否则从 pnl + direction 推算
-    x_val = float(q.get("x", 0)) if q.get("x") is not None else None
-    y_val = float(q.get("y", 0)) if q.get("y") is not None else None
+    x_val = float(q.get("x", 0)) if isinstance(q, dict) and q.get("x") is not None else None
+    y_val = float(q.get("y", 0)) if isinstance(q, dict) and q.get("y") is not None else None
 
     if x_val is None:
         # 从 pnl_pct 和 direction 推算象限
@@ -66,9 +78,11 @@ def _extract_event(case: Dict[str, Any]) -> Optional[CleanedEvent]:
             y_val = 0.5
 
     # regime: 优先 environment_snapshot, 其次从 liangyi_state 推断
-    regime = env.get("regime")
+    regime = env.get("regime") if isinstance(env, dict) else None
     if not regime or regime == "unknown":
         ly = case.get("liangyi_state", {})
+        if not isinstance(ly, dict):
+            ly = {}
         macro = ly.get("macro_phase", "")
         micro = ly.get("micro_phase", "")
         regime = f"{macro}|{micro}" if macro and micro else "unknown"
@@ -81,7 +95,7 @@ def _extract_event(case: Dict[str, Any]) -> Optional[CleanedEvent]:
         quadrant_y=y_val,
         pnl_pct=float(pnl) if pnl is not None else None,
         is_profit=(pnl > 0) if pnl is not None else None,
-        severity=_compute_severity(pnl, do.get("drawdown") or ao.get("drawdown")),
+        severity=_compute_severity(pnl, (do.get("drawdown") if isinstance(do, dict) else None) or (ao.get("drawdown") if isinstance(ao, dict) else None)),
         quality=0.0,
         clean_flags=[],
     )

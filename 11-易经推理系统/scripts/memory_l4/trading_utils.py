@@ -3,8 +3,10 @@
 交易工具集：风险控制、绩效统计、Case 生成、动态仓位
 """
 import json
+import os
 import time
 import uuid
+import fcntl
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
@@ -35,6 +37,7 @@ class TradeRecord:
     scale_params: Dict = field(default_factory=dict)
     market_snapshot: Dict = field(default_factory=dict)
     contradiction_list: List[Dict] = field(default_factory=list)
+    strategy_source: str = ""  # bcrm / external (马丁等其他策略)
 
 
 @dataclass
@@ -52,6 +55,7 @@ class DailyStats:
     max_drawdown: float = 0.0
     max_consecutive_wins: int = 0
     max_consecutive_losses: int = 0
+    current_consecutive_wins: int = 0
     current_consecutive_losses: int = 0
     peak_equity: float = 0.0
     starting_equity: float = 0.0
@@ -72,6 +76,7 @@ class RiskState:
     position_size_pct: float = 0.10        # 默认单笔仓位 10%
     min_position_size_pct: float = 0.02
     max_position_size_pct: float = 0.20
+    min_position_usdt: float = 20.0       # 最低名义仓位价值（USDT，传给OKX的下单金额）
 
 
 # ── 绩效统计器 ────────────────────────────────────────
@@ -122,16 +127,16 @@ class PerformanceTracker:
                 pass
 
         if self.trades:
-            total_pnl = sum(t.pnl for t in self.trades)
-            self.current_equity = self.initial_equity + total_pnl
-            self.peak_equity = self.current_equity
+            running_equity = self.initial_equity
+            self.peak_equity = self.initial_equity
             for t in self.trades:
-                equity = self.initial_equity + sum(x.pnl for x in self.trades[:self.trades.index(t)+1])
-                if equity > self.peak_equity:
-                    self.peak_equity = equity
-                dd = (self.peak_equity - equity) / self.peak_equity if self.peak_equity else 0
+                running_equity += t.pnl
+                if running_equity > self.peak_equity:
+                    self.peak_equity = running_equity
+                dd = (self.peak_equity - running_equity) / self.peak_equity if self.peak_equity else 0
                 if dd > self.max_drawdown:
                     self.max_drawdown = dd
+            self.current_equity = running_equity
 
     def _save_trade(self, trade: TradeRecord):
         """保存单笔交易到日志"""
@@ -181,12 +186,14 @@ class PerformanceTracker:
 
         if trade.pnl >= 0:
             ds.win_trades += 1
-            ds.max_consecutive_wins = max(ds.max_consecutive_wins,
-                                          ds.current_consecutive_losses * 0 + 1 if ds.current_consecutive_losses == 0 else 0)
+            ds.current_consecutive_wins += 1
             ds.current_consecutive_losses = 0
+            ds.max_consecutive_wins = max(ds.max_consecutive_wins,
+                                          ds.current_consecutive_wins)
         else:
             ds.loss_trades += 1
             ds.current_consecutive_losses += 1
+            ds.current_consecutive_wins = 0
             ds.max_consecutive_losses = max(ds.max_consecutive_losses,
                                             ds.current_consecutive_losses)
 
@@ -280,7 +287,8 @@ class RiskManager:
                  max_consecutive_losses: int = 5,
                  default_position_pct: float = 0.10,
                  min_position_pct: float = 0.02,
-                 max_position_pct: float = 0.20):
+                 max_position_pct: float = 0.20,
+                 min_position_usdt: float = 20.0):
         self.state = RiskState(
             daily_loss_limit=daily_loss_limit_usdt,
             daily_loss_limit_pct=daily_loss_limit_pct,
@@ -288,6 +296,7 @@ class RiskManager:
             position_size_pct=default_position_pct,
             min_position_size_pct=min_position_pct,
             max_position_size_pct=max_position_pct,
+            min_position_usdt=min_position_usdt,
         )
 
         self.risk_dir = memory_l4_dir() / "risk"
@@ -319,7 +328,13 @@ class RiskManager:
                 "halt_reason": self.state.halt_reason,
             }
             with open(self.state_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+                fcntl.flock(f, fcntl.LOCK_EX)
+                try:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+                    f.flush()
+                    os.fsync(f.fileno())
+                finally:
+                    fcntl.flock(f, fcntl.LOCK_UN)
         except Exception:
             pass
 
@@ -346,7 +361,8 @@ class RiskManager:
                            confidence: float,
                            volatility: float,
                            current_equity: float,
-                           base_pct: float = None) -> Dict:
+                           base_pct: float = None,
+                           leverage: float = None) -> Dict:
         """根据置信度和波动率动态计算仓位大小
 
         Args:
@@ -354,10 +370,14 @@ class RiskManager:
             volatility: 波动率 0~1
             current_equity: 当前权益
             base_pct: 基础仓位比例（默认用 state 中的值）
+            leverage: 杠杆倍数（默认从环境变量读取）
 
         Returns:
-            {position_usdt: float, position_pct: float, reason: str}
+            {position_usdt: float, margin_usdt: float, position_pct: float, reason: str}
         """
+        if leverage is None:
+            leverage = float(os.environ.get("DEFAULT_LEVERAGE", 10))
+
         base = base_pct or self.state.position_size_pct
 
         conf_factor = 0.5 + confidence * 1.0  # 置信度 0.25~0.95 -> 系数 0.75~1.45
@@ -372,14 +392,18 @@ class RiskManager:
         position_pct = max(self.state.min_position_size_pct,
                            min(position_pct, self.state.max_position_size_pct))
 
-        position_usdt = current_equity * position_pct
+        margin_usdt = current_equity * position_pct  # 保证金金额
+        position_usdt = margin_usdt * leverage  # 名义仓位价值（传给OKX下单）
+        position_usdt = max(position_usdt, self.state.min_position_usdt)  # 不低于最低名义仓位价值
+        margin_usdt = position_usdt / leverage  # 反推保证金
 
         return {
             "position_usdt": round(position_usdt, 2),
+            "margin_usdt": round(margin_usdt, 2),
             "position_pct": round(position_pct, 4),
             "confidence_factor": round(conf_factor, 4),
             "volatility_factor": round(vol_factor, 4),
-            "reason": f"conf={confidence:.2f} vol={volatility:.4f} -> size={position_pct:.1%}",
+            "reason": f"conf={confidence:.2f} vol={volatility:.4f} -> margin={margin_usdt:.2f}USDT ({position_pct:.1%})",
         }
 
     def update_after_trade(self, pnl: float, is_win: bool):
@@ -418,6 +442,7 @@ class RiskManager:
             "trading_halted": self.state.trading_halted,
             "halt_reason": self.state.halt_reason,
             "position_size_pct": self.state.position_size_pct,
+            "min_position_usdt": self.state.min_position_usdt,
         }
 
 
@@ -558,7 +583,8 @@ class PositionTracker:
                       liangyi_state: Dict = None,
                       scale_params: Dict = None,
                       market_snapshot: Dict = None,
-                      contradiction_list: List[Dict] = None) -> TradeRecord:
+                      contradiction_list: List[Dict] = None,
+                      strategy_source: str = "bcrm") -> TradeRecord:
         """记录开仓"""
         trade_id = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
         rec = TradeRecord(
@@ -574,6 +600,7 @@ class PositionTracker:
             scale_params=scale_params or {},
             market_snapshot=market_snapshot or {},
             contradiction_list=contradiction_list or [],
+            strategy_source=strategy_source,
         )
         self.open_positions[inst_id] = rec
         self._save_open_position(inst_id)

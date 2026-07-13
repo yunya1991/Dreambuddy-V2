@@ -238,14 +238,16 @@ def evolve_thresholds(perf: dict) -> dict:
     """
     根据绩效自进化调整阈值
     规则：
-    - 胜率 < 40%：提高置信度门槛（更保守）
-    - 胜率 > 60%：降低置信度门槛（更激进）
-    - 连续亏损 >= 5：暂停开仓，触发复盘
-    - 总盈利 > 1000U：降低日亏损限制
+    - 胜率 < 40%：降低单笔仓位（保持信号频率，降低风险）
+    - 胜率 > 60%：提高单笔仓位（信号质量高，加大投入）
+    - 连续亏损 >= 5：降低仓位至最小，触发复盘
+    - 总盈利 > 500U：适当提高仓位
+    - 总亏损 < -100U：降低仓位
+    - 置信度门槛保持稳定，不随亏损提高（保持交易频率）
     """
     thresholds = {
-        "confidence_threshold": 0.45,
-        "daily_loss_limit": -100.0,
+        "confidence_threshold": 0.35,
+        "daily_loss_limit": -50.0,
         "max_consecutive_losses": 5,
         "default_position_pct": 0.10,
     }
@@ -254,8 +256,9 @@ def evolve_thresholds(perf: dict) -> dict:
     config_file = OKX_SIM_DIR / "config.json"
     if config_file.exists():
         config = load_json(config_file, {})
-        thresholds["confidence_threshold"] = config.get("confidence_threshold", 0.45)
-        thresholds["daily_loss_limit"] = config.get("daily_loss_limit", -100.0)
+        thresholds["confidence_threshold"] = config.get("confidence_threshold", 0.35)
+        thresholds["daily_loss_limit"] = config.get("daily_loss_limit", -50.0)
+        thresholds["default_position_pct"] = config.get("default_position_pct", 0.10)
 
     adjustments = []
 
@@ -263,28 +266,40 @@ def evolve_thresholds(perf: dict) -> dict:
     total_pnl = perf.get("total_pnl", 0)
     consecutive_losses = perf.get("consecutive_losses", 0)
 
-    # 根据胜率调整置信度门槛
+    # 置信度门槛保持稳定（不随亏损提高）
+    # 根据胜率调整单笔仓位而非置信度门槛
     if win_rate < 0.40:
-        thresholds["confidence_threshold"] = min(thresholds["confidence_threshold"] + 0.05, 0.70)
-        adjustments.append("胜率偏低: 提高置信度门槛")
+        thresholds["default_position_pct"] = max(thresholds["default_position_pct"] - 0.02, 0.02)
+        adjustments.append(f"胜率偏低({win_rate:.1%}): 降低仓位至{thresholds['default_position_pct']:.1%}")
     elif win_rate > 0.60:
-        thresholds["confidence_threshold"] = max(thresholds["confidence_threshold"] - 0.03, 0.35)
-        adjustments.append("胜率偏高: 降低置信度门槛")
+        thresholds["default_position_pct"] = min(thresholds["default_position_pct"] + 0.02, 0.20)
+        adjustments.append(f"胜率偏高({win_rate:.1%}): 提高仓位至{thresholds['default_position_pct']:.1%}")
 
-    # 根据总盈亏调整日亏损限制
+    # 根据总盈亏调整仓位
     if total_pnl > 500:
-        thresholds["daily_loss_limit"] = min(thresholds["daily_loss_limit"] + 20, -50)
-        adjustments.append("总盈利良好: 放宽日亏损限制")
-    elif total_pnl < -200:
-        thresholds["daily_loss_limit"] = max(thresholds["daily_loss_limit"] - 30, -300)
-        adjustments.append("总亏损较大: 收紧日亏损限制")
+        thresholds["default_position_pct"] = min(thresholds["default_position_pct"] + 0.01, 0.20)
+        adjustments.append("总盈利良好: 提高仓位")
+    elif total_pnl < -100:
+        thresholds["default_position_pct"] = max(thresholds["default_position_pct"] - 0.02, 0.02)
+        adjustments.append(f"总亏损较大({total_pnl:.0f}U): 降低仓位")
 
     # 根据连续亏损调整
     if consecutive_losses >= 5:
-        thresholds["max_consecutive_losses"] = 3
-        adjustments.append("连续亏损过多: 提前熔断")
+        thresholds["default_position_pct"] = max(thresholds["default_position_pct"] - 0.03, 0.02)
+        adjustments.append(f"连续亏损{consecutive_losses}次: 大幅降低仓位")
+
+    # 根据总交易数调整置信度门槛（仅在交易足够多时微调）
+    total_trades = perf.get("total_trades", 0)
+    if total_trades >= 20:
+        if win_rate < 0.30:
+            thresholds["confidence_threshold"] = min(thresholds["confidence_threshold"] + 0.03, 0.50)
+            adjustments.append("交易足够多但胜率低: 小幅提高置信度门槛")
+        elif win_rate > 0.70:
+            thresholds["confidence_threshold"] = max(thresholds["confidence_threshold"] - 0.02, 0.25)
+            adjustments.append("交易足够多且胜率高: 小幅降低置信度门槛")
 
     _log(f"阈值调整: confidence {thresholds['confidence_threshold']:.2f}, "
+         f"position_pct {thresholds['default_position_pct']:.1%}, "
          f"daily_loss {thresholds['daily_loss_limit']:.0f}")
     if adjustments:
         _log(f"调整原因: {'; '.join(adjustments)}")
@@ -294,6 +309,7 @@ def evolve_thresholds(perf: dict) -> dict:
     config["confidence_threshold"] = thresholds["confidence_threshold"]
     config["daily_loss_limit"] = thresholds["daily_loss_limit"]
     config["max_consecutive_losses"] = thresholds["max_consecutive_losses"]
+    config["default_position_pct"] = thresholds["default_position_pct"]
     config["last_evolve"] = _fmt_ts(_now())
     save_json(config_file, config)
 

@@ -1,0 +1,387 @@
+{
+  "timestamp": "2026-07-11T10:08:53.740263+00:00",
+  "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "ARB",
+    "OP"
+  ],
+  "initial_capital": 10000.0,
+  "level_stats": {
+    "level_stats": {
+      "1": {
+        "count": 255,
+        "total_pnl": 8.510000000000007,
+        "wins": 130,
+        "losses": 125
+      },
+      "2": {
+        "count": 1,
+        "total_pnl": 5.85,
+        "wins": 1,
+        "losses": 0
+      },
+      "3": {
+        "count": 0,
+        "total_pnl": 0,
+        "wins": 0,
+        "losses": 0
+      },
+      "4": {
+        "count": 3,
+        "total_pnl": -58.76,
+        "wins": 0,
+        "losses": 3
+      }
+    },
+    "total_trades": 259,
+    "level_efficiency": {
+      "1": 0.502098008933303,
+      "2": 0.004086872586872587,
+      "3": 0.0,
+      "4": 0.0
+    },
+    "expected_capital_probs": {
+      "1": 0.9436194094013977,
+      "2": 0.018793530199534107,
+      "3": 0.018793530199534107,
+      "4": 0.018793530199534107
+    }
+  },
+  "best_params": {
+    "leverage": 5.0,
+    "base_position_pct": 0.2,
+    "addon1_pct": 0.05,
+    "addon2_pct": 0.05,
+    "addon3_pct": 0.1,
+    "max_concurrent_positions": 6
+  },
+  "all_results": [
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.1062,
+        "addon2_pct": 0.2401,
+        "addon3_pct": 0.2464,
+        "max_concurrent_positions": 4
+      },
+      "score": -1167.8424,
+      "total_trades": 193,
+      "timestamp": "2026-07-11T10:07:53.610894+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.0734,
+        "addon2_pct": 0.0812,
+        "addon3_pct": 0.1116,
+        "max_concurrent_positions": 5
+      },
+      "score": -495.691,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:07:56.373635+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.1402,
+        "addon2_pct": 0.1916,
+        "addon3_pct": 0.1041,
+        "max_concurrent_positions": 6
+      },
+      "score": -728.7083,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:07:59.127932+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.1749,
+        "addon2_pct": 0.0925,
+        "addon3_pct": 0.1364,
+        "max_concurrent_positions": 3
+      },
+      "score": -1119.1741,
+      "total_trades": 132,
+      "timestamp": "2026-07-11T10:08:00.558921+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.0956,
+        "addon2_pct": 0.155,
+        "addon3_pct": 0.1864,
+        "max_concurrent_positions": 3
+      },
+      "score": -1192.8777,
+      "total_trades": 132,
+      "timestamp": "2026-07-11T10:08:02.036879+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.2,
+        "addon2_pct": 0.25,
+        "addon3_pct": 0.3,
+        "max_concurrent_positions": 5
+      },
+      "score": -1188.4475,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:04.879427+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.1176,
+        "addon2_pct": 0.1798,
+        "addon3_pct": 0.1307,
+        "max_concurrent_positions": 5
+      },
+      "score": -717.5931,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:07.674064+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.1189,
+        "addon2_pct": 0.0905,
+        "addon3_pct": 0.1181,
+        "max_concurrent_positions": 3
+      },
+      "score": -949.5031,
+      "total_trades": 132,
+      "timestamp": "2026-07-11T10:08:09.157913+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.1279,
+        "addon2_pct": 0.0742,
+        "addon3_pct": 0.1157,
+        "max_concurrent_positions": 2
+      },
+      "score": -1033.4353,
+      "total_trades": 65,
+      "timestamp": "2026-07-11T10:08:09.972820+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.1288,
+        "addon2_pct": 0.0819,
+        "addon3_pct": 0.2652,
+        "max_concurrent_positions": 5
+      },
+      "score": -785.7541,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:12.826331+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.1924,
+        "addon2_pct": 0.2461,
+        "addon3_pct": 0.2218,
+        "max_concurrent_positions": 4
+      },
+      "score": -1284.8534,
+      "total_trades": 193,
+      "timestamp": "2026-07-11T10:08:14.977781+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.0882,
+        "addon2_pct": 0.2432,
+        "addon3_pct": 0.1173,
+        "max_concurrent_positions": 5
+      },
+      "score": -747.0477,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:17.807586+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.0754,
+        "addon2_pct": 0.0902,
+        "addon3_pct": 0.1,
+        "max_concurrent_positions": 6
+      },
+      "score": -494.8519,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:20.710414+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.05,
+        "addon2_pct": 0.05,
+        "addon3_pct": 0.3,
+        "max_concurrent_positions": 6
+      },
+      "score": -677.4784,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:23.650430+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.2,
+        "addon2_pct": 0.05,
+        "addon3_pct": 0.1,
+        "max_concurrent_positions": 6
+      },
+      "score": -609.2152,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:26.596748+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.05,
+        "addon2_pct": 0.25,
+        "addon3_pct": 0.1,
+        "max_concurrent_positions": 6
+      },
+      "score": -677.4784,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:29.469808+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.05,
+        "addon2_pct": 0.25,
+        "addon3_pct": 0.3,
+        "max_concurrent_positions": 2
+      },
+      "score": -1725.6757,
+      "total_trades": 65,
+      "timestamp": "2026-07-11T10:08:30.305087+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.1579,
+        "addon2_pct": 0.1197,
+        "addon3_pct": 0.1089,
+        "max_concurrent_positions": 3
+      },
+      "score": -1081.0864,
+      "total_trades": 132,
+      "timestamp": "2026-07-11T10:08:31.738428+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.0879,
+        "addon2_pct": 0.1626,
+        "addon3_pct": 0.2502,
+        "max_concurrent_positions": 5
+      },
+      "score": -821.0204,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:34.572785+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.0951,
+        "addon2_pct": 0.0796,
+        "addon3_pct": 0.109,
+        "max_concurrent_positions": 5
+      },
+      "score": -519.5225,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:37.546868+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.134,
+        "addon2_pct": 0.072,
+        "addon3_pct": 0.2002,
+        "max_concurrent_positions": 3
+      },
+      "score": -1124.7051,
+      "total_trades": 132,
+      "timestamp": "2026-07-11T10:08:39.055342+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.05,
+        "addon2_pct": 0.05,
+        "addon3_pct": 0.1,
+        "max_concurrent_positions": 5
+      },
+      "score": -406.1028,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:41.991865+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.0734,
+        "addon2_pct": 0.1764,
+        "addon3_pct": 0.2259,
+        "max_concurrent_positions": 5
+      },
+      "score": -785.4128,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:44.993886+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.05,
+        "addon2_pct": 0.05,
+        "addon3_pct": 0.1,
+        "max_concurrent_positions": 6
+      },
+      "score": -406.0503,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:47.839705+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.0,
+        "base_position_pct": 0.2,
+        "addon1_pct": 0.05,
+        "addon2_pct": 0.05,
+        "addon3_pct": 0.3,
+        "max_concurrent_positions": 6
+      },
+      "score": -677.4784,
+      "total_trades": 259,
+      "timestamp": "2026-07-11T10:08:50.740351+00:00"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-07-11T07:40:58.463080+00:00",
+  "coins": [
+    "BTC",
+    "ETH",
+    "SOL"
+  ],
+  "initial_capital": 10000.0,
+  "params_space": {
+    "base_position_pct": [
+      0.02,
+      0.15
+    ],
+    "addon_pct": [
+      0.05,
+      0.15
+    ],
+    "confidence_threshold": [
+      30,
+      80
+    ],
+    "max_concurrent_positions": [
+      2,
+      8
+    ]
+  },
+  "objective_weights": {
+    "return": 0.4,
+    "drawdown": 0.3,
+    "sharpe": 0.3
+  },
+  "hard_constraints": {
+    "max_drawdown_limit": 30.0,
+    "min_win_rate": 0.4,
+    "min_sharpe": 0.0
+  },
+  "best_score": -Infinity,
+  "best_params": null,
+  "all_results": []
+}

@@ -1,0 +1,1644 @@
+{
+  "timestamp": "2026-07-11T09:37:16.413078+00:00",
+  "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "ARB",
+    "OP"
+  ],
+  "initial_capital": 10000.0,
+  "params_space": {
+    "leverage": [
+      3,
+      20
+    ],
+    "base_position_pct": [
+      0.01,
+      0.15
+    ],
+    "addon1_pct": [
+      0.01,
+      0.15
+    ],
+    "addon2_pct": [
+      0.01,
+      0.15
+    ],
+    "addon3_pct": [
+      0.01,
+      0.15
+    ],
+    "max_concurrent_positions": [
+      2,
+      8
+    ]
+  },
+  "objective_weights": {
+    "return": 0.4,
+    "drawdown": 0.3,
+    "sharpe": 0.3
+  },
+  "hard_constraints": {
+    "max_drawdown_limit": 30.0,
+    "min_win_rate": 0.4,
+    "min_sharpe": 0.0
+  },
+  "best_score": -143.7717809257345,
+  "best_params": {
+    "leverage": 15.0,
+    "base_position_pct": 0.01,
+    "addon1_pct": 0.01,
+    "addon2_pct": 0.01,
+    "addon3_pct": 0.01,
+    "max_concurrent_positions": 5
+  },
+  "all_results": [
+    {
+      "params": {
+        "leverage": 9.4,
+        "base_position_pct": 0.1431,
+        "addon1_pct": 0.1125,
+        "addon2_pct": 0.0938,
+        "addon3_pct": 0.0318,
+        "max_concurrent_positions": 3
+      },
+      "capital_detail": {
+        "capital_per_coin": 3333.33,
+        "base_usd": 477.0,
+        "addon1_usd": 374.93,
+        "addon2_usd": 312.71,
+        "addon3_usd": 106.14,
+        "total_per_position": 1270.78,
+        "total_all_positions": 3812.34,
+        "fund_utilization": 38.1
+      },
+      "score": -1520.1842,
+      "total_trades": 132,
+      "valid_coins": 3,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -36.9,
+          "return_adj": -35.0743,
+          "drawdown_raw": 40.65,
+          "drawdown_adj": 38.6387,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -21.67,
+          "return_adj": -21.5838,
+          "drawdown_raw": 27.3,
+          "drawdown_adj": 27.1915,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -22.95,
+          "return_adj": -22.8737,
+          "drawdown_raw": 25.47,
+          "drawdown_adj": 25.3854,
+          "sharpe": -0.7803,
+          "trades": 67
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:20.385309+00:00"
+    },
+    {
+      "params": {
+        "leverage": 4.0,
+        "base_position_pct": 0.1313,
+        "addon1_pct": 0.0942,
+        "addon2_pct": 0.1091,
+        "addon3_pct": 0.0129,
+        "max_concurrent_positions": 8
+      },
+      "capital_detail": {
+        "capital_per_coin": 1250.0,
+        "base_usd": 164.08,
+        "addon1_usd": 117.7,
+        "addon2_usd": 136.41,
+        "addon3_usd": 16.1,
+        "total_per_position": 434.29,
+        "total_all_positions": 3474.33,
+        "fund_utilization": 34.7
+      },
+      "score": -352.9484,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -33.46,
+          "return_adj": -31.783,
+          "drawdown_raw": 37.08,
+          "drawdown_adj": 35.2216,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -19.61,
+          "return_adj": -19.531,
+          "drawdown_raw": 24.9,
+          "drawdown_adj": 24.7997,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -20.91,
+          "return_adj": -20.8396,
+          "drawdown_raw": 23.27,
+          "drawdown_adj": 23.1917,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -1.98,
+          "return_adj": -1.98,
+          "drawdown_raw": 4.97,
+          "drawdown_adj": 4.97,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -2.08,
+          "return_adj": -2.08,
+          "drawdown_raw": 5.94,
+          "drawdown_adj": 5.94,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:23.102293+00:00"
+    },
+    {
+      "params": {
+        "leverage": 17.2,
+        "base_position_pct": 0.0397,
+        "addon1_pct": 0.0355,
+        "addon2_pct": 0.0357,
+        "addon3_pct": 0.0526,
+        "max_concurrent_positions": 5
+      },
+      "capital_detail": {
+        "capital_per_coin": 2000.0,
+        "base_usd": 79.45,
+        "addon1_usd": 70.91,
+        "addon2_usd": 71.35,
+        "addon3_usd": 105.19,
+        "total_per_position": 326.91,
+        "total_all_positions": 1634.54,
+        "fund_utilization": 16.3
+      },
+      "score": -792.2164,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -15.31,
+          "return_adj": -15.3749,
+          "drawdown_raw": 17.53,
+          "drawdown_adj": 17.6043,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -8.87,
+          "return_adj": -8.873,
+          "drawdown_raw": 11.75,
+          "drawdown_adj": 11.754,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -9.82,
+          "return_adj": -9.8228,
+          "drawdown_raw": 11.1,
+          "drawdown_adj": 11.1032,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -0.91,
+          "return_adj": -0.91,
+          "drawdown_raw": 2.36,
+          "drawdown_adj": 2.36,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -0.95,
+          "return_adj": -0.95,
+          "drawdown_raw": 2.82,
+          "drawdown_adj": 2.82,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:25.763857+00:00"
+    },
+    {
+      "params": {
+        "leverage": 10.3,
+        "base_position_pct": 0.0508,
+        "addon1_pct": 0.0957,
+        "addon2_pct": 0.0295,
+        "addon3_pct": 0.0509,
+        "max_concurrent_positions": 4
+      },
+      "capital_detail": {
+        "capital_per_coin": 2500.0,
+        "base_usd": 126.93,
+        "addon1_usd": 239.15,
+        "addon2_usd": 73.82,
+        "addon3_usd": 127.25,
+        "total_per_position": 567.15,
+        "total_all_positions": 2268.61,
+        "fund_utilization": 22.7
+      },
+      "score": -781.6354,
+      "total_trades": 193,
+      "valid_coins": 4,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -21.46,
+          "return_adj": -21.8321,
+          "drawdown_raw": 24.29,
+          "drawdown_adj": 24.7112,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -12.48,
+          "return_adj": -12.4974,
+          "drawdown_raw": 16.29,
+          "drawdown_adj": 16.3127,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -13.64,
+          "return_adj": -13.6559,
+          "drawdown_raw": 15.34,
+          "drawdown_adj": 15.3579,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -1.28,
+          "return_adj": -1.28,
+          "drawdown_raw": 3.26,
+          "drawdown_adj": 3.26,
+          "sharpe": -0.4389,
+          "trades": 61
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:27.764989+00:00"
+    },
+    {
+      "params": {
+        "leverage": 10.8,
+        "base_position_pct": 0.1199,
+        "addon1_pct": 0.038,
+        "addon2_pct": 0.082,
+        "addon3_pct": 0.0929,
+        "max_concurrent_positions": 2
+      },
+      "capital_detail": {
+        "capital_per_coin": 5000.0,
+        "base_usd": 599.62,
+        "addon1_usd": 189.77,
+        "addon2_usd": 409.96,
+        "addon3_usd": 464.69,
+        "total_per_position": 1664.05,
+        "total_all_positions": 3328.1,
+        "fund_utilization": 33.3
+      },
+      "score": -1642.5181,
+      "total_trades": 65,
+      "valid_coins": 2,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -31.98,
+          "return_adj": -30.5292,
+          "drawdown_raw": 35.53,
+          "drawdown_adj": 33.9182,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -18.72,
+          "return_adj": -18.6518,
+          "drawdown_raw": 23.86,
+          "drawdown_adj": 23.773,
+          "sharpe": 0.0104,
+          "trades": 56
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:28.514367+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.1,
+        "base_position_pct": 0.079,
+        "addon1_pct": 0.0865,
+        "addon2_pct": 0.0689,
+        "addon3_pct": 0.0249,
+        "max_concurrent_positions": 8
+      },
+      "capital_detail": {
+        "capital_per_coin": 1250.0,
+        "base_usd": 98.76,
+        "addon1_usd": 108.17,
+        "addon2_usd": 86.1,
+        "addon3_usd": 31.15,
+        "total_per_position": 324.18,
+        "total_all_positions": 2593.47,
+        "fund_utilization": 25.9
+      },
+      "score": -344.838,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -24.65,
+          "return_adj": -23.9949,
+          "drawdown_raw": 27.74,
+          "drawdown_adj": 27.0028,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -14.36,
+          "return_adj": -14.3293,
+          "drawdown_raw": 18.62,
+          "drawdown_adj": 18.5802,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -15.6,
+          "return_adj": -15.5722,
+          "drawdown_raw": 17.49,
+          "drawdown_adj": 17.4588,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -1.46,
+          "return_adj": -1.46,
+          "drawdown_raw": 3.72,
+          "drawdown_adj": 3.72,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -1.53,
+          "return_adj": -1.53,
+          "drawdown_raw": 4.45,
+          "drawdown_adj": 4.45,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:31.417956+00:00"
+    },
+    {
+      "params": {
+        "leverage": 4.8,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.01,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 6
+      },
+      "capital_detail": {
+        "capital_per_coin": 1666.67,
+        "base_usd": 16.67,
+        "addon1_usd": 16.67,
+        "addon2_usd": 16.67,
+        "addon3_usd": 250.0,
+        "total_per_position": 300.0,
+        "total_all_positions": 1800.0,
+        "fund_utilization": 18.0
+      },
+      "score": -272.1052,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -16.91,
+          "return_adj": -25.6781,
+          "drawdown_raw": 19.3,
+          "drawdown_adj": 29.3074,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -9.8,
+          "return_adj": -10.2083,
+          "drawdown_raw": 12.94,
+          "drawdown_adj": 13.4792,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -10.82,
+          "return_adj": -11.1968,
+          "drawdown_raw": 12.21,
+          "drawdown_adj": 12.6352,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -1.01,
+          "return_adj": -1.01,
+          "drawdown_raw": 2.59,
+          "drawdown_adj": 2.59,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -1.05,
+          "return_adj": -1.05,
+          "drawdown_raw": 3.1,
+          "drawdown_adj": 3.1,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:34.190086+00:00"
+    },
+    {
+      "params": {
+        "leverage": 9.5,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.0704,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.1002,
+        "max_concurrent_positions": 7
+      },
+      "capital_detail": {
+        "capital_per_coin": 1428.57,
+        "base_usd": 14.29,
+        "addon1_usd": 100.58,
+        "addon2_usd": 14.29,
+        "addon3_usd": 143.12,
+        "total_per_position": 272.28,
+        "total_all_positions": 1905.95,
+        "fund_utilization": 19.1
+      },
+      "score": -617.4818,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -17.93,
+          "return_adj": -27.9306,
+          "drawdown_raw": 20.43,
+          "drawdown_adj": 31.825,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -10.4,
+          "return_adj": -10.8661,
+          "drawdown_raw": 13.7,
+          "drawdown_adj": 14.314,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -11.46,
+          "return_adj": -11.8893,
+          "drawdown_raw": 12.92,
+          "drawdown_adj": 13.404,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -1.07,
+          "return_adj": -1.07,
+          "drawdown_raw": 2.75,
+          "drawdown_adj": 2.75,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -1.12,
+          "return_adj": -1.12,
+          "drawdown_raw": 3.28,
+          "drawdown_adj": 3.28,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:36.918825+00:00"
+    },
+    {
+      "params": {
+        "leverage": 3.0,
+        "base_position_pct": 0.15,
+        "addon1_pct": 0.15,
+        "addon2_pct": 0.15,
+        "addon3_pct": 0.01,
+        "max_concurrent_positions": 4
+      },
+      "capital_detail": {
+        "capital_per_coin": 2500.0,
+        "base_usd": 375.0,
+        "addon1_usd": 375.0,
+        "addon2_usd": 375.0,
+        "addon3_usd": 25.0,
+        "total_per_position": 1150.0,
+        "total_all_positions": 4600.0,
+        "fund_utilization": 46.0
+      },
+      "score": -425.9154,
+      "total_trades": 193,
+      "valid_coins": 4,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -45.04,
+          "return_adj": -43.4831,
+          "drawdown_raw": 48.94,
+          "drawdown_adj": 47.2482,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -26.58,
+          "return_adj": -26.5062,
+          "drawdown_raw": 32.89,
+          "drawdown_adj": 32.7986,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -27.7,
+          "return_adj": -27.6357,
+          "drawdown_raw": 30.54,
+          "drawdown_adj": 30.4691,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -2.65,
+          "return_adj": -2.65,
+          "drawdown_raw": 6.56,
+          "drawdown_adj": 6.56,
+          "sharpe": -0.4389,
+          "trades": 61
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:38.984749+00:00"
+    },
+    {
+      "params": {
+        "leverage": 13.0,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.15,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.01,
+        "max_concurrent_positions": 7
+      },
+      "capital_detail": {
+        "capital_per_coin": 1428.57,
+        "base_usd": 14.29,
+        "addon1_usd": 214.29,
+        "addon2_usd": 14.29,
+        "addon3_usd": 14.29,
+        "total_per_position": 257.14,
+        "total_all_positions": 1800.0,
+        "fund_utilization": 18.0
+      },
+      "score": -816.5484,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -16.91,
+          "return_adj": -25.6781,
+          "drawdown_raw": 19.3,
+          "drawdown_adj": 29.3074,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -9.8,
+          "return_adj": -10.2083,
+          "drawdown_raw": 12.94,
+          "drawdown_adj": 13.4792,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -10.82,
+          "return_adj": -11.1968,
+          "drawdown_raw": 12.21,
+          "drawdown_adj": 12.6352,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -1.01,
+          "return_adj": -1.01,
+          "drawdown_raw": 2.6,
+          "drawdown_adj": 2.6,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -1.05,
+          "return_adj": -1.05,
+          "drawdown_raw": 3.1,
+          "drawdown_adj": 3.1,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:41.762377+00:00"
+    },
+    {
+      "params": {
+        "leverage": 20.0,
+        "base_position_pct": 0.15,
+        "addon1_pct": 0.15,
+        "addon2_pct": 0.15,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 2
+      },
+      "capital_detail": {
+        "capital_per_coin": 5000.0,
+        "base_usd": 750.0,
+        "addon1_usd": 750.0,
+        "addon2_usd": 750.0,
+        "addon3_usd": 750.0,
+        "total_per_position": 3000.0,
+        "total_all_positions": 6000.0,
+        "fund_utilization": 60.0
+      },
+      "score": -5917.632,
+      "total_trades": 65,
+      "valid_coins": 2,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -59.95,
+          "return_adj": -59.95,
+          "drawdown_raw": 63.6,
+          "drawdown_adj": 63.6,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -35.7,
+          "return_adj": -35.7,
+          "drawdown_raw": 42.79,
+          "drawdown_adj": 42.79,
+          "sharpe": 0.0104,
+          "trades": 56
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:42.551597+00:00"
+    },
+    {
+      "params": {
+        "leverage": 18.0,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.01,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.01,
+        "max_concurrent_positions": 8
+      },
+      "capital_detail": {
+        "capital_per_coin": 1250.0,
+        "base_usd": 12.5,
+        "addon1_usd": 12.5,
+        "addon2_usd": 12.5,
+        "addon3_usd": 12.5,
+        "total_per_position": 50.0,
+        "total_all_positions": 400.0,
+        "fund_utilization": 4.0
+      },
+      "score": -177.7729,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -3.68,
+          "return_adj": -3.68,
+          "drawdown_raw": 4.3,
+          "drawdown_adj": 4.3,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -2.11,
+          "return_adj": -2.11,
+          "drawdown_raw": 2.88,
+          "drawdown_adj": 2.88,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -2.4,
+          "return_adj": -2.4,
+          "drawdown_raw": 2.74,
+          "drawdown_adj": 2.74,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -0.22,
+          "return_adj": -0.22,
+          "drawdown_raw": 0.58,
+          "drawdown_adj": 0.58,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -0.23,
+          "return_adj": -0.23,
+          "drawdown_raw": 0.69,
+          "drawdown_adj": 0.69,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:45.261536+00:00"
+    },
+    {
+      "params": {
+        "leverage": 15.8,
+        "base_position_pct": 0.15,
+        "addon1_pct": 0.01,
+        "addon2_pct": 0.15,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 8
+      },
+      "capital_detail": {
+        "capital_per_coin": 1250.0,
+        "base_usd": 187.5,
+        "addon1_usd": 12.5,
+        "addon2_usd": 187.5,
+        "addon3_usd": 187.5,
+        "total_per_position": 575.0,
+        "total_all_positions": 4600.0,
+        "fund_utilization": 46.0
+      },
+      "score": -2129.6776,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -45.04,
+          "return_adj": -43.4831,
+          "drawdown_raw": 48.94,
+          "drawdown_adj": 47.2482,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -26.58,
+          "return_adj": -26.5062,
+          "drawdown_raw": 32.89,
+          "drawdown_adj": 32.7986,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -27.7,
+          "return_adj": -27.6357,
+          "drawdown_raw": 30.54,
+          "drawdown_adj": 30.4691,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -2.65,
+          "return_adj": -2.65,
+          "drawdown_raw": 6.56,
+          "drawdown_adj": 6.56,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -2.79,
+          "return_adj": -2.79,
+          "drawdown_raw": 7.82,
+          "drawdown_adj": 7.82,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:47.988526+00:00"
+    },
+    {
+      "params": {
+        "leverage": 20.0,
+        "base_position_pct": 0.15,
+        "addon1_pct": 0.15,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 8
+      },
+      "capital_detail": {
+        "capital_per_coin": 1250.0,
+        "base_usd": 187.5,
+        "addon1_usd": 187.5,
+        "addon2_usd": 12.5,
+        "addon3_usd": 187.5,
+        "total_per_position": 575.0,
+        "total_all_positions": 4600.0,
+        "fund_utilization": 46.0
+      },
+      "score": -2719.3647,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -45.04,
+          "return_adj": -43.4831,
+          "drawdown_raw": 48.94,
+          "drawdown_adj": 47.2482,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -26.58,
+          "return_adj": -26.5062,
+          "drawdown_raw": 32.89,
+          "drawdown_adj": 32.7986,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -27.7,
+          "return_adj": -27.6357,
+          "drawdown_raw": 30.54,
+          "drawdown_adj": 30.4691,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -2.65,
+          "return_adj": -2.65,
+          "drawdown_raw": 6.56,
+          "drawdown_adj": 6.56,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -2.79,
+          "return_adj": -2.79,
+          "drawdown_raw": 7.82,
+          "drawdown_adj": 7.82,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:50.698838+00:00"
+    },
+    {
+      "params": {
+        "leverage": 7.4,
+        "base_position_pct": 0.15,
+        "addon1_pct": 0.15,
+        "addon2_pct": 0.15,
+        "addon3_pct": 0.01,
+        "max_concurrent_positions": 6
+      },
+      "capital_detail": {
+        "capital_per_coin": 1666.67,
+        "base_usd": 250.0,
+        "addon1_usd": 250.0,
+        "addon2_usd": 250.0,
+        "addon3_usd": 16.67,
+        "total_per_position": 766.67,
+        "total_all_positions": 4600.0,
+        "fund_utilization": 46.0
+      },
+      "score": -950.919,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -45.04,
+          "return_adj": -43.4831,
+          "drawdown_raw": 48.94,
+          "drawdown_adj": 47.2482,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -26.58,
+          "return_adj": -26.5062,
+          "drawdown_raw": 32.89,
+          "drawdown_adj": 32.7986,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -27.7,
+          "return_adj": -27.6357,
+          "drawdown_raw": 30.54,
+          "drawdown_adj": 30.4691,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -2.65,
+          "return_adj": -2.65,
+          "drawdown_raw": 6.56,
+          "drawdown_adj": 6.56,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -2.79,
+          "return_adj": -2.79,
+          "drawdown_raw": 7.82,
+          "drawdown_adj": 7.82,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:53.423173+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.2,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.01,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 2
+      },
+      "capital_detail": {
+        "capital_per_coin": 5000.0,
+        "base_usd": 50.0,
+        "addon1_usd": 50.0,
+        "addon2_usd": 50.0,
+        "addon3_usd": 750.0,
+        "total_per_position": 900.0,
+        "total_all_positions": 1800.0,
+        "fund_utilization": 18.0
+      },
+      "score": -505.7383,
+      "total_trades": 65,
+      "valid_coins": 2,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -16.91,
+          "return_adj": -25.6781,
+          "drawdown_raw": 19.3,
+          "drawdown_adj": 29.3074,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -9.8,
+          "return_adj": -10.2083,
+          "drawdown_raw": 12.94,
+          "drawdown_adj": 13.4792,
+          "sharpe": 0.0104,
+          "trades": 56
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:54.220828+00:00"
+    },
+    {
+      "params": {
+        "leverage": 14.0,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.15,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.01,
+        "max_concurrent_positions": 4
+      },
+      "capital_detail": {
+        "capital_per_coin": 2500.0,
+        "base_usd": 25.0,
+        "addon1_usd": 375.0,
+        "addon2_usd": 25.0,
+        "addon3_usd": 25.0,
+        "total_per_position": 450.0,
+        "total_all_positions": 1800.0,
+        "fund_utilization": 18.0
+      },
+      "score": -1069.9287,
+      "total_trades": 193,
+      "valid_coins": 4,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -16.91,
+          "return_adj": -25.6781,
+          "drawdown_raw": 19.3,
+          "drawdown_adj": 29.3074,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -9.8,
+          "return_adj": -10.2083,
+          "drawdown_raw": 12.94,
+          "drawdown_adj": 13.4792,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -10.82,
+          "return_adj": -11.1968,
+          "drawdown_raw": 12.21,
+          "drawdown_adj": 12.6352,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -1.01,
+          "return_adj": -1.01,
+          "drawdown_raw": 2.59,
+          "drawdown_adj": 2.59,
+          "sharpe": -0.4389,
+          "trades": 61
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:56.287384+00:00"
+    },
+    {
+      "params": {
+        "leverage": 3.0,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.15,
+        "addon2_pct": 0.15,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 6
+      },
+      "capital_detail": {
+        "capital_per_coin": 1666.67,
+        "base_usd": 16.67,
+        "addon1_usd": 250.0,
+        "addon2_usd": 250.0,
+        "addon3_usd": 250.0,
+        "total_per_position": 766.67,
+        "total_all_positions": 4600.0,
+        "fund_utilization": 46.0
+      },
+      "score": -680.1249,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -45.04,
+          "return_adj": -115.1022,
+          "drawdown_raw": 48.94,
+          "drawdown_adj": 125.0689,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -26.58,
+          "return_adj": -29.9025,
+          "drawdown_raw": 32.89,
+          "drawdown_adj": 37.0012,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -27.7,
+          "return_adj": -30.594,
+          "drawdown_raw": 30.54,
+          "drawdown_adj": 33.7307,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -2.65,
+          "return_adj": -2.65,
+          "drawdown_raw": 6.56,
+          "drawdown_adj": 6.56,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -2.79,
+          "return_adj": -2.79,
+          "drawdown_raw": 7.82,
+          "drawdown_adj": 7.82,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:36:58.950331+00:00"
+    },
+    {
+      "params": {
+        "leverage": 5.6,
+        "base_position_pct": 0.15,
+        "addon1_pct": 0.15,
+        "addon2_pct": 0.15,
+        "addon3_pct": 0.01,
+        "max_concurrent_positions": 4
+      },
+      "capital_detail": {
+        "capital_per_coin": 2500.0,
+        "base_usd": 375.0,
+        "addon1_usd": 375.0,
+        "addon2_usd": 375.0,
+        "addon3_usd": 25.0,
+        "total_per_position": 1150.0,
+        "total_all_positions": 4600.0,
+        "fund_utilization": 46.0
+      },
+      "score": -844.5713,
+      "total_trades": 193,
+      "valid_coins": 4,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -45.04,
+          "return_adj": -43.4831,
+          "drawdown_raw": 48.94,
+          "drawdown_adj": 47.2482,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -26.58,
+          "return_adj": -26.5062,
+          "drawdown_raw": 32.89,
+          "drawdown_adj": 32.7986,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -27.7,
+          "return_adj": -27.6357,
+          "drawdown_raw": 30.54,
+          "drawdown_adj": 30.4691,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -2.65,
+          "return_adj": -2.65,
+          "drawdown_raw": 6.56,
+          "drawdown_adj": 6.56,
+          "sharpe": -0.4389,
+          "trades": 61
+        }
+      ],
+      "timestamp": "2026-07-11T09:37:00.971944+00:00"
+    },
+    {
+      "params": {
+        "leverage": 3.0,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.01,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 2
+      },
+      "capital_detail": {
+        "capital_per_coin": 5000.0,
+        "base_usd": 50.0,
+        "addon1_usd": 50.0,
+        "addon2_usd": 50.0,
+        "addon3_usd": 750.0,
+        "total_per_position": 900.0,
+        "total_all_positions": 1800.0,
+        "fund_utilization": 18.0
+      },
+      "score": -243.4638,
+      "total_trades": 65,
+      "valid_coins": 2,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -16.91,
+          "return_adj": -25.6781,
+          "drawdown_raw": 19.3,
+          "drawdown_adj": 29.3074,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -9.8,
+          "return_adj": -10.2083,
+          "drawdown_raw": 12.94,
+          "drawdown_adj": 13.4792,
+          "sharpe": 0.0104,
+          "trades": 56
+        }
+      ],
+      "timestamp": "2026-07-11T09:37:01.744183+00:00"
+    },
+    {
+      "params": {
+        "leverage": 11.1,
+        "base_position_pct": 0.15,
+        "addon1_pct": 0.01,
+        "addon2_pct": 0.15,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 6
+      },
+      "capital_detail": {
+        "capital_per_coin": 1666.67,
+        "base_usd": 250.0,
+        "addon1_usd": 16.67,
+        "addon2_usd": 250.0,
+        "addon3_usd": 250.0,
+        "total_per_position": 766.67,
+        "total_all_positions": 4600.0,
+        "fund_utilization": 46.0
+      },
+      "score": -1476.8311,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -45.04,
+          "return_adj": -43.4831,
+          "drawdown_raw": 48.94,
+          "drawdown_adj": 47.2482,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -26.58,
+          "return_adj": -26.5062,
+          "drawdown_raw": 32.89,
+          "drawdown_adj": 32.7986,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -27.7,
+          "return_adj": -27.6357,
+          "drawdown_raw": 30.54,
+          "drawdown_adj": 30.4691,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -2.65,
+          "return_adj": -2.65,
+          "drawdown_raw": 6.56,
+          "drawdown_adj": 6.56,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -2.79,
+          "return_adj": -2.79,
+          "drawdown_raw": 7.82,
+          "drawdown_adj": 7.82,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:37:04.496664+00:00"
+    },
+    {
+      "params": {
+        "leverage": 7.4,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.01,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 8
+      },
+      "capital_detail": {
+        "capital_per_coin": 1250.0,
+        "base_usd": 12.5,
+        "addon1_usd": 12.5,
+        "addon2_usd": 12.5,
+        "addon3_usd": 187.5,
+        "total_per_position": 225.0,
+        "total_all_positions": 1800.0,
+        "fund_utilization": 18.0
+      },
+      "score": -438.0101,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -16.91,
+          "return_adj": -25.6781,
+          "drawdown_raw": 19.3,
+          "drawdown_adj": 29.3074,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -9.8,
+          "return_adj": -10.2083,
+          "drawdown_raw": 12.94,
+          "drawdown_adj": 13.4792,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -10.82,
+          "return_adj": -11.1968,
+          "drawdown_raw": 12.21,
+          "drawdown_adj": 12.6352,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -1.01,
+          "return_adj": -1.01,
+          "drawdown_raw": 2.59,
+          "drawdown_adj": 2.59,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -1.05,
+          "return_adj": -1.05,
+          "drawdown_raw": 3.1,
+          "drawdown_adj": 3.1,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:37:07.347286+00:00"
+    },
+    {
+      "params": {
+        "leverage": 15.2,
+        "base_position_pct": 0.15,
+        "addon1_pct": 0.01,
+        "addon2_pct": 0.15,
+        "addon3_pct": 0.15,
+        "max_concurrent_positions": 2
+      },
+      "capital_detail": {
+        "capital_per_coin": 5000.0,
+        "base_usd": 750.0,
+        "addon1_usd": 50.0,
+        "addon2_usd": 750.0,
+        "addon3_usd": 750.0,
+        "total_per_position": 2300.0,
+        "total_all_positions": 4600.0,
+        "fund_utilization": 46.0
+      },
+      "score": -3335.2632,
+      "total_trades": 65,
+      "valid_coins": 2,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -45.04,
+          "return_adj": -43.4831,
+          "drawdown_raw": 48.94,
+          "drawdown_adj": 47.2482,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -26.58,
+          "return_adj": -26.5062,
+          "drawdown_raw": 32.89,
+          "drawdown_adj": 32.7986,
+          "sharpe": 0.0104,
+          "trades": 56
+        }
+      ],
+      "timestamp": "2026-07-11T09:37:08.182290+00:00"
+    },
+    {
+      "params": {
+        "leverage": 17.8,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.15,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.01,
+        "max_concurrent_positions": 7
+      },
+      "capital_detail": {
+        "capital_per_coin": 1428.57,
+        "base_usd": 14.29,
+        "addon1_usd": 214.29,
+        "addon2_usd": 14.29,
+        "addon3_usd": 14.29,
+        "total_per_position": 257.14,
+        "total_all_positions": 1800.0,
+        "fund_utilization": 18.0
+      },
+      "score": -1148.6793,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -16.91,
+          "return_adj": -25.6781,
+          "drawdown_raw": 19.3,
+          "drawdown_adj": 29.3074,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -9.8,
+          "return_adj": -10.2083,
+          "drawdown_raw": 12.94,
+          "drawdown_adj": 13.4792,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -10.82,
+          "return_adj": -11.1968,
+          "drawdown_raw": 12.21,
+          "drawdown_adj": 12.6352,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -1.01,
+          "return_adj": -1.01,
+          "drawdown_raw": 2.6,
+          "drawdown_adj": 2.6,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -1.05,
+          "return_adj": -1.05,
+          "drawdown_raw": 3.1,
+          "drawdown_adj": 3.1,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:37:10.983400+00:00"
+    },
+    {
+      "params": {
+        "leverage": 15.0,
+        "base_position_pct": 0.01,
+        "addon1_pct": 0.01,
+        "addon2_pct": 0.01,
+        "addon3_pct": 0.01,
+        "max_concurrent_positions": 5
+      },
+      "capital_detail": {
+        "capital_per_coin": 2000.0,
+        "base_usd": 20.0,
+        "addon1_usd": 20.0,
+        "addon2_usd": 20.0,
+        "addon3_usd": 20.0,
+        "total_per_position": 80.0,
+        "total_all_positions": 400.0,
+        "fund_utilization": 4.0
+      },
+      "score": -143.7718,
+      "total_trades": 259,
+      "valid_coins": 5,
+      "coin_results": [
+        {
+          "coin": "BTC",
+          "return_raw": -3.68,
+          "return_adj": -3.68,
+          "drawdown_raw": 4.3,
+          "drawdown_adj": 4.3,
+          "sharpe": -0.6942,
+          "trades": 9
+        },
+        {
+          "coin": "ETH",
+          "return_raw": -2.11,
+          "return_adj": -2.11,
+          "drawdown_raw": 2.88,
+          "drawdown_adj": 2.88,
+          "sharpe": 0.0104,
+          "trades": 56
+        },
+        {
+          "coin": "SOL",
+          "return_raw": -2.4,
+          "return_adj": -2.4,
+          "drawdown_raw": 2.74,
+          "drawdown_adj": 2.74,
+          "sharpe": -0.7803,
+          "trades": 67
+        },
+        {
+          "coin": "ARB",
+          "return_raw": -0.22,
+          "return_adj": -0.22,
+          "drawdown_raw": 0.58,
+          "drawdown_adj": 0.58,
+          "sharpe": -0.4389,
+          "trades": 61
+        },
+        {
+          "coin": "OP",
+          "return_raw": -0.23,
+          "return_adj": -0.23,
+          "drawdown_raw": 0.69,
+          "drawdown_adj": 0.69,
+          "sharpe": -0.4093,
+          "trades": 66
+        }
+      ],
+      "timestamp": "2026-07-11T09:37:13.781285+00:00"
+    }
+  ]
+}

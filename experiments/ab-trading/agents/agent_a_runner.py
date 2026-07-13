@@ -49,7 +49,7 @@ TP_PCT        = 0.08
 
 UNIVERSE_A = [
     "BTC", "ETH", "HYPE", "UNI",
-    "LIT", "SOL", "XRP", "ZEC", "NEAR", "WLD", "ADA", "SUI", "ETHFI", "ENA", "JUP", "XLM", "GRASS", "EIGEN", "ZRO", "IMX",
+    "SOL", "ZEC", "LIT", "ARB", "XRP", "WLD", "NEAR", "SUI", "LDO", "ADA", "ZRO", "ENA", "ETHFI", "JUP", "JTO", "SYRUP",
 ]
 
 

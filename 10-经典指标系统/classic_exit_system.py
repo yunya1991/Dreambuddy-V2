@@ -77,6 +77,7 @@ class ExitAction(str, Enum):
     CLOSE = "close"
     REDUCE = "reduce"
     HOLD = "hold"
+    RAISE_TP = "raise_tp"    # 提高止盈价（强反弹时让利润奔跑）
 
 
 class ExitPriority(str, Enum):
@@ -215,6 +216,10 @@ class ExitDecision:
     tstp_triggered: bool = False
     tstp_stage: int = 0
 
+    # RAISE_TP 相关
+    new_tp_price: float = 0.0
+    new_tp_pct: float = 0.0
+
     gate_passed: bool = True
     gate_reason: str = ""
 
@@ -340,6 +345,15 @@ class ExitConfig:
         28800: (1.5, 0.70, "reduce"),
     })
     tstp_close_if_weak_value_thr: float = 0.40
+
+    # ── RAISE_TP（提高止盈价）──────────────────────────────────────────
+    tstp_raise_tp_enabled: bool = True
+    tstp_raise_tp_value_thr: float = 0.65    # TSTP 未达衰减tp时，hold_value > 此值触发 RAISE_TP
+    tstp_raise_tp_atr_mult: float = 4.0      # 新止盈 = ATR × 此倍数（高于默认 3.0）
+    l2_raise_tp_enabled: bool = True
+    l2_raise_tp_value_thr: float = 0.65     # L1/L2 hold_value > 此值且 hold_risk 低时触发 RAISE_TP
+    l2_raise_tp_risk_thr: float = 0.30       # L1/L2 hold_risk < 此值才触发 RAISE_TP
+    l2_raise_tp_atr_mult: float = 4.0       # 新止盈 ATR 倍数
 
     # ── 跟踪止损 ────────────────────────────────────────────────────────
     trailing_enabled: bool = True
@@ -976,6 +990,28 @@ class ClassicExitSystem:
             tp_hit = pnl_for_check >= tp_pct_check
 
         if not tp_hit:
+            # 未达衰减tp目标：若强反弹(hold_value高) → RAISE_TP 提高止盈
+            if (
+                self.config.tstp_raise_tp_enabled
+                and features.hold_value > self.config.tstp_raise_tp_value_thr
+            ):
+                raise_mult = self.config.tstp_raise_tp_atr_mult
+                new_tp_pct = atr_pct * raise_mult
+                if pos.is_long:
+                    new_tp_price = pos.current_price * (1.0 + new_tp_pct)
+                else:
+                    new_tp_price = pos.current_price * (1.0 - new_tp_pct)
+                decision.action = ExitAction.RAISE_TP
+                decision.tstp_triggered = True
+                decision.tstp_stage = stage_idx
+                decision.new_tp_price = new_tp_price
+                decision.new_tp_pct = new_tp_pct
+                decision.reason = (
+                    f"TSTP_{regime_label}_RAISE_TP({tp_mult:.1f}xATR,"
+                    f"v={features.hold_value:.2f},new_tp={raise_mult:.1f}xATR)"
+                )
+                decision.confidence = 0.65
+                return decision
             return decision
 
         if action_type == "close_if_weak":
@@ -1079,6 +1115,29 @@ class ClassicExitSystem:
                 decision.confidence = 0.5 + (0.5 - value)
                 decision.reason = f"L2_LOW_VALUE({value:.2f})"
                 return decision
+
+        # 价值高 + 风险低 → RAISE_TP（让利润奔跑）
+        if (
+            self.config.l2_raise_tp_enabled
+            and value > self.config.l2_raise_tp_value_thr
+            and risk < self.config.l2_raise_tp_risk_thr
+        ):
+            atr_pct = features.atr_pct if features.atr_pct > 0 else (pos.atr_pct if pos.atr_pct > 0 else 0.02)
+            raise_mult = self.config.l2_raise_tp_atr_mult
+            new_tp_pct = atr_pct * raise_mult
+            if pos.is_long:
+                new_tp_price = pos.current_price * (1.0 + new_tp_pct)
+            else:
+                new_tp_price = pos.current_price * (1.0 - new_tp_pct)
+            decision.action = ExitAction.RAISE_TP
+            decision.new_tp_price = new_tp_price
+            decision.new_tp_pct = new_tp_pct
+            decision.confidence = 0.60 + (value - self.config.l2_raise_tp_value_thr)
+            decision.reason = (
+                f"L2_RAISE_TP(v={value:.2f},risk={risk:.2f},"
+                f"new_tp={raise_mult:.1f}xATR)"
+            )
+            return decision
 
         return decision
 
@@ -1639,6 +1698,8 @@ class ClassicExitSystem:
             new_trailing_stop=new.new_trailing_stop or base.new_trailing_stop,
             tstp_triggered=new.tstp_triggered or base.tstp_triggered,
             tstp_stage=new.tstp_stage or base.tstp_stage,
+            new_tp_price=new.new_tp_price or base.new_tp_price,
+            new_tp_pct=new.new_tp_pct or base.new_tp_pct,
             gate_passed=new.gate_passed if not base.gate_passed else base.gate_passed,
             gate_reason=new.gate_reason or base.gate_reason,
             features=new.features or base.features,
@@ -1663,14 +1724,42 @@ class ClassicExitSystem:
         positions: List[Dict],
         candles_map: Optional[Dict[str, List[Dict]]] = None,
     ) -> Dict[str, ExitDecision]:
-        """批量评估"""
+        """批量评估
+
+        当 pos_info 包含完整持仓字段时使用 evaluate_full（本地决策），
+        否则回退到 evaluate（API 优先）。
+        """
         results = {}
         for pos_info in positions:
             coin = pos_info.get("coin", "")
-            price = pos_info.get("price", 0)
-            action = pos_info.get("action", "LONG")
             candles = candles_map.get(coin) if candles_map else None
-            results[coin] = self.evaluate(coin, price, action, candles)
+
+            # 检查是否有足够字段走 evaluate_full
+            has_full = all(
+                k in pos_info for k in ("entry_price",)
+            ) and pos_info.get("entry_price", 0) > 0
+
+            if has_full:
+                pos = PositionState(
+                    coin=coin,
+                    side=pos_info.get("side", "long"),
+                    entry_price=float(pos_info.get("entry_price", 0)),
+                    current_price=float(pos_info.get("current_price", pos_info.get("price", 0))),
+                    position_age_sec=float(pos_info.get("position_age_sec", 0)),
+                    unrealized_pnl_pct=float(pos_info.get("unrealized_pnl_pct", 0)),
+                    leverage=float(pos_info.get("leverage", 1.0)),
+                    atr_pct=float(pos_info.get("atr_pct", 0.02)),
+                    mfe_pnl_pct=float(pos_info.get("mfe_pnl_pct", 0)),
+                    trailing_armed=bool(pos_info.get("trailing_armed", False)),
+                    trailing_stop_price=float(pos_info.get("trailing_stop_price", 0)),
+                    liq_price=float(pos_info.get("liq_price", 0)),
+                )
+                regime = pos_info.get("regime", "trend")
+                results[coin] = self.evaluate_full(pos, candles, regime=regime)
+            else:
+                price = pos_info.get("price", 0)
+                action = pos_info.get("action", "LONG")
+                results[coin] = self.evaluate(coin, price, action, candles)
         return results
 
     def is_api_available(self) -> bool:
@@ -1732,9 +1821,207 @@ def batch_evaluate_exit(
     return get_default_system().batch_evaluate(positions, candles_map)
 
 
+# ── HTTP API 服务 ────────────────────────────────────────────────────────────
+
+def _decision_to_dict(decision: ExitDecision) -> Dict[str, Any]:
+    """将 ExitDecision 序列化为可 JSON 化的字典"""
+    feats = decision.features
+    return {
+        "action": decision.action.value,
+        "priority": decision.priority.value,
+        "reason": decision.reason,
+        "confidence": decision.confidence,
+        "reduce_frac": decision.reduce_frac,
+        "suggested_price": decision.suggested_price,
+        "l0_triggered": decision.l0_triggered,
+        "l0_reason": decision.l0_reason,
+        "l1_hold_risk": decision.l1_hold_risk,
+        "l1_hold_value": decision.l1_hold_value,
+        "tb_sl_hit": decision.tb_sl_hit,
+        "tb_tp_hit": decision.tb_tp_hit,
+        "tb_time_hit": decision.tb_time_hit,
+        "trailing_triggered": decision.trailing_triggered,
+        "trailing_stop_price": decision.trailing_stop_price,
+        "new_trailing_stop": decision.new_trailing_stop,
+        "tstp_triggered": decision.tstp_triggered,
+        "tstp_stage": decision.tstp_stage,
+        "new_tp_price": decision.new_tp_price,
+        "new_tp_pct": decision.new_tp_pct,
+        "gate_passed": decision.gate_passed,
+        "gate_reason": decision.gate_reason,
+        "source": decision.source,
+        "features": {
+            "hold_risk": feats.hold_risk,
+            "hold_value": feats.hold_value,
+            "mrd_score": feats.mrd_score,
+            "p_mrd": feats.p_mrd,
+            "dd": feats.dd,
+            "rsi": feats.rsi,
+            "adx": feats.adx,
+            "atr_pct": feats.atr_pct,
+            "trend_shape": feats.trend_shape.value,
+            "trend_w_dir": feats.trend_w_dir,
+            "trend_d_dir": feats.trend_d_dir,
+            "mom_dir": feats.mom_dir,
+            "vol_dir": feats.vol_dir,
+            "pot_dir": feats.pot_dir,
+            "flow_dir": feats.flow_dir,
+            "risk_budget_penalty": feats.risk_budget_penalty,
+        } if feats is not None else None,
+    }
+
+
+def create_app(system: Optional[ClassicExitSystem] = None):
+    """创建 Flask API 应用
+
+    路由：
+        GET  /health              — 健康检查
+        POST /exit/evaluate       — 单笔持仓离场决策
+        POST /exit/batch_evaluate — 批量持仓评估
+        POST /exit/features       — 仅计算离场特征
+        GET  /exit/config         — 读取配置
+        POST /exit/state/reset    — 重置运行时状态
+    """
+    try:
+        from flask import Flask, request, jsonify
+    except ImportError:
+        raise ImportError("Flask 未安装，请执行: pip install flask")
+
+    app = Flask(__name__)
+    _system = system or get_default_system()
+
+    @app.route("/health", methods=["GET"])
+    def health():
+        return jsonify({
+            "ok": True,
+            "service": "classic_exit_system",
+            "l1_mode": _system.config.l1_mode.value,
+            "leverage_applied": _system.config.apply_leverage_to_thresholds,
+        })
+
+    @app.route("/exit/evaluate", methods=["POST"])
+    def exit_evaluate():
+        """单笔持仓离场决策评估"""
+        data = request.get_json(silent=True) or {}
+        try:
+            pos = PositionState(
+                coin=data.get("coin", data.get("symbol", "")),
+                side=data.get("side", "long"),
+                entry_price=float(data.get("entry_price", 0)),
+                current_price=float(data.get("current_price", 0)),
+                position_age_sec=float(data.get("position_age_sec", data.get("age_sec", 0))),
+                unrealized_pnl_pct=float(data.get("unrealized_pnl_pct", 0)),
+                leverage=float(data.get("leverage", 1.0)),
+                atr_pct=float(data.get("atr_pct", 0.02)),
+                mfe_pnl_pct=float(data.get("mfe_pnl_pct", 0)),
+                max_dd_pct=float(data.get("max_dd_pct", 0)),
+                entry_ts=int(data.get("entry_ts", data.get("entry_time", 0) or 0)),
+                trailing_armed=bool(data.get("trailing_armed", False)),
+                trailing_stop_price=float(data.get("trailing_stop_price", 0)),
+                liq_price=float(data.get("liq_price", 0)),
+                metadata=data.get("metadata", {}),
+            )
+            candles = data.get("candles_1h") or data.get("candles") or []
+            regime = data.get("regime", "trend")
+            now_ts = data.get("now_ts")
+
+            decision = _system.evaluate_full(
+                pos, candles, regime=regime,
+                now_ts=float(now_ts) if now_ts else None,
+            )
+            return jsonify({"ok": True, "decision": _decision_to_dict(decision)})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 400
+
+    @app.route("/exit/batch_evaluate", methods=["POST"])
+    def exit_batch():
+        """批量持仓评估"""
+        data = request.get_json(silent=True) or {}
+        positions = data.get("positions", [])
+        candles_map = data.get("candles_map")
+        results = _system.batch_evaluate(positions, candles_map)
+        return jsonify({
+            "ok": True,
+            "results": {k: _decision_to_dict(v) for k, v in results.items()},
+        })
+
+    @app.route("/exit/features", methods=["POST"])
+    def exit_features():
+        """仅计算离场特征（不决策）"""
+        data = request.get_json(silent=True) or {}
+        try:
+            pos = PositionState(
+                coin=data.get("coin", data.get("symbol", "")),
+                side=data.get("side", "long"),
+                entry_price=float(data.get("entry_price", 0)),
+                current_price=float(data.get("current_price", 0)),
+                position_age_sec=float(data.get("position_age_sec", 0)),
+                unrealized_pnl_pct=float(data.get("unrealized_pnl_pct", 0)),
+                leverage=float(data.get("leverage", 1.0)),
+                atr_pct=float(data.get("atr_pct", 0.02)),
+                mfe_pnl_pct=float(data.get("mfe_pnl_pct", 0)),
+                max_dd_pct=float(data.get("max_dd_pct", 0)),
+            )
+            candles = data.get("candles_1h") or data.get("candles") or []
+            regime = data.get("regime", "trend")
+            now_ts = data.get("now_ts")
+            feats = _system._compute_features(
+                pos, candles, regime,
+                float(now_ts) if now_ts else time.time(),
+            )
+            return jsonify({"ok": True, "features": {
+                "hold_risk": feats.hold_risk,
+                "hold_value": feats.hold_value,
+                "mrd_score": feats.mrd_score,
+                "p_mrd": feats.p_mrd,
+                "dd": feats.dd,
+                "rsi": feats.rsi,
+                "adx": feats.adx,
+                "atr_pct": feats.atr_pct,
+                "trend_shape": feats.trend_shape.value,
+                "trend_w_dir": feats.trend_w_dir,
+                "trend_d_dir": feats.trend_d_dir,
+                "mom_dir": feats.mom_dir,
+                "vol_dir": feats.vol_dir,
+                "pot_dir": feats.pot_dir,
+                "flow_dir": feats.flow_dir,
+                "risk_budget_penalty": feats.risk_budget_penalty,
+            }})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 400
+
+    @app.route("/exit/config", methods=["GET"])
+    def exit_config_get():
+        """读取当前配置"""
+        cfg = _system.config
+        return jsonify({"ok": True, "config": {
+            "l1_mode": cfg.l1_mode.value,
+            "apply_leverage_to_thresholds": cfg.apply_leverage_to_thresholds,
+            "l0_max_hold_sec": cfg.l0_max_hold_sec,
+            "l0_max_loss_pct": cfg.l0_max_loss_pct,
+            "l2_close_threshold": cfg.l2_close_threshold,
+            "l2_reduce_threshold": cfg.l2_reduce_threshold,
+            "tb_enabled": cfg.tb_enabled,
+            "tstp_enabled": cfg.tstp_enabled,
+            "trailing_enabled": cfg.trailing_enabled,
+            "gate_enabled": cfg.gate_enabled,
+            "risk_budget_enabled": cfg.risk_budget_enabled,
+        }})
+
+    @app.route("/exit/state/reset", methods=["POST"])
+    def exit_state_reset():
+        """重置运行时状态"""
+        data = request.get_json(silent=True) or {}
+        coin = data.get("coin")
+        _system.reset_state(coin)
+        return jsonify({"ok": True, "message": f"State reset for {coin or 'all'}"})
+
+    return app
+
+
 # ── 入口测试 ────────────────────────────────────────────────────────────────
 
-if __name__ == "__main__":
+def _run_self_test():
     print("=" * 70)
     print("经典指标离场系统 · 完整自检")
     print("=" * 70)
@@ -1982,3 +2269,33 @@ if __name__ == "__main__":
     print("\n" + "=" * 70)
     print("自检完成")
     print("=" * 70)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="经典指标离场系统")
+    parser.add_argument(
+        "mode", nargs="?", default="test",
+        choices=["test", "serve"],
+        help="test=运行自检, serve=启动API服务",
+    )
+    parser.add_argument("--host", default="0.0.0.0", help="API服务监听地址")
+    parser.add_argument("--port", type=int, default=8095, help="API服务端口")
+    parser.add_argument(
+        "--api-base", default="http://127.0.0.1:8092",
+        help="ml_trade_service API地址（用于 evaluate_api 模式）",
+    )
+    args = parser.parse_args()
+
+    if args.mode == "serve":
+        system = ClassicExitSystem(api_base=args.api_base)
+        app = create_app(system)
+        print(f"经典离场系统 API 服务启动")
+        print(f"  监听: http://{args.host}:{args.port}")
+        print(f"  ml_trade_service: {args.api_base}")
+        print(f"  L1 模式: {system.config.l1_mode.value}")
+        print(f"  杠杆口径: {'启用' if system.config.apply_leverage_to_thresholds else '禁用'}")
+        app.run(host=args.host, port=args.port, debug=False)
+    else:
+        _run_self_test()

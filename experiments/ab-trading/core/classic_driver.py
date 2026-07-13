@@ -94,11 +94,14 @@ class ClassicExitDecision:
     """经典指标离场决策"""
     coin: str
     should_exit: bool
-    action: str         # "close" / "reduce" / "hold"
+    action: str         # "close" / "reduce" / "hold" / "raise_tp"
     reason: str
     confidence: float
     priority: str = ""
     suggested_price: float = 0.0
+    new_tp_price: float = 0.0    # RAISE_TP 新止盈价
+    new_tp_pct: float = 0.0      # RAISE_TP 新止盈比例
+    reduce_frac: float = 0.0     # 减仓比例
     features: Dict = field(default_factory=dict)
 
 
@@ -473,6 +476,9 @@ class ClassicDriver:
                 confidence=decision.confidence,
                 priority=decision.priority.value if decision.priority else "",
                 suggested_price=decision.suggested_price,
+                new_tp_price=getattr(decision, 'new_tp_price', 0.0),
+                new_tp_pct=getattr(decision, 'new_tp_pct', 0.0),
+                reduce_frac=decision.reduce_frac,
                 features=features,
             )
         except Exception as e:
@@ -551,12 +557,14 @@ class ClassicDriver:
             {
                 "entries": [...],  # 开仓结果
                 "exits": [...],    # 平仓结果
+                "tp_updates": [...], # 止盈价更新
                 "signals": [...],  # 扫描到的信号
             }
         """
         result = {
             "entries": [],
             "exits": [],
+            "tp_updates": [],
             "signals": [],
             "api_available": self.is_available(),
         }
@@ -593,6 +601,18 @@ class ClassicDriver:
                         "reason": exit_dec.reason,
                         "result": exit_result,
                     })
+                elif exit_dec.action == "raise_tp" and exit_dec.new_tp_price > 0:
+                    # RAISE_TP：更新持仓的止盈价
+                    old_tp = pos.get("take_profit_price", 0)
+                    if exit_dec.new_tp_price > old_tp:
+                        pos["take_profit_price"] = exit_dec.new_tp_price
+                        pos["tp_source"] = "classic_raise_tp"
+                        result["tp_updates"].append({
+                            "coin": coin,
+                            "old_tp": old_tp,
+                            "new_tp": exit_dec.new_tp_price,
+                            "reason": exit_dec.reason,
+                        })
             except Exception as e:
                 result["exits"].append({"coin": coin, "error": str(e)})
         

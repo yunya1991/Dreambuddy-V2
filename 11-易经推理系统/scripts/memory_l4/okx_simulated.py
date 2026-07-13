@@ -34,7 +34,8 @@ DEFAULT_CONFIG = {
     "dry_run": True,
     "base_url": "https://www.okx.com",
     "default_inst_id": "BTC-USDT-SWAP",
-    "default_usdt_amount": 100,
+    "default_usdt_amount": 100,   # 名义价值，会在 _load_config 中根据保证金和杠杆重新计算
+    "default_leverage": 10,
 }
 
 _CUSTOM_HOSTS = {
@@ -44,12 +45,79 @@ _CUSTOM_HOSTS = {
 
 
 def _load_config() -> Dict:
+    """加载配置，优先级：1. os.environ 环境变量 2. config.json 3. .env 文件 4. 默认值"""
+    import os
+
+    cfg = DEFAULT_CONFIG.copy()
+
+    # 1. 优先从环境变量读取（支持外部传入配置）
+    if os.environ.get("OKX_API_KEY"):
+        cfg["api_key"] = os.environ["OKX_API_KEY"]
+    if os.environ.get("OKX_SECRET_KEY"):
+        cfg["secret_key"] = os.environ["OKX_SECRET_KEY"]
+    if os.environ.get("OKX_PASSPHRASE"):
+        cfg["passphrase"] = os.environ["OKX_PASSPHRASE"]
+    if os.environ.get("OKX_BASE_URL"):
+        cfg["base_url"] = os.environ["OKX_BASE_URL"]
+    if os.environ.get("OKX_SIMULATED"):
+        cfg["simulated"] = os.environ["OKX_SIMULATED"].lower() in ("true", "1", "yes")
+    if os.environ.get("OKX_DRY_RUN"):
+        cfg["dry_run"] = os.environ["OKX_DRY_RUN"].lower() in ("true", "1", "yes")
+    if os.environ.get("OKX_DEFAULT_INST_ID"):
+        cfg["default_inst_id"] = os.environ["OKX_DEFAULT_INST_ID"]
+    if os.environ.get("DEFAULT_LEVERAGE"):
+        cfg["default_leverage"] = float(os.environ["DEFAULT_LEVERAGE"])
+    if cfg["api_key"]:
+        return cfg
+
+    # 2. 其次读取 config.json（configure() 写入的配置）
     config_path = CONFIG_DIR / "config.json"
     if config_path.exists():
         with open(config_path) as f:
-            cfg = json.load(f)
-        return {**DEFAULT_CONFIG, **cfg}
-    return DEFAULT_CONFIG.copy()
+            saved_cfg = json.load(f)
+        cfg.update(saved_cfg)
+        if cfg["api_key"]:
+            return cfg
+
+    # 3. 最后读取 .env 文件（易经推理系统默认配置）
+    env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+    if env_path.exists():
+        env_vars = {}
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    env_vars[key.strip()] = value.strip()
+
+        leverage = cfg.get("default_leverage", 10)
+        if "DEFAULT_LEVERAGE" in env_vars:
+            leverage = float(env_vars["DEFAULT_LEVERAGE"])
+            cfg["default_leverage"] = leverage
+
+        if "DEFAULT_MARGIN_USDT" in env_vars:
+            cfg["default_usdt_amount"] = float(env_vars["DEFAULT_MARGIN_USDT"]) * leverage
+
+        if "OKX_API_KEY" in env_vars:
+            cfg["api_key"] = env_vars["OKX_API_KEY"]
+        if "OKX_SECRET_KEY" in env_vars:
+            cfg["secret_key"] = env_vars["OKX_SECRET_KEY"]
+        if "OKX_PASSPHRASE" in env_vars:
+            cfg["passphrase"] = env_vars["OKX_PASSPHRASE"]
+        if "OKX_BASE_URL" in env_vars:
+            cfg["base_url"] = env_vars["OKX_BASE_URL"]
+        if "OKX_SIMULATED" in env_vars:
+            cfg["simulated"] = env_vars["OKX_SIMULATED"].lower() in ("true", "1", "yes")
+        if "OKX_DRY_RUN" in env_vars:
+            cfg["dry_run"] = env_vars["OKX_DRY_RUN"].lower() in ("true", "1", "yes")
+        if "OKX_DEFAULT_INST_ID" in env_vars:
+            cfg["default_inst_id"] = env_vars["OKX_DEFAULT_INST_ID"]
+        if cfg["api_key"]:
+            return cfg
+
+    return cfg.copy()
 
 
 def _save_config(cfg: Dict) -> None:
@@ -81,21 +149,18 @@ def configure(api_key: str = None, secret_key: str = None,
 
 
 class _CustomDNSAdapter(requests.adapters.HTTPAdapter):
-    def resolve_host(self, hostname):
-        return _CUSTOM_HOSTS.get(hostname, hostname)
-
-    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+    def init_poolmanager(self, *args, **kwargs):
         import urllib3
         from urllib3.poolmanager import PoolManager
 
         class CustomPoolManager(PoolManager):
-            def _new_pool(self, scheme, host, port):
+            def _new_pool(self, scheme, host, port, request_context=None):
                 host = _CUSTOM_HOSTS.get(host, host)
-                return super()._new_pool(scheme, host, port)
+                return super()._new_pool(scheme, host, port, request_context=request_context)
 
-        self.poolmanager = CustomPoolManager(
-            num_pools=connections, maxsize=maxsize, block=block, **pool_kwargs
-        )
+        kwargs.setdefault('num_pools', 10)
+        kwargs.setdefault('maxsize', 10)
+        self.poolmanager = CustomPoolManager(**kwargs)
 
 
 class OKXSimulatedClient:
@@ -110,19 +175,35 @@ class OKXSimulatedClient:
         self.simulated = self.cfg["simulated"]
         self.dry_run = self.cfg["dry_run"]
         self.session = requests.Session()
-        self.session.mount("https://", _CustomDNSAdapter())
+        self.session.trust_env = False
 
         self._proxy_setup()
 
     def _proxy_setup(self):
+        # 1) 优先使用环境变量代理
         https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
         http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
-        if https_proxy or http_proxy:
-            proxies = {}
-            if https_proxy:
-                proxies["https"] = https_proxy
-            if http_proxy:
-                proxies["http"] = http_proxy
+        proxies = {}
+        if https_proxy:
+            proxies["https"] = https_proxy
+        if http_proxy:
+            proxies["http"] = http_proxy
+
+        # 2) 环境变量未设置时，尝试本地 Clash 默认端口（fake-ip 模式下必须走代理）
+        if not proxies:
+            for port in (7890, 7891, 14122, 38324):
+                try:
+                    import socket as _sock
+                    with _sock.create_connection(("127.0.0.1", port), timeout=0.3):
+                        proxies = {
+                            "http": f"http://127.0.0.1:{port}",
+                            "https": f"http://127.0.0.1:{port}",
+                        }
+                        break
+                except Exception:
+                    continue
+
+        if proxies:
             self.session.proxies.update(proxies)
 
     def _has_credentials(self) -> bool:
@@ -210,7 +291,7 @@ class OKXSimulatedClient:
 
     def get_instrument(self, inst_id: str = None) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
-        r = self._get("/api/v5/market/instruments", {"instId": inst_id}, auth=False)
+        r = self._get("/api/v5/public/instruments", {"instType": "SWAP", "instId": inst_id}, auth=False)
         if r.get("code") != "0":
             return {"ok": False, "error": r.get("msg", "unknown")}
         d = r["data"][0]
@@ -224,27 +305,49 @@ class OKXSimulatedClient:
             "lot_sz": float(d.get("lotSz", 1)),
         }
 
+    _KNOWN_LOT_SIZES = {
+        "BTC-USDT-SWAP": 0.01,
+        "ETH-USDT-SWAP": 0.01,
+        "SOL-USDT-SWAP": 0.01,
+        "BNB-USDT-SWAP": 0.01,
+        "XRP-USDT-SWAP": 1,
+        "DOGE-USDT-SWAP": 1,
+        "LTC-USDT-SWAP": 0.01,
+        "ADA-USDT-SWAP": 1,
+        "LINK-USDT-SWAP": 1,
+        "UNI-USDT-SWAP": 1,
+    }
+
     def _usdt_to_sz(self, inst_id: str, usdt_amount: float) -> float:
         ticker = self.get_ticker(inst_id)
         if not ticker["ok"]:
-            return usdt_amount
+            return float(int(usdt_amount))
+
+        lot_sz = self._KNOWN_LOT_SIZES.get(inst_id, 0.01)
+        ct_val = 1
+        ct_mult = 1
+
         instrument = self.get_instrument(inst_id)
-        if not instrument["ok"]:
-            return usdt_amount
+        if instrument["ok"]:
+            ct_val = instrument["ct_val"]
+            ct_mult = instrument["ct_mult"]
+            lot_sz = instrument["lot_sz"]
+
         last_price = ticker["last"]
-        ct_val = instrument["ct_val"]
-        ct_mult = instrument["ct_mult"]
-        lot_sz = instrument["lot_sz"]
         contract_value = last_price * ct_val * ct_mult
         if contract_value <= 0:
-            return usdt_amount
+            return float(int(usdt_amount))
+
         raw_sz = usdt_amount / contract_value
-        # 按 lot_sz 取整（向下取整，保证可成交）
         if lot_sz > 0:
             aligned_sz = math.floor(raw_sz / lot_sz) * lot_sz
         else:
             aligned_sz = raw_sz
-        # 保留有效精度
+
+        # 保证金不足买 1 张合约时返回 0（由调用方决定是否跳过）
+        if lot_sz > 0 and aligned_sz < lot_sz:
+            return 0.0
+
         if lot_sz >= 1:
             return float(int(aligned_sz))
         elif lot_sz >= 0.1:
@@ -409,11 +512,20 @@ class OKXSimulatedClient:
         self._audit_log("place_order", body, r)
 
         ok = r.get("code") == "0"
+        # 从 OKX 响应中提取错误信息
+        error = ""
+        if not ok:
+            data_list = r.get("data") or []
+            if data_list and isinstance(data_list, list):
+                error = data_list[0].get("sMsg", "") or data_list[0].get("sCode", "")
+            if not error:
+                error = r.get("msg", "")
         return {
             "ok": ok,
             "dry_run": False,
             "simulated": self.simulated,
             "ord_id": r["data"][0]["ordId"] if ok and r.get("data") else None,
+            "error": error,
             "raw": r,
         }
 
@@ -500,6 +612,12 @@ class OKXSimulatedClient:
         if not stop_loss_px and not take_profit_px:
             return {"ok": False, "error": "需指定止损价或止盈价"}
 
+        # 先撤销已有未触发的止盈止损单，避免重复下单
+        try:
+            self.cancel_algo_orders(inst_id)
+        except Exception:
+            pass
+
         # 获取持仓数量
         if sz is None:
             pos_data = self.get_positions(inst_id)
@@ -543,11 +661,15 @@ class OKXSimulatedClient:
                           "algo_id": r.get("data", [{}])[0].get("algoId") if r.get("data") else None,
                           "raw": r}
                 self._audit_log("oco_sltp_order", body, r)
+            oco_error = None if result.get("ok") else (
+                result.get("raw", {}).get("msg", "unknown")
+            )
             return {"orders": [result], "stop_loss": result,
                     "take_profit": result, "ok": result.get("ok"),
+                    "error": oco_error,
                     "reason": reason or "bcrm_risk_management"}
 
-        # 仅止损或仅止盈（conditional 单）
+        # 仅止损或仅止盈（止盈止损条件单）
         if stop_loss_px:
             sl_side = "sell" if pos_side == "long" else "buy"
             body = {
@@ -557,9 +679,9 @@ class OKXSimulatedClient:
                 "ordType": "conditional",
                 "sz": str(sz),
                 "posSide": pos_side,
-                "triggerPx": str(stop_loss_px),
-                "orderPx": "-1",
-                "triggerPxType": "last",
+                "slTriggerPx": str(stop_loss_px),
+                "slOrdPx": "-1",
+                "slTriggerPxType": "last",
                 "tag": "yijingsl",
             }
             if self.dry_run:
@@ -574,8 +696,12 @@ class OKXSimulatedClient:
                              "algo_id": r.get("data", [{}])[0].get("algoId") if r.get("data") else None,
                              "raw": r}
                 self._audit_log("stop_loss_order", body, r)
+            sl_error = None if sl_result.get("ok") else (
+                sl_result.get("raw", {}).get("msg", "unknown")
+            )
             return {"orders": [sl_result], "stop_loss": sl_result,
-                    "ok": sl_result.get("ok"), "reason": reason or "bcrm_risk_management"}
+                    "ok": sl_result.get("ok"), "error": sl_error,
+                    "reason": reason or "bcrm_risk_management"}
 
         # 仅止盈
         tp_side = "sell" if pos_side == "long" else "buy"
@@ -586,9 +712,9 @@ class OKXSimulatedClient:
             "ordType": "conditional",
             "sz": str(sz),
             "posSide": pos_side,
-            "triggerPx": str(take_profit_px),
-            "orderPx": "-1",
-            "triggerPxType": "last",
+            "tpTriggerPx": str(take_profit_px),
+            "tpOrdPx": "-1",
+            "tpTriggerPxType": "last",
             "tag": "yijingtp",
         }
         if self.dry_run:
@@ -603,8 +729,12 @@ class OKXSimulatedClient:
                          "algo_id": r.get("data", [{}])[0].get("algoId") if r.get("data") else None,
                          "raw": r}
             self._audit_log("take_profit_order", body, r)
+        tp_error = None if tp_result.get("ok") else (
+            tp_result.get("raw", {}).get("msg", "unknown")
+        )
         return {"orders": [tp_result], "take_profit": tp_result,
-                "ok": tp_result.get("ok"), "reason": reason or "bcrm_risk_management"}
+                "ok": tp_result.get("ok"), "error": tp_error,
+                "reason": reason or "bcrm_risk_management"}
 
     def reduce_position(self, inst_id: str = None, pos_side: str = "long",
                         reduce_ratio: float = 0.5, reason: str = "") -> Dict:
@@ -647,7 +777,7 @@ class OKXSimulatedClient:
         return result
 
     def cancel_algo_orders(self, inst_id: str = None) -> Dict:
-        """撤销所有未触发的止盈止损单（含 conditional 和 oco）"""
+        """撤销所有未触发的止盈止损单"""
         inst_id = inst_id or self.cfg["default_inst_id"]
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}
@@ -674,7 +804,7 @@ class OKXSimulatedClient:
         return {"ok": True, "cancelled": cancelled, "total": len(algo_ids)}
 
     def get_algo_orders(self, inst_id: str = None) -> Dict:
-        """查询未触发的止盈止损单（含 conditional 和 oco 类型）"""
+        """查询未触发的止盈止损单"""
         inst_id = inst_id or self.cfg["default_inst_id"]
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}

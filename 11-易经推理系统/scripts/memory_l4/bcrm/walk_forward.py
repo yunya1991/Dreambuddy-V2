@@ -150,28 +150,32 @@ def generate_synthetic_data(num_bars: int = 200,
         ma10 = sum(data[-j]["close"] for j in range(1, min(10, len(data)) + 1)) / min(10, len(data)) if data else price
         ma20 = sum(data[-j]["close"] for j in range(1, min(20, len(data)) + 1)) / min(20, len(data)) if data else price
 
-        # 四维评分 — 每个维度有独立噪声，让八卦分布更均匀
+        # 四维评分 — P2修复: 移除预计算，改由 normalize_snapshot() 统一处理
+        # 合成数据提供原始信号字段（rsi/ema/funding_rate等），与实盘链路对齐
+        rsi = 50.0
         if current_regime == "bull":
-            sd_score = 0.65 + rng.gauss(0, 0.1)
-            tech_score = 0.60 + rng.gauss(0, 0.12)
-            cf_score = 0.68 + rng.gauss(0, 0.10)
-            sent_score = 0.62 + rng.gauss(0, 0.13)
+            rsi = 55.0 + rng.gauss(0, 8)
         elif current_regime == "bear":
-            sd_score = 0.30 + rng.gauss(0, 0.10)
-            tech_score = 0.35 + rng.gauss(0, 0.12)
-            cf_score = 0.28 + rng.gauss(0, 0.10)
-            sent_score = 0.32 + rng.gauss(0, 0.13)
+            rsi = 45.0 + rng.gauss(0, 8)
         else:
-            sd_score = 0.50 + rng.gauss(0, 0.08)
-            tech_score = 0.50 + rng.gauss(0, 0.08)
-            cf_score = 0.50 + rng.gauss(0, 0.08)
-            sent_score = 0.50 + rng.gauss(0, 0.08)
+            rsi = 50.0 + rng.gauss(0, 5)
+        rsi = max(10.0, min(90.0, rsi))
 
-        # clip 到 [0.05, 0.95]
-        sd_score = max(0.05, min(0.95, sd_score))
-        tech_score = max(0.05, min(0.95, tech_score))
-        cf_score = max(0.05, min(0.95, cf_score))
-        sent_score = max(0.05, min(0.95, sent_score))
+        # EMA 模拟（用于 normalize_snapshot 的 technical_score 计算）
+        ema20 = ma5  # 短期均线代理
+        ema50 = ma10  # 中期均线代理
+
+        # 资金费率模拟（用于 capital_flow_score）
+        funding_rate = 0.0001 * rng.gauss(0, 3)  # 正态分布围绕0
+
+        # FGI 模拟（用于 sentiment_score）
+        if current_regime == "bull":
+            fgi = 65.0 + rng.gauss(0, 10)
+        elif current_regime == "bear":
+            fgi = 35.0 + rng.gauss(0, 10)
+        else:
+            fgi = 50.0 + rng.gauss(0, 8)
+        fgi = max(5.0, min(95.0, fgi))
 
         # 价格位置（在窗口中的相对位置）
         window_size = min(50, len(data) + 1)
@@ -194,10 +198,6 @@ def generate_synthetic_data(num_bars: int = 200,
             "volume": volume,
             "regime": current_regime,
             "trend_direction": "UP" if current_regime == "bull" else "DOWN" if current_regime == "bear" else "FLAT",
-            "supply_demand_score": sd_score,
-            "technical_score": tech_score,
-            "capital_flow_score": cf_score,
-            "sentiment_score": sent_score,
             "trend_strength": abs(drift) * 100 + rng.random() * 0.3,
             "volatility": volatility,
             "volume_ratio": 0.8 + rng.random() * 0.4,
@@ -206,6 +206,14 @@ def generate_synthetic_data(num_bars: int = 200,
             "ma10": ma10,
             "ma20": ma20,
             "momentum_direction": "UP" if price > ma5 else "DOWN",
+            # P2修复: 提供原始信号字段，让 normalize_snapshot() 统一计算四维评分
+            "rsi": rsi,
+            "ema20": ema20,
+            "ema50": ema50,
+            "funding_rate": funding_rate,
+            "fgi": fgi,
+            "ch4h": change * 4,  # 4小时涨跌幅代理
+            "oi_change_pct": rng.gauss(0, 5),  # OI变化代理
         }
         data.append(bar)
 
@@ -228,29 +236,69 @@ def build_bcrm_predict_fn(engine: BCRMEngine,
         memory_cases = adapter.retrieve_similar(snapshot, top_k=5)
         memory_dicts = [c.to_dict() for c in memory_cases]
 
-        # 构造矛盾列表 — 基于四维评分差异
-        sd = snapshot.get("supply_demand_score", 0.5)
-        tech = snapshot.get("technical_score", 0.5)
-        cf = snapshot.get("capital_flow_score", 0.5)
-        sent = snapshot.get("sentiment_score", 0.5)
+        # P2修复: 矛盾列表构造与实盘对齐，使用 _build_contradiction_list 逻辑
+        # 从 snapshot 原始字段推导矛盾（与 polling_trader 实盘链路一致）
+        change = snapshot.get("change_pct", 0)
+        if not change and "close" in snapshot:
+            # 合成数据路径：从 close 计算 change_pct
+            change = snapshot.get("ch4h", 0) / 4 if "ch4h" in snapshot else 0
 
-        # 主矛盾：供需 vs 技术面的分歧
-        sd_tech_diff = abs(sd - tech)
-        contradictions = [{
-            "id": "supply_demand_vs_technical",
-            "type": "supply_demand",
-            "tension": max(sd_tech_diff, 0.3),
-            "dominant_side": "THESIS" if sd > 0.5 else "ANTITHESIS",
-        }]
+        trend_str = snapshot.get("trend_strength", 0.5)
+        vol_ratio = snapshot.get("volume_ratio", 1.0)
+        vol = snapshot.get("volatility", 0.03)
 
-        # 次要矛盾：资金 vs 情绪的分歧
-        cf_sent_diff = abs(cf - sent)
-        if cf_sent_diff > 0.15:
+        contradictions = []
+        # 主矛盾：趋势方向（与实盘 _build_contradiction_list 一致）
+        if change > 0.01:
             contradictions.append({
-                "id": "capital_vs_sentiment",
-                "type": "volume_price",
-                "tension": cf_sent_diff,
-                "dominant_side": "THESIS" if cf > 0.5 else "ANTITHESIS",
+                "thesis": "多头动能释放，趋势向上",
+                "antithesis": "短期超买，回调压力增大",
+                "subject": "趋势方向",
+                "dominant_side": "BULL",
+                "direction": "UP",
+                "tension": max(0.2, min(0.4 + trend_str * 0.4, 0.85)),
+                "consistency": 0.6,
+            })
+        elif change < -0.01:
+            contradictions.append({
+                "thesis": "空头动能释放，趋势向下",
+                "antithesis": "短期超卖，反弹预期增强",
+                "subject": "趋势方向",
+                "dominant_side": "BEAR",
+                "direction": "DOWN",
+                "tension": max(0.2, min(0.4 + trend_str * 0.4, 0.85)),
+                "consistency": 0.6,
+            })
+        else:
+            contradictions.append({
+                "thesis": "多空平衡，震荡整理",
+                "antithesis": "方向选择临近，变盘在即",
+                "subject": "趋势方向",
+                "dominant_side": "EQUAL",
+                "direction": "NEUTRAL",
+                "tension": max(0.2, min(0.3 + vol * 5, 0.85)),
+                "consistency": 0.5,
+            })
+
+        # 次矛盾：量价关系
+        if abs(vol_ratio - 1.0) > 0.2:
+            if vol_ratio > 1.2 and change > 0:
+                vol_dominant = "BULL"
+                vol_direction = "UP"
+            elif vol_ratio > 1.2 and change < 0:
+                vol_dominant = "BEAR"
+                vol_direction = "DOWN"
+            else:
+                vol_dominant = "EQUAL"
+                vol_direction = "NEUTRAL"
+            contradictions.append({
+                "thesis": "放量运行，资金参与度高" if vol_ratio > 1.2 else "缩量运行，资金参与度低",
+                "antithesis": "量能不可持续" if vol_ratio > 1.2 else "可能蓄势待发",
+                "subject": "量价配合",
+                "dominant_side": vol_dominant,
+                "direction": vol_direction,
+                "tension": max(0.2, min(0.4 + abs(vol_ratio - 1.0) * 0.5, 0.8)),
+                "consistency": 0.6,
             })
 
         return engine.infer(
@@ -437,7 +485,7 @@ def run_bcrm_backtest(engine: BCRMEngine,
                 "id": "supply_demand_vs_technical",
                 "type": "supply_demand",
                 "tension": max(abs(sd - tech), 0.3),
-                "dominant_side": "THESIS" if sd > 0.5 else "ANTITHESIS",
+                "dominant_side": "BULL" if sd > 0.5 else "BEAR",
             }]
             return engine.infer(
                 market_snapshot=snapshot,

@@ -6,20 +6,18 @@
     <string>com.dreambuddy.screen_monitor</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/python3</string>
+        <string>/opt/anaconda3/bin/python3</string>
         <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_monitor.py</string>
     </array>
     <key>WorkingDirectory</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading</string>
     <key>StartInterval</key>
     <integer>14400</integer>
+    <key>RunAtLoad</key>
+    <true/>
     <key>StandardOutPath</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/logs/screen_monitor_launchd.log</string>
     <key>StandardErrorPath</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/logs/screen_monitor_launchd.log</string>
-    <key>RunAtLoad</key>
-    <false/>
-    <key>KeepAlive</key>
-    <false/>
 </dict>
 </plist>

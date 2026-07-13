@@ -203,15 +203,7 @@ try:
 except Exception:
     A2ComprehensiveNode = None  # type: ignore[misc,assignment]
 
-try:
-    from .f2_fund_flow import F2FundFlowNode
-except Exception:
-    F2FundFlowNode = None  # type: ignore[misc,assignment]
 
-try:
-    from .f3_sentiment import F3SentimentNode
-except Exception:
-    F3SentimentNode = None  # type: ignore[misc,assignment]
 
 try:
     from .a3_strategy import A3StrategyNode
@@ -253,15 +245,52 @@ try:
 except Exception:
     F1NewsSentimentNode = None  # type: ignore[misc,assignment]
 
-try:
-    from .f4_onchain import F4OnchainNode
-except Exception:
-    F4OnchainNode = None  # type: ignore[misc,assignment]
+
 
 try:
-    from .f5_macro import F5MacroNode
+    from .c5_exit_system import C5ExitSystemNode
 except Exception:
-    F5MacroNode = None  # type: ignore[misc,assignment]
+    C5ExitSystemNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .f2_flow_analysis import F2FlowAnalysisNode
+except Exception:
+    F2FlowAnalysisNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .f3_valuation import F3ValuationNode
+except Exception:
+    F3ValuationNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .f4_onchain_data import F4OnchainDataNode
+except Exception:
+    F4OnchainDataNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .f5_macro_analysis import F5MacroAnalysisNode
+except Exception:
+    F5MacroAnalysisNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .g1_risk_control import G1RiskControlNode
+except Exception:
+    G1RiskControlNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .g2_governance import G2GovernanceNode
+except Exception:
+    G2GovernanceNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .a7_practice_gate import A7PracticeGateNode
+except Exception:
+    A7PracticeGateNode = None  # type: ignore[misc,assignment]
+
+try:
+    from .a8_unity import A8UnityNode
+except Exception:
+    A8UnityNode = None  # type: ignore[misc,assignment]
 
 
 __all__ = [
@@ -270,10 +299,7 @@ __all__ = [
     "register_node",
     "list_available_nodes",
     "get_all_node_classes",
-    # 节点类（向后兼容，可能为 None）
-    "C1TechScanNode",
-    "C2MomentumNode",
-    "C3VolatilityNode",
+    # A 链节点
     "A0ContradictionNode",
     "A1DeepResearchNode",
     "A2ComprehensiveNode",
@@ -281,10 +307,21 @@ __all__ = [
     "A4GateNode",
     "A5ExecutionNode",
     "A6RegimeMonitorNode",
+    "A7PracticeGateNode",
+    "A8UnityNode",
     "A9ExitStrategyNode",
+    # C 链节点
+    "C1TechScanNode",
+    "C2MomentumNode",
+    "C3VolatilityNode",
+    "C5ExitSystemNode",
+    # F 链节点
     "F1NewsSentimentNode",
-    "F2FundFlowNode",
-    "F3SentimentNode",
-    "F4OnchainNode",
-    "F5MacroNode",
+    "F2FlowAnalysisNode",
+    "F3ValuationNode",
+    "F4OnchainDataNode",
+    "F5MacroAnalysisNode",
+    # G 链节点
+    "G1RiskControlNode",
+    "G2GovernanceNode",
 ]

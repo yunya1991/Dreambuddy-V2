@@ -210,6 +210,73 @@ class OrchestrationMemory:
         self._data["last_backtest"] = datetime.now().isoformat()
         logger.info(f"编排记忆表更新完成: {len(scenarios)} 场景")
 
+        # 补全未覆盖场景（EXTREME 等极端场景用相似 HIGH 场景推断）
+        self._fill_missing_scenarios(scenarios)
+        logger.info(f"编排记忆表补全完成: {len(scenarios)} 场景")
+
+    def _fill_missing_scenarios(self, scenarios: Dict[str, Any]) -> None:
+        """为未覆盖场景用相似场景推断补全
+
+        策略：EXTREME 场景降级参考同趋势的 HIGH 场景；
+        若 HIGH 也无，降级到 NORMAL；最终兜底用 c_g_chain（含风控）。
+        """
+        all_sids = [
+            f"{t}_{v}_{m}"
+            for t in ["BULL", "BEAR", "NEUTRAL"]
+            for v in ["LOW", "NORMAL", "HIGH", "EXTREME"]
+            for m in ["ACCELERATING", "DECELERATING", "EXHAUSTION"]
+        ]
+
+        vol_fallback = {"EXTREME": "HIGH", "HIGH": "NORMAL", "NORMAL": "LOW", "LOW": "LOW"}
+
+        for sid in all_sids:
+            if sid in scenarios:
+                continue
+
+            # 解析场景ID: BULL_EXTREME_ACCELERATING
+            parts = sid.split("_")
+            trend, vol, mom = parts[0], parts[1], parts[2]
+
+            # 逐级降级查找相似场景
+            ref = None
+            cur_vol = vol
+            for _ in range(3):
+                cur_vol = vol_fallback.get(cur_vol, "LOW")
+                ref_sid = f"{trend}_{cur_vol}_{mom}"
+                if ref_sid in scenarios and scenarios[ref_sid].get("sample_count", 0) > 0:
+                    ref = scenarios[ref_sid]
+                    break
+
+            if ref:
+                # 基于相似场景，但降低置信度并加上风控
+                ref_pattern = ref.get("best_pattern", "c_g_chain")
+                # EXTREME 场景强制加风控：若不含 G 节点则切换到 c_g_chain
+                new_pattern = ref_pattern if "G" in ref_pattern or ref_pattern == "c_g_chain" else "c_g_chain"
+                scenarios[sid] = {
+                    "best_pattern": new_pattern,
+                    "nodes": self.GRAPH_PATTERNS.get(new_pattern, self.GRAPH_PATTERNS["c_g_chain"]),
+                    "score": round(ref.get("score", 0.5) * 0.8, 4),  # 降权
+                    "metrics": ref.get("metrics", {"sharpe": 0.3, "return": 0, "max_dd": 0.2, "win_rate": 0.4}),
+                    "sample_count": 0,
+                    "confidence": "low",
+                    "sparse": True,
+                    "inferred": True,  # 标记为推断数据
+                    "inferred_from": ref_sid if ref else None,
+                }
+            else:
+                # 兜底：c_g_chain 含风控
+                scenarios[sid] = {
+                    "best_pattern": "c_g_chain",
+                    "nodes": self.GRAPH_PATTERNS["c_g_chain"],
+                    "score": 0.3,
+                    "metrics": {"sharpe": 0.2, "return": 0, "max_dd": 0.3, "win_rate": 0.35},
+                    "sample_count": 0,
+                    "confidence": "low",
+                    "sparse": True,
+                    "inferred": True,
+                    "inferred_from": None,
+                }
+
     def update_from_evolution(self, scenario_id: str, new_pattern: str,
                               nodes: List[str], score: float, evidence: Dict[str, Any]) -> None:
         """进化引擎单场景更新

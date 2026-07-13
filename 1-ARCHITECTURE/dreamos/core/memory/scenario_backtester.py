@@ -95,11 +95,18 @@ class ScenarioBacktester:
         for file_path, symbol in data_files:
             try:
                 klines = self._load_json(file_path)
-                if len(klines) < window_size + hold_periods:
-                    logger.warning(f"{symbol}: 数据不足 ({len(klines)} < {window_size + hold_periods})，跳过")
+
+                # 5m 数据用更大窗口（288根≈1天）和步长，覆盖更多趋势场景
+                is_5m = symbol.endswith("_5m")
+                f_window = window_size * 12 if is_5m else window_size  # 5m: 288, 1h: 24
+                f_step = step * 6 if is_5m else step                  # 5m: 36,  1h: 6
+                f_hold = hold_periods * 12 if is_5m else hold_periods  # 5m: 144, 1h: 12
+
+                if len(klines) < f_window + f_hold:
+                    logger.warning(f"{symbol}: 数据不足 ({len(klines)} < {f_window + f_hold})，跳过")
                     continue
 
-                file_trades = self._backtest_file(klines, symbol, window_size, step, hold_periods)
+                file_trades = self._backtest_file(klines, symbol, f_window, f_step, f_hold)
 
                 # 合并到总结果
                 for sid, patterns in file_trades.items():
@@ -110,7 +117,7 @@ class ScenarioBacktester:
                             all_trades[sid][pattern] = []
                         all_trades[sid][pattern].extend(trades)
 
-                logger.info(f"{symbol}: {len(file_trades)} 场景, 窗口数≈{(len(klines)-window_size-hold_periods)//step + 1}")
+                logger.info(f"{symbol}: {len(file_trades)} 场景, 窗口数≈{(len(klines)-f_window-f_hold)//f_step + 1}")
             except Exception as e:
                 logger.error(f"回测 {file_path} 失败: {e}")
                 continue
@@ -124,9 +131,14 @@ class ScenarioBacktester:
     # ============================================================
 
     def _load_data_files(self) -> List[Tuple[str, str]]:
-        """扫描数据目录，返回 [(file_path, symbol), ...]"""
+        """扫描数据目录，返回 [(file_path, symbol), ...]
+
+        策略：同时使用 1h（aggregated）和 5m（hyperliquid）数据。
+        1h 数据用于覆盖中低波动场景，5m 数据量大用于覆盖趋势场景（BULL/BEAR）。
+        """
         result = []
-        # 优先用 aggregated (1h/30m)，数据量适中
+
+        # 1. aggregated 1h/30m 数据
         agg_dir = os.path.join(self.data_dir, "aggregated", "futures")
         if os.path.isdir(agg_dir):
             for fname in sorted(os.listdir(agg_dir)):
@@ -134,14 +146,30 @@ class ScenarioBacktester:
                     symbol = self._extract_symbol(fname)
                     result.append((os.path.join(agg_dir, fname), symbol))
 
-        # 如果aggregated没数据，尝试hyperliquid 5m（数据量大，抽样使用）
-        if not result:
-            hl_dir = os.path.join(self.data_dir, "hyperliquid", "futures")
-            if os.path.isdir(hl_dir):
-                for fname in sorted(os.listdir(hl_dir)):
-                    if fname.endswith(".json"):
-                        symbol = self._extract_symbol(fname)
-                        result.append((os.path.join(hl_dir, fname), symbol))
+        # 2. hyperliquid 5m 数据（数据量大，覆盖趋势场景）
+        # 选取主流币 + 高波动小币种，保证 36 场景全覆盖（含 EXTREME）
+        hl_dir = os.path.join(self.data_dir, "hyperliquid", "futures")
+        if os.path.isdir(hl_dir):
+            hl_files = sorted([f for f in os.listdir(hl_dir) if f.endswith(".json")])
+            # 主流币 + 高波动币种（覆盖 BULL/BEAR + EXTREME 场景）
+            main_coins = [
+                "BTC", "ETH", "SOL", "AVAX", "LINK", "ARB", "DOGE", "ADA",
+                "BNB", "XRP", "DOT", "NEAR", "APT", "SUI", "TIA", "SEI",
+                "WLD", "ENA", "PEPE", "FET", "LTC", "BCH", "TRX",
+                # 高波动小币种（覆盖 EXTREME 场景）
+                "FARTCOIN", "POPCAT", "WIF", "BONK", "MEME", "TRUMP", "HYPE",
+                "GRASS", "GOAT", "VIRTUAL", "PUMP", "ZRO", "INIT", "BERA",
+                "KAITO", "LAYER", "MORPHO", "PENDLE", "RESOLV",
+            ]
+            added = set()
+            for fname in hl_files:
+                sym = self._extract_symbol(fname)
+                # 跳过 _USDT_USDT 重复，只取 _USDT-5m
+                if "_USDT_USDT" in fname or sym in added:
+                    continue
+                if sym in main_coins and "_USDT-5m" in fname:
+                    result.append((os.path.join(hl_dir, fname), sym + "_5m"))
+                    added.add(sym)
 
         return result
 

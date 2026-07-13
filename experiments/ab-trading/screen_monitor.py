@@ -40,8 +40,25 @@ def _load_env():
                     key, value = line.split("=", 1)
                     os.environ.setdefault(key.strip(), value.strip())
 
+GH_TOKEN_FROM_GH_CLI = ""
+try:
+    import subprocess
+    import shutil
+    gh_path = shutil.which("gh")
+    print(f"DEBUG: gh path: {gh_path}")
+    result = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=5, env={**os.environ, "GH_TOKEN": ""})
+    print(f"DEBUG: gh rc={result.returncode}, stdout='{result.stdout.strip()}', stderr={result.stderr}")
+    if result.returncode == 0:
+        GH_TOKEN_FROM_GH_CLI = result.stdout.strip()
+        print(f"DEBUG: GH_TOKEN_FROM_GH_CLI='{GH_TOKEN_FROM_GH_CLI}'")
+except Exception as e:
+    print(f"DEBUG: subprocess exception: {e}")
+
 _load_env()
 GH_TOKEN = os.environ.get("GH_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
+if not GH_TOKEN or GH_TOKEN == "your_github_token_here":
+    GH_TOKEN = GH_TOKEN_FROM_GH_CLI
+print(f"DEBUG: GH_TOKEN final='{GH_TOKEN[:10]}...'")
 PR_NUMBER = "52"
 REPO = "yunya1991/Dreambuddy-V2"
 
@@ -68,6 +85,8 @@ def _log(msg: str):
     LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG_FILE, "a") as f:
         f.write(line + "\n")
+
+_log(f"GH_TOKEN loaded: len={len(GH_TOKEN)}, starts_with={GH_TOKEN[:10] if GH_TOKEN else 'empty'}")
 
 def load_json(path: Path, default: dict = None) -> dict:
     if not path.exists():
@@ -383,9 +402,9 @@ def post_pr_comment(detail: dict, evolution: dict, stats: dict):
     active = state.get("active", False)
     direction = state.get("direction", "NONE")
     symbol = state.get("active_symbol", "?")
-    total_size = state.get("total_size", 0)
-    avg_entry = state.get("avg_entry", 0)
-    tp_price = state.get("tp_price", 0)
+    total_size = state.get("total_size", 0) or 0
+    avg_entry = state.get("avg_entry", 0) or 0
+    tp_price = state.get("tp_price", 0) or 0
     run_count = state.get("run_count", 0)
     trade_history = state.get("trade_history", [])
     mode = state.get("last_mode", "v9")

@@ -129,7 +129,7 @@ def _kline_to_snapshot(kline_data: List[Dict], idx: int = 0) -> Dict:
     closes_long = [kline_data[i]["c"] for i in range(idx, idx + lookback_long)]
     highs = [kline_data[i]["h"] for i in range(idx, idx + lookback_med)]
     lows = [kline_data[i]["l"] for i in range(idx, idx + lookback_med)]
-    volumes = [kline_data[i]["v"] for i in range(idx, idx + lookback_short)]
+    volumes = [float(kline_data[i]["v"]) for i in range(idx, idx + lookback_short)]
 
     high = max(highs)
     low = min(lows)
@@ -165,74 +165,37 @@ def _kline_to_snapshot(kline_data: List[Dict], idx: int = 0) -> Dict:
 
     # 成交量变化
     avg_vol = sum(volumes) / len(volumes) if volumes else 1
-    cur_vol = current["v"]
+    cur_vol = float(current["v"])
     volume_ratio = cur_vol / avg_vol if avg_vol else 1.0
     volume_ratio = max(0.3, min(volume_ratio, 5.0))
 
-    # ── 四维评分（基于价格行为构造） ──
-
-    # 1. 供需评分：均线排列 + 价格相对位置
-    ma_bullish = (price > ma_short > ma_med > ma_long)
-    ma_bearish = (price < ma_short < ma_med < ma_long)
-    if ma_bullish:
-        sd_score = 0.8 + min(change_pct * 5, 0.15)
-    elif ma_bearish:
-        sd_score = 0.2 + min(change_pct * 5, -0.15)
-    else:
-        # 部分排列
-        if price > ma_med:
-            sd_score = 0.55 + change_pct * 3
-        else:
-            sd_score = 0.45 + change_pct * 3
-    sd_score = max(0.15, min(sd_score, 0.85))
-
-    # 2. 技术评分：动量 + 突破
-    momentum = med_change * 8  # 中期动量放大
-    # 突破加分
-    breakout = 0
-    if price > high * 0.98 and change_pct > 0:
-        breakout = 0.15
-    elif price < low * 1.02 and change_pct < 0:
-        breakout = -0.15
-    tech_score = 0.5 + momentum + breakout
-    tech_score = max(0.15, min(tech_score, 0.85))
-
-    # 3. 资金评分：量价配合
-    if change_pct > 0 and volume_ratio > 1.2:
-        cf_score = 0.7 + min(volume_ratio * 0.05, 0.15)
-    elif change_pct < 0 and volume_ratio > 1.2:
-        cf_score = 0.3 - min(volume_ratio * 0.05, 0.15)
-    elif change_pct > 0 and volume_ratio < 0.8:
-        cf_score = 0.55  # 缩量上涨，怀疑
-    elif change_pct < 0 and volume_ratio < 0.8:
-        cf_score = 0.45  # 缩量下跌，怀疑
-    else:
-        cf_score = 0.5 + change_pct * 2
-    cf_score = max(0.15, min(cf_score, 0.85))
-
-    # 4. 情绪评分：波动率 + 极值位置
-    if price_position > 0.8 and volatility > 0.03:
-        sent_score = 0.7  # 高位高波动 = 贪婪
-    elif price_position < 0.2 and volatility > 0.03:
-        sent_score = 0.3  # 低位高波动 = 恐慌
-    else:
-        sent_score = 0.4 + price_position * 0.4
-    sent_score = max(0.15, min(sent_score, 0.85))
-
-    # 趋势强度：均线偏离度 + 波动率
     ma_dev = abs(price - ma_med) / ma_med if ma_med else 0
     trend_strength = min(ma_dev * 10 + volatility * 3, 0.9)
     trend_strength = max(0.1, trend_strength)
+
+    # P2修复: 从K线行为推算加密市场宏观周期指标（替代缺失的外部宏观API）
+    # 用长期均线斜率作为"GDP增速"代理：价格上涨趋势 → 经济增长
+    long_return = (price - ma_long) / ma_long if ma_long else 0
+    gdp_growth = max(-0.02, min(long_return * 2, 0.10))  # 映射到 [-2%, 10%]
+
+    # 用波动率作为"CPI通胀"代理：高波动 → 通胀压力
+    cpi = max(0.0, min(volatility * 5, 0.06))  # 映射到 [0%, 6%]
+
+    # 用价格位置 + 趋势强度推算"利率"代理：
+    # 高位+强趋势 → 加息环境（过热收紧）；低位+弱趋势 → 降息环境
+    if price_position > 0.6 and trend_strength > 0.3:
+        interest_rate = 0.03 + (price_position - 0.6) * 0.05  # 3%~5%
+    elif price_position < 0.3 and trend_strength < 0.2:
+        interest_rate = 0.005 + price_position * 0.02  # 0.5%~1.1%
+    else:
+        interest_rate = 0.02  # 中性2%
+    interest_rate = max(0.005, min(interest_rate, 0.055))
 
     return {
         "snapshot_ts": current.get("ts_str", datetime.now(timezone.utc).isoformat()),
         "price": price,
         "symbol": "BTC-USDT-SWAP",
         "market_scale": 0.7,
-        "supply_demand_score": sd_score,
-        "technical_score": tech_score,
-        "capital_flow_score": cf_score,
-        "sentiment_score": sent_score,
         "trend_strength": trend_strength,
         "volatility": volatility,
         "volume_ratio": volume_ratio,
@@ -244,6 +207,9 @@ def _kline_to_snapshot(kline_data: List[Dict], idx: int = 0) -> Dict:
         "ma_short": ma_short,
         "ma_med": ma_med,
         "ma_long": ma_long,
+        "gdp_growth": gdp_growth,
+        "cpi": cpi,
+        "interest_rate": interest_rate,
     }
 
 

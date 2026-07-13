@@ -1,0 +1,1536 @@
+{
+  "timestamp": "2026-07-12T15:30:25.516255+00:00",
+  "phase": "phase2",
+  "version": "1.0.0",
+  "position_summary": {
+    "timestamp": "2026-07-12T15:30:26.583692+00:00",
+    "total_systems": 6,
+    "total_positions": 14,
+    "total_unrealized_pnl": -0.21,
+    "overall_status": "degraded",
+    "system_status": {
+      "agent_a": "ok",
+      "agent_b": "ok",
+      "agent_c_memory": "ok",
+      "v15_martin": "error",
+      "yijing_bcrm": "ok",
+      "three_screen": "unavailable"
+    },
+    "by_system": {
+      "agent_a": {
+        "position_count": 2,
+        "status": "ok"
+      },
+      "agent_b": {
+        "position_count": 6,
+        "status": "ok"
+      },
+      "agent_c_memory": {
+        "position_count": 0,
+        "status": "ok"
+      },
+      "v15_martin": {
+        "position_count": 0,
+        "status": "error"
+      },
+      "yijing_bcrm": {
+        "position_count": 6,
+        "status": "ok"
+      },
+      "three_screen": {
+        "position_count": 0,
+        "status": "unavailable"
+      }
+    }
+  },
+  "market": {
+    "BTC": {
+      "current_price": 67500.0,
+      "change_24h_pct": 1.2,
+      "change_7d_pct": -3.5,
+      "volume_24h": 28000000000,
+      "high_24h": 68200,
+      "low_24h": 66800
+    },
+    "ETH": {
+      "current_price": 3500.0,
+      "change_24h_pct": -0.5,
+      "change_7d_pct": -2.1,
+      "volume_24h": 15000000000,
+      "high_24h": 3580,
+      "low_24h": 3460
+    },
+    "SOL": {
+      "current_price": 180.0,
+      "change_24h_pct": 2.8,
+      "change_7d_pct": 5.2,
+      "volume_24h": 3500000000,
+      "high_24h": 185,
+      "low_24h": 174
+    }
+  },
+  "a1_research": {
+    "skill_name": "dream-strategy-research",
+    "skill_version": "1.7.0",
+    "status": "completed",
+    "execution_mode": "code_adapter",
+    "phases_executed": [],
+    "data": {
+      "research_report": {
+        "summary": "BTC当前价格$0，趋势NEUTRAL_UP，信号充分性HIGH",
+        "triangle_compliance": {
+          "memory_research": {
+            "completed": true,
+            "episodes_found": 2,
+            "key_findings": [
+              "EP201 震荡整理行情：持续时间平均5-7天",
+              "EP178 窄幅震荡后选择方向通常伴随放量"
+            ]
+          },
+          "historical_research": {
+            "completed": true,
+            "cases_found": 4,
+            "similarity_scores": [
+              0.77,
+              0.72,
+              0.69,
+              0.61
+            ],
+            "outcomes": [
+              "后续上涨延续",
+              "后续上涨延续",
+              "震荡整理",
+              "震荡整理"
+            ]
+          },
+          "strategy_research": {
+            "completed": true,
+            "strategies_found": 2,
+            "recommendations": [
+              "range_trade_001 区间交易策略适用"
+            ]
+          },
+          "current_sentiment": {
+            "completed": true,
+            "bullish_ratio": 0.54,
+            "key_sources": [
+              "Tavily",
+              "Twitter",
+              "TradingView"
+            ],
+            "主流观点": "多空分歧，观望为主等待方向"
+          },
+          "regime_research": {
+            "completed": true,
+            "technical_regime": "RANGE_BOUND",
+            "fundamental_regime": "NEUTRAL",
+            "composite_score": 63,
+            "pattern_match": "RANGE_BOUND",
+            "similarity": 0.73,
+            "triple_screen": {
+              "S1_week": "BULLISH",
+              "S2_day": "BULLISH",
+              "S3_hour": "BEARISH"
+            },
+            "regime_change_signals": [
+              "关注MA50/MA200多空排列变化"
+            ],
+            "recommendations": [
+              "继续使用RANGE_BOUND策略"
+            ]
+          }
+        },
+        "market_state": {
+          "price": 0.0,
+          "trend_direction": "NEUTRAL_UP",
+          "trend_continuation": true,
+          "resistance_minimum": "UP",
+          "rsi_1h": 76.25,
+          "rsi_state": "overbought",
+          "atr_pct": 0.0,
+          "vol_regime": "low",
+          "funding_rate": 0.000684,
+          "oi_delta_pct": -1.5
+        },
+        "macro_snapshot": {
+          "sentiment": "risk_on",
+          "risk_level": "1",
+          "key_events": [
+            "美联储议息会议临近，市场观望情绪浓厚",
+            "BTC现货ETF资金流向观察",
+            "技术面超买，警惕回调风险"
+          ]
+        },
+        "onchain_signals": {
+          "whale_activity": "outflow",
+          "etf_flow": "inflow",
+          "prediction_bias": "neutral"
+        },
+        "macro_assets_background": {
+          "enabled": true,
+          "assets": [
+            {
+              "inst_id": "XAU-USDT-SWAP",
+              "name": "黄金",
+              "price": 4094.48,
+              "change_1h_pct": 0.96,
+              "trend_direction": "UP",
+              "correlation_with_btc": "NEGATIVE",
+              "signal_to_btc": "黄金涨→BTC可能面临避险资金流出"
+            },
+            {
+              "inst_id": "CL-USDT-SWAP",
+              "name": "原油",
+              "price": 78.5,
+              "change_1h_pct": -1.76,
+              "trend_direction": "DOWN",
+              "correlation_with_btc": "WEAK",
+              "signal_to_btc": "原油跌→通胀预期降低→BTC可能受益"
+            },
+            {
+              "inst_id": "HG-USDT-SWAP",
+              "name": "铜",
+              "price": 0.0,
+              "change_1h_pct": -0.88,
+              "trend_direction": "DOWN",
+              "correlation_with_btc": "POSITIVE",
+              "signal_to_btc": "铜跌→经济担忧→BTC可能承压"
+            },
+            {
+              "inst_id": "TSLA-USDT-SWAP",
+              "name": "TSLA",
+              "price": 999.01,
+              "change_1h_pct": -0.68,
+              "trend_direction": "DOWN",
+              "correlation_with_btc": "POSITIVE",
+              "signal_to_btc": "TSLA跌→科技股承压→BTC可能跟随"
+            },
+            {
+              "inst_id": "COIN-USDT-SWAP",
+              "name": "COIN",
+              "price": 215.8,
+              "change_1h_pct": -1.59,
+              "trend_direction": "DOWN",
+              "correlation_with_btc": "STRONG_POSITIVE",
+              "signal_to_btc": "COIN跌→加密行业降温→BTC可能承压"
+            }
+          ],
+          "resonance_signals": [
+            {
+              "signal_type": "RISK_OFF_BROAD",
+              "description": "多数宏观风险资产下跌，风险偏好整体降温",
+              "assets_involved": [
+                "CL-USDT-SWAP",
+                "HG-USDT-SWAP",
+                "TSLA-USDT-SWAP",
+                "COIN-USDT-SWAP"
+              ],
+              "direction_implication": "DOWN",
+              "strength": "MODERATE",
+              "action_suggestion": "建议降低仓位，警惕回调风险"
+            }
+          ],
+          "summary": "宏观资产背景：黄金上涨0.96%，原油下跌1.76%，铜下跌0.88%"
+        },
+        "dream_insights": {
+          "incorporated": false,
+          "suppressed_signals": [],
+          "nightmare_scenarios": [],
+          "counter_intuitive": []
+        },
+        "archive_findings": [
+          {
+            "case_id": "HIST_001",
+            "similarity_score": 0.77,
+            "outcome": "后续上涨延续",
+            "lessons": [
+              "历史不会简单重复，但会押韵",
+              "注意当前与历史的宏观环境差异"
+            ]
+          },
+          {
+            "case_id": "HIST_002",
+            "similarity_score": 0.72,
+            "outcome": "后续上涨延续",
+            "lessons": [
+              "历史不会简单重复，但会押韵",
+              "注意当前与历史的宏观环境差异"
+            ]
+          },
+          {
+            "case_id": "HIST_003",
+            "similarity_score": 0.69,
+            "outcome": "震荡整理",
+            "lessons": [
+              "历史不会简单重复，但会押韵",
+              "注意当前与历史的宏观环境差异"
+            ]
+          },
+          {
+            "case_id": "HIST_004",
+            "similarity_score": 0.61,
+            "outcome": "震荡整理",
+            "lessons": [
+              "历史不会简单重复，但会押韵",
+              "注意当前与历史的宏观环境差异"
+            ]
+          }
+        ],
+        "key_insights": [
+          "趋势方向NEUTRAL_UP，多头占优",
+          "注意风险：RSI1小时超买(76.2)，回调风险大"
+        ],
+        "risk_warnings": [
+          "RSI1小时超买(76.2)，回调风险大",
+          "未平仓合约减少1.5%，资金离场"
+        ],
+        "signal_sufficiency": {
+          "level": "HIGH",
+          "directional_signals": [
+            "趋势方向NEUTRAL_UP，多头占优"
+          ],
+          "counter_signals": [
+            "RSI1小时超买(76.2)，回调风险大",
+            "未平仓合约减少1.5%，资金离场",
+            "资金费率偏高(0.0007)，多头拥挤"
+          ],
+          "net_direction": "DOWN",
+          "sufficiency_rationale": "共4个有效信号，方向性信号1个，反向信号3个，净方向DOWN"
+        },
+        "action_pressure": {
+          "consecutive_skip_days": 0,
+          "pressure_level": "LOW",
+          "probe_recommendation": "连续SKIP0天，压力较低，按正常流程执行。",
+          "probe_conditions": [
+            "信号充分性达到MODERATE以上"
+          ]
+        },
+        "contradiction_list": {
+          "contradictions": [
+            {
+              "id": "CX_001",
+              "dimension": "C2-C3",
+              "name": "趋势看多 vs 技术超买",
+              "side_a": "多头趋势延续，顺势做多",
+              "side_b": "RSI接近超买区，短期回调风险",
+              "strength_a": "MODERATE",
+              "strength_b": "MODERATE",
+              "dominance": "A",
+              "evidence": {
+                "a": [
+                  "趋势方向NEUTRAL_UP",
+                  "均线多头排列"
+                ],
+                "b": [
+                  "RSI_1h=76.2",
+                  "短期涨幅过大"
+                ]
+              },
+              "c4_c5_note": "C4=存在(短期技术超买 vs 中期趋势支撑)；C5=不显著(当前矛盾均已在显性层面体现)"
+            },
+            {
+              "id": "CX_003",
+              "dimension": "C4-C6",
+              "name": "短期波动 vs 中期格局",
+              "side_a": "短期震荡加剧，方向性不明",
+              "side_b": "中期格局未破，维持原有判断",
+              "strength_a": "LOW",
+              "strength_b": "MODERATE",
+              "dominance": "B",
+              "evidence": {
+                "a": [
+                  "波动率上升",
+                  "多空拉锯"
+                ],
+                "b": [
+                  "周线级别趋势未变",
+                  "关键支撑/阻力有效"
+                ]
+              },
+              "c4_c5_note": "C4=存在(短期波动无序 vs 中期趋势清晰)；C5=不显著(显性信号已覆盖主要判断)"
+            }
+          ],
+          "total_contradictions": 2,
+          "contradiction_intensity": "MODERATE",
+          "dream_contradictions_included": false,
+          "c4_c5_note_standard": {
+            "description": "C4(时序矛盾)/C5(隐性与显性矛盾)维度无显著矛盾时的规范化标注规则",
+            "annotation_rules": [
+              {
+                "condition": "C4维度存在显著时序矛盾",
+                "note": "C4=存在(描述矛盾内容)",
+                "field_filled": true
+              },
+              {
+                "condition": "C4维度无显著时序矛盾",
+                "note": "C4=不显著(当前时间框架内各周期方向一致)",
+                "field_filled": true
+              },
+              {
+                "condition": "C5维度存在显性 vs 隐性矛盾",
+                "note": "C5=存在(描述矛盾内容)",
+                "field_filled": true
+              },
+              {
+                "condition": "C5维度无显性 vs 隐性矛盾",
+                "note": "C5=不显著(所有矛盾均已在显性层面体现)",
+                "field_filled": true
+              }
+            ],
+            "format": "每个矛盾对象的c4_c5_note字段必须填写，标注'存在'或'不显著'及简要说明，不得留空"
+          }
+        }
+      },
+      "data_freshness": {
+        "market_data_ts": "2026-07-12T15:30:29.345510+00:00",
+        "macro_data_ts": "2026-07-12T15:30:29.345510+00:00",
+        "onchain_data_ts": "2026-07-12T15:30:29.345510+00:00",
+        "dream_insights_ts": ""
+      },
+      "meta": {
+        "research_id": "A1-20260712-233029",
+        "researcher_version": "1.7.0",
+        "triangle_compliance": true,
+        "timestamp": "2026-07-12T15:30:29.345510+00:00"
+      }
+    },
+    "error": "",
+    "fallback_used": false,
+    "fallback_reason": ""
+  },
+  "a2_first_principles": {
+    "skill_name": "dream-first-principles",
+    "skill_version": "2.6.1",
+    "status": "completed",
+    "execution_mode": "code_adapter",
+    "phases_executed": [],
+    "data": {
+      "first_principles_analysis": {
+        "dual_dimension_analysis": {
+          "fundamental": {
+            "capital_flow": {
+              "macro_liquidity": {
+                "direction": "EXPAND",
+                "score": 56.0
+              },
+              "etf_flow": {
+                "direction": "INFLOW",
+                "score": 59.6,
+                "amount": "$0.6亿"
+              },
+              "oi_change": {
+                "direction": "UP",
+                "score": 56.4
+              },
+              "micro_liquidity": {
+                "depth": "$0",
+                "spread": "10.5bps"
+              }
+            },
+            "sentiment": {
+              "fear_greed": 55,
+              "funding_rate": "0.0300%",
+              "long_short_ratio": "1.04",
+              "signal": "NEUTRAL"
+            },
+            "geopolitical": {
+              "key_events": [
+                "美联储政策观望期，市场等待新的催化",
+                "BTC ETF资金流向为关键观察指标"
+              ],
+              "impact": "NEUTRAL",
+              "weight": 0.25
+            },
+            "policy": {
+              "central_bank": "EASING",
+              "regulatory": "NEUTRAL"
+            },
+            "synthesis": {
+              "fundamental_direction": "BULLISH",
+              "fundamental_score": 56.8,
+              "confidence": 0.57
+            }
+          },
+          "technical": {
+            "trend_indicators": {
+              "ema_alignment": "MIXED",
+              "ma_slopes": {
+                "short": "0.24%",
+                "medium": "0.096%",
+                "long": "0.036%"
+              },
+              "ma_trajectory": "UP",
+              "trajectory_strength": 18.0
+            },
+            "momentum": {
+              "rsi": 100.0,
+              "rsi_state": "OVERBOUGHT",
+              "macd": {
+                "signal": "GOLDEN_CROSS"
+              },
+              "stochastic": "59.6%"
+            },
+            "volatility": {
+              "atr": "0.0%",
+              "atr_state": "LOW",
+              "bollinger_position": "62.0%"
+            },
+            "support_resistance": {
+              "key_levels": [
+                "$0",
+                "$0",
+                "$0",
+                "$0",
+                "$0",
+                "$0"
+              ],
+              "nearest_support": "$0",
+              "nearest_resistance": "$0"
+            },
+            "synthesis": {
+              "technical_direction": "BULLISH",
+              "technical_score": 72.2,
+              "confidence": 0.72
+            }
+          },
+          "cross_dimension": {
+            "alignment": "SAME",
+            "synthesis_confidence": 0.82
+          }
+        },
+        "macro_asset_analysis": {
+          "assets": [
+            {
+              "inst_id": "XAU-USDT-SWAP",
+              "name": "黄金",
+              "price": 2319.03,
+              "ma_trend": "DOWN",
+              "correlation_with_btc": "NEGATIVE",
+              "signal_to_btc": "黄金跌→风险偏好回升→BTC可能受益"
+            },
+            {
+              "inst_id": "CL-USDT-SWAP",
+              "name": "原油",
+              "price": 78.81,
+              "ma_trend": "UP",
+              "correlation_with_btc": "WEAK",
+              "signal_to_btc": "原油涨→通胀预期升温→BTC可能承压"
+            },
+            {
+              "inst_id": "XCU-USDT-SWAP",
+              "name": "铜",
+              "price": 4.26,
+              "ma_trend": "UP",
+              "correlation_with_btc": "POSITIVE",
+              "signal_to_btc": "铜涨→经济乐观→风险资产普涨→BTC受益"
+            },
+            {
+              "inst_id": "TSLA-USDT-SWAP",
+              "name": "TSLA",
+              "price": 244.67,
+              "ma_trend": "DOWN",
+              "correlation_with_btc": "POSITIVE",
+              "signal_to_btc": "TSLA跌→科技股承压→BTC可能跟随"
+            },
+            {
+              "inst_id": "COIN-USDT-SWAP",
+              "name": "COIN",
+              "price": 214.15,
+              "ma_trend": "DOWN",
+              "correlation_with_btc": "STRONG_POSITIVE",
+              "signal_to_btc": "COIN跌→加密行业降温→BTC可能承压"
+            }
+          ],
+          "resonance_signals": [],
+          "divergence_detected": true,
+          "divergence_details": [
+            {
+              "type": "BTC vs TSLA背离",
+              "description": "BTC上涨但TSLA下跌，科技股承压，BTC可能为独立叙事",
+              "suggestion": "分析BTC独立上涨原因"
+            }
+          ],
+          "macro_trend_score": 3.8,
+          "macro_trend_interpretation": "宏观环境中性，技术分析权重增加",
+          "summary": "宏观资产分析：黄金DOWN，原油UP，铜UP，宏观趋势评分3.8"
+        },
+        "brain_analysis": {
+          "left_brain": {
+            "quantitative_signals": [
+              {
+                "signal": "RSI超买",
+                "score": -20,
+                "direction": "DOWN"
+              },
+              {
+                "signal": "OI增仓+价格上涨",
+                "score": 20,
+                "direction": "UP"
+              }
+            ],
+            "deterministic_score": 64.5,
+            "direction": "UP"
+          },
+          "right_brain": {
+            "pattern_recognition": [
+              {
+                "pattern": "RSI极度超买",
+                "confidence": "HIGH",
+                "implication": "回调概率高"
+              }
+            ],
+            "fuzzy_bias": "BULLISH",
+            "confidence_interval": [
+              49.5,
+              64.5,
+              79.5
+            ]
+          },
+          "contradiction": {
+            "detected": false,
+            "left_vs_right": "SYNTHESIZED",
+            "contradiction_strength": "WEAK",
+            "reconciled_direction": "UP",
+            "action_advice": "跟踪确认",
+            "probe_conditions": [
+              "趋势延续性确认"
+            ]
+          },
+          "main_contradiction": {
+            "primary": "趋势延续 vs 超买超卖反转压力",
+            "secondary": "短期波动 vs 中期趋势",
+            "weight_adjustment": {
+              "fundamental": "55%",
+              "technical": "45%"
+            }
+          },
+          "a0_contradiction_analysis": {
+            "primary_contradiction": {
+              "id": "CX_001",
+              "dimension": "C1",
+              "description": "趋势延续 vs 超买超卖反转压力",
+              "dominant_side": "A",
+              "direction_implication": "UP",
+              "confidence": 0.6,
+              "transformation": {
+                "condition": "关键支撑/阻力位突破，伴随成交量放大",
+                "probability": "MODERATE"
+              }
+            },
+            "contradiction_ranking": [
+              {
+                "id": "CX_001",
+                "score": 4.85,
+                "rank": 1
+              },
+              {
+                "id": "CX_002",
+                "score": 3.2,
+                "rank": 2
+              }
+            ],
+            "action_pressure_from_a1": {
+              "consecutive_skip_days": 3,
+              "pressure_level": "LOW",
+              "source": "A1.action_pressure字段",
+              "impact_on_direction": "HIGH压力时，方向权重+15%",
+              "constraint": "HIGH压力→A3禁止WAIT，必须PROBE"
+            }
+          }
+        },
+        "resistance_analysis": {
+          "resistance_score": 50.5,
+          "resistance_direction": "NEUTRAL",
+          "resistance_components": {
+            "cost_friction": {
+              "score": 53.6,
+              "weight": 0.3
+            },
+            "liquidity_friction": {
+              "score": 56.0,
+              "weight": 0.35
+            },
+            "crowding_friction": {
+              "score": 51.5,
+              "weight": 0.2
+            },
+            "vol_friction": {
+              "score": 30,
+              "weight": 0.15
+            }
+          },
+          "resistance_minimum_path": "NEUTRAL",
+          "resistance_confidence": 0.69,
+          "contrarian_compensation": {
+            "triggered": false,
+            "condition": "",
+            "adjustment": 0,
+            "original_score": 50.5,
+            "adjusted_score": 50.5
+          }
+        },
+        "trend_analysis": {
+          "ma_trajectory_method": {
+            "ma_slopes": {
+              "MA5": "0.24%",
+              "MA20": "0.096%",
+              "MA60": "0.036%"
+            },
+            "trajectory_value": "0.1212",
+            "trajectory_normalized": "0.24σ",
+            "trend_strength": "WEAK"
+          },
+          "trend_phase": "启动期",
+          "trend_direction": "BULL",
+          "trend_strength": 2.4,
+          "trend_momentum": "decelerating",
+          "trend_confidence": 0.62,
+          "historical_stats": {
+            "similar_patterns": 4,
+            "success_rate": "58.6%",
+            "avg_reversal_point": "$0"
+          }
+        },
+        "synthesis": {
+          "least_resistance_path": "UP",
+          "path_confidence": 0.78,
+          "contradictions": [],
+          "action_recommendation": "PROBE_LONG",
+          "action_rationale": "阻力最小路径向上，趋势配合，置信度较高",
+          "alternative_scenarios": [
+            {
+              "scenario": "乐观",
+              "probability": 0.19,
+              "condition": "突破关键阻力位，成交量放大，目标4.2%涨幅"
+            },
+            {
+              "scenario": "基准",
+              "probability": 0.63,
+              "condition": "沿阻力最小方向运行，预期波动1.4%"
+            },
+            {
+              "scenario": "悲观",
+              "probability": 0.18,
+              "condition": "反向突破关键支撑/阻力，触发止损，最大风险3.2%"
+            }
+          ]
+        }
+      },
+      "market_regime_classification": {
+        "regime": "TREND_STRONG",
+        "confidence": 0.7,
+        "signals": [
+          "趋势阶段：启动期",
+          "趋势方向：BULL",
+          "阻力最小路径：NEUTRAL"
+        ]
+      },
+      "meta": {
+        "analysis_id": "a2_20260712_153029",
+        "version": "2.6.1",
+        "timestamp": "2026-07-12T15:30:29.346471+00:00",
+        "left_right_brain_integrated": true,
+        "ma_trajectory_method": true
+      }
+    },
+    "error": "",
+    "fallback_used": false,
+    "fallback_reason": ""
+  },
+  "a3_strategy": {
+    "skill_name": "dream-strategy-designer",
+    "skill_version": "2.7.0",
+    "status": "completed",
+    "execution_mode": "code_adapter",
+    "phases_executed": [],
+    "data": {
+      "strategy_directive": {
+        "directive_bias": "WAIT",
+        "position_modifier": 0.5,
+        "leverage_cap": 2,
+        "target_coins": [
+          "BTC",
+          "ETH"
+        ],
+        "exit_conditions": [
+          {
+            "type": "trailing_stop",
+            "trigger": "从最高点回撤5%",
+            "action": "逐步止盈",
+            "enforcement": "SOFT"
+          },
+          {
+            "type": "timeout",
+            "trigger": "持仓超过72小时方向未明",
+            "action": "评估是否离场",
+            "enforcement": "SOFT"
+          }
+        ],
+        "risk_rules": [
+          {
+            "rule": "单币种最大亏损不超过总资金的3%",
+            "enforcement": "HARD"
+          },
+          {
+            "rule": "杠杆上限 2x",
+            "enforcement": "HARD"
+          },
+          {
+            "rule": "总仓位不超过总资金的60%",
+            "enforcement": "HARD"
+          },
+          {
+            "rule": "禁止无止损开仓",
+            "enforcement": "HARD"
+          },
+          {
+            "rule": "单日亏损超过5%强制停止交易",
+            "enforcement": "HARD"
+          }
+        ],
+        "timing_guidance": "观望为主，等待更明确的信号，优先关注关键支撑/阻力位的反应",
+        "contradiction_handling": {
+          "primary_contradiction": "市场多空力量相对均衡，缺乏明确的主要矛盾",
+          "contradiction_clarity": "MODERATE",
+          "strategic_response": "等待矛盾进一步明朗，不急于入场",
+          "monitoring_points": [],
+          "transformation_risk": "LOW"
+        }
+      },
+      "evidence_chain": {
+        "a1_inputs": {
+          "research_summary": "BTC当前价格$0，趋势NEUTRAL_UP，信号充分性HIGH",
+          "key_findings": [],
+          "market_state": {}
+        },
+        "a2_inputs": {
+          "regime": "TREND_STRONG",
+          "least_resistance_path": "NEUTRAL",
+          "trend_direction": "NEUTRAL",
+          "main_contradiction": "",
+          "confidence": 0.5
+        },
+        "feature_distillation": {
+          "direction": "NEUTRAL",
+          "momentum": "STABLE",
+          "resistance": "EASY",
+          "volatility": "NORMAL",
+          "sentiment": "NEUTRAL",
+          "capital": "NEUTRAL",
+          "regime": "TREND_STRONG",
+          "timing": "MID"
+        }
+      }
+    },
+    "error": "",
+    "fallback_used": false,
+    "fallback_reason": ""
+  },
+  "a9_exit_decision": {
+    "skill_name": "dream-exit-skill-v2",
+    "skill_version": "2.2.0",
+    "status": "completed",
+    "execution_mode": "code_adapter",
+    "phases_executed": [],
+    "data": {
+      "exit_evaluations": [
+        {
+          "position": {
+            "symbol": "UNI",
+            "system": "agent_a",
+            "direction": "LONG",
+            "size": 8.0,
+            "entry_price": 3.65156,
+            "current_price": 3.6614,
+            "unrealized_pnl": 0.269895
+          },
+          "recommended_action": "RAISE_TP",
+          "reason": "战略方向(WAIT)与持仓方向一致，阻力最小路径(UP)同向，启动期趋势阶段，建议提高止盈让利润奔跑",
+          "urgency": "LOW",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": 1,
+            "weighted_score": 0.31,
+            "regime_bonus": 0.15,
+            "final_score": 0.46
+          },
+          "parameters": {
+            "new_tp_price": 3.6614,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "LONG",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": 0.15
+            },
+            "layer4_synthesis": {
+              "final_score": 0.46,
+              "action": "RAISE_TP",
+              "urgency": "LOW"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "LIT",
+            "system": "agent_a",
+            "direction": "LONG",
+            "size": 22.0,
+            "entry_price": 2.659454,
+            "current_price": 2.6551,
+            "unrealized_pnl": -0.164
+          },
+          "recommended_action": "HOLD",
+          "reason": "战略方向中性，阻力最小路径(UP)不明朗，TREND_STRONG市场状态，维持现有持仓",
+          "urgency": "LOW",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": 1,
+            "weighted_score": 0.31,
+            "regime_bonus": 0.15,
+            "final_score": 0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "LONG",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": 0.15
+            },
+            "layer4_synthesis": {
+              "final_score": 0.46,
+              "action": "HOLD",
+              "urgency": "LOW"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "ETH",
+            "system": "agent_b",
+            "direction": "SHORT",
+            "size": 0.0012,
+            "entry_price": 1812.3,
+            "current_price": 1811.9934,
+            "unrealized_pnl": -0.01692
+          },
+          "recommended_action": "CLOSE",
+          "reason": "战略方向(WAIT)与持仓方向(SHORT)严重矛盾，阻力最小路径(UP)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+          "urgency": "HIGH",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": -1,
+            "weighted_score": -0.31,
+            "regime_bonus": -0.15,
+            "final_score": -0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "SHORT",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": -0.15
+            },
+            "layer4_synthesis": {
+              "final_score": -0.46,
+              "action": "CLOSE",
+              "urgency": "HIGH"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "UNI",
+            "system": "agent_b",
+            "direction": "LONG",
+            "size": 1.1,
+            "entry_price": 3.624,
+            "current_price": 3.6264,
+            "unrealized_pnl": 0.06743
+          },
+          "recommended_action": "RAISE_TP",
+          "reason": "战略方向(WAIT)与持仓方向一致，阻力最小路径(UP)同向，启动期趋势阶段，建议提高止盈让利润奔跑",
+          "urgency": "LOW",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": 1,
+            "weighted_score": 0.31,
+            "regime_bonus": 0.15,
+            "final_score": 0.46
+          },
+          "parameters": {
+            "new_tp_price": 3.6264,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "LONG",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": 0.15
+            },
+            "layer4_synthesis": {
+              "final_score": 0.46,
+              "action": "RAISE_TP",
+              "urgency": "LOW"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "JTO",
+            "system": "agent_b",
+            "direction": "LONG",
+            "size": 22.0,
+            "entry_price": 0.599483,
+            "current_price": 0.6013,
+            "unrealized_pnl": 0.30572
+          },
+          "recommended_action": "RAISE_TP",
+          "reason": "战略方向(WAIT)与持仓方向一致，阻力最小路径(UP)同向，启动期趋势阶段，建议提高止盈让利润奔跑",
+          "urgency": "LOW",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": 1,
+            "weighted_score": 0.31,
+            "regime_bonus": 0.15,
+            "final_score": 0.46
+          },
+          "parameters": {
+            "new_tp_price": 0.6013,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "LONG",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": 0.15
+            },
+            "layer4_synthesis": {
+              "final_score": 0.46,
+              "action": "RAISE_TP",
+              "urgency": "LOW"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "ENA",
+            "system": "agent_b",
+            "direction": "SHORT",
+            "size": 1039.0,
+            "entry_price": 0.081553,
+            "current_price": 0.0811,
+            "unrealized_pnl": -0.552023
+          },
+          "recommended_action": "CLOSE",
+          "reason": "战略方向(WAIT)与持仓方向(SHORT)严重矛盾，阻力最小路径(UP)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+          "urgency": "HIGH",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": -1,
+            "weighted_score": -0.31,
+            "regime_bonus": -0.15,
+            "final_score": -0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "SHORT",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": -0.15
+            },
+            "layer4_synthesis": {
+              "final_score": -0.46,
+              "action": "CLOSE",
+              "urgency": "HIGH"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "HYPE",
+            "system": "agent_b",
+            "direction": "SHORT",
+            "size": 0.14,
+            "entry_price": 67.08,
+            "current_price": 67.0089,
+            "unrealized_pnl": -0.10598
+          },
+          "recommended_action": "CLOSE",
+          "reason": "战略方向(WAIT)与持仓方向(SHORT)严重矛盾，阻力最小路径(UP)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+          "urgency": "HIGH",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": -1,
+            "weighted_score": -0.31,
+            "regime_bonus": -0.15,
+            "final_score": -0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "SHORT",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": -0.15
+            },
+            "layer4_synthesis": {
+              "final_score": -0.46,
+              "action": "CLOSE",
+              "urgency": "HIGH"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "SYRUP",
+            "system": "agent_b",
+            "direction": "SHORT",
+            "size": 118.0,
+            "entry_price": 0.19021,
+            "current_price": 0.1902,
+            "unrealized_pnl": -0.01652
+          },
+          "recommended_action": "CLOSE",
+          "reason": "战略方向(WAIT)与持仓方向(SHORT)严重矛盾，阻力最小路径(UP)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+          "urgency": "HIGH",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": -1,
+            "weighted_score": -0.31,
+            "regime_bonus": -0.15,
+            "final_score": -0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "SHORT",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": -0.15
+            },
+            "layer4_synthesis": {
+              "final_score": -0.46,
+              "action": "CLOSE",
+              "urgency": "HIGH"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "DOT",
+            "system": "yijing_bcrm",
+            "direction": "LONG",
+            "size": 0.0,
+            "entry_price": 0.87,
+            "current_price": 0.87,
+            "unrealized_pnl": 0.0
+          },
+          "recommended_action": "HOLD",
+          "reason": "战略方向中性，阻力最小路径(UP)不明朗，TREND_STRONG市场状态，维持现有持仓",
+          "urgency": "LOW",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": 1,
+            "weighted_score": 0.31,
+            "regime_bonus": 0.15,
+            "final_score": 0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "LONG",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": 0.15
+            },
+            "layer4_synthesis": {
+              "final_score": 0.46,
+              "action": "HOLD",
+              "urgency": "LOW"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "BTC",
+            "system": "yijing_bcrm",
+            "direction": "LONG",
+            "size": 0.0,
+            "entry_price": 64170.9,
+            "current_price": 64170.9,
+            "unrealized_pnl": 0.0
+          },
+          "recommended_action": "HOLD",
+          "reason": "战略方向中性，阻力最小路径(UP)不明朗，TREND_STRONG市场状态，维持现有持仓",
+          "urgency": "LOW",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": 1,
+            "weighted_score": 0.31,
+            "regime_bonus": 0.15,
+            "final_score": 0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "LONG",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": 0.15
+            },
+            "layer4_synthesis": {
+              "final_score": 0.46,
+              "action": "HOLD",
+              "urgency": "LOW"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "DOGE",
+            "system": "yijing_bcrm",
+            "direction": "LONG",
+            "size": 0.0,
+            "entry_price": 0.07427,
+            "current_price": 0.0743,
+            "unrealized_pnl": 0.0
+          },
+          "recommended_action": "HOLD",
+          "reason": "战略方向中性，阻力最小路径(UP)不明朗，TREND_STRONG市场状态，维持现有持仓",
+          "urgency": "LOW",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": 1,
+            "weighted_score": 0.31,
+            "regime_bonus": 0.15,
+            "final_score": 0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "LONG",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": 0.15
+            },
+            "layer4_synthesis": {
+              "final_score": 0.46,
+              "action": "HOLD",
+              "urgency": "LOW"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "XRP",
+            "system": "yijing_bcrm",
+            "direction": "SHORT",
+            "size": 0.0,
+            "entry_price": 1.0983,
+            "current_price": 1.0983,
+            "unrealized_pnl": 0.0
+          },
+          "recommended_action": "CLOSE",
+          "reason": "战略方向(WAIT)与持仓方向(SHORT)严重矛盾，阻力最小路径(UP)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+          "urgency": "HIGH",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": -1,
+            "weighted_score": -0.31,
+            "regime_bonus": -0.15,
+            "final_score": -0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "SHORT",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": -0.15
+            },
+            "layer4_synthesis": {
+              "final_score": -0.46,
+              "action": "CLOSE",
+              "urgency": "HIGH"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "UNI",
+            "system": "yijing_bcrm",
+            "direction": "LONG",
+            "size": 0.0,
+            "entry_price": 3.558,
+            "current_price": 3.558,
+            "unrealized_pnl": 0.0
+          },
+          "recommended_action": "HOLD",
+          "reason": "战略方向中性，阻力最小路径(UP)不明朗，TREND_STRONG市场状态，维持现有持仓",
+          "urgency": "LOW",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": 1,
+            "weighted_score": 0.31,
+            "regime_bonus": 0.15,
+            "final_score": 0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "LONG",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": 0.15
+            },
+            "layer4_synthesis": {
+              "final_score": 0.46,
+              "action": "HOLD",
+              "urgency": "LOW"
+            }
+          }
+        },
+        {
+          "position": {
+            "symbol": "ETH",
+            "system": "yijing_bcrm",
+            "direction": "LONG",
+            "size": 0.0,
+            "entry_price": 1801.55,
+            "current_price": 1801.55,
+            "unrealized_pnl": 0.0
+          },
+          "recommended_action": "HOLD",
+          "reason": "战略方向中性，阻力最小路径(UP)不明朗，TREND_STRONG市场状态，维持现有持仓",
+          "urgency": "LOW",
+          "confidence": 0.78,
+          "scoring": {
+            "alignment_score": 0,
+            "lr_alignment": 1,
+            "weighted_score": 0.31,
+            "regime_bonus": 0.15,
+            "final_score": 0.46
+          },
+          "parameters": {
+            "new_tp_price": 0,
+            "new_tp_pct": 0.0,
+            "reduce_fraction": 0.0
+          },
+          "layers": {
+            "layer1_alignment": {
+              "position_direction": "LONG",
+              "strategy_direction": "WAIT",
+              "alignment_score": 0
+            },
+            "layer2_confidence": {
+              "path_confidence": 0.78,
+              "confidence_weight": 0.89
+            },
+            "layer3_regime": {
+              "regime": "TREND_STRONG",
+              "trend_phase": "启动期",
+              "regime_bonus": 0.15
+            },
+            "layer4_synthesis": {
+              "final_score": 0.46,
+              "action": "HOLD",
+              "urgency": "LOW"
+            }
+          }
+        }
+      ],
+      "overall_summary": {
+        "total_evaluated": 14,
+        "close_count": 5,
+        "reduce_count": 0,
+        "hold_count": 6,
+        "raise_tp_count": 3,
+        "overall_stance": "CLOSE",
+        "rationale": "有 5 个持仓建议平仓，需紧急处理",
+        "urgency_breakdown": {
+          "critical": 0,
+          "high": 5,
+          "medium": 0,
+          "low": 9
+        }
+      },
+      "decision_layers": {
+        "layer1_strategy_alignment": "strategic direction vs position direction",
+        "layer2_confidence_weighting": "A2 path_confidence weight",
+        "layer3_regime_correction": "market regime adjustment",
+        "layer4_final_synthesis": "urgency + final action"
+      }
+    },
+    "error": "",
+    "fallback_used": false,
+    "fallback_reason": ""
+  }
+}

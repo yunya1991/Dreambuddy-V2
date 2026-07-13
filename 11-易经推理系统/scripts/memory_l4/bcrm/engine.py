@@ -109,9 +109,16 @@ class BCRMEngine:
         from .market_preprocessor import normalize_snapshot
         market_snapshot = normalize_snapshot(market_snapshot)
 
-        # Fail-fast 检查
-        if qmm_output and qmm_output.get("uncertainty", 0) > DEFAULT_HIGH_UNCERTAINTY:
-            output.fail_closed(REASON_HIGH_UNCERTAINTY)
+        # P1 修复: 集成 Guardrail 输入验证
+        from .guardrail import default_guardrail
+        guard = default_guardrail()
+        guard_result = guard.validate(
+            market_snapshot=market_snapshot,
+            contradiction_list=contradiction_list,
+            qmm_output=qmm_output,
+        )
+        if not guard_result.passed:
+            output.fail_closed(f"Guardrail验证失败: {'; '.join(guard_result.fail_reasons)}")
             return output
 
         # Bug Y1 修复: 无矛盾列表时自动从市场快照推导，而非直接 fail_closed
@@ -230,11 +237,14 @@ class BCRMEngine:
                 next_state, trigger, spiral, yijing_result))
 
         # Step 6: 策略分支
+        is_weak_signal = bool(output.reason_codes and
+                              "WEAK_SIGNAL_LIGHT_POSITION" in output.reason_codes)
         branches = self._step6_strategy_branches(
             next_state, trigger, spiral, yijing_result,
             price=market_snapshot.get("price", 0),
             volatility=volatility,
-            confidence=next_state.confidence)
+            confidence=next_state.confidence,
+            is_weak_signal=is_weak_signal)
 
         # Step 6.5: 多样性扩展（借鉴 LEAN 多策略组合）
         # 当 B1 占比 > 80% 时自动补充互补策略
@@ -392,11 +402,16 @@ class BCRMEngine:
         # 积累度：从记忆案例中计算
         accumulation = 0.5
         if memory_cases:
+            # 将 dominant_side 映射为 direction 以便比较
+            target_directions = set()
+            if contrad_state.dominant_side == "BULL":
+                target_directions = {"UP", "BULL", "BULLISH"}
+            elif contrad_state.dominant_side == "BEAR":
+                target_directions = {"DOWN", "BEAR", "BEARISH"}
             # 历史同向案例比例作为积累度
             same_dir_count = sum(
                 1 for c in memory_cases
-                if c.get("direction", "").upper() ==
-                contrad_state.dominant_side
+                if c.get("direction", "").upper() in target_directions
             )
             accumulation = same_dir_count / len(memory_cases)
 
@@ -791,7 +806,8 @@ class BCRMEngine:
                                   yijing_result,
                                   price: float = 0,
                                   volatility: float = 0.5,
-                                  confidence: float = 0.0) -> List[StrategyBranch]:
+                                  confidence: float = 0.0,
+                                  is_weak_signal: bool = False) -> List[StrategyBranch]:
         """生成策略分支（含结构化止损/止盈/减仓）。"""
         branches = []
         direction = next_state.direction
@@ -806,6 +822,9 @@ class BCRMEngine:
         if confidence < 0.5:
             sl_pct *= 0.7
             tp_pct *= 0.8
+
+        # P3修复: 弱信号时主路径轻仓（置信度分层传递到策略层）
+        main_position_modifier = 0.5 if is_weak_signal else 1.0
 
         if direction == DIR_UP:
             sl_px = price * (1 - sl_pct) if price else 0
@@ -823,7 +842,7 @@ class BCRMEngine:
             branch_id="B1",
             condition="主趋势延续，质变未触发",
             action=main_action,
-            position_modifier=1.0,
+            position_modifier=main_position_modifier,
             stop_condition=f"质变触发（积累度>{trigger.threshold:.0%}）",
             rationale="顺势而为，沿主趋势操作",
             stop_loss_px=sl_px,

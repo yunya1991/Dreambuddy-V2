@@ -1,0 +1,58 @@
+{
+  "yijing_monitor": {
+    "last_run": 1783898366.650421,
+    "last_duration": 1.6623780727386475,
+    "run_count": 12,
+    "last_exit_code": 0,
+    "status": "done"
+  },
+  "screen_orchestrator": {
+    "last_run": 1783911628.3620229,
+    "last_duration": 2.3527469635009766,
+    "run_count": 256,
+    "last_exit_code": 0,
+    "status": "done"
+  },
+  "screen_monitor": {
+    "last_run": 1783898578.628056,
+    "last_duration": 3.61905574798584,
+    "run_count": 12,
+    "last_exit_code": 0,
+    "status": "done"
+  },
+  "ab_orchestrator": {
+    "last_run": 1783911626.006448,
+    "last_duration": 46.11948108673096,
+    "run_count": 260,
+    "last_exit_code": 0,
+    "status": "running"
+  },
+  "ab_monitor": {
+    "last_run": 1783898396.8101099,
+    "last_duration": 1.8196101188659668,
+    "run_count": 12,
+    "last_exit_code": 0,
+    "status": "done"
+  },
+  "v15_martin": {
+    "last_run": 1783911533.827279,
+    "last_duration": 87.83510494232178,
+    "run_count": 45,
+    "last_exit_code": 0,
+    "status": "done"
+  },
+  "yijing_trading": {
+    "last_run": 1783862962.365283,
+    "last_duration": 4870.477591991425,
+    "run_count": 2,
+    "last_exit_code": 0,
+    "status": "running"
+  },
+  "capital_manager": {
+    "last_run": 1783854563.060089,
+    "last_duration": 91.23589205741882,
+    "run_count": 1,
+    "last_exit_code": 0,
+    "status": "done"
+  }
+}

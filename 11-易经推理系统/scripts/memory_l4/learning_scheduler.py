@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Callable
 from pathlib import Path
 
-from scripts.memory_l4.paths import memory_l4_dir, memory_l4_cases_dir
+from scripts.memory_l4 import paths
 from scripts.memory_l4.bcrm.engine import BCRMEngine
 from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
 
@@ -30,13 +30,14 @@ class LearningScheduler:
                  bcrm_engine: BCRMEngine,
                  retrain_interval_cases: int = 10,
                  retrain_interval_hours: int = 4,
-                 on_retrain_complete: Callable = None):
+                 on_retrain_complete: Callable = None,
+                 shared_dir=None):
         self.bcrm_engine = bcrm_engine
         self.retrain_interval_cases = retrain_interval_cases
         self.retrain_interval_hours = retrain_interval_hours
         self.on_retrain_complete = on_retrain_complete
 
-        self.learn_dir = memory_l4_dir() / "learning"
+        self.learn_dir = paths.memory_l4_dir() / "learning"
         self.learn_dir.mkdir(parents=True, exist_ok=True)
         self.state_file = self.learn_dir / "scheduler_state.json"
 
@@ -44,7 +45,7 @@ class LearningScheduler:
         self.last_case_count = 0
         self.retrain_count = 0
 
-        self.knowledge_bridge = KnowledgeBridge()
+        self.knowledge_bridge = KnowledgeBridge(shared_dir=shared_dir)
         self.external_params = {}
 
         self._lock = threading.Lock()
@@ -119,14 +120,14 @@ class LearningScheduler:
 
     def _count_cases(self) -> int:
         """统计当前案例总数"""
-        cases_dir = memory_l4_cases_dir()
+        cases_dir = paths.memory_l4_cases_dir()
         if not cases_dir.exists():
             return 0
         return len(list(cases_dir.glob("*.json")))
 
     def _load_all_cases(self) -> List[Dict]:
         """加载所有案例"""
-        cases_dir = memory_l4_cases_dir()
+        cases_dir = paths.memory_l4_cases_dir()
         if not cases_dir.exists():
             return []
         cases = []
@@ -261,7 +262,7 @@ class LearningScheduler:
             updated = result.get("updated", False) if isinstance(result, dict) else False
 
         if hasattr(liangyi, 'save_state'):
-            save_path = memory_l4_dir() / "liangyi_state.json"
+            save_path = paths.memory_l4_dir() / "liangyi_state.json"
             try:
                 liangyi.save_state(str(save_path))
             except Exception:
@@ -283,7 +284,7 @@ class LearningScheduler:
             predictor = QMMPredictor()
             train_result = predictor.train(cases)
             if train_result.get("ok"):
-                model_path = memory_l4_dir() / "qmm_model"
+                model_path = paths.memory_l4_dir() / "qmm_model"
                 model_path.mkdir(parents=True, exist_ok=True)
                 model_file = str(model_path / "qmm_xgb_model.json")
                 try:

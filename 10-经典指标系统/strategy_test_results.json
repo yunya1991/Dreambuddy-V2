@@ -1,0 +1,466 @@
+[
+  {
+    "strategy": "MultiGroupStrategy",
+    "module": "user_data.strategies.MultiGroupStrategy",
+    "total_tests": 5,
+    "signal_count": 5,
+    "long_signals": 5,
+    "short_signals": 0,
+    "no_signal": 0,
+    "errors": 0,
+    "coins": {
+      "BTC": {
+        "side": "long",
+        "timeframe": "4h",
+        "tag": "g1_trend"
+      },
+      "ETH": {
+        "side": "long",
+        "timeframe": "4h",
+        "tag": "g3_momentum"
+      },
+      "SOL": {
+        "side": "long",
+        "timeframe": "4h",
+        "tag": "g1_trend"
+      },
+      "AVAX": {
+        "side": "long",
+        "timeframe": "4h",
+        "tag": "g3_momentum"
+      },
+      "ARB": {
+        "side": "long",
+        "timeframe": "4h",
+        "tag": "g3_momentum"
+      }
+    },
+    "signal_rate": 100.0,
+    "long_rate": 100.0,
+    "short_rate": 0.0,
+    "category": "swing",
+    "score": 100.0
+  },
+  {
+    "strategy": "RegimeHybridStrategy",
+    "module": "user_data.strategies.RegimeHybridStrategy",
+    "total_tests": 5,
+    "signal_count": 1,
+    "long_signals": 1,
+    "short_signals": 0,
+    "no_signal": 4,
+    "errors": 0,
+    "coins": {
+      "BTC": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": ""
+      },
+      "ETH": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": ""
+      },
+      "SOL": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": ""
+      },
+      "AVAX": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": ""
+      },
+      "ARB": {
+        "side": "long",
+        "timeframe": "5m",
+        "tag": "trend_confirm"
+      }
+    },
+    "signal_rate": 20.0,
+    "long_rate": 20.0,
+    "short_rate": 0.0,
+    "category": "scalping",
+    "score": 41.0
+  },
+  {
+    "strategy": "Bot2StrategyTrend",
+    "module": "user_data.strategies.Bot2StrategyTrend",
+    "total_tests": 5,
+    "signal_count": 0,
+    "long_signals": 0,
+    "short_signals": 0,
+    "no_signal": 5,
+    "errors": 0,
+    "coins": {
+      "BTC": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      },
+      "ETH": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      },
+      "SOL": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      },
+      "AVAX": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      },
+      "ARB": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      }
+    },
+    "signal_rate": 0.0,
+    "long_rate": 0.0,
+    "short_rate": 0.0,
+    "category": "scalping",
+    "score": 35.0
+  },
+  {
+    "strategy": "Bot2Strategy",
+    "module": "user_data.strategies.Bot2StrategyRange",
+    "total_tests": 5,
+    "signal_count": 0,
+    "long_signals": 0,
+    "short_signals": 0,
+    "no_signal": 5,
+    "errors": 0,
+    "coins": {
+      "BTC": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      },
+      "ETH": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      },
+      "SOL": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      },
+      "AVAX": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      },
+      "ARB": {
+        "side": null,
+        "timeframe": "5m",
+        "tag": null
+      }
+    },
+    "signal_rate": 0.0,
+    "long_rate": 0.0,
+    "short_rate": 0.0,
+    "category": "scalping",
+    "score": 35.0
+  },
+  {
+    "strategy": "Strategy005",
+    "module": "user_data.strategies.Strategy005",
+    "total_tests": 5,
+    "signal_count": 0,
+    "long_signals": 0,
+    "short_signals": 0,
+    "no_signal": 5,
+    "errors": 0,
+    "coins": {
+      "BTC": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      },
+      "ETH": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      },
+      "SOL": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      },
+      "AVAX": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      },
+      "ARB": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      }
+    },
+    "signal_rate": 0.0,
+    "long_rate": 0.0,
+    "short_rate": 0.0,
+    "category": "swing",
+    "score": 35.0
+  },
+  {
+    "strategy": "Strategy006",
+    "module": "user_data.strategies.Strategy006",
+    "total_tests": 5,
+    "signal_count": 0,
+    "long_signals": 0,
+    "short_signals": 0,
+    "no_signal": 0,
+    "errors": 5,
+    "coins": {
+      "BTC": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      },
+      "ETH": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      },
+      "SOL": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      },
+      "AVAX": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      },
+      "ARB": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      }
+    },
+    "signal_rate": 0.0,
+    "long_rate": 0.0,
+    "short_rate": 0.0,
+    "category": "unknown",
+    "score": -999
+  },
+  {
+    "strategy": "OttStrategy",
+    "module": "user_data.strategies.OTTStrategy",
+    "total_tests": 5,
+    "signal_count": 0,
+    "long_signals": 0,
+    "short_signals": 0,
+    "no_signal": 5,
+    "errors": 0,
+    "coins": {
+      "BTC": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      },
+      "ETH": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      },
+      "SOL": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      },
+      "AVAX": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      },
+      "ARB": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": null
+      }
+    },
+    "signal_rate": 0.0,
+    "long_rate": 0.0,
+    "short_rate": 0.0,
+    "category": "swing",
+    "score": 35.0
+  },
+  {
+    "strategy": "AdaptiveVolatilityStrategy_forced",
+    "module": "user_data.strategies.AdaptiveVolatilityStrategy_forced",
+    "total_tests": 5,
+    "signal_count": 0,
+    "long_signals": 0,
+    "short_signals": 0,
+    "no_signal": 0,
+    "errors": 5,
+    "coins": {
+      "BTC": {
+        "error": "strategy_import_failed:module 'user_data.strategies.AdaptiveVolatilityStrategy_forced' has no attribute 'AdaptiveVolatilityStrategy_forced'"
+      },
+      "ETH": {
+        "error": "strategy_import_failed:module 'user_data.strategies.AdaptiveVolatilityStrategy_forced' has no attribute 'AdaptiveVolatilityStrategy_forced'"
+      },
+      "SOL": {
+        "error": "strategy_import_failed:module 'user_data.strategies.AdaptiveVolatilityStrategy_forced' has no attribute 'AdaptiveVolatilityStrategy_forced'"
+      },
+      "AVAX": {
+        "error": "strategy_import_failed:module 'user_data.strategies.AdaptiveVolatilityStrategy_forced' has no attribute 'AdaptiveVolatilityStrategy_forced'"
+      },
+      "ARB": {
+        "error": "strategy_import_failed:module 'user_data.strategies.AdaptiveVolatilityStrategy_forced' has no attribute 'AdaptiveVolatilityStrategy_forced'"
+      }
+    },
+    "signal_rate": 0.0,
+    "long_rate": 0.0,
+    "short_rate": 0.0,
+    "category": "unknown",
+    "score": -999
+  },
+  {
+    "strategy": "BreadthFlow1HStrategy",
+    "module": "user_data.strategies.MarketBreadthFlowStrategy",
+    "total_tests": 5,
+    "signal_count": 0,
+    "long_signals": 0,
+    "short_signals": 0,
+    "no_signal": 0,
+    "errors": 5,
+    "coins": {
+      "BTC": {
+        "error": "insufficient_candles"
+      },
+      "ETH": {
+        "error": "insufficient_candles"
+      },
+      "SOL": {
+        "error": "insufficient_candles"
+      },
+      "AVAX": {
+        "error": "insufficient_candles"
+      },
+      "ARB": {
+        "error": "insufficient_candles"
+      }
+    },
+    "signal_rate": 0.0,
+    "long_rate": 0.0,
+    "short_rate": 0.0,
+    "category": "unknown",
+    "score": -999
+  },
+  {
+    "strategy": "ShortTGEStrategy",
+    "module": "user_data.strategies.LongShortTripleScreenStrategy",
+    "total_tests": 5,
+    "signal_count": 0,
+    "long_signals": 0,
+    "short_signals": 0,
+    "no_signal": 0,
+    "errors": 5,
+    "coins": {
+      "BTC": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      },
+      "ETH": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      },
+      "SOL": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      },
+      "AVAX": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      },
+      "ARB": {
+        "error": "strategy_run_failed:module 'talib.abstract' has no attribute 'STOCH'"
+      }
+    },
+    "signal_rate": 0.0,
+    "long_rate": 0.0,
+    "short_rate": 0.0,
+    "category": "unknown",
+    "score": -999
+  },
+  {
+    "strategy": "TrendConfirmationStrategy",
+    "module": "user_data.strategies.TrendConfirmationStrategy",
+    "total_tests": 5,
+    "signal_count": 4,
+    "long_signals": 4,
+    "short_signals": 0,
+    "no_signal": 1,
+    "errors": 0,
+    "coins": {
+      "BTC": {
+        "side": "long",
+        "timeframe": "4h",
+        "tag": "trend_confirmation"
+      },
+      "ETH": {
+        "side": "long",
+        "timeframe": "4h",
+        "tag": "trend_confirmation"
+      },
+      "SOL": {
+        "side": null,
+        "timeframe": "4h",
+        "tag": ""
+      },
+      "AVAX": {
+        "side": "long",
+        "timeframe": "4h",
+        "tag": "trend_confirmation"
+      },
+      "ARB": {
+        "side": "long",
+        "timeframe": "4h",
+        "tag": "trend_confirmation"
+      }
+    },
+    "signal_rate": 80.0,
+    "long_rate": 80.0,
+    "short_rate": 0.0,
+    "category": "swing",
+    "score": 94.0
+  },
+  {
+    "strategy": "BreakoutStrategy",
+    "module": "user_data.strategies.breakoutStrategy",
+    "total_tests": 5,
+    "signal_count": 0,
+    "long_signals": 0,
+    "short_signals": 0,
+    "no_signal": 5,
+    "errors": 0,
+    "coins": {
+      "BTC": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": ""
+      },
+      "ETH": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": ""
+      },
+      "SOL": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": ""
+      },
+      "AVAX": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": ""
+      },
+      "ARB": {
+        "side": null,
+        "timeframe": "1h",
+        "tag": ""
+      }
+    },
+    "signal_rate": 0.0,
+    "long_rate": 0.0,
+    "short_rate": 0.0,
+    "category": "swing",
+    "score": 35.0
+  }
+]

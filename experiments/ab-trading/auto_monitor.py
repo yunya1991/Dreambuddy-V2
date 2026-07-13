@@ -17,11 +17,14 @@
 import os, sys, json, subprocess, time, argparse, warnings
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from dotenv import load_dotenv
 
 warnings.filterwarnings("ignore")
 
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR))
+
+load_dotenv(BASE_DIR / "config" / ".env")
 
 # ── 配置 ───────────────────────────────────────────────────────────────────
 AGENT_A_LOG_DIR = BASE_DIR / "logs" / "agent_a"

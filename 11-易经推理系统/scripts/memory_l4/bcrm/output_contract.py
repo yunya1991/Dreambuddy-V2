@@ -13,7 +13,7 @@ class ContradictionState:
     """矛盾状态：当前主导二元矛盾。"""
     thesis: str = ""
     antithesis: str = ""
-    dominant_side: str = "EQUAL"    # THESIS / ANTITHESIS / EQUAL
+    dominant_side: str = "EQUAL"    # BULL / BEAR / EQUAL
     tension: float = 0.5
     source_contradiction_id: str = ""
     philosophy_basis: List[str] = field(default_factory=list)

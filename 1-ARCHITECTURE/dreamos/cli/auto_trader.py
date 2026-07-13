@@ -46,6 +46,9 @@ class AutoTrader:
         self._min_trade_interval_minutes = 30
         self._scenario_classifier = None
         self._orchestration_memory = None
+        self._feedback_collector = None
+        # 当前分析上下文（场景+编排），供 execute_trade 回写反馈使用
+        self._current_context = {"scenario_id": "UNKNOWN", "pattern": "c_chain", "expected_direction": "HOLD"}
 
     def get_scenario_classifier(self):
         """场景分类器（延迟初始化）"""
@@ -61,6 +64,48 @@ class AutoTrader:
             self._orchestration_memory = OrchestrationMemory()
             self._orchestration_memory.load()
         return self._orchestration_memory
+
+    def get_feedback_collector(self):
+        """执行反馈收集器（延迟初始化）
+
+        断点3修复：交易执行结果回写到反馈收集器，驱动进化引擎。
+        """
+        if self._feedback_collector is None:
+            from dreamos.core.memory.execution_feedback import ExecutionFeedbackCollector
+            memory = self.get_orchestration_memory()
+            self._feedback_collector = ExecutionFeedbackCollector(memory)
+        return self._feedback_collector
+
+    def record_trade_feedback(self, trade_result: Dict[str, Any]) -> None:
+        """记录交易执行反馈到收集器
+
+        在交易执行后调用，将场景+编排+方向+收益回写，
+        供 EvolutionEngine._check_orchestration_optimization() 评估。
+
+        Args:
+            trade_result: {"direction", "result"(收益率), "expected_direction", ...}
+        """
+        try:
+            collector = self.get_feedback_collector()
+            scenario_id = trade_result.get("scenario_id", self._current_context["scenario_id"])
+            pattern = trade_result.get("pattern", self._current_context["pattern"])
+            collector.record(
+                scenario_id=scenario_id,
+                pattern=pattern,
+                trade_result={
+                    "direction": trade_result.get("direction", "HOLD"),
+                    "result": trade_result.get("result", 0.0),
+                    "expected_direction": trade_result.get("expected_direction",
+                                                           self._current_context["expected_direction"]),
+                    "symbol": trade_result.get("symbol", ""),
+                    "entry_price": trade_result.get("entry_price", 0),
+                    "exit_price": trade_result.get("exit_price", 0),
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+            logger.info(f"反馈已记录: {scenario_id} | {pattern} | dir={trade_result.get('direction')} | ret={trade_result.get('result', 0):.4f}")
+        except Exception as e:
+            logger.warning(f"记录交易反馈失败: {e}")
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -141,6 +186,13 @@ class AutoTrader:
         choice = memory.select(scenario.scenario_id)
         logger.info(f"场景识别: {scenario.scenario_id} → 编排: {choice.pattern} (L{choice.fallback_level})")
 
+        # 保存当前上下文，供 execute_trade / 离场检查 回写反馈使用
+        self._current_context = {
+            "scenario_id": scenario.scenario_id,
+            "pattern": choice.pattern,
+            "expected_direction": "HOLD",  # 由下方 analysis 结果更新
+        }
+
         agent = self.get_trading_agent()
         if not agent:
             logger.warning(f"TradingAgent 不可用，降级到经典指标分析 | 场景={scenario.scenario_id} 编排={choice.pattern}")
@@ -160,6 +212,9 @@ class AutoTrader:
             result["_path"] = "full_sacg"
             result["_scenario"] = scenario.scenario_id
             result["_orchestration"] = choice.pattern
+            # 更新上下文的预期方向（用于反馈的方向准确率评估）
+            a5_out = result.get("outputs", {}).get("A5", {})
+            self._current_context["expected_direction"] = a5_out.get("trade_order", {}).get("action", "HOLD")
             return result
         except Exception as e:
             logger.error(f"TradingAgent 分析失败: {e}，降级到经典指标分析 | 场景={scenario.scenario_id}")
@@ -298,7 +353,7 @@ class AutoTrader:
         }
 
     def _fetch_market_data(self, symbol: str) -> Dict[str, Any]:
-        """获取市场数据"""
+        """获取市场数据（包含场景分类器所需字段）"""
         client = self.get_exchange_client()
         if not client:
             return {"symbol": symbol, "price": 0}
@@ -310,13 +365,87 @@ class AutoTrader:
                     arch_dir = dreamos_dir.parent
                     root_dir = arch_dir.parent
                     sys.path.insert(0, str(root_dir))
-                    from experiments.ab_trading.execution.aster_spot import get_all_mids
-                    mids = get_all_mids(getattr(client, 'proxies', None))
+                    import importlib.util
+                    hl_path = root_dir / "experiments" / "ab-trading" / "execution" / "aster_spot.py"
+                    spec = importlib.util.spec_from_file_location("aster_spot", str(hl_path))
+                    aster_spot = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(aster_spot)
+
+                    mids = aster_spot.get_all_mids(getattr(client, 'proxies', None))
                     price = mids.get(symbol, 0)
-                    if price > 0:
+                    if price <= 0:
+                        return {"symbol": symbol, "price": 0}
+
+                    candles_1h = aster_spot.get_candles(symbol, "1h", 48, getattr(client, 'proxies', None))
+                    candles_4h = aster_spot.get_candles(symbol, "4h", 14, getattr(client, 'proxies', None))
+
+                    closes_1h = [float(c["c"]) for c in candles_1h if "c" in c]
+                    closes_4h = [float(c["c"]) for c in candles_4h if "c" in c]
+                    vols_1h = [float(c["v"]) for c in candles_1h if "v" in c]
+
+                    if len(closes_1h) < 24:
                         return {"symbol": symbol, "price": price}
-                except Exception:
-                    pass
+
+                    def ema(prices, n):
+                        if len(prices) < n:
+                            return prices[-1] if prices else 0
+                        k = 2 / (n + 1)
+                        e = prices[-n]
+                        for p in prices[-n + 1:]:
+                            e = p * k + e * (1 - k)
+                        return e
+
+                    def rsi(prices, n=14):
+                        if len(prices) < n + 1:
+                            return 50.0
+                        deltas = [prices[i] - prices[i - 1] for i in range(1, min(n + 1, len(prices)))]
+                        gains = [max(d, 0) for d in deltas]
+                        losses = [max(-d, 0) for d in deltas]
+                        avg_g = sum(gains) / n
+                        avg_l = sum(losses) / n
+                        if avg_l == 0:
+                            return 100.0
+                        rs = avg_g / avg_l
+                        return 100 - 100 / (1 + rs)
+
+                    def atr(raw_candles, n=14):
+                        if len(raw_candles) < 2:
+                            return 0
+                        trs = []
+                        for i in range(1, min(n + 1, len(raw_candles))):
+                            h = float(raw_candles[i].get("h", 0))
+                            l = float(raw_candles[i].get("l", 0))
+                            c_prev = float(raw_candles[i - 1].get("c", 0))
+                            trs.append(max(h - l, abs(h - c_prev), abs(l - c_prev)))
+                        return sum(trs) / len(trs) if trs else 0
+
+                    closes_rev = closes_1h[::-1]
+                    ema20 = ema(closes_rev, 20)
+                    ema50 = ema(closes_rev, min(50, len(closes_rev)))
+                    ema200 = ema(closes_4h[::-1], min(20, len(closes_4h)))
+                    rsi14 = rsi(closes_rev)
+                    atr14 = atr(candles_1h)
+
+                    change_1h = ((closes_1h[0] - closes_1h[1]) / closes_1h[1] * 100) if len(closes_1h) > 1 else 0
+                    change_24h = ((closes_1h[0] - closes_1h[23]) / closes_1h[23] * 100) if len(closes_1h) > 23 else 0
+                    change_4h = ((closes_4h[0] - closes_4h[3]) / closes_4h[3] * 100) if len(closes_4h) > 3 else 0
+
+                    return {
+                        "symbol": symbol,
+                        "price": price,
+                        "change_24h": round(change_24h, 3) / 100,
+                        "change_4h": round(change_4h, 3) / 100,
+                        "change_1h": round(change_1h, 3) / 100,
+                        "ema20": round(ema20, 2),
+                        "ema50": round(ema50, 2),
+                        "ema200": round(ema200, 2),
+                        "rsi14": round(rsi14, 1),
+                        "atr_pct": round(atr14 / price, 4),
+                    }
+                except Exception as e:
+                    logger.warning(f"获取完整市场数据失败: {e}")
+                    price = client.get_mid(symbol) if hasattr(client, 'get_mid') else 0
+                    return {"symbol": symbol, "price": price}
 
             if self.exchange == "okx":
                 ticker = client.get_ticker(f"{symbol}-USDT")
@@ -327,6 +456,14 @@ class AutoTrader:
                         "bid": ticker["bid"],
                         "ask": ticker["ask"],
                         "vol24h": ticker["vol24h"],
+                        "change_24h": ticker.get("change_24h", 0) / 100,
+                        "change_1h": 0,
+                        "change_4h": 0,
+                        "ema20": ticker["last"],
+                        "ema50": ticker["last"],
+                        "ema200": ticker["last"],
+                        "rsi14": 50,
+                        "atr_pct": 0.02,
                     }
         except Exception as e:
             logger.warning(f"获取市场数据失败: {e}")
@@ -427,6 +564,11 @@ class AutoTrader:
                         coin=coin,
                         usdt_amount=position_size,
                         leverage=leverage,
+                        tag="dreamos_auto",
+                    )
+                elif action == "EXIT":
+                    result = client.close_position(
+                        coin=coin,
                         tag="dreamos_auto",
                     )
                 else:
@@ -552,9 +694,30 @@ class AutoTrader:
             if exec_result.get("result") == "SUCCESS":
                 result["steps"].append({"step": "execution", "status": "completed", "ord_id": exec_result.get("ord_id")})
                 result["final_result"] = "TRADE_EXECUTED"
+                # 断点3修复：记录交易反馈（实盘成交，收益待离场时回填）
+                self.record_trade_feedback({
+                    "direction": direction,
+                    "result": 0.0,  # 开仓时收益未知，离场时由 run_exit_check 回填
+                    "expected_direction": self._current_context["expected_direction"],
+                    "symbol": symbol,
+                    "entry_price": trade_order.get("entry_price", 0),
+                    "scenario_id": self._current_context["scenario_id"],
+                    "pattern": self._current_context["pattern"],
+                })
             elif exec_result.get("dry_run"):
                 result["steps"].append({"step": "execution", "status": "dry_run", "details": exec_result})
                 result["final_result"] = "DRY_RUN"
+                # 模拟模式也记录反馈（用于压力测试和进化验证）
+                self.record_trade_feedback({
+                    "direction": direction,
+                    "result": 0.0,
+                    "expected_direction": self._current_context["expected_direction"],
+                    "symbol": symbol,
+                    "entry_price": trade_order.get("entry_price", 0),
+                    "scenario_id": self._current_context["scenario_id"],
+                    "pattern": self._current_context["pattern"],
+                })
+                self._try_trigger_evolution()
             else:
                 result["steps"].append({"step": "execution", "status": "failed", "error": exec_result.get("error")})
                 result["final_result"] = "EXECUTION_FAILED"
@@ -580,7 +743,44 @@ class AutoTrader:
             })
             exit_result["execution"] = exec_result
 
+            # 断点3修复：离场时回填实际收益率到反馈收集器
+            exit_price = exit_result.get("exit_price", entry_price)
+            if entry_price > 0:
+                if direction == "LONG":
+                    ret = (exit_price - entry_price) / entry_price
+                else:
+                    ret = (entry_price - exit_price) / entry_price
+                ret -= 0.0008  # 扣手续费
+            else:
+                ret = 0.0
+            self.record_trade_feedback({
+                "direction": direction,
+                "result": ret,
+                "expected_direction": self._current_context["expected_direction"],
+                "symbol": symbol,
+                "entry_price": entry_price,
+                "exit_price": exit_price,
+                "scenario_id": self._current_context["scenario_id"],
+                "pattern": self._current_context["pattern"],
+            })
+            self._try_trigger_evolution()
+
         return exit_result
+
+    def _try_trigger_evolution(self):
+        """检查反馈并尝试触发进化"""
+        try:
+            from dreamos.evolution.engine import EvolutionEngine
+
+            engine = EvolutionEngine()
+            collector = engine.get_feedback_collector()
+            updates = engine._check_orchestration_optimization()
+            if updates:
+                logger.info(f"进化引擎触发优化: {len(updates)} 个场景更新")
+                for update in updates:
+                    logger.info(f"  {update['scenario_id']}: {update['old_pattern']} → {update['new_pattern']}")
+        except Exception as e:
+            logger.warning(f"触发进化引擎失败: {e}")
 
     def get_account_status(self) -> Dict[str, Any]:
         """获取账户状态"""

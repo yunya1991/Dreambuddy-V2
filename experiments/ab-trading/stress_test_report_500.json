@@ -1,13 +1,13 @@
 {
-  "test_id": "stress_test_20260701_145020",
+  "test_id": "stress_test_20260709_203735",
   "test_name": "Dreambuddy OS 500轮多场景压力测试",
-  "start_time": "2026-07-01T14:50:20.770094",
-  "end_time": "2026-07-01T14:50:20.774801",
+  "start_time": "2026-07-09T20:37:35.845460",
+  "end_time": "2026-07-09T20:37:35.933583",
   "total_rounds": 488,
-  "total_time_ms": "4.69",
-  "total_time_seconds": "0.00",
-  "overall_tps": "103989.25",
-  "overall_success_rate": "99.18%",
+  "total_time_ms": "88.11",
+  "total_time_seconds": "0.09",
+  "overall_tps": "5538.40",
+  "overall_success_rate": "99.39%",
   "scenarios": [
     {
       "scenario_id": "S01",
@@ -16,16 +16,16 @@
       "success_rounds": 50,
       "failed_rounds": 0,
       "success_rate": "100.00%",
-      "total_time_ms": "0.21",
+      "total_time_ms": "0.24",
       "avg_latency_ms": "0.00",
       "p50_ms": "0.00",
-      "p95_ms": "0.01",
-      "p99_ms": "0.03",
-      "tps": "233796.21",
+      "p95_ms": "0.02",
+      "p99_ms": "0.06",
+      "tps": "212692.90",
       "errors": [],
       "details": {
         "test_queries_count": 10,
-        "average_objective_extraction_ms": 0.004277229309082031
+        "average_objective_extraction_ms": 0.0047016143798828125
       }
     },
     {
@@ -35,21 +35,21 @@
       "success_rounds": 50,
       "failed_rounds": 0,
       "success_rate": "100.00%",
-      "total_time_ms": "0.15",
+      "total_time_ms": "0.19",
       "avg_latency_ms": "0.00",
       "p50_ms": "0.00",
-      "p95_ms": "0.00",
-      "p99_ms": "0.01",
-      "tps": "330781.07",
+      "p95_ms": "0.02",
+      "p99_ms": "0.02",
+      "tps": "263130.74",
       "errors": [],
       "details": {
         "intent_distribution": {
-          "deep_analysis": 9,
-          "market_query": 8,
-          "risk_alert": 10,
-          "strategy_verify": 7,
-          "scenario_sim": 6,
-          "execute_trade": 10
+          "execute_trade": 11,
+          "market_query": 5,
+          "strategy_verify": 6,
+          "risk_alert": 8,
+          "scenario_sim": 11,
+          "deep_analysis": 9
         }
       }
     },
@@ -60,18 +60,29 @@
       "success_rounds": 50,
       "failed_rounds": 0,
       "success_rate": "100.00%",
-      "total_time_ms": "0.10",
+      "total_time_ms": "0.12",
       "avg_latency_ms": "0.00",
       "p50_ms": "0.00",
       "p95_ms": "0.00",
-      "p99_ms": "0.00",
-      "tps": "520385.11",
+      "p99_ms": "0.03",
+      "tps": "434192.96",
       "errors": [],
       "details": {
-        "available_nodes_count": 0,
+        "available_nodes_count": 11,
         "registry_stats": {
-          "total_nodes": 0,
-          "nodes": []
+          "total": 11,
+          "by_chain": {
+            "C": 1,
+            "A": 6,
+            "F": 3,
+            "G": 1
+          },
+          "by_type": {
+            "local_node": 4,
+            "skill_node": 7
+          },
+          "by_module_count": 11,
+          "total_calls": 0
         }
       }
     },
@@ -82,12 +93,12 @@
       "success_rounds": 50,
       "failed_rounds": 0,
       "success_rate": "100.00%",
-      "total_time_ms": "0.31",
+      "total_time_ms": "0.29",
       "avg_latency_ms": "0.01",
       "p50_ms": "0.00",
-      "p95_ms": "0.01",
-      "p99_ms": "0.06",
-      "tps": "160210.24",
+      "p95_ms": "0.02",
+      "p99_ms": "0.03",
+      "tps": "173749.13",
       "errors": [],
       "details": {
         "phase2_trigger_count": 45
@@ -104,14 +115,15 @@
       "avg_latency_ms": "0.00",
       "p50_ms": "0.00",
       "p95_ms": "0.00",
-      "p99_ms": "0.00",
-      "tps": "710898.98",
+      "p99_ms": "0.02",
+      "tps": "768187.55",
       "errors": [],
       "details": {
         "decision_distribution": {
-          "REDO": 31,
           "CONTINUE": 13,
+          "REDO": 30,
           "INSERT_BEFORE": 5,
+          "JUMP_TO": 1,
           "EARLY_TERMINATE": 1
         },
         "expected_distribution": {
@@ -130,12 +142,12 @@
       "success_rounds": 70,
       "failed_rounds": 0,
       "success_rate": "100.00%",
-      "total_time_ms": "0.64",
-      "avg_latency_ms": "0.01",
-      "p50_ms": "0.01",
-      "p95_ms": "0.01",
-      "p99_ms": "0.02",
-      "tps": "108781.50",
+      "total_time_ms": "73.31",
+      "avg_latency_ms": "1.05",
+      "p50_ms": "0.29",
+      "p95_ms": "0.52",
+      "p99_ms": "52.48",
+      "tps": "954.80",
       "errors": [],
       "details": {
         "tested_nodes": [
@@ -155,12 +167,12 @@
       "success_rounds": 40,
       "failed_rounds": 0,
       "success_rate": "100.00%",
-      "total_time_ms": "1.07",
-      "avg_latency_ms": "0.03",
-      "p50_ms": "0.03",
-      "p95_ms": "0.04",
-      "p99_ms": "0.05",
-      "tps": "37307.57",
+      "total_time_ms": "0.42",
+      "avg_latency_ms": "0.01",
+      "p50_ms": "0.01",
+      "p95_ms": "0.02",
+      "p99_ms": "0.02",
+      "tps": "95705.74",
       "errors": [],
       "details": {
         "compression_strategies_tested": [
@@ -170,10 +182,10 @@
           "SEMANTIC_AWARE"
         ],
         "avg_compression_by_strategy": {
-          "CRITICAL_ONLY": "avg_ratio=0.53, samples=13",
-          "VALUE_PRIORITY": "avg_ratio=0.63, samples=9",
-          "SEMANTIC_AWARE": "avg_ratio=0.42, samples=10",
-          "PATH_PRESERVE": "avg_ratio=0.47, samples=8"
+          "VALUE_PRIORITY": "avg_ratio=0.55, samples=11",
+          "PATH_PRESERVE": "avg_ratio=0.56, samples=7",
+          "SEMANTIC_AWARE": "avg_ratio=0.50, samples=8",
+          "CRITICAL_ONLY": "avg_ratio=0.49, samples=14"
         }
       }
     },
@@ -184,18 +196,18 @@
       "success_rounds": 40,
       "failed_rounds": 0,
       "success_rate": "100.00%",
-      "total_time_ms": "0.21",
-      "avg_latency_ms": "0.01",
-      "p50_ms": "0.01",
-      "p95_ms": "0.01",
+      "total_time_ms": "0.11",
+      "avg_latency_ms": "0.00",
+      "p50_ms": "0.00",
+      "p95_ms": "0.00",
       "p99_ms": "0.01",
-      "tps": "193508.84",
+      "tps": "372000.35",
       "errors": [],
       "details": {
-        "lessons_generated": 19,
+        "lessons_generated": 26,
         "lesson_types": {
           "S_成功规律": 12,
-          "F_失败规律": 7
+          "F_失败规律": 14
         }
       }
     },
@@ -206,46 +218,57 @@
       "success_rounds": 48,
       "failed_rounds": 0,
       "success_rate": "100.00%",
-      "total_time_ms": "0.54",
-      "avg_latency_ms": "0.01",
-      "p50_ms": "0.01",
-      "p95_ms": "0.02",
-      "p99_ms": "0.04",
-      "tps": "88223.75",
+      "total_time_ms": "69.67",
+      "avg_latency_ms": "1.45",
+      "p50_ms": "1.43",
+      "p95_ms": "2.14",
+      "p99_ms": "2.48",
+      "tps": "688.92",
       "errors": [],
       "details": {
         "threads": 6,
         "rounds_per_thread": 8,
-        "wall_clock_time_ms": "1.41",
-        "effective_tps": "34128.94"
+        "wall_clock_time_ms": "12.79",
+        "effective_tps": "3752.87"
       }
     },
     {
       "scenario_id": "E02",
       "scenario_name": "错误注入与降级测试",
       "total_rounds": 40,
-      "success_rounds": 36,
-      "failed_rounds": 4,
-      "success_rate": "90.00%",
-      "total_time_ms": "0.02",
+      "success_rounds": 37,
+      "failed_rounds": 3,
+      "success_rate": "92.50%",
+      "total_time_ms": "0.00",
       "avg_latency_ms": "0.00",
       "p50_ms": "0.00",
       "p95_ms": "0.00",
       "p99_ms": "0.00",
-      "tps": "1823610.43",
+      "tps": "8388608.00",
       "errors": [],
       "details": {
         "error_handling_stats": {
-          "injected_errors": 16,
-          "retry_success": 7,
-          "fallback_success": 5,
-          "final_failure": 4
+          "injected_errors": 11,
+          "retry_success": 5,
+          "fallback_success": 3,
+          "final_failure": 3
         }
       }
     }
   ],
   "system_stats": {
-    "total_nodes": 0,
-    "nodes": []
+    "total": 11,
+    "by_chain": {
+      "C": 1,
+      "A": 6,
+      "F": 3,
+      "G": 1
+    },
+    "by_type": {
+      "local_node": 4,
+      "skill_node": 7
+    },
+    "by_module_count": 11,
+    "total_calls": 0
   }
 }

@@ -50,7 +50,7 @@ CONFIDENCE_GATE = 0.55
 MAX_LEVERAGE    = 5
 DEFAULT_LEVERAGE = 3
 # Agent B 用合约，可交易全部标的池（与 A 相同，但决策框架不同）
-UNIVERSE_B = ["BTC", "ETH", "HYPE", "UNI", "LIT", "SOL", "XRP", "ZEC", "NEAR", "WLD", "ADA", "SUI", "ETHFI", "ENA", "JUP", "XLM", "GRASS", "EIGEN", "ZRO", "IMX"]
+UNIVERSE_B = ["BTC", "ETH", "HYPE", "UNI", "SOL", "ZEC", "LIT", "ARB", "XRP", "WLD", "NEAR", "SUI", "LDO", "ADA", "ZRO", "ENA", "ETHFI", "JUP", "JTO", "SYRUP"]
 
 MEMORY_PATH = Path(__file__).parent.parent / "data" / "agent_b_memory.json"
 GRAPH_LOG   = Path(__file__).parent.parent / "data" / "agent_b_graph.json"

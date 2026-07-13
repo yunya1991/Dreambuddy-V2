@@ -1169,6 +1169,25 @@ def _get_qmm_summary() -> Dict[str, Any]:
                     snapshot_detail = json.loads(sp.read_text(encoding="utf-8"))
                 except Exception:
                     pass
+        # Fallback: 如果 output_file 路径不存在（如迁移后路径变化），
+        # 从 qmm_dir 中找最新的快照文件
+        if not snapshot_detail:
+            try:
+                import glob
+                snap_files = sorted(
+                    glob.glob(str(qmm_dir() / "qmm_snapshot_*.json")),
+                    reverse=True,
+                )
+                for sf in snap_files:
+                    try:
+                        snap_data = json.loads(Path(sf).read_text(encoding="utf-8"))
+                        if snap_data.get("version") or snap_data.get("qmm_version"):
+                            snapshot_detail = snap_data
+                            break
+                    except Exception:
+                        continue
+            except Exception:
+                pass
         return {
             "available": True,
             "signals_index": data,
