@@ -200,6 +200,90 @@ def calc_indicator_dynamics(df, indicator_name: str) -> dict:
                 bear_change = bear_power.iloc[-1] - bear_power.iloc[-3]
                 result["acceleration"] = min(100, abs(bull_change - bear_change) / power_range * 100)
 
+        # ============================================================
+        # 反方指标（Phase 2：平衡确认偏误）
+        # ============================================================
+
+        elif indicator_name == "Bollinger_Bands":
+            # 布林带均值回归：价格触及下轨=超卖(BULL)，触及上轨=超买(BEAR)
+            # 与趋势指标相反：趋势BULL时布林带可能发出BEAR（超买）信号
+            upper, middle, lower = ta.BBANDS(close, timeperiod=20, nbdevup=2, nbdevdn=2)
+            price = close.iloc[-1]
+            upper_val = upper.iloc[-1]
+            lower_val = lower.iloc[-1]
+            middle_val = middle.iloc[-1]
+            band_width = upper_val - lower_val
+
+            if band_width > 0:
+                position_ratio = (price - lower_val) / band_width  # 0=下轨, 1=上轨
+                if position_ratio < 0.2:
+                    result["direction"] = "BULL"  # 超卖，均值回归看涨
+                elif position_ratio > 0.8:
+                    result["direction"] = "BEAR"  # 超买，均值回归看跌
+                else:
+                    result["direction"] = "NEUTRAL"
+                result["speed"] = min(100, abs(position_ratio - 0.5) * 200)
+                if len(close) >= 5:
+                    prev_ratio = (close.iloc[-5] - lower.iloc[-5]) / (upper.iloc[-5] - lower.iloc[-5] + 1e-9)
+                    result["acceleration"] = min(100, abs(position_ratio - prev_ratio) * 100)
+
+        elif indicator_name == "RSI_Divergence":
+            # 量价背离：价格创新高但RSI没有创新高 → 顶背离(BEAR)
+            #           价格创新低但RSI没有创新低 → 底背离(BULL)
+            rsi = ta.RSI(close, timeperiod=14)
+            lookback = 20
+            if len(close) > lookback and not rsi.isna().iloc[-1]:
+                price_recent = close.iloc[-lookback:]
+                rsi_recent = rsi.iloc[-lookback:]
+
+                price_high = price_recent.max()
+                price_low = price_recent.min()
+                price_current = close.iloc[-1]
+
+                rsi_at_price_high = rsi_recent.loc[price_recent.idxmax()]
+                rsi_at_price_low = rsi_recent.loc[price_recent.idxmin()]
+                rsi_current = rsi.iloc[-1]
+
+                # 顶背离：价格接近高点但RSI低于前高
+                if price_current > price_recent.quantile(0.75):
+                    if rsi_current < rsi_at_price_high - 5:
+                        result["direction"] = "BEAR"
+                        result["speed"] = min(100, (rsi_at_price_high - rsi_current) * 5)
+                # 底背离：价格接近低点但RSI高于前低
+                elif price_current < price_recent.quantile(0.25):
+                    if rsi_current > rsi_at_price_low + 5:
+                        result["direction"] = "BULL"
+                        result["speed"] = min(100, (rsi_current - rsi_at_price_low) * 5)
+
+                if len(rsi) >= 10:
+                    rsi_change = abs(rsi.iloc[-1] - rsi.iloc[-5])
+                    result["acceleration"] = min(100, rsi_change * 3)
+
+        elif indicator_name == "ATR_Volatility":
+            # 波动率突变：ATR飙升 = 市场不确定性增加 → NEUTRAL或反转预警
+            # 高波动率环境降低趋势信号可靠性（反方作用）
+            atr = ta.ATR(df["high"], df["low"], close, timeperiod=14)
+            if len(atr) >= 30 and not atr.isna().iloc[-1]:
+                atr_current = atr.iloc[-1]
+                atr_mean = atr.iloc[-30:].mean()
+                atr_ratio = atr_current / (atr_mean + 1e-9)
+
+                if atr_ratio > 2.0:
+                    # 波动率飙升>2倍均值 → 极端行情，趋势可能失效
+                    result["direction"] = "NEUTRAL"  # 中和趋势信号
+                    result["speed"] = min(100, (atr_ratio - 1.0) * 50)
+                elif atr_ratio > 1.5:
+                    # 波动率上升 → 趋势可能衰竭
+                    result["direction"] = "BEAR" if close.iloc[-1] < close.iloc[-5] else "BULL"
+                    result["speed"] = min(100, (atr_ratio - 1.0) * 40)
+                else:
+                    result["direction"] = "NEUTRAL"
+                    result["speed"] = min(100, atr_ratio * 30)
+
+                if len(atr) >= 5:
+                    atr_change = atr.iloc[-1] - atr.iloc[-5]
+                    result["acceleration"] = min(100, abs(atr_change / (atr_mean + 1e-9)) * 50)
+
         return result
 
     except Exception:

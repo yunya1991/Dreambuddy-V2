@@ -8,6 +8,36 @@ try:
 except ImportError:
     from skill_engine import register_skill, SkillEngine
 
+try:
+    from . import dream_insights_integration
+    _HAS_DREAM_INTEGRATION = True
+except ImportError:
+    try:
+        import dream_insights_integration
+        _HAS_DREAM_INTEGRATION = True
+    except ImportError:
+        _HAS_DREAM_INTEGRATION = False
+
+try:
+    from . import archive_center
+    _HAS_ARCHIVE = True
+except ImportError:
+    try:
+        import archive_center
+        _HAS_ARCHIVE = True
+    except ImportError:
+        _HAS_ARCHIVE = False
+
+try:
+    from . import llm_bridge
+    _HAS_LLM = True
+except ImportError:
+    try:
+        import llm_bridge
+        _HAS_LLM = True
+    except ImportError:
+        _HAS_LLM = False
+
 
 def _estimate_rsi_from_change(change_pct: float, period: int = 14) -> float:
     if change_pct == 0:
@@ -614,22 +644,67 @@ def a1_research_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
     if not risk_warnings:
         risk_warnings.append("关注宏观事件对市场的冲击")
 
-    dream_insights = {
-        "incorporated": False,
-        "suppressed_signals": [],
-        "nightmare_scenarios": [],
-        "counter_intuitive": [],
-    }
+    if _HAS_DREAM_INTEGRATION:
+        try:
+            dream_insights = dream_insights_integration.get_dream_insights_for_a1(max_age_days=7)
+        except Exception:
+            dream_insights = {
+                "incorporated": False,
+                "suppressed_signals": [],
+                "nightmare_scenarios": [],
+                "counter_intuitive": [],
+                "note": "做梦产物加载失败",
+            }
+    else:
+        dream_insights = {
+            "incorporated": False,
+            "suppressed_signals": [],
+            "nightmare_scenarios": [],
+            "counter_intuitive": [],
+        }
 
-    archive_findings = []
-    for i, outcome in enumerate(triangle_compliance["historical_research"]["outcomes"]):
-        score = triangle_compliance["historical_research"]["similarity_scores"][i] if i < len(triangle_compliance["historical_research"]["similarity_scores"]) else 0.6
-        archive_findings.append({
-            "case_id": f"HIST_{i+1:03d}",
-            "similarity_score": score,
-            "outcome": outcome,
-            "lessons": ["历史不会简单重复，但会押韵", "注意当前与历史的宏观环境差异"],
-        })
+    if _HAS_ARCHIVE:
+        try:
+            archive_findings = archive_center.get_archive_findings_for_a1(market_state, max_cases=3)
+        except Exception:
+            archive_findings = [{
+                "case_id": "FALLBACK_001",
+                "similarity_score": 0.5,
+                "outcome": "档案加载失败，使用默认参考",
+                "lessons": ["历史不会简单重复，但会押韵", "严格执行止损纪律"],
+            }]
+    else:
+        archive_findings = []
+        for i, outcome in enumerate(triangle_compliance["historical_research"]["outcomes"]):
+            score = triangle_compliance["historical_research"]["similarity_scores"][i] if i < len(triangle_compliance["historical_research"]["similarity_scores"]) else 0.6
+            archive_findings.append({
+                "case_id": f"HIST_{i+1:03d}",
+                "similarity_score": score,
+                "outcome": outcome,
+                "lessons": ["历史不会简单重复，但会押韵", "注意当前与历史的宏观环境差异"],
+            })
+
+    llm_enhancement = None
+    if _HAS_LLM and inputs.get("use_llm", False):
+        try:
+            positions_list = inputs.get("positions", [])
+            if not isinstance(positions_list, list):
+                positions_list = []
+            llm_result = llm_bridge.enhance_a1_research(
+                market_data=inputs.get("market", {}),
+                positions=positions_list,
+                base_report=research_report if 'research_report' in dir() else {},
+            )
+            if llm_result.success and llm_result.structured:
+                llm_enhancement = {
+                    "used": True,
+                    "fallback": llm_result.fallback_used,
+                    "model": llm_result.model,
+                    "latency_ms": llm_result.latency_ms,
+                    "enhanced_data": llm_result.structured,
+                }
+        except Exception:
+            llm_enhancement = {"used": False, "error": "LLM 调用失败"}
 
     now_ts = datetime.now(timezone.utc).isoformat()
 
@@ -647,7 +722,12 @@ def a1_research_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
         "signal_sufficiency": signal_sufficiency,
         "action_pressure": action_pressure,
         "contradiction_list": contradiction_list,
+        "llm_enhancement": llm_enhancement,
     }
+
+    dream_ts = ""
+    if _HAS_DREAM_INTEGRATION and isinstance(dream_insights, dict):
+        dream_ts = dream_insights.get("latest_date", "")
 
     return {
         "research_report": research_report,
@@ -655,12 +735,15 @@ def a1_research_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
             "market_data_ts": now_ts,
             "macro_data_ts": now_ts,
             "onchain_data_ts": now_ts,
-            "dream_insights_ts": "",
+            "dream_insights_ts": dream_ts,
         },
         "meta": {
             "research_id": f"A1-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
-            "researcher_version": "1.7.0",
+            "researcher_version": "2.0.0-enhanced",
             "triangle_compliance": True,
             "timestamp": now_ts,
+            "dream_integrated": _HAS_DREAM_INTEGRATION and dream_insights.get("incorporated", False),
+            "archive_integrated": _HAS_ARCHIVE,
+            "llm_enhanced": llm_enhancement is not None and llm_enhancement.get("used", False),
         },
     }

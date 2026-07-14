@@ -1,9 +1,20 @@
 from typing import Dict, Any
+from datetime import datetime, timezone
 
 try:
     from .skill_engine import register_skill
 except ImportError:
     from skill_engine import register_skill
+
+try:
+    from . import llm_bridge
+    _HAS_LLM = True
+except ImportError:
+    try:
+        import llm_bridge
+        _HAS_LLM = True
+    except ImportError:
+        _HAS_LLM = False
 
 
 @register_skill(
@@ -17,12 +28,18 @@ def a3_strategy_designer_handler(inputs: Dict[str, Any], engine) -> Dict[str, An
     positions = inputs.get("positions", {})
     market = inputs.get("market", {})
 
-    least_resistance_path = a2_result.get("least_resistance_path", "NEUTRAL")
-    confidence = a2_result.get("confidence", 0.5)
-    regime = a2_result.get("market_regime_classification", {}).get("regime", "RANGE_BOUND")
-    trend_direction = a2_result.get("trend_analysis", {}).get("trend_direction", "NEUTRAL")
-    main_contradiction = a2_result.get("main_contradiction", {}).get("primary", "")
-    a0_analysis = a2_result.get("a0_contradiction_analysis", {})
+    fpa = a2_result.get("first_principles_analysis", {}) if isinstance(a2_result, dict) else {}
+    synthesis = fpa.get("synthesis", {}) if isinstance(fpa, dict) else {}
+    brain = fpa.get("brain_analysis", {}) if isinstance(fpa, dict) else {}
+    trend = fpa.get("trend_analysis", {}) if isinstance(fpa, dict) else {}
+    regime_class = a2_result.get("market_regime_classification", {}) if isinstance(a2_result, dict) else {}
+
+    least_resistance_path = synthesis.get("least_resistance_path", "NEUTRAL")
+    confidence = synthesis.get("path_confidence", 0.5)
+    regime = regime_class.get("regime", "RANGE_BOUND")
+    trend_direction = trend.get("trend_direction", "NEUTRAL")
+    main_contradiction = brain.get("main_contradiction", {}).get("primary", "")
+    a0_analysis = brain.get("a0_contradiction_analysis", {})
 
     directive_bias = _determine_directive_bias(least_resistance_path, confidence, regime, a0_analysis)
 
@@ -73,9 +90,47 @@ def a3_strategy_designer_handler(inputs: Dict[str, Any], engine) -> Dict[str, An
         "feature_distillation": feature_distillation,
     }
 
+    llm_enhancement = None
+    if _HAS_LLM and inputs.get("use_llm", False):
+        try:
+            a1_report = a1_result.get("research_report", {}) if isinstance(a1_result, dict) else {}
+            a2_fpa = a2_result.get("first_principles_analysis", {}) if isinstance(a2_result, dict) else {}
+            llm_result = llm_bridge.enhance_a3_strategy(
+                a1_report=a1_report,
+                a2_analysis=a2_fpa,
+                base_directive=strategy_directive,
+            )
+            if llm_result.success and llm_result.structured:
+                llm_enhancement = {
+                    "used": True,
+                    "fallback": llm_result.fallback_used,
+                    "model": llm_result.model,
+                    "latency_ms": llm_result.latency_ms,
+                    "enhanced_data": llm_result.structured,
+                }
+                llm_bias = llm_result.structured.get("directive_bias")
+                if llm_bias in ("LONG", "SHORT", "PROBE", "WAIT", "REDUCE", "HOLD", "HEDGE"):
+                    strategy_directive["directive_bias"] = llm_bias
+                llm_pos = llm_result.structured.get("position_modifier")
+                if isinstance(llm_pos, (int, float)) and 0 < llm_pos <= 2:
+                    strategy_directive["position_modifier"] = round(float(llm_pos), 2)
+                llm_lev = llm_result.structured.get("leverage_cap")
+                if isinstance(llm_lev, (int, float)) and 1 <= llm_lev <= 10:
+                    strategy_directive["leverage_cap"] = int(llm_lev)
+        except Exception:
+            llm_enhancement = {"used": False, "error": "LLM 调用失败"}
+
+    now_ts = datetime.now(timezone.utc).isoformat()
+
     return {
         "strategy_directive": strategy_directive,
         "evidence_chain": evidence_chain,
+        "llm_enhancement": llm_enhancement,
+        "meta": {
+            "version": "2.7.0-enhanced",
+            "timestamp": now_ts,
+            "llm_enhanced": llm_enhancement is not None and llm_enhancement.get("used", False),
+        },
     }
 
 
@@ -310,20 +365,29 @@ def _build_contradiction_handling(a0_analysis: Dict, main_contradiction: str, di
 
 
 def _distill_features(a1_result: Dict, a2_result: Dict, market: Dict) -> Dict:
-    trend_direction = a2_result.get("trend_analysis", {}).get("trend_direction", "NEUTRAL")
-    momentum = a2_result.get("trend_analysis", {}).get("momentum", "STABLE")
-    volatility = a2_result.get("volatility_analysis", {}).get("level", "NORMAL")
-    regime = a2_result.get("market_regime_classification", {}).get("regime", "RANGE_BOUND")
-    sentiment = a1_result.get("market_state", {}).get("sentiment", "NEUTRAL")
-    capital_flow = a1_result.get("market_state", {}).get("capital_flow", "NEUTRAL")
+    fpa = a2_result.get("first_principles_analysis", {}) if isinstance(a2_result, dict) else {}
+    trend = fpa.get("trend_analysis", {}) if isinstance(fpa, dict) else {}
+    technical = fpa.get("dual_dimension_analysis", {}).get("technical", {}) if isinstance(fpa.get("dual_dimension_analysis", {}), dict) else {}
+    regime_class = a2_result.get("market_regime_classification", {}) if isinstance(a2_result, dict) else {}
 
-    direction = "BULL" if trend_direction == "BULL" else "BEAR" if trend_direction == "BEAR" else "NEUTRAL"
+    trend_direction = trend.get("trend_direction", "NEUTRAL")
+    momentum = trend.get("trend_momentum", "stable")
+    vol_state = technical.get("volatility", {}).get("atr_state", "NORMAL") if isinstance(technical.get("volatility", {}), dict) else "NORMAL"
+    regime = regime_class.get("regime", "RANGE_BOUND")
+
+    a1_report = a1_result.get("research_report", {}) if isinstance(a1_result, dict) else {}
+    a1_market_state = a1_report.get("market_state", {}) if isinstance(a1_report, dict) else {}
+    sentiment = a1_report.get("macro_snapshot", {}).get("sentiment", "neutral") if isinstance(a1_report.get("macro_snapshot", {}), dict) else "neutral"
+    onchain = a1_report.get("onchain_signals", {}) if isinstance(a1_report.get("onchain_signals", {}), dict) else {}
+    capital_flow = onchain.get("etf_flow", onchain.get("whale_activity", "neutral"))
+
+    direction = "BULL" if trend_direction in ("BULL", "NEUTRAL_UP") else "BEAR" if trend_direction in ("BEAR", "NEUTRAL_DOWN") else "NEUTRAL"
 
     return {
         "direction": direction,
         "momentum": momentum,
         "resistance": _infer_resistance(regime),
-        "volatility": volatility,
+        "volatility": vol_state,
         "sentiment": sentiment,
         "capital": capital_flow,
         "regime": regime,

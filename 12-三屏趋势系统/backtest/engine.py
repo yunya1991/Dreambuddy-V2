@@ -1,0 +1,242 @@
+"""三屏趋势系统 — 回测框架核心引擎
+
+向量化回测引擎，参考 VectorBT 设计理念：
+- 基于 pandas DataFrame，高效向量化计算
+- 支持多周期、多资产
+- 内置交易成本、滑点模拟
+- 支持仓位管理
+
+设计原则：
+- 数据输入：OHLCV DataFrame
+- 信号输入：持仓比例序列（0~1，正=多，负=空）
+- 输出：净值曲线、交易记录、绩效指标
+"""
+
+from typing import Dict, Optional, Tuple, List
+import pandas as pd
+import numpy as np
+
+
+class BacktestEngine:
+    """向量化回测引擎
+
+    用法:
+        engine = BacktestEngine(
+            initial_capital=10000,
+            commission=0.0005,  # 0.05%
+            slippage=0.0005,    # 0.05%
+        )
+        result = engine.run(prices, position_size, symbol="BTC")
+    """
+
+    def __init__(
+        self,
+        initial_capital: float = 10000.0,
+        commission: float = 0.0005,
+        slippage: float = 0.0005,
+        leverage: float = 1.0,
+    ):
+        """
+        参数:
+            initial_capital: 初始资金（USDT）
+            commission: 手续费率（单边）
+            slippage: 滑点率（单边）
+            leverage: 杠杆倍数（默认1倍现货）
+        """
+        self.initial_capital = initial_capital
+        self.commission = commission
+        self.slippage = slippage
+        self.leverage = leverage
+
+    def run(
+        self,
+        prices: pd.Series,
+        position_sizes: pd.Series,
+        symbol: str = "BTC",
+    ) -> Dict:
+        """
+        运行回测
+
+        参数:
+            prices: 收盘价序列（Index=时间，value=价格）
+            position_sizes: 目标仓位比例序列（-1~1，正=多，负=空）
+                           与 prices 对齐
+            symbol: 交易对名称
+
+        返回:
+            {
+                "equity_curve": pd.Series,  # 净值曲线
+                "returns": pd.Series,       # 日收益率
+                "trades": pd.DataFrame,     # 交易记录
+                "metrics": dict,            # 绩效指标
+                "position": pd.Series,      # 实际仓位
+            }
+        """
+        prices = prices.copy()
+        position_sizes = position_sizes.reindex(prices.index).ffill().fillna(0)
+
+        actual_position, trade_costs = self._calculate_position_and_costs(
+            prices, position_sizes
+        )
+
+        returns = self._calculate_returns(prices, actual_position)
+
+        equity = self._calculate_equity(returns, trade_costs)
+
+        trades = self._extract_trades(prices, actual_position, trade_costs)
+
+        from .metrics import calculate_performance_metrics
+        metrics = calculate_performance_metrics(equity, returns, trades)
+
+        return {
+            "symbol": symbol,
+            "initial_capital": self.initial_capital,
+            "final_equity": equity.iloc[-1],
+            "total_return": (equity.iloc[-1] / self.initial_capital - 1) * 100,
+            "equity_curve": equity,
+            "returns": returns,
+            "trades": trades,
+            "position": actual_position,
+            "metrics": metrics,
+            "prices": prices,
+        }
+
+    def _calculate_position_and_costs(
+        self, prices: pd.Series, target_sizes: pd.Series
+    ) -> Tuple[pd.Series, pd.Series]:
+        """
+        计算实际仓位和交易成本
+
+        考虑：
+        - 仓位变动 = 目标仓位 - 上一期仓位
+        - 每次调仓产生手续费 + 滑点
+        - 成本 = |仓位变动| × (commission + slippage)
+        """
+        actual_position = target_sizes.copy()
+
+        position_changes = actual_position.diff().abs()
+        position_changes.iloc[0] = abs(actual_position.iloc[0])
+
+        total_cost_rate = self.commission + self.slippage
+        trade_costs = position_changes * total_cost_rate
+
+        return actual_position, trade_costs
+
+    def _calculate_returns(
+        self, prices: pd.Series, position: pd.Series
+    ) -> pd.Series:
+        """
+        计算策略收益率
+
+        当期收益 = 上一期仓位 × 当期价格涨跌幅 × 杠杆
+        """
+        price_returns = prices.pct_change().fillna(0)
+
+        prev_position = position.shift(1).fillna(0)
+
+        strategy_returns = prev_position * price_returns * self.leverage
+
+        return strategy_returns
+
+    def _calculate_equity(
+        self, returns: pd.Series, trade_costs: pd.Series
+    ) -> pd.Series:
+        """
+        计算净值曲线
+
+        净值 = 初始资金 × 累乘(1 + 收益率 - 交易成本率)
+        """
+        net_returns = returns - trade_costs
+
+        cumulative = (1 + net_returns).cumprod()
+        equity = self.initial_capital * cumulative
+
+        equity.iloc[0] = self.initial_capital
+
+        return equity
+
+    def _extract_trades(
+        self,
+        prices: pd.Series,
+        position: pd.Series,
+        trade_costs: pd.Series,
+    ) -> pd.DataFrame:
+        """
+        提取交易记录
+
+        返回每笔完整开仓-平仓交易的记录
+        """
+        trades = []
+        current_side = 0
+        entry_price = 0
+        entry_time = None
+        entry_size = 0
+
+        for i in range(len(position)):
+            pos = position.iloc[i]
+            price = prices.iloc[i]
+            time = position.index[i]
+
+            if current_side == 0 and pos != 0:
+                current_side = 1 if pos > 0 else -1
+                entry_price = price * (1 + current_side * self.slippage)
+                entry_time = time
+                entry_size = abs(pos)
+            elif current_side != 0 and pos == 0:
+                exit_price = price * (1 - current_side * self.slippage)
+                pnl_pct = current_side * (exit_price / entry_price - 1) * self.leverage
+
+                trades.append({
+                    "entry_time": entry_time,
+                    "exit_time": time,
+                    "side": "long" if current_side > 0 else "short",
+                    "entry_price": round(entry_price, 2),
+                    "exit_price": round(exit_price, 2),
+                    "size": round(entry_size, 4),
+                    "pnl_pct": round(pnl_pct * 100, 2),
+                    "holding_bars": i - position.index.get_loc(entry_time),
+                })
+                current_side = 0
+                entry_price = 0
+                entry_time = None
+            elif current_side != 0 and (pos * current_side) < 0:
+                exit_price = price * (1 - current_side * self.slippage)
+                pnl_pct = current_side * (exit_price / entry_price - 1) * self.leverage
+
+                trades.append({
+                    "entry_time": entry_time,
+                    "exit_time": time,
+                    "side": "long" if current_side > 0 else "short",
+                    "entry_price": round(entry_price, 2),
+                    "exit_price": round(exit_price, 2),
+                    "size": round(entry_size, 4),
+                    "pnl_pct": round(pnl_pct * 100, 2),
+                    "holding_bars": i - position.index.get_loc(entry_time),
+                })
+
+                current_side = 1 if pos > 0 else -1
+                entry_price = price * (1 + current_side * self.slippage)
+                entry_time = time
+                entry_size = abs(pos)
+
+        if current_side != 0:
+            exit_price = prices.iloc[-1]
+            pnl_pct = current_side * (exit_price / entry_price - 1) * self.leverage
+            trades.append({
+                "entry_time": entry_time,
+                "exit_time": position.index[-1],
+                "side": "long" if current_side > 0 else "short",
+                "entry_price": round(entry_price, 2),
+                "exit_price": round(exit_price, 2),
+                "size": round(entry_size, 4),
+                "pnl_pct": round(pnl_pct * 100, 2),
+                "holding_bars": len(position) - position.index.get_loc(entry_time),
+                "open": True,
+            })
+
+        if trades:
+            return pd.DataFrame(trades)
+        return pd.DataFrame(columns=[
+            "entry_time", "exit_time", "side", "entry_price",
+            "exit_price", "size", "pnl_pct", "holding_bars"
+        ])

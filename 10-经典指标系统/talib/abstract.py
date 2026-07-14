@@ -27,6 +27,11 @@ def _ohlcv(v: Any) -> Tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
     return s, s, s, pd.Series(np.zeros(len(s)), index=s.index, dtype=float)
 
 
+def SMA(v: Any, timeperiod: int = 30) -> pd.Series:
+    s = _as_series(v if not isinstance(v, pd.DataFrame) else v.get("close"))
+    return s.rolling(max(1, int(timeperiod)), min_periods=1).mean()
+
+
 def EMA(v: Any, timeperiod: int = 30) -> pd.Series:
     s = _as_series(v if not isinstance(v, pd.DataFrame) else v.get("close"))
     return s.ewm(span=max(1, int(timeperiod)), adjust=False).mean()
@@ -154,6 +159,21 @@ def WILLR(v: Any, timeperiod: int = 14) -> pd.Series:
     ll = low.rolling(max(1, int(timeperiod)), min_periods=1).min()
     den = (hh - ll).replace(0, np.nan)
     return (-100 * (hh - close) / den).fillna(0.0)
+
+
+def CCI(*args: Any, timeperiod: int = 14) -> pd.Series:
+    if len(args) >= 3 and isinstance(args[0], pd.Series):
+        high = pd.to_numeric(args[0], errors="coerce")
+        low = pd.to_numeric(args[1], errors="coerce")
+        close = pd.to_numeric(args[2], errors="coerce")
+    else:
+        high, low, close, _ = _ohlcv(args[0] if args else pd.Series(dtype=float))
+    tp = (high + low + close) / 3.0
+    tp_sma = tp.rolling(max(1, int(timeperiod)), min_periods=1).mean()
+    tp_mad = tp.rolling(max(1, int(timeperiod)), min_periods=1).apply(
+        lambda x: np.mean(np.abs(x - np.mean(x))), raw=True
+    )
+    return ((tp - tp_sma) / (0.015 * tp_mad.replace(0, np.nan))).fillna(0.0)
 
 
 def BBANDS(v: Any, timeperiod: int = 5, nbdevup: float = 2.0, nbdevdn: float = 2.0, matype: int = 0):

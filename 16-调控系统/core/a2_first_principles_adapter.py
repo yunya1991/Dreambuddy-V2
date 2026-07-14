@@ -8,6 +8,16 @@ try:
 except ImportError:
     from skill_engine import register_skill, SkillEngine
 
+try:
+    from . import llm_bridge
+    _HAS_LLM = True
+except ImportError:
+    try:
+        import llm_bridge
+        _HAS_LLM = True
+    except ImportError:
+        _HAS_LLM = False
+
 
 def _estimate_rsi_from_change(change_pct: float, period: int = 14) -> float:
     if change_pct == 0:
@@ -1003,16 +1013,44 @@ def a2_first_principles_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any
         "synthesis": synthesis,
     }
 
+    llm_enhancement = None
+    if _HAS_LLM and inputs.get("use_llm", False):
+        try:
+            a1_report = a1_result.get("research_report", {}) if isinstance(a1_result, dict) else {}
+            llm_result = llm_bridge.enhance_a2_analysis(
+                market_data=market,
+                a1_report=a1_report,
+                base_analysis=first_principles_analysis,
+            )
+            if llm_result.success and llm_result.structured:
+                llm_enhancement = {
+                    "used": True,
+                    "fallback": llm_result.fallback_used,
+                    "model": llm_result.model,
+                    "latency_ms": llm_result.latency_ms,
+                    "enhanced_data": llm_result.structured,
+                }
+                llm_path = llm_result.structured.get("least_resistance_path")
+                if llm_path in ("UP", "DOWN", "NEUTRAL"):
+                    synthesis["least_resistance_path"] = llm_path
+                llm_conf = llm_result.structured.get("path_confidence")
+                if isinstance(llm_conf, (int, float)) and 0 <= llm_conf <= 1:
+                    synthesis["path_confidence"] = llm_conf
+        except Exception:
+            llm_enhancement = {"used": False, "error": "LLM 调用失败"}
+
     meta = {
         "analysis_id": analysis_id,
-        "version": "2.6.1",
+        "version": "2.6.1-enhanced",
         "timestamp": now_ts,
         "left_right_brain_integrated": True,
         "ma_trajectory_method": True,
+        "llm_enhanced": llm_enhancement is not None and llm_enhancement.get("used", False),
     }
 
     return {
         "first_principles_analysis": first_principles_analysis,
         "market_regime_classification": regime,
+        "llm_enhancement": llm_enhancement,
         "meta": meta,
     }

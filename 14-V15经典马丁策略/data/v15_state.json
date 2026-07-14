@@ -33,25 +33,6 @@
       "addon2_usd": 1.57,
       "addon3_usd": 3.15
     },
-    "HYPE": {
-      "inst_id": "HYPE-USDT-SWAP",
-      "entry_price": 67.754,
-      "open_price": 67.754,
-      "sz": 5.0,
-      "addons": 0,
-      "confidence": 62,
-      "open_time": "2026-07-11T20:15:04.780158+00:00",
-      "take_profit_pct": 0.0834,
-      "addon_pct": 0.16690000000000002,
-      "stop_loss_price": 48.251,
-      "stop_loss_type": "日EMA200",
-      "vol_mult": 0.7,
-      "per_coin_budget": 22.73,
-      "base_usd": 5.0,
-      "addon1_usd": 4.55,
-      "addon2_usd": 1.14,
-      "addon3_usd": 2.27
-    },
     "BTC": {
       "inst_id": "BTC-USDT-SWAP",
       "entry_price": 63837.7,
@@ -132,6 +113,6 @@
   "total_trades": 10,
   "total_wins": 0,
   "daily_pnl": 0.0,
-  "last_poll": "2026-07-13T13:35:17.708003+00:00",
-  "consecutive_losses": 3
+  "last_poll": "2026-07-14T00:13:06.028034+00:00",
+  "consecutive_losses": 4
 }

@@ -1,5 +1,11 @@
 """
-Phase 2 统一 AI 离场评估主脚本 — 接入真实 A1/A2/A3/A9 SKILL 引擎
+Phase 2+ 统一 AI 离场评估主脚本 — 接入真实 A1/A2/A3/A9 SKILL 引擎
+
+增强功能：
+  - LLM Bridge 集成（可选，use_llm=True 启用）
+  - 做梦产物集成（dream_journal / dream_brainstorm）
+  - 历史档案集成（Archive Center）
+  - 实时数据流（WebSocket，可选，默认REST）
 
 架构：
   查询层 → A1 深度调研 → A2 第一性原理 → A3 战略合成 → A9 离场决策
@@ -7,9 +13,11 @@ Phase 2 统一 AI 离场评估主脚本 — 接入真实 A1/A2/A3/A9 SKILL 引�
 
 用法：
   python 16-调控系统/scripts/phase2_exit_evaluator.py
+  USE_LLM=1 python 16-调控系统/scripts/phase2_exit_evaluator.py
 """
 
 import sys
+import os
 import json
 from pathlib import Path
 from datetime import datetime, timezone
@@ -28,46 +36,33 @@ import a2_first_principles_adapter
 import a3_strategy_adapter
 import a9_exit_decision
 
+USE_LLM = os.environ.get("USE_LLM", "").lower() in ("1", "true", "yes", "on")
+USE_REALTIME = os.environ.get("USE_REALTIME", "").lower() in ("1", "true", "yes", "on")
+
 
 def _fetch_market_data(positions: list) -> dict:
-    btc_price = 67500.0
-    eth_price = 3500.0
-    sol_price = 180.0
+    if USE_REALTIME:
+        try:
+            from realtime_market_stream import get_realtime_snapshot, start_realtime_stream, stop_realtime_stream
+            symbols = []
+            for p in positions:
+                sym = p.get("symbol", "").upper()
+                if sym and sym not in symbols:
+                    symbols.append(sym)
+            if not symbols:
+                symbols = ["BTC", "ETH", "SOL"]
+            start_realtime_stream(symbols)
+            import time
+            time.sleep(2)
+            snapshot = get_realtime_snapshot(symbols)
+            if snapshot:
+                stop_realtime_stream()
+                return snapshot
+        except Exception:
+            pass
 
-    btc_change_24h = 1.2
-    eth_change_24h = -0.5
-    sol_change_24h = 2.8
-
-    btc_change_7d = -3.5
-    eth_change_7d = -2.1
-    sol_change_7d = 5.2
-
-    return {
-        "BTC": {
-            "current_price": btc_price,
-            "change_24h_pct": btc_change_24h,
-            "change_7d_pct": btc_change_7d,
-            "volume_24h": 28000000000,
-            "high_24h": 68200,
-            "low_24h": 66800,
-        },
-        "ETH": {
-            "current_price": eth_price,
-            "change_24h_pct": eth_change_24h,
-            "change_7d_pct": eth_change_7d,
-            "volume_24h": 15000000000,
-            "high_24h": 3580,
-            "low_24h": 3460,
-        },
-        "SOL": {
-            "current_price": sol_price,
-            "change_24h_pct": sol_change_24h,
-            "change_7d_pct": sol_change_7d,
-            "volume_24h": 3500000000,
-            "high_24h": 185,
-            "low_24h": 174,
-        },
-    }
+    from market_data_fetcher import fetch_market_data
+    return fetch_market_data(positions)
 
 
 def run_phase2_evaluation():
@@ -99,15 +94,42 @@ def run_phase2_evaluation():
     a1_result = engine.execute("dream-strategy-research", {
         "market": market,
         "positions": positions,
+        "use_llm": USE_LLM,
     })
     print(f"  → 状态: {a1_result.status}")
     if a1_result.status == "completed":
         rs = a1_result.data.get("research_report", {})
         ms = rs.get("market_state", {})
         tc = ms.get("trend_direction", "UNKNOWN")
-        sig = ms.get("signal_adequacy", {})
+        sig = rs.get("signal_sufficiency", {})
+        rsi = ms.get("rsi_1h", ms.get("rsi_14", 50))
+        atr = ms.get("atr_pct", 0)
         print(f"  → 趋势方向: {tc}")
-        print(f"  → 信号充分性: {sig.get('level', 'unknown')} ({sig.get('net_direction', 0):.1f}/3)")
+        print(f"  → 信号充分性: {sig.get('level', 'unknown')} ({sig.get('net_direction', 'N/A')})")
+        print(f"  → BTC RSI: {rsi:.1f}")
+        print(f"  → 波动率 ATR%: {atr:.2f}%")
+
+        dream = rs.get("dream_insights", {})
+        if isinstance(dream, dict):
+            if dream.get("incorporated"):
+                n_suppressed = len(dream.get("suppressed_signals", []))
+                n_nightmare = len(dream.get("nightmare_scenarios", []))
+                latest = dream.get("latest_date", dream.get("products_info", [{}])[0].get("date", "") if dream.get("products_info") else "")
+                print(f"  → 🌙 做梦产物: 已集成 (被压制信号{n_suppressed}个, 噩梦{n_nightmare}个, 最新{latest})")
+            else:
+                reason = dream.get("note", dream.get("reason", "未找到"))
+                print(f"  → 🌙 做梦产物: 未集成 ({reason})")
+
+        archives = rs.get("archive_findings", [])
+        if isinstance(archives, list) and archives:
+            print(f"  → 📚 历史档案: {len(archives)} 个相似案例")
+            for i, arc in enumerate(archives[:2]):
+                print(f"     [{i+1}] 相似度{arc.get('similarity_score', 0):.0%}: {arc.get('case_id', 'N/A')}")
+
+        llm_enh = rs.get("llm_enhancement")
+        if isinstance(llm_enh, dict) and llm_enh.get("used"):
+            fb = " (规则降级)" if llm_enh.get("fallback") else ""
+            print(f"  → 🤖 LLM增强: 已启用{fb} ({llm_enh.get('model', 'N/A')}, {llm_enh.get('latency_ms', 0):.0f}ms)")
     else:
         print(f"  → 错误: {a1_result.error}")
 
@@ -116,6 +138,7 @@ def run_phase2_evaluation():
         "market": market,
         "a1_result": a1_result.data,
         "positions": positions,
+        "use_llm": USE_LLM,
     })
     print(f"  → 状态: {a2_result.status}")
     if a2_result.status == "completed":
@@ -127,6 +150,11 @@ def run_phase2_evaluation():
         print(f"  → 市场状态: {regime.get('regime', 'N/A')} ({regime.get('confidence', 0):.0f}%)")
         ta = fp.get("trend_analysis", {})
         print(f"  → 趋势阶段: {ta.get('trend_phase', 'N/A')}")
+
+        llm_enh = a2_result.data.get("llm_enhancement")
+        if isinstance(llm_enh, dict) and llm_enh.get("used"):
+            fb = " (规则降级)" if llm_enh.get("fallback") else ""
+            print(f"  → 🤖 LLM增强: 已启用{fb} ({llm_enh.get('model', 'N/A')}, {llm_enh.get('latency_ms', 0):.0f}ms)")
     else:
         print(f"  → 错误: {a2_result.error}")
 
@@ -136,6 +164,7 @@ def run_phase2_evaluation():
         "a2_result": a2_result.data,
         "positions": positions,
         "market": market,
+        "use_llm": USE_LLM,
     })
     print(f"  → 状态: {a3_result.status}")
     if a3_result.status == "completed":
@@ -145,6 +174,11 @@ def run_phase2_evaluation():
         print(f"  → 杠杆上限: {sd.get('leverage_cap', 1)}x")
         ec = sd.get("exit_conditions", [])
         print(f"  → 离场条件: {len(ec)} 条")
+
+        llm_enh = a3_result.data.get("llm_enhancement")
+        if isinstance(llm_enh, dict) and llm_enh.get("used"):
+            fb = " (规则降级)" if llm_enh.get("fallback") else ""
+            print(f"  → 🤖 LLM增强: 已启用{fb} ({llm_enh.get('model', 'N/A')}, {llm_enh.get('latency_ms', 0):.0f}ms)")
     else:
         print(f"  → 错误: {a3_result.error}")
 
@@ -241,12 +275,18 @@ def _generate_markdown_report(report: dict) -> str:
     lines.append("## 一、A1 深度调研结果")
     lines.append("")
     lines.append(f"- **趋势方向**: {ms.get('trend_direction', 'N/A')}")
-    sig = ms.get("signal_adequacy", {})
-    lines.append(f"- **信号充分性**: {sig.get('level', 'N/A')} ({sig.get('net_direction', 0):.1f}/3)")
-    rsi = ms.get("rsi_14", {})
-    lines.append(f"- **BTC RSI**: {rsi.get('value', 'N/A')} ({rsi.get('status', 'N/A')})")
+    sig = rs.get("signal_sufficiency", {})
+    lines.append(f"- **信号充分性**: {sig.get('level', 'N/A')} ({sig.get('net_direction', 'N/A')})")
+    rsi = ms.get("rsi_1h", ms.get("rsi_14", 50))
+    rsi_state = ms.get("rsi_state", "N/A")
+    lines.append(f"- **BTC RSI**: {rsi:.1f} ({rsi_state})")
     atr = ms.get("atr_pct", 0)
-    lines.append(f"- **波动率 (ATR%)**: {atr:.2%}")
+    lines.append(f"- **波动率 (ATR%)**: {atr:.2f}%")
+    lines.append(f"- **阻力最小路径**: {ms.get('resistance_minimum', 'N/A')}")
+    fund_rate = ms.get("funding_rate", 0)
+    oi_delta = ms.get("oi_delta_pct", 0)
+    lines.append(f"- **资金费率**: {fund_rate:.4f}%")
+    lines.append(f"- **未平仓合约变化**: {oi_delta:+.2f}%")
     lines.append("")
 
     lines.append("## 二、A2 第一性原理分析")

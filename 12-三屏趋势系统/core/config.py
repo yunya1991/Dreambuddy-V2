@@ -44,6 +44,14 @@ SCREEN2_INDICATORS: List[str] = [
     "Elder_ray",  # 趋势力度衰竭/逆转预警（Bull/Bear Power）
 ]
 
+# Phase 2: 反方指标 — 平衡确认偏误
+# 与趋势指标形成对冲：趋势BULL时反方可能发出BEAR（超买/背离/高波动）
+COUNTER_INDICATORS: List[str] = [
+    "Bollinger_Bands",    # 布林带均值回归：超买/超卖
+    "RSI_Divergence",     # 量价背离：顶背离/底背离
+    "ATR_Volatility",     # 波动率突变：极端行情预警
+]
+
 WEEKLY_WEIGHT: float = 0.6
 DAILY_WEIGHT: float = 0.4
 
@@ -70,6 +78,18 @@ POSITION_TIERS: List[tuple] = [
 CONFIDENCE_JUMP_THRESHOLD: float = 15.0
 COUNTER_TREND_ADDON_BUDGET: float = 0.40
 TOTAL_POSITION_BUDGET_CAP: float = 0.80
+
+# Phase 2: 极端行情应对机制
+EXTREME_VOLATILITY_THRESHOLD: float = 2.0     # ATR > 2倍均值 → 极端行情
+EXTREME_VOLATILITY_POSITION_CAP: float = 0.30  # 极端行情下最大仓位30%
+DAILY_LOSS_CIRCUIT_BREAKER: float = 0.08      # 单日亏损>8% → 熔断
+MAX_DRAWDOWN_CIRCUIT_BREAKER: float = 0.20    # 最大回撤>20% → 强制降仓
+
+# Phase 2: 动态权重过拟合防护
+WEIGHT_LOOKBACK_WINDOW: int = 180              # 权重计算回看窗口（天）
+WEIGHT_SMOOTHING_ALPHA: float = 0.95           # 权重指数平滑系数
+WEIGHT_MIN: float = 0.05                       # 单指标最低权重5%
+WEIGHT_MAX: float = 0.30                       # 单指标最高权重30%
 
 DEFAULT_INST_SPOT: str = "BTC-USDT"
 DEFAULT_INST_SWAP: str = "BTC-USDT-SWAP"

@@ -75,13 +75,23 @@ def calc_indicator_performance(df, indicator_name: str, baseline_return: float =
         return {"sharpe": 0.0, "win_rate": 0.5, "total_return": 0.0, "weight_score": 0.0, "excess_return": 0.0}
 
 
-def calc_dynamic_weights(df, indicators: List[str]) -> dict:
+def calc_dynamic_weights(df, indicators: List[str], prev_weights: Dict = None) -> dict:
     """
     计算指标的动态权重（基于历史表现排名）
+
+    Phase 2 过拟合防护：
+    1. 滚动窗口：仅用最近 WEIGHT_LOOKBACK_WINDOW 天数据
+    2. 指数平滑：新权重 = α×原始 + (1-α)×上一期权重
+    3. 权重约束：单指标权重限制在 [WEIGHT_MIN, WEIGHT_MAX]
 
     基线：日线 SMA200 策略
     筛选：优于基线的指标才分配权重
     排名：按 weight_score 从高到低分配权重
+
+    参数:
+        df: OHLCV DataFrame
+        indicators: 指标列表
+        prev_weights: 上一期权重（用于指数平滑），None=不平滑
 
     返回:
         {
@@ -91,6 +101,25 @@ def calc_dynamic_weights(df, indicators: List[str]) -> dict:
             "baseline_return": float,
         }
     """
+    try:
+        from .config import (
+            WEIGHT_LOOKBACK_WINDOW,
+            WEIGHT_SMOOTHING_ALPHA,
+            WEIGHT_MIN,
+            WEIGHT_MAX,
+        )
+    except ImportError:
+        from config import (
+            WEIGHT_LOOKBACK_WINDOW,
+            WEIGHT_SMOOTHING_ALPHA,
+            WEIGHT_MIN,
+            WEIGHT_MAX,
+        )
+
+    # Phase 2.1: 滚动窗口 — 只用最近的数据，避免后见之明偏差
+    if len(df) > WEIGHT_LOOKBACK_WINDOW:
+        df = df.iloc[-WEIGHT_LOOKBACK_WINDOW:].copy()
+
     sma200 = df["close"].rolling(200, min_periods=1).mean()
     baseline_signals = np.where(df["close"] > sma200, 1, -1)
     baseline_returns = []
@@ -113,27 +142,57 @@ def calc_dynamic_weights(df, indicators: List[str]) -> dict:
     total_score = sum(performances[ind]["weight_score"] for ind in sorted_indicators if performances[ind]["weight_score"] > 0)
     if total_score <= 0:
         equal_weight = 1.0 / len(indicators)
-        weights = {ind: equal_weight for ind in indicators}
+        raw_weights = {ind: equal_weight for ind in indicators}
     else:
-        weights = {}
+        raw_weights = {}
         for ind in indicators:
             perf = performances[ind]
             if perf["weight_score"] > 0:
-                weights[ind] = perf["weight_score"] / total_score
+                raw_weights[ind] = perf["weight_score"] / total_score
             else:
-                weights[ind] = 0.0
-        weight_sum = sum(weights.values())
+                raw_weights[ind] = 0.0
+        weight_sum = sum(raw_weights.values())
         if weight_sum > 0:
-            weights = {ind: w / weight_sum for ind, w in weights.items()}
+            raw_weights = {ind: w / weight_sum for ind, w in raw_weights.items()}
         else:
             equal_weight = 1.0 / len(indicators)
-            weights = {ind: equal_weight for ind in indicators}
+            raw_weights = {ind: equal_weight for ind in indicators}
+
+    # Phase 2.2: 指数平滑 — 降低权重波动，防止过拟合近期数据
+    alpha = WEIGHT_SMOOTHING_ALPHA
+    if prev_weights is not None:
+        smoothed_weights = {}
+        for ind in indicators:
+            raw = raw_weights.get(ind, 0.0)
+            prev = prev_weights.get(ind, raw)
+            smoothed_weights[ind] = alpha * raw + (1 - alpha) * prev
+        raw_weights = smoothed_weights
+
+    # Phase 2.3: 权重约束 — 单指标权重限制在 [WEIGHT_MIN, WEIGHT_MAX]
+    constrained = {}
+    for ind in indicators:
+        w = raw_weights.get(ind, 0.0)
+        # 对有权重的指标施加下限，对全部指标施加上限
+        if w > 0:
+            w = max(w, WEIGHT_MIN)
+        w = min(w, WEIGHT_MAX)
+        constrained[ind] = w
+
+    # 重新归一化
+    total = sum(constrained.values())
+    if total > 0:
+        weights = {ind: w / total for ind, w in constrained.items()}
+    else:
+        equal_weight = 1.0 / len(indicators)
+        weights = {ind: equal_weight for ind in indicators}
 
     return {
         "weights": weights,
         "performances": performances,
         "sorted_indicators": sorted_indicators,
         "baseline_return": round(baseline_return, 4),
+        "lookback_window": WEIGHT_LOOKBACK_WINDOW,
+        "smoothed": prev_weights is not None,
     }
 
 

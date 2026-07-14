@@ -134,7 +134,23 @@ DreamBuddy-V2 是一个 AI 驱动的加密货币交易决策系统，采用多�
 ```
 dreambuddy-v2/
 │
-├── 1-ARCHITECTURE/              # 架构设计文档（元系统，41个.md）
+├── 1-ARCHITECTURE/              # 架构设计 + Dream OS内核（元系统）
+│   ├── dreamos/                 # Dream OS 操作系统内核（Python包）
+│   │   ├── core/                # SACG四层内核（sense/arrange/compute/graph_store）
+│   │   ├── registry/            # 节点注册表
+│   │   ├── adapters/            # 适配器框架（Function/SKILL/API）
+│   │   ├── nodes/               # 内置节点库（22个：A/C/F/G系列）
+│   │   ├── evolution/           # 自我进化引擎
+│   │   ├── budget/              # 预算管理
+│   │   ├── apps/                # 应用层（TradingAgent/API/CLI）
+│   │   ├── cli/                 # CLI工具集
+│   │   ├── shared/              # 共享基础组件
+│   │   ├── config/              # 配置
+│   │   ├── docs/                # 系统文档（ENGINEERING_INDEX + TECHNICAL_DESIGN）
+│   │   └── dreamos-tests/       # 测试套件（5个测试文件）
+│   ├── dreamos-nodes/           # Dream OS 扩展节点
+│   ├── dreamos-tests/           # Dream OS 测试（兄弟目录）
+│   ├── registry/                # 模块注册表
 │   ├── FAQ/                     # 常见问题（FAQ.md, FAQ_FULL.md）
 │   ├── 中台设计/                 # 产品中台、网关中台设计
 │   ├── 前端设计/                 # 前端架构、UI规范、渠道设计（17个.md）
@@ -397,30 +413,38 @@ dreambuddy-v2/
 | 属性 | 值 |
 |------|-----|
 | 目录 | `11-易经推理系统/` |
-| 决策模型 | 矛盾分析法 + 第一性原理 + A0-A9决策链 |
-| 记忆系统 | L4四级记忆架构 |
-| CI/CD | GitHub Actions（6个workflow） |
-| 文档状态 | ⚠️ 缺少ENGINEERING_INDEX.md |
+| 核心引擎 | BCRM 1.0（矛盾力学）+ BCRM 2.0（辩证ML）+ QMM（量化记忆） |
+| 决策模型 | 易经八卦 + 辩证法 + A0-A9决策链 + 三引擎协同 |
+| 记忆系统 | L4四级记忆架构（M0→M5全链路） |
+| 自进化 | 三层反思闭环（A8/做梦部/联网）+ 约束升级通道 |
+| CI/CD | 16个CI脚本 + GitHub Actions（6个workflow） |
+| 约束层 | 30+约束文档 + 版本化发布 |
+| 技能体系 | 5大类40+技能（0-CORE/1-TRADE/2-INTELLIGENCE/3-SUPPORT/4-GENERIC） |
+| 文档状态 | ✅ 完整（ENGINEERING_INDEX v2.0 + TECHNICAL_DESIGN v2.0） |
+| 基线综合夏普 | 7.45（BTC/ETH/SOL/UNI 4币种组合） |
 
 **核心代码结构：**
 
 | 目录 | 文件数 | 职责 |
 |------|--------|------|
-| `scripts/memory_l4/bcrm/` | 19 | 易经推理引擎（yijing_engine, bagua_engine, liangyi_engine, sixty_four_guas, force_engine, scale_engine, walk_forward） |
-| `scripts/memory_l4/qmm/` | 13 | 量化模型（triple_screen, xgb_predictor, backtest） |
-| `scripts/memory_l4/` 顶层 | ~35 | 核心脚本（pipeline, polling_trader, okx_simulated, self_evolution_engine, distill_engine, memory_graph） |
-| `scripts/ci/` | 16 | CI脚本（architecture_sync_guard, branch_lifecycle_bot, evolution_decision_gate, safe_main_merge_gate） |
-| `constraints/` | ~30 | 约束规范（constitution, faq, qmm, system-index, workflows-spec） |
-| `tests/` | 60+ | 测试套件（CI测试、记忆系统测试、交易协议测试、E2E测试、压力测试） |
+| `scripts/memory_l4/bcrm/` | 19 | BCRM 1.0矛盾力学推理引擎（yijing_engine, bagua_engine, liangyi_engine, force_engine, scale_engine, walk_forward） |
+| `scripts/memory_l4/bcrm2/` | ~25 | BCRM 2.0辩证ML量化引擎（dialectical_ml_engine, bagua_feature_engine, market_regime, 11个特征模块） |
+| `scripts/memory_l4/qmm/` | 13 | QMM量化记忆模型（triple_screen, mrd, uncertainty, drift, xgb_predictor, gate） |
+| `scripts/memory_l4/` 顶层 | ~35 | 核心脚本（pipeline, polling_trader, self_evolution_engine, okx_simulated, classic_exit_system, shared_memory_bus） |
+| `scripts/ci/` | 16 | CI脚本（架构同步、分支生命周期、进化门禁、安全合并、约束管理） |
+| `constraints/` | ~30 | 约束规范（constitution, system-index, workflows-spec, qmm, faq, releases） |
+| `skills/` | 40+ | 技能库（0-CORE/1-TRADE/2-INTELLIGENCE/3-SUPPORT） |
+| `tests/` | 60+ | 测试套件（CI测试、记忆系统测试、交易协议测试、QMM测试、E2E测试、压力测试） |
 
-**文档入口：**
+**文档入口（按优先级）：**
 
 | 文档 | 路径 | 说明 |
 |------|------|------|
-| 技术设计 | `docs/TECHNICAL_DESIGN.md` | 架构设计 |
-| 架构文档 | `docs/architecture.md` | 架构概述 |
-| README | `README.md` | 系统说明 |
-| ⚠️ 工程索引 | 缺失 | 需补充 |
+| ✅ 工程索引 | `docs/ENGINEERING_INDEX.md` | 系统级工程索引（SSoT），11章节 |
+| ✅ 技术设计 | `docs/TECHNICAL_DESIGN.md` | 系统级技术设计，15章节（含BCRM 2.0深度） |
+| 架构基线 | `constraints/system-index/engineering-architecture.md` | 约束层架构基线 |
+| 系统概览 | `README.md` | 项目概览与快速开始 |
+| 架构简述 | `docs/architecture.md` | 系统架构概述 |
 
 ---
 
@@ -504,7 +528,8 @@ dreambuddy-v2/
 
 | 系统 | 目录 | 文档数 | 核心文档 |
 |------|------|--------|----------|
-| 架构设计 | `1-ARCHITECTURE/` | 41 | SYSTEM_ARCHITECTURE_OVERVIEW.md, WORKBUDDY_OS_MODULAR_ARCHITECTURE.md |
+| **Dream OS 内核** | `1-ARCHITECTURE/dreamos/` | 2篇系统文档 + ~45个代码文件 | dreamos/docs/ENGINEERING_INDEX.md, dreamos/docs/TECHNICAL_DESIGN.md |
+| 架构设计 | `1-ARCHITECTURE/` | 41+ | SYSTEM_ARCHITECTURE_OVERVIEW.md, WORKBUDDY_OS_MODULAR_ARCHITECTURE.md |
 | 治理合规 | `2-GOVERNANCE/` | 5 | GOVERNANCE_CHARTER.md, COMPLIANCE_RULES.md |
 | 知识库 | `2-KNOWLEDGE/` | 7个INDEX | 1-TRADING/, 2-TECHNICAL/, 3-THEORY/, 5-METHODOLOGY/ |
 | 链开发协议 | `3-CHAIN-DEVELOPMENT/` | 21 | D1-D4调研链, Z1-Z4规划链, E1-E3执行链 |
@@ -531,6 +556,7 @@ dreambuddy-v2/
 
 | 组件 | 入口 | 职责 |
 |------|------|------|
+| **Dream OS 内核** | `1-ARCHITECTURE/dreamos/` | 操作系统内核（SACG四层+节点+适配器+进化） |
 | master_daemon | `ops/master_daemon.py` | 主守护进程，管理V15马丁等定时任务 |
 | launchd管理 | `ops/launchd_manage.py` | launchd服务安装/卸载/状态 |
 | 产物同步 | `scripts/sync_artifact.py` | 产物同步到中台 |
@@ -791,11 +817,12 @@ cd 10-经典指标系统 && python -m pytest test_*.py -v
 
 | 系统 | 工程索引 | 技术文档 | 核心代码 |
 |------|----------|----------|----------|
+| **Dream OS 内核** | [dreamos/docs/ENGINEERING_INDEX.md](./1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | [dreamos/docs/TECHNICAL_DESIGN.md](./1-ARCHITECTURE/dreamos/docs/TECHNICAL_DESIGN.md) | [dreamos/__init__.py](./1-ARCHITECTURE/dreamos/__init__.py) |
 | V15马丁策略 | [docs/ENGINEERING_INDEX.md](./14-V15经典马丁策略/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md) | [core/v15_trader.py](./14-V15经典马丁策略/core/v15_trader.py) |
 | 经典指标系统 | [技术文档2.0.md](./10-经典指标系统/技术文档2.0.md) | [技术文档.md](./10-经典指标系统/技术文档.md) | [ml_trade_service.py](./10-经典指标系统/ml_trade_service.py) |
 | 三屏趋势系统 | [docs/ENGINEERING_INDEX.md](./12-三屏趋势系统/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) | [engine.py](./12-三屏趋势系统/engine.py) |
 | 通用风控模块 | [docs/ENGINEERING_INDEX.md](./13-通用风控模块/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./13-通用风控模块/docs/TECHNICAL_DESIGN.md) | [core/engine.py](./13-通用风控模块/core/engine.py) |
-| 易经推理系统 | [docs/architecture.md](./11-易经推理系统/docs/architecture.md) | [docs/TECHNICAL_DESIGN.md](./11-易经推理系统/docs/TECHNICAL_DESIGN.md) | [scripts/memory_l4/polling_trader.py](./11-易经推理系统/scripts/memory_l4/polling_trader.py) |
+| 易经推理系统 | [docs/ENGINEERING_INDEX.md](./11-易经推理系统/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./11-易经推理系统/docs/TECHNICAL_DESIGN.md) | [scripts/memory_l4/polling_trader.py](./11-易经推理系统/scripts/memory_l4/polling_trader.py) |
 | 调控系统 | [docs/ENGINEERING_INDEX.md](./16-调控系统/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./16-调控系统/docs/TECHNICAL_DESIGN.md) | [core/skill_engine.py](./16-调控系统/core/skill_engine.py) |
 | 架构设计 | [README.md](./1-ARCHITECTURE/README.md) | [SYSTEM_ARCHITECTURE_OVERVIEW.md](./1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) | - |
 
