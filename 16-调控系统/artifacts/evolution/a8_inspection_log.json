@@ -73,5 +73,80 @@
       }
     ],
     "evolution_proposals": []
+  },
+  {
+    "inspection_id": "a8_1783989289",
+    "timestamp": "2026-07-14T00:34:49.728942+00:00",
+    "total_decisions": 98,
+    "evaluated_decisions": 0,
+    "contradictions": [
+      {
+        "code": "C_A8_000",
+        "name": "数据不足",
+        "severity": "low",
+        "description": "暂无足够的已评估决策数据"
+      }
+    ],
+    "evolution_proposals": []
+  },
+  {
+    "inspection_id": "a8_1783989289",
+    "timestamp": "2026-07-14T00:34:49.731558+00:00",
+    "total_decisions": 13,
+    "evaluated_decisions": 0,
+    "contradictions": [
+      {
+        "code": "C_A8_000",
+        "name": "数据不足",
+        "severity": "low",
+        "description": "暂无足够的已评估决策数据"
+      }
+    ],
+    "evolution_proposals": []
+  },
+  {
+    "inspection_id": "a8_1783989289",
+    "timestamp": "2026-07-14T00:34:49.733714+00:00",
+    "total_decisions": 30,
+    "evaluated_decisions": 0,
+    "contradictions": [
+      {
+        "code": "C_A8_000",
+        "name": "数据不足",
+        "severity": "low",
+        "description": "暂无足够的已评估决策数据"
+      }
+    ],
+    "evolution_proposals": []
+  },
+  {
+    "inspection_id": "a8_1783989289",
+    "timestamp": "2026-07-14T00:34:49.735564+00:00",
+    "total_decisions": 30,
+    "evaluated_decisions": 0,
+    "contradictions": [
+      {
+        "code": "C_A8_000",
+        "name": "数据不足",
+        "severity": "low",
+        "description": "暂无足够的已评估决策数据"
+      }
+    ],
+    "evolution_proposals": []
+  },
+  {
+    "inspection_id": "a8_1783989289",
+    "timestamp": "2026-07-14T00:34:49.737413+00:00",
+    "total_decisions": 25,
+    "evaluated_decisions": 0,
+    "contradictions": [
+      {
+        "code": "C_A8_000",
+        "name": "数据不足",
+        "severity": "low",
+        "description": "暂无足够的已评估决策数据"
+      }
+    ],
+    "evolution_proposals": []
   }
 ]

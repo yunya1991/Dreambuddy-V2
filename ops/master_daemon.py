@@ -61,9 +61,9 @@ TASKS = [
         "name": "v15_martin",
         "label": "V15经典马丁策略",
         "interval": 3600,
-        "work_dir": str(AB_DIR),
-        "cmd": [PYTHON, str(AB_DIR / "v15ct_trader.py"), "--poll-once"],
-        "log_file": str(AB_DIR / "logs" / "v15ct_trader_master.log"),
+        "work_dir": str(V15_DIR),
+        "cmd": [PYTHON, str(V15_DIR / "run.py"), "poll_once"],
+        "log_file": str(V15_DIR / "logs" / "v15_trader_master.log"),
     },
     {
         "name": "ab_monitor",
@@ -108,9 +108,9 @@ TASKS = [
         "name": "capital_manager",
         "label": "资金管理引擎（月度优化）",
         "interval": 86400,
-        "work_dir": str(AB_DIR),
-        "cmd": [PYTHON, str(AB_DIR / "capital_manager_engine.py"), "monthly"],
-        "log_file": str(AB_DIR / "logs" / "capital_manager_master.log"),
+        "work_dir": str(V15_DIR),
+        "cmd": [PYTHON, str(V15_DIR / "run.py"), "capital_engine", "monthly"],
+        "log_file": str(V15_DIR / "logs" / "capital_manager_master.log"),
     },
 ]
 

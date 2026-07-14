@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 采集 AB Trading 监控数据并导出为 state.json
-- 本地 data_server.py 可调用
 - GitHub Actions 可直接运行并提交到仓库
 用法：python3 export_state.py [output_path]
 """

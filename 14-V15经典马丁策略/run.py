@@ -259,6 +259,27 @@ def cmd_config(args):
     print(f"\n监控币种: {get_config_list('V15_COINS')}")
 
 
+def cmd_api(args):
+    """启动V15策略HTTP API服务（支持monitor.html调用）"""
+    port = args.port or 8771
+    from v15_api_server import V15APIHandler
+    from http.server import HTTPServer
+
+    server = HTTPServer(("0.0.0.0", port), V15APIHandler)
+    print(f"=" * 70)
+    print(f"V15经典马丁策略 HTTP API服务启动: http://localhost:{port}")
+    print(f"=" * 70)
+    print(f"  GET  /api/v15-ct/decision?coin=BTC - 单币种决策信号")
+    print(f"  GET  /api/v15-ct/status - 策略状态")
+    print(f"  GET  /api/v15-ct/backtest?coin=BTC - 回测结果")
+    print(f"  GET  /api/v15-ct/decisions - 多币种决策")
+    print(f"  GET  /api/capital/allocation - 资金分配")
+    print(f"  GET  /api/capital/signal-trigger - 信号触发状态")
+    print(f"  GET  /health - 健康检查")
+    print(f"=" * 70)
+    server.serve_forever()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="V15 经典马丁策略 — 统一入口",
@@ -308,6 +329,10 @@ def main():
     # config
     subparsers.add_parser("config", help="查看当前配置")
 
+    # api
+    p_api = subparsers.add_parser("api", help="启动V15策略HTTP API服务（支持monitor.html调用）")
+    p_api.add_argument("--port", type=int, default=8771, help="API端口（默认8771）")
+
     args = parser.parse_args()
 
     if args.command == "signal":
@@ -326,6 +351,8 @@ def main():
         cmd_test(args)
     elif args.command == "config":
         cmd_config(args)
+    elif args.command == "api":
+        cmd_api(args)
     else:
         parser.print_help()
 

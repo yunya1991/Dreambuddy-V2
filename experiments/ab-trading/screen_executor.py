@@ -1128,7 +1128,27 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
             decision = _simple_mode_decision(s1, s2, price)
         else:
             decision = llm_decision(s1, s2, s3, reports)
-        
+
+        # ── ML第三屏（AI屏）：用基线模型预测修正决策置信度 ──
+        try:
+            from ml_inference import get_ml_signal, adjust_decision_with_ml
+            spot_inst_ml = current_candidate.get("spot", f"{current_symbol}-USDT") if current_candidate else f"{current_symbol}-USDT"
+            ml_signal = get_ml_signal(spot_inst_ml)
+            if not ml_signal.get("error"):
+                original_conf = decision.get("confidence", 50.0)
+                decision = adjust_decision_with_ml(decision, ml_signal, ml_weight=0.15)
+                _log("INFO", f"ML第三屏 [{current_symbol}]: 方向={ml_signal['direction']}, "
+                      f"上涨概率={ml_signal['prob_up']:.2f}, 置信={ml_signal['confidence']:.2f}")
+                if decision.get("ml_boost"):
+                    _log("INFO", f"ML调整: {decision['ml_boost']} (原{original_conf:.1f}% → {decision['confidence']:.1f}%)")
+                state["ml_signal"] = ml_signal
+            else:
+                _log("WARN", f"ML信号异常: {ml_signal.get('error')}")
+                state["ml_signal"] = {"error": ml_signal.get("error")}
+        except Exception as e:
+            _log("WARN", f"ML推理模块异常: {e}")
+            state["ml_signal"] = {"error": str(e)}
+
         state["last_mode"] = decision.get("mode", "v9")
         state["last_symbol"] = current_symbol
         _log("INFO", f"决策层: mode={decision['mode']}, action={decision['action']}, 置信{decision['confidence']}%, 简单模式={simple_mode}")

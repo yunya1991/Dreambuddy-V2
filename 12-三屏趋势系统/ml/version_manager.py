@@ -391,15 +391,27 @@ def _load_model_from_path(path: str) -> MLModel:
         data = pickle.load(f)
 
     model_type = 'lightgbm'
-    if 'params' in data:
-        if 'num_leaves' in data['params']:
+    params = data.get('params', {})
+    if params:
+        if 'num_leaves' in params or 'objective' in params:
             model_type = 'lightgbm'
-        elif 'booster' in data['params']:
+        elif 'booster' in params:
             model_type = 'xgboost'
-        elif 'C' in data['params']:
+        elif 'C' in params:
             model_type = 'logistic'
 
-    model = create_model(model_type, data.get('params', {}))
-    if 'feature_names' in data:
-        model.feature_names = data['feature_names']
-    return model
+    # 用对应类的 load 方法正确加载（包含内部模型对象）
+    if model_type == 'lightgbm':
+        from .models import LightGBMModel
+        return LightGBMModel.load(path)
+    elif model_type == 'xgboost':
+        from .models import XGBoostModel
+        return XGBoostModel.load(path)
+    elif model_type == 'logistic':
+        from .models import LogisticModel
+        return LogisticModel.load(path)
+    else:
+        model = create_model(model_type, params)
+        if 'feature_names' in data:
+            model.feature_names = data['feature_names']
+        return model

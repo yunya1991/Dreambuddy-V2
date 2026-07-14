@@ -288,6 +288,26 @@ class PollingTrader:
         if bagua_result and bagua_result.hexagram_name_cn:
             hex_cn = bagua_result.hexagram_name_cn
 
+        # 卦象名与方向一致性检查 (修复: 2026-07-13)
+        hex_consistent = True
+        if hex_cn:
+            gua_direction = self._get_hexagram_direction(hex_cn)
+            actual_direction = "long" if direction == "UP" else "short"
+            if gua_direction and gua_direction != "neutral" and gua_direction != actual_direction:
+                hex_consistent = False
+                # 尝试使用变卦或互卦作为替代卦象
+                if bcrm_result and hasattr(bcrm_result, 'hexagram'):
+                    bcrm_hex = bcrm_result.hexagram
+                    # 使用变卦替代
+                    if hasattr(bcrm_hex, 'changed_hexagram_cn') and bcrm_hex.changed_hexagram_cn:
+                        hex_cn = bcrm_hex.changed_hexagram_cn
+                        self._log(f"[{coin}] 卦象校准 | {hex_cn}(变卦) 替代原卦象", "INFO")
+                    else:
+                        self._log(
+                            f"[{coin}] 卦象警告 | 卦象{hex_cn}({gua_direction})与决策方向({actual_direction})不一致",
+                            "WARN"
+                        )
+
         sl_px, tp_px, reduce_ratio = 0, 0, 0
         if bcrm_result.strategy_branches:
             b1 = next((b for b in bcrm_result.strategy_branches
@@ -343,6 +363,7 @@ class PollingTrader:
             "direction": direction,
             "confidence": round(confidence, 4),
             "hexagram": hex_cn,
+            "hex_consistent": hex_consistent,  # 卦象方向一致性标志
             "fail_closed": fail_closed,
             "is_ranging": snapshot.get("is_ranging", False),
             "bagua_direction": bagua_dir,
@@ -357,6 +378,75 @@ class PollingTrader:
             "volatility": snapshot.get("volatility", 0.03),
             "kline_data": kline_data,
         }
+
+    def _get_hexagram_direction(self, hexagram_name: str) -> str:
+        """根据卦象名查询卦象方向
+
+        Args:
+            hexagram_name: 卦象中文名 (如 "巽为风")
+
+        Returns:
+            卦象方向: "long" / "short" / "neutral" / "" (未知)
+        """
+        # 卦象名到方向的映射 (基于SIXTY_FOUR_GUAS)
+        HEX_TO_DIRECTION = {
+            "乾为天": "long",
+            "坤为地": "short",
+            "水雷屯": "neutral",
+            "山水蒙": "neutral",
+            "水天需": "long",
+            "天水讼": "neutral",
+            "地水师": "short",
+            "水地比": "long",
+            "风雷益": "long",
+            "雷风恒": "neutral",
+            "离为火": "long",
+            "泽火革": "neutral",
+            "火风鼎": "long",
+            "巽为风": "long",
+            "兑为泽": "long",
+            "艮为山": "neutral",
+            "山地剥": "short",
+            "地雷复": "long",
+            "坎为水": "short",
+            "水火既济": "neutral",
+            "火水未济": "neutral",
+            "地天泰": "long",
+            "天地否": "short",
+            "天雷无妄": "neutral",
+            "山天大畜": "long",
+            "山雷颐": "neutral",
+            "泽天夬": "long",
+            "天风姤": "short",
+            "泽地萃": "long",
+            "地泽临": "long",
+            "风天小畜": "neutral",
+            "风地观": "neutral",
+            "风火家人": "long",
+            "风山渐": "long",
+            "风泽中孚": "long",
+            "雷天大壮": "long",
+            "雷地豫": "long",
+            "震为雷": "long",
+            "雷水解": "long",
+            "雷火丰": "long",
+            "雷山小过": "short",
+            "雷泽归妹": "short",
+            "水风井": "neutral",
+            "火天大有": "long",
+            "火地晋": "long",
+            "火雷噬嗑": "long",
+            "火山旅": "short",
+            "火泽睽": "short",
+            "山水蒙": "short",
+            "山风蛊": "short",
+            "山火贲": "long",
+            "山泽损": "short",
+            "泽水困": "short",
+            "泽山咸": "long",
+            "泽风大过": "short",
+        }
+        return HEX_TO_DIRECTION.get(hexagram_name, "")
 
     def _check_positions(self, coin: str) -> dict:
         """检查指定币种的持仓"""

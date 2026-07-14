@@ -240,6 +240,11 @@ class HexagramMapper:
         # 卦象强度 (整体偏离均值的程度 = 矛盾激化程度)
         gua_intensity = float(np.mean(list(gua_activity.values()))) if gua_activity else 0.0
 
+        # 修复: 卦象强度与方向一致性联动 (2026-07-13)
+        # 如果方向不一致，卦象强度减半，表示卦象的可解释性降低
+        if not direction_consistent:
+            gua_intensity *= 0.5
+
         # 生成解释
         direction_text = "看涨" if model_direction == 1 else (
             "看跌" if model_direction == -1 else "观望"

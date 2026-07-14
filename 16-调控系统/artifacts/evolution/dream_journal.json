@@ -53,5 +53,49 @@
     "latent_content": {},
     "counterfactual_analysis": [],
     "evolution_proposals": []
+  },
+  {
+    "dream_id": "dream_1783989289",
+    "timestamp": "2026-07-14T00:34:49.732310+00:00",
+    "total_decisions": 13,
+    "manifest_content": {
+      "note": "决策数据不足，做梦部分析需要至少5个已评估决策"
+    },
+    "latent_content": {},
+    "counterfactual_analysis": [],
+    "evolution_proposals": []
+  },
+  {
+    "dream_id": "dream_1783989289",
+    "timestamp": "2026-07-14T00:34:49.734414+00:00",
+    "total_decisions": 30,
+    "manifest_content": {
+      "note": "决策数据不足，做梦部分析需要至少5个已评估决策"
+    },
+    "latent_content": {},
+    "counterfactual_analysis": [],
+    "evolution_proposals": []
+  },
+  {
+    "dream_id": "dream_1783989289",
+    "timestamp": "2026-07-14T00:34:49.736282+00:00",
+    "total_decisions": 30,
+    "manifest_content": {
+      "note": "决策数据不足，做梦部分析需要至少5个已评估决策"
+    },
+    "latent_content": {},
+    "counterfactual_analysis": [],
+    "evolution_proposals": []
+  },
+  {
+    "dream_id": "dream_1783989289",
+    "timestamp": "2026-07-14T00:34:49.738074+00:00",
+    "total_decisions": 25,
+    "manifest_content": {
+      "note": "决策数据不足，做梦部分析需要至少5个已评估决策"
+    },
+    "latent_content": {},
+    "counterfactual_analysis": [],
+    "evolution_proposals": []
   }
 ]

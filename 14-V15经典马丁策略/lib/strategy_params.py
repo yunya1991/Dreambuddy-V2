@@ -18,7 +18,7 @@ sys.path.insert(0, str(BASE_DIR / "lib"))
 
 try:
     from config_loader import load_config, get_config, get_config_float, get_config_int, get_config_list
-    load_config("v15ct")
+    load_config("v15")
 except Exception:
     pass
 
@@ -651,7 +651,7 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
 
 
 def get_all_coins_params() -> Dict:
-    _raw = get_config_list("V15CT_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"])
+    _raw = get_config_list("V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"])
     coins = [c for c in _raw if _coin_supported(c, "okx")] or _raw
     result = {}
     for coin in coins:

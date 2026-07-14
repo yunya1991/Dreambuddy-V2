@@ -45,7 +45,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 try:
     from config_loader import load_config, get_config, get_config_float, get_config_int, get_config_list
-    load_config("v15ct")
+    load_config("v15")
 except Exception:
     pass
 
@@ -54,7 +54,7 @@ ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
 STATE_FILE = ARTIFACTS_DIR / "engine_state.json"
 OPTIMIZATION_HISTORY = ARTIFACTS_DIR / "optimization_history.json"
-CONFIG_FILE = STRATEGY_DIR / "config" / ".env.v15ct"
+CONFIG_FILE = STRATEGY_DIR / "config" / ".env.v15"
 
 
 class CapitalManagerEngine:
@@ -103,7 +103,7 @@ class CapitalManagerEngine:
     
     def run_backtest(self, coins=None) -> dict:
         """运行回测，统计各层加仓的触发频率和收益特征"""
-        coins = coins or get_config_list("V15CT_COINS", ["BTC", "ETH", "SOL", "ARB", "OP"])
+        coins = coins or get_config_list("V15_COINS", ["BTC", "ETH", "SOL", "ARB", "OP"])
         
         try:
             core_path = str(STRATEGY_DIR / "core")
@@ -230,7 +230,7 @@ class CapitalManagerEngine:
     
     def check_trend_batch(self, coins=None) -> dict:
         """批量检查趋势过滤状态"""
-        coins = coins or get_config_list("V15CT_COINS", ["BTC", "ETH", "SOL"])
+        coins = coins or get_config_list("V15_COINS", ["BTC", "ETH", "SOL"])
         results = {}
         for coin in coins:
             results[coin] = self.check_trend(coin)
@@ -307,7 +307,7 @@ class CapitalManagerEngine:
         }
     
     def _update_config_file(self, params: dict):
-        """更新 .env.v15ct 配置文件中的参数"""
+        """更新 .env.v15 配置文件中的参数"""
         if not CONFIG_FILE.exists():
             return
         

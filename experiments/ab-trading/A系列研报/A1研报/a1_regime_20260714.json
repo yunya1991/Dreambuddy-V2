@@ -1,0 +1,141 @@
+{
+  "regime": "BEAR_RECOVERY",
+  "regime_level": 3,
+  "regime_level_symbol": "⚠️⚠️⚠️",
+  "confidence": 0.82,
+  "timestamp": "2026-07-14T00:55:00+08:00",
+  "btc_price": 62230,
+  "btc_24h_change": -2.93,
+  "btc_7d_change": -3.4,
+  "eth_price": 1769.69,
+  "sol_price": 75.16,
+  "ma5": 63129,
+  "ma10": 63178,
+  "ma_cross": "DEATH_CROSS",
+  "ma_gap": -49,
+  "funding_rate": 0.0001,
+  "funding_direction": "positive_low",
+  "funding_flip_days": 29,
+  "fgi_source": "alternative.me",
+  "fgi_value": 28,
+  "fgi_classification": "Fear",
+  "fgi_trend": "improving_from_extreme_fear",
+  "etf_weekly_net": 197.4,
+  "etf_weekly_direction": "inflow_first_after_8_weeks",
+  "etf_june_total_outflow": -4.0,
+  "oil_wti": 74.36,
+  "oil_brent": 79.11,
+  "oil_24h_change": "+4-5%",
+  "gold_price": 4070,
+  "sp500": 7520,
+  "dxy": 101,
+  "vix": 16.4,
+  "us10y": 4.57,
+  "fed_rate": "3.50-3.75%",
+  "cpi_date": "2026-07-14",
+  "cpi_consensus_yoy": 3.8,
+  "cpi_consensus_mom": -0.1,
+  "whale_accumulation_btc": 270000,
+  "whale_accumulation_level": 59000,
+  "exchange_reserves_btc": 2.21,
+  "lth_supply_btc": 16.3,
+  "mvrv": 1.217,
+  "nupl": 0.178,
+  "sopr": 0.9985,
+  "btc_iv_atm": 41.5,
+  "btc_iv_7d": 41.8,
+  "btc_iv_30d": 39.2,
+  "btc_iv_90d": 39.4,
+  "si_index": -5,
+  "si_classification": "NEUTRAL偏BEAR",
+  "si_change_from_prev": -6,
+  "three_screen_weekly": -2,
+  "three_screen_daily": -2,
+  "three_screen_hourly": 0,
+  "three_screen_total": -4,
+  "three_screen_classification": "STRONG_BEAR偏NEUTRAL",
+  "contradictions": [
+    {
+      "id": "CX_033",
+      "name": "伊朗停火破裂 vs 市场韧性",
+      "side_a": "地缘升级(P0)",
+      "side_b": "BTC未崩至$58K",
+      "current_bias": "A_STRONG_UP",
+      "evolution": "周末新一轮打击，A方大幅加强"
+    },
+    {
+      "id": "CX_034",
+      "name": "通胀陷阱 vs 降息预期",
+      "side_a": "CPI>4%+油价↑",
+      "side_b": "Fed仍预期降息1次",
+      "current_bias": "A_STRONG",
+      "evolution": "今日CPI将决定方面强弱"
+    },
+    {
+      "id": "CX_035",
+      "name": "油价回落 vs 制裁恢复(7/17)",
+      "side_a": "制裁恢复+海峡关闭",
+      "side_b": "OPEC+增产压价",
+      "current_bias": "A_REVERSED_STRONG",
+      "evolution": "油价暴涨4-5%，B方完全失效"
+    },
+    {
+      "id": "CX_031",
+      "name": "恐惧 vs 反弹韧性",
+      "side_a": "FGI=28 Fear",
+      "side_b": "ETF+$197M+鲸鱼270K",
+      "current_bias": "B_STRONG_MAINTAINED",
+      "evolution": "FGI从22→28改善，ETF转正"
+    },
+    {
+      "id": "CX_036",
+      "name": "MA死叉 vs 鲸鱼积累",
+      "side_a": "技术面破位",
+      "side_b": "链上积累信号",
+      "current_bias": "A_STRONG_UP",
+      "evolution": "死叉刚确认，技术面恶化",
+      "is_new": true
+    }
+  ],
+  "key_levels": {
+    "resistance": [64729, 64000, 63178],
+    "support": [62000, 60000, 59000, 58384],
+    "current": 62230
+  },
+  "positioning_advice": "defensive_bearish_0.2-0.3x",
+  "next_catalysts": [
+    {
+      "date": "2026-07-14",
+      "event": "CPI June data",
+      "impact": "P0_CRITICAL"
+    },
+    {
+      "date": "2026-07-14",
+      "event": "Fed Chair Warsh testimony",
+      "impact": "P0_HIGH"
+    },
+    {
+      "date": "2026-07-15",
+      "event": "PPI June data",
+      "impact": "P1"
+    },
+    {
+      "date": "2026-07-17",
+      "event": "Iran sanctions deadline",
+      "impact": "P0_CRITICAL"
+    },
+    {
+      "date": "2026-07-28-29",
+      "event": "FOMC meeting",
+      "impact": "P0_CRITICAL"
+    }
+  ],
+  "p0_changes_from_prev": [
+    "Iran weekend military escalation - strikes on both sides",
+    "MA death cross confirmed (MA5-MA10: +537 → -49)",
+    "BTC breaks 200-week MA (bull-bear boundary)",
+    "Oil surges 4-5% (WTI $74.36, Brent $79.11)",
+    "Hormuz traffic drops to 6 vessels/day",
+    "CPI day today - critical macro catalyst"
+  ]
+}

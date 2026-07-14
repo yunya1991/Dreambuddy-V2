@@ -2,9 +2,7 @@
 """
 配置加载器 - V15经典马丁策略专用
 - 支持 include 语法合并多个配置文件
-- 统一管理 V15 经典马丁策略配置（v15/v15ct）
-- v15: 原始马丁策略配置
-- v15ct: 资金管理器增强版配置（贝叶斯优化+三屏趋势过滤+分层加仓）
+- 统一管理 V15 经典马丁策略配置
 """
 import os
 from pathlib import Path
@@ -13,18 +11,12 @@ from pathlib import Path
 def load_config(strategy_type: str = "v15") -> dict:
     """
     加载配置
-    :param strategy_type: "v15" 或 "v15ct"
+    :param strategy_type: "v15"（唯一支持配置）
     :return: 合并后的配置字典
     """
     config_dir = Path(__file__).parent.parent / "config"
     common_path = config_dir / ".env.common"
-
-    if strategy_type == "v15":
-        strategy_path = config_dir / ".env.v15"
-    elif strategy_type == "v15ct":
-        strategy_path = config_dir / ".env.v15ct"
-    else:
-        strategy_path = config_dir / ".env"
+    strategy_path = config_dir / ".env.v15"
 
     config = {}
 
