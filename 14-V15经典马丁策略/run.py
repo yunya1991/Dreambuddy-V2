@@ -70,14 +70,13 @@ def cmd_backtest(args):
     from v15_backtest import run_backtest
 
     coin = args.coin or "BTC"
-    limit = args.limit or 500
 
     print("=" * 70)
-    print(f"V15 经典马丁策略 — 回测 | {coin} | {limit} 根K线")
+    print(f"V15 经典马丁策略 — 回测 | {coin}")
     print("=" * 70)
 
     try:
-        result = run_backtest(coin, limit=limit)
+        result = run_backtest(coin)
         if result:
             print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
         else:

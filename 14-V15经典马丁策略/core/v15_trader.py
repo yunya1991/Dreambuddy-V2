@@ -30,6 +30,12 @@ except Exception:
     def _coin_supported(coin, exchange="okx"): return True
     def get_category(coin): return "crypto"
 
+try:
+    from bounce_potential_evaluator import monitor_bounce_signals
+    BOUNCE_MONITOR_ENABLED = True
+except ImportError:
+    BOUNCE_MONITOR_ENABLED = False
+
 STATE_FILE = BASE_DIR / "data" / "v15_state.json"
 LOG_DIR = BASE_DIR / "logs" / "v15"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -189,7 +195,7 @@ def execute_open_position(client, coin, decision, state):
                 inst_id=inst_id,
                 side="buy",
                 sz=sz,
-                td_mode="cross",
+                td_mode="isolated",
                 pos_side="long",
             )
             if r.get("ok"):
@@ -288,7 +294,7 @@ def execute_addon(client, coin, pos, state):
                 inst_id=inst_id,
                 side="buy",
                 sz=sz,
-                td_mode="cross",
+                td_mode="isolated",
                 pos_side="long",
             )
             if r.get("ok"):
@@ -368,7 +374,7 @@ def check_take_profit(client, coin, pos, state):
                     inst_id=inst_id,
                     side="sell",
                     sz=close_sz,
-                    td_mode="cross",
+                    td_mode="isolated",
                     pos_side="long",
                 )
                 if r.get("ok"):
@@ -396,7 +402,7 @@ def check_take_profit(client, coin, pos, state):
                     inst_id=inst_id,
                     side="sell",
                     sz=close_sz,
-                    td_mode="cross",
+                    td_mode="isolated",
                     pos_side="long",
                 )
                 if r.get("ok"):
@@ -557,7 +563,7 @@ def _execute_close_position(client, coin, pos, state, reason=""):
                 inst_id=inst_id,
                 side="sell",
                 sz=close_sz,
-                td_mode="cross",
+                td_mode="isolated",
                 pos_side="long",
             )
             if r.get("ok"):
@@ -593,7 +599,7 @@ def _execute_reduce_position(client, coin, pos, state, reduce_frac):
                 inst_id=inst_id,
                 side="sell",
                 sz=reduce_sz,
-                td_mode="cross",
+                td_mode="isolated",
                 pos_side="long",
             )
             if r.get("ok"):
@@ -716,6 +722,23 @@ def run_poll_cycle():
         trigger_capital_rebuild(state, reason="月度定时优化（每月1号）")
     
     _log(f"=== 开始轮询 ({len(COINS)}币种) ===")
+    
+    # 异常信号监控（影子模式：只输出不决策）
+    if BOUNCE_MONITOR_ENABLED:
+        _log("--- 反弹潜力监控（影子模式）---")
+        try:
+            signal_result = monitor_bounce_signals(COINS, lookback=60, min_signals=1)
+            if signal_result["highlighted_count"] > 0:
+                for r in signal_result["highlighted"]:
+                    triggers = ", ".join(r["triggered_list"])
+                    _log(f"[{r['coin']}] 信号触发({triggers}): n_triggered={r['n_triggered']}")
+                highlighted_coins = ", ".join([r["coin"] for r in signal_result["highlighted"]])
+                _log(f"潜在高价值币种({signal_result['highlighted_count']}个): {highlighted_coins}")
+            else:
+                _log("无信号触发币种")
+        except Exception as e:
+            _log(f"信号监控异常: {e}")
+        _log("--- 监控结束 ---")
     
     for coin in COINS:
         try:

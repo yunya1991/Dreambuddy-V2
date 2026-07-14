@@ -824,6 +824,12 @@ def run_backtest(
     if len(klines) < 200:
         return {"error": f"4H K线数据不足({len(klines)}根)，至少需要200根", "trades": [], "metrics": {}}
 
+    for k in klines:
+        if "ts" in k and "t" not in k:
+            k["t"] = k["ts"]
+        if "c" in k and "close" not in k:
+            k["close"] = k["c"]
+
     # 获取日线和周线数据（用于MA200和波动率计算）
     klines_1d = fetch_klines(coin, "1d", 400)
     klines_1w = fetch_klines(coin, "1w", 250)
