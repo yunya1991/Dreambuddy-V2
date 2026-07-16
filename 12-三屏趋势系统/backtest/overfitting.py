@@ -62,8 +62,7 @@ def parameter_sensitivity_analysis(
     results = []
     for val in param_values:
         try:
-            kwargs = {param_name: val}
-            strategy = strategy_factory(**kwargs)
+            strategy = _call_strategy_factory(strategy_factory, param_name, val)
             signals = strategy.generate_signals(df)
             result = engine.run(close, signals, symbol=f"{param_name}={val}")
             metric_val = result["metrics"].get(metric, 0)
@@ -401,3 +400,28 @@ def _ensure_index(df: pd.DataFrame) -> pd.DataFrame:
             df["date"] = pd.to_datetime(df["date"])
             df = df.set_index("date")
     return df
+
+
+def _call_strategy_factory(factory: Callable, param_name: str, param_value: Any):
+    """
+    调用 strategy_factory，兼容位置参数和关键字参数两种调用方式
+
+    先尝试关键字参数调用 factory(param_name=param_value)，
+    失败则回退到位置参数调用 factory(param_value)。
+    """
+    import inspect
+
+    try:
+        sig = inspect.signature(factory)
+        params = list(sig.parameters.keys())
+        if params and params[0] == param_name:
+            return factory(**{param_name: param_value})
+        elif params and len(params) == 1:
+            return factory(param_value)
+        else:
+            return factory(**{param_name: param_value})
+    except (ValueError, TypeError):
+        try:
+            return factory(**{param_name: param_value})
+        except TypeError:
+            return factory(param_value)

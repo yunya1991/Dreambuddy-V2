@@ -1,16 +1,17 @@
 """三屏趋势系统 — 入场信号服务
 
-通过经典指标系统（10-经典指标系统）获取 Freqtrade 多策略入场信号。
+从信号池（pool.json）读取 Freqtrade 多策略入场信号。
+
+信号池由 signal_pool/scanner.py 定时扫描全币种生成，包含
+1h 和 4h 两个时间周期的多策略投票结果。
 
 三屏趋势系统的定位：
 - Screen1/Screen2：大周期趋势方向 + 置信度（本模块计算）
-- Screen3：执行层入场时机 → 委托给经典系统的 Freqtrade 策略
-
-这样职责分离：
-- 三屏趋势系统 = 「判断做不做、做多空、做多少」
-- 经典指标系统 = 「具体什么时候进场、什么时候离场」
+- Screen3：执行层入场时机 → 从信号池读取 Freqtrade 策略信号
 """
 
+import os
+import json
 from typing import Dict, Optional, List
 from dataclasses import dataclass
 from enum import Enum
@@ -56,12 +57,35 @@ class MultiStrategySignal:
         return self.direction == SignalDirection.HOLD
 
 
+# 信号池文件路径
+_POOL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "signal_pool", "pool.json")
+
+# 信号池缓存（避免每次读文件）
+_pool_cache = None
+_pool_cache_mtime = 0
+
+
+def _load_pool() -> dict:
+    """加载信号池（带文件修改时间缓存）"""
+    global _pool_cache, _pool_cache_mtime
+    try:
+        mtime = os.path.getmtime(_POOL_FILE)
+        if _pool_cache is not None and mtime == _pool_cache_mtime:
+            return _pool_cache
+        with open(_POOL_FILE, "r") as f:
+            _pool_cache = json.load(f)
+            _pool_cache_mtime = mtime
+            return _pool_cache
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
 def fetch_freqtrade_signals(
     symbol: str,
     timeframes: Optional[List[str]] = None,
 ) -> Dict[str, MultiStrategySignal]:
     """
-    从经典指标系统获取 Freqtrade 多策略信号
+    从信号池读取 Freqtrade 多策略信号
 
     参数:
         symbol: 币种符号，如 "BTC"
@@ -70,71 +94,65 @@ def fetch_freqtrade_signals(
     返回:
         {timeframe: MultiStrategySignal}
 
-    说明：
-        三屏趋势系统不直接运行 Freqtrade 策略，而是通过经典系统获取信号。
-        经典系统负责策略运行、回测优化、参数调优等。
+    说明:
+        信号池由 signal_pool/scanner.py 定时生成（默认每5分钟）。
+        如果信号池不存在或币种未在池中，返回中性信号。
     """
-    try:
-        from .classic_bridge import _make_request
-    except ImportError:
-        from classic_bridge import _make_request
-
     timeframes = timeframes or ["1h", "4h"]
-    result = {}
+    pool = _load_pool()
 
+    if not pool or not pool.get("signals"):
+        # 信号池不存在或为空，返回中性信号
+        return {tf: _neutral_signal(symbol, tf) for tf in timeframes}
+
+    pool_signals = pool["signals"]
+    coin_data = pool_signals.get(symbol, {})
+
+    result = {}
     for tf in timeframes:
-        signal = _fetch_single_timeframe(symbol, tf)
-        if signal:
-            result[tf] = signal
+        tf_data = coin_data.get(tf, {})
+        if tf_data:
+            result[tf] = _dict_to_multi_signal(symbol, tf, tf_data)
+        else:
+            result[tf] = _neutral_signal(symbol, tf)
 
     return result
 
 
-def _fetch_single_timeframe(symbol: str, timeframe: str) -> Optional[MultiStrategySignal]:
-    """获取单个时间周期的信号"""
-    try:
-        from .classic_bridge import _make_request
-    except ImportError:
-        from classic_bridge import _make_request
+def _dict_to_multi_signal(symbol: str, timeframe: str, data: dict) -> MultiStrategySignal:
+    """将信号池中的字典转换为 MultiStrategySignal"""
+    signal_str = (data.get("signal") or "hold").lower()
+    conf = float(data.get("confidence", 0) or 0)
+    strategy_name = data.get("strategy", f"freqtrade_{timeframe}")
 
-    endpoint_map = {
-        "1h": f"/signals/hyperliquid/regime-hybrid?coin={symbol}",
-        "4h": f"/signals/hyperliquid/multigroup?coin={symbol}",
-    }
+    direction = _parse_direction(signal_str)
+    details = data.get("details", [])
 
-    endpoint = endpoint_map.get(timeframe)
-    if not endpoint:
-        return _neutral_signal(symbol, timeframe)
+    strategies = []
+    for d in details:
+        strategies.append(StrategySignal(
+            strategy_name=d.get("strategy", ""),
+            signal=_parse_direction(d.get("signal", "hold")),
+            confidence=float(d.get("weight", 0)) * 100,
+        ))
 
-    resp = _make_request(endpoint, timeout=4.0)
-    if not resp["ok"]:
-        return _neutral_signal(symbol, timeframe)
-
-    data = resp["data"]
-    if isinstance(data, dict):
-        signal_str = (data.get("signal") or data.get("direction") or "hold").lower()
-        conf = float(data.get("confidence", 0) or 0)
-        strategy_name = data.get("strategy", f"freqtrade_{timeframe}")
-
-        direction = _parse_direction(signal_str)
+    if not strategies:
         strategies = [StrategySignal(
             strategy_name=strategy_name,
             signal=direction,
             confidence=conf,
         )]
 
-        return MultiStrategySignal(
-            symbol=symbol,
-            timeframe=timeframe,
-            direction=direction,
-            confidence=conf,
-            strategy_count=1,
-            long_votes=1 if direction == SignalDirection.LONG else 0,
-            short_votes=1 if direction == SignalDirection.SHORT else 0,
-            strategies=strategies,
-        )
-
-    return _neutral_signal(symbol, timeframe)
+    return MultiStrategySignal(
+        symbol=symbol,
+        timeframe=timeframe,
+        direction=direction,
+        confidence=conf,
+        strategy_count=len(strategies),
+        long_votes=sum(1 for s in strategies if s.signal == SignalDirection.LONG),
+        short_votes=sum(1 for s in strategies if s.signal == SignalDirection.SHORT),
+        strategies=strategies,
+    )
 
 
 def _parse_direction(signal_str: str) -> SignalDirection:
@@ -148,7 +166,7 @@ def _parse_direction(signal_str: str) -> SignalDirection:
 
 
 def _neutral_signal(symbol: str, timeframe: str) -> MultiStrategySignal:
-    """返回中性/空信号（经典系统不可用时的降级）"""
+    """返回中性/空信号（信号池不可用时的降级）"""
     return MultiStrategySignal(
         symbol=symbol,
         timeframe=timeframe,

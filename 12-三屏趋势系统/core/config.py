@@ -3,36 +3,17 @@
 from typing import List, Dict
 
 CANDIDATE_COINS: List[Dict] = [
-    # 主流币
+    # 核心大币种（回测验证正收益）
     {"symbol": "BTC", "spot": "BTC-USDT", "swap": "BTC-USDT-SWAP", "is_btc": True},
     {"symbol": "ETH", "spot": "ETH-USDT", "swap": "ETH-USDT-SWAP", "is_btc": False},
     {"symbol": "SOL", "spot": "SOL-USDT", "swap": "SOL-USDT-SWAP", "is_btc": False},
     {"symbol": "BNB", "spot": "BNB-USDT", "swap": "BNB-USDT-SWAP", "is_btc": False},
-    {"symbol": "XRP", "spot": "XRP-USDT", "swap": "XRP-USDT-SWAP", "is_btc": False},
-    # 高市值山寨
-    {"symbol": "DOGE", "spot": "DOGE-USDT", "swap": "DOGE-USDT-SWAP", "is_btc": False},
-    {"symbol": "ADA", "spot": "ADA-USDT", "swap": "ADA-USDT-SWAP", "is_btc": False},
-    {"symbol": "AVAX", "spot": "AVAX-USDT", "swap": "AVAX-USDT-SWAP", "is_btc": False},
-    {"symbol": "LINK", "spot": "LINK-USDT", "swap": "LINK-USDT-SWAP", "is_btc": False},
-    {"symbol": "DOT", "spot": "DOT-USDT", "swap": "DOT-USDT-SWAP", "is_btc": False},
-    {"symbol": "TRX", "spot": "TRX-USDT", "swap": "TRX-USDT-SWAP", "is_btc": False},
-    {"symbol": "MATIC", "spot": "MATIC-USDT", "swap": "MATIC-USDT-SWAP", "is_btc": False},
-    # DeFi 赛道
-    {"symbol": "UNI", "spot": "UNI-USDT", "swap": "UNI-USDT-SWAP", "is_btc": False},
-    {"symbol": "AAVE", "spot": "AAVE-USDT", "swap": "AAVE-USDT-SWAP", "is_btc": False},
-    {"symbol": "LDO", "spot": "LDO-USDT", "swap": "LDO-USDT-SWAP", "is_btc": False},
-    # L2 / 新兴公链
-    {"symbol": "ARB", "spot": "ARB-USDT", "swap": "ARB-USDT-SWAP", "is_btc": False},
-    {"symbol": "OP", "spot": "OP-USDT", "swap": "OP-USDT-SWAP", "is_btc": False},
-    {"symbol": "APT", "spot": "APT-USDT", "swap": "APT-USDT-SWAP", "is_btc": False},
-    {"symbol": "SUI", "spot": "SUI-USDT", "swap": "SUI-USDT-SWAP", "is_btc": False},
-    {"symbol": "SEI", "spot": "SEI-USDT", "swap": "SEI-USDT-SWAP", "is_btc": False},
-    # Meme / 热门
-    {"symbol": "PEPE", "spot": "PEPE-USDT", "swap": "PEPE-USDT-SWAP", "is_btc": False},
-    {"symbol": "WIF", "spot": "WIF-USDT", "swap": "WIF-USDT-SWAP", "is_btc": False},
-    # 平台币 / 其他
-    {"symbol": "OKB", "spot": "OKB-USDT", "swap": "OKB-USDT-SWAP", "is_btc": False},
+    # 高流动性扩展币种
     {"symbol": "HYPE", "spot": "HYPE-USDT", "swap": "HYPE-USDT-SWAP", "is_btc": False},
+    {"symbol": "UNI", "spot": "UNI-USDT", "swap": "UNI-USDT-SWAP", "is_btc": False},
+    {"symbol": "ARB", "spot": "ARB-USDT", "swap": "ARB-USDT-SWAP", "is_btc": False},
+    {"symbol": "ZEC", "spot": "ZEC-USDT", "swap": "ZEC-USDT-SWAP", "is_btc": False},
+    {"symbol": "DOGE", "spot": "DOGE-USDT", "swap": "DOGE-USDT-SWAP", "is_btc": False},
 ]
 
 SCREEN1_INDICATORS: List[str] = [
@@ -93,3 +74,23 @@ WEIGHT_MAX: float = 0.30                       # 单指标最高权重30%
 
 DEFAULT_INST_SPOT: str = "BTC-USDT"
 DEFAULT_INST_SWAP: str = "BTC-USDT-SWAP"
+
+# Phase 3: 逐仓模式 + 价值风险评估 + 加仓系统
+MARGIN_MODE: str = "isolated"
+MAX_LEVERAGE: float = 5.0
+MAX_POSITION_PCT: float = 0.50
+MAX_ADDON_POSITION_PCT: float = 0.70
+
+BTC_DIVERGENCE_ADDON_PCT: float = 0.08
+BASE_TAKE_PROFIT_PCT: float = 0.04
+BASE_STOP_LOSS_PCT: float = 0.10
+
+RISK_REWARD_THRESHOLD: float = 1.5
+TREND_STRENGTH_ADDON_THRESHOLD: float = 65.0
+MAX_ADDON_COUNT: int = 2
+
+# Phase 3.1: BTC风向标 — 全系统做多/做空闸门
+BTC_WIND_VANE_DAILY_MA: int = 128        # 日线MA128
+BTC_WIND_VANE_WEEKLY_MA: int = 200       # 周线MA200
+BTC_WIND_VANE_BREAK_DAYS: int = 3        # 连续跌破MA128的天数阈值
+BTC_WIND_VANE_ENABLED: bool = True       # 风向标总开关

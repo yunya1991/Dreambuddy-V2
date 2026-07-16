@@ -386,3 +386,271 @@ def calc_classic_indicator_confidence(weekly_df, daily_df) -> dict:
         "trend_consistent": trend_consistent,
         "weights": {"weekly": WEEKLY_WEIGHT, "daily": DAILY_WEIGHT},
     }
+
+
+# ========================================================================
+# Elder-ray 高级分析（P2-v2：融入三重滤网第二屏理论）
+# ========================================================================
+
+def calc_elder_ray_advanced(df, period: int = 13, lookback: int = 20) -> dict:
+    """
+    Elder-ray 高级分析：EMA趋势 + 多空力量 + 背离检测 + 衰竭判定
+
+    三重滤网第二屏定位：
+    - 第一屏（周线）定长期趋势 → 由 trend_consistency 完成
+    - 第二屏（日线）用 Elder-ray 找回撤/背离 → 本函数实现
+    - 第三屏（小时线）精确入场 → 由 Freqtrade 完成
+
+    核心理论（Alexander Elder）：
+    1. EMA(13) 斜率 = 趋势方向（共识价值的移动）
+    2. Bull Power = High - EMA → 买方将价格推升至共识之上的能力
+    3. Bear Power = Low - EMA → 卖方将价格打压至共识之下的能力
+    4. 背离 = 价格创新高/低，但力量指标没有 → 趋势衰竭信号
+    5. 失控 = Bull Power 转负（多头失控）或 Bear Power 转正（空头失控）
+
+    参数:
+        df: DataFrame（日线/周线）
+        period: EMA 周期（默认13）
+        lookback: 背离检测回看窗口（默认20根K线）
+
+    返回:
+        {
+            "ema_trend": "BULL"/"BEAR"/"NEUTRAL",       # EMA斜率方向
+            "ema_slope": float,                          # EMA斜率值
+            "bull_power": float,                         # 当前多头力量
+            "bear_power": float,                         # 当前空头力量
+            "bull_above_zero": bool,                     # 多头力量是否在零线上方
+            "bear_below_zero": bool,                     # 空头力量是否在零线下方
+            "bull_losing_control": bool,                 # 多头失控（Bull转负）
+            "bear_losing_control": bool,                 # 空头失控（Bear转正）
+            "both_weakening": bool,                      # 多空力量均在减弱
+            "bull_divergence": {                         # 看跌背离（价格新高，Bull未新高）
+                "detected": bool,
+                "strength": 0-100,
+                "price_high_idx": int,
+                "bull_high_idx": int,
+            },
+            "bear_divergence": {                         # 看涨背离（价格新低，Bear未新低）
+                "detected": bool,
+                "strength": 0-100,
+                "price_low_idx": int,
+                "bear_low_idx": int,
+            },
+            "phase": str,                                # 趋势阶段：EARLY/ACCELERATING/MATURING/REVERSING/UNKNOWN
+            "phase_confidence": float,                   # 阶段判定置信度 0-100
+            "setup_score": float,                        # 综合入场setup评分 0-100（越高越好）
+        }
+    """
+    result = {
+        "ema_trend": "NEUTRAL",
+        "ema_slope": 0.0,
+        "bull_power": 0.0,
+        "bear_power": 0.0,
+        "bull_above_zero": False,
+        "bear_below_zero": False,
+        "bull_losing_control": False,
+        "bear_losing_control": False,
+        "both_weakening": False,
+        "bull_divergence": {"detected": False, "strength": 0.0, "price_high_idx": -1, "bull_high_idx": -1},
+        "bear_divergence": {"detected": False, "strength": 0.0, "price_low_idx": -1, "bear_low_idx": -1},
+        "phase": "UNKNOWN",
+        "phase_confidence": 0.0,
+        "setup_score": 0.0,
+    }
+
+    if not TALIB_AVAILABLE or len(df) < period + lookback:
+        return result
+
+    try:
+        # 1. 计算 EMA 和 Elder-ray
+        er = ta.ELDER_RAY(df, period=period)
+        # 统一转为 numpy 数组（避免 pandas 索引问题）
+        bull_power = np.array(er["bull_power"])
+        bear_power = np.array(er["bear_power"])
+        closes = np.array(df["close"])
+        highs = np.array(df["high"])
+        lows = np.array(df["low"])
+
+        # 计算 EMA（用于斜率判断）—— 转 numpy 数组避免 pandas 索引问题
+        ema = np.array(ta.EMA(closes, timeperiod=period))
+        current_ema = ema[-1]
+        prev_ema = ema[-6] if len(ema) >= 6 else ema[0]
+        ema_slope = (current_ema - prev_ema) / current_ema * 1000  # 归一化斜率
+
+        # 2. EMA趋势方向
+        if ema_slope > 0.5:
+            result["ema_trend"] = "BULL"
+        elif ema_slope < -0.5:
+            result["ema_trend"] = "BEAR"
+        else:
+            result["ema_trend"] = "NEUTRAL"
+        result["ema_slope"] = round(ema_slope, 3)
+
+        # 3. 当前多空力量
+        current_bull = float(bull_power[-1])
+        current_bear = float(bear_power[-1])
+        result["bull_power"] = round(current_bull, 4)
+        result["bear_power"] = round(current_bear, 4)
+        result["bull_above_zero"] = current_bull > 0
+        result["bear_below_zero"] = current_bear < 0
+
+        # 4. 失控检测
+        # 多头失控 = Bull Power 转为负值（价格最高点都在EMA下方，空头完全主导）
+        # 空头失控 = Bear Power 转为正值（价格最低点都在EMA上方，多头完全主导）
+        if current_bull < 0 and len(bull_power) >= 3 and bull_power[-3] > 0:
+            result["bull_losing_control"] = True
+        if current_bear > 0 and len(bear_power) >= 3 and bear_power[-3] < 0:
+            result["bear_losing_control"] = True
+
+        # 5. 多空力量均在减弱（变盘预警）
+        # Bull > 0 但在下降，Bear < 0 但在上升（两者都向零线靠拢）
+        if len(bull_power) >= 5:
+            bull_rising = current_bull > bull_power[-5]
+            bear_rising = current_bear > bear_power[-5]  # Bear从负变正是上升（减弱空头）
+            if current_bull > 0 and not bull_rising and current_bear < 0 and bear_rising:
+                result["both_weakening"] = True
+
+        # 6. 背离检测（回看 lookback 根K线）
+        window_start = max(0, len(closes) - lookback)
+        window_closes = closes[window_start:]
+        window_highs = highs[window_start:]
+        window_lows = lows[window_start:]
+        window_bull = bull_power[window_start:]
+        window_bear = bear_power[window_start:]
+
+        # 看跌背离：价格创新高，但Bull Power未创新高
+        if len(window_highs) >= 5:
+            price_high_idx = int(np.argmax(window_highs))
+            bull_high_idx = int(np.argmax(window_bull))
+            # 价格高点在力量高点之后（价格还在创新高，但力量已减弱）
+            if price_high_idx > bull_high_idx and price_high_idx == len(window_highs) - 1:
+                price_high_val = window_highs[price_high_idx]
+                bull_high_val = window_bull[bull_high_idx]
+                current_bull_val = window_bull[-1]
+                # 背离强度：价格创新高幅度 vs 力量下降幅度
+                price_new_high_pct = (price_high_val - window_highs[bull_high_idx]) / price_high_val * 100
+                bull_decline_pct = (bull_high_val - current_bull_val) / max(abs(bull_high_val), 1e-9) * 100
+                divergence_strength = min(100.0, max(0.0, price_new_high_pct * 2 + bull_decline_pct))
+                if divergence_strength > 10:
+                    result["bull_divergence"] = {
+                        "detected": True,
+                        "strength": round(divergence_strength, 1),
+                        "price_high_idx": price_high_idx,
+                        "bull_high_idx": bull_high_idx,
+                    }
+
+        # 看涨背离：价格创新低，但Bear Power未创新低（更接近零）
+        if len(window_lows) >= 5:
+            price_low_idx = int(np.argmin(window_lows))
+            bear_low_idx = int(np.argmin(window_bear))  # Bear最负 = 最低点
+            # 价格低点在力量低点之后（价格还在创新低，但空头力量已减弱）
+            if price_low_idx > bear_low_idx and price_low_idx == len(window_lows) - 1:
+                price_low_val = window_lows[price_low_idx]
+                bear_low_val = window_bear[bear_low_idx]
+                current_bear_val = window_bear[-1]
+                # 背离强度：价格创新低幅度 vs 力量减弱幅度
+                price_new_low_pct = (window_lows[bear_low_idx] - price_low_val) / max(abs(price_low_val), 1e-9) * 100
+                bear_weakening_pct = (current_bear_val - bear_low_val) / max(abs(bear_low_val), 1e-9) * 100
+                divergence_strength = min(100.0, max(0.0, price_new_low_pct * 2 + bear_weakening_pct))
+                if divergence_strength > 10:
+                    result["bear_divergence"] = {
+                        "detected": True,
+                        "strength": round(divergence_strength, 1),
+                        "price_low_idx": price_low_idx,
+                        "bear_low_idx": bear_low_idx,
+                    }
+
+        # 7. 趋势生命周期阶段判定（基于Elder-ray理论）
+        # EARLY: EMA刚刚转向 + 力量开始积累
+        # ACCELERATING: EMA趋势明确 + 主导力量增强
+        # MATURING: EMA趋势仍在但主导力量减弱 + 双方力量均减弱
+        # REVERSING: EMA趋势开始转向 + 背离信号 + 失控信号
+        ema_trend = result["ema_trend"]
+        bull_div = result["bull_divergence"]["detected"]
+        bear_div = result["bear_divergence"]["detected"]
+
+        if ema_trend == "BULL":
+            if result["both_weakening"] and result["bull_divergence"]["detected"]:
+                # 上升趋势中，多空均减弱 + 看跌背离 → 成熟/顶部
+                phase = "MATURING"
+                phase_conf = min(100, 50 + result["bull_divergence"]["strength"] * 0.5)
+            elif result["bear_losing_control"]:
+                # 空头失控（Bear转正）+ 上升趋势 → 加速阶段（多头完全主导）
+                phase = "ACCELERATING"
+                phase_conf = 80.0
+            elif abs(ema_slope) < 2 and current_bull > 0 and not result["both_weakening"]:
+                # EMA斜率较缓但在上升，多头力量为正 → 启动阶段
+                phase = "EARLY"
+                phase_conf = 55.0
+            else:
+                # 默认：上升趋势 + 多头力量正 → 加速
+                phase = "ACCELERATING"
+                phase_conf = 70.0
+        elif ema_trend == "BEAR":
+            if result["both_weakening"] and result["bear_divergence"]["detected"]:
+                # 下降趋势中，多空均减弱 + 看涨背离 → 成熟/底部
+                phase = "MATURING"
+                phase_conf = min(100, 50 + result["bear_divergence"]["strength"] * 0.5)
+            elif result["bull_losing_control"]:
+                # 多头失控（Bull转负）+ 下降趋势 → 加速下跌
+                phase = "ACCELERATING"
+                phase_conf = 80.0
+            elif abs(ema_slope) < 2 and current_bear < 0 and not result["both_weakening"]:
+                # EMA斜率较缓但在下降，空头力量为负 → 启动阶段（下跌初期）
+                phase = "EARLY"
+                phase_conf = 55.0
+            else:
+                phase = "ACCELERATING"
+                phase_conf = 70.0
+        else:
+            # EMA走平
+            if bear_div and result["bear_below_zero"]:
+                phase = "REVERSING"  # 看涨背离 → 可能反转向上
+                phase_conf = 60.0
+            elif bull_div and result["bull_above_zero"]:
+                phase = "REVERSING"  # 看跌背离 → 可能反转向下
+                phase_conf = 60.0
+            elif result["bull_losing_control"] or result["bear_losing_control"]:
+                phase = "REVERSING"
+                phase_conf = 55.0
+            else:
+                phase = "UNKNOWN"
+                phase_conf = 30.0
+
+        result["phase"] = phase
+        result["phase_confidence"] = round(phase_conf, 1)
+
+        # 8. 综合入场 setup 评分（0-100，越高越适合入场）
+        # 评分逻辑：
+        # - EMA趋势方向与交易方向一致 +20
+        # - 主导力量在零线上方/下方 +20
+        # - 背离信号出现（逆势时）+30
+        # - 力量增强（加速）+15
+        # - 失控确认 +15
+        setup_score = 0.0
+        if ema_trend == "BULL":
+            setup_score += 20
+        elif ema_trend == "BEAR":
+            setup_score += 20
+
+        if current_bull > 0:
+            setup_score += 10
+        if current_bear < 0:
+            setup_score += 10
+
+        if bear_div:
+            setup_score += min(30, result["bear_divergence"]["strength"] * 0.5)
+        if bull_div:
+            setup_score += min(30, result["bull_divergence"]["strength"] * 0.5)
+
+        if result["both_weakening"]:
+            setup_score += 10
+        if result["bull_losing_control"] or result["bear_losing_control"]:
+            setup_score += 15
+
+        result["setup_score"] = round(min(100.0, setup_score), 1)
+
+        return result
+
+    except Exception:
+        return result

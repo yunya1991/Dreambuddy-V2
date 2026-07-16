@@ -25,6 +25,12 @@ result = compute_trend_signal_from_dataframes(
     symbol="BTC",
     fundamental_data={"direction": "BULL", "confidence": 65},
 )
+
+# 集成推理（LightGBM + LLM 辩证推理）
+from ml.algo_ensemble import predict_ensemble
+from ml.llm_reasoning import reason_if_needed
+ensemble_pred = predict_ensemble(result)           # LightGBM 集成预测
+final = reason_if_needed(result, ensemble_pred)    # LLM 辩证推理（按需触发）
 ```
 
 ## 文件索引
@@ -40,6 +46,11 @@ result = compute_trend_signal_from_dataframes(
 | [core/trend_consistency.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/trend_consistency.py) | 趋势一致性检测 | `calc_trend_consistency()`, `calc_trend_direction_dynamic()` |
 | [core/dynamic_weights.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/dynamic_weights.py) | 动态权重 + 贝叶斯置信度 | `calc_dynamic_weights()`, `calc_bayesian_confidence()` |
 | [core/fusion.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/fusion.py) | 技术面+基本面撮合 | `fuse_technical_fundamental()` |
+| [ml/algo_ensemble.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py) | **LightGBM 集成推理**（五大算法权重学习） | `predict_ensemble()`, `train_ensemble()`, `collect_sample()` |
+| [ml/llm_reasoning.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/llm_reasoning.py) | **LLM 辩证推理**（矛盾信号分析） | `reason_if_needed()`, `should_trigger_llm()` |
+| [ml/label_samples.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/label_samples.py) | **样本标注 + 训练工具** | `label_collected_samples()`, `train_from_collected()` |
+| [ml/models.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/models.py) | 价格特征ML模型 | `LightGBMModel`, `XGBoostModel` |
+| [ml/feature_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py) | 价格特征工程 | `TrendFeatureEngineer` |
 | [data/market_data.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/market_data.py) | K线数据获取 | `fetch_candles()`, `resample_candles()` |
 | [data/fundamental_data.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/fundamental_data.py) | 基本面数据获取 | `fetch_fundamental_data()`, `fetch_fundamental_by_timeframe()` |
 
@@ -56,8 +67,27 @@ result = compute_trend_signal_from_dataframes(
 
 ```
 技术指标(周线+日线) ──→ 趋势一致性 + 贝叶斯置信度 ──┐
-                                                      ├──→ 技术面+基本面撮合 ──→ Freqtrade校准 ──→ 仓位映射
+                                                      ├──→ 技术面+基本面撮合 ──→ Freqtrade校准 ──→ 五大算法 final_signal
 A系列研报(周报+日报) ──→ 基本面方向 + 置信度 ─────────┘
+                                                                    │
+                                                                    ▼
+                                              ┌─────────────────────────────────┐
+                                              │     集成推理层 (新增)             │
+                                              │  ┌───────────────────────────┐  │
+                                              │  │ LightGBM 集成推理        │  │
+                                              │  │ 46维特征 → 权重自适应     │  │
+                                              │  │ 模型未训练→fallback       │  │
+                                              │  └───────────┬───────────────┘  │
+                                              │              │                  │
+                                              │  ┌───────────▼───────────────┐  │
+                                              │  │ LLM 辩证推理 (按需触发)    │  │
+                                              │  │ 低置信/矛盾→DeepSeek       │  │
+                                              │  │ 高置信无矛盾→直接用集成    │  │
+                                              │  └───────────┬───────────────┘  │
+                                              └──────────────┼──────────────────┘
+                                                             │
+                                                             ▼
+                                                    最终决策(方向+置信度+推理依据)
 ```
 
 ## 文档索引
