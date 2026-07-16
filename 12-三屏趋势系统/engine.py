@@ -1077,6 +1077,7 @@ def compute_trend_signal_from_dataframes(
     is_btc: bool = False,
     btc_daily_df=None,
     btc_weekly_df=None,
+    btc_trend_direction: Optional[str] = None,
 ) -> dict:
     """
     基于 DataFrame 计算完整三屏趋势信号（核心算法层）
@@ -1094,6 +1095,8 @@ def compute_trend_signal_from_dataframes(
         is_btc: 是否为BTC币种
         btc_daily_df: BTC日线DataFrame（用于波动率基准 + 风向标MA128检测）
         btc_weekly_df: BTC周线DataFrame（用于风向标MA200检测）
+        btc_trend_direction: BTC 趋势方向 "BULL"/"BEAR"/"NEUTRAL"（可选）
+            非BTC币种趋势跟随过滤：仅允许与BTC同向开单，禁止逆向开单
 
     返回:
         完整信号结构，详见技术文档第7节
@@ -1127,6 +1130,36 @@ def compute_trend_signal_from_dataframes(
             final_direction = er_direction
             # 背离确认时提升置信度（背离是可靠的切换信号）
             final_confidence = max(final_confidence, 55.0)
+
+    # ── BTC 趋势方向过滤（非 BTC 币种趋势跟随）──
+    # 核心逻辑：BTC 方向确定后，小币遵循"多空不对称性"原则：
+    # - BTC BULL  → 小币只能做多（ENTER_LONG），禁止做空 — 顺势而为
+    # - BTC BEAR  → 小币只能做空（ENTER_SHORT），禁止做多 — 逆势做空需明确信号
+    # - BTC NEUTRAL → 默认只允许做多（保守策略），禁止做空 — 市场多空不对称
+    btc_direction_blocked = False
+    btc_filter_reason = ""
+    if not is_btc and btc_trend_direction:
+        if btc_trend_direction == "BULL":
+            # BTC 看多 → 禁止做空
+            if final_direction == "BEAR":
+                btc_direction_blocked = True
+                btc_filter_reason = "BTC趋势BULL，禁止做空"
+                final_direction = "NEUTRAL"
+                final_confidence = 0.0
+        elif btc_trend_direction == "BEAR":
+            # BTC 看空 → 禁止做多
+            if final_direction == "BULL":
+                btc_direction_blocked = True
+                btc_filter_reason = "BTC趋势BEAR，禁止做多"
+                final_direction = "NEUTRAL"
+                final_confidence = 0.0
+        elif btc_trend_direction == "NEUTRAL":
+            # BTC 中性 → 默认只做多（市场多空不对称性）
+            if final_direction == "BEAR":
+                btc_direction_blocked = True
+                btc_filter_reason = "BTC趋势NEUTRAL，默认禁止做空（多空不对称）"
+                final_direction = "NEUTRAL"
+                final_confidence = 0.0
 
     ft_consistent = _integrate_freqtrade_signals(
         final_direction=final_direction,
@@ -1233,6 +1266,8 @@ def compute_trend_signal_from_dataframes(
         "phase_adjusted": decision.get("phase_adjusted", False),  # P2 新增
         "elder_ray_divergence_entry": decision.get("elder_ray_divergence_entry", False),  # P2-v2 新增
         "elder_ray": elder_ray_result,  # P2-v2 新增，完整 Elder-ray 结果
+        "btc_direction_blocked": btc_direction_blocked,  # BTC趋势方向过滤
+        "btc_filter_reason": btc_filter_reason,  # 过滤原因
         "leverage": MAX_LEVERAGE,
         "margin_mode": "isolated",
         "max_position_pct": MAX_POSITION_PCT,
