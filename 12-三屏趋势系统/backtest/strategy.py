@@ -464,6 +464,7 @@ class FullReasoningStrategy(BaseStrategy):
         fallback_confidence_threshold: float = 70.0,
         btc_prices: Optional[pd.DataFrame] = None,
         use_btc_direction_filter: bool = True,
+        use_fundamental: Optional[bool] = None,
     ):
         """
         参数:
@@ -491,6 +492,7 @@ class FullReasoningStrategy(BaseStrategy):
         self.fallback_confidence_threshold = fallback_confidence_threshold
         self.btc_prices = btc_prices
         self.use_btc_direction_filter = use_btc_direction_filter
+        self.use_fundamental = use_fundamental if use_fundamental is not None else True  # 默认启用基本面
 
         # 统计计数器
         self.stats = {
@@ -624,6 +626,7 @@ class FullReasoningStrategy(BaseStrategy):
                             btc_daily_df=daily_slice if self.is_btc else None,
                             btc_weekly_df=weekly_slice if self.is_btc else None,
                             btc_trend_direction=current_btc_dir,
+                            use_fundamental=self.use_fundamental,
                         )
 
                         fs = result.get("final_signal", {})

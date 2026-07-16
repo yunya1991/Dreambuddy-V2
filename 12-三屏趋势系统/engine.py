@@ -1078,6 +1078,7 @@ def compute_trend_signal_from_dataframes(
     btc_daily_df=None,
     btc_weekly_df=None,
     btc_trend_direction: Optional[str] = None,
+    use_fundamental: Optional[bool] = None,
 ) -> dict:
     """
     基于 DataFrame 计算完整三屏趋势信号（核心算法层）
@@ -1097,6 +1098,8 @@ def compute_trend_signal_from_dataframes(
         btc_weekly_df: BTC周线DataFrame（用于风向标MA200检测）
         btc_trend_direction: BTC 趋势方向 "BULL"/"BEAR"/"NEUTRAL"（可选）
             非BTC币种趋势跟随过滤：仅允许与BTC同向开单，禁止逆向开单
+        use_fundamental: 是否启用基本面融合（None=从config读取，True/False=强制）
+            基本面不可用时自动回退到纯技术分析
 
     返回:
         完整信号结构，详见技术文档第7节
@@ -1107,7 +1110,7 @@ def compute_trend_signal_from_dataframes(
     fundamental_data = fundamental_data or {"direction": "NEUTRAL", "confidence": 0}
     freqtrade_signals = freqtrade_signals or {}
 
-    trend_consistency = calc_trend_consistency(weekly_df, daily_df)
+    trend_consistency = calc_trend_consistency(weekly_df, daily_df, use_fundamental=use_fundamental)
 
     bayesian_confidence = calc_bayesian_confidence(weekly_df, daily_df)
 
@@ -1268,6 +1271,7 @@ def compute_trend_signal_from_dataframes(
         "elder_ray": elder_ray_result,  # P2-v2 新增，完整 Elder-ray 结果
         "btc_direction_blocked": btc_direction_blocked,  # BTC趋势方向过滤
         "btc_filter_reason": btc_filter_reason,  # 过滤原因
+        "fundamental_fusion": trend_consistency.get("fundamental_fusion"),  # 基本面融合结果
         "leverage": MAX_LEVERAGE,
         "margin_mode": "isolated",
         "max_position_pct": MAX_POSITION_PCT,

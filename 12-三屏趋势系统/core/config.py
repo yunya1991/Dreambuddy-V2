@@ -94,3 +94,11 @@ BTC_WIND_VANE_DAILY_MA: int = 128        # 日线MA128
 BTC_WIND_VANE_WEEKLY_MA: int = 200       # 周线MA200
 BTC_WIND_VANE_BREAK_DAYS: int = 3        # 连续跌破MA128的天数阈值
 BTC_WIND_VANE_ENABLED: bool = True       # 风向标总开关
+
+# ── 第一屏基本面分析开关（可回退到纯技术分析基线）──
+# True: 集成 6-TRADING 7维基本面分析（减半周期/矿工经济/链上估值/宏观金融/跨市场）
+# False: 纯技术分析（基线策略，对应 git tag baseline-tech-only）
+# 基本面数据不可用时自动回退到纯技术分析
+FUNDAMENTAL_SCREEN1_ENABLED: bool = True
+FUNDAMENTAL_TECH_WEIGHT: float = 0.6     # 技术权重
+FUNDAMENTAL_FUND_WEIGHT: float = 0.4     # 基本面权重

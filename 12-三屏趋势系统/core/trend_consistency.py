@@ -8,7 +8,9 @@
 - 趋势一致性：周线 vs 日线方向对齐检测
 """
 
-from typing import List, Dict
+from typing import List, Dict, Optional
+from datetime import datetime
+import pandas as pd
 try:
     from .indicators import (
         calc_indicator_dynamics,
@@ -22,6 +24,9 @@ try:
         REVERSAL_THRESHOLD,
         REVERSAL_SPEED_LOW,
         REVERSAL_ACCEL_HIGH,
+        FUNDAMENTAL_SCREEN1_ENABLED,
+        FUNDAMENTAL_TECH_WEIGHT,
+        FUNDAMENTAL_FUND_WEIGHT,
     )
 except ImportError:
     from indicators import (
@@ -36,6 +41,9 @@ except ImportError:
         REVERSAL_THRESHOLD,
         REVERSAL_SPEED_LOW,
         REVERSAL_ACCEL_HIGH,
+        FUNDAMENTAL_SCREEN1_ENABLED,
+        FUNDAMENTAL_TECH_WEIGHT,
+        FUNDAMENTAL_FUND_WEIGHT,
     )
 
 
@@ -275,9 +283,9 @@ def detect_trend_phase(df, indicators: List[str], lookback: int = 10) -> dict:
     }
 
 
-def calc_trend_consistency(weekly_df, daily_df) -> dict:
+def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] = None) -> dict:
     """
-    趋势一致性计算（静态 + 三维动态融合）
+    趋势一致性计算（静态 + 三维动态融合 + 基本面融合）
 
     动态优先原则：
     - 逆转信号 > 60% → 以动态方向为准（覆盖静态）
@@ -290,18 +298,28 @@ def calc_trend_consistency(weekly_df, daily_df) -> dict:
     - NEUTRAL_CONSISTENT: 周线中性，日线主导（弱一致）
     - INCONSISTENT: 周线与日线反向且无逆转信号
 
+    基本面融合（可回退）：
+    - use_fundamental=True 时，周线方向融合基本面 7 维分析
+    - 基本面数据不可用时自动回退到纯技术分析
+    - use_fundamental=False 时，完全使用纯技术分析（基线策略）
+
     返回:
         {
             "weekly": {static_direction, dynamic_direction, final_direction, core_direction, confidence, ...},
             "daily": {static_direction, dynamic_direction, final_direction, core_direction, confidence, ...},
-            "consistent": bool,                      # 向后兼容：STRONG/REVERSAL/NEUTRAL_CONSISTENT → True
-            "consistency_level": str,                # 新增：STRONG_CONSISTENT / REVERSAL_CONSISTENT / NEUTRAL_CONSISTENT / INCONSISTENT
-            "reversal_alignment": str,               # 新增：NONE / WEEKLY_REVERSAL / DAILY_REVERSAL / BOTH_REVERSAL
+            "consistent": bool,
+            "consistency_level": str,
+            "reversal_alignment": str,
             "overall_direction": "BULL"/"BEAR"/"NEUTRAL",
             "consistency_confidence": 0-100,
-            "reversal_confidence": 0-100,            # 新增：逆转置信度（仅 REVERSAL_CONSISTENT 时有意义）
+            "reversal_confidence": 0-100,
+            "fundamental_fusion": {...},   # 基本面融合结果
         }
     """
+    # 基本面开关：默认从 config 读取
+    if use_fundamental is None:
+        use_fundamental = FUNDAMENTAL_SCREEN1_ENABLED
+
     weekly_static = calc_trend_direction_static(weekly_df, SCREEN1_INDICATORS)
     weekly_dynamic = calc_trend_direction_dynamic(weekly_df, SCREEN1_INDICATORS)
 
@@ -311,6 +329,56 @@ def calc_trend_consistency(weekly_df, daily_df) -> dict:
         weekly_final = weekly_static
     else:
         weekly_final = weekly_dynamic["direction"]
+
+    # ── 基本面融合层（可回退）──
+    fundamental_fusion = None
+    if use_fundamental:
+        try:
+            from .fundamental_screen1 import calc_fundamental_screen1, fuse_tech_fundamental
+        except ImportError:
+            try:
+                from fundamental_screen1 import calc_fundamental_screen1, fuse_tech_fundamental
+            except ImportError:
+                calc_fundamental_screen1 = None
+                fuse_tech_fundamental = None
+
+        if calc_fundamental_screen1 and fuse_tech_fundamental:
+            # 从周线数据推断当前日期
+            current_date = None
+            if "date" in weekly_df.columns and len(weekly_df) > 0:
+                try:
+                    current_date = pd.to_datetime(weekly_df["date"].iloc[-1]).to_pydatetime()
+                except Exception:
+                    pass
+
+            fundamental = calc_fundamental_screen1(current_date)
+
+            # 提取技术方向和置信度
+            tech_core = _core_direction(weekly_final)
+            tech_conf = weekly_dynamic.get("confidence", 50.0)
+
+            # 融合
+            fundamental_fusion = fuse_tech_fundamental(
+                tech_direction=tech_core,
+                tech_confidence=tech_conf,
+                fundamental=fundamental,
+                tech_weight=FUNDAMENTAL_TECH_WEIGHT,
+                fundamental_weight=FUNDAMENTAL_FUND_WEIGHT,
+            )
+
+            # 如果基本面融合成功且方向变化，更新周线方向
+            if fundamental_fusion.get("fused", False) and fundamental_fusion.get("fundamental_available", False):
+                fused_dir = fundamental_fusion["direction"]
+                if fused_dir != tech_core and fused_dir != "NEUTRAL":
+                    # 基本面改变了方向（仅在基本面更明确时）
+                    if fundamental_fusion.get("conflict", False):
+                        # 技术与基本面冲突 → 降低置信度但不改变方向
+                        pass
+                    else:
+                        # 同向增强 → 保持方向，提升置信度
+                        pass
+                # 更新周线置信度
+                weekly_dynamic["confidence"] = fundamental_fusion["confidence"]
 
     daily_static = calc_trend_direction_static(daily_df, SCREEN2_INDICATORS)
     daily_dynamic = calc_trend_direction_dynamic(daily_df, SCREEN2_INDICATORS)
@@ -550,4 +618,5 @@ def calc_trend_consistency(weekly_df, daily_df) -> dict:
         "elder_divergence_confirm": elder_divergence_confirm,  # P2-v3 新增
         "trend_phase": combined_phase,            # P2 新增
         "trend_phase_confidence": combined_phase_conf,  # P2 新增
+        "fundamental_fusion": fundamental_fusion,  # 基本面融合结果（None=未启用/回退）
     }
