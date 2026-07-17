@@ -1,0 +1,70 @@
+{
+  "systems": {
+    "yijing": {
+      "enabled": true,
+      "base_dir": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统",
+      "max_idle_minutes": 30,
+      "adapter": "YijingAdapter",
+      "description": "易经推理系统 (BCRM 2.0)"
+    },
+    "v15": {
+      "enabled": true,
+      "base_dir": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略",
+      "max_idle_minutes": 240,
+      "adapter": "V15Adapter",
+      "description": "V15经典马丁策略"
+    },
+    "screen": {
+      "enabled": true,
+      "base_dir": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading",
+      "max_idle_minutes": 240,
+      "adapter": "ScreenAdapter",
+      "description": "三屏趋势系统"
+    },
+    "agent_a": {
+      "enabled": true,
+      "base_dir": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading",
+      "max_idle_minutes": 240,
+      "adapter": "AgentAAdapter",
+      "description": "Agent A (记忆工作流)"
+    },
+    "agent_b": {
+      "enabled": true,
+      "base_dir": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading",
+      "max_idle_minutes": 240,
+      "adapter": "AgentBAdapter",
+      "description": "Agent B (完整流程)"
+    }
+  },
+  "alert": {
+    "enabled": true,
+    "feishu_enabled": true,
+    "alert_on_warning": true,
+    "alert_on_critical": true,
+    "summary_interval_minutes": 180,
+    "channels": {
+      "critical": "risk",
+      "error": "risk",
+      "warning": "trading",
+      "info": "management"
+    }
+  },
+  "scheduler": {
+    "enabled": true,
+    "interval_minutes": 60,
+    "sync_interval_minutes": 5,
+    "start_immediately": true
+  },
+  "position_sync": {
+    "dry_run": true,
+    "close_confirm_count": 2,
+    "close_confirm_window_minutes": 10,
+    "max_backups": 20,
+    "skip_close_on_api_error": true
+  },
+  "logging": {
+    "level": "INFO",
+    "log_dir": "logs",
+    "max_files": 30
+  }
+}

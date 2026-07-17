@@ -1,8 +1,8 @@
-# Dream OS 工程索引 v2.0
+# Dream OS 工程索引 v2.1
 
 > **文档层级**: L1 — 系统级 SSoT（单真源）
-> **版本**: v2.0.0
-> **更新日期**: 2026-07-14
+> **版本**: v2.1.0
+> **更新日期**: 2026-07-15
 > **维护者**: Dream OS Core Team
 > **关联文档**: [SYSTEM_ARCHITECTURE_OVERVIEW.md](../SYSTEM_ARCHITECTURE_OVERVIEW.md) | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)
 
@@ -74,11 +74,13 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 
 | 指标 | 值 |
 |------|-----|
-| 内核版本 | v2.0.0 |
-| 核心代码文件 | ~45个 |
+| 内核版本 | v2.1.0 |
+| 核心代码文件 | ~50个 |
 | 内置节点数 | 22个（A系列10个 + C系列4个 + F系列5个 + G系列2个 + 1个初始化） |
 | 适配器类型 | 3种（Function / SKILL / API） |
 | 意图类型 | 6种标准 + 可扩展 |
+| 市场场景 | 36种（趋势×3 × 波动率×4 × 动量×3） |
+| 编排模式 | 5种（c_chain / c_f_chain / full_chain / f_chain / c_g_chain） |
 | 预算模式 | 3档（lean/standard/full） |
 | 测试覆盖率 | 5个测试套件（冒烟/感知层/ACG层/多场景/横切） |
 
@@ -133,8 +135,8 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 │   │
 │   └── memory/                   # 记忆扩展模块
 │       ├── __init__.py
-│       ├── execution_feedback.py # 执行反馈收集器
-│       ├── orchestration_memory.py # 编排记忆
+│       ├── execution_feedback.py # 执行反馈收集器（驱动进化）
+│       ├── orchestration_memory.py # 编排记忆表（场景-编排映射）
 │       └── scenario_backtester.py # 场景回测器
 │
 ├── registry/                     # 节点注册表
@@ -255,7 +257,7 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 |------|------|------|
 | IntentEngine | `intent_engine.py` | 意图引擎主入口，组合多识别器，管理Token预算 |
 | TokenBudgetManager | `token_budget.py` | 单周期Token预算管理 |
-| ScenarioClassifier | `scenario_classifier.py` | 场景分类器 |
+| ScenarioClassifier | `scenario_classifier.py` | 36 场景分类器（趋势×波动率×动量三维分类） |
 | RuleBasedRecognizer | `recognizers/rule_based.py` | 规则识别器（零Token，关键词匹配） |
 | LLMBasedRecognizer | `recognizers/llm_based.py` | LLM识别器（高置信度，消耗Token） |
 | DynamicIntentRecognizer | `recognizers/dynamic.py` | 动态意图识别器（基于历史反馈） |
@@ -268,6 +270,12 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 - `BREAKOUT` — 突破
 - `KNOWLEDGE_MATCH` — 知识库匹配
 - `UNCERTAIN` — 不确定/需要澄清
+
+**36 种市场场景分类**（三维笛卡尔积）:
+- 趋势方向：BULL / BEAR / NEUTRAL（3种）
+- 波动率等级：LOW / NORMAL / HIGH / EXTREME（4种）
+- 动量加速度：ACCELERATING / DECELERATING / EXHAUSTION（3种）
+- 场景 ID 格式：`{TREND}_{VOLATILITY}_{MOMENTUM}`，如 `BULL_NORMAL_ACCELERATING`
 
 **执行流程**:
 ```
@@ -319,6 +327,11 @@ BudgetAllocator 分配预算
 - A链：A0 → A1 → A2 → A3 → A4 → A5 → A6 → A7 → A8 → A9
 - C链：C1 → C2 → C3 → C5
 - F链：F1 → F2 → F3 → F4 → F5
+
+**编排记忆表**（`core/memory/orchestration_memory.py` → `OrchestrationMemory`）:
+- 存储 36 场景 × 5 种编排模式的最优映射
+- 四级降级查询：L0精确匹配 → L1趋势×波动率 → L2仅趋势 → L3默认c_chain
+- 5 种编排模式：c_chain / c_f_chain / full_chain / f_chain / c_g_chain
 
 #### 3.1.3 C层 — 执行
 
@@ -495,10 +508,19 @@ node = reg.to_node({"type": "api", "url": "https://api.example.com"})
 | LessonDistiller | `lesson_distiller.py` | 经验教训提炼（从历史中提取模式） |
 | GapAnalyzer | `gap_analyzer.py` | 知行差距分析（预期 vs 实际） |
 | NodeOptimizer | `node_optimizer.py` | 节点优化建议器 |
+| ExecutionFeedbackCollector | `core/memory/execution_feedback.py` | 执行反馈收集器（驱动编排优化） |
+
+**进化触发源**:
+1. **orchestration_optimization** — 执行反馈驱动的编排优化（主要触发源）
+   - 触发条件1：连续 3 笔方向准确率 < 50%
+   - 触发条件2：夏普比率偏差 > 30%
+   - 优化策略：切换到含风控的编排模式（c_g_chain）
+
+2. **历史数据驱动** — G 层历史数据分析（LessonDistiller）
 
 **进化流程**:
 ```
-G层历史数据
+G层历史数据 + 执行反馈
     ↓
 LessonDistiller → 提炼经验教训
     ↓
@@ -506,7 +528,9 @@ GapAnalyzer → 分析知行差距
     ↓
 NodeOptimizer → 生成优化建议
     ↓
-EvolutionReport（教训 + 差距 + 建议）
+_check_orchestration_optimization → 编排优化
+    ↓
+EvolutionReport（教训 + 差距 + 建议 + 编排更新）
 ```
 
 ---
@@ -573,17 +597,48 @@ G层 (GraphStore) → 持久化 + 历史记录
 | 工具 | 文件 | 说明 |
 |------|------|------|
 | auto_scheduler | `auto_scheduler.py` | 自动调度器 |
-| auto_trader | `auto_trader.py` | 自动交易器 |
+| auto_trader | `auto_trader.py` | 自动交易器（完整自动化交易闭环） |
 | bcrm2_scheduler | `bcrm2_scheduler.py` | BCRM2 调度器 |
 | evolution_test | `evolution_test.py` | 进化测试 |
 | stress_test | `stress_test.py` | 压力测试 |
 
-#### 3.7.3 调度器数据
+**AutoTrader 核心能力**:
+- 36 场景分类 + 编排记忆四级降级
+- 双交易所支持（Hyperliquid / OKX）
+- dry_run 模拟交易模式
+- 交易反馈自动回写 + 进化引擎触发
+- 最小交易间隔保护（30 分钟）
+- G1 风控门禁强制检查
+
+#### 3.7.3 调度器
+
+**主类**: `cli/scheduler.py` → `DreamOSScheduler`
+
+**特性**:
+- Cron 表达式配置定时任务
+- 多币种批量扫描
+- 任务状态管理（running/paused/stopped/error）
+- 执行历史记录
+- 线程安全设计
+
+#### 3.7.4 调度器数据
 
 | 文件 | 说明 |
 |------|------|
-| `scheduler_data/scheduler_jobs.json` | 调度任务配置 |
+| `scheduler_data/scheduler_jobs.json` | 调度任务配置（默认 5 分钟扫描 8 个主流币种） |
 | `scheduler_data/scheduler_history.json` | 调度历史记录 |
+
+**默认调度配置**:
+```json
+[
+  {
+    "name": "scan_main",
+    "cron_expr": "*/5 * * * *",
+    "enabled": true,
+    "symbols": ["BTC", "ETH", "SOL", "AVAX", "LINK", "ARB", "OP", "MATIC"]
+  }
+]
+```
 
 ---
 
@@ -904,11 +959,13 @@ launchctl list | grep dreambuddy
 | D01 | 节点实现多为骨架，缺少完整业务逻辑 | P0 | nodes/ 全部22个节点 |
 | D02 | 缺少完整的端到端集成测试 | P1 | 测试体系 |
 | D03 | G层持久化存储未完全实现（内存为主） | P1 | graph_store/ |
-| D04 | 进化引擎与实际执行反馈链路未打通 | P2 | evolution/ |
+| D04 | 进化引擎沙箱验证未接入真实回测（简化版） | P1 | evolution/engine.py _sandbox_validate |
 | D05 | 缺少生产级监控和告警 | P2 | 运维体系 |
 | D06 | API Server 实现不完整 | P2 | apps/api_server.py |
 | D07 | 多租户/多会话隔离未实现 | P3 | 架构层 |
 | D08 | 文档与实际代码实现存在偏差 | P1 | 文档体系 |
+| D09 | 编排优化策略单一（仅切换到c_g_chain） | P2 | evolution/engine.py |
+| D10 | 场景回测器未完整实现 | P2 | core/memory/scenario_backtester.py |
 
 ---
 
@@ -923,6 +980,9 @@ launchctl list | grep dreambuddy
 | 接入新能力 | §3.3 适配器框架 |
 | 开发新应用 | §3.6 应用层 |
 | 理解执行流程 | §3.1 SACG四层内核 |
+| 自动交易系统 | §3.7.2 自动化工具 + §3.7.3 调度器 |
+| 场景分类与编排 | §3.1.1 S层 + §3.1.2 A层编排记忆 |
+| 进化优化 | §3.5 自我进化引擎 |
 | 部署运维 | §7 部署与运行 |
 | 排查问题 | §5 关键接口速查 + §6 配置管理 |
 
@@ -932,11 +992,17 @@ launchctl list | grep dreambuddy
 |--------|--------|
 | OS内核入口 | `dreamos/__init__.py` |
 | S层入口 | `core/sense/intent_engine.py` |
+| 36场景分类 | `core/sense/scenario_classifier.py` |
 | A层入口 | `core/arrange/graph_planner.py` |
+| 编排记忆表 | `core/memory/orchestration_memory.py` |
 | C层入口 | `core/compute/graph_executor.py` |
 | G层入口 | `core/graph_store/store.py` |
+| 执行反馈收集 | `core/memory/execution_feedback.py` |
+| 进化引擎 | `evolution/engine.py` |
 | 节点列表 | `nodes/__init__.py` |
 | 应用入口 | `apps/trading_agent/agent.py` |
+| 自动交易器 | `cli/auto_trader.py` |
+| 调度器 | `cli/scheduler.py` |
 | CLI入口 | `cli/app.py` |
 | 测试入口 | `dreamos-tests/test_smoke.py` |
 
@@ -946,4 +1012,5 @@ launchctl list | grep dreambuddy
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.1 | 2026-07-15 | 新增 36 场景分类系统、编排记忆表与四级降级、执行反馈收集器、进化引擎编排优化机制、自动交易器（AutoTrader）完整链路、DreamOSScheduler 调度器与默认配置、更新技术债务索引、补充快速导航入口 |
 | v2.0 | 2026-07-14 | 新建完整系统级工程索引，覆盖 SACG 四层、Registry、适配器、节点体系、进化引擎、应用层、CLI、预算管理、测试体系 |

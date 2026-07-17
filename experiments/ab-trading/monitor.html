@@ -182,6 +182,7 @@
   <div class="tab" onclick="switchTab('cloud', event)">☁️ 云端调度</div>
   <div class="tab" onclick="switchTab('trend', event)">📈 三屏趋势</div>
   <!-- <div class="tab" onclick="switchTab('screen', event)">🎯 三屏马丁</div> -->
+  <div class="tab" onclick="switchTab('v15ct', event)">⚡ 马丁策略</div>
   <div class="tab" onclick="switchTab('yijing', event)">🗼 易经推理</div>
   <div class="tab" onclick="switchTab('dreamos', event)">⚙️ Dream OS</div>
   <div class="tab" onclick="switchTab('signals', event)">📡 代币信号</div>
@@ -221,6 +222,14 @@
         <div class="conf-bar-bg"><div class="conf-bar-fill" id="a-conf-bar" style="width:0%;background:var(--a-color)"></div></div>
         <span class="conf-value" id="a-conf-val">--</span>
       </div>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">风控门禁</span>
+      <span id="a-risk-gate" class="badge">--</span>
+    </div>
+    <div class="gate-row" id="a-countdown-row" style="display:none">
+      <span class="gate-label">保护倒计时</span>
+      <span id="a-loss-countdown" class="badge badge-block">--</span>
     </div>
     <div class="gate-row">
       <span class="gate-label">当前大师</span>
@@ -640,6 +649,18 @@
   <div id="tab-yijing" class="tab-content">
     <div style="max-width:1400px;margin:0 auto">
 
+    <!-- 账户总览 -->
+    <div class="card full-width" style="margin-bottom:16px">
+      <div class="card-title">
+        <div class="dot" style="background:var(--green)"></div>🗼 易经推理策略 · 账户总览
+        <span id="yj-acc-live-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(125,133,144,0.15);color:var(--muted);border:1px solid rgba(125,133,144,0.3)">--</span>
+        <button onclick="loadYijingAccountOverview()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div id="yj-account-overview">
+        <div style="color:var(--muted);padding:12px;font-size:12px">加载中...</div>
+      </div>
+    </div>
+
     <!-- 顶部门禁状态条 -->
     <div class="card full-width" style="margin-bottom:16px">
       <div class="card-title"><div class="dot" style="background:var(--purple)"></div>易经推理交易模型 · 系统门禁<button onclick="loadYijingData()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button></div>
@@ -816,6 +837,18 @@
   <!-- V15-CT 马丁策略 Tab -->
   <div id="tab-v15ct" class="tab-content">
   <div class="tab-grid">
+
+    <!-- 账户总览 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:var(--green)"></div>⚡ V15 马丁策略 · 账户总览
+        <span id="v15-acc-live-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(125,133,144,0.15);color:var(--muted);border:1px solid rgba(125,133,144,0.3)">--</span>
+        <button onclick="loadV15AccountOverview()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div id="v15-account-overview">
+        <div style="color:var(--muted);padding:12px;font-size:12px">加载中...</div>
+      </div>
+    </div>
 
     <!-- V15-CT 策略概览 -->
     <div class="card full-width">
@@ -1196,6 +1229,27 @@ function render(data) {
     const conf = lastA.confidence || 0;
     document.getElementById('a-conf-bar').style.width = (conf * 100) + '%';
     document.getElementById('a-conf-val').textContent = pct(conf);
+    const blocked = lastA.risk_gate_blocked;
+    const blockReason = lastA.block_reason || '';
+    const gateLabel = blocked ? `⛔ ${blockReason === 'loss_streak_protection' ? '连败保护' : '风控拦截'}` : '✅ 正常';
+    const gateClass = blocked ? 'badge-block' : 'badge-pass';
+    document.getElementById('a-risk-gate').outerHTML = `<span id="a-risk-gate" class="badge ${gateClass}">${gateLabel}</span>`;
+
+    // 连败保护倒计时显示
+    const countdownRow = document.getElementById('a-countdown-row');
+    const countdown = lastA.loss_protection_countdown;
+    if (countdown && countdown.remaining_hours !== undefined) {
+      countdownRow.style.display = '';
+      const remaining = countdown.remaining_hours;
+      const elapsed = countdown.elapsed_hours;
+      const maxH = countdown.max_hours;
+      const pct_bar = Math.min(100, (elapsed / maxH) * 100);
+      document.getElementById('a-loss-countdown').outerHTML =
+        `<span id="a-loss-countdown" class="badge badge-block">⏳ 剩余 ${remaining}h (${elapsed}/${maxH}h)</span>`;
+    } else {
+      countdownRow.style.display = 'none';
+    }
+
     document.getElementById('a-coin').textContent = lastA.coin || lastA.entry_price ? `${lastA.coin || '?'} @ $${fmt(lastA.entry_price)}` : '--';
   }
 
@@ -1331,7 +1385,9 @@ function render(data) {
   document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
 }
 
-// ── 数据加载：优先本地实时 API，fallback 到静态 state.json ────────────────
+// ── 数据加载：优先本地实时 API，fallback 到静态 state.json，最后尝试本地日志 ──
+let _loadFailCount = 0;
+
 async function loadData() {
   const candidates = [
     { url: '/api/state',  label: '本地实时 API',   mode: 'live'  },
@@ -1340,11 +1396,12 @@ async function loadData() {
   for (const src of candidates) {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 30000);
-      const res = await fetch(src.url, { signal: controller.signal });
+      const timer = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(src.url, { signal: controller.signal, cache: 'no-store' });
       clearTimeout(timer);
       if (!res.ok) continue;
       const data = await res.json();
+      if (!data || (!data.logs_a && !data.logs_b)) continue;
       render(data);
       const tag = src.mode === 'live' ? '实盘运行中' : '快照模式';
       const dot = src.mode === 'live' ? '' : '<div class="live-dot" style="background:var(--yellow)"></div>';
@@ -1359,12 +1416,17 @@ async function loadData() {
         document.getElementById('last-update').textContent =
           '快照生成于 ' + d.toLocaleString('zh-CN');
       }
+      _loadFailCount = 0;
       return;
     } catch (e) {
       // 尝试下一个
     }
   }
-  document.getElementById('last-update').textContent = '⚠️ 无法加载数据';
+  _loadFailCount++;
+  const msg = _loadFailCount > 1
+    ? `⚠️ 数据加载失败（第${_loadFailCount}次）· 30秒后自动重试`
+    : '⚠️ 数据加载失败 · 30秒后自动重试';
+  document.getElementById('last-update').textContent = msg;
 }
 
 // 初始加载 + 每30秒自动刷新
@@ -2872,9 +2934,202 @@ async function triggerScreenOrchestrator() {
   }
 }
 
+// ── 易经推理策略账户总览加载 ──
+async function loadYijingAccountOverview() {
+  const el = document.getElementById('yj-account-overview');
+  const badge = document.getElementById('yj-acc-live-badge');
+  if (!el) return;
+  try {
+    const res = await fetch('/api/yijing/account-overview', { signal: AbortSignal.timeout(15000) });
+    const d = await res.json();
+
+    // 实盘连接状态徽章
+    if (badge) {
+      if (d.live_ok) {
+        badge.textContent = 'OKX 已连接';
+        badge.style.background = 'rgba(63,185,80,0.15)';
+        badge.style.color = 'var(--green)';
+        badge.style.borderColor = 'rgba(63,185,80,0.3)';
+      } else {
+        badge.textContent = 'OKX 未连接';
+        badge.style.background = 'rgba(248,81,73,0.15)';
+        badge.style.color = 'var(--red)';
+        badge.style.borderColor = 'rgba(248,81,73,0.3)';
+      }
+    }
+
+    if (d.error) {
+      el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:12px">加载失败: ${d.error}</div>`;
+      return;
+    }
+
+    const initCap = d.initial_capital || 150;
+    const curBal = d.current_balance;
+    const totalPnl = d.total_pnl;
+    const pnlPct = d.pnl_pct;
+    const realizedPnl = d.realized_pnl;
+    const unrealizedPnl = d.unrealized_pnl;
+    const availBal = d.avail_balance;
+    const totalTrades = d.total_trades || 0;
+    const winCount = d.win_count || 0;
+    const winRatePct = d.win_rate_pct || 0;
+    const baselineNote = d.baseline_note || '';
+    const ts = d.timestamp ? d.timestamp.replace('T',' ').substring(0,19) : '--';
+
+    const fmt = (v,sign) => (v==null) ? '--' : `${sign&&v>=0?'+':''}$${v.toFixed(2)}`;
+    const fmtPct = (v) => (v==null) ? '--' : `${v>=0?'+':''}${v.toFixed(2)}%`;
+    const cl = (v) => (v==null) ? 'var(--muted)' : (v >= 0 ? 'var(--green)' : 'var(--red)');
+
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
+        <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid var(--blue)">
+          <div style="font-size:10px;color:var(--muted)">初始资金（今日起）</div>
+          <div style="font-size:18px;font-weight:700;margin-top:3px">$${initCap.toFixed(2)}</div>
+        </div>
+        <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid var(--green)">
+          <div style="font-size:10px;color:var(--muted)">当前账户余额</div>
+          <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:3px">${fmt(curBal)}</div>
+        </div>
+        <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid ${cl(totalPnl)}">
+          <div style="font-size:10px;color:var(--muted)">策略盈亏</div>
+          <div style="font-size:18px;font-weight:700;color:${cl(totalPnl)};margin-top:3px">${fmt(totalPnl,true)}</div>
+        </div>
+        <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid ${cl(totalPnl)}">
+          <div style="font-size:10px;color:var(--muted)">涨跌幅</div>
+          <div style="font-size:18px;font-weight:700;color:${cl(totalPnl)};margin-top:3px">${fmtPct(pnlPct)}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px">
+        <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">已实现盈亏</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;color:${cl(realizedPnl)}">${fmt(realizedPnl,true)}</div>
+        </div>
+        <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">浮动盈亏</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;color:${cl(unrealizedPnl)}">${fmt(unrealizedPnl,true)}</div>
+        </div>
+        <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">盈利·胜率·交易</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px">${winCount}·${winRatePct.toFixed(1)}%·${totalTrades}</div>
+        </div>
+        <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">可用余额</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px">${fmt(availBal)}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted)">
+        <span>${baselineNote ? '📅 '+baselineNote : ''}</span>
+        <span>更新 ${ts}</span>
+      </div>
+      ${d.live_error ? `<div style="font-size:11px;color:var(--red);padding:6px;background:rgba(248,81,73,0.08);border-radius:4px;margin-top:6px">⚠️ ${d.live_error.substring(0,90)}</div>` : ''}
+    `;
+  } catch (e) {
+    console.error('易经账户总览加载失败:', e);
+    el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:12px">账户总览加载失败: ${e.message}</div>`;
+  }
+}
+
+// ── V15 马丁策略账户总览加载 ──
+async function loadV15AccountOverview() {
+  const el = document.getElementById('v15-account-overview');
+  const badge = document.getElementById('v15-acc-live-badge');
+  if (!el) return;
+  try {
+    const V15_API_BASE = 'http://localhost:8771';
+    const res = await fetch(V15_API_BASE + '/api/v15-ct/account-overview', { signal: AbortSignal.timeout(15000) });
+    const d = await res.json();
+
+    if (badge) {
+      if (d.live_ok) {
+        badge.textContent = 'OKX 已连接';
+        badge.style.background = 'rgba(63,185,80,0.15)';
+        badge.style.color = 'var(--green)';
+        badge.style.borderColor = 'rgba(63,185,80,0.3)';
+      } else {
+        badge.textContent = 'OKX 未连接';
+        badge.style.background = 'rgba(248,81,73,0.15)';
+        badge.style.color = 'var(--red)';
+        badge.style.borderColor = 'rgba(248,81,73,0.3)';
+      }
+    }
+
+    if (d.error) {
+      el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:12px">加载失败: ${d.error}</div>`;
+      return;
+    }
+
+    const initCap = d.initial_capital || 150;
+    const curBal = d.current_balance;
+    const totalPnl = d.total_pnl;
+    const pnlPct = d.pnl_pct;
+    const realizedPnl = d.realized_pnl;
+    const unrealizedPnl = d.unrealized_pnl;
+    const availBal = d.avail_balance;
+    const totalTrades = d.total_trades || 0;
+    const winCount = d.win_count || 0;
+    const winRatePct = d.win_rate_pct || 0;
+    const consecLoss = d.consecutive_losses || 0;
+    const baselineNote = d.baseline_note || '';
+    const ts = d.timestamp ? d.timestamp.replace('T',' ').substring(0,19) : '--';
+
+    const fmt = (v,sign) => (v==null) ? '--' : `${sign&&v>=0?'+':''}$${v.toFixed(2)}`;
+    const fmtPct = (v) => (v==null) ? '--' : `${v>=0?'+':''}${v.toFixed(2)}%`;
+    const cl = (v) => (v==null) ? 'var(--muted)' : (v >= 0 ? 'var(--green)' : 'var(--red)');
+
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
+        <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid var(--blue)">
+          <div style="font-size:10px;color:var(--muted)">初始资金（今日起）</div>
+          <div style="font-size:18px;font-weight:700;margin-top:3px">$${initCap.toFixed(2)}</div>
+        </div>
+        <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid var(--green)">
+          <div style="font-size:10px;color:var(--muted)">当前账户余额</div>
+          <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:3px">${fmt(curBal)}</div>
+        </div>
+        <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid ${cl(totalPnl)}">
+          <div style="font-size:10px;color:var(--muted)">策略自身收益</div>
+          <div style="font-size:18px;font-weight:700;color:${cl(totalPnl)};margin-top:3px">${fmt(totalPnl,true)}</div>
+        </div>
+        <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid ${cl(totalPnl)}">
+          <div style="font-size:10px;color:var(--muted)">涨跌幅</div>
+          <div style="font-size:18px;font-weight:700;color:${cl(totalPnl)};margin-top:3px">${fmtPct(pnlPct)}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px">
+        <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">已实现盈亏</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;color:${cl(realizedPnl)}">${fmt(realizedPnl,true)}</div>
+        </div>
+        <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">浮动盈亏</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;color:${cl(unrealizedPnl)}">${fmt(unrealizedPnl,true)}</div>
+        </div>
+        <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">盈利·胜率·交易</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px">${winCount}·${winRatePct.toFixed(1)}%·${totalTrades}</div>
+        </div>
+        <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--muted)">连亏·可用余额</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px"><span style="color:${consecLoss>=3?'var(--red)':'var(--muted)'}">${consecLoss}</span>·${fmt(availBal)}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted)">
+        <span>${baselineNote ? '📅 '+baselineNote : ''}</span>
+        <span>更新 ${ts}</span>
+      </div>
+      ${d.live_error ? `<div style="font-size:11px;color:var(--red);padding:6px;background:rgba(248,81,73,0.08);border-radius:4px;margin-top:6px">⚠️ ${d.live_error.substring(0,90)}</div>` : ''}
+    `;
+  } catch (e) {
+    console.error('V15账户总览加载失败:', e);
+    el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:12px">账户总览加载失败: ${e.message}<br><span style="color:var(--muted);font-size:10px">请确认 V15 API 服务已启动 (port 8771)</span></div>`;
+  }
+}
+
 // ── 易经推理模型数据加载（五层架构：L4底座/QMM内核/BCRM推理/执行反馈/知识库）──
 async function loadYijingData() {
   try {
+    // 并行加载账户总览
+    loadYijingAccountOverview();
     const res = await fetch('/api/yijing', { signal: AbortSignal.timeout(60000) });
     const d = await res.json();
 
@@ -3613,16 +3868,19 @@ function renderDOSDecision(decision) {
   }
 }
 
-// V15-CT 马丁策略数据加载
+// V15-CT 马丁策略数据加载（指向14-V15经典马丁策略API服务）
 async function loadV15CTData() {
   try {
+    // 并行加载账户总览
+    loadV15AccountOverview();
+    const V15_API_BASE = 'http://localhost:8771';
     const [decisionRes, statusRes, backtestRes, capitalRes, triggerRes, decisionsRes] = await Promise.all([
-      fetchJson('/api/v15-ct/decision?coin=BTC', 30000),
-      fetchJson('/api/v15-ct/status', 15000),
-      fetchJson('/api/v15-ct/backtest?coin=BTC', 30000),
-      fetchJson('/api/capital/allocation', 15000),
-      fetchJson('/api/capital/signal-trigger', 15000),
-      fetchJson('/api/v15-ct/decisions', 60000),
+      fetchJson(V15_API_BASE + '/api/v15-ct/decision?coin=BTC', 30000),
+      fetchJson(V15_API_BASE + '/api/v15-ct/status', 15000),
+      fetchJson(V15_API_BASE + '/api/v15-ct/backtest?coin=BTC', 30000),
+      fetchJson(V15_API_BASE + '/api/capital/allocation', 15000),
+      fetchJson(V15_API_BASE + '/api/capital/signal-trigger', 15000),
+      fetchJson(V15_API_BASE + '/api/v15-ct/decisions', 60000),
     ]);
 
     // 更新策略概览
@@ -3857,7 +4115,7 @@ async function loadV15CTData() {
     let allResults = [];
     
     for (const coin of coins) {
-      const r = await fetchJson(`/api/v15-ct/backtest?coin=${coin}`, 30000);
+      const r = await fetchJson(V15_API_BASE + `/api/v15-ct/backtest?coin=${coin}`, 30000);
       if (r && !r.error) {
         const m = r.metrics;
         allResults.push(m);

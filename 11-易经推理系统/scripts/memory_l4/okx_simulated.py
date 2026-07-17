@@ -36,6 +36,7 @@ DEFAULT_CONFIG = {
     "default_inst_id": "BTC-USDT-SWAP",
     "default_usdt_amount": 100,   # 名义价值，会在 _load_config 中根据保证金和杠杆重新计算
     "default_leverage": 10,
+    "td_mode": "isolated",   # 逐仓模式（cross=全仓, isolated=逐仓）
 }
 
 _CUSTOM_HOSTS = {
@@ -67,6 +68,8 @@ def _load_config() -> Dict:
         cfg["default_inst_id"] = os.environ["OKX_DEFAULT_INST_ID"]
     if os.environ.get("DEFAULT_LEVERAGE"):
         cfg["default_leverage"] = float(os.environ["DEFAULT_LEVERAGE"])
+    if os.environ.get("OKX_TD_MODE"):
+        cfg["td_mode"] = os.environ["OKX_TD_MODE"]  # cross / isolated
     if cfg["api_key"]:
         return cfg
 
@@ -114,6 +117,8 @@ def _load_config() -> Dict:
             cfg["dry_run"] = env_vars["OKX_DRY_RUN"].lower() in ("true", "1", "yes")
         if "OKX_DEFAULT_INST_ID" in env_vars:
             cfg["default_inst_id"] = env_vars["OKX_DEFAULT_INST_ID"]
+        if "OKX_TD_MODE" in env_vars:
+            cfg["td_mode"] = env_vars["OKX_TD_MODE"]  # cross / isolated
         if cfg["api_key"]:
             return cfg
 
@@ -453,7 +458,7 @@ class OKXSimulatedClient:
 
     def place_order(self, inst_id: str, side: str, ord_type: str = "market",
                     sz: float = None, px: float = None,
-                    td_mode: str = "cross", pos_side: str = "net",
+                    td_mode: str = None, pos_side: str = "net",
                     tag: str = "yijing_sim",
                     reason: str = "") -> Dict:
         """
@@ -465,11 +470,13 @@ class OKXSimulatedClient:
             ord_type: market / limit
             sz: 数量（USDT 金额或币数量）
             px: 限价（限价单必填）
-            td_mode: cross / isolated / cash
+            td_mode: cross / isolated / cash（默认用配置中的 td_mode）
             pos_side: net / long / short
             tag: 订单标签
             reason: 下单原因（审计用）
         """
+        if td_mode is None:
+            td_mode = self.cfg.get("td_mode", "isolated")
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials",
                     "dry_run_result": None}
@@ -536,7 +543,7 @@ class OKXSimulatedClient:
         sz = self._usdt_to_sz(inst_id, usdt_amount)
         return self.place_order(
             inst_id=inst_id, side="buy", ord_type="market",
-            sz=sz, pos_side="long", td_mode="cross",
+            sz=sz, pos_side="long",
             reason=reason or "bcrm_reasoning_open_long"
         )
 
@@ -547,7 +554,7 @@ class OKXSimulatedClient:
         sz = self._usdt_to_sz(inst_id, usdt_amount)
         return self.place_order(
             inst_id=inst_id, side="sell", ord_type="market",
-            sz=sz, pos_side="short", td_mode="cross",
+            sz=sz, pos_side="short",
             reason=reason or "bcrm_reasoning_open_short"
         )
 
@@ -564,7 +571,7 @@ class OKXSimulatedClient:
         sz = long_pos[0]["pos"]
         return self.place_order(
             inst_id=inst_id, side="sell", ord_type="market",
-            sz=sz, pos_side="long", td_mode="cross",
+            sz=sz, pos_side="long",
             reason=reason or "bcrm_reasoning_close_long"
         )
 
@@ -581,7 +588,7 @@ class OKXSimulatedClient:
         sz = short_pos[0]["pos"]
         return self.place_order(
             inst_id=inst_id, side="buy", ord_type="market",
-            sz=sz, pos_side="short", td_mode="cross",
+            sz=sz, pos_side="short",
             reason=reason or "bcrm_reasoning_close_short"
         )
 
@@ -635,7 +642,7 @@ class OKXSimulatedClient:
             side = "sell" if pos_side == "long" else "buy"
             body = {
                 "instId": inst_id,
-                "tdMode": "cross",
+                "tdMode": self.cfg.get("td_mode", "isolated"),
                 "side": side,
                 "ordType": "oco",
                 "sz": str(sz),
@@ -674,7 +681,7 @@ class OKXSimulatedClient:
             sl_side = "sell" if pos_side == "long" else "buy"
             body = {
                 "instId": inst_id,
-                "tdMode": "cross",
+                "tdMode": self.cfg.get("td_mode", "isolated"),
                 "side": sl_side,
                 "ordType": "conditional",
                 "sz": str(sz),
@@ -707,7 +714,7 @@ class OKXSimulatedClient:
         tp_side = "sell" if pos_side == "long" else "buy"
         body = {
             "instId": inst_id,
-            "tdMode": "cross",
+            "tdMode": self.cfg.get("td_mode", "isolated"),
             "side": tp_side,
             "ordType": "conditional",
             "sz": str(sz),
@@ -767,7 +774,7 @@ class OKXSimulatedClient:
         side = "sell" if pos_side == "long" else "buy"
         result = self.place_order(
             inst_id=inst_id, side=side, ord_type="market",
-            sz=reduce_sz, pos_side=pos_side, td_mode="cross",
+            sz=reduce_sz, pos_side=pos_side,
             reason=reason or f"bcrm_reduce_{int(reduce_ratio*100)}pct"
         )
         result["reduce_ratio"] = reduce_ratio

@@ -942,7 +942,9 @@ def _v9_baseline_decision(screen1: dict, weekly: dict, a1_daily: dict, a6_intel:
 
 # ── 交易执行 ──────────────────────────────────────────────────────────────
 
-def _place_order(inst_id: str, side: str, pos_side: str, size: float, reduce_only: bool = False) -> dict:
+def _place_order(inst_id: str, side: str, pos_side: str, size: float, 
+                 reduce_only: bool = False, td_mode: str = "isolated", 
+                 leverage: float = 5.0) -> dict:
     args = [
         "swap", "place",
         "--instId", inst_id,
@@ -950,7 +952,8 @@ def _place_order(inst_id: str, side: str, pos_side: str, size: float, reduce_onl
         "--posSide", pos_side,
         "--ordType", "market",
         "--sz", str(size),
-        "--tdMode", "cross",
+        "--tdMode", td_mode,
+        "--lever", str(leverage),
         "--json",
     ]
     if reduce_only:
@@ -981,11 +984,14 @@ def get_lot_size(inst_id: str) -> float:
     return lot_sz
 
 
-def _calc_position_size(equity: float, level: int, direction: str, entry_price: float, inst_id: str = INST_SWAP, position_pct: float = None) -> float:
+def _calc_position_size(equity: float, level: int, direction: str, entry_price: float, 
+                        inst_id: str = INST_SWAP, position_pct: float = None,
+                        leverage: float = 5.0, max_position_pct: float = 0.50) -> float:
     pct = position_pct if position_pct is not None else calc_actual_position_pct(0.30)
-    margin_usdt = equity * pct  # 保证金金额
-    margin_usdt = max(margin_usdt, MIN_MARGIN_USD)  # 不低于最低保证金
-    notional_usdt = margin_usdt * DEFAULT_LEVERAGE  # 名义价值
+    pct = min(pct, max_position_pct)
+    margin_usdt = equity * pct
+    margin_usdt = max(margin_usdt, MIN_MARGIN_USD)
+    notional_usdt = margin_usdt * leverage
     size = notional_usdt / entry_price
     lot_sz = get_lot_size(inst_id)
     size = math.floor(size / lot_sz) * lot_sz
@@ -1053,18 +1059,43 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
             current_symbol = active_symbol
             _log("INFO", f"持仓币种: {active_symbol}, 继续监控")
         else:
-            best, _ = select_best_candidate(min_score_pct=70.0)
-            if best:
-                s1 = best["screen1"]
-                s2 = best["screen2"]
-                current_symbol = best["symbol"]
-                _log("INFO", f"最优标的: {current_symbol} {s1['direction']} 评分{s1['score_pct']:.1f}% vol_mult={best['vol_mult']}")
+            # 遍历所有候选币种，找到第一个满足三屏入场条件的
+            best_candidate = None
+            best_signal = None
+            for c in candidates:
+                spot_inst = c.get("spot", f"{c['symbol']}-USDT")
+                try:
+                    sig = compute_full_trading_signal(spot_inst, c.get("is_btc", True))
+                    if not sig.get("error"):
+                        fs = sig["final_signal"]
+                        if fs["action"] in ("ENTER_LONG", "ENTER_SHORT"):
+                            best_candidate = c
+                            best_signal = sig
+                            _log("INFO", f"三屏入场信号: {c['symbol']} action={fs['action']} conf={fs['confidence']:.1f}% pos={fs['position']['position_pct']*100:.0f}%")
+                            break
+                except Exception:
+                    continue
+
+            if best_candidate:
+                s1 = best_candidate["screen1"]
+                s2 = best_candidate["screen2"]
+                current_symbol = best_candidate["symbol"]
+                state["full_trading_signal"] = best_signal
+                _log("INFO", f"选中标的: {current_symbol} (三屏信号触发)")
             else:
-                top = candidates[0]
-                s1 = top["screen1"]
-                s2 = top["screen2"]
-                current_symbol = top["symbol"]
-                _log("INFO", f"无达标标的，展示候选首: {current_symbol} {s1['direction']} {s1['score_pct']:.1f}%")
+                # 无三屏信号触发，回退到评分最优
+                best, _ = select_best_candidate(min_score_pct=70.0)
+                if best:
+                    s1 = best["screen1"]
+                    s2 = best["screen2"]
+                    current_symbol = best["symbol"]
+                    _log("INFO", f"最优标的: {current_symbol} {s1['direction']} 评分{s1['score_pct']:.1f}% vol_mult={best['vol_mult']}")
+                else:
+                    top = candidates[0]
+                    s1 = top["screen1"]
+                    s2 = top["screen2"]
+                    current_symbol = top["symbol"]
+                    _log("INFO", f"无达标标的，展示候选首: {current_symbol} {s1['direction']} {s1['score_pct']:.1f}%")
 
         price = s1["price"]
         _log("INFO", f"Screen1 [{current_symbol}]: {s1['direction']} {s1['score_pct']:.1f}%, 价格=${price}")
@@ -1093,6 +1124,49 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
             except Exception as e:
                 _log("WARN", f"五大算法调用异常: {e}")
 
+        # ── 集成推理层：LightGBM 集成 + LLM 辩证推理 ──
+        ensemble_pred = None
+        reasoning_result = None
+        if full_signal and not full_signal.get("error"):
+            try:
+                from ml.algo_ensemble import predict_ensemble, collect_sample
+                from ml.llm_reasoning import reason_if_needed
+
+                # LightGBM 集成推理
+                ensemble_pred = predict_ensemble(full_signal)
+
+                # LLM 辩证推理（仅在不确定时触发）
+                reasoning_result = reason_if_needed(full_signal, ensemble_pred)
+
+                src = reasoning_result.get("source", "unknown")
+                rdir = reasoning_result.get("direction", "N/A")
+                rconf = reasoning_result.get("confidence", 0)
+                trigger = reasoning_result.get("trigger_reason", "N/A")
+                _log("INFO", f"集成推理 [{current_symbol}]: source={src}, "
+                      f"方向={rdir}, 置信={rconf:.1f}%, 触发={trigger}")
+
+                if reasoning_result.get("contradictions"):
+                    _log("INFO", f"矛盾检测: {'; '.join(reasoning_result['contradictions'])}")
+                if reasoning_result.get("reasoning"):
+                    _log("INFO", f"推理分析: {reasoning_result['reasoning'][:200]}")
+
+                # 收集训练样本（后续回测标注 future_return）
+                collect_sample(full_signal, symbol=current_symbol)
+
+                state["ensemble_pred"] = {
+                    "direction": ensemble_pred.get("direction"),
+                    "confidence": ensemble_pred.get("confidence"),
+                    "source": ensemble_pred.get("source"),
+                }
+                state["reasoning_result"] = {
+                    "source": src,
+                    "direction": rdir,
+                    "confidence": rconf,
+                    "trigger_reason": trigger,
+                }
+            except Exception as e:
+                _log("WARN", f"集成推理层异常: {e}")
+
         acct = get_account_info()
         equity = acct.get("equity", 0)
         available = acct.get("available", 0)
@@ -1113,15 +1187,50 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
         
         if full_signal and not full_signal.get("error"):
             fs = full_signal["final_signal"]
-            decision = {
-                "action": "OPEN_BULL" if fs["action"] == "ENTER_LONG" else "OPEN_BEAR" if fs["action"] == "ENTER_SHORT" else "WAIT",
-                "confidence": fs["confidence"],
-                "reasons": [fs.get("decision_reason", "")],
-                "mode": "five_algo",
-                "vol_mult": BASE_VOL_MULT,
-                "freqtrade_signals": full_signal.get("freqtrade_signals", {}),
-            }
-            _log("INFO", f"五大算法决策: mode={decision['mode']}, action={decision['action']}, 置信{decision['confidence']}%")
+
+            # 集成推理增强：优先使用 LightGBM + LLM 推理结果
+            if reasoning_result and reasoning_result.get("source") not in ("ensemble_fallback",):
+                r_dir = reasoning_result["direction"]
+                r_conf = reasoning_result["confidence"]
+
+                # 推理方向与五大算法 action 对齐验证
+                if r_dir == "BULL" and fs["action"] == "ENTER_LONG":
+                    action = "OPEN_BULL"
+                elif r_dir == "BEAR" and fs["action"] == "ENTER_SHORT":
+                    action = "OPEN_BEAR"
+                elif r_dir == "NEUTRAL":
+                    action = "WAIT"
+                else:
+                    # 推理方向与五大算法不一致 → 安全起见 WAIT
+                    action = "WAIT"
+
+                decision = {
+                    "action": action,
+                    "confidence": r_conf,
+                    "reasons": [
+                        fs.get("decision_reason", ""),
+                        f"推理来源: {reasoning_result['source']}",
+                        reasoning_result.get("reasoning", "")[:200],
+                    ],
+                    "mode": "ensemble_llm",
+                    "vol_mult": BASE_VOL_MULT,
+                    "freqtrade_signals": full_signal.get("freqtrade_signals", {}),
+                    "reasoning_source": reasoning_result["source"],
+                    "contradictions": reasoning_result.get("contradictions", []),
+                }
+                _log("INFO", f"集成推理决策: mode={decision['mode']}, action={action}, "
+                      f"置信={r_conf:.1f}%, source={reasoning_result['source']}")
+            else:
+                # 回退到原始五大算法
+                decision = {
+                    "action": "OPEN_BULL" if fs["action"] == "ENTER_LONG" else "OPEN_BEAR" if fs["action"] == "ENTER_SHORT" else "WAIT",
+                    "confidence": fs["confidence"],
+                    "reasons": [fs.get("decision_reason", "")],
+                    "mode": "five_algo",
+                    "vol_mult": BASE_VOL_MULT,
+                    "freqtrade_signals": full_signal.get("freqtrade_signals", {}),
+                }
+                _log("INFO", f"五大算法决策: mode={decision['mode']}, action={decision['action']}, 置信{decision['confidence']}%")
             if fs.get("decision_reason"):
                 _log("INFO", f"决策理由: {fs['decision_reason']}")
         elif simple_mode:
@@ -1165,106 +1274,146 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
             open_price = state.get("open_price", state.get("avg_entry", price))
             levels, _, _, _ = _calc_levels(state["direction"], open_price, vol_mult)
             pos_side = "long" if state["direction"] == "BULL" else "short"
+            long_dir = "LONG" if state["direction"] == "BULL" else "SHORT"
 
-            next_level = state["current_level"] + 1
-            if next_level <= MAX_ADDONS and not state.get("has_counter_trend_addon", False):
-                next_px = levels[next_level]["price"]
-                should_add = False
-                if state["direction"] == "BULL" and price <= next_px:
-                    should_add = True
-                elif state["direction"] == "BEAR" and price >= next_px:
-                    should_add = True
+            leverage = state.get("leverage", 5.0)
+            max_addon_position_pct = state.get("max_position_pct", 0.50) * 1.4
+            max_addon_position_pct = min(max_addon_position_pct, 0.70)
 
-                if should_add:
-                    counter_budget_pct = COUNTER_TREND_ADDON_BUDGET_PCT
-                    current_budget = state.get("current_budget_pct", state.get("entry_budget_pct", 0.30))
-                    new_budget = min(current_budget + counter_budget_pct, TOTAL_POSITION_BUDGET_CAP)
-                    add_budget_pct = new_budget - current_budget
-                    add_position_pct = calc_actual_position_pct(add_budget_pct)
-                    add_size = _calc_position_size(equity, next_level, state["direction"], next_px, current_swap, position_pct=add_position_pct)
-                    _log("ACTION", f"逆势加仓{next_level}: ${price:.2f}触发${next_px:.2f}, +{add_size}币, 预算{current_budget*100:.0f}%→{new_budget*100:.0f}%")
+            unrealized_pnl_pct = 0.0
+            if pos and pos.get("upnl") is not None and state.get("avg_entry", 0) > 0:
+                notional = state["avg_entry"] * state.get("total_size", 0)
+                if notional > 0:
+                    unrealized_pnl_pct = pos["upnl"] / notional * 100
 
-                    if AUTO_EXECUTE:
-                        side = "buy" if state["direction"] == "BULL" else "sell"
-                        res = _place_order(current_swap, side, pos_side, add_size)
-                        if res["ok"]:
-                            state["current_level"] = next_level
-                            state["total_size"] = round(state.get("total_size", 0) + add_size, 6)
-                            total_cost = state.get("avg_entry", 0) * state.get("total_size", 0) + next_px * add_size
-                            state["avg_entry"] = round(total_cost / state["total_size"], 2)
-                            state["entry_levels"] = [l["price"] for l in levels]
-                            state["has_counter_trend_addon"] = True
-                            state["current_budget_pct"] = new_budget
-                            state["last_action"] = f"COUNTER_ADDON_{next_level}"
-                            state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
-                            state["last_reason"] = f"价格${price:.2f}触发逆势加仓{next_level}@${next_px:.2f}, 预算{new_budget*100:.0f}%"
-                            _log("SUCCESS", f"逆势加仓成功: ordId={res['ordId']}, 均价=${state['avg_entry']:.2f}, 预算{new_budget*100:.0f}%")
-                            state["trade_history"].append({
-                                "ts": datetime.now(timezone.utc).isoformat(),
-                                "action": f"COUNTER_ADDON_{next_level}",
-                                "side": state["direction"],
-                                "price": next_px,
-                                "size": add_size,
-                                "budget_pct": add_budget_pct,
-                                "total_budget_pct": new_budget,
-                                "mode": decision["mode"],
-                                "reason": state["last_reason"],
-                            })
-                        else:
-                            _log("ERROR", f"逆势加仓失败: {res.get('err')}")
-                    else:
-                        _log("INFO", "[模拟] AUTO_EXECUTE=false，跳过")
+            current_position_pct = state.get("current_budget_pct", state.get("entry_budget_pct", 0.30))
 
-            # 顺势加仓：置信度跃迁
-            entry_conf = state.get("entry_confidence", conf)
-            current_conf = decision.get("confidence", conf)
-            state["current_confidence"] = current_conf
-            jump = current_conf - entry_conf
-            has_tf = state.get("has_trend_follow_addon", False)
+            has_counter_addon = state.get("has_counter_trend_addon", False)
+            has_trend_addon = state.get("has_trend_follow_addon", False)
+            total_addons = (1 if has_counter_addon else 0) + (1 if has_trend_addon else 0)
 
-            if jump >= CONFIDENCE_JUMP_THRESHOLD and not has_tf and state.get("active"):
-                entry_budget = state.get("entry_budget_pct", calc_entry_budget_pct(entry_conf))
-                new_entry_budget = calc_entry_budget_pct(current_conf)
-                trend_add_budget = max(0.0, new_entry_budget - entry_budget)
-                if trend_add_budget > 0:
-                    current_budget = state.get("current_budget_pct", entry_budget)
-                    new_budget = min(current_budget + trend_add_budget, TOTAL_POSITION_BUDGET_CAP)
-                    actual_add = new_budget - current_budget
-                    if actual_add > 0:
-                        add_position_pct = calc_actual_position_pct(actual_add)
-                        add_size = _calc_position_size(equity, 99, state["direction"], price, current_swap, position_pct=add_position_pct)
-                        _log("ACTION", f"顺势加仓: 置信度{entry_conf}%→{current_conf}%(+{jump}%), 预算{current_budget*100:.0f}%→{new_budget*100:.0f}%, +{add_size}币")
+            if total_addons < 2 and current_position_pct < max_addon_position_pct:
+                addon_decision = None
+                try:
+                    trend_system_path = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统"
+                    if trend_system_path not in sys.path:
+                        sys.path.insert(0, trend_system_path)
+                    from engine import evaluate_addon_decision
 
-                        if AUTO_EXECUTE:
-                            side = "buy" if state["direction"] == "BULL" else "sell"
-                            res = _place_order(current_swap, side, pos_side, add_size)
-                            if res["ok"]:
-                                state["total_size"] = round(state.get("total_size", 0) + add_size, 6)
-                                total_cost = state.get("avg_entry", 0) * state.get("total_size", 0) + price * add_size
-                                state["avg_entry"] = round(total_cost / state["total_size"], 2)
-                                state["has_trend_follow_addon"] = True
-                                state["current_budget_pct"] = new_budget
-                                state["last_action"] = "TREND_FOLLOW_ADDON"
-                                state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
-                                state["last_reason"] = f"置信度跃迁{entry_conf}%→{current_conf}%, 预算{new_budget*100:.0f}%"
-                                _log("SUCCESS", f"顺势加仓成功: ordId={res['ordId']}, 均价=${state['avg_entry']:.2f}, 预算{new_budget*100:.0f}%")
-                                state["trade_history"].append({
-                                    "ts": datetime.now(timezone.utc).isoformat(),
-                                    "action": "TREND_FOLLOW_ADDON",
-                                    "side": state["direction"],
-                                    "price": price,
-                                    "size": add_size,
-                                    "budget_pct": actual_add,
-                                    "total_budget_pct": new_budget,
-                                    "entry_confidence": entry_conf,
-                                    "current_confidence": current_conf,
-                                    "mode": decision["mode"],
-                                    "reason": state["last_reason"],
-                                })
+                    is_btc = state.get("active_symbol", "") == "BTC"
+                    full_signal = state.get("full_trading_signal", {})
+                    daily_df = None
+                    btc_daily_df = None
+
+                    addon_decision = evaluate_addon_decision(
+                        symbol=state.get("active_symbol", ""),
+                        direction=state["direction"],
+                        current_price=price,
+                        entry_price=state.get("avg_entry", price),
+                        is_btc=is_btc,
+                        daily_df=daily_df,
+                        btc_daily_df=btc_daily_df,
+                        unrealized_pnl_pct=unrealized_pnl_pct,
+                        current_position_pct=current_position_pct,
+                        max_position_cap=max_addon_position_pct,
+                    )
+                except Exception as e:
+                    _log("WARN", f"加仓决策计算异常: {e}")
+
+                if addon_decision and addon_decision.get("can_add"):
+                    addon_type = addon_decision.get("addon_type", "")
+                    addon_pct = addon_decision.get("addon_pct", 0) / 100
+                    addon_price = addon_decision.get("addon_price", price)
+                    addon_reason = addon_decision.get("reason", "")
+
+                    if addon_type == "divergence_counter_trend" and not has_counter_addon:
+                        add_budget_pct = addon_pct
+                        current_budget = state.get("current_budget_pct", state.get("entry_budget_pct", 0.30))
+                        new_budget = min(current_budget + add_budget_pct, max_addon_position_pct)
+                        actual_add = new_budget - current_budget
+
+                        if actual_add > 0.01:
+                            add_size = _calc_position_size(equity, 1, state["direction"], addon_price, 
+                                                           current_swap, position_pct=actual_add,
+                                                           leverage=leverage, max_position_pct=max_addon_position_pct)
+                            _log("ACTION", f"逆势加仓(背离): ${price:.2f}, 原因={addon_reason}, "
+                                  f"+{add_size}币, 预算{current_budget*100:.0f}%→{new_budget*100:.0f}%")
+
+                            if AUTO_EXECUTE:
+                                side = "buy" if state["direction"] == "BULL" else "sell"
+                                res = _place_order(current_swap, side, pos_side, add_size,
+                                                   td_mode="isolated", leverage=leverage)
+                                if res["ok"]:
+                                    state["current_level"] = state.get("current_level", 0) + 1
+                                    state["total_size"] = round(state.get("total_size", 0) + add_size, 6)
+                                    total_cost = state.get("avg_entry", 0) * state.get("total_size", 0) + addon_price * add_size
+                                    state["avg_entry"] = round(total_cost / state["total_size"], 2)
+                                    state["has_counter_trend_addon"] = True
+                                    state["current_budget_pct"] = new_budget
+                                    state["last_action"] = "DIVERGENCE_ADDON"
+                                    state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
+                                    state["last_reason"] = addon_reason
+                                    _log("SUCCESS", f"逆势加仓成功: ordId={res['ordId']}, 均价=${state['avg_entry']:.2f}")
+                                    state["trade_history"].append({
+                                        "ts": datetime.now(timezone.utc).isoformat(),
+                                        "action": "DIVERGENCE_ADDON",
+                                        "side": state["direction"],
+                                        "price": addon_price,
+                                        "size": add_size,
+                                        "budget_pct": actual_add,
+                                        "total_budget_pct": new_budget,
+                                        "mode": "value_risk",
+                                        "reason": addon_reason,
+                                        "addon_type": addon_type,
+                                    })
+                                else:
+                                    _log("ERROR", f"逆势加仓失败: {res.get('err')}")
                             else:
-                                _log("ERROR", f"顺势加仓失败: {res.get('err')}")
-                        else:
-                            _log("INFO", "[模拟] AUTO_EXECUTE=false，跳过")
+                                _log("INFO", "[模拟] AUTO_EXECUTE=false，跳过")
+
+                    elif addon_type == "trend_follow" and not has_trend_addon:
+                        add_budget_pct = addon_pct
+                        current_budget = state.get("current_budget_pct", state.get("entry_budget_pct", 0.30))
+                        new_budget = min(current_budget + add_budget_pct, max_addon_position_pct)
+                        actual_add = new_budget - current_budget
+
+                        if actual_add > 0.01:
+                            add_size = _calc_position_size(equity, 1, state["direction"], addon_price,
+                                                           current_swap, position_pct=actual_add,
+                                                           leverage=leverage, max_position_pct=max_addon_position_pct)
+                            _log("ACTION", f"顺势加仓(趋势强度): ${price:.2f}, 原因={addon_reason}, "
+                                  f"+{add_size}币, 预算{current_budget*100:.0f}%→{new_budget*100:.0f}%")
+
+                            if AUTO_EXECUTE:
+                                side = "buy" if state["direction"] == "BULL" else "sell"
+                                res = _place_order(current_swap, side, pos_side, add_size,
+                                                   td_mode="isolated", leverage=leverage)
+                                if res["ok"]:
+                                    state["total_size"] = round(state.get("total_size", 0) + add_size, 6)
+                                    total_cost = state.get("avg_entry", 0) * state.get("total_size", 0) + addon_price * add_size
+                                    state["avg_entry"] = round(total_cost / state["total_size"], 2)
+                                    state["has_trend_follow_addon"] = True
+                                    state["current_budget_pct"] = new_budget
+                                    state["last_action"] = "TREND_STRENGTH_ADDON"
+                                    state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
+                                    state["last_reason"] = addon_reason
+                                    _log("SUCCESS", f"顺势加仓成功: ordId={res['ordId']}, 均价=${state['avg_entry']:.2f}")
+                                    state["trade_history"].append({
+                                        "ts": datetime.now(timezone.utc).isoformat(),
+                                        "action": "TREND_STRENGTH_ADDON",
+                                        "side": state["direction"],
+                                        "price": addon_price,
+                                        "size": add_size,
+                                        "budget_pct": actual_add,
+                                        "total_budget_pct": new_budget,
+                                        "mode": "value_risk",
+                                        "reason": addon_reason,
+                                        "addon_type": addon_type,
+                                    })
+                                else:
+                                    _log("ERROR", f"顺势加仓失败: {res.get('err')}")
+                            else:
+                                _log("INFO", "[模拟] AUTO_EXECUTE=false，跳过")
 
             side_close = "sell" if state["direction"] == "BULL" else "buy"
             reached_tp = False
@@ -1368,9 +1517,9 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
             # 引擎已做完整三屏决策（趋势一致+Freqtrade同向→入场），执行器直接执行
             if action in ("OPEN_BULL", "OPEN_BEAR") and not pos:
                 direction = "BULL" if "BULL" in action else "BEAR"
+                long_dir = "LONG" if direction == "BULL" else "SHORT"
                 levels, tp_price, addon_pct, tp_pct = _calc_levels(direction, price, vol_mult)
 
-                # 仓位计算：优先使用新引擎 final_signal.position（置信度→仓位映射统一）
                 full_signal = state.get("full_trading_signal", {})
                 fs_pos = full_signal.get("final_signal", {}).get("position", {})
                 if fs_pos and fs_pos.get("position_pct", 0) > 0:
@@ -1381,17 +1530,42 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                     position_pct = calc_actual_position_pct(entry_budget_pct)
                 is_trial = conf < OPEN_CONFIDENCE_THRESHOLD
 
-                entry_size = _calc_position_size(equity, 0, direction, price, current_swap, position_pct=position_pct)
+                leverage = 5.0
+                max_position_pct = 0.50
+                if full_signal and full_signal.get("final_signal"):
+                    leverage = full_signal["final_signal"].get("leverage", 5.0)
+                    max_position_pct = full_signal["final_signal"].get("max_position_pct", 0.50)
+
+                position_pct = min(position_pct, max_position_pct)
+
+                vr = full_signal.get("value_risk_assessment", {}) if full_signal else {}
+                if vr and vr.get("take_profit_stop_loss"):
+                    tp_sl = vr["take_profit_stop_loss"]
+                    tp_price = tp_sl.get("take_profit_price", tp_price)
+                    sl_price = tp_sl.get("stop_loss_price", 0)
+                    tp_pct = tp_sl.get("take_profit_pct", tp_pct)
+                    sl_pct = tp_sl.get("stop_loss_pct", STOP_LOSS_PCT * 100)
+                    vol_ratio = vr.get("volatility", {}).get("vol_ratio", 1.0)
+                else:
+                    sl_price = price * (1 - STOP_LOSS_PCT) if direction == "BULL" else price * (1 + STOP_LOSS_PCT)
+                    sl_pct = STOP_LOSS_PCT * 100
+                    vol_ratio = 1.0
+
+                entry_size = _calc_position_size(equity, 0, direction, price, current_swap, 
+                                                  position_pct=position_pct, leverage=leverage,
+                                                  max_position_pct=max_position_pct)
                 pos_side = "long" if direction == "BULL" else "short"
                 side = "buy" if direction == "BULL" else "sell"
 
-                sl_price = price * (1 - STOP_LOSS_PCT) if direction == "BULL" else price * (1 + STOP_LOSS_PCT)
-
                 mode_text = f"置信{conf}%预算占{entry_budget_pct*100:.0f}%"
-                _log("ACTION", f"开仓[{mode_text}]: {direction} {current_symbol} ${price:.2f}, 止盈${tp_price:.2f}, 止损${sl_price:.2f}, 首仓{entry_size}, vol_mult={vol_mult}, 账户占比{position_pct*100:.1f}%")
+                _log("ACTION", f"开仓[{mode_text}]: {direction} {current_symbol} ${price:.2f}, "
+                      f"止盈${tp_price:.2f}({tp_pct:.1f}%), 止损${sl_price:.2f}({sl_pct:.1f}%), "
+                      f"首仓{entry_size}, 杠杆{leverage}x, 逐仓模式, 账户占比{position_pct*100:.1f}%, "
+                      f"波动率比{vol_ratio:.2f}")
 
                 if AUTO_EXECUTE:
-                    res = _place_order(current_swap, side, pos_side, entry_size)
+                    res = _place_order(current_swap, side, pos_side, entry_size, 
+                                       td_mode="isolated", leverage=leverage)
                     if res["ok"]:
                         state["active"] = True
                         state["active_symbol"] = current_symbol
@@ -1411,10 +1585,14 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                         state["current_budget_pct"] = entry_budget_pct
                         state["has_counter_trend_addon"] = False
                         state["has_trend_follow_addon"] = False
+                        state["leverage"] = leverage
+                        state["margin_mode"] = "isolated"
+                        state["max_position_pct"] = max_position_pct
+                        state["vol_ratio"] = vol_ratio
                         state["last_action"] = "OPEN_" + direction
                         state["last_action_ts"] = datetime.now(timezone.utc).timestamp()
                         state["last_reason"] = f"{decision['mode']}决策{mode_text}置信{conf}%"
-                        _log("SUCCESS", f"开仓成功: ordId={res['ordId']}")
+                        _log("SUCCESS", f"开仓成功: ordId={res['ordId']}, 逐仓模式, 杠杆{leverage}x")
                         state["trade_history"].append({
                             "ts": datetime.now(timezone.utc).isoformat(),
                             "action": "OPEN_" + direction,
@@ -1427,7 +1605,10 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
                             "mode": decision["mode"],
                             "reasons": reasons,
                             "is_trial": is_trial,
+                            "tp_price": tp_price,
                             "sl_price": sl_price,
+                            "leverage": leverage,
+                            "margin_mode": "isolated",
                         })
                     else:
                         _log("ERROR", f"开仓失败: {res.get('err')}")

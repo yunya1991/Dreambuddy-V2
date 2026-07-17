@@ -1,0 +1,96 @@
+{
+  "regime": "BEAR_RECOVERY",
+  "confidence": 78,
+  "level": 3,
+  "timestamp": "2026-07-17T00:55:00+08:00",
+  "report_version": "v2.6",
+  "btc": {
+    "price": 64486.5,
+    "change_24h": -0.79,
+    "change_7d": 3.6,
+    "high_24h": 64694.4,
+    "low_24h": 64290.7,
+    "high_7d": 65588.0,
+    "low_7d": 62065.9,
+    "ma5": 64374.62,
+    "ma10": 63869.66,
+    "ma20": 62800.0,
+    "wma200": 62230.0
+  },
+  "eth": {
+    "price": 1879.22,
+    "change_24h": -1.97,
+    "change_7d": 5.8
+  },
+  "sol": {
+    "price": 76.27,
+    "change_24h": -1.68,
+    "change_7d": 0.7
+  },
+  "funding": {
+    "btc": 0.00002358,
+    "eth": 0.00004638,
+    "sol": 0.00002712
+  },
+  "sentiment": {
+    "fgi_alternative": 25,
+    "fgi_maketo": 37,
+    "fgi_coinstats": 35,
+    "fgi_average": 32.3,
+    "fgi_status": "Extreme Fear to Fear",
+    "funding_bias": "neutral_low_positive",
+    "short_oi_ratio": 0.41
+  },
+  "etf": {
+    "daily_flow_20260714": 178.4,
+    "ibit_flow_20260714": 136.0,
+    "weekly_trend": "positive_after_june_outflows",
+    "june_total_outflow": -4500.0
+  },
+  "macro": {
+    "wti_oil": 74.36,
+    "brent_oil": 79.11,
+    "gold": 4070.0,
+    "dxy_trend": "strengthening",
+    "cpi_expectation": 3.8,
+    "fed_stance": "hawkish",
+    "next_fomc": "2026-07-28"
+  },
+  "geopolitical": {
+    "status": "escalating",
+    "primary_event": "iran_us_conflict_hormuz",
+    "hormuz_closed_since": "2026-07-12",
+    "escalation_risk": "high",
+    "oil_impact": "+3_to_5pct"
+  },
+  "a0_contradiction": {
+    "primary": "geopolitical_conflict_vs_etf_inflows",
+    "secondary": "retail_panic_vs_institutional_accumulation",
+    "macro": "inflation_expectation_vs_rate_cut_expectation",
+    "dominant_force": "geopolitical_conflict"
+  },
+  "si_index": -5,
+  "three_screen": -4,
+  "key_levels": {
+    "support": [63500, 61800, 59000, 58000],
+    "resistance": [65500, 66500, 68000, 70000]
+  },
+  "scenarios": {
+    "bull_case": {
+      "probability": 35,
+      "trigger": "conflict_deescalation + sustained_etf_inflows",
+      "target": "68000-70000"
+    },
+    "base_case": {
+      "probability": 40,
+      "trigger": "conflict_stalemate + mixed_flows",
+      "target": "62500-65500_range"
+    },
+    "bear_case": {
+      "probability": 25,
+      "trigger": "conflict_escalation + cpi_surprise_hawkish",
+      "target": "58000-60000"
+    }
+  },
+  "narrative": "BTC recovering from June lows with ETF inflows providing structural support, but geopolitical escalation (Iran/Hormuz) caps upside. Market in direction-selection phase. FGI extreme fear is contrarian bullish, but macro headwinds (oil/ inflation/Fed hawkishness) require caution. Short-term range-bound likely until July 28 FOMC or Iran conflict resolution."
+}

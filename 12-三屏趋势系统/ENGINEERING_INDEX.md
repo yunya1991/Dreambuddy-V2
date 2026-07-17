@@ -1,10 +1,10 @@
 # 12-三屏趋势系统 · 工程索引
 
 > 模块路径: `12-三屏趋势系统/`
-> 版本: v1.4.1 (Phase 3.2 - 币种池优化 + Platt校准)
+> 版本: v1.5.0 (Phase 3.3 - 双路径基本面架构 Path A + Path B)
 > 语言: Python 3.x
 > 依赖: numpy, pandas, talib（可选，从10-经典指标系统导入）
-> 更新日期: 2026-07-15
+> 更新日期: 2026-07-16
 
 ---
 
@@ -87,14 +87,16 @@
 │   ├── indicators.py                   #    指标计算（三维动态 + 静态）
 │   ├── trend_consistency.py            #    趋势一致性检测
 │   ├── dynamic_weights.py              #    动态权重 + 贝叶斯置信度
-│   ├── fusion.py                       #    技术面+基本面撮合
+│   ├── fusion.py                       #    Path A 融合：技术面+基本面撮合
+│   ├── fundamental_screen1.py          #    Path B 核心：7维基本面分析（Tavily+算法）
 │   ├── risk_control.py                 #    极端行情风控守卫
 │   └── risk_reward.py                  #    价值风险评估 + 仓位 + 加仓决策
 │
 ├── data/                               # 📦 数据获取层
 │   ├── __init__.py                     #    数据包导出
 │   ├── market_data.py                  #    K线数据获取 + 重采样
-│   └── fundamental_data.py             #    基本面数据获取（A系列研报）
+│   ├── fundamental_data.py             #    Path A 数据源：A系列研报获取
+│   └── tavily_data.py                  #    Path B 数据源：Tavily API 实时搜索（4维）
 │
 ├── signal_pool/                        # 📡 Freqtrade信号池
 │   ├── pool.json                       #    信号池缓存
@@ -166,7 +168,8 @@
 | [`core/indicators.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/indicators.py) | ~200 | `calc_indicator_dynamics()`<br>`calc_indicator_signal()`<br>`calc_trend_direction_static()`<br>`calc_classic_indicator_confidence()` | **指标计算引擎**。单指标三维动态(direction/speed/acceleration)、静态投票、经典指标综合置信度 |
 | [`core/trend_consistency.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/trend_consistency.py) | ~230 | `calc_trend_direction_dynamic()`<br>`calc_trend_consistency()` | **趋势一致性检测**。静态+动态融合（动态优先原则），周线日线一致性判定 |
 | [`core/dynamic_weights.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/dynamic_weights.py) | ~200 | `calc_indicator_performance()`<br>`calc_dynamic_weights()`<br>`calc_bayesian_confidence()` | **动态权重 + 贝叶斯**。指标回测表现评估、动态权重分配、贝叶斯置信度计算 |
-| [`core/fusion.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/fusion.py) | ~100 | `fuse_technical_fundamental()` | **撮合层**。技术面与基本面方向和置信度的融合计算 |
+| [`core/fusion.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/fusion.py) | ~100 | `fuse_technical_fundamental()` | **Path A 融合层**。技术面与研报基本面方向/置信度的融合计算 |
+| [`core/fundamental_screen1.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/fundamental_screen1.py) | ~450 | `calc_fundamental_screen1()`<br>`calc_halving_cycle()`<br>`fuse_tech_fundamental()`<br>`_try_tavily_dimensions()`<br>`load_annotation_dimension()` | **Path B 核心模块**。7维基本面分析框架：减半周期(纯代码)+Tavily API(4维)+annotation回退，加权融合输出方向/置信度 |
 | [`core/risk_control.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/risk_control.py) | ~80 | `check_extreme_risk()`<br>`calc_volatility_stop()` | **极端风控守卫**。极端行情检测、波动率止损、强制平仓判定 |
 | [`core/risk_reward.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/risk_reward.py) | ~300 | `calc_elder_ray()`<br>`calc_30d_volatility()`<br>`get_vol_adjusted_params()`<br>`calc_risk_reward_ratio()`<br>`evaluate_addon_opportunity()`<br>`calc_position_sizing()` | **价值风险 + 加仓**。Elder-ray趋势强度、波动率放大、RR比值、逆势/顺势加仓评估、仓位计算 |
 
@@ -176,7 +179,8 @@
 |------|------|------------|---------|
 | [`data/__init__.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/__init__.py) | 1 | — | 数据包导出 |
 | [`data/market_data.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/market_data.py) | ~120 | `fetch_candles()`<br>`resample_candles()`<br>`_get_okx_client()` | **K线数据**。从 OKX API 获取K线，支持跨周期重采样(5m→1h→4h→1D) |
-| [`data/fundamental_data.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/fundamental_data.py) | ~450 | `fetch_fundamental_data()`<br>`fetch_fundamental_by_timeframe()`<br>`_parse_a1_daily()`<br>`_parse_weekly_report()`<br>`_merge_fundamental()` | **基本面数据**。解析A系列研报(周报MD + A1日报JSON)，输出方向+置信度 |
+| [`data/fundamental_data.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/fundamental_data.py) | ~450 | `fetch_fundamental_data()`<br>`fetch_fundamental_by_timeframe()`<br>`_parse_a1_daily()`<br>`_parse_weekly_report()`<br>`_merge_fundamental()` | **Path A 数据源**。解析A系列研报(周报MD + A1日报JSON)，输出方向+置信度 |
+| [`data/tavily_data.py`](file:///Users/zhangjiangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/tavily_data.py) | ~510 | `fetch_all_tavily_dimensions()`<br>`collect_miner_economics()`<br>`collect_onchain_valuation()`<br>`collect_macro_finance()`<br>`collect_cross_market()`<br>`tavily_search()`<br>`_parse_number_near()` | **Path B 数据源**。Tavily API 实时搜索4维基本面数据（矿工/链上/宏观/跨市场），30分钟缓存，SDK+HTTP双模式，年份过滤 |
 
 ### 3.4 signal_pool/ 信号池
 
@@ -821,5 +825,5 @@ python3 tests/test_core.py
 
 ---
 
-**文档版本**: ENGINEERING_INDEX v1.1
-**最后更新**: 2026-07-15
+**文档版本**: ENGINEERING_INDEX v1.2
+**最后更新**: 2026-07-16

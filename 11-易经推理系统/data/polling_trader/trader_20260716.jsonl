@@ -1,0 +1,25 @@
+{"ts": "2026-07-16 00:01:28", "level": "INFO", "msg": "[持仓同步] 检查 OKX 已有持仓..."}
+{"ts": "2026-07-16 00:01:31", "level": "INFO", "msg": "[持仓同步] 完成，共 2 个持仓 (BCRM=2 外部=0)"}
+{"ts": "2026-07-16 00:01:31", "level": "INFO", "msg": "轮询交易器启动 | 间隔=3600s 币种=['BTC', 'ETH', 'SOL', 'BNB', 'UNI', 'LINK', 'ATOM', 'ARB', 'PEPE', 'WIF', 'DOGE', 'HYPE'] 周期=1H | 置信度阈值=0.35 最大持仓=5 | dry_run=False simulated=False"}
+{"ts": "2026-07-16 00:01:31", "level": "INFO", "msg": "[风控] 日亏损上限=-50.0USDT | 最大连续亏损=5 | 默认仓位=10.0%"}
+{"ts": "2026-07-16 00:01:31", "level": "INFO", "msg": "[绩效] 初始权益=100.0 | 当前权益=135.31 | 历史交易=27笔"}
+{"ts": "2026-07-16 00:01:31", "level": "INFO", "msg": "[外部知识] 已加载 2 个进化参数 | 灵敏度=1.33 | 风险厌恶=0.67 | 市场倾向=neutral"}
+{"ts": "2026-07-16 00:01:31", "level": "INFO", "msg": "═══ 轮询 #1 开始 ═══"}
+{"ts": "2026-07-16 00:01:31", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/5 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-07-16 00:01:34", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:34", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:34", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:34", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:34", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:35", "level": "ERROR", "msg": "[LINK] 推理失败: 获取 LINK-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:35", "level": "ERROR", "msg": "[ATOM] 推理失败: 获取 ATOM-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:35", "level": "ERROR", "msg": "[ARB] 推理失败: 获取 ARB-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:35", "level": "ERROR", "msg": "[PEPE] 推理失败: 获取 PEPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:35", "level": "ERROR", "msg": "[WIF] 推理失败: 获取 WIF-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:36", "level": "ERROR", "msg": "[DOGE] 推理失败: 获取 DOGE-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:36", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-07-16 00:01:36", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 2"}
+{"ts": "2026-07-16 00:01:36", "level": "INFO", "msg": "  - BTC: long @ 64793.8 (conf=0.90)"}
+{"ts": "2026-07-16 00:01:36", "level": "INFO", "msg": "  - ETH: long @ 1875.22 (conf=0.94)"}
+{"ts": "2026-07-16 00:01:36", "level": "INFO", "msg": "[学习] 当前案例=433 | 新增自上次重训=0 | 上次重训=2026-07-15 08:00:58"}
+{"ts": "2026-07-16 00:01:36", "level": "INFO", "msg": "═══ 轮询 #1 结束 ═══\n"}

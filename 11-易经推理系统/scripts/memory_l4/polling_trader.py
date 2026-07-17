@@ -22,6 +22,7 @@ import signal as signal_module
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+import numpy as np
 
 from scripts.memory_l4.yijing_trainer import (
     _kline_to_snapshot,
@@ -50,7 +51,11 @@ from scripts.memory_l4.classic_exit_system import (
     ExitAction,
     ExitConfig,
 )
+from scripts.memory_l4.yijing_exit_system import (
+    YijingExitSystem, YijingExitConfig, YijingExitAction,
+)
 from scripts.memory_l4.bcrm2.incremental_learner import IncrementalLearner
+from scripts.memory_l4.bcrm2_adapter import BCRM2Adapter
 
 
 class PollingTrader:
@@ -60,7 +65,7 @@ class PollingTrader:
                  interval: int = 3600,
                  coins: list = None,
                  bar: str = "1H",
-                 confidence_threshold: float = 0.45,
+                 confidence_threshold: float = 0.55,
                  max_positions: int = 3,
                  kline_limit: int = 200,
                  initial_equity: float = 100.0,
@@ -68,7 +73,8 @@ class PollingTrader:
                  max_consecutive_losses: int = 5,
                  default_position_pct: float = 0.10,
                  guardian: ProcessGuardian = None,
-                 shared_dir=None):
+                 shared_dir=None,
+                 use_bcrm2: bool = True):
         self.interval = interval
         self.coins = coins or ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE"]
         self.bar = bar
@@ -79,6 +85,11 @@ class PollingTrader:
         self.bcrm_engine = BCRMEngine()
         self.bagua_engine = BaguaEngine()
         self.okx_client = OKXSimulatedClient()
+        
+        self.use_bcrm2 = use_bcrm2
+        self.bcrm2_adapters = {}
+        if self.use_bcrm2:
+            self._log(f"[BCRM2.0] 模式已启用，将使用辩证ML引擎", "INFO")
 
         self.running = False
         self.cycle_count = 0
@@ -104,26 +115,36 @@ class PollingTrader:
         self.knowledge_bridge = KnowledgeBridge(shared_dir=shared_dir)
         self.external_knowledge = {}
 
-        # 经典指标离场系统
+        # 经典指标离场系统（短期修复：关闭杠杆解耦 + 放宽震荡市止损 + 暂停 Risk Gate 追跌）
         exit_cfg = ExitConfig(
             l0_max_hold_sec=172800,
             l0_max_loss_pct=-0.05,
             tb_enabled=True,
             tb_sl_atr_mult=1.5,
             tb_tp_atr_mult=3.0,
-            tb_sl_min_pct=0.02,
+            tb_sl_min_pct=0.045,  # 震荡市从 2% 提到 4.5%（覆盖默认 2%）
             tb_tp_min_pct=0.04,
             trailing_enabled=True,
             trailing_arm_profit_pct=0.04,
-            trailing_retrace_pct=0.02,
+            trailing_retrace_pct=0.035,  # 跟踪止损回撤从 2% 放到 3.5%，减少震荡洗盘
             tstp_enabled=True,
             l1_enabled=True,
             l2_close_threshold=0.75,
             l2_reduce_threshold=0.55,
-            apply_leverage_to_thresholds=False,
+            apply_leverage_to_thresholds=True,  # 关闭杠杆解耦：-5% 真的是 -5%
             inflight_cooldown_sec=180,
+            # 暂停 Risk Gate 追跌强制 close：震荡市 hold_risk 持续高位易误伤
+            l0_risk_gate_enabled=True,  # 保留 armed + reduce（减仓保护）
+            l0_risk_gate_close_enabled=False,  # 关闭强制 close，避免追跌平仓
+            l0_risk_gate_cooldown_min=60.0,  # cooldown 从 30min 拉长到 60min
+            l0_risk_gate_confirm_n=3,  # 确认次数从 2 提到 3，更保守
         )
         self.exit_system = ClassicExitSystem(config=exit_cfg)
+        self._exit_cfg_base = exit_cfg  # 保存基准配置，供动态调整使用
+
+        # 易经专属离场系统：基于卦象风险-价值评估，可否决 classic 的噪音止损
+        self.yijing_exit_system = YijingExitSystem(config=YijingExitConfig())
+        self.yijing_exit_system.set_log_callback(self._log)
 
         self.log_dir = Path("data/polling_trader")
         self.log_dir.mkdir(parents=True, exist_ok=True)
@@ -173,6 +194,21 @@ class PollingTrader:
                 )
                 self._log(f"[持仓同步] 已同步 {coin} {pos['pos_side']} @ {pos['avg_px']} [外部策略]", "INFO")
 
+        # 反向清理：本地有但 OKX 已无持仓的记录（已止损/止盈/手动平仓）
+        for p in self.position_tracker.all_open_positions():
+            inst_id = p.inst_id
+            pos_result = self.okx_client.get_positions(inst_id)
+            if not pos_result.get("ok"):
+                continue
+            okx_positions = [pp for pp in pos_result.get("positions", []) if float(pp["pos"]) > 0]
+            if not okx_positions:
+                self.position_tracker.close_position(
+                    inst_id,
+                    exit_price=0.0,
+                    exit_reason="OKX持仓已不存在，清理本地残留",
+                )
+                self._log(f"[持仓同步] 清理本地残留 {inst_id} (OKX已无持仓)", "WARN")
+
         open_count = len(self.position_tracker.all_open_positions())
         external_count = sum(1 for p in self.position_tracker.all_open_positions()
                              if p.strategy_source == "external")
@@ -214,6 +250,10 @@ class PollingTrader:
             inst_id=inst_id, bar=self.bar, limit=self.kline_limit)
         if not kline_data:
             return {"ok": False, "error": f"获取 {inst_id} K线失败"}
+        
+        # BCRM 2.0 推理路径
+        if self.use_bcrm2:
+            return self._infer_bcrm2(coin, inst_id, kline_data)
 
         snapshot = _kline_to_snapshot(kline_data, idx=0)
         if not snapshot:
@@ -376,6 +416,133 @@ class PollingTrader:
             "snapshot": snapshot,
             "contradictions": contradictions,
             "volatility": snapshot.get("volatility", 0.03),
+            "kline_data": kline_data,
+        }
+
+    def _kline_to_dataframe(self, kline_data: list) -> "pd.DataFrame":
+        """将 OKX K线数据转换为 pandas DataFrame"""
+        import pandas as pd
+        data = []
+        for c in kline_data:
+            data.append({
+                'timestamp': c.get('ts', 0),
+                'open': float(c.get('o', 0)),
+                'high': float(c.get('h', 0)),
+                'low': float(c.get('l', 0)),
+                'close': float(c.get('c', 0)),
+                'volume': float(c.get('v', 0)),
+            })
+        df = pd.DataFrame(data)
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms', utc=True)
+        df.set_index('timestamp', inplace=True)
+        df.sort_index(inplace=True)
+        return df
+
+    def _infer_bcrm2(self, coin: str, inst_id: str, kline_data: list) -> dict:
+        """使用 BCRM 2.0 (辩证ML) 执行推理"""
+        import pandas as pd
+        
+        if coin not in self.bcrm2_adapters:
+            self.bcrm2_adapters[coin] = BCRM2Adapter(
+                symbol=coin,
+                timeframe=self.bar,
+                tp_atr=3.0,
+                sl_atr=1.5,
+                max_hold_bars=60,
+            )
+        
+        adapter = self.bcrm2_adapters[coin]
+        
+        try:
+            df = self._kline_to_dataframe(kline_data)
+        except Exception as e:
+            return {"ok": False, "error": f"K线转换失败: {e}"}
+        
+        # 首次推理时自动训练
+        if adapter.engine is None:
+            self._log(f"[{coin}] BCRM2.0 首次推理，开始训练模型...", "INFO")
+            if not adapter.train(df):
+                self._log(f"[{coin}] BCRM2.0 训练失败，回退到 BCRM 1.0", "WARN")
+                self.use_bcrm2 = False
+                return self._fetch_and_infer(coin)
+        
+        # 执行推理
+        bcrm_result = adapter.infer(df, idx=-1)
+        
+        if not bcrm_result.get('ok'):
+            self._log(f"[{coin}] BCRM2.0 推理失败: {bcrm_result.get('fail_closed_reason', '未知')}", "WARN")
+            return {"ok": False, "error": "BCRM2.0 推理失败"}
+        
+        direction = bcrm_result['next_state']['direction']
+        confidence = bcrm_result['next_state']['confidence']
+        hex_cn = bcrm_result['hexagram']['hexagram_name_cn']
+        fail_closed = bcrm_result['is_fail_closed']()
+        
+        # 计算波动率（用于止盈止损）
+        closes = df['close'].values
+        atr = 0
+        if len(df) >= 14:
+            highs = df['high'].values
+            lows = df['low'].values
+            tr = np.maximum(
+                highs[1:] - lows[1:],
+                np.maximum(
+                    np.abs(highs[1:] - closes[:-1]),
+                    np.abs(lows[1:] - closes[:-1])
+                )
+            )
+            atr = np.mean(tr[-14:])
+        volatility = atr / closes[-1] if closes[-1] > 0 else 0.03
+        
+        # 检测震荡市
+        closes_window = list(closes[-60:])
+        snapshot_simple = {"price": closes[-1], "volatility": volatility}
+        ranging_info = _detect_ranging_market(snapshot_simple, closes_window)
+        is_ranging = ranging_info.get("is_ranging", False)
+        
+        price = closes[-1]
+        
+        # 计算 ATR 止盈止损
+        sl_px, tp_px = 0, 0
+        if atr > 0:
+            if direction == "UP":
+                sl_px = round(price - atr * 1.5, 4)
+                tp_px = round(price + atr * 3.0, 4)
+            elif direction == "DOWN":
+                sl_px = round(price + atr * 1.5, 4)
+                tp_px = round(price - atr * 3.0, 4)
+        
+        self._log(
+            f"[{coin}] BCRM2.0 推理 | 方向={direction} 置信度={confidence:.2f} "
+            f"卦象={hex_cn} fail_closed={fail_closed}",
+            "INFO"
+        )
+        
+        return {
+            "ok": True,
+            "coin": coin,
+            "inst_id": inst_id,
+            "price": price,
+            "direction": direction,
+            "confidence": round(confidence, 4),
+            "hexagram": hex_cn,
+            "hex_consistent": True,
+            "fail_closed": fail_closed,
+            "is_ranging": is_ranging,
+            "bagua_direction": "neutral",
+            "bagua_confidence": 0,
+            "stop_loss_px": sl_px,
+            "take_profit_px": tp_px,
+            "reduce_ratio": 0,
+            "liangyi_state": {},
+            "scale_params": {},
+            "snapshot": {
+                "price": price,
+                "volatility": volatility,
+                "is_ranging": is_ranging,
+            },
+            "contradictions": [],
+            "volatility": volatility,
             "kline_data": kline_data,
         }
 
@@ -661,55 +828,180 @@ class PollingTrader:
                     for c in kline_data
                 ]
 
-            exit_decision = self.exit_system.evaluate_full(
-                pos=exit_pos,
-                candles_1h=candles_1h,
-                regime=regime,
-            )
+            # ── 主离场层：易经推理专属离场（基于卦象风险-价值评估）──
+            # 架构反转：yijing 作为主决策，classic 降为备用（仅在 yijing 不可用或信号中性时调用）
+            yijing_hexagram = self._infer_current_hexagram(coin, inference, kline_data)
+            yijing_decision = None
+            yijing_available = yijing_hexagram is not None
 
-            if exit_decision.action == ExitAction.CLOSE:
+            if yijing_available:
+                yijing_decision = self.yijing_exit_system.evaluate(
+                    hexagram=yijing_hexagram,
+                    pos_side=pos_side,
+                    entry_price=float(entry_price) if entry_price else 0,
+                    current_price=float(current_price),
+                    position_age_sec=position_age_sec,
+                    unrealized_pnl_pct=float(upl_ratio),
+                    classic_decision=None,  # 主离场模式：不再否决 classic
+                    mfe_pnl_pct=max(0.0, float(upl_ratio)),
+                )
+
+            # 1) 易经强制平仓：卦象风险极高 + 方向冲突 → 直接 close
+            if yijing_decision and yijing_decision.action == YijingExitAction.FORCE_CLOSE:
                 self._log(
-                    f"[{coin}] 经典指标离场 [CLOSE] {exit_decision.reason} | "
-                    f"优先级={exit_decision.priority.value} "
-                    f"置信度={exit_decision.confidence:.2f} "
+                    f"[{coin}] 易经主离场 [FORCE_CLOSE] {yijing_decision.reason} | "
+                    f"卦象={yijing_decision.hexagram_name} "
+                    f"风险={yijing_decision.yijing_risk_score:.2f} "
+                    f"价值={yijing_decision.yijing_value_score:.2f} "
                     f"盈亏={upl:.2f}({upl_ratio:.2%})")
                 if pos_side == "long":
                     r = self.okx_client.market_close_long(
-                        inst_id, reason=f"经典离场:{exit_decision.reason}")
+                        inst_id, reason=f"易经离场:{yijing_decision.reason}")
                 else:
                     r = self.okx_client.market_close_short(
-                        inst_id, reason=f"经典离场:{exit_decision.reason}")
+                        inst_id, reason=f"易经离场:{yijing_decision.reason}")
                 if r.get("ok") or r.get("dry_run"):
                     self._handle_close_position(
                         inst_id=inst_id, coin=coin, pos_side=pos_side,
                         exit_price=current_price,
-                        exit_reason=f"classic_exit:{exit_decision.reason}",
+                        exit_reason=f"yijing_exit:{yijing_decision.reason}",
                         pnl=upl, pnl_pct=upl_ratio,
                     )
                 return
 
-            elif exit_decision.action == ExitAction.REDUCE:
+            # 2) 易经提高止盈：价值高 + 成长期 → 上调止盈位
+            if yijing_decision and yijing_decision.action == YijingExitAction.RAISE_TP:
+                tp_direction = 1 if pos_side == "long" else -1
+                tp_uplift = yijing_decision.tp_adjust_pct
+                new_tp_price = float(current_price) * (1 + tp_direction * tp_uplift * 0.5)
+                new_tp_pct = tp_uplift * 0.5
                 self._log(
-                    f"[{coin}] 经典指标离场 [REDUCE] {exit_decision.reason} | "
-                    f"减仓比例={exit_decision.reduce_frac:.0%} "
-                    f"盈亏={upl:.2f}({upl_ratio:.2%})")
-                return
-
-            elif exit_decision.action == ExitAction.RAISE_TP:
-                new_tp_price = exit_decision.new_tp_price
-                new_tp_pct = exit_decision.new_tp_pct
-                self._log(
-                    f"[{coin}] 经典指标离场 [RAISE_TP] {exit_decision.reason} | "
+                    f"[{coin}] 易经主离场 [RAISE_TP] {yijing_decision.reason} | "
+                    f"卦象={yijing_decision.hexagram_name} "
                     f"新止盈={new_tp_price:.2f}({new_tp_pct:.2%}) "
                     f"盈亏={upl:.2f}({upl_ratio:.2%})")
-                # 更新止盈价（通过 place_stop_loss_take_profit 覆盖式下单）
                 try:
                     tp_result = self.okx_client.place_stop_loss_take_profit(
                         inst_id=inst_id,
                         pos_side=pos_side,
                         stop_loss_px=None,
                         take_profit_px=new_tp_price,
-                        reason=f"raise_tp:{exit_decision.reason}",
+                        reason=f"yijing_raise_tp:{yijing_decision.reason}",
+                    )
+                    if tp_result.get("ok"):
+                        self._log(f"[{coin}] 易经止盈价已上调至 {new_tp_price:.2f}")
+                    else:
+                        self._log(f"[{coin}] 易经上调止盈失败: {tp_result.get('error', 'unknown')}", "WARN")
+                except Exception as e:
+                    self._log(f"[{coin}] 易经上调止盈异常: {e}", "WARN")
+                return
+
+            # 3) 易经主决策 HOLD：风险低 + 价值高 + 方向一致 + 未破阈值 → 维持持仓
+            #    （卦象信号良好，无需调用 classic 备用层）
+            if yijing_decision and yijing_decision.action == YijingExitAction.NO_INTERVENE:
+                cfg_yijing = self.yijing_exit_system.config
+                risk_low = yijing_decision.yijing_risk_score < cfg_yijing.veto_risk_threshold
+                value_high = yijing_decision.yijing_value_score > cfg_yijing.veto_value_threshold
+                loss_acceptable = float(upl_ratio) > cfg_yijing.veto_max_loss_pct
+                not_expired = position_age_sec < cfg_yijing.veto_max_hold_sec
+
+                if (risk_low and value_high and yijing_decision.direction_consistent
+                        and loss_acceptable and not_expired):
+                    self._log(
+                        f"[{coin}] 易经主离场 [HOLD] 卦象信号良好 | "
+                        f"卦象={yijing_decision.hexagram_name} "
+                        f"风险={yijing_decision.yijing_risk_score:.2f} "
+                        f"价值={yijing_decision.yijing_value_score:.2f} "
+                        f"阶段={yijing_decision.current_phase or '-'} "
+                        f"方向一致={yijing_decision.direction_consistent} "
+                        f"盈亏={upl:.2f}({upl_ratio:.2%}) 持仓={position_age_sec/3600:.1f}h "
+                        f"行情={regime} | 维持持仓")
+                    return
+                # 卦象信号中性或风险偏高 → 降级 classic 评估
+                self._log(
+                    f"[{coin}] 易经信号中性，降级经典备用离场 | "
+                    f"卦象={yijing_decision.hexagram_name} "
+                    f"风险={yijing_decision.yijing_risk_score:.2f} "
+                    f"价值={yijing_decision.yijing_value_score:.2f} "
+                    f"方向一致={yijing_decision.direction_consistent} "
+                    f"盈亏={upl_ratio:.2%} 持仓={position_age_sec/3600:.1f}h")
+            elif not yijing_available:
+                self._log(
+                    f"[{coin}] 易经卦象不可用，启用经典离场备用层 | "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%})", "WARN")
+
+            # ── 备用离场层：经典指标离场（yijing 不可用 或 信号中性时调用）──
+            # 短期修复 2：震荡市动态放宽止损（is_ranging / 弱趋势 → 止损更宽）
+            # 注意：传入 dict（含 is_ranging/adx/trend_strength），而非字符串 regime
+            self._adjust_exit_config_for_regime({
+                "is_ranging": is_ranging,
+                "adx": float(inference.get("adx", 0) or 0),
+                "trend_strength": inference.get("trend_strength", 0.5),
+            })
+
+            exit_decision = self.exit_system.evaluate_full(
+                pos=exit_pos,
+                candles_1h=candles_1h,
+                regime=regime,
+            )
+
+            # 执行 classic 决策
+            if exit_decision.action == ExitAction.CLOSE:
+                self._log(
+                    f"[{coin}] 经典备用离场 [CLOSE] {exit_decision.reason} | "
+                    f"优先级={exit_decision.priority.value} "
+                    f"置信度={exit_decision.confidence:.2f} "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%})")
+                if pos_side == "long":
+                    r = self.okx_client.market_close_long(
+                        inst_id, reason=f"经典备用离场:{exit_decision.reason}")
+                else:
+                    r = self.okx_client.market_close_short(
+                        inst_id, reason=f"经典备用离场:{exit_decision.reason}")
+                if r.get("ok") or r.get("dry_run"):
+                    self._handle_close_position(
+                        inst_id=inst_id, coin=coin, pos_side=pos_side,
+                        exit_price=current_price,
+                        exit_reason=f"classic_backup:{exit_decision.reason}",
+                        pnl=upl, pnl_pct=upl_ratio,
+                    )
+                return
+
+            if exit_decision.action == ExitAction.REDUCE:
+                self._log(
+                    f"[{coin}] 经典备用离场 [REDUCE] {exit_decision.reason} | "
+                    f"减仓比例={exit_decision.reduce_frac:.0%} "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%})")
+                reduce_result = self.okx_client.reduce_position(
+                    inst_id=inst_id,
+                    pos_side=pos_side,
+                    reduce_ratio=exit_decision.reduce_frac,
+                    reason=f"classic_backup:{exit_decision.reason}",
+                )
+                if reduce_result.get("ok"):
+                    self._log(
+                        f"[{coin}] 减仓成功 | "
+                        f"原持仓={reduce_result.get('original_pos')} "
+                        f"减仓量={reduce_result.get('reduce_sz')} "
+                        f"剩余={reduce_result.get('remaining_pos')}")
+                else:
+                    self._log(f"[{coin}] 减仓失败: {reduce_result.get('error', 'unknown')}", "WARN")
+                return
+
+            if exit_decision.action == ExitAction.RAISE_TP:
+                new_tp_price = exit_decision.new_tp_price
+                new_tp_pct = exit_decision.new_tp_pct
+                self._log(
+                    f"[{coin}] 经典备用离场 [RAISE_TP] {exit_decision.reason} | "
+                    f"新止盈={new_tp_price:.2f}({new_tp_pct:.2%}) "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%})")
+                try:
+                    tp_result = self.okx_client.place_stop_loss_take_profit(
+                        inst_id=inst_id,
+                        pos_side=pos_side,
+                        stop_loss_px=None,
+                        take_profit_px=new_tp_price,
+                        reason=f"raise_tp_backup:{exit_decision.reason}",
                     )
                     if tp_result.get("ok"):
                         self._log(f"[{coin}] 止盈价已上调至 {new_tp_price:.2f}")
@@ -719,11 +1011,18 @@ class PollingTrader:
                     self._log(f"[{coin}] 上调止盈异常: {e}", "WARN")
                 return
 
-            hold_risk = exit_decision.features.hold_risk if exit_decision.features else 0.5
-            hold_value = exit_decision.features.hold_value if exit_decision.features else 0.5
+            # 维持持仓日志（含易经风险评估）
+            hold_risk = (exit_decision.features.hold_risk if exit_decision and exit_decision.features else 0.5)
+            hold_value = (exit_decision.features.hold_value if exit_decision and exit_decision.features else 0.5)
+            yijing_risk = yijing_decision.yijing_risk_score if yijing_decision else 0.5
+            yijing_value = yijing_decision.yijing_value_score if yijing_decision else 0.5
+            hex_display = (yijing_decision.hexagram_name if yijing_decision else "无卦象") or "无卦象"
+            yijing_phase = (yijing_decision.current_phase if yijing_decision else "") or "-"
             self._log(
                 f"[{coin}] 持仓中 {pos_side} | "
                 f"浮动盈亏={upl:.2f}({upl_ratio:.2%}) | "
+                f"卦象={hex_display} 易经风险={yijing_risk:.2f} 易经价值={yijing_value:.2f} "
+                f"阶段={yijing_phase} "
                 f"持有风险={hold_risk:.2f} 持有价值={hold_value:.2f} "
                 f"行情={regime} | 维持持仓")
             return
@@ -782,10 +1081,29 @@ class PollingTrader:
         confidence = inference["confidence"]
         volatility = inference.get("volatility", 0.03)
 
+        leverage = self.okx_client.cfg.get("default_leverage", 3)
+        td_mode = self.okx_client.cfg.get("td_mode", "isolated")
+        balance = self.okx_client.get_balance()
+        
+        available_equity = self.perf_tracker.current_equity
+        if balance.get("ok"):
+            avail_usdt = balance.get("assets", {}).get("USDT", {}).get("avail", 0)
+            if td_mode == "isolated":
+                available_equity = avail_usdt
+            else:
+                total_eq = balance.get("total_eq", 0)
+                pos_result = self.okx_client.get_positions()
+                total_imr = 0
+                if pos_result.get("ok"):
+                    for p in pos_result.get("positions", []):
+                        if float(p.get("pos", 0)) > 0:
+                            total_imr += float(p.get("imr", 0))
+                available_equity = total_eq - total_imr
+
         pos_size_info = self.risk_manager.calc_position_size(
             confidence=confidence,
             volatility=volatility,
-            current_equity=self.perf_tracker.current_equity,
+            current_equity=available_equity,
         )
         position_usdt = pos_size_info["position_usdt"]
         position_pct = pos_size_info["position_pct"]
@@ -804,18 +1122,33 @@ class PollingTrader:
             f"置信度={confidence:.2f} 卦象={inference['hexagram']} | "
             f"仓位={position_usdt:.2f}USDT ({position_pct:.1%}) | "
             f"价格={inference['price']} 止损={sl_px} 止盈={tp_px} | "
-            f"原因={pos_size_info['reason']}"
+            f"原因={pos_size_info['reason']} | "
+            f"可用余额={available_equity:.2f}USDT"
         )
 
-        # 检查下单量是否满足最小合约单位
-        leverage = self.okx_client.cfg.get("default_leverage", 3)
         margin_needed = position_usdt / leverage
-        balance = self.okx_client.get_balance()
+        
         if balance.get("ok"):
+            total_eq = balance.get("total_eq", 0)
             avail_usdt = balance.get("assets", {}).get("USDT", {}).get("avail", 0)
-            if margin_needed > avail_usdt:
-                self._log(f"[{coin}] 可用保证金不足 | 需要={margin_needed:.2f}USDT 可用={avail_usdt:.2f}USDT 杠杆={leverage}x 跳过", "WARN")
-                return
+            
+            if td_mode == "isolated":
+                if margin_needed > avail_usdt:
+                    self._log(f"[{coin}] 可用保证金不足（逐仓） | 需要={margin_needed:.2f}USDT 可用={avail_usdt:.2f}USDT 总权益={total_eq:.2f}USDT 杠杆={leverage}x 跳过", "WARN")
+                    return
+            else:
+                pos_result = self.okx_client.get_positions()
+                total_imr = 0
+                if pos_result.get("ok"):
+                    for p in pos_result.get("positions", []):
+                        if float(p.get("pos", 0)) > 0:
+                            total_imr += float(p.get("imr", 0))
+                
+                cross_available = total_eq - total_imr
+                
+                if margin_needed > cross_available:
+                    self._log(f"[{coin}] 可用保证金不足（全仓） | 需要={margin_needed:.2f}USDT 可用={cross_available:.2f}USDT 总权益={total_eq:.2f}USDT 已用IMR={total_imr:.2f}USDT 杠杆={leverage}x 跳过", "WARN")
+                    return
 
         # 检查下单量是否满足最小合约单位
         sz = self.okx_client._usdt_to_sz(inst_id, position_usdt)
@@ -883,6 +1216,103 @@ class PollingTrader:
         except Exception as e:
             self._log(f"[外部知识] 加载失败: {e}", "ERROR")
             self.external_knowledge = {}
+
+    def _infer_current_hexagram(self, coin: str, inference: dict, kline_data: list):
+        """离场时推理当前卦象（轻量级，复用 YijingEngine）
+
+        用 inference 中已有的技术指标作为四维评分的简化输入：
+        - technical_score = trend_strength（趋势强度）
+        - supply_demand_score = 用价格位置近似
+        - capital_flow_score = 用成交量比近似
+        - sentiment_score = 用 confidence + is_ranging 反向近似
+
+        失败时返回 None（YijingExitSystem 会 fail-open 不干预）
+        """
+        try:
+            from scripts.memory_l4.bcrm.yijing_engine import YijingEngine
+            if not hasattr(self, "_yijing_engine_for_exit"):
+                self._yijing_engine_for_exit = YijingEngine()
+
+            # 从 inference 提取可用字段
+            trend_strength = float(inference.get("trend_strength", 0.5) or 0.5)
+            volatility = float(inference.get("volatility", 0.03) or 0.03)
+            confidence = float(inference.get("confidence", 0.5) or 0.5)
+            is_ranging = bool(inference.get("is_ranging", False))
+            current_price = float(inference.get("price", 0) or 0)
+
+            # 简化四维评分
+            technical_score = max(0.0, min(1.0, trend_strength))
+            supply_demand_score = 0.5  # 中性，离场时不重算供需
+            capital_flow_score = 0.5   # 中性
+            # 情绪面：confidence 高=乐观；震荡市=情绪混乱
+            sentiment_score = max(0.0, min(1.0, confidence * 0.7 + (0.3 if not is_ranging else 0.1)))
+
+            # 波动率归一化（0-1）
+            vol_norm = max(0.0, min(1.0, volatility * 20))
+
+            # 价格位置（从 kline_data 简单计算）
+            price_position = 0.5
+            if kline_data and len(kline_data) >= 20 and current_price > 0:
+                try:
+                    closes = [float(c.get("c", 0)) for c in kline_data[-20:]]
+                    if closes and max(closes) > min(closes):
+                        price_position = (current_price - min(closes)) / (max(closes) - min(closes))
+                        price_position = max(0.0, min(1.0, price_position))
+                except Exception:
+                    pass
+
+            result = self._yijing_engine_for_exit.infer(
+                supply_demand_score=supply_demand_score,
+                technical_score=technical_score,
+                capital_flow_score=capital_flow_score,
+                sentiment_score=sentiment_score,
+                trend_strength=trend_strength,
+                volatility=vol_norm,
+                volume_ratio=1.0,
+                price_position=price_position,
+                close_price=current_price,
+            )
+            return result
+        except Exception as e:
+            self._log(f"[{coin}] 离场卦象推理失败: {e}", "WARN")
+            return None
+
+    def _adjust_exit_config_for_regime(self, regime: dict):
+        """短期修复 2：根据市场状态动态调整 ExitConfig
+
+        - 震荡市（is_ranging=true / 弱趋势）：止损放宽到 5%，跟踪回撤 3.5% → 4%
+        - 趋势市：恢复基准配置（4.5% / 3.5%）
+        """
+        if not regime or not hasattr(self, "_exit_cfg_base"):
+            return
+        try:
+            is_ranging = bool(regime.get("is_ranging", False))
+            # 弱趋势判定：adx < 20 或 trend_strength 为 weak/range
+            adx = float(regime.get("adx", 0) or 0)
+            trend_strength = str(regime.get("trend_strength", "")).lower()
+            weak_trend = (adx < 20) or (trend_strength in ("weak", "range", "ranging"))
+
+            cfg = self.exit_system.config
+            if is_ranging or weak_trend:
+                # 震荡市：放宽止损
+                if cfg.tb_sl_min_pct != 0.05:
+                    cfg.tb_sl_min_pct = 0.05
+                    cfg.trailing_retrace_pct = 0.04
+                    self._log(
+                        f"[离场动态调整] 震荡市(is_ranging={is_ranging},adx={adx:.1f}) "
+                        f"→ tb_sl_min=5% trailing_retrace=4%"
+                    )
+            else:
+                # 趋势市：恢复基准
+                if cfg.tb_sl_min_pct != self._exit_cfg_base.tb_sl_min_pct:
+                    cfg.tb_sl_min_pct = self._exit_cfg_base.tb_sl_min_pct
+                    cfg.trailing_retrace_pct = self._exit_cfg_base.trailing_retrace_pct
+                    self._log(
+                        f"[离场动态调整] 趋势市恢复基准 "
+                        f"→ tb_sl_min={cfg.tb_sl_min_pct:.1%} trailing_retrace={cfg.trailing_retrace_pct:.1%}"
+                    )
+        except Exception as e:
+            self._log(f"[离场动态调整失败] {e}")
 
     def _adjust_confidence_threshold(self) -> float:
         """根据外部知识调整置信度阈值"""
@@ -1098,6 +1528,10 @@ def main():
                         help="默认单笔仓位比例，默认 0.10(10%%)")
     parser.add_argument("--no-guardian", action="store_true",
                         help="不启用进程守护")
+    parser.add_argument("--use-bcrm2", action="store_true", default=True,
+                        help="使用 BCRM 2.0 (辩证ML引擎)，默认启用")
+    parser.add_argument("--use-bcrm1", action="store_true",
+                        help="使用 BCRM 1.0 (矛盾力学引擎)")
     args = parser.parse_args()
 
     coins = [c.strip().upper() for c in args.coins.split(",")]
@@ -1140,6 +1574,7 @@ def main():
         max_consecutive_losses=args.max_consecutive_losses,
         default_position_pct=args.position_pct,
         guardian=guardian,
+        use_bcrm2=not args.use_bcrm1,
     )
 
     if guardian:

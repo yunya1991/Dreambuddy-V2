@@ -9,7 +9,7 @@
 3. Agent 自主申请：agents 写入 self_schedule.json 申请提前运行
 4. 紧急信号：市场波动超阈值时触发（BTC 1H变动 > 3%）
 """
-import os, json, time, subprocess, requests, warnings
+import os, sys, json, time, subprocess, requests, warnings
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -19,6 +19,10 @@ ENV_FILE  = BASE_DIR / "config" / ".env.v15"
 SCHED_FILE = BASE_DIR / "data" / "self_schedule.json"
 STATE_FILE = BASE_DIR / "data" / "orchestrator_state.json"
 LOG_FILE   = BASE_DIR / "logs" / "orchestrator.log"
+V15_STATE_FILE    = BASE_DIR / "data" / "v15_state.json"
+BAYESIAN_OPT_SCRIPT = BASE_DIR / "lib" / "bayesian_optimizer.py"
+BAYESIAN_OPT_LOCK  = BASE_DIR / "data" / "bayesian_opt" / ".opt.lock"
+BAYESIAN_OPT_LOG   = BASE_DIR / "logs" / "bayesian_opt.log"
 
 NORMAL_INTERVAL_H = 1          # 常规间隔（放宽验证阶段：1H）
 EVENT_WINDOW_H    = 0.5        # 重要事件前后触发窗口（放宽为30分钟）
@@ -239,6 +243,111 @@ def run_agents(reason: str):
         log(f"  ❌ 执行失败: {e}")
 
 
+# ── 贝叶斯优化自动调度 ─────────────────────────────────────────────────────
+# 触发条件（任一满足）：连亏≥3笔 / 距上次优化≥7天 / 跨月
+# 优化无效（收益差<2%）自动回退基线参数
+
+def get_loss_streak() -> int:
+    """从 v15_state.json 读取连续亏损笔数"""
+    if not V15_STATE_FILE.exists():
+        return 0
+    try:
+        with open(V15_STATE_FILE) as f:
+            state = json.load(f)
+        return int(state.get("consecutive_losses", 0))
+    except Exception:
+        return 0
+
+
+def check_bayesian_optimization_trigger() -> tuple:
+    """检查是否应该触发贝叶斯优化
+
+    读取 .env.v15 调度配置 + v15_state.json 连亏笔数，
+    调用 bayesian_optimizer.should_trigger_optimization() 判断。
+    """
+    # 读取调度开关
+    loss_streak_trigger = int(os.environ.get("BAYESIAN_OPT_LOSS_STREAK_TRIGGER", "3"))
+    weekly_enabled  = os.environ.get("BAYESIAN_OPT_WEEKLY", "false").lower() == "true"
+    monthly_enabled = os.environ.get("BAYESIAN_OPT_MONTHLY", "true").lower() == "true"
+
+    # 若所有调度开关都关闭，直接跳过
+    if not (weekly_enabled or monthly_enabled) and loss_streak_trigger <= 0:
+        return False, "调度已禁用"
+
+    try:
+        lib_path = str(BASE_DIR / "lib")
+        if lib_path not in sys.path:
+            sys.path.insert(0, lib_path)
+        from bayesian_optimizer import should_trigger_optimization
+        loss_streak = get_loss_streak()
+        should, reason = should_trigger_optimization(loss_streak=loss_streak)
+
+        # 若每月触发但开关关闭，覆盖为不触发
+        if should and not monthly_enabled and "跨月" in reason:
+            should = False
+            reason = "每月触发已禁用"
+
+        return should, reason
+    except Exception as e:
+        return False, f"触发检查失败: {e}"
+
+
+def _is_optimization_running() -> bool:
+    """通过 PID 锁文件检查优化是否正在运行"""
+    if not BAYESIAN_OPT_LOCK.exists():
+        return False
+    try:
+        with open(BAYESIAN_OPT_LOCK) as f:
+            pid = int(f.read().strip())
+        os.kill(pid, 0)  # 信号0：仅检查进程是否存在
+        return True
+    except (ProcessLookupError, ValueError, OSError):
+        # 进程已结束或锁文件无效，清理
+        try:
+            BAYESIAN_OPT_LOCK.unlink()
+        except Exception:
+            pass
+        return False
+
+
+def run_bayesian_optimization():
+    """后台启动贝叶斯优化+自动回退（不阻塞交易）
+
+    使用 PID 锁防止重复运行：
+    - 锁文件存在且进程存活 → 跳过
+    - 锁文件存在但进程已死 → 清理并启动
+    """
+    if _is_optimization_running():
+        log("📊 贝叶斯优化正在运行中，跳过本次触发")
+        return
+
+    if not BAYESIAN_OPT_SCRIPT.exists():
+        log(f"⚠️ 优化脚本不存在: {BAYESIAN_OPT_SCRIPT}")
+        return
+
+    BAYESIAN_OPT_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    log_file = BAYESIAN_OPT_LOG
+    loss_streak = get_loss_streak()
+
+    try:
+        with open(log_file, "a") as lf:
+            proc = subprocess.Popen(
+                ["python3", str(BAYESIAN_OPT_SCRIPT), "--with-rollback"],
+                cwd=str(BASE_DIR),
+                stdout=lf, stderr=subprocess.STDOUT,
+                start_new_session=True,  # 独立进程组，不受父进程退出影响
+            )
+        with open(BAYESIAN_OPT_LOCK, "w") as f:
+            f.write(str(proc.pid))
+        log(f"🔧 贝叶斯优化已后台启动 (PID={proc.pid}, 连亏{loss_streak}笔) → logs/bayesian_opt.log")
+    except Exception as e:
+        log(f"❌ 启动贝叶斯优化失败: {e}")
+        try:
+            BAYESIAN_OPT_LOCK.unlink()
+        except Exception:
+            pass
+
+
 # ── 主函数 ───────────────────────────────────────────────────────────────
 
 def main():
@@ -256,6 +365,16 @@ def main():
         fetch_upcoming_events_tavily()
     else:
         log(reason)
+
+    # ── 贝叶斯优化调度（独立于交易，后台运行不阻塞）──
+    # 触发条件：连亏≥3笔 / 距上次优化≥7天 / 跨月
+    # 优化无效（收益差<2%）自动回退基线参数
+    opt_trigger, opt_reason = check_bayesian_optimization_trigger()
+    if opt_trigger:
+        log(f"📊 贝叶斯优化触发: {opt_reason}")
+        run_bayesian_optimization()
+    else:
+        log(f"📊 贝叶斯优化: {opt_reason}")
 
 
 if __name__ == "__main__":

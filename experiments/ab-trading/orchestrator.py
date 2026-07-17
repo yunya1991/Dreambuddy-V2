@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """
-自主调度编排器 — Orchestrator
-每15分钟被 cron 调用，决定是否触发 Agent A / B
+AB-Trading 记忆与SKILL驱动调度器 — Orchestrator
+每4小时执行一次，调用 Agent A/B 的记忆模块与 SKILL 工作流进行交易决策
 
 自主性逻辑：
-1. 常规心跳：距上次运行 > 1H 自动触发
+1. 常规心跳：距上次运行 > 4H 自动触发
 2. 事件驱动：重要经济事件前后 1H 内主动触发
 3. Agent 自主申请：agents 写入 self_schedule.json 申请提前运行
 4. 紧急信号：市场波动超阈值时触发（BTC 1H变动 > 3%）
+
+记忆与SKILL集成：
+- 执行前加载双方记忆（Agent A/B），生成记忆摘要供调度决策参考
+- 加载 SKILL Registry 状态，检查 SKILL 可用性
+- 执行后更新双方记忆（记录调度决策、触发原因）
 """
-import os, json, time, subprocess, requests, warnings
+import os, sys, json, time, subprocess, requests, warnings
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -20,9 +25,9 @@ SCHED_FILE = BASE_DIR / "data" / "self_schedule.json"
 STATE_FILE = BASE_DIR / "data" / "orchestrator_state.json"
 LOG_FILE   = BASE_DIR / "logs" / "orchestrator.log"
 
-NORMAL_INTERVAL_H = 1          # 常规间隔（放宽验证阶段：1H）
-EVENT_WINDOW_H    = 0.5        # 重要事件前后触发窗口（放宽为30分钟）
-VOLATILITY_PCT    = 2.0        # BTC 1H 波动触发阈值（降低到2%更易触发）
+NORMAL_INTERVAL_H = 4          # 常规间隔：4H
+EVENT_WINDOW_H    = 0.5        # 重要事件前后触发窗口（30分钟）
+VOLATILITY_PCT    = 2.0        # BTC 1H 波动触发阈值
 
 TAVILY_KEY = None
 try:
@@ -212,33 +217,145 @@ def should_trigger(state: dict) -> tuple[bool, str]:
     return False, f"⏸ 等待中 (距上次 {elapsed_h:.1f}H / {NORMAL_INTERVAL_H}H)"
 
 
+# ── 记忆与SKILL集成 ─────────────────────────────────────────────────────
+
+def load_agent_memories() -> dict:
+    """
+    加载 Agent A/B 记忆模块，生成调度决策参考摘要
+    返回: {agent_a: {...}, agent_b: {...}, summary: str}
+    """
+    memories = {"agent_a": {}, "agent_b": {}, "summary": ""}
+
+    # Agent A 记忆
+    try:
+        sys.path.insert(0, str(BASE_DIR))
+        from core.agent_a_memory import load_memory as load_a_memory
+        a_mem = load_a_memory()
+        memories["agent_a"] = {
+            "current_master": a_mem.get("current_master", "N/A"),
+            "total_trades": a_mem.get("total_trades", 0),
+            "win_streak": a_mem.get("win_streak", 0),
+            "loss_streak": a_mem.get("loss_streak", 0),
+            "hold_streak": a_mem.get("hold_streak", 0),
+            "max_drawdown_pct": round(a_mem.get("max_drawdown_pct", 0), 1),
+            "active_positions": list(a_mem.get("active_positions", {}).keys()),
+            "lessons_count": len(a_mem.get("lessons", [])),
+        }
+    except Exception as e:
+        log(f"⚠️ Agent A 记忆加载失败: {e}")
+
+    # Agent B 记忆
+    b_mem_path = BASE_DIR / "data" / "agent_b_memory.json"
+    try:
+        if b_mem_path.exists():
+            with open(b_mem_path) as f:
+                b_mem = json.load(f)
+            memories["agent_b"] = {
+                "total_cycles": b_mem.get("total_cycles", 0),
+                "win_streaks": b_mem.get("win_streaks", 0),
+                "loss_streaks": b_mem.get("loss_streaks", 0),
+                "last_regime": b_mem.get("last_regime", "N/A"),
+                "active_positions": list(b_mem.get("active_positions", {}).keys()),
+                "lessons_count": len(b_mem.get("lessons", [])),
+            }
+    except Exception as e:
+        log(f"⚠️ Agent B 记忆加载失败: {e}")
+
+    # 生成摘要
+    a = memories["agent_a"]
+    b = memories["agent_b"]
+    summary_parts = []
+    if a:
+        summary_parts.append(
+            f"A[大师:{a.get('current_master')} 交易:{a.get('total_trades')} "
+            f"连胜:{a.get('win_streak')}/连败:{a.get('loss_streak')} "
+            f"回撤:{a.get('max_drawdown_pct')}% 持仓:{a.get('active_positions',[])}]"
+        )
+    if b:
+        summary_parts.append(
+            f"B[周期:{b.get('total_cycles')} "
+            f"连胜:{b.get('win_streaks')}/连败:{b.get('loss_streaks')} "
+            f"Regime:{b.get('last_regime')} 持仓:{b.get('active_positions',[])}]"
+        )
+    memories["summary"] = " | ".join(summary_parts) if summary_parts else "无记忆"
+    return memories
+
+
+def check_skill_registry() -> dict:
+    """
+    检查 SKILL Registry 状态，确认 A/C/F 链 SKILL 可用性
+    返回: {available: [str], unavailable: [str], total: int}
+    """
+    try:
+        sys.path.insert(0, str(BASE_DIR))
+        from core.modules.skill_loader import SkillLoader
+        loader = SkillLoader(str(BASE_DIR.parent.parent))
+        result = {"available": [], "unavailable": [], "total": 0}
+        for skill_name in SkillLoader.SKILL_PATHS:
+            if loader.is_skill_available(skill_name):
+                result["available"].append(skill_name)
+            else:
+                result["unavailable"].append(skill_name)
+        result["total"] = len(SkillLoader.SKILL_PATHS)
+        return result
+    except Exception as e:
+        log(f"⚠️ SKILL Registry 检查失败: {e}")
+        return {"available": [], "unavailable": [], "total": 0, "error": str(e)}
+
+
+def update_orchestrator_memory(reason: str, memories: dict, skill_status: dict):
+    """
+    更新调度器状态记忆：记录本轮调度决策、触发原因、记忆摘要
+    写入 orchestrator_state.json
+    """
+    state = load_state()
+    state["last_trigger_reason"] = reason
+    state["last_memory_summary"] = memories.get("summary", "")
+    state["last_skill_available"] = skill_status.get("available", [])
+    state["last_skill_unavailable"] = skill_status.get("unavailable", [])
+    save_state(state)
+
+
 # ── 执行 agents ───────────────────────────────────────────────────────────
 
-def run_agents(reason: str):
+def run_agents(reason: str, memories: dict = None, skill_status: dict = None):
+    """
+    执行 Agent A/B，传递记忆上下文和 SKILL 状态
+    Agent A: LLM 驱动 + 记忆系统 + SKILL 框架
+    Agent B: BAC 架构 + 交易记忆闭环 + SKILL 工作流
+    """
     log(f"🚀 触发执行 — {reason}")
+    if memories:
+        log(f"🧠 记忆摘要: {memories.get('summary', 'N/A')}")
+    if skill_status:
+        avail = skill_status.get("available", [])
+        log(f"📋 SKILL状态: {len(avail)}/{skill_status.get('total',0)} 可用 {avail}")
+
     for agent_script in ["agents/agent_a_runner.py", "agents/agent_b_runner.py"]:
         script_path = BASE_DIR / agent_script
         if not script_path.exists():
             log(f"⚠️ 脚本不存在: {script_path}")
             continue
+        agent_label = "A" if "agent_a" in agent_script else "B"
         try:
             result = subprocess.run(
                 ["python3", str(script_path)],
                 cwd=str(BASE_DIR),
-                capture_output=True, text=True, timeout=120
+                capture_output=True, text=True, timeout=180
             )
             # 提取关键输出行
             key_lines = [l for l in result.stdout.split("\n")
-                         if any(kw in l for kw in ["决策", "执行", "拦截", "通过", "权益", "USDC", "错误"])
+                         if any(kw in l for kw in ["决策", "执行", "拦截", "通过", "权益", "USDC", "错误",
+                                                     "记忆", "SKILL", "模式", "离场", "经典"])
                          and "Warning" not in l]
-            for line in key_lines[:4]:
-                log(f"  {line.strip()}")
+            for line in key_lines[:6]:
+                log(f"  [{agent_label}] {line.strip()}")
             if result.returncode != 0:
-                log(f"  ❌ 退出码 {result.returncode}: {result.stderr[:100]}")
+                log(f"  ❌ [{agent_label}] 退出码 {result.returncode}: {result.stderr[:100]}")
         except subprocess.TimeoutExpired:
-            log(f"  ⚠️ 超时: {agent_script}")
+            log(f"  ⚠️ [{agent_label}] 超时: {agent_script}")
         except Exception as e:
-            log(f"  ❌ 执行失败: {e}")
+            log(f"  ❌ [{agent_label}] 执行失败: {e}")
 
 
 # ── 主函数 ───────────────────────────────────────────────────────────────
@@ -248,11 +365,21 @@ def main():
     trigger, reason = should_trigger(state)
 
     if trigger:
-        run_agents(reason)
+        # 加载双方记忆和 SKILL 状态
+        memories = load_agent_memories()
+        skill_status = check_skill_registry()
+
+        # 执行 Agent A/B（记忆+SKILL驱动）
+        run_agents(reason, memories=memories, skill_status=skill_status)
+
+        # 更新调度器状态
         state["last_run_ts"]       = time.time()
         state["run_count"]         = state.get("run_count", 0) + 1
         state["last_trigger_reason"] = reason
         save_state(state)
+
+        # 更新调度器记忆（记录本轮决策上下文）
+        update_orchestrator_memory(reason, memories, skill_status)
 
         # 每日一次：用 Tavily 查未来事件，并让 agents 知晓
         fetch_upcoming_events_tavily()

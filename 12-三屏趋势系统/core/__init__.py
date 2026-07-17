@@ -40,6 +40,19 @@ try:
     from .fusion import (
         fuse_technical_fundamental,
     )
+    from .composite_predictor import (
+        CompositePredictor,
+        create_composite_predictor,
+        predict_from_dataframes,
+    )
+    from .least_resistance import (
+        compute_least_resistance,
+        calc_price_resistance,
+        calc_volume_resistance,
+        calc_momentum_resistance,
+        calc_trend_resistance,
+        calc_fundamental_resistance,
+    )
     from .risk_reward import (
         calc_elder_ray,
         calc_30d_volatility,
@@ -88,6 +101,19 @@ except ImportError:
     from fusion import (
         fuse_technical_fundamental,
     )
+    from composite_predictor import (
+        CompositePredictor,
+        create_composite_predictor,
+        predict_from_dataframes,
+    )
+    from least_resistance import (
+        compute_least_resistance,
+        calc_price_resistance,
+        calc_volume_resistance,
+        calc_momentum_resistance,
+        calc_trend_resistance,
+        calc_fundamental_resistance,
+    )
     from risk_reward import (
         calc_elder_ray,
         calc_30d_volatility,
@@ -133,4 +159,13 @@ __all__ = [
     "calc_risk_reward_ratio",
     "evaluate_addon_opportunity",
     "calc_position_sizing",
+    "CompositePredictor",
+    "create_composite_predictor",
+    "predict_from_dataframes",
+    "compute_least_resistance",
+    "calc_price_resistance",
+    "calc_volume_resistance",
+    "calc_momentum_resistance",
+    "calc_trend_resistance",
+    "calc_fundamental_resistance",
 ]

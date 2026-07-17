@@ -84,7 +84,7 @@ def _safe_bool(val, default=0) -> int:
     return 1 if bool(val) else 0
 
 
-# 完整特征名列表（40维）
+# 完整特征名列表（40维 + 15维哲学特征 = 55维）
 FEATURE_NAMES: List[str] = [
     # 趋势一致性 (14维)
     "tc_weekly_confidence", "tc_weekly_reversal", "tc_weekly_bull", "tc_weekly_bear",
@@ -107,6 +107,11 @@ FEATURE_NAMES: List[str] = [
     # 最终信号 (5维)
     "fs_direction", "fs_confidence", "fs_trend_consistent",
     "fs_fusion_consistent", "fs_freqtrade_consistent",
+    # 哲学贡献特征 (15维) — 来自v2增强版MA200策略哲学提取
+    "ph_btc_regime_label", "ph_btc_alt_divergence", "ph_is_btc_asset", "ph_alt_short_risk_score",
+    "ph_weekly_ma200_distance", "ph_dip_buy_level", "ph_dip_buy_position_ratio", "ph_left_side_buy_signal",
+    "ph_bear_short_layer", "ph_fib_tp_remaining_ratio", "ph_layered_position_target", "ph_position_adjustment",
+    "ph_btc_bull_confirmed", "ph_self_bull_confirmed", "ph_double_bull_score",
 ]
 
 
@@ -198,13 +203,32 @@ def extract_ensemble_features(full_signal: dict) -> Dict[str, float]:
     features["fs_fusion_consistent"] = _safe_bool(fs.get("fusion_consistent"))
     features["fs_freqtrade_consistent"] = _safe_bool(fs.get("freqtrade_consistent"))
 
+    # ── 哲学贡献特征（15维）──
+    # 从 full_signal 中的 philosophy 字段提取（由调用方注入）
+    ph = full_signal.get("philosophy", {})
+    features["ph_btc_regime_label"] = _safe_float(ph.get("btc_regime_label"))
+    features["ph_btc_alt_divergence"] = _safe_float(ph.get("btc_alt_divergence"))
+    features["ph_is_btc_asset"] = _safe_float(ph.get("is_btc_asset"))
+    features["ph_alt_short_risk_score"] = _safe_float(ph.get("alt_short_risk_score"))
+    features["ph_weekly_ma200_distance"] = _safe_float(ph.get("weekly_ma200_distance"))
+    features["ph_dip_buy_level"] = _safe_float(ph.get("dip_buy_level"))
+    features["ph_dip_buy_position_ratio"] = _safe_float(ph.get("dip_buy_position_ratio"))
+    features["ph_left_side_buy_signal"] = _safe_float(ph.get("left_side_buy_signal"))
+    features["ph_bear_short_layer"] = _safe_float(ph.get("bear_short_layer"))
+    features["ph_fib_tp_remaining_ratio"] = _safe_float(ph.get("fib_tp_remaining_ratio"))
+    features["ph_layered_position_target"] = _safe_float(ph.get("layered_position_target"))
+    features["ph_position_adjustment"] = _safe_float(ph.get("position_adjustment"))
+    features["ph_btc_bull_confirmed"] = _safe_float(ph.get("btc_bull_confirmed"))
+    features["ph_self_bull_confirmed"] = _safe_float(ph.get("self_bull_confirmed"))
+    features["ph_double_bull_score"] = _safe_float(ph.get("double_bull_score"))
+
     return features
 
 
 # ── 隔离声明 ──────────────────────────────────────────────────────────────
 # 本模块的 LightGBM 与以下系统完全隔离：
 # 1. 12-三屏趋势系统/ml/models.py 的 LightGBMModel
-#    - 那个用价格特征（52维），本模块用算法输出特征（40维）
+#    - 那个用价格特征（52维），本模块用算法输出特征（40维 + 15维哲学特征 = 55维）
 #    - 那个存 ml/models/current/，本模块存 ml/models/ensemble/
 # 2. 11-易经推理系统/scripts/memory_l4/bcrm2/ 的 DialecticalMLEngine
 #    - 那个用卦象特征，训练逻辑完全不同

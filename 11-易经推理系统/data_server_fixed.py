@@ -39,7 +39,58 @@ except ImportError:
 USER_A = "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934"
 USER_B = "0x6632da9c91A959eEBf1343f8AFAbf2807414004A"
 
+# 易经推理策略固定初始资金（USDT）—— 小额观测实际表现
+YIJING_INITIAL_CAPITAL = 150.0
+
 _cache = {}
+
+
+def _load_yijing_baseline():
+    """加载或创建易经策略每日基准快照（从今天起以 150 为基准）
+
+    基准值 = 今天起始时 performance.json 的累计已实现盈亏 total_pnl
+    从今天起已实现盈亏 = 当前 total_pnl - 基准 total_pnl
+    """
+    baseline_file = Path(__file__).parent / ".workbuddy" / "memory_l4" / "stats" / "account_baseline.json"
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+    baseline = None
+    if baseline_file.exists():
+        try:
+            with open(baseline_file) as fp:
+                baseline = json.load(fp)
+        except Exception:
+            baseline = None
+    # 读取当前累计已实现盈亏作为基准候选
+    perf_path = Path(__file__).parent / ".workbuddy" / "memory_l4" / "stats" / "performance.json"
+    current_realized = None
+    if perf_path.exists():
+        try:
+            with open(perf_path) as fp:
+                current_realized = float(json.load(fp).get("total_pnl", 0) or 0)
+        except Exception:
+            pass
+    # 日期变更或不存在 → 初始化新基准
+    if not baseline or baseline.get("baseline_date") != today:
+        baseline = {
+            "baseline_date": today,
+            "initial_capital": YIJING_INITIAL_CAPITAL,
+            "realized_pnl_baseline": current_realized,  # 可能为 None（performance 未生成）
+            "created_at": datetime.datetime.now().isoformat(),
+        }
+        try:
+            with open(baseline_file, "w") as fp:
+                json.dump(baseline, fp, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+    elif baseline.get("realized_pnl_baseline") is None and current_realized is not None:
+        # 补填基准（首次创建时 performance 未就绪）
+        baseline["realized_pnl_baseline"] = current_realized
+        try:
+            with open(baseline_file, "w") as fp:
+                json.dump(baseline, fp, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+    return baseline
 _cache_lock = threading.Lock()
 
 
@@ -127,11 +178,30 @@ def get_hl_state():
 
 
 def get_full_state():
-    hl = get_hl_state()
+    try:
+        hl = get_hl_state()
+    except Exception as e:
+        print(f"[state] get_hl_state failed: {e}")
+        hl = {
+            "perp_equity": 0, "perp_avail": 0, "perp_positions": [],
+            "b_equity": 0, "b_avail": 0, "b_positions": [],
+            "spot_usdc": 0, "total_equity": 0,
+            "hl_error": str(e),
+        }
+    try:
+        logs_a = load_logs(LOG_A)
+    except Exception as e:
+        print(f"[state] load_logs A failed: {e}")
+        logs_a = []
+    try:
+        logs_b = load_logs(LOG_B)
+    except Exception as e:
+        print(f"[state] load_logs B failed: {e}")
+        logs_b = []
     return {
         **hl,
-        "logs_a": load_logs(LOG_A),
-        "logs_b": load_logs(LOG_B),
+        "logs_a": logs_a,
+        "logs_b": logs_b,
     }
 
 
@@ -391,6 +461,132 @@ def get_yijing_positions():
     }
 
 
+def get_yijing_account_overview():
+    """易经推理策略账户总览：从今天起以 150 USDT 为基准
+
+    复用 get_yijing_positions() 的持仓数据（与页面持仓同源）：
+      - 基准日 = 今天，初始资金 = 150
+      - 从今天起已实现盈亏 = 当前 performance.total_pnl - 基准日 total_pnl
+      - 未实现盈亏 = 当前持仓 upl 之和（OKX 实时优先，降级用本地跟踪 pnl）
+      - 总盈亏 = 从今天起已实现 + 未实现
+      - 当前余额 = 150 + 总盈亏
+      - 涨跌幅 = 总盈亏 / 150 × 100%
+    """
+    # ── 基准快照（从今天起）──
+    baseline = _load_yijing_baseline()
+    realized_baseline = baseline.get("realized_pnl_baseline")
+    baseline_date = baseline.get("baseline_date")
+
+    # ── 复用持仓查询（与页面持仓数据同源，避免重复调 OKX）──
+    pos_data = get_yijing_positions()
+    okx_balance = pos_data.get("okx_balance", {}) or {}
+    okx_positions = pos_data.get("okx_live_positions", []) or []
+    local_positions = pos_data.get("positions", []) or []
+    performance = pos_data.get("performance", {}) or {}
+
+    # ── 累计已实现盈亏 + 从今天起已实现盈亏 ──
+    cumulative_realized = float(performance.get("total_pnl", 0) or 0)
+    total_trades = int(performance.get("total_trades", 0) or 0)
+    win_count = int(performance.get("win_count", 0) or 0)
+    win_rate = float(performance.get("win_rate", 0) or 0)
+
+    if realized_baseline is not None:
+        realized_pnl = cumulative_realized - realized_baseline
+    else:
+        # 基准未建立（performance 未就绪）：当作 0
+        realized_pnl = 0.0
+
+    # ── OKX 连接状态 ──
+    live_ok = bool(okx_balance)
+    live_error = ""
+    okx_avail = float(okx_balance.get("avail", 0) or 0) if live_ok else None
+
+    if okx_positions and isinstance(okx_positions[0], dict) and "error" in okx_positions[0]:
+        live_error = str(okx_positions[0].get("error", ""))
+        okx_positions = []
+
+    # 持仓明细 + 未实现盈亏
+    positions_detail = []
+    unrealized_pnl = 0.0
+    open_positions_count = 0
+
+    # 优先 OKX 实时持仓的 upl
+    for p in okx_positions:
+        try:
+            upl = float(p.get("upl", 0) or 0)
+            if abs(float(p.get("pos_size", p.get("pos", 0)) or 0)) > 0 or upl != 0:
+                unrealized_pnl += upl
+                open_positions_count += 1
+                positions_detail.append({
+                    "coin": p.get("coin", ""),
+                    "inst_id": p.get("inst_id", ""),
+                    "direction": p.get("direction", p.get("pos_side", "")),
+                    "upl": upl,
+                    "upl_ratio": float(p.get("upl_ratio", 0) or 0),
+                    "mark_px": float(p.get("mark_px", 0) or 0),
+                    "entry_price": float(p.get("entry_price", p.get("avg_px", 0)) or 0),
+                    "source": "okx_live",
+                })
+        except Exception:
+            continue
+
+    # OKX 无持仓数据时，降级用本地跟踪持仓的 pnl
+    if open_positions_count == 0 and local_positions:
+        for p in local_positions:
+            try:
+                upl = float(p.get("pnl", 0) or 0)
+                unrealized_pnl += upl
+                open_positions_count += 1
+                positions_detail.append({
+                    "coin": p.get("coin", ""),
+                    "inst_id": p.get("inst_id", ""),
+                    "direction": p.get("direction", ""),
+                    "upl": upl,
+                    "upl_ratio": float(p.get("pnl_pct", 0) or 0),
+                    "mark_px": 0,
+                    "entry_price": float(p.get("entry_price", 0) or 0),
+                    "source": "local",
+                })
+            except Exception:
+                continue
+
+    # ── 盈亏计算（从今天起，基于基准差值）──
+    total_pnl = realized_pnl + unrealized_pnl
+    current_balance = YIJING_INITIAL_CAPITAL + total_pnl
+    pnl_pct = (total_pnl / YIJING_INITIAL_CAPITAL) * 100 if YIJING_INITIAL_CAPITAL > 0 else 0
+    avail_balance = okx_avail if okx_avail is not None else current_balance
+
+    # 基准状态提示
+    if realized_baseline is not None:
+        baseline_note = f"基准日 {baseline_date} 起累计已实现 {round(realized_baseline, 2)}"
+    else:
+        baseline_note = "今日基准尚未建立（performance 未就绪）"
+
+    return {
+        "strategy": "yijing",
+        "strategy_name": "易经推理策略",
+        "initial_capital": YIJING_INITIAL_CAPITAL,
+        "baseline_date": baseline_date,
+        "baseline_realized_pnl": round(realized_baseline, 2) if realized_baseline is not None else None,
+        "baseline_note": baseline_note,
+        "current_balance": round(current_balance, 2),
+        "avail_balance": round(avail_balance, 2) if avail_balance is not None else None,
+        "total_pnl": round(total_pnl, 2),
+        "pnl_pct": round(pnl_pct, 2),
+        "realized_pnl": round(realized_pnl, 2),
+        "unrealized_pnl": round(unrealized_pnl, 2),
+        "total_trades": total_trades,
+        "win_count": win_count,
+        "win_rate": round(win_rate, 4),
+        "win_rate_pct": round(win_rate * 100, 2),
+        "open_positions": open_positions_count,
+        "positions_detail": positions_detail,
+        "live_ok": live_ok,
+        "live_error": live_error,
+        "timestamp": datetime.datetime.now().isoformat(),
+    }
+
+
 def _bg_refresh_state(interval: int = 5):
     while True:
         try:
@@ -406,6 +602,10 @@ def _bg_refresh_yijing(interval: int = 60):
         try:
             data = get_yijing_state()
             _cache_set("yijing", data)
+        except Exception:
+            pass
+        try:
+            _cache_set("yijing_account", get_yijing_account_overview())
         except Exception:
             pass
         time.sleep(interval)
@@ -524,6 +724,13 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == "/api/yijing-positions":
             self._json(get_yijing_positions())
+
+        elif path == "/api/yijing/account-overview":
+            cached = _cache_get("yijing_account")
+            if cached:
+                self._json(cached["data"])
+            else:
+                self._json(get_yijing_account_overview())
 
         # ── V15-CT 马丁策略 API ────────────────────────────────────────
         elif path == "/api/v15-ct/decision":

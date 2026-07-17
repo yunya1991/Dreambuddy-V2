@@ -259,6 +259,12 @@ def cmd_config(args):
     print(f"\n监控币种: {get_config_list('V15_COINS')}")
 
 
+def cmd_poll_light(args):
+    """轻量轮询：同步持仓状态+盈亏（不做交易决策，用于5分钟监控）"""
+    from v15_trader import run_light_poll_cycle
+    run_light_poll_cycle()
+
+
 def cmd_api(args):
     """启动V15策略HTTP API服务（支持monitor.html调用）"""
     port = args.port or 8771
@@ -289,7 +295,9 @@ def main():
   python3 run.py signal              # 查看全部币种信号
   python3 run.py signal BTC,ETH      # 查看指定币种信号
   python3 run.py backtest BTC 1000   # BTC回测，1000根K线
-  python3 run.py trader              # 启动自动交易器
+  python3 run.py trader              # 启动自动交易器（1小时轮询）
+  python3 run.py poll_once           # 单次完整轮询（信号+交易）
+  python3 run.py poll_light          # 轻量轮询（只同步持仓+盈亏，5分钟监控）
   python3 run.py capital             # 查看资金管理
   python3 run.py test                # 运行全部测试
   python3 run.py config              # 查看配置
@@ -312,6 +320,9 @@ def main():
 
     # poll_once
     subparsers.add_parser("poll_once", help="单次执行轮询（用于定时调度）")
+
+    # poll_light
+    subparsers.add_parser("poll_light", help="轻量轮询：同步持仓状态+盈亏（不做交易决策，用于5分钟监控）")
 
     # capital
     subparsers.add_parser("capital", help="查看资金管理状态")
@@ -343,6 +354,8 @@ def main():
         cmd_trader(args)
     elif args.command == "poll_once":
         cmd_poll_once(args)
+    elif args.command == "poll_light":
+        cmd_poll_light(args)
     elif args.command == "capital":
         cmd_capital(args)
     elif args.command == "capital_engine":

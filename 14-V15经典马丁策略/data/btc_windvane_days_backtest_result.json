@@ -1,0 +1,179 @@
+{
+  "mode": "btc_windvane_days_comparison",
+  "results": [
+    {
+      "coin": "BTC",
+      "base": {
+        "total_return_pct": 17.85,
+        "max_drawdown_pct": 1.19,
+        "sharpe_ratio": 4.9718,
+        "total_trades": 48,
+        "win_rate": 0.7083,
+        "profit_factor": 2.7739
+      },
+      "wv_1d": {
+        "total_return_pct": 10.53,
+        "max_drawdown_pct": 1.22,
+        "sharpe_ratio": 2.8067,
+        "total_trades": 105,
+        "win_rate": 0.5333,
+        "profit_factor": 2.0482,
+        "btc_windvane_exits": 76
+      },
+      "wv_3d": {
+        "total_return_pct": 10.53,
+        "max_drawdown_pct": 1.22,
+        "sharpe_ratio": 2.8067,
+        "total_trades": 105,
+        "win_rate": 0.5333,
+        "profit_factor": 2.0482,
+        "btc_windvane_exits": 76
+      }
+    },
+    {
+      "coin": "ETH",
+      "base": {
+        "total_return_pct": 9.23,
+        "max_drawdown_pct": 1.43,
+        "sharpe_ratio": 2.1488,
+        "total_trades": 66,
+        "win_rate": 0.5758,
+        "profit_factor": 1.6387
+      },
+      "wv_1d": {
+        "total_return_pct": 15.59,
+        "max_drawdown_pct": 1.44,
+        "sharpe_ratio": 2.555,
+        "total_trades": 71,
+        "win_rate": 0.6338,
+        "profit_factor": 1.4617,
+        "btc_windvane_exits": 48
+      },
+      "wv_3d": {
+        "total_return_pct": 15.59,
+        "max_drawdown_pct": 1.44,
+        "sharpe_ratio": 2.555,
+        "total_trades": 71,
+        "win_rate": 0.6338,
+        "profit_factor": 1.4617,
+        "btc_windvane_exits": 48
+      }
+    },
+    {
+      "coin": "SOL",
+      "base": {
+        "total_return_pct": 10.67,
+        "max_drawdown_pct": 2.38,
+        "sharpe_ratio": 1.57,
+        "total_trades": 85,
+        "win_rate": 0.5412,
+        "profit_factor": 1.5109
+      },
+      "wv_1d": {
+        "total_return_pct": 19.52,
+        "max_drawdown_pct": 1.33,
+        "sharpe_ratio": 3.7416,
+        "total_trades": 51,
+        "win_rate": 0.7059,
+        "profit_factor": 2.5328,
+        "btc_windvane_exits": 33
+      },
+      "wv_3d": {
+        "total_return_pct": 19.52,
+        "max_drawdown_pct": 1.33,
+        "sharpe_ratio": 3.7416,
+        "total_trades": 51,
+        "win_rate": 0.7059,
+        "profit_factor": 2.5328,
+        "btc_windvane_exits": 33
+      }
+    },
+    {
+      "coin": "ARB",
+      "base": {
+        "total_return_pct": -1.24,
+        "max_drawdown_pct": 3.16,
+        "sharpe_ratio": -0.4389,
+        "total_trades": 61,
+        "win_rate": 0.541,
+        "profit_factor": 0.7203
+      },
+      "wv_1d": {
+        "total_return_pct": 30.15,
+        "max_drawdown_pct": 1.24,
+        "sharpe_ratio": 4.5963,
+        "total_trades": 55,
+        "win_rate": 0.7636,
+        "profit_factor": 2.2169,
+        "btc_windvane_exits": 31
+      },
+      "wv_3d": {
+        "total_return_pct": 29.15,
+        "max_drawdown_pct": 1.24,
+        "sharpe_ratio": 4.8687,
+        "total_trades": 51,
+        "win_rate": 0.7843,
+        "profit_factor": 2.6497,
+        "btc_windvane_exits": 30
+      }
+    },
+    {
+      "coin": "OP",
+      "base": {
+        "total_return_pct": -1.29,
+        "max_drawdown_pct": 3.78,
+        "sharpe_ratio": -0.4093,
+        "total_trades": 66,
+        "win_rate": 0.4848,
+        "profit_factor": 0.9249
+      },
+      "wv_1d": {
+        "total_return_pct": 17.68,
+        "max_drawdown_pct": 2.97,
+        "sharpe_ratio": 2.4779,
+        "total_trades": 70,
+        "win_rate": 0.5714,
+        "profit_factor": 1.8467,
+        "btc_windvane_exits": 51
+      },
+      "wv_3d": {
+        "total_return_pct": 22.04,
+        "max_drawdown_pct": 2.97,
+        "sharpe_ratio": 2.8959,
+        "total_trades": 74,
+        "win_rate": 0.5811,
+        "profit_factor": 2.0126,
+        "btc_windvane_exits": 57
+      }
+    },
+    {
+      "coin": "UNI",
+      "base": {
+        "total_return_pct": -2.24,
+        "max_drawdown_pct": 3.41,
+        "sharpe_ratio": -0.8427,
+        "total_trades": 73,
+        "win_rate": 0.5342,
+        "profit_factor": 0.6743
+      },
+      "wv_1d": {
+        "total_return_pct": 27.61,
+        "max_drawdown_pct": 1.75,
+        "sharpe_ratio": 3.1088,
+        "total_trades": 86,
+        "win_rate": 0.6163,
+        "profit_factor": 1.7741,
+        "btc_windvane_exits": 63
+      },
+      "wv_3d": {
+        "total_return_pct": 28.46,
+        "max_drawdown_pct": 1.75,
+        "sharpe_ratio": 3.2783,
+        "total_trades": 85,
+        "win_rate": 0.6235,
+        "profit_factor": 1.8645,
+        "btc_windvane_exits": 63
+      }
+    }
+  ]
+}

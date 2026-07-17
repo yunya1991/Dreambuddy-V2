@@ -2,11 +2,19 @@
 
 提供 K 线数据获取和跨周期重采样功能。
 数据源可插拔，默认使用 OKX API。
+
+历史数据获取支持：
+- 通过分页获取2-3年的历史K线数据
+- 使用OKX Python SDK（okx包）的history-candles接口
+- 使用before/after参数进行分页
+- 自动去重和数据合并
 """
 
 import subprocess
 import os
+import time
 from typing import List, Dict, Optional
+import json
 
 
 def _get_okx_client():
@@ -29,10 +37,9 @@ def _run_okx(args: list) -> dict:
     try:
         r = subprocess.run(
             ["okx"] + args + ["--profile", "screen_trade"],
-            capture_output=True, text=True, timeout=15, env=env,
+            capture_output=True, text=True, timeout=30, env=env,
         )
         if r.returncode == 0 and r.stdout.strip():
-            import json
             return {"ok": True, "data": json.loads(r.stdout)}
     except Exception:
         pass
@@ -41,7 +48,7 @@ def _run_okx(args: list) -> dict:
 
 def fetch_candles(inst_id: str, bar: str, limit: int) -> List[Dict]:
     """
-    获取K线数据
+    获取K线数据（单次调用）
 
     参数:
         inst_id: 交易对ID，如 "BTC-USDT"
@@ -51,7 +58,6 @@ def fetch_candles(inst_id: str, bar: str, limit: int) -> List[Dict]:
     返回:
         K线列表，每根为 {"ts", "o", "h", "l", "c", "vol"}，时间正序
     """
-    # 方式1: OKX 客户端
     client = _get_okx_client()
     if client:
         try:
@@ -71,7 +77,6 @@ def fetch_candles(inst_id: str, bar: str, limit: int) -> List[Dict]:
         except Exception:
             pass
 
-    # 方式2: OKX CLI 回退
     r = _run_okx(["market", "candles", inst_id, "--bar", bar, "--limit", str(limit), "--json"])
     if not r["ok"]:
         return []
@@ -87,6 +92,117 @@ def fetch_candles(inst_id: str, bar: str, limit: int) -> List[Dict]:
             "vol": float(c[5]),
         })
     return list(reversed(candles))
+
+
+def fetch_historical_candles(
+    inst_id: str,
+    bar: str = "1D",
+    days: int = 730,
+    max_limit_per_page: int = 300,
+) -> List[Dict]:
+    """
+    通过分页获取历史K线数据（支持2-3年）
+
+    使用OKX Python SDK的history-candles接口，支持after参数进行分页。
+    API返回数据为降序（最新在前），每次用after参数获取更早的数据。
+
+    参数:
+        inst_id: 交易对ID，如 "BTC-USDT"
+        bar: 时间周期，如 "1m", "5m", "1H", "4H", "1D", "1W"
+        days: 获取天数，默认730天（约2年）
+        max_limit_per_page: 每页最大数量，默认300
+
+    返回:
+        K线列表，时间正序排列，已去重
+    """
+    all_candles = []
+    seen_ts = set()
+    after = None
+    page = 0
+    max_pages = (days // max_limit_per_page) + 10
+
+    print(f"  开始获取 {inst_id} {bar} 历史数据，目标 {days} 天...")
+
+    try:
+        from okx.api import Market
+
+        market = Market(flag="0")
+
+        while page < max_pages:
+            try:
+                if after:
+                    r = market.get_history_candles(
+                        instId=inst_id,
+                        bar=bar,
+                        limit=max_limit_per_page,
+                        after=after,
+                    )
+                else:
+                    r = market.get_history_candles(
+                        instId=inst_id,
+                        bar=bar,
+                        limit=max_limit_per_page,
+                    )
+
+                if r.get("code") != "0":
+                    print(f"  [WARN] 第 {page+1} 页API返回错误: {r.get('msg')}")
+                    break
+
+                raw = r.get("data", [])
+                if not raw or len(raw) == 0:
+                    print(f"  [INFO] 第 {page+1} 页无数据，停止")
+                    break
+
+                new_candles = []
+                for c in raw:
+                    ts = int(c[0])
+                    if ts in seen_ts:
+                        continue
+                    seen_ts.add(ts)
+                    new_candles.append({
+                        "ts": ts,
+                        "o": float(c[1]),
+                        "h": float(c[2]),
+                        "l": float(c[3]),
+                        "c": float(c[4]),
+                        "vol": float(c[5]),
+                    })
+
+                if not new_candles:
+                    print(f"  [INFO] 第 {page+1} 页无新数据，停止")
+                    break
+
+                all_candles.extend(new_candles)
+                oldest_ts = min(c["ts"] for c in new_candles)
+                after = str(oldest_ts)
+
+                print(f"  第 {page+1} 页: {len(new_candles)} 条，累计 {len(all_candles)} 条")
+
+                page += 1
+                time.sleep(0.3)
+
+            except Exception as e:
+                print(f"  [WARN] 第 {page+1} 页获取失败: {e}")
+                break
+
+    except ImportError:
+        print("  [WARN] OKX SDK未安装，使用CLI方案")
+        pass
+
+    if not all_candles:
+        print(f"  [WARN] 通过SDK未获取到数据，尝试CLI回退方案")
+        all_candles = fetch_candles(inst_id, bar, min(days, 1000))
+
+    all_candles.sort(key=lambda x: x["ts"])
+
+    print(f"  完成: 共获取 {len(all_candles)} 条数据")
+    if all_candles:
+        import datetime
+        start_dt = datetime.datetime.fromtimestamp(all_candles[0]["ts"] / 1000)
+        end_dt = datetime.datetime.fromtimestamp(all_candles[-1]["ts"] / 1000)
+        print(f"  时间范围: {start_dt.strftime('%Y-%m-%d')} ~ {end_dt.strftime('%Y-%m-%d')}")
+
+    return all_candles
 
 
 def _infer_timeframe(candles: List[Dict]) -> str:

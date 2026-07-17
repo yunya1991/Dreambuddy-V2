@@ -1,14 +1,21 @@
-"""三屏趋势系统 — 第一屏基本面分析模块
+"""三屏趋势系统 — 第一屏基本面分析模块（Path B 核心算法）
 
-基于 6-TRADING 的 7 维分析框架，将基本面维度集成到三屏趋势系统。
+双路径基本面架构：
+    Path A (AI驱动)：通过研报系统获取基本面方向（engine.py 的 fetch_fundamental_data）
+    Path B (算法驱动)：本模块实现，纯代码 + Tavily API，不依赖 AI
 
-7 维分析框架（来自 6-TRADING/skills/screen1/）：
+Path B 的 7 维分析框架：
     A. 技术维度 (40%)    → 已由 SCREEN1_INDICATORS 实现，此模块不重复
     B. 减半周期 (15%)    → 纯代码可计算，基于 BTC 减半时间表
-    C. 矿工经济 (15%)    → 需链上数据，回测中不可用 → 回退
-    D. 链上估值 (15%)    → 需链上数据，回测中不可用 → 回退
-    E. 宏观金融 (10%)    → 需宏观数据，回测中不可用 → 回退
-    F. 跨市场周期 (5%)   → 需跨市场数据，回测中不可用 → 回退
+    C. 矿工经济 (15%)    → Tavily 搜索 + 算法评分（Puell Multiple, Hashrate 等）
+    D. 链上估值 (15%)    → Tavily 搜索 + 算法评分（MVRV, SOPR, NUPL）
+    E. 宏观金融 (10%)    → Tavily 搜索 + 算法评分（DXY, 10Y, Fed Rate）
+    F. 跨市场周期 (5%)   → Tavily 搜索 + 算法评分（Risk-On/Off, Gold, S&P）
+
+数据源优先级：
+    1. Tavily API 实时搜索（主数据源，freshness_days=1）
+    2. 6-TRADING annotation JSON（回退，freshness_days=7）
+    3. 纯代码计算（维度 B，无外部依赖）
 
 回退策略：
     - 每个维度都有 available 标志
@@ -202,13 +209,37 @@ def load_annotation_dimension(dim_name: str, annotation_file: str) -> dict:
     }
 
 
+def _try_tavily_dimensions() -> Dict[str, dict]:
+    """
+    尝试通过 Tavily API 获取 4 个基本面维度数据
+
+    返回:
+        {"C_miner": {...}, "D_onchain": {...}, "E_macro": {...}, "F_cross_market": {...}}
+        Tavily 不可用时返回空 dict，调用方回退到 annotation
+    """
+    try:
+        # 优先相对导入（包内），回退到绝对导入
+        try:
+            from ..data.tavily_data import fetch_all_tavily_dimensions
+        except (ImportError, ValueError):
+            import sys
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+            from data.tavily_data import fetch_all_tavily_dimensions
+
+        return fetch_all_tavily_dimensions()
+    except Exception:
+        return {}
+
+
 def calc_fundamental_screen1(current_date: Optional[datetime] = None) -> Optional[dict]:
     """
     第一屏基本面 7 维分析（不含技术维度 A，A 由外部 SCREEN1_INDICATORS 计算）
 
+    Path B 核心入口：纯算法驱动，通过 Tavily API 获取实时基本面数据。
+
     流程：
     1. 维度 B（减半周期）— 纯代码计算
-    2. 维度 C/D/E/F — 从 6-TRADING annotation 文件加载，不可用则跳过
+    2. 维度 C/D/E/F — 优先 Tavily API 实时搜索，回退到 annotation 文件
     3. 加权融合可用维度（权重归一化）
     4. 若无可用基本面维度 → 返回 None（调用方回退到纯技术分析）
 
@@ -222,25 +253,26 @@ def calc_fundamental_screen1(current_date: Optional[datetime] = None) -> Optiona
             "score": float,                # 加权总分
             "confidence": 0-100,
             "dimensions": {dim_name: {...}},
+            "data_source": str,            # "tavily" / "annotation" / "mixed"
             "fallback_reason": str,        # 如果 available=False，说明原因
         }
     """
     # 维度 B：减半周期（纯代码）
     dim_b = calc_halving_cycle(current_date)
 
-    # 维度 C：矿工经济（从 annotation 加载）
-    dim_c = load_annotation_dimension("C_miner", "screen1_miner_annotation.json")
+    # 维度 C/D/E/F：优先 Tavily API，回退到 annotation
+    tavily_dims = _try_tavily_dimensions()
 
-    # 维度 D：链上估值
-    dim_d = load_annotation_dimension("D_onchain", "screen1_onchain_annotation.json")
-
-    # 维度 E：宏观金融
-    dim_e = load_annotation_dimension("E_macro", "screen1_macro_annotation.json")
-
-    # 维度 F：跨市场周期
-    dim_f = load_annotation_dimension("F_cross_market", "screen1_cross_market_annotation.json")
+    dim_c = tavily_dims.get("C_miner") or load_annotation_dimension("C_miner", "screen1_miner_annotation.json")
+    dim_d = tavily_dims.get("D_onchain") or load_annotation_dimension("D_onchain", "screen1_onchain_annotation.json")
+    dim_e = tavily_dims.get("E_macro") or load_annotation_dimension("E_macro", "screen1_macro_annotation.json")
+    dim_f = tavily_dims.get("F_cross_market") or load_annotation_dimension("F_cross_market", "screen1_cross_market_annotation.json")
 
     all_dims = {"B_halving": dim_b, "C_miner": dim_c, "D_onchain": dim_d, "E_macro": dim_e, "F_cross_market": dim_f}
+
+    # 统计数据源
+    tavily_count = sum(1 for v in all_dims.values() if v.get("source") == "tavily_api")
+    data_source = "tavily" if tavily_count >= 2 else ("mixed" if tavily_count >= 1 else "annotation")
 
     # 筛选可用维度
     available_dims = {k: v for k, v in all_dims.items() if v.get("available", False)}
@@ -304,6 +336,7 @@ def calc_fundamental_screen1(current_date: Optional[datetime] = None) -> Optiona
         "total_count": n_total,
         "bull_weight": round(bull_weight / total_weight, 3),
         "bear_weight": round(bear_weight / total_weight, 3),
+        "data_source": data_source,
     }
 
 

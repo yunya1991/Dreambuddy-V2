@@ -1,6 +1,6 @@
 # 易经推理系统 技术设计文档
 
-> **版本**: v2.0 | **日期**: 2026-07-13
+> **版本**: v2.3 | **日期**: 2026-07-15
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引）
 
@@ -259,7 +259,18 @@ Step 7: 实践指令（知行合一）
 | 决策方式 | 规则 + 力的合成 | ML概率 + 阈值裁决 |
 | 可解释性 | 卦象直接解释 | ML输出→卦象映射解释 |
 | 适用场景 | 哲理推演、案例分析 | 实盘交易、回测验证 |
-| 状态 | 并存 + 辅助 | 当前主力引擎 |
+| 状态 | Fallback备用引擎 | ★当前实盘主力引擎 |
+| 实盘集成 | 通过 `PollingTrader` 直接调用 | 通过 `BCRM2Adapter` 适配层调用 |
+
+#### 3.3.3 BCRM2Adapter 适配层
+
+BCRM 2.0 通过 `BCRM2Adapter`（`bcrm2_adapter.py`）实现与实盘交易系统的平滑对接：
+
+- **训练/推理/缓存一体化**：首次调用自动训练模型并缓存，后续直接加载
+- **接口兼容**：输出格式与 BCRM 1.0 兼容，`PollingTrader` 可无缝切换
+- **自动重训**：每 24 小时检查并重训模型
+- **Fallback机制**：币种数据不足时自动回退到 BCRM 1.0
+- **数据自动补充**：小币种K线数据不足时自动获取更多数据（max_bars=2000）
 
 ---
 
@@ -368,7 +379,7 @@ L2 Meta-Labeling (反题)
 L3 辩证裁决 (合题)
 ├── 输入: L1置信度 × L2盈利概率
 ├── 输出: 最终置信度
-└── 阈值: 0.40 (基础), 动态调整 by 市态
+└── 阈值: 0.60 (实盘优化), 动态调整 by 市态
 ```
 
 **卦象映射器**:
@@ -752,17 +763,21 @@ data_fetcher.py / okx_simulated.py
     ├── WDH时间维度
     └── ...
     ↓
-DialecticalMLEngine (L1→L2→L3)
+BCRM2Adapter (bcrm2_adapter.py)
+    ├── 模型缓存检查 → 命中则直接推理
+    └── 未命中 → DialecticalMLEngine 训练 (L1→L2→L3)
     ↓
-MarketRegimeDetector (8种市态)
+DialecticalMLEngine (L1→L2→L3) → 置信度 + 方向
     ↓
-信号生成 + 仓位计算
+MarketRegimeDetector (8种市态) → 仓位因子
+    ↓
+信号生成 (置信度阈值 0.60) + 仓位计算
     ↓
 RiskManager (日亏损/连续亏损熔断)
     ↓
 OKX下单执行
     ↓
-持仓跟踪 → 止盈止损 → 离场决策 (ClassicExitSystem)
+持仓跟踪 → ClassicExitSystem 离场决策 (P0→P1→P2→P3)
     ↓
 交易记录 → PerformanceTracker
     ↓
@@ -771,6 +786,8 @@ Case生成 → save_case_to_l4()
 L4记忆管道 (pipeline.py)
     ↓
 IncrementalLearner 检查触发再训练?
+    ↓
+(数据不足时) Fallback → BCRM 1.0 矛盾力学引擎
 ```
 
 ### 9.2 记忆沉淀数据流
@@ -827,7 +844,7 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 | K线周期 | 1H | 1小时K线 |
 | 数据量 | 6000根 | 约8个月 |
 | Walk-Forward折数 | 5 | 80%训练/20%验证 |
-| 置信度阈值 | 0.40 | 基础阈值 |
+| 置信度阈值 | 0.60 | 实盘优化值（回测最优） |
 | 止盈 | 3.0x ATR | 动态止盈 |
 | 止损 | 2.0x ATR | 动态止损 |
 | 最大持仓 | 60根K线 | 约2.5天 |
@@ -841,9 +858,115 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 
 ---
 
-## 11. 性能基准
+## 11. 逐仓风控模式
 
-### 11.1 BCRM 2.0 基线回测（6000根1H K线）
+### 11.1 设计原则
+
+**核心原则**: 风险隔离，单个币种亏损不蔓延至其他持仓。
+
+| 模式 | 特点 | 风险 | 适用场景 |
+|------|------|------|----------|
+| **逐仓 (isolated)** | 每个合约独立保证金账户 | 单币种最多损失该笔保证金 | 多币种策略，风险隔离优先 |
+| 全仓 (cross) | 所有持仓共享账户权益 | 一个币种爆仓影响全部 | 单币种或高胜率策略 |
+
+易经推理系统默认采用 **逐仓模式**。
+
+### 11.2 技术实现
+
+**配置项**: `td_mode = "isolated"`（可通过环境变量 `OKX_TD_MODE` 覆盖）
+
+**代码位置**: [okx_simulated.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/okx_simulated.py)
+
+- `DEFAULT_CONFIG["td_mode"]` = `"isolated"`
+- `_load_config()` 支持从 `data/okx_sim/config.json` 和环境变量读取
+- `place_order()` 从配置读取，不再硬编码 `td_mode`
+- `place_stop_loss_take_profit()` 止盈止损单同步使用配置的 td_mode
+
+**保证金检查**: [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py)
+
+| 模式 | 检查逻辑 |
+|------|----------|
+| 逐仓 | `USDT可用余额 ≥ 开仓所需保证金` |
+| 全仓 | `总权益 - 已用保证金(IMR) ≥ 开仓所需保证金` |
+
+**仓位计算逻辑**（v2.3 修正）：
+
+`_open_position()` 在计算仓位大小时，先查询账户实际可用余额，再传递给 `calc_position_size()`：
+
+```python
+# 获取实际可用资金（而非总权益）
+if td_mode == "isolated":
+    available_equity = avail_usdt  # 逐仓：USDT可用余额
+else:
+    available_equity = total_eq - total_imr  # 全仓：总权益 - 已用保证金
+
+# 用可用余额计算仓位（而非总权益）
+pos_size_info = self.risk_manager.calc_position_size(
+    confidence=confidence,
+    volatility=volatility,
+    current_equity=available_equity,  # ← 关键修正
+)
+```
+
+**修正原因**：当多个交易系统共用同一账户时（如 V15 马丁 + 三屏趋势 + 易经推理），总权益包含其他系统占用的保证金，直接使用总权益计算会导致仓位过大、开仓失败。
+
+### 11.3 资金分配
+
+- 默认杠杆: 3x
+- 单仓位资金比例: 10%（position_pct）
+- 最大持仓数: 10 个币种
+- 单币种保证金 = `仓位价值 / 杠杆`，独立占用
+
+### 11.4 切换方式
+
+```bash
+# 切换为全仓模式（不推荐，仅作回测对比）
+export OKX_TD_MODE=cross
+
+# 恢复逐仓模式（默认）
+export OKX_TD_MODE=isolated
+```
+
+---
+
+## 11.5 监控告警集成
+
+易经推理系统已接入 [15-监控告警系统](../../15-监控告警系统/)，实现统一监控和异常告警。
+
+### 监控适配器
+
+**文件**: [15-监控告警系统/adapters/yijing_adapter.py](../../15-监控告警系统/adapters/yijing_adapter.py)
+
+| 监控项 | 检查逻辑 | 告警级别 |
+|--------|----------|----------|
+| 进程心跳 | 检查 `data/polling_trader/` 下最新日志时间戳 | CRITICAL（>3小时无日志） |
+| 交易活跃度 | 检查当日交易笔数是否为0 | WARNING（连续6小时无交易） |
+| 持仓健康 | 检查持仓浮动盈亏是否超过日亏损限额 | ERROR |
+| 模型状态 | 检查 BCRM 2.0 模型是否正常加载 | ERROR |
+| 余额充足性 | 检查可用 USDT 是否低于最低开仓要求 | WARNING |
+
+### 飞书告警
+
+**文件**: [scripts/memory_l4/yijing_feishu_alert.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/yijing_feishu_alert.py)
+
+- 告警类型：heartbeat / trading / model / position / system / performance
+- 告警级别：critical / error / warning / info
+- 推送目标：飞书管理后台群组
+- 配置方式：环境变量 `FEISHU_APP_ID` + `FEISHU_APP_SECRET`
+
+### 调度配置
+
+| 任务 | 频率 | 入口 |
+|------|------|------|
+| 健康检查 | 每小时 | `yijing_monitor.py` → `YijingAdapter.check_health()` |
+| 完整监控 | 每3小时 | `yijing_monitor.py` → 全量检查 + 飞书推送 |
+| 自进化触发 | 每4小时或10笔新交易 | `self_evolution_engine.py` |
+
+---
+
+## 12. 性能基准
+
+### 12.1 BCRM 2.0 基线回测（6000根1H K线）
 
 **配置**: 市态切换 + auto_mcap + 特征选择 + 组合回测
 
@@ -869,7 +992,7 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 
 ---
 
-## 12. 技术栈
+## 13. 技术栈
 
 | 组件 | 技术 | 版本 | 用途 |
 |------|------|------|------|
@@ -886,9 +1009,9 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 
 ---
 
-## 13. 系统边界
+## 14. 系统边界
 
-### 13.1 负责范围
+### 14.1 负责范围
 
 ✅ **本系统负责：**
 - 易经哲学框架下的交易决策推理
@@ -900,7 +1023,7 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 - CI/CD与治理架构
 - 与OKX的交易接口
 
-### 13.2 不负责范围
+### 14.2 不负责范围
 
 ❌ **本系统不负责：**
 - 整体DreamOS的系统级调度（由master_daemon负责）
@@ -912,9 +1035,9 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 
 ---
 
-## 14. 未来优化方向
+## 15. 未来优化方向
 
-### 14.1 Phase 0 ✅ 已完成
+### 15.1 Phase 0 ✅ 已完成
 - [x] BCRM 2.0基础框架
 - [x] 八卦特征引擎
 - [x] 辩证ML三层架构
@@ -922,21 +1045,25 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 - [x] 组合回测
 - [x] 市态切换（8种市态）
 
-### 14.2 Phase 1 ✅ 已完成
+### 15.2 Phase 1 ✅ 已完成
 - [x] 增量学习闭环
 - [x] PollingTrader集成（实盘）
 - [x] WDH时间维度特征
 - [x] auto_mcap市值等级配置
 - [x] 特征选择模块
+- [x] **BCRM 2.0实盘切换**（BCRM2Adapter + 置信度优化0.60）
+- [x] **ClassicExitSystem离场系统集成**（四优先级 CLOSE/REDUCE/RAISE_TP/HOLD）
+- [x] **逐仓风控模式**（td_mode=isolated，风险隔离）
 
-### 14.3 Phase 2 ⚠️ 进行中
+### 15.3 Phase 2 ⚠️ 进行中
 - [ ] 美林时钟特征优化
-- [ ] Meta-Labeling V2调试
+- [ ] Meta-Labeling V2调试（L2训练失败问题待排查）
 - [ ] 跨资产特征深化
 - [ ] 市场模式聚类
 - [ ] 异常检测（混合架构）
+- [ ] 小币种数据不足Fallback策略优化
 
-### 14.4 Phase 3 📋 规划中
+### 15.4 Phase 3 📋 规划中
 - [ ] BCRM 1.0与2.0深度融合
 - [ ] QMM与BCRM的深度集成
 - [ ] 多时间框架融合
@@ -948,10 +1075,13 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 
 ---
 
-## 15. 变更日志
+## 16. 变更日志
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-07-15 | v2.3 | **保证金计算逻辑修正**：`_open_position()` 使用可用余额（而非总权益）计算仓位，解决多系统共用账户时仓位过大的问题；新增§11.5监控告警集成（15-监控告警系统适配器 + 飞书告警）；BCRM 2.0实盘验证通过（BTC/ETH开仓成功） | DreamBuddy v2 |
+| 2026-07-15 | v2.2 | 仓位模式从全仓(cross)切换为逐仓(isolated)；新增第11章逐仓风控模式；okx_simulated.py默认td_mode=isolated；polling_trader.py支持逐仓/全仓保证金检查；Phase 1增加逐仓风控模式标记 | DreamBuddy v2 |
+| 2026-07-14 | v2.1 | BCRM 2.0实盘切换：新增§3.3.3 BCRM2Adapter适配层；更新数据流（含Fallback机制）；置信度阈值0.60；Phase 1标记BCRM 2.0实盘+离场集成完成；Phase 2增加L2修复和小币种Fallback优化 | DreamBuddy v2 |
 | 2026-07-13 | v2.0 | 扩展为完整系统级技术设计，增加顶层架构、BCRM 1.0、QMM、L4记忆、自进化、A0-A9、CI/CD治理等章节 | DreamBuddy v2 |
 | （历史） | v1.0 | 初始版本，仅覆盖BCRM 2.0量化引擎 | BCRM 2.0团队 |
 

@@ -1,0 +1,62 @@
+{
+  "version": "v2.0.0-baseline",
+  "name": "AI三屏趋势策略-基线版本",
+  "created_at": "2026-07-17",
+  "description": "多任务学习+动态融合权重基线参数。合成数据回测收益253.47%，但真实数据回测验证显示策略能力有限（平均-7.19% vs 买入持有-58.41%，有超额但绝对收益为负）",
+  "backtest_data_note": "合成数据结果仅供参数对比参考，真实市场表现见 real_backtest_results 字段",
+  "dynamic_weight_fusion": {
+    "base_rule_weight": 0.55,
+    "min_rule_weight": 0.2,
+    "max_rule_weight": 0.9,
+    "trend_sensitivity": 0.25,
+    "vol_sensitivity": 0.25,
+    "volume_sensitivity": 0.2,
+    "duration_sensitivity": 0.25
+  },
+  "strategy_params": {
+    "label_lookahead": 7,
+    "train_window": 200,
+    "retrain_interval": 30,
+    "min_ml_confidence": 0.1,
+    "min_train_samples": 40,
+    "enable_fundamental": true,
+    "enable_multitask": true,
+    "enable_dynamic_weight": true,
+    "enable_feature_selection": false,
+    "top_k_features": 40,
+    "base_rule_weight": 0.3
+  },
+  "multitask_model": {
+    "conf_scale_factor": 10.0,
+    "task_weights": {
+      "direction": 0.5,
+      "confidence": 0.3,
+      "drive_mode": 0.2
+    }
+  },
+  "backtest_results": {
+    "data_source": "合成数据（带上升趋势的模拟序列）",
+    "total_return_pct": 253.47,
+    "sharpe_ratio": 7.10,
+    "max_drawdown_pct": 16.69,
+    "win_rate": 50.0,
+    "trade_count": 24
+  },
+  "real_backtest_results": {
+    "data_source": "OKX真实市场数据（300天日线）",
+    "data_period": "2025-09-20 ~ 2026-07-17",
+    "market_regime": "熊市/震荡（BTC买入持有-45.18%）",
+    "results": {
+      "BTC": {"return_pct": -4.18, "sharpe": -1.220, "drawdown_pct": 5.56, "trades": 1, "buy_hold": -45.18},
+      "ETH": {"return_pct": -9.88, "sharpe": -1.640, "drawdown_pct": 11.84, "trades": 1, "buy_hold": -58.84},
+      "SOL": {"return_pct": 3.47, "sharpe": 1.460, "drawdown_pct": 1.24, "trades": 5, "buy_hold": -68.56},
+      "UNI": {"return_pct": -18.18, "sharpe": -1.560, "drawdown_pct": 21.69, "trades": 1, "buy_hold": -61.06}
+    },
+    "avg_return_pct": -7.19,
+    "avg_sharpe": -0.740,
+    "avg_drawdown_pct": 10.08,
+    "avg_buy_hold": -58.41,
+    "alpha_vs_buy_hold": 51.22,
+    "conclusion": "策略在熊市中大幅跑赢买入持有（+51.22%），但绝对收益为负，说明策略具备防御能力但缺乏熊市盈利能力"
+  }
+}

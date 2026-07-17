@@ -734,13 +734,201 @@ class BCRM2Scheduler:
             self.stop()
 
 
+class BCRM2EvolutionObserver:
+    """BCRM 2.0 交易进化观测器
+
+    核心功能:
+      - 模型版本管理 (保存/加载/回滚/清理)
+      - 绩效统计 (胜率/夏普/最大回撤)
+      - 自动再训练触发 (增量学习闭环)
+      - 进化事件记录 (版本变更/参数调整/回滚)
+    """
+
+    def __init__(self, db_path: str = None):
+        if db_path is None:
+            project_root = str(Path(__file__).parent.parent.parent.parent)
+            db_path = str(Path(project_root) / "data" / "bcrm_trades.db")
+        self.db_path = db_path
+        self._ensure_tables()
+
+    def _ensure_tables(self):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""CREATE TABLE IF NOT EXISTS model_evolution (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            version_from TEXT,
+            version_to TEXT,
+            trigger_reason TEXT,
+            metrics_before TEXT,
+            metrics_after TEXT,
+            rollback_available INTEGER DEFAULT 1
+        )""")
+        cursor.execute("""CREATE TABLE IF NOT EXISTS performance_snapshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            version_id TEXT,
+            n_trades INTEGER,
+            win_rate REAL,
+            avg_pnl REAL,
+            sharpe_ratio REAL,
+            max_drawdown REAL,
+            notes TEXT
+        )""")
+        conn.commit()
+        conn.close()
+
+    def record_evolution_event(self, symbol: str, event_type: str,
+                               version_from: str = "", version_to: str = "",
+                               trigger_reason: str = "",
+                               metrics_before: Dict = None,
+                               metrics_after: Dict = None,
+                               rollback_available: bool = True):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""INSERT INTO model_evolution (
+            timestamp, symbol, event_type, version_from, version_to,
+            trigger_reason, metrics_before, metrics_after, rollback_available
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
+            datetime.now().isoformat(), symbol, event_type,
+            version_from, version_to, trigger_reason,
+            json.dumps(metrics_before or {}, ensure_ascii=False),
+            json.dumps(metrics_after or {}, ensure_ascii=False),
+            1 if rollback_available else 0,
+        ))
+        conn.commit()
+        conn.close()
+
+    def snapshot_performance(self, symbol: str, version_id: str,
+                             n_trades: int = 0, win_rate: float = 0,
+                             avg_pnl: float = 0, sharpe_ratio: float = 0,
+                             max_drawdown: float = 0, notes: str = ""):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""INSERT INTO performance_snapshots (
+            timestamp, symbol, version_id, n_trades, win_rate,
+            avg_pnl, sharpe_ratio, max_drawdown, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
+            datetime.now().isoformat(), symbol, version_id,
+            n_trades, win_rate, avg_pnl, sharpe_ratio, max_drawdown, notes,
+        ))
+        conn.commit()
+        conn.close()
+
+    def get_evolution_history(self, symbol: str = None, limit: int = 20) -> List[Dict]:
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            if symbol:
+                cursor.execute(
+                    "SELECT * FROM model_evolution WHERE symbol = ? ORDER BY id DESC LIMIT ?",
+                    (symbol, limit))
+            else:
+                cursor.execute(
+                    "SELECT * FROM model_evolution ORDER BY id DESC LIMIT ?", (limit,))
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in rows]
+        finally:
+            conn.close()
+
+    def get_performance_trend(self, symbol: str, limit: int = 10) -> List[Dict]:
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "SELECT * FROM performance_snapshots WHERE symbol = ? ORDER BY id DESC LIMIT ?",
+                (symbol, limit))
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in rows]
+        finally:
+            conn.close()
+
+    def check_rollback_candidates(self, symbol: str,
+                                   min_win_rate: float = 0.4,
+                                   min_sharpe: float = 0.0) -> List[Dict]:
+        """检查需要回滚的模型版本（当前绩效低于阈值）"""
+        trend = self.get_performance_trend(symbol, limit=5)
+        if not trend:
+            return []
+        recent = trend[0]
+        if recent.get("win_rate", 1.0) < min_win_rate or recent.get("sharpe_ratio", 0) < min_sharpe:
+            return [{
+                "symbol": symbol,
+                "current_version": recent.get("version_id"),
+                "win_rate": recent.get("win_rate"),
+                "sharpe_ratio": recent.get("sharpe_ratio"),
+                "recommendation": "建议回滚到上一版本",
+            }]
+        return []
+
+
+def run_hourly_sacg(symbols: List[str] = None,
+                     dry_run: bool = True,
+                     wdh_enabled: bool = True,
+                     merrill_enabled: bool = True,
+                     incremental_enabled: bool = True) -> Dict[str, Any]:
+    """每小时自动调度入口 — 完整S-A-C-G编排流程
+
+    流程:
+      1. S层: 意图识别 (场景分类 + 数据源判断)
+      2. A层: 图编排 (BCRM2.0优先 → BCRM1.0回退)
+      3. C层: 资源分配 (算力/特征工程/模型选择)
+      4. G层: 风险管理 (风控/离场/情报监控)
+      5. 数据库记录 (决策/交易/分析日志/模型版本)
+      6. 进化观测 (增量学习触发/绩效快照/回滚检查)
+    """
+    symbols = symbols or _BCRM2_SYMBOLS
+    scheduler = BCRM2Scheduler(
+        symbols=symbols, dry_run=dry_run,
+        wdh_enabled=wdh_enabled, merrill_enabled=merrill_enabled,
+        incremental_enabled=incremental_enabled,
+    )
+    observer = BCRM2EvolutionObserver()
+
+    # 执行扫描
+    result = scheduler.run_scan_all()
+
+    # 进化观测
+    for symbol in symbols:
+        perf = scheduler.get_performance_stats(symbol)
+        if perf:
+            n_trades = perf.get("n_trades", 0) or 0
+            win_rate = perf.get("win_rate", 0) or 0
+            observer.snapshot_performance(
+                symbol=symbol,
+                version_id=f"v2_phase0_{datetime.now().strftime('%Y%m%d%H')}",
+                n_trades=int(n_trades),
+                win_rate=float(win_rate),
+                avg_pnl=float(perf.get("avg_pnl", 0) or 0),
+                notes="每小时自动调度绩效快照",
+            )
+
+        # 回滚检查
+        rollback = observer.check_rollback_candidates(symbol)
+        if rollback:
+            for r in rollback:
+                logger.warning(f"回滚预警: {r}")
+                observer.record_evolution_event(
+                    symbol=symbol,
+                    event_type="rollback_warning",
+                    trigger_reason=f"win_rate={r['win_rate']}, sharpe={r['sharpe_ratio']}",
+                )
+
+    return result
+
+
 def main():
     """命令行入口"""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="BCRM 2.0 升级版自动化调度器")
-    parser.add_argument("--mode", default="run_once", choices=["run_once", "scheduled"],
-                        help="运行模式: run_once(单次扫描) / scheduled(定时调度)")
+    parser.add_argument("--mode", default="run_once", choices=["run_once", "scheduled", "sacg_hourly"],
+                        help="运行模式: run_once(单次扫描) / scheduled(定时调度) / sacg_hourly(S-A-C-G每小时调度)")
     parser.add_argument("--symbols", nargs="+", default=_BCRM2_SYMBOLS,
                         help="待分析币种列表")
     parser.add_argument("--dry-run", action="store_true", default=True,
@@ -757,9 +945,9 @@ def main():
                         help="cron表达式 (定时模式)")
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                         help="日志级别")
-    
+
     args = parser.parse_args()
-    
+
     logging.basicConfig(
         level=getattr(logging, args.log_level),
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -768,7 +956,16 @@ def main():
             logging.FileHandler(Path(__file__).parent.parent / "logs" / "bcrm2_scheduler.log"),
         ]
     )
-    
+
+    if args.mode == "sacg_hourly":
+        result = run_hourly_sacg(
+            symbols=args.symbols, dry_run=args.dry_run,
+            wdh_enabled=args.wdh, merrill_enabled=args.merrill,
+            incremental_enabled=args.incremental,
+        )
+        print(json.dumps(result.get("summary", {}), indent=2, ensure_ascii=False))
+        return
+
     scheduler = BCRM2Scheduler(
         symbols=args.symbols,
         dry_run=args.dry_run,
@@ -777,7 +974,7 @@ def main():
         merrill_enabled=args.merrill,
         incremental_enabled=args.incremental,
     )
-    
+
     if args.mode == "run_once":
         result = scheduler.run_scan_all()
         print(json.dumps(result["summary"], indent=2, ensure_ascii=False))

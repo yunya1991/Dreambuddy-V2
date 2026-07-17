@@ -761,3 +761,810 @@ class FullReasoningStrategy(BaseStrategy):
     def get_stats(self) -> dict:
         """获取回测统计信息"""
         return self.stats.copy()
+
+
+class LeastResistanceStrategy(BaseStrategy):
+    """纯最小阻力方向策略（第一性原理）
+
+    绕过 calc_trend_consistency 的完整推理链，
+    直接用 compute_least_resistance_3d 的 D/V/A 模型生成仓位。
+
+    时间三维 × 五维阻力 → 最小阻力三维模型 → 方向 + 入场信号
+    - 周线定方向（Direction）
+    - 日线定时机（Velocity）
+    - 小周期精细入场（Acceleration）
+    - 量变积累→质变突破：提前推理方向
+    """
+
+    def __init__(
+        self,
+        max_position: float = 0.60,
+        min_confidence: float = 40.0,
+        trial_confidence: float = 25.0,
+        trial_position_ratio: float = 0.3,
+        warmup_periods: int = 80,
+        update_step: int = 1,
+        use_fundamental: bool = False,
+        min_holding_bars: int = 5,
+        signal_confirm_bars: int = 2,
+        enable_trend_filter: bool = True,
+        bear_short_only: bool = True,
+        bull_long_only: bool = False,
+    ):
+        super().__init__(name="least_resistance")
+        self.max_position = max_position
+        self.min_confidence = min_confidence
+        self.trial_confidence = trial_confidence
+        self.trial_position_ratio = trial_position_ratio
+        self.warmup_periods = warmup_periods
+        self.update_step = max(1, update_step)
+        self.use_fundamental = use_fundamental
+        self.min_holding_bars = max(1, min_holding_bars)
+        self.signal_confirm_bars = max(1, signal_confirm_bars)
+        self.enable_trend_filter = enable_trend_filter
+        self.bear_short_only = bear_short_only
+        self.bull_long_only = bull_long_only
+        self.stats = {
+            "total_bars": 0,
+            "must_enter": 0,
+            "timing": 0,
+            "wait": 0,
+            "accumulation": 0,
+            "breakthrough_imminent": 0,
+            "breakthrough_confirmed": 0,
+            "continuation": 0,
+            "late_continuation": 0,
+            "accumulation_mode": 0,
+            "weakening": 0,
+            "trend_filter_blocks": 0,
+            "holding_wait": 0,
+            "confirm_wait": 0,
+        }
+
+    def generate_signals(self, prices: pd.DataFrame) -> pd.Series:
+        try:
+            from core.least_resistance import compute_least_resistance_3d
+        except ImportError:
+            import sys, os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+            from core.least_resistance import compute_least_resistance_3d
+
+        n = len(prices)
+        positions = np.zeros(n)
+        warmup = min(self.warmup_periods, n - 10)
+        step = max(1, self.update_step)
+
+        history_3d = []
+        daily_history_diffs = []
+        last_pos = 0.0
+
+        ma200 = prices["close"].rolling(window=200, min_periods=200).mean().values
+        ma50 = prices["close"].rolling(window=50, min_periods=50).mean().values
+        weekly_ma20 = prices["close"].rolling(window=20, min_periods=20).mean().values
+
+        signal_buffer = []
+        holding_count = 0
+        holding_direction = "NEUTRAL"
+
+        for i in range(warmup, n):
+            if (i - warmup) % step == 0 or i == warmup:
+                daily_slice = prices.iloc[:i + 1].copy()
+                weekly_df = self._resample_to_weekly(daily_slice)
+
+                if len(weekly_df) >= 10:
+                    try:
+                        result = compute_least_resistance_3d(
+                            weekly_df, daily_slice,
+                            daily_history_diffs=daily_history_diffs if daily_history_diffs else None,
+                            history_3d=history_3d if history_3d else None,
+                        )
+
+                        direction = result["direction"]
+                        confidence = result["confidence"]
+                        entry_signal = result["entry_signal"]
+                        daily_diff = result.get("daily_diff", 0.0)
+
+                        daily_history_diffs.append(daily_diff)
+                        if len(daily_history_diffs) > 30:
+                            daily_history_diffs = daily_history_diffs[-30:]
+
+                        history_3d.append({
+                            "direction": direction,
+                            "velocity": result["velocity"],
+                            "acceleration": result["acceleration"],
+                        })
+                        if len(history_3d) > 20:
+                            history_3d = history_3d[-20:]
+
+                        signal_buffer.append(direction)
+                        if len(signal_buffer) > self.signal_confirm_bars:
+                            signal_buffer = signal_buffer[-self.signal_confirm_bars:]
+
+                        if holding_count > 0:
+                            holding_count -= 1
+                            if holding_count == 0:
+                                holding_direction = "NEUTRAL"
+                            self.stats["holding_wait"] += 1
+                        else:
+                            confirmed_direction = self._get_confirmed_direction(signal_buffer)
+                            raw_pos = self._signal_to_position(confirmed_direction, confidence, entry_signal)
+                            filtered_pos = self._apply_trend_filter(raw_pos, i, ma200, ma50, weekly_ma20)
+
+                            if filtered_pos != last_pos:
+                                last_pos = filtered_pos
+                                if abs(filtered_pos) > 0:
+                                    holding_count = self.min_holding_bars
+                                    holding_direction = "BULL" if filtered_pos > 0 else "BEAR"
+                            else:
+                                if confirmed_direction != direction and len(signal_buffer) >= self.signal_confirm_bars:
+                                    self.stats["confirm_wait"] += 1
+
+                        self.stats["total_bars"] += 1
+                        if entry_signal == "MUST_ENTER":
+                            self.stats["must_enter"] += 1
+                        elif entry_signal == "TIMING":
+                            self.stats["timing"] += 1
+                        else:
+                            self.stats["wait"] += 1
+
+                        acc = result.get("accumulation", {})
+                        stage = acc.get("stage", "NONE")
+                        if stage == "ACCUMULATION":
+                            self.stats["accumulation"] += 1
+                        elif stage == "BREAKTHROUGH_IMMINENT":
+                            self.stats["breakthrough_imminent"] += 1
+                        elif stage == "BREAKTHROUGH_CONFIRMED":
+                            self.stats["breakthrough_confirmed"] += 1
+
+                        dm = result.get("drive_mode", {})
+                        dm_mode = dm.get("mode", "NONE")
+                        if dm_mode == "CONTINUATION":
+                            self.stats["continuation"] += 1
+                        elif dm_mode == "LATE_CONTINUATION":
+                            self.stats["late_continuation"] += 1
+                        elif dm_mode == "ACCUMULATION":
+                            self.stats["accumulation_mode"] += 1
+                        elif dm_mode == "WEAKENING":
+                            self.stats["weakening"] += 1
+
+                    except Exception:
+                        pass
+
+            positions[i] = last_pos
+
+        return pd.Series(positions, index=prices.index, name="position")
+
+    def _get_confirmed_direction(self, signal_buffer):
+        if len(signal_buffer) < self.signal_confirm_bars:
+            return "NEUTRAL"
+        last_n = signal_buffer[-self.signal_confirm_bars:]
+        if all(d == "BULL" for d in last_n):
+            return "BULL"
+        if all(d == "BEAR" for d in last_n):
+            return "BEAR"
+        return "NEUTRAL"
+
+    def _apply_trend_filter(self, pos, i, ma200, ma50, weekly_ma20):
+        if not self.enable_trend_filter:
+            return pos
+
+        if abs(pos) < 0.01:
+            return pos
+
+        in_bull = (i < len(ma200) and not np.isnan(ma200[i]) and ma200[i] > 0 and
+                   i < len(ma50) and not np.isnan(ma50[i]) and ma50[i] > ma200[i])
+
+        in_bear = (i < len(ma200) and not np.isnan(ma200[i]) and ma200[i] > 0 and
+                   i < len(ma50) and not np.isnan(ma50[i]) and ma50[i] < ma200[i])
+
+        if pos > 0:
+            if self.bear_short_only and in_bear:
+                self.stats["trend_filter_blocks"] += 1
+                return 0.0
+        elif pos < 0:
+            if in_bull:
+                self.stats["trend_filter_blocks"] += 1
+                return 0.0
+
+        return pos
+
+    def _signal_to_position(self, direction: str, confidence: float, entry_signal: str) -> float:
+        if direction == "NEUTRAL" or entry_signal == "WAIT":
+            return 0.0
+
+        if entry_signal == "MUST_ENTER":
+            pos_ratio = min(confidence / 100.0, 1.0) * self.max_position
+        elif entry_signal == "TIMING":
+            if confidence < self.trial_confidence:
+                return 0.0
+            pos_ratio = (
+                min(confidence / 100.0, 1.0)
+                * self.max_position
+                * self.trial_position_ratio
+            )
+        else:
+            return 0.0
+
+        if direction == "BULL":
+            return pos_ratio
+        elif direction == "BEAR":
+            return -pos_ratio
+        return 0.0
+
+    def _resample_to_weekly(self, daily_df: pd.DataFrame) -> pd.DataFrame:
+        if len(daily_df) == 0:
+            return daily_df
+
+        df = daily_df.copy()
+        if "date" in df.columns:
+            df = df.set_index("date")
+        else:
+            df.index = pd.to_datetime(df.index)
+
+        weekly = df.resample("W").agg({
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
+        }).dropna()
+
+        return weekly
+
+    def get_stats(self) -> dict:
+        return self.stats.copy()
+
+
+class AdaptiveLeastResistanceStrategy(BaseStrategy):
+    """自适应市场状态的最小阻力策略
+
+    根据MA200/MA50动态判断牛市/熊市/震荡，切换最优参数：
+    - 牛市: 长持仓(15天)+低确认(1天)+满仓 → 趋势跟踪
+    - 熊市: 短持仓(3天)+低确认(1天)+满仓 → 快进快出做空
+    - 震荡: 短持仓(3天)+高确认(2天)+低仓(0.4) → 保守防御
+    """
+
+    REGIME_PARAMS = {
+        "bull":      {"min_holding_bars": 15, "signal_confirm_bars": 1, "max_position": 1.0},
+        "bear":      {"min_holding_bars": 3,  "signal_confirm_bars": 1, "max_position": 1.0},
+        "sideways":  {"min_holding_bars": 3,  "signal_confirm_bars": 2, "max_position": 0.4},
+    }
+
+    def __init__(
+        self,
+        warmup_periods: int = 80,
+        update_step: int = 1,
+        regime_params: dict = None,
+        enable_trend_filter: bool = True,
+    ):
+        super().__init__(name="adaptive_lr")
+        self.warmup_periods = warmup_periods
+        self.update_step = max(1, update_step)
+        self.enable_trend_filter = enable_trend_filter
+        self.regime_params = regime_params or self.REGIME_PARAMS
+        self.stats = {
+            "total_bars": 0,
+            "regime_bull": 0,
+            "regime_bear": 0,
+            "regime_sideways": 0,
+            "regime_switches": 0,
+            "trend_filter_blocks": 0,
+        }
+
+    def generate_signals(self, prices: pd.DataFrame) -> pd.Series:
+        try:
+            from core.least_resistance import compute_least_resistance_3d
+        except ImportError:
+            import sys, os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+            from core.least_resistance import compute_least_resistance_3d
+
+        n = len(prices)
+        positions = np.zeros(n)
+        warmup = min(self.warmup_periods, n - 10)
+        step = max(1, self.update_step)
+
+        close = prices["close"]
+        ma200 = close.rolling(window=200, min_periods=200).mean().values
+        ma50 = close.rolling(window=50, min_periods=50).mean().values
+        ma200_slope = close.rolling(window=200, min_periods=200).mean().pct_change(periods=20).values
+
+        history_3d = []
+        daily_history_diffs = []
+        signal_buffer = []
+        holding_count = 0
+        last_pos = 0.0
+        last_regime = "sideways"
+
+        for i in range(warmup, n):
+            # 实时判断市场状态
+            current_regime = self._detect_regime(i, ma200, ma50, ma200_slope)
+            if current_regime != last_regime:
+                self.stats["regime_switches"] += 1
+                last_regime = current_regime
+            self.stats[f"regime_{current_regime}"] += 1
+
+            # 获取当前状态的参数
+            params = self.regime_params.get(current_regime, self.regime_params["sideways"])
+            min_holding = params["min_holding_bars"]
+            confirm_bars = params["signal_confirm_bars"]
+            max_position = params["max_position"]
+
+            if (i - warmup) % step == 0 or i == warmup:
+                daily_slice = prices.iloc[:i + 1].copy()
+                weekly_df = self._resample_to_weekly(daily_slice)
+
+                if len(weekly_df) >= 10:
+                    try:
+                        result = compute_least_resistance_3d(
+                            weekly_df, daily_slice,
+                            daily_history_diffs=daily_history_diffs if daily_history_diffs else None,
+                            history_3d=history_3d if history_3d else None,
+                        )
+
+                        direction = result["direction"]
+                        confidence = result["confidence"]
+                        entry_signal = result["entry_signal"]
+                        daily_diff = result.get("daily_diff", 0.0)
+
+                        daily_history_diffs.append(daily_diff)
+                        if len(daily_history_diffs) > 30:
+                            daily_history_diffs = daily_history_diffs[-30:]
+
+                        history_3d.append({
+                            "direction": direction,
+                            "velocity": result["velocity"],
+                            "acceleration": result["acceleration"],
+                        })
+                        if len(history_3d) > 20:
+                            history_3d = history_3d[-20:]
+
+                        signal_buffer.append(direction)
+                        if len(signal_buffer) > confirm_bars:
+                            signal_buffer = signal_buffer[-confirm_bars:]
+
+                        if holding_count > 0:
+                            holding_count -= 1
+                        else:
+                            confirmed = self._get_confirmed_direction(signal_buffer, confirm_bars)
+                            raw_pos = self._signal_to_position(
+                                confirmed, confidence, entry_signal, max_position
+                            )
+                            filtered_pos = self._apply_trend_filter(raw_pos, i, ma200, ma50)
+
+                            if filtered_pos != last_pos:
+                                last_pos = filtered_pos
+                                if abs(filtered_pos) > 0:
+                                    holding_count = min_holding
+
+                        self.stats["total_bars"] += 1
+
+                    except Exception:
+                        pass
+
+            positions[i] = last_pos
+
+        return pd.Series(positions, index=prices.index, name="position")
+
+    def _detect_regime(self, i, ma200, ma50, ma200_slope):
+        if i >= len(ma200) or np.isnan(ma200[i]) or ma200[i] <= 0:
+            return "sideways"
+        if i >= len(ma50) or np.isnan(ma50[i]) or ma50[i] <= 0:
+            return "sideways"
+
+        price_above = ma50[i] > ma200[i]
+        slope_up = ma200_slope[i] > 0 if (i < len(ma200_slope) and not np.isnan(ma200_slope[i])) else False
+
+        if price_above and slope_up:
+            return "bull"
+        elif not price_above and not slope_up:
+            return "bear"
+        return "sideways"
+
+    def _get_confirmed_direction(self, signal_buffer, confirm_bars):
+        if len(signal_buffer) < confirm_bars:
+            return "NEUTRAL"
+        last_n = signal_buffer[-confirm_bars:]
+        if all(d == "BULL" for d in last_n):
+            return "BULL"
+        if all(d == "BEAR" for d in last_n):
+            return "BEAR"
+        return "NEUTRAL"
+
+    def _signal_to_position(self, direction, confidence, entry_signal, max_position):
+        if direction == "NEUTRAL" or entry_signal == "WAIT":
+            return 0.0
+        if entry_signal == "MUST_ENTER":
+            pos_ratio = min(confidence / 100.0, 1.0) * max_position
+        elif entry_signal == "TIMING":
+            if confidence < 25.0:
+                return 0.0
+            pos_ratio = min(confidence / 100.0, 1.0) * max_position * 0.3
+        else:
+            return 0.0
+        if direction == "BULL":
+            return pos_ratio
+        elif direction == "BEAR":
+            return -pos_ratio
+        return 0.0
+
+    def _apply_trend_filter(self, pos, i, ma200, ma50):
+        if not self.enable_trend_filter or abs(pos) < 0.01:
+            return pos
+        if i >= len(ma200) or np.isnan(ma200[i]) or ma200[i] <= 0:
+            return pos
+        if i >= len(ma50) or np.isnan(ma50[i]) or ma50[i] <= 0:
+            return pos
+
+        in_bull = ma50[i] > ma200[i]
+        in_bear = ma50[i] < ma200[i]
+
+        if pos > 0 and in_bear:
+            self.stats["trend_filter_blocks"] += 1
+            return 0.0
+        if pos < 0 and in_bull:
+            self.stats["trend_filter_blocks"] += 1
+            return 0.0
+        return pos
+
+    def _resample_to_weekly(self, daily_df: pd.DataFrame) -> pd.DataFrame:
+        if len(daily_df) == 0:
+            return daily_df
+        df = daily_df.copy()
+        if "date" in df.columns:
+            df = df.set_index("date")
+        else:
+            df.index = pd.to_datetime(df.index)
+        weekly = df.resample("W").agg({
+            "open": "first", "high": "max", "low": "min",
+            "close": "last", "volume": "sum",
+        }).dropna()
+        return weekly
+
+    def get_stats(self) -> dict:
+        return self.stats.copy()
+
+class MA200TrendFollowingStrategy(BaseStrategy):
+    """MA200牛熊经验法则策略
+
+    核心逻辑：
+    - 牛市开启：收盘价 > MA200 且 MA200的5日斜率 > 0 → ALL IN 做多
+    - 熊市开启：收盘价 < MA200 且 MA200的5日斜率 < 0 → ALL IN 做空
+    - 震荡期：  空仓
+
+    经典趋势跟踪经验法则，确保大趋势下不空仓。
+    """
+
+    def __init__(
+        self,
+        ma_period: int = 200,
+        slope_period: int = 5,
+        max_position: float = 1.0,
+        sideways_mode: str = "flat",
+        warmup_periods: int = 210,
+    ):
+        super().__init__(name="ma200_trend")
+        self.ma_period = ma_period
+        self.slope_period = slope_period
+        self.max_position = max_position
+        self.sideways_mode = sideways_mode
+        self.warmup_periods = warmup_periods
+        self.stats = {
+            "bull_days": 0,
+            "bear_days": 0,
+            "sideways_days": 0,
+            "trend_switches": 0,
+        }
+
+    def generate_signals(self, prices: pd.DataFrame) -> pd.Series:
+        n = len(prices)
+        positions = np.zeros(n)
+        close = prices["close"].values
+        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma = ma_series.values
+
+        ma_slope = np.zeros(n)
+        for i in range(self.warmup_periods, n):
+            if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
+                ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
+
+        last_state = "init"
+        for i in range(self.warmup_periods, n):
+            if np.isnan(ma[i]) or ma[i] <= 0:
+                positions[i] = 0.0
+                continue
+
+            price_above = close[i] > ma[i]
+            slope_pos = ma_slope[i] > 0
+            slope_neg = ma_slope[i] < 0
+
+            if price_above and slope_pos:
+                current_state = "bull"
+                positions[i] = self.max_position
+                self.stats["bull_days"] += 1
+            elif not price_above and slope_neg:
+                current_state = "bear"
+                positions[i] = -self.max_position
+                self.stats["bear_days"] += 1
+            else:
+                current_state = "sideways"
+                positions[i] = 0.0
+                self.stats["sideways_days"] += 1
+
+            if current_state != last_state and last_state != "init":
+                self.stats["trend_switches"] += 1
+            last_state = current_state
+
+        return pd.Series(positions, index=prices.index, name="position")
+
+    def get_stats(self) -> dict:
+        return self.stats.copy()
+
+
+class EnhancedMA200Strategy(BaseStrategy):
+    """增强版MA200牛熊经验法则策略 v2
+
+    三条核心法则：
+    1. 比特币价格跌至周线MA200，分仓抄底（越跌越买）
+    2. BTC有效跌破MA200允许3层仓位做空；MA200的5日斜率为负时加仓至5成；
+       止盈位按斐波那契数列(23.6%, 38.2%, 50%, 61.8%)分阶段止盈
+    3. 小币在熊市禁止开仓，不做多也不做空；只有BTC和自身都处于牛市才做多
+
+    BTC策略矩阵：
+    - 牛市(价>MA200且斜率>0): 满仓做多
+    - 跌破MA200(价<MA200): 3成空仓
+    - 跌破MA200 + 斜率<0: 5成空仓
+    - 价格接近/跌破周线MA200: 分仓抄底(覆盖做空/空仓状态)
+    - 斐波那契止盈: 做空盈利达到23.6%/38.2%/50%/61.8%时分批减仓
+
+    小币策略矩阵：
+    - BTC牛市 且 自身牛市: 满仓做多
+    - 其他所有状态: 空仓（不做多也不做空）
+    """
+
+    def __init__(
+        self,
+        ma_period: int = 200,
+        slope_period: int = 5,
+        max_position: float = 1.0,
+        warmup_periods: int = 210,
+        symbol: str = "BTC",
+        is_btc: bool = True,
+        btc_prices: Optional[pd.DataFrame] = None,
+        weekly_ma200_dip_buy: bool = True,
+        dip_buy_max_position: float = 0.8,
+        dip_buy_levels: int = 4,
+        dip_buy_step_pct: float = 5.0,
+        bear_short_level1_pct: float = 0.3,
+        bear_short_level2_pct: float = 0.5,
+        fib_take_profit: bool = True,
+        fib_levels: Optional[list] = None,
+        alt_bear_no_trade: bool = True,
+    ):
+        super().__init__(name="enhanced_ma200_v2")
+        self.ma_period = ma_period
+        self.slope_period = slope_period
+        self.max_position = max_position
+        self.warmup_periods = warmup_periods
+        self.symbol = symbol
+        self.is_btc = is_btc
+        self.btc_prices = btc_prices
+        self.weekly_ma200_dip_buy = weekly_ma200_dip_buy
+        self.dip_buy_max_position = dip_buy_max_position
+        self.dip_buy_levels = dip_buy_levels
+        self.dip_buy_step_pct = dip_buy_step_pct
+        self.bear_short_level1_pct = bear_short_level1_pct
+        self.bear_short_level2_pct = bear_short_level2_pct
+        self.fib_take_profit = fib_take_profit
+        self.fib_levels = fib_levels or [0.236, 0.382, 0.5, 0.618]
+        self.alt_bear_no_trade = alt_bear_no_trade
+        self.stats = {
+            "bull_days": 0,
+            "bear_short_l1_days": 0,
+            "bear_short_l2_days": 0,
+            "bear_flat_days": 0,
+            "sideways_days": 0,
+            "dip_buy_days": 0,
+            "fib_tp_days": 0,
+            "trend_switches": 0,
+        }
+
+    def _resample_to_weekly(self, prices: pd.DataFrame) -> pd.DataFrame:
+        df = prices.copy()
+        if "date" in df.columns:
+            df = df.set_index("date")
+        else:
+            df.index = pd.to_datetime(df.index)
+        weekly = df.resample("W").agg({
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
+        }).dropna()
+        return weekly
+
+    def _compute_weekly_ma200(self, prices: pd.DataFrame) -> np.ndarray:
+        weekly = self._resample_to_weekly(prices)
+        weekly_close = weekly["close"].values
+        if len(weekly_close) < 200:
+            return np.full(len(prices), np.nan)
+        weekly_ma200 = pd.Series(weekly_close).rolling(window=200, min_periods=200).mean().values
+        daily_ma200 = np.full(len(prices), np.nan)
+        weekly_idx = 0
+        for i in range(len(prices)):
+            current_date = prices.index[i]
+            while weekly_idx < len(weekly) and weekly.index[weekly_idx] <= current_date:
+                weekly_idx += 1
+            if weekly_idx >= 200:
+                daily_ma200[i] = weekly_ma200[weekly_idx - 1]
+        return daily_ma200
+
+    def _compute_btc_regime(self) -> Optional[np.ndarray]:
+        if self.btc_prices is None or self.is_btc:
+            return None
+        btc_close = self.btc_prices["close"].values
+        n_btc = len(btc_close)
+        btc_ma = pd.Series(btc_close).rolling(window=self.ma_period, min_periods=self.ma_period).mean().values
+        btc_slope = np.zeros(n_btc)
+        for i in range(self.warmup_periods, n_btc):
+            if not np.isnan(btc_ma[i]) and not np.isnan(btc_ma[i - self.slope_period]):
+                btc_slope[i] = (btc_ma[i] / btc_ma[i - self.slope_period] - 1) * 100
+        btc_regime = np.full(n_btc, "sideways", dtype=object)
+        for i in range(self.warmup_periods, n_btc):
+            if np.isnan(btc_ma[i]):
+                continue
+            price_above = btc_close[i] > btc_ma[i]
+            slope_pos = btc_slope[i] > 0
+            slope_neg = btc_slope[i] < 0
+            if price_above and slope_pos:
+                btc_regime[i] = "bull"
+            elif not price_above:
+                btc_regime[i] = "bear"
+            else:
+                btc_regime[i] = "sideways"
+        return btc_regime
+
+    def _calc_fib_tp_position(
+        self,
+        current_price: float,
+        entry_price: float,
+        is_short: bool,
+        current_short_pos: float,
+    ) -> float:
+        """根据斐波那契止盈位计算当前应持有的空仓比例"""
+        if not self.fib_take_profit or not is_short or entry_price <= 0:
+            return current_short_pos
+        profit_pct = (entry_price - current_price) / entry_price
+        if profit_pct <= 0:
+            return current_short_pos
+        remaining_ratio = 1.0
+        n_levels = len(self.fib_levels)
+        portion_per_level = 1.0 / n_levels
+        for level in self.fib_levels:
+            if profit_pct >= level:
+                remaining_ratio -= portion_per_level
+        remaining_ratio = max(remaining_ratio, 0.0)
+        return current_short_pos * remaining_ratio
+
+    def generate_signals(self, prices: pd.DataFrame) -> pd.Series:
+        n = len(prices)
+        positions = np.zeros(n)
+        close = prices["close"].values
+        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma = ma_series.values
+        ma_slope = np.zeros(n)
+        for i in range(self.warmup_periods, n):
+            if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
+                ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
+        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
+        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        last_state = "init"
+        short_entry_price = None
+        for i in range(self.warmup_periods, n):
+            if np.isnan(ma[i]) or ma[i] <= 0:
+                positions[i] = 0.0
+                continue
+            price_above = close[i] > ma[i]
+            slope_pos = ma_slope[i] > 0
+            slope_neg = ma_slope[i] < 0
+            current_state = "sideways"
+            target_pos = 0.0
+            if self.is_btc:
+                if price_above and slope_pos:
+                    current_state = "bull"
+                    target_pos = self.max_position
+                    self.stats["bull_days"] += 1
+                    short_entry_price = None
+                elif not price_above:
+                    dip_buy_pos = 0.0
+                    if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                        weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
+                        if weekly_below_pct > 0:
+                            levels_filled = min(
+                                int(weekly_below_pct / self.dip_buy_step_pct),
+                                self.dip_buy_levels
+                            )
+                            if levels_filled > 0:
+                                dip_buy_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                    if dip_buy_pos > 0:
+                        current_state = "dip_buy"
+                        target_pos = dip_buy_pos
+                        self.stats["dip_buy_days"] += 1
+                        short_entry_price = None
+                    else:
+                        base_short = 0.0
+                        if slope_neg:
+                            base_short = self.bear_short_level2_pct
+                            current_state = "bear_short_l2"
+                            self.stats["bear_short_l2_days"] += 1
+                        else:
+                            base_short = self.bear_short_level1_pct
+                            current_state = "bear_short_l1"
+                            self.stats["bear_short_l1_days"] += 1
+                        if base_short > 0 and short_entry_price is None:
+                            short_entry_price = close[i]
+                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                            fib_pos = self._calc_fib_tp_position(
+                                close[i], short_entry_price, True, base_short
+                            )
+                            if fib_pos < base_short:
+                                self.stats["fib_tp_days"] += 1
+                            target_pos = -fib_pos
+                        else:
+                            target_pos = -base_short
+                else:
+                    dip_buy_pos = 0.0
+                    if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                        weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
+                        if weekly_below_pct > 0:
+                            levels_filled = min(
+                                int(weekly_below_pct / self.dip_buy_step_pct),
+                                self.dip_buy_levels
+                            )
+                            if levels_filled > 0:
+                                dip_buy_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                    if dip_buy_pos > 0:
+                        current_state = "dip_buy"
+                        target_pos = dip_buy_pos
+                        self.stats["dip_buy_days"] += 1
+                        short_entry_price = None
+                    else:
+                        current_state = "sideways"
+                        target_pos = 0.0
+                        self.stats["sideways_days"] += 1
+                        short_entry_price = None
+            else:
+                if self.alt_bear_no_trade:
+                    btc_in_bull = False
+                    if btc_regime is not None and i < len(btc_regime):
+                        btc_in_bull = btc_regime[i] == "bull"
+                    if price_above and slope_pos and btc_in_bull:
+                        current_state = "bull"
+                        target_pos = self.max_position
+                        self.stats["bull_days"] += 1
+                    else:
+                        current_state = "bear_flat"
+                        target_pos = 0.0
+                        self.stats["bear_flat_days"] += 1
+                else:
+                    if price_above and slope_pos:
+                        current_state = "bull"
+                        target_pos = self.max_position
+                        self.stats["bull_days"] += 1
+                    elif not price_above and slope_neg:
+                        current_state = "bear_short_l1"
+                        target_pos = -self.bear_short_level1_pct
+                        self.stats["bear_short_l1_days"] += 1
+                    else:
+                        current_state = "sideways"
+                        target_pos = 0.0
+                        self.stats["sideways_days"] += 1
+            positions[i] = target_pos
+            if current_state != last_state and last_state != "init":
+                self.stats["trend_switches"] += 1
+            last_state = current_state
+        return pd.Series(positions, index=prices.index, name="position")
+
+    def get_stats(self) -> dict:
+        return self.stats.copy()

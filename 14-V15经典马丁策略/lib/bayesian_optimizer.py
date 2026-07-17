@@ -60,6 +60,74 @@ def load_backtest_module():
 
 
 class V15CapitalOptimizer:
+    # ── 版本1: 固定参数基线（纯马丁策略，无智能增强，138%收益）──
+    # 止盈4%/底仓22%/加仓3次/间隔8%，无ATR/移动止盈/ELDER-RAY/风向标
+    # 作为智能系统整体失效时的终极回退
+    FIXED_BASELINE_PARAMS = {
+        'base_position_pct': 0.22,
+        'leverage': 5.0,
+        'tp_pct_btc': 0.04,
+        'max_addons': 3,
+        'addon_pct': 0.08,
+        'use_atr': False,
+        'use_trailing_tp': False,
+        'use_elder_ray': False,
+        'long_only': True,
+        'max_base_holding_hours': 48.0,
+        'max_post_addon_hours': 24.0,
+        'golden_window_hours': 12.0,
+    }
+
+    # ── 版本2: 智能参数基线（贝叶斯优化后，210.4%收益，2026-07-16）──
+    # 智能系统全开（ATR+移动止盈+ELDER-RAY+风向标）+ 贝叶斯优化最优参数
+    # 作为贝叶斯优化无效时的回退目标（不是固定参数基线）
+    SMART_BASELINE_PARAMS = {
+        'trailing_atr_mult': 1.0,
+        'trailing_start_ratio': 0.8,
+        'elder_ray_floor': 0.9,
+        'elder_ray_ceil': 1.5,
+        'btc_windvane_confirm_days': 3,
+        'max_base_holding_hours': 29.9,
+        'max_post_addon_hours': 37.7,
+        'golden_window_hours': 11.1,
+    }
+
+    # 向后兼容：BASELINE_PARAMS = SMART_BASELINE_PARAMS
+    # 优化无效时回退到此配置（智能参数基线，210.4%）
+    BASELINE_PARAMS = SMART_BASELINE_PARAMS.copy()
+
+    # 版本元数据
+    VERSION_INFO = {
+        'fixed_baseline': {
+            'name': '固定参数基线 v1.0',
+            'description': '纯马丁策略（止盈4%/底仓22%/加仓3次/间隔8%），无智能增强',
+            'total_return_pct': 138.0,
+            'params_key': 'FIXED_BASELINE_PARAMS',
+            'created_date': '2026-07-15',
+            'features': ['固定止盈4%', '固定加仓间隔8%', '无ATR', '无移动止盈', '无ELDER-RAY', '仅做多'],
+        },
+        'smart_baseline': {
+            'name': '智能参数基线 v2.0',
+            'description': '智能系统全开 + 贝叶斯优化最优参数',
+            'total_return_pct': 210.4,
+            'params_key': 'SMART_BASELINE_PARAMS',
+            'created_date': '2026-07-16',
+            'source': 'bayesian_optimization',
+            'optimization_id': 'v15_optimization_20260715_192704',
+            'best_score': 4112.87,
+            'features': ['ATR动态止盈', '移动止盈', 'ELDER-RAY资金调度(0.9-1.5x)', 'BTC风向标3日确认', '多空方向门控'],
+        },
+    }
+
+    # 优化调度配置
+    SCHEDULE_CONFIG = {
+        'loss_streak_trigger': 3,       # 连续亏损3笔触发（事件驱动）
+        'weekly_trigger': False,        # 每周触发（默认关闭，避免过拟合）
+        'monthly_trigger': True,        # 每月触发（周期驱动）
+        'min_improve_pct': 2.0,         # 优化后收益需比基线高2%才采用，否则回退
+        'cooldown_hours': 24,           # 冷却期：距上次优化24小时内不重复触发
+    }
+
     def __init__(self, coins=None, initial_capital=10000.0):
         self.coins = coins or ["BTC", "ETH", "SOL", "ARB", "OP"]
         self.initial_capital = initial_capital
@@ -90,15 +158,19 @@ class V15CapitalOptimizer:
             'min_trades': 10,
         }
         
-        # 参数空间：资金分配 + 持仓时间
+        # 参数空间：智能系统核心参数 + 资金分配 + 持仓时间
+        # 扩展到智能系统的主要参数（ATR/移动止盈/ELDER-RAY/风向标）
         self.params_space = {
-            'addon1_pct': (0.05, 0.20),
-            'addon2_pct': (0.05, 0.25),
-            'addon3_pct': (0.10, 0.30),
-            'max_concurrent_positions': (2, 6),
-            'max_base_holding_hours': (24, 96),
-            'max_post_addon_hours': (12, 48),
-            'golden_window_hours': (4, 24),
+            # ── 智能系统参数 ──
+            'trailing_atr_mult': (1.0, 2.5),           # 移动止盈ATR倍数
+            'trailing_start_ratio': (0.3, 0.8),        # 移动止盈启动阈值（占止盈比例）
+            'elder_ray_floor': (0.5, 0.9),             # ELDER-RAY仓位下限
+            'elder_ray_ceil': (1.2, 1.5),              # ELDER-RAY仓位上限
+            'btc_windvane_confirm_days': (1.0, 5.0),   # 风向标确认天数
+            # ── 持仓时间参数 ──
+            'max_base_holding_hours': (24, 96),        # 底仓最大持仓时间
+            'max_post_addon_hours': (12, 48),          # 加仓后最大持仓时间
+            'golden_window_hours': (4, 24),            # 黄金窗口
         }
         
         self._klines_cache = {}
@@ -111,15 +183,16 @@ class V15CapitalOptimizer:
         self._level_stats = {}
         self._run_base_backtest()
         
-        print(f"  固定参数: 底仓{self.fixed_base_position_pct*100:.0f}% | 杠杆{self.fixed_leverage:.0f}x | BTC止盈{self.fixed_tp_pct_btc*100:.0f}% | 趋势过滤: none")
-        print(f"  优化参数空间:")
+        print(f"  固定参数: 底仓{self.fixed_base_position_pct*100:.0f}% | 杠杆{self.fixed_leverage:.0f}x | BTC止盈{self.fixed_tp_pct_btc*100:.0f}%")
+        print(f"  智能系统: ATR动态止盈✓ | 移动止盈✓ | ELDER-RAY资金调度✓ | 多空方向门控✓(智能模式)")
+        print(f"  优化参数空间({len(self.params_space)}个):")
         for k, v in self.params_space.items():
-            if k == 'max_concurrent_positions':
-                print(f"    {k}: {int(v[0])} - {int(v[1])}")
-            elif 'hours' in k:
+            if 'hours' in k:
                 print(f"    {k}: {v[0]:.1f} - {v[1]:.1f}h")
+            elif 'days' in k:
+                print(f"    {k}: {int(v[0])} - {int(v[1])}天")
             else:
-                print(f"    {k}: {v[0]:.4f} - {v[1]:.4f}")
+                print(f"    {k}: {v[0]:.2f} - {v[1]:.2f}")
         print()
     
     def _preload_klines(self):
@@ -151,8 +224,8 @@ class V15CapitalOptimizer:
         return base_usd, addon_usd, total_per_position
     
     def _run_base_backtest(self):
-        """运行基准回测（无趋势过滤），统计各层收益特征"""
-        print("  运行基准回测，统计各层收益特征...")
+        """运行基准回测（智能系统默认配置），统计各层收益特征"""
+        print("  运行基准回测（智能系统默认配置），统计各层收益特征...")
         
         level_stats = {
             1: {'count': 0, 'total_pnl': 0, 'wins': 0, 'losses': 0},
@@ -168,28 +241,18 @@ class V15CapitalOptimizer:
             if not klines or len(klines) < 200:
                 continue
             
-            capital_per_coin = self.initial_capital / len(self.coins)
-            base_usd, addon_usd, total_per_position = self._calculate_capital_allocation(
-                capital_per_coin, self.fixed_base_position_pct, 0.05, 0.05, 0.10
-            )
-            effective_base_pct = total_per_position / capital_per_coin
-            
-            coin_vol = self._coin_volatility.get(coin, self._btc_volatility)
-            vol_ratio = coin_vol / self._btc_volatility if self._btc_volatility > 0 else 1.0
-            vol_ratio = max(0.5, min(2.0, vol_ratio))
-            tp_pct_coin = self.fixed_tp_pct_btc * vol_ratio
-            
             result = self.run_backtest(
                 coin=coin,
                 klines=klines,
-                initial_capital=capital_per_coin,
-                base_position_pct=effective_base_pct,
+                initial_capital=self.initial_capital / len(self.coins),
+                base_position_pct=self.fixed_base_position_pct,
                 max_addons=3,
                 confidence_threshold=0,
-                long_only=True,
+                long_only=False,
                 position_tf="4h",
-                custom_tp_pct=tp_pct_coin,
-                trend_filter_mode="none",
+                use_atr=True,
+                use_trailing_tp=True,
+                use_elder_ray=True,
             )
             
             if "error" in result:
@@ -325,106 +388,99 @@ class V15CapitalOptimizer:
     
     def objective(self, **params):
         try:
-            addon1_pct = params['addon1_pct']
-            addon2_pct = params['addon2_pct']
-            addon3_pct = params['addon3_pct']
-            max_concurrent_positions = int(round(params['max_concurrent_positions']))
+            # 智能系统参数
+            trailing_atr_mult = params['trailing_atr_mult']
+            trailing_start_ratio = params['trailing_start_ratio']
+            elder_ray_floor = params['elder_ray_floor']
+            elder_ray_ceil = params['elder_ray_ceil']
+            btc_windvane_confirm_days = int(round(params['btc_windvane_confirm_days']))
             max_base_holding_hours = params['max_base_holding_hours']
             max_post_addon_hours = params['max_post_addon_hours']
             golden_window_hours = params['golden_window_hours']
-            
-            trend_filter_mode = "none"
-            trend_filter_period = 200
-            
-            coins_to_test = self.coins[:max_concurrent_positions]
-            capital_per_coin = self.initial_capital / max_concurrent_positions
-            
-            base_usd, addon_usd, total_per_position = self._calculate_capital_allocation(
-                capital_per_coin, self.fixed_base_position_pct, addon1_pct, addon2_pct, addon3_pct
-            )
-            
-            effective_base_pct = total_per_position / capital_per_coin
-            
+
+            # 动态设置ELDER-RAY调节范围（通过修改全局函数行为）
+            # 由于calc_elder_ray_size_mult在v15_backtest中是独立函数，我们需要传递参数
+            # 这里用临时修改模块级变量的方式
+            bt = self.bt_module
+            old_floor = getattr(bt, '_elder_ray_floor', 0.9)
+            old_ceil = getattr(bt, '_elder_ray_ceil', 1.5)
+            bt._elder_ray_floor = elder_ray_floor
+            bt._elder_ray_ceil = elder_ray_ceil
+
             total_score = 0
             total_trades = 0
             valid_coins = 0
-            
-            for coin in coins_to_test:
+
+            for coin in self.coins:
                 klines = self._klines_cache.get(coin)
                 if not klines or len(klines) < 200:
                     continue
-                
-                # 按波动率放大止盈
-                coin_vol = self._coin_volatility.get(coin, self._btc_volatility)
-                vol_ratio = coin_vol / self._btc_volatility if self._btc_volatility > 0 else 1.0
-                vol_ratio = max(0.5, min(2.0, vol_ratio))
-                tp_pct_coin = self.fixed_tp_pct_btc * vol_ratio
-                
+
                 result = self.run_backtest(
                     coin=coin,
                     klines=klines,
-                    initial_capital=capital_per_coin,
-                    base_position_pct=effective_base_pct,
+                    initial_capital=self.initial_capital / len(self.coins),
+                    base_position_pct=self.fixed_base_position_pct,
                     max_addons=3,
                     confidence_threshold=0,
-                    long_only=True,
+                    long_only=False,           # 智能模式：多空双向
                     position_tf="4h",
-                    custom_tp_pct=tp_pct_coin,
-                    trend_filter_mode=trend_filter_mode,
-                    trend_filter_period=trend_filter_period,
+                    use_atr=True,              # ATR动态止盈
+                    use_trailing_tp=True,      # 移动止盈
+                    trailing_atr_mult=trailing_atr_mult,
+                    trailing_start_pct_of_tp=trailing_start_ratio,
+                    use_elder_ray=True,        # ELDER-RAY资金调度
+                    btc_windvane_confirm_days=btc_windvane_confirm_days,
                     max_base_holding_hours=max_base_holding_hours,
                     max_post_addon_hours=max_post_addon_hours,
                     golden_window_hours=golden_window_hours,
                 )
-                
+
                 if "error" in result:
                     continue
-                
+
                 metrics = result["metrics"]
-                
-                capital_alloc = {
-                    'base': base_usd,
-                    'addon1': addon_usd[0],
-                    'addon2': addon_usd[1],
-                    'addon3': addon_usd[2],
-                }
-                
-                score = self._calculate_objective_score(metrics, capital_alloc)
-                
+
+                # 简化评分：卡尔马比率为主 + 夏普 + 胜率
+                score = self._calculate_objective_score(metrics, None)
+
                 total_score += score
                 total_trades += metrics.get('total_trades', 0)
                 valid_coins += 1
-            
+
+            # 恢复全局变量
+            bt._elder_ray_floor = old_floor
+            bt._elder_ray_ceil = old_ceil
+
             if valid_coins == 0:
                 return -1000.0
-            
+
             avg_score = total_score / valid_coins
-            
+
             param_dict = {
-                'leverage': self.fixed_leverage,
-                'base_position_pct': self.fixed_base_position_pct,
-                'tp_pct_btc': self.fixed_tp_pct_btc,
-                'trend_filter_mode': trend_filter_mode,
-                'trend_filter_period': trend_filter_period,
-                'addon1_pct': round(addon1_pct, 4),
-                'addon2_pct': round(addon2_pct, 4),
-                'addon3_pct': round(addon3_pct, 4),
-                'max_concurrent_positions': max_concurrent_positions,
+                'trailing_atr_mult': round(trailing_atr_mult, 2),
+                'trailing_start_ratio': round(trailing_start_ratio, 2),
+                'elder_ray_floor': round(elder_ray_floor, 2),
+                'elder_ray_ceil': round(elder_ray_ceil, 2),
+                'btc_windvane_confirm_days': btc_windvane_confirm_days,
+                'max_base_holding_hours': round(max_base_holding_hours, 1),
+                'max_post_addon_hours': round(max_post_addon_hours, 1),
+                'golden_window_hours': round(golden_window_hours, 1),
             }
-            
+
             self.results.append({
                 'params': param_dict,
                 'score': round(avg_score, 4),
                 'total_trades': total_trades,
                 'timestamp': datetime.now(timezone.utc).isoformat(),
             })
-            
+
             if avg_score > self.best_score:
                 self.best_score = avg_score
                 self.best_params = param_dict
-            
+
             return avg_score
-            
+
         except Exception as e:
             print(f"  objective error: {e}")
             return -1000.0
@@ -446,15 +502,11 @@ class V15CapitalOptimizer:
         best_p = optimizer.max['params']
         
         best_params = {
-            'leverage': self.fixed_leverage,
-            'base_position_pct': self.fixed_base_position_pct,
-            'tp_pct_btc': self.fixed_tp_pct_btc,
-            'trend_filter_mode': 'none',
-            'trend_filter_period': 200,
-            'addon1_pct': round(best_p['addon1_pct'], 4),
-            'addon2_pct': round(best_p['addon2_pct'], 4),
-            'addon3_pct': round(best_p['addon3_pct'], 4),
-            'max_concurrent_positions': int(round(best_p['max_concurrent_positions'])),
+            'trailing_atr_mult': round(best_p['trailing_atr_mult'], 2),
+            'trailing_start_ratio': round(best_p['trailing_start_ratio'], 2),
+            'elder_ray_floor': round(best_p['elder_ray_floor'], 2),
+            'elder_ray_ceil': round(best_p['elder_ray_ceil'], 2),
+            'btc_windvane_confirm_days': int(round(best_p['btc_windvane_confirm_days'])),
             'max_base_holding_hours': round(best_p['max_base_holding_hours'], 1),
             'max_post_addon_hours': round(best_p['max_post_addon_hours'], 1),
             'golden_window_hours': round(best_p['golden_window_hours'], 1),
@@ -462,90 +514,65 @@ class V15CapitalOptimizer:
         
         self.best_params = best_params
         
-        max_concurrent = best_params['max_concurrent_positions']
-        coins_to_test = self.coins[:max_concurrent]
-        capital_per_coin = self.initial_capital / max_concurrent
+        # 设置ELDER-RAY范围为最优值用于验证回测
+        bt = self.bt_module
+        bt._elder_ray_floor = best_params['elder_ray_floor']
+        bt._elder_ray_ceil = best_params['elder_ray_ceil']
         
-        base_usd, addon_usd, total_per_position = self._calculate_capital_allocation(
-            capital_per_coin, best_params['base_position_pct'],
-            best_params['addon1_pct'], best_params['addon2_pct'], best_params['addon3_pct']
-        )
-        
-        print(f"\n{'='*70}")
-        print("  资金分配建议报告")
-        print(f"{'='*70}")
-        print(f"  验证币种: {coins_to_test}")
-        print(f"  总资金: ${self.initial_capital:,.2f}")
-        print(f"  可开仓数: {max_concurrent}")
-        print(f"  单币种资金: ${capital_per_coin:,.2f}")
+        print(f"\n{'='*80}")
+        print("  智能系统参数优化报告")
+        print(f"{'='*80}")
+        print(f"  验证币种: {self.coins}")
         print(f"  优化耗时: {elapsed:.1f}秒")
+        print(f"  最优评分: {self.best_score:.4f}")
         
-        print(f"\n  --- 策略定位 ---")
+        print(f"\n  --- 最优参数 ---")
         p = best_params
-        print(f"    底仓: {p['base_position_pct']*100:.0f}%资金 + {p['leverage']:.0f}x杠杆 ≈ {p['base_position_pct']*p['leverage']*100:.0f}%现货敞口")
-        print(f"    止盈: BTC {p['tp_pct_btc']*100:.0f}%（其他币种按波动率放大）")
-        print(f"    趋势过滤: none（动态止损线提供保护）")
-        print(f"    优化目标: 回撤控制优先 + 资金效率")
+        print(f"    移动止盈ATR倍数:     {p['trailing_atr_mult']:.2f}")
+        print(f"    移动止盈启动阈值:     {p['trailing_start_ratio']:.2f} (占止盈比例)")
+        print(f"    ELDER-RAY仓位范围:   {p['elder_ray_floor']:.2f}x - {p['elder_ray_ceil']:.2f}x")
+        print(f"    风向标确认天数:       {p['btc_windvane_confirm_days']}天")
+        print(f"    底仓最大持仓:         {p['max_base_holding_hours']:.1f}h")
+        print(f"    加仓后最大持仓:       {p['max_post_addon_hours']:.1f}h")
+        print(f"    黄金窗口:             {p['golden_window_hours']:.1f}h")
         
-        print(f"\n  --- 止盈比例（按波动率放大）---")
-        tp_btc = p['tp_pct_btc']
-        for coin in coins_to_test:
-            coin_vol = self._coin_volatility.get(coin, self._btc_volatility)
-            vol_ratio = coin_vol / self._btc_volatility if self._btc_volatility > 0 else 1.0
-            vol_ratio = max(0.5, min(2.0, vol_ratio))
-            print(f"    {coin}: {tp_btc*vol_ratio*100:.1f}% (波动率{vol_ratio:.2f}x)")
-        
-        print(f"\n  --- 单币种资金分配 ---")
-        total_capital = base_usd + sum(addon_usd)
-        addon_total = sum(addon_usd)
-        print(f"    底仓:   ${base_usd:,.2f} ({base_usd/total_capital*100:.1f}%) ← 平时赚止盈")
-        print(f"    加仓1:  ${addon_usd[0]:,.2f} ({addon_usd[0]/total_capital*100:.1f}%) ← 黑天鹅第1档")
-        print(f"    加仓2:  ${addon_usd[1]:,.2f} ({addon_usd[1]/total_capital*100:.1f}%) ← 黑天鹅第2档")
-        print(f"    加仓3:  ${addon_usd[2]:,.2f} ({addon_usd[2]/total_capital*100:.1f}%) ← 黑天鹅第3档")
-        print(f"    单仓位: ${total_per_position:,.2f}")
-        print(f"    加仓总资金: ${addon_total:,.2f} ({addon_total/total_capital*100:.1f}%)")
-        
-        print(f"\n  --- 验证回测结果 ---")
-        effective_base_pct = total_per_position / capital_per_coin
-        for coin in coins_to_test:
+        print(f"\n  --- 验证回测结果（智能系统最优参数）---")
+        for coin in self.coins:
             klines = self._klines_cache.get(coin)
             if not klines or len(klines) < 200:
                 continue
             
-            coin_vol = self._coin_volatility.get(coin, self._btc_volatility)
-            vol_ratio = coin_vol / self._btc_volatility if self._btc_volatility > 0 else 1.0
-            vol_ratio = max(0.5, min(2.0, vol_ratio))
-            tp_pct_coin = p['tp_pct_btc'] * vol_ratio
-            
             result = self.run_backtest(
-                coin=coin,
-                klines=klines,
-                initial_capital=capital_per_coin,
-                base_position_pct=effective_base_pct,
-                max_addons=3,
-                confidence_threshold=0,
-                long_only=True,
-                position_tf="4h",
-                custom_tp_pct=tp_pct_coin,
-                trend_filter_mode=p['trend_filter_mode'],
-                trend_filter_period=p['trend_filter_period'],
-                max_base_holding_hours=p.get('max_base_holding_hours', 48.0),
-                max_post_addon_hours=p.get('max_post_addon_hours', 24.0),
-                golden_window_hours=p.get('golden_window_hours', 12.0),
+                coin=coin, klines=klines,
+                initial_capital=self.initial_capital / len(self.coins),
+                base_position_pct=self.fixed_base_position_pct,
+                max_addons=3, confidence_threshold=0,
+                long_only=False, position_tf="4h",
+                use_atr=True, use_trailing_tp=True,
+                trailing_atr_mult=p['trailing_atr_mult'],
+                trailing_start_pct_of_tp=p['trailing_start_ratio'],
+                use_elder_ray=True,
+                btc_windvane_confirm_days=p['btc_windvane_confirm_days'],
+                max_base_holding_hours=p['max_base_holding_hours'],
+                max_post_addon_hours=p['max_post_addon_hours'],
+                golden_window_hours=p['golden_window_hours'],
             )
             
             if "error" in result:
                 continue
             
             m = result["metrics"]
-            leveraged_ret = m['total_return_pct'] * p['leverage']
-            leveraged_dd = m['max_drawdown_pct'] * p['leverage']
-            print(f"    {coin}: 收益{leveraged_ret:+.2f}% | 回撤{leveraged_dd:.2f}% | 胜率{m['win_rate']*100:.1f}% | {m['total_trades']}次交易")
+            lev = self.fixed_leverage
+            print(f"    {coin}: 收益{m['total_return_pct']*lev:+.2f}% | 回撤{m['max_drawdown_pct']*lev:.2f}% | 胜率{m['win_rate']*100:.1f}% | {m['total_trades']}次交易 | 夏普{m['sharpe_ratio']:.4f}")
         
-        print(f"{'='*70}\n")
+        print(f"{'='*80}\n")
         
         if save:
             self._save_results()
+        
+        # 恢复默认ELDER-RAY范围（贝叶斯优化最优值）
+        bt._elder_ray_floor = 0.9
+        bt._elder_ray_ceil = 1.5
         
         return best_params
     
@@ -1002,5 +1029,400 @@ def main():
         print(f"  {k}: {v}")
 
 
+# ── 自动回退与调度机制 ────────────────────────────────────────────────────
+
+# 基线参数和活跃参数的持久化路径
+ACTIVE_PARAMS_FILE = STRATEGY_DIR / "data" / "bayesian_opt" / "active_params.json"
+OPT_SCHEDULE_STATE_FILE = STRATEGY_DIR / "data" / "bayesian_opt" / "schedule_state.json"
+
+
+def load_active_params() -> dict:
+    """加载当前生效的参数（如果不存在则返回基线）"""
+    if ACTIVE_PARAMS_FILE.exists():
+        try:
+            with open(ACTIVE_PARAMS_FILE) as f:
+                data = json.load(f)
+                return data.get("params", V15CapitalOptimizer.BASELINE_PARAMS.copy())
+        except Exception:
+            pass
+    return V15CapitalOptimizer.BASELINE_PARAMS.copy()
+
+
+def save_active_params(params: dict, source: str = "optimization", score: float = 0):
+    """保存当前生效的参数"""
+    ACTIVE_PARAMS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    data = {
+        "params": params,
+        "source": source,
+        "score": round(score, 4),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    with open(ACTIVE_PARAMS_FILE, 'w') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def rollback_to_baseline(reason: str = "optimization ineffective") -> dict:
+    """回退到智能参数基线（210.4%，贝叶斯优化后的默认配置）
+
+    这是贝叶斯优化无效时的回退目标，不是固定参数基线。
+    """
+    baseline = V15CapitalOptimizer.SMART_BASELINE_PARAMS.copy()
+    save_active_params(baseline, source="smart_baseline_rollback", score=0)
+    print(f"  ⚠ 已回退到智能参数基线（210.4%），原因: {reason}")
+    return baseline
+
+
+def rollback_to_fixed_baseline(reason: str = "smart system failure") -> dict:
+    """终极回退：回退到固定参数基线（138%，纯马丁策略）
+
+    仅在智能系统整体失效（如ATR/ELDER-RAY/风向标全部异常）时使用。
+    回退后需手动排查智能系统问题，修复后重新启用智能参数基线。
+    """
+    baseline = V15CapitalOptimizer.FIXED_BASELINE_PARAMS.copy()
+    save_active_params(baseline, source="fixed_baseline_rollback", score=0)
+    print(f"  🚨 已终极回退到固定参数基线（138%，纯马丁策略），原因: {reason}")
+    print(f"     请排查智能系统问题，修复后运行: python3 lib/bayesian_optimizer.py --reset-to-smart")
+    return baseline
+
+
+def print_version_info():
+    """打印当前版本管理信息"""
+    print(f"\n{'='*80}")
+    print("  V15马丁策略 - 参数版本管理")
+    print(f"{'='*80}")
+
+    vi = V15CapitalOptimizer.VERSION_INFO
+
+    # 固定参数基线
+    fb = vi['fixed_baseline']
+    print(f"\n  ── 版本1: {fb['name']} ──")
+    print(f"  描述: {fb['description']}")
+    print(f"  回测收益: {fb['total_return_pct']:.1f}%")
+    print(f"  创建日期: {fb['created_date']}")
+    print(f"  特性: {', '.join(fb['features'])}")
+
+    # 智能参数基线
+    sb = vi['smart_baseline']
+    print(f"\n  ── 版本2: {sb['name']} ──")
+    print(f"  描述: {sb['description']}")
+    print(f"  回测收益: {sb['total_return_pct']:.1f}%")
+    print(f"  创建日期: {sb['created_date']}")
+    print(f"  优化来源: {sb['source']}")
+    print(f"  优化ID: {sb['optimization_id']}")
+    print(f"  最优评分: {sb['best_score']:.2f}")
+    print(f"  特性: {', '.join(sb['features'])}")
+
+    # 当前活跃参数
+    active = load_active_params()
+    active_data = {}
+    if ACTIVE_PARAMS_FILE.exists():
+        try:
+            with open(ACTIVE_PARAMS_FILE) as f:
+                active_data = json.load(f)
+        except Exception:
+            pass
+
+    print(f"\n  ── 当前活跃参数 ──")
+    print(f"  来源: {active_data.get('source', '未初始化（使用智能参数基线）')}")
+    print(f"  时间: {active_data.get('timestamp', 'N/A')}")
+    print(f"  评分: {active_data.get('score', 'N/A')}")
+
+    # 判断当前是哪个版本
+    if active == V15CapitalOptimizer.SMART_BASELINE_PARAMS:
+        print(f"  状态: ✅ 使用智能参数基线（210.4%）")
+    elif active == V15CapitalOptimizer.FIXED_BASELINE_PARAMS:
+        print(f"  状态: 🚨 使用固定参数基线（138%，终极回退模式）")
+    else:
+        print(f"  状态: 📊 使用贝叶斯优化参数（自定义）")
+
+    # 调度状态
+    sched = load_schedule_state()
+    print(f"\n  ── 调度状态 ──")
+    print(f"  上次优化: {sched.get('last_optimize_ts', '从未运行')}")
+    print(f"  上次动作: {sched.get('last_action', 'N/A')}")
+    print(f"  收益改善: {sched.get('last_improvement', 0):+.2f}%")
+
+    print(f"\n  ── 回退策略 ──")
+    print(f"  贝叶斯优化无效（收益差<2%）→ 回退到智能参数基线（210.4%）")
+    print(f"  智能系统整体失效 → 终极回退到固定参数基线（138%）")
+    print(f"{'='*80}\n")
+
+
+def run_optimization_with_rollback(coins=None, initial_capital=10000.0,
+                                    init_points=5, n_iter=20) -> dict:
+    """运行贝叶斯优化，并与基线对比，无效则自动回退
+
+    流程：
+    1. 用基线参数跑回测，记录基线收益
+    2. 运行贝叶斯优化，获取最优参数
+    3. 用最优参数跑回测，记录优化收益
+    4. 如果优化收益 - 基线收益 < min_improve_pct（默认2%），回退基线
+    5. 否则保存优化参数为活跃参数
+    """
+    coins = coins or ["BTC", "ETH", "SOL", "ARB", "OP", "UNI"]
+    min_improve = V15CapitalOptimizer.SCHEDULE_CONFIG['min_improve_pct']
+
+    print(f"\n{'='*80}")
+    print("  贝叶斯优化 + 自动回退验证")
+    print(f"  回退目标: 智能参数基线（210.4%，贝叶斯优化后）")
+    print(f"{'='*80}")
+
+    # Step 1: 智能参数基线回测（210.4%）
+    print("\n  [1/4] 智能参数基线回测...")
+    baseline_params = V15CapitalOptimizer.SMART_BASELINE_PARAMS.copy()
+    bt = load_backtest_module()
+    total_baseline = 0
+    for coin in coins:
+        klines = bt.fetch_klines(coin, "4h", 1500)
+        if not klines or len(klines) < 200:
+            continue
+        bt._elder_ray_floor = baseline_params['elder_ray_floor']
+        bt._elder_ray_ceil = baseline_params['elder_ray_ceil']
+        r = bt.run_backtest(
+            coin=coin, klines=klines,
+            initial_capital=initial_capital / len(coins),
+            base_position_pct=0.22, max_addons=3,
+            confidence_threshold=0, long_only=False, position_tf="4h",
+            use_atr=True, use_trailing_tp=True,
+            trailing_atr_mult=baseline_params['trailing_atr_mult'],
+            trailing_start_pct_of_tp=baseline_params['trailing_start_ratio'],
+            use_elder_ray=True,
+            btc_windvane_confirm_days=baseline_params['btc_windvane_confirm_days'],
+            max_base_holding_hours=baseline_params['max_base_holding_hours'],
+            max_post_addon_hours=baseline_params['max_post_addon_hours'],
+            golden_window_hours=baseline_params['golden_window_hours'],
+        )
+        if "error" not in r:
+            total_baseline += r['metrics']['total_return_pct']
+    print(f"    智能基线总收益: {total_baseline:+.2f}%")
+
+    # Step 2: 贝叶斯优化
+    print(f"\n  [2/4] 贝叶斯参数优化（{init_points}初始+{n_iter}迭代）...")
+    optimizer = V15CapitalOptimizer(coins=coins, initial_capital=initial_capital)
+    opt_params = optimizer.optimize(init_points=init_points, n_iter=n_iter, save=True)
+
+    # Step 3: 优化参数回测
+    print("\n  [3/4] 优化参数回测验证...")
+    total_optimized = 0
+    bt._elder_ray_floor = opt_params['elder_ray_floor']
+    bt._elder_ray_ceil = opt_params['elder_ray_ceil']
+    for coin in coins:
+        klines = optimizer._klines_cache.get(coin)
+        if not klines or len(klines) < 200:
+            continue
+        r = bt.run_backtest(
+            coin=coin, klines=klines,
+            initial_capital=initial_capital / len(coins),
+            base_position_pct=0.22, max_addons=3,
+            confidence_threshold=0, long_only=False, position_tf="4h",
+            use_atr=True, use_trailing_tp=True,
+            trailing_atr_mult=opt_params['trailing_atr_mult'],
+            trailing_start_pct_of_tp=opt_params['trailing_start_ratio'],
+            use_elder_ray=True,
+            btc_windvane_confirm_days=opt_params['btc_windvane_confirm_days'],
+            max_base_holding_hours=opt_params['max_base_holding_hours'],
+            max_post_addon_hours=opt_params['max_post_addon_hours'],
+            golden_window_hours=opt_params['golden_window_hours'],
+        )
+        if "error" not in r:
+            total_optimized += r['metrics']['total_return_pct']
+    print(f"    优化总收益: {total_optimized:+.2f}%")
+
+    # Step 4: 对比决定
+    improvement = total_optimized - total_baseline
+    print(f"\n  [4/4] 对比验证:")
+    print(f"    智能基线收益: {total_baseline:+.2f}%")
+    print(f"    优化收益:     {total_optimized:+.2f}%")
+    print(f"    收益差:       {improvement:+.2f}%")
+    print(f"    采用阈值:     +{min_improve:.1f}%")
+
+    if improvement >= min_improve:
+        save_active_params(opt_params, source="bayesian_optimization", score=optimizer.best_score)
+        print(f"\n  ✅ 优化有效（+{improvement:.2f}% ≥ +{min_improve}%），已采用优化参数")
+        result = {"action": "adopted", "params": opt_params, "improvement": round(improvement, 2)}
+    else:
+        rollback_to_baseline(f"优化收益差{improvement:+.2f}% < 阈值+{min_improve}%")
+        print(f"\n  ❌ 优化无效（+{improvement:.2f}% < +{min_improve}%），已回退基线参数")
+        result = {"action": "rolled_back", "params": baseline_params, "improvement": round(improvement, 2)}
+
+    # 保存调度状态
+    _save_schedule_state(result)
+    return result
+
+
+def _save_schedule_state(result: dict):
+    """保存调度状态（用于判断下次何时触发）"""
+    OPT_SCHEDULE_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    state = {
+        "last_optimize_ts": datetime.now(timezone.utc).isoformat(),
+        "last_action": result.get("action"),
+        "last_improvement": result.get("improvement", 0),
+    }
+    with open(OPT_SCHEDULE_STATE_FILE, 'w') as f:
+        json.dump(state, f, indent=2, ensure_ascii=False)
+
+
+def load_schedule_state() -> dict:
+    """加载调度状态"""
+    if OPT_SCHEDULE_STATE_FILE.exists():
+        try:
+            with open(OPT_SCHEDULE_STATE_FILE) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"last_optimize_ts": None, "last_action": None, "last_improvement": 0}
+
+
+def should_trigger_optimization(loss_streak: int = 0, trades_log: list = None) -> tuple:
+    """判断是否应该触发优化
+
+    触发条件（任一满足，且通过冷却期检查）：
+    1. 连续亏损 ≥ loss_streak_trigger（默认3笔，事件驱动）
+    2. 跨月（每月触发，周期驱动）
+
+    冷却期：距上次优化 < cooldown_hours（默认24h）时，除连亏触发外不触发
+    （连亏触发有最高优先级，冷却期内仍可触发，因为市场状态已变化）
+
+    配置优先级：环境变量（.env.v15） > SCHEDULE_CONFIG 类常量
+
+    返回: (should_trigger: bool, reason: str)
+    """
+    import os
+    config = V15CapitalOptimizer.SCHEDULE_CONFIG.copy()
+    # 从环境变量读取配置（覆盖默认值）
+    config['loss_streak_trigger'] = int(os.environ.get('BAYESIAN_OPT_LOSS_STREAK_TRIGGER', config['loss_streak_trigger']))
+    config['monthly_trigger'] = os.environ.get('BAYESIAN_OPT_MONTHLY', 'true').lower() == 'true'
+    config['cooldown_hours'] = float(os.environ.get('BAYESIAN_OPT_COOLDOWN_HOURS', config.get('cooldown_hours', 24)))
+
+    state = load_schedule_state()
+    cooldown_h = config.get('cooldown_hours', 24)
+
+    # 解析上次优化时间
+    last_opt_ts = None
+    if state.get("last_optimize_ts"):
+        try:
+            last_opt_ts = datetime.fromisoformat(state["last_optimize_ts"])
+        except Exception:
+            pass
+
+    # 条件1：连续亏损触发（最高优先级，冷却期内仍可触发）
+    if loss_streak >= config['loss_streak_trigger']:
+        # 连亏触发也检查冷却期，避免短时间连续亏损导致频繁优化
+        if last_opt_ts:
+            hours_since = (datetime.now(timezone.utc) - last_opt_ts).total_seconds() / 3600
+            if hours_since < cooldown_h:
+                return False, f"连亏{loss_streak}笔但冷却期内（{hours_since:.1f}h < {cooldown_h}h）"
+        return True, f"连续亏损{loss_streak}笔 ≥ {config['loss_streak_trigger']}笔触发阈值"
+
+    # 首次运行：无历史记录直接触发
+    if last_opt_ts is None:
+        return True, "首次运行优化"
+
+    # 冷却期检查（非连亏触发时）
+    hours_since = (datetime.now(timezone.utc) - last_opt_ts).total_seconds() / 3600
+    if hours_since < cooldown_h:
+        return False, f"冷却期内（{hours_since:.1f}h < {cooldown_h}h）"
+
+    # 条件2：每月触发（跨月检查，需 monthly_trigger=true）
+    if config.get('monthly_trigger', True):
+        now = datetime.now(timezone.utc)
+        if last_opt_ts.month != now.month or last_opt_ts.year != now.year:
+            return True, f"跨月触发（上次{last_opt_ts.strftime('%Y-%m')}）"
+
+    return False, f"未达触发条件（距上次{hours_since:.1f}h）"
+
+
+def get_loss_streak_from_trades(trades_log: list) -> int:
+    """从交易日志中计算当前连续亏损笔数"""
+    if not trades_log:
+        return 0
+    streak = 0
+    for trade in reversed(trades_log):
+        pnl = trade.get("pnl_pct", 0) if isinstance(trade, dict) else 0
+        if pnl < 0:
+            streak += 1
+        else:
+            break
+    return streak
+
+
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="V15马丁策略贝叶斯参数优化")
+    parser.add_argument("--coins", nargs="+", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI"], help="测试币种列表")
+    parser.add_argument("--capital", type=float, default=10000.0, help="初始资金")
+    parser.add_argument("--init-points", type=int, default=5, help="初始探索点数")
+    parser.add_argument("--iterations", type=int, default=20, help="优化迭代次数")
+    parser.add_argument("--iterative", action="store_true", help="启用三轮反馈迭代优化模式")
+    parser.add_argument("--rounds", type=int, default=3, help="迭代轮数（默认3轮）")
+    parser.add_argument("--save", action="store_true", help="保存结果到文件")
+    parser.add_argument("--with-rollback", action="store_true", help="优化+自动回退验证（推荐定时调度使用）")
+    parser.add_argument("--loss-streak", type=int, default=0, help="当前连续亏损笔数（用于触发判断）")
+    parser.add_argument("--check-trigger", action="store_true", help="仅检查是否应该触发优化，不执行")
+    parser.add_argument("--version-info", action="store_true", help="查看参数版本管理信息")
+    parser.add_argument("--reset-to-smart", action="store_true", help="重置为智能参数基线（210.4%）")
+    parser.add_argument("--reset-to-fixed", action="store_true", help="终极回退到固定参数基线（138%）")
+    args = parser.parse_args()
+
+    # 版本信息
+    if args.version_info:
+        print_version_info()
+        exit(0)
+
+    # 重置为智能参数基线
+    if args.reset_to_smart:
+        save_active_params(V15CapitalOptimizer.SMART_BASELINE_PARAMS.copy(),
+                          source="manual_reset_to_smart", score=4112.87)
+        print("✅ 已重置为智能参数基线（210.4%，贝叶斯优化后）")
+        exit(0)
+
+    # 终极回退到固定参数基线
+    if args.reset_to_fixed:
+        rollback_to_fixed_baseline("手动终极回退")
+        exit(0)
+
+    # 仅检查触发条件
+    if args.check_trigger:
+        should, reason = should_trigger_optimization(args.loss_streak)
+        print(f"触发检查: {'是' if should else '否'} - {reason}")
+        exit(0 if should else 1)
+
+    # 优化+回退模式（定时调度推荐）
+    if args.with_rollback:
+        result = run_optimization_with_rollback(
+            coins=args.coins, initial_capital=args.capital,
+            init_points=args.init_points, n_iter=args.iterations,
+        )
+        print(f"\n最终结果: {result['action']} (收益差: {result['improvement']:+.2f}%)")
+        exit(0)
+
+    # 普通优化模式
+    print(f"V15马丁策略贝叶斯参数优化")
+    mode_str = "三轮反馈迭代优化" if args.iterative else "单次优化"
+    print(f"模式: {mode_str}")
+    print(f"测试币种: {args.coins}")
+    print(f"初始资金: ${args.capital:,.2f}")
+    print()
+
+    optimizer = V15CapitalOptimizer(
+        coins=args.coins,
+        initial_capital=args.capital,
+    )
+
+    if args.iterative:
+        best, round_results = optimizer.iterate_optimize(
+            rounds=args.rounds,
+            init_points=args.init_points,
+            n_iter=args.iterations,
+            save=args.save,
+        )
+    else:
+        best = optimizer.optimize(
+            init_points=args.init_points,
+            n_iter=args.iterations,
+            save=args.save,
+        )
+
+    print("最优参数:")
+    for k, v in best.items():
+        print(f"  {k}: {v}")

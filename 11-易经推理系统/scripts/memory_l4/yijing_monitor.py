@@ -43,11 +43,46 @@ PERF_FILE = workbuddy_dir() / "memory_l4" / "stats" / "performance.json"
 TRADER_LOG_DIR = BASE_DIR / "data" / "polling_trader"
 OKX_SIM_DIR = BASE_DIR / "data" / "okx_sim"
 LOG_FILE = BASE_DIR / "logs" / "yijing_monitor.log"
+RISK_STATE_FILE = workbuddy_dir() / "memory_l4" / "risk" / "risk_state.json"
 
 MAX_IDLE_MINUTES = 30   # 心跳超过30分钟无更新认为异常
 GH_TOKEN = os.environ.get("GH_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
 PR_NUMBER = "52"
 REPO = "yunya1991/Dreambuddy-V2"
+
+FEISHU_ALERT_ENABLED = True
+
+# ── 飞书告警 ────────────────────────────────────────────────────────────────
+
+def _send_feishu_alert(alert_type: str, level: str, message: str, details: Dict = None):
+    if not FEISHU_ALERT_ENABLED:
+        return
+    try:
+        from scripts.memory_l4.yijing_feishu_alert import send_alert
+        send_alert(alert_type, level, message, details)
+    except Exception as e:
+        _log(f"飞书告警发送失败: {e}")
+
+def _send_feishu_heartbeat_timeout(idle_minutes: float):
+    try:
+        from scripts.memory_l4.yijing_feishu_alert import notify_heartbeat_timeout
+        notify_heartbeat_timeout(idle_minutes, MAX_IDLE_MINUTES)
+    except Exception as e:
+        _log(f"飞书心跳告警发送失败: {e}")
+
+def _send_feishu_trading_halted(reason: str, consecutive_losses: int, daily_pnl: float = 0):
+    try:
+        from scripts.memory_l4.yijing_feishu_alert import notify_trading_halted
+        notify_trading_halted(reason, consecutive_losses, daily_pnl)
+    except Exception as e:
+        _log(f"飞书交易暂停告警发送失败: {e}")
+
+def _send_feishu_status_summary(health: bool, status: str, detail: Dict):
+    try:
+        from scripts.memory_l4.yijing_feishu_alert import notify_status_summary
+        notify_status_summary(health, status, detail)
+    except Exception as e:
+        _log(f"飞书状态汇总发送失败: {e}")
 
 # ── 工具函数 ────────────────────────────────────────────────────────────────
 
@@ -119,11 +154,29 @@ def check_yijing_health() -> tuple[bool, str, dict]:
 
     # 检查心跳是否活跃
     if heartbeat_idle > MAX_IDLE_MINUTES:
+        _send_feishu_heartbeat_timeout(heartbeat_idle)
         return False, f"心跳已空闲 {heartbeat_idle:.0f} 分钟（阈值 {MAX_IDLE_MINUTES} 分钟）", detail
 
     # 检查是否有运行记录
     if heartbeat.get("status") in ("error", "stopped"):
+        _send_feishu_alert(
+            "heartbeat",
+            "critical",
+            f"进程状态异常: {heartbeat.get('status')} | last_error: {heartbeat.get('last_error', 'N/A')}",
+            {"pid": heartbeat.get("pid"), "status": heartbeat.get("status")}
+        )
         return False, f"进程状态异常: {heartbeat.get('status')} | last_error: {heartbeat.get('last_error', 'N/A')}", detail
+
+    # 检查风控状态
+    risk_state = load_json(RISK_STATE_FILE, {})
+    if risk_state.get("trading_halted", False):
+        _send_feishu_trading_halted(
+            risk_state.get("halt_reason", ""),
+            risk_state.get("consecutive_losses", 0),
+            risk_state.get("daily_pnl", 0),
+        )
+        detail["trading_halted"] = True
+        detail["halt_reason"] = risk_state.get("halt_reason")
 
     return True, f"心跳正常，空闲 {heartbeat_idle:.0f} 分钟，案例 {case_count} 个，重训 {scheduler.get('retrain_count', 0)} 次", detail
 
@@ -486,6 +539,9 @@ def main():
 
     # ── 3. PR 评论 ──
     post_pr_comment(detail, evolution, perf, evolved)
+
+    # ── 4. 飞书状态汇总 ──
+    _send_feishu_status_summary(healthy, status, detail)
 
     _log("\n" + "=" * 60)
     _log(f"易经推理监控完成 | {_fmt_ts(_now())}")

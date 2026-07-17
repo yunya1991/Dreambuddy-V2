@@ -855,9 +855,11 @@ def _run_classic_mode(
     print(f"[Agent B/Classic] 目标: 无 LLM 时完整接管交易")
     print(f"[Agent B/Classic] 数据源: ml_trade_service (10-经典指标系统)")
     
-    # 初始化 ClassicDriver
+    # 初始化 ClassicDriver — 使用实际可用余额进行资金分配
+    per_trade_usdc = max(round(equity * PER_TRADE_PCT, 2), 5.0)
+    print(f"[Agent B/Classic] 可用余额={equity:.2f} USDC, 单笔分配={per_trade_usdc:.2f} USDC ({PER_TRADE_PCT:.0%})")
     driver = ClassicDriver(
-        per_trade_usdc=BUDGET_USDC * PER_TRADE_PCT,
+        per_trade_usdc=per_trade_usdc,
         max_positions=3,
         leverage=DEFAULT_LEVERAGE,
         coins=UNIVERSE_B,
@@ -1068,6 +1070,7 @@ def run():
     sim_mode = False
 
     # Agent B 子账户：合约账户权益
+    # 使用实际可用余额进行资金分配，不再用 BUDGET_USDC 做上限
     acct = client.get_account()
     if not acct["ok"]:
         # 模拟模式：无有效账户时使用虚拟资金
@@ -1075,8 +1078,12 @@ def run():
         equity = BUDGET_USDC
         print(f"[Agent B] 模拟模式（账户查询失败），使用虚拟资金: {equity:.2f} USDC")
     else:
-        equity = min(acct["equity"], BUDGET_USDC)
-    print(f"[Agent B] 权益={equity:.2f} USDC  持仓={list(acct['positions'].keys())}")
+        equity = acct["equity"]
+        # 安全检查：权益异常时回退到默认预算
+        if equity <= 0:
+            equity = BUDGET_USDC
+            print(f"[Agent B] ⚠️ 账户权益异常({acct['equity']}), 回退到默认预算")
+    print(f"[Agent B] 可用余额={equity:.2f} USDC  持仓={list(acct['positions'].keys())}")
 
     # ── L1 基础离场检查（止损止盈 + 移动止损）──────────────────────────
     print(f"\n[Agent B/Exit] L1 基础离场检查...")
@@ -1224,7 +1231,7 @@ def run():
 
     # ── Step 3: 动态执行（ChainRouter）────────────────────────────────────
     print(f"[Agent B/OS] Step 3/6 — 动态执行引擎")
-    router = ChainRouter(client, mkt, memory, intent, BUDGET_USDC)
+    router = ChainRouter(client, mkt, memory, intent, BUDGET_USDC, equity=equity)
     chain_result = router.execute()
 
     print(f"[Agent B/Chain]  执行了 {len(chain_result.node_trace)} 个节点"
@@ -1252,7 +1259,7 @@ def run():
             intent.extend_nodes = []
 
             # 二次执行
-            router2 = ChainRouter(client, mkt, memory, intent, BUDGET_USDC)
+            router2 = ChainRouter(client, mkt, memory, intent, BUDGET_USDC, equity=equity)
             chain_result2 = router2.execute()
 
             print(f"[Agent B/Chain]  二次执行: {len(chain_result2.node_trace)} 个节点")

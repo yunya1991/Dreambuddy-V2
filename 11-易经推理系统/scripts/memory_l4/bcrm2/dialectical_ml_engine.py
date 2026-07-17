@@ -668,7 +668,7 @@ class DialecticalMLEngine:
 
         # L1预测 (用于构建L2特征)
         if self.l1_model is not None:
-            l1_proba = self.l1_model.predict_proba(X)
+            l1_proba = self._predict_proba(self.l1_model, X)
             l1_pred = np.argmax(l1_proba, axis=1) - 1
         else:
             l1_proba = np.random.rand(len(X), 3)
@@ -773,7 +773,7 @@ class DialecticalMLEngine:
         n = len(X)
 
         # L1预测 (正题)
-        l1_proba = self.l1_model.predict_proba(X)  # shape: (n, 3)
+        l1_proba = self._predict_proba(self.l1_model, X)  # shape: (n, 3)
         l1_pred = np.argmax(l1_proba, axis=1) - 1  # 映射回 -1/0/1
 
         # 计算L2增强特征 (V2版本)
@@ -785,9 +785,9 @@ class DialecticalMLEngine:
             X_l2 = ml_features.compute_base_features(df, l1_pred, l1_proba, ref_df, cycle_phase)
 
             if self.l2_model_long is not None:
-                l2_long_proba = self.l2_model_long.predict_proba(X_l2)[:, 1]
+                l2_long_proba = self._predict_binary_proba(self.l2_model_long, X_l2)
             if self.l2_model_short is not None:
-                l2_short_proba = self.l2_model_short.predict_proba(X_l2)[:, 1]
+                l2_short_proba = self._predict_binary_proba(self.l2_model_short, X_l2)
 
         for i in range(n):
             direction = int(l1_pred[i])
@@ -854,6 +854,22 @@ class DialecticalMLEngine:
             results.append(result)
 
         return results
+
+    def _predict_proba(self, model, X) -> np.ndarray:
+        """兼容 LGBMClassifier 和 Booster 的 predict_proba (多分类)"""
+        if hasattr(model, 'predict_proba'):
+            return model.predict_proba(X)
+        else:
+            # Booster.predict 对多分类直接返回概率矩阵 (n, n_classes)
+            return model.predict(X)
+
+    def _predict_binary_proba(self, model, X) -> np.ndarray:
+        """兼容 LGBMClassifier 和 Booster 的 predict_proba (二分类, 返回 class 1 的概率)"""
+        if hasattr(model, 'predict_proba'):
+            return model.predict_proba(X)[:, 1]
+        else:
+            # Booster 二分类 predict 直接返回 class 1 的概率 (1D array)
+            return model.predict(X)
 
     def predict_single(self, X_row: np.ndarray, with_gua: bool = False) -> Dict:
         """单样本预测"""

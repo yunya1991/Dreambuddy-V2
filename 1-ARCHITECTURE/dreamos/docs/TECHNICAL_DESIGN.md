@@ -1,8 +1,8 @@
-# Dream OS 技术设计文档 v2.0
+# Dream OS 技术设计文档 v2.1
 
 > **文档层级**: L1 — 系统级技术设计
-> **版本**: v2.0.0
-> **更新日期**: 2026-07-14
+> **版本**: v2.1.0
+> **更新日期**: 2026-07-15
 > **维护者**: Dream OS Core Team
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | [SYSTEM_ARCHITECTURE_OVERVIEW.md](../SYSTEM_ARCHITECTURE_OVERVIEW.md)
 
@@ -279,6 +279,43 @@ S 层内置 `TokenBudgetManager`，管理单周期内的 Token 消耗：
 - **预算分配**：S 层占总预算的 10-15%
 - **预算耗尽**：自动降级为纯规则模式，返回 UNCERTIAN + 低置信度
 
+#### 3.2.5 36 场景分类系统
+
+`ScenarioClassifier` 是 S 层的核心组件之一，将市场状态划分为 **3 × 4 × 3 = 36 种标准场景**，为编排选择和进化优化提供细粒度的场景索引。
+
+**三维分类体系**：
+
+| 维度 | 取值 | 说明 |
+|------|------|------|
+| **趋势方向** | BULL / BEAR / NEUTRAL | 基于均线排列和涨跌幅的趋势判定 |
+| **波动率等级** | LOW / NORMAL / HIGH / EXTREME | 基于 ATR% 的波动率分级 |
+| **动量加速度** | ACCELERATING / DECELERATING / EXHAUSTION | 动量速度 + 加速度 + 衰竭检测 |
+
+**趋势判定规则**：
+- **BULL**：price > ema20 > ema50 > ema200 且 trend_score ≥ 0.6
+- **BEAR**：price < ema20 < ema50 < ema200 且 trend_score ≥ 0.6
+- **NEUTRAL**：其他情况
+
+**波动率阈值**（ATR%）：
+- **EXTREME**：≥ 4%
+- **HIGH**：≥ 2%
+- **NORMAL**：≥ 1%
+- **LOW**：< 1%
+
+**动量加速度判定**：
+- **ACCELERATING**：动量速度 > 50 且加速度 > 0（趋势在加速）
+- **DECELERATING**：动量速度 > 30 且加速度 < 0（趋势仍在但减速）
+- **EXHAUSTION**：衰竭信号（加速度转负 + 短期与中期动量背离 + RSI 超买/超卖回落）
+
+**场景 ID 命名规范**：`{TREND}_{VOLATILITY}_{MOMENTUM}`，例如 `BULL_NORMAL_ACCELERATING`
+
+**输入数据要求**（market_data 字段）：
+```
+price, ema20, ema50, ema200,
+change_1h, change_4h, change_24h,
+atr_pct, rsi14
+```
+
 ### 3.3 A 层 — 编排引擎深度
 
 #### 3.3.1 图规划流程
@@ -355,6 +392,57 @@ BudgetAllocator 采用**"关键节点保底 + 可选节点弹性"**的分配策�
 - **重要节点**（A1/A2/A5/A6 等）：分配标准预算
 - **可选节点**（C 系列、F 系列）：弹性预算，预算充足时执行
 - **反思/聚合**：预留 10% 预算用于反思和聚合
+
+#### 3.3.5 编排记忆与三级降级
+
+`OrchestrationMemory`（编排记忆表）是 A 层的核心组件，存储每种市场场景的最优编排模式，支持**四级降级查询**，确保在任何数据条件下都能给出合理的编排建议。
+
+**5 种标准编排模式**：
+
+| 模式名称 | 节点序列 | 适用场景 |
+|----------|----------|----------|
+| **c_chain** | C1 → C2 → C3 | 纯技术面快速决策（默认 fallback） |
+| **c_f_chain** | C1 → C2 → F1 → F3 | 技术面 + 基本面验证 |
+| **full_chain** | C1 → C2 → F2 → G1 | 全链路 + 风控（高置信度场景） |
+| **f_chain** | F1 → F2 → F3 → F4 | 纯基本面驱动 |
+| **c_g_chain** | C1 → C3 → G1 | 技术面 + 风控（保守模式） |
+
+**四级降级查询策略**：
+
+```
+L0: 精确匹配全维度 (36场景)
+    ↓ 未命中
+L1: 降维 趋势×波动率 (12场景)
+    ↓ 未命中
+L2: 降维 仅趋势 (3场景)
+    ↓ 未命中
+L3: 默认 c_chain (C1→C2→C3)
+```
+
+**记忆表数据结构**：
+```json
+{
+  "version": "1.0.0",
+  "scenarios": {
+    "BULL_NORMAL_ACCELERATING": {
+      "best_pattern": "c_f_chain",
+      "nodes": ["C1", "C2", "F1", "F3"],
+      "metrics": {"sharpe": 1.85, "win_rate": 0.62},
+      "sample_count": 120,
+      "confidence": "high"
+    }
+  },
+  "fallback_chain": ["L0_exact", "L1_trend_vol", "L2_trend", "L3_default"]
+}
+```
+
+**编排选择输出**（`OrchestrationChoice`）：
+- `pattern`：选中的编排模式名称
+- `nodes`：节点序列
+- `score`：历史得分（夏普比率估计）
+- `confidence`：置信度（high/medium/low/default）
+- `fallback_level`：命中的降级层级（L0/L1/L2/L3）
+- `source_scenario`：实际命中的场景 ID
 
 ### 3.4 C 层 — 执行引擎深度
 
@@ -857,6 +945,70 @@ Dream OS 的自我进化是一个**三层反思闭环**：
 8. 验证效果 → G层继续记录 → 循环
 ```
 
+### 6.6 执行反馈收集器（ExecutionFeedbackCollector）
+
+`ExecutionFeedbackCollector` 是进化引擎的核心数据来源，负责记录每笔交易的实际结果，并计算与回测预期的偏差，当偏差超过阈值时触发编排优化。
+
+**触发进化的阈值条件**：
+
+| 触发条件 | 阈值 | 说明 |
+|----------|------|------|
+| **方向准确率** | < 50% | 连续 3 笔方向准确率低于 50% |
+| **夏普偏差** | > 30% | \|actual_sharpe - expected_sharpe\| / \|expected\| > 30% |
+| **最小样本** | 3 笔 | 至少 3 笔交易才触发评估 |
+
+**反馈记录数据结构**：
+```python
+@dataclass
+class ExecutionFeedback:
+    scenario_id: str           # 场景ID（36种场景之一）
+    pattern_used: str          # 使用的编排模式
+    timestamp: str             # ISO格式时间
+    trades: List[Dict]         # 交易明细
+    actual_sharpe: float       # 实际夏普比率
+    expected_sharpe: float     # 预期夏普比率
+    deviation: float           # 偏差率
+    direction_accuracy: float  # 方向准确率
+    trigger_evolution: bool    # 是否触发进化
+```
+
+**反馈收集流程**：
+1. 交易执行后，AutoTrader 调用 `record_trade_feedback()`
+2. 收集器将交易结果按场景 ID 分组存储
+3. 调用 `evaluate(scenario_id)` 计算该场景的执行指标
+4. 若触发条件满足，设置 `trigger_evolution = True`
+5. 进化引擎通过 `_check_orchestration_optimization()` 批量检查所有场景
+
+### 6.7 编排优化机制
+
+`EvolutionEngine._check_orchestration_optimization()` 实现了**基于执行反馈的编排动态优化**，是进化引擎的核心触发源之一。
+
+**优化流程**：
+
+```
+收集所有场景的执行反馈
+    ↓
+遍历每个场景
+    ↓
+feedback.trigger_evolution == True ?
+    ├─ 是 → 生成编排调整提案
+    │         ↓
+    │       沙箱验证（_sandbox_validate）
+    │         ↓
+    │       通过 → 更新 OrchestrationMemory
+    │         ↓
+    │       记录优化日志
+    └─ 否 → 跳过
+```
+
+**编排调整策略**：
+- 当前模式不含风控（非 `c_g_chain`）→ 切换到 `c_g_chain`（增加 G1 风控节点）
+- 后续可扩展：多模式竞争、次优模式切换、节点增删等
+
+**沙箱验证规则**：
+- 新提案的预估得分 > 现有得分 × 1.1
+- 简化版：有合理理由即通过（待接入 ScenarioBacktester 做回测验证）
+
 ---
 
 ## 7. 应用层设计
@@ -960,6 +1112,115 @@ CLI 提供命令行交互，支持：
 - **调度器**：定时任务管理
 - **自动化命令**：自动交易、自动调度
 - **分析命令**：历史数据分析、进化报告
+
+### 7.5 自动交易系统（AutoTrader）
+
+AutoTrader 是 Dream OS 旗舰级自动化应用，将 S-A-C-G 四层内核 + 进化引擎串联为完整的**自动化交易闭环**，支持模拟交易（dry_run）和实盘交易两种模式。
+
+#### 7.5.1 完整自动化链路
+
+```
+定时触发（Scheduler）
+    ↓
+市场扫描（Market Scan）
+    ↓  获取 K线 + 计算技术指标
+36 场景分类（ScenarioClassifier）
+    ↓
+编排选择（OrchestrationMemory）
+    ↓  四级降级查询
+A1-A5 分析（GraphExecutor）
+    ↓
+G1 风控检查（Risk Control）
+    ↓  GO/NO-GO 决策
+A5 执行决策（Execution Planning）
+    ↓
+交易所下单（OKX / Hyperliquid）
+    ↓
+A9 离场监控（Exit Strategy）
+    ↓
+反馈回写（ExecutionFeedbackCollector）
+    ↓
+进化优化（EvolutionEngine）
+```
+
+#### 7.5.2 核心组件
+
+| 组件 | 位置 | 职责 |
+|------|------|------|
+| **AutoTrader** | `cli/auto_trader.py` | 自动交易主类，编排全流程 |
+| **ScenarioClassifier** | `core/sense/scenario_classifier.py` | 36 场景分类 |
+| **OrchestrationMemory** | `core/memory/orchestration_memory.py` | 编排记忆与降级查询 |
+| **ExecutionFeedbackCollector** | `core/memory/execution_feedback.py` | 执行反馈收集 |
+| **EvolutionEngine** | `evolution/engine.py` | 自我进化引擎 |
+| **DreamOSScheduler** | `cli/scheduler.py` | 定时任务调度器 |
+
+#### 7.5.3 市场数据获取
+
+AutoTrader 通过动态导入 `aster_spot.py` 获取实时市场数据，支持以下指标计算：
+
+**技术指标集**（场景分类必需字段）：
+- 价格：`price`
+- 均线：`ema20`, `ema50`, `ema200`
+- 涨跌幅：`change_1h`, `change_4h`, `change_24h`
+- 波动率：`atr_pct`
+- 动量：`rsi14`
+
+**数据来源**：
+- Hyperliquid：通过 `aster_spot.py` 获取 K 线和 MID 价格
+- OKX：通过 OKX API 获取行情数据
+
+#### 7.5.4 交易执行
+
+**支持的交易动作**：
+- `LONG`：开多仓
+- `SHORT`：开空仓
+- `HOLD`：持有/不操作
+- `EXIT`：平仓离场
+- `REDUCE`：减仓
+- `RAISE_TP`：提高止盈
+
+**交易所支持**：
+- **Hyperliquid**：通过 `aster_spot.HyperliquidClient`
+- **OKX**：通过 OKX API 客户端
+- 支持 dry_run 模拟交易模式
+
+**风控保护**：
+- 最小交易间隔：30 分钟（防止频繁交易）
+- G1 风控门禁（A4 决策门禁后强制检查）
+- 预算管控（Token 消耗上限）
+
+#### 7.5.5 反馈与进化
+
+**交易后自动触发进化检查**：
+1. 交易执行完成后，调用 `record_trade_feedback()` 记录反馈
+2. 调用 `_try_trigger_evolution()` 触发进化引擎检查
+3. 进化引擎扫描所有场景，对满足触发条件的场景执行编排优化
+4. 优化结果写入 `OrchestrationMemory`，下次交易自动应用
+
+#### 7.5.6 调度器（DreamOSScheduler）
+
+**调度器特性**：
+- Cron 表达式配置定时任务
+- 多币种批量扫描
+- 任务状态管理（running/paused/stopped/error）
+- 执行历史记录
+- 线程安全设计
+
+**默认调度配置**（`scheduler_jobs.json`）：
+```json
+[
+  {
+    "name": "scan_main",
+    "cron_expr": "*/5 * * * *",
+    "enabled": true,
+    "symbols": ["BTC", "ETH", "SOL", "AVAX", "LINK", "ARB", "OP", "MATIC"]
+  }
+]
+```
+
+**调度器数据文件**：
+- `scheduler_jobs.json`：调度任务配置
+- `scheduler_history.json`：执行历史记录
 
 ---
 
@@ -1233,4 +1494,5 @@ YAML 配置文件  ──────────────  系统级配置
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.1 | 2026-07-15 | 新增 36 场景分类系统、编排记忆与四级降级、执行反馈收集器、编排优化机制、自动交易全链路（AutoTrader）、调度器与默认配置 |
 | v2.0 | 2026-07-14 | 新建完整系统级技术设计文档，覆盖 SACG 四层深度设计、节点体系、适配器框架、自我进化、应用层、数据流、部署运维 |

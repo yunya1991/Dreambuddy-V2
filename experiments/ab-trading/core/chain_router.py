@@ -41,6 +41,10 @@ REGISTRY  = Path(__file__).parent.parent / "data" / "skill_registry.md"
 # 官方完整清单（PR #48，包含43个SKILL + 经典指标 + 基本面系统）
 FULL_CHECKLIST = Path(__file__).parent.parent / "data" / "THREE_CHAIN_DISPATCH_CHECKLIST.md"
 
+# 单笔交易资金分配比例（与 agent_b_runner 保持一致）
+import os as _os
+PER_TRADE_PCT = float(_os.environ.get("PER_TRADE_PCT", "0.05"))
+
 
 @dataclass
 class NodeResult:
@@ -79,12 +83,14 @@ class ChainRouter:
     """
 
     def __init__(self, client, mkt: Dict, memory: Dict,
-                 intent, budget_usdc: float = 60.0):
+                 intent, budget_usdc: float = 60.0, equity: float = None):
         self.client        = client
         self.mkt           = mkt
         self.memory        = memory
         self.intent        = intent
         self.budget_usdc   = budget_usdc
+        # 实际可用余额：优先用传入的 equity，否则回退到 budget_usdc
+        self.equity        = equity if equity is not None else budget_usdc
         self.node_trace:   List[NodeResult] = []
         self.dynamic_added: List[str] = []
         self._current_conf  = intent.confidence
@@ -213,12 +219,12 @@ class ChainRouter:
         gate_passed, gate_reason = a7_gate(self._current_conf, self._direction,
                                            gate_threshold, self.memory)
 
-        # 仓位计算
+        # 仓位计算：基于实际可用余额进行资金分配
         pos_usdt = 0.0
         sl = tp = None
         if gate_passed:
-            equity = min(self.budget_usdc, 60.0)
-            pos_usdt = max(round(equity * 0.05, 2), 5.0)
+            # 使用实际可用余额，不再硬编码 60.0
+            pos_usdt = max(round(self.equity * PER_TRADE_PCT, 2), 5.0)
             px = self.mkt.get("price", 0)
             if self._direction == "LONG":
                 sl = round(px * 0.96, 4)

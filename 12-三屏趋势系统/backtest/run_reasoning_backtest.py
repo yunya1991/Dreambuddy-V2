@@ -30,6 +30,7 @@ from backtest import (
     BuyAndHoldStrategy,
     MovingAverageStrategy,
     TrendScreenStrategy,
+    LeastResistanceStrategy,
     fetch_historical_data,
     generate_sample_data,
     compare_results,
@@ -97,9 +98,54 @@ def run_strategy_backtest(engine, strategy, prices, name):
 
 def print_reasoning_stats(strategy, name):
     """打印推理算法统计信息"""
-    if not isinstance(strategy, FullReasoningStrategy):
+    if isinstance(strategy, FullReasoningStrategy):
+        _print_full_reasoning_stats(strategy, name)
+    elif isinstance(strategy, LeastResistanceStrategy):
+        _print_lr_stats(strategy, name)
+
+
+def _print_lr_stats(strategy, name):
+    """打印纯最小阻力策略统计"""
+    stats = strategy.get_stats()
+    total = stats["total_bars"]
+    if total == 0:
         return
 
+    print(f"\n--- {name} 最小阻力统计 ---")
+    print(f"  评估总次数: {total}")
+    print(f"  入场信号: 必须={stats['must_enter']} | 择机={stats['timing']} | 等待={stats['wait']}")
+    enter_total = stats["must_enter"] + stats["timing"]
+    enter_rate = enter_total / total * 100 if total > 0 else 0
+    print(f"  入场率: {enter_rate:.1f}% ({enter_total}/{total})")
+
+    # 双向驱动模式统计
+    cont = stats.get("continuation", 0)
+    late_cont = stats.get("late_continuation", 0)
+    acc_mode = stats.get("accumulation_mode", 0)
+    weak = stats.get("weakening", 0)
+    large_to_small = cont + late_cont
+    small_to_large = acc_mode + weak
+    print(f"  双向驱动: 大→小={large_to_small}({large_to_small/total*100:.1f}%) | 小→大={small_to_large}({small_to_large/total*100:.1f}%)")
+    if cont > 0:
+        print(f"    趋势延续: {cont} ({cont/total*100:.1f}%)")
+    if late_cont > 0:
+        print(f"    延续后期: {late_cont} ({late_cont/total*100:.1f}%)")
+    if acc_mode > 0:
+        print(f"    量变积累: {acc_mode} ({acc_mode/total*100:.1f}%)")
+    if weak > 0:
+        print(f"    趋势减弱: {weak} ({weak/total*100:.1f}%)")
+
+    # 量变质变统计
+    if stats.get("accumulation", 0) > 0:
+        print(f"  质变积累: {stats['accumulation']} 次 ({stats['accumulation']/total*100:.1f}%)")
+    if stats.get("breakthrough_imminent", 0) > 0:
+        print(f"  质变临近: {stats['breakthrough_imminent']} 次 ({stats['breakthrough_imminent']/total*100:.1f}%)")
+    if stats.get("breakthrough_confirmed", 0) > 0:
+        print(f"  质变确认: {stats['breakthrough_confirmed']} 次 ({stats['breakthrough_confirmed']/total*100:.1f}%)")
+
+
+def _print_full_reasoning_stats(strategy, name):
+    """打印完整推理策略统计"""
     stats = strategy.get_stats()
     total = stats["total_bars"]
     if total == 0:
@@ -220,6 +266,21 @@ def main():
     if bt:
         results["基础三屏"] = bt
         strategies["基础三屏"] = strat
+
+    # 策略3.5: 纯最小阻力方向（第一性原理：时间三维×五维阻力→D/V/A模型）
+    bt, strat = run_strategy_backtest(
+        engine,
+        LeastResistanceStrategy(
+            min_confidence=40.0,
+            warmup_periods=80,
+            update_step=update_step,
+        ),
+        df,
+        "纯最小阻力(D/V/A)",
+    )
+    if bt:
+        results["纯最小阻力"] = bt
+        strategies["纯最小阻力"] = strat
 
     # ── 获取 BTC 数据（非 BTC 币种趋势跟随过滤用）──
     btc_df = None

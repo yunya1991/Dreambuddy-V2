@@ -1,0 +1,79 @@
+{
+  "timestamp": "2026-07-15T12:03:36.130847",
+  "version": "BCRM2.0_Phase0",
+  "total_symbols": 10,
+  "success": 3,
+  "errors": 7,
+  "directions": {
+    "UP": 1,
+    "DOWN": 2
+  },
+  "config": {
+    "wdh_enabled": true,
+    "merrill_clock_enabled": true,
+    "incremental_learning_enabled": true
+  },
+  "results": {
+    "BTC": {
+      "direction": "UP",
+      "confidence": 0.7431,
+      "hexagram": "泽地萃",
+      "fail_closed": false,
+      "latency_ms": 5203.36,
+      "bars_used": 5000,
+      "wdh_features_used": true,
+      "merrill_clock_enabled": true,
+      "incremental_learning_enabled": true
+    },
+    "ETH": {
+      "direction": "DOWN",
+      "confidence": 0.7374,
+      "hexagram": "泽风大过",
+      "fail_closed": false,
+      "latency_ms": 4048.46,
+      "bars_used": 5000,
+      "wdh_features_used": true,
+      "merrill_clock_enabled": true,
+      "incremental_learning_enabled": true
+    },
+    "SOL": {
+      "direction": "DOWN",
+      "confidence": 0.7464,
+      "hexagram": "泽山咸",
+      "fail_closed": false,
+      "latency_ms": 4415.49,
+      "bars_used": 5000,
+      "wdh_features_used": true,
+      "merrill_clock_enabled": true,
+      "incremental_learning_enabled": true
+    },
+    "AVAX": {
+      "error": "数据不足",
+      "bars": 0
+    },
+    "LINK": {
+      "error": "数据不足",
+      "bars": 0
+    },
+    "DOT": {
+      "error": "数据不足",
+      "bars": 0
+    },
+    "MATIC": {
+      "error": "数据不足",
+      "bars": 0
+    },
+    "BNB": {
+      "error": "数据不足",
+      "bars": 0
+    },
+    "OP": {
+      "error": "数据不足",
+      "bars": 0
+    },
+    "ARB": {
+      "error": "数据不足",
+      "bars": 0
+    }
+  }
+}

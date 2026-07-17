@@ -1,0 +1,298 @@
+{
+  "test_time": "2026-07-18 00:32:05",
+  "architecture": "yijing_primary + classic_backup",
+  "total": 48,
+  "pass": 48,
+  "fail": 0,
+  "pass_rate": 100.0,
+  "results": [
+    {
+      "group": "A",
+      "name": "A1: FORCE_CLOSE 高风险+方向冲突",
+      "status": "PASS",
+      "detail": "action=force_close risk=0.831 dir_consistent=False"
+    },
+    {
+      "group": "A",
+      "name": "A2: RAISE_TP 价值高+成长期+盈利",
+      "status": "PASS",
+      "detail": "action=raise_tp value=0.858 tp_adjust=0.30"
+    },
+    {
+      "group": "A",
+      "name": "A3: NO_INTERVENE 信号良好(应HOLD)",
+      "status": "PASS",
+      "detail": "action=no_intervene risk=0.287 value=0.745"
+    },
+    {
+      "group": "A",
+      "name": "A4: NO_INTERVENE 信号中性(应降级)",
+      "status": "PASS",
+      "detail": "action=no_intervene risk=0.483 value=0.483"
+    },
+    {
+      "group": "B",
+      "name": "B: 六爻[初九]潜龙勿用",
+      "status": "PASS",
+      "detail": "expected risk=0.65 value=0.35, actual risk=0.65 value=0.35"
+    },
+    {
+      "group": "B",
+      "name": "B: 六爻[九二]见龙在田",
+      "status": "PASS",
+      "detail": "expected risk=0.4 value=0.65, actual risk=0.4 value=0.65"
+    },
+    {
+      "group": "B",
+      "name": "B: 六爻[九三]终日乾乾",
+      "status": "PASS",
+      "detail": "expected risk=0.55 value=0.55, actual risk=0.55 value=0.55"
+    },
+    {
+      "group": "B",
+      "name": "B: 六爻[九四]或跃在渊",
+      "status": "PASS",
+      "detail": "expected risk=0.45 value=0.7, actual risk=0.45 value=0.7"
+    },
+    {
+      "group": "B",
+      "name": "B: 六爻[九五]飞龙在天",
+      "status": "PASS",
+      "detail": "expected risk=0.25 value=0.9, actual risk=0.25 value=0.9"
+    },
+    {
+      "group": "B",
+      "name": "B: 六爻[上九]亢龙有悔",
+      "status": "PASS",
+      "detail": "expected risk=0.85 value=0.2, actual risk=0.85 value=0.2"
+    },
+    {
+      "group": "B",
+      "name": "B: 四阶段[萌芽期]",
+      "status": "PASS",
+      "detail": "expected risk=0.65 value=0.4, actual risk=0.65 value=0.4"
+    },
+    {
+      "group": "B",
+      "name": "B: 四阶段[成长期]",
+      "status": "PASS",
+      "detail": "expected risk=0.3 value=0.85, actual risk=0.3 value=0.85"
+    },
+    {
+      "group": "B",
+      "name": "B: 四阶段[成熟期]",
+      "status": "PASS",
+      "detail": "expected risk=0.45 value=0.65, actual risk=0.45 value=0.65"
+    },
+    {
+      "group": "B",
+      "name": "B: 四阶段[衰退期]",
+      "status": "PASS",
+      "detail": "expected risk=0.8 value=0.25, actual risk=0.8 value=0.25"
+    },
+    {
+      "group": "B",
+      "name": "B: risk_level[高]",
+      "status": "PASS",
+      "detail": "expected=0.8, actual=0.8"
+    },
+    {
+      "group": "B",
+      "name": "B: risk_level[中]",
+      "status": "PASS",
+      "detail": "expected=0.5, actual=0.5"
+    },
+    {
+      "group": "B",
+      "name": "B: risk_level[低]",
+      "status": "PASS",
+      "detail": "expected=0.25, actual=0.25"
+    },
+    {
+      "group": "B",
+      "name": "B: risk_level[high]",
+      "status": "PASS",
+      "detail": "expected=0.8, actual=0.8"
+    },
+    {
+      "group": "B",
+      "name": "B: risk_level[medium]",
+      "status": "PASS",
+      "detail": "expected=0.5, actual=0.5"
+    },
+    {
+      "group": "B",
+      "name": "B: risk_level[low]",
+      "status": "PASS",
+      "detail": "expected=0.25, actual=0.25"
+    },
+    {
+      "group": "B",
+      "name": "B: dir_map[UP/long]",
+      "status": "PASS",
+      "detail": "expected=0.2, actual=0.2"
+    },
+    {
+      "group": "B",
+      "name": "B: dir_map[UP/short]",
+      "status": "PASS",
+      "detail": "expected=0.85, actual=0.85"
+    },
+    {
+      "group": "B",
+      "name": "B: dir_map[DOWN/long]",
+      "status": "PASS",
+      "detail": "expected=0.85, actual=0.85"
+    },
+    {
+      "group": "B",
+      "name": "B: dir_map[DOWN/short]",
+      "status": "PASS",
+      "detail": "expected=0.2, actual=0.2"
+    },
+    {
+      "group": "B",
+      "name": "B: dir_map[FLAT/long]",
+      "status": "PASS",
+      "detail": "expected=0.5, actual=0.5"
+    },
+    {
+      "group": "B",
+      "name": "B: dir_map[FLAT/short]",
+      "status": "PASS",
+      "detail": "expected=0.5, actual=0.5"
+    },
+    {
+      "group": "C",
+      "name": "C1: hexagram=None fail-open",
+      "status": "PASS",
+      "detail": "action=no_intervene should_log=False reason=no_hexagram_data_fail_open"
+    },
+    {
+      "group": "C",
+      "name": "C2: hexagram=空dict 容错",
+      "status": "PASS",
+      "detail": "action=no_intervene risk=0.500"
+    },
+    {
+      "group": "C",
+      "name": "C3: hexagram=异常对象 容错",
+      "status": "PASS",
+      "detail": "action=no_intervene"
+    },
+    {
+      "group": "C",
+      "name": "C4: classic_decision=None 不触发VETO",
+      "status": "PASS",
+      "detail": "action=raise_tp"
+    },
+    {
+      "group": "D",
+      "name": "D1: 趋势市嬴势(飞龙在天+做多+10%盈利)",
+      "status": "PASS",
+      "detail": "action=raise_tp value=0.858"
+    },
+    {
+      "group": "D",
+      "name": "D2: 趋势市逆势(坤为地+做多+亏损)",
+      "status": "PASS",
+      "detail": "action=force_close risk=0.831"
+    },
+    {
+      "group": "D",
+      "name": "D3: 震荡市持仓(坎为水+方向冲突)",
+      "status": "PASS",
+      "detail": "action=no_intervene risk=0.656 dir_consistent=False"
+    },
+    {
+      "group": "D",
+      "name": "D4: 高波动顶部(亢龙有悔+方向冲突)",
+      "status": "PASS",
+      "detail": "action=force_close risk=0.831"
+    },
+    {
+      "group": "D",
+      "name": "D5: 长期持仓过期(>48h)",
+      "status": "PASS",
+      "detail": "action=no_intervene 需polling_trader判定 not_expired=False 降级"
+    },
+    {
+      "group": "D",
+      "name": "D6: 大亏损(<-3%)",
+      "status": "PASS",
+      "detail": "action=no_intervene 需polling_trader判定 loss_acceptable=False 降级"
+    },
+    {
+      "group": "D",
+      "name": "D7: 萌芽期持仓(应降级)",
+      "status": "PASS",
+      "detail": "action=no_intervene risk=0.508 value=0.393"
+    },
+    {
+      "group": "D",
+      "name": "D8: 做空嬴势(坤为地+做空+8%盈利)",
+      "status": "PASS",
+      "detail": "action=raise_tp value=0.858 dir_consistent=True"
+    },
+    {
+      "group": "E",
+      "name": "E1: 风险分>=0.80 触发FORCE_CLOSE",
+      "status": "PASS",
+      "detail": "risk=0.8307 action=force_close"
+    },
+    {
+      "group": "E",
+      "name": "E2: 风险分<0.80 不触发FORCE_CLOSE",
+      "status": "PASS",
+      "detail": "risk=0.7292 action=no_intervene"
+    },
+    {
+      "group": "E",
+      "name": "E3: 价值分>0.70 触发RAISE_TP",
+      "status": "PASS",
+      "detail": "value=0.7775 action=raise_tp"
+    },
+    {
+      "group": "E",
+      "name": "E4: 盈利=0.02 边界触发RAISE_TP",
+      "status": "PASS",
+      "detail": "action=raise_tp"
+    },
+    {
+      "group": "E",
+      "name": "E5: 盈利<0.02 不触发RAISE_TP",
+      "status": "PASS",
+      "detail": "action=no_intervene"
+    },
+    {
+      "group": "F",
+      "name": "F1: yijing FORCE_CLOSE 直接返回(不调classic)",
+      "status": "PASS",
+      "detail": "action=force_close risk=0.831"
+    },
+    {
+      "group": "F",
+      "name": "F2: yijing RAISE_TP 直接返回(不调classic)",
+      "status": "PASS",
+      "detail": "action=raise_tp"
+    },
+    {
+      "group": "F",
+      "name": "F3: yijing NO_INTERVENE 信号良好→HOLD(不调classic)",
+      "status": "PASS",
+      "detail": "action=no_intervene risk_low=True value_high=True dir_consistent=True loss_ok=True not_expired=True"
+    },
+    {
+      "group": "F",
+      "name": "F4: yijing NO_INTERVENE 信号中性→降级classic",
+      "status": "PASS",
+      "detail": "action=no_intervene risk_low=False value_high=False should_hold=False"
+    },
+    {
+      "group": "F",
+      "name": "F5: yijing不可用→fail_open(走classic)",
+      "status": "PASS",
+      "detail": "action=no_intervene reason=no_hexagram_data_fail_open"
+    }
+  ]
+}

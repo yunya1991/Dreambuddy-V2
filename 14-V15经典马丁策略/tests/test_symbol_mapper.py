@@ -18,10 +18,11 @@ sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
 
 from symbol_mapper import (
-    SymbolMapper, AssetInfo, AssetCategory, Exchange,
+    SymbolMapper, AssetInfo, AssetCategory, Exchange, MarketCapTier,
     get_mapper, reset_mapper,
     to_spot, to_swap, from_spot, from_swap,
     get_category, is_supported, get_contract_overrides,
+    is_martin_safe, filter_martin_safe,
 )
 
 
@@ -173,6 +174,108 @@ class TestRegistryManagement(unittest.TestCase):
         self.assertIn("precious_metal", s["by_category"])
         self.assertEqual(s["by_category"]["precious_metal"], 2)
         self.assertGreater(s["okx_supported"], 30)
+
+
+class TestMartinSafeFilter(unittest.TestCase):
+    """马丁策略风控过滤：市值等级 + 上线时间"""
+
+    def setUp(self):
+        reset_mapper()
+        self.m = SymbolMapper()
+
+    def test_market_cap_tier_large(self):
+        self.assertEqual(self.m.get_market_cap_tier("BTC"), MarketCapTier.LARGE)
+        self.assertEqual(self.m.get_market_cap_tier("ETH"), MarketCapTier.LARGE)
+        self.assertEqual(self.m.get_market_cap_tier("OKB"), MarketCapTier.LARGE)
+
+    def test_market_cap_tier_mid(self):
+        self.assertEqual(self.m.get_market_cap_tier("INJ"), MarketCapTier.MID)
+        self.assertEqual(self.m.get_market_cap_tier("AAVE"), MarketCapTier.MID)
+        self.assertEqual(self.m.get_market_cap_tier("ZEC"), MarketCapTier.MID)
+        self.assertEqual(self.m.get_market_cap_tier("HYPE"), MarketCapTier.MID)
+
+    def test_market_cap_tier_small(self):
+        self.assertEqual(self.m.get_market_cap_tier("PEPE"), MarketCapTier.SMALL)
+        self.assertEqual(self.m.get_market_cap_tier("SHIB"), MarketCapTier.SMALL)
+        self.assertEqual(self.m.get_market_cap_tier("APE"), MarketCapTier.SMALL)
+
+    def test_market_cap_tier_unknown(self):
+        self.assertIsNone(self.m.get_market_cap_tier("UNKNOWNXYZ"))
+
+    def test_listing_date(self):
+        ld = self.m.get_listing_date("BTC")
+        self.assertEqual(ld, "2013-04-28")
+        self.assertIsNone(self.m.get_listing_date("UNKNOWNXYZ"))
+
+    def test_is_martin_safe_large_passes(self):
+        self.assertTrue(self.m.is_martin_safe("BTC"))
+        self.assertTrue(self.m.is_martin_safe("ETH"))
+        self.assertTrue(self.m.is_martin_safe("SOL"))
+
+    def test_is_martin_safe_mid_passes(self):
+        self.assertTrue(self.m.is_martin_safe("INJ"))
+        self.assertTrue(self.m.is_martin_safe("AAVE"))
+        self.assertTrue(self.m.is_martin_safe("HYPE"))
+
+    def test_is_martin_safe_small_rejected(self):
+        self.assertFalse(self.m.is_martin_safe("PEPE"))
+        self.assertFalse(self.m.is_martin_safe("SHIB"))
+        self.assertFalse(self.m.is_martin_safe("WLD"))
+        self.assertFalse(self.m.is_martin_safe("SUSHI"))
+        self.assertFalse(self.m.is_martin_safe("APE"))
+
+    def test_is_martin_safe_unknown_rejected(self):
+        self.assertFalse(self.m.is_martin_safe("UNKNOWNXYZ"))
+
+    def test_is_martin_safe_large_only_tier(self):
+        # min_tier=large 时，MID 币种被剔除
+        self.assertTrue(self.m.is_martin_safe("BTC", min_tier=MarketCapTier.LARGE))
+        self.assertFalse(self.m.is_martin_safe("INJ", min_tier=MarketCapTier.LARGE))
+
+    def test_is_martin_safe_small_tier_allows_all(self):
+        # min_tier=small 时，所有等级通过（但仍需满足时间检测）
+        self.assertTrue(self.m.is_martin_safe("PEPE", min_tier=MarketCapTier.SMALL))
+        self.assertTrue(self.m.is_martin_safe("BTC", min_tier=MarketCapTier.SMALL))
+
+    def test_is_martin_safe_min_history_days(self):
+        # HYPE 上线 2024-11-29，距今 >365 天，但 <10000 天
+        # 用极大阈值测试时间过滤
+        self.assertFalse(self.m.is_martin_safe("HYPE", min_tier=MarketCapTier.MID, min_history_days=10000))
+        # 正常阈值应通过（时间层面）
+        self.assertTrue(self.m.is_martin_safe("HYPE", min_tier=MarketCapTier.MID, min_history_days=365))
+
+    def test_filter_martin_safe_batch(self):
+        coins = ["BTC", "PEPE", "ETH", "SHIB", "INJ", "WLD", "SOL"]
+        safe = self.m.filter_martin_safe(coins)
+        self.assertIn("BTC", safe)
+        self.assertIn("ETH", safe)
+        self.assertIn("INJ", safe)
+        self.assertIn("SOL", safe)
+        self.assertNotIn("PEPE", safe)
+        self.assertNotIn("SHIB", safe)
+        self.assertNotIn("WLD", safe)
+
+    def test_small_cap_martin_disabled(self):
+        """小市值币种应默认 martin_enabled=False"""
+        info = self.m.get_asset_info("PEPE")
+        self.assertFalse(info.martin_enabled)
+        info2 = self.m.get_asset_info("APE")
+        self.assertFalse(info2.martin_enabled)
+
+    def test_hype_martin_enabled(self):
+        """HYPE 已从SMALL提升至MID，martin_enabled应为True"""
+        info = self.m.get_asset_info("HYPE")
+        self.assertEqual(info.market_cap_tier, MarketCapTier.MID)
+        self.assertTrue(info.martin_enabled)
+        self.assertTrue(self.m.is_martin_safe("HYPE"))
+
+    def test_module_level_is_martin_safe(self):
+        self.assertTrue(is_martin_safe("BTC"))
+        self.assertFalse(is_martin_safe("PEPE"))
+
+    def test_module_level_filter_martin_safe(self):
+        safe = filter_martin_safe(["BTC", "PEPE", "ETH"])
+        self.assertEqual(safe, ["BTC", "ETH"])
 
 
 class TestV15Integration(unittest.TestCase):

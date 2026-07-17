@@ -661,7 +661,7 @@ class OKXSimulatedClient:
                     "take_profit": result, "ok": result.get("ok"),
                     "reason": reason or "bcrm_risk_management"}
 
-        # 仅止损或仅止盈（conditional 单）
+        # 仅止损或仅止盈（conditional 单，使用 tpTriggerPx/slTriggerPx 参数）
         if stop_loss_px:
             sl_side = "sell" if pos_side == "long" else "buy"
             body = {
@@ -671,9 +671,8 @@ class OKXSimulatedClient:
                 "ordType": "conditional",
                 "sz": str(sz),
                 "posSide": pos_side,
-                "triggerPx": str(stop_loss_px),
-                "orderPx": "-1",
-                "triggerPxType": "last",
+                "slTriggerPx": str(stop_loss_px),
+                "slOrdPx": "-1",
                 "tag": "yijingsl",
             }
             if self.dry_run:
@@ -700,9 +699,8 @@ class OKXSimulatedClient:
             "ordType": "conditional",
             "sz": str(sz),
             "posSide": pos_side,
-            "triggerPx": str(take_profit_px),
-            "orderPx": "-1",
-            "triggerPxType": "last",
+            "tpTriggerPx": str(take_profit_px),
+            "tpOrdPx": "-1",
             "tag": "yijingtp",
         }
         if self.dry_run:

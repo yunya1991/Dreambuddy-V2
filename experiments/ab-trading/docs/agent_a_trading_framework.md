@@ -1,7 +1,7 @@
 # Agent A 交易框架文档
 
 > **定位**：AB双Agent对比实验 — Agent A（Raw Claude）核心操作手册
-> **版本**：v1.0 | **创建**：2026-06-23
+> **版本**：v2.1 | **创建**：2026-06-23 | **更新**：2026-07-17
 > **市场**：Hyperliquid 永续合约 | **周期**：4H + 日线
 
 ---
@@ -245,9 +245,42 @@
 |------|----------|----------|
 | 单笔最大亏损 | -4%（含杠杆） | 止损出场 |
 | 单笔目标盈利 | +8% | 考虑止盈 |
-| 连续亏损 | 3笔 | 强制暂停，反思大师风格 |
+| 连续亏损 | 3笔 | 触发连败保护，强制HOLD（保留LLM原始置信度） |
+| 连败保护超时 | 48小时 | 自动重置 loss_streak，解除保护 |
 | 最大回撤 | -15% | 暂停交易，全面复盘 |
 | Token成本覆盖 | > 100% | 持续监控 |
+
+### 连败保护机制（v2.1 新增）
+
+**核心逻辑**：连败≥3 时强制 HOLD，但**不覆盖 LLM 原始置信度**，并启动48小时倒计时。
+
+```
+连败 ≥3 → 记录 loss_protection_start_ts → 强制 action=HOLD
+  ↓                                        ↓
+  保留原始 confidence/decision              页面显示"⛔ 连败保护" + 倒计时
+  ↓
+每轮运行检查：
+  elapsed ≥ 48h → 自动重置 loss_streak=0, 清除时间戳, 记录教训
+  elapsed < 48h → 继续保护，显示剩余时间
+  ↓
+连败期间有盈利平仓 → 立即清除保护计时
+```
+
+**关键字段**（写入决策日志）：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `risk_gate_blocked` | bool | 是否被风控拦截 |
+| `block_reason` | string | 拦截原因（`loss_streak_protection`） |
+| `original_action` | string | LLM 原始决策（被覆盖前的 LONG/SHORT） |
+| `original_confidence` | float | LLM 原始置信度 |
+| `loss_protection_countdown` | object | 倒计时信息（elapsed/remaining/max_hours） |
+
+**实现位置**：
+- 超时检查：[agent_a_memory.py#L145](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_memory.py#L145) `check_loss_protection_timeout()`
+- 倒计时查询：[agent_a_memory.py#L195](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_memory.py#L195) `get_loss_protection_countdown()`
+- 保护触发：[agent_a_runner.py#L251](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_a_runner.py#L251)
+- 超时常量：`LOSS_PROTECTION_MAX_HOURS = 48`
 
 ---
 
@@ -256,17 +289,33 @@
 每次 Cron 触发时，按以下顺序执行：
 
 ```
-1. 读取记忆文档（本文档）          ← 明确当前大师风格
-2. 获取账户状态（余额、持仓）
-3. 扫描市场（10个标的）
-4. 技术面分析（4H+日线）          ← 消耗 ~2000 tokens
-5. 情绪面分析（资金费率+多空比）   ← 消耗 ~500 tokens
-6. [如有预算] 消息面（Tavily×2）  ← 消耗 ~1000 tokens
-7. 综合打分，选出最优标的
-8. 决策（LONG/SHORT/HOLD）
-9. 执行（如果决策不是HOLD）
-10. 更新记忆（Lesson + 交易记录）
+ 1. 加载记忆                     ← 读取大师/教训/连败状态
+ 2. 连败保护48h超时检查            ← 超时自动重置 loss_streak（v2.1）
+ 3. 获取账户状态（余额、持仓）
+ 4. L1/L2 离场检查                ← 已有持仓的止损/止盈/动态调仓
+ 5. 扫描市场（20个标的）
+ 6. LLM 决策（SKILL框架）         ← 三维分析 + Token预算控制
+ 7. 连败保护拦截检查              ← 连败≥3且非HOLD→强制HOLD，保留置信度（v2.1）
+ 8. 执行交易（try/except保护）    ← API异常不崩溃，记录错误继续保存日志（v2.1）
+ 9. 保存决策日志                  ← 含 risk_gate_blocked/countdown 等风控字段
+10. 更新记忆（Lesson + 交易记录 + 大师切换 + 连败计时）
 ```
+
+### 执行异常保护（v2.1 新增）
+
+交易执行阶段（open_long/open_short）使用 try/except 包裹，即使 API 调用失败（SSL/超时/网络异常）也不会导致整个流程崩溃：
+
+```python
+# agent_a_runner.py L325-364
+try:
+    exec_result = client.open_long(coin, pos_usdt, leverage, tag)
+    ...
+except Exception as e:
+    print(f"[执行] ❌ 执行失败: {e}")
+    exec_result = {"ok": False, "error": str(e), "exception_type": type(e).__name__}
+```
+
+异常后仍会正常保存决策日志和记忆，确保不丢失本轮分析结果。
 
 ---
 
@@ -275,7 +324,25 @@
 | 时间 | 标的 | 方向 | 入场价 | 出场价 | PnL% | 大师风格 | Lesson |
 |------|------|------|--------|--------|------|----------|--------|
 | 2026-06-23 | ETH | LONG 3x | $1657 | - | - | Livermore | 首笔，等待结果 |
+| 2026-07-14 | (多笔) | - | - | - | 连亏5笔 | 多次切换 | 连败保护触发，持续83h后48h超时重置 |
+| 2026-07-17 | UNI | LONG 3x | $3.51 | - | - | Richard Dennis | 连败保护解除后首笔，等待结果 |
 
-**统计摘要**（每10笔更新）
-- 总笔数：1 | 胜率：- | 平均盈亏比：- | 最大回撤：-
-- Token 总消耗：- | 交易总盈亏：- | 净收益（扣Token）：-
+**统计摘要**（截至2026-07-17）
+- 总笔数：42 | 连败保护触发：1次（已超时重置） | 最大回撤：7.7%
+
+---
+
+## 文件索引
+
+| 文件 | 功能 |
+|------|------|
+| [agent_a_runner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_a_runner.py) | 主流程入口（SOP 10步） |
+| [agent_a_llm.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_llm.py) | LLM 决策核心（SKILL框架调用） |
+| [agent_a_memory.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_memory.py) | 记忆系统（教训/大师/连败保护/48h超时） |
+| [exit_module.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/exit_module.py) | L1/L2 离场模块 |
+| [scorecard.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/scoring/scorecard.py) | DecisionLog 日志结构 |
+| [aster_spot.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/execution/aster_spot.py) | Hyperliquid 合约执行层 |
+| [monitor.html](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html) | AB Trading 监控页面（含风控门禁/倒计时） |
+| `data/agent_a_memory.json` | 跨session记忆（自动维护） |
+| `logs/agent_a/*.json` | 每轮决策日志 |
+| `skills/agent-a-trading/SKILL.md` | Agent A SKILL 定义 |

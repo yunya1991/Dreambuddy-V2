@@ -1,6 +1,6 @@
 # DreamBuddy-V2 工程索引（SSoT）
 
-> **版本**: v2.0 | **更新日期**: 2026-07-13
+> **版本**: v2.1 | **更新日期**: 2026-07-15
 > **定位**: 整个项目的工程入口索引（Single Source of Truth），包含所有子系统的文件级索引、入口锚点、依赖关系和快速导航
 > **维护原则**: 每次变更必须先阅读本文件定位入口，变更后必须追加变更日志
 
@@ -280,6 +280,15 @@ dreambuddy-v2/
 │   ├── docs/                    # 文档（ENGINEERING_INDEX v4.0, TECHNICAL_DESIGN v4.0, API_SPEC v3.0）
 │   └── com.dreambuddy.v15_trader.plist  # launchd配置
 │
+├── 15-监控告警系统/              # 统一监控告警系统
+│   ├── monitor_core.py          # 监控核心（UnifiedMonitor + MonitorAdapter）
+│   ├── feishu_alert.py          # 飞书告警模块
+│   ├── scheduler.py             # 统一调度器
+│   ├── adapters/                # 系统适配器（Yijing/V15/Screen/AgentA/AgentB）
+│   ├── config/                  # 配置（monitor_config.json）
+│   ├── start_monitor.sh         # 启动脚本
+│   └── README.md                # 系统文档
+│
 ├── 16-调控系统/                  # 调控系统（早期阶段）
 │   ├── core/                    # 核心（a1_research_adapter, a3_strategy_adapter, skill_engine, unified_position_query）
 │   ├── scripts/                 # 脚本（phase0_exit_evaluator）
@@ -413,14 +422,14 @@ dreambuddy-v2/
 | 属性 | 值 |
 |------|-----|
 | 目录 | `11-易经推理系统/` |
-| 核心引擎 | BCRM 1.0（矛盾力学）+ BCRM 2.0（辩证ML）+ QMM（量化记忆） |
+| 核心引擎 | BCRM 2.0（辩证ML，实盘主力）+ BCRM 1.0（矛盾力学，Fallback）+ QMM（量化记忆） + 逐仓风控（isolated） |
 | 决策模型 | 易经八卦 + 辩证法 + A0-A9决策链 + 三引擎协同 |
 | 记忆系统 | L4四级记忆架构（M0→M5全链路） |
 | 自进化 | 三层反思闭环（A8/做梦部/联网）+ 约束升级通道 |
 | CI/CD | 16个CI脚本 + GitHub Actions（6个workflow） |
 | 约束层 | 30+约束文档 + 版本化发布 |
 | 技能体系 | 5大类40+技能（0-CORE/1-TRADE/2-INTELLIGENCE/3-SUPPORT/4-GENERIC） |
-| 文档状态 | ✅ 完整（ENGINEERING_INDEX v2.0 + TECHNICAL_DESIGN v2.0） |
+| 文档状态 | ✅ 完整（ENGINEERING_INDEX v2.1 + TECHNICAL_DESIGN v2.1） |
 | 基线综合夏普 | 7.45（BTC/ETH/SOL/UNI 4币种组合） |
 
 **核心代码结构：**
@@ -430,7 +439,7 @@ dreambuddy-v2/
 | `scripts/memory_l4/bcrm/` | 19 | BCRM 1.0矛盾力学推理引擎（yijing_engine, bagua_engine, liangyi_engine, force_engine, scale_engine, walk_forward） |
 | `scripts/memory_l4/bcrm2/` | ~25 | BCRM 2.0辩证ML量化引擎（dialectical_ml_engine, bagua_feature_engine, market_regime, 11个特征模块） |
 | `scripts/memory_l4/qmm/` | 13 | QMM量化记忆模型（triple_screen, mrd, uncertainty, drift, xgb_predictor, gate） |
-| `scripts/memory_l4/` 顶层 | ~35 | 核心脚本（pipeline, polling_trader, self_evolution_engine, okx_simulated, classic_exit_system, shared_memory_bus） |
+| `scripts/memory_l4/` 顶层 | ~38 | 核心脚本（pipeline, polling_trader, bcrm2_adapter, self_evolution_engine, okx_simulated, classic_exit_system, confidence_optimization, shared_memory_bus） |
 | `scripts/ci/` | 16 | CI脚本（架构同步、分支生命周期、进化门禁、安全合并、约束管理） |
 | `constraints/` | ~30 | 约束规范（constitution, system-index, workflows-spec, qmm, faq, releases） |
 | `skills/` | 40+ | 技能库（0-CORE/1-TRADE/2-INTELLIGENCE/3-SUPPORT） |
@@ -441,7 +450,7 @@ dreambuddy-v2/
 | 文档 | 路径 | 说明 |
 |------|------|------|
 | ✅ 工程索引 | `docs/ENGINEERING_INDEX.md` | 系统级工程索引（SSoT），11章节 |
-| ✅ 技术设计 | `docs/TECHNICAL_DESIGN.md` | 系统级技术设计，15章节（含BCRM 2.0深度） |
+| ✅ 技术设计 | `docs/TECHNICAL_DESIGN.md` | 系统级技术设计，16章节（含BCRM 2.0深度+逐仓风控） |
 | 架构基线 | `constraints/system-index/engineering-architecture.md` | 约束层架构基线 |
 | 系统概览 | `README.md` | 项目概览与快速开始 |
 | 架构简述 | `docs/architecture.md` | 系统架构概述 |
@@ -854,6 +863,7 @@ cd 10-经典指标系统 && python -m pytest test_*.py -v
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-07-15 | v2.1 | 易经推理系统切换逐仓风控模式（isolated）；ENGINEERING_INDEX v2.2、TECHNICAL_DESIGN v2.2同步更新；核心引擎描述增加逐仓风控 | DreamBuddy v2 |
 | 2026-07-12 | v1.0 | 初始创建 | DreamBuddy v2 |
 | 2026-07-13 | v2.0 | 重建为文件级索引，增加SSoT层级、变更流程、入口锚点 | DreamBuddy v2 |
 

@@ -22,6 +22,14 @@ from core import (
     fuse_technical_fundamental,
     SCREEN1_INDICATORS,
     SCREEN2_INDICATORS,
+    CompositePredictor,
+    create_composite_predictor,
+    predict_from_dataframes,
+    compute_least_resistance,
+    calc_price_resistance,
+    calc_volume_resistance,
+    calc_momentum_resistance,
+    calc_trend_resistance,
 )
 from engine import (
     confidence_to_position,
@@ -252,6 +260,168 @@ def test_fundamental_data():
     print(f"  一致: {fusion['consistent']}, 矛盾等级: {fusion['conflict_level']}%")
 
 
+def test_composite_predictor():
+    """测试综合预测引擎（技术基线 + 基本面三维度调节）"""
+    print("\n=== 测试: CompositePredictor ===")
+
+    predictor = create_composite_predictor()
+    print(f"  预测引擎创建成功: {type(predictor).__name__}")
+    print(f"  权重配置: {predictor.weights}")
+
+    tech_result = {"direction": "BULL", "confidence": 70.0}
+
+    fundamental_data_bull = {
+        "score": 65,
+        "direction": "BULL",
+        "confidence": 75,
+        "dimensions": {
+            "mining": {"available": True, "score": 70},
+            "onchain": {"available": True, "score": 60},
+            "macro": {"available": True, "score": 55},
+            "crossmarket": {"available": True, "score": 65},
+        },
+    }
+
+    result_bull = predictor.predict(tech_result, fundamental_data_bull)
+    print(f"\n  --- 技术面BULL + 基本面BULL（一致） ---")
+    print(f"  技术方向: {result_bull['technical']['direction']}")
+    print(f"  技术置信度: {result_bull['technical']['confidence']}%")
+    print(f"  基本面三维度可用: {result_bull['fundamental']['3d']['available']}")
+    print(f"  基本面方向: {result_bull['fundamental']['3d']['direction']}")
+    print(f"  基本面速度: {result_bull['fundamental']['3d']['velocity']:.3f}")
+    print(f"  基本面加速度: {result_bull['fundamental']['3d']['acceleration']:.3f}")
+    print(f"  调节类型: {result_bull['fundamental']['adjustment']['adjustment_type']}")
+    print(f"  调节因子: {result_bull['fundamental']['adjustment']['adjustment']:.4f}")
+    print(f"  调节原因: {result_bull['fundamental']['adjustment']['reason']}")
+    print(f"  最终方向: {result_bull['direction']}")
+    print(f"  最终置信度: {result_bull['confidence']}%")
+
+    fundamental_data_bear = {
+        "score": 35,
+        "direction": "BEAR",
+        "confidence": 70,
+        "dimensions": {
+            "mining": {"available": True, "score": 30},
+            "onchain": {"available": True, "score": 40},
+            "macro": {"available": True, "score": 35},
+            "crossmarket": {"available": True, "score": 45},
+        },
+    }
+
+    result_bear = predictor.predict(tech_result, fundamental_data_bear)
+    print(f"\n  --- 技术面BULL + 基本面BEAR（矛盾） ---")
+    print(f"  技术方向: {result_bear['technical']['direction']}")
+    print(f"  技术置信度: {result_bear['technical']['confidence']}%")
+    print(f"  基本面方向: {result_bear['fundamental']['3d']['direction']}")
+    print(f"  调节类型: {result_bear['fundamental']['adjustment']['adjustment_type']}")
+    print(f"  调节因子: {result_bear['fundamental']['adjustment']['adjustment']:.4f}")
+    print(f"  调节原因: {result_bear['fundamental']['adjustment']['reason']}")
+    print(f"  最终方向: {result_bear['direction']}")
+    print(f"  最终置信度: {result_bear['confidence']}%")
+
+    fundamental_data_neutral = {
+        "score": 50,
+        "direction": "NEUTRAL",
+        "confidence": 50,
+    }
+
+    result_neutral = predictor.predict(tech_result, fundamental_data_neutral)
+    print(f"\n  --- 技术面BULL + 基本面NEUTRAL（中性） ---")
+    print(f"  调节类型: {result_neutral['fundamental']['adjustment']['adjustment_type']}")
+    print(f"  调节因子: {result_neutral['fundamental']['adjustment']['adjustment']:.4f}")
+    print(f"  最终置信度: {result_neutral['confidence']}%")
+
+    print("\n  --- 便捷函数 predict_from_dataframes 测试 ---")
+    daily_df = _generate_synthetic_data(250, "bull")
+    weekly_df = _generate_synthetic_data(210, "bull")
+    df_result = predict_from_dataframes(
+        weekly_df=weekly_df,
+        daily_df=daily_df,
+        fundamental_data=fundamental_data_bull,
+    )
+    print(f"  趋势方向: {df_result['direction']}")
+    print(f"  综合置信度: {df_result['confidence']}%")
+    print(f"  调节类型: {df_result['fundamental']['adjustment']['adjustment_type']}")
+
+
+def test_least_resistance():
+    """测试最小阻力方向引擎（第一性原理）"""
+    print("\n=== 测试: 最小阻力方向引擎 ===")
+
+    bull_df = _generate_synthetic_data(250, "bull")
+    bear_df = _generate_synthetic_data(250, "bear")
+    neutral_df = _generate_synthetic_data(250, "neutral")
+
+    print("\n  --- 牛市行情 ---")
+    bull_lr = compute_least_resistance(bull_df)
+    print(f"  方向: {bull_lr['direction']}")
+    print(f"  置信度: {bull_lr['confidence']}%")
+    print(f"  多方阻力: {bull_lr['bull_resistance']:.4f}")
+    print(f"  空方阻力: {bull_lr['bear_resistance']:.4f}")
+    print(f"  阻力差: {bull_lr['resistance_diff']:.4f}")
+    print(f"  速度: {bull_lr['velocity']:.4f}, 加速度: {bull_lr['acceleration']:.4f}")
+    print(f"  价格维度 - 多方阻力: {bull_lr['dimensions']['price']['bull_resistance']:.4f}, "
+          f"空方阻力: {bull_lr['dimensions']['price']['bear_resistance']:.4f}")
+    print(f"  量能维度 - 多方阻力: {bull_lr['dimensions']['volume']['bull_resistance']:.4f}, "
+          f"空方阻力: {bull_lr['dimensions']['volume']['bear_resistance']:.4f}")
+    print(f"  动量维度 - 多方阻力: {bull_lr['dimensions']['momentum']['bull_resistance']:.4f}, "
+          f"空方阻力: {bull_lr['dimensions']['momentum']['bear_resistance']:.4f}")
+    print(f"  趋势维度 - 多方阻力: {bull_lr['dimensions']['trend']['bull_resistance']:.4f}, "
+          f"空方阻力: {bull_lr['dimensions']['trend']['bear_resistance']:.4f}")
+    print(f"  总结: {bull_lr['summary']}")
+
+    print("\n  --- 熊市行情 ---")
+    bear_lr = compute_least_resistance(bear_df)
+    print(f"  方向: {bear_lr['direction']}")
+    print(f"  置信度: {bear_lr['confidence']}%")
+    print(f"  多方阻力: {bear_lr['bull_resistance']:.4f}")
+    print(f"  空方阻力: {bear_lr['bear_resistance']:.4f}")
+    print(f"  阻力差: {bear_lr['resistance_diff']:.4f}")
+    print(f"  总结: {bear_lr['summary']}")
+
+    print("\n  --- 震荡行情 ---")
+    neutral_lr = compute_least_resistance(neutral_df)
+    print(f"  方向: {neutral_lr['direction']}")
+    print(f"  置信度: {neutral_lr['confidence']}%")
+    print(f"  多方阻力: {neutral_lr['bull_resistance']:.4f}")
+    print(f"  空方阻力: {neutral_lr['bear_resistance']:.4f}")
+    print(f"  阻力差: {neutral_lr['resistance_diff']:.4f}")
+    print(f"  总结: {neutral_lr['summary']}")
+
+    print("\n  --- 基本面阻力测试 ---")
+    fund_data_bull = {
+        "score": 70,
+        "direction": "BULL",
+        "confidence": 75,
+        "dimensions": {
+            "mining": {"available": True, "score": 70},
+            "onchain": {"available": True, "score": 65},
+        },
+    }
+    fund_lr = compute_least_resistance(bull_df, fundamental_data=fund_data_bull)
+    print(f"  加入基本面后方向: {fund_lr['direction']}")
+    print(f"  加入基本面后置信度: {fund_lr['confidence']}%")
+    print(f"  基本面维度可用: {fund_lr['dimensions']['fundamental'].get('available', False)}")
+    print(f"  基本面评分: {fund_lr['dimensions']['fundamental'].get('fund_score', 0)}")
+    print(f"  权重分布: {fund_lr['weights']}")
+
+    print("\n  --- 趋势一致性 + 最小阻力融合测试 ---")
+    weekly_df = _generate_synthetic_data(210, "bull")
+    daily_df = _generate_synthetic_data(250, "bull")
+    tc = calc_trend_consistency(weekly_df, daily_df)
+    print(f"  趋势一致: {tc['consistent']}")
+    print(f"  一致性级别: {tc['consistency_level']}")
+    print(f"  综合方向: {tc['overall_direction']}")
+    print(f"  一致性置信度: {tc['consistency_confidence']}%")
+    print(f"  最小阻力引擎启用: {tc.get('least_resistance') is not None}")
+    if tc.get('least_resistance'):
+        lr = tc['least_resistance']
+        print(f"  最小阻力方向: {lr['overall_direction']}")
+        print(f"  最小阻力置信度: {lr['consistency_confidence']}%")
+        print(f"  周线最小阻力: {lr['weekly']['direction']} ({lr['weekly']['confidence']}%)")
+        print(f"  日线最小阻力: {lr['daily']['direction']} ({lr['daily']['confidence']}%)")
+
+
 def run_all_tests():
     """运行所有测试"""
     print("=" * 60)
@@ -265,6 +435,8 @@ def run_all_tests():
     test_fusion()
     test_full_signal()
     test_fundamental_data()
+    test_composite_predictor()
+    test_least_resistance()
 
     print("\n" + "=" * 60)
     print("所有测试完成")

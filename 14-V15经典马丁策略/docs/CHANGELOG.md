@@ -5,6 +5,187 @@
 
 ---
 
+## [v5.1] - 2026-07-17
+
+### 实盘移动止盈集成 + RAISE_TP 修复
+
+- **新增**: 实盘移动止盈（Trailing TP）集成
+  - `core/v15_trader.py` → `check_take_profit()` 中集成移动止盈逻辑
+  - 参数从 `active_params.json` 加载（`trailing_atr_mult=1.0`, `trailing_start_ratio=0.8`）
+  - 配置开关：`V15_USE_TRAILING_TP=true`（默认启用）
+  - 持仓状态新增字段：`trailing_active`, `trailing_price`, `peak_price`
+  - 移动止盈在固定止盈之前检查，优先级更高
+  - ATR 从 4H K线实时计算（`calc_atr_pct()`），与回测引擎一致
+  - 兼容旧持仓：轮询时自动补充移动止盈状态字段
+  - **影响范围**: core/v15_trader.py, config/.env.v15
+
+- **修复**: RAISE_TP 提高止盈功能（3处bug）
+  - `check_take_profit()` 使用 `pos["take_profit_pct"]`（RAISE_TP 提高后的值），不再忽略
+  - RAISE_TP 后调用 `_sync_tp_sl_orders()` 同步更新交易所 OCO 挂单
+  - `_update_tp_sl_dynamic()` 也使用 `pos["take_profit_pct"]` 保持一致
+  - **影响范围**: core/v15_trader.py
+
+- **更新**: 技术文档和工程索引
+  - `TECHNICAL_DESIGN.md` v5.1：§15.3 移动止盈章节新增实盘集成说明
+  - `ENGINEERING_INDEX.md` v5.1：配置参数新增 `V15_USE_TRAILING_TP`
+  - **影响范围**: docs/TECHNICAL_DESIGN.md, docs/ENGINEERING_INDEX.md
+
+---
+
+## [v5.0] - 2026-07-16
+
+### 智能系统增强 + 双基线版本管理 + 贝叶斯优化自动调度
+
+- **新增**: 智能系统增强层 — 四项增强机制全开
+  - ATR动态止盈：`strategy_params.py` 新增 `calc_atr()` + `calc_atr_pct()`，BTC 4%基准按ATR因子动态调整
+  - 移动止盈（Trailing TP）：`v15_backtest.py` 新增 `use_trailing_tp` 参数，浮盈达80%启动，回撤N×ATR止盈
+  - ELDER-RAY资金调度：`v15_backtest.py` 新增 `calc_elder_ray_size_mult()` + 模块级变量 `_elder_ray_floor`(0.9) / `_elder_ray_ceil`(1.5)
+  - 凯利公式底仓优化：`kelly_optimizer.py` 半凯利+收缩估计（默认关闭，可选启用）
+  - **影响范围**: lib/strategy_params.py, lib/kelly_optimizer.py, core/v15_backtest.py
+  - **验证方式**: 6币种回测（BTC/ETH/SOL/ARB/OP/UNI），总收益从138%提升至210.4%
+
+- **新增**: BTC风向标智能模式选择
+  - BTC走DirectionGate（自身MA128+MA200），其他币走BTC风向标3日确认+short_only
+  - `v15_backtest.py` 新增 `use_btc_windvane`, `btc_windvane_confirm_days`, `btc_windvane_short_only` 参数
+  - 智能模式自动选择：非BTC币种自动启用风向标模式
+  - **影响范围**: core/v15_backtest.py
+  - **验证方式**: 总收益从+124.50%提升至+134.28%（风向标模式）
+
+- **新增**: 双基线版本管理体系
+  - `bayesian_optimizer.py` 新增 `FIXED_BASELINE_PARAMS`（138%，纯马丁策略，无智能增强）
+  - `bayesian_optimizer.py` 新增 `SMART_BASELINE_PARAMS`（210.4%，智能系统+贝叶斯优化最优参数）
+  - `BASELINE_PARAMS = SMART_BASELINE_PARAMS.copy()`（向后兼容）
+  - 新增 `VERSION_INFO` 版本元数据（双基线对比信息）
+  - 三级回退策略：贝叶斯优化参数 → 智能参数基线(210.4%) → 固定参数基线(138%)
+  - **影响范围**: lib/bayesian_optimizer.py
+
+- **新增**: 贝叶斯优化8参数智能系统空间
+  - 优化参数从旧的资金分配参数（addon1/2/3_pct等）切换为智能系统核心参数
+  - 新8参数：trailing_atr_mult, trailing_start_ratio, elder_ray_floor, elder_ray_ceil, btc_windvane_confirm_days, max_base_holding_hours, max_post_addon_hours, golden_window_hours
+  - 目标函数：卡尔马比率(40%) + 夏普(20%) + 胜率(15%) + 资金效率(25%)
+  - **影响范围**: lib/bayesian_optimizer.py
+
+- **新增**: 贝叶斯优化自动调度（orchestrator集成）
+  - `orchestrator.py` 新增 `check_bayesian_optimization_trigger()` 触发判断
+  - `orchestrator.py` 新增 `run_bayesian_optimization()` 后台启动（PID锁防重复，不阻塞交易）
+  - `bayesian_optimizer.py` 新增 `should_trigger_optimization()` 触发条件判断
+  - `bayesian_optimizer.py` 新增 `run_optimization_with_rollback()` 4步自动回退验证
+  - **影响范围**: core/orchestrator.py, lib/bayesian_optimizer.py
+
+- **新增**: 冷却期机制
+  - 距上次优化24小时内不重复触发（连亏触发也受冷却期约束，但有最高优先级）
+  - `SCHEDULE_CONFIG` 新增 `cooldown_hours: 24`
+  - **影响范围**: lib/bayesian_optimizer.py, config/.env.v15
+
+- **新增**: CLI版本管理命令
+  - `--version-info`：查看双基线版本管理信息
+  - `--reset-to-smart`：重置为智能参数基线（210.4%）
+  - `--reset-to-fixed`：终极回退到固定参数基线（138%）
+  - `--check-trigger`：检查是否应该触发优化
+  - `--with-rollback`：优化+自动回退验证（调度推荐）
+  - **影响范围**: lib/bayesian_optimizer.py
+
+- **新增**: 活跃参数与调度状态持久化
+  - `data/bayesian_opt/active_params.json`：当前生效参数 + 来源 + 评分 + 时间戳
+  - `data/bayesian_opt/schedule_state.json`：上次优化时间 + 动作 + 收益改善
+  - **影响范围**: data/bayesian_opt/
+
+- **修改**: 触发频率调整
+  - 从"连亏3笔+每周+每月"调整为"连亏3笔+每月"（去掉每周触发，避免过拟合）
+  - `BAYESIAN_OPT_WEEKLY` 从 `true` 改为 `false`
+  - 新增 `BAYESIAN_OPT_COOLDOWN_HOURS=24`
+  - **影响范围**: config/.env.v15, core/orchestrator.py, lib/bayesian_optimizer.py
+
+- **修改**: 技术文档全面更新
+  - `TECHNICAL_DESIGN.md` 新增第15章「智能系统增强」、第16章「BTC风向标智能模式选择」、第17章「贝叶斯优化自动调度与双基线版本管理」，更新§7.2 ELDER-RAY范围说明(0.9-1.5x)，更新§7.4/§10贝叶斯优化8参数表，更新版本至 v5.0
+  - `ENGINEERING_INDEX.md` 核心架构从10模块扩展至13模块，§5贝叶斯优化参数更新为8参数智能系统，新增§8「智能系统增强与双基线版本管理」，更新版本至 v5.0
+  - **影响范围**: docs/
+
+---
+
+## [v4.8] - 2026-07-15
+
+### 币种风控过滤系统：市值等级 + 上线时间双重过滤
+
+- **新增**: `symbol_mapper.py` 币种风控过滤系统
+  - 新增 `MarketCapTier` 枚举：LARGE（大市值Top20）/ MID（中等市值Top20-60）/ SMALL（小市值/meme币）
+  - `AssetInfo` 数据类新增 `market_cap_tier` 和 `listing_date` 字段
+  - 为全部 50 个注册币种标注市值等级和上线日期
+  - 新增 `is_martin_safe()` 方法：市值等级 + 上线时间双重过滤
+  - 新增 `filter_martin_safe()` 方法：批量过滤
+  - 新增 `get_market_cap_tier()` / `get_listing_date()` 查询方法
+  - 小市值币种（PEPE/SHIB/SUSHI/WLD/APE）自动设 `martin_enabled=False`
+  - **影响范围**: lib/symbol_mapper.py
+
+- **修改**: `v15_trader.py` COINS 加载逻辑增加风控过滤
+  - 导入 `is_martin_safe` 并新增降级兼容函数
+  - COINS 加载链：V15_COINS配置 → OKX支持过滤 → 马丁风控过滤
+  - 新增启动日志：输出原始/OKX支持/风控通过币种数 + 剔除币种及原因
+  - **影响范围**: core/v15_trader.py
+
+- **修改**: `config/.env.v15` 币种池精简 + 新增风控参数
+  - `V15_COINS` 从 34 个精简至 30 个（剔除 PEPE/SHIB/SUSHI/WLD/APE）
+  - 新增 `V15_MARTIN_MIN_TIER=mid`（最低市值等级）
+  - 新增 `V15_MARTIN_MIN_HISTORY_DAYS=365`（最小上线天数）
+  - **影响范围**: config/.env.v15
+
+- **修改**: HYPE 从 SMALL 提升至 MID
+  - HYPE（Hyperliquid）上线 2024-11-29，距今 >365 天，通过时间检测
+  - 用户指定保留（平台币潜力大），市值等级 SMALL → MID
+  - `martin_enabled` 从 False 恢复为 True
+  - **影响范围**: lib/symbol_mapper.py, config/.env.v15
+
+- **新增**: `tests/test_symbol_mapper.py` 新增 `TestMartinSafeFilter` 测试类
+  - 16 项测试：市值等级查询/单币种风控/批量过滤/时间检测/HYPE特殊处理
+  - 更新原有测试适配 HYPE 等级变更
+  - **影响范围**: tests/test_symbol_mapper.py
+  - **验证方式**: 46/48 测试通过（2个失败为改动前已存在的预存问题）
+
+- **修改**: 技术文档全面更新
+  - `TECHNICAL_DESIGN.md` 新增第 14 章「币种风控过滤系统」，风控体系从五层扩展至六层（新增第零层币种风控），更新版本至 v4.8
+  - `ENGINEERING_INDEX.md` 核心架构从 9 模块扩展至 10 模块（新增币种风控过滤），币种池从 34 更新至 30，新增 2 个配置参数，更新版本至 v4.3
+  - **影响范围**: docs/
+
+---
+
+## [v4.7] - 2026-07-14
+
+### OCO止盈止损挂单系统 + 多空方向控制v2上线
+
+- **新增**: OCO止盈止损挂单同步机制 — 交易所层面条件单保护
+  - `v15_trader.py` 新增 `_sync_tp_sl_orders()` 函数：开仓/加仓后同步挂 OKX OCO 条件单
+  - `v15_trader.py` 新增 `_update_tp_sl_dynamic()` 函数：轮询动态更新挂单（止损线移动 > 0.5% 时自动同步）
+  - `v15_trader.py` `execute_open_position()` 开仓成功后自动挂 OCO 单
+  - `v15_trader.py` `execute_addon()` 加仓成功后撤旧单+挂新单
+  - `v15_trader.py` `check_take_profit()` / `_execute_close_position()` 平仓前自动取消条件单
+  - `v15_trader.py` `run_poll_cycle()` 每次轮询动态检查止盈止损价格变化
+  - **影响范围**: core/v15_trader.py
+  - **验证方式**: 51项核心测试全通过
+
+- **修复**: `okx_client.py` TP-only/SL-only 条件单参数
+  - 仅止盈单参数从 `triggerPx` 改为 `tpTriggerPx` + `tpOrdPx`
+  - 仅止损单参数从 `triggerPx` 改为 `slTriggerPx` + `slOrdPx`
+  - **影响范围**: lib/okx_client.py
+
+- **修改**: `config/.env.v15` `V15_ALLOW_SHORT` 从 `false` 改为 `true`
+  - 系统切换为最新马丁策略（MA128 + BTC风向标做空机制）
+  - **影响范围**: config/.env.v15
+
+- **修改**: 实盘 5 币种持仓止盈止损挂单（NEAR 已手动平仓）
+  - BTC: OCO 单，TP=$65,119 (4%), SL=$57,000 (安全网)
+  - INJ: OCO 单，TP=$5.434 (9%), SL=$4.613 (日EMA200)
+  - TIA: OCO 单，TP=$0.4442 (9.6%), SL=$0.3844 (日MA200)
+  - WLD: OCO 单，TP=$0.4424 (10%), SL=$0.3927 (日MA200)
+  - ZEC: OCO 单，TP=$554.80 (10%), SL=$424.32 (日EMA200)
+  - **影响范围**: data/v15_state.json
+
+- **修改**: 技术文档全面更新
+  - `TECHNICAL_DESIGN.md` 新增第 13 章「OCO止盈止损挂单系统」，更新版本至 v4.7
+  - `ENGINEERING_INDEX.md` 更新交易方向为多空双向，核心架构从 7 模块扩展至 9 模块，更新版本至 v4.2
+  - **影响范围**: docs/
+
+---
+
 ## [v4.0] - 2026-07-13
 
 ### 文档规范化

@@ -1,7 +1,7 @@
 # 工程索引 — V15 经典马丁策略
 
 > **定位：** 模块级工程索引（L2），对齐系统 `2-KNOWLEDGE/4-OPERATIONS/索引体系.md` 的 Z 轴三层规范
-> **版本：** v4.1 | **更新：** 2026-07-13 | **维护者：** DreamBuddy v2
+> **版本：** v5.1 | **更新：** 2026-07-17 | **维护者：** DreamBuddy v2
 
 ---
 
@@ -11,9 +11,10 @@
 - [2. 目录地图](#2-目录地图)
 - [3. 文件清单与职责](#3-文件清单与职责)
 - [4. 16项技术指标清单](#4-16项技术指标清单)
-- [5. 贝叶斯优化参数](#5-贝叶斯优化参数8个)
+- [5. 贝叶斯优化参数](#5-贝叶斯优化参数8个智能系统参数)
 - [6. 核心流程索引](#6-核心流程索引)
 - [7. 配置参数索引](#7-配置参数索引)
+- [8. 智能系统增强与双基线版本管理](#8-智能系统增强与双基线版本管理)
 
 ---
 
@@ -23,27 +24,34 @@
 |------|-----|
 | 模块编号 | 14 |
 | 模块名称 | V15 经典马丁策略 |
-| 策略类型 | 马丁格尔 + 纯技术分析 + 智能资金管理 |
-| 交易方向 | 只做多 |
+| 策略类型 | 马丁格尔 + 纯技术分析 + 智能资金管理 + 智能系统增强 |
+| 交易方向 | 多空双向（BTC用DirectionGate MA128+自身MA200，其他币用BTC风向标3日确认+short_only） |
 | 交易周期 | 4H |
 | 最大加仓 | 3次（共4层仓位） |
-| 监控币种 | 34个（BTC,ETH,SOL,BNB,XRP,ADA,DOGE,LTC,LINK,AVAX,DOT,UNI,NEAR,APT,ARB,OP,INJ,SUI,SEI,TIA,AAVE,COMP,CRV,DYDX,LDO,PEPE,SAND,SHIB,STX,SUSHI,WLD,ZEC,OKB,HYPE） |
+| 监控币种 | 30个（大市值+中等市值，已剔除小市值/meme/新币：PEPE/SHIB/SUSHI/WLD/APE） |
+| 智能系统 | ATR动态止盈 + 移动止盈 + ELDER-RAY资金调度(0.9-1.5x) + BTC风向标智能模式 |
+| 版本管理 | 双基线：固定参数基线(138%) + 智能参数基线(210.4%) + 贝叶斯优化自动调度 |
 | 依赖关系 | 独立模块，依赖 10-经典指标系统（超时离场切换） |
 | 数据来源 | OKX API（实盘/模拟盘） |
 | 前端展示 | `experiments/ab-trading/monitor.html` 的"马丁策略" Tab（8765端口） |
 
-### 核心架构（7大模块）
+### 核心架构（13大模块）
 
 | 模块 | 核心功能 | 关键算法/指标 |
 |------|----------|---------------|
+| 币种风控过滤 | 市值等级+上线时间双重过滤 | MarketCapTier(LARGE/MID/SMALL) + listing_date ≥ 365天 |
 | 入场信号系统 | 16层入场决策 | Fib/布林/RSI/MACD/ADX/Pivot/OBV/SuperTrend/Keltner/StochRSI/Vortex/TEMA/GoldenCross/EMA排列（16项） |
-| 参数设置 | BTC固定 + 波动率放大 | 止盈/加仓间距/止损按30日波动率调整 |
+| 参数设置 | BTC固定 + 波动率放大 + ATR动态止盈 | 止盈/加仓间距/止损按30日波动率调整，ATR因子动态微调 |
 | 趋势强度计算器 | Elder-ray三重滤网 | EMA13斜率 + Bull/Bear Power + 背离检测 + 力度衰竭 |
-| 资金管理器 | 智能资金分配 | 22%底仓+5x杠杆+加仓分配（Elder-ray趋势强度 × 信号置信度 × 波动率 → 每币种预算） |
+| 资金管理器 | 智能资金分配 + ELDER-RAY资金调度 | 22%底仓+5x杠杆+加仓分配（Elder-ray趋势强度 × 信号置信度 × 波动率 → 每币种预算） |
+| 多空方向控制 | DirectionGate + BTC风向标智能模式 | BTC用MA128三状态模型，其他币用BTC风向标3日确认+short_only |
+| ATR动态止盈 | BTC 4%基准 + ATR因子 | `calc_atr()` + `get_vol_adjusted_params()` |
+| 移动止盈 | 浮盈达80%启动，回撤N×ATR止盈 | `trailing_atr_mult`(1.0-2.5) + `trailing_start_ratio`(0.3-0.8) |
 | 动态止损 | 日线/周线MA200风控 | 价格跌破所有均线禁止开仓，保护已有持仓 |
+| OCO止盈止损挂单 | 交易所层面条件单同步 | 开仓/加仓同步挂OCO单 + 轮询动态更新 + 平仓前撤单 |
 | 持仓超时与离场 | 分层计时 + 经典离场切换 | 底仓48h / 加仓后24h + 黄金窗口12h → 切换ClassicExitSystem（CLOSE/REDUCE/RAISE_TP/HOLD） |
-| 贝叶斯参数优化 | 8参数寻优 | 基于回测数据+资金效率评分，资金分配 + 最佳持仓时间 + 最大持仓数 → 最大化卡尔马比率 |
-| 三屏趋势过滤器 | 周线+日线MA104趋势一致性 | both_bear模式：双周期看空时禁止开多 |
+| 贝叶斯参数优化 | 8参数智能系统寻优 + 自动回退 | 智能系统参数(ATR/移动止盈/ELDER-RAY/风向标) + 持仓时间 → 最大化卡尔马比率 |
+| 贝叶斯自动调度 | orchestrator集成 + 双基线版本管理 | 连亏3笔+每月触发+24h冷却期+PID锁+自动回退验证 |
 
 ---
 
@@ -67,10 +75,11 @@
 │   ├── config_loader.py           配置加载器（支持 include 语法）
 │   ├── okx_client.py              OKX 交易客户端（实盘/模拟/REST API）
 │   ├── market_data.py             K线数据获取 + 基础指标
-│   ├── strategy_params.py         动态参数：动态止损+波动率+Elder-ray趋势强度
+│   ├── strategy_params.py         动态参数：动态止损+波动率+Elder-ray趋势强度+ATR计算
 │   ├── capital_manager.py         资金管理：智能分配+仓位成本+并发控制+风控
 │   ├── capital_manager_engine.py  资金管理引擎：回测+趋势+贝叶斯优化+月度报告
-│   ├── bayesian_optimizer.py      贝叶斯参数优化器（8参数，三轮反馈迭代）
+│   ├── bayesian_optimizer.py      贝叶斯参数优化器（8参数智能系统+双基线+自动回退）
+│   ├── kelly_optimizer.py         凯利公式底仓优化（半凯利+收缩估计，默认关闭）
 │   └── symbol_mapper.py           币种映射工具
 ├── tests/                         测试套件
 │   ├── test_v15_system.py         系统测试
@@ -80,6 +89,7 @@
 │   ├── v15_state.json             交易状态持久化
 │   ├── backtest_cache/            回测K线缓存
 │   ├── capital_manager/           资金管理引擎数据（优化历史/状态/报告）
+│   ├── bayesian_opt/              贝叶斯优化数据（active_params.json/schedule_state.json/优化历史）
 │   └── okx_client/                OKX客户端数据
 ├── docs/                          技术文档
 │   ├── ENGINEERING_INDEX.md       本文件 — 工程索引
@@ -117,21 +127,23 @@ experiments/ab-trading/
 | 文件 | 函数数 | 职责 | 关键函数 |
 |------|--------|------|----------|
 | `v15_signal.py` | ~25 | 信号引擎：16项技术指标 + 16层入场决策 | `v15_decision()`, `calc_sma()`, `calc_rsi()`, `calc_fibonacci()`, `calc_bollinger_bands()`, `calc_macd()`, `calc_adx()`, `determine_position()`, `calc_pivot_points()`, `calc_obv()`, `calc_supertrend()`, `calc_keltner_channel()`, `calc_stochrsi()`, `calc_vortex()`, `calc_tema()`, `calc_golden_cross()`, `calc_ema_align()` |
-| `v15_trader.py` | ~20 | 自动交易器：轮询信号、开仓（智能资金分配）、加仓、止盈、动态止损、超时离场（切换经典系统）、状态持久化 | `run_poll_cycle()`, `execute_open_position()`, `execute_addon()`, `check_take_profit()`, `check_time_exit()`, `_get_dynamic_params()`, `trigger_capital_rebuild()` |
-| `v15_backtest.py` | ~25 | 回测引擎：历史K线回测、绩效统计、超时离场模拟 | `run_backtest()`, `v15_decision()`, `print_report()`, `get_ma200_stop_loss()`, `get_vol_adjusted_params()` |
+| `v15_trader.py` | ~22 | 自动交易器：轮询信号、开仓（智能资金分配）、加仓、止盈、动态止损、超时离场、OCO挂单同步、多空方向控制、币种风控过滤、状态持久化 | `run_poll_cycle()`, `execute_open_position()`, `execute_addon()`, `check_take_profit()`, `check_time_exit()`, `_sync_tp_sl_orders()`, `_update_tp_sl_dynamic()`, `_get_direction_ctx()`, `_get_dynamic_params()` |
+| `v15_backtest.py` | ~25 | 回测引擎：历史K线回测、绩效统计、超时离场模拟 | `run_backtest()`, `v15_decision()`, `print_report()`, `get_ma200_stop_loss()`, `get_vol_adjusted_params()`, `prepare_ma128_for_4h()` |
+| `direction_gate.py` | ~5 | 多空方向控制：MA128+BTC风向标三状态模型 | `DirectionGate`（类，含 `evaluate()`），`GateResult`（数据类），`MarketRegime`/`TradeDirection`（枚举） |
 
 ### 3.2 工具层（lib/）
 
 | 文件 | 函数数 | 职责 | 关键函数 |
 |------|--------|------|----------|
 | `config_loader.py` | 8 | 配置加载：支持 include 语法、类型解析、环境变量注入 | `load_config()`, `get_config()`, `get_config_float()`, `get_config_int()`, `get_config_list()`, `get_config_bool()` |
-| `okx_client.py` | — | OKX REST API 客户端：下单/查仓/查余额/K线获取 | `OKXSimulatedClient`（类，含 `place_order()`, `get_positions()`, `get_balance()`, `get_kline()` 等） |
+| `okx_client.py` | — | OKX REST API 客户端：下单/查仓/查余额/K线获取/OCO止盈止损 | `OKXSimulatedClient`（类，含 `place_order()`, `get_positions()`, `get_balance()`, `get_kline()`, `place_stop_loss_take_profit()`, `cancel_algo_orders()`） |
 | `market_data.py` | 7 | K线获取（OKX API/CLI双路降级）+ 基础指标 | `fetch_candles()`, `calc_sma()`, `calc_ema()`, `calc_rsi()` |
-| `strategy_params.py` | ~15 | 动态参数：动态止损 + 波动率自适应 + Elder-ray趋势强度 | `get_dynamic_stop_loss()`, `get_vol_adjusted_params()`, `get_coin_strategy_params()`, `calc_elder_ray()`, `calc_daily_ma200()`, `calc_30d_volatility()`, `check_trend_filter()` |
+| `strategy_params.py` | ~16 | 动态参数：动态止损 + 波动率自适应 + Elder-ray趋势强度 + MA128计算 | `get_dynamic_stop_loss()`, `get_vol_adjusted_params()`, `get_coin_strategy_params()`, `calc_elder_ray()`, `calc_daily_ma200()`, `calc_daily_ma128()`, `calc_30d_volatility()`, `check_trend_filter()` |
 | `capital_manager.py` | ~12 | 资金管理：智能分配 + 仓位成本 + 并发控制 + 风险评级 | `calculate_per_coin_allocation()`, `calculate_capital_allocation()`, `calculate_single_position_cost()`, `get_account_balance()`, `get_current_positions()` |
 | `capital_manager_engine.py` | ~15 | 资金管理引擎：回测+趋势过滤+贝叶斯优化+月度报告+HTTP API | `CapitalManagerEngine`（类，含 `run_monthly()`, `run_optimization()`, `get_status()`, `check_open_permission()`） |
-| `bayesian_optimizer.py` | ~15 | 贝叶斯参数优化：8参数，三轮反馈迭代，最大化卡尔马比率 | `V15CapitalOptimizer`（类，含 `iterate_optimize()`, `_objective()`, `_run_backtest_evaluation()`） |
-| `symbol_mapper.py` | — | 币种映射工具 | `to_swap()`, `to_spot()` |
+| `bayesian_optimizer.py` | ~15 | 贝叶斯参数优化：8参数智能系统，三轮反馈迭代，自动回退验证，双基线版本管理 | `V15CapitalOptimizer`（类），`should_trigger_optimization()`, `run_optimization_with_rollback()`, `rollback_to_baseline()`, `rollback_to_fixed_baseline()`, `print_version_info()` |
+| `kelly_optimizer.py` | — | 凯利公式底仓优化：半凯利+收缩估计（默认关闭） | `KellyOptimizer`（类） |
+| `symbol_mapper.py` | — | 币种映射工具 + 马丁风控过滤（市值等级+上线时间） | `to_swap()`, `to_spot()`, `is_martin_safe()`, `filter_martin_safe()`, `get_market_cap_tier()`, `get_listing_date()` |
 
 ### 3.3 入口层
 
@@ -169,24 +181,33 @@ experiments/ab-trading/
 
 ---
 
-## 5. 贝叶斯优化参数（8个）
+## 5. 贝叶斯优化参数（8个智能系统参数）
 
-| 参数 | 范围 | 说明 | 来源 | 配置键 |
-|------|------|------|------|--------|
-| `base_position_pct` | 0.22（固定，用户经验值） | 底仓资金比例 | 贝叶斯优化 | `V15_BASE_POSITION_PCT` |
-| `addon1_pct` | 0.10-0.30 | 加仓1资金比例（黑天鹅第一档） | 贝叶斯优化 | `V15_ADDON1_PCT` |
-| `addon2_pct` | 0.03-0.10 | 加仓2资金比例 | 贝叶斯优化 | `V15_ADDON2_PCT` |
-| `addon3_pct` | 0.05-0.20 | 加仓3资金比例 | 贝叶斯优化 | `V15_ADDON3_PCT` |
-| `max_concurrent_positions` | 2-8 | 最大持仓币种数 | 贝叶斯优化 | `V15_MAX_CONCURRENT_POSITIONS` |
-| `max_base_holding_hours` | 24-96h | 底仓最大持仓时间 | 贝叶斯优化 | `V15_MAX_BASE_HOLDING_HOURS` |
-| `max_post_addon_hours` | 12-48h | 加仓后最大持仓时间 | 贝叶斯优化 | `V15_MAX_POST_ADDON_HOURS` |
-| `golden_window_hours` | 4-24h | 黑天鹅反弹黄金窗口 | 贝叶斯优化 | `V15_GOLDEN_WINDOW_HOURS` |
+> **v5.0 更新：** 优化参数从旧的资金分配参数（addon1/2/3_pct等）切换为智能系统核心参数（ATR/移动止盈/ELDER-RAY/风向标）。
+
+| 参数 | 范围 | 说明 | 类别 | 智能基线值 |
+|------|------|------|------|------------|
+| `trailing_atr_mult` | 1.0-2.5 | 移动止盈ATR倍数（浮盈回撤N×ATR止盈） | 智能系统 | 1.0 |
+| `trailing_start_ratio` | 0.3-0.8 | 移动止盈启动阈值（占止盈比例） | 智能系统 | 0.8 |
+| `elder_ray_floor` | 0.5-0.9 | ELDER-RAY仓位下限（弱趋势最小仓位） | 智能系统 | 0.9 |
+| `elder_ray_ceil` | 1.2-1.5 | ELDER-RAY仓位上限（强趋势最大仓位） | 智能系统 | 1.5 |
+| `btc_windvane_confirm_days` | 1-5 | BTC风向标跌破确认天数 | 智能系统 | 3 |
+| `max_base_holding_hours` | 24-96h | 底仓最大持仓时间 | 持仓时间 | 29.9h |
+| `max_post_addon_hours` | 12-48h | 加仓后最大持仓时间 | 持仓时间 | 37.7h |
+| `golden_window_hours` | 4-24h | 黑天鹅反弹黄金窗口 | 持仓时间 | 11.1h |
 
 **固定参数（不参与优化）：**
-- BTC 基础参数：底仓22%，5x杠杆，止盈4%（BTC固定），其他币种按波动率放大
-- 其他币种：止盈/加仓间距按30日波动率放大
-- 趋势过滤器：both_bear + MA104（周线+日线MA104都看空时禁止开多）
-- 底仓比例22%和杠杆5x为用户经验值，固定不参与优化
+- 底仓比例22%（`base_position_pct`，用户经验值）
+- 杠杆5x（`leverage`，用户经验值）
+- BTC止盈4%（`tp_pct_btc`，其他币种按波动率放大）
+- 加仓间距8%基准（`addon_pct`，按波动率放大）
+- 最大加仓3次（`max_addons`）
+
+**双基线版本：**
+| 版本 | 收益 | 参数键 | 用途 |
+|------|------|--------|------|
+| 固定参数基线 v1.0 | 138.0% | `FIXED_BASELINE_PARAMS` | 智能系统失效时终极回退 |
+| 智能参数基线 v2.0 | 210.4% | `SMART_BASELINE_PARAMS` | 贝叶斯优化无效时回退（当前默认） |
 
 ---
 
@@ -245,17 +266,26 @@ run_poll_cycle()
             └─ HOLD     → 继续持有
 ```
 
-### 6.3 月度优化流程（贝叶斯参数寻优）
+### 6.3 贝叶斯优化自动调度流程（智能系统参数寻优）
 
 ```
-CapitalManagerEngine.run_monthly()
-  ├─→ run_backtest()  ← 回测引擎（统计各层触发频率和收益特征）
-  ├─→ check_trend_filter()  ← 三屏趋势过滤
-  ├─→ run_optimization()  ← 贝叶斯优化器
-  │    ├─ 基于回测数据的资金效率评分
-  │    ├─ 趋势过滤参数寻优（both_bear + MA104）
-  │    └─ 最大化卡尔马比率
-  └─→ _update_config_file()  ← 写入配置
+orchestrator.py（每15分钟被cron调用）
+  ├─→ check_bayesian_optimization_trigger()
+  │    ├─ 读取 .env.v15 调度配置
+  │    ├─ 读取 v15_state.json 连亏笔数
+  │    └─ should_trigger_optimization()
+  │         ├─ 条件1: 连亏 ≥ 3笔（事件驱动，最高优先级）
+  │         ├─ 条件2: 跨月触发（周期驱动）
+  │         └─ 冷却期检查: 距上次优化 < 24h → 跳过
+  │
+  └─→ run_bayesian_optimization()  ← 后台启动（PID锁防重复，不阻塞交易）
+       └─ python3 bayesian_optimizer.py --with-rollback
+            ├─ [1/4] 智能参数基线回测（210.4%）
+            ├─ [2/4] 贝叶斯参数优化（8参数智能系统寻优）
+            ├─ [3/4] 优化参数回测验证
+            └─ [4/4] 对比决定:
+                 ├─ improvement ≥ 2.0% → 采用优化参数
+                 └─ improvement < 2.0% → 回退智能参数基线
 ```
 
 ### 6.4 连续亏损触发流程（事件驱动）
@@ -285,7 +315,9 @@ v15_trader.py 止损平仓时:
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `V15_COINS` | 34个币种 | 监控交易对列表 |
+| `V15_COINS` | 30个币种 | 监控交易对列表（已剔除小市值/meme/新币） |
+| `V15_MARTIN_MIN_TIER` | mid | 马丁策略最低市值等级（large/mid/small） |
+| `V15_MARTIN_MIN_HISTORY_DAYS` | 365 | 最小上线天数（新币暴涨暴跌风险，要求≥1年历史） |
 | `V15_POLL_INTERVAL` | 3600s | 轮询间隔 |
 | `V15_LEVERAGE` | 5 | 杠杆倍数 |
 | `V15_BASE_POSITION_PCT` | 0.22 | 底仓资金比例 |
@@ -293,15 +325,84 @@ v15_trader.py 止损平仓时:
 | `V15_MAX_BASE_HOLDING_HOURS` | 48 | 底仓最大持仓时间(h) |
 | `V15_MAX_POST_ADDON_HOURS` | 24 | 加仓后最大持仓时间(h) |
 | `V15_GOLDEN_WINDOW_HOURS` | 12 | 黑天鹅反弹黄金窗口(h) |
+| `V15_USE_TRAILING_TP` | true | 移动止盈开关（参数从active_params.json加载：trailing_atr_mult, trailing_start_ratio） |
 | `V15_DAILY_LOSS_LIMIT` | -50 | 日亏损限制(USDT) |
 | `V15_MAX_CONSECUTIVE_LOSSES` | 3 | 连续亏损3次触发资金管理引擎重新优化 |
-| `V15_TREND_FILTER_MODE` | both_bear | 趋势过滤模式（none/both_bear） |
+| `V15_ALLOW_SHORT` | true | 多空方向控制开关（true=启用MA128+BTC风向标做空机制） |
+| `V15_TREND_FILTER_MODE` | none | 趋势过滤模式（none/both_bear），当前已禁用 |
 | `V15_TREND_FILTER_PERIOD` | 104 | 趋势过滤MA周期 |
 | `V15_ADDON1_PCT` | 0.20 | 加仓1资金比例 |
 | `V15_ADDON2_PCT` | 0.05 | 加仓2资金比例 |
 | `V15_ADDON3_PCT` | 0.10 | 加仓3资金比例 |
 | `V15CT_CONFIDENCE_THRESHOLD` | 30 | V15-CT 信号置信度阈值 |
+| `BAYESIAN_OPT_LOSS_STREAK_TRIGGER` | 3 | 贝叶斯优化：连续亏损触发笔数 |
+| `BAYESIAN_OPT_WEEKLY` | false | 贝叶斯优化：每周触发（已关闭，避免过拟合） |
+| `BAYESIAN_OPT_MONTHLY` | true | 贝叶斯优化：每月触发（跨月检查） |
+| `BAYESIAN_OPT_MIN_IMPROVE_PCT` | 2.0 | 贝叶斯优化：采用阈值（收益差≥2%才采用） |
+| `BAYESIAN_OPT_COOLDOWN_HOURS` | 24 | 贝叶斯优化：冷却期（距上次优化24h内不重复触发） |
 
 ---
 
-_最后更新：2026-07-13 | 维护者：DreamBuddy v2_
+## 8. 智能系统增强与双基线版本管理
+
+### 8.1 智能系统增强模块
+
+| 增强模块 | 实现文件 | 核心参数 | 默认状态 |
+|----------|----------|----------|----------|
+| ATR动态止盈 | `lib/strategy_params.py` | `calc_atr()`, `calc_atr_pct()` | ✅ 启用（`use_atr=True`） |
+| 移动止盈 | `core/v15_backtest.py` | `trailing_atr_mult`, `trailing_start_ratio` | ✅ 启用（`use_trailing_tp=True`） |
+| ELDER-RAY资金调度 | `core/v15_backtest.py` + `lib/capital_manager.py` | `elder_ray_floor`(0.9), `elder_ray_ceil`(1.5) | ✅ 启用（`use_elder_ray=True`） |
+| BTC风向标智能模式 | `core/v15_backtest.py` | `btc_windvane_confirm_days`(3), `btc_windvane_short_only`(True) | ✅ 启用（非BTC币种自动启用） |
+| 凯利公式底仓优化 | `lib/kelly_optimizer.py` | `use_kelly`, `kelly_shrinkage` | ❌ 关闭（`use_kelly=False`） |
+
+### 8.2 BTC风向标智能模式选择
+
+| 币种 | 方向控制策略 | 止损机制 | 说明 |
+|------|-------------|----------|------|
+| BTC | DirectionGate（MA128三状态） | 自身MA200动态止损 | BTC走势独立，用自身指标 |
+| 其他币 | BTC风向标3日确认 + short_only | BTC MA200全局控方向 | 山寨币跟随BTC，用风向标更稳定 |
+
+### 8.3 双基线版本管理
+
+| 版本 | 名称 | 收益 | 参数键 | 创建日期 | 用途 |
+|------|------|------|--------|----------|------|
+| v1.0 | 固定参数基线 | 138.0% | `FIXED_BASELINE_PARAMS` | 2026-07-15 | 智能系统整体失效时终极回退 |
+| v2.0 | 智能参数基线 | 210.4% | `SMART_BASELINE_PARAMS` | 2026-07-16 | 贝叶斯优化无效时回退（当前默认） |
+
+**三级回退策略：**
+1. 贝叶斯优化参数（自定义）→ 正常运行
+2. 智能参数基线（210.4%）→ 优化收益差 < 2% 时回退
+3. 固定参数基线（138%）→ 智能系统整体失效时终极回退
+
+### 8.4 CLI 版本管理命令
+
+```bash
+# 查看版本管理信息（双基线对比 + 当前活跃参数 + 调度状态）
+python lib/bayesian_optimizer.py --version-info
+
+# 重置为智能参数基线（210.4%，推荐）
+python lib/bayesian_optimizer.py --reset-to-smart
+
+# 终极回退到固定参数基线（138%，仅智能系统失效时使用）
+python lib/bayesian_optimizer.py --reset-to-fixed
+
+# 检查是否应该触发优化
+python lib/bayesian_optimizer.py --check-trigger
+
+# 优化+自动回退验证（定时调度推荐）
+python lib/bayesian_optimizer.py --with-rollback
+```
+
+### 8.5 数据文件
+
+| 文件 | 路径 | 说明 |
+|------|------|------|
+| 活跃参数 | `data/bayesian_opt/active_params.json` | 当前生效的参数 + 来源 + 评分 + 时间戳 |
+| 调度状态 | `data/bayesian_opt/schedule_state.json` | 上次优化时间 + 动作 + 收益改善 |
+| PID锁 | `data/bayesian_opt/.opt.lock` | 防止优化重复运行的进程锁 |
+| 优化历史 | `data/bayesian_opt/v15_optimization_*.json` | 历次优化结果（按时间戳命名） |
+| 优化日志 | `logs/bayesian_opt.log` | 贝叶斯优化运行日志 |
+
+---
+
+_最后更新：2026-07-16 | 维护者：DreamBuddy v2_

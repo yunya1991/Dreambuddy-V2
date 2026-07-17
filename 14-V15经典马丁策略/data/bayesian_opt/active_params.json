@@ -1,0 +1,15 @@
+{
+  "params": {
+    "trailing_atr_mult": 1.0,
+    "trailing_start_ratio": 0.8,
+    "elder_ray_floor": 0.9,
+    "elder_ray_ceil": 1.5,
+    "btc_windvane_confirm_days": 3,
+    "max_base_holding_hours": 29.9,
+    "max_post_addon_hours": 37.7,
+    "golden_window_hours": 11.1
+  },
+  "source": "manual_reset_to_smart",
+  "score": 4112.87,
+  "timestamp": "2026-07-16T00:48:27.103714+00:00"
+}

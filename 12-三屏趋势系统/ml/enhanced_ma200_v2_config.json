@@ -1,0 +1,159 @@
+{
+  "version": "2.0",
+  "name": "增强版MA200牛熊经验法则策略",
+  "strategy_class": "EnhancedMA200Strategy",
+  "description": "在经典MA200牛熊法则基础上，加入周线MA200分仓抄底、BTC分层做空+斐波那契止盈、小币熊市完全空仓三大新法则",
+  "created_at": "2026-07-18",
+  "data_range": "2017-10-10 ~ 2026-07-16（BTC/ETH 3202天，SOL 2117天，UNI 2130天）",
+  "optimization_method": "经验法则驱动 + 9年历史数据回测验证",
+
+  "core_rules": {
+    "rule_1_weekly_dip_buy": {
+      "name": "周线MA200分仓抄底",
+      "trigger": "BTC价格跌至周线MA200以下",
+      "logic": "按跌幅分4档建仓，每跌5%加仓一档，最大仓位80%",
+      "params": {
+        "weekly_ma200_dip_buy": true,
+        "dip_buy_max_position": 0.8,
+        "dip_buy_levels": 4,
+        "dip_buy_step_pct": 5.0
+      }
+    },
+    "rule_2_btc_layered_short": {
+      "name": "BTC分层做空 + 斐波那契止盈",
+      "trigger_level1": "BTC有效跌破日线MA200 → 开3成空仓",
+      "trigger_level2": "日线MA200的5日斜率为负 → 加仓至5成",
+      "take_profit": "斐波那契分阶段止盈(23.6%/38.2%/50%/61.8%)，每档减仓25%",
+      "params": {
+        "bear_short_level1_pct": 0.3,
+        "bear_short_level2_pct": 0.5,
+        "fib_take_profit": true,
+        "fib_levels": [0.236, 0.382, 0.5, 0.618]
+      }
+    },
+    "rule_3_alt_bear_no_trade": {
+      "name": "小币熊市完全禁止开仓",
+      "logic": "小币(非BTC)在BTC非牛市时完全空仓，不做多也不做空；仅当BTC和自身同时处于牛市才满仓做多",
+      "params": {
+        "alt_bear_no_trade": true
+      }
+    }
+  },
+
+  "base_params": {
+    "ma_period": 200,
+    "slope_period": 5,
+    "max_position": 1.0,
+    "warmup_periods": 260
+  },
+
+  "backtest_results": {
+    "BTC": {
+      "return_pct": 457.05,
+      "sharpe": 0.510,
+      "max_drawdown_pct": 78.56,
+      "trades": 87,
+      "avg_holding_days": 32.4,
+      "state_distribution": {
+        "bull": "49%",
+        "bear_short_l1_3pct": "11%",
+        "bear_short_l2_5pct": "28%",
+        "dip_buy": "8%",
+        "sideways": "4%"
+      },
+      "fib_tp_days": 337
+    },
+    "ETH": {
+      "return_pct": 348.60,
+      "sharpe": 0.410,
+      "max_drawdown_pct": 66.22,
+      "trades": 32,
+      "avg_holding_days": 36.7,
+      "state_distribution": {
+        "bull": "40%",
+        "bear_flat": "60%"
+      }
+    },
+    "SOL": {
+      "return_pct": 380.77,
+      "sharpe": 0.830,
+      "max_drawdown_pct": 55.36,
+      "trades": 14,
+      "avg_holding_days": 23.4,
+      "state_distribution": {
+        "bull": "18%",
+        "bear_flat": "82%"
+      }
+    },
+    "UNI": {
+      "return_pct": 41.76,
+      "sharpe": 0.180,
+      "max_drawdown_pct": 62.32,
+      "trades": 13,
+      "avg_holding_days": 15.6,
+      "state_distribution": {
+        "bull": "11%",
+        "bear_flat": "89%"
+      }
+    },
+    "average": {
+      "return_pct": 307.05,
+      "sharpe": 0.482,
+      "max_drawdown_pct": 65.61,
+      "trades": 36
+    }
+  },
+
+  "buy_hold_baseline": {
+    "BTC": 1188.17,
+    "ETH": 512.99,
+    "SOL": 2497.92,
+    "UNI": 17.68,
+    "average": 1054.19
+  },
+
+  "comparison_with_classic_ma200": {
+    "classic_ma200_avg_return": 134.91,
+    "v2_avg_return": 307.05,
+    "improvement": "+172.14pp",
+    "classic_ma200_avg_sharpe": -0.008,
+    "v2_avg_sharpe": 0.482,
+    "sharpe_improvement": "+0.490",
+    "classic_ma200_avg_drawdown": 89.84,
+    "v2_avg_drawdown": 65.61,
+    "drawdown_improvement": "-24.23pp",
+    "key_improvement": "UNI从-99.62%爆仓 → +41.76%正收益"
+  },
+
+  "ablation_analysis": {
+    "with_dip_buy_vs_without": {
+      "with_dip_buy_btc": 457.05,
+      "without_dip_buy_btc": 210.61,
+      "conclusion": "周线MA200抄底贡献BTC收益的主要部分(+246.44pp)"
+    },
+    "with_fib_tp_vs_without": {
+      "with_fib_btc": 457.05,
+      "without_fib_btc": 452.52,
+      "conclusion": "斐波那契止盈在BTC上效果不明显(+4.53pp)，因BTC熊市下跌幅度常超过61.8%"
+    },
+    "conservative_vs_aggressive_short": {
+      "conservative_3_5pct_btc": 457.05,
+      "aggressive_5_7pct_btc": 398.25,
+      "conclusion": "3/5成仓位优于5/7成，做空仓位太激进反而降低收益(熊市反弹凶猛)"
+    }
+  },
+
+  "design_rationale": {
+    "weekly_ma200_dip_buy": "周线MA200是BTC长期牛熊分水岭，跌破后分仓抄底可捕捉大底，左侧布局降低平均成本",
+    "layered_short_3_5": "跌破MA200先开3成试探，斜率转负加到5成，避免一次性满仓做空被反弹打爆",
+    "fib_take_profit": "下跌趋势中分阶段锁定利润，避免盈利被反弹回吐",
+    "alt_bear_no_trade": "小币在熊市中做多做空双杀风险极高，完全空仓是最优选择；只有BTC+自身双牛才做多",
+    "warmup_260": "周线MA200需要约200周数据，日线warmup设为260确保所有指标有效"
+  },
+
+  "applicable_scenarios": {
+    "best_for": "大周期趋势跟踪，适合9年以上的长期回测和实盘",
+    "suitable_coins": "BTC + 主流小币(ETH/SOL/UNI等)",
+    "not_suitable_for": "短线交易、高波动小币种、震荡市套利"
+  }
+}

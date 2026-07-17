@@ -1,0 +1,52 @@
+{
+  "version": "v2.1.0-optimized",
+  "name": "AI三屏趋势策略-优化版本",
+  "created_at": "2026-07-17",
+  "description": "基于贝叶斯参数扫描优化，600天回测验证，收益276.16%，夏普8.47",
+  "optimization_method": "grid_search",
+  "baseline_version": "v2.0.0-baseline",
+  "dynamic_weight_fusion": {
+    "base_rule_weight": 0.3,
+    "min_rule_weight": 0.2,
+    "max_rule_weight": 0.9,
+    "trend_sensitivity": 0.25,
+    "vol_sensitivity": 0.25,
+    "volume_sensitivity": 0.2,
+    "duration_sensitivity": 0.25
+  },
+  "strategy_params": {
+    "label_lookahead": 7,
+    "train_window": 300,
+    "retrain_interval": 30,
+    "min_ml_confidence": 0.1,
+    "min_train_samples": 40,
+    "enable_fundamental": true,
+    "enable_multitask": true,
+    "enable_dynamic_weight": true,
+    "enable_feature_selection": false,
+    "top_k_features": 40,
+    "base_rule_weight": 0.3
+  },
+  "multitask_model": {
+    "conf_scale_factor": 10.0,
+    "task_weights": {
+      "direction": 0.5,
+      "confidence": 0.3,
+      "drive_mode": 0.2
+    }
+  },
+  "backtest_results": {
+    "total_return_pct": 276.16,
+    "sharpe_ratio": 8.47,
+    "max_drawdown_pct": 16.69,
+    "win_rate": 50.0,
+    "trade_count": 18
+  },
+  "param_sweep_top5": [
+    {"name": "大窗口", "train_window": 300, "return": 276.16, "sharpe": 8.47},
+    {"name": "低规则权重", "fusion_base_rule_weight": 0.3, "return": 265.81, "sharpe": 7.38},
+    {"name": "低趋势敏感", "fusion_trend_sensitivity": 0.05, "return": 246.53, "sharpe": 7.22},
+    {"name": "高波动敏感", "fusion_vol_sensitivity": 0.4, "return": 245.08, "sharpe": 7.24},
+    {"name": "高时长敏感", "fusion_duration_sensitivity": 0.4, "return": 242.74, "sharpe": 7.21}
+  ]
+}

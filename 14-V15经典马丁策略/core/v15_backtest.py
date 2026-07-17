@@ -6,18 +6,36 @@ V15 经典马丁策略回测引擎
 - 斐波那契+布林带+MACD+ADX入场
 - 所有币种: 动态MA200止损（日线/周线）
 - 所有币种: 根据30天波动率调整止盈和加仓间距
-- 默认只做多模式
+- 支持多空双向：DirectionGate根据日/周MA200控制方向开关
 """
-import json, os, sys, time, requests, warnings, math
+import json, os, sys, time, requests, warnings, math, copy
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timezone, timedelta
+
+# DirectionGate 多空方向控制
+sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+try:
+    from direction_gate import DirectionGate, MarketRegime
+    _DIRECTION_GATE_AVAILABLE = True
+except ImportError:
+    _DIRECTION_GATE_AVAILABLE = False
+
+try:
+    from strategy_params import calc_elder_ray
+    _ELDER_RAY_AVAILABLE = True
+except ImportError:
+    _ELDER_RAY_AVAILABLE = False
 
 warnings.filterwarnings("ignore")
 
 BASE_DIR = Path(__file__).parent.parent
 CACHE_DIR = BASE_DIR / "data" / "backtest_cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# ELDER-RAY 资金调度范围（贝叶斯优化最优值，可被优化器动态修改）
+_elder_ray_floor = 0.9
+_elder_ray_ceil = 1.5
 
 MAX_ADDONS = 3
 BASE_ADDON_PCT = 0.08
@@ -181,7 +199,7 @@ def _calc_adx(prices, period=14):
 # ── 数据获取 ──────────────────────────────────────────────────────────────
 
 def fetch_klines(coin: str, interval: str = "4h", limit: int = 1000) -> List[Dict]:
-    """获取历史K线数据（带缓存）"""
+    """获取历史K线数据（带缓存）— 返回深拷贝避免副作用"""
     cache_file = CACHE_DIR / f"{coin}_{interval}_{limit}.json"
 
     if cache_file.exists():
@@ -190,7 +208,7 @@ def fetch_klines(coin: str, interval: str = "4h", limit: int = 1000) -> List[Dic
                 cached = json.load(f)
             cache_age = time.time() - cached.get("cached_at", 0)
             if cache_age < 86400 * 7:  # 缓存7天
-                return cached.get("data", [])
+                return copy.deepcopy(cached.get("data", []))
         except Exception:
             pass
 
@@ -257,6 +275,17 @@ def calc_ma200_series(closes: List[float]) -> List[Optional[float]]:
         else:
             ma200.append(None)
     return ma200
+
+
+def calc_ma_series(closes: List[float], period: int) -> List[Optional[float]]:
+    """计算指定周期的MA序列"""
+    ma = []
+    for i in range(len(closes)):
+        if i >= period - 1:
+            ma.append(sum(closes[i - period + 1:i + 1]) / period)
+        else:
+            ma.append(None)
+    return ma
 
 
 def prepare_daily_sma_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], periods: List[int]) -> Dict[int, List[Optional[float]]]:
@@ -344,6 +373,31 @@ def prepare_ma200_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], klines_1w
             weekly_ma200_for_4h[i] = weekly_ma200_dict.get(week_str)
 
     return daily_ma200_for_4h, weekly_ma200_for_4h
+
+
+def prepare_ma128_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> List[Optional[float]]:
+    """
+    为4H数据准备日线MA128序列（用于DirectionGate多空方向控制）
+    返回: daily_ma128_list，长度与klines_4h相同
+    """
+    n = len(klines_4h)
+    daily_ma128_for_4h = [None] * n
+
+    if len(klines_1d) >= 128:
+        daily_closes = [float(k["c"]) for k in klines_1d]
+        daily_ma128_series = calc_ma_series(daily_closes, 128)
+
+        daily_ma128_dict = {}
+        for k, ma in zip(klines_1d, daily_ma128_series):
+            if ma is not None:
+                date_str = _timestamp_to_date_str(k["t"])
+                daily_ma128_dict[date_str] = ma
+
+        for i, k in enumerate(klines_4h):
+            date_str = _timestamp_to_date_str(k["t"])
+            daily_ma128_for_4h[i] = daily_ma128_dict.get(date_str)
+
+    return daily_ma128_for_4h
 
 
 def prepare_last_close_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], klines_1w: List[Dict]) -> Tuple[List[Optional[float]], List[Optional[float]]]:
@@ -467,10 +521,134 @@ def calc_30d_volatility(klines_1d: List[Dict]) -> float:
     return variance ** 0.5
 
 
-def get_vol_adjusted_params(base_tp: float, base_addon: float, coin_vol: float, btc_vol: float) -> Tuple[float, float]:
+def calc_atr(klines: List[Dict], period: int = 14) -> Optional[float]:
+    """计算ATR（平均真实波幅）"""
+    if len(klines) < period + 1:
+        return None
+    trs = []
+    for i in range(1, len(klines)):
+        h = float(klines[i].get("h", klines[i].get("c", 0)))
+        l = float(klines[i].get("l", klines[i].get("c", 0)))
+        prev_c = float(klines[i - 1].get("c", 0))
+        tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
+        trs.append(tr)
+    if len(trs) < period:
+        return None
+    return sum(trs[-period:]) / period
+
+
+def calc_atr_pct(klines: List[Dict], period: int = 14) -> Optional[float]:
+    """计算ATR占价格百分比"""
+    atr = calc_atr(klines, period)
+    if atr is None or not klines:
+        return None
+    current_price = float(klines[-1].get("c", 0))
+    if current_price <= 0:
+        return None
+    return (atr / current_price) * 100
+
+
+def prepare_atr_pct_for_4h(klines_4h: List[Dict], period: int = 14) -> List[Optional[float]]:
+    """为每根4H K线预计算ATR百分比（滑动窗口）"""
+    n = len(klines_4h)
+    result = [None] * n
+    for i in range(period, n):
+        window = klines_4h[:i + 1]
+        atr_pct = calc_atr_pct(window, period)
+        result[i] = atr_pct
+    return result
+
+
+def calc_elder_ray_size_mult(elder_ray: Dict, direction: str = "LONG") -> float:
+    """根据Elder-ray趋势强度计算仓位调整倍数
+    对齐 capital_manager.py 中的 calculate_per_coin_allocation 逻辑
+    返回: 0.3x - 1.5x 之间的乘数
     """
-    根据波动率调整参数
-    返回: (调整后的止盈比例, 调整后的加仓间距)
+    if not elder_ray:
+        return 1.0
+
+    strength = elder_ray.get("strength", 50)
+    dir_er = elder_ray.get("direction", "BULL_TREND")
+    ema_trend = elder_ray.get("ema_trend", "flat")
+    both_weakening = elder_ray.get("both_weakening", False)
+    bullish_div = elder_ray.get("bullish_divergence", False)
+    bearish_div = elder_ray.get("bearish_divergence", False)
+
+    # 基于 EMA 趋势方向 + Elder-ray 状态决定乘数
+    if ema_trend == "up":
+        if dir_er == "STRONG_BULL":
+            strength_mult = 1.2 + (strength / 100) * 0.3  # 1.2 - 1.5
+        elif dir_er == "BULL_TREND":
+            strength_mult = 1.0 + (strength / 100) * 0.3  # 1.0 - 1.3
+        elif dir_er == "BULL_REVERSAL":
+            strength_mult = 0.5 + (strength / 100) * 0.3  # 0.5 - 0.8
+        else:
+            strength_mult = 0.8 + (strength / 100) * 0.2  # 0.8 - 1.0
+    elif ema_trend == "down":
+        if dir_er == "STRONG_BEAR":
+            strength_mult = 0.3 + (strength / 100) * 0.2  # 0.3 - 0.5
+        elif dir_er == "BEAR_TREND":
+            strength_mult = 0.4 + (strength / 100) * 0.2  # 0.4 - 0.6
+        elif dir_er == "BEAR_REVERSAL":
+            strength_mult = 0.7 + (strength / 100) * 0.3  # 0.7 - 1.0
+        else:
+            strength_mult = 0.5 + (strength / 100) * 0.2  # 0.5 - 0.7
+    else:  # flat
+        strength_mult = 0.7 + (strength / 100) * 0.3  # 0.7 - 1.0
+
+    # 做多方向加成
+    if direction == "LONG" and bullish_div and ema_trend == "up":
+        strength_mult *= 1.2
+    # 做空方向加成
+    if direction == "SHORT" and bearish_div and ema_trend == "down":
+        strength_mult *= 1.2
+
+    # 多空都减弱 → 变盘风险 → 降仓
+    if both_weakening:
+        strength_mult *= 0.7
+
+    return max(_elder_ray_floor, min(_elder_ray_ceil, strength_mult))
+
+
+def prepare_elder_ray_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> List[Optional[Dict]]:
+    """为每根4H K线预计算Elder-ray状态（使用当日日线数据）
+    返回: 长度与klines_4h相同的列表，每个元素为elder_ray dict或None
+    """
+    n = len(klines_4h)
+    result = [None] * n
+
+    if not _ELDER_RAY_AVAILABLE or len(klines_1d) < 18:
+        return result
+
+    # 按日期索引日线数据
+    daily_by_date = {}
+    for idx, k in enumerate(klines_1d):
+        date_str = _timestamp_to_date_str(k["t"])
+        daily_by_date[date_str] = idx
+
+    # 为每根4H K线计算截至当日的elder-ray
+    for i in range(n):
+        date_str = _timestamp_to_date_str(klines_4h[i]["t"])
+        if date_str not in daily_by_date:
+            continue
+        daily_end_idx = daily_by_date[date_str]
+        if daily_end_idx < 17:
+            continue
+        # 使用截至当日的所有日线数据计算elder-ray
+        window = klines_1d[:daily_end_idx + 1]
+        elder = calc_elder_ray(window, period=13)
+        if elder:
+            result[i] = elder
+
+    return result
+
+
+def get_vol_adjusted_params(base_tp: float, base_addon: float, coin_vol: float, btc_vol: float,
+                             coin_atr_pct: Optional[float] = None,
+                             btc_atr_pct: Optional[float] = None) -> Tuple[float, float, float]:
+    """
+    根据波动率调整参数（含ATR动态因子）
+    返回: (调整后的止盈比例, 调整后的加仓间距, atr_factor)
     """
     if btc_vol <= 0:
         ratio = 1.0
@@ -480,7 +658,13 @@ def get_vol_adjusted_params(base_tp: float, base_addon: float, coin_vol: float, 
     # 限制调整范围 0.5x - 2.0x
     ratio = max(0.5, min(2.0, ratio))
 
-    return base_tp * ratio, base_addon * ratio
+    # ATR动态因子
+    atr_factor = 1.0
+    if coin_atr_pct is not None and btc_atr_pct is not None and btc_atr_pct > 0:
+        atr_factor = coin_atr_pct / btc_atr_pct
+        atr_factor = max(0.7, min(1.5, atr_factor))
+
+    return base_tp * ratio * atr_factor, base_addon * ratio * atr_factor, atr_factor
 
 
 # ── 趋势过滤 ──────────────────────────────────────────────────────────────
@@ -791,13 +975,25 @@ def run_backtest(
     custom_tp_pct: float = None,
     trend_filter_mode: str = "none",
     trend_filter_period: int = 60,
-    max_base_holding_hours: float = 48.0,
-    max_post_addon_hours: float = 24.0,
-    golden_window_hours: float = 12.0,
+    max_base_holding_hours: float = 29.9,
+    max_post_addon_hours: float = 37.7,
+    golden_window_hours: float = 11.1,
+    bounce_filter: Dict = None,
+    use_direction_gate: bool = False,
+    use_atr: bool = True,
+    use_kelly: bool = False,
+    kelly_base_pct: float = 0.22,
+    use_trailing_tp: bool = False,
+    trailing_atr_mult: float = 1.0,
+    trailing_start_pct_of_tp: float = 0.8,
+    use_btc_windvane: bool = False,
+    btc_windvane_confirm_days: int = 3,
+    btc_windvane_short_only: bool = False,
+    use_elder_ray: bool = True,
 ) -> Dict:
     """
     运行V15策略回测 v4
-    
+
     参数:
         coin: 币种
         klines: 4H K线数据（为None时自动获取）
@@ -814,8 +1010,64 @@ def run_backtest(
         max_base_holding_hours: 底仓最大持仓时间（小时），超时触发经典离场评估
         max_post_addon_hours: 加仓后最大持仓时间（小时）
         golden_window_hours: 黑天鹅反弹黄金窗口（小时），窗口内不触发评估
+        use_direction_gate: 启用DirectionGate多空方向控制（基于日/周MA200三状态模型）
+        use_atr: 启用ATR动态止盈（基于4H ATR百分比调整止盈和加仓间距）
+        use_kelly: 启用凯利公式优化底仓比例（基于历史回测数据计算最优仓位）
+        kelly_base_pct: 凯利优化的基线底仓比例（默认22%，凯利结果与之对比取保守者）
+        use_trailing_tp: 启用ATR移动止盈（浮盈达标后从最高点回撤N×ATR止盈）
+        trailing_atr_mult: 移动止盈的ATR倍数（默认1.5）
+        trailing_start_pct_of_tp: 启动移动止盈的浮盈阈值=止盈比例×此系数（默认0.5即50%）
+        use_btc_windvane: 启用BTC风向标模式（移除各币种MA200止损，用BTC MA200状态全局控方向）
+        btc_windvane_confirm_days: BTC风向标跌破确认天数（默认3日，大市值币可用1日提高灵敏度）
+        btc_windvane_short_only: SHORT_ALLOWED状态下是否只允许做空（默认false=多空都允许）
+        use_elder_ray: 启用Elder-ray日线强度资金调度（不利势能减弱/反弹强度高时资金更大）
     """
     is_btc = coin.upper() == "BTC"
+
+    # ── 智能模式：根据币种自动选择最优止损/方向控制策略 ──
+    # 回测结论(2026-07-16):
+    #   BTC: 自身MA200止损 + DirectionGate 更优（风向标模式收益-7.32%）
+    #   其他币: BTC风向标3日确认 + SHORT_ALLOWED只做空 更优
+    #     - SHORT_ALLOWED时只做空比多空都允许收益高4-7%，回撤大幅降低
+    if not use_btc_windvane and not use_direction_gate:
+        if is_btc:
+            use_direction_gate = True
+        else:
+            use_btc_windvane = True
+            btc_windvane_confirm_days = 3
+            btc_windvane_short_only = True
+
+    # ── 凯利公式底仓优化 ──
+    # 当 use_kelly=True 时，先用基线比例跑一遍获取交易样本，
+    # 再从样本计算凯利参数，用优化后的比例作为实际底仓比例
+    kelly_params = None
+    effective_base_pct = base_position_pct
+    if use_kelly:
+        try:
+            kelly_path = str(Path(__file__).parent.parent / "lib")
+            if kelly_path not in sys.path:
+                sys.path.insert(0, kelly_path)
+            from kelly_optimizer import calculate_kelly_from_trades, format_kelly_report
+            # 先用基线比例跑一次预回测获取交易样本
+            _pre_result = run_backtest(
+                coin=coin, klines=klines, initial_capital=initial_capital,
+                base_position_pct=kelly_base_pct, max_addons=max_addons,
+                confidence_threshold=confidence_threshold, long_only=long_only,
+                position_tf=position_tf, custom_addon_pct=custom_addon_pct,
+                custom_tp_pct=custom_tp_pct, trend_filter_mode=trend_filter_mode,
+                trend_filter_period=trend_filter_period,
+                max_base_holding_hours=max_base_holding_hours,
+                max_post_addon_hours=max_post_addon_hours,
+                golden_window_hours=golden_window_hours,
+                bounce_filter=bounce_filter, use_direction_gate=use_direction_gate,
+                use_atr=use_atr, use_kelly=False,
+            )
+            _pre_trades = _pre_result.get("trades", [])
+            kelly_params = calculate_kelly_from_trades(_pre_trades, base_pct=kelly_base_pct)
+            effective_base_pct = kelly_params.final_pct
+        except Exception as e:
+            print(f"凯利优化失败[{coin}]: {e}，回退基线{kelly_base_pct}")
+            effective_base_pct = kelly_base_pct
 
     # 获取数据
     if klines is None:
@@ -841,6 +1093,27 @@ def run_backtest(
         daily_ma200_list, weekly_ma200_list = prepare_ma200_for_4h(klines, klines_1d, klines_1w)
         last_daily_close_list, last_weekly_close_list = prepare_last_close_for_4h(klines, klines_1d, klines_1w)
 
+    # 预计算MA128（用于DirectionGate多空方向控制）
+    daily_ma128_list = None
+    if len(klines_1d) >= 128:
+        daily_ma128_list = prepare_ma128_for_4h(klines, klines_1d)
+
+    # 预计算BTC的MA128和收盘价（用于BTC风向标）
+    btc_daily_ma128_list = None
+    btc_recent_closes_list = None
+    if use_direction_gate and _DIRECTION_GATE_AVAILABLE:
+        btc_klines_1d_gate = fetch_klines("BTC", "1d", 400)
+        if len(btc_klines_1d_gate) >= 128:
+            btc_daily_ma128_list = prepare_ma128_for_4h(klines, btc_klines_1d_gate)
+            btc_recent_closes_list = []
+            btc_daily_close_dict = {}
+            for k in btc_klines_1d_gate:
+                date_str = _timestamp_to_date_str(k["t"])
+                btc_daily_close_dict[date_str] = float(k["c"])
+            for k in klines:
+                date_str = _timestamp_to_date_str(k["t"])
+                btc_recent_closes_list.append(btc_daily_close_dict.get(date_str))
+
     # 预计算日线均线（用于日线位置判定模式）
     daily_sma_lists = None
     if position_tf == "1d" and len(klines_1d) >= 200:
@@ -863,10 +1136,22 @@ def run_backtest(
     btc_klines_1d = fetch_klines("BTC", "1d", 400)
     btc_vol = calc_30d_volatility(btc_klines_1d)
 
-    # 根据波动率调整参数（所有币种都适用）
-    effective_tp_pct, effective_addon_pct = get_vol_adjusted_params(
+    # 预计算ATR百分比序列（4H K线，14周期）
+    coin_atr_pct_list = prepare_atr_pct_for_4h(klines, period=14)
+    btc_klines_4h = fetch_klines("BTC", "4h", 1500)
+    btc_atr_pct_list = prepare_atr_pct_for_4h(btc_klines_4h, period=14) if btc_klines_4h else []
+
+    # 预计算Elder-ray日线强度（用于资金调度）
+    elder_ray_list = None
+    if use_elder_ray and _ELDER_RAY_AVAILABLE and len(klines_1d) >= 18:
+        elder_ray_list = prepare_elder_ray_for_4h(klines, klines_1d)
+
+    # 基础波动率调整（不含ATR，作为回退基准）
+    effective_tp_pct_base, effective_addon_pct_base, _ = get_vol_adjusted_params(
         BASE_TP_PCT, BASE_ADDON_PCT, coin_vol, btc_vol
     )
+    effective_tp_pct = effective_tp_pct_base
+    effective_addon_pct = effective_addon_pct_base
     
     # 使用自定义参数覆盖（用于贝叶斯优化）
     if custom_tp_pct is not None:
@@ -877,6 +1162,53 @@ def run_backtest(
     closes = [float(k["c"]) for k in klines]
     highs = [float(k["h"]) for k in klines]
     lows = [float(k["l"]) for k in klines]
+
+    # BTC风向标模式：预计算BTC日MA200和周MA200序列，并生成状态序列
+    btc_windvane_states = None
+    if use_btc_windvane:
+        btc_klines_1d_wv = fetch_klines("BTC", "1d", 400)
+        btc_klines_1w_wv = fetch_klines("BTC", "1w", 300)
+        btc_daily_ma200_wv, btc_weekly_ma200_wv = prepare_ma200_for_4h(
+            klines, btc_klines_1d_wv, btc_klines_1w_wv
+        )
+        # BTC每日收盘价序列（映射到4H）
+        btc_daily_close_wv = [None] * len(klines)
+        if btc_klines_1d_wv:
+            btc_daily_close_dict = {}
+            for k in btc_klines_1d_wv:
+                date_str = _timestamp_to_date_str(k["t"])
+                btc_daily_close_dict[date_str] = float(k["c"])
+            for i, k in enumerate(klines):
+                date_str = _timestamp_to_date_str(k["t"])
+                btc_daily_close_wv[i] = btc_daily_close_dict.get(date_str)
+        # 生成BTC状态序列
+        btc_windvane_states = []
+        btc_recent_closes = []
+        last_date = None
+        for i in range(len(closes)):
+            state = "LONG_ONLY"
+            btc_d200 = btc_daily_ma200_wv[i] if i < len(btc_daily_ma200_wv) else None
+            btc_w200 = btc_weekly_ma200_wv[i] if i < len(btc_weekly_ma200_wv) else None
+            btc_close = btc_daily_close_wv[i] if i < len(btc_daily_close_wv) else None
+
+            if btc_close is not None:
+                date_str = _timestamp_to_date_str(klines[i].get("t", 0))
+                if date_str != last_date:
+                    btc_recent_closes.append(btc_close)
+                    if len(btc_recent_closes) > 5:
+                        btc_recent_closes.pop(0)
+                    last_date = date_str
+
+            if btc_d200 is not None and btc_w200 is not None and btc_close is not None:
+                if btc_close <= btc_w200:
+                    state = "LONG_ONLY_FORCE"
+                elif len(btc_recent_closes) >= btc_windvane_confirm_days and all(
+                    c <= btc_d200 for c in btc_recent_closes[-btc_windvane_confirm_days:]
+                ):
+                    state = "SHORT_ALLOWED"
+                else:
+                    state = "LONG_ONLY"
+            btc_windvane_states.append(state)
 
     capital = initial_capital
     position = None
@@ -912,7 +1244,53 @@ def run_backtest(
                 # 只做多模式：忽略做空信号
                 if long_only and action == "OPEN_BEAR":
                     continue
-                
+
+                # BTC风向标模式：根据BTC状态决定开仓方向
+                if use_btc_windvane and btc_windvane_states is not None:
+                    btc_state = btc_windvane_states[i] if i < len(btc_windvane_states) else "LONG_ONLY"
+                    if btc_state == "LONG_ONLY" and action == "OPEN_BEAR":
+                        continue  # BTC在MA200上方，只做多
+                    if btc_state == "LONG_ONLY_FORCE" and action == "OPEN_BEAR":
+                        continue  # BTC触及周MA200，强制做多
+                    if btc_state == "SHORT_ALLOWED" and btc_windvane_short_only and action == "OPEN_BULL":
+                        continue  # SHORT_ALLOWED状态下只允许做空
+
+                # DirectionGate多空方向控制：BTC风向标 + MA128有效跌破
+                if action == "OPEN_BEAR" and use_direction_gate and _DIRECTION_GATE_AVAILABLE:
+                    # 1. 判断BTC是否有效跌破MA128（连续3日收盘价低于MA128）
+                    btc_short_enabled = False
+                    if btc_daily_ma128_list is not None and btc_recent_closes_list is not None:
+                        btc_ma128 = btc_daily_ma128_list[i] if i < len(btc_daily_ma128_list) else None
+                        if btc_ma128 is not None:
+                            btc_recent = []
+                            for j in range(max(0, i - 5), i + 1):
+                                if j < len(btc_recent_closes_list) and btc_recent_closes_list[j] is not None:
+                                    btc_recent.append(btc_recent_closes_list[j])
+                            if len(btc_recent) >= 3:
+                                last_3 = btc_recent[-3:]
+                                btc_short_enabled = all(c <= btc_ma128 for c in last_3)
+
+                    # 2. 当前币种的方向控制
+                    gate = DirectionGate(allow_short=True)
+                    d_ma128 = daily_ma128_list[i] if daily_ma128_list and i < len(daily_ma128_list) else None
+                    w_ma200 = weekly_ma200_list[i] if weekly_ma200_list and i < len(weekly_ma200_list) else None
+                    
+                    recent_closes = []
+                    if last_daily_close_list:
+                        for j in range(max(0, i - 5), i + 1):
+                            if j < len(last_daily_close_list) and last_daily_close_list[j] is not None:
+                                recent_closes.append(last_daily_close_list[j])
+                    
+                    gate_result = gate.evaluate(
+                        current_price=current_price,
+                        daily_ma128=d_ma128,
+                        weekly_ma200=w_ma200,
+                        recent_daily_closes=recent_closes,
+                        btc_short_enabled=btc_short_enabled,
+                    )
+                    if not gate_result.short_enabled:
+                        continue  # DirectionGate不允许做空，跳过
+
                 # 趋势过滤：下跌趋势中禁止做多马丁
                 if "BULL" in action and trend_filter_mode != "none":
                     w_ma = trend_weekly_ma[i] if trend_weekly_ma and i < len(trend_weekly_ma) else 0
@@ -920,9 +1298,30 @@ def run_backtest(
                     if check_trend_filter(current_price, w_ma, d_ma, trend_filter_mode):
                         continue
 
+                # 反弹过滤：只在触发反弹信号时开仓
+                if bounce_filter is not None:
+                    if i not in bounce_filter or not bounce_filter[i]:
+                        continue
+
                 direction = "LONG" if "BULL" in action else "SHORT"
-                addon_pct = effective_addon_pct * vol_mult
-                tp_pct = effective_tp_pct * vol_mult
+
+                # ATR动态止盈：每根K线实时计算ATR因子
+                coin_atr_i = coin_atr_pct_list[i] if i < len(coin_atr_pct_list) else None
+                btc_atr_i = btc_atr_pct_list[i] if i < len(btc_atr_pct_list) else None
+                atr_factor_i = 1.0
+                if use_atr and coin_atr_i is not None and btc_atr_i is not None and btc_atr_i > 0:
+                    atr_factor_i = max(0.7, min(1.5, coin_atr_i / btc_atr_i))
+                tp_pct_dyn = effective_tp_pct_base * atr_factor_i
+                addon_pct_dyn = effective_addon_pct_base * atr_factor_i
+
+                # 自定义参数覆盖时不使用ATR动态调整
+                if custom_tp_pct is not None:
+                    tp_pct_dyn = custom_tp_pct
+                if custom_addon_pct is not None:
+                    addon_pct_dyn = custom_addon_pct
+
+                addon_pct = addon_pct_dyn * vol_mult
+                tp_pct = tp_pct_dyn * vol_mult
 
                 if direction == "LONG":
                     tp_price = current_price * (1 + tp_pct)
@@ -931,7 +1330,13 @@ def run_backtest(
                     tp_price = current_price * (1 - tp_pct)
                     addon_prices = [current_price * (1 + addon_pct * j) for j in range(1, max_addons + 1)]
 
-                position_size = capital * base_position_pct / current_price
+                # Elder-ray 资金调度：根据日线趋势强度调整仓位大小
+                # 不利势能减弱/反弹强度高 → 资金更大；趋势强劲不利 → 资金更小
+                elder_size_mult = 1.0
+                if elder_ray_list is not None and i < len(elder_ray_list) and elder_ray_list[i] is not None:
+                    elder_size_mult = calc_elder_ray_size_mult(elder_ray_list[i], direction)
+
+                position_size = capital * effective_base_pct * elder_size_mult / current_price
                 position = {
                     "direction": direction,
                     "entry_idx": i,
@@ -942,11 +1347,16 @@ def run_backtest(
                     "avg_entry": current_price,
                     "total_cost": position_size * current_price,
                     "tp_price": tp_price,
+                    "tp_pct": tp_pct,
                     "addon_prices": addon_prices,
                     "vol_mult": vol_mult,
                     "confidence": conf,
+                    "elder_mult": elder_size_mult,
                     "entry_reason": decision.get("position", ""),
                     "long_only": long_only,
+                    "trailing_active": False,
+                    "trailing_price": None,
+                    "peak_price": current_price,
                 }
         else:
             direction = position["direction"]
@@ -965,8 +1375,28 @@ def run_backtest(
                     hit_tp = True
                     exit_price = tp_price
 
-            # MA200动态止损（所有币种都使用）
-            if not hit_tp and not hit_sl and daily_ma200_list is not None:
+            # BTC风向标模式：状态切换时平仓反向仓位（替代原MA200止损）
+            if not hit_tp and not hit_sl and use_btc_windvane and btc_windvane_states is not None:
+                btc_state = btc_windvane_states[i] if i < len(btc_windvane_states) else "LONG_ONLY"
+
+                if btc_state == "LONG_ONLY" and direction == "SHORT":
+                    # BTC回到日MA200上方 → 平掉空仓
+                    hit_sl = True
+                    position["sl_type"] = "btc_windvane_long_only"
+                    exit_price = current_price
+                elif btc_state == "LONG_ONLY_FORCE" and direction == "SHORT":
+                    # BTC触及周MA200 → 强制平空转多
+                    hit_sl = True
+                    position["sl_type"] = "btc_windvane_force_long"
+                    exit_price = current_price
+                elif btc_state == "SHORT_ALLOWED" and direction == "LONG":
+                    # BTC有效跌破日MA200 → 平掉多仓，允许做空
+                    hit_sl = True
+                    position["sl_type"] = "btc_windvane_short_allowed"
+                    exit_price = current_price
+
+            # MA200动态止损（所有币种都使用，BTC风向标模式下跳过）
+            if not hit_tp and not hit_sl and daily_ma200_list is not None and not use_btc_windvane:
                 daily_ma200 = daily_ma200_list[i]
                 weekly_ma200 = weekly_ma200_list[i] if weekly_ma200_list else None
                 last_d_close = last_daily_close_list[i] if last_daily_close_list else None
@@ -985,6 +1415,58 @@ def run_backtest(
                         else:
                             exit_price = current_price
 
+            # ATR移动止盈（浮盈达标后从最高点回撤N×ATR止盈）
+            if not hit_tp and not hit_sl and use_trailing_tp:
+                coin_atr_i = coin_atr_pct_list[i] if i < len(coin_atr_pct_list) else None
+
+                if coin_atr_i is not None and coin_atr_i > 0:
+                    # 转换ATR百分比为价格
+                    atr_price = current_price * (coin_atr_i / 100)
+
+                    # 更新峰值价格
+                    if direction == "LONG":
+                        peak = max(position["peak_price"], high)
+                    else:
+                        peak = min(position["peak_price"], low)
+                    position["peak_price"] = peak
+
+                    # 计算浮盈比例
+                    avg_entry = position["avg_entry"]
+                    if direction == "LONG":
+                        unrealized_pnl_pct = (peak - avg_entry) / avg_entry
+                    else:
+                        unrealized_pnl_pct = (avg_entry - peak) / avg_entry
+
+                    # 启动阈值：浮盈达到止盈比例的一定比例
+                    tp_pct_pos = position.get("tp_pct", 0.04)
+                    start_threshold = tp_pct_pos * trailing_start_pct_of_tp
+
+                    if unrealized_pnl_pct >= start_threshold:
+                        # 计算移动止盈价
+                        if direction == "LONG":
+                            new_trailing = peak - trailing_atr_mult * atr_price
+                            # 移动止盈价只上移不下移
+                            if position["trailing_price"] is None or new_trailing > position["trailing_price"]:
+                                position["trailing_price"] = new_trailing
+                                position["trailing_active"] = True
+                        else:
+                            new_trailing = peak + trailing_atr_mult * atr_price
+                            # 移动止盈价只下移不上移
+                            if position["trailing_price"] is None or new_trailing < position["trailing_price"]:
+                                position["trailing_price"] = new_trailing
+                                position["trailing_active"] = True
+
+                    # 检查是否触发移动止盈
+                    if position["trailing_active"] and position["trailing_price"] is not None:
+                        if direction == "LONG" and low <= position["trailing_price"]:
+                            hit_tp = True
+                            exit_price = position["trailing_price"]
+                            position["sl_type"] = f"trailing_tp"
+                        elif direction == "SHORT" and high >= position["trailing_price"]:
+                            hit_tp = True
+                            exit_price = position["trailing_price"]
+                            position["sl_type"] = f"trailing_tp"
+
             # 加仓检查
             if not hit_tp and not hit_sl:
                 next_level = position["current_level"] + 1
@@ -1000,7 +1482,11 @@ def run_backtest(
                         addon_exec_price = next_addon_price
 
                     if should_add:
-                        addon_size = capital * base_position_pct / addon_exec_price
+                        # 加仓时也根据当前Elder-ray状态调整资金规模
+                        addon_elder_mult = 1.0
+                        if elder_ray_list is not None and i < len(elder_ray_list) and elder_ray_list[i] is not None:
+                            addon_elder_mult = calc_elder_ray_size_mult(elder_ray_list[i], direction)
+                        addon_size = capital * effective_base_pct * addon_elder_mult / addon_exec_price
                         position["total_cost"] += addon_size * addon_exec_price
                         position["total_size"] += addon_size
                         position["avg_entry"] = position["total_cost"] / position["total_size"]
@@ -1114,11 +1600,12 @@ def run_backtest(
                     "pnl_pct": round(pnl_pct * 100, 2),
                     "pnl_usd": round(pnl_usd, 2),
                     "exit_reason": "take_profit" if hit_tp else ("time_exit" if position.get("sl_type", "").startswith("time_exit") else "ma200_stop"),
-                    "sl_type": position.get("sl_type", "") if hit_sl else "",
+                    "sl_type": position.get("sl_type", ""),
                     "bars_held": i - position["entry_idx"],
                     "levels_used": position["current_level"] + 1,
                     "confidence": position["confidence"],
                     "vol_mult": position["vol_mult"],
+                    "elder_mult": position.get("elder_mult", 1.0),
                     "entry_reason": position["entry_reason"],
                     "long_only": position.get("long_only", False),
                 }
@@ -1183,6 +1670,11 @@ def run_backtest(
             reason_dist[r] = reason_dist.get(r, 0) + 1
 
         ma200_trades = sum(1 for t in trades if t.get("use_ma200"))
+        trailing_tp_trades = sum(1 for t in trades if t.get("exit_reason") == "take_profit"
+                                 and t.get("sl_type") == "trailing_tp")
+        fixed_tp_trades = sum(1 for t in trades if t.get("exit_reason") == "take_profit"
+                              and t.get("sl_type") != "trailing_tp")
+        btc_windvane_exits = sum(1 for t in trades if str(t.get("sl_type", "")).startswith("btc_windvane"))
 
         metrics = {
             "total_trades": len(trades),
@@ -1200,11 +1692,21 @@ def run_backtest(
             "level_distribution": level_dist,
             "entry_reason_dist": reason_dist,
             "ma200_stop_trades": ma200_trades,
+            "trailing_tp_trades": trailing_tp_trades,
+            "fixed_tp_trades": fixed_tp_trades,
             "coin_volatility": round(coin_vol * 100, 2),
             "btc_volatility": round(btc_vol * 100, 2),
             "vol_ratio": round(coin_vol / btc_vol, 2) if btc_vol > 0 else 1.0,
-            "effective_tp_pct": round(effective_tp_pct * 100, 2),
-            "effective_addon_pct": round(effective_addon_pct * 100, 2),
+            "effective_tp_pct": round(effective_tp_pct_base * 100, 2),
+            "effective_addon_pct": round(effective_addon_pct_base * 100, 2),
+            "atr_enabled": use_atr,
+            "kelly_enabled": use_kelly,
+            "trailing_tp_enabled": use_trailing_tp,
+            "btc_windvane_enabled": use_btc_windvane,
+            "btc_windvane_exits": btc_windvane_exits,
+            "elder_ray_enabled": use_elder_ray,
+            "elder_ray_avg_mult": round(sum(t.get("elder_mult", 1.0) for t in trades) / len(trades), 3) if trades else 1.0,
+            "effective_base_pct": round(effective_base_pct, 4),
         }
     else:
         metrics = {
@@ -1223,17 +1725,26 @@ def run_backtest(
             "level_distribution": {},
             "entry_reason_dist": {},
             "ma200_stop_trades": 0,
+            "trailing_tp_trades": 0,
+            "fixed_tp_trades": 0,
+            "btc_windvane_exits": 0,
             "coin_volatility": round(coin_vol * 100, 2),
             "btc_volatility": round(btc_vol * 100, 2),
             "vol_ratio": 1.0,
-            "effective_tp_pct": round(effective_tp_pct * 100, 2),
-            "effective_addon_pct": round(effective_addon_pct * 100, 2),
+            "effective_tp_pct": round(effective_tp_pct_base * 100, 2),
+            "effective_addon_pct": round(effective_addon_pct_base * 100, 2),
+            "atr_enabled": use_atr,
+            "kelly_enabled": use_kelly,
+            "trailing_tp_enabled": use_trailing_tp,
+            "btc_windvane_enabled": use_btc_windvane,
+            "effective_base_pct": round(effective_base_pct, 4),
         }
 
     return {
         "coin": coin,
         "initial_capital": initial_capital,
         "base_position_pct": base_position_pct,
+        "effective_base_pct": round(effective_base_pct, 4),
         "max_addons": max_addons,
         "confidence_threshold": confidence_threshold,
         "klines_count": len(closes),
@@ -1241,6 +1752,7 @@ def run_backtest(
         "position_tf": position_tf,
         "trades": trades,
         "metrics": metrics,
+        "kelly_params": kelly_params.__dict__ if kelly_params else None,
     }
 
 
@@ -1312,7 +1824,8 @@ def main():
     parser.add_argument("--limit", type=int, default=1500, help="4H K线数量 (默认: 1500)")
     parser.add_argument("--multi", action="store_true", help="多币种回测")
     parser.add_argument("--allow-short", action="store_true", help="允许做空（默认只做多）")
-    parser.add_argument("--compare", action="store_true", help="对比多空双向 vs 只做多")
+    parser.add_argument("--direction-gate", action="store_true", help="启用DirectionGate多空方向控制（基于日/周MA200）")
+    parser.add_argument("--compare", action="store_true", help="对比三模式: 只做多 vs 无限制做空 vs DirectionGate控制做空")
     parser.add_argument("--compare-position", action="store_true", help="对比4H均线 vs 日线均线位置判定")
     parser.add_argument("--position-tf", default="4h", choices=["4h", "1d"], help="位置判定时间框架 (默认: 4h)")
     args = parser.parse_args()
@@ -1357,25 +1870,12 @@ def main():
 
     elif args.compare:
         coins = ["BTC", "ETH", "SOL", "ARB", "OP"]
-        print("🚀 多币种V15策略回测 - 多空双向 vs 只做多对比")
+        print("🚀 多币种V15策略回测 - 三模式对比: 只做多 vs 无限制做空 vs DirectionGate控制做空")
         all_results = []
         for coin in coins:
             print(f"\n{'='*60}")
             print(f"  回测 {coin}...")
             klines = fetch_klines(coin, "4h", args.limit)
-
-            print(f"\n  --- 多空双向 ---")
-            result_both = run_backtest(
-                coin=coin,
-                klines=klines,
-                initial_capital=args.capital,
-                base_position_pct=args.position,
-                max_addons=args.addons,
-                confidence_threshold=args.threshold,
-                long_only=False,
-            )
-            print_report(result_both)
-            all_results.append(("both", result_both))
 
             print(f"\n  --- 只做多 ---")
             result_long = run_backtest(
@@ -1388,22 +1888,50 @@ def main():
                 long_only=True,
             )
             print_report(result_long)
-            all_results.append(("long", result_long))
+            all_results.append(("long_only", result_long))
 
-        print("\n" + "=" * 80)
-        print("  📊 多空双向 vs 只做多 对比汇总")
-        print("=" * 80)
-        print(f"  {'币种':>6} {'模式':>8} {'总收益':>10} {'交易数':>6} {'胜率':>8} {'盈亏比':>8} "
-              f"{'最大回撤':>10} {'夏普':>8}")
-        print("-" * 80)
+            print(f"\n  --- 无限制做空 ---")
+            result_both = run_backtest(
+                coin=coin,
+                klines=klines,
+                initial_capital=args.capital,
+                base_position_pct=args.position,
+                max_addons=args.addons,
+                confidence_threshold=args.threshold,
+                long_only=False,
+            )
+            print_report(result_both)
+            all_results.append(("both", result_both))
+
+            print(f"\n  --- DirectionGate控制做空 ---")
+            result_gate = run_backtest(
+                coin=coin,
+                klines=klines,
+                initial_capital=args.capital,
+                base_position_pct=args.position,
+                max_addons=args.addons,
+                confidence_threshold=args.threshold,
+                long_only=False,
+                use_direction_gate=True,
+            )
+            print_report(result_gate)
+            all_results.append(("gate", result_gate))
+
+        print("\n" + "=" * 90)
+        print("  📊 三模式对比汇总: 只做多 vs 无限制做空 vs DirectionGate控制做空")
+        print("=" * 90)
+        print(f"  {'币种':>6} {'模式':>16} {'总收益':>10} {'交易数':>6} {'胜率':>8} {'盈亏比':>8} "
+              f"{'最大回撤':>10} {'夏普':>8} {'做空数':>6}")
+        print("-" * 90)
         for mode, r in all_results:
             if "error" not in r:
                 m = r["metrics"]
-                mode_str = "只做多" if mode == "long" else "多空"
-                print(f"  {r['coin']:>6} {mode_str:>8} {m['total_return_pct']:>+8.2f}% {m['total_trades']:>6} "
+                short_trades = sum(1 for t in r.get("trades", []) if t.get("side") == "SHORT")
+                mode_str = {"long_only": "只做多", "both": "无限制做空", "gate": "Gate控制做空"}[mode]
+                print(f"  {r['coin']:>6} {mode_str:>16} {m['total_return_pct']:>+8.2f}% {m['total_trades']:>6} "
                       f"{m['win_rate']*100:>7.2f}% {m['profit_factor']:>8.2f} "
-                      f"{m['max_drawdown_pct']:>9.2f}% {m['sharpe_ratio']:>8.4f}")
-        print("=" * 80)
+                      f"{m['max_drawdown_pct']:>9.2f}% {m['sharpe_ratio']:>8.4f} {short_trades:>6}")
+        print("=" * 90)
 
     elif args.multi:
         coins = ["BTC", "ETH", "SOL", "ARB", "OP"]
@@ -1457,6 +1985,7 @@ def main():
             confidence_threshold=args.threshold,
             long_only=not args.allow_short,
             position_tf=args.position_tf,
+            use_direction_gate=args.direction_gate,
         )
         print_report(result)
 

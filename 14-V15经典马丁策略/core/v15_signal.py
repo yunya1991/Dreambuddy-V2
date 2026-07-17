@@ -530,14 +530,19 @@ def calc_ema_align(prices, periods=[20, 50, 200]):
 # ── V15 核心决策 ──────────────────────────────────────────────────────
 
 def v15_decision(spot_inst: str = "BTC-USDT", price: float = None,
-                 timeframe: str = "4H", limit: int = 200, test_mode: bool = False) -> dict:
+                 timeframe: str = "4H", limit: int = 200, test_mode: bool = False,
+                 direction_ctx: dict = None) -> dict:
     """
-    V15 经典马丁策略：16层入场决策 + 16项技术指标（只做多模式）
+    V15 经典马丁策略：16层入场决策 + 16项技术指标（多空模式）
 
-    入场条件（只做多）：
-    - ABOVE_ALL: 16层入场决策（Fib/布林/RSI/MACD/ADX/Pivot/OBV/SuperTrend/Keltner/StochRSI/Vortex/TEMA/GoldenCross/EMA排列）
-    - BELOW_ALL: 等待（不做空）
+    入场条件：
+    - ABOVE_ALL: 16层做多入场决策
+    - BELOW_ALL: 方向控制允许时走16层做空镜像逻辑，否则等待
     - IN_ZONE: 均值回归 + 多指标共振入场
+
+    Args:
+        direction_ctx: 方向控制上下文，None=只做多（向后兼容）
+            {"short_enabled": bool, "long_enabled": bool, "regime": str}
     """
     daily_candles = fetch_candles(spot_inst, timeframe, limit)
     if not daily_candles:
@@ -582,7 +587,166 @@ def v15_decision(spot_inst: str = "BTC-USDT", price: float = None,
     if position == 'BELOW_ALL':
         reasons.append(f"价格在所有均线下方(BELOW_ALL)")
         reasons.append(f"RSI14: {rsi}")
-        reasons.append("只做多模式: 价格在均线下, 等待做多机会")
+
+        # 方向控制：检查是否允许做空
+        short_enabled = direction_ctx and direction_ctx.get("short_enabled", False)
+
+        if not short_enabled:
+            # 做空未启用 → 等待做多机会（原行为，向后兼容）
+            reasons.append("方向控制: 做空未启用, 等待做多机会")
+        else:
+            # ── BELOW_ALL 16层做空镜像逻辑 ──
+            # 镜像规则：做多看支撑/超卖，做空看压力/超买
+            rng = fib['swing_high'] - fib['swing_low']
+            f382_short = fib['swing_low'] + 0.382 * rng   # 浅回调位（做空压力区上沿）
+            f500_short = fib['swing_low'] + 0.500 * rng   # 中回调位
+            f618_short = fib['swing_low'] + 0.618 * rng   # 深回调位（做空黄金区下沿）
+            in_zone_short = f382_short <= current_price <= f618_short
+
+            if boll:
+                reasons.append(f"布林带: 上轨{boll['upper']:.4g} 中轨{boll['sma']:.4g} 下轨{boll['lower']:.4g}")
+
+            boll_near_mid_s = boll and boll['sma'] > 0 and abs(current_price - boll['sma']) / boll['sma'] < 0.02
+            boll_touch_upper = boll and current_price >= boll['upper']
+
+            # Tier 1: Fib黄金区 + 布林中轨/上轨 = 双重确认（最高置信做空）
+            if in_zone_short and current_price >= f500_short and rsi > 45 and (boll_near_mid_s or boll_touch_upper):
+                fib_zone = 'golden'
+                boll_signal = 'touch_upper' if boll_touch_upper else 'near_mid'
+                action = "OPEN_BEAR"
+                confidence = 80
+                size_mult = 1.0
+                reasons.append(f"Fib黄金区+布林{'上轨' if boll_touch_upper else '中轨'}双重确认做空, 仓位倍数{size_mult}")
+
+            # Tier 2: Fib黄金区
+            elif in_zone_short and current_price >= f500_short and rsi > 45:
+                fib_zone = 'golden'
+                action = "OPEN_BEAR"
+                confidence = 75
+                size_mult = 1.0
+                reasons.append(f"Fib黄金区做空, 仓位倍数{size_mult}")
+
+            # Tier 3: Fib浅区
+            elif in_zone_short and current_price < f500_short and rsi > 45:
+                fib_zone = 'shallow'
+                action = "OPEN_BEAR"
+                confidence = 60
+                size_mult = 0.5
+                reasons.append(f"Fib浅区做空, 仓位倍数{size_mult}")
+
+            # Tier 4: Fib区外 + 布林中轨反弹（趋势中继做空）
+            elif not in_zone_short and boll_near_mid_s and rsi > 50:
+                boll_signal = 'near_mid'
+                action = "OPEN_BEAR"
+                confidence = 65
+                size_mult = 0.5
+                reasons.append("Fib区外但价格反弹至布林中轨+RSI>50, 趋势中继SHORT")
+
+            # Tier 5: RSI偏高（动能仍在空头侧）
+            elif rsi > 55 and not in_zone_short:
+                boll_signal = 'rsi_extreme'
+                action = "OPEN_BEAR"
+                confidence = 60
+                size_mult = 0.5
+                reasons.append("RSI>55空头动能持续, 轻仓SHORT")
+
+            # Tier 6: MACD空头柱扩张 = 顺势做空信号
+            elif macd and macd['bearish'] and macd['expanding'] and rsi > 45:
+                trend_signal = 'macd_bear'
+                action = "OPEN_BEAR"
+                confidence = 68
+                size_mult = 0.6
+                reasons.append(f"MACD空头柱扩张(hist={macd['hist']}), 顺势SHORT")
+
+            # Tier 7: ADX强趋势 + -DI > +DI = 空头趋势确认
+            elif adx and adx['strong'] and adx['di_minus'] > adx['di_plus'] and rsi > 45:
+                trend_signal = 'adx_bear'
+                action = "OPEN_BEAR"
+                confidence = 70
+                size_mult = 0.7
+                reasons.append(f"ADX={adx['adx']}>25, -DI={adx['di_minus']}>+DI={adx['di_plus']}, 强空头趋势")
+
+            # Tier 8: Pivot Points 压力区 + RSI中性
+            elif pivot and pivot['resistance_zone'] and 35 < rsi < 60:
+                trend_signal = 'pivot_resistance'
+                action = "OPEN_BEAR"
+                confidence = 62
+                size_mult = 0.5
+                reasons.append(f"Pivot压力区(Pivot={pivot['pivot']}~R1={pivot['r1']}), 压力位SHORT")
+
+            # Tier 9: OBV空头趋势 + 量能加速
+            elif obv and not obv['bullish'] and obv['accelerating'] and rsi > 40:
+                trend_signal = 'obv_bear'
+                action = "OPEN_BEAR"
+                confidence = 66
+                size_mult = 0.6
+                reasons.append(f"OBV空头趋势加速, 资金流出确认SHORT")
+
+            # Tier 10: SuperTrend空头
+            elif supertrend and not supertrend['bullish'] and rsi > 40:
+                trend_signal = 'supertrend_bear'
+                action = "OPEN_BEAR"
+                confidence = 64
+                size_mult = 0.5
+                reasons.append(f"SuperTrend空头趋势(上轨={supertrend['upper_band']}), 顺势SHORT")
+
+            # Tier 11: Keltner Channel 上沿/中线
+            elif keltner and (keltner['near_upper'] or keltner['near_middle']) and rsi > 40:
+                trend_signal = 'keltner_bear'
+                action = "OPEN_BEAR"
+                confidence = 61
+                size_mult = 0.5
+                reasons.append(f"Keltner Channel{'上沿' if keltner['near_upper'] else '中线'}入场(position={keltner['position']}), 均值回归SHORT")
+
+            # Tier 12: StochRSI死叉/超买
+            elif stochrsi and stochrsi.get('overbought') and rsi > 40:
+                trend_signal = 'stochrsi_bear'
+                action = "OPEN_BEAR"
+                confidence = 63
+                size_mult = 0.5
+                reasons.append(f"StochRSI超买(K={stochrsi['k']} D={stochrsi['d']}), 动量反转SHORT")
+
+            # Tier 13: Vortex空头反转
+            elif vortex and not vortex['bullish'] and vortex['reversal'] and rsi > 35:
+                trend_signal = 'vortex_bear'
+                action = "OPEN_BEAR"
+                confidence = 65
+                size_mult = 0.5
+                reasons.append(f"Vortex空头反转(VI-={vortex['vi_minus']}>VI+={vortex['vi_plus']}), 趋势反转确认SHORT")
+
+            # Tier 14: TEMA空头趋势
+            elif tema and not tema['bullish'] and tema['slope'] < 0 and rsi > 35:
+                trend_signal = 'tema_bear'
+                action = "OPEN_BEAR"
+                confidence = 64
+                size_mult = 0.5
+                reasons.append(f"TEMA空头趋势(tema={tema['tema']}<price, slope={tema['slope']}%), 三重EMA确认SHORT")
+
+            # Tier 15: GoldenCross死叉
+            elif golden_cross and not golden_cross['bullish'] and rsi > 35:
+                trend_signal = 'goldencross_bear'
+                action = "OPEN_BEAR"
+                confidence = 72
+                size_mult = 0.7
+                reasons.append(f"GoldenCross死叉(EMA50={golden_cross['ema_fast']}<EMA200={golden_cross['ema_slow']}), 长期趋势启动SHORT")
+
+            # Tier 16: EMA排列空头
+            elif ema_align and ema_align.get('direction') == 'BEAR' and ema_align['aligned'] and rsi > 35:
+                trend_signal = 'ema_align_bear'
+                action = "OPEN_BEAR"
+                confidence = 75
+                size_mult = 0.8
+                reasons.append(f"EMA排列空头(EMA20<EMA50<EMA200, 对齐度={ema_align['alignment_score']}), 完美空头排列SHORT")
+
+            else:
+                if not in_zone_short:
+                    reasons.append("未在Fib回调区[38.2%-61.8%]")
+                elif test_mode and rsi > 30:
+                    action = "OPEN_BEAR"
+                    confidence = 45
+                    reasons.append("[测试模式] RSI>30, 降低标准做空")
+                else:
+                    reasons.append("RSI<=45, 等待做空机会")
 
     elif position == 'ABOVE_ALL':
         rng = fib['swing_high'] - fib['swing_low']
@@ -896,23 +1060,23 @@ def v15_decision(spot_inst: str = "BTC-USDT", price: float = None,
         vol_mult = 1.0
     elif boll_signal == 'rsi_extreme':
         vol_mult = 0.7
-    elif trend_signal == 'pivot_support':
+    elif trend_signal == 'pivot_support' or trend_signal == 'pivot_resistance':
         vol_mult = 0.7
-    elif trend_signal == 'obv_bull':
+    elif trend_signal == 'obv_bull' or trend_signal == 'obv_bear':
         vol_mult = 0.8
-    elif trend_signal == 'supertrend_bull':
+    elif trend_signal == 'supertrend_bull' or trend_signal == 'supertrend_bear':
         vol_mult = 0.7
-    elif trend_signal == 'keltner_bull':
+    elif trend_signal == 'keltner_bull' or trend_signal == 'keltner_bear':
         vol_mult = 0.7
-    elif trend_signal == 'stochrsi_bull':
+    elif trend_signal == 'stochrsi_bull' or trend_signal == 'stochrsi_bear':
         vol_mult = 0.7
-    elif trend_signal == 'vortex_bull':
+    elif trend_signal == 'vortex_bull' or trend_signal == 'vortex_bear':
         vol_mult = 0.7
-    elif trend_signal == 'tema_bull':
+    elif trend_signal == 'tema_bull' or trend_signal == 'tema_bear':
         vol_mult = 0.7
-    elif trend_signal == 'goldencross_bull':
+    elif trend_signal == 'goldencross_bull' or trend_signal == 'goldencross_bear':
         vol_mult = 0.9
-    elif trend_signal == 'ema_align_bull':
+    elif trend_signal == 'ema_align_bull' or trend_signal == 'ema_align_bear':
         vol_mult = 1.0
 
     result = {

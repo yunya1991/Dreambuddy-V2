@@ -1,0 +1,144 @@
+{
+  "date": "2026-07-15",
+  "timestamp": "2026-07-15T00:55:15+08:00",
+  "regime": "BULL_RECOVERY_L2",
+  "regime_name": "BULL_RECOVERY",
+  "regime_level": 2,
+  "confidence": 75,
+  "si_index": 18,
+  "si_index_category": "MODERATE_BULL",
+  "three_screen": {
+    "weekly": 0,
+    "daily": 2,
+    "hourly": 2,
+    "composite": 2
+  },
+  "market_snapshot": {
+    "btc_price": 64754.9,
+    "btc_24h_change_pct": 4.02,
+    "eth_price": 1873.85,
+    "eth_24h_change_pct": 5.84,
+    "sol_price": 77.38,
+    "sol_24h_change_pct": 2.93,
+    "fgi": 22,
+    "fgi_classification": "Extreme Fear",
+    "funding_rate_btc": 0.0001,
+    "etf_net_flow_1d_usd": 297000000,
+    "etf_trend": "8_consecutive_inflows",
+    "ibit_flow_1d_usd": 395000000
+  },
+  "technical": {
+    "ma5": 64074.4,
+    "ma10": 63633.03,
+    "ma20": 62234.03,
+    "ma30": 62570.7,
+    "ma5_ma10_spread": 441.37,
+    "rsi14": 68.32,
+    "atr14": 1785.55,
+    "high_30d": 67253.3,
+    "low_30d": 57750.0,
+    "position_in_30d_range_pct": 73.71
+  },
+  "macro": {
+    "cpi_yoy": 3.5,
+    "cpi_yoy_expectation": 3.8,
+    "cpi_yoy_previous": 4.2,
+    "cpi_mom": -0.4,
+    "core_cpi_yoy": 2.6,
+    "core_cpi_mom": 0.0,
+    "fed_rate_range": "3.50-3.75%",
+    "july_hike_probability_after_cpi": "<20%",
+    "wti_price": 78.0,
+    "wti_24h_change_pct": 9.23,
+    "brent_price": 83.25,
+    "brent_24h_change_pct": 9.53,
+    "gold_price": 4100,
+    "sp500": 7542,
+    "dxy": 100.5
+  },
+  "contradictions": [
+    {
+      "id": "CX_033",
+      "name": "伊朗地缘升级 vs 市场韧性",
+      "side_a": "军事封锁/油价跳升",
+      "side_b": "BTC 未崩并反弹",
+      "bias": "A 偏强",
+      "trend": "A 边际减弱"
+    },
+    {
+      "id": "CX_034",
+      "name": "通胀陷阱 vs 降息预期",
+      "side_a": "CPI 反弹/油价↑",
+      "side_b": "6 月 CPI 爆冷",
+      "bias": "B 大幅加强",
+      "trend": "B 占主导"
+    },
+    {
+      "id": "CX_035",
+      "name": "油价回落 vs 制裁恢复",
+      "side_a": "制裁 7/17 截止/封锁",
+      "side_b": "OPEC+ 增产/能源 CPI 回落",
+      "bias": "A 偏强",
+      "trend": "A 短期占优"
+    },
+    {
+      "id": "CX_031",
+      "name": "恐惧 vs 反弹韧性",
+      "side_a": "FGI=22 极度恐惧",
+      "side_b": "ETF 流入 + 鲸鱼积累",
+      "bias": "B 偏强",
+      "trend": "B 强化"
+    },
+    {
+      "id": "CX_036",
+      "name": "MA 死叉 vs 鲸鱼积累",
+      "side_a": "技术面破位",
+      "side_b": "链上积累",
+      "bias": "B 偏强",
+      "trend": "死叉解除，金叉修复"
+    }
+  ],
+  "primary_contradiction": "CX_034",
+  "key_levels": {
+    "resistance_1": 65000,
+    "resistance_2": 67253,
+    "support_1": 64074,
+    "support_2": 63633,
+    "support_3": 62000,
+    "support_4": 60000,
+    "support_5": 59000,
+    "support_6": 58384
+  },
+  "risk_assessment": {
+    "upside_risks": [
+      "CPI 持续降温 + 7 月 FOMC 按兵不动",
+      "ETF 连续大额流入",
+      "鲸鱼积累效应显现",
+      "霍尔木兹局势降温"
+    ],
+    "downside_risks": [
+      "油价维持 $80+ 超过 2 周",
+      "7/17 制裁后伊朗石油归零",
+      "伊朗局势升级",
+      "BTC 未能站稳 $65,000",
+      "PPI 7/15 超预期"
+    ],
+    "black_swan": [
+      "伊朗全面封锁霍尔木兹 → 油价 $100+",
+      "Fed 7 月意外加息",
+      "鲸鱼停止积累 + ETF 净流出"
+    ]
+  },
+  "first_principles": {
+    "path_of_least_resistance": "短期向上",
+    "trend_momentum": "反弹动力强劲",
+    "resistance_sources": "伊朗地缘 + 油价脉冲 + 前高阻力",
+    "support_sources": "鲸鱼积累 + ETF 转正 + 降息预期"
+  },
+  "operation_suggestion": "中性偏多，0.4-0.6x 标准仓位，紧盯油价与 7/17 制裁节点",
+  "a7_verification": {
+    "source_sufficiency": true,
+    "evidence_chain_integrity": true,
+    "research_design_validity": true
+  }
+}

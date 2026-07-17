@@ -1121,8 +1121,35 @@ def compute_trend_signal_from_dataframes(
         fundamental_data
     )
 
+    # ── P3.4: 综合预测引擎（技术基线 + 基本面三维度调节）──
+    # 核心公式: final_confidence = tech_confidence × (1 + fundamental_adjustment)
+    # 基本面通过方向/速度/加速度/情绪四维因子调节技术面置信度
+    composite_prediction = None
+    try:
+        from .core.composite_predictor import create_composite_predictor
+        predictor = create_composite_predictor()
+        tech_result_for_composite = {
+            "direction": trend_consistency.get("overall_direction", "NEUTRAL"),
+            "confidence": trend_consistency.get("consistency_confidence", 0.0),
+        }
+        composite_prediction = predictor.predict(
+            tech_result=tech_result_for_composite,
+            fundamental_data=fundamental_data,
+        )
+    except Exception:
+        composite_prediction = None
+
     final_direction = fusion_result["final_direction"]
     final_confidence = fusion_result["final_confidence"]
+
+    # 应用综合预测引擎的调节因子
+    if composite_prediction and composite_prediction.get("fundamental", {}).get("adjustment", {}).get("adjustment") != 0:
+        adjustment = composite_prediction["fundamental"]["adjustment"]
+        adjustment_type = adjustment.get("adjustment_type", "none")
+        if adjustment_type == "enhance":
+            final_confidence = min(100, final_confidence * (1 + adjustment["adjustment"] * 0.3))
+        elif adjustment_type == "weaken":
+            final_confidence = max(0, final_confidence * (1 + adjustment["adjustment"] * 0.3))
 
     # ── P2-v3: Elder-ray 背离确认时，使用趋势一致性判定的方向 ──
     # 核心思想：Elder-ray 背离代表动态趋势切换，背离确认的方向应覆盖融合方向
@@ -1272,6 +1299,7 @@ def compute_trend_signal_from_dataframes(
         "btc_direction_blocked": btc_direction_blocked,  # BTC趋势方向过滤
         "btc_filter_reason": btc_filter_reason,  # 过滤原因
         "fundamental_fusion": trend_consistency.get("fundamental_fusion"),  # 基本面融合结果
+        "composite_prediction": composite_prediction,  # P3.4 综合预测引擎结果
         "leverage": MAX_LEVERAGE,
         "margin_mode": "isolated",
         "max_position_pct": MAX_POSITION_PCT,

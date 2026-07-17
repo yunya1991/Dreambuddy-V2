@@ -27,6 +27,7 @@ try:
         FUNDAMENTAL_SCREEN1_ENABLED,
         FUNDAMENTAL_TECH_WEIGHT,
         FUNDAMENTAL_FUND_WEIGHT,
+        LEAST_RESISTANCE_ENABLED,
     )
 except ImportError:
     from indicators import (
@@ -44,6 +45,7 @@ except ImportError:
         FUNDAMENTAL_SCREEN1_ENABLED,
         FUNDAMENTAL_TECH_WEIGHT,
         FUNDAMENTAL_FUND_WEIGHT,
+        LEAST_RESISTANCE_ENABLED,
     )
 
 
@@ -576,6 +578,74 @@ def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] 
         combined_phase = "UNKNOWN"
         combined_phase_conf = 0.0
 
+    # ── Phase 3.5: 最小阻力方向引擎 — 纯算法驱动（第一性原理）──
+    # 静态指标投票已被移除，最小阻力三维模型（时间三维×五维阻力）为唯一驱动
+    least_resistance = None
+    if LEAST_RESISTANCE_ENABLED:
+        try:
+            from .least_resistance import compute_least_resistance_3d
+        except ImportError:
+            try:
+                from least_resistance import compute_least_resistance_3d
+            except ImportError:
+                compute_least_resistance_3d = None
+
+        if compute_least_resistance_3d:
+            try:
+                lr_fundamental = None
+                if fundamental_fusion and fundamental_fusion.get("fundamental_available"):
+                    lr_fundamental = fundamental_fusion.get("fundamental_data", None)
+
+                lr_3d = compute_least_resistance_3d(
+                    weekly_df, daily_df, fundamental_data=lr_fundamental,
+                )
+
+                lr_dir = lr_3d["direction"]
+                lr_conf = lr_3d["confidence"]
+                lr_velocity = lr_3d["velocity"]
+                lr_acceleration = lr_3d["acceleration"]
+                lr_entry = lr_3d["entry_signal"]
+                lr_dir_diff = lr_3d["direction_diff"]
+
+                least_resistance = {
+                    "overall_direction": lr_dir,
+                    "consistency_confidence": lr_conf,
+                    "consistent": lr_dir != "NEUTRAL" and lr_dir_diff > 0,
+                    "velocity": lr_velocity,
+                    "acceleration": lr_acceleration,
+                    "entry_signal": lr_entry,
+                    "direction_diff": lr_dir_diff,
+                    "trend_strength": lr_3d.get("trend_strength", 0),
+                    "trend_duration": lr_3d.get("trend_duration", 0),
+                    "drive_mode": lr_3d.get("drive_mode"),
+                    "weekly": lr_3d["weekly"],
+                    "daily": lr_3d["daily"],
+                    "accumulation": lr_3d.get("accumulation"),
+                    "early_inference": lr_3d.get("early_inference"),
+                    "summary": lr_3d["summary"],
+                }
+
+                # 纯LR驱动：直接覆盖方向和置信度
+                if lr_dir != "NEUTRAL":
+                    overall_direction = lr_dir
+                    if lr_dir_diff > 0:
+                        # 周线日线同向 → 强一致
+                        consistency_level = "STRONG_CONSISTENT"
+                        consistent = True
+                        consistency_confidence = lr_conf
+                    else:
+                        # 日线与周线不一致
+                        consistent = False
+                        consistency_level = "INCONSISTENT"
+                        consistency_confidence = round(lr_conf * 0.5, 1)
+                else:
+                    overall_direction = "NEUTRAL"
+                    consistent = False
+                    consistency_level = "INCONSISTENT"
+                    consistency_confidence = 0.0
+            except Exception:
+                least_resistance = None
+
     return {
         "weekly": {
             "static_direction": weekly_static,
@@ -619,4 +689,5 @@ def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] 
         "trend_phase": combined_phase,            # P2 新增
         "trend_phase_confidence": combined_phase_conf,  # P2 新增
         "fundamental_fusion": fundamental_fusion,  # 基本面融合结果（None=未启用/回退）
+        "least_resistance": least_resistance,  # Phase 3.5 最小阻力方向引擎结果
     }

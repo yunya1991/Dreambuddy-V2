@@ -1,0 +1,146 @@
+{
+  "timestamp": "2026-07-17T20:10:04.573340",
+  "symbol": "BTC-USDT",
+  "n_days": 3202,
+  "regime_distribution": {
+    "bull": {
+      "days": 1306,
+      "pct": 40.78700811992505
+    },
+    "bear": {
+      "days": 941,
+      "pct": 29.387882573391632
+    },
+    "sideways": {
+      "days": 955,
+      "pct": 29.825109306683323
+    }
+  },
+  "best_params": {
+    "bull": {
+      "params": {
+        "update_step": 1,
+        "min_holding_bars": 15,
+        "signal_confirm_bars": 1,
+        "max_position": 1.0,
+        "enable_trend_filter": true
+      },
+      "return": 4.55,
+      "sharpe": 0.01,
+      "drawdown": 47.24,
+      "trades": 67,
+      "avg_holding": 22.074626865671643,
+      "regime_stats": {
+        "bull": {
+          "days": 1306,
+          "return_pct": 38.68482345298432,
+          "pct": 40.78700811992505
+        },
+        "bear": {
+          "days": 941,
+          "return_pct": 53.5972185957104,
+          "pct": 29.387882573391632
+        },
+        "sideways": {
+          "days": 955,
+          "return_pct": -44.57119520846315,
+          "pct": 29.825109306683323
+        }
+      }
+    },
+    "bear": {
+      "params": {
+        "update_step": 1,
+        "min_holding_bars": 3,
+        "signal_confirm_bars": 1,
+        "max_position": 1.0,
+        "enable_trend_filter": true
+      },
+      "return": 61.38,
+      "sharpe": 0.2,
+      "drawdown": 46.51,
+      "trades": 139,
+      "avg_holding": 6.841726618705036,
+      "regime_stats": {
+        "bull": {
+          "days": 1306,
+          "return_pct": 5.956895443845456,
+          "pct": 40.78700811992505
+        },
+        "bear": {
+          "days": 941,
+          "return_pct": 116.92218530261079,
+          "pct": 29.387882573391632
+        },
+        "sideways": {
+          "days": 955,
+          "return_pct": -26.512704277918107,
+          "pct": 29.825109306683323
+        }
+      }
+    },
+    "sideways": {
+      "params": {
+        "update_step": 1,
+        "min_holding_bars": 3,
+        "signal_confirm_bars": 2,
+        "max_position": 0.4,
+        "enable_trend_filter": true
+      },
+      "return": 2.06,
+      "sharpe": 0.02,
+      "drawdown": 24.49,
+      "trades": 108,
+      "avg_holding": 6.972222222222222,
+      "regime_stats": {
+        "bull": {
+          "days": 1306,
+          "return_pct": 0.6807037297479113,
+          "pct": 40.78700811992505
+        },
+        "bear": {
+          "days": 941,
+          "return_pct": 20.714795836712184,
+          "pct": 29.387882573391632
+        },
+        "sideways": {
+          "days": 955,
+          "return_pct": 2.082847806649446,
+          "pct": 29.825109306683323
+        }
+      }
+    },
+    "overall": {
+      "params": {
+        "update_step": 1,
+        "min_holding_bars": 15,
+        "signal_confirm_bars": 4,
+        "max_position": 1.0,
+        "enable_trend_filter": true
+      },
+      "return": 125.65,
+      "sharpe": 0.34,
+      "drawdown": 48.23,
+      "trades": 50,
+      "avg_holding": 21.22,
+      "regime_stats": {
+        "bull": {
+          "days": 1306,
+          "return_pct": 24.959116141615723,
+          "pct": 40.78700811992505
+        },
+        "bear": {
+          "days": 941,
+          "return_pct": 60.95773802116084,
+          "pct": 29.387882573391632
+        },
+        "sideways": {
+          "days": 955,
+          "return_pct": -20.817871890246884,
+          "pct": 29.825109306683323
+        }
+      }
+    }
+  },
+  "top5_per_regime": {}
+}

@@ -22,6 +22,9 @@ MAX_LESSONS = 20
 MAX_RECENT_TRADES = 50
 MAX_PENDING_STRATEGIES = 5
 
+# 连败保护最大持续时间（小时），超时后自动重置 loss_streak
+LOSS_PROTECTION_MAX_HOURS = 48
+
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -35,6 +38,8 @@ def load_memory() -> Dict:
                 data = json.load(f)
                 if "hold_streak" not in data:
                     data["hold_streak"] = 0
+                if "loss_protection_start_ts" not in data:
+                    data["loss_protection_start_ts"] = None
                 if "evolution" not in data:
                     data["evolution"] = {
                         "adopted_params": {},
@@ -53,6 +58,7 @@ def load_memory() -> Dict:
         "total_trades": 0,
         "win_streak": 0,
         "loss_streak": 0,
+        "loss_protection_start_ts": None,  # 连败保护启动时间（ISO格式），用于48小时超时重置
         "hold_streak": 0,
         "max_drawdown_pct": 0.0,
         "peak_equity": 60.0,
@@ -132,6 +138,95 @@ def get_top_lessons(memory: Dict, n: int = 10) -> List[Dict]:
     """获取评分最高的 n 条教训"""
     lessons = memory.get("lessons", [])
     return sorted(lessons, key=lambda x: x["score"], reverse=True)[:n]
+
+
+# ── 连败保护超时管理 ─────────────────────────────────────────────────────
+
+def check_loss_protection_timeout(memory: Dict) -> Dict:
+    """
+    检查连败保护是否超过48小时，超时则自动重置 loss_streak。
+
+    设计逻辑：
+    - 连败≥3时，loss_protection_start_ts 记录保护启动时间
+    - 超过 LOSS_PROTECTION_MAX_HOURS 后自动重置 loss_streak=0
+    - 防止系统陷入无限连败保护死循环
+
+    返回更新后的 memory。
+    """
+    loss_streak = memory.get("loss_streak", 0)
+    start_ts = memory.get("loss_protection_start_ts")
+
+    # 连败≥3 但没有记录启动时间 → 补记
+    if loss_streak >= 3 and not start_ts:
+        memory["loss_protection_start_ts"] = _now_iso()
+        return memory
+
+    # 连败<3 → 清除启动时间
+    if loss_streak < 3:
+        memory["loss_protection_start_ts"] = None
+        return memory
+
+    # 连败≥3 且有启动时间 → 检查是否超时
+    if start_ts:
+        try:
+            start_time = datetime.fromisoformat(start_ts)
+            now = datetime.now(timezone.utc)
+            elapsed_hours = (now - start_time).total_seconds() / 3600
+
+            if elapsed_hours >= LOSS_PROTECTION_MAX_HOURS:
+                print(f"[风控] 连败保护已持续{elapsed_hours:.1f}小时（≥{LOSS_PROTECTION_MAX_HOURS}h），自动重置 loss_streak")
+                memory["loss_streak"] = 0
+                memory["loss_protection_start_ts"] = None
+                memory["win_streak"] = 0
+                # 添加一条教训记录超时重置事件
+                add_lesson(
+                    memory,
+                    f"连败保护超时重置：持续{elapsed_hours:.1f}小时后自动解除，需重新评估市场环境",
+                    universality=3,
+                    importance=3,
+                )
+        except (ValueError, TypeError):
+            # 时间戳格式异常，重新记录
+            memory["loss_protection_start_ts"] = _now_iso()
+
+    return memory
+
+
+def get_loss_protection_countdown(memory: Dict) -> Optional[Dict]:
+    """
+    获取连败保护倒计时信息。
+
+    返回:
+        None — 未处于连败保护状态
+        Dict — {
+            "start_ts": 保护启动时间,
+            "elapsed_hours": 已经过小时数,
+            "remaining_hours": 剩余小时数,
+            "max_hours": 最大保护小时数,
+            "loss_streak": 当前连败次数,
+        }
+    """
+    loss_streak = memory.get("loss_streak", 0)
+    start_ts = memory.get("loss_protection_start_ts")
+
+    if loss_streak < 3 or not start_ts:
+        return None
+
+    try:
+        start_time = datetime.fromisoformat(start_ts)
+        now = datetime.now(timezone.utc)
+        elapsed_hours = (now - start_time).total_seconds() / 3600
+        remaining_hours = max(0, LOSS_PROTECTION_MAX_HOURS - elapsed_hours)
+
+        return {
+            "start_ts": start_ts,
+            "elapsed_hours": round(elapsed_hours, 1),
+            "remaining_hours": round(remaining_hours, 1),
+            "max_hours": LOSS_PROTECTION_MAX_HOURS,
+            "loss_streak": loss_streak,
+        }
+    except (ValueError, TypeError):
+        return None
 
 
 # ── 交易记录 ─────────────────────────────────────────────────────────────
@@ -216,9 +311,13 @@ def record_closed_trade(
         if pnl > 0:
             memory["win_streak"] = memory.get("win_streak", 0) + 1
             memory["loss_streak"] = 0
+            memory["loss_protection_start_ts"] = None  # 连胜 → 清除保护计时
         else:
             memory["loss_streak"] = memory.get("loss_streak", 0) + 1
             memory["win_streak"] = 0
+            # 连败≥3 → 记录保护启动时间
+            if memory["loss_streak"] >= 3 and not memory.get("loss_protection_start_ts"):
+                memory["loss_protection_start_ts"] = _now_iso()
 
     return memory
 

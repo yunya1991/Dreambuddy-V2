@@ -35,6 +35,7 @@ from core.agent_a_memory import (
     load_memory, save_memory, add_lesson, record_trade,
     update_equity_stats, maybe_switch_master, get_top_lessons,
     record_closed_trade, update_hold_streak, get_evolution_params,
+    check_loss_protection_timeout, get_loss_protection_countdown,
 )
 from core.exit_module import run_exit_check, init_position, update_position_exit_levels
 from core.agent_a_llm import agent_a_llm_decide, get_quota_status, get_available_provider
@@ -144,11 +145,19 @@ def run():
 
     # ── 1. 加载记忆 ───────────────────────────────────────────────
     memory = load_memory()
+
+    # 连败保护48小时超时检查（超时自动重置 loss_streak）
+    memory = check_loss_protection_timeout(memory)
+    countdown = get_loss_protection_countdown(memory)
+
     top_lessons = get_top_lessons(memory, 10)
     evolution_params = get_evolution_params(memory)
     print(f"[记忆] 当前大师: {memory['current_master']}")
     print(f"[记忆] 总交易: {memory['total_trades']} | "
           f"连胜: {memory['win_streak']} | 连败: {memory['loss_streak']}")
+    if countdown:
+        print(f"[风控] 连败保护倒计时: 已过{countdown['elapsed_hours']}h / 剩余{countdown['remaining_hours']}h "
+              f"(最大{countdown['max_hours']}h, 连败{countdown['loss_streak']}次)")
     print(f"[记忆] Lessons: {len(memory['lessons'])} 条 | "
           f"最大回撤: {memory.get('max_drawdown_pct', 0):.1f}%")
     if evolution_params:
@@ -239,14 +248,30 @@ def run():
         _break_conservative_loop(decision, mkt, memory, account_data)
 
     # 连败保护：连败≥3 时强制 HOLD（即使 LLM 说要做）
+    # 注意：48小时超时已在 run() 开头通过 check_loss_protection_timeout 处理
     if memory.get("loss_streak", 0) >= 3 and decision.get("action") != "HOLD":
+        countdown = get_loss_protection_countdown(memory)
         print(f"[风控] 连败{memory['loss_streak']}次，强制观望一轮")
+        if countdown:
+            print(f"[风控] 保护倒计时: 剩余{countdown['remaining_hours']}h (已过{countdown['elapsed_hours']}h/{countdown['max_hours']}h)")
+        original_action = decision.get("action", "HOLD")
+        original_conf = decision.get("confidence", 0)
+        decision["original_action"] = original_action
+        decision["original_confidence"] = original_conf
         decision["action"] = "HOLD"
-        decision["confidence"] = 0
+        decision["risk_gate_blocked"] = True
+        decision["block_reason"] = "loss_streak_protection"
+        # 注入倒计时信息到决策日志
+        if countdown:
+            decision["loss_protection_countdown"] = countdown
         decision["reasoning_steps"] = decision.get("reasoning_steps", []) + [
-            f"连败保护：已连败{memory['loss_streak']}次，本轮强制观望"
+            f"连败保护：已连败{memory['loss_streak']}次，本轮强制观望（信号置信度保留）"
+            + (f" | 保护倒计时: 剩余{countdown['remaining_hours']}h" if countdown else "")
         ]
-        decision["decision_rationale"] = "连败保护触发，强制HOLD"
+        decision["decision_rationale"] = (
+            f"连败保护触发，强制HOLD（原始信号{original_action}，置信度{original_conf:.0%}）"
+            + (f" | 剩余{countdown['remaining_hours']}h自动解除" if countdown else "")
+        )
 
     # ── 4.5 L2 智能离场（LLM 给出持仓调整建议）───────────────────────
     smart_exits = []
@@ -298,41 +323,45 @@ def run():
 
     exec_result = None
     if not sim_mode and AUTO_EXECUTE and action in ("LONG", "SHORT") and coin and pos_usdt > 0:
-        effective_equity = min(equity, BUDGET_USDC)
-        pos_usdt = max(min(pos_usdt, effective_equity * PER_TRADE_PCT), 5.0)
-        tag = f"a_{cycle[:8]}"
+        try:
+            effective_equity = min(equity, BUDGET_USDC)
+            pos_usdt = max(min(pos_usdt, effective_equity * PER_TRADE_PCT), 5.0)
+            tag = f"a_{cycle[:8]}"
 
-        if action == "LONG":
-            exec_result = client.open_long(coin, pos_usdt, leverage, tag)
-        else:
-            exec_result = client.open_short(coin, pos_usdt, leverage, tag)
+            if action == "LONG":
+                exec_result = client.open_long(coin, pos_usdt, leverage, tag)
+            else:
+                exec_result = client.open_short(coin, pos_usdt, leverage, tag)
 
-        print(f"[执行] {action} {coin} {pos_usdt} USDC × {leverage}x")
-        print(f"[执行] 结果: ok={exec_result.get('ok')} filled={exec_result.get('filled')}")
+            print(f"[执行] {action} {coin} {pos_usdt} USDC × {leverage}x")
+            print(f"[执行] 结果: ok={exec_result.get('ok')} filled={exec_result.get('filled')}")
 
-        # 开仓成功后初始化 active_positions（L1 基础离场）
-        if exec_result.get("ok"):
-            entry_px = decision.get("entry_price", 0) or client.get_mid_price(coin)
-            custom_sl = decision.get("stop_loss_price")
-            custom_tp = decision.get("take_profit_price")
-            memory["active_positions"] = init_position(
-                memory.get("active_positions", {}),
-                coin=coin,
-                entry_price=entry_px,
-                action=action,
-                position_size_usdt=pos_usdt,
-                leverage=leverage,
-                stop_loss_price=custom_sl,
-                take_profit_price=custom_tp,
-                cycle_id=cycle,
-                proxies=client.proxies,
-                client=client,
-            )
-            pos_info = memory["active_positions"][coin]
-            print(f"[离场] L1 预设: SL={pos_info['stop_loss_price']} "
-                  f"({pos_info['sl_source']}), "
-                  f"TP={pos_info['take_profit_price']} "
-                  f"({pos_info['tp_source']})")
+            # 开仓成功后初始化 active_positions（L1 基础离场）
+            if exec_result.get("ok"):
+                entry_px = decision.get("entry_price", 0) or client.get_mid_price(coin)
+                custom_sl = decision.get("stop_loss_price")
+                custom_tp = decision.get("take_profit_price")
+                memory["active_positions"] = init_position(
+                    memory.get("active_positions", {}),
+                    coin=coin,
+                    entry_price=entry_px,
+                    action=action,
+                    position_size_usdt=pos_usdt,
+                    leverage=leverage,
+                    stop_loss_price=custom_sl,
+                    take_profit_price=custom_tp,
+                    cycle_id=cycle,
+                    proxies=client.proxies,
+                    client=client,
+                )
+                pos_info = memory["active_positions"][coin]
+                print(f"[离场] L1 预设: SL={pos_info['stop_loss_price']} "
+                      f"({pos_info['sl_source']}), "
+                      f"TP={pos_info['take_profit_price']} "
+                      f"({pos_info['tp_source']})")
+        except Exception as e:
+            print(f"[执行] ❌ 执行失败: {e}")
+            exec_result = {"ok": False, "error": str(e), "exception_type": type(e).__name__}
     elif sim_mode and action in ("LONG", "SHORT") and coin and pos_usdt > 0:
         effective_equity = min(equity, BUDGET_USDC)
         pos_usdt = max(min(pos_usdt, effective_equity * PER_TRADE_PCT), 5.0)
@@ -369,6 +398,12 @@ def run():
         "top_lessons":         [l["content"] for l in top_lessons[:5]],
         "active_positions":    memory.get("active_positions", {}),
         "smart_exits":         smart_exits,
+        # 风控门禁相关字段
+        "risk_gate_blocked":   decision.get("risk_gate_blocked", False),
+        "block_reason":        decision.get("block_reason"),
+        "original_action":     decision.get("original_action"),
+        "original_confidence": decision.get("original_confidence"),
+        "loss_protection_countdown": decision.get("loss_protection_countdown"),
     })
     if exec_result:
         log.data["execution"] = exec_result

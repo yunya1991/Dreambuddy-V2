@@ -12,7 +12,7 @@
 | 目录位置 | `12-三屏趋势系统/` |
 | 主入口 | `engine.py` |
 | 核心模块 | `core/` |
-| 当前版本 | v1.3.1（Phase 3.2） |
+| 当前版本 | v1.6（Phase 3.5） |
 | 依赖系统 | 经典指标系统（10）、通用风控模块（13）、V15马丁策略（14） |
 
 ### 1.2 功能概览
@@ -28,6 +28,9 @@
 - **ML策略**：机器学习策略模块，模型版本管理
 - **Platt校准**：置信度校准（训练集ECE从22.6%降至1.3%，改善94%）
 - **币种池优化**：聚焦9个高流动性币种（BTC/ETH/SOL/BNB/HYPE/UNI/ARB/ZEC/DOGE）
+- **综合预测引擎**：技术基线 + 基本面三维度调节（方向/速度/加速度/情绪四维因子）
+- **9-基本面分析集成**：接入SignalEngine、SentimentEngine、LeastResistance三维度计算
+- **最小阻力方向引擎**（Phase 3.5）：第一性原理，5维度阻力计算（价格/量能/动量/趋势/基本面），动态算法优先于静态指标
 
 ### 1.3 决策优先级链
 
@@ -46,16 +49,20 @@
 ├── core/                    # 核心算法模块
 │   ├── __init__.py
 │   ├── config.py            # 配置管理（逐仓/价值风险/风向标）
+│   ├── composite_predictor.py # 综合预测引擎（技术基线+基本面三维度调节）
 │   ├── dynamic_weights.py   # 动态权重调整
-│   ├── fusion.py            # 信号融合（技术面+基本面）
+│   ├── fundamental_screen1.py # Path B 核心模块：7维基本面分析（Tavily+算法）
+│   ├── fusion.py            # 信号融合（Path A 技术面+基本面撮合）
 │   ├── indicators.py        # 技术指标计算
+│   ├── least_resistance.py  # Phase 3.5 最小阻力方向引擎（第一性原理）
 │   ├── risk_control.py      # 极端行情风控守卫
 │   ├── risk_reward.py       # 价值风险评估+仓位+加仓
 │   └── trend_consistency.py # 趋势一致性判断
 ├── data/                    # 数据层
 │   ├── __init__.py
-│   ├── fundamental_data.py  # 基本面数据
-│   └── market_data.py       # 市场数据
+│   ├── fundamental_data.py  # Path A 基本面数据（研报系统）
+│   ├── market_data.py       # 市场数据
+│   └── tavily_data.py       # Path B Tavily 数据采集（矿工/链上/宏观/跨市场）
 ├── signal_pool/             # Freqtrade信号池
 │   ├── pool.json            # 信号池缓存
 │   └── scanner.py           # 信号池扫描器
@@ -99,16 +106,19 @@
 | `core/indicators.py` | 技术指标计算（MA、EMA、MACD、RSI、KDJ等静态+三维动态） |
 | `core/trend_consistency.py` | 三屏趋势一致性判断核心（静态投票+三维动态融合+动态优先） |
 | `core/dynamic_weights.py` | 基于趋势强度的动态权重调整 |
-| `core/fusion.py` | 多信号融合算法（技术面+基本面撮合） |
+| `core/fundamental_screen1.py` | **Path B 核心**：7维基本面分析（Tavily API + 减半周期 + 算法评分） |
+| `core/fusion.py` | **Path A 融合**：技术面+基本面撮合（研报数据→最终方向） |
 | `core/risk_reward.py` | 价值风险评估、Elder-ray、波动率放大、加仓决策 |
 | `core/risk_control.py` | 极端行情风控守卫 |
+| `core/least_resistance.py` | **Phase 3.5 第一性原理**：最小阻力方向引擎（5维阻力计算：价格/量能/动量/趋势/基本面） |
 
 ### 3.2 数据层
 
 | 文件 | 功能说明 |
 |------|----------|
 | `data/market_data.py` | 市场行情数据获取与缓存（多周期K线） |
-| `data/fundamental_data.py` | 基本面数据集成（研报+经典指标回退） |
+| `data/fundamental_data.py` | **Path A 数据源**：A系列研报读取（周报MD + A1日报JSON） |
+| `data/tavily_data.py` | **Path B 数据源**：Tavily API 实时搜索（矿工/链上/宏观/跨市场 4维，30分钟缓存） |
 
 ### 3.3 信号与集成模块
 
@@ -300,5 +310,5 @@ cd 12-三屏趋势系统 && python -m pytest tests/ -v
 
 ---
 
-**文档版本**: v1.3.1  
-**最后更新**: 2026-07-15
+**文档版本**: v1.4  
+**最后更新**: 2026-07-16

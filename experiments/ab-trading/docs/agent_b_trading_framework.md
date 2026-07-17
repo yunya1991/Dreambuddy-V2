@@ -1,8 +1,8 @@
 # Agent B 交易框架文档 — DreamBuddy v2 量化交易系统
 
 > **定位**：AB双Agent对比实验 — Agent B（DreamBuddy v2）核心操作手册
-> **版本**：v2.0 | **更新**：2026-06-24
-> **市场**：Hyperliquid 永续合约（子账户）| **预算**：$60 USDC | **杠杆**：动态1-5x
+> **版本**：v2.1 | **创建**：2026-06-24 | **更新**：2026-07-17
+> **市场**：Hyperliquid 永续合约（子账户）| **预算**：实际可用余额 | **杠杆**：动态1-5x
 
 ---
 
@@ -179,11 +179,47 @@ Level 3 有Token：Tavily搜索（每4轮1次）→ 新策略进待验证池
 ### 仓位规则
 
 ```
-单笔仓位 = max(子账户权益 × 5%, $5)
+单笔仓位 = max(实际可用余额 × PER_TRADE_PCT, $5)
 名义价值 = 仓位 × 杠杆（最小$10，Hyperliquid限制）
 杠杆     = min(5, max(1, int(final_confidence × 5)))
-最大持仓 = 子账户权益 × 20%
+最大持仓 = 实际可用余额 × 20%
 ```
+
+### 资金分配机制（v2.1 更新）
+
+**变更说明**：不再使用固定 `BUDGET_USDC=60` 作为上限，改为直接读取合约账户实际权益。
+
+```
+之前：equity = min(acct["equity"], 60.0)     ← 即使充值更多也只用60
+现在：equity = acct["equity"]                 ← 实际有多少用多少
+```
+
+**数据流向**：
+```
+agent_b_runner.py
+  ├─ acct = client.get_account()              ← 从 Hyperliquid 获取实际权益
+  ├─ equity = acct["equity"]                  ← 直接使用，不再 min() 截断
+  │
+  ├─ ChainRouter(client, mkt, memory, intent,
+  │              BUDGET_USDC, equity=equity)   ← 传入实际权益
+  │     └─ pos_usdt = self.equity * PER_TRADE_PCT   ← 基于实际余额计算
+  │
+  └─ ClassicDriver(per_trade_usdc=equity*0.05)  ← Classic 模式同样使用实际余额
+```
+
+**环境变量配置**：
+- `PER_TRADE_PCT`：单笔资金分配比例，默认 `0.05`（5%），可通过环境变量覆盖
+- `BUDGET_USDC`：仅作为模拟模式回退值，不再截断实际权益
+
+**安全检查**：
+- 权益 ≤ 0 时回退到 `BUDGET_USDC` 并打印告警
+- 模拟模式（账户查询失败）使用虚拟资金 `BUDGET_USDC`
+
+**实现位置**：
+- ChainRouter 构造函数：[chain_router.py#L86](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_router.py#L86)
+- 仓位计算：[chain_router.py#L227](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_router.py#L227)
+- 权益获取：[agent_b_runner.py#L1081](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_b_runner.py#L1081)
+- ClassicDriver 初始化：[agent_b_runner.py#L858](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_b_runner.py#L858)
 
 ---
 
@@ -207,14 +243,20 @@ Level 3 有Token：Tavily搜索（每4轮1次）→ 新策略进待验证池
 
 | 文件 | 功能 |
 |------|------|
-| `core/intent_gateway.py` | 意图识别层 |
-| `core/chain_planner.py` | 零Token链路规划器 |
-| `core/chain_router.py` | 动态链路执行引擎（含A0内置节点、做梦部、治理环）|
-| `agents/agent_b_runner.py` | 主流程（三层架构整合）|
-| `data/skill_registry.md` | 能力清单（三环架构节点注册表）|
-| `data/agent_b_memory.json` | 跨session记忆（自动维护）|
+| [agent_b_runner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_b_runner.py) | 主流程（三层架构整合，含实际余额资金分配） |
+| [chain_router.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_router.py) | 动态链路执行引擎（含A0、做梦部、治理环、equity传参） |
+| [chain_planner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_planner.py) | 零Token链路规划器 |
+| [intent_gateway.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/intent_gateway.py) | 意图识别层 |
+| [classic_driver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/classic_driver.py) | Classic模式驱动（使用实际余额） |
+| [trading_memory.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/trading_memory.py) | 交易记忆系统 |
+| [exit_module.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/exit_module.py) | 离场模块 |
+| [aster_spot.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/execution/aster_spot.py) | Hyperliquid 合约执行层 |
+| [monitor.html](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html) | AB Trading 监控页面 |
+| `data/skill_registry.md` | 能力清单（三环架构节点注册表） |
+| `data/agent_b_memory.json` | 跨session记忆（自动维护） |
 | `data/agent_b_graph.json` | 图压缩B/A/C节点日志 |
 | `data/THREE_CHAIN_DISPATCH_CHECKLIST.md` | PR#48官方完整能力清单 |
+| `skills/screen-martin-trading/SKILL.md` | Agent B SKILL 定义 |
 
 ---
 

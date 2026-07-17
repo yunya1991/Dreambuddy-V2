@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-07-17T11:21:46.666208",
+  "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "UNI"
+  ],
+  "mode_a": {
+    "BTC": {
+      "total_return_pct": -4.34,
+      "annualized_return_pct": -5.25,
+      "final_equity": 9566.32,
+      "initial_equity": 10000.0,
+      "n_periods": 300,
+      "years": 0.82,
+      "total_trades": 1,
+      "closed_trades": 0,
+      "open_trades": 1,
+      "annualized_volatility_pct": 4.11,
+      "downside_volatility_pct": 9.78,
+      "max_drawdown_pct": 5.49,
+      "max_drawdown_start": 

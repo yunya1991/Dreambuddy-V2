@@ -23,36 +23,17 @@ INST_SPOT = "BTC-USDT"
 INST_SWAP = "BTC-USDT-SWAP"
 
 CANDIDATE_COINS = [
-    # 主流币
+    # 核心大币种（回测验证正收益）
     {"symbol": "BTC", "spot": "BTC-USDT", "swap": "BTC-USDT-SWAP", "is_btc": True},
     {"symbol": "ETH", "spot": "ETH-USDT", "swap": "ETH-USDT-SWAP", "is_btc": False},
     {"symbol": "SOL", "spot": "SOL-USDT", "swap": "SOL-USDT-SWAP", "is_btc": False},
     {"symbol": "BNB", "spot": "BNB-USDT", "swap": "BNB-USDT-SWAP", "is_btc": False},
-    {"symbol": "XRP", "spot": "XRP-USDT", "swap": "XRP-USDT-SWAP", "is_btc": False},
-    # 高市值山寨
-    {"symbol": "DOGE", "spot": "DOGE-USDT", "swap": "DOGE-USDT-SWAP", "is_btc": False},
-    {"symbol": "ADA", "spot": "ADA-USDT", "swap": "ADA-USDT-SWAP", "is_btc": False},
-    {"symbol": "AVAX", "spot": "AVAX-USDT", "swap": "AVAX-USDT-SWAP", "is_btc": False},
-    {"symbol": "LINK", "spot": "LINK-USDT", "swap": "LINK-USDT-SWAP", "is_btc": False},
-    {"symbol": "DOT", "spot": "DOT-USDT", "swap": "DOT-USDT-SWAP", "is_btc": False},
-    {"symbol": "TRX", "spot": "TRX-USDT", "swap": "TRX-USDT-SWAP", "is_btc": False},
-    {"symbol": "POL", "spot": "POL-USDT", "swap": "POL-USDT-SWAP", "is_btc": False},
-    # DeFi 赛道
-    {"symbol": "UNI", "spot": "UNI-USDT", "swap": "UNI-USDT-SWAP", "is_btc": False},
-    {"symbol": "AAVE", "spot": "AAVE-USDT", "swap": "AAVE-USDT-SWAP", "is_btc": False},
-    {"symbol": "LDO", "spot": "LDO-USDT", "swap": "LDO-USDT-SWAP", "is_btc": False},
-    # L2 / 新兴公链
-    {"symbol": "ARB", "spot": "ARB-USDT", "swap": "ARB-USDT-SWAP", "is_btc": False},
-    {"symbol": "OP", "spot": "OP-USDT", "swap": "OP-USDT-SWAP", "is_btc": False},
-    {"symbol": "APT", "spot": "APT-USDT", "swap": "APT-USDT-SWAP", "is_btc": False},
-    {"symbol": "SUI", "spot": "SUI-USDT", "swap": "SUI-USDT-SWAP", "is_btc": False},
-    {"symbol": "SEI", "spot": "SEI-USDT", "swap": "SEI-USDT-SWAP", "is_btc": False},
-    # Meme / 热门
-    {"symbol": "PEPE", "spot": "PEPE-USDT", "swap": "PEPE-USDT-SWAP", "is_btc": False},
-    {"symbol": "WIF", "spot": "WIF-USDT", "swap": "WIF-USDT-SWAP", "is_btc": False},
-    # 平台币 / 其他
-    {"symbol": "OKB", "spot": "OKB-USDT", "swap": "OKB-USDT-SWAP", "is_btc": False},
+    # 高流动性扩展币种
     {"symbol": "HYPE", "spot": "HYPE-USDT", "swap": "HYPE-USDT-SWAP", "is_btc": False},
+    {"symbol": "UNI", "spot": "UNI-USDT", "swap": "UNI-USDT-SWAP", "is_btc": False},
+    {"symbol": "ARB", "spot": "ARB-USDT", "swap": "ARB-USDT-SWAP", "is_btc": False},
+    {"symbol": "ZEC", "spot": "ZEC-USDT", "swap": "ZEC-USDT-SWAP", "is_btc": False},
+    {"symbol": "DOGE", "spot": "DOGE-USDT", "swap": "DOGE-USDT-SWAP", "is_btc": False},
 ]
 
 MAX_ADDONS = 1

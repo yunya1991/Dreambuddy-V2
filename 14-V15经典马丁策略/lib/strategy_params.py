@@ -51,6 +51,11 @@ def calc_daily_ma200(klines_1d: List[Dict]) -> Optional[float]:
     return _calc_sma(closes, 200)
 
 
+def calc_daily_ma128(klines_1d: List[Dict]) -> Optional[float]:
+    closes = [float(k["c"]) for k in klines_1d if "c" in k]
+    return _calc_sma(closes, 128)
+
+
 def calc_daily_ema200(klines_1d: List[Dict]) -> Optional[float]:
     closes = [float(k["c"]) for k in klines_1d if "c" in k]
     return _calc_ema(closes, 200)
@@ -75,6 +80,45 @@ def calc_30d_volatility(klines_1d: List[Dict]) -> float:
     avg = sum(recent_returns) / len(recent_returns)
     variance = sum((r - avg) ** 2 for r in recent_returns) / len(recent_returns)
     return variance ** 0.5
+
+
+def calc_atr(klines: List[Dict], period: int = 14) -> Optional[float]:
+    """计算ATR（平均真实波幅）
+
+    TR = max(high - low, |high - prev_close|, |low - prev_close|)
+    ATR = SMA(TR, period)
+
+    返回ATR值（绝对价格），数据不足返回None
+    """
+    if len(klines) < period + 1:
+        return None
+
+    trs = []
+    for i in range(1, len(klines)):
+        h = float(klines[i].get("h", klines[i].get("c", 0)))
+        l = float(klines[i].get("l", klines[i].get("c", 0)))
+        prev_c = float(klines[i - 1].get("c", 0))
+        tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
+        trs.append(tr)
+
+    if len(trs) < period:
+        return None
+
+    return sum(trs[-period:]) / period
+
+
+def calc_atr_pct(klines: List[Dict], period: int = 14) -> Optional[float]:
+    """计算ATR占价格百分比
+
+    返回 ATR / 当前价格 × 100，用于跨币种比较
+    """
+    atr = calc_atr(klines, period)
+    if atr is None or not klines:
+        return None
+    current_price = float(klines[-1].get("c", 0))
+    if current_price <= 0:
+        return None
+    return (atr / current_price) * 100
 
 
 def get_dynamic_stop_loss(direction: str, current_price: float,
@@ -399,7 +443,9 @@ def calc_elder_ray(klines: List[Dict], period: int = 13) -> Dict:
 
 def get_vol_adjusted_params(coin_vol: float, btc_vol: float,
                             base_tp_pct: float = None,
-                            base_addon_pct: float = None) -> Dict:
+                            base_addon_pct: float = None,
+                            coin_atr_pct: Optional[float] = None,
+                            btc_atr_pct: Optional[float] = None) -> Dict:
     if base_tp_pct is None:
         base_tp_pct = get_config_float("BASE_TP_PCT", 0.04)
     if base_addon_pct is None:
@@ -412,13 +458,23 @@ def get_vol_adjusted_params(coin_vol: float, btc_vol: float,
 
     ratio = max(0.5, min(2.5, ratio))
 
-    tp_pct = base_tp_pct * ratio
-    addon_pct = base_addon_pct * ratio
+    # ATR动态因子：当前市场波幅与BTC波幅的比值
+    # 高波动币种 → 放宽止盈空间；低波动币种 → 收窄止盈空间
+    atr_factor = 1.0
+    if coin_atr_pct is not None and btc_atr_pct is not None and btc_atr_pct > 0:
+        atr_factor = coin_atr_pct / btc_atr_pct
+        atr_factor = max(0.7, min(1.5, atr_factor))
+
+    tp_pct = base_tp_pct * ratio * atr_factor
+    addon_pct = base_addon_pct * ratio * atr_factor
 
     return {
         "btc_volatility": round(btc_vol * 100, 4),
         "coin_volatility": round(coin_vol * 100, 4),
         "vol_ratio": round(ratio, 4),
+        "atr_factor": round(atr_factor, 4),
+        "coin_atr_pct": round(coin_atr_pct, 4) if coin_atr_pct else None,
+        "btc_atr_pct": round(btc_atr_pct, 4) if btc_atr_pct else None,
         "take_profit_pct": round(tp_pct * 100, 2),
         "addon_pct": round(addon_pct * 100, 2),
         "base_tp_pct": round(base_tp_pct * 100, 2),
@@ -588,6 +644,33 @@ def fetch_weekly_klines(client, inst_id: str, limit: int = 200) -> List[Dict]:
     return []
 
 
+def fetch_klines(client, inst_id: str, bar: str = "4H", limit: int = 200) -> List[Dict]:
+    try:
+        r = client._get(
+            "/api/v5/market/candles",
+            {"instId": inst_id, "bar": bar, "limit": str(limit)},
+            auth=False
+        )
+        if r.get("code") == "0" and r.get("data"):
+            data = r["data"]
+            klines = []
+            for k in data:
+                klines.append({
+                    "t": int(k[0]),
+                    "o": float(k[1]),
+                    "h": float(k[2]),
+                    "l": float(k[3]),
+                    "c": float(k[4]),
+                    "v": float(k[5]) if len(k) > 5 else 0,
+                    "vol": float(k[5]) if len(k) > 5 else 0,
+                })
+            klines.reverse()
+            return klines
+    except Exception:
+        pass
+    return []
+
+
 def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
     client = _get_okx_client()
     if not client:
@@ -598,15 +681,23 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
     btc_daily_raw = fetch_daily_klines(client, "BTC-USDT-SWAP", 251)
     coin_daily_raw = fetch_daily_klines(client, inst_id, 251)
     coin_weekly_raw = fetch_weekly_klines(client, inst_id, 201)
+    coin_4h_raw = fetch_klines(client, inst_id, "4H", 200)
 
     btc_daily = btc_daily_raw[:-1] if len(btc_daily_raw) > 1 else btc_daily_raw
     coin_daily = coin_daily_raw[:-1] if len(coin_daily_raw) > 1 else coin_daily_raw
     coin_weekly = coin_weekly_raw[:-1] if len(coin_weekly_raw) > 1 else coin_weekly_raw
+    coin_4h = coin_4h_raw[:-1] if len(coin_4h_raw) > 1 else coin_4h_raw
 
     btc_vol = calc_30d_volatility(btc_daily)
     coin_vol = calc_30d_volatility(coin_daily)
 
+    # ATR动态止盈：使用4H K线计算ATR百分比
+    coin_atr_pct = calc_atr_pct(coin_4h) if coin_4h else None
+    btc_4h_raw = fetch_klines(client, "BTC-USDT-SWAP", "4H", 200)
+    btc_atr_pct = calc_atr_pct(btc_4h_raw) if btc_4h_raw else None
+
     daily_ma200 = calc_daily_ma200(coin_daily)
+    daily_ma128 = calc_daily_ma128(coin_daily)
     daily_ema200 = calc_daily_ema200(coin_daily)
     weekly_ma200 = calc_weekly_ma200(coin_weekly)
     weekly_ema200 = calc_weekly_ema200(coin_weekly)
@@ -617,7 +708,9 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
     ticker = client.get_ticker(inst_id)
     current_price = float(ticker.get("last", 0)) if ticker.get("ok") else 0
 
-    vol_params = get_vol_adjusted_params(coin_vol, btc_vol)
+    vol_params = get_vol_adjusted_params(coin_vol, btc_vol,
+                                          coin_atr_pct=coin_atr_pct,
+                                          btc_atr_pct=btc_atr_pct)
     stop_loss = get_dynamic_stop_loss(direction, current_price,
                                        daily_ma200, daily_ema200,
                                        weekly_ma200, weekly_ema200,
@@ -647,6 +740,14 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
         "take_profit_price": take_profit_price,
         "take_profit_pct": vol_params["take_profit_pct"],
         "addon_pct": vol_params["addon_pct"],
+        "klines_4h": coin_4h,
+        "klines_1d": coin_daily,
+        "klines_1w": coin_weekly,
+        "daily_ma200": daily_ma200,
+        "daily_ma128": daily_ma128,
+        "daily_ema200": daily_ema200,
+        "weekly_ma200": weekly_ma200,
+        "weekly_ema200": weekly_ema200,
     }
 
 

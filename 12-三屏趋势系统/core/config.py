@@ -102,3 +102,16 @@ BTC_WIND_VANE_ENABLED: bool = True       # 风向标总开关
 FUNDAMENTAL_SCREEN1_ENABLED: bool = True
 FUNDAMENTAL_TECH_WEIGHT: float = 0.6     # 技术权重
 FUNDAMENTAL_FUND_WEIGHT: float = 0.4     # 基本面权重
+
+# ── Phase 3.5: 最小阻力方向引擎（第一性原理）──
+# 市场总是沿着阻力最小方向运动
+# 时间三维（长/中/小周期）× 五维阻力算法 → 最小阻力三维模型（D/V/A）→ 最小阻力方向
+LEAST_RESISTANCE_ENABLED: bool = True    # 最小阻力引擎总开关（纯算法驱动，静态指标已移除）
+LEAST_RESISTANCE_PRICE_LOOKBACK: int = 60  # 价格阻力回看周期
+LEAST_RESISTANCE_WEIGHTS: Dict[str, float] = {
+    "price": 0.30,       # 价格阻力权重（压力位/支撑位）
+    "volume": 0.20,      # 量能阻力权重（OBV/放量缩量）
+    "momentum": 0.20,    # 动量阻力权重（RSI/MACD/背离）
+    "trend": 0.20,       # 趋势阻力权重（均线斜率/Elder-ray）
+    "fundamental": 0.10, # 基本面阻力权重
+}

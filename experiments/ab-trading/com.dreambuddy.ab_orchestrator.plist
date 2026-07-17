@@ -6,14 +6,14 @@
     <string>com.dreambuddy.ab_orchestrator</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/opt/anaconda3/bin/python3</string>
-        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/orchestrator.py</string>
+        <string>/bin/bash</string>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/run_orchestrator_daemon.sh</string>
     </array>
     <key>WorkingDirectory</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading</string>
-    <key>StartInterval</key>
-    <integer>600</integer>
     <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/logs/orchestrator_launchd.log</string>

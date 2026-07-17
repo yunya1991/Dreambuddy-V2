@@ -1,0 +1,14 @@
+{
+  "stage_id": "A8",
+  "trace_id": "v15_martin_a8_20260715",
+  "hypothesis_score": 81.9,
+  "practice_score": 74.25,
+  "gap_score": 7.650000000000006,
+  "timestamp": "20260714T165836Z",
+  "constraint_version": "v0.1",
+  "memory_refs": [],
+  "evidence_refs": [],
+  "producer": "workflows/trading-decision/A8_theory-practice",
+  "schema_version": "2.0",
+  "artifact_path": "14-V15经典马丁策略/docs/a8_analysis/a8_theory_practice_20260714T165836Z.json"
+}

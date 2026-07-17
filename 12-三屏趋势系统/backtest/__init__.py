@@ -20,6 +20,9 @@ from .strategy import (
     BuyAndHoldStrategy,
     MovingAverageStrategy,
     TrendScreenStrategy,
+    LeastResistanceStrategy,
+    MA200TrendFollowingStrategy,
+    EnhancedMA200Strategy,
 )
 from .data_utils import (
     prepare_ohlcv_dataframe,
@@ -59,6 +62,9 @@ __all__ = [
     "BuyAndHoldStrategy",
     "MovingAverageStrategy",
     "TrendScreenStrategy",
+    "LeastResistanceStrategy",
+    "MA200TrendFollowingStrategy",
+    "EnhancedMA200Strategy",
     # 数据工具
     "prepare_ohlcv_dataframe",
     "fetch_historical_data",
