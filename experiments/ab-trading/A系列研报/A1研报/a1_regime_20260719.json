@@ -1,0 +1,212 @@
+{
+  "date": "2026-07-19",
+  "timestamp": "2026-07-19T00:55:08+08:00",
+  "regime": "BEAR_RECOVERY_L2",
+  "regime_name": "BEAR_RECOVERY",
+  "regime_level": 2,
+  "confidence": 70,
+  "si_index": -2,
+  "si_index_category": "NEUTRAL_BEAR",
+  "three_screen": {
+    "weekly": 0,
+    "daily": -1,
+    "hourly": 0,
+    "composite": -1
+  },
+  "market_snapshot": {
+    "btc_price": 64250.3,
+    "btc_24h_change_pct": 1.07,
+    "eth_price": 1844.68,
+    "eth_24h_change_pct": 0.51,
+    "sol_price": 75.11,
+    "sol_24h_change_pct": 0.28,
+    "fgi": 25,
+    "fgi_classification": "Extreme Fear",
+    "fgi_24h_change": -2,
+    "funding_rate_btc": 0.0000777,
+    "etf_net_flow_1d_usd": 132000000,
+    "etf_trend": "4_consecutive_inflows",
+    "ibit_flow_1d_usd": 136000000
+  },
+  "technical": {
+    "ma5": 63567.0,
+    "ma10": 63200.0,
+    "ma20": 62500.0,
+    "ma30": 62700.0,
+    "ma5_ma10_spread": 367.0,
+    "rsi14": 52.0,
+    "atr14": 1780.0,
+    "high_30d": 67253.3,
+    "low_30d": 57750.0,
+    "position_in_30d_range_pct": 67.0,
+    "resistance": 65000,
+    "resistance_2": 65500,
+    "support": 63700,
+    "support_2": 62500,
+    "hard_support": 60000
+  },
+  "macro": {
+    "cpi_yoy": 3.5,
+    "cpi_yoy_expectation": 3.8,
+    "cpi_yoy_previous": 4.2,
+    "cpi_mom": -0.4,
+    "core_cpi_yoy": 2.6,
+    "core_cpi_mom": 0.0,
+    "fed_rate_range": "3.50-3.75%",
+    "july_hike_probability": "<20%",
+    "wti_price": 82.49,
+    "wti_24h_change_pct": 4.48,
+    "wti_weekly_change_pct": 14.35,
+    "brent_price": 88.10,
+    "brent_24h_change_pct": 4.59,
+    "brent_weekly_change_pct": 15.91,
+    "gold_price": 4100,
+    "sp500": 7535,
+    "dxy": 100.5,
+    "fomc_next": "2026-07-28/29"
+  },
+  "geopolitical": {
+    "iran_hormuz_status": "fully_closed",
+    "oil_tanker_incident": "2 tankers exploded 7/17",
+    "us_strikes_iran": "7 consecutive nights",
+    "iran_retaliation": "attacked US bases in Kuwait/Syria",
+    "sanctions_deadline": "2026-07-17 (passed)",
+    "escalation_risk": "HIGH"
+  },
+  "etf_data": {
+    "flow_7_16_usd": 79100000,
+    "flow_7_17_usd": 132000000,
+    "ibit_7_17_usd": 136000000,
+    "fbtc_7_17_usd": -4180000,
+    "consecutive_inflow_days": 4,
+    "total_aum_usd": 77800000000,
+    "ratio_to_btc_marketcap_pct": 6.04,
+    "cumulative_inflow_usd": 51220000000
+  },
+  "key_events": [
+    {
+      "date": "2026-07-15",
+      "event": "CPI 3.5% 爆冷, 6 年首次环比负增长",
+      "impact": "BULL (已被地缘抵消)"
+    },
+    {
+      "date": "2026-07-16",
+      "event": "霍尔木兹海峡升级, 油价开始暴涨",
+      "impact": "BEAR"
+    },
+    {
+      "date": "2026-07-17",
+      "event": "两艘油轮在霍尔木兹海峡爆炸, 伊朗宣布完全关闭海峡",
+      "impact": "BEAR (P0)"
+    },
+    {
+      "date": "2026-07-17",
+      "event": "WTI 暴涨 4.48% 至 $82.49, Brent 涨 4.59% 至 $88.10",
+      "impact": "BEAR (P0)"
+    },
+    {
+      "date": "2026-07-17",
+      "event": "伊朗对科威特/叙利亚美军基地发动大规模打击",
+      "impact": "BEAR (P0)"
+    },
+    {
+      "date": "2026-07-17",
+      "event": "ETF 净流入 $132M (IBIT $136M), 4 日连续流入",
+      "impact": "BULL (部分对冲)"
+    },
+    {
+      "date": "2026-07-18",
+      "event": "BTC 收盘 $64,250, 5 次冲 $65,000 未果",
+      "impact": "NEUTRAL"
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "CX_033",
+      "name": "伊朗地缘升级 vs 市场韧性",
+      "side_a": "霍尔木兹封锁/油价跳升/美军打击",
+      "side_b": "BTC 未崩/ETF 流入",
+      "bias": "A 大幅加强",
+      "trend": "7/17 油轮事件后 A 占绝对主导"
+    },
+    {
+      "id": "CX_034",
+      "name": "通胀陷阱 vs 降息预期",
+      "side_a": "油价 +14%/通胀预期回升",
+      "side_b": "6 月 CPI 3.5% 爆冷",
+      "bias": "A 偏强",
+      "trend": "油价暴涨削弱 CPI 利多, 7 月 CPI 可能反弹"
+    },
+    {
+      "id": "CX_035",
+      "name": "油价回落 vs 制裁恢复",
+      "side_a": "7/17 制裁+封锁+油轮爆炸",
+      "side_b": "OPEC+ 增产",
+      "bias": "A 逆转大幅加强",
+      "trend": "本周油价 +14%, A 占绝对优"
+    },
+    {
+      "id": "CX_031",
+      "name": "恐惧 vs 反弹韧性",
+      "side_a": "FGI=25 极度恐惧",
+      "side_b": "ETF 流入 + 鲸鱼积累 270K BTC",
+      "bias": "B 偏强",
+      "trend": "情绪与价格继续背离, 散户被洗出"
+    },
+    {
+      "id": "CX_036",
+      "name": "MA 死叉 vs 鲸鱼积累",
+      "side_a": "高位无法突破 $65,000",
+      "side_b": "链上持续积累 + 金叉维持",
+      "bias": "B 中性",
+      "trend": "金叉差值收窄 (+441→+367), 动能减弱"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "情景一: 霍尔木兹维持封锁但无升级",
+      "probability": 0.45,
+      "wti_range": "80-85",
+      "btc_range": "62000-64500",
+      "action": "防御偏空, 0.3-0.4x"
+    },
+    {
+      "name": "情景二: 危机升级 (打击核设施)",
+      "probability": 0.30,
+      "wti_range": "90+",
+      "btc_range": "58000-60000",
+      "action": "全面防御, 0.1-0.2x"
+    },
+    {
+      "name": "情景三: 危机降级 (重开海峡)",
+      "probability": 0.25,
+      "wti_range": "75以下",
+      "btc_range": "65000-67000",
+      "action": "转中性偏多, 0.5-0.6x"
+    }
+  ],
+  "key_observations": [
+    "BTC 5 次冲击 $65,000 未果, 多头动能衰减",
+    "FGI=25 极度恐惧但价格未崩, 典型背离",
+    "资金费率 +0.00777% 极低正值, 多空平衡",
+    "美股科技股大跌 (NFLX -7.26%, NVDA -2.21%), BTC-纳指相关 +0.72",
+    "ETF 4 日连续流入但速率温和 ($79M→$132M), FBTC 7/17 转流出",
+    "鲸鱼积累 270K BTC @$59K + 交易所储备 7 年低, 中长期支撑强"
+  ],
+  "operations_advice": {
+    "position": "0.3-0.4x 标准仓位",
+    "stance": "防御偏空, 中性偏稳",
+    "key_levels": {
+      "entry": "62,000-62,500",
+      "stop_loss": "59,500 (鲸鱼成本下)",
+      "take_profit_1": "65,000 (突破加仓)",
+      "take_profit_2": "67,000 (前高)"
+    },
+    "wait_for": [
+      "7/18-19 周末霍尔木兹局势明朗",
+      "7/21-25 ETF 持续流入 > $200M/日",
+      "7/28-29 FOMC 确认 9 月降息",
+      "7/14 CPI 7 月数据 (待公布)"
+    ]
+  }
+}
