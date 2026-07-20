@@ -180,7 +180,8 @@
 <div class="tabs">
   <div class="tab active" onclick="switchTab('local', event)">📊 本地监控</div>
   <div class="tab" onclick="switchTab('cloud', event)">☁️ 云端调度</div>
-  <div class="tab" onclick="switchTab('trend', event)">📈 三屏趋势</div>
+  <div class="tab" onclick="switchTab('trend', event)">📈 三屏趋势（模拟）</div>
+  <div class="tab" onclick="switchTab('v4wave', event)">⚡ 趋势策略（V4+波浪）</div>
   <!-- <div class="tab" onclick="switchTab('screen', event)">🎯 三屏马丁</div> -->
   <div class="tab" onclick="switchTab('v15ct', event)">⚡ 马丁策略</div>
   <div class="tab" onclick="switchTab('yijing', event)">🗼 易经推理</div>
@@ -514,6 +515,96 @@
       </div>
 
     </div>
+  </div>
+
+  <!-- 趋势策略 Tab（V4+波浪互斥融合，主力策略线） -->
+  <div id="tab-v4wave" class="tab-content">
+  <div class="tab-grid">
+
+    <!-- 策略总览 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" id="v4wave-dot" style="background:#22c55e"></div>趋势策略（V4+波浪融合）
+        <span id="v4wave-mode-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(34,197,94,0.15);color:#22c55e">实盘可用</span>
+        <span id="v4wave-symbol-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(59,130,246,0.15);color:var(--blue)">BTC</span>
+        <button onclick="loadV4WaveStrategy()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div id="v4wave-summary" style="padding:8px 0">
+        <div style="text-align:center;color:var(--muted);padding:20px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- V4 主策略 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--blue)"></div>V4 主策略（定方向）</div>
+      <div id="v4wave-v4" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:10px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 波浪策略 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--purple)"></div>波浪策略（择时加仓）</div>
+      <div id="v4wave-wave" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:10px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 物理评估 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>物理置信度评估</div>
+      <div id="v4wave-physics" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:10px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 最终决策 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" id="v4wave-decision-dot" style="background:#ef4444"></div>最终决策
+        <span id="v4wave-fusion-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:12px;background:rgba(239,68,68,0.15);color:#ef4444">--</span>
+      </div>
+      <div id="v4wave-decision" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:10px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 账户与持仓 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#22c55e"></div>账户与持仓</div>
+      <div id="v4wave-account" style="padding:4px 0">
+        <div style="text-align:center;color:var(--muted);padding:10px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 币种切换 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--blue)"></div>币种切换</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;padding:4px">
+        <button onclick="loadV4WaveStrategy('BTC')" class="mini-btn">BTC</button>
+        <button onclick="loadV4WaveStrategy('ETH')" class="mini-btn">ETH</button>
+        <button onclick="loadV4WaveStrategy('SOL')" class="mini-btn">SOL</button>
+        <button onclick="loadV4WaveStrategy('AVAX')" class="mini-btn">AVAX</button>
+        <button onclick="loadV4WaveStrategy('LINK')" class="mini-btn">LINK</button>
+        <button onclick="loadV4WaveStrategy('BNB')" class="mini-btn">BNB</button>
+      </div>
+    </div>
+
+    <!-- 实盘交易开关 -->
+    <div class="card">
+      <div class="card-title"><div class="dot" id="v4wave-auto-dot" style="background:#ef4444"></div>实盘交易</div>
+      <div style="padding:4px">
+        <label style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="v4wave-auto-trade" onchange="toggleV4WaveAutoTrade()" style="width:18px;height:18px">
+          <span style="font-size:13px">启用实盘自动化交易</span>
+        </label>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">
+          开启后将根据趋势策略信号自动下单（默认仅模拟）
+        </div>
+      </div>
+    </div>
+
+  </div>
   </div>
 
   <!-- 三屏马丁交易 Tab -->
@@ -1465,6 +1556,9 @@ function switchTab(tab, evt) {
   if (tab === 'trend' && !trendDataLoaded) {
     loadTrendScreenData();
   }
+  if (tab === 'v4wave') {
+    loadV4WaveStrategy();
+  }
   if (tab === 'screen' && !screenDataLoaded) {
     loadScreenData();
   }
@@ -1496,9 +1590,176 @@ function currentTabRefresh() {
     loadTokenSignals();
   } else if (currentTab === 'v15ct') {
     loadV15CTData();
+  } else if (currentTab === 'v4wave') {
+    loadV4WaveStrategy();
   } else {
     loadCloudData();
   }
+}
+
+// ── V4+波浪互斥融合策略（主力策略线） ────────────────────────────────────────
+let v4waveCurrentSymbol = 'BTC';
+
+function loadV4WaveStrategy(symbol) {
+  const targetSymbol = symbol || v4waveCurrentSymbol;
+  v4waveCurrentSymbol = targetSymbol;
+  document.getElementById('v4wave-symbol-badge').textContent = targetSymbol;
+
+  const url = '/api/v4-wave-strategy?symbol=' + targetSymbol;
+  fetch(url).then(r => r.json()).then(data => {
+    if (data.error) {
+      document.getElementById('v4wave-summary').innerHTML =
+        '<div style="text-align:center;color:#ef4444;padding:20px">错误: ' + data.error + '</div>';
+      return;
+    }
+    renderV4WaveStrategy(data);
+  }).catch(err => {
+    document.getElementById('v4wave-summary').innerHTML =
+      '<div style="text-align:center;color:#ef4444;padding:20px">加载失败: ' + err.message + '</div>';
+  });
+}
+
+function renderV4WaveStrategy(data) {
+  // 策略总览
+  const dirColor = data.final_decision.direction === 'BULL' ? '#22c55e' :
+                   data.final_decision.direction === 'BEAR' ? '#ef4444' : '#9ca3af';
+  const actionLabel = data.final_decision.action === 'ENTER_LONG' ? '做多' :
+                      data.final_decision.action === 'ENTER_SHORT' ? '做空' : '观望';
+  document.getElementById('v4wave-dot').style.background = dirColor;
+  document.getElementById('v4wave-summary').innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px"><span style="color:var(--muted)">当前价格</span><br><b>${data.current_price.toLocaleString()}</b> USDT</div>
+      <div style="flex:1;min-width:120px"><span style="color:var(--muted)">数据周期</span><br><b>${data.data_days}</b> 天</div>
+      <div style="flex:1;min-width:120px"><span style="color:var(--muted)">策略线</span><br><b>${data.strategy_line}</b></div>
+      <div style="flex:1;min-width:120px"><span style="color:var(--muted)">模式</span><br><b style="color:${dirColor}">${data.mode}</b></div>
+    </div>
+  `;
+
+  // V4 主策略
+  const v4 = data.v4_strategy || {};
+  const v4DirColor = v4.direction === 'BULL' ? '#22c55e' : v4.direction === 'BEAR' ? '#ef4444' : '#9ca3af';
+  document.getElementById('v4wave-v4').innerHTML = `
+    <div style="font-size:12px;line-height:1.8">
+      <div><span style="color:var(--muted)">策略名称</span>: <b>${v4.strategy_name || '--'}</b></div>
+      <div><span style="color:var(--muted)">方向</span>: <b style="color:${v4DirColor}">${v4.direction || '--'}</b></div>
+      <div><span style="color:var(--muted)">动作</span>: <b>${v4.action || '--'}</b></div>
+      <div><span style="color:var(--muted)">仓位</span>: <b>${(v4.position_pct || 0) * 100}%</b></div>
+      <div><span style="color:var(--muted)">状态</span>: <b>${v4.state || '--'}</b></div>
+    </div>
+  `;
+
+  // 波浪策略
+  const wave = data.wave_strategy || {};
+  const waveDirColor = wave.wave_direction === 'LONG' ? '#22c55e' : wave.wave_direction === 'SHORT' ? '#ef4444' : '#9ca3af';
+  document.getElementById('v4wave-wave').innerHTML = `
+    <div style="font-size:12px;line-height:1.8">
+      <div><span style="color:var(--muted)">信号</span>: <b>${wave.wave_signal || '--'}</b></div>
+      <div><span style="color:var(--muted)">标签</span>: <b>${wave.wave_label || '--'}</b></div>
+      <div><span style="color:var(--muted)">当前浪号</span>: <b>W${wave.current_wave || 0}</b></div>
+      <div><span style="color:var(--muted)">置信度</span>: <b>${(wave.wave_confidence || 0) * 100}%</b></div>
+      <div><span style="color:var(--muted)">方向</span>: <b style="color:${waveDirColor}">${wave.wave_direction || '--'}</b></div>
+      <div><span style="color:var(--muted)">仓位</span>: <b>${(wave.wave_position_pct || 0) * 100}%</b></div>
+    </div>
+  `;
+
+  // 物理评估
+  const physics = data.physics_assessment || {};
+  const etaColor = physics.weak_trend ? '#ef4444' : '#22c55e';
+  const etaLabel = physics.weak_trend ? '弱趋势' : '强趋势';
+  document.getElementById('v4wave-physics').innerHTML = `
+    <div style="font-size:12px;line-height:1.8">
+      <div><span style="color:var(--muted)">状态</span>: <b>${physics.enabled ? '启用' : '禁用'}</b></div>
+      <div><span style="color:var(--muted)">趋势强度</span>: <b style="color:${etaColor}">${etaLabel}</b> (η=${physics.current_eta || 0})</div>
+      <div><span style="color:var(--muted)">物理置信度</span>: <b>${(physics.physics_confidence || 0) * 100}%</b></div>
+      ${physics.components ? `
+      <div style="margin-top:4px;padding-top:4px;border-top:1px solid var(--border)">
+        <div style="color:var(--muted)">分量评分:</div>
+        <div>趋势: ${(physics.components.trend_score || 0) * 100}% | 反转: ${(physics.components.reversal_score || 0) * 100}%</div>
+        <div>支撑: ${(physics.components.support_score || 0) * 100}% | 动能: ${(physics.components.kinetic_score || 0) * 100}%</div>
+      </div>` : ''}
+    </div>
+  `;
+
+  // 最终决策
+  const dec = data.final_decision || {};
+  const decColor = dec.direction === 'BULL' ? '#22c55e' : dec.direction === 'BEAR' ? '#ef4444' : '#9ca3af';
+  const fusionColors = {
+    'v4_long_wave_add': '#22c55e', 'v4_long_keep': '#3b82f6', 'v4_long_wave_conflict': '#f59e0b',
+    'v4_short_wave_add': '#ef4444', 'v4_short_keep': '#3b82f6', 'v4_short_wave_conflict': '#f59e0b',
+    'v4_wait_wave_bottom': '#10b981', 'v4_wait_keep': '#9ca3af',
+    'no_wave': '#6b7280', 'insufficient_data': '#6b7280', 'v4_short_keep': '#3b82f6'
+  };
+  document.getElementById('v4wave-decision-dot').style.background = decColor;
+  document.getElementById('v4wave-fusion-badge').style.background = `rgba(${hexToRgb(fusionColors[dec.fusion_rule] || '#6b7280')},0.15)`;
+  document.getElementById('v4wave-fusion-badge').style.color = fusionColors[dec.fusion_rule] || '#6b7280';
+  document.getElementById('v4wave-fusion-badge').textContent = dec.fusion_rule || '--';
+  document.getElementById('v4wave-decision').innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:100px">
+        <span style="color:var(--muted)">方向</span><br>
+        <b style="font-size:18px;color:${decColor}">${dec.direction || '--'}</b>
+      </div>
+      <div style="flex:1;min-width:100px">
+        <span style="color:var(--muted)">动作</span><br>
+        <b style="font-size:18px">${actionLabel}</b>
+      </div>
+      <div style="flex:1;min-width:100px">
+        <span style="color:var(--muted)">原始仓位</span><br>
+        <b style="font-size:18px">${(dec.position_pct || 0) * 100}%</b>
+      </div>
+      <div style="flex:1;min-width:100px">
+        <span style="color:var(--muted)">调节后仓位</span><br>
+        <b style="font-size:18px;color:#f59e0b">${(dec.adjusted_position_pct || 0) * 100}%</b>
+      </div>
+    </div>
+    <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+      融合规则: ${dec.fusion_rule || '--'}
+    </div>
+  `;
+
+  // 账户与持仓
+  const acc = data.account || {};
+  const pos = data.position;
+  document.getElementById('v4wave-account').innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:100px">
+        <span style="color:var(--muted)">账户权益</span><br>
+        <b>${acc.equity.toLocaleString()}</b> USDC
+      </div>
+      <div style="flex:1;min-width:100px">
+        <span style="color:var(--muted)">可用余额</span><br>
+        <b>${acc.available.toLocaleString()}</b> USDC
+      </div>
+    </div>
+    ${pos ? `
+    <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px">
+        <div><span style="color:var(--muted)">方向</span>: <b>${pos.side}</b></div>
+        <div><span style="color:var(--muted)">数量</span>: <b>${pos.size}</b></div>
+        <div><span style="color:var(--muted)">入场价</span>: <b>${pos.entry_px}</b></div>
+        <div><span style="color:var(--muted)">现价</span>: <b>${pos.mark_px}</b></div>
+        <div><span style="color:var(--muted)">杠杆</span>: <b>${pos.leverage}x</b></div>
+        <div><span style="color:${pos.upnl >= 0 ? '#22c55e' : '#ef4444'}">未实现盈亏</span>: <b>${pos.upnl >= 0 ? '+' : ''}${pos.upnl.toLocaleString()}</b> USDC</div>
+      </div>
+    </div>` : '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--muted);font-size:12px">无持仓</div>'}
+  `;
+}
+
+function toggleV4WaveAutoTrade() {
+  const enabled = document.getElementById('v4wave-auto-trade').checked;
+  const dot = document.getElementById('v4wave-auto-dot');
+  dot.style.background = enabled ? '#22c55e' : '#ef4444';
+  if (enabled) {
+    if (!confirm('确定要启用实盘自动化交易吗？系统将根据趋势策略信号自动下单。')) {
+      document.getElementById('v4wave-auto-trade').checked = false;
+      dot.style.background = '#ef4444';
+    }
+  }
+}
+
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? `${parseInt(result[1], 16)},${parseInt(result[2], 16)},${parseInt(result[3], 16)}` : '107,114,136';
 }
 
 // ── 云端调度数据加载 ──────────────────────────────────────────────────────

@@ -4,10 +4,37 @@ A3 策略设计节点 — 设计具体交易策略，计算仓位、止损止盈
 
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
 from dreamos.shared.state import State, NodeResult
+
+MIN_LEVERAGE = 1
+MAX_LEVERAGE = 5
+CONFIDENCE_THRESHOLD = float(os.environ.get("DREAMOS_CONFIDENCE_THRESHOLD", "0.4"))
+
+
+def calc_dynamic_leverage(
+    confidence: float,
+    min_lev: int = MIN_LEVERAGE,
+    max_lev: int = MAX_LEVERAGE,
+    threshold: float = CONFIDENCE_THRESHOLD,
+) -> int:
+    """基于置信度动态计算杠杆倍数
+
+    映射逻辑:
+      - 置信度 = threshold (默认 0.4) → min_lev (1x)
+      - 置信度 = 0.6 → 约 3x
+      - 置信度 >= 0.8 → max_lev (5x)
+    """
+    if confidence <= threshold:
+        return min_lev
+    if confidence >= 0.8:
+        return max_lev
+    ratio = (confidence - threshold) / (0.8 - threshold)
+    lev = min_lev + ratio * (max_lev - min_lev)
+    return max(min_lev, min(max_lev, int(round(lev))))
 
 
 class A3StrategyNode(BaseNode):
@@ -99,7 +126,7 @@ class A3StrategyNode(BaseNode):
             "stop_loss": stop_loss,
             "take_profit": take_profit,
             "rr_ratio": round(rr_ratio, 2),
-            "leverage": min(5, max(1, int(confidence * 5))),
+            "leverage": calc_dynamic_leverage(confidence),
         }
 
         return NodeResult(

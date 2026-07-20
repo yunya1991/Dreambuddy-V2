@@ -5,6 +5,7 @@
 - 支持多周期、多资产
 - 内置交易成本、滑点模拟
 - 支持仓位管理
+- 支持物理引擎增强（信号评估器 + jerk止损 + 动能仓位）
 
 设计原则：
 - 数据输入：OHLCV DataFrame
@@ -12,7 +13,7 @@
 - 输出：净值曲线、交易记录、绩效指标
 """
 
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, List, Union
 import pandas as pd
 import numpy as np
 
@@ -35,6 +36,7 @@ class BacktestEngine:
         commission: float = 0.0005,
         slippage: float = 0.0005,
         leverage: float = 1.0,
+        physics_config=None,
     ):
         """
         参数:
@@ -42,17 +44,32 @@ class BacktestEngine:
             commission: 手续费率（单边）
             slippage: 滑点率（单边）
             leverage: 杠杆倍数（默认1倍现货）
+            physics_config: 物理增强器配置 (PhysicsEnhancerConfig)，
+                           None=不启用，传入配置=启用物理增强
         """
         self.initial_capital = initial_capital
         self.commission = commission
         self.slippage = slippage
         self.leverage = leverage
+        self.physics_config = physics_config
+        self._physics_enhancer = None
+
+        if physics_config is not None:
+            try:
+                from .ml.physics_enhancer import PhysicsEnhancer
+            except (ImportError, ValueError):
+                from ml.physics_enhancer import PhysicsEnhancer
+            self._physics_enhancer = PhysicsEnhancer(physics_config)
 
     def run(
         self,
         prices: pd.Series,
         position_sizes: pd.Series,
         symbol: str = "BTC",
+        ohlcv: Optional[pd.DataFrame] = None,
+        wave_signals: Optional[Union[np.ndarray, pd.Series]] = None,
+        wave_confs: Optional[Union[np.ndarray, pd.Series]] = None,
+        base_positions: Optional[Union[np.ndarray, pd.Series]] = None,
     ) -> Dict:
         """
         运行回测
@@ -62,6 +79,12 @@ class BacktestEngine:
             position_sizes: 目标仓位比例序列（-1~1，正=多，负=空）
                            与 prices 对齐
             symbol: 交易对名称
+            ohlcv: OHLCV DataFrame（启用物理增强时需要）
+            wave_signals: 波浪信号序列（可选，物理增强用）
+            wave_confs: 波浪置信度序列（可选，物理增强用）
+            base_positions: 主策略（V4）仓位序列（可选）。
+                           传入时，物理增强只作用于波浪仓位部分，
+                           主策略仓位保持不变，避免误杀高质量信号。
 
         返回:
             {
@@ -70,10 +93,48 @@ class BacktestEngine:
                 "trades": pd.DataFrame,     # 交易记录
                 "metrics": dict,            # 绩效指标
                 "position": pd.Series,      # 实际仓位
+                "physics_stats": dict,      # 物理增强统计（若启用）
             }
         """
         prices = prices.copy()
         position_sizes = position_sizes.reindex(prices.index).ffill().fillna(0)
+
+        # 物理增强：仅作用于波浪仓位，不干扰主策略仓位
+        physics_stats = None
+        if self._physics_enhancer is not None and ohlcv is not None:
+            pos_arr = position_sizes.values.astype(float)
+
+            ws_arr = None
+            wc_arr = None
+            if wave_signals is not None:
+                ws_arr = np.array(wave_signals) if not isinstance(wave_signals, np.ndarray) else wave_signals
+            if wave_confs is not None:
+                wc_arr = np.array(wave_confs, dtype=float) if not isinstance(wave_confs, np.ndarray) else wave_confs
+
+            if base_positions is not None:
+                # 分离模式：主策略仓位 + 物理增强的波浪仓位
+                base_arr = np.array(base_positions, dtype=float) if not isinstance(base_positions, np.ndarray) else base_positions
+                # 波浪仓位 = 总仓位 - 主策略仓位
+                wave_pos_arr = pos_arr - base_arr
+
+                enhanced_wave, physics_stats = self._physics_enhancer.enhance_positions(
+                    prices=ohlcv,
+                    base_positions=wave_pos_arr,
+                    wave_signals=ws_arr,
+                    wave_confs=wc_arr,
+                )
+                # 融合：主策略仓位（不变） + 物理增强后的波浪仓位
+                enhanced_pos = base_arr + enhanced_wave
+            else:
+                # 整体模式：物理增强作用于全部仓位
+                enhanced_pos, physics_stats = self._physics_enhancer.enhance_positions(
+                    prices=ohlcv,
+                    base_positions=pos_arr,
+                    wave_signals=ws_arr,
+                    wave_confs=wc_arr,
+                )
+
+            position_sizes = pd.Series(enhanced_pos, index=prices.index)
 
         actual_position, trade_costs = self._calculate_position_and_costs(
             prices, position_sizes
@@ -88,7 +149,7 @@ class BacktestEngine:
         from .metrics import calculate_performance_metrics
         metrics = calculate_performance_metrics(equity, returns, trades)
 
-        return {
+        result = {
             "symbol": symbol,
             "initial_capital": self.initial_capital,
             "final_equity": equity.iloc[-1],
@@ -100,6 +161,11 @@ class BacktestEngine:
             "metrics": metrics,
             "prices": prices,
         }
+
+        if physics_stats is not None:
+            result["physics_stats"] = physics_stats
+
+        return result
 
     def _calculate_position_and_costs(
         self, prices: pd.Series, target_sizes: pd.Series

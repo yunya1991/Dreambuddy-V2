@@ -12,6 +12,8 @@
       "ARB",
       "OP",
       "DOT"
-    ]
+    ],
+    "dry_run": true,
+    "exchange": "hyperliquid"
   }
 ]

@@ -420,8 +420,10 @@ class OKXSimulatedClient:
     def get_positions(self, inst_id: str = None) -> Dict:
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}
-        inst_id = inst_id or self.cfg["default_inst_id"]
-        r = self._get("/api/v5/account/positions", {"instId": inst_id})
+        params = {}
+        if inst_id:
+            params["instId"] = inst_id
+        r = self._get("/api/v5/account/positions", params or None)
         if r.get("code") != "0":
             return {"ok": False, "error": r.get("msg", "unknown"), "raw": r}
         positions = []
@@ -430,7 +432,7 @@ class OKXSimulatedClient:
                 "inst_id": d["instId"],
                 "pos_side": d.get("posSide", "net"),
                 "side": d.get("side"),
-                "pos": float(d.get("pos", 0)),
+                "pos": float(d.get("pos", 0) or 0),
                 "avg_px": float(d.get("avgPx", 0) or 0),
                 "upl": float(d.get("upl", 0) or 0),
                 "upl_ratio": float(d.get("uplRatio", 0) or 0),
@@ -441,6 +443,38 @@ class OKXSimulatedClient:
             if pos["pos"] != 0:
                 positions.append(pos)
         return {"ok": True, "positions": positions, "count": len(positions)}
+
+    def get_all_positions(self) -> Dict:
+        """一次性查询账户所有持仓（不分 instId，避免 30 次循环触发限流）
+
+        返回 dict: {coin_name: position_dict, ...}  coin_name 从 inst_id 提取 (如 ZEC-USDT-SWAP -> ZEC)
+        """
+        if not self._has_credentials():
+            return {"ok": False, "error": "missing api credentials"}
+        r = self._get("/api/v5/account/positions")
+        if r.get("code") != "0":
+            return {"ok": False, "error": r.get("msg", "unknown"), "raw": r}
+        positions_by_coin = {}
+        for d in r.get("data", []):
+            pos_val = float(d.get("pos", 0) or 0)
+            if pos_val == 0:
+                continue
+            inst_id = d["instId"]
+            # ZEC-USDT-SWAP -> ZEC
+            coin = inst_id.split("-")[0] if "-" in inst_id else inst_id
+            positions_by_coin[coin] = {
+                "inst_id": inst_id,
+                "pos_side": d.get("posSide", "net"),
+                "side": d.get("side"),
+                "pos": pos_val,
+                "avg_px": float(d.get("avgPx", 0) or 0),
+                "upl": float(d.get("upl", 0) or 0),
+                "upl_ratio": float(d.get("uplRatio", 0) or 0),
+                "lever": d.get("lever"),
+                "liq_px": float(d.get("liqPx", 0) or 0),
+                "mark_px": float(d.get("markPx", 0) or 0),
+            }
+        return {"ok": True, "positions": positions_by_coin, "count": len(positions_by_coin)}
 
     def transfer(self, ccy: str, amt: float, from_acct: str = "6", to_acct: str = "18") -> Dict:
         if not self._has_credentials():

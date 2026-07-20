@@ -2,17 +2,21 @@
 
 核心入口：compute_full_trading_signal()
 
-整合五大算法：
-1. 静态指标投票
-2. 三维动态融合（方向+速度+加速度，动态优先）
-3. 动态权重调整（回测排名 vs MA200基线）
-4. 贝叶斯参数寻优（置信度计算）
-5. 技术面+基本面撮合
+主力策略：V4 + 波浪互斥融合（V4定方向，波浪择时加仓）
 
-设计理念：趋势一致性确定方向，置信度评估确定仓位。
+策略层级：
+1. 三屏趋势系统：五大算法（静态投票+动态融合+权重调整+贝叶斯+基本面撮合）
+   → 作为信号源和置信度评估层
+2. V4 减半周期策略：主策略，定方向（多/空/空仓），覆盖三屏决策
+   → 9年回测：年化 53.34%，夏普 1.37，回撤 -44.37%
+3. 波浪策略：择时加仓（同向叠加，反向以V4为主，V4空仓时波浪轻仓抄底）
+   → V4+波浪互斥融合：年化 56.43%，夏普 1.41，回撤 -43.31%
+4. 物理置信度调节：弱趋势状态（η<0.10）下仓位微调
+
+设计理念：V4定方向，波浪择时加仓，物理引擎评估风险。
 
 系统边界：
-- 三屏趋势系统 = 「趋势方向判定 + 置信度评估 + 仓位计算」
+- 三屏趋势系统 = 「V4主策略方向 + 波浪择时加仓 + 置信度评估 + 仓位计算」
 - 入场信号精选 → 委托给 10-经典指标系统 的 Freqtrade 策略
 - 离场决策 → 委托给 10-经典指标系统 的 ClassicExitSystem
 """
@@ -1254,6 +1258,78 @@ def compute_trend_signal_from_dataframes(
         elder_ray=elder_ray_result,
     )
 
+    # === 主策略：V4 减半周期策略（BTC）+ 非BTC趋势跟踪策略 ===
+    # BTC: V4 减半周期逃顶策略（定方向）
+    # 非BTC: AltcoinTrendStrategy（基于自身MA200+减半周期影子仓位）
+    # 9年回测验证：V4年化 53.34%，V4+波浪互斥融合年化 56.43%
+    v4_strategy_info = None
+    try:
+        import pandas as _pd_v4
+
+        if daily_df is not None and len(daily_df) >= 250:
+            if is_btc:
+                try:
+                    from .ml.halving_top_exit_strategy import HalvingTopExitStrategy
+                except (ImportError, ValueError):
+                    from ml.halving_top_exit_strategy import HalvingTopExitStrategy
+
+                v4_strategy = HalvingTopExitStrategy(
+                    symbol=symbol,
+                    is_btc=True,
+                    btc_prices=daily_df,
+                )
+                strategy_name = "HalvingTopExitStrategy_v4"
+            else:
+                try:
+                    from .ml.altcoin_trend_strategy import AltcoinTrendStrategy
+                except (ImportError, ValueError):
+                    from ml.altcoin_trend_strategy import AltcoinTrendStrategy
+
+                v4_strategy = AltcoinTrendStrategy(
+                    symbol=symbol,
+                    btc_prices=btc_daily_df,
+                )
+                strategy_name = "AltcoinTrendStrategy"
+
+            v4_position_series = v4_strategy.generate_signals(daily_df)
+            v4_position_arr = v4_position_series.values if hasattr(v4_position_series, 'values') else np.array(v4_position_series)
+            v4_current_position = float(v4_position_arr[-1]) if len(v4_position_arr) > 0 else 0.0
+            v4_abs_position = abs(v4_current_position)
+
+            if v4_current_position > 0.01:
+                v4_action = "ENTER_LONG"
+                v4_direction = "BULL"
+                v4_position_pct = v4_abs_position
+            elif v4_current_position < -0.01:
+                v4_action = "ENTER_SHORT"
+                v4_direction = "BEAR"
+                v4_position_pct = v4_abs_position
+            else:
+                v4_action = "WAIT"
+                v4_direction = "NEUTRAL"
+                v4_position_pct = 0.0
+
+            v4_strategy_info = {
+                "enabled": True,
+                "v4_action": v4_action,
+                "v4_direction": v4_direction,
+                "v4_position_pct": round(v4_position_pct, 4),
+                "v4_raw_position": round(v4_current_position, 4),
+                "is_btc": is_btc,
+                "strategy_name": strategy_name,
+            }
+
+            decision["action"] = v4_action
+            decision["position"]["position_pct"] = v4_position_pct
+            final_direction = v4_direction
+            adjusted_position_pct = v4_position_pct
+    except Exception as e:
+        v4_strategy_info = {
+            "enabled": False,
+            "error": str(e),
+            "reason": "主策略计算异常，回退到三屏趋势决策",
+        }
+
     value_risk = None
     if final_direction != "NEUTRAL" and daily_df is not None and len(daily_df) >= 31:
         try:
@@ -1271,6 +1347,133 @@ def compute_trend_signal_from_dataframes(
     adjusted_position_pct = decision["position"]["position_pct"]
     if value_risk and value_risk.get("value_gt_risk") is False and decision["action"] in ("ENTER_LONG", "ENTER_SHORT"):
         adjusted_position_pct = min(adjusted_position_pct, 0.05)
+
+    # === PITD 物理置信度调节（方向1条件策略）===
+    # 物理引擎作为信号评估器调节仓位，不生成信号
+    # 条件：仅在弱趋势状态（η<0.10）启用物理调节，强趋势保持原始仓位
+    # 最优参数：网格搜索+Walk-Forward验证（年化7.19%→9.38%，夏普0.3772→0.4364）
+    physics_adjustment = None
+    if decision["action"] in ("ENTER_LONG", "ENTER_SHORT") and daily_df is not None and len(daily_df) >= 60:
+        try:
+            import numpy as _np
+            import pandas as _pd
+            try:
+                from .ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
+                from .ml.pitd_kinematics_engineer import KinematicsEngineer
+                from .ml.pitd_dynamics_engineer import DynamicsEngineer
+            except (ImportError, ValueError):
+                from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
+                from ml.pitd_kinematics_engineer import KinematicsEngineer
+                from ml.pitd_dynamics_engineer import DynamicsEngineer
+
+            # 1) 计算 η 判断是否弱趋势
+            _kin_fe = KinematicsEngineer()
+            _dyn_fe = DynamicsEngineer()
+            _kin_feats = _kin_fe.extract_series(daily_df)
+            _dyn_feats = _dyn_fe.extract_series(daily_df, _kin_feats)
+            _eta_series = _dyn_feats["dyn_coupling_eta"].values
+            current_eta = float(_eta_series[-1]) if len(_eta_series) > 0 else 0.0
+
+            # 2) 条件策略：仅在弱趋势时启用物理调节
+            if current_eta < 0.10:
+                # 3) 从决策方向+置信度推导 ML 信号（[-1,+1] 等价于 [0,1]）
+                signal_strength = max(min(final_confidence / 100.0, 1.0), 0.0)
+                if decision["action"] == "ENTER_LONG":
+                    ml_signal_value = 0.5 + 0.5 * signal_strength  # [0.5, 1.0]
+                else:  # ENTER_SHORT
+                    ml_signal_value = 0.5 - 0.5 * signal_strength  # [0.0, 0.5]
+
+                # 4) 调用物理置信度评估器（最优参数显式传入）
+                optimal_weights = ConfidenceWeights(
+                    w_eta=0.211, w_reversal=0.368,
+                    w_support=0.211, w_kinetic=0.211,
+                    position_lower=0.6, position_scale=1.0,
+                )
+                _scorer = PhysicsConfidenceScorer(optimal_weights)
+                # 构造等长 ML 预测数组（最后一根为当前 bar）
+                ml_predictions = _np.full(len(daily_df), 0.5)
+                ml_predictions[-1] = ml_signal_value
+
+                confidence_arr, components = _scorer.score_signals(
+                    prices=daily_df, ml_predictions=ml_predictions
+                )
+                current_confidence = float(confidence_arr[-1])
+
+                # 5) 调节仓位（取当前 bar）
+                base_pos_arr = _np.array([adjusted_position_pct])
+                conf_arr = _np.array([current_confidence])
+                adjusted_arr = _scorer.adjust_position(base_pos_arr, conf_arr)
+                physics_adjusted_pct = float(adjusted_arr[0])
+
+                # 6) 记录调节信息（供实盘可观测）
+                physics_adjustment = {
+                    "enabled": True,
+                    "weak_trend": True,
+                    "current_eta": round(current_eta, 4),
+                    "physics_confidence": round(current_confidence, 4),
+                    "original_position_pct": round(adjusted_position_pct, 4),
+                    "adjusted_position_pct": round(physics_adjusted_pct, 4),
+                    "multiplier": round(
+                        physics_adjusted_pct / max(adjusted_position_pct, 1e-6), 4
+                    ),
+                    "weights": {
+                        "w_eta": 0.211, "w_reversal": 0.368,
+                        "w_support": 0.211, "w_kinetic": 0.211,
+                        "position_lower": 0.6, "position_scale": 1.0,
+                    },
+                    "components": {
+                        "trend_score": round(float(components["trend_score"][-1]), 4),
+                        "reversal_score": round(float(components["reversal_score"][-1]), 4),
+                        "support_score": round(float(components["support_score"][-1]), 4),
+                        "kinetic_score": round(float(components["kinetic_score"][-1]), 4),
+                    },
+                }
+                adjusted_position_pct = physics_adjusted_pct
+            else:
+                physics_adjustment = {
+                    "enabled": False,
+                    "weak_trend": False,
+                    "current_eta": round(current_eta, 4),
+                    "reason": f"η={current_eta:.4f}≥0.10，强趋势保持原始仓位",
+                }
+        except Exception as e:
+            physics_adjustment = {
+                "enabled": False,
+                "error": str(e),
+                "reason": "物理置信度计算异常，保持原始仓位",
+            }
+
+    # === 波浪策略：择时加仓（互斥融合：V4定方向，波浪同向加仓）===
+    # 波浪理论作为择时加仓信号，物理引擎作为评估器
+    # V4主策略定方向 + 波浪择时加仓（3成基础仓位，上限5成）
+    # 融合规则：同向叠加、异向以V4为主、V4空仓时波浪轻仓抄底
+    wave_strategy = None
+    try:
+        try:
+            from .ml.ewave_strategy_adapter import EWaveStrategyAdapter, WaveConfig
+        except (ImportError, ValueError):
+            from ml.ewave_strategy_adapter import EWaveStrategyAdapter, WaveConfig
+        _wave_adapter = EWaveStrategyAdapter(WaveConfig(base_position=0.3, max_position=0.5))
+        wave_strategy = _wave_adapter.evaluate(
+            daily_df=daily_df,
+            v4_action=decision["action"],
+            v4_direction=final_direction,
+            v4_position_pct=adjusted_position_pct,
+            symbol=symbol,
+        )
+        # 融合后的总仓位作为最终仓位
+        if wave_strategy and wave_strategy.get("enabled"):
+            adjusted_position_pct = wave_strategy["total_position_pct"]
+            # 如果波浪策略改变了action/direction，更新决策
+            if wave_strategy["final_action"] != decision["action"]:
+                decision["action"] = wave_strategy["final_action"]
+                final_direction = wave_strategy["final_direction"]
+    except Exception as e:
+        wave_strategy = {
+            "enabled": False,
+            "error": str(e),
+            "reason": "波浪策略计算异常，保持V4原始仓位",
+        }
 
     final_signal = {
         "direction": final_direction,
@@ -1304,6 +1507,9 @@ def compute_trend_signal_from_dataframes(
         "margin_mode": "isolated",
         "max_position_pct": MAX_POSITION_PCT,
         "max_addon_position_pct": MAX_ADDON_POSITION_PCT,
+        "v4_strategy": v4_strategy_info,  # V4 主策略信息（定方向）
+        "physics_adjustment": physics_adjustment,  # PITD 物理置信度调节信息
+        "wave_strategy": wave_strategy,  # 波浪策略择时加仓信息
     }
 
     return {

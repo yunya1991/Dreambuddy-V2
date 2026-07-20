@@ -288,6 +288,8 @@ class DreamOSScheduler:
                 "cron_expr": job.cron_expr,
                 "enabled": job.enabled,
                 "symbols": getattr(job, "symbols", []),
+                "dry_run": getattr(job, "dry_run", True),
+                "exchange": getattr(job, "exchange", "hyperliquid"),
             })
         with open(jobs_file, "w") as f:
             json.dump(jobs_data, f, indent=2)
@@ -303,18 +305,26 @@ class DreamOSScheduler:
                     cron_expr = job_data["cron_expr"]
                     enabled = job_data.get("enabled", True)
                     symbols = job_data.get("symbols", [])
+                    # 读取 job 级别的 dry_run / exchange 配置(默认 dry_run=True 安全兜底)
+                    dry_run = job_data.get("dry_run", True)
+                    exchange = job_data.get("exchange", "hyperliquid")
 
-                    def _scan_single(symbol: str):
+                    def _scan_single(symbol: str, _dr=dry_run, _ex=exchange):
                         from dreamos.cli.auto_trader import AutoTrader
-                        trader = AutoTrader(dry_run=True)
+                        trader = AutoTrader(dry_run=_dr, exchange=_ex)
                         try:
                             return trader.run_auto_trade(symbol)
                         except Exception as e:
-                            logger.warning(f"调度扫描 {symbol} 失败: {e}")
+                            logger.warning(f"调度扫描 {symbol} 失败 (dry_run={_dr}, exchange={_ex}): {e}")
                             return {"error": str(e)}
 
                     if symbols:
-                        self.add_scan_job(name, cron_expr, symbols, _scan_single, enabled=enabled)
+                        job = self.add_scan_job(name, cron_expr, symbols, _scan_single, enabled=enabled)
+                        if job is not None:
+                            job.dry_run = dry_run
+                            job.exchange = exchange
+                            # add_scan_job 已用默认值保存过一次,这里用正确值重新保存
+                            self._save_jobs()
                     else:
                         self.add_job(name, cron_expr, lambda: None, enabled=enabled)
             except Exception as e:

@@ -138,14 +138,21 @@ def _extract_decision_outcome_features(case: Dict[str, Any]) -> Dict[str, Any]:
 def _extract_quadrant_features(case: Dict[str, Any]) -> Dict[str, Any]:
     """从 quadrant 提取特征 (v0.2 新增)。"""
     q = case.get("quadrant") or {}
+    if not isinstance(q, dict):
+        q = {}
     ev = q.get("evidence") or {}
+    if not isinstance(ev, dict):
+        ev = {}
     return {
-        "x": q.get("x", 0),
-        "y": q.get("y", 0),
+        "x": q.get("x", 0) if isinstance(q, dict) else 0,
+        "y": q.get("y", 0) if isinstance(q, dict) else 0,
         "y_perf": ev.get("y_perf", 0),
         "y_consistency": ev.get("y_consistency", 0),
         "y_human": ev.get("y_human", 0),
-        "quadrant_label": _quadrant_label(q.get("x", 0), q.get("y", 0)),
+        "quadrant_label": _quadrant_label(
+            q.get("x", 0) if isinstance(q, dict) else 0,
+            q.get("y", 0) if isinstance(q, dict) else 0,
+        ),
     }
 
 

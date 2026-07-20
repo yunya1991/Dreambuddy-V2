@@ -30,7 +30,10 @@ class YijingExitAction(Enum):
     NO_INTERVENE = "no_intervene"  # 不干预，保持 classic 决策
     VETO_CLOSE = "veto_close"      # 否决 close，保持持仓
     VETO_REDUCE = "veto_reduce"    # 否决 reduce
-    RAISE_TP = "raise_tp"          # 提高止盈位
+    RAISE_TP = "raise_tp"          # 提高止盈位（价值高时）
+    LOWER_SL = "lower_sl"          # 降低止损（风险低时，放宽止损空间）
+    LOWER_TP = "lower_tp"          # 降低止盈（风险升高时，提前锁定利润）
+    ADJUST_SL_TP = "adjust_sl_tp"  # 同时调整止损止盈
     FORCE_CLOSE = "force_close"    # 强制离场（卦象极度危险）
 
 
@@ -48,8 +51,9 @@ class YijingExitDecision:
     current_phase: str = ""            # 潜龙勿用/见龙在田/.../亢龙有悔
     development_stage: str = ""         # 萌芽期/成长期/成熟期/衰退期
     direction_consistent: bool = True  # 卦象方向与持仓方向是否一致
-    # TP 调整
-    tp_adjust_pct: float = 0.0         # RAISE_TP 时的止盈上浮比例
+    # TP/SL 调整
+    tp_adjust_pct: float = 0.0         # RAISE_TP/LOWER_TP 时的调整比例
+    sl_adjust_pct: float = 0.0         # LOWER_SL 时的调整比例（正数表示放宽）
     # 决策元信息
     confidence: float = 0.5
     should_log: bool = True            # 是否记录日志
@@ -75,6 +79,16 @@ class YijingExitConfig:
     raise_tp_min_profit_pct: float = 0.02  # 至少盈利 2% 才考虑提高 TP
     raise_tp_adjust_pct: float = 0.30      # TP 上浮 30%（叠加在原 TP 之上）
     raise_tp_value_threshold: float = 0.70 # 价值分 > 0.70 才提高 TP
+
+    # ── 降低止损阈值（放宽止损空间）──
+    lower_sl_max_loss_pct: float = -0.02   # 亏损不超过 -2% 才考虑放宽止损
+    lower_sl_min_risk_score: float = 0.30  # 风险分 < 0.30 才放宽止损
+    lower_sl_adjust_pct: float = 0.50      # SL 放宽 50%（从 1.5×ATR → 2.25×ATR）
+
+    # ── 降低止盈阈值（提前锁定利润）──
+    lower_tp_min_profit_pct: float = 0.03  # 至少盈利 3% 才考虑降低 TP
+    lower_tp_max_risk_score: float = 0.60  # 风险分 > 0.60 才降低 TP
+    lower_tp_adjust_pct: float = 0.30     # TP 下调 30%
 
     # ── 强制离场阈值 ──
     force_close_risk_threshold: float = 0.80  # 风险分 > 0.80 且方向冲突 → 强制 close
@@ -271,7 +285,49 @@ class YijingExitSystem:
                 )
                 return decision
 
-        # ── 3. 否决 classic 离场判定 ──
+        # ── 3. 降低止损判定：卦象风险低 + 亏损可控 → 放宽止损空间 ──
+        # 场景：趋势刚刚启动，暂时回撤但卦象显示风险低，不应该被止损洗出去
+        if (unrealized_pnl_pct > self.config.lower_sl_max_loss_pct
+                and decision.yijing_risk_score < self.config.lower_sl_min_risk_score
+                and decision.direction_consistent):
+            # 仅在萌芽期/成长期放宽止损（趋势刚刚启动）
+            early_stage = decision.development_stage in ("萌芽期", "成长期")
+            if early_stage:
+                decision.action = YijingExitAction.LOWER_SL
+                decision.sl_adjust_pct = self.config.lower_sl_adjust_pct
+                decision.reason = (
+                    f"yijing_lower_sl:risk={decision.yijing_risk_score:.2f},"
+                    f"stage={decision.development_stage},loss={unrealized_pnl_pct:.2%}"
+                )
+                self._log(
+                    f"[易经离场][放宽止损] {decision.hexagram_name} "
+                    f"风险={decision.yijing_risk_score:.2f} 阶段={decision.development_stage} "
+                    f"亏损={unrealized_pnl_pct:.2%} → SL 放宽 {decision.sl_adjust_pct:.0%}"
+                )
+                return decision
+
+        # ── 4. 降低止盈判定：卦象风险升高 + 已有利润 → 提前锁定 ──
+        # 场景：卦象显示接近顶部（风险升高），但还没到强制平仓的程度，提前锁定部分利润
+        if (unrealized_pnl_pct >= self.config.lower_tp_min_profit_pct
+                and decision.yijing_risk_score >= self.config.lower_tp_max_risk_score):
+            # 仅在成熟期/衰退期降低止盈（接近顶部）
+            late_stage = decision.development_stage in ("成熟期", "衰退期")
+            high_risk_phase = decision.current_phase in ("九三", "上九")
+            if late_stage or high_risk_phase:
+                decision.action = YijingExitAction.LOWER_TP
+                decision.tp_adjust_pct = -self.config.lower_tp_adjust_pct
+                decision.reason = (
+                    f"yijing_lower_tp:risk={decision.yijing_risk_score:.2f},"
+                    f"stage={decision.development_stage},profit={unrealized_pnl_pct:.2%}"
+                )
+                self._log(
+                    f"[易经离场][降低止盈] {decision.hexagram_name} "
+                    f"风险={decision.yijing_risk_score:.2f} 阶段={decision.development_stage} "
+                    f"盈利={unrealized_pnl_pct:.2%} → TP 下调 {abs(decision.tp_adjust_pct):.0%}"
+                )
+                return decision
+
+        # ── 5. 否决 classic 离场判定 ──
         if classic_decision is not None:
             classic_action_str = ""
             if hasattr(classic_decision, "action"):
@@ -413,3 +469,210 @@ class YijingExitSystem:
             }
         except Exception:
             return None
+
+    # ── 数据驱动校准（P1: 基于回测统计反向校准卦象参数）──
+
+    def calibrate_from_trades(self, trades: List[Any], min_samples: int = 5) -> Dict[str, Any]:
+        """
+        基于历史交易数据反向校准卦象风险/价值映射参数（P1数据驱动校准）
+
+        原理：
+        - 统计每个 phase/stage/risk_level 的实际胜率和收益
+        - 用实际表现反向推导其"真实风险"和"真实价值"
+        - 与先验假设对比，生成校准建议
+
+        Args:
+            trades: 交易列表，每笔需含 hexagram_name/current_phase/development_stage
+                    /risk_level/pnl_pct 字段（或 Trade 对象）
+            min_samples: 最少样本数，低于此值不校准
+
+        Returns:
+            dict: 校准结果，含建议参数和与先验的偏差
+        """
+        if not trades:
+            return {"status": "no_data", "suggestions": []}
+
+        # 提取交易数据
+        trade_data = []
+        for t in trades:
+            if hasattr(t, "hexagram_name"):
+                # Trade dataclass
+                hex_name = t.hexagram_name
+                pnl = t.pnl_pct
+                phase = getattr(t, "current_phase", "") or ""
+                stage = getattr(t, "development_stage", "") or ""
+                risk = getattr(t, "risk_level", "") or ""
+            elif isinstance(t, dict):
+                hex_name = t.get("hexagram_name", "")
+                pnl = t.get("pnl_pct", 0)
+                phase = t.get("current_phase", "") or ""
+                stage = t.get("development_stage", "") or ""
+                risk = t.get("risk_level", "") or ""
+            else:
+                continue
+            if hex_name:
+                trade_data.append({
+                    "hexagram_name": hex_name,
+                    "pnl_pct": pnl,
+                    "current_phase": phase,
+                    "development_stage": stage,
+                    "risk_level": risk,
+                    "is_win": pnl > 0,
+                })
+
+        if not trade_data:
+            return {"status": "no_hexagram_data", "suggestions": []}
+
+        total = len(trade_data)
+        total_win_rate = sum(1 for t in trade_data if t["is_win"]) / max(total, 1)
+        total_avg_pnl = sum(t["pnl_pct"] for t in trade_data) / max(total, 1)
+
+        # ── 按 current_phase 统计 ──
+        phase_stats = self._group_stats(trade_data, "current_phase", min_samples)
+        # ── 按 development_stage 统计 ──
+        stage_stats = self._group_stats(trade_data, "development_stage", min_samples)
+        # ── 按 risk_level 统计 ──
+        risk_stats = self._group_stats(trade_data, "risk_level", min_samples)
+
+        # ── 生成校准建议 ──
+        suggestions = []
+        cfg = self.config
+
+        # Phase 校准建议
+        for phase, stats in phase_stats.items():
+            prior_risk = cfg.phase_risk_map.get(phase, 0.5)
+            prior_value = cfg.phase_value_map.get(phase, 0.5)
+            actual_win = stats["win_rate"]
+            actual_pnl = stats["avg_pnl"]
+            # 偏差方向：实际胜率远低于先验风险预期 → 风险被低估
+            risk_alignment = self._assess_risk_alignment(prior_risk, actual_win, total_win_rate)
+            if risk_alignment != "aligned" and stats["count"] >= min_samples:
+                suggestions.append({
+                    "dimension": "phase",
+                    "key": phase,
+                    "type": risk_alignment,
+                    "prior_risk": prior_risk,
+                    "actual_win_rate": actual_win,
+                    "actual_avg_pnl": actual_pnl,
+                    "sample_count": stats["count"],
+                    "suggestion": f"{phase} 先验风险={prior_risk:.2f}，实际胜率={actual_win:.0%}，"
+                                  f"建议{'上调' if risk_alignment == 'underestimated' else '下调'}风险分",
+                })
+
+        # Stage 校准建议
+        for stage, stats in stage_stats.items():
+            prior_risk = cfg.stage_risk_map.get(stage, 0.5)
+            actual_win = stats["win_rate"]
+            risk_alignment = self._assess_risk_alignment(prior_risk, actual_win, total_win_rate)
+            if risk_alignment != "aligned" and stats["count"] >= min_samples:
+                suggestions.append({
+                    "dimension": "stage",
+                    "key": stage,
+                    "type": risk_alignment,
+                    "prior_risk": prior_risk,
+                    "actual_win_rate": actual_win,
+                    "actual_avg_pnl": stats["avg_pnl"],
+                    "sample_count": stats["count"],
+                    "suggestion": f"{stage} 先验风险={prior_risk:.2f}，实际胜率={actual_win:.0%}，"
+                                  f"建议{'上调' if risk_alignment == 'underestimated' else '下调'}风险分",
+                })
+
+        return {
+            "status": "ok",
+            "total_trades": total,
+            "overall_win_rate": total_win_rate,
+            "overall_avg_pnl": total_avg_pnl,
+            "phase_stats": phase_stats,
+            "stage_stats": stage_stats,
+            "risk_stats": risk_stats,
+            "calibration_suggestions": suggestions,
+            "suggestion_count": len(suggestions),
+        }
+
+    @staticmethod
+    def _group_stats(trades: List[Dict], key: str, min_samples: int) -> Dict[str, Dict]:
+        """按维度分组统计"""
+        groups = {}
+        for t in trades:
+            k = t.get(key, "")
+            if not k:
+                continue
+            if k not in groups:
+                groups[k] = {"count": 0, "wins": 0, "total_pnl": 0.0, "pnls": []}
+            groups[k]["count"] += 1
+            groups[k]["total_pnl"] += t["pnl_pct"]
+            groups[k]["pnls"].append(t["pnl_pct"])
+            if t["is_win"]:
+                groups[k]["wins"] += 1
+
+        result = {}
+        for k, g in groups.items():
+            if g["count"] >= min_samples:
+                result[k] = {
+                    "count": g["count"],
+                    "win_rate": g["wins"] / g["count"],
+                    "avg_pnl": g["total_pnl"] / g["count"],
+                }
+        return result
+
+    @staticmethod
+    def _assess_risk_alignment(prior_risk: float, actual_win_rate: float, baseline_win_rate: float) -> str:
+        """
+        评估先验风险与实际表现的一致性
+        - underestimated: 先验风险太低（实际表现远差于预期）
+        - overestimated: 先验风险太高（实际表现远好于预期）
+        - aligned: 基本一致
+        """
+        # 先验风险越高 → 预期胜率越低
+        # 用 1 - prior_risk 作为预期胜率的相对基准
+        expected_relative = 1.0 - prior_risk
+        actual_relative = actual_win_rate / max(baseline_win_rate, 0.01)
+        diff = actual_relative - expected_relative
+        if diff < -0.25:
+            return "underestimated"  # 实际更差 → 风险被低估
+        elif diff > 0.25:
+            return "overestimated"   # 实际更好 → 风险被高估
+        return "aligned"
+
+    # ── 参数版本管理（P2-2: 回滚机制）──
+
+    def snapshot_config(self, label: str = "") -> Dict[str, Any]:
+        """创建当前配置的快照（用于回滚）"""
+        import copy
+        import time
+        return {
+            "version": "1.0",
+            "timestamp": time.time(),
+            "label": label,
+            "config": copy.deepcopy({
+                "weight_risk_level": self.config.weight_risk_level,
+                "weight_phase": self.config.weight_phase,
+                "weight_development": self.config.weight_development,
+                "weight_direction_consistency": self.config.weight_direction_consistency,
+                "veto_risk_threshold": self.config.veto_risk_threshold,
+                "veto_value_threshold": self.config.veto_value_threshold,
+                "veto_max_loss_pct": self.config.veto_max_loss_pct,
+                "veto_max_hold_sec": self.config.veto_max_hold_sec,
+                "raise_tp_min_profit_pct": self.config.raise_tp_min_profit_pct,
+                "raise_tp_adjust_pct": self.config.raise_tp_adjust_pct,
+                "raise_tp_value_threshold": self.config.raise_tp_value_threshold,
+                "force_close_risk_threshold": self.config.force_close_risk_threshold,
+                "phase_risk_map": dict(self.config.phase_risk_map),
+                "phase_value_map": dict(self.config.phase_value_map),
+                "stage_risk_map": dict(self.config.stage_risk_map),
+                "stage_value_map": dict(self.config.stage_value_map),
+                "risk_level_map": dict(self.config.risk_level_map),
+                "direction_consistency_map": {k: dict(v) for k, v in self.config.direction_consistency_map.items()},
+            }),
+        }
+
+    def restore_config(self, snapshot: Dict[str, Any]) -> bool:
+        """从快照恢复配置（回滚）"""
+        try:
+            cfg_data = snapshot.get("config", {})
+            for key, value in cfg_data.items():
+                if hasattr(self.config, key):
+                    setattr(self.config, key, value)
+            return True
+        except Exception:
+            return False

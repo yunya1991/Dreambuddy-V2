@@ -392,7 +392,10 @@ def _load_model_from_path(path: str) -> MLModel:
 
     model_type = 'lightgbm'
     params = data.get('params', {})
-    if params:
+
+    if data.get('model_type') == 'lstm':
+        model_type = 'lstm'
+    elif params:
         if 'num_leaves' in params or 'objective' in params:
             model_type = 'lightgbm'
         elif 'booster' in params:
@@ -400,7 +403,6 @@ def _load_model_from_path(path: str) -> MLModel:
         elif 'C' in params:
             model_type = 'logistic'
 
-    # 用对应类的 load 方法正确加载（包含内部模型对象）
     if model_type == 'lightgbm':
         from .models import LightGBMModel
         return LightGBMModel.load(path)
@@ -410,6 +412,9 @@ def _load_model_from_path(path: str) -> MLModel:
     elif model_type == 'logistic':
         from .models import LogisticModel
         return LogisticModel.load(path)
+    elif model_type == 'lstm':
+        from .models import LSTMModel
+        return LSTMModel.load(path)
     else:
         model = create_model(model_type, params)
         if 'feature_names' in data:

@@ -165,7 +165,7 @@ class LLMBasedRecognizer(BaseRecognizer):
                 confidence=min(max(confidence, 0.0), 1.0),
                 rationale=rationale,
                 base_chain=base_chain,
-                context=data.get("key_factors", []),
+                context={"key_factors": data.get("key_factors", [])},
                 level=self.level,
             )
         except (json.JSONDecodeError, ValueError):

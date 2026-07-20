@@ -7,19 +7,22 @@
     <key>ProgramArguments</key>
     <array>
         <string>/opt/anaconda3/bin/python3</string>
-        <string>-m</string>
-        <string>dreamos.cli</string>
-        <string>auto</string>
-        <string>scan-all</string>
-        <string>--all</string>
-        <string>--exchange</string>
-        <string>hyperliquid</string>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/cli/start_scheduler.py</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE</string>
-    <key>StartInterval</key>
-    <integer>3600</integer>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONPATH</key>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE</string>
+        <key>NO_PROXY</key>
+        <string>localhost,127.0.0.1</string>
+        <key>no_proxy</key>
+        <string>localhost,127.0.0.1</string>
+    </dict>
     <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/logs/dreamos_launchd.log</string>

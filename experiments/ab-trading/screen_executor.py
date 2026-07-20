@@ -97,6 +97,38 @@ AUTO_EXECUTE = os.environ.get("SCREEN_AUTO_EXECUTE", "true").lower() == "true"
 MIN_MARGIN_USD = float(os.environ.get("MIN_MARGIN_USD", 20))
 DEFAULT_LEVERAGE = float(os.environ.get("DEFAULT_LEVERAGE", 10))
 
+# ── 交易所切换：ASTER 模式（趋势策略专用钱包） ────────────────────────────
+# EXCHANGE_MODE=aster   → 使用 AsterExecutor（趋势策略独立钱包 0x6632...A）
+# EXCHANGE_MODE=okx     → 使用 OKX（历史路径，已禁用，仅保留查询能力）
+EXCHANGE_MODE = os.environ.get("EXCHANGE_MODE", "aster").lower()
+ASTER_TREND_SYSTEM = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/trend-system"
+if ASTER_TREND_SYSTEM not in sys.path:
+    sys.path.insert(0, ASTER_TREND_SYSTEM)
+
+_aster_executor_instance = None
+
+
+def _get_aster_executor():
+    """获取 AsterExecutor 单例（趋势策略专用）"""
+    global _aster_executor_instance
+    if _aster_executor_instance is None:
+        try:
+            from live.aster_executor import AsterExecutor
+            _aster_executor_instance = AsterExecutor()
+            _log("INFO", f"[Aster] 执行器已加载 owner={_aster_executor_instance.config.owner[:14]}... "
+                          f"dry_run={_aster_executor_instance.config.dry_run}")
+        except Exception as e:
+            _log("ERROR", f"[Aster] 执行器加载失败: {e}")
+            return None
+    return _aster_executor_instance
+
+
+def _parse_coin_from_inst(inst_id: str) -> str:
+    """从 inst_id（如 BTC-USDT-SWAP）解析出币种符号（BTC）"""
+    if not inst_id:
+        return ""
+    return inst_id.split("-")[0].upper()
+
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
 DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
@@ -942,30 +974,65 @@ def _v9_baseline_decision(screen1: dict, weekly: dict, a1_daily: dict, a6_intel:
 
 # ── 交易执行 ──────────────────────────────────────────────────────────────
 
-def _place_order(inst_id: str, side: str, pos_side: str, size: float, 
-                 reduce_only: bool = False, td_mode: str = "isolated", 
+def _place_order(inst_id: str, side: str, pos_side: str, size: float,
+                 reduce_only: bool = False, td_mode: str = "isolated",
                  leverage: float = 5.0) -> dict:
-    args = [
-        "swap", "place",
-        "--instId", inst_id,
-        "--side", side,
-        "--posSide", pos_side,
-        "--ordType", "market",
-        "--sz", str(size),
-        "--tdMode", td_mode,
-        "--lever", str(leverage),
-        "--json",
-    ]
-    if reduce_only:
-        args.append("--reduceOnly")
+    """下单入口
 
-    r = _run_okx(args)
-    if r["ok"] and isinstance(r["data"], list) and r["data"]:
-        item = r["data"][0]
-        if item.get("sCode") == "0":
-            return {"ok": True, "ordId": item.get("ordId"), "msg": item.get("sMsg")}
-        return {"ok": False, "err": item.get("sMsg", "unknown")}
-    return {"ok": False, "err": r.get("err", str(r))}
+    根据 EXCHANGE_MODE 切换：
+      - aster → AsterExecutor（趋势策略专用钱包 0x6632...A）
+      - okx   → OKX CLI（历史路径，已禁用）
+    """
+    if EXCHANGE_MODE == "aster":
+        # ── Aster 路径：使用趋势策略专用钱包 ──
+        executor = _get_aster_executor()
+        if executor is None:
+            return {"ok": False, "err": "AsterExecutor 加载失败"}
+
+        coin = _parse_coin_from_inst(inst_id)
+        if not coin:
+            return {"ok": False, "err": f"无法解析币种: {inst_id}"}
+
+        # OKX side: buy/sell, pos_side: long/short
+        # AsterExecutor 需要 long/short/buy/sell 任一
+        aster_side = pos_side if pos_side in ("long", "short") else side
+
+        try:
+            # 计算名义价值（USDT）
+            price_now = get_price(inst_id)
+            notional_usd = float(size) * float(price_now) if price_now > 0 else 0.0
+
+            # Aster 最小名义价值约 64 USDT，若低于则按数量下单兜底
+            if notional_usd >= 64.0 and not reduce_only:
+                result = executor.place_market_order(
+                    coin=coin, side=aster_side,
+                    notional_usd=notional_usd,
+                    reduce_only=reduce_only,
+                    leverage=int(leverage) if leverage else None,
+                )
+            else:
+                # 数量下单（用于 reduce_only 平仓，或小额场景）
+                result = executor.place_market_order_qty(
+                    coin=coin, side=aster_side,
+                    qty=float(size),
+                    reduce_only=reduce_only,
+                    leverage=int(leverage) if leverage else None,
+                )
+
+            if result.get("ok"):
+                resp = result.get("resp", {})
+                ord_id = resp.get("orderId") or resp.get("ordId") or "aster_ok"
+                return {"ok": True, "ordId": str(ord_id),
+                        "msg": f"aster {result.get('symbol','')} {result.get('side','')}"}
+            return {"ok": False, "err": result.get("error", "aster_failed")}
+
+        except Exception as e:
+            _log("ERROR", f"[Aster] 下单异常 {inst_id} {side}: {e}")
+            return {"ok": False, "err": str(e)}
+
+    # ── OKX 路径（默认禁用）──
+    _log("ERROR", f"[OKX] 下单路径已被禁用（EXCHANGE_MODE=aster）：{inst_id} {side} {size}")
+    return {"ok": False, "err": "okx_path_disabled_aster_mode_only"}
 
 
 _lot_size_cache = {}

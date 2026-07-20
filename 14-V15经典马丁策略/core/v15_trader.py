@@ -879,10 +879,10 @@ def check_time_exit(client, coin, pos, state):
 
             entry_price = pos["entry_price"]
             if is_short:
-                # 做空：价格下跌盈利
+                # 做空：价格下跌盈利（经典指标系统内部 pnl_eff = unrealized_pnl_pct × leverage）
                 unrealized_pnl_pct = (entry_price - current_price) / entry_price
             else:
-                # 做多：价格上涨盈利
+                # 做多：价格上涨盈利（经典指标系统内部 pnl_eff = unrealized_pnl_pct × leverage）
                 unrealized_pnl_pct = (current_price - entry_price) / entry_price
 
             pos_state = PositionState(
@@ -1134,6 +1134,10 @@ def run_light_poll_cycle():
     - 不执行交易（不开仓、不加仓、不平仓）
     - 不挂OCO条件单
     - 只查仓+对比+更新state
+
+    防误删保护：
+    - API 调用失败（限流/网络）时，保留 state 中的持仓记录，不视为"外部平仓"
+    - 只有 API 明确返回成功且持仓数为 0 时，才判定为外部平仓
     """
     state = load_state()
     client = _get_okx_client()
@@ -1144,18 +1148,24 @@ def run_light_poll_cycle():
 
     _log("=== 轻量轮询开始 ===")
 
-    # 查询所有币种在交易所的真实持仓
-    exchange_positions = {}
-    for coin in COINS:
-        try:
-            inst_id = to_swap(coin)
-            resp = client.get_positions(inst_id)
-            if resp.get("ok"):
-                for p in resp.get("positions", []):
-                    if p.get("pos", 0) != 0:
-                        exchange_positions[coin] = p
-        except Exception as e:
-            _log(f"[{coin}] 轻量轮询查仓异常: {e}")
+    # 单次 API 拉取账户所有持仓（避免 30 次循环触发 OKX 限流）
+    all_resp = client.get_all_positions()
+    api_ok = all_resp.get("ok", False)
+    exchange_positions = all_resp.get("positions", {}) if api_ok else {}
+
+    if not api_ok:
+        # API 失败 — 保留 state 原状，只更新 last_poll
+        _log(f"[轻量轮询] ⚠️ 持仓查询失败: {all_resp.get('error', 'unknown')} — 保留 state 原状，不删除任何持仓")
+        state["last_poll"] = datetime.now(timezone.utc).isoformat()
+        save_state(state)
+        remaining = list(state.get("positions", {}).keys())
+        _log(f"=== 轻量轮询完成(降级) | 持仓:{len(remaining)} (state 未变更) ===")
+        for coin in remaining:
+            pos = state["positions"][coin]
+            pnl = pos.get("unrealized_pnl", 0)
+            pnl_pct = pos.get("profit_pct", 0)
+            _log(f"  [{coin}] mark=${pos.get('current_price', 0):.4f} pnl=${pnl:.2f} ({pnl_pct:+.2%}) [stale]")
+        return
 
     state_positions = set(state.get("positions", {}).keys())
     exchange_pos_keys = set(exchange_positions.keys())

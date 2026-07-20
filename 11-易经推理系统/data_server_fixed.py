@@ -45,6 +45,28 @@ YIJING_INITIAL_CAPITAL = 150.0
 _cache = {}
 
 
+def _json_default(obj):
+    """JSON 序列化兜底：处理 numpy 类型（screen_engine 等模块返回的数据可能含 int64/float64）
+
+    标准库 json.dumps 无法序列化 numpy.int64 / numpy.float64 / numpy.ndarray，
+    不加此兜底会让 /api/screen-trade 等端点抛 TypeError 后连接被强制关闭，
+    浏览器表现为「数据不显示」。
+    """
+    try:
+        import numpy as _np
+        if isinstance(obj, _np.integer):
+            return int(obj)
+        if isinstance(obj, _np.floating):
+            return float(obj)
+        if isinstance(obj, _np.bool_):
+            return bool(obj)
+        if isinstance(obj, _np.ndarray):
+            return obj.tolist()
+    except ImportError:
+        pass
+    return str(obj)
+
+
 def _load_yijing_baseline():
     """加载或创建易经策略每日基准快照（从今天起以 150 为基准）
 
@@ -230,6 +252,310 @@ def get_screen_state():
         return {"error": str(e)}
 
 
+# ── 三屏趋势策略数据（前端 /api/trend-screen 调用） ────────────────────────
+# 前端 monitor.html 的 "三屏趋势" Tab 实际请求 /api/trend-screen?symbol=BTC
+# screen_engine.compute_full_trading_signal() 已包含 trend_consistency /
+# bayesian_confidence / freqtrade_signals / technical_fundamental_fusion /
+# final_signal 等字段，但 final_signal 缺少 action/position/decision_reason
+# 等战术层字段；本函数补充这些字段并附加账户/持仓数据，使前端 Screen2/3
+# 不再因字段缺失而报错。
+def get_trend_screen_state(symbol: str = "BTC"):
+    if not SCREEN_AVAILABLE:
+        return {"error": "screen_engine not available"}
+    try:
+        spot_inst = f"{symbol}-USDT"
+        is_btc = (symbol.upper() == "BTC")
+        # screen_engine.compute_full_trading_signal 是模块级函数，
+        # 返回 trend_consistency / bayesian_confidence / freqtrade_signals /
+        # technical_fundamental_fusion / final_signal 等字段。
+        import screen_engine as _se
+        result = _se.compute_full_trading_signal(spot_inst=spot_inst, is_btc=is_btc)
+        if not result or result.get("error"):
+            return result or {"error": "compute_full_trading_signal failed"}
+
+        # 补充 final_signal 的战术层字段（Screen2 渲染需要）
+        fs = result.setdefault("final_signal", {})
+        direction = fs.get("direction", "NEUTRAL")
+        confidence = fs.get("confidence", 0)
+        if "action" not in fs:
+            fs["action"] = "ENTER_LONG" if direction == "BULL" else \
+                           "ENTER_SHORT" if direction == "BEAR" else "WAIT"
+        if "position" not in fs:
+            # 置信度→仓位映射（与前端 renderTrendScreen2 显示规则一致）
+            if confidence >= 85:
+                pct, tier = 0.60, "T1"
+            elif confidence >= 75:
+                pct, tier = 0.45, "T2"
+            elif confidence >= 65:
+                pct, tier = 0.30, "T3"
+            elif confidence >= 55:
+                pct, tier = 0.15, "T4"
+            elif confidence >= 45:
+                pct, tier = 0.05, "T5"
+            else:
+                pct, tier = 0.0, "--"
+            fs["position"] = {"position_pct": pct, "tier": tier}
+        if "decision_reason" not in fs:
+            tf = result.get("technical_fundamental_fusion", {}) or {}
+            fs["decision_reason"] = (
+                f"方向={direction} 置信度={confidence:.1f}% "
+                f"趋势一致={fs.get('trend_consistent')} "
+                f"融合一致={fs.get('fusion_consistent')} "
+                f"Freqtrade一致={fs.get('freqtrade_consistent')} "
+                f"技术面={tf.get('technical', {}).get('direction', '--')} "
+                f"基本面={tf.get('fundamental', {}).get('direction', '--')}"
+            )
+
+        # 附加账户与持仓（Screen3 渲染需要，从 Dream OS Aster 拉取）
+        try:
+            account = {"equity": 0, "available": 0}
+            position = None
+            try:
+                sys.path.insert(0, CLASSIC_DIR)
+                import ml_trade_service as _ml
+                positions_raw, _ = _ml._aster_fetch_positions(owner=DREAMOS_ASTER_OWNER)
+                for p in (positions_raw or []):
+                    if str(p.get("coin", "")).upper() == symbol.upper():
+                        amt = float(p.get("position_amt", 0) or 0)
+                        if abs(amt) < 1e-12:
+                            continue
+                        position = {
+                            "side": "LONG" if amt > 0 else "SHORT",
+                            "size": abs(amt),
+                            "entry_px": float(p.get("entry_px", 0) or 0),
+                            "leverage": float(p.get("leverage") or 1),
+                            "upnl": float(p.get("unrealized_pnl_u", 0) or 0),
+                        }
+                        break
+                summary = _ml._aster_fetch_account_summary(owner=DREAMOS_ASTER_OWNER)
+                if summary.get("ok"):
+                    s = summary.get("summary", {}) or {}
+                    account["equity"] = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
+                    account["available"] = float(s.get("availableBalance", 0) or 0)
+            except Exception:
+                pass
+            result["account"] = account
+            result["position"] = position
+        except Exception:
+            pass
+
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ── V4+波浪互斥融合策略（主力策略线：实盘可用） ──────────────────────────────
+# 主线策略：V4减半周期策略（定方向）+ 波浪理论（择时加仓）+ 物理引擎（信号评估）
+# 9年回测验证：V4年化 53.34%，V4+波浪互斥融合年化 56.43%
+# 融合规则：同向叠加、异向以V4为主、V4空仓时波浪轻仓抄底（上限50%）
+# 物理增强：弱趋势(η<0.10)时启用物理置信度调节仓位
+V4_WAVE_BASE_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/trend-system"
+
+def get_v4_wave_strategy(symbol: str = "BTC"):
+    try:
+        import sys, json, os
+        sys.path.insert(0, V4_WAVE_BASE_DIR)
+
+        symbol_upper = symbol.upper()
+        is_btc = (symbol_upper == "BTC")
+
+        # 加载本地历史数据（优先使用 730d 文件）
+        data_path = os.path.join(V4_WAVE_BASE_DIR, f"data/historical/{symbol_upper}_1D_730d.json")
+        if not os.path.exists(data_path):
+            data_path = os.path.join(V4_WAVE_BASE_DIR, f"data/historical/{symbol_upper}_1D_365d.json")
+        if not os.path.exists(data_path):
+            return {"error": f"未找到 {symbol_upper} 历史数据文件"}
+
+        with open(data_path) as f:
+            data = json.load(f)
+        import pandas as pd
+        df = pd.DataFrame(data)
+        df["timestamp"] = pd.to_datetime(df["ts"], unit="ms")
+        df = df.set_index("timestamp")
+        daily_df = df[["o", "h", "l", "c", "vol"]].rename(
+            columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}
+        )
+        current_price = float(daily_df["close"].iloc[-1])
+        data_days = len(daily_df)
+
+        # 加载 BTC 数据（非BTC币种需要）
+        btc_daily_df = None
+        if not is_btc:
+            btc_path = os.path.join(V4_WAVE_BASE_DIR, "data/historical/BTC_1D_730d.json")
+            if os.path.exists(btc_path):
+                with open(btc_path) as f:
+                    btc_data = json.load(f)
+                btc_df = pd.DataFrame(btc_data)
+                btc_df["timestamp"] = pd.to_datetime(btc_df["ts"], unit="ms")
+                btc_df = btc_df.set_index("timestamp")
+                btc_daily_df = btc_df[["o", "h", "l", "c", "vol"]].rename(
+                    columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}
+                )
+
+        # === 1. V4 主策略 ===
+        v4_result = None
+        if is_btc:
+            from ml.halving_top_exit_strategy import HalvingTopExitStrategy
+            v4_strategy = HalvingTopExitStrategy(symbol=symbol_upper, is_btc=True, btc_prices=daily_df)
+            strategy_name = "HalvingTopExitStrategy_v4"
+        else:
+            from ml.altcoin_trend_strategy import AltcoinTrendStrategy
+            v4_strategy = AltcoinTrendStrategy(symbol=symbol_upper, btc_prices=btc_daily_df)
+            strategy_name = "AltcoinTrendStrategy"
+
+        v4_position_series = v4_strategy.generate_signals(daily_df)
+        v4_pos_arr = v4_position_series.values if hasattr(v4_position_series, 'values') else v4_position_series
+        v4_current_pos = float(v4_pos_arr[-1]) if len(v4_pos_arr) > 0 else 0.0
+
+        if v4_current_pos > 0.01:
+            v4_action = "ENTER_LONG"
+            v4_direction = "BULL"
+            v4_position_pct = abs(v4_current_pos)
+        elif v4_current_pos < -0.01:
+            v4_action = "ENTER_SHORT"
+            v4_direction = "BEAR"
+            v4_position_pct = abs(v4_current_pos)
+        else:
+            v4_action = "WAIT"
+            v4_direction = "NEUTRAL"
+            v4_position_pct = 0.0
+
+        v4_result = {
+            "strategy_name": strategy_name,
+            "is_btc": is_btc,
+            "action": v4_action,
+            "direction": v4_direction,
+            "position_pct": round(v4_position_pct, 4),
+            "raw_position": round(v4_current_pos, 4),
+            "state": getattr(v4_strategy, "current_state", "N/A"),
+        }
+
+        # === 2. 波浪策略（互斥融合）===
+        wave_result = None
+        from ml.ewave_strategy_adapter import EWaveStrategyAdapter, WaveConfig
+        wave_adapter = EWaveStrategyAdapter(WaveConfig())
+        wave_result = wave_adapter.evaluate(
+            daily_df=daily_df,
+            v4_action=v4_action,
+            v4_direction=v4_direction,
+            v4_position_pct=v4_position_pct,
+            symbol=symbol,
+        )
+
+        # === 3. 物理置信度评估 ===
+        physics_result = None
+        try:
+            import numpy as np
+            from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
+            from ml.pitd_kinematics_engineer import KinematicsEngineer
+            from ml.pitd_dynamics_engineer import DynamicsEngineer
+
+            kin_fe = KinematicsEngineer()
+            dyn_fe = DynamicsEngineer()
+            kin_feats = kin_fe.extract_series(daily_df)
+            dyn_feats = dyn_fe.extract_series(daily_df, kin_feats)
+            eta_series = dyn_feats["dyn_coupling_eta"].values
+            current_eta = float(eta_series[-1]) if len(eta_series) > 0 else 0.0
+
+            weights = ConfidenceWeights(
+                w_eta=0.211, w_reversal=0.368,
+                w_support=0.211, w_kinetic=0.211,
+                position_lower=0.6, position_scale=1.0,
+            )
+            scorer = PhysicsConfidenceScorer(weights)
+            ml_preds = np.full(len(daily_df), 0.5)
+            if v4_action == "ENTER_LONG":
+                ml_preds[-1] = 0.75
+            elif v4_action == "ENTER_SHORT":
+                ml_preds[-1] = 0.25
+
+            conf_arr, components = scorer.score_signals(prices=daily_df, ml_predictions=ml_preds)
+            current_conf = float(conf_arr[-1])
+
+            physics_result = {
+                "enabled": True,
+                "weak_trend": current_eta < 0.10,
+                "current_eta": round(current_eta, 4),
+                "physics_confidence": round(current_conf, 4),
+                "components": {
+                    "trend_score": round(float(components["trend_score"][-1]), 4),
+                    "reversal_score": round(float(components["reversal_score"][-1]), 4),
+                    "support_score": round(float(components["support_score"][-1]), 4),
+                    "kinetic_score": round(float(components["kinetic_score"][-1]), 4),
+                },
+                "weights": {"w_eta": 0.211, "w_reversal": 0.368, "w_support": 0.211, "w_kinetic": 0.211},
+            }
+        except Exception as e:
+            physics_result = {"enabled": False, "error": str(e)}
+
+        # === 4. 最终决策 ===
+        final_action = wave_result.get("final_action", v4_action) if wave_result else v4_action
+        final_direction = wave_result.get("final_direction", v4_direction) if wave_result else v4_direction
+        final_position = wave_result.get("total_position_pct", v4_position_pct) if wave_result else v4_position_pct
+
+        # 物理调节（仅弱趋势）
+        adjusted_position = final_position
+        if physics_result.get("enabled") and physics_result.get("weak_trend") and final_action in ("ENTER_LONG", "ENTER_SHORT"):
+            base_pos_arr = np.array([final_position])
+            conf_arr = np.array([physics_result["physics_confidence"]])
+            adjusted_arr = scorer.adjust_position(base_pos_arr, conf_arr)
+            adjusted_position = float(adjusted_arr[0])
+
+        # === 5. 账户与持仓 ===
+        account = {"equity": 0, "available": 0}
+        position = None
+        try:
+            sys.path.insert(0, CLASSIC_DIR)
+            import ml_trade_service as _ml
+            positions_raw, _ = _ml._aster_fetch_positions(owner=DREAMOS_ASTER_OWNER)
+            for p in (positions_raw or []):
+                if str(p.get("coin", "")).upper() == symbol_upper:
+                    amt = float(p.get("position_amt", 0) or 0)
+                    if abs(amt) < 1e-12:
+                        continue
+                    position = {
+                        "side": "LONG" if amt > 0 else "SHORT",
+                        "size": abs(amt),
+                        "entry_px": float(p.get("entry_px", 0) or 0),
+                        "leverage": float(p.get("leverage") or 1),
+                        "upnl": float(p.get("unrealized_pnl_u", 0) or 0),
+                        "mark_px": float(p.get("mark_px", 0) or 0),
+                    }
+                    break
+            summary = _ml._aster_fetch_account_summary(owner=DREAMOS_ASTER_OWNER)
+            if summary.get("ok"):
+                s = summary.get("summary", {}) or {}
+                account["equity"] = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
+                account["available"] = float(s.get("availableBalance", 0) or 0)
+        except Exception:
+            pass
+
+        return {
+            "symbol": symbol_upper,
+            "spot_inst": f"{symbol_upper}-USDT",
+            "current_price": round(current_price, 2),
+            "data_days": data_days,
+            "generated_at": datetime.datetime.now().isoformat(),
+            "v4_strategy": v4_result,
+            "wave_strategy": wave_result,
+            "physics_assessment": physics_result,
+            "final_decision": {
+                "action": final_action,
+                "direction": final_direction,
+                "position_pct": round(final_position, 4),
+                "adjusted_position_pct": round(adjusted_position, 4),
+                "fusion_rule": wave_result.get("fusion_rule", "no_wave") if wave_result else "no_wave",
+            },
+            "account": account,
+            "position": position,
+            "strategy_line": "MAIN",
+            "mode": "live_trading_available",
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+
 def get_executor_state():
     try:
         from screen_executor import get_executor_state
@@ -257,10 +583,19 @@ def get_reports_state():
 # ── Dream OS 状态 ──────────────────────────────────────────────────────────
 ARCH_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE"
 PROJECT_ROOT = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2"
+CLASSIC_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统"
+# Dream OS 实盘账户 owner（Aster 平台，默认 None 使用 ASTER_API_KEY/SECRET_KEY）
+# 可通过环境变量 DREAMOS_ASTER_OWNER 指定特定 owner（如 quant/carry/three_screen）
+DREAMOS_ASTER_OWNER_RAW = os.environ.get("DREAMOS_ASTER_OWNER", "").strip()
+DREAMOS_ASTER_OWNER = DREAMOS_ASTER_OWNER_RAW if DREAMOS_ASTER_OWNER_RAW else None
 
 
 def get_dreamos_state():
-    """获取 Dream OS 状态（节点注册表 + 账户 + 记忆）"""
+    """获取 Dream OS 状态（节点注册表 + 账户 + 记忆）
+
+    持仓查询：Dream OS 实盘在 Aster 平台运行（owner=quant），
+    不再查询 Hyperliquid Agent B。
+    """
     try:
         sys.path.insert(0, ARCH_DIR)
         from dreamos.nodes import list_available_nodes, register_all
@@ -273,15 +608,53 @@ def get_dreamos_state():
                        "chain": getattr(n, "chain", ""), "description": getattr(n, "description", "")}
                       for n in nodes]
 
-        sys.path.insert(0, str(BASE_DIR))
-        account = {"equity": 0, "positions": {}}
-        memory = {}
+        # ── Aster 实盘账户（Dream OS 实际下单平台，owner=quant）──
+        account = {"ok": False, "equity": 0, "avail": 0, "positions": {}, "mode": "aster"}
         try:
-            from execution.aster_spot import HyperliquidClient
-            client = HyperliquidClient('b')
-            account = client.get_account()
-        except Exception:
-            pass
+            sys.path.insert(0, CLASSIC_DIR)
+            import ml_trade_service as _ml
+            # 持仓列表 → 转为 coin 为 key 的字典（兼容前端 renderDreamOS）
+            positions_raw, pos_err = _ml._aster_fetch_positions(owner=DREAMOS_ASTER_OWNER)
+            positions = {}
+            for p in (positions_raw or []):
+                coin = str(p.get("coin", "")).upper()
+                if not coin:
+                    continue
+                amt = float(p.get("position_amt", 0) or 0)
+                if abs(amt) < 1e-12:
+                    continue
+                positions[coin] = {
+                    "size":     amt,                    # 正=多, 负=空
+                    "entry_px": float(p.get("entry_px", 0) or 0),
+                    "upnl":     float(p.get("unrealized_pnl_u", 0) or 0),
+                    "leverage": float(p.get("leverage") or 1),
+                    "mark_px":  float(p.get("mark_px", 0) or 0),
+                    "liq_px":   float(p.get("liq_px", 0) or 0),
+                    "notional": float(p.get("notional_usdc", 0) or 0),
+                    "side":     p.get("side", "long" if amt > 0 else "short"),
+                }
+            # 账户摘要
+            summary = _ml._aster_fetch_account_summary(owner=DREAMOS_ASTER_OWNER)
+            equity = 0.0
+            avail = 0.0
+            if summary.get("ok"):
+                s = summary.get("summary", {}) or {}
+                equity = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
+                avail = float(s.get("availableBalance", 0) or 0)
+            account = {
+                "ok":        True,
+                "equity":    equity,
+                "avail":     avail,
+                "positions": positions,
+                "mode":      "aster",
+                "owner":     DREAMOS_ASTER_OWNER,
+                "pos_error": pos_err,
+            }
+        except Exception as e:
+            account = {"ok": False, "equity": 0, "avail": 0, "positions": {},
+                       "mode": "aster", "error": str(e)}
+
+        memory = {}
         try:
             sys.path.insert(0, PROJECT_ROOT)
             from experiments.agent_c.agent_c import AgentC
@@ -316,6 +689,135 @@ def get_dreamos_history():
         return {"logs": logs, "count": len(logs)}
     except Exception as e:
         return {"error": str(e)}
+
+
+def get_dreamos_scenarios():
+    """获取 36 场景编排记忆表 + 执行反馈 + 进化触发列表
+
+    返回前端 monitor.html dosLoadScenarios() 所需结构：
+      { stats, scenarios:[{scenario_id,covered,inferred,confidence,
+                          best_pattern,sample_count,score}],
+        feedback:{scenario_id:{total_trades,...}},
+        trigger_evolution:[{scenario_id,...}],
+        covered, total_scenarios }
+    """
+    try:
+        sys.path.insert(0, ARCH_DIR)
+        from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+        from dreamos.core.memory.execution_feedback import ExecutionFeedbackCollector
+
+        memory = OrchestrationMemory()
+        memory.load()
+
+        # ── 场景列表 ──
+        scenarios_out = []
+        for entry in memory.list_scenarios():
+            scenarios_out.append({
+                "scenario_id":  entry.get("scenario_id", ""),
+                "covered":      not entry.get("sparse", True),
+                "inferred":     bool(entry.get("inferred", False)),
+                "confidence":   entry.get("confidence", "low"),
+                "best_pattern": entry.get("best_pattern", ""),
+                "sample_count": int(entry.get("sample_count", 0) or 0),
+                "score":        float(entry.get("score", 0.0) or 0.0),
+            })
+
+        # ── 反馈统计 + 触发进化 ──
+        collector = ExecutionFeedbackCollector(memory=memory)
+        feedback_out = {}
+        trigger_list = []
+        for sid in collector.get_all_scenario_ids():
+            try:
+                feedback_out[sid] = collector.get_stats(sid)
+            except Exception:
+                pass
+        for fb in collector.get_all_feedbacks():
+            if fb.trigger_evolution:
+                trigger_list.append({
+                    "scenario_id":        fb.scenario_id,
+                    "pattern_used":       fb.pattern_used,
+                    "direction_accuracy": fb.direction_accuracy,
+                    "actual_sharpe":      fb.actual_sharpe,
+                    "expected_sharpe":    fb.expected_sharpe,
+                    "deviation":          fb.deviation,
+                })
+
+        stats = memory.get_stats()
+        return {
+            "stats":             stats,
+            "scenarios":         scenarios_out,
+            "feedback":          feedback_out,
+            "trigger_evolution": trigger_list,
+            "covered":           stats.get("covered_scenarios", len(scenarios_out)),
+            "total_scenarios":   stats.get("total_scenarios", 36) or 36,
+            "timestamp":         datetime.datetime.now().isoformat(),
+        }
+    except Exception as e:
+        return {"error": str(e), "scenarios": [], "feedback": {},
+                "trigger_evolution": [], "covered": 0, "total_scenarios": 36}
+
+
+def get_token_signals():
+    """聚合 9 个候选币种的最终交易信号，供 monitor.html signals tab 展示
+
+    使用 screen_engine.compute_full_trading_signal（重接口，单币种约 3-6 秒）。
+    推荐由后台 _bg_refresh_token_signals() 定时刷新，请求直接返回缓存。
+    """
+    try:
+        sys.path.insert(0, str(BASE_DIR))
+        from screen_engine import compute_full_trading_signal, CANDIDATE_COINS
+
+        ENTRY_CONFIDENCE_THRESHOLD = 45  # 与 screen_executor.py 入场阈值一致
+
+        signals = []
+        for coin in CANDIDATE_COINS:
+            try:
+                full = compute_full_trading_signal(
+                    spot_inst=coin.get("spot", f"{coin['symbol']}-USDT"),
+                    is_btc=coin.get("is_btc", False),
+                )
+                if not full or "error" in full:
+                    continue
+                fs = full.get("final_signal", {}) or {}
+                ft = full.get("freqtrade_signals", {}) or {}
+                direction = fs.get("direction", "NEUTRAL")
+                confidence = int(round(float(fs.get("confidence", 0) or 0), 0))
+                trend_consistent = bool(fs.get("trend_consistent", False))
+                freqtrade_consistent = bool(fs.get("freqtrade_consistent", False))
+                entry_ready = (
+                    trend_consistent
+                    and freqtrade_consistent
+                    and direction != "NEUTRAL"
+                    and confidence >= ENTRY_CONFIDENCE_THRESHOLD
+                )
+                ft4h = ft.get("4h", {}) or {}
+                ft1h = ft.get("1h", {}) or {}
+                signals.append({
+                    "symbol":               full.get("symbol", coin.get("symbol", "")),
+                    "price":                float(full.get("price", 0) or 0),
+                    "direction":            direction,
+                    "confidence":           confidence,
+                    "trend_consistent":     trend_consistent,
+                    "freqtrade_consistent": freqtrade_consistent,
+                    "entry_ready":          entry_ready,
+                    "freqtrade_4h":         ft4h.get("signal", ""),
+                    "freqtrade_4h_conf":    int(ft4h.get("confidence", 0) or 0),
+                    "freqtrade_1h":         ft1h.get("signal", ""),
+                    "freqtrade_1h_conf":    int(ft1h.get("confidence", 0) or 0),
+                })
+            except Exception:
+                continue
+
+        return {
+            "bull_count":    sum(1 for s in signals if s["direction"] == "BULL"),
+            "bear_count":    sum(1 for s in signals if s["direction"] == "BEAR"),
+            "neutral_count": sum(1 for s in signals if s["direction"] == "NEUTRAL"),
+            "signals":       signals,
+            "timestamp":     datetime.datetime.now().isoformat(),
+        }
+    except Exception as e:
+        return {"error": str(e), "signals": [],
+                "bull_count": 0, "bear_count": 0, "neutral_count": 0}
 
 
 def dreamos_analyze(symbol="BTC"):
@@ -660,6 +1162,25 @@ def _bg_refresh_dreamos(interval: int = 15):
             _cache_set("dreamos_history", get_dreamos_history())
         except Exception:
             pass
+        try:
+            _cache_set("dreamos_scenarios", get_dreamos_scenarios())
+        except Exception:
+            pass
+        time.sleep(interval)
+
+
+def _bg_refresh_token_signals(interval: int = 300):
+    """代币信号聚合接口较慢（9 币种 × compute_full_trading_signal），5 分钟刷新一次"""
+    # 启动后立即拉一次，避免页面长时间等待
+    try:
+        _cache_set("token_signals", get_token_signals())
+    except Exception:
+        pass
+    while True:
+        try:
+            _cache_set("token_signals", get_token_signals())
+        except Exception:
+            pass
         time.sleep(interval)
 
 
@@ -669,6 +1190,7 @@ def _start_bg_refresh():
         threading.Thread(target=_bg_refresh_yijing, args=(60,), daemon=True),
         threading.Thread(target=_bg_refresh_screen, args=(30,), daemon=True),
         threading.Thread(target=_bg_refresh_dreamos, args=(15,), daemon=True),
+        threading.Thread(target=_bg_refresh_token_signals, args=(300,), daemon=True),
     ]
     for t in threads:
         t.start()
@@ -714,6 +1236,41 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(cached["data"])
             else:
                 self._json({"error": "orchestrator data loading"})
+
+        # ── 三屏趋势策略（前端 "三屏趋势" Tab 实际请求的端点） ─────────────
+        # compute_full_trading_signal 调用较慢（OKX K线+Freqtrade 信号），
+        # 按 symbol 做 60s 缓存避免每次切换 tab 都重新计算。
+        elif path == "/api/trend-screen":
+            symbol = (self._get_query_param("symbol") or "BTC").upper()
+            cache_key = f"trend_screen_{symbol}"
+            cached = _cache_get(cache_key)
+            if cached and (time.time() - cached["ts"] < 60):
+                self._json(cached["data"])
+            else:
+                try:
+                    data = get_trend_screen_state(symbol)
+                    _cache_set(cache_key, data)
+                    self._json(data)
+                except Exception as e:
+                    self._json({"error": str(e)})
+
+        # ── V4+波浪互斥融合策略（主力策略线） ──────────────────────────────────
+        # 主线策略：V4减半周期策略（定方向）+ 波浪理论（择时加仓）+ 物理引擎（信号评估）
+        # 支持实盘交易，按 symbol 做 60s 缓存
+        elif path == "/api/v4-wave-strategy":
+            symbol = (self._get_query_param("symbol") or "BTC").upper()
+            cache_key = f"v4_wave_{symbol}"
+            cached = _cache_get(cache_key)
+            if cached and (time.time() - cached["ts"] < 60):
+                self._json(cached["data"])
+            else:
+                try:
+                    data = get_v4_wave_strategy(symbol)
+                    _cache_set(cache_key, data)
+                    self._json(data)
+                except Exception as e:
+                    import traceback
+                    self._json({"error": str(e), "traceback": traceback.format_exc()})
 
         elif path == "/api/reports":
             cached = _cache_get("reports")
@@ -875,6 +1432,25 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/dreamos/analyze":
             symbol = self._get_query_param("symbol") or "BTC"
             self._json(dreamos_analyze(symbol))
+
+        elif path == "/api/dreamos/scenarios":
+            cached = _cache_get("dreamos_scenarios")
+            if cached:
+                self._json(cached["data"])
+            else:
+                data = get_dreamos_scenarios()
+                _cache_set("dreamos_scenarios", data)
+                self._json(data)
+
+        elif path == "/api/token-signals":
+            cached = _cache_get("token_signals")
+            if cached:
+                self._json(cached["data"])
+            else:
+                # 首次请求时缓存尚未就绪，同步返回（前端有 60s 超时）
+                self._json({"error": "token_signals loading, please retry in a moment",
+                            "signals": [], "bull_count": 0,
+                            "bear_count": 0, "neutral_count": 0})
 
         elif path == "/api/screen-trigger":
             try:
@@ -1038,7 +1614,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def _json(self, data, status=200):
-        body = json.dumps(data, ensure_ascii=False).encode()
+        body = json.dumps(data, ensure_ascii=False, default=_json_default).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")

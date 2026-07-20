@@ -12,6 +12,10 @@ Dream OS 每小时自动调度任务 — BCRM 2.0 Phase 0升级版
 使用方式:
   python -m dreamos.cli.auto_scheduler --mode scheduled   # 定时调度
   python -m dreamos.cli.auto_scheduler --mode run_once    # 单次运行
+
+[DEPRECATED 2026-07-19] 本文件已废弃,统一使用 start_scheduler.py 作为唯一调度器入口。
+    launchd 守护进程通过 com.dreambuddy.dreamos.plist 拉起 start_scheduler.py。
+    本文件保留作历史参考,请勿新增依赖。
 """
 
 from __future__ import annotations

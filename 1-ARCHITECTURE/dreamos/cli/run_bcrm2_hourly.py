@@ -10,6 +10,10 @@ Dream OS 每小时自动调度任务 — BCRM 2.0 Phase 0 升级版
 3. BCRM 2.0架构（WDH时间特征+美林时钟+增量学习闭环）
 4. 自动触发模型再训练和参数进化
 5. 决策结果记录到SQLite和历史日志
+
+[DEPRECATED 2026-07-19] 本文件已废弃,统一使用 start_scheduler.py 作为唯一调度器入口。
+    launchd 守护进程通过 com.dreambuddy.dreamos.plist 拉起 start_scheduler.py。
+    本文件保留作历史参考,请勿新增依赖。
 """
 
 from __future__ import annotations

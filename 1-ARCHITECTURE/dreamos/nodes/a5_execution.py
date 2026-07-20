@@ -4,10 +4,38 @@ A5 交易执行节点 — 综合前序结果，生成最终交易指令
 
 from __future__ import annotations
 
+import os
 from typing import Dict, Any, List
 
 from dreamos.registry.base import BaseNode
 from dreamos.shared.state import State, NodeResult
+
+MIN_LEVERAGE = 1
+MAX_LEVERAGE = 5
+DEFAULT_LEVERAGE = 3
+CONFIDENCE_THRESHOLD = float(os.environ.get("DREAMOS_CONFIDENCE_THRESHOLD", "0.4"))
+
+
+def calc_dynamic_leverage(
+    confidence: float,
+    min_lev: int = MIN_LEVERAGE,
+    max_lev: int = MAX_LEVERAGE,
+    threshold: float = CONFIDENCE_THRESHOLD,
+) -> int:
+    """基于置信度动态计算杠杆倍数
+
+    映射逻辑:
+      - 置信度 = threshold (默认 0.4) → min_lev (1x)
+      - 置信度 = 0.6 → 约 3x
+      - 置信度 >= 0.8 → max_lev (5x)
+    """
+    if confidence <= threshold:
+        return min_lev
+    if confidence >= 0.8:
+        return max_lev
+    ratio = (confidence - threshold) / (0.8 - threshold)
+    lev = min_lev + ratio * (max_lev - min_lev)
+    return max(min_lev, min(max_lev, int(round(lev))))
 
 
 class A5ExecutionNode(BaseNode):
@@ -63,7 +91,11 @@ class A5ExecutionNode(BaseNode):
             strategy = a3_result.outputs["strategy"]
 
         position_size = strategy.get("position_size", 10.0)
-        leverage = strategy.get("leverage", 3)
+        if "leverage" in strategy and strategy["leverage"]:
+            leverage = int(strategy["leverage"])
+            leverage = max(MIN_LEVERAGE, min(MAX_LEVERAGE, leverage))
+        else:
+            leverage = calc_dynamic_leverage(confidence)
         stop_loss = strategy.get("stop_loss", 0)
         take_profit = strategy.get("take_profit", 0)
 
@@ -89,7 +121,7 @@ class A5ExecutionNode(BaseNode):
 
         rationale.append(f"[A5交易执行] {direction} {coin} @ ${price:.4f}")
         rationale.append(f"  仓位: {trade_order['position_size']:.2f} USDT")
-        rationale.append(f"  杠杆: {trade_order['leverage']}x")
+        rationale.append(f"  杠杆: {trade_order['leverage']}x (置信度={confidence:.2f})")
         rationale.append(f"  止损: ${trade_order['stop_loss']:.4f}")
         rationale.append(f"  止盈: ${trade_order['take_profit']:.4f}")
         rationale.append(f"  R:R: {trade_order['rr_ratio']:.2f}:1")

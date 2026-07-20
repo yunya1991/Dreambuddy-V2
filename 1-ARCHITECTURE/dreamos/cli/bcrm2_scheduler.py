@@ -13,6 +13,10 @@ BCRM 2.0 升级版自动化调度器
   C层: 资源分配 (算力/预算/特征工程)
   G层: 风险管理 (风险控制 + 离场策略 + 情报监控)
 
+[DEPRECATED 2026-07-19] 本文件已废弃,统一使用 start_scheduler.py 作为唯一调度器入口。
+    launchd 守护进程通过 com.dreambuddy.dreamos.plist 拉起 start_scheduler.py。
+    本文件保留作历史参考,请勿新增依赖。
+
 支持币种: BTC, ETH, SOL, AVAX, LINK, DOT, MATIC, BNB, OP, ARB
 """
 

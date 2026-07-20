@@ -30,6 +30,33 @@ if _env_path.exists():
     except ImportError:
         pass
 
+MIN_LEVERAGE = 1
+MAX_LEVERAGE = 5
+DEFAULT_LEVERAGE = 3
+CONFIDENCE_THRESHOLD = float(os.environ.get("DREAMOS_CONFIDENCE_THRESHOLD", "0.4"))
+
+
+def calc_dynamic_leverage(
+    confidence: float,
+    min_lev: int = MIN_LEVERAGE,
+    max_lev: int = MAX_LEVERAGE,
+    threshold: float = CONFIDENCE_THRESHOLD,
+) -> int:
+    """基于置信度动态计算杠杆倍数
+
+    映射逻辑:
+      - 置信度 = threshold (默认 0.4) → min_lev (1x)
+      - 置信度 = 0.6 → 约 3x
+      - 置信度 >= 0.8 → max_lev (5x)
+    """
+    if confidence <= threshold:
+        return min_lev
+    if confidence >= 0.8:
+        return max_lev
+    ratio = (confidence - threshold) / (0.8 - threshold)
+    lev = min_lev + ratio * (max_lev - min_lev)
+    return max(min_lev, min(max_lev, int(round(lev))))
+
 
 class AutoTrader:
     """自动化交易器"""
@@ -40,6 +67,7 @@ class AutoTrader:
         self.exchange = exchange.lower()
         self._okx_client = None
         self._hl_client = None
+        self._aster_module = None
         self._trading_agent = None
         self._enabled = True
         self._last_trade_time = {}
@@ -119,7 +147,29 @@ class AutoTrader:
             return self.get_okx_client()
         elif self.exchange == "hyperliquid":
             return self.get_hyperliquid_client()
+        elif self.exchange == "aster":
+            return self.get_aster_module()
         return None
+
+    def get_aster_module(self):
+        """加载 Aster 交易模块 (ml_trade_service)
+
+        Aster 采用 v3 EVM 签名,凭证从 .env 的 ASTER_USER/SIGNER/PRIVATE_KEY 读取。
+        返回 ml_trade_service 模块对象,调用方使用模块级函数:
+            _aster_market_order / _aster_market_order_qty / _aster_fetch_positions 等
+        """
+        if self._aster_module is None:
+            try:
+                root_dir = Path(__file__).parent.parent.parent.parent
+                ml_path = root_dir / "10-经典指标系统"
+                sys.path.insert(0, str(ml_path))
+                import ml_trade_service
+                self._aster_module = ml_trade_service
+                logger.info("Aster 模块加载成功 (v3 EVM 签名)")
+            except Exception as e:
+                logger.warning(f"无法加载 Aster 模块: {e}")
+                self._aster_module = None
+        return self._aster_module
 
     def get_hyperliquid_client(self):
         """获取 Hyperliquid 客户端"""
@@ -191,6 +241,8 @@ class AutoTrader:
             "scenario_id": scenario.scenario_id,
             "pattern": choice.pattern,
             "expected_direction": "HOLD",  # 由下方 analysis 结果更新
+            "market_data": market_data,  # 缓存,供 run_auto_trade 构造 trade_order 使用
+            "symbol": symbol,
         }
 
         agent = self.get_trading_agent()
@@ -213,8 +265,10 @@ class AutoTrader:
             result["_scenario"] = scenario.scenario_id
             result["_orchestration"] = choice.pattern
             # 更新上下文的预期方向（用于反馈的方向准确率评估）
+            # 优先从顶层 action 取(TradingAgent 最终决策),其次从 outputs.A5.trade_order 取
             a5_out = result.get("outputs", {}).get("A5", {})
-            self._current_context["expected_direction"] = a5_out.get("trade_order", {}).get("action", "HOLD")
+            expected_dir = result.get("action") or a5_out.get("trade_order", {}).get("action", "HOLD")
+            self._current_context["expected_direction"] = expected_dir
             return result
         except Exception as e:
             logger.error(f"TradingAgent 分析失败: {e}，降级到经典指标分析 | 场景={scenario.scenario_id}")
@@ -300,7 +354,7 @@ class AutoTrader:
                 "coin": symbol,
                 "entry_price": price,
                 "position_size": 10.0,
-                "leverage": 3,
+                "leverage": calc_dynamic_leverage(confidence),
                 "stop_loss": stop_loss,
                 "take_profit": take_profit,
                 "risk_per_trade": 10.0 * atr_pct,
@@ -339,7 +393,7 @@ class AutoTrader:
                 "A5": {
                     "trade_order": trade_order,
                     "confidence": confidence,
-                    "gate_passed": confidence >= 0.6,
+                    "gate_passed": confidence >= float(os.environ.get("DREAMOS_CONFIDENCE_THRESHOLD", "0.4")),
                 },
                 "C1": c1_result.outputs if c1_result else {},
                 "C2": c2_result.outputs if c2_result else {},
@@ -447,6 +501,81 @@ class AutoTrader:
                     price = client.get_mid(symbol) if hasattr(client, 'get_mid') else 0
                     return {"symbol": symbol, "price": price}
 
+            if self.exchange == "aster":
+                # Aster 行情: _aster_mid 取价格,_aster_klines_ohlcv_rows 取K线
+                # 返回行格式: [timestamp, open, high, low, close, volume]
+                price = client._aster_mid(symbol)
+                if price <= 0:
+                    return {"symbol": symbol, "price": 0}
+
+                rows_1h = client._aster_klines_ohlcv_rows(symbol, "1h", 50)
+                rows_4h = client._aster_klines_ohlcv_rows(symbol, "4h", 20)
+
+                # rows 按时间升序,取最后 N 根
+                if len(rows_1h) < 24:
+                    logger.warning(f"Aster 行情不足: {symbol} 1h K线仅 {len(rows_1h)} 根")
+                    return {"symbol": symbol, "price": price}
+
+                closes_1h = [r[4] for r in rows_1h]  # 升序,最后一个是最新
+                closes_4h = [r[4] for r in rows_4h]
+
+                def _ema(prices, n):
+                    if len(prices) < n:
+                        return prices[-1] if prices else 0
+                    k = 2 / (n + 1)
+                    e = prices[-n]
+                    for p in prices[-n + 1:]:
+                        e = p * k + e * (1 - k)
+                    return e
+
+                def _rsi(prices, n=14):
+                    if len(prices) < n + 1:
+                        return 50.0
+                    deltas = [prices[i] - prices[i - 1] for i in range(1, min(n + 1, len(prices)))]
+                    gains = [max(d, 0) for d in deltas]
+                    losses = [max(-d, 0) for d in deltas]
+                    avg_g = sum(gains) / n
+                    avg_l = sum(losses) / n
+                    if avg_l == 0:
+                        return 100.0
+                    rs = avg_g / avg_l
+                    return 100 - 100 / (1 + rs)
+
+                def _atr(rows, n=14):
+                    if len(rows) < 2:
+                        return 0
+                    trs = []
+                    for i in range(1, min(n + 1, len(rows))):
+                        h = rows[i][2]
+                        l = rows[i][3]
+                        c_prev = rows[i - 1][4]
+                        trs.append(max(h - l, abs(h - c_prev), abs(l - c_prev)))
+                    return sum(trs) / len(trs) if trs else 0
+
+                ema20 = _ema(closes_1h, 20)
+                ema50 = _ema(closes_1h, min(50, len(closes_1h)))
+                ema200 = _ema(closes_4h, min(20, len(closes_4h)))
+                rsi14 = _rsi(closes_1h)
+                atr14 = _atr(rows_1h)
+
+                # 变化率:closes_1h 升序,最新在末尾
+                change_1h = ((closes_1h[-1] - closes_1h[-2]) / closes_1h[-2] * 100) if len(closes_1h) > 1 else 0
+                change_24h = ((closes_1h[-1] - closes_1h[-24]) / closes_1h[-24] * 100) if len(closes_1h) > 23 else 0
+                change_4h = ((closes_4h[-1] - closes_4h[-4]) / closes_4h[-4] * 100) if len(closes_4h) > 3 else 0
+
+                return {
+                    "symbol": symbol,
+                    "price": price,
+                    "change_24h": round(change_24h, 3) / 100,
+                    "change_4h": round(change_4h, 3) / 100,
+                    "change_1h": round(change_1h, 3) / 100,
+                    "ema20": round(ema20, 2),
+                    "ema50": round(ema50, 2),
+                    "ema200": round(ema200, 2),
+                    "rsi14": round(rsi14, 1),
+                    "atr_pct": round(atr14 / price, 4),
+                }
+
             if self.exchange == "okx":
                 ticker = client.get_ticker(f"{symbol}-USDT")
                 if ticker.get("ok"):
@@ -489,11 +618,23 @@ class AutoTrader:
                 if not balance.get("ok"):
                     return {"passed": False, "reason": "无法获取账户余额"}
                 total_eq = balance["total_eq"]
+            elif self.exchange == "aster":
+                # Aster 通过 ml_trade_service._aster_fetch_account_summary 获取账户余额
+                try:
+                    summary = client._aster_fetch_account_summary()
+                    if summary.get("ok"):
+                        s = summary.get("summary", {}) or {}
+                        total_eq = float(s.get("totalWalletBalance", 0) or 0)
+                        if total_eq == 0:
+                            usdt = summary.get("assets", {}).get("USDT", {}) or {}
+                            total_eq = float(usdt.get("walletBalance", 0) or 0)
+                except Exception as e:
+                    logger.warning(f"Aster 获取账户余额失败: {e}")
+                    total_eq = 0.0
 
             position_size = trade_order.get("position_size", 10)
-            atr_pct = trade_order.get("risk_per_trade", 0.02)
-
-            risk_amount = position_size * atr_pct
+            # risk_per_trade 已经是单笔风险金额(USDT),不应再乘 position_size
+            risk_amount = trade_order.get("risk_per_trade", position_size * 0.02)
             risk_pct = (risk_amount / total_eq) * 100 if total_eq > 0 else 100
 
             checks = []
@@ -545,7 +686,8 @@ class AutoTrader:
         action = trade_order.get("action", "HOLD")
         coin = trade_order.get("coin", "BTC")
         position_size = trade_order.get("position_size", 10)
-        leverage = trade_order.get("leverage", 3)
+        leverage = int(trade_order.get("leverage", DEFAULT_LEVERAGE))
+        leverage = max(MIN_LEVERAGE, min(MAX_LEVERAGE, leverage))
 
         if action == "HOLD":
             return {"result": "SKIP", "reason": "方向为HOLD"}
@@ -608,6 +750,81 @@ class AutoTrader:
                 else:
                     return {"result": "FAILED", "error": result.get("raw", {})}
 
+            elif self.exchange == "aster":
+                # Aster v3 EVM 签名交易,调用 ml_trade_service 模块函数
+                # 下单前设置杠杆(动态 1-5 倍),基于置信度动态调整
+                target_lev = int(trade_order.get("leverage", DEFAULT_LEVERAGE))
+                target_lev = max(MIN_LEVERAGE, min(MAX_LEVERAGE, target_lev))
+                lev_ok = False
+                try:
+                    lev_resp = client._aster_update_leverage(coin, target_lev)
+                    lev_used = lev_resp.get('leverage_used') or lev_resp.get('leverage') if isinstance(lev_resp, dict) else None
+                    # 已持仓币种会返回 skipped=True(杠杆无法修改),这种情况下用现有杠杆下单
+                    if isinstance(lev_resp, dict) and lev_resp.get('skipped'):
+                        logger.warning(f"Aster 杠杆无法修改({coin}, 已持仓,保持现有杠杆): {lev_resp.get('reason')}")
+                        lev_ok = True  # 已持仓,允许下单(用现有杠杆)
+                    else:
+                        logger.info(f"Aster 杠杆设置: {coin} → {lev_used}x")
+                        lev_ok = True
+                except Exception as e:
+                    err_msg = str(e)
+                    logger.warning(f"Aster 设置杠杆失败({coin}, {target_lev}x): {err_msg}")
+                    # Nonce used 或其他错误,不允许下单(保守策略,避免用 10x 杠杆)
+                    return {"result": "FAILED", "error": f"杠杆设置失败({err_msg}),为避免高杠杆风险不下单"}
+
+                if not lev_ok:
+                    return {"result": "FAILED", "error": "杠杆设置未确认,不下单"}
+
+                if action == "LONG":
+                    r = client._aster_market_order(coin, 'long', float(position_size),
+                                                   reduce_only=False, allow_adjust=True)
+                elif action == "SHORT":
+                    r = client._aster_market_order(coin, 'short', float(position_size),
+                                                   reduce_only=False, allow_adjust=True)
+                elif action == "EXIT":
+                    # 平仓:先查持仓获取数量与方向
+                    positions, pos_err = client._aster_fetch_positions()
+                    if pos_err or not positions:
+                        return {"result": "SKIP", "reason": f"无持仓可平: {pos_err}"}
+                    pos_qty = None
+                    close_side = None
+                    for p in positions:
+                        if coin.upper() in str(p.get('symbol', '')).upper():
+                            amt = float(p.get('position_amt') or p.get('positionAmt') or 0)
+                            if abs(amt) > 0:
+                                pos_qty = abs(amt)
+                                close_side = 'sell' if amt > 0 else 'buy'
+                                break
+                    if pos_qty is None:
+                        return {"result": "SKIP", "reason": "无持仓可平"}
+                    r = client._aster_market_order_qty(coin, close_side, pos_qty, reduce_only=True)
+                else:
+                    return {"error": f"未知动作: {action}"}
+
+                # Aster 成功判断:resp 中 status == FILLED
+                resp = r.get('resp', {})
+                ok = False
+                order_id = None
+                if isinstance(resp, dict):
+                    inner = resp.get('data', resp)
+                    if isinstance(inner, dict):
+                        if inner.get('status') in ('FILLED', 'NEW', 'PARTIALLY_FILLED'):
+                            ok = True
+                            order_id = inner.get('orderId')
+
+                if ok:
+                    self._last_trade_time[coin] = time.time()
+                    return {
+                        "result": "SUCCESS",
+                        "action": action,
+                        "symbol": coin,
+                        "exchange": "aster",
+                        "ord_id": order_id,
+                        "details": r,
+                    }
+                else:
+                    return {"result": "FAILED", "error": r}
+
             else:
                 return {"error": f"不支持的交易所: {self.exchange}"}
 
@@ -664,18 +881,66 @@ class AutoTrader:
                 return result
             result["steps"].append({"step": "analysis", "status": "completed", "confidence": analysis.get("confidence")})
 
+            # TradingAgent.run() 把最终决策放在顶层 action/confidence
+            # 同时尝试从 outputs.A5.trade_order 获取详细的订单参数(可能为空)
             a5_output = analysis.get("outputs", {}).get("A5", {})
             trade_order = a5_output.get("trade_order", {})
-            direction = trade_order.get("action", "HOLD")
+            direction = trade_order.get("action") or analysis.get("action", "HOLD")
+
+            # 置信度优先从顶层取(TradingAgent 最终决策),其次从 A5 取
+            confidence = analysis.get("confidence") or a5_output.get("confidence", 0)
+
+            # 如果 A5 没有输出 trade_order 但顶层有方向,用缓存的 market_data 构造最小订单
+            if not trade_order and direction != "HOLD":
+                market_data = self._current_context.get("market_data", {})
+                price = market_data.get("price", 0)
+                # 价格为 0 说明行情数据获取失败(如 symbol 不存在),跳过下单
+                if price <= 0:
+                    result["steps"].append({"step": "decision", "status": "hold", "reason": f"行情数据无效(price={price})"})
+                    result["final_result"] = "HOLD"
+                    return result
+                atr = market_data.get("atr14", 0) or price * 0.02
+                atr_pct = (atr / price) if price > 0 else 0.02
+                # 基于账户余额动态计算 position_size(不超过账户 20%,默认 10 USDT)
+                position_size = 10.0
+                try:
+                    client = self.get_exchange_client()
+                    if client and self.exchange == "aster":
+                        summary = client._aster_fetch_account_summary()
+                        if summary.get("ok"):
+                            s = summary.get("summary", {}) or {}
+                            eq = float(s.get("totalWalletBalance", 0) or 0)
+                            if eq > 0:
+                                # 用 18% 留余量,避免浮点精度触发 risk_check 的 20% 上限
+                                position_size = round(min(10.0, eq * 0.18), 2)
+                except Exception as e:
+                    logger.warning(f"获取账户余额失败,用默认 position_size=10: {e}")
+                if direction == "LONG":
+                    stop_loss = round(price * (1 - atr_pct * 1.5), 4)
+                    take_profit = round(price * (1 + atr_pct * 3.0), 4)
+                else:
+                    stop_loss = round(price * (1 + atr_pct * 1.5), 4)
+                    take_profit = round(price * (1 - atr_pct * 3.0), 4)
+                trade_order = {
+                    "action": direction,
+                    "coin": symbol,
+                    "entry_price": price,
+                    "position_size": position_size,
+                    "leverage": calc_dynamic_leverage(confidence),
+                    "stop_loss": stop_loss,
+                    "take_profit": take_profit,
+                    "risk_per_trade": position_size * atr_pct,
+                }
+                logger.info(f"构造最小 trade_order (A5 无输出): {direction} {symbol} @ {price}, size={position_size}, leverage={trade_order['leverage']}x, SL={stop_loss}, TP={take_profit}")
 
             if direction == "HOLD":
                 result["steps"].append({"step": "decision", "status": "hold", "reason": "方向为HOLD"})
                 result["final_result"] = "HOLD"
                 return result
 
-            confidence = a5_output.get("confidence", 0)
-            if confidence < 0.6:
-                result["steps"].append({"step": "decision", "status": "rejected", "reason": f"置信度不足({confidence:.2f} < 0.6)"})
+            threshold = float(os.environ.get("DREAMOS_CONFIDENCE_THRESHOLD", "0.4"))
+            if confidence < threshold:
+                result["steps"].append({"step": "decision", "status": "rejected", "reason": f"置信度不足({confidence:.2f} < {threshold})"})
                 result["final_result"] = "CONFIDENCE_TOO_LOW"
                 return result
 

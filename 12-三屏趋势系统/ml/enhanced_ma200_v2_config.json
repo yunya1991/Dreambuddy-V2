@@ -4,6 +4,14 @@
   "strategy_class": "EnhancedMA200Strategy",
   "description": "在经典MA200牛熊法则基础上，加入周线MA200分仓抄底、BTC分层做空+斐波那契止盈、小币熊市完全空仓三大新法则",
   "created_at": "2026-07-18",
+  "baseline_status": {
+    "is_baseline": true,
+    "baseline_confirmed_at": "2026-07-18",
+    "baseline_reason": "全策略统一回测对比中，主动策略收益第1(+307.05%)、夏普第1(0.482)、4币种全部正收益（唯一），综合表现最优",
+    "comparison_with": ["BuyAndHoldStrategy", "MovingAverageStrategy", "MA200TrendFollowingStrategy", "LeastResistanceStrategy", "AdaptiveLeastResistanceStrategy"],
+    "comparison_script": "ml/full_strategy_comparison.py",
+    "comparison_output": "ml/full_strategy_comparison_output.txt"
+  },
   "data_range": "2017-10-10 ~ 2026-07-16（BTC/ETH 3202天，SOL 2117天，UNI 2130天）",
   "optimization_method": "经验法则驱动 + 9年历史数据回测验证",
 
@@ -21,7 +29,7 @@
     },
     "rule_2_btc_layered_short": {
       "name": "BTC分层做空 + 斐波那契止盈",
-      "trigger_level1": "BTC有效跌破日线MA200 → 开3成空仓",
+      "trigger_level1": "BTC跌破日线MA200 → 开3成空仓",
       "trigger_level2": "日线MA200的5日斜率为负 → 加仓至5成",
       "take_profit": "斐波那契分阶段止盈(23.6%/38.2%/50%/61.8%)，每档减仓25%",
       "params": {

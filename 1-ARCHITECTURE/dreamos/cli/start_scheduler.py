@@ -14,6 +14,21 @@ from pathlib import Path
 dreamos_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(dreamos_dir.parent))
 
+# 加载 Dream OS 独立 .env 文件(含 Aster 账户配置等)
+_env_path = dreamos_dir / ".env"
+if _env_path.exists():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(_env_path)
+    except ImportError:
+        # dotenv 不可用时降级:手动解析 KEY=VALUE
+        with open(_env_path) as _fp:
+            for _line in _fp:
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    os.environ.setdefault(_k.strip(), _v.strip())
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -27,6 +42,11 @@ logger = logging.getLogger(__name__)
 
 
 def main():
+    # 临时暂停标记:平仓维护中,调度器启动后立即退出
+    pause_file = dreamos_dir / "logs" / "SCHEDULER_PAUSED"
+    if pause_file.exists():
+        logger.info("暂停标记文件存在,调度器立即退出")
+        return
     logger.info("=" * 60)
     logger.info("Dream OS 调度器守护进程启动")
     logger.info("=" * 60)

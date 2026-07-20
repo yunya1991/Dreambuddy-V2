@@ -360,6 +360,14 @@ class ExitConfig:
     trailing_arm_profit_pct: float = 0.06
     trailing_retrace_pct: float = 0.03
 
+    # ── 移动止盈 (Trailing Take Profit, P3.5) ──────────────────────────
+    # 与 Trailing Stop 互补：激活更早(1.5%)，回撤更敏感(40%)
+    # 锁定利润而非防亏损，填补 1-6% 盈利保护空白
+    trailing_tp_enabled: bool = True
+    trailing_tp_arm_pct: float = 0.015      # 盈利 ≥ 1.5% 激活
+    trailing_tp_retrace_ratio: float = 0.40  # 从 MFE 回撤 ≥ 40% 触发
+    trailing_tp_min_lock_pct: float = 0.003  # 至少锁定 0.3% 利润
+
     # ── 冷却/滞回 ──────────────────────────────────────────────────────
     inflight_cooldown_sec: int = 90
     cooldown_after_close_sec: int = 3600
@@ -500,6 +508,12 @@ class ClassicExitSystem:
         trailing_decision = self._check_trailing_stop(pos, features)
         if trailing_decision.action != ExitAction.HOLD:
             merged = self._merge_decision(decision, trailing_decision, ExitPriority.P3_BEHAVIORAL)
+            return self._apply_behavioral_constraints(merged, pos, now)
+
+        # P3.5: 移动止盈 (Trailing Take Profit)
+        ttp_decision = self._check_trailing_tp(pos, features)
+        if ttp_decision.action != ExitAction.HOLD:
+            merged = self._merge_decision(decision, ttp_decision, ExitPriority.P3_BEHAVIORAL)
             return self._apply_behavioral_constraints(merged, pos, now)
 
         # P3: TSTP 时间止盈
@@ -927,6 +941,64 @@ class ClassicExitSystem:
                     return decision
 
         decision.new_trailing_stop = new_stop
+        return decision
+
+    # ══════════════════════════════════════════════════════════════════
+    # P3.5: 移动止盈 (Trailing Take Profit)
+    # ══════════════════════════════════════════════════════════════════
+
+    def _check_trailing_tp(self, pos: PositionState, features: ExitFeatureSet) -> ExitDecision:
+        """
+        P3.5: 移动止盈 — 基于 MFE 回撤锁定利润
+
+        与 Trailing Stop (P3) 互补：
+        - Trailing Stop：防亏损，激活晚(6%)，回撤3%
+        - Trailing TP：锁定利润，激活早(1.5%)，回撤40%(相对MFE)
+
+        触发条件：
+        1. MFE ≥ arm_pct (1.5%) — 盈利够激活
+        2. 回撤 = (MFE - 当前盈利) / MFE ≥ retrace_ratio (40%)
+        3. 当前盈利 ≥ min_lock_pct (0.3%) — 确保离场仍有正收益
+        """
+        decision = ExitDecision(
+            action=ExitAction.HOLD,
+            suggested_price=pos.current_price,
+            features=features,
+        )
+
+        if not self.config.trailing_tp_enabled:
+            return decision
+
+        # 含杠杆的有效盈利（与 Trailing Stop 口径一致）
+        pnl_now = pos.pnl_eff if self.config.apply_leverage_to_thresholds else pos.unrealized_pnl_pct
+        mfe = pos.mfe_pnl_pct
+        if self.config.apply_leverage_to_thresholds and pos.leverage > 0:
+            mfe_eff = mfe * pos.leverage
+        else:
+            mfe_eff = mfe
+
+        arm_pct = self.config.trailing_tp_arm_pct
+        retrace_ratio = self.config.trailing_tp_retrace_ratio
+        min_lock = self.config.trailing_tp_min_lock_pct
+
+        # 未达激活阈值
+        if mfe_eff < arm_pct:
+            return decision
+
+        # 计算从 MFE 的回撤比例
+        retrace = (mfe_eff - pnl_now) / max(mfe_eff, 1e-9)
+
+        # 回撤不足 或 当前盈利低于最小锁定
+        if retrace < retrace_ratio or pnl_now < min_lock:
+            return decision
+
+        # 触发移动止盈
+        decision.action = ExitAction.CLOSE
+        decision.reason = (
+            f"TRAILING_TP(mfe={mfe_eff*100:.2f}%,retrace={retrace*100:.1f}%,"
+            f"lock={pnl_now*100:.2f}%)"
+        )
+        decision.confidence = 0.75
         return decision
 
     # ══════════════════════════════════════════════════════════════════

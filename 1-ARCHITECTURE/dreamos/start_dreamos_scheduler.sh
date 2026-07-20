@@ -5,6 +5,12 @@
 #   ./start_dreamos_scheduler.sh run_once    # 单次扫描
 #   ./start_dreamos_scheduler.sh scheduled   # 定时调度(每小时)
 #   ./start_dreamos_scheduler.sh status      # 查看状态
+#
+# [DEPRECATED 2026-07-19] 本脚本已废弃,统一使用 launchd 守护进程:
+#     launchctl load ~/Library/LaunchAgents/com.dreambuddy.dreamos.plist
+# launchd 会拉起 cli/start_scheduler.py(唯一调度器入口),
+# 配置在 cli/scheduler_data/scheduler_jobs.json(dry_run/exchange 字段)。
+# 本脚本保留作历史参考,请勿新增依赖。
 
 set -e
 

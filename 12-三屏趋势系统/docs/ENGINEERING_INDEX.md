@@ -12,7 +12,7 @@
 | 目录位置 | `12-三屏趋势系统/` |
 | 主入口 | `engine.py` |
 | 核心模块 | `core/` |
-| 当前版本 | v1.6（Phase 3.5） |
+| 当前版本 | v2.3（Phase 4.5） |
 | 依赖系统 | 经典指标系统（10）、通用风控模块（13）、V15马丁策略（14） |
 
 ### 1.2 功能概览
@@ -31,6 +31,11 @@
 - **综合预测引擎**：技术基线 + 基本面三维度调节（方向/速度/加速度/情绪四维因子）
 - **9-基本面分析集成**：接入SignalEngine、SentimentEngine、LeastResistance三维度计算
 - **最小阻力方向引擎**（Phase 3.5）：第一性原理，5维度阻力计算（价格/量能/动量/趋势/基本面），动态算法优先于静态指标
+- **AI模型集成**（Phase 4）：LightGBM基线 + 基本面特征增强 + 多任务学习 + 动态融合权重
+- **v2增强版MA200基线策略**（Phase 4.5）：技术分析最佳版本，BTC分层抄底+分层做空+斐波那契止盈+小币熊市禁止开仓
+- **哲学特征工程**：从v2策略提炼4大哲学贡献→15个ML特征，带practice_validated标记
+- **LightGBM特征分类目录**：三大管线（价格特征/阻力特征/集成推理）
+- **基线优化原则**：所有优化必须优于v2基线，否则回退（夏普/卡玛/回撤综合评分）
 
 ### 1.3 决策优先级链
 
@@ -76,16 +81,37 @@
 │   ├── results.py           # 回测结果封装
 │   └── run_backtest.py      # 回测入口
 ├── ml/                      # 机器学习策略
+│   ├── __init__.py
 │   ├── ml_strategy.py       # ML策略核心
 │   ├── models.py            # 模型定义
 │   ├── tuner.py             # 超参调优
-│   └── version_manager.py   # 版本管理
+│   ├── version_manager.py   # 版本管理
+│   ├── feature_engineer.py  # 特征工程（基础）
+│   ├── lr_feature_engineer.py # 最小阻力特征工程（52技术面特征）
+│   ├── lr_ml_strategy.py    # AI增强策略v1（LightGBM单任务）
+│   ├── lr_ml_strategy_v2.py # AI增强策略v2（多任务+动态权重）
+│   ├── multitask_model.py   # 多任务学习模型 + 动态融合权重
+│   ├── fundamental_adapter.py # 基本面特征适配器（42个基本面特征）
+│   ├── philosophy_feature_engineer.py # 哲学贡献特征工程（15个实践验证特征）
+│   ├── full_strategy_comparison.py # 全策略统一回测对比
+│   ├── algo_ensemble.py     # 集成推理层
+│   ├── llm_reasoning.py     # LLM辩证推理
+│   ├── bayesian_optimizer.py # 贝叶斯优化
+│   ├── LIGHTGBM_FEATURE_CATALOG.md # LightGBM特征消费分类目录
+│   ├── enhanced_ma200_v2_config.json # v2基线策略配置
+│   ├── models/              # 模型存储
+│   │   ├── baseline/        # 基线模型
+│   │   ├── current/         # 当前模型
+│   │   ├── versions/        # 版本历史
+│   │   ├── ensemble/        # 集成样本
+│   │   └── registry.json    # 模型注册表
+│   └── optimization_results/ # 优化结果存档
 ├── tests/                   # 测试
 │   ├── __init__.py
 │   └── test_core.py         # 核心模块测试
 ├── docs/                    # 文档
 │   ├── ENGINEERING_INDEX.md # 工程索引（本文档）
-│   ├── TECHNICAL_DESIGN.md  # 技术设计文档
+│   ├── TECHNICAL_DESIGN.md  # 技术设计文档（v2.3，含基线策略+优化原则）
 │   └── trend-screen-system-design.md
 ├── classic_bridge.py        # 经典指标系统桥接
 ├── engine.py                # 主引擎
@@ -135,14 +161,25 @@
 | 文件 | 功能说明 |
 |------|----------|
 | `backtest/engine.py` | 回测核心引擎 |
-| `backtest/strategy.py` | 策略定义（含Platt置信度校准集成、便捷训练方法） |
-| `backtest/metrics.py` | 绩效指标计算 |
+| `backtest/strategy.py` | 策略定义（MA200/增强版MA200 v2/最小阻力/自适应等，含Platt置信度校准） |
+| `backtest/metrics.py` | 绩效指标计算（夏普/卡玛/最大回撤/胜率等） |
 | `backtest/walk_forward.py` | 滚动向前验证 |
 | `backtest/calibration.py` | 置信度校准（Platt缩放 / Isotonic回归 / Beta校准） |
 | `backtest/overfitting.py` | 过拟合检测 + 参数敏感性分析 + 置换检验 |
 | `backtest/results.py` | 回测结果封装与报告 |
-| `ml/ml_strategy.py` | ML策略核心 |
+| `ml/ml_strategy.py` | ML策略核心基类 |
 | `ml/version_manager.py` | 模型版本管理 |
+| `ml/lr_feature_engineer.py` | 最小阻力特征工程（52个技术面特征） |
+| `ml/fundamental_adapter.py` | 基本面特征适配器（42个基本面特征） |
+| `ml/philosophy_feature_engineer.py` | 哲学贡献特征工程（15个实践验证特征，4大哲学） |
+| `ml/lr_ml_strategy.py` | AI增强策略v1（LightGBM单任务） |
+| `ml/lr_ml_strategy_v2.py` | AI增强策略v2（多任务+动态权重） |
+| `ml/multitask_model.py` | 多任务学习模型 + 动态融合权重引擎 |
+| `ml/full_strategy_comparison.py` | **全策略统一回测对比**（BuyAndHold/MA200/EnhancedMA200_v2/LeastResistance/AdaptiveLeastResistance） |
+| `ml/enhanced_ma200_v2_config.json` | **v2基线策略配置**（回测结果+基线标记） |
+| `ml/LIGHTGBM_FEATURE_CATALOG.md` | LightGBM特征消费分类目录（三大管线） |
+| `ml/algo_ensemble.py` | 集成推理层 |
+| `ml/llm_reasoning.py` | LLM辩证推理 |
 
 ## 4. 依赖关系
 
@@ -289,14 +326,21 @@ cd 12-三屏趋势系统 && python -m pytest tests/ -v
 | 目标 | 路径 |
 |------|------|
 | 技术设计文档 | `docs/TECHNICAL_DESIGN.md` |
+| v2基线策略与优化原则 | `docs/TECHNICAL_DESIGN.md#8-v2基线策略与优化原则` |
 | 主引擎入口 | `engine.py` |
 | BTC风向标闸门 | `engine.py` → `evaluate_btc_wind_vane()` |
 | 五大算法决策 | `engine.py` → `five_algo_decision()` |
 | 趋势一致性核心 | `core/trend_consistency.py` |
+| 最小阻力引擎 | `core/least_resistance.py` |
 | 价值风险评估 | `core/risk_reward.py` |
 | 信号融合 | `core/fusion.py` |
 | 信号池 | `signal_pool/scanner.py` |
 | 回测引擎 | `backtest/engine.py` |
+| v2增强版MA200策略 | `backtest/strategy.py` → `EnhancedMA200Strategy` |
+| 全策略对比回测 | `ml/full_strategy_comparison.py` |
+| v2基线策略配置 | `ml/enhanced_ma200_v2_config.json` |
+| 哲学特征工程 | `ml/philosophy_feature_engineer.py` |
+| LightGBM特征目录 | `ml/LIGHTGBM_FEATURE_CATALOG.md` |
 | 单元测试 | `tests/test_core.py` |
 | 执行层 | `../experiments/ab-trading/screen_executor.py` |
 
@@ -307,8 +351,9 @@ cd 12-三屏趋势系统 && python -m pytest tests/ -v
 | 缺少完整API文档 | 中 | 需要补充接口规范文档 |
 | 缺少性能测试不足 | 中 | 需要补充压力测试 |
 | ML策略实盘验证 | 高 | ML策略尚未实盘验证 |
+| v2基线策略集成到主引擎 | 中 | EnhancedMA200 v2目前在回测层，需集成到engine.py主决策流 |
 
 ---
 
-**文档版本**: v1.4  
-**最后更新**: 2026-07-16
+**文档版本**: v2.3  
+**最后更新**: 2026-07-18

@@ -151,3 +151,31 @@ memory 经验沉淀
 - 状态：基线生效
 - 维护目录：`constraints/system-index/`
 - 对应通信契约：`constraints/workflows-spec/communication-contract-v0.1.md`
+
+## 11. 变更记录
+
+### v1.1 (2026-07-20) - 震荡市增强器集成
+
+**背景**：易经推理模型连续10次亏损，经A8批判性分析定位核心矛盾为趋势跟踪模型与震荡市环境错配。
+
+**新增模块**：
+- `scripts/memory_l4/ranging_market_enhancer.py` - 震荡市增强器
+- `scripts/memory_l4/enhancer_backtest_engine.py` - 增强器回测引擎
+
+**集成点**：
+- `polling_trader.py` 开仓决策链（`enhance()` 调用）
+- `trading_utils.py` TradeRecord 新增 `enhance_info` 字段
+
+**5项优化措施**：
+1. MA200方向性偏向 - 长期趋势过滤反向信号
+2. 布林带双信号确认 - 震荡市必须双重确认
+3. 动态止损宽度 - 按市场状态调整ATR倍数
+4. 置信度校准机制 - 预测-实际胜率校准表
+5. 市场环境自适应 - 5种状态差异化参数
+
+**回测验证**：
+- 最大回撤降低 54%-87%
+- 交易频率降低 80%-96%
+- ETH实现从亏损到盈利的转折（-9.4% → +1.5%）
+
+**详细文档**：`constraints/system-index/ranging-market-enhancer.md`

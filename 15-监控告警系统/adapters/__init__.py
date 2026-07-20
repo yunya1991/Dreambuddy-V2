@@ -16,6 +16,16 @@ from monitor_core import MonitorResult, MonitorStatus, load_json
 class YijingAdapter:
     """易经推理系统监控适配器"""
 
+    # 措施3：BCRM2.0 降级/失败关键字（用于扫描 polling_trader 日志）
+    BCRM2_FAILURE_KEYWORDS = (
+        "BCRM2.0 训练失败",
+        "BCRM2.0 运行异常",
+        "BCRM2.0 推理失败",
+        "BCRM2.0 启动健康检查失败",
+        "降级到 BCRM 1.0",
+        "降级回退到 BCRM 1.0",
+    )
+
     def __init__(self, system_name: str, config: Dict):
         self.system_name = system_name
         self.config = config
@@ -35,6 +45,9 @@ class YijingAdapter:
         last_heartbeat = heartbeat.get("ts", heartbeat.get("timestamp", 0))
         idle_minutes = (now - last_heartbeat) / 60 if last_heartbeat else float("inf")
 
+        # 措施3：BCRM2.0 健康自检（日志扫描 + 模型缓存检查）
+        bcrm2_status = self._check_bcrm2_health()
+
         detail = {
             "pid": heartbeat.get("pid"),
             "status": heartbeat.get("status"),
@@ -44,8 +57,11 @@ class YijingAdapter:
             "consecutive_losses": risk.get("consecutive_losses", 0),
             "total_trades": perf.get("total_trades", 0),
             "win_rate": perf.get("win_rate", 0),
+            "bcrm2_status": bcrm2_status["status"],
+            "bcrm2_detail": bcrm2_status["detail"],
         }
 
+        # 优先级1：交易暂停（最严重）
         if risk.get("trading_halted", False):
             return MonitorResult(
                 self.system_name,
@@ -54,6 +70,7 @@ class YijingAdapter:
                 detail,
             )
 
+        # 优先级2：心跳超时
         if idle_minutes > self.max_idle_minutes:
             return MonitorResult(
                 self.system_name,
@@ -62,6 +79,7 @@ class YijingAdapter:
                 detail,
             )
 
+        # 优先级3：进程状态异常
         if heartbeat.get("status") in ("error", "stopped"):
             return MonitorResult(
                 self.system_name,
@@ -70,12 +88,106 @@ class YijingAdapter:
                 detail,
             )
 
+        # 优先级4：BCRM2.0 健康检查（措施3）
+        if bcrm2_status["status"] == "critical":
+            return MonitorResult(
+                self.system_name,
+                MonitorStatus.CRITICAL,
+                f"BCRM2.0 异常: {bcrm2_status['detail']}",
+                detail,
+            )
+        if bcrm2_status["status"] == "warning":
+            return MonitorResult(
+                self.system_name,
+                MonitorStatus.WARNING,
+                f"BCRM2.0 警告: {bcrm2_status['detail']}",
+                detail,
+            )
+
         return MonitorResult(
             self.system_name,
             MonitorStatus.HEALTHY,
-            f"心跳正常，空闲 {idle_minutes:.0f} 分钟，案例 {heartbeat.get('case_count', 0)} 个",
+            f"心跳正常，空闲 {idle_minutes:.0f} 分钟，案例 {heartbeat.get('case_count', 0)} 个 | BCRM2.0: {bcrm2_status['detail']}",
             detail,
         )
+
+    def _check_bcrm2_health(self) -> Dict:
+        """措施3：BCRM2.0 健康自检
+
+        通过两个维度评估 BCRM2.0 健康状态：
+        1. 扫描 polling_trader 当天日志，查找降级/失败关键字
+        2. 检查 bcrm2_models 模型缓存目录的新鲜度
+
+        Returns:
+            {"status": "healthy"|"warning"|"critical", "detail": str}
+        """
+        today_str = datetime.now().strftime("%Y%m%d")
+        log_file = self.base_dir / "data" / "polling_trader" / f"trader_{today_str}.jsonl"
+        models_dir = self.base_dir / "data" / "bcrm2_models"
+
+        # 维度1：扫描当天日志中的 BCRM2.0 失败/降级记录
+        failure_count = 0
+        latest_failure = ""
+        if log_file.exists():
+            try:
+                with open(log_file, "r", encoding="utf-8") as f:
+                    # 只读最后 500 行避免大日志内存问题
+                    lines = f.readlines()[-500:]
+                for line in lines:
+                    try:
+                        entry = json.loads(line.strip())
+                        msg = entry.get("msg", "")
+                        if any(kw in msg for kw in self.BCRM2_FAILURE_KEYWORDS):
+                            failure_count += 1
+                            latest_failure = msg
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+        # 维度2：检查模型缓存目录
+        model_files = []
+        if models_dir.exists():
+            try:
+                model_files = list(models_dir.glob("*"))
+            except Exception:
+                pass
+
+        # 综合判定
+        if failure_count > 0:
+            # 当天有降级/失败记录 — critical
+            snippet = latest_failure[:80] if latest_failure else "未知"
+            return {
+                "status": "critical",
+                "detail": f"当天检测到 {failure_count} 次 BCRM2.0 降级/失败 | 最近: {snippet}",
+            }
+
+        if not model_files:
+            # 没有失败记录但模型缓存目录为空/不存在 — warning
+            # 可能是首次启动未训练，或模型缓存被清理
+            return {
+                "status": "warning",
+                "detail": "BCRM2.0 模型缓存目录为空 (可能未训练或首次启动)",
+            }
+
+        # 检查模型文件新鲜度（最新修改时间）
+        try:
+            latest_mtime = max(f.stat().st_mtime for f in model_files if f.is_file())
+            age_hours = (datetime.now().timestamp() - latest_mtime) / 3600
+            if age_hours > 48:
+                return {
+                    "status": "warning",
+                    "detail": f"BCRM2.0 模型缓存已 {age_hours:.0f} 小时未更新 (共 {len(model_files)} 个文件)",
+                }
+            return {
+                "status": "healthy",
+                "detail": f"模型缓存正常 ({len(model_files)} 个文件，{age_hours:.1f}h 前更新)",
+            }
+        except Exception:
+            return {
+                "status": "healthy",
+                "detail": f"模型缓存存在 ({len(model_files)} 个文件)",
+            }
 
     def get_performance(self) -> Dict:
         perf_file = self.base_dir / ".workbuddy" / "memory_l4" / "stats" / "performance.json"

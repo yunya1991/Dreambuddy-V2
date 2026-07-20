@@ -10,6 +10,11 @@ Dream OS 每小时自动调度任务 — BCRM 2.0 Phase 0升级版
   6. 系统自动化调度编排和交易进化观测
 
 支持币种: BTC, ETH, SOL, AVAX, LINK, DOT, MATIC, BNB, OP, ARB
+
+[DEPRECATED 2026-07-19] 本文件已废弃,统一使用 start_scheduler.py 作为唯一调度器入口。
+    launchd 守护进程通过 com.dreambuddy.dreamos.plist 拉起 start_scheduler.py,
+    后者调用 scheduler.py 的 DreamOSScheduler(基于 croniter + 直接调 AutoTrader)。
+    本文件保留作历史参考,请勿新增依赖。
 """
 
 from __future__ import annotations
@@ -28,6 +33,23 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 SYMBOLS = ["BTC", "ETH", "SOL", "AVAX", "LINK", "DOT", "MATIC", "BNB", "OP", "ARB"]
+
+MIN_LEVERAGE = 1
+MAX_LEVERAGE = 5
+DEFAULT_LEVERAGE = 3
+
+
+def _calc_dynamic_leverage(confidence: float, min_lev: int = MIN_LEVERAGE,
+                            max_lev: int = MAX_LEVERAGE,
+                            threshold: float = 0.4) -> int:
+    """基于置信度动态计算杠杆倍数"""
+    if confidence <= threshold:
+        return min_lev
+    if confidence >= 0.8:
+        return max_lev
+    ratio = (confidence - threshold) / (0.8 - threshold)
+    lev = min_lev + ratio * (max_lev - min_lev)
+    return max(min_lev, min(max_lev, int(round(lev))))
 
 
 def setup_logging(log_level: str = "INFO"):
@@ -371,19 +393,19 @@ class BCRM2EnhancedScheduler:
         trader = self.get_auto_trader()
         
         action = analysis_result.get("action", "HOLD")
+        confidence = analysis_result.get("confidence", 0)
         trade_order = {
             "action": action,
             "coin": symbol,
             "entry_price": analysis_result.get("price", 0),
             "position_size": 10.0,
-            "leverage": 3,
+            "leverage": _calc_dynamic_leverage(confidence),
         }
         
         if action == "HOLD":
             logger.info(f"⏸ {symbol} 方向为HOLD，跳过交易")
             return {"result": "SKIP", "reason": "方向为HOLD"}
         
-        confidence = analysis_result.get("confidence", 0)
         if confidence < 0.6:
             logger.info(f"⚠ {symbol} 置信度不足({confidence:.2f} < 0.6)，拒绝交易")
             return {"result": "CONFIDENCE_TOO_LOW", "confidence": confidence}

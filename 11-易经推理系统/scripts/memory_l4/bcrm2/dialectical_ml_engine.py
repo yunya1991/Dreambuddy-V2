@@ -245,6 +245,54 @@ class HexagramMapper:
         if not direction_consistent:
             gua_intensity *= 0.5
 
+        # 易经离场系统需要的字段（风险等级、阶段、发展阶段）
+        # 基于卦象强度 (gua_intensity) 和方向一致性推导
+        # risk_level: 高/中/低 — 卦象强度越高=矛盾越激化=风险越高
+        if gua_intensity >= 0.6:
+            risk_level = "高"
+        elif gua_intensity >= 0.35:
+            risk_level = "中"
+        else:
+            risk_level = "低"
+
+        # current_phase: 六爻阶段 — 基于模型置信度和卦象强度推导
+        # 置信度低=潜龙勿用/见龙在田，中等=终日乾乾/或跃在渊，高=飞龙在天，极高=亢龙有悔
+        if model_confidence < 0.35:
+            current_phase = "初九"
+        elif model_confidence < 0.50:
+            current_phase = "九二"
+        elif model_confidence < 0.65:
+            current_phase = "九三"
+        elif model_confidence < 0.80:
+            current_phase = "九四"
+        elif model_confidence < 0.92:
+            current_phase = "九五"
+        else:
+            current_phase = "上九"
+
+        # development_stage: 四阶段 — 萌芽/成长/成熟/衰退
+        # 方向一致+高强度=成熟期，方向一致+中强度=成长期，
+        # 方向不一致+高强度=衰退期，方向不一致+低强度=萌芽期
+        if direction_consistent:
+            if gua_intensity >= 0.5:
+                development_stage = "成熟期"
+            elif gua_intensity >= 0.3:
+                development_stage = "成长期"
+            else:
+                development_stage = "萌芽期"
+        else:
+            if gua_intensity >= 0.4:
+                development_stage = "衰退期"
+            else:
+                development_stage = "萌芽期"
+
+        # direction_hint: 卦象方向（YijingExitSystem 需要 "long"/"short"/"neutral"）
+        direction_hint = {
+            "long": "UP",
+            "short": "DOWN",
+            "neutral": "FLAT",
+        }.get(gua_info["direction"], "UNKNOWN")
+
         # 生成解释
         direction_text = "看涨" if model_direction == 1 else (
             "看跌" if model_direction == -1 else "观望"
@@ -255,8 +303,13 @@ class HexagramMapper:
             "upper_gua": GUA_DIMENSION_MAP[upper_gua],
             "lower_gua": GUA_DIMENSION_MAP[lower_gua],
             "hexagram_name": gua_info["name"],
+            "hexagram_name_cn": gua_info["name"],
             "hexagram_meaning": gua_info["meaning"],
             "hexagram_direction": gua_info["direction"],
+            "risk_level": risk_level,
+            "current_phase": current_phase,
+            "development_stage": development_stage,
+            "direction_hint": direction_hint,
             "ml_direction": direction_text,
             "ml_confidence": confidence_pct,
             "direction_consistent": direction_consistent,

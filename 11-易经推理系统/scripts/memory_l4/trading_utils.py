@@ -38,6 +38,7 @@ class TradeRecord:
     market_snapshot: Dict = field(default_factory=dict)
     contradiction_list: List[Dict] = field(default_factory=list)
     strategy_source: str = ""  # bcrm / external (马丁等其他策略)
+    enhance_info: Dict = field(default_factory=dict)  # 震荡市增强器信息（regime, bollinger, sl_mult等）
 
 
 @dataclass
@@ -584,7 +585,8 @@ class PositionTracker:
                       scale_params: Dict = None,
                       market_snapshot: Dict = None,
                       contradiction_list: List[Dict] = None,
-                      strategy_source: str = "bcrm") -> TradeRecord:
+                      strategy_source: str = "bcrm",
+                      enhance_info: Dict = None) -> TradeRecord:
         """记录开仓"""
         trade_id = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
         rec = TradeRecord(
@@ -601,6 +603,7 @@ class PositionTracker:
             market_snapshot=market_snapshot or {},
             contradiction_list=contradiction_list or [],
             strategy_source=strategy_source,
+            enhance_info=enhance_info or {},
         )
         self.open_positions[inst_id] = rec
         self._save_open_position(inst_id)

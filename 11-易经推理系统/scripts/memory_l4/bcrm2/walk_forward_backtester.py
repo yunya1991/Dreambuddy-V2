@@ -54,6 +54,9 @@ class Trade:
     upper_gua: str = ""
     lower_gua: str = ""
     position_factor: float = 1.0
+    risk_level: str = ""          # P2-1: 卦象风险等级
+    development_stage: str = ""   # P2-1: 发展阶段
+    current_phase: str = ""       # P2-1: 六爻阶段
 
 
 @dataclass
@@ -641,16 +644,39 @@ class WalkForwardBacktester:
         regime_names: Optional[List[str]] = None,
     ) -> List[Trade]:
         """
-        模拟交易: 当action=OPEN时入场，触碰tp/sl或到期平仓
+        模拟交易: 当action=OPEN时入场，易经离场优先，经典指标系统回退
 
-        简化模拟:
-          - 每根K线收盘检查信号，下一根K线开盘入场
-          - 入场后，每根K线检查是否触障
-          - 触障则在障碍价平仓
-          - 到期则在最后一根K线收盘平仓
-          - 如果启用市态切换，根据市态调整置信度阈值和止盈止损
+        离场架构（与实盘三层架构对齐 — P0-1统一触发时机 + P0-2补全经典指标）:
+        ┌─────────────────────────────────────────────────┐
+        │ 第一层：易经主离场层 (Yijing Primary)            │
+        │   1a. FORCE_CLOSE → 风险极高+方向冲突 → 立即平仓  │
+        │   1b. RAISE_TP  → 价值高+成长期 → 上调止盈      │
+        │   1c. HOLD      → 风险低+价值高 → 直接持仓      │
+        │       (不调用经典备用层，节省计算+避免噪音)       │
+        └──────────────┬──────────────────────────────────┘
+                       ↓ NO_INTERVENE 或 易经不可用
+        ┌─────────────────────────────────────────────────┐
+        │ 第二层：经典备用层 (Classic Backup)              │
+        │   P2: Triple Barrier (TP/SL/Time)               │
+        │   P3: Trailing Stop (跟踪止损, 基于ATR)          │
+        │   P1: Value-Risk 评估 (简化: 时间+盈亏比)        │
+        └──────────────┬──────────────────────────────────┘
+                       ↓ 经典决定 CLOSE / REDUCE
+        ┌─────────────────────────────────────────────────┐
+        │ 第三层：VETO 否决层 (Yijing Veto)                │
+        │   VETO_CLOSE  → 风险低+价值高 → 否决噪音止损    │
+        │   VETO_REDUCE → 否决减仓                        │
+        └─────────────────────────────────────────────────┘
         """
         from .market_regime import DEFAULT_REGIME_PARAMS
+        try:
+            from ..yijing_exit_system import YijingExitSystem, YijingExitConfig, YijingExitAction
+            yijing_exit = YijingExitSystem(config=YijingExitConfig())
+            yijing_enabled = True
+        except Exception:
+            yijing_enabled = False
+            yijing_exit = None
+
         trades = []
         position = None  # 当前持仓
 
@@ -658,6 +684,10 @@ class WalkForwardBacktester:
         high = df["high"].values
         low = df["low"].values
         open_prices = df["open"].values
+
+        # ── 预计算 ATR（用于跟踪止损，P0-2补全经典指标）──
+        atr_period = 14
+        atr_values = self._compute_atr(high, low, close, atr_period)
 
         for i, pred in enumerate(predictions):
             bar_idx = test_start + i
@@ -670,34 +700,105 @@ class WalkForwardBacktester:
                 sl_price = position["sl_price"]
                 hold_bars = i - position["entry_offset"]
                 max_hold = position.get("max_hold_bars", self.max_hold_bars)
+                pos_side = "long" if direction == 1 else "short"
+                current_price = close[bar_idx]
+                unrealized_pnl_pct = ((current_price - entry_price) * direction) / entry_price
+                position_age_sec = hold_bars * 3600  # 1H bar，按小时估算
+                mfe_pnl_pct = position.get("mfe_pnl_pct", max(0.0, unrealized_pnl_pct))
+                mfe_pnl_pct = max(mfe_pnl_pct, max(0.0, unrealized_pnl_pct))
+                position["mfe_pnl_pct"] = mfe_pnl_pct
 
-                # 检查止盈止损
-                if direction == 1:  # 多单
-                    if high[bar_idx] >= tp_price:
-                        exit_price = tp_price
-                        exit_reason = "tp"
-                    elif low[bar_idx] <= sl_price:
-                        exit_price = sl_price
-                        exit_reason = "sl"
-                    elif hold_bars >= max_hold:
-                        exit_price = close[bar_idx]
-                        exit_reason = "time"
-                    else:
-                        exit_price = None
-                        exit_reason = None
-                else:  # 空单
-                    if low[bar_idx] <= tp_price:
-                        exit_price = tp_price
-                        exit_reason = "tp"
-                    elif high[bar_idx] >= sl_price:
-                        exit_price = sl_price
-                        exit_reason = "sl"
-                    elif hold_bars >= self.max_hold_bars:
-                        exit_price = close[bar_idx]
-                        exit_reason = "time"
-                    else:
-                        exit_price = None
-                        exit_reason = None
+                # ── 第一层：易经主离场层 ──
+                exit_price = None
+                exit_reason = None
+                yijing_decision = None
+                skip_classic = False
+
+                if yijing_enabled:
+                    hexagram = pred.get("hexagram")
+                    if hexagram:
+                        yijing_decision = yijing_exit.evaluate(
+                            hexagram=hexagram,
+                            pos_side=pos_side,
+                            entry_price=entry_price,
+                            current_price=current_price,
+                            position_age_sec=position_age_sec,
+                            unrealized_pnl_pct=unrealized_pnl_pct,
+                            classic_decision=None,
+                            mfe_pnl_pct=mfe_pnl_pct,
+                        )
+
+                        # 1a) FORCE_CLOSE：风险极高+方向冲突 → 立即平仓
+                        if yijing_decision.action == YijingExitAction.FORCE_CLOSE:
+                            exit_price = current_price
+                            exit_reason = "yijing_force_close"
+                            skip_classic = True
+
+                        # 1b) RAISE_TP：价值高+成长期 → 上调止盈
+                        elif yijing_decision.action == YijingExitAction.RAISE_TP:
+                            tp_uplift = yijing_decision.tp_adjust_pct
+                            if direction == 1:
+                                new_tp = max(tp_price, current_price * (1 + tp_uplift * 0.5))
+                            else:
+                                new_tp = min(tp_price, current_price * (1 - tp_uplift * 0.5))
+                            position["tp_price"] = new_tp
+                            tp_price = new_tp
+                            position["yijing_tp_raised"] = True
+
+                        # 1c) HOLD：风险低+价值高+方向一致 → 直接持仓，跳过经典
+                        #    （与实盘架构对齐：易经主决策HOLD时不调用classic备用层）
+                        elif yijing_decision.action == YijingExitAction.NO_INTERVENE:
+                            cfg_y = yijing_exit.config
+                            risk_low = yijing_decision.yijing_risk_score < cfg_y.veto_risk_threshold
+                            value_high = yijing_decision.yijing_value_score > cfg_y.veto_value_threshold
+                            loss_ok = unrealized_pnl_pct > cfg_y.veto_max_loss_pct
+                            not_expired = position_age_sec < cfg_y.veto_max_hold_sec
+                            dir_ok = yijing_decision.direction_consistent
+
+                            if risk_low and value_high and dir_ok and loss_ok and not_expired:
+                                position["yijing_hold_count"] = position.get("yijing_hold_count", 0) + 1
+                                skip_classic = True
+
+                # ── 第二层：经典备用层（P0-2补全经典指标）──
+                if not skip_classic and exit_price is None:
+                    classic_result = self._evaluate_classic_exit(
+                        direction=direction,
+                        entry_price=entry_price,
+                        current_price=current_price,
+                        high=high,
+                        low=low,
+                        bar_idx=bar_idx,
+                        hold_bars=hold_bars,
+                        max_hold=max_hold,
+                        tp_price=tp_price,
+                        sl_price=sl_price,
+                        atr_values=atr_values,
+                        position=position,
+                    )
+                    exit_price = classic_result["exit_price"]
+                    exit_reason = classic_result["exit_reason"]
+                    classic_action = classic_result.get("action", "hold")
+
+                    # ── 第三层：VETO 否决层（与实盘触发时机一致）──
+                    # 经典决定 CLOSE/REDUCE 后，易经二次评估可否决
+                    if (exit_price is not None and classic_action in ("close", "reduce")
+                            and yijing_enabled and yijing_decision is not None):
+                        hexagram = pred.get("hexagram")
+                        if hexagram:
+                            veto_decision = yijing_exit.evaluate(
+                                hexagram=hexagram,
+                                pos_side=pos_side,
+                                entry_price=entry_price,
+                                current_price=current_price,
+                                position_age_sec=position_age_sec,
+                                unrealized_pnl_pct=unrealized_pnl_pct,
+                                classic_decision={"action": classic_action, "reason": exit_reason},
+                                mfe_pnl_pct=mfe_pnl_pct,
+                            )
+                            if veto_decision.action in (YijingExitAction.VETO_CLOSE, YijingExitAction.VETO_REDUCE):
+                                exit_price = None
+                                exit_reason = None
+                                position["yijing_veto_count"] = position.get("yijing_veto_count", 0) + 1
 
                 if exit_price is not None:
                     # 计算手续费 + 滑点
@@ -705,8 +806,6 @@ class WalkForwardBacktester:
                     slippage = abs(exit_price - entry_price) * self.slippage_rate
                     pnl_pct = ((exit_price - entry_price) * direction - fee - slippage) / entry_price
 
-                    # 仓位系数只记录，不直接影响PnL
-                    # 通过调整置信度阈值实现市态自适应开仓
                     pf = position.get("position_factor", 1.0)
 
                     trade = Trade(
@@ -715,13 +814,16 @@ class WalkForwardBacktester:
                         direction=direction,
                         entry_price=entry_price,
                         exit_price=exit_price,
-                        pnl_pct=pnl_pct * 100,  # 百分比
+                        pnl_pct=pnl_pct * 100,
                         hold_bars=hold_bars,
                         exit_reason=exit_reason,
                         confidence=position["confidence"],
                         hexagram_name=position.get("hexagram_name", ""),
                         upper_gua=position.get("upper_gua", ""),
                         lower_gua=position.get("lower_gua", ""),
+                        risk_level=position.get("risk_level", ""),
+                        development_stage=position.get("development_stage", ""),
+                        current_phase=position.get("current_phase", ""),
                         position_factor=pf,
                     )
                     trades.append(trade)
@@ -810,6 +912,9 @@ class WalkForwardBacktester:
                 hex_name = pred.get("hexagram", {}).get("hexagram_name", "")
                 upper_name = pred.get("hexagram", {}).get("upper_gua", {}).get("name", "")
                 lower_name = pred.get("hexagram", {}).get("lower_gua", {}).get("name", "")
+                risk_lvl = pred.get("hexagram", {}).get("risk_level", "")
+                dev_stage = pred.get("hexagram", {}).get("development_stage", "")
+                curr_phase = pred.get("hexagram", {}).get("current_phase", "")
 
                 position = {
                     "entry_bar": bar_idx,
@@ -822,6 +927,9 @@ class WalkForwardBacktester:
                     "hexagram_name": hex_name,
                     "upper_gua": upper_name,
                     "lower_gua": lower_name,
+                    "risk_level": risk_lvl,
+                    "development_stage": dev_stage,
+                    "current_phase": curr_phase,
                     "regime_name": regime_name,
                     "max_hold_bars": effective_max_hold,
                     "position_factor": position_factor,
@@ -854,10 +962,135 @@ class WalkForwardBacktester:
                 hexagram_name=position.get("hexagram_name", ""),
                 upper_gua=position.get("upper_gua", ""),
                 lower_gua=position.get("lower_gua", ""),
+                risk_level=position.get("risk_level", ""),
+                development_stage=position.get("development_stage", ""),
+                current_phase=position.get("current_phase", ""),
             )
             trades.append(trade)
 
         return trades
+
+    @staticmethod
+    def _compute_atr(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14) -> np.ndarray:
+        """计算 ATR（Average True Range），用于跟踪止损"""
+        n = len(high)
+        tr = np.zeros(n)
+        for i in range(1, n):
+            hl = high[i] - low[i]
+            hc = abs(high[i] - close[i - 1])
+            lc = abs(low[i] - close[i - 1])
+            tr[i] = max(hl, hc, lc)
+        tr[0] = high[0] - low[0]
+
+        atr = np.zeros(n)
+        atr[period - 1] = np.mean(tr[:period])
+        for i in range(period, n):
+            atr[i] = (atr[i - 1] * (period - 1) + tr[i]) / period
+        return atr
+
+    def _evaluate_classic_exit(
+        self,
+        direction: int,
+        entry_price: float,
+        current_price: float,
+        high: np.ndarray,
+        low: np.ndarray,
+        bar_idx: int,
+        hold_bars: int,
+        max_hold: int,
+        tp_price: float,
+        sl_price: float,
+        atr_values: np.ndarray,
+        position: dict,
+    ) -> dict:
+        """
+        经典备用离场评估（P0-2补全经典指标 + 移动止盈 P3.5）
+
+        执行顺序（与实盘 ClassicExitSystem 优先级对齐）:
+          P2:   Triple Barrier (TP/SL/Time)
+          P3:   Trailing Stop (ATR 跟踪止损)
+          P3.5: Trailing Take Profit (移动止盈，基于MFE回撤)
+          P1:   简化价值-风险评估 (盈亏比+时间衰减)
+
+        返回: {"exit_price": float|None, "exit_reason": str, "action": str}
+        """
+        # ── P2: Triple Barrier（TP / SL / Time）──
+        if direction == 1:  # 多单
+            if high[bar_idx] >= tp_price:
+                return {"exit_price": tp_price, "exit_reason": "classic_tb_tp", "action": "close"}
+            if low[bar_idx] <= sl_price:
+                return {"exit_price": sl_price, "exit_reason": "classic_tb_sl", "action": "close"}
+        else:  # 空单
+            if low[bar_idx] <= tp_price:
+                return {"exit_price": tp_price, "exit_reason": "classic_tb_tp", "action": "close"}
+            if high[bar_idx] >= sl_price:
+                return {"exit_price": sl_price, "exit_reason": "classic_tb_sl", "action": "close"}
+
+        if hold_bars >= max_hold:
+            return {"exit_price": current_price, "exit_reason": "classic_tb_time", "action": "close"}
+
+        # ── P3: ATR 跟踪止损（P0-2补全）──
+        atr = atr_values[bar_idx] if bar_idx < len(atr_values) else 0.0
+        if atr > 0:
+            atr_multiplier = 2.5  # 2.5 倍 ATR 跟踪止损
+            trailing_stop_pct = (atr_multiplier * atr) / entry_price
+
+            # 更新跟踪止损价（只向盈利方向移动）
+            if direction == 1:  # 多单
+                new_trailing = current_price * (1 - trailing_stop_pct)
+                prev_trailing = position.get("trailing_stop_price", sl_price)
+                if new_trailing > prev_trailing:
+                    position["trailing_stop_price"] = new_trailing
+                    prev_trailing = new_trailing
+                # 检查是否触发跟踪止损
+                if low[bar_idx] <= prev_trailing and hold_bars >= 5:
+                    return {"exit_price": prev_trailing, "exit_reason": "classic_trailing_atr", "action": "close"}
+            else:  # 空单
+                new_trailing = current_price * (1 + trailing_stop_pct)
+                prev_trailing = position.get("trailing_stop_price", sl_price)
+                if new_trailing < prev_trailing:
+                    position["trailing_stop_price"] = new_trailing
+                    prev_trailing = new_trailing
+                if high[bar_idx] >= prev_trailing and hold_bars >= 5:
+                    return {"exit_price": prev_trailing, "exit_reason": "classic_trailing_atr", "action": "close"}
+
+        # ── P3.5: 移动止盈 Trailing TP（基于MFE回撤锁定利润）──
+        # 与 Trailing Stop 互补：激活更早(1.5%)，回撤更敏感(40%)
+        pnl_pct_now = ((current_price - entry_price) * direction) / entry_price
+        # 更新 MFE（持仓期最大有利偏移）
+        mfe_pnl = position.get("mfe_pnl_pct", 0.0)
+        if pnl_pct_now > mfe_pnl:
+            mfe_pnl = pnl_pct_now
+            position["mfe_pnl_pct"] = mfe_pnl
+
+        ttp_arm_pct = 0.015     # 盈利 ≥ 1.5% 激活
+        ttp_retrace_ratio = 0.40  # 从 MFE 回撤 ≥ 40% 触发
+        ttp_min_lock_pct = 0.003  # 至少锁定 0.3% 利润（避免盈利不足时还离场）
+
+        if mfe_pnl >= ttp_arm_pct:
+            # 计算回撤比例：(MFE - 当前盈利) / MFE
+            retrace = (mfe_pnl - pnl_pct_now) / max(mfe_pnl, 1e-9)
+            # 锁定利润检查：当前盈利需 ≥ min_lock（确保离场时仍有正收益）
+            if retrace >= ttp_retrace_ratio and pnl_pct_now >= ttp_min_lock_pct:
+                return {
+                    "exit_price": current_price,
+                    "exit_reason": "classic_trailing_tp",
+                    "action": "close",
+                }
+
+        # ── P1: 简化价值-风险评估（盈亏比+时间衰减）──
+        pnl_pct = ((current_price - entry_price) * direction) / entry_price
+        # 持仓时间衰减：超过 max_hold*0.7 后开始降低持仓意愿
+        time_decay = max(0.0, 1.0 - (hold_bars / max(max_hold, 1)) * 0.8)
+        # 小亏+持仓较长 → 减仓/离场（避免无限等待）
+        if pnl_pct < -0.015 and hold_bars >= max_hold * 0.5 and time_decay < 0.6:
+            return {"exit_price": current_price, "exit_reason": "classic_vr_time_decay", "action": "close"}
+
+        # 微利+接近到期 → 止盈离场（锁定利润）
+        if pnl_pct > 0.01 and hold_bars >= max_hold * 0.8:
+            return {"exit_price": current_price, "exit_reason": "classic_vr_take_profit", "action": "close"}
+
+        return {"exit_price": None, "exit_reason": "hold", "action": "hold"}
 
     def _compute_summary(self, result: BacktestResult, df: pd.DataFrame):
         """计算汇总指标"""
@@ -983,6 +1216,37 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
                 f"总收益{result.short_stats.get('total_pnl', 0)}%")
     lines.append("")
 
+    # 离场原因统计（易经离场 vs 经典离场）
+    exit_reason_stats = {}
+    for t in result.all_trades:
+        reason = t.exit_reason or "unknown"
+        if reason not in exit_reason_stats:
+            exit_reason_stats[reason] = {"count": 0, "total_pnl": 0.0, "wins": 0}
+        exit_reason_stats[reason]["count"] += 1
+        exit_reason_stats[reason]["total_pnl"] += t.pnl_pct
+        if t.pnl_pct > 0:
+            exit_reason_stats[reason]["wins"] += 1
+
+    lines.append("【离场原因分布】")
+    lines.append(f"  {'离场原因':<22} {'次数':<6} {'占比':<8} {'胜率':<8} {'总收益':<10} {'平均':<8}")
+    lines.append(f"  {'-'*22} {'-'*6} {'-'*8} {'-'*8} {'-'*10} {'-'*8}")
+    yijing_total = 0
+    classic_total = 0
+    for reason, stats in sorted(exit_reason_stats.items(), key=lambda x: -x[1]["count"]):
+        count = stats["count"]
+        pct = count / max(result.total_trades, 1) * 100
+        win_rate = stats["wins"] / max(count, 1) * 100
+        avg = stats["total_pnl"] / max(count, 1)
+        lines.append(f"  {reason:<22} {count:<6} {pct:<7.1f}% {win_rate:<7.1f}% "
+                    f"{stats['total_pnl']:<9.2f}% {avg:<7.2f}%")
+        if reason.startswith("yijing"):
+            yijing_total += count
+        else:
+            classic_total += count
+    lines.append(f"  易经离场合计: {yijing_total} 笔 ({yijing_total/max(result.total_trades,1)*100:.1f}%)")
+    lines.append(f"  经典离场合计: {classic_total} 笔 ({classic_total/max(result.total_trades,1)*100:.1f}%)")
+    lines.append("")
+
     # 卦象统计
     if result.hexagram_stats:
         lines.append("【卦象统计 Top 10】")
@@ -1009,6 +1273,58 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
             bar = "█" * int(pct / 5)
             lines.append(f"  {gua:<4}: {cnt:<4} ({pct:<5.1f}%) {bar}")
         lines.append("")
+
+    # ── 卦象效果归因（P2-1: 多维度收益归因）──
+    # 基于 predictions 中的 hexagram 数据，按 risk_level / development_stage / current_phase 统计
+    hex_attr_stats = {
+        "risk_level": {},
+        "development_stage": {},
+        "current_phase": {},
+    }
+    has_hex_attrs = False
+    for t in result.all_trades:
+        # 尝试从 prediction 关联的 hexagram 提取属性
+        # 这里从 trade 对象附加属性中读取（如果有）
+        risk = getattr(t, "risk_level", "") or ""
+        stage = getattr(t, "development_stage", "") or ""
+        phase = getattr(t, "current_phase", "") or ""
+
+        pnl = t.pnl_pct
+        win = pnl > 0
+
+        for attr_key, attr_val in [("risk_level", risk), ("development_stage", stage), ("current_phase", phase)]:
+            if not attr_val:
+                continue
+            has_hex_attrs = True
+            if attr_val not in hex_attr_stats[attr_key]:
+                hex_attr_stats[attr_key][attr_val] = {"count": 0, "wins": 0, "total_pnl": 0.0}
+            hex_attr_stats[attr_key][attr_val]["count"] += 1
+            hex_attr_stats[attr_key][attr_val]["wins"] += 1 if win else 0
+            hex_attr_stats[attr_key][attr_val]["total_pnl"] += pnl
+
+    if has_hex_attrs:
+        lines.append("【卦象效果归因 · 多维度】")
+        lines.append(f"  维度：风险等级 / 发展阶段 / 六爻阶段 → 对应胜率与收益表现")
+        lines.append("")
+
+        for dim_key, dim_label in [
+            ("risk_level", "风险等级"),
+            ("development_stage", "发展阶段"),
+            ("current_phase", "六爻阶段"),
+        ]:
+            dim_data = hex_attr_stats[dim_key]
+            if not dim_data:
+                continue
+            lines.append(f"  ▸ {dim_label}")
+            lines.append(f"    {'分类':<12} {'次数':<6} {'胜率':<8} {'总收益':<10} {'平均':<8}")
+            lines.append(f"    {'-'*12} {'-'*6} {'-'*8} {'-'*10} {'-'*8}")
+            for key, stats in sorted(dim_data.items(), key=lambda x: -x[1]["count"]):
+                count = stats["count"]
+                win_rate = stats["wins"] / max(count, 1) * 100
+                avg = stats["total_pnl"] / max(count, 1)
+                lines.append(f"    {key:<12} {count:<6} {win_rate:<7.1f}% "
+                            f"{stats['total_pnl']:<9.2f}% {avg:<7.2f}%")
+            lines.append("")
 
     report = "\n".join(lines)
 
