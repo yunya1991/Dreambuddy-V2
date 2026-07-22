@@ -21,6 +21,17 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from enum import Enum
 
+# L4 TradeEvent 注册（跨系统统一交易记录）
+try:
+    _L4_ROOT = Path(__file__).resolve().parents[2] / "11-易经推理系统"
+    if str(_L4_ROOT) not in sys.path:
+        sys.path.insert(0, str(_L4_ROOT))
+    from scripts.memory_l4.trade_event import TradeEvent
+    from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+    _L4_ENABLED = True
+except Exception as _e:
+    _L4_ENABLED = False
+
 
 EXECUTION_LOG_DIR = Path(__file__).parent.parent / "artifacts" / "execution_logs"
 EXECUTION_LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -195,6 +206,39 @@ class ExitExecutor:
             else:
                 # 实盘/模拟盘执行
                 exec_record = self._real_execute(exec_record, pos)
+            
+            # 注册到 L4（执行成功时）
+            if _L4_ENABLED and exec_record.status == ExecutionStatus.SUCCESS.value:
+                try:
+                    trade_id = f"dream_os_{int(datetime.now(timezone.utc).timestamp())}_{exec_record.symbol}"
+                    event = TradeEvent(
+                        event_id=TradeEvent.generate_event_id(),
+                        system_source="dream_os",
+                        trade_id=trade_id,
+                        ts_entry=datetime.now(timezone.utc).isoformat(),
+                        ts_exit=datetime.now(timezone.utc).isoformat(),
+                        symbol=f"{exec_record.symbol}-USDT-SWAP",
+                        direction=exec_record.direction.lower(),
+                        entry_price=exec_record.entry_price,
+                        exit_price=exec_record.execution_price,
+                        position_size=exec_record.executed_size,
+                        pnl=exec_record.actual_pnl,
+                        pnl_pct=(exec_record.actual_pnl / (exec_record.entry_price * exec_record.executed_size) * 100) if exec_record.entry_price > 0 and exec_record.executed_size > 0 else 0,
+                        exit_reason=f"dream_os_{exec_record.action.lower()}_{exec_record.urgency}",
+                        decision_context={
+                            "strategy_id": exec_record.strategy_id,
+                            "system_name": exec_record.system_name,
+                            "fusion_mode": exec_record.fusion_mode,
+                            "urgency": exec_record.urgency,
+                            "mode": self.mode,
+                        },
+                    )
+                    registry = UnifiedCaseRegistry()
+                    case_id, success = registry.register_trade_event(event)
+                    if success:
+                        print(f"[Dream OS] L4 案例已注册: {case_id}")
+                except Exception as e:
+                    print(f"[Dream OS] L4 注册异常: {e}")
             
         except Exception as e:
             exec_record.status = ExecutionStatus.FAILED.value

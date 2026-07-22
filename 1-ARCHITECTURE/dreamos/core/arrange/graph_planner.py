@@ -79,15 +79,15 @@ class GraphPlanner:
         """
         timer = Timer("graph_planner")
 
-        # 从 state 中提取意图信息
         intent = state.intent or {}
         intent_type = intent.get("intent_type", "UNCERTAIN")
         recommended_chain = intent.get("recommended_chain", "A")
         base_chain = intent.get("base_chain", [])
         extend_nodes = intent.get("extend_nodes", [])
         confidence = intent.get("confidence", 0.0)
+        scenario_id = intent.get("scenario_id")
+        enable_subsystem = intent.get("enable_subsystem", True)
 
-        # 如果没有推荐链，根据意图类型推断
         if not recommended_chain or recommended_chain == "":
             recommended_chain = self._infer_chain(intent_type)
 
@@ -96,9 +96,9 @@ class GraphPlanner:
             base_chain=base_chain,
             extend_nodes=extend_nodes,
             confidence=confidence,
+            scenario_id=scenario_id if enable_subsystem else None,
         )
 
-        # 写入 state
         state.plan = plan.to_dict()
         with timer:
             pass
@@ -112,7 +112,8 @@ class GraphPlanner:
                          extend_nodes: Optional[List[str]] = None,
                          confidence: float = 0.5,
                          budget_total: Optional[int] = None,
-                         budget_mode: Optional[str] = None) -> ExecutionPlan:
+                         budget_mode: Optional[str] = None,
+                         scenario_id: Optional[str] = None) -> ExecutionPlan:
         """直接从意图参数构建执行计划（不依赖 State）"""
         if not recommended_chain:
             recommended_chain = self._infer_chain(intent_type)
@@ -124,6 +125,7 @@ class GraphPlanner:
             confidence=confidence,
             budget_total=budget_total,
             budget_mode=budget_mode,
+            scenario_id=scenario_id,
         )
 
     def build_graph(self, plan: ExecutionPlan,
@@ -157,30 +159,28 @@ class GraphPlanner:
                     extend_nodes: Optional[List[str]],
                     confidence: float,
                     budget_total: Optional[int] = None,
-                    budget_mode: Optional[str] = None) -> ExecutionPlan:
+                    budget_mode: Optional[str] = None,
+                    scenario_id: Optional[str] = None) -> ExecutionPlan:
         """构建执行计划"""
         total = budget_total or self._budget_total
         mode = budget_mode or self._budget_mode
 
-        # 选节点
         metas = self._selector.select(
             chain=chain,
             base_chain=base_chain,
             extend_nodes=extend_nodes,
             intent_confidence=confidence,
+            scenario_id=scenario_id,
         )
 
-        # 分配预算
         allocator = BudgetAllocator(total=total, mode=mode)
         allocation = allocator.allocate(metas)
 
-        # 更新节点的分配预算
         for meta in metas:
             meta.allocated_tokens = allocation.get(meta.node_id)
 
         chain_spec = self._selector.get_chain_spec(chain)
 
-        # 估算总消耗
         est_tokens = sum(m.allocated_tokens for m in metas)
         est_latency = sum(m.estimated_latency_ms for m in metas)
 
@@ -189,7 +189,7 @@ class GraphPlanner:
             selected_nodes=metas,
             budget=allocation,
             chain_spec=chain_spec,
-            rationale=self._build_rationale(chain, metas, confidence),
+            rationale=self._build_rationale(chain, metas, confidence, scenario_id),
             estimated_total_tokens=est_tokens,
             estimated_total_latency_ms=est_latency,
         )
@@ -205,11 +205,12 @@ class GraphPlanner:
         return INTENT_CHAIN_MAP.get(intent_type, "A")
 
     def _build_rationale(self, chain: str, metas: List[NodeMeta],
-                         confidence: float) -> str:
+                         confidence: float, scenario_id: Optional[str] = None) -> str:
         chain_name = STANDARD_CHAINS.get(chain, STANDARD_CHAINS["A"]).name
         node_count = len(metas)
         required = sum(1 for m in metas if m.is_required)
         optional = node_count - required
+        scenario_str = f", 场景={scenario_id}" if scenario_id else ""
         return (f"链路={chain}({chain_name})，"
                 f"节点={node_count}(必须{required}+可选{optional})，"
-                f"置信度={confidence:.0%}")
+                f"置信度={confidence:.0%}{scenario_str}")

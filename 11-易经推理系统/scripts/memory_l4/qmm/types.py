@@ -17,6 +17,7 @@ class CleanedEvent:
     severity: Optional[float]
     quality: float  # 0-1
     clean_flags: List[str] = field(default_factory=list)
+    system_source: str = "unknown"
 
 
 @dataclass
@@ -64,3 +65,6 @@ class QMMOutput:
     # 元信息
     reason_codes: List[str] = field(default_factory=list)
     evidence_refs: List[str] = field(default_factory=list)
+
+    # 系统来源统计
+    system_source_stats: Dict[str, Any] = field(default_factory=dict)

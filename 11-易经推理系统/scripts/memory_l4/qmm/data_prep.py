@@ -98,6 +98,7 @@ def _extract_event(case: Dict[str, Any]) -> Optional[CleanedEvent]:
         severity=_compute_severity(pnl, (do.get("drawdown") if isinstance(do, dict) else None) or (ao.get("drawdown") if isinstance(ao, dict) else None)),
         quality=0.0,
         clean_flags=[],
+        system_source=case.get("system_source", "unknown"),
     )
 
 

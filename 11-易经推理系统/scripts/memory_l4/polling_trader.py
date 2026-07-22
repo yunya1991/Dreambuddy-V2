@@ -41,6 +41,7 @@ from scripts.memory_l4.trading_utils import (
     PositionTracker,
     generate_case_from_trade,
     save_case_to_l4,
+    register_trade_to_l4,
 )
 from scripts.memory_l4.learning_scheduler import LearningScheduler
 from scripts.memory_l4.process_guardian import ProcessGuardian
@@ -73,6 +74,7 @@ class PollingTrader:
                  coins: list = None,
                  bar: str = "1H",
                  confidence_threshold: float = 0.55,
+                 short_confidence_threshold: float = 0.70,
                  max_positions: int = 3,
                  kline_limit: int = 200,
                  initial_equity: float = 100.0,
@@ -86,6 +88,7 @@ class PollingTrader:
         self.coins = coins or ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE"]
         self.bar = bar
         self.confidence_threshold = confidence_threshold
+        self.short_confidence_threshold = short_confidence_threshold  # 做空独立阈值（高于做多）
         self.max_positions = max_positions
         self.kline_limit = kline_limit
 
@@ -193,7 +196,19 @@ class PollingTrader:
         )
         self._kline_cache = {}  # 缓存K线数据用于异常检测
 
+        # CBR 案例检索增强（2026-07-21 修复：接入历史案例检索到决策流程）
+        try:
+            from scripts.memory_l4.cbr_adapter import CBRToBCRMBridge
+            self.cbr_bridge = CBRToBCRMBridge()
+            self.cbr_bridge.initialize()
+            self._log("[CBR] 案例检索增强已初始化", "INFO")
+        except Exception as e:
+            self._log(f"[CBR] 初始化失败: {e}，继续运行", "WARN")
+            self.cbr_bridge = None
+
         self._sync_existing_positions()
+
+        self._run_startup_inspection()
 
     def _sync_existing_positions(self):
         """同步 OKX 已有持仓到本地跟踪器"""
@@ -240,6 +255,30 @@ class PollingTrader:
         external_count = sum(1 for p in self.position_tracker.all_open_positions()
                              if p.strategy_source == "external")
         self._log(f"[持仓同步] 完成，共 {open_count} 个持仓 (BCRM={open_count-external_count} 外部={external_count})", "INFO")
+
+    def _run_startup_inspection(self):
+        """启动时运行 inspect 诊断命令，快速检查系统状态"""
+        self._log("[系统诊断] 启动时执行状态检查...", "INFO")
+        try:
+            from scripts.memory_l4.inspect import SystemInspector
+
+            inspector = SystemInspector()
+            report = inspector.inspect(panel_ids=["system", "positions", "models", "connections", "risk"])
+
+            for panel in report.panels:
+                status_icon = {"ok": "✅", "warn": "⚠️", "error": "❌"}.get(panel.status, "ℹ️")
+                self._log(f"  {status_icon} [{panel.name}] {panel.summary}", panel.status.upper())
+                for key, val in panel.details.items():
+                    if isinstance(val, (int, float, str)) and len(str(val)) <= 50:
+                        self._log(f"    └─ {key}: {val}")
+
+            if report.has_error:
+                self._log("[系统诊断] 发现错误，请检查相关组件", "WARN")
+            else:
+                self._log("[系统诊断] 启动检查通过", "INFO")
+
+        except Exception as e:
+            self._log(f"[系统诊断] 执行失败: {e}，继续运行", "WARN")
 
     def _log(self, msg: str, level: str = "INFO"):
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -590,8 +629,8 @@ class PollingTrader:
         confidence = bcrm_result['next_state']['confidence']
         hex_cn = bcrm_result['hexagram']['hexagram_name_cn']
         fail_closed = bcrm_result['is_fail_closed']()
-        
-        # 计算波动率（用于止盈止损）
+
+        # 计算波动率（用于止盈止损）— 必须在 CBR 增强前完成，供 CBR 使用
         closes = df['close'].values
         atr = 0
         if len(df) >= 14:
@@ -606,14 +645,40 @@ class PollingTrader:
             )
             atr = np.mean(tr[-14:])
         volatility = atr / closes[-1] if closes[-1] > 0 else 0.03
-        
+
         # 检测震荡市
         closes_window = list(closes[-60:])
         snapshot_simple = {"price": closes[-1], "volatility": volatility}
         ranging_info = _detect_ranging_market(snapshot_simple, closes_window)
         is_ranging = ranging_info.get("is_ranging", False)
-        
+
         price = closes[-1]
+
+        # CBR 案例检索增强（2026-07-21 修复：price/volatility 必须先计算好再调用）
+        if self.cbr_bridge and not fail_closed:
+            try:
+                bcrm_output = {
+                    'inst_id': inst_id,
+                    'direction': 'long' if direction == 'UP' else ('short' if direction == 'DOWN' else 'flat'),
+                    'confidence': confidence,
+                    'current_price': price,
+                    'regime': bcrm_result.get('hexagram', {}).get('liangyi_state', {}).get('macro_phase', ''),
+                    'volatility': volatility,
+                    'hexagram': hex_cn,
+                }
+                enhanced = self.cbr_bridge.enhance_bcrm_signal(bcrm_output)
+                # 应用 CBR 增强的参数
+                if enhanced.get('cbr_fusion_method') != 'bcrm_only':
+                    confidence = enhanced.get('confidence', confidence)
+                    self._log(
+                        f"[{coin}] CBR 增强 | 历史胜率={enhanced.get('cbr_historical_win_rate', 0):.1%} "
+                        f"Top-1相似度={enhanced.get('cbr_similarity_top1', 0):.2f} "
+                        f"融合模式={enhanced.get('cbr_fusion_method')} "
+                        f"风险提示={enhanced.get('cbr_risk_notes', [])}",
+                        "INFO"
+                    )
+            except Exception as e:
+                self._log(f"[{coin}] CBR 增强失败: {e}", "WARN")
         
         # 计算 ATR 止盈止损
         sl_px, tp_px = 0, 0
@@ -845,12 +910,11 @@ class PollingTrader:
             perf_summary = self.perf_tracker.record_trade(trade_rec)
             self.risk_manager.update_after_trade(pnl, pnl >= 0)
 
-            case = generate_case_from_trade(trade_rec)
-            saved = save_case_to_l4(case)
+            case_id, saved = register_trade_to_l4(trade_rec)
 
             self._log(
                 f"[{coin}] 平仓记录 | {'盈利' if pnl >= 0 else '亏损'} {pnl:.2f}USDT "
-                f"({pnl_pct:.2%}) | case已保存={saved} | "
+                f"({pnl_pct:.2%}) | case={case_id} saved={saved} | "
                 f"日盈亏={perf_summary['daily_total_pnl']:.2f} "
                 f"连亏={perf_summary['consecutive_losses']}"
             )
@@ -899,7 +963,7 @@ class PollingTrader:
             # 优化5：更新卦象数据驱动校准统计
             try:
                 if hasattr(self, 'ranging_enhancer') and self.ranging_enhancer:
-                    enhance_info = tracker_pos.enhance_info if tracker_pos and hasattr(tracker_pos, 'enhance_info') else None
+                    enhance_info = trade_rec.enhance_info if hasattr(trade_rec, 'enhance_info') else None
                     regime_val = enhance_info.get('regime', 'sideways') if enhance_info else 'sideways'
 
                     # 置信度校准
@@ -923,10 +987,85 @@ class PollingTrader:
             except Exception as e:
                 self._log(f"[{coin}] 校准更新失败: {e}", "WARN")
 
+            # P2-1a增强: 平仓后自动触发L4 Pipeline (M1-M4)
+            try:
+                self._trigger_l4_pipeline_for_trade(trade_rec, case_id, saved)
+            except Exception as e:
+                self._log(f"[{coin}] L4 Pipeline自动触发失败: {e}", "WARN")
+
             return perf_summary
         else:
             self._log(f"[{coin}] 警告：平仓但无对应开仓记录 {inst_id}", "WARN")
             return {}
+
+    def _trigger_l4_pipeline_for_trade(self, trade_rec, case_id: str, saved: bool):
+        """平仓后自动触发L4 Pipeline (M1-M4)
+
+        将平仓交易构建为episode文件，执行L4全链路：
+        M1(复盘) → M2(蒸馏) → M3(统计) → M3.5(KG同步) → M4(候选)
+        """
+        if not saved or not case_id:
+            return
+
+        import json
+        from datetime import datetime, timezone
+        from pathlib import Path
+
+        # 构建episode文件
+        episode = {
+            "case_id": case_id,
+            "ts": trade_rec.exit_time or trade_rec.entry_time or datetime.now(timezone.utc).isoformat(),
+            "regime": getattr(trade_rec, 'regime', 'unknown') or 'unknown',
+            "summary": {
+                "total_pnl": trade_rec.pnl,
+                "wins": 1 if trade_rec.pnl > 0 else 0,
+                "losses": 0 if trade_rec.pnl > 0 else 1,
+                "total_trades": 1,
+            },
+            "trades": [{
+                "trade_id": case_id,
+                "symbol": trade_rec.inst_id,
+                "inst_id": trade_rec.inst_id,
+                "direction": trade_rec.direction.upper() if isinstance(trade_rec.direction, str) else "LONG",
+                "entry_price": trade_rec.entry_price,
+                "exit_price": trade_rec.exit_price,
+                "position_size": getattr(trade_rec, 'position_size', 0.01),
+                "leverage": getattr(trade_rec, 'leverage', 10),
+                "margin_usdt": getattr(trade_rec, 'margin_usdt', 100),
+                "pnl": trade_rec.pnl,
+                "pnl_pct": trade_rec.pnl_pct,
+                "exit_reason": trade_rec.exit_reason or "unknown",
+                "ts_entry": trade_rec.entry_time,
+                "ts_exit": trade_rec.exit_time,
+                "system_source": "yijing_live",
+                "decision_context": {
+                    "confidence": trade_rec.confidence,
+                    "hexagram": trade_rec.hexagram or "",
+                },
+                "market_snapshot": {
+                    "regime": getattr(trade_rec, 'regime', 'unknown') or 'unknown',
+                },
+                "risk_events": [],
+            }],
+        }
+
+        # 保存episode文件
+        episodes_dir = Path("data/episodes")
+        episodes_dir.mkdir(parents=True, exist_ok=True)
+        ts_str = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+        ep_path = episodes_dir / f"live_{trade_rec.inst_id}_{ts_str}.json"
+        ep_path.write_text(json.dumps(episode, ensure_ascii=False, indent=2, default=str))
+
+        self._log(f"[L4] Episode保存: {ep_path.name}")
+
+        # 异步执行L4 Pipeline (M1-M4)
+        try:
+            from scripts.memory_l4.pipeline import run_pipeline
+            result = run_pipeline(ep_path)
+            l4_status = result.get("case", {}).get("l4_status", "unknown")
+            self._log(f"[L4] Pipeline完成: case={case_id} status={l4_status}")
+        except Exception as e:
+            self._log(f"[L4] Pipeline执行失败: {e}", "WARN")
 
     def _execute_trade(self, inference: dict, confidence_threshold: float = None):
         """根据推理结果执行交易决策（P2 完整版）"""
@@ -939,6 +1078,10 @@ class PollingTrader:
         volatility = inference.get("volatility", 0.03)
 
         effective_threshold = confidence_threshold or self.confidence_threshold
+
+        # 做空方向使用独立的更高阈值
+        if direction == "DOWN":
+            effective_threshold = max(effective_threshold, self.short_confidence_threshold)
 
         pos_info = self._check_positions(coin)
 
@@ -1450,12 +1593,16 @@ class PollingTrader:
             )
             return
 
-        trial_threshold = max(0.25, effective_threshold - 0.15)
+        # 做空试错区间更窄（减少低置信度做空）
+        if direction == "DOWN":
+            trial_threshold = max(0.40, effective_threshold - 0.10)
+        else:
+            trial_threshold = max(0.25, effective_threshold - 0.15)
         if confidence >= effective_threshold:
             pass
         elif confidence >= trial_threshold:
             is_trial = True
-            self._log(f"[{coin}] 轻仓试错模式 | 置信度={confidence:.2f} 在试错区间 [{trial_threshold}, {effective_threshold})")
+            self._log(f"[{coin}] 轻仓试错模式 | 置信度={confidence:.2f} 在试错区间 [{trial_threshold}, {effective_threshold}) 方向={direction}")
         else:
             self._log(f"[{coin}] 置信度不足 "
                       f"{confidence:.2f} < {trial_threshold} | "
@@ -1976,6 +2123,8 @@ def main():
                         help="K线周期，默认 1H")
     parser.add_argument("--confidence", type=float, default=0.35,
                         help="置信度阈值，默认 0.35")
+    parser.add_argument("--short-confidence", type=float, default=0.70,
+                        help="做空置信度阈值（高于做多以减少做空频率），默认 0.70")
     parser.add_argument("--max-positions", type=int, default=5,
                         help="最大同时持仓数，默认 5")
     parser.add_argument("--once", action="store_true",
@@ -2030,6 +2179,7 @@ def main():
         coins=coins,
         bar=args.bar,
         confidence_threshold=args.confidence,
+        short_confidence_threshold=args.short_confidence,
         max_positions=args.max_positions,
         initial_equity=args.initial_equity,
         daily_loss_limit=args.daily_loss_limit,

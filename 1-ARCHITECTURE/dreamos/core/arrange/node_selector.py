@@ -44,7 +44,8 @@ class NodeSelector:
                base_chain: Optional[List[str]] = None,
                extend_nodes: Optional[List[str]] = None,
                intent_confidence: float = 0.5,
-               include_optional: Optional[bool] = None) -> List[NodeMeta]:
+               include_optional: Optional[bool] = None,
+               scenario_id: Optional[str] = None) -> List[NodeMeta]:
         """选择节点
 
         Args:
@@ -53,23 +54,20 @@ class NodeSelector:
             extend_nodes: S 层推荐的扩展节点
             intent_confidence: 意图置信度，影响选择策略
             include_optional: 是否包含可选节点 (None=自动按置信度决定)
+            scenario_id: 当前场景 ID，用于动态选择子系统节点
 
         Returns:
             List[NodeMeta]: 选中的节点元信息列表
         """
-        # 获取链路规格
         chain_spec = STANDARD_CHAINS.get(chain, STANDARD_CHAINS["A"])
 
-        # 确定基础节点序列
         planned_ids = list(base_chain) if base_chain else list(chain_spec.node_ids)
 
-        # 合并扩展节点
         if extend_nodes:
             for nid in extend_nodes:
                 if nid not in planned_ids:
                     planned_ids.append(nid)
 
-        # 自动决定是否包含可选节点
         if include_optional is None:
             include_optional = intent_confidence < 0.7
 
@@ -78,7 +76,13 @@ class NodeSelector:
                 if nid not in planned_ids:
                     planned_ids.append(nid)
 
-        # 从 Registry 中查找节点，构建 NodeMeta
+        # 根据场景动态选择子系统节点
+        if scenario_id:
+            scenario_nodes = chain_spec.get_scenario_nodes(scenario_id)
+            for nid in scenario_nodes:
+                if nid not in planned_ids:
+                    planned_ids.append(nid)
+
         metas: List[NodeMeta] = []
         missing: List[str] = []
 

@@ -33,6 +33,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles
 from scoring.scorecard import DecisionLog, _cycle_id
 from orchestrator import request_early_run
+
+# L4 TradeEvent 注册（跨系统统一交易记录）
+try:
+    _L4_ROOT = Path(__file__).resolve().parents[2] / "11-易经推理系统"
+    if str(_L4_ROOT) not in sys.path:
+        sys.path.insert(0, str(_L4_ROOT))
+    from scripts.memory_l4.trade_event import TradeEvent
+    from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+    _L4_ENABLED = True
+except Exception as _e:
+    _L4_ENABLED = False
 from core.exit_module import (
     run_exit_check, init_position, update_position_exit_levels,
     check_classical_indicator_exits, check_l3_classical_exits_api, execute_exit,
@@ -978,6 +989,37 @@ def _run_classic_mode(
             print(f"[Agent B/Classic] 📤 平仓 {exit_info['coin']}: "
                   f"{exit_info['reason']} "
                   f"PnL={closed.get('pnl_pct', 0)*100:+.2f}%")
+            # 注册到 L4
+            if _L4_ENABLED and closed:
+                try:
+                    coin = exit_info['coin']
+                    trade_id = f"agent_b_{int(datetime.now(timezone.utc).timestamp())}_{coin}"
+                    event = TradeEvent(
+                        event_id=TradeEvent.generate_event_id(),
+                        system_source="agent_b",
+                        trade_id=trade_id,
+                        ts_entry=closed.get("entry_ts", datetime.now(timezone.utc).isoformat()),
+                        ts_exit=datetime.now(timezone.utc).isoformat(),
+                        symbol=f"{coin}-USDT-SWAP",
+                        direction=closed.get("action", "long").lower(),
+                        entry_price=closed.get("entry_price", 0),
+                        exit_price=closed.get("exit_price", 0),
+                        position_size=closed.get("position_size_usdt", 0),
+                        pnl=closed.get("pnl_pct", 0) * closed.get("position_size_usdt", 0),
+                        pnl_pct=closed.get("pnl_pct", 0) * 100,
+                        exit_reason=exit_info.get("reason", ""),
+                        decision_context={
+                            "driver_mode": "CLASSIC",
+                            "strategy": exit_info.get("strategy", "classic"),
+                            "confidence": closed.get("confidence", 0),
+                        },
+                    )
+                    registry = UnifiedCaseRegistry()
+                    case_id, success = registry.register_trade_event(event)
+                    if success:
+                        print(f"[Agent B] L4 案例已注册: {case_id}")
+                except Exception as e:
+                    print(f"[Agent B] L4 注册异常: {e}")
     
     # 输出信号概览
     signals = cycle_result.get("signals", [])
@@ -2042,6 +2084,228 @@ def _save_and_push_logs(cycle_id: str, log_data: dict):
             print(f"[Agent B/Logs] commit 跳过（无变更或失败）")
     except Exception as e:
         print(f"[Agent B/Logs] Git 操作异常: {e}")
+
+
+# ─── Agent B 策略参数优化 ──────────────────────────────────────────────────
+
+# 策略参数持久化路径
+STRATEGY_PARAMS_PATH = Path(__file__).parent.parent / "data" / "agent_b_strategy_params.json"
+
+# 默认策略参数（经典指标驱动基线）
+DEFAULT_STRATEGY_PARAMS = {
+    "stop_loss_pct": 0.04,
+    "take_profit_pct": 0.08,
+    "confidence_gate": 0.55,
+    "max_leverage": 5,
+    "default_leverage": 3,
+    "per_trade_pct": 0.05,
+    "max_positions": 3,
+    "rsi_overbought": 70,
+    "rsi_oversold": 30,
+    "ema_fast": 20,
+    "ema_slow": 50,
+    "ema_trend": 200,
+    "vol_ratio_threshold": 1.5,
+    "funding_rate_extreme": 0.0003,
+    "atr_sl_multiplier": 1.5,
+    "atr_tp_multiplier": 3.0,
+    "trailing_stop_activation_pct": 0.03,
+    "trailing_stop_distance_pct": 0.015,
+    "cooldown_sec": 300,
+}
+
+
+def _load_strategy_params() -> Dict:
+    """加载当前策略参数"""
+    if STRATEGY_PARAMS_PATH.exists():
+        try:
+            with open(STRATEGY_PARAMS_PATH) as f:
+                params = json.load(f)
+            # 合并默认值（新增字段补全）
+            merged = {**DEFAULT_STRATEGY_PARAMS, **params}
+            return merged
+        except Exception:
+            pass
+    return dict(DEFAULT_STRATEGY_PARAMS)
+
+
+def _save_strategy_params(params: Dict):
+    """保存策略参数"""
+    STRATEGY_PARAMS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(STRATEGY_PARAMS_PATH, "w") as f:
+        json.dump(params, f, ensure_ascii=False, indent=2)
+
+
+def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Dict:
+    """
+    基于记忆模块和经典技术指标计算策略参数调整建议
+
+    核心逻辑：
+    1. 连败 → 提高置信度门槛 / 降低杠杆
+    2. 连胜 → 可适度放宽参数
+    3. 教训驱动 → 提取教训中的量化调整
+    4. 波动率适应 → 根据 recent_decisions 的市场regime调整止损/止盈
+    5. 胜率统计 → 动态调整 per_trade_pct
+    """
+    adjustments = {}
+    params = _load_strategy_params()
+
+    # ── 1. 连败保护：连败越多，参数越保守 ──
+    loss_streaks = memory.get("loss_streaks", 0)
+    win_streaks = memory.get("win_streaks", 0)
+
+    if loss_streaks >= 5:
+        adjustments["confidence_gate"] = min(params["confidence_gate"] + 0.15, 0.85)
+        adjustments["default_leverage"] = max(params["default_leverage"] - 2, 1)
+        adjustments["per_trade_pct"] = max(params["per_trade_pct"] * 0.6, 0.02)
+        adjustments["max_positions"] = max(params["max_positions"] - 2, 1)
+    elif loss_streaks >= 3:
+        adjustments["confidence_gate"] = min(params["confidence_gate"] + 0.10, 0.80)
+        adjustments["default_leverage"] = max(params["default_leverage"] - 1, 1)
+        adjustments["per_trade_pct"] = max(params["per_trade_pct"] * 0.75, 0.03)
+    elif loss_streaks >= 1:
+        adjustments["confidence_gate"] = min(params["confidence_gate"] + 0.03, 0.75)
+
+    # ── 2. 连胜放宽：连胜3次以上可适度加仓 ──
+    if win_streaks >= 5 and loss_streaks == 0:
+        adjustments["per_trade_pct"] = min(params["per_trade_pct"] * 1.2, 0.10)
+        adjustments["default_leverage"] = min(params["default_leverage"] + 1, params["max_leverage"])
+    elif win_streaks >= 3 and loss_streaks == 0:
+        adjustments["per_trade_pct"] = min(params["per_trade_pct"] * 1.1, 0.08)
+
+    # ── 3. 教训驱动调整 ──
+    for lesson in memory.get("lessons", []):
+        if "提升置信度门槛至" in lesson:
+            try:
+                target = float(lesson.split("至")[-1])
+                adjustments["confidence_gate"] = max(
+                    adjustments.get("confidence_gate", params["confidence_gate"]),
+                    target,
+                )
+            except ValueError:
+                pass
+
+    # ── 4. 波动率适应：根据近期决策的 regime 统计调整止损/止盈 ──
+    regime_counts = {"TREND_UP": 0, "TREND_DOWN": 0, "RANGE": 0}
+    for d in recent_decisions:
+        regime = d.get("regime", "RANGE")
+        if regime in regime_counts:
+            regime_counts[regime] += 1
+
+    total_decisions = sum(regime_counts.values())
+    if total_decisions >= 5:
+        trend_pct = (regime_counts["TREND_UP"] + regime_counts["TREND_DOWN"]) / total_decisions
+        if trend_pct > 0.7:
+            # 趋势市：放宽止盈、适当收窄止损
+            adjustments["take_profit_pct"] = params["take_profit_pct"] * 1.25
+            adjustments["stop_loss_pct"] = params["stop_loss_pct"] * 0.9
+            adjustments["atr_tp_multiplier"] = params["atr_tp_multiplier"] * 1.2
+        elif regime_counts["RANGE"] / total_decisions > 0.6:
+            # 震荡市：收窄止盈、放宽止损
+            adjustments["take_profit_pct"] = params["take_profit_pct"] * 0.8
+            adjustments["stop_loss_pct"] = params["stop_loss_pct"] * 1.15
+            adjustments["atr_sl_multiplier"] = params["atr_sl_multiplier"] * 1.1
+            adjustments["atr_tp_multiplier"] = params["atr_tp_multiplier"] * 0.85
+
+    # ── 5. 胜率统计 → 动态调整仓位比例 ──
+    if len(recent_decisions) >= 10:
+        pnl_list = [d.get("pnl_pct") for d in recent_decisions if d.get("pnl_pct") is not None]
+        if pnl_list:
+            win_rate = sum(1 for p in pnl_list if p > 0) / len(pnl_list)
+            if win_rate < 0.3:
+                adjustments["per_trade_pct"] = max(
+                    adjustments.get("per_trade_pct", params["per_trade_pct"]) * 0.7,
+                    0.02,
+                )
+            elif win_rate > 0.6:
+                adjustments["per_trade_pct"] = min(
+                    adjustments.get("per_trade_pct", params["per_trade_pct"]) * 1.15,
+                    0.10,
+                )
+
+    return adjustments
+
+
+def update_classic_strategy_params():
+    """
+    每日凌晨2点执行的策略参数优化入口
+
+    基于 Agent B 记忆模块（连败/连胜/教训/regime统计/胜率）
+    和经典技术指标框架（ATR/EMA/RSI参数体系）驱动策略参数优化。
+
+    输出日志到 logs/agent_b.log
+    """
+    import logging
+
+    log_dir = Path(__file__).parent.parent / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "agent_b.log"
+
+    # 配置日志
+    logger = logging.getLogger("agent_b_strategy_update")
+    logger.setLevel(logging.INFO)
+    # 清除已有 handler（防止重复执行时叠加）
+    logger.handlers.clear()
+    fh = logging.FileHandler(log_path, encoding="utf-8")
+    fh.setLevel(logging.INFO)
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    fh.setFormatter(fmt)
+    logger.addHandler(fh)
+
+    logger.info("=" * 60)
+    logger.info("Agent B 策略参数优化启动（每日凌晨2点）")
+    logger.info("=" * 60)
+
+    # 加载记忆
+    memory = load_memory()
+    recent_decisions = memory.get("recent_decisions", [])
+    logger.info(f"记忆加载: {memory.get('total_cycles', 0)}轮历史, "
+                f"连败={memory.get('loss_streaks', 0)}, 连胜={memory.get('win_streaks', 0)}, "
+                f"教训={len(memory.get('lessons', []))}条")
+
+    # 加载当前参数
+    current_params = _load_strategy_params()
+    logger.info(f"当前策略参数: confidence_gate={current_params['confidence_gate']}, "
+                f"leverage={current_params['default_leverage']}, "
+                f"per_trade_pct={current_params['per_trade_pct']}, "
+                f"SL={current_params['stop_loss_pct']}, TP={current_params['take_profit_pct']}")
+
+    # 计算参数调整
+    adjustments = _compute_param_adjustments(memory, recent_decisions)
+    logger.info(f"计算调整建议: {len(adjustments)} 项")
+    for k, v in adjustments.items():
+        old_v = current_params.get(k, "N/A")
+        logger.info(f"  {k}: {old_v} → {v}")
+
+    # 应用调整
+    if not adjustments:
+        logger.info("无需调整，保持当前参数")
+    else:
+        new_params = {**current_params, **adjustments}
+        _save_strategy_params(new_params)
+        logger.info(f"策略参数已更新并保存至 {STRATEGY_PARAMS_PATH}")
+
+        # 记录调整历史到 memory
+        if "strategy_param_history" not in memory:
+            memory["strategy_param_history"] = []
+        memory["strategy_param_history"].append({
+            "ts": datetime.utcnow().isoformat(),
+            "adjustments": adjustments,
+            "trigger": f"连败={memory.get('loss_streaks',0)} 连胜={memory.get('win_streaks',0)}",
+        })
+        # 保留最近30条调整历史
+        memory["strategy_param_history"] = memory["strategy_param_history"][-30:]
+        MEMORY_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(MEMORY_PATH, "w") as f:
+            json.dump(memory, f, ensure_ascii=False, indent=2)
+        logger.info("调整历史已写入记忆模块")
+
+    logger.info("Agent B 策略参数优化完成")
+    logger.info("=" * 60)
+
+    # 关闭 handler
+    fh.close()
+    logger.removeHandler(fh)
 
 
 if __name__ == "__main__":

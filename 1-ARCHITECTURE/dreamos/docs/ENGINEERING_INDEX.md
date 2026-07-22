@@ -1,8 +1,8 @@
 # Dream OS 工程索引 v2.1
 
 > **文档层级**: L1 — 系统级 SSoT（单真源）
-> **版本**: v2.1.0
-> **更新日期**: 2026-07-15
+> **版本**: v2.4.0
+> **更新日期**: 2026-07-21
 > **维护者**: Dream OS Core Team
 > **关联文档**: [SYSTEM_ARCHITECTURE_OVERVIEW.md](../SYSTEM_ARCHITECTURE_OVERVIEW.md) | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)
 
@@ -39,9 +39,20 @@
 
 ### 1.1 系统定位
 
-Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力层 + 应用层"的三层操作系统级架构设计。
+Dream OS 是 Dreambuddy-v2 的**意图驱动 AI 操作系统内核**，采用"OS内核 + 能力域层 + 应用层"的三层架构设计。
 
-**核心设计哲学：纯编排层，不重复建设能力**——OS 内核只负责"调度"，所有具体能力通过适配器接入，不改核心代码。
+**核心设计哲学：纯编排层，不重复建设能力**——OS 内核只负责"调度"（意图识别、图编排、节点执行、状态存储），所有具体业务能力通过节点或适配器接入，不改核心代码。
+
+#### 双重身份
+
+Dream OS 具有双重身份，需要明确区分：
+
+| 身份 | 定位 | 范围 |
+|------|------|------|
+| **操作系统内核** | 通用意图驱动编排框架 | SACG 四层 + Registry + Adapters + Budget + Evolution |
+| **交易系统底座** | 交易能力域 + 交易应用 | 22个交易节点 + TradingAgent + AutoTrader |
+
+**关键认知**：交易系统不是 Dream OS 的"外部应用"，而是当前最成熟、最核心的**内建能力域**。操作系统内核提供编排骨架，交易节点填充血肉，两者共同构成当前可用的交易系统。未来可扩展其他能力域（知识管理、数据分析等）。
 
 ### 1.2 核心特性
 
@@ -94,9 +105,9 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 │   ├── ENGINEERING_INDEX.md      # 工程索引（本文档）
 │   └── TECHNICAL_DESIGN.md       # 技术设计文档
 │
-├── core/                         # SACG 四层内核
+├── core/                         # 操作系统内核层（SACG 四层）
 │   ├── __init__.py
-│   ├── sense/                    # S层 — 感知/意图识别
+│   ├── sense/                    # S层 — 感知/意图识别（通用）
 │   │   ├── __init__.py
 │   │   ├── intent_engine.py      # 意图引擎主入口
 │   │   ├── types.py              # 意图类型定义
@@ -109,7 +120,7 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 │   │       ├── llm_based.py      # LLM识别器
 │   │       └── dynamic.py        # 动态意图识别器
 │   │
-│   ├── arrange/                  # A层 — 图编排
+│   ├── arrange/                  # A层 — 图编排（通用）
 │   │   ├── __init__.py
 │   │   ├── graph_planner.py      # 图规划器主入口
 │   │   ├── types.py              # 编排类型定义
@@ -117,7 +128,7 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 │   │   ├── budget_allocator.py   # 预算分配器
 │   │   └── execution_graph.py    # 执行图（顺序图/条件图）
 │   │
-│   ├── compute/                  # C层 — 执行
+│   ├── compute/                  # C层 — 执行（通用）
 │   │   ├── __init__.py
 │   │   ├── graph_executor.py     # 图执行器主入口
 │   │   ├── types.py              # 执行类型定义
@@ -125,7 +136,7 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 │   │   ├── reflector.py          # 反射决策器
 │   │   └── aggregator.py         # 结果聚合器
 │   │
-│   ├── graph_store/              # G层 — 图存储
+│   ├── graph_store/              # G层 — 图存储（通用）
 │   │   ├── __init__.py
 │   │   ├── store.py              # 图存储主入口
 │   │   ├── types.py              # 存储类型定义
@@ -133,13 +144,13 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 │   │   ├── compressor.py         # 上下文压缩器
 │   │   └── history.py            # 历史回放器
 │   │
-│   └── memory/                   # 记忆扩展模块
+│   └── memory/                   # 记忆扩展模块（通用）
 │       ├── __init__.py
 │       ├── execution_feedback.py # 执行反馈收集器（驱动进化）
 │       ├── orchestration_memory.py # 编排记忆表（场景-编排映射）
 │       └── scenario_backtester.py # 场景回测器
 │
-├── registry/                     # 节点注册表
+├── registry/                     # 节点注册表（通用）
 │   ├── __init__.py
 │   ├── base.py                   # BaseNode 基类
 │   ├── node_registry.py          # 节点注册表
@@ -147,38 +158,34 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 │   ├── loader.py                 # 节点加载器
 │   └── version_manager.py        # 版本管理器
 │
-├── adapters/                     # 适配器框架
+├── adapters/                     # 适配器框架（通用）
 │   ├── __init__.py
 │   ├── base.py                   # 适配器基类 + AdapterRegistry
 │   ├── function_adapter.py       # 函数适配器
 │   ├── skill_adapter.py          # SKILL适配器
 │   └── api_adapter.py            # API适配器
 │
-├── nodes/                        # 内置节点库（22个）
-│   ├── __init__.py               # 注册入口 register_all()
-│   ├── a0_contradiction.py       # A0 矛盾论分析
-│   ├── a1_deep_research.py       # A1 深度调研
-│   ├── a2_comprehensive.py       # A2 综合分析
-│   ├── a3_strategy.py            # A3 策略制定
-│   ├── a4_gate.py                # A4 决策门禁
-│   ├── a5_execution.py           # A5 执行规划
-│   ├── a6_regime_monitor.py      # A6 市态监控
-│   ├── a7_practice_gate.py       # A7 实践门禁
-│   ├── a8_unity.py               # A8 统一升华
-│   ├── a9_exit_strategy.py       # A9 离场策略
-│   ├── c1_tech_scan.py           # C1 技术扫描
-│   ├── c2_momentum.py            # C2 动量分析
-│   ├── c3_volatility.py          # C3 波动率分析
-│   ├── c5_exit_system.py         # C5 离场系统
-│   ├── f1_news.py                # F1 新闻分析
-│   ├── f2_flow_analysis.py       # F2 资金流分析
-│   ├── f3_valuation.py           # F3 估值分析
-│   ├── f4_onchain_data.py        # F4 链上数据
-│   ├── f5_macro_analysis.py      # F5 宏观分析
-│   ├── g1_risk_control.py        # G1 风控
-│   └── g2_governance.py          # G2 治理
+├── capabilities/                 # 能力域层（业务逻辑与内核物理分离）
+│   ├── __init__.py               # 能力域根包入口
+│   └── trading/                  # 交易能力域（旗舰内建能力）
+│       ├── __init__.py           # TradingCapability 能力域定义
+│       ├── evaluator.py          # **交易分析评估器**（核心组件）
+│       ├── nodes/                # 22个交易节点
+│       │   ├── __init__.py       # 注册入口 register_all()
+│       │   ├── a0_contradiction.py
+│       │   ├── a1_deep_research.py
+│       │   ├── ...
+│       │   └── g2_governance.py
+│       ├── strategies/           # 策略配置（链路、阈值）
+│       ├── execution/            # 实盘执行层
+│       │   └── auto_trader.py    # AutoTrader 自动化交易
+│       └── backtest/             # 回测引擎
+│           └── engine.py         # DreamOSBacktester
 │
-├── evolution/                    # 自我进化引擎
+├── nodes/                        # ⚠️ 向后兼容层（已迁移到 capabilities/trading/nodes/）
+│   └── __init__.py               # 重新导出 capabilities.trading.nodes 的 API
+│
+├── evolution/                    # 自我进化引擎（通用）
 │   ├── __init__.py
 │   ├── engine.py                 # 进化引擎主入口
 │   ├── types.py                  # 进化类型定义
@@ -186,32 +193,32 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 │   ├── gap_analyzer.py           # 知行差距分析器
 │   └── node_optimizer.py         # 节点优化建议器
 │
-├── budget/                       # 预算管理
+├── budget/                       # 预算管理（通用）
 │   ├── __init__.py
 │   ├── global_budget.py          # 全局预算管理器
 │   └── cost_tracker.py           # 成本追踪器
 │
-├── apps/                         # 应用层
+├── apps/                         # 应用层：交易应用
 │   ├── __init__.py
-│   ├── trading_agent/            # 交易Agent应用
+│   ├── trading_agent/            # TradingAgent 交易智能体
 │   │   ├── __init__.py
 │   │   └── agent.py              # TradingAgent 主类
 │   ├── api_server.py             # API 服务
 │   └── cli.py                    # CLI 入口
 │
-├── cli/                          # CLI 工具
+├── cli/                          # CLI 工具：交易专用命令
 │   ├── __init__.py
 │   ├── __main__.py               # python -m dreamos.cli
 │   ├── app.py                    # CLI 主应用
 │   ├── base.py                   # 命令基类 + 上下文
 │   ├── commands.py               # 基础命令
 │   ├── repl.py                   # 交互式 REPL
-│   ├── scheduler.py              # 调度器
+│   ├── scheduler.py              # 调度器（通用框架）
 │   ├── scheduler_commands.py     # 调度命令
 │   ├── auto_commands.py          # 自动化命令
-│   ├── auto_scheduler.py         # 自动调度器
-│   ├── auto_trader.py            # 自动交易器
-│   ├── bcrm2_scheduler.py        # BCRM2 调度器
+│   ├── auto_scheduler.py         # 自动调度器（交易专用）
+│   ├── auto_trader.py            # 自动交易器（交易专用）
+│   ├── bcrm2_scheduler.py        # BCRM2 调度器（交易专用）
 │   ├── orchestration_commands.py # 编排命令
 │   ├── analyze_commands.py       # 分析命令
 │   ├── start_scheduler.py        # 启动调度器
@@ -221,7 +228,7 @@ Dream OS 是 Dreambuddy-v2 的**操作系统内核**，采用"OS内核 + 能力�
 │       ├── scheduler_jobs.json
 │       └── scheduler_history.json
 │
-├── shared/                       # 共享基础组件
+├── shared/                       # 共享基础组件（通用）
 │   ├── __init__.py
 │   ├── state.py                  # State / NodeResult / NodeStatus
 │   ├── interfaces.py             # Node / Graph / Edge / Registry / Adapter 接口
@@ -451,50 +458,54 @@ node = reg.to_node({"type": "api", "url": "https://api.example.com"})
 
 ---
 
-### 3.4 节点体系（22个内置节点）
+### 3.4 节点体系（22个内置交易节点）
 
-**主入口**: `nodes/__init__.py` → `register_all(registry)`
+**主入口**: `capabilities/trading/nodes/__init__.py` → `register_all(registry)`
+
+**能力域入口**: `capabilities/trading/__init__.py` → `TradingCapability`
+
+**向后兼容**: `nodes/__init__.py` → 重新导出 `capabilities.trading.nodes` 的 API
 
 #### 3.4.1 A系列 — 决策链（10个节点）
 
 | 节点 | 文件 | 名称 | 职责 |
 |------|------|------|------|
-| A0 | `a0_contradiction.py` | 矛盾论分析 | 识别市场主要矛盾和次要矛盾 |
-| A1 | `a1_deep_research.py` | 深度调研 | 多维度深度调研，收集信息 |
-| A2 | `a2_comprehensive.py` | 综合分析 | 综合各维度信息，形成判断 |
-| A3 | `a3_strategy.py` | 策略制定 | 制定具体交易策略 |
-| A4 | `a4_gate.py` | 决策门禁 | 风险收益评估，决定是否执行 |
-| A5 | `a5_execution.py` | 执行规划 | 制定详细执行计划 |
-| A6 | `a6_regime_monitor.py` | 市态监控 | 监控市场状态变化 |
-| A7 | `a7_practice_gate.py` | 实践门禁 | 实践验证门禁 |
-| A8 | `a8_unity.py` | 统一升华 | 理论实践统一，经验升华 |
-| A9 | `a9_exit_strategy.py` | 离场策略 | 制定离场策略 |
+| A0 | `capabilities/trading/nodes/a0_contradiction.py` | 矛盾论分析 | 识别市场主要矛盾和次要矛盾 |
+| A1 | `capabilities/trading/nodes/a1_deep_research.py` | 深度调研 | 多维度深度调研，收集信息 |
+| A2 | `capabilities/trading/nodes/a2_comprehensive.py` | 综合分析 | 综合各维度信息，形成判断 |
+| A3 | `capabilities/trading/nodes/a3_strategy.py` | 策略制定 | 制定具体交易策略 |
+| A4 | `capabilities/trading/nodes/a4_gate.py` | 决策门禁 | 风险收益评估，决定是否执行 |
+| A5 | `capabilities/trading/nodes/a5_execution.py` | 执行规划 | 制定详细执行计划 |
+| A6 | `capabilities/trading/nodes/a6_regime_monitor.py` | 市态监控 | 监控市场状态变化 |
+| A7 | `capabilities/trading/nodes/a7_practice_gate.py` | 实践门禁 | 实践验证门禁 |
+| A8 | `capabilities/trading/nodes/a8_unity.py` | 统一升华 | 理论实践统一，经验升华 |
+| A9 | `capabilities/trading/nodes/a9_exit_strategy.py` | 离场策略 | 制定离场策略 |
 
 #### 3.4.2 C系列 — 技术分析链（4个节点）
 
 | 节点 | 文件 | 名称 | 职责 |
 |------|------|------|------|
-| C1 | `c1_tech_scan.py` | 技术扫描 | 多周期技术指标扫描 |
-| C2 | `c2_momentum.py` | 动量分析 | 动量指标分析（RSI/MACD/KDJ等） |
-| C3 | `c3_volatility.py` | 波动率分析 | 波动率分析（ATR/Bollinger等） |
-| C5 | `c5_exit_system.py` | 离场系统 | 技术面离场决策 |
+| C1 | `capabilities/trading/nodes/c1_tech_scan.py` | 技术扫描 | 多周期技术指标扫描 |
+| C2 | `capabilities/trading/nodes/c2_momentum.py` | 动量分析 | 动量指标分析（RSI/MACD/KDJ等） |
+| C3 | `capabilities/trading/nodes/c3_volatility.py` | 波动率分析 | 波动率分析（ATR/Bollinger等） |
+| C5 | `capabilities/trading/nodes/c5_exit_system.py` | 离场系统 | 技术面离场决策 |
 
 #### 3.4.3 F系列 — 基本面链（5个节点）
 
 | 节点 | 文件 | 名称 | 职责 |
 |------|------|------|------|
-| F1 | `f1_news.py` | 新闻分析 | 新闻情绪与影响分析 |
-| F2 | `f2_flow_analysis.py` | 资金流分析 | 资金流向分析 |
-| F3 | `f3_valuation.py` | 估值分析 | 估值模型分析 |
-| F4 | `f4_onchain_data.py` | 链上数据 | 链上数据分析 |
-| F5 | `f5_macro_analysis.py` | 宏观分析 | 宏观经济分析 |
+| F1 | `capabilities/trading/nodes/f1_news.py` | 新闻分析 | 新闻情绪与影响分析 |
+| F2 | `capabilities/trading/nodes/f2_flow_analysis.py` | 资金流分析 | 资金流向分析 |
+| F3 | `capabilities/trading/nodes/f3_valuation.py` | 估值分析 | 估值模型分析 |
+| F4 | `capabilities/trading/nodes/f4_onchain_data.py` | 链上数据 | 链上数据分析 |
+| F5 | `capabilities/trading/nodes/f5_macro_analysis.py` | 宏观分析 | 宏观经济分析 |
 
 #### 3.4.4 G系列 — 治理链（2个节点）
 
 | 节点 | 文件 | 名称 | 职责 |
 |------|------|------|------|
-| G1 | `g1_risk_control.py` | 风控 | 风险控制检查 |
-| G2 | `g2_governance.py` | 治理 | 合规治理审查 |
+| G1 | `capabilities/trading/nodes/g1_risk_control.py` | 风控 | 风险控制检查 |
+| G2 | `capabilities/trading/nodes/g2_governance.py` | 治理 | 合规治理审查 |
 
 ---
 
@@ -722,13 +733,15 @@ python -m pytest dreamos-tests/ -v
           │                                   │
           ↓                                   ↓
    ┌───────────────────────────────────────────────┐
-   │              core/ (SACG 四层)                 │
+   │              core/ (SACG 四层 + Capability层)   │
    │  sense → arrange → compute → graph_store      │
+   │  + capability/ (CapabilityRegistry + Router)  │
    └──────────────┬────────────────────────────────┘
                   ↓
            ┌─────────────┐    ┌─────────────┐
-           │  nodes/     │    │ evolution/  │
-           └──────┬──────┘    └─────────────┘
+           │capabilities/│    │ evolution/  │
+           │  (trading)  │    └─────────────┘
+           └──────┬──────┘
                   ↓
            ┌─────────────┐
            │  apps/      │
@@ -945,7 +958,7 @@ launchctl list | grep dreambuddy
 
 | 维度 | 扩展方式 |
 |------|----------|
-| 新增节点 | 继承 BaseNode → 放入 nodes/ → 自动注册 |
+| 新增节点 | 继承 BaseNode → 放入 capabilities/<domain>/nodes/ → 自动注册 |
 | 新增适配器 | 继承 BaseAdapter → 注册到 AdapterRegistry |
 | 新增意图 | 调用 `register_intent_type()` |
 | 新增应用 | 组合 SACG 四层 + 自定义节点集 |
@@ -976,9 +989,10 @@ launchctl list | grep dreambuddy
 | 你想... | 直接去 |
 |---------|--------|
 | 理解整体架构 | §1 系统概览 + §2 目录结构 |
+| 理解操作系统 vs 交易系统 | §1.1 系统定位（双重身份） |
 | 开发新节点 | §3.2 Registry + §3.4 节点体系 |
-| 接入新能力 | §3.3 适配器框架 |
-| 开发新应用 | §3.6 应用层 |
+| 接入新能力域 | §3.3 适配器框架 + §3.6 能力域设计 |
+| 开发新应用 | §3.7 应用层 |
 | 理解执行流程 | §3.1 SACG四层内核 |
 | 自动交易系统 | §3.7.2 自动化工具 + §3.7.3 调度器 |
 | 场景分类与编排 | §3.1.1 S层 + §3.1.2 A层编排记忆 |
@@ -999,9 +1013,12 @@ launchctl list | grep dreambuddy
 | G层入口 | `core/graph_store/store.py` |
 | 执行反馈收集 | `core/memory/execution_feedback.py` |
 | 进化引擎 | `evolution/engine.py` |
-| 节点列表 | `nodes/__init__.py` |
+| 节点列表 | `capabilities/trading/nodes/__init__.py` |
+| 能力域入口 | `capabilities/trading/__init__.py` |
+| **交易分析评估器** | `capabilities/trading/evaluator.py` |
 | 应用入口 | `apps/trading_agent/agent.py` |
-| 自动交易器 | `cli/auto_trader.py` |
+| 自动交易器 | `capabilities/trading/execution/auto_trader.py` |
+| 回测引擎 | `capabilities/trading/backtest/engine.py` |
 | 调度器 | `cli/scheduler.py` |
 | CLI入口 | `cli/app.py` |
 | 测试入口 | `dreamos-tests/test_smoke.py` |
@@ -1012,5 +1029,8 @@ launchctl list | grep dreambuddy
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.4 | 2026-07-21 | **交易分析评估器（核心新增）**：新增 `TradingAnalysisEvaluator` 实现亏损原因分析（10类）、模块能力评估（5维）、模块回测、编排推荐；EvolutionEngine 整合评估器，新增 `analyze_trades()` / `evaluate_module_capabilities()` / `recommend_orchestration()` 方法；更新技术文档明确"分析评估→模块回测→节点编排"核心理念 |
+| v2.3 | 2026-07-21 | **物理分离，逻辑集成**：交易节点从 `nodes/` 迁移到 `capabilities/trading/nodes/`；新增 CapabilityRegistry + CapabilityRouter 内核组件；AutoTrader 和回测引擎迁移到 `capabilities/trading/execution/` 和 `backtest/`；更新所有文档路径和依赖关系图；旧 `nodes/` 保留为向后兼容层 |
+| v2.2 | 2026-07-21 | 完善系统定位：明确操作系统内核 vs 交易系统的双重身份；引入能力域层概念；更新系统边界为三层边界模型；明确内核层/交易能力域/应用层的职责边界；更新目录结构注释 |
 | v2.1 | 2026-07-15 | 新增 36 场景分类系统、编排记忆表与四级降级、执行反馈收集器、进化引擎编排优化机制、自动交易器（AutoTrader）完整链路、DreamOSScheduler 调度器与默认配置、更新技术债务索引、补充快速导航入口 |
 | v2.0 | 2026-07-14 | 新建完整系统级工程索引，覆盖 SACG 四层、Registry、适配器、节点体系、进化引擎、应用层、CLI、预算管理、测试体系 |

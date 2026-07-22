@@ -187,6 +187,7 @@
   <div class="tab" onclick="switchTab('yijing', event)">🗼 易经推理</div>
   <div class="tab" onclick="switchTab('dreamos', event)">⚙️ Dream OS</div>
   <div class="tab" onclick="switchTab('signals', event)">📡 代币信号</div>
+  <div class="tab" onclick="switchTab('global', event)">🌐 全局统计</div>
 </div>
 
 <div class="main">
@@ -1179,6 +1180,66 @@
     </div>
   </div>
 
+  <!-- 全局统计 Tab -->
+  <div id="tab-global" class="tab-content">
+    <div class="tab-grid">
+
+      <!-- 统计总览 -->
+      <div class="card full-width">
+        <div class="card-title">
+          <div class="dot" style="background:var(--green)"></div>🌐 跨系统交易统计总览
+          <button onclick="loadGlobalTradeStats()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">🔄 刷新</button>
+        </div>
+        <div class="stats-grid" id="global-summary">
+          <div class="stat"><div class="stat-label">总系统数</div><div class="stat-value" id="global-systems">--</div><div class="stat-sub">接入交易系统</div></div>
+          <div class="stat"><div class="stat-label">总交易次数</div><div class="stat-value" id="global-trades">--</div><div class="stat-sub">历史累计</div></div>
+          <div class="stat"><div class="stat-label">综合胜率</div><div class="stat-value" id="global-win-rate">--</div><div class="stat-sub">所有系统</div></div>
+          <div class="stat"><div class="stat-label">总 PnL</div><div class="stat-value" id="global-pnl">--</div><div class="stat-sub">收益率</div></div>
+        </div>
+      </div>
+
+      <!-- 系统对比表格 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--blue)"></div>系统胜率 & PnL 对比</div>
+        <div id="global-systems-table" style="overflow-x:auto">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>系统名称</th>
+                <th>交易次数</th>
+                <th>盈利/亏损</th>
+                <th>胜率</th>
+                <th>总 PnL</th>
+                <th>平均 PnL</th>
+                <th>最大盈利</th>
+                <th>最大亏损</th>
+              </tr>
+            </thead>
+            <tbody id="global-systems-tbody">
+              <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 可视化对比图 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--purple)"></div>胜率 & PnL 柱状图对比</div>
+        <div id="global-chart-container" style="height:300px;display:flex;flex-direction:column;gap:20px">
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">胜率对比</div>
+            <div id="global-win-rate-bars" style="display:flex;align-items:flex-end;gap:8px;height:120px"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">平均 PnL 对比</div>
+            <div id="global-avg-pnl-bars" style="display:flex;align-items:flex-end;gap:8px;height:120px"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -1575,6 +1636,9 @@ function switchTab(tab, evt) {
   if (tab === 'signals' && !signalsDataLoaded) {
     loadTokenSignals();
   }
+  if (tab === 'global') {
+    loadGlobalTradeStats();
+  }
 }
 
 function currentTabRefresh() {
@@ -1592,6 +1656,8 @@ function currentTabRefresh() {
     loadV15CTData();
   } else if (currentTab === 'v4wave') {
     loadV4WaveStrategy();
+  } else if (currentTab === 'global') {
+    loadGlobalTradeStats();
   } else {
     loadCloudData();
   }
@@ -1719,7 +1785,7 @@ function renderV4WaveStrategy(data) {
 
   // 账户与持仓
   const acc = data.account || {};
-  const pos = data.position;
+  const allPos = data.all_positions || [];
   document.getElementById('v4wave-account').innerHTML = `
     <div style="display:flex;gap:16px;flex-wrap:wrap">
       <div style="flex:1;min-width:100px">
@@ -1730,17 +1796,24 @@ function renderV4WaveStrategy(data) {
         <span style="color:var(--muted)">可用余额</span><br>
         <b>${acc.available.toLocaleString()}</b> USDC
       </div>
+      <div style="flex:1;min-width:100px">
+        <span style="color:var(--muted)">持仓数</span><br>
+        <b>${allPos.length}</b>
+      </div>
     </div>
-    ${pos ? `
+    ${allPos.length > 0 ? `
     <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px">
-        <div><span style="color:var(--muted)">方向</span>: <b>${pos.side}</b></div>
+      <div style="color:var(--muted);font-size:11px;margin-bottom:4px">所有持仓</div>
+      ${allPos.map(pos => `
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin-bottom:4px;padding:4px 6px;border-radius:4px;background:rgba(59,130,246,0.05)">
+        <div><span style="color:var(--muted)">币种</span>: <b style="color:var(--blue)">${pos.coin}</b></div>
+        <div><span style="color:var(--muted)">方向</span>: <b style="color:${pos.side === 'LONG' ? '#22c55e' : '#ef4444'}">${pos.side}</b></div>
         <div><span style="color:var(--muted)">数量</span>: <b>${pos.size}</b></div>
         <div><span style="color:var(--muted)">入场价</span>: <b>${pos.entry_px}</b></div>
         <div><span style="color:var(--muted)">现价</span>: <b>${pos.mark_px}</b></div>
         <div><span style="color:var(--muted)">杠杆</span>: <b>${pos.leverage}x</b></div>
         <div><span style="color:${pos.upnl >= 0 ? '#22c55e' : '#ef4444'}">未实现盈亏</span>: <b>${pos.upnl >= 0 ? '+' : ''}${pos.upnl.toLocaleString()}</b> USDC</div>
-      </div>
+      </div>`).join('')}
     </div>` : '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--muted);font-size:12px">无持仓</div>'}
   `;
 }
@@ -5060,6 +5133,120 @@ function renderFreqtradeSignalsList(signals) {
   }).join('');
 
   el.innerHTML = header + rows;
+}
+
+// ── 全局统计 Tab（跨系统交易链路面板） ──────────────────────────────────────────
+async function loadGlobalTradeStats() {
+  try {
+    const res = await fetch('/api/global-trade-stats', { cache: 'no-store' });
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById('global-systems-tbody').innerHTML =
+        '<tr><td colspan="8" style="text-align:center;color:var(--red);padding:20px">加载失败: ' + data.error + '</td></tr>';
+      return;
+    }
+
+    // 更新统计总览
+    const summary = data.summary || {};
+    document.getElementById('global-systems').textContent = summary.total_systems || '--';
+    document.getElementById('global-trades').textContent = summary.total_trades || '--';
+    document.getElementById('global-win-rate').textContent = summary.win_rate_pct != null ? summary.win_rate_pct + '%' : '--';
+    
+    const pnlEl = document.getElementById('global-pnl');
+    const pnlVal = summary.total_pnl;
+    if (pnlVal != null) {
+      pnlEl.textContent = (pnlVal >= 0 ? '+' : '') + pnlVal + '%';
+      pnlEl.className = pnlVal >= 0 ? 'up' : 'down';
+    } else {
+      pnlEl.textContent = '--';
+      pnlEl.className = '';
+    }
+
+    // 更新系统对比表格
+    const tbody = document.getElementById('global-systems-tbody');
+    const systems = data.systems || {};
+    const systemKeys = Object.keys(systems).sort((a, b) => {
+      return (systems[b].total_trades || 0) - (systems[a].total_trades || 0);
+    });
+
+    if (systemKeys.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">暂无交易数据</td></tr>';
+    } else {
+      tbody.innerHTML = systemKeys.map(source => {
+        const s = systems[source];
+        const winRateColor = s.win_rate_pct >= 50 ? 'var(--green)' : 'var(--red)';
+        const pnlColor = s.total_pnl >= 0 ? 'var(--green)' : 'var(--red)';
+        const avgPnlColor = s.avg_pnl >= 0 ? 'var(--green)' : 'var(--red)';
+        const maxWinColor = s.max_win >= 0 ? 'var(--green)' : 'var(--red)';
+        const maxLoseColor = s.max_lose < 0 ? 'var(--red)' : 'var(--green)';
+
+        return `
+          <tr>
+            <td style="font-weight:600">${s.name || source}</td>
+            <td>${s.total_trades || 0}</td>
+            <td>${s.win_count || 0} / ${s.lose_count || 0}</td>
+            <td style="color:${winRateColor};font-weight:600">${s.win_rate_pct != null ? s.win_rate_pct + '%' : '--'}</td>
+            <td style="color:${pnlColor};font-weight:600">${s.total_pnl != null ? (s.total_pnl >= 0 ? '+' : '') + s.total_pnl + '%' : '--'}</td>
+            <td style="color:${avgPnlColor}">${s.avg_pnl != null ? (s.avg_pnl >= 0 ? '+' : '') + (s.avg_pnl * 100).toFixed(2) + '%' : '--'}</td>
+            <td style="color:${maxWinColor}">${s.max_win != null ? '+' + s.max_win + '%' : '--'}</td>
+            <td style="color:${maxLoseColor}">${s.max_lose != null ? s.max_lose + '%' : '--'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 渲染胜率对比柱状图
+    renderGlobalBarChart('global-win-rate-bars', systems, 'win_rate', 'win_rate_pct', '%', '#58a6ff');
+
+    // 渲染平均 PnL 对比柱状图
+    renderGlobalBarChart('global-avg-pnl-bars', systems, 'avg_pnl', null, '%', '#bc8cff');
+
+    document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
+
+  } catch (e) {
+    console.error('全局统计加载失败:', e);
+    document.getElementById('global-systems-tbody').innerHTML =
+      '<tr><td colspan="8" style="text-align:center;color:var(--red);padding:20px">加载失败: ' + e.message + '</td></tr>';
+  }
+}
+
+function renderGlobalBarChart(containerId, systems, valueKey, displayKey, unit, barColor) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const systemKeys = Object.keys(systems).filter(k => systems[k].total_trades > 0);
+  if (systemKeys.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);height:100%;display:flex;align-items:center;justify-content:center">暂无数据</div>';
+    return;
+  }
+
+  // 获取最大值用于归一化
+  let maxVal = 0;
+  systemKeys.forEach(k => {
+    const val = Math.abs(systems[k][valueKey] || 0);
+    if (val > maxVal) maxVal = val;
+  });
+  maxVal = maxVal || 1;
+
+  container.innerHTML = systemKeys.map(source => {
+    const s = systems[source];
+    const val = s[valueKey] || 0;
+    const displayVal = displayKey ? s[displayKey] : (val * 100).toFixed(2);
+    const barHeight = (Math.abs(val) / maxVal) * 100;
+    const isPositive = val >= 0;
+    const barBgColor = isPositive ? barColor : 'var(--red)';
+
+    return `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="font-size:11px;font-weight:600;color:${isPositive ? barColor : 'var(--red)'};text-align:center">${displayVal}${unit}</div>
+        <div style="width:100%;height:100px;display:flex;align-items:flex-end;justify-content:center">
+          <div style="width:60%;height:${barHeight}%;background:${barBgColor};border-radius:4px 4px 0 0;transition:height 0.5s ease;"></div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);text-align:center;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.name}">${s.name}</div>
+      </div>
+    `;
+  }).join('');
 }
 </script>
 </body>

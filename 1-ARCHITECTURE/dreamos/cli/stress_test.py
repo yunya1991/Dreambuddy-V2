@@ -29,7 +29,7 @@ sys.path.insert(0, str(root_dir))
 
 from dreamos.cli.auto_trader import AutoTrader
 from dreamos.registry import get_default_registry
-from dreamos.nodes import register_all
+from dreamos.capabilities.trading.nodes import register_all
 from dreamos.core.compute.graph_executor import GraphExecutor
 from dreamos.core.arrange.execution_graph import SequentialGraph
 from dreamos.shared.state import State, new_state

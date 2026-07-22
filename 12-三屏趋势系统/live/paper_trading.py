@@ -5,12 +5,24 @@
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 from enum import Enum
 import json
 import os
+import sys
 from pathlib import Path
+
+# L4 TradeEvent 注册（跨系统统一交易记录）
+try:
+    _L4_ROOT = Path(__file__).resolve().parents[2] / "11-易经推理系统"
+    if str(_L4_ROOT) not in sys.path:
+        sys.path.insert(0, str(_L4_ROOT))
+    from scripts.memory_l4.trade_event import TradeEvent
+    from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+    _L4_ENABLED = True
+except Exception as _e:
+    _L4_ENABLED = False
 
 
 class OrderSide(Enum):
@@ -216,11 +228,15 @@ class PaperTradingEngine:
         current_pos = portfolio.positions.get(pos_key) if pos_key else None
 
         if signal == 0:
-            # 平仓信号
-            if current_pos and current_pos.sz > 0:
-                order = self._close_position(
-                    portfolio, current_pos, exec_px, ts, notes
-                )
+            # 平仓信号 - 平掉所有持仓（无论多空）
+            for side in ["long", "short"]:
+                pos_key = f"{inst_id}_{side}"
+                if pos_key in portfolio.positions:
+                    pos = portfolio.positions[pos_key]
+                    if pos.sz > 0:
+                        order = self._close_position(
+                            portfolio, pos, exec_px, ts, notes
+                        )
         elif signal > 0:
             # 做多
             if current_pos:
@@ -393,6 +409,37 @@ class PaperTradingEngine:
             notes=f"平仓(pnl={pnl:.2f}) {notes}",
         )
         portfolio.orders.append(order)
+
+        # 注册到 L4
+        if _L4_ENABLED and position.sz <= 0:
+            try:
+                trade_id = f"three_screen_paper_{int(datetime.now(timezone.utc).timestamp())}_{position.inst_id.replace('-', '_')}"
+                event = TradeEvent(
+                    event_id=TradeEvent.generate_event_id(),
+                    system_source="three_screen",
+                    trade_id=trade_id,
+                    ts_entry=ts.isoformat(),
+                    ts_exit=ts.isoformat(),
+                    symbol=position.inst_id,
+                    direction=position.side,
+                    entry_price=position.avg_px,
+                    exit_price=px,
+                    position_size=sz,
+                    pnl=pnl,
+                    pnl_pct=(pnl / (position.avg_px * sz) * 100) if position.avg_px > 0 and sz > 0 else 0,
+                    exit_reason=f"paper_close_{notes}",
+                    decision_context={
+                        "strategy_name": portfolio.strategy_name,
+                        "strategy_type": "three_screen_trend",
+                        "paper_trading": True,
+                    },
+                )
+                registry = UnifiedCaseRegistry()
+                case_id, success = registry.register_trade_event(event)
+                if success:
+                    print(f"[L4] 纸交易案例已注册: {case_id}")
+            except Exception as e:
+                print(f"[L4] 纸交易注册异常: {e}")
 
         return order
 

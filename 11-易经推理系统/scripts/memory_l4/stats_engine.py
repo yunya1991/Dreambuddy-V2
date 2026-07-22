@@ -129,7 +129,15 @@ def compute_event_library(cases: Optional[List[Dict[str, Any]]] = None) -> Dict[
     quadrant_density: Dict[str, int] = {}
 
     for c in cases:
-        q = c.get("quadrant") or {}
+        q = c.get("quadrant")
+        if isinstance(q, str):
+            try:
+                q = json.loads(q)
+            except:
+                q = {}
+        elif q is None:
+            q = {}
+        
         x = q.get("x")
         y = q.get("y")
         if x is None or y is None:
@@ -365,7 +373,7 @@ def now_iso_local() -> str:
 def _list_json(dir_path: Path) -> List[Path]:
     if not dir_path.exists():
         return []
-    return sorted([p for p in dir_path.glob("*.json") if p.is_file()])
+    return sorted([p for p in dir_path.glob("*.json") if p.is_file() and "_v02_backup" not in p.name])
 
 
 def _load_all_cases() -> List[Dict[str, Any]]:
@@ -399,8 +407,16 @@ def compute_quadrant_distribution(cases: Optional[List[Dict[str, Any]]] = None) 
         cases = _load_all_cases()
     xs, ys = [], []
     for c in cases:
-        q = c.get("quadrant") or {}
-        if q.get("x") is not None and q.get("y") is not None:
+        q = c.get("quadrant")
+        if isinstance(q, str):
+            try:
+                q = json.loads(q)
+            except:
+                q = {}
+        elif q is None:
+            q = {}
+        
+        if isinstance(q, dict) and q.get("x") is not None and q.get("y") is not None:
             xs.append(q["x"])
             ys.append(q["y"])
     return {

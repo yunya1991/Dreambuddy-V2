@@ -128,3 +128,38 @@ experiments/ab-trading/data/agent_b_memory.md
 # Local feature flags / config
 features/
 feed
+
+# BCRM2 runtime models
+11-易经推理系统/scripts/data/bcrm2_models/
+
+# Kline cache data
+11-易经推理系统/scripts/data/klines/
+
+# Episode data
+data/episodes/
+
+# Calibration data (runtime generated)
+11-易经推理系统/scripts/data/confidence_calibration.json
+11-易经推理系统/scripts/data/hexagram_calibration.json
+
+# Trading monitor runtime
+15-监控告警系统/trading-monitor/
+
+# Deploy ops runtime
+deploy/ops/
+
+# Capital manager runtime
+14-V15经典马丁策略/data/capital_manager/
+
+# Sim trades backup
+14-V15经典马丁策略/data/okx_client/sim_trades_audit.jsonl.bak.*
+
+# Cache directories
+12-三屏趋势系统/data/cache/
+12-三屏趋势系统/ml/backtest_results/
+12-三屏趋势系统/ml/loop_data/
+
+# Frontend build artifacts
+3-FRONTEND/dream-universal-gateway/.next/
+3-FRONTEND/dream-universal-gateway/out/
+3-FRONTEND/dream-universal-gateway/dist/

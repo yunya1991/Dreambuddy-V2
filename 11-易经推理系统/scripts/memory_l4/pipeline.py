@@ -180,6 +180,19 @@ def step_rebuild_index() -> Dict[str, Any]:
     out_path = index_builder.write_index(data, index_builder.default_index_path())
 
     print(f"[M3.5] Index rebuilt: {len(data['case_features'])} cases at {out_path}")
+    
+    # KG 知识图谱同步（2026-07-21 修复：索引重建后自动同步到知识图谱）
+    try:
+        from scripts.memory_l4.kg_builder import KGBuilder
+        kg_builder = KGBuilder()
+        kg_result = kg_builder.build_all()
+        total_cases = sum(r.case_count for r in kg_result.values())
+        total_entities = sum(len(r.entities) for r in kg_result.values())
+        total_triples = sum(len(r.triples) for r in kg_result.values())
+        print(f"[M3.5] KG synced: {total_cases} cases, {total_entities} entities, {total_triples} triples")
+    except Exception as e:
+        print(f"[M3.5] KG sync warning: {e}")
+    
     return {"index_path": str(out_path), "case_count": len(data["case_features"])}
 
 

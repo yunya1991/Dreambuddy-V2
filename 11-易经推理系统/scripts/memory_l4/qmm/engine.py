@@ -99,6 +99,7 @@ def run_qmm(
         acceleration=vel_result["acceleration"],
         reason_codes=_build_reason_codes(ts_result, mrd_result, vel_result),
         evidence_refs=[e.event_id for e in events[-10:]],
+        system_source_stats=_compute_system_source_stats(events),
     )
 
     # Step 7: 写入输出
@@ -197,6 +198,42 @@ def _build_reason_codes(
         codes.append("NEUTRAL")
 
     return codes
+
+
+def _compute_system_source_stats(events) -> Dict[str, Any]:
+    """统计各系统来源的交易数据。"""
+    stats = {}
+    for ev in events:
+        source = ev.system_source
+        if source not in stats:
+            stats[source] = {
+                "count": 0,
+                "profit_count": 0,
+                "loss_count": 0,
+                "total_pnl": 0.0,
+                "avg_pnl": 0.0,
+                "quality_sum": 0.0,
+            }
+        stats[source]["count"] += 1
+        if ev.is_profit is True:
+            stats[source]["profit_count"] += 1
+        elif ev.is_profit is False:
+            stats[source]["loss_count"] += 1
+        if ev.pnl_pct is not None:
+            stats[source]["total_pnl"] += ev.pnl_pct
+        stats[source]["quality_sum"] += ev.quality
+
+    for source, data in stats.items():
+        if data["count"] > 0:
+            data["avg_pnl"] = round(data["total_pnl"] / data["count"], 4)
+            data["quality_avg"] = round(data["quality_sum"] / data["count"], 4)
+            data["win_rate"] = round(data["profit_count"] / data["count"], 4)
+        else:
+            data["avg_pnl"] = 0.0
+            data["quality_avg"] = 0.0
+            data["win_rate"] = 0.0
+
+    return stats
 
 
 def _save_output(

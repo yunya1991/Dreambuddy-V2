@@ -236,8 +236,8 @@ class BCRM2Adapter:
             for i in range(15, len(df)):
                 atr[i] = (atr[i-1] * 13 + tr[i-1]) / 14
             
-            # 生成方向标签：基于止盈止损的触发
-            labels = np.zeros(len(df))  # -1=DOWN, 0=FLAT, 1=UP
+            # 生成方向标签：二分类 (UP=1, DOWN=0)
+            labels = np.zeros(len(df))  # 0=DOWN, 1=UP
             valid_mask = np.zeros(len(df), dtype=bool)
             
             for i in range(len(df) - self.max_hold_bars):
@@ -252,35 +252,39 @@ class BCRM2Adapter:
                 hit_sl_long = False
                 hit_tp_short = False
                 hit_sl_short = False
+                hit_time_long = None
+                hit_time_short = None
                 
                 for j in range(i + 1, min(i + 1 + self.max_hold_bars, len(df))):
                     if not hit_tp_long and highs[j] >= tp_long:
                         hit_tp_long = True
+                        hit_time_long = j - i
                     if not hit_sl_long and lows[j] <= sl_long:
                         hit_sl_long = True
                     if not hit_tp_short and lows[j] <= tp_short:
                         hit_tp_short = True
+                        hit_time_short = j - i
                     if not hit_sl_short and highs[j] >= sl_short:
                         hit_sl_short = True
-                    
-                    if (hit_tp_long or hit_sl_long) and (hit_tp_short or hit_sl_short):
-                        break
                 
-                # 多空都触发：看谁先触发（简化：都不标记）
+                # 优先标记明确的止盈止损信号
                 if hit_tp_long and not hit_sl_long:
                     labels[i] = 1
                     valid_mask[i] = True
                 elif hit_tp_short and not hit_sl_short:
-                    labels[i] = -1
+                    labels[i] = 0
                     valid_mask[i] = True
+                elif hit_tp_long and hit_tp_short:
+                    # 双方都触止盈，看谁先触发
+                    if hit_time_long and hit_time_short:
+                        labels[i] = 1 if hit_time_long < hit_time_short else 0
+                        valid_mask[i] = True
                 elif not hit_tp_long and not hit_sl_long and not hit_tp_short and not hit_sl_short:
                     # 都没触发，按最终收益方向
                     final_return = (closes[i + self.max_hold_bars] - closes[i]) / closes[i]
-                    if final_return > 0.005:
-                        labels[i] = 1
-                    elif final_return < -0.005:
-                        labels[i] = -1
-                    valid_mask[i] = True
+                    if abs(final_return) > 0.002:  # 降低阈值，增加样本
+                        labels[i] = 1 if final_return > 0 else 0
+                        valid_mask[i] = True
             
             # 准备训练数据
             valid_idx = np.where(valid_mask)[0]
@@ -291,16 +295,20 @@ class BCRM2Adapter:
             X = features.values[valid_idx]
             y = labels[valid_idx]
             
+            # 同步筛选df到有效样本
+            df_valid = df.iloc[valid_idx].copy()
+            
             # 去除NaN
             nan_mask = ~np.isnan(X).any(axis=1)
             X = X[nan_mask]
             y = y[nan_mask]
+            df_valid = df_valid.iloc[nan_mask].copy()
             
             if len(X) < 100:
                 logger.warning(f"[BCRM2] 去除NaN后样本不足: {len(X)}")
                 return False
             
-            logger.info(f"[BCRM2] 训练样本: {len(X)} (UP={sum(y==1)} FLAT={sum(y==0)} DOWN={sum(y==-1)})")
+            logger.info(f"[BCRM2] 训练样本: {len(X)} (UP={sum(y==1)} DOWN={sum(y==0)})")
             
             # 训练模型
             engine = DialecticalMLEngine(
@@ -314,7 +322,7 @@ class BCRM2Adapter:
             # Meta-Labeling
             logger.info(f"[BCRM2] 训练L2 Meta-Labeling模型...")
             try:
-                engine.train_l2(X, y)
+                engine.train_l2(X, y, df=df_valid)
             except Exception as e:
                 logger.warning(f"[BCRM2] L2训练失败，跳过: {e}")
             
@@ -394,7 +402,7 @@ class BCRM2Adapter:
                 X_row = np.nan_to_num(X_row, nan=0.0)
             
             # 推理
-            result = self.engine.predict_single(X_row, with_gua=True)
+            result = self.engine.predict_single(X_row, with_gua=True, df=df)
             
             # 转换为 BCRM 1.0 兼容格式
             direction_text = result['direction_text']
@@ -404,8 +412,39 @@ class BCRM2Adapter:
             hex_name = hexagram_info.get('hexagram_name', '未知卦')
             hex_name_cn = hexagram_info.get('hexagram_name_cn', hex_name)
             
-            # fail_closed 判定：FLAT 或置信度太低
-            fail_closed = (direction_text == 'FLAT') or (confidence < 0.3)
+            # fail_closed 判定：置信度太低
+            # 二分类无FLAT，仅根据置信度判断
+            fail_closed = confidence < 0.3
+            
+            # KG 知识图谱增强（2026-07-21 修复：接入知识图谱推理校准置信度）
+            kg_confidence_adjustment = 0.0
+            kg_strategy_notes = []
+            if not fail_closed:
+                try:
+                    from scripts.memory_l4.kg_query import KGQueryEngine
+                    kg_engine = KGQueryEngine()
+                    regime = hexagram_info.get('liangyi_state', {}).get('macro_phase', '')
+                    recommendations = kg_engine.recommend_strategy(
+                        inst_id=f"{self.symbol}-USDT-SWAP",
+                        regime=regime,
+                        hexagram=hex_name_cn,
+                    )
+                    if recommendations:
+                        top_rec = recommendations[0]
+                        # 如果历史推荐与当前方向一致，提升置信度；反之降低
+                        kg_win_rate = top_rec.get('win_rate', 0.5)
+                        if kg_win_rate > 0.6:
+                            kg_confidence_adjustment = 0.03
+                            kg_strategy_notes.append(f"KG历史胜率{kg_win_rate:.1%}支持当前方向")
+                        elif kg_win_rate < 0.4:
+                            kg_confidence_adjustment = -0.03
+                            kg_strategy_notes.append(f"KG历史胜率{kg_win_rate:.1%}警告当前方向")
+                        logger.info(f"[BCRM2] KG增强: {kg_strategy_notes}")
+                except Exception as e:
+                    logger.warning(f"[BCRM2] KG增强失败: {e}")
+            
+            # 应用 KG 校准
+            confidence = min(1.0, max(0.0, confidence + kg_confidence_adjustment))
             
             return {
                 'ok': True,

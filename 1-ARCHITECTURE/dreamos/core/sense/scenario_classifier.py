@@ -87,8 +87,8 @@ class ScenarioClassifier:
     def _classify_trend(self, mkt: Dict[str, Any]) -> str:
         """趋势分类 — 复用A6 _calculate_trend_score逻辑
 
-        BULL: price>ema20>ema50>ema200 且 trend_score>=0.6
-        BEAR: price<ema20<ema50<ema200 且 trend_score>=0.6
+        BULL: price>ema20>ema50 且 trend_score>=0.5（放宽，不强制要求ema200）
+        BEAR: price<ema20<ema50 且 trend_score>=0.5
         NEUTRAL: 其他
         """
         price = mkt.get("price", 0)
@@ -98,26 +98,30 @@ class ScenarioClassifier:
         change_24h = mkt.get("change_24h", 0)
 
         score = 0.0
-        bull_align = price > ema20 > ema50 > ema200
-        bear_align = price < ema20 < ema50 < ema200
+        # 核心趋势判断：价格与EMA20/EMA50的关系（EMA200在短周期数据下会退化）
+        bull_align = price > ema20 > ema50
+        bear_align = price < ema20 < ema50
 
         if bull_align:
-            score += 0.4
+            score += 0.5
         elif bear_align:
-            score += 0.4
+            score += 0.5
 
-        if ema20 > ema50:
-            score += 0.2
-        elif ema20 < ema50:
-            score += 0.2
+        # EMA200作为辅助确认（如果数据足够）
+        if ema200 > 0 and abs(ema200 - price) / max(price, 1) > 0.001:  # EMA200有效
+            if bull_align and price > ema200:
+                score += 0.15
+            elif bear_align and price < ema200:
+                score += 0.15
 
-        score += abs(change_24h) * 0.3
+        # 24h变化率贡献
+        score += min(abs(change_24h) * 0.3, 0.35)
         score = min(max(score, 0), 1)
         self._last_trend_score = score
 
-        if bull_align and score >= self.TREND_THRESHOLD:
+        if bull_align and score >= 0.5:
             return "BULL"
-        elif bear_align and score >= self.TREND_THRESHOLD:
+        elif bear_align and score >= 0.5:
             return "BEAR"
         else:
             return "NEUTRAL"

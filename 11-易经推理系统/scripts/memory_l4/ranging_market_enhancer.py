@@ -591,23 +591,23 @@ class RangingMarketEnhancer:
         if regime == MarketRegime.TREND_UP:
             # 上涨趋势：做多阈值放宽，做空阈值提高
             long_thresh = 0.45
-            short_thresh = 0.60
+            short_thresh = 0.70
         elif regime == MarketRegime.TREND_DOWN:
-            # 下跌趋势：做空阈值放宽，做多阈值提高
+            # 下跌趋势：做空阈值适度放宽，做多阈值提高
             long_thresh = 0.60
-            short_thresh = 0.45
+            short_thresh = 0.55
         elif regime == MarketRegime.RANGING_UP:
-            # 震荡偏多：做多稍宽，做空稍严
+            # 震荡偏多：做多稍宽，做空更严
             long_thresh = 0.50
-            short_thresh = 0.58
+            short_thresh = 0.68
         elif regime == MarketRegime.RANGING_DOWN:
             # 震荡偏空：做空稍宽，做多稍严
             long_thresh = 0.58
-            short_thresh = 0.50
+            short_thresh = 0.58
         else:
-            # SIDEWAYS：中等阈值
+            # SIDEWAYS：做空阈值高于做多
             long_thresh = 0.54
-            short_thresh = 0.54
+            short_thresh = 0.65
 
         # 应用方向偏向调整（额外 ±0.05）
         long_thresh -= bias * 0.05

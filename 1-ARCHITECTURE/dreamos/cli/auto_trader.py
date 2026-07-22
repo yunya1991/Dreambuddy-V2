@@ -61,6 +61,9 @@ def calc_dynamic_leverage(
 class AutoTrader:
     """自动化交易器"""
 
+    # P1-2: 降级路径告警阈值
+    FALLBACK_SUSPEND_THRESHOLD = 3  # 连续3次降级暂停该 symbol
+
     def __init__(self, agent_id: str = "b", dry_run: bool = True, exchange: str = "hyperliquid"):
         self.agent_id = agent_id
         self.dry_run = dry_run
@@ -77,6 +80,13 @@ class AutoTrader:
         self._feedback_collector = None
         # 当前分析上下文（场景+编排），供 execute_trade 回写反馈使用
         self._current_context = {"scenario_id": "UNKNOWN", "pattern": "c_chain", "expected_direction": "HOLD"}
+        # P1-2: 降级路径计数器 — symbol → 连续降级次数
+        self._fallback_counts: Dict[str, int] = {}
+        # P1-2: 暂停的 symbol 集合
+        self._suspended_symbols: set = set()
+        # 4h 周期去重 — symbol → 最后开仓的 4h 周期起始时间戳
+        # 1h 调度但开仓基于 4h，避免同一 4h 周期内重复开仓
+        self._last_trade_4h_ts: Dict[str, int] = {}
 
     def get_scenario_classifier(self):
         """场景分类器（延迟初始化）"""
@@ -234,7 +244,7 @@ class AutoTrader:
         memory = self.get_orchestration_memory()
         scenario = classifier.classify(market_data)
         choice = memory.select(scenario.scenario_id)
-        logger.info(f"场景识别: {scenario.scenario_id} → 编排: {choice.pattern} (L{choice.fallback_level})")
+        logger.info(f"场景识别: {scenario.scenario_id} → 编排: {choice.pattern} ({choice.fallback_level})")
 
         # 保存当前上下文，供 execute_trade / 离场检查 回写反馈使用
         self._current_context = {
@@ -285,7 +295,7 @@ class AutoTrader:
         from dreamos.registry import get_default_registry
         from dreamos.core.compute.graph_executor import GraphExecutor
         from dreamos.core.arrange.execution_graph import SequentialGraph
-        from dreamos.nodes import register_all
+        from dreamos.capabilities.trading.nodes import register_all
 
         start_time = time.time()
         registry = get_default_registry()
@@ -331,9 +341,12 @@ class AutoTrader:
             if c1_dir == c2_dir and c1_dir != "HOLD":
                 direction = c1_dir
                 confidence = c2_conf
-            elif c2_conf >= 0.65:
-                direction = c2_dir
-                confidence = c2_conf
+            else:
+                # 对称门槛：多空同等置信度要求
+                threshold = 0.62 if c2_dir == "SHORT" else 0.62
+                if c2_conf >= threshold:
+                    direction = c2_dir
+                    confidence = c2_conf
 
         price = market_data.get("price", 0)
         if price == 0:
@@ -431,13 +444,13 @@ class AutoTrader:
                         return {"symbol": symbol, "price": 0}
 
                     candles_1h = aster_spot.get_candles(symbol, "1h", 48, getattr(client, 'proxies', None))
-                    candles_4h = aster_spot.get_candles(symbol, "4h", 14, getattr(client, 'proxies', None))
+                    candles_4h = aster_spot.get_candles(symbol, "4h", 52, getattr(client, 'proxies', None))
 
                     closes_1h = [float(c["c"]) for c in candles_1h if "c" in c]
                     closes_4h = [float(c["c"]) for c in candles_4h if "c" in c]
                     vols_1h = [float(c["v"]) for c in candles_1h if "v" in c]
 
-                    if len(closes_1h) < 24:
+                    if len(closes_4h) < 24:
                         return {"symbol": symbol, "price": price}
 
                     def ema(prices, n):
@@ -473,16 +486,16 @@ class AutoTrader:
                             trs.append(max(h - l, abs(h - c_prev), abs(l - c_prev)))
                         return sum(trs) / len(trs) if trs else 0
 
-                    closes_rev = closes_1h[::-1]
+                    closes_rev = closes_4h[::-1]
                     ema20 = ema(closes_rev, 20)
                     ema50 = ema(closes_rev, min(50, len(closes_rev)))
-                    ema200 = ema(closes_4h[::-1], min(20, len(closes_4h)))
+                    ema200 = ema(closes_rev, min(200, len(closes_rev)))
                     rsi14 = rsi(closes_rev)
-                    atr14 = atr(candles_1h)
+                    atr14 = atr(candles_4h)
 
                     change_1h = ((closes_1h[0] - closes_1h[1]) / closes_1h[1] * 100) if len(closes_1h) > 1 else 0
-                    change_24h = ((closes_1h[0] - closes_1h[23]) / closes_1h[23] * 100) if len(closes_1h) > 23 else 0
-                    change_4h = ((closes_4h[0] - closes_4h[3]) / closes_4h[3] * 100) if len(closes_4h) > 3 else 0
+                    change_24h = ((closes_4h[0] - closes_4h[6]) / closes_4h[6] * 100) if len(closes_4h) > 6 else 0
+                    change_4h = ((closes_4h[0] - closes_4h[1]) / closes_4h[1] * 100) if len(closes_4h) > 1 else 0
 
                     return {
                         "symbol": symbol,
@@ -718,6 +731,9 @@ class AutoTrader:
 
                 if result.get("ok"):
                     self._last_trade_time[coin] = time.time()
+                    # 更新 4h 周期去重标记
+                    current_4h_ts = (int(time.time() * 1000) // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
+                    self._last_trade_4h_ts[coin] = current_4h_ts
                     return {
                         "result": "SUCCESS",
                         "action": action,
@@ -739,6 +755,9 @@ class AutoTrader:
 
                 if result.get("ok"):
                     self._last_trade_time[coin] = time.time()
+                    # 更新 4h 周期去重标记
+                    current_4h_ts = (int(time.time() * 1000) // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
+                    self._last_trade_4h_ts[coin] = current_4h_ts
                     return {
                         "result": "SUCCESS",
                         "action": action,
@@ -752,37 +771,8 @@ class AutoTrader:
 
             elif self.exchange == "aster":
                 # Aster v3 EVM 签名交易,调用 ml_trade_service 模块函数
-                # 下单前设置杠杆(动态 1-5 倍),基于置信度动态调整
-                target_lev = int(trade_order.get("leverage", DEFAULT_LEVERAGE))
-                target_lev = max(MIN_LEVERAGE, min(MAX_LEVERAGE, target_lev))
-                lev_ok = False
-                try:
-                    lev_resp = client._aster_update_leverage(coin, target_lev)
-                    lev_used = lev_resp.get('leverage_used') or lev_resp.get('leverage') if isinstance(lev_resp, dict) else None
-                    # 已持仓币种会返回 skipped=True(杠杆无法修改),这种情况下用现有杠杆下单
-                    if isinstance(lev_resp, dict) and lev_resp.get('skipped'):
-                        logger.warning(f"Aster 杠杆无法修改({coin}, 已持仓,保持现有杠杆): {lev_resp.get('reason')}")
-                        lev_ok = True  # 已持仓,允许下单(用现有杠杆)
-                    else:
-                        logger.info(f"Aster 杠杆设置: {coin} → {lev_used}x")
-                        lev_ok = True
-                except Exception as e:
-                    err_msg = str(e)
-                    logger.warning(f"Aster 设置杠杆失败({coin}, {target_lev}x): {err_msg}")
-                    # Nonce used 或其他错误,不允许下单(保守策略,避免用 10x 杠杆)
-                    return {"result": "FAILED", "error": f"杠杆设置失败({err_msg}),为避免高杠杆风险不下单"}
-
-                if not lev_ok:
-                    return {"result": "FAILED", "error": "杠杆设置未确认,不下单"}
-
-                if action == "LONG":
-                    r = client._aster_market_order(coin, 'long', float(position_size),
-                                                   reduce_only=False, allow_adjust=True)
-                elif action == "SHORT":
-                    r = client._aster_market_order(coin, 'short', float(position_size),
-                                                   reduce_only=False, allow_adjust=True)
-                elif action == "EXIT":
-                    # 平仓:先查持仓获取数量与方向
+                # P0-3 修复: EXIT 动作不需要设置杠杆,直接平仓
+                if action == "EXIT":
                     positions, pos_err = client._aster_fetch_positions()
                     if pos_err or not positions:
                         return {"result": "SKIP", "reason": f"无持仓可平: {pos_err}"}
@@ -799,7 +789,56 @@ class AutoTrader:
                         return {"result": "SKIP", "reason": "无持仓可平"}
                     r = client._aster_market_order_qty(coin, close_side, pos_qty, reduce_only=True)
                 else:
-                    return {"error": f"未知动作: {action}"}
+                    # LONG/SHORT: 下单前设置杠杆(动态 1-5 倍)
+                    target_lev = int(trade_order.get("leverage", DEFAULT_LEVERAGE))
+                    target_lev = max(MIN_LEVERAGE, min(MAX_LEVERAGE, target_lev))
+                    lev_ok = False
+                    try:
+                        lev_resp = client._aster_update_leverage(coin, target_lev)
+                        lev_used = lev_resp.get('leverage_used') or lev_resp.get('leverage') if isinstance(lev_resp, dict) else None
+                        # 已持仓币种会返回 skipped=True(杠杆无法修改)
+                        if isinstance(lev_resp, dict) and lev_resp.get('skipped'):
+                            # P0-3 修复: 验证现有杠杆是否在安全范围内
+                            try:
+                                positions, _ = client._aster_fetch_positions()
+                                current_lev = None
+                                if positions:
+                                    for p in positions:
+                                        if coin.upper() in str(p.get('symbol', '')).upper():
+                                            current_lev = int(p.get('leverage') or p.get('leverageSys') or 0)
+                                            break
+                                if current_lev and current_lev > MAX_LEVERAGE:
+                                    logger.error(f"Aster 杠杆超限({coin}): 现有{current_lev}x > 最大{MAX_LEVERAGE}x, 拒绝下单")
+                                    return {"result": "FAILED", "error": f"现有杠杆{current_lev}x超过安全上限{MAX_LEVERAGE}x,拒绝下单"}
+                                logger.warning(f"Aster 杠杆无法修改({coin}, 已持仓,现有杠杆={current_lev or '未知'}x): {lev_resp.get('reason')}")
+                                lev_ok = True
+                            except Exception as verify_err:
+                                logger.warning(f"Aster 杠杆验证失败({coin}): {verify_err}, 保守拒绝下单")
+                                return {"result": "FAILED", "error": f"杠杆验证失败: {verify_err}"}
+                        else:
+                            # P0-3 修复: 验证杠杆确实设置成功
+                            if lev_used and int(lev_used) > MAX_LEVERAGE:
+                                logger.error(f"Aster 杠杆设置异常({coin}): 设置后{lev_used}x > 最大{MAX_LEVERAGE}x")
+                                return {"result": "FAILED", "error": f"杠杆设置后{lev_used}x超过安全上限{MAX_LEVERAGE}x"}
+                            logger.info(f"Aster 杠杆设置: {coin} → {lev_used or target_lev}x")
+                            lev_ok = True
+                    except Exception as e:
+                        err_msg = str(e)
+                        logger.error(f"Aster 设置杠杆失败({coin}, {target_lev}x): {err_msg}, 拒绝下单")
+                        # P0-3: 杠杆设置失败时硬阻断,不下单
+                        return {"result": "FAILED", "error": f"杠杆设置失败({err_msg}),为避免高杠杆风险不下单"}
+
+                    if not lev_ok:
+                        return {"result": "FAILED", "error": "杠杆设置未确认,不下单"}
+
+                    if action == "LONG":
+                        r = client._aster_market_order(coin, 'long', float(position_size),
+                                                       reduce_only=False, allow_adjust=True)
+                    elif action == "SHORT":
+                        r = client._aster_market_order(coin, 'short', float(position_size),
+                                                       reduce_only=False, allow_adjust=True)
+                    else:
+                        return {"error": f"未知动作: {action}"}
 
                 # Aster 成功判断:resp 中 status == FILLED
                 resp = r.get('resp', {})
@@ -814,6 +853,9 @@ class AutoTrader:
 
                 if ok:
                     self._last_trade_time[coin] = time.time()
+                    # 更新 4h 周期去重标记
+                    current_4h_ts = (int(time.time() * 1000) // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
+                    self._last_trade_4h_ts[coin] = current_4h_ts
                     return {
                         "result": "SUCCESS",
                         "action": action,
@@ -832,37 +874,182 @@ class AutoTrader:
             return {"result": "ERROR", "error": str(e)}
 
     def check_exit(self, symbol: str, entry_price: float, direction: str) -> Dict[str, Any]:
-        """检查离场条件"""
+        """检查离场条件 — 时间衰减 + 市场状态自适应止损
+
+        持仓时间策略:
+            0-20 根 K 线: 宽松止损，给仓位空间发展
+            20-50 根: 线性收紧
+            50+ 根: 紧凑止损 + 移动止盈
+
+        市场状态叠加:
+            震荡市 (ranging): regime_factor=1.5，避免被噪声扫出
+            趋势市 (trend):   regime_factor=1.0，紧凑保护利润
+        """
         market_data = self._fetch_market_data(symbol)
         price = market_data.get("price", 0)
         if price == 0:
             return {"exit": False, "reason": "无法获取价格"}
 
-        atr_pct = 0.02
-        sl_pct = atr_pct * 1.5
-        tp_pct = atr_pct * 3.0
+        # 获取实时 ATR%
+        atr_pct = market_data.get("atr_pct", 0.02)
+
+        # 计算持仓 K 线数（基于开仓时间）
+        bars_held = self._estimate_bars_held(symbol)
+
+        # 时间衰减因子: 0-20 根 = 1.5, 20-50 根线性衰减到 1.0, 50+ 根 = 1.0
+        if bars_held <= 20:
+            time_factor = 1.5
+        elif bars_held <= 50:
+            time_factor = 1.5 - (bars_held - 20) * (0.5 / 30)  # 1.5 → 1.0
+        else:
+            time_factor = 1.0
+
+        # 市场状态因子：震荡市更宽，趋势市更紧
+        regime = self._detect_regime_from_market_data(market_data, atr_pct)
+        regime_factor = 1.5 if regime == "ranging" else 1.0
+
+        # 币种波动率因子：以 BTC 为基准，高波动币种额外放宽
+        symbol_vol_factor = self._calc_symbol_vol_factor(symbol, atr_pct)
+
+        # 最终止损因子 = 时间因子 × 市场状态因子 × 币种波动率因子
+        sl_factor = time_factor * regime_factor * symbol_vol_factor
+
+        # 止损/止盈比例
+        sl_pct = atr_pct * 1.0 * sl_factor    # 基础 1.0x ATR × 复合因子
+        tp_pct = atr_pct * 2.0                  # 止盈固定 2.0x ATR
 
         if direction == "LONG":
             stop_loss = entry_price * (1 - sl_pct)
             take_profit = entry_price * (1 + tp_pct)
+
+            # 50+ 根 K 线后启用移动止盈
+            if bars_held > 20:
+                profit_pct = (price - entry_price) / entry_price if entry_price > 0 else 0
+                if profit_pct > 0:
+                    # 移动止损：保本后逐步上移
+                    trail_stop = entry_price * (1 + profit_pct * 0.5)  # 保护 50% 利润
+                    stop_loss = max(stop_loss, trail_stop)
+
             if price <= stop_loss:
-                return {"exit": True, "reason": f"止损触发: {price:.2f} <= {stop_loss:.2f}", "exit_price": stop_loss}
+                return {"exit": True, "reason": f"止损触发: {price:.4f} <= {stop_loss:.4f} (持仓{bars_held}根, factor={sl_factor:.2f}={time_factor:.2f}×{regime_factor:.1f}×{symbol_vol_factor:.1f})", "exit_price": stop_loss}
             if price >= take_profit:
-                return {"exit": True, "reason": f"止盈触发: {price:.2f} >= {take_profit:.2f}", "exit_price": take_profit}
+                return {"exit": True, "reason": f"止盈触发: {price:.4f} >= {take_profit:.4f} (持仓{bars_held}根)", "exit_price": take_profit}
         else:
             stop_loss = entry_price * (1 + sl_pct)
             take_profit = entry_price * (1 - tp_pct)
-            if price >= stop_loss:
-                return {"exit": True, "reason": f"止损触发: {price:.2f} >= {stop_loss:.2f}", "exit_price": stop_loss}
-            if price <= take_profit:
-                return {"exit": True, "reason": f"止盈触发: {price:.2f} <= {take_profit:.2f}", "exit_price": take_profit}
 
-        return {"exit": False, "reason": "继续持有"}
+            if bars_held > 20:
+                profit_pct = (entry_price - price) / entry_price if entry_price > 0 else 0
+                if profit_pct > 0:
+                    trail_stop = entry_price * (1 - profit_pct * 0.5)
+                    stop_loss = min(stop_loss, trail_stop)
+
+            if price >= stop_loss:
+                return {"exit": True, "reason": f"止损触发: {price:.4f} >= {stop_loss:.4f} (持仓{bars_held}根, factor={sl_factor:.2f}={time_factor:.2f}×{regime_factor:.1f}×{symbol_vol_factor:.1f})", "exit_price": stop_loss}
+            if price <= take_profit:
+                return {"exit": True, "reason": f"止盈触发: {price:.4f} <= {take_profit:.4f} (持仓{bars_held}根)", "exit_price": take_profit}
+
+        return {"exit": False, "reason": f"继续持有 (持仓{bars_held}根, regime={regime}, SL factor={sl_factor:.2f}={time_factor:.2f}×{regime_factor:.1f}×{symbol_vol_factor:.1f}, atr={atr_pct:.4f})"}
+
+    def _estimate_bars_held(self, symbol: str) -> int:
+        """估算持仓 K 线数
+
+        基于 _last_trade_time 记录的开仓时间，按 1h 周期折算。
+        如果没有记录，返回 0（按最宽松处理）。
+        """
+        entry_ts = self._last_trade_time.get(symbol, 0)
+        if entry_ts == 0:
+            return 0
+        elapsed_hours = (time.time() - entry_ts) / 3600.0
+        return max(1, int(elapsed_hours))
+
+    def _detect_regime_from_market_data(self, market_data: Dict[str, Any], atr_pct: float) -> str:
+        """从实时行情判断市场状态
+
+        震荡市 (ranging): EMA 纠缠、价格在均线间反复
+        趋势市 (trend):   EMA 多头/空头排列
+
+        回退：用 ATR% 阈值判断
+        """
+        try:
+            from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+            classifier = ScenarioClassifier()
+            scenario = classifier.classify(market_data)
+            if scenario.trend in ("BULL", "BEAR"):
+                return "trend"
+            return "ranging"
+        except Exception:
+            # 回退：ATR% 阈值
+            if atr_pct > 0.03:
+                return "trend"
+            return "ranging"
+
+    def _calc_symbol_vol_factor(self, symbol: str, atr_pct: float) -> float:
+        """计算币种波动率因子（以 BTC 为基准）
+
+        比较当前币种 ATR% 与 BTC ATR%，波动率越高的币种给越宽的止损缓冲。
+
+        ratio = coin_atr / btc_atr
+        ratio <= 1.0: 0.8  (比 BTC 还稳定，收紧)
+        ratio 1.0-2.0: 1.0 (与 BTC 相当)
+        ratio 2.0-3.0: 1.2 (中等高波动)
+        ratio > 3.0:   1.4 (极端高波动)
+        """
+        symbol_upper = symbol.upper().strip()
+
+        # BTC 自身是基准
+        if symbol_upper in ("BTC", "BTCUSDT"):
+            return 1.0
+
+        # 获取 BTC 基准 ATR%
+        btc_atr_pct = self._get_btc_atr_pct()
+        if btc_atr_pct <= 0:
+            # 无法获取 BTC 数据，用硬编码回退
+            HIGH_VOL = {"SOL", "AVAX", "MATIC", "DOT", "LINK", "DOGE", "SHIB", "OP", "ARB"}
+            if symbol_upper in HIGH_VOL:
+                return 1.2
+            return 1.0
+
+        ratio = atr_pct / btc_atr_pct if btc_atr_pct > 0 else 1.0
+
+        if ratio <= 1.0:
+            return 0.8
+        elif ratio <= 2.0:
+            return 1.0
+        elif ratio <= 3.0:
+            return 1.2
+        else:
+            return 1.3
+
+    _btc_atr_cache: Dict[str, Any] = {"ts": 0, "val": 0.0}
+
+    def _get_btc_atr_pct(self) -> float:
+        """获取 BTC 的 ATR%（带 5 分钟缓存）"""
+        import time as _time
+        now = _time.time()
+        if self._btc_atr_cache["ts"] > 0 and (now - self._btc_atr_cache["ts"]) < 300:
+            return self._btc_atr_cache["val"]
+
+        try:
+            btc_data = self._fetch_market_data("BTC")
+            btc_atr = btc_data.get("atr_pct", 0.0)
+            if btc_atr > 0:
+                self._btc_atr_cache = {"ts": now, "val": btc_atr}
+                return btc_atr
+        except Exception:
+            pass
+
+        return 0.0
 
     def run_auto_trade(self, symbol: str) -> Dict[str, Any]:
         """运行完整自动化交易流程"""
         if not self.is_enabled():
             return {"result": "SKIP", "reason": "自动交易已禁用"}
+
+        # P1-2: 检查该 symbol 是否因连续降级被暂停
+        if symbol in self._suspended_symbols:
+            logger.warning(f"Symbol {symbol} 因连续 {self.FALLBACK_SUSPEND_THRESHOLD} 次降级路径被暂停交易")
+            return {"result": "SKIP", "reason": f"symbol {symbol} 已暂停(连续降级)"}
 
         start_time = time.time()
         result = {
@@ -889,6 +1076,24 @@ class AutoTrader:
 
             # 置信度优先从顶层取(TradingAgent 最终决策),其次从 A5 取
             confidence = analysis.get("confidence") or a5_output.get("confidence", 0)
+
+            # P1-2: 降级路径检测与告警
+            is_fallback = not trade_order or not trade_order.get("entry_price")
+            if is_fallback and direction != "HOLD":
+                self._fallback_counts[symbol] = self._fallback_counts.get(symbol, 0) + 1
+                count = self._fallback_counts[symbol]
+                logger.warning(f"Symbol {symbol} 降级路径触发 (连续 {count}/{self.FALLBACK_SUSPEND_THRESHOLD})")
+                if count >= self.FALLBACK_SUSPEND_THRESHOLD:
+                    self._suspended_symbols.add(symbol)
+                    logger.error(f"Symbol {symbol} 连续 {count} 次降级,已暂停交易")
+                    result["steps"].append({"step": "decision", "status": "suspended", "reason": f"连续 {count} 次降级路径"})
+                    result["final_result"] = "SUSPENDED_FALLBACK"
+                    return result
+            else:
+                # 正常 trade_order,重置降级计数
+                if self._fallback_counts.get(symbol, 0) > 0:
+                    logger.info(f"Symbol {symbol} 降级计数重置 (A5 正常输出)")
+                self._fallback_counts[symbol] = 0
 
             # 如果 A5 没有输出 trade_order 但顶层有方向,用缓存的 market_data 构造最小订单
             if not trade_order and direction != "HOLD":
@@ -938,10 +1143,20 @@ class AutoTrader:
                 result["final_result"] = "HOLD"
                 return result
 
-            threshold = float(os.environ.get("DREAMOS_CONFIDENCE_THRESHOLD", "0.4"))
+            # 对称门槛：多空同等置信度要求
+            threshold = 0.62 if direction == "SHORT" else 0.62
             if confidence < threshold:
-                result["steps"].append({"step": "decision", "status": "rejected", "reason": f"置信度不足({confidence:.2f} < {threshold})"})
+                result["steps"].append({"step": "decision", "status": "rejected", "reason": f"置信度不足({confidence:.2f} < {threshold}, 方向={direction})"})
                 result["final_result"] = "CONFIDENCE_TOO_LOW"
+                return result
+
+            # 4h 周期去重：1h 调度但开仓基于 4h 指标，避免同一 4h 周期内重复开仓
+            current_ts = int(time.time() * 1000)
+            current_4h_ts = (current_ts // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
+            last_4h_ts = self._last_trade_4h_ts.get(symbol, 0)
+            if last_4h_ts == current_4h_ts:
+                result["steps"].append({"step": "decision", "status": "rejected", "reason": f"4h 周期内已开仓(当前周期={current_4h_ts}, 上次={last_4h_ts})"})
+                result["final_result"] = "DUPLICATE_4H"
                 return result
 
             result["steps"].append({"step": "decision", "status": "approved", "direction": direction, "confidence": confidence})
@@ -1031,6 +1246,131 @@ class AutoTrader:
             self._try_trigger_evolution()
 
         return exit_result
+
+    def run_exit_check_all(self) -> Dict[str, Any]:
+        """检查所有持仓的离场条件并执行离场
+
+        P0-2 修复：调度器定期调用此方法，检查所有未平仓持仓的
+        止损/止盈条件，执行离场并回填实际收益率到反馈收集器。
+        """
+        client = self.get_exchange_client()
+        if not client:
+            return {"error": "无法连接交易所"}
+
+        # 获取所有持仓
+        positions = []
+        try:
+            if self.exchange == "aster":
+                pos_list, err = client._aster_fetch_positions()
+                if err:
+                    return {"error": f"获取持仓失败: {err}"}
+                positions = pos_list or []
+            elif self.exchange == "hyperliquid":
+                acct = client.get_account()
+                for coin, pos in acct.get("positions", {}).items():
+                    size = float(pos.get("size", 0))
+                    if abs(size) > 0:
+                        positions.append({
+                            "symbol": coin,
+                            "position_amt": size,
+                            "entry_price": float(pos.get("entry_px", 0)),
+                        })
+            elif self.exchange == "okx":
+                # OKX 通过 get_account_status 获取持仓
+                status = self.get_account_status()
+                if "error" in status:
+                    return status
+                # OKX spot 通常无持仓
+                positions = []
+        except Exception as e:
+            logger.warning(f"获取持仓异常: {e}")
+            return {"error": f"获取持仓异常: {e}"}
+
+        if not positions:
+            logger.info("离场检查: 无持仓")
+            return {"result": "NO_POSITIONS", "checked": 0, "timestamp": datetime.now().isoformat()}
+
+        results = []
+        exit_count = 0
+
+        for pos in positions:
+            symbol = str(pos.get("symbol", "")).replace("-USDT", "").replace("-SWAP", "")
+            entry_price = float(pos.get("entry_price") or pos.get("entryPx") or 0)
+            amt = float(pos.get("position_amt") or pos.get("positionAmt") or 0)
+
+            if entry_price <= 0 or abs(amt) <= 0:
+                continue
+
+            direction = "LONG" if amt > 0 else "SHORT"
+
+            # 检查离场条件
+            exit_result = self.check_exit(symbol, entry_price, direction)
+
+            if exit_result.get("exit"):
+                # 执行离场
+                exec_result = self.execute_trade({
+                    "action": "EXIT",
+                    "coin": symbol,
+                    "entry_price": entry_price,
+                    "direction": direction,
+                })
+
+                # 回填实际收益率
+                exit_price = exit_result.get("exit_price", entry_price)
+                if entry_price > 0:
+                    if direction == "LONG":
+                        ret = (exit_price - entry_price) / entry_price
+                    else:
+                        ret = (entry_price - exit_price) / entry_price
+                    ret -= 0.0008  # 手续费
+                else:
+                    ret = 0.0
+
+                self.record_trade_feedback({
+                    "direction": direction,
+                    "result": ret,
+                    "expected_direction": self._current_context.get("expected_direction", "HOLD"),
+                    "symbol": symbol,
+                    "entry_price": entry_price,
+                    "exit_price": exit_price,
+                    "scenario_id": self._current_context.get("scenario_id", "UNKNOWN"),
+                    "pattern": self._current_context.get("pattern", "c_chain"),
+                })
+
+                results.append({
+                    "symbol": symbol,
+                    "direction": direction,
+                    "entry_price": entry_price,
+                    "exit_price": exit_price,
+                    "return": round(ret, 4),
+                    "executed": True,
+                    "reason": exit_result.get("reason", ""),
+                    "exec_result": exec_result,
+                })
+                exit_count += 1
+                logger.info(f"离场执行: {symbol} {direction} entry={entry_price} exit={exit_price} ret={ret:.4f} reason={exit_result.get('reason', '')}")
+            else:
+                results.append({
+                    "symbol": symbol,
+                    "direction": direction,
+                    "entry_price": entry_price,
+                    "exit": False,
+                    "reason": exit_result.get("reason", "继续持有"),
+                })
+
+        # 如果有离场，触发进化
+        if exit_count > 0:
+            self._try_trigger_evolution()
+
+        return {
+            "result": "EXIT_CHECK_DONE",
+            "checked": len(results),
+            "exits": exit_count,
+            "holds": len(results) - exit_count,
+            "details": results,
+            "timestamp": datetime.now().isoformat(),
+        }
+
 
     def _try_trigger_evolution(self):
         """检查反馈并尝试触发进化"""

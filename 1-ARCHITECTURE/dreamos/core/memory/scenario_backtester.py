@@ -66,7 +66,7 @@ class ScenarioBacktester:
         """延迟初始化节点注册表"""
         if self._registry is None:
             from dreamos.registry import get_default_registry
-            from dreamos.nodes import register_all
+            from dreamos.capabilities.trading.nodes import register_all
             self._registry = get_default_registry()
             register_all(self._registry)
         return self._registry

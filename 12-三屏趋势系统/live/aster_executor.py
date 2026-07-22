@@ -27,6 +27,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 # 加载 trend-system/.env
 ENV_FILE = Path(__file__).parent.parent / ".env"
@@ -43,6 +44,17 @@ if ENV_FILE.exists():
 ML_SERVICE_PATH = Path(__file__).parent.parent.parent / "10-经典指标系统"
 if str(ML_SERVICE_PATH) not in sys.path:
     sys.path.insert(0, str(ML_SERVICE_PATH))
+
+# L4 TradeEvent 注册（跨系统统一交易记录）
+try:
+    _L4_ROOT = Path(__file__).resolve().parents[2] / "11-易经推理系统"
+    if str(_L4_ROOT) not in sys.path:
+        sys.path.insert(0, str(_L4_ROOT))
+    from scripts.memory_l4.trade_event import TradeEvent
+    from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+    _L4_ENABLED = True
+except Exception as _e:
+    _L4_ENABLED = False
 
 try:
     import ml_trade_service as _ml
@@ -96,6 +108,45 @@ class AsterExecutor:
 
         logger.info(f"[AsterExecutor] 初始化完成 owner={self.config.owner[:10]}... dry_run={self.config.dry_run}")
 
+    def _register_trade_to_l4(self, coin: str, side: str, entry_px: float, exit_px: float,
+                              qty: float, pnl: float, exit_reason: str, leverage: int = 3,
+                              screen_signals: Dict = None):
+        """将三屏趋势策略交易记录注册到 L4 统一案例库"""
+        if not _L4_ENABLED:
+            return None, False
+        try:
+            trade_id = f"three_screen_{int(datetime.now(timezone.utc).timestamp())}_{coin}"
+            event = TradeEvent(
+                event_id=TradeEvent.generate_event_id(),
+                system_source="three_screen",
+                trade_id=trade_id,
+                ts_entry=datetime.now(timezone.utc).isoformat(),
+                ts_exit=datetime.now(timezone.utc).isoformat(),
+                symbol=f"{coin}-USDT-SWAP",
+                direction=side.lower(),
+                entry_price=entry_px,
+                exit_price=exit_px,
+                position_size=qty,
+                pnl=pnl,
+                pnl_pct=(pnl / (entry_px * qty) * 100) if entry_px > 0 and qty > 0 else 0,
+                exit_reason=exit_reason,
+                decision_context={
+                    "screen_signals": screen_signals or {},
+                    "strategy_type": "three_screen_trend",
+                },
+                leverage=leverage,
+            )
+            registry = UnifiedCaseRegistry()
+            case_id, success = registry.register_trade_event(event)
+            if success:
+                logger.info(f"[{coin}] L4 案例已注册: {case_id}")
+            else:
+                logger.warning(f"[{coin}] L4 案例注册失败")
+            return case_id, success
+        except Exception as e:
+            logger.error(f"[{coin}] L4 注册异常: {e}")
+            return None, False
+
     # ─────────────────────────────────────────────────────────────
     # 账户查询
     # ─────────────────────────────────────────────────────────────
@@ -103,6 +154,9 @@ class AsterExecutor:
     def get_account_summary(self) -> Dict[str, Any]:
         """获取账户摘要"""
         try:
+            os.environ["ASTER_USER"] = self.config.owner
+            os.environ["ASTER_SIGNER"] = self.config.signer
+            os.environ["ASTER_SIGNER_PRIVATE_KEY"] = self.config.private_key
             r = self._ml._aster_fetch_account_summary(owner=self.config.owner)
             return r
         except Exception as e:
@@ -132,6 +186,9 @@ class AsterExecutor:
     def get_positions(self) -> List[Dict[str, Any]]:
         """获取当前持仓"""
         try:
+            os.environ["ASTER_USER"] = self.config.owner
+            os.environ["ASTER_SIGNER"] = self.config.signer
+            os.environ["ASTER_SIGNER_PRIVATE_KEY"] = self.config.private_key
             positions, _ = self._ml._aster_fetch_positions(owner=self.config.owner)
             return positions or []
         except Exception as e:
@@ -284,8 +341,20 @@ class AsterExecutor:
             if side:
                 close_side = side
 
+            entry_px = float(target_pos.get("entry_px", 0) or 0)
+            exit_px = float(target_pos.get("mark_px", 0) or target_pos.get("current_price", 0) or 0)
+            pnl = (exit_px - entry_px) * abs(pos_qty) * (1 if pos_qty > 0 else -1) if entry_px > 0 else 0
+
             if self.config.dry_run:
                 logger.info(f"[AsterExecutor] [DRY_RUN] 平仓 {coin} {close_side} qty={abs(pos_qty)}")
+                # dry_run 也注册到 L4（用于测试验证）
+                self._register_trade_to_l4(
+                    coin=coin, side="long" if pos_qty > 0 else "short",
+                    entry_px=entry_px, exit_px=exit_px,
+                    qty=abs(pos_qty), pnl=pnl,
+                    exit_reason="dry_run_close",
+                    leverage=self.config.default_leverage,
+                )
                 return {"ok": True, "dry_run": True, "closed_qty": abs(pos_qty)}
 
             # 执行平仓
@@ -295,6 +364,15 @@ class AsterExecutor:
                 qty=abs(pos_qty),
                 reduce_only=True,
                 owner=self.config.owner,
+            )
+
+            # 注册到 L4
+            self._register_trade_to_l4(
+                coin=coin, side="long" if pos_qty > 0 else "short",
+                entry_px=entry_px, exit_px=exit_px,
+                qty=abs(pos_qty), pnl=pnl,
+                exit_reason="close_position",
+                leverage=self.config.default_leverage,
             )
 
             logger.info(f"[AsterExecutor] 平仓成功 {coin} {close_side} qty={abs(pos_qty)}")
@@ -311,6 +389,157 @@ class AsterExecutor:
             logger.info(f"[AsterExecutor] 杠杆设置 {coin} -> {leverage}x")
         except Exception as e:
             logger.warning(f"[AsterExecutor] 杠杆设置失败: {e}")
+
+    # ─────────────────────────────────────────────────────────────
+    # 止盈止损硬单（交易所级别）
+    # ─────────────────────────────────────────────────────────────
+
+    def place_stop_loss_order(self, coin: str, position_side: str, qty: float,
+                               stop_price: float) -> Dict[str, Any]:
+        """挂止损单（STOP_MARKET, reduceOnly）
+
+        Args:
+            coin: 币种（如 BTC）
+            position_side: 持仓方向（long/short）
+            qty: 数量（正数）
+            stop_price: 止损触发价
+
+        Returns:
+            {"ok": bool, "order_id": int, "resp": dict, ...}
+        """
+        if self.config.dry_run:
+            logger.info(f"[AsterExecutor] [DRY_RUN] 止损单 {coin} pos={position_side} qty={qty} @ {stop_price}")
+            return {"ok": True, "dry_run": True, "coin": coin, "stop_price": stop_price}
+
+        # 持仓方向 → 平仓方向
+        close_side = "sell" if position_side.lower() == "long" else "buy"
+        try:
+            os.environ["ASTER_USER"] = self.config.owner
+            os.environ["ASTER_SIGNER"] = self.config.signer
+            os.environ["ASTER_SIGNER_PRIVATE_KEY"] = self.config.private_key
+            result = self._ml._aster_stop_market_order_qty(
+                coin=str(coin),
+                side=close_side,
+                qty=float(abs(qty)),
+                stop_price=float(stop_price),
+                reduce_only=True,
+                owner=self.config.owner,
+            )
+            order_id = None
+            try:
+                resp = result.get("resp", {}) or {}
+                if isinstance(resp, dict):
+                    order_id = resp.get("orderId")
+            except Exception:
+                pass
+            logger.info(f"[AsterExecutor] 止损单成功 {coin} {close_side} qty={qty} @ {stop_price} orderId={order_id}")
+            return {"ok": True, "order_id": order_id, "coin": coin, **result}
+        except Exception as e:
+            logger.error(f"[AsterExecutor] 止损单失败: {e}")
+            return {"ok": False, "error": str(e)}
+
+    def place_take_profit_order(self, coin: str, position_side: str, qty: float,
+                                 trigger_price: float) -> Dict[str, Any]:
+        """挂止盈单（TAKE_PROFIT_MARKET, reduceOnly）
+
+        Args:
+            coin: 币种
+            position_side: 持仓方向（long/short）
+            qty: 数量
+            trigger_price: 止盈触发价
+
+        Returns:
+            {"ok": bool, "order_id": int, ...}
+        """
+        if self.config.dry_run:
+            logger.info(f"[AsterExecutor] [DRY_RUN] 止盈单 {coin} pos={position_side} qty={qty} @ {trigger_price}")
+            return {"ok": True, "dry_run": True, "coin": coin, "trigger_price": trigger_price}
+
+        close_side = "sell" if position_side.lower() == "long" else "buy"
+        try:
+            os.environ["ASTER_USER"] = self.config.owner
+            os.environ["ASTER_SIGNER"] = self.config.signer
+            os.environ["ASTER_SIGNER_PRIVATE_KEY"] = self.config.private_key
+            result = self._ml._aster_take_profit_market_order_qty(
+                coin=str(coin),
+                side=close_side,
+                qty=float(abs(qty)),
+                trigger_price=float(trigger_price),
+                reduce_only=True,
+                owner=self.config.owner,
+            )
+            order_id = None
+            try:
+                resp = result.get("resp", {}) or {}
+                if isinstance(resp, dict):
+                    order_id = resp.get("orderId")
+            except Exception:
+                pass
+            logger.info(f"[AsterExecutor] 止盈单成功 {coin} {close_side} qty={qty} @ {trigger_price} orderId={order_id}")
+            return {"ok": True, "order_id": order_id, "coin": coin, **result}
+        except Exception as e:
+            logger.error(f"[AsterExecutor] 止盈单失败: {e}")
+            return {"ok": False, "error": str(e)}
+
+    def cancel_order(self, coin: str, order_id: int) -> Dict[str, Any]:
+        """取消挂单"""
+        if self.config.dry_run:
+            return {"ok": True, "dry_run": True}
+        if not order_id:
+            return {"ok": True, "skipped": "no_order_id"}
+        try:
+            os.environ["ASTER_USER"] = self.config.owner
+            os.environ["ASTER_SIGNER"] = self.config.signer
+            os.environ["ASTER_SIGNER_PRIVATE_KEY"] = self.config.private_key
+            sym = self._ml._aster_symbol_from_coin(str(coin))
+            self._ml._aster_order_cancel(symbol=sym, order_id=order_id, owner=self.config.owner)
+            logger.info(f"[AsterExecutor] 取消挂单 {coin} orderId={order_id}")
+            return {"ok": True, "coin": coin, "order_id": order_id}
+        except Exception as e:
+            logger.error(f"[AsterExecutor] 取消挂单失败 {coin} orderId={order_id}: {e}")
+            return {"ok": False, "error": str(e)}
+
+    def fetch_open_orders(self, coin: str = None) -> List[Dict[str, Any]]:
+        """查询挂单（可选币种过滤）"""
+        if self.config.dry_run:
+            return []
+        try:
+            os.environ["ASTER_USER"] = self.config.owner
+            os.environ["ASTER_SIGNER"] = self.config.signer
+            os.environ["ASTER_SIGNER_PRIVATE_KEY"] = self.config.private_key
+            orders, _ = self._ml._aster_fetch_open_orders(owner=self.config.owner)
+            if not orders:
+                return []
+            if coin:
+                target_sym = self._ml._aster_symbol_from_coin(str(coin)).upper()
+                orders = [o for o in orders if str(o.get("symbol", "")).upper() == target_sym]
+            return orders or []
+        except Exception as e:
+            logger.error(f"[AsterExecutor] 查询挂单失败: {e}")
+            return []
+
+    def cancel_symbol_orders(self, coin: str) -> Dict[str, Any]:
+        """取消某币种的所有挂单（便利方法）
+
+        Returns:
+            {"ok": bool, "canceled": int, "failed": int}
+        """
+        if self.config.dry_run:
+            return {"ok": True, "dry_run": True, "canceled": 0, "failed": 0}
+        orders = self.fetch_open_orders(coin=coin)
+        canceled = 0
+        failed = 0
+        for o in orders:
+            oid = o.get("orderId")
+            if oid is None:
+                continue
+            r = self.cancel_order(coin, oid)
+            if r.get("ok"):
+                canceled += 1
+            else:
+                failed += 1
+        logger.info(f"[AsterExecutor] 批量取消 {coin} 挂单: 成功{canceled} 失败{failed}")
+        return {"ok": failed == 0, "canceled": canceled, "failed": failed}
 
     # ─────────────────────────────────────────────────────────────
     # 辅助方法

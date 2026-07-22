@@ -656,12 +656,12 @@ class DialecticalMLEngine:
         """
         训练L1主方向模型 (正题)
 
-        y的取值: -1=DOWN, 0=FLAT, 1=UP
+        y的取值: 0=DOWN, 1=UP (二分类)
         """
         lgb = _get_lgb()
 
-        # 标签映射到0/1/2
-        y_mapped = y + 1  # -1→0, 0→1, 1→2
+        # 二分类直接使用原标签 (0=DOWN, 1=UP)
+        y_mapped = y
 
         self.l1_model = lgb.LGBMClassifier(**self.l1_params)
         self.l1_model.fit(X, y_mapped)
@@ -686,8 +686,7 @@ class DialecticalMLEngine:
             "n_features": X.shape[1],
             "train_accuracy": float(train_acc),
             "label_distribution": {
-                "down (-1)": int(np.sum(y == -1)),
-                "flat (0)": int(np.sum(y == 0)),
+                "down (0)": int(np.sum(y == 0)),
                 "up (1)": int(np.sum(y == 1)),
             },
             "top_features": top_features,
@@ -720,13 +719,14 @@ class DialecticalMLEngine:
         from .meta_labeling_features_v2 import MetaLabelingFeaturesV2
 
         # L1预测 (用于构建L2特征)
+        # 二分类: 0=DOWN, 1=UP
         if self.l1_model is not None:
             l1_proba = self._predict_proba(self.l1_model, X)
-            l1_pred = np.argmax(l1_proba, axis=1) - 1
+            l1_pred = np.argmax(l1_proba, axis=1)  # 0=DOWN, 1=UP
         else:
-            l1_proba = np.random.rand(len(X), 3)
+            l1_proba = np.random.rand(len(X), 2)
             l1_proba = l1_proba / l1_proba.sum(axis=1, keepdims=True)
-            l1_pred = np.argmax(l1_proba, axis=1) - 1
+            l1_pred = np.argmax(l1_proba, axis=1)  # 0=DOWN, 1=UP
 
         ml_features = MetaLabelingFeaturesV2()
         X_l2 = ml_features.compute_base_features(df, l1_pred, l1_proba, ref_df, cycle_phase)
@@ -738,9 +738,14 @@ class DialecticalMLEngine:
             future_return[i] = (close[i + 20] - close[i]) / close[i]
 
         # 做多L2: 当L1预测UP时, 判断这个UP信号的收益是否高于中位数
+        # 二分类: l1_pred == 1 → UP, l1_pred == 0 → DOWN
         long_mask = (l1_pred == 1)
+        
+        # 如果L1预测的UP信号不足，使用原始标签作为fallback
         if long_mask.sum() < 20:
-            return {"ok": False, "reason": f"insufficient L1 long signals: {long_mask.sum()}"}
+            long_mask = (y == 1)
+            if long_mask.sum() < 20:
+                return {"ok": False, "reason": f"insufficient long signals: {long_mask.sum()}"}
 
         long_returns = future_return[long_mask]
         long_median = np.median(long_returns)
@@ -754,7 +759,13 @@ class DialecticalMLEngine:
         long_acc = (long_pred == y_long).mean()
 
         # 做空L2: 当L1预测DOWN时, 判断这个DOWN信号的收益是否高于中位数
-        short_mask = (l1_pred == -1)
+        # 二分类: l1_pred == 0 → DOWN
+        short_mask = (l1_pred == 0)
+        
+        # 如果L1预测的DOWN信号不足，使用原始标签作为fallback
+        if short_mask.sum() < 20:
+            short_mask = (y == 0)
+
         if short_mask.sum() < 20:
             self.l2_model_short = None
             return {
@@ -771,7 +782,7 @@ class DialecticalMLEngine:
                 "note": "short samples insufficient, only long L2 trained"
             }
 
-        short_returns = -future_return[short_mask]  # 做空收益 = -未来收益
+        short_returns = -future_return[short_mask]
         short_median = np.median(short_returns)
         y_short = (short_returns > short_median).astype(int)
 
@@ -826,54 +837,50 @@ class DialecticalMLEngine:
         n = len(X)
 
         # L1预测 (正题)
-        l1_proba = self._predict_proba(self.l1_model, X)  # shape: (n, 3)
-        l1_pred = np.argmax(l1_proba, axis=1) - 1  # 映射回 -1/0/1
+        # 二分类: shape (n, 2), 0=DOWN, 1=UP
+        l1_proba = self._predict_proba(self.l1_model, X)
+        l1_pred = np.argmax(l1_proba, axis=1)  # 0=DOWN, 1=UP
 
         # 计算L2增强特征 (V2版本)
         l2_long_proba = None
         l2_short_proba = None
-        if (self.l2_model_long is not None) or (self.l2_model_short is not None):
+        if (self.l2_model_long is not None or self.l2_model_short is not None) and df is not None:
             from .meta_labeling_features_v2 import MetaLabelingFeaturesV2
             ml_features = MetaLabelingFeaturesV2()
-            X_l2 = ml_features.compute_base_features(df, l1_pred, l1_proba, ref_df, cycle_phase)
+            try:
+                X_l2 = ml_features.compute_base_features(df, l1_pred, l1_proba, ref_df, cycle_phase)
 
-            if self.l2_model_long is not None:
-                l2_long_proba = self._predict_binary_proba(self.l2_model_long, X_l2)
-            if self.l2_model_short is not None:
-                l2_short_proba = self._predict_binary_proba(self.l2_model_short, X_l2)
+                if self.l2_model_long is not None:
+                    l2_long_proba = self._predict_binary_proba(self.l2_model_long, X_l2)
+                if self.l2_model_short is not None:
+                    l2_short_proba = self._predict_binary_proba(self.l2_model_short, X_l2)
+            except Exception as e:
+                l2_long_proba = None
+                l2_short_proba = None
 
         for i in range(n):
             direction = int(l1_pred[i])
             l1_confidence = float(np.max(l1_proba[i]))
 
             # L3: 辩证裁决 (合题)
-            # 原始设计: L2仅在L1不确定区(0.4-0.7)介入裁决
+            # 二分类: direction == 0 → DOWN, direction == 1 → UP
             # - L1高自信(>0.7): 直接执行, L2不介入
             # - L1中等自信(0.4-0.7): L2完全裁决
             # - L1低自信(<0.4): 直接拒绝, L2不介入
-            if direction == 0:
-                final_confidence = l1_confidence * 0.5
-                action = "HOLD"
-                l2_conf = None
-                meta_conf = None
-            elif direction == 1:
-                # L1做多
+            if direction == 1:
+                # L1做多 (UP)
                 meta_conf = float(l2_long_proba[i]) if l2_long_proba is not None else None
                 if l2_long_proba is not None and 0.4 <= l1_confidence <= 0.7:
-                    # 不确定区域: L2介入裁决
                     mc = float(l2_long_proba[i])
                     if mc >= 0.5:
-                        # L2同意: 保持L1置信度 (不额外增强, 避免过度拟合)
                         final_confidence = l1_confidence
                     else:
-                        # L2反对: 降低置信度
                         final_confidence = l1_confidence * mc
                 else:
-                    # L1高自信或低自信: L2不介入
                     final_confidence = l1_confidence
                 l2_conf = meta_conf
                 action = "OPEN" if final_confidence > 0.35 else "HOLD"
-            else:  # direction == -1
+            else:  # direction == 0, 做空 (DOWN)
                 # L1做空
                 meta_conf = float(l2_short_proba[i]) if l2_short_proba is not None else None
                 if l2_short_proba is not None and 0.4 <= l1_confidence <= 0.7:
@@ -888,8 +895,8 @@ class DialecticalMLEngine:
                 action = "OPEN" if final_confidence > 0.35 else "HOLD"
 
             result = {
-                "direction": direction,  # -1/0/1
-                "direction_text": "UP" if direction == 1 else ("DOWN" if direction == -1 else "FLAT"),
+                "direction": direction,  # 0=DOWN, 1=UP
+                "direction_text": "UP" if direction == 1 else "DOWN",
                 "l1_confidence": round(l1_confidence, 4),
                 "l2_confidence": round(l2_conf, 4) if l2_conf is not None else None,
                 "meta_confidence": round(meta_conf, 4) if meta_conf is not None else None,
@@ -924,9 +931,9 @@ class DialecticalMLEngine:
             # Booster 二分类 predict 直接返回 class 1 的概率 (1D array)
             return model.predict(X)
 
-    def predict_single(self, X_row: np.ndarray, with_gua: bool = False) -> Dict:
+    def predict_single(self, X_row: np.ndarray, with_gua: bool = False, df: Optional[pd.DataFrame] = None) -> Dict:
         """单样本预测"""
-        return self.predict(X_row.reshape(1, -1), with_gua=with_gua)[0]
+        return self.predict(X_row.reshape(1, -1), with_gua=with_gua, df=df)[0]
 
     # --------------------------------------------------------
     # 模型保存/加载

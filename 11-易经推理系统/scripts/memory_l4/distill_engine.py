@@ -66,7 +66,12 @@ def init_distill(
     Returns:
         初始 Distill 字典
     """
-    did = distill_id or f"D_{now_iso_local()[:19].replace(':', '').replace('-', '')}"
+    if distill_id:
+        did = distill_id
+    else:
+        ts = now_iso_local()[:19].replace(':', '').replace('-', '')
+        cid = review_record.get("case_id", "")[-12:] or "unknown"
+        did = f"D_{ts}_{cid}"
 
     case_id = review_record.get("case_id", "")
     direction = review_record.get("direction", "mixed")

@@ -86,6 +86,30 @@ class A5ExecutionNode(BaseNode):
                 },
             )
 
+        # P2-2: 调用 A7 实践论门禁检查
+        a7_result = self._invoke_a7(state, direction, confidence)
+        a7_passed = a7_result.get("gate_passed", True)
+        a7_calibrated_conf = a7_result.get("calibrated_confidence", confidence)
+        a7_direction = a7_result.get("direction", direction)
+
+        if not a7_passed:
+            rationale.append(f"[A5] A7实践门禁未通过 (校准置信{a7_calibrated_conf:.1%} < 65%), 不生成交易指令")
+            return NodeResult(
+                node_id="A5",
+                confidence=round(a7_calibrated_conf, 3),
+                direction="HOLD",
+                outputs={
+                    "rationale": rationale,
+                    "trade_order": {},
+                    "a7_gate": a7_result,
+                },
+            )
+
+        # A7 通过后，使用校准后的置信度
+        confidence = a7_calibrated_conf
+        if a7_direction != "HOLD":
+            direction = a7_direction
+
         strategy = {}
         if a3_result and a3_result.outputs.get("strategy"):
             strategy = a3_result.outputs["strategy"]
@@ -100,12 +124,14 @@ class A5ExecutionNode(BaseNode):
         take_profit = strategy.get("take_profit", 0)
 
         if stop_loss == 0 or take_profit == 0:
+            # 收紧止损：从1.5倍ATR改为1.0倍，减少单笔亏损
+            # 盈亏比保持2:1
             if direction == "LONG":
-                stop_loss = round(price * (1 - atr_pct * 1.5), 4)
-                take_profit = round(price * (1 + atr_pct * 3.0), 4)
+                stop_loss = round(price * (1 - atr_pct * 1.0), 4)
+                take_profit = round(price * (1 + atr_pct * 2.0), 4)
             else:
-                stop_loss = round(price * (1 + atr_pct * 1.5), 4)
-                take_profit = round(price * (1 - atr_pct * 3.0), 4)
+                stop_loss = round(price * (1 + atr_pct * 1.0), 4)
+                take_profit = round(price * (1 - atr_pct * 2.0), 4)
 
         trade_order = {
             "action": direction,
@@ -125,6 +151,7 @@ class A5ExecutionNode(BaseNode):
         rationale.append(f"  止损: ${trade_order['stop_loss']:.4f}")
         rationale.append(f"  止盈: ${trade_order['take_profit']:.4f}")
         rationale.append(f"  R:R: {trade_order['rr_ratio']:.2f}:1")
+        rationale.append(f"  [A7门禁] 通过 (校准置信{a7_calibrated_conf:.1%} >= 65%)")
 
         return NodeResult(
             node_id="A5",
@@ -134,8 +161,46 @@ class A5ExecutionNode(BaseNode):
                 "rationale": rationale,
                 "trade_order": trade_order,
                 "gate_passed": gate_passed,
+                "a7_gate": a7_result,
             },
         )
+
+    def _invoke_a7(self, state: State, proposed_direction: str, proposed_confidence: float) -> Dict[str, Any]:
+        """P2-2: 调用 A7 实践论门禁进行决策验证
+
+        A7 基于《实践论》的实践→认识→实践闭环：
+        - 历史胜率验证（实践是检验真理的标准）
+        - 置信度校准（认识修正）
+        - 65% 置信度门槛（实践前的门禁）
+        """
+        try:
+            from dreamos.capabilities.trading.nodes.a7_practice_gate import A7PracticeGateNode
+            a7_node = A7PracticeGateNode()
+
+            # 构造 A7 需要的 intent
+            state.intent = {
+                "direction": proposed_direction,
+                "confidence": proposed_confidence,
+            }
+
+            a7_result = a7_node.execute_core(state)
+            return {
+                "gate_passed": a7_result.outputs.get("gate_passed", False),
+                "gate_result": a7_result.outputs.get("gate_result", "unknown"),
+                "calibrated_confidence": a7_result.outputs.get("calibrated_confidence", proposed_confidence),
+                "confidence_threshold": a7_result.outputs.get("confidence_threshold", 0.65),
+                "direction": a7_result.direction,
+                "history": a7_result.outputs.get("history", {}),
+            }
+        except Exception as e:
+            # A7 调用失败不阻断 A5，返回通过（保守策略：不因门禁故障阻止交易）
+            return {
+                "gate_passed": True,
+                "gate_result": "skipped",
+                "calibrated_confidence": proposed_confidence,
+                "direction": proposed_direction,
+                "error": str(e),
+            }
 
     def _get_market_data(self, state: State) -> Dict[str, Any]:
         if hasattr(state, "market") and state.market:

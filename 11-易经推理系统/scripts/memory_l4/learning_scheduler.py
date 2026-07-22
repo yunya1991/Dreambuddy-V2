@@ -271,18 +271,40 @@ class LearningScheduler:
         return updated
 
     def _retrain_qmm(self, cases: List[Dict]) -> bool:
-        """重训 QMM 模型
+        """重训 QMM 模型并生成快照
+
+        消费真实交易案例，过滤测试案例，生成 QMM 输出快照。
 
         Returns:
             是否更新成功
         """
-        if len(cases) < 15:
+        real_cases = [c for c in cases if "qmm_test" not in c.get("case_id", "")]
+        if len(real_cases) < 15:
+            print(f"[LearningScheduler] QMM 真实案例不足: {len(real_cases)} < 15")
             return False
+
+        print(f"[LearningScheduler] QMM 消费 {len(real_cases)} 个真实案例")
+
+        updated = False
+
+        try:
+            from scripts.memory_l4.qmm.engine import run_qmm
+            from scripts.memory_l4.distill_engine import load_all_distills
+
+            distills = load_all_distills()
+            output = run_qmm(real_cases, distills)
+
+            print(f"[LearningScheduler] QMM 快照生成成功: trend={output.trend_state}, "
+                  f"uncertainty={output.uncertainty:.4f}, "
+                  f"systems={list(output.system_source_stats.keys())}")
+            updated = True
+        except Exception as e:
+            print(f"[LearningScheduler] QMM 引擎运行异常: {e}")
 
         try:
             from scripts.memory_l4.qmm.xgb_predictor import QMMPredictor
             predictor = QMMPredictor()
-            train_result = predictor.train(cases)
+            train_result = predictor.train(real_cases)
             if train_result.get("ok"):
                 model_path = paths.memory_l4_dir() / "qmm_model"
                 model_path.mkdir(parents=True, exist_ok=True)
@@ -294,11 +316,12 @@ class LearningScheduler:
                         predictor.save_model(model_file)
                 except Exception:
                     pass
-                return True
+                print("[LearningScheduler] QMM XGB 模型训练成功")
+                updated = True
         except Exception as e:
-            print(f"[LearningScheduler] QMM 重训异常: {e}")
+            print(f"[LearningScheduler] QMM XGB 训练异常: {e}")
 
-        return False
+        return updated
 
     def get_state(self) -> Dict:
         """获取调度器状态"""

@@ -1,6 +1,6 @@
 # 易经推理系统 技术设计文档
 
-> **版本**: v2.3 | **日期**: 2026-07-15
+> **版本**: v2.4 | **日期**: 2026-07-21
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引）
 
@@ -601,6 +601,79 @@ M5_CANDIDATE_READY          候选就绪
   升级为约束? → evolution/ → constraints/
 ```
 
+### 5.2.1 TradingAgents Review Agent 集成
+
+L4 Review Engine 已集成 [TradingAgents](https://github.com/TauricResearch/TradingAgents) 的两阶段复盘机制，增强复盘深度与多维度分析能力。
+
+**集成组件：**
+
+| 组件 | 文件 | 功能 |
+|------|------|------|
+| `L4MemoryLog` | `tradingagents_reflector.py` | TradingMemoryLog 的 L4 适配版，追加式决策日志 |
+| `MultiDimensionalAnalyzer` | `tradingagents_reflector.py` | 多维度分析师（基本面/技术面/情绪面/风控面） |
+| `Reflector` | `tradingagents_reflector.py` | 两阶段反思引擎（Phase A 记录决策 → Phase B 延迟反思） |
+| `run_review()` | `review_engine.py` | 批量复盘入口，默认 `enable_tradingagents=True` |
+
+**ReviewRecord 扩展字段：**
+
+```json
+{
+  "tradingagents_reflection": {
+    "reflection_text": "The long call on BTC was correct, delivering +2.50%...",
+    "direction_correct": true,
+    "confirmed_theories_count": 3,
+    "contradicted_theories_count": 1,
+    "lessons": [...],
+    "past_context": "..."
+  },
+  "multi_dimensional_analysis": {
+    "fundamentals_report": {"entry_price": ..., "leverage": ...},
+    "technical_report": {"regime": ..., "volatility": ...},
+    "sentiment_report": {"confidence": ..., "overall_bullish": ...},
+    "risk_report": {"drawdown": ..., "stop_loss_triggered": ...},
+    "summary": "..."
+  }
+}
+```
+
+**调用链：** `pipeline.py` M1 阶段 → `step_review()` → `review_engine.build_review_record()` → 自动调用 `Reflector.reflect()` → 生成 `tradingagents_reflection` + `multi_dimensional_analysis`。
+
+### 5.2.2 evidence_chain 增强（TradingAgents 投研证据链结构）
+
+`evidence_chain` 已从 5 维基础结构扩展为 6 维 TradingAgents 增强版，新增 `analyst_refs` 分析师维度证据。
+
+**完整结构：**
+
+```json
+{
+  "evidence_chain": {
+    "market_data_refs": [{"type": "symbol", "ref": "BTC"}, ...],
+    "signal_refs": [{"type": "hexagram", "ref": "水山蹇"}, ...],
+    "strategy_refs": [{"type": "system_source", "ref": "yijing_inference"}, ...],
+    "historical_refs": [{"type": "pnl", "ref": "0.025"}, ...],
+    "constraint_refs": [{"type": "quadrant_x", "ref": "1.0"}, ...],
+    "analyst_refs": [
+      {"type": "yijing_analyst", "ref": "hexagram=水山蹇, confidence=0.91"},
+      {"type": "technical_analyst", "ref": "regime=recovery|sprout, volatility=0.15"},
+      {"type": "sentiment_analyst", "ref": "confidence=0.91, direction=long"},
+      {"type": "risk_analyst", "ref": "leverage=3x"}
+    ]
+  }
+}
+```
+
+**按系统来源的分析师映射：**
+
+| 系统来源 | 专属 analyst | 通用分析师 |
+|----------|-------------|-----------|
+| `yijing_inference` | `yijing_analyst` (卦象+置信度+两仪) | technical + sentiment + risk |
+| `martin_v15` | `martin_analyst` (加仓层级+配置) | technical + sentiment + risk |
+| `three_screen` | `three_screen_analyst` (三屏信号) | technical + sentiment + risk |
+| `agent_a` / `agent_b` | `{system}_analyst` (置信度+策略) | technical + sentiment + risk |
+| `dream_os` | `dreamos_analyst` (融合模式+策略ID) | technical + sentiment + risk |
+
+**构建入口：** `optimize_l4.py` → `_build_evidence_chain()` → 按 `system_source` 分派构建逻辑。`schema_validator.py` 已验证 `analyst_refs` 为可选字段（向后兼容）。
+
 ### 5.3 记忆沉淀闭环
 
 ```
@@ -1073,12 +1146,21 @@ export OKX_TD_MODE=isolated
 - [ ] 统一API网关
 - [ ] 配置中心化
 
+### 15.5 Phase 4 🧠 认知增强
+- [ ] **CBR 案例检索引擎** — 基于 Case-Based Reasoning 的相似案例检索与策略适配
+  - 目标：从 L4 历史案例库中检索相似市态下的成功/失败案例，为新决策提供历史参照
+  - 关键能力：案例相似度计算（特征距离 + 卦象匹配 + 市态对齐）、策略适配（复用/修正/组合）、检索效率优化（向量索引 + 近似最近邻）
+  - 与现有系统集成：CBR 引擎作为 BCRM 2.0 的辅助决策层，QMM 的历史对照信号可由 CBR 增强
+- [ ] LLM 驱动的案例摘要生成（长案例压缩为决策要点）
+- [ ] 跨币种案例迁移学习（BTC 成功案例适配到 ETH/SOL）
+
 ---
 
 ## 16. 变更日志
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-07-21 | v2.4 | **新增§5.2.1 TradingAgents Review Agent 集成**：L4 Review Engine 集成 TradingAgents 两阶段复盘机制（L4MemoryLog + MultiDimensionalAnalyzer + Reflector）；**新增§5.2.2 evidence_chain 增强**：从 5 维扩展为 6 维（新增 `analyst_refs`），支持按系统来源分派分析师维度；**新增§15.5 Phase 4 认知增强**：CBR 案例检索引擎、LLM 案例摘要、跨币种迁移学习；版本号 v2.3→v2.4 | DreamBuddy v2 |
 | 2026-07-15 | v2.3 | **保证金计算逻辑修正**：`_open_position()` 使用可用余额（而非总权益）计算仓位，解决多系统共用账户时仓位过大的问题；新增§11.5监控告警集成（15-监控告警系统适配器 + 飞书告警）；BCRM 2.0实盘验证通过（BTC/ETH开仓成功） | DreamBuddy v2 |
 | 2026-07-15 | v2.2 | 仓位模式从全仓(cross)切换为逐仓(isolated)；新增第11章逐仓风控模式；okx_simulated.py默认td_mode=isolated；polling_trader.py支持逐仓/全仓保证金检查；Phase 1增加逐仓风控模式标记 | DreamBuddy v2 |
 | 2026-07-14 | v2.1 | BCRM 2.0实盘切换：新增§3.3.3 BCRM2Adapter适配层；更新数据流（含Fallback机制）；置信度阈值0.60；Phase 1标记BCRM 2.0实盘+离场集成完成；Phase 2增加L2修复和小币种Fallback优化 | DreamBuddy v2 |

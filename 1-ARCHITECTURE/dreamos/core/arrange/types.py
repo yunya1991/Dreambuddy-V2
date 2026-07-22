@@ -61,9 +61,14 @@ class ChainSpec:
     description: str = ""
     node_ids: List[str] = field(default_factory=list)
     optional_nodes: List[str] = field(default_factory=list)  # 可选扩展节点
+    scenario_nodes: Dict[str, List[str]] = field(default_factory=dict)  # 场景→节点映射
 
     def total_count(self) -> int:
         return len(self.node_ids)
+
+    def get_scenario_nodes(self, scenario_id: str) -> List[str]:
+        """根据场景获取推荐的额外节点"""
+        return self.scenario_nodes.get(scenario_id, [])
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -72,6 +77,7 @@ class ChainSpec:
             "description": self.description,
             "node_ids": self.node_ids,
             "optional_nodes": self.optional_nodes,
+            "scenario_nodes": self.scenario_nodes,
         }
 
 
@@ -86,9 +92,39 @@ STANDARD_CHAINS: Dict[str, ChainSpec] = {
     "A": ChainSpec(
         chain_id="A",
         name="执行环·技术分析主线",
-        description="A1发现矛盾(含A0)→A2辩证矛盾(含A0)→A3解决矛盾(含A0)→A4门禁→A5执行→A9离场",
-        node_ids=["A1", "A2", "A3", "A4", "A5", "A9"],
+        description="C1技术面→C2动量→C3波动率→A1发现矛盾(含A0)→A2辩证矛盾(含C/F信号)→A3解决矛盾→A4门禁→A5执行→A9离场",
+        node_ids=["C1", "C2", "C3", "A1", "A2", "A3", "A4", "A5", "A9"],
         optional_nodes=["A6"],  # A6 情报可作为可选扩展
+        scenario_nodes={
+            # 牛市趋势场景 — 三屏趋势信号优先
+            "BULL_HIGH_ACCELERATING": ["C_S3_TREND"],
+            "BULL_HIGH_DECELERATING": ["C_S3_TREND"],
+            "BULL_NORMAL_ACCELERATING": ["C_S3_TREND"],
+            "BULL_NORMAL_DECELERATING": ["C_S3_TREND"],
+            "BULL_LOW_ACCELERATING": ["C_S3_TREND"],
+            "BULL_LOW_DECELERATING": ["C_S3_TREND"],
+            # 熊市趋势场景 — 三屏趋势信号优先
+            "BEAR_HIGH_ACCELERATING": ["C_S3_TREND"],
+            "BEAR_HIGH_DECELERATING": ["C_S3_TREND"],
+            "BEAR_NORMAL_ACCELERATING": ["C_S3_TREND"],
+            "BEAR_NORMAL_DECELERATING": ["C_S3_TREND"],
+            "BEAR_LOW_ACCELERATING": ["C_S3_TREND"],
+            "BEAR_LOW_DECELERATING": ["C_S3_TREND"],
+            # 震荡/中性场景 — 马丁策略和易经推理
+            "NEUTRAL_HIGH_ACCELERATING": ["C_MARTIN_V15", "A_YJ_INFER"],
+            "NEUTRAL_HIGH_DECELERATING": ["C_MARTIN_V15", "A_YJ_INFER"],
+            "NEUTRAL_NORMAL_ACCELERATING": ["C_MARTIN_V15"],
+            "NEUTRAL_NORMAL_DECELERATING": ["C_MARTIN_V15"],
+            "NEUTRAL_LOW_ACCELERATING": ["C_MARTIN_V15"],
+            "NEUTRAL_LOW_DECELERATING": ["C_MARTIN_V15"],
+            # 衰竭场景 — 易经推理辅助判断转折点
+            "BULL_HIGH_EXHAUSTION": ["A_YJ_INFER"],
+            "BEAR_HIGH_EXHAUSTION": ["A_YJ_INFER"],
+            "NEUTRAL_HIGH_EXHAUSTION": ["A_YJ_INFER"],
+            "BULL_NORMAL_EXHAUSTION": ["A_YJ_INFER"],
+            "BEAR_NORMAL_EXHAUSTION": ["A_YJ_INFER"],
+            "NEUTRAL_NORMAL_EXHAUSTION": ["A_YJ_INFER"],
+        },
     ),
     # C 链 (短线/突破)
     "C": ChainSpec(
@@ -96,6 +132,11 @@ STANDARD_CHAINS: Dict[str, ChainSpec] = {
         name="短线/突破链",
         description="C1技术→A2辩证→C3策略匹配→A4门禁",
         node_ids=["C1", "A2", "C3", "A4"],
+        scenario_nodes={
+            "BULL_*": ["C_S3_TREND"],
+            "BEAR_*": ["C_S3_TREND"],
+            "NEUTRAL_*": ["C_MARTIN_V15"],
+        },
     ),
     # F 链 (基本面)
     "F": ChainSpec(
@@ -103,6 +144,10 @@ STANDARD_CHAINS: Dict[str, ChainSpec] = {
         name="基本面链",
         description="A1发现矛盾→F1新闻→F5宏观→A2辩证→A4门禁",
         node_ids=["A1", "F1", "F5", "A2", "A4"],
+        scenario_nodes={
+            "BULL_*": ["A_YJ_INFER"],
+            "BEAR_*": ["A_YJ_INFER"],
+        },
     ),
     # 🟣 治理环 维度1 — gap_score 路由闭环 (知行合一)
     "G1": ChainSpec(

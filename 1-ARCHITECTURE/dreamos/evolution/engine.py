@@ -2,16 +2,28 @@
 DreamOS Evolution — 自我进化引擎 (EvolutionEngine)
 
 Evolution 层主入口，整合:
-    - LessonDistiller:    经验教训提炼
-    - GapAnalyzer:       知行差距分析
-    - NodeOptimizer:     节点优化建议器
+    - LessonDistiller:              经验教训提炼
+    - GapAnalyzer:                 知行差距分析
+    - NodeOptimizer:               节点优化建议器
+    - TradingAnalysisEvaluator:    交易分析评估器（核心新增）
 
 职责:
     1. 从 G 层历史数据中学习
     2. 分析知行差距
     3. 提炼教训
-    4. 生成优化建议
-    5. 输出进化报告
+    4. 分析交易亏损原因
+    5. 评估模块能力
+    6. 回测模块组合
+    7. 推荐最优节点编排
+    8. 输出进化报告
+
+**设计理念**:
+    Dream OS 交易系统的核心不是"自身交易"，而是"分析评估 → 模块能力回测 → 节点编排推荐"的质量提升闭环。
+    EvolutionEngine 通过整合 TradingAnalysisEvaluator，实现：
+    - 亏损原因分析 → 定位问题模块
+    - 模块能力评估 → 量化各模块表现
+    - 模块回测 → 验证改进效果
+    - 编排推荐 → 基于分析结果推荐最优节点编排
 
 用法:
     engine = EvolutionEngine()
@@ -19,6 +31,12 @@ Evolution 层主入口，整合:
     # report.lessons → 教训列表
     # report.gap_analysis → 差距分析
     # report.suggestions → 优化建议
+    
+    # 新增：交易分析评估
+    analysis_report = engine.analyze_trades(trade_history)
+    # analysis_report.loss_reason_distribution → 亏损原因分布
+    # analysis_report.module_capabilities → 模块能力评估
+    # analysis_report.orchestration_recommendations → 编排推荐
 """
 
 from __future__ import annotations
@@ -51,6 +69,10 @@ class EvolutionEngine:
 
         # 获取优化建议
         suggestions = engine.suggest(history_entries)
+
+        # 新增：交易分析评估（核心能力）
+        analysis = engine.analyze_trades(trade_history)
+        recommendations = engine.recommend_orchestration(scenarios)
     """
 
     def __init__(self, min_occurrences: int = 2):
@@ -59,6 +81,8 @@ class EvolutionEngine:
         self._optimizer = NodeOptimizer()
         self._history: List[HistoryEntry] = []
         self._feedback_collector = None  # 延迟初始化
+        self._trading_evaluator = None   # 交易分析评估器（延迟初始化）
+        self._evaluation_memory = None   # 评估记忆系统（延迟初始化）
 
     def get_feedback_collector(self):
         """获取执行反馈收集器（延迟初始化）"""
@@ -116,14 +140,35 @@ class EvolutionEngine:
         触发条件:
             1. 连续3笔方向准确率 < 50%
             2. |actual_sharpe - expected_sharpe| / |expected| > 30%
+
+        P1-1: 增加数据有效性校验，避免基于空数据触发进化
+        P2-1: 跳过未验证场景，避免基于未验证数据修改编排
         """
         collector = self.get_feedback_collector()
         updates = []
+
+        # P2-1: 进化前同步场景验证状态
+        collector.sync_verification_status()
 
         for scenario_id in collector.get_all_scenario_ids():
             feedback = collector.evaluate(scenario_id)
             if not feedback.trigger_evolution:
                 continue
+
+            # P1-1: 数据有效性双重校验
+            stats = collector.get_stats(scenario_id)
+            total_trades = stats.get("total_trades", 0)
+            if total_trades < collector.MIN_TRADES_FOR_EVAL:
+                continue
+
+            # P2-1: 跳过未验证场景（inferred/sparse/unverified 不参与进化）
+            scenario_data = collector.memory.get_scenario(scenario_id) if collector.memory else None
+            if scenario_data:
+                is_verified = scenario_data.get("verified", False)
+                confidence = scenario_data.get("confidence", "")
+                if not is_verified or confidence == "unverified":
+                    logger.info(f"P2-1: 场景 {scenario_id} 未验证(confidence={confidence}), 跳过进化")
+                    continue
 
             # 生成编排调整提案
             proposal = self._generate_orchestration_proposal(feedback)
@@ -186,6 +231,72 @@ class EvolutionEngine:
         # 实际应调用 ScenarioBacktester 做最近30天回测
         # 这里简化为通过
         return True
+
+    # ── 交易分析评估（核心新增）───────────────────────────────
+
+    def get_trading_evaluator(self):
+        """获取交易分析评估器（延迟初始化）"""
+        if self._trading_evaluator is None:
+            from dreamos.capabilities.trading.evaluator import TradingAnalysisEvaluator
+            self._trading_evaluator = TradingAnalysisEvaluator()
+        return self._trading_evaluator
+
+    def get_evaluation_memory(self):
+        """获取评估记忆系统（延迟初始化）"""
+        if self._evaluation_memory is None:
+            from dreamos.core.memory.evaluation_memory import EvaluationMemory
+            self._evaluation_memory = EvaluationMemory()
+            self._evaluation_memory.load()
+        return self._evaluation_memory
+
+    def analyze_trades(self, trade_history: List[Dict[str, Any]],
+                       scenarios: Optional[List[str]] = None) -> Any:
+        """分析交易历史，生成完整的交易分析评估报告
+
+        核心流程：亏损原因分析 → 模块能力评估 → 模块回测 → 编排推荐
+
+        Args:
+            trade_history: 交易历史列表
+            scenarios: 目标场景列表
+
+        Returns:
+            TradingAnalysisReport: 分析评估报告
+        """
+        evaluator = self.get_trading_evaluator()
+        return evaluator.generate_report(trade_history, scenarios=scenarios)
+
+    def analyze_loss_reasons(self, trade_history: List[Dict[str, Any]]) -> List[Any]:
+        """分析交易亏损原因"""
+        evaluator = self.get_trading_evaluator()
+        return evaluator.analyze_loss_reasons(trade_history)
+
+    def evaluate_module_capabilities(self, trade_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """评估各模块的能力"""
+        evaluator = self.get_trading_evaluator()
+        return evaluator.evaluate_module_capabilities(trade_history)
+
+    def backtest_modules(self, module_ids: List[str], scenario: str,
+                         period: str = "90d") -> Any:
+        """回测指定模块组合在特定场景下的表现"""
+        evaluator = self.get_trading_evaluator()
+        return evaluator.backtest_modules(module_ids, scenario, period)
+
+    def recommend_orchestration(self, scenarios: Optional[List[str]] = None,
+                                 module_capabilities: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """推荐最优节点编排
+
+        根据模块能力评估结果，为各场景推荐最优节点编排
+
+        Args:
+            scenarios: 目标场景列表
+            module_capabilities: 模块能力评估结果（可选，不提供则使用缓存）
+
+        Returns:
+            {scenario: OrchestrationRecommendation}
+        """
+        evaluator = self.get_trading_evaluator()
+        return evaluator.recommend_orchestration(scenarios=scenarios,
+                                                   module_capabilities=module_capabilities)
 
     def analyze_gap(self, state: State) -> float:
         """分析单次执行的知行差距分数

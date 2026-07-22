@@ -501,32 +501,42 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
             adjusted_arr = scorer.adjust_position(base_pos_arr, conf_arr)
             adjusted_position = float(adjusted_arr[0])
 
-        # === 5. 账户与持仓 ===
+        # === 5. 账户与持仓（使用 trend-system 的 AsterExecutor，确保 owner 一致）===
         account = {"equity": 0, "available": 0}
         position = None
+        all_positions = []
         try:
-            sys.path.insert(0, CLASSIC_DIR)
-            import ml_trade_service as _ml
-            positions_raw, _ = _ml._aster_fetch_positions(owner=DREAMOS_ASTER_OWNER)
-            for p in (positions_raw or []):
-                if str(p.get("coin", "")).upper() == symbol_upper:
-                    amt = float(p.get("position_amt", 0) or 0)
+            sys.path.insert(0, V4_WAVE_BASE_DIR)
+            from live.aster_executor import AsterExecutor
+            _v4_executor = AsterExecutor()
+            # 账户余额
+            try:
+                account["equity"] = float(_v4_executor.get_balance("USDT") or 0)
+                account["available"] = float(_v4_executor.get_available_balance("USDT") or 0)
+            except Exception:
+                pass
+            # 持仓查询：遍历所有持仓，匹配当前 symbol + 收集全部持仓
+            try:
+                positions_raw = _v4_executor.get_positions() or []
+                for p in positions_raw:
+                    coin = str(p.get("coin", "")).upper()
+                    amt = float(p.get("position_amt", 0) or p.get("positionAmt", 0) or 0)
                     if abs(amt) < 1e-12:
                         continue
-                    position = {
+                    pos_item = {
+                        "coin": coin,
                         "side": "LONG" if amt > 0 else "SHORT",
                         "size": abs(amt),
-                        "entry_px": float(p.get("entry_px", 0) or 0),
+                        "entry_px": float(p.get("entry_px", 0) or p.get("entryPrice", 0) or 0),
                         "leverage": float(p.get("leverage") or 1),
-                        "upnl": float(p.get("unrealized_pnl_u", 0) or 0),
-                        "mark_px": float(p.get("mark_px", 0) or 0),
+                        "upnl": float(p.get("unrealized_pnl_u", 0) or p.get("unRealizedProfit", 0) or 0),
+                        "mark_px": float(p.get("mark_px", 0) or p.get("markPrice", 0) or 0),
                     }
-                    break
-            summary = _ml._aster_fetch_account_summary(owner=DREAMOS_ASTER_OWNER)
-            if summary.get("ok"):
-                s = summary.get("summary", {}) or {}
-                account["equity"] = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
-                account["available"] = float(s.get("availableBalance", 0) or 0)
+                    all_positions.append(pos_item)
+                    if coin == symbol_upper:
+                        position = pos_item
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -548,6 +558,7 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
             },
             "account": account,
             "position": position,
+            "all_positions": all_positions,
             "strategy_line": "MAIN",
             "mode": "live_trading_available",
         }
@@ -584,10 +595,10 @@ def get_reports_state():
 ARCH_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE"
 PROJECT_ROOT = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2"
 CLASSIC_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统"
-# Dream OS 实盘账户 owner（Aster 平台，默认 None 使用 ASTER_API_KEY/SECRET_KEY）
-# 可通过环境变量 DREAMOS_ASTER_OWNER 指定特定 owner（如 quant/carry/three_screen）
+# Dream OS 实盘账户 owner（Aster 平台）
+# 注意：必须显式指定，避免被 trend-system 的 AsterExecutor 导入时污染全局 ASTER_USER
 DREAMOS_ASTER_OWNER_RAW = os.environ.get("DREAMOS_ASTER_OWNER", "").strip()
-DREAMOS_ASTER_OWNER = DREAMOS_ASTER_OWNER_RAW if DREAMOS_ASTER_OWNER_RAW else None
+DREAMOS_ASTER_OWNER = DREAMOS_ASTER_OWNER_RAW if DREAMOS_ASTER_OWNER_RAW else "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934"
 
 
 def get_dreamos_state():
@@ -608,51 +619,74 @@ def get_dreamos_state():
                        "chain": getattr(n, "chain", ""), "description": getattr(n, "description", "")}
                       for n in nodes]
 
-        # ── Aster 实盘账户（Dream OS 实际下单平台，owner=quant）──
-        account = {"ok": False, "equity": 0, "avail": 0, "positions": {}, "mode": "aster"}
+        # ── Aster 实盘账户（Dream OS 实际下单平台）──
+        # 注意：必须临时覆盖环境变量，因为 trend-system 的 AsterExecutor 导入时已污染全局 ASTER_USER
+        DREAMOS_ENV_FILE = Path(ARCH_DIR) / "dreamos" / ".env"
+        _original_env = {}
+        _dreamos_env_vars = ["ASTER_USER", "ASTER_SIGNER", "ASTER_SIGNER_PRIVATE_KEY"]
+        if DREAMOS_ENV_FILE.exists():
+            with open(DREAMOS_ENV_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    k, v = k.strip(), v.strip()
+                    if k in _dreamos_env_vars:
+                        _original_env[k] = os.environ.get(k)
+                        os.environ[k] = v
         try:
-            sys.path.insert(0, CLASSIC_DIR)
-            import ml_trade_service as _ml
-            # 持仓列表 → 转为 coin 为 key 的字典（兼容前端 renderDreamOS）
-            positions_raw, pos_err = _ml._aster_fetch_positions(owner=DREAMOS_ASTER_OWNER)
-            positions = {}
-            for p in (positions_raw or []):
-                coin = str(p.get("coin", "")).upper()
-                if not coin:
-                    continue
-                amt = float(p.get("position_amt", 0) or 0)
-                if abs(amt) < 1e-12:
-                    continue
-                positions[coin] = {
-                    "size":     amt,                    # 正=多, 负=空
-                    "entry_px": float(p.get("entry_px", 0) or 0),
-                    "upnl":     float(p.get("unrealized_pnl_u", 0) or 0),
-                    "leverage": float(p.get("leverage") or 1),
-                    "mark_px":  float(p.get("mark_px", 0) or 0),
-                    "liq_px":   float(p.get("liq_px", 0) or 0),
-                    "notional": float(p.get("notional_usdc", 0) or 0),
-                    "side":     p.get("side", "long" if amt > 0 else "short"),
+            account = {"ok": False, "equity": 0, "avail": 0, "positions": {}, "mode": "aster"}
+            try:
+                sys.path.insert(0, CLASSIC_DIR)
+                import ml_trade_service as _ml
+                # 持仓列表 → 转为 coin 为 key 的字典（兼容前端 renderDreamOS）
+                positions_raw, pos_err = _ml._aster_fetch_positions(owner=DREAMOS_ASTER_OWNER)
+                positions = {}
+                for p in (positions_raw or []):
+                    coin = str(p.get("coin", "")).upper()
+                    if not coin:
+                        continue
+                    amt = float(p.get("position_amt", 0) or 0)
+                    if abs(amt) < 1e-12:
+                        continue
+                    positions[coin] = {
+                        "size":     amt,                    # 正=多, 负=空
+                        "entry_px": float(p.get("entry_px", 0) or 0),
+                        "upnl":     float(p.get("unrealized_pnl_u", 0) or 0),
+                        "leverage": float(p.get("leverage") or 1),
+                        "mark_px":  float(p.get("mark_px", 0) or 0),
+                        "liq_px":   float(p.get("liq_px", 0) or 0),
+                        "notional": float(p.get("notional_usdc", 0) or 0),
+                        "side":     p.get("side", "long" if amt > 0 else "short"),
+                    }
+                # 账户摘要
+                summary = _ml._aster_fetch_account_summary(owner=DREAMOS_ASTER_OWNER)
+                equity = 0.0
+                avail = 0.0
+                if summary.get("ok"):
+                    s = summary.get("summary", {}) or {}
+                    equity = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
+                    avail = float(s.get("availableBalance", 0) or 0)
+                account = {
+                    "ok":        True,
+                    "equity":    equity,
+                    "avail":     avail,
+                    "positions": positions,
+                    "mode":      "aster",
+                    "owner":     DREAMOS_ASTER_OWNER,
+                    "pos_error": pos_err,
                 }
-            # 账户摘要
-            summary = _ml._aster_fetch_account_summary(owner=DREAMOS_ASTER_OWNER)
-            equity = 0.0
-            avail = 0.0
-            if summary.get("ok"):
-                s = summary.get("summary", {}) or {}
-                equity = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
-                avail = float(s.get("availableBalance", 0) or 0)
-            account = {
-                "ok":        True,
-                "equity":    equity,
-                "avail":     avail,
-                "positions": positions,
-                "mode":      "aster",
-                "owner":     DREAMOS_ASTER_OWNER,
-                "pos_error": pos_err,
-            }
-        except Exception as e:
-            account = {"ok": False, "equity": 0, "avail": 0, "positions": {},
-                       "mode": "aster", "error": str(e)}
+            except Exception as e:
+                account = {"ok": False, "equity": 0, "avail": 0, "positions": {},
+                           "mode": "aster", "error": str(e)}
+        finally:
+            # 恢复原始环境变量
+            for k, v in _original_env.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
 
         memory = {}
         try:
@@ -1089,6 +1123,155 @@ def get_yijing_account_overview():
     }
 
 
+def get_l4_status():
+    """获取 L4 认知闭环状态"""
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from scripts.memory_l4.l4_status_api import get_l4_status as _get_l4_status
+        return _get_l4_status()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def get_global_trade_stats():
+    """获取跨系统交易统计：从 L4 案例库读取各系统的胜率、PnL 等指标"""
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+        
+        registry = UnifiedCaseRegistry()
+        cases_dir = registry.cases_dir
+        
+        stats = {
+            "total_cases": 0,
+            "systems": {},
+            "summary": {},
+            "timestamp": datetime.datetime.now().isoformat(),
+        }
+        
+        system_names = {
+            "yijing_inference": "易经推理",
+            "martin_v15": "马丁策略 V15",
+            "three_screen": "三屏趋势",
+            "agent_a": "Agent A",
+            "agent_b": "Agent B",
+            "dream_os": "Dream OS",
+        }
+        
+        for source, name in system_names.items():
+            stats["systems"][source] = {
+                "name": name,
+                "total_trades": 0,
+                "win_count": 0,
+                "lose_count": 0,
+                "win_rate": 0.0,
+                "total_pnl": 0.0,
+                "avg_pnl": 0.0,
+                "max_win": 0.0,
+                "max_lose": 0.0,
+                "cases": [],
+            }
+        
+        all_cases = []
+        if cases_dir.exists():
+            for f in sorted(cases_dir.glob("*.json")):
+                try:
+                    with open(f) as fp:
+                        case = json.load(fp)
+                    source = case.get("system_source", "unknown")
+                    if source not in stats["systems"]:
+                        stats["systems"][source] = {
+                            "name": source,
+                            "total_trades": 0,
+                            "win_count": 0,
+                            "lose_count": 0,
+                            "win_rate": 0.0,
+                            "total_pnl": 0.0,
+                            "avg_pnl": 0.0,
+                            "max_win": 0.0,
+                            "max_lose": 0.0,
+                            "cases": [],
+                        }
+                    
+                    do = case.get("decision_outcome", {})
+                    pnl_pct = do.get("pnl_pct", 0)
+                    is_correct = do.get("is_correct", False)
+                    
+                    stats["systems"][source]["total_trades"] += 1
+                    stats["systems"][source]["total_pnl"] += pnl_pct
+                    stats["systems"][source]["cases"].append(case)
+                    
+                    if pnl_pct > 0:
+                        stats["systems"][source]["win_count"] += 1
+                        if pnl_pct > stats["systems"][source]["max_win"]:
+                            stats["systems"][source]["max_win"] = pnl_pct
+                    elif pnl_pct < 0:
+                        stats["systems"][source]["lose_count"] += 1
+                        if pnl_pct < stats["systems"][source]["max_lose"]:
+                            stats["systems"][source]["max_lose"] = pnl_pct
+                    
+                    all_cases.append(case)
+                except Exception:
+                    continue
+        
+        for source, data in stats["systems"].items():
+            if data["total_trades"] > 0:
+                data["win_rate"] = data["win_count"] / data["total_trades"]
+                data["avg_pnl"] = data["total_pnl"] / data["total_trades"]
+            data["win_rate_pct"] = round(data["win_rate"] * 100, 2)
+            data["total_pnl"] = round(data["total_pnl"], 2)
+            data["avg_pnl"] = round(data["avg_pnl"], 4)
+            data["max_win"] = round(data["max_win"], 2)
+            data["max_lose"] = round(data["max_lose"], 2)
+            data["cases"] = []
+        
+        stats["total_cases"] = len(all_cases)
+        
+        overall_total = 0
+        overall_win = 0
+        overall_pnl = 0.0
+        for data in stats["systems"].values():
+            overall_total += data["total_trades"]
+            overall_win += data["win_count"]
+            overall_pnl += data["total_pnl"]
+        
+        stats["summary"] = {
+            "total_systems": len(stats["systems"]),
+            "total_trades": overall_total,
+            "win_count": overall_win,
+            "win_rate": overall_win / overall_total if overall_total > 0 else 0.0,
+            "win_rate_pct": round((overall_win / overall_total * 100) if overall_total > 0 else 0, 2),
+            "total_pnl": round(overall_pnl, 2),
+            "avg_pnl": round(overall_pnl / overall_total, 4) if overall_total > 0 else 0.0,
+        }
+        
+        best_system = None
+        best_win_rate = 0
+        best_pnl = float('-inf')
+        for source, data in stats["systems"].items():
+            if data["total_trades"] >= 1:
+                if data["avg_pnl"] > best_pnl:
+                    best_pnl = data["avg_pnl"]
+                    best_system = source
+        
+        stats["top_performer"] = best_system
+        
+        return stats
+    except Exception as e:
+        return {"error": str(e), "systems": {}, "summary": {}}
+
+
+def _bg_refresh_l4_status(interval: int = 10):
+    """后台定时刷新 L4 认知闭环状态"""
+    while True:
+        try:
+            data = get_l4_status()
+            _cache_set("l4_status", data)
+        except Exception:
+            pass
+        time.sleep(interval)
+
+
 def _bg_refresh_state(interval: int = 5):
     while True:
         try:
@@ -1191,6 +1374,7 @@ def _start_bg_refresh():
         threading.Thread(target=_bg_refresh_screen, args=(30,), daemon=True),
         threading.Thread(target=_bg_refresh_dreamos, args=(15,), daemon=True),
         threading.Thread(target=_bg_refresh_token_signals, args=(300,), daemon=True),
+        threading.Thread(target=_bg_refresh_l4_status, args=(10,), daemon=True),
     ]
     for t in threads:
         t.start()
@@ -1547,6 +1731,26 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(signals)
             except Exception as e:
                 self._json({"error": str(e)})
+
+        # ── API: 全局交易统计（跨系统胜率/PnL对比） ────────────────────────
+        elif path == "/api/global-trade-stats":
+            cached = _cache_get("global_trade_stats")
+            if cached and (time.time() - cached["ts"] < 30):
+                self._json(cached["data"])
+            else:
+                data = get_global_trade_stats()
+                _cache_set("global_trade_stats", data)
+                self._json(data)
+
+        # ── API: L4 认知闭环状态仪表盘 ─────────────────────────────────────
+        elif path == "/api/l4-status":
+            cached = _cache_get("l4_status")
+            if cached and (time.time() - cached["ts"] < 10):
+                self._json(cached["data"])
+            else:
+                data = get_l4_status()
+                _cache_set("l4_status", data)
+                self._json(data)
 
         elif path == "/" or path == "/index.html":
             self._file(BASE_DIR / "monitor.html", "text/html")

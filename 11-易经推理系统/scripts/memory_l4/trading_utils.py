@@ -13,6 +13,8 @@ from pathlib import Path
 from dataclasses import dataclass, field, asdict
 
 from scripts.memory_l4.paths import memory_l4_stats_dir, memory_l4_cases_dir, memory_l4_dir
+from scripts.memory_l4.trade_event import TradeEvent
+from scripts.memory_l4.case_registry import UnifiedCaseRegistry
 
 
 # ── 数据结构 ──────────────────────────────────────────
@@ -447,86 +449,37 @@ class RiskManager:
         }
 
 
-# ── Case 生成器 ───────────────────────────────────────
+# ── Case 生成器（统一接口）──────────────────────────────
 
 def generate_case_from_trade(trade: TradeRecord) -> Dict:
-    """从平仓交易生成 L4 case
+    """从平仓交易生成 L4 case（旧接口，保留兼容性）
 
-    将实际交易结果转换为 BCRM/QMM 训练案例格式
+    调用新的 UnifiedCaseRegistry 创建标准 TradeCase v0.3
     """
-    snapshot = trade.market_snapshot or {}
-    liangyi = trade.liangyi_state or {}
-
-    x = 1 if trade.pnl >= 0 else -1
-    y = (trade.confidence - 0.5) * 2  # -1~1
-    if y > 0.3:
-        quadrant = "q1" if x > 0 else "q2"
-    elif y < -0.3:
-        quadrant = "q4" if x > 0 else "q3"
-    else:
-        quadrant = "q1" if x > 0 else "q3"
-
-    case = {
-        "case_id": f"live_trade_{trade.trade_id}",
-        "source": "live_trading",
-        "version": "v0.2",
-        "ts": trade.exit_time or datetime.now(timezone.utc).isoformat(),
-        "ts_start": trade.entry_time,
-        "symbol": trade.inst_id,
-        "direction": trade.direction,
-        "hexagram": trade.hexagram,
-        "confidence": trade.confidence,
-        "entry_price": trade.entry_price,
-        "exit_price": trade.exit_price,
-        "exit_reason": trade.exit_reason,
-
-        "liangyi_state": liangyi,
-        "scale_params": trade.scale_params or {},
-        "market_snapshot": snapshot,
-        "environment_snapshot": {
-            "volatility": snapshot.get("volatility", 0.03),
-            "trend_strength": snapshot.get("trend_strength", 0.5),
-            "price_position": snapshot.get("price_position", 0.5),
-            "is_ranging": snapshot.get("is_ranging", False),
-        },
-
-        "decision_outcome": {
-            "is_correct": trade.pnl >= 0,
-            "pnl": trade.pnl,
-            "pnl_pct": trade.pnl_pct,
-            "exit_reason": trade.exit_reason,
-        },
-
-        "actual_outcome": {
-            "is_correct": trade.pnl >= 0,
-            "pnl_pct": trade.pnl_pct,
-            "exit_reason": trade.exit_reason,
-        },
-
-        "quadrant": quadrant,
-        "contradiction_list": trade.contradiction_list,
-    }
+    event = TradeEvent.from_trade_record(trade)
+    registry = UnifiedCaseRegistry()
+    case = registry.build_trade_case(event)
     return case
 
 
 def save_case_to_l4(case: Dict) -> bool:
-    """保存 case 到 L4 案例库"""
-    cases_dir = memory_l4_cases_dir()
-    cases_dir.mkdir(parents=True, exist_ok=True)
+    """保存 case 到 L4 案例库（旧接口，保留兼容性）"""
+    registry = UnifiedCaseRegistry()
+    return registry.save_case(case)
 
-    case_id = case.get("case_id") or f"case_{int(time.time())}_{uuid.uuid4().hex[:8]}"
-    case["case_id"] = case_id
 
-    if "ts" not in case:
-        case["ts"] = datetime.now(timezone.utc).isoformat()
+def register_trade_to_l4(trade: TradeRecord) -> Tuple[str, bool]:
+    """
+    新统一接口：将交易记录注册到 L4
 
-    filepath = cases_dir / f"{case_id}.json"
-    try:
-        with filepath.open("w", encoding="utf-8") as f:
-            json.dump(case, f, indent=2, ensure_ascii=False, default=str)
-        return True
-    except Exception:
-        return False
+    使用 TradeEvent + UnifiedCaseRegistry 生成标准 TradeCase v0.3
+
+    Returns:
+        (case_id, success)
+    """
+    event = TradeEvent.from_trade_record(trade)
+    registry = UnifiedCaseRegistry()
+    return registry.register_trade_event(event)
 
 
 # ── 持仓跟踪器 ────────────────────────────────────────

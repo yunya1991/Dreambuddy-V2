@@ -44,7 +44,7 @@ SACG 四层架构:
 版本: v2.0.0
 """
 
-__version__ = "2.0.0"
+__version__ = "2.4.0"
 
 # ── shared 层: 核心抽象 ─────────────────────────────
 from .shared.state import State, NodeResult, NodeStatus, new_state
@@ -75,6 +75,9 @@ from .adapters.api_adapter import APIAdapter, APINode
 # ── core 四层（占位，P1-P4 实现） ───────────────────
 from .core import sense, arrange, compute, graph_store
 
+# ── 能力域层 ────────────────────────────────────────
+from . import capabilities
+
 # ── 横切关注点（占位，P6 实现） ─────────────────────
 from . import evolution, budget
 from . import apps
@@ -104,6 +107,8 @@ __all__ = [
     "APIAdapter", "APINode",
     # core layers
     "sense", "arrange", "compute", "graph_store",
+    # capability layers
+    "capabilities",
     # cross-cutting
     "evolution", "budget", "apps",
 ]

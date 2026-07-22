@@ -51,6 +51,8 @@ class ExecutionFeedbackCollector:
     DIRECTION_ACCURACY_THRESHOLD = 0.5   # 连续3笔方向准确率<50%
     DEVIATION_THRESHOLD = 0.3            # 偏差>30%
     MIN_TRADES_FOR_EVAL = 3             # 最少3笔交易才评估
+    # P1-1: 数据有效性阈值 — result=0(未平仓)占比超过此值时暂停进化
+    ZERO_RESULT_RATIO_THRESHOLD = 0.8
 
     def __init__(self, memory=None):
         self.memory = memory
@@ -159,12 +161,23 @@ class ExecutionFeedbackCollector:
         # 触发判定
         trigger = False
         if len(returns) >= self.MIN_TRADES_FOR_EVAL:
-            # 条件1: 连续3笔方向准确率<50%
-            if direction_accuracy < self.DIRECTION_ACCURACY_THRESHOLD:
-                trigger = True
-            # 条件2: 偏差>30%
-            if deviation > self.DEVIATION_THRESHOLD:
-                trigger = True
+            # P1-1: 数据有效性检查 — result=0 占比过高时暂停进化
+            zero_count = sum(1 for r in returns if r == 0)
+            zero_ratio = zero_count / len(returns) if returns else 0
+            if zero_ratio > self.ZERO_RESULT_RATIO_THRESHOLD:
+                # 绝大多数交易未平仓，无有效收益数据，不触发进化
+                trigger = False
+                logger.info(
+                    f"场景 {scenario_id} 数据无效: {zero_count}/{len(returns)} 笔 result=0 "
+                    f"(占比 {zero_ratio:.0%} > {self.ZERO_RESULT_RATIO_THRESHOLD:.0%}), 暂停进化触发"
+                )
+            else:
+                # 条件1: 连续3笔方向准确率<50%
+                if direction_accuracy < self.DIRECTION_ACCURACY_THRESHOLD:
+                    trigger = True
+                # 条件2: 偏差>30%
+                if deviation > self.DEVIATION_THRESHOLD:
+                    trigger = True
 
         return ExecutionFeedback(
             scenario_id=scenario_id,
@@ -206,3 +219,20 @@ class ExecutionFeedbackCollector:
             "total_return": round(sum(returns), 4) if returns else 0,
             "patterns_used": list(set(r.get("pattern", "?") for r in records)),
         }
+
+    def sync_verification_status(self) -> int:
+        """P2-1: 根据反馈数据同步场景验证状态
+
+        将有实验反馈数据的场景标记为 verified，
+        无反馈数据的场景标记为 unverified。
+
+        Returns:
+            标注为 unverified 的场景数量
+        """
+        if not self.memory:
+            return 0
+
+        # 有反馈记录的场景 = 已验证
+        verified_ids = set(self._records.keys())
+        unverified_count = self.memory.mark_unverified(verified_ids)
+        return unverified_count

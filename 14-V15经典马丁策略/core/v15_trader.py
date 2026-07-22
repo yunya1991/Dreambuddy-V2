@@ -17,6 +17,17 @@ BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
 
+# L4 TradeEvent 注册（跨系统统一交易记录）
+try:
+    _L4_ROOT = Path(__file__).resolve().parents[1] / "11-易经推理系统"
+    if str(_L4_ROOT) not in sys.path:
+        sys.path.insert(0, str(_L4_ROOT))
+    from scripts.memory_l4.trade_event import TradeEvent
+    from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+    _L4_ENABLED = True
+except Exception as _e:
+    _L4_ENABLED = False
+
 try:
     from config_loader import load_config, get_config, get_config_float, get_config_int, get_config_list, get_config_bool
     load_config("v15")
@@ -99,6 +110,81 @@ def _log(msg):
     log_file = LOG_DIR / f"v15_{datetime.now(timezone.utc).strftime('%Y%m%d')}.log"
     with open(log_file, "a") as f:
         f.write(line + "\n")
+
+
+def _register_martin_trade_to_l4(
+    coin: str,
+    pos: dict,
+    exit_price: float,
+    exit_reason: str,
+    pnl: float = None,
+    pnl_pct: float = None,
+):
+    """将马丁策略交易记录注册到 L4 统一案例库"""
+    if not _L4_ENABLED:
+        return None, False
+    
+    try:
+        trade_id = f"martin_{int(datetime.now(timezone.utc).timestamp())}_{coin}"
+        
+        direction = pos.get("direction", "LONG")
+        addons = pos.get("addons", 0)
+        entry_price = pos.get("entry_price", 0)
+        
+        if pnl_pct is None:
+            if direction == "SHORT":
+                pnl_pct = (entry_price - exit_price) / entry_price if entry_price > 0 else 0
+            else:
+                pnl_pct = (exit_price - entry_price) / entry_price if entry_price > 0 else 0
+        
+        if pnl is None:
+            pnl = pnl_pct * pos.get("sz", 0) * entry_price
+        
+        event = TradeEvent(
+            event_id=TradeEvent.generate_event_id(),
+            system_source="martin_v15",
+            trade_id=trade_id,
+            ts_entry=pos.get("open_time", datetime.now(timezone.utc).isoformat()),
+            ts_exit=datetime.now(timezone.utc).isoformat(),
+            symbol=pos.get("inst_id", to_swap(coin)),
+            direction=direction.lower(),
+            entry_price=entry_price,
+            exit_price=exit_price,
+            position_size=pos.get("sz", 0),
+            pnl=pnl,
+            pnl_pct=pnl_pct * 100 if abs(pnl_pct) < 10 else pnl_pct,
+            exit_reason=exit_reason,
+            decision_context={
+                "addon_level": addons,
+                "martin_config": {
+                    "max_addons": MAX_ADDONS,
+                    "base_tp_pct": BASE_TP_PCT,
+                    "leverage": LEVERAGE,
+                },
+                "grid_params": pos.get("grid_params", {}),
+                "take_profit_pct": pos.get("take_profit_pct"),
+                "stop_loss_price": pos.get("stop_loss_price"),
+            },
+            market_snapshot={
+                "regime": pos.get("regime", "unknown"),
+                "volatility": pos.get("volatility", 0.02),
+            },
+            leverage=LEVERAGE,
+            margin_usdt=pos.get("margin_usdt", 0),
+        )
+        
+        registry = UnifiedCaseRegistry()
+        case_id, success = registry.register_trade_event(event)
+        
+        if success:
+            _log(f"[{coin}] L4 案例已注册: {case_id}")
+        else:
+            _log(f"[{coin}] L4 案例注册失败")
+        
+        return case_id, success
+    except Exception as e:
+        _log(f"[{coin}] L4 注册异常: {e}")
+        return None, False
 
 
 # ── 启动日志：币种池风控过滤结果 ──
@@ -948,7 +1034,7 @@ def check_time_exit(client, coin, pos, state):
         return False
 
 
-def _execute_close_position(client, coin, pos, state, reason=""):
+def _execute_close_position(client, coin, pos, state, reason="", exit_price=None):
     """平仓（支持多空方向）- 平仓前取消所有条件单"""
     inst_id = pos["inst_id"]
     direction = pos.get("direction", "LONG")
@@ -977,6 +1063,13 @@ def _execute_close_position(client, coin, pos, state, reason=""):
                 _log(f"[{coin}] {direction} 平仓成功 ({reason})")
                 state["consecutive_losses"] = state.get("consecutive_losses", 0) + 1
                 if coin in state["positions"]:
+                    # 注册到 L4
+                    _register_martin_trade_to_l4(
+                        coin=coin,
+                        pos=pos,
+                        exit_price=exit_price or pos.get("entry_price", 0),
+                        exit_reason=reason,
+                    )
                     del state["positions"][coin]
                 return True
             else:
@@ -1175,6 +1268,13 @@ def run_light_poll_cycle():
     for coin in externally_closed:
         pos = state["positions"][coin]
         _log(f"[{coin}] ⚠️ 检测到外部平仓: entry={pos['entry_price']} sz={pos['sz']}")
+        # 注册外部平仓到 L4
+        _register_martin_trade_to_l4(
+            coin=coin,
+            pos=pos,
+            exit_price=pos.get("current_price", pos.get("entry_price", 0)),
+            exit_reason="external_close",
+        )
         del state["positions"][coin]
 
     # 2. 交易所中有但state中没有 → 外部开仓（策略不负责，仅记录）

@@ -94,9 +94,98 @@ def _qian_trend_features(df: pd.DataFrame) -> pd.DataFrame:
     ma10 = df["close"].rolling(10).mean()
     ma20 = df["close"].rolling(20).mean()
     ma50 = df["close"].rolling(50).mean()
+    ma100 = df["close"].rolling(100).mean()
+    ma200 = df["close"].rolling(200).mean()
+    
     bull = (ma5 > ma10) & (ma10 > ma20) & (ma20 > ma50)
     bear = (ma5 < ma10) & (ma10 < ma20) & (ma20 < ma50)
     feats["qian_ma_alignment"] = np.where(bull, 1.0, np.where(bear, -1.0, 0.0))
+
+    # 更多周期的均线排列
+    bull_full = (ma5 > ma10) & (ma10 > ma20) & (ma20 > ma50) & (ma50 > ma100) & (ma100 > ma200)
+    bear_full = (ma5 < ma10) & (ma10 < ma20) & (ma20 < ma50) & (ma50 < ma100) & (ma100 < ma200)
+    feats["qian_ma_alignment_full"] = np.where(bull_full, 1.0, np.where(bear_full, -1.0, 0.0))
+
+    # 均线发散程度 (趋势强度)
+    feats["qian_ma_divergence"] = (ma5 - ma200) / ma200
+
+    # Ichimoku云指标
+    conversion_line = (df["high"].rolling(9).max() + df["low"].rolling(9).min()) / 2
+    base_line = (df["high"].rolling(26).max() + df["low"].rolling(26).min()) / 2
+    span_a = (conversion_line + base_line) / 2
+    span_b = (df["high"].rolling(52).max() + df["low"].rolling(52).min()) / 2
+    feats["qian_ichimoku_conversion"] = (df["close"] - conversion_line) / df["close"]
+    feats["qian_ichimoku_base"] = (df["close"] - base_line) / df["close"]
+    feats["qian_ichimoku_span_a"] = (df["close"] - span_a) / df["close"]
+    feats["qian_ichimoku_span_b"] = (df["close"] - span_b) / df["close"]
+    feats["qian_ichimoku_cloud_top"] = np.maximum(span_a, span_b)
+    feats["qian_ichimoku_cloud_bottom"] = np.minimum(span_a, span_b)
+    feats["qian_ichimoku_in_cloud"] = ((df["close"] >= np.minimum(span_a, span_b)) & 
+                                       (df["close"] <= np.maximum(span_a, span_b))).astype(float)
+    feats["qian_ichimoku_above_cloud"] = (df["close"] > np.maximum(span_a, span_b)).astype(float)
+    feats["qian_ichimoku_below_cloud"] = (df["close"] < np.minimum(span_a, span_b)).astype(float)
+
+    # 抛物线SAR
+    sar = pd.Series(0.0, index=df.index)
+    sar.iloc[0] = df["low"].iloc[0]
+    af = 0.02
+    ep = df["high"].iloc[0]
+    trend = 1  # 1=up, -1=down
+    
+    for i in range(1, len(df)):
+        sar.iloc[i] = sar.iloc[i-1] + af * (ep - sar.iloc[i-1])
+        
+        if trend == 1:
+            if df["low"].iloc[i] < sar.iloc[i]:
+                trend = -1
+                sar.iloc[i] = df["high"].rolling(i+1).max().iloc[i]
+                ep = df["low"].iloc[i]
+                af = 0.02
+            else:
+                if df["high"].iloc[i] > ep:
+                    ep = df["high"].iloc[i]
+                    af = min(af + 0.02, 0.2)
+        else:
+            if df["high"].iloc[i] > sar.iloc[i]:
+                trend = 1
+                sar.iloc[i] = df["low"].rolling(i+1).min().iloc[i]
+                ep = df["high"].iloc[i]
+                af = 0.02
+            else:
+                if df["low"].iloc[i] < ep:
+                    ep = df["low"].iloc[i]
+                    af = min(af + 0.02, 0.2)
+    
+    feats["qian_sar"] = (df["close"] - sar) / df["close"]
+    feats["qian_sar_trend"] = trend * np.ones(len(df))
+
+    # 趋势持续时间
+    trend_duration = pd.Series(0, index=df.index, dtype=float)
+    for i in range(1, len(df)):
+        if df["close"].iloc[i] > df["close"].iloc[i-1]:
+            trend_duration.iloc[i] = trend_duration.iloc[i-1] + 1 if df["close"].iloc[i-1] > df["close"].iloc[i-2] else 1
+        elif df["close"].iloc[i] < df["close"].iloc[i-1]:
+            trend_duration.iloc[i] = trend_duration.iloc[i-1] - 1 if df["close"].iloc[i-1] < df["close"].iloc[i-2] else -1
+    feats["qian_trend_duration"] = trend_duration / 20.0
+
+    # 斜率特征 (多种周期)
+    for period in [10, 20, 50, 100]:
+        ma = df["close"].rolling(period).mean()
+        feats[f"qian_slope{period}"] = ma.diff(period) / ma
+        feats[f"qian_angle{period}"] = np.arctan(ma.diff(5) / ma) * 180 / np.pi
+
+    # 价格位置特征
+    feats["qian_price_above_ma50"] = (df["close"] > ma50).astype(float)
+    feats["qian_price_above_ma200"] = (df["close"] > ma200).astype(float)
+    feats["qian_price_distance_ma50"] = (df["close"] - ma50) / ma50
+    feats["qian_price_distance_ma200"] = (df["close"] - ma200) / ma200
+
+    # 趋势强度综合指标
+    feats["qian_trend_strength"] = (
+        feats["qian_adx"] * feats["qian_trend_dir"] +
+        feats["qian_ma_alignment"] * 0.3 +
+        np.sign(feats["qian_slope50"]) * 0.3
+    )
 
     return feats
 
@@ -216,6 +305,58 @@ def _zhen_momentum_features(df: pd.DataFrame) -> pd.DataFrame:
     for period in [20, 60]:
         feats[f"zhen_break_high{period}"] = (df["close"] > df["high"].rolling(period).max().shift()).astype(float)
         feats[f"zhen_break_low{period}"] = (df["close"] < df["low"].rolling(period).min().shift()).astype(float)
+
+    # === 下跌趋势专用特征 ===
+    # 下跌动量强度 (负收益的累积)
+    for period in [5, 10, 20, 60]:
+        neg_returns = df["close"].pct_change(period).clip(upper=0)
+        feats[f"zhen_down_momentum{period}"] = neg_returns
+    
+    # 下跌速度 (短期跌幅相对于长期跌幅的加速度)
+    down_5 = df["close"].pct_change(5).clip(upper=0)
+    down_20 = df["close"].pct_change(20).clip(upper=0)
+    feats["zhen_down_acceleration"] = down_5 - down_20 / 4
+
+    # 连续下跌天数
+    is_down = (df["close"] < df["close"].shift()).astype(int)
+    down_streak = pd.Series(0, index=df.index, dtype=int)
+    for i in range(1, len(df)):
+        if is_down.iloc[i] == 1:
+            down_streak.iloc[i] = down_streak.iloc[i-1] + 1
+        else:
+            down_streak.iloc[i] = 0
+    feats["zhen_down_streak"] = down_streak / 20.0
+
+    # 恐慌指标: 大阴线频率 (跌幅超过2倍ATR的K线占比)
+    tr = pd.concat([
+        df["high"] - df["low"],
+        np.abs(df["high"] - df["close"].shift()),
+        np.abs(df["low"] - df["close"].shift())
+    ], axis=1).max(axis=1)
+    atr14 = tr.rolling(14).mean()
+    body = df["close"] - df["open"]
+    large_down = (body < -atr14 * 0.5).astype(float)
+    feats["zhen_panic_freq"] = large_down.rolling(20).mean()
+
+    # 下跌量能 (下跌时的成交量占比)
+    down_vol = np.where(df["close"] < df["open"], df["volume"], 0)
+    total_vol = df["volume"].rolling(20).sum()
+    down_vol_sum = pd.Series(down_vol, index=df.index).rolling(20).sum()
+    feats["zhen_down_vol_ratio"] = down_vol_sum / (total_vol + 1e-10)
+
+    # 价格下跌加速度 (二阶导数)
+    price_change = df["close"].pct_change()
+    feats["zhen_price_acceleration"] = price_change.diff(5)
+
+    # 新低频率 (持续创新低的频率)
+    for period in [20, 60]:
+        is_new_low = (df["close"] == df["close"].rolling(period).min()).astype(float)
+        feats[f"zhen_new_low_freq{period}"] = is_new_low.rolling(period).mean()
+
+    # 下跌深度 (当前价格距离近期高点的跌幅)
+    for period in [20, 60, 120]:
+        roll_high = df["high"].rolling(period).max()
+        feats[f"zhen_drawdown{period}"] = (roll_high - df["close"]) / roll_high
 
     return feats
 

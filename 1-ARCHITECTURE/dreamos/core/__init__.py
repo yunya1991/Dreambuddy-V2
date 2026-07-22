@@ -18,6 +18,6 @@ SACG 架构:
 """
 
 # 各层入口（P1-P4 阶段填充真实实现）
-from . import sense, arrange, compute, graph_store
+from . import sense, arrange, compute, graph_store, capability
 
-__all__ = ["sense", "arrange", "compute", "graph_store"]
+__all__ = ["sense", "arrange", "compute", "graph_store", "capability"]

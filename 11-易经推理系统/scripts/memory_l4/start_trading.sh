@@ -5,13 +5,14 @@ cd "$(dirname "$0")/../.."
 mkdir -p logs
 
 echo "启动易经推理轮询交易器..."
-echo "配置: 29币种(含SPX/XAU TradFi) | 1小时间隔 | 置信度0.55 | 最大持仓10 | BCRM 2.0 (辩证ML引擎) | 逐仓模式(独立保证金) | 易经专属离场层"
+echo "配置: 29币种(含SPX/XAU TradFi) | 1小时间隔 | 做多置信度0.55 | 做空置信度0.70 | 最大持仓10 | BCRM 2.0 (辩证ML引擎) | 逐仓模式(独立保证金) | 易经专属离场层"
 echo "日志: logs/trading_stdout.log"
 
 nohup env FEISHU_APP_ID="cli_aa9442bde4b89be9" FEISHU_APP_SECRET="dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70" /opt/anaconda3/bin/python3 -m scripts.memory_l4.polling_trader \
     --interval 3600 \
     --coins BTC,ETH,SOL,BNB,XRP,DOGE,ADA,AVAX,LINK,LTC,DOT,NEAR,ATOM,UNI,APT,FIL,ARB,OP,INJ,SUI,SEI,TIA,AAVE,LDO,STX,IMX,GRT,SPX,XAU \
     --confidence 0.55 \
+    --short-confidence 0.70 \
     --max-positions 10 \
     --position-pct 0.10 \
     > logs/trading_stdout.log 2>&1 &

@@ -110,13 +110,28 @@ class OrchestrationMemory:
 
         Returns:
             OrchestrationChoice: 编排选择结果
+
+        查询策略（从精确到模糊）:
+            L0: 精确匹配全维度 — 有 best_pattern 且非推断即命中
+            L1: 降维 趋势×波动率 — 同趋势同波动率的最优场景
+            L2: 降维 仅趋势 — 同趋势的最优场景
+            L3: 默认 c_chain (C1→C2→C3)
         """
         parts = scenario_id.split("_")
         scenarios = self._data.get("scenarios", {})
 
+        def _usable(entry: dict) -> bool:
+            """判断条目是否可用于选择（有实际 best_pattern 且非纯推断）"""
+            if not entry or not entry.get("best_pattern"):
+                return False
+            # 推断的场景（无真实回测数据）降低优先级但仍可用
+            if entry.get("inferred") and entry.get("sample_count", 0) == 0:
+                return False
+            return True
+
         # L0: 精确匹配
         entry = scenarios.get(scenario_id)
-        if entry and not entry.get("sparse", True) and entry.get("confidence") in ("high", "medium"):
+        if _usable(entry):
             return OrchestrationChoice(
                 pattern=entry["best_pattern"],
                 nodes=entry["nodes"],
@@ -129,31 +144,46 @@ class OrchestrationMemory:
         # L1: 趋势×波动率 (前两段)
         if len(parts) >= 2:
             prefix = f"{parts[0]}_{parts[1]}_"
+            best_sid = None
+            best_score = -1
             for sid, entry in scenarios.items():
-                if sid.startswith(prefix) and not entry.get("sparse", True) and \
-                   entry.get("confidence") in ("high", "medium"):
-                    return OrchestrationChoice(
-                        pattern=entry["best_pattern"],
-                        nodes=entry["nodes"],
-                        score=entry.get("score", 0),
-                        confidence=entry.get("confidence", "low"),
-                        fallback_level="L1",
-                        source_scenario=sid,
-                    )
+                if sid.startswith(prefix) and _usable(entry):
+                    s = entry.get("score", 0)
+                    if s > best_score:
+                        best_score = s
+                        best_sid = sid
+            if best_sid:
+                entry = scenarios[best_sid]
+                return OrchestrationChoice(
+                    pattern=entry["best_pattern"],
+                    nodes=entry["nodes"],
+                    score=entry.get("score", 0),
+                    confidence=entry.get("confidence", "low"),
+                    fallback_level="L1",
+                    source_scenario=best_sid,
+                )
 
         # L2: 仅趋势 (第一段)
         if len(parts) >= 1:
             prefix = f"{parts[0]}_"
+            best_sid = None
+            best_score = -1
             for sid, entry in scenarios.items():
-                if sid.startswith(prefix) and not entry.get("sparse", True):
-                    return OrchestrationChoice(
-                        pattern=entry["best_pattern"],
-                        nodes=entry["nodes"],
-                        score=entry.get("score", 0),
-                        confidence=entry.get("confidence", "low"),
-                        fallback_level="L2",
-                        source_scenario=sid,
-                    )
+                if sid.startswith(prefix) and _usable(entry):
+                    s = entry.get("score", 0)
+                    if s > best_score:
+                        best_score = s
+                        best_sid = sid
+            if best_sid:
+                entry = scenarios[best_sid]
+                return OrchestrationChoice(
+                    pattern=entry["best_pattern"],
+                    nodes=entry["nodes"],
+                    score=entry.get("score", 0),
+                    confidence=entry.get("confidence", "low"),
+                    fallback_level="L2",
+                    source_scenario=best_sid,
+                )
 
         # L3: 默认
         return OrchestrationChoice(
@@ -291,14 +321,18 @@ class OrchestrationMemory:
         scenarios = self._data.setdefault("scenarios", {})
         existing = scenarios.get(scenario_id, {})
 
+        sample_count = evidence.get("sample_count", existing.get("sample_count", 0))
+        # sparse 根据样本量判断，而非硬编码 False
+        is_sparse = sample_count < 10
+
         scenarios[scenario_id] = {
             "best_pattern": new_pattern,
             "nodes": nodes,
             "score": round(score, 4),
             "metrics": evidence.get("metrics", existing.get("metrics", {})),
-            "sample_count": evidence.get("sample_count", existing.get("sample_count", 0)),
+            "sample_count": sample_count,
             "confidence": evidence.get("confidence", "medium"),
-            "sparse": False,
+            "sparse": is_sparse,
             "evolved_at": datetime.now().isoformat(),
         }
         logger.info(f"场景 {scenario_id} 编排已进化更新: {new_pattern} (score={score:.4f})")
@@ -333,3 +367,39 @@ class OrchestrationMemory:
     def get_scenario(self, scenario_id: str) -> Optional[Dict[str, Any]]:
         """获取单个场景详情"""
         return self._data.get("scenarios", {}).get(scenario_id)
+
+    def mark_unverified(self, verified_scenario_ids: set) -> int:
+        """P2-1: 将未在反馈数据中出现的场景标注为 unverified
+
+        未验证场景的编排选择仍可用于交易（降级查询），
+        但不参与进化引擎的编排优化（避免基于未验证数据修改编排）。
+
+        Args:
+            verified_scenario_ids: 已通过实验验证的场景ID集合
+
+        Returns:
+            被标注为 unverified 的场景数量
+        """
+        scenarios = self._data.get("scenarios", {})
+        count = 0
+        for sid, entry in scenarios.items():
+            if sid not in verified_scenario_ids:
+                old_conf = entry.get("confidence", "")
+                if old_conf != "unverified":
+                    entry["confidence"] = "unverified"
+                    entry["verified"] = False
+                    count += 1
+            else:
+                entry["verified"] = True
+
+        if count > 0:
+            self.save()
+            logger.info(f"P2-1: {count} 个场景标注为 unverified (已验证: {len(verified_scenario_ids)})")
+        return count
+
+    def is_verified(self, scenario_id: str) -> bool:
+        """P2-1: 检查场景是否已通过实验验证"""
+        entry = self.get_scenario(scenario_id)
+        if not entry:
+            return False
+        return entry.get("verified", False) and entry.get("confidence") != "unverified"
