@@ -106,6 +106,28 @@ class C1TechScanNode(BaseNode):
         elif regime == "RANGE":
             scores.append(("HOLD", 0.10, "震荡行情，建议观望"))
 
+        # ── 6. Freqtrade 量化策略信号 ────────────
+        ft_signal = mkt.get("freqtrade_signal")
+        if ft_signal and isinstance(ft_signal, dict):
+            ft_direction = ft_signal.get("direction", "HOLD")
+            ft_conf = float(ft_signal.get("confidence", 0))
+            ft_strategy_count = int(ft_signal.get("strategy_count", 0))
+            ft_long_votes = int(ft_signal.get("long_votes", 0))
+            ft_short_votes = int(ft_signal.get("short_votes", 0))
+
+            if ft_strategy_count >= 3 and ft_direction in ("LONG", "SHORT") and ft_conf > 0.55:
+                # 策略数≥3且高置信时，作为强技术信号
+                ft_weight = min(0.20, 0.08 + ft_strategy_count * 0.015 + (ft_conf - 0.5) * 0.2)
+                scores.append((ft_direction, ft_weight,
+                              f"Freqtrade策略({ft_strategy_count}个)看多 {ft_long_votes} vs 看空 {ft_short_votes}，置信 {ft_conf:.0%}"))
+            elif ft_strategy_count >= 2 and ft_direction in ("LONG", "SHORT"):
+                # 策略数较少时，作为中等强度信号
+                ft_weight = min(0.10, 0.05 + ft_strategy_count * 0.01)
+                scores.append((ft_direction, ft_weight,
+                              f"Freqtrade策略({ft_strategy_count}个)偏{ft_direction}，置信 {ft_conf:.0%}"))
+            elif ft_direction == "HOLD" or ft_strategy_count == 0:
+                scores.append(("HOLD", 0.05, "Freqtrade信号中性或策略不足"))
+
         # ── 综合计算 ────────────────────────────
         long_score = sum(w for d, w, _ in scores if d == "LONG")
         short_score = sum(w for d, w, _ in scores if d == "SHORT")

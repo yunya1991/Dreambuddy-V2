@@ -588,12 +588,14 @@ class ScenarioSystemEvaluator:
         max_drawdown = self._calculate_max_drawdown(pnls)
 
         # 综合评分
+        # P1-1 修复: sharpe 双向裁剪到 [-1, 1]，负 sharpe 不再无限放大扣分
+        #           负 total_return 扣分（而非贡献0），避免亏损场景得分偏高
         score = (
             win_rate * self.WEIGHTS["win_rate"] +
             accuracy * self.WEIGHTS["accuracy"] +
-            min(sharpe / 2, 1) * self.WEIGHTS["sharpe"] +  # 夏普归一化
+            max(-1, min(sharpe / 2, 1)) * self.WEIGHTS["sharpe"] +  # 夏普归一化 [-1, 1]
             stability * self.WEIGHTS["stability"] +
-            (1 if total_return > 0 else 0) * self.WEIGHTS["total_return"]
+            (1 if total_return > 0 else -1) * self.WEIGHTS["total_return"]  # 负收益扣分
         )
 
         return ScenarioSystemMetrics(
@@ -649,17 +651,16 @@ class ScenarioSystemEvaluator:
         return max(0.1, 1.0 - penalty)
 
     def _calculate_sharpe(self, pnls: List[float]) -> float:
-        """计算夏普比率"""
-        if len(pnls) < 2:
-            return 0
+        """计算年化夏普比率（样本标准差，年化）"""
+        from dreamos.capabilities.trading.stats_utils import calculate_metrics
+        metrics = calculate_metrics(pnls, periods_per_year=365)
+        return metrics.sharpe_ratio
 
-        avg = sum(pnls) / len(pnls)
-        variance = sum((p - avg) ** 2 for p in pnls) / len(pnls)
-        std = variance ** 0.5 if variance > 0 else 0.001
-
-        if std == 0:
-            return 0
-        return avg / std * (len(pnls) ** 0.5)
+    def _calculate_sortino(self, pnls: List[float]) -> float:
+        """计算年化 Sortino 比率"""
+        from dreamos.capabilities.trading.stats_utils import calculate_metrics
+        metrics = calculate_metrics(pnls, periods_per_year=365)
+        return metrics.sortino_ratio
 
     def _calculate_max_drawdown(self, pnls: List[float]) -> float:
         """计算最大回撤"""

@@ -18,7 +18,7 @@ import math
 
 from ._constants import (
     FORCE_WEIGHT_CORE, FORCE_WEIGHT_SURFACE,
-    FORCE_WEIGHT_TIME, FORCE_WEIGHT_SPACE,
+    FORCE_WEIGHT_TIME, FORCE_WEIGHT_SPACE, FORCE_WEIGHT_LIQUIDITY,
     SCALE_VOLATILITY_BASE, SCALE_VOLATILITY_RANGE,
     SCALE_TIME_SHORT, SCALE_TIME_MID, SCALE_TIME_LONG,
     SCALE_SPACE_SENSITIVITY_SMALL, SCALE_SPACE_SENSITIVITY_LARGE,
@@ -46,11 +46,12 @@ class ScaleParams:
     """
     scale: float = 0.5  # 体量系数 [0, 1]
 
-    # 四象权重（随体量变化）
+    # 五象权重（随体量变化）
     weight_time: float = FORCE_WEIGHT_TIME
     weight_space: float = FORCE_WEIGHT_SPACE
     weight_surface: float = FORCE_WEIGHT_SURFACE
     weight_core: float = FORCE_WEIGHT_CORE
+    weight_liquidity: float = FORCE_WEIGHT_LIQUIDITY
 
     # 力学参数
     market_mass_base: float = MARKET_MASS_BASE
@@ -73,6 +74,7 @@ class ScaleParams:
             "weight_space": round(self.weight_space, 4),
             "weight_surface": round(self.weight_surface, 4),
             "weight_core": round(self.weight_core, 4),
+            "weight_liquidity": round(self.weight_liquidity, 4),
             "market_mass_base": round(self.market_mass_base, 4),
             "velocity_decay": round(self.velocity_decay, 4),
             "confidence_threshold": round(self.confidence_threshold, 4),
@@ -135,20 +137,23 @@ def scale_to_params(scale: float) -> ScaleParams:
     """
     s = max(0.0, min(1.0, scale))
 
-    # --- 四象权重插值 ---
+    # --- 五象权重插值 ---
     # 小体量：表>时>空>里 → 大体量：里>时>表>空
     w_surface = _lerp(SCALE_SURFACE_WEIGHT_SMALL, SCALE_SURFACE_WEIGHT_LARGE, s)
     w_core = _lerp(SCALE_CORE_WEIGHT_SMALL, SCALE_CORE_WEIGHT_LARGE, s)
     # 时和空保持相对稳定，但微调
     w_time = FORCE_WEIGHT_TIME + (s - 0.5) * 0.05  # 大体量时间略增
     w_space = FORCE_WEIGHT_SPACE - (s - 0.5) * 0.03  # 大体量空间略减
+    # 流动性：小体量变化快影响大（略高），大体量流动性稳定（略低）
+    w_liquidity = FORCE_WEIGHT_LIQUIDITY + (0.5 - s) * 0.04
 
-    # 归一化（确保权重和为1）
-    total = w_time + w_space + w_surface + w_core
+    # 归一化（确保五力权重和为1）
+    total = w_time + w_space + w_surface + w_core + w_liquidity
     w_time /= total
     w_space /= total
     w_surface /= total
     w_core /= total
+    w_liquidity /= total
 
     # --- 力学参数插值 ---
     mass_base = _lerp(SCALE_MASS_SMALL, SCALE_MASS_LARGE, s)
@@ -174,6 +179,7 @@ def scale_to_params(scale: float) -> ScaleParams:
         weight_space=w_space,
         weight_surface=w_surface,
         weight_core=w_core,
+        weight_liquidity=w_liquidity,
         market_mass_base=mass_base,
         velocity_decay=decay,
         confidence_threshold=conf_threshold,

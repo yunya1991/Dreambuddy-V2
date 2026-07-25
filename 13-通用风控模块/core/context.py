@@ -5,27 +5,30 @@
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
-from enum import Enum
 from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class Direction(str, Enum):
     """交易方向"""
+
     LONG = "long"
     SHORT = "short"
 
 
 class ExitAction(str, Enum):
     """离场动作"""
+
     CLOSE = "close"
     REDUCE = "reduce"
     HOLD = "hold"
-    RAISE_TP = "raise_tp"    # 提高止盈价（强反弹时让利润奔跑）
+    RAISE_TP = "raise_tp"  # 提高止盈价（强反弹时让利润奔跑）
 
 
 class ExitPriority(str, Enum):
     """离场优先级"""
+
     P0_L0_HARD = "p0_l0"
     P1_VALUE_RISK = "p1"
     P2_TRIPLE_BARRIER = "p2"
@@ -34,6 +37,7 @@ class ExitPriority(str, Enum):
 
 class RiskLevel(str, Enum):
     """风险等级"""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -43,6 +47,7 @@ class RiskLevel(str, Enum):
 
 class ReasonCode(str, Enum):
     """理由码体系 - 与知识库风控体系.md对齐"""
+
     PASS = "PASS"
 
     HARD_FAIL_MISSING_CORE_DATA = "HARD_FAIL_MISSING_CORE_DATA"
@@ -71,6 +76,7 @@ class ReasonCode(str, Enum):
 @dataclass
 class Signal:
     """交易信号"""
+
     coin: str
     direction: Direction
     confidence: float = 0.5
@@ -84,6 +90,7 @@ class Signal:
 @dataclass
 class PositionState:
     """持仓状态"""
+
     coin: str
     side: Direction
     entry_price: float = 0.0
@@ -117,6 +124,7 @@ class PositionState:
 @dataclass
 class MarketSnapshot:
     """市场快照"""
+
     coin: str
     price: float = 0.0
     rsi: float = 50.0
@@ -131,6 +139,7 @@ class MarketSnapshot:
 @dataclass
 class RiskCheckResult:
     """风控检查结果"""
+
     passed: bool
     reason_code: ReasonCode = ReasonCode.PASS
     risk_level: RiskLevel = RiskLevel.NORMAL
@@ -148,23 +157,26 @@ class RiskCheckResult:
             passed=False,
             reason_code=reason_code,
             risk_level=RiskLevel.HIGH,
-            message=message or reason_code.value
+            message=message or reason_code.value,
         )
 
     @classmethod
-    def degrade_result(cls, reason_code: ReasonCode, modifier: float, message: str = "") -> "RiskCheckResult":
+    def degrade_result(
+        cls, reason_code: ReasonCode, modifier: float, message: str = ""
+    ) -> "RiskCheckResult":
         return cls(
             passed=True,
             reason_code=reason_code,
             risk_level=RiskLevel.MEDIUM,
             message=message or reason_code.value,
-            position_modifier=modifier
+            position_modifier=modifier,
         )
 
 
 @dataclass
 class PositionSizeResult:
     """仓位计算结果"""
+
     base_size_usdt: float = 0.0
     base_size_coins: float = 0.0
     risk_per_trade_usdt: float = 0.0
@@ -178,6 +190,7 @@ class PositionSizeResult:
 @dataclass
 class ExitResult:
     """离场决策结果"""
+
     action: ExitAction = ExitAction.HOLD
     priority: ExitPriority = ExitPriority.P3_BEHAVIORAL
     reason: str = ""

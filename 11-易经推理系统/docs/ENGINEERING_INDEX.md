@@ -1,6 +1,6 @@
 # 易经推理系统 工程索引（SSoT）
 
-> **版本**: v2.3 | **更新日期**: 2026-07-15
+> **版本**: v2.6 | **更新日期**: 2026-07-25
 > **定位**: 易经推理系统的工程入口索引（Single Source of Truth），包含所有子模块的文件级索引、入口锚点、依赖关系和快速导航
 > **维护原则**: 任何子系统变更影响入口、依赖关系、配置层级的，必须同步更新本文件
 
@@ -36,6 +36,8 @@
 |------|----------|----------|------|
 | 轮询交易器 | `scripts/memory_l4/polling_trader.py` | launchd | A0-A9决策链 + BCRM 2.0引擎 + 实盘交易 |
 | BCRM 2.0适配器 | `scripts/memory_l4/bcrm2_adapter.py` | 被 polling_trader 调用 | 封装BCRM 2.0训练/推理/缓存，兼容BCRM 1.0接口 |
+| 系统诊断 | `scripts/memory_l4/inspect.py` | 手动 / 启动时自检 | 系统健康检查（状态/持仓/模型/连接/风控/飞书） |
+| 多场景验证 | `multi_scenario_validation.py` | 手动运行 | 25个用例覆盖推理/离场/风控/反馈/异常五场景 |
 | 离场分析工具 | `scripts/memory_l4/analyze_eth_exit.py` | 手动运行 | 持仓离场四场景分析（hold/reduce/raise_tp/close） |
 | 置信度优化 | `scripts/memory_l4/confidence_optimization.py` | 手动运行 | 回测不同置信度阈值下的胜率/收益 |
 | BCRM 2.0回测 | `scripts/memory_l4/bcrm2/run_phase0_validation.py` | 手动运行 | Phase 0基线回测 |
@@ -53,12 +55,17 @@
 | 矛盾识别 | `bcrm/engine.py` → `BCRMEngine` | BCRM 1.0 |
 | 八卦力学 | `bcrm/bagua_engine.py` → `BaguaEngine` | BCRM 1.0 |
 | BCRM 2.0推理 | `bcrm2/dialectical_ml_engine.py` → `DialecticalMLEngine` | BCRM 2.0 |
-| BCRM 2.0实盘适配 | `bcrm2_adapter.py` → `BCRM2Adapter` | 适配层 |
-| 市态切换 | `bcrm2/market_regime.py` → `MarketRegimeDetector` | BCRM 2.0 |
+| BCRM 2.0实盘适配 | `bcrm2_adapter.py` → `BCRM2Adapter` | 适配层（含五角校验） |
+| 五角校验 | `triangle_verifier.py` → `TriangleVerifier` | 校验层（BCRM2×力学×A0×Ising×TDA） |
+| 市态切换 | `bcrm2/market_regime.py` → `MarketRegimeClassifier` | BCRM 2.0 |
 | QMM量化记忆 | `qmm/engine.py` → `run_qmm()` | QMM |
 | 三屏趋势 | `qmm/triple_screen.py` → `compute_triple_screen()` | QMM |
 | 交易执行 | `polling_trader.py` → `PollingTrader` | 顶层 |
-| 离场决策 | `classic_exit_system.py` → `ClassicExitSystem` | 顶层 |
+| 离场决策（主） | `yijing_exit_system.py` → `YijingExitSystem` | 顶层（v2架构反转后为主） |
+| 离场决策（备用） | `classic_exit_system.py` → `ClassicExitSystem` | 顶层（无卦象或降级时调用） |
+| 震荡市增强 | `ranging_market_enhancer.py` → `RangingMarketEnhancer` | 顶层（BCRM信号后置增强） |
+| CBR 案例检索 | `cbr_engine.py` → `CBREngine` / `cbr_adapter.py` → `CBRSignalEnhancer` | 顶层（BCRM2辅助决策层） |
+| 系统诊断 | `inspect.py` → `InspectReport` | 顶层（启动自检 + 手动排障） |
 | 记忆沉淀 | `pipeline.py` → `run_pipeline()` | L4记忆 |
 | 自进化 | `self_evolution_engine.py` → `SelfEvolutionEngine` | 顶层 |
 
@@ -67,6 +74,7 @@
 | 系统 | 配置文件 | 状态文件 |
 |------|----------|----------|
 | BCRM 2.0 | `configs/baseline_config.json` | `data/bcrm2_phase0/` |
+| BCRM 2.0 模型 | 按币种_周期分目录 | `scripts/data/bcrm2_models/{SYMBOL}_{TIMEFRAME}/` |
 | 轮询交易器 | 环境变量 + 代码默认值 | `data/polling_trader/trader_*.jsonl` |
 | OKX模拟 | `data/okx_sim/config.json` | `data/okx_sim/sim_trades_audit.jsonl` |
 | L4记忆 | `scripts/memory_l4/paths.py` 配置 | `artifacts/memory_l4/` |
@@ -125,8 +133,10 @@ cd 11-易经推理系统 && python -m pytest tests/test_ci_*.py -v
 |------|------|------|------|
 | 核心引擎 | Python | 3.9+ | BCRM/QMM/交易执行 |
 | ML框架 | LightGBM / XGBoost | latest | 辩证ML、Meta-Labeling |
+| 拓扑数据分析 | ripser + persim | 0.6.x / 0.3.x | TDA持久同调、瓶颈距离 |
 | 数据处理 | Pandas / NumPy | latest | 特征工程、回测 |
 | 特征工程 | scikit-learn | latest | 特征选择、标准化 |
+| 贝叶斯优化 | Optuna | latest | TPE参数搜索 |
 | 数据存储 | SQLite | built-in | 交易记录、版本管理 |
 | 行情接口 | OKX API | v5 | 实盘行情与交易 |
 | CI/CD | GitHub Actions | - | 架构门禁、进化门禁 |
@@ -136,6 +146,10 @@ cd 11-易经推理系统 && python -m pytest tests/test_ci_*.py -v
 ### 1.3 核心特性
 
 - **双引擎架构**: BCRM 1.0（矛盾力学推理）+ BCRM 2.0（辩证ML）
+- **五象力场物理引擎**: 时/空/表/里/流五象力场 + Verlet辛积分 + Langevin随机项 + 卡尔曼滤波
+- **五角校验架构**: BCRM2(ML) × 力学引擎(物理) × A0(矛盾) × Ising(相变) × TDA(拓扑) 五源交叉验证
+- **转折预警三层阶梯**: TDA拓扑突变(最早) → Ising相变(中期) → 力学引擎减速(确认)
+- **贝叶斯参数优化**: Optuna TPE搜索五角校验8参数，夏普6.96→8.20，回撤16.2%→11.8%
 - **八卦特征工程**: 8卦→8维度→~111个特征的易经映射体系
 - **辩证ML三层**: L1主方向（正题）→ L2 Meta-Labeling（反题）→ L3辩证裁决（合题）
 - **8种市态切换**: 自适应参数调整与仓位管理
@@ -208,13 +222,16 @@ cd 11-易经推理系统 && python -m pytest tests/test_ci_*.py -v
 │   │   ├── trading_traceability_guard.py  # 交易可追溯守护
 │   │   └── quick_merge.sh                 # 快速合并脚本
 │   │
-│   ├── memory_l4/                    # ★ L4记忆引擎核心（35+脚本）
+│   ├── memory_l4/                    # ★ L4记忆引擎核心（40+脚本）
 │   │   ├── bcrm/                     # BCRM 1.0 — 矛盾力学推理引擎
 │   │   │   ├── engine.py             # BCRMEngine 核心入口
 │   │   │   ├── yijing_engine.py      # 易经引擎（卦象解释）
 │   │   │   ├── bagua_engine.py       # 八卦力学引擎
 │   │   │   ├── liangyi_engine.py     # 两仪引擎
-│   │   │   ├── force_engine.py       # 力学引擎（力的合成）
+│   │   │   ├── force_engine.py       # ★ 力学引擎（五象力场+Verlet+Langevin+Kalman）
+│   │   │   ├── kalman_filter.py      # ★ 卡尔曼滤波（速度-加速度贝叶斯状态估计）
+│   │   │   ├── ising_phase_detector.py # ★ Ising相变检测（统计力学市场集体状态）
+│   │   │   ├── tda_early_warning.py  # ★ TDA拓扑早期预警（持久同调转折点检测）
 │   │   │   ├── scale_engine.py       # 规模引擎
 │   │   │   ├── sixty_four_guas.py    # 六十四卦定义
 │   │   │   ├── walk_forward.py       # Walk-Forward回测
@@ -274,8 +291,23 @@ cd 11-易经推理系统 && python -m pytest tests/test_ci_*.py -v
 │   │   │   └── __init__.py
 │   │   │
 │   │   ├── __init__.py
-│   │   ├── polling_trader.py         # ★ 轮询交易器（P2完整版，BCRM 2.0实盘）
-│   │   ├── bcrm2_adapter.py          # ★ BCRM 2.0适配器（训练/推理/缓存）
+│   │   ├── polling_trader.py         # ★ 轮询交易器（P2完整版，BCRM 2.0实盘+易经离场+震荡增强+CBR）
+│   │   ├── bcrm2_adapter.py          # ★ BCRM 2.0适配器（训练/推理/缓存/五角校验）
+│   │   ├── bcrm2_real_verifier.py    # BCRM 2.0 实盘推理路径五角校验验证器
+│   │   ├── triangle_verifier.py      # ★ 五角校验器（BCRM2×力学×A0×Ising×TDA）
+│   │   ├── force_engine_backtest.py  # 力学引擎回测脚本（baseline/p0/p1_kalman/p2_full 四模式）
+│   │   ├── pentagon_backtest.py      # 五角校验Walk-Forward完整回测
+│   │   ├── bayesian_optimize.py      # 贝叶斯参数优化（Optuna TPE）
+│   │   ├── fast_verifier.py          # 五角校验快速验证脚本
+│   │   ├── yijing_exit_system.py     # ★★ 主离场系统（FORCE_CLOSE/RAISE_TP/HOLD，v2架构反转后为主）
+│   │   ├── classic_exit_system.py    # 备用离场系统（CLOSE/REDUCE/RAISE_TP/HOLD，降级使用）
+│   │   ├── ranging_market_enhancer.py # ★ 震荡市增强层（5态自适应+布林双信号+动态止损+置信度校准）
+│   │   ├── a0_contradiction_engine.py # ★ A0矛盾引擎（七维矛盾张力，已集成进polling_trader/bcrm2_adapter）
+│   │   ├── a7_practice_gate.py       # A7实践门禁
+│   │   ├── cbr_engine.py             # ★ CBR案例检索引擎（4R循环：Retrieve→Reuse→Revise→Retain）
+│   │   ├── cbr_similarity.py         # CBR相似度计算（特征距离+卦象匹配+市态对齐）
+│   │   ├── cbr_sharded_retriever.py  # CBR分片检索器（大规模案例库检索优化）
+│   │   ├── cbr_adapter.py            # CBR→BCRM2适配层（CBRSignalEnhancer，三融合策略）
 │   │   ├── pipeline.py               # ★ L4记忆全链路管道
 │   │   ├── self_evolution_engine.py  # ★ 自进化引擎（三层反思）
 │   │   ├── okx_simulated.py          # OKX模拟客户端
@@ -283,7 +315,6 @@ cd 11-易经推理系统 && python -m pytest tests/test_ci_*.py -v
 │   │   ├── trading_utils.py          # 交易工具（绩效/风控/持仓）
 │   │   ├── learning_scheduler.py     # 学习调度器
 │   │   ├── process_guardian.py       # 进程守护
-│   │   ├── classic_exit_system.py    # ★ 经典离场系统（CLOSE/REDUCE/RAISE_TP/HOLD）
 │   │   ├── analyze_eth_exit.py       # 离场分析工具（四场景模拟）
 │   │   ├── confidence_optimization.py # 置信度阈值回测优化
 │   │   ├── confidence_detailed_analysis.py # 置信度区间详细分析
@@ -455,7 +486,9 @@ cd 11-易经推理系统 && python -m pytest tests/test_ci_*.py -v
 | `yijing_engine.py` | — | 易经引擎（卦象解释） | `YijingEngine` — 卦象翻译与解释 |
 | `bagua_engine.py` | — | 八卦力学引擎 | `BaguaEngine` — 八卦特征映射 |
 | `liangyi_engine.py` | — | 两仪引擎 | `LiangyiEngine` — 阴阳二象 |
-| `force_engine.py` | — | 力学引擎 | `ForceEngine` — 力的合成计算 |
+| `force_engine.py` | — | ★ 力学引擎（五象力场） | `ForceEngine` — Verlet积分+Langevin+Kalman+转折预警 |
+| `ising_phase_detector.py` | — | ★ Ising相变检测 | `IsingPhaseDetector` — 统计力学市场集体状态识别 |
+| `tda_early_warning.py` | — | ★ TDA拓扑早期预警 | `TDAEarlyWarning` — 持久同调转折点检测 |
 | `scale_engine.py` | — | 规模引擎 | `ScaleEngine`, `ScaleParams` |
 | `sixty_four_guas.py` | — | 六十四卦定义 | 卦名、卦象、含义 |
 | `walk_forward.py` | — | Walk-Forward回测 | 时间序列交叉验证 |
@@ -487,7 +520,7 @@ cd 11-易经推理系统 && python -m pytest tests/test_ci_*.py -v
 | 三层架构 | L1主方向模型(正题) → L2 Meta-Labeling(反题) → L3辩证裁决(合题) |
 | 特征总数 | ~400-460（按市值等级配置） |
 | 币种 | BTC, ETH, SOL, UNI |
-| 基线综合夏普 | 7.45 |
+| 基线综合夏普 | 8.20（五角校验+贝叶斯优化后） |
 
 **核心文件：**
 
@@ -498,7 +531,7 @@ cd 11-易经推理系统 && python -m pytest tests/test_ci_*.py -v
 | `portfolio_backtester.py` | 组合回测引擎 | `PortfolioBacktester`, `run()` |
 | `dialectical_ml_engine.py` | ★ 辩证ML引擎 | `DialecticalMLEngine` — L1/L2/L3三层 |
 | `bagua_feature_engine.py` | ★ 八卦特征引擎 | ~111个特征，8维度 |
-| `market_regime.py` | ★ 市态切换引擎 | `MarketRegimeDetector`, `RegimeParams` |
+| `market_regime.py` | ★ 市态切换引擎 | `MarketRegimeClassifier`, `RegimeParams` |
 | `feature_selector.py` | 特征选择模块 | LightGBM重要性 + 相关性去冗余 |
 | `data_fetcher.py` | 数据获取服务 | `get_klines()`, `get_bar_value()` |
 | `incremental_learner.py` | 增量学习模块 | `IncrementalLearner` |
@@ -576,14 +609,20 @@ QMMOutput(
 
 | 文件 | 职责 | 关键类/函数 |
 |------|------|-------------|
-| `polling_trader.py` | ★ 轮询交易器（P2完整版，BCRM 2.0实盘） | `PollingTrader` — 实盘交易主循环，支持 `use_bcrm2` 引擎切换 |
+| `polling_trader.py` | ★ 轮询交易器（P2完整版，BCRM 2.0实盘+易经离场+震荡增强+CBR） | `PollingTrader` — 实盘交易主循环，支持 `use_bcrm2` 引擎切换 |
 | `bcrm2_adapter.py` | ★ BCRM 2.0适配器 | `BCRM2Adapter` — 封装训练/推理/缓存，兼容BCRM 1.0接口 |
+| `bcrm2_real_verifier.py` | BCRM 2.0实盘验证器 | 真实推理路径五角校验验证 |
 | `okx_simulated.py` | OKX模拟客户端 | `OKXSimulatedClient` — 模拟/实盘交易，逐仓模式(isolated)默认 |
-| `classic_exit_system.py` | ★ 经典离场系统 | `ClassicExitSystem` — CLOSE/REDUCE/RAISE_TP/HOLD 四优先级 |
+| `yijing_exit_system.py` | ★★ 主离场系统（v2架构反转后为主） | `YijingExitSystem` — FORCE_CLOSE/RAISE_TP/HOLD/LOWER_SL/LOWER_TP + VETO机制 |
+| `classic_exit_system.py` | 备用离场系统（降级使用） | `ClassicExitSystem` — CLOSE/REDUCE/RAISE_TP/HOLD 四优先级 |
+| `ranging_market_enhancer.py` | ★ 震荡市增强层 | `RangingMarketEnhancer` — 5态自适应+布林双信号+动态止损+置信度校准 |
+| `a0_contradiction_engine.py` | ★ A0矛盾引擎 | `A0ContradictionEngine` — 七维矛盾张力分析 |
+| `cbr_engine.py` | ★ CBR案例检索引擎 | `CBREngine` — 4R循环（Retrieve→Reuse→Revise→Retain）；Python 3.9+ |
+| `cbr_adapter.py` | CBR→BCRM2适配层 | `CBRSignalEnhancer` — 三融合策略（cbr_override/cbr_blend/bcrm_only）；Python 3.9+ |
 | `trading_utils.py` | 交易工具集 | `PerformanceTracker`, `RiskManager`, `PositionTracker` |
 | `screen_martin_bridge.py` | 三屏马丁桥接 | 三屏趋势与马丁策略对接 |
 
-**PollingTrader 集成功能（P2完整版 + BCRM 2.0实盘）：**
+**PollingTrader 集成功能（P2完整版 + BCRM 2.0实盘 + v2架构反转）：**
 - P2-1a: 平仓后自动生成 case 存入 L4
 - P2-1b: 定期重训 LiangyiEngine + QMM
 - P2-2a: 动态仓位（置信度 + 波动率）
@@ -592,8 +631,11 @@ QMMOutput(
 - P2-4: BCRM 矛盾格式修复
 - P2-5: 进程守护 + 异常告警 + 日志持久化
 - **BCRM 2.0实盘**: `use_bcrm2=True` 切换至辩证ML引擎，通过 `BCRM2Adapter` 适配
-- **离场系统集成**: `ClassicExitSystem.evaluate_full()` 四优先级离场决策
-- **置信度优化**: 实盘阈值 0.60（基于回测最优）
+- **易经离场主决策**: `YijingExitSystem.evaluate()` 为主离场（FORCE_CLOSE/RAISE_TP/HOLD），无卦象或降级时调用 `ClassicExitSystem`
+- **震荡市增强**: `RangingMarketEnhancer` 后置增强 BCRM 信号（5态自适应+布林双信号+动态止损）
+- **CBR 案例检索**: `CBRSignalEnhancer` 增强 BCRM 信号（三融合策略）
+- **A0矛盾引擎**: 七维矛盾张力分析，方向一致性校准 + 创伤信号检测
+- **置信度优化**: 实盘阈值 0.60（基于回测最优）；代码默认 0.55，通过 `confidence_threshold` 参数或环境变量覆写
 - **逐仓模式**: 默认 isolated 逐仓，每个币种独立保证金，风险隔离
 
 ---
@@ -743,14 +785,18 @@ python -m pytest tests/test_workflows_memory_*.py -v  # 记忆工作流
 ### 4.1 内部模块依赖
 
 ```
-polling_trader.py (顶层交易器, BCRM 2.0实盘)
+polling_trader.py (顶层交易器, BCRM 2.0实盘 + v2架构反转)
     ├── bcrm2_adapter.py → BCRM2Adapter      ← BCRM 2.0适配(训练/推理/缓存)
     │   └── bcrm2/dialectical_ml_engine.py    ← 辩证ML引擎(L1/L2/L3)
     ├── bcrm/engine.py → BCRMEngine           ← BCRM 1.0矛盾推理(Fallback)
     ├── bcrm/bagua_engine.py → BaguaEngine    ← 八卦力学
     ├── bcrm2/market_regime.py                ← 市态切换
     ├── qmm/engine.py → run_qmm()             ← QMM量化记忆
-    ├── classic_exit_system.py                ← 离场决策(四优先级)
+    ├── yijing_exit_system.py → YijingExitSystem ← ★ 主离场(FORCE_CLOSE/RAISE_TP/HOLD)
+    ├── classic_exit_system.py → ClassicExitSystem ← 备用离场(降级时调用)
+    ├── ranging_market_enhancer.py            ← 震荡市增强层(5态自适应+布林双信号)
+    ├── a0_contradiction_engine.py            ← A0矛盾引擎(七维矛盾张力)
+    ├── cbr_engine.py / cbr_adapter.py        ← CBR案例检索增强(4R循环+三融合)
     ├── okx_simulated.py → OKXSimulatedClient ← 交易执行
     ├── trading_utils.py                       ← 绩效/风控/持仓
     ├── learning_scheduler.py                  ← 学习调度
@@ -806,15 +852,25 @@ BCRM2Adapter (bcrm2_adapter.py)
     ↓
 DialecticalMLEngine (L1→L2→L3) → 置信度 + 方向
     ↓
-MarketRegimeDetector (8种市态) → 仓位因子
+A0矛盾分析 → 方向一致性校准 + 创伤信号检测
+    ↓
+五角校验 (TriangleVerifier) → confidence_adjustment + P3联动
+    ↓
+MarketRegimeClassifier (8种市态) → 仓位因子
+    ↓
+震荡市增强层 (RangingMarketEnhancer) → 5态自适应+布林双信号+动态止损
     ↓
 信号生成 (置信度阈值 0.60) + 仓位计算
+    ↓
+CBR 案例检索增强 (CBRSignalEnhancer) → cbr_override/cbr_blend/bcrm_only
     ↓
 RiskManager (日亏损/连续亏损熔断)
     ↓
 OKX下单执行
     ↓
-持仓跟踪 → ClassicExitSystem 离场决策 (P0→P1→P2→P3)
+持仓跟踪 → YijingExitSystem 主离场决策 (FORCE_CLOSE/RAISE_TP/HOLD)
+    ├── 降级路径: NO_INTERVENE → 调用 ClassicExitSystem
+    └── 备用路径: 无卦象 → 直接调用 ClassicExitSystem (P0→P1→P2→P3)
     ↓
 交易记录 → PerformanceTracker
     ↓
@@ -859,16 +915,19 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 | BCRM 2.0 | `bcrm2/dialectical_ml_engine.py` | `DialecticalMLEngine` | 辩证ML推理入口 |
 | BCRM 2.0适配 | `bcrm2_adapter.py` | `BCRM2Adapter` | 实盘适配层（训练/推理/缓存） |
 | QMM | `qmm/engine.py` | `run_qmm()`, `run_qmm_with_gate()` | 量化记忆查询 |
-| 市态检测 | `bcrm2/market_regime.py` | `MarketRegimeDetector.detect()` | 当前市态分类 |
+| 市态检测 | `bcrm2/market_regime.py` | `MarketRegimeClassifier.fit()/predict_regime_names()` | 当前市态分类 |
 | 三屏趋势 | `qmm/triple_screen.py` | `compute_triple_screen()` | 三屏趋势对齐 |
 
 ### 5.2 交易接口
 
 | 模块 | 文件 | 核心类/函数 | 说明 |
 |------|------|------------|------|
-| 轮询交易 | `polling_trader.py` | `PollingTrader.run()` | 主交易循环（BCRM 2.0实盘） |
+| 轮询交易 | `polling_trader.py` | `PollingTrader.run()` | 主交易循环（BCRM 2.0实盘+易经离场+震荡增强+CBR） |
 | OKX客户端 | `okx_simulated.py` | `OKXSimulatedClient` | 模拟/实盘交易（逐仓模式默认） |
-| 离场系统 | `classic_exit_system.py` | `ClassicExitSystem.evaluate_full()` | 离场决策（四优先级） |
+| 离场系统（主） | `yijing_exit_system.py` | `YijingExitSystem.evaluate()` | 主离场决策（FORCE_CLOSE/RAISE_TP/HOLD，v2架构反转后为主） |
+| 离场系统（备用） | `classic_exit_system.py` | `ClassicExitSystem.evaluate_full()` | 备用离场决策（CLOSE/REDUCE/RAISE_TP/HOLD，降级时调用） |
+| 震荡市增强 | `ranging_market_enhancer.py` | `RangingMarketEnhancer.enhance()` | BCRM信号后置增强（5态自适应+布林双信号+动态止损） |
+| CBR 案例检索 | `cbr_adapter.py` | `CBRSignalEnhancer.enhance()` | CBR增强BCRM信号（三融合策略） |
 | 风控 | `trading_utils.py` | `RiskManager` | 风险控制（含动态仓位计算） |
 | 绩效 | `trading_utils.py` | `PerformanceTracker` | 绩效统计 |
 | 监控适配 | `15-监控告警系统/adapters/yijing_adapter.py` | `YijingAdapter.check_health()` | 系统健康检查（进程/交易/持仓/模型/余额） |
@@ -901,7 +960,7 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 | 系统 | 配置文件 | 关键配置项 |
 |------|----------|------------|
 | BCRM 2.0基线 | `configs/baseline_config.json` | 币种、周期、折数、阈值、模块开关 |
-| 轮询交易器 | 构造参数 + 环境变量 | interval, coins, confidence_threshold(0.60), max_positions(10), use_bcrm2(True) |
+| 轮询交易器 | 构造参数 + 环境变量 | interval, coins, confidence_threshold(默认0.55/实盘0.60), max_positions(10), use_bcrm2(True) |
 | OKX模拟 | `data/okx_sim/config.json` | API密钥、模拟模式、td_mode(isolated/cross)、默认杠杆 |
 | L4路径 | `scripts/memory_l4/paths.py` | 所有目录路径 |
 | QMM | `qmm/paths.py` + 代码默认值 | QMM数据路径 |
@@ -917,7 +976,7 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 | K线周期 | 1H | 1小时K线 |
 | 数据量 | 6000根 | 约8个月 |
 | Walk-Forward折数 | 5 | 80%训练/20%验证 |
-| 置信度阈值 | 0.60 | 实盘优化值（回测最优） |
+| 置信度阈值 | 0.60 | 实盘优化值（回测最优）；代码默认 0.55，实盘通过配置覆写 |
 | 止盈 | 3.0x ATR | 动态止盈 |
 | 止损 | 2.0x ATR | 动态止损 |
 | 最大持仓 | 60根K线 | 约2.5天 |
@@ -1000,14 +1059,16 @@ cd 11-易经推理系统 && python -m pytest tests/ -v
 
 #### 组合层指标
 
-| 指标 | 数值 |
-|------|------|
-| 组合总收益 | 86.85% |
-| 组合胜率 | 70.2% |
-| 组合盈亏比 | 2.61 |
-| 组合夏普 | 6.61 |
-| 组合最大回撤 | 12.75% |
-| **综合夏普(加权)** | **7.45** |
+| 指标 | Phase 0 基线 | 五角校验+贝叶斯优化后 |
+|------|----------|----------|
+| 组合总收益 | 86.85% | — |
+| 组合胜率 | 70.2% | — |
+| 组合盈亏比 | 2.61 | — |
+| 组合夏普 | 6.61 | — |
+| 组合最大回撤 | 12.75% | **11.8%** |
+| **综合夏普(加权)** | **7.45** | **8.20** |
+
+> 注：8.20 为接入五角校验+Optuna TPE 贝叶斯优化后的回测综合夏普（§1.3 核心特性已列出）。两套数值分别对应 Phase 0 基线与优化后基线，不再矛盾。
 
 ---
 
@@ -1053,7 +1114,13 @@ cd 11-易经推理系统 && python -m pytest tests/ -v
 | 市态切换 | [bcrm2/market_regime.py](../scripts/memory_l4/bcrm2/market_regime.py) |
 | 特征选择 | [bcrm2/feature_selector.py](../scripts/memory_l4/bcrm2/feature_selector.py) |
 | 增量学习 | [bcrm2/incremental_learner.py](../scripts/memory_l4/bcrm2/incremental_learner.py) |
-| 离场决策 | [classic_exit_system.py](../scripts/memory_l4/classic_exit_system.py) |
+| 主离场决策 | [yijing_exit_system.py](../scripts/memory_l4/yijing_exit_system.py) |
+| 备用离场决策 | [classic_exit_system.py](../scripts/memory_l4/classic_exit_system.py) |
+| 震荡市增强 | [ranging_market_enhancer.py](../scripts/memory_l4/ranging_market_enhancer.py) |
+| CBR 案例检索 | [cbr_engine.py](../scripts/memory_l4/cbr_engine.py) |
+| CBR 信号增强 | [cbr_adapter.py](../scripts/memory_l4/cbr_adapter.py) |
+| A0 矛盾引擎 | [a0_contradiction_engine.py](../scripts/memory_l4/a0_contradiction_engine.py) |
+| 五角校验 | [triangle_verifier.py](../scripts/memory_l4/triangle_verifier.py) |
 | 离场分析 | [analyze_eth_exit.py](../scripts/memory_l4/analyze_eth_exit.py) |
 | 置信度优化 | [confidence_optimization.py](../scripts/memory_l4/confidence_optimization.py) |
 | 自进化 | [self_evolution_engine.py](../scripts/memory_l4/self_evolution_engine.py) |
@@ -1076,6 +1143,8 @@ cd 11-易经推理系统 && python -m pytest tests/ -v
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-07-25 | v2.6 | **P1修复与系统增强**：①§0.3 运行入口新增 `inspect.py`（系统诊断）和 `multi_scenario_validation.py`（多场景验证）；②§0.3 核心链路新增 `InspectReport` 系统诊断环节；③§0.3 配置与状态新增 BCRM 2.0 模型目录 `scripts/data/bcrm2_models/{SYMBOL}_{TIMEFRAME}/`；④§1.2 技术栈补充 ripser+persim（TDA拓扑）、Optuna（贝叶斯优化）；⑤币种规模从 4 扩展至 27；⑥五角校验第五源 TDA 拓扑检测恢复可用（ripser已安装）；版本号 v2.5→v2.6 | DreamBuddy v2 |
+| 2026-07-24 | v2.5 | **文档与代码同步更新**：①§2.1 目录树补全 11 个缺失文件（`kalman_filter.py`、`yijing_exit_system.py`、`ranging_market_enhancer.py`、`a0_contradiction_engine.py`、`a7_practice_gate.py`、`bcrm2_real_verifier.py`、`cbr_engine.py`/`cbr_similarity.py`/`cbr_sharded_retriever.py`/`cbr_adapter.py`）；②§0.3/§3.2.1/§4.1/§4.3/§5.2 反映离场架构反转（`YijingExitSystem` 为主，`ClassicExitSystem` 降为备用）；③§3.2.1 PollingTrader 集成功能补全易经离场+震荡增强+CBR+A0矛盾引擎；④§4.3 数据流补全 A0/五角校验/震荡增强/CBR/易经离场环节；⑤§8.1 性能基准统一 Phase 0 基线(7.45)与五角校验+贝叶斯优化后(8.20)两套数值，消除自相矛盾；⑥§10.2 功能导航补全主离场/震荡增强/CBR/A0/五角校验入口；版本号 v2.4→v2.5 | DreamBuddy v2 |
 | 2026-07-15 | v2.3 | **保证金计算逻辑修正**：`polling_trader.py::_open_position()` 使用可用余额（而非总权益）计算仓位；新增统一监控适配器入口（`15-监控告警系统/adapters/yijing_adapter.py`）；BCRM 2.0实盘验证通过（BTC/ETH开仓成功） | DreamBuddy v2 |
 | 2026-07-15 | v2.2 | 仓位模式从全仓(cross)切换为逐仓(isolated)；okx_simulated.py默认td_mode=isolated；polling_trader.py支持逐仓/全仓保证金检查；新增D11技术债务 | DreamBuddy v2 |
 | 2026-07-14 | v2.1 | BCRM 2.0实盘切换：新增BCRM2Adapter适配器、离场分析工具、置信度优化脚本；更新数据流（含Fallback机制）；置信度阈值0.60；新增技术债务D09/D10 | DreamBuddy v2 |

@@ -8,7 +8,7 @@
 #   description: 节点职责描述
 #
 # 注:handler 字段会被 registry/loader.py 的 _build_function_node 读取
-#    类名必须与 dreamos/nodes/*.py 中的实际类名一致
+#    类名必须与 dreamos/capabilities/trading/nodes/*.py 中的实际类名一致
 
 nodes:
   # ── A 链:意图→编排→策略→风控→执行 ──
@@ -16,70 +16,70 @@ nodes:
     name: 矛盾论节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a0_contradiction.A0ContradictionNode
+    handler: dreamos.capabilities.trading.nodes.a0_contradiction.A0ContradictionNode
     description: 多空矛盾识别与对冲建议
 
   - node_id: A1_deep_research
     name: 深度调研节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a1_deep_research.A1DeepResearchNode
+    handler: dreamos.capabilities.trading.nodes.a1_deep_research.A1DeepResearchNode
     description: 多源信息聚合与深度分析
 
   - node_id: A2_comprehensive
     name: 综合分析节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a2_comprehensive.A2ComprehensiveNode
+    handler: dreamos.capabilities.trading.nodes.a2_comprehensive.A2ComprehensiveNode
     description: 跨链综合研判
 
   - node_id: A3_strategy
     name: 策略生成节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a3_strategy.A3StrategyNode
+    handler: dreamos.capabilities.trading.nodes.a3_strategy.A3StrategyNode
     description: 生成交易策略与参数
 
   - node_id: A4_gate
     name: 准入闸门节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a4_gate.A4GateNode
+    handler: dreamos.capabilities.trading.nodes.a4_gate.A4GateNode
     description: 策略准入校验
 
   - node_id: A5_execution
     name: 执行指令节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a5_execution.A5ExecutionNode
+    handler: dreamos.capabilities.trading.nodes.a5_execution.A5ExecutionNode
     description: 生成最终交易指令
 
   - node_id: A6_regime_monitor
     name: 市场状态监控节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a6_regime_monitor.A6RegimeMonitorNode
+    handler: dreamos.capabilities.trading.nodes.a6_regime_monitor.A6RegimeMonitorNode
     description: 监控市场状态变化
 
   - node_id: A7_practice_gate
     name: 实践验证闸门节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a7_practice_gate.A7PracticeGateNode
+    handler: dreamos.capabilities.trading.nodes.a7_practice_gate.A7PracticeGateNode
     description: 实践层面验证
 
   - node_id: A8_unity
     name: 统一决策节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a8_unity.A8UnityNode
+    handler: dreamos.capabilities.trading.nodes.a8_unity.A8UnityNode
     description: 多信号统一决策
 
   - node_id: A9_exit_strategy
     name: 离场策略节点
     chain: A
     adapter: function
-    handler: dreamos.nodes.a9_exit_strategy.A9ExitStrategyNode
+    handler: dreamos.capabilities.trading.nodes.a9_exit_strategy.A9ExitStrategyNode
     description: 四层离场决策链
 
   # ── C 链:经典技术分析 ──
@@ -87,28 +87,28 @@ nodes:
     name: 技术扫描节点
     chain: C
     adapter: function
-    handler: dreamos.nodes.c1_tech_scan.C1TechScanNode
+    handler: dreamos.capabilities.trading.nodes.c1_tech_scan.C1TechScanNode
     description: 价格行为与技术指标扫描
 
   - node_id: C2_momentum
     name: 动量分析节点
     chain: C
     adapter: function
-    handler: dreamos.nodes.c2_momentum.C2MomentumNode
+    handler: dreamos.capabilities.trading.nodes.c2_momentum.C2MomentumNode
     description: 多周期动量分析
 
   - node_id: C3_volatility
     name: 波动率节点
     chain: C
     adapter: function
-    handler: dreamos.nodes.c3_volatility.C3VolatilityNode
+    handler: dreamos.capabilities.trading.nodes.c3_volatility.C3VolatilityNode
     description: 波动率周期判定
 
   - node_id: C5_exit_system
     name: 离场系统节点
     chain: C
     adapter: function
-    handler: dreamos.nodes.c5_exit_system.C5ExitSystemNode
+    handler: dreamos.capabilities.trading.nodes.c5_exit_system.C5ExitSystemNode
     description: 经典离场信号系统
 
   # ── F 链:基本面/消息/链上 ──
@@ -116,35 +116,35 @@ nodes:
     name: 新闻情绪节点
     chain: F
     adapter: function
-    handler: dreamos.nodes.f1_news.F1NewsSentimentNode
+    handler: dreamos.capabilities.trading.nodes.f1_news.F1NewsSentimentNode
     description: 新闻事件与情绪分析
 
   - node_id: F2_flow_analysis
     name: 资金流分析节点
     chain: F
     adapter: function
-    handler: dreamos.nodes.f2_flow_analysis.F2FlowAnalysisNode
+    handler: dreamos.capabilities.trading.nodes.f2_flow_analysis.F2FlowAnalysisNode
     description: 资金流向分析
 
   - node_id: F3_valuation
     name: 估值分析节点
     chain: F
     adapter: function
-    handler: dreamos.nodes.f3_valuation.F3ValuationNode
+    handler: dreamos.capabilities.trading.nodes.f3_valuation.F3ValuationNode
     description: 估值模型分析
 
   - node_id: F4_onchain_data
     name: 链上数据节点
     chain: F
     adapter: function
-    handler: dreamos.nodes.f4_onchain_data.F4OnchainDataNode
+    handler: dreamos.capabilities.trading.nodes.f4_onchain_data.F4OnchainDataNode
     description: 链上指标综合分析
 
   - node_id: F5_macro_analysis
     name: 宏观分析节点
     chain: F
     adapter: function
-    handler: dreamos.nodes.f5_macro_analysis.F5MacroAnalysisNode
+    handler: dreamos.capabilities.trading.nodes.f5_macro_analysis.F5MacroAnalysisNode
     description: 宏观经济分析
 
   # ── G 链:风控与治理 ──
@@ -152,12 +152,12 @@ nodes:
     name: 风险控制节点
     chain: G
     adapter: function
-    handler: dreamos.nodes.g1_risk_control.G1RiskControlNode
+    handler: dreamos.capabilities.trading.nodes.g1_risk_control.G1RiskControlNode
     description: 仓位/杠杆/止损风控
 
   - node_id: G2_governance
     name: 治理节点
     chain: G
     adapter: function
-    handler: dreamos.nodes.g2_governance.G2GovernanceNode
+    handler: dreamos.capabilities.trading.nodes.g2_governance.G2GovernanceNode
     description: 策略治理与审计

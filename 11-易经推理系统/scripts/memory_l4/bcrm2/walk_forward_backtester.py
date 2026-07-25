@@ -13,6 +13,7 @@ Walk-Forward 回测框架 — 实践检验真理的算法落地
   可重复性 → 固定随机种子，相同数据得到相同结果
 """
 
+import os
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Tuple, Optional, Any
@@ -57,6 +58,12 @@ class Trade:
     risk_level: str = ""          # P2-1: 卦象风险等级
     development_stage: str = ""   # P2-1: 发展阶段
     current_phase: str = ""       # P2-1: 六爻阶段
+    # 五角校验字段
+    pentagon_verdict: str = ""    # STRONG_AGREE/MAJORITY_AGREE/DIVERGENT/CONFLICT
+    pentagon_adjustment: float = 0.0  # 置信度调整
+    pentagon_reversal: bool = False   # 反转预警
+    pentagon_early_exit: bool = False # 提前退出信号
+    pentagon_position_factor: float = 1.0  # 仓位系数（五角校验调整后）
 
 
 @dataclass
@@ -196,6 +203,23 @@ class WalkForwardBacktester:
         self.fs_corr_threshold = fs_corr_threshold
         self.use_regime_switching = use_regime_switching
         self.use_meta_labeling = use_meta_labeling
+        self.enable_pentagon = True  # 五角校验开关
+
+        # 五角校验器
+        self._triangle_verifier = None
+        if self.enable_pentagon:
+            try:
+                import sys as _sys
+                _l4 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                if _l4 not in _sys.path:
+                    _sys.path.insert(0, _l4)
+                from triangle_verifier import TriangleVerifier
+                self._triangle_verifier = TriangleVerifier()
+            except Exception as _e:
+                import logging as _log
+                _log.getLogger(__name__).warning(f"五角校验器加载失败: {_e}")
+                self._triangle_verifier = None
+                self.enable_pentagon = False
 
         # 组件
         self.feature_engine = BaguaFeatureEngine()
@@ -692,6 +716,11 @@ class WalkForwardBacktester:
         for i, pred in enumerate(predictions):
             bar_idx = test_start + i
 
+            # ── 五角校验：每根K线运行校验 ──
+            pentagon_result = None
+            if self.enable_pentagon and self._triangle_verifier is not None:
+                pentagon_result = self._run_pentagon_check(pred, df, bar_idx)
+
             # 如果有持仓，检查是否出场
             if position is not None:
                 entry_price = position["entry_price"]
@@ -713,6 +742,19 @@ class WalkForwardBacktester:
                 exit_reason = None
                 yijing_decision = None
                 skip_classic = False
+
+                # ── 五角校验：提前退出检查（优先于其他离场逻辑）──
+                if pentagon_result is not None:
+                    # P3双重预警（TDA+Ising）→ 提前退出
+                    if pentagon_result.early_exit_signal:
+                        exit_price = current_price
+                        exit_reason = "pentagon_early_exit"
+                        skip_classic = True
+                    # 反转预警 → 提前退出（如果盈利）
+                    elif pentagon_result.reversal_alert and unrealized_pnl_pct > 0:
+                        exit_price = current_price
+                        exit_reason = "pentagon_reversal"
+                        skip_classic = True
 
                 if yijing_enabled:
                     hexagram = pred.get("hexagram")
@@ -825,6 +867,11 @@ class WalkForwardBacktester:
                         development_stage=position.get("development_stage", ""),
                         current_phase=position.get("current_phase", ""),
                         position_factor=pf,
+                        pentagon_verdict=position.get("pentagon_verdict", ""),
+                        pentagon_adjustment=position.get("pentagon_adjustment", 0.0),
+                        pentagon_reversal=position.get("pentagon_reversal", False),
+                        pentagon_early_exit=position.get("pentagon_early_exit", False),
+                        pentagon_position_factor=position.get("pentagon_pos_factor", 1.0),
                     )
                     trades.append(trade)
                     position = None
@@ -836,6 +883,33 @@ class WalkForwardBacktester:
 
                 direction = pred["direction"]
                 confidence = pred["final_confidence"]
+
+                # ── 五角校验：开仓过滤与调整 ──
+                pentagon_verdict = ""
+                pentagon_adjustment = 0.0
+                pentagon_reversal = False
+                pentagon_early_exit = False
+                pentagon_pos_factor = 1.0
+                pentagon_sl_tighten = 1.0
+
+                if pentagon_result is not None:
+                    pentagon_verdict = pentagon_result.verdict
+                    pentagon_adjustment = pentagon_result.confidence_adjustment
+                    pentagon_reversal = pentagon_result.reversal_alert
+                    pentagon_early_exit = pentagon_result.early_exit_signal
+                    pentagon_pos_factor = pentagon_result.position_factor
+                    pentagon_sl_tighten = pentagon_result.sl_tighten_factor
+
+                    # 五角校验调整置信度
+                    confidence = max(0.0, min(1.0, confidence + pentagon_adjustment))
+
+                    # fail_closed：五源严重分歧 → 不开仓
+                    if pentagon_result.should_fail_closed:
+                        continue
+
+                    # 反转预警时不开新仓
+                    if pentagon_reversal:
+                        continue
 
                 # 市态切换: 根据市态调整参数
                 effective_conf_thresh = self.conf_threshold
@@ -902,6 +976,10 @@ class WalkForwardBacktester:
                 tp_dist = atr_est * atr_mult_tp
                 sl_dist = atr_est * atr_mult_sl
 
+                # ── 五角校验：止损收紧 ──
+                if pentagon_sl_tighten < 1.0:
+                    sl_dist *= pentagon_sl_tighten
+
                 if direction == 1:
                     tp_price = entry_price + tp_dist
                     sl_price = entry_price - sl_dist
@@ -933,6 +1011,12 @@ class WalkForwardBacktester:
                     "regime_name": regime_name,
                     "max_hold_bars": effective_max_hold,
                     "position_factor": position_factor,
+                    # 五角校验信息
+                    "pentagon_verdict": pentagon_verdict,
+                    "pentagon_adjustment": pentagon_adjustment,
+                    "pentagon_reversal": pentagon_reversal,
+                    "pentagon_early_exit": pentagon_early_exit,
+                    "pentagon_pos_factor": pentagon_pos_factor,
                 }
 
         # 如果最后还有持仓，强制平仓
@@ -965,10 +1049,82 @@ class WalkForwardBacktester:
                 risk_level=position.get("risk_level", ""),
                 development_stage=position.get("development_stage", ""),
                 current_phase=position.get("current_phase", ""),
+                pentagon_verdict=position.get("pentagon_verdict", ""),
+                pentagon_adjustment=position.get("pentagon_adjustment", 0.0),
+                pentagon_reversal=position.get("pentagon_reversal", False),
+                pentagon_early_exit=position.get("pentagon_early_exit", False),
+                pentagon_position_factor=position.get("pentagon_pos_factor", 1.0),
             )
             trades.append(trade)
 
         return trades
+
+    def _run_pentagon_check(self, pred: Dict, df: pd.DataFrame, bar_idx: int):
+        """
+        运行五角校验。
+
+        Args:
+            pred: BCRM2预测结果
+            df: K线数据
+            bar_idx: 当前K线索引
+
+        Returns:
+            TriangleVerificationResult 或 None
+        """
+        if self._triangle_verifier is None:
+            return None
+
+        try:
+            import numpy as _np
+
+            # BCRM2方向 → 字符串
+            direction_int = pred.get("direction", 0)
+            if direction_int == 1:
+                bcrm2_dir = "UP"
+            elif direction_int == -1 or direction_int == 0:
+                # 注意：原始预测中0表示DOWN，1表示UP
+                bcrm2_dir = "DOWN" if direction_int == 0 else "DOWN"
+            else:
+                bcrm2_dir = "FLAT"
+
+            bcrm2_conf = pred.get("final_confidence", 0.5)
+
+            # 简化A0分析（动量代理）
+            close = df["close"].values.astype(float)
+            if bar_idx < 20:
+                return None
+
+            recent_returns = _np.diff(_np.log(close[max(0, bar_idx-30):bar_idx+1]))
+            recent_returns = recent_returns[~_np.isnan(recent_returns)]
+            if len(recent_returns) < 5:
+                return None
+
+            momentum = float(_np.mean(recent_returns[-10:]))
+            vol = float(_np.std(recent_returns[-20:])) if len(recent_returns) >= 20 else float(_np.std(recent_returns))
+
+            a0_result_dict = {
+                "direction_bias": momentum * 20,
+                "overall_tension": min(1.0, abs(momentum) * 50),
+                "trauma_signal": False,
+            }
+
+            market_snapshot = {"volatility": vol}
+
+            # 切片DataFrame到当前K线
+            slice_df = df.iloc[:bar_idx + 1]
+
+            result = self._triangle_verifier.verify(
+                bcrm2_direction=bcrm2_dir,
+                bcrm2_confidence=bcrm2_conf,
+                a0_result_dict=a0_result_dict,
+                market_snapshot=market_snapshot,
+                df=slice_df,
+            )
+
+            return result
+
+        except Exception:
+            return None
 
     @staticmethod
     def _compute_atr(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14) -> np.ndarray:
@@ -1272,6 +1428,39 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
             pct = cnt / result.total_trades * 100
             bar = "█" * int(pct / 5)
             lines.append(f"  {gua:<4}: {cnt:<4} ({pct:<5.1f}%) {bar}")
+        lines.append("")
+
+    # ── 五角校验统计 ──
+    pentagon_trades = [t for t in result.all_trades if t.pentagon_verdict]
+    if pentagon_trades:
+        lines.append("【五角校验统计】")
+        verdict_stats = {}
+        for t in pentagon_trades:
+            v = t.pentagon_verdict or "NONE"
+            if v not in verdict_stats:
+                verdict_stats[v] = {"count": 0, "wins": 0, "total_pnl": 0.0}
+            verdict_stats[v]["count"] += 1
+            verdict_stats[v]["wins"] += 1 if t.pnl_pct > 0 else 0
+            verdict_stats[v]["total_pnl"] += t.pnl_pct
+
+        lines.append(f"  {'校验结果':<18} {'次数':<6} {'占比':<8} {'胜率':<8} {'总收益':<10} {'平均':<8}")
+        lines.append(f"  {'-'*18} {'-'*6} {'-'*8} {'-'*8} {'-'*10} {'-'*8}")
+        for v, stats in sorted(verdict_stats.items(), key=lambda x: -x[1]["count"]):
+            count = stats["count"]
+            pct = count / len(pentagon_trades) * 100
+            win_rate = stats["wins"] / max(count, 1) * 100
+            avg = stats["total_pnl"] / max(count, 1)
+            lines.append(f"  {v:<18} {count:<6} {pct:<7.1f}% {win_rate:<7.1f}% "
+                        f"{stats['total_pnl']:<9.2f}% {avg:<7.2f}%")
+        lines.append("")
+
+        # 五角校验预警离场统计
+        pentagon_exit_trades = [t for t in result.all_trades
+                                if t.exit_reason and t.exit_reason.startswith("pentagon")]
+        if pentagon_exit_trades:
+            lines.append(f"  五角校验提前离场: {len(pentagon_exit_trades)}笔, "
+                        f"胜率={sum(1 for t in pentagon_exit_trades if t.pnl_pct > 0)/len(pentagon_exit_trades)*100:.1f}%, "
+                        f"总收益={sum(t.pnl_pct for t in pentagon_exit_trades):.2f}%")
         lines.append("")
 
     # ── 卦象效果归因（P2-1: 多维度收益归因）──

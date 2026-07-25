@@ -20,8 +20,12 @@ Dreambuddy OS — Trading Agent 应用
 
 from __future__ import annotations
 
+import os
 import time
+import logging
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from dreamos.shared.state import State, new_state
 from dreamos.shared.utils import gen_cycle_id
@@ -34,7 +38,13 @@ from dreamos.budget import GlobalBudgetManager, CostTracker
 
 from dreamos.registry import NodeRegistry, get_default_registry
 
-from dreamos.capabilities.trading.nodes import register_all as register_trading_nodes
+from dreamos.core.capability import (
+    CapabilityRegistry,
+    CapabilityRouter,
+    RoutingResult,
+    get_default_capability_registry,
+)
+from dreamos.capabilities.trading import TradingCapability
 
 
 class TradingAgent:
@@ -57,18 +67,33 @@ class TradingAgent:
 
     def __init__(self,
                  registry: Optional[NodeRegistry] = None,
+                 capability_registry: Optional[CapabilityRegistry] = None,
                  budget_mode: str = "standard",
-                 auto_register: bool = True):
+                 auto_register: bool = True,
+                 default_capability: str = "trading"):
         self.registry = registry or get_default_registry()
+        self.capability_registry = capability_registry or get_default_capability_registry()
+        self.capability_registry.attach_node_registry(self.registry)
+
         if auto_register:
-            register_trading_nodes(self.registry)
+            self._register_default_capability()
             self._import_skills()
+
+        # 能力域路由器
+        self.capability_router = CapabilityRouter(
+            registry=self.capability_registry,
+            default_capability_id=default_capability,
+        )
 
         # 内核四层
         self.intent_engine = IntentEngine()
         self.graph_planner = GraphPlanner(registry=self.registry)
-        self.graph_executor = GraphExecutor()
-        self.graph_store = GraphStore()
+        self.graph_executor = GraphExecutor(registry=self.registry)
+        # G 层默认启用文件持久化，确保跨会话检查点和历史不丢失
+        default_storage_dir = os.path.join(
+            os.path.dirname(__file__), "..", "..", "data", "graph_store"
+        )
+        self.graph_store = GraphStore(storage_dir=default_storage_dir)
 
         # 横切关注点
         self.budget = GlobalBudgetManager(mode=budget_mode)
@@ -76,6 +101,12 @@ class TradingAgent:
 
         # 统计
         self._cycle_count = 0
+
+    def _register_default_capability(self) -> None:
+        """注册默认能力域（当前为交易能力域）"""
+        if "trading" not in self.capability_registry:
+            trading_cap = TradingCapability()
+            self.capability_registry.register(trading_cap)
 
     def run(self,
             user_input: str = "",
@@ -115,6 +146,13 @@ class TradingAgent:
         # ── 1. S 层：意图识别 ─────────────────
         intent_result = self._sense(user_input, market_data, context)
 
+        # ── 1.2 能力域路由 ───────────────────
+        routing_result = self._route_capability(intent_result)
+        if not routing_result.success:
+            logger.warning(
+                f"能力域路由失败: {routing_result.rationale}，回退到默认交易能力域"
+            )
+
         # ── 2. 构建 State ───────────────────
         state = new_state(cycle_id=cycle_id)
         state.inputs = {
@@ -123,6 +161,17 @@ class TradingAgent:
             "context": context,
         }
         state.market_data = market_data  # type: ignore[attr-defined]
+
+        # ── 1.5 注入 Freqtrade 量化策略信号 ───────────────────
+        freqtrade_signal = self._inject_freqtrade_signal(market_data)
+        if freqtrade_signal:
+            state.market_data["freqtrade_signal"] = freqtrade_signal
+
+        # ── 1.6 注入基本面数据（F 链数据源）─────────────────────
+        # 调用 FundamentalDataInjector 采集 30+ 基本面指标并扁平化注入 market_data
+        # 未注入会导致 F2-F5 节点读取不到字段，恒输出 HOLD
+        self._inject_fundamental_data(state.market_data)
+
         state.intent = {
             "intent_type": intent_result.intent_type,
             "confidence": intent_result.confidence,
@@ -131,8 +180,11 @@ class TradingAgent:
             "extend_nodes": getattr(intent_result, "extend_nodes", []),
             "rationale": getattr(intent_result, "rationale", ""),
             "recognizer": getattr(intent_result, "recognizer", ""),
-            "scenario_id": context.get("scenario_id"),
+            "scenario_id": context.get("scenario_id") or self._classify_scenario(market_data),
             "enable_subsystem": context.get("enable_subsystem", True),
+            "capability_id": routing_result.capability_id,
+            "capability_match_type": routing_result.match_type,
+            "capability_config": routing_result.capability_config,
         }
 
         # ── 3. A 层：图编排 ──────────────────
@@ -180,15 +232,26 @@ class TradingAgent:
                 "confidence": intent_result.confidence,
                 "recognizer": getattr(intent_result, "recognizer", ""),
             },
+            "capability": {
+                "capability_id": routing_result.capability_id,
+                "match_type": routing_result.match_type,
+                "match_score": routing_result.match_score,
+                "rationale": routing_result.rationale,
+            },
             "plan": {
                 "chain": getattr(plan, "planned_chain", ""),
                 "nodes": plan.node_ids if hasattr(plan, "node_ids") else [],
                 "budget_allocated": getattr(plan.budget, "total", 0) if hasattr(plan, "budget") else 0,
             },
             "execution": {
+                "nodes_planned": len(plan.node_ids) if hasattr(plan, "node_ids") else 0,
                 "nodes_executed": getattr(report, "executed_nodes", 0),
                 "success_count": getattr(report, "success_nodes", 0),
+                "skipped_count": getattr(report, "skipped_nodes", 0),
+                "total_nodes": getattr(report, "total_nodes", 0),
                 "total_tokens": total_tokens,
+                "early_terminated": getattr(report, "early_terminated", False),
+                "termination_reason": getattr(report, "termination_reason", ""),
             },
             "action": final_action,
             "confidence": final_confidence,
@@ -204,6 +267,24 @@ class TradingAgent:
 
     # ── S 层 ────────────────────────────────
 
+    def _classify_scenario(self, market_data: Dict) -> Optional[str]:
+        """从 market_data 自动分类场景
+
+        使用 ScenarioClassifier 对市场数据进行三维分类
+        （趋势×波动率×动量），返回 scenario_id 供编排器使用。
+        """
+        if not market_data or "price" not in market_data:
+            return None
+        try:
+            from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+            if not hasattr(self, "_scenario_classifier"):
+                self._scenario_classifier = ScenarioClassifier()
+            result = self._scenario_classifier.classify(market_data)
+            return result.scenario_id
+        except Exception as e:
+            logger.debug(f"场景分类失败: {e}")
+            return None
+
     def _sense(self, user_input: str, market_data: Dict,
                context: Dict) -> IntentResult:
         """S 层：意图识别"""
@@ -212,6 +293,83 @@ class TradingAgent:
             market=market_data,
             context=context,
         )
+
+    def _route_capability(self, intent_result: IntentResult) -> RoutingResult:
+        """能力域路由：根据意图选择最优能力域
+
+        路由策略（文档 §7.1.1:
+            1. exact: 意图类型精确匹配能力域 supported_intents
+            2. fuzzy: 关键词与能力域 tags 匹配
+            3. fallback: 回退到默认能力域（trading）
+            4. none: 无匹配，返回失败
+
+        Returns:
+            RoutingResult: 路由决策结果
+        """
+        return self.capability_router.route(intent_result)
+
+    def _inject_freqtrade_signal(self, market_data: Dict) -> Optional[Dict[str, Any]]:
+        """注入 Freqtrade 量化策略信号
+
+        从 10-经典指标系统的 Freqtrade 策略池获取综合信号，
+        作为 Dream OS 的量化信号源之一。
+        """
+        if not os.environ.get("DREAMOS_FREQTRADE_SIGNAL", "1") == "1":
+            return None
+
+        symbol = market_data.get("symbol", "BTC")
+        try:
+            from dreamos.capabilities.trading.freqtrade_signal_adapter import FreqtradeSignalAdapter
+
+            if not hasattr(self, "_freqtrade_adapter"):
+                self._freqtrade_adapter = FreqtradeSignalAdapter()
+
+            signal = self._freqtrade_adapter.get_signal(symbol)
+            if signal.get("direction") != "HOLD" or signal.get("strategy_count", 0) > 0:
+                logger.info(
+                    f"Freqtrade信号: {symbol} | {signal['direction']} | "
+                    f"conf={signal['confidence']:.1%} | "
+                    f"策略数={signal.get('strategy_count', 0)} | "
+                    f"多={signal.get('long_votes', 0)}/空={signal.get('short_votes', 0)}"
+                )
+                return signal
+        except Exception as e:
+            logger.warning(f"Freqtrade信号注入失败: {e}")
+
+        return None
+
+    def _inject_fundamental_data(self, market_data: Dict[str, Any]) -> None:
+        """注入基本面数据到 market_data（F 链数据源）
+
+        调用 FundamentalDataInjector 采集 30+ 基本面指标（ETF 流量、MVRV、链上数据等）
+        并扁平化注入到 market_data，供 F2-F5 节点读取。
+
+        环境变量:
+            DREAMOS_FUNDAMENTAL_INJECTION=1 (默认启用)
+        """
+        if os.environ.get("DREAMOS_FUNDAMENTAL_INJECTION", "1") != "1":
+            return
+
+        symbol = market_data.get("symbol", "BTC")
+        try:
+            from dreamos.capabilities.trading.fundamental_injector import FundamentalDataInjector
+
+            if not hasattr(self, "_fundamental_injector"):
+                self._fundamental_injector = FundamentalDataInjector()
+
+            injected = self._fundamental_injector.inject(market_data, symbol)
+            if injected:
+                logger.info(
+                    f"基本面数据已注入: {symbol} | "
+                    f"字段数={injected.get('field_count', 0)} | "
+                    f"source={injected.get('source_status', 'unknown')}"
+                )
+            else:
+                logger.warning(f"基本面数据注入返回空: {symbol}，F链将降级为HOLD")
+                market_data["_f_chain_degraded"] = True
+        except Exception as e:
+            logger.warning(f"基本面数据注入失败: {e}，F链将降级为HOLD")
+            market_data["_f_chain_degraded"] = True
 
     # ── A 层 ────────────────────────────────
 
@@ -222,7 +380,7 @@ class TradingAgent:
     # ── C 层 ────────────────────────────────
 
     def _compute(self, state: State, plan: ExecutionPlan) -> ExecutionReport:
-        """C 层：执行图"""
+        """C 层：执行图（集成 G 层自动检查点）"""
         from dreamos.core.arrange.execution_graph import SequentialGraph
 
         graph = SequentialGraph()
@@ -235,6 +393,7 @@ class TradingAgent:
             graph=graph,
             state=state,
             plan=plan,
+            graph_store=self.graph_store,
         )
 
     # ── G 层 ────────────────────────────────
@@ -400,9 +559,11 @@ class TradingAgent:
         return {
             "cycles_executed": self._cycle_count,
             "registered_nodes": len(self.registry),
+            "registered_capabilities": len(self.capability_registry.list_ids()),
+            "default_capability": self.capability_router.default_capability_id,
             "budget": self.budget.status(),
-            "history_count": summary.get("history_count", 0),
-            "checkpoint_count": summary.get("checkpoint_count", 0),
+            "history_count": summary.get("history_entries", 0),
+            "checkpoint_count": summary.get("checkpoints", 0),
         }
 
     def _import_skills(self):

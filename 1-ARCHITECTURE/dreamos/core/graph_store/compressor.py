@@ -36,17 +36,24 @@ class ContextCompressor:
     """
 
     # 默认配置
-    DEFAULT_KEEP_RECENT_TRACE = 10         # 保留最近 N 条 trace
-    DEFAULT_KEEP_RECENT_RESULTS = 15       # 保留最近 N 条完整结果
-    DEFAULT_MIN_CONFIDENCE = 0.3           # 低于此置信度的结果只留摘要
+    DEFAULT_KEEP_RECENT_TRACE = 10
+    DEFAULT_KEEP_RECENT_RESULTS = 15
+    DEFAULT_MIN_CONFIDENCE = 0.3
+
+    DEFAULT_RESULT_COUNT_THRESHOLD = 20
+    DEFAULT_TOKEN_ESTIMATE_RATIO = 4.0
 
     def __init__(self,
                  keep_recent_trace: int = DEFAULT_KEEP_RECENT_TRACE,
                  keep_recent_results: int = DEFAULT_KEEP_RECENT_RESULTS,
-                 min_confidence: float = DEFAULT_MIN_CONFIDENCE):
+                 min_confidence: float = DEFAULT_MIN_CONFIDENCE,
+                 result_count_threshold: int = DEFAULT_RESULT_COUNT_THRESHOLD,
+                 token_estimate_ratio: float = DEFAULT_TOKEN_ESTIMATE_RATIO):
         self._keep_trace = keep_recent_trace
         self._keep_results = keep_recent_results
         self._min_confidence = min_confidence
+        self._result_count_threshold = result_count_threshold
+        self._token_estimate_ratio = token_estimate_ratio
 
     def compress(self, state: State,
                  keep_recent_trace: Optional[int] = None,
@@ -123,10 +130,30 @@ class ContextCompressor:
         )
 
     def should_compress(self, state: State, threshold: int = 10000) -> bool:
-        """判断是否需要压缩"""
-        return self._estimate_size(state) > threshold
+        """判断是否需要压缩
 
-    # ── 内部方法 ───────────────────────────────────────
+        触发条件（满足任一即压缩）:
+            1. State 估算 token 数超过阈值（文档: 10000 tokens）
+            2. 节点结果数超过阈值（文档: 20 个节点）
+
+        阈值单位为 tokens，内部按字节/ratio 换算。
+        """
+        estimated_tokens = self._estimate_tokens(state)
+        if estimated_tokens > threshold:
+            return True
+
+        result_count = len(state.results) if state.results else 0
+        if result_count >= self._result_count_threshold:
+            return True
+
+        return False
+
+    # ── 内部方法 ──────────────────────────
+
+    def _estimate_tokens(self, state: State) -> int:
+        """估算 State 的 token 数（粗略估算：字节数 / ratio）"""
+        byte_size = self._estimate_size(state)
+        return int(byte_size / self._token_estimate_ratio)
 
     def _estimate_size(self, state: State) -> int:
         """估算 State 的序列化大小（字节）"""

@@ -339,8 +339,8 @@ def elder_ray_features(
 def triple_screen_features(
     df: pd.DataFrame,
     long_period: str = "1D",    # 第一屏: 潮汐 (日线)
-    mid_period: str = "4H",     # 第二屏: 波浪 (4小时)
-    short_period: str = "1H",   # 第三屏: 涟漪 (1小时 = 当前周期)
+    mid_period: str = "4h",     # 第二屏: 波浪 (4小时)
+    short_period: str = "1h",   # 第三屏: 涟漪 (1小时 = 当前周期)
 ) -> pd.DataFrame:
     """
     三屏交易系统特征 — Alexander Elder的经典三重滤网
@@ -393,7 +393,7 @@ def triple_screen_features(
 
     # ---- 第二屏: 波浪 (中周期震荡) ----
     # 用4小时重采样
-    four_h = df.resample("4H").agg({
+    four_h = df.resample("4h").agg({
         "open": "first", "high": "max", "low": "min",
         "close": "last", "volume": "sum",
     }).dropna()

@@ -80,9 +80,9 @@ def fibonacci_retracement_features(
 
     feats = pd.DataFrame(index=df.index)
 
-    high = df["high"].values
-    low = df["low"].values
-    close = df["close"].values
+    high = df["high"].values.copy()
+    low = df["low"].values.copy()
+    close = df["close"].values.copy()
     n = len(df)
 
     # 滚动最高点和最低点
@@ -165,9 +165,9 @@ def fibonacci_extension_features(
 
     feats = pd.DataFrame(index=df.index)
 
-    high = df["high"].values
-    low = df["low"].values
-    close = df["close"].values
+    high = df["high"].values.copy()
+    low = df["low"].values.copy()
+    close = df["close"].values.copy()
 
     # 近期高低点
     roll_high = pd.Series(high).rolling(swing_lookback).max().values
@@ -230,9 +230,9 @@ def volatility_normalized_fib_features(
 
     feats = pd.DataFrame(index=df.index)
 
-    high = df["high"].values
-    low = df["low"].values
-    close = df["close"].values
+    high = df["high"].values.copy()
+    low = df["low"].values.copy()
+    close = df["close"].values.copy()
     n = len(df)
 
     # ATR计算
@@ -321,9 +321,9 @@ def fibonacci_time_features(
     """
     feats = pd.DataFrame(index=df.index)
 
-    high = df["high"].values
-    low = df["low"].values
-    close = df["close"].values
+    high = df["high"].values.copy()
+    low = df["low"].values.copy()
+    close = df["close"].values.copy()
     n = len(df)
 
     # 斐波那契时间序列 (K线根数)

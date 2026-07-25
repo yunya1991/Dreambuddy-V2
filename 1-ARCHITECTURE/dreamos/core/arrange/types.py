@@ -67,8 +67,23 @@ class ChainSpec:
         return len(self.node_ids)
 
     def get_scenario_nodes(self, scenario_id: str) -> List[str]:
-        """根据场景获取推荐的额外节点"""
-        return self.scenario_nodes.get(scenario_id, [])
+        """根据场景获取推荐的额外节点
+
+        支持精确匹配和通配符匹配（如 "BULL_*" 匹配所有 BULL 开头的场景）。
+        优先精确匹配，未命中则按通配符匹配。
+        """
+        # 精确匹配
+        nodes = self.scenario_nodes.get(scenario_id)
+        if nodes:
+            return nodes
+
+        # 通配符匹配（如 "BULL_*"）
+        import fnmatch
+        for pattern, pattern_nodes in self.scenario_nodes.items():
+            if "*" in pattern and fnmatch.fnmatch(scenario_id, pattern):
+                return pattern_nodes
+
+        return []
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -97,33 +112,44 @@ STANDARD_CHAINS: Dict[str, ChainSpec] = {
         optional_nodes=["A6"],  # A6 情报可作为可选扩展
         scenario_nodes={
             # 牛市趋势场景 — 三屏趋势信号优先
-            "BULL_HIGH_ACCELERATING": ["C_S3_TREND"],
-            "BULL_HIGH_DECELERATING": ["C_S3_TREND"],
-            "BULL_NORMAL_ACCELERATING": ["C_S3_TREND"],
-            "BULL_NORMAL_DECELERATING": ["C_S3_TREND"],
             "BULL_LOW_ACCELERATING": ["C_S3_TREND"],
             "BULL_LOW_DECELERATING": ["C_S3_TREND"],
+            "BULL_LOW_EXHAUSTION": ["C_S3_TREND", "A_YJ_INFER"],
+            "BULL_NORMAL_ACCELERATING": ["C_S3_TREND"],
+            "BULL_NORMAL_DECELERATING": ["C_S3_TREND"],
+            "BULL_NORMAL_EXHAUSTION": ["C_S3_TREND", "A_YJ_INFER"],
+            "BULL_HIGH_ACCELERATING": ["C_S3_TREND"],
+            "BULL_HIGH_DECELERATING": ["C_S3_TREND"],
+            "BULL_HIGH_EXHAUSTION": ["C_S3_TREND", "A_YJ_INFER"],
+            "BULL_EXTREME_ACCELERATING": ["C_S3_TREND"],
+            "BULL_EXTREME_DECELERATING": ["C_S3_TREND"],
+            "BULL_EXTREME_EXHAUSTION": ["C_S3_TREND", "A_YJ_INFER"],
             # 熊市趋势场景 — 三屏趋势信号优先
-            "BEAR_HIGH_ACCELERATING": ["C_S3_TREND"],
-            "BEAR_HIGH_DECELERATING": ["C_S3_TREND"],
-            "BEAR_NORMAL_ACCELERATING": ["C_S3_TREND"],
-            "BEAR_NORMAL_DECELERATING": ["C_S3_TREND"],
             "BEAR_LOW_ACCELERATING": ["C_S3_TREND"],
             "BEAR_LOW_DECELERATING": ["C_S3_TREND"],
+            "BEAR_LOW_EXHAUSTION": ["C_S3_TREND", "A_YJ_INFER"],
+            "BEAR_NORMAL_ACCELERATING": ["C_S3_TREND"],
+            "BEAR_NORMAL_DECELERATING": ["C_S3_TREND"],
+            "BEAR_NORMAL_EXHAUSTION": ["C_S3_TREND", "A_YJ_INFER"],
+            "BEAR_HIGH_ACCELERATING": ["C_S3_TREND"],
+            "BEAR_HIGH_DECELERATING": ["C_S3_TREND"],
+            "BEAR_HIGH_EXHAUSTION": ["C_S3_TREND", "A_YJ_INFER"],
+            "BEAR_EXTREME_ACCELERATING": ["C_S3_TREND"],
+            "BEAR_EXTREME_DECELERATING": ["C_S3_TREND"],
+            "BEAR_EXTREME_EXHAUSTION": ["C_S3_TREND", "A_YJ_INFER"],
             # 震荡/中性场景 — 马丁策略和易经推理
-            "NEUTRAL_HIGH_ACCELERATING": ["C_MARTIN_V15", "A_YJ_INFER"],
-            "NEUTRAL_HIGH_DECELERATING": ["C_MARTIN_V15", "A_YJ_INFER"],
-            "NEUTRAL_NORMAL_ACCELERATING": ["C_MARTIN_V15"],
-            "NEUTRAL_NORMAL_DECELERATING": ["C_MARTIN_V15"],
             "NEUTRAL_LOW_ACCELERATING": ["C_MARTIN_V15"],
             "NEUTRAL_LOW_DECELERATING": ["C_MARTIN_V15"],
-            # 衰竭场景 — 易经推理辅助判断转折点
-            "BULL_HIGH_EXHAUSTION": ["A_YJ_INFER"],
-            "BEAR_HIGH_EXHAUSTION": ["A_YJ_INFER"],
-            "NEUTRAL_HIGH_EXHAUSTION": ["A_YJ_INFER"],
-            "BULL_NORMAL_EXHAUSTION": ["A_YJ_INFER"],
-            "BEAR_NORMAL_EXHAUSTION": ["A_YJ_INFER"],
-            "NEUTRAL_NORMAL_EXHAUSTION": ["A_YJ_INFER"],
+            "NEUTRAL_LOW_EXHAUSTION": ["C_MARTIN_V15", "A_YJ_INFER"],
+            "NEUTRAL_NORMAL_ACCELERATING": ["C_MARTIN_V15"],
+            "NEUTRAL_NORMAL_DECELERATING": ["C_MARTIN_V15"],
+            "NEUTRAL_NORMAL_EXHAUSTION": ["C_MARTIN_V15", "A_YJ_INFER"],
+            "NEUTRAL_HIGH_ACCELERATING": ["C_MARTIN_V15", "A_YJ_INFER"],
+            "NEUTRAL_HIGH_DECELERATING": ["C_MARTIN_V15", "A_YJ_INFER"],
+            "NEUTRAL_HIGH_EXHAUSTION": ["C_MARTIN_V15", "A_YJ_INFER"],
+            "NEUTRAL_EXTREME_ACCELERATING": ["C_MARTIN_V15", "A_YJ_INFER"],
+            "NEUTRAL_EXTREME_DECELERATING": ["C_MARTIN_V15", "A_YJ_INFER"],
+            "NEUTRAL_EXTREME_EXHAUSTION": ["C_MARTIN_V15", "A_YJ_INFER"],
         },
     ),
     # C 链 (短线/突破)
@@ -290,6 +316,7 @@ class ExecutionPlan:
     rationale: str = ""                     # 编排理由
     estimated_total_tokens: int = 0
     estimated_total_latency_ms: int = 0
+    capability_id: str = ""                # 能力域 ID（用于追溯路由结果）
 
     @property
     def node_ids(self) -> List[str]:
@@ -316,4 +343,5 @@ class ExecutionPlan:
             "rationale": self.rationale,
             "estimated_total_tokens": self.estimated_total_tokens,
             "estimated_total_latency_ms": self.estimated_total_latency_ms,
+            "capability_id": self.capability_id,
         }

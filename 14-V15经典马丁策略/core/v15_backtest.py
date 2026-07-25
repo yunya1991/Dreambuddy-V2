@@ -8,21 +8,29 @@ V15 经典马丁策略回测引擎
 - 所有币种: 根据30天波动率调整止盈和加仓间距
 - 支持多空双向：DirectionGate根据日/周MA200控制方向开关
 """
-import json, os, sys, time, requests, warnings, math, copy
+import copy
+import json
+import sys
+import time
+import warnings
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
-from datetime import datetime, timezone, timedelta
+from typing import Dict, List, Optional, Tuple
+
+import requests
 
 # DirectionGate 多空方向控制
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 try:
     from direction_gate import DirectionGate, MarketRegime
+
     _DIRECTION_GATE_AVAILABLE = True
 except ImportError:
     _DIRECTION_GATE_AVAILABLE = False
 
 try:
     from strategy_params import calc_elder_ray
+
     _ELDER_RAY_AVAILABLE = True
 except ImportError:
     _ELDER_RAY_AVAILABLE = False
@@ -43,6 +51,7 @@ BASE_TP_PCT = 0.04
 
 
 # ── 指标计算 ──────────────────────────────────────────────────────────────
+
 
 def _calc_sma(values, period):
     if len(values) < period:
@@ -68,12 +77,12 @@ def _calc_rsi(prices, period=14):
 def _determine_position(price, smas):
     valid = {k: v for k, v in smas.items() if v is not None}
     if not valid:
-        return 'IN_ZONE'
+        return "IN_ZONE"
     if all(price > v for v in valid.values()):
-        return 'ABOVE_ALL'
+        return "ABOVE_ALL"
     if all(price < v for v in valid.values()):
-        return 'BELOW_ALL'
-    return 'IN_ZONE'
+        return "BELOW_ALL"
+    return "IN_ZONE"
 
 
 def _calc_fibonacci(prices, lookback=30):
@@ -82,12 +91,12 @@ def _calc_fibonacci(prices, lookback=30):
     swing_low = min(window)
     rng = swing_high - swing_low
     return {
-        'swing_high': round(swing_high),
-        'swing_low': round(swing_low),
-        'f382': round(swing_low + 0.382 * rng),
-        'f500': round(swing_low + 0.500 * rng),
-        'f618': round(swing_low + 0.618 * rng),
-        'range': rng,
+        "swing_high": round(swing_high),
+        "swing_low": round(swing_low),
+        "f382": round(swing_low + 0.382 * rng),
+        "f500": round(swing_low + 0.500 * rng),
+        "f618": round(swing_low + 0.618 * rng),
+        "range": rng,
     }
 
 
@@ -98,17 +107,17 @@ def _calc_bollinger_bands(prices, period=20, num_std=2):
     if sma == 0:
         return None
     variance = sum((p - sma) ** 2 for p in prices[-period:]) / period
-    std = variance ** 0.5
+    std = variance**0.5
     upper = sma + num_std * std
     lower = sma - num_std * std
     pct_b = (prices[-1] - lower) / (upper - lower) if upper != lower else 0.5
     return {
-        'sma': round(sma, 2),
-        'upper': round(upper, 2),
-        'lower': round(lower, 2),
-        'std': round(std, 2),
-        'bandwidth': round(2 * num_std * std / sma * 100, 2),
-        'pct_b': round(pct_b, 3),
+        "sma": round(sma, 2),
+        "upper": round(upper, 2),
+        "lower": round(lower, 2),
+        "std": round(std, 2),
+        "bandwidth": round(2 * num_std * std / sma * 100, 2),
+        "pct_b": round(pct_b, 3),
     }
 
 
@@ -131,22 +140,22 @@ def _calc_macd(prices, fast=12, slow=26, signal=9):
         sig = m * alpha_sig + sig * (1 - alpha_sig)
         signal_line.append(sig)
     hist = [macd_line[i] - signal_line[i] for i in range(len(macd_line))]
-    cross = 'none'
+    cross = "none"
     if len(hist) >= 2:
         if hist[-1] > 0 and hist[-2] <= 0:
-            cross = 'golden'
+            cross = "golden"
         elif hist[-1] < 0 and hist[-2] >= 0:
-            cross = 'death'
+            cross = "death"
     expanding = len(hist) >= 2 and abs(hist[-1]) > abs(hist[-2])
     return {
-        'macd': round(macd_line[-1], 4),
-        'signal': round(signal_line[-1], 4),
-        'hist': round(hist[-1], 4),
-        'hist_prev': round(hist[-2], 4) if len(hist) >= 2 else 0,
-        'cross': cross,
-        'expanding': expanding,
-        'bearish': hist[-1] < 0,
-        'bullish': hist[-1] > 0,
+        "macd": round(macd_line[-1], 4),
+        "signal": round(signal_line[-1], 4),
+        "hist": round(hist[-1], 4),
+        "hist_prev": round(hist[-2], 4) if len(hist) >= 2 else 0,
+        "cross": cross,
+        "expanding": expanding,
+        "bearish": hist[-1] < 0,
+        "bullish": hist[-1] > 0,
     }
 
 
@@ -188,15 +197,16 @@ def _calc_adx(prices, period=14):
     else:
         adx = sum(dx[-period:]) / period
     return {
-        'adx': round(adx, 2),
-        'strong': adx > 25,
-        'very_strong': adx > 40,
-        'di_plus': round(100 * pdm[-1] / atr[-1], 2) if atr and atr[-1] > 0 else 0,
-        'di_minus': round(100 * mdm[-1] / atr[-1], 2) if atr and atr[-1] > 0 else 0,
+        "adx": round(adx, 2),
+        "strong": adx > 25,
+        "very_strong": adx > 40,
+        "di_plus": round(100 * pdm[-1] / atr[-1], 2) if atr and atr[-1] > 0 else 0,
+        "di_minus": round(100 * mdm[-1] / atr[-1], 2) if atr and atr[-1] > 0 else 0,
     }
 
 
 # ── 数据获取 ──────────────────────────────────────────────────────────────
+
 
 def fetch_klines(coin: str, interval: str = "4h", limit: int = 1000) -> List[Dict]:
     """获取历史K线数据（带缓存）— 返回深拷贝避免副作用"""
@@ -254,6 +264,7 @@ def fetch_klines(coin: str, interval: str = "4h", limit: int = 1000) -> List[Dic
 
 # ── MA200计算 ─────────────────────────────────────────────────────────────
 
+
 def _timestamp_to_date_str(ts_ms: int) -> str:
     """时间戳转日期字符串 YYYY-MM-DD"""
     return datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
@@ -271,7 +282,7 @@ def calc_ma200_series(closes: List[float]) -> List[Optional[float]]:
     ma200 = []
     for i in range(len(closes)):
         if i >= 199:
-            ma200.append(sum(closes[i - 199:i + 1]) / 200)
+            ma200.append(sum(closes[i - 199 : i + 1]) / 200)
         else:
             ma200.append(None)
     return ma200
@@ -282,13 +293,15 @@ def calc_ma_series(closes: List[float], period: int) -> List[Optional[float]]:
     ma = []
     for i in range(len(closes)):
         if i >= period - 1:
-            ma.append(sum(closes[i - period + 1:i + 1]) / period)
+            ma.append(sum(closes[i - period + 1 : i + 1]) / period)
         else:
             ma.append(None)
     return ma
 
 
-def prepare_daily_sma_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], periods: List[int]) -> Dict[int, List[Optional[float]]]:
+def prepare_daily_sma_for_4h(
+    klines_4h: List[Dict], klines_1d: List[Dict], periods: List[int]
+) -> Dict[int, List[Optional[float]]]:
     """
     为4H数据准备日线SMA序列（多个周期）
     返回: {period: [ma_values]}，每个列表长度与klines_4h相同
@@ -307,7 +320,7 @@ def prepare_daily_sma_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], perio
         ma_list = []
         for i in range(len(daily_closes)):
             if i >= p - 1:
-                ma_list.append(sum(daily_closes[i - p + 1:i + 1]) / p)
+                ma_list.append(sum(daily_closes[i - p + 1 : i + 1]) / p)
             else:
                 ma_list.append(None)
         daily_ma_series[p] = ma_list
@@ -329,7 +342,9 @@ def prepare_daily_sma_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], perio
     return result
 
 
-def prepare_ma200_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], klines_1w: List[Dict]) -> Tuple[List[Optional[float]], List[Optional[float]]]:
+def prepare_ma200_for_4h(
+    klines_4h: List[Dict], klines_1d: List[Dict], klines_1w: List[Dict]
+) -> Tuple[List[Optional[float]], List[Optional[float]]]:
     """
     为4H数据准备日线MA200和周线MA200序列
     返回: (daily_ma200_list, weekly_ma200_list)，长度与klines_4h相同
@@ -400,7 +415,9 @@ def prepare_ma128_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> List[O
     return daily_ma128_for_4h
 
 
-def prepare_last_close_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], klines_1w: List[Dict]) -> Tuple[List[Optional[float]], List[Optional[float]]]:
+def prepare_last_close_for_4h(
+    klines_4h: List[Dict], klines_1d: List[Dict], klines_1w: List[Dict]
+) -> Tuple[List[Optional[float]], List[Optional[float]]]:
     """
     为4H数据准备上一日收盘价和上一周收盘价序列（用于收盘价确认逻辑）
     返回: (last_daily_close_list, last_weekly_close_list)，长度与klines_4h相同
@@ -436,14 +453,19 @@ def prepare_last_close_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], klin
 
 # ── 动态止损 ──────────────────────────────────────────────────────────────
 
-def get_ma200_stop_loss(direction: str, close: float,
-                       daily_ma200: Optional[float], weekly_ma200: Optional[float],
-                       last_daily_close: Optional[float] = None,
-                       last_weekly_close: Optional[float] = None) -> Tuple[Optional[float], bool, str]:
+
+def get_ma200_stop_loss(
+    direction: str,
+    close: float,
+    daily_ma200: Optional[float],
+    weekly_ma200: Optional[float],
+    last_daily_close: Optional[float] = None,
+    last_weekly_close: Optional[float] = None,
+) -> Tuple[Optional[float], bool, str]:
     """
     MA200动态止损逻辑（与实盘strategy_params.py逻辑一致）
     返回: (止损线价格, 是否触发止损, 止损类型)
-    
+
     规则:
     1. 止损线 = 价格下方（做多）/上方（做空）最近的一条MA200
     2. 触发条件 = 对应周期的已收盘价确认（日线看昨收，周线看上周收）
@@ -496,10 +518,18 @@ def get_ma200_stop_loss(direction: str, close: float,
             return stop_price, triggered, stop_type
         else:
             all_below_daily = True
-            if daily_ma200 is not None and last_daily_close is not None and last_daily_close > daily_ma200:
+            if (
+                daily_ma200 is not None
+                and last_daily_close is not None
+                and last_daily_close > daily_ma200
+            ):
                 all_below_daily = False
             all_below_weekly = True
-            if weekly_ma200 is not None and last_weekly_close is not None and last_weekly_close > weekly_ma200:
+            if (
+                weekly_ma200 is not None
+                and last_weekly_close is not None
+                and last_weekly_close > weekly_ma200
+            ):
                 all_below_weekly = False
 
             all_confirmed_below = all_below_daily and all_below_weekly
@@ -507,6 +537,7 @@ def get_ma200_stop_loss(direction: str, close: float,
 
 
 # ── 波动率参数调整 ────────────────────────────────────────────────────────
+
 
 def calc_30d_volatility(klines_1d: List[Dict]) -> float:
     """计算30天波动率（日收益率标准差）"""
@@ -518,7 +549,7 @@ def calc_30d_volatility(klines_1d: List[Dict]) -> float:
     recent_returns = returns[-30:]
     avg = sum(recent_returns) / len(recent_returns)
     variance = sum((r - avg) ** 2 for r in recent_returns) / len(recent_returns)
-    return variance ** 0.5
+    return variance**0.5
 
 
 def calc_atr(klines: List[Dict], period: int = 14) -> Optional[float]:
@@ -553,7 +584,7 @@ def prepare_atr_pct_for_4h(klines_4h: List[Dict], period: int = 14) -> List[Opti
     n = len(klines_4h)
     result = [None] * n
     for i in range(period, n):
-        window = klines_4h[:i + 1]
+        window = klines_4h[: i + 1]
         atr_pct = calc_atr_pct(window, period)
         result[i] = atr_pct
     return result
@@ -635,7 +666,7 @@ def prepare_elder_ray_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> Li
         if daily_end_idx < 17:
             continue
         # 使用截至当日的所有日线数据计算elder-ray
-        window = klines_1d[:daily_end_idx + 1]
+        window = klines_1d[: daily_end_idx + 1]
         elder = calc_elder_ray(window, period=13)
         if elder:
             result[i] = elder
@@ -643,9 +674,14 @@ def prepare_elder_ray_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> Li
     return result
 
 
-def get_vol_adjusted_params(base_tp: float, base_addon: float, coin_vol: float, btc_vol: float,
-                             coin_atr_pct: Optional[float] = None,
-                             btc_atr_pct: Optional[float] = None) -> Tuple[float, float, float]:
+def get_vol_adjusted_params(
+    base_tp: float,
+    base_addon: float,
+    coin_vol: float,
+    btc_vol: float,
+    coin_atr_pct: Optional[float] = None,
+    btc_atr_pct: Optional[float] = None,
+) -> Tuple[float, float, float]:
     """
     根据波动率调整参数（含ATR动态因子）
     返回: (调整后的止盈比例, 调整后的加仓间距, atr_factor)
@@ -669,6 +705,7 @@ def get_vol_adjusted_params(base_tp: float, base_addon: float, coin_vol: float, 
 
 # ── 趋势过滤 ──────────────────────────────────────────────────────────────
 
+
 def calc_sma(prices: List[float], period: int) -> float:
     """计算简单移动平均线"""
     if len(prices) < period:
@@ -681,64 +718,69 @@ def calc_ma_series(closes: List[float], period: int) -> List[Optional[float]]:
     result = [None] * len(closes)
     if len(closes) < period:
         return result
-    
+
     for i in range(period - 1, len(closes)):
-        result[i] = sum(closes[i - period + 1:i + 1]) / period
-    
+        result[i] = sum(closes[i - period + 1 : i + 1]) / period
+
     return result
 
 
-def prepare_weekly_ma_for_4h(klines_4h: List[Dict], klines_1w: List[Dict], period: int) -> List[Optional[float]]:
+def prepare_weekly_ma_for_4h(
+    klines_4h: List[Dict], klines_1w: List[Dict], period: int
+) -> List[Optional[float]]:
     """为4H K线准备周线MA序列
-    
+
     返回：每个4H K线对应的周线MA值
     """
     n = len(klines_4h)
     result = [None] * n
-    
+
     if len(klines_1w) >= period:
         weekly_closes = [float(k["c"]) for k in klines_1w]
         weekly_ma_series = calc_ma_series(weekly_closes, period)
-        
+
         weekly_ma_dict = {}
         for k, ma in zip(klines_1w, weekly_ma_series):
             if ma is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ma_dict[week_str] = ma
-        
+
         for i, k in enumerate(klines_4h):
             week_str = _timestamp_to_week_start_str(k["t"])
             result[i] = weekly_ma_dict.get(week_str)
-    
+
     return result
 
 
-def prepare_daily_ma_for_4h(klines_4h: List[Dict], klines_1d: List[Dict], period: int) -> List[Optional[float]]:
+def prepare_daily_ma_for_4h(
+    klines_4h: List[Dict], klines_1d: List[Dict], period: int
+) -> List[Optional[float]]:
     """为4H K线准备日线MA序列"""
     n = len(klines_4h)
     result = [None] * n
-    
+
     if len(klines_1d) >= period:
         daily_closes = [float(k["c"]) for k in klines_1d]
         daily_ma_series = calc_ma_series(daily_closes, period)
-        
+
         daily_ma_dict = {}
         for k, ma in zip(klines_1d, daily_ma_series):
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma_dict[date_str] = ma
-        
+
         for i, k in enumerate(klines_4h):
             date_str = _timestamp_to_date_str(k["t"])
             result[i] = daily_ma_dict.get(date_str)
-    
+
     return result
 
 
-def check_trend_filter(current_price: float, weekly_ma, daily_ma, 
-                        filter_mode: str = "both_bear") -> bool:
+def check_trend_filter(
+    current_price: float, weekly_ma, daily_ma, filter_mode: str = "both_bear"
+) -> bool:
     """趋势过滤检查
-    
+
     参数:
         current_price: 当前价格
         weekly_ma: 周线均线值 (可能为None)
@@ -747,18 +789,18 @@ def check_trend_filter(current_price: float, weekly_ma, daily_ma,
             - "both_bear": 周线+日线都看空(价格都在均线下方)时禁止开多
             - "weekly_bear": 仅周线看空时禁止开多
             - "none": 不过滤
-    
+
     返回: True=禁止开多, False=允许开多
     """
     if filter_mode == "none":
         return False
-    
+
     if weekly_ma is None and daily_ma is None:
         return False
-    
+
     weekly_bear = current_price < weekly_ma if weekly_ma is not None else None
     daily_bear = current_price < daily_ma if daily_ma is not None else None
-    
+
     if filter_mode == "both_bear":
         if weekly_bear is None or daily_bear is None:
             return False
@@ -773,9 +815,12 @@ def check_trend_filter(current_price: float, weekly_ma, daily_ma,
 
 # ── V15决策 ───────────────────────────────────────────────────────────────
 
-def v15_decision(prices: List[float], override_position: str = None, override_smas: Dict[int, float] = None) -> dict:
+
+def v15_decision(
+    prices: List[float], override_position: str = None, override_smas: Dict[int, float] = None
+) -> dict:
     """V15策略决策函数
-    
+
     参数:
         prices: 价格列表
         override_position: 外部传入的位置判定（'ABOVE_ALL'/'IN_ZONE'/'BELOW_ALL'/None），为None时用prices计算
@@ -810,95 +855,109 @@ def v15_decision(prices: List[float], override_position: str = None, override_sm
     boll_signal = None
     trend_signal = None
 
-    if position == 'BELOW_ALL':
-        in_zone = fib['f382'] <= current_price <= fib['f618']
-        reasons.append(f"BELOW_ALL, Fib区: {fib['f382']}-{fib['f618']}, 现价: {current_price:.0f}, RSI: {rsi}")
+    if position == "BELOW_ALL":
+        in_zone = fib["f382"] <= current_price <= fib["f618"]
+        reasons.append(
+            f"BELOW_ALL, Fib区: {fib['f382']}-{fib['f618']}, 现价: {current_price:.0f}, RSI: {rsi}"
+        )
 
-        boll_near_mid = boll and abs(current_price - boll['sma']) / boll['sma'] < 0.02
-        boll_touch_upper = boll and current_price >= boll['upper']
+        boll_near_mid = boll and abs(current_price - boll["sma"]) / boll["sma"] < 0.02
+        boll_touch_upper = boll and current_price >= boll["upper"]
 
-        if in_zone and current_price >= fib['f500'] and rsi > 45 and (boll_near_mid or boll_touch_upper):
-            fib_zone = 'golden'
-            boll_signal = 'touch_upper' if boll_touch_upper else 'near_mid'
+        if (
+            in_zone
+            and current_price >= fib["f500"]
+            and rsi > 45
+            and (boll_near_mid or boll_touch_upper)
+        ):
+            fib_zone = "golden"
+            boll_signal = "touch_upper" if boll_touch_upper else "near_mid"
             action = "OPEN_BEAR"
             confidence = 80
             size_mult = 1.0
-        elif in_zone and current_price >= fib['f500'] and rsi > 45:
-            fib_zone = 'golden'
+        elif in_zone and current_price >= fib["f500"] and rsi > 45:
+            fib_zone = "golden"
             action = "OPEN_BEAR"
             confidence = 75
             size_mult = 1.0
-        elif in_zone and current_price < fib['f500'] and rsi > 45:
-            fib_zone = 'shallow'
+        elif in_zone and current_price < fib["f500"] and rsi > 45:
+            fib_zone = "shallow"
             action = "OPEN_BEAR"
             confidence = 60
             size_mult = 0.5
         elif not in_zone and boll_near_mid and rsi > 50:
-            boll_signal = 'near_mid'
+            boll_signal = "near_mid"
             action = "OPEN_BEAR"
             confidence = 65
             size_mult = 0.5
         elif rsi > 55 and not in_zone:
-            boll_signal = 'rsi_extreme'
+            boll_signal = "rsi_extreme"
             action = "OPEN_BEAR"
             confidence = 60
             size_mult = 0.5
-        elif macd and macd['bearish'] and macd['expanding'] and rsi > 45:
-            trend_signal = 'macd_bear'
+        elif macd and macd["bearish"] and macd["expanding"] and rsi > 45:
+            trend_signal = "macd_bear"
             action = "OPEN_BEAR"
             confidence = 68
             size_mult = 0.6
-        elif adx and adx['strong'] and adx['di_minus'] > adx['di_plus'] and rsi > 45:
-            trend_signal = 'adx_bear'
+        elif adx and adx["strong"] and adx["di_minus"] > adx["di_plus"] and rsi > 45:
+            trend_signal = "adx_bear"
             action = "OPEN_BEAR"
             confidence = 70
             size_mult = 0.7
 
-    elif position == 'ABOVE_ALL':
-        rng = fib['swing_high'] - fib['swing_low']
-        f382_long = round(fib['swing_high'] - 0.382 * rng)
-        f500_long = round(fib['swing_high'] - 0.500 * rng)
-        f618_long = round(fib['swing_high'] - 0.618 * rng)
+    elif position == "ABOVE_ALL":
+        rng = fib["swing_high"] - fib["swing_low"]
+        f382_long = round(fib["swing_high"] - 0.382 * rng)
+        f500_long = round(fib["swing_high"] - 0.500 * rng)
+        f618_long = round(fib["swing_high"] - 0.618 * rng)
         in_zone = f618_long <= current_price <= f382_long
 
-        reasons.append(f"ABOVE_ALL, Fib回调区: {f618_long}-{f382_long}, 现价: {current_price:.0f}, RSI: {rsi}")
+        reasons.append(
+            f"ABOVE_ALL, Fib回调区: {f618_long}-{f382_long}, 现价: {current_price:.0f}, RSI: {rsi}"
+        )
 
-        boll_near_mid = boll and abs(current_price - boll['sma']) / boll['sma'] < 0.02
-        boll_touch_lower = boll and current_price <= boll['lower']
+        boll_near_mid = boll and abs(current_price - boll["sma"]) / boll["sma"] < 0.02
+        boll_touch_lower = boll and current_price <= boll["lower"]
 
-        if in_zone and current_price <= f500_long and rsi < 55 and (boll_near_mid or boll_touch_lower):
-            fib_zone = 'golden'
-            boll_signal = 'touch_lower' if boll_touch_lower else 'near_mid'
+        if (
+            in_zone
+            and current_price <= f500_long
+            and rsi < 55
+            and (boll_near_mid or boll_touch_lower)
+        ):
+            fib_zone = "golden"
+            boll_signal = "touch_lower" if boll_touch_lower else "near_mid"
             action = "OPEN_BULL"
             confidence = 80
             size_mult = 1.0
         elif in_zone and current_price <= f500_long and rsi < 55:
-            fib_zone = 'golden'
+            fib_zone = "golden"
             action = "OPEN_BULL"
             confidence = 75
             size_mult = 1.0
         elif in_zone and current_price > f500_long and rsi < 55:
-            fib_zone = 'shallow'
+            fib_zone = "shallow"
             action = "OPEN_BULL"
             confidence = 60
             size_mult = 0.5
         elif not in_zone and boll_near_mid and rsi < 50:
-            boll_signal = 'near_mid'
+            boll_signal = "near_mid"
             action = "OPEN_BULL"
             confidence = 65
             size_mult = 0.5
         elif rsi < 45 and not in_zone:
-            boll_signal = 'rsi_extreme'
+            boll_signal = "rsi_extreme"
             action = "OPEN_BULL"
             confidence = 60
             size_mult = 0.5
-        elif macd and macd['bullish'] and macd['expanding'] and rsi < 55:
-            trend_signal = 'macd_bull'
+        elif macd and macd["bullish"] and macd["expanding"] and rsi < 55:
+            trend_signal = "macd_bull"
             action = "OPEN_BULL"
             confidence = 68
             size_mult = 0.6
-        elif adx and adx['strong'] and adx['di_plus'] > adx['di_minus'] and rsi < 55:
-            trend_signal = 'adx_bull'
+        elif adx and adx["strong"] and adx["di_plus"] > adx["di_minus"] and rsi < 55:
+            trend_signal = "adx_bull"
             action = "OPEN_BULL"
             confidence = 70
             size_mult = 0.7
@@ -906,22 +965,22 @@ def v15_decision(prices: List[float], override_position: str = None, override_sm
     else:
         reasons.append(f"IN_ZONE, RSI: {rsi}")
         if boll:
-            if current_price <= boll['lower'] and rsi < 45:
+            if current_price <= boll["lower"] and rsi < 45:
                 action = "OPEN_BULL"
                 confidence = 70
-                boll_signal = 'touch_lower'
-            elif current_price >= boll['upper'] and rsi > 55:
+                boll_signal = "touch_lower"
+            elif current_price >= boll["upper"] and rsi > 55:
                 action = "OPEN_BEAR"
                 confidence = 70
-                boll_signal = 'touch_upper'
+                boll_signal = "touch_upper"
             elif rsi < 35:
                 action = "OPEN_BULL"
                 confidence = 65
-                boll_signal = 'rsi_extreme'
+                boll_signal = "rsi_extreme"
             elif rsi > 65:
                 action = "OPEN_BEAR"
                 confidence = 65
-                boll_signal = 'rsi_extreme'
+                boll_signal = "rsi_extreme"
         else:
             if rsi < 35:
                 action = "OPEN_BULL"
@@ -931,19 +990,19 @@ def v15_decision(prices: List[float], override_position: str = None, override_sm
                 confidence = 65
 
     vol_mult = 1.0
-    if fib_zone == 'golden' and boll_signal in ('touch_upper', 'touch_lower'):
+    if fib_zone == "golden" and boll_signal in ("touch_upper", "touch_lower"):
         vol_mult = 1.3
-    elif fib_zone == 'golden':
+    elif fib_zone == "golden":
         vol_mult = 1.2
-    elif fib_zone == 'shallow':
+    elif fib_zone == "shallow":
         vol_mult = 0.8
-    elif trend_signal == 'adx_bull' or trend_signal == 'adx_bear':
+    elif trend_signal == "adx_bull" or trend_signal == "adx_bear":
         vol_mult = 0.9
-    elif trend_signal == 'macd_bull' or trend_signal == 'macd_bear':
+    elif trend_signal == "macd_bull" or trend_signal == "macd_bear":
         vol_mult = 0.8
-    elif boll_signal in ('touch_upper', 'touch_lower'):
+    elif boll_signal in ("touch_upper", "touch_lower"):
         vol_mult = 1.0
-    elif boll_signal == 'rsi_extreme':
+    elif boll_signal == "rsi_extreme":
         vol_mult = 0.7
 
     return {
@@ -961,6 +1020,7 @@ def v15_decision(prices: List[float], override_position: str = None, override_sm
 
 
 # ── 回测引擎 ──────────────────────────────────────────────────────────────
+
 
 def run_backtest(
     coin: str,
@@ -1047,20 +1107,29 @@ def run_backtest(
             kelly_path = str(Path(__file__).parent.parent / "lib")
             if kelly_path not in sys.path:
                 sys.path.insert(0, kelly_path)
-            from kelly_optimizer import calculate_kelly_from_trades, format_kelly_report
+            from kelly_optimizer import calculate_kelly_from_trades
+
             # 先用基线比例跑一次预回测获取交易样本
             _pre_result = run_backtest(
-                coin=coin, klines=klines, initial_capital=initial_capital,
-                base_position_pct=kelly_base_pct, max_addons=max_addons,
-                confidence_threshold=confidence_threshold, long_only=long_only,
-                position_tf=position_tf, custom_addon_pct=custom_addon_pct,
-                custom_tp_pct=custom_tp_pct, trend_filter_mode=trend_filter_mode,
+                coin=coin,
+                klines=klines,
+                initial_capital=initial_capital,
+                base_position_pct=kelly_base_pct,
+                max_addons=max_addons,
+                confidence_threshold=confidence_threshold,
+                long_only=long_only,
+                position_tf=position_tf,
+                custom_addon_pct=custom_addon_pct,
+                custom_tp_pct=custom_tp_pct,
+                trend_filter_mode=trend_filter_mode,
                 trend_filter_period=trend_filter_period,
                 max_base_holding_hours=max_base_holding_hours,
                 max_post_addon_hours=max_post_addon_hours,
                 golden_window_hours=golden_window_hours,
-                bounce_filter=bounce_filter, use_direction_gate=use_direction_gate,
-                use_atr=use_atr, use_kelly=False,
+                bounce_filter=bounce_filter,
+                use_direction_gate=use_direction_gate,
+                use_atr=use_atr,
+                use_kelly=False,
             )
             _pre_trades = _pre_result.get("trades", [])
             kelly_params = calculate_kelly_from_trades(_pre_trades, base_pct=kelly_base_pct)
@@ -1074,7 +1143,11 @@ def run_backtest(
         klines = fetch_klines(coin, "4h", 1500)
 
     if len(klines) < 200:
-        return {"error": f"4H K线数据不足({len(klines)}根)，至少需要200根", "trades": [], "metrics": {}}
+        return {
+            "error": f"4H K线数据不足({len(klines)}根)，至少需要200根",
+            "trades": [],
+            "metrics": {},
+        }
 
     for k in klines:
         if "ts" in k and "t" not in k:
@@ -1091,7 +1164,9 @@ def run_backtest(
     last_daily_close_list, last_weekly_close_list = None, None
     if len(klines_1d) >= 200:
         daily_ma200_list, weekly_ma200_list = prepare_ma200_for_4h(klines, klines_1d, klines_1w)
-        last_daily_close_list, last_weekly_close_list = prepare_last_close_for_4h(klines, klines_1d, klines_1w)
+        last_daily_close_list, last_weekly_close_list = prepare_last_close_for_4h(
+            klines, klines_1d, klines_1w
+        )
 
     # 预计算MA128（用于DirectionGate多空方向控制）
     daily_ma128_list = None
@@ -1119,7 +1194,7 @@ def run_backtest(
     if position_tf == "1d" and len(klines_1d) >= 200:
         daily_sma_periods = [30, 60, 120, 200]
         daily_sma_lists = prepare_daily_sma_for_4h(klines, klines_1d, daily_sma_periods)
-    
+
     # 预计算趋势过滤均线（周线MA + 日线MA）
     trend_weekly_ma = None
     trend_daily_ma = None
@@ -1152,7 +1227,7 @@ def run_backtest(
     )
     effective_tp_pct = effective_tp_pct_base
     effective_addon_pct = effective_addon_pct_base
-    
+
     # 使用自定义参数覆盖（用于贝叶斯优化）
     if custom_tp_pct is not None:
         effective_tp_pct = custom_tp_pct
@@ -1215,7 +1290,7 @@ def run_backtest(
     trades = []
 
     for i in range(200, len(closes)):
-        price_window = closes[:i + 1]
+        price_window = closes[: i + 1]
         current_price = closes[i]
         high = highs[i]
         low = lows[i]
@@ -1232,7 +1307,9 @@ def run_backtest(
 
                 daily_smas = {30: sma_30, 60: sma_60, 120: sma_120, 200: sma_200}
                 daily_position = _determine_position(current_price, daily_smas)
-                decision = v15_decision(price_window, override_position=daily_position, override_smas=daily_smas)
+                decision = v15_decision(
+                    price_window, override_position=daily_position, override_smas=daily_smas
+                )
             else:
                 decision = v15_decision(price_window)
 
@@ -1247,12 +1324,18 @@ def run_backtest(
 
                 # BTC风向标模式：根据BTC状态决定开仓方向
                 if use_btc_windvane and btc_windvane_states is not None:
-                    btc_state = btc_windvane_states[i] if i < len(btc_windvane_states) else "LONG_ONLY"
+                    btc_state = (
+                        btc_windvane_states[i] if i < len(btc_windvane_states) else "LONG_ONLY"
+                    )
                     if btc_state == "LONG_ONLY" and action == "OPEN_BEAR":
                         continue  # BTC在MA200上方，只做多
                     if btc_state == "LONG_ONLY_FORCE" and action == "OPEN_BEAR":
                         continue  # BTC触及周MA200，强制做多
-                    if btc_state == "SHORT_ALLOWED" and btc_windvane_short_only and action == "OPEN_BULL":
+                    if (
+                        btc_state == "SHORT_ALLOWED"
+                        and btc_windvane_short_only
+                        and action == "OPEN_BULL"
+                    ):
                         continue  # SHORT_ALLOWED状态下只允许做空
 
                 # DirectionGate多空方向控制：BTC风向标 + MA128有效跌破
@@ -1260,11 +1343,16 @@ def run_backtest(
                     # 1. 判断BTC是否有效跌破MA128（连续3日收盘价低于MA128）
                     btc_short_enabled = False
                     if btc_daily_ma128_list is not None and btc_recent_closes_list is not None:
-                        btc_ma128 = btc_daily_ma128_list[i] if i < len(btc_daily_ma128_list) else None
+                        btc_ma128 = (
+                            btc_daily_ma128_list[i] if i < len(btc_daily_ma128_list) else None
+                        )
                         if btc_ma128 is not None:
                             btc_recent = []
                             for j in range(max(0, i - 5), i + 1):
-                                if j < len(btc_recent_closes_list) and btc_recent_closes_list[j] is not None:
+                                if (
+                                    j < len(btc_recent_closes_list)
+                                    and btc_recent_closes_list[j] is not None
+                                ):
                                     btc_recent.append(btc_recent_closes_list[j])
                             if len(btc_recent) >= 3:
                                 last_3 = btc_recent[-3:]
@@ -1272,15 +1360,26 @@ def run_backtest(
 
                     # 2. 当前币种的方向控制
                     gate = DirectionGate(allow_short=True)
-                    d_ma128 = daily_ma128_list[i] if daily_ma128_list and i < len(daily_ma128_list) else None
-                    w_ma200 = weekly_ma200_list[i] if weekly_ma200_list and i < len(weekly_ma200_list) else None
-                    
+                    d_ma128 = (
+                        daily_ma128_list[i]
+                        if daily_ma128_list and i < len(daily_ma128_list)
+                        else None
+                    )
+                    w_ma200 = (
+                        weekly_ma200_list[i]
+                        if weekly_ma200_list and i < len(weekly_ma200_list)
+                        else None
+                    )
+
                     recent_closes = []
                     if last_daily_close_list:
                         for j in range(max(0, i - 5), i + 1):
-                            if j < len(last_daily_close_list) and last_daily_close_list[j] is not None:
+                            if (
+                                j < len(last_daily_close_list)
+                                and last_daily_close_list[j] is not None
+                            ):
                                 recent_closes.append(last_daily_close_list[j])
-                    
+
                     gate_result = gate.evaluate(
                         current_price=current_price,
                         daily_ma128=d_ma128,
@@ -1325,15 +1424,23 @@ def run_backtest(
 
                 if direction == "LONG":
                     tp_price = current_price * (1 + tp_pct)
-                    addon_prices = [current_price * (1 - addon_pct * j) for j in range(1, max_addons + 1)]
+                    addon_prices = [
+                        current_price * (1 - addon_pct * j) for j in range(1, max_addons + 1)
+                    ]
                 else:
                     tp_price = current_price * (1 - tp_pct)
-                    addon_prices = [current_price * (1 + addon_pct * j) for j in range(1, max_addons + 1)]
+                    addon_prices = [
+                        current_price * (1 + addon_pct * j) for j in range(1, max_addons + 1)
+                    ]
 
                 # Elder-ray 资金调度：根据日线趋势强度调整仓位大小
                 # 不利势能减弱/反弹强度高 → 资金更大；趋势强劲不利 → 资金更小
                 elder_size_mult = 1.0
-                if elder_ray_list is not None and i < len(elder_ray_list) and elder_ray_list[i] is not None:
+                if (
+                    elder_ray_list is not None
+                    and i < len(elder_ray_list)
+                    and elder_ray_list[i] is not None
+                ):
                     elder_size_mult = calc_elder_ray_size_mult(elder_ray_list[i], direction)
 
                 position_size = capital * effective_base_pct * elder_size_mult / current_price
@@ -1404,8 +1511,12 @@ def run_backtest(
 
                 if daily_ma200 is not None or weekly_ma200 is not None:
                     stop_line, triggered, sl_type = get_ma200_stop_loss(
-                        direction, current_price, daily_ma200, weekly_ma200,
-                        last_d_close, last_w_close
+                        direction,
+                        current_price,
+                        daily_ma200,
+                        weekly_ma200,
+                        last_d_close,
+                        last_w_close,
                     )
                     if triggered:
                         hit_sl = True
@@ -1446,13 +1557,19 @@ def run_backtest(
                         if direction == "LONG":
                             new_trailing = peak - trailing_atr_mult * atr_price
                             # 移动止盈价只上移不下移
-                            if position["trailing_price"] is None or new_trailing > position["trailing_price"]:
+                            if (
+                                position["trailing_price"] is None
+                                or new_trailing > position["trailing_price"]
+                            ):
                                 position["trailing_price"] = new_trailing
                                 position["trailing_active"] = True
                         else:
                             new_trailing = peak + trailing_atr_mult * atr_price
                             # 移动止盈价只下移不上移
-                            if position["trailing_price"] is None or new_trailing < position["trailing_price"]:
+                            if (
+                                position["trailing_price"] is None
+                                or new_trailing < position["trailing_price"]
+                            ):
                                 position["trailing_price"] = new_trailing
                                 position["trailing_active"] = True
 
@@ -1461,11 +1578,11 @@ def run_backtest(
                         if direction == "LONG" and low <= position["trailing_price"]:
                             hit_tp = True
                             exit_price = position["trailing_price"]
-                            position["sl_type"] = f"trailing_tp"
+                            position["sl_type"] = "trailing_tp"
                         elif direction == "SHORT" and high >= position["trailing_price"]:
                             hit_tp = True
                             exit_price = position["trailing_price"]
-                            position["sl_type"] = f"trailing_tp"
+                            position["sl_type"] = "trailing_tp"
 
             # 加仓检查
             if not hit_tp and not hit_sl:
@@ -1484,9 +1601,17 @@ def run_backtest(
                     if should_add:
                         # 加仓时也根据当前Elder-ray状态调整资金规模
                         addon_elder_mult = 1.0
-                        if elder_ray_list is not None and i < len(elder_ray_list) and elder_ray_list[i] is not None:
-                            addon_elder_mult = calc_elder_ray_size_mult(elder_ray_list[i], direction)
-                        addon_size = capital * effective_base_pct * addon_elder_mult / addon_exec_price
+                        if (
+                            elder_ray_list is not None
+                            and i < len(elder_ray_list)
+                            and elder_ray_list[i] is not None
+                        ):
+                            addon_elder_mult = calc_elder_ray_size_mult(
+                                elder_ray_list[i], direction
+                            )
+                        addon_size = (
+                            capital * effective_base_pct * addon_elder_mult / addon_exec_price
+                        )
                         position["total_cost"] += addon_size * addon_exec_price
                         position["total_size"] += addon_size
                         position["avg_entry"] = position["total_cost"] / position["total_size"]
@@ -1519,10 +1644,14 @@ def run_backtest(
                         classic_path = str(Path(__file__).parent.parent.parent / "10-经典指标系统")
                         if classic_path not in sys.path:
                             sys.path.insert(0, classic_path)
-                        from classic_exit_system import ClassicExitSystem, PositionState as ExitPosState, ExitConfig
-                        if not hasattr(run_backtest, '_exit_system'):
+                        from classic_exit_system import ClassicExitSystem, ExitConfig
+                        from classic_exit_system import PositionState as ExitPosState
+
+                        if not hasattr(run_backtest, "_exit_system"):
                             exit_cfg = ExitConfig()
-                            exit_cfg.l0_max_hold_sec = 999999  # 禁用L0持仓时间硬退出（马丁策略有自己的超时逻辑）
+                            exit_cfg.l0_max_hold_sec = (
+                                999999  # 禁用L0持仓时间硬退出（马丁策略有自己的超时逻辑）
+                            )
                             run_backtest._exit_system = ClassicExitSystem(config=exit_cfg)
                         system = run_backtest._exit_system
 
@@ -1546,9 +1675,15 @@ def run_backtest(
                         # 将4H klines 转换为 evaluate_full 可用的 candles 格式
                         # _compute_features 期望 List[Dict]，每条含 c/h/l/o/v 字段
                         # 回测使用 4H 数据（klines 字段为 c/h/l/o/t），i>=200 保证 ≥201 根足够计算特征
-                        candles_for_exit = klines[:i+1]
-                        decision = system.evaluate_full(pos_state, candles_1h=candles_for_exit, regime="trend")
-                        action_val = decision.action.value if hasattr(decision.action, 'value') else str(decision.action)
+                        candles_for_exit = klines[: i + 1]
+                        decision = system.evaluate_full(
+                            pos_state, candles_1h=candles_for_exit, regime="trend"
+                        )
+                        action_val = (
+                            decision.action.value
+                            if hasattr(decision.action, "value")
+                            else str(decision.action)
+                        )
 
                         if action_val == "close":
                             hit_time_exit = True
@@ -1567,7 +1702,7 @@ def run_backtest(
                             reduce_frac = decision.reduce_frac if decision.reduce_frac > 0 else 0.3
                             reduce_cost = position["total_cost"] * reduce_frac
                             position["total_cost"] -= reduce_cost
-                            position["total_size"] *= (1 - reduce_frac)
+                            position["total_size"] *= 1 - reduce_frac
                         # hold: 不做任何操作
 
                     except Exception:
@@ -1599,7 +1734,15 @@ def run_backtest(
                     "side": direction,
                     "pnl_pct": round(pnl_pct * 100, 2),
                     "pnl_usd": round(pnl_usd, 2),
-                    "exit_reason": "take_profit" if hit_tp else ("time_exit" if position.get("sl_type", "").startswith("time_exit") else "ma200_stop"),
+                    "exit_reason": (
+                        "take_profit"
+                        if hit_tp
+                        else (
+                            "time_exit"
+                            if position.get("sl_type", "").startswith("time_exit")
+                            else "ma200_stop"
+                        )
+                    ),
                     "sl_type": position.get("sl_type", ""),
                     "bars_held": i - position["entry_idx"],
                     "levels_used": position["current_level"] + 1,
@@ -1640,7 +1783,7 @@ def run_backtest(
         if len(returns) > 1:
             avg_return = sum(returns) / len(returns)
             variance = sum((r - avg_return) ** 2 for r in returns) / len(returns)
-            std_return = variance ** 0.5
+            std_return = variance**0.5
             sharpe = (avg_return / std_return) * (len(trades) ** 0.5) if std_return > 0 else 0
         else:
             sharpe = 0
@@ -1670,11 +1813,19 @@ def run_backtest(
             reason_dist[r] = reason_dist.get(r, 0) + 1
 
         ma200_trades = sum(1 for t in trades if t.get("use_ma200"))
-        trailing_tp_trades = sum(1 for t in trades if t.get("exit_reason") == "take_profit"
-                                 and t.get("sl_type") == "trailing_tp")
-        fixed_tp_trades = sum(1 for t in trades if t.get("exit_reason") == "take_profit"
-                              and t.get("sl_type") != "trailing_tp")
-        btc_windvane_exits = sum(1 for t in trades if str(t.get("sl_type", "")).startswith("btc_windvane"))
+        trailing_tp_trades = sum(
+            1
+            for t in trades
+            if t.get("exit_reason") == "take_profit" and t.get("sl_type") == "trailing_tp"
+        )
+        fixed_tp_trades = sum(
+            1
+            for t in trades
+            if t.get("exit_reason") == "take_profit" and t.get("sl_type") != "trailing_tp"
+        )
+        btc_windvane_exits = sum(
+            1 for t in trades if str(t.get("sl_type", "")).startswith("btc_windvane")
+        )
 
         metrics = {
             "total_trades": len(trades),
@@ -1705,7 +1856,11 @@ def run_backtest(
             "btc_windvane_enabled": use_btc_windvane,
             "btc_windvane_exits": btc_windvane_exits,
             "elder_ray_enabled": use_elder_ray,
-            "elder_ray_avg_mult": round(sum(t.get("elder_mult", 1.0) for t in trades) / len(trades), 3) if trades else 1.0,
+            "elder_ray_avg_mult": (
+                round(sum(t.get("elder_mult", 1.0) for t in trades) / len(trades), 3)
+                if trades
+                else 1.0
+            ),
             "effective_base_pct": round(effective_base_pct, 4),
         }
     else:
@@ -1758,6 +1913,7 @@ def run_backtest(
 
 # ── 报告输出 ──────────────────────────────────────────────────────────────
 
+
 def print_report(result: Dict):
     """打印回测报告"""
     if "error" in result:
@@ -1773,11 +1929,15 @@ def print_report(result: Dict):
     print(f"  最终资金: ${m['final_capital']:,.2f}")
     print(f"  基础仓位: {result['base_position_pct'] * 100:.1f}%")
     print(f"  最大加仓: {result['max_addons']} 层")
-    print(f"  止损模式: MA200动态止损 (日线+周线)")
-    print(f"  位置判定: {'日线均线(SMA30/60/120/200)' if result.get('position_tf') == '1d' else '4H均线(SMA30/65/128/200)'}")
+    print("  止损模式: MA200动态止损 (日线+周线)")
+    print(
+        f"  位置判定: {'日线均线(SMA30/60/120/200)' if result.get('position_tf') == '1d' else '4H均线(SMA30/65/128/200)'}"
+    )
     print(f"  交易方向: {'只做多' if result.get('long_only') else '多空双向'}")
     if m.get("effective_tp_pct") != 4.0:
-        print(f"  波动调整: 止盈{m['effective_tp_pct']:.1f}% / 加仓间距{m['effective_addon_pct']:.1f}% (比率{m['vol_ratio']:.2f}x)")
+        print(
+            f"  波动调整: 止盈{m['effective_tp_pct']:.1f}% / 加仓间距{m['effective_addon_pct']:.1f}% (比率{m['vol_ratio']:.2f}x)"
+        )
     print("-" * 70)
     print(f"  📊 总收益率: {m['total_return_pct']:+.2f}%")
     print(f"  📈 总交易次数: {m['total_trades']}")
@@ -1800,21 +1960,27 @@ def print_report(result: Dict):
     if result["trades"]:
         print("\n  最近10笔交易:")
         print("-" * 70)
-        print(f"  {'#':>3} {'方向':>6} {'入场价':>10} {'均价':>10} {'出场价':>10} "
-              f"{'收益率':>8} {'层级':>4} {'原因':>12} {'持仓':>5} {'出场':>8}")
+        print(
+            f"  {'#':>3} {'方向':>6} {'入场价':>10} {'均价':>10} {'出场价':>10} "
+            f"{'收益率':>8} {'层级':>4} {'原因':>12} {'持仓':>5} {'出场':>8}"
+        )
         print("-" * 70)
         for idx, t in enumerate(result["trades"][-10:]):
             exit_reason = "止盈" if t.get("exit_reason") == "take_profit" else "MA200"
-            print(f"  {idx + 1:>3} {t['side']:>6} {t['entry_price']:>10.2f} {t['avg_entry']:>10.2f} "
-                  f"{t['exit_price']:>10.2f} {t['pnl_pct']:>+7.2f}% {t['levels_used']:>4} "
-                  f"{t['entry_reason']:>12} {t['bars_held']:>4} {exit_reason:>8}")
+            print(
+                f"  {idx + 1:>3} {t['side']:>6} {t['entry_price']:>10.2f} {t['avg_entry']:>10.2f} "
+                f"{t['exit_price']:>10.2f} {t['pnl_pct']:>+7.2f}% {t['levels_used']:>4} "
+                f"{t['entry_reason']:>12} {t['bars_held']:>4} {exit_reason:>8}"
+            )
         print("=" * 70)
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────
 
+
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="V15经典马丁策略回测引擎")
     parser.add_argument("--coin", default="BTC", help="交易币种 (默认: BTC)")
     parser.add_argument("--capital", type=float, default=10000, help="初始资金 (默认: 10000)")
@@ -1824,10 +1990,22 @@ def main():
     parser.add_argument("--limit", type=int, default=1500, help="4H K线数量 (默认: 1500)")
     parser.add_argument("--multi", action="store_true", help="多币种回测")
     parser.add_argument("--allow-short", action="store_true", help="允许做空（默认只做多）")
-    parser.add_argument("--direction-gate", action="store_true", help="启用DirectionGate多空方向控制（基于日/周MA200）")
-    parser.add_argument("--compare", action="store_true", help="对比三模式: 只做多 vs 无限制做空 vs DirectionGate控制做空")
-    parser.add_argument("--compare-position", action="store_true", help="对比4H均线 vs 日线均线位置判定")
-    parser.add_argument("--position-tf", default="4h", choices=["4h", "1d"], help="位置判定时间框架 (默认: 4h)")
+    parser.add_argument(
+        "--direction-gate",
+        action="store_true",
+        help="启用DirectionGate多空方向控制（基于日/周MA200）",
+    )
+    parser.add_argument(
+        "--compare",
+        action="store_true",
+        help="对比三模式: 只做多 vs 无限制做空 vs DirectionGate控制做空",
+    )
+    parser.add_argument(
+        "--compare-position", action="store_true", help="对比4H均线 vs 日线均线位置判定"
+    )
+    parser.add_argument(
+        "--position-tf", default="4h", choices=["4h", "1d"], help="位置判定时间框架 (默认: 4h)"
+    )
     args = parser.parse_args()
 
     if args.compare_position:
@@ -1855,17 +2033,21 @@ def main():
         print("\n" + "=" * 80)
         print(f"  📊 4H均线 vs 日线均线 对比汇总 — {coin}")
         print("=" * 80)
-        print(f"  {'模式':>12} {'总收益':>10} {'交易数':>6} {'胜率':>8} {'盈亏比':>8} "
-              f"{'最大回撤':>10} {'夏普':>8} {'连盈':>5} {'连亏':>5}")
+        print(
+            f"  {'模式':>12} {'总收益':>10} {'交易数':>6} {'胜率':>8} {'盈亏比':>8} "
+            f"{'最大回撤':>10} {'夏普':>8} {'连盈':>5} {'连亏':>5}"
+        )
         print("-" * 80)
         for tf, r in all_results:
             if "error" not in r:
                 m = r["metrics"]
                 tf_str = "4H均线" if tf == "4h" else "日线均线"
-                print(f"  {tf_str:>12} {m['total_return_pct']:>+8.2f}% {m['total_trades']:>6} "
-                      f"{m['win_rate']*100:>7.2f}% {m['profit_factor']:>8.2f} "
-                      f"{m['max_drawdown_pct']:>9.2f}% {m['sharpe_ratio']:>8.4f} "
-                      f"{m['max_consecutive_wins']:>5} {m['max_consecutive_losses']:>5}")
+                print(
+                    f"  {tf_str:>12} {m['total_return_pct']:>+8.2f}% {m['total_trades']:>6} "
+                    f"{m['win_rate']*100:>7.2f}% {m['profit_factor']:>8.2f} "
+                    f"{m['max_drawdown_pct']:>9.2f}% {m['sharpe_ratio']:>8.4f} "
+                    f"{m['max_consecutive_wins']:>5} {m['max_consecutive_losses']:>5}"
+                )
         print("=" * 80)
 
     elif args.compare:
@@ -1877,7 +2059,7 @@ def main():
             print(f"  回测 {coin}...")
             klines = fetch_klines(coin, "4h", args.limit)
 
-            print(f"\n  --- 只做多 ---")
+            print("\n  --- 只做多 ---")
             result_long = run_backtest(
                 coin=coin,
                 klines=klines,
@@ -1890,7 +2072,7 @@ def main():
             print_report(result_long)
             all_results.append(("long_only", result_long))
 
-            print(f"\n  --- 无限制做空 ---")
+            print("\n  --- 无限制做空 ---")
             result_both = run_backtest(
                 coin=coin,
                 klines=klines,
@@ -1903,7 +2085,7 @@ def main():
             print_report(result_both)
             all_results.append(("both", result_both))
 
-            print(f"\n  --- DirectionGate控制做空 ---")
+            print("\n  --- DirectionGate控制做空 ---")
             result_gate = run_backtest(
                 coin=coin,
                 klines=klines,
@@ -1920,17 +2102,23 @@ def main():
         print("\n" + "=" * 90)
         print("  📊 三模式对比汇总: 只做多 vs 无限制做空 vs DirectionGate控制做空")
         print("=" * 90)
-        print(f"  {'币种':>6} {'模式':>16} {'总收益':>10} {'交易数':>6} {'胜率':>8} {'盈亏比':>8} "
-              f"{'最大回撤':>10} {'夏普':>8} {'做空数':>6}")
+        print(
+            f"  {'币种':>6} {'模式':>16} {'总收益':>10} {'交易数':>6} {'胜率':>8} {'盈亏比':>8} "
+            f"{'最大回撤':>10} {'夏普':>8} {'做空数':>6}"
+        )
         print("-" * 90)
         for mode, r in all_results:
             if "error" not in r:
                 m = r["metrics"]
                 short_trades = sum(1 for t in r.get("trades", []) if t.get("side") == "SHORT")
-                mode_str = {"long_only": "只做多", "both": "无限制做空", "gate": "Gate控制做空"}[mode]
-                print(f"  {r['coin']:>6} {mode_str:>16} {m['total_return_pct']:>+8.2f}% {m['total_trades']:>6} "
-                      f"{m['win_rate']*100:>7.2f}% {m['profit_factor']:>8.2f} "
-                      f"{m['max_drawdown_pct']:>9.2f}% {m['sharpe_ratio']:>8.4f} {short_trades:>6}")
+                mode_str = {"long_only": "只做多", "both": "无限制做空", "gate": "Gate控制做空"}[
+                    mode
+                ]
+                print(
+                    f"  {r['coin']:>6} {mode_str:>16} {m['total_return_pct']:>+8.2f}% {m['total_trades']:>6} "
+                    f"{m['win_rate']*100:>7.2f}% {m['profit_factor']:>8.2f} "
+                    f"{m['max_drawdown_pct']:>9.2f}% {m['sharpe_ratio']:>8.4f} {short_trades:>6}"
+                )
         print("=" * 90)
 
     elif args.multi:
@@ -1957,8 +2145,10 @@ def main():
         print("\n" + "=" * 70)
         print("  📊 多币种汇总")
         print("=" * 70)
-        print(f"  {'币种':>6} {'总收益':>10} {'交易数':>6} {'胜率':>8} {'盈亏比':>8} "
-              f"{'最大回撤':>10} {'夏普':>8} {'波动率':>8}")
+        print(
+            f"  {'币种':>6} {'总收益':>10} {'交易数':>6} {'胜率':>8} {'盈亏比':>8} "
+            f"{'最大回撤':>10} {'夏普':>8} {'波动率':>8}"
+        )
         print("-" * 70)
         total_return = 0
         total_trades = 0
@@ -1968,9 +2158,11 @@ def main():
                 total_return += m["total_return_pct"]
                 total_trades += m["total_trades"]
                 vol_str = f"{m['vol_ratio']:.2f}x" if m.get("vol_ratio") else "1.00x"
-                print(f"  {r['coin']:>6} {m['total_return_pct']:>+8.2f}% {m['total_trades']:>6} "
-                      f"{m['win_rate']*100:>7.2f}% {m['profit_factor']:>8.2f} "
-                      f"{m['max_drawdown_pct']:>9.2f}% {m['sharpe_ratio']:>8.4f} {vol_str:>8}")
+                print(
+                    f"  {r['coin']:>6} {m['total_return_pct']:>+8.2f}% {m['total_trades']:>6} "
+                    f"{m['win_rate']*100:>7.2f}% {m['profit_factor']:>8.2f} "
+                    f"{m['max_drawdown_pct']:>9.2f}% {m['sharpe_ratio']:>8.4f} {vol_str:>8}"
+                )
         print("-" * 70)
         print(f"  {'平均':>6} {total_return/len(all_results):>+8.2f}% {total_trades:>6}")
         print("=" * 70)

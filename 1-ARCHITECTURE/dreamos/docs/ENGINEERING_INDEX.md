@@ -223,7 +223,8 @@ Dream OS 具有双重身份，需要明确区分：
 │   ├── analyze_commands.py       # 分析命令
 │   ├── start_scheduler.py        # 启动调度器
 │   ├── evolution_test.py         # 进化测试
-│   ├── stress_test.py            # 压力测试
+│   ├── stress_test.py            # 压力测试（7场景 × 500轮）
+│   ├── multi_scenario_stress_test.py  # 多场景模拟压力测试（36场景全覆盖）
 │   └── scheduler_data/           # 调度器数据
 │       ├── scheduler_jobs.json
 │       └── scheduler_history.json
@@ -611,7 +612,8 @@ G层 (GraphStore) → 持久化 + 历史记录
 | auto_trader | `auto_trader.py` | 自动交易器（完整自动化交易闭环） |
 | bcrm2_scheduler | `bcrm2_scheduler.py` | BCRM2 调度器 |
 | evolution_test | `evolution_test.py` | 进化测试 |
-| stress_test | `stress_test.py` | 压力测试 |
+| stress_test | `stress_test.py` | 压力测试（7种场景 × 500轮） |
+| multi_scenario_stress_test | `multi_scenario_stress_test.py` | 多场景模拟压力测试（36场景全覆盖，5类测试指标） |
 
 **AutoTrader 核心能力**:
 - 36 场景分类 + 编排记忆四级降级
@@ -978,7 +980,7 @@ launchctl list | grep dreambuddy
 | D07 | 多租户/多会话隔离未实现 | P3 | 架构层 |
 | D08 | 文档与实际代码实现存在偏差 | P1 | 文档体系 |
 | D09 | 编排优化策略单一（仅切换到c_g_chain） | P2 | evolution/engine.py |
-| D10 | 场景回测器未完整实现 | P2 | core/memory/scenario_backtester.py |
+| D10 | ✅ 已解决：场景回测器已完整实现（数据加载→滑窗→场景分类→5模式节点链执行→模拟交易→评分→写入记忆），由 `evolution/engine.py` `_sandbox_validate` 和 `dreamos_backtester.py` 实际调用 | - | core/memory/scenario_backtester.py |
 
 ---
 

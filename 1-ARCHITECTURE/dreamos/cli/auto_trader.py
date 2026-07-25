@@ -5,7 +5,7 @@
     定时触发 → 市场扫描 → A1-A5分析 → G1风控检查 → A5执行决策 → 交易所下单 → A9离场监控
 
 支持 dry_run 模式进行模拟交易测试
-支持 Hyperliquid 和 OKX 双交易所
+支持 Aster 和 OKX 双交易所
 """
 
 from __future__ import annotations
@@ -64,7 +64,7 @@ class AutoTrader:
     # P1-2: 降级路径告警阈值
     FALLBACK_SUSPEND_THRESHOLD = 3  # 连续3次降级暂停该 symbol
 
-    def __init__(self, agent_id: str = "b", dry_run: bool = True, exchange: str = "hyperliquid"):
+    def __init__(self, agent_id: str = "dream_os", dry_run: bool = True, exchange: str = "aster"):
         self.agent_id = agent_id
         self.dry_run = dry_run
         self.exchange = exchange.lower()
@@ -84,9 +84,11 @@ class AutoTrader:
         self._fallback_counts: Dict[str, int] = {}
         # P1-2: 暂停的 symbol 集合
         self._suspended_symbols: set = set()
-        # 4h 周期去重 — symbol → 最后开仓的 4h 周期起始时间戳
+        # P0-3: 4h 周期去重 — symbol → 最后开仓的 4h 周期起始时间戳
         # 1h 调度但开仓基于 4h，避免同一 4h 周期内重复开仓
-        self._last_trade_4h_ts: Dict[str, int] = {}
+        # 持久化到文件，跨实例共享（scheduler 每次扫描创建新实例）
+        self._dedup_path = str(Path(__file__).parent / ".4h_dedup.json")
+        self._last_trade_4h_ts: Dict[str, int] = self._load_dedup_state()
 
     def get_scenario_classifier(self):
         """场景分类器（延迟初始化）"""
@@ -144,6 +146,68 @@ class AutoTrader:
             logger.info(f"反馈已记录: {scenario_id} | {pattern} | dir={trade_result.get('direction')} | ret={trade_result.get('result', 0):.4f}")
         except Exception as e:
             logger.warning(f"记录交易反馈失败: {e}")
+
+    def update_exit_feedback(self, symbol: str, entry_price: float,
+                             exit_price: float, result: float) -> None:
+        """P0-1: 平仓后回填实际结果到反馈收集器
+
+        闭合反馈环：开仓时 record(result=0)，平仓时 update_exit_result 回填。
+        这让进化引擎能获得真实收益数据，而非永久冻结。
+
+        Args:
+            symbol: 交易对
+            entry_price: 开仓价
+            exit_price: 平仓价
+            result: 实际收益率（已扣手续费）
+        """
+        try:
+            collector = self.get_feedback_collector()
+            scenario_id = self._current_context.get("scenario_id", "UNKNOWN")
+            updated = collector.update_exit_result(
+                scenario_id=scenario_id,
+                symbol=symbol,
+                entry_price=entry_price,
+                exit_price=exit_price,
+                result=result,
+            )
+            if updated:
+                logger.info(f"P0-1 平仓反馈已回填: {symbol} | result={result:.4f}")
+            else:
+                logger.warning(f"P0-1 平仓反馈未匹配开仓记录: {symbol} | entry={entry_price}")
+        except Exception as e:
+            logger.warning(f"P0-1 回填平仓反馈失败: {e}")
+
+    def _load_dedup_state(self) -> Dict[str, int]:
+        """P0-3: 加载持久化的 4h 去重表
+
+        scheduler 每次扫描创建新 AutoTrader 实例，
+        若不持久化，去重表每次为空，同一 4h 周期内会重复开仓。
+        """
+        try:
+            if os.path.exists(self._dedup_path):
+                with open(self._dedup_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    # 过滤掉过期的 4h 记录（只保留当前和上一个 4h 周期）
+                    current_4h = (int(time.time() * 1000) // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
+                    prev_4h = current_4h - (4 * 3600 * 1000)
+                    return {k: v for k, v in data.items() if v >= prev_4h}
+        except Exception:
+            pass
+        return {}
+
+    def _save_dedup_state(self) -> None:
+        """P0-3: 持久化 4h 去重表"""
+        try:
+            with open(self._dedup_path, "w", encoding="utf-8") as f:
+                json.dump(self._last_trade_4h_ts, f)
+        except Exception as e:
+            logger.warning(f"P0-3 保存 4h 去重表失败: {e}")
+
+    def _mark_4h_traded(self, coin: str) -> None:
+        """P0-3: 标记 symbol 在当前 4h 周期已开仓，并持久化"""
+        current_4h_ts = (int(time.time() * 1000) // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
+        self._last_trade_4h_ts[coin] = current_4h_ts
+        self._save_dedup_state()
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -678,18 +742,32 @@ class AutoTrader:
         return elapsed < self._min_trade_interval_minutes
 
     def execute_trade(self, trade_order: Dict) -> Dict[str, Any]:
-        """执行交易"""
+        """执行交易
+
+        P0 黑天鹅防护:
+          - 开仓(LONG/SHORT)成功后, 自动下交易所 TP/SL 条件单
+          - 平仓(EXIT)前, 先取消所有 TP/SL 挂单
+        即使程序崩溃/断网, 交易所条件单仍能触发, 防止黑天鹅事件.
+        """
         if self.dry_run:
+            sl = trade_order.get("stop_loss")
+            tp = trade_order.get("take_profit")
+            action = trade_order.get("action")
+            has_tpsl = sl is not None and tp is not None and action in ("LONG", "SHORT")
+            tpsl_set = bool(has_tpsl)
+            tpsl_cancelled = (action == "EXIT")
             return {
                 "dry_run": True,
-                "action": trade_order.get("action"),
+                "action": action,
                 "symbol": trade_order.get("coin"),
                 "entry_price": trade_order.get("entry_price"),
                 "position_size": trade_order.get("position_size"),
                 "leverage": trade_order.get("leverage"),
-                "stop_loss": trade_order.get("stop_loss"),
-                "take_profit": trade_order.get("take_profit"),
+                "stop_loss": sl,
+                "take_profit": tp,
                 "exchange": self.exchange,
+                "tpsl_set": tpsl_set,
+                "tpsl_cancelled": tpsl_cancelled,
             }
 
         client = self.get_exchange_client()
@@ -701,45 +779,84 @@ class AutoTrader:
         position_size = trade_order.get("position_size", 10)
         leverage = int(trade_order.get("leverage", DEFAULT_LEVERAGE))
         leverage = max(MIN_LEVERAGE, min(MAX_LEVERAGE, leverage))
+        stop_loss = trade_order.get("stop_loss")
+        take_profit = trade_order.get("take_profit")
 
         if action == "HOLD":
             return {"result": "SKIP", "reason": "方向为HOLD"}
 
         try:
             if self.exchange == "hyperliquid":
-                if action == "LONG":
-                    result = client.open_long(
-                        coin=coin,
-                        usdt_amount=position_size,
-                        leverage=leverage,
-                        tag="dreamos_auto",
-                    )
-                elif action == "SHORT":
-                    result = client.open_short(
-                        coin=coin,
-                        usdt_amount=position_size,
-                        leverage=leverage,
-                        tag="dreamos_auto",
-                    )
-                elif action == "EXIT":
+                # P0: EXIT 前先取消所有 TP/SL 挂单
+                if action == "EXIT":
+                    try:
+                        client.cancel_all_tpsl(coin)
+                        logger.info(f"平仓前取消 TP/SL 挂单: {coin}")
+                    except Exception as e:
+                        logger.warning(f"取消 TP/SL 挂单失败({coin}): {e}")
+
                     result = client.close_position(
                         coin=coin,
                         tag="dreamos_auto",
                     )
                 else:
-                    return {"error": f"未知动作: {action}"}
+                    if action == "LONG":
+                        result = client.open_long(
+                            coin=coin,
+                            usdt_amount=position_size,
+                            leverage=leverage,
+                            tag="dreamos_auto",
+                        )
+                    elif action == "SHORT":
+                        result = client.open_short(
+                            coin=coin,
+                            usdt_amount=position_size,
+                            leverage=leverage,
+                            tag="dreamos_auto",
+                        )
+                    else:
+                        return {"error": f"未知动作: {action}"}
 
                 if result.get("ok"):
                     self._last_trade_time[coin] = time.time()
-                    # 更新 4h 周期去重标记
-                    current_4h_ts = (int(time.time() * 1000) // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
-                    self._last_trade_4h_ts[coin] = current_4h_ts
+                    # P0-3: 更新 4h 周期去重标记（持久化跨实例共享）
+                    self._mark_4h_traded(coin)
+
+                    # P0: 开仓成功后自动下 TP/SL 条件单（黑天鹅底线防护）
+                    tpsl_result = None
+                    if action in ("LONG", "SHORT") and stop_loss and take_profit:
+                        try:
+                            # 稍等 500ms 确保仓位已在交易所确认
+                            time.sleep(0.5)
+                            tpsl_result = client.set_tpsl_orders(
+                                coin=coin,
+                                stop_loss_price=float(stop_loss),
+                                take_profit_price=float(take_profit),
+                                is_market=True,
+                            )
+                            if tpsl_result.get("ok"):
+                                logger.info(
+                                    f"TP/SL 条件单已设置: {coin} | "
+                                    f"SL={stop_loss} TP={take_profit} | "
+                                    f"oids={tpsl_result.get('oids', [])}"
+                                )
+                            else:
+                                logger.warning(
+                                    f"TP/SL 条件单设置失败({coin}): {tpsl_result.get('error')}"
+                                )
+                        except Exception as e:
+                            logger.warning(f"设置 TP/SL 条件单异常({coin}): {e}")
+                            tpsl_result = {"ok": False, "error": str(e)}
+
                     return {
                         "result": "SUCCESS",
                         "action": action,
                         "symbol": coin,
                         "exchange": "hyperliquid",
                         "details": result,
+                        "tpsl_result": tpsl_result,
+                        "stop_loss": stop_loss,
+                        "take_profit": take_profit,
                     }
                 else:
                     return {"result": "FAILED", "error": result}
@@ -750,14 +867,15 @@ class AutoTrader:
                     result = client.market_buy(inst_id, position_size, tag="auto_trader")
                 elif action == "SHORT":
                     result = client.market_sell(inst_id, position_size / trade_order.get("price", 1), tag="auto_trader")
+                elif action == "EXIT":
+                    result = client.close_position(inst_id, tag="auto_trader") if hasattr(client, "close_position") else {"ok": False, "error": "not_supported"}
                 else:
                     return {"error": f"未知动作: {action}"}
 
                 if result.get("ok"):
                     self._last_trade_time[coin] = time.time()
-                    # 更新 4h 周期去重标记
-                    current_4h_ts = (int(time.time() * 1000) // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
-                    self._last_trade_4h_ts[coin] = current_4h_ts
+                    # P0-3: 更新 4h 周期去重标记（持久化跨实例共享）
+                    self._mark_4h_traded(coin)
                     return {
                         "result": "SUCCESS",
                         "action": action,
@@ -765,6 +883,9 @@ class AutoTrader:
                         "exchange": "okx",
                         "ord_id": result.get("ord_id"),
                         "position_size": position_size,
+                        "stop_loss": stop_loss,
+                        "take_profit": take_profit,
+                        "tpsl_result": {"ok": False, "error": "okx_tpsl_not_implemented"},
                     }
                 else:
                     return {"result": "FAILED", "error": result.get("raw", {})}
@@ -773,21 +894,45 @@ class AutoTrader:
                 # Aster v3 EVM 签名交易,调用 ml_trade_service 模块函数
                 # P0-3 修复: EXIT 动作不需要设置杠杆,直接平仓
                 if action == "EXIT":
-                    positions, pos_err = client._aster_fetch_positions()
-                    if pos_err or not positions:
-                        return {"result": "SKIP", "reason": f"无持仓可平: {pos_err}"}
-                    pos_qty = None
-                    close_side = None
-                    for p in positions:
-                        if coin.upper() in str(p.get('symbol', '')).upper():
-                            amt = float(p.get('position_amt') or p.get('positionAmt') or 0)
-                            if abs(amt) > 0:
-                                pos_qty = abs(amt)
-                                close_side = 'sell' if amt > 0 else 'buy'
-                                break
-                    if pos_qty is None:
-                        return {"result": "SKIP", "reason": "无持仓可平"}
-                    r = client._aster_market_order_qty(coin, close_side, pos_qty, reduce_only=True)
+                    # P0: 平仓前先取消所有 TP/SL 挂单
+                    try:
+                        positions, pos_err = client._aster_fetch_positions()
+                        if pos_err or not positions:
+                            return {"result": "SKIP", "reason": f"无持仓可平: {pos_err}"}
+                        pos_qty = None
+                        close_side = None
+                        for p in positions:
+                            if coin.upper() in str(p.get('symbol', '')).upper():
+                                amt = float(p.get('position_amt') or p.get('positionAmt') or 0)
+                                if abs(amt) > 0:
+                                    pos_qty = abs(amt)
+                                    close_side = 'sell' if amt > 0 else 'buy'
+                                    break
+                        if pos_qty is None:
+                            return {"result": "SKIP", "reason": "无持仓可平"}
+                        
+                        # 获取持仓数量用于取消对应数量的条件单
+                        qty_to_cancel = pos_qty
+                        
+                        # 取消 STOP_MARKET 和 TAKE_PROFIT_MARKET 订单
+                        # Aster 没有批量取消 API，需要遍历订单取消
+                        open_orders = client._aster_fetch_open_orders() if hasattr(client, '_aster_fetch_open_orders') else []
+                        cancelled_count = 0
+                        for o in open_orders:
+                            if coin.upper() in str(o.get('symbol', '')).upper():
+                                o_type = o.get('type', '')
+                                if o_type in ('STOP_MARKET', 'TAKE_PROFIT_MARKET'):
+                                    try:
+                                        client._aster_order_cancel(o.get('symbol'), o.get('orderId'))
+                                        cancelled_count += 1
+                                    except Exception:
+                                        pass
+                        logger.info(f"平仓前取消 TP/SL 挂单: {coin}, 已取消{cancelled_count}个")
+                        
+                        r = client._aster_market_order_qty(coin, close_side, pos_qty, reduce_only=True)
+                    except Exception as e:
+                        logger.warning(f"Aster 平仓异常({coin}): {e}")
+                        return {"result": "FAILED", "error": str(e)}
                 else:
                     # LONG/SHORT: 下单前设置杠杆(动态 1-5 倍)
                     target_lev = int(trade_order.get("leverage", DEFAULT_LEVERAGE))
@@ -853,9 +998,61 @@ class AutoTrader:
 
                 if ok:
                     self._last_trade_time[coin] = time.time()
-                    # 更新 4h 周期去重标记
-                    current_4h_ts = (int(time.time() * 1000) // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
-                    self._last_trade_4h_ts[coin] = current_4h_ts
+                    # P0-3: 更新 4h 周期去重标记（持久化跨实例共享）
+                    self._mark_4h_traded(coin)
+
+                    # P0: 开仓成功后自动下 TP/SL 条件单（黑天鹅底线防护）
+                    tpsl_result = None
+                    if action in ("LONG", "SHORT") and stop_loss and take_profit:
+                        try:
+                            time.sleep(0.5)
+                            positions, _ = client._aster_fetch_positions()
+                            pos_qty = None
+                            for p in positions:
+                                if coin.upper() in str(p.get('symbol', '')).upper():
+                                    amt = float(p.get('position_amt') or p.get('positionAmt') or 0)
+                                    if abs(amt) > 0:
+                                        pos_qty = abs(amt)
+                                        break
+
+                            if pos_qty is None:
+                                pos_qty = position_size
+
+                            if action == "LONG":
+                                sl_side = "sell"
+                                tp_side = "sell"
+                            else:
+                                sl_side = "buy"
+                                tp_side = "buy"
+
+                            sl_result = client._aster_stop_market_order_qty(
+                                coin, sl_side, pos_qty, float(stop_loss), reduce_only=True
+                            )
+                            tp_result = client._aster_take_profit_market_order_qty(
+                                coin, tp_side, pos_qty, float(take_profit), reduce_only=True
+                            )
+
+                            sl_ok = sl_result.get('resp', {}).get('status') in ('NEW', 'FILLED', 'PARTIALLY_FILLED') if isinstance(sl_result.get('resp'), dict) else False
+                            tp_ok = tp_result.get('resp', {}).get('status') in ('NEW', 'FILLED', 'PARTIALLY_FILLED') if isinstance(tp_result.get('resp'), dict) else False
+
+                            if sl_ok and tp_ok:
+                                logger.info(
+                                    f"Aster TP/SL 条件单已设置: {coin} | "
+                                    f"SL={stop_loss} TP={take_profit} | "
+                                    f"qty={pos_qty}"
+                                )
+                                tpsl_result = {"ok": True, "sl_result": sl_result, "tp_result": tp_result}
+                            else:
+                                logger.warning(
+                                    f"Aster TP/SL 条件单设置失败({coin}): "
+                                    f"SL={sl_result.get('resp', {}).get('msg', 'unknown')}, "
+                                    f"TP={tp_result.get('resp', {}).get('msg', 'unknown')}"
+                                )
+                                tpsl_result = {"ok": False, "sl_result": sl_result, "tp_result": tp_result}
+                        except Exception as e:
+                            logger.warning(f"Aster 设置 TP/SL 条件单异常({coin}): {e}")
+                            tpsl_result = {"ok": False, "error": str(e)}
+
                     return {
                         "result": "SUCCESS",
                         "action": action,
@@ -863,6 +1060,9 @@ class AutoTrader:
                         "exchange": "aster",
                         "ord_id": order_id,
                         "details": r,
+                        "stop_loss": stop_loss,
+                        "take_profit": take_profit,
+                        "tpsl_result": tpsl_result,
                     }
                 else:
                     return {"result": "FAILED", "error": r}
@@ -884,6 +1084,8 @@ class AutoTrader:
         市场状态叠加:
             震荡市 (ranging): regime_factor=1.5，避免被噪声扫出
             趋势市 (trend):   regime_factor=1.0，紧凑保护利润
+
+        P1: 返回动态计算的 stop_loss / take_profit，供 modify_tpsl 更新交易所条件单
         """
         market_data = self._fetch_market_data(symbol)
         price = market_data.get("price", 0)
@@ -931,9 +1133,11 @@ class AutoTrader:
                     stop_loss = max(stop_loss, trail_stop)
 
             if price <= stop_loss:
-                return {"exit": True, "reason": f"止损触发: {price:.4f} <= {stop_loss:.4f} (持仓{bars_held}根, factor={sl_factor:.2f}={time_factor:.2f}×{regime_factor:.1f}×{symbol_vol_factor:.1f})", "exit_price": stop_loss}
+                return {"exit": True, "reason": f"止损触发: {price:.4f} <= {stop_loss:.4f} (持仓{bars_held}根, factor={sl_factor:.2f}={time_factor:.2f}×{regime_factor:.1f}×{symbol_vol_factor:.1f})", "exit_price": stop_loss,
+                        "stop_loss": stop_loss, "take_profit": take_profit, "current_price": price}
             if price >= take_profit:
-                return {"exit": True, "reason": f"止盈触发: {price:.4f} >= {take_profit:.4f} (持仓{bars_held}根)", "exit_price": take_profit}
+                return {"exit": True, "reason": f"止盈触发: {price:.4f} >= {take_profit:.4f} (持仓{bars_held}根)", "exit_price": take_profit,
+                        "stop_loss": stop_loss, "take_profit": take_profit, "current_price": price}
         else:
             stop_loss = entry_price * (1 + sl_pct)
             take_profit = entry_price * (1 - tp_pct)
@@ -945,11 +1149,22 @@ class AutoTrader:
                     stop_loss = min(stop_loss, trail_stop)
 
             if price >= stop_loss:
-                return {"exit": True, "reason": f"止损触发: {price:.4f} >= {stop_loss:.4f} (持仓{bars_held}根, factor={sl_factor:.2f}={time_factor:.2f}×{regime_factor:.1f}×{symbol_vol_factor:.1f})", "exit_price": stop_loss}
+                return {"exit": True, "reason": f"止损触发: {price:.4f} >= {stop_loss:.4f} (持仓{bars_held}根, factor={sl_factor:.2f}={time_factor:.2f}×{regime_factor:.1f}×{symbol_vol_factor:.1f})", "exit_price": stop_loss,
+                        "stop_loss": stop_loss, "take_profit": take_profit, "current_price": price}
             if price <= take_profit:
-                return {"exit": True, "reason": f"止盈触发: {price:.4f} <= {take_profit:.4f} (持仓{bars_held}根)", "exit_price": take_profit}
+                return {"exit": True, "reason": f"止盈触发: {price:.4f} <= {take_profit:.4f} (持仓{bars_held}根)", "exit_price": take_profit,
+                        "stop_loss": stop_loss, "take_profit": take_profit, "current_price": price}
 
-        return {"exit": False, "reason": f"继续持有 (持仓{bars_held}根, regime={regime}, SL factor={sl_factor:.2f}={time_factor:.2f}×{regime_factor:.1f}×{symbol_vol_factor:.1f}, atr={atr_pct:.4f})"}
+        return {
+            "exit": False,
+            "reason": f"继续持有 (持仓{bars_held}根, regime={regime}, SL factor={sl_factor:.2f}={time_factor:.2f}×{regime_factor:.1f}×{symbol_vol_factor:.1f}, atr={atr_pct:.4f})",
+            "stop_loss": stop_loss,
+            "take_profit": take_profit,
+            "current_price": price,
+            "bars_held": bars_held,
+            "regime": regime,
+            "sl_factor": round(sl_factor, 4),
+        }
 
     def _estimate_bars_held(self, symbol: str) -> int:
         """估算持仓 K 线数
@@ -1223,7 +1438,7 @@ class AutoTrader:
             })
             exit_result["execution"] = exec_result
 
-            # 断点3修复：离场时回填实际收益率到反馈收集器
+            # P0-1 修复：离场时回填实际收益率到反馈收集器（更新开仓记录，而非追加新记录）
             exit_price = exit_result.get("exit_price", entry_price)
             if entry_price > 0:
                 if direction == "LONG":
@@ -1233,16 +1448,8 @@ class AutoTrader:
                 ret -= 0.0008  # 扣手续费
             else:
                 ret = 0.0
-            self.record_trade_feedback({
-                "direction": direction,
-                "result": ret,
-                "expected_direction": self._current_context["expected_direction"],
-                "symbol": symbol,
-                "entry_price": entry_price,
-                "exit_price": exit_price,
-                "scenario_id": self._current_context["scenario_id"],
-                "pattern": self._current_context["pattern"],
-            })
+            # P0-1: 使用 update_exit_feedback 回填开仓记录，闭合反馈环
+            self.update_exit_feedback(symbol, entry_price, exit_price, ret)
             self._try_trigger_evolution()
 
         return exit_result
@@ -1252,6 +1459,9 @@ class AutoTrader:
 
         P0-2 修复：调度器定期调用此方法，检查所有未平仓持仓的
         止损/止盈条件，执行离场并回填实际收益率到反馈收集器。
+
+        P1 动态调整：未触发离场时，根据时间衰减/移动止损动态更新交易所 TP/SL 条件单，
+        确保即使程序离线，条件单也能反映最新风控状态。
         """
         client = self.get_exchange_client()
         if not client:
@@ -1292,6 +1502,7 @@ class AutoTrader:
 
         results = []
         exit_count = 0
+        tpsl_updated = 0
 
         for pos in positions:
             symbol = str(pos.get("symbol", "")).replace("-USDT", "").replace("-SWAP", "")
@@ -1303,7 +1514,7 @@ class AutoTrader:
 
             direction = "LONG" if amt > 0 else "SHORT"
 
-            # 检查离场条件
+            # 检查离场条件（同时返回动态 SL/TP）
             exit_result = self.check_exit(symbol, entry_price, direction)
 
             if exit_result.get("exit"):
@@ -1315,7 +1526,7 @@ class AutoTrader:
                     "direction": direction,
                 })
 
-                # 回填实际收益率
+                # P0-1 修复：回填实际收益率（更新开仓记录，闭合反馈环）
                 exit_price = exit_result.get("exit_price", entry_price)
                 if entry_price > 0:
                     if direction == "LONG":
@@ -1326,16 +1537,8 @@ class AutoTrader:
                 else:
                     ret = 0.0
 
-                self.record_trade_feedback({
-                    "direction": direction,
-                    "result": ret,
-                    "expected_direction": self._current_context.get("expected_direction", "HOLD"),
-                    "symbol": symbol,
-                    "entry_price": entry_price,
-                    "exit_price": exit_price,
-                    "scenario_id": self._current_context.get("scenario_id", "UNKNOWN"),
-                    "pattern": self._current_context.get("pattern", "c_chain"),
-                })
+                # P0-1: 使用 update_exit_feedback 回填开仓记录
+                self.update_exit_feedback(symbol, entry_price, exit_price, ret)
 
                 results.append({
                     "symbol": symbol,
@@ -1350,12 +1553,41 @@ class AutoTrader:
                 exit_count += 1
                 logger.info(f"离场执行: {symbol} {direction} entry={entry_price} exit={exit_price} ret={ret:.4f} reason={exit_result.get('reason', '')}")
             else:
+                # P1: 未离场时，动态更新交易所 TP/SL 条件单
+                new_sl = exit_result.get("stop_loss")
+                new_tp = exit_result.get("take_profit")
+                tpsl_result = None
+
+                if new_sl and new_tp and self.exchange == "hyperliquid" and hasattr(client, "modify_tpsl"):
+                    try:
+                        tpsl_result = client.modify_tpsl(
+                            coin=symbol,
+                            new_sl=float(new_sl),
+                            new_tp=float(new_tp),
+                            is_market=True,
+                        )
+                        if tpsl_result.get("ok"):
+                            tpsl_updated += 1
+                            logger.info(
+                                f"TP/SL 已更新: {symbol} | "
+                                f"SL={new_sl:.4f} TP={new_tp:.4f} | "
+                                f"action={tpsl_result.get('action', 'modify')}"
+                            )
+                        else:
+                            logger.debug(f"TP/SL 更新未变化或失败({symbol}): {tpsl_result.get('error')}")
+                    except Exception as e:
+                        logger.warning(f"TP/SL 动态更新异常({symbol}): {e}")
+                        tpsl_result = {"ok": False, "error": str(e)}
+
                 results.append({
                     "symbol": symbol,
                     "direction": direction,
                     "entry_price": entry_price,
                     "exit": False,
                     "reason": exit_result.get("reason", "继续持有"),
+                    "stop_loss": new_sl,
+                    "take_profit": new_tp,
+                    "tpsl_result": tpsl_result,
                 })
 
         # 如果有离场，触发进化
@@ -1367,6 +1599,7 @@ class AutoTrader:
             "checked": len(results),
             "exits": exit_count,
             "holds": len(results) - exit_count,
+            "tpsl_updated": tpsl_updated,
             "details": results,
             "timestamp": datetime.now().isoformat(),
         }

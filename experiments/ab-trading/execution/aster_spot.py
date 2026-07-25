@@ -307,7 +307,9 @@ def _sign_l1_action(private_key: str, action: Dict,
 class HyperliquidClient:
     def __init__(self, agent_id: str):
         self.agent_id = agent_id.lower()
-        pfx = f"AGENT_{agent_id.upper()}_ASTER"
+        # 注: 此类连接 Hyperliquid 交易所 (api.hyperliquid.xyz)
+        #     Agent A/B 使用 HYPERLIQUID 前缀; Dream OS 不使用此类
+        pfx = f"AGENT_{agent_id.upper()}_HYPERLIQUID"
         self.user_addr   = os.environ.get(f"{pfx}_USER", "")
         self.api_addr    = os.environ.get(f"{pfx}_SIGNER", "")
         self.private_key = os.environ.get(f"{pfx}_SIGNER_PRIVATE_KEY", "")

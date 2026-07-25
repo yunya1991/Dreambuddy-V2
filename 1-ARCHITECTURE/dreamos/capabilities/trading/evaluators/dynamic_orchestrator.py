@@ -85,7 +85,7 @@ class DynamicOrchestrator:
     # 36 个标准场景
     STANDARD_SCENARIOS: List[str] = []
     for _t in ("BULL", "BEAR", "NEUTRAL"):
-        for _v in ("HIGH", "NORMAL", "LOW"):
+        for _v in ("EXTREME", "HIGH", "NORMAL", "LOW"):
             for _p in ("ACCELERATING", "DECELERATING", "EXHAUSTION"):
                 STANDARD_SCENARIOS.append(f"{_t}_{_v}_{_p}")
 
@@ -262,10 +262,12 @@ class DynamicOrchestrator:
         if not hasattr(chain_spec, '_original_scenario_nodes'):
             chain_spec._original_scenario_nodes = dict(chain_spec.scenario_nodes)
 
-        # 更新映射
-        chain_spec.scenario_nodes = mapping
-        logger.info(f"ChainSpec[{chain_id}].scenario_nodes 已更新：{len(mapping)} 个场景")
-        return len(mapping)
+        # 合并：以静态映射为基础，动态映射覆盖（保留静态映射中的 EXTREME 等场景）
+        merged = dict(chain_spec._original_scenario_nodes)
+        merged.update(mapping)
+        chain_spec.scenario_nodes = merged
+        logger.info(f"ChainSpec[{chain_id}].scenario_nodes 已更新：{len(merged)} 个场景（静态{len(chain_spec._original_scenario_nodes)} + 动态{len(mapping)}）")
+        return len(merged)
 
     def restore_chain_spec(self, chain_id: str = "A") -> None:
         """恢复原始 ChainSpec.scenario_nodes"""

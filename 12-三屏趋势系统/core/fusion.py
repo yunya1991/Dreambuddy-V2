@@ -7,17 +7,18 @@
 """
 
 from typing import Dict
+
 try:
     from .config import (
-        TECHNICAL_WEIGHT,
         FUNDAMENTAL_WEIGHT,
         MAX_CONFLICT_DEDUCTION,
+        TECHNICAL_WEIGHT,
     )
 except ImportError:
     from config import (
-        TECHNICAL_WEIGHT,
         FUNDAMENTAL_WEIGHT,
         MAX_CONFLICT_DEDUCTION,
+        TECHNICAL_WEIGHT,
     )
 
 
@@ -71,9 +72,7 @@ def fuse_technical_fundamental(technical_result: Dict, fundamental_result: Dict)
     conflict_level = 0.0
 
     if consistent:
-        final_confidence = round(
-            tech_conf * TECHNICAL_WEIGHT + fund_conf * FUNDAMENTAL_WEIGHT, 1
-        )
+        final_confidence = round(tech_conf * TECHNICAL_WEIGHT + fund_conf * FUNDAMENTAL_WEIGHT, 1)
     elif fund_core == "NEUTRAL":
         final_confidence = tech_conf
     else:

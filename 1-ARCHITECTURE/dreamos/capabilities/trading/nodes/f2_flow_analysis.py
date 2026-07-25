@@ -19,6 +19,13 @@ from typing import Dict, Any, List
 
 from dreamos.registry.base import BaseNode
 from dreamos.shared.state import State, NodeResult
+from dreamos.capabilities.trading.stats_utils import (
+    normalize_tanh,
+    normalize_signed,
+    aggregate_signals,
+    z_score,
+    percentile_rank,
+)
 
 
 class F2FlowAnalysisNode(BaseNode):
@@ -59,13 +66,16 @@ class F2FlowAnalysisNode(BaseNode):
         exchange_net_flow = mkt.get("exchange_net_flow", 0)
         exchange_inflow = mkt.get("exchange_inflow", 0)
         exchange_outflow = mkt.get("exchange_outflow", 0)
-        if exchange_net_flow < -50:
-            scores.append(("LONG", 0.25, f"交易所净流出({exchange_net_flow:.0f}M)，场外积累"))
-        elif exchange_net_flow > 50:
-            scores.append(("SHORT", 0.20, f"交易所净流入({exchange_net_flow:.0f}M)，抛压增加"))
+        # 统计标准化：tanh 归一化，scale=100（单位百万）
+        enf_norm = normalize_tanh(exchange_net_flow, scale=100)
+        if enf_norm < -0.5:
+            scores.append(("LONG", 0.25, f"交易所净流出({exchange_net_flow:.0f}M, z={enf_norm:.2f})，场外积累"))
+        elif enf_norm > 0.5:
+            scores.append(("SHORT", 0.20, f"交易所净流入({exchange_net_flow:.0f}M, z={enf_norm:.2f})，抛压增加"))
 
         # ── 4. 聪明钱方向 ────────────────────────────────
         smart_money_direction = mkt.get("smart_money_direction", 0)
+        # 已经是 [-1, 1] 范围，保持原逻辑
         if smart_money_direction > 0.3:
             scores.append(("LONG", 0.20, f"聪明钱偏多({smart_money_direction:.2f})"))
         elif smart_money_direction < -0.3:
@@ -73,36 +83,33 @@ class F2FlowAnalysisNode(BaseNode):
 
         # ── 5. 资金费率分析 ──────────────────────────────
         funding_rate = mkt.get("funding_rate", 0)
-        if funding_rate > 0.05:
-            scores.append(("SHORT", 0.15, f"资金费率偏高({funding_rate*100:.2f}%)，多头拥挤"))
-        elif funding_rate < -0.05:
-            scores.append(("LONG", 0.15, f"资金费率偏低({funding_rate*100:.2f}%)，空头拥挤"))
+        # 统计标准化：tanh 归一化，scale=0.0003（正常日利率约0.01-0.03%）
+        fr_norm = normalize_tanh(funding_rate, scale=0.0003)
+        if fr_norm > 0.5:
+            scores.append(("SHORT", 0.15, f"资金费率偏高({funding_rate*100:.4f}%, z={fr_norm:.2f})，多头拥挤"))
+        elif fr_norm < -0.5:
+            scores.append(("LONG", 0.15, f"资金费率偏低({funding_rate*100:.4f}%, z={fr_norm:.2f})，空头拥挤"))
 
         # ── 6. 清算压力 ──────────────────────────────────
         liquidation_pressure = mkt.get("liquidation_pressure", 0)
         liq_long = mkt.get("liquidation_long", 0)
         liq_short = mkt.get("liquidation_short", 0)
-        if liquidation_pressure > 70:
-            scores.append(("LONG", 0.20, f"高清算压力({liquidation_pressure:.0f})，反向机会"))
+        # 统计标准化：线性归一化到 [-1, 1]，区间 [0, 100]
+        liq_norm = normalize_signed(liquidation_pressure, 0, 100)
+        if liq_norm > 0.5:
+            scores.append(("LONG", 0.20, f"高清算压力({liquidation_pressure:.0f}, z={liq_norm:.2f})，反向机会"))
 
-        # ── 综合计算 ────────────────────────────────────
-        long_score = sum(w for d, w, _ in scores if d == "LONG")
-        short_score = sum(w for d, w, _ in scores if d == "SHORT")
-        total = long_score + short_score
-
-        if total == 0:
-            direction = "HOLD"
-            confidence = 0.3
-        elif long_score > short_score:
-            direction = "LONG"
-            confidence = long_score / max(total, 0.01)
-        else:
-            direction = "SHORT"
-            confidence = short_score / max(total, 0.01)
+        # ── 综合计算（统计化聚合） ────────────────────────
+        stats = aggregate_signals(scores)
+        direction = stats.direction
+        confidence = stats.confidence
+        # 保持向后兼容：复用 aggregate_signals 计算的得分
+        long_score = stats.long_score
+        short_score = stats.short_score
 
         flow_score = long_score - short_score
 
-        rationale = [r for _, _, r in scores[:6]]
+        rationale = stats.rationale[:6]
         rationale.insert(0, f"[F2资金流] 资金流得分={flow_score:+.2f}")
         rationale.append(f"  方向: {direction} | 置信度: {confidence:.1%}")
 
@@ -128,6 +135,18 @@ class F2FlowAnalysisNode(BaseNode):
                 "short": liq_short,
             },
             "scores": {"long": round(long_score, 3), "short": round(short_score, 3)},
+            "stats": {
+                "z_score": round(stats.z_score, 4),
+                "percentile": round(stats.percentile, 2),
+                "active_signals": stats.active_signals,
+                "total_signals": stats.total_signals,
+            },
+            "normalized_values": {
+                "funding_rate": round(fr_norm, 4),
+                "exchange_net_flow": round(enf_norm, 4),
+                "liquidation_pressure": round(liq_norm, 4),
+                "smart_money_direction": round(smart_money_direction, 4),
+            },
             "rationale": rationale,
         }
 

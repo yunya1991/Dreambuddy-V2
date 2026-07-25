@@ -12,10 +12,10 @@
 6. RSI超卖 - RSI低于超卖线的程度
 7. 成交量恐慌 - 下跌时成交量是否异常放大
 """
-import json, time, math
+import json
+import time
 from pathlib import Path
-from typing import List, Dict, Tuple
-from datetime import datetime, timezone
+from typing import Dict, List
 
 from v15_backtest import fetch_klines
 
@@ -60,7 +60,7 @@ def _calc_std(klines: List[Dict], period: int = 20) -> float:
     window = closes[-period:]
     avg = sum(window) / len(window)
     variance = sum((c - avg) ** 2 for c in window) / len(window)
-    return variance ** 0.5
+    return variance**0.5
 
 
 def _calc_rsi(klines: List[Dict], period: int = 14) -> float:
@@ -102,18 +102,18 @@ def _calc_linear_regression(klines: List[Dict], period: int = 30) -> float:
     sum_x = sum(x)
     sum_y = sum(window)
     sum_xy = sum(x[i] * window[i] for i in range(n))
-    sum_x2 = sum(xi ** 2 for xi in x)
-    
-    denom = n * sum_x2 - sum_x ** 2
+    sum_x2 = sum(xi**2 for xi in x)
+
+    denom = n * sum_x2 - sum_x**2
     if denom == 0:
         return 0.0
-    
+
     slope = (n * sum_xy - sum_x * sum_y) / denom
     intercept = (sum_y - slope * sum_x) / n
-    
+
     predicted = slope * (n - 1) + intercept
     current = window[-1]
-    
+
     return (current - predicted) / predicted
 
 
@@ -121,16 +121,16 @@ def _calc_volume_anomaly(klines: List[Dict], period: int = 20, lookback: int = 5
     vols = [float(k["v"]) for k in klines]
     if len(vols) < period + lookback:
         return 1.0
-    
+
     recent = vols[-lookback:]
     avg_recent = sum(recent) / len(recent)
-    
-    past = vols[-(period + lookback):-lookback]
+
+    past = vols[-(period + lookback) : -lookback]
     avg_past = sum(past) / len(past)
-    
+
     if avg_past == 0:
         return 1.0
-    
+
     return avg_recent / avg_past
 
 
@@ -156,28 +156,28 @@ def evaluate_bounce_potential(
     closes = [float(k["c"]) for k in klines_4h]
     highs = [float(k["h"]) for k in klines_4h]
     lows = [float(k["l"]) for k in klines_4h]
-    
+
     if len(closes) < max(lookback, 30):
         return {"coin": coin, "method": method, "score": 0.0, "valid": False}
-    
+
     window = lookback
     recent_closes = closes[-window:]
     recent_highs = highs[-window:]
     recent_lows = lows[-window:]
-    
+
     current = closes[-1]
     recent_high = max(recent_highs)
     recent_low = min(recent_lows)
-    
+
     score = 0.0
     details = {}
-    
+
     if method == "fib":
         fib = _calc_fib_levels(recent_high, recent_low)
         dist_to_618 = abs(current - fib["0.618"]) / (recent_high - recent_low)
         score = dist_to_618 if current < fib["0.618"] else 0
         details = {"fib_0.618": round(fib["0.618"], 2), "dist_ratio": round(dist_to_618, 4)}
-    
+
     elif method == "bb":
         ma = _calc_ma(klines_4h, 20)
         std = _calc_std(klines_4h, 20)
@@ -186,19 +186,27 @@ def evaluate_bounce_potential(
             score = 0
         else:
             score = (bb_lower - current) / bb_lower if current < bb_lower else 0
-        details = {"ma_20": round(ma, 2), "bb_lower": round(bb_lower, 2), "deviation": round(score, 4)}
-    
+        details = {
+            "ma_20": round(ma, 2),
+            "bb_lower": round(bb_lower, 2),
+            "deviation": round(score, 4),
+        }
+
     elif method == "reg":
         reg_dev = _calc_linear_regression(klines_4h, 30)
         score = -reg_dev if reg_dev < 0 else 0
         details = {"regression_deviation": round(reg_dev, 4)}
-    
+
     elif method == "atr":
         atr = _calc_atr(klines_4h, 14)
         dist_from_low = recent_low - current if current < recent_low else 0
         score = dist_from_low / atr if atr > 0 else 0
-        details = {"atr": round(atr, 2), "dist_from_low": round(dist_from_low, 2), "atr_multiplier": round(score, 2)}
-    
+        details = {
+            "atr": round(atr, 2),
+            "dist_from_low": round(dist_from_low, 2),
+            "atr_multiplier": round(score, 2),
+        }
+
     elif method == "bias":
         ma50 = _calc_ma(klines_4h, 50)
         if ma50 == 0:
@@ -207,21 +215,21 @@ def evaluate_bounce_potential(
             bias = (current - ma50) / ma50
             score = -bias if bias < 0 else 0
         details = {"ma50": round(ma50, 2), "bias_pct": round(bias * 100, 2)}
-    
+
     elif method == "rsi":
         rsi = _calc_rsi(klines_4h, 14)
         score = (30 - rsi) / 30 if rsi < 30 else 0
         details = {"rsi": round(rsi, 2)}
-    
+
     elif method == "volume":
         vol_ratio = _calc_volume_anomaly(klines_4h, 20, 5)
         score = vol_ratio if vol_ratio > 1.5 else 0
         details = {"volume_ratio": round(vol_ratio, 2)}
-    
+
     elif method == "combo":
         # 4指标加权组合：乖离率(0.3) + 斐波那契(0.25) + RSI超卖(0.25) + 成交量恐慌(0.2)
         sub_scores = {}
-        
+
         # 1. 乖离率：当前价低于MA50越多，反弹空间越大
         ma50 = _calc_ma(klines_4h, 50)
         if ma50 > 0:
@@ -229,7 +237,7 @@ def evaluate_bounce_potential(
             sub_scores["bias"] = max(-bias, 0)  # 负乖离越大，分数越高
         else:
             sub_scores["bias"] = 0
-        
+
         # 2. 斐波那契回撤：当前价低于0.618支撑位越远，反弹空间越大
         fib = _calc_fib_levels(recent_high, recent_low)
         price_range = recent_high - recent_low
@@ -237,22 +245,22 @@ def evaluate_bounce_potential(
             sub_scores["fib"] = (fib["0.618"] - current) / price_range
         else:
             sub_scores["fib"] = 0
-        
+
         # 3. RSI超卖：RSI越低，超卖程度越大
         rsi = _calc_rsi(klines_4h, 14)
         sub_scores["rsi"] = max((30 - rsi) / 30, 0) if rsi < 30 else 0
-        
+
         # 4. 成交量恐慌：下跌放量程度
         vol_ratio = _calc_volume_anomaly(klines_4h, 20, 5)
         sub_scores["volume"] = vol_ratio / 3.0 if vol_ratio > 1.5 else 0  # 归一化：3倍量为满分
-        
+
         # 加权求和（经滚动窗口验证的最优权重）
         weights = {"bias": 0.20, "fib": 0.20, "rsi": 0.20, "volume": 0.40}
         score = sum(sub_scores[k] * weights[k] for k in weights)
-        
+
         # 多少个子指标触发（辅助判断信号强度）
         n_triggered = sum(1 for v in sub_scores.values() if v > 0)
-        
+
         details = {
             "bias_score": round(sub_scores["bias"], 4),
             "fib_score": round(sub_scores["fib"], 4),
@@ -261,7 +269,7 @@ def evaluate_bounce_potential(
             "n_triggered": n_triggered,
             "rsi_raw": round(rsi, 1),
         }
-    
+
     return {
         "coin": coin,
         "method": method,
@@ -286,7 +294,7 @@ def rank_by_bounce_potential(
     cache_key = f"{method}_{lookback}_{min_score}"
     cache_file = CACHE_DIR / f"bounce_{cache_key}.json"
     now = time.time()
-    
+
     if use_cache and cache_file.exists():
         try:
             cached = json.loads(cache_file.read_text())
@@ -296,7 +304,7 @@ def rank_by_bounce_potential(
                 return {"ranking": ranking, "selected": selected, "from_cache": True}
         except Exception:
             pass
-    
+
     ranking = []
     for coin in coins:
         klines = fetch_klines(coin, "4h", lookback + 100)
@@ -305,10 +313,10 @@ def rank_by_bounce_potential(
         result = evaluate_bounce_potential(coin, klines, method, lookback)
         if result["valid"]:
             ranking.append(result)
-    
+
     ranking.sort(key=lambda x: x["score"], reverse=True)
     selected = [r["coin"] for r in ranking if r["score"] >= min_score][:top_n]
-    
+
     result_data = {
         "cached_at": now,
         "method": method,
@@ -319,7 +327,7 @@ def rank_by_bounce_potential(
         "from_cache": False,
     }
     cache_file.write_text(json.dumps(result_data, indent=2, ensure_ascii=False))
-    
+
     return result_data
 
 
@@ -341,7 +349,9 @@ def print_bounce_report(result: Dict):
     print("-" * 80)
     for i, r in enumerate(result["ranking"]):
         status = "✓选" if r["coin"] in result["selected"] else ""
-        print(f"  {i+1:>3}  {r['coin']:>6}  {r['score']:>+7.4f}  {r['current_price']:>8.2f}  {r['price_from_low_pct']:>+9.2f}%  {status:>6}")
+        print(
+            f"  {i+1:>3}  {r['coin']:>6}  {r['score']:>+7.4f}  {r['current_price']:>8.2f}  {r['price_from_low_pct']:>+9.2f}%  {status:>6}"
+        )
     print("=" * 80)
     print(f"  入选: {', '.join(result.get('selected', []))}")
     print("=" * 80)
@@ -354,10 +364,10 @@ def print_bounce_report(result: Dict):
 # 各指标的异常阈值（基线配置）
 # 剔除乖离率信号（bias），保留作为参考但不参与触发判断
 SIGNAL_THRESHOLDS = {
-    "bias": -999.0,      # 乖离率已剔除，不参与触发
-    "fib": 0.0,         # 当前价低于0.618支撑位触发
-    "rsi": 25,          # RSI < 25 触发
-    "volume": 1.8,      # 成交量比率 > 1.8 触发
+    "bias": -999.0,  # 乖离率已剔除，不参与触发
+    "fib": 0.0,  # 当前价低于0.618支撑位触发
+    "rsi": 25,  # RSI < 25 触发
+    "volume": 1.8,  # 成交量比率 > 1.8 触发
 }
 
 # 参与触发判断的有效信号
@@ -391,7 +401,9 @@ def evaluate_signals(coin: str, klines_4h: List[Dict], lookback: int = 60) -> Di
     # 2. 斐波那契0.618
     fib = _calc_fib_levels(recent_high, recent_low)
     price_range = recent_high - recent_low
-    fib_below_618 = (fib["0.618"] - current) / price_range if price_range > 0 and current < fib["0.618"] else 0
+    fib_below_618 = (
+        (fib["0.618"] - current) / price_range if price_range > 0 and current < fib["0.618"] else 0
+    )
 
     # 3. RSI
     rsi = _calc_rsi(klines_4h, 14)
@@ -474,10 +486,14 @@ def monitor_bounce_signals(coins: List[str], lookback: int = 60, min_signals: in
 
 def print_signal_monitor(result: Dict):
     print("\n" + "=" * 100)
-    print(f"  反弹潜力异常信号监控")
-    print(f"  阈值: 乖离率<{SIGNAL_THRESHOLDS['bias']*100:.0f}% | 斐波那契低于0.618 | RSI<{SIGNAL_THRESHOLDS['rsi']} | 量比>{SIGNAL_THRESHOLDS['volume']}")
+    print("  反弹潜力异常信号监控")
+    print(
+        f"  阈值: 乖离率<{SIGNAL_THRESHOLDS['bias']*100:.0f}% | 斐波那契低于0.618 | RSI<{SIGNAL_THRESHOLDS['rsi']} | 量比>{SIGNAL_THRESHOLDS['volume']}"
+    )
     print("=" * 100)
-    print(f"  {'币种':>6}  {'乖离率':>8}  {'fib偏离':>8}  {'RSI':>6}  {'量比':>6}  {'触发数':>6}  {'触发信号':>20}")
+    print(
+        f"  {'币种':>6}  {'乖离率':>8}  {'fib偏离':>8}  {'RSI':>6}  {'量比':>6}  {'触发数':>6}  {'触发信号':>20}"
+    )
     print("-" * 100)
 
     for r in result["all_results"]:
@@ -490,19 +506,31 @@ def print_signal_monitor(result: Dict):
         triggers = ", ".join(r["triggered_list"]) if r["triggered_list"] else ""
 
         marker = " >>>" if r["has_signal"] else ""
-        print(f"  {r['coin']:>6}  {bias_str:>10}  {fib_str:>10}  {rsi_str:>8}  {vol_str:>8}  {n:>6}  {triggers:>20}{marker}")
+        print(
+            f"  {r['coin']:>6}  {bias_str:>10}  {fib_str:>10}  {rsi_str:>8}  {vol_str:>8}  {n:>6}  {triggers:>20}{marker}"
+        )
 
     print("-" * 100)
     highlighted_coins = [r["coin"] for r in result["highlighted"]]
-    print(f"  潜在高价值 ({result['min_signals']}+信号): {', '.join(highlighted_coins) if highlighted_coins else '无'}")
+    print(
+        f"  潜在高价值 ({result['min_signals']}+信号): {', '.join(highlighted_coins) if highlighted_coins else '无'}"
+    )
     print("=" * 100)
 
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="反弹潜力评估器")
-    parser.add_argument("--coins", default="BTC,ETH,SOL,BNB,XRP,ADA,DOGE,LTC,LINK,AVAX,DOT,UNI,NEAR,APT,ARB,OP,INJ,SUI,SEI,TIA,AAVE,COMP,CRV,DYDX,LDO,PEPE,SAND,SHIB,STX,SUSHI,WLD,ZEC,OKB,HYPE")
-    parser.add_argument("--method", default="fib", choices=["fib", "bb", "reg", "atr", "bias", "rsi", "volume", "combo"])
+    parser.add_argument(
+        "--coins",
+        default="BTC,ETH,SOL,BNB,XRP,ADA,DOGE,LTC,LINK,AVAX,DOT,UNI,NEAR,APT,ARB,OP,INJ,SUI,SEI,TIA,AAVE,COMP,CRV,DYDX,LDO,PEPE,SAND,SHIB,STX,SUSHI,WLD,ZEC,OKB,HYPE",
+    )
+    parser.add_argument(
+        "--method",
+        default="fib",
+        choices=["fib", "bb", "reg", "atr", "bias", "rsi", "volume", "combo"],
+    )
     parser.add_argument("--top", type=int, default=3)
     parser.add_argument("--lookback", type=int, default=60)
     parser.add_argument("--min-score", type=float, default=0.0)
@@ -517,7 +545,12 @@ if __name__ == "__main__":
         result = monitor_bounce_signals(coins, args.lookback, args.min_signals)
         print_signal_monitor(result)
     else:
-        result = rank_by_bounce_potential(coins, method=args.method, top_n=args.top,
-                                           lookback=args.lookback, min_score=args.min_score,
-                                           use_cache=not args.no_cache)
+        result = rank_by_bounce_potential(
+            coins,
+            method=args.method,
+            top_n=args.top,
+            lookback=args.lookback,
+            min_score=args.min_score,
+            use_cache=not args.no_cache,
+        )
         print_bounce_report(result)

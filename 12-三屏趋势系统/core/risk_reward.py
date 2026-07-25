@@ -11,13 +11,12 @@
 5. 加仓可行性评估
 """
 
-from typing import Dict, Optional, List
-import math
+from typing import Dict, List, Optional
 
 try:
     from .config import CANDIDATE_COINS
 except ImportError:
-    from config import CANDIDATE_COINS
+    pass
 
 
 def _calc_ema(closes: List[float], period: int) -> Optional[float]:
@@ -37,7 +36,7 @@ def calc_30d_volatility(closes: List[float]) -> float:
     recent_returns = returns[-30:]
     avg = sum(recent_returns) / len(recent_returns)
     variance = sum((r - avg) ** 2 for r in recent_returns) / len(recent_returns)
-    return variance ** 0.5
+    return variance**0.5
 
 
 def calc_elder_ray(klines: List[Dict], period: int = 13) -> Optional[Dict]:
@@ -110,32 +109,32 @@ def calc_elder_ray(klines: List[Dict], period: int = 13) -> Optional[Dict]:
     both_weakening = (current_bull > 0 and bull_rising) and (current_bear < 0 and bear_rising)
 
     if ema_trend_up and current_bull > 0 and current_bear > 0:
-        direction = 'STRONG_BULL'
+        direction = "STRONG_BULL"
         strength_base = 80
     elif ema_trend_up and current_bull > 0 and current_bear <= 0:
-        direction = 'BULL_TREND'
+        direction = "BULL_TREND"
         strength_base = 65
     elif ema_trend_up and current_bull <= 0:
-        direction = 'BULL_REVERSAL'
+        direction = "BULL_REVERSAL"
         strength_base = 35
     elif ema_trend_down and current_bear < 0 and current_bull < 0:
-        direction = 'STRONG_BEAR'
+        direction = "STRONG_BEAR"
         strength_base = 20
     elif ema_trend_down and current_bear < 0 and current_bull >= 0:
-        direction = 'BEAR_TREND'
+        direction = "BEAR_TREND"
         strength_base = 35
     elif ema_trend_down and current_bear >= 0:
-        direction = 'BEAR_REVERSAL'
+        direction = "BEAR_REVERSAL"
         strength_base = 60
     else:
         if current_bull > 0 and current_bear > 0:
-            direction = 'SIDEWAYS_BULLISH'
+            direction = "SIDEWAYS_BULLISH"
             strength_base = 55
         elif current_bull < 0 and current_bear < 0:
-            direction = 'SIDEWAYS_BEARISH'
+            direction = "SIDEWAYS_BEARISH"
             strength_base = 45
         else:
-            direction = 'SIDEWAYS'
+            direction = "SIDEWAYS"
             strength_base = 50
 
     slope_bonus = min(20, abs(ema_slope) * 50) if ema_trend_up else -min(10, abs(ema_slope) * 30)
@@ -197,9 +196,9 @@ def calc_elder_ray(klines: List[Dict], period: int = 13) -> Optional[Dict]:
     }
 
 
-def get_vol_adjusted_params(coin_vol: float, btc_vol: float,
-                            base_tp_pct: float = 0.04,
-                            base_addon_pct: float = 0.08) -> Dict:
+def get_vol_adjusted_params(
+    coin_vol: float, btc_vol: float, base_tp_pct: float = 0.04, base_addon_pct: float = 0.08
+) -> Dict:
     if btc_vol <= 0:
         ratio = 1.0
     else:
@@ -229,11 +228,23 @@ def calc_risk_reward_ratio(
     take_profit_price: float,
 ) -> Dict:
     if direction == "LONG":
-        risk = entry_price - stop_loss_price if stop_loss_price < entry_price else entry_price * 0.05
-        reward = take_profit_price - entry_price if take_profit_price > entry_price else entry_price * 0.03
+        risk = (
+            entry_price - stop_loss_price if stop_loss_price < entry_price else entry_price * 0.05
+        )
+        reward = (
+            take_profit_price - entry_price
+            if take_profit_price > entry_price
+            else entry_price * 0.03
+        )
     else:
-        risk = stop_loss_price - entry_price if stop_loss_price > entry_price else entry_price * 0.05
-        reward = entry_price - take_profit_price if take_profit_price < entry_price else entry_price * 0.03
+        risk = (
+            stop_loss_price - entry_price if stop_loss_price > entry_price else entry_price * 0.05
+        )
+        reward = (
+            entry_price - take_profit_price
+            if take_profit_price < entry_price
+            else entry_price * 0.03
+        )
 
     if risk <= 0:
         risk = entry_price * 0.01
@@ -275,7 +286,9 @@ def evaluate_addon_opportunity(
     }
 
     if current_position_pct >= max_position_cap:
-        result["reason"] = f"当前仓位{current_position_pct*100:.0f}%已达上限{max_position_cap*100:.0f}%"
+        result["reason"] = (
+            f"当前仓位{current_position_pct*100:.0f}%已达上限{max_position_cap*100:.0f}%"
+        )
         return result
 
     btc_addon_pct = 0.08
@@ -303,10 +316,12 @@ def evaluate_addon_opportunity(
         result["reason"] = f"风险回报比{rr['rr_ratio']:.2f}<1.5，价值低于风险"
         return result
 
-    is_counter_trend = (direction == "LONG" and unrealized_pnl_pct < 0) or \
-                       (direction == "BEAR" and unrealized_pnl_pct < 0)
-    is_trend_follow = (direction == "LONG" and unrealized_pnl_pct > 0) or \
-                      (direction == "BEAR" and unrealized_pnl_pct > 0)
+    is_counter_trend = (direction == "LONG" and unrealized_pnl_pct < 0) or (
+        direction == "BEAR" and unrealized_pnl_pct < 0
+    )
+    is_trend_follow = (direction == "LONG" and unrealized_pnl_pct > 0) or (
+        direction == "BEAR" and unrealized_pnl_pct > 0
+    )
 
     strength = elder_ray.get("strength", 50)
     bullish_div = elder_ray.get("bullish_divergence", False)
@@ -320,7 +335,9 @@ def evaluate_addon_opportunity(
                 result["addon_type"] = "divergence_counter_trend"
                 result["addon_pct"] = base_addon * 100
                 result["addon_price"] = round(addon_price, 4)
-                result["reason"] = f"BTC亏损{abs(unrealized_pnl_pct):.1f}%≥8%+{direction}背离，逆势加仓"
+                result["reason"] = (
+                    f"BTC亏损{abs(unrealized_pnl_pct):.1f}%≥8%+{direction}背离，逆势加仓"
+                )
                 return result
 
         if not is_btc and abs(unrealized_pnl_pct) >= base_addon * 100 * 0.8:
@@ -329,7 +346,9 @@ def evaluate_addon_opportunity(
                 result["addon_type"] = "divergence_counter_trend"
                 result["addon_pct"] = base_addon * 100
                 result["addon_price"] = round(addon_price, 4)
-                result["reason"] = f"{symbol}亏损{abs(unrealized_pnl_pct):.1f}%+背离，波动率放大逆势加仓"
+                result["reason"] = (
+                    f"{symbol}亏损{abs(unrealized_pnl_pct):.1f}%+背离，波动率放大逆势加仓"
+                )
                 return result
 
         result["reason"] = f"逆势但背离信号不足（亏损{abs(unrealized_pnl_pct):.1f}%）"

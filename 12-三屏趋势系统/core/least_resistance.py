@@ -18,14 +18,14 @@
 """
 
 import math
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
+
 import numpy as np
-import pandas as pd
 
 try:
     from .config import (
-        LEAST_RESISTANCE_WEIGHTS,
         LEAST_RESISTANCE_PRICE_LOOKBACK,
+        LEAST_RESISTANCE_WEIGHTS,
     )
 except ImportError:
     LEAST_RESISTANCE_WEIGHTS = {
@@ -53,9 +53,14 @@ def calc_price_resistance(df, lookback: int = 60) -> Dict[str, float]:
         }
     """
     if len(df) < 20:
-        return {"bull_resistance": 0.5, "bear_resistance": 0.5,
-                "nearest_resistance": 0.05, "nearest_support": 0.05,
-                "resistance_levels": [], "support_levels": []}
+        return {
+            "bull_resistance": 0.5,
+            "bear_resistance": 0.5,
+            "nearest_resistance": 0.05,
+            "nearest_support": 0.05,
+            "resistance_levels": [],
+            "support_levels": [],
+        }
 
     close = df["close"].values
     high = df["high"].values
@@ -70,13 +75,21 @@ def calc_price_resistance(df, lookback: int = 60) -> Dict[str, float]:
     support_levels = []
 
     for i in range(2, len(recent_high) - 2):
-        if recent_high[i] > recent_high[i-1] and recent_high[i] > recent_high[i-2] \
-           and recent_high[i] > recent_high[i+1] and recent_high[i] > recent_high[i+2]:
+        if (
+            recent_high[i] > recent_high[i - 1]
+            and recent_high[i] > recent_high[i - 2]
+            and recent_high[i] > recent_high[i + 1]
+            and recent_high[i] > recent_high[i + 2]
+        ):
             resistance_levels.append(recent_high[i])
 
     for i in range(2, len(recent_low) - 2):
-        if recent_low[i] < recent_low[i-1] and recent_low[i] < recent_low[i-2] \
-           and recent_low[i] < recent_low[i+1] and recent_low[i] < recent_low[i+2]:
+        if (
+            recent_low[i] < recent_low[i - 1]
+            and recent_low[i] < recent_low[i - 2]
+            and recent_low[i] < recent_low[i + 1]
+            and recent_low[i] < recent_low[i + 2]
+        ):
             support_levels.append(recent_low[i])
 
     ma_periods = [20, 50, 128, 200]
@@ -131,8 +144,12 @@ def calc_volume_resistance(df) -> Dict[str, float]:
     - OBV向下 = 资金流出，下跌阻力小
     """
     if len(df) < 20:
-        return {"bull_resistance": 0.5, "bear_resistance": 0.5,
-                "obv_trend": "neutral", "vol_price_divergence": 0.0}
+        return {
+            "bull_resistance": 0.5,
+            "bear_resistance": 0.5,
+            "obv_trend": "neutral",
+            "vol_price_divergence": 0.0,
+        }
 
     close = df["close"].values
     volume = df["volume"].values
@@ -154,12 +171,12 @@ def calc_volume_resistance(df) -> Dict[str, float]:
     obv = np.zeros(len(close))
     obv[0] = volume[0]
     for i in range(1, len(close)):
-        if close[i] > close[i-1]:
-            obv[i] = obv[i-1] + volume[i]
-        elif close[i] < close[i-1]:
-            obv[i] = obv[i-1] - volume[i]
+        if close[i] > close[i - 1]:
+            obv[i] = obv[i - 1] + volume[i]
+        elif close[i] < close[i - 1]:
+            obv[i] = obv[i - 1] - volume[i]
         else:
-            obv[i] = obv[i-1]
+            obv[i] = obv[i - 1]
 
     obv_ma_short = np.mean(obv[-10:]) if len(obv) >= 10 else obv[-1]
     obv_ma_long = np.mean(obv[-30:]) if len(obv) >= 30 else obv[-1]
@@ -180,7 +197,11 @@ def calc_volume_resistance(df) -> Dict[str, float]:
     bull_resistance = max(0.1, min(0.9, bull_resistance))
     bear_resistance = max(0.1, min(0.9, bear_resistance))
 
-    obv_trend = "bullish" if obv_trend_strength > 0.02 else ("bearish" if obv_trend_strength < -0.02 else "neutral")
+    obv_trend = (
+        "bullish"
+        if obv_trend_strength > 0.02
+        else ("bearish" if obv_trend_strength < -0.02 else "neutral")
+    )
 
     return {
         "bull_resistance": round(bull_resistance, 4),
@@ -203,8 +224,13 @@ def calc_momentum_resistance(df) -> Dict[str, float]:
     - 底背离 = 下跌阻力大
     """
     if len(df) < 30:
-        return {"bull_resistance": 0.5, "bear_resistance": 0.5,
-                "rsi": 50, "macd_trend": "neutral", "divergence": "none"}
+        return {
+            "bull_resistance": 0.5,
+            "bear_resistance": 0.5,
+            "rsi": 50,
+            "macd_trend": "neutral",
+            "divergence": "none",
+        }
 
     close = df["close"].values
     high = df["high"].values
@@ -265,8 +291,11 @@ def calc_momentum_resistance(df) -> Dict[str, float]:
     bull_resistance = max(0.1, min(0.9, bull_resistance))
     bear_resistance = max(0.1, min(0.9, bear_resistance))
 
-    macd_trend = "bullish" if macd_hist[-1] > 0 and hist_trend > 0 else \
-                 ("bearish" if macd_hist[-1] < 0 and hist_trend < 0 else "neutral")
+    macd_trend = (
+        "bullish"
+        if macd_hist[-1] > 0 and hist_trend > 0
+        else ("bearish" if macd_hist[-1] < 0 and hist_trend < 0 else "neutral")
+    )
 
     return {
         "bull_resistance": round(bull_resistance, 4),
@@ -289,8 +318,13 @@ def calc_trend_resistance(df) -> Dict[str, float]:
     - 趋势加速度 = 速度变化率
     """
     if len(df) < 50:
-        return {"bull_resistance": 0.5, "bear_resistance": 0.5,
-                "trend_strength": 50, "ma_slope": 0.0, "elder_ray_balance": 0.0}
+        return {
+            "bull_resistance": 0.5,
+            "bear_resistance": 0.5,
+            "trend_strength": 50,
+            "ma_slope": 0.0,
+            "elder_ray_balance": 0.0,
+        }
 
     close = df["close"].values
     high = df["high"].values
@@ -360,8 +394,12 @@ def calc_fundamental_resistance(fundamental_data: Optional[Dict] = None) -> Dict
     - 基本面速度/加速度也影响阻力变化
     """
     if not fundamental_data:
-        return {"bull_resistance": 0.5, "bear_resistance": 0.5,
-                "available": False, "fund_score": 0.0}
+        return {
+            "bull_resistance": 0.5,
+            "bear_resistance": 0.5,
+            "available": False,
+            "fund_score": 0.0,
+        }
 
     fund_score = 0.0
     score_sources = []
@@ -452,7 +490,9 @@ def compute_least_resistance(
     fundamental_r = calc_fundamental_resistance(fundamental_data)
 
     w_fund = w.get("fundamental", 0.1) if fundamental_r.get("available") else 0
-    total_other = w.get("price", 0.3) + w.get("volume", 0.2) + w.get("momentum", 0.2) + w.get("trend", 0.2)
+    total_other = (
+        w.get("price", 0.3) + w.get("volume", 0.2) + w.get("momentum", 0.2) + w.get("trend", 0.2)
+    )
     scale_factor = (1.0 - w_fund) / total_other if total_other > 0 else 1.0
 
     bull_resistance = (
@@ -617,7 +657,9 @@ def determine_drive_mode(
     strength_factor = max(0.0, 1.0 - trend_strength / 70.0)
     duration_factor = min(1.0, trend_duration / 15.0)
     accel_factor = max(0.0, -accel_aligned) * 2.0
-    reversal_sensitivity = min(1.0, strength_factor * 0.4 + duration_factor * 0.3 + accel_factor * 0.3)
+    reversal_sensitivity = min(
+        1.0, strength_factor * 0.4 + duration_factor * 0.3 + accel_factor * 0.3
+    )
 
     if trend_strength >= 60 and trend_duration < 10:
         mode = "CONTINUATION"
@@ -779,7 +821,9 @@ def detect_accumulation_breakthrough(
             stage = "ACCUMULATION"
             early_direction = expected_new_dir
             confidence_boost = 5.0 + min(10.0, accumulation_count * 2.0)
-            description = f"量变积累中: {accumulation_type}磨底/筑顶，A持续反向{accumulation_count}周期"
+            description = (
+                f"量变积累中: {accumulation_type}磨底/筑顶，A持续反向{accumulation_count}周期"
+            )
 
     return {
         "stage": stage,
@@ -891,7 +935,9 @@ def compute_least_resistance_3d(
             acceleration = 0.0
 
     # ── 4. 趋势强度 + 趋势延续时间 + 双向驱动模式判定 ──
-    trend_strength = calc_trend_strength(weekly_diff, weekly_velocity, weekly_acceleration, direction)
+    trend_strength = calc_trend_strength(
+        weekly_diff, weekly_velocity, weekly_acceleration, direction
+    )
     trend_duration = calc_trend_duration(history_3d, direction)
     drive_mode = determine_drive_mode(trend_strength, trend_duration, acceleration, direction)
 
@@ -999,11 +1045,15 @@ def compute_least_resistance_3d(
         "drive_mode": drive_mode,
         "accumulation": accumulation,
         "early_inference": early_inference,
-        "summary": _summarize_3d(direction, confidence, velocity, acceleration, entry_signal, accumulation, drive_mode),
+        "summary": _summarize_3d(
+            direction, confidence, velocity, acceleration, entry_signal, accumulation, drive_mode
+        ),
     }
 
 
-def _summarize_3d(direction, confidence, velocity, acceleration, entry_signal, accumulation=None, drive_mode=None):
+def _summarize_3d(
+    direction, confidence, velocity, acceleration, entry_signal, accumulation=None, drive_mode=None
+):
     """生成三维模型文字描述"""
     parts = []
     if direction == "BULL":
@@ -1061,7 +1111,9 @@ def _summarize_3d(direction, confidence, velocity, acceleration, entry_signal, a
     return " | ".join(parts)
 
 
-def _summarize_least_resistance(direction: str, confidence: float, velocity: float, acceleration: float) -> str:
+def _summarize_least_resistance(
+    direction: str, confidence: float, velocity: float, acceleration: float
+) -> str:
     """生成最小阻力方向的文字描述"""
     if direction == "BULL":
         if velocity > 0.5 and acceleration > 0:
@@ -1092,10 +1144,10 @@ def _ema(data, period: int) -> np.ndarray:
         return np.zeros(n)
     multiplier = 2 / (period + 1)
     ema = np.zeros(n)
-    ema[period-1] = np.mean(data[:period])
+    ema[period - 1] = np.mean(data[:period])
     for i in range(period, n):
-        ema[i] = (data[i] - ema[i-1]) * multiplier + ema[i-1]
-    ema[:period-1] = ema[period-1]
+        ema[i] = (data[i] - ema[i - 1]) * multiplier + ema[i - 1]
+    ema[: period - 1] = ema[period - 1]
     return ema
 
 
@@ -1103,7 +1155,7 @@ def _sma(data, period: int) -> np.ndarray:
     """计算SMA"""
     if len(data) < period:
         return np.array(data)
-    sma = np.convolve(data, np.ones(period)/period, mode='valid')
+    sma = np.convolve(data, np.ones(period) / period, mode="valid")
     return sma
 
 

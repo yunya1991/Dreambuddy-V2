@@ -8,17 +8,18 @@ ML 风控模型集成框架
     meta JSON → 模型加载 → 特征对齐 → 预测 → 概率输出
 """
 
-import os
 import json
+import os
 import pickle
-from typing import Dict, Any, Optional, List, Union
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 
 @dataclass
 class ModelPrediction:
     """模型预测结果"""
+
     p_tail: Optional[float] = None
     p_move: Optional[float] = None
     confidence: float = 0.0
@@ -72,7 +73,7 @@ class MLRiskModel:
         try:
             with open(meta_path) as f:
                 meta = json.load(f)
-        except Exception as e:
+        except Exception:
             return cls(name="error", version="0")
 
         model_type = meta.get("model_type", "sklearn_pickle")
@@ -88,6 +89,7 @@ class MLRiskModel:
         try:
             if model_type == "xgb":
                 import xgboost as xgb
+
                 booster = xgb.Booster()
                 booster.load_model(model_path)
                 model = booster
@@ -150,7 +152,9 @@ class MLRiskModel:
         result.details["method"] = "xgb_booster"
         return result
 
-    def _predict_sklearn(self, features: Dict[str, float], result: ModelPrediction) -> ModelPrediction:
+    def _predict_sklearn(
+        self, features: Dict[str, float], result: ModelPrediction
+    ) -> ModelPrediction:
         """sklearn 模型预测"""
         ordered = []
         for fn in self.feature_names:
@@ -221,13 +225,15 @@ class CommitteeModel:
                 continue
 
             pred = model.predict(features)
-            member_results.append({
-                "name": model.name,
-                "loaded": True,
-                "p_tail": pred.p_tail,
-                "p_move": pred.p_move,
-                "weight": weight,
-            })
+            member_results.append(
+                {
+                    "name": model.name,
+                    "loaded": True,
+                    "p_tail": pred.p_tail,
+                    "p_move": pred.p_move,
+                    "weight": weight,
+                }
+            )
 
             if pred.p_tail is not None:
                 weighted_p_tail += pred.p_tail * weight

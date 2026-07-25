@@ -287,22 +287,29 @@ SIXIANG_TAIYIN = "taiyin"     # 老阴 ⚏
 SIXIANG_LIST = [SIXIANG_TAIYANG, SIXIANG_SHAOYANG, SIXIANG_SHAOYIN, SIXIANG_TAIYIN]
 
 # ============================================================
-# 四象（新定义：时空表里）
+# 五象（新定义：时空表里流）
 # ============================================================
 # 第一性原理：市场沿阻力最小方向运动 = 力的合成
-# 四象 = 四个力场维度
+# 五象 = 五个力场维度（P2升级：新增流动性力场）
+# 流动性是市场的"润滑剂"：充裕助推趋势，枯竭阻碍趋势
+# 与 A0 流动性矛盾维度形成呼应（力方向 vs 矛盾张力，交叉验证）
 SIXIANG_TIME = "time"          # 时：周期力（康波/中周期/短周期）
 SIXIANG_SPACE = "space"        # 空：空间力（斐波那契/价格位置反重力）
 SIXIANG_SURFACE = "surface"    # 表：技术力（均线/MACD/RSI 数字化表观）
 SIXIANG_CORE = "core"          # 里：内驱力（供需/资金/情绪）
+SIXIANG_LIQUIDITY = "liquidity"  # 流：流动性力（量价关系/资金面/买卖价差）
 
-SIXIANG_FORCE_LIST = [SIXIANG_TIME, SIXIANG_SPACE, SIXIANG_SURFACE, SIXIANG_CORE]
+SIXIANG_FORCE_LIST = [SIXIANG_TIME, SIXIANG_SPACE, SIXIANG_SURFACE, SIXIANG_CORE, SIXIANG_LIQUIDITY]
 
-# 四象力场权重（里>表>时>空，内驱力最根本）
-FORCE_WEIGHT_CORE = 0.35       # 里：供需/资金/情绪 — 最根本的驱动力
-FORCE_WEIGHT_SURFACE = 0.30    # 表：技术分析 — 数字化综合体现
-FORCE_WEIGHT_TIME = 0.20       # 时：周期 — 时间维度
-FORCE_WEIGHT_SPACE = 0.15      # 空：空间 — 反重力效应
+# 五象力场权重（里>表>流>时>空，总和=1.00）
+# P2升级：新增流动性力场，从原四力各扣除部分权重
+# 原: CORE=0.35, SURFACE=0.30, TIME=0.20, SPACE=0.15
+# 新: CORE=0.30, SURFACE=0.25, LIQUIDITY=0.20, TIME=0.15, SPACE=0.10
+FORCE_WEIGHT_CORE = 0.30       # 里：供需/资金/情绪 — 最根本的驱动力
+FORCE_WEIGHT_SURFACE = 0.25    # 表：技术分析 — 数字化综合体现
+FORCE_WEIGHT_LIQUIDITY = 0.20  # 流：流动性 — 市场润滑剂，量价关系驱动
+FORCE_WEIGHT_TIME = 0.15       # 时：周期 — 时间维度
+FORCE_WEIGHT_SPACE = 0.10      # 空：空间 — 反重力效应
 
 # 时间轴映射
 TIME_HORIZON_SHORT = 0.3       # 短周期
@@ -322,7 +329,69 @@ VELOCITY_DECAY = 0.85          # 每步速度衰减（市场摩擦）
 ACCELERATION_DT = 1.0          # 时间步长
 
 # 转折预警阈值
-REVERSAL_WARNING_THRESHOLD = 0.15  # 减速超过此值触发预警
+REVERSAL_WARNING_THRESHOLD = 0.14  # 减速超过此值触发预警（贝叶斯优化）
+
+# 朗之万随机项参数（P0升级：市场热噪声）
+# 朗之万方程: dv = -γv·dt + (F/m)·dt + √(2γT)·dW
+#   γ = 阻尼系数 = -ln(decay)/dt（摩擦）
+#   T = 市场温度 ∝ 波动率²（热噪声强度）
+#   dW = 维纳过程（布朗运动）
+# 物理意义：摩擦力（已有decay）+ 确定性力（合力）+ 随机热噪声（新增）
+# 与 A0 情绪矛盾维度呼应：高情绪矛盾=高温=大噪声
+LANGEVIN_ENABLED = True              # 是否启用朗之万随机项
+LANGEVIN_TEMPERATURE_SCALE = 0.5     # 温度缩放因子：T = scale × volatility²
+LANGEVIN_NOISE_FLOOR = 0.005         # 噪声下限：即使低波动也有微量随机性
+LANGEVIN_NOISE_CAP = 0.15            # 噪声上限：防止极端波动时噪声压过信号
+LANGEVIN_DECAY_EPS = 0.01            # decay下限保护：防止 log(0)
+
+# 卡尔曼滤波参数（P1升级：速度/加速度状态估计）
+# 状态向量 x = [velocity, acceleration]^T
+# 状态转移 F = [[1, dt], [0, 1]]（匀加速运动模型）
+# 观测 H = [[1, 0]]（观测=速度=价格变化率）
+# 过程噪声 Q ∝ 波动率（市场突发风险）
+# 观测噪声 R ∝ 买卖价差（微观结构噪声）
+KALMAN_ENABLED_DEFAULT = False       # 默认关闭（可选插件，需显式开启）
+KALMAN_PROCESS_NOISE_VEL = 0.01      # 速度过程噪声基础值 q_v
+KALMAN_PROCESS_NOISE_ACC = 0.005     # 加速度过程噪声基础值 q_a
+KALMAN_OBS_NOISE_BASE = 0.02         # 观测噪声基础值 r
+KALMAN_VOLATILITY_FACTOR = 2.0       # 波动率对过程噪声的放大因子
+KALMAN_SPREAD_FACTOR = 10.0          # 买卖价差对观测噪声的放大因子
+KALMA_INITIAL_COV = 1.0             # 初始状态协方差（高不确定性）
+
+# Ising相变检测参数（P1升级：统计力学市场集体状态识别）
+# 物理模型：二维Ising模型
+#   - 资产收益符号 = 自旋 s_i ∈ {+1(涨), -1(跌)}
+#   - 资产间相关性 = 交互强度 J_ij
+#   - 磁化强度 M = |Σs_i|/N → 市场共识度（|M|高=强趋势，M≈0=震荡）
+#   - 能量 E = -ΣJ_ij·s_i·s_j → 市场紧张度（E突增=相变预警）
+#   - 温度 T ∝ 波动率 → 高温=无序(震荡)，低温=有序(趋势)
+# 与力学引擎的关系：微观(自旋)↔宏观(A0矛盾)↔物理(力学)三层交叉验证
+ISING_GRID_SIZE = 8                # 自旋网格边长（8x8=64个自旋，代表64个资产/时间窗）
+ISING_INTERACTION_BASE = 0.5       # 基础交互强度 J（资产间默认相关性）
+ISING_TEMP_SCALE = 401.4           # 温度映射系数 T = scale × volatility（贝叶斯优化校准）
+ISING_TEMP_CRITICAL = 2.269        # Ising临界温度（Onsager解 Tc≈2.269J/k）
+ISING_ORDERED_RATIO = 0.857        # 有序相温度比上限（T/Tc < 此值=有序）（贝叶斯优化）
+ISING_DISORDERED_RATIO = 1.132     # 无序相温度比下限（T/Tc > 此值=无序）（贝叶斯优化）
+ISING_MAGNETIZATION_THRESHOLD = 0.192  # 磁化强度阈值（贝叶斯优化）
+ISING_ENERGY_SPIKE_FACTOR = 1.79   # 能量突变因子（贝叶斯优化：更敏感的相变检测）
+ISING_WINDOW_SIZE = 30             # 滑动窗口大小（计算磁化强度时间序列，增大以稳定统计）
+
+# TDA持久同调参数（P2升级：代数拓扑转折点早期预警）
+# 物理模型：Takens延迟嵌入 + Vietoris-Rips复形 + 持久同调
+#   - 时间序列 → 延迟嵌入点云（Takens定理重构相空间）
+#   - 点云 → Vietoris-Rips复形（按距离阈值连接）
+#   - 持久同调 H0/H1 → 拓扑特征生命周期（ births/deaths）
+#   - Betti曲线 β(t) → 拓扑复杂度（突增=结构变化=转折预警）
+#   - 持久图距离（瓶颈/稳定距离）→ 与历史拓扑的差异（突变=转折）
+# 优势：比reversal_warning（减速检测）更早发现转折（拓扑先于动力学）
+TDA_EMBEDDING_DIM = 3              # Takens嵌入维度（相空间重构）
+TDA_EMBEDDING_DELAY = 2            # 延迟参数（时间序列嵌入步长）
+TDA_WINDOW_SIZE = 50               # 滑动窗口大小（最近N个点计算同调）
+TDA_MAX_PERSISTENCE_DIM = 1        # 最高同调维度（H0=连通分量, H1=环）
+TDA_BETTI_SPIKE_FACTOR = 3.28       # Betti曲线突增因子（贝叶斯优化）
+TDA_PERSISTENCE_RATIO_THRESHOLD = 0.6  # 长寿命特征占比阈值（>此值=稳定拓扑）
+TDA_BOTTLENECK_DISTANCE_THRESHOLD = 0.64  # 瓶颈距离阈值（贝叶斯优化）
+TDA_MIN_POINTS = 20                # 最少点数（不足则跳过TDA）
 
 # ============================================================
 # 小大之辩 — 市场体量自适应参数

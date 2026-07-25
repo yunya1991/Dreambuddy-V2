@@ -8167,7 +8167,7 @@ def _aster_env_get_for_owner(key: str, owner: Any = None) -> str:
         o0 = str(_ab_norm_owner(owner) or "").strip().lower()
     except Exception:
         o0 = ""
-    if o0 in ("quant", "carry", "three_screen"):
+    if o0 in ("quant", "carry", "three_screen", "trend"):
         v2 = str(os.environ.get(f"{k0}_{o0.upper()}", "")).strip()
         if v2:
             return v2
@@ -10065,6 +10065,13 @@ def _aster_stop_market_order_qty(coin: str, side: str, qty: float, stop_price: f
     sp = float(stop_price)
     if (not math.isfinite(sp)) or sp <= 0.0:
         raise RuntimeError("invalid_stop_price")
+    # P0 修复: 对 stop_price 做 tickSize 取整, 避免 "Precision over maximum" 错误
+    # LONG(side=SELL) SL<entry 向上取整(更接近 entry, 更早止损);
+    # SHORT(side=BUY) SL>entry 向下取整(更接近 entry, 更早止损)
+    try:
+        sp = _aster_round_price(sym, sp, round_up=(order_side == "SELL"))
+    except Exception:
+        pass
     params: Dict[str, Any] = {
         "symbol": sym,
         "side": order_side,
@@ -10095,6 +10102,13 @@ def _aster_take_profit_market_order_qty(coin: str, side: str, qty: float, trigge
     tp = float(trigger_price)
     if (not math.isfinite(tp)) or tp <= 0.0:
         raise RuntimeError("invalid_take_profit_price")
+    # P0 修复: 对 trigger_price 做 tickSize 取整, 避免 "Precision over maximum" 错误
+    # LONG(side=SELL) TP>entry 向上取整(更远离 entry, 更大收益);
+    # SHORT(side=BUY) TP<entry 向下取整(更远离 entry, 更大收益)
+    try:
+        tp = _aster_round_price(sym, tp, round_up=(order_side == "SELL"))
+    except Exception:
+        pass
     params: Dict[str, Any] = {
         "symbol": sym,
         "side": order_side,
@@ -15192,6 +15206,8 @@ def _ab_norm_owner(owner: Any) -> str:
         return "carry"
     if o == "strategy" or o.startswith(("strategy_", "strategy-", "strategy/")):
         return "strategy"
+    if o == "trend" or o.startswith(("trend_", "trend-", "trend/")):
+        return "trend"
     return "strategy"
 
 

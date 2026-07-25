@@ -348,6 +348,97 @@ class ScenarioBacktester:
     # 评分计算
     # ============================================================
 
+    def quick_compare(self, scenario_id: str, pattern_a: str, nodes_a: List[str],
+                      pattern_b: str, nodes_b: List[str],
+                      max_samples: int = 30) -> Dict[str, Any]:
+        """快速对比两种编排模式在指定场景下的得分
+
+        用于沙箱验证：从历史数据中筛选属于该场景的窗口，
+        对比两种编排的回测得分。
+
+        Args:
+            scenario_id: 目标场景ID
+            pattern_a: 模式A名称
+            nodes_a: 模式A的节点列表
+            pattern_b: 模式B名称
+            nodes_b: 模式B的节点列表
+            max_samples: 最大样本数（默认30，快速验证）
+
+        Returns:
+            {
+                "scenario_id": ...,
+                "samples": N,
+                pattern_a: {score, sharpe, return, win_rate},
+                pattern_b: {score, sharpe, return, win_rate},
+                "winner": pattern_a or pattern_b,
+                "score_diff": float,
+            }
+        """
+        data_files = self._load_data_files()
+        if not data_files:
+            return {"scenario_id": scenario_id, "samples": 0, "winner": None,
+                    "score_diff": 0, pattern_a: {}, pattern_b: {}}
+
+        trades_a: List[float] = []
+        trades_b: List[float] = []
+        matched = 0
+
+        for file_path, symbol in data_files:
+            if matched >= max_samples:
+                break
+            try:
+                klines = self._load_json(file_path)
+                is_5m = symbol.endswith("_5m")
+                window_size = 24 * 12 if is_5m else 24
+                step = 6 * 6 if is_5m else 6
+                hold = 12 * 12 if is_5m else 12
+
+                if len(klines) < window_size + hold:
+                    continue
+
+                for i in range(0, len(klines) - window_size - hold, step):
+                    if matched >= max_samples:
+                        break
+                    window = klines[i:i + window_size]
+                    future = klines[i + window_size:i + window_size + hold]
+
+                    market_data = self._build_market_data(window, symbol)
+                    if market_data is None:
+                        continue
+
+                    scenario = self.classifier.classify(market_data)
+                    if scenario.scenario_id != scenario_id:
+                        continue
+
+                    ret_a = self._simulate_trade(nodes_a, market_data, future, symbol)
+                    ret_b = self._simulate_trade(nodes_b, market_data, future, symbol)
+
+                    if ret_a is not None:
+                        trades_a.append(ret_a)
+                    if ret_b is not None:
+                        trades_b.append(ret_b)
+                    matched += 1
+            except Exception as e:
+                logger.warning(f"快速对比失败 {symbol}: {e}")
+                continue
+
+        metrics_a = self._calc_metrics(trades_a) if trades_a else {}
+        metrics_b = self._calc_metrics(trades_b) if trades_b else {}
+
+        score_a = metrics_a.get("score", 0)
+        score_b = metrics_b.get("score", 0)
+
+        winner = pattern_a if score_a > score_b else (pattern_b if score_b > score_a else None)
+
+        return {
+            "scenario_id": scenario_id,
+            "samples": matched,
+            pattern_a: metrics_a,
+            pattern_b: metrics_b,
+            "winner": winner,
+            "score_diff": round(score_b - score_a, 4),
+        }
+
     def _select_best(self, all_trades: Dict[str, Dict[str, List[float]]]) -> Dict[str, Any]:
         """计算评分并选优
 

@@ -1,11 +1,12 @@
 """
 信号生成引擎
-基于多维度指标生成交易信号
+基于多维度指标生成交易信号，支持自适应权重和贝叶斯置信度
 """
 
 import math
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Tuple
+from collections import defaultdict
 
 
 # 信号类型定义
@@ -19,6 +20,20 @@ SIGNAL_TYPES = {
     "risk_alert": {"strength": 0.5, "direction": 0, "horizon": "short"},
 }
 
+# 默认模块权重（后续可基于历史表现动态调整）
+DEFAULT_MODULE_WEIGHTS = {
+    "flow": 1.5,
+    "valuation": 1.4,
+    "onchain": 1.3,
+    "macro": 1.2,
+    "news": 1.0,
+    "sentiment": 1.0,
+    "breadth": 1.0,
+    "intermarket": 0.8,
+    "narrative": 0.7,
+    "calendar": 0.6,
+}
+
 
 def _to_float(v: Any, default: float = 0.0) -> float:
     try:
@@ -28,22 +43,106 @@ def _to_float(v: Any, default: float = 0.0) -> float:
 
 
 class SignalEngine:
-    """信号生成引擎"""
+    """信号生成引擎
+
+    支持自适应权重：基于模块历史预测准确率动态调整权重
+    支持贝叶斯置信度：使用 Beta 分布共轭先验更新置信度
+    """
 
     def __init__(self):
         self.signal_counter = 0
-        self.module_weights = {
-            "flow": 1.5,
-            "valuation": 1.4,
-            "onchain": 1.3,
-            "macro": 1.2,
-            "news": 1.0,
-            "sentiment": 1.0,
-            "breadth": 1.0,
-            "intermarket": 0.8,
-            "narrative": 0.7,
-            "calendar": 0.6,
+        self.module_weights = dict(DEFAULT_MODULE_WEIGHTS)
+
+        # 自适应权重：记录各模块的预测成功/失败次数
+        # 使用 Beta(α=1, β=1) 均匀先验
+        self._module_stats: Dict[str, Dict[str, float]] = {
+            m: {"alpha": 1.0, "beta": 1.0, "predictions": 0}
+            for m in DEFAULT_MODULE_WEIGHTS
         }
+
+        # 滚动统计：综合得分的历史分布
+        self._score_history: List[float] = []
+
+    # ---------- 新增：自适应权重与贝叶斯置信度 ----------
+    def _adaptive_weight(self, module_name: str) -> float:
+        """基于历史预测准确率的自适应权重
+
+        权重 = base_weight × (1 + accuracy_bonus)
+        accuracy_bonus 来自 Beta 分布的后验均值与 0.5（随机基线）的偏差
+        """
+        base = _to_float(self.module_weights.get(module_name, 1.0), 1.0)
+        stats = self._module_stats.get(module_name)
+        if not stats or stats["predictions"] < 5:
+            return base  # 样本不足，使用默认权重
+
+        # Beta 分布后验均值
+        alpha = stats["alpha"]
+        beta = stats["beta"]
+        posterior_mean = alpha / (alpha + beta)
+
+        # 偏离 0.5（随机）的程度决定权重调整幅度
+        # 准确率 > 0.5 → 权重增加，< 0.5 → 权重降低
+        accuracy_bonus = (posterior_mean - 0.5) * 0.6  # 最大 ±30% 调整
+        adjusted = base * (1.0 + accuracy_bonus)
+
+        # 限制在 [0.3×base, 2.0×base] 范围内
+        return max(base * 0.3, min(base * 2.0, adjusted))
+
+    def _bayesian_confidence(self, module_name: str, raw_confidence: float) -> float:
+        """贝叶斯置信度：融合模块历史准确率
+
+        当模块有足够历史数据时，用后验准确率修正置信度
+        """
+        stats = self._module_stats.get(module_name)
+        if not stats or stats["predictions"] < 10:
+            return raw_confidence  # 样本不足，保持原始置信度
+
+        alpha = stats["alpha"]
+        beta = stats["beta"]
+        total = alpha + beta
+
+        # 后验均值
+        posterior = alpha / total
+        # 方差越小，置信度越高
+        variance = (alpha * beta) / (total ** 2 * (total + 1))
+        precision = 1.0 - 4.0 * variance  # [0, 1]
+
+        # 融合：原始置信度 × 后验准确率 × 精度
+        # 当后验准确率高且方差小时，置信度提升
+        bayes_conf = raw_confidence * (0.5 + 0.5 * posterior) * (0.5 + 0.5 * precision)
+        return max(0.1, min(0.95, bayes_conf))
+
+    def update_module_performance(self, module_name: str, correct: bool) -> None:
+        """更新模块预测表现（用于自适应权重学习）
+
+        Args:
+            module_name: 模块名称
+            correct: 预测是否正确
+        """
+        if module_name not in self._module_stats:
+            self._module_stats[module_name] = {"alpha": 1.0, "beta": 1.0, "predictions": 0}
+        stats = self._module_stats[module_name]
+        if correct:
+            stats["alpha"] += 1
+        else:
+            stats["beta"] += 1
+        stats["predictions"] += 1
+
+        # 重新计算该模块的权重
+        self.module_weights[module_name] = self._adaptive_weight(module_name)
+
+    def get_module_stats(self) -> Dict[str, Dict[str, Any]]:
+        """获取各模块的统计信息"""
+        result = {}
+        for name, stats in self._module_stats.items():
+            total = stats["alpha"] + stats["beta"]
+            result[name] = {
+                "predictions": stats["predictions"],
+                "accuracy": stats["alpha"] / total if total > 0 else 0.5,
+                "weight": self.module_weights.get(name, 1.0),
+                "adaptive_weight": self._adaptive_weight(name),
+            }
+        return result
 
     # ---------- 公开 API ----------
     def generate_signals(
@@ -139,21 +238,43 @@ class SignalEngine:
             module_scores[module_name] = score_entry
             directions_map[module_name] = self._module_vote(r3d)
 
-        # 加权平均
+        # 加权平均（使用自适应权重）
         total_weight = 0.0
         weighted_score = 0.0
         weighted_confidence = 0.0
+        weight_details = {}  # 记录每个模块的自适应权重细节
         for m, info in module_scores.items():
-            w = _to_float(self.module_weights.get(m, 1.0), 1.0)
+            w = self._adaptive_weight(m)  # 自适应权重替代固定权重
             total_weight += w
             weighted_score += w * info["score"]
-            weighted_confidence += w * info["confidence"]
+            # 贝叶斯置信度
+            bayes_conf = self._bayesian_confidence(m, _to_float(info["confidence"], 0.5))
+            weighted_confidence += w * bayes_conf
+            weight_details[m] = {
+                "base_weight": _to_float(DEFAULT_MODULE_WEIGHTS.get(m, 1.0), 1.0),
+                "adaptive_weight": round(w, 3),
+                "bayesian_confidence": round(bayes_conf, 3),
+            }
         if total_weight > 0:
             weighted_score /= total_weight
             weighted_confidence /= total_weight
 
         weighted_score = max(-1.0, min(1.0, weighted_score))
         weighted_confidence = max(0.0, min(1.0, weighted_confidence))
+
+        # Composite 层 EWMA 平滑 — 轻度平滑聚合信号
+        # 各 F 节点已做节点级平滑，此处仅做轻度融合避免滞后
+        raw_composite_score = weighted_score
+        if not hasattr(self, "_composite_ewma"):
+            self._composite_ewma = None
+        if self._composite_ewma is None:
+            self._composite_ewma = weighted_score
+        else:
+            # alpha=0.5：弱平滑，主要保留当前信号
+            self._composite_ewma = 0.5 * weighted_score + 0.5 * self._composite_ewma
+            # 弱融合：70% 原始 + 30% 平滑，避免滞后
+            weighted_score = 0.7 * weighted_score + 0.3 * self._composite_ewma
+            weighted_score = max(-1.0, min(1.0, weighted_score))
 
         strength_val = int(round(50 + weighted_score * 50))
 
@@ -200,6 +321,23 @@ class SignalEngine:
 
         top_signals = self.rank_signals(top_signals)
 
+        # 更新得分历史（用于滚动统计）
+        self._score_history.append(weighted_score)
+        if len(self._score_history) > 200:
+            self._score_history = self._score_history[-200:]
+
+        # 计算综合得分的 z-score（相对历史）
+        score_z = 0.0
+        score_percentile = 50.0
+        if len(self._score_history) >= 10:
+            hist_mean = sum(self._score_history) / len(self._score_history)
+            hist_var = sum((x - hist_mean) ** 2 for x in self._score_history) / max(1, len(self._score_history) - 1)
+            hist_std = hist_var ** 0.5
+            if hist_std > 0:
+                score_z = max(-3.0, min(3.0, (weighted_score - hist_mean) / hist_std))
+            below = sum(1 for x in self._score_history if x < weighted_score)
+            score_percentile = below / len(self._score_history) * 100
+
         return {
             "score": round(weighted_score, 3),
             "confidence": round(weighted_confidence, 2),
@@ -218,6 +356,15 @@ class SignalEngine:
             "best_opportunities": best_opportunities,
             "risk_warnings": risk_warnings,
             "top_signals": top_signals,
+            # 新增：统计化信息
+            "stats": {
+                "score_z": round(score_z, 3),
+                "score_percentile": round(score_percentile, 1),
+                "history_size": len(self._score_history),
+                "module_weights": weight_details,
+                "raw_composite_score": round(raw_composite_score, 3),
+                "ewma_composite_score": round(self._composite_ewma, 3) if self._composite_ewma is not None else None,
+            },
         }
 
     # ---------- 新增：模块投票 ----------

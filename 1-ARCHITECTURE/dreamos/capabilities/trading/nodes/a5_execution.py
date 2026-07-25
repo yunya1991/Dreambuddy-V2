@@ -131,7 +131,7 @@ class A5ExecutionNode(BaseNode):
             atr_pct=atr_pct,
             confidence=confidence,
             coin=coin,
-            market_data=market_data,
+            market_data=mkt,
         )
         stop_loss = stop_take_result["stop_loss"]
         take_profit = stop_take_result["take_profit"]

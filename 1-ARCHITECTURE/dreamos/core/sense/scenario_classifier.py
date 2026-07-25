@@ -165,10 +165,12 @@ class ScenarioClassifier:
         self._last_momentum_speed = speed
 
         # 动量加速度：短期动量 vs 中期动量
-        # 正值=加速，负值=减速
+        # 正值=趋势加速，负值=趋势减速
+        # 对于下跌趋势(ch24h<0)，需反转加速度符号使其与趋势方向一致
         short_term = ch1h
         mid_term = ch4h / 4 if ch4h != 0 else 0  # 4h均值
-        accel = short_term - mid_term
+        direction = 1 if ch24h >= 0 else -1
+        accel = (short_term - mid_term) * direction
         self._last_momentum_accel = accel
 
         # 衰竭检测（复用screen_engine _detect_exhaustion 第310行逻辑）

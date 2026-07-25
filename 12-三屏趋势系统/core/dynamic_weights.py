@@ -5,25 +5,26 @@
 - 贝叶斯置信度：似然概率 × 先验 → 后验概率
 """
 
-from typing import List, Dict
+from typing import Dict, List
+
 import numpy as np
 
 try:
-    from .indicators import calc_indicator_dynamics
     from .config import (
+        DAILY_WEIGHT,
         SCREEN1_INDICATORS,
         SCREEN2_INDICATORS,
         WEEKLY_WEIGHT,
-        DAILY_WEIGHT,
     )
+    from .indicators import calc_indicator_dynamics
 except ImportError:
-    from indicators import calc_indicator_dynamics
     from config import (
+        DAILY_WEIGHT,
         SCREEN1_INDICATORS,
         SCREEN2_INDICATORS,
         WEEKLY_WEIGHT,
-        DAILY_WEIGHT,
     )
+    from indicators import calc_indicator_dynamics
 
 
 def calc_indicator_performance(df, indicator_name: str, baseline_return: float = 0.0) -> dict:
@@ -36,7 +37,7 @@ def calc_indicator_performance(df, indicator_name: str, baseline_return: float =
         close = df["close"].values
         signals = []
         for i in range(1, len(close)):
-            df_slice = df.iloc[:i+1]
+            df_slice = df.iloc[: i + 1]
             dyn = calc_indicator_dynamics(df_slice, indicator_name)
             if dyn["direction"] == "BULL":
                 signals.append(1)
@@ -46,16 +47,28 @@ def calc_indicator_performance(df, indicator_name: str, baseline_return: float =
                 signals.append(0)
 
         if not signals or sum(abs(s) for s in signals) == 0:
-            return {"sharpe": 0.0, "win_rate": 0.5, "total_return": 0.0, "weight_score": 0.0, "excess_return": 0.0}
+            return {
+                "sharpe": 0.0,
+                "win_rate": 0.5,
+                "total_return": 0.0,
+                "weight_score": 0.0,
+                "excess_return": 0.0,
+            }
 
         returns = []
         for i, sig in enumerate(signals[:-1]):
             if sig != 0:
-                ret = (close[i+1] - close[i]) / close[i] * sig
+                ret = (close[i + 1] - close[i]) / close[i] * sig
                 returns.append(ret)
 
         if not returns:
-            return {"sharpe": 0.0, "win_rate": 0.5, "total_return": 0.0, "weight_score": 0.0, "excess_return": 0.0}
+            return {
+                "sharpe": 0.0,
+                "win_rate": 0.5,
+                "total_return": 0.0,
+                "weight_score": 0.0,
+                "excess_return": 0.0,
+            }
 
         total_return = sum(returns)
         win_rate = sum(1 for r in returns if r > 0) / len(returns)
@@ -72,7 +85,13 @@ def calc_indicator_performance(df, indicator_name: str, baseline_return: float =
             "excess_return": round(excess_return, 3),
         }
     except Exception:
-        return {"sharpe": 0.0, "win_rate": 0.5, "total_return": 0.0, "weight_score": 0.0, "excess_return": 0.0}
+        return {
+            "sharpe": 0.0,
+            "win_rate": 0.5,
+            "total_return": 0.0,
+            "weight_score": 0.0,
+            "excess_return": 0.0,
+        }
 
 
 def calc_dynamic_weights(df, indicators: List[str], prev_weights: Dict = None) -> dict:
@@ -104,16 +123,16 @@ def calc_dynamic_weights(df, indicators: List[str], prev_weights: Dict = None) -
     try:
         from .config import (
             WEIGHT_LOOKBACK_WINDOW,
-            WEIGHT_SMOOTHING_ALPHA,
-            WEIGHT_MIN,
             WEIGHT_MAX,
+            WEIGHT_MIN,
+            WEIGHT_SMOOTHING_ALPHA,
         )
     except ImportError:
         from config import (
             WEIGHT_LOOKBACK_WINDOW,
-            WEIGHT_SMOOTHING_ALPHA,
-            WEIGHT_MIN,
             WEIGHT_MAX,
+            WEIGHT_MIN,
+            WEIGHT_SMOOTHING_ALPHA,
         )
 
     # Phase 2.1: 滚动窗口 — 只用最近的数据，避免后见之明偏差
@@ -125,7 +144,9 @@ def calc_dynamic_weights(df, indicators: List[str], prev_weights: Dict = None) -
     baseline_returns = []
     for i in range(1, len(df)):
         baseline_returns.append(
-            (df["close"].iloc[i] - df["close"].iloc[i-1]) / df["close"].iloc[i-1] * baseline_signals[i-1]
+            (df["close"].iloc[i] - df["close"].iloc[i - 1])
+            / df["close"].iloc[i - 1]
+            * baseline_signals[i - 1]
         )
     baseline_return = sum(baseline_returns) / len(baseline_returns) if baseline_returns else 0.0
 
@@ -134,15 +155,17 @@ def calc_dynamic_weights(df, indicators: List[str], prev_weights: Dict = None) -
         performances[ind] = calc_indicator_performance(df, ind, baseline_return)
 
     sorted_indicators = sorted(
-        performances.keys(),
-        key=lambda x: performances[x]["weight_score"],
-        reverse=True
+        performances.keys(), key=lambda x: performances[x]["weight_score"], reverse=True
     )
 
-    total_score = sum(performances[ind]["weight_score"] for ind in sorted_indicators if performances[ind]["weight_score"] > 0)
+    total_score = sum(
+        performances[ind]["weight_score"]
+        for ind in sorted_indicators
+        if performances[ind]["weight_score"] > 0
+    )
     if total_score <= 0:
         equal_weight = 1.0 / len(indicators)
-        raw_weights = {ind: equal_weight for ind in indicators}
+        raw_weights = dict.fromkeys(indicators, equal_weight)
     else:
         raw_weights = {}
         for ind in indicators:
@@ -156,7 +179,7 @@ def calc_dynamic_weights(df, indicators: List[str], prev_weights: Dict = None) -
             raw_weights = {ind: w / weight_sum for ind, w in raw_weights.items()}
         else:
             equal_weight = 1.0 / len(indicators)
-            raw_weights = {ind: equal_weight for ind in indicators}
+            raw_weights = dict.fromkeys(indicators, equal_weight)
 
     # Phase 2.2: 指数平滑 — 降低权重波动，防止过拟合近期数据
     alpha = WEIGHT_SMOOTHING_ALPHA
@@ -184,7 +207,7 @@ def calc_dynamic_weights(df, indicators: List[str], prev_weights: Dict = None) -
         weights = {ind: w / total for ind, w in constrained.items()}
     else:
         equal_weight = 1.0 / len(indicators)
-        weights = {ind: equal_weight for ind in indicators}
+        weights = dict.fromkeys(indicators, equal_weight)
 
     return {
         "weights": weights,

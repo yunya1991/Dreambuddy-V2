@@ -25,9 +25,8 @@ Path B 的 7 维分析框架：
 
 import json
 import os
-from datetime import datetime, timedelta
-from typing import Dict, Optional, List
-
+from datetime import datetime
+from typing import Dict, Optional
 
 # ── BTC 减半时间表 ──
 BTC_HALVING_DATES = [
@@ -35,29 +34,34 @@ BTC_HALVING_DATES = [
     {"date": "2016-07-09", "block": 420000, "reward_before": 25, "reward_after": 12.5},
     {"date": "2020-05-11", "block": 630000, "reward_before": 12.5, "reward_after": 6.25},
     {"date": "2024-04-20", "block": 840000, "reward_before": 6.25, "reward_after": 3.125},
-    {"date": "2028-04-19", "block": 1050000, "reward_before": 3.125, "reward_after": 1.5625},  # 预估
+    {
+        "date": "2028-04-19",
+        "block": 1050000,
+        "reward_before": 3.125,
+        "reward_after": 1.5625,
+    },  # 预估
 ]
 
 # 7 阶段周期评分体系（来自 6-TRADING/skills/screen1/screen1-halving-cycle.md）
 HALVING_STAGES = [
     # (天数范围起始, 天数范围结束, 基线评分, 信号, 阶段名)
-    (-360, 0,      +5,  "NEUTRAL", "减半前积累"),
-    (0,    180,    +15, "BULL",    "供给冲击初期"),
-    (180,  360,    +10, "BULL",    "价格发现期"),
-    (360,  540,    +5,  "NEUTRAL", "顶部窗口"),
-    (540,  720,    -10, "BEAR",    "熊市确认"),
-    (720,  1080,   -15, "BEAR",    "去库存期"),
-    (1080, 999999, +5,  "NEUTRAL", "下一轮积累"),
+    (-360, 0, +5, "NEUTRAL", "减半前积累"),
+    (0, 180, +15, "BULL", "供给冲击初期"),
+    (180, 360, +10, "BULL", "价格发现期"),
+    (360, 540, +5, "NEUTRAL", "顶部窗口"),
+    (540, 720, -10, "BEAR", "熊市确认"),
+    (720, 1080, -15, "BEAR", "去库存期"),
+    (1080, 999999, +5, "NEUTRAL", "下一轮积累"),
 ]
 
 # 7 维权重配置（来自 6-TRADING strategy-type.json）
 DIMENSION_WEIGHTS = {
-    "A_tech":        0.40,  # 技术维度（外部已计算，此模块不重复）
-    "B_halving":     0.15,  # 减半周期
-    "C_miner":       0.15,  # 矿工经济
-    "D_onchain":     0.15,  # 链上估值
-    "E_macro":       0.10,  # 宏观金融
-    "F_cross_market": 0.05, # 跨市场周期
+    "A_tech": 0.40,  # 技术维度（外部已计算，此模块不重复）
+    "B_halving": 0.15,  # 减半周期
+    "C_miner": 0.15,  # 矿工经济
+    "D_onchain": 0.15,  # 链上估值
+    "E_macro": 0.10,  # 宏观金融
+    "F_cross_market": 0.05,  # 跨市场周期
 }
 
 # annotation 文件搜索路径
@@ -223,6 +227,7 @@ def _try_tavily_dimensions() -> Dict[str, dict]:
             from ..data.tavily_data import fetch_all_tavily_dimensions
         except (ImportError, ValueError):
             import sys
+
             sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
             from data.tavily_data import fetch_all_tavily_dimensions
 
@@ -263,16 +268,32 @@ def calc_fundamental_screen1(current_date: Optional[datetime] = None) -> Optiona
     # 维度 C/D/E/F：优先 Tavily API，回退到 annotation
     tavily_dims = _try_tavily_dimensions()
 
-    dim_c = tavily_dims.get("C_miner") or load_annotation_dimension("C_miner", "screen1_miner_annotation.json")
-    dim_d = tavily_dims.get("D_onchain") or load_annotation_dimension("D_onchain", "screen1_onchain_annotation.json")
-    dim_e = tavily_dims.get("E_macro") or load_annotation_dimension("E_macro", "screen1_macro_annotation.json")
-    dim_f = tavily_dims.get("F_cross_market") or load_annotation_dimension("F_cross_market", "screen1_cross_market_annotation.json")
+    dim_c = tavily_dims.get("C_miner") or load_annotation_dimension(
+        "C_miner", "screen1_miner_annotation.json"
+    )
+    dim_d = tavily_dims.get("D_onchain") or load_annotation_dimension(
+        "D_onchain", "screen1_onchain_annotation.json"
+    )
+    dim_e = tavily_dims.get("E_macro") or load_annotation_dimension(
+        "E_macro", "screen1_macro_annotation.json"
+    )
+    dim_f = tavily_dims.get("F_cross_market") or load_annotation_dimension(
+        "F_cross_market", "screen1_cross_market_annotation.json"
+    )
 
-    all_dims = {"B_halving": dim_b, "C_miner": dim_c, "D_onchain": dim_d, "E_macro": dim_e, "F_cross_market": dim_f}
+    all_dims = {
+        "B_halving": dim_b,
+        "C_miner": dim_c,
+        "D_onchain": dim_d,
+        "E_macro": dim_e,
+        "F_cross_market": dim_f,
+    }
 
     # 统计数据源
     tavily_count = sum(1 for v in all_dims.values() if v.get("source") == "tavily_api")
-    data_source = "tavily" if tavily_count >= 2 else ("mixed" if tavily_count >= 1 else "annotation")
+    data_source = (
+        "tavily" if tavily_count >= 2 else ("mixed" if tavily_count >= 1 else "annotation")
+    )
 
     # 筛选可用维度
     available_dims = {k: v for k, v in all_dims.items() if v.get("available", False)}
@@ -387,7 +408,11 @@ def fuse_tech_fundamental(
             "fundamental_available": False,
             "conflict": False,
             "fused": False,
-            "fallback_reason": fundamental.get("fallback_reason", "基本面不可用") if fundamental else "基本面未提供",
+            "fallback_reason": (
+                fundamental.get("fallback_reason", "基本面不可用")
+                if fundamental
+                else "基本面未提供"
+            ),
         }
 
     fund_direction = fundamental["direction"]
@@ -409,7 +434,11 @@ def fuse_tech_fundamental(
         }
 
     # 两者反向 → 降低 confidence，技术优先
-    if tech_direction != "NEUTRAL" and fund_direction != "NEUTRAL" and tech_direction != fund_direction:
+    if (
+        tech_direction != "NEUTRAL"
+        and fund_direction != "NEUTRAL"
+        and tech_direction != fund_direction
+    ):
         penalty = fundamental_weight * 0.4
         fused_confidence = max(0, tech_confidence * (1 - penalty))
         return {

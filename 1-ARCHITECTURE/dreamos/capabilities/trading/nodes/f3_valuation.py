@@ -19,6 +19,13 @@ from typing import Dict, Any, List
 
 from dreamos.registry.base import BaseNode
 from dreamos.shared.state import State, NodeResult
+from dreamos.capabilities.trading.stats_utils import (
+    normalize_tanh,
+    normalize_signed,
+    aggregate_signals,
+    z_score,
+    percentile_rank,
+)
 
 
 class F3ValuationNode(BaseNode):
@@ -42,6 +49,8 @@ class F3ValuationNode(BaseNode):
 
         # ── 1. MVRV Z-Score ──────────────────────────────
         mvrv_z = mkt.get("mvrv_z_score", 0)
+        # 已经是 z-score，直接用作为标准化值
+        mvrv_norm = mvrv_z
         if mvrv_z < -1:
             scores.append(("LONG", 0.25, f"MVRV Z-Score={mvrv_z:.2f}，低估区域"))
         elif mvrv_z > 2:
@@ -51,24 +60,30 @@ class F3ValuationNode(BaseNode):
 
         # ── 2. SOPR ──────────────────────────────────────
         sopr = mkt.get("sopr", 1)
-        if sopr < 0.95:
-            scores.append(("LONG", 0.20, f"SOPR={sopr:.2f}，亏损区，洗盘接近尾声"))
-        elif sopr > 1.05:
-            scores.append(("SHORT", 0.15, f"SOPR={sopr:.2f}，盈利区，警惕获利回吐"))
+        # 统计标准化：线性归一化到 [-1, 1]，区间 [0.95, 1.05]
+        sopr_norm = normalize_signed(sopr, 0.95, 1.05)
+        if sopr_norm < -0.5:
+            scores.append(("LONG", 0.20, f"SOPR={sopr:.4f} (z={sopr_norm:.2f})，亏损区，洗盘接近尾声"))
+        elif sopr_norm > 0.5:
+            scores.append(("SHORT", 0.15, f"SOPR={sopr:.4f} (z={sopr_norm:.2f})，盈利区，警惕获利回吐"))
 
         # ── 3. AHR999 ────────────────────────────────────
         ahr999 = mkt.get("ahr999", 0.5)
-        if ahr999 < 0.45:
-            scores.append(("LONG", 0.25, f"AHR999={ahr999:.2f}，定投黄金区"))
-        elif ahr999 > 1.2:
-            scores.append(("SHORT", 0.20, f"AHR999={ahr999:.2f}，风险区"))
+        # 统计标准化：线性归一化到 [-1, 1]，区间 [0.45, 1.2]
+        ahr999_norm = normalize_signed(ahr999, 0.45, 1.2)
+        if ahr999_norm < -0.5:
+            scores.append(("LONG", 0.25, f"AHR999={ahr999:.3f} (z={ahr999_norm:.2f})，定投黄金区"))
+        elif ahr999_norm > 0.5:
+            scores.append(("SHORT", 0.20, f"AHR999={ahr999:.3f} (z={ahr999_norm:.2f})，风险区"))
 
         # ── 4. Mayer Multiple ────────────────────────────
         mayer = mkt.get("mayer_multiple", 1)
-        if mayer < 0.6:
-            scores.append(("LONG", 0.20, f"Mayer={mayer:.2f}，过冷区"))
-        elif mayer > 2.4:
-            scores.append(("SHORT", 0.20, f"Mayer={mayer:.2f}，过热区"))
+        # 统计标准化：线性归一化到 [-1, 1]，区间 [0.8, 2.6]
+        mayer_norm = normalize_signed(mayer, 0.8, 2.6)
+        if mayer_norm < -0.5:
+            scores.append(("LONG", 0.20, f"Mayer={mayer:.3f} (z={mayer_norm:.2f})，过冷区"))
+        elif mayer_norm > 0.5:
+            scores.append(("SHORT", 0.20, f"Mayer={mayer:.3f} (z={mayer_norm:.2f})，过热区"))
 
         # ── 5. Pi Cycle Top ──────────────────────────────
         pi_cycle = mkt.get("pi_cycle_top", 0)
@@ -83,20 +98,13 @@ class F3ValuationNode(BaseNode):
         elif address_change < -20:
             scores.append(("SHORT", 0.15, f"活跃地址减少({address_change:.1f}%)，需求下降"))
 
-        # ── 综合计算 ────────────────────────────────────
-        long_score = sum(w for d, w, _ in scores if d == "LONG")
-        short_score = sum(w for d, w, _ in scores if d == "SHORT")
-        total = long_score + short_score
-
-        if total == 0:
-            direction = "HOLD"
-            confidence = 0.3
-        elif long_score > short_score:
-            direction = "LONG"
-            confidence = long_score / max(total, 0.01)
-        else:
-            direction = "SHORT"
-            confidence = short_score / max(total, 0.01)
+        # ── 综合计算（统计化聚合） ────────────────────────
+        stats = aggregate_signals(scores)
+        direction = stats.direction
+        confidence = stats.confidence
+        # 保持向后兼容：复用 aggregate_signals 计算的得分
+        long_score = stats.long_score
+        short_score = stats.short_score
 
         # 判断估值区间
         valuation_score = long_score - short_score
@@ -107,9 +115,15 @@ class F3ValuationNode(BaseNode):
         else:
             valuation_zone = "fair_value"
 
-        rationale = [r for _, _, r in scores[:6]]
+        rationale = stats.rationale[:6]
         rationale.insert(0, f"[F3估值] 估值得分={valuation_score:+.2f} | 区间={valuation_zone}")
         rationale.append(f"  方向: {direction} | 置信度: {confidence:.1%}")
+
+        # ── 降级检测：无 Tavily 时降低置信度 ──────────
+        degraded = mkt.get("_f_chain_degraded", False)
+        if degraded:
+            confidence *= 0.5
+            rationale.append("  ⚠ 基本面数据源降级，置信度已折减")
 
         outputs = {
             "valuation_score": round(valuation_score, 3),
@@ -123,7 +137,20 @@ class F3ValuationNode(BaseNode):
                 "count": active_addresses,
                 "change": address_change,
             },
+            "degraded": degraded,
             "scores": {"long": round(long_score, 3), "short": round(short_score, 3)},
+            "stats": {
+                "z_score": round(stats.z_score, 4),
+                "percentile": round(stats.percentile, 2),
+                "active_signals": stats.active_signals,
+                "total_signals": stats.total_signals,
+            },
+            "normalized_values": {
+                "mvrv_z_score": round(mvrv_norm, 4),
+                "sopr": round(sopr_norm, 4),
+                "ahr999": round(ahr999_norm, 4),
+                "mayer_multiple": round(mayer_norm, 4),
+            },
             "rationale": rationale,
         }
 

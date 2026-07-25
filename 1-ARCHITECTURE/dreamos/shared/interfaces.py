@@ -62,9 +62,19 @@ class Node(ABC):
     chain: str = ""                # A / C / F / G / T
     tags: List[str] = []
 
-    # ── 性能元信息（可选） ──────────────────────────────
-    estimated_tokens: int = 0
+    # ── 资源与优先级元信息 ──────────────────────────────
+    required_tokens: int = 0       # 文档标准字段：预计消耗 token
+    priority: int = 0              # 文档标准字段：节点优先级（越大越高）
     estimated_latency_ms: int = 0
+
+    # ── 兼容别名（旧代码可继续用） ─────────────────────
+    @property
+    def estimated_tokens(self) -> int:
+        return self.required_tokens
+
+    @estimated_tokens.setter
+    def estimated_tokens(self, val: int) -> None:
+        self.required_tokens = val
 
     # ── 核心方法 ────────────────────────────────────────
 
@@ -160,6 +170,25 @@ class Graph(ABC):
     def all_nodes(self) -> List[Node]:
         """所有节点"""
         ...
+
+    def get_node(self, node_id: str) -> Optional[Node]:
+        """根据 ID 获取节点（默认实现，子类可重写）"""
+        for n in self.all_nodes():
+            if n.node_id == node_id:
+                return n
+        return None
+
+    def insert_before(self, before_node_id: str, new_node: Node) -> bool:
+        """在指定节点前插入新节点
+
+        Args:
+            before_node_id: 插入位置（在此节点之前）
+            new_node: 要插入的新节点
+
+        Returns:
+            True 插入成功，False 失败（如 before_node_id 不存在）
+        """
+        return False
 
 
 # ============================================================

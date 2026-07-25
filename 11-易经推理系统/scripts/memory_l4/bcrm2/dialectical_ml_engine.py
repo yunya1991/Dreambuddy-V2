@@ -148,13 +148,38 @@ class HexagramMapper:
         self.feature_names_by_gua = feature_names_by_gua
         self.guas = list(GUA_DIMENSION_MAP.keys())
         self._feature_stats = None  # 用于归一化: (mean, std) per feature
+        self._gua_activity_stats = None  # 用于活跃度二次归一化: (mean, std) per gua
 
     def fit_feature_stats(self, X: np.ndarray, feature_names: List[str]):
-        """用训练集统计量做特征归一化基准"""
+        """用训练集统计量做特征归一化基准，同时计算各卦活跃度的历史分布用于均衡"""
         means = np.mean(X, axis=0)
         stds = np.std(X, axis=0)
         stds = np.where(stds < 1e-8, 1.0, stds)
         self._feature_stats = {"mean": means, "std": stds, "names": feature_names}
+
+        # 计算各卦活跃度的历史均值和标准差（用于二次归一化，均衡分布）
+        norm_X = (X - means) / stds
+        gua_activities = {g: [] for g in self.guas if g in GUA_DIMENSION_MAP}
+        for gua, feat_names in self.feature_names_by_gua.items():
+            if gua not in GUA_DIMENSION_MAP:
+                continue
+            indices = [i for i, fn in enumerate(feature_names) if fn in feat_names]
+            if indices:
+                vals = np.abs(norm_X[:, indices])
+                gua_activities[gua] = np.mean(vals, axis=1)
+
+        gua_mean = {}
+        gua_std = {}
+        for g in gua_activities:
+            arr = np.array(gua_activities[g])
+            if len(arr) > 1 and np.std(arr) > 1e-8:
+                gua_mean[g] = float(np.mean(arr))
+                gua_std[g] = float(np.std(arr))
+            else:
+                gua_mean[g] = 0.0
+                gua_std[g] = 1.0
+
+        self._gua_activity_stats = {"mean": gua_mean, "std": gua_std}
 
     def predict_gua(
         self,
@@ -200,13 +225,28 @@ class HexagramMapper:
             else:
                 gua_activity[gua] = 0.0
 
+        # 活跃度二次归一化：基于训练集中各卦活跃度的历史分布做 z-score
+        # 目的：均衡各卦被选为上下卦的概率，解决卦象分布偏斜问题
+        balanced_activity = {}
+        if self._gua_activity_stats is not None:
+            for gua in gua_activity:
+                gmean = self._gua_activity_stats["mean"].get(gua, 0.0)
+                gstd = self._gua_activity_stats["std"].get(gua, 1.0)
+                if gstd > 1e-8:
+                    balanced_activity[gua] = (gua_activity[gua] - gmean) / gstd
+                else:
+                    balanced_activity[gua] = 0.0
+        else:
+            balanced_activity = gua_activity.copy()
+
         # 排序取活跃度最高的两个维度作为上下卦
         # 上卦 = 最活跃的维度（主导力量）
         # 下卦 = 次活跃的维度（次要力量/基础）
-        sorted_guas = sorted(gua_activity.items(), key=lambda x: x[1], reverse=True)
+        # 使用均衡后的活跃度排序，但保留原始活跃度值用于强度计算
+        sorted_guas = sorted(balanced_activity.items(), key=lambda x: x[1], reverse=True)
         upper_gua = sorted_guas[0][0] if len(sorted_guas) > 0 else "qian"
         lower_gua = sorted_guas[1][0] if len(sorted_guas) > 1 else "kun"
-        gua_strengths = gua_activity
+        gua_strengths = gua_activity  # 原始活跃度用于强度计算
 
         # 查64卦
         gua_key = (upper_gua, lower_gua)
@@ -953,6 +993,17 @@ class DialecticalMLEngine:
                 "feature_names_by_gua": self.feature_names_by_gua,
                 "n_classes": self.n_classes,
             }
+
+            if self.hexagram_mapper is not None:
+                if self.hexagram_mapper._feature_stats is not None:
+                    meta["feature_stats"] = {
+                        "mean": self.hexagram_mapper._feature_stats["mean"].tolist(),
+                        "std": self.hexagram_mapper._feature_stats["std"].tolist(),
+                        "names": self.hexagram_mapper._feature_stats["names"],
+                    }
+                if self.hexagram_mapper._gua_activity_stats is not None:
+                    meta["gua_activity_stats"] = self.hexagram_mapper._gua_activity_stats
+
             with open(os.path.join(dir_path, "model_meta.json"), "w", encoding="utf-8") as f:
                 json.dump(meta, f, indent=2, ensure_ascii=False)
             return True
@@ -970,6 +1021,17 @@ class DialecticalMLEngine:
             self.feature_names_by_gua = meta["feature_names_by_gua"]
             self.n_classes = meta.get("n_classes", 3)
             self.hexagram_mapper = HexagramMapper(self.feature_names_by_gua)
+
+            if "feature_stats" in meta:
+                fs = meta["feature_stats"]
+                self.hexagram_mapper._feature_stats = {
+                    "mean": np.array(fs["mean"]),
+                    "std": np.array(fs["std"]),
+                    "names": fs["names"],
+                }
+
+            if "gua_activity_stats" in meta:
+                self.hexagram_mapper._gua_activity_stats = meta["gua_activity_stats"]
 
             l1_path = os.path.join(dir_path, "l1_model.txt")
             if os.path.exists(l1_path):

@@ -14,10 +14,14 @@
   python3 auto_monitor.py --distill-only    # 仅执行复盘和PR评论
   python3 auto_monitor.py --check-only      # 仅检查状态不触发执行
 """
-import os, sys, json, subprocess, time, argparse, warnings
-from datetime import datetime, timezone, timedelta
+import argparse
+import json
+import os
+import subprocess
+import sys
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
-from dotenv import load_dotenv
 
 warnings.filterwarnings("ignore")
 
@@ -26,7 +30,8 @@ sys.path.insert(0, str(BASE_DIR / "core"))
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
 try:
-    from config_loader import load_config, get_config, get_config_int
+    from config_loader import load_config
+
     load_config("v15")
 except Exception:
     pass
@@ -34,18 +39,21 @@ except Exception:
 # ── 配置 ───────────────────────────────────────────────────────────────────
 AGENT_A_LOG_DIR = BASE_DIR / "logs" / "v15"
 AGENT_B_LOG_DIR = BASE_DIR / "logs" / "v15"
-MAX_IDLE_MINUTES = 240   # 超过4小时认为未正常运行
+MAX_IDLE_MINUTES = 240  # 超过4小时认为未正常运行
 GH_TOKEN = os.environ.get("GH_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
 PR_NUMBER = "52"
 REPO = "yunya1991/Dreambuddy-V2"
 
 # ── 工具函数 ────────────────────────────────────────────────────────────────
 
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
+
 def _fmt_ts(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+
 
 def get_latest_log_ts(log_dir: Path) -> datetime:
     """获取最近日志文件的时间戳"""
@@ -71,6 +79,7 @@ def get_latest_log_ts(log_dir: Path) -> datetime:
         mtime = logs[0].stat().st_mtime
         return datetime.fromtimestamp(mtime, tz=timezone.utc)
 
+
 def is_agent_running(agent_name: str, log_dir: Path) -> tuple[bool, str]:
     """检查 Agent 是否正常运行，返回 (是否正常, 状态说明)"""
     latest_ts = get_latest_log_ts(log_dir)
@@ -78,14 +87,16 @@ def is_agent_running(agent_name: str, log_dir: Path) -> tuple[bool, str]:
     idle_minutes = (now - latest_ts).total_seconds() / 60
 
     if latest_ts == datetime.min.replace(tzinfo=timezone.utc):
-        return False, f"从未运行过"
+        return False, "从未运行过"
 
     if idle_minutes > MAX_IDLE_MINUTES:
         return False, f"已空闲 {idle_minutes:.0f} 分钟（阈值 {MAX_IDLE_MINUTES} 分钟）"
 
     return True, f"最近运行 {_fmt_ts(latest_ts)}，空闲 {idle_minutes:.0f} 分钟"
 
+
 # ── 执行 Agent ──────────────────────────────────────────────────────────────
+
 
 def run_agent_a():
     """执行 V15 马丁策略交易器"""
@@ -99,13 +110,17 @@ def run_agent_a():
 
     try:
         result = subprocess.run(
-            ["python3", str(script)],
-            cwd=str(BASE_DIR),
-            capture_output=True, text=True, timeout=180
+            ["python3", str(script)], cwd=str(BASE_DIR), capture_output=True, text=True, timeout=180
         )
-        key_lines = [l for l in result.stdout.split("\n")
-                     if any(kw in l for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误"])
-                     and "Warning" not in l]
+        key_lines = [
+            l
+            for l in result.stdout.split("\n")
+            if any(
+                kw in l
+                for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误"]
+            )
+            and "Warning" not in l
+        ]
         for line in key_lines[-10:]:
             print(f"  {line.strip()}")
         if result.returncode != 0:
@@ -119,6 +134,7 @@ def run_agent_a():
     except Exception as e:
         print(f"[AutoMonitor] V15 执行异常: {e}")
         return False
+
 
 def run_agent_b():
     """执行 V15 马丁策略交易器（备用入口）"""
@@ -134,11 +150,19 @@ def run_agent_b():
         result = subprocess.run(
             ["python3", str(script), "trade"],
             cwd=str(BASE_DIR),
-            capture_output=True, text=True, timeout=180
+            capture_output=True,
+            text=True,
+            timeout=180,
         )
-        key_lines = [l for l in result.stdout.split("\n")
-                     if any(kw in l for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误"])
-                     and "Warning" not in l]
+        key_lines = [
+            l
+            for l in result.stdout.split("\n")
+            if any(
+                kw in l
+                for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误"]
+            )
+            and "Warning" not in l
+        ]
         for line in key_lines[-10:]:
             print(f"  {line.strip()}")
         if result.returncode != 0:
@@ -153,7 +177,9 @@ def run_agent_b():
         print(f"[AutoMonitor] V15 (run.py) 执行异常: {e}")
         return False
 
+
 # ── 复盘蒸馏学习 ────────────────────────────────────────────────────────────
+
 
 def load_logs(log_dir: Path, limit: int = 10) -> list:
     """加载最近 N 条日志"""
@@ -169,6 +195,7 @@ def load_logs(log_dir: Path, limit: int = 10) -> list:
         except Exception:
             pass
     return logs
+
 
 def distill_v15():
     """V15 马丁策略复盘蒸馏学习"""
@@ -209,7 +236,9 @@ def distill_v15():
     if total_trades > 0 and win_rate < 40:
         print(f"[AutoMonitor] ⚠️ 胜率{win_rate:.1f}%低于40%，建议优化策略参数")
 
+
 # ── PR 评论 ─────────────────────────────────────────────────────────────────
+
 
 def post_pr_comment():
     """在远端 PR 下创建评论"""
@@ -228,7 +257,9 @@ def post_pr_comment():
             result = subprocess.run(
                 ["python3", str(script)],
                 cwd=str(BASE_DIR),
-                capture_output=True, text=True, timeout=60
+                capture_output=True,
+                text=True,
+                timeout=60,
             )
             print(result.stdout[-500:] if len(result.stdout) > 500 else result.stdout)
             if "PR评论成功" in result.stdout:
@@ -242,7 +273,7 @@ def post_pr_comment():
             return False
     else:
         # 手动创建简单评论
-        cycle = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+        cycle = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         logs_a = load_logs(AGENT_A_LOG_DIR, limit=5)
         logs_b = load_logs(AGENT_B_LOG_DIR, limit=5)
 
@@ -266,12 +297,10 @@ def post_pr_comment():
 - 本报告由 auto_monitor.py 自动生成
 """
         url = f"https://api.github.com/repos/{REPO}/issues/{PR_NUMBER}/comments"
-        headers = {
-            "Authorization": f"token {GH_TOKEN}",
-            "Accept": "application/vnd.github.v3+json"
-        }
+        headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
         try:
             import requests
+
             r = requests.post(url, headers=headers, json={"body": body}, timeout=15)
             if r.status_code in (200, 201):
                 print("[AutoMonitor] PR 评论创建成功")
@@ -283,7 +312,9 @@ def post_pr_comment():
             print(f"[AutoMonitor] PR 评论异常: {e}")
             return False
 
+
 # ── 主流程 ──────────────────────────────────────────────────────────────────
+
 
 def main():
     parser = argparse.ArgumentParser(description="交易系统自动化监控")
@@ -324,6 +355,7 @@ def main():
     print("\n" + "=" * 60)
     print(f"[AutoMonitor] 完成 | {_fmt_ts(_now())}")
     print("=" * 60)
+
 
 if __name__ == "__main__":
     main()

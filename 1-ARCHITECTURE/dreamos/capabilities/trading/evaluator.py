@@ -650,13 +650,27 @@ class TradingAnalysisEvaluator:
 
     def _generate_backtest_trades(self, module_ids: List[str], scenario: str,
                                    period: str, price_data: Optional[List[Dict[str, Any]]]) -> List[float]:
-        """生成回测交易（简化版：基于模块能力估算）"""
+        """生成回测交易序列
+
+        优先使用真实交易记录；无记录时基于模块能力指标生成确定性序列。
+        不使用 random.random()，改为基于正态分布逆变换的确定性方法。
+        """
         if not self._module_cache:
             return []
 
-        base_win_rate = 0.5
-        base_avg_pnl = 0
+        # 收集真实交易记录
+        real_trades: List[float] = []
+        for mid in module_ids:
+            cap = self._module_cache.get(mid)
+            if cap and hasattr(cap, 'recent_trades') and cap.recent_trades:
+                real_trades.extend(cap.recent_trades)
 
+        if real_trades:
+            return real_trades[-60:]  # 最多60笔
+
+        # 无真实记录时，基于能力指标生成确定性序列
+        base_win_rate = 0.5
+        base_avg_pnl = 0.0
         for mid in module_ids:
             cap = self._module_cache.get(mid)
             if cap:
@@ -671,41 +685,43 @@ class TradingAnalysisEvaluator:
             "30d": 10, "60d": 20, "90d": 30, "180d": 60,
         }.get(period, 30)
 
-        import random
+        # 确定性序列：使用均匀分布的逆CDF替代 random.random()
+        # 这确保相同输入始终产生相同输出（可复现）
+        import math
         trades = []
-        for _ in range(num_trades):
-            if random.random() < base_win_rate * scenario_factor:
-                pnl = abs(base_avg_pnl) * (0.5 + random.random())
+        adjusted_win_rate = min(0.95, base_win_rate * scenario_factor)
+        for i in range(num_trades):
+            # 使用 golden ratio 序列生成确定性 "随机" 值（替代 random.random）
+            u = (i * 0.6180339887498949) % 1.0
+            if u < adjusted_win_rate:
+                # 盈利交易
+                u2 = ((i + 1) * 0.6180339887498949) % 1.0
+                pnl = abs(base_avg_pnl) * (0.5 + u2)
             else:
-                pnl = -abs(base_avg_pnl) * (0.5 + random.random() * 0.5)
+                # 亏损交易
+                u2 = ((i + 1) * 0.6180339887498949) % 1.0
+                pnl = -abs(base_avg_pnl) * (0.5 + u2 * 0.5)
             trades.append(pnl)
 
         return trades
 
     def _calculate_max_drawdown(self, trades: List[float]) -> float:
         """计算最大回撤"""
-        if not trades:
-            return 0
-        cumulative = 0
-        max_dd = 0
-        peak = 0
-        for pnl in trades:
-            cumulative += pnl
-            peak = max(peak, cumulative)
-            drawdown = peak - cumulative
-            max_dd = max(max_dd, drawdown)
-        return max_dd
+        from dreamos.capabilities.trading.stats_utils import calculate_metrics
+        metrics = calculate_metrics(trades, periods_per_year=365)
+        return metrics.max_drawdown
 
-    def _calculate_sharpe(self, trades: List[float]) -> float:
-        """计算夏普比率"""
-        if len(trades) < 2:
-            return 0
-        avg = sum(trades) / len(trades)
-        variance = sum((t - avg) ** 2 for t in trades) / len(trades)
-        std = variance ** 0.5 if variance > 0 else 0.001
-        if std == 0:
-            return 0
-        return avg / std * (len(trades) ** 0.5)
+    def _calculate_sharpe(self, pnls: List[float]) -> float:
+        """计算年化夏普比率"""
+        from dreamos.capabilities.trading.stats_utils import calculate_metrics
+        metrics = calculate_metrics(pnls, periods_per_year=365)
+        return metrics.sharpe_ratio
+
+    def _calculate_sortino(self, pnls: List[float]) -> float:
+        """计算年化 Sortino 比率"""
+        from dreamos.capabilities.trading.stats_utils import calculate_metrics
+        metrics = calculate_metrics(pnls, periods_per_year=365)
+        return metrics.sortino_ratio
 
     # ── 4. 编排推荐 ──────────────────────────────────────────
 

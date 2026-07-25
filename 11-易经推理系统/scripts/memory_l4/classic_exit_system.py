@@ -267,29 +267,36 @@ class ExitConfig:
 
     # ── L0 硬退出 ────────────────────────────────────────────────────────
     l0_max_hold_sec: int = 86400
-    l0_max_loss_pct: float = -0.05
+    # 回退：对比实验证明 ClassicExit 所有参数组均远逊于原始 BCRM 离场（+334% vs +2~6%）
+    # 根因：复杂离场系统过早平仓，平均持仓 4-10h vs 原始 29h，利润无法充分奔跑
+    # 回退到保守参数：L0 仅作为安全网，不主动干扰正常离场
+    l0_max_loss_pct: float = -0.20  # 仅在极端亏损时触发（3x杠杆下价格跌~6.7%）
     l0_liq_buffer_enabled: bool = True
     l0_liq_buffer_pct: float = 0.005
     l0_weekly_reversal_enabled: bool = True
     l0_weekly_reversal_confirm_weeks: int = 2
     l0_weekly_reversal_adx_min: float = 20.0
-    l0_risk_gate_enabled: bool = True
+    l0_risk_gate_enabled: bool = False  # 对比实验证明 risk_gate 是收益杀手，默认关闭
     l0_risk_gate_cooldown_min: float = 30.0
-    l0_risk_gate_long_thr: float = 0.50
-    l0_risk_gate_short_thr: float = 0.40
+    l0_risk_gate_long_thr: float = 0.75
+    l0_risk_gate_short_thr: float = 0.65
     l0_risk_gate_min_hold_sec: float = 0.0
-    l0_risk_gate_confirm_n: int = 2
+    l0_risk_gate_confirm_n: int = 4
     l0_risk_gate_confirm_window_m: int = 0
     l0_risk_gate_reduce_frac: float = 0.5
     l0_risk_gate_deadband: float = 0.05
     l0_risk_gate_close_enabled: bool = False
     l0_risk_gate_close_delay_min: float = 60.0
     l0_risk_gate_close_risk_boost: float = 0.10
+    # 盈利旁路：仓位盈利超过此阈值时跳过 risk_gate（让利润奔跑）
+    l0_risk_gate_profit_bypass_enabled: bool = True
+    l0_risk_gate_profit_bypass_pct: float = 0.03  # pnl_eff > 3% 时跳过
 
     # ── L1/L2 价值风险 ──────────────────────────────────────────────────
     l1_enabled: bool = True
-    l2_close_threshold: float = 0.75
-    l2_reduce_threshold: float = 0.55
+    # 回退到保守值：对比实验证明 L1/L2 过度干预导致收益暴跌
+    l2_close_threshold: float = 0.80  # 仅在极高风险时触发
+    l2_reduce_threshold: float = 0.65
     l2_reduce_min_profit_pct: float = 0.01
     l2_reduce_base_frac: float = 0.30
     l2_reduce_max_frac: float = 0.70
@@ -320,6 +327,7 @@ class ExitConfig:
 
     # ── Triple Barrier ─────────────────────────────────────────────────
     tb_enabled: bool = True
+    # 回退到原始值：贝叶斯寻优 sl=1.03 过紧导致频繁扫损
     tb_sl_atr_mult: float = 1.5
     tb_tp_atr_mult: float = 3.0
     tb_sl_min_pct: float = 0.02
@@ -351,12 +359,14 @@ class ExitConfig:
     tstp_raise_tp_value_thr: float = 0.65    # TSTP 未达衰减tp时，hold_value > 此值触发 RAISE_TP
     tstp_raise_tp_atr_mult: float = 4.0      # 新止盈 = ATR × 此倍数（高于默认 3.0）
     l2_raise_tp_enabled: bool = True
+    # 回退到原始值：贝叶斯寻优值过度限制 RAISE_TP
     l2_raise_tp_value_thr: float = 0.65     # L1/L2 hold_value > 此值且 hold_risk 低时触发 RAISE_TP
     l2_raise_tp_risk_thr: float = 0.30       # L1/L2 hold_risk < 此值才触发 RAISE_TP
     l2_raise_tp_atr_mult: float = 4.0       # 新止盈 ATR 倍数
 
     # ── 跟踪止损 ────────────────────────────────────────────────────────
     trailing_enabled: bool = True
+    # 回退到原始值：贝叶斯寻优值过度收紧跟踪止损
     trailing_arm_profit_pct: float = 0.06
     trailing_retrace_pct: float = 0.03
 
@@ -739,6 +749,10 @@ class ClassicExitSystem:
             features=features,
         )
 
+        # 盈利旁路：仓位盈利超过阈值时跳过 risk_gate，让利润奔跑
+        if self.config.l0_risk_gate_profit_bypass_enabled and pos.pnl_eff > self.config.l0_risk_gate_profit_bypass_pct:
+            return decision
+
         key = pos.coin or "default"
         rg = self.state.risk_gate.get(key, RiskGateState())
         rg.last_hold_risk = features.hold_risk
@@ -1051,10 +1065,29 @@ class ClassicExitSystem:
         cost_buffer_eff = cost_buffer * pos.leverage if self.config.apply_leverage_to_thresholds else cost_buffer
         pnl_for_check = pos.pnl_eff if self.config.apply_leverage_to_thresholds else pos.unrealized_pnl_pct
 
-        if pnl_for_check < cost_buffer_eff:
-            return decision
-
         regime_label = "TREND" if regime.lower() in ("trend", "trending") else "CHOP"
+
+        # 修复：原逻辑盈利<成本就 HOLD，导致长时间无盈利持仓占用仓位和风险
+        # 新逻辑：盈利<成本但持仓已达最大阶段 → 减仓/平仓释放死仓
+        if pnl_for_check < cost_buffer_eff:
+            max_stage = max(sorted_times) if sorted_times else 0
+            if max_stage > 0 and age >= max_stage:
+                if features.hold_value <= self.config.tstp_close_if_weak_value_thr:
+                    decision.action = ExitAction.CLOSE
+                    decision.tstp_triggered = True
+                    decision.tstp_stage = stage_idx
+                    decision.reason = f"TSTP_{regime_label}_CLOSE_NO_PROFIT({age/3600:.1f}h,v={features.hold_value:.2f})"
+                    decision.confidence = 0.70
+                    return decision
+                else:
+                    decision.action = ExitAction.REDUCE
+                    decision.tstp_triggered = True
+                    decision.tstp_stage = stage_idx
+                    decision.reduce_frac = 0.30
+                    decision.reason = f"TSTP_{regime_label}_REDUCE_NO_PROFIT({age/3600:.1f}h,v={features.hold_value:.2f})"
+                    decision.confidence = 0.60
+                    return decision
+            return decision
 
         if pos.is_long:
             tp_hit = pnl_for_check >= tp_pct_check
@@ -1298,6 +1331,8 @@ class ClassicExitSystem:
         feats.macd_hist = self._calc_macd_hist(closes)
         feats.adx = self._calc_adx(candles, 14) if len(candles) >= 28 else 25.0
         feats.atr_pct = self._calc_atr_pct(candles, 14) if len(candles) >= 15 else pos.atr_pct
+        # Choppiness Index（修复：原实现从未计算，导致 chop_risk 死代码）
+        feats.chop = self._calc_chop(candles, 14) if len(candles) >= 15 else 50.0
 
         # EMA 系列
         ema9 = self._ema(closes, 9)
@@ -1306,32 +1341,39 @@ class ClassicExitSystem:
         feats.ema_short_dist = (closes[-1] - ema20) / ema20 if ema20 > 0 else 0.0
         feats.pot_dist_to_ema50 = (closes[-1] - ema50) / ema50 if ema50 > 0 else 0.0
 
-        # 回撤（含 dd 启动门槛：mfe 覆盖成本或达到波动尺度后才启用 dd）
-        lookback = min(50, len(closes))
-        recent = closes[-lookback:]
-        peak = max(recent)
-        trough = min(recent)
-        if pos.is_long:
-            raw_dd = (peak - closes[-1]) / peak if peak > 0 else 0.0
-            mfe_pct = (peak - closes[0]) / closes[0] if closes[0] > 0 else 0.0
+        # 回撤（基于持仓 entry_price 的真实回撤）
+        # 修复：原实现用 K线窗口 peak/trough 代替持仓回撤，且 mfe 启用门槛
+        # 导致亏损单 dd 被强制清零，hold_risk 严重失真
+        if pos.entry_price > 0 and pos.current_price > 0:
+            if pos.is_long:
+                # 多头：从 entry 到 current 的亏损幅度（正数）
+                pnl_raw = (pos.current_price - pos.entry_price) / pos.entry_price
+            else:
+                # 空头：从 entry 到 current 的反向亏损幅度
+                pnl_raw = (pos.entry_price - pos.current_price) / pos.entry_price
+            raw_dd = max(0.0, -pnl_raw)
         else:
-            raw_dd = (closes[-1] - trough) / trough if trough > 0 else 0.0
-            mfe_pct = (closes[0] - trough) / closes[0] if closes[0] > 0 else 0.0
-        raw_dd = min(1.0, max(0.0, raw_dd))
-        if pos.max_dd_pct > raw_dd:
-            raw_dd = min(1.0, max(0.0, pos.max_dd_pct))
+            raw_dd = 0.0
 
-        cost_buffer = self._calc_cost_buffer(pos)
-        mfe_cost_thr = cost_buffer * self.config.dd_mfe_enable_cost_mult
-        atr_pct_val = feats.atr_pct if feats.atr_pct > 0 else pos.atr_pct
-        mfe_atr_thr = atr_pct_val * self.config.dd_mfe_enable_atr_mult
-        mfe_enable_thr = max(mfe_cost_thr, mfe_atr_thr)
+        # 优先使用 pos.max_dd_pct（上游提供的持仓最大回撤，更准确）
+        if pos.max_dd_pct > 0:
+            raw_dd = max(raw_dd, pos.max_dd_pct)
 
-        mfe_from_entry = max(0.0, pos.mfe_pnl_pct) if pos.mfe_pnl_pct > 0 else mfe_pct
-        if mfe_from_entry >= mfe_enable_thr:
-            feats.dd = raw_dd
+        feats.dd = min(1.0, raw_dd)
+
+        # MFE：优先使用 pos.mfe_pnl_pct（持仓后最大盈利幅度）
+        if pos.mfe_pnl_pct > 0:
+            feats.mfe = pos.mfe_pnl_pct
         else:
-            feats.dd = 0.0
+            # 回退：从 K线窗口估算（仅当 pos 未提供 MFE 时）
+            lookback = min(50, len(closes))
+            recent = closes[-lookback:]
+            if pos.is_long:
+                peak = max(recent)
+                feats.mfe = max(0.0, (peak - closes[0]) / closes[0]) if closes[0] > 0 else 0.0
+            else:
+                trough = min(recent)
+                feats.mfe = max(0.0, (closes[0] - trough) / closes[0]) if closes[0] > 0 else 0.0
 
         # 时间纬度形态（日线=EMA20斜率，周线=EMA50斜率）
         ema20_prev = self._ema(closes[:-1], 20) if len(closes) > 20 else ema20
@@ -1470,10 +1512,61 @@ class ClassicExitSystem:
         feats.hold_risk += feats.risk_budget_penalty
         feats.hold_risk = float(_clip(feats.hold_risk, 0.0, 1.0))
 
-        # hold_value = 1 - hold_risk（v1 简化）
-        feats.hold_value = 1.0 - feats.hold_risk
+        # hold_value 独立计算（修复：原 1-risk 等价反推导致 RAISE_TP 误触发）
+        feats.hold_value = self._calc_hold_value(pos, feats)
 
         return feats
+
+    def _calc_hold_value(self, pos: PositionState, feats: ExitFeatureSet) -> float:
+        """
+        计算持有价值分（独立于 hold_risk）
+
+        基于正向因子评估"继续持有的价值"：
+        - 趋势一致性：趋势方向与持仓方向一致时价值高
+        - 动量延续：动量方向与持仓方向一致时价值高
+        - 量价配合：成交量配合价格方向时价值高
+        - ADX 强趋势：强趋势市场持仓价值高
+        - 盈利加成：盈利的单子价值更高（让利润奔跑）
+        - 震荡市惩罚：震荡市持仓价值低
+        """
+        # 趋势一致性价值
+        if pos.is_long:
+            trend_value = _clip(feats.trend_d_dir * 0.3 + feats.trend_w_dir * 0.2 + 0.5, 0.0, 1.0)
+        else:
+            trend_value = _clip(-feats.trend_d_dir * 0.3 - feats.trend_w_dir * 0.2 + 0.5, 0.0, 1.0)
+
+        # 动量延续价值
+        if pos.is_long:
+            mom_value = _clip(feats.mom_dir * 0.25 + (feats.mom_rsi_delta / 5.0) + 0.5, 0.0, 1.0)
+        else:
+            mom_value = _clip(-feats.mom_dir * 0.25 - (feats.mom_rsi_delta / 5.0) + 0.5, 0.0, 1.0)
+
+        # 量价配合价值
+        if pos.is_long:
+            vol_value = _clip(feats.vol_dir * 0.15 + 0.5, 0.0, 1.0)
+        else:
+            vol_value = _clip(-feats.vol_dir * 0.15 + 0.5, 0.0, 1.0)
+
+        # ADX 强趋势加成
+        adx_value = _clip((feats.adx - 20.0) / 30.0, 0.0, 1.0) if feats.adx > 20 else 0.0
+
+        # 盈利加成（盈利的单子价值更高）
+        pnl_eff = pos.pnl_eff if self.config.apply_leverage_to_thresholds else pos.unrealized_pnl_pct
+        pnl_value = _clip(pnl_eff * 2.0, 0.0, 1.0) if pnl_eff > 0 else 0.0
+
+        # 震荡市惩罚
+        chop_penalty = _clip((feats.chop - 50.0) / 50.0, 0.0, 0.3) if feats.chop > 50 else 0.0
+
+        value = (
+            (0.30 * trend_value)
+            + (0.20 * mom_value)
+            + (0.15 * vol_value)
+            + (0.15 * adx_value)
+            + (0.20 * pnl_value)
+            - chop_penalty
+        )
+
+        return float(_clip(value, 0.0, 1.0))
 
     def _calc_hold_risk(self, pos: PositionState, feats: ExitFeatureSet) -> float:
         """计算持有风险分（对齐 ml_trade_service.py 权重与因子）"""
@@ -1716,6 +1809,51 @@ class ClassicExitSystem:
             return dx
         except Exception:
             return 25.0
+
+    @staticmethod
+    def _calc_chop(candles: List[Dict], n: int = 14) -> float:
+        """
+        Choppiness Index（震荡指标）
+
+        公式: CI = 100 * log10(sum(ATR, n) / (HH - LL)) / log10(n)
+        - CI < 38.2: 趋势市
+        - CI > 61.8: 震荡市
+        - 38.2 ~ 61.8: 过渡区
+
+        修复：原实现从未计算 chop，导致 _calc_hold_risk 中 chop_risk 死代码
+        """
+        if len(candles) < n + 1:
+            return 50.0
+        try:
+            start = max(0, len(candles) - (n + 1))
+            highs = []
+            lows = []
+            closes = []
+            for c in candles[start:]:
+                highs.append(float(c.get("h", c.get("high", 0))))
+                lows.append(float(c.get("l", c.get("low", 0))))
+                closes.append(float(c.get("c", c.get("close", 0))))
+
+            # ATR sum（n 根的真实波幅之和）
+            atr_sum = 0.0
+            for i in range(1, len(highs)):
+                tr = max(highs[i] - lows[i],
+                         abs(highs[i] - closes[i - 1]),
+                         abs(lows[i] - closes[i - 1]))
+                atr_sum += tr
+
+            # 窗口内最高-最低
+            hh = max(highs)
+            ll = min(lows)
+            range_hl = hh - ll
+
+            if range_hl <= 0 or atr_sum <= 0:
+                return 50.0
+
+            ci = 100.0 * math.log10(atr_sum / range_hl) / math.log10(n)
+            return float(_clip(ci, 0.0, 100.0))
+        except Exception:
+            return 50.0
 
     # ══════════════════════════════════════════════════════════════════
     # 辅助方法

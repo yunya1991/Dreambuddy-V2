@@ -9,17 +9,15 @@
 任一阻断 = SKIP（Fail-Closed 原则）。
 """
 
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 from .context import (
-    Signal,
-    RiskContext,
-    RiskCheckResult,
     ReasonCode,
-    Direction,
+    RiskCheckResult,
+    RiskContext,
+    Signal,
 )
-from .registry import RuleRegistry, RuleCategory
+from .registry import RuleCategory, RuleRegistry
 
 
 class PreTradeGate:
@@ -100,7 +98,7 @@ class PreTradeGate:
             except Exception as e:
                 return RiskCheckResult.fail_result(
                     reason_code=ReasonCode.HARD_FAIL_MISSING_CORE_DATA,
-                    message=f"门禁规则 '{rule_info.name}' 执行失败: {e}"
+                    message=f"门禁规则 '{rule_info.name}' 执行失败: {e}",
                 )
 
         result = RiskCheckResult.pass_result("所有门禁通过")

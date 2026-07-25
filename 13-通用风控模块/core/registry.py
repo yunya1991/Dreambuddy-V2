@@ -11,13 +11,14 @@
 每个规则是一个可调用对象，接收上下文参数，返回检查结果。
 """
 
-from typing import Dict, List, Callable, Any, Optional, Type
-from enum import Enum
 from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
 
 class RuleCategory(str, Enum):
     """规则类别"""
+
     GATE = "gate"
     POSITION = "position"
     EXIT = "exit"
@@ -26,6 +27,7 @@ class RuleCategory(str, Enum):
 @dataclass
 class RuleInfo:
     """规则元信息"""
+
     name: str
     category: RuleCategory
     priority: int = 100
@@ -91,6 +93,7 @@ class RuleRegistry:
 
     def register_gate(self, name: str, priority: int = 100, description: str = "", **kwargs):
         """门禁规则装饰器"""
+
         def decorator(func):
             self.register(
                 name=name,
@@ -98,13 +101,15 @@ class RuleRegistry:
                 handler=func,
                 priority=priority,
                 description=description,
-                **kwargs
+                **kwargs,
             )
             return func
+
         return decorator
 
     def register_position(self, name: str, priority: int = 100, description: str = "", **kwargs):
         """仓位规则装饰器"""
+
         def decorator(func):
             self.register(
                 name=name,
@@ -112,13 +117,15 @@ class RuleRegistry:
                 handler=func,
                 priority=priority,
                 description=description,
-                **kwargs
+                **kwargs,
             )
             return func
+
         return decorator
 
     def register_exit(self, name: str, priority: int = 100, description: str = "", **kwargs):
         """离场规则装饰器"""
+
         def decorator(func):
             self.register(
                 name=name,
@@ -126,9 +133,10 @@ class RuleRegistry:
                 handler=func,
                 priority=priority,
                 description=description,
-                **kwargs
+                **kwargs,
             )
             return func
+
         return decorator
 
     def unregister(self, name: str) -> bool:
@@ -186,7 +194,7 @@ class RuleRegistry:
         *args,
         config: Optional[Dict[str, Any]] = None,
         stop_on_fail: bool = True,
-        **kwargs
+        **kwargs,
     ) -> List[Any]:
         """按优先级顺序执行一类规则
 
@@ -212,18 +220,22 @@ class RuleRegistry:
 
             try:
                 result = handler(*args, config=rule_config, **kwargs)
-                results.append({
-                    "rule_name": rule_info.name,
-                    "result": result,
-                })
+                results.append(
+                    {
+                        "rule_name": rule_info.name,
+                        "result": result,
+                    }
+                )
 
                 if stop_on_fail and hasattr(result, "passed") and not result.passed:
                     break
             except Exception as e:
-                results.append({
-                    "rule_name": rule_info.name,
-                    "error": str(e),
-                })
+                results.append(
+                    {
+                        "rule_name": rule_info.name,
+                        "error": str(e),
+                    }
+                )
                 if stop_on_fail:
                     break
 

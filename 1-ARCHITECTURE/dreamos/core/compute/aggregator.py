@@ -90,13 +90,11 @@ class Aggregator:
             direction_scores[r.direction] = direction_scores.get(r.direction, 0.0) + weight
             total_weight += weight
 
-        # 归一化
         if total_weight > 0:
             direction_scores = {k: v / total_weight for k, v in direction_scores.items()}
         report.final_direction_scores = direction_scores
 
         # ── 确定最终方向 ─────────────────────────────
-        # 去掉 NEUTRAL 后看 LONG vs SHORT
         long_score = direction_scores.get("LONG", 0.0)
         short_score = direction_scores.get("SHORT", 0.0)
 
@@ -107,7 +105,6 @@ class Aggregator:
         else:
             final_direction = "HOLD"
 
-        # 方向分歧检查
         non_neutral = long_score + short_score
         if non_neutral > 0:
             disagreement = 1.0 - abs(long_score - short_score) / non_neutral
@@ -119,18 +116,67 @@ class Aggregator:
         # ── 计算最终置信度 ───────────────────────────
         successful = [r for r in results if r.success and r.confidence > 0]
         if successful:
-            # 加权平均置信度
             weighted_sum = sum(r.confidence * self._weights.get(r.node_id, 1.0) for r in successful)
             weight_sum = sum(self._weights.get(r.node_id, 1.0) for r in successful)
             report.final_confidence = round(weighted_sum / weight_sum if weight_sum > 0 else 0.0, 3)
         else:
             report.final_confidence = 0.0
 
-        # 如果方向是 HOLD，置信度打折
         if final_direction == "HOLD":
             report.final_confidence *= 0.6
 
+        # ── 理由聚合 ────────────────────────────────
+        report.final_rationale = self._aggregate_rationale(results, final_direction)
+
+        # ── 风险聚合 ────────────────────────────────
+        report.final_risks = self._aggregate_risks(results)
+
         return report
+
+    def _aggregate_rationale(self, results: List[NodeResult],
+                             final_direction: str) -> List[str]:
+        """理由聚合：提取关键节点的核心论据
+
+        按节点权重排序，取权重最高的前 5 个节点的理由。
+        """
+        rationales: List[str] = []
+        sorted_results = sorted(
+            [r for r in results if r.success],
+            key=lambda r: self._weights.get(r.node_id, 1.0) * r.confidence,
+            reverse=True,
+        )
+
+        for r in sorted_results[:5]:
+            outputs = getattr(r, "outputs", {}) or {}
+            node_rationale = outputs.get("rationale", [])
+            if isinstance(node_rationale, str) and node_rationale:
+                rationales.append(f"[{r.node_id}] {node_rationale}")
+            elif isinstance(node_rationale, list):
+                for reason in node_rationale[:2]:
+                    rationales.append(f"[{r.node_id}] {reason}")
+
+        if not rationales:
+            rationales.append(f"综合 {len(results)} 个节点分析，方向: {final_direction}")
+
+        return rationales
+
+    def _aggregate_risks(self, results: List[NodeResult]) -> List[str]:
+        """风险聚合：汇总所有节点的风险提示"""
+        risks: List[str] = []
+        for r in results:
+            if not r.success:
+                continue
+            outputs = getattr(r, "outputs", {}) or {}
+            node_risks = outputs.get("risks", [])
+            if isinstance(node_risks, str) and node_risks:
+                risks.append(f"[{r.node_id}] {node_risks}")
+            elif isinstance(node_risks, list):
+                for risk in node_risks:
+                    risks.append(f"[{r.node_id}] {risk}")
+            risk_level = outputs.get("risk_level")
+            if risk_level:
+                risks.append(f"[{r.node_id}] 风险等级: {risk_level}")
+        return risks
 
     def update_state(self, state: State, report: ExecutionReport) -> State:
         """将聚合结果写入 State"""

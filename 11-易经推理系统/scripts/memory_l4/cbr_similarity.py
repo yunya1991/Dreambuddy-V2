@@ -15,14 +15,14 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple
 
 
-type SimFunc = Callable[[Any, Any], float]
+SimFunc = Callable[[Any, Any], float]
 
 
 # ─────────────────────────────────────────────
 # 数值相似度
 # ─────────────────────────────────────────────
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class LinearSimilarity:
     """线性相似度：距离越近越相似，max_dist 处为 0。"""
     max_dist: float
@@ -37,7 +37,7 @@ class LinearSimilarity:
         return (self.max_dist - dist) / (self.max_dist - self.min_dist)
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class ExponentialSimilarity:
     """指数衰减相似度：对距离敏感，适合波动率等特征。"""
     decay: float = 1.0
@@ -47,7 +47,7 @@ class ExponentialSimilarity:
         return math.exp(-self.decay * dist)
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class ThresholdSimilarity:
     """阈值相似度：在阈值内完全相似，之外完全不相似。"""
     threshold: float
@@ -56,7 +56,7 @@ class ThresholdSimilarity:
         return 1.0 if abs(x - y) <= self.threshold else 0.0
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class IntervalSimilarity:
     """区间归一化相似度：值在 [min_val, max_val] 区间内。"""
     min_val: float
@@ -72,7 +72,7 @@ class IntervalSimilarity:
 # 离散 / 分类相似度
 # ─────────────────────────────────────────────
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class CategoricalSimilarity:
     """分类相似度：精确匹配得 1.0，不匹配得 0.0。
     可配置同义词映射（如卦象的五行关联）。"""
@@ -104,7 +104,7 @@ BAGUA_SYNONYMS: Dict[str, List[str]] = {
 # 复合相似度
 # ─────────────────────────────────────────────
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class QuadrantSimilarity:
     """象限空间欧氏距离相似度。
     x 轴: benefit/harm (性能), y 轴: certainty (确定性)。"""
@@ -119,7 +119,7 @@ class QuadrantSimilarity:
         return max(0.0, 1.0 - dist / self.max_dist)
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class EvidenceChainSimilarity:
     """evidence_chain 相似度：按引用类型分别计算后加权聚合。"""
     type_weights: Dict[str, float] = field(default_factory=lambda: {
@@ -166,16 +166,13 @@ class EvidenceChainSimilarity:
 # 聚合器（Aggregator）
 # ─────────────────────────────────────────────
 
-type PoolingName = str
-
-
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class SimilarityAggregator:
     """将多个局部相似度聚合为全局相似度。
 
     参考 cbrkit.sim.aggregator 设计，支持加权聚合。
     """
-    pooling: PoolingName = "weighted_mean"
+    pooling: str = "weighted_mean"
     weights: Optional[Dict[str, float]] = None
     default_weight: float = 1.0
 

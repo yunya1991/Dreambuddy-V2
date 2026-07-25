@@ -25,14 +25,15 @@
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
 # ── 导入9-基本面分析模块 ──
 try:
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "9-基本面分析"))
-    from engines.signal_engine import SignalEngine, create_signal_engine
+    from engines.least_resistance import compute_composite_score, compute_resistance_3d
     from engines.sentiment_engine import SentimentEngine, create_sentiment_engine
-    from engines.least_resistance import compute_resistance_3d, compute_composite_score
+    from engines.signal_engine import SignalEngine, create_signal_engine
+
     FUNDAMENTAL_ENGINES_AVAILABLE = True
 except ImportError:
     FUNDAMENTAL_ENGINES_AVAILABLE = False
@@ -43,12 +44,12 @@ except ImportError:
 
 # ── 默认权重配置 ──
 DEFAULT_WEIGHTS = {
-    "technical_base": 0.6,      # 技术面基线权重
+    "technical_base": 0.6,  # 技术面基线权重
     "fundamental_adjust": 0.4,  # 基本面调节权重
-    "direction_factor": 0.3,    # 方向匹配因子
-    "velocity_factor": 0.3,     # 速度因子
-    "acceleration_factor": 0.2, # 加速度因子
-    "sentiment_factor": 0.2,    # 情绪因子
+    "direction_factor": 0.3,  # 方向匹配因子
+    "velocity_factor": 0.3,  # 速度因子
+    "acceleration_factor": 0.2,  # 加速度因子
+    "sentiment_factor": 0.2,  # 情绪因子
 }
 
 
@@ -64,15 +65,15 @@ class CompositePredictor:
             self.sentiment_engine = create_sentiment_engine()
 
     def _normalize_weights(self):
-        total = self.weights.get("technical_base", 0.6) + self.weights.get("fundamental_adjust", 0.4)
+        total = self.weights.get("technical_base", 0.6) + self.weights.get(
+            "fundamental_adjust", 0.4
+        )
         if total != 1.0:
             self.weights["technical_base"] /= total
             self.weights["fundamental_adjust"] /= total
 
     def compute_fundamental_3d(
-        self,
-        fundamental_data: Dict[str, Any],
-        historical_scores: Optional[List[float]] = None
+        self, fundamental_data: Dict[str, Any], historical_scores: Optional[List[float]] = None
     ) -> Dict[str, Any]:
         """
         计算基本面三维度（方向/速度/加速度）
@@ -169,7 +170,9 @@ class CompositePredictor:
                 "positive_count": result["positive_count"],
                 "negative_count": result["negative_count"],
                 "category_distribution": result["category_distribution"],
-                "fear_greed": self.sentiment_engine.get_fear_greed_estimate(result["sentiment_index"]),
+                "fear_greed": self.sentiment_engine.get_fear_greed_estimate(
+                    result["sentiment_index"]
+                ),
             }
         except Exception as e:
             return {
@@ -184,7 +187,7 @@ class CompositePredictor:
         self,
         resistance_3d: Dict[str, Any],
         metrics: Dict[str, Any],
-        events: Optional[List[Dict[str, Any]]] = None
+        events: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Dict[str, Any]]:
         """
         生成交易信号（来自9-基本面分析的SignalEngine）
@@ -203,7 +206,7 @@ class CompositePredictor:
         try:
             signals = self.signal_engine.generate_signals(resistance_3d, metrics, events)
             return self.signal_engine.rank_signals(signals)
-        except Exception as e:
+        except Exception:
             return []
 
     def compute_fundamental_adjustment(
@@ -277,11 +280,15 @@ class CompositePredictor:
 
         reasons = []
         if abs(adj_direction) > 0.05:
-            reasons.append(f"方向{'一致增强' if adj_direction > 0 else '矛盾减弱'}({adj_direction:+.2f})")
+            reasons.append(
+                f"方向{'一致增强' if adj_direction > 0 else '矛盾减弱'}({adj_direction:+.2f})"
+            )
         if abs(adj_velocity) > 0.05:
             reasons.append(f"速度{'正向' if adj_velocity > 0 else '负向'}({adj_velocity:+.2f})")
         if abs(adj_acceleration) > 0.05:
-            reasons.append(f"加速度{'正向' if adj_acceleration > 0 else '负向'}({adj_acceleration:+.2f})")
+            reasons.append(
+                f"加速度{'正向' if adj_acceleration > 0 else '负向'}({adj_acceleration:+.2f})"
+            )
         if abs(adj_sentiment) > 0.05:
             reasons.append(f"情绪{'偏多' if adj_sentiment > 0 else '偏空'}({adj_sentiment:+.2f})")
 
@@ -362,7 +369,9 @@ class CompositePredictor:
 
         signal_summary = ""
         if signals:
-            signal_summary = self.signal_engine.generate_summary(signals, top_n=3) if self.signal_engine else ""
+            signal_summary = (
+                self.signal_engine.generate_summary(signals, top_n=3) if self.signal_engine else ""
+            )
 
         return {
             "direction": final_direction,
@@ -418,8 +427,8 @@ def predict_from_dataframes(
         综合预测结果
     """
     try:
-        from .trend_consistency import calc_trend_consistency
         from .config import FUNDAMENTAL_SCREEN1_ENABLED
+        from .trend_consistency import calc_trend_consistency
 
         trend_consistency = calc_trend_consistency(
             weekly_df, daily_df, use_fundamental=FUNDAMENTAL_SCREEN1_ENABLED
@@ -440,8 +449,8 @@ def predict_from_dataframes(
         )
 
     except ImportError:
-        from trend_consistency import calc_trend_consistency
         from config import FUNDAMENTAL_SCREEN1_ENABLED
+        from trend_consistency import calc_trend_consistency
 
         trend_consistency = calc_trend_consistency(
             weekly_df, daily_df, use_fundamental=FUNDAMENTAL_SCREEN1_ENABLED

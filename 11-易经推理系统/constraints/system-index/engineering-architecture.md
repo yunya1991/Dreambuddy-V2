@@ -179,3 +179,55 @@ memory 经验沉淀
 - ETH实现从亏损到盈利的转折（-9.4% → +1.5%）
 
 **详细文档**：`constraints/system-index/ranging-market-enhancer.md`
+
+### v1.2 (2026-07-23) - 力学引擎物理推理升级与五角校验架构
+
+**背景**：力学引擎（物理推理引擎）作为趋势策略的核心组件，原实现存在数值稳定性不足（一阶欧拉积分）、噪声过滤缺失、单一校验源等问题。引入高级数学/物理学算法，构建多源交叉校验架构，提升信号可靠性。
+
+**新增模块（3个）**：
+
+| 模块 | 文件 | 职责 | 依赖库 |
+|------|------|------|--------|
+| 卡尔曼滤波器 | `scripts/memory_l4/bcrm/kalman_filter.py` | 速度-加速度贝叶斯状态估计，过滤市场高频噪声 | pykalman 0.11.2 |
+| Ising相变检测器 | `scripts/memory_l4/bcrm/ising_phase_detector.py` | 二维Ising模型统计力学相变检测（Onsager精确解） | numpy |
+| TDA早期预警器 | `scripts/memory_l4/bcrm/tda_early_warning.py` | Takens嵌入+Vietoris-Rips持久同调，转折点最早预警 | ripser 0.6.15 + persim 0.3.8 |
+
+**修改模块（3个）**：
+
+| 模块 | 文件 | 变更内容 |
+|------|------|---------|
+| 力学引擎 | `scripts/memory_l4/bcrm/force_engine.py` | 四象→五象力场（新增流动性力）、欧拉→Verlet辛积分+Langevin随机项、集成可选Kalman后处理 |
+| 常量定义 | `scripts/memory_l4/bcrm/_constants.py` | 新增流动性力场常量、Kalman参数、Ising参数、TDA参数共26个 |
+| 三角校验器 | `scripts/memory_l4/triangle_verifier.py` | 三角校验→五角校验（BCRM2×力学×A0×Ising×TDA），集成三层预警 |
+
+**三层升级（P0→P1→P2）**：
+
+1. **P0 地基升级**：Verlet辛积分器（二阶精度，时间反演对称）+ Langevin随机项（市场热噪声）
+2. **P1 双向增强**：
+   - Kalman自适应滤波（pykalman库，过程噪声Q∝波动率，观测噪声R∝买卖价差）
+   - Ising相变检测（磁化强度M=市场共识度，能量E=市场紧张度，温度T∝波动率²，临界温度Tc≈2.269）
+3. **P2 最早预警**：TDA持久同调（Takens嵌入重构相空间，Vietoris-Rips复形，Betti曲线突增+瓶颈距离）
+
+**五角校验架构**：
+```
+BCRM2(ML模型)     ──┐
+力学引擎(物理)     ──┤  五角校验 → 一致性评分 + 置信度调整 + 风险预警
+A0(矛盾分析)      ──┤
+Ising(相变)       ──┤
+TDA(拓扑)         ──┘
+```
+
+**三层预警时序（由早到晚）**：
+1. TDA拓扑突变（最早）— Betti突增/瓶颈距离，拓扑结构变化领先于动力学
+2. Ising相变（中期）— 能量突变/临界相，统计力学相变信号
+3. 力学引擎减速（确认）— reversal_warning，动力学转折确认
+
+**验证结果**：
+- 五象力场权重总和=1.0000 ✓
+- Verlet稳态1.85 < 欧拉法2.00（辛积分器更稳定）✓
+- Kalman噪声平滑MSE降低29.9% ✓
+- Ising强趋势识别（M=0.97 ORDERED）✓
+- TDA早期转折预警（warning=True, strength=0.62）✓
+- 五角校验端到端集成 ✓
+
+**详细文档**：`constraints/system-index/force-engine-architecture.md`

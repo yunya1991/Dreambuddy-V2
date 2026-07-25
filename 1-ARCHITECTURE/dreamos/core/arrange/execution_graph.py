@@ -97,6 +97,35 @@ class SequentialGraph(Graph):
     def get_node(self, node_id: str) -> Optional[Node]:
         return self._nodes.get(node_id)
 
+    def insert_before(self, before_node_id: str, new_node: Node) -> bool:
+        """在指定节点前插入新节点（保持顺序）
+
+        如果 before_node_id 不存在，返回 False。
+        插入后，新节点位于 before_node_id 之前。
+        """
+        if not new_node.node_id:
+            return False
+        if before_node_id not in self._nodes:
+            return False
+        if new_node.node_id in self._nodes:
+            return False
+
+        keys = list(self._nodes.keys())
+        idx = keys.index(before_node_id)
+
+        new_ordered = OrderedDict()
+        for i, k in enumerate(keys):
+            if i == idx:
+                new_ordered[new_node.node_id] = new_node
+            new_ordered[k] = self._nodes[k]
+
+        self._nodes = new_ordered
+
+        if idx == 0:
+            self._entry_id = new_node.node_id
+
+        return True
+
     def __len__(self) -> int:
         return len(self._nodes)
 
@@ -206,6 +235,58 @@ class ConditionalGraph(Graph):
 
     def get_node(self, node_id: str) -> Optional[Node]:
         return self._nodes.get(node_id)
+
+    def insert_before(self, before_node_id: str, new_node: Node) -> bool:
+        """在指定节点前插入新节点
+
+        对于 ConditionalGraph，插入逻辑：
+        1. 添加新节点
+        2. 将所有指向 before_node_id 的入边改指向新节点
+        3. 添加新节点 → before_node_id 的默认边
+        """
+        if not new_node.node_id:
+            return False
+        if before_node_id not in self._nodes:
+            return False
+        if new_node.node_id in self._nodes:
+            return False
+
+        self._nodes[new_node.node_id] = new_node
+
+        # 重定向所有入边和默认路径
+        new_edges = []
+        for edge in self._edges:
+            if edge.target == before_node_id:
+                new_edges.append(Edge(
+                    source=edge.source,
+                    target=new_node.node_id,
+                    condition=edge.condition,
+                    label=edge.label,
+                ))
+            else:
+                new_edges.append(edge)
+
+        # 重定向 _default_next 中指向 before_node_id 的条目
+        for src, tgt in list(self._default_next.items()):
+            if tgt == before_node_id:
+                self._default_next[src] = new_node.node_id
+
+        # 添加新节点 → before_node_id 的默认边
+        new_edges.append(Edge(
+            source=new_node.node_id,
+            target=before_node_id,
+            condition=None,
+            label="insert_before_default",
+        ))
+        self._default_next[new_node.node_id] = before_node_id
+
+        self._edges = new_edges
+
+        # 如果 before_node_id 是入口，更新入口
+        if self._entry_id == before_node_id:
+            self._entry_id = new_node.node_id
+
+        return True
 
     def __len__(self) -> int:
         return len(self._nodes)

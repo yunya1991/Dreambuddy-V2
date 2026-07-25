@@ -15,12 +15,13 @@ Dream OS — 能力域管理内核组件
 
 from __future__ import annotations
 
-from .registry import CapabilityRegistry, CapabilityDomain
+from .registry import CapabilityRegistry, CapabilityDomain, get_default_capability_registry
 from .router import CapabilityRouter, RoutingResult
 
 __all__ = [
     "CapabilityRegistry",
     "CapabilityDomain",
+    "get_default_capability_registry",
     "CapabilityRouter",
     "RoutingResult",
 ]

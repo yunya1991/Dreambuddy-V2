@@ -9,8 +9,14 @@ V15 经典马丁策略自动交易器
   - 做空：跌破日 MA200 但在周 MA200 上方（SHORT_ALLOWED，反向马丁）
   - 强制做多：跌至周 MA200（LONG_ONLY_FORCE，禁止做空）
 """
-import json, os, sys, time, math, signal as sig_module, subprocess, threading
-from datetime import datetime, timezone, timedelta
+import json
+import math
+import signal as sig_module
+import subprocess
+import sys
+import threading
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
@@ -22,14 +28,23 @@ try:
     _L4_ROOT = Path(__file__).resolve().parents[1] / "11-易经推理系统"
     if str(_L4_ROOT) not in sys.path:
         sys.path.insert(0, str(_L4_ROOT))
-    from scripts.memory_l4.trade_event import TradeEvent
     from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+    from scripts.memory_l4.trade_event import TradeEvent
+
     _L4_ENABLED = True
 except Exception as _e:
     _L4_ENABLED = False
 
 try:
-    from config_loader import load_config, get_config, get_config_float, get_config_int, get_config_list, get_config_bool
+    from config_loader import (
+        get_config,
+        get_config_bool,
+        get_config_float,
+        get_config_int,
+        get_config_list,
+        load_config,
+    )
+
     load_config("v15")
 except Exception:
     pass
@@ -37,19 +52,37 @@ except Exception:
 # 统一交易对适配层（替代散落的 f"{coin}-USDT" / f"{coin}-USDT-SWAP" 硬编码）
 try:
     from symbol_mapper import (
-        to_spot, to_swap, is_supported as _coin_supported, get_category,
+        get_category,
+        to_spot,
+        to_swap,
+    )
+    from symbol_mapper import (
         is_martin_safe as _coin_martin_safe,
+    )
+    from symbol_mapper import (
+        is_supported as _coin_supported,
     )
 except Exception:
     # 降级：保留原硬编码行为，保证向后兼容
-    def to_spot(coin, exchange="okx"): return f"{coin}-USDT"
-    def to_swap(coin, exchange="okx"): return f"{coin}-USDT-SWAP"
-    def _coin_supported(coin, exchange="okx"): return True
-    def get_category(coin): return "crypto"
-    def _coin_martin_safe(coin, min_tier="mid", min_history_days=365): return True
+    def to_spot(coin, exchange="okx"):
+        return f"{coin}-USDT"
+
+    def to_swap(coin, exchange="okx"):
+        return f"{coin}-USDT-SWAP"
+
+    def _coin_supported(coin, exchange="okx"):
+        return True
+
+    def get_category(coin):
+        return "crypto"
+
+    def _coin_martin_safe(coin, min_tier="mid", min_history_days=365):
+        return True
+
 
 try:
-    from bounce_potential_evaluator import monitor_bounce_signals, evaluate_signals
+    from bounce_potential_evaluator import evaluate_signals, monitor_bounce_signals
+
     BOUNCE_MONITOR_ENABLED = True
 except ImportError:
     BOUNCE_MONITOR_ENABLED = False
@@ -68,25 +101,33 @@ STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 POLL_INTERVAL = int(get_config("V15_POLL_INTERVAL", "3600"))
 AUTO_EXECUTE = str(get_config("V15_AUTO_EXECUTE", "true")).lower() == "true"
 # 币种池：从配置加载后，用 SymbolMapper 过滤出 OKX 支持的币种
-_RAW_COINS = get_config_list("V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"])
+_RAW_COINS = get_config_list(
+    "V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
+)
 _OKX_SUPPORTED = [c for c in _RAW_COINS if _coin_supported(c, "okx")] or _RAW_COINS
 # ── 马丁策略风控过滤：市值等级 + 上线时间 ──
 # min_tier: 最低市值等级 (large/mid/small)，默认 mid（剔除 small）
 # min_history_days: 最小上线天数，默认 365 天（避免新币暴涨暴跌风险）
 _MARTIN_MIN_TIER = str(get_config("V15_MARTIN_MIN_TIER", "mid")).lower()
 _MARTIN_MIN_HISTORY_DAYS = get_config_int("V15_MARTIN_MIN_HISTORY_DAYS", 365)
-COINS = [c for c in _OKX_SUPPORTED if _coin_martin_safe(c, _MARTIN_MIN_TIER, _MARTIN_MIN_HISTORY_DAYS)]
+COINS = [
+    c for c in _OKX_SUPPORTED if _coin_martin_safe(c, _MARTIN_MIN_TIER, _MARTIN_MIN_HISTORY_DAYS)
+]
 # 记录被风控剔除的币种（供启动日志输出）
 _MARTIN_REJECTED = [c for c in _OKX_SUPPORTED if c not in COINS]
 MAX_ADDONS = get_config_int("MAX_ADDONS_PER_POSITION", 3)
 BASE_TP_PCT = get_config_float("BASE_TP_PCT", 0.04)
 LEVERAGE = get_config_float("LEVERAGE", 5.0)
+MAX_CONCURRENT_POSITIONS = get_config_int("MAX_CONCURRENT_POSITIONS", 3)
+TOTAL_BUDGET = get_config_float("TOTAL_BUDGET", 260)
+
 
 # ── 移动止盈参数（从贝叶斯优化活跃参数加载）──
 def _load_trailing_params():
     """从 active_params.json 加载移动止盈参数，失败则用默认值"""
     try:
         from bayesian_optimizer import load_active_params
+
         params = load_active_params()
         return {
             "enabled": get_config_bool("V15_USE_TRAILING_TP", True),
@@ -100,7 +141,51 @@ def _load_trailing_params():
             "start_ratio": 0.8,
         }
 
+
 _TRAILING = _load_trailing_params()
+
+
+# ── 通用风控引擎（13-通用风控模块接入）──
+# 影子模式：只输出风控结果，不阻断交易
+# 正式模式：RISK_GATE_ENABLED=true 时启用门禁
+def _init_risk_engine():
+    """初始化通用风控引擎（懒加载）"""
+    try:
+        risk_module_path = BASE_DIR.parent / "13-通用风控模块"
+        if str(risk_module_path) not in sys.path:
+            sys.path.insert(0, str(risk_module_path))
+        from core.engine import RiskEngine
+
+        engine = RiskEngine(
+            {
+                "max_daily_drawdown_pct": 0.10,
+                "risk_per_trade_pct": 0.02,
+                "max_concurrent_positions": MAX_CONCURRENT_POSITIONS,
+                "gate": {
+                    "max_concurrent_positions": MAX_CONCURRENT_POSITIONS,
+                    "max_daily_loss_usd": abs(get_config_float("V15_DAILY_LOSS_LIMIT", -50)),
+                    "max_consecutive_losses": get_config_int("V15_MAX_CONSECUTIVE_LOSSES", 5),
+                },
+            }
+        )
+        engine.register_default_rules()
+        _log("[风控引擎] 通用风控引擎初始化成功（影子模式）")
+        return engine
+    except Exception as e:
+        _log(f"[风控引擎] 初始化失败，降级: {e}")
+        return None
+
+
+_RISK_ENGINE = None
+RISK_GATE_ENABLED = get_config_bool("V15_RISK_GATE_ENABLED", False)
+
+
+def _get_risk_engine():
+    """获取风控引擎单例"""
+    global _RISK_ENGINE
+    if _RISK_ENGINE is None:
+        _RISK_ENGINE = _init_risk_engine()
+    return _RISK_ENGINE
 
 
 def _log(msg):
@@ -123,23 +208,23 @@ def _register_martin_trade_to_l4(
     """将马丁策略交易记录注册到 L4 统一案例库"""
     if not _L4_ENABLED:
         return None, False
-    
+
     try:
         trade_id = f"martin_{int(datetime.now(timezone.utc).timestamp())}_{coin}"
-        
+
         direction = pos.get("direction", "LONG")
         addons = pos.get("addons", 0)
         entry_price = pos.get("entry_price", 0)
-        
+
         if pnl_pct is None:
             if direction == "SHORT":
                 pnl_pct = (entry_price - exit_price) / entry_price if entry_price > 0 else 0
             else:
                 pnl_pct = (exit_price - entry_price) / entry_price if entry_price > 0 else 0
-        
+
         if pnl is None:
             pnl = pnl_pct * pos.get("sz", 0) * entry_price
-        
+
         event = TradeEvent(
             event_id=TradeEvent.generate_event_id(),
             system_source="martin_v15",
@@ -172,15 +257,15 @@ def _register_martin_trade_to_l4(
             leverage=LEVERAGE,
             margin_usdt=pos.get("margin_usdt", 0),
         )
-        
+
         registry = UnifiedCaseRegistry()
         case_id, success = registry.register_trade_event(event)
-        
+
         if success:
             _log(f"[{coin}] L4 案例已注册: {case_id}")
         else:
             _log(f"[{coin}] L4 案例注册失败")
-        
+
         return case_id, success
     except Exception as e:
         _log(f"[{coin}] L4 注册异常: {e}")
@@ -188,16 +273,21 @@ def _register_martin_trade_to_l4(
 
 
 # ── 启动日志：币种池风控过滤结果 ──
-_log(f"马丁策略币种池: 原始={len(_RAW_COINS)}个, OKX支持={len(_OKX_SUPPORTED)}个, "
-     f"风控通过={len(COINS)}个 (min_tier={_MARTIN_MIN_TIER}, min_history_days={_MARTIN_MIN_HISTORY_DAYS})")
+_log(
+    f"马丁策略币种池: 原始={len(_RAW_COINS)}个, OKX支持={len(_OKX_SUPPORTED)}个, "
+    f"风控通过={len(COINS)}个 (min_tier={_MARTIN_MIN_TIER}, min_history_days={_MARTIN_MIN_HISTORY_DAYS})"
+)
 if _MARTIN_REJECTED:
-    _log(f"马丁风控剔除币种({len(_MARTIN_REJECTED)}个): {','.join(_MARTIN_REJECTED)} - 原因: 小市值或上线时间不足")
+    _log(
+        f"马丁风控剔除币种({len(_MARTIN_REJECTED)}个): {','.join(_MARTIN_REJECTED)} - 原因: 小市值或上线时间不足"
+    )
 _log(f"最终马丁币种池: {','.join(COINS)}")
 
 
 def _get_okx_client():
     try:
         from okx_client import OKXSimulatedClient
+
         config = {
             "api_key": get_config("OKX_API_KEY", ""),
             "secret_key": get_config("OKX_SECRET_KEY", ""),
@@ -267,7 +357,7 @@ def _get_direction_ctx(coin):
     """获取币种的多空方向控制上下文（含BTC风向标机制）"""
     try:
         from direction_gate import DirectionGate
-        from strategy_params import get_coin_strategy_params, calc_daily_ma128
+        from strategy_params import calc_daily_ma128, get_coin_strategy_params
 
         # 先获取BTC的方向控制结果作为风向标
         btc_short_enabled = False
@@ -322,6 +412,7 @@ def check_capital():
     """检查资金是否允许开新仓"""
     try:
         from capital_manager import calculate_capital_allocation
+
         alloc = calculate_capital_allocation()
         return alloc["recommendations"]["allow_open_new_position"], alloc
     except Exception as e:
@@ -336,12 +427,60 @@ def execute_open_position(client, coin, decision, state):
     action = decision.get("action", "WAIT")
 
     # 判断多空方向
-    is_short = (action == "OPEN_BEAR")
+    is_short = action == "OPEN_BEAR"
     direction = "SHORT" if is_short else "LONG"
 
     if conf < 60:
         _log(f"[{coin}] 置信度不足({conf}<60), 跳过")
         return False
+
+    # ── 通用事前风控检查（13-通用风控模块）──
+    risk_engine = _get_risk_engine()
+    if risk_engine:
+        try:
+            from core.context import Direction, RiskContext, Signal as RiskSignal
+
+            direction_val = Direction.SHORT if is_short else Direction.LONG
+            risk_signal = RiskSignal(
+                coin=coin,
+                direction=direction_val,
+                confidence=conf / 100.0,
+                strategy="v15_martin",
+            )
+
+            daily_pnl = state.get("daily_pnl", 0.0)
+            total_equity = state.get("total_equity", TOTAL_BUDGET)
+            pos_count = len(state.get("positions", {}))
+            consecutive_losses = state.get("consecutive_losses", 0)
+
+            risk_ctx = RiskContext(
+                total_equity=total_equity,
+                available_balance=total_equity * 0.5,
+                daily_pnl=daily_pnl,
+                consecutive_losses=consecutive_losses,
+                total_trades=state.get("total_trades", 0),
+                total_wins=state.get("total_wins", 0),
+            )
+
+            risk_result = risk_engine.pre_trade_check(risk_signal, risk_ctx)
+
+            mode = "门禁" if RISK_GATE_ENABLED else "影子"
+            status = "PASS" if risk_result.passed else "BLOCK"
+            _log(
+                f"[风控-{mode}][{coin}] {status} "
+                f"reason={risk_result.reason_code.value} "
+                f"modifier={risk_result.position_modifier:.2f} "
+                f"msg={risk_result.message}"
+            )
+
+            if RISK_GATE_ENABLED and not risk_result.passed:
+                _log(f"[风控-门禁][{coin}] 阻断开仓: {risk_result.message}")
+                return False
+
+            if risk_result.position_modifier != 1.0:
+                _log(f"[风控-{mode}][{coin}] 仓位调整系数: " f"{risk_result.position_modifier:.2f}")
+        except Exception as e:
+            _log(f"[风控] 检查异常，跳过风控: {e}")
 
     try:
         params = _get_dynamic_params(client, coin, direction)
@@ -358,9 +497,13 @@ def execute_open_position(client, coin, decision, state):
                 if bounce_signal["valid"] and bounce_signal["n_triggered"] >= BOUNCE_MIN_SIGNALS:
                     triggers = ", ".join(bounce_signal["triggered_list"])
                     effective_conf = conf + bounce_signal["n_triggered"] * 10
-                    _log(f"[{coin}] 反弹信号加持({triggers}): n_triggered={bounce_signal['n_triggered']}, 置信度从{conf}%增强至{effective_conf}%")
+                    _log(
+                        f"[{coin}] 反弹信号加持({triggers}): n_triggered={bounce_signal['n_triggered']}, 置信度从{conf}%增强至{effective_conf}%"
+                    )
                 else:
-                    _log(f"[{coin}] 无反弹信号(n_triggered={bounce_signal.get('n_triggered', 0)})，保持原始置信度{conf}%")
+                    _log(
+                        f"[{coin}] 无反弹信号(n_triggered={bounce_signal.get('n_triggered', 0)})，保持原始置信度{conf}%"
+                    )
             else:
                 _log(f"[{coin}] 无4H K线数据，保持原始置信度{conf}%")
         else:
@@ -377,6 +520,7 @@ def execute_open_position(client, coin, decision, state):
 
         # ── 智能资金分配（使用增强置信度）──
         from capital_manager import calculate_per_coin_allocation
+
         elder_ray = params.get("elder_ray")
         alloc = calculate_per_coin_allocation(coin, effective_conf, elder_ray)
 
@@ -399,13 +543,15 @@ def execute_open_position(client, coin, decision, state):
         actual_margin = actual_notional / LEVERAGE
 
         adj = alloc.get("adjustments", {})
-        _log(f"[{coin}] 开仓 {direction} sz={sz}张 price={price} 保证金=${actual_margin:.2f} 名义=${actual_notional:.2f} "
-             f"TP={tp_pct*100:.2f}% SL={sl_type}@${sl_price} conf={conf}% "
-             f"资金分配: 趋势={adj.get('strength_mult', 1.0):.2f}x 置信={adj.get('conf_mult', 1.0):.2f}x "
-             f"波动={adj.get('vol_adjust', 1.0):.2f}x 综合={adj.get('combined_mult', 1.0):.2f}x "
-             f"EMA={adj.get('elder_ray_direction', 'N/A')} "
-             f"Dir={adj.get('elder_ray_ema_trend', 'N/A')} "
-             f"强度={adj.get('elder_ray_strength', 0):.1f}")
+        _log(
+            f"[{coin}] 开仓 {direction} sz={sz}张 price={price} 保证金=${actual_margin:.2f} 名义=${actual_notional:.2f} "
+            f"TP={tp_pct*100:.2f}% SL={sl_type}@${sl_price} conf={conf}% "
+            f"资金分配: 趋势={adj.get('strength_mult', 1.0):.2f}x 置信={adj.get('conf_mult', 1.0):.2f}x "
+            f"波动={adj.get('vol_adjust', 1.0):.2f}x 综合={adj.get('combined_mult', 1.0):.2f}x "
+            f"EMA={adj.get('elder_ray_direction', 'N/A')} "
+            f"Dir={adj.get('elder_ray_ema_trend', 'N/A')} "
+            f"强度={adj.get('elder_ray_strength', 0):.1f}"
+        )
 
         if AUTO_EXECUTE:
             # 做空: side="sell", pos_side="short"; 做多: side="buy", pos_side="long"
@@ -467,7 +613,7 @@ def execute_addon(client, coin, pos, state):
     inst_id = pos["inst_id"]
     addons = pos.get("addons", 0)
     direction = pos.get("direction", "LONG")
-    is_short = (direction == "SHORT")
+    is_short = direction == "SHORT"
 
     if addons >= MAX_ADDONS:
         _log(f"[{coin}] 已达最大加仓次数({MAX_ADDONS})")
@@ -475,6 +621,7 @@ def execute_addon(client, coin, pos, state):
 
     try:
         from capital_manager import calculate_capital_allocation
+
         alloc = calculate_capital_allocation()
         if not alloc["recommendations"]["allow_addon"]:
             _log(f"[{coin}] 资金不足, 跳过加仓")
@@ -509,13 +656,17 @@ def execute_addon(client, coin, pos, state):
             # 做空：价格上涨才加仓（反向马丁）
             move_pct = (current_price - open_price) / open_price
             if move_pct < target_pct:
-                _log(f"[{coin}] 涨幅不足({move_pct:.2%}<{target_pct:.2%}), 跳过加空 (第{addons+1}层)")
+                _log(
+                    f"[{coin}] 涨幅不足({move_pct:.2%}<{target_pct:.2%}), 跳过加空 (第{addons+1}层)"
+                )
                 return False
         else:
             # 做多：价格下跌才加仓（经典马丁）
             move_pct = (open_price - current_price) / open_price
             if move_pct < target_pct:
-                _log(f"[{coin}] 跌幅不足({move_pct:.2%}<{target_pct:.2%}), 跳过加仓 (第{addons+1}层)")
+                _log(
+                    f"[{coin}] 跌幅不足({move_pct:.2%}<{target_pct:.2%}), 跳过加仓 (第{addons+1}层)"
+                )
                 return False
 
         lot_sz, ct_val = get_contract_info(client, inst_id)
@@ -527,8 +678,10 @@ def execute_addon(client, coin, pos, state):
         actual_notional = sz * ct_val * current_price
         actual_margin = actual_notional / LEVERAGE
         move_label = "涨幅" if is_short else "跌幅"
-        _log(f"[{coin}] 加仓#{addons+1} {direction} sz={sz}张 price={current_price} 保证金=${actual_margin:.2f} 名义=${actual_notional:.2f} "
-             f"开仓价=${open_price:.2f} {move_label}={move_pct:.2%} 预算=${addon_usd:.2f}")
+        _log(
+            f"[{coin}] 加仓#{addons+1} {direction} sz={sz}张 price={current_price} 保证金=${actual_margin:.2f} 名义=${actual_notional:.2f} "
+            f"开仓价=${open_price:.2f} {move_label}={move_pct:.2%} 预算=${addon_usd:.2f}"
+        )
 
         if AUTO_EXECUTE:
             # 做空加仓: side="sell", pos_side="short"; 做多加仓: side="buy", pos_side="long"
@@ -543,7 +696,9 @@ def execute_addon(client, coin, pos, state):
             )
             if r.get("ok"):
                 pos["addons"] = addons + 1
-                pos["entry_price"] = (pos["entry_price"] * pos["sz"] + current_price * sz) / (pos["sz"] + sz)
+                pos["entry_price"] = (pos["entry_price"] * pos["sz"] + current_price * sz) / (
+                    pos["sz"] + sz
+                )
                 pos["sz"] += sz
                 pos["last_addon_time"] = datetime.now(timezone.utc).isoformat()
                 _log(f"[{coin}] 加仓成功, 总仓位={pos['sz']} 均价=${pos['entry_price']:.2f}")
@@ -563,13 +718,14 @@ def execute_addon(client, coin, pos, state):
 def _get_dynamic_params(client, coin, direction="LONG"):
     """获取币种的动态策略参数（止盈、加仓、止损）"""
     from strategy_params import get_coin_strategy_params
+
     params = get_coin_strategy_params(coin, direction)
     if "error" in params:
         raise ValueError(params["error"])
-    
+
     sl = params["stop_loss"]
     vol = params["volatility"]
-    
+
     return {
         "current_price": params["current_price"],
         "take_profit_pct": params["take_profit_pct"] / 100,
@@ -613,7 +769,7 @@ def _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price):
 
     inst_id = pos["inst_id"]
     direction = pos.get("direction", "LONG")
-    is_short = (direction == "SHORT")
+    is_short = direction == "SHORT"
     pos_side = "short" if is_short else "long"
 
     try:
@@ -644,7 +800,9 @@ def _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price):
                 reason=f"v15_{direction.lower()}_tp_sl_sync",
             )
             if r.get("ok"):
-                _log(f"[{coin}] {direction} OCO止盈止损挂单成功 TP=${tp_price:.4f} SL=${sl_price:.4f} sz={pos['sz']}")
+                _log(
+                    f"[{coin}] {direction} OCO止盈止损挂单成功 TP=${tp_price:.4f} SL=${sl_price:.4f} sz={pos['sz']}"
+                )
             else:
                 _log(f"[{coin}] {direction} OCO止盈止损挂单失败: {r.get('error', r)}")
         else:
@@ -689,7 +847,7 @@ def _update_tp_sl_dynamic(client, coin, pos):
         last_tp = pos.get("last_tp_price")
 
         # 计算当前止盈价
-        is_short = (direction == "SHORT")
+        is_short = direction == "SHORT"
         if is_short:
             current_tp = entry_price * (1 - tp_pct)
         else:
@@ -731,7 +889,7 @@ def check_take_profit(client, coin, pos, state):
     """
     inst_id = pos["inst_id"]
     direction = pos.get("direction", "LONG")
-    is_short = (direction == "SHORT")
+    is_short = direction == "SHORT"
     try:
         params = _get_dynamic_params(client, coin, direction)
         current_price = params["current_price"]
@@ -757,6 +915,7 @@ def check_take_profit(client, coin, pos, state):
             if klines_4h:
                 try:
                     from strategy_params import calc_atr_pct
+
                     atr_pct = calc_atr_pct(klines_4h)
                 except Exception:
                     pass
@@ -783,35 +942,51 @@ def check_take_profit(client, coin, pos, state):
                     if is_short:
                         new_trailing = peak + _TRAILING["atr_mult"] * atr_price
                         # 做空：移动止盈价只下移不上移
-                        if pos.get("trailing_price") is None or new_trailing < pos["trailing_price"]:
+                        if (
+                            pos.get("trailing_price") is None
+                            or new_trailing < pos["trailing_price"]
+                        ):
                             pos["trailing_price"] = new_trailing
-                            _log(f"[{coin}] 移动止盈激活 peak={peak:.4g} trailing={new_trailing:.4g} ATR={atr_pct:.2f}%")
+                            _log(
+                                f"[{coin}] 移动止盈激活 peak={peak:.4g} trailing={new_trailing:.4g} ATR={atr_pct:.2f}%"
+                            )
                     else:
                         new_trailing = peak - _TRAILING["atr_mult"] * atr_price
                         # 做多：移动止盈价只上移不下移
-                        if pos.get("trailing_price") is None or new_trailing > pos["trailing_price"]:
+                        if (
+                            pos.get("trailing_price") is None
+                            or new_trailing > pos["trailing_price"]
+                        ):
                             pos["trailing_price"] = new_trailing
-                            _log(f"[{coin}] 移动止盈激活 peak={peak:.4g} trailing={new_trailing:.4g} ATR={atr_pct:.2f}%")
+                            _log(
+                                f"[{coin}] 移动止盈激活 peak={peak:.4g} trailing={new_trailing:.4g} ATR={atr_pct:.2f}%"
+                            )
                     pos["trailing_active"] = True
 
                 # 检查移动止盈触发
                 trailing_price = pos.get("trailing_price")
                 if pos.get("trailing_active") and trailing_price is not None:
-                    if (not is_short and current_price <= trailing_price) or \
-                       (is_short and current_price >= trailing_price):
-                        _log(f"[{coin}] {direction} 移动止盈触发 price=${current_price:.4g} 回撤至 trailing=${trailing_price:.4g} "
-                             f"(peak=${peak:.4g}, profit={profit_pct:.2%})")
+                    if (not is_short and current_price <= trailing_price) or (
+                        is_short and current_price >= trailing_price
+                    ):
+                        _log(
+                            f"[{coin}] {direction} 移动止盈触发 price=${current_price:.4g} 回撤至 trailing=${trailing_price:.4g} "
+                            f"(peak=${peak:.4g}, profit={profit_pct:.2%})"
+                        )
                         if AUTO_EXECUTE:
                             client.cancel_algo_orders(inst_id)
                             lot_sz, ct_val = get_contract_info(client, inst_id)
                             close_sz = math.floor(pos["sz"] / lot_sz) * lot_sz
-                            decimals = len(str(lot_sz).split('.')[-1]) if '.' in str(lot_sz) else 0
+                            decimals = len(str(lot_sz).split(".")[-1]) if "." in str(lot_sz) else 0
                             close_sz = round(close_sz, decimals)
                             side = "buy" if is_short else "sell"
                             pos_side = "short" if is_short else "long"
                             r = client.place_order(
-                                inst_id=inst_id, side=side, sz=close_sz,
-                                td_mode="isolated", pos_side=pos_side,
+                                inst_id=inst_id,
+                                side=side,
+                                sz=close_sz,
+                                td_mode="isolated",
+                                pos_side=pos_side,
                             )
                             if r.get("ok"):
                                 _log(f"[{coin}] 移动止盈平仓成功")
@@ -831,7 +1006,7 @@ def check_take_profit(client, coin, pos, state):
                 client.cancel_algo_orders(inst_id)
                 lot_sz, ct_val = get_contract_info(client, inst_id)
                 close_sz = math.floor(pos["sz"] / lot_sz) * lot_sz
-                decimals = len(str(lot_sz).split('.')[-1]) if '.' in str(lot_sz) else 0
+                decimals = len(str(lot_sz).split(".")[-1]) if "." in str(lot_sz) else 0
                 close_sz = round(close_sz, decimals)
                 # 做空平仓: side="buy", pos_side="short"; 做多平仓: side="sell", pos_side="long"
                 side = "buy" if is_short else "sell"
@@ -856,20 +1031,28 @@ def check_take_profit(client, coin, pos, state):
         if sl_triggered:
             if is_short:
                 if sl_price is not None:
-                    _log(f"[{coin}] {direction} 动态止损触发({sl_type}) 价格=${current_price:.2f} >= 止损线=${sl_price:.2f}")
+                    _log(
+                        f"[{coin}] {direction} 动态止损触发({sl_type}) 价格=${current_price:.2f} >= 止损线=${sl_price:.2f}"
+                    )
                 else:
-                    _log(f"[{coin}] {direction} 动态止损触发({sl_type}) 价格涨破所有均线，无条件止损")
+                    _log(
+                        f"[{coin}] {direction} 动态止损触发({sl_type}) 价格涨破所有均线，无条件止损"
+                    )
             else:
                 if sl_price is not None:
-                    _log(f"[{coin}] {direction} 动态止损触发({sl_type}) 价格=${current_price:.2f} <= 止损线=${sl_price:.2f}")
+                    _log(
+                        f"[{coin}] {direction} 动态止损触发({sl_type}) 价格=${current_price:.2f} <= 止损线=${sl_price:.2f}"
+                    )
                 else:
-                    _log(f"[{coin}] {direction} 动态止损触发({sl_type}) 价格跌破所有均线，无条件止损")
+                    _log(
+                        f"[{coin}] {direction} 动态止损触发({sl_type}) 价格跌破所有均线，无条件止损"
+                    )
 
             if AUTO_EXECUTE:
                 client.cancel_algo_orders(inst_id)
                 lot_sz, ct_val = get_contract_info(client, inst_id)
                 close_sz = math.floor(pos["sz"] / lot_sz) * lot_sz
-                decimals = len(str(lot_sz).split('.')[-1]) if '.' in str(lot_sz) else 0
+                decimals = len(str(lot_sz).split(".")[-1]) if "." in str(lot_sz) else 0
                 close_sz = round(close_sz, decimals)
                 side = "buy" if is_short else "sell"
                 pos_side = "short" if is_short else "long"
@@ -885,7 +1068,9 @@ def check_take_profit(client, coin, pos, state):
                     state["consecutive_losses"] = state.get("consecutive_losses", 0) + 1
                     del state["positions"][coin]
                     if state["consecutive_losses"] >= MAX_CONSECUTIVE_LOSSES_REBUILD:
-                        trigger_capital_rebuild(state, reason=f"连续{state['consecutive_losses']}次亏损")
+                        trigger_capital_rebuild(
+                            state, reason=f"连续{state['consecutive_losses']}次亏损"
+                        )
                     return True
                 else:
                     _log(f"[{coin}] 止损平仓失败: {r.get('error', r)}")
@@ -913,7 +1098,7 @@ def check_time_exit(client, coin, pos, state):
     """
     try:
         direction = pos.get("direction", "LONG")
-        is_short = (direction == "SHORT")
+        is_short = direction == "SHORT"
         params = _get_dynamic_params(client, coin, direction)
         current_price = params["current_price"]
         if current_price <= 0:
@@ -950,14 +1135,17 @@ def check_time_exit(client, coin, pos, state):
         if hold_hours < max_hours:
             return False
 
-        _log(f"[{coin}] 持仓超时 {hold_hours:.1f}h (阈值={max_hours:.0f}h, 加仓={addons}), 触发经典离场评估")
+        _log(
+            f"[{coin}] 持仓超时 {hold_hours:.1f}h (阈值={max_hours:.0f}h, 加仓={addons}), 触发经典离场评估"
+        )
 
         # ── 调用经典离场系统 ──────────────────────────────────────
         try:
             classic_path = str(Path(__file__).parent.parent.parent / "10-经典指标系统")
             if classic_path not in sys.path:
                 sys.path.insert(0, classic_path)
-            from classic_exit_system import ClassicExitSystem, PositionState, ExitConfig
+            from classic_exit_system import ClassicExitSystem, ExitConfig, PositionState
+
             # 禁用 L0 持仓时间硬退出（马丁策略有自己的分层超时逻辑）
             exit_cfg = ExitConfig()
             exit_cfg.l0_max_hold_sec = 999999
@@ -979,13 +1167,18 @@ def check_time_exit(client, coin, pos, state):
                 position_age_sec=hold_hours * 3600.0,
                 unrealized_pnl_pct=unrealized_pnl_pct,
                 leverage=LEVERAGE,
-                atr_pct=params.get("volatility", 0.02) / 100.0 if params.get("volatility", 0) > 1 else 0.02,
+                atr_pct=(
+                    params.get("volatility", 0.02) / 100.0
+                    if params.get("volatility", 0) > 1
+                    else 0.02
+                ),
             )
 
             # 获取1H K线供特征计算（hold_value/hold_risk 需要技术指标）
             candles_1h = None
             try:
                 from market_data import fetch_candles
+
                 spot = to_spot(coin)
                 candles_1h = fetch_candles(spot, bar="1H", limit=100)
             except Exception:
@@ -998,7 +1191,9 @@ def check_time_exit(client, coin, pos, state):
             _execute_close_position(client, coin, pos, state, reason="timeout_fallback")
             return True
 
-        action = decision.action.value if hasattr(decision.action, 'value') else str(decision.action)
+        action = (
+            decision.action.value if hasattr(decision.action, "value") else str(decision.action)
+        )
 
         # ── 处理离场动作 ──────────────────────────────────────────
         if action == "close":
@@ -1021,8 +1216,10 @@ def check_time_exit(client, coin, pos, state):
             # 同步更新交易所 OCO 挂单（撤销旧单 → 下新止盈价单）
             sl_price = params.get("stop_loss_price")
             _sync_tp_sl_orders(client, coin, pos, pos["entry_price"], capped_tp, sl_price)
-            _log(f"[{coin}] 经典评估: RAISE_TP ({decision.reason}) "
-                 f"新止盈={capped_tp:.2%} (原={original_tp:.2%}), OCO挂单已同步")
+            _log(
+                f"[{coin}] 经典评估: RAISE_TP ({decision.reason}) "
+                f"新止盈={capped_tp:.2%} (原={original_tp:.2%}), OCO挂单已同步"
+            )
             return False
 
         else:  # hold
@@ -1038,14 +1235,14 @@ def _execute_close_position(client, coin, pos, state, reason="", exit_price=None
     """平仓（支持多空方向）- 平仓前取消所有条件单"""
     inst_id = pos["inst_id"]
     direction = pos.get("direction", "LONG")
-    is_short = (direction == "SHORT")
+    is_short = direction == "SHORT"
     try:
         if AUTO_EXECUTE:
             client.cancel_algo_orders(inst_id)
 
         lot_sz, ct_val = get_contract_info(client, inst_id)
         close_sz = math.floor(pos["sz"] / lot_sz) * lot_sz
-        decimals = len(str(lot_sz).split('.')[-1]) if '.' in str(lot_sz) else 0
+        decimals = len(str(lot_sz).split(".")[-1]) if "." in str(lot_sz) else 0
         close_sz = round(close_sz, decimals)
 
         if AUTO_EXECUTE:
@@ -1085,11 +1282,11 @@ def _execute_reduce_position(client, coin, pos, state, reduce_frac):
     """减仓（供 check_time_exit 调用，支持多空方向）"""
     inst_id = pos["inst_id"]
     direction = pos.get("direction", "LONG")
-    is_short = (direction == "SHORT")
+    is_short = direction == "SHORT"
     try:
         lot_sz, ct_val = get_contract_info(client, inst_id)
         reduce_sz = math.floor((pos["sz"] * reduce_frac) / lot_sz) * lot_sz
-        decimals = len(str(lot_sz).split('.')[-1]) if '.' in str(lot_sz) else 0
+        decimals = len(str(lot_sz).split(".")[-1]) if "." in str(lot_sz) else 0
         reduce_sz = round(reduce_sz, decimals)
 
         if reduce_sz < lot_sz:
@@ -1109,7 +1306,9 @@ def _execute_reduce_position(client, coin, pos, state, reduce_frac):
             )
             if r.get("ok"):
                 pos["sz"] -= reduce_sz
-                _log(f"[{coin}] {direction} 减仓成功 frac={reduce_frac:.0%} sz={reduce_sz} 剩余={pos['sz']}")
+                _log(
+                    f"[{coin}] {direction} 减仓成功 frac={reduce_frac:.0%} sz={reduce_sz} 剩余={pos['sz']}"
+                )
                 return True
             else:
                 _log(f"[{coin}] 减仓失败: {r.get('error', r)}")
@@ -1142,8 +1341,11 @@ def trigger_capital_rebuild(state, reason=""):
             script = BASE_DIR / "run.py"
             cmd = [sys.executable, str(script), "capital_engine", "monthly"]
             result = subprocess.run(
-                cmd, capture_output=True, text=True,
-                cwd=str(BASE_DIR), timeout=7200,
+                cmd,
+                capture_output=True,
+                text=True,
+                cwd=str(BASE_DIR),
+                timeout=7200,
             )
             if result.returncode == 0:
                 _log("[资金管理] 优化完成")
@@ -1166,10 +1368,10 @@ def check_monthly_rebuild(state):
     """检查是否需要运行月度资金优化（每月1号运行一次）"""
     now = datetime.now(timezone.utc)
     last_rebuild = state.get("last_capital_rebuild", "")
-    
+
     if now.day != 1:
         return False
-    
+
     if last_rebuild:
         try:
             last_dt = datetime.fromisoformat(last_rebuild.replace("Z", "+00:00"))
@@ -1177,21 +1379,25 @@ def check_monthly_rebuild(state):
                 return False
         except:
             pass
-    
+
     return True
+
 
 _lot_size_cache = {}
 _ct_val_cache = {}
+
 
 def get_contract_info(client, inst_id):
     """获取合约信息（lotSz, ctVal）带缓存"""
     if inst_id in _lot_size_cache and inst_id in _ct_val_cache:
         return _lot_size_cache[inst_id], _ct_val_cache[inst_id]
     try:
-        r = client._get('/api/v5/public/instruments', {'instId': inst_id, 'instType': 'SWAP'}, auth=False)
-        if r.get('code') == '0' and r.get('data'):
-            lot_sz = float(r['data'][0].get('lotSz', 1))
-            ct_val = float(r['data'][0].get('ctVal', 1))
+        r = client._get(
+            "/api/v5/public/instruments", {"instId": inst_id, "instType": "SWAP"}, auth=False
+        )
+        if r.get("code") == "0" and r.get("data"):
+            lot_sz = float(r["data"][0].get("lotSz", 1))
+            ct_val = float(r["data"][0].get("ctVal", 1))
             _lot_size_cache[inst_id] = lot_sz
             _ct_val_cache[inst_id] = ct_val
             return lot_sz, ct_val
@@ -1201,6 +1407,7 @@ def get_contract_info(client, inst_id):
     _ct_val_cache[inst_id] = 1.0
     return 0.01, 1.0
 
+
 def calc_lot_sz(notional_usd, price, lot_sz, ct_val):
     """根据名义价值计算张数（OKX合约sz是张数，不是币数）"""
     if ct_val <= 0 or price <= 0:
@@ -1209,7 +1416,7 @@ def calc_lot_sz(notional_usd, price, lot_sz, ct_val):
     sz_adj = math.floor(sz_raw / lot_sz) * lot_sz
     if sz_adj < lot_sz:
         return 0
-    decimals = len(str(lot_sz).split('.')[-1]) if '.' in str(lot_sz) else 0
+    decimals = len(str(lot_sz).split(".")[-1]) if "." in str(lot_sz) else 0
     return round(sz_adj, decimals)
 
 
@@ -1248,7 +1455,9 @@ def run_light_poll_cycle():
 
     if not api_ok:
         # API 失败 — 保留 state 原状，只更新 last_poll
-        _log(f"[轻量轮询] ⚠️ 持仓查询失败: {all_resp.get('error', 'unknown')} — 保留 state 原状，不删除任何持仓")
+        _log(
+            f"[轻量轮询] ⚠️ 持仓查询失败: {all_resp.get('error', 'unknown')} — 保留 state 原状，不删除任何持仓"
+        )
         state["last_poll"] = datetime.now(timezone.utc).isoformat()
         save_state(state)
         remaining = list(state.get("positions", {}).keys())
@@ -1257,7 +1466,9 @@ def run_light_poll_cycle():
             pos = state["positions"][coin]
             pnl = pos.get("unrealized_pnl", 0)
             pnl_pct = pos.get("profit_pct", 0)
-            _log(f"  [{coin}] mark=${pos.get('current_price', 0):.4f} pnl=${pnl:.2f} ({pnl_pct:+.2%}) [stale]")
+            _log(
+                f"  [{coin}] mark=${pos.get('current_price', 0):.4f} pnl=${pnl:.2f} ({pnl_pct:+.2%}) [stale]"
+            )
         return
 
     state_positions = set(state.get("positions", {}).keys())
@@ -1281,10 +1492,12 @@ def run_light_poll_cycle():
     externally_opened = exchange_pos_keys - state_positions
     for coin in externally_opened:
         p = exchange_positions[coin]
-        _log(f"[{coin}] ⚠️ 检测到外部开仓: avg_px={p['avg_px']:.4f} pos={p['pos']} upl={p['upl']:.2f}")
+        _log(
+            f"[{coin}] ⚠️ 检测到外部开仓: avg_px={p['avg_px']:.4f} pos={p['pos']} upl={p['upl']:.2f}"
+        )
 
     # 3. 两边都有 → 更新盈亏信息
-    for coin in (state_positions & exchange_pos_keys):
+    for coin in state_positions & exchange_pos_keys:
         p = exchange_positions[coin]
         pos = state["positions"][coin]
         pos["current_price"] = p.get("mark_px", 0)
@@ -1307,13 +1520,17 @@ def run_light_poll_cycle():
 
     # 输出监控摘要
     remaining = list(state.get("positions", {}).keys())
-    _log(f"=== 轻量轮询完成 | 持仓:{len(remaining)} 外部平仓:{len(externally_closed)} 外部开仓:{len(externally_opened)} ===")
+    _log(
+        f"=== 轻量轮询完成 | 持仓:{len(remaining)} 外部平仓:{len(externally_closed)} 外部开仓:{len(externally_opened)} ==="
+    )
     if remaining:
         for coin in remaining:
             pos = state["positions"][coin]
             pnl = pos.get("unrealized_pnl", 0)
             pnl_pct = pos.get("profit_pct", 0)
-            _log(f"  [{coin}] mark=${pos.get('current_price', 0):.4f} pnl=${pnl:.2f} ({pnl_pct:+.2%})")
+            _log(
+                f"  [{coin}] mark=${pos.get('current_price', 0):.4f} pnl=${pnl:.2f} ({pnl_pct:+.2%})"
+            )
 
 
 def run_poll_cycle():
@@ -1381,35 +1598,39 @@ def run_poll_cycle():
         except Exception as e:
             _log(f"[{coin}] 轮询异常: {e}")
 
-    win_rate = (state["total_wins"] / state["total_trades"] * 100) if state["total_trades"] > 0 else 0
-    _log(f"=== 轮询完成 | 持仓:{len(state['positions'])} 总交易:{state['total_trades']} 胜率:{win_rate:.1f}% ===")
+    win_rate = (
+        (state["total_wins"] / state["total_trades"] * 100) if state["total_trades"] > 0 else 0
+    )
+    _log(
+        f"=== 轮询完成 | 持仓:{len(state['positions'])} 总交易:{state['total_trades']} 胜率:{win_rate:.1f}% ==="
+    )
     save_state(state)
 
 
 def main():
-    _log(f"V15 经典马丁策略自动交易器启动")
+    _log("V15 经典马丁策略自动交易器启动")
     _log(f"  币种: {COINS}")
     _log(f"  轮询间隔: {POLL_INTERVAL}s")
     _log(f"  自动执行: {AUTO_EXECUTE}")
     _log(f"  最大加仓: {MAX_ADDONS}次")
     _log(f"  止盈: {BASE_TP_PCT:.0%}")
     _log(f"  允许做空: {V15_ALLOW_SHORT}")
-    
+
     def handle_signal(signum, frame):
         _log("收到退出信号, 保存状态...")
         state = load_state()
         save_state(state)
         sys.exit(0)
-    
+
     sig_module.signal(sig_module.SIGINT, handle_signal)
     sig_module.signal(sig_module.SIGTERM, handle_signal)
-    
+
     while True:
         try:
             run_poll_cycle()
         except Exception as e:
             _log(f"轮询周期异常: {e}")
-        
+
         _log(f"等待 {POLL_INTERVAL}s 后下一轮...")
         time.sleep(POLL_INTERVAL)
 

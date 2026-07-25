@@ -6,30 +6,33 @@
 - 经典指标综合置信度
 """
 
-from typing import List, Dict
+from typing import List
+
 import numpy as np
 
 try:
     import sys
+
     sys.path.insert(0, "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统")
     from talib import abstract as ta
+
     TALIB_AVAILABLE = True
 except ImportError:
     TALIB_AVAILABLE = False
 
 try:
     from .config import (
+        DAILY_WEIGHT,
         SCREEN1_INDICATORS,
         SCREEN2_INDICATORS,
         WEEKLY_WEIGHT,
-        DAILY_WEIGHT,
     )
 except ImportError:
     from config import (
+        DAILY_WEIGHT,
         SCREEN1_INDICATORS,
         SCREEN2_INDICATORS,
         WEEKLY_WEIGHT,
-        DAILY_WEIGHT,
     )
 
 
@@ -54,7 +57,9 @@ def calc_indicator_dynamics(df, indicator_name: str) -> dict:
             hist = macd_dict["macdhist"]
             result["direction"] = "BULL" if macd_line.iloc[-1] > signal_line.iloc[-1] else "BEAR"
             price_mean = close.mean()
-            result["speed"] = min(100, abs(macd_line.iloc[-1] - signal_line.iloc[-1]) / price_mean * 1000)
+            result["speed"] = min(
+                100, abs(macd_line.iloc[-1] - signal_line.iloc[-1]) / price_mean * 1000
+            )
             if len(hist) >= 3:
                 slope = (hist.iloc[-1] - hist.iloc[-3]) / 2
                 result["acceleration"] = min(100, abs(slope) / price_mean * 1000)
@@ -172,7 +177,11 @@ def calc_indicator_dynamics(df, indicator_name: str) -> dict:
             result["speed"] = min(100, alignment_score * 100)
             if len(ema20) >= 3:
                 prev_ma_values = [ema20.iloc[-3], ema50.iloc[-3], ema200.iloc[-3]]
-                prev_alignment = 1 - (np.std(prev_ma_values) / np.mean(prev_ma_values)) if np.mean(prev_ma_values) > 0 else 0
+                prev_alignment = (
+                    1 - (np.std(prev_ma_values) / np.mean(prev_ma_values))
+                    if np.mean(prev_ma_values) > 0
+                    else 0
+                )
                 result["acceleration"] = min(100, abs(alignment_score - prev_alignment) * 100)
 
         elif indicator_name == "Elder_ray":
@@ -190,15 +199,18 @@ def calc_indicator_dynamics(df, indicator_name: str) -> dict:
             else:
                 result["direction"] = "NEUTRAL"
             # 速度：力量强度（绝对值归一化）
-            power_range = max(bull_power.max() - bull_power.min(),
-                              bear_power.max() - bear_power.min(), 1e-9)
+            power_range = max(
+                bull_power.max() - bull_power.min(), bear_power.max() - bear_power.min(), 1e-9
+            )
             power_abs = max(abs(bull_power.iloc[-1]), abs(bear_power.iloc[-1]))
             result["speed"] = min(100, power_abs / power_range * 100)
             # 加速度：力量变化率（衰竭/增强）—— 高speed+低accel=衰竭预警
             if len(bull_power) >= 3:
                 bull_change = bull_power.iloc[-1] - bull_power.iloc[-3]
                 bear_change = bear_power.iloc[-1] - bear_power.iloc[-3]
-                result["acceleration"] = min(100, abs(bull_change - bear_change) / power_range * 100)
+                result["acceleration"] = min(
+                    100, abs(bull_change - bear_change) / power_range * 100
+                )
 
         # ============================================================
         # 反方指标（Phase 2：平衡确认偏误）
@@ -224,7 +236,9 @@ def calc_indicator_dynamics(df, indicator_name: str) -> dict:
                     result["direction"] = "NEUTRAL"
                 result["speed"] = min(100, abs(position_ratio - 0.5) * 200)
                 if len(close) >= 5:
-                    prev_ratio = (close.iloc[-5] - lower.iloc[-5]) / (upper.iloc[-5] - lower.iloc[-5] + 1e-9)
+                    prev_ratio = (close.iloc[-5] - lower.iloc[-5]) / (
+                        upper.iloc[-5] - lower.iloc[-5] + 1e-9
+                    )
                     result["acceleration"] = min(100, abs(position_ratio - prev_ratio) * 100)
 
         elif indicator_name == "RSI_Divergence":
@@ -316,6 +330,7 @@ def calc_classic_indicator_confidence(weekly_df, daily_df) -> dict:
       - 速度/加速度加成：同向指标的速度+加速度均值 × 5 上限加分
       - Screen1(周线)置信度权重 60%，Screen2(日线) 40%
     """
+
     def _calc_group(indicators, df):
         bull_count = 0
         bear_count = 0
@@ -373,7 +388,9 @@ def calc_classic_indicator_confidence(weekly_df, daily_df) -> dict:
 
     if trend_consistent:
         overall_direction = s1["direction"]
-        overall_confidence = round(s1["confidence"] * WEEKLY_WEIGHT + s2["confidence"] * DAILY_WEIGHT, 1)
+        overall_confidence = round(
+            s1["confidence"] * WEEKLY_WEIGHT + s2["confidence"] * DAILY_WEIGHT, 1
+        )
     else:
         overall_direction = "NEUTRAL"
         overall_confidence = round(min(s1["confidence"], s2["confidence"]) * 0.5, 1)
@@ -391,6 +408,7 @@ def calc_classic_indicator_confidence(weekly_df, daily_df) -> dict:
 # ========================================================================
 # Elder-ray 高级分析（P2-v2：融入三重滤网第二屏理论）
 # ========================================================================
+
 
 def calc_elder_ray_advanced(df, period: int = 13, lookback: int = 20) -> dict:
     """
@@ -451,8 +469,18 @@ def calc_elder_ray_advanced(df, period: int = 13, lookback: int = 20) -> dict:
         "bull_losing_control": False,
         "bear_losing_control": False,
         "both_weakening": False,
-        "bull_divergence": {"detected": False, "strength": 0.0, "price_high_idx": -1, "bull_high_idx": -1},
-        "bear_divergence": {"detected": False, "strength": 0.0, "price_low_idx": -1, "bear_low_idx": -1},
+        "bull_divergence": {
+            "detected": False,
+            "strength": 0.0,
+            "price_high_idx": -1,
+            "bull_high_idx": -1,
+        },
+        "bear_divergence": {
+            "detected": False,
+            "strength": 0.0,
+            "price_low_idx": -1,
+            "bear_low_idx": -1,
+        },
         "phase": "UNKNOWN",
         "phase_confidence": 0.0,
         "setup_score": 0.0,
@@ -528,9 +556,15 @@ def calc_elder_ray_advanced(df, period: int = 13, lookback: int = 20) -> dict:
                 bull_high_val = window_bull[bull_high_idx]
                 current_bull_val = window_bull[-1]
                 # 背离强度：价格创新高幅度 vs 力量下降幅度
-                price_new_high_pct = (price_high_val - window_highs[bull_high_idx]) / price_high_val * 100
-                bull_decline_pct = (bull_high_val - current_bull_val) / max(abs(bull_high_val), 1e-9) * 100
-                divergence_strength = min(100.0, max(0.0, price_new_high_pct * 2 + bull_decline_pct))
+                price_new_high_pct = (
+                    (price_high_val - window_highs[bull_high_idx]) / price_high_val * 100
+                )
+                bull_decline_pct = (
+                    (bull_high_val - current_bull_val) / max(abs(bull_high_val), 1e-9) * 100
+                )
+                divergence_strength = min(
+                    100.0, max(0.0, price_new_high_pct * 2 + bull_decline_pct)
+                )
                 if divergence_strength > 10:
                     result["bull_divergence"] = {
                         "detected": True,
@@ -549,9 +583,17 @@ def calc_elder_ray_advanced(df, period: int = 13, lookback: int = 20) -> dict:
                 bear_low_val = window_bear[bear_low_idx]
                 current_bear_val = window_bear[-1]
                 # 背离强度：价格创新低幅度 vs 力量减弱幅度
-                price_new_low_pct = (window_lows[bear_low_idx] - price_low_val) / max(abs(price_low_val), 1e-9) * 100
-                bear_weakening_pct = (current_bear_val - bear_low_val) / max(abs(bear_low_val), 1e-9) * 100
-                divergence_strength = min(100.0, max(0.0, price_new_low_pct * 2 + bear_weakening_pct))
+                price_new_low_pct = (
+                    (window_lows[bear_low_idx] - price_low_val)
+                    / max(abs(price_low_val), 1e-9)
+                    * 100
+                )
+                bear_weakening_pct = (
+                    (current_bear_val - bear_low_val) / max(abs(bear_low_val), 1e-9) * 100
+                )
+                divergence_strength = min(
+                    100.0, max(0.0, price_new_low_pct * 2 + bear_weakening_pct)
+                )
                 if divergence_strength > 10:
                     result["bear_divergence"] = {
                         "detected": True,

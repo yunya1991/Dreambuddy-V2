@@ -10,19 +10,17 @@
     P3 - 执行层行为约束
 """
 
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 from .context import (
-    PositionState,
-    MarketSnapshot,
-    RiskContext,
-    ExitResult,
     ExitAction,
     ExitPriority,
-    Direction,
+    ExitResult,
+    MarketSnapshot,
+    PositionState,
+    RiskContext,
 )
-from .registry import RuleRegistry, RuleCategory
+from .registry import RuleCategory, RuleRegistry
 
 
 class ExitEngine:
@@ -108,7 +106,7 @@ class ExitEngine:
                 if result.priority == ExitPriority.P0_L0_HARD:
                     break
 
-            except Exception as e:
+            except Exception:
                 continue
 
         return best_result

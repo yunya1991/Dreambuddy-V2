@@ -21,19 +21,17 @@
 """
 
 import json
-import os
-import sys
 import time
-import traceback
-from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
-from enum import Enum
 from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class AlertLevel(str, Enum):
     """告警级别"""
+
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
@@ -41,6 +39,7 @@ class AlertLevel(str, Enum):
 
 class AlertCategory(str, Enum):
     """告警类别"""
+
     GATE_BLOCK = "gate_block"
     GATE_DEGRADE = "gate_degrade"
     EXIT_TRIGGER = "exit_trigger"
@@ -53,6 +52,7 @@ class AlertCategory(str, Enum):
 @dataclass
 class AlertEvent:
     """告警事件"""
+
     level: AlertLevel
     category: AlertCategory
     title: str
@@ -82,38 +82,48 @@ class AlertEvent:
         icon = icon_map.get(self.level, "ℹ️")
 
         elements = [
-            {
-                "tag": "div",
-                "text": {
-                    "tag": "lark_md",
-                    "content": f"{icon} **{self.message}**"
-                }
-            },
+            {"tag": "div", "text": {"tag": "lark_md", "content": f"{icon} **{self.message}**"}},
             {"tag": "hr"},
         ]
 
         if self.coin:
-            elements.append({
-                "tag": "div",
-                "fields": [
-                    {"is_short": True, "text": {"tag": "lark_md", "content": f"**币种**\n{self.coin}"}},
-                    {"is_short": True, "text": {"tag": "lark_md", "content": f"**类别**\n{self.category.value}"}},
-                    {"is_short": True, "text": {"tag": "lark_md", "content": f"**级别**\n{self.level.value}"}},
-                    {"is_short": True, "text": {"tag": "lark_md", "content": f"**时间**\n{self.timestamp}"}},
-                ]
-            })
+            elements.append(
+                {
+                    "tag": "div",
+                    "fields": [
+                        {
+                            "is_short": True,
+                            "text": {"tag": "lark_md", "content": f"**币种**\n{self.coin}"},
+                        },
+                        {
+                            "is_short": True,
+                            "text": {
+                                "tag": "lark_md",
+                                "content": f"**类别**\n{self.category.value}",
+                            },
+                        },
+                        {
+                            "is_short": True,
+                            "text": {"tag": "lark_md", "content": f"**级别**\n{self.level.value}"},
+                        },
+                        {
+                            "is_short": True,
+                            "text": {"tag": "lark_md", "content": f"**时间**\n{self.timestamp}"},
+                        },
+                    ],
+                }
+            )
 
         if self.details:
             detail_lines = []
             for k, v in self.details.items():
                 detail_lines.append(f"  - **{k}**: {v}")
-            elements.append({
-                "tag": "div",
-                "text": {
-                    "tag": "lark_md",
-                    "content": "**详情**\n" + "\n".join(detail_lines)
+            elements.append(
+                {
+                    "tag": "div",
+                    "text": {"tag": "lark_md", "content": "**详情**\n" + "\n".join(detail_lines)},
                 }
-            })
+            )
 
         return {
             "config": {"wide_screen_mode": True},
@@ -276,7 +286,10 @@ class RiskAlertNotifier:
     def _load_feishu_module(self):
         """加载 feishu_notify 模块"""
         candidates = [
-            Path(__file__).resolve().parent.parent.parent / "6-TRADING" / "scripts" / "feishu_notify.py",
+            Path(__file__).resolve().parent.parent.parent
+            / "6-TRADING"
+            / "scripts"
+            / "feishu_notify.py",
             Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/scripts/feishu_notify.py"),
         ]
 
@@ -284,6 +297,7 @@ class RiskAlertNotifier:
             if p.exists():
                 try:
                     import importlib.util
+
                     spec = importlib.util.spec_from_file_location("feishu_notify", str(p))
                     mod = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(mod)
@@ -300,9 +314,11 @@ class RiskAlertNotifier:
             log_path.parent.mkdir(parents=True, exist_ok=True)
 
             with open(log_path, "a") as f:
-                f.write(f"[{event.timestamp}] [{event.level.value}] [{event.category.value}] "
-                        f"{'[SENT]' if sent else '[LOCAL]'} "
-                        f"{event.title} | {event.coin} | {event.message}\n")
+                f.write(
+                    f"[{event.timestamp}] [{event.level.value}] [{event.category.value}] "
+                    f"{'[SENT]' if sent else '[LOCAL]'} "
+                    f"{event.title} | {event.coin} | {event.message}\n"
+                )
                 if event.details:
                     for k, v in event.details.items():
                         f.write(f"  {k}: {v}\n")
@@ -320,14 +336,16 @@ class RiskAlertNotifier:
         level: AlertLevel = AlertLevel.CRITICAL,
     ):
         """门禁阻断告警"""
-        return self.alert(AlertEvent(
-            level=level,
-            category=AlertCategory.GATE_BLOCK,
-            title="交易门禁阻断",
-            message=reason,
-            coin=coin,
-            details=details or {},
-        ))
+        return self.alert(
+            AlertEvent(
+                level=level,
+                category=AlertCategory.GATE_BLOCK,
+                title="交易门禁阻断",
+                message=reason,
+                coin=coin,
+                details=details or {},
+            )
+        )
 
     def alert_gate_degrade(
         self,
@@ -340,14 +358,16 @@ class RiskAlertNotifier:
         d = {"position_modifier": modifier}
         if details:
             d.update(details)
-        return self.alert(AlertEvent(
-            level=AlertLevel.WARNING,
-            category=AlertCategory.GATE_DEGRADE,
-            title="交易门禁降级",
-            message=f"{reason} (仓位×{modifier:.2f})",
-            coin=coin,
-            details=d,
-        ))
+        return self.alert(
+            AlertEvent(
+                level=AlertLevel.WARNING,
+                category=AlertCategory.GATE_DEGRADE,
+                title="交易门禁降级",
+                message=f"{reason} (仓位×{modifier:.2f})",
+                coin=coin,
+                details=d,
+            )
+        )
 
     def alert_exit_trigger(
         self,
@@ -362,14 +382,16 @@ class RiskAlertNotifier:
         d = {"action": action, "priority": priority}
         if details:
             d.update(details)
-        return self.alert(AlertEvent(
-            level=level,
-            category=AlertCategory.EXIT_TRIGGER,
-            title=f"离场触发: {action.upper()}",
-            message=reason,
-            coin=coin,
-            details=d,
-        ))
+        return self.alert(
+            AlertEvent(
+                level=level,
+                category=AlertCategory.EXIT_TRIGGER,
+                title=f"离场触发: {action.upper()}",
+                message=reason,
+                coin=coin,
+                details=d,
+            )
+        )
 
     def alert_drawdown(
         self,
@@ -382,13 +404,20 @@ class RiskAlertNotifier:
         d = {"drawdown_pct": f"{drawdown_pct:.2%}", "threshold_pct": f"{threshold_pct:.2%}"}
         if details:
             d.update(details)
-        return self.alert(AlertEvent(
-            level=level,
-            category=AlertCategory.DRAWDOWN,
-            title="日回撤告警",
-            message=f"日回撤 {drawdown_pct:.2%}" + (f" 超过阈值 {threshold_pct:.2%}" if drawdown_pct >= threshold_pct else " 接近阈值"),
-            details=d,
-        ))
+        return self.alert(
+            AlertEvent(
+                level=level,
+                category=AlertCategory.DRAWDOWN,
+                title="日回撤告警",
+                message=f"日回撤 {drawdown_pct:.2%}"
+                + (
+                    f" 超过阈值 {threshold_pct:.2%}"
+                    if drawdown_pct >= threshold_pct
+                    else " 接近阈值"
+                ),
+                details=d,
+            )
+        )
 
     def alert_consecutive_loss(
         self,
@@ -401,13 +430,16 @@ class RiskAlertNotifier:
         d = {"consecutive_losses": count, "threshold": threshold}
         if details:
             d.update(details)
-        return self.alert(AlertEvent(
-            level=level,
-            category=AlertCategory.CONSECUTIVE_LOSS,
-            title="连续亏损告警",
-            message=f"连续亏损 {count} 次" + (f"，达到上限 {threshold}" if count >= threshold else ""),
-            details=d,
-        ))
+        return self.alert(
+            AlertEvent(
+                level=level,
+                category=AlertCategory.CONSECUTIVE_LOSS,
+                title="连续亏损告警",
+                message=f"连续亏损 {count} 次"
+                + (f"，达到上限 {threshold}" if count >= threshold else ""),
+                details=d,
+            )
+        )
 
     def get_history(self, limit: int = 50) -> List[Dict[str, Any]]:
         """获取告警历史"""

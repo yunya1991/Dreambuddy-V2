@@ -139,32 +139,31 @@ class PollingTrader:
         self.knowledge_bridge = KnowledgeBridge(shared_dir=shared_dir)
         self.external_knowledge = {}
 
-        # 经典指标离场系统（短期修复：关闭杠杆解耦 + 放宽震荡市止损 + 暂停 Risk Gate 追跌）
+        # 经典指标离场系统（回退到原始配置：回测证明暂停主动层导致收益暴跌）
         exit_cfg = ExitConfig(
             l0_max_hold_sec=172800,
             l0_max_loss_pct=-0.05,
             tb_enabled=True,
             tb_sl_atr_mult=1.5,
             tb_tp_atr_mult=3.0,
-            tb_sl_min_pct=0.045,  # 震荡市从 2% 提到 4.5%（覆盖默认 2%）
+            tb_sl_min_pct=0.045,
             tb_tp_min_pct=0.04,
             trailing_enabled=True,
             trailing_arm_profit_pct=0.04,
-            trailing_retrace_pct=0.035,  # 跟踪止损回撤从 2% 放到 3.5%，减少震荡洗盘
+            trailing_retrace_pct=0.035,
             tstp_enabled=True,
             l1_enabled=True,
             l2_close_threshold=0.75,
             l2_reduce_threshold=0.55,
-            apply_leverage_to_thresholds=True,  # 关闭杠杆解耦：-5% 真的是 -5%
+            apply_leverage_to_thresholds=True,
             inflight_cooldown_sec=180,
-            # 暂停 Risk Gate 追跌强制 close：震荡市 hold_risk 持续高位易误伤
-            l0_risk_gate_enabled=True,  # 保留 armed + reduce（减仓保护）
-            l0_risk_gate_close_enabled=False,  # 关闭强制 close，避免追跌平仓
-            l0_risk_gate_cooldown_min=60.0,  # cooldown 从 30min 拉长到 60min
-            l0_risk_gate_confirm_n=3,  # 确认次数从 2 提到 3，更保守
+            l0_risk_gate_enabled=True,
+            l0_risk_gate_close_enabled=False,
+            l0_risk_gate_cooldown_min=60.0,
+            l0_risk_gate_confirm_n=3,
         )
         self.exit_system = ClassicExitSystem(config=exit_cfg)
-        self._exit_cfg_base = exit_cfg  # 保存基准配置，供动态调整使用
+        self._exit_cfg_base = exit_cfg
 
         # 震荡市增强器（优化1-5统一入口）
         # 包含：5种市场状态、布林带双信号确认、MA200方向性偏向、动态止损宽度、置信度校准
@@ -205,6 +204,15 @@ class PollingTrader:
         except Exception as e:
             self._log(f"[CBR] 初始化失败: {e}，继续运行", "WARN")
             self.cbr_bridge = None
+
+        # A7 实践论门禁（代码驱动，不依赖大模型）
+        try:
+            from scripts.memory_l4.a7_practice_gate import A7PracticeGate
+            self.a7_gate = A7PracticeGate()
+            self._log("[A7] 实践论门禁已初始化", "INFO")
+        except Exception as e:
+            self._log(f"[A7] 门禁初始化失败: {e}，继续运行", "WARN")
+            self.a7_gate = None
 
         self._sync_existing_positions()
 
@@ -272,7 +280,7 @@ class PollingTrader:
                     if isinstance(val, (int, float, str)) and len(str(val)) <= 50:
                         self._log(f"    └─ {key}: {val}")
 
-            if report.has_error:
+            if report.overall_status == "error":
                 self._log("[系统诊断] 发现错误，请检查相关组件", "WARN")
             else:
                 self._log("[系统诊断] 启动检查通过", "INFO")
@@ -493,6 +501,7 @@ class PollingTrader:
                 reduce_ratio = b1.reduce_ratio
 
         # 经典指标离场回退：BCRM 未产生止盈止损时，用 ATR 计算止损止盈
+        # 回退到原始参数：回测证明 1.2x/4.0x 导致止损过紧，胜率暴跌
         if sl_px == 0 or tp_px == 0:
             price = snapshot.get("price", 0)
             volatility = snapshot.get("volatility", 0.03)
@@ -529,6 +538,11 @@ class PollingTrader:
                 scale_dict = bcrm_result.scale_params.to_dict()
             elif isinstance(bcrm_result.scale_params, dict):
                 scale_dict = bcrm_result.scale_params
+
+        # P0修复：注入 regime 到 snapshot（卦象+is_ranging+closes推断）
+        snapshot["regime"] = self._infer_regime(
+            hex_cn, snapshot.get("is_ranging", False), direction, closes_window
+        )
 
         return {
             "ok": True,
@@ -718,9 +732,20 @@ class PollingTrader:
                 "price": price,
                 "volatility": volatility,
                 "is_ranging": is_ranging,
+                "regime": self._infer_regime(
+                    hex_cn, is_ranging, direction, list(closes[-60:]) if len(closes) >= 60 else list(closes)
+                ),
             },
-            "contradictions": [],
+            "contradictions": bcrm_result.get("a0_analysis", {}).get("contradictions", []),
+            "a0_analysis": bcrm_result.get("a0_analysis"),
+            "a0_warnings": bcrm_result.get("a0_warnings", []),
+            "triangle_verification": bcrm_result.get("triangle_verification"),
+            # P3预警联动参数（五角校验输出）
+            "position_factor": bcrm_result.get("position_factor", 1.0),
+            "sl_tighten_factor": bcrm_result.get("sl_tighten_factor", 1.0),
+            "early_exit_signal": bcrm_result.get("early_exit_signal", False),
             "volatility": volatility,
+            "sl_atr": 1.5,
             "kline_data": kline_data,
         }
 
@@ -792,6 +817,81 @@ class PollingTrader:
             "泽风大过": "short",
         }
         return HEX_TO_DIRECTION.get(hexagram_name, "")
+
+    # 64卦名首字 → 八卦元素映射（上卦/下卦提取）
+    _HEX_CHAR_TO_GUA = {
+        "乾": "qian", "天": "qian",
+        "坤": "kun", "地": "kun",
+        "震": "zhen", "雷": "zhen",
+        "巽": "xun", "风": "xun",
+        "坎": "kan", "水": "kan",
+        "离": "li", "火": "li",
+        "艮": "gen", "山": "gen",
+        "兑": "dui", "泽": "dui",
+    }
+
+    def _infer_regime(self, hexagram_name: str, is_ranging: bool,
+                      direction: str = "", closes: list = None) -> str:
+        """从卦象名+市场状态推断 regime（8态之一）
+
+        轻量级推断，不依赖 MarketRegimeClassifier 训练。
+        映射规则：
+          1. 从64卦名提取下卦（第1字）和上卦（第2字，若存在）
+          2. 下卦为主卦，映射到 GUA_REGIME_MAP 的8态
+          3. is_ranging=True 时，趋势类regime降级为震荡类
+          4. 特殊处理纯卦（"X为Y"格式）
+
+        Returns:
+            regime 名称（如 TREND_UP_STRONG / RANGE_BOUND / ...）
+        """
+        from scripts.memory_l4.bcrm2.market_regime import GUA_REGIME_MAP
+
+        if not hexagram_name or hexagram_name == "已存在持仓":
+            # 无卦象时用 is_ranging + direction 兜底
+            if is_ranging:
+                return "RANGE_BOUND"
+            if direction == "UP":
+                return "TREND_UP_MILD"
+            if direction == "DOWN":
+                return "VOLATILE_DROP"
+            return "CONSOLIDATION"
+
+        # 纯卦格式："X为Y"（如"乾为天"）→ 取首字
+        if "为" in hexagram_name:
+            first_gua = self._HEX_CHAR_TO_GUA.get(hexagram_name[0], "")
+            if first_gua and first_gua in GUA_REGIME_MAP:
+                regime = GUA_REGIME_MAP[first_gua]
+                # 震荡市降级
+                if is_ranging and regime in ("TREND_UP_STRONG", "TREND_UP_MILD", "BREAKOUT"):
+                    return "RANGE_BOUND"
+                return regime
+
+        # 组合卦：取前两字作为上下卦（如"水山蹇"→上坎下艮）
+        # 下卦（第1字）为主，上卦（第2字）为辅
+        if len(hexagram_name) >= 2:
+            lower_gua = self._HEX_CHAR_TO_GUA.get(hexagram_name[0], "")
+            upper_gua = self._HEX_CHAR_TO_GUA.get(hexagram_name[1], "")
+
+            # 优先用下卦（主卦）映射
+            if lower_gua and lower_gua in GUA_REGIME_MAP:
+                regime = GUA_REGIME_MAP[lower_gua]
+                # 震荡市降级：强趋势/突破类 → 震荡
+                if is_ranging and regime in ("TREND_UP_STRONG", "TREND_UP_MILD", "BREAKOUT", "FOMO_RALLY"):
+                    return "RANGE_BOUND"
+                return regime
+
+            # 下卦未命中，尝试上卦
+            if upper_gua and upper_gua in GUA_REGIME_MAP:
+                return GUA_REGIME_MAP[upper_gua]
+
+        # 价格趋势兜底
+        if closes and len(closes) >= 20:
+            if closes[-1] > closes[-20]:
+                return "TREND_UP_MILD" if not is_ranging else "RANGE_BOUND"
+            elif closes[-1] < closes[-20]:
+                return "VOLATILE_DROP" if not is_ranging else "RANGE_BOUND"
+
+        return "CONSOLIDATION"
 
     def _check_positions(self, coin: str) -> dict:
         """检查指定币种的持仓"""
@@ -952,6 +1052,9 @@ class PollingTrader:
                 should_retrain, reason = self.incremental_learner.should_retrain(coin)
                 if should_retrain:
                     self._log(f"[{coin}] 增量学习触发再训练: {reason}")
+                    retrain_ok = self._trigger_bcrm2_retrain(coin)
+                    if retrain_ok:
+                        self._log(f"[{coin}] BCRM2.0 增量重训完成")
             except Exception as e:
                 self._log(f"[{coin}] 增量学习记录失败: {e}", "WARN")
 
@@ -997,6 +1100,53 @@ class PollingTrader:
         else:
             self._log(f"[{coin}] 警告：平仓但无对应开仓记录 {inst_id}", "WARN")
             return {}
+
+    def _trigger_bcrm2_retrain(self, coin: str) -> bool:
+        """触发 BCRM 2.0 增量重训
+
+        使用最新K线数据重新训练模型，并记录到增量学习版本管理。
+        """
+        if not self.use_bcrm2:
+            return False
+
+        adapter = self.bcrm2_adapters.get(coin)
+        if not adapter:
+            return False
+
+        try:
+            from scripts.memory_l4.bcrm2.incremental_learner import IncrementalLearner
+
+            inst_id = f"{coin}-USDT-SWAP"
+            kline_resp = self.okx_client.get_kline(inst_id, bar=self.bar, limit=self.kline_limit)
+            candles = kline_resp.get("candles", []) if isinstance(kline_resp, dict) else kline_resp
+            if not candles or len(candles) < 100:
+                self._log(f"[{coin}] BCRM2重训失败：K线不足 {len(candles) if candles else 0}", "WARN")
+                return False
+
+            import pandas as pd
+            df = pd.DataFrame([{
+                'open': float(c['o']), 'high': float(c['h']), 'low': float(c['l']),
+                'close': float(c['c']), 'volume': float(c.get('vol', c.get('v', 0))),
+                'timestamp': c.get('ts', ''),
+            } for c in candles])
+
+            retrained = adapter.train(df, force_retrain=True)
+            if retrained:
+                perf = self.incremental_learner.db.get_recent_performance(coin)
+                self.incremental_learner.version_manager.save_version(
+                    adapter.engine, coin,
+                    version_id=None,
+                    metrics={
+                        "win_rate": perf.get("win_rate", 0) / 100 if perf.get("win_rate") else 0,
+                        "total_trades": perf.get("n_trades", 0),
+                    },
+                    notes="增量学习自动重训",
+                )
+                return True
+            return False
+        except Exception as e:
+            self._log(f"[{coin}] BCRM2增量重训异常: {e}", "WARN")
+            return False
 
     def _trigger_l4_pipeline_for_trade(self, trade_rec, case_id: str, saved: bool):
         """平仓后自动触发L4 Pipeline (M1-M4)
@@ -1142,6 +1292,31 @@ class PollingTrader:
                         return
 
                     self._open_position(inference, is_reverse=True)
+                return
+
+            # P3预警联动：五角校验 TDA+Ising 双重预警 → 提前退出
+            early_exit = inference.get("early_exit_signal", False)
+            if early_exit:
+                tri_ver = inference.get("triangle_verification") or {}
+                self._log(
+                    f"[{coin}] P3提前退出 [EARLY_EXIT] TDA+Ising双重预警 | "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%}) "
+                    f"预警={tri_ver.get('risk_warnings', [])}",
+                    "WARN")
+                exit_price = pos_info.get("mark_px", inference["price"])
+                if pos_side == "long":
+                    r = self.okx_client.market_close_long(
+                        inst_id, reason="P3_early_exit:TDA+Ising")
+                else:
+                    r = self.okx_client.market_close_short(
+                        inst_id, reason="P3_early_exit:TDA+Ising")
+                if r.get("ok") or r.get("dry_run"):
+                    self._handle_close_position(
+                        inst_id=inst_id, coin=coin, pos_side=pos_side,
+                        exit_price=exit_price,
+                        exit_reason="p3_early_exit",
+                        pnl=upl, pnl_pct=upl_ratio,
+                    )
                 return
 
             # 经典指标离场系统评估（完整四大优先级）
@@ -1663,11 +1838,25 @@ class PollingTrader:
             position_usdt *= 0.4
             position_pct *= 0.4
 
+        # P3预警联动：五角校验降仓系数（TDA+Ising双重预警→降仓50%，单一预警→降仓20%）
+        position_factor = inference.get("position_factor", 1.0)
+        if position_factor < 1.0:
+            position_usdt *= position_factor
+            position_pct *= position_factor
+            self._log(f"[{coin}] P3降仓 | position_factor={position_factor:.2f} → 仓位={position_usdt:.2f}USDT", "WARN")
+
         action = "open_long" if direction == "UP" else "open_short"
         pos_side = "long" if direction == "UP" else "short"
         sl_px = inference["stop_loss_px"]
         tp_px = inference["take_profit_px"]
         price = inference["price"]
+
+        # P3预警联动：五角校验止损收紧（sl_tighten_factor < 1.0 → 收紧止损）
+        sl_tighten_factor = inference.get("sl_tighten_factor", 1.0)
+        if sl_tighten_factor < 1.0 and sl_px and price > 0:
+            old_sl = sl_px
+            sl_px = round(price + (sl_px - price) * sl_tighten_factor, 4)
+            self._log(f"[{coin}] P3止损收紧 | factor={sl_tighten_factor:.2f} SL {old_sl}→{sl_px}", "WARN")
 
         # 优化3：动态止损宽度（如果增强器有推荐，覆盖默认值）
         # 关键口径：先按"订单收益率"定义，再通过 leverage 换算成价格
@@ -1794,6 +1983,9 @@ class PollingTrader:
             self._log(f"[{coin}] 开仓成功 | ordId={ord_id} | "
                       f"入场价≈{entry_price}")
 
+            # L4 轻量开仓事件（M0 注册预览 + A0 创伤追踪）
+            self._record_opening_event(inference, entry_price, pos_side, confidence)
+
             if sl_px and tp_px:
                 sltp_result = self.okx_client.place_stop_loss_take_profit(
                     inst_id=inst_id,
@@ -1811,6 +2003,53 @@ class PollingTrader:
                 self.guardian.record_error(RuntimeError(f"开仓失败: {err}"),
                                            context=f"open_position:{coin}")
 
+    def _record_opening_event(self, inference: dict, entry_price: float, pos_side: str, confidence: float):
+        """开仓时轻量记录：A0 创伤追踪 + 开仓事件存档（供平仓后 L4 使用）"""
+        import json
+        from datetime import datetime
+
+        coin = inference.get("coin", "")
+        inst_id = inference.get("inst_id", "")
+        direction = inference.get("direction", "")
+
+        # A0 创伤追踪：记录决策方向（平仓后会更新对错）
+        try:
+            from scripts.memory_l4.a0_contradiction_engine import A0ContradictionEngine
+            if not hasattr(self, "_a0_engine"):
+                self._a0_engine = A0ContradictionEngine()
+            self._a0_engine.record_decision(
+                inst_id=inst_id,
+                direction=direction,
+                was_correct=True,  # 开仓时未知，平仓后更新
+                ts=datetime.now().isoformat(),
+            )
+        except Exception:
+            pass
+
+        # 轻量开仓事件存档
+        try:
+            event = {
+                "ts": datetime.now().isoformat(),
+                "type": "position_opened",
+                "inst_id": inst_id,
+                "coin": coin,
+                "direction": direction,
+                "pos_side": pos_side,
+                "entry_price": entry_price,
+                "confidence": confidence,
+                "a0_analysis": inference.get("a0_analysis"),
+                "a0_warnings": inference.get("a0_warnings", []),
+                "volatility": inference.get("volatility", 0),
+                "hexagram": inference.get("hexagram", ""),
+            }
+            event_dir = Path(self.data_dir) / "l4_events" if hasattr(self, "data_dir") else \
+                Path("data/l4_events")
+            event_dir.mkdir(parents=True, exist_ok=True)
+            event_file = event_dir / f"open_{inst_id}_{int(datetime.now().timestamp())}.json"
+            event_file.write_text(json.dumps(event, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
     def _load_external_knowledge(self):
         """加载 AB Trading 导出的外部知识"""
         try:
@@ -1827,18 +2066,19 @@ class PollingTrader:
             self.external_knowledge = {}
 
     def _infer_current_hexagram(self, coin: str, inference: dict, kline_data: list):
-        """离场时推理当前卦象（轻量级，复用 YijingEngine）
+        """离场时推理当前卦象（轻量级，复用 YijingEngine + HexagramKnowledge）
 
-        用 inference 中已有的技术指标作为四维评分的简化输入：
-        - technical_score = trend_strength（趋势强度）
-        - supply_demand_score = 用价格位置近似
-        - capital_flow_score = 用成交量比近似
-        - sentiment_score = 用 confidence + is_ranging 反向近似
+        P1修复：
+        - 优先复用开仓时的卦象名（inference["hexagram"]），保证卦象一致性
+        - 从 HexagramKnowledge 获取固有的 risk_level/direction_hint（不依赖简化参数）
+        - 用 YijingEngine.infer() 推理 current_phase/development_stage（动态判断）
+        - 修正 supply_demand/capital_flow 不再固定0.5，改用价格位置+成交量比
 
         失败时返回 None（YijingExitSystem 会 fail-open 不干预）
         """
         try:
             from scripts.memory_l4.bcrm.yijing_engine import YijingEngine
+            from scripts.memory_l4.bcrm.sixty_four_guas import get_hexagram_knowledge
             if not hasattr(self, "_yijing_engine_for_exit"):
                 self._yijing_engine_for_exit = YijingEngine()
 
@@ -1848,28 +2088,39 @@ class PollingTrader:
             confidence = float(inference.get("confidence", 0.5) or 0.5)
             is_ranging = bool(inference.get("is_ranging", False))
             current_price = float(inference.get("price", 0) or 0)
+            # 开仓时已推理的卦象名（如"巽为风"）
+            hex_name_cn = inference.get("hexagram", "") or ""
 
-            # 简化四维评分
-            technical_score = max(0.0, min(1.0, trend_strength))
-            supply_demand_score = 0.5  # 中性，离场时不重算供需
-            capital_flow_score = 0.5   # 中性
-            # 情绪面：confidence 高=乐观；震荡市=情绪混乱
-            sentiment_score = max(0.0, min(1.0, confidence * 0.7 + (0.3 if not is_ranging else 0.1)))
-
-            # 波动率归一化（0-1）
-            vol_norm = max(0.0, min(1.0, volatility * 20))
-
-            # 价格位置（从 kline_data 简单计算）
+            # ── 价格位置 + 成交量比（不再固定0.5）──
             price_position = 0.5
+            volume_ratio = 1.0
+            closes = []
             if kline_data and len(kline_data) >= 20 and current_price > 0:
                 try:
                     closes = [float(c.get("c", 0)) for c in kline_data[-20:]]
                     if closes and max(closes) > min(closes):
                         price_position = (current_price - min(closes)) / (max(closes) - min(closes))
                         price_position = max(0.0, min(1.0, price_position))
+                    # 成交量比：近5根 vs 前20根均值
+                    vols = [float(c.get("v", 0)) for c in kline_data[-20:]]
+                    if vols and len(vols) >= 10:
+                        recent_vol = sum(vols[-5:]) / 5
+                        base_vol = sum(vols[:-5]) / max(len(vols) - 5, 1)
+                        volume_ratio = recent_vol / base_vol if base_vol > 0 else 1.0
                 except Exception:
                     pass
 
+            # 供需评分：价格位置 >0.7 偏多，<0.3 偏空，中间中性
+            supply_demand_score = max(0.0, min(1.0, price_position))
+            # 资金面：放量=资金流入，缩量=流出
+            capital_flow_score = max(0.0, min(1.0, 0.5 + (volume_ratio - 1.0) * 0.3))
+            # 技术面
+            technical_score = max(0.0, min(1.0, trend_strength))
+            # 情绪面
+            sentiment_score = max(0.0, min(1.0, confidence * 0.7 + (0.3 if not is_ranging else 0.1)))
+            vol_norm = max(0.0, min(1.0, volatility * 20))
+
+            # ── 用 YijingEngine 推理 current_phase / development_stage ──
             result = self._yijing_engine_for_exit.infer(
                 supply_demand_score=supply_demand_score,
                 technical_score=technical_score,
@@ -1877,10 +2128,23 @@ class PollingTrader:
                 sentiment_score=sentiment_score,
                 trend_strength=trend_strength,
                 volatility=vol_norm,
-                volume_ratio=1.0,
+                volume_ratio=volume_ratio,
                 price_position=price_position,
                 close_price=current_price,
             )
+
+            # ── P1修复：用 HexagramKnowledge 覆盖固有属性（risk_level/direction_hint）──
+            # YijingEngine.infer() 用简化参数推理时，risk_level 可能不准
+            # HexagramKnowledge 的 risk_level/direction_hint 是卦象固有属性，更可靠
+            if hex_name_cn and hex_name_cn != "已存在持仓":
+                hex_kb = get_hexagram_knowledge(hex_name_cn)
+                if hex_kb:
+                    # 覆盖固有属性
+                    result.risk_level = hex_kb.risk_level or result.risk_level
+                    result.direction_hint = hex_kb.direction_hint or result.direction_hint
+                    # 确保 hexagram_name_cn 一致
+                    result.hexagram_name_cn = hex_name_cn
+
             return result
         except Exception as e:
             self._log(f"[{coin}] 离场卦象推理失败: {e}", "WARN")
@@ -2005,6 +2269,26 @@ class PollingTrader:
                     f"波动率={inference.get('volatility', 0):.4f} | "
                     f"fail={inference['fail_closed']}"
                 )
+
+                # A7 实践论门禁检查（代码驱动，执行前拦截）
+                if self.a7_gate and not inference.get("fail_closed", False):
+                    current_positions = self._count_total_positions()
+                    cbr_engine = getattr(self.cbr_bridge, "cbr", None) if self.cbr_bridge else None
+                    gate_report = self.a7_gate.check_before_execute(
+                        inference=inference,
+                        risk_manager=self.risk_manager,
+                        cbr_engine=cbr_engine,
+                        current_equity=self.perf_tracker.current_equity,
+                        max_positions=self.max_positions,
+                        current_positions=current_positions,
+                    )
+                    if not gate_report.passed:
+                        self._log(
+                            f"[{inference['coin']}] A7门禁拦截: "
+                            f"{'; '.join(gate_report.blocking_reasons)}",
+                            "WARN"
+                        )
+                        continue
 
                 self._execute_trade(inference, confidence_threshold=effective_threshold)
 

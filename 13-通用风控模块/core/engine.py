@@ -24,37 +24,33 @@ RiskEngine 是所有风控功能的统一入口，整合三层风控体系。
     action = engine.check_exit(position, market, context)
 """
 
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional
 
+from .alert import AlertEvent, RiskAlertNotifier
 from .context import (
-    Signal,
-    PositionState,
-    MarketSnapshot,
-    RiskContext,
-    RiskCheckResult,
-    PositionSizeResult,
     ExitResult,
-    ExitAction,
-    Direction,
-    ReasonCode,
+    MarketSnapshot,
+    PositionSizeResult,
+    PositionState,
+    RiskCheckResult,
+    RiskContext,
+    Signal,
 )
-from .registry import RuleRegistry, RuleCategory
-from .pre_trade_gate import PreTradeGate
-from .position_sizer import PositionSizer
 from .exit_engine import ExitEngine
-from .l1_assessor import L1ValueRiskAssessor, ExitFeatureSet, L1Mode, L2HysteresisState
+from .l1_assessor import ExitFeatureSet, L1Mode, L1ValueRiskAssessor, L2HysteresisState
 from .ml_model import MLModelRegistry, ModelPrediction
-from .alert import RiskAlertNotifier, AlertEvent, AlertLevel, AlertCategory
+from .position_sizer import PositionSizer
+from .pre_trade_gate import PreTradeGate
+from .registry import RuleCategory, RuleRegistry
 
 try:
+    from ..rules.exit_rules import register_default_exit_rules
     from ..rules.gate_rules import register_default_gate_rules
     from ..rules.position_rules import register_default_position_rules
-    from ..rules.exit_rules import register_default_exit_rules
 except ImportError:
+    from rules.exit_rules import register_default_exit_rules
     from rules.gate_rules import register_default_gate_rules
     from rules.position_rules import register_default_position_rules
-    from rules.exit_rules import register_default_exit_rules
 
 
 class RiskEngine:

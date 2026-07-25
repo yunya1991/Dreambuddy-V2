@@ -78,7 +78,8 @@ class YijingExitConfig:
     # ── 提高止盈阈值 ──
     raise_tp_min_profit_pct: float = 0.02  # 至少盈利 2% 才考虑提高 TP
     raise_tp_adjust_pct: float = 0.30      # TP 上浮 30%（叠加在原 TP 之上）
-    raise_tp_value_threshold: float = 0.70 # 价值分 > 0.70 才提高 TP
+    raise_tp_value_threshold: float = 0.58 # 价值分 > 0.58 才提高 TP
+    # P1修复：从0.70下调到0.58，使成长期/成熟期的高价值卦象能触发RAISE_TP
 
     # ── 降低止损阈值（放宽止损空间）──
     lower_sl_max_loss_pct: float = -0.02   # 亏损不超过 -2% 才考虑放宽止损
@@ -91,7 +92,8 @@ class YijingExitConfig:
     lower_tp_adjust_pct: float = 0.30     # TP 下调 30%
 
     # ── 强制离场阈值 ──
-    force_close_risk_threshold: float = 0.80  # 风险分 > 0.80 且方向冲突 → 强制 close
+    force_close_risk_threshold: float = 0.65  # 风险分 > 0.65 且方向冲突 → 强制 close
+    # P1修复：从0.80下调到0.65，使high风险+方向冲突的卦象能触发FORCE_CLOSE
 
     # ── 卦象阶段映射 ──
     # current_phase 六阶段的风险/价值（易经六爻）
@@ -401,11 +403,11 @@ class YijingExitSystem:
         # risk_level 分量
         rl_risk = cfg.risk_level_map.get(risk_level, 0.50)
 
-        # current_phase 分量
-        phase_risk = cfg.phase_risk_map.get(current_phase, 0.50)
+        # current_phase 分量（模糊匹配：YijingEngine 输出含中文描述后缀）
+        phase_risk = self._lookup_phase(current_phase, cfg.phase_risk_map)
 
-        # development_stage 分量
-        stage_risk = cfg.stage_risk_map.get(development_stage, 0.50)
+        # development_stage 分量（模糊匹配）
+        stage_risk = self._lookup_stage(development_stage, cfg.stage_risk_map)
 
         # 方向一致性分量
         direction_map = cfg.direction_consistency_map.get(
@@ -431,11 +433,11 @@ class YijingExitSystem:
         """计算卦象价值分（0-1，越高越有价值）"""
         cfg = self.config
 
-        # current_phase 价值
-        phase_value = cfg.phase_value_map.get(current_phase, 0.50)
+        # current_phase 价值（模糊匹配）
+        phase_value = self._lookup_phase(current_phase, cfg.phase_value_map)
 
-        # development_stage 价值
-        stage_value = cfg.stage_value_map.get(development_stage, 0.50)
+        # development_stage 价值（模糊匹配）
+        stage_value = self._lookup_stage(development_stage, cfg.stage_value_map)
 
         # risk_level 反向价值（高风险=低价值）
         rl_risk = cfg.risk_level_map.get(risk_level, 0.50)
@@ -444,6 +446,62 @@ class YijingExitSystem:
         # 加权（phase 和 stage 为主）
         value_score = 0.45 * phase_value + 0.40 * stage_value + 0.15 * rl_value
         return max(0.0, min(1.0, value_score))
+
+    @staticmethod
+    def _lookup_phase(phase: str, mapping: Dict[str, float]) -> float:
+        """模糊匹配六爻阶段
+
+        YijingEngine 输出格式：'五爻阶段（飞龙在天）'
+        配置表 key 格式：'九五'
+        匹配规则：精确 → 包含 key → key 中文描述包含 → 默认 0.50
+        """
+        if not phase:
+            return 0.50
+        # 精确匹配
+        if phase in mapping:
+            return mapping[phase]
+        # 包含 key（如 '九五' in '五爻阶段（飞龙在天）'）
+        for key, val in mapping.items():
+            if key in phase:
+                return val
+        # 中文描述反向匹配（飞龙在天→九五，亢龙有悔→上九 等）
+        desc_to_key = {
+            "潜龙勿用": "初九", "见龙在田": "九二", "终日乾乾": "九三",
+            "或跃在渊": "九四", "飞龙在天": "九五", "亢龙有悔": "上九",
+        }
+        for desc, key in desc_to_key.items():
+            if desc in phase and key in mapping:
+                return mapping[key]
+        return 0.50
+
+    @staticmethod
+    def _lookup_stage(stage: str, mapping: Dict[str, float]) -> float:
+        """模糊匹配发展阶段
+
+        YijingEngine 输出格式：'崩溃期（加速下跌）'
+        配置表 key 格式：'衰退期'
+        匹配规则：精确 → 包含 key → 前缀匹配 → 默认 0.50
+        """
+        if not stage:
+            return 0.50
+        # 精确匹配
+        if stage in mapping:
+            return mapping[stage]
+        # 包含 key（如 '衰退期' in '崩溃期（加速下跌）' 不会命中，需反向）
+        for key, val in mapping.items():
+            if key in stage:
+                return val
+        # 同义词前缀匹配（YijingEngine 用词 vs 配置用词）
+        synonym_map = {
+            "萌芽": "萌芽期", "启动": "萌芽期", "初期": "萌芽期",
+            "成长": "成长期", "上升": "成长期",
+            "成熟": "成熟期", "鼎盛": "成熟期", "顶部": "成熟期",
+            "衰退": "衰退期", "崩溃": "衰退期", "下跌": "衰退期", "衰竭": "衰退期",
+        }
+        for syn, key in synonym_map.items():
+            if syn in stage and key in mapping:
+                return mapping[key]
+        return 0.50
 
     def _extract_hexagram(self, hexagram: Any) -> Optional[Dict[str, Any]]:
         """从卦象对象提取字段（兼容 YijingResult / dict / None）"""

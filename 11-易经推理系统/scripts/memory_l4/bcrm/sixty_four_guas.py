@@ -1472,11 +1472,22 @@ def get_all_hexagram_names() -> List[str]:
     return list(SIXTY_FOUR_GUAS.keys())
 
 
+# 中文名 → 拼音 key 反向映射（P1修复：支持按中文名查找卦象知识）
+_HEX_NAME_CN_TO_KEY: Dict[str, str] = {
+    v["name_cn"]: k for k, v in SIXTY_FOUR_GUAS.items()
+}
+
+
 def get_hexagram_knowledge(name: str) -> Optional[HexagramKnowledge]:
-    """获取指定卦的知识。"""
+    """获取指定卦的知识（支持拼音 key 和中文名两种查找方式）。"""
     data = SIXTY_FOUR_GUAS.get(name)
     if not data:
-        return None
+        # 尝试中文名反向查找
+        key = _HEX_NAME_CN_TO_KEY.get(name)
+        if not key:
+            return None
+        data = SIXTY_FOUR_GUAS[key]
+        name = key
     return HexagramKnowledge(
         name=name,
         name_cn=data["name_cn"],

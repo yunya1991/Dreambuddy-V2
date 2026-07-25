@@ -887,9 +887,9 @@
 
     <!-- 第四层：执行与反馈 -->
     <div class="card full-width" style="margin-bottom:16px">
-      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>第四层 · 执行与反馈<span style="margin-left:8px;font-size:10px;color:var(--muted)">OKX模拟盘 + 交易统计 + 失败分析</span></div>
+      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>第四层 · 执行与反馈<span style="margin-left:8px;font-size:10px;color:var(--muted)">OKX模拟盘 + 交易统计 + 增量学习闭环</span></div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
         <!-- OKX 模拟盘 -->
         <div>
           <div class="memory-label">OKX 模拟盘（持仓/余额/Algo单）</div>
@@ -899,6 +899,11 @@
         <div>
           <div class="memory-label">模拟交易统计（action分布 / top卦象）</div>
           <div id="yj-exec-stats" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
+        </div>
+        <!-- 增量学习闭环 -->
+        <div>
+          <div class="memory-label">增量学习闭环（反馈 → 重训 → 版本）</div>
+          <div id="yj-exec-learning" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
         </div>
       </div>
     </div>
@@ -1243,6 +1248,19 @@
 </div>
 
 <script>
+// ── 代理绕过：如果通过 localhost 访问且被代理拦截，自动切换到 127.0.0.1 ──
+(function() {
+  if (location.hostname === 'localhost') {
+    const port = location.port || '80';
+    fetch('/api/state', { signal: AbortSignal.timeout(3000) })
+      .then(r => { if (!r.ok) throw new Error('bad'); })
+      .catch(() => {
+        console.warn('[Proxy] localhost 被代理拦截，切换到 127.0.0.1');
+        location.replace(`http://127.0.0.1:${port}${location.pathname}${location.hash}`);
+      });
+  }
+})();
+
 // ── 数据加载（从本地 JSON 文件读取）─────────────────────────────────────────
 // 生产环境：通过 data-server.py 提供 /api/logs 接口
 // 开发环境：直接内嵌（下方 MOCK_DATA 会被替换）
@@ -3274,8 +3292,7 @@ async function loadYijingAccountOverview() {
   const badge = document.getElementById('yj-acc-live-badge');
   if (!el) return;
   try {
-    const res = await fetch('/api/yijing/account-overview', { signal: AbortSignal.timeout(15000) });
-    const d = await res.json();
+    const d = await yjFetch('/api/yijing/account-overview', 15000);
 
     // 实盘连接状态徽章
     if (badge) {
@@ -3460,12 +3477,38 @@ async function loadV15AccountOverview() {
 }
 
 // ── 易经推理模型数据加载（五层架构：L4底座/QMM内核/BCRM推理/执行反馈/知识库）──
+
+// 代理降级 fetch：如果 localhost 走了系统代理返回 502，自动切换 127.0.0.1 重试
+async function yjFetch(url, timeoutMs) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs || 60000) });
+    if (res.status === 502 || res.status === 0) throw new Error('proxy_502');
+    return await res.json();
+  } catch (e) {
+    // 代理拦截：如果当前 hostname 是 localhost，切换到 127.0.0.1 重试
+    if (location.hostname === 'localhost') {
+      const altUrl = url.startsWith('http')
+        ? url.replace(/\/\/localhost[:/]/, '//127.0.0.1:')
+        : `http://127.0.0.1:${location.port || 80}${url}`;
+      if (altUrl !== url) {
+        console.warn('[YJ] 代理检测: 切换到 127.0.0.1 重试', e.message);
+        try {
+          const res2 = await fetch(altUrl, { signal: AbortSignal.timeout(timeoutMs || 60000) });
+          return await res2.json();
+        } catch (e2) {
+          throw e2;
+        }
+      }
+    }
+    throw e;
+  }
+}
+
 async function loadYijingData() {
   try {
     // 并行加载账户总览
     loadYijingAccountOverview();
-    const res = await fetch('/api/yijing', { signal: AbortSignal.timeout(60000) });
-    const d = await res.json();
+    const d = await yjFetch('/api/yijing', 60000);
 
     // ===== 顶部门禁状态条 =====
     const busStats = d.bus_stats || {};
@@ -3498,6 +3541,7 @@ async function loadYijingData() {
 
     // ===== 第四层：执行与反馈 =====
     renderExecution(d.sim_trade || {}, d.trading || {});
+    renderIncrementalLearning(d.incremental_learning || {});
 
     // ===== 第五层：知识库 =====
     renderResearch(d.research || {}, d.screen_martin || {});
@@ -3506,9 +3550,13 @@ async function loadYijingData() {
     document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
   } catch (e) {
     console.error('易经数据加载失败:', e);
-    ['yj-l4-bus','yj-l4-cases','yj-l4-routing','yj-qmm-triple','yj-qmm-gate-detail','yj-bcrm-bagua','yj-bcrm-decision','yj-bcrm-agreement','yj-exec-okx','yj-exec-stats','yj-research-a1','yj-research-a6','yj-research-screen'].forEach(id => {
+    const isProxyError = e.message.includes('proxy_502') || e.message.includes('Failed to fetch') || e.message.includes('502');
+    const errMsg = isProxyError
+      ? '请求被代理拦截 (502)。请在 Clash/代理中配置 localhost 不走代理，或直接访问 http://127.0.0.1:8765/'
+      : e.message;
+    ['yj-l4-bus','yj-l4-cases','yj-l4-routing','yj-qmm-triple','yj-qmm-gate-detail','yj-bcrm-bagua','yj-bcrm-decision','yj-bcrm-agreement','yj-exec-okx','yj-exec-stats','yj-exec-learning','yj-research-a1','yj-research-a6','yj-research-screen'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:12px">加载失败: ${e.message}</div>`;
+      if (el) el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:12px">加载失败: ${errMsg}</div>`;
     });
   }
   // 加载实盘持仓
@@ -3520,8 +3568,7 @@ async function loadYijingPositions() {
   const el = document.getElementById('yj-positions');
   const badge = document.getElementById('yj-pos-count-badge');
   try {
-    const res = await fetch('/api/yijing-positions', { signal: AbortSignal.timeout(15000) });
-    const d = await res.json();
+    const d = await yjFetch('/api/yijing-positions', 15000);
 
     const localPositions = d.positions || [];
     const okxPositions = d.okx_live_positions || [];
@@ -3853,10 +3900,14 @@ function renderBCRM(latest, agreementStats, recentCount) {
   const pf = be.potential_field || {};
   const baguaDir = be.primary_direction || 'neutral';
   const baguaColor = baguaDir === 'long' ? 'var(--green)' : baguaDir === 'short' ? 'var(--red)' : 'var(--muted)';
+  const guaNameMap = {qian:'乾',kun:'坤',zhen:'震',xun:'巽',kan:'坎',li:'离',gen:'艮',dui:'兑'};
+  const upperGua = guaNameMap[be.outer_gua] || be.outer_gua || '--';
+  const lowerGua = guaNameMap[be.inner_gua] || be.inner_gua || '--';
   baguaEl.innerHTML = `
     <div style="text-align:center;margin-bottom:10px;padding:8px;background:rgba(0,0,0,0.2);border-radius:6px">
       <div style="font-size:20px;font-weight:700">${be.hexagram_name_cn || be.current_gua_cn || '--'}</div>
       <div style="font-size:11px;color:var(--muted);margin-top:2px">${be.hexagram_name || '--'}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">上卦: <span style="color:var(--a-color)">${upperGua}</span> · 下卦: <span style="color:var(--b-color)">${lowerGua}</span></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
       <div><span style="color:var(--muted);font-size:10px">两仪</span><div style="font-size:12px;font-weight:600;color:${be.liangyi_state === 'yang' ? 'var(--green)' : 'var(--red)'}">${be.liangyi_state || '--'} (${(be.liangyi_strength||0).toFixed(2)})</div></div>
@@ -3956,6 +4007,43 @@ function renderExecution(simTrade, trading) {
   }
 }
 
+// ── 增量学习闭环 ──
+function renderIncrementalLearning(il) {
+  const el = document.getElementById('yj-exec-learning');
+  if (!el) return;
+
+  if (!il || il.available === false) {
+    el.innerHTML = `<div style="color:var(--muted);font-style:italic;padding:8px">⚠️ 增量学习未就绪</div><div style="font-size:11px;color:var(--muted);padding:0 8px">${il?.error || '需要更多交易记录以启动学习'}</div>`;
+    return;
+  }
+
+  const totalTrades = il.total_trades || 0;
+  const winRate = il.win_rate || 0;
+  const versions = il.model_versions || 0;
+  const shouldRetrain = il.should_retrain || false;
+  const retrainReason = il.retrain_reason || '';
+  const healthy = il.feedback_loop_healthy !== false;
+
+  const loopStatus = healthy ? '正常' : '断裂';
+  const loopColor = healthy ? 'var(--green)' : 'var(--red)';
+  const retrainBadge = shouldRetrain
+    ? '<span style="font-size:10px;padding:2px 6px;border-radius:8px;background:rgba(210,153,34,0.15);color:var(--yellow);margin-left:4px">待重训</span>'
+    : '';
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+      <div><span style="color:var(--muted);font-size:10px">反馈闭环</span><div style="font-size:12px;font-weight:600;color:${loopColor}">${loopStatus}${retrainBadge}</div></div>
+      <div><span style="color:var(--muted);font-size:10px">模型版本</span><div style="font-size:12px;font-weight:600">${versions}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+      <div><span style="color:var(--muted);font-size:10px">累计交易</span><div style="font-size:14px;font-weight:700">${totalTrades}</div></div>
+      <div><span style="color:var(--muted);font-size:10px">胜率</span><div style="font-size:14px;font-weight:700">${(winRate||0).toFixed(1)}%</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted)">Sharpe: ${il.sharpe?.toFixed(2)||'--'} · 累计PnL: $${(il.total_pnl||0).toFixed(2)}</div>
+    ${shouldRetrain && retrainReason ? `<div style="font-size:10px;color:var(--yellow);margin-top:6px;padding:4px 6px;background:rgba(210,153,34,0.1);border-radius:4px">触发原因: ${retrainReason}</div>` : ''}
+  `;
+}
+
 // ── 知识库（A1/A6/周报/三屏马丁）──
 function renderResearch(research, screen) {
   const a1El = document.getElementById('yj-research-a1');
@@ -3989,7 +4077,10 @@ function renderResearch(research, screen) {
       </div>
       <div style="font-size:11px;margin-bottom:6px"><span style="color:var(--muted)">主矛盾:</span> ${pc.description||'--'} <span style="color:var(--muted)">→</span> <span style="color:${pc.direction === 'UP' ? 'var(--green)' : 'var(--red)'}">${pc.direction||'--'}</span> (conf ${(pc.confidence*100||0).toFixed(0)}%)</div>
       ${ap.probe_recommendation ? `<div style="font-size:11px;color:var(--yellow);margin-bottom:6px;padding:6px;background:rgba(210,153,34,0.1);border-radius:4px;border-left:3px solid var(--yellow)">⚠️ ${ap.probe_recommendation}</div>` : ''}
-      <div style="font-size:10px;color:var(--muted)">支撑: ${(kl.support||[]).map(s=>'$'+s).join(' / ')||'--'} | 阻力: ${(kl.resistance||[]).map(r=>'$'+r).join(' / ')||'--'}</div>
+      <div style="font-size:10px;color:var(--muted)">
+        阻力: ${kl.strong_resistance ? '$'+kl.strong_resistance+' (强) ' : ''}${kl.resistance ? '$'+kl.resistance : '--'} | 
+        支撑: ${kl.weak_support ? '$'+kl.weak_support+' / ' : ''}${kl.mid_support ? '$'+kl.mid_support+' / ' : ''}${kl.strong_support ? '$'+kl.strong_support : '--'}
+      </div>
     `;
   }
 

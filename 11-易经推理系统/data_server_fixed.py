@@ -39,6 +39,24 @@ except ImportError:
 USER_A = "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934"
 USER_B = "0x6632da9c91A959eEBf1343f8AFAbf2807414004A"
 
+# ── 加载 dreamos/.env 中的 Aster 分离凭证 ─────────────────────────────────
+# P1 修复: ml_trade_service._aster_env_get_for_owner 对钱包地址类型的 owner
+# 直接读取全局 os.environ["ASTER_USER"]，导致 Dream OS 和趋势策略查询返回
+# 相同持仓。正确做法是用 owner="trend" 关键字，读取 ASTER_USER_TREND 等分离变量。
+# dreamos/.env 已定义 ASTER_USER_TREND/SIGNER_TREND/PRIVATE_KEY_TREND，这里加载到进程环境。
+_DREAMOS_ENV_FILE = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/.env")
+if _DREAMOS_ENV_FILE.exists():
+    with open(_DREAMOS_ENV_FILE) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if not _line or _line.startswith("#") or "=" not in _line:
+                continue
+            _k, _v = _line.split("=", 1)
+            _k, _v = _k.strip(), _v.strip()
+            # 只加载 ASTER_* 相关变量（包括 _TREND 后缀），避免污染其他配置
+            if _k.startswith("ASTER_"):
+                os.environ.setdefault(_k, _v)
+
 # 易经推理策略固定初始资金（USDT）—— 小额观测实际表现
 YIJING_INITIAL_CAPITAL = 150.0
 
@@ -306,14 +324,19 @@ def get_trend_screen_state(symbol: str = "BTC"):
                 f"基本面={tf.get('fundamental', {}).get('direction', '--')}"
             )
 
-        # 附加账户与持仓（Screen3 渲染需要，从 Dream OS Aster 拉取）
+        # 附加账户与持仓（Screen3 渲染需要，从趋势策略专用 Aster 钱包拉取）
+        # P1 修复: 用 owner="trend" 关键字查询，ml_trade_service 会读取
+        # ASTER_USER_TREND / ASTER_SIGNER_TREND / ASTER_SIGNER_PRIVATE_KEY_TREND
+        # 这三个分离环境变量（已在模块顶部从 dreamos/.env 加载），
+        # 避免与 Dream OS 的全局 ASTER_USER 冲突，确保查询到的是趋势策略独立钱包。
         try:
             account = {"equity": 0, "available": 0}
             position = None
             try:
                 sys.path.insert(0, CLASSIC_DIR)
                 import ml_trade_service as _ml
-                positions_raw, _ = _ml._aster_fetch_positions(owner=DREAMOS_ASTER_OWNER)
+                # owner="trend" → 读取 ASTER_USER_TREND 等，查到 0x6632da9c... 钱包
+                positions_raw, _ = _ml._aster_fetch_positions(owner="trend")
                 for p in (positions_raw or []):
                     if str(p.get("coin", "")).upper() == symbol.upper():
                         amt = float(p.get("position_amt", 0) or 0)
@@ -327,7 +350,7 @@ def get_trend_screen_state(symbol: str = "BTC"):
                             "upnl": float(p.get("unrealized_pnl_u", 0) or 0),
                         }
                         break
-                summary = _ml._aster_fetch_account_summary(owner=DREAMOS_ASTER_OWNER)
+                summary = _ml._aster_fetch_account_summary(owner="trend")
                 if summary.get("ok"):
                     s = summary.get("summary", {}) or {}
                     account["equity"] = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)

@@ -124,6 +124,9 @@ class OrchestrationMemory:
             """判断条目是否可用于选择（有实际 best_pattern 且非纯推断）"""
             if not entry or not entry.get("best_pattern"):
                 return False
+            # P0-2: score=0 的模板假数据不可用（无有效回测评分）
+            if entry.get("score", 0) <= 0:
+                return False
             # 推断的场景（无真实回测数据）降低优先级但仍可用
             if entry.get("inferred") and entry.get("sample_count", 0) == 0:
                 return False
@@ -403,3 +406,33 @@ class OrchestrationMemory:
         if not entry:
             return False
         return entry.get("verified", False) and entry.get("confidence") != "unverified"
+
+    def purge_template_data(self) -> Dict[str, int]:
+        """P0-2: 清除模板填充的假数据
+
+        识别特征:
+            1. inferred=True（推断生成的，无真实回测数据）
+            2. score=0（无有效回测评分，包含空模板和未评分模板）
+        这些是初始化脚本批量生成的模板值，不是真实回测数据。
+        清除后这些场景将走 L1/L2/L3 降级查询，比"精准命中假数据"更安全。
+
+        Returns:
+            {"purged": 被清除数量, "kept": 保留数量}
+        """
+        scenarios = self._data.get("scenarios", {})
+        to_remove = []
+        for sid, entry in scenarios.items():
+            is_template = entry.get("inferred", False) or entry.get("score", 0) <= 0
+            if is_template:
+                to_remove.append(sid)
+
+        for sid in to_remove:
+            del scenarios[sid]
+
+        kept = len(scenarios)
+        if to_remove:
+            self.save()
+            logger.info(
+                f"P0-2: 清除 {len(to_remove)} 条模板假数据, 保留 {kept} 条真实数据"
+            )
+        return {"purged": len(to_remove), "kept": kept}

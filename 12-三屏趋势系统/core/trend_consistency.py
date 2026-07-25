@@ -8,44 +8,45 @@
 - 趋势一致性：周线 vs 日线方向对齐检测
 """
 
-from typing import List, Dict, Optional
-from datetime import datetime
+from typing import List, Optional
+
 import pandas as pd
+
 try:
+    from .config import (
+        DAILY_WEIGHT,
+        FUNDAMENTAL_FUND_WEIGHT,
+        FUNDAMENTAL_SCREEN1_ENABLED,
+        FUNDAMENTAL_TECH_WEIGHT,
+        LEAST_RESISTANCE_ENABLED,
+        REVERSAL_ACCEL_HIGH,
+        REVERSAL_SPEED_LOW,
+        REVERSAL_THRESHOLD,
+        SCREEN1_INDICATORS,
+        SCREEN2_INDICATORS,
+        WEEKLY_WEIGHT,
+    )
     from .indicators import (
         calc_indicator_dynamics,
         calc_trend_direction_static,
     )
-    from .config import (
+except ImportError:
+    from config import (
+        DAILY_WEIGHT,
+        FUNDAMENTAL_FUND_WEIGHT,
+        FUNDAMENTAL_SCREEN1_ENABLED,
+        FUNDAMENTAL_TECH_WEIGHT,
+        LEAST_RESISTANCE_ENABLED,
+        REVERSAL_ACCEL_HIGH,
+        REVERSAL_SPEED_LOW,
+        REVERSAL_THRESHOLD,
         SCREEN1_INDICATORS,
         SCREEN2_INDICATORS,
         WEEKLY_WEIGHT,
-        DAILY_WEIGHT,
-        REVERSAL_THRESHOLD,
-        REVERSAL_SPEED_LOW,
-        REVERSAL_ACCEL_HIGH,
-        FUNDAMENTAL_SCREEN1_ENABLED,
-        FUNDAMENTAL_TECH_WEIGHT,
-        FUNDAMENTAL_FUND_WEIGHT,
-        LEAST_RESISTANCE_ENABLED,
     )
-except ImportError:
     from indicators import (
         calc_indicator_dynamics,
         calc_trend_direction_static,
-    )
-    from config import (
-        SCREEN1_INDICATORS,
-        SCREEN2_INDICATORS,
-        WEEKLY_WEIGHT,
-        DAILY_WEIGHT,
-        REVERSAL_THRESHOLD,
-        REVERSAL_SPEED_LOW,
-        REVERSAL_ACCEL_HIGH,
-        FUNDAMENTAL_SCREEN1_ENABLED,
-        FUNDAMENTAL_TECH_WEIGHT,
-        FUNDAMENTAL_FUND_WEIGHT,
-        LEAST_RESISTANCE_ENABLED,
     )
 
 
@@ -73,12 +74,14 @@ def calc_trend_direction_dynamic(df, indicators: List[str]) -> dict:
 
     for ind in indicators:
         dyn = calc_indicator_dynamics(df, ind)
-        signals.append({
-            "indicator": ind,
-            "direction": dyn["direction"],
-            "speed": dyn["speed"],
-            "acceleration": dyn["acceleration"],
-        })
+        signals.append(
+            {
+                "indicator": ind,
+                "direction": dyn["direction"],
+                "speed": dyn["speed"],
+                "acceleration": dyn["acceleration"],
+            }
+        )
         if dyn["direction"] == "BULL":
             bull_count += 1
         elif dyn["direction"] == "BEAR":
@@ -182,7 +185,7 @@ def calc_reversal_persistence(df, indicators: List[str], lookback: int = 10) -> 
     start_idx = max(1, n - lookback)
     for i in range(start_idx, n):
         try:
-            slice_df = df.iloc[:i + 1]
+            slice_df = df.iloc[: i + 1]
             dyn = calc_trend_direction_dynamic(slice_df, indicators)
             is_reversal = dyn["reversal_score"] > 50
             history.append(is_reversal)
@@ -276,7 +279,11 @@ def detect_trend_phase(df, indicators: List[str], lookback: int = 10) -> dict:
         "both_weakening": er["both_weakening"],
         "setup_score": er["setup_score"],
         # 保留原接口字段（向后兼容）
-        "speed_trend": "RISING" if er["ema_trend"] == "BULL" else ("FALLING" if er["ema_trend"] == "BEAR" else "FLAT"),
+        "speed_trend": (
+            "RISING"
+            if er["ema_trend"] == "BULL"
+            else ("FALLING" if er["ema_trend"] == "BEAR" else "FLAT")
+        ),
         "accel_trend": "RISING" if er["both_weakening"] else "FLAT",
         "current_speed": abs(er["bull_power"]) + abs(er["bear_power"]),
         "current_accel": er["setup_score"] / 10,
@@ -369,7 +376,9 @@ def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] 
             )
 
             # 如果基本面融合成功且方向变化，更新周线方向
-            if fundamental_fusion.get("fused", False) and fundamental_fusion.get("fundamental_available", False):
+            if fundamental_fusion.get("fused", False) and fundamental_fusion.get(
+                "fundamental_available", False
+            ):
                 fused_dir = fundamental_fusion["direction"]
                 if fused_dir != tech_core and fused_dir != "NEUTRAL":
                     # 基本面改变了方向（仅在基本面更明确时）
@@ -470,8 +479,9 @@ def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] 
         if weekly_core == "NEUTRAL":
             # 周线中性时，置信度以日线为主（降权处理）
             consistency_confidence = round(
-                daily_dynamic["confidence"] * DAILY_WEIGHT +
-                weekly_dynamic["confidence"] * WEEKLY_WEIGHT * 0.3, 1
+                daily_dynamic["confidence"] * DAILY_WEIGHT
+                + weekly_dynamic["confidence"] * WEEKLY_WEIGHT * 0.3,
+                1,
             )
         elif consistency_level == "REVERSAL_CONSISTENT":
             # 逆转一致：使用动态置信度加权，整体降权（不确定性高）
@@ -479,13 +489,18 @@ def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] 
             # 因为背离是趋势切换的可靠信号，置信度不应过度降权
             rev_weight = 0.85 if elder_divergence_confirm else 0.7
             consistency_confidence = round(
-                (weekly_dynamic["confidence"] * WEEKLY_WEIGHT +
-                 daily_dynamic["confidence"] * DAILY_WEIGHT) * rev_weight, 1
+                (
+                    weekly_dynamic["confidence"] * WEEKLY_WEIGHT
+                    + daily_dynamic["confidence"] * DAILY_WEIGHT
+                )
+                * rev_weight,
+                1,
             )
         else:
             consistency_confidence = round(
-                weekly_dynamic["confidence"] * WEEKLY_WEIGHT +
-                daily_dynamic["confidence"] * DAILY_WEIGHT, 1
+                weekly_dynamic["confidence"] * WEEKLY_WEIGHT
+                + daily_dynamic["confidence"] * DAILY_WEIGHT,
+                1,
             )
     else:
         consistency_confidence = round(
@@ -512,12 +527,19 @@ def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] 
             w_rev_score = max(w_rev_score, er_div_strength * 0.5)
 
         # 动态速度+加速度增强逆转可信度
-        w_dyn_factor = min(1.0, (weekly_dynamic["avg_speed"] + weekly_dynamic["avg_acceleration"]) / 200)
-        d_dyn_factor = min(1.0, (daily_dynamic["avg_speed"] + daily_dynamic["avg_acceleration"]) / 200)
+        w_dyn_factor = min(
+            1.0, (weekly_dynamic["avg_speed"] + weekly_dynamic["avg_acceleration"]) / 200
+        )
+        d_dyn_factor = min(
+            1.0, (daily_dynamic["avg_speed"] + daily_dynamic["avg_acceleration"]) / 200
+        )
 
         reversal_confidence = round(
-            (w_rev_score * WEEKLY_WEIGHT * (0.5 + w_dyn_factor * 0.5) +
-             d_rev_score * DAILY_WEIGHT * (0.5 + d_dyn_factor * 0.5)), 1
+            (
+                w_rev_score * WEEKLY_WEIGHT * (0.5 + w_dyn_factor * 0.5)
+                + d_rev_score * DAILY_WEIGHT * (0.5 + d_dyn_factor * 0.5)
+            ),
+            1,
         )
 
         # P1: 逆转信号累积增强
@@ -548,7 +570,11 @@ def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] 
         if elder_divergence_confirm:
             overall_direction = weekly_core
         elif weekly_is_reversal and daily_is_reversal:
-            overall_direction = weekly_core if weekly_dynamic["reversal_score"] >= daily_dynamic["reversal_score"] else daily_core
+            overall_direction = (
+                weekly_core
+                if weekly_dynamic["reversal_score"] >= daily_dynamic["reversal_score"]
+                else daily_core
+            )
         elif weekly_is_reversal:
             overall_direction = weekly_core
         else:
@@ -597,7 +623,9 @@ def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] 
                     lr_fundamental = fundamental_fusion.get("fundamental_data", None)
 
                 lr_3d = compute_least_resistance_3d(
-                    weekly_df, daily_df, fundamental_data=lr_fundamental,
+                    weekly_df,
+                    daily_df,
+                    fundamental_data=lr_fundamental,
                 )
 
                 lr_dir = lr_3d["direction"]
@@ -686,7 +714,7 @@ def calc_trend_consistency(weekly_df, daily_df, use_fundamental: Optional[bool] 
         "consistency_confidence": consistency_confidence,
         "reversal_confidence": reversal_confidence,
         "elder_divergence_confirm": elder_divergence_confirm,  # P2-v3 新增
-        "trend_phase": combined_phase,            # P2 新增
+        "trend_phase": combined_phase,  # P2 新增
         "trend_phase_confidence": combined_phase_conf,  # P2 新增
         "fundamental_fusion": fundamental_fusion,  # 基本面融合结果（None=未启用/回退）
         "least_resistance": least_resistance,  # Phase 3.5 最小阻力方向引擎结果

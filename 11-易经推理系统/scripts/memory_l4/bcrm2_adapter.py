@@ -155,6 +155,12 @@ class BCRM2Adapter:
             logger.warning(f"[BCRM2] 数据仍不足，无法训练: {len(df)} bars")
             return False
         
+        # 确保数据可写（pandas 新版本 .values 可能返回只读视图）
+        df = df.copy()
+        for col in ['open', 'high', 'low', 'close', 'volume']:
+            if col in df.columns:
+                df[col] = df[col].values.copy()
+        
         cache_key = self._get_cache_key(df)
         
         # 尝试加载缓存
@@ -178,6 +184,7 @@ class BCRM2Adapter:
             for col in ['open', 'high', 'low', 'close', 'volume']:
                 if col in df.columns:
                     df[col] = df[col].replace([np.inf, -np.inf], np.nan).ffill().bfill()
+                    df[col] = df[col].values.copy()
             
             # 计算特征
             logger.info(f"[BCRM2] 计算特征 ({self.symbol} {self.timeframe})...")
@@ -344,21 +351,28 @@ class BCRM2Adapter:
             traceback.print_exc()
             return False
     
-    def infer(self, df: pd.DataFrame, idx: int = -1) -> Dict[str, Any]:
+    def infer(self, df: pd.DataFrame, idx: int = -1, auto_train: bool = True) -> Dict[str, Any]:
         """
         执行推理，返回与 BCRM 1.0 兼容的格式。
         
         Args:
             df: K线数据 DataFrame
             idx: 推理位置（默认最后一根）
+            auto_train: 模型未就绪时是否自动触发训练
             
         Returns:
             兼容 BCRM 1.0 输出格式的字典
         """
         if self.engine is None:
-            # 自动训练
-            if not self.train(df):
-                return self._fail_closed_result("模型未训练")
+            # 先尝试加载缓存模型
+            cache_key = self._get_cache_key(df)
+            if self._load_cached_model(cache_key):
+                pass  # 加载成功
+            elif auto_train:
+                if not self.train(df):
+                    return self._fail_closed_result("模型未训练")
+            else:
+                return self._fail_closed_result("模型未就绪")
         
         try:
             from scripts.memory_l4.bcrm2.bagua_feature_engine import BaguaFeatureEngine
@@ -374,6 +388,7 @@ class BCRM2Adapter:
             for col in ['open', 'high', 'low', 'close', 'volume']:
                 if col in df.columns:
                     df[col] = df[col].replace([np.inf, -np.inf], np.nan).ffill().bfill()
+                    df[col] = df[col].values.copy()
             
             # 计算特征（只用需要的部分）
             feature_engine = BaguaFeatureEngine()
@@ -395,6 +410,10 @@ class BCRM2Adapter:
             features = pd.concat([features, wdh_feats], axis=1)
             
             # 确保特征顺序一致
+            # 处理训练时存在但推理时缺失的特征
+            for fn in self.feature_names:
+                if fn not in features.columns:
+                    features[fn] = 0.0
             X_row = features[self.feature_names].values[idx]
             
             # 处理NaN
@@ -445,15 +464,115 @@ class BCRM2Adapter:
             
             # 应用 KG 校准
             confidence = min(1.0, max(0.0, confidence + kg_confidence_adjustment))
-            
+
+            # A0 矛盾分析增强（纯代码驱动，不依赖大模型）
+            a0_result = None
+            a0_adjustment = 0.0
+            a0_warnings = []
+            if not fail_closed:
+                try:
+                    from scripts.memory_l4.a0_contradiction_engine import A0ContradictionEngine
+
+                    a0_engine = A0ContradictionEngine()
+                    a0_result = a0_engine.analyze(
+                        df, inst_id=f"{self.symbol}-USDT-SWAP",
+                    )
+
+                    # 方向一致性校准
+                    bcrm_direction = 1 if direction_text == "UP" else -1
+                    if a0_result.direction_bias * bcrm_direction > 0:
+                        # A0 与 BCRM 方向一致 → 增强置信度
+                        a0_adjustment = abs(a0_result.confidence_adjustment)
+                    else:
+                        # A0 与 BCRM 方向不一致 → 削弱置信度
+                        a0_adjustment = -abs(a0_result.confidence_adjustment)
+
+                    # 创伤信号 → 大幅降低置信度
+                    if a0_result.trauma_signal:
+                        a0_adjustment -= 0.15
+                        a0_warnings.append("创伤信号：连续3次同方向错误，强制降级")
+
+                    # 极端张力 → 额外风险预警
+                    if a0_result.overall_tension > 0.7:
+                        a0_warnings.append(a0_result.risk_warning)
+
+                    if a0_warnings:
+                        logger.warning(f"[BCRM2] A0预警: {a0_warnings}")
+                    logger.info(
+                        f"[BCRM2] A0矛盾分析: 综合张力={a0_result.overall_tension:.2f} "
+                        f"方向偏置={a0_result.direction_bias:+.2f} "
+                        f"调整={a0_adjustment:+.4f} "
+                        f"主矛盾={a0_result.primary_contradiction.name if a0_result.primary_contradiction else 'N/A'}"
+                    )
+                except Exception as e:
+                    logger.warning(f"[BCRM2] A0矛盾分析失败: {e}")
+
+            # 应用 A0 校准
+            confidence = min(1.0, max(0.0, confidence + a0_adjustment))
+
+            # 如果 A0 创伤信号导致置信度过低，标记 fail_closed
+            if a0_result and a0_result.trauma_signal and confidence < 0.4:
+                fail_closed = True
+
+            # 五角校验：BCRM2(ML) × 力学引擎(物理) × A0(矛盾) × Ising(相变) × TDA(拓扑)
+            triangle_result = None
+            triangle_adjustment = 0.0
+            triangle_warnings = []
+            # P3预警联动参数默认值（fail_closed 时使用默认值，避免 NameError）
+            position_factor = 1.0
+            sl_tighten_factor = 1.0
+            early_exit_signal = False
+            if not fail_closed:
+                try:
+                    from scripts.memory_l4.triangle_verifier import TriangleVerifier
+
+                    verifier = TriangleVerifier()
+                    market_snapshot = {
+                        "volatility": float(df["close"].pct_change().tail(20).std()) if len(df) >= 20 else 0.03,
+                    }
+                    triangle_result = verifier.verify(
+                        bcrm2_direction=direction_text,
+                        bcrm2_confidence=confidence,
+                        a0_result_dict=a0_result.to_dict() if a0_result else None,
+                        market_snapshot=market_snapshot,
+                        df=df,
+                    )
+
+                    triangle_adjustment = triangle_result.confidence_adjustment
+                    triangle_warnings = triangle_result.risk_warnings
+
+                    # 强反转预警 → 削弱置信度
+                    if triangle_result.reversal_alert:
+                        a0_warnings.append(f"三角反转预警: 强度={triangle_result.reversal_strength:.2f}")
+
+                    # P3预警联动策略：TDA+Ising双重预警 → 降仓+收紧止损
+                    position_factor = triangle_result.position_factor if triangle_result else 1.0
+                    sl_tighten_factor = triangle_result.sl_tighten_factor if triangle_result else 1.0
+                    early_exit_signal = triangle_result.early_exit_signal if triangle_result else False
+
+                    # 三源严重分歧 → fail_closed
+                    if triangle_result.should_fail_closed:
+                        fail_closed = True
+
+                    logger.info(
+                        f"[BCRM2] 三角校验: {triangle_result.verdict} "
+                        f"一致性={triangle_result.agreement_score:.0%} "
+                        f"调整={triangle_adjustment:+.4f}"
+                    )
+                except Exception as e:
+                    logger.warning(f"[BCRM2] 三角校验失败: {e}")
+
+            # 应用三角校验调整
+            confidence = min(1.0, max(0.0, confidence + triangle_adjustment))
+
             return {
                 'ok': True,
                 'next_state': {
                     'direction': direction_text,
                     'confidence': confidence,
-                    'derivation': f"BCRM2.0 L1={result['l1_confidence']:.2f} L2={result.get('l2_confidence', 'N/A')}",
+                    'derivation': f"BCRM2.0 L1={result['l1_confidence']:.2f} L2={result.get('l2_confidence', 'N/A')} A0_adj={a0_adjustment:+.3f} TRI_adj={triangle_adjustment:+.3f}",
                 },
-                'hexagram': {
+                'hexagram': hexagram_info if hexagram_info else {
                     'hexagram_name': hex_name,
                     'hexagram_name_cn': hex_name_cn,
                     'changed_hexagram_cn': None,
@@ -462,9 +581,18 @@ class BCRM2Adapter:
                 'strategy_branches': [],
                 'liangyi_state': None,
                 'scale_params': None,
+                'a0_analysis': a0_result.to_dict() if a0_result else None,
+                'a0_warnings': a0_warnings,
+                'triangle_verification': triangle_result.to_dict() if triangle_result else None,
                 'fail_closed_reason': '' if not fail_closed else (
-                    'FLAT方向' if direction_text == 'FLAT' else '置信度不足'
+                    'FLAT方向' if direction_text == 'FLAT' else
+                    ('三源严重分歧' if triangle_result and triangle_result.should_fail_closed else
+                     ('A0创伤信号降级' if a0_result and a0_result.trauma_signal else '置信度不足'))
                 ),
+                # P3预警联动策略参数
+                'position_factor': position_factor,
+                'sl_tighten_factor': sl_tighten_factor,
+                'early_exit_signal': early_exit_signal,
             }
             
         except Exception as e:
@@ -492,6 +620,10 @@ class BCRM2Adapter:
             'liangyi_state': None,
             'scale_params': None,
             'fail_closed_reason': reason,
+            # P3预警联动参数（fail_closed 时使用默认值）
+            'position_factor': 1.0,
+            'sl_tighten_factor': 1.0,
+            'early_exit_signal': False,
         }
     
     def maybe_retrain(self, df: pd.DataFrame) -> bool:

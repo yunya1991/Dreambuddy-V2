@@ -88,6 +88,7 @@ class ExecutionFeedbackCollector:
         entry = {
             "pattern": pattern,
             "timestamp": datetime.now().isoformat(),
+            "status": "open",  # P0-1: 标记开仓状态，平仓时改为 closed
             **trade_result,
         }
         self._records[scenario_id].append(entry)
@@ -97,6 +98,52 @@ class ExecutionFeedbackCollector:
             self._records[scenario_id] = self._records[scenario_id][-100:]
 
         self._save()
+
+    def update_exit_result(self, scenario_id: str, symbol: str, entry_price: float,
+                           exit_price: float, result: float) -> bool:
+        """P0-1: 平仓时回填实际结果到最近的开仓记录
+
+        根据 scenario_id + symbol + entry_price 匹配最近一条 result=0 的开仓记录，
+        回填 exit_price 和 result，闭合反馈环。
+
+        Args:
+            scenario_id: 场景ID
+            symbol: 交易对
+            entry_price: 开仓价
+            exit_price: 平仓价
+            result: 实际收益率（已扣手续费）
+
+        Returns:
+            True 如果成功更新，False 如果未找到匹配记录
+        """
+        records = self._records.get(scenario_id, [])
+        sym_upper = symbol.upper().strip()
+
+        # 从最新记录往前找，匹配 result=0 且 symbol+entry_price 匹配的开仓记录
+        for r in reversed(records):
+            rec_sym = str(r.get("symbol", "")).upper().strip()
+            rec_entry = float(r.get("entry_price", 0))
+            # entry_price 容差 0.1%（应对浮点精度和滑点）
+            price_match = (rec_entry > 0 and entry_price > 0
+                           and abs(rec_entry - entry_price) < entry_price * 0.001)
+            if (r.get("result", 0) == 0
+                    and rec_sym == sym_upper
+                    and price_match):
+                r["exit_price"] = exit_price
+                r["result"] = result
+                r["exit_timestamp"] = datetime.now().isoformat()
+                r["status"] = "closed"
+                self._save()
+                logger.info(
+                    f"P0-1 反馈回填: {scenario_id} | {symbol} | "
+                    f"entry={entry_price} exit={exit_price} result={result:.4f}"
+                )
+                return True
+
+        logger.warning(
+            f"P0-1 未找到匹配开仓记录: {scenario_id} | {symbol} | entry={entry_price}"
+        )
+        return False
 
     def evaluate(self, scenario_id: str) -> ExecutionFeedback:
         """评估某场景的执行反馈

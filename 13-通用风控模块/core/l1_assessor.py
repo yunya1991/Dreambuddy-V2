@@ -21,14 +21,15 @@ L1 价值-风险评估
 """
 
 import math
-from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
-from enum import Enum
 from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class TrendShape(str, Enum):
     """趋势形态（5类）"""
+
     UP_STRONG = "up_strong"
     UP_REVERSAL = "up_reversal"
     DOWN_STRONG = "down_strong"
@@ -38,6 +39,7 @@ class TrendShape(str, Enum):
 
 class L1Mode(str, Enum):
     """L1评估模式"""
+
     HEURISTIC = "heuristic"
     MRD = "mrd"
     ML = "ml"
@@ -46,6 +48,7 @@ class L1Mode(str, Enum):
 @dataclass
 class ExitFeatureSet:
     """离场特征集 — L1评估的输入"""
+
     # 持仓状态
     dd: float = 0.0
     mfe: float = 0.0
@@ -125,21 +128,35 @@ class ExitFeatureSet:
             ts = TrendShape.CHOP
 
         return cls(
-            rsi=rsi, macd_hist=macd_hist, adx=adx, atr_pct=atr_pct,
-            chop=chop, ema_short_dist=ema_short_dist,
-            dd=dd, mfe=mfe,
-            trend_shape=ts, trend_w_dir=trend_w_dir, trend_d_dir=trend_d_dir,
-            mom_dir=mom_dir, mom_rsi_delta=mom_rsi_delta, mom_macdh_delta=mom_macdh_delta,
-            vol_dir=vol_dir, vol_z=vol_z, vol_ratio_delta=vol_ratio_delta,
-            pot_adx_delta=pot_adx_delta, pot_dist_to_ema50=pot_dist_to_ema50,
+            rsi=rsi,
+            macd_hist=macd_hist,
+            adx=adx,
+            atr_pct=atr_pct,
+            chop=chop,
+            ema_short_dist=ema_short_dist,
+            dd=dd,
+            mfe=mfe,
+            trend_shape=ts,
+            trend_w_dir=trend_w_dir,
+            trend_d_dir=trend_d_dir,
+            mom_dir=mom_dir,
+            mom_rsi_delta=mom_rsi_delta,
+            mom_macdh_delta=mom_macdh_delta,
+            vol_dir=vol_dir,
+            vol_z=vol_z,
+            vol_ratio_delta=vol_ratio_delta,
+            pot_adx_delta=pot_adx_delta,
+            pot_dist_to_ema50=pot_dist_to_ema50,
             regime=regime,
-            p_tail=p_tail, p_move=p_move,
+            p_tail=p_tail,
+            p_move=p_move,
         )
 
 
 @dataclass
 class L2HysteresisState:
     """L2滞回状态机 — per-coin 持久化"""
+
     close_armed: bool = False
     close_confirm_count: int = 0
     reduce_armed: bool = False
@@ -151,6 +168,7 @@ class L2HysteresisState:
 @dataclass
 class L1AssessmentResult:
     """L1评估结果"""
+
     hold_risk: float = 0.5
     hold_value: float = 0.5
     mrd_score: float = 0.0
@@ -219,9 +237,7 @@ class L1ValueRiskAssessor:
             hold_risk = self._apply_ml_adjustment(hold_risk, features, result)
 
         # 5. 风险预算惩罚
-        rb_penalty = self._calc_risk_budget_penalty(
-            position, features, snapshot_history or []
-        )
+        rb_penalty = self._calc_risk_budget_penalty(position, features, snapshot_history or [])
         result.risk_budget_penalty = rb_penalty
         hold_risk = hold_risk + rb_penalty
 

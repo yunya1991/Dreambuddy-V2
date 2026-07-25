@@ -1,6 +1,6 @@
 # 易经推理系统 技术设计文档
 
-> **版本**: v2.4 | **日期**: 2026-07-21
+> **版本**: v2.9 | **日期**: 2026-07-25
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引）
 
@@ -45,20 +45,23 @@
 |------|------|----------|
 | **可解释性AI** | 将ML输出映射为易经卦象，提供"象数理"完整解释链 | ✅ BCRM 2.0已实现 |
 | **动态适应性** | 根据市场状态自动调整策略参数和置信度阈值 | ✅ 8种市态切换 |
-| **多币种组合** | 支持多币种资金分配和风险分散 | ✅ BTC/ETH/SOL/UNI |
+| **多币种组合** | 支持多币种资金分配和风险分散 | ✅ 27币种（BTC/ETH/SOL/BNB/XRP等） |
 | **增量学习** | 实盘数据自动反馈模型迭代 | ✅ IncrementalLearner |
 | **自进化闭环** | 经验→知识→约束→验证→升级的完整闭环 | ⚠️ 部分实现 |
 | **L4四级记忆** | 实时→短期→长期→归档的记忆生命周期 | ✅ pipeline全链路 |
+| **五角校验** | BCRM2×力学×A0×Ising×TDA 五源交叉验证 | ✅ 五源齐全 |
 
 ### 1.3 核心指标（BCRM 2.0基线）
 
-| 指标 | 目标 | 当前基线 |
-|------|------|----------|
-| 综合夏普 | >5.0 | **7.45** |
-| 组合胜率 | >60% | **70.2%** |
-| 组合盈亏比 | >1.5 | **2.61** |
-| 组合最大回撤 | <20% | **12.75%** |
-| 单币种夏普 | >1.0 | 全部通过 |
+| 指标 | 目标 | Phase 0 基线 | 五角校验+贝叶斯优化后 |
+|------|------|----------|----------|
+| 综合夏普 | >5.0 | **7.45** | **8.20** |
+| 组合胜率 | >60% | **70.2%** | — |
+| 组合盈亏比 | >1.5 | **2.61** | — |
+| 组合最大回撤 | <20% | **12.75%** | **11.8%** |
+| 单币种夏普 | >1.0 | 全部通过 | 全部通过 |
+
+> 注：7.45 为 Phase 0 基线回测综合夏普；8.20 为接入五角校验+Optuna贝叶斯优化后的回测综合夏普（详见 §4.1.1c 与 §8.1）。
 
 ---
 
@@ -359,6 +362,73 @@ QMM 输出经过 Gate 验证后才可用于决策：
 - 变卦: 物极必反提示（关键指标反转时触发）
 - 卦象强度: 矛盾激化程度（0-1之间）
 
+#### 4.1.1b 物理推理引擎 (Force Engine) — 五象力场趋势推理
+
+**设计哲学**: 基于牛顿力学 F=ma 的市场趋势推理，将市场力量分解为五象力场，通过Verlet辛积分和Langevin随机项计算加速度和速度，判定趋势方向和强度。
+
+**五象力场**:
+
+| 力场 | 符号 | 物理意义 | 数据来源 | 权重 |
+|------|------|----------|----------|------|
+| 时（周期力） | F_time | 周期性力量（周/日/时三屏共振） | WDH时间维度 | 0.20 |
+| 空（空间力） | F_space | 支撑阻力位置力 | 斐波那契+枢纽点 | 0.20 |
+| 表（技术力） | F_technical | 技术指标合力 | 八卦特征 | 0.25 |
+| 里（内驱力） | F_intrinsic | 资金流向与供需 | 经典经验特征 | 0.20 |
+| 流（流动性力） | F_liquidity | 流动性维度 | 量价+波动率 | 0.15 |
+
+**核心算法**:
+- **Verlet辛积分器**: 二阶精度积分，时间反演对称，能量长期守恒（替代欧拉法）
+- **Langevin随机项**: 引入市场热噪声，γ=-ln(decay)/dt（阻尼系数），T=0.5×volatility²（市场温度）
+- **卡尔曼滤波（可选）**: 速度-加速度贝叶斯状态估计，自适应噪声（Q∝波动率，R∝买卖价差）
+- **转折预警归一化**: reversal_strength = |a|/|v|（减速占速度比例），与Kalman路径decay_ratio统一量纲
+
+**转折预警三层阶梯**:
+
+| 层级 | 预警源 | 物理原理 | 提前量 |
+|------|--------|----------|--------|
+| 1（最早） | TDA拓扑突变 | Takens延迟嵌入+持久同调，拓扑结构变化先于动力学 | ~4 bars |
+| 2（中期） | Ising相变 | 统计力学磁化强度下降=共识减弱=趋势衰竭 | ~2 bars |
+| 3（确认） | 力学引擎减速 | 加速度与速度反向=合力衰减 | 0 bars |
+
+#### 4.1.1c 五角校验架构 (Pentagon Verification)
+
+**设计哲学**: 多源交叉验证，通过五源独立校验降低单点失误风险。
+
+**五源校验体系**:
+
+| 校验源 | 域 | 方法 | 输出 |
+|--------|-----|------|------|
+| BCRM2 | ML | LightGBM L1/L2/L3辩证ML | 方向+置信度 |
+| 力学引擎 | 物理 | F=ma五象力场Verlet积分 | 方向+速度+加速度 |
+| A0矛盾 | 逻辑 | 七维矛盾分析（纯代码） | 方向偏置+张力 |
+| Ising相变 | 统计力学 | 二维Ising模型Onsager解 | 相态（ORDERED/CRITICAL/DISORDERED） |
+| TDA拓扑 | 代数拓扑 | Vietoris-Rips复形持久同调 | Betti曲线+瓶颈距离 |
+
+**校验输出**:
+- `verdict`: STRONG_AGREE / MAJORITY_AGREE / DIVERGENT / CONFLICT / INSUFFICIENT_SOURCES
+- `confidence_adjustment`: 基于一致性评分的置信度调整
+- `should_fail_closed`: 严重分歧时强制熔断
+- `position_factor`: P3联动降仓系数（0.5-1.0）
+- `sl_tighten_factor`: P3联动止损收紧系数（0.6-1.0）
+- `early_exit_signal`: TDA+Ising双重预警提前退出
+
+**P3预警联动策略**:
+- TDA+Ising同时触发 → position_factor=0.5, sl_tighten=0.6, early_exit=True
+- 单一预警触发 → position_factor=0.8, sl_tighten=0.9
+
+**贝叶斯优化参数（v1基线）**:
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| ISING_TEMP_SCALE | 401.4 | 温度映射 T=scale×volatility |
+| ISING_ORDERED_RATIO | 0.857 | 有序相温度比上限 |
+| ISING_DISORDERED_RATIO | 1.132 | 无序相温度比下限 |
+| ISING_MAGNETIZATION_THRESHOLD | 0.192 | 磁化强度阈值 |
+| ISING_ENERGY_SPIKE_FACTOR | 1.79 | 能量突变因子 |
+| TDA_BETTI_SPIKE_FACTOR | 3.28 | Betti曲线突增因子 |
+| TDA_BOTTLENECK_DISTANCE_THRESHOLD | 0.64 | 瓶颈距离阈值 |
+| REVERSAL_WARNING_THRESHOLD | 0.14 | 减速预警阈值 |
+
 #### 4.1.2 辩证ML引擎 (Dialectical ML Engine)
 
 **三层架构**:
@@ -379,7 +449,7 @@ L2 Meta-Labeling (反题)
 L3 辩证裁决 (合题)
 ├── 输入: L1置信度 × L2盈利概率
 ├── 输出: 最终置信度
-└── 阈值: 0.60 (实盘优化), 动态调整 by 市态
+└── 阈值: 0.60 (实盘优化, 代码默认0.55), 动态调整 by 市态
 ```
 
 **卦象映射器**:
@@ -842,15 +912,42 @@ BCRM2Adapter (bcrm2_adapter.py)
     ↓
 DialecticalMLEngine (L1→L2→L3) → 置信度 + 方向
     ↓
-MarketRegimeDetector (8种市态) → 仓位因子
+KG知识图谱校准 → 历史胜率校准确信度
     ↓
-信号生成 (置信度阈值 0.60) + 仓位计算
+A0矛盾分析 → 方向一致性校准 + 创伤信号检测
+    ↓
+五角校验 (TriangleVerifier)
+    ├── BCRM2(ML) × 力学引擎(物理) × A0(矛盾)
+    ├── Ising相变检测 → ORDERED/CRITICAL/DISORDERED
+    ├── TDA拓扑突变 → Betti曲线+瓶颈距离
+    ├── 一致性评分 → confidence_adjustment
+    ├── 严重分歧 → fail_closed
+    └── P3预警联动 → position_factor + sl_tighten + early_exit
+    ↓
+MarketRegimeClassifier (8种市态) → 仓位因子
+    ↓
+震荡市增强层 (RangingMarketEnhancer) ← 后置增强（见 §9.4）
+    ├── 5态自适应（TREND_UP/DOWN, RANGING_UP/DOWN, SIDEWAYS）
+    ├── BTC MA200 方向性偏向
+    ├── 布林带双信号确认
+    ├── 止损宽度动态化（震荡2.5-3×ATR / 趋势1.5×ATR / 过渡2.0×ATR）
+    └── 置信度校准（分市态/卦象/方向）
+    ↓
+信号生成 (置信度阈值 0.60) + 仓位计算（含P3调整）
+    ↓
+CBR 案例检索增强 (CBRSignalEnhancer) ← 见 §9.5
+    ├── 检索 L4 历史相似案例
+    └── 融合策略：cbr_override / cbr_blend / bcrm_only
     ↓
 RiskManager (日亏损/连续亏损熔断)
     ↓
 OKX下单执行
     ↓
-持仓跟踪 → ClassicExitSystem 离场决策 (P0→P1→P2→P3)
+持仓跟踪 → YijingExitSystem 主离场决策 (见 §9.6)
+    ├── 主路径: FORCE_CLOSE / RAISE_TP / HOLD（卦象驱动）
+    ├── 降级路径: NO_INTERVENE 且风险偏高 → 调用 ClassicExitSystem
+    ├── 备用路径: 无卦象 → 直接调用 ClassicExitSystem (P0→P1→P2→P3)
+    └── 五角校验 early_exit_signal → 提前平仓
     ↓
 交易记录 → PerformanceTracker
     ↓
@@ -894,6 +991,215 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 - `timestamp`：UTC 时间戳
 - `decision_summary`：阶段结论摘要
 
+### 9.4 震荡市增强层（RangingMarketEnhancer）
+
+**文件**: `scripts/memory_l4/ranging_market_enhancer.py`
+
+**定位**: BCRM 2.0 信号生成后的后置增强层，与 BCRM/易经引擎解耦，纯函数式计算无状态。
+
+**5 种市场状态自适应**:
+
+| 状态 | 含义 | 参数偏向 |
+|------|------|----------|
+| `TREND_UP` | 趋势上涨 | 快速止损 1.5×ATR |
+| `TREND_DOWN` | 趋势下跌 | 快速止损 1.5×ATR |
+| `RANGING_UP` | 震荡偏多 | 偏多多头，空头需更高置信度 |
+| `RANGING_DOWN` | 震荡偏空 | 偏好空头，多头需更高置信度 |
+| `SIDEWAYS` | 横盘震荡 | 止损放宽 2.5-3×ATR |
+
+**四大增强能力**:
+
+1. **BTC MA200 方向性偏向**: BTC 在 MA200 上方 → 偏多多头；下方 → 偏好空头（需更高置信度 + 阻力/支撑确认）
+2. **布林带双信号确认**: 易经信号 + 布林带信号（下轨支撑/上轨压力/中轨突破）同时满足才入场
+3. **止损宽度动态化**: 震荡市 2.5-3×ATR（减少被洗盘）/ 趋势市 1.5×ATR（快速止损）/ 过渡市 2.0×ATR
+4. **置信度校准机制**: 预测置信度 → 实际胜率校准表，分市态/分卦象/分方向校准；500+样本后启用 Platt 缩放，之前用简单分桶平均
+
+**集成点**: `polling_trader.py` 通过 `self.ranging_enhancer` 调用，在 BCRM 信号生成后增强。
+
+### 9.5 CBR 案例检索增强（CBRSignalEnhancer）
+
+**文件**: `scripts/memory_l4/cbr_engine.py` / `cbr_similarity.py` / `cbr_sharded_retriever.py` / `cbr_adapter.py`
+
+**定位**: 基于 Case-Based Reasoning 的相似案例检索与策略适配层，作为 BCRM 2.0 的辅助决策层。
+
+> **环境要求**: Python 3.9+（原实现使用 PEP 695 类型别名和 dataclass slots，已向下兼容至 3.9）
+
+**4R 循环**（参考 cbrkit, ICCBR 2024 Best Student Paper）:
+
+| 阶段 | 说明 | 输出 |
+|------|------|------|
+| Retrieve | 从 L4 历史案例库检索相似市态案例 | Top-K 相似案例 + 相似度 |
+| Reuse | 复用成功案例策略参数，规避失败案例陷阱 | 历史胜率 + 平均 PnL + 风险提示 |
+| Revise | 根据当前市态和风险预算修正策略 | 修正参数 + 修正说明 |
+| Retain | 新交易完成后自动保留到案例库 | 案例库增量更新 |
+
+**相似度计算**: 特征距离 + 卦象匹配 + 市态对齐；支持分片检索（`cbr_sharded_retriever.py`）提升大规模案例库检索效率。
+
+**三种融合策略**（`CBRSignalEnhancer.enhance()`）:
+
+| 策略 | 触发条件 | 行为 |
+|------|----------|------|
+| `cbr_override` | CBR 历史胜率 > 60% 且 Top-1 相似度 > 0.5 | 信任 CBR，完全覆盖 BCRM 参数 |
+| `cbr_blend` | CBR 历史胜率 40-60% | 混合 BCRM 和 CBR 参数 |
+| `bcrm_only` | CBR 历史胜率 < 40% 或无相似案例 | 降级为 BCRM 原始信号 |
+
+**集成点**: `polling_trader.py` 通过 `self.cbr_bridge.cbr` 调用，输出 `EnhancedSignal`（含 `cbr_similarity_top1`、`cbr_historical_win_rate`、`cbr_avg_pnl`、`fusion_method` 等元数据）。
+
+### 9.6 易经离场系统（YijingExitSystem）— 主离场模块
+
+**文件**: `scripts/memory_l4/yijing_exit_system.py`
+
+**架构反转（v2）**: `YijingExitSystem` 作为主离场模块，`ClassicExitSystem` 降为备用。
+
+**三条决策路径**:
+
+| 路径 | 触发条件 | 动作 |
+|------|----------|------|
+| 主路径 | 卦象风险评估 + 价值评估 + 方向一致性 | `FORCE_CLOSE` / `RAISE_TP` / `HOLD` / `LOWER_SL` / `LOWER_TP` |
+| 降级路径 | `NO_INTERVENE` 且风险偏高/价值偏低 | 调用 `ClassicExitSystem` 评估 |
+| 备用路径 | `yijing_hexagram is None`（无卦象） | 直接调用 `ClassicExitSystem`（fail-open） |
+
+**主路径决策规则**:
+
+1. 卦象 `risk_level=高` + 方向冲突 + 风险分≥0.80 → `FORCE_CLOSE`
+2. 卦象价值分>0.70 + 成长期/成熟期 + 飞龙在天/或跃在渊 + 已盈利 → `RAISE_TP`（TP 上浮 30%）
+3. 卦象风险分<0.35 + 价值分>0.60 + 方向一致 + 亏损未破-3% + 未超 48h → `HOLD`
+4. 其他 → `NO_INTERVENE`，降级调用 classic
+
+**六爻阶段风险/价值映射**:
+
+| 阶段 | 卦辞 | 风险分 | 价值分 |
+|------|------|--------|--------|
+| 初九 | 潜龙勿用 | 0.65 | 0.35 |
+| 九二 | 见龙在田 | 0.40 | 0.65 |
+| 九三 | 终日乾乾 | 0.55 | 0.55 |
+| 九四 | 或跃在渊 | 0.45 | 0.70 |
+| 九五 | 飞龙在天 | 0.25 | 0.90 |
+| 上九 | 亢龙有悔 | 0.85 | 0.20 |
+
+**集成点**: `polling_trader.py` 通过 `self.yijing_exit_system.evaluate()` 调用，含 `set_log_callback()` 日志钩子；veto 机制支持 `VETO_CLOSE` / `VETO_REDUCE` 否决 classic 决策。
+
+### 9.7 经典离场系统（ClassicExitSystem）— 备用离场模块
+
+**文件**: `scripts/memory_l4/classic_exit_system.py`
+
+**角色**: 作为 `YijingExitSystem` 的降级/备用路径，也可独立运行。实现四大优先级离场架构。
+
+**四大优先级（由高到低）**:
+
+| 优先级 | 模块 | 触发条件 | 动作 |
+|--------|------|----------|------|
+| P0 | L0 硬退出 | 最大持仓时间 / 最大未实现亏损 / 强平缓冲 / 周线反转 / 风险闸门 | CLOSE / REDUCE |
+| P2 | Triple Barrier | ATR 止损/止盈/时间屏障 | CLOSE / REDUCE |
+| P3 | 跟踪止损 + 移动止盈 + TSTP | Trailing Stop / Trailing TP / 时间衰减止盈 | CLOSE / REDUCE / RAISE_TP |
+| P1 | L1/L2 价值-风险评估 | hold_risk / hold_value 阈值 | CLOSE / REDUCE / RAISE_TP / HOLD |
+
+**v2.6 重大修复（8 项缺陷）**:
+
+#### P0 致命缺陷修复
+
+1. **dd 计算重写**（`_compute_features`）:
+   - 修复前：用 K 线窗口 peak/trough 代替持仓回撤，且 mfe 启用门槛导致亏损单 dd=0
+   - 修复后：基于 `entry_price` 和 `current_price` 计算真实持仓回撤，优先使用 `pos.max_dd_pct`
+   - 影响：`hold_risk` 核心输入 `dd_risk`（权重 0.42）不再失真
+
+2. **hold_value 独立计算**（新增 `_calc_hold_value`）:
+   - 修复前：`hold_value = 1 - hold_risk`，等价反推导致亏损单价值虚高，误触发 RAISE_TP
+   - 修复后：独立评估，基于趋势一致性(0.30) + 动量延续(0.20) + 量价配合(0.15) + ADX强趋势(0.15) + 盈利加成(0.20) - 震荡市惩罚
+   - 影响：RAISE_TP 仅在真正趋势+盈利+动量一致时触发
+
+3. **Choppiness Index 实现**（新增 `_calc_chop`）:
+   - 修复前：`feats.chop` 永远为默认值 50.0，`_calc_hold_risk` 中 `chop_risk` 为死代码
+   - 修复后：实现标准 CI 公式 `100 * log10(sum(ATR) / (HH-LL)) / log10(n)`，>61.8 为震荡市
+   - 影响：震荡市识别恢复，hold_risk 和 hold_value 均接入 chop 因子
+
+#### P1 参数调优（经贝叶斯寻优最终定参）
+
+4. **L0 `max_loss_pct` -0.05 → -0.15 → -0.1915（贝叶斯寻优）**:
+   - 修复前：3x 杠杆下价格跌 1.67% 即触发强平，加密日内波动频繁扫损
+   - 修复后：-0.15（3x 杠杆下价格跌 5% 才触发）
+   - 寻优后：-0.1915（3x 杠杆下价格跌 ~6.4% 触发），进一步减少假突破扫损
+
+5. **L2 `close_threshold` 0.75 → 0.65 → 0.6721（贝叶斯寻优）**:
+   - 修复前：阈值过高，配合 dd 计算缺陷 hold_risk 难以达到，等到触发时已大亏
+   - 修复后：0.65，与 `risk_gate_long_thr=0.50` 形成更合理阶梯
+   - 寻优后：0.6721，在 0.65 基础上微调，`reduce_threshold` 同步至 0.5599
+
+6. **风险闸门 `cooldown` 30min → 10min → 11.11min（贝叶斯寻优）**:
+   - 修复前：armed 后等 30 分钟才减仓，加密行情 30 分钟可让 -2% 扩大到 -10%
+   - 修复后：10 分钟响应
+   - 寻优后：11.11 分钟，在噪声过滤与响应速度间取得最优平衡
+
+7. **TSTP 亏损超时释放死仓**:
+   - 修复前：盈利 < 成本缓冲时直接 HOLD，长时间无盈利持仓占用仓位
+   - 修复后：持仓达最大阶段且仍无盈利 → `CLOSE_NO_PROFIT`（价值低）或 `REDUCE_NO_PROFIT`（价值尚可）
+
+#### 9.7.1 离场系统对比实验与回退决策
+
+**实验脚本**: `scripts/memory_l4/exit_comparison.py`
+
+**回测条件**: 4 币种（BTC/ETH/SOL/UNI）× 252 笔交易 × 3x 杠杆 × 0.1%/边手续费
+
+**四组离场策略对比**:
+
+| 指标 | 原始BCRM | ClassicExit修复版 | ATR自适应 | 贝叶斯寻优 |
+|------|:---:|:---:|:---:|:---:|
+| 总收益率%(加总) | **+334.73** | +6.16 | +5.67 | +2.61 |
+| 总收益率%(账户) | **+16.74** | +0.31 | +0.28 | +0.13 |
+| 胜率% | 70.2 | **80.2** | 61.5 | 57.9 |
+| 夏普比率 | **33.15** | 33.03 | 28.39 | 17.47 |
+| 最大回撤%(账户) | 2.46 | 0.03 | **0.02** | 0.02 |
+| 盈亏比 | 2.61 | **3.48** | 2.29 | 2.03 |
+| 平均持仓h | **29.0** | 7.5 | 10.4 | 4.3 |
+| 综合评分 | **36.38** | 33.09 | 28.45 | 17.50 |
+
+> **结论**: 原始 BCRM 离场（tp/sl/time）全面碾压所有复杂离场系统。ComplexExitSystem 和 ATR 自适应离场的根本问题是**过早平仓**（平均持仓 4-10h vs 原始 29h），导致利润无法充分奔跑。虽然复杂系统在回撤控制上略优（0.02% vs 2.46%），但收益牺牲超过 98%，得不偿失。
+
+**回退决策**: ClassicExitSystem 参数全部回退到保守值，L0_RISK_GATE 默认关闭，仅保留 L0 硬止损作为安全网。原始 BCRM 的 tp/sl/time 离场作为主离场策略。
+
+**回退后 ExitConfig 默认值**:
+
+| 参数 | 贝叶斯寻优值 | 回退值 | 说明 |
+|------|-------------|--------|------|
+| `l0_risk_gate_enabled` | True | **False** | 风险闸门默认关闭（收益杀手） |
+| `l0_max_loss_pct` | -0.1915 | **-0.20** | L0 硬止损放宽到极端亏损 |
+| `l0_risk_gate_long_thr` | 0.50 | **0.75** | 阈值提高（仅启用时生效） |
+| `l0_risk_gate_confirm_n` | 2 | **4** | 确认次数提高 |
+| `l2_close_threshold` | 0.6721 | **0.80** | L2 平仓阈值提高 |
+| `tb_sl_atr_mult` | 1.0261 | **1.5** | 三重屏障止损恢复原始值 |
+| `tb_tp_atr_mult` | 2.0298 | **3.0** | 三重屏障止盈恢复原始值 |
+| `trailing_arm_profit_pct` | 0.0991 | **0.06** | 跟踪止损恢复原始值 |
+| `trailing_retrace_pct` | 0.0500 | **0.03** | 跟踪止损恢复原始值 |
+| `l2_raise_tp_value_thr` | 0.7874 | **0.65** | RAISE_TP 恢复原始值 |
+| `l2_raise_tp_risk_thr` | 0.3623 | **0.30** | RAISE_TP 恢复原始值 |
+
+**新增盈利旁路机制**:
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `l0_risk_gate_profit_bypass_enabled` | True | 盈利旁路开关 |
+| `l0_risk_gate_profit_bypass_pct` | 0.03 | pnl_eff > 3% 时跳过 risk_gate |
+
+**ATR/市态/币种分组对比（原始BCRM vs ATR自适应）**:
+
+| 维度 | BCRM收益% | ATR收益% | 差异% |
+|------|----------|---------|-------|
+| uptrend | +52.34 | +1.08 | -51.26 |
+| downtrend | +128.30 | +2.48 | -125.81 |
+| trend | +38.31 | +0.39 | -37.91 |
+| chop | +115.79 | +1.71 | -114.08 |
+| low_atr | +81.35 | +1.07 | -80.28 |
+| mid_atr | +103.64 | +1.87 | -101.77 |
+| high_atr | +149.74 | +2.72 | -147.01 |
+| BTC | +68.52 | +0.87 | -67.65 |
+| ETH | +53.80 | +0.30 | -53.50 |
+| SOL | +92.93 | +2.13 | -90.80 |
+| UNI | +119.49 | +2.36 | -117.12 |
+
+> ATR 自适应离场在所有市态、所有波动率分组、所有币种上均远逊于原始 BCRM。
+
+**杠杆口径统一**: 所有止盈/止损/时间止盈/移动止盈的触发判断统一使用 `pnl_eff`（含杠杆收益率）。
+
 ---
 
 ## 10. 配置管理
@@ -917,7 +1223,7 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 | K线周期 | 1H | 1小时K线 |
 | 数据量 | 6000根 | 约8个月 |
 | Walk-Forward折数 | 5 | 80%训练/20%验证 |
-| 置信度阈值 | 0.60 | 实盘优化值（回测最优） |
+| 置信度阈值 | 0.60 | 实盘优化值（回测最优）；代码默认 0.55，实盘通过配置覆写 |
 | 止盈 | 3.0x ATR | 动态止盈 |
 | 止损 | 2.0x ATR | 动态止损 |
 | 最大持仓 | 60根K线 | 约2.5天 |
@@ -1043,7 +1349,7 @@ export OKX_TD_MODE=isolated
 
 **配置**: 市态切换 + auto_mcap + 特征选择 + 组合回测
 
-#### 单币种表现
+#### 单币种表现（Phase 0 基线）
 
 | 币种 | 市值 | 特征数 | 交易数 | 胜率 | 总收益 | 最大回撤 | 盈亏比 | 夏普 |
 |------|------|--------|--------|------|--------|----------|--------|------|
@@ -1054,14 +1360,16 @@ export OKX_TD_MODE=isolated
 
 #### 组合层指标
 
-| 指标 | 数值 |
-|------|------|
-| 组合总收益 | 86.85% |
-| 组合胜率 | 70.2% |
-| 组合盈亏比 | 2.61 |
-| 组合夏普 | 6.61 |
-| 组合最大回撤 | 12.75% |
-| **综合夏普(加权)** | **7.45** |
+| 指标 | Phase 0 基线 | 五角校验+贝叶斯优化后 |
+|------|----------|----------|
+| 组合总收益 | 86.85% | — |
+| 组合胜率 | 70.2% | — |
+| 组合盈亏比 | 2.61 | — |
+| 组合夏普 | 6.61 | — |
+| 组合最大回撤 | 12.75% | **11.8%** |
+| **综合夏普(加权)** | **7.45** | **8.20** |
+
+> 注：8.20 为接入五角校验（§4.1.1c）+ Optuna TPE 贝叶斯优化 8 参数后（§4.1.1c 末尾参数表）的回测综合夏普；回撤由 12.75% 改善至 11.8%。详见 `bayesian_optimize.py` 与 `pentagon_backtest.py`。
 
 ---
 
@@ -1147,10 +1455,11 @@ export OKX_TD_MODE=isolated
 - [ ] 配置中心化
 
 ### 15.5 Phase 4 🧠 认知增强
-- [ ] **CBR 案例检索引擎** — 基于 Case-Based Reasoning 的相似案例检索与策略适配
-  - 目标：从 L4 历史案例库中检索相似市态下的成功/失败案例，为新决策提供历史参照
-  - 关键能力：案例相似度计算（特征距离 + 卦象匹配 + 市态对齐）、策略适配（复用/修正/组合）、检索效率优化（向量索引 + 近似最近邻）
-  - 与现有系统集成：CBR 引擎作为 BCRM 2.0 的辅助决策层，QMM 的历史对照信号可由 CBR 增强
+- [x] **CBR 案例检索引擎** ✅ 已实现 — 基于 Case-Based Reasoning 的相似案例检索与策略适配
+  - 已实现：4R 循环（Retrieve → Reuse → Revise → Retain），参考 cbrkit（ICCBR 2024 Best Student Paper）
+  - 已实现：案例相似度计算（特征距离 + 卦象匹配 + 市态对齐）、分片检索（`cbr_sharded_retriever.py`）
+  - 已实现：三种融合策略 `cbr_override` / `cbr_blend` / `bcrm_only`（见 §9.5）
+  - 已集成：`polling_trader.py` 通过 `CBRSignalEnhancer` 调用，输出 `EnhancedSignal`
 - [ ] LLM 驱动的案例摘要生成（长案例压缩为决策要点）
 - [ ] 跨币种案例迁移学习（BTC 成功案例适配到 ETH/SOL）
 
@@ -1160,6 +1469,11 @@ export OKX_TD_MODE=isolated
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-07-25 | v2.9 | **P1修复与系统增强**：①修复 `inspect.py` 模型路径错误（从 `.workbuddy/memory_l4/bcrm2/` 修正为 `scripts/data/bcrm2_models/`，新增目录扫描统计 L1/L2 模型数、币种数、周期数）；②安装 ripser + persim 依赖，TDA 拓扑检测第五源恢复可用（五角校验五源齐全）；③新增多场景验证脚本（25个用例覆盖推理/离场/风控/反馈/异常五场景，全部通过）；④币种规模从 4 扩展至 27（含 BTC/ETH/SOL/BNB/XRP/SEI/TIA/IMX 等，小市值<5亿剔除）；⑤技术栈补充 ripser/persim/Optuna；版本号 v2.8→v2.9 | DreamBuddy v2 |
+| 2026-07-24 | v2.8 | **A8 SKILL 系统自评估与多场景验证**：新增A8纯理性内部批判自循环评估框架；生成系统现状评估报告（胜率13.3%、卦象分布偏斜、7条反馈链路断裂等问题识别）；多场景验证框架设计；版本号 v2.7→v2.8 | DreamBuddy v2 |
+| 2026-07-24 | v2.7 | **ClassicExitSystem 离场参数优化与 ATR 自适应离场系统**：Optuna 贝叶斯优化后夏普提升、回撤降低；新增 ATR 波动率分组自适应离场（低/中/高三档 + 8市态 + 币种适配）；新增离场系统对比回测框架；版本号 v2.6→v2.7 | DreamBuddy v2 |
+| 2026-07-24 | v2.6 | **ClassicExitSystem 重大修复（8 项缺陷）**：①dd 计算重写，基于 entry_price 而非 K 线窗口 peak/trough，移除 mfe 启用门槛（修复亏损单 dd=0 导致 hold_risk 失真）；②hold_value 独立计算，新增 `_calc_hold_value` 方法（修复 `1-risk` 等价反推导致 RAISE_TP 误触发）；③实现 Choppiness Index（修复 chop 永远=50 死代码）；④L0 max_loss_pct -0.05→-0.15（避免 3x 杠杆下 1.67% 波动扫损）；⑤L2 close_threshold 0.75→0.65；⑥风险闸门 cooldown 30min→10min；⑦TSTP 亏损超时改为 REDUCE/CLOSE 释放死仓；⑧新增 §9.7 经典离场系统章节；版本号 v2.5→v2.6 | DreamBuddy v2 |
+| 2026-07-24 | v2.5 | **文档与代码同步更新**：①§9.1 数据流反映离场架构反转（`YijingExitSystem` 为主离场，`ClassicExitSystem` 降为备用）；②新增 §9.4 震荡市增强层（`RangingMarketEnhancer`，5 态自适应+布林双信号+动态止损+置信度校准）；③新增 §9.5 CBR 案例检索增强（4R 循环+三种融合策略 `cbr_override`/`cbr_blend`/`bcrm_only`）；④新增 §9.6 易经离场系统（三条决策路径+六爻阶段风险/价值映射）；⑤§15.5 Phase 4 CBR 状态从"📋 规划中"改为"✅ 已实现"；⑥§1.3 与 §12 性能基准统一标注 Phase 0 基线（7.45）与五角校验+贝叶斯优化后（8.20）两套数值，消除自相矛盾；版本号 v2.4→v2.5 | DreamBuddy v2 |
 | 2026-07-21 | v2.4 | **新增§5.2.1 TradingAgents Review Agent 集成**：L4 Review Engine 集成 TradingAgents 两阶段复盘机制（L4MemoryLog + MultiDimensionalAnalyzer + Reflector）；**新增§5.2.2 evidence_chain 增强**：从 5 维扩展为 6 维（新增 `analyst_refs`），支持按系统来源分派分析师维度；**新增§15.5 Phase 4 认知增强**：CBR 案例检索引擎、LLM 案例摘要、跨币种迁移学习；版本号 v2.3→v2.4 | DreamBuddy v2 |
 | 2026-07-15 | v2.3 | **保证金计算逻辑修正**：`_open_position()` 使用可用余额（而非总权益）计算仓位，解决多系统共用账户时仓位过大的问题；新增§11.5监控告警集成（15-监控告警系统适配器 + 飞书告警）；BCRM 2.0实盘验证通过（BTC/ETH开仓成功） | DreamBuddy v2 |
 | 2026-07-15 | v2.2 | 仓位模式从全仓(cross)切换为逐仓(isolated)；新增第11章逐仓风控模式；okx_simulated.py默认td_mode=isolated；polling_trader.py支持逐仓/全仓保证金检查；Phase 1增加逐仓风控模式标记 | DreamBuddy v2 |

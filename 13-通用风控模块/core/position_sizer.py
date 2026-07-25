@@ -11,16 +11,14 @@
     - 仓位分级（轻仓/中仓/重仓）
 """
 
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 from .context import (
-    Signal,
-    RiskContext,
     PositionSizeResult,
-    Direction,
+    RiskContext,
+    Signal,
 )
-from .registry import RuleRegistry, RuleCategory
+from .registry import RuleCategory, RuleRegistry
 
 
 class PositionSizer:

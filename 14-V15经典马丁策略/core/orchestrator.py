@@ -9,28 +9,36 @@
 3. Agent 自主申请：agents 写入 self_schedule.json 申请提前运行
 4. 紧急信号：市场波动超阈值时触发（BTC 1H变动 > 3%）
 """
-import os, sys, json, time, subprocess, requests, warnings
-from datetime import datetime, timezone, timedelta
+import json
+import os
+import subprocess
+import sys
+import time
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
 
+import requests
+
 warnings.filterwarnings("ignore")
-BASE_DIR  = Path(__file__).parent.parent
-ENV_FILE  = BASE_DIR / "config" / ".env.v15"
+BASE_DIR = Path(__file__).parent.parent
+ENV_FILE = BASE_DIR / "config" / ".env.v15"
 SCHED_FILE = BASE_DIR / "data" / "self_schedule.json"
 STATE_FILE = BASE_DIR / "data" / "orchestrator_state.json"
-LOG_FILE   = BASE_DIR / "logs" / "orchestrator.log"
-V15_STATE_FILE    = BASE_DIR / "data" / "v15_state.json"
+LOG_FILE = BASE_DIR / "logs" / "orchestrator.log"
+V15_STATE_FILE = BASE_DIR / "data" / "v15_state.json"
 BAYESIAN_OPT_SCRIPT = BASE_DIR / "lib" / "bayesian_optimizer.py"
-BAYESIAN_OPT_LOCK  = BASE_DIR / "data" / "bayesian_opt" / ".opt.lock"
-BAYESIAN_OPT_LOG   = BASE_DIR / "logs" / "bayesian_opt.log"
+BAYESIAN_OPT_LOCK = BASE_DIR / "data" / "bayesian_opt" / ".opt.lock"
+BAYESIAN_OPT_LOG = BASE_DIR / "logs" / "bayesian_opt.log"
 
-NORMAL_INTERVAL_H = 1          # 常规间隔（放宽验证阶段：1H）
-EVENT_WINDOW_H    = 0.5        # 重要事件前后触发窗口（放宽为30分钟）
-VOLATILITY_PCT    = 2.0        # BTC 1H 波动触发阈值（降低到2%更易触发）
+NORMAL_INTERVAL_H = 1  # 常规间隔（放宽验证阶段：1H）
+EVENT_WINDOW_H = 0.5  # 重要事件前后触发窗口（放宽为30分钟）
+VOLATILITY_PCT = 2.0  # BTC 1H 波动触发阈值（降低到2%更易触发）
 
 TAVILY_KEY = None
 try:
     from dotenv import load_dotenv
+
     load_dotenv(ENV_FILE)
     TAVILY_KEY = os.environ.get("TAVILY_API_KEY")
 except Exception:
@@ -47,6 +55,7 @@ def log(msg: str):
 
 
 # ── 状态管理 ──────────────────────────────────────────────────────────────
+
 
 def load_state() -> dict:
     if STATE_FILE.exists():
@@ -65,6 +74,7 @@ def save_state(state: dict):
 
 
 # ── Agent 自主调度请求 ────────────────────────────────────────────────────
+
 
 def load_schedule_requests() -> list:
     """读取 agents 写入的自主调度申请"""
@@ -91,13 +101,15 @@ def clear_expired_requests():
 def request_early_run(reason: str, run_at_ts: float, priority: str = "normal"):
     """供 agents 调用：申请在指定时间提前触发"""
     reqs = load_schedule_requests()
-    reqs.append({
-        "reason":     reason,
-        "run_at_ts":  run_at_ts,
-        "expires_ts": run_at_ts + 3600,  # 1H 后过期
-        "priority":   priority,
-        "created_ts": time.time(),
-    })
+    reqs.append(
+        {
+            "reason": reason,
+            "run_at_ts": run_at_ts,
+            "expires_ts": run_at_ts + 3600,  # 1H 后过期
+            "priority": priority,
+            "created_ts": time.time(),
+        }
+    )
     SCHED_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(SCHED_FILE, "w") as f:
         json.dump(reqs, f, indent=2)
@@ -111,11 +123,12 @@ KNOWN_EVENTS = [
     # 每月更新一次（由 agents 通过 Tavily 自动更新）
 ]
 
+
 def check_upcoming_events_local() -> list:
     """本地已知事件检测（零Token）"""
     now = datetime.now(timezone.utc)
     upcoming = []
-    for (month, day, hour, minute, name) in KNOWN_EVENTS:
+    for month, day, hour, minute, name in KNOWN_EVENTS:
         event_dt = now.replace(month=month, day=day, hour=hour, minute=minute, second=0)
         delta = (event_dt - now).total_seconds() / 3600
         if -EVENT_WINDOW_H <= delta <= EVENT_WINDOW_H:
@@ -132,16 +145,31 @@ def fetch_upcoming_events_tavily() -> list:
     if time.time() - last_event_check < 20 * 3600:  # 20H 内不重复查
         return state.get("cached_events", [])
     try:
-        s = requests.Session(); s.trust_env = False
-        r = s.post("https://api.tavily.com/search", json={
-            "api_key": TAVILY_KEY,
-            "query":   "US economic events today CPI NFP FOMC Fed meeting crypto market impact",
-            "search_depth": "basic",
-            "max_results": 5,
-        }, timeout=10)
+        s = requests.Session()
+        s.trust_env = False
+        r = s.post(
+            "https://api.tavily.com/search",
+            json={
+                "api_key": TAVILY_KEY,
+                "query": "US economic events today CPI NFP FOMC Fed meeting crypto market impact",
+                "search_depth": "basic",
+                "max_results": 5,
+            },
+            timeout=10,
+        )
         results = r.json().get("results", [])
         events = []
-        keywords = ["CPI", "NFP", "FOMC", "Fed", "GDP", "PCE", "inflation", "employment", "rate decision"]
+        keywords = [
+            "CPI",
+            "NFP",
+            "FOMC",
+            "Fed",
+            "GDP",
+            "PCE",
+            "inflation",
+            "employment",
+            "rate decision",
+        ]
         for res in results:
             title = res.get("title", "")
             if any(k.lower() in title.lower() for k in keywords):
@@ -159,29 +187,39 @@ def fetch_upcoming_events_tavily() -> list:
 
 # ── 市场波动检测 ─────────────────────────────────────────────────────────
 
+
 def check_market_volatility() -> dict:
     """检测 BTC 1H 波动（零Token，直接调 Hyperliquid）"""
     try:
-        s = requests.Session(); s.trust_env = False
+        s = requests.Session()
+        s.trust_env = False
         now_ms = int(time.time() * 1000)
         start_ms = now_ms - 3600000  # 1H ago
-        r = s.post("https://api.hyperliquid.xyz/info", json={
-            "type": "candleSnapshot",
-            "req": {"coin": "BTC", "interval": "1h", "startTime": start_ms, "endTime": now_ms}
-        }, timeout=8)
+        r = s.post(
+            "https://api.hyperliquid.xyz/info",
+            json={
+                "type": "candleSnapshot",
+                "req": {"coin": "BTC", "interval": "1h", "startTime": start_ms, "endTime": now_ms},
+            },
+            timeout=8,
+        )
         candles = r.json()
         if candles and len(candles) >= 1:
             last = candles[-1]
-            open_px  = float(last["o"])
+            open_px = float(last["o"])
             close_px = float(last["c"])
             change_pct = abs((close_px - open_px) / open_px * 100)
-            return {"change_pct": round(change_pct, 2), "direction": "UP" if close_px > open_px else "DOWN"}
+            return {
+                "change_pct": round(change_pct, 2),
+                "direction": "UP" if close_px > open_px else "DOWN",
+            }
     except Exception:
         pass
     return {"change_pct": 0, "direction": "NEUTRAL"}
 
 
 # ── 触发决策 ─────────────────────────────────────────────────────────────
+
 
 def should_trigger(state: dict) -> tuple[bool, str]:
     """
@@ -218,6 +256,7 @@ def should_trigger(state: dict) -> tuple[bool, str]:
 
 # ── 执行 agents ───────────────────────────────────────────────────────────
 
+
 def run_agents(reason: str):
     log(f"🚀 触发执行 — {reason}")
     script_path = BASE_DIR / "core" / "v15_trader.py"
@@ -228,17 +267,25 @@ def run_agents(reason: str):
         result = subprocess.run(
             ["python3", str(script_path)],
             cwd=str(BASE_DIR),
-            capture_output=True, text=True, timeout=120
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
-        key_lines = [l for l in result.stdout.split("\n")
-                     if any(kw in l for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误"])
-                     and "Warning" not in l]
+        key_lines = [
+            l
+            for l in result.stdout.split("\n")
+            if any(
+                kw in l
+                for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误"]
+            )
+            and "Warning" not in l
+        ]
         for line in key_lines[:4]:
             log(f"  {line.strip()}")
         if result.returncode != 0:
             log(f"  ❌ 退出码 {result.returncode}: {result.stderr[:100]}")
     except subprocess.TimeoutExpired:
-        log(f"  ⚠️ 超时: v15_trader.py")
+        log("  ⚠️ 超时: v15_trader.py")
     except Exception as e:
         log(f"  ❌ 执行失败: {e}")
 
@@ -246,6 +293,7 @@ def run_agents(reason: str):
 # ── 贝叶斯优化自动调度 ─────────────────────────────────────────────────────
 # 触发条件（任一满足）：连亏≥3笔 / 距上次优化≥7天 / 跨月
 # 优化无效（收益差<2%）自动回退基线参数
+
 
 def get_loss_streak() -> int:
     """从 v15_state.json 读取连续亏损笔数"""
@@ -267,7 +315,7 @@ def check_bayesian_optimization_trigger() -> tuple:
     """
     # 读取调度开关
     loss_streak_trigger = int(os.environ.get("BAYESIAN_OPT_LOSS_STREAK_TRIGGER", "3"))
-    weekly_enabled  = os.environ.get("BAYESIAN_OPT_WEEKLY", "false").lower() == "true"
+    weekly_enabled = os.environ.get("BAYESIAN_OPT_WEEKLY", "false").lower() == "true"
     monthly_enabled = os.environ.get("BAYESIAN_OPT_MONTHLY", "true").lower() == "true"
 
     # 若所有调度开关都关闭，直接跳过
@@ -279,6 +327,7 @@ def check_bayesian_optimization_trigger() -> tuple:
         if lib_path not in sys.path:
             sys.path.insert(0, lib_path)
         from bayesian_optimizer import should_trigger_optimization
+
         loss_streak = get_loss_streak()
         should, reason = should_trigger_optimization(loss_streak=loss_streak)
 
@@ -334,12 +383,15 @@ def run_bayesian_optimization():
             proc = subprocess.Popen(
                 ["python3", str(BAYESIAN_OPT_SCRIPT), "--with-rollback"],
                 cwd=str(BASE_DIR),
-                stdout=lf, stderr=subprocess.STDOUT,
+                stdout=lf,
+                stderr=subprocess.STDOUT,
                 start_new_session=True,  # 独立进程组，不受父进程退出影响
             )
         with open(BAYESIAN_OPT_LOCK, "w") as f:
             f.write(str(proc.pid))
-        log(f"🔧 贝叶斯优化已后台启动 (PID={proc.pid}, 连亏{loss_streak}笔) → logs/bayesian_opt.log")
+        log(
+            f"🔧 贝叶斯优化已后台启动 (PID={proc.pid}, 连亏{loss_streak}笔) → logs/bayesian_opt.log"
+        )
     except Exception as e:
         log(f"❌ 启动贝叶斯优化失败: {e}")
         try:
@@ -350,14 +402,15 @@ def run_bayesian_optimization():
 
 # ── 主函数 ───────────────────────────────────────────────────────────────
 
+
 def main():
     state = load_state()
     trigger, reason = should_trigger(state)
 
     if trigger:
         run_agents(reason)
-        state["last_run_ts"]       = time.time()
-        state["run_count"]         = state.get("run_count", 0) + 1
+        state["last_run_ts"] = time.time()
+        state["run_count"] = state.get("run_count", 0) + 1
         state["last_trigger_reason"] = reason
         save_state(state)
 

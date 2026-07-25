@@ -224,13 +224,69 @@ class EvolutionEngine:
         return None
 
     def _sandbox_validate(self, proposal: Dict[str, Any]) -> bool:
-        """沙箱验证：新评分 > 现有 × 1.1
+        """沙箱验证：新方案回测得分 > 现有方案 × 1.1
 
-        简化版：只要有合理理由就通过
+        使用 ScenarioBacktester 在历史数据上快速回测对比，
+        只有新方案得分显著优于现有方案（>10%）才通过。
         """
-        # 实际应调用 ScenarioBacktester 做最近30天回测
-        # 这里简化为通过
-        return True
+        scenario_id = proposal.get("scenario_id")
+        new_pattern = proposal.get("new_pattern")
+        new_nodes = proposal.get("nodes", [])
+        old_pattern = proposal.get("old_pattern", "c_chain")
+
+        if not scenario_id or not new_nodes:
+            logger.warning("沙箱验证跳过：缺少 scenario_id 或 nodes")
+            return False
+
+        try:
+            from dreamos.core.memory.scenario_backtester import ScenarioBacktester
+            from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+
+            # 获取旧编排的节点列表
+            memory = OrchestrationMemory()
+            memory.load()
+            old_choice = memory.select(scenario_id)
+            old_nodes = old_choice.nodes if old_choice else ["C1", "C2", "C3"]
+
+            backtester = ScenarioBacktester()
+            result = backtester.quick_compare(
+                scenario_id=scenario_id,
+                pattern_a=old_pattern,
+                nodes_a=old_nodes,
+                pattern_b=new_pattern,
+                nodes_b=new_nodes,
+                max_samples=30,
+            )
+
+            samples = result.get("samples", 0)
+            if samples < 5:
+                logger.warning(f"沙箱验证样本不足: {samples} < 5，保守拒绝")
+                return False
+
+            old_score = result.get(old_pattern, {}).get("score", 0)
+            new_score = result.get(new_pattern, {}).get("score", 0)
+
+            passed = new_score > old_score * 1.1
+            logger.info(
+                f"沙箱验证: {scenario_id} | "
+                f"旧={old_pattern}({old_score:.3f}) → 新={new_pattern}({new_score:.3f}) | "
+                f"样本={samples} | {'通过' if passed else '未通过'}"
+            )
+
+            if passed:
+                proposal["score"] = new_score
+                proposal["evidence"]["backtest"] = {
+                    "old_score": old_score,
+                    "new_score": new_score,
+                    "samples": samples,
+                    "old_pattern_metrics": result.get(old_pattern, {}),
+                    "new_pattern_metrics": result.get(new_pattern, {}),
+                }
+
+            return passed
+        except Exception as e:
+            logger.warning(f"沙箱验证异常，保守拒绝: {e}")
+            return False
 
     # ── 交易分析评估（核心新增）───────────────────────────────
 

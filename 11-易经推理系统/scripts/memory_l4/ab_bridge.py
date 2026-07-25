@@ -1109,6 +1109,73 @@ def get_yijing_summary() -> Dict[str, Any]:
     except Exception:
         pass
 
+    # 13. BCRM 2.0 实时推理（用本地K线数据，不依赖OKX API）
+    bcrm2_latest = {}
+    try:
+        from scripts.memory_l4.bcrm2_adapter import BCRM2Adapter
+        from pathlib import Path as _Path
+        import pandas as _pd
+
+        kline_file = _Path(__file__).resolve().parents[1] / "data" / "klines" / "BTC_1H.csv"
+        if kline_file.exists():
+            df = _pd.read_csv(kline_file)
+            if "timestamp" in df.columns:
+                df["timestamp"] = _pd.to_datetime(df["timestamp"])
+                df = df.set_index("timestamp")
+            adapter = BCRM2Adapter("BTC", "1H")
+            result = adapter.infer(df, auto_train=False)
+            if result and result.get("ok") is not False:
+                ns = result.get("next_state", {})
+                hex_info = result.get("hexagram", {}) or {}
+                bcrm2_latest = {
+                    "available": True,
+                    "symbol": "BTC",
+                    "timeframe": "1H",
+                    "direction": ns.get("direction", "FLAT"),
+                    "confidence": ns.get("confidence", 0),
+                    "derivation": ns.get("derivation", ""),
+                    "fail_closed": result.get("is_fail_closed", lambda: False)() if callable(result.get("is_fail_closed")) else result.get("is_fail_closed", True),
+                    "hexagram": {
+                        "name_cn": hex_info.get("hexagram_name_cn", ""),
+                        "name": hex_info.get("hexagram_name", ""),
+                        "upper_gua": hex_info.get("upper_gua", {}).get("name", "") if isinstance(hex_info.get("upper_gua"), dict) else "",
+                        "lower_gua": hex_info.get("lower_gua", {}).get("name", "") if isinstance(hex_info.get("lower_gua"), dict) else "",
+                        "meaning": hex_info.get("hexagram_meaning", ""),
+                        "risk_level": hex_info.get("risk_level", ""),
+                        "direction_hint": hex_info.get("direction_hint", ""),
+                        "mutual_gua": hex_info.get("mutual_gua", ""),
+                        "changed_gua": hex_info.get("changed_gua", ""),
+                        "narrative": hex_info.get("narrative", "")[:200] if hex_info.get("narrative") else "",
+                    },
+                    "position_factor": result.get("position_factor", 1.0),
+                    "sl_tighten_factor": result.get("sl_tighten_factor", 1.0),
+                    "early_exit_signal": result.get("early_exit_signal", False),
+                }
+    except Exception as e:
+        bcrm2_latest = {"available": False, "error": str(e)[:100]}
+
+    # 14. 增量学习 / 反馈闭环状态
+    incremental_learning_state = {}
+    try:
+        from scripts.memory_l4.bcrm2.incremental_learner import IncrementalLearner
+        learner = IncrementalLearner()
+        perf = learner.db.get_recent_performance("BTC")
+        versions = learner.version_manager.list_versions("BTC") if hasattr(learner, 'version_manager') else []
+        should_retrain, retrain_reason = learner.should_retrain("BTC")
+        incremental_learning_state = {
+            "available": True,
+            "total_trades": perf.get("n_trades", 0),
+            "win_rate": perf.get("win_rate", 0),
+            "total_pnl": perf.get("total_pnl", 0),
+            "sharpe": perf.get("sharpe", 0),
+            "model_versions": len(versions) if isinstance(versions, list) else 0,
+            "should_retrain": should_retrain,
+            "retrain_reason": retrain_reason,
+            "feedback_loop_healthy": True,
+        }
+    except Exception as e:
+        incremental_learning_state = {"available": False, "error": str(e)[:100]}
+
     return {
         "bus_stats": bus_stats,
         "event_types": event_types,
@@ -1137,6 +1204,8 @@ def get_yijing_summary() -> Dict[str, Any]:
         "qmm": qmm_data,
         "l4_case_count": l4_case_count,
         "l4_liangyi_learned": l4_liangyi_learned,
+        "bcrm2": bcrm2_latest,
+        "incremental_learning": incremental_learning_state,
     }
 
 

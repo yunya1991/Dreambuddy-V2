@@ -64,7 +64,8 @@ MIN_MARGIN_USD = get_config_float("MIN_MARGIN_USD", 20)
 
 # 币种池：用 SymbolMapper 过滤出 OKX 支持的币种
 _RAW_COINS = get_config_list("V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"])
-V15CT_COINS = [c for c in _RAW_COINS if _coin_supported(c, "okx")] or _RAW_COINS
+FILTERED_COINS = [c for c in _RAW_COINS if _coin_supported(c, "okx")] or _RAW_COINS
+V15CT_COINS = FILTERED_COINS
 
 
 def _get_okx_client():

@@ -360,30 +360,76 @@ class ModelsPanel(BasePanel):
     PANEL_ID = "models"
     PANEL_NAME = "🧠 模型状态"
 
+    def _get_bcrm2_models_dir(self) -> Path:
+        from pathlib import Path
+        import scripts.memory_l4.bcrm2_adapter as _ba
+        return Path(_ba.__file__).resolve().parents[1] / "data" / "bcrm2_models"
+
+    def _scan_model_dirs(self, models_dir: Path) -> dict:
+        symbols = set()
+        timeframes = set()
+        total_models = 0
+        l1_count = 0
+        l2_count = 0
+        latest_model = None
+        latest_mtime = 0
+
+        if not models_dir.exists():
+            return {
+                "symbols": [],
+                "timeframes": [],
+                "total_models": 0,
+                "l1_count": 0,
+                "l2_count": 0,
+                "latest_model": None,
+                "latest_train_time": None,
+            }
+
+        for item in models_dir.iterdir():
+            if item.is_dir() and "_" in item.name:
+                parts = item.name.split("_")
+                if len(parts) >= 2:
+                    symbols.add(parts[0])
+                    timeframes.add(parts[1])
+                total_models += 1
+                l1_path = item / "l1_model.txt"
+                l2_path = item / "l2_model.txt"
+                if l1_path.exists():
+                    l1_count += 1
+                    mt = l1_path.stat().st_mtime
+                    if mt > latest_mtime:
+                        latest_mtime = mt
+                        latest_model = item.name
+                if l2_path.exists():
+                    l2_count += 1
+
+        return {
+            "symbols": sorted(symbols),
+            "timeframes": sorted(timeframes),
+            "total_models": total_models,
+            "l1_count": l1_count,
+            "l2_count": l2_count,
+            "latest_model": latest_model,
+            "latest_train_time": datetime.fromtimestamp(latest_mtime).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ) if latest_mtime > 0 else None,
+        }
+
     def check(self) -> PanelResult:
         details = {}
         status = "ok"
         summary = ""
 
-        bcrm2_dir = workbuddy_dir() / "memory_l4" / "bcrm2"
+        models_dir = self._get_bcrm2_models_dir()
+        details["models_dir"] = str(models_dir)
+        details["models_dir_exists"] = models_dir.exists()
 
-        l1_model = bcrm2_dir / "l1_model.txt"
-        l2_model = bcrm2_dir / "l2_model.txt"
+        scan = self._scan_model_dirs(models_dir)
+        details.update(scan)
 
-        l1_exists = l1_model.exists()
-        l2_exists = l2_model.exists()
-
-        details["l1_model_exists"] = l1_exists
-        details["l2_model_exists"] = l2_exists
-
-        if not l1_exists or not l2_exists:
+        if not models_dir.exists() or scan["total_models"] == 0:
             status = "error"
-            missing = []
-            if not l1_exists:
-                missing.append("L1")
-            if not l2_exists:
-                missing.append("L2")
-            summary = f"模型文件缺失 ({', '.join(missing)})"
+            summary = "模型目录不存在或无模型"
             return PanelResult(
                 panel_id=self.PANEL_ID,
                 name=self.PANEL_NAME,
@@ -392,18 +438,16 @@ class ModelsPanel(BasePanel):
                 details=details,
             )
 
-        for model_name, model_path in [("L1", l1_model), ("L2", l2_model)]:
-            try:
-                content = model_path.read_text(encoding="utf-8")
-                lines = content.split("\n")[:5]
-                for line in lines:
-                    if "num_data" in line or "n_estimators" in line:
-                        details[f"{model_name.lower()}_header"] = line
-                        break
-                mtime = datetime.fromtimestamp(model_path.stat().st_mtime)
-                details[f"{model_name.lower()}_train_time"] = mtime.strftime("%Y-%m-%d %H:%M:%S")
-            except Exception as e:
-                details[f"{model_name.lower()}_error"] = str(e)
+        if scan["l1_count"] == 0:
+            status = "error"
+            summary = "无 L1 模型文件"
+            return PanelResult(
+                panel_id=self.PANEL_ID,
+                name=self.PANEL_NAME,
+                status=status,
+                summary=summary,
+                details=details,
+            )
 
         try:
             from scripts.memory_l4.bcrm2.incremental_learner import IncrementalLearner
@@ -419,7 +463,10 @@ class ModelsPanel(BasePanel):
             details["sample_count_error"] = str(e)
 
         if not summary:
-            summary = "BCRM2 模型就绪"
+            summary = (
+                f"{scan['l1_count']}个L1模型, {scan['l2_count']}个L2模型, "
+                f"{len(scan['symbols'])}币种, {len(scan['timeframes'])}周期"
+            )
 
         return PanelResult(
             panel_id=self.PANEL_ID,

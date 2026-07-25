@@ -136,6 +136,8 @@ class ExecutionReport:
     final_action: Optional[str] = None       # LONG / SHORT / HOLD
     final_confidence: float = 0.0
     final_direction_scores: Dict[str, float] = field(default_factory=dict)
+    final_rationale: List[str] = field(default_factory=list)
+    final_risks: List[str] = field(default_factory=list)
 
     early_terminated: bool = False
     termination_reason: Optional[str] = None
@@ -176,6 +178,8 @@ class ExecutionReport:
             "final_action": self.final_action,
             "final_confidence": self.final_confidence,
             "final_direction_scores": self.final_direction_scores,
+            "final_rationale": self.final_rationale,
+            "final_risks": self.final_risks,
             "early_terminated": self.early_terminated,
             "termination_reason": self.termination_reason,
         }

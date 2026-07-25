@@ -3,13 +3,19 @@ Dreambuddy OS — HTTP API 服务
 
 基于 Flask 的 RESTful API，对外暴露 TradingAgent 能力。
 
-端点:
-    POST   /api/v1/analyze          交易分析（市场数据驱动）
-    POST   /api/v1/chat             对话式分析（自然语言）
-    GET    /api/v1/status           Agent 状态
+标准端点（文档 §7.3 定义）:
+    POST   /api/v1/run              执行一次完整推理
+    POST   /api/v1/intent           只做意图识别
     GET    /api/v1/nodes            已注册节点列表
     GET    /api/v1/history          历史记录
     GET    /api/v1/health           健康检查
+
+扩展端点（工程增强）:
+    POST   /api/v1/analyze          交易分析（= /run 的交易专用别名）
+    POST   /api/v1/chat             对话式分析（自然语言）
+    GET    /api/v1/status           Agent 状态
+    POST   /api/v1/budget/reset     重置预算
+    GET    /api/v1/budget           获取预算状态
 
 启动:
     python -m dreamos.apps.api_server
@@ -86,6 +92,78 @@ def create_app(agent: Optional[TradingAgent] = None,
                 for n in nodes
             ],
         })
+
+    @app.post("/api/v1/run")
+    def run_analysis():
+        """执行一次完整推理（文档 §7.3 标准端点）
+
+        请求体:
+            {
+                "user_input": "",               // 可选：用户自然语言输入
+                "market_data": { ... },         // 可选：市场数据
+                "context": {}                   // 可选：上下文
+            }
+        """
+        data = request.get_json(silent=True) or {}
+        user_input = data.get("user_input", "")
+        market_data = data.get("market_data", {})
+        context = data.get("context", {})
+
+        if not market_data and not user_input:
+            return jsonify({"error": "user_input or market_data required"}), 400
+
+        try:
+            result = _agent.run(
+                user_input=user_input,
+                market_data=market_data,
+                context=context,
+            )
+            return jsonify(result)
+        except Exception as e:
+            return jsonify({"error": f"执行失败: {str(e)}"}), 500
+
+    @app.post("/api/v1/intent")
+    def recognize_intent():
+        """只做意图识别（文档 §7.3 标准端点）
+
+        不执行完整分析链路，仅返回 S 层意图识别结果。
+
+        请求体:
+            {
+                "user_input": "分析 BTC 趋势",   // 用户输入
+                "market_data": { ... },         // 可选：市场数据
+                "context": {}                   // 可选：上下文
+            }
+        """
+        data = request.get_json(silent=True) or {}
+        user_input = data.get("user_input", "")
+        market_data = data.get("market_data", {})
+        context = data.get("context", {})
+
+        if not user_input and not market_data:
+            return jsonify({"error": "user_input or market_data required"}), 400
+
+        try:
+            intent_result = _agent.intent_engine.recognize(
+                user_message=user_input,
+                market=market_data,
+                context=context,
+            )
+            return jsonify({
+                "intent_type": intent_result.intent_type,
+                "confidence": intent_result.confidence,
+                "recommended_chain": intent_result.recommended_chain,
+                "base_chain": getattr(intent_result, "base_chain", []),
+                "extend_nodes": getattr(intent_result, "extend_nodes", []),
+                "rationale": getattr(intent_result, "rationale", ""),
+                "recognizers_used": getattr(intent_result, "recognizers_used", []),
+                "total_tokens": getattr(intent_result, "total_tokens", 0),
+                "total_latency_ms": getattr(intent_result, "total_latency_ms", 0),
+                "clarify_needed": getattr(intent_result, "clarify_needed", False),
+                "clarify_question": getattr(intent_result, "clarify_question", ""),
+            })
+        except Exception as e:
+            return jsonify({"error": f"意图识别失败: {str(e)}"}), 500
 
     @app.post("/api/v1/analyze")
     def analyze():

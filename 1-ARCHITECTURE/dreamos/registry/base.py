@@ -93,6 +93,7 @@ class BaseNode(Node):
             1. validate(state) → 校验失败返回 FAILED
             2. execute_core(state) → 自动计时
             3. 异常 → 标记 FAILED，调用 fallback
+            4. F 链信号平滑 — EWMA + MAD 异常过滤（仅 F 链节点）
         """
         # 输入校验
         err = self.validate(state)
@@ -128,7 +129,54 @@ class BaseNode(Node):
             result.latency_ms = timer.elapsed_ms
         result.node_id = result.node_id or self.node_id
 
+        # F 链信号平滑 — EWMA + MAD 异常过滤
+        if getattr(self, "chain", "") == "F" and result.status.value == "SUCCESS":
+            self._smooth_f_signal(result)
+
         return result
+
+    def _smooth_f_signal(self, result: NodeResult) -> None:
+        """对 F 链节点输出做信号平滑（就地修改 result）
+
+        1. 从 outputs 中提取 *_score 字段
+        2. EWMA 平滑 + MAD 鲁棒限幅
+        3. 调整 confidence（偏离原始值越大，置信度衰减）
+        """
+        try:
+            from dreamos.capabilities.trading.signal_smoother import get_smoother
+
+            outputs = result.outputs
+            if not outputs:
+                return
+
+            # 查找 score 字段（命名规律：{module}_score）
+            score_key = None
+            for key in outputs:
+                if key.endswith("_score") and isinstance(outputs[key], (int, float)):
+                    score_key = key
+                    break
+
+            if score_key is None:
+                return
+
+            raw_score = float(outputs[score_key])
+            raw_conf = result.confidence or 0.5
+
+            smoother = get_smoother()
+            smoothed_score, adj_conf = smoother.smooth(self.node_id, raw_score, raw_conf)
+
+            # 平滑后 score 覆盖
+            outputs[score_key] = round(smoothed_score, 4)
+            # 记录原始值供追溯
+            outputs[f"_raw_{score_key}"] = round(raw_score, 4)
+            outputs["_smoothed"] = True
+
+            # 仅在异常值检测触发时调整 confidence
+            # 正常平滑不降低 confidence，避免过度惩罚
+            result.confidence = round(adj_conf, 4)
+        except Exception as e:
+            # 平滑失败不影响原始信号
+            pass
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.node_id} [{self.chain}]>"
