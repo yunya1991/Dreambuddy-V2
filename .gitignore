@@ -233,6 +233,30 @@ _tmp_entry_conf.py
 # OKX sim trade audit logs (runtime)
 **/okx_sim/sim_trades_audit.jsonl*
 
+# Graph store checkpoints (runtime, 600K+ files)
+1-ARCHITECTURE/dreamos/data/graph_store/
+
+# Memory system runtime checkpoints
+4-MEMORY/0-工作记忆/checkpoints/
+
+# 易经推理系统 runtime data & artifacts
+11-易经推理系统/data/
+11-易经推理系统/artifacts/trading/
+11-易经推理系统/artifacts/evolution/
+
+# Backup files (all variants: .bak, .bak_*, .md.bak_*)
+*.bak*
+*.bak_*
+
+# Machine-specific launchd plists (global)
+**/com.dreambuddy.*.plist
+
 # ML model binaries (tracked pkl kept; untracked ones excluded)
 *.pkl
 !10-经典指标系统/user_data/models/rf_model.pkl
+
+# Volatile runtime state (tracked-but-modified, isolate going forward)
+**/scheduler_data/
+14-V15经典马丁策略/data/orchestrator_state.json
+4-MEMORY/0-元记忆/template_mappings.json
+4-MEMORY/2-交易记忆单元/bayesian_memories.json
