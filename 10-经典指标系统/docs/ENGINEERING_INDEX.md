@@ -66,12 +66,23 @@
 │   └── config_*.json
 ├── docs/                    # 文档
 │   ├── ENGINEERING_INDEX.md # 工程索引（本文档）
-│   └── TECHNICAL_DESIGN.md  # 技术设计文档
+│   ├── TECHNICAL_DESIGN.md  # 技术设计文档 v2.0
+│   ├── API_SPEC.md          # 接口规格 v1.1
+│   ├── CHANGELOG.md         # 变更日志 v1.1
+│   ├── 系统运营技术文档.md    # 运营手册
+│   ├── 基本面分析文档.md      # 基本面分析参考
+│   ├── 策略开发规范.md        # 策略开发规范
+│   ├── 集成指南.md           # 系统集成指南
+│   ├── 一页式操作手册.md      # 快速操作指南
+│   └── archive/             # 历史归档
+│       ├── 技术文档_历史.md          # 旧版技术文档（已被 TECHNICAL_DESIGN.md v2.0 替代）
+│       ├── 交易AI_Agent_技术文档_历史.md
+│       ├── NanoClaw技能协调方案_历史.md
+│       └── 新闻分析技能技术文档_历史.md
 ├── ml_trade_service.py      # 主服务入口
 ├── classic_exit_system.py   # 退出系统
 ├── carry_service.py         # 套利服务
-├── requirements.txt
-└── README.md
+└── requirements.txt
 ```
 
 ## 3. 关键文件说明
@@ -221,5 +232,10 @@ python -m pytest test_exit_system_backtest.py -v
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2026-07-13
+**文档版本**: v1.2
+**最后更新**: 2026-07-31
+
+## 更新记录
+
+- 2026-07-31 归档历史技术文档：`技术文档.md`（12414行）已迁移至 `docs/archive/技术文档_历史.md`，权威技术设计以 `docs/TECHNICAL_DESIGN.md` v2.0 为准（DD-006 已关闭）。根目录 8 个散落 .md 文件归入 `docs/` 和 `docs/archive/`（DD-007 已关闭）。
+- 2026-07-25 修复索引断链：将失效的 `docs/TECHNICAL_DESIGN.md` 引用修正为实际存在的技术文档（`技术文档2.0.md` 为当前权威、`技术文档.md` 为历史维护版）；同步移除目录结构中不存在的 `README.md` 引用。

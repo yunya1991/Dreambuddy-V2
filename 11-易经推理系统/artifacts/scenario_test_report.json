@@ -1,0 +1,505 @@
+{
+  "test_time": "2026-07-21T15:51:43.590654+00:00",
+  "total_scenarios": 8,
+  "bcrm_passed": 3,
+  "bcrm_results": [
+    {
+      "scenario": "上升趋势",
+      "direction": "UP",
+      "confidence": 0.9704,
+      "hexagram": "雷地豫",
+      "passed": true,
+      "reason": "通过"
+    },
+    {
+      "scenario": "下降趋势",
+      "direction": "DOWN",
+      "confidence": 0.7918000000000001,
+      "hexagram": "泽地萃",
+      "passed": true,
+      "reason": "通过"
+    },
+    {
+      "scenario": "横盘震荡",
+      "direction": "UP",
+      "confidence": 0.89,
+      "hexagram": "天山遁",
+      "passed": false,
+      "reason": "置信度超出范围: 0.89 不在 [0.3,0.7]; "
+    },
+    {
+      "scenario": "高波动上升",
+      "direction": "DOWN",
+      "confidence": 0.5305,
+      "hexagram": "水天需",
+      "passed": false,
+      "reason": "方向不符: 预期=UP, 实际=DOWN; "
+    },
+    {
+      "scenario": "高波动下跌",
+      "direction": "UP",
+      "confidence": 0.8601,
+      "hexagram": "山泽损",
+      "passed": false,
+      "reason": "方向不符: 预期=DOWN, 实际=UP; "
+    },
+    {
+      "scenario": "低波动横盘",
+      "direction": "DOWN",
+      "confidence": 0.9313,
+      "hexagram": "天水讼",
+      "passed": false,
+      "reason": "置信度超出范围: 0.93 不在 [0.3,0.7]; "
+    },
+    {
+      "scenario": "突破前蓄势",
+      "direction": "UP",
+      "confidence": 1.0,
+      "hexagram": "泽雷随",
+      "passed": true,
+      "reason": "通过"
+    },
+    {
+      "scenario": "破位下跌",
+      "direction": "UP",
+      "confidence": 0.9261,
+      "hexagram": "泽山咸",
+      "passed": false,
+      "reason": "方向不符: 预期=DOWN, 实际=UP; "
+    }
+  ],
+  "cbr_results": [
+    {
+      "scenario": "上升趋势",
+      "bcrm_direction": "UP",
+      "bcrm_confidence": 1.0,
+      "cbr_fusion_method": "cbr_blend",
+      "cbr_confidence": 1.0,
+      "cbr_historical_win_rate": 0.0,
+      "cbr_similarity_top1": 0.0,
+      "cbr_risk_notes": [
+        "案例库为空，使用默认参数"
+      ],
+      "confidence_change": 0.0
+    },
+    {
+      "scenario": "下降趋势",
+      "bcrm_direction": "DOWN",
+      "bcrm_confidence": 0.6316,
+      "cbr_fusion_method": "cbr_blend",
+      "cbr_confidence": 0.6316,
+      "cbr_historical_win_rate": 0.0,
+      "cbr_similarity_top1": 0.0,
+      "cbr_risk_notes": [
+        "案例库为空，使用默认参数"
+      ],
+      "confidence_change": 0.0
+    },
+    {
+      "scenario": "横盘震荡",
+      "bcrm_direction": "UP",
+      "bcrm_confidence": 0.9145,
+      "cbr_fusion_method": "cbr_blend",
+      "cbr_confidence": 0.9145,
+      "cbr_historical_win_rate": 0.0,
+      "cbr_similarity_top1": 0.0,
+      "cbr_risk_notes": [
+        "案例库为空，使用默认参数"
+      ],
+      "confidence_change": 0.0
+    },
+    {
+      "scenario": "高波动上升",
+      "bcrm_direction": "UP",
+      "bcrm_confidence": 1.0,
+      "cbr_fusion_method": "cbr_blend",
+      "cbr_confidence": 1.0,
+      "cbr_historical_win_rate": 0.0,
+      "cbr_similarity_top1": 0.0,
+      "cbr_risk_notes": [
+        "案例库为空，使用默认参数"
+      ],
+      "confidence_change": 0.0
+    },
+    {
+      "scenario": "高波动下跌",
+      "bcrm_direction": "UP",
+      "bcrm_confidence": 0.8611,
+      "cbr_fusion_method": "cbr_blend",
+      "cbr_confidence": 0.9611,
+      "cbr_historical_win_rate": 1.0,
+      "cbr_similarity_top1": 0.301,
+      "cbr_risk_notes": [],
+      "confidence_change": 0.1
+    },
+    {
+      "scenario": "低波动横盘",
+      "bcrm_direction": "DOWN",
+      "bcrm_confidence": 0.6236,
+      "cbr_fusion_method": "cbr_blend",
+      "cbr_confidence": 0.6236,
+      "cbr_historical_win_rate": 0.0,
+      "cbr_similarity_top1": 0.0,
+      "cbr_risk_notes": [
+        "案例库为空，使用默认参数"
+      ],
+      "confidence_change": 0.0
+    },
+    {
+      "scenario": "突破前蓄势",
+      "bcrm_direction": "DOWN",
+      "bcrm_confidence": 0.9334,
+      "cbr_fusion_method": "cbr_blend",
+      "cbr_confidence": 0.9334,
+      "cbr_historical_win_rate": 0.0,
+      "cbr_similarity_top1": 0.0,
+      "cbr_risk_notes": [
+        "案例库为空，使用默认参数"
+      ],
+      "confidence_change": 0.0
+    },
+    {
+      "scenario": "破位下跌",
+      "bcrm_direction": "DOWN",
+      "bcrm_confidence": 0.9722000000000001,
+      "cbr_fusion_method": "cbr_blend",
+      "cbr_confidence": 0.9722,
+      "cbr_historical_win_rate": 0.0,
+      "cbr_similarity_top1": 0.0,
+      "cbr_risk_notes": [
+        "案例库为空，使用默认参数"
+      ],
+      "confidence_change": -0.0
+    }
+  ],
+  "kg_results": [
+    {
+      "scenario": "上升趋势",
+      "hexagram": "泽雷随",
+      "regime": "",
+      "recommendations": [
+        {
+          "strategy": "agent_b",
+          "total_cases": 2,
+          "win_rate": 1.0,
+          "avg_pnl": 3.6,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "泽雷随"
+          }
+        },
+        {
+          "strategy": "unknown",
+          "total_cases": 1,
+          "win_rate": 1.0,
+          "avg_pnl": 0.025,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "泽雷随"
+          }
+        },
+        {
+          "strategy": "yijing_inference",
+          "total_cases": 4,
+          "win_rate": 0.75,
+          "avg_pnl": 1.4038,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "泽雷随"
+          }
+        }
+      ],
+      "recommendation_count": 7
+    },
+    {
+      "scenario": "下降趋势",
+      "hexagram": "雷天大壮",
+      "regime": "",
+      "recommendations": [
+        {
+          "strategy": "agent_b",
+          "total_cases": 2,
+          "win_rate": 1.0,
+          "avg_pnl": 3.6,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "雷天大壮"
+          }
+        },
+        {
+          "strategy": "unknown",
+          "total_cases": 1,
+          "win_rate": 1.0,
+          "avg_pnl": 0.025,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "雷天大壮"
+          }
+        },
+        {
+          "strategy": "yijing_inference",
+          "total_cases": 4,
+          "win_rate": 0.75,
+          "avg_pnl": 1.4038,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "雷天大壮"
+          }
+        }
+      ],
+      "recommendation_count": 7
+    },
+    {
+      "scenario": "横盘震荡",
+      "hexagram": "山天大畜",
+      "regime": "",
+      "recommendations": [
+        {
+          "strategy": "agent_b",
+          "total_cases": 2,
+          "win_rate": 1.0,
+          "avg_pnl": 3.6,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "山天大畜"
+          }
+        },
+        {
+          "strategy": "unknown",
+          "total_cases": 1,
+          "win_rate": 1.0,
+          "avg_pnl": 0.025,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "山天大畜"
+          }
+        },
+        {
+          "strategy": "yijing_inference",
+          "total_cases": 4,
+          "win_rate": 0.75,
+          "avg_pnl": 1.4038,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "山天大畜"
+          }
+        }
+      ],
+      "recommendation_count": 7
+    },
+    {
+      "scenario": "高波动上升",
+      "hexagram": "风雷益",
+      "regime": "",
+      "recommendations": [
+        {
+          "strategy": "agent_b",
+          "total_cases": 2,
+          "win_rate": 1.0,
+          "avg_pnl": 3.6,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "风雷益"
+          }
+        },
+        {
+          "strategy": "unknown",
+          "total_cases": 1,
+          "win_rate": 1.0,
+          "avg_pnl": 0.025,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "风雷益"
+          }
+        },
+        {
+          "strategy": "yijing_inference",
+          "total_cases": 4,
+          "win_rate": 0.75,
+          "avg_pnl": 1.4038,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "风雷益"
+          }
+        }
+      ],
+      "recommendation_count": 7
+    },
+    {
+      "scenario": "高波动下跌",
+      "hexagram": "地雷复",
+      "regime": "",
+      "recommendations": [
+        {
+          "strategy": "agent_b",
+          "total_cases": 2,
+          "win_rate": 1.0,
+          "avg_pnl": 3.6,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "地雷复"
+          }
+        },
+        {
+          "strategy": "unknown",
+          "total_cases": 1,
+          "win_rate": 1.0,
+          "avg_pnl": 0.025,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "地雷复"
+          }
+        },
+        {
+          "strategy": "yijing_inference",
+          "total_cases": 4,
+          "win_rate": 0.75,
+          "avg_pnl": 1.4038,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "地雷复"
+          }
+        }
+      ],
+      "recommendation_count": 7
+    },
+    {
+      "scenario": "低波动横盘",
+      "hexagram": "雷泽归妹",
+      "regime": "",
+      "recommendations": [
+        {
+          "strategy": "agent_b",
+          "total_cases": 2,
+          "win_rate": 1.0,
+          "avg_pnl": 3.6,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "雷泽归妹"
+          }
+        },
+        {
+          "strategy": "unknown",
+          "total_cases": 1,
+          "win_rate": 1.0,
+          "avg_pnl": 0.025,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "雷泽归妹"
+          }
+        },
+        {
+          "strategy": "yijing_inference",
+          "total_cases": 4,
+          "win_rate": 0.75,
+          "avg_pnl": 1.4038,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "雷泽归妹"
+          }
+        }
+      ],
+      "recommendation_count": 7
+    },
+    {
+      "scenario": "突破前蓄势",
+      "hexagram": "天地否",
+      "regime": "",
+      "recommendations": [
+        {
+          "strategy": "agent_b",
+          "total_cases": 2,
+          "win_rate": 1.0,
+          "avg_pnl": 3.6,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "天地否"
+          }
+        },
+        {
+          "strategy": "unknown",
+          "total_cases": 1,
+          "win_rate": 1.0,
+          "avg_pnl": 0.025,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "天地否"
+          }
+        },
+        {
+          "strategy": "yijing_inference",
+          "total_cases": 4,
+          "win_rate": 0.75,
+          "avg_pnl": 1.4038,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "天地否"
+          }
+        }
+      ],
+      "recommendation_count": 7
+    },
+    {
+      "scenario": "破位下跌",
+      "hexagram": "雷地豫",
+      "regime": "",
+      "recommendations": [
+        {
+          "strategy": "agent_b",
+          "total_cases": 2,
+          "win_rate": 1.0,
+          "avg_pnl": 3.6,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "雷地豫"
+          }
+        },
+        {
+          "strategy": "unknown",
+          "total_cases": 1,
+          "win_rate": 1.0,
+          "avg_pnl": 0.025,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "雷地豫"
+          }
+        },
+        {
+          "strategy": "yijing_inference",
+          "total_cases": 4,
+          "win_rate": 0.75,
+          "avg_pnl": 1.4038,
+          "conditions": {
+            "inst_id": "BTC-USDT-SWAP",
+            "regime": "",
+            "hexagram": "雷地豫"
+          }
+        }
+      ],
+      "recommendation_count": 7
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
-  "last_run_ts": 1783995788.77189,
-  "run_count": 1,
-  "last_trigger_reason": "\u23f0 \u5e38\u89c4\u5fc3\u8df3: \u5df2\u8fc7 495554.4H",
-  "last_event_check_ts": 1783995789.584633,
+  "last_run_ts": 1785820541.5225759,
+  "run_count": 145,
+  "last_trigger_reason": "\u23f0 \u5e38\u89c4\u5fc3\u8df3: \u5df2\u8fc7 1.0H",
+  "last_event_check_ts": 1785809642.939156,
   "cached_events": []
 }

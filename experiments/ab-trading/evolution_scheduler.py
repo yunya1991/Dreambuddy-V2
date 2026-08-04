@@ -21,7 +21,7 @@ from core.agent_a_memory import (
     set_evolution_timestamp,
 )
 
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).parent
 LOG_DIR = BASE_DIR / "logs"
 LOG_FILE = LOG_DIR / "evolution.log"
 

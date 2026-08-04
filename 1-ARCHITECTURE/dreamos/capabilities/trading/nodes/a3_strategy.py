@@ -5,7 +5,7 @@ A3 策略设计节点 — 设计具体交易策略，计算仓位、止损止盈
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from dreamos.registry.base import BaseNode
 from dreamos.shared.state import State, NodeResult
@@ -20,21 +20,77 @@ def calc_dynamic_leverage(
     min_lev: int = MIN_LEVERAGE,
     max_lev: int = MAX_LEVERAGE,
     threshold: float = CONFIDENCE_THRESHOLD,
+    atr_pct: Optional[float] = None,
+    vol_benchmark: float = 0.025,
 ) -> int:
-    """基于置信度动态计算杠杆倍数
+    """基于置信度+波动率动态计算杠杆倍数（Kelly 风格）
 
     映射逻辑:
       - 置信度 = threshold (默认 0.4) → min_lev (1x)
-      - 置信度 = 0.6 → 约 3x
-      - 置信度 >= 0.8 → max_lev (5x)
+      - 置信度 >= 0.75 → 基础系数打满
+      - atr_pct > vol_benchmark 时按比例降杠杆(高波动币降风险)
+      - atr_pct < 1.0% 时最高可 +1x
     """
     if confidence <= threshold:
         return min_lev
-    if confidence >= 0.8:
-        return max_lev
-    ratio = (confidence - threshold) / (0.8 - threshold)
-    lev = min_lev + ratio * (max_lev - min_lev)
-    return max(min_lev, min(max_lev, int(round(lev))))
+    conf_ratio = min(1.0, (confidence - threshold) / max(1e-6, (0.75 - threshold)))
+    vol_factor = 1.0
+    if atr_pct is not None and atr_pct > 0:
+        vol_ratio = vol_benchmark / max(1e-6, atr_pct)
+        vol_factor = max(0.5, min(1.5, vol_ratio))
+    target = min_lev + conf_ratio * (max_lev - min_lev)
+    target *= vol_factor
+    return max(min_lev, min(max_lev, int(round(target))))
+
+
+def calc_dynamic_position_and_leverage(
+    confidence: float,
+    atr_pct: float,
+    account_equity: Optional[float] = None,
+    direction: str = "LONG",
+    min_lev: int = MIN_LEVERAGE,
+    max_lev: int = MAX_LEVERAGE,
+    threshold: float = CONFIDENCE_THRESHOLD,
+    symbol: str = "BTC",
+    default_equity: float = 60.0,
+) -> Dict[str, float]:
+    """统一的 Kelly 动态仓位 & 杠杆模型（与 A5 一致）"""
+    if confidence >= threshold:
+        conf_score = min(1.0, (confidence - threshold) / max(1e-6, 0.75 - threshold))
+    else:
+        conf_score = 0.0
+    conf_score = max(0.0, min(1.0, conf_score))
+    atr = max(0.001, float(atr_pct) if atr_pct else 0.025)
+    vol_score = 0.025 / atr
+    vol_score = max(0.5, min(1.5, vol_score))
+    edge = max(0.0, conf_score - 0.35)
+    kelly_full = (edge * 3.0 - (1.0 - conf_score)) / 2.0
+    kelly_full = max(0.02, min(0.30, kelly_full))
+    kelly_half = kelly_full * 0.5
+    if account_equity is None or account_equity <= 0:
+        account_equity = default_equity
+    eq = max(0.0, float(account_equity))
+    tier1 = {"BTC", "ETH"}
+    tier2 = {"SOL", "BNB", "XRP"}
+    tier_small_min = {"OP", "ARB", "DOGE", "SHIB", "PEPE", "DOT"}
+    max_single_pct = 0.25 if symbol.upper() in tier1 else (0.18 if symbol.upper() in tier2 else 0.15)
+    min_position_usdt = 5.0 if symbol.upper() in tier_small_min else 3.0
+    position = eq * kelly_half * conf_score * vol_score
+    position = max(min_position_usdt, min(position, eq * max_single_pct))
+    position = round(position, 2)
+    leverage = calc_dynamic_leverage(
+        confidence=confidence, min_lev=min_lev, max_lev=max_lev,
+        threshold=threshold, atr_pct=atr_pct,
+    )
+    return {
+        "position_size": position, "leverage": float(leverage),
+        "confidence_score": round(conf_score, 3),
+        "vol_score": round(vol_score, 3),
+        "kelly_pct": round(kelly_half, 4),
+        "max_single_pct": max_single_pct,
+        "min_position_usdt": min_position_usdt,
+        "account_equity": round(eq, 2),
+    }
 
 
 class A3StrategyNode(BaseNode):
@@ -90,9 +146,28 @@ class A3StrategyNode(BaseNode):
                 },
             )
 
-        # 仓位计算
-        equity = 60.0  # 默认资金
-        position_size = min(equity * 0.05, 10.0)  # 5% 仓位，最大 10U
+        # P0-6: Kelly 动态仓位 & 杠杆（置信度 × 波动率 × 账户权益）
+        acc_eq = None
+        if isinstance(mkt, dict):
+            acc_eq = mkt.get("account_equity") or mkt.get("totalWalletBalance") or mkt.get("eq")
+            if acc_eq is not None:
+                try:
+                    acc_eq = float(acc_eq)
+                except (TypeError, ValueError):
+                    acc_eq = None
+        dyn = calc_dynamic_position_and_leverage(
+            confidence=confidence,
+            atr_pct=atr_pct,
+            account_equity=acc_eq,
+            direction=direction,
+            min_lev=MIN_LEVERAGE,
+            max_lev=MAX_LEVERAGE,
+            threshold=CONFIDENCE_THRESHOLD,
+            symbol=coin,
+        )
+        position_size = dyn["position_size"]
+        leverage = int(dyn["leverage"])
+        equity = dyn["account_equity"]
 
         # 止损止盈计算（与A5保持一致：1.0倍ATR止损，2.0倍ATR止盈）
         if direction == "LONG":
@@ -113,7 +188,13 @@ class A3StrategyNode(BaseNode):
             rr_rating = "❌ 较差"
 
         rationale.append(f"[策略] {direction} {coin} @ ${price:.4f}")
-        rationale.append(f"  仓位: {position_size:.2f} USDT ({position_size/equity*100:.1f}%)")
+        rationale.append(
+            f"  Kelly 模型: eq={equity}USDT kelly={dyn['kelly_pct']:.2%} "
+            f"conf={dyn['confidence_score']:.2f} vol={dyn['vol_score']:.2f} "
+            f"max_single={dyn['max_single_pct']:.0%}"
+        )
+        rationale.append(f"  仓位: {position_size:.2f} USDT ({position_size/equity*100:.1f}% of equity)")
+        rationale.append(f"  杠杆: {leverage}x (置信度={confidence:.2f} ATR%={atr_pct*100:.1f}%)")
         rationale.append(f"  止损: ${stop_loss:.4f} ({abs(price-stop_loss)/price*100:.1f}%)")
         rationale.append(f"  止盈: ${take_profit:.4f} ({abs(take_profit-price)/price*100:.1f}%)")
         rationale.append(f"  R:R: {rr_ratio:.2f}:1 {rr_rating}")
@@ -126,7 +207,8 @@ class A3StrategyNode(BaseNode):
             "stop_loss": stop_loss,
             "take_profit": take_profit,
             "rr_ratio": round(rr_ratio, 2),
-            "leverage": calc_dynamic_leverage(confidence),
+            "leverage": leverage,
+            "_kelly": dyn,
         }
 
         return NodeResult(

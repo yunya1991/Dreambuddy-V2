@@ -1684,23 +1684,29 @@ function currentTabRefresh() {
 // ── V4+波浪互斥融合策略（主力策略线） ────────────────────────────────────────
 let v4waveCurrentSymbol = 'BTC';
 
-function loadV4WaveStrategy(symbol) {
+async function loadV4WaveStrategy(symbol) {
   const targetSymbol = symbol || v4waveCurrentSymbol;
   v4waveCurrentSymbol = targetSymbol;
   document.getElementById('v4wave-symbol-badge').textContent = targetSymbol;
 
   const url = '/api/v4-wave-strategy?symbol=' + targetSymbol;
-  fetch(url).then(r => r.json()).then(data => {
+  // 后端 V4+波浪计算较慢（含 Wave/Physics 特征提取，约 20-30s），用 yjFetch 走代理降级+超时
+  try {
+    const data = await yjFetch(url, 60000);
     if (data.error) {
       document.getElementById('v4wave-summary').innerHTML =
         '<div style="text-align:center;color:#ef4444;padding:20px">错误: ' + data.error + '</div>';
       return;
     }
     renderV4WaveStrategy(data);
-  }).catch(err => {
+  } catch (err) {
+    const isProxyError = err.message.includes('proxy_502') || err.message.includes('502') || err.message.includes('Failed to fetch');
+    const msg = isProxyError
+      ? '请求被代理拦截 (502)，请直访 http://127.0.0.1:8765/ 或在 Clash 配置 localhost 不走代理'
+      : '加载失败: ' + err.message;
     document.getElementById('v4wave-summary').innerHTML =
-      '<div style="text-align:center;color:#ef4444;padding:20px">加载失败: ' + err.message + '</div>';
-  });
+      '<div style="text-align:center;color:#ef4444;padding:20px">' + msg + '</div>';
+  }
 }
 
 function renderV4WaveStrategy(data) {

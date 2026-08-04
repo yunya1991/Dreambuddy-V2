@@ -14,6 +14,7 @@ import argparse
 import json
 import time
 import subprocess
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,6 +24,13 @@ import sys
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
+
+# 加载 .env 配置，确保 os.environ 中包含 POLLING_COINS 等变量
+try:
+    from dotenv import load_dotenv
+    load_dotenv(_ROOT / ".env")
+except Exception:
+    pass
 
 from scripts.memory_l4.paths import (
     workspace_root,
@@ -246,7 +254,14 @@ class PositionsPanel(BasePanel):
             from scripts.memory_l4.okx_simulated import OKXSimulatedClient
 
             client = OKXSimulatedClient()
-            coins = ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE"]
+            # 从 .env 读取 POLLING_COINS，缺省时回退到默认列表
+            _env_coins = os.environ.get("POLLING_COINS", "")
+            if _env_coins:
+                coins = [c.strip() for c in _env_coins.split(",") if c.strip()]
+            else:
+                coins = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "NEAR", "SUI", "APT",
+                         "DOT", "ATOM", "LTC", "LINK", "ARB", "OP", "UNI", "AAVE", "DOGE", "PEPE",
+                         "NVDA", "TSLA", "MSFT", "META", "GOOGL", "AAPL", "AMZN", "COIN", "XAU", "XAG"]
             for coin in coins:
                 inst_id = f"{coin}-USDT-SWAP"
                 result = client.get_positions(inst_id)

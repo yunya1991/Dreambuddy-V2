@@ -1,0 +1,47 @@
+{
+  "incidents": {
+    "INC-20260727111511": {
+      "incident_id": "INC-20260727111511",
+      "incident_type": "cpu",
+      "severity": "high",
+      "timestamp": "2026-07-27T11:15:11.432397",
+      "host": "node-1",
+      "service": "l3-scheduler",
+      "symptoms": [
+        "CPU使用率超过90%",
+        "响应延迟"
+      ],
+      "root_cause": null,
+      "resolution": null,
+      "duration_minutes": null,
+      "impact": "moderate",
+      "tags": [
+        "性能告警"
+      ]
+    }
+  },
+  "playbooks": {
+    "PB-20260727111511": {
+      "playbook_id": "PB-20260727111511",
+      "name": "CPU高负载处理预案",
+      "trigger_condition": "cpu > 85%",
+      "steps": [
+        "检查进程",
+        "分析周期",
+        "降低频率"
+      ],
+      "estimated_time_minutes": 15,
+      "required_access": [
+        "ssh"
+      ],
+      "created_at": "2026-07-27T11:15:11.432671",
+      "last_used": null,
+      "usage_count": 0,
+      "success_rate": 0.0,
+      "tags": [
+        "CPU"
+      ]
+    }
+  },
+  "baselines": {}
+}

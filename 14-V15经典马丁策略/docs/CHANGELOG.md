@@ -5,6 +5,32 @@
 
 ---
 
+## [v5.2] - 2026-08-01
+
+### 技术文档与代码实现一致性对齐（A8 理论-实践一致性）
+
+- **修复**: `TECHNICAL_DESIGN.md` 多处历史遗留与 `direction_gate.py` 实现不一致
+  - DirectionGate 已升级为 **MA128 + BTC风向标** 模型，但文档前半部分仍描述旧的"日/周MA200三状态模型"
+  - §1.2 模块表：多空方向控制描述 → "基于MA128+BTC风向标三状态模型"
+  - §1.3 设计原则：方向控制原则对齐新模型，补交叉引用 §11.2.2
+  - §12.1 风控链路：第一层入场风控 DirectionGate 描述 → "MA128+BTC风向标三状态模型"
+  - §12.2 风控参数表：方向缓冲带说明 → "MA附近缓冲（日MA128+周MA200）"
+  - §12.3 多空方向验证链：状态触发条件从"价格在日MA200上方→LONG_PREFERRED"等旧逻辑，改为"BTC做空闸门关闭→LONG_PREFERRED"等新模型逻辑
+  - §12.3 测试统计：25项 → 26项（边界情况5项→6项，新增 `_check_valid_breakdown` 3日有效跌破判定用例）
+  - **影响范围**: docs/TECHNICAL_DESIGN.md
+
+- **修复**: `tests/test_short_selling.py` DirectionGate 参数名历史遗留清理
+  - 测试文件停留在旧模型（`daily_ma200`/`last_daily_close`/`last_weekly_close`），导致 15 个用例 `TypeError`
+  - `TestDirectionGateStates` (4项)：参数名 `daily_ma200`→`daily_ma128`，语义从"跌破日MA200"改为"BTC风向标闸门开关"
+  - `TestDirectionGateEdgeCases` (5项→6项)：参数名对齐 + 语义调整 + 新增 `_check_valid_breakdown` 用例
+  - `TestGateResultDict` (2项)：`to_dict()` 字段 `daily_ma200`→`daily_ma128`，新增 `price_vs_*` 字段断言
+  - `TestStateTransitions` (3项)：状态转移触发条件从"跌破MA200"改为"BTC闸门打开/关闭"
+  - 附带清理：`execute_open_position` 已升级为开仓+3档加仓网格预挂单，2 个用例 `assert_called_once()` 改为 `call_args_list[0]` 验证开仓单方向
+  - **影响范围**: tests/test_short_selling.py
+  - **验证方式**: `pytest tests/test_short_selling.py -v` → 26/26 全部通过
+
+---
+
 ## [v5.1] - 2026-07-17
 
 ### 实盘移动止盈集成 + RAISE_TP 修复

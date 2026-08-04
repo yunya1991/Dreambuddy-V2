@@ -1,0 +1,50 @@
+{
+  "task_id": "task_20260705162240_fdyw",
+  "status": "failed",
+  "created_at": "2026-07-05T16:22:40.594Z",
+  "updated_at": "2026-07-05T16:22:40.594Z",
+  "source": "dashboard",
+  "message": "那支撑位在哪里",
+  "intent": {
+    "type": "need_clarification",
+    "confidence": 0.55,
+    "entities": {},
+    "reasoning": "询问支撑位，但未指定交易品种，需要用户明确币种",
+    "clarification_options": [
+      {
+        "key": "btc",
+        "label": "BTC 的支撑位",
+        "target_intent": "deep_analysis",
+        "entities": {
+          "symbol": "BTC"
+        }
+      },
+      {
+        "key": "eth",
+        "label": "ETH 的支撑位",
+        "target_intent": "deep_analysis",
+        "entities": {
+          "symbol": "ETH"
+        }
+      },
+      {
+        "key": "sol",
+        "label": "SOL 的支撑位",
+        "target_intent": "deep_analysis",
+        "entities": {
+          "symbol": "SOL"
+        }
+      }
+    ],
+    "clarification_question": "你想查询哪个交易品种的支撑位？"
+  },
+  "thinking_mode": "quick",
+  "trading_mode": "ai_skill",
+  "session_id": "test_e2e_003",
+  "priority": "medium",
+  "metadata": {
+    "user_agent": "DreamGateway/1.0",
+    "intent_method": "llm"
+  },
+  "error": "Task timed out (stale pending > 5min)"
+}

@@ -1,7 +1,13 @@
 /**
- * Superpowers SKILL.md 格式适配器
+ * superpowers-skill-adapter.ts — SKILL.md 格式解析器（TypeScript 版）
  *
- * 位置: 6-图结构上下文压缩/planner/superpowers-skill-adapter.ts
+ * 仅用于把外部标准 SKILL.md 文档解析为 SkillCapability 对象，**不负责执行**。
+ * 通用认知层对应实现位于 4-MEMORY/9-工具与接口/skill_verifier.py + cognitive_superpowers.py（Python SkillLoader）。
+ *
+ * 边界澄清：
+ *   - 本文件：交易 Planner 侧的 SKILL.md 解析适配器（只读解析）
+ *   - Python SkillLoader：认知层的权威实现（加载+索引+recall 检索+格式红线校验）
+ * 两者解析同一份 SKILL.md 文件，但服务于不同子系统，互不依赖。
  *
  * 功能:
  *   - 导入 Superpowers SKILL.md 格式为 SkillCapability
@@ -10,9 +16,6 @@
  * 设计依据: Superpowers 插件生态的 SKILL.md 格式
  *   - frontmatter (YAML): name, description
  *   - Markdown 正文: 指令、检查清单、流程图、HARD-GATE
- *
- * 注意: 导入的 Superpowers Skill 作为 "方法论技能" 注册
- *   它们不直接执行交易逻辑，而是约束执行流程
  */
 
 import {

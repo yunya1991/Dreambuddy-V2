@@ -1,0 +1,35 @@
+{
+  "template_id": "APP-1785494484782",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": null,
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "任务涉及 5 个文件",
+    "action_count": 5,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/core/memory/evaluation_memory.json",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1785473166713.json",
+      "1-ARCHITECTURE/dreamos/core/memory/orchestration_memory.json",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/reports/evaluation_eval_20260731_184549.json",
+      "4-MEMORY/0-元记忆/template_mappings.json"
+    ],
+    "duration_minutes": 69.2,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1785498638.661797
+  }
+}

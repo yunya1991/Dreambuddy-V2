@@ -358,9 +358,78 @@ def run_agents(reason: str, memories: dict = None, skill_status: dict = None):
             log(f"  ❌ [{agent_label}] 执行失败: {e}")
 
 
+# ── 记忆蒸馏与跨Agent同步 ───────────────────────────────────────────────
+
+def sync_cross_agent_memory(memories: dict):
+    """
+    跨 Agent 记忆同步：将 A/B 双方的关键记忆互相注入
+    实现「建议→验证→提炼→进化」闭环的跨系统传递
+    """
+    a_lessons = memories.get("agent_a", {}).get("lessons_count", 0)
+    b_lessons = len(memories.get("agent_b", {}).get("lessons", []))
+
+    # 加载 Agent B 的 verified_lessons（交易记忆闭环产物）
+    b_mem_path = BASE_DIR / "data" / "agent_b_memory.json"
+    if b_mem_path.exists():
+        try:
+            with open(b_mem_path) as f:
+                b_mem = json.load(f)
+            verified = b_mem.get("suggestion_loop", {}).get("verified_lessons", [])
+            if verified:
+                log(f"🔄 跨Agent同步: B侧已验证教训 {len(verified)} 条")
+        except Exception:
+            pass
+
+    # 加载 Agent A 的 top lessons
+    a_mem_path = BASE_DIR / "data" / "agent_a_memory.json"
+    if a_mem_path.exists():
+        try:
+            with open(a_mem_path) as f:
+                a_mem = json.load(f)
+            top_lessons = sorted(
+                a_mem.get("lessons", []),
+                key=lambda x: x.get("score", 0),
+                reverse=True
+            )[:3]
+            if top_lessons:
+                lesson_summary = "; ".join(l.get("content", "")[:40] for l in top_lessons)
+                log(f"🔄 跨Agent同步: A侧Top教训: {lesson_summary}")
+        except Exception:
+            pass
+
+
+def run_memory_distillation():
+    """
+    执行记忆蒸馏：将应用记忆中的高质量经验提炼为通用经验
+    使用 app_memory_interface 的蒸馏候选接口
+    """
+    try:
+        sys.path.insert(0, str(BASE_DIR))
+        from memory.app_memory_interface import ExperimentMemoryInterface
+        mem = ExperimentMemoryInterface()
+
+        # 获取蒸馏候选（质量≥B级）
+        candidates = mem.distill_candidates(min_quality="B", limit=10)
+        if candidates:
+            log(f"🧪 记忆蒸馏: {len(candidates)} 条候选可上升为全局经验")
+            for c in candidates[:3]:
+                log(f"   [{c['quality_level']}] conf={c['confidence']:.0%} verify={c.get('verify_count',0)} "
+                    f"ready={'✅' if c.get('ready_for_global') else '⏳'}")
+
+        # 健康检查
+        health = mem.healthcheck()
+        stats = health.get("stats", {})
+        log(f"💊 记忆系统健康: {health['status']} | "
+            f"lessons={stats.get('lessons_count',0)} verified={stats.get('verified_lessons_count',0)} "
+            f"trades={stats.get('trades_count',0)}")
+    except Exception as e:
+        log(f"⚠️ 记忆蒸馏失败: {e}")
+
+
 # ── 主函数 ───────────────────────────────────────────────────────────────
 
-def main():
+def run_once():
+    """单次执行：检查触发条件 → 加载记忆+SKILL → 执行Agent → 更新状态"""
     state = load_state()
     trigger, reason = should_trigger(state)
 
@@ -369,8 +438,14 @@ def main():
         memories = load_agent_memories()
         skill_status = check_skill_registry()
 
+        # 跨Agent记忆同步
+        sync_cross_agent_memory(memories)
+
         # 执行 Agent A/B（记忆+SKILL驱动）
         run_agents(reason, memories=memories, skill_status=skill_status)
+
+        # 执行记忆蒸馏
+        run_memory_distillation()
 
         # 更新调度器状态
         state["last_run_ts"]       = time.time()
@@ -386,6 +461,57 @@ def main():
     else:
         log(reason)
 
+    # ── Agent B 策略参数每日更新（原 launchd com.dreambuddy.agent-b-strategy-update）──
+    # macOS 26.3 限制用户级 launchd 加载，改为在 orchestrator 内部调度
+    # 触发条件：距上次更新 > 23H 且 UTC 01:00-03:00 之间
+    try:
+        last_update_ts = state.get("last_strategy_update_ts", 0)
+        hours_since_update = (time.time() - last_update_ts) / 3600
+        utc_hour = datetime.now(timezone.utc).hour
+        if hours_since_update > 23 and 1 <= utc_hour <= 3:
+            log("🔄 触发 Agent B 策略参数更新（每日调度）")
+            from agents.agent_b_runner import update_classic_strategy_params
+            update_classic_strategy_params()
+            state["last_strategy_update_ts"] = time.time()
+            save_state(state)
+            log("✅ Agent B 策略参数更新完成")
+    except Exception as e:
+        log(f"⚠️ Agent B 策略参数更新失败: {e}")
+
+
+def main(daemon: bool = False):
+    """
+    主入口
+
+    单次模式（默认）：python3 orchestrator.py
+    守护进程模式：     python3 orchestrator.py --daemon
+    """
+    if not daemon:
+        run_once()
+        return
+
+    # ── 守护进程模式：持续循环，每 CHECK_INTERVAL_S 检查一次 ──
+    CHECK_INTERVAL_S = 10 * 60  # 每10分钟检查一次触发条件
+    log(f"🌀 守护进程启动 | 检查间隔={CHECK_INTERVAL_S}s | 常规执行间隔={NORMAL_INTERVAL_H}H")
+
+    while True:
+        try:
+            run_once()
+        except Exception as e:
+            log(f"❌ 执行异常: {e}")
+
+        # 计算下次检查前的等待时间
+        state = load_state()
+        elapsed_h = (time.time() - state.get("last_run_ts", 0)) / 3600
+        remaining_s = max(0, (NORMAL_INTERVAL_H - elapsed_h) * 3600)
+
+        log(f"💤 等待 {CHECK_INTERVAL_S}s 后检查 (距下次常规执行约 {remaining_s/3600:.1f}H)")
+        time.sleep(CHECK_INTERVAL_S)
+
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="AB-Trading 记忆与SKILL驱动调度器")
+    parser.add_argument("--daemon", action="store_true", help="守护进程模式：持续循环执行")
+    args = parser.parse_args()
+    main(daemon=args.daemon)

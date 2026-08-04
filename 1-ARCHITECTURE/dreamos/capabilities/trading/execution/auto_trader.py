@@ -35,6 +35,20 @@ MAX_LEVERAGE = 5
 DEFAULT_LEVERAGE = 3
 CONFIDENCE_THRESHOLD = float(os.environ.get("DREAMOS_CONFIDENCE_THRESHOLD", "0.4"))
 
+# L4 统一案例库接入（参考 V15/16-调控 的 _L4_ENABLED 模式）
+# P0-1 修复：DreamOS auto_trader 开仓时注册 TradeCase，离场时回填实际结果，
+# 捕获 S-A-C-G 决策上下文（scenario_id / pattern / confidence / A链路），
+# 为 L4 认知闭环（cases → reviews → distills → 模型重训）提供训练数据。
+_L4_ROOT = Path(__file__).resolve().parents[5] / "11-易经推理系统"
+if str(_L4_ROOT) not in sys.path:
+    sys.path.insert(0, str(_L4_ROOT))
+try:
+    from scripts.memory_l4.trade_event import TradeEvent
+    from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+    _L4_ENABLED = True
+except Exception:
+    _L4_ENABLED = False
+
 
 def calc_dynamic_leverage(
     confidence: float,
@@ -89,6 +103,10 @@ class AutoTrader:
         # 持久化到文件，跨实例共享（scheduler 每次扫描创建新实例）
         self._dedup_path = str(Path(__file__).parent / ".4h_dedup.json")
         self._last_trade_4h_ts: Dict[str, int] = self._load_dedup_state()
+        # P0-1: L4 case_id 映射 — symbol → case_id，支持开仓注册+离场回填两阶段闭环
+        # 持久化到文件，跨实例共享（scheduler 每次扫描创建新实例）
+        self._l4_case_map_path = str(Path(__file__).parent / ".l4_case_map.json")
+        self._l4_case_map: Dict[str, str] = self._load_l4_case_map()
 
     def get_scenario_classifier(self):
         """场景分类器（延迟初始化）"""
@@ -208,6 +226,128 @@ class AutoTrader:
         current_4h_ts = (int(time.time() * 1000) // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
         self._last_trade_4h_ts[coin] = current_4h_ts
         self._save_dedup_state()
+
+    # ── P0-1: L4 统一案例库接入（开仓注册 + 离场回填两阶段闭环）──
+
+    def _load_l4_case_map(self) -> Dict[str, str]:
+        """加载持久化的 symbol → case_id 映射
+
+        scheduler 每次扫描创建新 AutoTrader 实例，
+        若不持久化，开仓时注册的 case_id 丢失，离场时无法回填。
+        """
+        try:
+            if os.path.exists(self._l4_case_map_path):
+                with open(self._l4_case_map_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception:
+            pass
+        return {}
+
+    def _save_l4_case_map(self) -> None:
+        """持久化 symbol → case_id 映射"""
+        try:
+            with open(self._l4_case_map_path, "w", encoding="utf-8") as f:
+                json.dump(self._l4_case_map, f)
+        except Exception as e:
+            logger.warning(f"P0-1 保存 L4 case_id 映射失败: {e}")
+
+    def _register_l4_case(self, symbol: str, direction: str, confidence: float,
+                          trade_order: Dict[str, Any], exec_result: Dict[str, Any]) -> None:
+        """开仓成功后注册 TradeCase 到 L4 案例库
+
+        捕获 S-A-C-G 决策上下文（scenario_id / pattern / confidence / A链路），
+        为 L4 认知闭环提供训练数据。ts_exit=None 表示开仓未平，离场时回填。
+
+        Args:
+            symbol: 交易标的（如 BTC）
+            direction: 方向 (LONG/SHORT)
+            confidence: 决策置信度
+            trade_order: 交易订单（含 entry_price / position_size / leverage / stop_loss / take_profit）
+            exec_result: 执行结果（含 ord_id）
+        """
+        if not _L4_ENABLED:
+            return
+        try:
+            trade_id = f"dream_os_{int(time.time())}_{symbol}"
+            market_data = self._current_context.get("market_data", {})
+
+            event = TradeEvent(
+                event_id=TradeEvent.generate_event_id(),
+                system_source="dream_os",
+                trade_id=trade_id,
+                ts_entry=datetime.utcnow().isoformat(),
+                ts_exit=None,  # 开仓未平，离场时回填
+                symbol=f"{symbol}-USDT-SWAP",
+                direction=direction.lower(),
+                entry_price=trade_order.get("entry_price", 0),
+                position_size=trade_order.get("position_size", 0),
+                leverage=trade_order.get("leverage", DEFAULT_LEVERAGE),
+                margin_usdt=0.0,
+                decision_context={
+                    "scenario_id": self._current_context.get("scenario_id", "UNKNOWN"),
+                    "pattern": self._current_context.get("pattern", "c_chain"),
+                    "expected_direction": self._current_context.get("expected_direction", "HOLD"),
+                    "confidence": confidence,
+                    "path": self._current_context.get("path", "unknown"),
+                    "stop_loss": trade_order.get("stop_loss"),
+                    "take_profit": trade_order.get("take_profit"),
+                    "rr_ratio": trade_order.get("rr_ratio"),
+                    "ord_id": exec_result.get("ord_id"),
+                    "dry_run": exec_result.get("dry_run", False),
+                },
+                market_snapshot={
+                    "regime": market_data.get("regime", "unknown"),
+                    "volatility": market_data.get("volatility", 0.02),
+                    "trend_strength": market_data.get("trend_strength", 0.5),
+                    "price_position": market_data.get("price_position", 0.5),
+                },
+            )
+
+            registry = UnifiedCaseRegistry()
+            case_id, success = registry.register_trade_event(event)
+
+            if success:
+                self._l4_case_map[symbol] = case_id
+                self._save_l4_case_map()
+                logger.info(f"[{symbol}] L4 案例已注册(开仓): {case_id} | dir={direction} conf={confidence:.2f}")
+        except Exception as e:
+            logger.warning(f"[{symbol}] L4 开仓注册异常: {e}")
+
+    def _update_l4_outcome(self, symbol: str, exit_price: float, ret: float,
+                           exit_reason: str = "") -> None:
+        """离场后回填实际结果到 L4 案例库，闭合开仓→离场两阶段闭环
+
+        Args:
+            symbol: 交易标的
+            exit_price: 离场价格
+            ret: 实际收益率（已扣手续费）
+            exit_reason: 离场原因
+        """
+        if not _L4_ENABLED:
+            return
+        case_id = self._l4_case_map.get(symbol)
+        if not case_id:
+            return  # 无对应开仓案例（可能是外部策略持仓），跳过
+        try:
+            pnl_pct = ret * 100  # 转为百分比
+            ts_exit = datetime.utcnow().isoformat()
+
+            registry = UnifiedCaseRegistry()
+            success = registry.update_outcome(
+                case_id=case_id,
+                pnl_pct=pnl_pct,
+                exit_price=exit_price,
+                exit_reason=exit_reason or "auto_trader_exit",
+                ts_exit=ts_exit,
+            )
+
+            if success:
+                # 回填成功，清除映射
+                del self._l4_case_map[symbol]
+                self._save_l4_case_map()
+                logger.info(f"[{symbol}] L4 案例已回填(离场): {case_id} | ret={ret:.4f} reason={exit_reason}")
+        except Exception as e:
+            logger.warning(f"[{symbol}] L4 离场回填异常: {e}")
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -1519,6 +1659,15 @@ class AutoTrader:
 
             # P1-2: 降级路径检测与告警
             is_fallback = not trade_order or not trade_order.get("entry_price")
+            # 决策日志: 便于监控 A5 执行情况 (之前正常流程静默,无法从日志确认 A5 是否执行)
+            path = analysis.get("_path", "unknown")
+            if trade_order and trade_order.get("entry_price"):
+                logger.info(
+                    f"Symbol {symbol} A5正常执行 | path={path} dir={direction} "
+                    f"conf={confidence:.2f} entry={trade_order.get('entry_price')} "
+                    f"size={trade_order.get('position_size')} "
+                    f"SL={trade_order.get('stop_loss')} TP={trade_order.get('take_profit')}"
+                )
             if is_fallback and direction != "HOLD":
                 self._fallback_counts[symbol] = self._fallback_counts.get(symbol, 0) + 1
                 count = self._fallback_counts[symbol]
@@ -1535,7 +1684,16 @@ class AutoTrader:
                     logger.info(f"Symbol {symbol} 降级计数重置 (A5 正常输出)")
                 self._fallback_counts[symbol] = 0
 
-            # 如果 A5 没有输出 trade_order 但顶层有方向,用缓存的 market_data 构造最小订单
+            # A5 已执行但 trade_order 为空: A4/A7 门禁主动拒绝, 尊重决策不构造 fallback
+            if not trade_order and direction != "HOLD" and a5_output:
+                a5_rationale = a5_output.get("rationale", [])
+                reject_reason = a5_rationale[-1] if a5_rationale else "A5门禁拒绝"
+                logger.info(f"Symbol {symbol} A5门禁拒绝交易 ({reject_reason}), 不构造fallback")
+                result["steps"].append({"step": "decision", "status": "gate_rejected", "reason": reject_reason})
+                result["final_result"] = "GATE_REJECTED"
+                return result
+
+            # A5 未在链路中执行 (a5_output 为空), 用缓存的 market_data 构造最小订单
             if not trade_order and direction != "HOLD":
                 market_data = self._current_context.get("market_data", {})
                 price = market_data.get("price", 0)
@@ -1579,6 +1737,7 @@ class AutoTrader:
                 logger.info(f"构造最小 trade_order (A5 无输出): {direction} {symbol} @ {price}, size={position_size}, leverage={trade_order['leverage']}x, SL={stop_loss}, TP={take_profit}")
 
             if direction == "HOLD":
+                logger.info(f"Symbol {symbol} 决策HOLD | path={path} conf={confidence:.2f}")
                 result["steps"].append({"step": "decision", "status": "hold", "reason": "方向为HOLD"})
                 result["final_result"] = "HOLD"
                 return result
@@ -1586,6 +1745,7 @@ class AutoTrader:
             # 对称门槛：多空同等置信度要求
             threshold = 0.62 if direction == "SHORT" else 0.62
             if confidence < threshold:
+                logger.info(f"Symbol {symbol} 置信度不足 | dir={direction} conf={confidence:.2f} < {threshold}")
                 result["steps"].append({"step": "decision", "status": "rejected", "reason": f"置信度不足({confidence:.2f} < {threshold}, 方向={direction})"})
                 result["final_result"] = "CONFIDENCE_TOO_LOW"
                 return result
@@ -1595,10 +1755,12 @@ class AutoTrader:
             current_4h_ts = (current_ts // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
             last_4h_ts = self._last_trade_4h_ts.get(symbol, 0)
             if last_4h_ts == current_4h_ts:
+                logger.info(f"Symbol {symbol} 4h周期去重 | dir={direction} conf={confidence:.2f}")
                 result["steps"].append({"step": "decision", "status": "rejected", "reason": f"4h 周期内已开仓(当前周期={current_4h_ts}, 上次={last_4h_ts})"})
                 result["final_result"] = "DUPLICATE_4H"
                 return result
 
+            logger.info(f"Symbol {symbol} 决策通过 | dir={direction} conf={confidence:.2f} entry={trade_order.get('entry_price')}")
             result["steps"].append({"step": "decision", "status": "approved", "direction": direction, "confidence": confidence})
 
             result["steps"].append({"step": "risk_check", "status": "running"})
@@ -1624,6 +1786,8 @@ class AutoTrader:
                     "scenario_id": self._current_context["scenario_id"],
                     "pattern": self._current_context["pattern"],
                 })
+                # P0-1: 注册 L4 TradeCase（开仓阶段），捕获 S-A-C-G 决策上下文
+                self._register_l4_case(symbol, direction, confidence, trade_order, exec_result)
             elif exec_result.get("dry_run"):
                 result["steps"].append({"step": "execution", "status": "dry_run", "details": exec_result})
                 result["final_result"] = "DRY_RUN"
@@ -1637,6 +1801,8 @@ class AutoTrader:
                     "scenario_id": self._current_context["scenario_id"],
                     "pattern": self._current_context["pattern"],
                 })
+                # P0-1: dry_run 模式也注册 L4 案例（用于压力测试和进化验证）
+                self._register_l4_case(symbol, direction, confidence, trade_order, exec_result)
                 self._try_trigger_evolution()
             else:
                 result["steps"].append({"step": "execution", "status": "failed", "error": exec_result.get("error")})
@@ -1675,6 +1841,9 @@ class AutoTrader:
                 ret = 0.0
             # P0-1: 使用 update_exit_feedback 回填开仓记录，闭合反馈环
             self.update_exit_feedback(symbol, entry_price, exit_price, ret)
+            # P0-1: 回填 L4 TradeCase（离场阶段），闭合开仓→离场两阶段闭环
+            self._update_l4_outcome(symbol, exit_price, ret,
+                                    exit_reason=exit_result.get("reason", "run_exit_check"))
             self._try_trigger_evolution()
 
         return exit_result
@@ -1699,7 +1868,21 @@ class AutoTrader:
                 pos_list, err = client._aster_fetch_positions()
                 if err:
                     return {"error": f"获取持仓失败: {err}"}
-                positions = pos_list or []
+                # P0 修复: Aster API 返回的字段名是 coin/entry_px/position_amt，
+                # 但下方循环期望 symbol/entry_price/position_amt。
+                # 之前字段名不匹配导致 symbol="" 和 entry_price=0，
+                # 被过滤掉所有持仓，离场检查 checked=0。
+                for p in (pos_list or []):
+                    if float(p.get("position_amt", 0) or 0) == 0:
+                        continue
+                    positions.append({
+                        "symbol": p.get("coin", ""),
+                        "entry_price": float(p.get("entry_px", 0) or 0),
+                        "position_amt": float(p.get("position_amt", 0) or 0),
+                        "leverage": float(p.get("leverage") or 1),
+                        "mark_price": float(p.get("mark_px", 0) or 0),
+                        "unrealized_pnl": float(p.get("unrealized_pnl_u", 0) or 0),
+                    })
             elif self.exchange == "hyperliquid":
                 acct = client.get_account()
                 for coin, pos in acct.get("positions", {}).items():
@@ -1764,6 +1947,9 @@ class AutoTrader:
 
                 # P0-1: 使用 update_exit_feedback 回填开仓记录
                 self.update_exit_feedback(symbol, entry_price, exit_price, ret)
+                # P0-1: 回填 L4 TradeCase（离场阶段），闭合开仓→离场两阶段闭环
+                self._update_l4_outcome(symbol, exit_price, ret,
+                                        exit_reason=exit_result.get("reason", "run_exit_check_all"))
 
                 results.append({
                     "symbol": symbol,

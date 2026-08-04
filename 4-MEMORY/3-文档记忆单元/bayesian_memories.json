@@ -1,0 +1,26 @@
+{
+  "updated_at": "2026-07-29T07:53:39.554058",
+  "memory_count": 1,
+  "schema_version": 2,
+  "memories": [
+    {
+      "memory_id": "GM-DOC-001",
+      "content": "API 文档必须与代码实现保持同步，A8 校验是确保一致性的关键机制",
+      "category": "principle",
+      "confidence": 0.95,
+      "quality_level": "B",
+      "verify_count": 1,
+      "conflict_count": 0,
+      "beta_alpha": 2,
+      "beta_beta": 1,
+      "created_at": "2026-07-27T11:05:04.472685",
+      "last_updated": "2026-07-27T11:05:04.472685",
+      "source": "A8 SKILL 实践",
+      "tags": [
+        "文档治理",
+        "A8校验",
+        "SSoT"
+      ]
+    }
+  ]
+}

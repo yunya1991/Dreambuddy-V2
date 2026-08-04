@@ -372,7 +372,7 @@ def get_trend_screen_state(symbol: str = "BTC"):
 # 9年回测验证：V4年化 53.34%，V4+波浪互斥融合年化 56.43%
 # 融合规则：同向叠加、异向以V4为主、V4空仓时波浪轻仓抄底（上限50%）
 # 物理增强：弱趋势(η<0.10)时启用物理置信度调节仓位
-V4_WAVE_BASE_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/trend-system"
+V4_WAVE_BASE_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统"
 
 def get_v4_wave_strategy(symbol: str = "BTC"):
     try:
@@ -524,24 +524,30 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
             adjusted_arr = scorer.adjust_position(base_pos_arr, conf_arr)
             adjusted_position = float(adjusted_arr[0])
 
-        # === 5. 账户与持仓（使用 trend-system 的 AsterExecutor，确保 owner 一致）===
+        # === 5. 账户与持仓（趋势策略专用钱包 owner="trend" → ASTER_USER_TREND）===
+        # P1 修复: 之前用 AsterExecutor() 会读取全局 os.environ["ASTER_USER"]，
+        # 该变量被 dreamos/.env 加载时污染为 Dream OS 钱包 (0x93842F...)。
+        # 改用 owner="trend" 关键字查询，读取 ASTER_USER_TREND 等
+        # 分离环境变量，确保查到的是趋势策略独立钱包 (0x6632da9c...)。
         account = {"equity": 0, "available": 0}
         position = None
         all_positions = []
         try:
-            sys.path.insert(0, V4_WAVE_BASE_DIR)
-            from live.aster_executor import AsterExecutor
-            _v4_executor = AsterExecutor()
-            # 账户余额
+            sys.path.insert(0, CLASSIC_DIR)
+            import ml_trade_service as _ml
+            # 账户摘要
             try:
-                account["equity"] = float(_v4_executor.get_balance("USDT") or 0)
-                account["available"] = float(_v4_executor.get_available_balance("USDT") or 0)
+                summary = _ml._aster_fetch_account_summary(owner="trend")
+                if summary and summary.get("ok"):
+                    s = summary.get("summary", {}) or {}
+                    account["equity"] = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
+                    account["available"] = float(s.get("availableBalance", 0) or 0)
             except Exception:
                 pass
             # 持仓查询：遍历所有持仓，匹配当前 symbol + 收集全部持仓
             try:
-                positions_raw = _v4_executor.get_positions() or []
-                for p in positions_raw:
+                positions_raw, _ = _ml._aster_fetch_positions(owner="trend")
+                for p in (positions_raw or []):
                     coin = str(p.get("coin", "")).upper()
                     amt = float(p.get("position_amt", 0) or p.get("positionAmt", 0) or 0)
                     if abs(amt) < 1e-12:
@@ -619,7 +625,7 @@ ARCH_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE"
 PROJECT_ROOT = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2"
 CLASSIC_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统"
 # Dream OS 实盘账户 owner（Aster 平台）
-# 注意：必须显式指定，避免被 trend-system 的 AsterExecutor 导入时污染全局 ASTER_USER
+# 注意：必须显式指定，避免被 12-三屏趋势系统的 AsterExecutor 导入时污染全局 ASTER_USER
 DREAMOS_ASTER_OWNER_RAW = os.environ.get("DREAMOS_ASTER_OWNER", "").strip()
 DREAMOS_ASTER_OWNER = DREAMOS_ASTER_OWNER_RAW if DREAMOS_ASTER_OWNER_RAW else "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934"
 
@@ -643,7 +649,7 @@ def get_dreamos_state():
                       for n in nodes]
 
         # ── Aster 实盘账户（Dream OS 实际下单平台）──
-        # 注意：必须临时覆盖环境变量，因为 trend-system 的 AsterExecutor 导入时已污染全局 ASTER_USER
+        # 注意：必须临时覆盖环境变量，因为 12-三屏趋势系统的 AsterExecutor 导入时已污染全局 ASTER_USER
         DREAMOS_ENV_FILE = Path(ARCH_DIR) / "dreamos" / ".env"
         _original_env = {}
         _dreamos_env_vars = ["ASTER_USER", "ASTER_SIGNER", "ASTER_SIGNER_PRIVATE_KEY"]

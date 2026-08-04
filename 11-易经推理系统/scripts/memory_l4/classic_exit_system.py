@@ -3,7 +3,9 @@
 经典指标离场系统 (Classic Exit System)
 =======================================
 
-统一封装的经典指标离场模块，作为单一真相源（Single Source of Truth)。
+经典指标离场模块，作为易经离场系统的备用层（架构反转后）。
+注意：本模块并非单一真相源（SSOT）；yijing_exit_system 为主离场模块，
+当 yijing 不可用或信号中性时降级调用本模块。详见 yijing_exit_system.py 头部架构说明。
 
 架构设计（与技术文档 11.y 完整对齐）：
 
@@ -371,11 +373,13 @@ class ExitConfig:
     trailing_retrace_pct: float = 0.03
 
     # ── 移动止盈 (Trailing Take Profit, P3.5) ──────────────────────────
-    # 与 Trailing Stop 互补：激活更早(1.5%)，回撤更敏感(40%)
+    # 与 Trailing Stop 互补：激活更早，回撤更敏感
     # 锁定利润而非防亏损，填补 1-6% 盈利保护空白
+    # B项优化（贝叶斯寻优）：arm 0.015→0.0508, retrace 0.40→0.4668
+    # 让利润奔跑更久，减少微利离场（回测策略收益 5.23%→6.18%）
     trailing_tp_enabled: bool = True
-    trailing_tp_arm_pct: float = 0.015      # 盈利 ≥ 1.5% 激活
-    trailing_tp_retrace_ratio: float = 0.40  # 从 MFE 回撤 ≥ 40% 触发
+    trailing_tp_arm_pct: float = 0.0508     # 盈利 ≥ 5.08% 激活（原1.5%）
+    trailing_tp_retrace_ratio: float = 0.4668  # 从 MFE 回撤 ≥ 46.68% 触发（原40%）
     trailing_tp_min_lock_pct: float = 0.003  # 至少锁定 0.3% 利润
 
     # ── 冷却/滞回 ──────────────────────────────────────────────────────
@@ -383,6 +387,18 @@ class ExitConfig:
     cooldown_after_close_sec: int = 3600
     cooldown_after_reduce_sec: int = 1800
     post_close_freeze_hours: float = 2.0
+
+    # ── D项优化：最小持仓保护期（贝叶斯寻优 min_hold_bars=6） ──────────
+    # 开仓后前6小时（6根1H K线）内，仅允许P0硬离场（最大亏损/强平/持仓时间）
+    # 跳过P2/P3/P1动态离场，防止过早微利离场
+    # 回测：策略收益 5.23%→5.89%，过滤1-3h短持仓亏损源
+    min_hold_bars: int = 6
+
+    # ── E项优化：最大减仓次数限制（贝叶斯寻优 max_reduce_count=1） ──────
+    # 每笔交易最多减仓1次，保留完整仓位让利润奔跑
+    # 回测：策略收益 5.23%→6.53%，胜率 76.6%→81.8%，盈亏比 2.77→3.47
+    # 减仓次数通过 pos.metadata["reduce_count"] 跟踪
+    max_reduce_count: int = 1
 
     # ── 成本缓冲 ────────────────────────────────────────────────────────
     fee_roundtrip_pct: float = 0.001
@@ -480,6 +496,7 @@ class ClassicExitSystem:
         candles_1h: Optional[List[Dict]] = None,
         regime: str = "trend",
         now_ts: Optional[float] = None,
+        p0_only: bool = False,
     ) -> ExitDecision:
         """
         完整离场评估（四大优先级逐级检查）
@@ -490,6 +507,10 @@ class ClassicExitSystem:
         3. P3 - 跟踪止损 / TSTP 检查（行为约束）
         4. P1 - L1/L2 价值-风险评估（主体决策）
         5. Exit Gate 过滤 + 执行约束
+
+        Args:
+            p0_only: 仅执行P0硬门槛检查（最大亏损/强平/最大持仓时间），
+                     跳过P2/P3/P1动态离场。用于1h保护期内只靠开仓SL/TP+硬底线防护。
         """
         now = now_ts if now_ts is not None else time.time()
 
@@ -507,6 +528,19 @@ class ClassicExitSystem:
         if l0_decision.action != ExitAction.HOLD:
             merged = self._merge_decision(decision, l0_decision, ExitPriority.P0_L0_HARD)
             return self._apply_behavioral_constraints(merged, pos, now)
+
+        # v3.0：p0_only 模式下跳过所有动态离场（P2/P3/P1）
+        # 1h保护期内只靠开仓静态SL/TP + P0硬底线（最大亏损/强平/持仓时间）
+        if p0_only:
+            return self._apply_behavioral_constraints(decision, pos, now)
+
+        # D项优化：min_hold_bars 保护期
+        # 开仓后前 min_hold_bars 根K线内，仅允许P0硬离场，跳过P2/P3/P1动态离场
+        # 防止过早微利离场，过滤1-3h短持仓亏损源
+        if self.config.min_hold_bars > 0:
+            hold_bars = pos.position_age_sec / 3600.0  # 1H K线
+            if hold_bars < self.config.min_hold_bars:
+                return self._apply_behavioral_constraints(decision, pos, now)
 
         # P2: Triple Barrier
         tb_decision = self._check_triple_barrier(pos, features)
@@ -1246,9 +1280,23 @@ class ClassicExitSystem:
         pos: PositionState,
         now: float,
     ) -> ExitDecision:
-        """应用执行层行为约束（inflight冷却、post-close冻结、gate过滤）"""
+        """应用执行层行为约束（inflight冷却、post-close冻结、gate过滤、减仓次数限制）"""
         if decision.action == ExitAction.HOLD:
             return decision
+
+        # E项优化：最大减仓次数限制
+        # 每笔交易最多减仓 max_reduce_count 次，超过则改为HOLD
+        # 减仓次数通过 pos.metadata["reduce_count"] 跟踪
+        if decision.action == ExitAction.REDUCE and self.config.max_reduce_count >= 0:
+            current_reduce_count = pos.metadata.get("reduce_count", 0)
+            if current_reduce_count >= self.config.max_reduce_count:
+                decision.action = ExitAction.HOLD
+                decision.gate_passed = False
+                decision.gate_reason = "max_reduce_count"
+                decision.reason = (
+                    f"MAX_REDUCE_LIMIT({current_reduce_count}/{self.config.max_reduce_count})"
+                )
+                return decision
 
         key = pos.coin or "default"
         cd_map = self.state.cooldown.get(key, {})

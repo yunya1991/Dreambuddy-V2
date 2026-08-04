@@ -35,6 +35,8 @@ MAX_PENDING_STRATEGIES = 5
 
 # 连败保护最大持续时间（小时），超时后自动重置 loss_streak
 LOSS_PROTECTION_MAX_HOURS = 48
+# 触发连败保护冷却的连败笔数阈值（连败达到此值才强制 HOLD 观望）
+LOSS_PROTECTION_TRIGGER = 15
 
 
 def _now_iso() -> str:
@@ -158,7 +160,7 @@ def check_loss_protection_timeout(memory: Dict) -> Dict:
     检查连败保护是否超过48小时，超时则自动重置 loss_streak。
 
     设计逻辑：
-    - 连败≥3时，loss_protection_start_ts 记录保护启动时间
+    - 连败≥LOSS_PROTECTION_TRIGGER 时，loss_protection_start_ts 记录保护启动时间
     - 超过 LOSS_PROTECTION_MAX_HOURS 后自动重置 loss_streak=0
     - 防止系统陷入无限连败保护死循环
 
@@ -167,17 +169,17 @@ def check_loss_protection_timeout(memory: Dict) -> Dict:
     loss_streak = memory.get("loss_streak", 0)
     start_ts = memory.get("loss_protection_start_ts")
 
-    # 连败≥3 但没有记录启动时间 → 补记
-    if loss_streak >= 3 and not start_ts:
+    # 连败≥阈值 但没有记录启动时间 → 补记
+    if loss_streak >= LOSS_PROTECTION_TRIGGER and not start_ts:
         memory["loss_protection_start_ts"] = _now_iso()
         return memory
 
-    # 连败<3 → 清除启动时间
-    if loss_streak < 3:
+    # 连败<阈值 → 清除启动时间
+    if loss_streak < LOSS_PROTECTION_TRIGGER:
         memory["loss_protection_start_ts"] = None
         return memory
 
-    # 连败≥3 且有启动时间 → 检查是否超时
+    # 连败≥阈值 且有启动时间 → 检查是否超时
     if start_ts:
         try:
             start_time = datetime.fromisoformat(start_ts)
@@ -220,7 +222,7 @@ def get_loss_protection_countdown(memory: Dict) -> Optional[Dict]:
     loss_streak = memory.get("loss_streak", 0)
     start_ts = memory.get("loss_protection_start_ts")
 
-    if loss_streak < 3 or not start_ts:
+    if loss_streak < LOSS_PROTECTION_TRIGGER or not start_ts:
         return None
 
     try:
@@ -326,8 +328,8 @@ def record_closed_trade(
         else:
             memory["loss_streak"] = memory.get("loss_streak", 0) + 1
             memory["win_streak"] = 0
-            # 连败≥3 → 记录保护启动时间
-            if memory["loss_streak"] >= 3 and not memory.get("loss_protection_start_ts"):
+            # 连败≥阈值 → 记录保护启动时间
+            if memory["loss_streak"] >= LOSS_PROTECTION_TRIGGER and not memory.get("loss_protection_start_ts"):
                 memory["loss_protection_start_ts"] = _now_iso()
 
     # 注册到 L4
@@ -397,10 +399,14 @@ def maybe_switch_master(memory: Dict, market_regime: str = "RANGE") -> Dict:
     """
     根据交易表现和市场环境，评估是否切换大师风格
     切换规则：
-      - 连亏3笔 → 大概率切换
+      - 连亏3笔且震荡市 → 切换（震荡市趋势策略易反复止损）
       - 累计回撤≥15% → 强制切换
-      - 错过10%以上单边行情 → 切换到趋势追踪型
+      - 连败≥5笔 → 必须切换
       - 连续15轮HOLD → 强制切换（打破过度保守死循环）
+
+    注意：market_regime 现由 detect_market_regime() 基于市场统计输出，
+    规则兜底/保守循环打破路径不再硬编码 TREND_UP/DOWN，故 RANGE 分支
+    可真正生效（此前 regime 永为趋势，该分支永不触发）。
     """
     current = memory.get("current_master", "Jesse Livermore")
     loss_streak = memory.get("loss_streak", 0)

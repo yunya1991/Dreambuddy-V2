@@ -54,7 +54,9 @@ def main():
     try:
         from dreamos.cli.scheduler import DreamOSScheduler
 
-        scheduler = DreamOSScheduler(data_dir='1-ARCHITECTURE/dreamos/cli/scheduler_data')
+        # 使用绝对路径加载 scheduler_data,避免 cwd 差异导致加载失败
+        scheduler_data_dir = str(dreamos_dir / "cli" / "scheduler_data")
+        scheduler = DreamOSScheduler(data_dir=scheduler_data_dir)
         
         jobs = scheduler.list_jobs()
         logger.info(f"已加载 {len(jobs)} 个定时任务")

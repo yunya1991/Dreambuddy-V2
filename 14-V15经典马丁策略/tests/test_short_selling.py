@@ -27,28 +27,30 @@ from direction_gate import (
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestDirectionGateStates(unittest.TestCase):
-    """DirectionGate 核心状态判断"""
+    """DirectionGate 核心状态判断（MA128 + BTC风向标模型）"""
 
     def setUp(self):
         reset_gate()
         self.gate = DirectionGate(allow_short=True, buffer_pct=0.01)
 
-    def test_long_preferred_price_above_daily_ma200(self):
-        """价格在日MA200上方 → LONG_PREFERRED，只做多"""
+    def test_long_preferred_price_above_daily_ma128(self):
+        """BTC做空闸门未打开 → LONG_PREFERRED，只做多（默认保守）"""
         r = self.gate.evaluate(
-            current_price=65000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=64000, last_weekly_close=62000,
+            current_price=65000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=[64000, 63500, 63000],
+            btc_short_enabled=False,
         )
         self.assertEqual(r.regime, MarketRegime.LONG_PREFERRED)
         self.assertTrue(r.long_enabled)
         self.assertFalse(r.short_enabled)
         self.assertEqual(r.allowed_direction, TradeDirection.LONG_ONLY)
 
-    def test_short_allowed_below_daily_above_weekly(self):
-        """跌破日MA200但在周MA200上方 → SHORT_ALLOWED，允许做空"""
+    def test_short_allowed_btc_gate_open_above_weekly(self):
+        """BTC做空闸门打开 + 在周MA200上方 → SHORT_ALLOWED，允许做空"""
         r = self.gate.evaluate(
-            current_price=58000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=59000, last_weekly_close=58000,
+            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=[59000, 58500, 58000],
+            btc_short_enabled=True,
         )
         self.assertEqual(r.regime, MarketRegime.SHORT_ALLOWED)
         self.assertTrue(r.long_enabled)
@@ -58,8 +60,9 @@ class TestDirectionGateStates(unittest.TestCase):
     def test_long_only_force_at_weekly_ma200(self):
         """跌至周线MA200 → LONG_ONLY_FORCE，强制做多"""
         r = self.gate.evaluate(
-            current_price=54000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=54500, last_weekly_close=54800,
+            current_price=54000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=[54500, 54000, 53500],
+            btc_short_enabled=True,
         )
         self.assertEqual(r.regime, MarketRegime.LONG_ONLY_FORCE)
         self.assertTrue(r.long_enabled)
@@ -70,8 +73,9 @@ class TestDirectionGateStates(unittest.TestCase):
         """全局开关关闭 → 永远只做多"""
         gate = DirectionGate(allow_short=False)
         r = gate.evaluate(
-            current_price=58000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=59000, last_weekly_close=58000,
+            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=[59000, 58500, 58000],
+            btc_short_enabled=True,
         )
         self.assertEqual(r.regime, MarketRegime.LONG_PREFERRED)
         self.assertFalse(r.short_enabled)
@@ -79,56 +83,75 @@ class TestDirectionGateStates(unittest.TestCase):
 
 
 class TestDirectionGateEdgeCases(unittest.TestCase):
-    """DirectionGate 边界情况"""
+    """DirectionGate 边界情况（MA128 + BTC风向标模型）"""
 
     def setUp(self):
         reset_gate()
 
     def test_data_insufficient_defaults_long(self):
-        """MA200数据不足 → 保守只做多"""
+        """MA数据不足 → 保守只做多"""
         gate = DirectionGate(allow_short=True)
-        r = gate.evaluate(current_price=65000, daily_ma200=None, weekly_ma200=None)
+        r = gate.evaluate(current_price=65000, daily_ma128=None, weekly_ma200=None)
         self.assertEqual(r.regime, MarketRegime.LONG_PREFERRED)
         self.assertFalse(r.short_enabled)
 
-    def test_daily_ma200_none_only(self):
-        """只有日MA200为None → 保守只做多"""
+    def test_daily_ma128_none_only(self):
+        """只有日MA128为None → 保守只做多（MA数据不足分支）"""
         gate = DirectionGate(allow_short=True)
-        r = gate.evaluate(current_price=65000, daily_ma200=None, weekly_ma200=55000)
+        r = gate.evaluate(current_price=65000, daily_ma128=None, weekly_ma200=55000)
         self.assertEqual(r.regime, MarketRegime.LONG_PREFERRED)
+        self.assertFalse(r.short_enabled)
 
-    def test_buffer_zone_avoids_frequent_switch(self):
-        """缓冲带避免临界点频繁切换"""
+    def test_buffer_zone_at_weekly_ma200(self):
+        """周MA200缓冲带避免临界点频繁切换"""
         gate = DirectionGate(allow_short=True, buffer_pct=0.01)
-        daily_ma200 = 60000
-        buffer = daily_ma200 * 0.01  # 60
+        weekly_ma200 = 55000
+        weekly_buffer = weekly_ma200 * 0.01  # 550
 
-        # 刚好在缓冲带内（收盘价 > MA200 + buffer 才算上方）
+        # 刚好在周MA200+buffer内 → 强制做多（LONG_ONLY_FORCE）
         r = gate.evaluate(
-            current_price=60050, daily_ma200=daily_ma200, weekly_ma200=55000,
-            last_daily_close=60030,  # 在缓冲带内
+            current_price=55400, daily_ma128=60000, weekly_ma200=weekly_ma200,
+            recent_daily_closes=[55600, 55500, 55400],  # 最近收盘价55400 < 55550(=55000+550)
+            btc_short_enabled=True,
         )
-        # 60030 < 60060(=60000+60)，不算上方 → 进入SHORT_ALLOWED分支
-        self.assertEqual(r.regime, MarketRegime.SHORT_ALLOWED)
+        self.assertEqual(r.regime, MarketRegime.LONG_ONLY_FORCE)
+        self.assertFalse(r.short_enabled)
 
-    def test_close_price_confirmation(self):
-        """使用收盘价确认而非实时价"""
+    def test_btc_gate_closed_always_long(self):
+        """BTC做空闸门关闭 → 永远只做多（即便价格低于日MA128）"""
         gate = DirectionGate(allow_short=True)
-        # 实时价在日MA200下方，但收盘价在上方 → LONG_PREFERRED
         r = gate.evaluate(
-            current_price=59000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=61000,  # 收盘价在上方
+            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=[59000, 58500, 58000],
+            btc_short_enabled=False,  # 闸门关闭
         )
         self.assertEqual(r.regime, MarketRegime.LONG_PREFERRED)
+        self.assertFalse(r.short_enabled)
 
-    def test_falls_back_to_current_price(self):
-        """无收盘价时回退到当前价"""
+    def test_falls_back_no_recent_closes_uses_current(self):
+        """无recent_daily_closes时回退到current_price判断周线位置"""
         gate = DirectionGate(allow_short=True)
         r = gate.evaluate(
-            current_price=58000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=None, last_weekly_close=None,
+            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=None,
+            btc_short_enabled=True,
         )
+        # 58000 > 周MA200(55000)+buffer(550) → 不在周线缓冲带内 → SHORT_ALLOWED
         self.assertEqual(r.regime, MarketRegime.SHORT_ALLOWED)
+        self.assertTrue(r.short_enabled)
+
+    def test_valid_breakdown_3_days_close_below_ma128(self):
+        """_check_valid_breakdown: 连续3日收盘价低于MA128 → 有效跌破"""
+        gate = DirectionGate(allow_short=True)
+        self.assertTrue(gate._check_valid_breakdown(
+            [61000, 60500, 59000, 58500, 58000], 60000
+        ))
+        self.assertFalse(gate._check_valid_breakdown(
+            [61000, 60500, 60100], 60000  # 只有2日低于
+        ))
+        self.assertFalse(gate._check_valid_breakdown(
+            [59000, 58000], 60000  # 不足3日
+        ))
 
 
 class TestGateResultDict(unittest.TestCase):
@@ -136,20 +159,24 @@ class TestGateResultDict(unittest.TestCase):
 
     def test_to_dict_contains_all_fields(self):
         gate = DirectionGate(allow_short=True)
-        r = gate.evaluate(current_price=65000, daily_ma200=60000, weekly_ma200=55000)
+        r = gate.evaluate(current_price=65000, daily_ma128=60000, weekly_ma200=55000,
+                          btc_short_enabled=False)
         d = r.to_dict()
         self.assertIn("regime", d)
         self.assertIn("allowed_direction", d)
         self.assertIn("short_enabled", d)
         self.assertIn("long_enabled", d)
-        self.assertIn("daily_ma200", d)
+        self.assertIn("daily_ma128", d)
         self.assertIn("weekly_ma200", d)
         self.assertIn("current_price", d)
         self.assertIn("reason", d)
+        self.assertIn("price_vs_daily_ma128", d)
+        self.assertIn("price_vs_weekly_ma200", d)
 
     def test_to_dict_short_enabled_true(self):
         gate = DirectionGate(allow_short=True)
-        r = gate.evaluate(current_price=58000, daily_ma200=60000, weekly_ma200=55000)
+        r = gate.evaluate(current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+                          btc_short_enabled=True)
         d = r.to_dict()
         self.assertTrue(d["short_enabled"])
         self.assertTrue(d["long_enabled"])
@@ -249,10 +276,11 @@ class TestShortPositionExecution(unittest.TestCase):
 
         self.assertTrue(result)
         # 验证下单参数：做空用 sell + short
-        self.mock_client.place_order.assert_called_once()
-        call_kwargs = self.mock_client.place_order.call_args
-        self.assertEqual(call_kwargs[1]["side"], "sell")
-        self.assertEqual(call_kwargs[1]["pos_side"], "short")
+        # execute_open_position 现在会挂 1 张开仓单 + 3 档加仓网格预挂单
+        self.assertGreaterEqual(self.mock_client.place_order.call_count, 1)
+        open_call = self.mock_client.place_order.call_args_list[0]
+        self.assertEqual(open_call[1]["side"], "sell")
+        self.assertEqual(open_call[1]["pos_side"], "short")
 
         # 验证持仓状态记录了方向
         pos = self.state["positions"]["BTC"]
@@ -537,9 +565,11 @@ class TestLongBackwardCompatibility(unittest.TestCase):
         result = v15_trader.execute_open_position(self.mock_client, "BTC", decision, self.state)
 
         self.assertTrue(result)
-        call_kwargs = self.mock_client.place_order.call_args
-        self.assertEqual(call_kwargs[1]["side"], "buy")
-        self.assertEqual(call_kwargs[1]["pos_side"], "long")
+        # execute_open_position 现在会挂 1 张开仓单 + 3 档加仓网格预挂单
+        self.assertGreaterEqual(self.mock_client.place_order.call_count, 1)
+        open_call = self.mock_client.place_order.call_args_list[0]
+        self.assertEqual(open_call[1]["side"], "buy")
+        self.assertEqual(open_call[1]["pos_side"], "long")
 
         pos = self.state["positions"]["BTC"]
         self.assertEqual(pos["direction"], "LONG")
@@ -677,25 +707,28 @@ class TestShortStopLossLogic(unittest.TestCase):
 # ═══════════════════════════════════════════════════════════════════════
 
 class TestStateTransitions(unittest.TestCase):
-    """多空状态转移场景测试"""
+    """多空状态转移场景测试（MA128 + BTC风向标模型）"""
 
     def setUp(self):
         reset_gate()
         self.gate = DirectionGate(allow_short=True)
 
     def test_transition_long_to_short_allowed(self):
-        """从做多优先转为允许做空（跌破日MA200）"""
-        # 第1步：价格在日MA200上方
+        """从做多优先转为允许做空（BTC做空闸门打开）"""
+        # 第1步：BTC做空闸门关闭 → LONG_PREFERRED
         r1 = self.gate.evaluate(
-            current_price=65000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=64000,
+            current_price=65000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=[64000, 63500, 63000],
+            btc_short_enabled=False,
         )
         self.assertEqual(r1.regime, MarketRegime.LONG_PREFERRED)
+        self.assertFalse(r1.short_enabled)
 
-        # 第2步：跌破日MA200
+        # 第2步：BTC做空闸门打开 → SHORT_ALLOWED
         r2 = self.gate.evaluate(
-            current_price=58000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=59000,
+            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=[59000, 58500, 58000],
+            btc_short_enabled=True,
         )
         self.assertEqual(r2.regime, MarketRegime.SHORT_ALLOWED)
         self.assertTrue(r2.short_enabled)
@@ -703,20 +736,24 @@ class TestStateTransitions(unittest.TestCase):
     def test_transition_short_to_long_only_force(self):
         """从允许做空转为强制做多（跌至周MA200）"""
         r = self.gate.evaluate(
-            current_price=54000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=54500, last_weekly_close=54800,
+            current_price=54000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=[54500, 54000, 53500],
+            btc_short_enabled=True,
         )
         self.assertEqual(r.regime, MarketRegime.LONG_ONLY_FORCE)
         self.assertFalse(r.short_enabled)
         self.assertTrue(r.long_enabled)
 
     def test_transition_recovery_to_long_preferred(self):
-        """恢复到做多优先（价格涨回日MA200上方）"""
+        """恢复到做多优先（BTC做空闸门关闭）"""
+        # BTC做空闸门关闭 → LONG_PREFERRED
         r = self.gate.evaluate(
-            current_price=62000, daily_ma200=60000, weekly_ma200=55000,
-            last_daily_close=61500, last_weekly_close=60000,
+            current_price=62000, daily_ma128=60000, weekly_ma200=55000,
+            recent_daily_closes=[61500, 61000, 60500],
+            btc_short_enabled=False,
         )
         self.assertEqual(r.regime, MarketRegime.LONG_PREFERRED)
+        self.assertFalse(r.short_enabled)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,82 @@
+{
+  "scenario_backtest_time": "2026-07-31 10:14:34",
+  "bugfix_version": "yijing_exit_v2.2 (Bug1+Bug2 on top of v2.1)",
+  "total": 9,
+  "pass": 9,
+  "fail": 0,
+  "pass_rate_percent": 100.0,
+  "scenarios": [
+    {
+      "scenario": "Bug1-CaseA: 持仓2h < 48h阈值",
+      "bugfix_desc": "全局门控不应拦截正常持仓",
+      "before_fix": "(无此门控) yijing可能反复调整老仓位SL/TP",
+      "after_fix": "timed_out=False, yijing_available=True → 正常走yijing",
+      "passed": true,
+      "detail": "position_age=7200s < 172800s(48h)"
+    },
+    {
+      "scenario": "Bug1-CaseB: 持仓56h > 48h阈值",
+      "bugfix_desc": "全局门控强制降级 → yijing_available=False",
+      "before_fix": "(无此门控) yijing对超48h老仓位仍可能调整SL/TP，陷入无限循环",
+      "after_fix": "timed_out=True, yijing_available=False → 走classic稳妥处理",
+      "passed": true,
+      "detail": "position_age=201600s > 172800s(48h)"
+    },
+    {
+      "scenario": "Bug1-CaseC: 超48h后HOLD判定5条件整体False",
+      "bugfix_desc": "即使卦象信号良好，not_expired=False会让HOLD整体失败 → 降级classic",
+      "before_fix": "(老代码无全局门控) 可能走 yijing HOLD 或 调整SL分支，老仓位继续被调整",
+      "after_fix": "hold_5cond=False (not_expired=False) → 降级classic备用层",
+      "passed": true,
+      "detail": "risk_low=True, value_high=True, dir_consistent=True, loss_ok=True, not_expired=False"
+    },
+    {
+      "scenario": "Bug2-CaseA: 持仓30min(开仓初期) + hold_risk=0.55",
+      "bugfix_desc": "min_hold_sec=3600 → 开仓1h内不触发risk_gate（排除初期噪音）",
+      "before_fix": "触发=True action=reduce（thr=0.5 无保护期，刚开仓就减仓）",
+      "after_fix": "触发=False action=hold（age=30m<1h，min_hold保护拦截）",
+      "passed": true,
+      "detail": "修复前阈值long_thr=0.50 → 0.55≥0.50 立即触发；修复后min_hold=3600s拦截"
+    },
+    {
+      "scenario": "Bug2-CaseB: 持仓2h + hold_risk=0.55（中低风险）",
+      "bugfix_desc": "long_thr 0.5→0.65 → 中低风险正常波动不再触发减仓",
+      "before_fix": "触发=True action=reduce（thr=0.50过低，0.55就减仓）",
+      "after_fix": "触发=False action=hold（thr=0.65，0.55<0.65 正常持有）",
+      "passed": true,
+      "detail": "回测中95.6%触发率的核心修复点：把阈值从0.5提高到0.65，过滤大部分正常波动"
+    },
+    {
+      "scenario": "Bug2-CaseC: 持仓2h + hold_risk=0.70（高风险）",
+      "bugfix_desc": "高风险场景仍正常触发（未过度削弱risk_gate保护功能）",
+      "before_fix": "触发=True action=reduce",
+      "after_fix": "触发=True action=reduce",
+      "passed": true,
+      "detail": "0.70≥0.65 阈值，真正危险仍可正常减仓，功能未被削弱"
+    },
+    {
+      "scenario": "Bug2-CaseD: 持仓2h + 有效盈利4%（pnl_eff=4%）",
+      "bugfix_desc": "profit_bypass 3%→5% → 小额盈利（<5%）仍受risk_gate保护，利润<5%不急于让利润奔跑",
+      "before_fix": "profit_bypass_pct=0.03 → 盈利3%就跳过risk_gate（可能太早）",
+      "after_fix": "profit_bypass_pct=0.05 → 盈利≥5%才跳过risk_gate，让利润稳步积累",
+      "passed": true,
+      "detail": "修复前profit_bypass=3% → pnl_eff=4%>3% → 旁路跳过risk_gate; 修复后profit_bypass=5% → 4%<5% 不走旁路，但hold_risk=0.55<0.65 不触发"
+    },
+    {
+      "scenario": "回归-G1: VETO模式绕过1h门禁",
+      "bugfix_desc": "mode=veto → 不受1h缓存影响，真正重算",
+      "before_fix": "veto命中main缓存 → 返回NO_INTERVENE → VETO_CLOSE永不触发",
+      "after_fix": "veto.action=veto_close（正确否决classic噪音止损）",
+      "passed": true,
+      "detail": "main.action=no_intervene, veto.action=veto_close"
+    },
+    {
+      "scenario": "回归-G2: VETO模式不污染主缓存",
+      "bugfix_desc": "mode=veto → 不更新_eval_cache，不打乱main模式的1h节奏",
+      "before_fix": "veto会刷新last_eval_ts → main模式1h节奏被污染 → 下次评估延迟",
+      "after_fix": "cache_ts_before=1785464074.186733, cache_ts_after=1785464074.186733 → 未变化",
+      "passed": true,
+      "detail": "veto模式执行前后缓存时间戳完全一致"
+    }
+  ]
+}

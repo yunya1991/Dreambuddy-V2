@@ -49,6 +49,7 @@ class LLMBasedRecognizer(BaseRecognizer):
     """基于 LLM 的深度意图识别器
 
     只有当规则识别置信度不足时才调用，节省 Token。
+    支持注入工作记忆上下文，增强 LLM 的认知能力。
     """
 
     name = "llm_based"
@@ -59,12 +60,18 @@ class LLMBasedRecognizer(BaseRecognizer):
                  model: Optional[str] = None,
                  system_prompt: str = SYSTEM_PROMPT,
                  temperature: float = 0.3,
+                 working_memory: Optional[Any] = None,
                  **kwargs):
         super().__init__(**kwargs)
         self._llm = llm
         self._model = model
         self._system_prompt = system_prompt
         self._temperature = temperature
+        self._working_memory = working_memory
+
+    def set_working_memory(self, wm: Any) -> None:
+        """设置工作记忆（由 TradingAgent 调用）"""
+        self._working_memory = wm
 
     @property
     def llm(self) -> LLMClient:
@@ -78,7 +85,11 @@ class LLMBasedRecognizer(BaseRecognizer):
         try:
             with timer:
                 user_msg = self._build_user_prompt(_input)
-                messages = make_messages(system=self._system_prompt, user=user_msg)
+                
+                # 注入工作记忆上下文到 System Prompt
+                system_prompt = self._inject_working_memory()
+                
+                messages = make_messages(system=system_prompt, user=user_msg)
 
                 resp = self.llm.chat(
                     messages,
@@ -102,6 +113,27 @@ class LLMBasedRecognizer(BaseRecognizer):
                 tokens_used=0,
                 level=self.level,
             )
+
+    def _inject_working_memory(self) -> str:
+        """将工作记忆上下文注入到 System Prompt
+        
+        Returns:
+            增强后的 System Prompt
+        """
+        if self._working_memory is None:
+            return self._system_prompt
+        
+        try:
+            # 获取工作记忆的上下文字符串
+            wm_context = self._working_memory.get_prompt_context()
+            
+            # 组合：原始 System Prompt + 工作记忆上下文
+            enhanced_prompt = f"{self._system_prompt}\n\n---\n\n{wm_context}"
+            
+            return enhanced_prompt
+        except Exception:
+            # 静默失败，返回原始 prompt
+            return self._system_prompt
 
     def _build_user_prompt(self, _input: IntentInput) -> str:
         """构建用户提示词"""
@@ -172,21 +204,25 @@ class LLMBasedRecognizer(BaseRecognizer):
             return self._uncertain(f"无法解析 LLM 响应: {text[:100]}")
 
     def _chain_to_nodes(self, chain: str, intent_type: str) -> List[str]:
-        """链标识 → 节点序列"""
+        """链标识 → 节点序列
+
+        注意: A5(战术执行) 和 A9(离场策略) 必须包含,
+        否则无法生成 trade_order 和止损止盈记录
+        """
         chain = chain.upper()
         if chain == "A":
-            return ["A1", "A2", "A3", "A4"]
+            return ["A1", "A2", "A3", "A4", "A5", "A9"]
         elif chain == "F":
-            return ["F1", "F2", "F3", "A2", "A3", "A4"]
+            return ["F1", "F2", "F3", "A2", "A3", "A4", "A5", "A9"]
         elif chain == "C":
-            return ["C1", "C2", "A3", "A4"]
+            return ["C1", "C2", "A3", "A4", "A5", "A9"]
         elif chain == "MIXED":
-            return ["A1", "F1", "C1", "A2", "A3", "A4"]
+            return ["A1", "F1", "C1", "A2", "A3", "A4", "A5", "A9"]
         # 默认按意图类型推断
         definition = get_intent_definition(intent_type)
         chain = definition.get("chain", "A")
         if chain == "A":
-            return ["A1", "A2", "A3", "A4"]
+            return ["A1", "A2", "A3", "A4", "A5", "A9"]
         elif chain == "F":
-            return ["F1", "F2", "F3", "A2", "A3", "A4"]
-        return ["A1", "A2", "A3", "A4"]
+            return ["F1", "F2", "F3", "A2", "A3", "A4", "A5", "A9"]
+        return ["A1", "A2", "A3", "A4", "A5", "A9"]

@@ -10,11 +10,18 @@
 - 备用路径：yijing_hexagram is None → 直接调用 classic
 
 决策原则（主离场模式）：
-1. 卦象 risk_level=高 + 方向冲突 + 风险分≥0.80 → FORCE_CLOSE
-2. 卦象价值分>0.70 + 成长期/成熟期 + 飞龙在天/或跃在渊 + 已盈利 → RAISE_TP
+1. 卦象 risk_level=高 + 方向冲突 + 风险分≥0.75 → FORCE_CLOSE（硬强制）
+   软强制：风险分≥0.70 且 <0.75 + 方向冲突 + 持仓≥15min 或 亏损≤-3% → FORCE_CLOSE
+   冷静期内（持仓<30min 且 亏损>-2%）→ FORCE_CLOSE 降级为 TIGHTEN_SL
+2. 卦象价值分>0.58 + 成长期/成熟期 + 飞龙在天/或跃在渊 + 已盈利 → RAISE_TP
 3. 卦象风险分<0.35 + 价值分>0.60 + 方向一致 + 亏损未破-3% + 未超48h → HOLD
 4. 其他情况 → NO_INTERVENE，降级调用 classic 备用层
 5. 无卦象数据 → polling_trader 直接调用 classic（fail-open）
+
+评估模式（v2.1 P0修复）：
+- main 模式：主离场评估，遵守 1h 节奏门禁，结果写入缓存
+- veto 模式：classic 决定 CLOSE/REDUCE 后的二次否决评估，绕过 1h 门禁，不写缓存
+  （否则 veto 会被主评估的 1h 缓存吞掉，导致 VETO_CLOSE/VETO_REDUCE 永不触发）
 """
 
 from __future__ import annotations
@@ -35,6 +42,7 @@ class YijingExitAction(Enum):
     LOWER_TP = "lower_tp"          # 降低止盈（风险升高时，提前锁定利润）
     ADJUST_SL_TP = "adjust_sl_tp"  # 同时调整止损止盈
     FORCE_CLOSE = "force_close"    # 强制离场（卦象极度危险）
+    TIGHTEN_SL = "tighten_sl"      # 收紧止损（风险升高时缩小止损空间保本）
 
 
 @dataclass
@@ -61,19 +69,31 @@ class YijingExitDecision:
 
 @dataclass
 class YijingExitConfig:
-    """易经离场配置"""
+    """易经离场配置
+
+    v3.0 架构调整（用户需求：按1h收盘价评估，1h内只用开仓SL/TP防护）：
+    - 易经风险/价值评估仅在1h边界（基于开仓时间的整点）才重新计算
+    - 持仓未满1h：完全不干预，只用开仓时设置的静态止盈止损
+    - 持仓≥1h后：每隔1h评估一次；两次评估之间的1h窗口内，易经不调整SL/TP
+    """
+    # ── 1h评估节奏控制（v3.0核心）──
+    # 评估间隔=3600s=1h；同时规定持仓未满1h彻底不评估
+    eval_interval_sec: float = 3600.0          # 两次易经评估的最小间隔（1h）
+    min_position_age_for_eval_sec: float = 3600.0  # 持仓至少满1h才允许首次易经评估
+
     # ── 风险评分权重 ──
-    weight_risk_level: float = 0.35        # risk_level 高/中/低
-    weight_phase: float = 0.25            # current_phase 六阶段
-    weight_development: float = 0.20      # development_stage 四阶段
-    weight_direction_consistency: float = 0.20  # 卦象方向与持仓方向
+    # v2.1优化：降低phase/stage的权重（基于kline计算，非稳定信号），提高risk_level和direction（卦象固有属性更可靠）
+    weight_risk_level: float = 0.40        # risk_level 高/中/低（卦象固有风险）
+    weight_phase: float = 0.18            # current_phase 六阶段（权重降低，kline噪音）
+    weight_development: float = 0.18      # development_stage 四阶段（权重降低）
+    weight_direction_consistency: float = 0.24  # 卦象方向与持仓方向（提高，最核心的风险信号）
 
     # ── 否决阈值 ──
     # 否决 classic CLOSE/REDUCE 的条件：风险低 + 价值高 + 持仓未破关键位
     veto_risk_threshold: float = 0.35     # yijing_risk_score < 此值才允许否决
     veto_value_threshold: float = 0.60    # yijing_value_score > 此值才允许否议
     veto_max_loss_pct: float = -0.03       # 亏损超过 -3% 不否决（让 classic 止损生效）
-    veto_max_hold_sec: float = 172800      # 持仓超过 48h 不否决
+    veto_max_hold_sec: float = 104400      # 持仓超过 29h 不否决（回测最佳持仓时间）
 
     # ── 提高止盈阈值 ──
     raise_tp_min_profit_pct: float = 0.02  # 至少盈利 2% 才考虑提高 TP
@@ -91,9 +111,31 @@ class YijingExitConfig:
     lower_tp_max_risk_score: float = 0.60  # 风险分 > 0.60 才降低 TP
     lower_tp_adjust_pct: float = 0.30     # TP 下调 30%
 
+    # ── 收紧止损阈值（风险升高时缩小止损空间保本）──
+    tighten_sl_min_risk_score: float = 0.35  # 风险分 >= 此值才考虑收紧
+    tighten_sl_max_profit_pct: float = 0.01  # 盈利不超过 1% 才收紧（未盈利或微利）
+    tighten_sl_adjust_pct: float = 0.30      # SL 收紧 30%（止损空间缩小 30%）
+
     # ── 强制离场阈值 ──
-    force_close_risk_threshold: float = 0.65  # 风险分 > 0.65 且方向冲突 → 强制 close
-    # P1修复：从0.80下调到0.65，使high风险+方向冲突的卦象能触发FORCE_CLOSE
+    # v2.1优化：从0.65提高到0.75，避免risk=66%（中高风险）就仓促平仓
+    # 真正的强制平仓只留给极端危险场景（risk>=75%且明确方向反转）
+    force_close_risk_threshold: float = 0.75
+    # 软强制阈值：风险>0.70但<0.75时，若满足冷静期/盈亏条件仍可force_close
+    force_close_soft_risk_threshold: float = 0.70
+    force_close_min_loss_pct: float = -0.03   # 软强制时盈亏须超过-3%（跌破硬止损才开）
+    force_close_min_age_sec: float = 900      # 软强制时持仓至少15分钟才开
+
+    # ── 持仓冷静期 ──
+    # v2.1新增：开仓后短时间内卦象波动很正常（kline还没走出来），给一定保护
+    cooldown_age_sec: float = 1800          # 持仓30分钟内不触发普通FORCE_CLOSE（硬止损除外）
+    cooldown_max_loss_pct: float = -0.02    # 冷静期内亏损超过-2%，冷静期保护失效（允许止损）
+    cooldown_protect_force_close: bool = True  # 冷静期内FORCE_CLOSE降级为TIGHTEN_SL
+
+    # ── TRANSITIONING 特殊处理 ──
+    # v2.1新增：TRANSITIONING=转折中，不是明确反转，不应直接当方向冲突触发FORCE_CLOSE
+    # 降级为"风险偏高"处理：收紧止损，而非强制平仓
+    transitioning_not_direction_conflict: bool = True
+    transitioning_dir_risk: float = 0.50   # TRANSITIONING 方向风险（原为0.60，降为中性0.50）
 
     # ── 卦象阶段映射 ──
     # current_phase 六阶段的风险/价值（易经六爻）
@@ -141,13 +183,19 @@ class YijingExitConfig:
         "UP": {"long": 0.20, "short": 0.85},    # UP 卦做多：风险低；做空：风险高
         "DOWN": {"long": 0.85, "short": 0.20},  # DOWN 卦做空：风险低；做多：风险高
         "FLAT": {"long": 0.50, "short": 0.50},  # FLAT 中性
-        "TRANSITIONING": {"long": 0.60, "short": 0.60},  # 转换期风险中等
+        # v2.1优化：TRANSITIONING=转折中，不是明确反转，降为中性0.50，不再触发"方向冲突FORCE_CLOSE"
+        "TRANSITIONING": {"long": 0.50, "short": 0.50},
         "UNKNOWN": {"long": 0.50, "short": 0.50},
     })
 
 
 class YijingExitSystem:
     """易经推理专属离场系统
+
+    v3.0 架构（按1h收盘价评估）：
+    - 持仓<1h：完全不干预，只用开仓时静态SL/TP防护
+    - 持仓≥1h：每隔1h（1h K线收盘节奏）才重算一次风险/价值
+    - 两次评估之间的1h窗口：易经返回NO_INTERVENE，不调整SL/TP
 
     使用方式：
         yijing_decision = yijing_exit.evaluate(
@@ -157,16 +205,26 @@ class YijingExitSystem:
             current_price=...,
             position_age_sec=...,
             unrealized_pnl_pct=...,
-            classic_decision=classic_exit_decision,  # 可选，用于否决
+            coin="BTC",                    # v3.0新增：用于缓存key
+            open_time_sec=0.0,             # v3.0新增：开仓时间戳，用于对齐1h边界
         )
         if yijing_decision.action == YijingExitAction.VETO_CLOSE:
             # 否决 classic 的 CLOSE，保持持仓
             pass
     """
 
+    # 评估模式
+    MODE_MAIN = "main"  # 主离场评估：遵守 1h 节奏门禁 + 写缓存
+    MODE_VETO = "veto"  # 否决评估：绕过 1h 门禁 + 不写缓存（避免污染主决策缓存）
+
     def __init__(self, config: Optional[YijingExitConfig] = None):
         self.config = config or YijingExitConfig()
         self._log_callback = None
+        # v3.0新增：评估时间戳缓存
+        # key = f"{coin}:{pos_side}"  value = {last_eval_ts: float, last_decision: YijingExitDecision}
+        self._eval_cache: Dict[str, Dict[str, Any]] = {}
+        # 当前评估模式（供 _save_eval_cache 判断是否写缓存）
+        self._current_eval_mode: str = self.MODE_MAIN
 
     def set_log_callback(self, callback):
         """设置日志回调函数"""
@@ -175,6 +233,71 @@ class YijingExitSystem:
     def _log(self, msg: str, level: str = "INFO"):
         if self._log_callback:
             self._log_callback(msg, level)
+
+    def _cache_key(self, coin: str, pos_side: str) -> str:
+        return f"{coin}:{pos_side}"
+
+    def _save_eval_cache(self, coin: str, pos_side: str, decision: YijingExitDecision):
+        """写入评估缓存（仅在真正重算时调用）
+
+        veto 模式不写缓存：避免二次否决评估污染主决策的 1h 节奏缓存，
+        否则主评估下次会被门禁判定为"距上次评估不足1h"而沿用 veto 结果。
+        """
+        if self._current_eval_mode != self.MODE_MAIN:
+            return  # veto 模式不写缓存
+        if not coin:
+            return  # 未传coin则不缓存，保持向后兼容
+        key = self._cache_key(coin, pos_side)
+        self._eval_cache[key] = {
+            "last_eval_ts": time.time(),
+            "last_decision": decision,
+        }
+
+    def clear_cache(self, coin: str = "", pos_side: str = ""):
+        """清除缓存（平仓后调用，避免污染下次持仓）"""
+        if coin and pos_side:
+            key = self._cache_key(coin, pos_side)
+            self._eval_cache.pop(key, None)
+        elif coin:
+            # 清除该币种所有方向
+            keys = [k for k in self._eval_cache if k.startswith(f"{coin}:")]
+            for k in keys:
+                self._eval_cache.pop(k, None)
+        else:
+            self._eval_cache.clear()
+
+    def should_evaluate_now(self,
+                            position_age_sec: float,
+                            coin: str,
+                            pos_side: str,
+                            open_time_sec: float = 0.0) -> bool:
+        """v3.0核心：判断当前时刻是否应该执行易经评估
+
+        规则：
+        1. 持仓未满 min_position_age_for_eval_sec（默认1h）→ 不评估
+        2. 距上次评估 < eval_interval_sec（默认1h）→ 不评估
+        3. 否则 → 评估（对齐到自开仓以来的整1h边界）
+        """
+        cfg = self.config
+        now = time.time()
+
+        # 规则1：持仓未满最小年龄，彻底不评估
+        if position_age_sec < cfg.min_position_age_for_eval_sec:
+            return False
+
+        # 规则2：读取缓存中的上次评估时间
+        key = self._cache_key(coin, pos_side)
+        cache = self._eval_cache.get(key)
+        if cache is not None:
+            last_ts = cache.get("last_eval_ts", 0.0)
+            if (now - last_ts) < cfg.eval_interval_sec:
+                return False
+
+        # 规则3：对齐到开仓以来的整1h边界（允许±60s误差）
+        # 用position_age_sec已经相对开仓时间计算过了，直接判断是否跨越1h边界
+        # position_age_sec减去前面N个整小时后得到余数，当余数<轮询间隔时说明刚好到点
+        # 这里简化处理：只要满足min_age + 1h间隔条件就允许（实际整点由调用方轮询频率保证）
+        return True
 
     def evaluate(
         self,
@@ -186,6 +309,9 @@ class YijingExitSystem:
         unrealized_pnl_pct: float,
         classic_decision: Any = None,
         mfe_pnl_pct: float = 0.0,
+        coin: str = "",            # v3.0新增：缓存key
+        open_time_sec: float = 0.0, # v3.0新增：开仓时间戳
+        mode: str = "main",         # 评估模式：main=主离场(守1h门禁+写缓存) / veto=否决评估(绕门禁+不写缓存)
     ) -> YijingExitDecision:
         """评估离场决策
 
@@ -198,14 +324,64 @@ class YijingExitSystem:
             unrealized_pnl_pct: 未实现盈亏比例（如 0.02 = +2%）
             classic_decision: classic_exit_system 的决策（可选，用于否决判断）
             mfe_pnl_pct: 最大盈利幅度
+            coin: 币种代码（v3.0新增，用于1h节奏缓存）
+            open_time_sec: 开仓时间戳（v3.0新增）
+            mode: 评估模式
+                  - "main"：主离场评估，遵守 1h 节奏门禁，结果写入缓存
+                  - "veto"：classic 决定 CLOSE/REDUCE 后的二次否决评估，
+                    绕过 1h 门禁（避免被主评估缓存吞掉），不写缓存（避免污染主决策）
 
         Returns:
             YijingExitDecision
         """
+        # 记录当前模式，供 _save_eval_cache 判断是否写缓存
+        self._current_eval_mode = mode if mode in (self.MODE_MAIN, self.MODE_VETO) else self.MODE_MAIN
+
+        now_ts = time.time()
         decision = YijingExitDecision(
             action=YijingExitAction.NO_INTERVENE,
             reason="no_hexagram_data",
         )
+
+        # ── v3.0：1h节奏门禁（仅 main 模式生效；veto 模式绕过，否则二次否决评估会被缓存吞掉）──
+        cfg = self.config
+        if self._current_eval_mode == self.MODE_MAIN and not self.should_evaluate_now(position_age_sec, coin, pos_side, open_time_sec):
+            # 不评估：分两种日志
+            cache_key = self._cache_key(coin, pos_side)
+            cache = self._eval_cache.get(cache_key)
+
+            # 情况A：持仓不足1h → 明确告诉调用方"等待静态SL/TP"
+            if position_age_sec < cfg.min_position_age_for_eval_sec:
+                decision.action = YijingExitAction.NO_INTERVENE
+                decision.reason = (
+                    f"yijing_window_wait:持仓{position_age_sec/60:.1f}min"
+                    f"<{cfg.min_position_age_for_eval_sec/60:.0f}min，1h内仅用开仓静态SL/TP防护"
+                )
+                decision.should_log = False  # 避免每分钟刷屏
+                return decision
+
+            # 情况B：持仓≥1h但距上次评估不足1h → 沿用上一次决策（非活跃）
+            if cache is not None and "last_decision" in cache:
+                cached_decision = cache["last_decision"]
+                # 沿用缓存决策，但标记 should_log=False 防刷屏；同时保持NO_INTERVENE语义（不做任何动态调整）
+                decision.action = YijingExitAction.NO_INTERVENE
+                decision.reason = (
+                    f"yijing_window_cached:距上次评估"
+                    f"{(now_ts-cache['last_eval_ts'])/60:.1f}min<{cfg.eval_interval_sec/60:.0f}min"
+                    f"，窗口内不重算；缓存risk={cached_decision.yijing_risk_score:.2f}"
+                    f" value={cached_decision.yijing_value_score:.2f}"
+                )
+                decision.yijing_risk_score = cached_decision.yijing_risk_score
+                decision.yijing_value_score = cached_decision.yijing_value_score
+                decision.hexagram_name = cached_decision.hexagram_name
+                decision.should_log = False
+                return decision
+
+            # 其他情况（持仓≥1h但没缓存，理论上should_evaluate_now=True才对，这里防御性返回）
+            decision.action = YijingExitAction.NO_INTERVENE
+            decision.reason = "yijing_window_hold"
+            decision.should_log = False
+            return decision
 
         # ── 提取卦象字段 ──
         hex_data = self._extract_hexagram(hexagram)
@@ -242,28 +418,80 @@ class YijingExitSystem:
             direction_hint, {"long": 0.50, "short": 0.50}
         )
         direction_risk = direction_consistency.get(pos_side, 0.50)
-        decision.direction_consistent = direction_risk < 0.50
-        # 方向不一致时风险分加权提升
-        if not decision.direction_consistent:
+        # v2.1优化：TRANSITIONING=转折中，不是明确反向，视为方向不冲突
+        # 不再因TRANSITIONING而提升risk和判定dir_consistent=False
+        is_transitioning = (direction_hint == "TRANSITIONING")
+        if is_transitioning and self.config.transitioning_not_direction_conflict:
+            # 视为中性：既不冲突也不一致，避免"方向冲突FORCE_CLOSE"
+            decision.direction_consistent = True
+        else:
+            decision.direction_consistent = direction_risk < 0.50
+
+        # 方向不一致（不含TRANSITIONING）时风险分加权提升
+        if not decision.direction_consistent and not (is_transitioning and self.config.transitioning_not_direction_conflict):
             decision.yijing_risk_score = (
                 decision.yijing_risk_score * 0.7 + direction_risk * 0.3
             )
 
         decision.confidence = float(hex_data.get("confidence", 0.5) or 0.5)
 
-        # ── 1. 强制离场判定：卦象风险极高 + 方向冲突 ──
-        if (decision.yijing_risk_score >= self.config.force_close_risk_threshold
-                and not decision.direction_consistent):
+        # ── v2.1新增：持仓冷静期判断 ──
+        cfg = self.config
+        in_cooldown = (
+            cfg.cooldown_protect_force_close
+            and position_age_sec < cfg.cooldown_age_sec
+            and unrealized_pnl_pct > cfg.cooldown_max_loss_pct
+        )
+
+        # ── 1. 强制离场判定：卦象风险极高 + 明确方向冲突（不含TRANSITIONING）──
+        # v2.1优化：
+        #   - 硬强制门槛从0.65→0.75，留给TRANSITIONING真正的极端风险才触发
+        #   - 软强制（0.70~0.75）：持仓够久或亏损够深才触发
+        #   - 冷静期内：force_close降级为tighten_sl
+        direction_hard_conflict = (
+            not decision.direction_consistent
+            and not (is_transitioning and self.config.transitioning_not_direction_conflict)
+        )
+        risk = decision.yijing_risk_score
+        hard_force = risk >= cfg.force_close_risk_threshold and direction_hard_conflict
+        soft_force = (
+            risk >= cfg.force_close_soft_risk_threshold
+            and risk < cfg.force_close_risk_threshold
+            and direction_hard_conflict
+            and (position_age_sec >= cfg.force_close_min_age_sec
+                 or unrealized_pnl_pct <= cfg.force_close_min_loss_pct)
+        )
+
+        if hard_force or soft_force:
+            if in_cooldown:
+                # 冷静期保护：不降为force_close，只收紧止损
+                decision.action = YijingExitAction.TIGHTEN_SL
+                decision.sl_adjust_pct = cfg.tighten_sl_adjust_pct * 1.2  # 多加收一点
+                decision.reason = (
+                    f"yijing_cooldown_protect:原FORCE_CLOSE(risk={risk:.2f})→TIGHTEN_SL，"
+                    f"持仓仅{position_age_sec/60:.1f}min(保护{cfg.cooldown_age_sec/60:.0f}min内)"
+                    f"，盈亏={unrealized_pnl_pct:.2%}(>-2%保护)"
+                )
+                self._log(
+                    f"[易经离场][冷静期保护] {decision.hexagram_name} "
+                    f"原FORCE_CLOSE风险={risk:.2f} → 降级TIGHTEN_SL | "
+                    f"持仓={position_age_sec/60:.1f}min 盈亏={unrealized_pnl_pct:.2%}"
+                )
+                self._save_eval_cache(coin, pos_side, decision)
+                return decision
+
             decision.action = YijingExitAction.FORCE_CLOSE
+            level_tag = "HARD" if hard_force else "SOFT"
             decision.reason = (
-                f"yijing_force_close:risk={decision.yijing_risk_score:.2f},"
+                f"yijing_force_close[{level_tag}]:risk={risk:.2f},"
                 f"direction_conflict({direction_hint}_vs_{pos_side})"
             )
             self._log(
                 f"[易经离场][强制平仓] {decision.hexagram_name} "
-                f"风险={decision.yijing_risk_score:.2f} 价值={decision.yijing_value_score:.2f} "
-                f"卦象方向={direction_hint} 与持仓{pos_side}冲突"
+                f"风险={risk:.2f} 价值={decision.yijing_value_score:.2f} "
+                f"卦象方向={direction_hint} 与持仓{pos_side}冲突 [{level_tag}]"
             )
+            self._save_eval_cache(coin, pos_side, decision)
             return decision
 
         # ── 2. 提高止盈判定：卦象价值高 + 当前盈利 ──
@@ -285,6 +513,7 @@ class YijingExitSystem:
                     f"价值={decision.yijing_value_score:.2f} 卦象阶段={decision.current_phase}"
                     f"({decision.development_stage}) → TP 上浮 {decision.tp_adjust_pct:.0%}"
                 )
+                self._save_eval_cache(coin, pos_side, decision)
                 return decision
 
         # ── 3. 降低止损判定：卦象风险低 + 亏损可控 → 放宽止损空间 ──
@@ -306,6 +535,7 @@ class YijingExitSystem:
                     f"风险={decision.yijing_risk_score:.2f} 阶段={decision.development_stage} "
                     f"亏损={unrealized_pnl_pct:.2%} → SL 放宽 {decision.sl_adjust_pct:.0%}"
                 )
+                self._save_eval_cache(coin, pos_side, decision)
                 return decision
 
         # ── 4. 降低止盈判定：卦象风险升高 + 已有利润 → 提前锁定 ──
@@ -327,6 +557,32 @@ class YijingExitSystem:
                     f"风险={decision.yijing_risk_score:.2f} 阶段={decision.development_stage} "
                     f"盈利={unrealized_pnl_pct:.2%} → TP 下调 {abs(decision.tp_adjust_pct):.0%}"
                 )
+                self._save_eval_cache(coin, pos_side, decision)
+                return decision
+
+        # ── 4.5. 收紧止损判定：卦象风险升高 + 未盈利/微利 → 收紧止损保本 ──
+        # 场景：卦象显示风险正在升高，但还没到强制平仓的程度，且持仓未盈利或微利，
+        #       此时应收紧止损，减少潜在亏损
+        if (unrealized_pnl_pct < self.config.tighten_sl_max_profit_pct
+                and decision.yijing_risk_score >= self.config.tighten_sl_min_risk_score
+                and decision.yijing_risk_score < self.config.force_close_risk_threshold):
+            # 风险升高阶段：衰退期/成熟期，或警示阶段：九三/上九
+            warning_stage = decision.development_stage in ("成熟期", "衰退期")
+            warning_phase = decision.current_phase in ("九三", "上九")
+            if warning_stage or warning_phase:
+                decision.action = YijingExitAction.TIGHTEN_SL
+                decision.sl_adjust_pct = self.config.tighten_sl_adjust_pct
+                decision.reason = (
+                    f"yijing_tighten_sl:risk={decision.yijing_risk_score:.2f},"
+                    f"stage={decision.development_stage},phase={decision.current_phase},"
+                    f"profit={unrealized_pnl_pct:.2%}"
+                )
+                self._log(
+                    f"[易经离场][收紧止损] {decision.hexagram_name} "
+                    f"风险={decision.yijing_risk_score:.2f} 阶段={decision.development_stage} "
+                    f"盈亏={unrealized_pnl_pct:.2%} → SL 收紧 {decision.sl_adjust_pct:.0%}"
+                )
+                self._save_eval_cache(coin, pos_side, decision)
                 return decision
 
         # ── 5. 否决 classic 离场判定 ──
@@ -379,6 +635,7 @@ class YijingExitSystem:
                         f"卦象阶段={decision.current_phase} → 否决 classic 的 {classic_reason} "
                         f"盈亏={unrealized_pnl_pct:.2%} 持仓{position_age_sec/3600:.1f}h"
                     )
+                    self._save_eval_cache(coin, pos_side, decision)
                     return decision
 
         # ── 4. 默认不干预 ──
@@ -387,6 +644,7 @@ class YijingExitSystem:
             f"no_intervene:risk={decision.yijing_risk_score:.2f},"
             f"value={decision.yijing_value_score:.2f}"
         )
+        self._save_eval_cache(coin, pos_side, decision)
         return decision
 
     def _calc_risk_score(

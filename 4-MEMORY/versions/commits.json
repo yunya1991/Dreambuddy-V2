@@ -1,0 +1,92 @@
+{
+  "20260728_213356_6c451337": {
+    "commit_id": "20260728_213356_6c451337",
+    "parent_id": "",
+    "timestamp": "2026-07-28T13:33:56.143250+00:00",
+    "author": "trae",
+    "message": "初始版本：P0归档TL-006/TL-007后",
+    "files": {
+      "CORE.md": "5d62e0381ecba5e1",
+      "1-原则记忆/ENGINEERING_PRINCIPLES.md": "797b6d58544cf4b3",
+      "2-方法论记忆/A1_RESEARCH_METHOD.md": "3c8e8c032675c35d",
+      "2-方法论记忆/A8_THEORY_PRACTICE.md": "98c94ee12372cd3f",
+      "2-方法论记忆/CONTRADICTION_METHOD.md": "78e0b9dd1aca57e7",
+      "5-通用经验/TECH_LESSONS.md": "7301c73c143c7b77",
+      "5-通用经验/PROCESS_LESSONS.md": "20bc907a0a0254c8",
+      "5-通用经验/BEST_PRACTICES.md": "03f9d3bffdb7e924",
+      "5-通用经验/ANTI_PATTERNS.md": "a4eaafd576e324ee"
+    }
+  },
+  "20260728_213410_3419376c": {
+    "commit_id": "20260728_213410_3419376c",
+    "parent_id": "20260728_213356_6c451337",
+    "timestamp": "2026-07-28T13:34:10.702395+00:00",
+    "author": "trae",
+    "message": "测试变更：CORE.md添加测试行",
+    "files": {
+      "CORE.md": "252062fa54fbc680",
+      "1-原则记忆/ENGINEERING_PRINCIPLES.md": "797b6d58544cf4b3",
+      "2-方法论记忆/A1_RESEARCH_METHOD.md": "3c8e8c032675c35d",
+      "2-方法论记忆/A8_THEORY_PRACTICE.md": "98c94ee12372cd3f",
+      "2-方法论记忆/CONTRADICTION_METHOD.md": "78e0b9dd1aca57e7",
+      "5-通用经验/TECH_LESSONS.md": "7301c73c143c7b77",
+      "5-通用经验/PROCESS_LESSONS.md": "20bc907a0a0254c8",
+      "5-通用经验/BEST_PRACTICES.md": "03f9d3bffdb7e924",
+      "5-通用经验/ANTI_PATTERNS.md": "a4eaafd576e324ee"
+    }
+  },
+  "20260728_213441_37ad0e80": {
+    "commit_id": "20260728_213441_37ad0e80",
+    "parent_id": "20260728_213410_3419376c",
+    "timestamp": "2026-07-28T13:34:41.585131+00:00",
+    "author": "rollback",
+    "message": "回滚前备份 → 20260728",
+    "files": {
+      "CORE.md": "252062fa54fbc680",
+      "1-原则记忆/ENGINEERING_PRINCIPLES.md": "797b6d58544cf4b3",
+      "2-方法论记忆/A1_RESEARCH_METHOD.md": "3c8e8c032675c35d",
+      "2-方法论记忆/A8_THEORY_PRACTICE.md": "98c94ee12372cd3f",
+      "2-方法论记忆/CONTRADICTION_METHOD.md": "78e0b9dd1aca57e7",
+      "5-通用经验/TECH_LESSONS.md": "7301c73c143c7b77",
+      "5-通用经验/PROCESS_LESSONS.md": "20bc907a0a0254c8",
+      "5-通用经验/BEST_PRACTICES.md": "03f9d3bffdb7e924",
+      "5-通用经验/ANTI_PATTERNS.md": "a4eaafd576e324ee"
+    }
+  },
+  "20260728_213856_593a02b2": {
+    "commit_id": "20260728_213856_593a02b2",
+    "parent_id": "20260728_213441_37ad0e80",
+    "timestamp": "2026-07-28T13:38:56.342547+00:00",
+    "author": "trae",
+    "message": "P1 MemOS版本控制端到端验证检查点",
+    "files": {
+      "CORE.md": "5d62e0381ecba5e1",
+      "1-原则记忆/ENGINEERING_PRINCIPLES.md": "797b6d58544cf4b3",
+      "2-方法论记忆/A1_RESEARCH_METHOD.md": "3c8e8c032675c35d",
+      "2-方法论记忆/A8_THEORY_PRACTICE.md": "98c94ee12372cd3f",
+      "2-方法论记忆/CONTRADICTION_METHOD.md": "78e0b9dd1aca57e7",
+      "5-通用经验/TECH_LESSONS.md": "7301c73c143c7b77",
+      "5-通用经验/PROCESS_LESSONS.md": "20bc907a0a0254c8",
+      "5-通用经验/BEST_PRACTICES.md": "03f9d3bffdb7e924",
+      "5-通用经验/ANTI_PATTERNS.md": "a4eaafd576e324ee"
+    }
+  },
+  "20260731_121508_438084ea": {
+    "commit_id": "20260731_121508_438084ea",
+    "parent_id": "20260728_213856_593a02b2",
+    "timestamp": "2026-07-31T04:15:08.097471+00:00",
+    "author": "trae",
+    "message": "consolidate修复前快照",
+    "files": {
+      "CORE.md": "b6cc427efb49f6c1",
+      "1-原则记忆/ENGINEERING_PRINCIPLES.md": "797b6d58544cf4b3",
+      "2-方法论记忆/A1_RESEARCH_METHOD.md": "3c8e8c032675c35d",
+      "2-方法论记忆/A8_THEORY_PRACTICE.md": "98c94ee12372cd3f",
+      "2-方法论记忆/CONTRADICTION_METHOD.md": "78e0b9dd1aca57e7",
+      "5-通用经验/TECH_LESSONS.md": "7301c73c143c7b77",
+      "5-通用经验/PROCESS_LESSONS.md": "20bc907a0a0254c8",
+      "5-通用经验/BEST_PRACTICES.md": "03f9d3bffdb7e924",
+      "5-通用经验/ANTI_PATTERNS.md": "a4eaafd576e324ee"
+    }
+  }
+}

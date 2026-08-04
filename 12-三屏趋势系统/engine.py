@@ -1323,6 +1323,11 @@ def compute_trend_signal_from_dataframes(
             decision["position"]["position_pct"] = v4_position_pct
             final_direction = v4_direction
             adjusted_position_pct = v4_position_pct
+            # V4 覆盖时同步更新 confidence，避免日志出现"confidence=80% 仍 WAIT"的误读
+            # - V4 空仓(WAIT/NEUTRAL) → confidence 置 0，与 action 一致
+            # - V4 有仓位(ENTER_LONG/SHORT) → 保留三屏融合 confidence 作为风控参考
+            if v4_action == "WAIT":
+                final_confidence = 0.0
     except Exception as e:
         v4_strategy_info = {
             "enabled": False,
@@ -1578,6 +1583,12 @@ def compute_full_trading_signal(
         "close": [c["c"] for c in daily],
         "volume": [c["vol"] for c in daily],
     })
+    # 设置 DatetimeIndex：V4 主策略(halving_top_exit_strategy)依赖 prices.index[i] 为 pd.Timestamp
+    # 用于减半周期阶段判断(_get_halving_phase)，缺失会导致 TypeError: Timestamp <= int
+    # 注意：BTC_HALVING_DATES 是 tz-naive，这里必须用 tz-naive 以避免 tz-naive/tz-aware 比较错误
+    if daily and "ts" in daily[0]:
+        daily_df.index = pd.to_datetime([c["ts"] for c in daily], unit="ms").tz_localize(None)
+
     weekly_df = pd.DataFrame({
         "open": [c["o"] for c in weekly],
         "high": [c["h"] for c in weekly],
@@ -1585,6 +1596,8 @@ def compute_full_trading_signal(
         "close": [c["c"] for c in weekly],
         "volume": [c["vol"] for c in weekly],
     }) if weekly else pd.DataFrame()
+    if weekly and "ts" in weekly[0]:
+        weekly_df.index = pd.to_datetime([c["ts"] for c in weekly], unit="ms").tz_localize(None)
 
     fundamental_data = fetch_fundamental_data(symbol)
 
@@ -1658,6 +1671,9 @@ def compute_full_trading_signal(
                     "close": [c["c"] for c in btc_daily_raw],
                     "volume": [c["vol"] for c in btc_daily_raw],
                 })
+                # 同步设置 DatetimeIndex（与 daily_df 保持一致，tz-naive）
+                if "ts" in btc_daily_raw[0]:
+                    btc_daily_df.index = pd.to_datetime([c["ts"] for c in btc_daily_raw], unit="ms").tz_localize(None)
             if btc_weekly_raw:
                 btc_weekly_df = pd.DataFrame({
                     "open": [c["o"] for c in btc_weekly_raw],
@@ -1666,6 +1682,8 @@ def compute_full_trading_signal(
                     "close": [c["c"] for c in btc_weekly_raw],
                     "volume": [c["vol"] for c in btc_weekly_raw],
                 })
+                if "ts" in btc_weekly_raw[0]:
+                    btc_weekly_df.index = pd.to_datetime([c["ts"] for c in btc_weekly_raw], unit="ms").tz_localize(None)
         except Exception:
             pass
 

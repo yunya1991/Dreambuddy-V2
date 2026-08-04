@@ -1,11 +1,11 @@
 """Aster 执行器 — 趋势策略专用
 
 用途：
-    trend-system 独立 aster 环境的下单执行模块，
+    12-三屏趋势系统 独立 aster 环境的下单执行模块，
     与 ab-trading 的 Hyperliquid/OKX 链路隔离。
 
 核心功能：
-    - 加载 trend-system/.env 中的 aster 凭证
+    - 加载 12-三屏趋势系统/.env 中的 aster 凭证
     - 封装 ml_trade_service 的下单接口
     - 支持市价单、止盈止损单
     - 账户与持仓查询
@@ -17,7 +17,7 @@
     result = executor.place_market_order("BTC", "long", 10.0)  # 10 USDT 名义价值
     pos = executor.get_positions()
 
-文件: trend-system/live/aster_executor.py
+文件: 12-三屏趋势系统/live/aster_executor.py
 """
 
 import os
@@ -29,7 +29,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-# 加载 trend-system/.env
+# 加载 12-三屏趋势系统/.env
 ENV_FILE = Path(__file__).parent.parent / ".env"
 if ENV_FILE.exists():
     with open(ENV_FILE) as f:
@@ -92,7 +92,7 @@ class AsterConfig:
 class AsterExecutor:
     """Aster 执行器
 
-    封装 ml_trade_service 的下单接口，专门为 trend-system 设计。
+    封装 ml_trade_service 的下单接口，专门为 12-三屏趋势系统 设计。
     """
 
     def __init__(self, config: AsterConfig = None):

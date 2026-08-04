@@ -1,0 +1,24 @@
+{
+  "updated_at": "2026-07-29T07:53:39.554483",
+  "memory_count": 1,
+  "schema_version": 2,
+  "memories": [
+    {
+      "memory_id": "GM-INF-001",
+      "content": "信息更新需要及时同步到相关文档和记忆单元，确保信息一致性",
+      "category": "principle",
+      "confidence": 0.7125,
+      "quality_level": "B",
+      "verify_count": 1,
+      "conflict_count": 0,
+      "beta_alpha": 2,
+      "beta_beta": 1,
+      "created_at": "2026-07-27T11:05:04.472846",
+      "last_updated": "2026-07-27T11:05:04.472846",
+      "source": "系统设计",
+      "tags": [
+        "信息同步"
+      ]
+    }
+  ]
+}

@@ -148,7 +148,7 @@ class Reflector:
 
         # 4. 提前终止检查
         if self._enable_early_terminate:
-            early = self._check_early_terminate(current_node_id, result, state, executed_count)
+            early = self._check_early_terminate(current_node_id, result, state, executed_count, graph)
             if early:
                 return early
 
@@ -248,9 +248,43 @@ class Reflector:
 
         return None
 
+    # 执行类节点: 不能被 early_terminate 跳过
+    # A5=战术执行(生成trade_order), A9=离场策略(记录止损止盈)
+    NON_TERMINATABLE_NODES = {"A5", "A9"}
+
     def _check_early_terminate(self, current_node_id: str, result: NodeResult,
-                               state: State, executed_count: int) -> Optional[ReflectDecision]:
-        """检查是否可以提前终止"""
+                               state: State, executed_count: int,
+                               graph: Optional[Graph] = None) -> Optional[ReflectDecision]:
+        """检查是否可以提前终止
+
+        保护规则: A5(战术执行) 和 A9(离场策略) 是必须执行的节点,
+        即使置信度极高也不允许跳过,否则无法生成 trade_order。
+        """
+        # 如果当前节点是 A5/A9,不提前终止
+        if current_node_id in self.NON_TERMINATABLE_NODES:
+            return None
+
+        # 检查剩余未执行节点中是否有 A5/A9
+        if graph is not None:
+            try:
+                # SequentialGraph 用 all_nodes() 返回节点列表
+                all_nodes = []
+                if hasattr(graph, "all_nodes"):
+                    all_nodes = [getattr(n, "node_id", str(n)) for n in graph.all_nodes()]
+                elif hasattr(graph, "_nodes"):
+                    nodes_attr = graph._nodes
+                    if isinstance(nodes_attr, dict):
+                        all_nodes = list(nodes_attr.keys())
+                    elif isinstance(nodes_attr, list):
+                        all_nodes = [getattr(n, "node_id", str(n)) for n in nodes_attr]
+                # 从 state.results 获取已执行节点
+                executed_ids = set(state.results.keys()) if state.results else set()
+                remaining = [nid for nid in all_nodes if nid not in executed_ids]
+                if any(nid in self.NON_TERMINATABLE_NODES for nid in remaining):
+                    return None
+            except Exception:
+                pass  # 无法获取剩余节点时不阻断保护逻辑
+
         if result.confidence >= self.CONFIDENCE_TERMINATE and executed_count >= 3:
             return ReflectDecision(
                 action=ReflectAction.EARLY_TERMINATE,

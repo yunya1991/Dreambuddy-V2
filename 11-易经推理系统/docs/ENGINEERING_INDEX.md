@@ -63,6 +63,7 @@
 | 交易执行 | `polling_trader.py` → `PollingTrader` | 顶层 |
 | 离场决策（主） | `yijing_exit_system.py` → `YijingExitSystem` | 顶层（v2架构反转后为主） |
 | 离场决策（备用） | `classic_exit_system.py` → `ClassicExitSystem` | 顶层（无卦象或降级时调用） |
+| 离场决策（DreamOS） | `exit_module_adapter.py` → `YijingExitAdapter` | DreamOS（统一接口+三级卦象降级+9→4映射，详见 TECHNICAL_DESIGN §9.8） |
 | 震荡市增强 | `ranging_market_enhancer.py` → `RangingMarketEnhancer` | 顶层（BCRM信号后置增强） |
 | CBR 案例检索 | `cbr_engine.py` → `CBREngine` / `cbr_adapter.py` → `CBRSignalEnhancer` | 顶层（BCRM2辅助决策层） |
 | 系统诊断 | `inspect.py` → `InspectReport` | 顶层（启动自检 + 手动排障） |
@@ -870,7 +871,8 @@ OKX下单执行
     ↓
 持仓跟踪 → YijingExitSystem 主离场决策 (FORCE_CLOSE/RAISE_TP/HOLD)
     ├── 降级路径: NO_INTERVENE → 调用 ClassicExitSystem
-    └── 备用路径: 无卦象 → 直接调用 ClassicExitSystem (P0→P1→P2→P3)
+    ├── 备用路径: 无卦象 → 直接调用 ClassicExitSystem (P0→P1→P2→P3)
+    └── DreamOS路径: YijingExitAdapter → ExitModuleSelector 按场景择优 (详见 §9.8)
     ↓
 交易记录 → PerformanceTracker
     ↓

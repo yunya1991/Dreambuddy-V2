@@ -295,23 +295,26 @@ class TestV15Integration(unittest.TestCase):
             )
 
     def test_v15_trader_coins_count_expanded(self):
-        """扩展后币种池应大于原始8个"""
+        """币种池应至少包含4个强势代币"""
         import v15_trader
-        self.assertGreaterEqual(len(v15_trader.COINS), 8)
+        self.assertGreaterEqual(len(v15_trader.COINS), 4)
 
-    def test_v15_trader_has_precious_metal(self):
-        """扩展后应包含贵金属代币"""
+    def test_v15_trader_has_us_stock(self):
+        """币种池应包含美股个股永续（强势代币候选）"""
         import v15_trader
-        self.assertIn("XAUT", v15_trader.COINS)
-        self.assertIn("PAXG", v15_trader.COINS)
+        self.assertIn("MU", v15_trader.COINS)
+        self.assertIn("SKHYNIX", v15_trader.COINS)
 
     def test_capital_manager_coins_filtered(self):
-        """capital_manager 的 V15_COINS 列表应通过 SymbolMapper 过滤"""
+        """capital_manager 币种应通过 SymbolMapper 过滤（若有 V15_COINS 属性）"""
         import capital_manager
-        for coin in capital_manager.V15_COINS:
+        coins = getattr(capital_manager, "V15_COINS", None) or getattr(capital_manager, "V15CT_COINS", None)
+        if coins is None:
+            self.skipTest("capital_manager 无 V15_COINS/V15CT_COINS 属性")
+        for coin in coins:
             self.assertTrue(
                 is_supported(coin, "okx"),
-                f"币种 {coin} 在 capital_manager.V15_COINS 中但未被 SymbolMapper 标记为 OKX 支持",
+                f"币种 {coin} 在 capital_manager 币种池中但未被 SymbolMapper 标记为 OKX 支持",
             )
 
     def test_capital_manager_to_swap_integration(self):

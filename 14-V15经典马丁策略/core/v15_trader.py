@@ -120,6 +120,7 @@ BASE_TP_PCT = get_config_float("BASE_TP_PCT", 0.04)
 LEVERAGE = get_config_float("LEVERAGE", 5.0)
 MAX_CONCURRENT_POSITIONS = get_config_int("MAX_CONCURRENT_POSITIONS", 3)
 TOTAL_BUDGET = get_config_float("TOTAL_BUDGET", 260)
+ADDON_PCT = get_config_float("ADDON_PCT", 0.08)
 
 
 # ── 移动止盈参数（从贝叶斯优化活跃参数加载）──
@@ -148,6 +149,155 @@ _TRAILING = _load_trailing_params()
 # ── 通用风控引擎（13-通用风控模块接入）──
 # 影子模式：只输出风控结果，不阻断交易
 # 正式模式：RISK_GATE_ENABLED=true 时启用门禁
+# 实盘风控参数（2026-07-31 用户要求落地）
+V15_COOLDOWN_HOURS = get_config_int("V15_COOLDOWN_HOURS", 48)
+V15_FEISHU_ALERT_ENABLED = get_config_bool("V15_FEISHU_ALERT_ENABLED", True)
+V15_SYSTEM_NAME = "V15马丁实盘"
+
+# ── 飞书告警接入（复用 15-监控告警系统 模块）──
+def _init_feishu_alert():
+    """懒加载飞书告警模块，失败降级为本地日志"""
+    if not V15_FEISHU_ALERT_ENABLED:
+        return None
+    try:
+        alert_path = BASE_DIR.parent / "15-监控告警系统"
+        if str(alert_path) not in sys.path:
+            sys.path.insert(0, str(alert_path))
+        import feishu_alert as _feishu_module
+        _log("[飞书告警] 初始化成功")
+        # 直接持有模块，避免 type() 创建的实例把函数当方法调用(self注入)
+        return _feishu_module
+    except Exception as e:
+        _log(f"[飞书告警] 初始化失败，降级为本地日志: {e}")
+        return None
+
+_FEISHU_ALERT = None
+
+def _get_feishu_alert():
+    global _FEISHU_ALERT
+    if _FEISHU_ALERT is None:
+        _FEISHU_ALERT = _init_feishu_alert()
+    return _FEISHU_ALERT
+
+
+def _feishu_alert_v15(alert_type, level, message, details=None):
+    """V15飞书告警统一入口，失败静默降级"""
+    alert = _get_feishu_alert()
+    if alert is None:
+        _log(f"[告警-local][{level}] {message}")
+        return None
+    try:
+        return alert.send_alert(alert_type, level, message, details or {}, V15_SYSTEM_NAME)
+    except Exception as e:
+        _log(f"[飞书告警] 发送失败，降级为本地日志: {e} | {alert_type}|{level}|{message}")
+        return None
+
+
+# ── 冷却状态管理 ──
+def is_in_cooldown(state):
+    """判断是否处于交易冷却暂停期，返回 (是否暂停, 剩余小时, 原因)"""
+    cd_until = state.get("cooldown_until", "")
+    if not cd_until:
+        return False, 0.0, ""
+    try:
+        cd_dt = datetime.fromisoformat(cd_until.replace("Z", "+00:00"))
+    except Exception:
+        return False, 0.0, ""
+    now_utc = datetime.now(timezone.utc)
+    remain_sec = (cd_dt - now_utc).total_seconds()
+    if remain_sec <= 0:
+        return False, 0.0, ""
+    return True, remain_sec / 3600.0, state.get("cooldown_reason", "连续亏损超限")
+
+
+def enter_cooldown(state, reason: str, hours: int = None):
+    """进入交易冷却期，自动飞书告警（只在首次触发时告警）
+
+    并发安全：操作前从磁盘 reload 最新 state（避免多进程旧快照覆盖），
+    操作后立即 save_state 落盘。
+    """
+    hours = hours or V15_COOLDOWN_HOURS
+    now_utc = datetime.now(timezone.utc)
+    cd_until = now_utc.timestamp() + hours * 3600
+    # 从磁盘 reload 最新冷却状态，避免并发进程旧快照覆盖
+    latest = load_state()
+    if latest.get("cooldown_until"):
+        # 已有冷却记录，仅同步到传入的 state 对象，不重复写入
+        state["cooldown_until"] = latest["cooldown_until"]
+        state["cooldown_reason"] = latest.get("cooldown_reason", "")
+        state["cooldown_triggered_at"] = latest.get("cooldown_triggered_at", "")
+        return
+    cd_until_str = datetime.fromtimestamp(cd_until, tz=timezone.utc).isoformat()
+    state["cooldown_until"] = cd_until_str
+    state["cooldown_reason"] = reason
+    state["cooldown_triggered_at"] = now_utc.isoformat()
+    latest["cooldown_until"] = cd_until_str
+    latest["cooldown_reason"] = reason
+    latest["cooldown_triggered_at"] = now_utc.isoformat()
+    save_state(latest)
+    _log(f"[风控-冷却] 进入{hours}小时交易冷却暂停，原因: {reason}")
+    _log(f"[风控-冷却] 冷却至: {state['cooldown_until']}")
+    # 飞书告警：critical级别
+    consec = state.get("consecutive_losses", 0)
+    daily_pnl = state.get("daily_pnl", 0.0)
+    details = {
+        "连续亏损": f"{consec}次",
+        "冷却时长": f"{hours}小时",
+        "冷却至": state["cooldown_until"],
+        "日盈亏": f"{daily_pnl:.2f} USDT",
+        "持仓数": len(state.get("positions", {})),
+        "原因": reason,
+    }
+    alert = _get_feishu_alert()
+    if alert is not None:
+        try:
+            alert.notify_trading_halted(V15_SYSTEM_NAME, reason, consec, daily_pnl)
+        except Exception as e:
+            _log(f"[飞书告警] 暂停通知发送失败: {e}")
+    # 兜底再发一条（防止 notify_trading_halted 路径异常）
+    _feishu_alert_v15("trading", "critical",
+                     f"⚠️ 交易暂停{hours}h！{reason}", details)
+
+
+def exit_cooldown_if_expired(state):
+    """冷却期结束自动恢复交易，飞书通知恢复
+
+    并发安全：从磁盘 reload 最新冷却状态判断，避免旧快照误清冷却。
+    """
+    # 从磁盘 reload 最新冷却状态，避免旧快照导致误判
+    latest = load_state()
+    cd_until_disk = latest.get("cooldown_until", "")
+    if not cd_until_disk:
+        # 磁盘上无冷却记录，同步传入的 state 并返回
+        state["cooldown_until"] = ""
+        state["cooldown_reason"] = ""
+        return False
+    # 用磁盘最新值判断是否仍在冷却期
+    in_cd, remain, reason = is_in_cooldown(latest)
+    if in_cd:
+        # 仍在冷却期，同步到传入的 state，不可退出
+        state["cooldown_until"] = cd_until_disk
+        state["cooldown_reason"] = latest.get("cooldown_reason", "")
+        state["cooldown_triggered_at"] = latest.get("cooldown_triggered_at", "")
+        return False
+    # 冷却确已过期（磁盘时间已过）→ 清零并落盘
+    _log(f"[风控-冷却] 冷却期已结束，恢复正常交易（原因: {reason or '连续亏损超限'}）")
+    details = {
+        "冷却结束时间": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "原暂停原因": reason or "连续亏损超限",
+        "连续亏损清零": "是",
+    }
+    state["consecutive_losses"] = 0
+    state["cooldown_until"] = ""
+    state["cooldown_reason"] = ""
+    latest["consecutive_losses"] = 0
+    latest["cooldown_until"] = ""
+    latest["cooldown_reason"] = ""
+    save_state(latest)
+    _feishu_alert_v15("trading", "info", "✅ 冷却结束，恢复交易", details)
+    return True
+
+
 def _init_risk_engine():
     """初始化通用风控引擎（懒加载）"""
     try:
@@ -317,6 +467,14 @@ def load_state():
                     pos["open_price"] = pos.get("entry_price", 0)
                 if "vol_mult" not in pos:
                     pos["vol_mult"] = 1.0
+            # 兼容旧 state: 补充冷却/风控相关新字段
+            for f in ("cooldown_until", "cooldown_reason", "cooldown_triggered_at"):
+                if f not in state:
+                    state[f] = ""
+            if "consecutive_losses" not in state:
+                state["consecutive_losses"] = 0
+            if "total_equity" not in state:
+                state["total_equity"] = TOTAL_BUDGET
             return state
         except Exception:
             pass
@@ -328,6 +486,9 @@ def load_state():
         "last_poll": "",
         "consecutive_losses": 0,
         "last_capital_rebuild": "",
+        "cooldown_until": "",
+        "cooldown_reason": "",
+        "cooldown_triggered_at": "",
     }
 
 
@@ -335,6 +496,48 @@ def save_state(state):
     state["last_poll"] = datetime.now(timezone.utc).isoformat()
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2, ensure_ascii=False)
+
+
+def _on_loss_trade(state, coin: str, reason: str):
+    """统一的亏损交易处理：连亏计数递增、告警、触发冷却（≥6次则48h暂停）。
+    返回：(consecutive_losses, triggered_cooldown)
+    """
+    consec = state.get("consecutive_losses", 0) + 1
+    state["consecutive_losses"] = consec
+    threshold = get_config_int("V15_MAX_CONSECUTIVE_LOSSES", 6)
+
+    # 连亏告警（warning 或 critical）
+    if consec >= 3:
+        details = {
+            "币种": coin,
+            "连续亏损": f"{consec}/{threshold}次",
+            "原因": reason,
+            "日盈亏": f"{state.get('daily_pnl', 0.0):.2f} USDT",
+        }
+        alert = _get_feishu_alert()
+        if alert is not None:
+            try:
+                alert.notify_consecutive_losses(V15_SYSTEM_NAME, coin, consec, threshold)
+            except Exception as e:
+                _log(f"[飞书告警] 连亏通知失败: {e}")
+        if consec >= threshold:
+            _feishu_alert_v15("trading", "critical",
+                             f"🔴 {coin} 连续亏损 {consec}/{threshold} 次，达到阈值！", details)
+        else:
+            _feishu_alert_v15("trading", "warning",
+                             f"⚠️ {coin} 连续亏损 {consec}/{threshold} 次，接近阈值", details)
+
+    # 达到阈值 → 进入冷却（只在首次触发时进入，避免重复告警）
+    triggered_cooldown = False
+    if consec >= threshold and not state.get("cooldown_until"):
+        enter_cooldown(state, reason=f"连续{consec}次亏损达到阈值{threshold}笔")
+        triggered_cooldown = True
+
+    # 连亏触发资金优化（原有逻辑，保留）
+    if consec >= MAX_CONSECUTIVE_LOSSES_REBUILD:
+        trigger_capital_rebuild(state, reason=f"连续{consec}次亏损")
+
+    return consec, triggered_cooldown
 
 
 def get_v15_decision(coin):
@@ -347,7 +550,10 @@ def get_v15_decision(coin):
         if V15_ALLOW_SHORT:
             direction_ctx = _get_direction_ctx(coin)
 
-        return v15_decision(to_spot(coin), direction_ctx=direction_ctx)
+        # 美股个股永续在 OKX 无现货，用 swap 合约拉 K 线
+        from symbol_mapper import AssetCategory
+        inst = to_swap(coin) if get_category(coin) == AssetCategory.STOCK else to_spot(coin)
+        return v15_decision(inst, direction_ctx=direction_ctx)
     except Exception as e:
         _log(f"[{coin}] 决策失败: {e}")
         return {"action": "WAIT", "confidence": 0, "reasons": [str(e)]}
@@ -509,9 +715,26 @@ def execute_open_position(client, coin, decision, state):
         else:
             _log(f"[{coin}] 反弹检测未启用或做空方向，保持原始置信度{conf}%")
 
+        # 维度错配修复 v2（2026-07-31）：
+        # stop_loss_triggered 用日/周 MA200 判断，而开仓信号用 4H SMA 判断
+        # 马丁策略本就是逆势抄底，单均线触发时日/周 MA200 下方开多是正常场景
+        # 但 BELOW_ALL_MA_CONFIRMED（所有均线确认跌破）= 强下跌趋势，开仓即触发止损
+        # 逻辑矛盾：开仓允许 + 平仓立即止损 → 死循环（高频亏损根因）
+        # 修复：BELOW_ALL_MA_CONFIRMED 时拒绝开仓；其他单均线触发时仓位减半
+        risk_mult = 1.0
         if params["stop_loss_triggered"]:
-            _log(f"[{coin}] 止损触发({params['stop_loss_type']})，禁止开{direction}仓")
-            return False
+            sl_type = params["stop_loss_type"]
+            if sl_type == "BELOW_ALL_MA_CONFIRMED":
+                _log(
+                    f"[{coin}] 拒绝开仓: {sl_type}触发(所有均线确认跌破,强下跌趋势), "
+                    f"开仓即触发止损,避免死循环"
+                )
+                return False
+            risk_mult = 0.5
+            _log(
+                f"[{coin}] 风控提示: {sl_type}触发(日/周MA200下方), "
+                f"维度错配修复: 仓位倍数降至{risk_mult}x"
+            )
 
         tp_pct = params["take_profit_pct"]
         addon_pct = params["addon_pct"]
@@ -529,7 +752,7 @@ def execute_open_position(client, coin, decision, state):
             return False
 
         base_margin = alloc["base_usd"]
-        vol_mult = decision.get("vol_mult", 1.0)
+        vol_mult = decision.get("vol_mult", 1.0) * risk_mult
         order_margin = base_margin * vol_mult
         order_notional = order_margin * LEVERAGE
 
@@ -543,9 +766,10 @@ def execute_open_position(client, coin, decision, state):
         actual_margin = actual_notional / LEVERAGE
 
         adj = alloc.get("adjustments", {})
+        sl_display = f"${sl_price:.4f}" if sl_price else "无(仅止盈)"
         _log(
             f"[{coin}] 开仓 {direction} sz={sz}张 price={price} 保证金=${actual_margin:.2f} 名义=${actual_notional:.2f} "
-            f"TP={tp_pct*100:.2f}% SL={sl_type}@${sl_price} conf={conf}% "
+            f"TP={tp_pct*100:.2f}% SL={sl_type}@{sl_display} conf={conf}% "
             f"资金分配: 趋势={adj.get('strength_mult', 1.0):.2f}x 置信={adj.get('conf_mult', 1.0):.2f}x "
             f"波动={adj.get('vol_adjust', 1.0):.2f}x 综合={adj.get('combined_mult', 1.0):.2f}x "
             f"EMA={adj.get('elder_ray_direction', 'N/A')} "
@@ -592,6 +816,7 @@ def execute_open_position(client, coin, decision, state):
                 }
                 state["total_trades"] += 1
                 _sync_tp_sl_orders(client, coin, state["positions"][coin], price, tp_pct, sl_price)
+                _place_addon_grid_orders(client, coin, state["positions"][coin])
                 return True
             else:
                 _log(f"[{coin}] 开仓失败: {r.get('error', r)}")
@@ -750,6 +975,251 @@ def _get_dynamic_params(client, coin, direction="LONG"):
     }
 
 
+def _place_addon_grid_orders(client, coin, pos):
+    """开仓时预挂3档加仓限价单（马丁网格）
+
+    做多：在开仓价下方 -8%/-16%/-24% 挂买入限价单
+    做空：在开仓价上方 +8%/+16%/+24% 挂卖出限价单
+
+    每档加仓数量按金字塔资金分配（addon1_usd/addon2_usd/addon3_usd）计算。
+    挂单 ord_id 记录到 pos["addon_grid"] 供轮询时检查与调整。
+
+    Args:
+        client: OKX 客户端
+        coin: 币种
+        pos: 持仓信息 dict（含 open_price, direction, addon*_usd, inst_id）
+    """
+    if not AUTO_EXECUTE:
+        return
+
+    inst_id = pos["inst_id"]
+    direction = pos.get("direction", "LONG")
+    is_short = direction == "SHORT"
+    open_price = pos.get("open_price", pos.get("entry_price", 0))
+    if open_price <= 0:
+        return
+
+    addon_pct = pos.get("addon_pct", ADDON_PCT)
+    addon_budgets = [
+        pos.get("addon1_usd", 0),
+        pos.get("addon2_usd", 0),
+        pos.get("addon3_usd", 0),
+    ]
+    vol_mult = pos.get("vol_mult", 1.0)
+
+    lot_sz, ct_val = get_contract_info(client, inst_id)
+    pos_side = "short" if is_short else "long"
+    side = "buy" if not is_short else "sell"  # 做多加仓=买入, 做空加仓=卖出
+
+    grid_orders = []
+    for i in range(MAX_ADDONS):
+        addon_usd = addon_budgets[i] if i < len(addon_budgets) else 0
+        if addon_usd <= 0:
+            continue
+        addon_margin = addon_usd * vol_mult
+        addon_notional = addon_margin * LEVERAGE
+        # 第 i 档触发价格：开仓价下跌 (i+1)*addon_pct（做多）/ 上涨（做空）
+        trigger_pct = addon_pct * (i + 1)
+        if is_short:
+            grid_px = open_price * (1 + trigger_pct)
+        else:
+            grid_px = open_price * (1 - trigger_pct)
+        if grid_px <= 0:
+            continue
+        sz = calc_lot_sz(addon_notional, grid_px, lot_sz, ct_val)
+        if sz < lot_sz:
+            _log(f"[{coin}] 加仓网格#{i+1} 数量({sz}张)<最小单位({lot_sz}张), 跳过挂单")
+            continue
+        r = client.place_order(
+            inst_id=inst_id,
+            side=side,
+            ord_type="limit",
+            sz=sz,
+            px=grid_px,
+            td_mode="isolated",
+            pos_side=pos_side,
+            tag="v15addongrid",
+            reason=f"v15_martin_addon_grid_{i+1}",
+        )
+        if r.get("ok") or r.get("ord_id"):
+            ord_id = r.get("ord_id") or (r.get("raw") or {}).get("data", [{}])[0].get("ordId")
+            grid_orders.append({
+                "tier": i + 1,
+                "ord_id": ord_id,
+                "px": grid_px,
+                "sz": sz,
+                "addon_usd": addon_usd,
+                "trigger_pct": trigger_pct,
+                "status": "pending",
+            })
+            _log(
+                f"[{coin}] 加仓网格#{i+1} 挂单成功 {direction} {side} "
+                f"sz={sz}张 px=${grid_px:.4f} ({trigger_pct*100:.0f}%档) "
+                f"预算=${addon_usd:.2f} ord_id={ord_id}"
+            )
+        else:
+            _log(f"[{coin}] 加仓网格#{i+1} 挂单失败: {r.get('error', r)}")
+            grid_orders.append({
+                "tier": i + 1,
+                "ord_id": None,
+                "px": grid_px,
+                "sz": sz,
+                "addon_usd": addon_usd,
+                "trigger_pct": trigger_pct,
+                "status": "failed",
+            })
+
+    pos["addon_grid"] = grid_orders
+
+
+def _check_addon_grid_status(client, coin, pos):
+    """轮询时检查加仓网格挂单状态并动态调整
+
+    1. 查询 OKX 未成交订单，对比 pos["addon_grid"] 每档状态
+    2. 已成交档位 → 更新持仓（addons++, entry_price, sz），同步 TP/SL
+    3. 未成交但价格偏离 → 撤旧单重挂（动态调整）
+    4. 返回已成交的档位数（供 execute_addon 判断是否跳过）
+
+    Returns:
+        int: 本次轮询新成交的加仓档数
+    """
+    if not AUTO_EXECUTE:
+        return 0
+
+    grid = pos.get("addon_grid")
+    if not grid:
+        return 0
+
+    inst_id = pos["inst_id"]
+    direction = pos.get("direction", "LONG")
+    is_short = direction == "SHORT"
+    open_price = pos.get("open_price", pos.get("entry_price", 0))
+    addon_pct = pos.get("addon_pct", ADDON_PCT)
+
+    # 查询当前未成交订单
+    pending_r = client.get_pending_orders(inst_id)
+    pending_ord_ids = set()
+    if pending_r.get("ok"):
+        for o in pending_r.get("orders", []):
+            pending_ord_ids.add(o.get("ord_id"))
+
+    new_filled = 0
+    for entry in grid:
+        tier = entry["tier"]
+        ord_id = entry.get("ord_id")
+        status = entry.get("status", "pending")
+
+        if status in ("filled", "cancelled", "failed"):
+            continue
+
+        # 判断挂单是否已成交：ord_id 不在未成交列表中 = 已成交或已撤销
+        if ord_id and ord_id not in pending_ord_ids:
+            # 查询订单最终状态
+            ord_r = client.get_order(inst_id, ord_id)
+            if ord_r.get("ok"):
+                state_code = ord_r.get("state", "")
+                filled_sz = ord_r.get("filled_sz", 0)
+                avg_px = ord_r.get("avg_px", 0)
+                if state_code == "filled" and filled_sz > 0:
+                    # 已成交 → 更新持仓
+                    old_sz = pos["sz"]
+                    old_entry = pos["entry_price"]
+                    pos["addons"] = pos.get("addons", 0) + 1
+                    pos["entry_price"] = (old_entry * old_sz + avg_px * filled_sz) / (
+                        old_sz + filled_sz
+                    )
+                    pos["sz"] += filled_sz
+                    pos["last_addon_time"] = datetime.now(timezone.utc).isoformat()
+                    entry["status"] = "filled"
+                    entry["fill_px"] = avg_px
+                    new_filled += 1
+                    _log(
+                        f"[{coin}] 加仓网格#{tier} 限价单已成交 "
+                        f"sz={filled_sz}张 px=${avg_px:.4f} 总仓位={pos['sz']} 均价=${pos['entry_price']:.4f}"
+                    )
+                    # 同步 TP/SL（均价变化后需更新）
+                    tp_pct = pos.get("take_profit_pct", addon_pct)
+                    sl_price = pos.get("stop_loss_price", 0)
+                    _sync_tp_sl_orders(client, coin, pos, pos["entry_price"], tp_pct, sl_price)
+                    continue
+                elif state_code in ("canceled", "cancelled"):
+                    entry["status"] = "cancelled"
+                    _log(f"[{coin}] 加仓网格#{tier} 挂单已撤销(交易所侧), 跳过")
+                    continue
+
+        # 未成交的挂单 → 检查是否需要动态调整价格
+        # 调整条件：当前价格已越过挂单价格（应该已成交但未成交）或偏离过大
+        if status == "pending" and ord_id:
+            try:
+                params = _get_dynamic_params(client, coin, direction)
+                current_price = params["current_price"]
+                grid_px = entry.get("px", 0)
+                trigger_pct = entry.get("trigger_pct", addon_pct * tier)
+                # 期望触发价（基于开仓价）
+                if is_short:
+                    expected_px = open_price * (1 + trigger_pct)
+                else:
+                    expected_px = open_price * (1 - trigger_pct)
+                # 价格偏离超过 2% → 撤旧单重挂
+                if grid_px > 0 and abs(grid_px - expected_px) / expected_px > 0.02:
+                    cr = client.cancel_order(inst_id, ord_id)
+                    if cr.get("ok"):
+                        _log(f"[{coin}] 加仓网格#{tier} 价格偏离, 撤单重挂 "
+                             f"旧=${grid_px:.4f} 期望=${expected_px:.4f}")
+                        # 重新计算数量并挂单
+                        addon_usd = entry.get("addon_usd", 0)
+                        vol_mult = pos.get("vol_mult", 1.0)
+                        lot_sz, ct_val = get_contract_info(client, inst_id)
+                        addon_notional = addon_usd * vol_mult * LEVERAGE
+                        new_sz = calc_lot_sz(addon_notional, expected_px, lot_sz, ct_val)
+                        if new_sz >= lot_sz:
+                            side = "sell" if is_short else "buy"
+                            pos_side = "short" if is_short else "long"
+                            r = client.place_order(
+                                inst_id=inst_id, side=side, ord_type="limit",
+                                sz=new_sz, px=expected_px, td_mode="isolated",
+                                pos_side=pos_side, tag="v15_addon_grid",
+                                reason=f"v15_martin_addon_grid_{tier}_adjust",
+                            )
+                            if r.get("ok") or r.get("ord_id"):
+                                new_ord_id = r.get("ord_id") or r.get("data", {}).get("ordId")
+                                entry["ord_id"] = new_ord_id
+                                entry["px"] = expected_px
+                                entry["sz"] = new_sz
+                                _log(f"[{coin}] 加仓网格#{tier} 重挂成功 "
+                                     f"sz={new_sz}张 px=${expected_px:.4f} ord_id={new_ord_id}")
+                            else:
+                                entry["status"] = "failed"
+                                _log(f"[{coin}] 加仓网格#{tier} 重挂失败: {r.get('error', r)}")
+                    else:
+                        _log(f"[{coin}] 加仓网格#{tier} 撤单失败: {cr.get('error', cr)}")
+            except Exception as e:
+                _log(f"[{coin}] 加仓网格#{tier} 状态检查异常: {e}")
+
+    return new_filled
+
+
+def _cancel_addon_grid_orders(client, coin, pos):
+    """平仓时撤销所有未成交的加仓网格限价单"""
+    if not AUTO_EXECUTE:
+        return
+    grid = pos.get("addon_grid")
+    if not grid:
+        return
+    inst_id = pos["inst_id"]
+    for entry in grid:
+        if entry.get("status") == "pending" and entry.get("ord_id"):
+            try:
+                cr = client.cancel_order(inst_id, entry["ord_id"])
+                if cr.get("ok"):
+                    entry["status"] = "cancelled"
+                    _log(f"[{coin}] 加仓网格#{entry['tier']} 平仓撤单成功")
+                else:
+                    _log(f"[{coin}] 加仓网格#{entry['tier']} 平仓撤单失败: {cr.get('error', cr)}")
+            except Exception as e:
+                _log(f"[{coin}] 加仓网格#{entry['tier']} 平仓撤单异常: {e}")
+
+
 def _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price):
     """同步设置/更新 OCO 止盈止损条件单
 
@@ -787,7 +1257,7 @@ def _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price):
         if valid_sl:
             if is_short and sl_price <= entry_price:
                 valid_sl = False
-            if not is_short and sl_price >= entry_price:
+            elif not is_short and sl_price >= entry_price:
                 valid_sl = False
 
         if valid_sl:
@@ -974,6 +1444,7 @@ def check_take_profit(client, coin, pos, state):
                             f"(peak=${peak:.4g}, profit={profit_pct:.2%})"
                         )
                         if AUTO_EXECUTE:
+                            _cancel_addon_grid_orders(client, coin, pos)
                             client.cancel_algo_orders(inst_id)
                             lot_sz, ct_val = get_contract_info(client, inst_id)
                             close_sz = math.floor(pos["sz"] / lot_sz) * lot_sz
@@ -1003,6 +1474,7 @@ def check_take_profit(client, coin, pos, state):
             _log(f"[{coin}] {direction} 止盈触发 profit={profit_pct:.2%} >= {tp_pct:.2%}")
 
             if AUTO_EXECUTE:
+                _cancel_addon_grid_orders(client, coin, pos)
                 client.cancel_algo_orders(inst_id)
                 lot_sz, ct_val = get_contract_info(client, inst_id)
                 close_sz = math.floor(pos["sz"] / lot_sz) * lot_sz
@@ -1049,6 +1521,7 @@ def check_take_profit(client, coin, pos, state):
                     )
 
             if AUTO_EXECUTE:
+                _cancel_addon_grid_orders(client, coin, pos)
                 client.cancel_algo_orders(inst_id)
                 lot_sz, ct_val = get_contract_info(client, inst_id)
                 close_sz = math.floor(pos["sz"] / lot_sz) * lot_sz
@@ -1065,15 +1538,20 @@ def check_take_profit(client, coin, pos, state):
                 )
                 if r.get("ok"):
                     _log(f"[{coin}] 止损平仓 ({sl_type})")
-                    state["consecutive_losses"] = state.get("consecutive_losses", 0) + 1
-                    del state["positions"][coin]
-                    if state["consecutive_losses"] >= MAX_CONSECUTIVE_LOSSES_REBUILD:
-                        trigger_capital_rebuild(
-                            state, reason=f"连续{state['consecutive_losses']}次亏损"
-                        )
+                    _on_loss_trade(state, coin, reason=f"止损平仓({sl_type})")
+                    if coin in state["positions"]:
+                        del state["positions"][coin]
                     return True
                 else:
+                    err_str = str(r.get("error", r)) + str(r.get("raw", ""))
                     _log(f"[{coin}] 止损平仓失败: {r.get('error', r)}")
+                    # 交易所已无持仓（sCode 51169）→ 视为已被外部止损平仓，按亏损清理
+                    if "51169" in err_str or "don't have any positions" in err_str:
+                        _log(f"[{coin}] 检测到交易所无持仓，按外部止损平仓处理")
+                        _on_loss_trade(state, coin, reason=f"外部止损平仓({sl_type})")
+                        if coin in state["positions"]:
+                            del state["positions"][coin]
+                        return True
             return False
 
         return False
@@ -1084,17 +1562,16 @@ def check_take_profit(client, coin, pos, state):
 
 def check_time_exit(client, coin, pos, state):
     """
-    分层超时触发经典离场系统评估。
+    分层超时离场评估（V15 自有逻辑，不依赖经典离场系统）。
 
     分层计时：
       - 有加仓：从最后一次加仓(last_addon_time)计时，先过黄金窗口再过超时阈值
       - 无加仓：从开仓(open_time)计时，过底仓超时阈值
 
-    超时后调用 ClassicExitSystem.evaluate_full()：
-      CLOSE    → 平仓
-      REDUCE   → 减仓(reduce_frac 比例)
-      RAISE_TP → 提高止盈价(new_tp_pct)
-      HOLD     → 继续持有
+    超时后 V15 自有决策：
+      - 盈利 → 提高止盈价（让利润奔跑，不超过原始止盈2倍）
+      - 亏损未触发止损 → 继续持有（马丁策略允许较长持仓+较高波动）
+      止损由 check_tp_sl 的动态止损线（日/周MA200）和 OCO 硬单保护
     """
     try:
         direction = pos.get("direction", "LONG")
@@ -1135,96 +1612,44 @@ def check_time_exit(client, coin, pos, state):
         if hold_hours < max_hours:
             return False
 
+        # ── V15 自有超时决策（不调用经典离场系统）──
+        entry_price = pos["entry_price"]
+        if is_short:
+            profit_pct = (entry_price - current_price) / entry_price
+        else:
+            profit_pct = (current_price - entry_price) / entry_price
+
         _log(
-            f"[{coin}] 持仓超时 {hold_hours:.1f}h (阈值={max_hours:.0f}h, 加仓={addons}), 触发经典离场评估"
+            f"[{coin}] 持仓超时 {hold_hours:.1f}h (阈值={max_hours:.0f}h, 加仓={addons}), "
+            f"盈亏={profit_pct:+.2%}"
         )
 
-        # ── 调用经典离场系统 ──────────────────────────────────────
-        try:
-            classic_path = str(Path(__file__).parent.parent.parent / "10-经典指标系统")
-            if classic_path not in sys.path:
-                sys.path.insert(0, classic_path)
-            from classic_exit_system import ClassicExitSystem, ExitConfig, PositionState
-
-            # 禁用 L0 持仓时间硬退出（马丁策略有自己的分层超时逻辑）
-            exit_cfg = ExitConfig()
-            exit_cfg.l0_max_hold_sec = 999999
-            system = ClassicExitSystem(config=exit_cfg)
-
-            entry_price = pos["entry_price"]
-            if is_short:
-                # 做空：价格下跌盈利（经典指标系统内部 pnl_eff = unrealized_pnl_pct × leverage）
-                unrealized_pnl_pct = (entry_price - current_price) / entry_price
-            else:
-                # 做多：价格上涨盈利（经典指标系统内部 pnl_eff = unrealized_pnl_pct × leverage）
-                unrealized_pnl_pct = (current_price - entry_price) / entry_price
-
-            pos_state = PositionState(
-                coin=coin,
-                side="short" if is_short else "long",
-                entry_price=entry_price,
-                current_price=current_price,
-                position_age_sec=hold_hours * 3600.0,
-                unrealized_pnl_pct=unrealized_pnl_pct,
-                leverage=LEVERAGE,
-                atr_pct=(
-                    params.get("volatility", 0.02) / 100.0
-                    if params.get("volatility", 0) > 1
-                    else 0.02
-                ),
-            )
-
-            # 获取1H K线供特征计算（hold_value/hold_risk 需要技术指标）
-            candles_1h = None
-            try:
-                from market_data import fetch_candles
-
-                spot = to_spot(coin)
-                candles_1h = fetch_candles(spot, bar="1H", limit=100)
-            except Exception:
-                pass
-
-            decision = system.evaluate_full(pos_state, candles_1h=candles_1h, regime="trend")
-
-        except Exception as e:
-            _log(f"[{coin}] 经典离场系统不可用({e}), 降级保本平仓")
-            _execute_close_position(client, coin, pos, state, reason="timeout_fallback")
-            return True
-
-        action = (
-            decision.action.value if hasattr(decision.action, "value") else str(decision.action)
-        )
-
-        # ── 处理离场动作 ──────────────────────────────────────────
-        if action == "close":
-            _log(f"[{coin}] 经典评估: CLOSE ({decision.reason})")
-            _execute_close_position(client, coin, pos, state, reason="classic_close")
-            return True
-
-        elif action == "reduce":
-            reduce_frac = decision.reduce_frac if decision.reduce_frac > 0 else 0.3
-            _log(f"[{coin}] 经典评估: REDUCE frac={reduce_frac:.0%} ({decision.reason})")
-            _execute_reduce_position(client, coin, pos, state, reduce_frac)
-            return False
-
-        elif action == "raise_tp":
-            new_tp_pct = decision.new_tp_pct
+        if profit_pct > 0:
+            # 盈利超时：提高止盈价 50%，让利润奔跑（上限为原始止盈的2倍）
             original_tp = pos.get("take_profit_pct", BASE_TP_PCT)
-            # 不超过原始止盈的 2 倍（防止过度贪婪）
-            capped_tp = min(new_tp_pct, original_tp * 2.0)
-            pos["take_profit_pct"] = capped_tp
-            # 同步更新交易所 OCO 挂单（撤销旧单 → 下新止盈价单）
+            new_tp = original_tp * 1.5
+            capped_tp = min(new_tp, original_tp * 2.0)
+            if capped_tp > original_tp:
+                pos["take_profit_pct"] = capped_tp
+                sl_price = params.get("stop_loss_price")
+                _sync_tp_sl_orders(client, coin, pos, entry_price, capped_tp, sl_price)
+                _log(
+                    f"[{coin}] 超时盈利, 提高止盈 {original_tp:.2%} → {capped_tp:.2%}, OCO挂单已同步"
+                )
+            else:
+                _log(f"[{coin}] 超时盈利, 止盈已达上限 {original_tp:.2%}, 继续持有")
+        else:
+            # 亏损超时：未触发止损线则继续持有（马丁策略允许较长持仓等反弹）
             sl_price = params.get("stop_loss_price")
-            _sync_tp_sl_orders(client, coin, pos, pos["entry_price"], capped_tp, sl_price)
-            _log(
-                f"[{coin}] 经典评估: RAISE_TP ({decision.reason}) "
-                f"新止盈={capped_tp:.2%} (原={original_tp:.2%}), OCO挂单已同步"
-            )
-            return False
+            sl_triggered = params.get("stop_loss_triggered", False)
+            if sl_triggered:
+                _log(f"[{coin}] 超时且已触发止损条件, 将由 check_tp_sl 处理平仓")
+            else:
+                _log(
+                    f"[{coin}] 超时亏损 {profit_pct:.2%}, 未触发止损线, 继续持有等反弹"
+                )
 
-        else:  # hold
-            _log(f"[{coin}] 经典评估: HOLD ({decision.reason})")
-            return False
+        return False
 
     except Exception as e:
         _log(f"[{coin}] 超时离场检查异常: {e}")
@@ -1238,6 +1663,7 @@ def _execute_close_position(client, coin, pos, state, reason="", exit_price=None
     is_short = direction == "SHORT"
     try:
         if AUTO_EXECUTE:
+            _cancel_addon_grid_orders(client, coin, pos)
             client.cancel_algo_orders(inst_id)
 
         lot_sz, ct_val = get_contract_info(client, inst_id)
@@ -1258,7 +1684,7 @@ def _execute_close_position(client, coin, pos, state, reason="", exit_price=None
             )
             if r.get("ok"):
                 _log(f"[{coin}] {direction} 平仓成功 ({reason})")
-                state["consecutive_losses"] = state.get("consecutive_losses", 0) + 1
+                _on_loss_trade(state, coin, reason=f"平仓({reason})")
                 if coin in state["positions"]:
                     # 注册到 L4
                     _register_martin_trade_to_l4(
@@ -1319,8 +1745,7 @@ def _execute_reduce_position(client, coin, pos, state, reduce_frac):
         return False
 
 
-ADDON_PCT_CHECK = get_config_float("ADDON_PCT", 0.08)
-LEVERAGE = get_config_float("LEVERAGE", 5.0)
+ADDON_PCT_CHECK = ADDON_PCT  # 向后兼容别名
 
 MAX_CONSECUTIVE_LOSSES_REBUILD = get_config_int("V15_MAX_CONSECUTIVE_LOSSES", 3)
 _capital_rebuild_running = False
@@ -1543,6 +1968,15 @@ def run_poll_cycle():
         save_state(state)
         return
 
+    # ── 冷却状态检查（每轮必检）──
+    exit_cooldown_if_expired(state)
+    in_cd, remain_hours, cd_reason = is_in_cooldown(state)
+    if in_cd:
+        _log(
+            f"[风控-冷却] 交易暂停中，剩余 {remain_hours:.1f}h "
+            f"(原因: {cd_reason})，跳过开仓，仅监控现有持仓"
+        )
+
     if check_monthly_rebuild(state):
         trigger_capital_rebuild(state, reason="月度定时优化（每月1号）")
 
@@ -1578,6 +2012,9 @@ def run_poll_cycle():
 
                 if not check_take_profit(client, coin, pos, state):
                     if not check_time_exit(client, coin, pos, state):
+                        # 先检查加仓网格挂单状态（已成交则更新持仓）
+                        _check_addon_grid_status(client, coin, pos)
+                        # execute_addon 作为兜底：网格未覆盖或挂单失败时市价加仓
                         added = execute_addon(client, coin, pos, state)
                         if not added:
                             _update_tp_sl_dynamic(client, coin, pos)
@@ -1589,7 +2026,30 @@ def run_poll_cycle():
                 # 支持多空开仓信号：OPEN_BULL（做多）和 OPEN_BEAR（做空）
                 if action in ("OPEN_BULL", "OPEN_BEAR") and conf >= 60:
                     _log(f"[{coin}] 信号触发: {action} conf={conf}%")
-                    execute_open_position(client, coin, decision, state)
+
+                    # 门禁1: 冷却期禁止开新仓
+                    if in_cd:
+                        _log(
+                            f"[{coin}] 冷却期禁止开仓，"
+                            f"剩余 {remain_hours:.1f}h，跳过"
+                        )
+                    else:
+                        # 门禁2: 单次轮询/全局最多3仓（MAX_CONCURRENT_POSITIONS）
+                        pos_count = len(state.get("positions", {}))
+                        if pos_count >= MAX_CONCURRENT_POSITIONS:
+                            _log(
+                                f"[风控-门禁][{coin}] 持仓数上限 ({pos_count}/"
+                                f"{MAX_CONCURRENT_POSITIONS})，禁止开新仓"
+                            )
+                            _feishu_alert_v15(
+                                "trading", "warning",
+                                f"⚠️ 持仓数达到上限 {pos_count}/{MAX_CONCURRENT_POSITIONS}，"
+                                f"拒绝 {coin} 开新仓",
+                                {"持仓上限": MAX_CONCURRENT_POSITIONS,
+                                 "当前持仓数": pos_count,
+                                 "币种池": list(state["positions"].keys())})
+                        else:
+                            execute_open_position(client, coin, decision, state)
                 else:
                     _log(f"[{coin}] 等待: {action} conf={conf}%")
 
@@ -1615,6 +2075,34 @@ def main():
     _log(f"  最大加仓: {MAX_ADDONS}次")
     _log(f"  止盈: {BASE_TP_PCT:.0%}")
     _log(f"  允许做空: {V15_ALLOW_SHORT}")
+    # ── 实盘风控配置（2026-07-31）──
+    consec_threshold = get_config_int("V15_MAX_CONSECUTIVE_LOSSES", 6)
+    cooldown_h = get_config_int("V15_COOLDOWN_HOURS", 48)
+    gate_enabled = get_config_bool("V15_RISK_GATE_ENABLED", True)
+    max_pos = get_config_int("MAX_CONCURRENT_POSITIONS", 3)
+    _log(
+        f"  实盘风控: 连亏≥{consec_threshold}笔 → {cooldown_h}h冷却 | "
+        f"最大持仓 {max_pos} 笔 | 门禁: {'开启' if gate_enabled else '影子模式'} "
+        f"| 飞书告警: {'开启' if V15_FEISHU_ALERT_ENABLED else '关闭'}"
+    )
+    # 启动飞书通知
+    details = {
+        "币种池": f"{len(COINS)}个",
+        "轮询间隔": f"{POLL_INTERVAL}s",
+        "最大持仓": f"{max_pos}笔",
+        "连亏阈值": f"{consec_threshold}笔",
+        "冷却时长": f"{cooldown_h}h",
+        "自动执行": AUTO_EXECUTE,
+        "门禁模式": "实盘阻断" if gate_enabled else "影子模式",
+        "允许做空": V15_ALLOW_SHORT,
+    }
+    alert = _get_feishu_alert()
+    if alert is not None:
+        try:
+            alert.notify_system_start(V15_SYSTEM_NAME, details)
+        except Exception as e:
+            _log(f"[飞书告警] 启动通知失败: {e}")
+    _feishu_alert_v15("system", "info", "🚀 V15马丁策略交易器已启动", details)
 
     def handle_signal(signum, frame):
         _log("收到退出信号, 保存状态...")

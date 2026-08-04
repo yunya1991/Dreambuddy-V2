@@ -291,7 +291,8 @@ class OKXSimulatedClient:
 
     def get_instrument(self, inst_id: str = None) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
-        r = self._get("/api/v5/market/instruments", {"instId": inst_id}, auth=False)
+        # 使用 public/instruments 接口（market/instruments 对股票永续等部分合约返回 Not Found）
+        r = self._get("/api/v5/public/instruments", {"instType": "SWAP", "instId": inst_id}, auth=False)
         if r.get("code") != "0":
             return {"ok": False, "error": r.get("msg", "unknown")}
         d = r["data"][0]
@@ -499,7 +500,7 @@ class OKXSimulatedClient:
     def place_order(self, inst_id: str, side: str, ord_type: str = "market",
                     sz: float = None, px: float = None,
                     td_mode: str = "isolated", pos_side: str = "net",
-                    tag: str = "yijing_sim",
+                    tag: str = "yijingsim",
                     reason: str = "") -> Dict:
         """
         下单（默认 dry_run 模式，仅记录不下单）
@@ -525,7 +526,7 @@ class OKXSimulatedClient:
             "side": side,
             "ordType": ord_type,
             "posSide": pos_side,
-            "tag": "yijingsim",
+            "tag": tag or "yijingsim",
         }
 
         if ord_type == "market":
@@ -866,6 +867,43 @@ class OKXSimulatedClient:
             "fee": float(d.get("fee", 0) or 0),
             "pnl": float(d.get("pnl", 0) or 0),
         }
+
+    def get_pending_orders(self, inst_id: str = None) -> Dict:
+        """查询未成交的普通订单（含限价加仓单）
+
+        用于马丁网格加仓挂单的状态检查。
+        """
+        inst_id = inst_id or self.cfg["default_inst_id"]
+        if not self._has_credentials():
+            return {"ok": False, "error": "missing api credentials"}
+        r = self._get("/api/v5/trade/orders-pending",
+                      {"instId": inst_id, "instType": "SWAP"})
+        if r.get("code") != "0":
+            return {"ok": False, "error": r.get("msg", "unknown")}
+        orders = []
+        for d in r.get("data", []):
+            orders.append({
+                "ord_id": d.get("ordId"),
+                "side": d.get("side"),
+                "pos_side": d.get("posSide"),
+                "ord_type": d.get("ordType"),
+                "sz": float(d.get("sz", 0) or 0),
+                "px": float(d.get("px", 0) or 0),
+                "state": d.get("state"),
+                "tag": d.get("tag", ""),
+            })
+        return {"ok": True, "orders": orders, "count": len(orders)}
+
+    def cancel_order(self, inst_id: str, ord_id: str) -> Dict:
+        """撤销单个普通订单（限价单等）"""
+        if not self._has_credentials():
+            return {"ok": False, "error": "missing api credentials"}
+        body = {"instId": inst_id, "ordId": ord_id}
+        r = self._post("/api/v5/trade/cancel-order", body)
+        self._audit_log("cancel_order", body, r)
+        if r.get("code") == "0" and r.get("data"):
+            return {"ok": True, "ord_id": ord_id}
+        return {"ok": False, "error": r.get("msg", r.get("data", {}).get("sMsg", "unknown"))}
 
     # ── 模拟交易训练闭环 ────────────────────────────────────
 

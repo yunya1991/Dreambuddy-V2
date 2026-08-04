@@ -2186,6 +2186,18 @@ def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Di
                 pass
 
     # ── 4. 波动率适应：根据近期决策的 regime 统计调整止损/止盈 ──
+    # 参数安全边界（防止漂移失控）
+    PARAM_BOUNDS = {
+        "stop_loss_pct":    (0.02, 0.08),   # 止损 2%-8%
+        "take_profit_pct":  (0.04, 0.15),   # 止盈 4%-15%
+        "atr_sl_multiplier": (1.0, 2.5),     # ATR止损乘数 1.0-2.5
+        "atr_tp_multiplier": (2.0, 5.0),     # ATR止盈乘数 2.0-5.0
+        "per_trade_pct":    (0.02, 0.10),    # 单笔仓位 2%-10%
+        "confidence_gate":  (0.40, 0.85),    # 置信度门槛 40%-85%
+        "default_leverage": (1, 5),           # 杠杆 1x-5x
+        "max_positions":    (1, 5),           # 最大持仓数 1-5
+    }
+
     regime_counts = {"TREND_UP": 0, "TREND_DOWN": 0, "RANGE": 0}
     for d in recent_decisions:
         regime = d.get("regime", "RANGE")
@@ -2196,16 +2208,16 @@ def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Di
     if total_decisions >= 5:
         trend_pct = (regime_counts["TREND_UP"] + regime_counts["TREND_DOWN"]) / total_decisions
         if trend_pct > 0.7:
-            # 趋势市：放宽止盈、适当收窄止损
-            adjustments["take_profit_pct"] = params["take_profit_pct"] * 1.25
-            adjustments["stop_loss_pct"] = params["stop_loss_pct"] * 0.9
-            adjustments["atr_tp_multiplier"] = params["atr_tp_multiplier"] * 1.2
+            # 趋势市：放宽止盈、适当收窄止损（有上限约束）
+            adjustments["take_profit_pct"] = min(params["take_profit_pct"] * 1.15, PARAM_BOUNDS["take_profit_pct"][1])
+            adjustments["stop_loss_pct"] = max(params["stop_loss_pct"] * 0.92, PARAM_BOUNDS["stop_loss_pct"][0])
+            adjustments["atr_tp_multiplier"] = min(params["atr_tp_multiplier"] * 1.1, PARAM_BOUNDS["atr_tp_multiplier"][1])
         elif regime_counts["RANGE"] / total_decisions > 0.6:
-            # 震荡市：收窄止盈、放宽止损
-            adjustments["take_profit_pct"] = params["take_profit_pct"] * 0.8
-            adjustments["stop_loss_pct"] = params["stop_loss_pct"] * 1.15
-            adjustments["atr_sl_multiplier"] = params["atr_sl_multiplier"] * 1.1
-            adjustments["atr_tp_multiplier"] = params["atr_tp_multiplier"] * 0.85
+            # 震荡市：收窄止盈、放宽止损（有上限约束）
+            adjustments["take_profit_pct"] = max(params["take_profit_pct"] * 0.85, PARAM_BOUNDS["take_profit_pct"][0])
+            adjustments["stop_loss_pct"] = min(params["stop_loss_pct"] * 1.1, PARAM_BOUNDS["stop_loss_pct"][1])
+            adjustments["atr_sl_multiplier"] = min(params["atr_sl_multiplier"] * 1.05, PARAM_BOUNDS["atr_sl_multiplier"][1])
+            adjustments["atr_tp_multiplier"] = max(params["atr_tp_multiplier"] * 0.9, PARAM_BOUNDS["atr_tp_multiplier"][0])
 
     # ── 5. 胜率统计 → 动态调整仓位比例 ──
     if len(recent_decisions) >= 10:
@@ -2222,6 +2234,12 @@ def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Di
                     adjustments.get("per_trade_pct", params["per_trade_pct"]) * 1.15,
                     0.10,
                 )
+
+    # ── 6. 边界兜底校验：确保所有调整值在安全范围内 ──
+    for k, v in adjustments.items():
+        if k in PARAM_BOUNDS:
+            lo, hi = PARAM_BOUNDS[k]
+            adjustments[k] = max(lo, min(v, hi))
 
     return adjustments
 

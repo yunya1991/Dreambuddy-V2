@@ -1,7 +1,7 @@
 # 技术设计文档 — V15 经典马丁策略
 
 > **定位：** 模块级技术设计文档，描述架构、数据流、算法细节
-> **版本：** v5.1 | **更新：** 2026-07-17
+> **版本：** v5.2 | **更新：** 2026-08-01
 > **系统：** V15 经典马丁策略（入场信号+反弹增强+参数设置+趋势计算+资金管理+动态止损+离场系统+贝叶斯优化+多空方向控制v2+OCO止盈止损挂单+币种风控过滤+智能系统增强+双基线版本管理+贝叶斯自动调度+实盘移动止盈）
 
 ---
@@ -89,7 +89,7 @@ V15 经典马丁策略由 8 大核心模块构成，形成完整的交易决策�
 | 模块 | 核心职责 | 关键输出 | 所在文件 |
 |------|----------|----------|----------|
 | 入场信号系统 | 16层入场决策，16项技术指标计算，4H均线位置判定 | OPEN_BULL / OPEN_BEAR / WAIT + 置信度 | `core/v15_signal.py` |
-| 多空方向控制 | 基于日/周MA200三状态模型动态控制多空方向 | regime + short_enabled + long_enabled | `lib/direction_gate.py` |
+| 多空方向控制 | 基于MA128+BTC风向标三状态模型动态控制多空方向 | regime + short_enabled + long_enabled | `lib/direction_gate.py` |
 | 反弹检测器 | 第二层信号增强，Fib支撑+RSI超卖+量能恐慌检测 | n_triggered + 置信度加持 | `lib/bounce_potential_evaluator.py` |
 | 参数设置 | BTC固定参数基准，其他币种按30日波动率放大 | 止盈比例、加仓间距、止损参数 | `lib/strategy_params.py` |
 | 趋势强度计算器 | Elder-ray三重滤网系统，日线级别趋势强度评估 | direction + strength(0-100) + 多空信号 | `lib/strategy_params.py` |
@@ -161,7 +161,7 @@ BOUNCE_MIN_SIGNALS=1          # 最少触发项数
 
 1. **信号与执行分离** — `v15_signal.py` 只负责计算信号，`v15_trader.py` 负责执行交易，职责清晰
 2. **波动率自适应** — 所有关键参数（止盈、加仓间距、止损）根据币种波动率动态调整
-3. **多空方向控制** — DirectionGate 基于日/周 MA200 三状态模型动态控制多空方向（默认只做多，`V15_ALLOW_SHORT=true` 时启用做空）
+3. **多空方向控制** — DirectionGate 基于 MA128+BTC风向标 三状态模型动态控制多空方向（默认只做多，`V15_ALLOW_SHORT=true` 时启用做空）。详见 §11.2.2
 4. **状态持久化** — 持仓状态写入 JSON 文件，进程重启不丢失
 5. **多层风控** — 入场风控 + 持仓风控 + 资金风控 + 止损风控 四层防护
 
@@ -1580,7 +1580,7 @@ prepare_ma200_for_4h(klines_4h, klines_1d, klines_1w):
 
 ┌─ 第一层：入场风控 ──────────────────────────────────────┐
 │  • 置信度 ≥ 60 才入场                                    │
-│  • DirectionGate方向控制（日/周MA200三状态模型）          │
+│  • DirectionGate方向控制（MA128+BTC风向标三状态模型）          │
 │  • 止损未触发（不在 BELOW_ALL_MA_CONFIRMED 状态）         │
 │  • 下单数量 ≥ 最小合约单位                                │
 └──────────────────────────────────────────────────────────┘
@@ -1629,7 +1629,7 @@ prepare_ma200_for_4h(klines_4h, klines_1d, klines_1w):
 | 固定止损 | — | — | 已移除，仅使用MA200动态止损 |
 | 趋势过滤模式 | none | `TREND_FILTER_MODE` | 已禁用，不参与开仓过滤 |
 | 允许做空 | true | `V15_ALLOW_SHORT` | 多空方向控制开关，true=启用MA128+BTC风向标做空机制 |
-| 方向缓冲带 | 1% | `DirectionGate(buffer_pct)` | MA200附近缓冲，避免频繁切换 |
+| 方向缓冲带 | 1% | `DirectionGate(buffer_pct)` | MA附近缓冲（日MA128+周MA200），避免频繁切换 |
 | 日亏损限制 | -50 USDT | `V15_DAILY_LOSS_LIMIT` | 单日亏损上限 |
 | 连续亏损 | 3次 | `V15_MAX_CONSECUTIVE_LOSSES` | 连续亏损暂停阈值，触发资金管理引擎重新优化 |
 | 保证金高危线 | 80% | 代码硬编码 | 保证金占比超80%高风险 |
@@ -1641,10 +1641,10 @@ prepare_ma200_for_4h(klines_4h, klines_1d, klines_1w):
 方向控制层:
   direction_gate.py (DirectionGate)
     ├─ V15_ALLOW_SHORT=false → 永远 LONG_PREFERRED (只做多)
-    ├─ 价格在日MA200上方 → LONG_PREFERRED (只做多)
-    ├─ 跌破日MA200但周MA200上方 → SHORT_ALLOWED (允许做空)
-    ├─ 跌至周MA200 → LONG_ONLY_FORCE (强制做多)
-    └─ 使用收盘价确认 + 1%缓冲带，避免频繁切换
+    ├─ BTC做空闸门关闭(btc_short_enabled=false) → LONG_PREFERRED (只做多)
+    ├─ BTC做空闸门打开 + 价格在周MA200上方 → SHORT_ALLOWED (允许做空)
+    ├─ 跌至周MA200附近(含1%缓冲带) → LONG_ONLY_FORCE (强制做多)
+    └─ 有效跌破判断：连续3日收盘价低于日MA128 + 收盘价确认，避免频繁切换
 
 信号层:
   v15_signal.py
@@ -1667,9 +1667,9 @@ prepare_ma200_for_4h(klines_4h, klines_1d, klines_1w):
     └─ SHORT: 止损线 = 价格上方最近均线, 触发 = 收盘价 >= 止损线
 
 测试:
-  tests/test_short_selling.py (25项测试全通过)
+  tests/test_short_selling.py (26项测试全通过)
     ├─ DirectionGate三状态模型 (4项)
-    ├─ 边界情况与缓冲带 (5项)
+    ├─ 边界情况与缓冲带 (6项)
     ├─ GateResult序列化 (2项)
     ├─ 做空执行逻辑Mock验证 (5项)
     ├─ 做多向后兼容 (2项)

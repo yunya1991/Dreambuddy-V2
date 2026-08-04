@@ -131,7 +131,7 @@ def run_exit_evaluation_cycle():
         engine = SkillEngine()
         
         symbols = list(set(p.get("symbol", "BTC") for p in all_positions))
-        a1_result = engine.execute("dream-research-skill-v2", {
+        a1_result = engine.execute("dream-strategy-research", {
             "symbol": "BTC",
             "symbols": symbols[:3],
             "market_type": "crypto",
@@ -145,7 +145,7 @@ def run_exit_evaluation_cycle():
         # 4. A2 第一性原理
         # ==========================================
         _log("\n[步骤 4/10] A2 第一性原理分析...")
-        a2_result = engine.execute("dream-first-principles-v2", {
+        a2_result = engine.execute("dream-first-principles", {
             "research_result": a1_result.data,
             "use_llm": use_llm,
         })
@@ -154,7 +154,7 @@ def run_exit_evaluation_cycle():
         # 5. A3 战略合成
         # ==========================================
         _log("\n[步骤 5/10] A3 战略合成...")
-        a3_result = engine.execute("dream-strategy-designer-v2", {
+        a3_result = engine.execute("dream-strategy-designer", {
             "research_result": a1_result.data,
             "first_principles_result": a2_result.data,
             "use_llm": use_llm,
@@ -177,11 +177,15 @@ def run_exit_evaluation_cycle():
         # 7. A9 宏观离场 + 融合决策
         # ==========================================
         _log("\n[步骤 7/10] A9 宏观离场 + 融合决策...")
-        
-        a9_evals = []
-        for pos in all_positions:
-            a9_eval = a9_exit_decision.evaluate_position_for_exit(pos, a3_result.data)
-            a9_evals.append(a9_eval)
+
+        a9_result_data = a9_exit_decision.a9_exit_decision_handler({
+            "positions": all_positions,
+            "a1_result": a1_result.data,
+            "a2_result": a2_result.data,
+            "a3_result": a3_result.data,
+            "market": market,
+        }, engine)
+        a9_evals = a9_result_data.get("exit_evaluations", [])
         
         # 融合决策（含策略适配 + 置信度门槛 + 进化参数）
         fused_evals = _fuse_with_evolution(

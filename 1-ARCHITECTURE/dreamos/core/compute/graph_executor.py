@@ -35,6 +35,7 @@ C 层主入口，职责:
 
 from __future__ import annotations
 
+import logging
 from typing import Optional, List, Dict, Any
 
 from dreamos.shared.state import State, NodeResult, NodeStatus
@@ -47,6 +48,8 @@ from .types import (
 from .node_runner import NodeRunner
 from .reflector import Reflector
 from .aggregator import Aggregator
+
+logger = logging.getLogger(__name__)
 
 
 GATE_NODES = {"A4", "A7", "G1"}
@@ -134,6 +137,7 @@ class GraphExecutor:
         report.total_nodes = len(all_node_ids)
 
         executed_ids: List[str] = []
+        redo_counts: Dict[str, int] = {}  # 跟踪每个节点的 REDO 次数
         step = 0
         used_budget = 0
 
@@ -223,6 +227,18 @@ class GraphExecutor:
                         current = jump_node
                         continue
                 elif action == ReflectAction.REDO:
+                    redo_counts[node_id] = redo_counts.get(node_id, 0) + 1
+                    # Reflector 的 record.retries 不可靠 (每次 REDO 创建新 record),
+                    # 在此强制限制: 超过 max_retries 时跳到下一节点, 避免
+                    # 低置信度节点无限 REDO 耗尽 max_steps 导致 A5/A9 永不执行
+                    if redo_counts[node_id] > self._runner._max_retries:
+                        logger.warning(
+                            f"节点 {node_id} REDO 次数超限 "
+                            f"({redo_counts[node_id]} > {self._runner._max_retries}), "
+                            f"强制跳到下一节点"
+                        )
+                        current = graph.get_next(node_id, state)
+                        continue
                     if node_id in executed_ids:
                         executed_ids.remove(node_id)
                     continue

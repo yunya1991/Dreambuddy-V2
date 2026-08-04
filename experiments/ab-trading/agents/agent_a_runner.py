@@ -36,9 +36,10 @@ from core.agent_a_memory import (
     update_equity_stats, maybe_switch_master, get_top_lessons,
     record_closed_trade, update_hold_streak, get_evolution_params,
     check_loss_protection_timeout, get_loss_protection_countdown,
+    LOSS_PROTECTION_TRIGGER,
 )
 from core.exit_module import run_exit_check, init_position, update_position_exit_levels
-from core.agent_a_llm import agent_a_llm_decide, get_quota_status, get_available_provider
+from core.agent_a_llm import agent_a_llm_decide, get_quota_status, get_available_provider, detect_market_regime
 
 # ── 配置 ───────────────────────────────────────────────────────────────────
 AUTO_EXECUTE  = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
@@ -67,7 +68,7 @@ def fetch_market_context(client: HyperliquidClient) -> dict:
         if price <= 0:
             continue
         try:
-            candles = get_candles(coin, "1h", 48, client.proxies)
+            candles = get_candles(coin, "1h", 100, client.proxies)
             closes  = [float(c["c"]) for c in candles if "c" in c]
             vols    = [float(c["v"]) for c in candles if "v" in c]
         except Exception:
@@ -80,15 +81,18 @@ def fetch_market_context(client: HyperliquidClient) -> dict:
         avg_vol = sum(vols) / len(vols) if vols else 0
         cur_vol = vols[0] if vols else 0
 
-        # 简化 EMA 计算
+        # 标准 EMA：prices 需为时间正序（最旧→最新），SMA 初始化 + 全数据迭代
         def ema(prices, n):
             if not prices or n <= 0:
-                return prices[-1] if prices else 0
+                return 0
             if len(prices) < n:
-                return prices[-1]
+                # 数据不足 n，用全量 SMA 近似（避免退化成单点价格）
+                return sum(prices) / len(prices)
             k = 2 / (n + 1)
-            e = prices[-n]
-            for p in prices[-n+1:]:
+            # 初始 EMA = 前 n 个价格的 SMA
+            e = sum(prices[:n]) / n
+            # 从第 n+1 个起迭代至最新
+            for p in prices[n:]:
                 e = p * k + e * (1 - k)
             return e
 
@@ -247,9 +251,9 @@ def run():
         print(f"[风控] 连续{hold_streak}轮HOLD，降低入场门槛以打破保守循环")
         _break_conservative_loop(decision, mkt, memory, account_data)
 
-    # 连败保护：连败≥3 时强制 HOLD（即使 LLM 说要做）
+    # 连败保护：连败≥LOSS_PROTECTION_TRIGGER 时强制 HOLD（即使 LLM 说要做）
     # 注意：48小时超时已在 run() 开头通过 check_loss_protection_timeout 处理
-    if memory.get("loss_streak", 0) >= 3 and decision.get("action") != "HOLD":
+    if memory.get("loss_streak", 0) >= LOSS_PROTECTION_TRIGGER and decision.get("action") != "HOLD":
         countdown = get_loss_protection_countdown(memory)
         print(f"[风控] 连败{memory['loss_streak']}次，强制观望一轮")
         if countdown:
@@ -569,7 +573,7 @@ def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_da
             "entry_price": px,
             "stop_loss_price": sl,
             "take_profit_price": tp,
-            "market_regime": "TREND_UP" if best_side == "LONG" else "TREND_DOWN",
+            "market_regime": detect_market_regime(mkt),
             "decision_rationale": f"[保守循环打破] {best_coin} {best_side} score={best_score} "
                                  f"conf={confidence:.0%}（连续HOLD触发强制入场）",
             "reasoning_steps": decision.get("reasoning_steps", []) + [
@@ -612,7 +616,7 @@ def _self_schedule(decision: dict, mkt: dict, memory: dict):
             break
 
     # 场景3：连败保护解除 → 6H后复盘
-    if loss_streak >= 3:
+    if loss_streak >= LOSS_PROTECTION_TRIGGER:
         request_early_run(
             reason=f"A连败{loss_streak}次，6H后强制复盘评估市场",
             run_at_ts=now + 21600,

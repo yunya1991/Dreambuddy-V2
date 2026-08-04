@@ -1,244 +1,69 @@
-# 架构设计总览
+# 架构设计
 
-> **版本**: v2.0
-> **更新日期**: 2026-05-16
+> **版本**: v3.0 | **更新日期**: 2026-07-31
+> **定位**: 1-ARCHITECTURE 目录入口，指向架构唯一事实源（SSoT）
+> **架构 SSoT**: ★ [SYSTEM_ARCHITECTURE_OVERVIEW.md](./SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 — 所有架构争议以此为准
 
 ---
 
-## 🏛️ 六大核心系统
+## 架构唯一事实源（SSoT）
 
-Dream-MultiSkill架构由六大核心系统组成：
+**所有架构设计、硬约束、模块边界、技术债全景以 [SYSTEM_ARCHITECTURE_OVERVIEW.md](./SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 为准。**
 
-| 系统 | 目录 | 描述 |
+SSoT v3.0 覆盖 12 章：
+
+- 三层架构（OS内核 + 能力层 + 应用层）
+- 三大思维链 + 三大核心闭环 + A0 矛盾论
+- 认知系统 + 记忆进化（开发闭环 ↔ 交易闭环对称）
+- 公司中枢（六部门 + 双中台 + 双交易流 + 四层合规）
+- 硬约束清单（违反即 bug）+ 技术债 103 项全景
+
+> ⚠️ 本 README 不再重复架构内容。如需了解架构，直接阅读 SSoT。
+
+---
+
+## 本目录文档索引
+
+### 架构总览
+
+| 文档 | 路径 | 状态 |
 |------|------|------|
-| 架构设计 | `1-ARCHITECTURE/` | 架构文档+设计文档+索引 |
-| 治理系统 | `2-GOVERNANCE/` | 合规+门禁+审计 |
-| 前端系统 | `3-FRONTEND/` | 用户界面 |
-| 记忆系统 | `4-MEMORY/` | 记忆+学习+进化 |
-| 业务管理 | `5-BUSINESS/` | HR+运营+成本 |
-| 交易系统 | `6-TRADING/` | A0-A9交易流水线 |
+| ★ SSoT 架构总览 v3.0 | [SYSTEM_ARCHITECTURE_OVERVIEW.md](./SYSTEM_ARCHITECTURE_OVERVIEW.md) | ✅ 草稿待评审 |
+| 交易模块总览 | [TRADING_MODULES_OVERVIEW.md](./TRADING_MODULES_OVERVIEW.md) | 🟡 与 v3.0 对齐 |
+| 三链调度清单 | [THREE_CHAIN_DISPATCH_CHECKLIST.md](./THREE_CHAIN_DISPATCH_CHECKLIST.md) | 🟡 与 v3.0 对齐 |
+| 超能力集成 | [SUPERPOWERS_INTEGRATION_UPGRADE.md](./SUPERPOWERS_INTEGRATION_UPGRADE.md) | 🟡 参考 |
+| 旧模块化架构（归档） | [WORKBUDDY_OS_MODULAR_ARCHITECTURE.md](./WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) | 📦 归档参考，决策以 v3.0 为准 |
+
+### 子目录
+
+| 子目录 | 内容 | 入口 |
+|--------|------|------|
+| 中台设计/ | 产物中台、网关中台、公司中枢 | [README.md](./中台设计/README.md) |
+| 前端设计/ | 前端架构、UI 规范 | [README.md](./前端设计/README.md) |
+| 工作索引/ | SKILL 索引、部门矩阵、工具映射 | [README.md](./工作索引/README.md) |
+| FAQ/ | 常见问题 | [README.md](./FAQ/README.md) |
+| dreamos/ | DreamOS CLI | [docs/ENGINEERING_INDEX.md](./dreamos/docs/ENGINEERING_INDEX.md) |
 
 ---
 
-## 🧠 公司中枢方向
+## 子系统架构文档
 
-自 `2026-05-16` 起，`7-ARTIFACT-HUB-V2` 的定位从“产物中台 + 路由服务”升级为“公司治理架构驱动的 AI 中枢”。
-
-它不再只服务产物索引和路由，而是开始统一承接：
-
-- 研究中台；
-- 市场化中台；
-- 交易链路监控；
-- 治理控制台；
-- HR 绩效与组织优化；
-- 市场情报与外部竞争；
-- 六人董事会（治理委员会）与人工审批。
-
-相关文档：
-
-- [公司中枢设计](./中台设计/COMPANY_CENTRAL_HUB.md)
-- [治理中枢化设计](../docs/superpowers/specs/2026-05-16-artifact-hub-v2-governance-central-design.md)
+7 个交易子系统（10/11/12/13/14/16/17）的技术设计文档见 [0-系统文档管理/2-文档地图/SYSTEM_MAP.md](../0-系统文档管理/2-文档地图/SYSTEM_MAP.md) §L2。
 
 ---
 
-## 📐 架构层次
+## 快速导航
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    用户交互层                                 │
-│  Gateway / Feed / Chain / Ops / 市场化中台 / 董事会台         │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────────┐
-│                 公司中枢 / 中台治理层                           │
-│  Artifact Hub V2 / Query / Route / Trace / Audit / Approval  │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────────┐
-│                    决策执行层                                 │
-│  研究链路 / 双交易工作流 / 分发执行 / 审计回放                 │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────────┐
-│                    支撑服务层                                 │
-│  治理部 / HR / 市场部 / 记忆系统 / 业务管理 / 外部集成          │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────────┐
-│                    基础设施层                                 │
-│  dreambuddy artifacts/meta/config / OKX / LLM / DB / 外部渠道 │
-└─────────────────────────────────────────────────────────────┘
-```
+| 需求 | 去哪看 |
+|------|--------|
+| 了解整体架构 | [SSoT v3.0](./SYSTEM_ARCHITECTURE_OVERVIEW.md) |
+| 找某个文档 | [文档地图 SYSTEM_MAP](../0-系统文档管理/2-文档地图/SYSTEM_MAP.md) |
+| 找某个主题 | [主题地图 TOPIC_MAP](../0-系统文档管理/2-文档地图/TOPIC_MAP.md) |
+| 架构文档地图 | [ARCHITECTURE_MAP](../0-系统文档管理/2-文档地图/ARCHITECTURE_MAP.md) |
+| 技术债清单 | [DEBT_INDEX.md](../DEBT_INDEX.md) |
 
 ---
 
-## 🔗 四大协作闭环
-
-### 闭环1: 交易决策闭环
-
-```
-A1调研 → A2分析 → A3推演 → A4验证 → A5执行 → A6监控 → A7门禁 → A1迭代
-```
-
-### 闭环2: 学习进化闭环
-
-```
-Episode记录 → Lesson蒸馏 → Proposal生成 → 验证门禁 → 实施执行 → A8复盘
-```
-
-### 闭环3: 治理合规闭环
-
-```
-合规审查 → 影子验证 → 执行监控 → 审计归因 → 持续改进
-```
-
-### 闭环4: 组织进化闭环
-
-```
-市场部发现机会/威胁 → 研究部调研 → 交易部执行验证 → 运营部分发 →
-治理部审计/解释 → HR 绩效评估/招聘/优化 → 董事会治理 → 人工审批
-```
-
----
-
-## 📊 SKILL分类
-
-| 类别 | 数量 | 核心SKILL |
-|------|------|-----------|
-| 交易研究(A0-A9) | 15+ | dream-strategy-research, dream-first-principles... |
-| 治理合规 | 12+ | dream-governance-manager, ai-trading-compliance... |
-| 记忆学习 | 12+ | memory-manager, learning-episode-writer... |
-| 业务管理 | 8+ | dream-hr-recruitment, dream-operation-director... |
-| 外部集成 | 15+ | tavily, telegram, 腾讯文档... |
-| 前端工具 | 5+ | gateway, bailian-integration... |
-
----
-
-## 📁 文档分类索引
-
-### 1-ARCHITECTURE/ 架构设计
-
-```
-1-ARCHITECTURE/
-├── 中台设计/                    # 产物中台、网关中台
-│   ├── README.md
-│   ├── PRODUCT_HUB.md          # 基础设计
-│   ├── PRODUCT_HUB_FULL.md      # 完整设计
-│   └── GATEWAY_HUB.md           # 网关设计
-├── 前端设计/                    # 用户前端系统
-│   ├── README.md
-│   ├── ARCHITECTURE.md
-│   ├── FRONTEND_ARCHITECTURE.md
-│   ├── USER_SYSTEM_DESIGN.md
-│   ├── API_CONFIG_DESIGN.md
-│   ├── TRADING_CONFIG_DESIGN.md
-│   ├── STRATEGY_CONFIG_DESIGN.md
-│   ├── CHANNEL_DESIGN.md
-│   ├── INTENT_ROUTER.md
-│   ├── UI_SPEC.md
-│   ├── UI_ROADMAP.md
-│   ├── FRONTEND_WB_INTEGRATION.md
-│   ├── CHAIN_ORCHESTRATOR.md
-│   └── TECH_STACK_EVALUATION.md
-├── 工作索引/                    # SKILL索引、工具映射
-│   ├── README.md
-│   ├── SKILL_INDEX.md          # 完整SKILL索引
-│   ├── DEPARTMENT_MATRIX.md     # 部门矩阵
-│   ├── FILE_LOCATIONS.md        # 文件位置
-│   └── TOOL_MAPPING.md          # 工具映射
-└── FAQ/                        # 常见问题
-    ├── README.md
-    ├── FAQ.md                   # 基础FAQ
-    └── FAQ_FULL.md              # 完整FAQ
-```
-
-### 2-GOVERNANCE/ 治理系统
-
-```
-2-GOVERNANCE/
-├── README.md
-├── GOVERNANCE_CHARTER.md       # 治理章程
-├── 核心SKILL/
-│   ├── dream-governance-manager/
-│   ├── ai-trading-compliance/
-│   ├── hermes-shadow-verification-gate/
-│   ├── hermes-skill-governance/
-│   └── hermes-rollback-actuator/
-└── 文档/
-    └── compliance_checklist.md
-```
-
-### 3-FRONTEND/ 前端系统
-
-```
-3-FRONTEND/
-├── README.md
-└── dream-universal-gateway/
-    ├── src/
-    ├── docs/
-    └── 配置/
-```
-
-### 4-MEMORY/ 记忆系统
-
-```
-4-MEMORY/
-├── README.md
-└── 核心SKILL/
-    ├── memory-manager/
-    ├── memory-distiller/
-    ├── memory-session-index/
-    ├── learning-episode-writer/
-    ├── learning-lesson-distiller/
-    └── learning-proposal-generator/
-```
-
-### 5-BUSINESS/ 业务管理
-
-```
-5-BUSINESS/
-├── README.md
-└── 核心SKILL/
-    ├── dream-hr-recruitment/
-    ├── dream-performance-review/
-    ├── dream-operation-director/
-    ├── dream-cost-control/
-    └── auto-repair/
-```
-
-### 6-TRADING/ 交易系统
-
-```
-6-TRADING/
-├── README.md
-├── A_SERIES_DETAIL.md          # A0-A9详解
-└── 核心SKILL/
-    ├── dream-contradiction-theory/  (A0)
-    ├── dream-strategy-research/     (A1)
-    ├── dream-first-principles/      (A2)
-    ├── master-seminar/              (A3)
-    ├── dream-tactical-validator/    (A4)
-    ├── dream-tactical-executor/     (A5)
-    ├── dream-intelligence-monitor/  (A6)
-    ├── A7-practice-theory/
-    ├── A8-theory-practice-verification/
-    └── dream-exit-skill-v2/         (A9)
-```
-
----
-
-## 🚀 快速导航
-
-### 按需求导航
-
-| 需求 | 文档 |
-|------|------|
-| 系统概览 | [README.md](./README.md) |
-| SKILL索引 | [SKILL_INDEX.md](./工作索引/SKILL_INDEX.md) |
-| 部门职责 | [DEPARTMENT_MATRIX.md](./工作索引/DEPARTMENT_MATRIX.md) |
-| 产物中台 | [PRODUCT_HUB_FULL.md](./中台设计/PRODUCT_HUB_FULL.md) |
-| 网关设计 | [GATEWAY_HUB.md](./中台设计/GATEWAY_HUB.md) |
-| 前端架构 | [FRONTEND_ARCHITECTURE.md](./前端设计/FRONTEND_ARCHITECTURE.md) |
-| A系流程 | [A_SERIES_DETAIL.md](../6-TRADING/A_SERIES_DETAIL.md) |
-| 治理章程 | [GOVERNANCE_CHARTER.md](../2-GOVERNANCE/GOVERNANCE_CHARTER.md) |
-| 常见问题 | [FAQ_FULL.md](./FAQ/FAQ_FULL.md) |
+**文档版本**: v3.0
+**最后更新**: 2026-07-31
+**关联**: [SSoT](./SYSTEM_ARCHITECTURE_OVERVIEW.md) · [0-系统文档管理](../0-系统文档管理/)

@@ -329,6 +329,62 @@ class DreamOSScheduler:
                             self.jobs[name].dry_run = dry_run
                             self.jobs[name].exchange = exchange
                             self.jobs[name].job_type = "exit_check"
+                            # add_job 已用默认值保存过一次,这里用正确值重新保存
+                            self._save_jobs()
+                    elif job_type == "backtest":
+                        # 回测评估任务
+                        bt_interval = job_data.get("interval", "1h")
+                        bt_budget = job_data.get("budget", "lean")
+                        def _backtest(_symbols=symbols, _interval=bt_interval, _budget=bt_budget):
+                            import subprocess
+                            try:
+                                # 兜底: job 配置漏 symbols 时用默认币种，避免 join("") → 报告全 0
+                                bt_symbols = [s for s in _symbols if s and s.strip()] if _symbols else []
+                                if not bt_symbols:
+                                    bt_symbols = ["BTC", "ETH", "SOL"]
+                                    logger.warning("backtest job 未配置 symbols，回退默认 BTC,ETH,SOL")
+                                cmd = [
+                                    "/opt/anaconda3/bin/python3", "-m",
+                                    "dreamos.cli.dreamos_backtester",
+                                    "--symbols", ",".join(bt_symbols),
+                                    "--interval", _interval,
+                                    "--budget", _budget,
+                                ]
+                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800, cwd="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE")
+                                logger.info(f"回测评估完成: {result.stdout[-200:] if result.stdout else 'no output'}")
+                                return {"exit_code": result.returncode}
+                            except Exception as e:
+                                logger.warning(f"回测评估失败: {e}")
+                                return {"error": str(e)}
+
+                        self.add_job(name, cron_expr, _backtest, enabled=enabled)
+                        if name in self.jobs:
+                            self.jobs[name].job_type = "backtest"
+                            self._save_jobs()
+                    elif job_type == "optimize":
+                        # 编排优化任务
+                        opt_interval = job_data.get("interval", "1h")
+                        def _optimize(_symbols=symbols, _interval=opt_interval):
+                            import subprocess
+                            try:
+                                cmd = [
+                                    "/opt/anaconda3/bin/python3", "-m",
+                                    "dreamos.cli.dreamos_backtester",
+                                    "--symbols", ",".join(_symbols),
+                                    "--interval", _interval,
+                                    "--optimize",
+                                ]
+                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600, cwd="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE")
+                                logger.info(f"编排优化完成: {result.stdout[-200:] if result.stdout else 'no output'}")
+                                return {"exit_code": result.returncode}
+                            except Exception as e:
+                                logger.warning(f"编排优化失败: {e}")
+                                return {"error": str(e)}
+
+                        self.add_job(name, cron_expr, _optimize, enabled=enabled)
+                        if name in self.jobs:
+                            self.jobs[name].job_type = "optimize"
+                            self._save_jobs()
                     else:
                         # 默认: 扫描交易任务
                         def _scan_single(symbol: str, _dr=dry_run, _ex=exchange):

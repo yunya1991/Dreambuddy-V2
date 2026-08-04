@@ -54,10 +54,10 @@ ADDON_PCT = get_config_float("ADDON_PCT", 0.08)  # 加仓间距（保持不变�
 BASE_POSITION_PCT = get_config_float("BASE_POSITION_PCT", 0.22)
 LEVERAGE = get_config_float("LEVERAGE", 5.0)
 
-# 加仓资金分配（贝叶斯优化结果）
-ADDON1_PCT = get_config_float("ADDON1_PCT", 0.20)  # 加仓1：20%（黑天鹅第一档，最可能触发）
-ADDON2_PCT = get_config_float("ADDON2_PCT", 0.05)  # 加仓2：5%
-ADDON3_PCT = get_config_float("ADDON3_PCT", 0.10)  # 加仓3：10%
+# 加仓资金分配（金字塔结构：越跌加仓越大，经典马丁）
+ADDON1_PCT = get_config_float("ADDON1_PCT", 0.05)  # 加仓1：5%（黑天鹅第一档）
+ADDON2_PCT = get_config_float("ADDON2_PCT", 0.10)  # 加仓2：10%
+ADDON3_PCT = get_config_float("ADDON3_PCT", 0.20)  # 加仓3：20%（最深处加仓最大）
 
 MAX_POSITION_PCT = get_config_float("MAX_POSITION_PCT", 0.60)
 MIN_MARGIN_USD = get_config_float("MIN_MARGIN_USD", 20)

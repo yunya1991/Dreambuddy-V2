@@ -421,6 +421,63 @@ def _parse_llm_output(reply: str) -> Optional[dict]:
 
 # ── 基本规则引擎（兜底）─────────────────────────────────────────────────
 
+def detect_market_regime(mkt: dict) -> str:
+    """
+    基于市场统计判断整体市场状态（趋势 vs 震荡）。
+
+    设计目标：规则兜底路径不再硬编码 regime，让 maybe_switch_master 的
+    RANGE 分支能真正生效（此前 regime 永为 TREND_UP/DOWN，导致震荡市
+    风格切换永不触发）。
+
+    判断维度（取主流币聚合，避免单币噪声）：
+      1. 动量强度：24h涨跌幅绝对值中位数（弱动量→震荡）
+      2. EMA 结构：|ema20-ema50|/price 中位数（缠绕→震荡，拉开→趋势）
+      3. RSI 分布：RSI 落在 40-60 中性区的占比（>=50%→震荡）
+      4. 方向一致性：样本中上涨币种占比
+
+    返回: "TREND_UP" / "TREND_DOWN" / "RANGE"
+    """
+    coins = mkt.get("coins", {})
+    if not coins:
+        return "RANGE"
+
+    # 优先用主流币判断，避免小币噪声主导
+    majors = [c for c in ["BTC", "ETH", "SOL"] if c in coins]
+    sample = majors if majors else list(coins.keys())[:5]
+
+    abs_ch24 = sorted([abs(coins[c].get("ch24", 0)) for c in sample])
+    median_mom = abs_ch24[len(abs_ch24) // 2] if abs_ch24 else 0.0
+
+    ema_spreads = []
+    for c in sample:
+        d = coins[c]
+        p = d.get("price", 0)
+        e20, e50 = d.get("ema20", 0), d.get("ema50", 0)
+        if p > 0 and e20 > 0 and e50 > 0:
+            ema_spreads.append(abs(e20 - e50) / p)
+    median_spread = sorted(ema_spreads)[len(ema_spreads) // 2] if ema_spreads else 0.0
+
+    rsi_vals = [coins[c].get("rsi14", 50) for c in sample]
+    neutral_rsi_ratio = (sum(1 for r in rsi_vals if 40 <= r <= 60) / len(rsi_vals)) if rsi_vals else 0.0
+
+    up_count = sum(1 for c in sample if coins[c].get("ch24", 0) > 0)
+    up_ratio = up_count / len(sample) if sample else 0.5
+
+    # 强震荡信号：动量弱 + EMA缠绕 + RSI中性
+    if median_mom < 1.5 and median_spread < 0.01 and neutral_rsi_ratio >= 0.5:
+        return "RANGE"
+    # 弱动量且方向不一致 → 震荡
+    if median_mom < 2.0 and not (up_ratio >= 0.67 or up_ratio <= 0.33):
+        return "RANGE"
+    # 方向一致且动量足够 → 趋势
+    if up_ratio >= 0.67 and median_mom >= 1.5:
+        return "TREND_UP"
+    if up_ratio <= 0.33 and median_mom >= 1.5:
+        return "TREND_DOWN"
+    # 介于之间，默认偏震荡（保守）
+    return "RANGE"
+
+
 def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
     """
     基本规则引擎 — 当所有 LLM 都不可用时的兜底策略
@@ -531,9 +588,11 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
     sl = round(px * (1 - stop_loss_pct) if best_side == "LONG" else px * (1 + stop_loss_pct), 2)
     tp = round(px * (1 + take_profit_pct) if best_side == "LONG" else px * (1 - take_profit_pct), 2)
 
-    regime = "TREND_UP" if best_side == "LONG" else "TREND_DOWN"
+    # regime 基于市场整体统计判断（而非硬编码为方向），震荡市可输出 RANGE
+    regime = detect_market_regime(mkt)
 
     reasoning.append(f"[规则引擎] 扫描 {len(coins)} 个标的")
+    reasoning.append(f"市场状态: {regime}（基于主流币动量/EMA/RSI统计）")
     reasoning.append(f"最优标的: {best_coin} score={best_score}")
     reasoning.append(f"方向: {best_side} | 24H={best_info.get('ch24',0):+.1f}% 4H={best_info.get('ch4h',0):+.1f}%")
     reasoning.append(f"量比: {best_info.get('vol_ratio',1):.2f}x")

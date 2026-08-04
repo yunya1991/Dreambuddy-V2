@@ -408,6 +408,20 @@ class ElliottWaveRecognizer:
         n_pts = len(points)
         recent = points[-6:] if n_pts >= 6 else points
 
+        # P1 修复: 在函数开头初始化 last_low/last_high，避免
+        # 多头分支赋值、空头分支引用导致 UnboundLocalError:
+        # "cannot access local variable 'last_low' where it is not
+        # associated with a value"
+        last_low = None
+        last_high = None
+        for p in reversed(points):
+            if p.point_type == 'LOW' and last_low is None:
+                last_low = p
+            elif p.point_type == 'HIGH' and last_high is None:
+                last_high = p
+            if last_low is not None and last_high is not None:
+                break
+
         if is_bull:
             # 多头推动浪
             if n_pts < 3:
@@ -416,17 +430,6 @@ class ElliottWaveRecognizer:
             # 取最近转折点，按位置判断当前浪
             # 多头推动浪期望模式：LOW-HIGH-LOW-HIGH-LOW-HIGH
             # 但实际中转折点可能不完整，按当前可用转折点判断
-
-            # 找到最后一个LOW和HIGH
-            last_low = None
-            last_high = None
-            for p in reversed(points):
-                if p.point_type == 'LOW' and last_low is None:
-                    last_low = p
-                elif p.point_type == 'HIGH' and last_high is None:
-                    last_high = p
-                if last_low is not None and last_high is not None:
-                    break
 
             if last_low is None or last_high is None:
                 return ('INCOMPLETE', 0, 0.0)
@@ -487,6 +490,10 @@ class ElliottWaveRecognizer:
 
         else:
             # 空头推动浪：HIGH-LOW-HIGH-LOW-HIGH-LOW
+            # 保护：last_low/last_high 在函数开头已初始化，但若数据不全仍可能为 None
+            if last_low is None or last_high is None:
+                return ('INCOMPLETE', 0, 0.0)
+
             bear_pattern = ['HIGH', 'LOW', 'HIGH', 'LOW', 'HIGH', 'LOW']
             actual_pattern = [p.point_type for p in recent]
 

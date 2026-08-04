@@ -1,0 +1,20 @@
+{
+  "template_id": "APP-VM-1785285216150-3f933957",
+  "title": "git diff-tree命令需要加--root参数才能支持首次commit(无parent)的文件变更提取。不加--root时首次commit的diff-tr",
+  "content": "git diff-tree命令需要加--root参数才能支持首次commit(无parent)的文件变更提取。不加--root时首次commit的diff-tree输出为空，导致extract_commit_info获取不到文件列表和行数统计。",
+  "quality_level": "A",
+  "confidence": 0.7,
+  "verify_count": 9,
+  "tags": [
+    "git",
+    "diff-tree",
+    "hook",
+    "踩坑"
+  ],
+  "memory_type": "experience",
+  "source": "认知闭环开发-2026-07-29",
+  "created_at": "2026-07-29T00:33:36.150383+00:00",
+  "updated_at": "2026-07-31T13:09:11.447216+00:00",
+  "rebuilt_from_memory_id": "VM-1785285216150-3f933957",
+  "rebuild_version": 1
+}

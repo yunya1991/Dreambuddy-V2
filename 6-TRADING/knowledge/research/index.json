@@ -1,0 +1,25 @@
+{
+  "last_updated": "2026-05-19T10:00:00Z",
+  "artifacts": [
+    {
+      "artifact_id": "intel-report-001",
+      "title": "BTC市场情报分析报告",
+      "type": "report",
+      "date": "2026-05-19T09:00:00Z",
+      "status": "completed",
+      "chain_phase": "A1",
+      "workflow_type": "trading_v2",
+      "tags": "bitcoin market-analysis"
+    },
+    {
+      "artifact_id": "strategy-a3-002",
+      "title": "ETH趋势跟踪策略",
+      "type": "strategy",
+      "date": "2026-05-18T15:00:00Z",
+      "status": "completed",
+      "chain_phase": "A3",
+      "workflow_type": "trading_v2",
+      "tags": "ethereum trend strategy"
+    }
+  ]
+}

@@ -1,8 +1,10 @@
-# DreamBuddy-V2 工程索引（SSoT）
+# DreamBuddy-V2 工程索引
 
-> **版本**: v2.1 | **更新日期**: 2026-07-15
-> **定位**: 整个项目的工程入口索引（Single Source of Truth），包含所有子系统的文件级索引、入口锚点、依赖关系和快速导航
-> **维护原则**: 每次变更必须先阅读本文件定位入口，变更后必须追加变更日志
+> **版本**: v3.0 | **更新日期**: 2026-07-31
+> **定位**: 项目工程入口索引，提供运行入口、核心链路、配置落地点的快速导航
+> **架构 SSoT**: ★ [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](./1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 — 所有架构争议以此为准
+> **文档管理**: [0-系统文档管理/INDEX.md](./0-系统文档管理/INDEX.md) v2.0 — 全项目文档导航中枢
+> **维护原则**: 工程入口变更时更新本文件；架构变更更新 SSoT；文档变更更新 0-系统文档管理
 
 ---
 
@@ -21,15 +23,14 @@
 
 | 层级 | 文档 | 权威范围 | 冲突时的优先级 |
 |------|------|----------|----------------|
-| L0 | 本文件（ENGINEERING_INDEX.md） | 全项目工程索引、系统间依赖、入口锚点 | 最高 |
-| L0 | TECHNICAL_DESIGN.md | 全项目技术架构、设计原则、数据流 | 最高（架构层面） |
+| L0 | **1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md v3.0** | 架构唯一事实源（SSoT）：三层架构、硬约束、模块边界、技术债全景 | **最高（架构层面）** |
+| L0 | 本文件（ENGINEERING_INDEX.md v3.0） | 全项目工程索引、运行入口、核心链路、配置落地点 | 最高（工程索引） |
 | L0 | DEBT_INDEX.md | 全项目技术债务清单与修复计划 | 最高（债务层面） |
-| L0 | PROJECT_DOC_STANDARD.md | 子系统文档规范标准 | 最高（文档规范） |
-| L1 | 10-经典指标系统/技术文档2.0.md | 经典指标系统行为边界与排障 | 该子系统内最高 |
-| L1 | 10-经典指标系统/系统运营技术文档.md | 运营闭环、监控、故障处置 | 运维层面最高 |
-| L1 | 10-经典指标系统/skills/SKILLS_技术文档规范.md | Skills能力契约、R0-R3分级 | 技能层面最高 |
-| L1 | 14-V15经典马丁策略/docs/*.md | V15策略技术设计、API规格 | 该子系统内最高 |
+| L0 | 0-系统文档管理/ | 文档元层管理中枢（规范/地图/治理） | 最高（文档管理） |
+| L0 | 0-系统文档管理/1-规范体系/DOC_STANDARD.md | 文档编写规范 | 最高（文档规范） |
+| L1 | 各子系统 docs/TECHNICAL_DESIGN.md | 子系统技术设计 | 该子系统内最高 |
 | L2 | 各子系统 docs/ENGINEERING_INDEX.md | 子系统文件级索引 | 该子系统内最高 |
+| 📦 | TECHNICAL_DESIGN.md（根目录） | **已归档**（v3.0 LEGACY），被 SSoT 替代 | 无（历史参考） |
 
 ### 0.3 工程索引（必读入口）
 
@@ -235,8 +236,7 @@ dreambuddy-v2/
 │   ├── skills/                  # 技能目录（catalog/contracts/playbooks/routing）
 │   ├── tools/                   # 工具脚本（参数优化、回测验证、环境检查）
 │   ├── user_data/               # 用户数据与配置（20+config_*.json）
-│   ├── 技术文档.md               # 核心技术文档（12414行）
-│   ├── 技术文档2.0.md            # 维护版技术文档（8772行）
+│   ├── 技术文档.md               # 旧版技术文档（12414行，DD-006 待归档）
 │   ├── 系统运营技术文档.md        # 运营手册（310行）
 │   ├── 基本面分析文档.md          # 基本面分析（1994行）
 │   └── ...
@@ -314,7 +314,8 @@ dreambuddy-v2/
 ├── ENGINEERING_INDEX.md         # 本文件 — 工程索引（SSoT）
 ├── TECHNICAL_DESIGN.md          # 技术架构文档
 ├── DEBT_INDEX.md                # 技术债务索引
-├── PROJECT_DOC_STANDARD.md      # 子系统文档规范标准
+├── 0-系统文档管理/              # 文档元层管理中枢（规范/地图/治理）
+├── PROJECT_DOC_STANDARD.md      # 已迁移 → 0-系统文档管理/1-规范体系/DOC_STANDARD.md
 ├── README.md
 └── CONTRIBUTING.md
 ```
@@ -380,7 +381,7 @@ dreambuddy-v2/
 | 目录 | `10-经典指标系统/` |
 | 核心服务 | Flask后端（ml_trade_service.py） |
 | 服务端口 | 8092（后端）、5173（前端） |
-| 文档状态 | ✅ 成熟（技术文档12414行 + 技术文档2.0 8772行 + 运营文档310行） |
+| 文档状态 | ✅ 成熟（docs/TECHNICAL_DESIGN.md 8772行 + 技术文档.md 12414行 + 运营文档310行） |
 
 **核心文件：**
 
@@ -398,7 +399,7 @@ dreambuddy-v2/
 | 文档 | 行数 | 权威范围 |
 |------|------|----------|
 | `技术文档.md` | 12414 | 生产交易系统行为边界与排障（历史材料） |
-| `技术文档2.0.md` | 8772 | 维护版技术文档（当前权威） |
+| `docs/TECHNICAL_DESIGN.md` | 8772 | 技术设计文档（由技术文档2.0.md迁入，当前权威） |
 | `系统运营技术文档.md` | 310 | 运营闭环、监控、故障处置 |
 | `交易AI Agent 技术文档2.0.md` | 268 | AI Agent/沙箱/门禁/审计边界 |
 | `skills/SKILLS_技术文档规范.md` | 184 | Skills能力契约、R0-R3分级标准 |
@@ -828,7 +829,7 @@ cd 10-经典指标系统 && python -m pytest test_*.py -v
 |------|----------|----------|----------|
 | **Dream OS 内核** | [dreamos/docs/ENGINEERING_INDEX.md](./1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | [dreamos/docs/TECHNICAL_DESIGN.md](./1-ARCHITECTURE/dreamos/docs/TECHNICAL_DESIGN.md) | [dreamos/__init__.py](./1-ARCHITECTURE/dreamos/__init__.py) |
 | V15马丁策略 | [docs/ENGINEERING_INDEX.md](./14-V15经典马丁策略/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md) | [core/v15_trader.py](./14-V15经典马丁策略/core/v15_trader.py) |
-| 经典指标系统 | [技术文档2.0.md](./10-经典指标系统/技术文档2.0.md) | [技术文档.md](./10-经典指标系统/技术文档.md) | [ml_trade_service.py](./10-经典指标系统/ml_trade_service.py) |
+| 经典指标系统 | [docs/TECHNICAL_DESIGN.md](./10-经典指标系统/docs/TECHNICAL_DESIGN.md) | [技术文档.md](./10-经典指标系统/技术文档.md) | [ml_trade_service.py](./10-经典指标系统/ml_trade_service.py) |
 | 三屏趋势系统 | [docs/ENGINEERING_INDEX.md](./12-三屏趋势系统/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) | [engine.py](./12-三屏趋势系统/engine.py) |
 | 通用风控模块 | [docs/ENGINEERING_INDEX.md](./13-通用风控模块/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./13-通用风控模块/docs/TECHNICAL_DESIGN.md) | [core/engine.py](./13-通用风控模块/core/engine.py) |
 | 易经推理系统 | [docs/ENGINEERING_INDEX.md](./11-易经推理系统/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./11-易经推理系统/docs/TECHNICAL_DESIGN.md) | [scripts/memory_l4/polling_trader.py](./11-易经推理系统/scripts/memory_l4/polling_trader.py) |

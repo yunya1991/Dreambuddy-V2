@@ -49,6 +49,8 @@ try:
 except ImportError:
     raise ImportError("需要安装 bayesian-optimization 库: pip install bayesian-optimization")
 
+from config_loader import get_config_int, get_config_float
+
 
 def load_backtest_module():
     import sys

@@ -42,6 +42,30 @@ SYSTEM_SOURCES = [
     "dream_os",
 ]
 
+# P1-1: 测试数据关键字 — case_id / trade_id 含这些词时标记 is_test=True
+_TEST_KEYWORDS = ("test", "qmm_test", "backup", "demo", "sample", "mock")
+
+# P1-2: shared_memory_bus ACL 配置 — 扩展所有 6 个 system_source 的读写权限
+_SHARED_BUS_ACL = {
+    "yijing_inference": {"publish": True, "read": True},
+    "three_screen": {"publish": True, "read": True},
+    "martin_v15": {"publish": True, "read": True},
+    "agent_a": {"publish": True, "read": True},
+    "agent_b": {"publish": True, "read": True},
+    "dream_os": {"publish": True, "read": True},
+    "bcrm_engine": {"publish": True, "read": True},
+}
+
+
+def _detect_is_test(case_id: str, trade_id: str = "") -> bool:
+    """P1-1: 检测案例是否为测试数据
+
+    通过 case_id / trade_id 中是否包含测试关键字来判断。
+    下游 ReviewEngine / DistillEngine / l4_stats_adapter 可按 is_test 字段过滤。
+    """
+    combined = f"{case_id} {trade_id}".lower()
+    return any(kw in combined for kw in _TEST_KEYWORDS)
+
 
 class UnifiedCaseRegistry:
     """全局交易事件注册中心"""
@@ -75,7 +99,8 @@ class UnifiedCaseRegistry:
         1. build_trade_case — 生成标准 v0.3 格式
         2. validate_case — schema 验证
         3. save_case — 持久化存储
-        4. notify_hooks — 触发实时消费钩子
+        4. publish_to_shared_bus — P1-2: 双写到 shared_memory_bus 事件流
+        5. notify_hooks — 触发实时消费钩子
 
         Returns:
             (case_id, success)
@@ -95,9 +120,41 @@ class UnifiedCaseRegistry:
 
         # 触发实时消费钩子
         if success:
+            # P1-2: 双写到 shared_memory_bus，实现事件驱动订阅（轻量改造，不改变直接注册流程）
+            self._publish_to_shared_bus(event, case)
             self._notify_hooks(case)
 
         return case["case_id"], success
+
+    def _publish_to_shared_bus(self, event: TradeEvent, case: Dict[str, Any]) -> None:
+        """P1-2: 将交易事件发布到 shared_memory_bus 事件流
+
+        轻量双写：在案例持久化成功后，同步发布到事件总线，
+        供 ab_bridge / bcrm_engine 等订阅方消费。
+        失败不影响案例库写入（总线是事件留痕，非强一致性）。
+        """
+        try:
+            from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
+            publish_shared_memory_event(
+                snapshot_ts=event.ts_exit or event.ts_entry or datetime.now(timezone.utc).isoformat(),
+                agent_id=event.system_source,
+                event_type="trade_case_registered",
+                payload={
+                    "case_id": case.get("case_id"),
+                    "system_source": event.system_source,
+                    "symbol": event.symbol,
+                    "direction": event.direction,
+                    "entry_price": event.entry_price,
+                    "exit_price": event.exit_price,
+                    "pnl_pct": event.pnl_pct,
+                    "is_test": case.get("is_test", False),
+                    "l4_status": case.get("l4_status"),
+                },
+                acl_config=_SHARED_BUS_ACL,
+            )
+        except Exception as e:
+            # 总线写入失败不影响案例库主流程
+            print(f"[UnifiedCaseRegistry] shared_memory_bus publish 失败(非致命): {e}")
     
     def build_trade_case(self, event: TradeEvent) -> Dict[str, Any]:
         """
@@ -116,7 +173,9 @@ class UnifiedCaseRegistry:
             "version": "v0.3",
             "system_source": event.system_source,
             "source": "live_trading",
-            
+            # P1-1: 测试数据标记，下游消费时按 is_test=False 过滤训练集
+            "is_test": _detect_is_test(f"tc_{event.system_source}_{event.trade_id}", event.trade_id),
+
             "ts": event.ts_exit or event.ts_entry,
             "ts_start": event.ts_entry,
             "ts_end": event.ts_exit,
@@ -333,7 +392,106 @@ class UnifiedCaseRegistry:
                 return json.load(f)
         except Exception:
             return None
-    
+
+    def update_outcome(self, case_id: str,
+                       pnl: Optional[float] = None,
+                       pnl_pct: Optional[float] = None,
+                       exit_price: Optional[float] = None,
+                       exit_reason: Optional[str] = None,
+                       ts_exit: Optional[str] = None) -> bool:
+        """离场回填：更新已注册案例的实际结果，闭合开仓→离场两阶段闭环
+
+        与 CaseWriter.update_outcome 对齐，支持 auto_trader 等子系统
+        开仓时注册案例（ts_exit=None）、离场时回填结果的异步两阶段模式。
+
+        Args:
+            case_id: 案例 ID（开仓时由 register_trade_event 返回）
+            pnl: 实际盈亏金额
+            pnl_pct: 实际盈亏百分比
+            exit_price: 离场价格
+            exit_reason: 离场原因
+            ts_exit: 离场时间 ISO 字符串
+
+        Returns:
+            是否更新成功
+        """
+        case = self.get_case(case_id)
+        if case is None:
+            print(f"[UnifiedCaseRegistry] update_outcome 案例不存在: {case_id}")
+            return False
+
+        is_correct = None
+        if pnl is not None:
+            is_correct = pnl >= 0
+        elif pnl_pct is not None:
+            is_correct = pnl_pct >= 0
+
+        # 更新 decision_outcome
+        outcome = case.get("decision_outcome", {})
+        if pnl is not None:
+            outcome["pnl"] = pnl
+        if pnl_pct is not None:
+            outcome["pnl_pct"] = pnl_pct
+        if exit_reason is not None:
+            outcome["exit_reason"] = exit_reason
+        if is_correct is not None:
+            outcome["is_correct"] = is_correct
+        outcome["goal_achieved"] = is_correct
+        case["decision_outcome"] = outcome
+
+        # 更新 actual_outcome（与 decision_outcome 保持一致）
+        actual = case.get("actual_outcome", {})
+        if pnl_pct is not None:
+            actual["pnl_pct"] = pnl_pct
+        if exit_reason is not None:
+            actual["exit_reason"] = exit_reason
+        if is_correct is not None:
+            actual["is_correct"] = is_correct
+        case["actual_outcome"] = actual
+
+        # 更新 position_info
+        pos_info = case.get("position_info", {})
+        if exit_price is not None:
+            pos_info["exit_price"] = exit_price
+        case["position_info"] = pos_info
+
+        # 更新时间
+        if ts_exit:
+            case["ts_end"] = ts_exit
+            case["ts"] = ts_exit  # ts 取最新时间
+
+        # 追加 thinking_chain EXIT 阶段
+        chain = case.get("thinking_chain", [])
+        symbol = case.get("symbol", case.get("inst_id", "UNKNOWN"))
+        direction = case.get("direction", "UNKNOWN")
+        chain.append({
+            "stage": "EXIT",
+            "ts": ts_exit or datetime.now(timezone.utc).isoformat(),
+            "decision": f"Close {direction.upper()} {symbol}",
+            "rationale": f"Exit reason: {exit_reason}, PnL: {pnl_pct}%",
+            "evidence_refs": [],
+            "exit_price": exit_price,
+        })
+        case["thinking_chain"] = chain
+
+        # 更新执行状态
+        execution = case.get("execution", {})
+        execution["result"] = "completed"
+        case["execution"] = execution
+
+        # 更新 L4 状态
+        case["l4_status"] = "M1_OUTCOME_UPDATED"
+
+        # 持久化
+        filepath = self.cases_dir / f"{case_id}.json"
+        try:
+            with filepath.open("w", encoding="utf-8") as f:
+                json.dump(case, f, ensure_ascii=False, indent=2, default=str)
+            return True
+        except Exception as e:
+            print(f"[UnifiedCaseRegistry] update_outcome 保存失败: {case_id} | {e}")
+            return False
+
     def list_cases(self, system_source: Optional[str] = None) -> List[str]:
         """列出 TradeCase ID"""
         ids = []

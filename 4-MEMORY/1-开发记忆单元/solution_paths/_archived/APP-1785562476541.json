@@ -1,0 +1,61 @@
+{
+  "template_id": "APP-1785562476541",
+  "name": "python-development 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "python-development 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": null,
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "任务涉及 4 个文件",
+    "action_count": 5,
+    "files_touched": [
+      "cognitive_loop_entry.py",
+      "cognitive_mcp_server.py",
+      "cognitive_session.py",
+      "cognitive_daemon.py"
+    ],
+    "duration_minutes": 17.1,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1785563503.083364,
+    "parent_skill_ids": [
+      "custom-path"
+    ],
+    "process_verify_report": {},
+    "task_type": "python-development",
+    "reproducible_steps": [
+      "modified: cognitive_loop_entry.py",
+      "modified: cognitive_session.py（共 2 次修改）",
+      "modified: cognitive_daemon.py",
+      "modified: cognitive_mcp_server.py"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "cognitive_loop_entry.py",
+        "cognitive_mcp_server.py",
+        "cognitive_session.py",
+        "cognitive_daemon.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

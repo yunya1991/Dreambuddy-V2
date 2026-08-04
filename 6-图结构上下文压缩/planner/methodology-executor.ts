@@ -1,10 +1,14 @@
 /**
- * MethodologyExecutor - C 层方法论执行器（包装器模式）
+ * methodology-executor.ts — C 层交易节点质量门禁
  *
- * 位置: 6-图结构上下文压缩/planner/methodology-executor.ts
+ * 定位：交易 Planner 的节点级代码门禁（Spec 合规 + 置信度审查），
+ * 借鉴 Superpowers 理念，但**不等价于 Superpowers Skill 体系**，
+ * 与认知层 Process Layer（4-MEMORY/ 的 Python SkillLoader）**解耦**。
  *
- * 设计依据: Claude Code Superpowers 7阶段方法论
- *   借鉴其"先验证后完成"的执行理念，作为 C 层节点执行的包装器
+ * 边界澄清：
+ *   - 本文件：GraphExecutor 节点前后硬拦截检查（交易专用）
+ *   - 认知层 Process Layer：SKILL.md Markdown 注入，AI 读后自主 Prompt 自约束（通用）
+ * 两者互不冲突，交易开发任务可双保险：Planner 内部门禁 + AI 侧 process_block 自主遵循。
  *
  * 核心理念:
  *   - 包装器模式：在不改变 GraphExecutor 核心逻辑的前提下增加方法论约束
@@ -16,10 +20,8 @@
  *   2. 两阶段审查 - Spec合规 + 质量审查（所有节点）
  *   3. 子代理派发 - 复杂节点拆分子任务并行（高复杂度节点）
  *
- * 不改变的核心创新:
- *   - 动态图编排（非固定流水线）
- *   - 反射决策机制（CONTINUE/REDO/JUMP）
- *   - 置信度驱动
+ * 注：更完整的方法论在通用认知层 Process Layer（SKILL.md）；
+ * 本文件仅做 Planner 节点级代码门禁，不进入通用认知环。
  */
 
 import { ThinkingStepDefinition } from './step-types';

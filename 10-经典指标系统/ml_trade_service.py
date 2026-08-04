@@ -8301,7 +8301,24 @@ def _aster_v3_sign(params: Dict[str, Any], owner: Any = None) -> Dict[str, Any]:
     _aster_v3_trim_dict(d0)
     json_str = json.dumps(d0, sort_keys=True).replace(" ", "").replace("\\'", "\\\"")
 
-    nonce = int(time.time() * 1000000)
+    # P1-BUGFIX: 连续快速签名（开仓 + SL + TP）时，微秒时间戳可能相同
+    # 导致 "Nonce used" 错误。使用 ASTER_STATE 维护全局 last_nonce，
+    # 保证 nonce 严格单调递增:
+    #   new_nonce = max(当前微秒时间戳, 上次 nonce + 1)
+    # 同时加 owner 维度支持多账户（通常仅一个账户，key 为用户地址）
+    try:
+        _nonce_key = "last_nonce_v3_" + str(signer or "").lower()
+        _last = int(ASTER_STATE.get(_nonce_key, 0))
+    except Exception:
+        _nonce_key = "last_nonce_v3"
+        _last = 0
+    _candidate = int(time.time() * 1000000)
+    nonce = _candidate if _candidate > _last else _last + 1
+    try:
+        ASTER_STATE[_nonce_key] = int(nonce)
+    except Exception:
+        pass
+
     encoded = abi_encode(["string", "address", "address", "uint256"], [json_str, user, signer, int(nonce)])
     keccak_hex = Web3.keccak(encoded).hex()
     signable = encode_defunct(hexstr=keccak_hex)

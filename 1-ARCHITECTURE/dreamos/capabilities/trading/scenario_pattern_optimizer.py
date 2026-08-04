@@ -23,12 +23,14 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 # 5种编排模式
+# 注意: 所有 pattern 必须包含 A4→A5→A9 执行节点, 否则无法生成 trade_order
+# A2 提供策略参数, 一并加入
 GRAPH_PATTERNS = {
-    "c_chain":     ["C1", "C2", "C3"],
-    "c_f_chain":   ["C1", "C2", "F1", "F3"],
-    "full_chain":  ["C1", "C2", "F2", "G1"],
-    "f_chain":     ["F1", "F2", "F3", "F4"],
-    "c_g_chain":   ["C1", "C3", "G1"],
+    "c_chain":     ["C1", "C2", "C3", "A2", "A4", "A5", "A9"],
+    "c_f_chain":   ["C1", "C2", "F1", "F3", "A2", "A4", "A5", "A9"],
+    "full_chain":  ["C1", "C2", "F2", "G1", "A2", "A4", "A5", "A9"],
+    "f_chain":     ["F1", "F2", "F3", "F4", "A2", "A4", "A5", "A9"],
+    "c_g_chain":   ["C1", "C3", "G1", "A2", "A4", "A5", "A9"],
 }
 
 

@@ -46,16 +46,19 @@ class OrchestrationMemory:
     """
 
     # 5种编排模式（来自 stress_test.py 第90-96行）
+    # 注意: 所有 pattern 必须包含 A4(风控门禁)→A5(战术执行)→A9(离场策略),
+    # 否则 A5 无法生成 trade_order, auto_trader 走降级 fallback 绕过门禁。
+    # A2(策略合成) 提供策略参数, 一并加入。
     GRAPH_PATTERNS = {
-        "c_chain":     ["C1", "C2", "C3"],
-        "c_f_chain":   ["C1", "C2", "F1", "F3"],
-        "full_chain":  ["C1", "C2", "F2", "G1"],
-        "f_chain":     ["F1", "F2", "F3", "F4"],
-        "c_g_chain":   ["C1", "C3", "G1"],
+        "c_chain":     ["C1", "C2", "C3", "A2", "A4", "A5", "A9"],
+        "c_f_chain":   ["C1", "C2", "F1", "F3", "A2", "A4", "A5", "A9"],
+        "full_chain":  ["C1", "C2", "F2", "G1", "A2", "A4", "A5", "A9"],
+        "f_chain":     ["F1", "F2", "F3", "F4", "A2", "A4", "A5", "A9"],
+        "c_g_chain":   ["C1", "C3", "G1", "A2", "A4", "A5", "A9"],
     }
 
     DEFAULT_PATTERN = "c_chain"
-    DEFAULT_NODES = ["C1", "C2", "C3"]
+    DEFAULT_NODES = ["C1", "C2", "C3", "A2", "A4", "A5", "A9"]
 
     def __init__(self, path: Optional[str] = None):
         self.path = path or self._default_path()
@@ -137,7 +140,7 @@ class OrchestrationMemory:
         if _usable(entry):
             return OrchestrationChoice(
                 pattern=entry["best_pattern"],
-                nodes=entry["nodes"],
+                nodes=self._ensure_execution_nodes(entry["nodes"]),
                 score=entry.get("score", 0),
                 confidence=entry.get("confidence", "low"),
                 fallback_level="L0",
@@ -159,7 +162,7 @@ class OrchestrationMemory:
                 entry = scenarios[best_sid]
                 return OrchestrationChoice(
                     pattern=entry["best_pattern"],
-                    nodes=entry["nodes"],
+                    nodes=self._ensure_execution_nodes(entry["nodes"]),
                     score=entry.get("score", 0),
                     confidence=entry.get("confidence", "low"),
                     fallback_level="L1",
@@ -181,7 +184,7 @@ class OrchestrationMemory:
                 entry = scenarios[best_sid]
                 return OrchestrationChoice(
                     pattern=entry["best_pattern"],
-                    nodes=entry["nodes"],
+                    nodes=self._ensure_execution_nodes(entry["nodes"]),
                     score=entry.get("score", 0),
                     confidence=entry.get("confidence", "low"),
                     fallback_level="L2",
@@ -197,6 +200,22 @@ class OrchestrationMemory:
             fallback_level="L3",
             source_scenario="DEFAULT",
         )
+
+    # 执行链必备节点: A2(策略)→A4(门禁)→A5(战术执行)→A9(离场)
+    # 缺失任一节点会导致无法生成 trade_order 或止损止盈记录
+    EXECUTION_NODES = ["A2", "A4", "A5", "A9"]
+
+    def _ensure_execution_nodes(self, nodes: List[str]) -> List[str]:
+        """确保返回的节点列表包含执行链必备节点 (A2/A4/A5/A9)
+
+        旧版 orchestration_memory.json 缓存了不含 A5/A9 的节点列表,
+        此方法在返回前补齐, 避免每次回测后都要重新生成 JSON。
+        """
+        result = list(nodes)
+        for nid in self.EXECUTION_NODES:
+            if nid not in result:
+                result.append(nid)
+        return result
 
     def update_from_backtest(self, results: Dict[str, Any]) -> None:
         """回测结果批量更新记忆表

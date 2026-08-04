@@ -24,6 +24,13 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+# 加载 .env 配置，确保 os.environ 中包含 POLLING_COINS/INITIAL_EQUITY 等
+try:
+    from dotenv import load_dotenv
+    load_dotenv(_ROOT / ".env")
+except Exception:
+    pass
+
 from scripts.memory_l4.paths import (
     workspace_root,
     workbuddy_dir,
@@ -194,22 +201,46 @@ def run_polling_trader():
         return False
 
     try:
-        # 使用 nohup 后台启动
-        result = subprocess.run(
-            ["nohup", "python", "-m", "scripts.memory_l4.polling_trader",
-             "--interval", "3600", "--coins", "BTC,ETH,SOL,BNB,UNI,LINK,ATOM,ARB,PEPE,WIF,DOGE,HYPE"],
-            cwd=str(BASE_DIR),
-            capture_output=True, text=True, timeout=30
-        )
-        _log(f"启动命令执行完成 (exit: {result.returncode})")
-        if result.returncode != 0:
-            _log(f"启动失败: {result.stderr[:200]}")
+        # 使用 nohup 后台启动（参数与 .env 保持一致：INITIAL_EQUITY 200USDT，30币种，interval=300s）
+        import os
+        coins = os.environ.get("POLLING_COINS", "BTC,ETH,SOL,BNB,XRP,ADA,AVAX,NEAR,SUI,APT,DOT,ATOM,LTC,LINK,ARB,OP,UNI,AAVE,DOGE,PEPE,NVDA,TSLA,MSFT,META,GOOGL,AAPL,AMZN,COIN,XAU,XAG")
+        interval = os.environ.get("POLLING_INTERVAL", "300")
+        confidence = os.environ.get("CONFIDENCE_THRESHOLD", "0.70")
+        max_positions = os.environ.get("MAX_POSITIONS", "3")
+        position_pct = os.environ.get("DEFAULT_POSITION_PCT", "0.10")
+        initial_equity = os.environ.get("INITIAL_EQUITY", "200")
+
+        # 日志重定向到 BASE_DIR/logs
+        log_dir = BASE_DIR / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        stdout_log = log_dir / "trading_stdout.log"
+        stderr_log = log_dir / "trading_stderr.log"
+
+        # 用 Popen 后台启动（nohup + 重定向），避免 subprocess.run timeout=30 触发"启动超时"误报
+        cmd = [
+            "nohup", sys.executable, "-m", "scripts.memory_l4.polling_trader",
+            "--interval", interval, "--coins", coins,
+            "--confidence", confidence, "--max-positions", max_positions,
+            "--position-pct", position_pct,
+            "--initial-equity", initial_equity,
+        ]
+        with open(stdout_log, "a") as out_f, open(stderr_log, "a") as err_f:
+            proc = subprocess.Popen(
+                cmd,
+                cwd=str(BASE_DIR),
+                stdout=out_f, stderr=err_f,
+                start_new_session=True,
+            )
+        _log(f"Popen 启动成功 PID={proc.pid}")
+        # 短等待确认进程未立即退出
+        time.sleep(3)
+        polled = proc.poll()
+        if polled is None:
+            _log(f"polling_trader 已在后台启动（PID={proc.pid}，存活）")
+            return True
+        else:
+            _log(f"启动后立即退出 (exit={polled})，请检查 {stderr_log}")
             return False
-        _log("polling_trader 已在后台启动")
-        return True
-    except subprocess.TimeoutExpired:
-        _log("启动超时")
-        return False
     except Exception as e:
         _log(f"启动异常: {e}")
         return False
@@ -299,7 +330,7 @@ def evolve_thresholds(perf: dict) -> dict:
     - 置信度门槛保持稳定，不随亏损提高（保持交易频率）
     """
     thresholds = {
-        "confidence_threshold": 0.35,
+        "confidence_threshold": 0.70,
         "daily_loss_limit": -50.0,
         "max_consecutive_losses": 5,
         "default_position_pct": 0.10,
@@ -309,7 +340,7 @@ def evolve_thresholds(perf: dict) -> dict:
     config_file = OKX_SIM_DIR / "config.json"
     if config_file.exists():
         config = load_json(config_file, {})
-        thresholds["confidence_threshold"] = config.get("confidence_threshold", 0.35)
+        thresholds["confidence_threshold"] = config.get("confidence_threshold", 0.70)
         thresholds["daily_loss_limit"] = config.get("daily_loss_limit", -50.0)
         thresholds["default_position_pct"] = config.get("default_position_pct", 0.10)
 
@@ -345,10 +376,10 @@ def evolve_thresholds(perf: dict) -> dict:
     total_trades = perf.get("total_trades", 0)
     if total_trades >= 20:
         if win_rate < 0.30:
-            thresholds["confidence_threshold"] = min(thresholds["confidence_threshold"] + 0.03, 0.50)
+            thresholds["confidence_threshold"] = min(thresholds["confidence_threshold"] + 0.03, 0.80)
             adjustments.append("交易足够多但胜率低: 小幅提高置信度门槛")
         elif win_rate > 0.70:
-            thresholds["confidence_threshold"] = max(thresholds["confidence_threshold"] - 0.02, 0.25)
+            thresholds["confidence_threshold"] = max(thresholds["confidence_threshold"] - 0.02, 0.55)
             adjustments.append("交易足够多且胜率高: 小幅降低置信度门槛")
 
     _log(f"阈值调整: confidence {thresholds['confidence_threshold']:.2f}, "

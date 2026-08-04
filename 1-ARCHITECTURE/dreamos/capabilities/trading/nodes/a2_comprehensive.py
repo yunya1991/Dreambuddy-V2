@@ -117,7 +117,9 @@ class A2ComprehensiveNode(BaseNode):
             same_ratio = sum(1 for d in dirs if d == direction) / len(dirs)
             confidence *= (0.6 + same_ratio * 0.4)  # 一致性加成
 
-        confidence = min(max(confidence, 0.2), 0.9)
+        # P0-5 修复: 纯代码节点的最低置信度设为 0.3, 避免触发 Reflector 无意义的 REDO
+        # (代码节点重试结果相同, REDO 只会浪费计算资源)
+        confidence = min(max(confidence, 0.3), 0.9)
 
         rationale.append("[A2综合分析] 跨维度融合（含子系统信号）")
         for dim, sig in dimension_scores.items():

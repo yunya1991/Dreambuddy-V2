@@ -1,0 +1,151 @@
+{
+  "symbol": "BTC",
+  "module": "17-v4-wave-strategy (独立模块)",
+  "data_days": 3213,
+  "years": 8.8,
+  "date_range": [
+    "2017-10-10",
+    "2026-07-27"
+  ],
+  "valid_start": 730,
+  "valid_days": 2483,
+  "valid_years": 6.8,
+  "results_9y_with_cost": {
+    "纯V4": {
+      "total_return": 11.802804853657133,
+      "annualized": 0.45469989517860054,
+      "sharpe": 1.1013422150116665,
+      "max_drawdown": -0.5044455265976784,
+      "calmar": 0.9013855237163149,
+      "win_rate": 0.5185370741482966,
+      "avg_position": 0.6017190344378159,
+      "valid_days": 2483,
+      "trades": 44
+    },
+    "V4+波浪(默认)": {
+      "total_return": 11.604918742884744,
+      "annualized": 0.45137268106394046,
+      "sharpe": 1.0946972819002305,
+      "max_drawdown": -0.5050186803387537,
+      "calmar": 0.8937742278388021,
+      "win_rate": 0.5172244094488189,
+      "avg_position": 0.6024802104345941,
+      "valid_days": 2483,
+      "trades": 58
+    },
+    "V4+波浪(优化)": {
+      "total_return": 10.898485326063984,
+      "annualized": 0.43911945303328026,
+      "sharpe": 1.0606720348582452,
+      "max_drawdown": -0.5334066732100984,
+      "calmar": 0.8232357694188797,
+      "win_rate": 0.5172244094488189,
+      "avg_position": 0.6095361911031402,
+      "valid_days": 2483,
+      "trades": 58
+    },
+    "买入持有": {
+      "total_return": 6.461187107654837,
+      "annualized": 0.3437003007302446,
+      "sharpe": 0.5838663955311915,
+      "max_drawdown": -0.7639531821506947,
+      "calmar": 0.44989707322463574,
+      "win_rate": 0.5267821184051551,
+      "avg_position": 1.0,
+      "valid_days": 2483,
+      "trades": 1
+    }
+  },
+  "results_9y_no_cost": {
+    "纯V4": {
+      "total_return": 13.006102412251078,
+      "annualized": 0.47403630805699914,
+      "sharpe": 1.1485839985003277,
+      "max_drawdown": -0.4998496019388119,
+      "calmar": 0.9483578784864719,
+      "win_rate": 0.5190380761523046,
+      "avg_position": 0.6017190344378159,
+      "valid_days": 2483,
+      "trades": 44
+    },
+    "V4+波浪(默认)": {
+      "total_return": 13.177324958464759,
+      "annualized": 0.4766715149968659,
+      "sharpe": 1.1565753879091603,
+      "max_drawdown": -0.4950758786383276,
+      "calmar": 0.9628251659279349,
+      "win_rate": 0.5177165354330708,
+      "avg_position": 0.6024802104345941,
+      "valid_days": 2483,
+      "trades": 58
+    },
+    "V4+波浪(优化)": {
+      "total_return": 12.562228009605304,
+      "annualized": 0.467074630432865,
+      "sharpe": 1.1288192486823478,
+      "max_drawdown": -0.520341228552694,
+      "calmar": 0.8976314095502528,
+      "win_rate": 0.5177165354330708,
+      "avg_position": 0.6095361911031402,
+      "valid_days": 2483,
+      "trades": 58
+    },
+    "买入持有": {
+      "total_return": 6.461187107654837,
+      "annualized": 0.3437003007302446,
+      "sharpe": 0.5838663955311915,
+      "max_drawdown": -0.7639531821506947,
+      "calmar": 0.44989707322463574,
+      "win_rate": 0.5267821184051551,
+      "avg_position": 1.0,
+      "valid_days": 2483,
+      "trades": 1
+    }
+  },
+  "results_4y_with_cost": {
+    "纯V4": {
+      "total_return": 2.1183443310035064,
+      "annualized": 0.32886547177564496,
+      "sharpe": 0.9751104977919713,
+      "max_drawdown": -0.37093056554497283,
+      "calmar": 0.8865957737736558,
+      "win_rate": 0.526440410418311,
+      "avg_position": 0.6437801277111452,
+      "valid_days": 1460,
+      "trades": 26
+    },
+    "V4+波浪(默认)": {
+      "total_return": 2.3250873014731477,
+      "annualized": 0.35036372550463546,
+      "sharpe": 1.0390382172821198,
+      "max_drawdown": -0.374254631511913,
+      "calmar": 0.9361640338002949,
+      "win_rate": 0.5267295597484277,
+      "avg_position": 0.6447253331905974,
+      "valid_days": 1460,
+      "trades": 29
+    },
+    "V4+波浪(优化)": {
+      "total_return": 2.401969587130431,
+      "annualized": 0.3581026814757515,
+      "sharpe": 1.0585027949719872,
+      "max_drawdown": -0.37591240257962033,
+      "calmar": 0.9526226828866159,
+      "win_rate": 0.5267295597484277,
+      "avg_position": 0.6504993057933371,
+      "valid_days": 1460,
+      "trades": 29
+    },
+    "买入持有": {
+      "total_return": 1.653291906840359,
+      "annualized": 0.2762808652285802,
+      "sharpe": 0.6162600783220622,
+      "max_drawdown": -0.5329272526836045,
+      "calmar": 0.518421348950241,
+      "win_rate": 0.523972602739726,
+      "avg_position": 1.0,
+      "valid_days": 1460,
+      "trades": 1
+    }
+  }
+}

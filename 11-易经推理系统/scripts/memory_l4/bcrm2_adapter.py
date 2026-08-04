@@ -297,7 +297,8 @@ class BCRM2Adapter:
             valid_idx = np.where(valid_mask)[0]
             if len(valid_idx) < 100:
                 logger.warning(f"[BCRM2] 有效样本不足: {len(valid_idx)}")
-                return False
+                # v3.0：返回 "insufficient_data" 而非 False，让调用方区分数据不足 vs 训练异常
+                return "insufficient_data"
             
             X = features.values[valid_idx]
             y = labels[valid_idx]
@@ -313,7 +314,7 @@ class BCRM2Adapter:
             
             if len(X) < 100:
                 logger.warning(f"[BCRM2] 去除NaN后样本不足: {len(X)}")
-                return False
+                return "insufficient_data"
             
             logger.info(f"[BCRM2] 训练样本: {len(X)} (UP={sum(y==1)} DOWN={sum(y==0)})")
             

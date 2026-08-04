@@ -1,8 +1,8 @@
 # Dream OS 技术设计文档 v2.1
 
 > **文档层级**: L1 — 系统级技术设计
-> **版本**: v2.4.0
-> **更新日期**: 2026-07-21
+> **版本**: v2.5.0
+> **更新日期**: 2026-08-01
 > **维护者**: Dream OS Core Team
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | [SYSTEM_ARCHITECTURE_OVERVIEW.md](../SYSTEM_ARCHITECTURE_OVERVIEW.md)
 
@@ -1420,6 +1420,81 @@ A9 离场监控（Exit Strategy）
 | **ExecutionFeedbackCollector** | `core/memory/execution_feedback.py` | 执行反馈收集 |
 | **EvolutionEngine** | `evolution/engine.py` | 自我进化引擎 |
 | **DreamOSScheduler** | `cli/scheduler.py` | 定时任务调度器 |
+| **ExitModuleSelector** | `capabilities/trading/exit_strategy/exit_module_selector.py` | 离场模块择优选择器（三级降级） |
+| **ExitModuleBacktester** | `capabilities/trading/exit_strategy/exit_module_backtester.py` | 离场模块对比回测器 |
+| **ExitModuleAdapter** | `capabilities/trading/exit_strategy/exit_module_adapter.py` | 离场模块统一适配器（classic/simple/yijing/fundamental） |
+| **EntryModuleSelector** | `capabilities/trading/entry_strategy/entry_module_selector.py` | 入场模块择优选择器（场景三级降级 + LOW 强降级） |
+| **EntryModuleBacktester** | `capabilities/trading/entry_strategy/entry_module_backtester.py` | 入场模块对比回测器（出场统一 builtin ATR，隔离出场差异） |
+| **EntryModuleAdapter** | `capabilities/trading/entry_strategy/entry_module_adapter.py` | 入场模块统一适配器（a2_fusion/c2_momentum/s3_trend/yj_infer/martin_v15/scenario_ema） |
+
+#### 7.5.2.1 离场模块择优机制
+
+DreamOS 支持基于场景 + 回测表现的离场模块择优调用，通过 `DREAMOS_EXIT_SELECTOR_ENABLED` 环境变量控制（默认开启，`auto_trader.py` 中 `EXIT_SELECTOR_ENABLED = os.environ.get("DREAMOS_EXIT_SELECTOR_ENABLED", "1") == "1"`）。
+
+**三级降级选择**：
+| 级别 | 匹配方式 | 置信度 | 说明 |
+|------|----------|--------|------|
+| L0 | 精确匹配 36 场景 | 0.9 | 从 `exit_performance_memory.json` 取 score 最高的模块 |
+| L1 | 趋势×波动率（12 场景） | 0.7 | 降维匹配 |
+| L2 | 仅趋势（3 场景） | 0.5 | 进一步降维 |
+| L3 | 默认优先级 | 0.3 | `["classic", "simple", "yijing", "fundamental"]` 取第一个 available |
+
+**统一接口**：所有离场模块通过 `UnifiedExitDecision` 输出：
+- `action`: HOLD / CLOSE / REDUCE / RAISE_TP
+- `stop_loss` / `take_profit` / `exit_price`
+- `new_trailing_armed` / `new_trailing_stop`: 跟踪止损跨巡检状态回写
+- `raw`: 原始决策对象（调试用）
+
+**历史默认关闭原因**（v2.5 修复后已消除，现默认开启）：
+- classic 适配器存在 leverage 硬编码、candles 缺失、trailing 状态丢失、mfe/max_dd 硬编码 0 等 bug
+- 回测器存在 yijing 缓存门禁失效、leverage 硬编码、trailing 不传、mfe/max_dd 瞬时化、exit_reasons 分类错误等 bug
+- 上述 bug 在 v2.5 已修复，故 `DREAMOS_EXIT_SELECTOR_ENABLED` 默认值改为 `"1"`（开启）；如需回退内置 ATR，设 `DREAMOS_EXIT_SELECTOR_ENABLED=0`
+
+#### 7.5.2.2 入场模块择优机制（v2.6 新增 · 数据驱动编排）
+
+> **核心哲学**：DreamOS 不自创入场信号，只作为能力编排器，从 6 个已交付的"高置信节点/核心能力模块"中择优选择——所有模块效果通过回测数据驱动。
+
+**开关**：`DREAMOS_ENTRY_SELECTOR_ENABLED=1`（默认开启）
+
+**可选子能力（6 个，全部为已有系统交付，不自创信号）**：
+| 模块名 | 来源节点/能力 | 说明 |
+|--------|---------------|------|
+| `a2_fusion` | A2 跨链融合节点 | 多信号融合方向输出 |
+| `c2_momentum` | C2 动量节点 | 动量对称信号 |
+| `s3_trend` | C_S3_TREND 三屏趋势节点 | 周/日/日内 三屏共振 |
+| `yj_infer` | A_YJ_INFER 易经卦象推理 | 卦象方向与置信度 |
+| `martin_v15` | C_MARTIN_V15 马丁V15 | 阶段性高置信信号 |
+| `scenario_ema` | EMA 双均线基线（非节点） | 震荡市/高噪音场景专用强降级基线，越简单越稳 |
+
+**三级降级选择（与 ExitModuleSelector 同架构）**：
+| 级别 | fallback_level | 匹配方式 | 说明 |
+|------|----------------|----------|------|
+| L0 精确场景 | 0 | 36 场景精确匹配 | `entry_performance_memory.json` 按 score 择优 |
+| L1 趋势×波动率 | 1 | 12 场景降维 | `<TREND>_<VOLATILITY>_*` 聚合 |
+| L2 仅趋势 | 2 | 3 场景降维 | `<TREND>_*` 聚合 |
+| L3 默认 | 3 | 无回测数据 | 不 override，回退原链路（TradingAgent / C1→C2→C3） |
+| 强降级（LOW/CHOP/RANGE） | 5 | 噪音场景强制 | 不管回测数据如何，直接走 `scenario_ema`——震荡市越简单越好，避免 6 个节点都误判 |
+
+**隔离出场差异的回测设计**：
+入场选择器核心目标是"在相同入场点下比较不同入场模块的入场决策差异"。为排除"离场策略好坏"干扰：
+- 所有入场模块的回测结果**统一使用 builtin ATR 时间衰减离场**（SLTP=2.0×ATR，持有最多 20 bar=80 小时时间止损，滑点 1.0×ATR）。
+- 回测产物 `entry_performance_memory.json` 仅评估入场，不评估离场。
+- 离场策略优化由 §7.5.2.1 的 ExitModuleSelector 独立负责。
+
+**AutoTrader 接入方式（overlay 而非替换）**：
+1. 先照常跑 `TradingAgent.run_full_analysis()`（C1→C2→C3→A4 G1→最终决策）
+2. 在最终决策前调用 `_try_selector_entry()`：
+   - EntryModuleSelector.select(scenario_id) 拿到 fallback_level ∈ {0,1,2,5} 且 direction ∈ {LONG,SHORT}，并且 confidence ≥ 与 exit 回测器对齐的对称门槛（默认 0.62）才 override
+   - L3 / fallback_level=3 或 adapter 不可用或 direction=HOLD → 不 override，回退原 TradingAgent 链路（不影响现有实盘稳定性）
+3. override 成功时 `trade_snapshot` 打标：`entry_module_override=模块名, fallback_level=L0/L1/L2/LOW`，便于 ExecutionFeedbackCollector 持续回填真实绩效更新 EntryPerformanceMemory。
+
+**生成回测数据命令**：
+```bash
+cd 1-ARCHITECTURE
+python3 -m dreamos.capabilities.trading.entry_strategy.entry_module_backtester \
+    --symbols BTC,ETH,SOL --interval 1h --min-trades 3 --confidence-threshold 0.62
+# 产出：core/memory/entry_performance_memory.json
+```
 
 #### 7.5.3 市场数据获取
 
@@ -1850,6 +1925,8 @@ Dream OS 采用**三层边界模型**，从内到外依次为：操作系统内�
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.6 | 2026-08-02 | **入场模块择优架构（不自创信号，数据驱动编排）**：新增 `entry_strategy/` 子能力（4 文件，完全对齐 exit_strategy）——`entry_module_adapter.py` 封装 6 个入场模块：a2_fusion（A2跨链融合）、c2_momentum（C2动量）、s3_trend（三屏趋势C_S3_TREND）、yj_infer（易经卦象A_YJ_INFER）、martin_v15（V15马丁C_MARTIN_V15）、scenario_ema（基线，LOW震荡强降级用）；`entry_module_backtester.py` 出场统一 builtin ATR（隔离出场差异），输出 `entry_performance_memory.json` 供 EntryModuleSelector 打分；`auto_trader.py` 新增 `ENTRY_SELECTOR_ENABLED=1`、`get_entry_selector`、`_try_selector_entry`（run_full_analysis 之后 overlay），L3/fallback_level=3 回退原 TradingAgent / C1→C2→C3 链路，LOW/CHOP/RANGE 场景 fallback_level=5 强制走 scenario_ema 基线；新增 §7.5.2.2 入场模块择优机制章节 |
+| v2.5 | 2026-08-01 | **离场模块择优与回测器修复**：修复 `auto_trader.py` 中 classic 适配器的 4 个 bug（leverage 硬编码 1.0、candles 永远为空、trailing_armed/stop 状态丢失、mfe/max_dd 硬编码 0）；修复 `exit_module_backtester.py` 的 5 个 bug（Yijing 1h 缓存门禁导致 0% 触发率、leverage 硬编码、trailing 不传、mfe/max_dd 瞬时化、exit_reasons 分类错误）；补齐 `SimpleExitAdapter` 缺失的 trailing 参数；`UnifiedExitDecision` 新增 `new_trailing_armed`/`new_trailing_stop` 字段；新增 §7.5.2.1 离场模块择优机制章节 |
 | v2.4 | 2026-07-21 | **交易分析评估器（核心新增）**：新增 `TradingAnalysisEvaluator` 交易分析评估器，实现亏损原因分析（10类）、模块能力评估（5维）、模块回测、编排推荐的完整闭环；更新 EvolutionEngine 整合评估器，新增 `analyze_trades()` / `evaluate_module_capabilities()` / `recommend_orchestration()` 等方法；更新 §7.2 明确"分析评估 → 模块能力回测 → 节点编排推荐"的核心设计理念 |
 | v2.3 | 2026-07-21 | **物理分离，逻辑集成**：交易节点从 `dreamos/nodes/` 迁移到 `dreamos/capabilities/trading/nodes/`，实现操作系统内核与交易能力域的物理分离；新增 CapabilityRegistry 和 CapabilityRouter 内核组件，实现意图驱动的能力域路由；新增 §7.1.1 能力域注册与路由机制、§7.2 交易能力域旗舰地位阐述、§13.5 物理分离 vs 逻辑集成决策；AutoTrader 和回测引擎迁移到交易能力域子目录；旧 `dreamos/nodes/` 保留为向后兼容层 |
 | v2.2 | 2026-07-21 | 新增系统定位章节：明确操作系统内核 vs 交易系统的双重身份；引入能力域层（Capability Domains）概念；重构系统边界为三层边界模型（内核层/能力域层/应用层）；更新应用层设计，明确交易能力域是内建核心能力；优化未来优化方向，分内核层/交易能力域/能力域扩展三个维度 |

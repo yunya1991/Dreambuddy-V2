@@ -205,9 +205,12 @@ class C1TechScanNode(BaseNode):
         }
 
         indicators["rationale"] = rationale
+        # P0-5 修复: 纯代码节点的最低置信度设为 0.3, 避免触发 Reflector 无意义的 REDO
+        # (代码节点重试结果相同, REDO 只会浪费计算资源)
+        final_conf = round(max(min(confidence, 0.95), 0.3), 3)
         return NodeResult(
             node_id="C1",
-            confidence=round(min(confidence, 0.95), 3),
+            confidence=final_conf,
             direction=direction,
             outputs=indicators,
         )

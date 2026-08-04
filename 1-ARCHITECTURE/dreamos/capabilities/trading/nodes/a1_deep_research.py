@@ -136,7 +136,9 @@ class A1DeepResearchNode(BaseNode):
         if a0_aligned and a0_direction != "HOLD":
             confidence += 0.06  # A0 矛盾论支持当前方向，小幅加分
 
-        confidence = min(max(confidence, 0.2), 0.92)
+        # 置信度地板 = 0.35, 对齐 Reflector.CONFIDENCE_LOW=0.3
+        # 旧值 0.2 < 0.3 会导致确定性计算的 REDO 无效重试 (相同输入相同输出)
+        confidence = min(max(confidence, 0.35), 0.92)
 
         rationale.append("[A1深度研究] 多周期研究")
         rationale.append(f"  日线: {ch24:+.2f}% | 4h: {ch4h:+.2f}% | 1h: {ch1h:+.2f}%")

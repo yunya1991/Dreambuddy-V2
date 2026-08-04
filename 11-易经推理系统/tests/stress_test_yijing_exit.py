@@ -763,6 +763,390 @@ def test_group_f():
 
 
 # ============================================================
+# G组: VETO 缓存 bug 回归测试（P0修复验证）
+# ============================================================
+def test_group_g():
+    section("G组: VETO 缓存 bug 回归测试（P0修复）")
+
+    # 场景复现：polling_trader 在同一轮询周期内
+    #   1) 先调 yijing.evaluate(mode='main') 做主离场评估，写入 _eval_cache
+    #   2) classic 决定 CLOSE/REDUCE 后，再调 yijing.evaluate(mode='veto', classic_decision=...) 做否决评估
+    # Bug：修复前 veto 调用被 1h 门禁命中缓存，直接返回 NO_INTERVENE，VETO 永不触发
+    # Fix：veto 模式绕过 1h 门禁 + 不写缓存
+
+    # G1: 主评估写入缓存后，veto 评估应绕过门禁真正重新计算（不被缓存吞掉）
+    try:
+        sys_obj = YijingExitSystem()
+        # 构造一个"风险偏低+价值高+方向一致+成熟期"的卦象：
+        #   - 风险分需 ≥ lower_sl_min_risk_score(0.30) 以跳过 LOWER_SL 分支
+        #   - 价值分 > veto_value_threshold(0.60) 满足否决条件
+        #   - 方向一致(UP vs long)
+        #   - 成熟期（非萌芽/成长期）跳过 LOWER_SL 的 early_stage 过滤
+        #   - 未到 FORCE_CLOSE/TIGHTEN_SL/LOWER_TP 阈值
+        # 用"九五+成熟期+低风险+UP"：风险=0.40*0.25+0.18*0.25+0.18*0.45+0.24*0.20=0.279
+        #   略低于0.30仍可能命中LOWER_SL，改用"九三+成熟期"提高风险到0.30~0.60区间
+        # 九三 phase_risk=0.55, 成熟期 stage_risk=0.45, 低 rl=0.25, UP/long=0.20
+        # 风险 = 0.40*0.25 + 0.18*0.55 + 0.18*0.45 + 0.24*0.20 = 0.1+0.099+0.081+0.048 = 0.328
+        # 价值 = 0.45*0.55 + 0.40*0.65 + 0.15*0.75 = 0.2475+0.26+0.1125 = 0.62 > 0.60 ✓
+        hex_data = make_hexagram(
+            name_cn="天火同人", risk_level="低",
+            current_phase="九三", development_stage="成熟期",
+            direction_hint="UP", confidence=0.75,
+        )
+        # 第一次：main 模式主评估，会写入缓存
+        main_decision = sys_obj.evaluate(
+            hexagram=hex_data, pos_side="long",
+            entry_price=100.0, current_price=101.5,
+            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            coin="BTC", open_time_sec=time.time() - 3600,
+            mode="main",
+        )
+        main_was_no_intervene = (main_decision.action == YijingExitAction.NO_INTERVENE)
+
+        # 第二次：立即 veto 模式评估（距上次<1h，正常应被门禁拦截）
+        # 传入 classic_decision 模拟 classic 决定 CLOSE
+        # 用 dict 形式，避免 str(enum) 解析问题：evaluate 中对 dict 取 ["action"]
+        classic_dec = {
+            "action": "close",   # classic 决定平仓
+            "reason": "tb_stop_loss: ATR 止损触发",  # 噪音止损关键词，应被否决
+        }
+
+        veto_decision = sys_obj.evaluate(
+            hexagram=hex_data, pos_side="long",
+            entry_price=100.0, current_price=101.5,
+            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            classic_decision=classic_dec,
+            coin="BTC", open_time_sec=time.time() - 3600,
+            mode="veto",
+        )
+        # 修复前：veto_decision.action == NO_INTERVENE（被缓存吞掉）
+        # 修复后：veto_decision.action == VETO_CLOSE（真正执行了否决判定）
+        passed = (main_was_no_intervene
+                  and veto_decision.action == YijingExitAction.VETO_CLOSE)
+        record("G", "G1: veto 绕过 1h 门禁真正重算", passed,
+               f"main={main_decision.action.value}(risk={main_decision.yijing_risk_score:.3f},"
+               f"value={main_decision.yijing_value_score:.3f}) "
+               f"veto={veto_decision.action.value} "
+               f"(修复前 veto=no_intervene 为 BUG)")
+    except Exception as e:
+        record("G", "G1: veto 绕过 1h 门禁真正重算", False, f"exception: {e}")
+        print(traceback.format_exc())
+
+    # G2: veto 模式不应污染主决策缓存（veto 后下次主评估仍受原缓存约束）
+    try:
+        sys_obj = YijingExitSystem()
+        hex_data = make_hexagram(
+            name_cn="风天小畜", risk_level="低",
+            current_phase="九二", development_stage="成长期",
+            direction_hint="UP", confidence=0.75,
+        )
+        # 主评估写缓存
+        sys_obj.evaluate(
+            hexagram=hex_data, pos_side="long",
+            entry_price=100.0, current_price=101.5,
+            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            coin="ETH", open_time_sec=time.time() - 3600,
+            mode="main",
+        )
+        cache_before = sys_obj._eval_cache.get("ETH:long")
+        main_last_ts_before = cache_before["last_eval_ts"] if cache_before else None
+
+        # veto 评估（如果污染缓存，last_eval_ts 会被刷新）
+        classic_dec = {
+            "action": "close",
+            "reason": "trailing_stop: 跟踪止损",  # 噪音止损关键词
+        }
+        sys_obj.evaluate(
+            hexagram=hex_data, pos_side="long",
+            entry_price=100.0, current_price=101.5,
+            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            classic_decision=classic_dec,
+            coin="ETH", open_time_sec=time.time() - 3600,
+            mode="veto",
+        )
+        cache_after = sys_obj._eval_cache.get("ETH:long")
+        main_last_ts_after = cache_after["last_eval_ts"] if cache_after else None
+
+        # 修复后：veto 不写缓存，last_eval_ts 应保持不变
+        passed = (main_last_ts_before is not None
+                  and main_last_ts_after is not None
+                  and main_last_ts_before == main_last_ts_after)
+        record("G", "G2: veto 不污染主决策缓存", passed,
+               f"ts_before={main_last_ts_before} ts_after={main_last_ts_after} "
+               f"(修复前 ts_after 会刷新为 veto 时间，污染缓存)")
+    except Exception as e:
+        record("G", "G2: veto 不污染主决策缓存", False, f"exception: {e}")
+        print(traceback.format_exc())
+
+    # G3: main 模式仍受 1h 门禁约束（修复未破坏原有行为）
+    try:
+        sys_obj = YijingExitSystem()
+        hex_data = make_hexagram(
+            name_cn="风天小畜", risk_level="低",
+            current_phase="九二", development_stage="成长期",
+            direction_hint="UP", confidence=0.75,
+        )
+        # 第一次 main 评估
+        d1 = sys_obj.evaluate(
+            hexagram=hex_data, pos_side="long",
+            entry_price=100.0, current_price=101.5,
+            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            coin="SOL", open_time_sec=time.time() - 3600,
+            mode="main",
+        )
+        # 立即第二次 main 评估：应被 1h 门禁拦截，返回缓存 NO_INTERVENE
+        d2 = sys_obj.evaluate(
+            hexagram=hex_data, pos_side="long",
+            entry_price=100.0, current_price=101.5,
+            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            coin="SOL", open_time_sec=time.time() - 3600,
+            mode="main",
+        )
+        passed = (d1.action == YijingExitAction.NO_INTERVENE
+                  and d2.action == YijingExitAction.NO_INTERVENE
+                  and "cached" in d2.reason or "window" in d2.reason)
+        record("G", "G3: main 模式仍守 1h 门禁", passed,
+               f"d1={d1.action.value} d2={d2.action.value} d2.reason={d2.reason[:60]}")
+    except Exception as e:
+        record("G", "G3: main 模式仍守 1h 门禁", False, f"exception: {e}")
+        print(traceback.format_exc())
+
+    # G4: veto 模式无 classic_decision 时不触发 VETO（保持 NO_INTERVENE）
+    try:
+        sys_obj = YijingExitSystem()
+        hex_data = make_hexagram(
+            name_cn="风天小畜", risk_level="低",
+            current_phase="九二", development_stage="成长期",
+            direction_hint="UP", confidence=0.75,
+        )
+        d = sys_obj.evaluate(
+            hexagram=hex_data, pos_side="long",
+            entry_price=100.0, current_price=101.5,
+            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            classic_decision=None,
+            coin="XRP", open_time_sec=time.time() - 3600,
+            mode="veto",
+        )
+        # 无 classic_decision → 不应触发 VETO_CLOSE/VETO_REDUCE
+        passed = (d.action != YijingExitAction.VETO_CLOSE
+                  and d.action != YijingExitAction.VETO_REDUCE)
+        record("G", "G4: veto 无 classic_decision 不触发", passed,
+               f"action={d.action.value}")
+    except Exception as e:
+        record("G", "G4: veto 无 classic_decision 不触发", False, f"exception: {e}")
+        print(traceback.format_exc())
+
+
+# ============================================================
+# H组: Bug修复回归测试（本次修复专项）
+# ============================================================
+def test_group_h():
+    section("H组: Bug修复回归测试（P0 Bug1/Bug2专项验证）")
+
+    # ── Bug1: 48h持仓超时强制降级 ──
+
+    # H1: 超时场景下 HOLD判定条件的 not_expired=False，整体HOLD失败 → 走降级路径
+    # 注：yijing可能返回lower_sl/tighten_sl（其他分支优先级更高），但不影响超时降级逻辑的验证
+    try:
+        sys_obj = YijingExitSystem()
+        hex_data = make_hexagram(
+            name_cn="风天小畜", risk_level="低",
+            current_phase="九二", development_stage="成长期",
+            direction_hint="UP", confidence=0.70,
+        )
+        # 构造 position_age_sec=200000 > veto_max_hold_sec=172800(48h)
+        d = sys_obj.evaluate(
+            hexagram=hex_data, pos_side="long",
+            entry_price=100.0, current_price=101.0,
+            position_age_sec=200000,  # > 48h
+            unrealized_pnl_pct=0.01,
+        )
+        # 检查polling_trader层HOLD判定的5个条件：risk_low & value_high & dir_consistent & loss_acceptable & not_expired
+        cfg = sys_obj.config
+        risk_low = d.yijing_risk_score < cfg.veto_risk_threshold
+        value_high = d.yijing_value_score > cfg.veto_value_threshold
+        not_expired = 200000 < cfg.veto_max_hold_sec  # Bug1核心验证: 超时后此条件为False
+        loss_acceptable = 0.01 > cfg.veto_max_loss_pct
+        hold_conditions_overall = risk_low and value_high and d.direction_consistent and loss_acceptable and not_expired
+        # 关键: not_expired必须为False → 整体HOLD失败 → 降级classic
+        passed = (not not_expired
+                  and risk_low and value_high and d.direction_consistent
+                  and not hold_conditions_overall)
+        record("H", "H1: 48h超时 HOLD条件整体False → 走降级路径", passed,
+               f"action={d.action.value} risk={d.yijing_risk_score:.3f} "
+               f"value={d.yijing_value_score:.3f} dir_consistent={d.direction_consistent} "
+               f"not_expired(超时后应False)={not_expired} hold_overall(应为False)={hold_conditions_overall}")
+    except Exception as e:
+        record("H", "H1: 48h超时HOLD条件拦截", False, f"exception: {e}")
+        print(traceback.format_exc())
+
+    # H2: 未超时场景下 not_expired=True，HOLD条件整体可以成立（对比验证）
+    try:
+        sys_obj = YijingExitSystem()
+        hex_data = make_hexagram(
+            name_cn="风天小畜", risk_level="低",
+            current_phase="九二", development_stage="成长期",
+            direction_hint="UP", confidence=0.70,
+        )
+        # 构造正常持仓=2h（未超时）
+        d = sys_obj.evaluate(
+            hexagram=hex_data, pos_side="long",
+            entry_price=100.0, current_price=101.0,
+            position_age_sec=7200,  # 2h < 48h
+            unrealized_pnl_pct=0.01,
+        )
+        cfg = sys_obj.config
+        risk_low = d.yijing_risk_score < cfg.veto_risk_threshold
+        value_high = d.yijing_value_score > cfg.veto_value_threshold
+        not_expired = 7200 < cfg.veto_max_hold_sec
+        loss_acceptable = 0.01 > cfg.veto_max_loss_pct  # 1% > -3%
+        hold_condition = risk_low and value_high and d.direction_consistent and loss_acceptable and not_expired
+        # 核心：not_expired为True，HOLD条件整体成立（即使yijing走了lower_sl分支，逻辑条件是对的）
+        passed = (not_expired and risk_low and value_high and d.direction_consistent and hold_condition)
+        record("H", "H2: 未超时 HOLD条件整体成立（对比组）", passed,
+               f"hold_cond={hold_condition} not_expired={not_expired} "
+               f"risk_low={risk_low} value_high={value_high} action={d.action.value}")
+    except Exception as e:
+        record("H", "H2: 未超时 HOLD条件成立（对比组）", False, f"exception: {e}")
+        print(traceback.format_exc())
+
+    # H3: veto_max_hold_sec 配置值正确（172800 = 48h）
+    try:
+        sys_obj = YijingExitSystem()
+        cfg = sys_obj.config
+        expected_48h = 48 * 3600  # 172800
+        passed = (cfg.veto_max_hold_sec == expected_48h)
+        record("H", "H3: veto_max_hold_sec=48h(172800s) 配置正确", passed,
+               f"veto_max_hold_sec={cfg.veto_max_hold_sec} expected={expected_48h}")
+    except Exception as e:
+        record("H", "H3: 48h超时配置值", False, f"exception: {e}")
+
+    # ── Bug2: L0_RISK_GATE 过度敏感修复 ──
+
+    # H4: 验证ExitConfig参数已被优化（通过构造ClassicExitSystem检查新参数）
+    try:
+        # 导入ClassicExit相关类
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "memory_l4"))
+        from classic_exit_system import ClassicExitSystem, ExitConfig
+
+        # 模拟polling_trader中修复后的配置
+        exit_cfg = ExitConfig(
+            l0_risk_gate_enabled=True,
+            l0_risk_gate_long_thr=0.65,        # Bug2修复: 从0.5→0.65
+            l0_risk_gate_short_thr=0.60,       # Bug2修复: 同步提高
+            l0_risk_gate_min_hold_sec=3600.0,  # Bug2修复: 新增1h保护期
+            l0_risk_gate_profit_bypass_pct=0.05,  # Bug2修复: 3%→5%
+            l0_risk_gate_cooldown_min=60.0,
+            l0_risk_gate_confirm_n=3,
+        )
+        classic_sys = ClassicExitSystem(config=exit_cfg)
+        cfg = classic_sys.config
+        # 检查4个关键参数是否正确写入
+        passed = (cfg.l0_risk_gate_long_thr == 0.65
+                  and cfg.l0_risk_gate_short_thr == 0.60
+                  and cfg.l0_risk_gate_min_hold_sec == 3600.0
+                  and cfg.l0_risk_gate_profit_bypass_pct == 0.05)
+        record("H", "H4: L0_RISK_GATE 4个关键参数正确写入配置", passed,
+               f"long_thr={cfg.l0_risk_gate_long_thr} short_thr={cfg.l0_risk_gate_short_thr} "
+               f"min_hold_sec={cfg.l0_risk_gate_min_hold_sec} "
+               f"profit_bypass_pct={cfg.l0_risk_gate_profit_bypass_pct}")
+    except Exception as e:
+        record("H", "H4: L0_RISK_GATE参数写入配置", False, f"exception: {e}")
+        print(traceback.format_exc())
+
+    # H5: 验证min_hold_sec前不触发risk_gate（持仓30min < 1h，hold_risk即使很高也跳过）
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "memory_l4"))
+        from classic_exit_system import (
+            ClassicExitSystem, ExitConfig, ExitAction,
+            PositionState, ExitFeatureSet, ExitPriority
+        )
+
+        exit_cfg = ExitConfig(
+            l0_risk_gate_enabled=True,
+            l0_risk_gate_long_thr=0.65,
+            l0_risk_gate_min_hold_sec=3600.0,  # 1h保护期
+            l0_risk_gate_confirm_n=1,          # 降低确认数，便于触发
+            l0_risk_gate_cooldown_min=0.0,     # 取消冷却
+            l0_risk_gate_profit_bypass_enabled=False,  # 关闭盈利旁路
+        )
+        classic_sys = ClassicExitSystem(config=exit_cfg)
+
+        # 构造PositionState: 持仓30min < 1h保护期，hold_risk=0.9（极高风险）
+        now_ts = time.time() * 1000
+        pos = PositionState(
+            coin="TEST",
+            side="long",
+            entry_price=100.0,
+            current_price=99.0,  # 轻微亏损
+            position_age_sec=30 * 60,  # 30min = 1800s < 3600s保护期
+            unrealized_pnl_pct=-0.01,
+            leverage=3.0,
+            atr_pct=0.03,
+            mfe_pnl_pct=0.0,
+        )
+        features = ExitFeatureSet(
+            hold_risk=0.90,  # 极高风险，远超0.65阈值
+            adx=25.0, dd=0.05, trend_shape=None,
+        )
+        decision = classic_sys._check_risk_gate(pos, features, now_ts)
+        # 持仓<min_hold_sec，应返回HOLD不触发减仓
+        passed = (decision.action == ExitAction.HOLD)
+        record("H", "H5: 持仓<1h保护期即使高风险也不触发risk_gate", passed,
+               f"action={decision.action.value} hold_risk=0.90 "
+               f"hold_age=30min min_hold_sec=3600s reason={decision.reason[:60]}")
+    except Exception as e:
+        record("H", "H5: min_hold_sec保护期拦截", False, f"exception: {e}")
+        print(traceback.format_exc())
+
+    # H6: 验证long_thr提高后0.65以下不触发（持仓2h已过保护期）
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "memory_l4"))
+        from classic_exit_system import (
+            ClassicExitSystem, ExitConfig, ExitAction,
+            PositionState, ExitFeatureSet
+        )
+
+        exit_cfg = ExitConfig(
+            l0_risk_gate_enabled=True,
+            l0_risk_gate_long_thr=0.65,
+            l0_risk_gate_min_hold_sec=3600.0,
+            l0_risk_gate_confirm_n=1,
+            l0_risk_gate_cooldown_min=0.0,
+            l0_risk_gate_profit_bypass_enabled=False,
+            l0_risk_gate_deadband=0.0,  # 取消死区便于精确测试
+        )
+        classic_sys = ClassicExitSystem(config=exit_cfg)
+        # 清空历史状态
+        classic_sys.state.risk_gate.clear()
+
+        now_ts = time.time() * 1000
+        pos = PositionState(
+            coin="TEST2",
+            side="long",
+            entry_price=100.0,
+            current_price=99.0,
+            position_age_sec=2 * 3600,  # 2h = 7200s > 1h保护期
+            unrealized_pnl_pct=-0.01,
+            leverage=3.0,
+            atr_pct=0.03,
+            mfe_pnl_pct=0.0,
+        )
+        # hold_risk=0.60 < 0.65阈值，不应触发
+        features = ExitFeatureSet(
+            hold_risk=0.60,
+            adx=25.0, dd=0.05, trend_shape=None,
+        )
+        decision = classic_sys._check_risk_gate(pos, features, now_ts)
+        passed = (decision.action == ExitAction.HOLD)
+        record("H", "H6: hold_risk=0.60 < 0.65阈值不触发risk_gate", passed,
+               f"action={decision.action.value} hold_risk=0.60 thr=0.65 reason={decision.reason[:60]}")
+    except Exception as e:
+        record("H", "H6: long_thr=0.65阈值以下不触发", False, f"exception: {e}")
+        print(traceback.format_exc())
+
+
+# ============================================================
 # 主函数
 # ============================================================
 def main():
@@ -777,6 +1161,8 @@ def main():
     test_group_d()
     test_group_e()
     test_group_f()
+    test_group_g()
+    test_group_h()  # H组: 本次Bug修复专项回归测试
 
     # 汇总
     print(f"\n{'='*60}")

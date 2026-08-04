@@ -63,6 +63,7 @@ class TradingAgent:
         - 预算全局管控：GlobalBudgetManager 统一分配
         - 状态可追溯：GraphStore 保存每个周期的完整快照
         - 自我进化：历史数据驱动 Evolution 持续优化
+        - L0 工作记忆：WorkingMemoryManager 管理任务上下文
     """
 
     def __init__(self,
@@ -70,7 +71,8 @@ class TradingAgent:
                  capability_registry: Optional[CapabilityRegistry] = None,
                  budget_mode: str = "standard",
                  auto_register: bool = True,
-                 default_capability: str = "trading"):
+                 default_capability: str = "trading",
+                 enable_working_memory: bool = True):
         self.registry = registry or get_default_registry()
         self.capability_registry = capability_registry or get_default_capability_registry()
         self.capability_registry.attach_node_registry(self.registry)
@@ -99,8 +101,123 @@ class TradingAgent:
         self.budget = GlobalBudgetManager(mode=budget_mode)
         self.cost_tracker = CostTracker()
 
+        # L0 工作记忆（可选启用）
+        self._enable_working_memory = enable_working_memory
+        self.working_memory = None
+        if enable_working_memory:
+            try:
+                import sys
+                from pathlib import Path as _Path
+                _root = _Path(__file__).resolve().parents[4]
+                _wm_path = str(_root / "4-MEMORY" / "9-工具与接口")
+                if _wm_path not in sys.path:
+                    sys.path.insert(0, _wm_path)
+                from working_memory_manager import WorkingMemoryManager
+                self._wm_class = WorkingMemoryManager
+            except ImportError:
+                self._wm_class = None
+                logger.info("WorkingMemoryManager 未安装，L0 工作记忆已禁用")
+
         # 统计
         self._cycle_count = 0
+
+    def _inject_wm_to_llm_recognizer(self) -> None:
+        """将工作记忆注入到 IntentEngine 的 LLMBasedRecognizer"""
+        from dreamos.core.sense.recognizers import LLMBasedRecognizer
+        
+        for recognizer in self.intent_engine._recognizers:
+            if isinstance(recognizer, LLMBasedRecognizer):
+                recognizer.set_working_memory(self.working_memory)
+                break
+
+    # ── L0 工作记忆辅助方法 ────────────────────────
+
+    def _init_working_memory(self, cycle_id: str, user_input: str,
+                              market_data: Dict, context: Dict) -> None:
+        """初始化 L0 工作记忆（在每次 run() 开始时调用）"""
+        if not self._enable_working_memory or self._wm_class is None:
+            return
+
+        try:
+            wm = self._wm_class(task_id=cycle_id)
+            wm.set_task(
+                title=f"交易分析: {user_input or market_data.get('symbol', 'N/A')}",
+                goal=f"symbol={market_data.get('symbol', 'BTC')}, price={market_data.get('price', 0)}",
+            )
+            wm.set_context("user_input", user_input)
+            wm.set_context("symbol", market_data.get("symbol", "BTC"))
+            wm.set_context("price", str(market_data.get("price", 0)))
+            self.working_memory = wm
+            
+            # 同步注入到 LLMBasedRecognizer（让 LLM 可以读取工作记忆）
+            self._inject_wm_to_llm_recognizer()
+        except Exception as e:
+            logger.debug(f"工作记忆初始化失败: {e}")
+            self.working_memory = None
+
+    def _wm_set_context(self, key: str, value: Any) -> None:
+        """写入上下文到工作记忆（静默失败）"""
+        if self.working_memory is None:
+            return
+        try:
+            self.working_memory.set_context(key, value)
+        except Exception:
+            pass
+
+    def _wm_set_scratch(self, key: str, value: Any) -> None:
+        """写入草稿到工作记忆（静默失败）"""
+        if self.working_memory is None:
+            return
+        try:
+            self.working_memory.set_scratch(key, value)
+        except Exception:
+            pass
+
+    def _wm_checkpoint(self, name: str = "") -> None:
+        """保存工作记忆检查点"""
+        if self.working_memory is None:
+            return
+        try:
+            self.working_memory.checkpoint(name)
+        except Exception:
+            pass
+
+    def _distill_to_app_memory(self, result: Dict, market_data: Dict) -> None:
+        """L0→L1 蒸馏：将本次周期经验上升到应用记忆"""
+        if self.working_memory is None:
+            return
+
+        try:
+            symbol = market_data.get("symbol", "BTC")
+            action = result.get("action", "HOLD")
+            confidence = result.get("confidence", 0)
+            intent_type = result.get("intent", {}).get("type", "unknown")
+
+            lesson = (
+                f"交易分析 [{symbol}]: {intent_type} → {action} "
+                f"(confidence={confidence:.2f}, "
+                f"latency={result.get('latency_ms', 0):.0f}ms, "
+                f"tokens={result.get('tokens_used', 0)})"
+            )
+
+            self.working_memory.update_status("completed")
+            self.working_memory.distill_to_app_memory(
+                target_memory_id="AM-TRD-001",
+                lesson_content=lesson,
+                confidence=min(confidence, 0.95),
+                tags=[symbol, intent_type, action, "trading_agent"],
+            )
+        except Exception as e:
+            logger.debug(f"工作记忆蒸馏失败: {e}")
+
+    @property
+    def working_memory_status(self) -> Dict[str, Any]:
+        """获取工作记忆状态"""
+        if self.working_memory is None:
+            return {"enabled": False}
+        return self.working_memory.get_stats()
+
+    # ── 能力域与 SKILL 注册 ────────────────────────
 
     def _register_default_capability(self) -> None:
         """注册默认能力域（当前为交易能力域）"""
@@ -140,8 +257,9 @@ class TradingAgent:
         market_data = market_data or {}
         context = context or {}
 
-        # ── 0. 预算开始 ────────────────────────
+        # ── 0. 预算开始 + 初始化 L0 工作记忆 ────────────────────────
         self.budget.begin_cycle(cycle_id)
+        self._init_working_memory(cycle_id, user_input, market_data, context)
 
         # ── 1. S 层：意图识别 ─────────────────
         intent_result = self._sense(user_input, market_data, context)
@@ -153,6 +271,17 @@ class TradingAgent:
                 f"能力域路由失败: {routing_result.rationale}，回退到默认交易能力域"
             )
 
+        # ── 1.3 写入 S 层结果到工作记忆 ─────────────────
+        self._wm_set_context("intent_type", intent_result.intent_type)
+        self._wm_set_context("intent_confidence", f"{intent_result.confidence:.2f}")
+        self._wm_set_context("recommended_chain", intent_result.recommended_chain)
+        self._wm_set_scratch("intent_result", {
+            "type": intent_result.intent_type,
+            "confidence": intent_result.confidence,
+            "chain": intent_result.recommended_chain,
+            "rationale": getattr(intent_result, "rationale", ""),
+        })
+
         # ── 2. 构建 State ───────────────────
         state = new_state(cycle_id=cycle_id)
         state.inputs = {
@@ -162,14 +291,18 @@ class TradingAgent:
         }
         state.market_data = market_data  # type: ignore[attr-defined]
 
+        # P0-4 修复: 确保 market_data 中有 "coin" 字段
+        # A5/A3/F1 节点通过 mkt.get("coin", "BTC") 读取币种,
+        # 但 market_data 只有 "symbol" 字段,导致所有币种开仓都下到 BTC
+        if "coin" not in market_data and "symbol" in market_data:
+            market_data["coin"] = market_data["symbol"]
+
         # ── 1.5 注入 Freqtrade 量化策略信号 ───────────────────
         freqtrade_signal = self._inject_freqtrade_signal(market_data)
         if freqtrade_signal:
             state.market_data["freqtrade_signal"] = freqtrade_signal
 
         # ── 1.6 注入基本面数据（F 链数据源）─────────────────────
-        # 调用 FundamentalDataInjector 采集 30+ 基本面指标并扁平化注入 market_data
-        # 未注入会导致 F2-F5 节点读取不到字段，恒输出 HOLD
         self._inject_fundamental_data(state.market_data)
 
         state.intent = {
@@ -187,14 +320,53 @@ class TradingAgent:
             "capability_config": routing_result.capability_config,
         }
 
+        # P0-5 修复: 当 auto_trader 已查询编排记忆表时, 用记忆表的节点顺序覆盖 base_chain
+        # 原问题: auto_trader 查询了记忆表得到 choice.nodes=["C1","C2","C3","A2","A4","A5","A9"],
+        # 但只放到 context["recommended_orchestration"], agent.run 没有读取它,
+        # 导致 GraphPlanner 收到 base_chain=["A1","A2",...] 的错误顺序,
+        # A2 在 C1 之前执行, 读不到技术信号, 触发 REDO 超限
+        recommended_orch = context.get("recommended_orchestration") or {}
+        orch_nodes = recommended_orch.get("nodes") or []
+        if orch_nodes:
+            state.intent["base_chain"] = list(orch_nodes)
+            state.intent["extend_nodes"] = []
+
+        # ── 2.1 写入 State 上下文到工作记忆 ─────────────────
+        self._wm_set_context("symbol", market_data.get("symbol", "BTC"))
+        self._wm_set_context("price", str(market_data.get("price", 0)))
+        scenario_id = state.intent.get("scenario_id", "")
+        if scenario_id:
+            self._wm_set_context("scenario_id", scenario_id)
+
         # ── 3. A 层：图编排 ──────────────────
         plan = self._arrange(intent_result, state)
+
+        # ── 3.1 写入 A 层结果到工作记忆 ─────────────────
+        self._wm_set_scratch("arrange_result", {
+            "chain": getattr(plan, "planned_chain", ""),
+            "node_count": len(plan.node_ids) if hasattr(plan, "node_ids") else 0,
+            "node_ids": plan.node_ids if hasattr(plan, "node_ids") else [],
+            "budget_allocated": getattr(plan.budget, "total", 0) if hasattr(plan, "budget") else 0,
+        })
 
         # ── 4. C 层：执行 ────────────────────
         report = self._compute(state, plan)
 
+        # ── 4.1 写入 C 层结果到工作记忆 ─────────────────
+        self._wm_set_scratch("compute_result", {
+            "executed_nodes": getattr(report, "executed_nodes", 0),
+            "success_nodes": getattr(report, "success_nodes", 0),
+            "skipped_nodes": getattr(report, "skipped_nodes", 0),
+            "total_nodes": getattr(report, "total_nodes", 0),
+            "total_tokens": getattr(report, "total_tokens", 0),
+            "early_terminated": getattr(report, "early_terminated", False),
+        })
+
         # ── 5. G 层：存储 ────────────────────
         self._store(state, report)
+
+        # ── 5.1 工作记忆检查点 ─────────────────
+        self._wm_checkpoint("post_store")
 
         # ── 6. 预算结算 ──────────────────────
         total_tokens = getattr(report, "total_tokens", 0)
@@ -206,6 +378,17 @@ class TradingAgent:
 
         final_action = getattr(report, "final_action", state.final_action or "HOLD")
         final_confidence = getattr(report, "final_confidence", state.final_confidence)
+
+        # ── 7.1 写入最终结果到工作记忆 ─────────────────
+        self._wm_set_context("final_action", final_action)
+        self._wm_set_context("final_confidence", f"{final_confidence:.2f}")
+        self._wm_set_context("latency_ms", f"{latency_ms:.0f}")
+        self._wm_set_scratch("final_result", {
+            "action": final_action,
+            "confidence": final_confidence,
+            "latency_ms": round(latency_ms, 1),
+            "tokens_used": total_tokens,
+        })
 
         # 收集所有节点输出
         outputs = self._collect_outputs(state)
@@ -263,6 +446,10 @@ class TradingAgent:
         }
 
         self._cycle_count += 1
+
+        # ── 8. L0→L1 蒸馏：将本次周期经验上升到应用记忆 ─────────────────
+        self._distill_to_app_memory(result, market_data)
+
         return result
 
     # ── S 层 ────────────────────────────────
@@ -361,8 +548,8 @@ class TradingAgent:
             if injected:
                 logger.info(
                     f"基本面数据已注入: {symbol} | "
-                    f"字段数={injected.get('field_count', 0)} | "
-                    f"source={injected.get('source_status', 'unknown')}"
+                    f"字段数={injected.get('_fundamental_field_count', 0)} | "
+                    f"source={injected.get('_fundamental_source', 'unknown')}"
                 )
             else:
                 logger.warning(f"基本面数据注入返回空: {symbol}，F链将降级为HOLD")
@@ -452,9 +639,29 @@ class TradingAgent:
         # 门禁通过后，使用校准后的置信度
         calibrated_confidence = a7_gate.get("calibrated_confidence", confidence)
 
-        from dreamos.capabilities.trading.nodes.a5_execution import calc_dynamic_leverage
+        from dreamos.capabilities.trading.nodes.a5_execution import (
+            calc_dynamic_leverage,
+            calc_dynamic_position_and_leverage,
+        )
         atr_pct = market_data.get("atr_pct", 0.02)
         symbol = market_data.get("symbol", "BTC")
+
+        # P0-6: Kelly 动态仓位 & 杠杆（置信度 × 波动率 × 账户权益）
+        acc_eq = market_data.get("account_equity") or market_data.get("totalWalletBalance")
+        if acc_eq is not None:
+            try:
+                acc_eq = float(acc_eq)
+            except (TypeError, ValueError):
+                acc_eq = None
+        dyn = calc_dynamic_position_and_leverage(
+            confidence=calibrated_confidence,
+            atr_pct=atr_pct,
+            account_equity=acc_eq,
+            direction=action,
+            symbol=symbol,
+        )
+        position_size = dyn["position_size"]
+        leverage = int(dyn["leverage"])
 
         # 对称止损止盈（与A5节点保持一致）
         if action == "LONG":
@@ -468,14 +675,15 @@ class TradingAgent:
             "action": action,
             "coin": symbol,
             "entry_price": price,
-            "position_size": 10.0,
-            "leverage": calc_dynamic_leverage(calibrated_confidence),
+            "position_size": position_size,
+            "leverage": leverage,
             "stop_loss": stop_loss,
             "take_profit": take_profit,
-            "risk_per_trade": 10.0 * atr_pct,
+            "risk_per_trade": position_size * atr_pct,
             "rr_ratio": round(abs(take_profit - price) / max(abs(price - stop_loss), 0.0001), 2),
             "_a7_gate": a7_gate,
             "_synthesized": True,
+            "_kelly": dyn,
         }
 
     def _run_a7_gate(self, state: State, direction: str, confidence: float,
@@ -599,6 +807,8 @@ class TradingAgent:
             print(f"[SKILL导入] 跳过: {e}")
 
     def __repr__(self) -> str:
+        wm_status = "on" if self.working_memory is not None else "off"
         return (f"<TradingAgent cycles={self._cycle_count} "
                 f"nodes={len(self.registry)} "
-                f"budget={self.budget.level()}>")
+                f"budget={self.budget.level()} "
+                f"wm={wm_status}>")

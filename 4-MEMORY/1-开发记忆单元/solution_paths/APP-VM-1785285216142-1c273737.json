@@ -1,0 +1,20 @@
+{
+  "template_id": "APP-VM-1785285216142-1c273737",
+  "title": "GitHub调研发现mem0(~25k★)/Letta(~14k★)/Zep(~3k★)/A-MEM等记忆项目全部是被动服务/库，没有现成的通用自动触发层。自动",
+  "content": "GitHub调研发现mem0(~25k★)/Letta(~14k★)/Zep(~3k★)/A-MEM等记忆项目全部是被动服务/库，没有现成的通用自动触发层。自动接入层是行业空白，必须自建。通用触发源排序：git hooks > 文件监听(watchman) > shell心跳 > CLI代理。",
+  "quality_level": "B",
+  "confidence": 0.8,
+  "verify_count": 1,
+  "tags": [
+    "github调研",
+    "记忆系统",
+    "自动接入",
+    "架构决策"
+  ],
+  "memory_type": "experience",
+  "source": "认知闭环开发-2026-07-29",
+  "created_at": "2026-07-29T00:33:36.142783+00:00",
+  "updated_at": "2026-07-29T00:33:36.148245+00:00",
+  "rebuilt_from_memory_id": "VM-1785285216142-1c273737",
+  "rebuild_version": 1
+}

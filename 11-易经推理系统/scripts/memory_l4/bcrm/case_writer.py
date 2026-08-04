@@ -143,9 +143,19 @@ class CaseWriter:
         if bcrm_output.hexagram and bcrm_output.hexagram.hexagram_name:
             tags.append(f"hex_{bcrm_output.hexagram.hexagram_name}")
 
+        # P1-1: 测试数据标记，与 UnifiedCaseRegistry._detect_is_test 逻辑一致
+        _TEST_KEYWORDS = ("test", "qmm_test", "backup", "demo", "sample", "mock")
+        is_test = any(kw in case_id.lower() for kw in _TEST_KEYWORDS)
+
         case = {
             "case_id": case_id,
             "schema_version": "4.0",
+            # P0-2: 统一来源标识，与 UnifiedCaseRegistry v0.3 的 system_source 对齐，
+            # 使下游 ReviewEngine/DistillEngine/l4_stats_adapter 可按 system_source 统一过滤，
+            # 不再依赖 case_id 前缀区分来源。
+            "system_source": "yijing_inference",
+            # P1-1: 测试数据标记，下游消费时按 is_test=False 过滤训练集
+            "is_test": is_test,
             "symbol": symbol,
             "timeframe": timeframe,
             "snapshot_ts": market_snapshot.get("snapshot_ts",

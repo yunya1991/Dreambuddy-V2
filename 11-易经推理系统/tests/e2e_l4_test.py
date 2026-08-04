@@ -6,6 +6,7 @@
 
 import json
 import sys
+import tempfile
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +17,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from scripts.memory_l4 import paths as _paths
 from scripts.memory_l4.paths import (
     memory_l4_cases_dir,
     memory_l4_reviews_dir,
@@ -26,6 +28,32 @@ from scripts.memory_l4.paths import (
 from scripts.memory_l4 import case_registry, a0a9_bridge, review_engine
 from scripts.memory_l4 import distill_engine, stats_engine, pipeline
 from scripts.memory_l4 import index_builder, query_similar
+
+
+# ── 测试/生产数据隔离 ──────────────────────────────────────────────
+# P0 修复：原 _clean_workspace fixture (autouse) 直接清空生产目录
+# .workbuddy/memory_l4/cases/，导致888个真实案例被测试误删。
+# 现改为：在临时目录创建沙箱，monkeypatch paths 模块的所有目录函数
+# 指向沙箱，测试全程不触碰生产数据。
+_TEST_SANDBOX: Path = Path(tempfile.mkdtemp(prefix="l4_e2e_test_"))
+
+
+def _sandbox_path(*parts: str) -> Path:
+    """返回沙箱目录下的子路径，自动创建"""
+    p = _TEST_SANDBOX.joinpath(*parts)
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+# Monkeypatch paths 模块函数，使其指向沙箱目录（模块级，影响所有导入处）
+_paths.workbuddy_dir = lambda: _sandbox_path(".workbuddy")
+_paths.memory_l4_dir = lambda: _sandbox_path(".workbuddy", "memory_l4")
+_paths.memory_l4_cases_dir = lambda: _sandbox_path(".workbuddy", "memory_l4", "cases")
+_paths.memory_l4_distills_dir = lambda: _sandbox_path(".workbuddy", "memory_l4", "distills")
+_paths.memory_l4_stats_dir = lambda: _sandbox_path(".workbuddy", "memory_l4", "stats")
+_paths.memory_l4_reviews_dir = lambda: _sandbox_path(".workbuddy", "memory_l4", "reviews")
+_paths.episodes_dir = lambda: _sandbox_path(".workbuddy", "episodes")
+_paths.artifacts_memory_l4_dir = lambda: _sandbox_path("artifacts", "memory_l4")
 
 def _ts() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -69,9 +97,8 @@ def _make_episode(case_id: str, pnl: float, regime: str = "bull",
 
 
 def _make_a0a9_artifacts(case_id: str):
-    """生成合成 A0-A9 阶段产出。"""
-    trading_dir = _ROOT / "artifacts" / "trading"
-    trading_dir.mkdir(parents=True, exist_ok=True)
+    """生成合成 A0-A9 阶段产出（写入沙箱目录）。"""
+    trading_dir = _sandbox_path("artifacts", "trading")
 
     stage_data = {
         "A0": {"timestamp": _ts(), "core_contradiction": "price action vs indicator divergence",
@@ -105,6 +132,7 @@ def _make_a0a9_artifacts(case_id: str):
 
 
 def _purge_dir(d: Path, patterns: tuple[str, ...]) -> None:
+    """清空沙箱目录（不影响生产数据）"""
     if not d.exists():
         return
     for pat in patterns:
@@ -115,12 +143,13 @@ def _purge_dir(d: Path, patterns: tuple[str, ...]) -> None:
 
 @pytest.fixture(scope="module", autouse=True)
 def _clean_workspace():
+    """清空沙箱目录（已隔离生产数据，安全操作）"""
     _purge_dir(workbuddy_dir() / "episodes", ("*.json",))
     _purge_dir(memory_l4_cases_dir(), ("*.json",))
     _purge_dir(memory_l4_reviews_dir(), ("*.json",))
     _purge_dir(memory_l4_distills_dir(), ("*.json",))
     _purge_dir(memory_l4_stats_dir(), ("*.json",))
-    trading_dir = _ROOT / "artifacts" / "trading"
+    trading_dir = _sandbox_path("artifacts", "trading")
     _purge_dir(trading_dir, ("*_output.json",))
     yield
 
@@ -607,12 +636,13 @@ if __name__ == "__main__":
     print("L4 Memory System E2E Test Suite")
     print("=" * 60)
 
-    # Clean test data
+    # Clean test data (沙箱目录，已隔离生产数据)
     import shutil
     for d in [memory_l4_cases_dir(), memory_l4_reviews_dir(), memory_l4_distills_dir(), memory_l4_stats_dir()]:
         if d.exists():
             shutil.rmtree(d)
         d.mkdir(parents=True, exist_ok=True)
+    print(f"[安全] 测试沙箱目录: {_TEST_SANDBOX}")
 
     print("\n--- M0: case_registry ---")
     test("M0: register profit case", test_m0_register)

@@ -1,9 +1,10 @@
 # DreamBuddy-V2 技术债务管理手册
 
-> **版本**: v2.0 | **更新日期**: 2026-07-25
+> **版本**: v2.4 | **更新日期**: 2026-07-30
 > **定位**: 项目级技术债务管理体系（工程化版），包含分类标准、评估框架、度量指标、管理流程和偿还路线图
 > **权威性**: L0级文档，技术债管理的唯一事实来源（SSoT）
 > **维护原则**: 每月评审一次，每季度更新路线图，债务状态变更即时更新
+> **关联**: 文档类债务（DOC）的细化管理见 [0-系统文档管理/3-文档治理/DOC_DEBT_INDEX.md](./0-系统文档管理/3-文档治理/DOC_DEBT_INDEX.md)；文档规范见 [0-系统文档管理/1-规范体系/DOC_STANDARD.md](./0-系统文档管理/1-规范体系/DOC_STANDARD.md)
 
 ---
 
@@ -269,19 +270,27 @@ PR 门禁
 
 ### 7.1 统计概览
 
+> 2026-07-25 更新：S1 文档统一管理完成，关闭 D043（CHANGELOG缺失）、D048/D049（16-调控系统函数不存在+SKILL名不一致），新增 D050（TECHNICAL_DESIGN范围错位）。建立 [0-系统文档管理](./0-系统文档管理/) 元层中枢，DOC 类债务抽离至 [DOC_DEBT_INDEX.md](./0-系统文档管理/3-文档治理/DOC_DEBT_INDEX.md) 专项管理。
+>
+> 2026-07-30 更新（v2.4）：完成全维度技术债深度排查，新增登记 D051-D108 共 58 项（架构排查 30 项 + 代码质量排查 28 项）。本次排查发现现有清单对**安全债与资金安全债**覆盖严重不足，新增 7 项 P0 级债务涉及明文凭据、反序列化、沙箱绕过、熔断失效、并发状态分叉等致命风险。新增债务按 8 大分类归集：CODE +26、ARCH +8、CFG +9、ENG +6、TEST +5、DOC +2、DEP +2。
+>
+> 2026-07-30 批次1（资金安全止损）：完成 D056/D062/D081/D085 4项修复，状态标记为待验证。D056 密钥迁移到 .env（密钥不变，轮换/历史清理暂缓）；D062 RiskManager except:pass 改为 logger.exception + _save_failed 标记 + can_trade 拒绝开仓；D081 dedup 状态同步（根本解决依赖 D051）；D085 ENCRYPTION_KEY 统一为 .env.local 的值。
+
 #### 按分类统计
 
 | 分类 | 代码 | 数量 | P0 | P1 | P2 | P3 |
 |------|------|------|----|----|----|----|
-| 工程化债 | ENG | 10 | 2 | 4 | 3 | 1 |
-| 架构设计债 | ARCH | 7 | 1 | 3 | 2 | 1 |
-| 代码质量债 | CODE | 5 | 0 | 2 | 2 | 1 |
-| 测试债 | TEST | 6 | 0 | 2 | 3 | 1 |
-| 文档债 | DOC | 8 | 0 | 1 | 5 | 2 |
-| 依赖债 | DEP | 3 | 0 | 2 | 1 | 0 |
-| 配置债 | CFG | 3 | 1 | 1 | 1 | 0 |
+| 工程化债 | ENG | 11 | 1 | 4 | 5 | 1 |
+| 架构设计债 | ARCH | 17 | 2 | 8 | 6 | 1 |
+| 代码质量债 | CODE | 33 | 6 | 11 | 14 | 2 |
+| 测试债 | TEST | 12 | 0 | 5 | 6 | 1 |
+| 文档债 | DOC | 12 | 0 | 1 | 9 | 2 |
+| 依赖债 | DEP | 5 | 0 | 3 | 2 | 0 |
+| 配置债 | CFG | 11 | 2 | 5 | 2 | 2 |
 | 性能债 | PERF | 2 | 0 | 1 | 1 | 0 |
-| **总计** | - | **44** | **4** | **16** | **18** | **6** |
+| **总计** | - | **103** | **11** | **38** | **45** | **9** |
+
+> **文档债（DOC）细化管理**: 文档类债务的逐项明细、影响分析、修复状态已迁移至 [0-系统文档管理/3-文档治理/DOC_DEBT_INDEX.md](./0-系统文档管理/3-文档治理/DOC_DEBT_INDEX.md)。本文件保留 DOC 债务的统计汇总，详细清单以 DOC_DEBT_INDEX.md 为准。
 
 #### 按系统统计
 
@@ -293,6 +302,7 @@ PR 门禁
 | 10-经典指标系统 | 4 | 0 | 1 | 离场系统不一致、文档版本混乱 |
 | 12-三屏趋势系统 | 3 | 0 | 1 | 文档不完整、未接入风控 |
 | 11-易经推理系统 | 4 | 0 | 1 | 文档、代码重复、未接入风控 |
+| 16-调控系统 | 1 | 0 | 0 | TECHNICAL_DESIGN范围错位（D050，P2） |
 | 3-EVOLUTION | 2 | 0 | 0 | 文档缺失、无测试 |
 | 6-图结构压缩 | 2 | 0 | 0 | 文档缺失、无测试 |
 | ops/ | 2 | 0 | 1 | 文档缺失、无监控 |
@@ -305,6 +315,13 @@ PR 门禁
 | D024 | CFG | 配置文件优先级不清晰 | S2 | L1 | 600 | 4h |
 | D002 | ARCH | 通用风控模块未接入任何策略 | S2 | L1 | 900 | 16h |
 | D003 | CODE | V15CT与独立V15系统冗余 | S2 | L3 | 300 | 8h |
+| D051 | CODE | auto_trader.py双实现且副本.env路径错误 | S2 | L2 | 200 | 2h |
+| D056 | CODE | [安全]明文硬编码OKX API key/secret/passphrase | S1 | L2 | 600 | 4h |
+| D060 | CODE | [安全]pickle.load反序列化未签名校验(13处) | S1 | L2 | 400 | 8h |
+| D061 | CODE | [安全]AST安全沙箱自身异常被吞(失败即放行) | S1 | L3 | 200 | 4h |
+| D062 | CODE | [安全]RiskManager状态读写except:pass(熔断失效) | S1 | L2 | 600 | 2h |
+| D081 | ARCH | .4h_dedup.json双状态文件分叉(重复下单风险) | S1 | L2 | 600 | 2h |
+| D085 | CFG | ENCRYPTION_KEY跨.env/.env.local不一致 | S2 | L2 | 300 | 2h |
 
 ### 7.3 P1 高优先级债务 (16项)
 
@@ -326,6 +343,28 @@ PR 门禁
 | D033 | ENG | 缺少 Makefile 统一构建入口 | S4 | L1 | 135 | 2h |
 | D034 | DEP | 缺少 pyproject.toml 项目配置 | S4 | L1 | 135 | 4h |
 | D007 | ARCH | 记忆系统未充分利用 | S3 | L2 | 240 | 24h |
+| D052 | CODE | v4_wave_trader.py双实现 | S3 | L2 | 120 | 4h |
+| D053 | CODE | dream-tactical-validator跨子系统完全重复 | S3 | L2 | 120 | 2h |
+| D057 | CODE | [安全]Tavily API key重复硬编码 | S2 | L3 | 100 | 1h |
+| D058 | CODE | [安全]Bailian API key多处硬编码 | S2 | L3 | 100 | 1h |
+| D059 | CODE | [安全]subprocess shell=True命令注入面 | S2 | L3 | 100 | 2h |
+| D063 | CODE | OKX客户端网络异常与业务错误码混淆 | S2 | L2 | 200 | 4h |
+| D064 | CODE | bare except 55+处静默吞异常 | S2 | L1 | 300 | 8h |
+| D066 | CODE | requests.Session 30+处未关闭(资源泄漏) | S3 | L2 | 120 | 4h |
+| D068 | CODE | ml_trade_service.py单文件74000+行 | S2 | L1 | 300 | 24h |
+| D075 | CODE | [安全]敏感字段(钱包/API key片段)打印日志 | S2 | L3 | 100 | 2h |
+| D077 | ARCH | 跨子系统硬编码路径+sys.path操纵(4处) | S3 | L2 | 120 | 8h |
+| D078 | ARCH | experiments反向依赖11-易经推理(parents[3]) | S3 | L2 | 120 | 4h |
+| D079 | ARCH | data_server_fixed.py 30+处sys.path.insert | S3 | L2 | 120 | 8h |
+| D080 | ARCH | 9套记忆系统并行实现(关联D007) | S3 | L2 | 240 | 24h |
+| D086 | CFG | 13+.env文件散落无统一加载策略 | S3 | L1 | 180 | 8h |
+| D088 | CFG | 硬编码绝对路径锁死开发机(/Users/zhangjiangtao) | S3 | L2 | 120 | 4h |
+| D089 | CFG | SYMBOLS交易对列表9+文件硬编码且不一致 | S3 | L2 | 120 | 4h |
+| D092 | CFG | 置信度阈值分散硬编码(0.4/0.55/0.70) | S2 | L2 | 200 | 2h |
+| D094 | ENG | 200+ckpt_*.json检查点文件入库每日增 | S3 | L1 | 180 | 2h |
+| D100 | TEST | 15-监控告警系统完全无测试 | S2 | L3 | 100 | 8h |
+| D102 | TEST | 通用风控测试极简(关联D031,资金安全模块) | S2 | L3 | 100 | 8h |
+| D108 | DEP | requirements.txt缺失关键依赖且未锁定版本 | S3 | L1 | 180 | 8h |
 
 ### 7.4 P2 中优先级债务 (18项)
 
@@ -349,6 +388,33 @@ PR 门禁
 | D039 | CODE | 函数复杂度偏高 | S4 | L2 | 50 | 12h |
 | D040 | DEP | 存在过期/未使用依赖 | S4 | L2 | 50 | 4h |
 | D041 | PERF | 重复K线数据获取 | S4 | L2 | 50 | 6h |
+| D050 | DOC | 16-调控系统 TECHNICAL_DESIGN 范围错位 | S3 | L3 | 80 | 8h |
+| D054 | CODE | 9-基本面分析文件迁移残留(同名文件) | S3 | L3 | 60 | 2h |
+| D055 | CODE | 9-基本面分析debug/scratch脚本散落根目录 | S4 | L3 | 15 | 1h |
+| D065 | CODE | _init_db未try/finally包裹sqlite连接 | S3 | L3 | 40 | 1h |
+| D067 | CODE | Tavily查询Session函数内泄漏 | S3 | L3 | 40 | 1h |
+| D069 | CODE | polling_trader.py 2642行+超长方法(关联D039) | S3 | L3 | 60 | 8h |
+| D070 | CODE | classic_exit_system.py 1998行+全局单例 | S3 | L3 | 60 | 6h |
+| D071 | CODE | v15_trader.py 1647行+长方法 | S3 | L3 | 60 | 6h |
+| D072 | CODE | okx_simulated.py 1277行 | S3 | L3 | 60 | 4h |
+| D073 | CODE | data_server_fixed.py直接污染os.environ | S3 | L2 | 80 | 2h |
+| D074 | CODE | print()代替logger 1053处 | S3 | L1 | 60 | 8h |
+| D076 | CODE | OKX客户端+代理探测逻辑多处重复(关联D004) | S3 | L2 | 80 | 8h |
+| D082 | ARCH | .cognitive/sessions/.current跨进程无锁 | S3 | L3 | 40 | 2h |
+| D083 | ARCH | 全局可变单例模式泛滥9+处 | S3 | L2 | 80 | 6h |
+| D087 | CFG | config_loader.py全局环境污染os.environ | S3 | L2 | 80 | 2h |
+| D090 | CFG | coins默认参数硬编码与资产池不同步 | S3 | L3 | 40 | 1h |
+| D095 | ENG | 9-基本面分析/.venv虚拟环境残留仓库 | S3 | L3 | 60 | 1h |
+| D096 | ENG | .cognitive/sessions运行时状态入库 | S4 | L3 | 15 | 1h |
+| D097 | ENG | 6-TRADING空状态文件入库(approval_state.json等) | S4 | L3 | 15 | 1h |
+| D098 | ENG | dreamos/cli下7个调度器入口职责重叠 | S3 | L3 | 60 | 4h |
+| D099 | ENG | ab-trading 9 plist+9 shell+6 Python入口冗余 | S3 | L3 | 60 | 4h |
+| D101 | TEST | V15核心模块(v15_trader/orchestrator/okx_client)无测试 | S3 | L3 | 60 | 8h |
+| D103 | TEST | 测试散落15+位置无统一结构 | S3 | L1 | 60 | 4h |
+| D104 | TEST | 3-EVOLUTION/6-图结构/7-产物中台测试缺失 | S3 | L2 | 40 | 8h |
+| D105 | DOC | 17-v4-wave"完全独立"声明与硬依赖矛盾 | S3 | L3 | 40 | 1h |
+| D106 | DOC | 1-ARCHITECTURE/README架构过时(关联DD-002) | S3 | L3 | 40 | 2h |
+| D107 | DEP | 币安Skill第三方仓库vendored入库 | S4 | L3 | 15 | 2h |
 
 ### 7.5 P3 低优先级债务 (6项)
 
@@ -360,6 +426,9 @@ PR 门禁
 | D045 | CODE | 错误处理不统一 | S4 | L2 | 25 | 8h |
 | D046 | TEST | 缺少性能基准测试 | S4 | L3 | 15 | 8h |
 | D047 | ENG | 缺少安全扫描(bandit) | S4 | L1 | 45 | 2h |
+| D084 | ARCH | cognitive_loop_entry.py sys.path自注入 | S4 | L3 | 15 | 2h |
+| D091 | CFG | 硬编码本地Clash代理端口(7890等) | S4 | L3 | 15 | 1h |
+| D093 | CFG | .env.bak备份文件残留(含旧密钥) | S4 | L3 | 15 | 0.5h |
 
 ---
 
@@ -397,6 +466,29 @@ PR 门禁
 - [x] 配置优先级文档化
 
 > **Phase 1 状态**: ✅ 主要目标已达成。D002（风控接入）处于影子模式验证阶段，待稳定后转正式门禁模式。
+
+#### Phase 1 扩展：S1 文档统一管理（2026-07-25 完成）
+
+> 在 Phase 1 工程化基础建设完成后，追加一轮文档统一管理，为 Phase 2 核心系统治理奠定文档基础。
+
+| 步骤 | 任务 | 关联债务 | 交付物 |
+|------|------|----------|--------|
+| S1-1 | 解决 12-三屏趋势系统双索引冲突 + trend-system 并行目录 | - | 路径引用统一 + 冗余目录清理 |
+| S1-2 | 修复 16-调控系统 ENGINEERING_INDEX 严重过时 | - | 重建工程索引 v2.0（19个核心文件） |
+| S1-3 | 修复 10-经典指标系统索引断链 | D010 | ENGINEERING_INDEX v1.1 + 规范路径 |
+| S2 | 5 子系统补全 API_SPEC.md + CHANGELOG.md | D043 | 10 份文档（5子系统×2） |
+| S2 | 更新 PROJECT_DOC_STANDARD.md 对照表 + README 导航 | - | 对照表全 A 级 + 文档导航 |
+| S3 | 文档-代码对齐检查 | D048, D049, D050 | 3 项新债务登记 |
+| S4 | 建立 0-系统文档管理 元层中枢 | - | 规范体系 + 文档地图 + 文档治理 + 根目录衔接 |
+| S4 | DOC 类债务抽离至 DOC_DEBT_INDEX.md | - | 文档债专项管理清单 |
+
+**S1 完成标准**:
+- [x] 6 个子系统文档评级全部达到 A/A- 级
+- [x] PROJECT_DOC_STANDARD.md 对照表更新至 v1.1（已迁移至 0-系统文档管理/1-规范体系/DOC_STANDARD.md v2.0）
+- [x] D043（CHANGELOG 缺失）已关闭
+- [x] 文档-代码对齐偏差已识别并登记为新债务（D048-D050）
+- [x] 0-系统文档管理 元层中枢建立，根目录 README 瘦身为极简入口
+- [x] DOC 类债务抽离至 [DOC_DEBT_INDEX.md](./0-系统文档管理/3-文档治理/DOC_DEBT_INDEX.md) 专项管理
 
 ### 8.3 Phase 2: 核心系统治理 (第2个月)
 
@@ -482,9 +574,9 @@ PR 门禁
 | D006 | 杠杆倍数不一致 | CFG | P1 | 待验证 | v4.0 | - | 2h | - | - | 待验证 D032 |
 | D007 | 记忆系统未利用 | ARCH | P1 | 待修复 | - | - | 24h | - | - | 远期 |
 | D008 | 依赖版本不统一 | DEP | P1 | 待修复 | - | - | 8h | - | - | 见 D028 |
-| D009 | 三屏趋势文档不全 | DOC | P2 | 待修复 | - | - | 8h | - | - | Phase 3 |
-| D010 | 经典指标文档混乱 | DOC | P1 | 待修复 | - | - | 8h | - | - | Phase 2 |
-| D011 | 易经推理文档不全 | DOC | P2 | 待修复 | - | - | 12h | - | - | Phase 3 |
+| D009 | 三屏趋势文档不全 | DOC | P2 | 待修复 | - | - | 8h | - | - | Phase 3；API_SPEC+CHANGELOG已补全 |
+| D010 | 经典指标文档混乱 | DOC | P1 | 待修复 | - | - | 8h | - | - | Phase 2；索引断链已修复+API_SPEC+CHANGELOG已补全 |
+| D011 | 易经推理文档不全 | DOC | P2 | 待修复 | - | - | 12h | - | - | Phase 3；API_SPEC+CHANGELOG已补全 |
 | D012 | 进化引擎文档缺失 | DOC | P3 | 待修复 | - | - | 4h | - | - | - |
 | D013 | 图结构文档缺失 | DOC | P3 | 待修复 | - | - | 6h | - | - | - |
 | D014 | 运维工具文档缺失 | DOC | P2 | 待修复 | - | - | 4h | - | - | Phase 3 |
@@ -516,11 +608,72 @@ PR 门禁
 | D040 | 过期/未使用依赖 | DEP | P2 | 待修复 | - | - | 4h | - | - | Phase 2 |
 | D041 | 重复K线数据获取 | PERF | P2 | 待修复 | - | - | 6h | - | - | Phase 3 |
 | D042 | 代码注释不足 | DOC | P3 | 待修复 | - | - | 持续 | - | - | - |
-| D043 | CHANGELOG 缺失 | DOC | P3 | 待修复 | - | - | 4h | - | - | - |
+| D043 | CHANGELOG 缺失 | DOC | P3 | 已关闭 | phase1-doc | - | 4h | 2h | 2026-07-25 | 5子系统已补全CHANGELOG.md |
 | D044 | 魔法数字未提取 | CODE | P3 | 待修复 | - | - | 4h | - | - | - |
 | D045 | 错误处理不统一 | CODE | P3 | 待修复 | - | - | 8h | - | - | Phase 3 |
 | D046 | 缺少性能基准测试 | TEST | P3 | 待修复 | - | - | 8h | - | - | - |
 | D047 | 缺少安全扫描 | ENG | P3 | 待修复 | - | - | 2h | - | - | - |
+| D048 | 16-调控系统函数不存在 | CODE | P1 | 已关闭 | phase1-doc | - | 2h | 1h | 2026-07-25 | 改为调用a9_exit_decision_handler，同时补全a1/a2/market数据 |
+| D049 | 16-调控系统SKILL名不一致 | CODE | P1 | 已关闭 | phase1-doc | - | 2h | 1h | 2026-07-25 | 3处SKILL名修正：dream-research-skill-v2→dream-strategy-research等 |
+| D050 | 16-调控系统TECHNICAL_DESIGN范围错位 | DOC | P2 | 待修复 | - | - | 8h | - | - | v1.0仅覆盖离场评估子模块，未覆盖19个核心文件全链路 |
+| D051 | auto_trader.py双实现且副本.env路径错误 | CODE | P0 | 待修复 | - | - | 2h | - | - | cli/与execution/两份，副本.env解析到错误路径 |
+| D052 | v4_wave_trader.py双实现 | CODE | P1 | 待修复 | - | - | 4h | - | - | 12-三屏与17-v4-wave各一份，17版import 12版模块 |
+| D053 | dream-tactical-validator跨子系统完全重复 | CODE | P1 | 待修复 | - | - | 2h | - | - | 6-TRADING与11-易经各一份，3脚本完全一致 |
+| D054 | 9-基本面分析文件迁移残留 | CODE | P2 | 待修复 | - | - | 2h | - | - | 根目录与backend/src/同名文件4组 |
+| D055 | 9-基本面分析debug/scratch脚本散落 | CODE | P2 | 待修复 | - | - | 1h | - | - | debug_tavily.py/fix_all.py/test_poly.py等 |
+| D056 | [安全]明文硬编码OKX API key | CODE | P0 | 待验证 | batch1 | - | 4h | 0.5h | - | 迁移到.env完成，密钥不变；轮换/历史清理暂缓 |
+| D057 | [安全]Tavily API key重复硬编码 | CODE | P1 | 待修复 | - | - | 1h | - | - | debug_tavily.py等3处 |
+| D058 | [安全]Bailian API key多处硬编码 | CODE | P1 | 待修复 | - | - | 1h | - | - | deploy_knowledge.py等6处(两子系统各3) |
+| D059 | [安全]subprocess shell=True命令注入 | CODE | P1 | 待修复 | - | - | 2h | - | - | okx_unified_toolkit.py:165等2处 |
+| D060 | [安全]pickle.load反序列化未校验 | CODE | P0 | 待修复 | - | - | 8h | - | - | 13处，含风控ml_model.py:98 |
+| D061 | [安全]AST安全沙箱自身异常被吞 | CODE | P0 | 待修复 | - | - | 4h | - | - | ml_trade_service.py:48818，失败应deny |
+| D062 | [安全]RiskManager状态读写except:pass | CODE | P0 | 待验证 | batch1 | - | 2h | 0.5h | - | except改为logger.exception+_save_failed标记+can_trade拒绝 |
+| D063 | OKX客户端网络异常与业务错误码混淆 | CODE | P1 | 待修复 | - | - | 4h | - | - | okx_simulated.py:243，缺重试退避 |
+| D064 | bare except 55+处静默吞异常 | CODE | P1 | 待修复 | - | - | 8h | - | - | 含bailian_client/v15_trader等 |
+| D065 | _init_db未try/finally包裹sqlite | CODE | P2 | 待修复 | - | - | 1h | - | - | dreamos_full_scheduler.py:79 |
+| D066 | requests.Session 30+处未关闭 | CODE | P1 | 待修复 | - | - | 4h | - | - | okx_simulated.py:181等，长跑泄漏 |
+| D067 | Tavily查询Session函数内泄漏 | CODE | P2 | 待修复 | - | - | 1h | - | - | orchestrator.py:148,194 |
+| D068 | ml_trade_service.py单文件74000+行 | CODE | P1 | 待修复 | - | - | 24h | - | - | 10-经典指标系统，需按子系统拆分 |
+| D069 | polling_trader.py 2642行+超长方法 | CODE | P2 | 待修复 | - | - | 8h | - | - | _fetch_and_infer 213行，关联D039 |
+| D070 | classic_exit_system.py 1998行+全局单例 | CODE | P2 | 待修复 | - | - | 6h | - | - | 行1963 global _default_system |
+| D071 | v15_trader.py 1647行+长方法 | CODE | P2 | 待修复 | - | - | 6h | - | - | execute_open_position 192行 |
+| D072 | okx_simulated.py 1277行 | CODE | P2 | 待修复 | - | - | 4h | - | - | 混合DNS/代理/签名/HTTP/模拟 |
+| D073 | data_server_fixed.py污染os.environ | CODE | P2 | 待修复 | - | - | 2h | - | - | :42-58,653-718 setdefault注入凭证 |
+| D074 | print()代替logger 1053处 | CODE | P2 | 待修复 | - | - | 8h | - | - | 40+文件，生产无法过滤 |
+| D075 | [安全]敏感字段打印日志 | CODE | P1 | 待修复 | - | - | 2h | - | - | v4_wave_trader.py:168等，钱包/key片段 |
+| D076 | OKX客户端+代理探测逻辑重复 | CODE | P2 | 待修复 | - | - | 8h | - | - | 5处重复实现，关联D004 |
+| D077 | 跨子系统硬编码路径+sys.path | ARCH | P1 | 待修复 | - | - | 8h | - | - | 17-v4-wave 4处硬编码"12-三屏趋势系统" |
+| D078 | experiments反向依赖11-易经推理 | ARCH | P1 | 待修复 | - | - | 4h | - | - | agent_a_memory.py:13 parents[3]回溯 |
+| D079 | data_server_fixed.py 30+sys.path.insert | ARCH | P1 | 待修复 | - | - | 8h | - | - | 单文件30+处跨子系统注入 |
+| D080 | 9套记忆系统并行实现 | ARCH | P1 | 待修复 | - | - | 24h | - | - | 关联D007，需落实两层架构规范 |
+| D081 | .4h_dedup.json双状态文件分叉 | ARCH | P0 | 待验证 | batch1 | - | 2h | 0.2h | - | execution版已同步为cli版内容；根本解决依赖D051 |
+| D082 | .cognitive/sessions/.current跨进程无锁 | ARCH | P2 | 待修复 | - | - | 2h | - | - | 多daemon并发覆盖指针 |
+| D083 | 全局可变单例模式泛滥9+处 | ARCH | P2 | 待修复 | - | - | 6h | - | - | evolution_loop/realtime_stream等 |
+| D084 | cognitive_loop_entry.py sys.path自注入 | ARCH | P3 | 待修复 | - | - | 2h | - | - | 4-MEMORY/9-工具与接口未组织为包 |
+| D085 | ENCRYPTION_KEY跨.env不一致 | CFG | P0 | 待验证 | batch1 | - | 2h | 0.1h | - | .env已统一为.env.local的值 |
+| D086 | 13+.env文件散落无统一策略 | CFG | P1 | 待修复 | - | - | 8h | - | - | 各子系统独立维护，加载方式各异 |
+| D087 | config_loader.py全局环境污染 | CFG | P2 | 待修复 | - | - | 2h | - | - | V15 lib/config_loader.py:30 os.environ.update |
+| D088 | 硬编码绝对路径锁死开发机 | CFG | P1 | 待修复 | - | - | 4h | - | - | data_server_fixed.py:47等/Users/zhangjiangtao |
+| D089 | SYMBOLS交易对列表9+文件硬编码 | CFG | P1 | 待修复 | - | - | 4h | - | - | 10/8/4币不一致，资产池已扩到30 |
+| D090 | coins默认参数硬编码 | CFG | P2 | 待修复 | - | - | 1h | - | - | polling_trader.py:88默认6币 |
+| D091 | 硬编码本地Clash代理端口 | CFG | P3 | 待修复 | - | - | 1h | - | - | okx_simulated.py:201端口7890等 |
+| D092 | 置信度阈值分散硬编码 | CFG | P1 | 待修复 | - | - | 2h | - | - | 0.4/0.55/0.70多套，调整不联动 |
+| D093 | .env.bak备份文件残留 | CFG | P3 | 待修复 | - | - | 0.5h | - | - | dreamos/.env.bak.20260719 |
+| D094 | 200+ckpt_*.json检查点入库 | ENG | P1 | 待修复 | - | - | 2h | - | - | dreamos/data/graph_store/，每日增 |
+| D095 | 9-基本面分析/.venv残留仓库 | ENG | P2 | 待修复 | - | - | 1h | - | - | git rm -r --cached清除 |
+| D096 | .cognitive/sessions运行时状态入库 | ENG | P2 | 待修复 | - | - | 1h | - | - | 含.current指针，跨机器无意义 |
+| D097 | 6-TRADING空状态文件入库 | ENG | P2 | 待修复 | - | - | 1h | - | - | approval_state.json等仅{} |
+| D098 | dreamos/cli 7个调度器入口 | ENG | P2 | 待修复 | - | - | 4h | - | - | auto/bcrm2/full/start等重叠 |
+| D099 | ab-trading 9plist+9shell冗余 | ENG | P2 | 待修复 | - | - | 4h | - | - | monitor/orchestrator/daemon三层重叠 |
+| D100 | 15-监控告警完全无测试 | TEST | P1 | 待修复 | - | - | 8h | - | - | monitor_core/feishu_alert零覆盖 |
+| D101 | V15核心模块无测试 | TEST | P2 | 待修复 | - | - | 8h | - | - | v15_trader/orchestrator/okx_client，关联D030 |
+| D102 | 通用风控测试极简 | TEST | P1 | 待修复 | - | - | 8h | - | - | pre_trade_gate/position_sizer零覆盖，关联D031 |
+| D103 | 测试散落15+位置无统一结构 | TEST | P2 | 待修复 | - | - | 4h | - | - | 部分散落根目录，9-基本面有shim |
+| D104 | 3-EVOLUTION等测试缺失 | TEST | P2 | 待修复 | - | - | 8h | - | - | 6-图结构仅3测试对20+源文件 |
+| D105 | 17-v4-wave"完全独立"声明矛盾 | DOC | P2 | 待修复 | - | - | 1h | - | - | __init__.py声称独立但import 12-三屏 |
+| D106 | 1-ARCHITECTURE/README架构过时 | DOC | P2 | 待修复 | - | - | 2h | - | - | 仍描述六大核心，关联DD-002 |
+| D107 | 币安Skill第三方仓库vendored | DEP | P2 | 待修复 | - | - | 2h | - | - | 9-基本面分析/币安Skill/binance-skills-hub-main |
+| D108 | requirements.txt缺失且未锁定 | DEP | P1 | 待修复 | - | - | 8h | - | - | pyyaml等未声明，无版本号，关联D028 |
 
 ---
 
@@ -544,10 +697,10 @@ PR 门禁
 | 测试体系 | L2+ | L3 | 有测试，覆盖率基线已建立 |
 | CI/CD | L2 | L3 | 统一CI流水线已建立，需完善门禁 |
 | 依赖管理 | L1 | L2 | 依赖分散，无统一管理 |
-| 文档体系 | L2+ | L3 | 有文档，配置管理规范已建立 |
-| 技术债管理 | L2 | L3 | 有完整清单和管理流程 |
+| 文档体系 | L3 | L3 | S1文档统一管理完成，6子系统全A级，规范标准建立 |
+| 技术债管理 | L2+ | L3 | 有完整清单和管理流程，文档-代码对齐检查已启动 |
 | 架构治理 | L2+ | L3 | 风控接入V15(影子模式) |
-| **综合评分** | **L2-** | **L3** | **Phase 1完成，进入Phase 2** |
+| **综合评分** | **L2+** | **L3** | **Phase 1+S1完成，进入Phase 2** |
 
 ### A.3 各等级跃迁标准
 

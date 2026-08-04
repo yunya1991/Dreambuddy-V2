@@ -1,5 +1,8 @@
 # 通用风控引擎 — 工程索引
 
+> **版本**: v1.0 | **更新日期**: 2026-07-25
+> **关联**: [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) · [API_SPEC.md](./API_SPEC.md) v1.1.0 · [CHANGELOG.md](./CHANGELOG.md) v1.1.0
+
 ## 1. 模块定位
 
 **模块名称**: 13-通用风控模块

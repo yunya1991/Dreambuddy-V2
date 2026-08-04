@@ -306,21 +306,24 @@ class RuleBasedRecognizer(BaseRecognizer):
         """根据意图类型推荐主链节点
 
         对应规范中的六种意图到链路映射:
-            TREND_FOLLOWING:  C1→F2/F3→A2→A4   (趋势跟随, A链精简)
-            MEAN_REVERSION:   C1→F2/F3→A2→A4   (均值回归, A链精简)
-            FUNDAMENTAL_PLAY: A1→F1→F5→A2→A4   (基本面驱动, F链)
-            BREAKOUT:         C1→A2→C3→A4       (突破, C链)
-            KNOWLEDGE_MATCH:  C3→A4              (知识库快捷路径)
-            UNCERTAIN:        C1→A1→A2→A4       (不确定, A链完整)
+            TREND_FOLLOWING:  C1→F2/F3→A2→A4→A5→A9   (趋势跟随, A链精简)
+            MEAN_REVERSION:   C1→F2/F3→A2→A4→A5→A9   (均值回归, A链精简)
+            FUNDAMENTAL_PLAY: A1→F1→F5→A2→A4→A5→A9   (基本面驱动, F链)
+            BREAKOUT:         C1→A2→C3→A4→A5→A9       (突破, C链)
+            KNOWLEDGE_MATCH:  C3→A4→A5→A9              (知识库快捷路径)
+            UNCERTAIN:        C1→A1→A2→A4→A5→A9       (不确定, A链完整)
 
-        注意: A0 矛盾论内置于 A2/A3, 不在链路中独立出现
+        注意:
+            - A0 矛盾论内置于 A2/A3, 不在链路中独立出现
+            - A5 战术执行生成最终 trade_order, 必须包含
+            - A9 离场策略记录止损止盈, 必须包含
         """
         chain_map = {
-            "TREND_FOLLOWING":   ["C1", "F2", "F3", "A2", "A4"],
-            "MEAN_REVERSION":    ["C1", "F2", "F3", "A2", "A4"],
-            "FUNDAMENTAL_PLAY":  ["A1", "F1", "F5", "A2", "A4"],
-            "BREAKOUT":          ["C1", "A2", "C3", "A4"],
-            "KNOWLEDGE_MATCH":   ["C3", "A4"],
-            "UNCERTAIN":         ["C1", "A1", "A2", "A4"],
+            "TREND_FOLLOWING":   ["C1", "F2", "F3", "A2", "A4", "A5", "A9"],
+            "MEAN_REVERSION":    ["C1", "F2", "F3", "A2", "A4", "A5", "A9"],
+            "FUNDAMENTAL_PLAY":  ["A1", "F1", "F5", "A2", "A4", "A5", "A9"],
+            "BREAKOUT":          ["C1", "A2", "C3", "A4", "A5", "A9"],
+            "KNOWLEDGE_MATCH":   ["C3", "A4", "A5", "A9"],
+            "UNCERTAIN":         ["C1", "A1", "A2", "A4", "A5", "A9"],
         }
-        return chain_map.get(intent_type, ["C1", "A1", "A2", "A4"])
+        return chain_map.get(intent_type, ["C1", "A1", "A2", "A4", "A5", "A9"])

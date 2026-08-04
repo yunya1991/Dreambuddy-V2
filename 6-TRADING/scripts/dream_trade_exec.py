@@ -1,10 +1,25 @@
 #!/usr/bin/env python3
 """Dream-MultiSkill 交易执行 - Step 4 & 5"""
-import requests, json, time, hmac, base64, hashlib
+import os, requests, json, time, hmac, base64, hashlib
 
-api_key = "f9d0221c-b26a-48eb-b248-88b3d600eccd"
-secret_key = "05912564EBA86936B3E799138A5DA502"
-passphrase = "Zjt@199107293419"
+def _load_env():
+    """从同目录 .env 加载环境变量（不依赖 python-dotenv）"""
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if not os.path.exists(env_path):
+        return
+    with open(env_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+_load_env()
+
+api_key = os.environ.get("OKX_API_KEY", "")
+secret_key = os.environ.get("OKX_SECRET_KEY", "")
+passphrase = os.environ.get("OKX_PASSPHRASE", "")
 base_url = "https://www.okx.com"
 
 def get_headers(method, path, body=""):

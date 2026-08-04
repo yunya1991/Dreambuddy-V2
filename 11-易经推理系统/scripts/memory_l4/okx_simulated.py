@@ -182,6 +182,9 @@ class OKXSimulatedClient:
         self.session = requests.Session()
         self.session.trust_env = False
 
+        # dry_run 模式下的本地内存订单簿（止盈止损单）
+        self._dry_run_algo_orders: Dict[str, list] = {}  # inst_id -> [orders]
+
         self._proxy_setup()
 
     def _proxy_setup(self):
@@ -311,16 +314,41 @@ class OKXSimulatedClient:
         }
 
     _KNOWN_LOT_SIZES = {
+        # Layer1
         "BTC-USDT-SWAP": 0.01,
         "ETH-USDT-SWAP": 0.01,
         "SOL-USDT-SWAP": 0.01,
         "BNB-USDT-SWAP": 0.01,
         "XRP-USDT-SWAP": 1,
-        "DOGE-USDT-SWAP": 1,
-        "LTC-USDT-SWAP": 0.01,
         "ADA-USDT-SWAP": 1,
-        "LINK-USDT-SWAP": 1,
-        "UNI-USDT-SWAP": 1,
+        "AVAX-USDT-SWAP": 0.1,
+        "NEAR-USDT-SWAP": 0.1,
+        "SUI-USDT-SWAP": 1,
+        "APT-USDT-SWAP": 0.1,
+        "DOT-USDT-SWAP": 0.1,
+        "ATOM-USDT-SWAP": 0.1,
+        "LTC-USDT-SWAP": 0.01,
+        "LINK-USDT-SWAP": 0.1,
+        # Layer2/DeFi
+        "ARB-USDT-SWAP": 1,
+        "OP-USDT-SWAP": 1,
+        "UNI-USDT-SWAP": 0.1,
+        "AAVE-USDT-SWAP": 0.01,
+        # Meme
+        "DOGE-USDT-SWAP": 1,
+        "PEPE-USDT-SWAP": 1,
+        # 美股个股
+        "NVDA-USDT-SWAP": 0.01,
+        "TSLA-USDT-SWAP": 0.01,
+        "MSFT-USDT-SWAP": 0.01,
+        "META-USDT-SWAP": 0.01,
+        "GOOGL-USDT-SWAP": 0.01,
+        "AAPL-USDT-SWAP": 0.01,
+        "AMZN-USDT-SWAP": 0.01,
+        "COIN-USDT-SWAP": 0.01,
+        # TradFi（贵金属）
+        "XAU-USDT-SWAP": 1,    # 黄金 ctVal=0.001
+        "XAG-USDT-SWAP": 1,    # 白银 ctVal=0.01
     }
 
     def _usdt_to_sz(self, inst_id: str, usdt_amount: float) -> float:
@@ -414,8 +442,9 @@ class OKXSimulatedClient:
     def get_positions(self, inst_id: str = None) -> Dict:
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}
-        inst_id = inst_id or self.cfg["default_inst_id"]
-        r = self._get("/api/v5/account/positions", {"instId": inst_id})
+        # inst_id 为空时批量查询全部持仓（一次API调用，避免逐个查询因限流导致计数不准）
+        params = {"instId": inst_id} if inst_id else {}
+        r = self._get("/api/v5/account/positions", params)
         if r.get("code") != "0":
             return {"ok": False, "error": r.get("msg", "unknown"), "raw": r}
         positions = []
@@ -619,6 +648,63 @@ class OKXSimulatedClient:
         if not stop_loss_px and not take_profit_px:
             return {"ok": False, "error": "需指定止损价或止盈价"}
 
+        # v3.0修复：按tickSz对齐SL/TP价格，避免OKX Parameter slTriggerPx error
+        tick_sz = 0.01  # 默认精度
+        try:
+            inst_info = self.get_instrument(inst_id)
+            if inst_info.get("ok"):
+                tick_sz = inst_info.get("tick_sz", 0.01) or 0.01
+        except Exception:
+            pass
+
+        def _round_to_tick(px: float, tick: float) -> float:
+            """将价格对齐到tickSz的整数倍"""
+            if tick <= 0 or px <= 0:
+                return px
+            return round(px / tick) * tick
+
+        if stop_loss_px > 0:
+            stop_loss_px = _round_to_tick(stop_loss_px, tick_sz)
+        if take_profit_px > 0:
+            take_profit_px = _round_to_tick(take_profit_px, tick_sz)
+
+        # ── P0修复：调整一侧止盈止损时，保留另一侧的价格，避免取消原保护 ──
+        existing_sl = 0
+        existing_tp = 0
+        try:
+            current_orders = self.get_algo_orders(inst_id)
+            if current_orders.get("ok") and current_orders.get("orders"):
+                for order in current_orders["orders"]:
+                    # 宽松匹配：pending 接口返回的都是未触发订单，优先匹配同方向
+                    pos_match = (order.get("pos_side") == pos_side
+                                 or not order.get("pos_side"))
+                    state_match = (order.get("state") in ("live", "ordering", None, ""))
+                    if pos_match and state_match:
+                        if order.get("sl_trigger_px", 0) > 0:
+                            existing_sl = order["sl_trigger_px"]
+                        if order.get("tp_trigger_px", 0) > 0:
+                            existing_tp = order["tp_trigger_px"]
+            # 实盘调试：记录查询到的现有止盈止损
+            if not self.dry_run and (stop_loss_px is None or take_profit_px is None or stop_loss_px == 0 or take_profit_px == 0):
+                self._audit_log("algo_preserve_check", {
+                    "inst_id": inst_id,
+                    "pos_side": pos_side,
+                    "input_sl": stop_loss_px,
+                    "input_tp": take_profit_px,
+                    "existing_sl": existing_sl,
+                    "existing_tp": existing_tp,
+                    "order_count": current_orders.get("count", 0),
+                }, current_orders)
+        except Exception as e:
+            self._audit_log("algo_preserve_error", {"inst_id": inst_id}, {"error": str(e)})
+
+        # 如果只更新一侧，保留另一侧的现有价格
+        # 注意：stop_loss_px 可能是 None 或 0，都表示未传入
+        if (stop_loss_px is None or stop_loss_px == 0) and existing_sl > 0:
+            stop_loss_px = existing_sl
+        if (take_profit_px is None or take_profit_px == 0) and existing_tp > 0:
+            take_profit_px = existing_tp
+
         # 先撤销已有未触发的止盈止损单，避免重复下单
         try:
             self.cancel_algo_orders(inst_id)
@@ -647,9 +733,9 @@ class OKXSimulatedClient:
                 "ordType": "oco",
                 "sz": str(sz),
                 "posSide": pos_side,
-                "slTriggerPx": str(stop_loss_px),
+                "slTriggerPx": f"{stop_loss_px:.12f}",
                 "slOrdPx": "-1",   # 市价触发
-                "tpTriggerPx": str(take_profit_px),
+                "tpTriggerPx": f"{take_profit_px:.12f}",
                 "tpOrdPx": "-1",
                 "tag": "yijingsltp",
             }
@@ -671,6 +757,22 @@ class OKXSimulatedClient:
             oco_error = None if result.get("ok") else (
                 result.get("raw", {}).get("msg", "unknown")
             )
+            # dry_run 模式：记录到本地内存订单簿
+            if self.dry_run and result.get("ok"):
+                self._dry_run_algo_orders[inst_id] = [{
+                    "algo_id": result["algo_id"],
+                    "ord_type": "oco",
+                    "side": side,
+                    "pos_side": pos_side,
+                    "sz": sz,
+                    "trigger_px": 0,
+                    "sl_trigger_px": stop_loss_px,
+                    "tp_trigger_px": take_profit_px,
+                    "order_px": "-1",
+                    "state": "live",
+                    "actual_px": 0,
+                    "tag": "yijingsltp",
+                }]
             return {"orders": [result], "stop_loss": result,
                     "take_profit": result, "ok": result.get("ok"),
                     "error": oco_error,
@@ -686,7 +788,7 @@ class OKXSimulatedClient:
                 "ordType": "conditional",
                 "sz": str(sz),
                 "posSide": pos_side,
-                "slTriggerPx": str(stop_loss_px),
+                "slTriggerPx": f"{stop_loss_px:.12f}",
                 "slOrdPx": "-1",
                 "slTriggerPxType": "last",
                 "tag": "yijingsl",
@@ -706,6 +808,25 @@ class OKXSimulatedClient:
             sl_error = None if sl_result.get("ok") else (
                 sl_result.get("raw", {}).get("msg", "unknown")
             )
+            # dry_run 模式：记录到本地内存订单簿
+            if self.dry_run and sl_result.get("ok"):
+                orders = self._dry_run_algo_orders.setdefault(inst_id, [])
+                # 移除同方向旧的仅止损单
+                orders[:] = [o for o in orders if not (o["pos_side"] == pos_side and o["ord_type"] == "conditional" and o.get("sl_trigger_px", 0) > 0)]
+                orders.append({
+                    "algo_id": sl_result["algo_id"],
+                    "ord_type": "conditional",
+                    "side": sl_side,
+                    "pos_side": pos_side,
+                    "sz": sz,
+                    "trigger_px": stop_loss_px,
+                    "sl_trigger_px": stop_loss_px,
+                    "tp_trigger_px": 0,
+                    "order_px": "-1",
+                    "state": "live",
+                    "actual_px": 0,
+                    "tag": "yijingsl",
+                })
             return {"orders": [sl_result], "stop_loss": sl_result,
                     "ok": sl_result.get("ok"), "error": sl_error,
                     "reason": reason or "bcrm_risk_management"}
@@ -719,7 +840,7 @@ class OKXSimulatedClient:
             "ordType": "conditional",
             "sz": str(sz),
             "posSide": pos_side,
-            "tpTriggerPx": str(take_profit_px),
+            "tpTriggerPx": f"{take_profit_px:.12f}",
             "tpOrdPx": "-1",
             "tpTriggerPxType": "last",
             "tag": "yijingtp",
@@ -739,6 +860,25 @@ class OKXSimulatedClient:
         tp_error = None if tp_result.get("ok") else (
             tp_result.get("raw", {}).get("msg", "unknown")
         )
+        # dry_run 模式：记录到本地内存订单簿
+        if self.dry_run and tp_result.get("ok"):
+            orders = self._dry_run_algo_orders.setdefault(inst_id, [])
+            # 移除同方向旧的仅止盈单
+            orders[:] = [o for o in orders if not (o["pos_side"] == pos_side and o["ord_type"] == "conditional" and o.get("tp_trigger_px", 0) > 0)]
+            orders.append({
+                "algo_id": tp_result["algo_id"],
+                "ord_type": "conditional",
+                "side": tp_side,
+                "pos_side": pos_side,
+                "sz": sz,
+                "trigger_px": take_profit_px,
+                "sl_trigger_px": 0,
+                "tp_trigger_px": take_profit_px,
+                "order_px": "-1",
+                "state": "live",
+                "actual_px": 0,
+                "tag": "yijingtp",
+            })
         return {"orders": [tp_result], "take_profit": tp_result,
                 "ok": tp_result.get("ok"), "error": tp_error,
                 "reason": reason or "bcrm_risk_management"}
@@ -786,6 +926,15 @@ class OKXSimulatedClient:
     def cancel_algo_orders(self, inst_id: str = None) -> Dict:
         """撤销所有未触发的止盈止损单"""
         inst_id = inst_id or self.cfg["default_inst_id"]
+
+        # dry_run 模式：直接清空本地内存订单簿
+        if self.dry_run:
+            orders = self._dry_run_algo_orders.get(inst_id, [])
+            count = len(orders)
+            self._dry_run_algo_orders[inst_id] = []
+            return {"ok": True, "cancelled": count, "total": count,
+                    "msg": f"dry_run: 取消 {count} 个 algo orders", "dry_run": True}
+
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}
 
@@ -813,6 +962,13 @@ class OKXSimulatedClient:
     def get_algo_orders(self, inst_id: str = None) -> Dict:
         """查询未触发的止盈止损单"""
         inst_id = inst_id or self.cfg["default_inst_id"]
+
+        # dry_run 模式：从本地内存订单簿读取
+        if self.dry_run:
+            orders = self._dry_run_algo_orders.get(inst_id, [])
+            return {"ok": True, "orders": list(orders), "count": len(orders),
+                    "dry_run": True}
+
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}
         orders = []

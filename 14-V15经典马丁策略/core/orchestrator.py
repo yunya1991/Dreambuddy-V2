@@ -259,33 +259,33 @@ def should_trigger(state: dict) -> tuple[bool, str]:
 
 def run_agents(reason: str):
     log(f"🚀 触发执行 — {reason}")
-    script_path = BASE_DIR / "core" / "v15_trader.py"
+    script_path = BASE_DIR / "run.py"
     if not script_path.exists():
         log(f"⚠️ 脚本不存在: {script_path}")
         return
     try:
         result = subprocess.run(
-            ["python3", str(script_path)],
+            ["python3", str(script_path), "poll_once"],
             cwd=str(BASE_DIR),
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=600,
         )
         key_lines = [
             l
             for l in result.stdout.split("\n")
             if any(
                 kw in l
-                for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误"]
+                for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误", "轮询完成"]
             )
             and "Warning" not in l
         ]
-        for line in key_lines[:4]:
+        for line in key_lines[:6]:
             log(f"  {line.strip()}")
         if result.returncode != 0:
-            log(f"  ❌ 退出码 {result.returncode}: {result.stderr[:100]}")
+            log(f"  ❌ 退出码 {result.returncode}: {result.stderr[:200]}")
     except subprocess.TimeoutExpired:
-        log("  ⚠️ 超时: v15_trader.py")
+        log("  ⚠️ 超时: poll_once (600s)")
     except Exception as e:
         log(f"  ❌ 执行失败: {e}")
 

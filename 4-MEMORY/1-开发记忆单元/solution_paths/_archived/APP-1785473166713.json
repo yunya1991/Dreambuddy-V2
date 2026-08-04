@@ -1,0 +1,59 @@
+{
+  "template_id": "APP-1785473166713",
+  "name": "trading-data 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "trading-data 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": null,
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "任务涉及 29 个文件",
+    "action_count": 361,
+    "files_touched": [
+      "14-V15经典马丁策略/data/orchestrator_state.json",
+      "14-V15经典马丁策略/data/backtest_cache/ARB_1w_200.json",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/execution/auto_trader.py",
+      "4-MEMORY/9-工具与接口/dynamic_distill_engine.py",
+      "14-V15经典马丁策略/data/capital_manager/engine_state.json",
+      "4-MEMORY/0-元记忆/template_mappings.json",
+      "11-易经推理系统/data/backtest/optimize_a_e_report.json",
+      "14-V15经典马丁策略/data/backtest_cache/BTC_1w_200.json",
+      "4-MEMORY/9-工具与接口/stress_test_cognitive_noise_filter.py",
+      "14-V15经典马丁策略/data/self_schedule.json",
+      "14-V15经典马丁策略/data/backtest_cache/SOL_1w_200.json",
+      "11-易经推理系统/tests/optimize_a_e.py",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1785472553915.json",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/nodes/a1_deep_research.py",
+      "1-ARCHITECTURE/dreamos/cli/auto_trader.py",
+      "14-V15经典马丁策略/data/v15_state.json",
+      "12-三屏趋势系统/data/v4_position_sltp.json",
+      "14-V15经典马丁策略/data/backtest_cache/OP_1w_200.json",
+      "14-V15经典马丁策略/data/backtest_cache/ETH_1w_200.json",
+      "4-MEMORY/0-元记忆/process_templates.json",
+      "4-MEMORY/1-开发记忆单元/bayesian_memories.json",
+      "4-MEMORY/9-工具与接口/bayesian_memory_updater.py",
+      "4-MEMORY/2-交易记忆单元/bayesian_memories.json",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/reports/dynamic_orchestration_20260731_130508.json",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/nodes/subsystem_adapter_nodes.py",
+      "11-易经推理系统/data/backtest/verify_landed_report.json",
+      "1-ARCHITECTURE/dreamos/cli/backtest_reports/backtest_1h_20260731_1305.md",
+      "1-ARCHITECTURE/dreamos/cli/backtest_reports/backtest_1h_20260731_1800.md",
+      "4-MEMORY/9-工具与接口/cognitive_daemon.py"
+    ],
+    "duration_minutes": 355.1,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1785494473.7115421
+  }
+}

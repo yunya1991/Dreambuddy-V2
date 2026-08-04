@@ -120,7 +120,7 @@ class SubsystemTradeExtractor:
     SCREEN3_PERF_HISTORY = "12-三屏趋势系统/ml/models/perf_logs/perf_history.json"
 
     # 趋势策略配置（回测结果）
-    TREND_SYSTEM_PERF = "trend-system/ml/models/perf_logs/perf_history.json"
+    TREND_SYSTEM_PERF = "12-三屏趋势系统/ml/models/perf_logs/perf_history.json"
 
     def extract_all(self) -> List[SubsystemTrade]:
         """提取所有子系统的交易记录"""

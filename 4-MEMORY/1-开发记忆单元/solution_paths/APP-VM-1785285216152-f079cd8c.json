@@ -1,0 +1,20 @@
+{
+  "template_id": "APP-VM-1785285216152-f079cd8c",
+  "title": "MCP server单例模式(_cle_instance)在单元测试中会导致mock失效：前一个测试创建了真实实例后，后续测试patch(CognitiveLo",
+  "content": "MCP server单例模式(_cle_instance)在单元测试中会导致mock失效：前一个测试创建了真实实例后，后续测试patch(CognitiveLoopEntry)无法覆盖已存在的单例。解决方案：提供_reset_cle()函数，在每个需要mock的测试前调用重置单例。",
+  "quality_level": "A",
+  "confidence": 0.85,
+  "verify_count": 9,
+  "tags": [
+    "单例",
+    "单元测试",
+    "mock",
+    "MCP"
+  ],
+  "memory_type": "experience",
+  "source": "认知闭环开发-2026-07-29",
+  "created_at": "2026-07-29T00:33:36.152427+00:00",
+  "updated_at": "2026-07-31T13:09:11.431234+00:00",
+  "rebuilt_from_memory_id": "VM-1785285216152-f079cd8c",
+  "rebuild_version": 1
+}

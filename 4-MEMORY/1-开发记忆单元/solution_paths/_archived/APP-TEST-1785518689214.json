@@ -1,0 +1,51 @@
+{
+  "template_id": "APP-TEST-1785518689214",
+  "name": "test applied",
+  "steps": [
+    "step1"
+  ],
+  "description": "test applied",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "test-driven-development",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "",
+    "action_count": 0,
+    "files_touched": [],
+    "duration_minutes": 0,
+    "success": true,
+    "commit_hash": "",
+    "created_at": 1785518689.2144241,
+    "parent_skill_ids": [
+      "test-driven-development"
+    ],
+    "process_verify_report": {
+      "test-driven-development": {
+        "score": 0.78,
+        "followed": true
+      }
+    },
+    "task_type": "python-development",
+    "reproducible_steps": [
+      "step1",
+      "step2"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "t.py"
+      ],
+      "modified_files": [
+        "f.py"
+      ],
+      "debt_items": []
+    }
+  }
+}

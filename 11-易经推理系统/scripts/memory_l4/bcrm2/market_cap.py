@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 MARKET_CAP_LARGE = "large"
 MARKET_CAP_MID = "mid"
 MARKET_CAP_SMALL = "small"
+MARKET_CAP_TRADFI = "tradfi"   # TradFi 资产（黄金/标普等）
 
 
 @dataclass
@@ -134,6 +135,29 @@ PRESET_CONFIGS = {
         merrill_phase=False,
         merrill_cross=False,
     ),
+    MARKET_CAP_TRADFI: FeatureConfig(
+        enable_bagua=True,
+        enable_classic=True,
+        enable_fibonacci=True,
+        enable_pivot=True,
+        enable_rsi=False,
+        enable_wdh=True,
+        wdh_weekly_only=False,
+        enable_cycle=False,  # TradFi 无减半周期
+        cycle_halving=False,
+        cycle_ath=False,
+        cycle_inventory=False,
+        cycle_long_term=False,
+        enable_cross_asset=True,
+        enable_mcap_feature=True,
+        enable_meta_labeling=False,
+        enable_merrill=True,   # TradFi 资金轮动明显
+        merrill_inflation=True,
+        merrill_growth=True,
+        merrill_capital_flow=True,
+        merrill_phase=True,
+        merrill_cross=True,
+    ),
 }
 
 
@@ -169,6 +193,20 @@ KNOWN_MCAP = {
     "WIF": MARKET_CAP_SMALL,
     "JTO": MARKET_CAP_SMALL,
     "BLUR": MARKET_CAP_SMALL,
+    "NEAR": MARKET_CAP_MID,
+    "AAVE": MARKET_CAP_SMALL,
+    # 美股个股（按市值归类）
+    "NVDA": MARKET_CAP_TRADFI,   # 万亿市值
+    "TSLA": MARKET_CAP_TRADFI,
+    "MSFT": MARKET_CAP_TRADFI,
+    "META": MARKET_CAP_TRADFI,
+    "GOOGL": MARKET_CAP_TRADFI,
+    "AAPL": MARKET_CAP_TRADFI,
+    "AMZN": MARKET_CAP_TRADFI,
+    "COIN": MARKET_CAP_TRADFI,
+    # TradFi（贵金属）
+    "XAU": MARKET_CAP_TRADFI,
+    "XAG": MARKET_CAP_TRADFI,
 }
 
 

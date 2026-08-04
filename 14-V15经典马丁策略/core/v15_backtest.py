@@ -390,6 +390,66 @@ def prepare_ma200_for_4h(
     return daily_ma200_for_4h, weekly_ma200_for_4h
 
 
+def _calc_ema_series(closes: List[float], period: int) -> List[Optional[float]]:
+    """计算EMA序列（与实盘strategy_params._calc_ema一致）"""
+    n = len(closes)
+    ema_list = [None] * n
+    if n < period:
+        return ema_list
+    k = 2 / (period + 1)
+    ema = closes[0]
+    for i in range(n):
+        if i > 0:
+            ema = closes[i] * k + ema * (1 - k)
+        if i >= period - 1:
+            ema_list[i] = ema
+    return ema_list
+
+
+def prepare_ema200_for_4h(
+    klines_4h: List[Dict], klines_1d: List[Dict], klines_1w: List[Dict]
+) -> Tuple[List[Optional[float]], List[Optional[float]]]:
+    """
+    为4H数据准备日线EMA200和周线EMA200序列（用于MA200+EMA200止损对比回测）
+    返回: (daily_ema200_list, weekly_ema200_list)，长度与klines_4h相同
+    """
+    n = len(klines_4h)
+    daily_ema200_for_4h = [None] * n
+    weekly_ema200_for_4h = [None] * n
+
+    # 计算日线EMA200
+    if len(klines_1d) >= 200:
+        daily_closes = [float(k["c"]) for k in klines_1d]
+        daily_ema200_series = _calc_ema_series(daily_closes, 200)
+
+        daily_ema200_dict = {}
+        for k, ema in zip(klines_1d, daily_ema200_series):
+            if ema is not None:
+                date_str = _timestamp_to_date_str(k["t"])
+                daily_ema200_dict[date_str] = ema
+
+        for i, k in enumerate(klines_4h):
+            date_str = _timestamp_to_date_str(k["t"])
+            daily_ema200_for_4h[i] = daily_ema200_dict.get(date_str)
+
+    # 计算周线EMA200
+    if len(klines_1w) >= 200:
+        weekly_closes = [float(k["c"]) for k in klines_1w]
+        weekly_ema200_series = _calc_ema_series(weekly_closes, 200)
+
+        weekly_ema200_dict = {}
+        for k, ema in zip(klines_1w, weekly_ema200_series):
+            if ema is not None:
+                week_str = _timestamp_to_week_start_str(k["t"])
+                weekly_ema200_dict[week_str] = ema
+
+        for i, k in enumerate(klines_4h):
+            week_str = _timestamp_to_week_start_str(k["t"])
+            weekly_ema200_for_4h[i] = weekly_ema200_dict.get(week_str)
+
+    return daily_ema200_for_4h, weekly_ema200_for_4h
+
+
 def prepare_ma128_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> List[Optional[float]]:
     """
     为4H数据准备日线MA128序列（用于DirectionGate多空方向控制）
@@ -530,6 +590,93 @@ def get_ma200_stop_loss(
                 and last_weekly_close is not None
                 and last_weekly_close > weekly_ma200
             ):
+                all_below_weekly = False
+
+            all_confirmed_below = all_below_daily and all_below_weekly
+            return None, all_confirmed_below, "BELOW_ALL_MA"
+
+
+def get_ma200_ema200_stop_loss(
+    direction: str,
+    close: float,
+    daily_ma200: Optional[float],
+    weekly_ma200: Optional[float],
+    daily_ema200: Optional[float],
+    weekly_ema200: Optional[float],
+    last_daily_close: Optional[float] = None,
+    last_weekly_close: Optional[float] = None,
+) -> Tuple[Optional[float], bool, str]:
+    """
+    MA200+EMA200动态止损逻辑（与实盘strategy_params.get_dynamic_stop_loss一致）
+
+    四条候选均线: 日MA200、日EMA200、周MA200、周EMA200
+    止损线 = 价格下方（做多）/上方（做空）最近的一条
+    触发 = 对应周期已收盘价确认跌破/突破
+
+    返回: (止损线价格, 是否触发止损, 止损类型)
+    """
+    if (
+        daily_ma200 is None
+        and weekly_ma200 is None
+        and daily_ema200 is None
+        and weekly_ema200 is None
+    ):
+        return None, False, "NONE"
+
+    if direction == "SHORT":
+        candidates = []
+        if daily_ma200 is not None and daily_ma200 > close:
+            candidates.append((daily_ma200, daily_ma200 - close, "daily", "日MA200"))
+        if daily_ema200 is not None and daily_ema200 > close:
+            candidates.append((daily_ema200, daily_ema200 - close, "daily", "日EMA200"))
+        if weekly_ma200 is not None and weekly_ma200 > close:
+            candidates.append((weekly_ma200, weekly_ma200 - close, "weekly", "周MA200"))
+        if weekly_ema200 is not None and weekly_ema200 > close:
+            candidates.append((weekly_ema200, weekly_ema200 - close, "weekly", "周EMA200"))
+
+        if candidates:
+            candidates.sort(key=lambda x: x[1])
+            stop_price, _, period, stop_type = candidates[0]
+            triggered = False
+            if period == "daily" and last_daily_close is not None:
+                triggered = last_daily_close >= stop_price
+            elif period == "weekly" and last_weekly_close is not None:
+                triggered = last_weekly_close >= stop_price
+            return stop_price, triggered, stop_type
+        else:
+            return None, True, "ABOVE_ALL_MA"
+
+    else:  # LONG
+        candidates = []
+        if daily_ma200 is not None and daily_ma200 < close:
+            candidates.append((daily_ma200, close - daily_ma200, "daily", "日MA200"))
+        if daily_ema200 is not None and daily_ema200 < close:
+            candidates.append((daily_ema200, close - daily_ema200, "daily", "日EMA200"))
+        if weekly_ma200 is not None and weekly_ma200 < close:
+            candidates.append((weekly_ma200, close - weekly_ma200, "weekly", "周MA200"))
+        if weekly_ema200 is not None and weekly_ema200 < close:
+            candidates.append((weekly_ema200, close - weekly_ema200, "weekly", "周EMA200"))
+
+        if candidates:
+            candidates.sort(key=lambda x: x[1])
+            stop_price, _, period, stop_type = candidates[0]
+            triggered = False
+            if period == "daily" and last_daily_close is not None:
+                triggered = last_daily_close <= stop_price
+            elif period == "weekly" and last_weekly_close is not None:
+                triggered = last_weekly_close <= stop_price
+            return stop_price, triggered, stop_type
+        else:
+            # 所有均线都在价格上方 → 检查是否全部确认跌破
+            all_below_daily = True
+            if daily_ma200 is not None and last_daily_close is not None and last_daily_close > daily_ma200:
+                all_below_daily = False
+            if daily_ema200 is not None and last_daily_close is not None and last_daily_close > daily_ema200:
+                all_below_daily = False
+            all_below_weekly = True
+            if weekly_ma200 is not None and last_weekly_close is not None and last_weekly_close > weekly_ma200:
+                all_below_weekly = False
+            if weekly_ema200 is not None and last_weekly_close is not None and last_weekly_close > weekly_ema200:
                 all_below_weekly = False
 
             all_confirmed_below = all_below_daily and all_below_weekly
@@ -1050,6 +1197,7 @@ def run_backtest(
     btc_windvane_confirm_days: int = 3,
     btc_windvane_short_only: bool = False,
     use_elder_ray: bool = True,
+    use_ema200: bool = False,
 ) -> Dict:
     """
     运行V15策略回测 v4
@@ -1167,6 +1315,11 @@ def run_backtest(
         last_daily_close_list, last_weekly_close_list = prepare_last_close_for_4h(
             klines, klines_1d, klines_1w
         )
+
+    # 预计算EMA200（仅use_ema200=True时计算，用于MA200+EMA200止损对比回测）
+    daily_ema200_list, weekly_ema200_list = None, None
+    if use_ema200 and len(klines_1d) >= 200:
+        daily_ema200_list, weekly_ema200_list = prepare_ema200_for_4h(klines, klines_1d, klines_1w)
 
     # 预计算MA128（用于DirectionGate多空方向控制）
     daily_ma128_list = None
@@ -1510,14 +1663,28 @@ def run_backtest(
                 last_w_close = last_weekly_close_list[i] if last_weekly_close_list else None
 
                 if daily_ma200 is not None or weekly_ma200 is not None:
-                    stop_line, triggered, sl_type = get_ma200_stop_loss(
-                        direction,
-                        current_price,
-                        daily_ma200,
-                        weekly_ma200,
-                        last_d_close,
-                        last_w_close,
-                    )
+                    if use_ema200 and daily_ema200_list is not None:
+                        daily_ema200 = daily_ema200_list[i]
+                        weekly_ema200 = weekly_ema200_list[i] if weekly_ema200_list else None
+                        stop_line, triggered, sl_type = get_ma200_ema200_stop_loss(
+                            direction,
+                            current_price,
+                            daily_ma200,
+                            weekly_ma200,
+                            daily_ema200,
+                            weekly_ema200,
+                            last_d_close,
+                            last_w_close,
+                        )
+                    else:
+                        stop_line, triggered, sl_type = get_ma200_stop_loss(
+                            direction,
+                            current_price,
+                            daily_ma200,
+                            weekly_ma200,
+                            last_d_close,
+                            last_w_close,
+                        )
                     if triggered:
                         hit_sl = True
                         position["sl_type"] = sl_type

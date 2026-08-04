@@ -34,6 +34,15 @@ MIN_LEVERAGE = 1
 MAX_LEVERAGE = 5
 DEFAULT_LEVERAGE = 3
 CONFIDENCE_THRESHOLD = float(os.environ.get("DREAMOS_CONFIDENCE_THRESHOLD", "0.4"))
+# 离场模块选择器开关：v2.5 修复后默认启用择优。
+# 分类路由（ExitModuleSelector._scenario_override）：
+#   LOW/CHOP/RANGE 震荡市 → module_name="builtin"（_try_selector_exit 看到后返回 None → 回退内置 ATR 时间衰减）
+#   NORMAL/HIGH 趋势/高波动 → 按回测 score 选 classic/yijing 最优（fallback_level 0/1/2）
+# 环境变量 DREAMOS_EXIT_SELECTOR_ENABLED=0 可强制关闭，完全走内置 ATR。
+EXIT_SELECTOR_ENABLED = os.environ.get("DREAMOS_EXIT_SELECTOR_ENABLED", "1") == "1"
+# 入场模块选择器开关（v2.6 新增）：默认开启，有回测数据(fallback_level<3)时覆盖 analysis 的方向/置信度；
+# 无数据(LOW/CHOP/RANGE)时走 scenario_ema 强降级或 L3 回退原链路（不影响原 TradingAgent/C1→C2→C3）
+ENTRY_SELECTOR_ENABLED = os.environ.get("DREAMOS_ENTRY_SELECTOR_ENABLED", "1") == "1"
 
 
 def calc_dynamic_leverage(
@@ -41,21 +50,109 @@ def calc_dynamic_leverage(
     min_lev: int = MIN_LEVERAGE,
     max_lev: int = MAX_LEVERAGE,
     threshold: float = CONFIDENCE_THRESHOLD,
+    atr_pct: Optional[float] = None,
+    vol_benchmark: float = 0.025,
 ) -> int:
-    """基于置信度动态计算杠杆倍数
+    """基于置信度+波动率动态计算杠杆倍数（Kelly 风格）
 
     映射逻辑:
       - 置信度 = threshold (默认 0.4) → min_lev (1x)
-      - 置信度 = 0.6 → 约 3x
-      - 置信度 >= 0.8 → max_lev (5x)
+      - 置信度 >= 0.75 → 基础系数打满
+      - atr_pct > vol_benchmark (默认 2.5%) 时按比例降杠杆(高波动币降风险)
+      - atr_pct < 1.0% 时最高可 +1x
     """
     if confidence <= threshold:
         return min_lev
-    if confidence >= 0.8:
-        return max_lev
-    ratio = (confidence - threshold) / (0.8 - threshold)
-    lev = min_lev + ratio * (max_lev - min_lev)
-    return max(min_lev, min(max_lev, int(round(lev))))
+    conf_ratio = min(1.0, (confidence - threshold) / max(1e-6, (0.75 - threshold)))
+    # 波动率调节 (ATR% 作为日波代理)
+    vol_factor = 1.0
+    if atr_pct is not None and atr_pct > 0:
+        vol_ratio = vol_benchmark / max(1e-6, atr_pct)  # 小波动=高杠杆
+        vol_factor = max(0.5, min(1.5, vol_ratio))
+    target = min_lev + conf_ratio * (max_lev - min_lev)
+    target *= vol_factor
+    return max(min_lev, min(max_lev, int(round(target))))
+
+
+def calc_dynamic_position_and_leverage(
+    confidence: float,
+    atr_pct: float,
+    account_equity: Optional[float] = None,
+    direction: str = "LONG",
+    min_lev: int = MIN_LEVERAGE,
+    max_lev: int = MAX_LEVERAGE,
+    threshold: float = CONFIDENCE_THRESHOLD,
+    symbol: str = "BTC",
+    default_equity: float = 60.0,
+) -> Dict[str, float]:
+    """统一的 Kelly 动态仓位 & 杠杆模型（与 A5 模块版本保持一致）
+
+    Args:
+        confidence: 决策置信度 [0,1]（来自 A2/A5/A7 校准后）
+        atr_pct:   ATR/price 波动率（0.02 = 2% 日波）
+        account_equity: 账户总权益(USDT)，None 时用 default 或 查询接口
+        direction:  LONG/SHORT，仅用于日志/校验
+        min_lev/max_lev/threshold: 杠杆参数
+        symbol:    币种（用于 BTC 溢价基准）
+        default_equity: 接口查询失败时的默认权益(60 USDT 为测试账户量级)
+
+    Returns:
+        dict with keys: position_size, leverage, confidence_score, vol_score, kelly_pct, max_single_pct, min_position_usdt
+    """
+    # 1) 置信度分数：threshold 以下=0，0.75 以上=1.0
+    if confidence >= threshold:
+        conf_score = min(1.0, (confidence - threshold) / max(1e-6, 0.75 - threshold))
+    else:
+        conf_score = 0.0
+    conf_score = max(0.0, min(1.0, conf_score))
+
+    # 2) 波动率分数：日波 2.5% 基准=1.0；>4% 时惩罚；<1.5% 时奖励
+    atr = max(0.001, float(atr_pct) if atr_pct else 0.025)
+    vol_score = 0.025 / atr
+    vol_score = max(0.5, min(1.5, vol_score))
+
+    # 3) Kelly 比例：半凯利，f* = (p*b - q) / b，近似用置信度当作胜率 p
+    edge = max(0.0, conf_score - 0.35)
+    kelly_full = (edge * 3.0 - (1.0 - conf_score)) / 2.0
+    kelly_full = max(0.02, min(0.30, kelly_full))
+    kelly_half = kelly_full * 0.5
+
+    # 4) 账户余额
+    if account_equity is None or account_equity <= 0:
+        account_equity = default_equity
+    eq = max(0.0, float(account_equity))
+
+    # 5) 单币种硬上限 & 下限
+    tier1 = {"BTC", "ETH"}
+    tier2 = {"SOL", "BNB", "XRP"}
+    tier_small_min = {"OP", "ARB", "DOGE", "SHIB", "PEPE", "DOT"}
+    max_single_pct = 0.25 if symbol.upper() in tier1 else (0.18 if symbol.upper() in tier2 else 0.15)
+    min_position_usdt = 5.0 if symbol.upper() in tier_small_min else 3.0
+
+    # 6) 综合名义本金 = equity × kelly × conf × vol
+    position = eq * kelly_half * conf_score * vol_score
+    position = max(min_position_usdt, min(position, eq * max_single_pct))
+    position = round(position, 2)
+
+    # 7) 杠杆 = 动态（置信度+波动率）
+    leverage = calc_dynamic_leverage(
+        confidence=confidence,
+        min_lev=min_lev,
+        max_lev=max_lev,
+        threshold=threshold,
+        atr_pct=atr_pct,
+    )
+
+    return {
+        "position_size": position,
+        "leverage": float(leverage),
+        "confidence_score": round(conf_score, 3),
+        "vol_score": round(vol_score, 3),
+        "kelly_pct": round(kelly_half, 4),
+        "max_single_pct": max_single_pct,
+        "min_position_usdt": min_position_usdt,
+        "account_equity": round(eq, 2),
+    }
 
 
 class AutoTrader:
@@ -78,6 +175,11 @@ class AutoTrader:
         self._scenario_classifier = None
         self._orchestration_memory = None
         self._feedback_collector = None
+        self._exit_selector = None  # 离场模块选择器（延迟初始化）
+        self._entry_selector = None  # 入场模块选择器（延迟初始化）
+        # _last_trade_time 持久化路径（跨 scheduler 重启共享）
+        self._trade_time_path = str(Path(__file__).parent / ".trade_time.json")
+        self._last_trade_time = self._load_trade_time_state()
         # 当前分析上下文（场景+编排），供 execute_trade 回写反馈使用
         self._current_context = {"scenario_id": "UNKNOWN", "pattern": "c_chain", "expected_direction": "HOLD"}
         # P1-2: 降级路径计数器 — symbol → 连续降级次数
@@ -89,6 +191,11 @@ class AutoTrader:
         # 持久化到文件，跨实例共享（scheduler 每次扫描创建新实例）
         self._dedup_path = str(Path(__file__).parent / ".4h_dedup.json")
         self._last_trade_4h_ts: Dict[str, int] = self._load_dedup_state()
+        # per-symbol 持仓运行时状态（classic 离场适配器用）：
+        #   {symbol: {leverage, trailing_armed, trailing_stop_price,
+        #             peak_price, trough_price, mfe_pnl_pct, max_dd_pct, entry_price}}
+        # 跨离场巡检持续累积，未命中的 symbol 下次巡检自动复用
+        self._position_exit_state: Dict[str, Dict[str, Any]] = {}
 
     def get_scenario_classifier(self):
         """场景分类器（延迟初始化）"""
@@ -115,6 +222,102 @@ class AutoTrader:
             memory = self.get_orchestration_memory()
             self._feedback_collector = ExecutionFeedbackCollector(memory)
         return self._feedback_collector
+
+    def get_exit_selector(self):
+        """离场模块选择器（延迟初始化）
+
+        基于场景 + 回测表现选择最佳离场模块（classic / yijing / fundamental / simple）。
+        仅有回测数据时生效（fallback_level < 3），否则 check_exit 回退到内置逻辑。
+        """
+        if self._exit_selector is None:
+            try:
+                from dreamos.capabilities.trading.exit_strategy.exit_module_selector import ExitModuleSelector
+                self._exit_selector = ExitModuleSelector()
+            except Exception as e:
+                logger.warning(f"离场模块选择器加载失败: {e}")
+                self._exit_selector = None
+        return self._exit_selector
+
+    def get_entry_selector(self):
+        """入场模块选择器（延迟初始化）
+
+        6 个可选模块（a2_fusion/c2_momentum/s3_trend/yj_infer/martin_v15/scenario_ema）。
+        回测驱动：EntryPerformanceMemory.json 有数据时按 score 择优；无数据时走 L3 默认。
+        LOW/CHOP/RANGE 场景强降级 scenario_ema（震荡市越简单越好）。
+        """
+        if self._entry_selector is None:
+            try:
+                from dreamos.capabilities.trading.entry_strategy import EntryModuleSelector
+                self._entry_selector = EntryModuleSelector()
+            except Exception as e:
+                logger.warning(f"入场模块选择器加载失败: {e}")
+                self._entry_selector = None
+        return self._entry_selector
+
+    def _try_selector_entry(
+        self,
+        symbol: str,
+        scenario_id: str,
+        candles_1h_rows: Optional[List[tuple]],  # [(t,o,h,l,c,v), ...] 升序 48 根 1h
+        market_data: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """入场模块选择器 overlay（v2.6 新增）。
+
+        返回 dict: {direction, confidence, module_name, reason, source_scenario, entry_decision_raw}
+            或 None → 不 override，回退原链路 (TradingAgent / C1→C2→C3)
+
+        触发条件（全部满足）:
+            1. ENTRY_SELECTOR_ENABLED=1（默认）
+            2. EntryModuleSelector 返回 fallback_level ∈ {0,1,2,5} 且 不是 default fallback (L3)
+            3. 被选中的 adapter.is_available 且 返回 direction != HOLD
+        """
+        if not ENTRY_SELECTOR_ENABLED:
+            return None
+        try:
+            selector = self.get_entry_selector()
+            if selector is None:
+                return None
+            choice = selector.select(scenario_id)
+            # L3 默认：无回测数据，不做 override（尊重原链路）
+            if choice.fallback_level == 3:
+                return None
+            adapter = selector.get_adapter(choice.module_name)
+            if adapter is None or not getattr(adapter, 'is_available', True):
+                return None
+            # 构造 48 根 1h K 行（与回测一致）：优先用 candles_1h_rows，否则从 market_data candles_1h 转换
+            window_48 = candles_1h_rows or []
+            if not window_48 and market_data.get("candles_1h"):
+                for c in market_data["candles_1h"]:
+                    if isinstance(c, dict):
+                        row = (int(c.get("t",0)), float(c.get("o",0)), float(c.get("h",0)),
+                               float(c.get("l",0)), float(c.get("c",0)), float(c.get("v",0)))
+                        if row[4] > 0: window_48.append(row)
+                    elif isinstance(c, (list, tuple)) and len(c) >= 6:
+                        window_48.append(tuple(c[:6]))
+            # 不足 48 时从 closes 回补（非严格但保持一致性）
+            if len(window_48) < 24 and market_data.get("price", 0) > 0:
+                # 无法凑齐足够K线 → 放弃 override
+                return None
+            entry_decision = adapter.evaluate(
+                symbol=symbol, scenario_id=scenario_id,
+                window_klines=window_48, market_data=market_data, extra_state=None,
+            )
+            direction = (entry_decision.direction or "HOLD").upper()
+            confidence = float(entry_decision.confidence or 0.0)
+            if direction not in ("LONG", "SHORT"):
+                return None
+            return {
+                "direction": direction,
+                "confidence": confidence,
+                "module_name": choice.module_name,
+                "source_scenario": choice.source_scenario,
+                "fallback_level": choice.fallback_level,
+                "reason": getattr(entry_decision, 'entry_reason', ''),
+                "entry_decision_raw": entry_decision,
+            }
+        except Exception as e:
+            logger.debug(f"入场选择器 override 失败: {e}")
+            return None
 
     def record_trade_feedback(self, trade_result: Dict[str, Any]) -> None:
         """记录交易执行反馈到收集器
@@ -209,6 +412,32 @@ class AutoTrader:
         self._last_trade_4h_ts[coin] = current_4h_ts
         self._save_dedup_state()
 
+    def _load_trade_time_state(self) -> Dict[str, float]:
+        """加载持久化的开仓时间表（跨 scheduler 重启共享）
+
+        scheduler 每次扫描创建新 AutoTrader 实例，若不持久化，
+        _last_trade_time 每次为空 → _estimate_bars_held 返回 0 →
+        止损范围被放大、移动止盈失效。
+        """
+        try:
+            if os.path.exists(self._trade_time_path):
+                with open(self._trade_time_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                # 清理 7 天前的陈旧记录，避免无限增长
+                cutoff = time.time() - 7 * 24 * 3600
+                return {k: float(v) for k, v in data.items() if float(v) > cutoff}
+        except Exception as e:
+            logger.warning(f"加载开仓时间表失败: {e}")
+        return {}
+
+    def _save_trade_time_state(self) -> None:
+        """持久化开仓时间表"""
+        try:
+            with open(self._trade_time_path, "w", encoding="utf-8") as f:
+                json.dump(self._last_trade_time, f)
+        except Exception as e:
+            logger.warning(f"保存开仓时间表失败: {e}")
+
     def is_enabled(self) -> bool:
         return self._enabled
 
@@ -302,6 +531,9 @@ class AutoTrader:
         确保无论主路径还是降级路径都使用场景驱动的编排选择。
         """
         market_data = self._fetch_market_data(symbol)
+
+        # P0-6: 注入真实账户余额，供 Kelly 仓位模型使用
+        self._inject_account_equity(market_data)
 
         # 场景识别 + 编排选择（消除随机性，由记忆表驱动）
         classifier = self.get_scenario_classifier()
@@ -419,6 +651,19 @@ class AutoTrader:
 
         if direction != "HOLD" and price > 0:
             atr_pct = 0.02
+            # P0-6: Kelly 动态仓位 & 杠杆
+            dyn = calc_dynamic_position_and_leverage(
+                confidence=confidence,
+                atr_pct=atr_pct,
+                account_equity=None,
+                direction=direction,
+                min_lev=MIN_LEVERAGE,
+                max_lev=MAX_LEVERAGE,
+                threshold=CONFIDENCE_THRESHOLD,
+                symbol=symbol,
+            )
+            position_size = dyn["position_size"]
+            leverage = int(dyn["leverage"])
             if direction == "LONG":
                 stop_loss = round(price * (1 - atr_pct * 1.5), 4)
                 take_profit = round(price * (1 + atr_pct * 3.0), 4)
@@ -430,12 +675,13 @@ class AutoTrader:
                 "action": direction,
                 "coin": symbol,
                 "entry_price": price,
-                "position_size": 10.0,
-                "leverage": calc_dynamic_leverage(confidence),
+                "position_size": position_size,
+                "leverage": leverage,
                 "stop_loss": stop_loss,
                 "take_profit": take_profit,
-                "risk_per_trade": 10.0 * atr_pct,
+                "risk_per_trade": position_size * atr_pct,
                 "rr_ratio": round(abs(take_profit - price) / max(abs(price - stop_loss), 0.0001), 2),
+                "_kelly": dyn,
             }
 
         # 构建与主路径兼容的输出格式
@@ -482,6 +728,36 @@ class AutoTrader:
             "_orchestration": pattern_name,
             "_fallback_level": choice.fallback_level if choice else "L3",
         }
+
+    def _inject_account_equity(self, market_data: dict) -> None:
+        """P0-6: 查询真实账户余额并注入 market_data，供 Kelly 仓位模型使用
+
+        获取失败时不阻断流程，Kelly 模型会用 default_equity 兜底。
+        缓存 5 分钟避免频繁调用 API。
+        """
+        # 5 分钟缓存，避免每个币种都调 API
+        cache_key = "_account_equity_ts"
+        cache_ts = getattr(self, "_account_equity_cache_ts", 0)
+        if time.time() - cache_ts < 300 and hasattr(self, "_account_equity_cache"):
+            market_data["account_equity"] = self._account_equity_cache
+            return
+
+        try:
+            client = self.get_exchange_client()
+            if client and self.exchange == "aster":
+                summary = client._aster_fetch_account_summary()
+                if isinstance(summary, dict) and summary.get("ok"):
+                    s = summary.get("summary", {}) or {}
+                    eq = float(s.get("totalWalletBalance", 0) or 0)
+                    if eq > 0:
+                        market_data["account_equity"] = eq
+                        self._account_equity_cache = eq
+                        self._account_equity_cache_ts = time.time()
+                        logger.info(f"账户余额注入: {eq:.2f} USDT (Kelly 仓位模型)")
+                        return
+        except Exception as e:
+            logger.warning(f"查询账户余额失败,Kelly 模型将用默认值兜底: {e}")
+        # 获取失败时不写入，让 Kelly 模型用 default_equity=60 兜底
 
     def _fetch_market_data(self, symbol: str) -> Dict[str, Any]:
         """获取市场数据（包含场景分类器所需字段）"""
@@ -561,6 +837,16 @@ class AutoTrader:
                     change_24h = ((closes_4h[0] - closes_4h[6]) / closes_4h[6] * 100) if len(closes_4h) > 6 else 0
                     change_4h = ((closes_4h[0] - closes_4h[1]) / closes_4h[1] * 100) if len(closes_4h) > 1 else 0
 
+                    # candles_1h 转 dict 格式供 classic 适配器消费
+                    hl_candles = []
+                    for c in candles_1h:
+                        if isinstance(c, dict):
+                            hl_candles.append(c)
+                        elif isinstance(c, (list, tuple)) and len(c) >= 5:
+                            hl_candles.append({
+                                "t": c[0], "o": c[1], "h": c[2], "l": c[3],
+                                "c": c[4], "v": c[5] if len(c) > 5 else 0,
+                            })
                     return {
                         "symbol": symbol,
                         "price": price,
@@ -572,10 +858,12 @@ class AutoTrader:
                         "ema200": round(ema200, 2),
                         "rsi14": round(rsi14, 1),
                         "atr_pct": round(atr14 / price, 4),
+                        "candles_1h": hl_candles,
                     }
                 except Exception as e:
-                    logger.warning(f"获取完整市场数据失败: {e}")
-                    price = client.get_mid(symbol) if hasattr(client, 'get_mid') else 0
+                    logger.warning(f"Hyperliquid 获取完整市场数据失败: {e}")
+                    if hasattr(client, 'get_mid'):
+                        price = client.get_mid(symbol)
                     return {"symbol": symbol, "price": price}
 
             if self.exchange == "aster":
@@ -640,6 +928,14 @@ class AutoTrader:
                 change_24h = ((closes_1h[-1] - closes_1h[-24]) / closes_1h[-24] * 100) if len(closes_1h) > 23 else 0
                 change_4h = ((closes_4h[-1] - closes_4h[-4]) / closes_4h[-4] * 100) if len(closes_4h) > 3 else 0
 
+                # rows_1h 转 dict 格式供 classic 适配器消费
+                ast_candles = []
+                for r in rows_1h:
+                    if isinstance(r, (list, tuple)) and len(r) >= 5:
+                        ast_candles.append({
+                            "t": r[0], "o": r[1], "h": r[2], "l": r[3],
+                            "c": r[4], "v": r[5] if len(r) > 5 else 0,
+                        })
                 return {
                     "symbol": symbol,
                     "price": price,
@@ -651,6 +947,7 @@ class AutoTrader:
                     "ema200": round(ema200, 2),
                     "rsi14": round(rsi14, 1),
                     "atr_pct": round(atr14 / price, 4),
+                    "candles_1h": ast_candles,
                 }
 
             if self.exchange == "okx":
@@ -719,8 +1016,11 @@ class AutoTrader:
             if risk_pct > 5:
                 checks.append(f"单笔风险过高({risk_pct:.1f}% > 5%)")
 
-            if total_eq > 0 and position_size > total_eq * 0.2:
-                checks.append(f"仓位过大({position_size} > 账户20%)")
+            # P0-6: 仓位集中度检查 — 用 Kelly 模型的 max_single_pct，无 Kelly 信息时 30% 安全网
+            kelly_info = trade_order.get("_kelly") or {}
+            max_single_pct = kelly_info.get("max_single_pct", 0.30)
+            if total_eq > 0 and position_size > total_eq * max_single_pct:
+                checks.append(f"仓位过大({position_size:.1f} > 账户{max_single_pct:.0%})")
 
             if self._check_trade_interval(symbol):
                 checks.append("交易间隔不足")
@@ -757,6 +1057,8 @@ class AutoTrader:
             tpsl_set = bool(has_tpsl)
             tpsl_cancelled = (action == "EXIT")
             return {
+                "result": "SKIP",
+                "reason": "dry_run",
                 "dry_run": True,
                 "action": action,
                 "symbol": trade_order.get("coin"),
@@ -819,6 +1121,7 @@ class AutoTrader:
 
                 if result.get("ok"):
                     self._last_trade_time[coin] = time.time()
+                    self._save_trade_time_state()
                     # P0-3: 更新 4h 周期去重标记（持久化跨实例共享）
                     self._mark_4h_traded(coin)
 
@@ -874,6 +1177,7 @@ class AutoTrader:
 
                 if result.get("ok"):
                     self._last_trade_time[coin] = time.time()
+                    self._save_trade_time_state()
                     # P0-3: 更新 4h 周期去重标记（持久化跨实例共享）
                     self._mark_4h_traded(coin)
                     return {
@@ -902,6 +1206,8 @@ class AutoTrader:
                         pos_qty = None
                         close_side = None
                         for p in positions:
+                            if not isinstance(p, dict):
+                                continue
                             if coin.upper() in str(p.get('symbol', '')).upper():
                                 amt = float(p.get('position_amt') or p.get('positionAmt') or 0)
                                 if abs(amt) > 0:
@@ -918,18 +1224,45 @@ class AutoTrader:
                         # Aster 没有批量取消 API，需要遍历订单取消
                         open_orders = client._aster_fetch_open_orders() if hasattr(client, '_aster_fetch_open_orders') else []
                         cancelled_count = 0
-                        for o in open_orders:
-                            if coin.upper() in str(o.get('symbol', '')).upper():
-                                o_type = o.get('type', '')
-                                if o_type in ('STOP_MARKET', 'TAKE_PROFIT_MARKET'):
-                                    try:
-                                        client._aster_order_cancel(o.get('symbol'), o.get('orderId'))
-                                        cancelled_count += 1
-                                    except Exception:
-                                        pass
+                        if isinstance(open_orders, list):
+                            for o in open_orders:
+                                if not isinstance(o, dict):
+                                    continue
+                                if coin.upper() in str(o.get('symbol', '')).upper():
+                                    o_type = o.get('type', '')
+                                    if o_type in ('STOP_MARKET', 'TAKE_PROFIT_MARKET'):
+                                        try:
+                                            client._aster_order_cancel(o.get('symbol'), o.get('orderId'))
+                                            cancelled_count += 1
+                                        except Exception:
+                                            pass
                         logger.info(f"平仓前取消 TP/SL 挂单: {coin}, 已取消{cancelled_count}个")
                         
                         r = client._aster_market_order_qty(coin, close_side, pos_qty, reduce_only=True)
+                        # P0-5 修复: EXIT 平仓后立即判断结果并 return,避免漏到下方开仓逻辑
+                        close_ok = False
+                        close_order_id = None
+                        if isinstance(r, dict):
+                            resp = r.get('resp', {})
+                            if isinstance(resp, dict):
+                                inner = resp.get('data', resp)
+                                if isinstance(inner, dict):
+                                    if inner.get('status') in ('FILLED', 'NEW', 'PARTIALLY_FILLED'):
+                                        close_ok = True
+                                        close_order_id = inner.get('orderId')
+                        if close_ok:
+                            logger.info(f"Aster 平仓成功: {coin} | side={close_side} qty={pos_qty}")
+                            return {
+                                "result": "SUCCESS",
+                                "action": "EXIT",
+                                "symbol": coin,
+                                "exchange": "aster",
+                                "ord_id": close_order_id,
+                                "details": r,
+                            }
+                        else:
+                            logger.warning(f"Aster 平仓失败({coin}): r={r if isinstance(r, (dict, list)) else type(r).__name__}")
+                            return {"result": "FAILED", "error": f"平仓结果异常: {r if isinstance(r, (dict, list, str)) else type(r).__name__}"}
                     except Exception as e:
                         logger.warning(f"Aster 平仓异常({coin}): {e}")
                         return {"result": "FAILED", "error": str(e)}
@@ -947,8 +1280,10 @@ class AutoTrader:
                             try:
                                 positions, _ = client._aster_fetch_positions()
                                 current_lev = None
-                                if positions:
+                                if isinstance(positions, list):
                                     for p in positions:
+                                        if not isinstance(p, dict):
+                                            continue
                                         if coin.upper() in str(p.get('symbol', '')).upper():
                                             current_lev = int(p.get('leverage') or p.get('leverageSys') or 0)
                                             break
@@ -986,7 +1321,7 @@ class AutoTrader:
                         return {"error": f"未知动作: {action}"}
 
                 # Aster 成功判断:resp 中 status == FILLED
-                resp = r.get('resp', {})
+                resp = r.get('resp', {}) if isinstance(r, dict) else {}
                 ok = False
                 order_id = None
                 if isinstance(resp, dict):
@@ -998,6 +1333,7 @@ class AutoTrader:
 
                 if ok:
                     self._last_trade_time[coin] = time.time()
+                    self._save_trade_time_state()
                     # P0-3: 更新 4h 周期去重标记（持久化跨实例共享）
                     self._mark_4h_traded(coin)
 
@@ -1008,12 +1344,15 @@ class AutoTrader:
                             time.sleep(0.5)
                             positions, _ = client._aster_fetch_positions()
                             pos_qty = None
-                            for p in positions:
-                                if coin.upper() in str(p.get('symbol', '')).upper():
-                                    amt = float(p.get('position_amt') or p.get('positionAmt') or 0)
-                                    if abs(amt) > 0:
-                                        pos_qty = abs(amt)
-                                        break
+                            if isinstance(positions, list):
+                                for p in positions:
+                                    if not isinstance(p, dict):
+                                        continue
+                                    if coin.upper() in str(p.get('symbol', '')).upper():
+                                        amt = float(p.get('position_amt') or p.get('positionAmt') or 0)
+                                        if abs(amt) > 0:
+                                            pos_qty = abs(amt)
+                                            break
 
                             if pos_qty is None:
                                 pos_qty = position_size
@@ -1032,8 +1371,18 @@ class AutoTrader:
                                 coin, tp_side, pos_qty, float(take_profit), reduce_only=True
                             )
 
-                            sl_ok = sl_result.get('resp', {}).get('status') in ('NEW', 'FILLED', 'PARTIALLY_FILLED') if isinstance(sl_result.get('resp'), dict) else False
-                            tp_ok = tp_result.get('resp', {}).get('status') in ('NEW', 'FILLED', 'PARTIALLY_FILLED') if isinstance(tp_result.get('resp'), dict) else False
+                            sl_ok = False
+                            tp_ok = False
+                            if isinstance(sl_result, dict):
+                                sl_resp = sl_result.get('resp', {})
+                                if isinstance(sl_resp, dict):
+                                    sl_inner = sl_resp.get('data', sl_resp) if isinstance(sl_resp.get('data', {}), dict) else sl_resp
+                                    sl_ok = isinstance(sl_inner, dict) and sl_inner.get('status') in ('NEW', 'FILLED', 'PARTIALLY_FILLED')
+                            if isinstance(tp_result, dict):
+                                tp_resp = tp_result.get('resp', {})
+                                if isinstance(tp_resp, dict):
+                                    tp_inner = tp_resp.get('data', tp_resp) if isinstance(tp_resp.get('data', {}), dict) else tp_resp
+                                    tp_ok = isinstance(tp_inner, dict) and tp_inner.get('status') in ('NEW', 'FILLED', 'PARTIALLY_FILLED')
 
                             if sl_ok and tp_ok:
                                 logger.info(
@@ -1073,6 +1422,197 @@ class AutoTrader:
         except Exception as e:
             return {"result": "ERROR", "error": str(e)}
 
+    def _resolve_scenario_id(self, market_data: Dict[str, Any]) -> str:
+        """识别当前场景 ID（供离场模块选择器使用）"""
+        try:
+            from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+            scenario = ScenarioClassifier().classify(market_data)
+            sid = getattr(scenario, "scenario_id", "")
+            if sid:
+                return sid
+        except Exception:
+            pass
+        return self._current_context.get("scenario_id", "UNKNOWN")
+
+    def _try_selector_exit(
+        self,
+        symbol: str,
+        entry_price: float,
+        current_price: float,
+        direction: str,
+        market_data: Dict[str, Any],
+        atr_pct: float,
+        bars_held: int,
+        scenario_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        """基于回测表现的离场模块选择（overlay）
+
+        v2.5 路由（默认启用择优）：
+            EXIT_SELECTOR_ENABLED: 总开关，默认 1
+            selector.select(scenario_id) → 返回 ExitModuleChoice:
+              - module_name == "builtin" / fallback_level == 4: 场景级强降级（LOW/CHOP/RANGE）
+                → 返回 None，走 check_exit 内置 ATR 时间衰减逻辑（震荡市越简单越好）
+              - module_name == "simple" / fallback_level >= 3: 无足够回测数据，降级内置
+              - 其它 (classic/yijing/fundamental): 按回测 score 择优执行
+        Returns:
+            dict (check_exit 格式) 或 None (回退到内置逻辑)
+        """
+        if not EXIT_SELECTOR_ENABLED:
+            return None
+        try:
+            selector = self.get_exit_selector()
+            if selector is None:
+                return None
+            choice = selector.select(scenario_id)
+            # 场景级强降级（fallback_level=4，LOW/CHOP/RANGE）→ 内置 ATR（震荡市 builtin 胜率 40.3% > yijing 42%但 avg_pnl -0.2% 远差）
+            if choice.module_name == "builtin" or choice.fallback_level == 4:
+                return None
+            # L3 = 无回测数据的默认选择，保持内置逻辑避免回归
+            if choice.fallback_level >= 3:
+                return None
+            # simple 模块即内置逻辑的镜像，直接走内置路径以利用更精细的 regime/vol 因子
+            if choice.module_name == "simple":
+                return None
+            adapter = selector.get_adapter(choice.module_name)
+            if adapter is None or not adapter.is_available:
+                return None
+
+            position_age_sec = max(0.0, bars_held * 3600.0)
+            if entry_price > 0:
+                unrealized_pnl_pct = (
+                    (current_price - entry_price) / entry_price
+                    if direction == "LONG"
+                    else (entry_price - current_price) / entry_price
+                )
+            else:
+                unrealized_pnl_pct = 0.0
+
+            # 1. 获取/更新 per-symbol 持仓状态（解决 leverage / trailing / mfe / max_dd 4 bug）
+            pstate = self._position_exit_state.setdefault(symbol, {
+                "leverage": DEFAULT_LEVERAGE,
+                "trailing_armed": False,
+                "trailing_stop_price": 0.0,
+                "peak_price": entry_price,
+                "trough_price": entry_price,
+                "mfe_pnl_pct": 0.0,
+                "max_dd_pct": 0.0,
+                "entry_price": entry_price,
+            })
+            # entry_price 变化说明是新仓位，重置统计
+            if pstate.get("entry_price", 0) != entry_price:
+                pstate["entry_price"] = entry_price
+                pstate["peak_price"] = entry_price
+                pstate["trough_price"] = entry_price
+                pstate["mfe_pnl_pct"] = 0.0
+                pstate["max_dd_pct"] = 0.0
+                pstate["trailing_armed"] = False
+                pstate["trailing_stop_price"] = 0.0
+            # 尝试从交易所持仓取真实 leverage（覆盖默认值）
+            try:
+                client = self.get_exchange_client()
+                if client and self.exchange == "aster":
+                    pos_list, _ = client._aster_fetch_positions()
+                    for p in (pos_list or []):
+                        coin = str(p.get("coin", "")).replace("-USDT", "").replace("-SWAP", "")
+                        if coin == symbol and float(p.get("position_amt", 0) or 0) != 0:
+                            pstate["leverage"] = float(p.get("leverage") or DEFAULT_LEVERAGE)
+                            break
+            except Exception:
+                pass
+            # 实时更新 peak/trough 和 mfe/max_dd
+            if direction == "LONG":
+                if current_price > pstate["peak_price"]:
+                    pstate["peak_price"] = current_price
+                    if entry_price > 0:
+                        pstate["mfe_pnl_pct"] = max(pstate["mfe_pnl_pct"], (current_price - entry_price) / entry_price)
+                if entry_price > 0 and pstate["peak_price"] > 0:
+                    dd = (pstate["peak_price"] - current_price) / pstate["peak_price"]
+                    pstate["max_dd_pct"] = max(pstate["max_dd_pct"], dd)
+            else:
+                if current_price < pstate["trough_price"] or pstate["trough_price"] == 0:
+                    pstate["trough_price"] = current_price
+                    if entry_price > 0:
+                        pstate["mfe_pnl_pct"] = max(pstate["mfe_pnl_pct"], (entry_price - current_price) / entry_price)
+                if entry_price > 0 and pstate["trough_price"] > 0:
+                    dd = (current_price - pstate["trough_price"]) / pstate["trough_price"]
+                    pstate["max_dd_pct"] = max(pstate["max_dd_pct"], dd)
+
+            decision = adapter.evaluate(
+                symbol=symbol,
+                entry_price=entry_price,
+                current_price=current_price,
+                direction=direction,
+                market_data=market_data,
+                position_age_sec=position_age_sec,
+                unrealized_pnl_pct=unrealized_pnl_pct,
+                leverage=float(pstate["leverage"]),
+                atr_pct=atr_pct,
+                mfe_pnl_pct=float(pstate["mfe_pnl_pct"]),
+                max_dd_pct=float(pstate["max_dd_pct"]),
+                trailing_armed=pstate.get("trailing_armed", False),
+                trailing_stop_price=float(pstate.get("trailing_stop_price", 0.0)),
+                scenario_id=scenario_id,
+            )
+            # 回写跟踪止损状态（UnifiedExitDecision 暴露 new_trailing_armed/new_trailing_stop）
+            new_armed = getattr(decision, "new_trailing_armed", None)
+            new_stop = getattr(decision, "new_trailing_stop", 0.0)
+            if isinstance(new_armed, bool):
+                pstate["trailing_armed"] = new_armed
+            if isinstance(new_stop, (int, float)) and new_stop > 0:
+                pstate["trailing_stop_price"] = float(new_stop)
+
+            # 补充 SL/TP（适配器未提供时用 StopTakeProfitEngine 计算）
+            stop_loss = decision.stop_loss
+            take_profit = decision.take_profit
+            if stop_loss <= 0 or take_profit <= 0:
+                try:
+                    from dreamos.capabilities.trading.exit_strategy.stop_take_profit import calculate_stop_take_profit
+                    regime = "ranging" if ("RANGE" in scenario_id or "CHOP" in scenario_id) else (
+                        "trend_bull" if "BULL" in scenario_id else "trend_bear"
+                    )
+                    confidence = max(0.3, 0.8 - bars_held * 0.01)
+                    sltp = calculate_stop_take_profit(
+                        direction=direction,
+                        entry_price=entry_price,
+                        atr_pct=atr_pct,
+                        confidence=confidence,
+                        stop_strategy="atr",
+                        take_strategy="ratio",
+                        take_ratio=2.0,
+                        min_rr_ratio=1.5,
+                        market_regime=regime,
+                    )
+                    if stop_loss <= 0:
+                        stop_loss = sltp.get("stop_loss", 0)
+                    if take_profit <= 0:
+                        take_profit = sltp.get("take_profit", 0)
+                except Exception as e:
+                    logger.warning(f"[selector] SL/TP 补充计算失败({symbol}): {e}")
+
+            # RAISE_TP: 用模块提供的新止盈价
+            if decision.action == "RAISE_TP" and decision.new_tp_price > 0:
+                take_profit = decision.new_tp_price
+
+            should_exit = decision.action in ("CLOSE", "REDUCE")
+            exit_price = decision.exit_price if should_exit else 0.0
+            if should_exit and exit_price <= 0:
+                exit_price = current_price
+
+            return {
+                "exit": should_exit,
+                "reason": f"[{choice.module_name}@L{choice.fallback_level}] {decision.reason}",
+                "exit_price": exit_price,
+                "stop_loss": stop_loss,
+                "take_profit": take_profit,
+                "current_price": current_price,
+                "bars_held": bars_held,
+                "module": choice.module_name,
+                "reduce_frac": decision.reduce_frac if decision.action == "REDUCE" else 0.0,
+            }
+        except Exception as e:
+            logger.warning(f"[selector] 离场模块选择异常({symbol}), 回退内置逻辑: {e}")
+            return None
+
     def check_exit(self, symbol: str, entry_price: float, direction: str) -> Dict[str, Any]:
         """检查离场条件 — 时间衰减 + 市场状态自适应止损
 
@@ -1098,6 +1638,14 @@ class AutoTrader:
         # 计算持仓 K 线数（基于开仓时间）
         bars_held = self._estimate_bars_held(symbol)
 
+        # P2: 基于回测表现的离场模块选择（仅有回测数据时启用，否则回退内置逻辑）
+        scenario_id = self._resolve_scenario_id(market_data)
+        selector_result = self._try_selector_exit(
+            symbol, entry_price, price, direction, market_data, atr_pct, bars_held, scenario_id
+        )
+        if selector_result is not None:
+            return selector_result
+
         # 时间衰减因子: 0-20 根 = 1.5, 20-50 根线性衰减到 1.0, 50+ 根 = 1.0
         if bars_held <= 20:
             time_factor = 1.5
@@ -1116,14 +1664,76 @@ class AutoTrader:
         # 最终止损因子 = 时间因子 × 市场状态因子 × 币种波动率因子
         sl_factor = time_factor * regime_factor * symbol_vol_factor
 
-        # 止损/止盈比例
-        sl_pct = atr_pct * 1.0 * sl_factor    # 基础 1.0x ATR × 复合因子
-        tp_pct = atr_pct * 2.0                  # 止盈固定 2.0x ATR
+        # P2 优化: 调用成熟模块 StopTakeProfitEngine 计算动态 SL/TP
+        # 引擎内部根据 market_regime + symbol_volatility + confidence 动态调整 ATR 乘数
+        # - 震荡市: ranging_multiplier=1.5（放大止损范围，避免被噪声扫出）
+        # - 趋势市: trend_multiplier=0.8（缩小止损范围，保护利润）
+        # - 高波动币种: high_vol_multiplier=1.3
+        # - 低波动币种: low_vol_multiplier=0.8
+        # SL 用 ATR 策略，TP 用 RATIO 策略（基于 SL 距离×2.0），保证最小 R:R=1.5
+        try:
+            # 优先用 dreamos 包路径，失败时回退到相对路径
+            try:
+                from dreamos.capabilities.trading.exit_strategy.stop_take_profit import calculate_stop_take_profit
+            except ImportError:
+                # dreamos 包不可用时，直接从文件路径加载
+                # __file__ = .../dreamos/cli/auto_trader.py，向上一层到 dreamos/
+                import importlib.util
+                _dreamos_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                _stp_path = os.path.join(
+                    _dreamos_root, "capabilities", "trading", "exit_strategy", "stop_take_profit.py"
+                )
+                _spec = importlib.util.spec_from_file_location("_stop_take_profit", _stp_path)
+                _stp_mod = importlib.util.module_from_spec(_spec)
+                # 注册到 sys.modules，避免 Python 3.9 dataclass 解析 __module__ 失败
+                sys.modules["_stop_take_profit"] = _stp_mod
+                _spec.loader.exec_module(_stp_mod)
+                calculate_stop_take_profit = _stp_mod.calculate_stop_take_profit
+            # 映射 regime -> MarketRegime 枚举值
+            if regime == "ranging":
+                market_regime_str = "ranging"
+            elif direction == "LONG":
+                market_regime_str = "trend_bull"
+            else:
+                market_regime_str = "trend_bear"
+            # 映射 symbol_vol_factor -> SymbolVolatility 枚举值
+            if symbol_vol_factor <= 0.8:
+                symbol_vol_str = "low"
+            elif symbol_vol_factor >= 1.2:
+                symbol_vol_str = "high"
+            else:
+                symbol_vol_str = "medium"
+            # 持仓时间越久置信度越低（时间衰减），传递给引擎缩小 ATR 乘数
+            confidence = max(0.3, 0.8 - bars_held * 0.01)
+            sltp_result = calculate_stop_take_profit(
+                direction=direction,
+                entry_price=entry_price,
+                atr_pct=atr_pct,
+                confidence=confidence,
+                stop_strategy="atr",
+                take_strategy="ratio",
+                take_ratio=2.0,
+                min_rr_ratio=1.5,
+                market_regime=market_regime_str,
+                symbol_volatility=symbol_vol_str,
+            )
+            stop_loss = sltp_result.get("stop_loss", 0)
+            take_profit = sltp_result.get("take_profit", 0)
+            tp_rationale = sltp_result.get("rationale", [])
+            logger.debug(f"[check_exit] {symbol} StopTakeProfitEngine: regime={market_regime_str}, vol={symbol_vol_str}, SL={stop_loss}, TP={take_profit}, rationale={tp_rationale}")
+        except Exception as e:
+            logger.warning(f"[check_exit] StopTakeProfitEngine 调用失败，回退到硬编码公式: {e}")
+            # 回退: 原硬编码公式
+            sl_pct = atr_pct * 1.0 * sl_factor
+            tp_pct = atr_pct * 2.0
+            if direction == "LONG":
+                stop_loss = entry_price * (1 - sl_pct)
+                take_profit = entry_price * (1 + tp_pct)
+            else:
+                stop_loss = entry_price * (1 + sl_pct)
+                take_profit = entry_price * (1 - tp_pct)
 
         if direction == "LONG":
-            stop_loss = entry_price * (1 - sl_pct)
-            take_profit = entry_price * (1 + tp_pct)
-
             # 50+ 根 K 线后启用移动止盈
             if bars_held > 20:
                 profit_pct = (price - entry_price) / entry_price if entry_price > 0 else 0
@@ -1139,9 +1749,6 @@ class AutoTrader:
                 return {"exit": True, "reason": f"止盈触发: {price:.4f} >= {take_profit:.4f} (持仓{bars_held}根)", "exit_price": take_profit,
                         "stop_loss": stop_loss, "take_profit": take_profit, "current_price": price}
         else:
-            stop_loss = entry_price * (1 + sl_pct)
-            take_profit = entry_price * (1 - tp_pct)
-
             if bars_held > 20:
                 profit_pct = (entry_price - price) / entry_price if entry_price > 0 else 0
                 if profit_pct > 0:
@@ -1292,8 +1899,47 @@ class AutoTrader:
             # 置信度优先从顶层取(TradingAgent 最终决策),其次从 A5 取
             confidence = analysis.get("confidence") or a5_output.get("confidence", 0)
 
+            # v2.6 入场模块选择器 overlay（ENTRY_SELECTOR_ENABLED=1，默认启用）
+            # 有回测数据（fallback_level <3 或 场景级降级 L5）时，用 EntryModuleSelector 推荐的模块覆盖 direction/confidence
+            # 低置信/LOW 震荡 → 返回 None → 回退原逻辑
+            scenario_id_2 = self._resolve_scenario_id(self._current_context.get("market_data", {}))
+            _entry_override = self._try_selector_entry(
+                symbol=symbol,
+                scenario_id=scenario_id_2,
+                candles_1h_rows=None,
+                market_data=self._current_context.get("market_data", {}),
+            )
+            if _entry_override is not None:
+                logger.info(
+                    f"入场选择器覆盖原决策({direction} conf={confidence:.2f}) "
+                    f"→ {_entry_override['direction']} conf={_entry_override['confidence']:.2f} "
+                    f"[{_entry_override['module_name']}] "
+                    f"src={_entry_override['source_scenario']}: {_entry_override.get('reason','')[:80]}"
+                )
+                direction = _entry_override["direction"]
+                confidence = _entry_override["confidence"]
+                result["steps"].append({
+                    "step": "entry_selector_override",
+                    "status": "applied",
+                    "module": _entry_override["module_name"],
+                    "source_scenario": _entry_override["source_scenario"],
+                    "fallback_level": _entry_override["fallback_level"],
+                    "direction": direction,
+                    "confidence": confidence,
+                    "reason": _entry_override.get("reason", ""),
+                })
+
             # P1-2: 降级路径检测与告警
             is_fallback = not trade_order or not trade_order.get("entry_price")
+            # 决策日志: 便于监控 A5 执行情况 (之前正常流程静默,无法从日志确认 A5 是否执行)
+            path = analysis.get("_path", "unknown")
+            if trade_order and trade_order.get("entry_price"):
+                logger.info(
+                    f"Symbol {symbol} A5正常执行 | path={path} dir={direction} "
+                    f"conf={confidence:.2f} entry={trade_order.get('entry_price')} "
+                    f"size={trade_order.get('position_size')} "
+                    f"SL={trade_order.get('stop_loss')} TP={trade_order.get('take_profit')}"
+                )
             if is_fallback and direction != "HOLD":
                 self._fallback_counts[symbol] = self._fallback_counts.get(symbol, 0) + 1
                 count = self._fallback_counts[symbol]
@@ -1310,7 +1956,16 @@ class AutoTrader:
                     logger.info(f"Symbol {symbol} 降级计数重置 (A5 正常输出)")
                 self._fallback_counts[symbol] = 0
 
-            # 如果 A5 没有输出 trade_order 但顶层有方向,用缓存的 market_data 构造最小订单
+            # A5 已执行但 trade_order 为空: A4/A7 门禁主动拒绝, 尊重决策不构造 fallback
+            if not trade_order and direction != "HOLD" and a5_output:
+                a5_rationale = a5_output.get("rationale", [])
+                reject_reason = a5_rationale[-1] if a5_rationale else "A5门禁拒绝"
+                logger.info(f"Symbol {symbol} A5门禁拒绝交易 ({reject_reason}), 不构造fallback")
+                result["steps"].append({"step": "decision", "status": "gate_rejected", "reason": reject_reason})
+                result["final_result"] = "GATE_REJECTED"
+                return result
+
+            # A5 未在链路中执行 (a5_output 为空), 用缓存的 market_data 构造最小订单
             if not trade_order and direction != "HOLD":
                 market_data = self._current_context.get("market_data", {})
                 price = market_data.get("price", 0)
@@ -1321,20 +1976,29 @@ class AutoTrader:
                     return result
                 atr = market_data.get("atr14", 0) or price * 0.02
                 atr_pct = (atr / price) if price > 0 else 0.02
-                # 基于账户余额动态计算 position_size(不超过账户 20%,默认 10 USDT)
-                position_size = 10.0
+                # P0-6: Kelly 动态仓位 & 杠杆（置信度 × 波动率 × 账户权益）
+                # 优先获取真实账户余额；取不到时 60 USDT 兜底
+                acc_eq: Optional[float] = None
                 try:
                     client = self.get_exchange_client()
                     if client and self.exchange == "aster":
                         summary = client._aster_fetch_account_summary()
-                        if summary.get("ok"):
+                        if isinstance(summary, dict) and summary.get("ok"):
                             s = summary.get("summary", {}) or {}
-                            eq = float(s.get("totalWalletBalance", 0) or 0)
-                            if eq > 0:
-                                # 用 18% 留余量,避免浮点精度触发 risk_check 的 20% 上限
-                                position_size = round(min(10.0, eq * 0.18), 2)
+                            acc_eq = float(s.get("totalWalletBalance", 0) or 0) or None
                 except Exception as e:
-                    logger.warning(f"获取账户余额失败,用默认 position_size=10: {e}")
+                    logger.warning(f"获取账户余额失败,Kelly 用默认兜底: {e}")
+                dyn = calc_dynamic_position_and_leverage(
+                    confidence=confidence,
+                    atr_pct=atr_pct,
+                    account_equity=acc_eq,
+                    direction=direction,
+                    min_lev=MIN_LEVERAGE,
+                    max_lev=MAX_LEVERAGE,
+                    threshold=CONFIDENCE_THRESHOLD,
+                    symbol=symbol,
+                )
+                position_size = dyn["position_size"]
                 if direction == "LONG":
                     stop_loss = round(price * (1 - atr_pct * 1.5), 4)
                     take_profit = round(price * (1 + atr_pct * 3.0), 4)
@@ -1346,14 +2010,21 @@ class AutoTrader:
                     "coin": symbol,
                     "entry_price": price,
                     "position_size": position_size,
-                    "leverage": calc_dynamic_leverage(confidence),
+                    "leverage": int(dyn["leverage"]),
                     "stop_loss": stop_loss,
                     "take_profit": take_profit,
                     "risk_per_trade": position_size * atr_pct,
+                    "_kelly": dyn,
                 }
-                logger.info(f"构造最小 trade_order (A5 无输出): {direction} {symbol} @ {price}, size={position_size}, leverage={trade_order['leverage']}x, SL={stop_loss}, TP={take_profit}")
+                logger.info(
+                    f"构造 trade_order (A5无输出,Kelly模型): {direction} {symbol} @ {price} | "
+                    f"size={position_size}USDT lev={int(dyn['leverage'])}x | "
+                    f"eq={dyn['account_equity']} kelly={dyn['kelly_pct']:.2%} conf={dyn['confidence_score']:.2f} vol={dyn['vol_score']:.2f} | "
+                    f"SL={stop_loss} TP={take_profit}"
+                )
 
             if direction == "HOLD":
+                logger.info(f"Symbol {symbol} 决策HOLD | path={path} conf={confidence:.2f}")
                 result["steps"].append({"step": "decision", "status": "hold", "reason": "方向为HOLD"})
                 result["final_result"] = "HOLD"
                 return result
@@ -1361,6 +2032,7 @@ class AutoTrader:
             # 对称门槛：多空同等置信度要求
             threshold = 0.62 if direction == "SHORT" else 0.62
             if confidence < threshold:
+                logger.info(f"Symbol {symbol} 置信度不足 | dir={direction} conf={confidence:.2f} < {threshold}")
                 result["steps"].append({"step": "decision", "status": "rejected", "reason": f"置信度不足({confidence:.2f} < {threshold}, 方向={direction})"})
                 result["final_result"] = "CONFIDENCE_TOO_LOW"
                 return result
@@ -1370,10 +2042,12 @@ class AutoTrader:
             current_4h_ts = (current_ts // (4 * 3600 * 1000)) * (4 * 3600 * 1000)
             last_4h_ts = self._last_trade_4h_ts.get(symbol, 0)
             if last_4h_ts == current_4h_ts:
+                logger.info(f"Symbol {symbol} 4h周期去重 | dir={direction} conf={confidence:.2f}")
                 result["steps"].append({"step": "decision", "status": "rejected", "reason": f"4h 周期内已开仓(当前周期={current_4h_ts}, 上次={last_4h_ts})"})
                 result["final_result"] = "DUPLICATE_4H"
                 return result
 
+            logger.info(f"Symbol {symbol} 决策通过 | dir={direction} conf={confidence:.2f} entry={trade_order.get('entry_price')}")
             result["steps"].append({"step": "decision", "status": "approved", "direction": direction, "confidence": confidence})
 
             result["steps"].append({"step": "risk_check", "status": "running"})
@@ -1474,7 +2148,21 @@ class AutoTrader:
                 pos_list, err = client._aster_fetch_positions()
                 if err:
                     return {"error": f"获取持仓失败: {err}"}
-                positions = pos_list or []
+                # P0 修复: Aster API 返回字段名 coin/entry_px，下方循环期望
+                # symbol/entry_price，之前不匹配导致 checked=0 离场检查失效
+                for p in (pos_list or []):
+                    if not isinstance(p, dict):
+                        continue
+                    if float(p.get("position_amt", 0) or 0) == 0:
+                        continue
+                    positions.append({
+                        "symbol": p.get("coin", ""),
+                        "entry_price": float(p.get("entry_px", 0) or 0),
+                        "position_amt": float(p.get("position_amt", 0) or 0),
+                        "leverage": float(p.get("leverage") or 1),
+                        "mark_price": float(p.get("mark_px", 0) or 0),
+                        "unrealized_pnl": float(p.get("unrealized_pnl_u", 0) or 0),
+                    })
             elif self.exchange == "hyperliquid":
                 acct = client.get_account()
                 for coin, pos in acct.get("positions", {}).items():

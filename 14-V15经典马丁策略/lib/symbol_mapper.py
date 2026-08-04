@@ -214,6 +214,24 @@ class SymbolMapper:
                 listing_date=ld,
             ))
 
+        # ── 美股个股永续（OKX SWAP 支持）──
+        # 上市日期用股票本体上市日期（远超1年风控门槛），OKX 永续 lot_sz=0.01
+        us_stocks = [
+            ("MU",       "Micron Technology",  0.01, 0.01, 1.0, "1994-06-01"),   # 美光
+            ("SKHYNIX",  "SK hynix",           0.01, 0.01, 1.0, "2014-01-01"),   # 海力士
+        ]
+        for sym, name, lot, tick, ctval, ld in us_stocks:
+            self.register(AssetInfo(
+                symbol=sym, name=name,
+                category=AssetCategory.STOCK,
+                exchanges={"okx": True},
+                lot_sz_override=lot,
+                tick_sz_override=tick,
+                ct_val_override=ctval,
+                market_cap_tier=MarketCapTier.LARGE,  # 美股大盘股
+                listing_date=ld,
+            ))
+
     # ── 注册 / 查询 ──────────────────────────────────────────────
 
     def register(self, asset: AssetInfo):

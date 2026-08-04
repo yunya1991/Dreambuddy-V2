@@ -90,9 +90,11 @@ class CS3TrendNode(BaseNode):
             prices = self._get_price_series(mkt)
 
             if len(prices) < 50:
+                # 数据不足返回 DEGRADED (而非 SUCCESS), 与模块加载失败一致,
+                # Reflector 对 DEGRADED 走 CONTINUE 而非 REDO, 避免无效重试
                 return NodeResult(
                     node_id=self.node_id,
-                    status=NodeStatus.SUCCESS,
+                    status=NodeStatus.DEGRADED,
                     direction="HOLD",
                     confidence=0.0,
                     warnings=["价格数据不足，无法计算三屏指标"],
@@ -185,7 +187,9 @@ class CS3TrendNode(BaseNode):
         else:
             direction = "HOLD"
 
-        confidence = min(1.0, abs(total_score) + 0.2)
+        # 置信度偏移 = 0.35, 对齐 Reflector.CONFIDENCE_LOW=0.3
+        # 旧值 0.2 在三屏混合/中性时 confidence≈0.2 < 0.3 触发无效 REDO
+        confidence = min(1.0, abs(total_score) + 0.35)
 
         return {
             "direction": direction,

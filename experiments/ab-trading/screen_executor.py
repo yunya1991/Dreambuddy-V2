@@ -101,7 +101,7 @@ DEFAULT_LEVERAGE = float(os.environ.get("DEFAULT_LEVERAGE", 10))
 # EXCHANGE_MODE=aster   → 使用 AsterExecutor（趋势策略独立钱包 0x6632...A）
 # EXCHANGE_MODE=okx     → 使用 OKX（历史路径，已禁用，仅保留查询能力）
 EXCHANGE_MODE = os.environ.get("EXCHANGE_MODE", "aster").lower()
-ASTER_TREND_SYSTEM = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/trend-system"
+ASTER_TREND_SYSTEM = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统"
 if ASTER_TREND_SYSTEM not in sys.path:
     sys.path.insert(0, ASTER_TREND_SYSTEM)
 

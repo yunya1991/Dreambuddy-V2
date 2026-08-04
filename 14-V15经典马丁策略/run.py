@@ -265,6 +265,12 @@ def cmd_poll_light(args):
     run_light_poll_cycle()
 
 
+def cmd_orchestrator(args):
+    """自主编排器：智能决定是否触发交易（每15分钟运行）"""
+    from orchestrator import main as orchestrator_main
+    orchestrator_main()
+
+
 def cmd_api(args):
     """启动V15策略HTTP API服务（支持monitor.html调用）"""
     port = args.port or 8771
@@ -298,6 +304,7 @@ def main():
   python3 run.py trader              # 启动自动交易器（1小时轮询）
   python3 run.py poll_once           # 单次完整轮询（信号+交易）
   python3 run.py poll_light          # 轻量轮询（只同步持仓+盈亏，5分钟监控）
+  python3 run.py orchestrator        # 自主编排器（智能触发，每15分钟）
   python3 run.py capital             # 查看资金管理
   python3 run.py test                # 运行全部测试
   python3 run.py config              # 查看配置
@@ -323,6 +330,9 @@ def main():
 
     # poll_light
     subparsers.add_parser("poll_light", help="轻量轮询：同步持仓状态+盈亏（不做交易决策，用于5分钟监控）")
+
+    # orchestrator
+    subparsers.add_parser("orchestrator", help="自主编排器：智能决定是否触发交易（每15分钟运行）")
 
     # capital
     subparsers.add_parser("capital", help="查看资金管理状态")
@@ -356,6 +366,8 @@ def main():
         cmd_poll_once(args)
     elif args.command == "poll_light":
         cmd_poll_light(args)
+    elif args.command == "orchestrator":
+        cmd_orchestrator(args)
     elif args.command == "capital":
         cmd_capital(args)
     elif args.command == "capital_engine":

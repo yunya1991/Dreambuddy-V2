@@ -1,6 +1,6 @@
 # 易经推理系统 技术设计文档
 
-> **版本**: v2.9 | **日期**: 2026-07-25
+> **版本**: v3.0 | **日期**: 2026-08-01
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引）
 
@@ -1077,7 +1077,9 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 | 九五 | 飞龙在天 | 0.25 | 0.90 |
 | 上九 | 亢龙有悔 | 0.85 | 0.20 |
 
-**集成点**: `polling_trader.py` 通过 `self.yijing_exit_system.evaluate()` 调用，含 `set_log_callback()` 日志钩子；veto 机制支持 `VETO_CLOSE` / `VETO_REDUCE` 否决 classic 决策。
+**集成点**:
+1. **独立链路（polling_trader）**: `polling_trader.py` 通过 `self.yijing_exit_system.evaluate()` 调用，含 `set_log_callback()` 日志钩子；veto 机制支持 `VETO_CLOSE` / `VETO_REDUCE` 否决 classic 决策。
+2. **DreamOS 链路（auto_trader）**: 通过 `YijingExitAdapter` 适配器封装为统一接口，经 `ExitModuleSelector` 按场景回测表现择优调用（详见 §9.8）。
 
 ### 9.7 经典离场系统（ClassicExitSystem）— 备用离场模块
 
@@ -1199,6 +1201,78 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 > ATR 自适应离场在所有市态、所有波动率分组、所有币种上均远逊于原始 BCRM。
 
 **杠杆口径统一**: 所有止盈/止损/时间止盈/移动止盈的触发判断统一使用 `pnl_eff`（含杠杆收益率）。
+
+### 9.8 DreamOS 离场模块集成（YijingExitAdapter + ExitModuleSelector）
+
+**文件**:
+- `1-ARCHITECTURE/dreamos/capabilities/trading/exit_strategy/exit_module_adapter.py` — YijingExitAdapter
+- `1-ARCHITECTURE/dreamos/capabilities/trading/exit_strategy/exit_module_selector.py` — ExitModuleSelector
+- `1-ARCHITECTURE/dreamos/capabilities/trading/exit_strategy/exit_module_backtester.py` — ExitModuleBacktester
+- `1-ARCHITECTURE/dreamos/core/memory/exit_performance_memory.json` — 性能记忆表
+
+**架构定位**: 将 YijingExitSystem 封装为 DreamOS 统一离场接口（`UnifiedExitDecision`），通过 `ExitModuleSelector` 按场景回测表现与 classic / simple 模块公平竞争择优。
+
+#### 9.8.1 YijingExitAdapter 实现
+
+**卦象数据来源（三级降级，零回归保障）**:
+
+| 级别 | 来源 | 说明 |
+|------|------|------|
+| L1 | `market_data['hexagram_result']` | 未来 A_YJ_INFER 节点注入 |
+| L2 | `market_data['yijing_hexagram']` | A2 综合感知节点注入 |
+| L3 | `_synthesize_hexagram()` | 基于 scenario_id + change_24h + rsi14 + atr_pct 合成（回测/冷启动自动启用） |
+
+**决策映射（9→4）**:
+
+| YijingExitAction | UnifiedExitDecision | 说明 |
+|-----------------|---------------------|------|
+| `FORCE_CLOSE` | `CLOSE` + exit_price | 方向冲突+高风险 |
+| `LOWER_TP` | `CLOSE` + exit_price | 风险升高提前锁定利润 |
+| `RAISE_TP` | `RAISE_TP` + new_tp_price | 价值高+成长期/成熟期 |
+| `LOWER_SL` / `TIGHTEN_SL` / `ADJUST_SL_TP` | `HOLD` + 动态 SL/TP 调整 | 按 adjust_pct 重算基准 ATR SL/TP |
+| `VETO_CLOSE` / `VETO_REDUCE` / `NO_INTERVENE` | `HOLD` | 不干预 |
+
+**SL/TP 动态调整**: 基准 `SL=1.5×ATR, TP=3.0×ATR`（RR=2），叠加 `sl_adjust_pct`（正数放宽/负数收紧）和 `tp_adjust_pct`（正数提高/负数降低）。
+
+**懒加载路径**: 优先 `$DREAMBUDDY_ROOT/11-易经推理系统/scripts/memory_l4/yijing_exit_system.py`，向上递归查找 `11-易经推理系统` 目录。
+
+#### 9.8.2 回测结果（3 场景 × 592 交易）
+
+**回测条件**: BTC/ETH/SOL × 2161 根 1h K线 × 窗口 48 × 步长 8 × 持仓 20 根
+
+| 场景 | yijing score | classic score | simple score | 最优 |
+|------|:-----------:|:------------:|:-----------:|:----:|
+| NEUTRAL_NORMAL_ACCELERATING | 3.187 (sharpe 6.76, ret 88.42%) | 3.187 (相同) | 2.410 | classic/yijing 并列 |
+| NEUTRAL_HIGH_ACCELERATING | 2.406 | 2.406 | **3.727** | simple |
+| NEUTRAL_LOW_ACCELERATING | −1.023 | −1.028 | −1.336 | 所有模块负分 → auto_trader 回退内置逻辑 |
+
+**记忆表**: `exit_performance_memory.json` 已写入 3 场景 × 3 模块（classic/simple/yijing）完整指标。
+
+**Selector 验证**: 当 yijing score 最高时，`ExitModuleSelector.select()` 返回 `module_name=yijing, fallback_level=0`（L0 精确匹配）；所有模块 score<0 时返回 `fallback_level=3`，auto_trader 回退内置 ATR 逻辑（零回归保护）。
+
+#### 9.8.3 易经与经典离场评估重叠分析
+
+**输入信号层**: 完全不同，零重叠。
+- 经典: 技术指标量化（RSI/ADX/EMA/MACD/资金流 → hold_risk / hold_value）
+- 易经: 卦象 7 维加权（risk_level×0.40 + phase×0.18 + stage×0.18 + direction×0.24）
+
+**决策动作层**: 3 项重叠（CLOSE / RAISE_TP / TIGHTEN_SL），但触发条件和计算机制完全不同，为互补关系而非冗余。
+
+**经典独有**: L0 硬退出（超时/亏损/强平/周线反转/风险闸门）、P2 Triple Barrier、P3 Trailing Stop / TSTP、L2 REDUCE 分批减仓。
+
+**易经独有**: 1h 节奏门禁、LOWER_SL（放宽止损）、LOWER_TP（降低止盈）、VETO_CLOSE/REDUCE（否决机制）、方向冲突检测、冷静期保护。
+
+**结论**: 两个模块在信号层和独有能力层有清晰边界，重叠仅存在于动作空间交集且触发条件各异，不需要修改评估逻辑。当 `ExitModuleSelector` 选中 yijing 时，经典 L0 安全硬退出会被跳过，通过 auto_trader 内置 check_exit P1（时间衰减+ATR止损）作为兜底补偿。
+
+#### 9.8.4 实盘启用
+
+当前默认零回归安全模式（`DREAMOS_EXIT_SELECTOR_ENABLED=0`），auto_trader check_exit 走内置 ATR 逻辑。启用易经离场择优：
+
+```bash
+export DREAMOS_EXIT_SELECTOR_ENABLED=1
+```
+
+未来 A_YJ_INFER 节点接入后，将真实卦象写入 `market_data['hexagram_result']`，L3 合成 fallback 自动升级为 L1 真实卦象。
 
 ---
 
@@ -1445,6 +1519,9 @@ export OKX_TD_MODE=isolated
 - [ ] 小币种数据不足Fallback策略优化
 
 ### 15.4 Phase 3 📋 规划中
+- [x] **YijingExitAdapter DreamOS 集成** ✅ 已实现 — 卦象三级降级注入 + 9→4 决策映射 + ATR 基准 SL/TP 动态调整（详见 §9.8）
+- [x] **ExitModuleBacktester yijing 回测** ✅ 已实现 — 3 场景 × 592 交易全量回测，性能数据写入 exit_performance_memory.json
+- [x] **ExitModuleSelector 择优验证** ✅ 已实现 — L0 精确匹配选中 yijing，fallback_level=3 零回归保护
 - [ ] BCRM 1.0与2.0深度融合
 - [ ] QMM与BCRM的深度集成
 - [ ] 多时间框架融合
@@ -1469,6 +1546,7 @@ export OKX_TD_MODE=isolated
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-08-01 | v3.0 | **DreamOS 离场模块集成**：①新增 §9.8 DreamOS 离场模块集成章节（YijingExitAdapter + ExitModuleSelector + ExitModuleBacktester）；②YijingExitAdapter 从占位符升级为完整实现（懒加载+三级卦象降级+9→4决策映射+ATR基准SL/TP动态调整）；③ExitModuleBacktester 补充 change_24h/rsi14 动态注入，支持 yijing 卦象合成 fallback；④3场景×592交易全量回测，性能数据写入 exit_performance_memory.json；⑤ExitModuleSelector L0 精确匹配验证通过（yijing score最高时选中 yijing）；⑥§9.6 集成点补充 DreamOS 链路描述；⑦§15.4 Phase 3 标记 3 项已完成；版本号 v2.9→v3.0 | DreamBuddy v2 |
 | 2026-07-25 | v2.9 | **P1修复与系统增强**：①修复 `inspect.py` 模型路径错误（从 `.workbuddy/memory_l4/bcrm2/` 修正为 `scripts/data/bcrm2_models/`，新增目录扫描统计 L1/L2 模型数、币种数、周期数）；②安装 ripser + persim 依赖，TDA 拓扑检测第五源恢复可用（五角校验五源齐全）；③新增多场景验证脚本（25个用例覆盖推理/离场/风控/反馈/异常五场景，全部通过）；④币种规模从 4 扩展至 27（含 BTC/ETH/SOL/BNB/XRP/SEI/TIA/IMX 等，小市值<5亿剔除）；⑤技术栈补充 ripser/persim/Optuna；版本号 v2.8→v2.9 | DreamBuddy v2 |
 | 2026-07-24 | v2.8 | **A8 SKILL 系统自评估与多场景验证**：新增A8纯理性内部批判自循环评估框架；生成系统现状评估报告（胜率13.3%、卦象分布偏斜、7条反馈链路断裂等问题识别）；多场景验证框架设计；版本号 v2.7→v2.8 | DreamBuddy v2 |
 | 2026-07-24 | v2.7 | **ClassicExitSystem 离场参数优化与 ATR 自适应离场系统**：Optuna 贝叶斯优化后夏普提升、回撤降低；新增 ATR 波动率分组自适应离场（低/中/高三档 + 8市态 + 币种适配）；新增离场系统对比回测框架；版本号 v2.6→v2.7 | DreamBuddy v2 |

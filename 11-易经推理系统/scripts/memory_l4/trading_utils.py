@@ -7,10 +7,13 @@ import os
 import time
 import uuid
 import fcntl
+import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
+
+logger = logging.getLogger(__name__)
 
 from scripts.memory_l4.paths import memory_l4_stats_dir, memory_l4_cases_dir, memory_l4_dir
 from scripts.memory_l4.trade_event import TradeEvent
@@ -41,6 +44,7 @@ class TradeRecord:
     contradiction_list: List[Dict] = field(default_factory=list)
     strategy_source: str = ""  # bcrm / external (马丁等其他策略)
     enhance_info: Dict = field(default_factory=dict)  # 震荡市增强器信息（regime, bollinger, sl_mult等）
+    reduce_count: int = 0  # E项优化：累计减仓次数，用于max_reduce_count限制
 
 
 @dataclass
@@ -305,6 +309,7 @@ class RiskManager:
         self.risk_dir = memory_l4_dir() / "risk"
         self.risk_dir.mkdir(parents=True, exist_ok=True)
         self.state_file = self.risk_dir / "risk_state.json"
+        self._save_failed = False
         self._load_state()
 
     def _load_state(self):
@@ -319,7 +324,7 @@ class RiskManager:
                     self.state.trading_halted = data.get("trading_halted", False)
                     self.state.halt_reason = data.get("halt_reason", "")
             except Exception:
-                pass
+                logger.exception("加载风控状态失败，使用默认状态（可能保守）")
 
     def _save_state(self):
         try:
@@ -338,8 +343,10 @@ class RiskManager:
                     os.fsync(f.fileno())
                 finally:
                     fcntl.flock(f, fcntl.LOCK_UN)
+            self._save_failed = False
         except Exception:
-            pass
+            logger.exception("保存风控状态失败，后续开仓将被拒绝直到恢复")
+            self._save_failed = True
 
     def can_trade(self, current_equity: float = 0) -> Dict:
         """检查是否允许开仓
@@ -347,6 +354,9 @@ class RiskManager:
         Returns:
             {allowed: bool, reason: str}
         """
+        if self._save_failed:
+            return {"allowed": False, "reason": "风控状态持久化失败，拒绝开仓 until 恢复"}
+
         if self.state.trading_halted:
             return {"allowed": False, "reason": f"交易已暂停: {self.state.halt_reason}"}
 
@@ -383,7 +393,23 @@ class RiskManager:
 
         base = base_pct or self.state.position_size_pct
 
-        conf_factor = 0.5 + confidence * 1.0  # 置信度 0.25~0.95 -> 系数 0.75~1.45
+        # 置信度系数：分段线性动态缩放
+        # 以 0.70 为基准点，低于基准减仓，高于基准加仓
+        # 置信度 0.00 → 系数 0.40（最低）
+        # 置信度 0.55 → 系数 0.75（低置信度减仓）
+        # 置信度 0.70 → 系数 1.00（基准）
+        # 置信度 0.80 → 系数 1.17（明显加仓）
+        # 置信度 0.90 → 系数 1.33（高置信度大幅加仓）
+        # 置信度 0.95+ → 系数 1.50（极高置信度满仓）
+        conf_normalized = max(0.0, min(1.0, confidence))
+        if conf_normalized <= 0.70:
+            # 低置信度区间：0.40 → 1.00（线性插值）
+            conf_factor = 0.40 + (conf_normalized / 0.70) * 0.60
+        else:
+            # 高置信度区间：1.00 → 1.50（线性插值）
+            conf_factor = 1.00 + ((conf_normalized - 0.70) / 0.30) * 0.50
+        # 限制在 [0.40, 1.50] 区间
+        conf_factor = max(0.40, min(1.50, conf_factor))
 
         if volatility > 0:
             vol_factor = 0.02 / volatility  # 波动率越高，仓位越小（反比）
@@ -406,7 +432,11 @@ class RiskManager:
             "position_pct": round(position_pct, 4),
             "confidence_factor": round(conf_factor, 4),
             "volatility_factor": round(vol_factor, 4),
-            "reason": f"conf={confidence:.2f} vol={volatility:.4f} -> margin={margin_usdt:.2f}USDT ({position_pct:.1%})",
+            "reason": (
+                f"conf={confidence:.2f}(factor={conf_factor:.2f}) "
+                f"vol={volatility:.4f}(factor={vol_factor:.2f}) "
+                f"-> pos={position_usdt:.2f}USDT ({position_pct:.1%})"
+            ),
         }
 
     def update_after_trade(self, pnl: float, is_win: bool):

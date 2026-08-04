@@ -755,7 +755,12 @@ def main():
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-    symbols = [s.strip().upper() for s in args.symbols.split(",")]
+    # 空字符串/空白兜底默认币种（scheduler 传 symbols=[] → join="" 会覆盖 argparse 默认值）
+    raw_symbols = args.symbols.strip() if args.symbols else ""
+    if not raw_symbols:
+        raw_symbols = "BTC,ETH,SOL"
+        logger.warning("收到空 symbols 参数，回退默认 BTC,ETH,SOL")
+    symbols = [s.strip().upper() for s in raw_symbols.split(",") if s.strip()]
 
     if args.optimize:
         print("\n" + "="*80)

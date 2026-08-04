@@ -163,3 +163,76 @@ deploy/ops/
 3-FRONTEND/dream-universal-gateway/.next/
 3-FRONTEND/dream-universal-gateway/out/
 3-FRONTEND/dream-universal-gateway/dist/
+
+# === Strict isolation (2026-08-04) — sensitive & runtime artifacts ===
+# Sensitive env backups & IDE/tool local state
+.env.bak*
+.env.*.bak*
+.trae/
+.claude/
+.cognitive/
+.run/
+.cognitive_daemon.pid
+*.pid
+
+# Runtime reports (generated, not source)
+**/reports/dynamic_orchestration_*.json
+**/reports/evaluation_eval_*.json
+**/reports/evaluation_report_eval_*.json
+**/reports/simulation_sim_*.json
+**/backtest_reports/
+**/observation/reports/
+**/multi_scenario_stress_report.json
+
+# Runtime memory/state JSON (not source code)
+**/.4h_dedup.json
+**/.trade_time.json
+**/entry_performance_memory.json
+**/evaluation_memory.json
+**/execution_feedback.json
+**/exit_performance_memory.json
+**/orchestration_memory.json
+**/orchestration_memory.json.bak*
+
+# V15 runtime data, caches & machine-specific plists
+14-V15经典马丁策略/data/backtest_cache/
+14-V15经典马丁策略/data/bayesian_opt/
+14-V15经典马丁策略/data/okx_client/
+14-V15经典马丁策略/data/v15_state.json
+14-V15经典马丁策略/data/v15_state.json.bak*
+14-V15经典马丁策略/data/account_baseline.json
+14-V15经典马丁策略/data/_e2e_tag_test.json
+14-V15经典马丁策略/.coverage
+14-V15经典马丁策略/com.dreambuddy.v15_orchestrator.plist
+
+# 16-调控系统 runtime task records, sqlite & execution logs
+16-调控系统/core/intent-specs/
+16-调控系统/core/meta/*.sqlite*
+16-调控系统/artifacts/execution_logs/
+16-调控系统/a8_design_observation.json
+16-调控系统/a8_design_report.json
+16-调控系统/a8_report.json
+
+# AB-trading runtime research data & machine-specific launchd plists
+experiments/ab-trading/A系列研报/A1研报/
+experiments/ab-trading/com.dreambuddy.*.plist
+
+# ML training samples & backtest result JSON (data, not source)
+12-三屏趋势系统/ml/models/ensemble/collected/
+12-三屏趋势系统/data/
+12-三屏趋势系统/ml/ewave_backtest_results.json
+12-三屏趋势系统/ml/ewave_vs_v55_comparison.json
+
+# Root-level runtime data & temp files
+/data/
+_tmp_entry_conf.py
+
+# Polling trader runtime logs (large jsonl)
+**/data/polling_trader/
+
+# OKX sim trade audit logs (runtime)
+**/okx_sim/sim_trades_audit.jsonl*
+
+# ML model binaries (tracked pkl kept; untracked ones excluded)
+*.pkl
+!10-经典指标系统/user_data/models/rf_model.pkl

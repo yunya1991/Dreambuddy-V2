@@ -866,3 +866,36 @@ def save_distill(distill: Dict[str, Any], out_path: Optional[Path] = None) -> Pa
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(distill, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return target
+
+
+def load_all_distills() -> List[Dict[str, Any]]:
+    """加载全部蒸馏记录。
+
+    扫描 memory_l4_distills_dir() 下的所有 .json 文件，
+    解析为列表并按 created_at 升序排序（无时间戳的排到最后）。
+
+    Returns:
+        蒸馏记录字典列表
+    """
+    distills_dir = memory_l4_distills_dir()
+    if not distills_dir.exists():
+        return []
+
+    def _get_ts(d: Dict[str, Any]) -> str:
+        """获取蒸馏记录时间戳用于排序。"""
+        if d.get("created_at"):
+            return d["created_at"]
+        pt = d.get("process_trace") or {}
+        if pt.get("created_at"):
+            return pt["created_at"]
+        return ""
+
+    result: List[Dict[str, Any]] = []
+    for p in sorted(distills_dir.glob("*.json")):
+        try:
+            result.append(json.loads(p.read_text(encoding="utf-8")))
+        except Exception:
+            continue
+
+    result.sort(key=lambda d: _get_ts(d))
+    return result

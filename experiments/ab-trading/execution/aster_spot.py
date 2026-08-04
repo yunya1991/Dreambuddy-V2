@@ -308,11 +308,15 @@ class HyperliquidClient:
     def __init__(self, agent_id: str):
         self.agent_id = agent_id.lower()
         # 注: 此类连接 Hyperliquid 交易所 (api.hyperliquid.xyz)
-        #     Agent A/B 使用 HYPERLIQUID 前缀; Dream OS 不使用此类
-        pfx = f"AGENT_{agent_id.upper()}_HYPERLIQUID"
-        self.user_addr   = os.environ.get(f"{pfx}_USER", "")
-        self.api_addr    = os.environ.get(f"{pfx}_SIGNER", "")
-        self.private_key = os.environ.get(f"{pfx}_SIGNER_PRIVATE_KEY", "")
+        #     兼容 HYPERLIQUID 和 ASTER 两种前缀（优先 HYPERLIQUID）
+        def _get_env(name: str) -> str:
+            val = os.environ.get(f"AGENT_{agent_id.upper()}_HYPERLIQUID_{name}", "")
+            if val:
+                return val
+            return os.environ.get(f"AGENT_{agent_id.upper()}_ASTER_{name}", "")
+        self.user_addr   = _get_env("USER")
+        self.api_addr    = _get_env("SIGNER")
+        self.private_key = _get_env("SIGNER_PRIVATE_KEY")
 
         proxy_url = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
         self.proxies = {"https": proxy_url, "http": proxy_url} if proxy_url else None

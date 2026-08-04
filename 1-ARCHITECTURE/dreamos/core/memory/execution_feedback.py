@@ -106,8 +106,12 @@ class ExecutionFeedbackCollector:
         根据 scenario_id + symbol + entry_price 匹配最近一条 result=0 的开仓记录，
         回填 exit_price 和 result，闭合反馈环。
 
+        P0-BUGFIX: 平仓时 _current_context.scenario_id 可能与开仓时不一致（scheduler
+        每次创建新 AutoTrader 实例，或市场场景切换）。先在指定 scenario_id 查找，
+        失败则降级遍历 ALL scenarios，按 symbol + entry_price 全局搜索匹配记录。
+
         Args:
-            scenario_id: 场景ID
+            scenario_id: 场景ID（首选，失败时降级全局搜索）
             symbol: 交易对
             entry_price: 开仓价
             exit_price: 平仓价
@@ -116,32 +120,45 @@ class ExecutionFeedbackCollector:
         Returns:
             True 如果成功更新，False 如果未找到匹配记录
         """
-        records = self._records.get(scenario_id, [])
         sym_upper = symbol.upper().strip()
 
-        # 从最新记录往前找，匹配 result=0 且 symbol+entry_price 匹配的开仓记录
-        for r in reversed(records):
-            rec_sym = str(r.get("symbol", "")).upper().strip()
-            rec_entry = float(r.get("entry_price", 0))
-            # entry_price 容差 0.1%（应对浮点精度和滑点）
-            price_match = (rec_entry > 0 and entry_price > 0
-                           and abs(rec_entry - entry_price) < entry_price * 0.001)
-            if (r.get("result", 0) == 0
-                    and rec_sym == sym_upper
-                    and price_match):
-                r["exit_price"] = exit_price
-                r["result"] = result
-                r["exit_timestamp"] = datetime.now().isoformat()
-                r["status"] = "closed"
-                self._save()
-                logger.info(
-                    f"P0-1 反馈回填: {scenario_id} | {symbol} | "
-                    f"entry={entry_price} exit={exit_price} result={result:.4f}"
-                )
+        def _try_match(records: List[Dict[str, Any]], tag_sid: str) -> bool:
+            for r in reversed(records):
+                rec_sym = str(r.get("symbol", "")).upper().strip()
+                rec_entry = float(r.get("entry_price", 0))
+                # entry_price 容差 0.1%（应对浮点精度和滑点）
+                price_match = (rec_entry > 0 and entry_price > 0
+                               and abs(rec_entry - entry_price) < entry_price * 0.001)
+                if (r.get("result", 0) == 0
+                        and rec_sym == sym_upper
+                        and price_match):
+                    r["exit_price"] = exit_price
+                    r["result"] = result
+                    r["exit_timestamp"] = datetime.now().isoformat()
+                    r["status"] = "closed"
+                    self._save()
+                    logger.info(
+                        f"P0-1 反馈回填: {tag_sid} | {symbol} | "
+                        f"entry={entry_price} exit={exit_price} result={result:.4f}"
+                    )
+                    return True
+            return False
+
+        # 路径1: 指定 scenario_id 优先匹配（快速路径）
+        records = self._records.get(scenario_id, [])
+        if _try_match(records, scenario_id):
+            return True
+
+        # 路径2: 降级遍历所有 scenario_id（解决 scheduler 新实例 scenario_id=UNKNOWN 问题）
+        for sid, recs in self._records.items():
+            if sid == scenario_id:
+                continue  # 已尝试过
+            if _try_match(recs, sid + "(cross-scenario)"):
                 return True
 
         logger.warning(
-            f"P0-1 未找到匹配开仓记录: {scenario_id} | {symbol} | entry={entry_price}"
+            f"P0-1 未找到匹配开仓记录(scenario={scenario_id} + 全局搜索均失败): "
+            f"{symbol} | entry={entry_price}"
         )
         return False
 
