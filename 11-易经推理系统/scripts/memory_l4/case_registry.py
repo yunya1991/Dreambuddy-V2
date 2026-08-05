@@ -349,7 +349,22 @@ class UnifiedCaseRegistry:
                 "evidence_refs": [],
                 "exit_price": event.exit_price,
             })
-        
+
+        # P2-9: 追加 PREDICTION stage（事前预测快照，若 decision_context 含 prediction）
+        prediction = ctx.get("prediction")
+        if prediction:
+            chain.append({
+                "stage": "PREDICTION",
+                "ts": event.ts_entry,
+                "decision": f"Predict {prediction.get('expected_direction', 'N/A')} "
+                            f"target={prediction.get('target_return_pct', 0)}%",
+                "rationale": f"horizon={prediction.get('expected_horizon_bars', 0)}bars, "
+                             f"stop_prob={prediction.get('stop_loss_prob', 0)}, "
+                             f"conf={prediction.get('prediction_confidence', 0)}",
+                "evidence_refs": [],
+                "prediction_snapshot": prediction,
+            })
+
         return chain
     
     def save_case(self, case: Dict[str, Any], validate: bool = True) -> bool:
@@ -472,6 +487,27 @@ class UnifiedCaseRegistry:
             "evidence_refs": [],
             "exit_price": exit_price,
         })
+
+        # P2-9: 计算预测误差（若 case thinking_chain 含 PREDICTION stage）
+        prediction_snapshot = None
+        for stage in chain:
+            if stage.get("stage") == "PREDICTION":
+                prediction_snapshot = stage.get("prediction_snapshot")
+                break
+        if prediction_snapshot:
+            try:
+                from scripts.memory_l4.prediction_bridge import compute_prediction_error_dict
+                actual = {
+                    "direction": direction,
+                    "return_pct": pnl_pct if pnl_pct is not None else 0.0,
+                    "stop_triggered": (exit_reason == "stop_loss") if exit_reason else False,
+                }
+                prediction_error = compute_prediction_error_dict(prediction_snapshot, actual)
+                if prediction_error:
+                    case["prediction_error"] = prediction_error
+            except Exception:
+                pass
+
         case["thinking_chain"] = chain
 
         # 更新执行状态
@@ -512,14 +548,43 @@ def _require_nonempty(value: str, field: str) -> str:
 
 
 def create_case_from_episode_data(episode: Dict[str, Any], case_id: str) -> Dict[str, Any]:
-    """从 A0-A9 episode 数据创建 TradeCase（兼容旧接口）"""
+    """从 episode 数据创建 TradeCase（兼容旧接口）
+
+    兼容两种 episode 格式：
+    - A0-A9 格式：inst_id/trace_id/pnl_pct 在顶层
+    - live_* 格式（_trigger_l4_pipeline_for_trade 生成）：字段在 trades[0] 内
+    """
     ts = _require_nonempty(str(episode.get("ts") or ""), "ts")
-    inst_id = _require_nonempty(str(episode.get("inst_id") or ""), "inst_id")
-    trace_id = _require_nonempty(str(episode.get("trace_id") or ""), "trace_id")
-    
+
+    # live_* 格式：字段在 trades[0] 内
+    trades = episode.get("trades") or []
+    first_trade = trades[0] if trades else {}
+
+    inst_id = str(
+        episode.get("inst_id")
+        or first_trade.get("inst_id")
+        or first_trade.get("symbol")
+        or ""
+    )
+    if not inst_id:
+        raise ValueError("missing required field: inst_id")
+
+    trace_id = str(
+        episode.get("trace_id")
+        or first_trade.get("trade_id")
+        or case_id
+    )
+
     pnl = episode.get("pnl_pct")
+    if pnl is None:
+        pnl = first_trade.get("pnl_pct")
     pnl_usdt = episode.get("pnl_usdt")
+    if pnl_usdt is None:
+        pnl_usdt = first_trade.get("pnl")
     dd = episode.get("drawdown")
+
+    exit_reason = first_trade.get("exit_reason")
+    system_source = first_trade.get("system_source", "yijing_live")
     
     return {
         "case_id": case_id,
@@ -544,8 +609,8 @@ def create_case_from_episode_data(episode: Dict[str, Any], case_id: str) -> Dict
             "pnl_pct": float(pnl) if pnl is not None else None,
             "pnl_usdt": float(pnl_usdt) if pnl_usdt is not None else None,
             "drawdown": float(dd) if dd is not None else None,
-            "exit_reason": None,
-            "goal_achieved": None,
+            "exit_reason": exit_reason,
+            "goal_achieved": True if (pnl is not None and pnl > 0) else (False if pnl is not None else None),
         },
         "l4_status": "M0_CASE_REGISTERED",
         "plan": {
