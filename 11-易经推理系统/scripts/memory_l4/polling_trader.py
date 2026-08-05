@@ -43,6 +43,7 @@ from scripts.memory_l4.trading_utils import (
     save_case_to_l4,
     register_trade_to_l4,
 )
+from scripts.memory_l4.paths import episodes_dir as _episodes_dir
 from scripts.memory_l4.learning_scheduler import LearningScheduler
 from scripts.memory_l4.process_guardian import ProcessGuardian
 from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
@@ -69,6 +70,14 @@ from scripts.memory_l4.ranging_market_enhancer import (
 class PollingTrader:
     """易经推理轮询交易器（P2 完整版）"""
 
+    # config.json 中与进化阈值相关的键
+    _EVOLUTION_CONFIG_KEYS = (
+        "confidence_threshold",
+        "daily_loss_limit",
+        "max_consecutive_losses",
+        "default_position_pct",
+    )
+
     def __init__(self,
                  interval: int = 3600,
                  coins: list = None,
@@ -85,17 +94,22 @@ class PollingTrader:
                  shared_dir=None,
                  use_bcrm2: bool = True):
         self.interval = interval
-        self.coins = coins or ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE"]
+        self.coins = coins or ["UNI", "PUMP", "MU", "SKHYNIX", "HYPE", "ETH", "BTC", "SOL",
+                               "XAU", "XAG", "GOOGL", "NVDA", "AMZN", "OKB", "BNB"]
         self.bar = bar
         self.confidence_threshold = confidence_threshold
         self.short_confidence_threshold = short_confidence_threshold  # 做空独立阈值（高于做多）
         self.max_positions = max_positions
         self.kline_limit = kline_limit
 
+        # A-1修复：启动时从 OKX_SIM/config.json 加载进化后的阈值，覆盖默认值
+        # 注意：需要在 risk_manager 创建后调用，才能同时更新 risk_manager.state
+        self._evolution_config_path = None
+
         self.bcrm_engine = BCRMEngine()
         self.bagua_engine = BaguaEngine()
         self.okx_client = OKXSimulatedClient()
-        
+
         self.use_bcrm2 = use_bcrm2
         self.bcrm2_adapters = {}
         # v3.0：per-coin降级机制，替代全局use_bcrm2=False
@@ -131,6 +145,9 @@ class PollingTrader:
             default_position_pct=default_position_pct,
             min_position_usdt=20.0,
         )
+
+        # A-1修复：risk_manager 创建后，从 config.json 加载进化后的阈值覆盖默认值
+        self._load_evolution_config(initial=True)
         self.position_tracker = PositionTracker()
         self.learning_scheduler = LearningScheduler(
             bcrm_engine=self.bcrm_engine,
@@ -228,6 +245,21 @@ class PollingTrader:
         except Exception as e:
             self._log(f"[A7] 门禁初始化失败: {e}，继续运行", "WARN")
             self.a7_gate = None
+
+        # P3: 认知召回桥接（A 系列 Cron 执行前注入认知召回）
+        self.cognitive_recall_enabled = True
+        self._trading_recall_fn = None
+        try:
+            import sys as _sys
+            _cog_path = str(Path(__file__).resolve().parents[2] / "4-MEMORY" / "9-工具与接口")
+            if _cog_path not in _sys.path:
+                _sys.path.insert(0, _cog_path)
+            from cognitive_loop_entry import trading_recall as _trading_recall
+            self._trading_recall_fn = _trading_recall
+            self._log("[P3] 认知召回桥接已初始化", "INFO")
+        except Exception as e:
+            self._log(f"[P3] 认知召回桥接初始化失败: {e}，继续运行", "WARN")
+            self.cognitive_recall_enabled = False
 
         self._sync_existing_positions()
 
@@ -383,9 +415,59 @@ class PollingTrader:
         """检查是否跨天，重置每日风控"""
         today = datetime.now().strftime("%Y-%m-%d")
         if today != self.last_date:
+            # F2修正：跨天时输出前一天的每日聚合摘要到监控
+            self._emit_daily_summary(self.last_date)
             self._log(f"[风控] 新的一天 {today}，重置每日风控统计")
             self.risk_manager.reset_daily()
             self.last_date = today
+
+    def _emit_daily_summary(self, date_str: str):
+        """F2修正：输出每日聚合绩效摘要到监控文件。
+
+        将 PerformanceTracker 的日统计 + 整体统计写入
+        .workbuddy/memory_l4/stats/daily_summary_{date}.json
+        供 yijing_monitor / 飞书推送消费。
+        """
+        if not date_str:
+            return
+        try:
+            today_stats = self.perf_tracker.get_today_stats()
+            overall = self.perf_tracker.get_overall_stats()
+
+            summary = {
+                "date": date_str,
+                "generated_at": datetime.now().isoformat(),
+                "daily": {
+                    "total_trades": today_stats.get("total_trades", 0),
+                    "win_trades": today_stats.get("win_trades", 0),
+                    "loss_trades": today_stats.get("loss_trades", 0),
+                    "total_pnl": today_stats.get("total_pnl", 0),
+                    "win_rate": today_stats.get("win_rate", 0),
+                    "max_drawdown": today_stats.get("max_drawdown", 0),
+                    "consecutive_losses": today_stats.get("current_consecutive_losses", 0),
+                },
+                "overall": {
+                    "total_trades": overall.get("total_trades", 0),
+                    "win_rate": overall.get("win_rate", 0),
+                    "total_pnl": overall.get("total_pnl", 0),
+                    "profit_factor": overall.get("profit_factor", 0),
+                    "max_drawdown": overall.get("max_drawdown", 0),
+                    "current_equity": overall.get("current_equity", 0),
+                    "sharpe_ratio": overall.get("sharpe_ratio", 0),
+                    "trading_days": overall.get("trading_days", 0),
+                },
+            }
+
+            summary_file = self.perf_tracker.stats_dir / f"daily_summary_{date_str}.json"
+            summary_file.write_text(
+                json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8"
+            )
+            self._log(f"[每日摘要] {date_str} 已落盘: {summary_file.name} | "
+                      f"日交易{summary['daily']['total_trades']}笔 盈亏{summary['daily']['total_pnl']:.2f}U "
+                      f"整体夏普{summary['overall']['sharpe_ratio']:.2f}")
+        except Exception as e:
+            self._log(f"[每日摘要] 生成失败: {e}", "WARN")
 
     def _fetch_and_infer(self, coin: str) -> dict:
         """获取实时行情并执行 BCRM + 八卦双引擎推理"""
@@ -1256,7 +1338,7 @@ class PollingTrader:
         }
 
         # 保存episode文件
-        episodes_dir = Path("data/episodes")
+        episodes_dir = _episodes_dir()
         episodes_dir.mkdir(parents=True, exist_ok=True)
         ts_str = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
         ep_path = episodes_dir / f"live_{trade_rec.inst_id}_{ts_str}.json"
@@ -1969,13 +2051,7 @@ class PollingTrader:
             position_usdt *= 0.4
             position_pct *= 0.4
 
-        # P3预警联动：五角校验降仓系数（TDA+Ising双重预警→降仓50%，单一预警→降仓20%）
-        position_factor = inference.get("position_factor", 1.0)
-        if position_factor < 1.0:
-            position_usdt *= position_factor
-            position_pct *= position_factor
-            self._log(f"[{coin}] P3降仓 | position_factor={position_factor:.2f} → 仓位={position_usdt:.2f}USDT", "WARN")
-
+        # v3 纯风控版：五角校验不再调整仓位（position_factor 恒=1.0），仅通过 sl_tighten_factor 收紧止损
         action = "open_long" if direction == "UP" else "open_short"
         pos_side = "long" if direction == "UP" else "short"
         sl_px = inference["stop_loss_px"]
@@ -2143,6 +2219,72 @@ class PollingTrader:
                 self.guardian.record_error(RuntimeError(f"开仓失败: {err}"),
                                            context=f"open_position:{coin}")
 
+    def _inject_cognitive_recall(self, coin: str, inference: dict) -> dict:
+        """
+        P3: 构建交易上下文并调用认知系统召回，返回认知建议。
+
+        设计原则:
+          - 建议而非约束: 召回结果注入 inference，不阻断交易决策
+          - 失败安全: 认知系统不可用时返回空结果，不影响交易
+          - 上下文构建: 从 inference 提取关键字段组装召回上下文
+        """
+        if not self._trading_recall_fn:
+            return {"ok": False, "reason": "recall_fn not initialized"}
+
+        # 构建召回上下文（从 inference 提取关键字段）
+        direction = inference.get("direction", "")
+        confidence = inference.get("confidence", 0.0)
+        hexagram = inference.get("hexagram", "")
+        is_ranging = inference.get("is_ranging", False)
+        volatility = inference.get("volatility", 0.0)
+        a0_warnings = inference.get("a0_warnings", [])
+
+        ctx_parts = [f"{coin}", f"方向={direction}", f"置信度={confidence:.2f}"]
+        if hexagram:
+            ctx_parts.append(f"卦象={hexagram}")
+        if is_ranging:
+            ctx_parts.append("震荡市场")
+        if volatility > 0:
+            ctx_parts.append(f"波动率={volatility:.4f}")
+        if a0_warnings:
+            ctx_parts.append(f"矛盾预警={len(a0_warnings)}项")
+        context = " ".join(ctx_parts)
+
+        try:
+            result = self._trading_recall_fn(
+                context=context,
+                task_type="strategy-execution",
+                top_k_mem=3,
+                top_meta=2,
+                top_applied=2,
+            )
+            if result.get("ok"):
+                mem_count = result.get("count", 0)
+                meta_count = len(result.get("processes", {}).get("meta", []))
+                applied_count = len(result.get("processes", {}).get("applied", []))
+                self._log(
+                    f"[{coin}] P3认知召回: 记忆={mem_count}条 | "
+                    f"T系列Skill={meta_count}个 | 历史路径={applied_count}条",
+                    "INFO"
+                )
+            return result
+        except Exception as e:
+            self._log(f"[{coin}] P3认知召回失败: {e}", "WARN")
+            return {"ok": False, "error": str(e)}
+
+    @staticmethod
+    def _summarize_cognitive_recall(inference: dict) -> dict:
+        """P3: 从 inference 中提取认知召回摘要（轻量，供开仓事件存档）"""
+        cr = inference.get("cognitive_recall")
+        if not cr or not cr.get("ok"):
+            return {"ok": False}
+        return {
+            "ok": True,
+            "mem_count": cr.get("count", 0),
+            "meta_skills": [m.get("skill_id") for m in cr.get("processes", {}).get("meta", [])],
+            "applied_count": len(cr.get("processes", {}).get("applied", [])),
+        }
+
     def _record_opening_event(self, inference: dict, entry_price: float, pos_side: str, confidence: float):
         """开仓时轻量记录：A0 创伤追踪 + 开仓事件存档（供平仓后 L4 使用）"""
         import json
@@ -2168,6 +2310,14 @@ class PollingTrader:
 
         # 轻量开仓事件存档
         try:
+            # P2-9: 事前预测（对齐 Friston 主动推理，失败静默不阻断开仓记录）
+            prediction_data = None
+            try:
+                from scripts.memory_l4.prediction_bridge import generate_prediction_dict
+                prediction_data = generate_prediction_dict(inference)
+            except Exception:
+                pass
+
             event = {
                 "ts": datetime.now().isoformat(),
                 "type": "position_opened",
@@ -2181,6 +2331,10 @@ class PollingTrader:
                 "a0_warnings": inference.get("a0_warnings", []),
                 "volatility": inference.get("volatility", 0),
                 "hexagram": inference.get("hexagram", ""),
+                # P3: 认知召回摘要（供平仓后 L4 回溯分析）
+                "cognitive_recall": self._summarize_cognitive_recall(inference),
+                # P2-9: 事前预测快照（供平仓后计算 prediction_error 驱动贝叶斯）
+                "prediction": prediction_data,
             }
             event_dir = Path(self.data_dir) / "l4_events" if hasattr(self, "data_dir") else \
                 Path("data/l4_events")
@@ -2327,6 +2481,64 @@ class PollingTrader:
         except Exception as e:
             self._log(f"[离场动态调整失败] {e}")
 
+    def _load_evolution_config(self, initial: bool = False):
+        """A-1修复：从 OKX_SIM/config.json 加载进化后的阈值，覆盖默认值。
+
+        - initial=True: __init__ 时调用，覆盖构造参数默认值
+        - initial=False: run_once 每轮调用，热 reload 进化后的新阈值
+
+        只更新 4 个进化键：confidence_threshold / daily_loss_limit /
+        max_consecutive_losses / default_position_pct。
+        其余字段（api_key 等）不受影响。
+        """
+        try:
+            from scripts.memory_l4.paths import workspace_root as _ws
+            cfg_path = _ws() / "data" / "okx_sim" / "config.json"
+            self._evolution_config_path = cfg_path
+            if not cfg_path.exists():
+                return
+            cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+
+            updated = []
+            old_vals = {
+                "confidence_threshold": self.confidence_threshold,
+                "daily_loss_limit": getattr(self.risk_manager, "state", None) and self.risk_manager.state.daily_loss_limit,
+                "max_consecutive_losses": getattr(self.risk_manager, "state", None) and self.risk_manager.state.max_consecutive_losses,
+                "default_position_pct": getattr(self.risk_manager, "state", None) and self.risk_manager.state.position_size_pct,
+            }
+
+            # confidence_threshold
+            new_conf = cfg.get("confidence_threshold")
+            if new_conf is not None and new_conf != self.confidence_threshold:
+                self.confidence_threshold = new_conf
+                updated.append(f"confidence_threshold={new_conf}")
+
+            # risk_manager 相关 3 个字段（init 后 risk_manager 才存在）
+            if hasattr(self, "risk_manager") and self.risk_manager is not None:
+                state = self.risk_manager.state
+                new_dll = cfg.get("daily_loss_limit")
+                if new_dll is not None and new_dll != state.daily_loss_limit:
+                    state.daily_loss_limit = new_dll
+                    updated.append(f"daily_loss_limit={new_dll}")
+                new_mcl = cfg.get("max_consecutive_losses")
+                if new_mcl is not None and new_mcl != state.max_consecutive_losses:
+                    state.max_consecutive_losses = int(new_mcl)
+                    updated.append(f"max_consecutive_losses={new_mcl}")
+                new_dpp = cfg.get("default_position_pct")
+                if new_dpp is not None and new_dpp != state.position_size_pct:
+                    state.position_size_pct = new_dpp
+                    updated.append(f"default_position_pct={new_dpp}")
+
+            if updated:
+                tag = "init" if initial else "reload"
+                self._log(f"[进化阈值/{tag}] 从 config.json 加载: {', '.join(updated)}")
+        except Exception as e:
+            if initial:
+                # init 阶段失败静默（config 可能尚不存在）
+                pass
+            else:
+                self._log(f"[进化阈值/reload] 加载失败: {e}", "WARN")
+
     def _adjust_confidence_threshold(self) -> float:
         """根据外部知识调整置信度阈值"""
         base_threshold = self.confidence_threshold
@@ -2347,6 +2559,8 @@ class PollingTrader:
         """执行一轮推理 + 交易"""
         self._check_date_rollover()
         self._load_external_knowledge()
+        # A-1修复：每轮热 reload 进化后的阈值
+        self._load_evolution_config(initial=False)
         self.cycle_count += 1
         self._log(f"═══ 轮询 #{self.cycle_count} 开始 ═══")
 
@@ -2411,6 +2625,10 @@ class PollingTrader:
                     f"波动率={inference.get('volatility', 0):.4f} | "
                     f"fail={inference['fail_closed']}"
                 )
+
+                # P3: 反向召回接入 — A 系列 Cron 执行前注入认知召回（建议而非约束）
+                if self.cognitive_recall_enabled and self._trading_recall_fn:
+                    inference["cognitive_recall"] = self._inject_cognitive_recall(coin, inference)
 
                 # A7 实践论门禁检查（代码驱动，执行前拦截）
                 if self.a7_gate and not inference.get("fail_closed", False):
@@ -2648,8 +2866,8 @@ def main():
     parser = argparse.ArgumentParser(description="易经推理轮询交易器（P2 完整版）")
     parser.add_argument("--interval", type=int, default=3600,
                         help="轮询间隔（秒），默认 3600(1h)")
-    parser.add_argument("--coins", type=str, default="BTC,ETH,SOL,BNB,XRP,DOGE",
-                        help="币种列表，逗号分隔，默认 BTC,ETH,SOL,BNB,XRP,DOGE")
+    parser.add_argument("--coins", type=str, default="UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAUT,XAG,GOOGL,NVDA,AMZN,OKB,BNB",
+                        help="币种列表，逗号分隔，默认 15币种固定候选池")
     parser.add_argument("--bar", type=str, default="1H",
                         help="K线周期，默认 1H")
     parser.add_argument("--confidence", type=float, default=0.35,
