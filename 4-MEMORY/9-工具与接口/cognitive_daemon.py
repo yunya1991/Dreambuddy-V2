@@ -759,8 +759,8 @@ class CognitiveDaemon:
             from rumination_engine import RuminationEngine
             from cognitive_loop_entry import get_cle
             engine = RuminationEngine()
-            # episodes_dir: 项目根/.workbuddy/episodes（避免跨包 import paths）
-            ep_dir = str(self.watch_dir / ".workbuddy" / "episodes")
+            # episodes_dir: 多路径搜索，避免跨包硬编码
+            ep_dir = self._find_episodes_dir()
             findings = engine.ruminate(ep_dir)
             cle = get_cle()
             for f in findings:
@@ -775,10 +775,37 @@ class CognitiveDaemon:
             self._last_activity_ts = time.time()
             if self.verbose and findings:
                 print(f"[Daemon] 反刍产出 {len(findings)} 条模式记忆", file=sys.stderr)
+            elif self.verbose:
+                print(f"[Daemon] 反刍完成，无新模式 (ep_dir={ep_dir})", file=sys.stderr)
         except Exception as e:
             if self.verbose:
                 print(f"[Daemon] 反刍失败: {e}", file=sys.stderr)
             self._last_activity_ts = time.time()  # 失败也重置，避免连续重试
+
+    def _find_episodes_dir(self) -> str:
+        """多路径搜索 episodes 目录，避免跨包硬编码路径 bug"""
+        # 候选路径（按优先级）
+        candidates = [
+            self.watch_dir / "11-易经推理系统" / ".workbuddy" / "episodes",
+            self.watch_dir / ".workbuddy" / "episodes",
+        ]
+        # 尝试从 paths 模块获取（单一事实源）
+        try:
+            import sys
+            _yijing_scripts = str(self.watch_dir / "11-易经推理系统" / "scripts")
+            if _yijing_scripts not in sys.path:
+                sys.path.insert(0, _yijing_scripts)
+            from memory_l4.paths import episodes_dir as _ep_dir
+            candidates.insert(0, _ep_dir())
+        except Exception:
+            pass
+
+        for p in candidates:
+            if p.exists() and p.is_dir():
+                return str(p)
+
+        # 兜底：返回第一个候选（即使不存在，让 ruminate_engine 处理空目录）
+        return str(candidates[0])
 
     def on_new_session_created(self, session_id, initial_msg, working_memory=None):
         """设计节 3.1 路径 C：新会话创建时后台预热 process_block。与路径 B 去重。"""
