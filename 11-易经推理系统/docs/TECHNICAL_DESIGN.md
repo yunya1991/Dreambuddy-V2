@@ -1,6 +1,6 @@
 # 易经推理系统 技术设计文档
 
-> **版本**: v3.0 | **日期**: 2026-08-01
+> **版本**: v4.1 | **日期**: 2026-08-05
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引）
 
@@ -49,19 +49,20 @@
 | **增量学习** | 实盘数据自动反馈模型迭代 | ✅ IncrementalLearner |
 | **自进化闭环** | 经验→知识→约束→验证→升级的完整闭环 | ⚠️ 部分实现 |
 | **L4四级记忆** | 实时→短期→长期→归档的记忆生命周期 | ✅ pipeline全链路 |
-| **五角校验** | BCRM2×力学×A0×Ising×TDA 五源交叉验证 | ✅ 五源齐全 |
+| **五角校验** | BCRM2×力学×A0×Ising×TDA 五源风险信号综合评分→双向风控 | ✅ v4 风险评分风控版 |
 
 ### 1.3 核心指标（BCRM 2.0基线）
 
-| 指标 | 目标 | Phase 0 基线 | 五角校验+贝叶斯优化后 |
+| 指标 | 目标 | Phase 0 基线 | 五角校验v4风控版 |
 |------|------|----------|----------|
-| 综合夏普 | >5.0 | **7.45** | **8.20** |
-| 组合胜率 | >60% | **70.2%** | — |
-| 组合盈亏比 | >1.5 | **2.61** | — |
-| 组合最大回撤 | <20% | **12.75%** | **11.8%** |
+| 综合夏普 | >5.0 | **10.16** | **10.20** |
+| 组合胜率 | >60% | **72.5%** | — |
+| 组合盈亏比 | >1.5 | **3.89** | — |
+| 组合最大回撤 | <20% | **10.12%** | **10.34%** |
+| 平均总收益 | — | **135.31%** | **139.40%** |
 | 单币种夏普 | >1.0 | 全部通过 | 全部通过 |
 
-> 注：7.45 为 Phase 0 基线回测综合夏普；8.20 为接入五角校验+Optuna贝叶斯优化后的回测综合夏普（详见 §4.1.1c 与 §8.1）。
+> 注：10.16 为 BTC/ETH/SOL 6000bars/5folds 基线回测综合夏普；10.20 为接入五角校验 v4 风险评分风控版后的综合夏普（详见 §4.1.1c 与 §8.1）。四项验证标准全部通过（夏普不拖累、回撤不恶化、风控触发、收益提升）。
 
 ---
 
@@ -390,44 +391,67 @@ QMM 输出经过 Gate 验证后才可用于决策：
 | 2（中期） | Ising相变 | 统计力学磁化强度下降=共识减弱=趋势衰竭 | ~2 bars |
 | 3（确认） | 力学引擎减速 | 加速度与速度反向=合力衰减 | 0 bars |
 
-#### 4.1.1c 五角校验架构 (Pentagon Verification)
+#### 4.1.1c 五角校验架构 (Pentagon Verification v4 风险评分风控版)
 
-**设计哲学**: 多源交叉验证，通过五源独立校验降低单点失误风险。
+**设计哲学**: 五源风险信号综合评分 → 双向风控调控。不投票方向，只评估风险等级，驱动仓位/杠杆/止盈/止损的动态管理。
 
-**五源校验体系**:
+**版本演进**:
+- v1/v2: 五源方向投票 → 一致性 → 置信度/仓位调整（方向驱动，经两轮贝叶斯优化无法超过基线，已证伪）
+- v3: 纯风控中立，仅双预警止损收紧（五角校验未真正发挥作用）
+- **v4（当前）**: 五源风险信号 → 风险评分 → 仓位/杠杆/止盈/止损双向调控（风险驱动）
 
-| 校验源 | 域 | 方法 | 输出 |
-|--------|-----|------|------|
-| BCRM2 | ML | LightGBM L1/L2/L3辩证ML | 方向+置信度 |
-| 力学引擎 | 物理 | F=ma五象力场Verlet积分 | 方向+速度+加速度 |
-| A0矛盾 | 逻辑 | 七维矛盾分析（纯代码） | 方向偏置+张力 |
-| Ising相变 | 统计力学 | 二维Ising模型Onsager解 | 相态（ORDERED/CRITICAL/DISORDERED） |
-| TDA拓扑 | 代数拓扑 | Vietoris-Rips复形持久同调 | Betti曲线+瓶颈距离 |
+**五源风险信号体系**:
 
-**校验输出**:
-- `verdict`: STRONG_AGREE / MAJORITY_AGREE / DIVERGENT / CONFLICT / INSUFFICIENT_SOURCES
-- `confidence_adjustment`: 基于一致性评分的置信度调整
-- `should_fail_closed`: 严重分歧时强制熔断
-- `position_factor`: P3联动降仓系数（0.5-1.0）
-- `sl_tighten_factor`: P3联动止损收紧系数（0.6-1.0）
-- `early_exit_signal`: TDA+Ising双重预警提前退出
+| 风险源 | 域 | 方法 | 风险信号计算 |
+|--------|-----|------|-------------|
+| BCRM2 | ML | LightGBM L1/L2/L3辩证ML | `1 - confidence`（置信度低→风险高） |
+| 力学引擎 | 物理 | F=ma五象力场Verlet积分 | 反转→0.8，正常→0.2 |
+| A0矛盾 | 逻辑 | 七维矛盾分析（纯代码） | `tension + 0.3×trauma`（上界1.0） |
+| Ising相变 | 统计力学 | 二维Ising模型Onsager解 | 相变预警→0.9，正常→0.1 |
+| TDA拓扑 | 代数拓扑 | Vietoris-Rips复形持久同调 | 拓扑突变→0.9，正常→0.1 |
 
-**P3预警联动策略**:
-- TDA+Ising同时触发 → position_factor=0.5, sl_tighten=0.6, early_exit=True
-- 单一预警触发 → position_factor=0.8, sl_tighten=0.9
+**风险注意力动态加权**:
+- 追踪各源风险预警准确率（预警后市场是否恶化），指数衰减更新权重（decay=0.97）
+- 准确率高的源权重增大（0.10-0.40），准确率低的源权重减小
+- 初始等权 0.20，窗口 30 笔交易
 
-**贝叶斯优化参数（v1基线）**:
+**风险评分分档与双向风控调控**:
 
-| 参数 | 值 | 说明 |
-|------|-----|------|
-| ISING_TEMP_SCALE | 401.4 | 温度映射 T=scale×volatility |
-| ISING_ORDERED_RATIO | 0.857 | 有序相温度比上限 |
-| ISING_DISORDERED_RATIO | 1.132 | 无序相温度比下限 |
-| ISING_MAGNETIZATION_THRESHOLD | 0.192 | 磁化强度阈值 |
-| ISING_ENERGY_SPIKE_FACTOR | 1.79 | 能量突变因子 |
-| TDA_BETTI_SPIKE_FACTOR | 3.28 | Betti曲线突增因子 |
-| TDA_BOTTLENECK_DISTANCE_THRESHOLD | 0.64 | 瓶颈距离阈值 |
-| REVERSAL_WARNING_THRESHOLD | 0.14 | 减速预警阈值 |
+| 风险等级 | risk_score | 仓位系数 | 杠杆系数 | 止盈调整 | 止损收紧 |
+|---------|-----------|---------|---------|---------|---------|
+| LOW | < 0.15 | 1.10 | 1.05 | 1.10 | 1.0 |
+| NORMAL | 0.15-0.50 | 1.0 | 1.0 | 1.0 | 1.0 |
+| MID | 0.50-0.70 | 0.85 | 0.90 | 0.95 | 0.95 |
+| HIGH | ≥ 0.70 | 0.60 | 0.70 | 0.90 | 0.85 |
+| +双预警底线 | TDA+Ising同时触发 | — | — | — | min(上述, 0.85) |
+
+**校验输出（TriangleVerificationResult）**:
+- `risk_score`: 综合风险评分 0=安全, 1=高危
+- `risk_level`: LOW / NORMAL / MID / HIGH
+- `position_factor`: 仓位系数（0.60-1.10，v4双向）
+- `leverage_factor`: 杠杆系数（0.70-1.05，v4新增）
+- `tp_adjustment`: 止盈调整系数（0.90-1.10，v4新增）
+- `sl_tighten_factor`: 止损收紧系数（0.85-1.0，含v3双预警底线）
+- `early_exit_signal`: TDA+Ising双重预警提前退出（v3保留）
+- `verdict`: `P4_RISK_CONTROL_{LEVEL}`
+
+**不干预项**（v4 仍保持中立）:
+- 方向投票（BCRM2 主导方向）
+- 置信度调整（`confidence_adjustment=0.0`）
+- 开仓阻断（`should_fail_closed=False`）
+
+**回测验证结果**（BTC/ETH/SOL 6000bars/5folds）:
+
+| 指标 | Baseline | v4风控 | Delta | 判定 |
+|------|----------|-------|-------|------|
+| 平均夏普 | 10.16 | 10.20 | +0.4% | ✅ 不拖累 |
+| 平均回撤 | 10.12% | 10.34% | +0.22% | ✅ 不恶化 |
+| 平均收益 | 135.31% | 139.40% | +4.09% | ✅ 提升 |
+| 风控触发 | — | 94笔/412笔(22.8%) | — | ✅ 生效 |
+
+**实盘适配状态**:
+- 仓位/止损/止盈调整：已实现（`polling_trader.py`）
+- 杠杆调整：待实现 OKX `set_leverage` API（`effective_leverage` 已计算，下单一环待对接）
 
 #### 4.1.2 辩证ML引擎 (Dialectical ML Engine)
 
@@ -916,13 +940,15 @@ KG知识图谱校准 → 历史胜率校准确信度
     ↓
 A0矛盾分析 → 方向一致性校准 + 创伤信号检测
     ↓
-五角校验 (TriangleVerifier)
+五角校验 v4 (TriangleVerifier)
     ├── BCRM2(ML) × 力学引擎(物理) × A0(矛盾)
     ├── Ising相变检测 → ORDERED/CRITICAL/DISORDERED
     ├── TDA拓扑突变 → Betti曲线+瓶颈距离
-    ├── 一致性评分 → confidence_adjustment
-    ├── 严重分歧 → fail_closed
-    └── P3预警联动 → position_factor + sl_tighten + early_exit
+    ├── 五源风险信号 → 综合风险评分 (0=安全, 1=高危)
+    ├── 风险注意力动态加权 (decay=0.97)
+    ├── 风险评分分档 → position_factor + leverage_factor + tp_adjustment + sl_tighten
+    ├── 双预警底线 → TDA+Ising同时触发 sl_tighten=0.85
+    └── 不干预：方向投票/置信度/开仓阻断
     ↓
 MarketRegimeClassifier (8种市态) → 仓位因子
     ↓
@@ -1432,18 +1458,16 @@ export OKX_TD_MODE=isolated
 | SOL | 中 | 463 | 65 | 75.4% | 92.92% | 11.20% | 3.02 | 7.88 |
 | UNI | 小 | 402 | 92 | 60.9% | 119.48% | 33.45% | 2.12 | 5.62 |
 
-#### 组合层指标
+#### 组合层指标（BTC/ETH/SOL 6000bars/5folds）
 
-| 指标 | Phase 0 基线 | 五角校验+贝叶斯优化后 |
-|------|----------|----------|
-| 组合总收益 | 86.85% | — |
-| 组合胜率 | 70.2% | — |
-| 组合盈亏比 | 2.61 | — |
-| 组合夏普 | 6.61 | — |
-| 组合最大回撤 | 12.75% | **11.8%** |
-| **综合夏普(加权)** | **7.45** | **8.20** |
+| 指标 | Baseline | 五角校验v4风控版 | Delta | 判定 |
+|------|----------|-----------------|-------|------|
+| 平均总收益 | 135.31% | 139.40% | +4.09% | ✅ 提升 |
+| 平均夏普 | 10.16 | 10.20 | +0.4% | ✅ 不拖累 |
+| 平均最大回撤 | 10.12% | 10.34% | +0.22% | ✅ 不恶化 |
+| 风控触发率 | — | 22.8% (94/412笔) | — | ✅ 生效 |
 
-> 注：8.20 为接入五角校验（§4.1.1c）+ Optuna TPE 贝叶斯优化 8 参数后（§4.1.1c 末尾参数表）的回测综合夏普；回撤由 12.75% 改善至 11.8%。详见 `bayesian_optimize.py` 与 `pentagon_backtest.py`。
+> 注：v4 风险评分风控版回测（详见 §4.1.1c），四项验证标准全部通过。v1/v2 方向投票+贝叶斯优化方案已废弃（经两轮优化无法超过基线）。
 
 ---
 
@@ -1546,6 +1570,8 @@ export OKX_TD_MODE=isolated
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-08-05 | v4.1 | **认知科学 P2 落地与实盘修复**：①P2-9 主动推理事前预测落地（`prediction_engine.py` + `prediction_bridge.py`，开仓生成 prediction，平仓计算 prediction_error 驱动贝叶斯，TDD 通过）；②P2-7 静息态反刍落地（`rumination_engine.py`，daemon 空闲>30min 统计聚类近7天 episode 产出 C 级假设记忆，TDD 通过）；③P2-8 双通道回测环境就绪（`experiments/ab-trading/core/dual_channel/`：胼胝体整合器+双通道运行器+AB 对比框架，9/9 测试通过，BTC 500bars 回测 path_advantage=-0.2315 待 metrics 调优）；④反刍实盘路径 bug 修复（`_find_episodes_dir()` 多路径搜索替代硬编码，找到 85 个 episode 文件）；⑤反刍模块详细日志增强（idle 检查/触发原因/执行流程/样本详情）；⑥认知回测框架扩展（`cognitive_backtest.py` 新增 P2-9/P2-7 回测，4/5 项 path_advantage ≥ +0.2）；⑦实盘重启（polling_trader 加载 P2-9 prediction；cognitive_daemon 加载 P2-7 路径修复+日志，PID 31219）；版本号 v4.0→v4.1 | DreamBuddy v2 |
+| 2026-08-05 | v4.0 | **五角校验 v4 风险评分风控版**：①§4.1.1c 五角校验架构重写为 v4（五源风险信号综合评分+风险注意力动态加权+仓位/杠杆/止盈/止损双向调控+v3双预警底线）；②§1.3 核心指标更新为 BTC/ETH/SOL 6000bars/5folds 回测（夏普10.16→10.20、回撤10.12%→10.34%、收益135.31%→139.40%，四项标准全通过）；③推理链更新五角校验输出字段（risk_score/risk_level/leverage_factor/tp_adjustment）；④§8.1 性能基线更新；⑤v1/v2 方向投票+贝叶斯优化方案废弃；版本号 v3.0→v4.0 | DreamBuddy v2 |
 | 2026-08-01 | v3.0 | **DreamOS 离场模块集成**：①新增 §9.8 DreamOS 离场模块集成章节（YijingExitAdapter + ExitModuleSelector + ExitModuleBacktester）；②YijingExitAdapter 从占位符升级为完整实现（懒加载+三级卦象降级+9→4决策映射+ATR基准SL/TP动态调整）；③ExitModuleBacktester 补充 change_24h/rsi14 动态注入，支持 yijing 卦象合成 fallback；④3场景×592交易全量回测，性能数据写入 exit_performance_memory.json；⑤ExitModuleSelector L0 精确匹配验证通过（yijing score最高时选中 yijing）；⑥§9.6 集成点补充 DreamOS 链路描述；⑦§15.4 Phase 3 标记 3 项已完成；版本号 v2.9→v3.0 | DreamBuddy v2 |
 | 2026-07-25 | v2.9 | **P1修复与系统增强**：①修复 `inspect.py` 模型路径错误（从 `.workbuddy/memory_l4/bcrm2/` 修正为 `scripts/data/bcrm2_models/`，新增目录扫描统计 L1/L2 模型数、币种数、周期数）；②安装 ripser + persim 依赖，TDA 拓扑检测第五源恢复可用（五角校验五源齐全）；③新增多场景验证脚本（25个用例覆盖推理/离场/风控/反馈/异常五场景，全部通过）；④币种规模从 4 扩展至 27（含 BTC/ETH/SOL/BNB/XRP/SEI/TIA/IMX 等，小市值<5亿剔除）；⑤技术栈补充 ripser/persim/Optuna；版本号 v2.8→v2.9 | DreamBuddy v2 |
 | 2026-07-24 | v2.8 | **A8 SKILL 系统自评估与多场景验证**：新增A8纯理性内部批判自循环评估框架；生成系统现状评估报告（胜率13.3%、卦象分布偏斜、7条反馈链路断裂等问题识别）；多场景验证框架设计；版本号 v2.7→v2.8 | DreamBuddy v2 |

@@ -1,6 +1,6 @@
 # 认知架构：认知-理论-实践闭环 (Cognitive Architecture)
 
-> **版本**: v3.2
+> **版本**: v3.4
 > **更新日期**: 2026-08-05
 > **核心思想**: 借鉴认知科学（Cognitive Science）和贝叶斯大脑理论，将系统升级为一个具备自我优化能力的认知引擎。认知层 = 工作记忆（L0）+ 记忆系统（L1/L2）+ 知识库（2-KNOWLEDGE）+ 流程系统（Process：元认知 Superpowers + 交易认知 T 系列 + 应用认知 Solution Paths）
 >
@@ -11,6 +11,8 @@
 > **v3.2 变更**: §5.5.7 落地认知回测验证框架——`cognitive_backtest.py` 统一回测 P1-1/2/3 三项更新，复用 `evaluation_engine.compute_path_advantage`。结果：P1-2 salience_score (+0.4165) 和 P1-3 global_broadcast (+0.4600) 通过验证(upgrade)，P1-1 episodic_block (+0.0641) 标记观察(observe，代理指标待真实 episode 数据)。TDD 9/9 通过。
 >
 > **v3.3 变更**: 落地 P2-9 主动推理事前预测（`prediction_engine.py`，开仓生成 prediction，平仓计算 prediction_error 驱动贝叶斯）+ P2-7 静息态反刍（`rumination_engine.py`，daemon 空闲>30min 统计聚类近7天 episode 产出 C 级假设记忆）+ P2-8 双通道并行 spec（仅设计，待 AB-Trading 双通道回测环境就绪）+ P3-10/11/12 理论注脚（自由能/GWT/状态机随 P2 落地补注脚，§5.4.1）。回测 P2-9/P2-7 通过（4/5 项 path_advantage ≥ +0.2）。TDD 11/11 通过。
+>
+> **v3.4 变更**: P2-8 双通道回测环境落地（`experiments/ab-trading/core/dual_channel/`：胼胝体整合器 + 双通道运行器 + AB 对比框架，9/9 测试通过）+ P2-7 反刍实盘修复（路径 bug fix：`_find_episodes_dir()` 多路径搜索替代硬编码，找到 85 个 episode；反刍模块详细日志：idle 检查/触发原因/执行流程/样本详情）+ 实盘重启（polling_trader PID 28778 加载 P2-9 prediction；cognitive_daemon PID 31219 加载 P2-7 路径修复+日志）。BTC 500bars AB 对比回测 path_advantage=-0.2315（未通过 +0.2 门槛，metrics 映射需调优）。
 
 ---
 
@@ -691,7 +693,7 @@ python3 cognitive_superpowers.py --suggest "测试驱动开发"
 | # | 方向 | 理论基础 | 落地设想 | 回测指标 | 状态 |
 |---|------|---------|---------|---------|------|
 | 7 | 静息态反刍 | DMN 默认模式网络 | daemon 空闲>30min 触发"反刍模式"，从近期 episode 提取模式更新记忆（类睡眠记忆巩固） | 反刍产出的新记忆被后续 recall 命中率 | ✅ v3.3 已落地 |
-| 8 | 双通道并行决策 | 左右脑并行 | A系列新增"右脑通道"——易经+做梦并行运行，A7整合双通道结论（当前做梦只在连续HOLD后触发） | 双通道 vs 单通道的转折点捕获率 | 📝 v3.3 spec 完成，待回测环境 |
+| 8 | 双通道并行决策 | 左右脑并行 | A系列新增"右脑通道"——易经+做梦并行运行，A7整合双通道结论（当前做梦只在连续HOLD后触发） | 双通道 vs 单通道的转折点捕获率 | � v3.4 回测环境已就绪（`dual_channel/` 三模块 + 9/9 测试），待 path_advantage≥+0.2 |
 | 9 | 主动推理（事前预测） | Friston 主动推理 | 开仓前生成 `prediction`（预期走势/止损概率），平仓后与实际对比，预测误差驱动贝叶斯更新 | 预测误差与后续模型修正幅度的相关性 | ✅ v3.3 已落地 |
 | 10 | 自由能统一理论 | Friston 自由能 | 将贝叶斯更新/A8校验/矛盾分析统一为"最小化自由能"的特例 | 理论统一性（文档一致性检查） | 📝 v3.3 注脚补全（§5.4.1） |
 | 11 | 全局工作空间→意识 | GWT | trading_recall 的 process_block 写入工作记忆 = "认知系统意识到了" | 认知系统"意识"覆盖率（关键决策点注入率） | 📝 v3.3 注脚补全（§5.4.1） |
