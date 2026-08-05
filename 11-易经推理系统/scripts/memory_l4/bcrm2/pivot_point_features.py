@@ -267,3 +267,9 @@ class PivotPointFeatures:
         result = result.ffill().fillna(0)
         result = result.replace([np.inf, -np.inf], 0)
         return result
+
+
+# ===== FeatureRegistry 注册 =====
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+
+FeatureRegistry.register(name="pivot_point", factory=PivotPointFeatures)

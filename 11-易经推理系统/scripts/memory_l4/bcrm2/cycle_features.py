@@ -344,3 +344,14 @@ class CycleFeatures:
     def n_features(self) -> int:
         """特征总数 (估算)"""
         return 57
+
+
+# ===== FeatureRegistry 注册 =====
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry, _cycle_sub_key_splitter
+
+FeatureRegistry.register(
+    name="cycle",
+    factory=lambda symbol="BTC": CycleFeatures(symbol=symbol),
+    requires_symbol=True,
+    sub_key_splitter=_cycle_sub_key_splitter,
+)

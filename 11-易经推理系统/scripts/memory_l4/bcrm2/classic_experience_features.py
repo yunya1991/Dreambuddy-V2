@@ -518,3 +518,9 @@ class ClassicExperienceFeatures:
             "elder_ray": "Elder-ray - 多空力量透视",
             "triple_screen": "三屏系统 - 三重滤网",
         }
+
+
+# ===== FeatureRegistry 注册 =====
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+
+FeatureRegistry.register(name="classic_exp", factory=ClassicExperienceFeatures)

@@ -505,3 +505,13 @@ class WDHFeatures:
             "hourly_timing": "小时线入场时机 - 短期突破/动量",
             "qualitative_trigger": "质变触发信号 - 量变→质变合成",
         }
+
+
+# ===== FeatureRegistry 注册 =====
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry, _wdh_sub_key_splitter
+
+FeatureRegistry.register(
+    name="wdh",
+    factory=WDHFeatures,
+    sub_key_splitter=_wdh_sub_key_splitter,
+)

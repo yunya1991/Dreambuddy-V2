@@ -368,3 +368,13 @@ def apply_mcap_feature_config(
     }
 
     return params
+
+
+# ===== FeatureRegistry 注册 =====
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+
+FeatureRegistry.register(
+    name="market_cap",
+    factory=MarketCapClassifier,
+    requires_symbol=False,  # 构造函数无参，symbol 在 get_mcap_features(symbol, df) 中传入
+)

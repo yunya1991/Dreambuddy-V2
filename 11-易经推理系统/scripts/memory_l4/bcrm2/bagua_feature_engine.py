@@ -741,3 +741,14 @@ class BaguaFeatureEngine:
     def gua_feature_count(self) -> Dict[str, int]:
         """各卦特征数量统计"""
         return {gua: len(names) for gua, names in self.feature_names_by_gua.items()}
+
+
+# ===== FeatureRegistry 注册 =====
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+
+FeatureRegistry.register(
+    name="bagua",
+    factory=BaguaFeatureEngine,
+    participates_in_gua=True,
+    uses_instance_gua_map=True,
+)

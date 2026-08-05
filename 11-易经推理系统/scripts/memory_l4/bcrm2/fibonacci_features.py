@@ -439,3 +439,9 @@ class FibonacciFeatures:
             "fib_vol_norm": "波动率归一化 - ATR标尺 (跨币种可比)",
             "fib_time": "斐波那契时间 - 变盘时间窗口",
         }
+
+
+# ===== FeatureRegistry 注册 =====
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+
+FeatureRegistry.register(name="fibonacci", factory=FibonacciFeatures)

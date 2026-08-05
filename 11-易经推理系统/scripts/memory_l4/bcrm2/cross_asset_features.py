@@ -247,3 +247,24 @@ def _feature_names() -> List[str]:
         "ca_ref_ret_lag1", "ca_ref_ret_lag2", "ca_ref_ret_lag3",
         "ca_ref_big_move", "ca_ref_big_move_dir",
     ]
+
+
+# ===== FeatureRegistry 注册 =====
+class CrossAssetFeatureWrapper:
+    """将 compute_cross_asset_features 函数包装为类，适配 FeatureRegistry"""
+
+    def __init__(self):
+        pass
+
+    def compute(self, df: pd.DataFrame, ref_df: pd.DataFrame,
+                symbol: str = "ETH", ref_symbol: str = "BTC") -> pd.DataFrame:
+        return compute_cross_asset_features(df, ref_df, symbol=symbol, ref_symbol=ref_symbol)
+
+
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+
+FeatureRegistry.register(
+    name="cross_asset",
+    factory=CrossAssetFeatureWrapper,
+    requires_ref_df=True,
+)

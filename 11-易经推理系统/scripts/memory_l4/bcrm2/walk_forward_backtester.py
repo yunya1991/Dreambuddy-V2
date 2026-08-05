@@ -179,7 +179,7 @@ class WalkForwardBacktester:
         max_hold_bars: int = 60,
         atr_period: int = 14,
         fee_rate: float = 0.0004,  # 0.04% 手续费
-        slippage_rate: float = 0.0002,  # 0.02% 滑点
+        slippage_rate: float = 0.001,  # 0.1% 滑点（P0修正：与文档声称一致）
         feature_selection: bool = False,
         fs_imp_threshold: float = 0.01,
         fs_corr_threshold: float = 0.85,
@@ -317,163 +317,63 @@ class WalkForwardBacktester:
             merrill_phase = cfg.merrill_phase
             merrill_cross = cfg.merrill_cross
 
-        # 1. 计算全部特征
+        # 1. 计算全部特征（统一走 FeatureRegistry）
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+        # 触发所有模块注册
+        import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa: F401
+        import scripts.memory_l4.bcrm2.classic_experience_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.fibonacci_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.pivot_point_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.wdh_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
+        import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
+
+        registry_config = {
+            "wdh_weekly_only": wdh_weekly_only,
+            "cycle_halving": cycle_halving,
+            "cycle_ath": cycle_ath,
+            "cycle_inventory": cycle_inventory,
+            "cycle_long_term": cycle_long_term,
+        }
+
+        enabled = ["bagua", "classic_exp", "fibonacci"]
+        if enable_pivot: enabled.append("pivot_point")
+        if enable_rsi: enabled.append("rsi_sentiment")
+        if enable_wdh: enabled.append("wdh")
+        if enable_cycle: enabled.append("cycle")
+        if enable_mcap: enabled.append("market_cap")
+        if enable_merrill: enabled.append("merrill_clock")
+        if ref_df is not None: enabled.append("cross_asset")
+
         if verbose:
-            print(f"[{self.symbol}] 计算八卦特征...")
-        features = self.feature_engine.compute(df)
+            print(f"[{self.symbol}] 计算 {len(enabled)} 个特征模块...")
+
+        features, feature_names_by_gua = FeatureRegistry.compute_all(
+            df=df,
+            ref_df=ref_df,
+            symbol=self.symbol,
+            config=registry_config,
+            enabled=enabled,
+            verbose=verbose,
+        )
         feature_names = list(features.columns)
-        feature_names_by_gua = dict(self.feature_engine.feature_names_by_gua)
-
-        # 1b. 经典交易经验特征 (经验常量)
-        if verbose:
-            print(f"[{self.symbol}] 计算经典交易经验特征 (牛熊线+Elder-ray+三屏)...")
-        classic_feats = self.classic_features.compute(df)
-        features = pd.concat([features, classic_feats], axis=1)
-        feature_names = list(features.columns)
-        feature_names_by_gua["classic_exp"] = list(classic_feats.columns)
-        if verbose:
-            print(f"  经典经验特征: {len(classic_feats.columns)}个")
-
-        # 1c. 斐波那契特征 (数学确定性比例)
-        if verbose:
-            print(f"[{self.symbol}] 计算斐波那契特征 (回撤+扩展+波动率归一化+时间周期)...")
-        fib_feats = self.fib_features.compute(df)
-        features = pd.concat([features, fib_feats], axis=1)
-        feature_names = list(features.columns)
-        feature_names_by_gua["fibonacci"] = list(fib_feats.columns)
-        if verbose:
-            print(f"  斐波那契特征: {len(fib_feats.columns)}个")
-
-        # 1d. 枢纽点特征 (数学确定性的支撑/阻力位)
-        if enable_pivot:
-            if verbose:
-                print(f"[{self.symbol}] 计算枢纽点特征 (Standard+Fibonacci+Camarilla)...")
-            pp_feats = self.pivot_features.compute(df)
-            features = pd.concat([features, pp_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["pivot_point"] = list(pp_feats.columns)
-            if verbose:
-                print(f"  枢纽点特征: {len(pp_feats.columns)}个")
-
-        # 1e. RSI情绪压力特征 (自适应超买超卖+买卖压力)
-        if enable_rsi:
-            if verbose:
-                print(f"[{self.symbol}] 计算RSI情绪压力特征 (自适应阈值+背离+买卖压力)...")
-            rsi_feats = self.rsi_features.compute(df)
-            features = pd.concat([features, rsi_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["rsi_sentiment"] = list(rsi_feats.columns)
-            if verbose:
-                print(f"  RSI情绪特征: {len(rsi_feats.columns)}个")
-
-        # 1f. 周/日/时三屏 + 量变积累特征 (量变引起质变理论)
-        if enable_wdh:
-            if verbose:
-                if wdh_weekly_only:
-                    print(f"[{self.symbol}] 计算周线量变积累特征 (仅周线层)...")
-                else:
-                    print(f"[{self.symbol}] 计算周/日/时三屏+量变积累特征 (量变→质变)...")
-            wdh_feats = self.wdh_features.compute(df, weekly_only=wdh_weekly_only)
-            features = pd.concat([features, wdh_feats], axis=1)
-            feature_names = list(features.columns)
-            # 按子类注册 (便于卦象映射器跳过非八卦维度)
-            feature_names_by_gua["wdh_weekly_accum"] = [
-                c for c in wdh_feats.columns if c.startswith("wa_")
-            ]
-            if not wdh_weekly_only:
-                feature_names_by_gua["wdh_daily_confirm"] = [
-                    c for c in wdh_feats.columns if c.startswith("dc_")
-                ]
-                feature_names_by_gua["wdh_hourly_timing"] = [
-                    c for c in wdh_feats.columns if c.startswith("ht_")
-                ]
-                feature_names_by_gua["wdh_qual_trigger"] = [
-                    c for c in wdh_feats.columns if c.startswith("qt_")
-                ]
-            if verbose:
-                label = "周线量变积累" if wdh_weekly_only else "周/日/时+量变质变"
-                print(f"  {label}特征: {len(wdh_feats.columns)}个")
-
-        # 1g. 库存周期特征 (4年基钦周期 + 减半周期 + 长期趋势)
-        if enable_cycle:
-            if verbose:
-                print(f"[{self.symbol}] 计算库存周期特征 (基钦周期+减半+牛熊线)...")
-            cycle_feats = self.cycle_features.compute(
-                df,
-                enable_halving=cycle_halving,
-                enable_ath=cycle_ath,
-                enable_inventory=cycle_inventory,
-                enable_long_term=cycle_long_term,
-            )
-            features = pd.concat([features, cycle_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["cycle_halving"] = [
-                c for c in cycle_feats.columns if c.startswith("hc_")
-            ]
-            feature_names_by_gua["cycle_ath"] = [
-                c for c in cycle_feats.columns if c.startswith("ath_")
-            ]
-            feature_names_by_gua["cycle_inventory"] = [
-                c for c in cycle_feats.columns if c.startswith("ic_")
-            ]
-            feature_names_by_gua["cycle_long_term"] = [
-                c for c in cycle_feats.columns if c.startswith("lt_")
-            ]
-            if verbose:
-                print(f"  库存周期特征: {len(cycle_feats.columns)}个")
-
-        # 1h. 市值特征 (将市值等级作为特征输入)
-        if enable_mcap:
-            if verbose:
-                print(f"[{self.symbol}] 计算市值特征 (等级+波动率归一化)...")
-            mcap_feats = self.mcap_classifier.get_mcap_features(self.symbol, df)
-            features = pd.concat([features, mcap_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["market_cap"] = list(mcap_feats.columns)
-            if verbose:
-                print(f"  市值特征: {len(mcap_feats.columns)}个")
-
-        # 1h2. 美林时钟周期特征 (跨资产资金流转)
-        if enable_merrill:
-            if verbose:
-                print(f"[{self.symbol}] 计算美林时钟特征 (BTC.D×库存周期+共振+跨资产动量+流动性)...")
-            from .merrill_clock_features import MerrillClockFeatures
-            cycle_phase_data = cycle_feats if enable_cycle else None
-            merrill_feats = self.merrill_features.compute(
-                df,
-                ref_df=ref_df,
-                enable_btcd=merrill_capital_flow,
-                enable_inventory=merrill_growth,
-                enable_resonance=merrill_inflation,
-                enable_cross_asset_momentum=True,
-                enable_liquidity=True,
-                enable_phase=merrill_phase,
-                enable_cross=merrill_cross,
-                cycle_phase=cycle_phase_data,
-            )
-            features = pd.concat([features, merrill_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["merrill_clock"] = list(merrill_feats.columns)
-            if verbose:
-                print(f"  美林时钟特征: {len(merrill_feats.columns)}个")
-
-        # 1i. 跨资产特征 (如果有参考资产)
-        if ref_df is not None and len(ref_df) > 200:
-            if verbose:
-                print(f"[{self.symbol}] 计算跨资产特征 (ref=BTC)...")
-            ca_feats = compute_cross_asset_features(df, ref_df)
-            features = pd.concat([features, ca_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["cross_asset"] = list(ca_feats.columns)
-            if verbose:
-                print(f"  跨资产特征: {len(ca_feats.columns)}个")
 
         if verbose:
             print(f"  特征总数: {len(feature_names)}")
-
-        if verbose:
-            for gua, cnt in {**{g: len(f) for g, f in feature_names_by_gua.items()}}.items():
+            for gua, cnt in {g: len(f) for g, f in feature_names_by_gua.items()}.items():
                 print(f"    {gua}: {cnt}个特征")
+
+        # 保存 cycle_feats 给 L2 MetaLabeling 用
+        cycle_feats = None
+        if enable_cycle:
+            cycle_cols = []
+            for key in ["cycle_halving", "cycle_ath", "cycle_inventory", "cycle_long_term"]:
+                cycle_cols.extend(feature_names_by_gua.get(key, []))
+            if cycle_cols:
+                cycle_feats = features[cycle_cols]
 
         # 2. 计算三重障碍标签
         if verbose:
@@ -843,9 +743,9 @@ class WalkForwardBacktester:
                                 position["yijing_veto_count"] = position.get("yijing_veto_count", 0) + 1
 
                 if exit_price is not None:
-                    # 计算手续费 + 滑点
+                    # 计算手续费 + 滑点（P0修正：滑点=成交额×滑点率，双边）
                     fee = entry_price * self.fee_rate + exit_price * self.fee_rate
-                    slippage = abs(exit_price - entry_price) * self.slippage_rate
+                    slippage = (entry_price + exit_price) * self.slippage_rate
                     pnl_pct = ((exit_price - entry_price) * direction - fee - slippage) / entry_price
 
                     pf = position.get("position_factor", 1.0)
@@ -907,9 +807,7 @@ class WalkForwardBacktester:
                     if pentagon_result.should_fail_closed:
                         continue
 
-                    # 反转预警时不开新仓
-                    if pentagon_reversal:
-                        continue
+                    # v2优化：反转预警改为降仓不阻断（position_factor已在verifier中设置）
 
                 # 市态切换: 根据市态调整参数
                 effective_conf_thresh = self.conf_threshold
@@ -1017,6 +915,7 @@ class WalkForwardBacktester:
                     "pentagon_reversal": pentagon_reversal,
                     "pentagon_early_exit": pentagon_early_exit,
                     "pentagon_pos_factor": pentagon_pos_factor,
+                    "pentagon_result": pentagon_result,  # 保存完整结果用于注意力反馈
                 }
 
         # 如果最后还有持仓，强制平仓
@@ -1026,7 +925,7 @@ class WalkForwardBacktester:
             direction = position["direction"]
             hold_bars = (test_end - 1) - position["entry_bar"]
             fee = position["entry_price"] * self.fee_rate + exit_price * self.fee_rate
-            slippage = abs(exit_price - position["entry_price"]) * self.slippage_rate
+            slippage = (position["entry_price"] + exit_price) * self.slippage_rate
             pnl_pct = ((exit_price - position["entry_price"]) * direction - fee - slippage) / position["entry_price"]
 
             # 仓位系数只记录
@@ -1056,6 +955,22 @@ class WalkForwardBacktester:
                 pentagon_position_factor=position.get("pentagon_pos_factor", 1.0),
             )
             trades.append(trade)
+
+            # ── 注意力反馈：记录各源方向与实际方向 ──
+            if self._triangle_verifier is not None and hasattr(self._triangle_verifier, 'record_outcome'):
+                pentagon_pos = position.get("pentagon_result")
+                if pentagon_pos is not None:
+                    actual_dir = 1 if pnl_pct > 0 else (-1 if pnl_pct < 0 else 0)
+                    self._triangle_verifier.record_outcome(
+                        source_directions={
+                            "bcrm2": pentagon_pos.bcrm2_direction,
+                            "force": pentagon_pos.force_direction,
+                            "a0": pentagon_pos.a0_direction,
+                            "ising": pentagon_pos.ising_direction,
+                            "tda": pentagon_pos.tda_direction,
+                        },
+                        actual_direction=actual_dir,
+                    )
 
         return trades
 
@@ -1273,9 +1188,18 @@ class WalkForwardBacktester:
         losses = abs(sum(p for p in pnls if p < 0))
         result.profit_factor = wins / losses if losses > 0 else float('inf')
 
-        # 夏普比率 (假设无风险利率=0)
-        if len(pnls) > 1 and np.std(pnls) > 0:
-            result.sharpe_ratio = np.mean(pnls) / np.std(pnls) * np.sqrt(252)  # 年化近似
+        # 夏普比率（P0修正：用日收益序列年化，sqrt(252)）
+        # 按 exit_bar // 24 聚合为"日"（假设 1H K 线，24 根=1天）
+        if len(trades) > 0:
+            daily_returns = {}
+            for t in trades:
+                day_key = t.exit_bar // 24  # 1H bar → 日分组
+                daily_returns[day_key] = daily_returns.get(day_key, 0.0) + t.pnl_pct
+            daily_pnls = list(daily_returns.values())
+            if len(daily_pnls) > 1 and np.std(daily_pnls) > 0:
+                result.sharpe_ratio = np.mean(daily_pnls) / np.std(daily_pnls) * np.sqrt(252)
+            else:
+                result.sharpe_ratio = 0.0
         else:
             result.sharpe_ratio = 0.0
 

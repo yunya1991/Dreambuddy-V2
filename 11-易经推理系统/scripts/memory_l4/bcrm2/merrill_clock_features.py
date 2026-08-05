@@ -620,3 +620,15 @@ class MerrillClockFeatures:
     @property
     def n_features(self) -> int:
         return 55
+
+
+# ===== FeatureRegistry 注册 =====
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+
+FeatureRegistry.register(
+    name="merrill_clock",
+    factory=lambda symbol="BTC": MerrillClockFeatures(symbol=symbol),
+    requires_symbol=True,
+    requires_ref_df=True,
+    requires_cycle_phase=True,
+)

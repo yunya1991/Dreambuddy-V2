@@ -123,7 +123,24 @@ class BCRM2Adapter:
             logger.info(f"[BCRM2] 模型已缓存: {model_path}")
         except Exception as e:
             logger.warning(f"[BCRM2] 保存模型缓存失败: {e}")
-    
+
+    def _fetch_ref_df(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
+        """获取 BTC 参考数据用于跨资产特征和 L2 MetaLabeling"""
+        if self.symbol.upper() in ("BTC", "BTC-USDT-SWAP"):
+            return None  # BTC 自身不需要 ref_df
+
+        try:
+            from scripts.memory_l4.bcrm2.data_fetcher import get_klines
+            # 获取与 df 时间范围对齐的 BTC K线
+            ref_df = get_klines("BTC", self.timeframe, max_bars=max(len(df) + 200, 5000))
+            if ref_df is not None and len(ref_df) > 200:
+                # 对齐索引到 df
+                ref_df = ref_df.reindex(df.index, method='ffill')
+                return ref_df
+        except Exception as e:
+            logger.warning(f"[BCRM2] 获取 BTC ref_df 失败: {e}")
+        return None
+
     def train(self, df: pd.DataFrame, force_retrain: bool = False) -> bool:
         """
         训练 BCRM 2.0 模型。
@@ -170,14 +187,20 @@ class BCRM2Adapter:
             return True
         
         try:
-            from scripts.memory_l4.bcrm2.bagua_feature_engine import BaguaFeatureEngine
+            from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
             from scripts.memory_l4.bcrm2.dialectical_ml_engine import DialecticalMLEngine
-            from scripts.memory_l4.bcrm2.classic_experience_features import ClassicExperienceFeatures
-            from scripts.memory_l4.bcrm2.fibonacci_features import FibonacciFeatures
-            from scripts.memory_l4.bcrm2.pivot_point_features import PivotPointFeatures
-            from scripts.memory_l4.bcrm2.rsi_sentiment_features import RSISentimentFeatures
-            from scripts.memory_l4.bcrm2.wdh_features import WDHFeatures
-            
+            # 触发所有模块注册
+            import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa: F401
+            import scripts.memory_l4.bcrm2.classic_experience_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.fibonacci_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.pivot_point_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.wdh_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
+            import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
+
             # 数据清洗: 填充NaN，确保特征计算鲁棒
             df = df.copy()
             df = df.ffill().bfill()
@@ -185,44 +208,26 @@ class BCRM2Adapter:
                 if col in df.columns:
                     df[col] = df[col].replace([np.inf, -np.inf], np.nan).ffill().bfill()
                     df[col] = df[col].values.copy()
-            
+
             # 计算特征
             logger.info(f"[BCRM2] 计算特征 ({self.symbol} {self.timeframe})...")
-            
-            feature_engine = BaguaFeatureEngine()
-            features = feature_engine.compute(df)
+
+            # 获取 BTC 参考数据
+            ref_df = self._fetch_ref_df(df)
+
+            features, feature_names_by_gua = FeatureRegistry.compute_all(
+                df=df,
+                ref_df=ref_df,
+                symbol=self.symbol,
+                verbose=True,
+            )
             feature_names = list(features.columns)
-            feature_names_by_gua = dict(feature_engine.feature_names_by_gua)
-            
-            # 经典交易经验特征
-            classic_feats = ClassicExperienceFeatures().compute(df)
-            features = pd.concat([features, classic_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["classic_exp"] = list(classic_feats.columns)
-            
-            # 斐波那契特征
-            fib_feats = FibonacciFeatures().compute(df)
-            features = pd.concat([features, fib_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["fibonacci"] = list(fib_feats.columns)
-            
-            # 枢纽点特征
-            pivot_feats = PivotPointFeatures().compute(df)
-            features = pd.concat([features, pivot_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["pivot_point"] = list(pivot_feats.columns)
-            
-            # RSI情绪特征
-            rsi_feats = RSISentimentFeatures().compute(df)
-            features = pd.concat([features, rsi_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["rsi_sentiment"] = list(rsi_feats.columns)
-            
-            # WDH三屏特征
-            wdh_feats = WDHFeatures().compute(df)
-            features = pd.concat([features, wdh_feats], axis=1)
-            feature_names = list(features.columns)
-            feature_names_by_gua["wdh"] = list(wdh_feats.columns)
+
+            # 保存 cycle_feats 给 L2 用
+            cycle_cols = []
+            for key in ["cycle_halving", "cycle_ath", "cycle_inventory", "cycle_long_term"]:
+                cycle_cols.extend(feature_names_by_gua.get(key, []))
+            cycle_feats = features[cycle_cols] if cycle_cols else None
             
             # 生成标签（未来N根K线的方向）
             logger.info(f"[BCRM2] 生成标签...")
@@ -330,7 +335,12 @@ class BCRM2Adapter:
             # Meta-Labeling
             logger.info(f"[BCRM2] 训练L2 Meta-Labeling模型...")
             try:
-                engine.train_l2(X, y, df=df_valid)
+                engine.train_l2(
+                    X, y,
+                    df=df_valid,
+                    ref_df=ref_df.iloc[valid_idx][nan_mask] if ref_df is not None else None,
+                    cycle_phase=cycle_feats.iloc[valid_idx][nan_mask] if cycle_feats is not None else None,
+                )
             except Exception as e:
                 logger.warning(f"[BCRM2] L2训练失败，跳过: {e}")
             
@@ -376,12 +386,18 @@ class BCRM2Adapter:
                 return self._fail_closed_result("模型未就绪")
         
         try:
-            from scripts.memory_l4.bcrm2.bagua_feature_engine import BaguaFeatureEngine
-            from scripts.memory_l4.bcrm2.classic_experience_features import ClassicExperienceFeatures
-            from scripts.memory_l4.bcrm2.fibonacci_features import FibonacciFeatures
-            from scripts.memory_l4.bcrm2.pivot_point_features import PivotPointFeatures
-            from scripts.memory_l4.bcrm2.rsi_sentiment_features import RSISentimentFeatures
-            from scripts.memory_l4.bcrm2.wdh_features import WDHFeatures
+            from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+            # 触发所有模块注册
+            import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa: F401
+            import scripts.memory_l4.bcrm2.classic_experience_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.fibonacci_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.pivot_point_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.wdh_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
+            import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
             
             # 数据清洗: 填充NaN，确保特征计算鲁棒
             df = df.copy()
@@ -391,24 +407,13 @@ class BCRM2Adapter:
                     df[col] = df[col].replace([np.inf, -np.inf], np.nan).ffill().bfill()
                     df[col] = df[col].values.copy()
             
-            # 计算特征（只用需要的部分）
-            feature_engine = BaguaFeatureEngine()
-            features = feature_engine.compute(df)
-            
-            classic_feats = ClassicExperienceFeatures().compute(df)
-            features = pd.concat([features, classic_feats], axis=1)
-            
-            fib_feats = FibonacciFeatures().compute(df)
-            features = pd.concat([features, fib_feats], axis=1)
-            
-            pivot_feats = PivotPointFeatures().compute(df)
-            features = pd.concat([features, pivot_feats], axis=1)
-            
-            rsi_feats = RSISentimentFeatures().compute(df)
-            features = pd.concat([features, rsi_feats], axis=1)
-            
-            wdh_feats = WDHFeatures().compute(df)
-            features = pd.concat([features, wdh_feats], axis=1)
+            # 计算特征
+            ref_df = self._fetch_ref_df(df)
+            features, feature_names_by_gua = FeatureRegistry.compute_all(
+                df=df,
+                ref_df=ref_df,
+                symbol=self.symbol,
+            )
             
             # 确保特征顺序一致
             # 处理训练时存在但推理时缺失的特征

@@ -346,3 +346,9 @@ class RSISentimentFeatures:
             "rsi_pressure": "买卖压力量化 (累积/速度/极值)",
             "rsi_regime": "RSI区间分析 (趋势/震荡模式)",
         }
+
+
+# ===== FeatureRegistry 注册 =====
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+
+FeatureRegistry.register(name="rsi_sentiment", factory=RSISentimentFeatures)
