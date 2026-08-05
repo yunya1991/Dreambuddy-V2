@@ -749,37 +749,89 @@ class CognitiveDaemon:
             # P2-7: 空闲反刍检测（DMN 默认模式网络）
             idle = time.time() - self._last_activity_ts
             today = datetime.now().strftime("%Y-%m-%d")
-            if (idle >= self._rumination_idle_seconds
-                    and self._last_rumination_date != today):
+            idle_threshold = self._rumination_idle_seconds
+            already_ruminate_today = (self._last_rumination_date == today)
+
+            # 详细日志：每次 idle 检查的状态
+            if self.verbose:
+                idle_min = idle / 60.0
+                threshold_min = idle_threshold / 60.0
+                remaining_min = max(0.0, (idle_threshold - idle) / 60.0)
+                last_run = self._last_rumination_date or "从未"
+                if idle >= idle_threshold and not already_ruminate_today:
+                    trigger_reason = "✅ 触发（idle 达标 + 今日未执行）"
+                elif idle >= idle_threshold and already_ruminate_today:
+                    trigger_reason = f"⏸️ 跳过（今日已执行: {last_run}）"
+                else:
+                    trigger_reason = f"⏳ 等待（还需空闲 {remaining_min:.1f}min）"
+                print(f"[Daemon][反刍检查] idle={idle_min:.1f}min/{threshold_min:.0f}min | "
+                      f"今日已执行={already_ruminate_today} | {trigger_reason}",
+                      file=sys.stderr)
+
+            if (idle >= idle_threshold
+                    and not already_ruminate_today):
                 self._ruminate()
 
     def _ruminate(self):
         """P2-7: 静息态反刍——从近期 episode 提取模式，记录为 C 级假设记忆"""
+        if self.verbose:
+            print(f"[Daemon][反刍开始] 启动静息态反刍流程...", file=sys.stderr)
+        t_start = time.time()
         try:
             from rumination_engine import RuminationEngine
             from cognitive_loop_entry import get_cle
             engine = RuminationEngine()
             # episodes_dir: 多路径搜索，避免跨包硬编码
             ep_dir = self._find_episodes_dir()
+            if self.verbose:
+                print(f"[Daemon][反刍路径] episodes_dir={ep_dir}", file=sys.stderr)
             findings = engine.ruminate(ep_dir)
+            t_ruminate = time.time() - t_start
+            if self.verbose:
+                print(f"[Daemon][反刍提取] 耗时={t_ruminate:.2f}s | 产出={len(findings)}条模式",
+                      file=sys.stderr)
             cle = get_cle()
+            recorded = 0
             for f in findings:
-                cle.record(
-                    content=f.finding_text,
-                    quality_level="C",
-                    confidence=0.3,
-                    tags=["rumination", "pattern", f.pattern_key.split("|")[0]],
-                    source="rumination",
-                )
+                try:
+                    cle.record(
+                        content=f.finding_text,
+                        quality_level="C",
+                        confidence=0.3,
+                        tags=["rumination", "pattern", f.pattern_key.split("|")[0]],
+                        source="rumination",
+                    )
+                    recorded += 1
+                except Exception as rec_err:
+                    if self.verbose:
+                        print(f"[Daemon][反刍记录] 单条写入失败: {rec_err}",
+                              file=sys.stderr)
             self._last_rumination_date = datetime.now().strftime("%Y-%m-%d")
             self._last_activity_ts = time.time()
-            if self.verbose and findings:
-                print(f"[Daemon] 反刍产出 {len(findings)} 条模式记忆", file=sys.stderr)
-            elif self.verbose:
-                print(f"[Daemon] 反刍完成，无新模式 (ep_dir={ep_dir})", file=sys.stderr)
-        except Exception as e:
+            t_total = time.time() - t_start
             if self.verbose:
-                print(f"[Daemon] 反刍失败: {e}", file=sys.stderr)
+                if findings:
+                    print(f"[Daemon][反刍完成] 总耗时={t_total:.2f}s | "
+                          f"产出={len(findings)}条 | 写入成功={recorded}条 | "
+                          f"日期标记={self._last_rumination_date}",
+                          file=sys.stderr)
+                    for i, f in enumerate(findings[:3]):
+                        print(f"[Daemon][反刍样本 {i+1}] pattern={f.pattern_key} | "
+                              f"observed={getattr(f, 'observed_rate', '?')} | "
+                              f"baseline={getattr(f, 'baseline_rate', '?')} | "
+                              f"sample_n={getattr(f, 'sample_n', '?')}",
+                              file=sys.stderr)
+                else:
+                    print(f"[Daemon][反刍完成] 总耗时={t_total:.2f}s | 无新模式 | "
+                          f"ep_dir={ep_dir} | 日期标记={self._last_rumination_date}",
+                          file=sys.stderr)
+        except Exception as e:
+            t_total = time.time() - t_start
+            if self.verbose:
+                import traceback
+                print(f"[Daemon][反刍失败] 耗时={t_total:.2f}s | 错误: {e}",
+                      file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
             self._last_activity_ts = time.time()  # 失败也重置，避免连续重试
 
     def _find_episodes_dir(self) -> str:
