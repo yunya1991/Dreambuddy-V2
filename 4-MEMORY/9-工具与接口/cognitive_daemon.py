@@ -34,6 +34,7 @@ import subprocess
 import sys
 import time
 import fnmatch
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -491,11 +492,62 @@ def _extract_rich_tags(changes: Dict[str, str]) -> List[str]:
     return tags
 
 
+def salience_score(changes: Dict[str, str]) -> float:
+    """P1-2: 突显网络触发器——计算文件变更的显著性分数。
+
+    对齐 Menon 2011 三大脑网络：SN 检测显著事件触发 DMN↔CEN 切换。
+    高显著→即时触发 recall（SN→CEN）；低显著→累积批量触发（DMN 留存）。
+
+    权重表:
+      风控文件（13-通用风控模块/a7_gate/熔断）= 1.0
+      交易核心（polling_trader/bcrm/exit_system）= 0.8
+      记忆系统（4-MEMORY/）= 0.6
+      文档（0-系统文档管理 .md）= 0.3
+      配置（.json/.yaml）= 0.2
+      其余 = 0.4
+
+    Returns:
+        [0.0, 1.0] 的显著性分数
+    """
+    if not changes:
+        return 0.0
+
+    max_score = 0.0
+    for filepath in changes.keys():
+        f = filepath.lower()
+        score = 0.0
+
+        # 风控文件 = 1.0
+        if "13-通用风控模块" in f or "a7_gate" in f or "熔断" in f or "circuit_breaker" in f:
+            score = 1.0
+        # 交易核心 = 0.8
+        elif "polling_trader" in f or "bcrm" in f or "exit_system" in f or "walk_forward" in f:
+            score = 0.8
+        # 记忆系统 = 0.6
+        elif "4-memory" in f or "cognitive" in f or "superpowers" in f:
+            score = 0.6
+        # 文档 = 0.3
+        elif "0-系统文档管理" in f or (f.endswith(".md") and "2-knowledge" not in f):
+            score = 0.3
+        # 配置 = 0.2
+        elif f.endswith(".json") or f.endswith(".yaml") or f.endswith(".yml"):
+            score = 0.2
+        # 其余 = 0.4
+        else:
+            score = 0.4
+
+        if score > max_score:
+            max_score = score
+
+    return max_score
+
+
 # 交易相关顶层目录（与cognitive_session._TRADING_DIRS保持一致，循环导入时本地定义）
 _TRADING_DIRS_FROM_SESSION = frozenset([
     "10-经典指标系统", "11-易经推理系统", "12-三屏趋势系统",
     "13-通用风控模块", "14-V15经典马丁策略", "15-监控告警系统",
     "16-调控系统", "6-TRADING",
+    "experiments",  # P0: experiments/ab-trading/ 含 A 系列节点代码和回测
 ])
 
 
@@ -632,6 +684,10 @@ class CognitiveDaemon:
         self.pending_changes: Dict[str, str] = {}
         self._running = False
         self._pid_file = _SCRIPT_DIR / ".cognitive_daemon.pid"
+        # P2-7: 静息态反刍（DMN 默认模式网络）
+        self._last_activity_ts = time.time()
+        self._last_rumination_date = None
+        self._rumination_idle_seconds = 1800  # 30 分钟
 
     def start(self):
         """启动daemon主循环"""
@@ -682,10 +738,47 @@ class CognitiveDaemon:
             if self.debounce_timer.trigger():
                 self._flush_changes()
 
+            # P2-7: 有变更更新活动时间
+            self._last_activity_ts = time.time()
+
         else:
             # 无变更，检查防抖窗口是否过期
             if self.pending_changes and self.debounce_timer.trigger():
                 self._flush_changes()
+
+            # P2-7: 空闲反刍检测（DMN 默认模式网络）
+            idle = time.time() - self._last_activity_ts
+            today = datetime.now().strftime("%Y-%m-%d")
+            if (idle >= self._rumination_idle_seconds
+                    and self._last_rumination_date != today):
+                self._ruminate()
+
+    def _ruminate(self):
+        """P2-7: 静息态反刍——从近期 episode 提取模式，记录为 C 级假设记忆"""
+        try:
+            from rumination_engine import RuminationEngine
+            from cognitive_loop_entry import get_cle
+            engine = RuminationEngine()
+            # episodes_dir: 项目根/.workbuddy/episodes（避免跨包 import paths）
+            ep_dir = str(self.watch_dir / ".workbuddy" / "episodes")
+            findings = engine.ruminate(ep_dir)
+            cle = get_cle()
+            for f in findings:
+                cle.record(
+                    content=f.finding_text,
+                    quality_level="C",
+                    confidence=0.3,
+                    tags=["rumination", "pattern", f.pattern_key.split("|")[0]],
+                    source="rumination",
+                )
+            self._last_rumination_date = datetime.now().strftime("%Y-%m-%d")
+            self._last_activity_ts = time.time()
+            if self.verbose and findings:
+                print(f"[Daemon] 反刍产出 {len(findings)} 条模式记忆", file=sys.stderr)
+        except Exception as e:
+            if self.verbose:
+                print(f"[Daemon] 反刍失败: {e}", file=sys.stderr)
+            self._last_activity_ts = time.time()  # 失败也重置，避免连续重试
 
     def on_new_session_created(self, session_id, initial_msg, working_memory=None):
         """设计节 3.1 路径 C：新会话创建时后台预热 process_block。与路径 B 去重。"""
