@@ -231,11 +231,14 @@ def test_mcp_tool_call_recall():
         },
     }
 
-    with patch("cognitive_mcp_server.CognitiveLoopEntry") as MockCLE:
-        mock_instance = MockCLE.return_value
+    # 修复：直接 mock _get_cle 函数（handler 用 _get_cle() 单例，不是 CognitiveLoopEntry 类）
+    with patch("cognitive_mcp_server._get_cle") as mock_get_cle:
+        mock_instance = MagicMock()
         mock_instance.recall.return_value = [
-            {"memory_id": "VM-001", "content": "贝叶斯经验", "quality_level": "B"}
+            {"id": "VM-001", "content": "贝叶斯经验", "quality_level": "B"}
         ]
+        mock_instance.working_memory = MagicMock()
+        mock_get_cle.return_value = mock_instance
 
         response = handle_jsonrpc(request)
 
@@ -256,9 +259,7 @@ def test_mcp_tool_call_recall():
 
 def test_mcp_tool_call_record():
     """协议层：tools/call record 写入新经验"""
-    from cognitive_mcp_server import handle_jsonrpc, _reset_cle
-
-    _reset_cle()  # 重置单例，确保mock生效
+    from cognitive_mcp_server import handle_jsonrpc
 
     request = {
         "jsonrpc": "2.0",
@@ -274,9 +275,11 @@ def test_mcp_tool_call_record():
         },
     }
 
-    with patch("cognitive_mcp_server.CognitiveLoopEntry") as MockCLE:
-        mock_instance = MockCLE.return_value
+    # 修复：直接 mock _get_cle 函数（handler 用 _get_cle() 单例）
+    with patch("cognitive_mcp_server._get_cle") as mock_get_cle:
+        mock_instance = MagicMock()
         mock_instance.record.return_value = "VM-NEW-001"
+        mock_get_cle.return_value = mock_instance
 
         response = handle_jsonrpc(request)
 
@@ -295,9 +298,7 @@ def test_mcp_tool_call_record():
 
 def test_mcp_tool_call_stats():
     """协议层：tools/call stats 返回统计信息"""
-    from cognitive_mcp_server import handle_jsonrpc, _reset_cle
-
-    _reset_cle()  # 重置单例，确保mock生效
+    from cognitive_mcp_server import handle_jsonrpc
 
     request = {
         "jsonrpc": "2.0",
@@ -306,16 +307,24 @@ def test_mcp_tool_call_stats():
         "params": {"name": "stats", "arguments": {}},
     }
 
-    with patch("cognitive_mcp_server.CognitiveLoopEntry") as MockCLE:
-        mock_instance = MockCLE.return_value
-        mock_instance.stats.return_value = {"total": 10, "by_quality": {"A": 2, "B": 8}}
+    # 修复：直接 mock _get_cle 函数（避免全局单例污染）
+    with patch("cognitive_mcp_server._get_cle") as mock_get_cle:
+        mock_instance = MagicMock()
+        # 真实 stats() 返回 {"memory": vm_stats, "distill": ..., "capacity": ...}
+        mock_instance.stats.return_value = {
+            "memory": {"total": 10, "by_quality": {"A": 2, "B": 8}},
+            "distill": {},
+            "capacity": {},
+        }
+        mock_get_cle.return_value = mock_instance
 
         response = handle_jsonrpc(request)
 
         assert "result" in response
         content_text = response["result"]["content"][0]["text"]
         stats = json.loads(content_text)
-        assert stats["total"] == 10, f"统计应返回total=10: {stats}"
+        # 真实结构：stats["memory"]["total"]，非 stats["total"]
+        assert stats["memory"]["total"] == 10, f"统计应返回 memory.total=10: {stats}"
 
         print("✅ test_mcp_tool_call_stats 通过")
         return True

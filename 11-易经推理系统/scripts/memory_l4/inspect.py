@@ -259,9 +259,8 @@ class PositionsPanel(BasePanel):
             if _env_coins:
                 coins = [c.strip() for c in _env_coins.split(",") if c.strip()]
             else:
-                coins = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "NEAR", "SUI", "APT",
-                         "DOT", "ATOM", "LTC", "LINK", "ARB", "OP", "UNI", "AAVE", "DOGE", "PEPE",
-                         "NVDA", "TSLA", "MSFT", "META", "GOOGL", "AAPL", "AMZN", "COIN", "XAU", "XAG"]
+                coins = ["UNI", "PUMP", "MU", "SKHYNIX", "HYPE", "ETH", "BTC", "SOL",
+                         "XAU", "XAG", "GOOGL", "NVDA", "AMZN", "OKB", "BNB"]
             for coin in coins:
                 inst_id = f"{coin}-USDT-SWAP"
                 result = client.get_positions(inst_id)

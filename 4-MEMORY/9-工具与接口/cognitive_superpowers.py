@@ -378,7 +378,15 @@ def resolve_unit_for_task(task_type: str) -> Optional[Dict[str, Any]]:
         "documentation": "MU-DEV",
         "knowledge-management": "MU-DEV",
         "configuration": "MU-DEV",
+        # P2: 交易类全部路由到 MU-TRD
         "trading-system": "MU-TRD",
+        "trading-data": "MU-TRD",
+        "strategy-state": "MU-TRD",
+        "risk-control": "MU-TRD",
+        "strategy-research": "MU-TRD",
+        "strategy-backtest": "MU-TRD",
+        "strategy-execution": "MU-TRD",
+        "strategy-governance": "MU-TRD",
         "general": "MU-DEV",
     }
     unit_id = mapping.get(task_type, "MU-DEV")
@@ -656,6 +664,67 @@ class ProcessTemplateRegistry:
             applied._quality_level_override = "B"
         elif applied.consecutive_positive >= 4 and current_level == "B":
             applied._quality_level_override = "A"
+
+    # P2: 交易专用 path_advantage — 用 P&L/夏普/回撤/胜率计算客观分
+    def update_path_advantage_from_trading(
+        self,
+        applied_id: str,
+        pnl_pct: float,
+        sharpe_ratio: float,
+        max_drawdown_pct: float,
+        win_rate: float,
+    ) -> None:
+        """
+        P2: 用交易客观指标计算 path_advantage 并触发贝叶斯升降级。
+
+        评分公式（归一化到 [-1, 1] 区间）：
+          pnl_score    = clip(pnl_pct / 10.0, -1, 1)        # ±10% P&L 即满分
+          sharpe_score = clip(sharpe_ratio / 2.0, -1, 1)     # ±2.0 夏普即满分
+          dd_score     = clip((15.0 - max_drawdown_pct) / 15.0, -1, 1)  # ≤15%回撤为正，>30%为负
+          win_score    = clip((win_rate - 0.5) / 0.3, -1, 1) # 50%胜率为中性，80%+为满分
+
+          path_advantage = pnl_score*0.4 + sharpe_score*0.3 + dd_score*0.2 + win_score*0.1
+
+        升降级规则复用 update_path_advantage（≥0.2 正向，≤-0.2 负向）。
+        """
+        applied = self.get_applied_template(applied_id)
+        if applied is None:
+            return
+
+        # 归一化各指标到 [-1, 1]
+        def _clip(v: float, lo: float = -1.0, hi: float = 1.0) -> float:
+            return max(lo, min(hi, v))
+
+        pnl_score = _clip(pnl_pct / 10.0)
+        sharpe_score = _clip(sharpe_ratio / 2.0)
+        dd_score = _clip((15.0 - max_drawdown_pct) / 15.0)
+        win_score = _clip((win_rate - 0.5) / 0.3)
+
+        path_advantage = (
+            pnl_score * 0.4
+            + sharpe_score * 0.3
+            + dd_score * 0.2
+            + win_score * 0.1
+        )
+
+        # 存入 outcome_metrics
+        applied.metadata["outcome_metrics"] = {
+            "pnl_pct": pnl_pct,
+            "sharpe_ratio": sharpe_ratio,
+            "max_drawdown_pct": max_drawdown_pct,
+            "win_rate": win_rate,
+            "computed_path_advantage": round(path_advantage, 4),
+            "component_scores": {
+                "pnl_score": round(pnl_score, 4),
+                "sharpe_score": round(sharpe_score, 4),
+                "dd_score": round(dd_score, 4),
+                "win_score": round(win_score, 4),
+            },
+            "timestamp": int(time.time()),
+        }
+
+        # 复用主升降级逻辑
+        self.update_path_advantage(applied_id, path_advantage, decision="trading_outcome")
 
     def retrieve_applied(self, context: str, top_k: int = 2) -> List[Dict[str, Any]]:
         """
@@ -1188,9 +1257,21 @@ class SkillLoader:
     SKILLS_ROOT = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/0-元记忆/superpowers/skills")
     INDEX_PATH = SKILLS_ROOT.parent / "skills-index.json"
 
+    # P1: 交易认知 Skill 双源加载
+    TRADING_SKILLS_ROOT = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/0-元记忆/trading-cognition/skills")
+    TRADING_INDEX_PATH = TRADING_SKILLS_ROOT.parent / "trading-skills-index.json"
+
+    # P1: 交易类 task_type 集合（用于 retrieve 路由）
+    _TRADING_TASK_TYPES = frozenset([
+        "trading-system", "trading-data", "strategy-state", "risk-control",
+        "strategy-research", "strategy-backtest", "strategy-execution", "strategy-governance",
+    ])
+
     def __init__(self):
         self.skills: Dict[str, SuperpowersSkill] = {}
+        self.trading_skills: Dict[str, SuperpowersSkill] = {}
         self.load_all()
+        self._load_trading_skills()
 
     # --- 格式红线（经验 95953）----
     def _validate_frontmatter_format(self, content: str, path: str) -> None:
@@ -1270,14 +1351,17 @@ class SkillLoader:
         return fm, hard_gates, checklists
 
     def _load_supplement(self, skill_dir: Path) -> Optional[str]:
-        """读同级 dreambuddy-supplement.md；不存在返回 None"""
-        sup_path = skill_dir / "dreambuddy-supplement.md"
-        if not sup_path.exists():
-            return None
-        try:
-            return sup_path.read_text(encoding="utf-8")
-        except OSError:
-            return None
+        """读同级 supplement 文件；不存在返回 None。
+        P1: 优先 dreambuddy-supplement.md（开发 Skill），回退 cognitive-supplement.md（交易 Skill）
+        """
+        for name in ("dreambuddy-supplement.md", "cognitive-supplement.md"):
+            sup_path = skill_dir / name
+            if sup_path.exists():
+                try:
+                    return sup_path.read_text(encoding="utf-8")
+                except OSError:
+                    pass
+        return None
 
     _EN_STOPWORDS_2 = {
         "on","in","to","it","an","of","or","at","by","do","is","be","as","so","we","if","go","no","up","my","he","me","hi","ok","ex","vs","al","eg","id","pm","am"
@@ -1440,6 +1524,47 @@ class SkillLoader:
         except Exception as e:
             print(f"[SkillLoader] WARNING: 写入 skills-index.json 失败: {e}")
 
+    # P1: 交易 Skill 加载（复用 _parse_skill_md / _load_supplement / _extract_trigger_keywords）
+    def _load_trading_skills(self) -> None:
+        """从 TRADING_SKILLS_ROOT 加载交易认知 Skill。异常隔离，失败不影响开发 Skill。"""
+        if not self.TRADING_SKILLS_ROOT.exists():
+            return
+
+        for skill_dir in sorted(self.TRADING_SKILLS_ROOT.iterdir()):
+            if not skill_dir.is_dir():
+                continue
+            skill_md_path = skill_dir / "SKILL.md"
+            if not skill_md_path.exists():
+                continue
+            skill_id = skill_dir.name
+            try:
+                content = skill_md_path.read_text(encoding="utf-8")
+                self._validate_frontmatter_format(content, str(skill_md_path))
+                fm, hard_gates, checklists = self._parse_skill_md(content)
+                supplement = self._load_supplement(skill_dir)
+                trigger_keywords = self._extract_trigger_keywords(fm, hard_gates, checklists, supplement)
+
+                display_name = str(fm.get("name") or skill_id)
+                description = str(fm.get("description") or "")
+                md5_of_base = hashlib.md5(content.encode()).hexdigest()
+
+                sk = SuperpowersSkill(
+                    skill_id=skill_id,
+                    display_name=display_name,
+                    description=description,
+                    version=f"trading-cognition v0.1",
+                    raw_skill_md=content,
+                    hard_gates=hard_gates,
+                    checklists=checklists,
+                    trigger_keywords=trigger_keywords,
+                    supplement=supplement,
+                    md5_of_base=md5_of_base,
+                    localized=supplement is not None,
+                )
+                self.trading_skills[skill_id] = sk
+            except Exception as e:
+                print(f"[SkillLoader] WARNING: 交易 Skill 加载 {skill_id} 失败: {e}")
+
     def _rebuild_index_cache(self) -> None:
         """写 skills-index.json：{skill_id: skill.to_dict() for skill_id in self.skills}"""
         data = {sid: sk.to_dict() for sid, sk in self.skills.items()}
@@ -1450,9 +1575,10 @@ class SkillLoader:
         )
 
     # --- 检索（设计节 2.3）----
-    def retrieve(self, query: str, top_meta: int = 2, top_applied: int = 2, applied_loader=None) -> dict:
+    def retrieve(self, query: str, top_meta: int = 2, top_applied: int = 2, applied_loader=None, task_type: str = None) -> dict:
         """
         按查询文本的关键词匹配度返回 meta（SuperpowersSkill）与 applied（历史应用流程）。
+        P1: 新增 task_type 参数，trading 类 task_type 召回交易 Skill，其他召回开发 Skill。
         返回结构：{"meta": List[Tuple[SuperpowersSkill, float, str]], "applied": List[Dict]}
         评分：对每个 skill，trigger_keywords 命中数 + hg 命中数*0.3 + cl 命中数*0.2
         applied_loader 为 None 时 applied 维持空列表（向后兼容）。
@@ -1460,9 +1586,13 @@ class SkillLoader:
         query_lower = query.lower()
         query_tokens = [t for t in re.split(r"[^a-z0-9\u4e00-\u9fa5]+", query_lower) if t]
 
+        # P1: 按 task_type 选择 Skill 源
+        is_trading = task_type is not None and task_type in self._TRADING_TASK_TYPES
+        source_skills = self.trading_skills if is_trading else self.skills
+
         scored: List[Tuple[SuperpowersSkill, float, List[str]]] = []
 
-        for skill_id, sk in self.skills.items():
+        for skill_id, sk in source_skills.items():
             score = 0.0
             reasons: List[str] = []
 

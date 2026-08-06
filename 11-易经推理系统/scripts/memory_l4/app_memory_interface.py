@@ -526,7 +526,7 @@ def stats() -> Dict[str, Any]:
 
 
 def distill_candidates(
-    min_quality: float = 0.7,
+    min_quality: str = "C",
     limit: int = 10,
 ) -> List[Dict[str, Any]]:
     """蒸馏候选 — 可上升为总记忆的候选列表
@@ -534,12 +534,19 @@ def distill_candidates(
     从 distill 记录中筛选高质量的、具有普适性的经验。
 
     Args:
-        min_quality: 最低质量分数 (quadrant y)
+        min_quality: 最低质量等级 ("S"/"A"/"B"/"C"/"D")，兼容 float 传入
         limit: 返回数量
 
     Returns:
         候选蒸馏经验列表
     """
+    # 质量等级 → float 阈值映射（兼容旧版 float 传入）
+    _QUALITY_THRESHOLD = {"S": 0.95, "A": 0.70, "B": 0.40, "C": 0.0, "D": -1.0}
+    if isinstance(min_quality, (int, float)):
+        min_y = float(min_quality)
+    else:
+        min_y = _QUALITY_THRESHOLD.get(str(min_quality).upper(), 0.0)
+
     distills_dir = memory_l4_distills_dir()
     if not distills_dir.exists():
         return []
@@ -553,7 +560,7 @@ def distill_candidates(
             continue
 
         y = distill.get("quadrant", {}).get("y", 0)
-        if y < min_quality:
+        if y < min_y:
             continue
 
         # 检查是否有可上升价值
@@ -663,6 +670,52 @@ def run_distill_from_review(review_record: Dict[str, Any]) -> Dict[str, Any]:
     distill = run_full_distill_pipeline(review_record)
     save_distill(distill)
     return distill
+
+
+# ─────────────────────────────────────────────
+# 类式接口封装（符合 MEMORY_INTERFACE_SPEC v1.0）
+# ─────────────────────────────────────────────
+
+class TradingMemoryInterface:
+    """L4 交易记忆统一接口（类式封装）
+
+    符合 4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md v1.0 规范。
+    适配器模式：不修改现有顶层函数，在其上封装类式接口。
+
+    供 DistillScheduler / WorkingMemoryManager 等认知系统组件动态加载。
+    """
+
+    def search(self, query: str = "", filters: Optional[Dict[str, Any]] = None,
+               memory_type: str = "all", top_k: int = 10) -> List[Dict[str, Any]]:
+        return search(query=query, filters=filters, memory_type=memory_type, top_k=top_k)
+
+    def add(self, memory_entry: Dict[str, Any]) -> str:
+        return add(memory_entry)
+
+    def update(self, memory_id: str, updates: Dict[str, Any]) -> bool:
+        return update(memory_id=memory_id, updates=updates)
+
+    def get(self, memory_id: str) -> Optional[Dict[str, Any]]:
+        return get(memory_id=memory_id)
+
+    def stats(self) -> Dict[str, Any]:
+        return stats()
+
+    def distill_candidates(self, min_quality: str = "C", limit: int = 10) -> List[Dict[str, Any]]:
+        return distill_candidates(min_quality=min_quality, limit=limit)
+
+    def healthcheck(self) -> Dict[str, Any]:
+        return healthcheck()
+
+    def search_similar_cases(self, **kwargs) -> List[Dict[str, Any]]:
+        return search_similar_cases(**kwargs)
+
+    def run_distill_from_review(self, **kwargs) -> Dict[str, Any]:
+        return run_distill_from_review(**kwargs)
+
+
+# 别名：distill_scheduler 通过 getattr(module, "AppMemoryInterface") 查找
+AppMemoryInterface = TradingMemoryInterface
 
 
 # ─────────────────────────────────────────────

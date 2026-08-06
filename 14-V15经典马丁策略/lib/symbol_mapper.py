@@ -169,6 +169,7 @@ class SymbolMapper:
             ("STX",  "Stacks",       "2020-05-28"),
             ("ZEC",  "Zcash",        "2016-10-28"),
             ("HYPE", "Hyperliquid",  "2024-11-29"),  # 平台币，上线>1年，潜力大
+            ("PUMP", "Pump.fun",     "2024-08-15"),  # Solana meme/pump 代币，上线>300天
         ]
         for sym, name, ld in mid_caps:
             self.register(AssetInfo(
@@ -199,8 +200,10 @@ class SymbolMapper:
 
         # ── 贵金属代币（OKX SWAP 支持）──
         precious_metals = [
-            ("XAUT", "Tether Gold", 0.01, 0.01, 1.0, "2020-01-09"),   # XAUT-USDT-SWAP, 1张=1 XAUT
+            ("XAUT", "Tether Gold", 0.01, 0.01, 1.0, "2020-01-09"),   # XAUT 现货代币（非SWAP）
             ("PAXG", "Paxos Gold",  0.001, 0.01, 1.0, "2020-09-11"),  # PAXG-USDT-SWAP
+            ("XAG",  "Silver",      0.01, 0.01, 1.0, "2020-01-01"),   # XAG-USDT-SWAP, 白银
+            ("XAU",  "Gold Index",  1,    0.1,  0.001, "2020-01-01"), # XAU-USDT-SWAP, 黄金指数永续
         ]
         for sym, name, lot, tick, ctval, ld in precious_metals:
             self.register(AssetInfo(
@@ -219,6 +222,9 @@ class SymbolMapper:
         us_stocks = [
             ("MU",       "Micron Technology",  0.01, 0.01, 1.0, "1994-06-01"),   # 美光
             ("SKHYNIX",  "SK hynix",           0.01, 0.01, 1.0, "2014-01-01"),   # 海力士
+            ("GOOGL",    "Alphabet (Google)",  0.01, 0.01, 1.0, "2004-08-19"),   # 谷歌
+            ("NVDA",     "NVIDIA",             0.01, 0.01, 1.0, "1999-01-22"),   # 英伟达
+            ("AMZN",     "Amazon",             0.01, 0.01, 1.0, "1997-05-15"),   # 亚马逊
         ]
         for sym, name, lot, tick, ctval, ld in us_stocks:
             self.register(AssetInfo(

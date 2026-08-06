@@ -92,6 +92,7 @@ class V15CapitalOptimizer:
         'max_base_holding_hours': 29.9,
         'max_post_addon_hours': 37.7,
         'golden_window_hours': 11.1,
+        'regime_cooldown_bars': 12,
     }
 
     # 向后兼容：BASELINE_PARAMS = SMART_BASELINE_PARAMS
@@ -121,12 +122,20 @@ class V15CapitalOptimizer:
         },
     }
 
-    # 优化调度配置
+    # 优化调度配置（Phase C: 双层节奏）
+    # ── Layer 1: 参数空间重算（60天周期，过拟合护栏）──
+    #   每60天才重算一次贝叶斯优化参数空间（tp/addon/holding 边界）
+    #   连亏3笔可事件驱动提前触发，但冷却24h
+    # ── Layer 2: 易经 risk/value 插值（5-7天周期，日常微调）──
+    #   每5-7天更新易经 risk/value → 参数微调倍数（不碰参数空间边界）
+    #   仅在 [0.75, 1.25] 范围内微调 tp_mult/holding_mult/size_mult
     SCHEDULE_CONFIG = {
-        'loss_streak_trigger': 3,       # 连续亏损3笔触发（事件驱动）
-        'weekly_trigger': False,        # 每周触发（默认关闭，避免过拟合）
-        'monthly_trigger': True,        # 每月触发（周期驱动）
-        'min_improve_pct': 2.0,         # 优化后收益需比基线高2%才采用，否则回退
+        'loss_streak_trigger': 3,       # 连续亏损3笔触发参数空间重算（事件驱动）
+        'weekly_trigger': False,        # 每周触发（关闭）
+        'monthly_trigger': False,       # 每月触发（关闭，改为60天）
+        'param_space_recalc_days': 60,  # 参数空间重算周期：60天（过拟合护栏）
+        'yijing_interp_days': 6,        # 易经插值更新周期：6天（日常微调）
+        'min_improve_pct': 2.0,         # 参数空间优化后收益需比基线高2%才采用
         'cooldown_hours': 24,           # 冷却期：距上次优化24小时内不重复触发
     }
 
@@ -659,8 +668,44 @@ class V15CapitalOptimizer:
 
     # ── 三轮反馈优化（回测→优化→回测验证→再优化，互相促进）──────────────
 
+    def _normalize_params(self, params: dict) -> dict:
+        """补全 params 缺失的必选键（capital/trend/智能开关），保证 _run_verify_backtest 不 KeyError
+
+        设计原则：
+        - SMART_BASELINE_PARAMS 只需定义 8 个优化参数，capital 相关键从实例默认值补齐
+        - 显式传入的键保持不变，不会被覆盖
+        """
+        out = params.copy()
+        # Capital 参数（来自 __init__ 固定值 + config 加仓比例）
+        out.setdefault('leverage', self.fixed_leverage)
+        out.setdefault('base_position_pct', self.fixed_base_position_pct)
+        out.setdefault('tp_pct_btc', self.fixed_tp_pct_btc)
+        out.setdefault('addon1_pct', get_config_float("ADDON1_PCT", 0.05))
+        out.setdefault('addon2_pct', get_config_float("ADDON2_PCT", 0.10))
+        out.setdefault('addon3_pct', get_config_float("ADDON3_PCT", 0.20))
+        out.setdefault('max_concurrent_positions', get_config_int("MAX_CONCURRENT_POSITIONS", 3))
+        # Trend filter
+        out.setdefault('trend_filter_mode', 'none')
+        out.setdefault('trend_filter_period', 200)
+        # 智能系统开关（默认全开，和 baseline 描述一致）
+        out.setdefault('use_atr', True)
+        out.setdefault('use_trailing_tp', True)
+        out.setdefault('use_elder_ray', True)
+        out.setdefault('long_only', False)  # 智能系统默认多空双向
+        # 8 个优化参数兜底（如果传入的是 FIXED_BASELINE 风格则补默认值）
+        out.setdefault('trailing_atr_mult', 1.5)
+        out.setdefault('trailing_start_ratio', 0.5)
+        out.setdefault('elder_ray_floor', 0.9)
+        out.setdefault('elder_ray_ceil', 1.5)
+        out.setdefault('btc_windvane_confirm_days', 3)
+        out.setdefault('max_base_holding_hours', 48.0)
+        out.setdefault('max_post_addon_hours', 24.0)
+        out.setdefault('golden_window_hours', 12.0)
+        return out
+
     def _run_verify_backtest(self, params: dict) -> dict:
         """用指定参数运行完整回测验证，返回详细指标"""
+        params = self._normalize_params(params)
         max_concurrent = params['max_concurrent_positions']
         coins_to_test = self.coins[:max_concurrent]
         capital_per_coin = self.initial_capital / max_concurrent
@@ -690,6 +735,16 @@ class V15CapitalOptimizer:
             vol_ratio = max(0.5, min(2.0, vol_ratio))
             tp_pct_coin = params['tp_pct_btc'] * vol_ratio
 
+            # 更新全局 elder-ray 范围（由 bayesian_optimizer.objective 同理修改）
+            old_floor = getattr(self.bt_module, '_elder_ray_floor', 0.9)
+            old_ceil = getattr(self.bt_module, '_elder_ray_ceil', 1.5)
+            self.bt_module._elder_ray_floor = params.get('elder_ray_floor', old_floor)
+            self.bt_module._elder_ray_ceil = params.get('elder_ray_ceil', old_ceil)
+
+            # BTC 币种用 direction_gate，其他币种用 btc_windvane（和 run_backtest 内置自动选择一致，可显式覆盖）
+            use_direction_gate = params.get('use_direction_gate', coin == 'BTC')
+            use_btc_windvane = params.get('use_btc_windvane', coin != 'BTC')
+
             result = self.run_backtest(
                 coin=coin,
                 klines=klines,
@@ -697,7 +752,7 @@ class V15CapitalOptimizer:
                 base_position_pct=effective_base_pct,
                 max_addons=3,
                 confidence_threshold=0,
-                long_only=True,
+                long_only=params.get('long_only', False),
                 position_tf="4h",
                 custom_tp_pct=tp_pct_coin,
                 trend_filter_mode=params['trend_filter_mode'],
@@ -705,7 +760,20 @@ class V15CapitalOptimizer:
                 max_base_holding_hours=params.get('max_base_holding_hours', 48.0),
                 max_post_addon_hours=params.get('max_post_addon_hours', 24.0),
                 golden_window_hours=params.get('golden_window_hours', 12.0),
+                use_atr=params.get('use_atr', True),
+                use_trailing_tp=params.get('use_trailing_tp', False),
+                trailing_atr_mult=params.get('trailing_atr_mult', 1.0),
+                trailing_start_pct_of_tp=params.get('trailing_start_ratio', 0.5),
+                use_elder_ray=params.get('use_elder_ray', True),
+                use_direction_gate=use_direction_gate,
+                use_btc_windvane=use_btc_windvane,
+                btc_windvane_confirm_days=params.get('btc_windvane_confirm_days', 3),
+                regime_cooldown_bars=params.get('regime_cooldown_bars', 0),
+                regime_params=params.get('regime_params'),
             )
+            # 恢复 elder-ray 全局，避免副作用残留
+            self.bt_module._elder_ray_floor = old_floor
+            self.bt_module._elder_ray_ceil = old_ceil
 
             if "error" in result:
                 continue

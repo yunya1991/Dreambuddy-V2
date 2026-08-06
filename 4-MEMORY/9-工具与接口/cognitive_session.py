@@ -193,6 +193,11 @@ EVOLVE_CATEGORY_GROUPS: Dict[str, str] = {
     "trading-data": "trading",
     "strategy-state": "trading",
     "risk-control": "trading",
+    # P0: 交易细粒度 task_type
+    "strategy-research": "trading",
+    "strategy-backtest": "trading",
+    "strategy-execution": "trading",
+    "strategy-governance": "trading",
     # 开发大类
     "python-development": "dev",
     "frontend-development": "dev",
@@ -554,7 +559,7 @@ class CognitiveSessionManager:
             # 检索相关流程（改造后用 SkillLoader，设计节 3.6）
             from cognitive_superpowers import SkillLoader, resolve_unit_for_task
             loader = SkillLoader()
-            proc_result = loader.retrieve(session.task_type, top_meta=3, top_applied=2)
+            proc_result = loader.retrieve(session.task_type, top_meta=3, top_applied=2, task_type=session.task_type)
             new_items: List[RecalledProcessItem] = []
             for (skill, score, reason) in proc_result.get("meta", []):
                 new_items.append(RecalledProcessItem(
@@ -827,7 +832,13 @@ class CognitiveSessionManager:
             }
 
             # 6. 生成应用模板ID
-            applied_id = f"APP-{session.id.split('-')[-1]}"
+            # P2: 交易类 task_type 用 APP-TRD- 前缀，开发类用 APP- 前缀
+            _trading_types = frozenset([
+                "trading-system", "trading-data", "strategy-state", "risk-control",
+                "strategy-research", "strategy-backtest", "strategy-execution", "strategy-governance",
+            ])
+            _prefix = "APP-TRD-" if session.task_type in _trading_types else "APP-"
+            applied_id = f"{_prefix}{session.id.split('-')[-1]}"
             name = f"{session.task_type} 的解决路径"
 
             # 7. 获取目标单元
@@ -888,7 +899,26 @@ _TRADING_DIRS = frozenset([
     "15-监控告警系统",
     "16-调控系统",
     "6-TRADING",
+    "experiments",  # P0: experiments/ab-trading/ 含 A 系列节点代码和回测
 ])
+
+# P0: 交易目录细粒度 task_type 路由规则
+# (顶层目录, 二级目录关键词) → task_type
+# 按优先级从上到下匹配，命中即返回
+_TRADING_FINEGRAIN_RULES = [
+    # 调度/治理配置（.github/workflows/ 或 docs/ 下的 trigger/governance 文件）
+    (".github", "workflows", "strategy-governance"),
+    ("docs", None, "strategy-governance"),
+    # SKILL.md 策略研究/方法论
+    ("skills", None, "strategy-research"),
+    # 回测目录
+    ("backtest", None, "strategy-backtest"),
+    # A 系列节点代码（experiments/ab-trading/core/nodes/）
+    ("core", "nodes", "strategy-execution"),
+]
+
+# 交易 data 子目录（运行时数据/产物，非代码）
+_TRADING_DATA_SUBDIRS = frozenset(["data", "artifacts", "memory", "signal_pool", "A系列研报"])
 
 
 def infer_task_type(filepaths: List[str]) -> str:
@@ -905,9 +935,35 @@ def infer_task_type(filepaths: List[str]) -> str:
         if top == "4-MEMORY":
             return "memory-system"
         elif top in _TRADING_DIRS:
-            # 进一步细分：data/目录变更 = 交易模型训练/数据更新
-            if len(parts) >= 2 and parts[1] in ("data", "artifacts", "memory", "signal_pool"):
+            # P0: 先检查是否为运行时数据/产物目录
+            if len(parts) >= 2 and parts[1] in _TRADING_DATA_SUBDIRS:
                 return "trading-data"
+            # P0: 细粒度路由 — 按二级/三级目录关键词匹配
+            if len(parts) >= 2:
+                sub = parts[1]
+                for rule_sub, rule_sub2, rule_type in _TRADING_FINEGRAIN_RULES:
+                    if sub == rule_sub:
+                        # 如果规则要求三级目录也匹配
+                        if rule_sub2 is not None:
+                            if len(parts) >= 3 and parts[2] == rule_sub2:
+                                return rule_type
+                        else:
+                            return rule_type
+            # P0: experiments/ab-trading/ 下按三级目录细分
+            if top == "experiments" and len(parts) >= 2 and parts[1] == "ab-trading":
+                if len(parts) >= 3:
+                    third = parts[2]
+                    if third == "backtest":
+                        return "strategy-backtest"
+                    if third == "core" and len(parts) >= 4 and parts[3] == "nodes":
+                        return "strategy-execution"
+                # experiments/ab-trading/ 下其他 .py 默认归 strategy-execution
+                return "strategy-execution"
+            # P0: 交易目录下未命中细粒度规则的 .py 代码文件归 strategy-execution
+            # （如 10-经典指标系统/indicators/rsi.py 是修改策略代码）
+            if Path(f).suffix == ".py":
+                return "strategy-execution"
+            # 默认交易系统
             return "trading-system"
         elif top == "0-系统文档管理":
             return "documentation"

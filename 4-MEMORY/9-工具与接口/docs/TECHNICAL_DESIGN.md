@@ -642,6 +642,64 @@ MCP recall(0次) → 闭环断裂 → 蒸馏跳过(C级不达标) → L2 仅34�
 | `search` 参数 | 分散参数 | 统一为 `filters: Dict` |
 | `add` 入参 | 展开参数 | 统一为 `memory_entry: Dict` |
 
+### 6.6 交易认知流程重构（T 系列 + 交易产物沉淀）
+
+将原 A 系列 10 个 Skill 重构为 6 个通用 T 系列 Skill（T0-T5），并实现交易执行产物的独立沉淀与贝叶斯升降级。
+
+**P0 — 边界修复**：
+
+14. ✅ **task_type 路由修复**（P0 2026-08-05）：`cognitive_session.py` 的 `EVOLVE_CATEGORY_GROUPS` 补充 4 个交易细粒度 task_type（`strategy-research`/`strategy-backtest`/`strategy-execution`/`strategy-governance`），全部归入 `trading` 大类。交易文件变更（如 `experiments/ab-trading/`）正确识别为交易类而非开发类。
+
+**P1 — T 系列 SKILL 编写**：
+
+15. ✅ **双源 SkillLoader**（P1 2026-08-05）：`cognitive_superpowers.py` 新增 `TRADING_SKILLS_ROOT`、`_load_trading_skills()`，从 `4-MEMORY/0-元记忆/trading-cognition/skills/` 加载 6 个 T 系列 Skill。`retrieve()` 按 `task_type` 路由：交易类召回 T 系列，开发类召回原 14 个开发 Skill。
+16. ✅ **T0-T5 Skill 定义**（P1 2026-08-05）：
+    - T0 市场认知（合并 A0+A1+A2）：7 维矛盾分析 + 创伤检测
+    - T1 战略合成（精简自 A3）：三情景推演 + 历史模式匹配
+    - T2 交易执行（合并 A4+A5+A9）：验证→执行→离场三阶段
+    - T3 风控门禁（精简自 A7+A4）：事前门禁 + 事中熔断 + 事后归因
+    - T4 情报雷达（精简自 A6）：三屏 MA 趋势 + 宏观共振 + 分级响应
+    - T5 元认知复盘（精简自 A8）：纸上谈兵检测 + 四步复盘闭环
+
+**P2 — 交易执行产物沉淀**：
+
+17. ✅ **APP-TRD-*.json 产物沉淀**（P2-a 2026-08-05）：`cognitive_session.py` `_deposit_applied_template` 为交易类 task_type 生成 `APP-TRD-` 前缀的 applied_id（区别于开发类 `APP-`）。`cognitive_superpowers.py` `resolve_unit_for_task` 将 8 个交易 task_type 路由到 `MU-TRD`（交易记忆单元），确保交易产物沉淀到 `2-交易记忆单元/solution_paths/`。
+18. ✅ **path_advantage 用 P&L/夏普做客观贝叶斯升级**（P2-b 2026-08-05）：`cognitive_superpowers.py` 新增 `update_path_advantage_from_trading()`，基于交易客观指标计算 path_advantage：
+
+    ```
+    pnl_score    = clip(pnl_pct / 10.0, -1, 1)         # ±10% P&L 即满分
+    sharpe_score = clip(sharpe_ratio / 2.0, -1, 1)      # ±2.0 夏普即满分
+    dd_score     = clip((15.0 - max_drawdown_pct) / 15.0, -1, 1)  # ≤15%回撤为正
+    win_score    = clip((win_rate - 0.5) / 0.3, -1, 1)  # 50%胜率为中性
+
+    path_advantage = pnl_score*0.4 + sharpe_score*0.3 + dd_score*0.2 + win_score*0.1
+    ```
+
+    升降级规则复用 `update_path_advantage`（≥0.2 正向，≤-0.2 负向）：连续 2 次正向 C→B，连续 4 次正向 B→A，连续 3 次负向→quarantined。客观指标存入 `metadata["outcome_metrics"]` 供追溯。
+
+    **调用方**：交易系统在每笔交易平仓后，用实际 P&L/夏普/回撤/胜率调用此方法，驱动交易策略模板的贝叶斯升降级——优于开发类的主观 path_advantage 评分。
+
+**P3 — 反向召回接入（A 系列 Cron 执行前注入认知召回）**：
+
+19. ✅ **trading_recall() 编程式召回 API**（P3-a 2026-08-05）：`cognitive_loop_entry.py` 新增模块级函数 `trading_recall(context, task_type, top_k_mem, top_meta, top_applied)`，封装 memories + processes/meta + processes/applied 三段召回，与 MCP recall 工具返回格式一致。设计原则：**建议而非约束**（召回结果不阻断交易决策）、**失败安全**（认知系统不可用时返回 `ok=False` 空结果，不抛异常）、**边界清晰**（认知系统提供 API，交易系统调用，无反向依赖）。
+
+20. ✅ **A 系列 Cron 执行前注入**（P3-a 2026-08-05）：`polling_trader.py` 在 A7 门禁检查前注入认知召回：
+    - `__init__` 新增认知召回桥接初始化（动态 import `trading_recall`，路径 `4-MEMORY/9-工具与接口`）
+    - `_inject_cognitive_recall(coin, inference)` 方法：从 inference 提取关键字段（币种/方向/置信度/卦象/震荡/波动率/矛盾预警）组装上下文，调用 `trading_recall(task_type="strategy-execution")`，结果写入 `inference["cognitive_recall"]`
+    - `_summarize_cognitive_recall(inference)` 静态方法：提取召回摘要（mem_count + meta_skills + applied_count），写入开仓事件存档供平仓后 L4 回溯
+
+    **注入点**：`run_once()` 第一阶段循环中，A7 门禁检查前（L2557）。认知召回作为**上下文增强**注入 inference，A7 门禁可选读取但不强制——保持门禁职责单一。
+
+    **数据流**：
+    ```
+    polling_trader.run_once()
+      → _fetch_and_infer(coin)  → inference dict
+      → _inject_cognitive_recall(coin, inference)  → inference["cognitive_recall"]
+      → A7 门禁检查（可选读取 cognitive_recall）
+      → _execute_trade(inference)
+        → _record_opening_event(inference)  → event["cognitive_recall"] 摘要存档
+    ```
+
 ---
 
 ## 7. 测试体系
@@ -653,13 +711,13 @@ MCP recall(0次) → 闭环断裂 → 蒸馏跳过(C级不达标) → L2 仅34�
 | `tests/test_p3_suggestions_refresh.py` | Suggestions 刷新(P3)：TTL 过期、动作阈值、NOOP 安全、刷新标记 — 5 tests |
 | `tests/test_p4_vec0_and_sp_rebuild.py` | vec0 保护(P4a) + SP 重建(P4b)：引擎选择、质量过滤、噪声跳过 — 4 tests |
 | `test_cognitive_session.py` | 会话生命周期与注入 |
-| `test_cognitive_superpowers.py` | 过程模板 |
+| `test_cognitive_superpowers.py` | 过程模板 + T 系列双源加载(P1) + 交易 task_type 路由(P2) + path_advantage 交易客观指标(P2) + trading_recall 编程式 API(P3) + 认知召回摘要(P3) — 16 tests |
 | `test_relay_verify.py` | git hook 接力验证 |
 | `test_rigorous_bayesian.py` | 贝叶斯更新严格性 |
-| `test_auto_access.py` | 自动访问 |
+| `test_auto_access.py` | MCP 协议层自动访问（initialize/tools/list/tools/call recall/record/stats）— 12 tests，mock 修复对齐 _get_cle 单例 |
 | `stress_test_cognitive_noise_filter.py` | 噪声过滤压力测试 |
 
-> **TDD 覆盖**：P1~P4 共 21 项测试全部通过（2026-08-01 验证）。
+> **TDD 覆盖**：P1~P4 共 21 项测试全部通过（2026-08-01 验证）；交易认知流程 P0~P3 共 13 项测试通过 + test_auto_access mock 修复 3 项，全量 148/148（2026-08-05 验证）。
 
 ---
 
@@ -670,9 +728,14 @@ MCP recall(0次) → 闭环断裂 → 蒸馏跳过(C级不达标) → L2 仅34�
 | 2026-07-31 | v1.0 | 初始版本，关闭 DD-018；覆盖四组件架构、闭环数据流、核心算法、数据模型、已知问题诊断与改进路线 |
 | 2026-07-31 | v1.1 | 实施 P0-2 + P1-2 + P3 修复：recall 阈值 B→C、CLAUDE.md 硬约束强化、MCP 工具描述强化、空上下文退化逻辑、schema 默认值统一；P0-1 代码就绪待用户配置 hooks |
 | 2026-08-01 | v1.2 | P1 噪声排除（.workbuddy/heartbeat/.*_time.json）+ P2a 日志重定向（--log-file + _TeeStream）+ P2b 历史 C 级清理（187 SQL archived + 47 SP → _archived/）+ P3 SuggestionsRefresher 双触发（TTL 15min + 动作≥5）+ P4a vec0 三层保护 + P4b SP 重建（10 条 B+）+ TDD 21/21 |
+| 2026-08-05 | v1.3 | §6.6 交易认知流程重构：P0 边界修复（4 个交易 task_type 归 trading 大类）+ P1 T 系列双源 SkillLoader（6 个 T0-T5 Skill，按 task_type 路由）+ P2 交易产物沉淀（APP-TRD- 前缀 + MU-TRD 路由 + update_path_advantage_from_trading 用 P&L/夏普/回撤/胜率做客观贝叶斯升降级）+ TDD 5/5 P2 测试通过，全量 141/144（3 个 test_auto_access 既有失败非本次引入） |
+| 2026-08-05 | v1.4 | §6.6 P3 反向召回接入：trading_recall() 编程式 API（memories+meta+applied 三段，失败安全）+ polling_trader A7 门禁前注入认知召回（_inject_cognitive_recall + _summarize_cognitive_recall 开仓事件存档）+ TDD 4/4 P3 测试通过，全量 145/148 |
+| 2026-08-05 | v1.5 | 修复 test_auto_access.py 3 个历史失败（根因：mock CognitiveLoopEntry 类未拦截 _get_cle 单例；修复：改 patch _get_cle 函数 + stats 断言对齐真实嵌套结构 stats["memory"]["total"]）+ cognitive_daemon 重启（PID 6039，加载 P3 代码）+ 全量 148/148 零失败 |
+| 2026-08-05 | v1.6 | [COGNITIVE_ARCHITECTURE.md](../../0-元记忆/COGNITIVE_ARCHITECTURE.md) v3.0→v3.1：§1 认知层补入 Process 流程层（对齐认知三要素）+ §5 新增人类认知科学完善（7 维度调研：左右脑/双系统/三层脑/工作记忆/预测编码/全局工作空间/三大脑网络，12 项完善建议 P0-P3，认知回测验证框架：A/B 对比+6 个认知指标+输出差异矩阵+Walk-Forward 认知回测，复用 evaluation_engine+pipeline+WalkForwardBacktester）|
+| 2026-08-05 | v1.7 | 落地认知回测验证框架 §5.5.7：新增 [cognitive_backtest.py](../cognitive_backtest.py) 统一回测 P1-1(episodic_block)/P1-2(salience_score)/P1-3(global_broadcast) 三项更新，复用 `evaluation_engine.compute_path_advantage`/`decide_learning_action`，输出 BacktestResult + path_advantage + 决策(upgrade/alert/quarantine/observe)。结果：P1-2 +0.4165 upgrade、P1-3 +0.4600 upgrade、P1-1 +0.0641 observe(代理指标待真实 episode 数据)。TDD 9/9 通过（[test_cognitive_backtest_unified.py](../test_cognitive_backtest_unified.py)）。卡控策略：报告+告警不强制回滚。|
 
 ---
 
-**文档版本**: v1.2
-**最后更新**: 2026-08-01
-**关联债务**: DD-018（已关闭）· [MEMORY_INTERFACE_SPEC.md](../../6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) · [APP_MEMORY_REGISTRY.md](../../6-应用记忆索引/APP_MEMORY_REGISTRY.md)
+**文档版本**: v1.7
+**最后更新**: 2026-08-05
+**关联债务**: DD-018（已关闭）· [MEMORY_INTERFACE_SPEC.md](../../6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) · [APP_MEMORY_REGISTRY.md](../../6-应用记忆索引/APP_MEMORY_REGISTRY.md) · [COGNITIVE_ARCHITECTURE.md](../../0-元记忆/COGNITIVE_ARCHITECTURE.md)

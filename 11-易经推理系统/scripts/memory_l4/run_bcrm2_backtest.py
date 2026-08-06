@@ -20,9 +20,9 @@ def main():
     timeframe = '1H'
     max_bars = 3000
     n_folds = 5
-    conf_threshold = 0.60
+    conf_threshold = 0.70  # P0修正：与实盘 config.json 对齐（原 0.60）
     tp_atr = 3.0
-    sl_atr = 1.5
+    sl_atr = 1.5  # 与实盘一致
     max_hold_bars = 60
     
     print("=" * 80)

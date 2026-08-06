@@ -435,9 +435,20 @@ def compute_metrics(results: List[TradeResult]) -> BacktestMetrics:
     total_return = sum(pnls)
     avg_return = total_return / n
 
-    # Sharpe（年化，假设 1H K 线，252*24=6048 小时/年）
-    if len(pnls) > 1 and np.std(pnls) > 0:
-        sharpe = np.mean(pnls) / np.std(pnls) * math.sqrt(6048)
+    # Sharpe（P0修正：用日收益序列年化，sqrt(252)）
+    if len(results) > 0:
+        # 按平仓日期聚合日收益
+        daily_returns = {}
+        for r in results:
+            day_str = (r.exit_time_str or "")[:10]
+            if not day_str:
+                day_str = "unknown"
+            daily_returns[day_str] = daily_returns.get(day_str, 0.0) + r.pnl_pct
+        daily_pnls = list(daily_returns.values())
+        if len(daily_pnls) > 1 and np.std(daily_pnls) > 0:
+            sharpe = np.mean(daily_pnls) / np.std(daily_pnls) * math.sqrt(252)
+        else:
+            sharpe = 0.0
     else:
         sharpe = 0.0
 
@@ -471,11 +482,17 @@ def compute_metrics(results: List[TradeResult]) -> BacktestMetrics:
                 "trades": len(rs),
                 "win_rate": sum(1 for p in sym_pnls if p > 0) / len(rs) * 100,
                 "total_return": sum(sym_pnls),
-                "sharpe": np.mean(sym_pnls) / np.std(sym_pnls) * math.sqrt(6048) if len(sym_pnls) > 1 and np.std(sym_pnls) > 0 else 0.0,
                 "avg_atr_pct": np.mean([r.atr_pct_at_entry for r in rs]) * 100,
                 "avg_hold_bars": np.mean([r.hold_bars for r in rs]),
                 "max_dd_raw": max(r.max_dd_pct_raw for r in rs) * 100 if hasattr(r, 'max_dd_pct_raw') else 0.0,
             }
+            # P0修正：夏普按日收益序列年化
+            sym_daily = {}
+            for r in rs:
+                d = (r.exit_time_str or "")[:10] or "unknown"
+                sym_daily[d] = sym_daily.get(d, 0.0) + r.pnl_pct
+            sym_dp = list(sym_daily.values())
+            symbol_metrics[sym]["sharpe"] = np.mean(sym_dp) / np.std(sym_dp) * math.sqrt(252) if len(sym_dp) > 1 and np.std(sym_dp) > 0 else 0.0
 
     # 按市态
     regime_metrics = {}

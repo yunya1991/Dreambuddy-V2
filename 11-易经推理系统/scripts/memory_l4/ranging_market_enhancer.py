@@ -128,9 +128,9 @@ class RangingEnhanceResult:
     recommended_long_threshold: float = 0.55
     recommended_short_threshold: float = 0.55
 
-    # 建议的止损ATR倍数
-    recommended_sl_atr_mult: float = 1.5
-    recommended_tp_atr_mult: float = 3.0
+    # 建议的止损ATR倍数（2026-08-06 放宽：避免频繁扫损）
+    recommended_sl_atr_mult: float = 2.5
+    recommended_tp_atr_mult: float = 5.0
 
     # 布林带确认结果
     bollinger_confirms: bool = False
@@ -247,8 +247,8 @@ class RangingMarketEnhancer:
         result.recommended_long_threshold = long_thresh
         result.recommended_short_threshold = short_thresh
 
-        # 6. 动态止损倍数
-        sl_mult, tp_mult = self._dynamic_atr_multipliers(regime, boll)
+        # 6. 动态止损倍数（2026-08-06 上传入 confidence，高置信度仓位进一步放宽）
+        sl_mult, tp_mult = self._dynamic_atr_multipliers(regime, boll, confidence)
         result.recommended_sl_atr_mult = sl_mult
         result.recommended_tp_atr_mult = tp_mult
 
@@ -623,31 +623,38 @@ class RangingMarketEnhancer:
 
     def _dynamic_atr_multipliers(self,
                                  regime: MarketRegime,
-                                 boll: BollingerInfo
+                                 boll: BollingerInfo,
+                                 confidence: float = 0.0
                                  ) -> Tuple[float, float]:
         """
         动态ATR止损止盈倍数
 
-        规则：
-        - 震荡市：止损放宽到 2.5-3.0×ATR，止盈 4.0-5.0×ATR
-        - 趋势市：止损 1.5×ATR，止盈 3.0×ATR（保持2:1盈亏比）
-        - 过渡市：止损 2.0×ATR，止盈 3.5×ATR
+        2026-08-06 整体放宽：趋势市原 1.5/3.0 → 2.5/5.0；盈亏比保持 ~2:1
+        - 强趋势市(TREND_UP/TREND_DOWN)：止损 2.5×ATR，止盈 5.0×ATR
+        - 过渡市(RANGING_UP/RANGING_DOWN)：止损 3.0×ATR，止盈 5.5×ATR
+        - 震荡市(SIDEWAYS)：止损 3.5×ATR，止盈 6.0×ATR
+        - 置信度≥0.9：再 ×1.3（让高置信度单子拿更久）
         """
         if regime in (MarketRegime.TREND_UP, MarketRegime.TREND_DOWN):
-            sl_mult = 1.5
-            tp_mult = 3.0
-        elif regime in (MarketRegime.RANGING_UP, MarketRegime.RANGING_DOWN):
             sl_mult = 2.5
-            tp_mult = 4.5
+            tp_mult = 5.0
+        elif regime in (MarketRegime.RANGING_UP, MarketRegime.RANGING_DOWN):
+            sl_mult = 3.0
+            tp_mult = 5.5
         else:
             # SIDEWAYS
-            sl_mult = 3.0
-            tp_mult = 5.0
+            sl_mult = 3.5
+            tp_mult = 6.0
+
+        # 高置信度进一步放宽
+        if confidence >= 0.9:
+            sl_mult *= 1.3
+            tp_mult *= 1.3
 
         # 布林带收窄时进一步放宽（防止假突破被洗）
         if boll.is_squeeze:
             sl_mult *= 1.1
-            tp_mult *= 1.0
+            tp_mult *= 1.05
 
         return sl_mult, tp_mult
 

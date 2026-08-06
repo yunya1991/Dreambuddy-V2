@@ -147,6 +147,21 @@ EXCLUDE_FILES = {
     "btc_windvane_*.json",      # V15 btc风向标回测产物
 }
 
+# 排除的相对路径模式（对路径段匹配粒度不足的补充）
+# 用法：对归一化的正斜杠路径做 fnmatch。
+# - 用于精确排除某模块下的子目录（避免误伤同名下其他目录）
+# - 用于排除非代码的自动生成文档 / 版本快照目录
+EXCLUDE_PATH_PATTERNS = {
+    # V15 经典马丁策略 docs：ENGINEERING_INDEX.md/TECHNICAL_DESIGN.md 等由脚本自动生成，
+    # 每有版本迭代就高频重写，非人工意图变更，会持续重置 daemon 空闲计时器导致反刍饥饿
+    "14-V15经典马丁策略/docs/*",
+    "*/14-V15经典马丁策略/docs/*",
+    # 易经推理系统约束 release：每 10 分钟自演化引擎生成一个 v0.1.xxx.json 快照，
+    # 属于运行产物，不是开发行为变更，不应计入 activity
+    "11-易经推理系统/constraints/releases/*",
+    "*/11-易经推理系统/constraints/releases/*",
+}
+
 
 def is_code_file(filepath: str) -> bool:
     """判断是否为需要监听的代码文件"""
@@ -177,6 +192,12 @@ def is_code_file(filepath: str) -> bool:
     # 2) 普通排除目录：路径段匹配
     for excl in EXCLUDE_DIRS:
         if excl in parts:
+            return False
+
+    # 3) 路径模式：对归一化路径做 fnmatch（支持任意前缀 / 子串通配）
+    path_norm = str(p).replace(os.sep, "/")
+    for excl in EXCLUDE_PATH_PATTERNS:
+        if fnmatch.fnmatch(path_norm, excl):
             return False
 
     # 排除文件检查（统一用 fnmatch 通配符，支持 * 在任意位置）

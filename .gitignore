@@ -1,262 +1,99 @@
-# Dependencies
-node_modules/
-.pnpm-store/
-
-# Build
-.next/
-out/
-dist/
+# ==================== Python ====================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
 build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+# 注意：不使用通用的 lib/, lib64/, var/, logs/, parts/ 模式
+# 因为项目源代码目录下有 lib/ 文件夹（如 14-V15经典马丁策略/lib/）
+# 仅排除虚拟环境的标准路径结构
+*/lib/python*/
+*/lib64/python*/
+sdist/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Environment
-.env
-.env.local
-.env.*.local
+# ==================== System & Editor ====================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
 
-# IDE
+# Thumbnails
+._*
+
+# VS Code
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS
-.DS_Store
-Thumbs.db
+# ==================== Environment & Secrets ====================
+.env
+.env.local
+.env.*.local
+.env.v15
+*.pem
+*.key
+ secrets.json
 
-# Logs
-logs/
+# ==================== Logs & Runtime Data ====================
 *.log
-npm-debug.log*
+*.jsonl
+# 注意：不使用通用 logs/ 模式，因为项目中可能有 logs/ 包目录
+# 如需排除特定logs目录，请使用完整路径：xxx/logs/
 
-# Local runtime artifacts
-/artifacts/
+# 事件总线日志
+11-易经推理系统/artifacts/memory_l4/shared_bus/
+4-MEMORY/0-元记忆/evaluation_history.jsonl
 
-# Local agent state
-.superpowers/
-.workbuddy/
+# ==================== Memory Runtime Data (运行时记忆单元) ====================
+# 开发记忆单元 - 运行时solution paths
+4-MEMORY/1-开发记忆单元/solution_paths/APP-*.json
 
-# Python cache
-**/__pycache__/
-*.pyc
+# 交易记忆单元 - 运行时solution paths
+4-MEMORY/2-交易记忆单元/solution_paths/APP-*.json
 
-# Artifact Hub runtime state (repo-local)
-dreambuddy/meta/*.sqlite*
-dreambuddy/artifacts/tasks/*.json
-dreambuddy/artifacts/results/*.json
+# 元记忆 - 运行时交易认知
+4-MEMORY/0-元记忆/trading-cognition/
 
-# Trading runtime data / generated logs
-6-TRADING/data/
-**/.codebuddy/
-6-TRADING/skills/**/intelligence_input/
+# ==================== 易经推理系统 - 运行时数据 ====================
+# 约束版本快照(运行时自动生成的版本历史)
+11-易经推理系统/constraints/releases/*.json
+# 保留少数初始版本模板，取消下面注释如需全部排除
+# 11-易经推理系统/constraints/releases/
 
-# Cache
-.cache/
-.eslintcache
+# 归档目录
+11-易经推理系统/scripts/memory_l4/_archived/
 
-# Database
-*.db
-*.db-journal
+# 回测结果 (运行时产物)
+11-易经推理系统/scripts/memory_l4/new_methodology_backtest_result.json
+11-易经推理系统/scripts/memory_l4/*_result.json
+11-易经推理系统/scripts/memory_l4/*_backtest_result.json
 
-# Temporary
-tmp/
-temp/
-*.tmp
+# ==================== V15马丁策略 - 运行时数据 ====================
+14-V15经典马丁策略/data/baseline_current.json
+14-V15经典马丁策略/data/phase_a_result.json
+14-V15经典马丁策略/data/phase_a_plus_result.json
+14-V15经典马丁策略/data/phase_b_plus_result.json
+14-V15经典马丁策略/data/phase_c_walkforward_result.json
+14-V15经典马丁策略/data/regime_state.json
+14-V15经典马丁策略/data/v15_state_archived_*.json
 
-# Private
-**/private/
-**/secrets/
-**/credentials/
+# 部署配置快照通常需要保留，如有需要取消下一行注释
+# 14-V15经典马丁策略/data/v15_final_deployment.json
 
-# Wiki temp files
-wiki_tmp/
-
-# Runtime data and caches
-data/knowledge_vector_cache_v2.json
-9-基本面分析/.tmp_*.sh
-
-# 经典指标系统 - 运行时数据（保留策略代码和核心配置）
-10-经典指标系统/user_data/data/
-10-经典指标系统/user_data/backtest_results/
-10-经典指标系统/user_data/hyperopt_results/
-10-经典指标系统/user_data/plot/
-10-经典指标系统/user_data/logs/
-10-经典指标系统/user_data/database/
-10-经典指标系统/user_data/agent_sandbox/
-10-经典指标系统/user_data/ai_integration/
-10-经典指标系统/user_data/notebooks/
-10-经典指标系统/user_data/hyperopt_results_v2/
-10-经典指标系统/user_data/ml_models/
-10-经典指标系统/user_data/online_models/
-10-经典指标系统/user_data/lstm/
-10-经典指标系统/user_data/bt_results/
-10-经典指标系统/user_data/archive/
-10-经典指标系统/user_data/strategies/.trae/
-10-经典指标系统/user_data/strategies/_backups/
-10-经典指标系统/user_data/strategies/tradingview/research/
-10-经典指标系统/user_data/strategies/github/_reports/
-10-经典指标系统/user_data/arena_state.json
-10-经典指标系统/user_data/committee_reward_penalty.json
-10-经典指标系统/user_data/performance_log.json
-10-经典指标系统/user_data/kalman_state.json
-10-经典指标系统/user_data/*.bak
-10-经典指标系统/user_data/strategies/ShortTGEStrategy_plan.txt
-
-# Test outputs
-**/stress_test_output/
-
-# Python virtual environments
-.venv/
-venv/
-env/
-*/.venv/
-*.png
-
-# Intent memory runtime data
-**/intent-memory/records.json
-**/intent-memory/stats.json
-
-# AB trading runtime state
-experiments/ab-trading/state.json
-experiments/ab-trading/decision.json
-experiments/ab-trading/data/agent_a_memory.md
-experiments/ab-trading/data/agent_b_memory.md
-
-# Research scheduler
-.research-scheduler/
-.asset-research-history/
-
-# Local feature flags / config
-features/
-feed
-
-# BCRM2 runtime models
-11-易经推理系统/scripts/data/bcrm2_models/
-
-# Kline cache data
-11-易经推理系统/scripts/data/klines/
-
-# Episode data
-data/episodes/
-
-# Calibration data (runtime generated)
-11-易经推理系统/scripts/data/confidence_calibration.json
-11-易经推理系统/scripts/data/hexagram_calibration.json
-
-# Trading monitor runtime
-15-监控告警系统/trading-monitor/
-
-# Deploy ops runtime
-deploy/ops/
-
-# Capital manager runtime
-14-V15经典马丁策略/data/capital_manager/
-
-# Sim trades backup
-14-V15经典马丁策略/data/okx_client/sim_trades_audit.jsonl.bak.*
-
-# Cache directories
-12-三屏趋势系统/data/cache/
-12-三屏趋势系统/ml/backtest_results/
-12-三屏趋势系统/ml/loop_data/
-
-# Frontend build artifacts
-3-FRONTEND/dream-universal-gateway/.next/
-3-FRONTEND/dream-universal-gateway/out/
-3-FRONTEND/dream-universal-gateway/dist/
-
-# === Strict isolation (2026-08-04) — sensitive & runtime artifacts ===
-# Sensitive env backups & IDE/tool local state
-.env.bak*
-.env.*.bak*
-.trae/
-.claude/
-.cognitive/
-.run/
-.cognitive_daemon.pid
-*.pid
-
-# Runtime reports (generated, not source)
-**/reports/dynamic_orchestration_*.json
-**/reports/evaluation_eval_*.json
-**/reports/evaluation_report_eval_*.json
-**/reports/simulation_sim_*.json
-**/backtest_reports/
-**/observation/reports/
-**/multi_scenario_stress_report.json
-
-# Runtime memory/state JSON (not source code)
-**/.4h_dedup.json
-**/.trade_time.json
-**/entry_performance_memory.json
-**/evaluation_memory.json
-**/execution_feedback.json
-**/exit_performance_memory.json
-**/orchestration_memory.json
-**/orchestration_memory.json.bak*
-
-# V15 runtime data, caches & machine-specific plists
-14-V15经典马丁策略/data/backtest_cache/
-14-V15经典马丁策略/data/bayesian_opt/
-14-V15经典马丁策略/data/okx_client/
-14-V15经典马丁策略/data/v15_state.json
-14-V15经典马丁策略/data/v15_state.json.bak*
-14-V15经典马丁策略/data/account_baseline.json
-14-V15经典马丁策略/data/_e2e_tag_test.json
-14-V15经典马丁策略/.coverage
-14-V15经典马丁策略/com.dreambuddy.v15_orchestrator.plist
-
-# 16-调控系统 runtime task records, sqlite & execution logs
-16-调控系统/core/intent-specs/
-16-调控系统/core/meta/*.sqlite*
-16-调控系统/artifacts/execution_logs/
-16-调控系统/a8_design_observation.json
-16-调控系统/a8_design_report.json
-16-调控系统/a8_report.json
-
-# AB-trading runtime research data & machine-specific launchd plists
-experiments/ab-trading/A系列研报/A1研报/
-experiments/ab-trading/com.dreambuddy.*.plist
-
-# ML training samples & backtest result JSON (data, not source)
-12-三屏趋势系统/ml/models/ensemble/collected/
-12-三屏趋势系统/data/
-12-三屏趋势系统/ml/ewave_backtest_results.json
-12-三屏趋势系统/ml/ewave_vs_v55_comparison.json
-
-# Root-level runtime data & temp files
-/data/
-_tmp_entry_conf.py
-
-# Polling trader runtime logs (large jsonl)
-**/data/polling_trader/
-
-# OKX sim trade audit logs (runtime)
-**/okx_sim/sim_trades_audit.jsonl*
-
-# Graph store checkpoints (runtime, 600K+ files)
-1-ARCHITECTURE/dreamos/data/graph_store/
-
-# Memory system runtime checkpoints
-4-MEMORY/0-工作记忆/checkpoints/
-
-# 易经推理系统 runtime data & artifacts
-11-易经推理系统/data/
-11-易经推理系统/artifacts/trading/
-11-易经推理系统/artifacts/evolution/
-
-# Backup files (all variants: .bak, .bak_*, .md.bak_*)
-*.bak*
-*.bak_*
-
-# Machine-specific launchd plists (global)
-**/com.dreambuddy.*.plist
-
-# ML model binaries (tracked pkl kept; untracked ones excluded)
-*.pkl
-!10-经典指标系统/user_data/models/rf_model.pkl
-
-# Volatile runtime state (tracked-but-modified, isolate going forward)
-**/scheduler_data/
-14-V15经典马丁策略/data/orchestrator_state.json
-4-MEMORY/0-元记忆/template_mappings.json
-4-MEMORY/2-交易记忆单元/bayesian_memories.json
+# ==================== 临时测试文件 ====================
+test_sl_tp_*.py
+11-易经推理系统/test_sl_tp_*.py

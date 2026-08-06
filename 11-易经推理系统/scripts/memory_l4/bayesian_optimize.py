@@ -247,18 +247,66 @@ def main():
     print(f"\n  得分提升: {improvement:+.4f}")
 
     if improvement > 0.1:
-        print(f"\n  结论: ✅ 优化有效，建议采纳新参数")
-        # 保存最优参数
-        output_path = os.path.join(SCRIPT_DIR, "optimal_params.json")
-        with open(output_path, "w") as f:
-            json.dump({
-                "params": best.params,
-                "score": best.value,
-                "baseline_score": baseline_score,
-                "improvement": improvement,
-                "user_attrs": best.user_attrs,
-            }, f, indent=2)
-        print(f"  参数已保存: {output_path}")
+        # P1修正：hold-out 验证 — 用最后 20% 数据独立验证最优参数
+        print(f"\n  [Hold-out] 用最后 20% 数据独立验证最优参数...")
+        holdout_sharpes = []
+        holdout_returns = []
+        holdout_dds = []
+        for symbol in ["BTC", "ETH"]:
+            df = load_klines(symbol)
+            if df is None or len(df) < 800:
+                continue
+            # 取最后 20% 数据作为 hold-out
+            holdout_start = int(len(df) * 0.8)
+            df_holdout = df.iloc[holdout_start:].copy()
+            if len(df_holdout) < 100:
+                continue
+            try:
+                result = run_backtest(symbol, df_holdout)
+                holdout_sharpes.append(result.sharpe_ratio)
+                holdout_returns.append(result.total_return)
+                holdout_dds.append(result.max_drawdown)
+                print(f"    {symbol} hold-out: 夏普={result.sharpe_ratio:.2f}, 收益={result.total_return:.2f}%, 回撤={result.max_drawdown:.2f}%")
+            except Exception as e:
+                print(f"    {symbol} hold-out 失败: {e}")
+
+        holdout_sharpe = np.mean(holdout_sharpes) if holdout_sharpes else 0.0
+        holdout_return = np.mean(holdout_returns) if holdout_returns else 0.0
+        holdout_dd = np.mean(holdout_dds) if holdout_dds else 0.0
+        holdout_score = holdout_sharpe + 0.01 * holdout_return - 0.05 * holdout_dd
+
+        # hold-out 衰减率
+        decay = (best.value - holdout_score) / abs(best.value) if best.value != 0 else 1.0
+        print(f"\n  Hold-out 综合得分: {holdout_score:.4f} (优化折内: {best.value:.4f}, 衰减: {decay:.1%})")
+
+        if decay > 0.5:
+            print(f"  结论: ❌ hold-out 衰减>50%，过拟合风险高，回退到基线参数")
+            for k, v in BASELINE_PARAMS.items():
+                setattr(const, k, v)
+                if hasattr(ising_mod, k):
+                    setattr(ising_mod, k, v)
+                if hasattr(force_mod, k):
+                    setattr(force_mod, k, v)
+                if hasattr(tda_mod, k):
+                    setattr(tda_mod, k, v)
+            print(f"  已回退到基线参数")
+        else:
+            print(f"  结论: ✅ hold-out 验证通过（衰减<50%），采纳新参数")
+            output_path = os.path.join(SCRIPT_DIR, "optimal_params.json")
+            with open(output_path, "w") as f:
+                json.dump({
+                    "params": best.params,
+                    "score": best.value,
+                    "holdout_score": holdout_score,
+                    "holdout_decay": decay,
+                    "baseline_score": baseline_score,
+                    "improvement": improvement,
+                    "user_attrs": best.user_attrs,
+                    "holdout_sharpe": holdout_sharpe,
+                    "holdout_return": holdout_return,
+                    "holdout_drawdown": holdout_dd,
+                }, f, indent=2)
+            print(f"  参数已保存: {output_path}")
     else:
         print(f"\n  结论: ❌ 优化未显著提升（提升<0.1），回退到基线参数")
         # 恢复基线参数（patch所有模块）

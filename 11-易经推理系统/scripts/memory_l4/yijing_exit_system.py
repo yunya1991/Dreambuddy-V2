@@ -217,6 +217,36 @@ class YijingExitSystem:
     MODE_MAIN = "main"  # 主离场评估：遵守 1h 节奏门禁 + 写缓存
     MODE_VETO = "veto"  # 否决评估：绕过 1h 门禁 + 不写缓存（避免污染主决策缓存）
 
+    # ── SL/TP 连续调制因子（ATR 基线 × 调制因子）──
+
+    @staticmethod
+    def risk_to_sl_modulation(risk_score: float) -> float:
+        """风险分 → SL 调制因子（连续函数）
+
+        risk=0.25 → 1.5（放宽50%，给趋势空间）
+        risk=0.50 → 1.0（保持基线）
+        risk=0.75 → 0.5（收紧50%，保本）
+        边界 clamp 到 [0.5, 2.0]
+        """
+        return max(0.5, min(2.0, 2.0 - 2.0 * risk_score))
+
+    @staticmethod
+    def value_to_tp_modulation(value_score: float) -> float:
+        """价值分 → TP 调制因子（连续函数）
+
+        value=0.85 → 1.775（提高78%，让利润跑）
+        value=0.50 → 1.25（提高25%）
+        value=0.30 → 0.95（基本保持）
+        边界 clamp 到 [0.5, 2.0]
+        """
+        return max(0.5, min(2.0, 0.5 + 1.5 * value_score))
+
+    @staticmethod
+    def apply_atr_floor(modulated_roi: float, base_roi: float,
+                        floor_ratio: float = 0.7) -> float:
+        """ATR 基线下限保护：调整后 ROI 不得低于基线的 floor_ratio 倍"""
+        return max(modulated_roi, base_roi * floor_ratio)
+
     def __init__(self, config: Optional[YijingExitConfig] = None):
         self.config = config or YijingExitConfig()
         self._log_callback = None

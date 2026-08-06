@@ -38,6 +38,18 @@ DREAM_SKILL_PATH = SKILLS_DIR / "dream-oneirology" / "SKILL.md"
 
 EVOLUTION_LOG = BASE_DIR / "data" / "self_evolution" / "evolution_log.json"
 
+# B-2修复：config.json 路径（与 yijing_monitor.evolve_thresholds 共享同一文件）
+OKX_SIM_CONFIG = BASE_DIR / "data" / "okx_sim" / "config.json"
+
+# B-2修复：constraints/releases 快照目录
+CONSTRAINTS_RELEASES_DIR = BASE_DIR / "constraints" / "releases"
+
+# adopted 提案 param_key → config.json 键的映射
+# SelfEvolutionEngine 的安全参数名与 config.json 字段名不同，需要桥接
+_PARAM_KEY_TO_CONFIG = {
+    "min_confidence_threshold": "confidence_threshold",
+}
+
 # ── 停滞检测阈值 ─────────────────────────────────────────────────────────────
 STAGNATION_WIN_RATE_THRESHOLD  = 0.45   # 胜率低于此值触发
 STAGNATION_HOLD_STREAK         = 10     # 连续HOLD次数触发
@@ -380,16 +392,14 @@ class SelfEvolutionEngine:
 
         # 1. Tavily 宏观市场搜索
         try:
-            from scripts.memory_l4.tavily_macro import search_macro_data
-            tavily_key = os.environ.get("TAVILY_API_KEY", "")
-            if tavily_key:
-                queries = self._build_search_queries(a8_result, dream_result)
-                for q in queries[:2]:  # 最多2次查询控制成本
-                    data = search_macro_data(q, tavily_key)
-                    if data and not data.get("error"):
-                        sources.append({"type": "tavily", "query": q,
-                                        "snippets": data.get("results", [])[:2]})
-                        search_results.extend(data.get("results", [])[:2])
+            from scripts.memory_l4.tavily_macro import tavily_search
+            queries = self._build_search_queries(a8_result, dream_result)
+            for q in queries[:2]:  # 最多2次查询控制成本
+                data = tavily_search(q, max_results=5, topic="news")
+                if data and not data.get("error"):
+                    sources.append({"type": "tavily", "query": q,
+                                    "snippets": data.get("results", [])[:2]})
+                    search_results.extend(data.get("results", [])[:2])
         except Exception as e:
             sources.append({"type": "tavily", "error": str(e)})
 
@@ -589,6 +599,10 @@ class SelfEvolutionEngine:
                     proposal["backtest_result"] = {"skipped": True}
                     adopted.append(proposal)
 
+        # B-2修复：将 adopted 提案落地到 config.json + constraints/releases 快照
+        if adopted:
+            self._apply_adopted_to_config(adopted)
+
         return adopted
 
     # ── 日志管理 ────────────────────────────────────────────────────────────
@@ -611,3 +625,103 @@ class SelfEvolutionEngine:
     def get_last_evolution(self) -> Optional[Dict]:
         """获取最近一次进化记录。"""
         return self._log[-1] if self._log else None
+
+    # ── B-2修复：adopted 提案落地 ────────────────────────────────────────────
+
+    def _apply_adopted_to_config(self, adopted: List[Dict]):
+        """将 adopted 提案写入 config.json + 生成 constraints/releases 快照。
+
+        - 能映射到 config.json 字段的 → 更新 config.json
+        - 所有 adopted → 生成 constraints/releases/vX.Y.Z.json 快照
+        """
+        import time as _time
+        from datetime import datetime, timezone as _tz
+
+        # 1. 更新 config.json
+        config_updated = {}
+        if OKX_SIM_CONFIG.exists():
+            try:
+                cfg = json.loads(OKX_SIM_CONFIG.read_text(encoding="utf-8"))
+            except Exception:
+                cfg = {}
+        else:
+            cfg = {}
+
+        for p in adopted:
+            param_key = p.get("param_key", "")
+            param_val = p.get("param_value")
+            # 桥接 param_key → config 键名
+            config_key = _PARAM_KEY_TO_CONFIG.get(param_key, param_key)
+            # 只写 config.json 已知的进化键
+            # 注：max_consecutive_losses 已禁用（风控改以亏损金额为准），不再自动进化
+            if config_key in ("confidence_threshold", "daily_loss_limit",
+                              "default_position_pct", "loss_limit_pct"):
+                old_val = cfg.get(config_key)
+                if old_val != param_val:
+                    cfg[config_key] = param_val
+                    config_updated[config_key] = {"old": old_val, "new": param_val}
+
+        if config_updated:
+            cfg["last_evolve"] = datetime.now(_tz.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+            OKX_SIM_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+            OKX_SIM_CONFIG.write_text(
+                json.dumps(cfg, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8"
+            )
+            print(f"  [B-2] config.json 已更新: {list(config_updated.keys())}")
+
+        # 2. 生成 constraints/releases 快照
+        self._emit_constraint_release(adopted, config_updated)
+
+    def _emit_constraint_release(self, adopted: List[Dict], config_updated: Dict):
+        """生成 constraints/releases/vX.Y.Z.json 约束升级快照。"""
+        from datetime import datetime, timezone as _tz
+
+        CONSTRAINTS_RELEASES_DIR.mkdir(parents=True, exist_ok=True)
+
+        # 读取现有最高版本号（按数字而非字符串排序）
+        existing = list(CONSTRAINTS_RELEASES_DIR.glob("v*.json"))
+        max_patch = 0
+        for f in existing:
+            try:
+                parts = f.stem.split(".")  # e.g. ["v0", "1", "2"]
+                patch = int(parts[-1])
+                if patch > max_patch:
+                    max_patch = patch
+            except Exception:
+                pass
+        next_patch = max_patch + 1
+
+        new_version = f"v0.1.{next_patch}"
+        ts = datetime.now(_tz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        snapshot = {
+            "release_version": new_version,
+            "generated_at": ts,
+            "source_ref": "self_evolution_engine",
+            "source_sha256": f"evolution-{ts}",
+            "candidate_id": ",".join(
+                p.get("param_key", "") for p in adopted[:5]
+            ),
+            "from_version": f"v0.1.{max_patch}" if max_patch > 0 else "v0.1.0",
+            "to_version": new_version,
+            "schema_version": "evolution-p2-constraint-release-snapshot-v0.1",
+            "adopted_proposals": [
+                {
+                    "title": p.get("title", ""),
+                    "param_key": p.get("param_key", ""),
+                    "param_value": p.get("param_value"),
+                    "source": p.get("source", ""),
+                    "rationale": p.get("rationale", ""),
+                }
+                for p in adopted
+            ],
+            "config_changes": config_updated,
+        }
+
+        out_path = CONSTRAINTS_RELEASES_DIR / f"{new_version}.json"
+        out_path.write_text(
+            json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8"
+        )
+        print(f"  [B-2] 约束快照已生成: {out_path.name} ({len(adopted)} proposals)")

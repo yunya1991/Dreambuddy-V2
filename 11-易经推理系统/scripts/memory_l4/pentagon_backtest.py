@@ -8,19 +8,29 @@
 """
 import sys
 import os
-import time
-import logging
-import pandas as pd
 
 # 设置路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 
-# 修复inspect模块
+# 修复inspect模块：必须在任何其他import之前执行（特别是pandas/dataclasses之前）
 import importlib
+# 先移除项目内可能干扰的inspect.py路径
+_remove_paths = [p for p in sys.path if 'memory_l4' in p or p == SCRIPT_DIR]
+for _p in _remove_paths:
+    if _p in sys.path:
+        sys.path.remove(_p)
 _std_inspect = importlib.import_module('inspect')
 sys.modules['inspect'] = _std_inspect
+# 恢复路径
+for _p in reversed(_remove_paths):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+import time
+import logging
+import pandas as pd
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger(__name__)

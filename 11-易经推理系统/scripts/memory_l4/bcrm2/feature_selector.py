@@ -48,6 +48,7 @@ class FeatureSelector:
         X: pd.DataFrame,
         y: np.ndarray,
         model=None,
+        min_valid_ratio: float = 0.5,
     ) -> List[str]:
         """
         执行特征选择
@@ -56,10 +57,18 @@ class FeatureSelector:
             X: 特征DataFrame
             y: 标签
             model: 已训练的LightGBM模型 (如果有)，没有则训练一个简单的
+            min_valid_ratio: 有效值比例阈值（0~1），低于此值的特征先被过滤
 
         Returns:
             选中的特征名列表
         """
+        # 第0层: 有效值比例预筛（过滤macro稀疏特征等）
+        n_rows = len(X)
+        min_valid = int(n_rows * min_valid_ratio)
+        valid_counts = X.notna().sum()
+        sparse_cols = valid_counts[valid_counts < min_valid].index.tolist()
+        if sparse_cols:
+            X = X.drop(columns=sparse_cols)
         feature_names = list(X.columns)
 
         # 1. 获取特征重要性

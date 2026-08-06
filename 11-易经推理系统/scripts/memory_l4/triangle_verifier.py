@@ -1,27 +1,133 @@
 #!/usr/bin/env python3
 """
-五角校验器 — BCRM2(ML) × 力学引擎(物理) × A0(矛盾) × Ising(相变) × TDA(拓扑) 交叉验证。
+五角校验器（v4 风险评分风控版）— 基于五源风险信号综合评分实现双向风控。
 
-核心思想：
-    五个独立推理源各给出方向判断，通过投票/加权/分歧检测，
-    生成最终置信度调整和风险预警。
+定位变更（2026-08-05 v4）：
+    v3 纯风控版仅双预警止损收紧，五角校验未真正发挥作用。
+    v4 引入风险评分驱动的双向风控，让五角校验主动管理仓位/杠杆/止盈止损。
 
-五角校验逻辑：
-    1. 五源方向一致 → 强信号，置信度增强
-    2. 多数一致少数分歧 → 中信号，置信度略降 + 预警
-    3. 严重分歧 → 弱信号，置信度大幅降低 + fail_closed 候选
+    与 v2 的本质区别：
+        - v2: 五源方向投票 → 一致性 → 置信度/仓位调整（方向驱动，已证伪）
+        - v4: 五源风险信号 → 风险评分 → 仓位/杠杆/止盈止损调控（风险驱动）
 
-预警机制：
-    - 力学引擎反转预警 + A0 矛盾张力 → 强反转预警
-    - Ising 相变预警(能量突变/临界相) → 趋势衰竭预警
-    - TDA 拓扑突变预警(Betti突增/瓶颈距离) → 转折最早预警（拓扑先于动力学）
+    ✅ 核心机制：
+        1. 五源风险信号综合评分 (0=安全, 1=高危)
+           - 不投票方向，只评估风险等级
+           - 风险注意力动态加权（追踪各源风险预警准确率）
+        2. 双向风控调控：
+           - 低风险 → 加仓/提杠杆/提高止盈
+           - 高风险 → 降仓/降杠杆/收紧止损
+        3. v3 双预警止损收紧保留（TDA+Ising 同时触发 → sl_tighten=0.85 底线）
+
+    ❌ 仍然不做：
+        - 方向投票（BCRM2 主导方向）
+        - 开仓阻断（不阻止 BCRM2 信号）
+        - 置信度调整（不修改 BCRM2 置信度）
 """
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any, List, Tuple
 import logging
 import numpy as np
+import json
+from pathlib import Path
+from collections import deque
 
 logger = logging.getLogger(__name__)
+
+# ================================================================
+# v4 风险评分风控版参数
+# ================================================================
+@dataclass
+class PentagonParams:
+    """五角校验 v4 参数 — 风险评分驱动的双向风控。
+
+    核心参数：
+        - 风险评分阈值 + 对应的仓位/杠杆/止盈/止损系数
+        - 风险注意力参数（追踪各源风险预警准确率）
+        - v3 双预警止损收紧保留（底线）
+    """
+    # ── v3 保留：双预警止损收紧底线 ──
+    sl_tighten_double: float = 0.85  # TDA+Ising 同时触发 → 收紧15%
+    sl_tighten_single: float = 1.0
+
+    # ── v4 新增：风险评分风控参数 ──
+    # 风险评分分档阈值（risk_score 0=安全, 1=高危）
+    risk_threshold_low: float = 0.15    # < 0.15 → 低风险（加仓/提杠杆）
+    risk_threshold_mid: float = 0.50    # 0.15-0.50 → 正常
+    risk_threshold_high: float = 0.70   # 0.50-0.70 → 中风险（降仓）
+    # >= 0.70 → 高风险（大幅降仓/收紧止损）
+
+    # 低风险档：温和加仓/提杠杆/提高止盈
+    pos_factor_low_risk: float = 1.10
+    leverage_factor_low_risk: float = 1.05
+    tp_mult_low_risk: float = 1.10
+
+    # 正常档：不调整
+    pos_factor_normal: float = 1.0
+    leverage_factor_normal: float = 1.0
+    tp_mult_normal: float = 1.0
+
+    # 中风险档：降仓/降杠杆/略降止盈/略收紧止损
+    pos_factor_mid_risk: float = 0.85
+    leverage_factor_mid_risk: float = 0.90
+    tp_mult_mid_risk: float = 0.95
+    sl_tighten_mid_risk: float = 0.95
+
+    # 高风险档：大幅降仓/降杠杆/降止盈/收紧止损
+    pos_factor_high_risk: float = 0.60
+    leverage_factor_high_risk: float = 0.70
+    tp_mult_high_risk: float = 0.90
+    sl_tighten_high_risk: float = 0.85
+
+    # ── v4 新增：风险注意力参数 ──
+    risk_attention_enabled: bool = True
+    risk_attention_window: int = 30      # 追踪窗口
+    risk_attention_decay: float = 0.97   # 指数衰减系数
+    risk_attention_min_weight: float = 0.10
+    risk_attention_max_weight: float = 0.40
+
+    # ── v4 新增：五源风险信号基础权重（初始等权）──
+    risk_weight_bcrm2: float = 0.20
+    risk_weight_force: float = 0.20
+    risk_weight_a0: float = 0.20
+    risk_weight_ising: float = 0.20
+    risk_weight_tda: float = 0.20
+
+    # ── 接口兼容（v3 遗留，全部中性）──
+    weight_bcrm2: float = 0.20
+    weight_force: float = 0.20
+    weight_a0: float = 0.20
+    weight_ising: float = 0.20
+    weight_tda: float = 0.20
+    bonus_strong_agree: float = 0.0
+    bonus_majority: float = 0.0
+    penalty_divergent: float = 0.0
+    penalty_conflict: float = 0.0
+    penalty_reversal: float = 0.0
+    penalty_ising_alert: float = 0.0
+    penalty_tda_warning: float = 0.0
+    penalty_double_warning: float = 0.0
+    max_total_penalty: float = 0.0
+    attention_enabled: bool = False
+    attention_window: int = 30
+    attention_decay: float = 1.0
+    attention_min_weight: float = 0.20
+    attention_max_weight: float = 0.20
+    pos_factor_strong_agree: float = 1.0
+    pos_factor_majority: float = 1.0
+    pos_factor_divergent: float = 1.0
+    pos_factor_single_warning: float = 1.0
+    pos_factor_double_warning: float = 1.0
+    pos_factor_reversal: float = 1.0
+    fail_closed_threshold: float = 0.0
+
+    def to_dict(self) -> dict:
+        return {k: v for k, v in self.__dict__.items()}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "PentagonParams":
+        known = {k: v for k, v in d.items() if k in cls().__dict__}
+        return cls(**known)
 
 
 @dataclass
@@ -50,10 +156,16 @@ class TriangleVerificationResult:
     # 校验模式
     verdict: str = ""  # STRONG_AGREE / MAJORITY_AGREE / DIVERGENT / CONFLICT
 
-    # P3预警联动策略（新增）
-    position_factor: float = 1.0     # 仓位系数（1.0=正常, 0.5=降仓50%, 0=空仓）
-    sl_tighten_factor: float = 1.0   # 止损收紧系数（1.0=正常, 0.6=收紧40%）
+    # P3预警联动策略（v3保留）
+    position_factor: float = 1.0     # 仓位系数（1.0=正常, 0.5=降仓50%, 1.15=加仓15%）
+    sl_tighten_factor: float = 1.0   # 止损收紧系数（1.0=正常, 0.85=收紧15%）
     early_exit_signal: bool = False  # 提前退出信号（TDA+Ising双重预警）
+
+    # v4 新增：风险评分风控
+    risk_score: float = 0.0          # 综合风险评分 0=安全, 1=高危
+    risk_level: str = "NORMAL"       # LOW / NORMAL / MID / HIGH
+    leverage_factor: float = 1.0     # 杠杆系数（1.0=正常, 1.15=提杠杆15%, 0.7=降杠杆30%）
+    tp_adjustment: float = 1.0       # 止盈调整系数（1.0=正常, 1.1=提高止盈10%）
 
     def to_dict(self) -> dict:
         return {
@@ -72,16 +184,30 @@ class TriangleVerificationResult:
             "ising_result": self.ising_result_dict,
             "tda_result": self.tda_result_dict,
             "verdict": self.verdict,
-            "position_factor": round(self.position_factor, 2),
-            "sl_tighten_factor": round(self.sl_tighten_factor, 2),
+            "position_factor": round(self.position_factor, 3),
+            "sl_tighten_factor": round(self.sl_tighten_factor, 3),
             "early_exit_signal": self.early_exit_signal,
+            "risk_score": round(self.risk_score, 4),
+            "risk_level": self.risk_level,
+            "leverage_factor": round(self.leverage_factor, 3),
+            "tp_adjustment": round(self.tp_adjustment, 3),
         }
 
 
 class TriangleVerifier:
-    """五角校验器：BCRM2 × 力学引擎 × A0 × Ising相变 × TDA拓扑"""
+    """五角校验器（v4 风险评分风控版）：五源风险信号综合评分 → 双向风控调控。
 
-    def __init__(self):
+    核心流程：
+        1. 提取五源风险信号（不投票方向）
+        2. 风险注意力动态加权 → 综合风险评分
+        3. 风险评分分档 → 仓位/杠杆/止盈/止损双向调控
+        4. v3 双预警止损收紧叠加（底线保护）
+    """
+
+    SOURCE_NAMES = ["bcrm2", "force", "a0", "ising", "tda"]
+
+    def __init__(self, params: Optional[PentagonParams] = None):
+        self.params = params or PentagonParams()
         self._force_engine = None
         self._ising_detector = None
         self._tda_detector = None
@@ -89,10 +215,28 @@ class TriangleVerifier:
         self._init_ising_detector()
         self._init_tda_detector()
 
+        # v4 风险注意力：追踪各源风险预警准确率（预警后市场是否恶化）
+        self._risk_warning_history: Dict[str, deque] = {
+            name: deque(maxlen=self.params.risk_attention_window)
+            for name in self.SOURCE_NAMES
+        }
+        self._risk_dynamic_weights: Dict[str, float] = {
+            "bcrm2": self.params.risk_weight_bcrm2,
+            "force": self.params.risk_weight_force,
+            "a0": self.params.risk_weight_a0,
+            "ising": self.params.risk_weight_ising,
+            "tda": self.params.risk_weight_tda,
+        }
+        # 记录上一笔风险信号，用于 record_outcome 时核对
+        self._last_risk_signals: Optional[Dict[str, float]] = None
+
     def _init_force_engine(self):
         """延迟初始化力学引擎"""
         try:
-            from scripts.memory_l4.bcrm.force_engine import ForceEngine
+            try:
+                from bcrm.force_engine import ForceEngine
+            except ImportError:
+                from scripts.memory_l4.bcrm.force_engine import ForceEngine
             self._force_engine = ForceEngine()
             logger.info("[五角校验] 力学引擎已加载")
         except Exception as e:
@@ -101,7 +245,10 @@ class TriangleVerifier:
     def _init_ising_detector(self):
         """延迟初始化Ising相变检测器"""
         try:
-            from scripts.memory_l4.bcrm.ising_phase_detector import IsingPhaseDetector
+            try:
+                from bcrm.ising_phase_detector import IsingPhaseDetector
+            except ImportError:
+                from scripts.memory_l4.bcrm.ising_phase_detector import IsingPhaseDetector
             self._ising_detector = IsingPhaseDetector()
             logger.info("[五角校验] Ising相变检测器已加载")
         except Exception as e:
@@ -110,7 +257,10 @@ class TriangleVerifier:
     def _init_tda_detector(self):
         """延迟初始化TDA拓扑检测器（P2新增）"""
         try:
-            from scripts.memory_l4.bcrm.tda_early_warning import TDAEarlyWarning
+            try:
+                from bcrm.tda_early_warning import TDAEarlyWarning
+            except ImportError:
+                from scripts.memory_l4.bcrm.tda_early_warning import TDAEarlyWarning
             self._tda_detector = TDAEarlyWarning()
             logger.info("[五角校验] TDA拓扑检测器已加载")
         except Exception as e:
@@ -125,136 +275,241 @@ class TriangleVerifier:
         df: Optional["pd.DataFrame"] = None,
     ) -> TriangleVerificationResult:
         """
-        执行三角校验。
+        执行五角校验（v4 风险评分风控版）。
 
-        Args:
-            bcrm2_direction: BCRM2 方向 "UP"/"DOWN"/"FLAT"
-            bcrm2_confidence: BCRM2 置信度
-            a0_result_dict: A0 分析结果字典
-            market_snapshot: 市场快照（供力学引擎使用）
-            df: K线数据（供力学引擎提取特征）
+        流程：
+            1. 运行五源检测器
+            2. 提取五源风险信号（0=安全, 1=高危）
+            3. 风险注意力动态加权 → 综合风险评分
+            4. 风险评分分档 → 仓位/杠杆/止盈/止损双向调控
+            5. v3 双预警止损收紧叠加（底线保护）
+
+        不干预：方向投票、置信度调整、开仓阻断。
         """
         result = TriangleVerificationResult()
+        p = self.params
 
-        # BCRM2 方向
+        # 方向记录（仅诊断）
         result.bcrm2_direction = self._dir_str_to_int(bcrm2_direction)
-
-        # A0 方向
         if a0_result_dict:
             bias = a0_result_dict.get("direction_bias", 0)
             result.a0_direction = 1 if bias > 0.1 else (-1 if bias < -0.1 else 0)
-        else:
-            result.a0_direction = 0
 
-        # 力学引擎方向
-        result.force_direction, force_reversal, force_strength, force_dict = \
-            self._run_force_engine(market_snapshot, df)
+        # ── 1. 运行五源检测器 ──
+        _, force_reversal, force_strength, force_dict = self._run_force_engine(market_snapshot, df)
         result.force_result_dict = force_dict
 
-        # Ising相变方向（第四源）
-        result.ising_direction, ising_alert, ising_phase, ising_dict = \
-            self._run_ising_detector(market_snapshot, df)
+        _, ising_alert, ising_phase, ising_dict = self._run_ising_detector(market_snapshot, df)
         result.ising_result_dict = ising_dict
 
-        # TDA拓扑方向（第五源，P2新增）
-        result.tda_direction, tda_warning, tda_strength, tda_dict = \
-            self._run_tda_detector(market_snapshot, df)
+        _, tda_warning, tda_strength, tda_dict = self._run_tda_detector(market_snapshot, df)
         result.tda_result_dict = tda_dict
 
-        # 一致性评分（五源）
-        directions = [result.bcrm2_direction, result.force_direction,
-                      result.a0_direction, result.ising_direction,
-                      result.tda_direction]
-        result.agreement_score = self._compute_agreement(directions)
-
-        # 置信度调整
-        result.confidence_adjustment = self._compute_adjustment(
-            result.agreement_score, directions, bcrm2_confidence
-        )
-
-        # 反转预警：力学减速 + A0 高张力
+        # ── 2. 提取五源风险信号 (0=安全, 1=高危) ──
         a0_tension = a0_result_dict.get("overall_tension", 0) if a0_result_dict else 0
-        if force_reversal and a0_tension > 0.5:
-            result.reversal_alert = True
-            result.reversal_strength = min(
-                force_strength * 0.5 + a0_tension * 0.5, 1.0
-            )
-            result.risk_warnings.append(
-                f"强反转预警：力学减速(强度={force_strength:.2f}) + "
-                f"A0高张力({a0_tension:.2f})"
-            )
-            # 反转预警削弱当前方向置信度
-            result.confidence_adjustment -= 0.1 * result.reversal_strength
+        a0_trauma = a0_result_dict.get("trauma_signal", False) if a0_result_dict else False
 
-        # Ising相变预警（P1新增）
-        if ising_alert:
-            ising_phase_str = ising_phase or "UNKNOWN"
-            result.risk_warnings.append(
-                f"Ising相变预警：相态={ising_phase_str}，市场可能发生牛熊转换"
-            )
-            # 相变预警削弱置信度
-            result.confidence_adjustment -= 0.08
+        risk_signals = {
+            "bcrm2": max(0.0, 1.0 - bcrm2_confidence),           # 置信度低→风险高
+            "force": 0.8 if force_reversal else 0.2,               # 力学反转→高风险
+            "a0": min(1.0, a0_tension + (0.3 if a0_trauma else 0.0)),  # tension+trauma→风险
+            "ising": 0.9 if ising_alert else 0.1,                  # 相变→高风险
+            "tda": 0.9 if tda_warning else 0.1,                    # 拓扑突变→高风险
+        }
+        self._last_risk_signals = risk_signals.copy()
 
-        # TDA拓扑突变预警（P2新增，最早转折信号）
-        if tda_warning:
-            result.risk_warnings.append(
-                f"TDA拓扑突变预警：强度={tda_strength:.2f}，"
-                f"拓扑结构变化领先于动力学转折"
-            )
-            # TDA预警削弱置信度（拓扑突变是最早信号，权重适中）
-            result.confidence_adjustment -= 0.06 * tda_strength
+        # ── 3. 风险注意力动态加权 → 综合风险评分 ──
+        weights = self._get_risk_weights()
+        total_w = sum(weights.values())
+        risk_score = sum(weights[k] * risk_signals[k] for k in self.SOURCE_NAMES) / max(total_w, 1e-6)
+        risk_score = max(0.0, min(1.0, risk_score))
+        result.risk_score = risk_score
 
-        # P3预警联动策略：TDA+Ising双重预警 → 提前降仓+收紧止损
-        # 逻辑：TDA（最早信号）+ Ising（中期信号）同时触发，说明趋势反转概率极高
+        # ── 4. 风险评分分档 → 双向风控调控 ──
+        if risk_score < p.risk_threshold_low:
+            # 低风险：加仓/提杠杆/提高止盈
+            result.risk_level = "LOW"
+            result.position_factor = p.pos_factor_low_risk
+            result.leverage_factor = p.leverage_factor_low_risk
+            result.tp_adjustment = p.tp_mult_low_risk
+            result.sl_tighten_factor = 1.0
+        elif risk_score < p.risk_threshold_mid:
+            # 正常：不调整
+            result.risk_level = "NORMAL"
+            result.position_factor = p.pos_factor_normal
+            result.leverage_factor = p.leverage_factor_normal
+            result.tp_adjustment = p.tp_mult_normal
+            result.sl_tighten_factor = 1.0
+        elif risk_score < p.risk_threshold_high:
+            # 中风险：降仓/降杠杆/略降止盈/略收紧止损
+            result.risk_level = "MID"
+            result.position_factor = p.pos_factor_mid_risk
+            result.leverage_factor = p.leverage_factor_mid_risk
+            result.tp_adjustment = p.tp_mult_mid_risk
+            result.sl_tighten_factor = p.sl_tighten_mid_risk
+        else:
+            # 高风险：大幅降仓/降杠杆/降止盈/收紧止损
+            result.risk_level = "HIGH"
+            result.position_factor = p.pos_factor_high_risk
+            result.leverage_factor = p.leverage_factor_high_risk
+            result.tp_adjustment = p.tp_mult_high_risk
+            result.sl_tighten_factor = p.sl_tighten_high_risk
+
+        # ── 5. v3 双预警止损收紧叠加（底线保护）──
         if tda_warning and ising_alert:
             result.early_exit_signal = True
-            # 双重预警：降仓50%，止损收紧40%
-            result.position_factor = 0.5
-            result.sl_tighten_factor = 0.6
+            result.reversal_alert = True
+            result.reversal_strength = 0.5 + tda_strength * 0.5
+            # 取风险评分和双预警中更紧的止损
+            result.sl_tighten_factor = min(result.sl_tighten_factor, p.sl_tighten_double)
             result.risk_warnings.append(
-                f"P3双重预警联动：TDA(强度={tda_strength:.2f}) + Ising(相态={ising_phase or 'UNKNOWN'})，"
-                f"建议降仓至50%，止损收紧至60%"
+                f"P3双重预警：TDA({tda_strength:.2f}) + Ising({ising_phase or 'UNKNOWN'}) "
+                f"→ 止损收紧至{result.sl_tighten_factor*100:.0f}%"
             )
-            # 双重预警大幅削弱置信度
-            result.confidence_adjustment -= 0.15
-        elif tda_warning or ising_alert:
-            # 单一预警：轻微降仓，轻微收紧止损
-            result.position_factor = 0.8
-            result.sl_tighten_factor = 0.9
-            if tda_warning:
-                result.risk_warnings.append(f"TDA预警：建议降仓至80%")
-            if ising_alert:
-                result.risk_warnings.append(f"Ising预警：建议止损收紧至90%")
-            result.confidence_adjustment -= 0.03
 
-        # 力学引擎创伤重置：A0 创伤信号 → 重置力学速度
-        if a0_result_dict and a0_result_dict.get("trauma_signal", False):
+        # ── 预警记录（诊断）──
+        if ising_alert:
+            result.risk_warnings.append(
+                f"Ising相变预警：相态={ising_phase or 'UNKNOWN'}"
+            )
+        if tda_warning:
+            result.risk_warnings.append(
+                f"TDA拓扑突变预警：强度={tda_strength:.2f}"
+            )
+        if force_reversal and a0_tension > 0.5:
+            result.risk_warnings.append(
+                f"力学+A0反转预警（强度{(force_strength+a0_tension)/2:.2f}）"
+            )
+        if a0_trauma:
             if self._force_engine:
                 self._force_engine.reset_velocity()
-                result.risk_warnings.append("创伤信号：力学引擎速度已重置，打破惯性")
+            result.risk_warnings.append("创伤信号：力学引擎速度已重置")
 
-        # 判定校验模式
-        result.verdict = self._determine_verdict(directions, result.agreement_score)
-
-        # 极端分歧 → 建议 fail_closed
-        if result.agreement_score < 0.34:
-            result.should_fail_closed = True
-            result.risk_warnings.append(
-                "五源严重分歧，建议 fail_closed"
-            )
+        # v4 中性值：不干预置信度/方向/阻断
+        result.confidence_adjustment = 0.0
+        result.should_fail_closed = False
+        result.agreement_score = 0.5
+        result.verdict = f"P4_RISK_CONTROL_{result.risk_level}"
 
         if result.risk_warnings:
-            logger.debug(f"[五角校验] {result.verdict}: {result.risk_warnings}")
+            logger.debug(f"[五角校验v4] {result.risk_warnings}")
         logger.info(
-            f"[五角校验] {result.verdict} "
-            f"BCRM2={result.bcrm2_direction:+d} 力学={result.force_direction:+d} "
-            f"A0={result.a0_direction:+d} Ising={result.ising_direction:+d} "
-            f"TDA={result.tda_direction:+d} "
-            f"一致性={result.agreement_score:.0%} "
-            f"调整={result.confidence_adjustment:+.4f}"
+            f"[五角校验v4] risk_score={risk_score:.3f} level={result.risk_level} "
+            f"pos_factor={result.position_factor:.2f} lev_factor={result.leverage_factor:.2f} "
+            f"tp_adj={result.tp_adjustment:.2f} sl_tighten={result.sl_tighten_factor:.2f} "
+            f"ising={ising_alert} tda={tda_warning}"
         )
 
         return result
+
+    # ================================================================
+    # v4 风险注意力机制
+    # ================================================================
+    def record_outcome(self, source_directions: Dict[str, int], actual_direction: int,
+                       actual_pnl_pct: Optional[float] = None):
+        """记录交易结果，更新风险注意力权重。
+
+        v4 改为追踪风险预警准确率：
+            - 某源发出高风险信号(risk>0.5)后，市场确实恶化(pnl<0) → 准确
+            - 某源发出高风险信号后，市场没恶化(pnl>0) → 不准确
+            - 某源发出低风险信号(risk<0.3)后，市场恶化(pnl<0) → 不准确
+
+        兼容旧接口：若 actual_pnl_pct 为 None，退化用方向匹配。
+        """
+        if not self.params.risk_attention_enabled or self._last_risk_signals is None:
+            return
+
+        # 判断市场是否恶化
+        if actual_pnl_pct is not None:
+            market_deteriorated = actual_pnl_pct < 0
+        else:
+            # 退化：方向不匹配视为恶化
+            market_deteriorated = False
+            for name in self.SOURCE_NAMES:
+                src_dir = source_directions.get(name, 0)
+                if src_dir != 0 and src_dir != actual_direction:
+                    market_deteriorated = True
+                    break
+
+        # 核对各源风险信号准确性
+        for name in self.SOURCE_NAMES:
+            risk_val = self._last_risk_signals.get(name, 0.0)
+            if risk_val > 0.5:
+                # 高风险预警：市场恶化=准确，没恶化=不准确
+                correct = market_deteriorated
+            elif risk_val < 0.3:
+                # 低风险信号：市场没恶化=准确，恶化=不准确
+                correct = not market_deteriorated
+            else:
+                # 中间区域不评分
+                continue
+            self._risk_warning_history[name].append(1.0 if correct else 0.0)
+
+        self._update_risk_weights()
+
+    def _update_risk_weights(self):
+        """指数衰减更新风险注意力权重。"""
+        if not self.params.risk_attention_enabled:
+            return
+
+        p = self.params
+        new_weights = {}
+        for name in self.SOURCE_NAMES:
+            history = self._risk_warning_history[name]
+            if len(history) < 3:
+                # 样本不足，保持初始权重
+                new_weights[name] = self._risk_dynamic_weights[name]
+                continue
+
+            # 指数加权准确率
+            accs = list(history)
+            decay = p.risk_attention_decay
+            ewma_acc = 0.0
+            weight_sum = 0.0
+            for i, acc in enumerate(reversed(accs)):
+                w = decay ** i
+                ewma_acc += acc * w
+                weight_sum += w
+            ewma_acc /= max(weight_sum, 1e-6)
+
+            # 准确率高 → 权重增大；准确率低 → 权重减小
+            # 基础权重 0.20，按准确率偏离 0.5 的程度调整
+            base = 0.20
+            adjustment = (ewma_acc - 0.5) * 0.40  # -0.20 ~ +0.20
+            new_w = base + adjustment
+            new_w = max(p.risk_attention_min_weight, min(p.risk_attention_max_weight, new_w))
+            new_weights[name] = new_w
+
+        self._risk_dynamic_weights = new_weights
+
+    def _get_risk_weights(self) -> Dict[str, float]:
+        """获取当前风险注意力权重。"""
+        if not self.params.risk_attention_enabled:
+            return {
+                "bcrm2": self.params.risk_weight_bcrm2,
+                "force": self.params.risk_weight_force,
+                "a0": self.params.risk_weight_a0,
+                "ising": self.params.risk_weight_ising,
+                "tda": self.params.risk_weight_tda,
+            }
+        return self._risk_dynamic_weights.copy()
+
+    def _get_effective_weights(self) -> Dict[str, float]:
+        """兼容旧接口：返回风险注意力权重。"""
+        return self._get_risk_weights()
+
+    def get_attention_stats(self) -> Dict[str, dict]:
+        """获取各源风险注意力统计。"""
+        stats = {}
+        for name in self.SOURCE_NAMES:
+            history = self._risk_warning_history[name]
+            acc = sum(history) / len(history) if len(history) > 0 else 0.0
+            stats[name] = {
+                "samples": len(history),
+                "accuracy": round(acc, 4),
+                "current_weight": round(self._risk_dynamic_weights[name], 4),
+            }
+        return stats
 
     # ================================================================
     # 力学引擎执行
@@ -457,46 +712,6 @@ class TriangleVerifier:
         enriched.setdefault("trend_strength", abs(ma_direction) * 10)
 
         return enriched
-
-    # ================================================================
-    # 一致性计算
-    # ================================================================
-    def _compute_agreement(self, directions: List[int]) -> float:
-        """计算三源方向一致性 0-1"""
-        non_zero = [d for d in directions if d != 0]
-        if len(non_zero) <= 1:
-            return 0.5  # 只有一个有效源，无法交叉验证
-
-        # 统计方向相同的比例
-        positive = sum(1 for d in non_zero if d > 0)
-        negative = sum(1 for d in non_zero if d < 0)
-
-        majority = max(positive, negative)
-        agreement = majority / len(non_zero)
-
-        return agreement
-
-    # ================================================================
-    # 置信度调整
-    # ================================================================
-    def _compute_adjustment(
-        self, agreement: float, directions: List[int], bcrm_confidence: float
-    ) -> float:
-        """根据一致性计算置信度调整"""
-        # 三源完全一致 → 增强
-        if agreement >= 1.0:
-            return 0.08  # +8% 置信度
-
-        # 多数一致 → 轻微增强
-        if agreement >= 0.67:
-            return 0.03  # +3%
-
-        # 分歧 → 降低
-        if agreement >= 0.5:
-            return -0.05  # -5%
-
-        # 严重分歧 → 大幅降低
-        return -0.15  # -15%
 
     # ================================================================
     # 校验模式判定

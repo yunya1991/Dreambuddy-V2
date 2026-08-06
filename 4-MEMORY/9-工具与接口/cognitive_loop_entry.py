@@ -851,5 +851,167 @@ def reset_cle():
     _cle_instance = None
 
 
+# ============================================================
+# P3: 交易系统编程式召回 — 供 A 系列 Cron 执行前注入认知召回
+# ============================================================
+
+def trading_recall(
+    context: str,
+    task_type: str = "trading-system",
+    top_k_mem: int = 5,
+    top_meta: int = 2,
+    top_applied: int = 2,
+    coin: str = "",
+    direction: str = "",
+) -> Dict[str, Any]:
+    """
+    P3: 交易系统编程式召回 API。
+
+    供交易系统（polling_trader / A 系列 Cron）在执行前直接 import 调用，
+    返回 memories + processes/meta + processes/applied 三段结构，
+    与 MCP recall 工具返回格式一致。
+
+    P1-3 新增: 召回结果同时发布到 shared_memory_bus（全局广播），
+    供 AB-Trading 等跨系统模块并行获取（对齐 Baars GWT 全局工作空间理论）。
+
+    设计原则:
+      - 建议而非约束: 召回结果是上下文增强，不阻断交易决策
+      - 失败安全: 认知系统不可用时返回空结果，不抛异常；广播失败也不影响主流程
+      - 边界清晰: 认知系统提供 API，交易系统调用，无反向依赖
+
+    Args:
+        context: 交易上下文（如 "BTC 做多 置信度0.72 震荡市场"）
+        task_type: 交易 task_type（默认 trading-system，路由到 T 系列 Skill）
+        top_k_mem: 经验记忆返回数
+        top_meta: 元认知流程（T 系列 Skill）返回数
+        top_applied: 应用认知流程（APP-TRD-*.json）返回数
+        coin: 交易币种（如 "BTC-USDT-SWAP"），用于全局广播 payload
+        direction: 交易方向（如 "LONG"/"SHORT"），用于全局广播 payload
+
+    Returns:
+        {
+            "memories": [...],          # 经验记忆
+            "count": int,
+            "processes": {
+                "meta": [...],          # T 系列 Skill 建议
+                "applied": [...],       # 历史交易解决路径
+                "process_block_markdown": "...",
+            },
+            "ok": bool,                 # 认知系统是否可用
+        }
+    """
+    empty_result: Dict[str, Any] = {
+        "memories": [],
+        "count": 0,
+        "processes": {"meta": [], "applied": [], "process_block_markdown": ""},
+        "ok": False,
+    }
+
+    try:
+        cle = get_cle()
+        # 1) 经验记忆召回
+        memories = cle.recall(context, top_k=top_k_mem, min_quality="C")
+
+        # 2) 元认知流程（T 系列 Skill）+ 应用认知流程
+        from cognitive_superpowers import SkillLoader, ProcessTemplateRegistry
+
+        loader = SkillLoader()
+        registry = ProcessTemplateRegistry()
+        proc = loader.retrieve(
+            context,
+            top_meta=top_meta,
+            top_applied=top_applied,
+            applied_loader=registry,
+            task_type=task_type,
+        )
+
+        # 3) meta 元组 → 可序列化 dict
+        meta_list = [
+            {
+                "skill_id": sk.skill_id,
+                "display_name": sk.display_name,
+                "match_score": round(score, 2),
+                "match_reason": reason,
+                "hard_gates": sk.hard_gates,
+                "localized": sk.localized,
+            }
+            for (sk, score, reason) in proc["meta"]
+        ]
+
+        # 4) 拼装 process_block_markdown
+        md_parts = [
+            f"### [{sk.skill_id}] {sk.display_name}\n- 匹配度: {score:.2f}\n- {reason}"
+            for (sk, score, reason) in proc["meta"]
+        ]
+        process_block_md = "\n\n".join(md_parts)
+
+        result = {
+            "memories": memories,
+            "count": len(memories),
+            "processes": {
+                "meta": meta_list,
+                "applied": proc["applied"],
+                "process_block_markdown": process_block_md,
+            },
+            "ok": True,
+        }
+
+        # P1-3: 全局广播——召回结果发布到 shared_memory_bus（GWT 全局工作空间）
+        # 失败安全：广播异常不影响主流程
+        try:
+            _publish_cognitive_recall_broadcast(coin, direction, context, result)
+        except Exception:
+            pass  # 广播失败静默处理
+
+        return result
+    except Exception as e:
+        empty_result["error"] = str(e)
+        return empty_result
+
+
+def _publish_cognitive_recall_broadcast(
+    coin: str,
+    direction: str,
+    context: str,
+    recall_result: Dict[str, Any],
+) -> None:
+    """P1-3: 将认知召回结果发布到 shared_memory_bus（全局广播）。
+
+    对齐 Baars GWT "剧院模型"：信息进入全局工作空间后被全脑广播，
+    各模块（AB-Trading 等）可并行获取。
+    """
+    try:
+        from datetime import datetime
+        # 动态导入 shared_memory_bus（避免硬依赖）
+        import importlib
+        bus_path = Path(__file__).resolve().parents[2] / "11-易经推理系统" / "scripts" / "memory_l4" / "shared_memory_bus.py"
+        if not bus_path.exists():
+            return
+        spec = importlib.util.spec_from_file_location("shared_memory_bus", bus_path)
+        if not spec or not spec.loader:
+            return
+        bus_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bus_module)
+
+        # 构造广播 payload
+        recall_summary = f"memories={recall_result.get('count', 0)}, meta={len(recall_result.get('processes', {}).get('meta', []))}"
+        suggested_skills = [m.get("skill_id", "") for m in recall_result.get("processes", {}).get("meta", [])]
+
+        bus_module.publish_shared_memory_event(
+            snapshot_ts=datetime.now().astimezone().isoformat(timespec="seconds"),
+            agent_id="cognitive_recall",
+            event_type="cognitive_recall_broadcast",
+            payload={
+                "coin": coin,
+                "direction": direction,
+                "context": context[:200],
+                "recall_summary": recall_summary,
+                "suggested_skills": suggested_skills,
+            },
+        )
+    except Exception:
+        pass  # 广播失败静默处理
+
+
 if __name__ == "__main__":
     sys.exit(main())

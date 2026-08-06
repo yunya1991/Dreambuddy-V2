@@ -35,10 +35,11 @@ class BCRM2Adapter:
                  train_bars: int = 2000,
                  tp_atr: float = 3.0,
                  sl_atr: float = 1.5,
-                 max_hold_bars: int = 60):
+                 max_hold_bars: int = 60,
+                 macro_config: dict = None):
         """
         初始化 BCRM 2.0 适配器。
-        
+
         Args:
             symbol: 交易对符号 (如 BTC)
             timeframe: 时间周期 (如 1H)
@@ -47,6 +48,8 @@ class BCRM2Adapter:
             tp_atr: 止盈ATR倍数
             sl_atr: 止损ATR倍数
             max_hold_bars: 最大持仓K线数
+            macro_config: 宏观特征开关配置 (如 {"macro_feat_fgi_zscore": True, ...})
+                          None 表示不传 config (全部启用默认行为)
         """
         self.symbol = symbol
         self.timeframe = timeframe
@@ -54,6 +57,7 @@ class BCRM2Adapter:
         self.tp_atr = tp_atr
         self.sl_atr = sl_atr
         self.max_hold_bars = max_hold_bars
+        self.macro_config = macro_config or {}
         
         if model_cache_dir is None:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -69,8 +73,12 @@ class BCRM2Adapter:
         self._train_interval = 86400  # 24小时重训一次
     
     def _get_cache_key(self, df: pd.DataFrame) -> str:
-        """生成数据缓存键"""
+        """生成数据缓存键（含 macro_config 哈希，配置变更自动重训）"""
         data_str = f"{self.symbol}_{self.timeframe}_{len(df)}_{df.index[0]}_{df.index[-1]}"
+        if self.macro_config:
+            import json as _json
+            cfg_str = _json.dumps(self.macro_config, sort_keys=True)
+            data_str += f"_macro_{hashlib.md5(cfg_str.encode()).hexdigest()[:8]}"
         return hashlib.md5(data_str.encode()).hexdigest()[:16]
     
     def _get_model_path(self, cache_key: str) -> str:
@@ -141,6 +149,18 @@ class BCRM2Adapter:
             logger.warning(f"[BCRM2] 获取 BTC ref_df 失败: {e}")
         return None
 
+    def _fetch_macro_df(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
+        """获取宏观数据用于宏观特征模块（P1）"""
+        try:
+            from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
+            fetcher = MacroDataFetcher()
+            macro_df = fetcher.fetch_all(self.symbol, df.index, live=True, verbose=False)
+            if macro_df is not None and not macro_df.empty:
+                return macro_df
+        except Exception as e:
+            logger.warning(f"[BCRM2] 获取宏观数据失败: {e}")
+        return None
+
     def train(self, df: pd.DataFrame, force_retrain: bool = False) -> bool:
         """
         训练 BCRM 2.0 模型。
@@ -200,6 +220,7 @@ class BCRM2Adapter:
             import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
             import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
             import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.macro_features  # noqa: F401
 
             # 数据清洗: 填充NaN，确保特征计算鲁棒
             df = df.copy()
@@ -215,10 +236,15 @@ class BCRM2Adapter:
             # 获取 BTC 参考数据
             ref_df = self._fetch_ref_df(df)
 
+            # 获取宏观数据（P1）
+            macro_df = self._fetch_macro_df(df)
+
             features, feature_names_by_gua = FeatureRegistry.compute_all(
                 df=df,
                 ref_df=ref_df,
+                macro_df=macro_df,
                 symbol=self.symbol,
+                config=self.macro_config,
                 verbose=True,
             )
             feature_names = list(features.columns)
@@ -398,7 +424,8 @@ class BCRM2Adapter:
             import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
             import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
             import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
-            
+            import scripts.memory_l4.bcrm2.macro_features  # noqa: F401
+
             # 数据清洗: 填充NaN，确保特征计算鲁棒
             df = df.copy()
             df = df.ffill().bfill()
@@ -406,13 +433,16 @@ class BCRM2Adapter:
                 if col in df.columns:
                     df[col] = df[col].replace([np.inf, -np.inf], np.nan).ffill().bfill()
                     df[col] = df[col].values.copy()
-            
+
             # 计算特征
             ref_df = self._fetch_ref_df(df)
+            macro_df = self._fetch_macro_df(df)
             features, feature_names_by_gua = FeatureRegistry.compute_all(
                 df=df,
                 ref_df=ref_df,
+                macro_df=macro_df,
                 symbol=self.symbol,
+                config=self.macro_config,
             )
             
             # 确保特征顺序一致
@@ -528,6 +558,10 @@ class BCRM2Adapter:
             position_factor = 1.0
             sl_tighten_factor = 1.0
             early_exit_signal = False
+            leverage_factor = 1.0
+            tp_adjustment = 1.0
+            risk_score = 0.0
+            risk_level = "NORMAL"
             if not fail_closed:
                 try:
                     from scripts.memory_l4.triangle_verifier import TriangleVerifier
@@ -551,10 +585,14 @@ class BCRM2Adapter:
                     if triangle_result.reversal_alert:
                         a0_warnings.append(f"三角反转预警: 强度={triangle_result.reversal_strength:.2f}")
 
-                    # P3预警联动策略：TDA+Ising双重预警 → 降仓+收紧止损
+                    # v4 风险评分风控：仓位/杠杆/止盈/止损/风险评分
                     position_factor = triangle_result.position_factor if triangle_result else 1.0
                     sl_tighten_factor = triangle_result.sl_tighten_factor if triangle_result else 1.0
                     early_exit_signal = triangle_result.early_exit_signal if triangle_result else False
+                    leverage_factor = triangle_result.leverage_factor if triangle_result else 1.0
+                    tp_adjustment = triangle_result.tp_adjustment if triangle_result else 1.0
+                    risk_score = triangle_result.risk_score if triangle_result else 0.0
+                    risk_level = triangle_result.risk_level if triangle_result else "NORMAL"
 
                     # 三源严重分歧 → fail_closed
                     if triangle_result.should_fail_closed:
@@ -595,10 +633,14 @@ class BCRM2Adapter:
                     ('三源严重分歧' if triangle_result and triangle_result.should_fail_closed else
                      ('A0创伤信号降级' if a0_result and a0_result.trauma_signal else '置信度不足'))
                 ),
-                # P3预警联动策略参数
+                # v4 风险评分风控参数
                 'position_factor': position_factor,
                 'sl_tighten_factor': sl_tighten_factor,
                 'early_exit_signal': early_exit_signal,
+                'leverage_factor': leverage_factor,
+                'tp_adjustment': tp_adjustment,
+                'risk_score': risk_score,
+                'risk_level': risk_level,
             }
             
         except Exception as e:

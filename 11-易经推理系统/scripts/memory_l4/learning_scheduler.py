@@ -217,6 +217,12 @@ class LearningScheduler:
             self.retrain_count += 1
             self._save_state()
 
+            # B-1修复：重训完成后自动触发三层自进化检查
+            try:
+                self._maybe_run_self_evolution(cases)
+            except Exception as e:
+                print(f"[LearningScheduler] 自进化检查失败: {e}")
+
             if self.on_retrain_complete:
                 try:
                     self.on_retrain_complete({
@@ -322,6 +328,56 @@ class LearningScheduler:
             print(f"[LearningScheduler] QMM XGB 训练异常: {e}")
 
         return updated
+
+    def _maybe_run_self_evolution(self, cases: List[Dict]):
+        """B-1修复：重训后自动检查是否需要触发三层自进化。
+
+        从 cases 统计胜率/hold 比例等，传入 SelfEvolutionEngine.should_trigger()。
+        如果触发，执行 run_full_cycle()，adopted 提案会自动写回 config.json（B-2）。
+        """
+        try:
+            from scripts.memory_l4.self_evolution_engine import SelfEvolutionEngine
+        except Exception:
+            return
+
+        # 从 cases 提取统计信息
+        total = len(cases)
+        if total == 0:
+            return
+
+        wins = sum(1 for c in cases
+                   if c.get("decision_outcome", {}).get("pnl_pct", 0) > 0)
+        win_rate = wins / total
+
+        # hold 比例（近似 hold_streak）
+        hold_count = sum(1 for c in cases
+                         if "hold" in str(c.get("execution", {}).get("result", "")).lower())
+        hold_rate = hold_count / total
+        hold_streak = int(hold_rate * 10)
+
+        # 卦象分布
+        hexagrams = {}
+        for c in cases:
+            gua = c.get("environment_snapshot", {}).get("regime", "")
+            if gua:
+                hexagrams[gua] = hexagrams.get(gua, 0) + 1
+
+        stats = {
+            "win_rate": win_rate,
+            "hold_rate": hold_rate,
+            "hold_streak": hold_streak,
+            "top_hexagrams": hexagrams,
+            "total_trades": total,
+        }
+
+        engine = SelfEvolutionEngine()
+        should, reason = engine.should_trigger(stats)
+
+        if should:
+            print(f"[LearningScheduler] 触发自进化: {reason}")
+            engine.run_full_cycle(stats, cases[:20], force=False)
+        else:
+            print(f"[LearningScheduler] 自进化未触发: {reason}")
 
     def get_state(self) -> Dict:
         """获取调度器状态"""

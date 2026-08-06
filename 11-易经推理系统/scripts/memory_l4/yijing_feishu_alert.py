@@ -19,6 +19,11 @@ import json
 import sys
 import os
 import requests
+from requests.adapters import HTTPAdapter
+try:
+    from urllib3.util.retry import Retry
+except ImportError:  # 兼容老版本 urllib3
+    Retry = None
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
@@ -37,6 +42,12 @@ CHAT_IDS = {
 TOKEN_URL = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
 MSG_URL = "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id"
 
+# 网络请求：超时（秒），指数退避重试（总次数），状态码强制重试列表
+_REQUEST_TIMEOUT = int(os.environ.get("FEISHU_HTTP_TIMEOUT", "20"))
+_REQUEST_RETRY_TOTAL = int(os.environ.get("FEISHU_HTTP_RETRY", "3"))
+_REQUEST_BACKOFF = float(os.environ.get("FEISHU_HTTP_BACKOFF", "1.5"))
+_RETRY_STATUS = (429, 500, 502, 503, 504)
+
 ALERT_COLOR_MAP = {
     "critical": "#ff4d4f",
     "error": "#ff7875",
@@ -54,11 +65,42 @@ ALERT_EMOJI = {
 FEISHU_CREDENTIALS_VALID = bool(FEISHU_APP_ID and FEISHU_APP_SECRET)
 
 
+# ── 带代理 + 重试的共享 Session ────────────────────────────────────────────
+# 经验：macOS 上 SSL EOF / 握手中断通常是瞬时网络抖动或出口链路差异，
+# 必须：1. 读取 HTTP(S)_PROXY / NO_PROXY 环境变量（trust_env=True）
+#       2. 对 POST 做指数退避重试（默认 3 次 × backoff 1.5s）
+#       3. 合理超时（默认 20s，避免僵死）
+_REQUEST_SESSION = None
+
+
+def _get_session() -> requests.Session:
+    """构建或复用带重试/代理的 requests Session。"""
+    global _REQUEST_SESSION
+    if _REQUEST_SESSION is not None:
+        return _REQUEST_SESSION
+    session = requests.Session()
+    if Retry is not None:
+        retry = Retry(
+            total=_REQUEST_RETRY_TOTAL,
+            backoff_factor=_REQUEST_BACKOFF,
+            status_forcelist=_RETRY_STATUS,
+            allowed_methods=("POST", "GET"),
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+    # 自动拾取 HTTP_PROXY / HTTPS_PROXY / NO_PROXY（macOS 上有代理时必须）
+    session.trust_env = True
+    _REQUEST_SESSION = session
+    return session
+
+
 def get_token() -> str:
-    resp = requests.post(TOKEN_URL, json={
+    resp = _get_session().post(TOKEN_URL, json={
         "app_id": FEISHU_APP_ID,
         "app_secret": FEISHU_APP_SECRET,
-    }, timeout=10)
+    }, timeout=_REQUEST_TIMEOUT)
     resp.raise_for_status()
     data = resp.json()
     if data["code"] != 0:
@@ -68,14 +110,14 @@ def get_token() -> str:
 
 def send_message(chat_id: str, msg_type: str, content: dict) -> dict:
     token = get_token()
-    resp = requests.post(MSG_URL, headers={
+    resp = _get_session().post(MSG_URL, headers={
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }, json={
         "receive_id": chat_id,
         "msg_type": msg_type,
         "content": json.dumps(content, ensure_ascii=False),
-    }, timeout=10)
+    }, timeout=_REQUEST_TIMEOUT)
     resp.raise_for_status()
     result = resp.json()
     if result["code"] != 0:

@@ -90,10 +90,16 @@ except ImportError:
 BOUNCE_FILTER_ENABLED = get_config_bool("BOUNCE_FILTER_ENABLED", False)
 BOUNCE_MIN_SIGNALS = get_config_int("BOUNCE_MIN_SIGNALS", 1)
 
+# ── Phase C 易经推理开关（默认关闭：walk-forward 验证 C 相比 B+ 无额外收益）──
+# true: 启用易经 risk/value 插值（实验性，需重新验证后才可开启）
+# false: 仅使用 Phase B+ 子形态微调（v15 最终形态）
+V15_YIJING_ENABLED = get_config_bool("V15_YIJING_ENABLED", False)
+
 # 多空方向控制开关
 V15_ALLOW_SHORT = str(get_config("V15_ALLOW_SHORT", "false")).lower() == "true"
 
 STATE_FILE = BASE_DIR / "data" / "v15_state.json"
+REGIME_STATE_FILE = BASE_DIR / "data" / "regime_state.json"
 LOG_DIR = BASE_DIR / "logs" / "v15"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -553,17 +559,30 @@ def get_v15_decision(coin):
         # 美股个股永续在 OKX 无现货，用 swap 合约拉 K 线
         from symbol_mapper import AssetCategory
         inst = to_swap(coin) if get_category(coin) == AssetCategory.STOCK else to_spot(coin)
-        return v15_decision(inst, direction_ctx=direction_ctx)
+        result = v15_decision(inst, direction_ctx=direction_ctx)
+        if direction_ctx:
+            result["direction_ctx"] = direction_ctx
+        return result
     except Exception as e:
         _log(f"[{coin}] 决策失败: {e}")
         return {"action": "WAIT", "confidence": 0, "reasons": [str(e)]}
 
 
 def _get_direction_ctx(coin):
-    """获取币种的多空方向控制上下文（含BTC风向标机制）"""
+    """获取币种的多空方向控制上下文（含BTC风向标机制 + Phase A 连续3日确认）"""
     try:
         from direction_gate import DirectionGate
         from strategy_params import calc_daily_ma128, get_coin_strategy_params
+        from regime_manager import RegimeManager
+
+        # Phase A: 加载 RegimeManager 状态
+        rm = RegimeManager(confirm_days=3, initial_regime="LONG_ONLY")
+        try:
+            if REGIME_STATE_FILE.exists():
+                with open(REGIME_STATE_FILE) as f:
+                    rm.load_state(json.load(f))
+        except Exception:
+            pass  # 文件不存在或损坏，用默认值
 
         # 先获取BTC的方向控制结果作为风向标
         btc_short_enabled = False
@@ -583,9 +602,28 @@ def _get_direction_ctx(coin):
                             recent_daily_closes=btc_recent_closes,
                             btc_short_enabled=True,
                         )
-                        btc_short_enabled = btc_result.short_enabled
+                        # Phase A: 通过 RegimeManager 做连续3日确认 + sticky
+                        raw_regime = btc_result.regime.value
+                        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                        confirmed_regime = rm.update(raw_regime, date_str=today)
+                        btc_short_enabled = confirmed_regime in ("SHORT_ALLOWED",)
+                        if btc_short_enabled != btc_result.short_enabled:
+                            _log(f"[PhaseA] BTC形态确认: raw={raw_regime} → confirmed={confirmed_regime} (sticky)")
             except Exception as e:
                 _log(f"[BTC风向标] 获取失败: {e}")
+
+        # Phase A: 保存 RegimeManager 状态
+        try:
+            with open(REGIME_STATE_FILE, "w") as f:
+                json.dump(rm.save_state(), f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+
+        # Phase A+: 形态切换冷却期检查（切换后2天内不开新仓）
+        regime_cooldown_days = 2  # 12根4H bar ≈ 2天
+        in_cooldown = rm.is_in_cooldown(regime_cooldown_days, today_str=today)
+        if in_cooldown:
+            _log(f"[PhaseA+] 形态切换冷却中（距上次切换<{regime_cooldown_days}天），暂停开新仓")
 
         # 获取当前币种的方向控制
         params = get_coin_strategy_params(coin, "LONG")
@@ -608,10 +646,88 @@ def _get_direction_ctx(coin):
         )
         ctx = result.to_dict()
         ctx["btc_short_enabled"] = btc_short_enabled
+        ctx["regime_in_cooldown"] = in_cooldown
         return ctx
     except Exception as e:
         _log(f"[{coin}] 方向控制评估失败: {e}, 默认只做多")
         return {"short_enabled": False, "long_enabled": True, "regime": "error"}
+
+
+# ── Phase B+: 子形态参数微调倍数表 ──────────────────────────────────────
+# 宏观(BULL/BEAR) × 微观(Elder-ray 子形态) → tp_mult / holding_mult
+# 设计原则：小幅微调(±15~20%)，不做整组参数硬覆盖，避免 Phase B 退化
+# - STRONG: 趋势强劲 → 放宽TP+延长持仓，让利润跑
+# - WEAK:   动能衰竭/逆转 → 收紧TP+缩短持仓，快速离场
+# - NORMAL: 基准
+_SUBREGIME_MULTS = {
+    "BULL_STRONG":  {"tp_mult": 1.10, "holding_mult": 1.20},
+    "BULL_WEAK":    {"tp_mult": 0.85, "holding_mult": 0.70},
+    "BULL_NORMAL":  {"tp_mult": 1.00, "holding_mult": 1.00},
+    "BEAR_STRONG":  {"tp_mult": 1.10, "holding_mult": 1.20},
+    "BEAR_WEAK":    {"tp_mult": 0.85, "holding_mult": 0.70},
+    "BEAR_NORMAL":  {"tp_mult": 1.00, "holding_mult": 1.00},
+}
+
+
+def _compute_subregime_live(elder_ray: dict, btc_short_enabled: bool):
+    """实盘子形态计算（基于当前 Elder-ray 方向 + 宏观 BTC 形态）
+
+    实盘不依赖历史序列平滑，直接用当前 Elder-ray 方向判定子形态。
+    Elder-ray 本身已基于日线 EMA13 斜率 + Bull/Bear Power 计算，具备一定稳定性；
+    宏观 BTC MA128 已经过 3 日确认 + sticky，切换频率低。
+
+    Args:
+        elder_ray: strategy_params.calc_elder_ray() 返回的 dict（含 direction 字段）
+        btc_short_enabled: 宏观 BTC 做空闸门是否打开（True=BEAR 态）
+
+    Returns:
+        (subregime_label, tp_mult, holding_mult)
+    """
+    if elder_ray is None or not isinstance(elder_ray, dict):
+        return ("NORMAL", 1.0, 1.0)
+
+    d = elder_ray.get("direction", "SIDEWAYS")
+    macro = "BEAR" if btc_short_enabled else "BULL"
+
+    if macro == "BEAR":
+        if d in ("STRONG_BEAR", "BEAR_TREND"):
+            sub = "BEAR_STRONG"
+        elif d == "BEAR_REVERSAL":
+            sub = "BEAR_WEAK"
+        else:
+            sub = "BEAR_NORMAL"
+    else:
+        if d in ("STRONG_BULL", "BULL_TREND"):
+            sub = "BULL_STRONG"
+        elif d == "BULL_REVERSAL":
+            sub = "BULL_WEAK"
+        else:
+            sub = "BULL_NORMAL"
+
+    mults = _SUBREGIME_MULTS.get(sub, {"tp_mult": 1.0, "holding_mult": 1.0})
+    return (sub, mults["tp_mult"], mults["holding_mult"])
+
+
+# ── Phase C: 易经推理桥接（懒加载，首次使用时初始化）──────────────────────
+_yiji_bridge = None
+_yiji_bridge_initialized = False
+
+
+def _get_yiji_bridge():
+    """懒加载 YijingBridge（避免模块加载时初始化失败影响整体）"""
+    global _yiji_bridge, _yiji_bridge_initialized
+    if not _yiji_bridge_initialized:
+        _yiji_bridge_initialized = True
+        try:
+            from yijing_bridge import YijingBridge
+            _yiji_bridge = YijingBridge()
+            if not _yiji_bridge.available:
+                _log("Phase C: 易经桥接不可用（YijingEngine 加载失败），降级为仅子形态")
+                _yiji_bridge = None
+        except Exception as e:
+            _log(f"Phase C: 易经桥接初始化失败: {e}，降级为仅子形态")
+            _yiji_bridge = None
+    return _yiji_bridge
 
 
 def check_capital():
@@ -751,6 +867,41 @@ def execute_open_position(client, coin, decision, state):
             _log(f"[{coin}] 资金分配不允许: {alloc.get('reason', '资金不足')}")
             return False
 
+        # ── Phase B+: 子形态参数微调（TP + 持仓时间，±15~20%）──
+        dir_ctx = decision.get("direction_ctx") or {}
+        btc_short_enabled = dir_ctx.get("btc_short_enabled", False)
+        subregime, tp_mult, holding_mult = _compute_subregime_live(elder_ray, btc_short_enabled)
+
+        # ── Phase C: 易经 risk/value 插值（在子形态基础上叠加）──
+        # v15 最终形态：默认关闭（V15_YIJING_ENABLED=False），仅使用 Phase B+ 子形态
+        yiji_risk = None
+        yiji_value = None
+        yiji_hex = ""
+        bridge = _get_yiji_bridge() if V15_YIJING_ENABLED else None
+        _yiji_klines = params.get("klines_4h")
+        if bridge and _yiji_klines:
+            try:
+                yiji_result = bridge.infer_current(_yiji_klines)
+                yiji_risk = yiji_result["risk_score"]
+                yiji_value = yiji_result["value_score"]
+                yiji_hex = yiji_result.get("hexagram", "")
+                from yijing_param_interpolator import interpolate_params
+                sr_mults = {"tp_mult": tp_mult, "holding_mult": holding_mult, "size_mult": 1.0}
+                final_mults = interpolate_params(yiji_risk, yiji_value, subregime_mults=sr_mults)
+                # 用最终倍数覆盖子形态倍数
+                tp_mult = final_mults["tp_mult"]
+                holding_mult = final_mults["holding_mult"]
+            except Exception as e:
+                _log(f"[{coin}] Phase C 易经插值失败: {e}，降级为仅子形态")
+
+        if tp_mult != 1.0:
+            tp_pct = tp_pct * tp_mult
+            log_parts = [f"PhaseB+ 子形态={subregime}"]
+            if yiji_hex:
+                log_parts.append(f"卦={yiji_hex} risk={yiji_risk:.2f} value={yiji_value:.2f}")
+            log_parts.append(f"tp_mult={tp_mult:.2f} hold_mult={holding_mult:.2f} → TP={tp_pct*100:.2f}%")
+            _log(f"[{coin}] {' '.join(log_parts)}")
+
         base_margin = alloc["base_usd"]
         vol_mult = decision.get("vol_mult", 1.0) * risk_mult
         order_margin = base_margin * vol_mult
@@ -813,6 +964,14 @@ def execute_open_position(client, coin, decision, state):
                     "trailing_active": False,
                     "trailing_price": None,
                     "peak_price": price,
+                    # Phase B+: 子形态微调记录（持仓超时检查时使用 holding_mult）
+                    "subregime": subregime,
+                    "tp_mult": tp_mult,
+                    "holding_mult": holding_mult,
+                    # Phase C: 易经推理记录（便于后续分析监控，None 表示桥接降级）
+                    "yiji_risk": yiji_risk,
+                    "yiji_value": yiji_value,
+                    "yiji_hexagram": yiji_hex,
                 }
                 state["total_trades"] += 1
                 _sync_tp_sl_orders(client, coin, state["positions"][coin], price, tp_pct, sl_price)
@@ -1599,6 +1758,12 @@ def check_time_exit(client, coin, pos, state):
             max_hours = get_config_float("V15_MAX_BASE_HOLDING_HOURS", 48.0)
             golden_window = 0.0  # 底仓阶段无黄金窗口
 
+        # Phase B+: 子形态持仓时间微调（±15~20%）
+        holding_mult = pos.get("holding_mult", 1.0)
+        if holding_mult != 1.0:
+            max_hours *= holding_mult
+            golden_window *= holding_mult
+
         if base_time.tzinfo is None:
             base_time = base_time.replace(tzinfo=timezone.utc)
 
@@ -2026,6 +2191,12 @@ def run_poll_cycle():
                 # 支持多空开仓信号：OPEN_BULL（做多）和 OPEN_BEAR（做空）
                 if action in ("OPEN_BULL", "OPEN_BEAR") and conf >= 60:
                     _log(f"[{coin}] 信号触发: {action} conf={conf}%")
+
+                    # 门禁0: 形态切换冷却期禁止开新仓（Phase A+）
+                    dir_ctx = decision.get("direction_ctx") or {}
+                    if dir_ctx.get("regime_in_cooldown"):
+                        _log(f"[{coin}] 形态切换冷却期，暂停开新仓")
+                        continue
 
                     # 门禁1: 冷却期禁止开新仓
                     if in_cd:

@@ -45,7 +45,7 @@ def step_register(episode_path: Path) -> Dict[str, Any]:
     case = case_registry.create_case_from_episode_file(episode_path)
     data = json.loads(case.read_text(encoding="utf-8"))
     cid = data["case_id"]
-    assert data["version"] == "v0.2", f"expected v0.2, got {data['version']}"
+    assert data["version"] in ("v0.2", "v0.3"), f"expected v0.2 or v0.3, got {data['version']}"
     assert data["l4_status"] == "M0_CASE_REGISTERED"
     print(f"[M0] Registered TradeCase {cid}")
     return data

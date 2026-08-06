@@ -89,8 +89,8 @@ class PollingTrader:
                  max_positions: int = 3,
                  kline_limit: int = 200,
                  initial_equity: float = 100.0,
-                 daily_loss_limit: float = -50.0,
-                 max_consecutive_losses: int = 5,
+                 daily_loss_limit: float = -30.0,
+                 max_consecutive_losses: int = 999,
                  default_position_pct: float = 0.10,
                  guardian: ProcessGuardian = None,
                  shared_dir=None,
@@ -109,8 +109,8 @@ class PollingTrader:
 | max_positions | int | 3 | 最大同时持仓数 |
 | kline_limit | int | 200 | K线获取数量 |
 | initial_equity | float | 100.0 | 初始权益（USDT） |
-| daily_loss_limit | float | -50.0 | 日最大亏损（USDT） |
-| max_consecutive_losses | int | 5 | 最大连续亏损次数 |
+| daily_loss_limit | float | -30.0 | 日亏损兜底固定阈值（USDT），默认-30（150U可用金的20%） |
+| max_consecutive_losses | int | 999 | ~~最大连续亏损次数~~ 已禁用（v4.2改为亏损金额比例触发） |
 | default_position_pct | float | 0.10 | 默认单笔仓位比例（10%） |
 | guardian | ProcessGuardian | None | 进程守护器 |
 | shared_dir | Path | None | 共享内存目录 |
@@ -163,7 +163,9 @@ def get_status(self) -> dict
     "risk": {                               # dict: 风控状态
         "daily_pnl": -12.5,
         "consecutive_losses": 1,
-        "max_consecutive_losses": 5,
+        "max_consecutive_losses": 999,      # 已禁用（v4.2改为亏损金额比例触发）
+        "loss_limit_pct": 0.20,             # 亏损比例阈值（20%）
+        "daily_loss_limit": -30.0,          # 兜底固定阈值（USDT）
         "trading_halted": False,
         # ...其他 RiskManager 字段
     },
@@ -194,7 +196,7 @@ python -m scripts.memory_l4.polling_trader [options]
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `--interval` | int | 3600 | 轮询间隔（秒） |
-| `--coins` | str | "BTC,ETH,SOL,BNB,XRP,DOGE" | 币种列表（逗号分隔） |
+| `--coins` | str | "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB" | 币种列表（逗号分隔，15币种固定候选池） |
 | `--bar` | str | "1H" | K线周期 |
 | `--confidence` | float | 0.35 | 做多置信度阈值 |
 | `--short-confidence` | float | 0.70 | 做空置信度阈值 |
@@ -349,7 +351,7 @@ elif decision.action == YijingExitAction.FORCE_CLOSE:
 ## 5. BCRM2Adapter 辩证ML适配器
 
 **文件**：`scripts/memory_l4/bcrm2_adapter.py`
-**角色**：封装 `DialecticalMLEngine`，提供与 BCRM 1.0 兼容的 `infer()` 接口；含模型缓存、五角校验（BCRM2×力学×A0×Ising×TDA）。
+**角色**：封装 `DialecticalMLEngine`，提供与 BCRM 1.0 兼容的 `infer()` 接口；含模型缓存、五角校验 v4（BCRM2×力学×A0×Ising×TDA 五源风险信号综合评分→双向风控）。
 
 ### 5.1 类签名
 
@@ -396,7 +398,7 @@ def train(self, df: pd.DataFrame, force_retrain: bool = False) -> bool
 def infer(self, df: pd.DataFrame, idx: int = -1, auto_train: bool = True) -> Dict[str, Any]
 ```
 
-执行推理，返回与 BCRM 1.0 兼容的格式。模型未就绪时按 `auto_train` 决定是否自动训练。推理链含：BCRM2 ML 推理 → KG 知识图谱校准 → A0 矛盾分析 → 五角校验（TriangleVerifier）→ fail_closed 判定。
+执行推理，返回与 BCRM 1.0 兼容的格式。模型未就绪时按 `auto_train` 决定是否自动训练。推理链含：BCRM2 ML 推理 → KG 知识图谱校准 → A0 矛盾分析 → 五角校验 v4 风险评分风控（TriangleVerifier）→ fail_closed 判定。
 
 **返回值（成功）：**
 
@@ -419,11 +421,15 @@ def infer(self, df: pd.DataFrame, idx: int = -1, auto_train: bool = True) -> Dic
     "scale_params": None,
     "a0_analysis": {...},               # A0 矛盾分析结果
     "a0_warnings": [...],               # list[str]: A0 预警
-    "triangle_verification": {...},     # 五角校验结果
+    "triangle_verification": {...},     # 五角校验 v4 结果
     "fail_closed_reason": "",           # str: fail_closed 时的原因
-    "position_factor": 1.0,             # P3 预警联动：仓位因子
-    "sl_tighten_factor": 1.0,           # P3 预警联动：止损收紧因子
-    "early_exit_signal": False,         # P3 预警联动：提前离场信号
+    "position_factor": 1.0,             # v4 风险评分风控：仓位因子（0.60-1.10）
+    "sl_tighten_factor": 1.0,           # v4 风险评分风控：止损收紧因子（0.85-1.0）
+    "early_exit_signal": False,         # v3 保留：TDA+Ising双预警提前离场
+    "leverage_factor": 1.0,             # v4 新增：杠杆因子（0.70-1.05）
+    "tp_adjustment": 1.0,               # v4 新增：止盈调整因子（0.90-1.10）
+    "risk_score": 0.0,                  # v4 新增：综合风险评分（0=安全, 1=高危）
+    "risk_level": "NORMAL",             # v4 新增：风险等级 LOW/NORMAL/MID/HIGH
 }
 ```
 
@@ -443,7 +449,8 @@ def infer(self, df: pd.DataFrame, idx: int = -1, auto_train: bool = True) -> Dic
 **fail_closed 触发条件：**
 - 置信度 < 0.3
 - A0 创伤信号（连续3次同方向错误）且置信度 < 0.4
-- 五角校验三源严重分歧（`triangle_result.should_fail_closed`）
+
+> 注：v4 五角校验不再触发 fail_closed（`should_fail_closed` 恒为 False），仅通过风险评分调整仓位/杠杆/止盈/止损。
 
 ### 5.4 maybe_retrain
 
@@ -787,8 +794,9 @@ python data_server_fixed.py
 | `模型未训练` | BCRM 2.0 模型未就绪且 `auto_train=False` | 返回 FLAT，不下单 |
 | `模型未就绪` | 模型加载失败且训练失败 | 同上 |
 | `置信度不足` | 推理置信度 < 0.3 | 返回 FLAT，不下单 |
-| `三源严重分歧` | 五角校验中 BCRM2/力学/A0 严重冲突 | 返回 FLAT，不下单 |
-| `A0创伤信号降级` | A0 检测连续3次同方向错误 + 置信度 < 0.4 | 返回 FLAT，不下单 |
+| `A0创伤降级` | A0 创伤信号且置信度 < 0.4 | 返回 FLAT，不下单 |
+
+> 注：v4 五角校验不再触发 fail_closed（"三源严重分歧"已废弃）。五角校验改为通过风险评分调整仓位/杠杆/止盈/止损，不阻断开仓。
 | `推理失败: <异常>` | 推理过程抛异常 | 返回 FLAT，记录堆栈 |
 
 ### 12.2 诊断面板状态
@@ -809,12 +817,21 @@ python data_server_fixed.py
 
 ### 12.4 风控触发
 
-| 触发条件 | 行为 |
-|----------|------|
-| `daily_pnl <= daily_loss_limit` | `trading_halted=True`，停止开新仓 |
-| `consecutive_losses >= max_consecutive_losses` | 同上 |
-| 持仓数 >= `max_positions` | 拒绝开新仓 |
-| A7 门禁未通过 | 拦截当前币种下单 |
+**v4.2 改造**：风控以**亏损金额**为唯一触发准则，不再以连续亏损笔数为准。
+
+| 触发条件 | 判定逻辑 | 行为 |
+|----------|----------|------|
+| 亏损金额超限 | `daily_pnl ≤ -(current_equity × loss_limit_pct)` | `trading_halted=True`，停止开新仓 |
+| 兜底固定阈值 | `daily_pnl ≤ daily_loss_limit` | 同上 |
+| 有效阈值 | `max(dynamic_limit, daily_loss_limit)` | 取更严格者 |
+| ~~连续亏损笔数~~ | ~~`consecutive_losses ≥ max_consecutive_losses`~~ | 已禁用（`max_consecutive_losses=999`） |
+| 持仓数 >= `max_positions` | — | 拒绝开新仓 |
+| A7 门禁未通过 | — | 拦截当前币种下单 |
+
+**默认场景**（可用资金 150U，`loss_limit_pct=0.20`）：
+- 亏25U（16.7%）→ 允许交易
+- 亏30U（20.0%）→ 触发拦截
+- 亏35U（23.3%）→ 触发拦截 + `trading_halted=True`
 
 ---
 

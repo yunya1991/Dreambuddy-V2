@@ -5,6 +5,68 @@
 
 ---
 
+## [v6.0] - 2026-08-06
+
+### Phase A+/B+/C 智能增强演进 & v15-final 最终形态锁定
+
+**最终形态：Phase B+（Phase A+ 基线 + 子形态微调），Phase C 暂不启用**
+
+#### Phase A+：智能增强基线（v5.x 已实现，作为基线）
+
+- **ATR动态止盈**：BTC 4%基准按ATR因子动态调整
+- **移动止盈（Trailing TP）**：浮盈80%启动，回撤N×ATR止盈
+- **ELDER-RAY资金调度**：0.9-1.5x 按趋势强度调整仓位
+- **BTC风向标智能模式**：BTC用DirectionGate MA128，其他币用BTC风向标3日确认
+- **贝叶斯8参数自动调度**：连亏3笔+月度触发，双基线版本管理
+
+#### Phase B+：子形态微调（BULL/BEAR × Elder-ray 6类子形态）
+
+- **新增**：子形态6分类（BULL_STRONG/BULL_NORMAL/BULL_STABLE/BEAR_STRONG/BEAR_NORMAL/BEAR_STABLE），3-bar mode 平滑
+  - 基于 Elder-ray + MA128 全局BULL/BEAR
+  - TP 倍数：BULL 形态×1.05-1.15（放宽止盈），BEAR 形态×0.85-0.95（收紧止盈）
+  - 持仓倍数：BULL×1.05-1.10（延长持仓），BEAR×0.85-0.95（缩短持仓）
+  - **影响范围**: `core/v15_backtest.py`, `core/v15_trader.py`
+  - **验证方式**: 3币种（BTC/ETH/SOL）回测 vs A+基线：收益+2.07%、胜率+1.38%、Calmar+1.18、最大回撤不变
+
+#### Phase C：易经推理桥接 & risk/value 插值（模块化实现，默认关闭）
+
+- **新增**：易经推理桥接模块（模块化，可被外部调用）
+  - `lib/yijing_bridge.py`：跨目录 importlib 加载 YijingEngine，K线转8维归一化评分（供需/技术面/资金流/情绪/趋势强度/波动率/量比/价格位置），批量/单次推理+缓存
+  - `lib/yijing_param_interpolator.py`：risk/value→TP/持仓/仓位插值，与子形态倍数叠加，clamp [0.75, 1.25]，中性区（|net_value|<0.12）不调整
+  - `lib/coin_selector.py`：易经因子币种过滤（DANGER剔除，net_value排序）
+  - `core/walk_forward_validator.py`：5段 walk-forward 验证框架（全段退化<5%才通过）
+  - **修复 Bug**：risk_score 从离散3档(0.25/0.50/0.75)→连续化（卦象档位锚点+8维评分微调），范围 0.17-0.71
+  - **修复 Bug**：前向填充（最多回看3bar≈12h）解决 yijing_step=6 采样导致的命中率低（13-32%→~100%）
+  - **影响范围**: `lib/yijing_bridge.py`, `lib/yijing_param_interpolator.py`, `lib/coin_selector.py`, `core/walk_forward_validator.py`, `core/v15_backtest.py`, `core/v15_trader.py`
+
+- **新增**：双层优化节奏（60天参数空间 + 6天易经插值）
+  - `lib/bayesian_optimizer.py` `SCHEDULE_CONFIG`：`param_space_recalc_days=60`（过拟合护栏），`yijing_interp_days=6`（日常微调，不碰边界）
+  - 冷却期24h，连亏3笔事件驱动，收益≥2%才采用
+
+#### Phase C 未通过验证，暂不启用
+
+- **walk-forward 结果**：
+  - BTC/ETH ✅ 5/5段通过
+  - SOL ❌ 4/5段（第2段退化6%超5%容忍线）
+- **C vs B+ 收益对比**：
+  | 币种 | B+收益 | C收益 | C-B+ |
+  |------|--------|-------|------|
+  | BTC  | +26.99% | +26.94% | -0.05% |
+  | ETH  | +10.50% | +10.40% | -0.10% |
+  | SOL  | +7.36%  | +7.25%  | -0.11% |
+- **根因**：马丁策略止盈/持仓对 tp_mult ±5-8% 的微调不敏感，Phase B+ 子形态已捕获大部分可改善空间，易经插值边际贡献为负
+
+#### v15-final 部署 & 开关
+
+- **新增**：`V15_YIJING_ENABLED` 配置项（默认 `false`，Phase C 关闭）
+  - `.env.v15`：`V15_YIJING_ENABLED=false`
+  - `core/v15_trader.py`：易经桥接仅在开启时懒加载初始化，否则直接跳过
+- **新增**：`data/v15_final_deployment.json` — 最终部署状态快照（决策依据+激活配置+模块保留状态）
+- **实盘重启**：旧进程PID=7329 → 新进程PID=84567，Phase B+ 代码加载，下次开仓时生效
+- **Phase C 模块化保留**：4个模块完整保留，后续可通过 `V15_YIJING_ENABLED=true` 启用或被其他系统调用
+
+---
+
 ## [v5.2] - 2026-08-01
 
 ### 技术文档与代码实现一致性对齐（A8 理论-实践一致性）

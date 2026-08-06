@@ -137,7 +137,7 @@ DreamBuddy v2 是一个**AI驱动的交易决策与开发认知双闭环操作�
 | **G层 (存储层)** | OS文件系统 | GraphStore + Compressor | 状态检查点、上下文压缩、回放 | `dreamos/core/graph_store/` | 🟢 已实现 |
 | **横切关注点** | OS系统服务 | Registry / Evolution / Budget / Adapters / Errors | 节点注册、自我进化、预算管控、适配 | `dreamos/registry/` 等 | 🟢 已实现 |
 | **交易子系统** | 专用ASIC | 10/11/12/13/14/16（6个） | 具体交易策略与风控实现 | `10-经典指标系统/` 等 | 🟢 已实现 |
-| **认知系统** | 大脑皮层 | daemon + git hook + 会话管理器 | 开发认知闭环，驱动代码与记忆进化 | `4-MEMORY/9-工具与接口/` | 🟢 已实现 |
+| **认知系统** | 大脑皮层 | daemon + git hook + 会话管理器 + 流程模板系统（Superpowers 14 Skill + T系列 6 Skill + Solution Paths） | 开发认知闭环+交易认知闭环，驱动代码与记忆进化 | `4-MEMORY/9-工具与接口/` | 🟢 已实现 |
 | **公司中枢** | CEO办公室 | 六部门 + 双中台 + 治理体系 | 宏观治理、跨系统协调、合规管控 | `1-ARCHITECTURE/中台设计/` | 🟡 部分实现 |
 | **记忆系统** | 长期记忆 | L0/L1/L2 三层 | 存储+检索+蒸馏+质量分级 | `4-MEMORY/` | 🟡 部分实现 |
 
@@ -901,7 +901,7 @@ TradingAgent（S-A-C-G 全链路调度）
 | 编号/名称 | 定位 | 核心能力 | 文档状态 | 状态 |
 |----------|------|---------|---------|------|
 | **2-KNOWLEDGE 知识库** | 从Skills蒸馏的跨领域系统知识 | 5大域：TRADING/TECHNICAL/THEORY/OPERATIONS/METHODOLOGY | ✅ 完整（5域齐全） | 🟢 |
-| **4-MEMORY 记忆系统** | AI Agent的长期记忆（区别于2-KNOWLEDGE的人类知识） | L0工作记忆 + L1应用记忆（5个MU）+ L2总记忆 + 7标准接口 + 质量分级S/A/B/C/D | 🟡 部分完整（L1丰富，L2待充实） | 🟡 |
+| **4-MEMORY 记忆系统** | AI Agent的长期记忆（区别于2-KNOWLEDGE的人类知识） | L0工作记忆 + L1应用记忆（5个MU）+ L2总记忆 + 7标准接口 + 质量分级S/A/B/C/D + Process流程层（Superpowers+T系列+Solution Paths） | 🟡 部分完整（L1丰富，L2待充实） | 🟡 |
 | **8-FEISHU 飞书协作系统** | 人机协作外部信息层：飞书群组+审批+多维表格+Wiki+Cron任务 | 5群组(研究/交易台/管理/复盘/风控) + 2 Bot(Dream分析推送/Hermes执行接收) + Gate-C/A9审批 + Bitable交易记录 + lark-cli集成 | ✅ README完整 | 🟢 运行中 |
 | **7-产物中台** | 产物存储+索引+路由+归档 | Artifact Hub V2：研究中台+市场化中台+交易链路监控+治理控制台 | ⚠️ 部分完整（仅工程索引有） | 🟡 |
 | **15-监控告警系统** | 全系统监控+告警+通知 | 监控指标采集+阈值告警+多渠道通知 | ⚠️ 仅README | 🔴 待规范化 |

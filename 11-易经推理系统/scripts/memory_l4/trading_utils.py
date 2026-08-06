@@ -45,6 +45,9 @@ class TradeRecord:
     strategy_source: str = ""  # bcrm / external (马丁等其他策略)
     enhance_info: Dict = field(default_factory=dict)  # 震荡市增强器信息（regime, bollinger, sl_mult等）
     reduce_count: int = 0  # E项优化：累计减仓次数，用于max_reduce_count限制
+    # ATR 基线 SL/TP 收益率（开仓时记录，供易经离场系统调制使用）
+    base_sl_roi: float = 0.0   # 开仓时 ATR 基线止损收益率（如 0.12 = 12%）
+    base_tp_roi: float = 0.0   # 开仓时 ATR 基线止盈收益率（如 0.60 = 60%）
 
 
 @dataclass
@@ -74,9 +77,9 @@ class DailyStats:
 class RiskState:
     """风控状态"""
     daily_pnl: float = 0.0
-    daily_loss_limit: float = -100.0       # 日最大亏损（USDT）
-    daily_loss_limit_pct: float = -0.05    # 日最大亏损比例
-    max_consecutive_losses: int = 5        # 最大连续亏损次数
+    daily_loss_limit: float = -100.0       # 日最大亏损（USDT，兜底固定值）
+    loss_limit_pct: float = 0.20           # 日最大亏损比例（相对当前权益，0.20=20%）
+    max_consecutive_losses: int = 999      # 最大连续亏损次数（已禁用，设极大值不再触发）
     current_consecutive_losses: int = 0
     trading_halted: bool = False
     halt_reason: str = ""
@@ -254,7 +257,7 @@ class PerformanceTracker:
         return asdict(ds)
 
     def get_overall_stats(self) -> Dict:
-        """获取整体统计"""
+        """获取整体统计（P2修正：补夏普比率和日收益率序列）"""
         total_trades = len(self.trades)
         win_trades = sum(1 for t in self.trades if t.pnl >= 0)
         loss_trades = total_trades - win_trades
@@ -266,6 +269,22 @@ class PerformanceTracker:
         avg_win = sum(wins) / len(wins) if wins else 0
         avg_loss = sum(losses) / len(losses) if losses else 0
         profit_factor = avg_win / avg_loss if avg_loss else 0
+
+        # P2修正：计算日收益率序列和夏普比率
+        daily_returns = {}
+        for t in self.trades:
+            day = (t.exit_time or "")[:10]
+            if not day:
+                day = "unknown"
+            daily_returns[day] = daily_returns.get(day, 0.0) + t.pnl
+
+        daily_pnls = list(daily_returns.values())
+        sharpe_ratio = 0.0
+        if len(daily_pnls) > 1:
+            import numpy as _np
+            std = _np.std(daily_pnls)
+            if std > 0:
+                sharpe_ratio = _np.mean(daily_pnls) / std * (252 ** 0.5)
 
         return {
             "total_trades": total_trades,
@@ -280,6 +299,9 @@ class PerformanceTracker:
             "current_equity": self.current_equity,
             "peak_equity": self.peak_equity,
             "initial_equity": self.initial_equity,
+            "sharpe_ratio": sharpe_ratio,  # P2新增
+            "daily_returns": daily_pnls,   # P2新增
+            "trading_days": len(daily_pnls),  # P2新增
         }
 
 
@@ -289,16 +311,16 @@ class RiskManager:
     """风险控制器：动态仓位 + 日亏损限制 + 连续亏损熔断"""
 
     def __init__(self,
-                 daily_loss_limit_usdt: float = -100.0,
-                 daily_loss_limit_pct: float = -0.05,
-                 max_consecutive_losses: int = 5,
+                 daily_loss_limit_usdt: float = -30.0,
+                 max_consecutive_losses: int = 999,
                  default_position_pct: float = 0.10,
                  min_position_pct: float = 0.02,
                  max_position_pct: float = 0.20,
-                 min_position_usdt: float = 20.0):
+                 min_position_usdt: float = 20.0,
+                 loss_limit_pct: float = 0.20):
         self.state = RiskState(
             daily_loss_limit=daily_loss_limit_usdt,
-            daily_loss_limit_pct=daily_loss_limit_pct,
+            loss_limit_pct=loss_limit_pct,
             max_consecutive_losses=max_consecutive_losses,
             position_size_pct=default_position_pct,
             min_position_size_pct=min_position_pct,
@@ -351,6 +373,12 @@ class RiskManager:
     def can_trade(self, current_equity: float = 0) -> Dict:
         """检查是否允许开仓
 
+        风控规则：亏损金额超过可用金额的 loss_limit_pct（默认20%）则触发拦截。
+        不再以连续亏损笔数为准，避免小幅连续亏损反复触发风控。
+
+        Args:
+            current_equity: 当前账户权益（USDT），用于动态计算亏损阈值
+
         Returns:
             {allowed: bool, reason: str}
         """
@@ -360,13 +388,14 @@ class RiskManager:
         if self.state.trading_halted:
             return {"allowed": False, "reason": f"交易已暂停: {self.state.halt_reason}"}
 
-        if self.state.daily_pnl <= self.state.daily_loss_limit:
-            return {"allowed": False,
-                    "reason": f"日亏损达上限: {self.state.daily_pnl:.2f} <= {self.state.daily_loss_limit:.2f}"}
+        # 动态亏损阈值：亏损超过当前权益的 loss_limit_pct（默认20%）则拦截
+        # 兜底固定值 daily_loss_limit（默认-30U，即150U可用金的20%）
+        dynamic_limit = -(current_equity * self.state.loss_limit_pct) if current_equity > 0 else self.state.daily_loss_limit
+        effective_limit = max(dynamic_limit, self.state.daily_loss_limit)  # 取更严格的阈值
 
-        if self.state.current_consecutive_losses >= self.state.max_consecutive_losses:
+        if self.state.daily_pnl <= effective_limit:
             return {"allowed": False,
-                    "reason": f"连续亏损达上限: {self.state.current_consecutive_losses}/{self.state.max_consecutive_losses}"}
+                    "reason": f"日亏损达上限: {self.state.daily_pnl:.2f} <= {effective_limit:.2f} (权益{current_equity:.2f}的{self.state.loss_limit_pct:.0%})"}
 
         return {"allowed": True, "reason": ""}
 
@@ -439,8 +468,14 @@ class RiskManager:
             ),
         }
 
-    def update_after_trade(self, pnl: float, is_win: bool):
-        """交易平仓后更新风控状态"""
+    def update_after_trade(self, pnl: float, is_win: bool, current_equity: float = 0):
+        """交易平仓后更新风控状态
+
+        Args:
+            pnl: 本笔盈亏（USDT）
+            is_win: 是否盈利
+            current_equity: 当前权益（用于动态亏损阈值判断）
+        """
         self.state.daily_pnl += pnl
 
         if is_win:
@@ -448,13 +483,16 @@ class RiskManager:
         else:
             self.state.current_consecutive_losses += 1
 
-        if self.state.daily_pnl <= self.state.daily_loss_limit:
-            self.state.trading_halted = True
-            self.state.halt_reason = f"日亏损达到上限 {self.state.daily_loss_limit:.2f} USDT"
+        # 仅以亏损金额触发halt，不以连续亏损笔数触发
+        dynamic_limit = -(current_equity * self.state.loss_limit_pct) if current_equity > 0 else self.state.daily_loss_limit
+        effective_limit = max(dynamic_limit, self.state.daily_loss_limit)
 
-        if self.state.current_consecutive_losses >= self.state.max_consecutive_losses:
+        if self.state.daily_pnl <= effective_limit:
             self.state.trading_halted = True
-            self.state.halt_reason = f"连续亏损 {self.state.current_consecutive_losses} 次"
+            self.state.halt_reason = (
+                f"日亏损达到上限 {effective_limit:.2f} USDT "
+                f"(权益{current_equity:.2f}的{self.state.loss_limit_pct:.0%})"
+            )
 
         self._save_state()
 
@@ -521,7 +559,59 @@ class PositionTracker:
         self.positions_dir = memory_l4_dir() / "open_positions"
         self.positions_dir.mkdir(parents=True, exist_ok=True)
         self.open_positions: Dict[str, TradeRecord] = {}
+        # 统一冷静期：{inst_id: {pos_side, close_ts, exit_reason}}
+        self.last_close_info: Dict[str, dict] = {}
         self._load_open_positions()
+        self._load_last_close_info()
+
+    # ── 统一冷静期：持久化 ────────────────────────────────────────────────
+    def _last_close_file(self):
+        return self.positions_dir / "last_close_info.json"
+
+    def _load_last_close_info(self):
+        """从磁盘加载最后平仓记录（用于跨重启保留冷却期）"""
+        f = self._last_close_file()
+        if f.exists():
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    self.last_close_info = json.load(fp)
+            except Exception:
+                self.last_close_info = {}
+
+    def _save_last_close_info(self):
+        """保存最后平仓记录到磁盘"""
+        f = self._last_close_file()
+        try:
+            with open(f, "w", encoding="utf-8") as fp:
+                json.dump(self.last_close_info, fp, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    def is_in_cooldown(self, inst_id: str, direction: str,
+                       cooldown_sec: float) -> Tuple[bool, str]:
+        """检查统一冷静期（全方向拦截）
+
+        平仓后 cooldown_sec 内禁止该币种任何方向的新开仓（含反手）。
+        防止"平仓→立即反手→又亏→再反手"的频繁来回割肉循环。
+
+        Args:
+            inst_id: 合约ID
+            direction: 欲开仓方向 (long/short) — 保留参数兼容，但不再区分方向
+            cooldown_sec: 冷静期秒数
+
+        Returns:
+            (in_cooldown, reason) — in_cooldown=True 表示应跳过开仓
+        """
+        info = self.last_close_info.get(inst_id)
+        if not info:
+            return False, ""
+        elapsed = time.time() - info.get("close_ts", 0)
+        if elapsed < cooldown_sec:
+            remaining = cooldown_sec - elapsed
+            return True, (f"统一冷静期: 剩余{remaining/3600:.1f}h "
+                          f"(上次{info.get('pos_side')}平仓于{elapsed/60:.1f}分钟前, "
+                          f"reason={info.get('exit_reason')})")
+        return False, ""
 
     def _load_open_positions(self):
         """从磁盘加载未平仓记录"""
@@ -569,7 +659,9 @@ class PositionTracker:
                       market_snapshot: Dict = None,
                       contradiction_list: List[Dict] = None,
                       strategy_source: str = "bcrm",
-                      enhance_info: Dict = None) -> TradeRecord:
+                      enhance_info: Dict = None,
+                      base_sl_roi: float = 0.0,
+                      base_tp_roi: float = 0.0) -> TradeRecord:
         """记录开仓"""
         trade_id = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
         rec = TradeRecord(
@@ -587,6 +679,8 @@ class PositionTracker:
             contradiction_list=contradiction_list or [],
             strategy_source=strategy_source,
             enhance_info=enhance_info or {},
+            base_sl_roi=base_sl_roi,
+            base_tp_roi=base_tp_roi,
         )
         self.open_positions[inst_id] = rec
         self._save_open_position(inst_id)
@@ -623,6 +717,14 @@ class PositionTracker:
             rec.pnl_pct = rec.pnl / 100 if rec.entry_price else 0
         else:
             rec.pnl_pct = pnl_pct
+
+        # 记录统一冷静期信息（所有平仓路径都经过此处）
+        self.last_close_info[inst_id] = {
+            "pos_side": rec.direction,
+            "close_ts": time.time(),
+            "exit_reason": exit_reason,
+        }
+        self._save_last_close_info()
 
         self._remove_open_position(inst_id)
         return rec

@@ -1,0 +1,70 @@
+{
+  "deployment_date": "2026-08-06",
+  "version": "v15-final",
+  "final_phase": "B+",
+  "description": "V15经典马丁策略最终部署形态：Phase A+ + 子形态微调(B+)",
+  "decision_basis": {
+    "phase_b_plus": {
+      "avg_return_pct": 14.95,
+      "avg_win_rate": 0.6101,
+      "calmar_ratio": 8.48,
+      "avg_sharpe_ratio": 3.2079,
+      "total_trades": 207,
+      "vs_baseline": {
+        "return_delta": "+2.07%",
+        "win_rate_delta": "+1.38%",
+        "calmar_delta": "+1.18"
+      },
+      "walk_forward": "5/5段全通过"
+    },
+    "phase_c_rejected": {
+      "reason": "易经插值相比B+无额外收益，SOL第2段退化6%超5%容忍线",
+      "c_vs_b_plus": {
+        "BTC": "-0.05%",
+        "ETH": "-0.10%",
+        "SOL": "-0.11%"
+      },
+      "bugs_fixed": [
+        "risk_score离散3档→连续化(0.17-0.71)",
+        "命中率13-32%→~100%(前向填充)",
+        "中性区避免risk≈value时无效收紧"
+      ],
+      "conclusion": "修复后仍微退化，马丁策略对tp_mult±5%微调不敏感"
+    }
+  },
+  "active_config": {
+    "V15_YIJING_ENABLED": false,
+    "subregime_enabled": true,
+    "use_atr": true,
+    "use_trailing_tp": true,
+    "use_direction_gate": true,
+    "use_elder_ray": true,
+    "base_position_pct": 0.22,
+    "leverage": 5.0,
+    "max_base_holding_hours": 29.9,
+    "max_post_addon_hours": 37.7,
+    "golden_window_hours": 11.1,
+    "trailing_atr_mult": 1.0,
+    "trailing_start_pct_of_tp": 0.8,
+    "regime_cooldown_bars": 12,
+    "V15_ALLOW_SHORT": true,
+    "V15_RISK_GATE_ENABLED": true,
+    "V15_COOLDOWN_HOURS": 48,
+    "MAX_CONCURRENT_POSITIONS": 3
+  },
+  "optimization_schedule": {
+    "param_space_recalc_days": 60,
+    "yijing_interp_days": 6,
+    "loss_streak_trigger": 3,
+    "min_improve_pct": 2.0,
+    "cooldown_hours": 24,
+    "note": "60天重算参数空间(过拟合护栏)，6天更新易经插值(当前关闭)"
+  },
+  "phase_c_modules_preserved": {
+    "yijing_bridge": "lib/yijing_bridge.py (模块化，可被外部调用)",
+    "yijing_param_interpolator": "lib/yijing_param_interpolator.py",
+    "coin_selector": "lib/coin_selector.py",
+    "walk_forward_validator": "core/walk_forward_validator.py",
+    "status": "代码保留，V15_YIJING_ENABLED=false 默认关闭，需验证通过后才可开启"
+  }
+}

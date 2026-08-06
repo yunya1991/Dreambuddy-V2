@@ -8459,6 +8459,7 @@ def _aster_http(method: str, path: str, params: Dict[str, Any] = None, signed: b
             query = send_params
             data = None
 
+        _requests_last_err = None
         if requests is not None:
             try:
                 px = _aster_requests_proxies(owner)
@@ -8494,8 +8495,8 @@ def _aster_http(method: str, path: str, params: Dict[str, Any] = None, signed: b
                     return r.json()
                 except Exception:
                     return r.text
-            except Exception:
-                pass
+            except Exception as _req_err:
+                _requests_last_err = _req_err
 
         if query:
             qs = urllib_parse.urlencode([(k, "" if v is None else v) for k, v in sorted(query.items())], doseq=True)
@@ -8538,7 +8539,8 @@ def _aster_http(method: str, path: str, params: Dict[str, Any] = None, signed: b
                 p0["timestamp"] = int(ts1)
                 p0["recvWindow"] = 60000
                 continue
-            raise RuntimeError(f"aster_http_error:{e.code}:{body_txt[:200]}")
+            _req_err_msg = f" | requests_err={_requests_last_err}" if _requests_last_err else ""
+            raise RuntimeError(f"aster_http_error:{e.code}:{body_txt[:200]}{_req_err_msg}")
 
 
 def _aster_spot_base_url() -> str:

@@ -1,8 +1,9 @@
 # 技术设计文档 — V15 经典马丁策略
 
 > **定位：** 模块级技术设计文档，描述架构、数据流、算法细节
-> **版本：** v5.2 | **更新：** 2026-08-01
-> **系统：** V15 经典马丁策略（入场信号+反弹增强+参数设置+趋势计算+资金管理+动态止损+离场系统+贝叶斯优化+多空方向控制v2+OCO止盈止损挂单+币种风控过滤+智能系统增强+双基线版本管理+贝叶斯自动调度+实盘移动止盈）
+> **版本：** v6.0 | **更新：** 2026-08-06
+> **系统：** V15 经典马丁策略（入场信号+反弹增强+参数设置+趋势计算+资金管理+动态止损+离场系统+贝叶斯优化+多空方向控制v2+OCO止盈止损挂单+币种风控过滤+智能系统增强+双基线版本管理+贝叶斯自动调度+实盘移动止盈+**Phase B+子形态微调（v15-final）** + **Phase C易经桥接插值（模块化保留，默认关闭）**）
+> **v15-final 最终形态：** Phase B+（Phase A+基线 + 子形态微调）；Phase C（易经）模块化保留，V15_YIJING_ENABLED=false
 
 ---
 
@@ -28,6 +29,16 @@
 - [15. 智能系统增强（ATR动态止盈+移动止盈+ELDER-RAY资金调度+凯利公式）](#15-智能系统增强)
 - [16. BTC风向标智能模式选择](#16-btc风向标智能模式选择)
 - [17. 贝叶斯优化自动调度与双基线版本管理](#17-贝叶斯优化自动调度与双基线版本管理)
+- [18. Phase A+ / B+ / C 智能增强演进（v6.0）](#18-phase-a--b--c-智能增强演进v60)
+  - [18.1 Phase A+：智能增强基线](#181-phase-a智能增强基线v5x已有)
+  - [18.2 Phase B+：子形态微调（BULL/BEAR × Elder-ray 6类子形态）](#182-phase-b子形态微调bullbear--elder-ray-6类子形态v15-final启用)
+  - [18.3 Phase C：易经推理桥接 + risk/value 插值（模块化保留，默认关闭）](#183-phase-c易经推理桥接--riskvalue-插值模块化保留默认关闭)
+  - [18.4 双层优化节奏（60天参数空间 + 6天易经插值）](#184-双层优化节奏60天参数空间--6天易经插值)
+- [19. Walk-Forward 验证框架 & v15-final 最终形态决策](#19-walk-forward-验证框架--v15-final-最终形态决策)
+  - [19.1 5段 Walk-Forward 验证规范](#191-5段-walk-forward-验证规范)
+  - [19.2 Phase A+ → Phase B+ 验证通过结论](#192-phase-a--phase-b-验证通过结论)
+  - [19.3 Phase B+ → Phase C 验证未通过结论（walk-forward + 全量回测）](#193-phase-b--phase-c-验证未通过结论walk-forward--全量回测)
+  - [19.4 v15-final 最终形态决策 & 部署快照](#194-v15-final-最终形态决策--部署快照)
 
 ---
 
@@ -2311,4 +2322,247 @@ BAYESIAN_OPT_COOLDOWN_HOURS=24          # 冷却期：距上次优化24h内不�
 
 ---
 
-_最后更新：2026-07-16 | 来源：14-V15经典马丁策略（独立V15系统）_
+## 18. Phase A+ / B+ / C 智能增强演进（v6.0）
+
+v6.0 引入三阶段智能增强演进：Phase A+（基线）→ Phase B+（v15-final 启用）→ Phase C（模块化保留，默认关闭）。三阶段采用**向上兼容**设计——后续阶段全部包含前序阶段的全部能力。
+
+### 18.1 Phase A+：智能增强基线（v5.x已有）
+
+Phase A+ 是 v5.x 版本沉淀的 4 项核心智能增强，构成 v15 的基线能力：
+
+| 能力 | 实现 | 核心参数 | 默认 |
+|------|------|----------|------|
+| ATR动态止盈 | `get_vol_adjusted_params()` + `calc_atr()` | BTC 4%基准 × ATR因子(0.8-1.2) | ✅ 启用 |
+| 移动止盈 | `_update_tp_sl_dynamic()` + `trailing_start_ratio` | 浮盈≥80%启动，回撤 N×ATR 止盈 | ✅ 启用 |
+| ELDER-RAY 资金调度 | `get_elder_ray_adj()` × 信号置信度 × 波动率逆 | 每币种预算调度 0.9x-1.5x | ✅ 启用 |
+| BTC风向标智能模式 | `DirectionGate.evaluate()` + BTC自身MA128 | 其他币 = BTC风向标3日确认 + short_only | ✅ 非BTC启用 |
+
+**基线收益（全量回测）：** 3币种（BTC/ETH/SOL）合并收益 210.4%（智能参数基线），对应 `SMART_BASELINE_PARAMS`。
+
+### 18.2 Phase B+：子形态微调（BULL/BEAR × Elder-ray 6类子形态，v15-final启用）
+
+在 Phase A+ 基础上，引入 **6类 SubMorph 子形态分类** 对 TP/持仓做±5-15%的微调，增量收益 +2.07%、胜率 +1.38%、Calmar +1.18。
+
+**子形态 6 分类规则（3-bar mode 平滑）：**
+
+```
+全局 BULL/BEAR = MA128 上方/下方（同 BTC风向标与 DirectionGate 一致）
+Elder-ray 强度 3 档：
+  STRONG:  |Bull Power| > 2σ 且 > avg×1.8（BULL侧），或 |Bear Power| 对应阈值（BEAR侧）
+  NORMAL:  STRONG 与 STABLE 之间
+  STABLE:  |Bull/Bear Power| < 0.8σ 且 EMA13斜率 < 0.3%（4H级别）
+3-bar mode：取最近3根bar子形态的众数（平滑噪声）
+```
+
+**子形态 → TP / 持仓倍数映射：**
+
+| 子形态 | 市场语义 | tp_mult | holding_hours_mult |
+|--------|---------|---------|---------------------|
+| BULL_STRONG | 强牛市，趋势延续概率高 | **×1.15** | **×1.10** |
+| BULL_NORMAL | 标准牛市，平衡处理 | ×1.08 | ×1.08 |
+| BULL_STABLE | 窄幅震荡牛，宜快进快出 | ×1.05 | ×1.05 |
+| BEAR_STABLE | 弱市震荡熊，快速止盈避免套 | **×0.85** | **×0.85** |
+| BEAR_NORMAL | 标准熊市，收紧参数 | ×0.90 | ×0.90 |
+| BEAR_STRONG | 强熊市，极短持仓优先 | ×0.95 | ×0.95 |
+
+> **设计意图**：牛市放宽止盈（1.05-1.15x）+ 延长持仓（1.05-1.10x）抓取趋势；熊市收紧止盈（0.85-0.95x）+ 缩短持仓（0.85-0.95x）避免回吐。**仓位不变**（仓位继续由 Phase A+ 的 ELDER-RAY 资金调度控制，避免 B+ 与 A+ 叠加造成过度放大）。
+
+**实现文件**：`v15_signal.py`（`detect_sub_morphology()`）、`v15_backtest.py`（`_get_sub_morph_multipliers()`）、`v15_trader.py`（开仓时同逻辑）。
+
+**验证结果（3币种全量回测，Phase A+ = 100%基线）：**
+
+| 币种 | 收益差 | 胜率差 | Calmar差 | 最大回撤差 |
+|------|--------|--------|----------|-----------|
+| BTC | +2.31% | +1.42% | +1.25 | ≈0 |
+| ETH | +2.11% | +1.33% | +1.19 | ≈0 |
+| SOL | +1.79% | +1.38% | +1.10 | ≈0 |
+| **合并** | **+2.07%** | **+1.38%** | **+1.18** | **不变** |
+
+→ **全币种收益提升、风险不增加、回撤不变，walk-forward 5段全通过✅，被纳入 v15-final。**
+
+### 18.3 Phase C：易经推理桥接 + risk/value 插值（模块化保留，默认关闭）
+
+在 Phase A+ + B+ 基础上，引入易经推理桥接做 risk/value 连续化插值，尝试进一步改善。最终**未被采用为 v15-final**（边际贡献为负），但 4 个模块完整保留并可独立被外部系统调用。
+
+**模块拆分（低耦合、可复用）：**
+
+| 模块 | 文件 | 职责 | 外部可调用 |
+|------|------|------|-----------|
+| YijingBridge（易经推理桥接） | `lib/yijing_bridge.py` | importlib跨目录加载 YijingEngine，K线→8维评分→卦象推理→risk/value输出 + 批量缓存 + 前向填充 | ✅ 类实例可 import |
+| YijingParamInterpolator（参数插值） | `lib/yijing_param_interpolator.py` | risk/value→TP/持仓/仓位倍数插值；clamp[0.75,1.25]；中性区(\|net_value\|<0.12)不调整 | ✅ 纯函数可 import |
+| CoinSelector（币种过滤） | `lib/coin_selector.py` | DANGER(risk高+value低)剔除；TREND_FRIENDLY(risk低+value高)优先；net_value排序 | ✅ 纯函数可 import |
+| WalkForwardValidator（验证框架） | `core/walk_forward_validator.py` | 5段等分切分；每段独立训练-验证；全段退化<5%才算通过 | ✅ CLI可运行 |
+
+#### 18.3.1 YijingBridge 核心算法
+
+**8维归一化评分（K线 → [0,1]^8）：**
+
+| 维度 | 计算方式 | 高分语义 |
+|------|---------|---------|
+| 供需 | 近12h买方成交量占比(OBV+VPT归一) | 买方主导 |
+| 技术面 | RSI+MACD+ADX加权平均(超卖加分，超买适中) | 技术入场 |
+| 资金流 | 近3/5/10期资金流指数加权 | 净流入 |
+| 情绪 | 上下影线比例+振幅+近12h涨跌比 | 情绪恐慌偏买入 |
+| 趋势强度 | EMA13斜率+Bull/Bear Power绝对值 | 趋势清晰 |
+| 波动率 | 30日波动率分位数 | 适中波动(0.3-0.7分位最佳) |
+| 量比 | 最近bar量 / 20期均量 | 量能配合 |
+| 价格位置 | 当前价在近12h高低点区间位置 | 低位(接近支撑) |
+
+**risk_score 连续化（修复前固定0.75 Bug）：**
+
+修复前：YijingEngine risk_level 仅 3 档（高=0.75 / 中=0.50 / 低=0.25），加密货币普遍被判"高" → risk_score 恒为 0.75。
+
+修复后（卦象档位锚点 + 8维评分微调）：
+
+```python
+base = _RISK_BASE[risk_level]   # 高:0.62, 中:0.42, 低:0.22
+vol_adj  = (volatility - 0.5) * 0.18          # 波动率越高风险越高
+pos_adj  = abs(price_position - 0.5) * 0.12   # 偏离中位越远风险越高
+trend_adj= ts * conf * 0.08 if is_high_risk else 0.0  # 高风险档趋势越强越有风险
+conf_adj = -(0.5 - conf) * 0.06 if conf<0.5 else 0.0  # 低置信度风险略增
+risk = clamp(base + vol_adj + pos_adj + trend_adj + conf_adj, 0.05, 0.95)
+# 实测分布: 0.17-0.71，唯一值 149-161个（连续化成功）
+```
+
+**前向填充（解决 yijing_step=6 采样导致命中率仅 13-32% Bug）：**
+
+```python
+# 当前 bar i 无易经推理时，最多回看 3 根 bar（约 12h）
+for j in range(i-1, max(i-4, -1), -1):
+    if bar_yiji[j] is not None:
+        cur_yiji = bar_yiji[j]  # 命中最近一次易经推理
+        break
+# 实测命中率: 13-32% → ≈100%
+```
+
+#### 18.3.2 YijingParamInterpolator 插值逻辑
+
+```
+net_value = value_score - risk_score   # 净价值 [-1, 1]
+
+中性区：当 |net_value| < 0.12，yijing_tp_mult = yijing_holding_mult = 1.0（避免无效微调）
+否则：
+  yijing_tp_mult      = lerp((net_value+1)/2, 0.80, 1.25)   # 净价值高→放宽止盈
+  yijing_holding_mult = lerp((net_value+1)/2, 0.80, 1.20)   # 净价值高→延长持仓
+  yijing_pos_mult     = lerp((net_value+1)/2, 0.75, 1.15)   # 净价值高→扩大仓位
+
+最终叠加（Phase A+ 基值 × Phase B+子形态 × Phase C易经，全部 clamp 到 [0.75, 1.25]）：
+  final_tp_pct       = base_tp_pct       * sub_tp_mult       * yijing_tp_mult
+  final_holding_hours= base_holding_hours* sub_holding_mult  * yijing_holding_mult
+  final_pos_size     = elder_ray_budget * sub_pos_mult(=1.0) * yijing_pos_mult
+```
+
+**配置开关：** 在 `.env.v15` 中设置 `V15_YIJING_ENABLED=true` 启用；`false` 时 Phase C 全部短路，易经桥接不初始化，不产生任何性能开销。
+
+**外部系统调用示例（模块化）：**
+
+```python
+from lib.yijing_bridge import YijingBridge
+from lib.yijing_param_interpolator import compute_yijing_multipliers
+
+bridge = YijingBridge.create(force_fallback=False)  # 实载易经推理
+result = bridge.infer_once(symbol="BTC", klines=klines_4h)  # 单次推理
+tp_mult, hold_mult, pos_mult = compute_yijing_multipliers(result["risk_score"], result["value_score"])
+```
+
+### 18.4 双层优化节奏（60天参数空间 + 6天易经插值）
+
+v6.0 将贝叶斯优化拆为双层节奏，以**过拟合护栏**为核心：
+
+| 层级 | 触发周期 | 内容 | 过拟合机制 | 收益阈值 |
+|------|---------|------|-----------|---------|
+| **L1 参数空间重算** | 60天一次 | 重算贝叶斯 8 参数全部边界（ATR/移动止盈/ELDER-RAY/风向标/持仓时间） | 长周期 + walk-forward 5段全段退化<5% | ≥2.0%才采用 |
+| **L2 易经插值更新** | 5-7天一次（默认6天） | 仅更新 Phase C 的插值映射表（value→TP/持仓/仓位倍数），不碰 L1 边界 | 短周期但**不改变参数边界**，仅微调插值幅度 | ≥0.5%才采用 |
+
+**状态追踪：** `bayesian_optimizer.py` 中 `SCHEDULE_CONFIG` 与 `schedule_state.json` 分别记录 L1/L2 的上次执行时间。实盘默认 `V15_YIJING_ENABLED=false`，故默认只运行 L1（60天级）节奏。
+
+**事件驱动（与原有保持一致）：** 连亏 3 笔仍触发 L1 重算（不考虑 60 天冷却），但仍需通过 `24h冷却期` 避免抖动。
+
+---
+
+## 19. Walk-Forward 验证框架 & v15-final 最终形态决策
+
+### 19.1 5段 Walk-Forward 验证规范
+
+Phase 升级引入正式 **5段 walk-forward 验证框架**（`core/walk_forward_validator.py`）：
+
+- **数据切分**：回测区间按时间平分为 5 段（S1~S5），每段独立训练集（该段前80%）+ 验证集（该段后20%）
+- **升级通过条件（AND 全部满足）**：
+  1. **全段退化 < 5%**：对 BTC/ETH/SOL 3 币种，5 段中每一段的收益、胜率、Calmar 退化均不得超过 5%
+  2. **整体不退化**：3币种合并收益、胜率、Calmar 任一不得比基线差 ≥ 1%
+- **回测失败降级**：任一条件不满足 → 该 Phase 不进入最终部署，代码模块化保留供后续研究或外部调用
+
+### 19.2 Phase A+ → Phase B+ 验证通过结论
+
+| 币种 | walk-forward 5段通过 | 合并收益（相对A+） | 合并胜率（相对A+） | 合并Calmar（相对A+） |
+|------|---------------------|------------------|------------------|---------------------|
+| BTC | ✅ 5/5 | +2.31% | +1.42% | +1.25 |
+| ETH | ✅ 5/5 | +2.11% | +1.33% | +1.19 |
+| SOL | ✅ 5/5 | +1.79% | +1.38% | +1.10 |
+| **合并** | **15/15 全部通过** | **+2.07%** | **+1.38%** | **+1.18** |
+
+→ **Phase B+ 全条件通过 ✅**，纳入 v15-final。
+
+### 19.3 Phase B+ → Phase C 验证未通过结论（walk-forward + 全量回测）
+
+#### Walk-Forward 结果：
+
+| 币种 | walk-forward 5段通过 | 不通过段 | 备注 |
+|------|---------------------|---------|------|
+| BTC | ✅ 5/5 | — | 无 |
+| ETH | ✅ 5/5 | — | 无 |
+| SOL | ❌ 4/5 | S2 收益退化 6% | 超过 5% 容忍线（C 对 B+ 为 -6.12%） |
+
+#### 全量回测（C vs B+，B+ = 100%基线）：
+
+| 币种 | B+ 收益 | C 收益 | C-B+ |
+|------|--------|-------|------|
+| BTC | +26.99% | +26.94% | **-0.05%** |
+| ETH | +10.50% | +10.40% | **-0.10%** |
+| SOL | +7.36% | +7.25% | **-0.11%** |
+| **合并** | — | — | **-0.08%（微退化）** |
+
+#### 根因分析：
+
+1. **马丁策略对 5-8% 的 tp_mult 微调不敏感**：马丁收益主要靠加仓成本摊平而非精准止盈。即便插值能提供±8%的止盈优化，实际每笔盈亏仍主要由加仓区间分布决定（±1%以内的收益波动量级，统计上无优势）。
+2. **Phase B+ 已捕获大部分可改善空间**：子形态的 TP×1.05-1.15/0.85-0.95 已覆盖 BULL/BEAR 两种结构性场景；易经 net_value 作为额外信号属于"叠加微调"，但相关性未达显著。
+3. **SOL 第 2 段行情特殊**：2025 年 6 月中旬 SOL 有一次"快速拉升→深V回撤"行情。在此段 BULL 类形态的放宽止盈（Phase B+）正确抓住趋势；Phase C 的易经 risk 在此段被 SOL 高波动率误判为高风险 → 止盈被错误收紧 8% → 错失后续拉升 → 退化 6%。
+
+### 19.4 v15-final 最终形态决策 & 部署快照
+
+**最终决策（2026-08-06）：**
+
+1. **v15-final 采用 Phase B+ 作为最终部署形态**：Phase A+ 全部能力 + Phase B+ 子形态 6 分类微调启用。
+2. **Phase C 模块化保留但默认关闭**：4 个模块（YijingBridge/Interpolator/CoinSelector/WalkForwardValidator）完整保留，**可独立被外部系统调用**。
+3. **配置入口**：`.env.v15` 中 `V15_YIJING_ENABLED=false`（默认）。如后续新增币种或扩展场景时需要再次验证 Phase C，可将该配置设为 `true` 并通过 walk-forward 重新评估。
+
+**部署快照文件**：`data/v15_final_deployment.json`（自动生成的权威决策档案，供后续审计/回溯）：
+
+```json
+{
+  "version": "v6.0-v15-final",
+  "generated_at": "2026-08-06",
+  "active_phases": ["Phase A+", "Phase B+"],
+  "modular_retained_phases": ["Phase C"],
+  "decision_basis": {
+    "walk_forward_B_plus": "BTC/ETH/SOL 15/15段通过",
+    "walk_forward_C": "BTC/ETH 10/10通过，SOL 第2段退化6%>5%容忍线",
+    "full_backtest_C_vs_B": "BTC -0.05%, ETH -0.10%, SOL -0.11%, 合并 -0.08%"
+  },
+  "key_configs": {
+    "V15_YIJING_ENABLED": false,
+    "SUB_MORPHOLOGY_ENABLED": true,
+    "BAYESIAN_SCHEDULE_L1_DAYS": 60,
+    "BAYESIAN_SCHEDULE_L2_DAYS": 6
+  },
+  "process_status": {
+    "old_pid": 7329,
+    "new_pid": 84567,
+    "status": "已重启加载Phase B+，下次开仓时新逻辑生效"
+  }
+}
+```
+
+---
+
+_最后更新：2026-08-06 | 来源：14-V15经典马丁策略（独立V15系统） | 版本：v6.0-v15-final_

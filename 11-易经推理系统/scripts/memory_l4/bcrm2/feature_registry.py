@@ -32,6 +32,7 @@ class FeatureModuleSpec:
     factory: Callable                               # 工厂函数/类 → 实例
     participates_in_gua: bool = False               # 是否参与卦象推导（8卦维度）
     requires_ref_df: bool = False                   # 是否需要参考资产(如BTC)
+    requires_macro_df: bool = False                 # 是否需要宏观数据(P1)
     requires_symbol: bool = False                   # 构造函数是否需要 symbol
     requires_cycle_phase: bool = False              # 是否需要 cycle 模块输出
     default_enabled: bool = True                    # 默认是否启用
@@ -97,6 +98,7 @@ class FeatureRegistry:
         cls,
         df: pd.DataFrame,
         ref_df: Optional[pd.DataFrame] = None,
+        macro_df: Optional[pd.DataFrame] = None,
         symbol: str = "BTC",
         config: Optional[dict] = None,
         enabled: Optional[List[str]] = None,
@@ -107,6 +109,7 @@ class FeatureRegistry:
         Args:
             df: K线 OHLCV 数据
             ref_df: 参考资产（如BTC）的 OHLCV，用于跨资产特征
+            macro_df: 宏观数据 DataFrame（P1），已对齐到 df.index
             symbol: 交易标的符号
             config: 配置字典（如 wdh_weekly_only, cycle_halving 等开关）
             enabled: 启用的模块名列表。None 表示启用所有 default_enabled=True 的模块
@@ -120,6 +123,7 @@ class FeatureRegistry:
         ctx = {
             "df": df,
             "ref_df": ref_df,
+            "macro_df": macro_df,
             "symbol": symbol,
             "config": config or {},
         }
@@ -146,6 +150,13 @@ class FeatureRegistry:
                 if ref_df is None or len(ref_df) < 200:
                     if verbose:
                         print(f"  跳过 {name}: ref_df 不足")
+                    continue
+
+            # 检查 macro_df 依赖
+            if spec.requires_macro_df:
+                if macro_df is None or macro_df.empty:
+                    if verbose:
+                        print(f"  跳过 {name}: macro_df 缺失")
                     continue
 
             # 创建实例
@@ -180,6 +191,10 @@ class FeatureRegistry:
                 elif name == "merrill_clock":
                     cycle_phase = cycle_feats if cycle_feats is not None else None
                     feats = instance.compute(df, ref_df=ref_df, cycle_phase=cycle_phase)
+                elif spec.requires_macro_df:
+                    # 提取 macro_ 前缀的维度开关配置传给宏观特征模块
+                    macro_config = {k: v for k, v in ctx["config"].items() if k.startswith("macro_")}
+                    feats = instance.compute(df, macro_df=macro_df, config=macro_config)
                 else:
                     feats = instance.compute(df)
             except Exception as e:

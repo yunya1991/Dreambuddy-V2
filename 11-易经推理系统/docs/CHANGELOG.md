@@ -2,7 +2,113 @@
 
 > **定位**：记录每次变更的原因、内容、验证方式
 > **格式**：`[版本] - 日期 → 变更类型（新增/修改/修复/删除）`
-> **版本**：v3.0 | **更新**：2026-08-01
+> **版本**：v4.2 | **更新**：2026-08-06
+
+---
+
+## [v4.2] - 2026-08-06
+
+### 宏观特征优化（v4 前向贪心选择）
+
+- **新增**: `macro_feature_optimize_v4.py` 两阶段加速的前向贪心选择（预筛选 Top-8 + 前向选择）
+  - 动机: v3 用 importance ranking 的不同截断（K=3/5/8）测试，不是真正的特征搜索；v4 从 K=0 逐步添加边际贡献最大的特征
+  - 预筛选阶段: 24 个特征逐个评估单特征贡献，选 Top-8 候选
+  - 前向选择阶段: 在 Top-8 上做贪心选择，产出 K-vs-得分曲线，早停 patience=3
+- **修改**: `macro_features.py` 增加两级开关机制（特征级 `macro_feat_{name}` 优先，维度级 `macro_enable_{dim}` 回退）
+- **验证**: BTC-only 3折×4000bars 选择 + 5折×6000bars 验证
+  - K=0 基线 11.253 → K=3 最优 16.578（选择阶段）
+  - K=0 验证 10.273 → K=3 验证 12.721（**+23.8%**）
+  - 3 个特征验证有效: `fgi_zscore` (+3.672)、`fgi_extreme_fear` (+1.611)、`hash_rate_trend` (+0.042)
+  - 关键发现: `fgi_zscore` + `fgi_extreme_fear` 协同效应（连续值+事件标记）；`tvl_change_7d` 与 FGI 冲突（单独+1.329，组合后-4.326）
+
+### BTC 宏观特征落地
+
+- **修改**: `bcrm2_adapter.py` 增加 `macro_config` 参数
+  - `__init__` 接收 `macro_config: dict = None`
+  - 训练和推理路径的 `compute_all` 调用均传入 `config=self.macro_config`
+  - `_get_cache_key` 加入 macro_config 哈希，配置变更自动重训
+- **修改**: `polling_trader.py` `_infer_bcrm2()` 为 BTC 传入 3 特征配置
+  - BTC: 启用 `fgi_zscore` + `fgi_extreme_fear` + `hash_rate_trend`，显式关闭其余 21 个
+  - 其他币种: `macro_config=None`（保持默认行为）
+- **验证**: MacroFeatures.compute 正确启用/关闭特征；缓存键区分不同配置；test_polling_trader_prediction 2/2 通过
+
+### 风控规则改造（亏损金额比例触发）
+
+- **重构**: `trading_utils.py` RiskManager 风控触发逻辑
+  - 动机: 原连续亏损笔数触发（默认5次）导致小幅连续亏损反复触发风控，交易频率过低
+  - 改为: 亏损金额 > 可用金额 × `loss_limit_pct`（默认20%）触发
+  - `RiskState` 新增 `loss_limit_pct: float = 0.20`，`max_consecutive_losses` 默认改为 999（禁用）
+  - `can_trade()` 改为动态计算 `-(current_equity × loss_limit_pct)` 阈值，取 `max(dynamic, daily_loss_limit)` 为有效阈值
+  - `update_after_trade()` 增加 `current_equity` 参数，halt 触发改为仅看亏损金额
+- **修改**: `polling_trader.py` 默认参数 `daily_loss_limit=-30.0`、`max_consecutive_losses=999`
+  - `_load_evolution_config` 加载 `loss_limit_pct`
+  - `update_after_trade` 调用传入 `current_equity`
+- **修改**: `yijing_monitor.py` 默认值同步为 `-30.0/999/0.20`，保存时写入 `loss_limit_pct`
+- **修改**: `self_evolution_engine.py` 进化白名单移除 `max_consecutive_losses`，新增 `loss_limit_pct`
+- **修改**: `config.json` 风控配置 `daily_loss_limit: -30.0, max_consecutive_losses: 999, loss_limit_pct: 0.20`
+- **验证**: 6 项单元测试通过（RiskState 字段、RiskManager 默认参数、动态阈值、连亏不触发、update_after_trade、PollingTrader 参数）
+
+### 文档更新
+
+- **修改**: `TECHNICAL_DESIGN.md`
+  - §9.3.1 新增宏观特征层章节（24特征/6维度+两级开关+v4验证结果+落地配置+关键发现）
+  - §11.3.1 新增风控触发规则章节（设计哲学+风控规则表+默认场景+代码示例+进化系统适配）
+  - 推理链 RiskManager 描述更新
+  - §16 变更日志添加 v4.2 条目
+- **修改**: `API_SPEC.md`
+  - PollingTrader 参数默认值更新（`daily_loss_limit=-30.0, max_consecutive_losses=999`）
+  - 风控状态示例增加 `loss_limit_pct` 和 `daily_loss_limit` 字段
+  - §12.4 风控触发表格重写（亏损金额比例触发+默认场景示例）
+
+---
+
+## [v4.0] - 2026-08-05
+
+### 五角校验 v4 风险评分风控版
+
+- **重构**: 五角校验从 v3"纯风控中立"升级为 v4"风险评分驱动的双向风控"
+  - 动机: v3 纯风控版仅双预警止损收紧，五角校验未真正发挥作用
+  - 与 v2 的本质区别: v2 是五源方向投票→一致性→仓位调整（方向驱动，已证伪）；v4 是五源风险信号→风险评分→仓位/杠杆/止盈/止损调控（风险驱动）
+  - 核心机制:
+    1. 五源风险信号综合评分 (0=安全, 1=高危)：不投票方向，只评估风险等级
+    2. 风险注意力动态加权：追踪各源风险预警准确率（预警后市场是否恶化），指数衰减更新权重 (decay=0.97)
+    3. 双向风控调控：低风险→加仓/提杠杆/提高止盈，高风险→降仓/降杠杆/收紧止损
+    4. v3 双预警止损收紧保留（TDA+Ising 同时触发 → sl_tighten=0.85 底线）
+  - **影响范围**: `scripts/memory_l4/triangle_verifier.py`（核心改造）、`scripts/memory_l4/bcrm2/walk_forward_backtester.py`（回测适配）、`scripts/memory_l4/bcrm2_adapter.py`（字段透传）、`scripts/memory_l4/polling_trader.py`（实盘适配）
+
+- **回测验证**: BTC/ETH/SOL 6000bars/5folds 对比 baseline vs v4
+  - 参数调优: risk_threshold_low 从 0.30 调为 0.15（收窄加仓范围），pos_factor 从 1.15 降为 1.10，leverage_factor 从 1.15 降为 1.05（减少回撤恶化）
+  - 最终结果: 平均夏普 10.16→10.20 (+0.4% ✅)、平均回撤 10.12%→10.34% (+0.22% ✅)、平均收益 135.31%→139.40% (+4.09% ✅)、风控触发 94笔/412笔（加仓79+降仓3+双预警12 ✅）
+  - 四项验证标准全部通过: 夏普不拖累 ✅、回撤不恶化 ✅、风控层触发 ✅、收益提升 ✅
+  - **验证脚本**: `scripts/memory_l4/pentagon_v3_backtest.py`
+  - **遗留**: 实盘杠杆调整需后续实现 set_leverage API（仓位/止损/止盈已适配）
+
+---
+
+## [v3.1] - 2026-08-05
+
+### 五角校验 v3 纯风控版重构
+
+- **重构**: 五角校验器从"方向校验器"重新定位为"风险预警器"（P3 风控层独立运行，不影响 BCRM2 信号生成）
+  - 动机: v2 方向投票+仓位调整链路经两轮贝叶斯优化仍无法超过无校验基线（高胜率环境下降仓有害）
+  - 移除: 五源加权方向投票、agreement_score→position_factor 链路、一致性评分→置信度调整、轻量注意力动态权重、fail_closed 阻断、强一致/分歧/反转加减仓
+  - 保留: TDA 拓扑突变预警 + Ising 相变预警，双预警同时触发 → sl_tighten=0.85（收紧止损15%）
+  - 中性化: PentagonParams 权重/惩罚/仓位系数全部冻结为中性值，仅保留接口兼容
+  - **影响范围**: `scripts/memory_l4/triangle_verifier.py`、`scripts/memory_l4/bcrm2/walk_forward_backtester.py`、`scripts/memory_l4/bcrm2_adapter.py`、`scripts/memory_l4/polling_trader.py`
+  - **验证方式**: 运行时验证通过 — 无预警场景 verdict=P3_RISK_MONITOR、confidence_adjustment=0.0、position_factor=1.0、should_fail_closed=False、sl_tighten_factor=1.0；注意力机制冻结（record_outcome 为 no-op，权重恒 0.20）
+
+- **回测验证**: BTC/ETH/SOL 6000bars/5folds 对比 baseline vs v3
+  - 参数调优: sl_tighten_double 从 0.7（收紧30%）调整为 0.85（收紧15%），根因是 0.7 在低波动率币种 BTC 上过于激进，导致夏普 -20%、交易摩擦激增
+  - 最终结果（sl_tighten=0.85）: 平均夏普 10.28→10.22（-0.6%，容许 ±5% 内 ✅）、平均回撤 10.53%→10.53%（+0.00%，容许 ±0.5% 内 ✅）、风控触发 13笔/414笔（3.1% ✅）
+  - 三项验证标准全部通过: 夏普不拖累 ✅、回撤不恶化 ✅、风控层确实触发 ✅
+  - **验证脚本**: `scripts/memory_l4/pentagon_v3_backtest.py`
+  - **结果文件**: `data/pentagon_v3_validation.json`
+
+- **清理**: 移除 v2 残留死代码与孤儿文件
+  - 删除 `polling_trader.py` 中 v2 降仓死代码块（position_factor 恒=1.0 永不执行）
+  - 归档 `pentagon_optimal_params.json`（v2 贝叶斯优化产物，运行时不再加载）→ `_archived/`
+  - 更新 `fast_verifier.py` 诊断脚本，verdict 统计从 STRONG_AGREE/MAJORITY_AGREE/DIVERGENT/CONFLICT 四分类改为 P3_RISK_MONITOR 覆盖率
+  - **影响范围**: `scripts/memory_l4/polling_trader.py`、`scripts/memory_l4/_archived/pentagon_optimal_params.json`、`scripts/memory_l4/fast_verifier.py`
 
 ---
 

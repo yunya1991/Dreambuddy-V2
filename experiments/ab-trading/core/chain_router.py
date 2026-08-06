@@ -233,7 +233,18 @@ class ChainRouter:
                 sl = round(px * 1.04, 4)
                 tp = round(px * 0.92, 4)
 
-        leverage = min(5, max(1, int(self._current_conf * 5)))
+        # 杠杆动态调整：基于置信度映射 [2,5]
+        # <0.65→2x | 0.65-0.75→3x | 0.75-0.85→4x | ≥0.85→5x
+        # 若后续实盘表现较差，可整体回归 2x
+        _c = self._current_conf
+        if _c >= 0.85:
+            leverage = 5
+        elif _c >= 0.75:
+            leverage = 4
+        elif _c >= 0.65:
+            leverage = 3
+        else:
+            leverage = 2
 
         # 记录图压缩节点
         self._record_graph(gate_passed, pos_usdt)

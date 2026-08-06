@@ -14,11 +14,14 @@ Walk-Forward 回测框架 — 实践检验真理的算法落地
 """
 
 import os
+import logging
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass, field
 from tqdm import tqdm
+
+logger = logging.getLogger(__name__)
 
 from .bagua_feature_engine import BaguaFeatureEngine
 from .triple_barrier_labeler import DialecticalLabeler
@@ -185,6 +188,7 @@ class WalkForwardBacktester:
         fs_corr_threshold: float = 0.85,
         use_regime_switching: bool = False,  # 是否启用市态切换
         use_meta_labeling: bool = False,  # 是否启用L2 Meta-Labeling
+        macro_config: Optional[dict] = None,  # 宏观特征维度开关（贝叶斯优化用）
     ):
         self.symbol = symbol
         self.n_folds = n_folds
@@ -203,6 +207,7 @@ class WalkForwardBacktester:
         self.fs_corr_threshold = fs_corr_threshold
         self.use_regime_switching = use_regime_switching
         self.use_meta_labeling = use_meta_labeling
+        self.macro_config = macro_config  # 宏观特征维度开关
         self.enable_pentagon = True  # 五角校验开关
 
         # 五角校验器
@@ -330,6 +335,23 @@ class WalkForwardBacktester:
         import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
         import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
         import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.macro_features  # noqa: F401
+
+        # P1: 获取宏观数据（失败则跳过 macro 模块）
+        # 优化：当 macro_config 所有维度都关闭时，跳过拉取
+        macro_all_disabled = (
+            self.macro_config is not None
+            and all(not v for v in self.macro_config.values())
+        )
+        macro_df = None
+        if not macro_all_disabled:
+            try:
+                from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
+                fetcher = MacroDataFetcher()
+                macro_df = fetcher.fetch_all(self.symbol, df.index, live=False, verbose=verbose)
+            except Exception as e:
+                if verbose:
+                    print(f"  [Macro] 宏观数据获取失败，跳过: {e}")
 
         registry_config = {
             "wdh_weekly_only": wdh_weekly_only,
@@ -338,6 +360,9 @@ class WalkForwardBacktester:
             "cycle_inventory": cycle_inventory,
             "cycle_long_term": cycle_long_term,
         }
+        # 合并宏观维度开关（贝叶斯优化传入）
+        if self.macro_config:
+            registry_config.update(self.macro_config)
 
         enabled = ["bagua", "classic_exp", "fibonacci"]
         if enable_pivot: enabled.append("pivot_point")
@@ -347,6 +372,7 @@ class WalkForwardBacktester:
         if enable_mcap: enabled.append("market_cap")
         if enable_merrill: enabled.append("merrill_clock")
         if ref_df is not None: enabled.append("cross_asset")
+        if macro_df is not None and not macro_df.empty: enabled.append("macro")
 
         if verbose:
             print(f"[{self.symbol}] 计算 {len(enabled)} 个特征模块...")
@@ -354,6 +380,7 @@ class WalkForwardBacktester:
         features, feature_names_by_gua = FeatureRegistry.compute_all(
             df=df,
             ref_df=ref_df,
+            macro_df=macro_df,
             symbol=self.symbol,
             config=registry_config,
             enabled=enabled,
@@ -479,7 +506,19 @@ class WalkForwardBacktester:
         X_train_df = features.iloc[train_start:train_end].copy()
         y_train = labels.iloc[train_start:train_end]["label"].values
 
-        # 过滤掉NaN
+        # 删除低覆盖率列（有效值 < 50%），避免 macro 的稀疏列和 warmup 列干扰训练
+        n_rows = len(X_train_df)
+        min_valid = int(n_rows * 0.5)
+        valid_counts = X_train_df.notna().sum()
+        bad_cols = valid_counts[valid_counts < min_valid].index.tolist()
+        if bad_cols:
+            X_train_df = X_train_df.drop(columns=bad_cols)
+            feature_names_by_gua = {
+                g: [f for f in feats if f not in bad_cols]
+                for g, feats in feature_names_by_gua.items()
+            }
+
+        # 过滤掉剩余含 NaN 的行（warmup 行）
         valid_mask = ~X_train_df.isna().any(axis=1).values
         X_train_df = X_train_df[valid_mask]
         y_train = y_train[valid_mask]
@@ -643,18 +682,38 @@ class WalkForwardBacktester:
                 yijing_decision = None
                 skip_classic = False
 
-                # ── 五角校验：提前退出检查（优先于其他离场逻辑）──
-                if pentagon_result is not None:
-                    # P3双重预警（TDA+Ising）→ 提前退出
-                    if pentagon_result.early_exit_signal:
-                        exit_price = current_price
-                        exit_reason = "pentagon_early_exit"
-                        skip_classic = True
-                    # 反转预警 → 提前退出（如果盈利）
-                    elif pentagon_result.reversal_alert and unrealized_pnl_pct > 0:
-                        exit_price = current_price
-                        exit_reason = "pentagon_reversal"
-                        skip_classic = True
+                # ── 五角校验 v3：仅动态收紧止损，不直接干预方向/平仓 ──
+                if pentagon_result is not None and pentagon_result.sl_tighten_factor < 1.0:
+                    # 双预警触发：动态收紧已有持仓的止损（若尚未收紧）
+                    sl_tighten = pentagon_result.sl_tighten_factor
+                    if not position.get("pentagon_sl_applied", False):
+                        # 基于入场ATR距离重新计算收紧后的止损价
+                        orig_sl_dist = abs(entry_price - position.get("original_sl_price", sl_price))
+                        new_sl_dist = orig_sl_dist * sl_tighten
+                        if direction == 1:
+                            new_sl = entry_price - new_sl_dist
+                            # 只允许更紧的止损（更高），不允许更松
+                            if new_sl > sl_price:
+                                position["sl_price"] = new_sl
+                                sl_price = new_sl
+                                position["pentagon_sl_applied"] = True
+                                position["pentagon_sl_factor"] = sl_tighten
+                                logger.debug(
+                                    f"[P3风控] 多单止损收紧 {sl_tighten:.0%}: "
+                                    f"{entry_price - orig_sl_dist:.2f} → {new_sl:.2f}"
+                                )
+                        else:
+                            new_sl = entry_price + new_sl_dist
+                            # 只允许更紧的止损（更低），不允许更松
+                            if new_sl < sl_price:
+                                position["sl_price"] = new_sl
+                                sl_price = new_sl
+                                position["pentagon_sl_applied"] = True
+                                position["pentagon_sl_factor"] = sl_tighten
+                                logger.debug(
+                                    f"[P3风控] 空单止损收紧 {sl_tighten:.0%}: "
+                                    f"{entry_price + orig_sl_dist:.2f} → {new_sl:.2f}"
+                                )
 
                 if yijing_enabled:
                     hexagram = pred.get("hexagram")
@@ -746,9 +805,30 @@ class WalkForwardBacktester:
                     # 计算手续费 + 滑点（P0修正：滑点=成交额×滑点率，双边）
                     fee = entry_price * self.fee_rate + exit_price * self.fee_rate
                     slippage = (entry_price + exit_price) * self.slippage_rate
-                    pnl_pct = ((exit_price - entry_price) * direction - fee - slippage) / entry_price
+                    raw_pnl = ((exit_price - entry_price) * direction - fee - slippage) / entry_price
 
+                    # P0修复+v4: 仓位系数×五角校验仓位×五角校验杠杆 实际应用到PnL
                     pf = position.get("position_factor", 1.0)
+                    pentagon_pf = position.get("pentagon_pos_factor", 1.0)
+                    pentagon_lev = position.get("pentagon_leverage_factor", 1.0)
+                    effective_pf = pf * pentagon_pf * pentagon_lev
+                    pnl_pct = raw_pnl * effective_pf
+
+                    # v4: 交易结束后更新风险注意力
+                    if self._triangle_verifier is not None:
+                        pentagon_res = position.get("pentagon_result")
+                        if pentagon_res is not None:
+                            self._triangle_verifier.record_outcome(
+                                source_directions={
+                                    "bcrm2": pentagon_res.bcrm2_direction,
+                                    "force": pentagon_res.force_direction,
+                                    "a0": pentagon_res.a0_direction,
+                                    "ising": pentagon_res.ising_direction,
+                                    "tda": pentagon_res.tda_direction,
+                                },
+                                actual_direction=direction,
+                                actual_pnl_pct=pnl_pct * 100,
+                            )
 
                     trade = Trade(
                         entry_bar=position["entry_bar"],
@@ -794,20 +874,22 @@ class WalkForwardBacktester:
 
                 if pentagon_result is not None:
                     pentagon_verdict = pentagon_result.verdict
-                    pentagon_adjustment = pentagon_result.confidence_adjustment
+                    # v4 风险评分风控版：不调整置信度、不阻断开仓
+                    pentagon_adjustment = 0.0  # 不调整置信度
                     pentagon_reversal = pentagon_result.reversal_alert
                     pentagon_early_exit = pentagon_result.early_exit_signal
+                    # v4: 从风险评分分档获取仓位/杠杆/止盈/止损系数
                     pentagon_pos_factor = pentagon_result.position_factor
+                    pentagon_leverage_factor = pentagon_result.leverage_factor
+                    pentagon_tp_adjustment = pentagon_result.tp_adjustment
                     pentagon_sl_tighten = pentagon_result.sl_tighten_factor
-
-                    # 五角校验调整置信度
-                    confidence = max(0.0, min(1.0, confidence + pentagon_adjustment))
-
-                    # fail_closed：五源严重分歧 → 不开仓
-                    if pentagon_result.should_fail_closed:
-                        continue
-
-                    # v2优化：反转预警改为降仓不阻断（position_factor已在verifier中设置）
+                    pentagon_risk_score = pentagon_result.risk_score
+                    pentagon_risk_level = pentagon_result.risk_level
+                else:
+                    pentagon_leverage_factor = 1.0
+                    pentagon_tp_adjustment = 1.0
+                    pentagon_risk_score = 0.0
+                    pentagon_risk_level = "NORMAL"
 
                 # 市态切换: 根据市态调整参数
                 effective_conf_thresh = self.conf_threshold
@@ -874,16 +956,25 @@ class WalkForwardBacktester:
                 tp_dist = atr_est * atr_mult_tp
                 sl_dist = atr_est * atr_mult_sl
 
-                # ── 五角校验：止损收紧 ──
+                # ── 五角校验 v4：止盈/止损调整 ──
+                original_sl_dist = sl_dist
+                # v4: 风险评分驱动的止盈调整
+                tp_dist *= pentagon_tp_adjustment
+                # v4: 风险评分驱动 + v3双预警底线的止损收紧
                 if pentagon_sl_tighten < 1.0:
                     sl_dist *= pentagon_sl_tighten
+                    pentagon_sl_applied = True
+                else:
+                    pentagon_sl_applied = False
 
                 if direction == 1:
                     tp_price = entry_price + tp_dist
                     sl_price = entry_price - sl_dist
+                    original_sl_price = entry_price - original_sl_dist
                 else:
                     tp_price = entry_price - tp_dist
                     sl_price = entry_price + sl_dist
+                    original_sl_price = entry_price + original_sl_dist
 
                 hex_name = pred.get("hexagram", {}).get("hexagram_name", "")
                 upper_name = pred.get("hexagram", {}).get("upper_gua", {}).get("name", "")
@@ -899,6 +990,7 @@ class WalkForwardBacktester:
                     "direction": direction,
                     "tp_price": tp_price,
                     "sl_price": sl_price,
+                    "original_sl_price": original_sl_price,  # v3: 原始止损价，用于持仓期间动态收紧
                     "confidence": confidence,
                     "hexagram_name": hex_name,
                     "upper_gua": upper_name,
@@ -909,13 +1001,18 @@ class WalkForwardBacktester:
                     "regime_name": regime_name,
                     "max_hold_bars": effective_max_hold,
                     "position_factor": position_factor,
-                    # 五角校验信息
+                    # 五角校验信息（v4: 风险评分风控）
                     "pentagon_verdict": pentagon_verdict,
                     "pentagon_adjustment": pentagon_adjustment,
                     "pentagon_reversal": pentagon_reversal,
                     "pentagon_early_exit": pentagon_early_exit,
                     "pentagon_pos_factor": pentagon_pos_factor,
-                    "pentagon_result": pentagon_result,  # 保存完整结果用于注意力反馈
+                    "pentagon_leverage_factor": pentagon_leverage_factor,
+                    "pentagon_tp_adjustment": pentagon_tp_adjustment,
+                    "pentagon_risk_score": pentagon_risk_score,
+                    "pentagon_risk_level": pentagon_risk_level,
+                    "pentagon_sl_applied": pentagon_sl_applied,
+                    "pentagon_result": pentagon_result,
                 }
 
         # 如果最后还有持仓，强制平仓
@@ -926,10 +1023,14 @@ class WalkForwardBacktester:
             hold_bars = (test_end - 1) - position["entry_bar"]
             fee = position["entry_price"] * self.fee_rate + exit_price * self.fee_rate
             slippage = (position["entry_price"] + exit_price) * self.slippage_rate
-            pnl_pct = ((exit_price - position["entry_price"]) * direction - fee - slippage) / position["entry_price"]
+            raw_pnl = ((exit_price - position["entry_price"]) * direction - fee - slippage) / position["entry_price"]
 
-            # 仓位系数只记录
+            # P0修复+v4: 仓位系数×五角校验仓位×五角校验杠杆 实际应用到PnL
             pf = position.get("position_factor", 1.0)
+            pentagon_pf = position.get("pentagon_pos_factor", 1.0)
+            pentagon_lev = position.get("pentagon_leverage_factor", 1.0)
+            effective_pf = pf * pentagon_pf * pentagon_lev
+            pnl_pct = raw_pnl * effective_pf
 
             trade = Trade(
                 entry_bar=position["entry_bar"],

@@ -134,7 +134,7 @@ class TestRegistryManagement(unittest.TestCase):
 
     def test_list_coins_by_category(self):
         metals = self.m.list_coins(category=AssetCategory.PRECIOUS_METAL)
-        self.assertEqual(set(metals), {"XAUT", "PAXG"})
+        self.assertEqual(set(metals), {"XAUT", "PAXG", "XAG", "XAU"})
 
         cryptos = self.m.list_coins(category=AssetCategory.CRYPTO)
         self.assertIn("BTC", cryptos)
@@ -172,7 +172,7 @@ class TestRegistryManagement(unittest.TestCase):
         s = self.m.summary()
         self.assertGreater(s["total"], 30)
         self.assertIn("precious_metal", s["by_category"])
-        self.assertEqual(s["by_category"]["precious_metal"], 2)
+        self.assertEqual(s["by_category"]["precious_metal"], 4)
         self.assertGreater(s["okx_supported"], 30)
 
 
@@ -193,6 +193,7 @@ class TestMartinSafeFilter(unittest.TestCase):
         self.assertEqual(self.m.get_market_cap_tier("AAVE"), MarketCapTier.MID)
         self.assertEqual(self.m.get_market_cap_tier("ZEC"), MarketCapTier.MID)
         self.assertEqual(self.m.get_market_cap_tier("HYPE"), MarketCapTier.MID)
+        self.assertEqual(self.m.get_market_cap_tier("PUMP"), MarketCapTier.MID)
 
     def test_market_cap_tier_small(self):
         self.assertEqual(self.m.get_market_cap_tier("PEPE"), MarketCapTier.SMALL)
@@ -304,6 +305,9 @@ class TestV15Integration(unittest.TestCase):
         import v15_trader
         self.assertIn("MU", v15_trader.COINS)
         self.assertIn("SKHYNIX", v15_trader.COINS)
+        self.assertIn("GOOGL", v15_trader.COINS)
+        self.assertIn("NVDA", v15_trader.COINS)
+        self.assertIn("AMZN", v15_trader.COINS)
 
     def test_capital_manager_coins_filtered(self):
         """capital_manager 币种应通过 SymbolMapper 过滤（若有 V15_COINS 属性）"""

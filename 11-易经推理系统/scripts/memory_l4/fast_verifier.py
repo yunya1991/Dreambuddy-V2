@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-实盘验证脚本 — 快速验证五角校验效果（简化版，不重新训练模型）。
+实盘验证脚本 — 快速验证五角校验 v3 纯风控版效果（简化版，不重新训练模型）。
 
-验证内容：
-  1. 五角校验各源方向一致性
-  2. 置信度校准
+验证内容（v3 纯风控版，仅保留预警检测，不干预方向/仓位/置信度）：
+  1. P3 风控监控覆盖率（verdict 恒为 P3_RISK_MONITOR）
+  2. 置信度校准（v3 不调整，应与基线一致）
   3. 预警有效性（TDA/Ising/力学减速）
-  4. P3预警联动策略（TDA+Ising双重预警）
+  4. P3双重预警止损收紧（TDA+Ising同时触发 → sl_tighten=0.7）
 """
 import sys
 import os
@@ -57,11 +57,8 @@ class VerificationMetrics:
     direction_accuracy: float = 0.0
     high_conf_accuracy: float = 0.0
     low_conf_accuracy: float = 0.0
-    # 五角校验一致性
-    strong_agree_count: int = 0
-    majority_agree_count: int = 0
-    divergent_count: int = 0
-    conflict_count: int = 0
+    # P3 风控监控（v3：verdict 恒为 P3_RISK_MONITOR）
+    p3_monitor_count: int = 0
     # 预警有效性
     total_reversal_warnings: int = 0
     reversal_hit_rate: float = 0.0
@@ -194,16 +191,10 @@ class FastVerifier:
             if low_conf:
                 metrics.low_conf_accuracy = sum(1 for r in low_conf if r.final_direction == r.actual_direction) / len(low_conf)
 
-        # 五角校验一致性
+        # P3 风控监控（v3：verdict 恒为 P3_RISK_MONITOR，无方向一致性分级）
         for r in records:
-            if r.verdict == "STRONG_AGREE":
-                metrics.strong_agree_count += 1
-            elif r.verdict == "MAJORITY_AGREE":
-                metrics.majority_agree_count += 1
-            elif r.verdict == "DIVERGENT":
-                metrics.divergent_count += 1
-            elif r.verdict == "CONFLICT":
-                metrics.conflict_count += 1
+            if r.verdict == "P3_RISK_MONITOR":
+                metrics.p3_monitor_count += 1
 
         # 预警有效性
         warnings = [r for r in records if r.reversal_alert]
@@ -246,13 +237,9 @@ class FastVerifier:
         print(f"    高置信(>=0.6)准确率: {metrics.high_conf_accuracy:.1%}")
         print(f"    低置信(<=0.4)准确率: {metrics.low_conf_accuracy:.1%}")
 
-        print(f"\n  [五角校验一致性]")
-        total_consensus = metrics.strong_agree_count + metrics.majority_agree_count + metrics.divergent_count + metrics.conflict_count
-        if total_consensus > 0:
-            print(f"    STRONG_AGREE: {metrics.strong_agree_count} ({metrics.strong_agree_count/total_consensus:.1%})")
-            print(f"    MAJORITY_AGREE: {metrics.majority_agree_count} ({metrics.majority_agree_count/total_consensus:.1%})")
-            print(f"    DIVERGENT: {metrics.divergent_count} ({metrics.divergent_count/total_consensus:.1%})")
-            print(f"    CONFLICT: {metrics.conflict_count} ({metrics.conflict_count/total_consensus:.1%})")
+        print(f"\n  [P3 风控监控]")
+        if metrics.total_signals > 0:
+            print(f"    P3_RISK_MONITOR: {metrics.p3_monitor_count} ({metrics.p3_monitor_count/metrics.total_signals:.1%})")
 
         print(f"\n  [预警有效性]")
         print(f"    力学减速预警: {metrics.total_reversal_warnings}次, 命中率={metrics.reversal_hit_rate:.1%}")

@@ -14,7 +14,7 @@ mkdir -p "$PID_DIR" "$LOG_DIR"
 # 格式: "名称|工作目录|命令|日志文件"
 SERVICES=(
   "dreamos_scheduler|$PROJECT_ROOT/1-ARCHITECTURE/dreamos|$PYTHON $PROJECT_ROOT/1-ARCHITECTURE/dreamos/cli/start_scheduler.py|$LOG_DIR/dreamos_scheduler.log"
-  "yijing_polling_trader|$PROJECT_ROOT/11-易经推理系统|$PYTHON -m scripts.memory_l4.polling_trader --interval 3600 --coins BTC,ETH,SOL,BNB,XRP,ADA,AVAX,NEAR,SUI,APT,DOT,ATOM,LTC,LINK,ARB,OP,UNI,AAVE,DOGE,PEPE,NVDA,TSLA,MSFT,META,GOOGL,AAPL,AMZN,COIN,XAU,XAG --confidence 0.70 --max-positions 5 --position-pct 0.10|$LOG_DIR/yijing_polling_trader.log"
+  "yijing_polling_trader|$PROJECT_ROOT/11-易经推理系统|$PYTHON -m scripts.memory_l4.polling_trader --interval 3600 --coins UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB --confidence 0.70 --max-positions 5 --position-pct 0.10|$LOG_DIR/yijing_polling_trader.log"
   "v15_orchestrator|$PROJECT_ROOT/14-V15经典马丁策略|bash -c 'while true; do $PYTHON run.py orchestrator >> logs/orchestrator.log 2>&1; sleep 900; done'|$LOG_DIR/v15_orchestrator_daemon.log"
   "v15_light_poll|$PROJECT_ROOT/14-V15经典马丁策略|bash -c 'while true; do $PYTHON run.py poll_light >> logs/v15_light_poll.log 2>&1; sleep 300; done'|$LOG_DIR/v15_light_poll_daemon.log"
   "cognitive_daemon|$PROJECT_ROOT|$PYTHON -u $PROJECT_ROOT/4-MEMORY/9-工具与接口/cognitive_daemon.py --watch . --interval 5 --debounce 8 --verbose|$LOG_DIR/cognitive_daemon.log"

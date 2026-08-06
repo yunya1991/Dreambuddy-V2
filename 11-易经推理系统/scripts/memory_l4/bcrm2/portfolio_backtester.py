@@ -271,11 +271,19 @@ class PortfolioBacktester:
         else:
             result.portfolio_profit_factor = float('inf') if profits else 0
 
-        # 组合夏普比率
-        if len(weighted_pnls) > 1:
-            std = np.std(weighted_pnls)
-            if std > 0:
-                result.portfolio_sharpe = np.mean(weighted_pnls) / std * np.sqrt(252)
+        # 组合夏普比率（P0修正：用日收益序列年化，sqrt(252)）
+        if result.timeline_trades:
+            daily_returns = {}
+            for t in result.timeline_trades:
+                day_str = str(t.get("entry_time", ""))[:10]
+                if not day_str or day_str == "NaT":
+                    day_str = "unknown"
+                daily_returns[day_str] = daily_returns.get(day_str, 0.0) + t["weighted_pnl"]
+            daily_pnls = list(daily_returns.values())
+            if len(daily_pnls) > 1:
+                std = np.std(daily_pnls)
+                if std > 0:
+                    result.portfolio_sharpe = np.mean(daily_pnls) / std * np.sqrt(252)
 
         # 组合最大回撤 (累积收益曲线)
         cum = np.cumsum(weighted_pnls)
@@ -325,12 +333,8 @@ class PortfolioBacktester:
         lines.append(f"    组合交易数:   {result.portfolio_total_trades}")
         lines.append("")
 
-        # 综合夏普 (各币种夏普的加权平均)
-        weighted_sharpe = sum(
-            result.symbol_results[s].sharpe_ratio * result.symbol_weights.get(s, 0)
-            for s in result.symbol_results
-        )
-        lines.append(f"  综合夏普 (加权平均): {weighted_sharpe:.2f}")
+        # 综合夏普（P0修正：用组合日收益序列年化，非各币种夏普加权平均）
+        lines.append(f"  综合夏普 (日收益年化): {result.portfolio_sharpe:.2f}")
         lines.append("")
 
         return "\n".join(lines)

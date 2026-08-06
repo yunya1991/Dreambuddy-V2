@@ -78,6 +78,10 @@ class PollingTrader:
         "default_position_pct",
     )
 
+    # 统一冷静期：平仓后 N 秒内禁止该币种任何方向新开仓（含反手）
+    # 防止"平仓→立即反手→又亏→再反手"的频繁来回割肉循环
+    COOLDOWN_SEC = 28800  # 8 小时
+
     def __init__(self,
                  interval: int = 3600,
                  coins: list = None,
@@ -87,8 +91,8 @@ class PollingTrader:
                  max_positions: int = 3,
                  kline_limit: int = 200,
                  initial_equity: float = 100.0,
-                 daily_loss_limit: float = -50.0,
-                 max_consecutive_losses: int = 5,
+                 daily_loss_limit: float = -30.0,
+                 max_consecutive_losses: int = 999,
                  default_position_pct: float = 0.10,
                  guardian: ProcessGuardian = None,
                  shared_dir=None,
@@ -161,18 +165,18 @@ class PollingTrader:
         self.knowledge_bridge = KnowledgeBridge(shared_dir=shared_dir)
         self.external_knowledge = {}
 
-        # 经典指标离场系统（回退到原始配置：回测证明暂停主动层导致收益暴跌）
+        # 经典指标离场系统（2026-08-06 放宽：减少频繁扫损，支持高置信度长持）
         exit_cfg = ExitConfig(
             l0_max_hold_sec=172800,
-            l0_max_loss_pct=-0.05,
+            l0_max_loss_pct=-0.05,          # 最后防线不变
             tb_enabled=True,
-            tb_sl_atr_mult=1.5,
-            tb_tp_atr_mult=3.0,
-            tb_sl_min_pct=0.045,
-            tb_tp_min_pct=0.04,
+            tb_sl_atr_mult=2.5,             # 原 1.5 → 2.5：放宽ATR-based止损，避免震荡洗出
+            tb_tp_atr_mult=5.0,             # 原 3.0 → 5.0：盈亏比保持~2:1
+            tb_sl_min_pct=0.06,             # 原 0.045 → 0.06：订单级最小止损 6%（对应价格0.6%@10x）
+            tb_tp_min_pct=0.06,             # 原 0.04 → 0.06：同放宽
             trailing_enabled=True,
-            trailing_arm_profit_pct=0.04,
-            trailing_retrace_pct=0.035,
+            trailing_arm_profit_pct=0.06,  # 原 0.04 → 0.06：达到6%订单盈利才启用追踪止盈，避免过早启动
+            trailing_retrace_pct=0.05,     # 原 0.035 → 0.05：允许5%回调而非3.5%，减少利润锁定过急
             tstp_enabled=True,
             l1_enabled=True,
             l2_close_threshold=0.75,
@@ -609,15 +613,20 @@ class PollingTrader:
                 reduce_ratio = b1.reduce_ratio
 
         # 经典指标离场回退：BCRM 未产生止盈止损时，用 ATR 计算止损止盈
-        # P0修复: ATR 倍数 1.5→2.0 / 3.0→4.0（原 1.5×ATR 止损过近，10x 杠杆下极易被扫损）
+        # 2026-08-06 上调：ATR 倍数 2.0→3.0 / 4.0→6.0（过近止损导致频繁扫损，高置信度仓位建议长期持有）
         if sl_px == 0 or tp_px == 0:
             price = snapshot.get("price", 0)
             volatility = snapshot.get("volatility", 0.03)
             if price > 0:
                 # ATR 近似：用波动率 × 价格作为 ATR 估计
                 atr = max(price * volatility, price * 0.005)  # 至少 0.5%
-                atr_mult_sl = 2.0   # 止损 = 2.0 × ATR
-                atr_mult_tp = 4.0   # 止盈 = 4.0 × ATR（盈亏比 2:1）
+                # 基础倍率
+                atr_mult_sl = 3.0   # 止损 = 3.0 × ATR（原 2.0 → 放宽，避免洗出）
+                atr_mult_tp = 6.0   # 止盈 = 6.0 × ATR（原 4.0 → 盈亏比 2:1）
+                # 高置信度进一步放宽：置信度 ≥0.9 时 SL/TP 再 ×1.3
+                if confidence >= 0.9:
+                    atr_mult_sl *= 1.3
+                    atr_mult_tp *= 1.3
                 if direction == "UP":
                     fallback_sl = round(price - atr * atr_mult_sl, 4)
                     fallback_tp = round(price + atr * atr_mult_tp, 4)
@@ -629,7 +638,8 @@ class PollingTrader:
                 if tp_px == 0:
                     tp_px = fallback_tp
                 self._log(
-                    f"[{coin}] 经典指标离场 | ATR={atr:.2f} | "
+                    f"[{coin}] 经典指标离场 | ATR={atr:.2f} "
+                    f"(conf={confidence:.2f}→SL×{atr_mult_sl/3.0:.1f} TP×{atr_mult_tp/6.0:.1f}) | "
                     f"SL={sl_px} TP={tp_px} (盈亏比={atr_mult_tp/atr_mult_sl:.1f}:1)",
                     "INFO")
 
@@ -698,14 +708,47 @@ class PollingTrader:
     def _infer_bcrm2(self, coin: str, inst_id: str, kline_data: list) -> dict:
         """使用 BCRM 2.0 (辩证ML) 执行推理"""
         import pandas as pd
-        
+
         if coin not in self.bcrm2_adapters:
+            # BTC 启用 v4 前向选择验证有效的 3 个宏观特征
+            # (fgi_zscore + fgi_extreme_fear + hash_rate_trend，BTC验证得分 +23.8%)
+            # 其他币种保持默认（不传 macro_config = 全部启用默认行为）
+            btc_macro_config = None
+            if coin.upper() == "BTC":
+                btc_macro_config = {
+                    "macro_feat_fgi_zscore": True,
+                    "macro_feat_fgi_extreme_fear": True,
+                    "macro_feat_hash_rate_trend": True,
+                    # 其余 21 个特征显式关闭
+                    "macro_feat_fgi_trend_7d": False,
+                    "macro_feat_fgi_extreme_greed": False,
+                    "macro_feat_fgi_divergence": False,
+                    "macro_feat_funding_rate_zscore": False,
+                    "macro_feat_funding_extreme_positive": False,
+                    "macro_feat_funding_extreme_negative": False,
+                    "macro_feat_oi_change_rate": False,
+                    "macro_feat_funding_divergence": False,
+                    "macro_feat_stablecoin_growth": False,
+                    "macro_feat_liquidity_expanding": False,
+                    "macro_feat_liquidity_contracting": False,
+                    "macro_feat_tvl_change_7d": False,
+                    "macro_feat_miner_accumulation": False,
+                    "macro_feat_miners_revenue_zscore": False,
+                    "macro_feat_smart_money_direction": False,
+                    "macro_feat_smart_money_divergence": False,
+                    "macro_feat_social_hype_zscore": False,
+                    "macro_feat_hype_extreme": False,
+                    "macro_feat_market_cap_rank": False,
+                    "macro_feat_ath_drop_pct": False,
+                    "macro_feat_undervalued": False,
+                }
             self.bcrm2_adapters[coin] = BCRM2Adapter(
                 symbol=coin,
                 timeframe=self.bar,
                 tp_atr=3.0,
                 sl_atr=1.5,
                 max_hold_bars=60,
+                macro_config=btc_macro_config,
             )
         
         adapter = self.bcrm2_adapters[coin]
@@ -824,15 +867,20 @@ class PollingTrader:
                 self._log(f"[{coin}] CBR 增强失败: {e}", "WARN")
         
         # 计算 ATR 止盈止损
-        # P0修复: ATR 倍数 1.5→2.0 / 3.0→4.0（原止损过近，10x 杠杆下极易被扫损）
+        # 2026-08-06 上调：ATR 倍数 2.0→3.0 / 4.0→6.0（过近止损频繁扫损；高置信度再 ×1.3 放宽）
         sl_px, tp_px = 0, 0
         if atr > 0:
+            sl_mult = 3.0   # 原 2.0
+            tp_mult = 6.0   # 原 4.0
+            if confidence >= 0.9:
+                sl_mult *= 1.3
+                tp_mult *= 1.3
             if direction == "UP":
-                sl_px = round(price - atr * 2.0, 4)
-                tp_px = round(price + atr * 4.0, 4)
+                sl_px = round(price - atr * sl_mult, 4)
+                tp_px = round(price + atr * tp_mult, 4)
             elif direction == "DOWN":
-                sl_px = round(price + atr * 2.0, 4)
-                tp_px = round(price - atr * 4.0, 4)
+                sl_px = round(price + atr * sl_mult, 4)
+                tp_px = round(price - atr * tp_mult, 4)
         
         self._log(
             f"[{coin}] BCRM2.0 推理 | 方向={direction} 置信度={confidence:.2f} "
@@ -870,10 +918,14 @@ class PollingTrader:
             "a0_analysis": bcrm_result.get("a0_analysis"),
             "a0_warnings": bcrm_result.get("a0_warnings", []),
             "triangle_verification": bcrm_result.get("triangle_verification"),
-            # P3预警联动参数（五角校验输出）
+            # v4 风险评分风控参数（五角校验输出）
             "position_factor": bcrm_result.get("position_factor", 1.0),
             "sl_tighten_factor": bcrm_result.get("sl_tighten_factor", 1.0),
             "early_exit_signal": bcrm_result.get("early_exit_signal", False),
+            "leverage_factor": bcrm_result.get("leverage_factor", 1.0),
+            "tp_adjustment": bcrm_result.get("tp_adjustment", 1.0),
+            "risk_score": bcrm_result.get("risk_score", 0.0),
+            "risk_level": bcrm_result.get("risk_level", "NORMAL"),
             "volatility": volatility,
             "sl_atr": 1.5,
             "kline_data": kline_data,
@@ -1024,7 +1076,10 @@ class PollingTrader:
         return "CONSOLIDATION"
 
     def _check_positions(self, coin: str) -> dict:
-        """检查指定币种的持仓"""
+        """检查指定币种的持仓。
+        Bug修复：返回 open_time（开仓时间戳,秒），供离场系统计算持仓年龄。
+        优先从本地 PositionTracker.entry_time 读取（更准确），缺失时回退 OKX ctime。
+        """
         inst_id = f"{coin}-USDT-SWAP"
         pos_result = self.okx_client.get_positions(inst_id)
         if not pos_result.get("ok"):
@@ -1033,6 +1088,27 @@ class PollingTrader:
         if not positions:
             return {"has_position": False}
         pos = positions[0]
+
+        open_time_sec = 0.0
+        tracker_rec = self.position_tracker.get_open_position(inst_id)
+        if tracker_rec and tracker_rec.entry_time:
+            try:
+                if tracker_rec.entry_time.endswith("Z"):
+                    ts = tracker_rec.entry_time.replace("Z", "+00:00")
+                else:
+                    ts = tracker_rec.entry_time
+                from datetime import datetime as _dt
+                open_time_sec = _dt.fromisoformat(ts).timestamp()
+            except Exception:
+                open_time_sec = 0.0
+        if open_time_sec <= 0:
+            # OKX 回退：取 ctime（字符串秒）
+            ctime = pos.get("cTime") or pos.get("ctime") or pos.get("created_at", "0")
+            try:
+                open_time_sec = float(ctime) / 1000 if float(ctime) > 1e12 else float(ctime)
+            except Exception:
+                open_time_sec = 0.0
+
         return {
             "has_position": True,
             "pos_side": pos["pos_side"],
@@ -1041,6 +1117,7 @@ class PollingTrader:
             "upl": pos["upl"],
             "upl_ratio": pos["upl_ratio"],
             "mark_px": pos["mark_px"],
+            "open_time": open_time_sec,
         }
 
     def _count_total_positions(self) -> int:
@@ -1054,6 +1131,41 @@ class PollingTrader:
     def _get_leverage(self) -> float:
         """获取当前默认杠杆倍数"""
         return float(self.okx_client.cfg.get("default_leverage", 3))
+
+    def _get_base_sl_roi(self, inst_id: str, entry_price: float = 0.0) -> float:
+        """读取开仓时 ATR 基线止损收益率。
+
+        优先从 PositionTracker.base_sl_roi 读取；
+        旧持仓（字段为0）时回退到从当前 SL 价格反算。
+        """
+        rec = self.position_tracker.get_open_position(inst_id)
+        if rec and rec.base_sl_roi > 0:
+            return rec.base_sl_roi
+        # 回退：从 entry_price 和 stop_loss 反算（如果有的话）
+        if rec and entry_price > 0 and rec.market_snapshot:
+            sl_px = rec.market_snapshot.get("stop_loss_px", 0)
+            if sl_px > 0:
+                leverage = self._get_leverage()
+                price_pct = abs(sl_px - entry_price) / entry_price
+                return self._price_change_to_roi(price_pct, leverage)
+        return 0.0
+
+    def _get_base_tp_roi(self, inst_id: str, entry_price: float = 0.0) -> float:
+        """读取开仓时 ATR 基线止盈收益率。
+
+        优先从 PositionTracker.base_tp_roi 读取；
+        旧持仓（字段为0）时回退到从当前 TP 价格反算。
+        """
+        rec = self.position_tracker.get_open_position(inst_id)
+        if rec and rec.base_tp_roi > 0:
+            return rec.base_tp_roi
+        if rec and entry_price > 0 and rec.market_snapshot:
+            tp_px = rec.market_snapshot.get("take_profit_px", 0)
+            if tp_px > 0:
+                leverage = self._get_leverage()
+                price_pct = abs(tp_px - entry_price) / entry_price
+                return self._price_change_to_roi(price_pct, leverage)
+        return 0.0
 
     def _roi_to_price_change(self, roi_pct: float, leverage: float = None) -> float:
         """订单收益率 → 价格涨跌幅（不含杠杆）
@@ -1146,7 +1258,7 @@ class PollingTrader:
 
         if trade_rec:
             perf_summary = self.perf_tracker.record_trade(trade_rec)
-            self.risk_manager.update_after_trade(pnl, pnl >= 0)
+            self.risk_manager.update_after_trade(pnl, pnl >= 0, current_equity=self.perf_tracker.current_equity)
 
             case_id, saved = register_trade_to_l4(trade_rec)
 
@@ -1417,6 +1529,16 @@ class PollingTrader:
                         pnl_pct=upl_ratio,
                     )
 
+                    # 统一冷静期：平仓后 8h 内不反手（防止来回割肉循环）
+                    _side_map = {"UP": "long", "DOWN": "short"}
+                    want_side = _side_map.get(direction)
+                    in_cd, cd_reason = self.position_tracker.is_in_cooldown(
+                        inst_id, want_side, self.COOLDOWN_SEC
+                    )
+                    if in_cd:
+                        self._log(f"[{coin}] 信号反转已平仓，但统一冷静期生效，跳过反手开仓: {cd_reason}", "INFO")
+                        return
+
                     risk_check = self.risk_manager.can_trade(
                         self.perf_tracker.current_equity
                     )
@@ -1554,20 +1676,31 @@ class PollingTrader:
                 return
 
             # 2) 易经提高止盈：价值高 + 成长期 → 上调止盈位
-            # 口径：目标用"订单止盈收益率"定义，再通过 leverage 换算成价格
+            # 2026-08-06 修复：基于 ATR 基线 × 价值调制因子（非硬编码 15%）
             if yijing_decision and yijing_decision.action == YijingExitAction.RAISE_TP:
                 leverage = self._get_leverage()
                 entry_price = float(pos_info.get("avg_px", current_price))
-                tp_uplift = yijing_decision.tp_adjust_pct
-                target_tp_roi_pct = tp_uplift * 0.5  # 订单止盈收益率（30%×0.5=15%）
-                new_tp_price = self._calc_tp_price(
-                    entry_price, pos_side, target_tp_roi_pct, leverage
+                # 读取开仓时 ATR 基线止盈收益率
+                base_tp_roi = self._get_base_tp_roi(inst_id, entry_price)
+                if base_tp_roi <= 0:
+                    self._log(f"[{coin}] 易经主离场 [RAISE_TP] 跳过: base_tp_roi=0（旧持仓无ATR基线）", "WARN")
+                    return
+                # 价值分 → TP 调制因子（连续函数）
+                tp_modulation = YijingExitSystem.value_to_tp_modulation(
+                    yijing_decision.yijing_value_score
                 )
-                tp_price_change_pct = self._roi_to_price_change(target_tp_roi_pct, leverage)
+                target_tp_roi = base_tp_roi * tp_modulation
+                # ATR 基线下限保护
+                target_tp_roi = YijingExitSystem.apply_atr_floor(target_tp_roi, base_tp_roi)
+                new_tp_price = self._calc_tp_price(
+                    entry_price, pos_side, target_tp_roi, leverage
+                )
+                tp_price_change_pct = self._roi_to_price_change(target_tp_roi, leverage)
                 self._log(
                     f"[{coin}] 易经主离场 [RAISE_TP] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name} 杠杆={leverage}x "
-                    f"目标订单收益率={target_tp_roi_pct:.2%} 需价格涨幅={tp_price_change_pct:.2%} "
+                    f"ATR基线={base_tp_roi:.2%} × 调制{tp_modulation:.2f} = {target_tp_roi:.2%} "
+                    f"(价{tp_price_change_pct:.2%}) "
                     f"新止盈={new_tp_price:.2f} 盈亏={upl:.2f}({upl_ratio:.2%})")
                 try:
                     tp_result = self.okx_client.place_stop_loss_take_profit(
@@ -1586,21 +1719,31 @@ class PollingTrader:
                 return
 
             # 3) 易经降低止损：风险低 + 趋势初期 → 放宽止损空间，避免被洗出去
-            # 口径：基础订单止损收益率 -2%，放宽 50% → 允许订单亏损 -3%
+            # 2026-08-06 修复：基于 ATR 基线 × 风险调制因子（非硬编码 2%）
             if yijing_decision and yijing_decision.action == YijingExitAction.LOWER_SL:
                 leverage = self._get_leverage()
                 entry_price = float(pos_info.get("avg_px", current_price))
-                sl_relax_pct = yijing_decision.sl_adjust_pct
-                base_sl_roi_pct = 0.02  # 基础订单止损收益率 -2%
-                new_sl_roi_pct = base_sl_roi_pct * (1 + sl_relax_pct)  # 放宽 50% → -3%
-                new_sl_price = self._calc_sl_price(
-                    entry_price, pos_side, new_sl_roi_pct, leverage
+                # 读取开仓时 ATR 基线止损收益率
+                base_sl_roi = self._get_base_sl_roi(inst_id, entry_price)
+                if base_sl_roi <= 0:
+                    self._log(f"[{coin}] 易经主离场 [LOWER_SL] 跳过: base_sl_roi=0（旧持仓无ATR基线）", "WARN")
+                    return
+                # 风险分 → SL 调制因子（连续函数，风险低 → >1.0 放宽）
+                sl_modulation = YijingExitSystem.risk_to_sl_modulation(
+                    yijing_decision.yijing_risk_score
                 )
-                sl_price_change_pct = self._roi_to_price_change(new_sl_roi_pct, leverage)
+                new_sl_roi = base_sl_roi * sl_modulation
+                # ATR 基线下限保护
+                new_sl_roi = YijingExitSystem.apply_atr_floor(new_sl_roi, base_sl_roi)
+                new_sl_price = self._calc_sl_price(
+                    entry_price, pos_side, new_sl_roi, leverage
+                )
+                sl_price_change_pct = self._roi_to_price_change(new_sl_roi, leverage)
                 self._log(
                     f"[{coin}] 易经主离场 [LOWER_SL] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name} 杠杆={leverage}x "
-                    f"新订单止损={new_sl_roi_pct:.2%}(价{sl_price_change_pct:.2%}) "
+                    f"ATR基线={base_sl_roi:.2%} × 调制{sl_modulation:.2f} = {new_sl_roi:.2%} "
+                    f"(价{sl_price_change_pct:.2%}) "
                     f"新止损={new_sl_price:.2f} 盈亏={upl:.2f}({upl_ratio:.2%})")
                 try:
                     sl_result = self.okx_client.place_stop_loss_take_profit(
@@ -1619,20 +1762,30 @@ class PollingTrader:
                 return
 
             # 4) 易经降低止盈：风险升高 + 已有利润 → 提前锁定利润
-            # 口径：用"订单止盈收益率"定义新止盈位（不下调太狠，仍有利润空间）
+            # 2026-08-06 修复：基于 ATR 基线 × 价值调制因子（非硬编码 9%）
             if yijing_decision and yijing_decision.action == YijingExitAction.LOWER_TP:
                 leverage = self._get_leverage()
                 entry_price = float(pos_info.get("avg_px", current_price))
-                tp_adjust_pct = abs(yijing_decision.tp_adjust_pct)
-                target_tp_roi_pct = tp_adjust_pct * 0.3  # 订单止盈收益率 30%×0.3=9%
-                new_tp_price = self._calc_tp_price(
-                    entry_price, pos_side, target_tp_roi_pct, leverage
+                base_tp_roi = self._get_base_tp_roi(inst_id, entry_price)
+                if base_tp_roi <= 0:
+                    self._log(f"[{coin}] 易经主离场 [LOWER_TP] 跳过: base_tp_roi=0（旧持仓无ATR基线）", "WARN")
+                    return
+                # 价值分低 → tp_modulation < 1.0（降低止盈）
+                tp_modulation = YijingExitSystem.value_to_tp_modulation(
+                    yijing_decision.yijing_value_score
                 )
-                tp_price_change_pct = self._roi_to_price_change(target_tp_roi_pct, leverage)
+                target_tp_roi = base_tp_roi * tp_modulation
+                # ATR 基线下限保护
+                target_tp_roi = YijingExitSystem.apply_atr_floor(target_tp_roi, base_tp_roi)
+                new_tp_price = self._calc_tp_price(
+                    entry_price, pos_side, target_tp_roi, leverage
+                )
+                tp_price_change_pct = self._roi_to_price_change(target_tp_roi, leverage)
                 self._log(
                     f"[{coin}] 易经主离场 [LOWER_TP] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name} 杠杆={leverage}x "
-                    f"新订单止盈={target_tp_roi_pct:.2%}(价{tp_price_change_pct:.2%}) "
+                    f"ATR基线={base_tp_roi:.2%} × 调制{tp_modulation:.2f} = {target_tp_roi:.2%} "
+                    f"(价{tp_price_change_pct:.2%}) "
                     f"新止盈={new_tp_price:.2f} 盈亏={upl:.2f}({upl_ratio:.2%})")
                 try:
                     tp_result = self.okx_client.place_stop_loss_take_profit(
@@ -1651,20 +1804,30 @@ class PollingTrader:
                 return
 
             # 5) 易经收紧止损：风险升高 + 未盈利/微利 → 收紧止损保本
+            # 2026-08-06 修复：基于 ATR 基线 × 风险调制因子（非硬编码 2%）
             if yijing_decision and yijing_decision.action == YijingExitAction.TIGHTEN_SL:
                 leverage = self._get_leverage()
                 entry_price = float(pos_info.get("avg_px", current_price))
-                sl_tighten_pct = yijing_decision.sl_adjust_pct
-                base_sl_roi_pct = 0.02  # 基础订单止损收益率 -2%
-                new_sl_roi_pct = base_sl_roi_pct * (1 - sl_tighten_pct)  # 收紧 30% → -1.4%
-                new_sl_price = self._calc_sl_price(
-                    entry_price, pos_side, new_sl_roi_pct, leverage
+                base_sl_roi = self._get_base_sl_roi(inst_id, entry_price)
+                if base_sl_roi <= 0:
+                    self._log(f"[{coin}] 易经主离场 [TIGHTEN_SL] 跳过: base_sl_roi=0（旧持仓无ATR基线）", "WARN")
+                    return
+                # 风险分高 → sl_modulation < 1.0（收紧止损）
+                sl_modulation = YijingExitSystem.risk_to_sl_modulation(
+                    yijing_decision.yijing_risk_score
                 )
-                sl_price_change_pct = self._roi_to_price_change(new_sl_roi_pct, leverage)
+                new_sl_roi = base_sl_roi * sl_modulation
+                # ATR 基线下限保护（收紧不低于基线的 0.7 倍）
+                new_sl_roi = YijingExitSystem.apply_atr_floor(new_sl_roi, base_sl_roi)
+                new_sl_price = self._calc_sl_price(
+                    entry_price, pos_side, new_sl_roi, leverage
+                )
+                sl_price_change_pct = self._roi_to_price_change(new_sl_roi, leverage)
                 self._log(
                     f"[{coin}] 易经主离场 [TIGHTEN_SL] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name} 杠杆={leverage}x "
-                    f"新订单止损={new_sl_roi_pct:.2%}(价{sl_price_change_pct:.2%}) "
+                    f"ATR基线={base_sl_roi:.2%} × 调制{sl_modulation:.2f} = {new_sl_roi:.2%} "
+                    f"(价{sl_price_change_pct:.2%}) "
                     f"新止损={new_sl_price:.2f} 盈亏={upl:.2f}({upl_ratio:.2%})")
                 try:
                     sl_result = self.okx_client.place_stop_loss_take_profit(
@@ -2022,6 +2185,15 @@ class PollingTrader:
 
         leverage = self.okx_client.cfg.get("default_leverage", 3)
         td_mode = self.okx_client.cfg.get("td_mode", "isolated")
+
+        # v4 风险评分风控：杠杆调整
+        leverage_factor = inference.get("leverage_factor", 1.0)
+        effective_leverage = max(1, round(leverage * leverage_factor))
+        risk_level = inference.get("risk_level", "NORMAL")
+        if leverage_factor != 1.0:
+            self._log(f"[{coin}] v4杠杆调整 | risk_level={risk_level} factor={leverage_factor:.2f} "
+                      f"leverage {leverage}→{effective_leverage}", "INFO")
+
         balance = self.okx_client.get_balance()
         
         available_equity = self.perf_tracker.current_equity
@@ -2051,27 +2223,43 @@ class PollingTrader:
             position_usdt *= 0.4
             position_pct *= 0.4
 
-        # v3 纯风控版：五角校验不再调整仓位（position_factor 恒=1.0），仅通过 sl_tighten_factor 收紧止损
+        # v4 风险评分风控：仓位调整
+        position_factor = inference.get("position_factor", 1.0)
+        if position_factor != 1.0:
+            old_usdt = position_usdt
+            position_usdt *= position_factor
+            position_pct *= position_factor
+            self._log(f"[{coin}] v4仓位调整 | risk_level={risk_level} factor={position_factor:.2f} "
+                      f"仓位 {old_usdt:.2f}→{position_usdt:.2f}USDT", "INFO")
+
         action = "open_long" if direction == "UP" else "open_short"
         pos_side = "long" if direction == "UP" else "short"
         sl_px = inference["stop_loss_px"]
         tp_px = inference["take_profit_px"]
         price = inference["price"]
 
-        # P3预警联动：五角校验止损收紧（sl_tighten_factor < 1.0 → 收紧止损）
+        # v4 风险评分风控：止损收紧
         sl_tighten_factor = inference.get("sl_tighten_factor", 1.0)
         if sl_tighten_factor < 1.0 and sl_px and price > 0:
             old_sl = sl_px
             sl_px = round(price + (sl_px - price) * sl_tighten_factor, 4)
-            self._log(f"[{coin}] P3止损收紧 | factor={sl_tighten_factor:.2f} SL {old_sl}→{sl_px}", "WARN")
+            self._log(f"[{coin}] v4止损收紧 | factor={sl_tighten_factor:.2f} SL {old_sl}→{sl_px}", "WARN")
+
+        # v4 风险评分风控：止盈调整
+        tp_adjustment = inference.get("tp_adjustment", 1.0)
+        if tp_adjustment != 1.0 and tp_px and price > 0:
+            old_tp = tp_px
+            tp_px = round(price + (tp_px - price) * tp_adjustment, 4)
+            self._log(f"[{coin}] v4止盈调整 | factor={tp_adjustment:.2f} TP {old_tp}→{tp_px}", "INFO")
 
         # 优化3：动态止损宽度（如果增强器有推荐，覆盖默认值）
         # 关键口径：先按"订单收益率"定义，再通过 leverage 换算成价格
         #   ATR 倍数（市场态）→ 价格波动% → 订单收益率% = 价格波动% × leverage
+        # 2026-08-06 上调：默认倍率 1.5/3.0 → 2.5/5.0，与 ExitConfig/BCRM2_ATR 口径保持一致
         enhance_info = inference.get("enhance_result")
         if enhance_info and price > 0 and volatility > 0:
-            sl_mult = enhance_info.get("sl_atr_mult", 1.5)
-            tp_mult = enhance_info.get("tp_atr_mult", 3.0)
+            sl_mult = enhance_info.get("sl_atr_mult", 2.5)
+            tp_mult = enhance_info.get("tp_atr_mult", 5.0)
             atr_val = price * volatility
             if sl_mult != 1.5 or tp_mult != 3.0:
                 # 1) 先按"订单收益率"定义：1.5×ATR → 价格波动 sl_mult×volatility
@@ -2101,11 +2289,17 @@ class PollingTrader:
                     )
 
         # 输出：换算订单收益率（杠杆×价格波动%）
+        # 同时记录 ATR 基线 SL/TP 收益率，供易经离场系统调制使用
+        base_sl_roi = 0.0
+        base_tp_roi = 0.0
         if price > 0 and leverage > 0 and sl_px and tp_px:
             sl_pct = abs(sl_px - price) / price
             tp_pct = abs(tp_px - price) / price
             sl_roi = self._price_change_to_roi(sl_pct, leverage)
             tp_roi = self._price_change_to_roi(tp_pct, leverage)
+            # 记录 ATR 基线 ROI（供易经离场系统 1h 后调制使用）
+            base_sl_roi = sl_roi
+            base_tp_roi = tp_roi
             if pos_side == "long":
                 sl_label = f"亏{sl_roi:.2%}(价{sl_pct:.2%})"
                 tp_label = f"盈{tp_roi:.2%}(价{tp_pct:.2%})"
@@ -2188,6 +2382,8 @@ class PollingTrader:
                 market_snapshot=inference.get("snapshot"),
                 contradiction_list=inference.get("contradictions"),
                 enhance_info=inference.get("enhance_result"),
+                base_sl_roi=base_sl_roi,
+                base_tp_roi=base_tp_roi,
             )
             self._log(f"[{coin}] 开仓成功 | ordId={ord_id} | "
                       f"入场价≈{entry_price}")
@@ -2528,6 +2724,10 @@ class PollingTrader:
                 if new_dpp is not None and new_dpp != state.position_size_pct:
                     state.position_size_pct = new_dpp
                     updated.append(f"default_position_pct={new_dpp}")
+                new_llp = cfg.get("loss_limit_pct")
+                if new_llp is not None and new_llp != state.loss_limit_pct:
+                    state.loss_limit_pct = float(new_llp)
+                    updated.append(f"loss_limit_pct={new_llp}")
 
             if updated:
                 tag = "init" if initial else "reload"
@@ -2681,6 +2881,20 @@ class PollingTrader:
                 if pos_info.get("has_position"):
                     continue  # 已有持仓，不在新开仓阶段处理
 
+                # 运行时残留清理：本地有记录但 OKX 已无持仓（OKX端 SL/TP 触发）
+                # 清理残留并记录平仓时间，用于统一冷静期判断
+                inst_id = f"{coin}-USDT-SWAP"
+                if self.position_tracker.has_open_position(inst_id):
+                    stale_rec = self.position_tracker.get_open_position(inst_id)
+                    stale_side = stale_rec.direction if stale_rec else None
+                    self.position_tracker.close_position(
+                        inst_id,
+                        exit_price=float(pos_info.get("mark_px", 0.0)) or 0.0,
+                        exit_reason="运行时检测OKX持仓消失",
+                    )
+                    self._log(f"[{coin}] 运行时清理本地残留 "
+                              f"(OKX端已平仓, side={stale_side})", "WARN")
+
                 direction = inference["direction"]
                 confidence = inference["confidence"]
                 fail_closed = inference["fail_closed"]
@@ -2688,6 +2902,16 @@ class PollingTrader:
                 if direction not in ("UP", "DOWN"):
                     continue
                 if fail_closed:
+                    continue
+
+                # 统一冷静期检查：平仓后 8h 内禁止该币种任何方向新开仓
+                _side_map = {"UP": "long", "DOWN": "short"}
+                want_side = _side_map.get(direction)
+                in_cd, cd_reason = self.position_tracker.is_in_cooldown(
+                    inst_id, want_side, self.COOLDOWN_SEC
+                )
+                if in_cd:
+                    self._log(f"[{coin}] 跳过开仓候选: {cd_reason}", "INFO")
                     continue
 
                 # 基础阈值筛选
@@ -2880,10 +3104,10 @@ def main():
                         help="只执行一次，不循环")
     parser.add_argument("--initial-equity", type=float, default=None,
                         help="初始权益（USDT），不指定则从 OKX 读取实际余额")
-    parser.add_argument("--daily-loss-limit", type=float, default=-50.0,
-                        help="日最大亏损（USDT），默认 -50")
-    parser.add_argument("--max-consecutive-losses", type=int, default=5,
-                        help="最大连续亏损次数，默认 5")
+    parser.add_argument("--daily-loss-limit", type=float, default=-30.0,
+                        help="日最大亏损兜底值（USDT），默认 -30（150U可用金的20%）")
+    parser.add_argument("--max-consecutive-losses", type=int, default=999,
+                        help="最大连续亏损次数（已禁用，默认999不再触发），风控改以亏损金额为准")
     parser.add_argument("--position-pct", type=float, default=0.20,
                         help="默认单笔仓位比例，默认 0.20(20%%)（C项优化）")
     parser.add_argument("--no-guardian", action="store_true",

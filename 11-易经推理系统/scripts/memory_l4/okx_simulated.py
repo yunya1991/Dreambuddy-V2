@@ -347,7 +347,7 @@ class OKXSimulatedClient:
         "AMZN-USDT-SWAP": 0.01,
         "COIN-USDT-SWAP": 0.01,
         # TradFi（贵金属）
-        "XAU-USDT-SWAP": 1,    # 黄金 ctVal=0.001
+        "XAU-USDT-SWAP": 1,    # 黄金指数永续 ctVal=0.001
         "XAG-USDT-SWAP": 1,    # 白银 ctVal=0.01
     }
 

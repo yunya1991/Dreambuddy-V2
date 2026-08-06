@@ -150,6 +150,7 @@ class WorkingMemoryManager:
         "context": 2000,   # 上下文：中等
         "scratch": 1500,   # 草稿区：中等
         "process": 3000,   # 流程建议（元+应用双层），设计节 3.2
+        "episodic": 800,   # 情景缓冲器（决策事件序列），Baddeley 2000
     }
 
     def __init__(
@@ -179,6 +180,8 @@ class WorkingMemoryManager:
         self.scratch_block = MemoryBlock("scratch", max_tokens=merged_budgets.get("scratch", 1500))
         self.process_block = MemoryBlock("process", max_tokens=merged_budgets.get("process", 3000))
         self.process_block._readonly = True  # 只有 recall 注入能写，AI 自身不能改写
+        # P1-1: 情景缓冲器（Baddeley 2000）——跨时间整合决策事件序列
+        self.episodic_block = MemoryBlock("episodic", max_tokens=merged_budgets.get("episodic", 800))
 
         # 检查点目录
         if checkpoint_dir is None:
@@ -287,6 +290,38 @@ class WorkingMemoryManager:
             self.process_block.set("markdown", markdown)
             self._log("load_process_block", {"chars": len(markdown)})
 
+    def append_episode(
+        self,
+        stage: str,
+        decision: str,
+        rationale: str = "",
+        evidence_refs: Optional[List[str]] = None,
+    ) -> None:
+        """P1-1: 追加决策事件到情景缓冲器（Baddeley 2000 episodic buffer）。
+
+        记录"发生了什么决策及为什么"的时序流，供 A8 复盘回溯。
+        区别于 scratch_block 的"中间计算值"。
+
+        Args:
+            stage: 决策阶段（如 "A0_矛盾分析", "A3_战略", "A7_门禁"）
+            decision: 决策内容（如 "做多BTC", "减仓50%"）
+            rationale: 决策理由（如 "多头矛盾占优，资金流入"）
+            evidence_refs: 证据引用列表（如 ["FGI=72", "资金费率=0.01%"]）
+        """
+        with self._lock:
+            ts = datetime.now(timezone.utc).isoformat()
+            key = f"ep_{len(self.episodic_block.items)}_{stage}"
+            episode = {
+                "stage": stage,
+                "decision": decision,
+                "rationale": rationale,
+                "evidence_refs": evidence_refs or [],
+                "ts": ts,
+            }
+            self.episodic_block.set(key, json.dumps(episode, ensure_ascii=False))
+            self._log("append_episode", {"stage": stage, "decision": decision})
+            self._auto_compress_if_needed(self.episodic_block)
+
     # ============================================================
     # 上下文生成（注入到 System Prompt）
     # ============================================================
@@ -330,6 +365,17 @@ class WorkingMemoryManager:
                 lines.append(process_md)
             lines.append("")
 
+        if self.episodic_block.items:
+            lines.append("---")
+            lines.append("## 📋 决策事件序列（Episodic Buffer · 供 A8 复盘回溯）")
+            for k, v in self.episodic_block.items.items():
+                try:
+                    ep = json.loads(v)
+                    lines.append(f"- **[{ep.get('stage', '?')}]** {ep.get('decision', '?')} — {ep.get('rationale', '')}")
+                except (json.JSONDecodeError, TypeError):
+                    lines.append(f"- {k}: {v[:100]}")
+            lines.append("")
+
         # Token 使用情况
         total = self._total_tokens()
         lines.append(f"---")
@@ -348,6 +394,7 @@ class WorkingMemoryManager:
             "context": self.context_block.estimate_tokens(),
             "scratch": self.scratch_block.estimate_tokens(),
             "process": self.process_block.estimate_tokens(),
+            "episodic": self.episodic_block.estimate_tokens(),
             "total": self._total_tokens(),
         }
 
@@ -357,6 +404,7 @@ class WorkingMemoryManager:
             + self.context_block.estimate_tokens()
             + self.scratch_block.estimate_tokens()
             + self.process_block.estimate_tokens()
+            + self.episodic_block.estimate_tokens()
         )
 
     def _auto_compress_if_needed(self, block: MemoryBlock) -> None:
@@ -409,6 +457,7 @@ class WorkingMemoryManager:
                 "task_block": self.task_block.to_dict(),
                 "context_block": self.context_block.to_dict(),
                 "scratch_block": self.scratch_block.to_dict(),
+                "episodic_block": self.episodic_block.to_dict(),
                 "operation_log": self._operation_log[-50:],  # 保留最近50条
                 "saved_at": datetime.now(timezone.utc).isoformat(),
             }

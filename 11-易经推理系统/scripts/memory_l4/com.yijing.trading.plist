@@ -12,7 +12,7 @@
         <string>--interval</string>
         <string>3600</string>
         <string>--coins</string>
-        <string>BTC,ETH,SOL,BNB,XRP,DOGE,ADA,AVAX,LINK,LTC,DOT,NEAR,ATOM,UNI,APT,FIL,ARB,OP,INJ,SUI,SEI,TIA,AAVE,LDO,STX,IMX,GRT,SPX,XAU</string>
+        <string>UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB</string>
         <string>--confidence</string>
         <string>0.35</string>
         <string>--max-positions</string>

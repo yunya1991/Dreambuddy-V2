@@ -35,6 +35,21 @@ class ContradictionDimension:
 
 
 @dataclass
+class A8GapDimension:
+    """
+    A8 理论实践一致性矛盾维度。
+    作为 A0 的"第8维矛盾"，来源分两类：
+      - trading_a8: 交易 A8 hypothesis vs practice gap_score
+      - code_a8:    代码 A8 文档/代码一致性 (consistency_score, doc_only, code_only)
+    """
+    source: str                           # "trading_a8" / "code_a8"
+    gap_score: float                      # 张力原始值（直接映射为 tension）
+    hypothesis_score: float = 0.0         # 交易A8: 假设分数
+    practice_score: float = 0.0           # 交易A8: 实践分数
+    details: Dict[str, Any] = field(default_factory=dict)  # 代码A8: doc_only/code_only/consistency_score
+
+
+@dataclass
 class A0AnalysisResult:
     """A0 矛盾分析结果"""
     contradictions: List[ContradictionDimension] = field(default_factory=list)
@@ -67,7 +82,10 @@ class A0AnalysisResult:
 
 
 class A0ContradictionEngine:
-    """A0 矛盾分析引擎 — 纯代码驱动"""
+    """A0 矛盾分析引擎 — 纯代码驱动。
+
+    8维矛盾 = 7维市场矛盾 + 1维（a8_gap 理论实践一致性矛盾）
+    """
 
     # 周期统计窗口
     TREND_LOOKBACK = 60       # 看近60根K线判断趋势持续时间
@@ -76,6 +94,90 @@ class A0ContradictionEngine:
 
     def __init__(self):
         self._trauma_tracker: Dict[str, List[Dict]] = {}  # inst_id -> 最近的决策记录
+        self._external_contradictions: List[Dict[str, Any]] = []  # 外部注入的矛盾（a8_gap 等）
+
+    # =====================================================================
+    # 外部矛盾注入：A8→A0 反向反馈 (#3-b 三层脑理论)
+    # =====================================================================
+    def inject_external_contradiction(self, gap: A8GapDimension) -> Dict[str, Any]:
+        """
+        注入一个 A8 偏差作为 A0 的外部矛盾维度。
+
+        映射规则：
+          - dim_id = "a8_gap"
+          - name: 交易A8 / 代码A8
+          - tension = gap_score (交易A8) 或 1-consistency_score/100 (代码A8)
+          - direction: 实践<假设 → BEAR（模型不可信）；一致 → EQUAL
+
+        去重/合并策略（#3-b 三层脑反馈）：
+          1. trace_id 相同：直接替换（避免重复注入）
+          2. source 相同（如两次 trading_a8）：替换为最新一条（a0_contradiction 是
+             实时快照，每 tick 重新计算；历史偏差用 governance 链另行存储，不堆积
+             到矛盾池避免 tension 被稀释）。
+        """
+        import time as _t
+        # 张力计算
+        if gap.source == "code_a8" and "consistency_score" in gap.details:
+            tension = round(1.0 - float(gap.details["consistency_score"]) / 100.0, 4)
+        else:
+            tension = round(float(gap.gap_score), 4)
+        tension = max(0.0, min(1.0, tension))
+
+        # 方向：实践弱于假设 → BEAR（模型预测与实际背离）
+        if abs(gap.gap_score) < 1e-6:
+            dominant_side = "EQUAL"
+        elif gap.practice_score < gap.hypothesis_score:
+            dominant_side = "BEAR"
+        elif gap.practice_score > gap.hypothesis_score:
+            dominant_side = "BULL"
+        else:
+            dominant_side = "EQUAL"
+
+        # evidence 构造
+        src_label = "交易A8" if gap.source == "trading_a8" else "代码A8"
+        if gap.source == "trading_a8":
+            ev = (f"{src_label}: 理论{gap.hypothesis_score:.2f} vs "
+                  f"实践{gap.practice_score:.2f}，偏差={gap.gap_score:.2f}")
+        else:
+            doc_only = gap.details.get("doc_only") or gap.details.get("doc_only_functions") or []
+            code_only = gap.details.get("code_only") or gap.details.get("code_only_functions") or []
+            cons = gap.details.get("consistency_score", "?")
+            ev = (f"{src_label}: 一致性={cons} | 文档缺{len(doc_only)}项 | 代码缺{len(code_only)}项"
+                  + (f" doc_only={doc_only[:3]}" if doc_only else ""))
+        name_map = {"trading_a8": "A8理论实践一致性", "code_a8": "A8文档代码一致性"}
+        thesis = "理论(文档/假设)是准确的"
+        anti = "实践(代码/执行)与理论存在显著偏差"
+
+        entry = {
+            "dim_id": "a8_gap",
+            "name": name_map.get(gap.source, "A8一致性"),
+            "thesis": thesis,
+            "antithesis": anti,
+            "tension": tension,
+            "dominant_side": dominant_side,
+            "evidence": ev,
+            "gap_source": gap.source,
+            "_ts": _t.time(),
+            "_trace_id": gap.details.get("trace_id") if isinstance(gap.details, dict) else None,
+        }
+        # 去重：同一 _trace_id 覆盖旧的
+        if entry["_trace_id"]:
+            self._external_contradictions = [
+                e for e in self._external_contradictions
+                if e.get("_trace_id") != entry["_trace_id"]
+            ]
+        # 相同来源（trading_a8/code_a8）合并为最新一条（避免堆积）
+        self._external_contradictions = [
+            e for e in self._external_contradictions
+            if e.get("gap_source") != gap.source
+        ]
+        self._external_contradictions.append(entry)
+        return {
+            "dim_id": entry["dim_id"],
+            "tension": entry["tension"],
+            "dominant_side": entry["dominant_side"],
+            "evidence": entry["evidence"],
+        }
 
     def analyze(
         self,
@@ -84,7 +186,7 @@ class A0ContradictionEngine:
         market_snapshot: Optional[Dict[str, Any]] = None,
     ) -> A0AnalysisResult:
         """
-        执行7维矛盾分析。
+        执行8维矛盾分析（7维市场 + 外部注入的 a8_gap 等）。
 
         Args:
             df: K线数据，需要有 open/high/low/close/volume 列
@@ -92,7 +194,16 @@ class A0ContradictionEngine:
             market_snapshot: 额外市场快照（funding_rate, rsi 等可选）
         """
         if df is None or len(df) < 30:
-            return A0AnalysisResult()
+            # 即使 df 空，也返回携带外部矛盾的结果
+            r = A0AnalysisResult()
+            for ext in self._external_contradictions:
+                r.contradictions.append(ContradictionDimension(
+                    dim_id=ext["dim_id"], name=ext["name"],
+                    thesis=ext["thesis"], antithesis=ext["antithesis"],
+                    tension=ext["tension"], dominant_side=ext["dominant_side"],
+                    evidence=ext["evidence"],
+                ))
+            return r
 
         snapshot = market_snapshot or {}
         closes = df["close"].values.astype(float)
@@ -102,7 +213,7 @@ class A0ContradictionEngine:
 
         result = A0AnalysisResult()
 
-        # 逐维度分析
+        # 逐维度分析（7维市场）
         result.contradictions.append(self._dim_bull_bear(closes, volumes, snapshot))
         result.contradictions.append(self._dim_time(df, snapshot))
         result.contradictions.append(self._dim_info(closes, volumes, snapshot))
@@ -110,6 +221,15 @@ class A0ContradictionEngine:
         result.contradictions.append(self._dim_emotion(closes, snapshot))
         result.contradictions.append(self._dim_cycle(closes, snapshot))
         result.contradictions.append(self._dim_structure(closes, highs, lows, snapshot))
+
+        # 合并外部注入的矛盾（a8_gap 等）
+        for ext in self._external_contradictions:
+            result.contradictions.append(ContradictionDimension(
+                dim_id=ext["dim_id"], name=ext["name"],
+                thesis=ext["thesis"], antithesis=ext["antithesis"],
+                tension=ext["tension"], dominant_side=ext["dominant_side"],
+                evidence=ext["evidence"],
+            ))
 
         # 确定主要矛盾（张力最大的）
         result.primary_contradiction = max(result.contradictions, key=lambda c: c.tension)

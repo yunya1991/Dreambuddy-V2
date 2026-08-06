@@ -102,7 +102,13 @@ def _fmt_ts(dt: datetime) -> str:
 def _log(msg: str):
     ts = _fmt_ts(_now())
     line = f"[{ts}] {msg}"
-    print(line, flush=True)
+    # 避免重复写：如果 stdout/stderr 被重定向到同一个日志文件（例如 shell >> log 2>&1），
+    # 就跳过 print，只通过显式写文件输出。只有交互式（TTY）运行时同时输出到终端。
+    try:
+        if sys.stdout.isatty():
+            print(line, flush=True)
+    except Exception:
+        pass
     LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG_FILE, "a") as f:
         f.write(line + "\n")
@@ -201,9 +207,9 @@ def run_polling_trader():
         return False
 
     try:
-        # 使用 nohup 后台启动（参数与 .env 保持一致：INITIAL_EQUITY 200USDT，30币种，interval=300s）
+        # 使用 nohup 后台启动（参数与 .env 保持一致：INITIAL_EQUITY 200USDT，15币种，interval=300s）
         import os
-        coins = os.environ.get("POLLING_COINS", "BTC,ETH,SOL,BNB,XRP,ADA,AVAX,NEAR,SUI,APT,DOT,ATOM,LTC,LINK,ARB,OP,UNI,AAVE,DOGE,PEPE,NVDA,TSLA,MSFT,META,GOOGL,AAPL,AMZN,COIN,XAU,XAG")
+        coins = os.environ.get("POLLING_COINS", "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB")
         interval = os.environ.get("POLLING_INTERVAL", "300")
         confidence = os.environ.get("CONFIDENCE_THRESHOLD", "0.70")
         max_positions = os.environ.get("MAX_POSITIONS", "3")
@@ -277,7 +283,7 @@ def trigger_retrain():
         return False
 
 def analyze_performance() -> dict:
-    """分析交易绩效"""
+    """分析交易绩效（P1修正：优先从 PerformanceTracker 的 daily_stats.json 读取，统一数据源）"""
     _log("=" * 60)
     _log("分析易经推理交易绩效")
     _log("=" * 60)
@@ -294,26 +300,62 @@ def analyze_performance() -> dict:
         "consecutive_losses": 0,
     })
 
-    # 从案例目录补充统计
-    cases_dir = memory_l4_cases_dir()
-    if cases_dir.exists():
-        cases = [load_json(f) for f in cases_dir.glob("*.json")]
-        pnl_list = [c.get("pnl", 0) for c in cases if c.get("pnl") is not None]
+    # P1修正：优先从 PerformanceTracker 的 daily_stats.json 读取（与 polling_trader 同源）
+    daily_stats_file = workbuddy_dir() / "memory_l4" / "stats" / "daily_stats.json"
+    all_trades_file = workbuddy_dir() / "memory_l4" / "stats" / "all_trades.jsonl"
 
-        if pnl_list:
-            perf["total_trades"] = len(pnl_list)
-            perf["win_count"] = sum(1 for p in pnl_list if p > 0)
-            perf["loss_count"] = sum(1 for p in pnl_list if p <= 0)
-            perf["win_rate"] = perf["win_count"] / perf["total_trades"] if perf["total_trades"] > 0 else 0
-            perf["total_pnl"] = sum(pnl_list)
-            perf["avg_pnl"] = perf["total_pnl"] / perf["total_trades"]
-            perf["max_win"] = max(pnl_list) if pnl_list else 0
-            perf["max_loss"] = min(pnl_list) if pnl_list else 0
+    pnl_list = []
+    consecutive_losses = 0
+
+    # 优先从 all_trades.jsonl 读取逐笔交易（PerformanceTracker 写入）
+    if all_trades_file.exists():
+        try:
+            for line in all_trades_file.read_text(encoding="utf-8").strip().split("\n"):
+                if not line.strip():
+                    continue
+                trade = json.loads(line)
+                pnl = trade.get("pnl", 0)
+                if pnl is not None:
+                    pnl_list.append(pnl)
+        except Exception as e:
+            _log(f"读取 all_trades.jsonl 失败: {e}，回退到 cases 目录")
+
+    # 如果 all_trades.jsonl 不可用，回退到 cases 目录（兼容旧数据）
+    if not pnl_list:
+        cases_dir = memory_l4_cases_dir()
+        if cases_dir.exists():
+            cases = [load_json(f) for f in cases_dir.glob("*.json")]
+            pnl_list = [c.get("pnl", 0) for c in cases if c.get("pnl") is not None]
+
+    if pnl_list:
+        perf["total_trades"] = len(pnl_list)
+        perf["win_count"] = sum(1 for p in pnl_list if p > 0)
+        perf["loss_count"] = sum(1 for p in pnl_list if p <= 0)
+        perf["win_rate"] = perf["win_count"] / perf["total_trades"] if perf["total_trades"] > 0 else 0
+        perf["total_pnl"] = sum(pnl_list)
+        perf["avg_pnl"] = perf["total_pnl"] / perf["total_trades"]
+        perf["max_win"] = max(pnl_list) if pnl_list else 0
+        perf["max_loss"] = min(pnl_list) if pnl_list else 0
+
+        # 从 daily_stats.json 读取最近一天的连亏次数
+        if daily_stats_file.exists():
+            try:
+                daily_stats = load_json(daily_stats_file, {})
+                # 取最近一天
+                if daily_stats:
+                    latest_date = sorted(daily_stats.keys())[-1]
+                    latest = daily_stats[latest_date]
+                    consecutive_losses = latest.get("current_consecutive_losses", 0)
+            except Exception:
+                pass
+
+    perf["consecutive_losses"] = consecutive_losses
 
     _log(f"绩效统计: 总交易 {perf['total_trades']} 笔 | 胜率 {perf['win_rate']:.1%} | 总盈亏 {perf['total_pnl']:.2f} USDT")
 
     # 保存更新后的绩效
     perf["last_update"] = _fmt_ts(_now())
+    perf["data_source"] = "all_trades.jsonl" if all_trades_file.exists() else "cases"
     save_json(PERF_FILE, perf)
 
     return perf
@@ -331,8 +373,9 @@ def evolve_thresholds(perf: dict) -> dict:
     """
     thresholds = {
         "confidence_threshold": 0.70,
-        "daily_loss_limit": -50.0,
-        "max_consecutive_losses": 5,
+        "daily_loss_limit": -30.0,
+        "max_consecutive_losses": 999,
+        "loss_limit_pct": 0.20,
         "default_position_pct": 0.10,
     }
 
@@ -341,7 +384,9 @@ def evolve_thresholds(perf: dict) -> dict:
     if config_file.exists():
         config = load_json(config_file, {})
         thresholds["confidence_threshold"] = config.get("confidence_threshold", 0.70)
-        thresholds["daily_loss_limit"] = config.get("daily_loss_limit", -50.0)
+        thresholds["daily_loss_limit"] = config.get("daily_loss_limit", -30.0)
+        thresholds["max_consecutive_losses"] = config.get("max_consecutive_losses", 999)
+        thresholds["loss_limit_pct"] = config.get("loss_limit_pct", 0.20)
         thresholds["default_position_pct"] = config.get("default_position_pct", 0.10)
 
     adjustments = []
@@ -393,6 +438,7 @@ def evolve_thresholds(perf: dict) -> dict:
     config["confidence_threshold"] = thresholds["confidence_threshold"]
     config["daily_loss_limit"] = thresholds["daily_loss_limit"]
     config["max_consecutive_losses"] = thresholds["max_consecutive_losses"]
+    config["loss_limit_pct"] = thresholds["loss_limit_pct"]
     config["default_position_pct"] = thresholds["default_position_pct"]
     config["last_evolve"] = _fmt_ts(_now())
     save_json(config_file, config)
@@ -401,6 +447,36 @@ def evolve_thresholds(perf: dict) -> dict:
         "thresholds": thresholds,
         "adjustments": adjustments,
     }
+
+def _run_self_evolution_cycle(perf: dict) -> dict:
+    """
+    接入 SelfEvolutionEngine 三层闭环（A8理论实践验证 / 做梦部 / 联网反思）。
+    停滞检测通过才执行完整周期，否则返回未触发报告。
+    与 evolve_thresholds 互补：前者做轻量规则调整，本函数做深度自进化。
+    """
+    try:
+        from scripts.memory_l4.self_evolution_engine import SelfEvolutionEngine
+        engine = SelfEvolutionEngine()
+        stats = {
+            "win_rate": perf.get("win_rate", 1.0),
+            "total_trades": perf.get("total_trades", 0),
+            # 以下字段暂无数据源，使用默认值（不会误触发对应条件）
+            "hold_streak": 0,
+            "accuracy_trend": [],
+            "hold_rate": 0.0,
+            "top_hexagrams": {},
+        }
+        should, reason = engine.should_trigger(stats)
+        if not should:
+            _log(f"[自进化] {reason}，跳过三层闭环")
+            return {"triggered": False, "reason": reason}
+        _log(f"[自进化] 触发三层闭环: {reason}")
+        report = engine.run_full_cycle(stats, [])
+        _log(f"[自进化] 完成 | 采纳 {len(report.get('adopted', []))} 个提案")
+        return {"triggered": True, "reason": reason, "report": report}
+    except Exception as e:
+        _log(f"[自进化] 三层闭环异常: {e}")
+        return {"triggered": False, "error": str(e)}
 
 def run_evolution():
     """执行自进化学习流程"""
@@ -417,6 +493,9 @@ def run_evolution():
     # 3. 进化阈值
     evolved = evolve_thresholds(perf)
 
+    # 3.5 三层自进化闭环（A8 / 做梦部 / 联网反思）— 停滞检测通过才触发
+    self_evo_report = _run_self_evolution_cycle(perf)
+
     # 4. 保存进化记录
     evolution_file = workbuddy_dir() / "memory_l4" / "evolution" / "yijing_evolution.json"
     evolution = load_json(evolution_file, {
@@ -424,15 +503,34 @@ def run_evolution():
         "history": [],
         "lessons": [],
     })
-    evolution["evolution_count"] = evolution.get("evolution_count", 0) + 1
-    evolution["history"].append({
-        "ts": _fmt_ts(_now()),
-        "win_rate": perf.get("win_rate", 0),
-        "total_pnl": perf.get("total_pnl", 0),
-        "thresholds": evolved["thresholds"],
-        "adjustments": evolved["adjustments"],
-    })
-    evolution["history"] = evolution["history"][-20:]
+
+    # A-3修复：阈值无变化时不 increment evolution_count、不写 history
+    adjustments = evolved.get("adjustments", [])
+    new_thresholds = evolved.get("thresholds", {})
+
+    # 取上一条 history 的 thresholds 做对比
+    prev_history = evolution.get("history", [])
+    prev_thresholds = prev_history[-1]["thresholds"] if prev_history else {}
+
+    # 判断是否有实质变化（阈值不同 或 adjustments 非空且不重复）
+    thresholds_changed = (new_thresholds != prev_thresholds)
+    # 检查 adjustments 是否与上一条完全相同
+    prev_adjustments = prev_history[-1].get("adjustments", []) if prev_history else []
+    adjustments_same = (adjustments == prev_adjustments and not thresholds_changed)
+
+    if thresholds_changed or (adjustments and not adjustments_same):
+        evolution["evolution_count"] = evolution.get("evolution_count", 0) + 1
+        evolution["history"].append({
+            "ts": _fmt_ts(_now()),
+            "win_rate": perf.get("win_rate", 0),
+            "total_pnl": perf.get("total_pnl", 0),
+            "thresholds": new_thresholds,
+            "adjustments": adjustments,
+        })
+        evolution["history"] = evolution["history"][-20:]
+        _log(f"进化状态已保存 | 累计进化 {evolution['evolution_count']} 次")
+    else:
+        _log(f"阈值无变化，跳过进化记录（当前累计 {evolution.get('evolution_count', 0)} 次）")
 
     # 提取教训
     lessons = evolution.get("lessons", [])
@@ -449,6 +547,14 @@ def run_evolution():
 
     evolution["lessons"] = lessons[-20:]
     evolution["last_evolve_ts"] = _now().timestamp()
+    if self_evo_report.get("triggered"):
+        _se_report = self_evo_report.get("report", {})
+        evolution["last_self_evolution"] = {
+            "ts": _fmt_ts(_now()),
+            "reason": self_evo_report.get("reason", ""),
+            "adopted_count": len(_se_report.get("adopted", [])),
+            "proposals_count": len(_se_report.get("proposals", [])),
+        }
     save_json(evolution_file, evolution)
 
     _log(f"进化状态已保存 | 累计进化 {evolution['evolution_count']} 次")

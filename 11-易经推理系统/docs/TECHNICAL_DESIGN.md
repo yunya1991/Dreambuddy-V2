@@ -1,6 +1,6 @@
 # 易经推理系统 技术设计文档
 
-> **版本**: v4.1 | **日期**: 2026-08-05
+> **版本**: v4.1 | **日期**: 2026-08-06
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引）
 
@@ -47,7 +47,7 @@
 | **动态适应性** | 根据市场状态自动调整策略参数和置信度阈值 | ✅ 8种市态切换 |
 | **多币种组合** | 支持多币种资金分配和风险分散 | ✅ 27币种（BTC/ETH/SOL/BNB/XRP等） |
 | **增量学习** | 实盘数据自动反馈模型迭代 | ✅ IncrementalLearner |
-| **自进化闭环** | 经验→知识→约束→验证→升级的完整闭环 | ⚠️ 部分实现 |
+| **自进化闭环** | 经验→知识→约束→验证→升级的完整闭环 | ✅ 已实现（三层闭环接入 yijing_monitor） |
 | **L4四级记忆** | 实时→短期→长期→归档的记忆生命周期 | ✅ pipeline全链路 |
 | **五角校验** | BCRM2×力学×A0×Ising×TDA 五源风险信号综合评分→双向风控 | ✅ v4 风险评分风控版 |
 
@@ -817,6 +817,8 @@ Layer 3: 联网反思（Tavily + GitHub 成熟经验）
     └── scripts/memory_l4/tavily_macro.py
 ```
 
+> **实现状态**: ✅ 已实现。`SelfEvolutionEngine`（`scripts/memory_l4/self_evolution_engine.py`）封装三层闭环，由 `yijing_monitor.run_evolution()` 在停滞检测通过时触发，与 `evolve_thresholds` 轻量调整互补。
+
 ### 6.2 停滞检测触发条件
 
 满足任一即触发自进化：
@@ -965,7 +967,7 @@ CBR 案例检索增强 (CBRSignalEnhancer) ← 见 §9.5
     ├── 检索 L4 历史相似案例
     └── 融合策略：cbr_override / cbr_blend / bcrm_only
     ↓
-RiskManager (日亏损/连续亏损熔断)
+RiskManager (亏损金额比例熔断，亏损>权益×20%触发)
     ↓
 OKX下单执行
     ↓
@@ -1016,6 +1018,72 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 - `evidence_refs[]`：证据文件路径或证据 ID
 - `timestamp`：UTC 时间戳
 - `decision_summary`：阶段结论摘要
+
+### 9.3.1 宏观特征层（MacroFeatures）— v4.2 特征级开关
+
+**文件**: [macro_features.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/macro_features.py)
+
+**定位**: BCRM 2.0 特征工程的组成部分，提供 24 个市场级宏观特征（6 维度），通过两级开关控制启用/禁用。
+
+**两级开关机制**（特征级优先，维度级回退）：
+
+```python
+def _feat_enabled(name: str) -> bool:
+    """两级开关：特征级优先，维度级回退，默认 True"""
+    feat_key = f"macro_feat_{name}"
+    if feat_key in cfg:              # 特征级开关优先
+        return bool(cfg[feat_key])
+    dim = self.FEATURE_TO_DIM.get(name)
+    if dim is not None:              # 维度级开关回退
+        dim_key = f"macro_enable_{dim}"
+        if dim_key in cfg:
+            return bool(cfg[dim_key])
+    return True                      # 默认启用
+```
+
+**6 维度 24 特征**：
+
+| 维度 | 特征 | 说明 |
+|------|------|------|
+| sentiment | fgi_zscore, fgi_trend_7d, fgi_extreme_fear, fgi_extreme_greed, fgi_divergence | 恐惧贪婪指数衍生 |
+| funding | funding_rate_zscore, funding_extreme_positive, funding_extreme_negative, oi_change_rate, funding_divergence | 资金费率+持仓量 |
+| liquidity | stablecoin_growth, liquidity_expanding, liquidity_contracting, tvl_change_7d | 流动性指标 |
+| onchain | hash_rate_trend, miner_accumulation, miners_revenue_zscore | 链上数据 |
+| smart_money | smart_money_direction, smart_money_divergence | 聪明钱方向 |
+| valuation | market_cap_rank, ath_drop_pct, undervalued, social_hype_zscore, hype_extreme | 估值+社交热度 |
+
+**v4 前向贪心选择验证结果**（BTC-only, 3折×4000bars 选择 + 5折×6000bars 验证）：
+
+| K | 得分 | 边际 | 加入特征 |
+|---|------|------|----------|
+| 0 | 11.253 | — | (基线) |
+| 1 | 14.925 | **+3.672** | fgi_zscore |
+| 2 | 16.536 | **+1.611** | fgi_extreme_fear |
+| 3 | 16.578 | +0.042 | hash_rate_trend |
+
+**BTC 验证得分**: 10.273 → 12.721（**+23.8%**），3 个特征验证有效。
+
+**落地配置**（仅 BTC 启用 3 个特征，其他币种保持默认）：
+
+```python
+# polling_trader.py _infer_bcrm2()
+if coin.upper() == "BTC":
+    btc_macro_config = {
+        "macro_feat_fgi_zscore": True,
+        "macro_feat_fgi_extreme_fear": True,
+        "macro_feat_hash_rate_trend": True,
+        # 其余 21 个特征显式关闭
+        "macro_feat_fgi_trend_7d": False,
+        # ...
+    }
+```
+
+**BCRM2Adapter 适配**: `macro_config` 参数透传至 `FeatureRegistry.compute_all(config=...)`；缓存键包含 macro_config 哈希，配置变更自动重训。
+
+**关键发现**：
+- `fgi_zscore` + `fgi_extreme_fear` 存在**协同效应**（连续值捕捉趋势，事件标记捕捉极值反转点）
+- `tvl_change_7d` 单独第2名(+1.329)，但与 FGI 组合后严重冲突(-4.326)，说明流动性与情绪指标信息重叠且方向相反
+- 24 个特征中仅 3 个在 BTC 上验证有效，其余 21 个边际贡献为零或负
 
 ### 9.4 震荡市增强层（RangingMarketEnhancer）
 
@@ -1396,6 +1464,52 @@ pos_size_info = self.risk_manager.calc_position_size(
 - 最大持仓数: 10 个币种
 - 单币种保证金 = `仓位价值 / 杠杆`，独立占用
 
+### 11.3.1 风控触发规则（v4.2 改造）
+
+**设计哲学**：以**亏损金额**为唯一风控触发准则，不再以连续亏损笔数为准，避免小幅连续亏损反复触发风控导致交易频率过低。
+
+**风控规则**：
+
+| 触发条件 | 判定逻辑 | 默认值 |
+|----------|----------|--------|
+| 亏损金额超限 | `daily_pnl ≤ -(current_equity × loss_limit_pct)` | `loss_limit_pct=0.20`（20%） |
+| 兜底固定阈值 | `daily_pnl ≤ daily_loss_limit` | `daily_loss_limit=-30.0` USDT |
+| 有效阈值 | `max(dynamic_limit, daily_loss_limit)`（取更严格者） | — |
+| ~~连续亏损笔数~~ | ~~`consecutive_losses ≥ max_consecutive_losses`~~ | 已禁用（`max_consecutive_losses=999`） |
+
+**默认场景**（可用资金 150U）：
+
+| 亏损金额 | 占比 | 判定 |
+|----------|------|------|
+| -25U | 16.7% | ✓ 允许交易 |
+| -30U | 20.0% | ✗ 触发拦截（达到阈值） |
+| -35U | 23.3% | ✗ 触发拦截 + `trading_halted=True` |
+
+**关键代码**：[trading_utils.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py) `RiskManager.can_trade()`
+
+```python
+# 动态亏损阈值：亏损超过当前权益的 loss_limit_pct（默认20%）则拦截
+dynamic_limit = -(current_equity * self.state.loss_limit_pct) if current_equity > 0 else self.state.daily_loss_limit
+effective_limit = max(dynamic_limit, self.state.daily_loss_limit)  # 取更严格的阈值
+
+if self.state.daily_pnl <= effective_limit:
+    return {"allowed": False, "reason": f"日亏损达上限: {self.state.daily_pnl:.2f} <= {effective_limit:.2f}"}
+```
+
+**配置项**（`data/okx_sim/config.json`）：
+
+```json
+{
+  "daily_loss_limit": -30.0,
+  "max_consecutive_losses": 999,
+  "loss_limit_pct": 0.20
+}
+```
+
+**进化系统适配**：
+- `yijing_monitor.py`：默认值同步更新为 `-30.0/999/0.20`，保存时写入 `loss_limit_pct`
+- `self_evolution_engine.py`：进化白名单移除 `max_consecutive_losses`（已禁用，不再自动进化），新增 `loss_limit_pct`
+
 ### 11.4 切换方式
 
 ```bash
@@ -1570,6 +1684,7 @@ export OKX_TD_MODE=isolated
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-08-06 | v4.2 | **宏观特征优化 + 风控规则改造**：①§9.3.1 新增宏观特征层章节（MacroFeatures 24特征/6维度+两级开关机制+v4前向贪心选择验证）；②BTC启用3个验证有效特征（fgi_zscore+fgi_extreme_fear+hash_rate_trend，BTC验证得分+23.8%）；③BCRM2Adapter增加macro_config参数+缓存键含macro_config哈希（配置变更自动重训）；④§11.3.1 风控规则改造：移除连续亏损笔数触发，改为亏损金额>权益×20%触发（默认可用150U→阈值30U）；⑤进化系统适配（yijing_monitor/self_evolution_engine 默认值与白名单同步）；版本号 v4.1→v4.2 | DreamBuddy v2 |
 | 2026-08-05 | v4.1 | **认知科学 P2 落地与实盘修复**：①P2-9 主动推理事前预测落地（`prediction_engine.py` + `prediction_bridge.py`，开仓生成 prediction，平仓计算 prediction_error 驱动贝叶斯，TDD 通过）；②P2-7 静息态反刍落地（`rumination_engine.py`，daemon 空闲>30min 统计聚类近7天 episode 产出 C 级假设记忆，TDD 通过）；③P2-8 双通道回测环境就绪（`experiments/ab-trading/core/dual_channel/`：胼胝体整合器+双通道运行器+AB 对比框架，9/9 测试通过，BTC 500bars 回测 path_advantage=-0.2315 待 metrics 调优）；④反刍实盘路径 bug 修复（`_find_episodes_dir()` 多路径搜索替代硬编码，找到 85 个 episode 文件）；⑤反刍模块详细日志增强（idle 检查/触发原因/执行流程/样本详情）；⑥认知回测框架扩展（`cognitive_backtest.py` 新增 P2-9/P2-7 回测，4/5 项 path_advantage ≥ +0.2）；⑦实盘重启（polling_trader 加载 P2-9 prediction；cognitive_daemon 加载 P2-7 路径修复+日志，PID 31219）；版本号 v4.0→v4.1 | DreamBuddy v2 |
 | 2026-08-05 | v4.0 | **五角校验 v4 风险评分风控版**：①§4.1.1c 五角校验架构重写为 v4（五源风险信号综合评分+风险注意力动态加权+仓位/杠杆/止盈/止损双向调控+v3双预警底线）；②§1.3 核心指标更新为 BTC/ETH/SOL 6000bars/5folds 回测（夏普10.16→10.20、回撤10.12%→10.34%、收益135.31%→139.40%，四项标准全通过）；③推理链更新五角校验输出字段（risk_score/risk_level/leverage_factor/tp_adjustment）；④§8.1 性能基线更新；⑤v1/v2 方向投票+贝叶斯优化方案废弃；版本号 v3.0→v4.0 | DreamBuddy v2 |
 | 2026-08-01 | v3.0 | **DreamOS 离场模块集成**：①新增 §9.8 DreamOS 离场模块集成章节（YijingExitAdapter + ExitModuleSelector + ExitModuleBacktester）；②YijingExitAdapter 从占位符升级为完整实现（懒加载+三级卦象降级+9→4决策映射+ATR基准SL/TP动态调整）；③ExitModuleBacktester 补充 change_24h/rsi14 动态注入，支持 yijing 卦象合成 fallback；④3场景×592交易全量回测，性能数据写入 exit_performance_memory.json；⑤ExitModuleSelector L0 精确匹配验证通过（yijing score最高时选中 yijing）；⑥§9.6 集成点补充 DreamOS 链路描述；⑦§15.4 Phase 3 标记 3 项已完成；版本号 v2.9→v3.0 | DreamBuddy v2 |

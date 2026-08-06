@@ -107,12 +107,30 @@ def test_infer_task_type():
     """任务类型推断"""
     from cognitive_session import infer_task_type
 
+    # 基础场景
     assert infer_task_type(["4-MEMORY/test.py"]) == "memory-system"
-    assert infer_task_type(["11-易经推理系统/test.py"]) == "trading-system"
+    assert infer_task_type(["11-易经推理系统/test.py"]) == "strategy-execution"  # P0: .py 交易代码
     assert infer_task_type(["0-系统文档管理/test.md"]) == "documentation"
     assert infer_task_type(["unknown.py"]) == "python-development"
     assert infer_task_type(["unknown.md"]) == "documentation"
     assert infer_task_type([]) == "general"
+    # 非 .py 的交易目录文件仍为 trading-system
+    assert infer_task_type(["11-易经推理系统/README.md"]) == "trading-system"
+
+    # P0: experiments/ab-trading/ 纳入交易目录
+    assert infer_task_type(["experiments/ab-trading/core/nodes/a0_contradiction.py"]) == "strategy-execution"
+    assert infer_task_type(["experiments/ab-trading/backtest/indicator_backtest.py"]) == "strategy-backtest"
+
+    # P0: 6-TRADING 细粒度 task_type
+    assert infer_task_type(["6-TRADING/skills/dream-strategy-research/SKILL.md"]) == "strategy-research"
+    assert infer_task_type(["6-TRADING/docs/TRIGGER_PROMPTS.md"]) == "strategy-governance"
+    assert infer_task_type(["6-TRADING/A系列研报/A1研报/report.json"]) == "trading-data"
+
+    # P0: 11-易经推理系统 调度配置
+    assert infer_task_type(["11-易经推理系统/.github/workflows/trading-a4-validation.yml"]) == "strategy-governance"
+
+    # P0: 10-经典指标系统 改指标代码
+    assert infer_task_type(["10-经典指标系统/indicators/rsi.py"]) == "strategy-execution"
 
     print("✅ test_infer_task_type 通过")
     return True
