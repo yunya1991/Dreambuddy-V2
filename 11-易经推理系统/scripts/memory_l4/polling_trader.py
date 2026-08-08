@@ -22,6 +22,7 @@ import signal as signal_module
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Tuple, Dict, Any, List, Optional, Callable, Union
 import numpy as np
 
 from scripts.memory_l4.yijing_trainer import (
@@ -314,6 +315,35 @@ class PollingTrader:
         external_count = sum(1 for p in self.position_tracker.all_open_positions()
                              if p.strategy_source == "external")
         self._log(f"[持仓同步] 完成，共 {open_count} 个持仓 (BCRM={open_count-external_count} 外部={external_count})", "INFO")
+
+        # ══════════════════════════════════════════════════════════════
+        # v5.0 离场防频繁优化：离场确认状态机 + 持仓保护门禁
+        # ══════════════════════════════════════════════════════════════
+        # 离场动作2次确认状态机：避免单根K线假信号/瞬时波动直接平仓
+        # key = f"{coin}:{action_type}"  value = {confirm_count: int, first_ts: float}
+        self._exit_confirm_state: Dict[str, Dict[str, Any]] = {}
+        # 确认窗口：2次轮询(约2min)内连续触发才执行
+        self.EXIT_CONFIRM_WINDOW_SEC = 300  # 5分钟窗口
+        self.EXIT_CONFIRM_REQUIRED = 2      # 需要2次连续触发
+        # 离场动作类型
+        self.EXIT_ACT_SIGNAL_REVERSE = "signal_reverse"
+        self.EXIT_ACT_YIJING_FORCE_CLOSE = "yijing_force_close"
+        self.EXIT_ACT_P3_EARLY_EXIT = "p3_early_exit"
+
+        # 持仓保护期门禁（开仓后N小时内仅硬离场生效）
+        # 保护期内：信号反转需更高置信度；易经TIGHTEN_SL/LOWER_TP/LOWER_SL/RAISE_TP全部屏蔽；
+        #          P3提前退出需确认；仅保留开仓静态SL/TP + P0硬止损
+        self.POSITION_PROTECTION_HOURS = 6.0  # 开仓后前6小时为保护期
+        # 保护期内信号反转所需额外置信度(在effective_threshold之上再加)
+        self.PROTECTED_REVERSE_CONF_BOOST = 0.12  # 如原阈值0.7→保护期需≥0.82
+        # 保护期内最小亏损比例才允许P3提前退出（否则假预警会走）
+        self.PROTECTED_P3_MIN_LOSS_PCT = -0.08  # 浮亏≥8%才允许P3退出（保护期内）
+        self._log(
+            f"[离场防频繁] v5.0优化已启用：保护期={self.POSITION_PROTECTION_HOURS:.0f}h "
+            f"| 离场确认={self.EXIT_CONFIRM_REQUIRED}次/{self.EXIT_CONFIRM_WINDOW_SEC//60:.0f}min "
+            f"| 保护期反转置信+{self.PROTECTED_REVERSE_CONF_BOOST:.0%}",
+            "INFO"
+        )
 
     def _run_startup_inspection(self):
         """启动时运行 inspect 诊断命令，快速检查系统状态"""
@@ -1075,6 +1105,73 @@ class PollingTrader:
 
         return "CONSOLIDATION"
 
+    # ══════════════════════════════════════════════════════════════
+    # v5.0 离场防频繁：离场确认状态机 + 持仓保护期门禁
+    # ══════════════════════════════════════════════════════════════
+
+    def _is_position_protected(self, position_age_sec: float) -> bool:
+        """判断持仓是否在保护期内（开仓后前N小时）
+
+        保护期内：仅P0硬止损/静态SL/TP生效；易经动态SL/TP调整屏蔽；
+        信号反转/P3提前退出需要更高门槛 + 离场确认。
+        """
+        return position_age_sec < (self.POSITION_PROTECTION_HOURS * 3600.0)
+
+    def _exit_confirm(self, coin: str, action_type: str) -> Tuple[bool, int]:
+        """离场动作2次确认状态机。
+
+        Args:
+            coin: 币种
+            action_type: 动作类型（signal_reverse / yijing_force_close / p3_early_exit）
+
+        Returns:
+            (confirmed: bool, current_count: int)
+                confirmed: 是否达到确认次数（可执行离场）
+                current_count: 当前累计确认次数
+        """
+        now = time.time()
+        key = f"{coin}:{action_type}"
+
+        state = self._exit_confirm_state.get(key)
+        if state is None:
+            # 第一次触发：记录，未确认
+            self._exit_confirm_state[key] = {
+                "confirm_count": 1,
+                "first_ts": now,
+            }
+            return False, 1
+
+        # 检查是否在确认窗口内
+        elapsed = now - state["first_ts"]
+        if elapsed > self.EXIT_CONFIRM_WINDOW_SEC:
+            # 窗口超时：重置为第一次
+            self._exit_confirm_state[key] = {
+                "confirm_count": 1,
+                "first_ts": now,
+            }
+            return False, 1
+
+        # 窗口内：累计+1
+        state["confirm_count"] += 1
+        self._exit_confirm_state[key] = state
+        confirmed = state["confirm_count"] >= self.EXIT_CONFIRM_REQUIRED
+        return confirmed, state["confirm_count"]
+
+    def _clear_exit_confirm(self, coin: str, action_type: str = ""):
+        """清除某币种的离场确认状态。
+
+        离场执行后、或条件不再满足时调用，避免状态污染。
+        """
+        if action_type:
+            key = f"{coin}:{action_type}"
+            self._exit_confirm_state.pop(key, None)
+        else:
+            # 清除该币种所有动作类型
+            prefix = f"{coin}:"
+            keys = [k for k in self._exit_confirm_state if k.startswith(prefix)]
+            for k in keys:
+                self._exit_confirm_state.pop(k, None)
+
     def _check_positions(self, coin: str) -> dict:
         """检查指定币种的持仓。
         Bug修复：返回 open_time（开仓时间戳,秒），供离场系统计算持仓年龄。
@@ -1497,18 +1594,50 @@ class PollingTrader:
                 self._log(f"[{coin}] 外部策略持仓，BCRM 不干预", "INFO")
                 return
 
+            # 计算持仓年龄（供保护期门禁、离场确认等使用）
+            position_age_sec = 0
+            open_time = pos_info.get("open_time", 0)
+            if open_time > 0:
+                position_age_sec = time.time() - open_time
+            in_protection = self._is_position_protected(position_age_sec)
+
+            # ── ① 信号反转：v5.0优化 提高门槛 + 离场确认 ──
+            # 基础门槛
+            reverse_threshold = effective_threshold
+            # 保护期内：额外+12%置信度（原0.7→0.82），最低不低于0.85
+            if in_protection:
+                reverse_threshold = max(
+                    reverse_threshold + self.PROTECTED_REVERSE_CONF_BOOST,
+                    0.85
+                )
             signal_reverse = (
                 (pos_side == "long" and direction == "DOWN"
-                 and confidence >= effective_threshold)
+                 and confidence >= reverse_threshold)
                 or
                 (pos_side == "short" and direction == "UP"
-                 and confidence >= effective_threshold)
+                 and confidence >= reverse_threshold)
             )
 
             if signal_reverse:
-                self._log(f"[{coin}] 信号反转 {pos_side}→{direction} | "
-                          f"置信度={confidence:.2f} 卦象={inference['hexagram']} "
-                          f"浮动盈亏={upl:.2f}({upl_ratio:.2%})")
+                # 离场确认：需2次轮询连续触发（避免单根K线假反转）
+                confirmed, cnt = self._exit_confirm(coin, self.EXIT_ACT_SIGNAL_REVERSE)
+                if not confirmed:
+                    self._log(
+                        f"[{coin}] 信号反转待确认 [{cnt}/{self.EXIT_CONFIRM_REQUIRED}] "
+                        f"{pos_side}→{direction} | 置信度={confidence:.2f}(≥{reverse_threshold:.2f}) "
+                        f"{'[保护期]' if in_protection else ''} 卦象={inference['hexagram']} "
+                        f"盈亏={upl:.2f}({upl_ratio:.2%})",
+                        "INFO"
+                    )
+                    return  # 未确认：等待下次轮询
+
+                # 确认通过：清除状态后执行
+                self._clear_exit_confirm(coin, self.EXIT_ACT_SIGNAL_REVERSE)
+                self._log(
+                    f"[{coin}] 信号反转✅已确认 {pos_side}→{direction} | "
+                    f"置信度={confidence:.2f}(≥{reverse_threshold:.2f}) "
+                    f"{'[保护期]' if in_protection else ''} 卦象={inference['hexagram']} "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%}) 持仓={position_age_sec/3600:.1f}h")
 
                 exit_price = pos_info.get("mark_px", inference["price"])
                 if pos_side == "long":
@@ -1553,40 +1682,69 @@ class PollingTrader:
 
                     self._open_position(inference, is_reverse=True)
                 return
+            else:
+                # 反转条件不再满足：清除累计确认状态
+                self._clear_exit_confirm(coin, self.EXIT_ACT_SIGNAL_REVERSE)
 
-            # P3预警联动：五角校验 TDA+Ising 双重预警 → 提前退出
+            # ── ② P3提前退出：v5.0优化 离场确认 + 保护期门槛 ──
             early_exit = inference.get("early_exit_signal", False)
             if early_exit:
-                tri_ver = inference.get("triangle_verification") or {}
-                self._log(
-                    f"[{coin}] P3提前退出 [EARLY_EXIT] TDA+Ising双重预警 | "
-                    f"盈亏={upl:.2f}({upl_ratio:.2%}) "
-                    f"预警={tri_ver.get('risk_warnings', [])}",
-                    "WARN")
-                exit_price = pos_info.get("mark_px", inference["price"])
-                if pos_side == "long":
-                    r = self.okx_client.market_close_long(
-                        inst_id, reason="P3_early_exit:TDA+Ising")
-                else:
-                    r = self.okx_client.market_close_short(
-                        inst_id, reason="P3_early_exit:TDA+Ising")
-                if r.get("ok") or r.get("dry_run"):
-                    self._handle_close_position(
-                        inst_id=inst_id, coin=coin, pos_side=pos_side,
-                        exit_price=exit_price,
-                        exit_reason="p3_early_exit",
-                        pnl=upl, pnl_pct=upl_ratio,
-                    )
-                return
+                # 保护期内：浮亏≥8%才允许P3退出（否则假预警直接走）
+                p3_allowed = True
+                if in_protection:
+                    if float(upl_ratio) > self.PROTECTED_P3_MIN_LOSS_PCT:
+                        p3_allowed = False
+                        self._log(
+                            f"[{coin}] P3提前退出 [保护期拦截] 盈亏={upl_ratio:.2%}"
+                            f">阈值{self.PROTECTED_P3_MIN_LOSS_PCT:.0%}，忽略预警",
+                            "INFO"
+                        )
+                if p3_allowed:
+                    # 离场确认：需2次连续触发
+                    confirmed, cnt = self._exit_confirm(coin, self.EXIT_ACT_P3_EARLY_EXIT)
+                    if not confirmed:
+                        tri_ver = inference.get("triangle_verification") or {}
+                        self._log(
+                            f"[{coin}] P3提前退出待确认 [{cnt}/{self.EXIT_CONFIRM_REQUIRED}] "
+                            f"{'[保护期]' if in_protection else ''} | "
+                            f"盈亏={upl:.2f}({upl_ratio:.2%}) "
+                            f"预警={tri_ver.get('risk_warnings', [])}",
+                            "WARN"
+                        )
+                        return  # 待确认
+                    # 确认通过
+                    self._clear_exit_confirm(coin, self.EXIT_ACT_P3_EARLY_EXIT)
+                    tri_ver = inference.get("triangle_verification") or {}
+                    self._log(
+                        f"[{coin}] P3提前退出✅已确认 TDA+Ising双重预警 "
+                        f"{'[保护期]' if in_protection else ''} | "
+                        f"盈亏={upl:.2f}({upl_ratio:.2%}) "
+                        f"持仓={position_age_sec/3600:.1f}h "
+                        f"预警={tri_ver.get('risk_warnings', [])}",
+                        "WARN")
+                    exit_price = pos_info.get("mark_px", inference["price"])
+                    if pos_side == "long":
+                        r = self.okx_client.market_close_long(
+                            inst_id, reason="P3_early_exit:TDA+Ising")
+                    else:
+                        r = self.okx_client.market_close_short(
+                            inst_id, reason="P3_early_exit:TDA+Ising")
+                    if r.get("ok") or r.get("dry_run"):
+                        self._handle_close_position(
+                            inst_id=inst_id, coin=coin, pos_side=pos_side,
+                            exit_price=exit_price,
+                            exit_reason="p3_early_exit",
+                            pnl=upl, pnl_pct=upl_ratio,
+                        )
+                    return
+            else:
+                # P3信号消失：清除累计确认
+                self._clear_exit_confirm(coin, self.EXIT_ACT_P3_EARLY_EXIT)
 
             # 经典指标离场系统评估（完整四大优先级）
             current_price = inference["price"]
             entry_price = pos_info.get("avg_px", 0)
-            position_age_sec = 0
-            open_time = pos_info.get("open_time", 0)
-            if open_time > 0:
-                position_age_sec = time.time() - open_time
-
+            # position_age_sec 和 open_time 已在上方计算
             kline_data = inference.get("kline_data", [])
             is_ranging = inference.get("is_ranging", False)
             regime = "chop" if is_ranging else "trend"
@@ -1652,14 +1810,28 @@ class PollingTrader:
                     open_time_sec=float(open_time) if open_time else 0.0,  # v3.0：开仓时间戳
                 )
 
-            # 1) 易经强制平仓：卦象风险极高 + 方向冲突 → 直接 close
+            # 1) 易经强制平仓：卦象风险极高 + 方向冲突 → 离场确认后执行
             if yijing_decision and yijing_decision.action == YijingExitAction.FORCE_CLOSE:
+                # v5.0：FORCE_CLOSE 加2次离场确认（避免卦象波动误平仓，尤其是中高风险时）
+                fc_confirmed, fc_cnt = self._exit_confirm(coin, self.EXIT_ACT_YIJING_FORCE_CLOSE)
+                if not fc_confirmed:
+                    self._log(
+                        f"[{coin}] 易经FORCE_CLOSE待确认 [{fc_cnt}/{self.EXIT_CONFIRM_REQUIRED}] "
+                        f"{'[保护期]' if in_protection else ''} | "
+                        f"{yijing_decision.reason} | 卦象={yijing_decision.hexagram_name} "
+                        f"风险={yijing_decision.yijing_risk_score:.2f} "
+                        f"盈亏={upl:.2f}({upl_ratio:.2%})",
+                        "WARN"
+                    )
+                    return  # 未确认，等待下次
+                # 确认通过：执行
+                self._clear_exit_confirm(coin, self.EXIT_ACT_YIJING_FORCE_CLOSE)
                 self._log(
-                    f"[{coin}] 易经主离场 [FORCE_CLOSE] {yijing_decision.reason} | "
+                    f"[{coin}] 易经主离场 [FORCE_CLOSE✅已确认] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name} "
                     f"风险={yijing_decision.yijing_risk_score:.2f} "
                     f"价值={yijing_decision.yijing_value_score:.2f} "
-                    f"盈亏={upl:.2f}({upl_ratio:.2%})")
+                    f"持仓={position_age_sec/3600:.1f}h 盈亏={upl:.2f}({upl_ratio:.2%})")
                 if pos_side == "long":
                     r = self.okx_client.market_close_long(
                         inst_id, reason=f"易经离场:{yijing_decision.reason}")
@@ -1674,8 +1846,31 @@ class PollingTrader:
                         pnl=upl, pnl_pct=upl_ratio,
                     )
                 return
+            else:
+                # FORCE_CLOSE条件不满足：清除累计确认（避免污染）
+                self._clear_exit_confirm(coin, self.EXIT_ACT_YIJING_FORCE_CLOSE)
 
-            # 2) 易经提高止盈：价值高 + 成长期 → 上调止盈位
+            # ── v5.0：持仓保护期门禁 ──
+            # 开仓后6h内：屏蔽易经的SL/TP动态调整（TIGHTEN_SL/LOWER_SL/RAISE_TP/LOWER_TP）
+            # 原因：开仓初期卦象/指标不稳定，频繁调SL/TP反而适得其反；
+            #       保护期内仅依赖开仓时设置的静态SL/TP + FORCE_CLOSE(极端) + 信号反转
+            _PROTECTED_YIJING_ACTIONS = {
+                YijingExitAction.RAISE_TP, YijingExitAction.LOWER_SL,
+                YijingExitAction.LOWER_TP, YijingExitAction.TIGHTEN_SL,
+            }
+            if in_protection and yijing_decision and yijing_decision.action in _PROTECTED_YIJING_ACTIONS:
+                self._log(
+                    f"[{coin}] 易经{str(yijing_decision.action).split('.')[-1]} [保护期屏蔽] "
+                    f"持仓={position_age_sec/3600:.1f}h<{self.POSITION_PROTECTION_HOURS:.0f}h | "
+                    f"原动作原因={yijing_decision.reason} 卦象={yijing_decision.hexagram_name or '-'} | "
+                    f"保护期内仅用静态SL/TP，跳过动态调整",
+                    "INFO"
+                )
+                # NO_INTERVENE 语义：维持持仓
+                yijing_decision.action = YijingExitAction.NO_INTERVENE
+                yijing_decision.reason = "protected_hold:" + yijing_decision.reason
+
+            # 2) 易经提高止盈：价值高 + 成长期 → 上调止盈位（保护期内已屏蔽）
             # 2026-08-06 修复：基于 ATR 基线 × 价值调制因子（非硬编码 15%）
             if yijing_decision and yijing_decision.action == YijingExitAction.RAISE_TP:
                 leverage = self._get_leverage()

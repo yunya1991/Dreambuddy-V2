@@ -137,7 +137,7 @@ class RegistryLoader:
             fn = self._import_function(handler_ref)
 
         adapter = FunctionAdapter()
-        node = adapter.wrap(fn, node_id=cfg.get("id", ""))
+        node = adapter.wrap(fn, node_id=cfg.get("node_id") or cfg.get("id", ""))
         node.name = cfg.get("name", node.name)
         node.description = cfg.get("description", "")
         node.chain = cfg.get("chain", "")
@@ -150,7 +150,7 @@ class RegistryLoader:
         """构建 API 节点"""
         adapter = APIAdapter()
         node = adapter.to_node({
-            "node_id": cfg.get("id", ""),
+            "node_id": cfg.get("node_id") or cfg.get("id", ""),
             "url": cfg.get("url", cfg.get("endpoint", "")),
             "method": cfg.get("method", "GET"),
             "headers": cfg.get("headers", {}),
@@ -168,7 +168,7 @@ class RegistryLoader:
         """构建 SKILL 节点"""
         adapter = SkillAdapter()
         node = adapter.to_node({
-            "node_id": cfg.get("id", ""),
+            "node_id": cfg.get("node_id") or cfg.get("id", ""),
             "skill_path": cfg.get("skill_path", ""),
         })
         node.name = cfg.get("name", node.name)

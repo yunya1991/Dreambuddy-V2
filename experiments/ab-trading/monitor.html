@@ -3392,7 +3392,7 @@ async function loadV15AccountOverview() {
   const badge = document.getElementById('v15-acc-live-badge');
   if (!el) return;
   try {
-    const V15_API_BASE = 'http://localhost:8771';
+    const V15_API_BASE = window.location.origin;
     const res = await fetch(V15_API_BASE + '/api/v15-ct/account-overview', { signal: AbortSignal.timeout(15000) });
     const d = await res.json();
 
@@ -4304,7 +4304,7 @@ async function loadV15CTData() {
   try {
     // 并行加载账户总览
     loadV15AccountOverview();
-    const V15_API_BASE = 'http://localhost:8771';
+    const V15_API_BASE = window.location.origin;
     const [decisionRes, statusRes, backtestRes, capitalRes, triggerRes, decisionsRes] = await Promise.all([
       fetchJson(V15_API_BASE + '/api/v15-ct/decision?coin=BTC', 30000),
       fetchJson(V15_API_BASE + '/api/v15-ct/status', 15000),

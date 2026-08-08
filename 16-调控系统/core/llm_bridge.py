@@ -64,7 +64,9 @@ def _set_cache(prompt: str, model: str, result: LLMResult):
 
 def _load_env_config() -> Dict[str, str]:
     config = {}
+    # 与 qwen_client.py 保持一致的加载顺序，优先级从低到高
     env_files = [
+        BASE_DIR / "6-TRADING" / "scripts" / ".env",
         BASE_DIR / "16-调控系统" / ".env",
         BASE_DIR / ".env",
         Path(os.path.expanduser("~/.workbuddy/.env")),
@@ -81,7 +83,7 @@ def _load_env_config() -> Dict[str, str]:
             except Exception:
                 pass
     for k, v in os.environ.items():
-        if k.startswith(("OPENAI", "DEEPSEEK", "ANTHROPIC", "LLM")):
+        if k.startswith(("OPENAI", "DEEPSEEK", "ANTHROPIC", "LLM", "QWEN")):
             config[k] = v
     return config
 
@@ -140,6 +142,17 @@ def call_llm(prompt: str, system_prompt: str = "",
     config = _load_env_config()
 
     provider_configs = []
+
+    # v5.0：千问（阿里云 DashScope）— 最高优先级 provider
+    # 千问 = 阿里云/通义千问（非百度），OpenAI 兼容协议
+    qw_key = config.get("QWEN_API_KEY", "")
+    if qw_key:
+        provider_configs.append({
+            "name": "qwen",
+            "api_key": qw_key,
+            "base_url": config.get("QWEN_BASE_URL", "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"),
+            "model": model or config.get("QWEN_MODEL", "qwen3.8-max"),
+        })
 
     ds_key = config.get("DEEPSEEK_API_KEY", "")
     if ds_key:

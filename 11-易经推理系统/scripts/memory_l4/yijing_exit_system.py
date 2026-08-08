@@ -107,28 +107,38 @@ class YijingExitConfig:
     lower_sl_adjust_pct: float = 0.50      # SL 放宽 50%（从 1.5×ATR → 2.25×ATR）
 
     # ── 降低止盈阈值（提前锁定利润）──
-    lower_tp_min_profit_pct: float = 0.03  # 至少盈利 3% 才考虑降低 TP
-    lower_tp_max_risk_score: float = 0.60  # 风险分 > 0.60 才降低 TP
+    # v5.0：风险阈值 0.60→0.72，min_profit 3%→6%
+    # 仅在真正风险高+利润够厚时才锁定利润，避免过早把"正在奔跑的利润"吓出去
+    lower_tp_min_profit_pct: float = 0.06  # 至少盈利 6% 才考虑降低 TP
+    lower_tp_max_risk_score: float = 0.72  # 风险分 > 0.72 才降低 TP
     lower_tp_adjust_pct: float = 0.30     # TP 下调 30%
 
     # ── 收紧止损阈值（风险升高时缩小止损空间保本）──
-    tighten_sl_min_risk_score: float = 0.35  # 风险分 >= 此值才考虑收紧
-    tighten_sl_max_profit_pct: float = 0.01  # 盈利不超过 1% 才收紧（未盈利或微利）
+    # v5.0：min_risk 0.35→0.55，max_profit 1%→-2%（亏损时才考虑收紧）
+    # 原逻辑微利1%以内就收紧，实际上是在"行情正常波动时主动缩小生存空间"→反向优化
+    # 新逻辑：只有风险高(≥0.55)且持仓已亏损(≤-2%)时才收紧，也就是"确实出问题了才收缩防线"
+    tighten_sl_min_risk_score: float = 0.55  # 风险分 >= 此值才考虑收紧
+    tighten_sl_max_profit_pct: float = -0.02  # 亏损超过-2%才收紧（盈利/微亏不收紧）
     tighten_sl_adjust_pct: float = 0.30      # SL 收紧 30%（止损空间缩小 30%）
 
     # ── 强制离场阈值 ──
     # v2.1优化：从0.65提高到0.75，避免risk=66%（中高风险）就仓促平仓
-    # 真正的强制平仓只留给极端危险场景（risk>=75%且明确方向反转）
-    force_close_risk_threshold: float = 0.75
-    # 软强制阈值：风险>0.70但<0.75时，若满足冷静期/盈亏条件仍可force_close
-    force_close_soft_risk_threshold: float = 0.70
-    force_close_min_loss_pct: float = -0.03   # 软强制时盈亏须超过-3%（跌破硬止损才开）
-    force_close_min_age_sec: float = 900      # 软强制时持仓至少15分钟才开
+    # v5.0再上移：硬强制 0.75→0.85，软强制 0.70→0.80
+    # 真正的强制平仓只留给卦象极度危险+明确反转场景（上九亢龙有悔/衰退期+DOWN）
+    # polling_trader 外层还叠加了2次离场确认，双重保护
+    force_close_risk_threshold: float = 0.85
+    # 软强制阈值：风险>0.80但<0.85时，若满足冷静期/盈亏条件仍可force_close
+    force_close_soft_risk_threshold: float = 0.80
+    force_close_min_loss_pct: float = -0.05   # 软强制时盈亏须超过-5%（跌破更深才开）
+    force_close_min_age_sec: float = 3600      # 软强制时持仓至少60分钟才开（原15min）
 
     # ── 持仓冷静期 ──
     # v2.1新增：开仓后短时间内卦象波动很正常（kline还没走出来），给一定保护
-    cooldown_age_sec: float = 1800          # 持仓30分钟内不触发普通FORCE_CLOSE（硬止损除外）
-    cooldown_max_loss_pct: float = -0.02    # 冷静期内亏损超过-2%，冷静期保护失效（允许止损）
+    # v5.0延长：30min→60min，-2%→-4%
+    # 原因：前30min正是ATR消化期，此时卦象基于刚入场K线计算极不稳定；
+    #       延长到60min可有效减少"开仓→易经立刻给TIGHTEN_SL→扫损"的死循环
+    cooldown_age_sec: float = 3600          # 持仓60分钟内不触发普通FORCE_CLOSE（硬止损除外）
+    cooldown_max_loss_pct: float = -0.04    # 冷静期内亏损超过-4%，冷静期保护失效（允许止损）
     cooldown_protect_force_close: bool = True  # 冷静期内FORCE_CLOSE降级为TIGHTEN_SL
 
     # ── TRANSITIONING 特殊处理 ──

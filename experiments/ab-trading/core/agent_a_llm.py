@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """
-Agent A 专用 LLM 客户端 — 三级回退机制
-优先级：Trae (免费额度) → DeepSeek V4 → 基本规则引擎
+Agent A 专用 LLM 客户端 — 四级回退机制
+优先级：千问 3.8 MAX → Trae (免费额度) → DeepSeek V4 → 基本规则引擎
 
 每日配额控制：超出后自动回落下一级，系统不中断。
 
-三级回退：
-  1. Trae (trae.ai) — 免费额度，优先使用
-  2. DeepSeek V4 (api.deepseek.com) — 付费备用
-  3. 基本规则引擎 — 硬编码兜底（0 Token）
+四级回退：
+  1. 千问 3.8 MAX (阿里云百炼) — 主力模型，最高优先级
+  2. Trae (trae.ai) — 免费额度，备用
+  3. DeepSeek V4 (api.deepseek.com) — 付费备用
+  4. 基本规则引擎 — 硬编码兜底（0 Token）
 """
-import os, json, time, requests, warnings
+import os, json, time, requests, ssl, warnings
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional, Tuple
+from urllib3.util.ssl_ import create_urllib3_context
 
 warnings.filterwarnings("ignore")
 
@@ -21,6 +23,11 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / "config" / ".env")
 
 # ── 配置 ─────────────────────────────────────────────────────────────────
+# 千问 3.8 MAX（最高优先级）
+QWEN_API_KEY  = os.environ.get("QWEN_API_KEY", "")
+QWEN_BASE_URL = os.environ.get("QWEN_BASE_URL", "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1")
+QWEN_MODEL    = os.environ.get("QWEN_MODEL", "qwen3.8-max")
+
 TRAE_API_KEY     = os.environ.get("TRAE_API_KEY", "")
 TRAE_BASE_URL    = os.environ.get("TRAE_BASE_URL", "https://api.trae.ai/v1")
 TRAE_MODEL       = os.environ.get("TRAE_MODEL", "claude-sonnet-4-5")
@@ -29,11 +36,27 @@ DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE    = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
 DEEPSEEK_MODEL   = os.environ.get("DEEPSEEK_MODEL_V4", "deepseek-chat")
 
-DAILY_LIMIT_TRAE     = int(os.environ.get("AGENT_A_TRAE_DAILY_LIMIT",   "12"))
+DAILY_LIMIT_QWEN     = int(os.environ.get("AGENT_A_QWEN_DAILY_LIMIT",     "60"))
+DAILY_LIMIT_TRAE     = int(os.environ.get("AGENT_A_TRAE_DAILY_LIMIT",     "12"))
 DAILY_LIMIT_DEEPSEEK = int(os.environ.get("AGENT_A_DEEPSEEK_DAILY_LIMIT", "24"))
 
 QUOTA_FILE = Path(__file__).parent.parent / "data" / "agent_a_llm_quota.json"
 SKILL_PATH = Path(__file__).parent.parent / "skills" / "agent-a-trading" / "SKILL.md"
+
+# ── TLS 1.2 强制 Session（解决 macOS LibreSSL TLS 1.3 兼容性）─────────────
+class TLS12Adapter(requests.adapters.HTTPAdapter):
+    """强制 TLS 1.2 的 HTTPAdapter，避免 macOS LibreSSL TLS 1.3 握手失败"""
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = create_urllib3_context()
+        ctx.maximum_version = ssl.TLSVersion.TLSv1_2
+        kwargs["ssl_context"] = ctx
+        super().init_poolmanager(*args, **kwargs)
+
+def _tls12_session() -> requests.Session:
+    s = requests.Session()
+    s.trust_env = False
+    s.mount("https://", TLS12Adapter())
+    return s
 
 # ── 配额管理 ──────────────────────────────────────────────────────────────
 
@@ -51,9 +74,10 @@ def _load_quota() -> dict:
         except Exception:
             pass
     return {
-        "date":      _today(),
-        "trae":      0,
-        "deepseek":  0,
+        "date":          _today(),
+        "qwen":          0,
+        "trae":          0,
+        "deepseek":      0,
         "rule_fallback": 0,
     }
 
@@ -72,7 +96,13 @@ def _record_usage(provider: str):
 
 def _can_use(provider: str) -> Tuple[bool, str]:
     q = _load_quota()
-    if provider == "trae":
+    if provider == "qwen":
+        if not QWEN_API_KEY:
+            return False, "未配置 QWEN_API_KEY"
+        if q.get("qwen", 0) >= DAILY_LIMIT_QWEN:
+            return False, f"千问日配额已满({DAILY_LIMIT_QWEN}次)"
+        return True, "ok"
+    elif provider == "trae":
         if not TRAE_API_KEY:
             return False, "未配置 TRAE_API_KEY"
         if q.get("trae", 0) >= DAILY_LIMIT_TRAE:
@@ -92,6 +122,7 @@ def get_quota_status() -> dict:
     q = _load_quota()
     return {
         "date":          q["date"],
+        "qwen":          f"{q.get('qwen',0)}/{DAILY_LIMIT_QWEN}",
         "trae":          f"{q.get('trae',0)}/{DAILY_LIMIT_TRAE}",
         "deepseek":      f"{q.get('deepseek',0)}/{DAILY_LIMIT_DEEPSEEK}",
         "rule_fallback": q.get("rule_fallback", 0),
@@ -100,6 +131,8 @@ def get_quota_status() -> dict:
 
 def get_available_provider() -> str:
     """返回当前可用的最高优先级 provider"""
+    if _can_use("qwen")[0]:
+        return "qwen"
     if _can_use("trae")[0]:
         return "trae"
     if _can_use("deepseek")[0]:
@@ -107,6 +140,38 @@ def get_available_provider() -> str:
     return "rule"
 
 # ── LLM 调用实现 ──────────────────────────────────────────────────────────
+
+def _call_qwen(prompt: str, system: str, max_tokens: int) -> str:
+    """调用千问 3.8 MAX API（兼容 OpenAI 格式），内置 TLS 1.2 + SSL 重试"""
+    for attempt in range(3):
+        try:
+            s = _tls12_session()
+            resp = s.post(
+                f"{QWEN_BASE_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {QWEN_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model":       QWEN_MODEL,
+                    "messages":    [
+                        {"role": "system", "content": system},
+                        {"role": "user",   "content": prompt},
+                    ],
+                    "max_tokens":  max_tokens,
+                    "temperature": 0.3,
+                },
+                timeout=60,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            if attempt < 2 and ("SSL" in str(e) or "EOF" in str(e)):
+                time.sleep(1)
+                continue
+            raise
+
 
 def _call_trae(prompt: str, system: str, max_tokens: int) -> str:
     s = requests.Session()
@@ -167,7 +232,7 @@ def _load_skill_content() -> str:
         pass
     return ""
 
-# ── 主入口：三级回退 ─────────────────────────────────────────────────────
+# ── 主入口：四级回退 ─────────────────────────────────────────────────────
 
 def agent_a_llm_decide(
     market_data: dict,
@@ -177,10 +242,10 @@ def agent_a_llm_decide(
 ) -> Tuple[dict, str]:
     """
     Agent A 交易决策主入口
-    三级回退：Trae → DeepSeek → 基本规则
+    四级回退：千问 3.8 MAX → Trae → DeepSeek → 基本规则
 
     返回: (decision_dict, provider_used)
-    provider_used: "trae" / "deepseek" / "rule"
+    provider_used: "qwen" / "trae" / "deepseek" / "rule"
     """
     skill_content = _load_skill_content()
 
@@ -199,7 +264,23 @@ def agent_a_llm_decide(
 
     user_prompt = _build_user_prompt(market_data, memory, account_data)
 
-    # ── Level 1: Trae ──────────────────────────────────────────────
+    # ── Level 1: 千问 3.8 MAX（最高优先级）──────────────────────────
+    ok, reason = _can_use("qwen")
+    if ok:
+        try:
+            reply = _call_qwen(user_prompt, system_prompt, max_tokens)
+            decision = _parse_llm_output(reply)
+            if decision and decision.get("action") in ("LONG", "SHORT", "HOLD"):
+                _record_usage("qwen")
+                return decision, "qwen"
+        except Exception as e:
+            err = str(e)
+            if any(c in err for c in ["429", "quota", "credit", "rate limit"]):
+                pass
+            else:
+                _record_usage("qwen")
+
+    # ── Level 2: Trae ──────────────────────────────────────────────
     ok, reason = _can_use("trae")
     if ok:
         try:
@@ -215,7 +296,7 @@ def agent_a_llm_decide(
             else:
                 _record_usage("trae")
 
-    # ── Level 2: DeepSeek V4 ───────────────────────────────────────
+    # ── Level 3: DeepSeek V4 ───────────────────────────────────────
     ok, reason = _can_use("deepseek")
     if ok:
         try:

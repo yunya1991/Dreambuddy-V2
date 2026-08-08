@@ -23,6 +23,16 @@ wheels/
 .installed.cfg
 *.egg
 
+# ==================== Node.js / Frontend ====================
+node_modules/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+dist/
+coverage/
+*.tsbuildinfo
+
 # ==================== System & Editor ====================
 .DS_Store
 .AppleDouble
@@ -39,6 +49,15 @@ Icon
 *.swo
 *~
 
+# IDE / Agent Workspaces
+.claude/
+.trae/
+.codebuddy/
+.workbuddy/
+.research-scheduler/
+.cognitive/
+.run/
+
 # ==================== Environment & Secrets ====================
 .env
 .env.local
@@ -46,53 +65,206 @@ Icon
 .env.v15
 *.pem
 *.key
- secrets.json
+secrets.json
+*.sqlite
+*.db
+
+# ==================== PID / Runtime Locks ====================
+*.pid
+*.lock
+com.dreambuddy.*.plist
 
 # ==================== Logs & Runtime Data ====================
 *.log
 *.jsonl
-# 注意：不使用通用 logs/ 模式，因为项目中可能有 logs/ 包目录
-# 如需排除特定logs目录，请使用完整路径：xxx/logs/
 
-# 事件总线日志
+# ==================== Databases ====================
+*.db
+*.sqlite
+*.sqlite3
+
+# ==================== Archives / Compressed ====================
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# ==================== Coverage / Test Reports ====================
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# ==================== Backups ====================
+*.bak
+*.backup
+*.bak_*
+*_archived_*
+
+# ==================== Runtime ML Models / Caches ====================
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.safetensors
+
+# ==================== IDE / Agent Runtime ====================
+.claude/
+.trae/
+.cognitive/
+.research-scheduler/
+.run/
+.workbuddy/
+.codebuddy/
+
+# ============================================================
+# 项目特定运行时数据目录（按模块细分）
+# ============================================================
+
+# ---------- 根目录运行时数据 ----------
+data/
+artifacts/
+experiments/
+deploy/hermes/
+deploy/ops/
+.asset-research-history/
+_tmp_entry_conf.py
+hermes-config-snapshot.tar.gz
+hermes-deploy-bundle.tar.gz
+hermes-restore.sh
+.cognitive_daemon.pid
+
+# ---------- 1-ARCHITECTURE / dreamos 运行时数据 ----------
+1-ARCHITECTURE/dreamos/.env.bak*
+1-ARCHITECTURE/dreamos/capabilities/trading/backtest/backtest_reports/
+1-ARCHITECTURE/dreamos/capabilities/trading/execution/.*.json
+1-ARCHITECTURE/dreamos/capabilities/trading/observation/reports/
+1-ARCHITECTURE/dreamos/capabilities/trading/reports/
+1-ARCHITECTURE/dreamos/cli/scheduler_data/
+1-ARCHITECTURE/dreamos/cli/.4h_dedup.json
+1-ARCHITECTURE/dreamos/cli/.trade_time.json
+1-ARCHITECTURE/dreamos/cli/backtest_reports/
+1-ARCHITECTURE/dreamos/cli/multi_scenario_stress_report.json
+1-ARCHITECTURE/dreamos/core/memory/
+1-ARCHITECTURE/dreamos/logs/
+
+# ---------- 10-经典指标系统 user_data 运行时数据 ----------
+10-经典指标系统/user_data/ai_integration/
+
+# ---------- 10-经典指标系统 ----------
+10-经典指标系统/user_data/hyperopt.lock
+10-经典指标系统/user_data/config.json
+
+# ---------- 11-易经推理系统 ----------
+11-易经推理系统/data/
+11-易经推理系统/scripts/data/
 11-易经推理系统/artifacts/memory_l4/shared_bus/
-4-MEMORY/0-元记忆/evaluation_history.jsonl
-
-# ==================== Memory Runtime Data (运行时记忆单元) ====================
-# 开发记忆单元 - 运行时solution paths
-4-MEMORY/1-开发记忆单元/solution_paths/APP-*.json
-
-# 交易记忆单元 - 运行时solution paths
-4-MEMORY/2-交易记忆单元/solution_paths/APP-*.json
-
-# 元记忆 - 运行时交易认知
-4-MEMORY/0-元记忆/trading-cognition/
-
-# ==================== 易经推理系统 - 运行时数据 ====================
-# 约束版本快照(运行时自动生成的版本历史)
 11-易经推理系统/constraints/releases/*.json
-# 保留少数初始版本模板，取消下面注释如需全部排除
-# 11-易经推理系统/constraints/releases/
-
-# 归档目录
 11-易经推理系统/scripts/memory_l4/_archived/
-
-# 回测结果 (运行时产物)
-11-易经推理系统/scripts/memory_l4/new_methodology_backtest_result.json
 11-易经推理系统/scripts/memory_l4/*_result.json
 11-易经推理系统/scripts/memory_l4/*_backtest_result.json
+11-易经推理系统/skills/1-TRADE/*/.workbuddy/
+11-易经推理系统/skills/1-TRADE/*/.codebuddy/
 
-# ==================== V15马丁策略 - 运行时数据 ====================
+# ---------- 12-三屏趋势系统 ----------
+12-三屏趋势系统/.cache/
+12-三屏趋势系统/data/cache/
+12-三屏趋势系统/data/historical/
+12-三屏趋势系统/data/v4_position_sltp.json
+12-三屏趋势系统/ml/backtest_results/
+12-三屏趋势系统/ml/loop_data/
+12-三屏趋势系统/ml/ewave_backtest_results.json
+12-三屏趋势系统/ml/ewave_vs_v55_comparison.json
+12-三屏趋势系统/ml/adaptive_output.txt
+12-三屏趋势系统/ml/lr_opt_output.txt
+12-三屏趋势系统/ml/phase3a_report.json
+12-三屏趋势系统/ml/final_comparison.json
+12-三屏趋势系统/signal_pool/pool.json
+
+# ---------- 13-通用风控模块 ----------
+# (暂无额外运行时数据)
+
+# ---------- 14-V15经典马丁策略 ----------
+14-V15经典马丁策略/.coverage
+14-V15经典马丁策略/data/backtest_cache/
+14-V15经典马丁策略/data/bayesian_opt/
+14-V15经典马丁策略/data/capital_manager/
+14-V15经典马丁策略/data/okx_client/
+14-V15经典马丁策略/data/automation_reports/
 14-V15经典马丁策略/data/baseline_current.json
 14-V15经典马丁策略/data/phase_a_result.json
 14-V15经典马丁策略/data/phase_a_plus_result.json
 14-V15经典马丁策略/data/phase_b_plus_result.json
 14-V15经典马丁策略/data/phase_c_walkforward_result.json
 14-V15经典马丁策略/data/regime_state.json
-14-V15经典马丁策略/data/v15_state_archived_*.json
+14-V15经典马丁策略/data/v15_state.json
+14-V15经典马丁策略/data/v15_state.json.bak*
+14-V15经典马丁策略/data/orchestrator_state.json
+14-V15经典马丁策略/data/account_baseline.json
+14-V15经典马丁策略/data/_e2e_tag_test.json
+14-V15经典马丁策略/logs/
+14-V15经典马丁策略/*.plist
 
-# 部署配置快照通常需要保留，如有需要取消下一行注释
-# 14-V15经典马丁策略/data/v15_final_deployment.json
+# ---------- 15-监控告警系统 ----------
+15-监控告警系统/data/
+15-监控告警系统/logs/
+15-监控告警系统/trading-monitor/
+
+# ---------- 16-调控系统 ----------
+16-调控系统/a8_design_observation.json
+16-调控系统/a8_design_report.json
+16-调控系统/a8_report.json
+16-调控系统/artifacts/backtests/
+16-调控系统/artifacts/execution_logs/
+16-调控系统/artifacts/code_patches/
+16-调控系统/artifacts/baseline_registry.json
+16-调控系统/core/intent-specs/
+16-调控系统/core/meta/artifact_hub.sqlite
+
+# ---------- 3-FRONTEND / 3.1-FRONTEND ----------
+3-FRONTEND/dream-universal-gateway/dev.db
+3-FRONTEND/dream-universal-gateway/prisma/dev.db
+3.1-FRONTEND/dev.db
+3.1-FRONTEND/intent-memory/
+
+# ---------- 4-MEMORY ----------
+4-MEMORY/0-元记忆/evaluation_history.jsonl
+4-MEMORY/0-元记忆/trading-cognition/
+4-MEMORY/0-元记忆/*.bak_*
+4-MEMORY/0-元记忆/template_mappings.json
+4-MEMORY/0-工作记忆/
+4-MEMORY/1-开发记忆单元/solution_paths/APP-*.json
+4-MEMORY/2-交易记忆单元/solution_paths/APP-*.json
+4-MEMORY/2-交易记忆单元/bayesian_memories.json
+4-MEMORY/4-文档记忆/
+4-MEMORY/9-工具与接口/.cognitive_daemon.pid
+4-MEMORY/9-工具与接口/com.dreambuddy.cognitive-daemon.plist
+4-MEMORY/data/
+4-MEMORY/archive/*.bak_*
+4-MEMORY/versions/commits.json
+
+# ---------- 6-TRADING ----------
+6-TRADING/sessions/
+6-TRADING/approval_state.json
+6-TRADING/screen1_synthesis.json
+6-TRADING/task_state.json
+6-TRADING/test_results.json
+
+# ---------- 7-产物中台 ----------
+7-产物中台/docs/archive/
+7-产物中台/ui-map/
+7-产物中台/用户上下文索引系统/
+7-产物中台/策略主线/
+7-产物中台/系统研究链路/
+7-产物中台/系统运营链路/
+7-产物中台/系统研究索引体系/app/api/recommendation-engine/logs/
+7-产物中台/系统研究索引体系/app/recommendation-engine/logs/
+7-产物中台/系统研究索引体系/scripts/stress_test_output/
 
 # ==================== 临时测试文件 ====================
 test_sl_tp_*.py

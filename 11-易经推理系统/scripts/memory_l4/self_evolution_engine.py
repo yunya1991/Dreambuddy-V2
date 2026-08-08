@@ -67,9 +67,27 @@ class SelfEvolutionEngine:
     """
 
     def __init__(self, llm_client=None):
+        # v5.0：自动接入千问 3.8 MAX 驱动器（Dream OS 大模型驱动）
+        # 若未显式传入 llm_client，自动尝试加载 16-调控系统/core/llm_driver
+        if llm_client is None:
+            llm_client = self._try_load_qwen_driver()
         self.llm_client = llm_client  # 可传入 agent_a_llm 或 deepseek
         EVOLUTION_LOG.parent.mkdir(parents=True, exist_ok=True)
         self._log: List[Dict] = self._load_log()
+
+    @staticmethod
+    def _try_load_qwen_driver():
+        """尝试加载千问 LLM 驱动器，失败则返回 None（纯规则模式）"""
+        try:
+            import sys as _sys
+            from pathlib import Path as _Path
+            _driver_path = _Path(__file__).resolve().parent.parent.parent.parent / "16-调控系统" / "core"
+            if str(_driver_path) not in _sys.path:
+                _sys.path.insert(0, str(_driver_path))
+            from llm_driver import llm_call
+            return llm_call
+        except Exception:
+            return None
 
     # ── 停滞检测 ─────────────────────────────────────────────────────────────
 

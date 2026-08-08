@@ -31,7 +31,7 @@
     "name": "backtest_evaluation",
     "cron_expr": "0 */6 * * *",
     "enabled": true,
-    "symbols": ["BTC", "ETH", "SOL"],
+    "symbols": [],
     "dry_run": true,
     "exchange": "hyperliquid",
     "job_type": "backtest"

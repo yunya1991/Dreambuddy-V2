@@ -340,21 +340,29 @@ class ExitConfig:
 
     # ── TSTP 时间止盈 ──────────────────────────────────────────────────
     tstp_enabled: bool = True
+    # v5.0：所有档位 trigger_pct 上调 30%+ / reduce_frac 下调 15-25pp（降低"看到一点点利润就收"的冲动）
+    # 原配置：300s(6%,25%), 1800s(5%,33%), 3600s(4%,40%), 14400s(3%,50%), 28800s(2.5%,close_if_weak)
+    # 新配置：300s(9%,10%), 1800s(7%,15%), 3600s(6%,20%), 14400s(5%,30%), 28800s(4%,close_if_weak)
+    # 核心逻辑：
+    #   - 短时(300s/5min)触发 6%→9%：不让"一根阳线"就把 1/4 仓位收走
+    #   - 长时(14400s/4h) 3%→5%：持仓4h至少赚5%才配减仓
+    #   - reduce_frac 整体降低：减仓时减少减仓比例，更多仓位留给主升浪
     tstp_trend_plan: Dict[int, Tuple[float, float, str]] = field(default_factory=lambda: {
-        300:  (6.0, 0.25, "reduce"),
-        1800: (5.0, 0.33, "reduce"),
-        3600: (4.0, 0.40, "reduce"),
-        14400: (3.0, 0.50, "reduce"),
-        28800: (2.5, 0.50, "close_if_weak"),
+        300:  (9.0, 0.10, "reduce"),
+        1800: (7.0, 0.15, "reduce"),
+        3600: (6.0, 0.20, "reduce"),
+        14400: (5.0, 0.30, "reduce"),
+        28800: (4.0, 0.50, "close_if_weak"),
     })
     tstp_chop_plan: Dict[int, Tuple[float, float, str]] = field(default_factory=lambda: {
-        300:  (4.0, 0.40, "reduce"),
-        1800: (3.0, 0.50, "reduce"),
-        3600: (2.5, 0.60, "reduce"),
-        14400: (2.0, 0.70, "reduce"),
-        28800: (1.5, 0.70, "reduce"),
+        300:  (6.0, 0.20, "reduce"),
+        1800: (5.0, 0.25, "reduce"),
+        3600: (4.0, 0.30, "reduce"),
+        14400: (3.0, 0.40, "reduce"),
+        28800: (2.5, 0.50, "close_if_weak"),
     })
-    tstp_close_if_weak_value_thr: float = 0.40
+    # v5.0：0.40→0.55，只有价值很低的时候才"弱转close"
+    tstp_close_if_weak_value_thr: float = 0.55
 
     # ── RAISE_TP（提高止盈价）──────────────────────────────────────────
     tstp_raise_tp_enabled: bool = True
@@ -369,17 +377,22 @@ class ExitConfig:
     # ── 跟踪止损 ────────────────────────────────────────────────────────
     trailing_enabled: bool = True
     # 回退到原始值：贝叶斯寻优值过度收紧跟踪止损
-    trailing_arm_profit_pct: float = 0.06
-    trailing_retrace_pct: float = 0.03
+    # v5.0再放宽：arm 6%→9%，retrace 3%→5%
+    # 理由：跟踪止损本来是给"利润已经跑出来"的仓位用的；前9%利润给它自由，回撤也放宽到5%
+    #       真正的短震荡就不会轻易把趋势单打出去
+    trailing_arm_profit_pct: float = 0.09
+    trailing_retrace_pct: float = 0.05
 
     # ── 移动止盈 (Trailing Take Profit, P3.5) ──────────────────────────
     # 与 Trailing Stop 互补：激活更早，回撤更敏感
     # 锁定利润而非防亏损，填补 1-6% 盈利保护空白
     # B项优化（贝叶斯寻优）：arm 0.015→0.0508, retrace 0.40→0.4668
     # 让利润奔跑更久，减少微利离场（回测策略收益 5.23%→6.18%）
+    # v5.0进一步放宽：arm 5.08%→8%，retrace 46.68%→60%
+    #       锁定门槛降低到：只有回撤掉 60% 的浮盈才锁定利润，给利润更大的呼吸空间
     trailing_tp_enabled: bool = True
-    trailing_tp_arm_pct: float = 0.0508     # 盈利 ≥ 5.08% 激活（原1.5%）
-    trailing_tp_retrace_ratio: float = 0.4668  # 从 MFE 回撤 ≥ 46.68% 触发（原40%）
+    trailing_tp_arm_pct: float = 0.08        # 盈利 ≥ 8% 激活（原5.08%）
+    trailing_tp_retrace_ratio: float = 0.60  # 从 MFE 回撤 ≥ 60% 触发（原46.68%）
     trailing_tp_min_lock_pct: float = 0.003  # 至少锁定 0.3% 利润
 
     # ── 冷却/滞回 ──────────────────────────────────────────────────────
@@ -392,13 +405,17 @@ class ExitConfig:
     # 开仓后前6小时（6根1H K线）内，仅允许P0硬离场（最大亏损/强平/持仓时间）
     # 跳过P2/P3/P1动态离场，防止过早微利离场
     # 回测：策略收益 5.23%→5.89%，过滤1-3h短持仓亏损源
-    min_hold_bars: int = 6
+    # v5.0：6→8小时，进一步过滤掉"开仓→4-6h震荡洗出→错过主升浪"的场景
+    min_hold_bars: int = 8
 
     # ── E项优化：最大减仓次数限制（贝叶斯寻优 max_reduce_count=1） ──────
     # 每笔交易最多减仓1次，保留完整仓位让利润奔跑
     # 回测：策略收益 5.23%→6.53%，胜率 76.6%→81.8%，盈亏比 2.77→3.47
     # 减仓次数通过 pos.metadata["reduce_count"] 跟踪
-    max_reduce_count: int = 1
+    # v5.0：1→0（禁止减仓，只允许整笔平仓）
+    # 原因：减仓会把"胜率看起来很高"但实际把大利润切碎了，让奔跑中的仓位失去了复利放大能力；
+    #       对高置信度仓位，要么持要么走，不做中间半吊子动作
+    max_reduce_count: int = 0
 
     # ── 成本缓冲 ────────────────────────────────────────────────────────
     fee_roundtrip_pct: float = 0.001

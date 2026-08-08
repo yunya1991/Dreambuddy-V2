@@ -824,7 +824,7 @@ LANDED_PARAMS = {
     "B_trailing_arm": 0.0508,          # classic_exit_system.py trailing_tp_arm_pct
     "B_trailing_retrace": 0.4668,      # classic_exit_system.py trailing_tp_retrace_ratio
     "C_position_size_pct": 0.20,       # .env DEFAULT_POSITION_PCT
-    "D_min_hold_bars": 6,              # classic_exit_system.py min_hold_bars
+    "D_min_hold_bars": 8,              # classic_exit_system.py min_hold_bars (基线v0.1.0: 6→8 普遍性校验通过)
     "E_max_reduce_count": 1,           # classic_exit_system.py max_reduce_count
 }
 

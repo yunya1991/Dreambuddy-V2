@@ -247,9 +247,12 @@ def get_full_state():
 
 def get_yijing_state():
     try:
+        # 使用 anaconda python3 绝对路径（与 data_server 进程一致），
+        # 避免系统 python3 与 anaconda 环境差异；超时从 45s 提升到 90s
+        # 留足余量（实测 yijing-status 耗时 20-25s，含 BCRM 推理+对比学习）
         result = subprocess.run(
-            ["python3", "-m", "scripts.memory_l4.ab_bridge", "yijing-status"],
-            capture_output=True, text=True, timeout=45,
+            [sys.executable, "-m", "scripts.memory_l4.ab_bridge", "yijing-status"],
+            capture_output=True, text=True, timeout=90,
             cwd=str(BCRM_REPO),
             env={**os.environ, "NO_PROXY": "localhost,127.0.0.1",
                  "no_proxy": "localhost,127.0.0.1"},
@@ -1152,6 +1155,250 @@ def get_yijing_account_overview():
     }
 
 
+# 马丁策略固定初始资金（USDT）
+V15_INITIAL_CAPITAL = 150.0
+
+
+def _load_v15_baseline():
+    """加载或创建V15马丁策略每日基准快照（从今天起以150为基准）"""
+    baseline_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/account_baseline.json")
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+    baseline = None
+    if baseline_file.exists():
+        try:
+            with open(baseline_file) as f:
+                baseline = json.load(f)
+        except Exception:
+            baseline = None
+    if not baseline or baseline.get("baseline_date") != today:
+        baseline = {
+            "baseline_date": today,
+            "initial_capital": V15_INITIAL_CAPITAL,
+            "okx_total_eq_baseline": None,
+            "v15_state_equity_baseline": None,
+            "created_at": datetime.datetime.now().isoformat(),
+        }
+        try:
+            baseline_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(baseline_file, "w") as fp:
+                json.dump(baseline, fp, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+    return baseline
+
+
+def _save_v15_baseline(baseline):
+    try:
+        baseline_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/account_baseline.json")
+        baseline_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(baseline_file, "w") as fp:
+            json.dump(baseline, fp, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def get_v15_account_overview():
+    """V15 马丁策略账户总览：从今天起以 150 USDT 为基准
+
+    优先从 v15_state.json 读取本地跟踪数据（策略已维护该文件），
+    OKX 实时数据作为增强（若可用则填充 live_ok / avail_balance 等字段）。
+    """
+    baseline = _load_v15_baseline()
+    v15_state_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/v15_state.json")
+
+    # ── 从 v15_state.json 读取核心数据 ──
+    total_trades = 0
+    total_wins = 0
+    consecutive_losses = 0
+    current_state_equity = None
+    state_updated_at = None
+    positions_detail = []
+    unrealized_pnl_sum = 0.0
+    open_positions_count = 0
+
+    if v15_state_file.exists():
+        try:
+            with open(v15_state_file) as f:
+                v15_state = json.load(f)
+            total_trades = int(v15_state.get("total_trades", 0) or 0)
+            total_wins = int(v15_state.get("total_wins", 0) or 0)
+            consecutive_losses = int(v15_state.get("consecutive_losses", 0) or 0)
+            current_state_equity = v15_state.get("total_equity")
+            if current_state_equity is not None:
+                current_state_equity = float(current_state_equity or 0)
+            state_updated_at = v15_state.get("last_poll")
+
+            # 首次读取到 state_equity 时写入基准
+            if baseline.get("v15_state_equity_baseline") is None and current_state_equity is not None:
+                baseline["v15_state_equity_baseline"] = current_state_equity
+                _save_v15_baseline(baseline)
+
+            raw_positions = v15_state.get("positions", {}) or {}
+            for coin, p in raw_positions.items():
+                upl = float(p.get("unrealized_pnl", 0) or 0)
+                mark_price = float(p.get("current_price", p.get("mark_px", 0)) or 0)
+                unrealized_pnl_sum += upl
+                open_positions_count += 1
+                positions_detail.append({
+                    "coin": coin,
+                    "symbol": coin,
+                    "inst_id": p.get("inst_id", f"{coin}-USDT-SWAP"),
+                    "direction": p.get("direction", "LONG"),
+                    "upl": upl,
+                    "unrealized_pnl": upl,
+                    "upl_ratio": float(p.get("upl_ratio", 0) or 0),
+                    "mark_px": mark_price,
+                    "mark_price": mark_price,
+                    "current_price": mark_price,
+                    "entry_price": float(p.get("entry_price", 0) or 0),
+                    "sz": float(p.get("sz", 0) or 0),
+                    "lever": p.get("lever", ""),
+                    "source": p.get("source", "v15_state"),
+                    "open_time": p.get("open_time", ""),
+                    "addons": int(p.get("addons", 0) or 0),
+                    "profit_pct": float(p.get("profit_pct", 0) or 0),
+                    "confidence": int(p.get("confidence", 0) or 0),
+                    "take_profit_pct": float(p.get("take_profit_pct", 0) or 0),
+                    "stop_loss_price": p.get("stop_loss_price"),
+                    "stop_loss_type": p.get("stop_loss_type"),
+                })
+        except Exception:
+            pass
+
+    # ── 尝试 OKX 实时数据增强 ──
+    live_ok = False
+    live_error = ""
+    avail_balance = None
+    current_okx_eq = None
+
+    try:
+        V15_DIR = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略")
+        sys.path.insert(0, str(V15_DIR / "lib"))
+        from capital_manager import get_account_balance, get_current_positions
+        balance = get_account_balance()
+        if balance.get("ok"):
+            live_ok = True
+            current_okx_eq = float(balance.get("total_eq", 0) or 0)
+            avail_balance = float(balance.get("avail_balance", 0) or 0)
+            # 首次成功获取 OKX 权益时写入基准
+            if baseline.get("okx_total_eq_baseline") is None:
+                baseline["okx_total_eq_baseline"] = current_okx_eq
+                _save_v15_baseline(baseline)
+            # OKX 实时持仓覆盖本地持仓
+            try:
+                okx_positions = get_current_positions() or []
+                if okx_positions:
+                    new_detail = []
+                    new_upl_sum = 0.0
+                    new_count = 0
+                    for p in okx_positions:
+                        sz = float(p.get("pos_sz", p.get("sz", 0)) or 0)
+                        if abs(sz) < 1e-12:
+                            continue
+                        upl = float(p.get("unrealized_pnl", 0) or 0)
+                        mark_price = float(p.get("mark_price", p.get("mark_px", 0)) or 0)
+                        coin = p.get("coin", p.get("symbol", ""))
+                        new_upl_sum += upl
+                        new_count += 1
+                        new_detail.append({
+                            "coin": coin,
+                            "symbol": coin,
+                            "inst_id": p.get("inst_id", ""),
+                            "direction": p.get("direction", ""),
+                            "upl": upl,
+                            "unrealized_pnl": upl,
+                            "upl_ratio": float(p.get("upl_ratio", 0) or 0),
+                            "mark_px": mark_price,
+                            "mark_price": mark_price,
+                            "current_price": mark_price,
+                            "entry_price": float(p.get("entry_price", 0) or 0),
+                            "sz": sz,
+                            "lever": p.get("lever", ""),
+                            "source": "okx_live",
+                            "open_time": p.get("open_time", ""),
+                            "addons": 0,
+                        })
+                    if new_count > 0:
+                        positions_detail = new_detail
+                        unrealized_pnl_sum = new_upl_sum
+                        open_positions_count = new_count
+            except Exception:
+                pass
+        else:
+            live_error = balance.get("error", "OKX 连接失败")
+    except Exception as _e:
+        live_error = str(_e)[:120]
+
+    baseline_eq = baseline.get("okx_total_eq_baseline")
+    baseline_state_eq = baseline.get("v15_state_equity_baseline")
+
+    # ── 盈亏计算 ──
+    total_pnl = None
+    current_balance = None
+    pnl_pct = None
+    realized_pnl = None
+
+    # 优先 OKX 基准差值（策略自身收益）
+    if current_okx_eq is not None and baseline_eq is not None:
+        total_pnl = current_okx_eq - baseline_eq
+        current_balance = V15_INITIAL_CAPITAL + total_pnl
+        pnl_pct = (total_pnl / V15_INITIAL_CAPITAL) * 100 if V15_INITIAL_CAPITAL > 0 else 0
+        realized_pnl = total_pnl - unrealized_pnl_sum
+    # 降级用 v15_state.json 的 total_equity
+    elif current_state_equity is not None and baseline_state_eq is not None:
+        total_pnl = current_state_equity - baseline_state_eq
+        current_balance = V15_INITIAL_CAPITAL + total_pnl
+        pnl_pct = (total_pnl / V15_INITIAL_CAPITAL) * 100 if V15_INITIAL_CAPITAL > 0 else 0
+        realized_pnl = total_pnl - unrealized_pnl_sum
+    # 再降级：只用浮动盈亏估算（基准尚未建立时）
+    else:
+        total_pnl = unrealized_pnl_sum if unrealized_pnl_sum != 0 else 0.0
+        current_balance = V15_INITIAL_CAPITAL + total_pnl
+        pnl_pct = (total_pnl / V15_INITIAL_CAPITAL) * 100 if V15_INITIAL_CAPITAL > 0 else 0
+        realized_pnl = None
+
+    win_rate = (total_wins / total_trades) if total_trades > 0 else 0.0
+    win_rate_pct = round(win_rate * 100, 2)
+
+    # 基准状态提示
+    baseline_note = ""
+    if baseline_eq is not None:
+        baseline_note = f"基准日 {baseline.get('baseline_date')} 起 OKX 权益 {round(baseline_eq, 2)}"
+    elif baseline_state_eq is not None:
+        baseline_note = f"基准日 {baseline.get('baseline_date')} 起策略权益 {round(baseline_state_eq, 2)}（本地）"
+    else:
+        baseline_note = "今日基准尚未建立（等待首次数据采样）"
+
+    if avail_balance is None:
+        avail_balance = current_balance
+
+    return {
+        "strategy": "v15_martin",
+        "strategy_name": "V15 经典马丁策略",
+        "initial_capital": V15_INITIAL_CAPITAL,
+        "baseline_date": baseline.get("baseline_date"),
+        "baseline_okx_eq": round(baseline_eq, 2) if baseline_eq is not None else None,
+        "baseline_note": baseline_note,
+        "current_balance": round(current_balance, 2) if current_balance is not None else None,
+        "avail_balance": round(avail_balance, 2) if avail_balance is not None else None,
+        "total_pnl": round(total_pnl, 2) if total_pnl is not None else None,
+        "pnl_pct": round(pnl_pct, 2) if pnl_pct is not None else None,
+        "realized_pnl": round(realized_pnl, 2) if realized_pnl is not None else None,
+        "unrealized_pnl": round(unrealized_pnl_sum, 2),
+        "total_trades": total_trades,
+        "win_count": total_wins,
+        "win_rate": round(win_rate, 4),
+        "win_rate_pct": win_rate_pct,
+        "consecutive_losses": consecutive_losses,
+        "open_positions": open_positions_count,
+        "positions_detail": positions_detail,
+        "live_ok": live_ok,
+        "live_error": live_error,
+        "state_updated_at": state_updated_at,
+        "timestamp": datetime.datetime.now().isoformat(),
+    }
+
+
 def get_l4_status():
     """获取 L4 认知闭环状态"""
     try:
@@ -1315,7 +1562,9 @@ def _bg_refresh_yijing(interval: int = 60):
     while True:
         try:
             data = get_yijing_state()
-            _cache_set("yijing", data)
+            # 仅缓存成功结果（非 error），避免单次超时覆盖掉上次的有效数据
+            if isinstance(data, dict) and "error" not in data:
+                _cache_set("yijing", data)
         except Exception:
             pass
         try:
@@ -1503,6 +1752,13 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(get_yijing_account_overview())
 
         # ── V15-CT 马丁策略 API ────────────────────────────────────────
+        elif path == "/api/v15-ct/account-overview":
+            try:
+                self._json(get_v15_account_overview())
+            except Exception as e:
+                self._json({"error": str(e), "strategy": "v15_martin",
+                             "initial_capital": 150.0})
+
         elif path == "/api/v15-ct/decision":
             try:
                 sys.path.insert(0, str(BASE_DIR))
@@ -1546,37 +1802,75 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == "/api/v15-ct/status":
             try:
-                sys.path.insert(0, str(BASE_DIR))
-                from capital_manager import calculate_capital_allocation
-                from config_loader import load_config, get_config
-                load_config("v15ct")
-                
-                allocation = calculate_capital_allocation()
-                positions = allocation.get("positions", [])
-                
-                state_file = BASE_DIR / "data" / "v15ct_state.json"
+                # V15 马丁策略状态直接从 v15_state.json 读取（由 v15_trader.py 维护）
+                v15_state_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/v15_state.json")
                 total_trades = 0
-                win_rate = 0
-                auto_execute = str(get_config("V15CT_AUTO_EXECUTE", "true")).lower() == "true"
-                if state_file.exists():
+                total_wins = 0
+                win_rate = 0.0
+                coins_monitored = []
+                total_equity = 0.0
+                consecutive_losses = 0
+                positions = []
+                state_updated_at = None
+                if v15_state_file.exists():
                     try:
-                        with open(state_file) as f:
-                            state = json.load(f)
-                        total_trades = state.get("total_trades", 0)
-                        win_rate = state.get("win_rate", 0)
+                        with open(v15_state_file) as f:
+                            v15_state = json.load(f)
+                        total_trades = v15_state.get("total_trades", 0)
+                        total_wins = v15_state.get("total_wins", 0)
+                        win_rate = round(total_wins / total_trades, 4) if total_trades > 0 else 0.0
+                        total_equity = v15_state.get("total_equity", 0.0)
+                        consecutive_losses = v15_state.get("consecutive_losses", 0)
+                        state_updated_at = v15_state.get("last_poll")
+                        # 从 v15_state.json 构建持仓列表
+                        raw_positions = v15_state.get("positions", {}) or {}
+                        for coin, p in raw_positions.items():
+                            entry_price = float(p.get("entry_price", 0) or 0)
+                            sz = float(p.get("sz", 0) or 0)
+                            mark_price = float(p.get("current_price", p.get("mark_px", 0)) or 0)
+                            upl = float(p.get("unrealized_pnl", 0) or 0)
+                            positions.append({
+                                # 原始字段
+                                "coin": coin,
+                                "symbol": coin,  # ← 前端用 pos.symbol
+                                "inst_id": p.get("inst_id", f"{coin}-USDT-SWAP"),
+                                "direction": p.get("direction", "LONG"),
+                                "entry_price": entry_price,
+                                "sz": sz,
+                                "open_time": p.get("open_time", ""),
+                                "per_coin_budget": float(p.get("per_coin_budget", 0) or 0),
+                                "addons": int(p.get("addons", 0) or 0),
+                                "current_price": mark_price,
+                                "mark_price": mark_price,  # ← 前端用 pos.mark_price
+                                "mark_px": mark_price,
+                                "unrealized_pnl": upl,
+                                "upl": upl,  # ← 前端用 pos.upl
+                                "upl_ratio": float(p.get("upl_ratio", 0) or 0),
+                                "profit_pct": float(p.get("profit_pct", 0) or 0),
+                                "confidence": int(p.get("confidence", 0) or 0),
+                                "take_profit_pct": float(p.get("take_profit_pct", 0) or 0),
+                                "stop_loss_price": p.get("stop_loss_price"),
+                                "stop_loss_type": p.get("stop_loss_type"),
+                                "lever": p.get("lever", ""),
+                                "source": "v15_state",
+                            })
+                        coins_monitored = list(raw_positions.keys())
                     except Exception:
                         pass
-                
+
                 self._json({
-                    "strategy_mode": "v15_ct",
-                    "auto_execute": auto_execute,
+                    "strategy_mode": "v15_martin",
+                    "auto_execute": True,
                     "positions": positions,
                     "v15_ct_positions": positions,
                     "total_trades": total_trades,
+                    "total_wins": total_wins,
                     "win_rate": win_rate,
-                    "coins_monitored": allocation.get("coins_monitored", []),
-                    "capital": allocation.get("balance", {}),
-                    "risk_level": allocation.get("recommendations", {}).get("risk_level", "LOW"),
+                    "coins_monitored": coins_monitored,
+                    "capital": {"equity": total_equity},
+                    "consecutive_losses": consecutive_losses,
+                    "risk_level": "MEDIUM",
+                    "state_updated_at": state_updated_at,
                 })
             except Exception as e:
                 self._json({"error": str(e)})

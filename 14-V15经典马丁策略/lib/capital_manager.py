@@ -134,39 +134,47 @@ def get_account_balance():
 
 
 def get_current_positions():
+    """获取账户所有持仓（一次性查询，不局限于 V15_COINS 配置列表）
+
+    使用 get_all_positions() 避免：
+    1. 逐个查询触发 API 限流
+    2. 遗漏不在 V15_COINS 中的持仓（如外部开仓的 NEAR、ZEC）
+    """
     client = _get_okx_client()
     positions = []
-    
+
     if not client:
         return positions
-    
+
     try:
-        for symbol in V15CT_COINS:
-            inst_id = to_swap(symbol)
-            r = client.get_positions(inst_id)
-            if r.get("ok"):
-                pos_data = r.get("positions", r.get("data", []))
-                for p in pos_data:
-                    pos_sz = float(p.get("pos", p.get("pos_sz", 0)))
-                    if pos_sz != 0:
-                        pos_side = p.get("pos_side", "net")
-                        is_long = pos_side == "long" or (pos_side == "net" and pos_sz > 0)
-                        positions.append({
-                            "symbol": symbol,
-                            "inst_id": inst_id,
-                            "direction": "LONG" if is_long else "SHORT",
-                            "pos_side": pos_side,
-                            "pos_sz": abs(pos_sz),
-                            "entry_price": float(p.get("avg_px", p.get("avg_entry_px", 0))),
-                            "mark_price": float(p.get("mark_px", 0)),
-                            "margin": float(p.get("margin", 0)),
-                            "unrealized_pnl": float(p.get("upl", p.get("unrealized_pnl", 0))),
-                            "upl_ratio": float(p.get("upl_ratio", 0)),
-                            "lever": p.get("lever", ""),
-                        })
+        r = client.get_all_positions()
+        if not r.get("ok"):
+            return positions
+
+        pos_map = r.get("positions", {})
+        for coin, p in pos_map.items():
+            pos_sz = float(p.get("pos", 0))
+            if pos_sz == 0:
+                continue
+            pos_side = p.get("pos_side", "net")
+            is_long = pos_side == "long" or (pos_side == "net" and pos_sz > 0)
+            inst_id = p.get("inst_id", to_swap(coin))
+            positions.append({
+                "symbol": coin,
+                "inst_id": inst_id,
+                "direction": "LONG" if is_long else "SHORT",
+                "pos_side": pos_side,
+                "pos_sz": abs(pos_sz),
+                "entry_price": float(p.get("avg_px", 0)),
+                "mark_price": float(p.get("mark_px", 0)),
+                "margin": float(p.get("margin", 0)),
+                "unrealized_pnl": float(p.get("upl", 0)),
+                "upl_ratio": float(p.get("upl_ratio", 0)),
+                "lever": p.get("lever", ""),
+            })
     except Exception:
         pass
-    
+
     return positions
 
 
