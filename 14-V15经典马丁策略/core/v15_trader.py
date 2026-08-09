@@ -3,7 +3,7 @@
 V15 经典马丁策略自动交易器
 - 定时轮询币种信号
 - 根据资金计算器决定是否开仓
-- 马丁加仓：最多3次，资金不足时禁止开新仓
+- 马丁加仓：最多4次（=总5单），资金不足时禁止开新仓
 - 多空双向：DirectionGate 根据日/周 MA200 控制方向开关
   - 做多：价格在日 MA200 上方（LONG_PREFERRED）
   - 做空：跌破日 MA200 但在周 MA200 上方（SHORT_ALLOWED，反向马丁）
@@ -109,6 +109,12 @@ V15_USE_SWING_POTENTIAL = str(
     get_config("V15_USE_SWING_POTENTIAL", "false")
 ).lower() == "true"
 
+# Phase 4: TimingGate 波浪+斐波那契时机软调控总开关
+# false=关闭（保持现状，只靠 DirectionGate + 指标驱动，向后兼容）
+V15_USE_TIMING_GATE = str(
+    get_config("V15_USE_TIMING_GATE", "false")
+).lower() == "true"
+
 STATE_FILE = BASE_DIR / "data" / "v15_state.json"
 REGIME_STATE_FILE = BASE_DIR / "data" / "regime_state.json"
 LOG_DIR = BASE_DIR / "logs" / "v15"
@@ -132,7 +138,8 @@ COINS = [
 ]
 # 记录被风控剔除的币种（供启动日志输出）
 _MARTIN_REJECTED = [c for c in _OKX_SUPPORTED if c not in COINS]
-MAX_ADDONS = get_config_int("MAX_ADDONS_PER_POSITION", 3)
+V15_MAX_ADDONS = get_config_int("MAX_ADDONS_PER_POSITION", 4)  # 4档加仓=总5单（实盘测试版本）
+MAX_ADDONS = V15_MAX_ADDONS
 BASE_TP_PCT = get_config_float("BASE_TP_PCT", 0.04)
 LEVERAGE = get_config_float("LEVERAGE", 5.0)
 MAX_CONCURRENT_POSITIONS = get_config_int("MAX_CONCURRENT_POSITIONS", 3)
@@ -716,6 +723,42 @@ def _get_direction_ctx(coin):
         ctx = result.to_dict()
         ctx["btc_short_enabled"] = btc_short_enabled
         ctx["regime_in_cooldown"] = in_cooldown
+
+        # Phase 4: TimingGate 波浪+斐波那契时机软调控
+        # - gate_result 作为方向先验 → TimingGate 方向匹配评分 & 三浪结构 & fib回撤
+        # - timing_score 决定仓位/杠杆倍数（timing_mult = timing_score）
+        # - long_timing_ok / short_timing_ok 覆盖 ctx 对应布尔值，软门禁
+        if V15_USE_TIMING_GATE:
+            try:
+                from timing_gate import TimingGate
+                # TimingGate 需要更长日线序列（至少 30 条，优先 60 条）用于 swing 检测
+                coin_recent_daily = [float(k["c"]) for k in klines_1d[-60:] if "c" in k]
+                if len(coin_recent_daily) >= 20:
+                    tg = TimingGate(swing_window=2, strict=False, threshold=0.5)
+                    tres = tg.evaluate(result, coin_recent_daily, price_now=params["current_price"])
+                    # 软门禁：DirectionGate 允许 且 TimingGate 允许 → 才算最终允许
+                    ctx["long_enabled"] = bool(ctx.get("long_enabled", True)) and tres.long_timing_ok
+                    ctx["short_enabled"] = bool(ctx.get("short_enabled", False)) and tres.short_timing_ok
+                    ctx["timing_score"] = float(max(0.0, min(1.0, tres.timing_score)))
+                    ctx["timing_zone"] = tres.fib_zone
+                    ctx["timing_structure"] = tres.structure.kind if tres.structure else "UNCLEAR"
+                    ctx["timing_reason"] = tres.reason
+                    # breakdown 透传到 dashboard
+                    ctx["timing_breakdown"] = tres.score_breakdown._asdict() if tres.score_breakdown else {}
+                    # 透传 diagnostic（整包）
+                    ctx["timing_diag"] = tres.to_diagnostic()
+                else:
+                    ctx["timing_score"] = 1.0   # 日线太少，降级：不调控
+                    ctx["timing_zone"] = "NONE"
+                    ctx["timing_structure"] = "UNCLEAR"
+                    ctx["timing_reason"] = "日线样本不足(<20)，跳过时机评估"
+            except Exception as e:
+                _log(f"[{coin}] TimingGate 时机评估失败(降级放行): {e}")
+                # 失败降级：放行（timing_score=1.0）保持原 ctx 不变，避免影响生产
+                ctx.setdefault("timing_score", 1.0)
+        else:
+            ctx.setdefault("timing_score", 1.0)   # 关闭时 1.0 表示不调控
+
         # Phase2: 将BTC力学诊断透传到返回值，方便监控页面展示
         if V15_USE_MECHANISTIC_DIRECTION_GATE and btc_vi is not None:
             ctx["btc_mechanistic"] = {
@@ -980,7 +1023,10 @@ def execute_open_position(client, coin, decision, state):
 
         base_margin = alloc["base_usd"]
         vol_mult = decision.get("vol_mult", 1.0) * risk_mult
-        order_margin = base_margin * vol_mult
+        # Phase 4: 波浪+fib 时机评分 × 仓位大小（软调控）
+        timing_score = float(dir_ctx.get("timing_score", 1.0) or 1.0)
+        timing_score = max(0.15, min(1.0, timing_score))  # 夹到[0.15,1.0]，避免极端清仓
+        order_margin = base_margin * vol_mult * timing_score
         order_notional = order_margin * LEVERAGE
 
         lot_sz, ct_val = get_contract_info(client, inst_id)
@@ -994,6 +1040,10 @@ def execute_open_position(client, coin, decision, state):
 
         adj = alloc.get("adjustments", {})
         sl_display = f"${sl_price:.4f}" if sl_price else "无(仅止盈)"
+        timing_display = (
+            f" timing={timing_score:.2f}x zone={dir_ctx.get('timing_zone','NONE')} str={dir_ctx.get('timing_structure','UNCLEAR')}"
+            if dir_ctx.get("timing_score") is not None else ""
+        )
         _log(
             f"[{coin}] 开仓 {direction} sz={sz}张 price={price} 保证金=${actual_margin:.2f} 名义=${actual_notional:.2f} "
             f"TP={tp_pct*100:.2f}% SL={sl_type}@{sl_display} conf={conf}% "
@@ -1002,6 +1052,7 @@ def execute_open_position(client, coin, decision, state):
             f"EMA={adj.get('elder_ray_direction', 'N/A')} "
             f"Dir={adj.get('elder_ray_ema_trend', 'N/A')} "
             f"强度={adj.get('elder_ray_strength', 0):.1f}"
+            f"{timing_display}"
         )
 
         if AUTO_EXECUTE:
@@ -1036,6 +1087,7 @@ def execute_open_position(client, coin, decision, state):
                     "addon1_usd": alloc.get("addon1_usd", 0),
                     "addon2_usd": alloc.get("addon2_usd", 0),
                     "addon3_usd": alloc.get("addon3_usd", 0),
+                    "addon4_usd": alloc.get("addon4_usd", 0),
                     # 移动止盈状态
                     "trailing_active": False,
                     "trailing_price": None,
@@ -1048,6 +1100,10 @@ def execute_open_position(client, coin, decision, state):
                     "yiji_risk": yiji_risk,
                     "yiji_value": yiji_value,
                     "yiji_hexagram": yiji_hex,
+                    # Phase 4: TimingGate 时机评分（整仓保持，含加仓继承）
+                    "timing_score": timing_score,
+                    "timing_zone": dir_ctx.get("timing_zone", "NONE"),
+                    "timing_structure": dir_ctx.get("timing_structure", "UNCLEAR"),
                 }
                 state["total_trades"] += 1
                 _sync_tp_sl_orders(client, coin, state["positions"][coin], price, tp_pct, sl_price)
@@ -1093,18 +1149,24 @@ def execute_addon(client, coin, pos, state):
         if current_price <= 0:
             return False
 
-        # 使用开仓时分配的加仓预算
+        # 使用开仓时分配的加仓预算（同时继承入场时 timing_mult，保持整仓尺度一致）
+        timing_mult = float(pos.get("timing_score", 1.0) or 1.0)
+        timing_mult = max(0.15, min(1.0, timing_mult))
         addon_budgets = [
             pos.get("addon1_usd", 0),
             pos.get("addon2_usd", 0),
             pos.get("addon3_usd", 0),
+            pos.get("addon4_usd", 0),
         ]
         addon_usd = addon_budgets[addons] if addons < len(addon_budgets) else 0
         if addon_usd <= 0:
             # 回退到旧逻辑
             base_margin = alloc["single_position_cost"]["base_usd"]
             vol_mult = pos.get("vol_mult", 1.0)
-            addon_usd = base_margin * vol_mult * (addon_pct * (addons + 1))
+            addon_usd = base_margin * vol_mult * (addon_pct * (addons + 1)) * timing_mult
+        else:
+            # 预算来自 alloc 未乘 timing，这里补乘 timing_mult
+            addon_usd = addon_usd * timing_mult
 
         vol_mult = pos.get("vol_mult", 1.0)
         addon_margin = addon_usd * vol_mult
@@ -1211,12 +1273,12 @@ def _get_dynamic_params(client, coin, direction="LONG"):
 
 
 def _place_addon_grid_orders(client, coin, pos):
-    """开仓时预挂3档加仓限价单（马丁网格）
+    """开仓时预挂4档加仓限价单（马丁网格，1首单+4加仓=总5单）
 
-    做多：在开仓价下方 -8%/-16%/-24% 挂买入限价单
-    做空：在开仓价上方 +8%/+16%/+24% 挂卖出限价单
+    做多：在开仓价下方 -8%/-16%/-24%/-32% 挂买入限价单
+    做空：在开仓价上方 +8%/+16%/+24%/+32% 挂卖出限价单
 
-    每档加仓数量按金字塔资金分配（addon1_usd/addon2_usd/addon3_usd）计算。
+    每档加仓数量按金字塔资金分配（addon1_usd/addon2_usd/addon3_usd/addon4_usd）计算。
     挂单 ord_id 记录到 pos["addon_grid"] 供轮询时检查与调整。
 
     Args:
@@ -1239,6 +1301,7 @@ def _place_addon_grid_orders(client, coin, pos):
         pos.get("addon1_usd", 0),
         pos.get("addon2_usd", 0),
         pos.get("addon3_usd", 0),
+        pos.get("addon4_usd", 0),
     ]
     vol_mult = pos.get("vol_mult", 1.0)
 

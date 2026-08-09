@@ -44,10 +44,10 @@ except Exception:
     def to_swap(coin, exchange="okx"): return f"{coin}-USDT-SWAP"
     def _coin_supported(coin, exchange="okx"): return True
 
-# ── 贝叶斯优化后的参数（底仓现货思维 + 黑天鹅加仓）──
+# ── 贝叶斯优化后的参数（底仓现货思维 + 黑天鹅加仓，最大5单：1首单+4加仓）──
 TOTAL_BUDGET = get_config_float("TOTAL_BUDGET", 100)
 MAX_CONCURRENT_POSITIONS = get_config_int("MAX_CONCURRENT_POSITIONS", 6)
-MAX_ADDONS_PER_POSITION = get_config_int("MAX_ADDONS_PER_POSITION", 3)
+MAX_ADDONS_PER_POSITION = get_config_int("MAX_ADDONS_PER_POSITION", 4)  # 4档加仓=总5单（实盘测试版本）
 ADDON_PCT = get_config_float("ADDON_PCT", 0.08)  # 加仓间距（保持不变）
 
 # 底仓22% + 杠杆5x（现货思维）
@@ -57,7 +57,8 @@ LEVERAGE = get_config_float("LEVERAGE", 5.0)
 # 加仓资金分配（金字塔结构：越跌加仓越大，经典马丁）
 ADDON1_PCT = get_config_float("ADDON1_PCT", 0.05)  # 加仓1：5%（黑天鹅第一档）
 ADDON2_PCT = get_config_float("ADDON2_PCT", 0.10)  # 加仓2：10%
-ADDON3_PCT = get_config_float("ADDON3_PCT", 0.20)  # 加仓3：20%（最深处加仓最大）
+ADDON3_PCT = get_config_float("ADDON3_PCT", 0.20)  # 加仓3：20%
+ADDON4_PCT = get_config_float("ADDON4_PCT", 0.35)  # 加仓4：35%（最深档，5单结构的末端黑天鹅加仓）
 
 MAX_POSITION_PCT = get_config_float("MAX_POSITION_PCT", 0.60)
 MIN_MARGIN_USD = get_config_float("MIN_MARGIN_USD", 20)
@@ -196,7 +197,8 @@ def calculate_single_position_cost(budget=None):
     addon1_usd = budget * ADDON1_PCT
     addon2_usd = budget * ADDON2_PCT
     addon3_usd = budget * ADDON3_PCT
-    addon_total = addon1_usd + addon2_usd + addon3_usd
+    addon4_usd = budget * ADDON4_PCT
+    addon_total = addon1_usd + addon2_usd + addon3_usd + addon4_usd
 
     total_cost = base_usd + addon_total
     return {
@@ -209,6 +211,7 @@ def calculate_single_position_cost(budget=None):
             {"addon": 1, "cost_usd": round(addon1_usd, 2), "pct": ADDON1_PCT, "label": "黑天鹅第一档"},
             {"addon": 2, "cost_usd": round(addon2_usd, 2), "pct": ADDON2_PCT, "label": "黑天鹅第二档"},
             {"addon": 3, "cost_usd": round(addon3_usd, 2), "pct": ADDON3_PCT, "label": "黑天鹅第三档"},
+            {"addon": 4, "cost_usd": round(addon4_usd, 2), "pct": ADDON4_PCT, "label": "黑天鹅第四档（最深）"},
         ]
     }
 
@@ -332,12 +335,13 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
 
     # ── 资金分配 ──
     # 固定：底仓22%，5x杠杆
-    # 动态（贝叶斯优化）：addon1/2/3
+    # 动态（贝叶斯优化）：addon1/2/3/4
     base_usd = per_coin_budget * BASE_POSITION_PCT
     addon1_usd = per_coin_budget * ADDON1_PCT
     addon2_usd = per_coin_budget * ADDON2_PCT
     addon3_usd = per_coin_budget * ADDON3_PCT
-    total_needed = base_usd + addon1_usd + addon2_usd + addon3_usd
+    addon4_usd = per_coin_budget * ADDON4_PCT
+    total_needed = base_usd + addon1_usd + addon2_usd + addon3_usd + addon4_usd
 
     # ── 检查资金充足性（扣除基础仓 + 下跌保证金）──
     # 下跌8%时，5x杠杆的保证金需求增加约 8% * 5 = 40% 的 base_usd
@@ -352,7 +356,8 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
         addon1_usd *= scale
         addon2_usd *= scale
         addon3_usd *= scale
-        total_needed = base_usd + addon1_usd + addon2_usd + addon3_usd
+        addon4_usd *= scale
+        total_needed = base_usd + addon1_usd + addon2_usd + addon3_usd + addon4_usd
         drawdown_margin *= scale
 
     remaining_after = available_budget - total_needed - drawdown_margin
@@ -366,6 +371,7 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
         "addon1_usd": round(addon1_usd, 2),
         "addon2_usd": round(addon2_usd, 2),
         "addon3_usd": round(addon3_usd, 2),
+        "addon4_usd": round(addon4_usd, 2),
         "total_usd": round(total_needed, 2),
         "drawdown_margin": round(drawdown_margin, 2),
         "remaining_after": round(remaining_after, 2),
