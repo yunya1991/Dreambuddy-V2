@@ -103,6 +103,12 @@ V15_USE_MECHANISTIC_DIRECTION_GATE = str(
     get_config("V15_USE_MECHANISTIC_DIRECTION_GATE", "true")
 ).lower() == "true"
 
+# Phase 3: BTC风向标 swing 势垒/势阱开关（true=swing点高斯力叠加到F_net；false=仅MA弹簧）
+# 实验性：开启前需回测验证 Phase 2 vs Phase 3 有正收益提升
+V15_USE_SWING_POTENTIAL = str(
+    get_config("V15_USE_SWING_POTENTIAL", "false")
+).lower() == "true"
+
 STATE_FILE = BASE_DIR / "data" / "v15_state.json"
 REGIME_STATE_FILE = BASE_DIR / "data" / "regime_state.json"
 LOG_DIR = BASE_DIR / "logs" / "v15"
@@ -624,6 +630,10 @@ def _get_direction_ctx(coin):
                     btc_daily_ma128 = calc_daily_ma128(btc_klines_1d)
                     if btc_daily_ma128 is not None:
                         btc_recent_closes = [float(k["c"]) for k in btc_klines_1d[-5:] if "c" in k]
+                        # Phase3: swing 检测需要更长的序列（30条日线≈足够 3-6 个 swing 点）
+                        btc_closes_30 = [float(k["c"]) for k in btc_klines_1d[-30:] if "c" in k]
+                        swing_for_evaluate = btc_closes_30 if V15_USE_SWING_POTENTIAL else None
+
                         # Phase2: BTC风向标启用力学化
                         btc_gate = DirectionGate(
                             allow_short=True,
@@ -636,6 +646,8 @@ def _get_direction_ctx(coin):
                             recent_daily_closes=btc_recent_closes,
                             btc_short_enabled=True,   # 自举：BTC风向标先允许，RM确认后再覆盖
                             velocity_integrator=btc_vi if V15_USE_MECHANISTIC_DIRECTION_GATE else None,
+                            recent_closes_for_swing=swing_for_evaluate,   # Phase3: swing 势场
+                            swing_weight=0.5,
                         )
                         # Phase A: 通过 RegimeManager 做确认 + sticky
                         # Phase2: 传 mechanistic_ctx → 动态 1/3/5 天减速检测

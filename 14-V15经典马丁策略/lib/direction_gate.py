@@ -351,6 +351,125 @@ class MAForceFieldResult:
     dominant_role: str      # 主导角色："resistance"(上方阻力) | "support"(下方支撑) | "aligned"(两线同向)
 
 
+# ===================================================================
+# Phase 3: swing 高低点 → 高斯势垒/势阱 → 解析梯度力
+# 理论借鉴: BCRM1.0 BaguaEngine._build_potential_field (bagua_engine.py:L828-L841)
+#   障碍势:   U(x) = ±A · exp(-(x-x₀)² / 2σ²)
+#   力 = -∇U: F = (A/σ²) · x_dist · exp(-x_dist² / 2σ²)   (高取+低取−)
+# ===================================================================
+
+@dataclass
+class SwingPoint:
+    """单个摆动点"""
+    price: float
+    type: str           # "high" / "low"
+    dist_pct: float = 0.0  # 距当前价的百分比(计算时填充)
+
+
+@dataclass
+class SwingForceResult:
+    F_swing_net: float           # swing 合力
+    upward_barrier: float        # 上方 swing high 的力（应<0 表示向下排斥阻力）
+    downward_pull: float         # 下方 swing low 的力（应<0 表示向下吸引支撑）
+    swing_points: List[SwingPoint]  # 被使用的 swing 点列表
+
+
+def detect_swing_points(closes: List[float], window: int = 3) -> List[SwingPoint]:
+    """
+    窗口极值法检测 swing 高低点（借鉴 BCRM1.0 BaguaEngine window=3 fractal）。
+
+    某收盘价为前后各 window 根的最大值 → swing high；
+    某收盘价为前后各 window 根的最小值 → swing low。
+
+    数据长度不足 2*window+1 → 返回空列表（向后兼容）。
+    """
+    if not closes or len(closes) < 2 * window + 1:
+        return []
+    pts: List[SwingPoint] = []
+    n = len(closes)
+    for i in range(window, n - window):
+        w = closes[i - window:i + window + 1]
+        c = closes[i]
+        if c == max(w):
+            pts.append(SwingPoint(price=float(c), type="high"))
+        elif c == min(w):
+            pts.append(SwingPoint(price=float(c), type="low"))
+    return pts
+
+
+def _swing_point_force(
+    price: float,
+    swing_price: float,
+    swing_type: str,
+    amplitude: float = 0.15,
+    sigma_pct: float = 5.0,
+) -> float:
+    """
+    单个 swing 点的解析梯度力 F = -∇U。
+
+    势场:   U = (+A 若 high, -A 若 low) · exp(-d² / 2σ²)
+            d = dist_pct = (price - swing_price) / swing_price × 100
+    梯度力: F = (±A/σ²) · d · exp(-d² / 2σ²)   (+ for high, - for low)
+
+    Args:
+        price: 当前价格
+        swing_price: swing 点价格
+        swing_type: "high" / "low"
+        amplitude: A (0.15, BCRM1.0常量)
+        sigma_pct: σ % (5.0%, BCRM1.0 σ=0.05 归一化≈5%)
+
+    Returns:
+        F_swing: 正=向上，负=向下
+    """
+    if swing_price == 0 or sigma_pct <= 0:
+        return 0.0
+    d = (price - swing_price) / swing_price * 100  # 百分比距离
+    # F = (sign * A / σ²) · d · exp(-d² / 2σ²)
+    sign = +1.0 if swing_type == "high" else -1.0
+    sigma_sq = sigma_pct * sigma_pct
+    # 高斯项
+    gauss = math.exp(-0.5 * d * d / sigma_sq)
+    return sign * amplitude / sigma_sq * d * gauss
+
+
+def _compute_swing_force_field(
+    price: float,
+    swing_points: List[SwingPoint],
+    amplitude: float = 0.15,
+    sigma_pct: float = 5.0,
+) -> SwingForceResult:
+    """
+    所有 swing 点的合力 + 上下阻力分量。
+
+    分量分解：
+      upward_barrier  = swing_high 在上方(price<sw)的合力 （应为负=向下阻力→阻止向上）
+      downward_pull   = swing_low  在下方(price>sw)的合力 （应为负=向下吸引→支撑区）
+    其他 swing（high 在价下、low 在价上）也计入 F_swing_net 用于完整物理意义，
+    但它们的影响通常较小（距离已远，高斯衰减到近 0）。
+    """
+    if not swing_points:
+        return SwingForceResult(F_swing_net=0.0, upward_barrier=0.0, downward_pull=0.0, swing_points=[])
+
+    F_net = 0.0
+    up_barrier = 0.0   # 上方 high 产生的向下阻力
+    down_pull = 0.0    # 下方 low 产生的向下吸引
+    for sp in swing_points:
+        # 填充 dist_pct 诊断字段
+        sp.dist_pct = (price - sp.price) / sp.price * 100 if sp.price else 0
+        f = _swing_point_force(price, sp.price, sp.type, amplitude=amplitude, sigma_pct=sigma_pct)
+        F_net += f
+        if sp.type == "high" and price < sp.price:   # high 在上方
+            up_barrier += f                           # 应 < 0
+        elif sp.type == "low" and price > sp.price:   # low 在下方
+            down_pull += f                            # 应 < 0
+    return SwingForceResult(
+        F_swing_net=F_net,
+        upward_barrier=up_barrier,
+        downward_pull=down_pull,
+        swing_points=swing_points,
+    )
+
+
 def _ma_spring_force(price: float, ma: float, spring_k: float = 2.0) -> float:
     """
     均线弹簧力（BCRM1.0 空间力 F = -k × (x - x0) 迁移）
@@ -502,6 +621,11 @@ class VelocityIntegrator:
         self.step_count += 1
         return self.velocity
 
+    def reset(self):
+        """重置速度为 0，保留配置参数 (decay/mass/threshold 不变)"""
+        self.velocity = 0.0
+        self.step_count = 0
+
     def save_state(self) -> Dict[str, Any]:
         return {
             "decay": self.decay,
@@ -552,16 +676,20 @@ def _evaluate_mechanistic_impl(
     btc_short_enabled: bool,
     allow_short: bool,
     velocity_integrator: Optional[VelocityIntegrator],
+    recent_closes_for_swing: Optional[List[float]] = None,
+    swing_weight: float = 0.5,
 ) -> GateResult:
     """
-    力学化 DirectionGate 评估（Phase 1 实现）
+    力学化 DirectionGate 评估（Phase 1 双均线弹簧 + Phase 3 swing高斯势垒/势阱）
 
     判定流程:
-    1. 力场计算: F_daily, F_weekly, F_net
-    2. 加速度: a = F_net / market_mass (mass 默认1.0，Phase 2 体量自适应)
-    3. 速度积分: v = vi.step(a)，若无vi则使用 proxy_v = F_net（瞬时近似）
-    4. 映射: v → regime
-    5. 叠加 BTC 闸门 + 全局开关
+    1. MA力场: F_daily, F_weekly, F_ma_net（Phase1）
+    2. Swing力场: F_swing_net = Σ（每个swing点的高斯梯度力）（Phase3, 可空）
+    3. 合力:   F_net = F_ma_net + swing_weight × F_swing_net
+    4. 加速度: a = F_net / mass
+    5. 速度积分: v = vi.step(a)，若无vi则使用 proxy_v = F_net
+    6. 映射: v → regime
+    7. 叠加 BTC 闸门 + 全局开关
     """
     price_vs_daily = "above" if current_price > daily_ma128 else "below"
     price_vs_weekly = "above" if current_price > weekly_ma200 else "below"
@@ -582,15 +710,27 @@ def _evaluate_mechanistic_impl(
 
     ff = _compute_ma_force_field(current_price, daily_ma128, weekly_ma200)
 
+    # Phase 3: swing 势场合力（若传入closes_for_swing）
+    sf: Optional[SwingForceResult] = None
+    F_swing_net = 0.0
+    if recent_closes_for_swing and len(recent_closes_for_swing) >= 7:
+        swings = detect_swing_points([float(x) for x in recent_closes_for_swing], window=3)
+        if swings:
+            sf = _compute_swing_force_field(current_price, swings)
+            F_swing_net = sf.F_swing_net
+
+    # 合力（MA力为主，swing力为辅，swing_weight默认0.5）
+    F_net = ff.F_net + swing_weight * F_swing_net
+
     # 加速度 & 速度
     market_mass = 1.0
-    a = ff.F_net / market_mass if velocity_integrator else 0
+    a = F_net / market_mass if velocity_integrator else 0
     if velocity_integrator is not None:
         v = velocity_integrator.step(a)
         v_source = "integrated"
     else:
         # 无积分器时，用 F_net 作为速度代理（瞬时估计）
-        v = ff.F_net
+        v = F_net
         v_source = "F_net_proxy"
 
     # 阈值：默认 0.02，如果使用 proxy 适度放宽
@@ -644,7 +784,10 @@ def _evaluate_mechanistic_impl(
         "F_weekly": round(ff.F_weekly, 6),
         "w_daily": round(ff.w_daily, 4),
         "w_weekly": round(ff.w_weekly, 4),
-        "F_net": round(ff.F_net, 6),
+        "F_ma_net": round(ff.F_net, 6),              # Phase 1 原合力
+        "F_swing_net": round(F_swing_net, 6),        # Phase 3 swing 合力
+        "F_net": round(F_net, 6),                    # 总合力（MA + swing_weight×swing）
+        "swing_weight": swing_weight,
         "dist_to_daily_pct": round(ff.dist_to_daily_pct, 3),
         "dist_to_weekly_pct": round(ff.dist_to_weekly_pct, 3),
         "dominant_ma": ff.dominant_ma,
@@ -654,6 +797,19 @@ def _evaluate_mechanistic_impl(
         "velocity_source": v_source,
         "threshold": threshold,
     }
+    # Phase 3 额外诊断（swing）
+    if sf is not None:
+        diag["upward_barrier"] = round(sf.upward_barrier, 6)
+        diag["downward_pull"] = round(sf.downward_pull, 6)
+        diag["n_swing_highs"] = sum(1 for p in sf.swing_points if p.type == "high")
+        diag["n_swing_lows"] = sum(1 for p in sf.swing_points if p.type == "low")
+        diag["swing_points"] = [
+            {"price": p.price, "type": p.type, "dist_pct": round(p.dist_pct, 3)}
+            for p in sf.swing_points
+        ]
+    else:
+        diag["n_swing_highs"] = 0
+        diag["n_swing_lows"] = 0
 
     return GateResult(
         regime=regime,
@@ -677,6 +833,8 @@ def _evaluate_mechanistic(
     recent_daily_closes: List[float],
     btc_short_enabled: bool,
     velocity_integrator: Optional[VelocityIntegrator],
+    recent_closes_for_swing: Optional[List[float]] = None,
+    swing_weight: float = 0.5,
 ) -> GateResult:
     return _evaluate_mechanistic_impl(
         current_price=current_price,
@@ -686,11 +844,65 @@ def _evaluate_mechanistic(
         btc_short_enabled=btc_short_enabled,
         allow_short=self.allow_short,
         velocity_integrator=velocity_integrator,
+        recent_closes_for_swing=recent_closes_for_swing,
+        swing_weight=swing_weight,
     )
 
 
 # 绑定为 DirectionGate 的方法
 DirectionGate._evaluate_mechanistic = _evaluate_mechanistic
+
+
+# 补充 DirectionGate.evaluate 签名（新增 swing 可选参数）
+# 直接 patch DirectionGate.evaluate 方法: 先保存旧方法
+_original_evaluate = DirectionGate.evaluate
+
+
+def _patched_evaluate(
+    self: DirectionGate,
+    current_price: float,
+    daily_ma128: Optional[float] = None,
+    weekly_ma200: Optional[float] = None,
+    recent_daily_closes: Optional[List[float]] = None,
+    btc_short_enabled: bool = False,
+    velocity_integrator: Optional["VelocityIntegrator"] = None,
+    recent_closes_for_swing: Optional[List[float]] = None,
+    swing_weight: float = 0.5,
+) -> GateResult:
+    """
+    评估当前市场状态和允许的交易方向。
+
+    传统模式(use_mechanistic=False): 收盘价确认+above/below二值判定。
+    力学化模式(use_mechanistic=True): Phase 1/3 — 均线弹簧力 + swing高斯势垒/势阱合力 + Verlet积分。
+
+    新增 Phase 3 参数：
+        recent_closes_for_swing: 较长的收盘价序列（推荐30条以上），swing检测用。
+                         None 或 <7 条 → F_swing=0（等价 Phase 1/2，向后兼容）
+        swing_weight: swing 合力权重（默认 0.5，swing 为辅，MA 为主）
+    """
+    if self.use_mechanistic and daily_ma128 is not None and weekly_ma200 is not None:
+        return self._evaluate_mechanistic(
+            current_price=current_price,
+            daily_ma128=daily_ma128,
+            weekly_ma200=weekly_ma200,
+            recent_daily_closes=recent_daily_closes or [],
+            btc_short_enabled=btc_short_enabled,
+            velocity_integrator=velocity_integrator,
+            recent_closes_for_swing=recent_closes_for_swing,
+            swing_weight=swing_weight,
+        )
+    return _original_evaluate(
+        self,
+        current_price=current_price,
+        daily_ma128=daily_ma128,
+        weekly_ma200=weekly_ma200,
+        recent_daily_closes=recent_daily_closes,
+        btc_short_enabled=btc_short_enabled,
+        velocity_integrator=velocity_integrator,
+    )
+
+
+DirectionGate.evaluate = _patched_evaluate  # type: ignore
 
 
 if __name__ == "__main__":
