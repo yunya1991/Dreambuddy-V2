@@ -45,15 +45,27 @@ def load_kline_from_local(
     if filepath.exists():
         df = pd.read_csv(filepath)
         if "timestamp" in df.columns:
-            df["timestamp"] = pd.to_datetime(df["timestamp"])
+            # Bug修复: 统一 UTC 时区，避免与其他来源数据的时区冲突
+            ts = pd.to_datetime(df["timestamp"])
+            if ts.dt.tz is None:
+                ts = ts.dt.tz_localize("UTC")
+            else:
+                ts = ts.dt.tz_convert("UTC")
+            df["timestamp"] = ts
             df = df.set_index("timestamp")
         elif "ts" in df.columns:
-            df["ts"] = pd.to_datetime(df["ts"], unit="ms")
-            df = df.set_index("ts")
+            ts = pd.to_datetime(df["ts"], unit="ms", utc=True)
+            df["timestamp"] = ts
+            df = df.set_index("timestamp")
         else:
             # 用第一列当时间索引
             df = df.set_index(df.columns[0])
-            df.index = pd.to_datetime(df.index)
+            ts = pd.to_datetime(df.index)
+            if ts.tz is None:
+                ts = ts.tz_localize("UTC")
+            else:
+                ts = ts.tz_convert("UTC")
+            df.index = ts
         df.index.name = "timestamp"
         return df
     return None
@@ -132,7 +144,8 @@ def fetch_okx_klines(
         df[col] = df[col].astype(float)
 
     df["ts"] = df["ts"].astype(int)
-    df["timestamp"] = pd.to_datetime(df["ts"], unit="ms")
+    # Bug修复: 统一使用 UTC 时区，避免与其他数据拼接时 datetime64[ns] vs datetime64[ns, UTC] 错误
+    df["timestamp"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
     df = df.set_index("timestamp")
     df = df.sort_index()
 

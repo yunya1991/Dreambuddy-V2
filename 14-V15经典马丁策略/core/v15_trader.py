@@ -499,9 +499,21 @@ def load_state():
 
 
 def save_state(state):
-    state["last_poll"] = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    state["last_poll"] = now_iso
+    state["last_sync"] = now_iso
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2, ensure_ascii=False)
+
+
+def _on_win_trade(state, coin: str, reason: str):
+    """统一的盈利交易处理：胜场计数+1、连亏清零、记录日盈亏。
+    返回：(total_wins, consecutive_losses_reset_to_0)
+    """
+    state["total_wins"] = state.get("total_wins", 0) + 1
+    state["consecutive_losses"] = 0
+    _log(f"[{coin}] ✅ 胜场记录: wins={state['total_wins']}, 连亏已清零 ({reason})")
+    return state["total_wins"], 0
 
 
 def _on_loss_trade(state, coin: str, reason: str):
@@ -1822,11 +1834,23 @@ def check_time_exit(client, coin, pos, state):
 
 
 def _execute_close_position(client, coin, pos, state, reason="", exit_price=None):
-    """平仓（支持多空方向）- 平仓前取消所有条件单"""
+    """平仓（支持多空方向）- 平仓前取消所有条件单 + 按实际PnL判定胜负"""
     inst_id = pos["inst_id"]
     direction = pos.get("direction", "LONG")
     is_short = direction == "SHORT"
     try:
+        entry_price = pos.get("entry_price", 0)
+        final_exit_price = exit_price or pos.get("current_price", entry_price)
+
+        # 计算盈亏百分比
+        if entry_price > 0 and final_exit_price > 0:
+            if is_short:
+                profit_pct = (entry_price - final_exit_price) / entry_price
+            else:
+                profit_pct = (final_exit_price - entry_price) / entry_price
+        else:
+            profit_pct = pos.get("unrealized_pnl", 0) / max(1.0, pos.get("per_coin_budget", 1.0))
+
         if AUTO_EXECUTE:
             _cancel_addon_grid_orders(client, coin, pos)
             client.cancel_algo_orders(inst_id)
@@ -1848,14 +1872,22 @@ def _execute_close_position(client, coin, pos, state, reason="", exit_price=None
                 pos_side=pos_side,
             )
             if r.get("ok"):
-                _log(f"[{coin}] {direction} 平仓成功 ({reason})")
-                _on_loss_trade(state, coin, reason=f"平仓({reason})")
+                is_profit = profit_pct >= 0
+                pnl_label = f"盈利 {profit_pct:+.2%}" if is_profit else f"亏损 {profit_pct:+.2%}"
+                _log(f"[{coin}] {direction} 平仓成功 ({reason}) | {pnl_label}")
+
+                # 按实际盈亏判定胜场或败场
+                if is_profit:
+                    _on_win_trade(state, coin, reason=f"平仓({reason}) {pnl_label}")
+                else:
+                    _on_loss_trade(state, coin, reason=f"平仓({reason}) {pnl_label}")
+
                 if coin in state["positions"]:
                     # 注册到 L4
                     _register_martin_trade_to_l4(
                         coin=coin,
                         pos=pos,
-                        exit_price=exit_price or pos.get("entry_price", 0),
+                        exit_price=final_exit_price,
                         exit_reason=reason,
                     )
                     del state["positions"][coin]
@@ -2064,19 +2096,43 @@ def run_light_poll_cycle():
     state_positions = set(state.get("positions", {}).keys())
     exchange_pos_keys = set(exchange_positions.keys())
 
-    # 1. state中有但交易所没有 → 外部平仓（手动操作等）
+    # 1. state中有但交易所没有 → 外部平仓（手动操作、强平、OCO自动止盈止损等）
     externally_closed = state_positions - exchange_pos_keys
     for coin in externally_closed:
         pos = state["positions"][coin]
-        _log(f"[{coin}] ⚠️ 检测到外部平仓: entry={pos['entry_price']} sz={pos['sz']}")
+        direction = pos.get("direction", "LONG")
+        is_short = direction == "SHORT"
+        entry_price = pos.get("entry_price", 0)
+        current_price = pos.get("current_price", entry_price)
+
+        # 估算盈亏百分比
+        if entry_price > 0 and current_price > 0:
+            if is_short:
+                profit_pct = (entry_price - current_price) / entry_price
+            else:
+                profit_pct = (current_price - entry_price) / entry_price
+        else:
+            profit_pct = 0.0
+
+        is_profit = profit_pct >= 0
+        pnl_label = f"盈利 {profit_pct:+.2%}" if is_profit else f"亏损 {profit_pct:+.2%}"
+        _log(f"[{coin}] ⚠️ 检测到外部平仓: entry={entry_price:.4f} sz={pos['sz']} | {pnl_label}")
+
+        # 按实际盈亏更新统计
+        if is_profit:
+            _on_win_trade(state, coin, reason=f"外部平仓(external_close) {pnl_label}")
+        else:
+            _on_loss_trade(state, coin, reason=f"外部平仓(external_close) {pnl_label}")
+
         # 注册外部平仓到 L4
         _register_martin_trade_to_l4(
             coin=coin,
             pos=pos,
-            exit_price=pos.get("current_price", pos.get("entry_price", 0)),
+            exit_price=current_price,
             exit_reason="external_close",
         )
-        del state["positions"][coin]
+        if coin in state["positions"]:
+            del state["positions"][coin]
 
     # 2. 交易所中有但state中没有 → 外部开仓（策略不负责，仅记录）
     externally_opened = exchange_pos_keys - state_positions

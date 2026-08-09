@@ -142,6 +142,23 @@ class BCRM2Adapter:
             # 获取与 df 时间范围对齐的 BTC K线
             ref_df = get_klines("BTC", self.timeframe, max_bars=max(len(df) + 200, 5000))
             if ref_df is not None and len(ref_df) > 200:
+                # ══════════════════════════════════════════════════════
+                # Bug修复: 统一时区，避免 datetime64[ns] vs datetime64[ns, UTC] 冲突
+                # ══════════════════════════════════════════════════════
+                # 如果 df.index 有时区，确保 ref_df.index 也有同样的时区；反之亦然
+                df_tz = df.index.tz
+                ref_tz = ref_df.index.tz
+                if df_tz is not None and ref_tz is None:
+                    # df有时区，ref没有 → 给ref加UTC再转换到df的时区（或直接localize到UTC再tz_convert）
+                    ref_df = ref_df.tz_localize("UTC")
+                    if str(df_tz) != "UTC":
+                        ref_df = ref_df.tz_convert(df_tz)
+                elif df_tz is None and ref_tz is not None:
+                    # df无时区，ref有时区 → 去除ref的时区
+                    ref_df = ref_df.tz_localize(None)
+                elif df_tz is not None and ref_tz is not None and str(df_tz) != str(ref_tz):
+                    # 两者有时区但不同 → 统一到df的时区
+                    ref_df = ref_df.tz_convert(df_tz)
                 # 对齐索引到 df
                 ref_df = ref_df.reindex(df.index, method='ffill')
                 return ref_df
