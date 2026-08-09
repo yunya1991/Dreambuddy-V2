@@ -79,6 +79,55 @@ class BCRMEngine:
                 "market_sentiment": 0.2,
             }
 
+    # ── PROP-20260810: config.json 接线（进化采纳参数 → 引擎）──────────────
+
+    # config.json 键 → 引擎参数（与 self_evolution_engine._PARAM_KEY_TO_CONFIG 对齐）
+    _CONFIG_TO_ENGINE_PARAM = {
+        "confidence_threshold": "min_confidence_threshold",
+    }
+    # 引擎参数合法值域（与 evolution_backtest._ENGINE_FIELD_BOUNDS 一致）
+    _ENGINE_PARAM_BOUNDS = {
+        "min_confidence_threshold": (0.01, 0.95),
+    }
+
+    @classmethod
+    def from_config(cls, config_path=None) -> "BCRMEngine":
+        """PROP-20260810: 从 config.json 加载进化采纳的参数构造引擎。
+
+        闭环最后一跳：self_evolution_engine 采纳并固化的参数，
+        由此真正注入生产引擎（此前 6 处构造点全部裸构造，进化值不生效）。
+
+        安全性：任何异常（文件缺失/损坏/键缺失/值越界）→ 回退默认构造，
+        行为与裸构造完全一致。
+        """
+        try:
+            import json
+            from pathlib import Path
+
+            if config_path is None:
+                from scripts.memory_l4.paths import workspace_root
+                config_path = workspace_root() / "data" / "okx_sim" / "config.json"
+            config_path = Path(config_path)
+            if not config_path.exists():
+                return cls()
+            cfg = json.loads(config_path.read_text(encoding="utf-8"))
+            if not isinstance(cfg, dict):
+                return cls()
+
+            kwargs = {}
+            for cfg_key, param_name in cls._CONFIG_TO_ENGINE_PARAM.items():
+                val = cfg.get(cfg_key)
+                if val is None:
+                    continue
+                val = float(val)  # 非数值 → ValueError → 整体回退
+                lo, hi = cls._ENGINE_PARAM_BOUNDS[param_name]
+                if not (lo <= val <= hi):
+                    continue  # 越界值忽略，不带病注入
+                kwargs[param_name] = val
+            return cls(**kwargs)
+        except Exception:
+            return cls()
+
     def infer(self,
               market_snapshot: Dict[str, Any],
               contradiction_list: List[Dict] = None,
@@ -924,5 +973,5 @@ class BCRMEngine:
 
 
 def default_engine() -> BCRMEngine:
-    """获取默认引擎实例。"""
-    return BCRMEngine()
+    """获取引擎实例（PROP-20260810: 注入 config.json 进化采纳参数）。"""
+    return BCRMEngine.from_config()

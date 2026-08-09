@@ -551,7 +551,7 @@ def run_bcrm_on_event(event: Dict[str, Any],
     from scripts.memory_l4.bcrm.engine import BCRMEngine
 
     if engine is None:
-        engine = BCRMEngine()
+        engine = BCRMEngine.from_config()  # PROP-20260810
 
     payload = event.get("payload") or {}
     market_snapshot = _construct_market_snapshot_from_log(payload)
@@ -754,7 +754,7 @@ def run_bcrm_batch(events: List[Dict[str, Any]] = None,
                                            acl_config=ACL_CONFIG)
 
     from scripts.memory_l4.bcrm.engine import BCRMEngine
-    engine = BCRMEngine()
+    engine = BCRMEngine.from_config()  # PROP-20260810
 
     results = []
     agree_count = 0
@@ -1456,7 +1456,7 @@ def run_simulated_batch(limit: int = 10) -> Dict[str, Any]:
 
     events = read_shared_memory_events(limit=limit, agent_id="bcrm_engine",
                                        acl_config=ACL_CONFIG)
-    engine = BCRMEngine()
+    engine = BCRMEngine.from_config()  # PROP-20260810
 
     results = []
     actions_count = {"open_long": 0, "open_short": 0, "hold": 0,

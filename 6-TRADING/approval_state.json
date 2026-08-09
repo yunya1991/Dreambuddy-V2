@@ -1,1 +1,11 @@
-{}
+{
+  "PROP-20260810": {
+    "session_id": "20260809_prop20260810_config_wiring",
+    "approval_type": "trading",
+    "created_at": "2026-08-09T00:35:38.030145+00:00",
+    "status": "APPROVED",
+    "decision_by": "用户431972（飞书会话明确批准）",
+    "decided_at": "2026-08-09T00:57:15.335780+00:00",
+    "decision_note": "E1实施完成，36/36测试通过，交付PR"
+  }
+}
