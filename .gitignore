@@ -130,8 +130,12 @@ htmlcov/
 data/
 artifacts/
 experiments/
-deploy/hermes/
-deploy/ops/
+# deploy/hermes/ 改为细粒度忽略，保留核心代码/SKILL可上传
+deploy/hermes/logs/
+deploy/hermes/memories/
+# deploy/ops/ 改为细粒度忽略，保留安装脚本/daemon代码可上传
+deploy/ops/logs/
+deploy/ops/state/
 .asset-research-history/
 _tmp_entry_conf.py
 hermes-config-snapshot.tar.gz
@@ -234,7 +238,7 @@ hermes-restore.sh
 
 # ---------- 4-MEMORY ----------
 4-MEMORY/0-元记忆/evaluation_history.jsonl
-4-MEMORY/0-元记忆/trading-cognition/
+# trading-cognition 是T系列交易认知SKILL定义（md文件），属于核心源代码，必须上传
 4-MEMORY/0-元记忆/*.bak_*
 4-MEMORY/0-元记忆/template_mappings.json
 4-MEMORY/0-工作记忆/
