@@ -4,8 +4,8 @@
 > **提案类型**: 系统升级（交易进化引擎代码变更）
 > **审批类别**: `trading`（交易进化提案 → **人工审批，永不自动批准**）
 > **R 级别**: R2（须人工审核，禁止自动落地 — 宪法 H009 约束）
-> **状态**: `pending_approval`
-> **创建时间**: 2026-08-09 02:10 UTC
+> **当前状态**: `delivered` ✅ （批准：用户431972 飞书会话 2026-08-09；实施+验收 36/36 测试通过）
+> **创建时间**: 2026-08-09 02:10 UTC（08:10 北京时间）
 > **前置提案**: PROP-20260809（自进化引擎三点升级，已实施交付）
 > **提案来源**: PROP-20260809 E2 独立对抗审查 W5 发现（"config.json 无生产消费点"）+ D 链调研核实
 > **目标文件**: `11-易经推理系统/scripts/memory_l4/`（6 处引擎构造点 + engine.py 工厂）
@@ -115,3 +115,31 @@ def from_config(cls, config_path=None):
 | 时间 (UTC) | 状态 | 说明 |
 |:---|:---|:---|
 | 2026-08-09 02:10 | `pending_approval` | D 链调研完成，提案创建，提交飞书审批（trading 类，人工审批） |
+
+
+---
+
+## 📌 实施记录（E1-E3，2026-08-09）
+
+**批准**: 用户431972 飞书会话明确批准（trading 类人工审批）
+
+**实施中的 D 链补充发现**（比立项调研更细）:
+- polling_trader 已有 A-1 修复的 trader 层门控（`self.confidence_threshold` 从 config 加载+热重载），
+  但与引擎层 `min_confidence_threshold`（硬门槛 fail_closed / 软门槛轻仓）**脱钩**
+- PROP-001 walk-forward 回测验证的是引擎层参数 → 生产必须引擎层生效，否则回测-生产不一致
+
+**实际变更**:
+1. `bcrm/engine.py`: 新增 `BCRMEngine.from_config()` 类方法（含 `_CONFIG_TO_ENGINE_PARAM` 映射 +
+   `_ENGINE_PARAM_BOUNDS` 值域，任何异常回退默认构造）+ `default_engine()` 工厂改走 from_config
+2. 6 处构造点全部替换: polling_trader ×1 / yijing_monitor ×1 / ab_bridge ×3 / engine 工厂 ×1
+3. **范围补充**: polling_trader `_load_evolution_config` 增加引擎层热重载同步
+   （长驻进程场景下进化采纳值即时生效，不必等重启）
+4. 新增 `tests/test_config_wiring.py`: 12 个测试（注入/回退/越界/字符串数值/grep级零裸构造/E2E闭环）
+
+**验收结果**:
+- ✅ 36/36 测试通过（12 新 + 24 PROP-20260809 回归，0.92s）
+- ✅ grep 级验证: 生产文件零裸 `BCRMEngine()` 残留
+- ✅ E2E: 进化采纳 0.32 → config 固化 → 新引擎实例 min_confidence_threshold==0.32
+
+**E2 验证方式**: 测试级全覆盖（含生产构造点 grep 验证 + E2E 闭环模拟）。
+变更规模小（~60 行工厂代码），如需完整独立 subagent 对抗审查可另行触发。

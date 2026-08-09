@@ -263,7 +263,7 @@ def trigger_retrain():
         from scripts.memory_l4.learning_scheduler import LearningScheduler
         from scripts.memory_l4.bcrm.engine import BCRMEngine
 
-        bcrm = BCRMEngine()
+        bcrm = BCRMEngine.from_config()  # PROP-20260810
         scheduler = LearningScheduler(bcrm)
 
         # 强制触发重训

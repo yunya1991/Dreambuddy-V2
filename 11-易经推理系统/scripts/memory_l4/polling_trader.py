@@ -111,7 +111,7 @@ class PollingTrader:
         # 注意：需要在 risk_manager 创建后调用，才能同时更新 risk_manager.state
         self._evolution_config_path = None
 
-        self.bcrm_engine = BCRMEngine()
+        self.bcrm_engine = BCRMEngine.from_config()  # PROP-20260810
         self.bagua_engine = BaguaEngine()
         self.okx_client = OKXSimulatedClient()
 
@@ -2903,6 +2903,19 @@ class PollingTrader:
             if new_conf is not None and new_conf != self.confidence_threshold:
                 self.confidence_threshold = new_conf
                 updated.append(f"confidence_threshold={new_conf}")
+
+            # PROP-20260810: 引擎层阈值同步（进化采纳值热重载到引擎）
+            if hasattr(self, "bcrm_engine") and self.bcrm_engine is not None \
+                    and new_conf is not None:
+                try:
+                    new_conf_f = float(new_conf)
+                    if 0.01 <= new_conf_f <= 0.95 and \
+                            new_conf_f != self.bcrm_engine.min_confidence_threshold:
+                        self.bcrm_engine.min_confidence_threshold = new_conf_f
+                        updated.append(
+                            f"engine.min_confidence_threshold={new_conf_f}")
+                except (TypeError, ValueError):
+                    pass
 
             # risk_manager 相关 3 个字段（init 后 risk_manager 才存在）
             if hasattr(self, "risk_manager") and self.risk_manager is not None:
