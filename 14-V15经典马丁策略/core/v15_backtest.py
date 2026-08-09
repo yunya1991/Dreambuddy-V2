@@ -28,6 +28,14 @@ try:
 except ImportError:
     _DIRECTION_GATE_AVAILABLE = False
 
+# Phase 4: TimingGate（波浪+斐波那契时机软调控，基于三浪结构识别+fib回撤质量）
+try:
+    from timing_gate import TimingGate
+
+    _TIMING_GATE_AVAILABLE = True
+except ImportError:
+    _TIMING_GATE_AVAILABLE = False
+
 try:
     from strategy_params import calc_elder_ray
 
@@ -45,7 +53,7 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 _elder_ray_floor = 0.9
 _elder_ray_ceil = 1.5
 
-MAX_ADDONS = 3
+MAX_ADDONS = 4  # 1首单 + 4加仓 = 最多5单（实盘验证版本，按用户要求开启5档）
 BASE_ADDON_PCT = 0.08
 BASE_TP_PCT = 0.04
 
@@ -1262,6 +1270,24 @@ def run_backtest(
     golden_window_hours: float = 11.1,
     bounce_filter: Dict = None,
     use_direction_gate: bool = False,
+    use_timing_gate: bool = False,   # Phase4: 波浪+斐波那契时机软调控（默认关，向后兼容）
+    # ---- Phase4 TimingGate 可调超参（贝叶斯优化透传）：仅 use_timing_gate=True 生效 ----
+    timing_gate_apply_to_btc: bool = False,   # False=BTC禁用timing（BTC swing结构不如小币清晰，更安全）
+    timing_gate_threshold: float = 0.30,       # BO最优：放宽入场（原0.50）
+    timing_gate_strict: bool = False,
+    timing_gate_swing_window: int = 2,
+    timing_gate_fib_retrace_lo: float = 0.23,  # BO最优：放宽回撤区间（原0.30）
+    timing_gate_fib_retrace_hi: float = 0.71,  # BO最优（原0.72）
+    timing_gate_fib_ext_ratio: float = 1.62,   # BO最优（原1.618）
+    timing_gate_lenient_unclear: float = 0.58, # BO最优（原0.60）
+    timing_gate_strict_unclear_score: float = 0.20,
+    timing_gate_retrace_mu: float = 0.62,      # BO最优：偏F618（原0.50）
+    timing_gate_retrace_sigma: float = 0.34,   # BO最优：更宽容（原0.18）
+    timing_gate_unclear_retrace_ext: float = 0.88,  # BO最优（原0.90）
+    timing_gate_soft_mode: bool = True,        # BO最优：软调控仓位落位（不做硬门禁continue）
+    timing_size_power: float = 2.49,           # BO最优：强惩罚低分（timing_mult=score^2.49）
+    timing_gate_swing_fusion_mode: str = "or", # BO最优：日线OR小时级取高分
+    timing_gate_intraday_swing_window: int = 3,
     use_atr: bool = True,
     use_kelly: bool = False,
     kelly_base_pct: float = 0.22,
@@ -1300,6 +1326,7 @@ def run_backtest(
         max_post_addon_hours: 加仓后最大持仓时间（小时）
         golden_window_hours: 黑天鹅反弹黄金窗口（小时），窗口内不触发评估
         use_direction_gate: 启用DirectionGate多空方向控制（基于日/周MA200三状态模型）
+        use_timing_gate: 启用TimingGate波浪+斐波那契时机软调控（三浪结构+fib回撤评分，默认false）
         use_atr: 启用ATR动态止盈（基于4H ATR百分比调整止盈和加仓间距）
         use_kelly: 启用凯利公式优化底仓比例（基于历史回测数据计算最优仓位）
         kelly_base_pct: 凯利优化的基线底仓比例（默认22%，凯利结果与之对比取保守者）
@@ -1670,6 +1697,7 @@ def run_backtest(
                         continue  # SHORT_ALLOWED状态下只允许做空
 
                 # DirectionGate多空方向控制：BTC风向标 + MA128有效跌破
+                coin_gate_result = None   # Phase4 TimingGate: 缓存币种DirectionGate结果（多空共用）
                 if action == "OPEN_BEAR" and use_direction_gate and _DIRECTION_GATE_AVAILABLE:
                     # Phase A: 使用预计算的 confirmed btc_short_enabled（连续3日确认 + sticky）
                     if confirmed_btc_short_enabled is not None:
@@ -1722,8 +1750,95 @@ def run_backtest(
                         recent_daily_closes=recent_closes,
                         btc_short_enabled=btc_short_enabled,
                     )
+                    coin_gate_result = gate_result
                     if not gate_result.short_enabled:
                         continue  # DirectionGate不允许做空，跳过
+
+                # Phase 4: TimingGate 波浪+斐波那契时机软调控（方向先验 × 三浪结构评分）
+                timing_mult: float = 1.0   # 默认无软调控，完全由 DirectionGate/指标 决定
+                # apply_to_btc=False → BTC 单独禁用 timing（大币结构不清，避免反效果；贝叶斯优化开启）
+                _timing_active = (
+                    use_timing_gate and _TIMING_GATE_AVAILABLE
+                    and (not is_btc or timing_gate_apply_to_btc)
+                )
+                if _timing_active:
+                    # 1. 若此前未计算币种 DirectionGate，则补一次（TimingGate 需要 gate_result 作为方向先验）
+                    if coin_gate_result is None and _DIRECTION_GATE_AVAILABLE:
+                        try:
+                            _d128 = daily_ma128_list[i] if daily_ma128_list and i < len(daily_ma128_list) else None
+                            _w200 = weekly_ma200_list[i] if weekly_ma200_list and i < len(weekly_ma200_list) else None
+                            _rc5: list = []
+                            if last_daily_close_list:
+                                for j in range(max(0, i - 5), i + 1):
+                                    if j < len(last_daily_close_list) and last_daily_close_list[j] is not None:
+                                        _rc5.append(last_daily_close_list[j])
+                            # btc_short_enabled fallback: 没有 confirmed 就按 long_only（保守）
+                            _btc_se = False
+                            if confirmed_btc_short_enabled is not None and i < len(confirmed_btc_short_enabled):
+                                _btc_se = confirmed_btc_short_enabled[i]
+                            _g = DirectionGate(allow_short=True)
+                            coin_gate_result = _g.evaluate(
+                                current_price=current_price,
+                                daily_ma128=_d128,
+                                weekly_ma200=_w200,
+                                recent_daily_closes=_rc5,
+                                btc_short_enabled=_btc_se,
+                            )
+                        except Exception:
+                            coin_gate_result = None
+                    # 2. 准备 TimingGate 的长周期日线序列（最近 100 条每日收盘价）
+                    timing_rcs: list = []
+                    if last_daily_close_list:
+                        for j in range(max(0, i - 99), i + 1):
+                            if j < len(last_daily_close_list) and last_daily_close_list[j] is not None:
+                                timing_rcs.append(last_daily_close_list[j])
+                    # 2b. 准备小时级（4h）收盘价序列（最近 120 根≈20天，用于双周期 swing 融合）
+                    timing_intraday: list = []
+                    if timing_gate_swing_fusion_mode != "daily_only":
+                        for j in range(max(0, i - 119), i + 1):
+                            timing_intraday.append(closes[j])
+                    # 3. TimingGate 评估 (参数从 run_backtest 透传，便于贝叶斯优化)
+                    if coin_gate_result is not None and len(timing_rcs) >= 20:
+                        try:
+                            tg = TimingGate(
+                                swing_window=int(timing_gate_swing_window),
+                                fib_retrace_lo=float(timing_gate_fib_retrace_lo),
+                                fib_retrace_hi=float(timing_gate_fib_retrace_hi),
+                                fib_ext_ratio=float(timing_gate_fib_ext_ratio),
+                                threshold=float(timing_gate_threshold),
+                                lenient_unclear=float(timing_gate_lenient_unclear),
+                                strict_unclear_score=float(timing_gate_strict_unclear_score),
+                                strict=bool(timing_gate_strict),
+                                retrace_mu=float(timing_gate_retrace_mu),
+                                retrace_sigma=float(timing_gate_retrace_sigma),
+                                unclear_retrace_ext=float(timing_gate_unclear_retrace_ext),
+                                swing_fusion_mode=str(timing_gate_swing_fusion_mode),
+                                intraday_swing_window=int(timing_gate_intraday_swing_window),
+                            )
+                            _intraday_arg = timing_intraday if len(timing_intraday) >= 20 else None
+                            t_res = tg.evaluate(
+                                coin_gate_result, timing_rcs,
+                                price_now=current_price,
+                                intraday_closes=_intraday_arg,
+                            )
+                            is_bull_action = "BULL" in action
+                            if timing_gate_soft_mode:
+                                # 软调控模式：不做硬门禁 continue，靠 timing_mult 连续调控仓位
+                                # timing_mult = timing_score ^ size_power（power>1 强化惩罚低分）
+                                _raw = float(max(0.0, min(1.0, t_res.timing_score)))
+                                timing_mult = _raw ** float(timing_size_power)
+                                # 极低分仍跳过（避免微零仓位无意义开仓）
+                                if timing_mult < 0.02:
+                                    continue
+                            else:
+                                # 硬门禁模式（原逻辑）
+                                if is_bull_action and not t_res.long_timing_ok:
+                                    continue
+                                if (not is_bull_action) and not t_res.short_timing_ok:
+                                    continue
+                                timing_mult = float(max(0.0, min(1.0, t_res.timing_score)))
+                        except Exception:
+                            timing_mult = 1.0
 
                 # 趋势过滤：下跌趋势中禁止做多马丁
                 if "BULL" in action and trend_filter_mode != "none":
@@ -1842,7 +1957,7 @@ def run_backtest(
                 ):
                     elder_size_mult = calc_elder_ray_size_mult(elder_ray_list[i], direction)
 
-                position_size = capital * effective_base_pct * elder_size_mult / current_price
+                position_size = capital * effective_base_pct * elder_size_mult * timing_mult / current_price
                 position = {
                     "direction": direction,
                     "entry_idx": i,
@@ -1858,6 +1973,7 @@ def run_backtest(
                     "vol_mult": vol_mult,
                     "confidence": conf,
                     "elder_mult": elder_size_mult,
+                    "timing_mult": timing_mult,   # Phase4: 波浪+fib时机软调控（入场时确定，整仓保持）
                     "entry_reason": decision.get("position", ""),
                     "long_only": long_only,
                     "trailing_active": False,
@@ -2033,8 +2149,10 @@ def run_backtest(
                             addon_elder_mult = calc_elder_ray_size_mult(
                                 elder_ray_list[i], direction
                             )
+                        # 加仓：继承入场时的 timing_mult（整仓时机尺度一致）
+                        add_timing_mult = position.get("timing_mult", 1.0)
                         addon_size = (
-                            capital * effective_base_pct * addon_elder_mult / addon_exec_price
+                            capital * effective_base_pct * addon_elder_mult * add_timing_mult / addon_exec_price
                         )
                         position["total_cost"] += addon_size * addon_exec_price
                         position["total_size"] += addon_size
@@ -2428,6 +2546,11 @@ def main():
         help="启用DirectionGate多空方向控制（基于日/周MA200）",
     )
     parser.add_argument(
+        "--timing-gate",
+        action="store_true",
+        help="Phase4: 启用TimingGate波浪+斐波那契时机软调控（三浪+fib回撤评分）",
+    )
+    parser.add_argument(
         "--compare",
         action="store_true",
         help="对比三模式: 只做多 vs 无限制做空 vs DirectionGate控制做空",
@@ -2610,6 +2733,7 @@ def main():
             long_only=not args.allow_short,
             position_tf=args.position_tf,
             use_direction_gate=args.direction_gate,
+            use_timing_gate=args.timing_gate,
         )
         print_report(result)
 
