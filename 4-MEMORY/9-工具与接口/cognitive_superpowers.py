@@ -1251,14 +1251,16 @@ class SuperpowersSkill:
 class SkillLoader:
     """
     SKILL.md 加载器。
-    SKILLS_ROOT = /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/0-元记忆/superpowers/skills
+    SKILLS_ROOT = <repo_root>/4-MEMORY/0-元记忆/superpowers/skills（动态解析，跨机器可移植）
     INDEX_PATH = SKILLS_ROOT 父目录下 /skills-index.json
     """
-    SKILLS_ROOT = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/0-元记忆/superpowers/skills")
+    # COG-FIX-20260809: 原 macOS 硬编码路径改为相对本文件动态解析（parents[2] = 仓库根）
+    _REPO_ROOT = Path(__file__).resolve().parents[2]
+    SKILLS_ROOT = _REPO_ROOT / "4-MEMORY" / "0-元记忆" / "superpowers" / "skills"
     INDEX_PATH = SKILLS_ROOT.parent / "skills-index.json"
 
     # P1: 交易认知 Skill 双源加载
-    TRADING_SKILLS_ROOT = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/0-元记忆/trading-cognition/skills")
+    TRADING_SKILLS_ROOT = _REPO_ROOT / "4-MEMORY" / "0-元记忆" / "trading-cognition" / "skills"
     TRADING_INDEX_PATH = TRADING_SKILLS_ROOT.parent / "trading-skills-index.json"
 
     # P1: 交易类 task_type 集合（用于 retrieve 路由）
