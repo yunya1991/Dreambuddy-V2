@@ -32,14 +32,17 @@
 
 ---
 
-## 2. 认知系统内部结构：开发认知 × 交易认知（两大维度，用户 2026-08-09 定义）
+## 2. 认知系统内部结构：分类 × 层级，两种划分共同组成（用户 2026-08-09 澄清）
 
 > 依据 SYSTEM_ARCHITECTURE_OVERVIEW.md §1/§6.1（"交易决策闭环 + 开发认知闭环，对称"）+ TECHNICAL_DESIGN §6.6 + COGNITIVE_ARCHITECTURE.md v3.4。
-> **主维度 = 开发认知 / 交易认知**（按领域分）；通用/应用是**次级分层**（按抽象度分），每个维度内部都有。
+> **两种划分（相互正交，共同组成认知系统）**：
+> - **分类轴（横向）= 认知分类**，按领域划分：开发认知 / 交易认知 / …（可扩展）
+> - **层级轴（纵向）= 认知层级**，按抽象度划分：通用认知 → 应用认知（层级关系）
+> ⚠️ 两种划分不分主次维度；每个分类内部都有通用、应用两个层级。
 
-### 2.1 两大维度
+### 2.1 分类轴：认知分类（横向，按领域划分）
 
-| 维度 | 解决什么 | Process 层 Skill | 应用记忆落点 | 召回路由 |
+| 分类 | 解决什么 | Process 层 Skill | 应用记忆落点 | 召回路由 |
 |:---|:---|:---|:---|:---|
 | **开发认知** | "代码怎么写" | 元认知 Superpowers 14 Skill（`0-元记忆/superpowers/skills/`） | APP-DEV-* → `1-开发记忆单元/solution_paths/` | 开发类 task_type |
 | **交易认知** | "交易怎么决策" | T 系列 6 Skill T0-T5（`0-元记忆/trading-cognition/skills/`） | APP-TRD-* → `2-交易记忆单元/solution_paths/`（MU-TRD 路由） | 8 个交易 task_type（strategy-research/backtest/execution/governance 等） |
@@ -47,12 +50,21 @@
 **T 系列定义**（TECHNICAL_DESIGN §6.6）：T0 市场认知(A0+A1+A2) / T1 战略合成(A3) / T2 交易执行(A4+A5+A9) / T3 风控门禁 t3-risk-gatekeeper(A7+A4) / T4 情报雷达 t4-intelligence-radar(A6) / T5 元认知复盘 t5-meta-reflection(A8)。
 ✅ Mac 端原版 T 系列已入库（2026-08-09 main@273110c0，含 cognitive-supplement.md 本地化补充，SkillLoader 双源加载验证通过）。
 
-### 2.2 次级分层（每个维度内部）
+### 2.2 层级轴：通用认知 → 应用认知（纵向，按抽象度划分）
+
+> 层级关系：通用认知是上层（通用方法论/流程技能），应用认知是下层（特定领域的应用经验）；两个层级存在于每个分类内部。
 
 | 层 | 名称 | 进化规则 | 红线 |
 |:---|:---|:---|:---|
-| 通用层 | 原版 SKILL.md（开发=Superpowers，交易=T 系列） | 只增不改，允许系统性完善 | **原版内容禁改**；补充写入同级 supplement 文件 |
-| 应用层 | Solution Paths（APP-DEV-* / APP-TRD-*） | 贝叶斯进化 C→B→A→S；交易类用客观指标（P&L/夏普/回撤/胜率 → path_advantage） | 等级由验证驱动，不手工改 |
+| 通用认知（上层） | 原版 SKILL.md（开发=Superpowers，交易=T 系列） | 只增不改，允许系统性完善 | **原版内容禁改**；补充写入同级 supplement 文件 |
+| 应用认知（下层） | Solution Paths（APP-DEV-* / APP-TRD-*） | 贝叶斯进化 C→B→A→S；交易类用客观指标（P&L/夏普/回撤/胜率 → path_advantage） | 等级由验证驱动，不手工改 |
+
+**分类 × 层级 交叉矩阵**（两种划分共同组成认知系统）：
+
+| 分类＼层级 | 通用认知 | 应用认知 |
+|:---|:---|:---|
+| 开发认知 | Superpowers 14 Skill（原版） | APP-DEV-* → `1-开发记忆单元/solution_paths/` |
+| 交易认知 | T 系列 T0-T5（原版） | APP-TRD-* → `2-交易记忆单元/solution_paths/`（MU-TRD 路由） |
 
 **认知三要素** = Knowledge（2-KNOWLEDGE）+ Memory（4-MEMORY L0/L1/L2）+ Process（上表 Skill 体系）
 
