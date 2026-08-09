@@ -180,6 +180,11 @@ class OKXSimulatedClient:
         self.simulated = self.cfg["simulated"]
         self.dry_run = self.cfg["dry_run"]
         self.session = requests.Session()
+        # P0 修复：macOS 下 ClashX / Surge 等 GUI 代理软件只对当前 Aqua login session 生效，
+        # requests.Session 默认的 proxy 选择依赖 trust_env=True。但为了兼容显式 session.proxies
+        # 手动设置的场景，这里保持 trust_env=False，并在 _proxy_setup 中强制
+        # 把 os.environ 里的 HTTP(S)_PROXY / ALL_PROXY 写入 self.session.proxies。
+        # 为了调试代理问题，初始化后记录 session.proxies 到日志。
         self.session.trust_env = False
 
         # dry_run 模式下的本地内存订单簿（止盈止损单）
@@ -191,11 +196,16 @@ class OKXSimulatedClient:
         # 1) 优先使用环境变量代理
         https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
         http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
+        all_proxy = os.environ.get("ALL_PROXY") or os.environ.get("all_proxy")
         proxies = {}
         if https_proxy:
             proxies["https"] = https_proxy
         if http_proxy:
             proxies["http"] = http_proxy
+        if all_proxy and not proxies:
+            # ALL_PROXY 通常是 socks5 格式，requests >= 2.28 原生支持 socks
+            proxies["http"] = all_proxy
+            proxies["https"] = all_proxy
 
         # 2) 环境变量未设置时，尝试本地 Clash 默认端口（fake-ip 模式下必须走代理）
         if not proxies:
@@ -211,11 +221,61 @@ class OKXSimulatedClient:
                 except Exception:
                     continue
 
+        # 关键：直接赋值而非 update，避免之前的 session.proxies 中残留空值影响。
+        # （macOS ClashX GUI 代理只对当前 Aqua login session 生效；
+        #  进程若被 launchd 收养为 PPID=1，会因 session 隔离导致直接 TCP 连接失败 -> "Host is down"。
+        #  所以启动 polling_trader 时必须保持在 Aqua login session 中，例如：
+        #    setopt NO_HUP; (python3 -u -m scripts.memory_l4.polling_trader ... &)
+        #  不要用 nohup / setsid / disown 让进程脱离会话。）
         if proxies:
-            self.session.proxies.update(proxies)
+            self.session.proxies = dict(proxies)
+        else:
+            self.session.proxies = {}
+
+        # P0 诊断：尝试用当前代理发一次 probe 请求，如果失败就打印明确的诊断日志，
+        # 便于快速区分"代理没配好"和"OKX 侧故障"。
+        try:
+            self._probe_proxy_or_log()
+        except Exception:
+            # 任何探测异常都不能影响初始化
+            pass
 
     def _has_credentials(self) -> bool:
         return bool(self.api_key and self.secret_key and self.passphrase)
+
+    def _probe_proxy_or_log(self):
+        """P0 诊断：探测当前代理能否连通 OKX。失败时用 print 打到 stdout（会被重定向到 trading_stdout.log）。
+        注意：不能用 self._log / _audit_log，因为这些在 __init__ 早期可能未准备好。"""
+        import time as _t
+        proxies = dict(getattr(self, "session", None) and self.session.proxies or {})
+        try:
+            t0 = _t.time()
+            r = self.session.get(
+                self.base_url + "/api/v5/public/time",
+                timeout=5,
+            )
+            dt_ms = int((_t.time() - t0) * 1000)
+            try:
+                j = r.json()
+            except Exception:
+                j = {}
+            ok = (j.get("code") == "0") or (200 <= r.status_code < 300)
+            tag = "OK" if ok else "FAIL"
+            print(
+                f"[OKX 代理探测/{tag}] status={r.status_code} code={j.get('code')} "
+                f"t={dt_ms}ms proxies={proxies}",
+                flush=True,
+            )
+        except Exception as e:
+            print(
+                f"[OKX 代理探测/FAIL] {type(e).__name__}: {e} | proxies={proxies} | "
+                f"建议：请不要用 nohup/setsid/disown 启动进程，否则会因 Aqua session 隔离连不上 GUI 代理。"
+                f"正确启动方式：在当前 Aqua login session（正常终端）里执行 `setopt NO_HUP; "
+                f"export HTTPS_PROXY=http://127.0.0.1:7890 HTTP_PROXY=http://127.0.0.1:7890; "
+                f"(python3 -u -m scripts.memory_l4.polling_trader ... &)`",
+                flush=True,
+            )
+
 
     def _headers(self, method: str, path: str, body: str = "") -> Dict:
         ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
@@ -556,6 +616,17 @@ class OKXSimulatedClient:
                 error = data_list[0].get("sMsg", "") or data_list[0].get("sCode", "")
             if not error:
                 error = r.get("msg", "")
+            # P2 修复：失败时追加 session.proxies 诊断信息，
+            # 便于快速定位 "Host is down" 是代理未配置还是 OKX 侧故障
+            try:
+                _proxies = getattr(self, "session", None) and self.session.proxies
+            except Exception:
+                _proxies = None
+            _proxy_str = str(_proxies) if _proxies else "empty"
+            if not error:
+                error = f"unknown_error; proxies={_proxy_str}"
+            else:
+                error = f"{error}; proxies={_proxy_str}"
         return {
             "ok": ok,
             "dry_run": False,

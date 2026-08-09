@@ -99,8 +99,20 @@ class PollingTrader:
                  shared_dir=None,
                  use_bcrm2: bool = True):
         self.interval = interval
-        self.coins = coins or ["UNI", "PUMP", "MU", "SKHYNIX", "HYPE", "ETH", "BTC", "SOL",
-                               "XAU", "XAG", "GOOGL", "NVDA", "AMZN", "OKB", "BNB"]
+        default_coins = ["UNI", "PUMP", "MU", "SKHYNIX", "HYPE", "ETH", "BTC", "SOL",
+                         "XAU", "XAG", "GOOGL", "NVDA", "AMZN", "OKB", "BNB"]
+        # P4 修复：币种规范化映射
+        # 实际 OKX 合约：
+        #   XAU-USDT-SWAP  (黄金现货杠杆代币, ticker code=0, 存在)
+        #   XAUT-USDT-SWAP (Tether黄金代币,          ticker code=51001, 不存在/已下线)
+        # 所以如果用户/旧启动命令写了 XAUT，必须映射到 XAU，避免 K线拉取失败。
+        _NORMALIZE_COIN = {"XAUT": "XAU"}
+
+        def _norm(c):
+            cu = str(c).strip().upper()
+            return _NORMALIZE_COIN.get(cu, cu)
+
+        self.coins = [_norm(c) for c in (coins or default_coins)]
         self.bar = bar
         self.confidence_threshold = confidence_threshold
         self.short_confidence_threshold = short_confidence_threshold  # 做空独立阈值（高于做多）
@@ -2226,13 +2238,27 @@ class PollingTrader:
         ranging_confidence = inference.get("ranging_confidence", 0.0)
         is_trial = False
 
-        # A项优化：硬性confidence最低阈值（贝叶斯寻优0.7955）
-        # 低于此值的开仓信号直接跳过，不允许试错开仓
-        # 回测：过滤掉37%低质量交易，胜率76.6%→84.8%，策略收益5.23%→5.59%
-        A_CONFIDENCE_FLOOR = 0.7955
-        if confidence < A_CONFIDENCE_FLOOR:
+        # A项过滤：可配置 confidence 最低门槛（原贝叶斯寻优值 0.7955 改为可热 reload）
+        # - 优先使用 self.confidence_threshold（构造参数 args.confidence
+        #   → 被 _load_evolution_config 从 config.json 热 reload
+        #   → 被 _adjust_confidence_threshold 按外部知识小幅上调）
+        # - A_SAFETY_FLOOR = 0.40 兜底：防止进化配置损坏/参数手误传成 0.01 导致阈值失控
+        #
+        # 回测基线（原硬编码 0.7955）：过滤掉 37% 低质量交易，
+        # 胜率 76.6% -> 84.8%，策略收益 5.23% -> 5.59%；
+        # 当 config.json 的 confidence_threshold 偏离较大时，
+        # 仍以 safety floor=0.40 作为最低边界。
+        try:
+            adjusted_threshold = self._adjust_confidence_threshold()
+        except Exception:
+            adjusted_threshold = self.confidence_threshold
+        A_SAFETY_FLOOR = 0.40
+        effective_a_floor = max(float(adjusted_threshold), A_SAFETY_FLOOR)
+        if confidence < effective_a_floor:
             self._log(
-                f"[{coin}] A项过滤 | confidence={confidence:.2f} < {A_CONFIDENCE_FLOOR} | "
+                f"[{coin}] A项过滤 | confidence={confidence:.4f} < "
+                f"effective_a_floor={effective_a_floor:.4f}("
+                f"adjusted={adjusted_threshold:.4f}, safety_floor={A_SAFETY_FLOOR}) | "
                 f"方向={direction} 卦象={inference['hexagram']} 跳过")
             return
 
@@ -3298,8 +3324,8 @@ def main():
     parser = argparse.ArgumentParser(description="易经推理轮询交易器（P2 完整版）")
     parser.add_argument("--interval", type=int, default=3600,
                         help="轮询间隔（秒），默认 3600(1h)")
-    parser.add_argument("--coins", type=str, default="UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAUT,XAG,GOOGL,NVDA,AMZN,OKB,BNB",
-                        help="币种列表，逗号分隔，默认 15币种固定候选池")
+    parser.add_argument("--coins", type=str, default="UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB",
+                        help="币种列表，逗号分隔，默认 15币种固定候选池（注意：使用 XAU 而非 XAUT，OKX 实际合约为 XAU-USDT-SWAP）")
     parser.add_argument("--bar", type=str, default="1H",
                         help="K线周期，默认 1H")
     parser.add_argument("--confidence", type=float, default=0.35,
@@ -3327,6 +3353,10 @@ def main():
     args = parser.parse_args()
 
     coins = [c.strip().upper() for c in args.coins.split(",")]
+    # P4 修复：币种规范化（XAUT → XAU，因为 OKX 实际存在的是 XAU-USDT-SWAP，XAUT 已下架）
+    # 在 CLI 层做一次，配合 PollingTrader.__init__ 内的二次规范化形成双保险。
+    _NORM_MAIN = {"XAUT": "XAU"}
+    coins = [_NORM_MAIN.get(c, c) for c in coins]
 
     if args.initial_equity is None:
         print("[初始化] 从 OKX 读取实际余额...")

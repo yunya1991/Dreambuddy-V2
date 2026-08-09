@@ -134,6 +134,7 @@ class SelfEvolutionEngine:
         Layer 1 → Layer 2 → Layer 3 串行，前层发现越多，后层越有针对性。
         每层都生成可验证的改进提案，通过 walk_forward 回测后写入进化池。
         """
+        self._last_stats = stats
         ts = datetime.now(timezone.utc).isoformat()
         print(f"\n{'='*60}")
         print(f"[SelfEvolution] 启动三层自进化周期 {ts}")
@@ -780,17 +781,36 @@ class SelfEvolutionEngine:
 
         参考 QuantConnect Walk-Forward Optimization 框架。
         """
-        if not proposals or not recent_decisions:
+        if not proposals:
+            return []
+
+        MIN_DECISIONS_FOR_BACKTEST = 5
+        MIN_TRADES_FOR_STATS_SIGNIFICANCE = 5
+
+        total_trades = self._last_stats.get("total_trades", 0) if hasattr(self, '_last_stats') else 0
+        if total_trades < MIN_TRADES_FOR_STATS_SIGNIFICANCE:
+            print(f"  ⏸ 交易数据不足 ({total_trades} < {MIN_TRADES_FOR_STATS_SIGNIFICANCE})，跳过回测验证，提案保留候选池")
             return []
 
         adopted = []
-        # 去重：同一 param_key 只保留最高评分提案
+        pending = []
         deduped = {}
         for p in proposals:
             k = p.get("param_key", p.get("title", ""))
             if k not in deduped:
                 deduped[k] = p
         proposals = list(deduped.values())
+
+        seen_keys = self._load_seen_param_keys()
+        new_proposals = []
+        for p in proposals:
+            k = p.get("param_key", "")
+            v = str(p.get("param_value", ""))
+            if k and (k, v) in seen_keys:
+                print(f"  ⏭ 跳过已验证提案: {p['title']} ({k}={v})")
+                continue
+            new_proposals.append(p)
+        proposals = new_proposals
 
         try:
             from scripts.memory_l4.bcrm.walk_forward import WalkForwardEngine
@@ -799,6 +819,8 @@ class SelfEvolutionEngine:
         except Exception:
             wfe = None
 
+        has_sufficient_decisions = (recent_decisions and len(recent_decisions) >= MIN_DECISIONS_FOR_BACKTEST)
+
         for proposal in proposals:
             try:
                 param_key = proposal.get("param_key", "")
@@ -806,77 +828,114 @@ class SelfEvolutionEngine:
                 if not param_key:
                     continue
 
-                if wfe and recent_decisions and len(recent_decisions) >= 5:
-                    # PROP-20260809-001: 白名单门禁(第一道) + 真实 walk-forward 回测(第二道, AND)
-                    safe_params = {
-                        "velocity_threshold", "min_confidence_threshold",
-                        "sentiment_weight", "volume_ratio_min",
-                        "force_evaluate_high_vol", "velocity_threshold_mode",
-                        "force_action_after_n_holds", "high_uncertainty_threshold",
-                    }
-                    is_safe = param_key in safe_params
-                    if not is_safe:
-                        improved = False  # 高风险参数跳过（原行为）
-                    else:
-                        # 真实 walk-forward 双引擎对比验证
-                        # （本地 klines，不依赖外网；数据不足内部降级 rule_check+degraded）
-                        try:
-                            from scripts.memory_l4.evolution_backtest import (
-                                walk_forward_validate)
-                            bt = walk_forward_validate(
-                                param_key=param_key,
-                                proposed_value=param_val,
-                            )
-                        except Exception as e:
-                            print(f"  ⚠️ walk-forward 验证异常，降级 rule_check: {e}")
-                            bt = {
-                                "validated": True,
-                                "method": "rule_check",
-                                "degraded": True,
-                                "reason": f"walk_forward_exception: {e}",
-                            }
-                        proposal["backtest_result"] = bt
-                        improved = bool(bt.get("validated", False))
-                        if not improved:
-                            print(f"  ⏸ 拒绝(walk-forward 劣化): "
-                                  f"{proposal['title']} | delta={bt.get('delta')}")
-                else:
-                    # 数据不足时，A8/dream 来源直接采纳（原行为 + 诚实标注）
-                    improved = proposal.get("source") in ("a8", "dream")
-                    if improved and "backtest_result" not in proposal:
-                        proposal["backtest_result"] = {
-                            "validated": True, "method": "rule_check",
-                            "degraded": True,
-                            "reason": "insufficient_recent_decisions",
-                        }
+                safe_params = {
+                    "velocity_threshold", "min_confidence_threshold",
+                    "sentiment_weight", "volume_ratio_min",
+                    "force_evaluate_high_vol", "velocity_threshold_mode",
+                    "force_action_after_n_holds", "high_uncertainty_threshold",
+                }
+                is_safe = param_key in safe_params
 
-                if improved:
-                    proposal["adopted"] = True
-                    if "backtest_result" not in proposal:
-                        proposal["backtest_result"] = {
-                            "validated": True, "method": "rule_check"}
-                    adopted.append(proposal)
-                    method = proposal["backtest_result"].get("method", "?")
-                    degraded = proposal["backtest_result"].get("degraded", False)
-                    tag = f"[{method}{'/degraded' if degraded else ''}]"
-                    print(f"  ✅ 采纳 {tag}: {proposal['title']}")
-                else:
-                    print(f"  ⏸ 跳过: {proposal['title']} (需人工确认)")
-            except Exception as adopt_err:
-                if proposal.get("source") == "a8":
-                    proposal["adopted"] = True
-                    # W7修复(E2审查): 异常兜底也诚实标注 degraded
+                if not is_safe:
                     proposal["backtest_result"] = {
-                        "skipped": True, "degraded": True,
-                        "reason": f"adopt_loop_exception: {adopt_err}",
-                    }
-                    adopted.append(proposal)
+                        "validated": False, "method": "whitelist_gate",
+                        "reason": f"参数 {param_key} 不在白名单"}
+                    pending.append(proposal)
+                    print(f"  ⛔ 白名单拒绝: {proposal['title']} ({param_key})")
+                    continue
 
-        # B-2修复：将 adopted 提案落地到 config.json + constraints/releases 快照
+                if wfe and has_sufficient_decisions:
+                    try:
+                        from scripts.memory_l4.evolution_backtest import (
+                            walk_forward_validate)
+                        bt = walk_forward_validate(
+                            param_key=param_key,
+                            proposed_value=param_val,
+                        )
+                    except Exception as e:
+                        print(f"  ⚠️ walk-forward 验证异常，降级 rule_check: {e}")
+                        bt = {
+                            "validated": True,
+                            "method": "rule_check",
+                            "degraded": True,
+                            "reason": f"walk_forward_exception: {e}",
+                        }
+                    proposal["backtest_result"] = bt
+                    improved = bool(bt.get("validated", False))
+                    if not improved:
+                        print(f"  ⏸ 拒绝(walk-forward 劣化): "
+                              f"{proposal['title']} | delta={bt.get('delta')}")
+                        pending.append(proposal)
+                        continue
+                else:
+                    proposal["backtest_result"] = {
+                        "validated": False,
+                        "method": "insufficient_data",
+                        "reason": f"决策数不足 ({len(recent_decisions) if recent_decisions else 0} < {MIN_DECISIONS_FOR_BACKTEST})"}
+                    pending.append(proposal)
+                    print(f"  ⏸ 数据不足，待验证: {proposal['title']}")
+                    continue
+
+                proposal["adopted"] = True
+                adopted.append(proposal)
+                method = proposal["backtest_result"].get("method", "?")
+                degraded = proposal["backtest_result"].get("degraded", False)
+                tag = f"[{method}{'/degraded' if degraded else ''}]"
+                print(f"  ✅ 采纳 {tag}: {proposal['title']}")
+
+            except Exception as adopt_err:
+                proposal["backtest_result"] = {
+                    "skipped": True, "degraded": True,
+                    "reason": f"adopt_loop_exception: {adopt_err}",
+                }
+                pending.append(proposal)
+                print(f"  ⚠️ 异常跳过: {proposal.get('title', '?')} ({adopt_err})")
+
         if adopted:
             self._apply_adopted_to_config(adopted)
+            self._save_seen_param_keys(adopted)
+
+        if pending:
+            self._save_pending_proposals(pending)
 
         return adopted
+
+    def _load_seen_param_keys(self) -> set:
+        seen_file = BASE_DIR / "data" / "self_evolution" / "seen_param_keys.json"
+        if seen_file.exists():
+            try:
+                data = json.loads(seen_file.read_text(encoding="utf-8"))
+                return set(tuple(x) for x in data)
+            except Exception:
+                pass
+        return set()
+
+    def _save_seen_param_keys(self, adopted: List[Dict]):
+        seen_file = BASE_DIR / "data" / "self_evolution" / "seen_param_keys.json"
+        existing = self._load_seen_param_keys()
+        for p in adopted:
+            k = p.get("param_key", "")
+            v = str(p.get("param_value", ""))
+            if k:
+                existing.add((k, v))
+        seen_file.parent.mkdir(parents=True, exist_ok=True)
+        seen_file.write_text(
+            json.dumps([list(x) for x in existing], ensure_ascii=False, indent=2),
+            encoding="utf-8")
+
+    def _save_pending_proposals(self, pending: List[Dict]):
+        pending_file = BASE_DIR / "data" / "self_evolution" / "pending_proposals.json"
+        existing = []
+        if pending_file.exists():
+            try:
+                existing = json.loads(pending_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        existing.extend(pending)
+        pending_file.parent.mkdir(parents=True, exist_ok=True)
+        pending_file.write_text(
+            json.dumps(existing[-100:], ensure_ascii=False, indent=2),
+            encoding="utf-8")
 
     # ── 日志管理 ────────────────────────────────────────────────────────────
 

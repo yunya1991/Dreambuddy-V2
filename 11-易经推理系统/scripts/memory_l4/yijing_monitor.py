@@ -394,6 +394,18 @@ def evolve_thresholds(perf: dict) -> dict:
     win_rate = perf.get("win_rate", 0)
     total_pnl = perf.get("total_pnl", 0)
     consecutive_losses = perf.get("consecutive_losses", 0)
+    total_trades = perf.get("total_trades", 0)
+
+    MIN_SAMPLE_FOR_THRESHOLD = 5
+
+    if total_trades < MIN_SAMPLE_FOR_THRESHOLD:
+        _log(f"交易样本量不足 ({total_trades} < {MIN_SAMPLE_FOR_THRESHOLD})，跳过阈值调整，保持当前配置")
+        return {
+            "thresholds": thresholds,
+            "adjustments": [],
+            "skipped": True,
+            "reason": f"insufficient_sample({total_trades}<{MIN_SAMPLE_FOR_THRESHOLD})",
+        }
 
     # 置信度门槛保持稳定（不随亏损提高）
     # 根据胜率调整单笔仓位而非置信度门槛
