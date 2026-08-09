@@ -28,6 +28,14 @@ try:
 except ImportError:
     _DIRECTION_GATE_AVAILABLE = False
 
+# Phase 4: TimingGate（波浪+斐波那契时机软调控，基于三浪结构识别+fib回撤质量）
+try:
+    from timing_gate import TimingGate
+
+    _TIMING_GATE_AVAILABLE = True
+except ImportError:
+    _TIMING_GATE_AVAILABLE = False
+
 try:
     from strategy_params import calc_elder_ray
 
@@ -45,7 +53,7 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 _elder_ray_floor = 0.9
 _elder_ray_ceil = 1.5
 
-MAX_ADDONS = 3
+MAX_ADDONS = 4  # 1首单 + 4加仓 = 最多5单（实盘验证版本，按用户要求开启5档）
 BASE_ADDON_PCT = 0.08
 BASE_TP_PCT = 0.04
 
@@ -328,7 +336,7 @@ def prepare_daily_sma_for_4h(
     # 创建日期->MA映射
     daily_ma_dict = {p: {} for p in periods}
     for p in periods:
-        for k, ma in zip(klines_1d, daily_ma_series[p]):
+        for k, ma in zip(klines_1d, daily_ma_series[p], strict=False):
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma_dict[p][date_str] = ma
@@ -360,7 +368,7 @@ def prepare_ma200_for_4h(
 
         # 创建日期->MA200映射
         daily_ma200_dict = {}
-        for k, ma in zip(klines_1d, daily_ma200_series):
+        for k, ma in zip(klines_1d, daily_ma200_series, strict=False):
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma200_dict[date_str] = ma
@@ -377,7 +385,7 @@ def prepare_ma200_for_4h(
 
         # 创建周开始日期->MA200映射
         weekly_ma200_dict = {}
-        for k, ma in zip(klines_1w, weekly_ma200_series):
+        for k, ma in zip(klines_1w, weekly_ma200_series, strict=False):
             if ma is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ma200_dict[week_str] = ma
@@ -423,7 +431,7 @@ def prepare_ema200_for_4h(
         daily_ema200_series = _calc_ema_series(daily_closes, 200)
 
         daily_ema200_dict = {}
-        for k, ema in zip(klines_1d, daily_ema200_series):
+        for k, ema in zip(klines_1d, daily_ema200_series, strict=False):
             if ema is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ema200_dict[date_str] = ema
@@ -438,7 +446,7 @@ def prepare_ema200_for_4h(
         weekly_ema200_series = _calc_ema_series(weekly_closes, 200)
 
         weekly_ema200_dict = {}
-        for k, ema in zip(klines_1w, weekly_ema200_series):
+        for k, ema in zip(klines_1w, weekly_ema200_series, strict=False):
             if ema is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ema200_dict[week_str] = ema
@@ -463,7 +471,7 @@ def prepare_ma128_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> List[O
         daily_ma128_series = calc_ma_series(daily_closes, 128)
 
         daily_ma128_dict = {}
-        for k, ma in zip(klines_1d, daily_ma128_series):
+        for k, ma in zip(klines_1d, daily_ma128_series, strict=False):
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma128_dict[date_str] = ma
@@ -669,14 +677,30 @@ def get_ma200_ema200_stop_loss(
         else:
             # 所有均线都在价格上方 → 检查是否全部确认跌破
             all_below_daily = True
-            if daily_ma200 is not None and last_daily_close is not None and last_daily_close > daily_ma200:
+            if (
+                daily_ma200 is not None
+                and last_daily_close is not None
+                and last_daily_close > daily_ma200
+            ):
                 all_below_daily = False
-            if daily_ema200 is not None and last_daily_close is not None and last_daily_close > daily_ema200:
+            if (
+                daily_ema200 is not None
+                and last_daily_close is not None
+                and last_daily_close > daily_ema200
+            ):
                 all_below_daily = False
             all_below_weekly = True
-            if weekly_ma200 is not None and last_weekly_close is not None and last_weekly_close > weekly_ma200:
+            if (
+                weekly_ma200 is not None
+                and last_weekly_close is not None
+                and last_weekly_close > weekly_ma200
+            ):
                 all_below_weekly = False
-            if weekly_ema200 is not None and last_weekly_close is not None and last_weekly_close > weekly_ema200:
+            if (
+                weekly_ema200 is not None
+                and last_weekly_close is not None
+                and last_weekly_close > weekly_ema200
+            ):
                 all_below_weekly = False
 
             all_confirmed_below = all_below_daily and all_below_weekly
@@ -828,12 +852,12 @@ def prepare_elder_ray_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> Li
 # - WEAK:   动能衰竭/逆转 → 收紧TP+缩短持仓，快速离场
 # - NORMAL: 基准
 DEFAULT_SUBREGIME_MULTS: Dict[str, Dict[str, float]] = {
-    "BULL_STRONG":  {"tp_mult": 1.10, "holding_mult": 1.20},
-    "BULL_WEAK":    {"tp_mult": 0.85, "holding_mult": 0.70},
-    "BULL_NORMAL":  {"tp_mult": 1.00, "holding_mult": 1.00},
-    "BEAR_STRONG":  {"tp_mult": 1.10, "holding_mult": 1.20},
-    "BEAR_WEAK":    {"tp_mult": 0.85, "holding_mult": 0.70},
-    "BEAR_NORMAL":  {"tp_mult": 1.00, "holding_mult": 1.00},
+    "BULL_STRONG": {"tp_mult": 1.10, "holding_mult": 1.20},
+    "BULL_WEAK": {"tp_mult": 0.85, "holding_mult": 0.70},
+    "BULL_NORMAL": {"tp_mult": 1.00, "holding_mult": 1.00},
+    "BEAR_STRONG": {"tp_mult": 1.10, "holding_mult": 1.20},
+    "BEAR_WEAK": {"tp_mult": 0.85, "holding_mult": 0.70},
+    "BEAR_NORMAL": {"tp_mult": 1.00, "holding_mult": 1.00},
 }
 
 
@@ -935,7 +959,7 @@ def calc_sma(prices: List[float], period: int) -> float:
     return sum(prices[-period:]) / period
 
 
-def calc_ma_series(closes: List[float], period: int) -> List[Optional[float]]:
+def _calc_ma_series_dup(closes: List[float], period: int) -> List[Optional[float]]:  # noqa: F811 - 旧版本备用，保留向后兼容
     """计算简单移动平均线序列"""
     result = [None] * len(closes)
     if len(closes) < period:
@@ -962,7 +986,7 @@ def prepare_weekly_ma_for_4h(
         weekly_ma_series = calc_ma_series(weekly_closes, period)
 
         weekly_ma_dict = {}
-        for k, ma in zip(klines_1w, weekly_ma_series):
+        for k, ma in zip(klines_1w, weekly_ma_series, strict=False):
             if ma is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ma_dict[week_str] = ma
@@ -986,7 +1010,7 @@ def prepare_daily_ma_for_4h(
         daily_ma_series = calc_ma_series(daily_closes, period)
 
         daily_ma_dict = {}
-        for k, ma in zip(klines_1d, daily_ma_series):
+        for k, ma in zip(klines_1d, daily_ma_series, strict=False):
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma_dict[date_str] = ma
@@ -1060,10 +1084,8 @@ def v15_decision(
 
     if override_position is not None:
         position = override_position
-        display_smas = override_smas if override_smas else smas
     else:
         position = _determine_position(current_price, smas)
-        display_smas = smas
     fib = _calc_fibonacci(prices, 30)
     boll = _calc_bollinger_bands(prices, period=20, num_std=2)
     macd = _calc_macd(prices)
@@ -1262,6 +1284,24 @@ def run_backtest(
     golden_window_hours: float = 11.1,
     bounce_filter: Dict = None,
     use_direction_gate: bool = False,
+    use_timing_gate: bool = False,  # Phase4: 波浪+斐波那契时机软调控（默认关，向后兼容）
+    # ---- Phase4 TimingGate 可调超参（贝叶斯优化透传）：仅 use_timing_gate=True 生效 ----
+    timing_gate_apply_to_btc: bool = False,  # False=BTC禁用timing（BTC swing结构不如小币清晰，更安全）
+    timing_gate_threshold: float = 0.30,  # BO最优：放宽入场（原0.50）
+    timing_gate_strict: bool = False,
+    timing_gate_swing_window: int = 2,
+    timing_gate_fib_retrace_lo: float = 0.23,  # BO最优：放宽回撤区间（原0.30）
+    timing_gate_fib_retrace_hi: float = 0.71,  # BO最优（原0.72）
+    timing_gate_fib_ext_ratio: float = 1.62,  # BO最优（原1.618）
+    timing_gate_lenient_unclear: float = 0.58,  # BO最优（原0.60）
+    timing_gate_strict_unclear_score: float = 0.20,
+    timing_gate_retrace_mu: float = 0.62,  # BO最优：偏F618（原0.50）
+    timing_gate_retrace_sigma: float = 0.34,  # BO最优：更宽容（原0.18）
+    timing_gate_unclear_retrace_ext: float = 0.88,  # BO最优（原0.90）
+    timing_gate_soft_mode: bool = True,  # BO最优：软调控仓位落位（不做硬门禁continue）
+    timing_size_power: float = 2.49,  # BO最优：强惩罚低分（timing_mult=score^2.49）
+    timing_gate_swing_fusion_mode: str = "or",  # BO最优：日线OR小时级取高分
+    timing_gate_intraday_swing_window: int = 3,
     use_atr: bool = True,
     use_kelly: bool = False,
     kelly_base_pct: float = 0.22,
@@ -1300,6 +1340,7 @@ def run_backtest(
         max_post_addon_hours: 加仓后最大持仓时间（小时）
         golden_window_hours: 黑天鹅反弹黄金窗口（小时），窗口内不触发评估
         use_direction_gate: 启用DirectionGate多空方向控制（基于日/周MA200三状态模型）
+        use_timing_gate: 启用TimingGate波浪+斐波那契时机软调控（三浪结构+fib回撤评分，默认false）
         use_atr: 启用ATR动态止盈（基于4H ATR百分比调整止盈和加仓间距）
         use_kelly: 启用凯利公式优化底仓比例（基于历史回测数据计算最优仓位）
         kelly_base_pct: 凯利优化的基线底仓比例（默认22%，凯利结果与之对比取保守者）
@@ -1463,14 +1504,12 @@ def run_backtest(
     effective_tp_pct_base, effective_addon_pct_base, _ = get_vol_adjusted_params(
         BASE_TP_PCT, BASE_ADDON_PCT, coin_vol, btc_vol
     )
-    effective_tp_pct = effective_tp_pct_base
-    effective_addon_pct = effective_addon_pct_base
 
     # 使用自定义参数覆盖（用于贝叶斯优化）
     if custom_tp_pct is not None:
-        effective_tp_pct = custom_tp_pct
+        pass
     if custom_addon_pct is not None:
-        effective_addon_pct = custom_addon_pct
+        pass
 
     closes = [float(k["c"]) for k in klines]
     highs = [float(k["h"]) for k in klines]
@@ -1526,15 +1565,18 @@ def run_backtest(
         # Phase A: 连续3日收盘确认 + sticky 防震荡
         if btc_windvane_states:
             from regime_manager import compute_confirmed_regimes_by_date
+
             bar_dates_wv = [_timestamp_to_date_str(k.get("t", 0)) for k in klines]
             btc_windvane_states = compute_confirmed_regimes_by_date(
-                btc_windvane_states, bar_dates_wv,
+                btc_windvane_states,
+                bar_dates_wv,
                 confirm_days=btc_windvane_confirm_days,
             )
 
     # Phase A: DirectionGate 路径预计算 confirmed BTC short_enabled（连续3日确认 + sticky）
     if use_direction_gate and _DIRECTION_GATE_AVAILABLE and btc_daily_ma128_list is not None:
         from regime_manager import compute_confirmed_regimes_by_date
+
         raw_btc_states = []
         for idx in range(len(closes)):
             btc_ma128 = btc_daily_ma128_list[idx] if idx < len(btc_daily_ma128_list) else None
@@ -1544,14 +1586,20 @@ def run_backtest(
                     if j < len(btc_recent_closes_list) and btc_recent_closes_list[j] is not None:
                         btc_recent.append(btc_recent_closes_list[j])
                 if len(btc_recent) >= 3:
-                    raw_btc_states.append("SHORT_ALLOWED" if all(c <= btc_ma128 for c in btc_recent[-3:]) else "LONG_ONLY")
+                    raw_btc_states.append(
+                        "SHORT_ALLOWED"
+                        if all(c <= btc_ma128 for c in btc_recent[-3:])
+                        else "LONG_ONLY"
+                    )
                 else:
                     raw_btc_states.append("LONG_ONLY")
             else:
                 raw_btc_states.append("LONG_ONLY")
         bar_dates_gate = [_timestamp_to_date_str(k.get("t", 0)) for k in klines]
         confirmed_states = compute_confirmed_regimes_by_date(
-            raw_btc_states, bar_dates_gate, confirm_days=3,
+            raw_btc_states,
+            bar_dates_gate,
+            confirm_days=3,
         )
         confirmed_btc_short_enabled = [s == "SHORT_ALLOWED" for s in confirmed_states]
 
@@ -1563,13 +1611,17 @@ def run_backtest(
         if use_btc_windvane and btc_windvane_states:
             for idx in range(1, len(btc_windvane_states)):
                 if btc_windvane_states[idx] != btc_windvane_states[idx - 1]:
-                    for j in range(idx, min(idx + regime_cooldown_bars, len(regime_cooldown_flags))):
+                    for j in range(
+                        idx, min(idx + regime_cooldown_bars, len(regime_cooldown_flags))
+                    ):
                         regime_cooldown_flags[j] = True
         # direction_gate 路径：从 confirmed_btc_short_enabled 变化点计算
         elif use_direction_gate and confirmed_btc_short_enabled:
             for idx in range(1, len(confirmed_btc_short_enabled)):
                 if confirmed_btc_short_enabled[idx] != confirmed_btc_short_enabled[idx - 1]:
-                    for j in range(idx, min(idx + regime_cooldown_bars, len(regime_cooldown_flags))):
+                    for j in range(
+                        idx, min(idx + regime_cooldown_bars, len(regime_cooldown_flags))
+                    ):
                         regime_cooldown_flags[j] = True
 
     # Phase B: 预计算 per-bar regime 标签（用于 per-regime 参数切换）
@@ -1606,6 +1658,7 @@ def run_backtest(
         try:
             sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
             from yijing_bridge import YijingBridge
+
             _yiji_bridge = YijingBridge()
             if _yiji_bridge.available:
                 bar_yiji = _yiji_bridge.infer_klines(klines, step=yijing_step)
@@ -1647,7 +1700,11 @@ def run_backtest(
 
             if action in ("OPEN_BULL", "OPEN_BEAR") and conf >= confidence_threshold:
                 # Phase A+: 形态切换冷却期内不开新仓
-                if regime_cooldown_flags is not None and i < len(regime_cooldown_flags) and regime_cooldown_flags[i]:
+                if (
+                    regime_cooldown_flags is not None
+                    and i < len(regime_cooldown_flags)
+                    and regime_cooldown_flags[i]
+                ):
                     continue
                 # 只做多模式：忽略做空信号
                 if long_only and action == "OPEN_BEAR":
@@ -1670,10 +1727,15 @@ def run_backtest(
                         continue  # SHORT_ALLOWED状态下只允许做空
 
                 # DirectionGate多空方向控制：BTC风向标 + MA128有效跌破
+                coin_gate_result = None  # Phase4 TimingGate: 缓存币种DirectionGate结果（多空共用）
                 if action == "OPEN_BEAR" and use_direction_gate and _DIRECTION_GATE_AVAILABLE:
                     # Phase A: 使用预计算的 confirmed btc_short_enabled（连续3日确认 + sticky）
                     if confirmed_btc_short_enabled is not None:
-                        btc_short_enabled = confirmed_btc_short_enabled[i] if i < len(confirmed_btc_short_enabled) else False
+                        btc_short_enabled = (
+                            confirmed_btc_short_enabled[i]
+                            if i < len(confirmed_btc_short_enabled)
+                            else False
+                        )
                     else:
                         # fallback: 原始逐 bar 计算
                         btc_short_enabled = False
@@ -1722,8 +1784,113 @@ def run_backtest(
                         recent_daily_closes=recent_closes,
                         btc_short_enabled=btc_short_enabled,
                     )
+                    coin_gate_result = gate_result
                     if not gate_result.short_enabled:
                         continue  # DirectionGate不允许做空，跳过
+
+                # Phase 4: TimingGate 波浪+斐波那契时机软调控（方向先验 × 三浪结构评分）
+                timing_mult: float = 1.0  # 默认无软调控，完全由 DirectionGate/指标 决定
+                # apply_to_btc=False → BTC 单独禁用 timing（大币结构不清，避免反效果；贝叶斯优化开启）
+                _timing_active = (
+                    use_timing_gate
+                    and _TIMING_GATE_AVAILABLE
+                    and (not is_btc or timing_gate_apply_to_btc)
+                )
+                if _timing_active:
+                    # 1. 若此前未计算币种 DirectionGate，则补一次（TimingGate 需要 gate_result 作为方向先验）
+                    if coin_gate_result is None and _DIRECTION_GATE_AVAILABLE:
+                        try:
+                            _d128 = (
+                                daily_ma128_list[i]
+                                if daily_ma128_list and i < len(daily_ma128_list)
+                                else None
+                            )
+                            _w200 = (
+                                weekly_ma200_list[i]
+                                if weekly_ma200_list and i < len(weekly_ma200_list)
+                                else None
+                            )
+                            _rc5: list = []
+                            if last_daily_close_list:
+                                for j in range(max(0, i - 5), i + 1):
+                                    if (
+                                        j < len(last_daily_close_list)
+                                        and last_daily_close_list[j] is not None
+                                    ):
+                                        _rc5.append(last_daily_close_list[j])
+                            # btc_short_enabled fallback: 没有 confirmed 就按 long_only（保守）
+                            _btc_se = False
+                            if confirmed_btc_short_enabled is not None and i < len(
+                                confirmed_btc_short_enabled
+                            ):
+                                _btc_se = confirmed_btc_short_enabled[i]
+                            _g = DirectionGate(allow_short=True)
+                            coin_gate_result = _g.evaluate(
+                                current_price=current_price,
+                                daily_ma128=_d128,
+                                weekly_ma200=_w200,
+                                recent_daily_closes=_rc5,
+                                btc_short_enabled=_btc_se,
+                            )
+                        except Exception:
+                            coin_gate_result = None
+                    # 2. 准备 TimingGate 的长周期日线序列（最近 100 条每日收盘价）
+                    timing_rcs: list = []
+                    if last_daily_close_list:
+                        for j in range(max(0, i - 99), i + 1):
+                            if (
+                                j < len(last_daily_close_list)
+                                and last_daily_close_list[j] is not None
+                            ):
+                                timing_rcs.append(last_daily_close_list[j])
+                    # 2b. 准备小时级（4h）收盘价序列（最近 120 根≈20天，用于双周期 swing 融合）
+                    timing_intraday: list = []
+                    if timing_gate_swing_fusion_mode != "daily_only":
+                        for j in range(max(0, i - 119), i + 1):
+                            timing_intraday.append(closes[j])
+                    # 3. TimingGate 评估 (参数从 run_backtest 透传，便于贝叶斯优化)
+                    if coin_gate_result is not None and len(timing_rcs) >= 20:
+                        try:
+                            tg = TimingGate(
+                                swing_window=int(timing_gate_swing_window),
+                                fib_retrace_lo=float(timing_gate_fib_retrace_lo),
+                                fib_retrace_hi=float(timing_gate_fib_retrace_hi),
+                                fib_ext_ratio=float(timing_gate_fib_ext_ratio),
+                                threshold=float(timing_gate_threshold),
+                                lenient_unclear=float(timing_gate_lenient_unclear),
+                                strict_unclear_score=float(timing_gate_strict_unclear_score),
+                                strict=bool(timing_gate_strict),
+                                retrace_mu=float(timing_gate_retrace_mu),
+                                retrace_sigma=float(timing_gate_retrace_sigma),
+                                unclear_retrace_ext=float(timing_gate_unclear_retrace_ext),
+                                swing_fusion_mode=str(timing_gate_swing_fusion_mode),
+                                intraday_swing_window=int(timing_gate_intraday_swing_window),
+                            )
+                            _intraday_arg = timing_intraday if len(timing_intraday) >= 20 else None
+                            t_res = tg.evaluate(
+                                coin_gate_result,
+                                timing_rcs,
+                                price_now=current_price,
+                                intraday_closes=_intraday_arg,
+                            )
+                            is_bull_action = "BULL" in action
+                            if timing_gate_soft_mode:
+                                # 软调控模式：不做硬门禁 continue，靠 timing_mult 连续调控仓位
+                                # timing_mult = timing_score ^ size_power（power>1 强化惩罚低分）
+                                _raw = float(max(0.0, min(1.0, t_res.timing_score)))
+                                timing_mult = _raw ** float(timing_size_power)
+                                # 极低分仍跳过（避免微零仓位无意义开仓）
+                                if timing_mult < 0.02:
+                                    continue
+                            else:
+                                # 硬门禁模式（原逻辑）
+                                if is_bull_action and not t_res.long_timing_ok:
+                                    continue
+                                if (not is_bull_action) and not t_res.short_timing_ok:
+                                    continue
+                                timing_mult = float(max(0.0, min(1.0, t_res.timing_score)))
+                        except Exception:
+                            timing_mult = 1.0
 
                 # 趋势过滤：下跌趋势中禁止做多马丁
                 if "BULL" in action and trend_filter_mode != "none":
@@ -1747,11 +1914,11 @@ def run_backtest(
                 cur_trailing_start = trailing_start_pct_of_tp
                 if regime_params and bar_regimes and i < len(bar_regimes):
                     rp = regime_params.get(bar_regimes[i], {})
-                    cur_max_base_h = rp.get('max_base_holding_hours', max_base_holding_hours)
-                    cur_max_post_addon_h = rp.get('max_post_addon_hours', max_post_addon_hours)
-                    cur_golden_window_h = rp.get('golden_window_hours', golden_window_hours)
-                    cur_trailing_atr_mult = rp.get('trailing_atr_mult', trailing_atr_mult)
-                    cur_trailing_start = rp.get('trailing_start_ratio', trailing_start_pct_of_tp)
+                    cur_max_base_h = rp.get("max_base_holding_hours", max_base_holding_hours)
+                    cur_max_post_addon_h = rp.get("max_post_addon_hours", max_post_addon_hours)
+                    cur_golden_window_h = rp.get("golden_window_hours", golden_window_hours)
+                    cur_trailing_atr_mult = rp.get("trailing_atr_mult", trailing_atr_mult)
+                    cur_trailing_start = rp.get("trailing_start_ratio", trailing_start_pct_of_tp)
 
                 # Phase B+: 子形态小幅微调（TP + 持仓时间），不覆盖整组参数
                 _cur_tp_mult = 1.0
@@ -1759,8 +1926,8 @@ def run_backtest(
                 if bar_subregimes is not None and i < len(bar_subregimes):
                     _cur_subregime = bar_subregimes[i]
                     _sr = (subregime_mults or DEFAULT_SUBREGIME_MULTS).get(_cur_subregime, {})
-                    _h_mult = _sr.get('holding_mult', 1.0)
-                    _cur_tp_mult = _sr.get('tp_mult', 1.0)
+                    _h_mult = _sr.get("holding_mult", 1.0)
+                    _cur_tp_mult = _sr.get("tp_mult", 1.0)
                     cur_max_base_h *= _h_mult
                     cur_max_post_addon_h *= _h_mult
                     cur_golden_window_h *= _h_mult
@@ -1799,13 +1966,17 @@ def run_backtest(
                 if _cur_yiji is not None:
                     try:
                         from yijing_param_interpolator import interpolate_params
+
                         _sr_mults = {"tp_mult": _cur_tp_mult, "holding_mult": 1.0, "size_mult": 1.0}
                         # holding_mult 已应用到 cur_max_base_h，这里传 1.0 避免重复
                         if _cur_subregime:
-                            _sr = (subregime_mults or DEFAULT_SUBREGIME_MULTS).get(_cur_subregime, {})
-                            _sr_mults["holding_mult"] = _sr.get('holding_mult', 1.0)
+                            _sr = (subregime_mults or DEFAULT_SUBREGIME_MULTS).get(
+                                _cur_subregime, {}
+                            )
+                            _sr_mults["holding_mult"] = _sr.get("holding_mult", 1.0)
                         _yiji_mults = interpolate_params(
-                            _cur_yiji["risk_score"], _cur_yiji["value_score"],
+                            _cur_yiji["risk_score"],
+                            _cur_yiji["value_score"],
                             subregime_mults=_sr_mults,
                         )
                         # 应用最终倍数（覆盖子形态的 tp_mult）
@@ -1813,7 +1984,9 @@ def run_backtest(
                         if custom_tp_pct is None:
                             tp_pct = tp_pct_dyn * vol_mult * _cur_tp_mult
                         # holding_mult 叠加（yiji 额外部分）
-                        _yiji_h_extra = _yiji_mults["holding_mult"] / _sr_mults.get("holding_mult", 1.0)
+                        _yiji_h_extra = _yiji_mults["holding_mult"] / _sr_mults.get(
+                            "holding_mult", 1.0
+                        )
                         if _yiji_h_extra != 1.0:
                             cur_max_base_h *= _yiji_h_extra
                             cur_max_post_addon_h *= _yiji_h_extra
@@ -1842,7 +2015,9 @@ def run_backtest(
                 ):
                     elder_size_mult = calc_elder_ray_size_mult(elder_ray_list[i], direction)
 
-                position_size = capital * effective_base_pct * elder_size_mult / current_price
+                position_size = (
+                    capital * effective_base_pct * elder_size_mult * timing_mult / current_price
+                )
                 position = {
                     "direction": direction,
                     "entry_idx": i,
@@ -1858,6 +2033,7 @@ def run_backtest(
                     "vol_mult": vol_mult,
                     "confidence": conf,
                     "elder_mult": elder_size_mult,
+                    "timing_mult": timing_mult,  # Phase4: 波浪+fib时机软调控（入场时确定，整仓保持）
                     "entry_reason": decision.get("position", ""),
                     "long_only": long_only,
                     "trailing_active": False,
@@ -1973,7 +2149,9 @@ def run_backtest(
 
                     # 启动阈值：浮盈达到止盈比例的一定比例
                     tp_pct_pos = position.get("tp_pct", 0.04)
-                    pos_trailing_start = position.get("trailing_start_ratio", trailing_start_pct_of_tp)
+                    pos_trailing_start = position.get(
+                        "trailing_start_ratio", trailing_start_pct_of_tp
+                    )
                     start_threshold = tp_pct_pos * pos_trailing_start
 
                     if unrealized_pnl_pct >= start_threshold:
@@ -2033,8 +2211,14 @@ def run_backtest(
                             addon_elder_mult = calc_elder_ray_size_mult(
                                 elder_ray_list[i], direction
                             )
+                        # 加仓：继承入场时的 timing_mult（整仓时机尺度一致）
+                        add_timing_mult = position.get("timing_mult", 1.0)
                         addon_size = (
-                            capital * effective_base_pct * addon_elder_mult / addon_exec_price
+                            capital
+                            * effective_base_pct
+                            * addon_elder_mult
+                            * add_timing_mult
+                            / addon_exec_price
                         )
                         position["total_cost"] += addon_size * addon_exec_price
                         position["total_size"] += addon_size
@@ -2428,6 +2612,11 @@ def main():
         help="启用DirectionGate多空方向控制（基于日/周MA200）",
     )
     parser.add_argument(
+        "--timing-gate",
+        action="store_true",
+        help="Phase4: 启用TimingGate波浪+斐波那契时机软调控（三浪+fib回撤评分）",
+    )
+    parser.add_argument(
         "--compare",
         action="store_true",
         help="对比三模式: 只做多 vs 无限制做空 vs DirectionGate控制做空",
@@ -2610,6 +2799,7 @@ def main():
             long_only=not args.allow_short,
             position_tf=args.position_tf,
             use_direction_gate=args.direction_gate,
+            use_timing_gate=args.timing_gate,
         )
         print_report(result)
 

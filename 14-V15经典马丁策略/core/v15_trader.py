@@ -3,7 +3,7 @@
 V15 经典马丁策略自动交易器
 - 定时轮询币种信号
 - 根据资金计算器决定是否开仓
-- 马丁加仓：最多3次，资金不足时禁止开新仓
+- 马丁加仓：最多4次（=总5单），资金不足时禁止开新仓
 - 多空双向：DirectionGate 根据日/周 MA200 控制方向开关
   - 做多：价格在日 MA200 上方（LONG_PREFERRED）
   - 做空：跌破日 MA200 但在周 MA200 上方（SHORT_ALLOWED，反向马丁）
@@ -98,6 +98,19 @@ V15_YIJING_ENABLED = get_config_bool("V15_YIJING_ENABLED", False)
 # 多空方向控制开关
 V15_ALLOW_SHORT = str(get_config("V15_ALLOW_SHORT", "false")).lower() == "true"
 
+# Phase 2: BTC风向标力学化总开关（true=弹簧力场+Verlet+减速动态确认；false=传统above/below+3日硬确认）
+V15_USE_MECHANISTIC_DIRECTION_GATE = (
+    str(get_config("V15_USE_MECHANISTIC_DIRECTION_GATE", "true")).lower() == "true"
+)
+
+# Phase 3: BTC风向标 swing 势垒/势阱开关（true=swing点高斯力叠加到F_net；false=仅MA弹簧）
+# 实验性：开启前需回测验证 Phase 2 vs Phase 3 有正收益提升
+V15_USE_SWING_POTENTIAL = str(get_config("V15_USE_SWING_POTENTIAL", "false")).lower() == "true"
+
+# Phase 4: TimingGate 波浪+斐波那契时机软调控总开关
+# false=关闭（保持现状，只靠 DirectionGate + 指标驱动，向后兼容）
+V15_USE_TIMING_GATE = str(get_config("V15_USE_TIMING_GATE", "false")).lower() == "true"
+
 STATE_FILE = BASE_DIR / "data" / "v15_state.json"
 REGIME_STATE_FILE = BASE_DIR / "data" / "regime_state.json"
 LOG_DIR = BASE_DIR / "logs" / "v15"
@@ -121,7 +134,8 @@ COINS = [
 ]
 # 记录被风控剔除的币种（供启动日志输出）
 _MARTIN_REJECTED = [c for c in _OKX_SUPPORTED if c not in COINS]
-MAX_ADDONS = get_config_int("MAX_ADDONS_PER_POSITION", 3)
+V15_MAX_ADDONS = get_config_int("MAX_ADDONS_PER_POSITION", 4)  # 4档加仓=总5单（实盘测试版本）
+MAX_ADDONS = V15_MAX_ADDONS
 BASE_TP_PCT = get_config_float("BASE_TP_PCT", 0.04)
 LEVERAGE = get_config_float("LEVERAGE", 5.0)
 MAX_CONCURRENT_POSITIONS = get_config_int("MAX_CONCURRENT_POSITIONS", 3)
@@ -160,6 +174,7 @@ V15_COOLDOWN_HOURS = get_config_int("V15_COOLDOWN_HOURS", 48)
 V15_FEISHU_ALERT_ENABLED = get_config_bool("V15_FEISHU_ALERT_ENABLED", True)
 V15_SYSTEM_NAME = "V15马丁实盘"
 
+
 # ── 飞书告警接入（复用 15-监控告警系统 模块）──
 def _init_feishu_alert():
     """懒加载飞书告警模块，失败降级为本地日志"""
@@ -170,6 +185,7 @@ def _init_feishu_alert():
         if str(alert_path) not in sys.path:
             sys.path.insert(0, str(alert_path))
         import feishu_alert as _feishu_module
+
         _log("[飞书告警] 初始化成功")
         # 直接持有模块，避免 type() 创建的实例把函数当方法调用(self注入)
         return _feishu_module
@@ -177,7 +193,9 @@ def _init_feishu_alert():
         _log(f"[飞书告警] 初始化失败，降级为本地日志: {e}")
         return None
 
+
 _FEISHU_ALERT = None
+
 
 def _get_feishu_alert():
     global _FEISHU_ALERT
@@ -261,8 +279,7 @@ def enter_cooldown(state, reason: str, hours: int = None):
         except Exception as e:
             _log(f"[飞书告警] 暂停通知发送失败: {e}")
     # 兜底再发一条（防止 notify_trading_halted 路径异常）
-    _feishu_alert_v15("trading", "critical",
-                     f"⚠️ 交易暂停{hours}h！{reason}", details)
+    _feishu_alert_v15("trading", "critical", f"⚠️ 交易暂停{hours}h！{reason}", details)
 
 
 def exit_cooldown_if_expired(state):
@@ -468,7 +485,7 @@ def load_state():
         try:
             with open(STATE_FILE) as f:
                 state = json.load(f)
-            for coin, pos in state.get("positions", {}).items():
+            for _coin, pos in state.get("positions", {}).items():
                 if "open_price" not in pos:
                     pos["open_price"] = pos.get("entry_price", 0)
                 if "vol_mult" not in pos:
@@ -499,9 +516,21 @@ def load_state():
 
 
 def save_state(state):
-    state["last_poll"] = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    state["last_poll"] = now_iso
+    state["last_sync"] = now_iso
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2, ensure_ascii=False)
+
+
+def _on_win_trade(state, coin: str, reason: str):
+    """统一的盈利交易处理：胜场计数+1、连亏清零、记录日盈亏。
+    返回：(total_wins, consecutive_losses_reset_to_0)
+    """
+    state["total_wins"] = state.get("total_wins", 0) + 1
+    state["consecutive_losses"] = 0
+    _log(f"[{coin}] ✅ 胜场记录: wins={state['total_wins']}, 连亏已清零 ({reason})")
+    return state["total_wins"], 0
 
 
 def _on_loss_trade(state, coin: str, reason: str):
@@ -527,11 +556,19 @@ def _on_loss_trade(state, coin: str, reason: str):
             except Exception as e:
                 _log(f"[飞书告警] 连亏通知失败: {e}")
         if consec >= threshold:
-            _feishu_alert_v15("trading", "critical",
-                             f"🔴 {coin} 连续亏损 {consec}/{threshold} 次，达到阈值！", details)
+            _feishu_alert_v15(
+                "trading",
+                "critical",
+                f"🔴 {coin} 连续亏损 {consec}/{threshold} 次，达到阈值！",
+                details,
+            )
         else:
-            _feishu_alert_v15("trading", "warning",
-                             f"⚠️ {coin} 连续亏损 {consec}/{threshold} 次，接近阈值", details)
+            _feishu_alert_v15(
+                "trading",
+                "warning",
+                f"⚠️ {coin} 连续亏损 {consec}/{threshold} 次，接近阈值",
+                details,
+            )
 
     # 达到阈值 → 进入冷却（只在首次触发时进入，避免重复告警）
     triggered_cooldown = False
@@ -558,6 +595,7 @@ def get_v15_decision(coin):
 
         # 美股个股永续在 OKX 无现货，用 swap 合约拉 K 线
         from symbol_mapper import AssetCategory
+
         inst = to_swap(coin) if get_category(coin) == AssetCategory.STOCK else to_spot(coin)
         result = v15_decision(inst, direction_ctx=direction_ctx)
         if direction_ctx:
@@ -569,23 +607,40 @@ def get_v15_decision(coin):
 
 
 def _get_direction_ctx(coin):
-    """获取币种的多空方向控制上下文（含BTC风向标机制 + Phase A 连续3日确认）"""
+    """获取币种的多空方向控制上下文（含BTC风向标机制 + Phase A 连续3日确认 + Phase2力学化）"""
     try:
-        from direction_gate import DirectionGate
-        from strategy_params import calc_daily_ma128, get_coin_strategy_params
+        from direction_gate import DirectionGate, VelocityIntegrator
         from regime_manager import RegimeManager
+        from strategy_params import calc_daily_ma128, get_coin_strategy_params
 
-        # Phase A: 加载 RegimeManager 状态
+        # Phase A: 加载 RegimeManager 状态 + (Phase2) VelocityIntegrator 状态
         rm = RegimeManager(confirm_days=3, initial_regime="LONG_ONLY")
+        btc_vi = None  # Phase2: BTC风向标专用速度积分器
+        state_blob = None
         try:
             if REGIME_STATE_FILE.exists():
                 with open(REGIME_STATE_FILE) as f:
-                    rm.load_state(json.load(f))
+                    state_blob = json.load(f)
+                    rm.load_state(state_blob)
+                # Phase2: 从同一 state 文件加载 vi state
+                if V15_USE_MECHANISTIC_DIRECTION_GATE:
+                    vi_saved = (
+                        state_blob.get("velocity_integrator_state")
+                        if isinstance(state_blob, dict)
+                        else None
+                    )
+                    if vi_saved:
+                        btc_vi = VelocityIntegrator.load_state(vi_saved)
+                    else:
+                        btc_vi = VelocityIntegrator()
         except Exception:
             pass  # 文件不存在或损坏，用默认值
+        if V15_USE_MECHANISTIC_DIRECTION_GATE and btc_vi is None:
+            btc_vi = VelocityIntegrator()
 
         # 先获取BTC的方向控制结果作为风向标
         btc_short_enabled = False
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         if V15_ALLOW_SHORT:
             try:
                 btc_params = get_coin_strategy_params("BTC", "LONG")
@@ -594,28 +649,65 @@ def _get_direction_ctx(coin):
                     btc_daily_ma128 = calc_daily_ma128(btc_klines_1d)
                     if btc_daily_ma128 is not None:
                         btc_recent_closes = [float(k["c"]) for k in btc_klines_1d[-5:] if "c" in k]
-                        btc_gate = DirectionGate(allow_short=True)
+                        # Phase3: swing 检测需要更长的序列（30条日线≈足够 3-6 个 swing 点）
+                        btc_closes_30 = [float(k["c"]) for k in btc_klines_1d[-30:] if "c" in k]
+                        swing_for_evaluate = btc_closes_30 if V15_USE_SWING_POTENTIAL else None
+
+                        # Phase2: BTC风向标启用力学化
+                        btc_gate = DirectionGate(
+                            allow_short=True,
+                            use_mechanistic=bool(V15_USE_MECHANISTIC_DIRECTION_GATE),
+                        )
                         btc_result = btc_gate.evaluate(
                             current_price=btc_params["current_price"],
                             daily_ma128=btc_daily_ma128,
                             weekly_ma200=btc_params["stop_loss"].get("weekly_ma200"),
                             recent_daily_closes=btc_recent_closes,
-                            btc_short_enabled=True,
+                            btc_short_enabled=True,  # 自举：BTC风向标先允许，RM确认后再覆盖
+                            velocity_integrator=(
+                                btc_vi if V15_USE_MECHANISTIC_DIRECTION_GATE else None
+                            ),
+                            recent_closes_for_swing=swing_for_evaluate,  # Phase3: swing 势场
+                            swing_weight=0.5,
                         )
-                        # Phase A: 通过 RegimeManager 做连续3日确认 + sticky
+                        # Phase A: 通过 RegimeManager 做确认 + sticky
+                        # Phase2: 传 mechanistic_ctx → 动态 1/3/5 天减速检测
                         raw_regime = btc_result.regime.value
-                        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-                        confirmed_regime = rm.update(raw_regime, date_str=today)
+                        mechanistic_ctx = None
+                        diag = btc_result.mechanistic_diag
+                        if V15_USE_MECHANISTIC_DIRECTION_GATE and diag:
+                            mechanistic_ctx = {
+                                "a": float(diag.get("acceleration", 0.0) or 0.0),
+                                "v": float(diag.get("velocity", 0.0) or 0.0),
+                                "threshold": float(diag.get("threshold", 0.02) or 0.02),
+                            }
+                        confirmed_regime = rm.update(
+                            raw_regime,
+                            date_str=today,
+                            mechanistic_ctx=mechanistic_ctx,
+                        )
                         btc_short_enabled = confirmed_regime in ("SHORT_ALLOWED",)
-                        if btc_short_enabled != btc_result.short_enabled:
-                            _log(f"[PhaseA] BTC形态确认: raw={raw_regime} → confirmed={confirmed_regime} (sticky)")
+                        extra_log = ""
+                        if mechanistic_ctx and rm.last_zone:
+                            extra_log = (
+                                f" [mechanistic zone={rm.last_zone},"
+                                f" v={mechanistic_ctx['v']:+.4f}, a={mechanistic_ctx['a']:+.4f}]"
+                            )
+                        if btc_short_enabled != btc_result.short_enabled or extra_log:
+                            _log(
+                                f"[PhaseA] BTC形态确认: raw={raw_regime} →"
+                                f" confirmed={confirmed_regime} (sticky){extra_log}"
+                            )
             except Exception as e:
                 _log(f"[BTC风向标] 获取失败: {e}")
 
-        # Phase A: 保存 RegimeManager 状态
+        # Phase A: 保存 RegimeManager 状态 + (Phase2) vi state
         try:
+            save_blob = rm.save_state()
+            if V15_USE_MECHANISTIC_DIRECTION_GATE and btc_vi is not None:
+                save_blob["velocity_integrator_state"] = btc_vi.save_state()
             with open(REGIME_STATE_FILE, "w") as f:
-                json.dump(rm.save_state(), f, indent=2, ensure_ascii=False)
+                json.dump(save_blob, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
 
@@ -625,7 +717,7 @@ def _get_direction_ctx(coin):
         if in_cooldown:
             _log(f"[PhaseA+] 形态切换冷却中（距上次切换<{regime_cooldown_days}天），暂停开新仓")
 
-        # 获取当前币种的方向控制
+        # 获取当前币种的方向控制（保持传统模式，BTC风向标已对闸门位做过滤）
         params = get_coin_strategy_params(coin, "LONG")
         if "error" in params:
             return {"short_enabled": False, "long_enabled": True, "regime": "unknown"}
@@ -647,6 +739,56 @@ def _get_direction_ctx(coin):
         ctx = result.to_dict()
         ctx["btc_short_enabled"] = btc_short_enabled
         ctx["regime_in_cooldown"] = in_cooldown
+
+        # Phase 4: TimingGate 波浪+斐波那契时机软调控
+        # - gate_result 作为方向先验 → TimingGate 方向匹配评分 & 三浪结构 & fib回撤
+        # - timing_score 决定仓位/杠杆倍数（timing_mult = timing_score）
+        # - long_timing_ok / short_timing_ok 覆盖 ctx 对应布尔值，软门禁
+        if V15_USE_TIMING_GATE:
+            try:
+                from timing_gate import TimingGate
+
+                # TimingGate 需要更长日线序列（至少 30 条，优先 60 条）用于 swing 检测
+                coin_recent_daily = [float(k["c"]) for k in klines_1d[-60:] if "c" in k]
+                if len(coin_recent_daily) >= 20:
+                    tg = TimingGate(swing_window=2, strict=False, threshold=0.5)
+                    tres = tg.evaluate(result, coin_recent_daily, price_now=params["current_price"])
+                    # 软门禁：DirectionGate 允许 且 TimingGate 允许 → 才算最终允许
+                    ctx["long_enabled"] = (
+                        bool(ctx.get("long_enabled", True)) and tres.long_timing_ok
+                    )
+                    ctx["short_enabled"] = (
+                        bool(ctx.get("short_enabled", False)) and tres.short_timing_ok
+                    )
+                    ctx["timing_score"] = float(max(0.0, min(1.0, tres.timing_score)))
+                    ctx["timing_zone"] = tres.fib_zone
+                    ctx["timing_structure"] = tres.structure.kind if tres.structure else "UNCLEAR"
+                    ctx["timing_reason"] = tres.reason
+                    # breakdown 透传到 dashboard
+                    ctx["timing_breakdown"] = (
+                        tres.score_breakdown._asdict() if tres.score_breakdown else {}
+                    )
+                    # 透传 diagnostic（整包）
+                    ctx["timing_diag"] = tres.to_diagnostic()
+                else:
+                    ctx["timing_score"] = 1.0  # 日线太少，降级：不调控
+                    ctx["timing_zone"] = "NONE"
+                    ctx["timing_structure"] = "UNCLEAR"
+                    ctx["timing_reason"] = "日线样本不足(<20)，跳过时机评估"
+            except Exception as e:
+                _log(f"[{coin}] TimingGate 时机评估失败(降级放行): {e}")
+                # 失败降级：放行（timing_score=1.0）保持原 ctx 不变，避免影响生产
+                ctx.setdefault("timing_score", 1.0)
+        else:
+            ctx.setdefault("timing_score", 1.0)  # 关闭时 1.0 表示不调控
+
+        # Phase2: 将BTC力学诊断透传到返回值，方便监控页面展示
+        if V15_USE_MECHANISTIC_DIRECTION_GATE and btc_vi is not None:
+            ctx["btc_mechanistic"] = {
+                "velocity": btc_vi.velocity,
+                "step_count": btc_vi.step_count,
+                "last_zone": rm.last_zone,
+            }
         return ctx
     except Exception as e:
         _log(f"[{coin}] 方向控制评估失败: {e}, 默认只做多")
@@ -660,12 +802,12 @@ def _get_direction_ctx(coin):
 # - WEAK:   动能衰竭/逆转 → 收紧TP+缩短持仓，快速离场
 # - NORMAL: 基准
 _SUBREGIME_MULTS = {
-    "BULL_STRONG":  {"tp_mult": 1.10, "holding_mult": 1.20},
-    "BULL_WEAK":    {"tp_mult": 0.85, "holding_mult": 0.70},
-    "BULL_NORMAL":  {"tp_mult": 1.00, "holding_mult": 1.00},
-    "BEAR_STRONG":  {"tp_mult": 1.10, "holding_mult": 1.20},
-    "BEAR_WEAK":    {"tp_mult": 0.85, "holding_mult": 0.70},
-    "BEAR_NORMAL":  {"tp_mult": 1.00, "holding_mult": 1.00},
+    "BULL_STRONG": {"tp_mult": 1.10, "holding_mult": 1.20},
+    "BULL_WEAK": {"tp_mult": 0.85, "holding_mult": 0.70},
+    "BULL_NORMAL": {"tp_mult": 1.00, "holding_mult": 1.00},
+    "BEAR_STRONG": {"tp_mult": 1.10, "holding_mult": 1.20},
+    "BEAR_WEAK": {"tp_mult": 0.85, "holding_mult": 0.70},
+    "BEAR_NORMAL": {"tp_mult": 1.00, "holding_mult": 1.00},
 }
 
 
@@ -720,6 +862,7 @@ def _get_yiji_bridge():
         _yiji_bridge_initialized = True
         try:
             from yijing_bridge import YijingBridge
+
             _yiji_bridge = YijingBridge()
             if not _yiji_bridge.available:
                 _log("Phase C: 易经桥接不可用（YijingEngine 加载失败），降级为仅子形态")
@@ -760,7 +903,8 @@ def execute_open_position(client, coin, decision, state):
     risk_engine = _get_risk_engine()
     if risk_engine:
         try:
-            from core.context import Direction, RiskContext, Signal as RiskSignal
+            from core.context import Direction, RiskContext
+            from core.context import Signal as RiskSignal
 
             direction_val = Direction.SHORT if is_short else Direction.LONG
             risk_signal = RiskSignal(
@@ -772,7 +916,7 @@ def execute_open_position(client, coin, decision, state):
 
             daily_pnl = state.get("daily_pnl", 0.0)
             total_equity = state.get("total_equity", TOTAL_BUDGET)
-            pos_count = len(state.get("positions", {}))
+            len(state.get("positions", {}))
             consecutive_losses = state.get("consecutive_losses", 0)
 
             risk_ctx = RiskContext(
@@ -886,6 +1030,7 @@ def execute_open_position(client, coin, decision, state):
                 yiji_value = yiji_result["value_score"]
                 yiji_hex = yiji_result.get("hexagram", "")
                 from yijing_param_interpolator import interpolate_params
+
                 sr_mults = {"tp_mult": tp_mult, "holding_mult": holding_mult, "size_mult": 1.0}
                 final_mults = interpolate_params(yiji_risk, yiji_value, subregime_mults=sr_mults)
                 # 用最终倍数覆盖子形态倍数
@@ -899,12 +1044,17 @@ def execute_open_position(client, coin, decision, state):
             log_parts = [f"PhaseB+ 子形态={subregime}"]
             if yiji_hex:
                 log_parts.append(f"卦={yiji_hex} risk={yiji_risk:.2f} value={yiji_value:.2f}")
-            log_parts.append(f"tp_mult={tp_mult:.2f} hold_mult={holding_mult:.2f} → TP={tp_pct*100:.2f}%")
+            log_parts.append(
+                f"tp_mult={tp_mult:.2f} hold_mult={holding_mult:.2f} → TP={tp_pct*100:.2f}%"
+            )
             _log(f"[{coin}] {' '.join(log_parts)}")
 
         base_margin = alloc["base_usd"]
         vol_mult = decision.get("vol_mult", 1.0) * risk_mult
-        order_margin = base_margin * vol_mult
+        # Phase 4: 波浪+fib 时机评分 × 仓位大小（软调控）
+        timing_score = float(dir_ctx.get("timing_score", 1.0) or 1.0)
+        timing_score = max(0.15, min(1.0, timing_score))  # 夹到[0.15,1.0]，避免极端清仓
+        order_margin = base_margin * vol_mult * timing_score
         order_notional = order_margin * LEVERAGE
 
         lot_sz, ct_val = get_contract_info(client, inst_id)
@@ -918,6 +1068,11 @@ def execute_open_position(client, coin, decision, state):
 
         adj = alloc.get("adjustments", {})
         sl_display = f"${sl_price:.4f}" if sl_price else "无(仅止盈)"
+        timing_display = (
+            f" timing={timing_score:.2f}x zone={dir_ctx.get('timing_zone','NONE')} str={dir_ctx.get('timing_structure','UNCLEAR')}"
+            if dir_ctx.get("timing_score") is not None
+            else ""
+        )
         _log(
             f"[{coin}] 开仓 {direction} sz={sz}张 price={price} 保证金=${actual_margin:.2f} 名义=${actual_notional:.2f} "
             f"TP={tp_pct*100:.2f}% SL={sl_type}@{sl_display} conf={conf}% "
@@ -926,6 +1081,7 @@ def execute_open_position(client, coin, decision, state):
             f"EMA={adj.get('elder_ray_direction', 'N/A')} "
             f"Dir={adj.get('elder_ray_ema_trend', 'N/A')} "
             f"强度={adj.get('elder_ray_strength', 0):.1f}"
+            f"{timing_display}"
         )
 
         if AUTO_EXECUTE:
@@ -960,6 +1116,7 @@ def execute_open_position(client, coin, decision, state):
                     "addon1_usd": alloc.get("addon1_usd", 0),
                     "addon2_usd": alloc.get("addon2_usd", 0),
                     "addon3_usd": alloc.get("addon3_usd", 0),
+                    "addon4_usd": alloc.get("addon4_usd", 0),
                     # 移动止盈状态
                     "trailing_active": False,
                     "trailing_price": None,
@@ -972,6 +1129,10 @@ def execute_open_position(client, coin, decision, state):
                     "yiji_risk": yiji_risk,
                     "yiji_value": yiji_value,
                     "yiji_hexagram": yiji_hex,
+                    # Phase 4: TimingGate 时机评分（整仓保持，含加仓继承）
+                    "timing_score": timing_score,
+                    "timing_zone": dir_ctx.get("timing_zone", "NONE"),
+                    "timing_structure": dir_ctx.get("timing_structure", "UNCLEAR"),
                 }
                 state["total_trades"] += 1
                 _sync_tp_sl_orders(client, coin, state["positions"][coin], price, tp_pct, sl_price)
@@ -1017,18 +1178,24 @@ def execute_addon(client, coin, pos, state):
         if current_price <= 0:
             return False
 
-        # 使用开仓时分配的加仓预算
+        # 使用开仓时分配的加仓预算（同时继承入场时 timing_mult，保持整仓尺度一致）
+        timing_mult = float(pos.get("timing_score", 1.0) or 1.0)
+        timing_mult = max(0.15, min(1.0, timing_mult))
         addon_budgets = [
             pos.get("addon1_usd", 0),
             pos.get("addon2_usd", 0),
             pos.get("addon3_usd", 0),
+            pos.get("addon4_usd", 0),
         ]
         addon_usd = addon_budgets[addons] if addons < len(addon_budgets) else 0
         if addon_usd <= 0:
             # 回退到旧逻辑
             base_margin = alloc["single_position_cost"]["base_usd"]
             vol_mult = pos.get("vol_mult", 1.0)
-            addon_usd = base_margin * vol_mult * (addon_pct * (addons + 1))
+            addon_usd = base_margin * vol_mult * (addon_pct * (addons + 1)) * timing_mult
+        else:
+            # 预算来自 alloc 未乘 timing，这里补乘 timing_mult
+            addon_usd = addon_usd * timing_mult
 
         vol_mult = pos.get("vol_mult", 1.0)
         addon_margin = addon_usd * vol_mult
@@ -1135,12 +1302,12 @@ def _get_dynamic_params(client, coin, direction="LONG"):
 
 
 def _place_addon_grid_orders(client, coin, pos):
-    """开仓时预挂3档加仓限价单（马丁网格）
+    """开仓时预挂4档加仓限价单（马丁网格，1首单+4加仓=总5单）
 
-    做多：在开仓价下方 -8%/-16%/-24% 挂买入限价单
-    做空：在开仓价上方 +8%/+16%/+24% 挂卖出限价单
+    做多：在开仓价下方 -8%/-16%/-24%/-32% 挂买入限价单
+    做空：在开仓价上方 +8%/+16%/+24%/+32% 挂卖出限价单
 
-    每档加仓数量按金字塔资金分配（addon1_usd/addon2_usd/addon3_usd）计算。
+    每档加仓数量按金字塔资金分配（addon1_usd/addon2_usd/addon3_usd/addon4_usd）计算。
     挂单 ord_id 记录到 pos["addon_grid"] 供轮询时检查与调整。
 
     Args:
@@ -1163,6 +1330,7 @@ def _place_addon_grid_orders(client, coin, pos):
         pos.get("addon1_usd", 0),
         pos.get("addon2_usd", 0),
         pos.get("addon3_usd", 0),
+        pos.get("addon4_usd", 0),
     ]
     vol_mult = pos.get("vol_mult", 1.0)
 
@@ -1202,15 +1370,17 @@ def _place_addon_grid_orders(client, coin, pos):
         )
         if r.get("ok") or r.get("ord_id"):
             ord_id = r.get("ord_id") or (r.get("raw") or {}).get("data", [{}])[0].get("ordId")
-            grid_orders.append({
-                "tier": i + 1,
-                "ord_id": ord_id,
-                "px": grid_px,
-                "sz": sz,
-                "addon_usd": addon_usd,
-                "trigger_pct": trigger_pct,
-                "status": "pending",
-            })
+            grid_orders.append(
+                {
+                    "tier": i + 1,
+                    "ord_id": ord_id,
+                    "px": grid_px,
+                    "sz": sz,
+                    "addon_usd": addon_usd,
+                    "trigger_pct": trigger_pct,
+                    "status": "pending",
+                }
+            )
             _log(
                 f"[{coin}] 加仓网格#{i+1} 挂单成功 {direction} {side} "
                 f"sz={sz}张 px=${grid_px:.4f} ({trigger_pct*100:.0f}%档) "
@@ -1218,15 +1388,17 @@ def _place_addon_grid_orders(client, coin, pos):
             )
         else:
             _log(f"[{coin}] 加仓网格#{i+1} 挂单失败: {r.get('error', r)}")
-            grid_orders.append({
-                "tier": i + 1,
-                "ord_id": None,
-                "px": grid_px,
-                "sz": sz,
-                "addon_usd": addon_usd,
-                "trigger_pct": trigger_pct,
-                "status": "failed",
-            })
+            grid_orders.append(
+                {
+                    "tier": i + 1,
+                    "ord_id": None,
+                    "px": grid_px,
+                    "sz": sz,
+                    "addon_usd": addon_usd,
+                    "trigger_pct": trigger_pct,
+                    "status": "failed",
+                }
+            )
 
     pos["addon_grid"] = grid_orders
 
@@ -1311,7 +1483,7 @@ def _check_addon_grid_status(client, coin, pos):
         if status == "pending" and ord_id:
             try:
                 params = _get_dynamic_params(client, coin, direction)
-                current_price = params["current_price"]
+                params["current_price"]
                 grid_px = entry.get("px", 0)
                 trigger_pct = entry.get("trigger_pct", addon_pct * tier)
                 # 期望触发价（基于开仓价）
@@ -1323,8 +1495,10 @@ def _check_addon_grid_status(client, coin, pos):
                 if grid_px > 0 and abs(grid_px - expected_px) / expected_px > 0.02:
                     cr = client.cancel_order(inst_id, ord_id)
                     if cr.get("ok"):
-                        _log(f"[{coin}] 加仓网格#{tier} 价格偏离, 撤单重挂 "
-                             f"旧=${grid_px:.4f} 期望=${expected_px:.4f}")
+                        _log(
+                            f"[{coin}] 加仓网格#{tier} 价格偏离, 撤单重挂 "
+                            f"旧=${grid_px:.4f} 期望=${expected_px:.4f}"
+                        )
                         # 重新计算数量并挂单
                         addon_usd = entry.get("addon_usd", 0)
                         vol_mult = pos.get("vol_mult", 1.0)
@@ -1335,9 +1509,14 @@ def _check_addon_grid_status(client, coin, pos):
                             side = "sell" if is_short else "buy"
                             pos_side = "short" if is_short else "long"
                             r = client.place_order(
-                                inst_id=inst_id, side=side, ord_type="limit",
-                                sz=new_sz, px=expected_px, td_mode="isolated",
-                                pos_side=pos_side, tag="v15_addon_grid",
+                                inst_id=inst_id,
+                                side=side,
+                                ord_type="limit",
+                                sz=new_sz,
+                                px=expected_px,
+                                td_mode="isolated",
+                                pos_side=pos_side,
+                                tag="v15_addon_grid",
                                 reason=f"v15_martin_addon_grid_{tier}_adjust",
                             )
                             if r.get("ok") or r.get("ord_id"):
@@ -1345,8 +1524,10 @@ def _check_addon_grid_status(client, coin, pos):
                                 entry["ord_id"] = new_ord_id
                                 entry["px"] = expected_px
                                 entry["sz"] = new_sz
-                                _log(f"[{coin}] 加仓网格#{tier} 重挂成功 "
-                                     f"sz={new_sz}张 px=${expected_px:.4f} ord_id={new_ord_id}")
+                                _log(
+                                    f"[{coin}] 加仓网格#{tier} 重挂成功 "
+                                    f"sz={new_sz}张 px=${expected_px:.4f} ord_id={new_ord_id}"
+                                )
                             else:
                                 entry["status"] = "failed"
                                 _log(f"[{coin}] 加仓网格#{tier} 重挂失败: {r.get('error', r)}")
@@ -1810,9 +1991,7 @@ def check_time_exit(client, coin, pos, state):
             if sl_triggered:
                 _log(f"[{coin}] 超时且已触发止损条件, 将由 check_tp_sl 处理平仓")
             else:
-                _log(
-                    f"[{coin}] 超时亏损 {profit_pct:.2%}, 未触发止损线, 继续持有等反弹"
-                )
+                _log(f"[{coin}] 超时亏损 {profit_pct:.2%}, 未触发止损线, 继续持有等反弹")
 
         return False
 
@@ -1822,11 +2001,23 @@ def check_time_exit(client, coin, pos, state):
 
 
 def _execute_close_position(client, coin, pos, state, reason="", exit_price=None):
-    """平仓（支持多空方向）- 平仓前取消所有条件单"""
+    """平仓（支持多空方向）- 平仓前取消所有条件单 + 按实际PnL判定胜负"""
     inst_id = pos["inst_id"]
     direction = pos.get("direction", "LONG")
     is_short = direction == "SHORT"
     try:
+        entry_price = pos.get("entry_price", 0)
+        final_exit_price = exit_price or pos.get("current_price", entry_price)
+
+        # 计算盈亏百分比
+        if entry_price > 0 and final_exit_price > 0:
+            if is_short:
+                profit_pct = (entry_price - final_exit_price) / entry_price
+            else:
+                profit_pct = (final_exit_price - entry_price) / entry_price
+        else:
+            profit_pct = pos.get("unrealized_pnl", 0) / max(1.0, pos.get("per_coin_budget", 1.0))
+
         if AUTO_EXECUTE:
             _cancel_addon_grid_orders(client, coin, pos)
             client.cancel_algo_orders(inst_id)
@@ -1848,14 +2039,22 @@ def _execute_close_position(client, coin, pos, state, reason="", exit_price=None
                 pos_side=pos_side,
             )
             if r.get("ok"):
-                _log(f"[{coin}] {direction} 平仓成功 ({reason})")
-                _on_loss_trade(state, coin, reason=f"平仓({reason})")
+                is_profit = profit_pct >= 0
+                pnl_label = f"盈利 {profit_pct:+.2%}" if is_profit else f"亏损 {profit_pct:+.2%}"
+                _log(f"[{coin}] {direction} 平仓成功 ({reason}) | {pnl_label}")
+
+                # 按实际盈亏判定胜场或败场
+                if is_profit:
+                    _on_win_trade(state, coin, reason=f"平仓({reason}) {pnl_label}")
+                else:
+                    _on_loss_trade(state, coin, reason=f"平仓({reason}) {pnl_label}")
+
                 if coin in state["positions"]:
                     # 注册到 L4
                     _register_martin_trade_to_l4(
                         coin=coin,
                         pos=pos,
-                        exit_price=exit_price or pos.get("entry_price", 0),
+                        exit_price=final_exit_price,
                         exit_reason=reason,
                     )
                     del state["positions"][coin]
@@ -1967,7 +2166,7 @@ def check_monthly_rebuild(state):
             last_dt = datetime.fromisoformat(last_rebuild.replace("Z", "+00:00"))
             if last_dt.year == now.year and last_dt.month == now.month:
                 return False
-        except:
+        except Exception:  # noqa: E722 - 允许宽捕获以兼容外部异常
             pass
 
     return True
@@ -2064,19 +2263,43 @@ def run_light_poll_cycle():
     state_positions = set(state.get("positions", {}).keys())
     exchange_pos_keys = set(exchange_positions.keys())
 
-    # 1. state中有但交易所没有 → 外部平仓（手动操作等）
+    # 1. state中有但交易所没有 → 外部平仓（手动操作、强平、OCO自动止盈止损等）
     externally_closed = state_positions - exchange_pos_keys
     for coin in externally_closed:
         pos = state["positions"][coin]
-        _log(f"[{coin}] ⚠️ 检测到外部平仓: entry={pos['entry_price']} sz={pos['sz']}")
+        direction = pos.get("direction", "LONG")
+        is_short = direction == "SHORT"
+        entry_price = pos.get("entry_price", 0)
+        current_price = pos.get("current_price", entry_price)
+
+        # 估算盈亏百分比
+        if entry_price > 0 and current_price > 0:
+            if is_short:
+                profit_pct = (entry_price - current_price) / entry_price
+            else:
+                profit_pct = (current_price - entry_price) / entry_price
+        else:
+            profit_pct = 0.0
+
+        is_profit = profit_pct >= 0
+        pnl_label = f"盈利 {profit_pct:+.2%}" if is_profit else f"亏损 {profit_pct:+.2%}"
+        _log(f"[{coin}] ⚠️ 检测到外部平仓: entry={entry_price:.4f} sz={pos['sz']} | {pnl_label}")
+
+        # 按实际盈亏更新统计
+        if is_profit:
+            _on_win_trade(state, coin, reason=f"外部平仓(external_close) {pnl_label}")
+        else:
+            _on_loss_trade(state, coin, reason=f"外部平仓(external_close) {pnl_label}")
+
         # 注册外部平仓到 L4
         _register_martin_trade_to_l4(
             coin=coin,
             pos=pos,
-            exit_price=pos.get("current_price", pos.get("entry_price", 0)),
+            exit_price=current_price,
             exit_reason="external_close",
         )
-        del state["positions"][coin]
+        if coin in state["positions"]:
+            del state["positions"][coin]
 
     # 2. 交易所中有但state中没有 → 外部开仓（策略不负责，仅记录）
     externally_opened = exchange_pos_keys - state_positions
@@ -2195,15 +2418,37 @@ def run_poll_cycle():
                     # 门禁0: 形态切换冷却期禁止开新仓（Phase A+）
                     dir_ctx = decision.get("direction_ctx") or {}
                     if dir_ctx.get("regime_in_cooldown"):
-                        _log(f"[{coin}] 形态切换冷却期，暂停开新仓")
-                        continue
+                        # 死锁修复(2026-08-09): 冷却期只应阻止与形态切换方向一致的开仓
+                        # 当V15_ALLOW_SHORT=false且形态切到SHORT_ALLOWED时，
+                        # 做多开仓不应被阻止（因为系统本来就不做空，做多是逆势抄底）
+                        regime = dir_ctx.get("regime", "")
+                        is_short_signal = action == "OPEN_BEAR"
+                        allow_short = V15_ALLOW_SHORT
+
+                        # 场景1: 做空信号 + 冷却期 → 允许（因为做空被禁用，此分支不会执行到）
+                        # 场景2: 做多信号 + 冷却期 + V15_ALLOW_SHORT=false + 形态SHORT_ALLOWED
+                        #   → 放行：做多是逆势抄底，不受形态切换影响
+                        if is_short_signal and not allow_short:
+                            # 做空信号但做空被禁用，跳过
+                            _log(f"[{coin}] 做空信号但V15_ALLOW_SHORT=false，跳过")
+                            continue
+
+                        # 冷却期只在以下场景阻止开仓：
+                        # 1. 做多信号 + 形态刚从LONG切到其他 → 不做逆势
+                        # 2. 做空信号（已在上面处理）
+                        # 如果形态是SHORT_ALLOWED但做空被禁用，做多信号放行
+                        if regime == "short_allowed" and not allow_short and not is_short_signal:
+                            _log(
+                                f"[{coin}] 形态SHORT_ALLOWED但V15_ALLOW_SHORT=false，放行做多（逆势抄底）"
+                            )
+                            # 放行，继续后续检查
+                        elif dir_ctx.get("regime_in_cooldown"):
+                            _log(f"[{coin}] 形态切换冷却期，暂停开新仓")
+                            continue
 
                     # 门禁1: 冷却期禁止开新仓
                     if in_cd:
-                        _log(
-                            f"[{coin}] 冷却期禁止开仓，"
-                            f"剩余 {remain_hours:.1f}h，跳过"
-                        )
+                        _log(f"[{coin}] 冷却期禁止开仓，" f"剩余 {remain_hours:.1f}h，跳过")
                     else:
                         # 门禁2: 单次轮询/全局最多3仓（MAX_CONCURRENT_POSITIONS）
                         pos_count = len(state.get("positions", {}))
@@ -2213,12 +2458,16 @@ def run_poll_cycle():
                                 f"{MAX_CONCURRENT_POSITIONS})，禁止开新仓"
                             )
                             _feishu_alert_v15(
-                                "trading", "warning",
+                                "trading",
+                                "warning",
                                 f"⚠️ 持仓数达到上限 {pos_count}/{MAX_CONCURRENT_POSITIONS}，"
                                 f"拒绝 {coin} 开新仓",
-                                {"持仓上限": MAX_CONCURRENT_POSITIONS,
-                                 "当前持仓数": pos_count,
-                                 "币种池": list(state["positions"].keys())})
+                                {
+                                    "持仓上限": MAX_CONCURRENT_POSITIONS,
+                                    "当前持仓数": pos_count,
+                                    "币种池": list(state["positions"].keys()),
+                                },
+                            )
                         else:
                             execute_open_position(client, coin, decision, state)
                 else:

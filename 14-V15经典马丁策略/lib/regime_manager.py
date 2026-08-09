@@ -25,13 +25,49 @@ from __future__ import annotations
 from typing import List, Optional, Dict
 
 
+# ===================================================================
+# Phase 2: 减速检测 + 动态确认天数 (替代僵硬的3日收盘确认)
+# ===================================================================
+
+def detect_deceleration_zone(a: float, v: float, threshold: float = 0.02) -> str:
+    """
+    基于加速度-速度内积 (a·v) 的趋势稳定性判定。
+
+    Args:
+        a: 加速度 a = F_net / mass
+        v: 速度（Verlet 积分后的市场速度）
+        threshold: 速度阈值（默认 0.02，与 VelocityIntegrator 一致）
+
+    Returns:
+        "accel"   — 加速态：a·v>0 且 |v| > 2×threshold（趋势可靠，1天确认）
+        "decel"   — 减速态：a·v<0 且 |v| > threshold（力反向拉速度，5天保守）
+        "neutral" — 中性/支撑区：其他（默认3天）
+    """
+    av = a * v
+    abs_v = abs(v)
+    if av > 0 and abs_v > 2 * threshold:
+        return "accel"
+    if av < 0 and abs_v > threshold:
+        return "decel"
+    return "neutral"
+
+
+def effective_confirm_days(zone: str, default_days: int = 3) -> int:
+    """检测区 → 动态确认天数"""
+    if zone == "accel":
+        return 1
+    if zone == "decel":
+        return 5
+    return default_days
+
+
 class RegimeManager:
-    """市场形态管理器 — 连续N日收盘确认 + sticky_last 防震荡"""
+    """市场形态管理器 — 连续N日收盘确认 + sticky_last 防震荡 + Phase2 力学化动态天数"""
 
     def __init__(self, confirm_days: int = 3, initial_regime: str = "LONG_ONLY"):
         """
         Args:
-            confirm_days: 连续确认天数（默认3日）
+            confirm_days: 连续确认天数（默认3日，中性态 fallback 值）
             initial_regime: 初始确认形态
         """
         self.confirm_days = confirm_days
@@ -40,8 +76,11 @@ class RegimeManager:
         self.pending_count = 0
         self.last_date: Optional[str] = None
         self.last_change_date: Optional[str] = None  # 形态上次切换的日期
+        # Phase 2: 上次使用的检测区（诊断用）
+        self.last_zone: Optional[str] = None
 
-    def update(self, raw_regime: str, date_str: Optional[str] = None) -> str:
+    def update(self, raw_regime: str, date_str: Optional[str] = None,
+               mechanistic_ctx: Optional[Dict[str, float]] = None) -> str:
         """单步更新（实盘用），返回 confirmed_regime
 
         仅在日切（date_str 变化）时才递增 pending_count，
@@ -50,10 +89,25 @@ class RegimeManager:
         Args:
             raw_regime: DirectionGate 输出的瞬时形态
             date_str: 当前日期字符串（如 "2026-08-06"），None 时每次都计数
+            mechanistic_ctx: Phase 2 力学化上下文，可选字段：
+                {"a": acceleration, "v": velocity, "threshold": 0.02}
+                存在时使用「减速检测 → 动态 confirm_days」，否则按 confirm_days 默认。
 
         Returns:
             confirmed_regime: 经过确认 + sticky 处理后的形态
         """
+        # Phase 2: 根据 mechanistic_ctx 计算 effective confirm_days
+        if mechanistic_ctx and isinstance(mechanistic_ctx, dict):
+            a = float(mechanistic_ctx.get("a", 0.0) or 0.0)
+            v = float(mechanistic_ctx.get("v", 0.0) or 0.0)
+            t = float(mechanistic_ctx.get("threshold", 0.02) or 0.02)
+            zone = detect_deceleration_zone(a, v, t)
+            eff = effective_confirm_days(zone, self.confirm_days)
+            self.last_zone = zone
+        else:
+            eff = self.confirm_days
+            self.last_zone = None
+
         is_new_day = date_str is not None and date_str != self.last_date
         self.last_date = date_str
 
@@ -71,8 +125,8 @@ class RegimeManager:
                 self.pending_regime = raw_regime
                 self.pending_count = 1 if (is_new_day or date_str is None) else 0
 
-            # 连续 confirm_days 日同一新形态 → 切换
-            if self.pending_count >= self.confirm_days:
+            # 连续 eff 日同一新形态 → 切换（动态天数）
+            if self.pending_count >= eff:
                 self.confirmed_regime = self.pending_regime
                 self.pending_regime = None
                 self.pending_count = 0
@@ -81,8 +135,8 @@ class RegimeManager:
         return self.confirmed_regime
 
     def save_state(self) -> dict:
-        """序列化状态用于持久化"""
-        return {
+        """序列化状态用于持久化（Phase2: 额外保存 last_zone）"""
+        d: Dict = {
             "confirmed_regime": self.confirmed_regime,
             "pending_regime": self.pending_regime,
             "pending_count": self.pending_count,
@@ -90,15 +144,19 @@ class RegimeManager:
             "last_date": self.last_date,
             "last_change_date": self.last_change_date,
         }
+        if self.last_zone is not None:
+            d["last_zone"] = self.last_zone
+        return d
 
     def load_state(self, state: dict):
-        """从持久化数据恢复状态"""
+        """从持久化数据恢复状态（忽略额外字段，如 velocity_integrator_state，由调用方处理）"""
         self.confirmed_regime = state.get("confirmed_regime", "LONG_ONLY")
         self.pending_regime = state.get("pending_regime")
         self.pending_count = state.get("pending_count", 0)
         self.confirm_days = state.get("confirm_days", self.confirm_days)
         self.last_date = state.get("last_date")
         self.last_change_date = state.get("last_change_date")
+        self.last_zone = state.get("last_zone")
 
     def is_in_cooldown(self, cooldown_days: int, today_str: Optional[str] = None) -> bool:
         """判断当前是否处于形态切换冷却期内

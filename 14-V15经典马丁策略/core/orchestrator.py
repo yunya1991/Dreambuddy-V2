@@ -263,9 +263,10 @@ def run_agents(reason: str):
     if not script_path.exists():
         log(f"⚠️ 脚本不存在: {script_path}")
         return
+    python_cmd = sys.executable or "python"
     try:
         result = subprocess.run(
-            ["python3", str(script_path), "poll_once"],
+            [python_cmd, str(script_path), "poll_once"],
             cwd=str(BASE_DIR),
             capture_output=True,
             text=True,
@@ -276,7 +277,17 @@ def run_agents(reason: str):
             for l in result.stdout.split("\n")
             if any(
                 kw in l
-                for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误", "轮询完成"]
+                for kw in [
+                    "信号触发",
+                    "开仓",
+                    "加仓",
+                    "止盈",
+                    "止损",
+                    "胜率",
+                    "权益",
+                    "错误",
+                    "轮询完成",
+                ]
             )
             and "Warning" not in l
         ]

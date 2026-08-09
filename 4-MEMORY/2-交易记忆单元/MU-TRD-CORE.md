@@ -17,14 +17,24 @@
 - 蒸馏机制：从review中提取模式，生成通用规则
 - 健康指标：pipeline_connected、schema_compliance、last_update
 
-## 交易经验 Top 3（A级 — 情景→语义）
+## 交易经验 Top 5（A级 — 情景→语义）
 
 1. L4记忆ID必须用微秒级时间戳，避免同秒添加覆盖
 2. 记忆search中score=0且有query时应过滤，避免返回无关结果
 3. All搜索同score时需类型轮转，否则单一类型占满top_k
+4. V15形态切换冷却期死锁：V15_ALLOW_SHORT=false时，SHORT_ALLOWED形态不应阻止做多（2026-08-09修复）
+5. V15日志监控bug：auto_monitor.py用*.json匹配日志，实际应为*.log（2026-08-09修复）
+
+## V15策略关键认知（2026-08-09）
+
+- 胜率0%（6交易0胜）：需检查入场信号质量和止盈止损设置
+- 加仓间距30%（BASE_ADDON_PCT=8%×V15_VOL_MULT=1.875）过大，实际波动难触发
+- 外部开仓警告：MU币被外部系统开仓，与V15策略冲突
+- 形态切换冷却期设计缺陷已修复：允许逆势做多
 
 ## 当前状态
 
 - L4统一接口封装已完成（AM-TRD-001）
 - 数据规模：5,018条（457 case + 4,485 review + 76 distill）
 - 健康状态：healthy（schema_compliance 93.65%）
+- V15修复记录：2026-08-09（3处bug修复）
