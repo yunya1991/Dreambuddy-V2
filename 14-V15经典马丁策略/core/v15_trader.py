@@ -98,6 +98,11 @@ V15_YIJING_ENABLED = get_config_bool("V15_YIJING_ENABLED", False)
 # 多空方向控制开关
 V15_ALLOW_SHORT = str(get_config("V15_ALLOW_SHORT", "false")).lower() == "true"
 
+# Phase 2: BTC风向标力学化总开关（true=弹簧力场+Verlet+减速动态确认；false=传统above/below+3日硬确认）
+V15_USE_MECHANISTIC_DIRECTION_GATE = str(
+    get_config("V15_USE_MECHANISTIC_DIRECTION_GATE", "true")
+).lower() == "true"
+
 STATE_FILE = BASE_DIR / "data" / "v15_state.json"
 REGIME_STATE_FILE = BASE_DIR / "data" / "regime_state.json"
 LOG_DIR = BASE_DIR / "logs" / "v15"
@@ -581,23 +586,36 @@ def get_v15_decision(coin):
 
 
 def _get_direction_ctx(coin):
-    """获取币种的多空方向控制上下文（含BTC风向标机制 + Phase A 连续3日确认）"""
+    """获取币种的多空方向控制上下文（含BTC风向标机制 + Phase A 连续3日确认 + Phase2力学化）"""
     try:
-        from direction_gate import DirectionGate
+        from direction_gate import DirectionGate, VelocityIntegrator
         from strategy_params import calc_daily_ma128, get_coin_strategy_params
         from regime_manager import RegimeManager
 
-        # Phase A: 加载 RegimeManager 状态
+        # Phase A: 加载 RegimeManager 状态 + (Phase2) VelocityIntegrator 状态
         rm = RegimeManager(confirm_days=3, initial_regime="LONG_ONLY")
+        btc_vi = None          # Phase2: BTC风向标专用速度积分器
+        state_blob = None
         try:
             if REGIME_STATE_FILE.exists():
                 with open(REGIME_STATE_FILE) as f:
-                    rm.load_state(json.load(f))
+                    state_blob = json.load(f)
+                    rm.load_state(state_blob)
+                # Phase2: 从同一 state 文件加载 vi state
+                if V15_USE_MECHANISTIC_DIRECTION_GATE:
+                    vi_saved = state_blob.get("velocity_integrator_state") if isinstance(state_blob, dict) else None
+                    if vi_saved:
+                        btc_vi = VelocityIntegrator.load_state(vi_saved)
+                    else:
+                        btc_vi = VelocityIntegrator()
         except Exception:
             pass  # 文件不存在或损坏，用默认值
+        if V15_USE_MECHANISTIC_DIRECTION_GATE and btc_vi is None:
+            btc_vi = VelocityIntegrator()
 
         # 先获取BTC的方向控制结果作为风向标
         btc_short_enabled = False
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         if V15_ALLOW_SHORT:
             try:
                 btc_params = get_coin_strategy_params("BTC", "LONG")
@@ -606,28 +624,55 @@ def _get_direction_ctx(coin):
                     btc_daily_ma128 = calc_daily_ma128(btc_klines_1d)
                     if btc_daily_ma128 is not None:
                         btc_recent_closes = [float(k["c"]) for k in btc_klines_1d[-5:] if "c" in k]
-                        btc_gate = DirectionGate(allow_short=True)
+                        # Phase2: BTC风向标启用力学化
+                        btc_gate = DirectionGate(
+                            allow_short=True,
+                            use_mechanistic=bool(V15_USE_MECHANISTIC_DIRECTION_GATE),
+                        )
                         btc_result = btc_gate.evaluate(
                             current_price=btc_params["current_price"],
                             daily_ma128=btc_daily_ma128,
                             weekly_ma200=btc_params["stop_loss"].get("weekly_ma200"),
                             recent_daily_closes=btc_recent_closes,
-                            btc_short_enabled=True,
+                            btc_short_enabled=True,   # 自举：BTC风向标先允许，RM确认后再覆盖
+                            velocity_integrator=btc_vi if V15_USE_MECHANISTIC_DIRECTION_GATE else None,
                         )
-                        # Phase A: 通过 RegimeManager 做连续3日确认 + sticky
+                        # Phase A: 通过 RegimeManager 做确认 + sticky
+                        # Phase2: 传 mechanistic_ctx → 动态 1/3/5 天减速检测
                         raw_regime = btc_result.regime.value
-                        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-                        confirmed_regime = rm.update(raw_regime, date_str=today)
+                        mechanistic_ctx = None
+                        diag = btc_result.mechanistic_diag
+                        if V15_USE_MECHANISTIC_DIRECTION_GATE and diag:
+                            mechanistic_ctx = {
+                                "a": float(diag.get("acceleration", 0.0) or 0.0),
+                                "v": float(diag.get("velocity", 0.0) or 0.0),
+                                "threshold": float(diag.get("threshold", 0.02) or 0.02),
+                            }
+                        confirmed_regime = rm.update(
+                            raw_regime, date_str=today, mechanistic_ctx=mechanistic_ctx,
+                        )
                         btc_short_enabled = confirmed_regime in ("SHORT_ALLOWED",)
-                        if btc_short_enabled != btc_result.short_enabled:
-                            _log(f"[PhaseA] BTC形态确认: raw={raw_regime} → confirmed={confirmed_regime} (sticky)")
+                        extra_log = ""
+                        if mechanistic_ctx and rm.last_zone:
+                            extra_log = (
+                                f" [mechanistic zone={rm.last_zone},"
+                                f" v={mechanistic_ctx['v']:+.4f}, a={mechanistic_ctx['a']:+.4f}]"
+                            )
+                        if btc_short_enabled != btc_result.short_enabled or extra_log:
+                            _log(
+                                f"[PhaseA] BTC形态确认: raw={raw_regime} →"
+                                f" confirmed={confirmed_regime} (sticky){extra_log}"
+                            )
             except Exception as e:
                 _log(f"[BTC风向标] 获取失败: {e}")
 
-        # Phase A: 保存 RegimeManager 状态
+        # Phase A: 保存 RegimeManager 状态 + (Phase2) vi state
         try:
+            save_blob = rm.save_state()
+            if V15_USE_MECHANISTIC_DIRECTION_GATE and btc_vi is not None:
+                save_blob["velocity_integrator_state"] = btc_vi.save_state()
             with open(REGIME_STATE_FILE, "w") as f:
-                json.dump(rm.save_state(), f, indent=2, ensure_ascii=False)
+                json.dump(save_blob, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
 
@@ -637,7 +682,7 @@ def _get_direction_ctx(coin):
         if in_cooldown:
             _log(f"[PhaseA+] 形态切换冷却中（距上次切换<{regime_cooldown_days}天），暂停开新仓")
 
-        # 获取当前币种的方向控制
+        # 获取当前币种的方向控制（保持传统模式，BTC风向标已对闸门位做过滤）
         params = get_coin_strategy_params(coin, "LONG")
         if "error" in params:
             return {"short_enabled": False, "long_enabled": True, "regime": "unknown"}
@@ -659,6 +704,13 @@ def _get_direction_ctx(coin):
         ctx = result.to_dict()
         ctx["btc_short_enabled"] = btc_short_enabled
         ctx["regime_in_cooldown"] = in_cooldown
+        # Phase2: 将BTC力学诊断透传到返回值，方便监控页面展示
+        if V15_USE_MECHANISTIC_DIRECTION_GATE and btc_vi is not None:
+            ctx["btc_mechanistic"] = {
+                "velocity": btc_vi.velocity,
+                "step_count": btc_vi.step_count,
+                "last_zone": rm.last_zone,
+            }
         return ctx
     except Exception as e:
         _log(f"[{coin}] 方向控制评估失败: {e}, 默认只做多")
@@ -2251,8 +2303,31 @@ def run_poll_cycle():
                     # 门禁0: 形态切换冷却期禁止开新仓（Phase A+）
                     dir_ctx = decision.get("direction_ctx") or {}
                     if dir_ctx.get("regime_in_cooldown"):
-                        _log(f"[{coin}] 形态切换冷却期，暂停开新仓")
-                        continue
+                        # 死锁修复(2026-08-09): 冷却期只应阻止与形态切换方向一致的开仓
+                        # 当V15_ALLOW_SHORT=false且形态切到SHORT_ALLOWED时，
+                        # 做多开仓不应被阻止（因为系统本来就不做空，做多是逆势抄底）
+                        regime = dir_ctx.get("regime", "")
+                        is_short_signal = action == "OPEN_BEAR"
+                        allow_short = V15_ALLOW_SHORT
+                        
+                        # 场景1: 做空信号 + 冷却期 → 允许（因为做空被禁用，此分支不会执行到）
+                        # 场景2: 做多信号 + 冷却期 + V15_ALLOW_SHORT=false + 形态SHORT_ALLOWED
+                        #   → 放行：做多是逆势抄底，不受形态切换影响
+                        if is_short_signal and not allow_short:
+                            # 做空信号但做空被禁用，跳过
+                            _log(f"[{coin}] 做空信号但V15_ALLOW_SHORT=false，跳过")
+                            continue
+                        
+                        # 冷却期只在以下场景阻止开仓：
+                        # 1. 做多信号 + 形态刚从LONG切到其他 → 不做逆势
+                        # 2. 做空信号（已在上面处理）
+                        # 如果形态是SHORT_ALLOWED但做空被禁用，做多信号放行
+                        if regime == "short_allowed" and not allow_short and not is_short_signal:
+                            _log(f"[{coin}] 形态SHORT_ALLOWED但V15_ALLOW_SHORT=false，放行做多（逆势抄底）")
+                            # 放行，继续后续检查
+                        elif dir_ctx.get("regime_in_cooldown"):
+                            _log(f"[{coin}] 形态切换冷却期，暂停开新仓")
+                            continue
 
                     # 门禁1: 冷却期禁止开新仓
                     if in_cd:
