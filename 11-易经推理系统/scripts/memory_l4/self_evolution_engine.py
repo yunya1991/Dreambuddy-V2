@@ -44,6 +44,10 @@ OKX_SIM_CONFIG = BASE_DIR / "data" / "okx_sim" / "config.json"
 # B-2修复：constraints/releases 快照目录
 CONSTRAINTS_RELEASES_DIR = BASE_DIR / "constraints" / "releases"
 
+# PROP-20260809-003: regime → 四象限概率调整映射表
+# BASE_DIR = 11-易经推理系统（Path(__file__).parent.parent.parent）
+REGIME_MAP_PATH = BASE_DIR / "config" / "regime_quadrant_map.json"
+
 # adopted 提案 param_key → config.json 键的映射
 # SelfEvolutionEngine 的安全参数名与 config.json 字段名不同，需要桥接
 _PARAM_KEY_TO_CONFIG = {
@@ -166,12 +170,16 @@ class SelfEvolutionEngine:
         print(f"  搜索结果: {len(online_result.get('sources', []))} 个来源")
         print(f"  提案: {[p['title'] for p in online_result.get('proposals', [])]}")
 
-        # ── 汇总所有提案 + Walk-Forward 验证 ─────────────────────────────
+        # ── 汇总所有提案 ─────────────────────────────────────────────────
         all_proposals = (
             a8_result.get("proposals", []) +
             dream_result.get("proposals", []) +
             online_result.get("proposals", [])
         )
+
+        # PROP-20260809-002: 提案参数值数据驱动精化
+        # （反思层定方向，Optuna+本地klines walk-forward 定值；失败自动降级）
+        all_proposals = self._refine_proposal_values(all_proposals)
         result["proposals"] = all_proposals
 
         print(f"\n[WalkForward] 验证 {len(all_proposals)} 个提案...")
@@ -358,15 +366,20 @@ class SelfEvolutionEngine:
             if llm_insight:
                 signals.append(f"LLM潜意识探测: {llm_insight}")
 
+        # PROP-20260809-003: 四象限概率 = 静态基线 + Regime 调整
+        # （regime 缺失/过期/未知 → 自动回退静态基线，行为不变）
+        quad_probs, quad_meta = self._regime_adjusted_quadrant_probs()
+
         return {
             "subconscious_signals": signals,
             "proposals": proposals,
             "four_quadrant": {
-                "optimistic":  {"prob": 0.15, "scenario": "市场突破关键阻力，信号明确"},
-                "neutral":     {"prob": 0.35, "scenario": "区间震荡，当前主要场景"},
-                "pessimistic": {"prob": 0.30, "scenario": "趋势反转，止损触发"},
-                "ignored":     {"prob": 0.20, "scenario": ignored_scenario or "假突破后急速反转"},
+                "optimistic":  {"prob": quad_probs["optimistic"], "scenario": "市场突破关键阻力，信号明确"},
+                "neutral":     {"prob": quad_probs["neutral"], "scenario": "区间震荡，当前主要场景"},
+                "pessimistic": {"prob": quad_probs["pessimistic"], "scenario": "趋势反转，止损触发"},
+                "ignored":     {"prob": quad_probs["ignored"], "scenario": ignored_scenario or "假突破后急速反转"},
             },
+            "four_quadrant_meta": quad_meta,
             "analyzed_at": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -378,6 +391,210 @@ class SelfEvolutionEngine:
         if hold_rate > 0.6:
             return f"系统持续观望时市场单边突破，踏空主升浪（坤为地→乾为天）"
         return "主流观点一致时的反向黑天鹅"
+
+    # ── PROP-20260809-002: 提案参数值数据驱动精化 ─────────────────────────
+
+    # 方向推断关键词（反思层意图 → 搜索空间约束）
+    _LOWER_KEYWORDS = ("降低", "下调", "收紧", "减少", "lower", "decrease", "reduce")
+    _RAISE_KEYWORDS = ("提高", "上调", "放宽", "增加", "raise", "increase")
+
+    def _refine_proposal_values(self, proposals: List[Dict]) -> List[Dict]:
+        """
+        PROP-20260809-002: 提案参数值数据驱动精化。
+
+        - 反思层（A8/做梦部/联网）决定"调哪个参数"，方向从 rationale 关键词推断
+        - Optuna + 本地 klines walk-forward 决定"调多少"
+        - 影子参数 / 无 optuna / 超时 → 保留原值并标注 value_source，不中断流程
+        """
+        if not proposals:
+            return proposals
+        try:
+            from scripts.memory_l4.evolution_optimize import (
+                optimize_proposal_value)
+        except Exception as e:
+            print(f"  ⚠️ evolution_optimize 不可用，跳过参数精化: {e}")
+            return proposals
+
+        for p in proposals:
+            param_key = p.get("param_key", "")
+            if not param_key or p.get("param_value") is None:
+                continue
+            # 方向推断: 标题优先（意图最明确），文本中首个出现的关键词获胜
+            # （中文 rationale 惯例: 动作动词在前、效果在后，
+            #   如"提高入场门槛减少错误" → raise 而非 lower）
+            rationale = str(p.get("title", "")) + " " + str(p.get("rationale", ""))
+            first_pos, direction = None, "around"
+            for kw in self._LOWER_KEYWORDS:
+                pos = rationale.find(kw)
+                if pos >= 0 and (first_pos is None or pos < first_pos):
+                    first_pos, direction = pos, "lower"
+            for kw in self._RAISE_KEYWORDS:
+                pos = rationale.find(kw)
+                if pos >= 0 and (first_pos is None or pos < first_pos):
+                    first_pos, direction = pos, "raise"
+            try:
+                new_val, source = optimize_proposal_value(
+                    param_key, direction, p["param_value"])
+                if source == "optuna":
+                    p["param_value_original"] = p["param_value"]
+                    p["param_value"] = new_val
+                p["value_source"] = source
+                p["value_direction"] = direction
+            except Exception as e:
+                p["value_source"] = "default_fallback"
+                print(f"  ⚠️ 提案值精化失败 {param_key}: {e}")
+        return proposals
+
+    # ── PROP-20260809-003: Regime 联动四象限 ──────────────────────────────
+
+    def _load_regime_map(self) -> Dict:
+        """加载 regime → 四象限概率映射表（缺失/损坏 → 空 dict，调用方降级）。"""
+        try:
+            return json.loads(REGIME_MAP_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+
+    def _get_current_regime(self) -> Optional[Dict]:
+        """
+        从 AB 日志读取最新 market_regime。
+
+        Returns:
+            {"regime", "confidence", "age_hours", "source"} 或 None
+            （目录不存在/无日志/日志超过 stale_hours → None，调用方回退静态基线）
+        """
+        try:
+            cfg = self._load_regime_map()
+            stale_hours = float(cfg.get("stale_hours", 48))
+
+            env_dir = os.environ.get("AB_LOG_DIR", "").strip()
+            log_dir = Path(env_dir) if env_dir else None
+            if log_dir is None or not log_dir.exists():
+                return None
+
+            candidates = sorted(
+                log_dir.glob("**/*.json"),
+                key=lambda p: p.stat().st_mtime, reverse=True)
+            now_ts = datetime.now(timezone.utc).timestamp()
+            for path in candidates[:5]:
+                try:
+                    age_h = (now_ts - path.stat().st_mtime) / 3600.0
+                    if age_h > stale_hours:
+                        continue  # 过期，看更早的日志也没意义（更旧）
+                    text = path.read_text(encoding="utf-8")
+                    records: List[Dict] = []
+                    try:
+                        data = json.loads(text)
+                        records = data if isinstance(data, list) else [data]
+                    except json.JSONDecodeError:
+                        # 兼容 JSONL 格式
+                        for line in text.splitlines():
+                            line = line.strip()
+                            if line:
+                                try:
+                                    records.append(json.loads(line))
+                                except json.JSONDecodeError:
+                                    continue
+                    for rec in reversed(records):
+                        regime = str(rec.get("market_regime", "")).upper()
+                        if regime and regime != "UNKNOWN":
+                            # W4修复(E2审查): 优先用记录自身时间戳判龄
+                            # （mtime 新鲜不代表 regime 记录新鲜——文件可能被
+                            #   追加其他事件），记录无时间戳才回退 mtime。
+                            rec_age_h = self._record_age_hours(rec, now_ts)
+                            if rec_age_h is None:
+                                rec_age_h = age_h
+                            if rec_age_h > stale_hours:
+                                continue  # regime 记录本身过期
+                            return {
+                                "regime": regime,
+                                "confidence": float(rec.get("confidence") or 0),
+                                "age_hours": round(rec_age_h, 1),
+                                "source": str(path),
+                            }
+                except OSError:
+                    continue
+            return None
+        except Exception:
+            return None
+
+    @staticmethod
+    def _record_age_hours(rec: Dict, now_ts: float) -> Optional[float]:
+        """解析记录时间戳（ts/ts_utc/timestamp/created_at）计算年龄。"""
+        for key in ("ts_utc", "ts", "timestamp", "created_at"):
+            raw = rec.get(key)
+            if not raw:
+                continue
+            try:
+                if isinstance(raw, (int, float)):
+                    ts = float(raw)
+                    if ts > 1e12:  # 毫秒
+                        ts /= 1000.0
+                    return max(0.0, (now_ts - ts) / 3600.0)
+                dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return max(0.0, (now_ts - dt.timestamp()) / 3600.0)
+            except (ValueError, TypeError, OSError):
+                continue
+        return None
+
+    def _regime_adjusted_quadrant_probs(self):
+        """
+        四象限概率 = 静态基线 + regime 调整（PROP-20260809-003）。
+
+        规则:
+          - 每象限调整幅度裁剪至 ±max_adjust（配置文件，默认 0.10）
+          - 调整后归一化保证和 = 1.0
+          - regime 缺失/过期/不在映射表 → 静态基线（prob_source="static_fallback"）
+
+        Returns:
+            (probs_dict, meta_dict)
+        """
+        cfg = self._load_regime_map()
+        base = dict(cfg.get("base_probs", {
+            "optimistic": 0.15, "neutral": 0.35,
+            "pessimistic": 0.30, "ignored": 0.20}))
+        max_adj = float(cfg.get("max_adjust", 0.10))
+
+        # B2修复(E2审查): 先判空配置再取 regime（避免无谓日志扫描）
+        if not cfg:
+            return base, {"regime": None, "prob_source": "static_fallback",
+                          "reason": "no_map_config"}
+
+        regime_info = self._get_current_regime()
+        if not regime_info:
+            return base, {"regime": None, "prob_source": "static_fallback",
+                          "reason": "no_regime_data"}
+
+        regime = regime_info["regime"]
+        adjustments = cfg.get("regime_adjustments", {}).get(regime)
+        if adjustments is None:
+            return base, {"regime": regime, "prob_source": "static_fallback",
+                          "reason": "regime_not_in_map"}
+
+        probs = {}
+        for quad, base_p in base.items():
+            adj = max(-max_adj, min(max_adj, float(adjustments.get(quad, 0.0))))
+            probs[quad] = max(0.0, float(base_p) + adj)
+
+        # 归一化（保证和 = 1.0）
+        total = sum(probs.values())
+        if total > 0:
+            probs = {k: round(v / total, 4) for k, v in probs.items()}
+            # B3修复(E2审查): 舍入残差补到最大象限，保证严格和=1.0
+            residual = round(1.0 - sum(probs.values()), 4)
+            if abs(residual) >= 1e-4:
+                largest = max(probs, key=probs.get)
+                probs[largest] = round(probs[largest] + residual, 4)
+
+        meta = {
+            "regime": regime,
+            "regime_confidence": regime_info.get("confidence"),
+            "regime_age_hours": regime_info.get("age_hours"),
+            "prob_source": "regime",
+            "applied_adjustments": adjustments,
+        }
+        return probs, meta
 
     def _llm_dream_analysis(self, stats, signals) -> str:
         """LLM 做梦部深度潜意识探测。"""
@@ -590,8 +807,7 @@ class SelfEvolutionEngine:
                     continue
 
                 if wfe and recent_decisions and len(recent_decisions) >= 5:
-                    # 用 WalkForwardEngine.run 做简单对比验证
-                    # 仅检查提案是否属于已知安全类型（不做完整回测节省时间）
+                    # PROP-20260809-001: 白名单门禁(第一道) + 真实 walk-forward 回测(第二道, AND)
                     safe_params = {
                         "velocity_threshold", "min_confidence_threshold",
                         "sentiment_weight", "volume_ratio_min",
@@ -599,22 +815,61 @@ class SelfEvolutionEngine:
                         "force_action_after_n_holds", "high_uncertainty_threshold",
                     }
                     is_safe = param_key in safe_params
-                    improved = is_safe  # 安全参数直接通过，高风险参数跳过
+                    if not is_safe:
+                        improved = False  # 高风险参数跳过（原行为）
+                    else:
+                        # 真实 walk-forward 双引擎对比验证
+                        # （本地 klines，不依赖外网；数据不足内部降级 rule_check+degraded）
+                        try:
+                            from scripts.memory_l4.evolution_backtest import (
+                                walk_forward_validate)
+                            bt = walk_forward_validate(
+                                param_key=param_key,
+                                proposed_value=param_val,
+                            )
+                        except Exception as e:
+                            print(f"  ⚠️ walk-forward 验证异常，降级 rule_check: {e}")
+                            bt = {
+                                "validated": True,
+                                "method": "rule_check",
+                                "degraded": True,
+                                "reason": f"walk_forward_exception: {e}",
+                            }
+                        proposal["backtest_result"] = bt
+                        improved = bool(bt.get("validated", False))
+                        if not improved:
+                            print(f"  ⏸ 拒绝(walk-forward 劣化): "
+                                  f"{proposal['title']} | delta={bt.get('delta')}")
                 else:
-                    # 数据不足时，A8/dream 来源直接采纳
+                    # 数据不足时，A8/dream 来源直接采纳（原行为 + 诚实标注）
                     improved = proposal.get("source") in ("a8", "dream")
+                    if improved and "backtest_result" not in proposal:
+                        proposal["backtest_result"] = {
+                            "validated": True, "method": "rule_check",
+                            "degraded": True,
+                            "reason": "insufficient_recent_decisions",
+                        }
 
                 if improved:
                     proposal["adopted"] = True
-                    proposal["backtest_result"] = {"validated": True, "method": "rule_check"}
+                    if "backtest_result" not in proposal:
+                        proposal["backtest_result"] = {
+                            "validated": True, "method": "rule_check"}
                     adopted.append(proposal)
-                    print(f"  ✅ 采纳: {proposal['title']}")
+                    method = proposal["backtest_result"].get("method", "?")
+                    degraded = proposal["backtest_result"].get("degraded", False)
+                    tag = f"[{method}{'/degraded' if degraded else ''}]"
+                    print(f"  ✅ 采纳 {tag}: {proposal['title']}")
                 else:
                     print(f"  ⏸ 跳过: {proposal['title']} (需人工确认)")
-            except Exception:
+            except Exception as adopt_err:
                 if proposal.get("source") == "a8":
                     proposal["adopted"] = True
-                    proposal["backtest_result"] = {"skipped": True}
+                    # W7修复(E2审查): 异常兜底也诚实标注 degraded
+                    proposal["backtest_result"] = {
+                        "skipped": True, "degraded": True,
+                        "reason": f"adopt_loop_exception: {adopt_err}",
+                    }
                     adopted.append(proposal)
 
         # B-2修复：将 adopted 提案落地到 config.json + constraints/releases 快照

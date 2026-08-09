@@ -1,0 +1,30 @@
+{
+  "version": "0.1.0",
+  "description": "PROP-20260809-003: 做梦部四象限概率的 Regime 调整映射。基础概率=历史静态值(15/35/30/20)；每象限调整幅度硬上限 ±max_adjust；调整后归一化保证和=1.0。regime 缺失/过期/未知 → 全 0 调整(等于静态基线)。",
+  "base_probs": {
+    "optimistic": 0.15,
+    "neutral": 0.35,
+    "pessimistic": 0.30,
+    "ignored": 0.20
+  },
+  "max_adjust": 0.10,
+  "stale_hours": 48,
+  "regime_adjustments": {
+    "BULL":          {"optimistic": 0.08, "neutral": -0.05, "pessimistic": -0.05, "ignored": 0.02},
+    "TRENDING_UP":   {"optimistic": 0.08, "neutral": -0.05, "pessimistic": -0.05, "ignored": 0.02},
+    "UPTREND":       {"optimistic": 0.08, "neutral": -0.05, "pessimistic": -0.05, "ignored": 0.02},
+    "BEAR":          {"optimistic": -0.05, "neutral": -0.03, "pessimistic": 0.08, "ignored": 0.00},
+    "TRENDING_DOWN": {"optimistic": -0.05, "neutral": -0.03, "pessimistic": 0.08, "ignored": 0.00},
+    "DOWNTREND":     {"optimistic": -0.05, "neutral": -0.03, "pessimistic": 0.08, "ignored": 0.00},
+    "SIDEWAYS":      {"optimistic": 0.00, "neutral": 0.05, "pessimistic": -0.03, "ignored": -0.02},
+    "RANGE":         {"optimistic": 0.00, "neutral": 0.05, "pessimistic": -0.03, "ignored": -0.02},
+    "UNCERTAIN":     {"optimistic": 0.00, "neutral": 0.02, "pessimistic": 0.00, "ignored": -0.02},
+    "UNKNOWN":       {"optimistic": 0.00, "neutral": 0.00, "pessimistic": 0.00, "ignored": 0.00}
+  },
+  "adjustment_rationale": {
+    "BULL": "牛市: 突破情景(optimistic)概率上调，防踏空主升浪(ignored微调升); 反转情景(pessimistic)下调但不归零(保持尾部风险意识)",
+    "BEAR": "熊市: 趋势反转/止损情景(pessimistic)上调为主场景; 突破情景(optimistic)下调",
+    "SIDEWAYS": "震荡市: 区间情景(neutral)强化; 尾部情景(ignored)略降(震荡市黑天鹅相对少)",
+    "UNKNOWN": "未知: 不做调整，等于静态基线(保守降级)"
+  }
+}
