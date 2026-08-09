@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import sys
 import time
 import warnings
@@ -51,13 +50,13 @@ TRACE_CSV = OUTPUT_DIR / "phase4_bayes_trace.csv"
 
 # 贝叶斯优化 5 个小币（不含 BTC；BTC 默认关闭 timing，单独跑也不会受益）
 OPT_COINS: List[str] = ["ETH", "SOL", "DOGE", "ADA", "BNB"]
-KLIMIT = 1500          # 4h K 线根数（≈ 250 天）
+KLIMIT = 1500  # 4h K 线根数（≈ 250 天）
 INITIAL_CAPITAL = 10000
 
 # --------------------------------------------------------------------------- #
 # 导入回测引擎
 # --------------------------------------------------------------------------- #
-from v15_backtest import run_backtest, fetch_klines  # type: ignore
+from v15_backtest import fetch_klines, run_backtest  # type: ignore
 
 
 def _metrics(r: dict) -> Tuple[float, float, float, int]:
@@ -84,8 +83,9 @@ def _preload_klines() -> Dict[str, List[Dict]]:
     return out
 
 
-def objective(params: np.ndarray,
-              klines_map: Dict[str, List[Dict]]) -> Tuple[float, Dict[str, Tuple[float, float]]]:
+def objective(
+    params: np.ndarray, klines_map: Dict[str, List[Dict]]
+) -> Tuple[float, Dict[str, Tuple[float, float]]]:
     """
     params = [threshold, lenient_unclear, unclear_retrace_ext,
               retrace_mu, retrace_sigma, fib_retrace_lo, fib_retrace_hi, fib_ext_ratio,
@@ -94,9 +94,18 @@ def objective(params: np.ndarray,
     soft_mode 固定 True（仓位软调控落位）
     返回 (objective_scalar, per_coin_metrics: {coin: (total_return_pct, sharpe)})
     """
-    (threshold, lenient_unclear, unclear_retrace_ext,
-     retrace_mu, retrace_sigma, fib_retrace_lo, fib_retrace_hi, fib_ext_ratio,
-     size_power, swing_fusion_idx) = params
+    (
+        threshold,
+        lenient_unclear,
+        unclear_retrace_ext,
+        retrace_mu,
+        retrace_sigma,
+        fib_retrace_lo,
+        fib_retrace_hi,
+        fib_ext_ratio,
+        size_power,
+        swing_fusion_idx,
+    ) = params
 
     _fusion_modes = ["daily_only", "or", "and"]
     swing_fusion_mode = _fusion_modes[int(swing_fusion_idx)]
@@ -145,24 +154,25 @@ def objective(params: np.ndarray,
 # --------------------------------------------------------------------------- #
 # 简易贝叶斯优化（高斯过程回归 + 期望改进）
 # --------------------------------------------------------------------------- #
+from scipy.stats import norm  # noqa
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel
 from sklearn.preprocessing import MinMaxScaler
-from scipy.stats import norm  # noqa
 
-
-BOUNDS = np.array([
-    [0.25, 0.65],   # 0: threshold
-    [0.55, 0.85],   # 1: lenient_unclear
-    [0.85, 0.98],   # 2: unclear_retrace_ext
-    [0.42, 0.62],   # 3: retrace_mu
-    [0.15, 0.35],   # 4: retrace_sigma
-    [0.22, 0.38],   # 5: fib_retrace_lo
-    [0.62, 0.80],   # 6: fib_retrace_hi
-    [1.50, 2.00],   # 7: fib_ext_ratio
-    [0.5, 2.5],     # 8: size_power（>1强化低分惩罚，<1弱化）
-    [0.0, 2.999],   # 9: swing_fusion_idx（0=daily_only, 1=or, 2=and）
-])
+BOUNDS = np.array(
+    [
+        [0.25, 0.65],  # 0: threshold
+        [0.55, 0.85],  # 1: lenient_unclear
+        [0.85, 0.98],  # 2: unclear_retrace_ext
+        [0.42, 0.62],  # 3: retrace_mu
+        [0.15, 0.35],  # 4: retrace_sigma
+        [0.22, 0.38],  # 5: fib_retrace_lo
+        [0.62, 0.80],  # 6: fib_retrace_hi
+        [1.50, 2.00],  # 7: fib_ext_ratio
+        [0.5, 2.5],  # 8: size_power（>1强化低分惩罚，<1弱化）
+        [0.0, 2.999],  # 9: swing_fusion_idx（0=daily_only, 1=or, 2=and）
+    ]
+)
 
 PARAM_NAMES = [
     "threshold",
@@ -178,8 +188,9 @@ PARAM_NAMES = [
 ]
 
 
-def expected_improvement(X_cand: np.ndarray, gpr: GaussianProcessRegressor,
-                         y_best: float, xi: float = 0.01) -> np.ndarray:
+def expected_improvement(
+    X_cand: np.ndarray, gpr: GaussianProcessRegressor, y_best: float, xi: float = 0.01
+) -> np.ndarray:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         mu, sigma = gpr.predict(X_cand, return_std=True)
@@ -189,8 +200,9 @@ def expected_improvement(X_cand: np.ndarray, gpr: GaussianProcessRegressor,
     return ei
 
 
-def bayesian_optimize(n_iter: int = 25, n_init: int = 5,
-                      seed: int = 42) -> Tuple[np.ndarray, float, List[Dict], Dict[str, Tuple[float, float]]]:
+def bayesian_optimize(
+    n_iter: int = 25, n_init: int = 5, seed: int = 42
+) -> Tuple[np.ndarray, float, List[Dict], Dict[str, Tuple[float, float]]]:
     rng = np.random.default_rng(seed)
 
     # 1. 一次性预加载全部小币 K 线
@@ -220,7 +232,7 @@ def bayesian_optimize(n_iter: int = 25, n_init: int = 5,
             "stage": "init",
             "elapsed_sec": round(dt, 1),
             "objective": round(val, 4),
-            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x)},
+            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x, strict=False)},
         }
         trace.append(row)
         print(f"  [init {i+1}/{n_init}] obj={val:.4f} t={dt:.1f}s")
@@ -230,9 +242,9 @@ def bayesian_optimize(n_iter: int = 25, n_init: int = 5,
 
     # 3. 高斯过程 + 期望改进迭代采点
     scaler = MinMaxScaler()
-    kernel = (ConstantKernel(1.0, (1e-3, 1e3))
-              * RBF(length_scale=1.0, length_scale_bounds=(1e-2, 1e2))
-              + WhiteKernel(noise_level=1e-2, noise_level_bounds=(1e-5, 1e-1)))
+    kernel = ConstantKernel(1.0, (1e-3, 1e3)) * RBF(
+        length_scale=1.0, length_scale_bounds=(1e-2, 1e2)
+    ) + WhiteKernel(noise_level=1e-2, noise_level_bounds=(1e-5, 1e-1))
 
     for it in range(n_iter):
         X_scaled = scaler.fit_transform(X_arr)
@@ -273,11 +285,13 @@ def bayesian_optimize(n_iter: int = 25, n_init: int = 5,
             "stage": "BO",
             "elapsed_sec": round(dt, 1),
             "objective": round(val_next, 4),
-            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x_next)},
+            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x_next, strict=False)},
         }
         trace.append(row)
         best_so_far = float(np.max(y_arr))
-        print(f"  [BO {it+1}/{n_iter}] obj={val_next:.4f} t={dt:.1f}s | best_so_far={best_so_far:.4f}")
+        print(
+            f"  [BO {it+1}/{n_iter}] obj={val_next:.4f} t={dt:.1f}s | best_so_far={best_so_far:.4f}"
+        )
 
     best_idx = int(np.argmax(y_arr))
     best_x = X_arr[best_idx]
@@ -289,7 +303,7 @@ def main():
     print("=" * 72)
     print("Phase4 TimingGate 贝叶斯参数优化")
     print(f"  优化币种(仅小币，BTC默认关): {OPT_COINS}")
-    print(f"  目标 = avg(total_return_pct) + 0.5 * avg(sharpe) → 最大")
+    print("  目标 = avg(total_return_pct) + 0.5 * avg(sharpe) → 最大")
     print("=" * 72)
 
     best_x, best_y, trace, best_per_coin = bayesian_optimize(n_iter=25, n_init=5, seed=42)
@@ -326,7 +340,9 @@ def main():
             "timing_gate_intraday_swing_window": 3,
         },
     }
-    BEST_PARAMS_JSON.write_text(json.dumps(best_dict, indent=2, ensure_ascii=False), encoding="utf-8")
+    BEST_PARAMS_JSON.write_text(
+        json.dumps(best_dict, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     print(f"\n[最优参数] 已写入 {BEST_PARAMS_JSON}")
     print(json.dumps(best_dict, indent=2, ensure_ascii=False))
 

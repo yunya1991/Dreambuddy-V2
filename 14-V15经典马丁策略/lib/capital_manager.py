@@ -24,7 +24,8 @@
 可用资金 >= 单仓位总需求 * 2 时，允许开新单
 可用资金 < 单仓位总需求 时，禁止开新单
 """
-import json, os, sys
+import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -32,22 +33,37 @@ BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
 try:
-    from config_loader import load_config, get_config, get_config_float, get_config_int, get_config_list
+    from config_loader import (
+        get_config,
+        get_config_float,
+        get_config_int,
+        get_config_list,
+        load_config,
+    )
+
     load_config("v15")
 except Exception:
     pass
 
 # 统一交易对适配层
 try:
-    from symbol_mapper import to_swap, is_supported as _coin_supported
+    from symbol_mapper import is_supported as _coin_supported
+    from symbol_mapper import to_swap
 except Exception:
-    def to_swap(coin, exchange="okx"): return f"{coin}-USDT-SWAP"
-    def _coin_supported(coin, exchange="okx"): return True
+
+    def to_swap(coin, exchange="okx"):
+        return f"{coin}-USDT-SWAP"
+
+    def _coin_supported(coin, exchange="okx"):
+        return True
+
 
 # ── 贝叶斯优化后的参数（底仓现货思维 + 黑天鹅加仓，最大5单：1首单+4加仓）──
 TOTAL_BUDGET = get_config_float("TOTAL_BUDGET", 100)
 MAX_CONCURRENT_POSITIONS = get_config_int("MAX_CONCURRENT_POSITIONS", 6)
-MAX_ADDONS_PER_POSITION = get_config_int("MAX_ADDONS_PER_POSITION", 4)  # 4档加仓=总5单（实盘测试版本）
+MAX_ADDONS_PER_POSITION = get_config_int(
+    "MAX_ADDONS_PER_POSITION", 4
+)  # 4档加仓=总5单（实盘测试版本）
 ADDON_PCT = get_config_float("ADDON_PCT", 0.08)  # 加仓间距（保持不变）
 
 # 底仓22% + 杠杆5x（现货思维）
@@ -64,7 +80,9 @@ MAX_POSITION_PCT = get_config_float("MAX_POSITION_PCT", 0.60)
 MIN_MARGIN_USD = get_config_float("MIN_MARGIN_USD", 20)
 
 # 币种池：用 SymbolMapper 过滤出 OKX 支持的币种
-_RAW_COINS = get_config_list("V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"])
+_RAW_COINS = get_config_list(
+    "V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
+)
 FILTERED_COINS = [c for c in _RAW_COINS if _coin_supported(c, "okx")] or _RAW_COINS
 V15CT_COINS = FILTERED_COINS
 
@@ -72,6 +90,7 @@ V15CT_COINS = FILTERED_COINS
 def _get_okx_client():
     try:
         from okx_client import OKXSimulatedClient
+
         config = {
             "api_key": get_config("OKX_API_KEY", ""),
             "secret_key": get_config("OKX_SECRET_KEY", ""),
@@ -99,7 +118,7 @@ def get_account_balance():
             "avail_balance": TOTAL_BUDGET,
             "used_margin": 0,
         }
-    
+
     try:
         bal = client.get_balance()
         if not bal.get("ok"):
@@ -110,14 +129,14 @@ def get_account_balance():
                 "avail_balance": TOTAL_BUDGET,
                 "used_margin": 0,
             }
-        
+
         total_eq = float(bal.get("total_eq", TOTAL_BUDGET))
         assets = bal.get("assets", {})
         usdt = assets.get("USDT", {})
         avail_balance = float(usdt.get("avail", total_eq))
         frozen = float(usdt.get("frozen", 0))
         used_margin = frozen
-        
+
         return {
             "ok": True,
             "total_eq": round(total_eq, 2),
@@ -160,19 +179,21 @@ def get_current_positions():
             pos_side = p.get("pos_side", "net")
             is_long = pos_side == "long" or (pos_side == "net" and pos_sz > 0)
             inst_id = p.get("inst_id", to_swap(coin))
-            positions.append({
-                "symbol": coin,
-                "inst_id": inst_id,
-                "direction": "LONG" if is_long else "SHORT",
-                "pos_side": pos_side,
-                "pos_sz": abs(pos_sz),
-                "entry_price": float(p.get("avg_px", 0)),
-                "mark_price": float(p.get("mark_px", 0)),
-                "margin": float(p.get("margin", 0)),
-                "unrealized_pnl": float(p.get("upl", 0)),
-                "upl_ratio": float(p.get("upl_ratio", 0)),
-                "lever": p.get("lever", ""),
-            })
+            positions.append(
+                {
+                    "symbol": coin,
+                    "inst_id": inst_id,
+                    "direction": "LONG" if is_long else "SHORT",
+                    "pos_side": pos_side,
+                    "pos_sz": abs(pos_sz),
+                    "entry_price": float(p.get("avg_px", 0)),
+                    "mark_price": float(p.get("mark_px", 0)),
+                    "margin": float(p.get("margin", 0)),
+                    "unrealized_pnl": float(p.get("upl", 0)),
+                    "upl_ratio": float(p.get("upl_ratio", 0)),
+                    "lever": p.get("lever", ""),
+                }
+            )
     except Exception:
         pass
 
@@ -208,11 +229,31 @@ def calculate_single_position_cost(budget=None):
         "budget_source": "dynamic" if budget != TOTAL_BUDGET else "static",
         "budget_value": round(budget, 2),
         "addon_details": [
-            {"addon": 1, "cost_usd": round(addon1_usd, 2), "pct": ADDON1_PCT, "label": "黑天鹅第一档"},
-            {"addon": 2, "cost_usd": round(addon2_usd, 2), "pct": ADDON2_PCT, "label": "黑天鹅第二档"},
-            {"addon": 3, "cost_usd": round(addon3_usd, 2), "pct": ADDON3_PCT, "label": "黑天鹅第三档"},
-            {"addon": 4, "cost_usd": round(addon4_usd, 2), "pct": ADDON4_PCT, "label": "黑天鹅第四档（最深）"},
-        ]
+            {
+                "addon": 1,
+                "cost_usd": round(addon1_usd, 2),
+                "pct": ADDON1_PCT,
+                "label": "黑天鹅第一档",
+            },
+            {
+                "addon": 2,
+                "cost_usd": round(addon2_usd, 2),
+                "pct": ADDON2_PCT,
+                "label": "黑天鹅第二档",
+            },
+            {
+                "addon": 3,
+                "cost_usd": round(addon3_usd, 2),
+                "pct": ADDON3_PCT,
+                "label": "黑天鹅第三档",
+            },
+            {
+                "addon": 4,
+                "cost_usd": round(addon4_usd, 2),
+                "pct": ADDON4_PCT,
+                "label": "黑天鹅第四档（最深）",
+            },
+        ],
     }
 
 
@@ -243,7 +284,9 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
     # 获取可用预算
     if available_budget is None:
         balance = get_account_balance()
-        available_budget = balance.get("avail_balance", TOTAL_BUDGET) if balance.get("ok") else TOTAL_BUDGET
+        available_budget = (
+            balance.get("avail_balance", TOTAL_BUDGET) if balance.get("ok") else TOTAL_BUDGET
+        )
 
     # 获取当前持仓数
     positions = get_current_positions()
@@ -261,6 +304,7 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
     # 获取币种波动率
     try:
         from strategy_params import get_coin_strategy_params
+
         params = get_coin_strategy_params(symbol, "LONG")
         vol_ratio = params.get("volatility", {}).get("vol_ratio", 1.0)
     except Exception:
@@ -416,22 +460,22 @@ def calculate_capital_allocation():
     total_eq = balance["total_eq"]
     avail_balance = balance["avail_balance"]
     used_margin = balance["used_margin"]
-    
+
     current_positions_count = len(positions)
     max_positions_allowed = MAX_CONCURRENT_POSITIONS - current_positions_count
-    
+
     total_cost_per_position = single_cost["total_cost_usd"]
     base_usd = single_cost["base_usd"]
-    
+
     positions_can_open = 0
     if total_cost_per_position > 0:
         positions_can_open = int(avail_balance / total_cost_per_position)
     positions_can_open = min(positions_can_open, max_positions_allowed)
-    
+
     remaining_after_open = avail_balance - (positions_can_open * total_cost_per_position)
-    
+
     margin_usage_pct = (used_margin / total_eq) * 100 if total_eq > 0 else 0
-    
+
     allocation = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "balance": balance,
@@ -465,13 +509,19 @@ def calculate_capital_allocation():
             "avail_balance_pct": round((avail_balance / total_eq) * 100, 2),
         },
         "recommendations": {
-            "allow_open_new_position": positions_can_open > 0 and remaining_after_open > MIN_MARGIN_USD,
+            "allow_open_new_position": positions_can_open > 0
+            and remaining_after_open > MIN_MARGIN_USD,
             "allow_addon": remaining_after_open > MIN_MARGIN_USD,
             "risk_level": _assess_risk_level(margin_usage_pct, current_positions_count),
-            "advice": _generate_advice(positions_can_open, margin_usage_pct, current_positions_count, total_cost_per_position),
-        }
+            "advice": _generate_advice(
+                positions_can_open,
+                margin_usage_pct,
+                current_positions_count,
+                total_cost_per_position,
+            ),
+        },
     }
-    
+
     return allocation
 
 
@@ -492,7 +542,7 @@ def _generate_advice(positions_can_open, margin_pct, position_count, total_cost_
     if positions_can_open == 0:
         return f"⚠️ 可用资金不足，无法开新仓（单仓位需${total_cost_per_position}）"
     if positions_can_open >= 2:
-        return f"⚠️ 资金过于充足，建议只开1个仓位确保加仓空间"
+        return "⚠️ 资金过于充足，建议只开1个仓位确保加仓空间"
     return f"✅ 可开1个新仓位（单仓位需${total_cost_per_position}，包含3次加仓）"
 
 
@@ -509,7 +559,7 @@ def check_can_addon():
 def get_coin_allocation(symbol):
     allocation = calculate_capital_allocation()
     base_usd = allocation["single_position_cost"]["base_usd"]
-    
+
     for pos in allocation["positions"]:
         if pos["symbol"] == symbol:
             return {
@@ -520,7 +570,7 @@ def get_coin_allocation(symbol):
                 "can_addon": allocation["recommendations"]["allow_addon"],
                 "unrealized_pnl": pos["unrealized_pnl"],
             }
-    
+
     return {
         "symbol": symbol,
         "has_position": False,
@@ -535,7 +585,7 @@ def get_coin_allocation(symbol):
 def get_signal_trigger_status():
     allocation = calculate_capital_allocation()
     can_open = allocation["recommendations"]["allow_open_new_position"]
-    
+
     trigger_status = {}
     for symbol in V15CT_COINS:
         has_position = any(pos["symbol"] == symbol for pos in allocation["positions"])
@@ -544,7 +594,7 @@ def get_signal_trigger_status():
             "has_position": has_position,
             "can_addon": has_position and allocation["recommendations"]["allow_addon"],
         }
-    
+
     return {
         "can_open_new_position": can_open,
         "current_positions_count": allocation["calculations"]["current_positions_count"],
@@ -556,6 +606,7 @@ def get_signal_trigger_status():
 def get_coin_strategy_params(symbol, direction="LONG"):
     try:
         from strategy_params import get_coin_strategy_params as _get_params
+
         return _get_params(symbol, direction)
     except Exception as e:
         return {"error": str(e)}
@@ -579,17 +630,17 @@ def calculate_position_risk(pos):
         entry = pos.get("entry_price", 0)
         open_price = pos.get("open_price", entry)
         current = pos.get("mark_price", 0)
-        
+
         params = get_coin_strategy_params(symbol, direction)
         if "error" in params:
             return {"error": params["error"]}
-        
+
         sl = params.get("stop_loss", {})
         tp_pct = params.get("take_profit_pct", 0) / 100
         addon_pct = params.get("addon_pct", 0) / 100
-        
+
         tp_price = entry * (1 + tp_pct) if direction == "LONG" else entry * (1 - tp_pct)
-        
+
         addon_levels = []
         for i in range(1, 4):
             target_drop = addon_pct * i
@@ -597,22 +648,32 @@ def calculate_position_risk(pos):
                 level_price = open_price * (1 - target_drop)
             else:
                 level_price = open_price * (1 + target_drop)
-            addon_levels.append({
-                "level": i,
-                "price": round(level_price, 4),
-                "drop_pct": round(target_drop * 100, 2),
-            })
-        
+            addon_levels.append(
+                {
+                    "level": i,
+                    "price": round(level_price, 4),
+                    "drop_pct": round(target_drop * 100, 2),
+                }
+            )
+
         profit_pct = (current - entry) / entry if direction == "LONG" else (entry - current) / entry
-        distance_to_tp = (tp_price - current) / current if direction == "LONG" else (current - tp_price) / current
-        
+        distance_to_tp = (
+            (tp_price - current) / current
+            if direction == "LONG"
+            else (current - tp_price) / current
+        )
+
         sl_price = sl.get("stop_loss_price")
         if sl_price is not None and sl_price > 0:
-            distance_to_sl = (current - sl_price) / current if direction == "LONG" else (sl_price - current) / current
+            distance_to_sl = (
+                (current - sl_price) / current
+                if direction == "LONG"
+                else (sl_price - current) / current
+            )
             distance_to_sl_pct = round(distance_to_sl * 100, 2)
         else:
             distance_to_sl_pct = None
-        
+
         return {
             "symbol": symbol,
             "direction": direction,
@@ -642,7 +703,7 @@ def calculate_position_risk(pos):
 if __name__ == "__main__":
     alloc = calculate_capital_allocation()
     print(json.dumps(alloc, indent=2, ensure_ascii=False))
-    
+
     print("\n=== 信号触发状态 ===")
     trigger = get_signal_trigger_status()
     print(json.dumps(trigger, indent=2, ensure_ascii=False))

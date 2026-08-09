@@ -5,12 +5,10 @@ Phase 0: 优先从本地已有数据加载，没有则从OKX API拉取
 """
 
 import os
-import json
 import time
-from typing import List, Dict, Optional
 from pathlib import Path
+from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 
@@ -18,11 +16,13 @@ def _get_okx_client():
     """获取OKX客户端（优先使用系统已有的okx_simulated）"""
     try:
         from ..okx_simulated import OKXSimulatedClient
+
         return OKXSimulatedClient()
     except Exception:
         pass
     try:
         from okx import OKXClient
+
         return OKXClient()
     except Exception:
         pass
@@ -99,12 +99,8 @@ def fetch_okx_klines(
         s = _requests_mod.Session()
         s.trust_env = True  # 信任环境变量（如果设置了的话）
         proxies = {}
-        https_proxy = (
-            os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
-        )
-        http_proxy = (
-            os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
-        )
+        https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+        http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
         all_proxy = os.environ.get("ALL_PROXY") or os.environ.get("all_proxy")
         if https_proxy:
             proxies["https"] = https_proxy
@@ -118,6 +114,7 @@ def fetch_okx_klines(
             for port in (7890, 7891, 14122, 38324):
                 try:
                     import socket as _sock
+
                     with _sock.create_connection(("127.0.0.1", port), timeout=0.3):
                         proxies = {
                             "http": f"http://127.0.0.1:{port}",
@@ -159,7 +156,9 @@ def fetch_okx_klines(
                     return _sess.get(url, params=params, timeout=10)
 
                 # 构造候选 instId 列表：现货 → SWAP
-                base_symbol = symbol.upper().replace("-USDT", "").replace("USDT", "").replace("-SWAP", "")
+                base_symbol = (
+                    symbol.upper().replace("-USDT", "").replace("USDT", "").replace("-SWAP", "")
+                )
                 candidates = [f"{base_symbol}-USDT", f"{base_symbol}-USDT-SWAP"]
                 resp = None
                 for inst_id in candidates:
@@ -210,10 +209,20 @@ def fetch_okx_klines(
 
     # 解析数据
     # OKX K线格式: [ts, o, h, l, c, vol, volCcy, volCcyQuote, confirm]
-    df = pd.DataFrame(all_data, columns=[
-        "ts", "open", "high", "low", "close",
-        "volume", "vol_ccy", "vol_ccy_quote", "confirm"
-    ])
+    df = pd.DataFrame(
+        all_data,
+        columns=[
+            "ts",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "vol_ccy",
+            "vol_ccy_quote",
+            "confirm",
+        ],
+    )
 
     # 类型转换
     for col in ["open", "high", "low", "close", "volume"]:

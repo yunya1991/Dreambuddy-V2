@@ -277,7 +277,17 @@ def run_agents(reason: str):
             for l in result.stdout.split("\n")
             if any(
                 kw in l
-                for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误", "轮询完成"]
+                for kw in [
+                    "信号触发",
+                    "开仓",
+                    "加仓",
+                    "止盈",
+                    "止损",
+                    "胜率",
+                    "权益",
+                    "错误",
+                    "轮询完成",
+                ]
             )
             and "Warning" not in l
         ]

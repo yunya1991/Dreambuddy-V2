@@ -23,7 +23,7 @@ DIR = Path(__file__).parent
 sys.path.insert(0, str(DIR / "core"))
 sys.path.insert(0, str(DIR / "lib"))
 
-from v15_backtest import run_backtest, fetch_klines, print_report
+from v15_backtest import fetch_klines, run_backtest
 
 COINS = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI"]
 KLIMIT = 1500
@@ -98,15 +98,21 @@ def main():
 
     print("=" * 92)
     if bo_loaded:
-        print("  Phase 4 回测对比: Phase2(力学化无timing) vs Phase4*(力学化+wave-fib timing + 贝叶斯最优参数)")
+        print(
+            "  Phase 4 回测对比: Phase2(力学化无timing) vs Phase4*(力学化+wave-fib timing + 贝叶斯最优参数)"
+        )
     else:
         print("  Phase 4 回测对比: Phase2(力学化无timing) vs Phase4(力学化+wave-fib timing软调控)")
     print("=" * 92)
     print("  A = use_direction_gate=True, use_timing_gate=False (现状力学化基线)")
     if bo_loaded:
-        print("  B*= use_direction_gate=True, use_timing_gate=True  + BO最优参数(贝叶斯优化 output/phase4_best_params.json)")
+        print(
+            "  B*= use_direction_gate=True, use_timing_gate=True  + BO最优参数(贝叶斯优化 output/phase4_best_params.json)"
+        )
     else:
-        print("  B = use_direction_gate=True, use_timing_gate=True  (叠加TimingGate软调控，默认参数)")
+        print(
+            "  B = use_direction_gate=True, use_timing_gate=True  (叠加TimingGate软调控，默认参数)"
+        )
     print("  币种:", COINS)
     print("  初始资金:", INITIAL_CAPITAL, "| 4H K线:", KLIMIT)
     print("=" * 92)
@@ -183,9 +189,7 @@ def main():
         f"    · 平均总收益 {avg_ret_a:+.2f}% → {avg_ret_b:+.2f}%  "
         f"Δ绝对={delta_ret:+.2f}%  Δ相对={rel_ret:+.2f}%"
     )
-    print(
-        f"    · 平均夏普   {avg_sharpe_a:.4f}  → {avg_sharpe_b:.4f}  Δ={delta_sharpe:+.4f}"
-    )
+    print(f"    · 平均夏普   {avg_sharpe_a:.4f}  → {avg_sharpe_b:.4f}  Δ={delta_sharpe:+.4f}")
     print(
         f"    · 平均回撤   {avg_dd_a:.2f}%  → {avg_dd_b:.2f}%  Δ={delta_dd:+.2f}%  (负值=降低回撤=好事)"
     )
@@ -196,7 +200,9 @@ def main():
     print("  🎯 判定：相对收益提升 > 5% 时启用 TimingGate（默认开启），否则关闭但保留代码")
     print("=" * 92)
     if rel_ret > 5.0 and delta_sharpe >= 0.0:
-        print("  ✅ Phase4 相对 Phase2 平均总收益提升 > 5% 且夏普不降 → 建议默认打开 V15_USE_TIMING_GATE=true")
+        print(
+            "  ✅ Phase4 相对 Phase2 平均总收益提升 > 5% 且夏普不降 → 建议默认打开 V15_USE_TIMING_GATE=true"
+        )
         verdict = "ENABLE_GATE"
     elif rel_ret > 0.0 and delta_sharpe > 0.0:
         print(f"  ⚠️  Phase4 收益提升 {rel_ret:+.2f}%（未达5%阈值），夏普提升 {delta_sharpe:+.4f}")

@@ -57,21 +57,21 @@ def _fmt_ts(dt: datetime) -> str:
 
 def get_latest_log_ts(log_dir: Path) -> datetime:
     """获取最近日志文件的时间戳
-    
+
     日志文件格式:
     - v15_YYYYMMDD.log (日期轮转日志)
     - v15_trader.log, v15_light_poll.log 等固定文件名
     """
     if not log_dir.exists():
         return datetime.min.replace(tzinfo=timezone.utc)
-    
+
     # 优先匹配日期格式的日志文件 (v15_YYYYMMDD.log)
     dated_logs = sorted(log_dir.glob("v15_[0-9]*.log"), reverse=True)
     if dated_logs:
         fname = dated_logs[0].stem  # v15_20260809
         try:
             date_part = fname.replace("v15_", "")
-            dt = datetime.strptime(date_part, "%Y%m%d")
+            datetime.strptime(date_part, "%Y%m%d")
             # 使用文件修改时间获取精确时间
             mtime = dated_logs[0].stat().st_mtime
             mtime_dt = datetime.fromtimestamp(mtime, tz=timezone.utc)
@@ -80,12 +80,12 @@ def get_latest_log_ts(log_dir: Path) -> datetime:
         except Exception:
             mtime = dated_logs[0].stat().st_mtime
             return datetime.fromtimestamp(mtime, tz=timezone.utc)
-    
+
     # 回退：匹配所有 .log 文件
     all_logs = sorted(log_dir.glob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not all_logs:
         return datetime.min.replace(tzinfo=timezone.utc)
-    
+
     # 用文件修改时间（最可靠的方式）
     mtime = all_logs[0].stat().st_mtime
     return datetime.fromtimestamp(mtime, tz=timezone.utc)
@@ -122,7 +122,11 @@ def run_agent_a():
     python_cmd = sys.executable or "python"
     try:
         result = subprocess.run(
-            [python_cmd, str(script)], cwd=str(BASE_DIR), capture_output=True, text=True, timeout=180
+            [python_cmd, str(script)],
+            cwd=str(BASE_DIR),
+            capture_output=True,
+            text=True,
+            timeout=180,
         )
         key_lines = [
             l

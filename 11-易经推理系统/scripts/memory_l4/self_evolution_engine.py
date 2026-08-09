@@ -22,10 +22,12 @@
   - scripts/memory_l4/tavily_macro.py（联网）
   - scripts/memory_l4/bcrm/walk_forward.py（回测验证）
 """
-import json, os, time, warnings
-from pathlib import Path
-from typing import Dict, List, Optional, Any
+import json
+import os
+import warnings
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 warnings.filterwarnings("ignore")
 
@@ -33,7 +35,7 @@ BASE_DIR = Path(__file__).parent.parent.parent
 
 # 6-TRADING Skills 路径
 SKILLS_DIR = BASE_DIR.parent / "6-TRADING" / "skills"
-A8_SKILL_PATH    = SKILLS_DIR / "A8-theory-practice-verification" / "SKILL.md"
+A8_SKILL_PATH = SKILLS_DIR / "A8-theory-practice-verification" / "SKILL.md"
 DREAM_SKILL_PATH = SKILLS_DIR / "dream-oneirology" / "SKILL.md"
 
 EVOLUTION_LOG = BASE_DIR / "data" / "self_evolution" / "evolution_log.json"
@@ -55,9 +57,10 @@ _PARAM_KEY_TO_CONFIG = {
 }
 
 # ── 停滞检测阈值 ─────────────────────────────────────────────────────────────
-STAGNATION_WIN_RATE_THRESHOLD  = 0.45   # 胜率低于此值触发
-STAGNATION_HOLD_STREAK         = 10     # 连续HOLD次数触发
-STAGNATION_ACCURACY_DECLINE    = 3      # 方向准确率连续下降期数
+STAGNATION_WIN_RATE_THRESHOLD = 0.45  # 胜率低于此值触发
+STAGNATION_HOLD_STREAK = 10  # 连续HOLD次数触发
+STAGNATION_ACCURACY_DECLINE = 3  # 方向准确率连续下降期数
+
 
 class SelfEvolutionEngine:
     """
@@ -85,10 +88,14 @@ class SelfEvolutionEngine:
         try:
             import sys as _sys
             from pathlib import Path as _Path
-            _driver_path = _Path(__file__).resolve().parent.parent.parent.parent / "16-调控系统" / "core"
+
+            _driver_path = (
+                _Path(__file__).resolve().parent.parent.parent.parent / "16-调控系统" / "core"
+            )
             if str(_driver_path) not in _sys.path:
                 _sys.path.insert(0, str(_driver_path))
             from llm_driver import llm_call
+
             return llm_call
         except Exception:
             return None
@@ -105,9 +112,9 @@ class SelfEvolutionEngine:
         Returns:
             (should_trigger: bool, reason: str)
         """
-        win_rate   = stats.get("win_rate", 1.0)
+        win_rate = stats.get("win_rate", 1.0)
         hold_streak = stats.get("hold_streak", 0)
-        acc_trend   = stats.get("accuracy_trend", [])  # 最近N期方向准确率
+        acc_trend = stats.get("accuracy_trend", [])  # 最近N期方向准确率
 
         if win_rate < STAGNATION_WIN_RATE_THRESHOLD and stats.get("total_trades", 0) >= 5:
             return True, f"胜率停滞: {win_rate:.1%} < {STAGNATION_WIN_RATE_THRESHOLD:.1%}"
@@ -116,18 +123,16 @@ class SelfEvolutionEngine:
             return True, f"过度保守: 连续{hold_streak}轮HOLD"
 
         if len(acc_trend) >= STAGNATION_ACCURACY_DECLINE:
-            if all(acc_trend[i] >= acc_trend[i+1]
-                   for i in range(len(acc_trend)-1)):
+            if all(acc_trend[i] >= acc_trend[i + 1] for i in range(len(acc_trend) - 1)):
                 return True, f"方向准确率连续下降{len(acc_trend)}期: {acc_trend}"
 
         return False, "系统正常，无需进化"
 
     # ── 主入口：完整三层进化周期 ─────────────────────────────────────────────
 
-    def run_full_cycle(self,
-                       stats: Dict[str, Any],
-                       recent_decisions: List[Dict],
-                       force: bool = False) -> Dict[str, Any]:
+    def run_full_cycle(
+        self, stats: Dict[str, Any], recent_decisions: List[Dict], force: bool = False
+    ) -> Dict[str, Any]:
         """
         执行完整三层自进化周期。
 
@@ -173,9 +178,9 @@ class SelfEvolutionEngine:
 
         # ── 汇总所有提案 ─────────────────────────────────────────────────
         all_proposals = (
-            a8_result.get("proposals", []) +
-            dream_result.get("proposals", []) +
-            online_result.get("proposals", [])
+            a8_result.get("proposals", [])
+            + dream_result.get("proposals", [])
+            + online_result.get("proposals", [])
         )
 
         # PROP-20260809-002: 提案参数值数据驱动精化
@@ -200,9 +205,7 @@ class SelfEvolutionEngine:
 
     # ── Layer 1: A8 理论与实践验证 ───────────────────────────────────────────
 
-    def _run_a8_inspection(self,
-                            stats: Dict,
-                            decisions: List[Dict]) -> Dict:
+    def _run_a8_inspection(self, stats: Dict, decisions: List[Dict]) -> Dict:
         """
         A8 检验：对照 6-TRADING A8 SKILL 的框架，
         找出理论预期与实际结果的背离点。
@@ -219,48 +222,60 @@ class SelfEvolutionEngine:
             top_gua, top_count = max(top_hexagrams.items(), key=lambda x: x[1])
             total = sum(top_hexagrams.values())
             if total > 0 and top_count / total > 0.6:
-                gaps.append({
-                    "type": "卦象单一化",
-                    "desc": f"{top_gua} 占比 {top_count/total:.1%}，系统推理退化为默认卦",
-                    "severity": "high",
-                })
-                proposals.append({
-                    "title": "增加市场状态区分度",
-                    "param_key": "velocity_threshold",
-                    "param_value": 0.015,
-                    "rationale": "降低速度阈值增加方向信号多样性",
-                    "source": "a8",
-                })
+                gaps.append(
+                    {
+                        "type": "卦象单一化",
+                        "desc": f"{top_gua} 占比 {top_count/total:.1%}，系统推理退化为默认卦",
+                        "severity": "high",
+                    }
+                )
+                proposals.append(
+                    {
+                        "title": "增加市场状态区分度",
+                        "param_key": "velocity_threshold",
+                        "param_value": 0.015,
+                        "rationale": "降低速度阈值增加方向信号多样性",
+                        "source": "a8",
+                    }
+                )
 
         # 检验2: 胜率与置信度一致性（高置信低胜率 = 理论虚高）
         if win_rate < 0.45:
-            gaps.append({
-                "type": "置信度虚高",
-                "desc": f"胜率 {win_rate:.1%} 但系统置信度未相应下调",
-                "severity": "medium",
-            })
-            proposals.append({
-                "title": "上调置信度门槛",
-                "param_key": "min_confidence_threshold",
-                "param_value": 0.45,
-                "rationale": "实际胜率偏低，提高入场门槛减少错误",
-                "source": "a8",
-            })
+            gaps.append(
+                {
+                    "type": "置信度虚高",
+                    "desc": f"胜率 {win_rate:.1%} 但系统置信度未相应下调",
+                    "severity": "medium",
+                }
+            )
+            proposals.append(
+                {
+                    "title": "上调置信度门槛",
+                    "param_key": "min_confidence_threshold",
+                    "param_value": 0.45,
+                    "rationale": "实际胜率偏低，提高入场门槛减少错误",
+                    "source": "a8",
+                }
+            )
 
         # 检验3: hold 过多（系统保守 = 实践与理论背离）
         if hold_pct > 0.7:
-            gaps.append({
-                "type": "行动力不足",
-                "desc": f"HOLD 占比 {hold_pct:.1%}，系统过度保守",
-                "severity": "medium",
-            })
-            proposals.append({
-                "title": "降低 velocity threshold",
-                "param_key": "velocity_threshold",
-                "param_value": 0.015,
-                "rationale": "提高信号敏感度，减少过度观望",
-                "source": "a8",
-            })
+            gaps.append(
+                {
+                    "type": "行动力不足",
+                    "desc": f"HOLD 占比 {hold_pct:.1%}，系统过度保守",
+                    "severity": "medium",
+                }
+            )
+            proposals.append(
+                {
+                    "title": "降低 velocity threshold",
+                    "param_key": "velocity_threshold",
+                    "param_value": 0.015,
+                    "rationale": "提高信号敏感度，减少过度观望",
+                    "source": "a8",
+                }
+            )
 
         # 用 LLM 补充深度分析（可选）
         llm_gaps = self._llm_a8_analysis(stats, decisions) if self.llm_client else []
@@ -277,8 +292,9 @@ class SelfEvolutionEngine:
         """用 LLM 做 A8 深度分析（有 Token 成本，可选）"""
         try:
             # 读取 A8 SKILL 框架
-            skill_text = A8_SKILL_PATH.read_text(encoding="utf-8")[:1500] \
-                if A8_SKILL_PATH.exists() else ""
+            skill_text = (
+                A8_SKILL_PATH.read_text(encoding="utf-8")[:1500] if A8_SKILL_PATH.exists() else ""
+            )
             prompt = f"""你是 A8 理论与实践验证模块。
 参考框架: {skill_text[:500]}
 
@@ -291,29 +307,27 @@ class SelfEvolutionEngine:
   类型: xxx
   描述: xxx（30字内）
   严重性: high/medium/low"""
-            from scripts.memory_l4.bcrm.market_preprocessor import normalize_snapshot
             reply = self.llm_client(prompt, max_tokens=200, purpose="a8_governance")
             # 解析简单格式
             gaps = []
             for block in reply.split("类型:")[1:]:
                 lines = block.strip().split("\n")
                 if len(lines) >= 2:
-                    gaps.append({
-                        "type":     lines[0].strip(),
-                        "desc":     lines[1].replace("描述:", "").strip() if len(lines) > 1 else "",
-                        "severity": "medium",
-                        "source":   "llm_a8",
-                    })
+                    gaps.append(
+                        {
+                            "type": lines[0].strip(),
+                            "desc": lines[1].replace("描述:", "").strip() if len(lines) > 1 else "",
+                            "severity": "medium",
+                            "source": "llm_a8",
+                        }
+                    )
             return gaps[:2]
         except Exception:
             return []
 
     # ── Layer 2: 做梦部外部反思 ──────────────────────────────────────────────
 
-    def _run_dream_analysis(self,
-                             stats: Dict,
-                             decisions: List[Dict],
-                             a8_result: Dict) -> Dict:
+    def _run_dream_analysis(self, stats: Dict, decisions: List[Dict], a8_result: Dict) -> Dict:
         """
         做梦部：弗洛伊德五大机制，发现被系统压制的判断。
         """
@@ -324,37 +338,43 @@ class SelfEvolutionEngine:
         top_hexagrams = stats.get("top_hexagrams", {})
         if len(top_hexagrams) <= 2 and sum(top_hexagrams.values()) > 5:
             signals.append("凝缩：决策被过度简化为少数卦象")
-            proposals.append({
-                "title": "增加四维评分权重多样性",
-                "param_key": "sentiment_weight",
-                "param_value": 0.35,  # 提高情绪权重
-                "rationale": "打破凝缩，增加决策维度多样性",
-                "source": "dream",
-            })
+            proposals.append(
+                {
+                    "title": "增加四维评分权重多样性",
+                    "param_key": "sentiment_weight",
+                    "param_value": 0.35,  # 提高情绪权重
+                    "rationale": "打破凝缩，增加决策维度多样性",
+                    "source": "dream",
+                }
+            )
 
         # 强迫性重复检测：连续 hold + 相同原因
         if stats.get("hold_streak", 0) >= 5:
             signals.append(f"强迫性重复：连续{stats['hold_streak']}轮HOLD")
-            proposals.append({
-                "title": "启动反事实推演模式",
-                "param_key": "force_action_after_n_holds",
-                "param_value": 8,
-                "rationale": "做梦部：系统在回避做决策，强制试探",
-                "source": "dream",
-            })
+            proposals.append(
+                {
+                    "title": "启动反事实推演模式",
+                    "param_key": "force_action_after_n_holds",
+                    "param_value": 8,
+                    "rationale": "做梦部：系统在回避做决策，强制试探",
+                    "source": "dream",
+                }
+            )
 
         # 投射检测：外部归因过多
         if a8_result.get("gaps"):
             external_gaps = [g for g in a8_result["gaps"] if "市场" in g.get("desc", "")]
             if len(external_gaps) > len(a8_result["gaps"]) * 0.6:
                 signals.append("投射：将内部能力不足归因于市场不明朗")
-                proposals.append({
-                    "title": "降低不确定性阈值",
-                    "param_key": "high_uncertainty_threshold",
-                    "param_value": 0.85,  # 原来可能过低
-                    "rationale": "系统在投射，适当接受不确定性",
-                    "source": "dream",
-                })
+                proposals.append(
+                    {
+                        "title": "降低不确定性阈值",
+                        "param_key": "high_uncertainty_threshold",
+                        "param_value": 0.85,  # 原来可能过低
+                        "rationale": "系统在投射，适当接受不确定性",
+                        "source": "dream",
+                    }
+                )
 
         # 四象限情景预言（被忽视情景）
         ignored_scenario = self._generate_ignored_scenario(stats)
@@ -375,10 +395,19 @@ class SelfEvolutionEngine:
             "subconscious_signals": signals,
             "proposals": proposals,
             "four_quadrant": {
-                "optimistic":  {"prob": quad_probs["optimistic"], "scenario": "市场突破关键阻力，信号明确"},
-                "neutral":     {"prob": quad_probs["neutral"], "scenario": "区间震荡，当前主要场景"},
-                "pessimistic": {"prob": quad_probs["pessimistic"], "scenario": "趋势反转，止损触发"},
-                "ignored":     {"prob": quad_probs["ignored"], "scenario": ignored_scenario or "假突破后急速反转"},
+                "optimistic": {
+                    "prob": quad_probs["optimistic"],
+                    "scenario": "市场突破关键阻力，信号明确",
+                },
+                "neutral": {"prob": quad_probs["neutral"], "scenario": "区间震荡，当前主要场景"},
+                "pessimistic": {
+                    "prob": quad_probs["pessimistic"],
+                    "scenario": "趋势反转，止损触发",
+                },
+                "ignored": {
+                    "prob": quad_probs["ignored"],
+                    "scenario": ignored_scenario or "假突破后急速反转",
+                },
             },
             "four_quadrant_meta": quad_meta,
             "analyzed_at": datetime.now(timezone.utc).isoformat(),
@@ -386,11 +415,12 @@ class SelfEvolutionEngine:
 
     def _generate_ignored_scenario(self, stats: Dict) -> str:
         """生成'被忽视情景'（四象限第四象限）。"""
-        top_gua = max(stats.get("top_hexagrams", {"坤为地": 1}).items(),
-                      key=lambda x: x[1], default=("?", 0))[0]
+        max(
+            stats.get("top_hexagrams", {"坤为地": 1}).items(), key=lambda x: x[1], default=("?", 0)
+        )[0]
         hold_rate = stats.get("hold_rate", 0.5)
         if hold_rate > 0.6:
-            return f"系统持续观望时市场单边突破，踏空主升浪（坤为地→乾为天）"
+            return "系统持续观望时市场单边突破，踏空主升浪（坤为地→乾为天）"
         return "主流观点一致时的反向黑天鹅"
 
     # ── PROP-20260809-002: 提案参数值数据驱动精化 ─────────────────────────
@@ -410,8 +440,7 @@ class SelfEvolutionEngine:
         if not proposals:
             return proposals
         try:
-            from scripts.memory_l4.evolution_optimize import (
-                optimize_proposal_value)
+            from scripts.memory_l4.evolution_optimize import optimize_proposal_value
         except Exception as e:
             print(f"  ⚠️ evolution_optimize 不可用，跳过参数精化: {e}")
             return proposals
@@ -434,8 +463,7 @@ class SelfEvolutionEngine:
                 if pos >= 0 and (first_pos is None or pos < first_pos):
                     first_pos, direction = pos, "raise"
             try:
-                new_val, source = optimize_proposal_value(
-                    param_key, direction, p["param_value"])
+                new_val, source = optimize_proposal_value(param_key, direction, p["param_value"])
                 if source == "optuna":
                     p["param_value_original"] = p["param_value"]
                     p["param_value"] = new_val
@@ -473,8 +501,8 @@ class SelfEvolutionEngine:
                 return None
 
             candidates = sorted(
-                log_dir.glob("**/*.json"),
-                key=lambda p: p.stat().st_mtime, reverse=True)
+                log_dir.glob("**/*.json"), key=lambda p: p.stat().st_mtime, reverse=True
+            )
             now_ts = datetime.now(timezone.utc).timestamp()
             for path in candidates[:5]:
                 try:
@@ -552,26 +580,38 @@ class SelfEvolutionEngine:
             (probs_dict, meta_dict)
         """
         cfg = self._load_regime_map()
-        base = dict(cfg.get("base_probs", {
-            "optimistic": 0.15, "neutral": 0.35,
-            "pessimistic": 0.30, "ignored": 0.20}))
+        base = dict(
+            cfg.get(
+                "base_probs",
+                {"optimistic": 0.15, "neutral": 0.35, "pessimistic": 0.30, "ignored": 0.20},
+            )
+        )
         max_adj = float(cfg.get("max_adjust", 0.10))
 
         # B2修复(E2审查): 先判空配置再取 regime（避免无谓日志扫描）
         if not cfg:
-            return base, {"regime": None, "prob_source": "static_fallback",
-                          "reason": "no_map_config"}
+            return base, {
+                "regime": None,
+                "prob_source": "static_fallback",
+                "reason": "no_map_config",
+            }
 
         regime_info = self._get_current_regime()
         if not regime_info:
-            return base, {"regime": None, "prob_source": "static_fallback",
-                          "reason": "no_regime_data"}
+            return base, {
+                "regime": None,
+                "prob_source": "static_fallback",
+                "reason": "no_regime_data",
+            }
 
         regime = regime_info["regime"]
         adjustments = cfg.get("regime_adjustments", {}).get(regime)
         if adjustments is None:
-            return base, {"regime": regime, "prob_source": "static_fallback",
-                          "reason": "regime_not_in_map"}
+            return base, {
+                "regime": regime,
+                "prob_source": "static_fallback",
+                "reason": "regime_not_in_map",
+            }
 
         probs = {}
         for quad, base_p in base.items():
@@ -600,8 +640,7 @@ class SelfEvolutionEngine:
     def _llm_dream_analysis(self, stats, signals) -> str:
         """LLM 做梦部深度潜意识探测。"""
         try:
-            skill_text = DREAM_SKILL_PATH.read_text(encoding="utf-8")[:800] \
-                if DREAM_SKILL_PATH.exists() else ""
+            DREAM_SKILL_PATH.read_text(encoding="utf-8")[:800] if DREAM_SKILL_PATH.exists() else ""
             prompt = f"""你是做梦部，基于弗洛伊德框架分析以下交易系统的潜意识：
 
 已检测信号: {signals[:3]}
@@ -614,10 +653,7 @@ class SelfEvolutionEngine:
 
     # ── Layer 3: 联网反思 ────────────────────────────────────────────────────
 
-    def _run_online_reflection(self,
-                                stats: Dict,
-                                a8_result: Dict,
-                                dream_result: Dict) -> Dict:
+    def _run_online_reflection(self, stats: Dict, a8_result: Dict, dream_result: Dict) -> Dict:
         """
         联网反思：结合 Tavily 搜索和 GitHub 成熟经验，
         验证当前系统问题是否有已知解法。
@@ -629,12 +665,14 @@ class SelfEvolutionEngine:
         # 1. Tavily 宏观市场搜索
         try:
             from scripts.memory_l4.tavily_macro import tavily_search
+
             queries = self._build_search_queries(a8_result, dream_result)
             for q in queries[:2]:  # 最多2次查询控制成本
                 data = tavily_search(q, max_results=5, topic="news")
                 if data and not data.get("error"):
-                    sources.append({"type": "tavily", "query": q,
-                                    "snippets": data.get("results", [])[:2]})
+                    sources.append(
+                        {"type": "tavily", "query": q, "snippets": data.get("results", [])[:2]}
+                    )
                     search_results.extend(data.get("results", [])[:2])
         except Exception as e:
             sources.append({"type": "tavily", "error": str(e)})
@@ -647,7 +685,8 @@ class SelfEvolutionEngine:
         # 3. LLM 综合外部信息生成改进提案
         if self.llm_client and (search_results or github_insights["proposals"]):
             llm_proposals = self._llm_synthesize_online(
-                stats, search_results, github_insights, a8_result)
+                stats, search_results, github_insights, a8_result
+            )
             proposals.extend(llm_proposals)
 
         return {
@@ -713,7 +752,8 @@ class SelfEvolutionEngine:
         sources = []
         gaps = [g.get("type", "") for g in a8_result.get("gaps", [])]
         hold_heavy = a8_result.get("proposals", []) and any(
-            "hold" in str(p).lower() for p in a8_result["proposals"])
+            "hold" in str(p).lower() for p in a8_result["proposals"]
+        )
 
         if any("卦象" in g for g in gaps) or hold_heavy:
             matched.append(patterns["velocity_too_conservative"])
@@ -723,25 +763,27 @@ class SelfEvolutionEngine:
             matched.append(patterns["over_hold"])
 
         for m in matched:
-            sources.append({"type": "github", "repo": m["source"],
-                             "insight": m["insight"]})
+            sources.append({"type": "github", "repo": m["source"], "insight": m["insight"]})
 
         return {
             "sources": sources,
             "proposals": [m["proposal"] for m in matched],
         }
 
-    def _llm_synthesize_online(self, stats, search_results,
-                                github_insights, a8_result) -> List[Dict]:
+    def _llm_synthesize_online(
+        self, stats, search_results, github_insights, a8_result
+    ) -> List[Dict]:
         """LLM 综合外部信息生成具体改进提案。"""
         try:
-            search_summary = "\n".join(
-                f"- {r.get('title','')}: {r.get('content','')[:80]}"
-                for r in search_results[:3]
-            ) if search_results else "（无搜索结果）"
+            search_summary = (
+                "\n".join(
+                    f"- {r.get('title','')}: {r.get('content','')[:80]}" for r in search_results[:3]
+                )
+                if search_results
+                else "（无搜索结果）"
+            )
             github_summary = "\n".join(
-                f"- [{s['repo']}] {s['insight']}"
-                for s in github_insights.get("sources", [])
+                f"- [{s['repo']}] {s['insight']}" for s in github_insights.get("sources", [])
             )
             prompt = f"""你是量化交易系统优化专家。
 
@@ -756,25 +798,30 @@ class SelfEvolutionEngine:
 理由: xxx（25字内）"""
             reply = self.llm_client(prompt, max_tokens=100, purpose="a8_governance")
             proposals = []
-            lines = {l.split(":")[0].strip(): ":".join(l.split(":")[1:]).strip()
-                     for l in reply.strip().split("\n") if ":" in l}
+            lines = {
+                l.split(":")[0].strip(): ":".join(l.split(":")[1:]).strip()
+                for l in reply.strip().split("\n")
+                if ":" in l
+            }
             if lines.get("参数名"):
-                proposals.append({
-                    "title":      f"LLM综合优化: {lines.get('参数名')}",
-                    "param_key":  lines.get("参数名", ""),
-                    "param_value": lines.get("新值", ""),
-                    "rationale":  lines.get("理由", ""),
-                    "source":     "llm_online",
-                })
+                proposals.append(
+                    {
+                        "title": f"LLM综合优化: {lines.get('参数名')}",
+                        "param_key": lines.get("参数名", ""),
+                        "param_value": lines.get("新值", ""),
+                        "rationale": lines.get("理由", ""),
+                        "source": "llm_online",
+                    }
+                )
             return proposals
         except Exception:
             return []
 
     # ── P2: Walk-Forward 回测验证 ────────────────────────────────────────────
 
-    def _backtest_and_adopt(self,
-                             proposals: List[Dict],
-                             recent_decisions: List[Dict]) -> List[Dict]:
+    def _backtest_and_adopt(
+        self, proposals: List[Dict], recent_decisions: List[Dict]
+    ) -> List[Dict]:
         """
         P2: 用 walk_forward.py 对每个提案做回测验证，
         通过则写入进化池（adopted_params）。
@@ -787,9 +834,13 @@ class SelfEvolutionEngine:
         MIN_DECISIONS_FOR_BACKTEST = 5
         MIN_TRADES_FOR_STATS_SIGNIFICANCE = 5
 
-        total_trades = self._last_stats.get("total_trades", 0) if hasattr(self, '_last_stats') else 0
+        total_trades = (
+            self._last_stats.get("total_trades", 0) if hasattr(self, "_last_stats") else 0
+        )
         if total_trades < MIN_TRADES_FOR_STATS_SIGNIFICANCE:
-            print(f"  ⏸ 交易数据不足 ({total_trades} < {MIN_TRADES_FOR_STATS_SIGNIFICANCE})，跳过回测验证，提案保留候选池")
+            print(
+                f"  ⏸ 交易数据不足 ({total_trades} < {MIN_TRADES_FOR_STATS_SIGNIFICANCE})，跳过回测验证，提案保留候选池"
+            )
             return []
 
         adopted = []
@@ -813,13 +864,16 @@ class SelfEvolutionEngine:
         proposals = new_proposals
 
         try:
-            from scripts.memory_l4.bcrm.walk_forward import WalkForwardEngine
             from scripts.memory_l4.bcrm.engine import BCRMEngine
+            from scripts.memory_l4.bcrm.walk_forward import WalkForwardEngine
+
             wfe = WalkForwardEngine(BCRMEngine())
         except Exception:
             wfe = None
 
-        has_sufficient_decisions = (recent_decisions and len(recent_decisions) >= MIN_DECISIONS_FOR_BACKTEST)
+        has_sufficient_decisions = (
+            recent_decisions and len(recent_decisions) >= MIN_DECISIONS_FOR_BACKTEST
+        )
 
         for proposal in proposals:
             try:
@@ -829,25 +883,31 @@ class SelfEvolutionEngine:
                     continue
 
                 safe_params = {
-                    "velocity_threshold", "min_confidence_threshold",
-                    "sentiment_weight", "volume_ratio_min",
-                    "force_evaluate_high_vol", "velocity_threshold_mode",
-                    "force_action_after_n_holds", "high_uncertainty_threshold",
+                    "velocity_threshold",
+                    "min_confidence_threshold",
+                    "sentiment_weight",
+                    "volume_ratio_min",
+                    "force_evaluate_high_vol",
+                    "velocity_threshold_mode",
+                    "force_action_after_n_holds",
+                    "high_uncertainty_threshold",
                 }
                 is_safe = param_key in safe_params
 
                 if not is_safe:
                     proposal["backtest_result"] = {
-                        "validated": False, "method": "whitelist_gate",
-                        "reason": f"参数 {param_key} 不在白名单"}
+                        "validated": False,
+                        "method": "whitelist_gate",
+                        "reason": f"参数 {param_key} 不在白名单",
+                    }
                     pending.append(proposal)
                     print(f"  ⛔ 白名单拒绝: {proposal['title']} ({param_key})")
                     continue
 
                 if wfe and has_sufficient_decisions:
                     try:
-                        from scripts.memory_l4.evolution_backtest import (
-                            walk_forward_validate)
+                        from scripts.memory_l4.evolution_backtest import walk_forward_validate
+
                         bt = walk_forward_validate(
                             param_key=param_key,
                             proposed_value=param_val,
@@ -863,15 +923,18 @@ class SelfEvolutionEngine:
                     proposal["backtest_result"] = bt
                     improved = bool(bt.get("validated", False))
                     if not improved:
-                        print(f"  ⏸ 拒绝(walk-forward 劣化): "
-                              f"{proposal['title']} | delta={bt.get('delta')}")
+                        print(
+                            f"  ⏸ 拒绝(walk-forward 劣化): "
+                            f"{proposal['title']} | delta={bt.get('delta')}"
+                        )
                         pending.append(proposal)
                         continue
                 else:
                     proposal["backtest_result"] = {
                         "validated": False,
                         "method": "insufficient_data",
-                        "reason": f"决策数不足 ({len(recent_decisions) if recent_decisions else 0} < {MIN_DECISIONS_FOR_BACKTEST})"}
+                        "reason": f"决策数不足 ({len(recent_decisions) if recent_decisions else 0} < {MIN_DECISIONS_FOR_BACKTEST})",
+                    }
                     pending.append(proposal)
                     print(f"  ⏸ 数据不足，待验证: {proposal['title']}")
                     continue
@@ -885,7 +948,8 @@ class SelfEvolutionEngine:
 
             except Exception as adopt_err:
                 proposal["backtest_result"] = {
-                    "skipped": True, "degraded": True,
+                    "skipped": True,
+                    "degraded": True,
                     "reason": f"adopt_loop_exception: {adopt_err}",
                 }
                 pending.append(proposal)
@@ -905,7 +969,7 @@ class SelfEvolutionEngine:
         if seen_file.exists():
             try:
                 data = json.loads(seen_file.read_text(encoding="utf-8"))
-                return set(tuple(x) for x in data)
+                return {tuple(x) for x in data}
             except Exception:
                 pass
         return set()
@@ -920,8 +984,8 @@ class SelfEvolutionEngine:
                 existing.add((k, v))
         seen_file.parent.mkdir(parents=True, exist_ok=True)
         seen_file.write_text(
-            json.dumps([list(x) for x in existing], ensure_ascii=False, indent=2),
-            encoding="utf-8")
+            json.dumps([list(x) for x in existing], ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
     def _save_pending_proposals(self, pending: List[Dict]):
         pending_file = BASE_DIR / "data" / "self_evolution" / "pending_proposals.json"
@@ -934,8 +998,8 @@ class SelfEvolutionEngine:
         existing.extend(pending)
         pending_file.parent.mkdir(parents=True, exist_ok=True)
         pending_file.write_text(
-            json.dumps(existing[-100:], ensure_ascii=False, indent=2),
-            encoding="utf-8")
+            json.dumps(existing[-100:], ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
     # ── 日志管理 ────────────────────────────────────────────────────────────
 
@@ -950,8 +1014,7 @@ class SelfEvolutionEngine:
     def _save_log(self):
         # 只保留最近 50 次进化记录
         EVOLUTION_LOG.write_text(
-            json.dumps(self._log[-50:], ensure_ascii=False, indent=2),
-            encoding="utf-8"
+            json.dumps(self._log[-50:], ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
     def get_last_evolution(self) -> Optional[Dict]:
@@ -966,8 +1029,8 @@ class SelfEvolutionEngine:
         - 能映射到 config.json 字段的 → 更新 config.json
         - 所有 adopted → 生成 constraints/releases/vX.Y.Z.json 快照
         """
-        import time as _time
-        from datetime import datetime, timezone as _tz
+        from datetime import datetime
+        from datetime import timezone as _tz
 
         # 1. 更新 config.json
         config_updated = {}
@@ -986,8 +1049,12 @@ class SelfEvolutionEngine:
             config_key = _PARAM_KEY_TO_CONFIG.get(param_key, param_key)
             # 只写 config.json 已知的进化键
             # 注：max_consecutive_losses 已禁用（风控改以亏损金额为准），不再自动进化
-            if config_key in ("confidence_threshold", "daily_loss_limit",
-                              "default_position_pct", "loss_limit_pct"):
+            if config_key in (
+                "confidence_threshold",
+                "daily_loss_limit",
+                "default_position_pct",
+                "loss_limit_pct",
+            ):
                 old_val = cfg.get(config_key)
                 if old_val != param_val:
                     cfg[config_key] = param_val
@@ -997,8 +1064,7 @@ class SelfEvolutionEngine:
             cfg["last_evolve"] = datetime.now(_tz.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             OKX_SIM_CONFIG.parent.mkdir(parents=True, exist_ok=True)
             OKX_SIM_CONFIG.write_text(
-                json.dumps(cfg, ensure_ascii=False, indent=2) + "\n",
-                encoding="utf-8"
+                json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
             )
             print(f"  [B-2] config.json 已更新: {list(config_updated.keys())}")
 
@@ -1007,7 +1073,8 @@ class SelfEvolutionEngine:
 
     def _emit_constraint_release(self, adopted: List[Dict], config_updated: Dict):
         """生成 constraints/releases/vX.Y.Z.json 约束升级快照。"""
-        from datetime import datetime, timezone as _tz
+        from datetime import datetime
+        from datetime import timezone as _tz
 
         CONSTRAINTS_RELEASES_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1032,9 +1099,7 @@ class SelfEvolutionEngine:
             "generated_at": ts,
             "source_ref": "self_evolution_engine",
             "source_sha256": f"evolution-{ts}",
-            "candidate_id": ",".join(
-                p.get("param_key", "") for p in adopted[:5]
-            ),
+            "candidate_id": ",".join(p.get("param_key", "") for p in adopted[:5]),
             "from_version": f"v0.1.{max_patch}" if max_patch > 0 else "v0.1.0",
             "to_version": new_version,
             "schema_version": "evolution-p2-constraint-release-snapshot-v0.1",
@@ -1053,7 +1118,6 @@ class SelfEvolutionEngine:
 
         out_path = CONSTRAINTS_RELEASES_DIR / f"{new_version}.json"
         out_path.write_text(
-            json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8"
+            json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
         print(f"  [B-2] 约束快照已生成: {out_path.name} ({len(adopted)} proposals)")

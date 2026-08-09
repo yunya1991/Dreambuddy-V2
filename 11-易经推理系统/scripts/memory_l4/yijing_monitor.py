@@ -12,10 +12,16 @@
   python -m scripts.memory_l4.yijing_monitor --check-only    # 仅检查状态
   python -m scripts.memory_l4.yijing_monitor --evolve-only   # 仅执行自进化和PR评论
 """
-import os, sys, json, subprocess, time, argparse, warnings, math
-from datetime import datetime, timezone, timedelta
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict
 
 warnings.filterwarnings("ignore")
 
@@ -27,18 +33,15 @@ if str(_ROOT) not in sys.path:
 # 加载 .env 配置，确保 os.environ 中包含 POLLING_COINS/INITIAL_EQUITY 等
 try:
     from dotenv import load_dotenv
+
     load_dotenv(_ROOT / ".env")
 except Exception:
     pass
 
 from scripts.memory_l4.paths import (
-    workspace_root,
-    workbuddy_dir,
-    memory_l4_dir,
     memory_l4_cases_dir,
-    memory_l4_stats_dir,
-    memory_l4_reviews_dir,
-    memory_l4_distills_dir,
+    workbuddy_dir,
+    workspace_root,
 )
 
 BASE_DIR = workspace_root()
@@ -52,7 +55,7 @@ OKX_SIM_DIR = BASE_DIR / "data" / "okx_sim"
 LOG_FILE = BASE_DIR / "logs" / "yijing_monitor.log"
 RISK_STATE_FILE = workbuddy_dir() / "memory_l4" / "risk" / "risk_state.json"
 
-MAX_IDLE_MINUTES = 30   # 心跳超过30分钟无更新认为异常
+MAX_IDLE_MINUTES = 30  # 心跳超过30分钟无更新认为异常
 GH_TOKEN = os.environ.get("GH_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
 PR_NUMBER = "52"
 REPO = "yunya1991/Dreambuddy-V2"
@@ -61,43 +64,55 @@ FEISHU_ALERT_ENABLED = True
 
 # ── 飞书告警 ────────────────────────────────────────────────────────────────
 
+
 def _send_feishu_alert(alert_type: str, level: str, message: str, details: Dict = None):
     if not FEISHU_ALERT_ENABLED:
         return
     try:
         from scripts.memory_l4.yijing_feishu_alert import send_alert
+
         send_alert(alert_type, level, message, details)
     except Exception as e:
         _log(f"飞书告警发送失败: {e}")
 
+
 def _send_feishu_heartbeat_timeout(idle_minutes: float):
     try:
         from scripts.memory_l4.yijing_feishu_alert import notify_heartbeat_timeout
+
         notify_heartbeat_timeout(idle_minutes, MAX_IDLE_MINUTES)
     except Exception as e:
         _log(f"飞书心跳告警发送失败: {e}")
 
+
 def _send_feishu_trading_halted(reason: str, consecutive_losses: int, daily_pnl: float = 0):
     try:
         from scripts.memory_l4.yijing_feishu_alert import notify_trading_halted
+
         notify_trading_halted(reason, consecutive_losses, daily_pnl)
     except Exception as e:
         _log(f"飞书交易暂停告警发送失败: {e}")
 
+
 def _send_feishu_status_summary(health: bool, status: str, detail: Dict):
     try:
         from scripts.memory_l4.yijing_feishu_alert import notify_status_summary
+
         notify_status_summary(health, status, detail)
     except Exception as e:
         _log(f"飞书状态汇总发送失败: {e}")
 
+
 # ── 工具函数 ────────────────────────────────────────────────────────────────
+
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
+
 def _fmt_ts(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+
 
 def _log(msg: str):
     ts = _fmt_ts(_now())
@@ -113,6 +128,7 @@ def _log(msg: str):
     with open(LOG_FILE, "a") as f:
         f.write(line + "\n")
 
+
 def load_json(path: Path, default: dict = None) -> dict:
     if not path.exists():
         return default or {}
@@ -122,15 +138,19 @@ def load_json(path: Path, default: dict = None) -> dict:
     except Exception:
         return default or {}
 
+
 def save_json(path: Path, data: dict):
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+
 def ts_to_dt(ts: float) -> datetime:
     return datetime.fromtimestamp(ts, tz=timezone.utc)
 
+
 # ── 监控 ────────────────────────────────────────────────────────────────────
+
 
 def check_yijing_health() -> tuple[bool, str, dict]:
     """
@@ -168,7 +188,11 @@ def check_yijing_health() -> tuple[bool, str, dict]:
     # 检查心跳是否活跃
     if heartbeat_idle > MAX_IDLE_MINUTES:
         _send_feishu_heartbeat_timeout(heartbeat_idle)
-        return False, f"心跳已空闲 {heartbeat_idle:.0f} 分钟（阈值 {MAX_IDLE_MINUTES} 分钟）", detail
+        return (
+            False,
+            f"心跳已空闲 {heartbeat_idle:.0f} 分钟（阈值 {MAX_IDLE_MINUTES} 分钟）",
+            detail,
+        )
 
     # 检查是否有运行记录
     if heartbeat.get("status") in ("error", "stopped"):
@@ -176,9 +200,13 @@ def check_yijing_health() -> tuple[bool, str, dict]:
             "heartbeat",
             "critical",
             f"进程状态异常: {heartbeat.get('status')} | last_error: {heartbeat.get('last_error', 'N/A')}",
-            {"pid": heartbeat.get("pid"), "status": heartbeat.get("status")}
+            {"pid": heartbeat.get("pid"), "status": heartbeat.get("status")},
         )
-        return False, f"进程状态异常: {heartbeat.get('status')} | last_error: {heartbeat.get('last_error', 'N/A')}", detail
+        return (
+            False,
+            f"进程状态异常: {heartbeat.get('status')} | last_error: {heartbeat.get('last_error', 'N/A')}",
+            detail,
+        )
 
     # 检查风控状态
     risk_state = load_json(RISK_STATE_FILE, {})
@@ -191,9 +219,15 @@ def check_yijing_health() -> tuple[bool, str, dict]:
         detail["trading_halted"] = True
         detail["halt_reason"] = risk_state.get("halt_reason")
 
-    return True, f"心跳正常，空闲 {heartbeat_idle:.0f} 分钟，案例 {case_count} 个，重训 {scheduler.get('retrain_count', 0)} 次", detail
+    return (
+        True,
+        f"心跳正常，空闲 {heartbeat_idle:.0f} 分钟，案例 {case_count} 个，重训 {scheduler.get('retrain_count', 0)} 次",
+        detail,
+    )
+
 
 # ── 恢复执行 ────────────────────────────────────────────────────────────────
+
 
 def run_polling_trader():
     """启动易经推理轮询交易器"""
@@ -209,7 +243,10 @@ def run_polling_trader():
     try:
         # 使用 nohup 后台启动（参数与 .env 保持一致：INITIAL_EQUITY 200USDT，15币种，interval=300s）
         import os
-        coins = os.environ.get("POLLING_COINS", "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB")
+
+        coins = os.environ.get(
+            "POLLING_COINS", "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB"
+        )
         interval = os.environ.get("POLLING_INTERVAL", "300")
         confidence = os.environ.get("CONFIDENCE_THRESHOLD", "0.70")
         max_positions = os.environ.get("MAX_POSITIONS", "3")
@@ -224,17 +261,29 @@ def run_polling_trader():
 
         # 用 Popen 后台启动（nohup + 重定向），避免 subprocess.run timeout=30 触发"启动超时"误报
         cmd = [
-            "nohup", sys.executable, "-m", "scripts.memory_l4.polling_trader",
-            "--interval", interval, "--coins", coins,
-            "--confidence", confidence, "--max-positions", max_positions,
-            "--position-pct", position_pct,
-            "--initial-equity", initial_equity,
+            "nohup",
+            sys.executable,
+            "-m",
+            "scripts.memory_l4.polling_trader",
+            "--interval",
+            interval,
+            "--coins",
+            coins,
+            "--confidence",
+            confidence,
+            "--max-positions",
+            max_positions,
+            "--position-pct",
+            position_pct,
+            "--initial-equity",
+            initial_equity,
         ]
         with open(stdout_log, "a") as out_f, open(stderr_log, "a") as err_f:
             proc = subprocess.Popen(
                 cmd,
                 cwd=str(BASE_DIR),
-                stdout=out_f, stderr=err_f,
+                stdout=out_f,
+                stderr=err_f,
                 start_new_session=True,
             )
         _log(f"Popen 启动成功 PID={proc.pid}")
@@ -251,7 +300,9 @@ def run_polling_trader():
         _log(f"启动异常: {e}")
         return False
 
+
 # ── 自进化学习 ──────────────────────────────────────────────────────────────
+
 
 def trigger_retrain():
     """触发两仪引擎和QMM重训"""
@@ -260,8 +311,8 @@ def trigger_retrain():
     _log("=" * 60)
 
     try:
-        from scripts.memory_l4.learning_scheduler import LearningScheduler
         from scripts.memory_l4.bcrm.engine import BCRMEngine
+        from scripts.memory_l4.learning_scheduler import LearningScheduler
 
         bcrm = BCRMEngine.from_config()  # PROP-20260810
         scheduler = LearningScheduler(bcrm)
@@ -282,23 +333,27 @@ def trigger_retrain():
         _log(f"重训异常: {e}")
         return False
 
+
 def analyze_performance() -> dict:
     """分析交易绩效（P1修正：优先从 PerformanceTracker 的 daily_stats.json 读取，统一数据源）"""
     _log("=" * 60)
     _log("分析易经推理交易绩效")
     _log("=" * 60)
 
-    perf = load_json(PERF_FILE, {
-        "total_trades": 0,
-        "win_count": 0,
-        "loss_count": 0,
-        "win_rate": 0,
-        "total_pnl": 0,
-        "avg_pnl": 0,
-        "max_win": 0,
-        "max_loss": 0,
-        "consecutive_losses": 0,
-    })
+    perf = load_json(
+        PERF_FILE,
+        {
+            "total_trades": 0,
+            "win_count": 0,
+            "loss_count": 0,
+            "win_rate": 0,
+            "total_pnl": 0,
+            "avg_pnl": 0,
+            "max_win": 0,
+            "max_loss": 0,
+            "consecutive_losses": 0,
+        },
+    )
 
     # P1修正：优先从 PerformanceTracker 的 daily_stats.json 读取（与 polling_trader 同源）
     daily_stats_file = workbuddy_dir() / "memory_l4" / "stats" / "daily_stats.json"
@@ -331,7 +386,9 @@ def analyze_performance() -> dict:
         perf["total_trades"] = len(pnl_list)
         perf["win_count"] = sum(1 for p in pnl_list if p > 0)
         perf["loss_count"] = sum(1 for p in pnl_list if p <= 0)
-        perf["win_rate"] = perf["win_count"] / perf["total_trades"] if perf["total_trades"] > 0 else 0
+        perf["win_rate"] = (
+            perf["win_count"] / perf["total_trades"] if perf["total_trades"] > 0 else 0
+        )
         perf["total_pnl"] = sum(pnl_list)
         perf["avg_pnl"] = perf["total_pnl"] / perf["total_trades"]
         perf["max_win"] = max(pnl_list) if pnl_list else 0
@@ -351,7 +408,9 @@ def analyze_performance() -> dict:
 
     perf["consecutive_losses"] = consecutive_losses
 
-    _log(f"绩效统计: 总交易 {perf['total_trades']} 笔 | 胜率 {perf['win_rate']:.1%} | 总盈亏 {perf['total_pnl']:.2f} USDT")
+    _log(
+        f"绩效统计: 总交易 {perf['total_trades']} 笔 | 胜率 {perf['win_rate']:.1%} | 总盈亏 {perf['total_pnl']:.2f} USDT"
+    )
 
     # 保存更新后的绩效
     perf["last_update"] = _fmt_ts(_now())
@@ -359,6 +418,7 @@ def analyze_performance() -> dict:
     save_json(PERF_FILE, perf)
 
     return perf
+
 
 def evolve_thresholds(perf: dict) -> dict:
     """
@@ -399,7 +459,9 @@ def evolve_thresholds(perf: dict) -> dict:
     MIN_SAMPLE_FOR_THRESHOLD = 5
 
     if total_trades < MIN_SAMPLE_FOR_THRESHOLD:
-        _log(f"交易样本量不足 ({total_trades} < {MIN_SAMPLE_FOR_THRESHOLD})，跳过阈值调整，保持当前配置")
+        _log(
+            f"交易样本量不足 ({total_trades} < {MIN_SAMPLE_FOR_THRESHOLD})，跳过阈值调整，保持当前配置"
+        )
         return {
             "thresholds": thresholds,
             "adjustments": [],
@@ -411,10 +473,14 @@ def evolve_thresholds(perf: dict) -> dict:
     # 根据胜率调整单笔仓位而非置信度门槛
     if win_rate < 0.40:
         thresholds["default_position_pct"] = max(thresholds["default_position_pct"] - 0.02, 0.02)
-        adjustments.append(f"胜率偏低({win_rate:.1%}): 降低仓位至{thresholds['default_position_pct']:.1%}")
+        adjustments.append(
+            f"胜率偏低({win_rate:.1%}): 降低仓位至{thresholds['default_position_pct']:.1%}"
+        )
     elif win_rate > 0.60:
         thresholds["default_position_pct"] = min(thresholds["default_position_pct"] + 0.02, 0.20)
-        adjustments.append(f"胜率偏高({win_rate:.1%}): 提高仓位至{thresholds['default_position_pct']:.1%}")
+        adjustments.append(
+            f"胜率偏高({win_rate:.1%}): 提高仓位至{thresholds['default_position_pct']:.1%}"
+        )
 
     # 根据总盈亏调整仓位
     if total_pnl > 500:
@@ -433,15 +499,21 @@ def evolve_thresholds(perf: dict) -> dict:
     total_trades = perf.get("total_trades", 0)
     if total_trades >= 20:
         if win_rate < 0.30:
-            thresholds["confidence_threshold"] = min(thresholds["confidence_threshold"] + 0.03, 0.80)
+            thresholds["confidence_threshold"] = min(
+                thresholds["confidence_threshold"] + 0.03, 0.80
+            )
             adjustments.append("交易足够多但胜率低: 小幅提高置信度门槛")
         elif win_rate > 0.70:
-            thresholds["confidence_threshold"] = max(thresholds["confidence_threshold"] - 0.02, 0.55)
+            thresholds["confidence_threshold"] = max(
+                thresholds["confidence_threshold"] - 0.02, 0.55
+            )
             adjustments.append("交易足够多且胜率高: 小幅降低置信度门槛")
 
-    _log(f"阈值调整: confidence {thresholds['confidence_threshold']:.2f}, "
-         f"position_pct {thresholds['default_position_pct']:.1%}, "
-         f"daily_loss {thresholds['daily_loss_limit']:.0f}")
+    _log(
+        f"阈值调整: confidence {thresholds['confidence_threshold']:.2f}, "
+        f"position_pct {thresholds['default_position_pct']:.1%}, "
+        f"daily_loss {thresholds['daily_loss_limit']:.0f}"
+    )
     if adjustments:
         _log(f"调整原因: {'; '.join(adjustments)}")
 
@@ -460,6 +532,7 @@ def evolve_thresholds(perf: dict) -> dict:
         "adjustments": adjustments,
     }
 
+
 def _run_self_evolution_cycle(perf: dict) -> dict:
     """
     接入 SelfEvolutionEngine 三层闭环（A8理论实践验证 / 做梦部 / 联网反思）。
@@ -468,6 +541,7 @@ def _run_self_evolution_cycle(perf: dict) -> dict:
     """
     try:
         from scripts.memory_l4.self_evolution_engine import SelfEvolutionEngine
+
         engine = SelfEvolutionEngine()
         stats = {
             "win_rate": perf.get("win_rate", 1.0),
@@ -490,6 +564,7 @@ def _run_self_evolution_cycle(perf: dict) -> dict:
         _log(f"[自进化] 三层闭环异常: {e}")
         return {"triggered": False, "error": str(e)}
 
+
 def run_evolution():
     """执行自进化学习流程"""
     _log("\n" + "=" * 60)
@@ -510,11 +585,14 @@ def run_evolution():
 
     # 4. 保存进化记录
     evolution_file = workbuddy_dir() / "memory_l4" / "evolution" / "yijing_evolution.json"
-    evolution = load_json(evolution_file, {
-        "evolution_count": 0,
-        "history": [],
-        "lessons": [],
-    })
+    evolution = load_json(
+        evolution_file,
+        {
+            "evolution_count": 0,
+            "history": [],
+            "lessons": [],
+        },
+    )
 
     # A-3修复：阈值无变化时不 increment evolution_count、不写 history
     adjustments = evolved.get("adjustments", [])
@@ -525,20 +603,22 @@ def run_evolution():
     prev_thresholds = prev_history[-1]["thresholds"] if prev_history else {}
 
     # 判断是否有实质变化（阈值不同 或 adjustments 非空且不重复）
-    thresholds_changed = (new_thresholds != prev_thresholds)
+    thresholds_changed = new_thresholds != prev_thresholds
     # 检查 adjustments 是否与上一条完全相同
     prev_adjustments = prev_history[-1].get("adjustments", []) if prev_history else []
-    adjustments_same = (adjustments == prev_adjustments and not thresholds_changed)
+    adjustments_same = adjustments == prev_adjustments and not thresholds_changed
 
     if thresholds_changed or (adjustments and not adjustments_same):
         evolution["evolution_count"] = evolution.get("evolution_count", 0) + 1
-        evolution["history"].append({
-            "ts": _fmt_ts(_now()),
-            "win_rate": perf.get("win_rate", 0),
-            "total_pnl": perf.get("total_pnl", 0),
-            "thresholds": new_thresholds,
-            "adjustments": adjustments,
-        })
+        evolution["history"].append(
+            {
+                "ts": _fmt_ts(_now()),
+                "win_rate": perf.get("win_rate", 0),
+                "total_pnl": perf.get("total_pnl", 0),
+                "thresholds": new_thresholds,
+                "adjustments": adjustments,
+            }
+        )
         evolution["history"] = evolution["history"][-20:]
         _log(f"进化状态已保存 | 累计进化 {evolution['evolution_count']} 次")
     else:
@@ -573,7 +653,9 @@ def run_evolution():
 
     return evolution, perf, evolved
 
+
 # ── PR 评论 ─────────────────────────────────────────────────────────────────
+
 
 def post_pr_comment(detail: dict, evolution: dict, perf: dict, evolved: dict):
     """在远端 PR 下创建易经推理专属评论"""
@@ -585,7 +667,7 @@ def post_pr_comment(detail: dict, evolution: dict, perf: dict, evolved: dict):
         _log("GH_TOKEN 未配置，跳过 PR 评论")
         return False
 
-    cycle = _now().strftime('%Y%m%d_%H%M%S')
+    cycle = _now().strftime("%Y%m%d_%H%M%S")
 
     # 构建报告
     heartbeat = detail.get("heartbeat", {})
@@ -643,12 +725,10 @@ def post_pr_comment(detail: dict, evolution: dict, perf: dict, evolved: dict):
 """
 
     url = f"https://api.github.com/repos/{REPO}/issues/{PR_NUMBER}/comments"
-    headers = {
-        "Authorization": f"token {GH_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
+    headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     try:
         import requests
+
         r = requests.post(url, headers=headers, json={"body": body}, timeout=15)
         if r.status_code in (200, 201):
             _log("PR 评论创建成功")
@@ -660,7 +740,9 @@ def post_pr_comment(detail: dict, evolution: dict, perf: dict, evolved: dict):
         _log(f"PR 评论异常: {e}")
         return False
 
+
 # ── 主流程 ──────────────────────────────────────────────────────────────────
+
 
 def main():
     parser = argparse.ArgumentParser(description="易经推理交易自动化监控")
@@ -695,6 +777,7 @@ def main():
     _log("\n" + "=" * 60)
     _log(f"易经推理监控完成 | {_fmt_ts(_now())}")
     _log("=" * 60)
+
 
 if __name__ == "__main__":
     main()

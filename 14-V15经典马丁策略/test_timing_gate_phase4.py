@@ -11,10 +11,10 @@
   - 只把 DirectionGate.GateResult 作为"方向先验"（若 gate 不让做多，则即使 bull 结构也返回 long_timing_ok=False）
   - UNCLEAR 结构时宽容模式：默认放行 (timing_ok=True) 避免过度限仓
 """
+
 from __future__ import annotations
 
 import sys
-from dataclasses import asdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # --------------------------------------------------------------------------- #
 PASS = 0
 FAIL = 0
+
 
 def check(name: str, cond: bool, detail: str = ""):
     global PASS, FAIL
@@ -43,12 +44,17 @@ def approx(a: float, b: float, tol: float = 1e-3) -> bool:
 # 导入被测模块（TDD-RED：文件可能不存在/为空，会先失败）
 # --------------------------------------------------------------------------- #
 try:
-    from lib.timing_gate import (
-        TimingGate, TimingResult, WaveStructure,
-        detect_three_wave_structure, classify_fib_zone,
-        retrace_quality_score, extension_chase_score,
-    )
     from lib.direction_gate import GateResult, MarketRegime, TradeDirection
+    from lib.timing_gate import (
+        TimingGate,
+        TimingResult,
+        WaveStructure,
+        classify_fib_zone,
+        detect_three_wave_structure,
+        extension_chase_score,
+        retrace_quality_score,
+    )
+
     _MODULE_LOADED = True
 except Exception as _E:
     print(f"[TDD-RED] 模块加载失败（预期在 RED 阶段发生）：{_E}")
@@ -71,7 +77,12 @@ except Exception as _E:
 def _make_gate(regime: str, long_allowed: bool, short_allowed: bool) -> "GateResult":
     # 兼容：如果 GateResult 还未导入，返回普通 dict (在 RED 阶段不会被使用)
     if GateResult is None:
-        return dict(regime=regime, long_enabled=long_allowed, short_enabled=short_allowed, diagnostic={})
+        return {
+            "regime": regime,
+            "long_enabled": long_allowed,
+            "short_enabled": short_allowed,
+            "diagnostic": {},
+        }
 
     # 用枚举构造真实 regime / allowed_direction
     regime_map = {
@@ -155,8 +166,11 @@ def t_a2_bearish_three_wave_basic():
 
 def t_a3_unclear_not_enough_swings():
     """swing 点数 <3 → UNCLEAR"""
-    for n in ([], [{"idx":0,"price":100,"type":"low"}],
-              [{"idx":0,"price":100,"type":"low"}, {"idx":5,"price":110,"type":"high"}]):
+    for n in (
+        [],
+        [{"idx": 0, "price": 100, "type": "low"}],
+        [{"idx": 0, "price": 100, "type": "low"}, {"idx": 5, "price": 110, "type": "high"}],
+    ):
         ws = detect_three_wave_structure(n)
         check(f"A15. swings={len(n)} → UNCLEAR", ws.kind == "UNCLEAR", f"got {ws.kind}")
 
@@ -209,7 +223,9 @@ def t_c1_bull_structure_within_fib_band_and_gate_long_ok():
     """Bull 三浪 + r=0.5 ∈ [0.30,0.72] + 现价 118 < EXT148.54 + gate 允许多 → long_timing_ok"""
     tg = TimingGate(fib_retrace_lo=0.30, fib_retrace_hi=0.72, fib_ext_ratio=1.618)
     gate = _make_gate("long_preferred", long_allowed=True, short_allowed=False)
-    recent_closes = list(range(60))  # dummy，内部走 swing 检测；我们通过 monkey patch 用固定 swings 测
+    recent_closes = list(
+        range(60)
+    )  # dummy，内部走 swing 检测；我们通过 monkey patch 用固定 swings 测
     # Monkey patch 内部 swing 检测（否则要构造真实的长序列 closes，测试不直观）
     _monkey_swings(tg, _mock_swings_bull())
     tr = tg.evaluate(gate, recent_closes, price_now=118.0)
@@ -233,9 +249,15 @@ def t_c3_bull_price_over_ext_1618_no_chase():
     tg = TimingGate(fib_ext_ratio=1.618)
     gate = _make_gate("long_preferred", long_allowed=True, short_allowed=False)
     _monkey_swings(tg, _mock_swings_bull())
-    tr = tg.evaluate(gate, recent_closes=list(range(60)), price_now=150.0)  # EXT 是 148.54，150 > 148.54
+    tr = tg.evaluate(
+        gate, recent_closes=list(range(60)), price_now=150.0
+    )  # EXT 是 148.54，150 > 148.54
     check("C6. 超EXT1618 追末端 → long_timing_ok=False", tr.long_timing_ok is False)
-    check("C7. reason 包含'追末端'或'扩展'或'EXT'", ("追末端" in tr.reason or "扩展" in tr.reason or "EXT" in tr.reason), tr.reason)
+    check(
+        "C7. reason 包含'追末端'或'扩展'或'EXT'",
+        ("追末端" in tr.reason or "扩展" in tr.reason or "EXT" in tr.reason),
+        tr.reason,
+    )
 
 
 def t_c4_bull_retrace_too_shallow_wait():
@@ -254,8 +276,11 @@ def t_c4_bull_retrace_too_shallow_wait():
     # ext = 价格 126 在 148.54 下方约 22.54 < 30 → 0.5+0.5*22.54/30 = 0.876
     # total ≈ 1.0 * 0.15 * 0.876 ≈ 0.13 < 0.5 阈值 → long_timing_ok=False
     check("C8. 回撤浅 r=0.15<0.30 → long_timing_ok=False", tr.long_timing_ok is False)
-    check("C9. reason 包含'回撤'或'等待'或'等待'",
-          ("回撤" in tr.reason or "浅" in tr.reason or "等待" in tr.reason), tr.reason)
+    check(
+        "C9. reason 包含'回撤'或'等待'或'等待'",
+        ("回撤" in tr.reason or "浅" in tr.reason or "等待" in tr.reason),
+        tr.reason,
+    )
 
 
 def t_c5_bull_retrace_too_deep_trend_reversal_risk():
@@ -271,9 +296,11 @@ def t_c5_bull_retrace_too_deep_trend_reversal_risk():
     tr = tg.evaluate(gate, recent_closes=list(range(60)), price_now=105.0)
     # retrace_quality_score(0.85) ≈ exp(-0.5*(0.35/0.18)^2) ≈ 0.15
     check("C10. 深回撤 r=0.85>0.72 → long_timing_ok=False", tr.long_timing_ok is False)
-    check("C11. reason 包含'等待'或'NONE'(fib_zone不明)",
-          ("等待" in tr.reason or "NONE" in tr.fib_zone or "回撤" in tr.reason),
-          f"reason={tr.reason} zone={tr.fib_zone}")
+    check(
+        "C11. reason 包含'等待'或'NONE'(fib_zone不明)",
+        ("等待" in tr.reason or "NONE" in tr.fib_zone or "回撤" in tr.reason),
+        f"reason={tr.reason} zone={tr.fib_zone}",
+    )
 
 
 def t_c6_bear_rebound_f618_within_band_ok():
@@ -287,7 +314,11 @@ def t_c6_bear_rebound_f618_within_band_ok():
     gate = _make_gate("short_allowed", long_allowed=True, short_allowed=True)
     _monkey_swings(tg, bear_swings_f618)
     tr = tg.evaluate(gate, recent_closes=list(range(60)), price_now=187.0)
-    check("C12. bear+F618反弹+未到ext+gate允空 → short_timing_ok=True", tr.short_timing_ok is True, str(tr))
+    check(
+        "C12. bear+F618反弹+未到ext+gate允空 → short_timing_ok=True",
+        tr.short_timing_ok is True,
+        str(tr),
+    )
     check("C13. fib_zone=F618", tr.fib_zone == "F618", tr.fib_zone)
 
 
@@ -295,7 +326,7 @@ def t_c7_bear_price_under_ext_no_chase_down():
     """现价 ≤ bear EXT151.46（下跌扩展目标）→ 禁止追 5 浪末端 → short_timing_ok=False"""
     tg = TimingGate(fib_ext_ratio=1.618)
     gate = _make_gate("short_allowed", long_allowed=True, short_allowed=True)
-    _monkey_swings(tg, _mock_swings_bear())   # H0=200 L1=170 H2=185 → EXT=200-30*1.618=151.46
+    _monkey_swings(tg, _mock_swings_bear())  # H0=200 L1=170 H2=185 → EXT=200-30*1.618=151.46
     tr = tg.evaluate(gate, recent_closes=list(range(60)), price_now=150.0)  # 150 < 151.46
     check("C14. bear 超扩展末端 → short_timing_ok=False", tr.short_timing_ok is False)
 
@@ -304,28 +335,36 @@ def t_c8_unclear_structure_lenient_mode_passes():
     """结构 UNCLEAR + lenient(strict=False) → timing_score 按 gate 方向决定ok（避免过度限仓）"""
     tg = TimingGate(strict=False, threshold=0.5)
     gate = _make_gate("long_preferred", long_allowed=True, short_allowed=False)
-    _monkey_swings(tg, [{"idx":0,"price":100,"type":"low"}])  # 仅 1 个 swing → UNCLEAR
+    _monkey_swings(tg, [{"idx": 0, "price": 100, "type": "low"}])  # 仅 1 个 swing → UNCLEAR
     tr = tg.evaluate(gate, recent_closes=list(range(60)), price_now=100.0)
     # lenient → structure_score=0.6, retrace=0.9, ext=0.9 → total≈0.486
     # threshold 默认 0.5 → 可能刚好 0.486 < 0.5 → timing_ok=False
     # 为避免边界，UNCLER lenient 检查 score >=0.45（宽容放行范围）
-    check("C15. UNCLEAR+lenient → timing_score ∈ [0.4,0.8]（宽容放行打折扣）",
-          0.4 <= tr.timing_score <= 0.8, f"score={tr.timing_score}")
-    check("C16. UNCLEAR+lenient → short_timing_ok=False（gate 不允许空）",
-          tr.short_timing_ok is False)
+    check(
+        "C15. UNCLEAR+lenient → timing_score ∈ [0.4,0.8]（宽容放行打折扣）",
+        0.4 <= tr.timing_score <= 0.8,
+        f"score={tr.timing_score}",
+    )
+    check(
+        "C16. UNCLEAR+lenient → short_timing_ok=False（gate 不允许空）", tr.short_timing_ok is False
+    )
 
 
 def t_c9_unclear_structure_strict_mode_blocks():
     """结构 UNCLEAR + strict=True → 低分 timing_ok=False（结构不清不下单）"""
     tg = TimingGate(strict=True, threshold=0.5)
     gate = _make_gate("long_preferred", long_allowed=True, short_allowed=False)
-    _monkey_swings(tg, [{"idx":0,"price":100,"type":"low"}])
+    _monkey_swings(tg, [{"idx": 0, "price": 100, "type": "low"}])
     tr = tg.evaluate(gate, recent_closes=list(range(60)), price_now=100.0)
     # strict → structure_score=0.2, retrace=0.9, ext=0.9 → total≈0.162
-    check("C17. UNCLEAR+strict → timing_score ≤0.3（保守低分）",
-          tr.timing_score <= 0.3, f"score={tr.timing_score}")
-    check("C17b. UNCLEAR+strict → long_timing_ok=False（结构不清不入场）",
-          tr.long_timing_ok is False)
+    check(
+        "C17. UNCLEAR+strict → timing_score ≤0.3（保守低分）",
+        tr.timing_score <= 0.3,
+        f"score={tr.timing_score}",
+    )
+    check(
+        "C17b. UNCLEAR+strict → long_timing_ok=False（结构不清不入场）", tr.long_timing_ok is False
+    )
 
 
 def t_c10_gate_diagnostic_timing_field_present():
@@ -335,18 +374,36 @@ def t_c10_gate_diagnostic_timing_field_present():
     _monkey_swings(tg, _mock_swings_bull())
     tr = tg.evaluate(gate, recent_closes=list(range(60)), price_now=118.0)
     # 验证所有必需字段
-    for attr in ("timing_score", "long_timing_ok", "short_timing_ok",
-                 "structure", "fib_zone", "score_breakdown", "reason"):
+    for attr in (
+        "timing_score",
+        "long_timing_ok",
+        "short_timing_ok",
+        "structure",
+        "fib_zone",
+        "score_breakdown",
+        "reason",
+    ):
         check(f"C18. TimingResult 含字段 {attr}", hasattr(tr, attr))
-    for attr in ("kind", "wave1_start", "wave1_end", "wave2_end",
-                 "wave1_range", "retrace_ratio", "ext_target"):
+    for attr in (
+        "kind",
+        "wave1_start",
+        "wave1_end",
+        "wave2_end",
+        "wave1_range",
+        "retrace_ratio",
+        "ext_target",
+    ):
         check(f"C19. WaveStructure 含字段 {attr}", hasattr(tr.structure, attr))
     # to_diagnostic 验证
     diag = tr.to_diagnostic()
     check("C20. to_diagnostic() 输出含 timing_score", "timing_score" in diag)
-    check("C21. to_diagnostic() 输出含 breakdown 三维度",
-          all(k in diag.get("breakdown", {}) for k in
-              ("structure_match", "retrace_quality", "extension_chase")))
+    check(
+        "C21. to_diagnostic() 输出含 breakdown 三维度",
+        all(
+            k in diag.get("breakdown", {})
+            for k in ("structure_match", "retrace_quality", "extension_chase")
+        ),
+    )
 
 
 def _monkey_swings(tg: "TimingGate", swings: list[dict]):
@@ -364,13 +421,13 @@ def t_d_end_to_end_with_real_swing_detection():
     closes: list[float] = []
     # 浪1: 100 → 130 (bar 0..30，用更多bar让swing清晰)
     for i in range(31):
-        closes.append(100 + i * (30/30))
+        closes.append(100 + i * (30 / 30))
     # 浪2: 130 → 115 (bar 30..50)
     for i in range(1, 21):
-        closes.append(130 - i * (15/20))
+        closes.append(130 - i * (15 / 20))
     # 浪3 启动: 115 → 126 (bar 50..75)，保证最后的 swing low (115) 被识别（之后2bar更高）
     for i in range(1, 26):
-        closes.append(115 + i * (11/25))
+        closes.append(115 + i * (11 / 25))
     gate = _make_gate("long_preferred", long_allowed=True, short_allowed=False)
     tr = tg.evaluate(gate, closes, price_now=closes[-1])
     # 至少满足 timing_score 语义合理 ∈ [0,1]；结构是否 UNCLEAR 取决于 swing 检测（放宽）
@@ -397,11 +454,15 @@ def t_e1_retrace_quality_curve():
     check("E2. F382 ∈ [0.80, 0.95]", 0.80 <= r_f382 <= 0.95, f"got {r_f382}")
     check("E3. F618 ∈ [0.80, 0.95]（与F382对称）", 0.80 <= r_f618 <= 0.95, f"got {r_f618}")
     check("E4. 0.30 边缘 ∈ [0.50, 0.75]（σ高斯钟形外1σ附近）", 0.50 <= r_lo <= 0.75, f"got {r_lo}")
-    check("E5. 0.72 边缘 ∈ [0.40, 0.75]（与0.30对称，1σ~1.2z处）", 0.40 <= r_hi <= 0.75, f"got {r_hi}")
+    check(
+        "E5. 0.72 边缘 ∈ [0.40, 0.75]（与0.30对称，1σ~1.2z处）", 0.40 <= r_hi <= 0.75, f"got {r_hi}"
+    )
     check("E6. 极浅回撤 r=0.05 ≤0.35", r_shallow <= 0.35, f"got {r_shallow}")
     check("E7. 极深回撤 r=0.95 ≤0.35", r_deep <= 0.35, f"got {r_deep}")
-    check("E8. retrace_quality ∈ [0,1] 对所有 r∈[-0.5,1.5]",
-          all(0 <= retrace_quality_score(r) <= 1 for r in (x/10 for x in range(-5, 16))))
+    check(
+        "E8. retrace_quality ∈ [0,1] 对所有 r∈[-0.5,1.5]",
+        all(0 <= retrace_quality_score(r) <= 1 for r in (x / 10 for x in range(-5, 16))),
+    )
 
 
 def t_e2_extension_chase_piecewise():
@@ -443,13 +504,21 @@ def t_e3_timing_score_integrated_matches_quality():
     _monkey_swings(tg, swings_f382)
     tr_f382 = tg.evaluate(gate, recent_closes=list(range(60)), price_now=120.0)
 
-    check("E14. F500 timing_score ∈ [0.85, 1.0]（最佳）",
-          0.85 <= tr_f500.timing_score <= 1.0, f"got {tr_f500.timing_score}")
-    check("E15. F382 timing_score ∈ [0.6, 0.9]（比F500略低）",
-          0.6 <= tr_f382.timing_score <= 0.9, f"got {tr_f382.timing_score}")
-    check("E16. F500 score >= F382 score",
-          tr_f500.timing_score >= tr_f382.timing_score - 1e-9,
-          f"F500={tr_f500.timing_score} vs F382={tr_f382.timing_score}")
+    check(
+        "E14. F500 timing_score ∈ [0.85, 1.0]（最佳）",
+        0.85 <= tr_f500.timing_score <= 1.0,
+        f"got {tr_f500.timing_score}",
+    )
+    check(
+        "E15. F382 timing_score ∈ [0.6, 0.9]（比F500略低）",
+        0.6 <= tr_f382.timing_score <= 0.9,
+        f"got {tr_f382.timing_score}",
+    )
+    check(
+        "E16. F500 score >= F382 score",
+        tr_f500.timing_score >= tr_f382.timing_score - 1e-9,
+        f"F500={tr_f500.timing_score} vs F382={tr_f382.timing_score}",
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -467,36 +536,59 @@ if __name__ == "__main__":
         print()
 
     test_groups = [
-        ("A. 三浪结构识别", [
-            t_a1_bullish_three_wave_basic if _MODULE_LOADED else lambda: None,
-            t_a2_bearish_three_wave_basic if _MODULE_LOADED else lambda: None,
-            t_a3_unclear_not_enough_swings if _MODULE_LOADED else lambda: None,
-            t_a4_unclear_bull_lower_low if _MODULE_LOADED else lambda: None,
-            t_a5_unclear_bear_higher_high if _MODULE_LOADED else lambda: None,
-        ]),
-        ("B. Fib 回撤区间分类", [
-            t_b_fib_zone_classification if _MODULE_LOADED else lambda: None,
-        ]),
-        ("C. TimingGate.evaluate 完整时机门禁", [
-            t_c1_bull_structure_within_fib_band_and_gate_long_ok if _MODULE_LOADED else lambda: None,
-            t_c2_bull_gate_does_not_allow_long_so_timing_also_no if _MODULE_LOADED else lambda: None,
-            t_c3_bull_price_over_ext_1618_no_chase if _MODULE_LOADED else lambda: None,
-            t_c4_bull_retrace_too_shallow_wait if _MODULE_LOADED else lambda: None,
-            t_c5_bull_retrace_too_deep_trend_reversal_risk if _MODULE_LOADED else lambda: None,
-            t_c6_bear_rebound_f618_within_band_ok if _MODULE_LOADED else lambda: None,
-            t_c7_bear_price_under_ext_no_chase_down if _MODULE_LOADED else lambda: None,
-            t_c8_unclear_structure_lenient_mode_passes if _MODULE_LOADED else lambda: None,
-            t_c9_unclear_structure_strict_mode_blocks if _MODULE_LOADED else lambda: None,
-            t_c10_gate_diagnostic_timing_field_present if _MODULE_LOADED else lambda: None,
-        ]),
-        ("D. 真实swing端到端", [
-            t_d_end_to_end_with_real_swing_detection if _MODULE_LOADED else lambda: None,
-        ]),
-        ("E. 软评分数学验证（高斯回撤曲线 + 追末端分段线性）", [
-            t_e1_retrace_quality_curve if _MODULE_LOADED else lambda: None,
-            t_e2_extension_chase_piecewise if _MODULE_LOADED else lambda: None,
-            t_e3_timing_score_integrated_matches_quality if _MODULE_LOADED else lambda: None,
-        ]),
+        (
+            "A. 三浪结构识别",
+            [
+                t_a1_bullish_three_wave_basic if _MODULE_LOADED else lambda: None,
+                t_a2_bearish_three_wave_basic if _MODULE_LOADED else lambda: None,
+                t_a3_unclear_not_enough_swings if _MODULE_LOADED else lambda: None,
+                t_a4_unclear_bull_lower_low if _MODULE_LOADED else lambda: None,
+                t_a5_unclear_bear_higher_high if _MODULE_LOADED else lambda: None,
+            ],
+        ),
+        (
+            "B. Fib 回撤区间分类",
+            [
+                t_b_fib_zone_classification if _MODULE_LOADED else lambda: None,
+            ],
+        ),
+        (
+            "C. TimingGate.evaluate 完整时机门禁",
+            [
+                (
+                    t_c1_bull_structure_within_fib_band_and_gate_long_ok
+                    if _MODULE_LOADED
+                    else lambda: None
+                ),
+                (
+                    t_c2_bull_gate_does_not_allow_long_so_timing_also_no
+                    if _MODULE_LOADED
+                    else lambda: None
+                ),
+                t_c3_bull_price_over_ext_1618_no_chase if _MODULE_LOADED else lambda: None,
+                t_c4_bull_retrace_too_shallow_wait if _MODULE_LOADED else lambda: None,
+                t_c5_bull_retrace_too_deep_trend_reversal_risk if _MODULE_LOADED else lambda: None,
+                t_c6_bear_rebound_f618_within_band_ok if _MODULE_LOADED else lambda: None,
+                t_c7_bear_price_under_ext_no_chase_down if _MODULE_LOADED else lambda: None,
+                t_c8_unclear_structure_lenient_mode_passes if _MODULE_LOADED else lambda: None,
+                t_c9_unclear_structure_strict_mode_blocks if _MODULE_LOADED else lambda: None,
+                t_c10_gate_diagnostic_timing_field_present if _MODULE_LOADED else lambda: None,
+            ],
+        ),
+        (
+            "D. 真实swing端到端",
+            [
+                t_d_end_to_end_with_real_swing_detection if _MODULE_LOADED else lambda: None,
+            ],
+        ),
+        (
+            "E. 软评分数学验证（高斯回撤曲线 + 追末端分段线性）",
+            [
+                t_e1_retrace_quality_curve if _MODULE_LOADED else lambda: None,
+                t_e2_extension_chase_piecewise if _MODULE_LOADED else lambda: None,
+                t_e3_timing_score_integrated_matches_quality if _MODULE_LOADED else lambda: None,
+            ],
+        ),
     ]
 
     for name, funcs in test_groups:
