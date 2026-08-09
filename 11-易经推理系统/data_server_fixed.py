@@ -924,11 +924,18 @@ def get_yijing_positions():
     local_positions = []
     if pos_dir.exists():
         for f in sorted(pos_dir.glob("*.json")):
+            # 跳过非持仓文件（如 last_close_info.json）
+            if f.name == "last_close_info.json":
+                continue
             try:
                 with open(f) as fp:
                     d = json.load(fp)
+                    # 只保留有有效 coin 字段的持仓记录
+                    coin = d.get("coin", "")
+                    if not coin:
+                        continue
                     local_positions.append({
-                        "coin": d.get("coin", ""),
+                        "coin": coin,
                         "inst_id": d.get("inst_id", ""),
                         "direction": d.get("direction", ""),
                         "entry_price": d.get("entry_price", 0),
