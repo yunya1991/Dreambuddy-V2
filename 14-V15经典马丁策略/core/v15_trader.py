@@ -111,6 +111,28 @@ V15_USE_SWING_POTENTIAL = str(get_config("V15_USE_SWING_POTENTIAL", "false")).lo
 # false=关闭（保持现状，只靠 DirectionGate + 指标驱动，向后兼容）
 V15_USE_TIMING_GATE = str(get_config("V15_USE_TIMING_GATE", "false")).lower() == "true"
 
+# ── Phase 4: TimingGate 细粒度参数（与 v15_backtest.py BO最优默认值1:1对齐）──
+V15_TIMING_SWING_WINDOW = int(get_config("V15_TIMING_SWING_WINDOW", "2"))
+V15_TIMING_STRICT = str(get_config("V15_TIMING_STRICT", "false")).lower() == "true"
+V15_TIMING_THRESHOLD = float(get_config("V15_TIMING_THRESHOLD", "0.30"))
+V15_TIMING_FIB_RETRACE_LO = float(get_config("V15_TIMING_FIB_RETRACE_LO", "0.23"))
+V15_TIMING_FIB_RETRACE_HI = float(get_config("V15_TIMING_FIB_RETRACE_HI", "0.71"))
+V15_TIMING_FIB_EXT_RATIO = float(get_config("V15_TIMING_FIB_EXT_RATIO", "1.62"))
+V15_TIMING_LENIENT_UNCLEAR = float(get_config("V15_TIMING_LENIENT_UNCLEAR", "0.58"))
+V15_TIMING_STRICT_UNCLEAR_SCORE = float(get_config("V15_TIMING_STRICT_UNCLEAR_SCORE", "0.20"))
+V15_TIMING_RETRACE_MU = float(get_config("V15_TIMING_RETRACE_MU", "0.62"))
+V15_TIMING_RETRACE_SIGMA = float(get_config("V15_TIMING_RETRACE_SIGMA", "0.34"))
+V15_TIMING_UNCLEAR_RETRACE_EXT = float(get_config("V15_TIMING_UNCLEAR_RETRACE_EXT", "0.88"))
+# 软调控模式（核心）：True=只缩仓位不硬门禁；False=先硬门禁再打折
+V15_TIMING_SOFT_MODE = str(get_config("V15_TIMING_SOFT_MODE", "true")).lower() == "true"
+# 非线性惩罚指数：timing_mult = score ** V15_TIMING_SIZE_POWER
+V15_TIMING_SIZE_POWER = float(get_config("V15_TIMING_SIZE_POWER", "2.49"))
+# swing融合模式: "or" / "and" / "daily_only"
+V15_TIMING_SWING_FUSION_MODE = str(get_config("V15_TIMING_SWING_FUSION_MODE", "or")).lower()
+V15_TIMING_INTRADAY_SWING_WINDOW = int(get_config("V15_TIMING_INTRADAY_SWING_WINDOW", "3"))
+# 软调控下仓位缩到极小就跳过（避免无意义挂单）
+V15_TIMING_SKIP_MULT = float(get_config("V15_TIMING_SKIP_MULT", "0.02"))
+
 STATE_FILE = BASE_DIR / "data" / "v15_state.json"
 REGIME_STATE_FILE = BASE_DIR / "data" / "regime_state.json"
 LOG_DIR = BASE_DIR / "logs" / "v15"
@@ -141,6 +163,151 @@ LEVERAGE = get_config_float("LEVERAGE", 5.0)
 MAX_CONCURRENT_POSITIONS = get_config_int("MAX_CONCURRENT_POSITIONS", 3)
 TOTAL_BUDGET = get_config_float("TOTAL_BUDGET", 260)
 ADDON_PCT = get_config_float("ADDON_PCT", 0.08)
+
+# ── Phase D: AI 闸门总开关（默认关闭=严格等价基线，字节级别不变异） ──
+# 四大铁律 ① 基线可随时回退：env/config 改为 false 则完全不运行 Phase D 分支
+# 四大铁律 ② 不超基线不启用：phase_d_gateway 内 apply_iron_clamp 保证不越界
+# 四大铁律 ③ 最大最小调节边界：K_bound 由 ai_boundary_scaler 持久化
+# 四大铁律 ④ 边界随表现缩放：每 N 轮更新 S_bt / S_live 重算 K_bound
+V15_AI_ENABLED = str(get_config("V15_AI_ENABLED", "false")).lower() == "true"
+# V15_AI_SHADOW: 只出决策日志不实际生效（便于先上线观察 AI 调参倾向）
+V15_AI_SHADOW = str(get_config("V15_AI_SHADOW", "false")).lower() == "true"
+V15_AI_STATE_FILE = BASE_DIR / "data" / "phase_d_ai_state.json"
+
+# ── Phase E: PPO-LSTM 强化学习（默认关闭=字节等价基线） ──
+V15_AI_PHASE_E_ENABLED = str(get_config("V15_AI_PHASE_E_ENABLED", "false")).lower() == "true"
+V15_AI_PHASE_E_MODEL_PATH = str(get_config("V15_AI_PHASE_E_MODEL_PATH", ""))
+
+_PHASE_E_GW_SINGLETON = None
+
+_PHASE_D_GW_SINGLETON = None
+
+
+def _get_phase_d_gateway():
+    """懒加载 PhaseDGateway 单例。关闭开关时返回 None，保证调用方直接走基线分支。"""
+    global _PHASE_D_GW_SINGLETON
+    if not V15_AI_ENABLED:
+        return None
+    if _PHASE_D_GW_SINGLETON is not None:
+        return _PHASE_D_GW_SINGLETON
+    try:
+        from phase_d_gateway import PhaseDGateway
+
+        _PHASE_D_GW_SINGLETON = PhaseDGateway(enabled=True)
+        return _PHASE_D_GW_SINGLETON
+    except Exception as _e:
+        _log(f"[Phase-D] Gateway 初始化失败(降级为None=基线): {_e}")
+        _PHASE_D_GW_SINGLETON = None
+        return None
+
+
+def _get_phase_e_gateway():
+    """懒加载 PhaseEGateway 单例。关闭开关时返回 None，保证基线等价。"""
+    global _PHASE_E_GW_SINGLETON
+    if not V15_AI_PHASE_E_ENABLED:
+        return None
+    if _PHASE_E_GW_SINGLETON is not None:
+        return _PHASE_E_GW_SINGLETON
+    try:
+        from phase_e_gateway import PhaseEGateway
+
+        _PHASE_E_GW_SINGLETON = PhaseEGateway(
+            enabled=True,
+            ppo_model_path=V15_AI_PHASE_E_MODEL_PATH or None,
+        )
+        return _PHASE_E_GW_SINGLETON
+    except Exception as _e:
+        _log(f"[Phase-E] Gateway 初始化失败(降级为None=基线): {_e}")
+        _PHASE_E_GW_SINGLETON = None
+        return None
+
+
+def _phase_e_build_s_state(coin: str, params: dict, pos: dict = None) -> dict:
+    """构建 34 维状态 dict（供 PhaseEGateway 使用）。
+    MVP 阶段从 params 和 pos 中提取可用字段，缺失字段用中性值填充。"""
+    return {
+        "timing_score": float(params.get("timing_score", 0.5)),
+        "structure_match_score": float(params.get("structure_match_score", 0.5)),
+        "retrace_quality_score": float(params.get("retrace_quality_score", 0.5)),
+        "extension_chase_score": float(params.get("extension_chase_score", 0.5)),
+        "regime": str(params.get("regime", "ACCUM")),
+        "long_enabled": bool(params.get("long_enabled", True)),
+        "short_enabled": bool(params.get("short_enabled", False)),
+        "btc_windvane_strength": float(params.get("btc_windvane_strength", 0.5)),
+        "regime_zone": int(params.get("regime_zone", 2)),
+        "days_in_current_zone": int(params.get("days_in_current_zone", 10)),
+        "position_level": int(pos.get("current_level", 0)) if pos else 0,
+        "avg_entry_price_pct_diff": float(params.get("avg_entry_pct_diff", 0.0)),
+        "unrealized_pnl_ratio": float(params.get("unrealized_pnl_ratio", 0.0)),
+        "distance_to_liq_ratio": float(params.get("distance_to_liq_ratio", 0.80)),
+        "atr_14_pct": float(params.get("atr_pct", 0.03)),
+        "atr_14_zscore_30": 0.0,
+        "realized_vol_30d": float(params.get("vol_ratio", 0.04)),
+        "vol_zscore_60": 0.0,
+        "btc_corr_30d": 0.8,
+        "btc_rsi_14": 50.0,
+        "swing_window_daily": 2,
+        "swing_window_4h": 3,
+        "recent_10_win_rate": float(params.get("recent_win_rate", 0.5)),
+        "recent_10_avg_pnl_ratio": 0.0,
+        "max_drawdown_30d": 0.05,
+        "account_margin_ratio": 0.10,
+        "imr": 0.05,
+        "coin_total_deployed": float(params.get("coin_total_deployed", 0.0)),
+        "recent_10_count": int(params.get("recent_10_count", 0)),
+    }
+
+
+def _phase_d_heuristic_p_bust(klines_4h, params: dict, direction: str) -> float:
+    """MVP 阶段 BiLSTM 权重未完成训练：用 4H 统计特征启发式预估 p_bust。
+    真实训练后只需替换为加载 .pt 模型推理即可，接口保持不变。"""
+    # 简化特征：ATR% / 最近 12 根最大回撤 / 方向一致性
+    closes = []
+    highs = []
+    lows = []
+    for k in klines_4h or []:
+        if isinstance(k, dict) and "c" in k:
+            closes.append(float(k["c"])); highs.append(float(k.get("h", k["c"]))); lows.append(float(k.get("l", k["c"])))
+        elif isinstance(k, (list, tuple)) and len(k) >= 5:
+            closes.append(float(k[4])); highs.append(float(k[2])); lows.append(float(k[3]))
+    if len(closes) < 12:
+        return 0.10  # 数据不足 → 保守偏中性
+    recent_c = closes[-12:]
+    peak = max(recent_c)
+    dd12 = (peak - min(recent_c)) / max(1e-9, peak)
+    atr_sum = 0.0
+    n = min(len(closes), 14)
+    for i in range(-n, 0):
+        tr = highs[i] - lows[i]
+        atr_sum += tr
+    atr_pct = (atr_sum / n) / max(1e-9, closes[-1])
+    elder = params.get("elder_ray", 0) if isinstance(params, dict) else 0
+    # 方向冲突：做多但 elder<0 或 做空但 elder>0 → 恶化爆仓风险
+    direction_ok = (direction == "LONG" and elder >= 0) or (direction == "SHORT" and elder <= 0)
+    risk = (dd12 * 0.55) + (atr_pct * 0.25) + (0.0 if direction_ok else 0.20)
+    return float(max(0.0, min(0.99, risk)))
+
+
+def _phase_d_heuristic_dd24h(klines_1h) -> float:
+    """MVP 阶段 PatchTST 权重未完成训练：用 1H 波动率启发式估计未来 24 根最大回撤。
+    真实训练后替换为 .pt 推理即可，接口保持不变。"""
+    closes = []
+    for k in klines_1h or []:
+        if isinstance(k, dict) and "c" in k:
+            closes.append(float(k["c"]))
+        elif isinstance(k, (list, tuple)) and len(k) >= 5:
+            closes.append(float(k[4]))
+    n = min(len(closes), 48)
+    if n < 12:
+        return 0.06  # 数据不足 → 默认 6% 回撤
+    win = closes[-n:]
+    rets = [(win[i] / win[i - 1] - 1.0) for i in range(1, len(win))]
+    import math
+    var = sum(r * r for r in rets) / max(1, len(rets))
+    sigma = math.sqrt(var)
+    # 未来 24 根 ≈ sigma * sqrt(24) * 系数1.2（保守）
+    dd = sigma * math.sqrt(24) * 1.2
+    return float(max(0.0, min(0.99, dd)))
 
 
 # ── 移动止盈参数（从贝叶斯优化活跃参数加载）──
@@ -742,25 +909,97 @@ def _get_direction_ctx(coin):
 
         # Phase 4: TimingGate 波浪+斐波那契时机软调控
         # - gate_result 作为方向先验 → TimingGate 方向匹配评分 & 三浪结构 & fib回撤
-        # - timing_score 决定仓位/杠杆倍数（timing_mult = timing_score）
-        # - long_timing_ok / short_timing_ok 覆盖 ctx 对应布尔值，软门禁
+        # - timing_score → timing_mult = score^V15_TIMING_SIZE_POWER 决定仓位缩放（核心软调控）
+        # - soft_mode=True(推荐/BO最优): 不改变 long_enabled 闸门位，只靠 timing_mult 非线性缩仓位
+        #   （避免硬门禁丢失交易机会，与回测完全同构）
+        # - soft_mode=False(旧模式): long_timing_ok AND DirectionGate，强门禁+线性打折
         if V15_USE_TIMING_GATE:
             try:
                 from timing_gate import TimingGate
 
                 # TimingGate 需要更长日线序列（至少 30 条，优先 60 条）用于 swing 检测
                 coin_recent_daily = [float(k["c"]) for k in klines_1d[-60:] if "c" in k]
+                # 小时级（4H）收盘价序列，用于 swing_fusion_mode="or" 的日线/小时级融合
+                coin_recent_4h = [
+                    float(k["c"])
+                    for k in params.get("klines_4h", [])[-60:]
+                    if "c" in k
+                ]
                 if len(coin_recent_daily) >= 20:
-                    tg = TimingGate(swing_window=2, strict=False, threshold=0.5)
-                    tres = tg.evaluate(result, coin_recent_daily, price_now=params["current_price"])
-                    # 软门禁：DirectionGate 允许 且 TimingGate 允许 → 才算最终允许
-                    ctx["long_enabled"] = (
-                        bool(ctx.get("long_enabled", True)) and tres.long_timing_ok
+                    tg = TimingGate(
+                        swing_window=V15_TIMING_SWING_WINDOW,
+                        strict=V15_TIMING_STRICT,
+                        threshold=V15_TIMING_THRESHOLD,
+                        fib_retrace_lo=V15_TIMING_FIB_RETRACE_LO,
+                        fib_retrace_hi=V15_TIMING_FIB_RETRACE_HI,
+                        fib_ext_ratio=V15_TIMING_FIB_EXT_RATIO,
+                        lenient_unclear=V15_TIMING_LENIENT_UNCLEAR,
+                        strict_unclear_score=V15_TIMING_STRICT_UNCLEAR_SCORE,
+                        retrace_mu=V15_TIMING_RETRACE_MU,
+                        retrace_sigma=V15_TIMING_RETRACE_SIGMA,
+                        unclear_retrace_ext=V15_TIMING_UNCLEAR_RETRACE_EXT,
+                        swing_fusion_mode=V15_TIMING_SWING_FUSION_MODE,
+                        intraday_swing_window=V15_TIMING_INTRADAY_SWING_WINDOW,
                     )
-                    ctx["short_enabled"] = (
-                        bool(ctx.get("short_enabled", False)) and tres.short_timing_ok
+                    # 日线序列 + 小时级序列（用于 OR/AND 融合），与回测 L1747-L1755 参数同构
+                    intraday_arg = (
+                        coin_recent_4h if len(coin_recent_4h) >= 15 else None
                     )
+                    tres = tg.evaluate(
+                        result,
+                        coin_recent_daily,
+                        price_now=params["current_price"],
+                        intraday_closes=intraday_arg,
+                    )
+                    if V15_TIMING_SOFT_MODE:
+                        # ── 软调控模式（BO最优，与回测一致）──
+                        # 保持 DirectionGate 的 long/short 闸门位不变，不在此处硬阻断
+                        # 只把 timing_score 透传给 execute_open_position，用 score^power 非线性缩仓位
+                        # （score极低时，mult < V15_TIMING_SKIP_MULT 由 execute_open_position 层跳过）
+                        ctx.setdefault("timing_long_ok", bool(tres.long_timing_ok))
+                        ctx.setdefault("timing_short_ok", bool(tres.short_timing_ok))
+                    else:
+                        # ── 硬门禁兼容模式（旧行为，双重惩罚）──
+                        ctx["long_enabled"] = (
+                            bool(ctx.get("long_enabled", True)) and tres.long_timing_ok
+                        )
+                        ctx["short_enabled"] = (
+                            bool(ctx.get("short_enabled", False)) and tres.short_timing_ok
+                        )
+                    # 基础评分（线性，幂次在仓位层 compute_timing_mult 处统一应用）
                     ctx["timing_score"] = float(max(0.0, min(1.0, tres.timing_score)))
+
+                    # ── Phase D: G-D3 放宽时机评分（AI 仅可"放宽基线"；收紧不允许） ──
+                    _pd_gw2 = _get_phase_d_gateway()
+                    if _pd_gw2 is not None:
+                        try:
+                            # 用 PatchTST 启发式 dd24h 估计作为"未来高波动 → 放宽入场评分"的信号
+                            _pd_klines_1h = [
+                                float(k["c"]) if isinstance(k, dict) and "c" in k else (float(k[4]) if isinstance(k, (list, tuple)) and len(k) >= 5 else None)
+                                for k in params.get("klines_1h", [])
+                            ]
+                            _pd_klines_1h = [v for v in _pd_klines_1h if v is not None]
+                            _pd_dd24h = _phase_d_heuristic_dd24h(_pd_klines_1h)
+                            _pd_old_score = ctx["timing_score"]
+                            _pd_regime = str(tres.structure.kind if tres.structure else "UNCLEAR")
+                            _pd_ctx3 = {"p_bust": _phase_d_p_bust or 0.0, "p_dd": _pd_dd24h}
+                            _new_score, _new_power = _pd_gw2.apply_timing_relaxation(
+                                coin, _pd_old_score, V15_TIMING_SIZE_POWER, _pd_regime, ctx=_pd_ctx3
+                            )
+                            if V15_AI_SHADOW:
+                                if abs(_new_score - _pd_old_score) > 1e-6:
+                                    _log(
+                                        f"[Phase-D-SHADOW][{coin}] G-D3 timing_score {_pd_old_score:.3f}→{_new_score:.3f} power {V15_TIMING_SIZE_POWER:.2f}→{_new_power:.2f} (dd24h={_pd_dd24h:.3f} regime={_pd_regime}) 未生效"
+                                    )
+                            else:
+                                ctx["timing_score"] = _new_score
+                                if abs(_new_score - _pd_old_score) > 1e-6:
+                                    _log(
+                                        f"[Phase-D][{coin}] G-D3 放宽时机评分: {_pd_old_score:.3f}→{_new_score:.3f} power {V15_TIMING_SIZE_POWER:.2f}→{_new_power:.2f} (dd24h={_pd_dd24h:.3f} regime={_pd_regime})"
+                                    )
+                        except Exception as _pd_e2:
+                            _log(f"[Phase-D][{coin}] G-D3 评分放宽异常(降级原评分): {_pd_e2}")
+
                     ctx["timing_zone"] = tres.fib_zone
                     ctx["timing_structure"] = tres.structure.kind if tres.structure else "UNCLEAR"
                     ctx["timing_reason"] = tres.reason
@@ -770,17 +1009,34 @@ def _get_direction_ctx(coin):
                     )
                     # 透传 diagnostic（整包）
                     ctx["timing_diag"] = tres.to_diagnostic()
+                    # 软调控 meta：执行层不必重复算，直接在这里给出 timing_mult（score^power）
+                    _raw = max(0.0, min(1.0, ctx["timing_score"]))
+                    timing_mult = (
+                        (_raw ** float(V15_TIMING_SIZE_POWER))
+                        if V15_TIMING_SIZE_POWER > 0 and _raw > 0
+                        else 0.0
+                    )
+                    ctx["timing_mult"] = float(timing_mult)
+                    ctx["timing_size_power"] = float(V15_TIMING_SIZE_POWER)
+                    ctx["timing_soft_mode"] = bool(V15_TIMING_SOFT_MODE)
+                    ctx["timing_skip_mult"] = float(V15_TIMING_SKIP_MULT)
                 else:
                     ctx["timing_score"] = 1.0  # 日线太少，降级：不调控
+                    ctx["timing_mult"] = 1.0
+                    ctx["timing_size_power"] = float(V15_TIMING_SIZE_POWER)
                     ctx["timing_zone"] = "NONE"
                     ctx["timing_structure"] = "UNCLEAR"
                     ctx["timing_reason"] = "日线样本不足(<20)，跳过时机评估"
+                    ctx["timing_soft_mode"] = bool(V15_TIMING_SOFT_MODE)
+                    ctx["timing_skip_mult"] = float(V15_TIMING_SKIP_MULT)
             except Exception as e:
                 _log(f"[{coin}] TimingGate 时机评估失败(降级放行): {e}")
                 # 失败降级：放行（timing_score=1.0）保持原 ctx 不变，避免影响生产
                 ctx.setdefault("timing_score", 1.0)
+                ctx.setdefault("timing_mult", 1.0)
         else:
             ctx.setdefault("timing_score", 1.0)  # 关闭时 1.0 表示不调控
+            ctx.setdefault("timing_mult", 1.0)
 
         # Phase2: 将BTC力学诊断透传到返回值，方便监控页面展示
         if V15_USE_MECHANISTIC_DIRECTION_GATE and btc_vi is not None:
@@ -899,6 +1155,49 @@ def execute_open_position(client, coin, decision, state):
         _log(f"[{coin}] 置信度不足({conf}<60), 跳过")
         return False
 
+    # ── Phase D: G-D1 跳过开仓闸门（铁律：默认关闭时整段跳过） ──
+    # 这里必须保证 V15_AI_ENABLED=False 时，以下代码无任何副作用（状态文件不创建、变量值不变异）
+    # V15_AI_SHADOW=True 时：只记录决策日志不实际跳过，便于上线前后对比 AI 判断
+    _phase_d_gw = _get_phase_d_gateway()
+    _phase_d_p_bust = None
+    _phase_d_effective_max_addons = None
+    if _phase_d_gw is not None:
+        try:
+            # 预取 dynamic params 里的 klines_4h / elder_ray 用于构造预估（不影响后续 params 取数）
+            _pd_params = _get_dynamic_params(client, coin, direction)
+            _phase_d_p_bust = _phase_d_heuristic_p_bust(
+                _pd_params.get("klines_4h"), _pd_params, direction
+            )
+            _pd_dd24h = _phase_d_heuristic_dd24h([
+                float(k["c"]) if isinstance(k, dict) and "c" in k else (float(k[4]) if isinstance(k, (list, tuple)) and len(k) >= 5 else None)
+                for k in _pd_params.get("klines_1h", [])
+            ])
+            # ctx dict 携带 heuristic 预估，gateway 内部 predict 函数会优先读取
+            _pd_ctx = {"p_bust": _phase_d_p_bust, "p_dd": _pd_dd24h, "coin": coin}
+            if V15_AI_SHADOW:
+                _skip_shadow = _phase_d_gw.should_skip_open(_pd_ctx)
+                _log(
+                    f"[Phase-D-SHADOW][{coin}] G-D1 bust_prob={_phase_d_p_bust:.3f} dd24h={_pd_dd24h:.3f} should_skip={_skip_shadow}（SHADOW 不生效）"
+                )
+            else:
+                if _phase_d_gw.should_skip_open(_pd_ctx):
+                    _log(f"[Phase-D][{coin}] G-D1 跳过开仓: BiLSTM 爆仓概率={_phase_d_p_bust:.3f}")
+                    return False
+            # G-D2：effective_max_addons 保存起来，稍后在加仓预算/网格处使用
+            _addon_budgets = {f"addon{k}_usd": 0 for k in [1, 2, 3, 4]}  # 占位，实际预算在 alloc 后填入
+            _eff, _ = _phase_d_gw.compute_effective_max_addons(
+                coin, _pd_ctx, MAX_ADDONS, _addon_budgets
+            )
+            _phase_d_effective_max_addons = int(_eff)
+            if _phase_d_effective_max_addons != MAX_ADDONS:
+                _log(
+                    f"[Phase-D][{coin}] G-D2 加仓档数: 基线={MAX_ADDONS} → 实际={_phase_d_effective_max_addons} (bust_prob={_phase_d_p_bust:.3f}){' [SHADOW]' if V15_AI_SHADOW else ''}"
+                )
+        except Exception as _pd_e:
+            _log(f"[Phase-D][{coin}] G-D1/G-D2 评估异常(降级基线): {_pd_e}")
+            _phase_d_p_bust = None
+            _phase_d_effective_max_addons = None
+
     # ── 通用事前风控检查（13-通用风控模块）──
     risk_engine = _get_risk_engine()
     if risk_engine:
@@ -916,7 +1215,6 @@ def execute_open_position(client, coin, decision, state):
 
             daily_pnl = state.get("daily_pnl", 0.0)
             total_equity = state.get("total_equity", TOTAL_BUDGET)
-            len(state.get("positions", {}))
             consecutive_losses = state.get("consecutive_losses", 0)
 
             risk_ctx = RiskContext(
@@ -1011,6 +1309,29 @@ def execute_open_position(client, coin, decision, state):
             _log(f"[{coin}] 资金分配不允许: {alloc.get('reason', '资金不足')}")
             return False
 
+        # ── Phase D: G-D2 缩减加仓档（裁剪多余 addon*_usd 预算） ──
+        # V15_AI_SHADOW=True 时不修改预算值，仅打印日志
+        _pd_original_addons = {f"addon{k}_usd": alloc.get(f"addon{k}_usd", 0) for k in [1, 2, 3, 4]}
+        if (
+            _phase_d_effective_max_addons is not None
+            and _phase_d_effective_max_addons < MAX_ADDONS
+            and not V15_AI_SHADOW
+        ):
+            for _k in range(_phase_d_effective_max_addons + 1, MAX_ADDONS + 1):
+                alloc[f"addon{_k}_usd"] = 0
+
+        # ── Phase E: PPO-LSTM 加仓金字塔动作（默认关闭=基线等价） ──
+        _phase_e_gw = _get_phase_e_gateway()
+        if _phase_e_gw is not None:
+            try:
+                _pe_s_state = _phase_e_build_s_state(coin, params)
+                _pe_alloc_before = {k: alloc.get(k, 0) for k in ["base_usd", "addon1_usd", "addon2_usd", "addon3_usd", "addon4_usd", "total_usd", "per_coin_budget"]}
+                alloc = _phase_e_gw.apply_size_multipliers(alloc, _pe_s_state)
+                _pe_alloc_after = {k: alloc.get(k, 0) for k in ["base_usd", "addon1_usd", "addon2_usd", "addon3_usd", "addon4_usd"]}
+                _log(f"[Phase-E][{coin}] PPO 动作: {_pe_alloc_before.get('total_usd', 0):.1f} → {alloc.get('total_usd', 0):.1f}  action={alloc.get('ai_action', {})}")
+            except Exception as _pe_e:
+                _log(f"[Phase-E][{coin}] apply_size_multipliers 异常(降级基线): {_pe_e}")
+
         # ── Phase B+: 子形态参数微调（TP + 持仓时间，±15~20%）──
         dir_ctx = decision.get("direction_ctx") or {}
         btc_short_enabled = dir_ctx.get("btc_short_enabled", False)
@@ -1051,10 +1372,33 @@ def execute_open_position(client, coin, decision, state):
 
         base_margin = alloc["base_usd"]
         vol_mult = decision.get("vol_mult", 1.0) * risk_mult
-        # Phase 4: 波浪+fib 时机评分 × 仓位大小（软调控）
+        # ── Phase 4: 波浪+fib 时机评分软调控（与回测 v15_backtest.py L1877-L1884 完全同构）──
+        # 优先用上层已计算的 timing_mult（=score^V15_TIMING_SIZE_POWER），缺失时回退自算
         timing_score = float(dir_ctx.get("timing_score", 1.0) or 1.0)
-        timing_score = max(0.15, min(1.0, timing_score))  # 夹到[0.15,1.0]，避免极端清仓
-        order_margin = base_margin * vol_mult * timing_score
+        timing_score = max(0.0, min(1.0, timing_score))
+        _ctx_mult = dir_ctx.get("timing_mult")
+        if _ctx_mult is not None:
+            timing_mult = float(_ctx_mult)
+        else:
+            # 降级：自算幂次，保持语义一致
+            _pow = float(dir_ctx.get("timing_size_power", V15_TIMING_SIZE_POWER) or V15_TIMING_SIZE_POWER)
+            timing_mult = (timing_score ** _pow) if _pow > 0 and timing_score > 0 else 0.0
+        timing_mult = max(0.0, min(1.0, timing_mult))
+        soft_mode = bool(dir_ctx.get("timing_soft_mode", V15_TIMING_SOFT_MODE))
+        skip_mult = float(dir_ctx.get("timing_skip_mult", V15_TIMING_SKIP_MULT) or V15_TIMING_SKIP_MULT)
+
+        # 软调控模式下，非线性惩罚到极小仓位时直接跳过
+        # （回测 v15_backtest.py L1883: if timing_mult < 0.02 → continue）
+        if soft_mode and timing_mult < skip_mult:
+            _log(
+                f"[{coin}] TimingGate 软调控跳过: "
+                f"score={timing_score:.3f} mult={timing_mult:.5f} (< skip={skip_mult})"
+                f" 结构={dir_ctx.get('timing_structure','UNCLEAR')} zone={dir_ctx.get('timing_zone','NONE')}"
+                f" | {dir_ctx.get('timing_reason', '')}"
+            )
+            return False
+
+        order_margin = base_margin * vol_mult * timing_mult
         order_notional = order_margin * LEVERAGE
 
         lot_sz, ct_val = get_contract_info(client, inst_id)
@@ -1068,11 +1412,17 @@ def execute_open_position(client, coin, decision, state):
 
         adj = alloc.get("adjustments", {})
         sl_display = f"${sl_price:.4f}" if sl_price else "无(仅止盈)"
-        timing_display = (
-            f" timing={timing_score:.2f}x zone={dir_ctx.get('timing_zone','NONE')} str={dir_ctx.get('timing_structure','UNCLEAR')}"
-            if dir_ctx.get("timing_score") is not None
-            else ""
-        )
+        # 展示 timing_mult（真正乘到仓位的幂次后值）+ 原始线性score用于诊断
+        if dir_ctx.get("timing_score") is not None:
+            _pow_shown = dir_ctx.get("timing_size_power", V15_TIMING_SIZE_POWER)
+            timing_display = (
+                f" timing={timing_mult:.3f}x (score={timing_score:.2f}^pow={_pow_shown})"
+                f" zone={dir_ctx.get('timing_zone','NONE')}"
+                f" str={dir_ctx.get('timing_structure','UNCLEAR')}"
+                + (" [SOFT]" if soft_mode else " [HARD]")
+            )
+        else:
+            timing_display = ""
         _log(
             f"[{coin}] 开仓 {direction} sz={sz}张 price={price} 保证金=${actual_margin:.2f} 名义=${actual_notional:.2f} "
             f"TP={tp_pct*100:.2f}% SL={sl_type}@{sl_display} conf={conf}% "
@@ -1131,8 +1481,14 @@ def execute_open_position(client, coin, decision, state):
                     "yiji_hexagram": yiji_hex,
                     # Phase 4: TimingGate 时机评分（整仓保持，含加仓继承）
                     "timing_score": timing_score,
+                    "timing_mult": timing_mult,
+                    "timing_size_power": dir_ctx.get("timing_size_power", V15_TIMING_SIZE_POWER),
                     "timing_zone": dir_ctx.get("timing_zone", "NONE"),
                     "timing_structure": dir_ctx.get("timing_structure", "UNCLEAR"),
+                    # Phase D: AI 决策记录（便于分析与跨轮询生效；None=未启用）
+                    # 影子模式下 ai_effective_max_addons=None → execute_addon / grid 回退 MAX_ADDONS（基线）
+                    "ai_p_bust": _phase_d_p_bust,
+                    "ai_effective_max_addons": None if V15_AI_SHADOW else _phase_d_effective_max_addons,
                 }
                 state["total_trades"] += 1
                 _sync_tp_sl_orders(client, coin, state["positions"][coin], price, tp_pct, sl_price)
@@ -1160,8 +1516,13 @@ def execute_addon(client, coin, pos, state):
     direction = pos.get("direction", "LONG")
     is_short = direction == "SHORT"
 
-    if addons >= MAX_ADDONS:
-        _log(f"[{coin}] 已达最大加仓次数({MAX_ADDONS})")
+    # Phase D: G-D2 缩减加仓档 → effective_max_addons（未启用时回退 MAX_ADDONS）
+    eff_max = pos.get("ai_effective_max_addons")
+    if eff_max is None:
+        eff_max = MAX_ADDONS
+    eff_max = int(max(0, min(MAX_ADDONS, eff_max)))
+    if addons >= eff_max:
+        _log(f"[{coin}] 已达最大加仓次数(当前={addons} 上限={eff_max} 基线MAX={MAX_ADDONS})")
         return False
 
     try:
@@ -1178,9 +1539,16 @@ def execute_addon(client, coin, pos, state):
         if current_price <= 0:
             return False
 
-        # 使用开仓时分配的加仓预算（同时继承入场时 timing_mult，保持整仓尺度一致）
-        timing_mult = float(pos.get("timing_score", 1.0) or 1.0)
-        timing_mult = max(0.15, min(1.0, timing_mult))
+        # 使用开仓时分配的加仓预算（同时继承入场时 timing_mult，保持整仓尺度一致，与回测同构）
+        # 优先用开仓时已计算好的 timing_mult（=score^pow），否则退化自算（兼容老持仓）
+        _saved_mult = pos.get("timing_mult")
+        if _saved_mult is not None:
+            timing_mult = float(_saved_mult)
+        else:
+            _raw_score = float(pos.get("timing_score", 1.0) or 1.0)
+            _pow = float(pos.get("timing_size_power", V15_TIMING_SIZE_POWER) or V15_TIMING_SIZE_POWER)
+            timing_mult = ((max(0.0, min(1.0, _raw_score)) ** _pow) if _pow > 0 else 0.0)
+        timing_mult = max(0.0, min(1.0, timing_mult))
         addon_budgets = [
             pos.get("addon1_usd", 0),
             pos.get("addon2_usd", 0),
@@ -1333,16 +1701,33 @@ def _place_addon_grid_orders(client, coin, pos):
         pos.get("addon4_usd", 0),
     ]
     vol_mult = pos.get("vol_mult", 1.0)
+    # 继承入场时 timing_mult：整组加仓预算同比例缩放（与回测 v15_backtest.py L2214-L2220 同构）
+    _saved_mult = pos.get("timing_mult")
+    if _saved_mult is not None:
+        timing_mult = float(_saved_mult)
+    else:
+        _raw_score = float(pos.get("timing_score", 1.0) or 1.0)
+        _pow = float(pos.get("timing_size_power", V15_TIMING_SIZE_POWER) or V15_TIMING_SIZE_POWER)
+        timing_mult = ((max(0.0, min(1.0, _raw_score)) ** _pow) if _pow > 0 else 0.0)
+    timing_mult = max(0.0, min(1.0, timing_mult))
 
     lot_sz, ct_val = get_contract_info(client, inst_id)
     pos_side = "short" if is_short else "long"
     side = "buy" if not is_short else "sell"  # 做多加仓=买入, 做空加仓=卖出
 
+    # Phase D: G-D2 缩减加仓档（未启用时 → eff_max = MAX_ADDONS → 基线）
+    eff_max = pos.get("ai_effective_max_addons")
+    if eff_max is None:
+        eff_max = MAX_ADDONS
+    eff_max = int(max(0, min(MAX_ADDONS, eff_max)))
+
     grid_orders = []
-    for i in range(MAX_ADDONS):
-        addon_usd = addon_budgets[i] if i < len(addon_budgets) else 0
-        if addon_usd <= 0:
+    for i in range(eff_max):
+        addon_usd_raw = addon_budgets[i] if i < len(addon_budgets) else 0
+        if addon_usd_raw <= 0:
             continue
+        # 补乘 timing_mult：capital_manager 给出的 addon*_usd 是基线预算，尚未考虑时机缩放
+        addon_usd = addon_usd_raw * timing_mult
         addon_margin = addon_usd * vol_mult
         addon_notional = addon_margin * LEVERAGE
         # 第 i 档触发价格：开仓价下跌 (i+1)*addon_pct（做多）/ 上涨（做空）
@@ -1355,7 +1740,7 @@ def _place_addon_grid_orders(client, coin, pos):
             continue
         sz = calc_lot_sz(addon_notional, grid_px, lot_sz, ct_val)
         if sz < lot_sz:
-            _log(f"[{coin}] 加仓网格#{i+1} 数量({sz}张)<最小单位({lot_sz}张), 跳过挂单")
+            _log(f"[{coin}] 加仓网格#{i+1} 数量({sz}张)<最小单位({lot_sz}张), 跳过挂单 (timing_mult={timing_mult:.3f})")
             continue
         r = client.place_order(
             inst_id=inst_id,

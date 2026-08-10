@@ -5,6 +5,29 @@
 
 ---
 
+## [v6.1] - 2026-08-10
+
+### 新增 AI_ENHANCEMENT_ROADMAP.md：大模型增强三阶段路线图 + 四大决策铁律
+
+**变更类型：新增技术文档（无代码改动）**
+
+- **新增**：`docs/AI_ENHANCEMENT_ROADMAP.md` v1.0，完成联网调研 + GitHub 研究后的落地技术规范
+  - **模型族谱（§2）**：金融大模型族（FinGPT/QuantLLM/FLAG-Trader/FinRL-DeepSeek）、时间序列 SOTA（PatchTST/iTransformer/TimesNet/VAIOM/BiLSTM-Attention）、强化学习算法（PPO/CPPO/TD3/FLAG-Trader）、GitHub 马丁+AI 参考项目
+  - **AI 决策四大铁律（§3 = 用户四条原则的工程化）**：
+    1. **§3.1 基线可随时回退**：3 级开关（总闸 + Phase 闸 + 模块闸）、关闭后内存不加载 AI、状态快照、OCO 挂单自动还原基线
+    2. **§3.2 不超基线不启用**：① 全量回测总收益 ≥ 基线 +5% 且 卡尔马 ≥ 基线×1.05；② Walk-Forward 5/5 段退化 < 10% 且 ≥3 段正向；③ MDD ≤ 基线×1.10；④ OOD 极端行情 ≥ 基线×0.90
+    3. **§3.3 最大最小调节边界（基线相对 + 绝对铁壳双层 clamp）**：10 个决策变量的 LOWER/UPPER 默认值；最高优先级：AI 只能否决开仓、永远不可强制开仓；max_addons 只能缩档、不能扩到第 5 档
+    4. **§3.4 边界随回测+实盘表现缩放**：`S_bt`（回测稳健度）+ `S_live`（实盘跟踪得分，7 天滚动）驱动 `K_bound ∈ [0.50, 1.35]`；`S_live < 0.85` 单窗口立即回退基线
+  - **Phase D（1–2 周 MVP，§4）**：BiLSTM-Attention 爆仓预警 + PatchTST 回撤预测；G-D1/G-D2/G-D3 三个离散闸门；精确代码接入点映射（v15_trader.py / timing_gate.py / v15_backtest.py）
+  - **Phase E（3–6 周核心，§5）**：PPO-LSTM 强化学习接管加仓金字塔；34 维状态空间 / 5 维动作空间 / 马丁专属奖励函数；**§5.2 确定性风控盾（Deterministic Shield）6 条硬防线**直接落地 §3.3
+  - **Phase F（长期架构，§6）**：FLAG-Trader 式 LLM 策略网络；SFT 模仿 V15 成功轨迹 → PPO 按收益梯度继续调参；易经桥接 Prompt 槽位与边界收紧
+  - **§7 配置规范**：统一写入 `config/.env.v15`；`V15_AI_ENABLED` 总闸 + Phase D/E/F 子闸 + 模型路径 + 阈值 + K_bound 状态锚点
+  - **§8 升级总门禁**：Phase D 实盘 ≥ 28 天 + S_live ≥ 1.05 才允许进 Phase E；Phase E ≥ 56 天 + S_live ≥ 1.10 才允许进 Phase F；出现 S_live<0.85 / 盾告警≥10 / MDD>基线×1.20 任一即自动降级
+  - **§9 失效模式清单**：AI 越亏越补、LLM 幻觉、历史过拟合、分布外劣化、推理崩溃、配置手滑、易经+LLM 双迷信、升级过快、决策不可审计 — 共 9 类风险均对应到本文档某一节的防护机制
+- **无实盘影响**：本次仅新增文档，未改动任何运行代码；`V15_AI_ENABLED` 及所有 Phase 子开关默认 `false`，实盘行为与 v15-final (v6.0) 字节等价
+
+---
+
 ## [v6.0] - 2026-08-06
 
 ### Phase A+/B+/C 智能增强演进 & v15-final 最终形态锁定
