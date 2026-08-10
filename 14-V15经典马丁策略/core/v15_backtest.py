@@ -58,6 +58,61 @@ BASE_ADDON_PCT = 0.08
 BASE_TP_PCT = 0.04
 
 
+# ── Phase D 回测侧 helpers（与 core/v15_trader.py 同构，字节级对齐开关） ──
+def _phase_d_make_gateway(enabled: bool, baseline_max: int = MAX_ADDONS):
+    """phase_d_ai_enabled=False 时返回 None → 所有分支完全走基线。"""
+    if not enabled:
+        return None
+    try:
+        from phase_d_gateway import PhaseDGateway
+
+        return PhaseDGateway(enabled=True)
+    except Exception:
+        return None
+
+
+def _phase_d_heuristic_p_bust(klines_slice, elder: float, direction: str) -> float:
+    """klines_slice: list of dict[h,l,c] 最近 14 根 4H；用于回测（无需 HTTP）。"""
+    closes = []
+    highs = []
+    lows = []
+    for k in klines_slice or []:
+        try:
+            closes.append(float(k["c"])); highs.append(float(k.get("h", k["c"]))); lows.append(float(k.get("l", k["c"])))
+        except Exception:
+            pass
+    if len(closes) < 12:
+        return 0.10
+    recent_c = closes[-12:]
+    peak = max(recent_c)
+    dd12 = (peak - min(recent_c)) / max(1e-9, peak)
+    n = min(len(closes), 14)
+    atr_sum = 0.0
+    for i in range(-n, 0):
+        atr_sum += highs[i] - lows[i]
+    atr_pct = (atr_sum / n) / max(1e-9, closes[-1])
+    elder = float(elder or 0.0)
+    direction_ok = (direction == "LONG" and elder >= 0) or (direction == "SHORT" and elder <= 0)
+    risk = (dd12 * 0.55) + (atr_pct * 0.25) + (0.0 if direction_ok else 0.20)
+    return float(max(0.0, min(0.99, risk)))
+
+
+def _phase_d_heuristic_dd24h(closes_4h, i: int) -> float:
+    """最近 48 根 4H 收盘价估计未来 24 根最大回撤。"""
+    if not closes_4h:
+        return 0.06
+    start = max(0, i - 47)
+    win = [float(c) for c in closes_4h[start : i + 1]]
+    if len(win) < 12:
+        return 0.06
+    import math
+    rets = [(win[k] / win[k - 1] - 1.0) for k in range(1, len(win))]
+    var = sum(r * r for r in rets) / max(1, len(rets))
+    sigma = math.sqrt(var)
+    dd = sigma * math.sqrt(24) * 1.2
+    return float(max(0.0, min(0.99, dd)))
+
+
 # ── 指标计算 ──────────────────────────────────────────────────────────────
 
 
@@ -1319,6 +1374,11 @@ def run_backtest(
     subregime_mults: Dict = None,
     yijing_enabled: bool = False,
     yijing_step: int = 6,
+    # ---- Phase D: AI 闸门（BiLSTM 爆仓预警 + PatchTST dd24h 预测） ----
+    # 默认 False=完全不运行 Phase D，保证与基线字节级等价
+    phase_d_ai_enabled: bool = False,
+    # ---- Phase E: PPO-LSTM 强化学习加仓金字塔 ----
+    phase_e_ai_enabled: bool = False,
 ) -> Dict:
     """
     运行V15策略回测 v4
@@ -1666,6 +1726,18 @@ def run_backtest(
             print(f"  [Phase C] 易经桥接初始化失败，降级为禁用: {e}")
             bar_yiji = None
 
+    # Phase D: AI 闸门（默认关闭=完全不创建，字节等价基线）
+    _phase_d_gw = _phase_d_make_gateway(bool(phase_d_ai_enabled), baseline_max=int(max_addons))
+
+    # Phase E: PPO-LSTM gateway（默认 None=基线等价）
+    _phase_e_gw = None
+    if phase_e_ai_enabled:
+        try:
+            from phase_e_gateway import PhaseEGateway
+            _phase_e_gw = PhaseEGateway(enabled=True)
+        except Exception:
+            _phase_e_gw = None
+
     capital = initial_capital
     position = None
     trades = []
@@ -1878,6 +1950,18 @@ def run_backtest(
                                 # 软调控模式：不做硬门禁 continue，靠 timing_mult 连续调控仓位
                                 # timing_mult = timing_score ^ size_power（power>1 强化惩罚低分）
                                 _raw = float(max(0.0, min(1.0, t_res.timing_score)))
+                                # ── Phase D: G-D3 放宽时机评分（AI 只可放宽，不可收紧基线） ──
+                                if _phase_d_gw is not None:
+                                    try:
+                                        _dd24h = _phase_d_heuristic_dd24h(closes, i)
+                                        _regime_bt = str(t_res.structure.kind if t_res.structure else "UNCLEAR")
+                                        _ns, _np2 = _phase_d_gw.apply_timing_relaxation(
+                                            coin, _raw, timing_size_power, _regime_bt,
+                                            ctx={"p_bust": 0.0, "p_dd": _dd24h},
+                                        )
+                                        _raw = _ns
+                                    except Exception:
+                                        pass
                                 timing_mult = _raw ** float(timing_size_power)
                                 # 极低分仍跳过（避免微零仓位无意义开仓）
                                 if timing_mult < 0.02:
@@ -1905,6 +1989,33 @@ def run_backtest(
                         continue
 
                 direction = "LONG" if "BULL" in action else "SHORT"
+
+                # ── Phase D: G-D1 跳过开仓 + G-D2 缩减档数（默认关闭=整段跳过） ──
+                _pd_eff_max = max_addons
+                _pd_p_bust = None
+                if _phase_d_gw is not None:
+                    try:
+                        _slice_start = max(0, i - 13)
+                        _kl_win = klines[_slice_start : i + 1]
+                        _elder_i = (
+                            elder_ray_list[i]
+                            if elder_ray_list is not None
+                            and i < len(elder_ray_list)
+                            and elder_ray_list[i] is not None
+                            else 0.0
+                        )
+                        _pd_p_bust = _phase_d_heuristic_p_bust(_kl_win, _elder_i, direction)
+                        _pd_dd24h = _phase_d_heuristic_dd24h(closes, i)
+                        _pd_ctx = {"p_bust": _pd_p_bust, "p_dd": _pd_dd24h, "coin": coin}
+                        if _phase_d_gw.should_skip_open(_pd_ctx):
+                            continue  # G-D1: 高风险爆仓概率 → 跳过此单
+                        _eff, _ = _phase_d_gw.compute_effective_max_addons(
+                            coin, _pd_ctx, max_addons, {f"addon{k}_usd": 0 for k in [1,2,3,4]}
+                        )
+                        _pd_eff_max = int(max(0, min(max_addons, _eff)))
+                    except Exception:
+                        _pd_eff_max = max_addons
+                        _pd_p_bust = None
 
                 # Phase B: per-regime 参数覆盖（开仓时根据当前 regime 选择参数）
                 cur_max_base_h = max_base_holding_hours
@@ -1997,12 +2108,12 @@ def run_backtest(
                 if direction == "LONG":
                     tp_price = current_price * (1 + tp_pct)
                     addon_prices = [
-                        current_price * (1 - addon_pct * j) for j in range(1, max_addons + 1)
+                        current_price * (1 - addon_pct * j) for j in range(1, _pd_eff_max + 1)
                     ]
                 else:
                     tp_price = current_price * (1 - tp_pct)
                     addon_prices = [
-                        current_price * (1 + addon_pct * j) for j in range(1, max_addons + 1)
+                        current_price * (1 + addon_pct * j) for j in range(1, _pd_eff_max + 1)
                     ]
 
                 # Elder-ray 资金调度：根据日线趋势强度调整仓位大小
@@ -2018,6 +2129,36 @@ def run_backtest(
                 position_size = (
                     capital * effective_base_pct * elder_size_mult * timing_mult / current_price
                 )
+
+                # ── Phase E: PPO-LSTM 动作（默认关闭=基线等价） ──
+                if _phase_e_gw is not None:
+                    try:
+                        _pe_base_params = {"addon_pct": addon_pct * 100, "tp_pct": tp_pct * 100}
+                        _pe_s = {
+                            "timing_score": float(timing_mult),
+                            "position_level": 0,
+                            "vol_zscore_60": 0.0,
+                            "recent_10_win_rate": 0.5,
+                            "recent_10_count": 0,
+                            "account_margin_ratio": 0.10,
+                            "imr": 0.05,
+                            "coin_total_deployed": 0.0,
+                        }
+                        _pe_params = _phase_e_gw.apply_param_multipliers(coin, _pe_base_params, _pe_s)
+                        addon_pct = _pe_params["addon_pct"] / 100.0
+                        tp_pct = _pe_params["tp_pct"] / 100.0
+                        # 重新计算 tp_price 和 addon_prices
+                        if direction == "LONG":
+                            tp_price = current_price * (1 + tp_pct)
+                            addon_prices = [current_price * (1 - addon_pct * j) for j in range(1, _pd_eff_max + 1)]
+                        else:
+                            tp_price = current_price * (1 - tp_pct)
+                            addon_prices = [current_price * (1 + addon_pct * j) for j in range(1, _pd_eff_max + 1)]
+                        # 应用 base_position_mult
+                        _pe_action = _pe_params.get("ai_action", {})
+                        position_size *= float(_pe_action.get("base_position_mult", 1.0))
+                    except Exception:
+                        pass
                 position = {
                     "direction": direction,
                     "entry_idx": i,
@@ -2049,6 +2190,9 @@ def run_backtest(
                     "yiji_risk": _cur_yiji["risk_score"] if _cur_yiji else None,
                     "yiji_value": _cur_yiji["value_score"] if _cur_yiji else None,
                     "yiji_hexagram": _cur_yiji["hexagram"] if _cur_yiji else None,
+                    # Phase D: 记录 AI 决策（便于后续分析；None=未启用）
+                    "ai_p_bust": _pd_p_bust,
+                    "ai_effective_max_addons": _pd_eff_max,
                 }
         else:
             direction = position["direction"]
@@ -2189,7 +2333,12 @@ def run_backtest(
             # 加仓检查
             if not hit_tp and not hit_sl:
                 next_level = position["current_level"] + 1
-                if next_level <= max_addons:
+                # Phase D: G-D2 缩减加仓档 → 读 position.ai_effective_max_addons（未启用=max_addons）
+                _pd_pos_eff_max = position.get("ai_effective_max_addons")
+                if _pd_pos_eff_max is None:
+                    _pd_pos_eff_max = max_addons
+                _pd_pos_eff_max = int(max(0, min(max_addons, _pd_pos_eff_max)))
+                if next_level <= _pd_pos_eff_max:
                     next_addon_price = position["addon_prices"][next_level - 1]
                     should_add = False
 
