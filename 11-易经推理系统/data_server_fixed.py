@@ -245,6 +245,29 @@ def get_full_state():
     }
 
 
+def _extract_json_from_stdout(stdout: str):
+    """从可能混入日志行的子进程 stdout 中提取首个可解析的 JSON 对象
+
+    ab_bridge yijing-status 会在 stdout 混入 OKX 代理探测等日志行
+    （如 "[OKX 代理探测/OK] ... proxies={'http':...}"），直接
+    json.loads 会因前缀日志行抛异常。这里用 raw_decode 逐个尝试
+    每个 '{' 起点，跳过非法片段（如单引号 dict repr），直到命中
+    真正的 JSON 对象。
+    """
+    decoder = json.JSONDecoder()
+    idx = 0
+    while idx < len(stdout):
+        pos = stdout.find("{", idx)
+        if pos == -1:
+            break
+        try:
+            data, _ = decoder.raw_decode(stdout[pos:])
+            return data
+        except json.JSONDecodeError:
+            idx = pos + 1
+    return None
+
+
 def get_yijing_state():
     try:
         # 使用 anaconda python3 绝对路径（与 data_server 进程一致），
@@ -258,7 +281,12 @@ def get_yijing_state():
                  "no_proxy": "localhost,127.0.0.1"},
         )
         if result.returncode == 0:
-            return json.loads(result.stdout)
+            # ab_bridge stdout 可能混入日志行，用 raw_decode 提取首个 JSON
+            data = _extract_json_from_stdout(result.stdout)
+            if data is not None:
+                return data
+            # stdout 无合法 JSON 时回退到 stderr 提示
+            return {"error": f"stdout 无合法 JSON: {result.stdout[:300]}"}
         return {"error": result.stderr[:500]}
     except Exception as e:
         return {"error": str(e)}
@@ -1425,6 +1453,7 @@ def get_global_trade_stats():
             "timestamp": datetime.datetime.now().isoformat(),
         }
         
+        # 主系统定义（顺序决定前端展示顺序）
         system_names = {
             "yijing_inference": "易经推理",
             "martin_v15": "马丁策略 V15",
@@ -1432,7 +1461,34 @@ def get_global_trade_stats():
             "agent_a": "Agent A",
             "agent_b": "Agent B",
             "dream_os": "Dream OS",
+            "unknown": "未知来源",
         }
+
+        # 归一化映射：旧/别名 → 主 system_source
+        # 任何落入本表的 source 都会合并到主桶，避免前端出现"影子系统"
+        _SOURCE_NORMALIZE = {
+            "bcrm": "yijing_inference",
+            "yijing_live": "yijing_inference",
+            "yijing_engine": "yijing_inference",
+            "yijing_force": "yijing_inference",
+            "liangyi": "yijing_inference",
+            "scale": "yijing_inference",
+            "bagua": "yijing_inference",
+            "yijing": "yijing_inference",
+            "three_screen_trend": "three_screen",
+            "martin_v15_live": "martin_v15",
+            "martin": "martin_v15",
+            "dreamos": "dream_os",
+            "dreamos_trading": "dream_os",
+            "agent_a_live": "agent_a",
+            "agent_b_live": "agent_b",
+        }
+
+        def normalize_source(src: str) -> str:
+            if not src:
+                return "unknown"
+            s = str(src).strip().lower()
+            return _SOURCE_NORMALIZE.get(s, s)
         
         for source, name in system_names.items():
             stats["systems"][source] = {
@@ -1454,10 +1510,18 @@ def get_global_trade_stats():
                 try:
                     with open(f) as fp:
                         case = json.load(fp)
-                    source = case.get("system_source", "unknown")
+                    # 跳过非交易案例：记忆条目（lesson/test 等）缺少
+                    # decision_outcome 字段，不属于任何系统的交易记录。
+                    if not case.get("decision_outcome"):
+                        continue
+                    raw_source = case.get("system_source") or "unknown"
+                    source = normalize_source(raw_source)
+
+                    # 动态建桶（未知来源也能展示，避免遗漏）
                     if source not in stats["systems"]:
+                        display_name = system_names.get(source, source)
                         stats["systems"][source] = {
-                            "name": source,
+                            "name": display_name,
                             "total_trades": 0,
                             "win_count": 0,
                             "lose_count": 0,

@@ -1138,6 +1138,39 @@ def run():
         for ct in l1_closed:
             print(f"[Agent B/Exit] L1平仓 {ct['coin']}: {ct['exit_reason']} "
                   f"PnL={ct['pnl_pct']*100:+.2f}%")
+        # ── L4 注册（BAC_LLM / BAC_RULE 模式下的 L1+sync 平仓）──
+        # classic 模式的 L4 注册在 _run_classic_mode 内部处理 classic_exits
+        if _L4_ENABLED:
+            for ct in l1_closed:
+                try:
+                    coin = ct['coin']
+                    trade_id = f"agent_b_{int(datetime.now(timezone.utc).timestamp())}_{coin}"
+                    event = TradeEvent(
+                        event_id=TradeEvent.generate_event_id(),
+                        system_source="agent_b",
+                        trade_id=trade_id,
+                        ts_entry=ct.get("entry_ts", datetime.now(timezone.utc).isoformat()),
+                        ts_exit=ct.get("exit_ts", datetime.now(timezone.utc).isoformat()),
+                        symbol=f"{coin}-USDT-SWAP",
+                        direction=ct.get("action", "long").lower(),
+                        entry_price=ct.get("entry_price", 0),
+                        exit_price=ct.get("exit_price", 0),
+                        position_size=ct.get("position_size_usdt", 0),
+                        pnl=ct.get("pnl_pct", 0) * ct.get("position_size_usdt", 0),
+                        pnl_pct=ct.get("pnl_pct", 0) * 100,
+                        exit_reason=ct.get("exit_reason", ""),
+                        decision_context={
+                            "driver_mode": "BAC_LLM",
+                            "exit_layer": "L1_or_sync",
+                            "confidence": ct.get("confidence", 0),
+                        },
+                    )
+                    registry = UnifiedCaseRegistry()
+                    case_id, success = registry.register_trade_event(event)
+                    if success:
+                        print(f"[Agent B] L4 案例已注册: {case_id}")
+                except Exception as e:
+                    print(f"[Agent B] L4 注册异常: {e}")
     else:
         print(f"[Agent B/Exit] L1无触发，持仓: {list(memory['active_positions'].keys()) or '无'}")
 

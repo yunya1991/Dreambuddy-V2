@@ -630,10 +630,14 @@ def sync_positions_from_exchange(
     client: HyperliquidClient,
     active_positions: Dict,
     account_data: Optional[Dict] = None,
-) -> Dict:
+) -> Tuple[Dict, List[Dict]]:
     """
     将内存中的 active_positions 与交易所实际持仓同步
     防止因异常退出导致的记录不一致
+
+    返回: (active_positions, closed_by_sync_list)
+        closed_by_sync_list: 交易所端已平仓但内存中还有的仓位记录，
+                             含 PnL 估算和 exit_reason="exchange_sync"
     """
     if account_data is not None:
         acct = account_data
@@ -641,10 +645,49 @@ def sync_positions_from_exchange(
         acct = client.get_account()
     real_positions = acct.get("positions", {})
 
-    # 1. 移除交易所已不存在的持仓
+    closed_by_sync: List[Dict] = []
+
+    # 1. 移除交易所已不存在的持仓 — 记录平仓信息而非静默删除
     coins_to_remove = [c for c in active_positions if c not in real_positions]
-    for c in coins_to_remove:
-        del active_positions[c]
+    if coins_to_remove:
+        mids = client.get_all_mids()
+        for c in coins_to_remove:
+            pos = active_positions[c]
+            entry_price = float(pos.get("entry_price", 0) or 0)
+            # 用当前 mid price 估算平仓价格（mids 可能返回 str，需转 float）
+            try:
+                exit_price = float(mids.get(c, 0) or 0)
+            except (TypeError, ValueError):
+                exit_price = 0.0
+            if exit_price <= 0:
+                # 无法获取价格，用 entry_price 兜底（PnL=0）
+                exit_price = entry_price
+
+            is_long = pos.get("action", "") in ("LONG", "BUY")
+            if entry_price > 0:
+                if is_long:
+                    pnl_pct = (exit_price - entry_price) / entry_price
+                else:
+                    pnl_pct = (entry_price - exit_price) / entry_price
+            else:
+                pnl_pct = 0.0
+
+            closed_info = {
+                "coin": c,
+                "action": pos.get("action", ""),
+                "entry_price": entry_price,
+                "exit_price": exit_price,
+                "pnl_pct": pnl_pct,
+                "exit_reason": "exchange_sync",
+                "exit_ts": datetime.now(timezone.utc).isoformat(),
+                "entry_ts": pos.get("entry_ts", ""),
+                "position_size_usdt": pos.get("position_size_usdt", 0),
+                "confidence": pos.get("confidence", 0),
+                "cycle_id": pos.get("cycle_id", ""),
+                "execution": {"synced": True, "real_exit_price": exit_price},
+            }
+            closed_by_sync.append(closed_info)
+            del active_positions[c]
 
     # 2. 新增交易所存在但内存中没有的持仓（异常恢复）
     for coin, pos in real_positions.items():
@@ -674,7 +717,7 @@ def sync_positions_from_exchange(
                 "cycle_id": "recovered",
             }
 
-    return active_positions
+    return active_positions, closed_by_sync
 
 
 # ── 主入口：离场检查与执行 ────────────────────────────────────────────────
@@ -699,8 +742,12 @@ def run_exit_check(
     """
     closed_trades = []
 
-    # 1. 同步持仓
-    active_positions = sync_positions_from_exchange(client, active_positions, account_data)
+    # 1. 同步持仓（含交易所端已平仓位的记录）
+    active_positions, closed_by_sync = sync_positions_from_exchange(
+        client, active_positions, account_data
+    )
+    # 合并 sync 发现的平仓记录到 closed_trades
+    closed_trades.extend(closed_by_sync)
 
     if not active_positions:
         return active_positions, closed_trades

@@ -53,11 +53,32 @@ class TradeEvent:
         return f"evt_{int(datetime.now(timezone.utc).timestamp())}_{uuid.uuid4().hex[:8]}"
     
     @classmethod
+    def _normalize_yijing_source(cls, src: str) -> str:
+        """将易经推理子系统来源统一归一化为 yijing_inference
+
+        历史/现状兼容:
+        - bcrm / yijing_live / yijing_engine / liangyi / 易经子模块标识
+          统一归入 yijing_inference（易经推理系统主类）。
+        其他来源（martin_v15/agent_a 等）原样返回。
+        """
+        _YIJING_ALIASES = frozenset({
+            "bcrm", "yijing_live", "yijing_engine", "yijing_inference",
+            "liangyi", "scale", "bagua", "yijing", "yijing_force",
+        })
+        if not src:
+            return "yijing_inference"
+        normalized = str(src).strip().lower()
+        if normalized in _YIJING_ALIASES or normalized.startswith("yijing") or normalized.startswith("bcrm"):
+            return "yijing_inference"
+        return normalized
+
+    @classmethod
     def from_trade_record(cls, record) -> "TradeEvent":
         """从易经推理系统的 TradeRecord 创建 TradeEvent"""
+        raw_source = record.strategy_source or "yijing_inference"
         return cls(
             event_id=cls.generate_event_id(),
-            system_source=record.strategy_source or "yijing_inference",
+            system_source=cls._normalize_yijing_source(raw_source),
             trade_id=record.trade_id,
             ts_entry=record.entry_time,
             ts_exit=record.exit_time,

@@ -1633,7 +1633,7 @@ class PollingTrader:
                     "exit_reason": trade_rec.exit_reason or "unknown",
                     "ts_entry": trade_rec.entry_time,
                     "ts_exit": trade_rec.exit_time,
-                    "system_source": "yijing_live",
+                    "system_source": "yijing_inference",
                     "decision_context": {
                         "confidence": trade_rec.confidence,
                         "hexagram": trade_rec.hexagram or "",

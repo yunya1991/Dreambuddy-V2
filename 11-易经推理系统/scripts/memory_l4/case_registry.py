@@ -584,11 +584,22 @@ def create_case_from_episode_data(episode: Dict[str, Any], case_id: str) -> Dict
     dd = episode.get("drawdown")
 
     exit_reason = first_trade.get("exit_reason")
-    system_source = first_trade.get("system_source", "yijing_live")
+    raw_system_source = first_trade.get("system_source", "yijing_inference")
+    # 归一化易经推理子系统别名 → yijing_inference
+    _YIJING_ALIASES = frozenset({
+        "bcrm", "yijing_live", "yijing_engine", "yijing_inference",
+        "liangyi", "scale", "bagua", "yijing", "yijing_force",
+    })
+    _src_norm = str(raw_system_source).strip().lower() or "yijing_inference"
+    if _src_norm in _YIJING_ALIASES or _src_norm.startswith("yijing") or _src_norm.startswith("bcrm"):
+        system_source = "yijing_inference"
+    else:
+        system_source = _src_norm
     
     return {
         "case_id": case_id,
         "version": "v0.2",
+        "system_source": system_source,
         "ts_start": ts,
         "ts_end": None,
         "inst_id": inst_id,

@@ -210,10 +210,36 @@ class ExitExecutor:
             # 注册到 L4（执行成功时）
             if _L4_ENABLED and exec_record.status == ExecutionStatus.SUCCESS.value:
                 try:
-                    trade_id = f"dream_os_{int(datetime.now(timezone.utc).timestamp())}_{exec_record.symbol}"
+                    # ── 推断 system_source（不要写死 dream_os）──
+                    # 持仓 pos.system（= exec_record.system_name）
+                    # 记录了实际开仓的子系统：agent_a / agent_b / martin_v15 /
+                    # three_screen / yijing_inference / dream_os 原生等。
+                    # 没有 system_name 时才回落到 "dream_os"（调控系统本身的头寸）。
+                    raw_sys = (exec_record.system_name or "").strip().lower()
+                    _SYS_SOURCE_MAP = {
+                        "agent_a": "agent_a",
+                        "agent_b": "agent_b",
+                        "martin_v15": "martin_v15",
+                        "v15": "martin_v15",
+                        "martin": "martin_v15",
+                        "three_screen": "three_screen",
+                        "three-screen": "three_screen",
+                        "screen": "three_screen",
+                        "yijing_inference": "yijing_inference",
+                        "yijing": "yijing_inference",
+                        "yijing_live": "yijing_inference",
+                        "bcrm": "yijing_inference",
+                        "dream_os": "dream_os",
+                        "dreamos": "dream_os",
+                        "regulation": "dream_os",
+                        "control": "dream_os",
+                    }
+                    resolved_source = _SYS_SOURCE_MAP.get(raw_sys, "dream_os")
+
+                    trade_id = f"{resolved_source}_{int(datetime.now(timezone.utc).timestamp())}_{exec_record.symbol}"
                     event = TradeEvent(
                         event_id=TradeEvent.generate_event_id(),
-                        system_source="dream_os",
+                        system_source=resolved_source,
                         trade_id=trade_id,
                         ts_entry=datetime.now(timezone.utc).isoformat(),
                         ts_exit=datetime.now(timezone.utc).isoformat(),
