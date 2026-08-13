@@ -559,3 +559,56 @@ class YijingSignalGenerator:
             return "medium"
         else:
             return "high"
+
+
+# ---- Task 4: YijingSignalGeneratorNode ----
+
+from dreamos.registry.base import BaseNode
+from dreamos.shared.state import State, NodeResult, NodeStatus
+
+
+class YijingSignalGeneratorNode(BaseNode):
+    """YijingSignalGenerator node wrapper for DreamOS orchestration.
+
+    Wraps YijingSignalGenerator into a BaseNode-compatible node,
+    enabling it to participate in the DreamOS execution graph.
+    """
+
+    node_id: str = "YIJING_SIGNAL"
+    name: str = "Yijing Signal Generator"
+    description: str = "I Ching reasoning engine for directional signals"
+    chain: str = "B"
+    tags: list = ["trading", "yijing", "signal"]
+
+    def __init__(self, seed: Optional[int] = 42, **kwargs):
+        super().__init__(**kwargs)
+        self._generator = YijingSignalGenerator(seed=seed)
+
+    def execute_core(self, state: State) -> NodeResult:
+        """Execute Yijing signal generation and return NodeResult.
+
+        Reads market data from state.market, calls YijingSignalGenerator.generate(),
+        and wraps the result into a NodeResult.
+        """
+        market_data = state.market or {}
+
+        signal = self._generator.generate(market_data)
+
+        confidence = signal.get("confidence", 0.5)
+        direction = signal.get("direction", "HOLD")
+
+        return NodeResult(
+            node_id=self.node_id,
+            status=NodeStatus.SUCCESS,
+            confidence=confidence,
+            direction=direction,
+            outputs={
+                "direction": direction,
+                "confidence": confidence,
+                "hexagram": signal.get("hexagram", {}),
+                "phase": signal.get("phase", ""),
+                "risk_level": signal.get("risk_level", ""),
+                "symbol": signal.get("symbol", ""),
+                "source": signal.get("source", "yijing"),
+            },
+        )
