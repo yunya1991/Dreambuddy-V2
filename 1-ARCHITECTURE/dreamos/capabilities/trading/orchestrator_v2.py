@@ -305,3 +305,58 @@ class OrchestratorV2:
     @property
     def reviewer(self) -> CognitiveReviewer:
         return self._reviewer
+
+
+# ---- Task 3: OrchestratorV2Node ----
+
+from dreamos.registry.base import BaseNode
+from dreamos.shared.state import State, NodeResult, NodeStatus
+
+
+class OrchestratorV2Node(BaseNode):
+    """OrchestratorV2 node wrapper for DreamOS orchestration.
+
+    Wraps OrchestratorV2 into a BaseNode-compatible node,
+    enabling it to participate in the DreamOS execution graph.
+    """
+
+    node_id: str = "ORCHESTRATOR_V2"
+    name: str = "Orchestrator V2"
+    description: str = "Hermes scheduling and Bayesian optimization layer"
+    chain: str = "F"
+    tags: list = ["trading", "orchestration", "hermes", "bayesian"]
+
+    def __init__(self, use_hermes: bool = False, **kwargs):
+        super().__init__(**kwargs)
+        self._orchestrator = OrchestratorV2(use_hermes=use_hermes)
+
+    def execute_core(self, state: State) -> NodeResult:
+        """Execute a full orchestration cycle and return NodeResult.
+
+        Reads market data from state.market, calls OrchestratorV2.run_cycle(),
+        and wraps the result into a NodeResult.
+        """
+        market_data = state.market or {}
+
+        cycle_result = self._orchestrator.run_cycle(market_data)
+
+        status = cycle_result.get("status", "FAILED")
+        confidence = 0.7 if status == "COMPLETED" else 0.4
+
+        return NodeResult(
+            node_id=self.node_id,
+            status=NodeStatus.SUCCESS if status in ("COMPLETED", "PARTIAL") else NodeStatus.FAILED,
+            confidence=confidence,
+            direction=cycle_result.get("signal", {}).get("direction", "HOLD"),
+            outputs={
+                "cycle_id": cycle_result.get("cycle_id", ""),
+                "status": status,
+                "selection": cycle_result.get("selection", {}),
+                "signal": cycle_result.get("signal", {}),
+                "execution": cycle_result.get("execution", {}),
+                "review": cycle_result.get("review", {}),
+                "bayesian_triggered": cycle_result.get("bayesian_triggered", False),
+                "errors": cycle_result.get("errors", []),
+                "source": "orchestrator-v2",
+            },
+        )
