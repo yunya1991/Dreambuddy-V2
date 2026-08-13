@@ -177,3 +177,59 @@ class SignalRouter:
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "source": "signal-router-batch",
         }
+
+
+# ---- Task 2: SignalRouterNode ----
+
+from dreamos.registry.base import BaseNode
+from dreamos.shared.state import State, NodeResult, NodeStatus
+
+
+class SignalRouterNode(BaseNode):
+    """SignalRouter node wrapper for DreamOS orchestration.
+
+    Wraps SignalRouter into a BaseNode-compatible node,
+    enabling it to participate in the DreamOS execution graph.
+    """
+
+    node_id: str = "SIGNAL_ROUTER"
+    name: str = "Signal Router"
+    description: str = "Route signals through CoinSelector -> Yijing -> V15Executor"
+    chain: str = "D"
+    tags: list = ["trading", "router", "orchestration"]
+
+    def __init__(self, use_hermes: bool = False, **kwargs):
+        super().__init__(**kwargs)
+        self._router = SignalRouter(use_hermes=use_hermes)
+
+    def execute_core(self, state: State) -> NodeResult:
+        """Execute signal routing and return NodeResult.
+
+        Reads market data from state.market, calls SignalRouter.route(),
+        and wraps the result into a NodeResult.
+        """
+        market_data = state.market or {}
+
+        result = self._router.route(market_data)
+
+        confidence = result.get("confidence", 0.5)
+        direction = result.get("direction", "HOLD")
+        position = result.get("position", {})
+        status = position.get("status", "REJECTED")
+
+        return NodeResult(
+            node_id=self.node_id,
+            status=NodeStatus.SUCCESS if status == "OPEN" else NodeStatus.DEGRADED,
+            confidence=confidence,
+            direction=direction,
+            outputs={
+                "symbol": result.get("symbol", ""),
+                "direction": direction,
+                "confidence": confidence,
+                "hexagram": result.get("hexagram", {}),
+                "phase": result.get("phase", ""),
+                "risk_level": result.get("risk_level", ""),
+                "position": position,
+                "source": result.get("source", "signal-router"),
+            },
+        )
