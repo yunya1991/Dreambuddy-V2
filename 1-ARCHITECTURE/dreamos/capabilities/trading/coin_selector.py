@@ -67,28 +67,25 @@ class CoinSelector:
         return self._select_mock(market_data)
 
     def _select_mock(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Mock选币逻辑（用于测试和开发阶段）"""
-        symbols = market_data.get("symbols", ["BTC", "ETH", "SOL"])
-        long_pool = []
-        short_pool = []
+        """Mock选币逻辑（用于测试和开发阶段）
 
-        for i, sym in enumerate(symbols):
-            if i % 2 == 0:
-                long_pool.append({
-                    "symbol": sym,
-                    "score": 0.85 - i * 0.05,
-                    "reasons": ["mock: 趋势向上", "mock: 资金流入"],
-                })
-            else:
-                short_pool.append({
-                    "symbol": sym,
-                    "score": 0.72 - i * 0.05,
-                    "reasons": ["mock: 趋势向下", "mock: 资金流出"],
-                })
+        Mock模式下仍然走融合流程：
+            1. 调用 _call_asset_research（mock返回）
+            2. 调用 _call_attention_radar（mock返回）
+            3. 调用 _fuse_results 融合产出多空代币池
+        """
+        symbols = market_data.get("symbols", ["BTC", "ETH", "SOL"])
+
+        # 调用 mock SKILL
+        asset_research = self._call_asset_research(region="global")
+        attention_radar = self._call_attention_radar(symbols=symbols)
+
+        # 融合产出多空代币池
+        fused = self._fuse_results(asset_research, attention_radar)
 
         return {
-            "long_pool": long_pool,
-            "short_pool": short_pool,
+            "long_pool": fused["long_pool"],
+            "short_pool": fused["short_pool"],
             "timestamp": "2026-08-14T02:00:00Z",
             "source": "mock",
         }
@@ -207,15 +204,18 @@ class CoinSelector:
         long_pool: List[Dict[str, Any]] = []
         short_pool: List[Dict[str, Any]] = []
 
-        # 处理 long_top：与 asset_research 交集优先
+        # 处理 long_top：与 asset_research 交集优先，应用 crypto_priority
         for item in attention_radar.get("long_top", []):
             sym = item["symbol"]
             reasons = [item.get("reason", "attention signal")]
             if sym in asset_map:
-                score = (item.get("score", 0.5) + asset_map[sym].get("score", 0.5)) / 2
+                base_score = (item.get("score", 0.5) + asset_map[sym].get("score", 0.5)) / 2
                 reasons.append(asset_map[sym].get("reason", "asset research"))
             else:
-                score = item.get("score", 0.5) * 0.8  # 降权
+                base_score = item.get("score", 0.5) * 0.8  # 降权
+            # crypto_priority: priority=1.0 保持原分，priority=0.5 降权
+            crypto_priority = asset_map.get(sym, {}).get("priority", 1.0)
+            score = base_score * crypto_priority
             long_pool.append({
                 "symbol": sym,
                 "score": round(score, 4),
@@ -227,10 +227,12 @@ class CoinSelector:
             sym = item["symbol"]
             reasons = [item.get("reason", "attention signal")]
             if sym in asset_map:
-                score = (item.get("score", 0.5) + asset_map[sym].get("score", 0.5)) / 2
+                base_score = (item.get("score", 0.5) + asset_map[sym].get("score", 0.5)) / 2
                 reasons.append(asset_map[sym].get("reason", "asset research"))
             else:
-                score = item.get("score", 0.5) * 0.8
+                base_score = item.get("score", 0.5) * 0.8
+            crypto_priority = asset_map.get(sym, {}).get("priority", 1.0)
+            score = base_score * crypto_priority
             short_pool.append({
                 "symbol": sym,
                 "score": round(score, 4),
@@ -241,9 +243,10 @@ class CoinSelector:
         for item in asset_research.get("priority_assets", []):
             sym = item["symbol"]
             if sym not in long_map and sym not in short_map:
+                crypto_priority = item.get("priority", 1.0)
                 long_pool.append({
                     "symbol": sym,
-                    "score": round(item.get("score", 0.5) * 0.7, 4),
+                    "score": round(item.get("score", 0.5) * 0.7 * crypto_priority, 4),
                     "reasons": [item.get("reason", "asset research only")],
                 })
 

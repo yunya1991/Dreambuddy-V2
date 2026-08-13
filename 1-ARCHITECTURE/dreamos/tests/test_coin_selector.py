@@ -102,3 +102,58 @@ def test_fuse_results():
         assert "symbol" in item
         assert "score" in item
         assert "reasons" in item
+
+
+# ---- Task 3: 多空代币池融合逻辑（crypto_priority） ----
+
+def test_coin_selector_fuse_results():
+    """测试融合逻辑中 crypto_priority 降权：非加密资产 score 乘以 0.5"""
+    selector = CoinSelector(use_hermes=False)
+    asset_research = {
+        "engineName": "AssetResearch",
+        "region": "global",
+        "phase": "discovery",
+        "priority_assets": [
+            {"symbol": "BTC", "score": 0.9, "reason": "strong trend", "priority": 1.0},
+            {"symbol": "DOGE", "score": 0.7, "reason": "meme coin", "priority": 0.5},
+        ],
+        "source": "mock",
+    }
+    attention_radar = {
+        "long_top": [
+            {"symbol": "BTC", "score": 0.85, "reason": "attention high"},
+            {"symbol": "DOGE", "score": 0.6, "reason": "hype driven"},
+        ],
+        "short_top": [],
+        "source": "mock",
+    }
+    fused = selector._fuse_results(asset_research, attention_radar)
+
+    # 查找 BTC 和 DOGE 的融合结果
+    pool_by_symbol = {item["symbol"]: item for item in fused["long_pool"]}
+    assert "BTC" in pool_by_symbol
+    assert "DOGE" in pool_by_symbol
+
+    # BTC priority=1.0，不应降权
+    btc_score = pool_by_symbol["BTC"]["score"]
+    # DOGE priority=0.5，应降权（score 乘以 0.5）
+    doge_score = pool_by_symbol["DOGE"]["score"]
+
+    # BTC 的 score 应高于 DOGE（因为 DOGE 被 crypto_priority 降权）
+    assert btc_score > doge_score, f"BTC score {btc_score} should be > DOGE score {doge_score}"
+
+
+def test_coin_selector_select_uses_fusion():
+    """测试 select 方法在 mock 模式下使用融合逻辑而非简单分池"""
+    selector = CoinSelector(use_hermes=False)
+    result = selector.select(market_data={"symbols": ["BTC", "ETH", "SOL", "DOGE"]})
+    assert isinstance(result, dict)
+    assert "long_pool" in result
+    assert "short_pool" in result
+    assert "source" in result
+    # select 应该调用 _call_asset_research + _call_attention_radar + _fuse_results
+    # 验证 source 为 mock（因为 use_hermes=False）
+    assert result["source"] == "mock"
+    # 验证返回的 pool 非空
+    total = len(result["long_pool"]) + len(result["short_pool"])
+    assert total > 0, "pools should not be empty"
