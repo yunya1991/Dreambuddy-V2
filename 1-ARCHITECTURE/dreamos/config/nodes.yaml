@@ -90,6 +90,15 @@ nodes:
     description: 四层离场决策链
 
   # ── C 链:经典技术分析 ──
+  # ── F 链:Hermes调度与编排 ──
+  - node_id: ORCHESTRATOR_V2
+    name: 编排器V2
+    chain: F
+    adapter: function
+    handler: dreamos.capabilities.trading.orchestrator_v2.OrchestratorV2Node
+    description: Hermes调度五层闭环与贝叶斯优化
+
+  # ── C 链:经典技术分析 ──
   # ── E 链:认知复盘 ──
   - node_id: COGNITIVE_REVIEW
     name: 认知复盘器
