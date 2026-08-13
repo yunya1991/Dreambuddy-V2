@@ -1,6 +1,7 @@
 """V15Executor test suite."""
 import pytest
 from pathlib import Path
+from datetime import datetime, timedelta
 import sys
 
 BASE = Path(__file__).parent.parent
@@ -92,3 +93,39 @@ def test_v15_executor_addon_grid_short_with_vol_mult():
     assert abs(grid[0]["price"] - 112000.0) < 1.0   # 100000 * (1 + 0.12)
     assert abs(grid[1]["price"] - 124000.0) < 1.0   # 100000 * (1 + 0.24)
     assert abs(grid[2]["price"] - 136000.0) < 1.0   # 100000 * (1 + 0.36)
+
+
+# ---- Task 3: ATR trailing TP and timeout exit ----
+
+def test_v15_executor_atr_trailing_tp():
+    """Test check_exit_conditions triggers ATR trailing TP."""
+    executor = V15Executor()
+    position = {
+        "symbol": "BTC",
+        "direction": "LONG",
+        "entry_price": 100000.0,
+        "addon_count": 0,
+        "opened_at": datetime.utcnow().isoformat() + "Z",
+    }
+    # Price rises 4% → should trigger TP
+    result = executor.check_exit_conditions(position, current_price=104500.0, vol_mult=1.0)
+    assert result["should_exit"] is True
+    assert "TP" in result["reason"]
+
+
+def test_v15_executor_timeout_exit():
+    """Test check_exit_conditions triggers timeout exit."""
+    executor = V15Executor()
+    # Position opened 35 hours ago (exceeds base 29.9h)
+    old_time = (datetime.utcnow() - timedelta(hours=35)).isoformat() + "Z"
+    position = {
+        "symbol": "BTC",
+        "direction": "LONG",
+        "entry_price": 100000.0,
+        "addon_count": 0,
+        "opened_at": old_time,
+    }
+    # Price not at TP, but timeout exceeded
+    result = executor.check_exit_conditions(position, current_price=101000.0, vol_mult=1.0)
+    assert result["should_exit"] is True
+    assert "Timeout" in result["reason"]
