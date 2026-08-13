@@ -348,3 +348,57 @@ class CognitiveReviewer:
             "total_pnl": self._total_pnl,
             "total_lessons": len(self._lessons),
         }
+
+
+# ---- Task 3: CognitiveReviewerNode ----
+
+from dreamos.registry.base import BaseNode
+from dreamos.shared.state import State, NodeResult, NodeStatus
+
+
+class CognitiveReviewerNode(BaseNode):
+    """CognitiveReviewer node wrapper for DreamOS orchestration.
+
+    Wraps CognitiveReviewer into a BaseNode-compatible node,
+    enabling it to participate in the DreamOS execution graph.
+    """
+
+    node_id: str = "COGNITIVE_REVIEW"
+    name: str = "Cognitive Reviewer"
+    description: str = "Review trade results and extract cognitive lessons"
+    chain: str = "E"
+    tags: list = ["trading", "cognitive", "review", "learning"]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._reviewer = CognitiveReviewer()
+
+    def execute_core(self, state: State) -> NodeResult:
+        """Execute cognitive review and return NodeResult.
+
+        Reads trade result from state.market, calls CognitiveReviewer.review(),
+        and wraps the result into a NodeResult.
+        """
+        trade_result = state.market or {}
+
+        review = self._reviewer.review(trade_result)
+
+        assessment = review.get("assessment", "NEUTRAL")
+        score = review.get("score", 0.5)
+
+        return NodeResult(
+            node_id=self.node_id,
+            status=NodeStatus.SUCCESS,
+            confidence=score,
+            direction=trade_result.get("direction", "HOLD"),
+            outputs={
+                "symbol": review.get("symbol", ""),
+                "assessment": assessment,
+                "score": score,
+                "lessons": review.get("lessons", []),
+                "pnl_usdt": review.get("pnl_usdt", 0.0),
+                "pnl_pct": review.get("pnl_pct", 0.0),
+                "review_id": review.get("review_id", ""),
+                "source": "cognitive-review",
+            },
+        )
