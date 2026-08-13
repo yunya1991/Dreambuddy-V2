@@ -286,6 +286,80 @@ class YijingSignalGenerator:
             "source": "yijing",
         }
 
+    def fuse_signals(
+        self, signals: Dict[str, Any],
+        yijing_weight: float = 0.6, pool_weight: float = 0.4,
+    ) -> Dict[str, Any]:
+        """Fuse yijing signals with pool scores for final direction decisions.
+
+        Weighting: final_confidence = yijing_confidence * yijing_weight + pool_score * pool_weight
+
+        Args:
+            signals: Output from generate_from_pools with long_signals/short_signals.
+            yijing_weight: Weight for yijing confidence (default 0.6).
+            pool_weight: Weight for pool score (default 0.4).
+
+        Returns:
+            {
+                "long_decisions": [{symbol, final_direction, final_confidence, ...}],
+                "short_decisions": [...],
+                "timestamp": "...",
+                "source": "yijing-fused",
+            }
+        """
+        long_decisions: List[Dict[str, Any]] = []
+        short_decisions: List[Dict[str, Any]] = []
+
+        for sig in signals.get("long_signals", []):
+            yijing_conf = sig.get("confidence", 0.5)
+            pool_score = sig.get("pool_score", 0.5)
+            final_conf = round(yijing_conf * yijing_weight + pool_score * pool_weight, 4)
+
+            # Direction: keep original if confidence is high enough, otherwise HOLD
+            if final_conf > 0.55:
+                final_dir = sig.get("direction", "HOLD")
+            else:
+                final_dir = "HOLD"
+
+            long_decisions.append({
+                "symbol": sig.get("symbol", ""),
+                "final_direction": final_dir,
+                "final_confidence": final_conf,
+                "yijing_confidence": yijing_conf,
+                "pool_score": pool_score,
+                "hexagram": sig.get("hexagram", {}),
+                "phase": sig.get("phase", ""),
+                "risk_level": sig.get("risk_level", ""),
+            })
+
+        for sig in signals.get("short_signals", []):
+            yijing_conf = sig.get("confidence", 0.5)
+            pool_score = sig.get("pool_score", 0.5)
+            final_conf = round(yijing_conf * yijing_weight + pool_score * pool_weight, 4)
+
+            if final_conf > 0.55:
+                final_dir = sig.get("direction", "HOLD")
+            else:
+                final_dir = "HOLD"
+
+            short_decisions.append({
+                "symbol": sig.get("symbol", ""),
+                "final_direction": final_dir,
+                "final_confidence": final_conf,
+                "yijing_confidence": yijing_conf,
+                "pool_score": pool_score,
+                "hexagram": sig.get("hexagram", {}),
+                "phase": sig.get("phase", ""),
+                "risk_level": sig.get("risk_level", ""),
+            })
+
+        return {
+            "long_decisions": long_decisions,
+            "short_decisions": short_decisions,
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "source": "yijing-fused",
+        }
+
     def _score_to_trigram(self, score1: float, score2: float) -> int:
         """Convert two scores to a 3-bit trigram index.
 

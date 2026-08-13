@@ -148,3 +148,48 @@ def test_yijing_generate_from_pools_missing_data():
     # Should only process symbols with available market data
     assert len(signals["long_signals"]) == 1
     assert signals["long_signals"][0]["symbol"] == "BTC"
+
+
+# ---- Task 3: Signal fusion and direction decision ----
+
+def test_yijing_fuse_signals():
+    """Test fuse_signals combines yijing signals with pool scores."""
+    gen = YijingSignalGenerator(seed=42)
+    signals = {
+        "long_signals": [
+            {"symbol": "BTC", "direction": "LONG", "confidence": 0.75, "hexagram": {}, "pool_score": 0.85},
+            {"symbol": "ETH", "direction": "HOLD", "confidence": 0.50, "hexagram": {}, "pool_score": 0.80},
+        ],
+        "short_signals": [
+            {"symbol": "DOGE", "direction": "SHORT", "confidence": 0.65, "hexagram": {}, "pool_score": 0.70},
+        ],
+    }
+    fused = gen.fuse_signals(signals)
+    assert isinstance(fused, dict)
+    assert "long_decisions" in fused
+    assert "short_decisions" in fused
+    assert isinstance(fused["long_decisions"], list)
+    assert isinstance(fused["short_decisions"], list)
+    for dec in fused["long_decisions"] + fused["short_decisions"]:
+        assert "symbol" in dec
+        assert "final_direction" in dec
+        assert "final_confidence" in dec
+        assert "yijing_confidence" in dec
+        assert "pool_score" in dec
+
+
+def test_yijing_fuse_signals_weighting():
+    """Test fuse_signals applies correct weighting: yijing 0.6 + pool 0.4."""
+    gen = YijingSignalGenerator(seed=42)
+    signals = {
+        "long_signals": [
+            {"symbol": "BTC", "direction": "LONG", "confidence": 0.80, "hexagram": {}, "pool_score": 0.90},
+        ],
+        "short_signals": [],
+    }
+    fused = gen.fuse_signals(signals)
+    dec = fused["long_decisions"][0]
+    # final_confidence should be weighted: 0.80*0.6 + 0.90*0.4 = 0.84
+    expected = round(0.80 * 0.6 + 0.90 * 0.4, 4)
+    assert abs(dec["final_confidence"] - expected) < 0.01
+    assert dec["final_direction"] == "LONG"
