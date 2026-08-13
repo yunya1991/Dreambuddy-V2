@@ -254,3 +254,55 @@ class CoinSelector:
             "long_pool": long_pool,
             "short_pool": short_pool,
         }
+
+
+# ---- Task 4: CoinSelectorNode ----
+
+from dreamos.registry.base import BaseNode
+from dreamos.shared.state import State, NodeResult, NodeStatus
+
+
+class CoinSelectorNode(BaseNode):
+    """CoinSelector node wrapper for DreamOS orchestration.
+
+    Wraps CoinSelector into a BaseNode-compatible node,
+    enabling it to participate in the DreamOS execution graph.
+    """
+
+    node_id: str = "COIN_SELECTOR"
+    name: str = "Coin Selector"
+    description: str = "Select long/short token pools via SKILL fusion"
+    chain: str = "A"
+    tags: list = ["trading", "selection"]
+
+    def __init__(self, use_hermes: bool = False, **kwargs):
+        super().__init__(**kwargs)
+        self._selector = CoinSelector(use_hermes=use_hermes)
+
+    def execute_core(self, state: State) -> NodeResult:
+        """Execute coin selection and return NodeResult with pools.
+
+        Reads market data from state.market, calls CoinSelector.select(),
+        and wraps the result into a NodeResult.
+        """
+        market_data = state.market or {"symbols": ["BTC", "ETH", "SOL"]}
+
+        pools = self._selector.select(market_data=market_data)
+
+        long_count = len(pools.get("long_pool", []))
+        short_count = len(pools.get("short_pool", []))
+        total = long_count + short_count
+
+        confidence = min(1.0, total / 10.0) if total > 0 else 0.0
+
+        return NodeResult(
+            node_id=self.node_id,
+            status=NodeStatus.SUCCESS,
+            confidence=confidence,
+            outputs={
+                "long_pool": pools.get("long_pool", []),
+                "short_pool": pools.get("short_pool", []),
+                "timestamp": pools.get("timestamp", ""),
+                "source": pools.get("source", "mock"),
+            },
+        )
