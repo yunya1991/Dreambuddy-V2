@@ -92,3 +92,162 @@ class CoinSelector:
             "timestamp": "2026-08-14T02:00:00Z",
             "source": "mock",
         }
+
+    # ---- Task 2: SKILL 调用与融合 ----
+
+    def _call_asset_research(self, region: str = "global") -> Dict[str, Any]:
+        """调用asset-research SKILL进行资产调研
+
+        Args:
+            region: 调研区域，如 global / asia / americas
+
+        Returns:
+            {
+                "engineName": "AssetResearch",
+                "region": "global",
+                "phase": "discovery",
+                "priority_assets": [{"symbol": "BTC", "score": 0.9, "reason": "..."}],
+                "source": "hermes" | "mock"
+            }
+        """
+        if self.use_hermes:
+            # TODO: 通过Hermes调用asset-research SKILL
+            pass
+
+        # Mock 返回
+        return {
+            "engineName": "AssetResearch",
+            "region": region,
+            "phase": "discovery",
+            "priority_assets": [
+                {"symbol": "BTC", "score": 0.9, "reason": "strong trend"},
+                {"symbol": "ETH", "score": 0.8, "reason": "volume surge"},
+                {"symbol": "SOL", "score": 0.75, "reason": "ecosystem growth"},
+            ],
+            "source": "mock",
+        }
+
+    def _call_attention_radar(self, symbols: List[str]) -> Dict[str, Any]:
+        """调用dream-attention-radar SKILL获取注意力排名
+
+        Args:
+            symbols: 待排名的代币符号列表
+
+        Returns:
+            {
+                "long_top": [{"symbol": "BTC", "score": 0.85, "reason": "..."}],
+                "short_top": [{"symbol": "DOGE", "score": 0.65, "reason": "..."}],
+                "source": "hermes" | "mock"
+            }
+        """
+        if self.use_hermes:
+            # TODO: 通过Hermes调用dream-attention-radar SKILL
+            pass
+
+        # Mock 返回
+        long_top = []
+        short_top = []
+        for i, sym in enumerate(symbols):
+            if i % 2 == 0:
+                long_top.append({
+                    "symbol": sym,
+                    "score": 0.85 - i * 0.05,
+                    "reason": "attention high",
+                })
+            else:
+                short_top.append({
+                    "symbol": sym,
+                    "score": 0.65 - i * 0.05,
+                    "reason": "attention low",
+                })
+
+        return {
+            "long_top": long_top,
+            "short_top": short_top,
+            "source": "mock",
+        }
+
+    def _fuse_results(
+        self,
+        asset_research: Dict[str, Any],
+        attention_radar: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """融合asset-research和attention-radar结果，产出多空代币池
+
+        融合策略：
+            1. 从asset_research的priority_assets中提取候选
+            2. 与attention_radar的long_top/short_top做交集匹配
+            3. 同时出现在两个来源的代币获得加权得分
+            4. 仅出现在一个来源的代币降权保留
+
+        Args:
+            asset_research: _call_asset_research 的返回结果
+            attention_radar: _call_attention_radar 的返回结果
+
+        Returns:
+            {
+                "long_pool": [{"symbol": "...", "score": 0.0, "reasons": [...]}],
+                "short_pool": [{"symbol": "...", "score": 0.0, "reasons": [...]}],
+            }
+        """
+        # 构建 attention_radar 查找索引
+        long_map: Dict[str, Dict[str, Any]] = {
+            item["symbol"]: item for item in attention_radar.get("long_top", [])
+        }
+        short_map: Dict[str, Dict[str, Any]] = {
+            item["symbol"]: item for item in attention_radar.get("short_top", [])
+        }
+
+        # 构建 asset_research 查找索引
+        asset_map: Dict[str, Dict[str, Any]] = {
+            item["symbol"]: item
+            for item in asset_research.get("priority_assets", [])
+        }
+
+        long_pool: List[Dict[str, Any]] = []
+        short_pool: List[Dict[str, Any]] = []
+
+        # 处理 long_top：与 asset_research 交集优先
+        for item in attention_radar.get("long_top", []):
+            sym = item["symbol"]
+            reasons = [item.get("reason", "attention signal")]
+            if sym in asset_map:
+                score = (item.get("score", 0.5) + asset_map[sym].get("score", 0.5)) / 2
+                reasons.append(asset_map[sym].get("reason", "asset research"))
+            else:
+                score = item.get("score", 0.5) * 0.8  # 降权
+            long_pool.append({
+                "symbol": sym,
+                "score": round(score, 4),
+                "reasons": reasons,
+            })
+
+        # 处理 short_top
+        for item in attention_radar.get("short_top", []):
+            sym = item["symbol"]
+            reasons = [item.get("reason", "attention signal")]
+            if sym in asset_map:
+                score = (item.get("score", 0.5) + asset_map[sym].get("score", 0.5)) / 2
+                reasons.append(asset_map[sym].get("reason", "asset research"))
+            else:
+                score = item.get("score", 0.5) * 0.8
+            short_pool.append({
+                "symbol": sym,
+                "score": round(score, 4),
+                "reasons": reasons,
+            })
+
+        # 补充仅出现在 asset_research 但不在 attention_radar 中的代币
+        for item in asset_research.get("priority_assets", []):
+            sym = item["symbol"]
+            if sym not in long_map and sym not in short_map:
+                long_pool.append({
+                    "symbol": sym,
+                    "score": round(item.get("score", 0.5) * 0.7, 4),
+                    "reasons": [item.get("reason", "asset research only")],
+                })
+
+        return {
+            "long_pool": long_pool,
+            "short_pool": short_pool,
+        }
