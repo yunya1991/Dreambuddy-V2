@@ -161,3 +161,67 @@ def test_v15_executor_node():
     assert "symbol" in result.outputs
     assert "direction" in result.outputs
     assert "position_size" in result.outputs
+
+
+# ---- Task 5: Phase 3 integration test ----
+
+def test_phase3_integration():
+    """Phase 3 end-to-end: init -> execute -> addon grid -> exit check -> node."""
+    from dreamos.capabilities.trading.v15_executor import V15Executor, V15ExecutorNode
+    from dreamos.shared.state import State, NodeResult, new_state
+
+    # Step 1: Initialize executor
+    executor = V15Executor()
+    assert executor is not None
+
+    # Step 2: Execute signal
+    signal = {
+        "symbol": "BTC",
+        "direction": "LONG",
+        "confidence": 0.75,
+        "entry_price": 100000.0,
+    }
+    pos = executor.execute_signal(signal)
+    assert pos["status"] == "OPEN"
+    assert pos["addons_remaining"] == 3
+    assert pos["tp_pct"] == 0.04
+    assert pos["addon_gap_pct"] == 0.08
+
+    # Step 3: Verify addon grid
+    grid = executor.compute_addon_grid("LONG", 100000.0, vol_mult=1.0)
+    assert len(grid) == 3
+    assert abs(grid[0]["price"] - 92000.0) < 1.0
+    assert abs(grid[1]["price"] - 84000.0) < 1.0
+    assert abs(grid[2]["price"] - 76000.0) < 1.0
+
+    # Step 4: Check exit conditions (TP not hit)
+    exit_result = executor.check_exit_conditions(
+        pos, current_price=101000.0, vol_mult=1.0
+    )
+    assert exit_result["should_exit"] is False
+
+    # Step 5: Check exit conditions (TP hit)
+    exit_result = executor.check_exit_conditions(
+        pos, current_price=105000.0, vol_mult=1.0
+    )
+    assert exit_result["should_exit"] is True
+    assert "TP" in exit_result["reason"]
+
+    # Step 6: Verify DreamOS node wrapper
+    node = V15ExecutorNode()
+    assert node.node_id == "V15_EXECUTOR"
+    assert node.chain == "C"
+
+    state = new_state(cycle_id="phase3-integration")
+    state.market = {
+        "symbol": "BTC",
+        "direction": "LONG",
+        "confidence": 0.75,
+        "entry_price": 100000.0,
+    }
+    result = node.execute(state)
+
+    assert result.success
+    assert result.outputs["status"] == "OPEN"
+    assert result.outputs["symbol"] == "BTC"
+    assert result.outputs["direction"] == "LONG"
