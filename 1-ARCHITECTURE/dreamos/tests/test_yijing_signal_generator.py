@@ -72,3 +72,79 @@ def test_yijing_signal_generator_hexagram_structure():
     assert "changed_gua" in hex
     assert "moving_yaos" in hex
     assert isinstance(hex["moving_yaos"], list)
+
+
+# ---- Task 2: Pool integration ----
+
+def test_yijing_generate_from_pools():
+    """Test generate_from_pools processes a full coin pool."""
+    gen = YijingSignalGenerator(seed=42)
+    pools = {
+        "long_pool": [
+            {"symbol": "BTC", "score": 0.85, "reasons": ["trend up"]},
+            {"symbol": "ETH", "score": 0.80, "reasons": ["volume surge"]},
+        ],
+        "short_pool": [
+            {"symbol": "DOGE", "score": 0.65, "reasons": ["trend down"]},
+        ],
+    }
+    market_data_batch = {
+        "BTC": {
+            "symbol": "BTC", "supply_demand_score": 0.65, "technical_score": 0.60,
+            "capital_flow_score": 0.55, "sentiment_score": 0.50,
+            "trend_strength": 0.70, "volatility": 0.30, "volume_ratio": 1.2,
+            "price_position": 0.45, "ma5": 100.0, "ma10": 98.0, "ma20": 95.0,
+            "momentum_direction": "UP", "close_price": 100.0,
+        },
+        "ETH": {
+            "symbol": "ETH", "supply_demand_score": 0.60, "technical_score": 0.55,
+            "capital_flow_score": 0.50, "sentiment_score": 0.45,
+            "trend_strength": 0.65, "volatility": 0.35, "volume_ratio": 1.1,
+            "price_position": 0.40, "ma5": 50.0, "ma10": 49.0, "ma20": 48.0,
+            "momentum_direction": "UP", "close_price": 50.0,
+        },
+        "DOGE": {
+            "symbol": "DOGE", "supply_demand_score": 0.35, "technical_score": 0.30,
+            "capital_flow_score": 0.25, "sentiment_score": 0.20,
+            "trend_strength": 0.25, "volatility": 0.55, "volume_ratio": 0.7,
+            "price_position": 0.80, "ma5": 0.12, "ma10": 0.13, "ma20": 0.14,
+            "momentum_direction": "DOWN", "close_price": 0.12,
+        },
+    }
+    signals = gen.generate_from_pools(pools, market_data_batch)
+    assert isinstance(signals, dict)
+    assert "long_signals" in signals
+    assert "short_signals" in signals
+    assert isinstance(signals["long_signals"], list)
+    assert isinstance(signals["short_signals"], list)
+    assert len(signals["long_signals"]) == 2
+    assert len(signals["short_signals"]) == 1
+    for sig in signals["long_signals"] + signals["short_signals"]:
+        assert "symbol" in sig
+        assert "direction" in sig
+        assert "confidence" in sig
+
+
+def test_yijing_generate_from_pools_missing_data():
+    """Test generate_from_pools handles missing market data gracefully."""
+    gen = YijingSignalGenerator(seed=42)
+    pools = {
+        "long_pool": [
+            {"symbol": "BTC", "score": 0.85, "reasons": ["trend up"]},
+            {"symbol": "MISSING", "score": 0.70, "reasons": ["unknown"]},
+        ],
+        "short_pool": [],
+    }
+    market_data_batch = {
+        "BTC": {
+            "symbol": "BTC", "supply_demand_score": 0.65, "technical_score": 0.60,
+            "capital_flow_score": 0.55, "sentiment_score": 0.50,
+            "trend_strength": 0.70, "volatility": 0.30, "volume_ratio": 1.2,
+            "price_position": 0.45, "ma5": 100.0, "ma10": 98.0, "ma20": 95.0,
+            "momentum_direction": "UP", "close_price": 100.0,
+        },
+    }
+    signals = gen.generate_from_pools(pools, market_data_batch)
+    # Should only process symbols with available market data
+    assert len(signals["long_signals"]) == 1
+    assert signals["long_signals"][0]["symbol"] == "BTC"

@@ -237,6 +237,55 @@ class YijingSignalGenerator:
             "source": "yijing",
         }
 
+    def generate_from_pools(
+        self,
+        pools: Dict[str, Any],
+        market_data_batch: Dict[str, Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Generate Yijing signals for all symbols in coin pools.
+
+        Args:
+            pools: CoinSelector output with long_pool and short_pool.
+            market_data_batch: Dict mapping symbol to market_data dict.
+
+        Returns:
+            {
+                "long_signals": [signal, ...],
+                "short_signals": [signal, ...],
+                "timestamp": "...",
+                "source": "yijing",
+            }
+        """
+        long_signals: List[Dict[str, Any]] = []
+        short_signals: List[Dict[str, Any]] = []
+
+        for item in pools.get("long_pool", []):
+            sym = item.get("symbol", "")
+            md = market_data_batch.get(sym)
+            if md is None:
+                continue
+            signal = self.generate(md)
+            signal["pool_score"] = item.get("score", 0.0)
+            signal["pool_reasons"] = item.get("reasons", [])
+            long_signals.append(signal)
+
+        for item in pools.get("short_pool", []):
+            sym = item.get("symbol", "")
+            md = market_data_batch.get(sym)
+            if md is None:
+                continue
+            signal = self.generate(md)
+            signal["pool_score"] = item.get("score", 0.0)
+            signal["pool_reasons"] = item.get("reasons", [])
+            short_signals.append(signal)
+
+        return {
+            "long_signals": long_signals,
+            "short_signals": short_signals,
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "source": "yijing",
+        }
+
     def _score_to_trigram(self, score1: float, score2: float) -> int:
         """Convert two scores to a 3-bit trigram index.
 
