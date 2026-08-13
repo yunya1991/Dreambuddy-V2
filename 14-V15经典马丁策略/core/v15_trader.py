@@ -4,7 +4,9 @@ V15 经典马丁策略自动交易器
 - 定时轮询币种信号
 - 根据资金计算器决定是否开仓
 - 马丁加仓：最多4次（=总5单），资金不足时禁止开新仓
-- 多空双向：DirectionGate 根据日/周 MA200 控制方向开关
+- 多空双向：DirectionGate 基于 MA128 + BTC风向标三状态模型控制方向开关
+- BTC风向标智能模式：BTC用自身MA128+DirectionGate，非BTC加密币种用BTC风向标3日确认+short_only
+- 非加密资产（如美股）：旧版DirectionGate + MA200止损（与BTC走势无关）
   - 做多：价格在日 MA200 上方（LONG_PREFERRED）
   - 做空：跌破日 MA200 但在周 MA200 上方（SHORT_ALLOWED，反向马丁）
   - 强制做多：跌至周 MA200（LONG_ONLY_FORCE，禁止做空）
@@ -773,8 +775,69 @@ def get_v15_decision(coin):
         return {"action": "WAIT", "confidence": 0, "reasons": [str(e)]}
 
 
+def _is_crypto_asset(coin):
+    """判断币种是否为加密资产（基于V15_ASSET_TYPES配置）
+
+    加密资产 → BTC风向标智能模式（§16）
+    非加密资产（如美股）→ 旧版MA200止损+DirectionGate
+    """
+    asset_types_str = str(get_config("V15_ASSET_TYPES", ""))
+    if not asset_types_str:
+        # 配置为空时默认全部为加密资产（向后兼容）
+        return True
+    for entry in asset_types_str.split(","):
+        entry = entry.strip()
+        if ":" in entry:
+            symbol, asset_type = entry.split(":", 1)
+            if symbol.strip().upper() == coin.upper():
+                return asset_type.strip().lower() == "crypto"
+    # 未在配置中找到的币种，默认为非加密资产（安全默认）
+    return False
+
+
 def _get_direction_ctx(coin):
-    """获取币种的多空方向控制上下文（含BTC风向标机制 + Phase A 连续3日确认 + Phase2力学化）"""
+    """获取币种的多空方向控制上下文（含BTC风向标机制 + Phase A 连续3日确认 + Phase2力学化）
+
+    双模式方向控制：
+    - 加密资产：BTC风向标智能模式（§16）
+      BTC用自身MA128+DirectionGate，非BTC加密币用BTC风向标3日确认+short_only
+    - 非加密资产（如美股）：旧版DirectionGate（日/周MA200三状态模型）
+    """
+    # 非加密资产 → 旧版DirectionGate逻辑
+    if not _is_crypto_asset(coin):
+        try:
+            from direction_gate import DirectionGate
+            from strategy_params import calc_daily_ma128, get_coin_strategy_params
+
+            params = get_coin_strategy_params(coin, "LONG")
+            if "error" in params:
+                return {"short_enabled": False, "long_enabled": True, "regime": "unknown"}
+
+            klines_1d = params.get("klines_1d", [])
+            daily_ma128 = calc_daily_ma128(klines_1d)
+            recent_closes = [float(k["c"]) for k in klines_1d[-5:] if "c" in k]
+
+            sl = params["stop_loss"]
+            gate = DirectionGate(allow_short=V15_ALLOW_SHORT)
+            result = gate.evaluate(
+                current_price=params["current_price"],
+                daily_ma128=daily_ma128,
+                weekly_ma200=sl.get("weekly_ma200"),
+                recent_daily_closes=recent_closes,
+                btc_short_enabled=V15_ALLOW_SHORT,
+            )
+            ctx = result.to_dict()
+            ctx["btc_short_enabled"] = V15_ALLOW_SHORT
+            ctx["btc_confirmed_regime"] = result.regime.value
+            ctx["regime_in_cooldown"] = False
+            ctx["use_btc_windvane"] = False
+            _log(f"[{coin}] 非加密资产模式: regime={result.regime.value}, 做多={result.long_enabled}, 做空={result.short_enabled}")
+            return ctx
+        except Exception as e:
+            _log(f"[{coin}] 方向控制评估失败(非加密): {e}, 默认只做多")
+            return {"short_enabled": False, "long_enabled": True, "regime": "error"}
+
+    # 加密资产 → BTC风向标智能模式（§16）
     try:
         from direction_gate import DirectionGate, VelocityIntegrator
         from regime_manager import RegimeManager
@@ -807,6 +870,7 @@ def _get_direction_ctx(coin):
 
         # 先获取BTC的方向控制结果作为风向标
         btc_short_enabled = False
+        btc_confirmed_regime = "LONG_PREFERRED"
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         if V15_ALLOW_SHORT:
             try:
@@ -853,6 +917,7 @@ def _get_direction_ctx(coin):
                             date_str=today,
                             mechanistic_ctx=mechanistic_ctx,
                         )
+                        btc_confirmed_regime = confirmed_regime
                         btc_short_enabled = confirmed_regime in ("SHORT_ALLOWED",)
                         extra_log = ""
                         if mechanistic_ctx and rm.last_zone:
@@ -884,15 +949,15 @@ def _get_direction_ctx(coin):
         if in_cooldown:
             _log(f"[PhaseA+] 形态切换冷却中（距上次切换<{regime_cooldown_days}天），暂停开新仓")
 
-        # 获取当前币种的方向控制（保持传统模式，BTC风向标已对闸门位做过滤）
+        # 获取当前币种的方向控制（BTC风向标已对闸门位做过滤）
+        # BTC风向标智能模式（§16）：BTC用自身MA128+DirectionGate，非BTC加密币用BTC风向标3日确认+short_only
         params = get_coin_strategy_params(coin, "LONG")
         if "error" in params:
             return {"short_enabled": False, "long_enabled": True, "regime": "unknown"}
 
-        # 计算当前币种的MA128
-        klines_1d = params.get("klines_1d", [])
-        daily_ma128 = calc_daily_ma128(klines_1d)
-        recent_closes = [float(k["c"]) for k in klines_1d[-5:] if "c" in k]
+            klines_1d = params.get("klines_1d", [])
+            daily_ma128 = calc_daily_ma128(klines_1d)
+            recent_closes = [float(k["c"]) for k in klines_1d[-5:] if "c" in k]
 
         sl = params["stop_loss"]
         gate = DirectionGate(allow_short=True)
@@ -905,7 +970,9 @@ def _get_direction_ctx(coin):
         )
         ctx = result.to_dict()
         ctx["btc_short_enabled"] = btc_short_enabled
+        ctx["btc_confirmed_regime"] = btc_confirmed_regime
         ctx["regime_in_cooldown"] = in_cooldown
+        ctx["use_btc_windvane"] = False
 
         # Phase 4: TimingGate 波浪+斐波那契时机软调控
         # - gate_result 作为方向先验 → TimingGate 方向匹配评分 & 三浪结构 & fib回撤
@@ -1045,6 +1112,31 @@ def _get_direction_ctx(coin):
                 "step_count": btc_vi.step_count,
                 "last_zone": rm.last_zone,
             }
+
+        # ── BTC风向标智能模式：非BTC加密币种覆盖方向控制（§16）──
+        # 非BTC加密币种：使用BTC风向标3日确认 + short_only模式
+        # 覆盖DirectionGate的结果，由BTC风向标状态决定多空方向
+        if coin.upper() != "BTC" and _is_crypto_asset(coin):
+            if btc_confirmed_regime == "SHORT_ALLOWED":
+                ctx["short_enabled"] = True
+                ctx["long_enabled"] = False  # short_only：SHORT_ALLOWED时只做空不做多
+                ctx["regime"] = "SHORT_ALLOWED"
+                ctx["use_btc_windvane"] = True
+            elif btc_confirmed_regime == "LONG_ONLY_FORCE":
+                ctx["short_enabled"] = False
+                ctx["long_enabled"] = True  # 强制做多
+                ctx["regime"] = "LONG_ONLY_FORCE"
+                ctx["use_btc_windvane"] = True
+            else:
+                # LONG_PREFERRED：默认只做多
+                ctx["short_enabled"] = False
+                ctx["long_enabled"] = True
+                ctx["regime"] = "LONG_PREFERRED"
+                ctx["use_btc_windvane"] = True
+            _log(f"[{coin}] BTC风向标模式: regime={btc_confirmed_regime}, 做多={ctx['long_enabled']}, 做空={ctx['short_enabled']}")
+        else:
+            ctx["use_btc_windvane"] = False
+
         return ctx
     except Exception as e:
         _log(f"[{coin}] 方向控制评估失败: {e}, 默认只做多")
@@ -1279,8 +1371,12 @@ def execute_open_position(client, coin, decision, state):
         # 但 BELOW_ALL_MA_CONFIRMED（所有均线确认跌破）= 强下跌趋势，开仓即触发止损
         # 逻辑矛盾：开仓允许 + 平仓立即止损 → 死循环（高频亏损根因）
         # 修复：BELOW_ALL_MA_CONFIRMED 时拒绝开仓；其他单均线触发时仓位减半
+        #
+        # BTC风向标智能模式（§16）：
+        # - 非BTC加密币种已移除MA200止损（sl_type=BTC_WINDVANE），跳过此检查
+        # - 非加密资产（如美股）保留MA200止损检查
         risk_mult = 1.0
-        if params["stop_loss_triggered"]:
+        if params["stop_loss_triggered"] and params["stop_loss_type"] != "BTC_WINDVANE":
             sl_type = params["stop_loss_type"]
             if sl_type == "BELOW_ALL_MA_CONFIRMED":
                 _log(
@@ -1489,6 +1585,9 @@ def execute_open_position(client, coin, decision, state):
                     # 影子模式下 ai_effective_max_addons=None → execute_addon / grid 回退 MAX_ADDONS（基线）
                     "ai_p_bust": _phase_d_p_bust,
                     "ai_effective_max_addons": None if V15_AI_SHADOW else _phase_d_effective_max_addons,
+                    # BTC风向标智能模式：记录开仓时的BTC风向标状态（供止损检查对比）
+                    "btc_regime_at_open": dir_ctx.get("btc_confirmed_regime", "LONG_PREFERRED"),
+                    "use_btc_windvane": dir_ctx.get("use_btc_windvane", False),
                 }
                 state["total_trades"] += 1
                 _sync_tp_sl_orders(client, coin, state["positions"][coin], price, tp_pct, sl_price)
@@ -1635,7 +1734,14 @@ def execute_addon(client, coin, pos, state):
 
 
 def _get_dynamic_params(client, coin, direction="LONG"):
-    """获取币种的动态策略参数（止盈、加仓、止损）"""
+    """获取币种的动态策略参数（止盈、加仓、止损）
+
+    BTC风向标智能模式（§16）：
+    - BTC：保留自身MA200/EMA200动态止损
+    - 非BTC币种：移除自身MA200止损，止损由BTC风向标状态控制
+      → BTC触发SHORT_ALLOWED时平掉非BTC多仓
+      → BTC触发LONG_ONLY_FORCE时平掉非BTC空仓
+    """
     from strategy_params import get_coin_strategy_params
 
     params = get_coin_strategy_params(coin, direction)
@@ -1645,6 +1751,35 @@ def _get_dynamic_params(client, coin, direction="LONG"):
     sl = params["stop_loss"]
     vol = params["volatility"]
 
+    # ── BTC风向标智能模式：加密资产非BTC币种移除自身MA200止损 ──
+    # 非加密资产（如美股）保留旧版MA200止损
+    if coin.upper() != "BTC" and _is_crypto_asset(coin):
+        # 非BTC加密币种：不使用自身MA200止损，由BTC风向标状态控制平仓
+        # 止损价格设为None，止损触发由check_take_profit中的BTC风向标状态检查处理
+        return {
+            "current_price": params["current_price"],
+            "take_profit_pct": params["take_profit_pct"] / 100,
+            "addon_pct": params["addon_pct"] / 100,
+            "stop_loss_price": None,
+            "stop_loss_pct": None,
+            "stop_loss_type": "BTC_WINDVANE",
+            "stop_loss_triggered": False,  # 由BTC风向标状态动态判断
+            "daily_ma200": sl["daily_ma200"],
+            "daily_ema200": sl["daily_ema200"],
+            "weekly_ma200": sl["weekly_ma200"],
+            "weekly_ema200": sl["weekly_ema200"],
+            "above_daily_ma200": sl["above_daily_ma200_close"],
+            "above_daily_ema200": sl["above_daily_ema200_close"],
+            "above_weekly_ma200": sl["above_weekly_ma200_close"],
+            "above_weekly_ema200": sl["above_weekly_ema200_close"],
+            "last_daily_close": params.get("last_daily_close"),
+            "last_weekly_close": params.get("last_weekly_close"),
+            "volatility": vol,
+            "elder_ray": params.get("elder_ray"),
+            "klines_4h": params.get("klines_4h"),
+        }
+
+    # BTC：保留自身MA200/EMA200动态止损
     return {
         "current_price": params["current_price"],
         "take_profit_pct": params["take_profit_pct"] / 100,
@@ -2037,6 +2172,22 @@ def _update_tp_sl_dynamic(client, coin, pos):
         if current_price <= 0:
             return
 
+        # BTC风向标智能模式：非BTC加密币种无MA200止损价格，跳过止损更新
+        use_btc_windvane = pos.get("use_btc_windvane", False)
+        if use_btc_windvane and sl_price is None:
+            # 仅检查止盈价是否需要更新
+            entry_price = pos["entry_price"]
+            last_tp = pos.get("last_tp_price")
+            is_short = direction == "SHORT"
+            if is_short:
+                current_tp = entry_price * (1 - tp_pct)
+            else:
+                current_tp = entry_price * (1 + tp_pct)
+            if last_tp is None or (last_tp > 0 and abs(current_tp - last_tp) / last_tp > 0.005):
+                _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, None)
+                pos["last_tp_price"] = current_tp
+            return
+
         entry_price = pos["entry_price"]
         last_sl = pos.get("last_sl_price")
         last_tp = pos.get("last_tp_price")
@@ -2102,6 +2253,40 @@ def check_take_profit(client, coin, pos, state):
         sl_price = params["stop_loss_price"]
         sl_type = params["stop_loss_type"]
         sl_triggered = params["stop_loss_triggered"]
+
+        # ── BTC风向标智能模式：加密资产非BTC币种由BTC风向标状态控制止损 ──
+        # 非加密资产（如美股）使用旧版MA200止损，不进入此分支
+        if coin.upper() != "BTC" and _is_crypto_asset(coin) and sl_type == "BTC_WINDVANE":
+            # 获取当前BTC风向标状态
+            btc_ctx = _get_direction_ctx("BTC")
+            btc_regime = btc_ctx.get("btc_confirmed_regime", "LONG_PREFERRED")
+            pos_regime = pos.get("btc_regime_at_open", "LONG_PREFERRED")
+
+            # BTC风向标状态变化导致方向反转 → 触发平仓
+            if not is_short and btc_regime == "SHORT_ALLOWED":
+                # 持有多仓但BTC风向标转为SHORT_ALLOWED → 平多仓
+                _log(
+                    f"[{coin}] BTC风向标止损触发: 持有多仓但BTC regime={btc_regime} "
+                    f"(开仓时={pos_regime})，平多仓"
+                )
+                sl_triggered = True
+                sl_type = "BTC_WINDVANE_SHORT_ALLOWED"
+            elif is_short and btc_regime == "LONG_ONLY_FORCE":
+                # 持有空仓但BTC风向标转为LONG_ONLY_FORCE → 平空仓
+                _log(
+                    f"[{coin}] BTC风向标止损触发: 持有空仓但BTC regime={btc_regime} "
+                    f"(开仓时={pos_regime})，平空仓"
+                )
+                sl_triggered = True
+                sl_type = "BTC_WINDVANE_LONG_ONLY_FORCE"
+            elif is_short and btc_regime == "LONG_PREFERRED":
+                # 持有空仓但BTC风向标回到LONG_PREFERRED → 平空仓
+                _log(
+                    f"[{coin}] BTC风向标止损触发: 持有空仓但BTC regime={btc_regime} "
+                    f"(开仓时={pos_regime})，平空仓"
+                )
+                sl_triggered = True
+                sl_type = "BTC_WINDVANE_BACK_TO_LONG"
 
         # ── 移动止盈检查（在固定止盈之前）──
         if _TRAILING["enabled"] and profit_pct > 0:
