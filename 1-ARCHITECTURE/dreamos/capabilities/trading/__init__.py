@@ -178,6 +178,9 @@ from dreamos.capabilities.trading.coin_selector import CoinSelector, CoinSelecto
 # ── Phase 2: B-series Yijing signal generator ────────────────────
 from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator, YijingSignalGeneratorNode
 
+# ── Phase 3: C-series V15 Martin executor ────────────────────────
+from dreamos.capabilities.trading.v15_executor import V15Executor, V15ExecutorNode
+
 __all__ = [
     "TradingCapability",
     "get_trading_capability",
@@ -185,4 +188,6 @@ __all__ = [
     "CoinSelectorNode",
     "YijingSignalGenerator",
     "YijingSignalGeneratorNode",
+    "V15Executor",
+    "V15ExecutorNode",
 ]

@@ -90,6 +90,15 @@ nodes:
     description: 四层离场决策链
 
   # ── C 链:经典技术分析 ──
+  # ── C 链:V15马丁执行 ──
+  - node_id: V15_EXECUTOR
+    name: V15马丁执行器
+    chain: C
+    adapter: function
+    handler: dreamos.capabilities.trading.v15_executor.V15ExecutorNode
+    description: V15经典马丁策略执行层
+
+  # ── C 链:经典技术分析 ──
   # ── B 链:易经推理 ──
   - node_id: YIJING_SIGNAL
     name: 易经信号生成器
