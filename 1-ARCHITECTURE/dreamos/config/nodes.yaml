@@ -90,6 +90,15 @@ nodes:
     description: 四层离场决策链
 
   # ── C 链:经典技术分析 ──
+  # ── B 链:易经推理 ──
+  - node_id: YIJING_SIGNAL
+    name: 易经信号生成器
+    chain: B
+    adapter: function
+    handler: dreamos.capabilities.trading.yijing_signal_generator.YijingSignalGeneratorNode
+    description: 易经推理引擎产生买卖信号
+
+  # ── C 链:经典技术分析 ──
   - node_id: C1_tech_scan
     name: 技术扫描节点
     chain: C

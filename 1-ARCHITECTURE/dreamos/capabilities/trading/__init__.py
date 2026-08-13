@@ -172,12 +172,17 @@ def get_trading_capability() -> TradingCapability:
     return TradingCapability()
 
 
-# ── Phase 1: A系列选币层导出 ──────────────────────
+# ── Phase 1: A-series coin selection layer ──────────────────────
 from dreamos.capabilities.trading.coin_selector import CoinSelector, CoinSelectorNode
+
+# ── Phase 2: B-series Yijing signal generator ────────────────────
+from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator, YijingSignalGeneratorNode
 
 __all__ = [
     "TradingCapability",
     "get_trading_capability",
     "CoinSelector",
     "CoinSelectorNode",
+    "YijingSignalGenerator",
+    "YijingSignalGeneratorNode",
 ]
