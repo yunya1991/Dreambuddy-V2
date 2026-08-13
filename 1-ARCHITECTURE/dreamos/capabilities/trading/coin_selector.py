@@ -255,6 +255,31 @@ class CoinSelector:
             "short_pool": short_pool,
         }
 
+    # ---- Task 5: persist_pools ----
+
+    def persist_pools(self, pools: Dict[str, Any], filepath: str) -> None:
+        """Persist token pools to a JSON file with timestamp.
+
+        Args:
+            pools: The pools dict from select() containing long_pool, short_pool, etc.
+            filepath: Path to the output JSON file.
+        """
+        import json
+        from datetime import datetime
+
+        data = {
+            "long_pool": pools.get("long_pool", []),
+            "short_pool": pools.get("short_pool", []),
+            "timestamp": pools.get("timestamp", ""),
+            "source": pools.get("source", ""),
+            "persisted_at": datetime.utcnow().isoformat() + "Z",
+        }
+
+        Path(filepath).write_text(
+            json.dumps(data, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
 
 # ---- Task 4: CoinSelectorNode ----
 

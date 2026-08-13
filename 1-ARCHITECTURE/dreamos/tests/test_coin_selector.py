@@ -171,3 +171,25 @@ def test_coin_selector_node():
     assert "short_pool" in result.outputs
     assert isinstance(result.outputs["long_pool"], list)
     assert isinstance(result.outputs["short_pool"], list)
+
+
+# ---- Task 5: persist_pools ----
+
+def test_coin_selector_persist_pools(tmp_path):
+    """Test persist_pools saves pools to JSON with persisted_at timestamp."""
+    import json
+
+    selector = CoinSelector(use_hermes=False)
+    pools = selector.select(market_data={"symbols": ["BTC", "ETH", "SOL"]})
+
+    filepath = tmp_path / "pools.json"
+    selector.persist_pools(pools, str(filepath))
+
+    assert filepath.exists()
+    saved = json.loads(filepath.read_text(encoding="utf-8"))
+    assert "long_pool" in saved
+    assert "short_pool" in saved
+    assert "persisted_at" in saved
+    assert isinstance(saved["persisted_at"], str)
+    assert len(saved["long_pool"]) == len(pools["long_pool"])
+    assert len(saved["short_pool"]) == len(pools["short_pool"])
