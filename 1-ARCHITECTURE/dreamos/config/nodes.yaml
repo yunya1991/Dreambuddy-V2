@@ -90,6 +90,15 @@ nodes:
     description: 四层离场决策链
 
   # ── C 链:经典技术分析 ──
+  # ── D 链:信号路由 ──
+  - node_id: SIGNAL_ROUTER
+    name: 信号路由器
+    chain: D
+    adapter: function
+    handler: dreamos.capabilities.trading.signal_router.SignalRouterNode
+    description: 串联选币->易经->V15执行三层信号路由
+
+  # ── C 链:经典技术分析 ──
   # ── C 链:V15马丁执行 ──
   - node_id: V15_EXECUTOR
     name: V15马丁执行器

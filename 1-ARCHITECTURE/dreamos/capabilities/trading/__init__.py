@@ -181,6 +181,9 @@ from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGen
 # ── Phase 3: C-series V15 Martin executor ────────────────────────
 from dreamos.capabilities.trading.v15_executor import V15Executor, V15ExecutorNode
 
+# ── Phase 4: D-series signal router ──────────────────────────────
+from dreamos.capabilities.trading.signal_router import SignalRouter, SignalRouterNode
+
 __all__ = [
     "TradingCapability",
     "get_trading_capability",
@@ -190,4 +193,6 @@ __all__ = [
     "YijingSignalGeneratorNode",
     "V15Executor",
     "V15ExecutorNode",
+    "SignalRouter",
+    "SignalRouterNode",
 ]
