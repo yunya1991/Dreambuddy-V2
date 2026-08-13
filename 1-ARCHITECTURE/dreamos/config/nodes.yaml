@@ -11,7 +11,14 @@
 #    类名必须与 dreamos/capabilities/trading/nodes/*.py 中的实际类名一致
 
 nodes:
-  # ── A 链:意图→编排→策略→风控→执行 ──
+  # ── A 链:选币→意图→编排→策略→风控→执行 ──
+  - node_id: COIN_SELECTOR
+    name: 多空代币池选择器
+    chain: A
+    adapter: function
+    handler: dreamos.capabilities.trading.coin_selector.CoinSelectorNode
+    description: Hermes驱动SKILL选币，产出多空代币池
+
   - node_id: A0_contradiction
     name: 矛盾论节点
     chain: A

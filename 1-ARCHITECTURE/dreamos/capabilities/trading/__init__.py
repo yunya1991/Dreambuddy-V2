@@ -170,3 +170,14 @@ class TradingCapability:
 def get_trading_capability() -> TradingCapability:
     """获取交易能力域单例"""
     return TradingCapability()
+
+
+# ── Phase 1: A系列选币层导出 ──────────────────────
+from dreamos.capabilities.trading.coin_selector import CoinSelector, CoinSelectorNode
+
+__all__ = [
+    "TradingCapability",
+    "get_trading_capability",
+    "CoinSelector",
+    "CoinSelectorNode",
+]
