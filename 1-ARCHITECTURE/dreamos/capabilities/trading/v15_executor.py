@@ -314,3 +314,65 @@ class V15Executor:
     def open_positions(self) -> Dict[str, Position]:
         """Get all open positions."""
         return {k: v for k, v in self._positions.items() if v.status == "OPEN"}
+
+
+# ---- Task 4: V15ExecutorNode ----
+
+from dreamos.registry.base import BaseNode
+from dreamos.shared.state import State, NodeResult, NodeStatus
+
+
+class V15ExecutorNode(BaseNode):
+    """V15Executor node wrapper for DreamOS orchestration.
+
+    Wraps V15Executor into a BaseNode-compatible node,
+    enabling it to participate in the DreamOS execution graph.
+    """
+
+    node_id: str = "V15_EXECUTOR"
+    name: str = "V15 Martin Executor"
+    description: str = "Execute Martin strategy with V15 params"
+    chain: str = "C"
+    tags: list = ["trading", "v15", "martin", "execution"]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._executor = V15Executor()
+
+    def execute_core(self, state: State) -> NodeResult:
+        """Execute V15 Martin strategy and return NodeResult.
+
+        Reads signal from state.market, calls V15Executor.execute_signal(),
+        and wraps the result into a NodeResult.
+        """
+        market = state.market or {}
+
+        signal = {
+            "symbol": market.get("symbol", ""),
+            "direction": market.get("direction", "HOLD"),
+            "confidence": market.get("confidence", 0.0),
+            "entry_price": market.get("entry_price", market.get("close_price", 0.0)),
+        }
+
+        result = self._executor.execute_signal(signal)
+
+        status = result.get("status", "REJECTED")
+        confidence = result.get("position_size", 0.0) / max(1.0, self._executor.total_budget) if status == "OPEN" else 0.0
+
+        return NodeResult(
+            node_id=self.node_id,
+            status=NodeStatus.SUCCESS if status == "OPEN" else NodeStatus.DEGRADED,
+            confidence=max(0.0, min(1.0, confidence)),
+            direction=signal.get("direction", "HOLD"),
+            outputs={
+                "symbol": result.get("symbol", ""),
+                "direction": result.get("direction", ""),
+                "status": status,
+                "position_size": result.get("position_size", 0.0),
+                "entry_price": result.get("entry_price", 0.0),
+                "addons_remaining": result.get("addons_remaining", 0),
+                "tp_pct": result.get("tp_pct", 0.04),
+                "addon_gap_pct": result.get("addon_gap_pct", 0.08),
+                "reason": result.get("reason", ""),
+            },
+        )

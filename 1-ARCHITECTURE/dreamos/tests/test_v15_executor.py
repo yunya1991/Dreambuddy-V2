@@ -129,3 +129,35 @@ def test_v15_executor_timeout_exit():
     result = executor.check_exit_conditions(position, current_price=101000.0, vol_mult=1.0)
     assert result["should_exit"] is True
     assert "Timeout" in result["reason"]
+
+
+# ---- Task 4: V15ExecutorNode ----
+
+def test_v15_executor_node():
+    """Test V15ExecutorNode node wrapper."""
+    from dreamos.capabilities.trading.v15_executor import V15ExecutorNode
+    from dreamos.shared.state import State, NodeResult, new_state
+
+    node = V15ExecutorNode()
+    assert node.node_id == "V15_EXECUTOR"
+    assert node.chain == "C"
+
+    state = new_state(cycle_id="test-v15-001")
+    state.market = {
+        "symbol": "BTC",
+        "direction": "LONG",
+        "confidence": 0.75,
+        "entry_price": 100000.0,
+    }
+
+    result = node.execute(state)
+
+    assert isinstance(result, NodeResult)
+    assert result.node_id == "V15_EXECUTOR"
+    assert result.success
+    assert result.confidence > 0
+    assert "status" in result.outputs
+    assert result.outputs["status"] == "OPEN"
+    assert "symbol" in result.outputs
+    assert "direction" in result.outputs
+    assert "position_size" in result.outputs
