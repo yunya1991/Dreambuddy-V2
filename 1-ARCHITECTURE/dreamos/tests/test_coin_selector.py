@@ -193,3 +193,53 @@ def test_coin_selector_persist_pools(tmp_path):
     assert isinstance(saved["persisted_at"], str)
     assert len(saved["long_pool"]) == len(pools["long_pool"])
     assert len(saved["short_pool"]) == len(pools["short_pool"])
+
+
+# ---- Task 6: Phase 1 integration test ----
+
+def test_phase1_integration(tmp_path):
+    """Phase 1 end-to-end integration: init -> select -> validate -> persist -> node."""
+    import json
+    from dreamos.capabilities.trading.coin_selector import CoinSelector, CoinSelectorNode
+
+    # Step 1: Initialize selector
+    selector = CoinSelector(use_hermes=False)
+    assert selector is not None
+
+    # Step 2: Execute selection
+    pools = selector.select(market_data={"symbols": ["BTC", "ETH", "SOL", "DOGE"]})
+    assert "long_pool" in pools
+    assert "short_pool" in pools
+    assert pools["source"] == "mock"
+    total = len(pools["long_pool"]) + len(pools["short_pool"])
+    assert total > 0
+
+    # Step 3: Validate pool item format
+    for item in pools["long_pool"] + pools["short_pool"]:
+        assert "symbol" in item
+        assert "score" in item
+        assert "reasons" in item
+
+    # Step 4: Persist pools
+    filepath = tmp_path / "phase1_pools.json"
+    selector.persist_pools(pools, str(filepath))
+    assert filepath.exists()
+    saved = json.loads(filepath.read_text(encoding="utf-8"))
+    assert "persisted_at" in saved
+    assert len(saved["long_pool"]) == len(pools["long_pool"])
+
+    # Step 5: Verify DreamOS node wrapper
+    node = CoinSelectorNode()
+    assert node.node_id == "COIN_SELECTOR"
+    assert node.chain == "A"
+
+    state = new_state(cycle_id="phase1-integration")
+    state.market = {"symbols": ["BTC", "ETH", "SOL", "DOGE"]}
+    result = node.execute(state)
+
+    assert result.success
+    assert result.confidence > 0
+    assert "long_pool" in result.outputs
+    assert "short_pool" in result.outputs
+    assert isinstance(result.outputs["long_pool"], list)
+    assert isinstance(result.outputs["short_pool"], list)
