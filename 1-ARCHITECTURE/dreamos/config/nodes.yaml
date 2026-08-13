@@ -90,6 +90,15 @@ nodes:
     description: 四层离场决策链
 
   # ── C 链:经典技术分析 ──
+  # ── E 链:认知复盘 ──
+  - node_id: COGNITIVE_REVIEW
+    name: 认知复盘器
+    chain: E
+    adapter: function
+    handler: dreamos.capabilities.trading.cognitive_reviewer.CognitiveReviewerNode
+    description: 交易结果复盘与认知教训注入进化
+
+  # ── C 链:经典技术分析 ──
   # ── D 链:信号路由 ──
   - node_id: SIGNAL_ROUTER
     name: 信号路由器

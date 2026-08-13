@@ -184,6 +184,9 @@ from dreamos.capabilities.trading.v15_executor import V15Executor, V15ExecutorNo
 # ── Phase 4: D-series signal router ──────────────────────────────
 from dreamos.capabilities.trading.signal_router import SignalRouter, SignalRouterNode
 
+# ── Phase 5: E-series cognitive reviewer ────────────────────────
+from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewer, CognitiveReviewerNode
+
 __all__ = [
     "TradingCapability",
     "get_trading_capability",
@@ -195,4 +198,6 @@ __all__ = [
     "V15ExecutorNode",
     "SignalRouter",
     "SignalRouterNode",
+    "CognitiveReviewer",
+    "CognitiveReviewerNode",
 ]
