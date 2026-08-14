@@ -122,6 +122,8 @@ class V15Executor:
     def execute_signal(self, signal: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a trading signal and open a position.
 
+        When signal passes risk control, calls HyperliquidClient for real order.
+
         Args:
             signal: Dict with symbol, direction, confidence, entry_price.
 
@@ -165,7 +167,40 @@ class V15Executor:
         per_position_budget = self.total_budget / self.max_concurrent
         position_size = (per_position_budget * self.leverage) / entry_price if entry_price > 0 else 0.0
 
-        # Create position
+        # Try real order via HyperliquidClient
+        real_order_result = None
+        try:
+            import sys as _sys
+            from pathlib import Path as _Path
+            _ab_dir = _Path(__file__).resolve().parent.parent.parent.parent / "experiments" / "ab-trading"
+            if str(_ab_dir) not in _sys.path:
+                _sys.path.insert(0, str(_ab_dir))
+            from dotenv import load_dotenv
+            load_dotenv(_ab_dir / "config" / ".env")
+            from execution.aster_spot import HyperliquidClient
+
+            hl_client = HyperliquidClient("dream_os")
+
+            # Set leverage
+            try:
+                hl_client.set_leverage(symbol, int(self.leverage))
+            except Exception:
+                pass  # Leverage setting may fail if already set
+
+            # Calculate USDT amount for the order
+            usdt_amount = per_position_budget
+
+            # Place market order
+            if direction == "LONG":
+                order_result = hl_client.open_long(symbol, usdt_amount)
+            else:  # SHORT
+                order_result = hl_client.open_short(symbol, usdt_amount)
+
+            real_order_result = order_result
+        except Exception as e:
+            real_order_result = {"error": str(e)}
+
+        # Create position record
         pos = Position(
             symbol=symbol,
             direction=direction,
@@ -177,7 +212,7 @@ class V15Executor:
         )
         self._positions[symbol] = pos
 
-        return {
+        result = {
             "symbol": symbol,
             "direction": direction,
             "entry_price": entry_price,
@@ -188,7 +223,9 @@ class V15Executor:
             "status": "OPEN",
             "leverage": self.leverage,
             "budget_allocated": per_position_budget,
+            "real_order": real_order_result,
         }
+        return result
 
     def compute_addon_grid(
         self,

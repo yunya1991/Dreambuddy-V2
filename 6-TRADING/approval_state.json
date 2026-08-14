@@ -57,7 +57,12 @@
     "status": "PENDING",
     "title": "PROP-20260810-DATASOURCE-FALLBACK: OKX封锁下K线数据源fallback(gate.io/binance.vision)",
     "proposal_doc": "11-易经推理系统/docs/proposals/PROP-20260810-datasource-fallback.md",
-    "note": "等待人工审批（等人，永不自动）。背景: 8/8 21:45起OKX TCP封锁致零推理零交易30+h"
+    "note": "等待人工审批（等人，永不自动）。背景: 8/8 21:45起OKX TCP封锁致零推理零交易30+h",
+    "decision_by": null,
+    "ai_reason": "AI保守保持持仓: score=0",
+    "guard_restore_note": "2026-08-14 守卫修复: 8/10归档恢复将 approval_agent.py 回退为 pre-v3（无四类门禁），导致本单在超时后被 v2 代码路径 decide_a9(score=0) 误拒。trading 类规则为'永不自动、等人'，现恢复 PENDING 等待人工审批（v3 门禁已重建，42/42 回归通过）。原误拒理由保留于 ai_reason。",
+    "guard_restored_at": "2026-08-14T03:10:03.882846+00:00",
+    "last_reminded_at": "2026-08-14T03:10:32.260981+00:00"
   },
   "PROP-20260810-DETGATE": {
     "session_id": "20260810_prop_deterministic_gate",
@@ -66,7 +71,12 @@
     "status": "PENDING",
     "title": "PROP-20260810-DETERMINISTIC-GATE: walk-forward门禁确定性化(Langevin噪声播种)",
     "proposal_doc": "11-易经推理系统/docs/proposals/PROP-20260810-deterministic-gate.md",
-    "note": "等待人工审批（等人，永不自动）。8/9采纳的min_confidence_threshold=0.2584经9次复测证实落在噪声带,暂缓上线"
+    "note": "等待人工审批（等人，永不自动）。8/9采纳的min_confidence_threshold=0.2584经9次复测证实落在噪声带,暂缓上线",
+    "decision_by": null,
+    "ai_reason": "AI保守保持持仓: score=0",
+    "guard_restore_note": "2026-08-14 守卫修复: 8/10归档恢复将 approval_agent.py 回退为 pre-v3（无四类门禁），导致本单在超时后被 v2 代码路径 decide_a9(score=0) 误拒。trading 类规则为'永不自动、等人'，现恢复 PENDING 等待人工审批（v3 门禁已重建，42/42 回归通过）。原误拒理由保留于 ai_reason。",
+    "guard_restored_at": "2026-08-14T03:10:03.882846+00:00",
+    "last_reminded_at": "2026-08-14T03:10:32.260981+00:00"
   },
   "PROP-20260810-SCHEDPATHS": {
     "session_id": "20260810_prop_scheduler_paths",
@@ -75,7 +85,12 @@
     "status": "PENDING",
     "title": "PROP-20260810-SCHEDULER-PATHS: DreamOS调度器回测/优化子进程macOS硬编码路径可移植化修复(激活需重启守护进程)",
     "proposal_doc": "1-ARCHITECTURE/dreamos/docs/proposals/PROP-20260810-scheduler-paths.md",
-    "note": "等待人工审批（等人，永不自动）。修复已实施并验证(py_compile+解释器导入PASS)，未激活：激活=重启守护进程，将首次生成orchestration_memory.json影响A层编排选择→交易路径"
+    "note": "等待人工审批（等人，永不自动）。修复已实施并验证(py_compile+解释器导入PASS)，未激活：激活=重启守护进程，将首次生成orchestration_memory.json影响A层编排选择→交易路径",
+    "decision_by": null,
+    "ai_reason": "AI保守保持持仓: score=0",
+    "guard_restore_note": "2026-08-14 守卫修复: 8/10归档恢复将 approval_agent.py 回退为 pre-v3（无四类门禁），导致本单在超时后被 v2 代码路径 decide_a9(score=0) 误拒。trading 类规则为'永不自动、等人'，现恢复 PENDING 等待人工审批（v3 门禁已重建，42/42 回归通过）。原误拒理由保留于 ai_reason。",
+    "guard_restored_at": "2026-08-14T03:10:03.882846+00:00",
+    "last_reminded_at": "2026-08-14T03:10:32.260981+00:00"
   },
   "PROP-20260810-CMARTIN": {
     "session_id": "20260810_prop_cmartin_node",
@@ -84,7 +99,12 @@
     "status": "PENDING",
     "title": "PROP-20260810-CMARTIN-NODE: C_MARTIN_V15节点缺失——NEUTRAL场景路由到不存在节点(95次/日REDO风暴),v15基线策略在编排图断路",
     "proposal_doc": "1-ARCHITECTURE/dreamos/docs/proposals/PROP-20260810-cmartin-node.md",
-    "note": "等待人工审批（等人，永不自动）。三方案待决策:A=从v15基线实现节点(推荐,需回测对比基线)/B=改路由语义(不建议)/C=接受降级(需更新SSoT)。未做任何代码改动"
+    "note": "等待人工审批（等人，永不自动）。三方案待决策:A=从v15基线实现节点(推荐,需回测对比基线)/B=改路由语义(不建议)/C=接受降级(需更新SSoT)。未做任何代码改动",
+    "decision_by": null,
+    "ai_reason": "AI保守保持持仓: score=0",
+    "guard_restore_note": "2026-08-14 守卫修复: 8/10归档恢复将 approval_agent.py 回退为 pre-v3（无四类门禁），导致本单在超时后被 v2 代码路径 decide_a9(score=0) 误拒。trading 类规则为'永不自动、等人'，现恢复 PENDING 等待人工审批（v3 门禁已重建，42/42 回归通过）。原误拒理由保留于 ai_reason。",
+    "guard_restored_at": "2026-08-14T03:10:03.882846+00:00",
+    "last_reminded_at": "2026-08-14T03:10:32.260981+00:00"
   },
   "PROP-20260810-V15CFG": {
     "session_id": "20260810_v15_daily_monitor",
@@ -93,6 +113,24 @@
     "status": "PENDING",
     "title": "PROP-20260810-V15CFG: 实盘配置接线缺口—.env.v15从未创建,实盘偏离8/6批准的Phase B+部署形态(ALLOW_SHORT/RISK_GATE/持仓时限5项漂移)",
     "proposal_doc": "14-V15经典马丁策略/docs/proposals/PROP-20260810-v15-config-wiring.md",
-    "note": "等待人工审批（等人，永不自动）。V9参数核对无漂移;漂移项均为V15叠加层。当前OKX封锁致零交易,漂移未造成实际损失,但OKX恢复前必须接线。建议与PROP-20260810-DATAFALLBACK捆绑审批。未做任何代码改动。"
+    "note": "等待人工审批（等人，永不自动）。V9参数核对无漂移;漂移项均为V15叠加层。当前OKX封锁致零交易,漂移未造成实际损失,但OKX恢复前必须接线。建议与PROP-20260810-DATAFALLBACK捆绑审批。未做任何代码改动。",
+    "decision_by": null,
+    "ai_reason": "AI保守保持持仓: score=0",
+    "guard_restore_note": "2026-08-14 守卫修复: 8/10归档恢复将 approval_agent.py 回退为 pre-v3（无四类门禁），导致本单在超时后被 v2 代码路径 decide_a9(score=0) 误拒。trading 类规则为'永不自动、等人'，现恢复 PENDING 等待人工审批（v3 门禁已重建，42/42 回归通过）。原误拒理由保留于 ai_reason。",
+    "guard_restored_at": "2026-08-14T03:10:03.882846+00:00",
+    "last_reminded_at": "2026-08-14T03:10:32.260981+00:00"
+  },
+  "B4929C68-A87A-4F27-8889-7E256AC7DD8A": {
+    "instance_code": "B4929C68-A87A-4F27-8889-7E256AC7DD8A",
+    "created_at": "2026-08-13T17:30:48.597438+00:00",
+    "template_code": "2F40FE12-255E-4FD4-AAD7-FD36C45FEA66",
+    "template_label": "索引系统审批(旧V1)",
+    "approval_type": "governance",
+    "status": "APPROVED",
+    "title": "易经引擎BCRM参数上线: min_confidence_threshold 0.25→0.258351（DETGATE确定性重裁PASS）",
+    "start_time": "1786339761741",
+    "end_time": "1786351180100",
+    "serial_number": "202608100001",
+    "synced_at": "2026-08-14T01:30:48.597661+08:00"
   }
 }

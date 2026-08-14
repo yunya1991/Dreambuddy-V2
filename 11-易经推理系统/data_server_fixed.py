@@ -38,6 +38,7 @@ except ImportError:
 
 USER_A = "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934"
 USER_B = "0x6632da9c91A959eEBf1343f8AFAbf2807414004A"
+USER_C = "0x81cA2cf32b57a5790338c2b0d7Ca847abC18838a"  # Agent C 独立钱包（DreamOS 主交易账户）
 
 # ── 加载 dreamos/.env 中的 Aster 分离凭证 ─────────────────────────────────
 # P1 修复: ml_trade_service._aster_env_get_for_owner 对钱包地址类型的 owner
@@ -205,6 +206,7 @@ def get_perp_state(user: str) -> dict:
 def get_hl_state():
     a = get_perp_state(USER_A)
     b = get_perp_state(USER_B)
+    c = get_perp_state(USER_C)
     return {
         "perp_equity":    a["equity"],
         "perp_avail":     a["avail"],
@@ -212,8 +214,11 @@ def get_hl_state():
         "b_equity":       b["equity"],
         "b_avail":        b["avail"],
         "b_positions":    b["positions"],
+        "c_equity":       c["equity"],
+        "c_avail":        c["avail"],
+        "c_positions":    c["positions"],
         "spot_usdc":      0,
-        "total_equity":   a["equity"] + b["equity"],
+        "total_equity":   a["equity"] + b["equity"] + c["equity"],
     }
 
 
@@ -225,6 +230,7 @@ def get_full_state():
         hl = {
             "perp_equity": 0, "perp_avail": 0, "perp_positions": [],
             "b_equity": 0, "b_avail": 0, "b_positions": [],
+            "c_equity": 0, "c_avail": 0, "c_positions": [],
             "spot_usdc": 0, "total_equity": 0,
             "hl_error": str(e),
         }
@@ -355,37 +361,30 @@ def get_trend_screen_state(symbol: str = "BTC"):
                 f"基本面={tf.get('fundamental', {}).get('direction', '--')}"
             )
 
-        # 附加账户与持仓（Screen3 渲染需要，从趋势策略专用 Aster 钱包拉取）
-        # P1 修复: 用 owner="trend" 关键字查询，ml_trade_service 会读取
-        # ASTER_USER_TREND / ASTER_SIGNER_TREND / ASTER_SIGNER_PRIVATE_KEY_TREND
-        # 这三个分离环境变量（已在模块顶部从 dreamos/.env 加载），
-        # 避免与 Dream OS 的全局 ASTER_USER 冲突，确保查询到的是趋势策略独立钱包。
+        # 附加账户与持仓（Screen3 渲染需要，从 Hyperliquid 趋势策略钱包拉取）
+        # P2 修复: 原代码通过 ml_trade_service._aster_fetch_positions 从 OKX 获取持仓，
+        # 但实际交易已在 Hyperliquid 执行。改为调用 get_perp_state(USER_B) 获取
+        # Hyperliquid 清算状态，USER_B=0x6632da9c... 是趋势策略专用钱包。
         try:
             account = {"equity": 0, "available": 0}
             position = None
             try:
-                sys.path.insert(0, CLASSIC_DIR)
-                import ml_trade_service as _ml
-                # owner="trend" → 读取 ASTER_USER_TREND 等，查到 0x6632da9c... 钱包
-                positions_raw, _ = _ml._aster_fetch_positions(owner="trend")
-                for p in (positions_raw or []):
+                hl_state = get_perp_state(USER_C)
+                account["equity"] = hl_state.get("equity", 0)
+                account["available"] = hl_state.get("avail", 0)
+                for p in (hl_state.get("positions") or []):
                     if str(p.get("coin", "")).upper() == symbol.upper():
-                        amt = float(p.get("position_amt", 0) or 0)
-                        if abs(amt) < 1e-12:
+                        size = float(p.get("size", 0) or 0)
+                        if abs(size) < 1e-12:
                             continue
                         position = {
-                            "side": "LONG" if amt > 0 else "SHORT",
-                            "size": abs(amt),
+                            "side": "LONG" if size > 0 else "SHORT",
+                            "size": abs(size),
                             "entry_px": float(p.get("entry_px", 0) or 0),
                             "leverage": float(p.get("leverage") or 1),
-                            "upnl": float(p.get("unrealized_pnl_u", 0) or 0),
+                            "upnl": float(p.get("upnl", 0) or 0),
                         }
                         break
-                summary = _ml._aster_fetch_account_summary(owner="trend")
-                if summary.get("ok"):
-                    s = summary.get("summary", {}) or {}
-                    account["equity"] = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
-                    account["available"] = float(s.get("availableBalance", 0) or 0)
             except Exception:
                 pass
             result["account"] = account
@@ -668,85 +667,56 @@ def get_dreamos_state():
     不再查询 Hyperliquid Agent B。
     """
     try:
-        sys.path.insert(0, ARCH_DIR)
-        from dreamos.nodes import list_available_nodes, register_all
-        from dreamos.registry import get_default_registry
-
-        registry = get_default_registry()
-        register_all(registry)
-        nodes = registry.list_nodes()
-        registered = [{"node_id": n.node_id, "name": getattr(n, "name", ""),
-                       "chain": getattr(n, "chain", ""), "description": getattr(n, "description", "")}
-                      for n in nodes]
-
-        # ── Aster 实盘账户（Dream OS 实际下单平台）──
-        # 注意：必须临时覆盖环境变量，因为 12-三屏趋势系统的 AsterExecutor 导入时已污染全局 ASTER_USER
-        DREAMOS_ENV_FILE = Path(ARCH_DIR) / "dreamos" / ".env"
-        _original_env = {}
-        _dreamos_env_vars = ["ASTER_USER", "ASTER_SIGNER", "ASTER_SIGNER_PRIVATE_KEY"]
-        if DREAMOS_ENV_FILE.exists():
-            with open(DREAMOS_ENV_FILE) as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
-                        continue
-                    k, v = line.split("=", 1)
-                    k, v = k.strip(), v.strip()
-                    if k in _dreamos_env_vars:
-                        _original_env[k] = os.environ.get(k)
-                        os.environ[k] = v
+        # ── DreamOS 节点注册表（模块不可用时降级为空列表）──
+        registered = []
         try:
-            account = {"ok": False, "equity": 0, "avail": 0, "positions": {}, "mode": "aster"}
-            try:
-                sys.path.insert(0, CLASSIC_DIR)
-                import ml_trade_service as _ml
-                # 持仓列表 → 转为 coin 为 key 的字典（兼容前端 renderDreamOS）
-                positions_raw, pos_err = _ml._aster_fetch_positions(owner=DREAMOS_ASTER_OWNER)
-                positions = {}
-                for p in (positions_raw or []):
-                    coin = str(p.get("coin", "")).upper()
-                    if not coin:
-                        continue
-                    amt = float(p.get("position_amt", 0) or 0)
-                    if abs(amt) < 1e-12:
-                        continue
-                    positions[coin] = {
-                        "size":     amt,                    # 正=多, 负=空
-                        "entry_px": float(p.get("entry_px", 0) or 0),
-                        "upnl":     float(p.get("unrealized_pnl_u", 0) or 0),
-                        "leverage": float(p.get("leverage") or 1),
-                        "mark_px":  float(p.get("mark_px", 0) or 0),
-                        "liq_px":   float(p.get("liq_px", 0) or 0),
-                        "notional": float(p.get("notional_usdc", 0) or 0),
-                        "side":     p.get("side", "long" if amt > 0 else "short"),
-                    }
-                # 账户摘要
-                summary = _ml._aster_fetch_account_summary(owner=DREAMOS_ASTER_OWNER)
-                equity = 0.0
-                avail = 0.0
-                if summary.get("ok"):
-                    s = summary.get("summary", {}) or {}
-                    equity = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
-                    avail = float(s.get("availableBalance", 0) or 0)
-                account = {
-                    "ok":        True,
-                    "equity":    equity,
-                    "avail":     avail,
-                    "positions": positions,
-                    "mode":      "aster",
-                    "owner":     DREAMOS_ASTER_OWNER,
-                    "pos_error": pos_err,
+            sys.path.insert(0, ARCH_DIR)
+            from dreamos.nodes import list_available_nodes, register_all
+            from dreamos.registry import get_default_registry
+
+            registry = get_default_registry()
+            register_all(registry)
+            nodes = registry.list_nodes()
+            registered = [{"node_id": n.node_id, "name": getattr(n, "name", ""),
+                           "chain": getattr(n, "chain", ""), "description": getattr(n, "description", "")}
+                          for n in nodes]
+        except Exception:
+            pass
+
+        # ── Hyperliquid 实盘账户（Agent C 钱包，DreamOS 主交易账户）──
+        # P2 修复: 原代码从 Aster/OKX 获取持仓，但实际交易已在 Hyperliquid 执行。
+        # 改为调用 get_perp_state(USER_C) 获取 Agent C 钱包的持仓和余额。
+        try:
+            hl_state = get_perp_state(USER_C)
+            positions = {}
+            for p in (hl_state.get("positions") or []):
+                coin = str(p.get("coin", "")).upper()
+                if not coin:
+                    continue
+                size = float(p.get("size", 0) or 0)
+                if abs(size) < 1e-12:
+                    continue
+                positions[coin] = {
+                    "size":     size,
+                    "entry_px": float(p.get("entry_px", 0) or 0),
+                    "upnl":     float(p.get("upnl", 0) or 0),
+                    "leverage": float(p.get("leverage") or 1),
+                    "mark_px":  0,
+                    "liq_px":   0,
+                    "notional": abs(size) * float(p.get("entry_px", 0) or 0),
+                    "side":     "long" if size > 0 else "short",
                 }
-            except Exception as e:
-                account = {"ok": False, "equity": 0, "avail": 0, "positions": {},
-                           "mode": "aster", "error": str(e)}
-        finally:
-            # 恢复原始环境变量
-            for k, v in _original_env.items():
-                if v is None:
-                    os.environ.pop(k, None)
-                else:
-                    os.environ[k] = v
+            account = {
+                "ok":        True,
+                "equity":    hl_state.get("equity", 0),
+                "avail":     hl_state.get("avail", 0),
+                "positions": positions,
+                "mode":      "hyperliquid",
+                "wallet":    USER_C,
+            }
+        except Exception as e:
+            account = {"ok": False, "equity": 0, "avail": 0, "positions": {},
+                       "mode": "hyperliquid", "error": str(e)}
 
         memory = {}
         try:
@@ -941,6 +911,258 @@ def dreamos_analyze(symbol="BTC"):
         return {"error": str(e)}
 
 
+# ── DreamOS V2 六层闭环 ────────────────────────────────────────────
+
+_dreamos_v2_orch = None
+
+def _get_dreamos_v2():
+    """获取或初始化 DreamOS V2 编排器单例"""
+    global _dreamos_v2_orch
+    if _dreamos_v2_orch is None:
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "1-ARCHITECTURE"))
+        from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2
+        _dreamos_v2_orch = OrchestratorV2(use_hermes=False, seed=42)
+    return _dreamos_v2_orch
+
+def _fetch_market_data_for_v2(symbol="BTC"):
+    """获取 Hyperliquid 实时市场数据并转换为 V2 格式"""
+    try:
+        AB_DIR = Path(__file__).resolve().parent.parent / "experiments" / "ab-trading"
+        sys.path.insert(0, str(AB_DIR))
+        from dotenv import load_dotenv
+        load_dotenv(AB_DIR / "config" / ".env")
+        from execution.aster_spot import HyperliquidClient, _info_with_retry
+        import requests as _req
+
+        client = HyperliquidClient("dream_os")
+
+        # 获取实时价格
+        s = _req.Session()
+        s.trust_env = False
+        mids = _info_with_retry(s, {"type": "allMids"}, None)
+        price_str = mids.get(symbol, "0")
+        close_price = float(price_str)
+
+        # 获取账户信息
+        account = client.get_account()
+        equity = float(account.get("equity", 0))
+        avail = float(account.get("avail", 0))
+        positions = account.get("positions", {})
+
+        # 检查是否已有该币种持仓
+        has_position = symbol in positions
+        pos_data = positions.get(symbol, {})
+        pos_size = float(pos_data.get("size", 0))
+        pos_entry = float(pos_data.get("entry_px", 0))
+        pos_upnl = float(pos_data.get("upnl", 0))
+
+        # 获取 K 线数据计算技术指标（使用 req 包装格式）
+        try:
+            klines_resp = _info_with_retry(s, {
+                "type": "candleSnapshot",
+                "req": {
+                    "coin": symbol,
+                    "interval": "4h",
+                    "startTime": int((datetime.datetime.now().timestamp() - 30*4*3600) * 1000),
+                    "endTime": int(datetime.datetime.now().timestamp() * 1000),
+                },
+            }, None)
+            candles = klines_resp if isinstance(klines_resp, list) else []
+        except Exception:
+            candles = []
+
+        # 获取 24h 统计数据
+        try:
+            meta_resp = _info_with_retry(s, {"type": "metaAndAssetCtxs"}, None)
+            meta_ctx = {}
+            if isinstance(meta_resp, list) and len(meta_resp) >= 2:
+                universe = meta_resp[0].get("universe", [])
+                ctxs = meta_resp[1]
+                for i, m in enumerate(universe):
+                    if m.get("name") == symbol and i < len(ctxs):
+                        meta_ctx = ctxs[i]
+                        break
+        except Exception:
+            meta_ctx = {}
+
+        # 从 K线提取收盘价
+        closes = []
+        for c in candles:
+            try:
+                closes.append(float(c.get("c", 0)))  # 'c' = close price
+            except Exception:
+                pass
+
+        if len(closes) >= 5:
+            ma5 = sum(closes[-5:]) / 5
+        else:
+            ma5 = close_price
+        if len(closes) >= 10:
+            ma10 = sum(closes[-10:]) / 10
+        else:
+            ma10 = close_price
+        if len(closes) >= 20:
+            ma20 = sum(closes[-20:]) / 20
+        else:
+            ma20 = close_price
+
+        # 计算价格位置（在最近20根K线的高低点中的位置）
+        if len(closes) >= 20:
+            high_20 = max(closes[-20:])
+            low_20 = min(closes[-20:])
+            if high_20 > low_20:
+                price_position = (close_price - low_20) / (high_20 - low_20)
+            else:
+                price_position = 0.5
+        else:
+            price_position = 0.5
+
+        # 计算波动率（最近5根K线的标准差/均值）
+        if len(closes) >= 5:
+            avg = sum(closes[-5:]) / 5
+            var = sum((c - avg) ** 2 for c in closes[-5:]) / 5
+            vol = (var ** 0.5) / avg if avg > 0 else 0.3
+        else:
+            vol = 0.3
+
+        # 计算动量方向
+        if len(closes) >= 2:
+            if closes[-1] > closes[-2]:
+                momentum_direction = "UP"
+            elif closes[-1] < closes[-2]:
+                momentum_direction = "DOWN"
+            else:
+                momentum_direction = "FLAT"
+        else:
+            momentum_direction = "UP"
+
+        # 计算趋势强度（MA 排列一致性）
+        if ma5 > ma10 > ma20:
+            trend_strength = 0.75
+        elif ma5 < ma10 < ma20:
+            trend_strength = 0.25
+        else:
+            trend_strength = 0.50
+
+        # 四维评分（基于实时数据 + 24h 统计）
+        # 供需评分：基于价格位置、趋势和未平仓合约
+        prev_day_px = float(meta_ctx.get("prevDayPx", close_price))
+        open_interest = float(meta_ctx.get("openInterest", 0))
+        day_base_vlm = float(meta_ctx.get("dayBaseVlm", 0))
+        funding = float(meta_ctx.get("funding", 0))
+
+        # 价格相对前一日的变化
+        day_change = (close_price - prev_day_px) / prev_day_px if prev_day_px > 0 else 0.0
+
+        # 供需评分：价格上涨+未平仓增加=多头强势
+        supply_demand_score = 0.5 + day_change * 5 + (trend_strength - 0.5) * 0.3
+        if funding > 0:
+            supply_demand_score += 0.05  # 正资金费率=多头愿意付费
+        else:
+            supply_demand_score -= 0.05
+        supply_demand_score = max(0.1, min(0.9, supply_demand_score))
+
+        # 技术评分：基于 MA 排列、动量和日变化
+        if ma5 > ma10 > ma20 and momentum_direction == "UP":
+            technical_score = 0.70
+        elif ma5 < ma10 < ma20 and momentum_direction == "DOWN":
+            technical_score = 0.30
+        elif day_change > 0.01:
+            technical_score = 0.65
+        elif day_change < -0.01:
+            technical_score = 0.35
+        else:
+            technical_score = 0.50
+
+        # 资金流评分：基于可用保证金比例和成交量
+        if equity > 0:
+            capital_ratio = avail / equity
+            capital_flow_score = 0.5 + (capital_ratio - 0.5) * 0.3
+        else:
+            capital_flow_score = 0.50
+        # 成交量大=资金活跃
+        if day_base_vlm > 10000:
+            capital_flow_score += 0.05
+        capital_flow_score = max(0.1, min(0.9, capital_flow_score))
+
+        # 情绪评分：基于波动率反向映射 + 资金费率
+        sentiment_score = max(0.2, min(0.8, 0.6 - vol * 1.5))
+        if funding > 0.0001:
+            sentiment_score = min(0.8, sentiment_score + 0.1)  # 正资金费率=市场偏多
+        elif funding < -0.0001:
+            sentiment_score = max(0.2, sentiment_score - 0.1)  # 负资金费率=市场偏空
+
+        # 成交量比率（简化）
+        volume_ratio = 1.0
+
+        return {
+            "symbol": symbol,
+            "supply_demand_score": round(supply_demand_score, 4),
+            "technical_score": round(technical_score, 4),
+            "capital_flow_score": round(capital_flow_score, 4),
+            "sentiment_score": round(sentiment_score, 4),
+            "trend_strength": round(trend_strength, 4),
+            "volatility": round(vol, 4),
+            "volume_ratio": volume_ratio,
+            "price_position": round(price_position, 4),
+            "ma5": round(ma5, 4),
+            "ma10": round(ma10, 4),
+            "ma20": round(ma20, 4),
+            "momentum_direction": momentum_direction,
+            "close_price": close_price,
+            "entry_price": close_price,
+            "equity": equity,
+            "avail": avail,
+            "has_position": has_position,
+            "pos_size": pos_size,
+            "pos_entry": pos_entry,
+            "pos_upnl": pos_upnl,
+        }
+    except Exception as e:
+        return None
+
+def dreamos_v2_cycle(symbol="BTC"):
+    """执行 DreamOS V2 六层闭环完整周期"""
+    try:
+        orch = _get_dreamos_v2()
+        market_data = _fetch_market_data_for_v2(symbol)
+        if not market_data:
+            # 使用合理的默认值
+            market_data = {
+                "symbol": symbol,
+                "supply_demand_score": 0.55,
+                "technical_score": 0.50,
+                "capital_flow_score": 0.50,
+                "sentiment_score": 0.45,
+                "trend_strength": 0.60,
+                "volatility": 0.35,
+                "volume_ratio": 1.0,
+                "price_position": 0.50,
+                "ma5": 0.0, "ma10": 0.0, "ma20": 0.0,
+                "momentum_direction": "UP",
+                "close_price": 0.0,
+                "entry_price": 0.0,
+            }
+        result = orch.run_cycle(market_data)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+def dreamos_v2_status():
+    """获取 DreamOS V2 编排器状态"""
+    try:
+        orch = _get_dreamos_v2()
+        status = orch.get_status()
+        ctx = orch.reviewer.get_cognitive_context()
+        return {
+            "orchestrator": status,
+            "cognitive": ctx,
+            "timestamp": datetime.datetime.now().isoformat() + "Z",
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def get_yijing_positions():
     """读取易经推理系统的当前持仓（本地跟踪 + OKX实盘查询）"""
     pos_dir = Path(__file__).parent / ".workbuddy" / "memory_l4" / "open_positions"
@@ -971,52 +1193,36 @@ def get_yijing_positions():
             except Exception:
                 pass
 
-    # ── OKX 实盘持仓查询 ──
+    # ── Hyperliquid 实盘持仓查询 ──
+    # P2 修复: 原代码从 OKX 获取持仓，但实际交易已在 Hyperliquid 执行。
+    # 改为调用 get_hl_state() 获取两个钱包的持仓和余额。
     okx_positions = []
     okx_balance = {}
     try:
-        sys.path.insert(0, str(Path(__file__).parent / "scripts" / "memory_l4"))
-        from okx_simulated import OKXSimulatedClient, _load_config, CONFIG_DIR
-        env_keys = ["OKX_API_KEY", "OKX_SECRET_KEY", "OKX_PASSPHRASE",
-                    "OKX_BASE_URL", "OKX_SIMULATED", "OKX_DRY_RUN",
-                    "OKX_DEFAULT_INST_ID", "DEFAULT_LEVERAGE"]
-        saved_env = {}
-        for k in env_keys:
-            if k in os.environ:
-                saved_env[k] = os.environ.pop(k)
-        try:
-            client = OKXSimulatedClient()
-        finally:
-            for k, v in saved_env.items():
-                os.environ[k] = v
-
-        # 查询账户余额
-        bal = client.get_balance()
-        if bal.get("ok"):
-            okx_balance = {
-                "total_eq": bal.get("total_eq", 0),
-                "avail": bal.get("assets", {}).get("USDT", {}).get("avail", 0),
-            }
-
-        # 查询所有币种持仓
-        coins = ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE"]
-        for coin in coins:
-            inst_id = f"{coin}-USDT-SWAP"
-            r = client.get_positions(inst_id)
-            if not r.get("ok"):
-                continue
-            for p in r.get("positions", []):
+        hl = get_hl_state()
+        okx_balance = {
+            "total_eq": hl.get("total_equity", 0),
+            "avail": hl.get("perp_avail", 0),
+        }
+        # 合并三个钱包的持仓
+        for wallet_key, positions in [("perp", hl.get("perp_positions", [])),
+                                       ("b", hl.get("b_positions", [])),
+                                       ("c", hl.get("c_positions", []))]:
+            for p in (positions or []):
+                size = float(p.get("size", 0) or 0)
+                if abs(size) < 1e-12:
+                    continue
                 okx_positions.append({
-                    "coin": coin,
-                    "inst_id": inst_id,
-                    "direction": p.get("pos_side", ""),
-                    "entry_price": p.get("avg_px", 0),
-                    "pos_size": p.get("pos", 0),
-                    "upl": p.get("upl", 0),
-                    "upl_ratio": p.get("upl_ratio", 0),
-                    "mark_px": p.get("mark_px", 0),
-                    "leverage": p.get("lever", ""),
-                    "source": "okx_live",
+                    "coin": p.get("coin", ""),
+                    "inst_id": f"{p.get('coin', '')}-USDT-SWAP",
+                    "direction": "long" if size > 0 else "short",
+                    "entry_price": float(p.get("entry_px", 0) or 0),
+                    "pos_size": abs(size),
+                    "upl": float(p.get("upnl", 0) or 0),
+                    "upl_ratio": 0,
+                    "mark_px": 0,
+                    "leverage": str(p.get("leverage", "")),
+                    "source": "hl_live",
                 })
     except Exception as e:
         okx_positions = [{"error": str(e)}]
@@ -2138,6 +2344,22 @@ class Handler(BaseHTTPRequestHandler):
                 data = get_l4_status()
                 _cache_set("l4_status", data)
                 self._json(data)
+
+        # ── API: DreamOS V2 六层闭环 ─────────────────────────────────────
+        elif path == "/api/dreamos-v2/cycle":
+            symbol = self._get_query_param("symbol") or "BTC"
+            try:
+                data = dreamos_v2_cycle(symbol)
+                self._json(data)
+            except Exception as e:
+                self._json({"error": str(e)})
+
+        elif path == "/api/dreamos-v2/status":
+            try:
+                data = dreamos_v2_status()
+                self._json(data)
+            except Exception as e:
+                self._json({"error": str(e)})
 
         elif path == "/" or path == "/index.html":
             self._file(BASE_DIR / "monitor.html", "text/html")

@@ -779,7 +779,7 @@
     <!-- 实盘持仓卡片 -->
     <div class="card full-width" style="margin-bottom:16px">
       <div class="card-title">
-        <div class="dot" style="background:var(--green)"></div>OKX 实盘持仓
+        <div class="dot" style="background:var(--green)"></div>Hyperliquid 实盘持仓
         <span id="yj-pos-count-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(63,185,80,0.15);color:var(--green);border:1px solid rgba(63,185,80,0.3)">0 持仓</span>
         <button onclick="loadYijingPositions()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新持仓</button>
       </div>
@@ -892,7 +892,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
         <!-- OKX 模拟盘 -->
         <div>
-          <div class="memory-label">OKX 模拟盘（持仓/余额/Algo单）</div>
+          <div class="memory-label">Hyperliquid 实盘（持仓/余额/Algo单）</div>
           <div id="yj-exec-okx" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
         </div>
         <!-- 模拟交易统计 -->
@@ -3611,15 +3611,15 @@ async function loadYijingPositions() {
     const okxAvail = okxBalance.avail || 0;
     const balanceHtml = okxEq > 0 ? `
       <div style="display:flex;gap:12px;margin-bottom:10px;padding:8px 12px;background:rgba(63,185,80,0.08);border-radius:6px;border:1px solid rgba(63,185,80,0.2)">
-        <div><span style="font-size:10px;color:var(--muted)">OKX总权益</span> <span style="font-size:14px;font-weight:700;color:var(--green)">$${okxEq.toFixed(2)}</span></div>
+        <div><span style="font-size:10px;color:var(--muted)">HL总权益</span> <span style="font-size:14px;font-weight:700;color:var(--green)">$${okxEq.toFixed(2)}</span></div>
         <div><span style="font-size:10px;color:var(--muted)">可用</span> <span style="font-size:14px;font-weight:700">$${okxAvail.toFixed(2)}</span></div>
       </div>` : '';
 
-    // OKX 实盘持仓列表
+    // Hyperliquid 实盘持仓列表
     let okxPosHtml = '';
     const validOkxPos = okxPositions.filter(p => !p.error);
     if (okxPositions.length > 0 && okxPositions[0].error) {
-      okxPosHtml = `<div style="color:var(--red);padding:6px;font-size:11px">OKX API错误: ${okxPositions[0].error}</div>`;
+      okxPosHtml = `<div style="color:var(--red);padding:6px;font-size:11px">HL API错误: ${okxPositions[0].error}</div>`;
     } else if (validOkxPos.length === 0) {
       okxPosHtml = `<div style="color:var(--muted);font-style:italic;padding:6px;font-size:11px">📭 OKX实盘无持仓</div>`;
     } else {
@@ -3707,7 +3707,7 @@ async function loadYijingPositions() {
         ${haltBadge}
         <span style="font-size:10px;color:var(--muted)">日期: ${risk.date||'--'}</span>
       </div>
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">OKX 实盘持仓:</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Hyperliquid 实盘持仓:</div>
       ${okxPosHtml}
       ${localPosHtml}
     `;
