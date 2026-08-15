@@ -2304,13 +2304,21 @@ class AutoTrader:
                 self.update_exit_feedback(symbol, entry_price, exit_price, ret)
 
                 # P1-3: 真实盈亏回填 DreamOS E层认知闭环 (失败不影响主流程)
-                self._feed_cognitive_loop(
-                    symbol=symbol, direction=direction,
-                    entry_price=entry_price, exit_price=exit_price,
-                    ret=ret, position_amt=amt,
-                    exit_reason=exit_result.get("reason", ""),
-                    px_source=px_source,
-                )
+                # 守卫: 仅 real_fill(交易所真实成交) 进认知层 —— dry_run/估算平仓
+                # 是模拟值,喂入会污染 W/L/lessons(真单未平,认知先记假账)。
+                if px_source == "real_fill":
+                    self._feed_cognitive_loop(
+                        symbol=symbol, direction=direction,
+                        entry_price=entry_price, exit_price=exit_price,
+                        ret=ret, position_amt=amt,
+                        exit_reason=exit_result.get("reason", ""),
+                        px_source=px_source,
+                    )
+                else:
+                    logger.info(
+                        f"P1-3 认知回填跳过(非真实成交): {symbol} | "
+                        f"px_source={px_source} | ret={ret:.4f}"
+                    )
 
                 results.append({
                     "symbol": symbol,
