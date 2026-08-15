@@ -161,6 +161,9 @@ class AutoTrader:
     # P1-2: 降级路径告警阈值
     FALLBACK_SUSPEND_THRESHOLD = 3  # 连续3次降级暂停该 symbol
 
+    # PROP-20260816 P2: 持仓快照目录 (conftest monkeypatch 到 tmp 隔离)
+    SNAPSHOT_DIR = Path(__file__).parent / "scheduler_data"
+
     def __init__(self, agent_id: str = "dream_os", dry_run: bool = True, exchange: str = "aster"):
         self.agent_id = agent_id
         self.dry_run = dry_run
@@ -191,6 +194,10 @@ class AutoTrader:
         # 持久化到文件，跨实例共享（scheduler 每次扫描创建新实例）
         self._dedup_path = str(Path(__file__).parent / ".4h_dedup.json")
         self._last_trade_4h_ts: Dict[str, int] = self._load_dedup_state()
+        # PROP-20260816 P2: 交易所侧平仓对账 —— 持仓快照文件
+        # (交易所 TP/SL 触发平仓时本程序收不到事件,靠快照 diff + fills 确认)
+        # SNAPSHOT_DIR 为类属性,conftest 在测试中 monkeypatch 到 tmp 目录
+        self._snapshot_path = self.SNAPSHOT_DIR / "position_snapshot.json"
         # per-symbol 持仓运行时状态（classic 离场适配器用）：
         #   {symbol: {leverage, trailing_armed, trailing_stop_price,
         #             peak_price, trough_price, mfe_pnl_pct, max_dd_pct, entry_price}}
@@ -2257,6 +2264,12 @@ class AutoTrader:
             logger.warning(f"获取持仓异常: {e}")
             return {"error": f"获取持仓异常: {e}"}
 
+        # PROP-20260816 P2: 交易所侧平仓对账 (修复 F-2)
+        # 上次快照中存在、本次交易所已消失的持仓 = TP/SL 在交易所侧触发,
+        # 查 fills 确认真实成交价后回填认知层;确认不到只记日志不喂认知。
+        self._reconcile_disappeared_positions(positions)
+        self._save_position_snapshot(positions)
+
         if not positions:
             logger.info("离场检查: 无持仓")
             return {"result": "NO_POSITIONS", "checked": 0, "timestamp": datetime.now().isoformat()}
@@ -2384,6 +2397,124 @@ class AutoTrader:
             "details": results,
             "timestamp": datetime.now().isoformat(),
         }
+
+    # ── PROP-20260816 P2: 交易所侧平仓对账 (修复 F-2) ─────────────────────────────
+
+    @staticmethod
+    def _norm_snapshot_symbol(raw: str) -> str:
+        """归一化持仓 symbol 作为快照 key (去 USDT/SWAP/PERP 后缀)。"""
+        sym = str(raw or "").upper()
+        for suffix in ("-USDT", "-SWAP", "-PERP", "USDT"):
+            sym = sym.replace(suffix, "")
+        return sym or str(raw or "").upper()
+
+    def _load_position_snapshot(self) -> Dict[str, Dict[str, Any]]:
+        """加载上次巡检的持仓快照 {symbol: {entry_price,size,direction,ts}}。"""
+        try:
+            if self._snapshot_path.exists():
+                with open(self._snapshot_path) as f:
+                    data = json.load(f)
+                return data if isinstance(data, dict) else {}
+        except Exception as e:
+            logger.warning(f"持仓快照加载失败: {e}")
+        return {}
+
+    def _save_position_snapshot(self, positions: List[Dict[str, Any]]) -> None:
+        """保存本次持仓快照。持续持有的 symbol 保留首次观察 ts(对账窗口起点)。"""
+        try:
+            prev = self._load_position_snapshot()
+            snap: Dict[str, Dict[str, Any]] = {}
+            now = time.time()
+            for p in positions or []:
+                amt = float(p.get("position_amt", 0) or 0)
+                if abs(amt) <= 0:
+                    continue
+                sym = self._norm_snapshot_symbol(p.get("symbol", ""))
+                if not sym:
+                    continue
+                snap[sym] = {
+                    "entry_price": float(p.get("entry_price", 0) or 0),
+                    "size": abs(amt),
+                    "direction": "LONG" if amt > 0 else "SHORT",
+                    "ts": prev.get(sym, {}).get("ts", now),
+                }
+            self._snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self._snapshot_path, "w") as f:
+                json.dump(snap, f, indent=2)
+        except Exception as e:
+            logger.warning(f"持仓快照保存失败(不阻塞): {e}")
+
+    def _reconcile_disappeared_positions(self, current_positions: List[Dict[str, Any]]) -> None:
+        """快照 diff: 上次有、本次交易所消失的持仓 → 疑似交易所侧 TP/SL 平仓。"""
+        try:
+            prev = self._load_position_snapshot()
+            if not prev:
+                return
+            current_syms = set()
+            for p in current_positions or []:
+                amt = float(p.get("position_amt", 0) or 0)
+                if abs(amt) <= 0:
+                    continue
+                sym = self._norm_snapshot_symbol(p.get("symbol", ""))
+                if sym:
+                    current_syms.add(sym)
+            for sym, snap in prev.items():
+                if sym not in current_syms:
+                    self._confirm_exchange_close(sym, snap or {})
+        except Exception as e:
+            logger.warning(f"P2对账异常(不阻塞): {e}")
+
+    def _confirm_exchange_close(self, sym: str, snap: Dict[str, Any]) -> None:
+        """查交易所 fills 确认单个 symbol 的平仓;确认不到 → 只记日志不喂认知。"""
+        try:
+            client = self.get_exchange_client()
+            if not (self.exchange == "hyperliquid" and client is not None
+                    and hasattr(client, "_info") and getattr(client, "user_addr", None)):
+                logger.info(f"P2对账: {self.exchange} 暂不支持fills查询, 跳过 {sym}")
+                return
+            fills = client._info({"type": "userFills", "user": client.user_addr}) or []
+            ts_ms = int(float(snap.get("ts", 0)) * 1000)
+            close_fills = []
+            for f in fills:
+                if f.get("coin") != sym:
+                    continue
+                closed_pnl = float(f.get("closedPnl", 0) or 0)
+                if closed_pnl == 0:
+                    continue  # 只认真正减/平仓的成交
+                if ts_ms > 0 and int(f.get("time", 0)) < ts_ms - 6 * 3600 * 1000:
+                    continue  # 仅回溯首次观察前6小时窗口
+                close_fills.append(f)
+            if not close_fills:
+                logger.info(f"P2对账: {sym} 已从交易所消失但未确认到平仓成交, 不喂认知")
+                return
+            total_sz = sum(abs(float(f.get("sz", 0))) for f in close_fills)
+            if total_sz <= 0:
+                return
+            exit_px = sum(float(f.get("px", 0)) * abs(float(f.get("sz", 0))) for f in close_fills) / total_sz
+            pnl = sum(float(f.get("closedPnl", 0) or 0) for f in close_fills)
+            entry = float(snap.get("entry_price", 0) or 0)
+            direction = snap.get("direction", "LONG")
+            size = float(snap.get("size", 0) or 0)
+            if entry <= 0 or exit_px <= 0:
+                logger.info(f"P2对账: {sym} 入场/出场价缺失, 不喂认知")
+                return
+            if direction == "LONG":
+                ret = (exit_px - entry) / entry
+            else:
+                ret = (entry - exit_px) / entry
+            ret -= 0.0008  # 与 _feed_cognitive_loop 手续费口径一致
+            self._feed_cognitive_loop(
+                symbol=sym, direction=direction, entry_price=entry, exit_price=exit_px,
+                ret=ret, position_amt=size,
+                exit_reason=f"exchange_close|reconciled|closedPnl={pnl:.2f}",
+                px_source="real_fill",
+            )
+            logger.info(
+                f"P2对账成功: {sym} {direction} entry={entry} exit={exit_px:.4f} "
+                f"pnl={pnl:.2f} 已回填认知层"
+            )
+        except Exception as e:
+            logger.warning(f"P2对账 {sym} 失败(不阻塞): {e}")
 
 
     def _try_trigger_evolution(self):

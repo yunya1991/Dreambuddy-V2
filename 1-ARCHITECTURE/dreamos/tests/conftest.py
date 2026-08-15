@@ -11,6 +11,7 @@ import pytest
 def isolate_dreamos_state(tmp_path, monkeypatch):
     """每个测试独立的状态文件目录(autouse,全测试套件生效)。"""
     from dreamos.capabilities.trading import orchestrator_v2, v15_executor
+    from dreamos.cli import auto_trader
 
     monkeypatch.setattr(
         orchestrator_v2, "STATE_FILE", tmp_path / "orchestrator_v2_state.json"
@@ -20,5 +21,9 @@ def isolate_dreamos_state(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(
         v15_executor, "POSITIONS_FILE", tmp_path / "v15_positions.json"
+    )
+    # PROP-20260816 P2: 持仓快照隔离(防止测试写入生产 scheduler_data)
+    monkeypatch.setattr(
+        auto_trader.AutoTrader, "SNAPSHOT_DIR", tmp_path
     )
     yield

@@ -441,20 +441,27 @@ class DreamOSScheduler:
                                     pool_source = "default"
                                 logger.info(f"F层编排启动: {len(target_symbols)}币种 {target_symbols} | 来源={pool_source}")
                                 results = []
+                                # PROP-20260816 P1: B层指标注入(修复F-1数据饥饿)
+                                from dreamos.cli.auto_trader import AutoTrader
+                                from dreamos.capabilities.trading.market_enrichment import enrich_market_data
+                                try:
+                                    trader = AutoTrader(dry_run=True, exchange=_ex)
+                                except Exception as e:
+                                    trader = None
+                                    logger.warning(f"F层编排: AutoTrader创建失败({e}), 本周期回退0价驱动")
                                 for sym in target_symbols:
                                     md = {"symbol": sym, "entry_price": 0.0, "close_price": 0.0}
-                                    try:
-                                        from dreamos.cli.auto_trader import AutoTrader
-                                        trader = AutoTrader(dry_run=True, exchange=_ex)
-                                        client = trader.get_exchange_client()
-                                        if client is not None and hasattr(client, "get_mid_price"):
-                                            px = float(client.get_mid_price(sym) or 0)
-                                            md["entry_price"] = px
-                                            md["close_price"] = px
-                                        else:
-                                            logger.warning(f"F层编排 {sym}: 客户端无 get_mid_price, 本周期以0价驱动(executor将REJECTED兜底)")
-                                    except Exception as e:
-                                        logger.warning(f"F层编排 {sym} 行情获取失败: {e}")
+                                    if trader is not None:
+                                        try:
+                                            md = enrich_market_data(sym, md, trader._fetch_market_data)
+                                            if md.get("ma20"):
+                                                logger.info(
+                                                    f"F层编排 {sym}: 指标注入完成 ma5/10/20="
+                                                    f"{md.get('ma5')}/{md.get('ma10')}/{md.get('ma20')} "
+                                                    f"momentum={md.get('momentum_direction')} vol={md.get('volatility')}"
+                                                )
+                                        except Exception as e:
+                                            logger.warning(f"F层编排 {sym}: 指标注入失败(降级): {e}")
                                     cr = orch.run_cycle(md)
                                     results.append({
                                         "symbol": sym,
