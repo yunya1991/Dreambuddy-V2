@@ -564,7 +564,10 @@ def _generate_code_patch(
         "polling_trader": "11-易经推理系统/scripts/memory_l4/polling_trader.py",
         "llm_orchestrator": "16-调控系统/core/llm_orchestrator.py",
     }
-    target_path = module_to_file.get(target_module, target_module)
+    target_path = str(module_to_file.get(target_module, target_module) or "unknown_target.py")
+
+    # 动态解析仓库根目录（兼容 Dreambuddy-V2-main 等目录名；旧版硬编码 macOS 路径 /Users/zhangjiangtao）
+    _repo_root = Path(__file__).resolve().parents[2]
 
     script_lines = [
         "#!/usr/bin/env python3",
@@ -578,7 +581,7 @@ def _generate_code_patch(
         "#",
         "import ast, sys, pathlib, shutil",
         "",
-        f'TARGET = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/{target_path}")',
+        f'TARGET = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else {_repo_root / target_path!r})',
         "",
         "def main():",
         "    src = TARGET.read_text(encoding='utf-8')",

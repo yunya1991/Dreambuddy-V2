@@ -179,7 +179,14 @@ class StopTakeProfitEngine:
 
         Returns:
             StopTakeProfitResult: 止盈止损结果
+
+        Raises:
+            ValueError: 入场价格无效（≤0，通常因行情数据缺失降级）
         """
+        if entry_price is None or entry_price <= 0:
+            raise ValueError(f"无效入场价格: {entry_price!r}（必须>0，通常因行情数据缺失）")
+        if atr_pct is None or atr_pct < 0:
+            atr_pct = 0.0
         rationale: List[str] = []
 
         # 动态计算 ATR 乘数（基于市场状态和币种波动率）
@@ -278,7 +285,7 @@ class StopTakeProfitEngine:
                 stop_loss = entry_price - stop_distance
             else:
                 stop_loss = entry_price + stop_distance
-            rationale.append(f"ATR止损: {multiplier:.2f}x ATR ({stop_distance/entry_price:.2%})")
+            rationale.append(f"ATR止损: {multiplier:.2f}x ATR ({(stop_distance / entry_price if entry_price else 0.0):.2%})")
 
         elif strategy == StopLossStrategy.FIXED_PCT:
             pct = self.config.stop_fixed_pct * dynamic_atr_multiplier
@@ -342,7 +349,7 @@ class StopTakeProfitEngine:
                 take_profit = entry_price + take_distance
             else:
                 take_profit = entry_price - take_distance
-            rationale.append(f"ATR止盈: {multiplier:.2f}x ATR ({take_distance/entry_price:.2%})")
+            rationale.append(f"ATR止盈: {multiplier:.2f}x ATR ({(take_distance / entry_price if entry_price else 0.0):.2%})")
 
         elif strategy == TakeProfitStrategy.FIXED_PCT:
             pct = self.config.take_fixed_pct * dynamic_atr_multiplier

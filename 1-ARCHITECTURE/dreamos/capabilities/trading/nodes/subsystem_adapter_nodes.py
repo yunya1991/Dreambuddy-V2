@@ -535,6 +535,9 @@ def register_subsystem_nodes(registry) -> int:
     count = 0
     for node in nodes:
         try:
+            if registry.exists(node.node_id):
+                logger.info(f"节点已注册，跳过: {node.node_id}")
+                continue
             registry.register(node)
             count += 1
             logger.info(f"注册子系统节点: {node.node_id} - {node.name}")

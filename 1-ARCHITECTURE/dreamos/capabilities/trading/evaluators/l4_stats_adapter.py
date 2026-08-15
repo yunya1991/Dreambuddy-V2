@@ -103,12 +103,14 @@ class L4StatsAdapter:
 
     def __init__(self, cases_dir: Optional[Path] = None):
         if cases_dir is None:
-            # 默认路径：11-易经推理系统/.workbuddy/memory_l4/cases/
-            project_root = Path(__file__).resolve()
-            while project_root.name != "dreambuddy-v2":
-                project_root = project_root.parent
-                if project_root == project_root.parent:
+            # 默认路径：<仓库根>/11-易经推理系统/.workbuddy/memory_l4/cases/
+            # 以标记目录「11-易经推理系统」向上定位仓库根，兼容 Dreambuddy-V2-main 等
+            # 带大小写/后缀的目录名（旧逻辑固定匹配小写 dreambuddy-v2 失败后爬到根目录）
+            project_root = Path(__file__).resolve().parent
+            while not (project_root / "11-易经推理系统").exists():
+                if project_root.parent == project_root:
                     break
+                project_root = project_root.parent
             cases_dir = project_root / "11-易经推理系统" / ".workbuddy" / "memory_l4" / "cases"
         self.cases_dir = cases_dir
         self._cache: Optional[Dict[str, Dict[str, SubsystemStats]]] = None
