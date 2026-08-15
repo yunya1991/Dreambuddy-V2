@@ -26,6 +26,10 @@ class CoinSelector:
     ASSET_RESEARCH_SKILL = SKILL_BASE / "asset-research"
     ATTENTION_RADAR_SKILL = SKILL_BASE / "dream-attention-radar"
 
+    # 每周选币 cron 产出的持久化币池文件（共享数据契约）
+    POOL_FILE = Path(__file__).parent.parent.parent / "cli" / "scheduler_data" / "coin_pool.json"
+    POOL_MAX_AGE_DAYS = 8  # 每周产出一次，允许1天宽限
+
     def __init__(self, use_hermes: bool = True):
         """初始化选币器
 
@@ -52,7 +56,38 @@ class CoinSelector:
         if self.use_hermes:
             return self._select_via_hermes(market_data)
         else:
+            # 优先加载每周选币 cron 产出的持久化币池（真实数据）
+            persisted = self._load_persisted_pools()
+            if persisted is not None:
+                return persisted
             return self._select_mock(market_data)
+
+    def _load_persisted_pools(self) -> Dict[str, Any] | None:
+        """加载每周选币 cron 写入的 coin_pool.json（新鲜度校验）
+
+        Returns:
+            池 dict（source="persisted"）；文件不存在/过期/损坏时返回 None
+        """
+        import json
+        from datetime import datetime, timezone
+
+        try:
+            if not self.POOL_FILE.exists():
+                return None
+            age_days = (datetime.now(timezone.utc).timestamp() - self.POOL_FILE.stat().st_mtime) / 86400
+            if age_days > self.POOL_MAX_AGE_DAYS:
+                return None
+            data = json.loads(self.POOL_FILE.read_text(encoding="utf-8"))
+            if not data.get("long_pool") and not data.get("short_pool"):
+                return None
+            return {
+                "long_pool": data.get("long_pool", []),
+                "short_pool": data.get("short_pool", []),
+                "timestamp": data.get("timestamp", ""),
+                "source": f"persisted:{data.get('source', 'weekly-cron')}",
+            }
+        except Exception:
+            return None
 
     def _select_via_hermes(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
         """通过Hermes大模型调用SKILL进行选币
@@ -83,10 +118,11 @@ class CoinSelector:
         # 融合产出多空代币池
         fused = self._fuse_results(asset_research, attention_radar)
 
+        from datetime import datetime, timezone
         return {
             "long_pool": fused["long_pool"],
             "short_pool": fused["short_pool"],
-            "timestamp": "2026-08-14T02:00:00Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "source": "mock",
         }
 

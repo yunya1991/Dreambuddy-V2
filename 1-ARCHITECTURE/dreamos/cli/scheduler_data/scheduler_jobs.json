@@ -15,7 +15,7 @@
       "ARB"
     ],
     "dry_run": true,
-    "exchange": "aster",
+    "exchange": "hyperliquid",
     "job_type": "scan"
   },
   {
@@ -24,7 +24,7 @@
     "enabled": true,
     "symbols": [],
     "dry_run": true,
-    "exchange": "aster",
+    "exchange": "hyperliquid",
     "job_type": "exit_check"
   },
   {
@@ -44,5 +44,14 @@
     "dry_run": true,
     "exchange": "hyperliquid",
     "job_type": "optimize"
+  },
+  {
+    "name": "orchestration_cycle",
+    "cron_expr": "30 * * * *",
+    "enabled": true,
+    "symbols": [],
+    "dry_run": true,
+    "exchange": "hyperliquid",
+    "job_type": "orchestrate"
   }
 ]

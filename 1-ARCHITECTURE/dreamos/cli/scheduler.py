@@ -17,6 +17,7 @@ Dream OS 定时调度器
 from __future__ import annotations
 
 import time
+import sys
 import threading
 import logging
 import json
@@ -65,6 +66,11 @@ class ScheduledJob:
         self.run_count = 0
         self.error_count = 0
         self.last_error = None
+        # job 级元数据（_save_jobs 持久化；动态赋值改为显式声明）
+        self.symbols: List[str] = []
+        self.dry_run: bool = True
+        self.exchange: str = "hyperliquid"
+        self.job_type: str = "scan"
         self._thread = None
         self._stop_event = threading.Event()
 
@@ -234,12 +240,20 @@ class DreamOSScheduler:
         enabled: bool = True,
     ) -> ScheduledJob:
         def _scan_all():
+            # P0.6 修复: 历史记录与扫描执行解耦
+            # (8/15 ENOSPC 事故中 _record_history 抛异常→except 内再次抛异常→
+            #  整个 scan job 中断,剩余币种全部跳过)
             for symbol in symbols:
                 try:
                     result = scan_func(symbol)
-                    self._record_history(symbol, "scan", result)
+                    action = "scan"
                 except Exception as e:
-                    self._record_history(symbol, "scan_error", {"error": str(e)})
+                    result = {"error": str(e)}
+                    action = "scan_error"
+                try:
+                    self._record_history(symbol, action, result)
+                except Exception as e:
+                    logger.warning(f"历史记录写入失败(不影响扫描) {symbol}: {e}")
 
         if name in self.jobs:
             self.remove_job(name)
@@ -318,7 +332,11 @@ class DreamOSScheduler:
                             trader = AutoTrader(dry_run=_dr, exchange=_ex)
                             try:
                                 result = trader.run_exit_check_all()
-                                logger.info(f"离场检查完成: {result.get('checked', 0)} 个持仓, {result.get('exits', 0)} 个离场")
+                                # P0.5-B2: 错误必须显式告警,不得静默为 "0 个持仓"
+                                if isinstance(result, dict) and result.get("error"):
+                                    logger.warning(f"离场检查失败 (dry_run={_dr}, exchange={_ex}): {result.get('error')}")
+                                    return result
+                                logger.info(f"离场检查完成: {result.get('checked', 0)} 个持仓, {result.get('exits', 0)} 个离场, tpsl更新={result.get('tpsl_updated', 0)}")
                                 return result
                             except Exception as e:
                                 logger.warning(f"离场检查失败 (dry_run={_dr}, exchange={_ex}): {e}")
@@ -343,14 +361,16 @@ class DreamOSScheduler:
                                 if not bt_symbols:
                                     bt_symbols = ["BTC", "ETH", "SOL"]
                                     logger.warning("backtest job 未配置 symbols，回退默认 BTC,ETH,SOL")
+                                # P0.5-B1: 跨平台修复 — 用当前解释器+相对仓库路径,不再硬编码 Mac 路径
+                                _arch_dir = str(Path(__file__).resolve().parent.parent.parent)
                                 cmd = [
-                                    "/opt/anaconda3/bin/python3", "-m",
+                                    sys.executable, "-m",
                                     "dreamos.cli.dreamos_backtester",
                                     "--symbols", ",".join(bt_symbols),
                                     "--interval", _interval,
                                     "--budget", _budget,
                                 ]
-                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800, cwd="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE")
+                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800, cwd=_arch_dir)
                                 logger.info(f"回测评估完成: {result.stdout[-200:] if result.stdout else 'no output'}")
                                 return {"exit_code": result.returncode}
                             except Exception as e:
@@ -367,14 +387,16 @@ class DreamOSScheduler:
                         def _optimize(_symbols=symbols, _interval=opt_interval):
                             import subprocess
                             try:
+                                # P0.5-B1: 跨平台修复 — 用当前解释器+相对仓库路径,不再硬编码 Mac 路径
+                                _arch_dir = str(Path(__file__).resolve().parent.parent.parent)
                                 cmd = [
-                                    "/opt/anaconda3/bin/python3", "-m",
+                                    sys.executable, "-m",
                                     "dreamos.cli.dreamos_backtester",
                                     "--symbols", ",".join(_symbols),
                                     "--interval", _interval,
                                     "--optimize",
                                 ]
-                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600, cwd="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE")
+                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600, cwd=_arch_dir)
                                 logger.info(f"编排优化完成: {result.stdout[-200:] if result.stdout else 'no output'}")
                                 return {"exit_code": result.returncode}
                             except Exception as e:
@@ -384,6 +406,85 @@ class DreamOSScheduler:
                         self.add_job(name, cron_expr, _optimize, enabled=enabled)
                         if name in self.jobs:
                             self.jobs[name].job_type = "optimize"
+                            self._save_jobs()
+                    elif job_type == "orchestrate":
+                        # P2: F层驱动 —— OrchestratorV2 周期编排
+                        # 完整五层流水线: A选币 → B易经 → C执行 → D路由 → E认知审查
+                        # 状态/账本从磁盘恢复(持久化),seed用小时时间桶保证每周期卦象不重复
+                        def _orchestrate(_symbols=symbols, _dr=dry_run, _ex=exchange):
+                            try:
+                                from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2
+                                import time as _time
+                                hour_seed = int(_time.time() // 3600)
+                                orch = OrchestratorV2(use_hermes=False, seed=hour_seed)
+                                # job级 dry_run 直接落到 executor（不依赖环境变量）
+                                orch.executor.dry_run = bool(_dr)
+
+                                # A层币池接线: job配置 > coin_pool.json(每周选币cron产出) > 默认池
+                                target_symbols = list(_symbols or [])
+                                pool_source = "job_config"
+                                if not target_symbols:
+                                    try:
+                                        pools = orch.coin_selector._load_persisted_pools()
+                                        if pools:
+                                            ordered = []
+                                            for item in (pools.get("long_pool", []) + pools.get("short_pool", [])):
+                                                s = (item or {}).get("symbol", "")
+                                                if s and s not in ordered:
+                                                    ordered.append(s)
+                                            target_symbols = ordered[:6]
+                                            pool_source = pools.get("source", "coin_pool.json")
+                                    except Exception as e:
+                                        logger.warning(f"F层编排: 币池加载失败({e}), 回退默认池")
+                                if not target_symbols:
+                                    target_symbols = ["BTC", "ETH", "SOL"]
+                                    pool_source = "default"
+                                logger.info(f"F层编排启动: {len(target_symbols)}币种 {target_symbols} | 来源={pool_source}")
+                                results = []
+                                for sym in target_symbols:
+                                    md = {"symbol": sym, "entry_price": 0.0, "close_price": 0.0}
+                                    try:
+                                        from dreamos.cli.auto_trader import AutoTrader
+                                        trader = AutoTrader(dry_run=True, exchange=_ex)
+                                        client = trader.get_exchange_client()
+                                        if client is not None and hasattr(client, "get_mid_price"):
+                                            px = float(client.get_mid_price(sym) or 0)
+                                            md["entry_price"] = px
+                                            md["close_price"] = px
+                                        else:
+                                            logger.warning(f"F层编排 {sym}: 客户端无 get_mid_price, 本周期以0价驱动(executor将REJECTED兜底)")
+                                    except Exception as e:
+                                        logger.warning(f"F层编排 {sym} 行情获取失败: {e}")
+                                    cr = orch.run_cycle(md)
+                                    results.append({
+                                        "symbol": sym,
+                                        "cycle_id": cr.get("cycle_id"),
+                                        "status": cr.get("status"),
+                                        "direction": cr.get("signal", {}).get("direction"),
+                                        "confidence": cr.get("signal", {}).get("confidence"),
+                                        "position_status": cr.get("execution", {}).get("status"),
+                                    })
+
+                                st = orch.get_status()
+                                summary = "; ".join(
+                                    f"{r['symbol']}:{r['direction']}({float(r['confidence'] or 0):.2f})/{r['position_status']}"
+                                    for r in results
+                                )
+                                logger.info(
+                                    f"F层编排完成: {len(results)}周期 [{summary}] "
+                                    f"| 累计 cycles={st['total_cycles']} pnl={st['total_pnl']}"
+                                )
+                                return {"cycles": results, "status_summary": st}
+                            except Exception as e:
+                                logger.warning(f"F层编排失败: {e}")
+                                return {"error": str(e)}
+
+                        self.add_job(name, cron_expr, _orchestrate, enabled=enabled)
+                        if name in self.jobs:
+                            self.jobs[name].dry_run = dry_run
+                            self.jobs[name].exchange = exchange
+                            self.jobs[name].job_type = "orchestrate"
+                            self.jobs[name].symbols = symbols  # 防止 _save_jobs 丢失显式配置
                             self._save_jobs()
                     else:
                         # 默认: 扫描交易任务
