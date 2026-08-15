@@ -1,0 +1,215 @@
+{
+  "verify_time": "2026-08-15T22:50:05.099291",
+  "layers": {
+    "A_选币": {
+      "pool_source": "persisted:hermes-weekly",
+      "long_pool": [
+        [
+          "LINK",
+          0.82
+        ],
+        [
+          "BTC",
+          0.74
+        ],
+        [
+          "HYPE",
+          0.71
+        ],
+        [
+          "ETH",
+          0.66
+        ],
+        [
+          "NEAR",
+          0.6
+        ]
+      ],
+      "short_pool": [
+        [
+          "UNI",
+          0.66
+        ],
+        [
+          "KAITO",
+          0.62
+        ],
+        [
+          "PUMP",
+          0.55
+        ]
+      ],
+      "consumed_symbols": [
+        "LINK",
+        "BTC",
+        "HYPE",
+        "ETH",
+        "NEAR",
+        "UNI"
+      ]
+    },
+    "F_编排": {
+      "cycles_before": 126,
+      "cycles_after": 132,
+      "state_persisted": true,
+      "last_cycle": {
+        "cycle_id": "cycle-0132",
+        "status": "COMPLETED",
+        "timestamp": "2026-08-15T14:50:16.111498Z"
+      }
+    },
+    "E_认知": {
+      "lessons_file": "/home/ubuntu/Dreambuddy-V2-main/1-ARCHITECTURE/dreamos/data/cognitive_lessons.json",
+      "lessons_created": false,
+      "lessons_content": null,
+      "injection_field_present": true,
+      "wiring": "auto_trader._feed_cognitive_loop → record_real_exit (real_fill 守卫已加, commit 01109a2)"
+    },
+    "C_执行": {
+      "dry_run_gate": true,
+      "ledger_before": [],
+      "ledger_after": [],
+      "note": "影子模式: HOLD/REJECTED 不开仓; 真实持仓(SOL)由 exit_check 实盘管理"
+    }
+  },
+  "cycles": [
+    {
+      "symbol": "LINK",
+      "live_mid_price": 9.48575,
+      "cycle_id": "cycle-0127",
+      "status": "COMPLETED",
+      "B_signal": {
+        "direction": "HOLD",
+        "confidence": 0.1312,
+        "confidence_raw": null,
+        "cognitive_adjustment": 0.0,
+        "hexagram": null,
+        "phase": "leaping-dragon",
+        "risk_level": "medium"
+      },
+      "C_execution": "REJECTED",
+      "E_cognitive_snapshot": {
+        "total_reviews": 0,
+        "total_pnl": 0.0,
+        "win_rate": 0.0,
+        "confidence_adjustment": 0.0
+      },
+      "bayesian_triggered": false
+    },
+    {
+      "symbol": "BTC",
+      "live_mid_price": 63014.5,
+      "cycle_id": "cycle-0128",
+      "status": "COMPLETED",
+      "B_signal": {
+        "direction": "HOLD",
+        "confidence": 0.1312,
+        "confidence_raw": null,
+        "cognitive_adjustment": 0.0,
+        "hexagram": null,
+        "phase": "leaping-dragon",
+        "risk_level": "medium"
+      },
+      "C_execution": "REJECTED",
+      "E_cognitive_snapshot": {
+        "total_reviews": 0,
+        "total_pnl": 0.0,
+        "win_rate": 0.0,
+        "confidence_adjustment": 0.0
+      },
+      "bayesian_triggered": false
+    },
+    {
+      "symbol": "HYPE",
+      "live_mid_price": 56.2505,
+      "cycle_id": "cycle-0129",
+      "status": "COMPLETED",
+      "B_signal": {
+        "direction": "HOLD",
+        "confidence": 0.1312,
+        "confidence_raw": null,
+        "cognitive_adjustment": 0.0,
+        "hexagram": null,
+        "phase": "leaping-dragon",
+        "risk_level": "medium"
+      },
+      "C_execution": "REJECTED",
+      "E_cognitive_snapshot": {
+        "total_reviews": 0,
+        "total_pnl": 0.0,
+        "win_rate": 0.0,
+        "confidence_adjustment": 0.0
+      },
+      "bayesian_triggered": false
+    },
+    {
+      "symbol": "ETH",
+      "live_mid_price": 1881.95,
+      "cycle_id": "cycle-0130",
+      "status": "COMPLETED",
+      "B_signal": {
+        "direction": "HOLD",
+        "confidence": 0.1312,
+        "confidence_raw": null,
+        "cognitive_adjustment": 0.0,
+        "hexagram": null,
+        "phase": "leaping-dragon",
+        "risk_level": "medium"
+      },
+      "C_execution": "REJECTED",
+      "E_cognitive_snapshot": {
+        "total_reviews": 0,
+        "total_pnl": 0.0,
+        "win_rate": 0.0,
+        "confidence_adjustment": 0.0
+      },
+      "bayesian_triggered": false
+    },
+    {
+      "symbol": "NEAR",
+      "live_mid_price": 1.63365,
+      "cycle_id": "cycle-0131",
+      "status": "COMPLETED",
+      "B_signal": {
+        "direction": "HOLD",
+        "confidence": 0.1312,
+        "confidence_raw": null,
+        "cognitive_adjustment": 0.0,
+        "hexagram": null,
+        "phase": "leaping-dragon",
+        "risk_level": "medium"
+      },
+      "C_execution": "REJECTED",
+      "E_cognitive_snapshot": {
+        "total_reviews": 0,
+        "total_pnl": 0.0,
+        "win_rate": 0.0,
+        "confidence_adjustment": 0.0
+      },
+      "bayesian_triggered": false
+    },
+    {
+      "symbol": "UNI",
+      "live_mid_price": 3.25435,
+      "cycle_id": "cycle-0132",
+      "status": "COMPLETED",
+      "B_signal": {
+        "direction": "HOLD",
+        "confidence": 0.1312,
+        "confidence_raw": null,
+        "cognitive_adjustment": 0.0,
+        "hexagram": null,
+        "phase": "leaping-dragon",
+        "risk_level": "medium"
+      },
+      "C_execution": "REJECTED",
+      "E_cognitive_snapshot": {
+        "total_reviews": 0,
+        "total_pnl": 0.0,
+        "win_rate": 0.0,
+        "confidence_adjustment": 0.0
+      },
+      "bayesian_triggered": false
+    }
+  ]
+}
