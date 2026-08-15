@@ -15,7 +15,7 @@ import sys
 import json
 import time
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime
 from pathlib import Path
 
@@ -379,6 +379,65 @@ class AutoTrader:
                 logger.warning(f"P0-1 平仓反馈未匹配开仓记录: {symbol} | entry={entry_price}")
         except Exception as e:
             logger.warning(f"P0-1 回填平仓反馈失败: {e}")
+
+    def _feed_cognitive_loop(self, symbol: str, direction: str, entry_price: float,
+                             exit_price: float, ret: float, position_amt: float,
+                             exit_reason: str = "", px_source: str = "") -> None:
+        """P1-3: 平仓后将真实盈亏回填到 DreamOS E层认知闭环
+
+        名义价值 = |position_amt| × entry_price, pnl_usdt = ret × 名义价值
+        (ret 已扣手续费)。调用 orchestrator_v2.record_real_exit():
+        真实审查 → lessons 落盘 → W/L/累计PnL/连败计数更新。
+
+        任何异常仅记日志 —— 认知回填失败绝不影响持仓管家主流程。
+        """
+        try:
+            notional = abs(float(position_amt or 0)) * float(entry_price or 0)
+            pnl_usdt = round(float(ret) * notional, 6)
+            trade_result = {
+                "symbol": symbol,
+                "direction": direction,
+                "entry_price": float(entry_price),
+                "exit_price": float(exit_price),
+                "position_size": abs(float(position_amt or 0)),
+                "pnl_usdt": pnl_usdt,
+                "pnl_pct": float(ret),
+                "confidence": 0.5,  # 旧管线无置信度记录,用中性值
+                "addon_count": 0,
+                "hold_hours": 0.0,
+                "exit_reason": f"{exit_reason}|{px_source}".strip("|"),
+            }
+            from dreamos.capabilities.trading.orchestrator_v2 import record_real_exit
+            review = record_real_exit(trade_result)
+            logger.info(
+                f"P1-3 认知回填: {symbol} | pnl={pnl_usdt:.4f} USDT | "
+                f"assessment={review.get('assessment', '?')} | "
+                f"lessons={len(review.get('lessons', []))}"
+            )
+        except Exception as e:
+            logger.warning(f"P1-3 认知闭环回填失败(不影响主流程): {e}")
+
+    def _resolve_exit_price(self, exec_result: Dict, estimated_price: float) -> Tuple[float, str]:
+        """P2: 确定平仓价格来源（持仓管家接真实成交回报）
+
+        Returns:
+            (exit_price, source):
+              - real_fill: 交易所真实成交均价（实盘成功平仓,优先使用）
+              - dry_run:   模拟平仓,使用决策估算价
+              - estimated: 实盘但无成交回报（部分成交/回报缺失）,降级估算价
+        """
+        try:
+            if not isinstance(exec_result, dict):
+                return estimated_price, "estimated"
+            if exec_result.get("dry_run") or exec_result.get("simulated"):
+                return estimated_price, "dry_run"
+            if exec_result.get("result") == "SUCCESS":
+                real_px = float(exec_result.get("real_fill_price") or 0)
+                if real_px > 0:
+                    return real_px, "real_fill"
+            return estimated_price, "estimated"
+        except Exception:
+            return estimated_price, "estimated"
 
     def _load_dedup_state(self) -> Dict[str, int]:
         """P0-3: 加载持久化的 4h 去重表
@@ -1070,6 +1129,7 @@ class AutoTrader:
                 "exchange": self.exchange,
                 "tpsl_set": tpsl_set,
                 "tpsl_cancelled": tpsl_cancelled,
+                "simulated": True,
             }
 
         client = self.get_exchange_client()
@@ -1151,6 +1211,15 @@ class AutoTrader:
                             logger.warning(f"设置 TP/SL 条件单异常({coin}): {e}")
                             tpsl_result = {"ok": False, "error": str(e)}
 
+                    # P2: 提取真实成交均价（平仓反馈用）
+                    real_fill_price = 0.0
+                    filled_info = result.get("filled") or {}
+                    if isinstance(filled_info, dict):
+                        try:
+                            real_fill_price = float(filled_info.get("avgPx") or 0.0)
+                        except (TypeError, ValueError):
+                            real_fill_price = 0.0
+
                     return {
                         "result": "SUCCESS",
                         "action": action,
@@ -1160,6 +1229,7 @@ class AutoTrader:
                         "tpsl_result": tpsl_result,
                         "stop_loss": stop_loss,
                         "take_profit": take_profit,
+                        "real_fill_price": real_fill_price,
                     }
                 else:
                     return {"result": "FAILED", "error": result}
@@ -2113,7 +2183,9 @@ class AutoTrader:
             exit_result["execution"] = exec_result
 
             # P0-1 修复：离场时回填实际收益率到反馈收集器（更新开仓记录，而非追加新记录）
-            exit_price = exit_result.get("exit_price", entry_price)
+            # P2: 持仓管家接真实成交回报 —— 实盘优先用交易所成交均价,dry_run 用决策估算价
+            estimated_px = exit_result.get("exit_price", entry_price)
+            exit_price, px_source = self._resolve_exit_price(exec_result, estimated_px)
             if entry_price > 0:
                 if direction == "LONG":
                     ret = (exit_price - entry_price) / entry_price
@@ -2124,6 +2196,7 @@ class AutoTrader:
                 ret = 0.0
             # P0-1: 使用 update_exit_feedback 回填开仓记录，闭合反馈环
             self.update_exit_feedback(symbol, entry_price, exit_price, ret)
+            logger.info(f"离场反馈: {symbol} | 价格来源={px_source} | exit={exit_price} ret={ret:.4f}")
             self._try_trigger_evolution()
 
         return exit_result
@@ -2215,7 +2288,9 @@ class AutoTrader:
                 })
 
                 # P0-1 修复：回填实际收益率（更新开仓记录，闭合反馈环）
-                exit_price = exit_result.get("exit_price", entry_price)
+                # P2: 持仓管家接真实成交回报 —— 实盘优先用交易所成交均价,dry_run 用决策估算价
+                estimated_px = exit_result.get("exit_price", entry_price)
+                exit_price, px_source = self._resolve_exit_price(exec_result, estimated_px)
                 if entry_price > 0:
                     if direction == "LONG":
                         ret = (exit_price - entry_price) / entry_price
@@ -2228,18 +2303,28 @@ class AutoTrader:
                 # P0-1: 使用 update_exit_feedback 回填开仓记录
                 self.update_exit_feedback(symbol, entry_price, exit_price, ret)
 
+                # P1-3: 真实盈亏回填 DreamOS E层认知闭环 (失败不影响主流程)
+                self._feed_cognitive_loop(
+                    symbol=symbol, direction=direction,
+                    entry_price=entry_price, exit_price=exit_price,
+                    ret=ret, position_amt=amt,
+                    exit_reason=exit_result.get("reason", ""),
+                    px_source=px_source,
+                )
+
                 results.append({
                     "symbol": symbol,
                     "direction": direction,
                     "entry_price": entry_price,
                     "exit_price": exit_price,
+                    "px_source": px_source,
                     "return": round(ret, 4),
                     "executed": True,
                     "reason": exit_result.get("reason", ""),
                     "exec_result": exec_result,
                 })
                 exit_count += 1
-                logger.info(f"离场执行: {symbol} {direction} entry={entry_price} exit={exit_price} ret={ret:.4f} reason={exit_result.get('reason', '')}")
+                logger.info(f"离场执行: {symbol} {direction} entry={entry_price} exit={exit_price}({px_source}) ret={ret:.4f} reason={exit_result.get('reason', '')}")
             else:
                 # P1: 未离场时，动态更新交易所 TP/SL 条件单
                 new_sl = exit_result.get("stop_loss")

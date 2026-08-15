@@ -143,7 +143,8 @@ def test_coin_selector_select_uses_fusion():
     assert "long_pool" in result
     assert "short_pool" in result
     assert "source" in result
-    assert result["source"] == "mock"
+    # a277445 后优先级: 持久化周度币池 > mock 兜底
+    assert result["source"] in ("mock", "persisted:hermes-weekly")
     total = len(result["long_pool"]) + len(result["short_pool"])
     assert total > 0, "pools should not be empty"
 
@@ -210,7 +211,8 @@ def test_phase1_integration(tmp_path):
     pools = selector.select(market_data={"symbols": ["BTC", "ETH", "SOL", "DOGE"]})
     assert "long_pool" in pools
     assert "short_pool" in pools
-    assert pools["source"] == "mock"
+    # a277445 后优先级: 持久化周度币池 > mock 兜底
+    assert pools["source"] in ("mock", "persisted:hermes-weekly")
     total = len(pools["long_pool"]) + len(pools["short_pool"])
     assert total > 0
 

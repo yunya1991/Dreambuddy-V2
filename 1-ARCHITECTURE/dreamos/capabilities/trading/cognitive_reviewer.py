@@ -262,6 +262,55 @@ class CognitiveReviewer:
             "confidence_adjustment": round(confidence_adjustment, 4),
         }
 
+    def load_lessons(self, filepath: Optional[str] = None) -> int:
+        """Load lessons from the persistence file (startup recovery).
+
+        Complements persist_lessons(): restores in-memory lessons and the
+        cumulative counters after a process restart. Dedupes by lesson_id
+        so repeated loads are safe.
+
+        Args:
+            filepath: Path to lessons file. Uses init path if not provided.
+
+        Returns:
+            Number of lessons newly loaded (0 if file missing/corrupt).
+        """
+        path = filepath or self._lessons_filepath
+        if not path or not Path(path).exists():
+            return 0
+        try:
+            data = json.loads(Path(path).read_text(encoding="utf-8"))
+        except Exception:
+            return 0
+
+        existing_ids = {l.lesson_id for l in self._lessons}
+        loaded = 0
+        for ld in data.get("lessons", []):
+            if not isinstance(ld, dict):
+                continue
+            lid = str(ld.get("lesson_id", ""))
+            if not lid or lid in existing_ids:
+                continue
+            self._lessons.append(TradeLesson(
+                lesson_id=lid,
+                category=str(ld.get("category", "")),
+                description=str(ld.get("description", "")),
+                symbol=str(ld.get("symbol", "")),
+                trade_pnl=float(ld.get("trade_pnl", 0.0) or 0.0),
+                confidence_at_entry=float(ld.get("confidence_at_entry", 0.5) or 0.5),
+                created_at=str(ld.get("created_at", "")),
+            ))
+            existing_ids.add(lid)
+            loaded += 1
+
+        # 恢复累计计数器：仅在本实例尚未产生过 review 时以文件为准
+        # (文件由 persist_lessons 每轮落盘，是跨重启的权威累计值)
+        if self._review_count == 0:
+            self._review_count = int(data.get("total_reviews", 0) or 0)
+            self._total_pnl = float(data.get("total_pnl", 0.0) or 0.0)
+
+        return loaded
+
     def persist_lessons(self, filepath: Optional[str] = None) -> None:
         """Persist all lessons to a JSON file.
 
@@ -279,7 +328,9 @@ class CognitiveReviewer:
             "persisted_at": datetime.utcnow().isoformat() + "Z",
         }
 
-        Path(path).write_text(
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
             json.dumps(data, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )

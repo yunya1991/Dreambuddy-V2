@@ -70,45 +70,66 @@ def test_phase7_full_closed_loop():
     # Layer C: V15 execution
     assert result["execution"]["status"] in ("OPEN", "REJECTED")
 
-    # Layer E: Cognitive review
+    # Layer E: 认知层 —— P1-3 后新契约: 周期内不再伪造 pnl=0 审查,
+    # 改为 awaiting_real_feedback 快照(真实审查由平仓回填 record_real_exit 产生)
     assert result["review"]["status"] == "OK"
-    assert result["review"]["assessment"] in ("GOOD", "NEUTRAL", "BAD")
+    assert result["review"]["mode"] == "awaiting_real_feedback"
+    assert "cognitive_context" in result["review"]
 
 
 def test_phase7_cognitive_injection():
-    """Phase 7: Verify cognitive context injection back into signal generation."""
-    orch = OrchestratorV2(use_hermes=False)
+    """Phase 7 / P1-1: 认知注入闭环 —— 真实教训 → 下轮信号置信度调整。
 
-    # Run a cycle
-    market_data = {
-        "symbol": "BTC",
-        "supply_demand_score": 0.65,
-        "technical_score": 0.60,
-        "capital_flow_score": 0.55,
-        "sentiment_score": 0.50,
-        "trend_strength": 0.70,
-        "volatility": 0.30,
-        "volume_ratio": 1.2,
-        "price_position": 0.45,
-        "ma5": 100.0,
-        "ma10": 98.0,
-        "ma20": 95.0,
-        "momentum_direction": "UP",
-        "close_price": 100000.0,
-        "entry_price": 100000.0,
+    新契约(P1-3 后): run_cycle 不再伪造审查;认知积累来自真实平仓回填
+    (record_real_exit)。本测试验证完整闭环:
+        1. record_real_exit(盈利单) → lessons 落盘 + 状态更新
+        2. 新建 OrchestratorV2 → 启动加载 lessons (P1-2)
+        3. run_cycle → confidence_adjustment 注入信号置信度 (P1-1)
+    """
+    from dreamos.capabilities.trading.orchestrator_v2 import record_real_exit
+
+    # Step 1: 真实盈利单回填 → 产生 lesson 并落盘
+    win_trade = {
+        "symbol": "BTC", "direction": "LONG", "entry_price": 100000.0,
+        "exit_price": 105000.0, "position_size": 0.01,
+        "confidence": 0.75, "addon_count": 0, "hold_hours": 5.0,
+        "exit_reason": "TP hit|real", "pnl_usdt": 50.0, "pnl_pct": 0.05,
     }
-    orch.run_cycle(market_data)
+    review = record_real_exit(win_trade)
+    assert review["status"] == "OK"
+    assert review["state_update"] == "OK"
 
-    # Get cognitive context from reviewer
+    # Step 2: 新实例启动加载 —— 认知记忆跨实例保留 (P1-2)
+    orch = OrchestratorV2(use_hermes=False)
     ctx = orch.reviewer.get_cognitive_context()
     assert ctx["total_reviews"] >= 1
+    assert ctx["total_pnl"] > 0
+    assert ctx["win_rate"] > 0.6
     assert isinstance(ctx["confidence_adjustment"], float)
     assert -0.1 <= ctx["confidence_adjustment"] <= 0.1
+    assert ctx["confidence_adjustment"] > 0  # 盈利教训 → 正向调整
 
-    # Verify context can be used to adjust future signals
-    # (in production, this would be injected into YijingSignalGenerator)
-    adjustment = ctx["confidence_adjustment"]
-    assert isinstance(adjustment, float)
+    # Step 3: run_cycle → P1-1 注入生效
+    market_data = {
+        "symbol": "BTC",
+        "supply_demand_score": 0.65, "technical_score": 0.60,
+        "capital_flow_score": 0.55, "sentiment_score": 0.50,
+        "trend_strength": 0.70, "volatility": 0.30,
+        "volume_ratio": 1.2, "price_position": 0.45,
+        "ma5": 100.0, "ma10": 98.0, "ma20": 95.0,
+        "momentum_direction": "UP",
+        "close_price": 100000.0, "entry_price": 100000.0,
+    }
+    result = orch.run_cycle(market_data)
+
+    # 认知快照: review 与信号均携带注入痕迹
+    assert result["review"]["cognitive_context"]["total_reviews"] >= 1
+    sig = result["signal"]
+    if sig.get("status") == "OK" and "confidence_raw" in sig:
+        raw = sig["confidence_raw"]
+        adj = sig["cognitive_adjustment"]
+        assert adj == pytest.approx(ctx["confidence_adjustment"])
+        assert sig["confidence"] == pytest.approx(max(0.0, min(1.0, raw + adj)))
 
 
 def test_phase7_bayesian_optimization_loop():

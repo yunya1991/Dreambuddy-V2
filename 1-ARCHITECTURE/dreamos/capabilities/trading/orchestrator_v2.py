@@ -23,7 +23,13 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+from pathlib import Path
+import json
+import logging
+import os
 import uuid
+
+logger = logging.getLogger(__name__)
 
 from dreamos.capabilities.trading.coin_selector import CoinSelector
 from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator
@@ -35,6 +41,13 @@ from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewer
 # Bayesian optimization trigger thresholds
 BAYESIAN_LOSS_THRESHOLD = 3
 BAYESIAN_DAYS_THRESHOLD = 7
+
+# P1 状态持久化: 运行状态落盘,重启后自动恢复(不再失忆)
+STATE_FILE = Path(__file__).resolve().parent.parent.parent / "cli" / "scheduler_data" / "orchestrator_v2_state.json"
+_CYCLE_HISTORY_CAP = 200  # 历史记录上限,防止状态文件无限膨胀
+
+# P1-2: E层认知记忆持久化文件 (lessons 跨重启不丢失)
+LESSONS_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "cognitive_lessons.json"
 
 
 @dataclass
@@ -74,8 +87,16 @@ class OrchestratorV2:
         self._coin_selector = CoinSelector(use_hermes=use_hermes)
         self._signal_generator = YijingSignalGenerator(seed=seed)
         self._executor = V15Executor()
-        self._router = SignalRouter(use_hermes=use_hermes, seed=seed)
-        self._reviewer = CognitiveReviewer()
+        # P2: 注入共享实例 —— 单账本/单PRNG,消除双实例状态漂移
+        self._router = SignalRouter(
+            use_hermes=use_hermes,
+            seed=seed,
+            executor=self._executor,
+            signal_generator=self._signal_generator,
+        )
+        # P1-2: E层认知记忆 —— lessons 持久化 + 启动加载(重启不再失忆)
+        self._reviewer = CognitiveReviewer(lessons_filepath=str(LESSONS_FILE))
+        self._reviewer.load_lessons()
 
         # State tracking
         self._total_cycles = 0
@@ -87,6 +108,66 @@ class OrchestratorV2:
         self._last_optimization_date: Optional[datetime] = None
         self._bayesian_optimizations = 0
         self._cycle_history: List[Dict[str, Any]] = []
+
+        # P1: 从磁盘恢复状态(如存在)
+        self._load_state()
+
+    # ── P1 状态持久化 ─────────────────────────────────────────────────────
+
+    def _load_state(self) -> None:
+        """从 STATE_FILE 恢复运行状态。文件缺失/损坏时静默使用初始值。"""
+        try:
+            if not STATE_FILE.exists():
+                return
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self._total_cycles = int(data.get("total_cycles", 0))
+            self._total_pnl = float(data.get("total_pnl", 0.0))
+            self._wins = int(data.get("wins", 0))
+            self._losses = int(data.get("losses", 0))
+            self._consecutive_losses = int(data.get("consecutive_losses", 0))
+            self._bayesian_optimizations = int(data.get("bayesian_optimizations", 0))
+            self._cycle_history = list(data.get("cycle_history", []))[-_CYCLE_HISTORY_CAP:]
+            for attr, key in (
+                ("_last_profit_date", "last_profit_date"),
+                ("_last_optimization_date", "last_optimization_date"),
+            ):
+                raw = data.get(key)
+                if raw:
+                    try:
+                        setattr(self, attr, datetime.fromisoformat(str(raw).replace("Z", "")))
+                    except ValueError:
+                        setattr(self, attr, None)
+            logger.info(
+                f"OrchestratorV2 状态已恢复: cycles={self._total_cycles} "
+                f"pnl={self._total_pnl:.4f} W/L={self._wins}/{self._losses} "
+                f"source={STATE_FILE.name}"
+            )
+        except Exception as e:
+            logger.warning(f"OrchestratorV2 状态恢复失败(使用初始值): {e}")
+
+    def _save_state(self) -> None:
+        """原子写入运行状态到 STATE_FILE (tmp+rename,防半截文件)。"""
+        try:
+            STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "total_cycles": self._total_cycles,
+                "total_pnl": round(self._total_pnl, 6),
+                "wins": self._wins,
+                "losses": self._losses,
+                "consecutive_losses": self._consecutive_losses,
+                "bayesian_optimizations": self._bayesian_optimizations,
+                "last_profit_date": self._last_profit_date.isoformat() if self._last_profit_date else None,
+                "last_optimization_date": self._last_optimization_date.isoformat() if self._last_optimization_date else None,
+                "cycle_history": self._cycle_history[-_CYCLE_HISTORY_CAP:],
+                "saved_at": datetime.utcnow().isoformat() + "Z",
+            }
+            tmp_path = str(STATE_FILE) + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, STATE_FILE)
+        except Exception as e:
+            logger.warning(f"OrchestratorV2 状态落盘失败: {e}")
 
     def run_cycle(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a full trading cycle through all five layers.
@@ -118,69 +199,69 @@ class OrchestratorV2:
             errors.append(f"selection: {e}")
             status = "PARTIAL"
 
-        # Layer B: Yijing signal generation
+        # P1-1: E→B 认知注入 —— 周期开始时读取认知上下文
+        # confidence_adjustment 由历史 lessons 的真实盈亏推导(-0.1~+0.1)
+        cognitive_ctx: Dict[str, Any] = {}
+        confidence_adjustment = 0.0
         try:
-            signal = self._signal_generator.generate(market_data)
+            cognitive_ctx = self._reviewer.get_cognitive_context(
+                market_data.get("symbol")
+            )
+            confidence_adjustment = float(
+                cognitive_ctx.get("confidence_adjustment", 0.0) or 0.0
+            )
+        except Exception as e:
+            errors.append(f"cognitive_context: {e}")
+            status = "PARTIAL"
+
+        # Layer B+C+D: SignalRouter 真实接线（P2）
+        # 单次 route() 内部完成: 易经信号生成(B) → V15执行(C) → 统一路由(D)
+        # 共享注入的 generator/executor 实例: 单PRNG流 + 单账本, 无双重执行
+        try:
+            routed = self._router.route(market_data)
             sig_out = {
-                "symbol": signal.get("symbol", ""),
-                "direction": signal.get("direction", "HOLD"),
-                "confidence": signal.get("confidence", 0.0),
-                "hexagram": signal.get("hexagram", {}),
+                "symbol": routed.get("symbol", ""),
+                "direction": routed.get("direction", "HOLD"),
+                "confidence": routed.get("confidence", 0.0),
+                "hexagram": routed.get("hexagram", {}),
+                "phase": routed.get("phase", ""),
+                "risk_level": routed.get("risk_level", ""),
                 "status": "OK",
             }
-        except Exception as e:
-            sig_out = {"status": "ERROR", "error": str(e)}
-            errors.append(f"signal: {e}")
-            status = "PARTIAL"
-
-        # Layer C: V15 execution
-        try:
-            exec_signal = {
-                "symbol": market_data.get("symbol", ""),
-                "direction": sig_out.get("direction", "HOLD"),
-                "confidence": sig_out.get("confidence", 0.0),
-                "entry_price": market_data.get("entry_price", market_data.get("close_price", 0.0)),
-            }
-            position = self._executor.execute_signal(exec_signal)
+            position = routed.get("position", {})
             execution = {"position": position, "status": position.get("status", "REJECTED")}
-        except Exception as e:
-            execution = {"status": "ERROR", "error": str(e)}
-            errors.append(f"execution: {e}")
-            status = "PARTIAL"
 
-        # Layer D: Signal routing (already done via layers B+C, record result)
-        try:
-            routed = {
-                "symbol": sig_out.get("symbol", ""),
-                "direction": sig_out.get("direction", "HOLD"),
-                "confidence": sig_out.get("confidence", 0.0),
-                "position": execution.get("position", {}),
-                "status": "OK",
-            }
+            # P1-1: 将认知调整量注入 B层信号置信度 (保留原始值供审计)
+            if confidence_adjustment:
+                raw_conf = float(sig_out.get("confidence", 0.0))
+                sig_out["confidence_raw"] = raw_conf
+                sig_out["confidence"] = round(
+                    max(0.0, min(1.0, raw_conf + confidence_adjustment)), 4
+                )
+            sig_out["cognitive_adjustment"] = confidence_adjustment
         except Exception as e:
             routed = {"status": "ERROR", "error": str(e)}
-            errors.append(f"routing: {e}")
+            sig_out = {"status": "ERROR", "error": str(e)}
+            execution = {"status": "ERROR", "error": str(e)}
+            errors.append(f"routing(B+C+D): {e}")
             status = "PARTIAL"
 
-        # Layer E: Cognitive review (simulated trade result for review)
+        # Layer E: 认知层 —— P1-3: 不再喂 pnl=0 伪造交易结果(自我欺骗已移除)
+        # 真实盈亏审查由平仓路径回填: cli/auto_trader.run_exit_check_all()
+        #   → record_real_exit() → reviewer.review(真实结果) + lessons 落盘
+        # 本周期仅记录认知状态快照(供影子模式观察注入是否生效)
         try:
-            # Create a simulated trade result for review
-            trade_result = {
-                "symbol": market_data.get("symbol", ""),
-                "direction": sig_out.get("direction", "HOLD"),
-                "entry_price": market_data.get("entry_price", 0.0),
-                "exit_price": market_data.get("close_price", 0.0),
-                "position_size": execution.get("position", {}).get("position_size", 0.0),
-                "confidence": sig_out.get("confidence", 0.0),
-                "hexagram": sig_out.get("hexagram", {}),
-                "addon_count": 0,
-                "hold_hours": 0.0,
-                "exit_reason": "cycle_complete",
-                "pnl_usdt": 0.0,
-                "pnl_pct": 0.0,
+            review = {
+                "status": "OK",
+                "mode": "awaiting_real_feedback",
+                "cognitive_context": {
+                    "total_reviews": cognitive_ctx.get("total_reviews", 0),
+                    "total_pnl": cognitive_ctx.get("total_pnl", 0.0),
+                    "win_rate": cognitive_ctx.get("win_rate", 0.0),
+                    "confidence_adjustment": confidence_adjustment,
+                },
+                "note": "真实盈亏审查由平仓回填路径 record_real_exit() 产生",
             }
-            review = self._reviewer.review(trade_result)
-            review["status"] = "OK"
         except Exception as e:
             review = {"status": "ERROR", "error": str(e)}
             errors.append(f"review: {e}")
@@ -199,6 +280,9 @@ class OrchestratorV2:
 
         if errors:
             status = "FAILED" if status == "PARTIAL" and len(errors) >= 3 else status
+
+        # P1: 周期结束落盘状态
+        self._save_state()
 
         return {
             "cycle_id": cycle_id,
@@ -285,6 +369,8 @@ class OrchestratorV2:
         else:
             self._losses += 1
             self._consecutive_losses += 1
+        # P1: 交易结果落盘(真实平仓反馈入口)
+        self._save_state()
 
     @property
     def coin_selector(self) -> CoinSelector:
@@ -305,6 +391,55 @@ class OrchestratorV2:
     @property
     def reviewer(self) -> CognitiveReviewer:
         return self._reviewer
+
+
+# ---- P1-3: 真实平仓回填入口 (E层认知闭环接线) ----
+
+def record_real_exit(trade_result: Dict[str, Any]) -> Dict[str, Any]:
+    """P1-3: 真实平仓结果回填 —— E层认知闭环入口。
+
+    由 cli/auto_trader.run_exit_check_all() 在真实持仓平仓后调用:
+        1. CognitiveReviewer.review(真实结果) → assessment + lessons
+        2. lessons 持久化到 LESSONS_FILE (供 P1-1 下轮注入)
+        3. OrchestratorV2.record_trade_result(pnl) → W/L、累计PnL、
+           连败计数(贝叶斯触发源) 落盘 STATE_FILE
+
+    失败降级: 任何异常只记录日志,不向调用方抛出(不影响持仓管家主流程)。
+
+    Args:
+        trade_result: 含 symbol/direction/entry_price/exit_price/pnl_usdt/
+            pnl_pct/exit_reason 等字段的交易结果 dict。
+
+    Returns:
+        review dict (含 assessment/score/lessons);失败时含 error 字段。
+    """
+    # Step 1: E层真实审查 + lessons 落盘
+    try:
+        reviewer = CognitiveReviewer(lessons_filepath=str(LESSONS_FILE))
+        reviewer.load_lessons()
+        review = reviewer.review(trade_result)
+        reviewer.persist_lessons()
+    except Exception as e:
+        logger.warning(f"P1-3 E层真实审查失败: {e}")
+        return {"status": "ERROR", "error": str(e)}
+
+    # Step 2: F层状态更新 (W/L、累计PnL、连败计数)
+    pnl_usdt = float(trade_result.get("pnl_usdt", 0.0) or 0.0)
+    try:
+        orch = OrchestratorV2()
+        orch.record_trade_result(pnl_usdt)
+        review["state_update"] = "OK"
+    except Exception as e:
+        logger.warning(f"P1-3 F层状态落盘失败: {e}")
+        review["state_update"] = "FAILED"
+
+    review["status"] = "OK"
+    logger.info(
+        f"P1-3 真实平仓回填: {trade_result.get('symbol', '?')} | "
+        f"pnl={pnl_usdt:.4f} USDT | assessment={review.get('assessment')} | "
+        f"lessons={len(review.get('lessons', []))}"
+    )
+    return review
 
 
 # ---- Task 3: OrchestratorV2Node ----
