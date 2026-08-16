@@ -79,10 +79,10 @@ def main():
                 inst_id=inst_id,
                 direction=pos_side,
                 entry_price=avg_px,
-                confidence=0.5,
+                confidence=0.8,
                 hexagram="已存在持仓",
                 market_snapshot={"price": mark_px},
-                strategy_source="external",
+                strategy_source="bcrm",
                 scale_params={
                     "okx_actual_sz": sz,
                     "okx_actual_side": pos_side,

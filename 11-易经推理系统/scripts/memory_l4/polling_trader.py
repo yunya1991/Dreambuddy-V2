@@ -328,13 +328,13 @@ class PollingTrader:
                     inst_id=inst_id,
                     direction=pos["pos_side"],
                     entry_price=float(pos["avg_px"]),
-                    confidence=0.5,
+                    confidence=0.8,
                     hexagram="已存在持仓",
                     market_snapshot={"price": float(pos.get("mark_px", pos["avg_px"]))},
-                    strategy_source="external",
+                    strategy_source="bcrm",
                 )
                 self._log(
-                    f"[持仓同步] 已同步 {coin} {pos['pos_side']} @ {pos['avg_px']} [外部策略]",
+                    f"[持仓同步] 已同步 {coin} {pos['pos_side']} @ {pos['avg_px']} [易经推理持仓·启动同步]",
                     "INFO",
                 )
 

@@ -1198,7 +1198,7 @@ def execute_open_position(client, coin, decision, state):
             _pd_klines_4h = _pd_params.get("klines_4h", [])
             # 获取 1H K 线（PatchTST 推理需要 120 根）
             try:
-                from strategy_params import fetch_klines, to_swap
+                from strategy_params import fetch_klines
                 _pd_klines_1h = fetch_klines(client, to_swap(coin), "1H", 150)
             except Exception:
                 _pd_klines_1h = []
