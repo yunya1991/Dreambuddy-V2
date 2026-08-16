@@ -22,6 +22,15 @@ def isolate_dreamos_state(tmp_path, monkeypatch):
     monkeypatch.setattr(
         v15_executor, "POSITIONS_FILE", tmp_path / "v15_positions.json"
     )
+    # PROP-20260816: 对冲账本 + 动态排名层隔离
+    from dreamos.capabilities.trading import hedge_executor, coin_selector
+
+    monkeypatch.setattr(
+        hedge_executor, "HEDGE_POSITIONS_FILE", tmp_path / "hedge_positions.json"
+    )
+    monkeypatch.setattr(
+        coin_selector, "DYNAMIC_SCORES_FILE", tmp_path / "pool_dynamic_scores.json"
+    )
     # PROP-20260816 P2: 持仓快照隔离(防止测试写入生产 scheduler_data)
     monkeypatch.setattr(
         auto_trader.AutoTrader, "SNAPSHOT_DIR", tmp_path

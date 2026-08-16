@@ -108,6 +108,7 @@ class V15Executor:
         addon_gap_pct: float = ADDON_GAP_PCT,
         min_confidence: float = MIN_CONFIDENCE,
         dry_run: Optional[bool] = None,
+        long_only: bool = False,
     ):
         """Initialize V15 executor with strategy params.
 
@@ -131,6 +132,9 @@ class V15Executor:
         self.base_tp_pct = base_tp_pct
         self.addon_gap_pct = addon_gap_pct
         self.min_confidence = min_confidence
+        # PROP-20260816 模块2: V15 纯多门禁（马丁无固定止损,空头方向风险无限,
+        # 编排路径仅消费多池；默认 False 保持 scan_main 存量路径行为不变）
+        self.long_only = bool(long_only)
         if dry_run is None:
             dry_run = os.environ.get("DREAMOS_TRADING_DRY_RUN", "true").strip().lower() != "false"
         self.dry_run = bool(dry_run)
@@ -217,6 +221,15 @@ class V15Executor:
                 "direction": direction,
                 "status": "REJECTED",
                 "reason": "HOLD signal not executable",
+            }
+
+        # PROP-20260816 模块2: long_only 门禁（SHORT 信号拒单）
+        if self.long_only and direction == "SHORT":
+            return {
+                "symbol": symbol,
+                "direction": direction,
+                "status": "REJECTED",
+                "reason": "v15_long_only",
             }
 
         # Check max concurrent positions

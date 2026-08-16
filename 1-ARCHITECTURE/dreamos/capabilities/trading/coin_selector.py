@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 from pathlib import Path
+import os
 
 
 class CoinSelector:
@@ -85,6 +86,8 @@ class CoinSelector:
                 "short_pool": data.get("short_pool", []),
                 "timestamp": data.get("timestamp", ""),
                 "source": f"persisted:{data.get('source', 'weekly-cron')}",
+                # PROP-20260816: regime 透传(对冲激活门禁用)
+                "regime": data.get("regime", ""),
             }
         except Exception:
             return None
@@ -315,6 +318,99 @@ class CoinSelector:
             json.dumps(data, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+
+# ---- PROP-20260816 模块1: 币池动态排名层 (pool_dynamic_scores) ----
+# 周报 coin_pool.json 是 SSoT 只读; 动态分独立存储于运行时层,
+# 编排选币按合并分排序: merged = 0.7×weekly_score + 0.3×dyn_score
+
+DYNAMIC_SCORES_FILE = (
+    Path(__file__).parent.parent.parent
+    / "cli" / "scheduler_data" / "pool_dynamic_scores.json"
+)
+DYN_COLD_START = 0.5   # 冷启动中性分(退化回周报排名)
+WEEKLY_WEIGHT = 0.7
+DYN_WEIGHT = 0.3
+
+
+def load_dynamic_scores() -> Dict[str, Any]:
+    """加载动态排名层 {symbol: {dyn_score,last_dir,last_conf,cycles_seen,updated_at}}。
+
+    文件不存在/损坏时返回空 dict（调用方按冷启动处理）。
+    """
+    import json
+
+    try:
+        if not DYNAMIC_SCORES_FILE.exists():
+            return {}
+        data = json.loads(DYNAMIC_SCORES_FILE.read_text(encoding="utf-8"))
+        scores = data.get("scores") or {}
+        return scores if isinstance(scores, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_dynamic_scores(scores: Dict[str, Any]) -> None:
+    """原子写入动态排名层 (tmp+rename, 防半截文件)。"""
+    import json
+    from datetime import datetime, timezone
+
+    try:
+        DYNAMIC_SCORES_FILE.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "scores": scores,
+        }
+        tmp = str(DYNAMIC_SCORES_FILE) + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, DYNAMIC_SCORES_FILE)
+    except Exception:
+        pass  # 运行时层写入失败不阻断编排
+
+
+def record_dynamic_score(symbol: str, confidence: float, direction: str = "") -> None:
+    """upsert 回写已评估币的 B层 conf（orchestration_cycle 每周期调用）。"""
+    from datetime import datetime, timezone
+
+    if not symbol:
+        return
+    scores = load_dynamic_scores()
+    entry = scores.get(symbol) or {"dyn_score": DYN_COLD_START, "cycles_seen": 0}
+    conf = float(confidence or 0.0)
+    entry["dyn_score"] = round(conf, 4)
+    entry["last_conf"] = round(conf, 4)
+    if direction:
+        entry["last_dir"] = direction
+    entry["cycles_seen"] = int(entry.get("cycles_seen", 0)) + 1
+    entry["updated_at"] = datetime.now(timezone.utc).isoformat()
+    scores[symbol] = entry
+    save_dynamic_scores(scores)
+
+
+def merge_dynamic_scores(
+    pool: List[Dict[str, Any]],
+    dynamic: Dict[str, Any] | None = None,
+) -> List[Dict[str, Any]]:
+    """按合并分排序币池: merged = 0.7×weekly + 0.3×dyn（冷启动 0.5）。
+
+    返回新列表（降序），每项追加 dyn_score/merged_score 键；
+    不修改入参与 coin_pool.json（周报 SSoT 只读）。
+    """
+    if dynamic is None:
+        dynamic = load_dynamic_scores()
+    merged_list: List[Dict[str, Any]] = []
+    for item in pool or []:
+        sym = (item or {}).get("symbol", "")
+        weekly = float((item or {}).get("score", 0.0) or 0.0)
+        dyn = float((dynamic.get(sym) or {}).get("dyn_score", DYN_COLD_START))
+        merged = WEEKLY_WEIGHT * weekly + DYN_WEIGHT * dyn
+        new_item = dict(item)
+        new_item["dyn_score"] = round(dyn, 4)
+        new_item["merged_score"] = round(merged, 4)
+        merged_list.append(new_item)
+    merged_list.sort(key=lambda x: x["merged_score"], reverse=True)
+    return merged_list
 
 
 # ---- Task 4: CoinSelectorNode ----

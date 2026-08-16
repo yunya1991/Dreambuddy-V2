@@ -2221,6 +2221,10 @@ class AutoTrader:
         if not client:
             return {"error": "无法连接交易所"}
 
+        # PROP-20260816 模块3: 对冲对合并PnL离场巡检（独立账本,先于单币巡检,
+        # 异常不影响主离场流程）
+        hedge_exit_report = self._run_hedge_exit_check(client)
+
         # 获取所有持仓
         positions = []
         try:
@@ -2272,7 +2276,8 @@ class AutoTrader:
 
         if not positions:
             logger.info("离场检查: 无持仓")
-            return {"result": "NO_POSITIONS", "checked": 0, "timestamp": datetime.now().isoformat()}
+            return {"result": "NO_POSITIONS", "checked": 0, "hedge": hedge_exit_report,
+                    "timestamp": datetime.now().isoformat()}
 
         results = []
         exit_count = 0
@@ -2395,8 +2400,40 @@ class AutoTrader:
             "holds": len(results) - exit_count,
             "tpsl_updated": tpsl_updated,
             "details": results,
+            "hedge": hedge_exit_report,
             "timestamp": datetime.now().isoformat(),
         }
+
+    # ── PROP-20260816 模块3: 对冲对离场分支 ──────────────────────────────
+
+    def _run_hedge_exit_check(self, client) -> Dict[str, Any]:
+        """对冲对合并PnL离场巡检（独立账本 hedge_positions.json）。
+
+        有 OPEN 对: 拉标记价 → 合并PnL ≥+4% / ≤-6% 时双腿同平。
+        无 OPEN 对返回 {}；异常只记日志,不影响主离场流程。
+        """
+        try:
+            from dreamos.capabilities.trading.hedge_executor import HedgeExecutor
+
+            hedge = HedgeExecutor(dry_run=self.dry_run)
+            pair = hedge.get_open_pair()
+            if pair is None:
+                return {}
+            mids_fn = getattr(client, "get_all_mids", None)
+            if mids_fn is None:
+                return {"pair_id": pair.pair_id, "actions": [], "skipped": "no_price_source"}
+            mids = mids_fn() or {}
+            prices = {
+                pair.long_symbol: float(mids.get(pair.long_symbol, 0) or 0),
+                pair.short_symbol: float(mids.get(pair.short_symbol, 0) or 0),
+            }
+            actions = hedge.manage_exits(prices)
+            if actions:
+                logger.info(f"对冲对离场巡检: {actions}")
+            return {"pair_id": pair.pair_id, "actions": actions}
+        except Exception as e:
+            logger.warning(f"对冲对离场巡检失败(不影响主流程): {e}")
+            return {"error": str(e)}
 
     # ── PROP-20260816 P2: 交易所侧平仓对账 (修复 F-2) ─────────────────────────────
 
