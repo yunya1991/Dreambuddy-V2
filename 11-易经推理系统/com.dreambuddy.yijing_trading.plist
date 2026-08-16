@@ -7,21 +7,33 @@
     <key>ProgramArguments</key>
     <array>
         <string>/opt/anaconda3/bin/python3</string>
+        <string>-u</string>
         <string>-m</string>
         <string>scripts.memory_l4.polling_trader</string>
         <string>--interval</string>
-        <string>3600</string>
+        <string>300</string>
         <string>--coins</string>
-        <string>BTC,ETH,SOL,BNB,XRP,DOGE,ADA,AVAX,LINK,LTC,DOT,NEAR,ATOM,UNI,APT,FIL,ARB,OP,INJ,SUI,SEI,TIA,AAVE,LDO,STX,IMX,GRT,SPX,XAU</string>
+        <string>UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB,LINK,SNDK,SPCX</string>
         <string>--confidence</string>
-        <string>0.55</string>
+        <string>0.7955</string>
         <string>--max-positions</string>
-        <string>10</string>
+        <string>3</string>
         <string>--position-pct</string>
-        <string>0.10</string>
+        <string>0.20</string>
     </array>
     <key>WorkingDirectory</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HTTPS_PROXY</key>
+        <string>http://127.0.0.1:7890</string>
+        <key>HTTP_PROXY</key>
+        <string>http://127.0.0.1:7890</string>
+        <key>FEISHU_APP_ID</key>
+        <string>cli_aa9442bde4b89be9</string>
+        <key>FEISHU_APP_SECRET</key>
+        <string>dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70</string>
+    </dict>
     <key>StandardOutPath</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/logs/trading_stdout.log</string>
     <key>StandardErrorPath</key>

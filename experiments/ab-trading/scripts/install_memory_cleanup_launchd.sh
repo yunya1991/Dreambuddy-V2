@@ -1,6 +1,6 @@
 #!/bin/bash
 # 记忆模块清理 — launchd 安装脚本
-# 每周日凌晨 3:00 触发，日志输出到 logs/memory_cleanup.log（业务）和 logs/memory_cleanup_launchd.log（stdout/stderr）
+# 每日凌晨 2:10 触发（策略更新之后），日志输出到 logs/memory_cleanup.log（业务）和 logs/memory_cleanup_launchd.log（stdout/stderr）
 # 用法: bash scripts/install_memory_cleanup_launchd.sh [install|remove|status|kickstart]
 set -euo pipefail
 
@@ -54,7 +54,7 @@ case "$ACTION" in
     echo "=================================================="
     echo
     echo "服务标签:   $LABEL"
-    echo "触发时间:   每周日 03:00 (Weekday=0, StartCalendarInterval)"
+    echo "触发时间:   每日 02:10 (StartCalendarInterval，策略更新后执行)"
     echo "执行命令:   cd $PROJECT_DIR && python3 -c 'from core.memory.memory_manager import MemoryManager; m = MemoryManager(); m.clean_expired_memories()'"
     echo "业务日志:   $PROJECT_DIR/logs/memory_cleanup.log"
     echo "stdout日志: $PROJECT_DIR/logs/memory_cleanup_launchd.log"

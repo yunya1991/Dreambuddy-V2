@@ -117,13 +117,18 @@ class PollingTrader:
             "AMZN",
             "OKB",
             "BNB",
+            "LINK",
+            "SNDK",
+            "SPCX",
         ]
         # P4 修复：币种规范化映射
         # 实际 OKX 合约：
         #   XAU-USDT-SWAP  (黄金现货杠杆代币, ticker code=0, 存在)
         #   XAUT-USDT-SWAP (Tether黄金代币,          ticker code=51001, 不存在/已下线)
-        # 所以如果用户/旧启动命令写了 XAUT，必须映射到 XAU，避免 K线拉取失败。
-        _NORMALIZE_COIN = {"XAUT": "XAU"}
+        #   XSNDK → SNDK-USDT-SWAP (闪迪, OKX用SNDK而非XSNDK)
+        #   XSPCX → SPCX-USDT-SWAP  (SpaceX, OKX用SPCX而非XSPCX)
+        # 所以如果用户/旧启动命令写了 XAUT/XSNDK/XSPCX，必须映射，避免 K线拉取失败。
+        _NORMALIZE_COIN = {"XAUT": "XAU", "XSNDK": "SNDK", "XSPCX": "SPCX"}
 
         def _norm(c):
             cu = str(c).strip().upper()
@@ -1242,7 +1247,7 @@ class PollingTrader:
         inst_id = f"{coin}-USDT-SWAP"
         pos_result = self.okx_client.get_positions(inst_id)
         if not pos_result.get("ok"):
-            return {"has_position": False}
+            return {"has_position": False, "query_failed": True}
         positions = pos_result.get("positions", [])
         if not positions:
             return {"has_position": False}
@@ -1665,7 +1670,8 @@ class PollingTrader:
         except Exception as e:
             self._log(f"[L4] Pipeline执行失败: {e}", "WARN")
 
-    def _execute_trade(self, inference: dict, confidence_threshold: float = None):
+    def _execute_trade(self, inference: dict, confidence_threshold: float = None,
+                       all_inferences: dict = None):
         """根据推理结果执行交易决策（P2 完整版）"""
         coin = inference["coin"]
         inst_id = inference["inst_id"]
@@ -1881,18 +1887,100 @@ class PollingTrader:
                 ]
 
             # ── v3.1: 29h持仓超时全局门控（回测最佳持仓时间）──
-            # 持仓超过29h强制降级classic，避免对老仓位反复调整SL/TP陷入无限循环
-            # 此门控优先级最高（在yijing评估之前），确保超时仓位直接进入classic处理路径
-            # 经典离场仅在持仓>29h且易经离场不工作时启用（用户需求）
+            # 持仓超过29h后：
+            #   盈利 → 信号排名对比：有更强信号则止盈换仓，否则继续持有追求更大利润
+            #   亏损 → 跳过yijing评估，直接走classic备用离场
             position_timeout_sec = self.yijing_exit_system.config.veto_max_hold_sec  # 104400 = 29h
             position_timed_out = position_age_sec > position_timeout_sec
             if position_timed_out:
-                self._log(
-                    f"[{coin}] 持仓超时(>29h)启用经典备用离场 | "
-                    f"持仓={position_age_sec/3600:.1f}h > {position_timeout_sec/3600:.0f}h阈值 | "
-                    f"跳过yijing评估，直接走classic备用离场",
-                    "WARN",
-                )
+                if upl > 0 and all_inferences:
+                    # ── 超时止盈：信号排名对比 ──
+                    # 持仓盈利且超时，重新排名当前币种 vs 其他候选币种信号
+                    # 有更强信号 → 止盈换仓（Phase 3 自动开新仓）
+                    # 无更强信号 → 继续持有，追求更大利润
+                    _base_threshold = confidence_threshold or self.confidence_threshold
+                    held_conf = inference.get("confidence", 0)
+                    held_dir = inference.get("direction", "")
+                    held_score = held_conf * (0.95 if held_dir == "DOWN" else 1.0)
+
+                    best_candidate = None
+                    best_score = held_score  # 必须严格大于当前持仓才替换
+                    _side_map = {"UP": "long", "DOWN": "short"}
+
+                    for other_coin, other_inf in all_inferences.items():
+                        if other_coin == coin:
+                            continue
+                        other_inst = f"{other_coin}-USDT-SWAP"
+                        # 本地检查持仓（无API调用）
+                        if self.position_tracker.has_open_position(other_inst):
+                            continue
+                        other_dir = other_inf.get("direction", "")
+                        if other_dir not in ("UP", "DOWN"):
+                            continue
+                        if other_inf.get("fail_closed", True):
+                            continue
+                        other_conf = other_inf.get("confidence", 0)
+                        # 阈值筛选（做空用更高阈值）
+                        other_threshold = _base_threshold
+                        if other_dir == "DOWN":
+                            other_threshold = max(other_threshold, self.short_confidence_threshold)
+                        if other_conf < other_threshold:
+                            continue
+                        # 冷静期检查
+                        in_cd, _ = self.position_tracker.is_in_cooldown(
+                            other_inst, _side_map.get(other_dir), self.COOLDOWN_SEC
+                        )
+                        if in_cd:
+                            continue
+                        other_score = other_conf * (0.95 if other_dir == "DOWN" else 1.0)
+                        if other_score > best_score:
+                            best_candidate = (other_coin, other_dir, other_conf, other_score)
+                            best_score = other_score
+
+                    if best_candidate:
+                        bc_coin, bc_dir, bc_conf, bc_score = best_candidate
+                        self._log(
+                            f"[{coin}] 超时止盈换仓(>29h) | 盈利={upl:.2f}({upl_ratio:.2%}) | "
+                            f"当前信号={held_score:.2f} < 候选{bc_coin}={bc_score:.2f} "
+                            f"(conf={bc_conf:.2f} dir={bc_dir}) | 止盈后Phase3自动开新仓",
+                            "INFO",
+                        )
+                        exit_price = pos_info.get("mark_px", inference["price"])
+                        if pos_side == "long":
+                            r = self.okx_client.market_close_long(
+                                inst_id, reason=f"超时止盈换仓:更强信号{bc_coin}"
+                            )
+                        else:
+                            r = self.okx_client.market_close_short(
+                                inst_id, reason=f"超时止盈换仓:更强信号{bc_coin}"
+                            )
+                        if r.get("ok") or r.get("dry_run"):
+                            self._handle_close_position(
+                                inst_id=inst_id,
+                                coin=coin,
+                                pos_side=pos_side,
+                                exit_price=exit_price,
+                                exit_reason="timeout_profit_switch",
+                                pnl=upl,
+                                pnl_pct=upl_ratio,
+                            )
+                        return
+                    else:
+                        # 没有更强信号 → 继续持有
+                        self._log(
+                            f"[{coin}] 超时继续持有(>29h) | 盈利={upl:.2f}({upl_ratio:.2%}) | "
+                            f"当前信号={held_score:.2f}仍为最强，继续持有追求更大利润",
+                            "INFO",
+                        )
+                        return
+                else:
+                    # 持仓亏损 → 走classic备用离场
+                    self._log(
+                        f"[{coin}] 持仓超时(>29h)启用经典备用离场 | "
+                        f"持仓={position_age_sec/3600:.1f}h > {position_timeout_sec/3600:.0f}h阈值 | "
+                        f"亏损={upl:.2f} | 跳过yijing评估，直接走classic备用离场",
+                        "WARN",
+                    )
 
             # ── 主离场层：易经推理专属离场（基于卦象风险-价值评估）──
             # 架构反转：yijing 作为主决策，classic 降为备用（仅在 yijing 不可用或信号中性时调用）
@@ -3314,7 +3402,8 @@ class PollingTrader:
                 pos_info = self._check_positions(coin)
                 if pos_info.get("has_position"):
                     # 有持仓：执行持仓管理（离场评估、信号反转等）
-                    self._execute_trade(inference, confidence_threshold=effective_threshold)
+                    self._execute_trade(inference, confidence_threshold=effective_threshold,
+                                        all_inferences=all_inferences)
             except Exception as e:
                 cycle_success = False
                 self._log(f"[{coin}] 持仓管理异常: {e}", "ERROR")
@@ -3332,8 +3421,11 @@ class PollingTrader:
 
                 # 运行时残留清理：本地有记录但 OKX 已无持仓（OKX端 SL/TP 触发）
                 # 清理残留并记录平仓时间，用于统一冷静期判断
+                # 注意：查询失败（限流）时不清理，避免误删本地持仓记录
                 inst_id = f"{coin}-USDT-SWAP"
-                if self.position_tracker.has_open_position(inst_id):
+                if pos_info.get("query_failed"):
+                    self._log(f"[{coin}] OKX 持仓查询失败（可能限流），跳过残留清理", "WARN")
+                elif self.position_tracker.has_open_position(inst_id):
                     stale_rec = self.position_tracker.get_open_position(inst_id)
                     stale_side = stale_rec.direction if stale_rec else None
                     self.position_tracker.close_position(
@@ -3488,11 +3580,84 @@ class PollingTrader:
         )
 
         def _shutdown(signum, frame):
-            self._log("收到退出信号，正在停止...", "WARN")
+            _sig_names = {
+                getattr(signal_module, k, 0): k
+                for k in ("SIGINT", "SIGTERM", "SIGHUP", "SIGPIPE",
+                          "SIGXCPU", "SIGXFSZ", "SIGUSR1", "SIGUSR2")
+            }
+            _sn = _sig_names.get(signum, f"SIG#{signum}")
+            self._log(f"收到退出信号 {_sn}，正在停止...", "WARN")
             self.running = False
 
         signal_module.signal(signal_module.SIGINT, _shutdown)
         signal_module.signal(signal_module.SIGTERM, _shutdown)
+        # macOS setsid 后仍然可能收到的信号，全部统一捕获写日志，避免静默退出
+        for _sn_name in ("SIGHUP", "SIGPIPE", "SIGXCPU", "SIGXFSZ", "SIGUSR1", "SIGUSR2"):
+            try:
+                signal_module.signal(getattr(signal_module, _sn_name), _shutdown)
+            except (AttributeError, OSError, ValueError):
+                pass
+
+        # ══════════════════════════════════════════════════════════════
+        # 内置 yijing_monitor 调度线程（每 6 小时触发一次健康检查 + 自进化）
+        # 替代 launchd 定时调度，避免 macOS 沙箱权限问题
+        # ══════════════════════════════════════════════════════════════
+        MONITOR_INTERVAL_SEC = 6 * 3600  # 6 小时
+
+        def _monitor_worker():
+            first_run = True
+            while self.running:
+                try:
+                    if first_run:
+                        # 首次延迟 1 小时启动：避免和首轮 18 币种 BCRM2 训练/推理重叠导致内存压力
+                        wait_sec = 60 * 60
+                        desc = "首次延迟 1h"
+                    else:
+                        # 之后每 6 小时一次
+                        wait_sec = MONITOR_INTERVAL_SEC
+                        desc = "定期"
+                    # 以 1s 为粒度响应 shutdown
+                    for _ in range(wait_sec):
+                        if not self.running:
+                            return
+                        time.sleep(1)
+                    first_run = False
+                    self._log(f"[Monitor] {desc}触发监控周期（健康检查 + 自进化）", "INFO")
+                    # 延迟导入，避免模块加载冲突
+                    from scripts.memory_l4 import yijing_monitor
+                    try:
+                        healthy, status, detail = yijing_monitor.check_yijing_health()
+                        self._log(
+                            f"[Monitor] 健康: {'✅ 正常' if healthy else '⚠️ 异常'} | {status}",
+                            "INFO" if healthy else "WARN",
+                        )
+                    except Exception as _e:
+                        self._log(f"[Monitor] 健康检查异常: {_e}", "WARN")
+                    try:
+                        evo, perf, evolved = yijing_monitor.run_evolution()
+                        self._log(
+                            f"[Monitor] 进化完成 | 累计次数={evo.get('evolution_count', 0)} "
+                            f"| 胜率={perf.get('win_rate', 0):.0%} | 总盈亏={perf.get('total_pnl', 0):.2f}USDT",
+                            "INFO",
+                        )
+                    except Exception as _e:
+                        self._log(f"[Monitor] 自进化异常: {_e}", "ERROR")
+                        if self.guardian:
+                            self.guardian.record_error(_e, context="monitor_evolution")
+                except Exception as _e:
+                    # 线程级别兜底：不能让监控线程挂了
+                    self._log(f"[Monitor] 调度线程异常: {_e}", "ERROR")
+                    for _ in range(300):
+                        if not self.running:
+                            return
+                        time.sleep(1)
+
+        import threading as _threading
+        monitor_thread = _threading.Thread(
+            target=_monitor_worker, name="yijing_monitor", daemon=True
+        )
+        monitor_thread.start()
+        self._log(f"[Monitor] 内置调度线程已启动 | 周期={MONITOR_INTERVAL_SEC//3600}h", "INFO")
 
         while self.running:
             try:

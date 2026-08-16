@@ -235,6 +235,19 @@ def run_polling_trader():
     _log("启动易经推理轮询交易器")
     _log("=" * 60)
 
+    # 并发保护：若已有 polling_trader 实例运行则跳过，避免多实例共享同一 OKX 账户
+    try:
+        existing = subprocess.run(
+            ["pgrep", "-f", "scripts.memory_l4.polling_trader"],
+            capture_output=True, text=True, timeout=5
+        )
+        existing_pids = [p for p in existing.stdout.strip().split("\n") if p and int(p) != os.getpid()]
+        if existing_pids:
+            _log(f"跳过启动：检测到已有 polling_trader 实例运行 (PID={','.join(existing_pids)})")
+            return True
+    except Exception as _e:
+        _log(f"并发检查失败（忽略，继续启动）: {_e}")
+
     script = BASE_DIR / "scripts" / "memory_l4" / "polling_trader.py"
     if not script.exists():
         _log(f"错误: 脚本不存在 {script}")
@@ -248,10 +261,10 @@ def run_polling_trader():
             "POLLING_COINS", "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB"
         )
         interval = os.environ.get("POLLING_INTERVAL", "300")
-        confidence = os.environ.get("CONFIDENCE_THRESHOLD", "0.70")
+        confidence = os.environ.get("CONFIDENCE_THRESHOLD", "0.7955")
         max_positions = os.environ.get("MAX_POSITIONS", "3")
-        position_pct = os.environ.get("DEFAULT_POSITION_PCT", "0.10")
-        initial_equity = os.environ.get("INITIAL_EQUITY", "200")
+        position_pct = os.environ.get("DEFAULT_POSITION_PCT", "0.20")
+        initial_equity = os.environ.get("INITIAL_EQUITY", "200.0")
 
         # 日志重定向到 BASE_DIR/logs
         log_dir = BASE_DIR / "logs"

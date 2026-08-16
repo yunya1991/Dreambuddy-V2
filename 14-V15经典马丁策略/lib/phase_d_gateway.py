@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import math
 import os
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 
@@ -106,6 +108,12 @@ class PhaseDGateway:
     _mock_bilstm: Optional[float] = field(default=None, repr=False)  # 仅 _for_testing_use_mock_predictor 用
     _mock_patchtst: Optional[float] = field(default=None, repr=False)
 
+    # ---- 真实模型懒加载缓存（首次推理时加载，之后复用） ----
+    _bilstm_model: Any = field(default=None, repr=False)
+    _bilstm_meta: Optional[Dict] = field(default=None, repr=False)
+    _patchtst_model: Any = field(default=None, repr=False)
+    _patchtst_meta: Optional[Dict] = field(default=None, repr=False)
+
     # ================================================================
     # TDD 工厂：用 mock 预测值（不加载真实模型），便于单测
     # ================================================================
@@ -122,49 +130,222 @@ class PhaseDGateway:
         )
 
     # ================================================================
-    # 预测函数：真实加载模型 & 推理；或走 mock（TDD 场景）
-    # 此处先以 mock + 随机兜底实现，真实模型权重在训练脚本交付后注入
+    # 预测函数：真实模型优先 → mock → heuristic ctx → 中性兜底
     # ================================================================
     def _predict_patchtst_drawdown(self, ctx: Dict[str, Any]) -> float:
         """PatchTST: 预测未来 24 根 1H K 线 max drawdown (负值, -1=-100%)"""
         if not self.enabled:
             return -0.0
-        # MVP 桥接：外部 heuristic 预估值直接通过 ctx 注入（正数→负数转换）
-        if ctx and "p_dd" in ctx:
-            _v = float(ctx["p_dd"])
-            return -abs(_v) if _v > 0 else _v  # 确保负值（drawdown 约定）
-        if self._mock_patchtst is not None:
-            return float(self._mock_patchtst)
-        # 真实模型加载兜底：权重不存在时返回 0（中性=对基线无影响）
+        # 1. 真实模型推理（权重存在时优先）
         if self.patchtst_model_path and os.path.isfile(self.patchtst_model_path):
             try:
                 return self._run_real_patchtst(ctx)
             except Exception:
-                return -0.0
+                pass  # 推理失败 → 降级
+        # 2. Mock（TDD 场景）
+        if self._mock_patchtst is not None:
+            return float(self._mock_patchtst)
+        # 3. Heuristic ctx 预估值（MVP 桥接）
+        if ctx and "p_dd" in ctx:
+            _v = float(ctx["p_dd"])
+            return -abs(_v) if _v > 0 else _v
         return -0.0
 
     def _predict_bilstm_p_bust(self, ctx: Dict[str, Any]) -> float:
         """BiLSTM-Attention: 爆仓概率 P([0,1])"""
         if not self.enabled:
             return 0.0
-        # MVP 桥接：外部 heuristic 预估值直接通过 ctx 注入
-        if ctx and "p_bust" in ctx:
-            return float(ctx["p_bust"])
-        if self._mock_bilstm is not None:
-            return float(self._mock_bilstm)
+        # 1. 真实模型推理（权重存在时优先）
         if self.bilstm_model_path and os.path.isfile(self.bilstm_model_path):
             try:
                 return self._run_real_bilstm(ctx)
             except Exception:
-                return 0.0
+                pass  # 推理失败 → 降级
+        # 2. Mock（TDD 场景）
+        if self._mock_bilstm is not None:
+            return float(self._mock_bilstm)
+        # 3. Heuristic ctx 预估值（MVP 桥接）
+        if ctx and "p_bust" in ctx:
+            return float(ctx["p_bust"])
         return 0.0
 
-    def _run_real_patchtst(self, ctx: Dict[str, Any]) -> float:  # pragma: no cover - 训练完成后接入
-        """Phase D 训练脚本交付权重后替换实现"""
-        raise NotImplementedError("PatchTST 实盘推理将在训练完成后注入")
+    # ================================================================
+    # 真实模型推理：懒加载 + 特征工程 + 前向传播
+    # ================================================================
 
-    def _run_real_bilstm(self, ctx: Dict[str, Any]) -> float:  # pragma: no cover - 训练完成后接入
-        raise NotImplementedError("BiLSTM-Attention 实盘推理将在训练完成后注入")
+    @staticmethod
+    def _parse_klines(raw_klines: list, key_map: dict = None) -> list:
+        """将 OKX/Hyperliquid klines 统一为 [{o,h,l,c,v}, ...] 列表"""
+        if not raw_klines:
+            return []
+        default_map = {"o": "o", "h": "h", "l": "l", "c": "c", "v": "vol"}
+        km = key_map or default_map
+        out = []
+        for k in raw_klines:
+            if isinstance(k, dict):
+                o = float(k.get(km["o"], k.get("o", 0)))
+                h = float(k.get(km["h"], k.get("h", 0)))
+                lo = float(k.get(km["l"], k.get("l", 0)))
+                c = float(k.get(km["c"], k.get("c", 0)))
+                v = float(k.get(km["v"], k.get("v", k.get("vol", 0))))
+                out.append({"o": o, "h": h, "l": lo, "c": c, "v": v})
+            elif isinstance(k, (list, tuple)) and len(k) >= 5:
+                out.append({"o": float(k[1]), "h": float(k[2]), "l": float(k[3]),
+                            "c": float(k[4]), "v": float(k[5]) if len(k) > 5 else 0.0})
+        return out
+
+    @staticmethod
+    def _ohlcv_to_array(candles: list, n_bars: int) -> "Any":
+        """从 candle list 取最后 n_bars 根，转为 (1, n_bars, 5) numpy float32"""
+        import numpy as np
+        if len(candles) < n_bars:
+            pad = [candles[0]] * (n_bars - len(candles)) if candles else \
+                [{"o": 1.0, "h": 1.0, "l": 1.0, "c": 1.0, "v": 0.0}] * n_bars
+            candles = pad + candles
+        arr = np.array(
+            [[b["o"], b["h"], b["l"], b["c"], b["v"]] for b in candles[-n_bars:]],
+            dtype=np.float32,
+        )
+        return arr[None, :, :]  # (1, n_bars, 5)
+
+    @staticmethod
+    def _compute_atr(candles_4h: list, period: int = 14) -> float:
+        """从 4H candle list 计算 ATR"""
+        if len(candles_4h) < period + 1:
+            return abs(candles_4h[-1]["h"] - candles_4h[-1]["l"]) if candles_4h else 0.0
+        trs = []
+        for i in range(len(candles_4h) - period, len(candles_4h)):
+            h, l, pc = candles_4h[i]["h"], candles_4h[i]["l"], candles_4h[i - 1]["c"]
+            tr = max(h - l, abs(h - pc), abs(l - pc))
+            trs.append(tr)
+        return sum(trs) / len(trs)
+
+    def _build_bilstm_scalar(self, ctx: Dict[str, Any], candles_4h: list) -> "Any":
+        """构造 BiLSTM 7 维标量特征（对齐 phase_d_dataset_generator.py）"""
+        import numpy as np
+
+        # 0: level / 4.0
+        level = float(ctx.get("level", 0))
+        # 1: 未实现盈亏比
+        pnl_pct = float(ctx.get("pnl_pct", 0.0))
+        # 2: atr_z / 3.0 — 对最近 30 根 4H 滚动 ATR 求 z-score
+        atr_now = self._compute_atr(candles_4h, 14)
+        atrs_rolling = []
+        for w in range(max(0, len(candles_4h) - 60), len(candles_4h)):
+            seg = candles_4h[max(0, w - 15): w + 1]
+            if len(seg) >= 14:
+                atrs_rolling.append(self._compute_atr(seg, 14))
+        if atrs_rolling:
+            atr_mean = sum(atrs_rolling) / len(atrs_rolling)
+            atr_std = float(np.std(atrs_rolling))
+        else:
+            atr_mean, atr_std = atr_now, 1.0
+        atr_z = (atr_now - atr_mean) / max(1e-6, atr_std)
+        atr_z = max(-3.0, min(3.0, atr_z))
+        # 3: vol_z / 2.5 — 用 4H 收盘价对数收益近似
+        closes = [b["c"] for b in candles_4h[-60:]] if len(candles_4h) >= 10 else [b["c"] for b in candles_4h]
+        rets = [math.log(closes[i] / closes[i - 1]) for i in range(1, len(closes)) if closes[i - 1] > 0]
+        vol_30 = float(np.std(rets)) * math.sqrt(365 * 6) if len(rets) >= 10 else 0.6  # 4H → 年化
+        vol_z = (vol_30 - 0.6) / max(0.6 * 0.3, 1e-4)
+        vol_z = min(2.5, max(-2.5, vol_z))
+        # 4-6: TimingGate 三维评分（ctx 传入或默认占位）
+        structure = float(ctx.get("timing_structure", 0.70))
+        retrace = float(ctx.get("timing_retrace", 0.65))
+        extension = float(ctx.get("timing_extension", 0.75))
+
+        return np.array(
+            [level / 4.0, pnl_pct, atr_z / 3.0, vol_z / 2.5, structure, retrace, extension],
+            dtype=np.float32,
+        )[None, :]  # (1, 7)
+
+    def _load_bilstm_model(self):
+        """懒加载 BiLSTM 模型权重"""
+        import torch
+        ai_trainers_path = str(Path(__file__).resolve().parent.parent / "ai_trainers")
+        if ai_trainers_path not in sys.path:
+            sys.path.insert(0, ai_trainers_path)
+        from phase_d_models import BiLSTMAttentionBust
+
+        payload = torch.load(self.bilstm_model_path, map_location="cpu", weights_only=False)
+        meta = payload.get("meta", {})
+        model = BiLSTMAttentionBust(
+            ohlcv_len=meta.get("ohlcv_len", 60),
+            n_channels=meta.get("n_channels", 5),
+            n_scalar=meta.get("n_scalar", 7),
+            hidden=meta.get("hidden", 48),
+            n_layers=meta.get("n_layers", 2),
+        )
+        model.load_state_dict(payload["state_dict"])
+        model.eval()
+        self._bilstm_model = model
+        self._bilstm_meta = meta
+
+    def _load_patchtst_model(self):
+        """懒加载 PatchTST 模型权重"""
+        import torch
+        ai_trainers_path = str(Path(__file__).resolve().parent.parent / "ai_trainers")
+        if ai_trainers_path not in sys.path:
+            sys.path.insert(0, ai_trainers_path)
+        from phase_d_models import PatchTSTForDrawdown
+
+        payload = torch.load(self.patchtst_model_path, map_location="cpu", weights_only=False)
+        meta = payload.get("meta", {})
+        model = PatchTSTForDrawdown(
+            c_in=meta.get("c_in", 5),
+            seq_len=meta.get("seq_len", 120),
+            patch_len=meta.get("patch_len", 12),
+            stride=meta.get("stride", 6),
+            d_model=meta.get("d_model", 32),
+            n_layers=meta.get("n_layers", 2),
+            n_heads=meta.get("n_heads", 4),
+        )
+        model.load_state_dict(payload["state_dict"])
+        model.eval()
+        self._patchtst_model = model
+        self._patchtst_meta = meta
+
+    def _run_real_bilstm(self, ctx: Dict[str, Any]) -> float:
+        """BiLSTM-Attention 实盘推理：加载权重 → 构造输入 → 前向传播 → P_bust"""
+        import torch
+
+        if self._bilstm_model is None:
+            self._load_bilstm_model()
+        if self._bilstm_model is None:
+            raise ValueError("BiLSTM 模型加载失败")
+
+        candles_4h = self._parse_klines(ctx.get("klines_4h", []))
+        if len(candles_4h) < 10:
+            raise ValueError("klines_4h 不足，无法推理 BiLSTM")
+
+        ohlcv = self._ohlcv_to_array(candles_4h, 60)  # (1, 60, 5)
+        scalar = self._build_bilstm_scalar(ctx, candles_4h)  # (1, 7)
+
+        with torch.no_grad():
+            p = self._bilstm_model(
+                torch.from_numpy(ohlcv),
+                torch.from_numpy(scalar),
+            )
+        return float(max(0.0, min(1.0, p.item())))
+
+    def _run_real_patchtst(self, ctx: Dict[str, Any]) -> float:
+        """PatchTST 实盘推理：加载权重 → 构造输入 → 前向传播 → 回撤预测值（负值）"""
+        import torch
+
+        if self._patchtst_model is None:
+            self._load_patchtst_model()
+        if self._patchtst_model is None:
+            raise ValueError("PatchTST 模型加载失败")
+
+        candles_1h = self._parse_klines(ctx.get("klines_1h", []))
+        if len(candles_1h) < 10:
+            raise ValueError("klines_1h 不足，无法推理 PatchTST")
+
+        x = self._ohlcv_to_array(candles_1h, 120)  # (1, 120, 5)
+
+        with torch.no_grad():
+            p = self._patchtst_model(torch.from_numpy(x))
+        val = float(p.item())
+        return max(-1.0, min(0.0, val))  # clamp 到 [-1, 0]
 
     # ================================================================
     # G-D1 · Skip Open（含 §3.3 最高优先级铁律：baseline_wait 必须 Skip）
@@ -176,10 +357,16 @@ class PhaseDGateway:
             return False
         p_dd = self._predict_patchtst_drawdown(ctx)
         p_bust = self._predict_bilstm_p_bust(ctx)
-        if p_dd <= self.g_d1_drawdown_threshold:
+        try:
+            p_dd_f = float(p_dd)
+            p_bust_f = float(p_bust)
+        except (TypeError, ValueError):
+            # 异常类型降级：不开闸门（安全）
+            return False
+        if p_dd_f <= self.g_d1_drawdown_threshold:
             self.last_gate_code = "G-D1-SKIP-DRAWDOWN"
             return True
-        if p_bust >= self.g_d1_bust_threshold:
+        if p_bust_f >= self.g_d1_bust_threshold:
             self.last_gate_code = "G-D1-SKIP-BUST"
             return True
         return False
@@ -223,14 +410,26 @@ class PhaseDGateway:
             return int(baseline_max_addons), dict(addon_budgets)
 
         _ctx = {"coin": coin, "pos": pos}
-        # 透传外部 heuristic 预估（MVP 桥接）
+        # 透传外部 heuristic 预估 + klines（MVP 桥接 + 真实模型推理）
         if isinstance(pos, dict):
             if "p_bust" in pos:
                 _ctx["p_bust"] = pos["p_bust"]
             if "p_dd" in pos:
                 _ctx["p_dd"] = pos["p_dd"]
+            if "klines_4h" in pos:
+                _ctx["klines_4h"] = pos["klines_4h"]
+            if "klines_1h" in pos:
+                _ctx["klines_1h"] = pos["klines_1h"]
+            if "level" in pos:
+                _ctx["level"] = pos["level"]
+            if "pnl_pct" in pos:
+                _ctx["pnl_pct"] = pos["pnl_pct"]
         p_bust = self._predict_bilstm_p_bust(_ctx)
-        if p_bust >= self.g_d2_bust_threshold:
+        try:
+            p_bust_f = float(p_bust)
+        except (TypeError, ValueError):
+            p_bust_f = 0.0
+        if p_bust_f >= self.g_d2_bust_threshold:
             eff = clamp_max_addons_delta(-1, int(baseline_max_addons))
             trimmed = dict(addon_budgets)
             # 丢弃最高编号 addon：addon4 > addon3 > ...
@@ -275,8 +474,12 @@ class PhaseDGateway:
         _ctx = {"symbol": symbol, "regime": regime}
         if ctx:
             _ctx.update(ctx)
-        p_dd = self._predict_patchtst_drawdown(_ctx)
-        p_bust = self._predict_bilstm_p_bust(_ctx)
+        try:
+            p_dd = float(self._predict_patchtst_drawdown(_ctx))
+            p_bust = float(self._predict_bilstm_p_bust(_ctx))
+        except Exception:
+            # 任何异常（模型推理/类型转换）都降级不放松
+            return orig_score, orig_power
 
         if not (p_dd > self.g_d3_drawdown_threshold and p_bust < self.g_d3_bust_threshold):
             return orig_score, orig_power

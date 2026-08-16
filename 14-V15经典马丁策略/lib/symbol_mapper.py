@@ -225,6 +225,8 @@ class SymbolMapper:
             ("GOOGL",    "Alphabet (Google)",  0.01, 0.01, 1.0, "2004-08-19"),   # 谷歌
             ("NVDA",     "NVIDIA",             0.01, 0.01, 1.0, "1999-01-22"),   # 英伟达
             ("AMZN",     "Amazon",             0.01, 0.01, 1.0, "1997-05-15"),   # 亚马逊
+            ("SNDK",     "SanDisk",            0.01, 0.01, 1.0, "1995-03-08"),   # 闪迪
+            ("SPCX",     "SpaceX",             0.01, 0.01, 1.0, "2024-01-01"),   # SpaceX (OKX永续)
         ]
         for sym, name, lot, tick, ctval, ld in us_stocks:
             self.register(AssetInfo(

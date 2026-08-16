@@ -13,7 +13,9 @@ from __future__ import annotations
 import json
 import math
 import os
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 # ── §3.3 动作空间默认边界（LOWER / UPPER 相对倍率） ──
@@ -86,8 +88,97 @@ class PhaseEGateway:
                 pass  # 加载失败 → 降级为中性动作
 
     def _load_ppo_model(self):
-        """加载 PPO-LSTM 权重（MVP 阶段留空，训练完成后注入）。"""
-        pass  # pragma: no cover
+        """加载 PPO-LSTM 权重，构造 PPOLSTMActorCritic 模型。"""
+        import torch
+
+        ai_trainers_path = str(Path(__file__).resolve().parent.parent / "ai_trainers")
+        if ai_trainers_path not in sys.path:
+            sys.path.insert(0, ai_trainers_path)
+        from phase_e_models import PPOLSTMActorCritic
+
+        payload = torch.load(self.ppo_model_path, map_location="cpu", weights_only=False)
+        config = payload.get("config", {})
+        model = PPOLSTMActorCritic(
+            state_dim=34,
+            hidden_dim=config.get("hidden_dim", 128),
+            num_layers=config.get("num_layers", 1),
+        )
+        model.load_state_dict(payload["model_state_dict"])
+        model.eval()
+        self._ppo_model = model
+
+    @staticmethod
+    def _build_state_vector(s_state: Dict[str, Any]) -> "Any":
+        """将 s_state dict 转为 34 维 numpy float32 向量（对齐 v15_gym_env.STATE_KEYS）。
+
+        训练环境 _get_obs() 的 34 维定义：
+          TimingGate(4) + DirectionGate(5: regime_3hot + long/short) +
+          RegimeManager(5: zone_5hot) + 持仓(9: level_5hot + 4标量) +
+          波动(8) + 历史表现(3)
+        """
+        import numpy as np
+
+        # TimingGate (4)
+        timing_score = float(s_state.get("timing_score", 0.5))
+        structure = float(s_state.get("structure_match_score", 0.5))
+        retrace = float(s_state.get("retrace_quality_score", 0.5))
+        extension = float(s_state.get("extension_chase_score", 0.5))
+
+        # DirectionGate (5): regime 3hot + long_enabled + short_enabled
+        regime = str(s_state.get("regime", "ACCUM")).upper()
+        if regime == "ACCUM":
+            r3 = [1.0, 0.0, 0.0]
+        elif regime == "UP":
+            r3 = [0.0, 1.0, 0.0]
+        elif regime == "DOWN":
+            r3 = [0.0, 0.0, 1.0]
+        else:
+            r3 = [0.0, 0.0, 0.0]
+        long_en = 1.0 if s_state.get("long_enabled", True) else 0.0
+        short_en = 1.0 if s_state.get("short_enabled", False) else 0.0
+
+        # RegimeManager (5): zone 5hot
+        zone = int(s_state.get("regime_zone", 2))
+        z5 = [0.0] * 5
+        if 0 <= zone < 5:
+            z5[zone] = 1.0
+
+        # 持仓 (9): level 5hot + 4 标量
+        level = int(s_state.get("position_level", 0))
+        l5 = [0.0] * 5
+        if 0 <= level < 5:
+            l5[level] = 1.0
+        avg_entry_diff = float(s_state.get("avg_entry_price_pct_diff", 0.0))
+        unrealized = float(s_state.get("unrealized_pnl_ratio", 0.0))
+        dist_liq = float(s_state.get("distance_to_liq_ratio", 0.80))
+        unused_9 = 0.0
+
+        # 波动 (8)
+        atr_pct = float(s_state.get("atr_14_pct", 0.03))
+        atr_z = float(s_state.get("atr_14_zscore_30", 0.0))
+        realized_vol = float(s_state.get("realized_vol_30d", 0.04))
+        vol_z = float(s_state.get("vol_zscore_60", 0.0))
+        btc_corr = float(s_state.get("btc_corr_30d", 0.8))
+        btc_rsi = float(s_state.get("btc_rsi_14", 50.0)) / 100.0
+        swing_d = float(s_state.get("swing_window_daily", 2))
+        swing_4h = float(s_state.get("swing_window_4h", 3))
+
+        # 历史表现 (3)
+        win_rate = float(s_state.get("recent_10_win_rate", 0.5))
+        avg_pnl = float(s_state.get("recent_10_avg_pnl_ratio", 0.0))
+        mdd = float(s_state.get("max_drawdown_30d", 0.05))
+
+        obs = np.array([
+            timing_score, structure, retrace, extension,
+            r3[0], r3[1], r3[2], long_en, short_en,
+            z5[0], z5[1], z5[2], z5[3], z5[4],
+            l5[0], l5[1], l5[2], l5[3], l5[4],
+            avg_entry_diff, unrealized, dist_liq, unused_9,
+            atr_pct, atr_z, realized_vol, vol_z,
+            btc_corr, btc_rsi, swing_d, swing_4h,
+            win_rate, avg_pnl, mdd,
+        ], dtype=np.float32)
+        return obs
 
     # ── 核心：PPO 推理 → 5 维动作 ──
 
@@ -95,7 +186,16 @@ class PhaseEGateway:
         """PPO policy 推理，返回原始 5 维动作。"""
         if self._mock_action is not None:
             return dict(self._mock_action)
-        # MVP 桥接：无模型时返回中性动作（=基线）
+        # 真实模型推理
+        if self._ppo_model is not None:
+            try:
+                import torch
+                obs = self._build_state_vector(s_state)  # (34,)
+                x = torch.from_numpy(obs).unsqueeze(0).unsqueeze(0)  # (1, 1, 34)
+                return self._ppo_model.get_action_dict(x)
+            except Exception:
+                pass  # 推理失败 → 降级中性
+        # 无模型时返回中性动作（=基线）
         return {
             "addon_pct_mult": 1.0,
             "addon_size_mult": 1.0,

@@ -110,5 +110,8 @@
     "agent_b/20260706_032312.json",
     "agent_b/20260706_035843.json",
     "agent_b/20260706_115920.json"
-  ]
+  ],
+  "a_active_positions": {},
+  "b_active_positions": {},
+  "last_sync_at": 1786596194
 }

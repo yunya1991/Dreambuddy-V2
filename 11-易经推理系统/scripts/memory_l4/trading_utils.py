@@ -345,6 +345,21 @@ class RiskManager:
                     self.state.current_consecutive_losses = data.get("consecutive_losses", 0)
                     self.state.trading_halted = data.get("trading_halted", False)
                     self.state.halt_reason = data.get("halt_reason", "")
+                # 配置字段：跨日保留（可能被 config.json 热覆盖）
+                if "daily_loss_limit" in data:
+                    self.state.daily_loss_limit = data["daily_loss_limit"]
+                if "loss_limit_pct" in data:
+                    self.state.loss_limit_pct = data["loss_limit_pct"]
+                if "max_consecutive_losses" in data:
+                    self.state.max_consecutive_losses = data["max_consecutive_losses"]
+                if "position_size_pct" in data:
+                    self.state.position_size_pct = data["position_size_pct"]
+                if "min_position_size_pct" in data:
+                    self.state.min_position_size_pct = data["min_position_size_pct"]
+                if "max_position_size_pct" in data:
+                    self.state.max_position_size_pct = data["max_position_size_pct"]
+                if "min_position_usdt" in data:
+                    self.state.min_position_usdt = data["min_position_usdt"]
             except Exception:
                 logger.exception("加载风控状态失败，使用默认状态（可能保守）")
 
@@ -356,6 +371,13 @@ class RiskManager:
                 "consecutive_losses": self.state.current_consecutive_losses,
                 "trading_halted": self.state.trading_halted,
                 "halt_reason": self.state.halt_reason,
+                "daily_loss_limit": self.state.daily_loss_limit,
+                "loss_limit_pct": self.state.loss_limit_pct,
+                "max_consecutive_losses": self.state.max_consecutive_losses,
+                "position_size_pct": self.state.position_size_pct,
+                "min_position_size_pct": self.state.min_position_size_pct,
+                "max_position_size_pct": self.state.max_position_size_pct,
+                "min_position_usdt": self.state.min_position_usdt,
             }
             with open(self.state_file, "w", encoding="utf-8") as f:
                 fcntl.flock(f, fcntl.LOCK_EX)
