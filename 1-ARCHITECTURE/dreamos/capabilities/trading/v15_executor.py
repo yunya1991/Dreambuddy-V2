@@ -24,9 +24,18 @@ V15 Core Params:
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from datetime import datetime, timedelta
+from pathlib import Path
+import json
+import logging
 import math
+import os
+
+logger = logging.getLogger(__name__)
+
+# P1 状态持久化: 持仓账本落盘,重启后自动恢复(不再失忆)
+POSITIONS_FILE = Path(__file__).resolve().parent.parent.parent / "cli" / "scheduler_data" / "v15_positions.json"
 
 
 # ── V9 Red Line Constants (immutable) ──────────────────────────
@@ -98,6 +107,7 @@ class V15Executor:
         base_tp_pct: float = BASE_TP_PCT,
         addon_gap_pct: float = ADDON_GAP_PCT,
         min_confidence: float = MIN_CONFIDENCE,
+        dry_run: Optional[bool] = None,
     ):
         """Initialize V15 executor with strategy params.
 
@@ -109,6 +119,10 @@ class V15Executor:
             base_tp_pct: Base take-profit percentage (default 0.04).
             addon_gap_pct: Addon gap percentage (default 0.08).
             min_confidence: Minimum signal confidence to accept (default 0.50).
+            dry_run: P0-3 safety gate. True = paper mode, real order path is
+                never touched. Default None -> env DREAMOS_TRADING_DRY_RUN
+                (defaults to true). Real orders require explicit dry_run=False
+                plus trading approval.
         """
         self.leverage = leverage
         self.total_budget = total_budget
@@ -117,7 +131,59 @@ class V15Executor:
         self.base_tp_pct = base_tp_pct
         self.addon_gap_pct = addon_gap_pct
         self.min_confidence = min_confidence
+        if dry_run is None:
+            dry_run = os.environ.get("DREAMOS_TRADING_DRY_RUN", "true").strip().lower() != "false"
+        self.dry_run = bool(dry_run)
         self._positions: Dict[str, Position] = {}
+        # P1: 从磁盘恢复持仓账本(如存在)
+        self._load_positions()
+
+    # ── P1 持仓账本持久化 ─────────────────────────────────────────────────
+
+    def _load_positions(self) -> None:
+        """从 POSITIONS_FILE 恢复持仓。文件缺失/损坏时静默使用空账本。"""
+        try:
+            if not POSITIONS_FILE.exists():
+                return
+            with open(POSITIONS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            restored = 0
+            for symbol, raw in (data.get("positions") or {}).items():
+                try:
+                    for k in ("opened_at", "last_addon_at"):
+                        if raw.get(k):
+                            try:
+                                raw[k] = datetime.fromisoformat(str(raw[k]).replace("Z", ""))
+                            except ValueError:
+                                raw[k] = None
+                        elif k in raw:
+                            raw[k] = None
+                    self._positions[symbol] = Position(**raw)
+                    restored += 1
+                except Exception as e:
+                    logger.warning(f"V15Executor 恢复持仓 {symbol} 失败,跳过: {e}")
+            open_n = sum(1 for p in self._positions.values() if p.status == "OPEN")
+            logger.info(f"V15Executor 账本已恢复: {restored} 笔(OPEN={open_n}) source={POSITIONS_FILE.name}")
+        except Exception as e:
+            logger.warning(f"V15Executor 账本恢复失败(使用空账本): {e}")
+
+    def _save_positions(self) -> None:
+        """原子写入持仓账本到 POSITIONS_FILE (tmp+rename,防半截文件)。"""
+        try:
+            POSITIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+            payload = {"positions": {}, "saved_at": datetime.utcnow().isoformat() + "Z"}
+            for symbol, pos in self._positions.items():
+                d = asdict(pos)
+                for k in ("opened_at", "last_addon_at"):
+                    v = d.get(k)
+                    d[k] = v.isoformat() if isinstance(v, datetime) else None
+                payload["positions"][symbol] = d
+            tmp_path = str(POSITIONS_FILE) + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, POSITIONS_FILE)
+        except Exception as e:
+            logger.warning(f"V15Executor 账本落盘失败: {e}")
 
     def execute_signal(self, signal: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a trading signal and open a position.
@@ -167,38 +233,48 @@ class V15Executor:
         per_position_budget = self.total_budget / self.max_concurrent
         position_size = (per_position_budget * self.leverage) / entry_price if entry_price > 0 else 0.0
 
-        # Try real order via HyperliquidClient
+        # P0-3 safety gate: default dry_run=True, never touch real order path.
+        # Real orders require explicit dry_run=False + trading approval.
         real_order_result = None
-        try:
-            import sys as _sys
-            from pathlib import Path as _Path
-            _ab_dir = _Path(__file__).resolve().parent.parent.parent.parent / "experiments" / "ab-trading"
-            if str(_ab_dir) not in _sys.path:
-                _sys.path.insert(0, str(_ab_dir))
-            from dotenv import load_dotenv
-            load_dotenv(_ab_dir / "config" / ".env")
-            from execution.aster_spot import HyperliquidClient
-
-            hl_client = HyperliquidClient("dream_os")
-
-            # Set leverage
+        if self.dry_run:
+            real_order_result = {
+                "status": "simulated",
+                "dry_run": True,
+                "note": "real order skipped by dry_run gate",
+            }
+        else:
             try:
-                hl_client.set_leverage(symbol, int(self.leverage))
-            except Exception:
-                pass  # Leverage setting may fail if already set
+                import sys as _sys
+                from pathlib import Path as _Path
+                _ab_dir = _Path(__file__).resolve().parent.parent.parent.parent / "experiments" / "ab-trading"
+                if str(_ab_dir) not in _sys.path:
+                    _sys.path.insert(0, str(_ab_dir))
+                from dotenv import load_dotenv
+                load_dotenv(_ab_dir / "config" / ".env")
+                from execution.aster_spot import HyperliquidClient
 
-            # Calculate USDT amount for the order
-            usdt_amount = per_position_budget
+                hl_client = HyperliquidClient("c")
 
-            # Place market order
-            if direction == "LONG":
-                order_result = hl_client.open_long(symbol, usdt_amount)
-            else:  # SHORT
-                order_result = hl_client.open_short(symbol, usdt_amount)
+                # Set leverage
+                try:
+                    hl_client.set_leverage(symbol, int(self.leverage))
+                except Exception:
+                    pass  # Leverage setting may fail if already set
 
-            real_order_result = order_result
-        except Exception as e:
-            real_order_result = {"error": str(e)}
+                # Calculate USDT amount for the order
+                usdt_amount = per_position_budget
+
+                # Place market order
+                # FIX(PROP-20260816): 显式传 leverage,否则 client 用 DEFAULT_LEVERAGE=3,
+                # 实际开仓杠杆与 self.leverage(5x) 不一致
+                if direction == "LONG":
+                    order_result = hl_client.open_long(symbol, usdt_amount, leverage=int(self.leverage))
+                else:  # SHORT
+                    order_result = hl_client.open_short(symbol, usdt_amount, leverage=int(self.leverage))
+
+                real_order_result = order_result
+            except Exception as e:
+                real_order_result = {"error": str(e)}
 
         # Create position record
         pos = Position(
@@ -211,6 +287,8 @@ class V15Executor:
             addon_gap_pct=self.addon_gap_pct,
         )
         self._positions[symbol] = pos
+        # P1: 开仓即落盘,重启不丢账
+        self._save_positions()
 
         result = {
             "symbol": symbol,

@@ -34,16 +34,18 @@ class SignalRouter:
         use_hermes: bool = False,
         seed: Optional[int] = 42,
         executor: Optional[V15Executor] = None,
+        signal_generator: Optional[YijingSignalGenerator] = None,
     ):
         """Initialize the signal router with all three layers.
 
         Args:
             use_hermes: Whether to use Hermes for SKILL calls (default False = mock).
             seed: PRNG seed for YijingSignalGenerator.
-            executor: Optional custom V15Executor instance.
+            executor: Optional custom V15Executor instance (注入可共享账本,避免双账本).
+            signal_generator: Optional custom YijingSignalGenerator instance (注入可共享PRNG状态).
         """
         self.coin_selector = CoinSelector(use_hermes=use_hermes)
-        self.signal_generator = YijingSignalGenerator(seed=seed)
+        self.signal_generator = signal_generator or YijingSignalGenerator(seed=seed)
         self.executor = executor or V15Executor()
 
     def route(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
