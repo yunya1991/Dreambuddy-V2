@@ -175,7 +175,10 @@ class CognitiveReviewer:
             ))
 
         # Lesson: high confidence trade won
-        if pnl_usdt > 0 and confidence >= 0.70:
+        # F-2 fix (2026-08-16): 0.70→0.50, 与执行门禁 MIN_CONFIDENCE 对齐,
+        # 确保所有过门禁的盈利单都能沉淀正向经验(原0.70高于旧公式天花板0.6,
+        # 正向lesson结构性不可达; F-1修复后新天花板0.85, 0.50=执行门禁值)
+        if pnl_usdt > 0 and confidence >= 0.50:
             lessons.append(TradeLesson(
                 lesson_id=f"lesson-{self._review_count:04d}-goodentry",
                 category="direction",

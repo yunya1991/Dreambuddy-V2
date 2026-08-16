@@ -22,14 +22,14 @@ import math
 # ── Trigram constants (3-bit → 8 trigrams) ─────────────────────
 
 TRIGRAM_NAMES = [
-    "Qian",   # 111 - Heaven
-    "Dui",    # 110 - Lake
-    "Li",     # 101 - Fire
-    "Zhen",   # 100 - Thunder
-    "Xun",    # 011 - Wind
-    "Kan",    # 010 - Water
-    "Gen",    # 001 - Mountain
     "Kun",    # 000 - Earth
+    "Gen",    # 001 - Mountain
+    "Kan",    # 010 - Water
+    "Xun",    # 011 - Wind
+    "Zhen",   # 100 - Thunder
+    "Li",     # 101 - Fire
+    "Dui",    # 110 - Lake
+    "Qian",   # 111 - Heaven
 ]
 
 TRIGRAM_DIRECTIONS = {
@@ -506,9 +506,9 @@ class YijingSignalGenerator:
         inner_dir = TRIGRAM_DIRECTIONS.get(inner, "UP")
         outer_dir = TRIGRAM_DIRECTIONS.get(outer, "UP")
         if inner_dir == outer_dir:
-            base = 0.75
+            base = 0.85
         else:
-            base = 0.50
+            base = 0.45
 
         # Moving yao penalty
         yao_penalty = 1.0 - len(moving) * 0.10
@@ -526,7 +526,7 @@ class YijingSignalGenerator:
         if direction == "HOLD":
             clarity = 0.5
         else:
-            clarity = 0.8
+            clarity = 1.0
 
         confidence = base * yao_penalty * trend_factor * consistency * clarity
         return max(0.0, min(1.0, confidence))
