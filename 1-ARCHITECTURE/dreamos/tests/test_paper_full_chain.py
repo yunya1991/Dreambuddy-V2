@@ -21,6 +21,9 @@
         新天花板 0.85; MIN_CONFIDENCE 保持 0.50 不动(阈值语义恢复可达)。
     F-2 [已修复]: goodentry lesson 阈值 0.70→0.50, 与执行门禁对齐,
         过门禁的盈利单全部沉淀正向经验。回归测试: test_f2_gap_closed。
+    B-2 [已修复]: HEXAGRAM_NAMES 表 29 键序错位 + 5 缺失(坤在上卦组合全缺),
+        卦名展示/lessons 归档错位。已按通行本周文王序全量重建。
+        回归测试: test_hexagram_table_lock。
 """
 import json
 import sys
@@ -395,3 +398,72 @@ def test_live_enrichment_smoke():
         f"\nLIVE BTC: dir={sig['direction']} conf={sig['confidence']} "
         f"trend={md['trend_strength']} gua={sig['hexagram']['original_gua']}"
     )
+
+
+# ── B-2 锁定: 64卦名表 ──────────────────────────────────────────────────
+def test_hexagram_table_lock():
+    """HEXAGRAM_NAMES 必须与通行本周文王序完全一致 (B-2 回归锁)。
+
+    参照表独立编码自经典卦象结构(上卦/下卦), 非从被测代码复制。
+    任何手动改动 HEXAGRAM_NAMES 必须先过此测试。
+    """
+    from dreamos.capabilities.trading.yijing_signal_generator import (
+        HEXAGRAM_NAMES, TRIGRAM_NAMES,
+    )
+
+    # 1) 全覆盖: 8×8=64 组合一个不缺
+    combos = [(l, u) for l in TRIGRAM_NAMES for u in TRIGRAM_NAMES]
+    missing = [c for c in combos if c not in HEXAGRAM_NAMES]
+    assert not missing, f"卦表缺失组合: {missing}"
+    assert len(HEXAGRAM_NAMES) == 64
+
+    # 2) 编号唯一: 1..64 各恰好一次
+    nums = sorted(int(v.rsplit("_", 1)[1]) for v in HEXAGRAM_NAMES.values())
+    assert nums == list(range(1, 65)), "卦序号必须恰好覆盖 1..64"
+
+    # 3) 全量对照 (lower, upper) -> 周文王序号
+    REF = {
+        ("Qian", "Qian"): 1, ("Kun", "Kun"): 2, ("Zhen", "Kan"): 3,
+        ("Kan", "Gen"): 4, ("Qian", "Kan"): 5, ("Kan", "Qian"): 6,
+        ("Kan", "Kun"): 7, ("Kun", "Kan"): 8, ("Qian", "Xun"): 9,
+        ("Dui", "Qian"): 10, ("Qian", "Kun"): 11, ("Kun", "Qian"): 12,
+        ("Li", "Qian"): 13, ("Qian", "Li"): 14, ("Gen", "Kun"): 15,
+        ("Kun", "Zhen"): 16, ("Zhen", "Dui"): 17, ("Xun", "Gen"): 18,
+        ("Dui", "Kun"): 19, ("Kun", "Xun"): 20, ("Zhen", "Li"): 21,
+        ("Li", "Gen"): 22, ("Kun", "Gen"): 23, ("Zhen", "Kun"): 24,
+        ("Zhen", "Qian"): 25, ("Qian", "Gen"): 26, ("Zhen", "Gen"): 27,
+        ("Xun", "Dui"): 28, ("Kan", "Kan"): 29, ("Li", "Li"): 30,
+        ("Gen", "Dui"): 31, ("Xun", "Zhen"): 32, ("Gen", "Qian"): 33,
+        ("Qian", "Zhen"): 34, ("Kun", "Li"): 35, ("Li", "Kun"): 36,
+        ("Li", "Xun"): 37, ("Dui", "Li"): 38, ("Gen", "Kan"): 39,
+        ("Kan", "Zhen"): 40, ("Dui", "Gen"): 41, ("Zhen", "Xun"): 42,
+        ("Qian", "Dui"): 43, ("Xun", "Qian"): 44, ("Kun", "Dui"): 45,
+        ("Xun", "Kun"): 46, ("Kan", "Dui"): 47, ("Xun", "Kan"): 48,
+        ("Li", "Dui"): 49, ("Xun", "Li"): 50, ("Zhen", "Zhen"): 51,
+        ("Gen", "Gen"): 52, ("Gen", "Xun"): 53, ("Dui", "Zhen"): 54,
+        ("Li", "Zhen"): 55, ("Gen", "Li"): 56, ("Xun", "Xun"): 57,
+        ("Dui", "Dui"): 58, ("Kan", "Xun"): 59, ("Dui", "Kan"): 60,
+        ("Dui", "Xun"): 61, ("Gen", "Zhen"): 62, ("Li", "Kan"): 63,
+        ("Kan", "Li"): 64,
+    }
+    mismatches = [
+        f"{k}: 期望#{n}, 实为{HEXAGRAM_NAMES[k]}"
+        for k, n in REF.items()
+        if int(HEXAGRAM_NAMES[k].rsplit("_", 1)[1]) != n
+    ]
+    assert not mismatches, "卦表错位:\n" + "\n".join(mismatches)
+
+    # 4) 结构不变量: 八纯卦 + 颐/大过-小过/中孚 互换对
+    pure_nums = {
+        int(HEXAGRAM_NAMES[(t, t)].rsplit("_", 1)[1]) for t in TRIGRAM_NAMES
+    }
+    assert pure_nums == {1, 2, 29, 30, 51, 52, 57, 58}, f"八纯卦错位: {pure_nums}"
+    for (l1, u1), (l2, u2), expect in [
+        (("Zhen", "Gen"), ("Gen", "Zhen"), {27, 62}),
+        (("Xun", "Dui"), ("Dui", "Xun"), {28, 61}),
+    ]:
+        pair = {
+            int(HEXAGRAM_NAMES[(l1, u1)].rsplit("_", 1)[1]),
+            int(HEXAGRAM_NAMES[(l2, u2)].rsplit("_", 1)[1]),
+        }
+        assert pair == expect, f"互换对 {(l1,u1)}/{(l2,u2)} -> {pair}"

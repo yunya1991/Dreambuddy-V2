@@ -43,67 +43,84 @@ TRIGRAM_DIRECTIONS = {
     "Kun": "DOWN",
 }
 
-# 64 hexagram names (inner=rows, outer=cols)
+# 64 hexagram names keyed by (lower/inner trigram, upper/outer trigram),
+# King Wen numbering. Rebuilt 2026-08-16 (B-2): previous table had 29
+# swapped keys + 5 missing entries. Locked by
+# test_hexagram_table_lock in tests/test_paper_full_chain.py — do not
+# edit by hand.
 HEXAGRAM_NAMES = {
-    ("Qian", "Qian"): "Qian_1",
-    ("Kun", "Kun"): "Kun_2",
-    ("Zhen", "Qian"): "Da_Zhuang_34",
-    ("Kun", "Qian"): "Pi_12",
-    ("Qian", "Kun"): "Tai_11",
-    ("Qian", "Zhen"): "Da_Yu_14",
-    ("Zhen", "Kun"): "Yu_16",
-    ("Qian", "Xun"): "Xiao_Xu_9",
-    ("Xun", "Qian"): "Gu_18",
-    ("Qian", "Kan"): "Xu_5",
-    ("Kan", "Qian"): "Song_6",
-    ("Qian", "Gen"): "Da_Xu_26",
-    ("Gen", "Qian"): "Bo_23",
-    ("Qian", "Dui"): "Guai_43",
-    ("Dui", "Qian"): "Lin_19",
-    ("Qian", "Li"): "Da_You_14",
-    ("Li", "Qian"): "Tong_Ren_13",
-    ("Kun", "Zhen"): "Fu_24",
-    ("Zhen", "Zhen"): "Zhen_51",
-    ("Xun", "Zhen"): "Yi_27",
-    ("Kan", "Zhen"): "Tun_3",
-    ("Gen", "Zhen"): "Xiao_Guo_62",
-    ("Dui", "Zhen"): "Gui_Mei_54",
-    ("Li", "Zhen"): "Feng_55",
-    ("Kun", "Xun"): "Guan_20",
-    ("Zhen", "Xun"): "Heng_32",
-    ("Xun", "Xun"): "Xun_57",
-    ("Kan", "Xun"): "Jing_48",
-    ("Gen", "Xun"): "Jian_39",
-    ("Dui", "Xun"): "Zhong_Fu_61",
-    ("Li", "Xun"): "Jia_Ren_37",
-    ("Kun", "Kan"): "Shi_7",
-    ("Zhen", "Kan"): "Jie_40",
-    ("Xun", "Kan"): "Huan_59",
-    ("Kan", "Kan"): "Kan_29",
-    ("Gen", "Kan"): "Meng_4",
-    ("Dui", "Kan"): "Kun_47",
-    ("Li", "Kan"): "Wei_Ji_64",
-    ("Kun", "Gen"): "Sheng_46",
-    ("Zhen", "Gen"): "Xiao_Guo_62",
-    ("Xun", "Gen"): "Jian_39",
-    ("Kan", "Gen"): "Meng_4",
-    ("Gen", "Gen"): "Gen_52",
-    ("Dui", "Gen"): "Sun_41",
-    ("Li", "Gen"): "Lü_56",
-    ("Kun", "Dui"): "Lin_19",
-    ("Zhen", "Dui"): "Gui_Mei_54",
-    ("Xun", "Dui"): "Zhong_Fu_61",
-    ("Kan", "Dui"): "Kun_47",
-    ("Gen", "Dui"): "Sun_41",
-    ("Dui", "Dui"): "Dui_58",
-    ("Li", "Dui"): "Kui_38",
-    ("Kun", "Li"): "Ming_Yi_36",
-    ("Zhen", "Li"): "Feng_55",
-    ("Xun", "Li"): "Jia_Ren_37",
-    ("Kan", "Li"): "Wei_Ji_64",
-    ("Gen", "Li"): "Lü_56",
-    ("Dui", "Li"): "Kui_38",
-    ("Li", "Li"): "Li_30",
+    # ── upper Qian 乾 (Heaven above) ──
+    ("Qian", "Qian"): "Qian_1",        # 乾为天
+    ("Kun", "Qian"): "Pi_12",          # 天地否
+    ("Zhen", "Qian"): "Wu_Wang_25",    # 天雷无妄
+    ("Gen", "Qian"): "Dun_33",         # 天山遁
+    ("Kan", "Qian"): "Song_6",         # 天水讼
+    ("Xun", "Qian"): "Gou_44",         # 天风姤
+    ("Li", "Qian"): "Tong_Ren_13",     # 天火同人
+    ("Dui", "Qian"): "Lu_10",          # 天泽履
+    # ── upper Kun 坤 (Earth above) ──
+    ("Qian", "Kun"): "Tai_11",         # 地天泰
+    ("Kun", "Kun"): "Kun_2",           # 坤为地
+    ("Zhen", "Kun"): "Fu_24",          # 地雷复
+    ("Gen", "Kun"): "Qian_15",         # 地山谦
+    ("Kan", "Kun"): "Shi_7",           # 地水师
+    ("Xun", "Kun"): "Sheng_46",        # 地风升
+    ("Li", "Kun"): "Ming_Yi_36",       # 地火明夷
+    ("Dui", "Kun"): "Lin_19",          # 地泽临
+    # ── upper Zhen 震 (Thunder above) ──
+    ("Qian", "Zhen"): "Da_Zhuang_34",  # 雷天大壮
+    ("Kun", "Zhen"): "Yu_16",          # 雷地豫
+    ("Zhen", "Zhen"): "Zhen_51",       # 震为雷
+    ("Gen", "Zhen"): "Xiao_Guo_62",    # 雷山小过
+    ("Kan", "Zhen"): "Jie_40",         # 雷水解
+    ("Xun", "Zhen"): "Heng_32",        # 雷风恒
+    ("Li", "Zhen"): "Feng_55",         # 雷火丰
+    ("Dui", "Zhen"): "Gui_Mei_54",     # 雷泽归妹
+    # ── upper Gen 艮 (Mountain above) ──
+    ("Qian", "Gen"): "Da_Xu_26",       # 山天大畜
+    ("Kun", "Gen"): "Bo_23",           # 山地剥
+    ("Zhen", "Gen"): "Yi_27",          # 山雷颐
+    ("Gen", "Gen"): "Gen_52",          # 艮为山
+    ("Kan", "Gen"): "Meng_4",          # 山水蒙
+    ("Xun", "Gen"): "Gu_18",           # 山风蛊
+    ("Li", "Gen"): "Bi_22",            # 山火贲
+    ("Dui", "Gen"): "Sun_41",          # 山泽损
+    # ── upper Kan 坎 (Water above) ──
+    ("Qian", "Kan"): "Xu_5",           # 水天需
+    ("Kun", "Kan"): "Bi_8",            # 水地比
+    ("Zhen", "Kan"): "Tun_3",          # 水雷屯
+    ("Gen", "Kan"): "Jian_39",         # 水山蹇
+    ("Kan", "Kan"): "Kan_29",          # 坎为水
+    ("Xun", "Kan"): "Jing_48",         # 水风井
+    ("Li", "Kan"): "Ji_Ji_63",         # 水火既济
+    ("Dui", "Kan"): "Jie_60",          # 水泽节
+    # ── upper Xun 巽 (Wind above) ──
+    ("Qian", "Xun"): "Xiao_Xu_9",      # 风天小畜
+    ("Kun", "Xun"): "Guan_20",         # 风地观
+    ("Zhen", "Xun"): "Yi_42",          # 风雷益
+    ("Gen", "Xun"): "Jian_53",         # 风山渐
+    ("Kan", "Xun"): "Huan_59",         # 风水涣
+    ("Xun", "Xun"): "Xun_57",          # 巽为风
+    ("Li", "Xun"): "Jia_Ren_37",       # 风火家人
+    ("Dui", "Xun"): "Zhong_Fu_61",     # 风泽中孚
+    # ── upper Li 离 (Fire above) ──
+    ("Qian", "Li"): "Da_You_14",       # 火天大有
+    ("Kun", "Li"): "Jin_35",           # 火地晋
+    ("Zhen", "Li"): "Shi_He_21",       # 火雷噬嗑
+    ("Gen", "Li"): "Lu_56",            # 火山旅
+    ("Kan", "Li"): "Wei_Ji_64",        # 火水未济
+    ("Xun", "Li"): "Ding_50",          # 火风鼎
+    ("Li", "Li"): "Li_30",             # 离为火
+    ("Dui", "Li"): "Kui_38",           # 火泽睽
+    # ── upper Dui 兑 (Lake above) ──
+    ("Qian", "Dui"): "Guai_43",        # 泽天夬
+    ("Kun", "Dui"): "Cui_45",          # 泽地萃
+    ("Zhen", "Dui"): "Sui_17",         # 泽雷随
+    ("Gen", "Dui"): "Xian_31",         # 泽山咸
+    ("Kan", "Dui"): "Kun_47",          # 泽水困
+    ("Xun", "Dui"): "Da_Guo_28",       # 泽风大过
+    ("Li", "Dui"): "Ge_49",            # 泽火革
+    ("Dui", "Dui"): "Dui_58",          # 兑为泽
 }
 
 # Phase boundaries for six-yao positioning
