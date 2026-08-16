@@ -848,6 +848,7 @@ def _get_direction_ctx(coin):
             ctx["regime_in_cooldown"] = False
             ctx["use_btc_windvane"] = False
             _log(f"[{coin}] 非加密资产模式: regime={result.regime.value}, 做多={result.long_enabled}, 做空={result.short_enabled}")
+            ctx["short_enabled"] = False  # 选项3硬闸（用户确认 2026-08-16）：保持做空关闭
             return ctx
         except Exception as e:
             _log(f"[{coin}] 方向控制评估失败(非加密): {e}, 默认只做多")
@@ -971,9 +972,12 @@ def _get_direction_ctx(coin):
         if "error" in params:
             return {"short_enabled": False, "long_enabled": True, "regime": "unknown"}
 
-            klines_1d = params.get("klines_1d", [])
-            daily_ma128 = calc_daily_ma128(klines_1d)
-            recent_closes = [float(k["c"]) for k in klines_1d[-5:] if "c" in k]
+        # 存量bug修复（用户批准 2026-08-16 选项3）：此3行原误缩进在上方 return
+        # 之后成为死代码，daily_ma128/recent_closes 从未赋值 → UnboundLocalError
+        # → 方向控制永远降级"只做多"，BTC风向标从未真正生效
+        klines_1d = params.get("klines_1d", [])
+        daily_ma128 = calc_daily_ma128(klines_1d)
+        recent_closes = [float(k["c"]) for k in klines_1d[-5:] if "c" in k]
 
         sl = params["stop_loss"]
         gate = DirectionGate(allow_short=True)
@@ -1152,6 +1156,12 @@ def _get_direction_ctx(coin):
             _log(f"[{coin}] BTC风向标模式: regime={btc_confirmed_regime}, 做多={ctx['long_enabled']}, 做空={ctx['short_enabled']}")
         else:
             ctx["use_btc_windvane"] = False
+
+        # 选项3硬闸（用户确认 2026-08-16）：保持做空关闭。
+        # 风向标正常评估并影响做多质量（熊市形态→山寨观望 long_enabled=False），
+        # 但 short_enabled 恒为 False → v15_signal 跳过全部 OPEN_BEAR 分支。
+        # 未来恢复做空：删除此行并重新走提案审批。
+        ctx["short_enabled"] = False
 
         return ctx
     except Exception as e:
