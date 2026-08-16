@@ -53,5 +53,14 @@
     "dry_run": true,
     "exchange": "hyperliquid",
     "job_type": "orchestrate"
+  },
+  {
+    "name": "v15_full_cycle",
+    "cron_expr": "45 * * * *",
+    "enabled": true,
+    "symbols": [],
+    "dry_run": true,
+    "exchange": "hyperliquid",
+    "job_type": "v15_full"
   }
 ]

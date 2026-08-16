@@ -590,6 +590,38 @@ class DreamOSScheduler:
                             self.jobs[name].job_type = "orchestrate"
                             self.jobs[name].symbols = symbols  # 防止 _save_jobs 丢失显式配置
                             self._save_jobs()
+                    elif job_type == "v15_full":
+                        # PROP-20260816C（用户批准 2026-08-16）: V15 权威完整轮询周期
+                        # 子进程运行 v15_trader.run_poll_cycle()（v15_trader 有模块级状态/
+                        # 信号处理器，进程隔离最安全）；数据源/执行层由 .env.v15 开关控制
+                        # （V15_DATA_SOURCE=hyperliquid + V15_EXECUTION=paper）
+                        def _v15_full():
+                            import subprocess
+                            try:
+                                _repo_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+                                _v15_dir = str(Path(_repo_root) / "14-V15经典马丁策略")
+                                _code = (
+                                    "import sys; sys.path.insert(0, 'core'); sys.path.insert(0, 'lib'); "
+                                    "import v15_trader; v15_trader.run_poll_cycle()"
+                                )
+                                result = subprocess.run(
+                                    [sys.executable, "-c", _code],
+                                    capture_output=True, text=True, timeout=1200,
+                                    cwd=_v15_dir)
+                                _tail = (result.stdout or "")[-200:]
+                                if result.returncode != 0:
+                                    logger.warning(f"V15完整轮询异常 rc={result.returncode}: {(result.stderr or '')[-200:]}")
+                                else:
+                                    logger.info(f"V15完整轮询完成: {_tail}")
+                                return {"exit_code": result.returncode, "tail": _tail}
+                            except Exception as e:
+                                logger.warning(f"V15完整轮询失败: {e}")
+                                return {"error": str(e)}
+
+                        self.add_job(name, cron_expr, _v15_full, enabled=enabled)
+                        if name in self.jobs:
+                            self.jobs[name].job_type = "v15_full"
+                            self._save_jobs()
                     else:
                         # 默认: 扫描交易任务
                         def _scan_single(symbol: str, _dr=dry_run, _ex=exchange):

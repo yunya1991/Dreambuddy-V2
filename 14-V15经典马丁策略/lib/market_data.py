@@ -14,7 +14,15 @@ from config_loader import get_config
 
 
 def _get_okx_client():
-    """获取 OKX API 客户端"""
+    """获取行情客户端（V15_DATA_SOURCE=hyperliquid 时透明切 HL 数据适配器）"""
+    # PROP-20260816C 模块1（用户批准 2026-08-16）：
+    # 腾讯云大陆封锁 OKX 网络，K线统一改走 Hyperliquid（本机可达、与执行层同源无基差）
+    if get_config("V15_DATA_SOURCE", "").strip().lower() == "hyperliquid":
+        try:
+            from hl_data_adapter import HLDataAdapter
+            return HLDataAdapter()
+        except Exception:
+            return None
     try:
         from okx_client import OKXSimulatedClient
         client = OKXSimulatedClient()

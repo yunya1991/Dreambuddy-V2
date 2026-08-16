@@ -627,6 +627,22 @@ _log(f"最终马丁币种池: {','.join(COINS)}")
 
 
 def _get_okx_client():
+    # PROP-20260816C 模块2（用户批准 2026-08-16）：Paper 执行开关
+    # V15_EXECUTION=paper 时替换为本地纸面执行客户端（HL 行情 + 本地账本，无真实下单通道）
+    exec_mode = get_config("V15_EXECUTION", "").strip().lower()
+    if exec_mode == "paper":
+        try:
+            from v15_paper_client import V15PaperClient
+            return V15PaperClient()
+        except Exception as e:
+            _log(f"Paper客户端初始化失败: {e}")
+            return None
+    # 硬安全闸：HL 数据源（网络封锁环境标志）只允许配合 paper 执行，
+    # 禁止构造 OKX 实盘客户端 —— 配置错误时快速失败而非静默降级
+    if get_config("V15_DATA_SOURCE", "").strip().lower() == "hyperliquid":
+        raise RuntimeError(
+            "硬安全闸: V15_DATA_SOURCE=hyperliquid 必须配合 V15_EXECUTION=paper, "
+            "禁止在网络封锁环境构造 OKX 实盘客户端")
     try:
         from okx_client import OKXSimulatedClient
 

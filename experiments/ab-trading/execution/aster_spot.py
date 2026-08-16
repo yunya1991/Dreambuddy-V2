@@ -144,7 +144,14 @@ def get_candles(coin: str, interval: str = "1h", count: int = 48,
     if cached is not None:
         return cached
     now_ms = _now_ms()
-    intervals = {"5m": 5*60000, "15m": 15*60000, "1h": 3600000, "4h": 4*3600000}
+    # PROP-20260816C: 补全 HL 官方支持的周期映射（V15 日线策略需要 1d；原字典缺 1d 时
+    # 会静默按 1h 计算 startTime，interval 却传 1d → 返回数据严重不足）
+    intervals = {
+        "1m": 60000, "3m": 3*60000, "5m": 5*60000, "15m": 15*60000, "30m": 30*60000,
+        "1h": 3600000, "2h": 2*3600000, "4h": 4*3600000, "8h": 8*3600000,
+        "12h": 12*3600000, "1d": 24*3600000, "3d": 3*24*3600000,
+        "1w": 7*24*3600000, "1M": 30*24*3600000,
+    }
     ms = intervals.get(interval, 3600000)
     start = now_ms - ms * count
     data = _info({

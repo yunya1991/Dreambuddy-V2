@@ -280,3 +280,6 @@ test_sl_tp_*.py
 # --- 临时阈值调试占位文件 ---
 /threshold
 /threshold.*
+
+# PROP-20260816C: V15 本地凭据隔离（2026-08-16）
+14-V15经典马丁策略/config/.env.local

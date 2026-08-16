@@ -573,6 +573,16 @@ def check_trend_filter(current_price: float,
 
 
 def _get_okx_client():
+    # PROP-20260816C 模块1补全（用户批准 2026-08-16）：Hyperliquid 数据源开关
+    # strategy_params 是入场链路动态参数（current_price/klines）的数据源，
+    # 不切换则网络封锁环境阻塞调用 → current_price=0 → 入场必然中止（冒烟实测）
+    try:
+        from config_loader import get_config
+        if get_config("V15_DATA_SOURCE", "").strip().lower() == "hyperliquid":
+            from hl_data_adapter import HLDataAdapter
+            return HLDataAdapter()
+    except Exception:
+        pass
     try:
         from okx_client import OKXSimulatedClient
         from config_loader import get_config
