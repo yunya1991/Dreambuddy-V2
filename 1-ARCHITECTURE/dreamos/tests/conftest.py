@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def isolate_dreamos_state(tmp_path, monkeypatch):
     """每个测试独立的状态文件目录(autouse,全测试套件生效)。"""
-    from dreamos.capabilities.trading import orchestrator_v2, v15_executor
+    from dreamos.capabilities.trading import orchestrator_v2
     from dreamos.cli import auto_trader
 
     monkeypatch.setattr(
@@ -19,9 +19,8 @@ def isolate_dreamos_state(tmp_path, monkeypatch):
     monkeypatch.setattr(
         orchestrator_v2, "LESSONS_FILE", tmp_path / "cognitive_lessons.json"
     )
-    monkeypatch.setattr(
-        v15_executor, "POSITIONS_FILE", tmp_path / "v15_positions.json"
-    )
+    # V15Executor 已改造为 14-V15 适配器，不再使用 POSITIONS_FILE
+    # 持仓状态统一由 14-V15 v15_state.json 管理
     # PROP-20260816: 对冲账本 + 动态排名层隔离
     from dreamos.capabilities.trading import hedge_executor, coin_selector
 

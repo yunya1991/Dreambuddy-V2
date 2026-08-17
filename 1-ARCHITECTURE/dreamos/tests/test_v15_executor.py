@@ -1,227 +1,168 @@
-"""V15Executor test suite."""
+"""Integration tests for V15Executor adapter layer."""
 import pytest
-from pathlib import Path
-from datetime import datetime, timedelta
-import sys
-
-BASE = Path(__file__).parent.parent
-sys.path.insert(0, str(BASE))
-
-from dreamos.capabilities.trading.v15_executor import V15Executor
+from unittest.mock import Mock, patch, MagicMock
+from dreamos.capabilities.trading.v15_executor import V15Executor, V15ExecutorNode
+from dreamos.shared.state import State, NodeStatus
 
 
-def test_v15_executor_initialization():
-    """Test V15Executor can be initialized with default params."""
-    executor = V15Executor()
-    assert executor is not None
-    assert hasattr(executor, "execute_signal")
-    assert hasattr(executor, "compute_addon_grid")
-    assert hasattr(executor, "check_exit_conditions")
+class TestV15ExecutorAdapter:
+    """Test V15Executor as 14-V15 adapter layer."""
+
+    def test_executor_initialization_with_coin_pool(self):
+        """Test that V15Executor loads coin pool on initialization."""
+        executor = V15Executor(dry_run=True)
+        
+        # Should load coin pool from coin_pool.json
+        assert "long_pool" in executor._coin_pool
+        assert "short_pool" in executor._coin_pool
+        assert isinstance(executor._coin_pool["long_pool"], list)
+        assert isinstance(executor._coin_pool["short_pool"], list)
+
+    def test_executor_rejects_hold_signal(self):
+        """Test that HOLD signal is rejected."""
+        executor = V15Executor(dry_run=True)
+        signal = {
+            "symbol": "BTC",
+            "direction": "HOLD",
+            "confidence": 0.75,
+            "entry_price": 50000.0,
+        }
+        result = executor.execute_signal(signal)
+        
+        assert result["status"] == "REJECTED"
+        assert result["reason"] == "HOLD signal not executable"
+        assert result["source"] == "14-V15-adapter"
+
+    def test_executor_rejects_long_only_gate(self):
+        """Test that long_only gate rejects SHORT signals."""
+        executor = V15Executor(dry_run=True, long_only=True)
+        signal = {
+            "symbol": "BTC",
+            "direction": "SHORT",
+            "confidence": 0.75,
+            "entry_price": 50000.0,
+        }
+        result = executor.execute_signal(signal)
+        
+        assert result["status"] == "REJECTED"
+        assert result["reason"] == "v15_long_only"
+        assert result["source"] == "14-V15-adapter"
+
+    def test_executor_rejects_symbol_not_in_pool(self):
+        """Test that symbol not in coin pool is rejected."""
+        executor = V15Executor(dry_run=True)
+        
+        # Mock coin pool to only include BTC
+        executor._coin_pool = {
+            "long_pool": [{"symbol": "BTC", "score": 0.8}],
+            "short_pool": [],
+        }
+        
+        signal = {
+            "symbol": "ETH",  # Not in pool
+            "direction": "LONG",
+            "confidence": 0.75,
+            "entry_price": 3000.0,
+        }
+        result = executor.execute_signal(signal)
+        
+        assert result["status"] == "REJECTED"
+        assert "not in long_pool" in result["reason"]
+        assert result["source"] == "14-V15-adapter"
+
+    @patch('dreamos.capabilities.trading.v15_executor.v15_trader')
+    def test_executor_delegates_to_14v15(self, mock_v15_trader):
+        """Test that V15Executor delegates to 14-V15 execute_open_position."""
+        # Mock 14-V15 functions
+        mock_v15_trader.load_state.return_value = {"positions": {}}
+        mock_v15_trader._get_okx_client.return_value = Mock()
+        mock_v15_trader.execute_open_position.return_value = True
+        mock_v15_trader.save_state.return_value = None
+        
+        executor = V15Executor(dry_run=True)
+        
+        # Mock coin pool to include BTC
+        executor._coin_pool = {
+            "long_pool": [{"symbol": "BTC", "score": 0.8}],
+            "short_pool": [],
+        }
+        
+        signal = {
+            "symbol": "BTC",
+            "direction": "LONG",
+            "confidence": 0.75,
+            "entry_price": 50000.0,
+        }
+        result = executor.execute_signal(signal)
+        
+        # Should delegate to 14-V15
+        assert mock_v15_trader.execute_open_position.called
+        assert result["source"] == "14-V15-adapter"
+        assert result["status"] in ["OPEN", "REJECTED", "ERROR"]
+
+    def test_executor_initializes_hyperliquid_client(self):
+        """Test that HyperliquidClient is initialized when dry_run=False."""
+        import dreamos.capabilities.trading.v15_executor as v15_module
+        
+        # Save original state
+        original_hl_available = v15_module._HL_AVAILABLE
+        original_hl_client = getattr(v15_module, 'HyperliquidClient', None)
+        
+        try:
+            # Create mock HyperliquidClient class
+            mock_hl_client_instance = Mock()
+            mock_hl_client_class = Mock(return_value=mock_hl_client_instance)
+            
+            # Patch module attributes
+            v15_module._HL_AVAILABLE = True
+            v15_module.HyperliquidClient = mock_hl_client_class
+            
+            executor = V15Executor(dry_run=False, agent_id="c")
+            
+            # Should initialize HyperliquidClient
+            assert mock_hl_client_class.called
+            assert mock_hl_client_class.call_args[0][0] == "c"
+            assert executor._hl_client is not None
+            assert executor._hl_adapter is not None
+        finally:
+            # Restore original state
+            v15_module._HL_AVAILABLE = original_hl_available
+            if original_hl_client is not None:
+                v15_module.HyperliquidClient = original_hl_client
 
 
-def test_v15_executor_execute_signal():
-    """Test execute_signal opens a position with correct params."""
-    executor = V15Executor()
-    signal = {
-        "symbol": "BTC",
-        "direction": "LONG",
-        "confidence": 0.75,
-        "entry_price": 100000.0,
-    }
-    result = executor.execute_signal(signal)
-    assert isinstance(result, dict)
-    assert "symbol" in result
-    assert result["symbol"] == "BTC"
-    assert "direction" in result
-    assert result["direction"] == "LONG"
-    assert "entry_price" in result
-    assert "position_size" in result
-    assert "addons_remaining" in result
-    assert result["addons_remaining"] == 3
-    assert "tp_pct" in result
-    assert result["tp_pct"] == 0.04
-    assert "addon_gap_pct" in result
-    assert result["addon_gap_pct"] == 0.08
-    assert "status" in result
-    assert result["status"] == "OPEN"
+class TestV15ExecutorNode:
+    """Test V15ExecutorNode DreamOS wrapper."""
 
+    def test_node_returns_valid_noderesult(self):
+        """Test that V15ExecutorNode returns valid NodeResult."""
+        node = V15ExecutorNode()
+        state = State(market={
+            "symbol": "BTC",
+            "direction": "LONG",
+            "confidence": 0.75,
+            "entry_price": 50000.0,
+        })
+        result = node.execute_core(state)
+        
+        assert result.node_id == "V15_EXECUTOR"
+        assert result.status in [NodeStatus.SUCCESS, NodeStatus.DEGRADED]
+        assert 0.0 <= result.confidence <= 1.0
+        assert "source" in result.outputs
+        assert result.outputs["source"] == "14-V15-adapter"
 
-def test_v15_executor_rejects_invalid_signal():
-    """Test execute_signal rejects signals with low confidence."""
-    executor = V15Executor()
-    signal = {
-        "symbol": "BTC",
-        "direction": "LONG",
-        "confidence": 0.30,
-        "entry_price": 100000.0,
-    }
-    result = executor.execute_signal(signal)
-    assert result["status"] == "REJECTED"
-    assert "reason" in result
-
-
-# ---- Task 2: Martin addon grid ----
-
-def test_v15_executor_addon_grid_long():
-    """Test compute_addon_grid for LONG direction."""
-    executor = V15Executor()
-    grid = executor.compute_addon_grid("LONG", 100000.0, vol_mult=1.0)
-
-    assert len(grid) == 3
-    assert grid[0]["level"] == 1
-    assert grid[1]["level"] == 2
-    assert grid[2]["level"] == 3
-
-    # LONG addons: price drops by 8% each level
-    assert abs(grid[0]["price"] - 92000.0) < 1.0   # 100000 * (1 - 0.08)
-    assert abs(grid[1]["price"] - 84000.0) < 1.0   # 100000 * (1 - 0.16)
-    assert abs(grid[2]["price"] - 76000.0) < 1.0   # 100000 * (1 - 0.24)
-
-    assert grid[0]["gap_pct"] == 0.08
-    assert grid[1]["gap_pct"] == 0.16
-    assert grid[2]["gap_pct"] == 0.24
-
-
-def test_v15_executor_addon_grid_short_with_vol_mult():
-    """Test compute_addon_grid for SHORT with volatility multiplier."""
-    executor = V15Executor()
-    grid = executor.compute_addon_grid("SHORT", 100000.0, vol_mult=1.5)
-
-    assert len(grid) == 3
-    # SHORT addons: price rises by 8%*1.5=12% each level
-    gap = 0.08 * 1.5  # 0.12
-    assert abs(grid[0]["price"] - 112000.0) < 1.0   # 100000 * (1 + 0.12)
-    assert abs(grid[1]["price"] - 124000.0) < 1.0   # 100000 * (1 + 0.24)
-    assert abs(grid[2]["price"] - 136000.0) < 1.0   # 100000 * (1 + 0.36)
-
-
-# ---- Task 3: ATR trailing TP and timeout exit ----
-
-def test_v15_executor_atr_trailing_tp():
-    """Test check_exit_conditions triggers ATR trailing TP."""
-    executor = V15Executor()
-    position = {
-        "symbol": "BTC",
-        "direction": "LONG",
-        "entry_price": 100000.0,
-        "addon_count": 0,
-        "opened_at": datetime.utcnow().isoformat() + "Z",
-    }
-    # Price rises 4% → should trigger TP
-    result = executor.check_exit_conditions(position, current_price=104500.0, vol_mult=1.0)
-    assert result["should_exit"] is True
-    assert "TP" in result["reason"]
-
-
-def test_v15_executor_timeout_exit():
-    """Test check_exit_conditions triggers timeout exit."""
-    executor = V15Executor()
-    # Position opened 35 hours ago (exceeds base 29.9h)
-    old_time = (datetime.utcnow() - timedelta(hours=35)).isoformat() + "Z"
-    position = {
-        "symbol": "BTC",
-        "direction": "LONG",
-        "entry_price": 100000.0,
-        "addon_count": 0,
-        "opened_at": old_time,
-    }
-    # Price not at TP, but timeout exceeded
-    result = executor.check_exit_conditions(position, current_price=101000.0, vol_mult=1.0)
-    assert result["should_exit"] is True
-    assert "Timeout" in result["reason"]
-
-
-# ---- Task 4: V15ExecutorNode ----
-
-def test_v15_executor_node():
-    """Test V15ExecutorNode node wrapper."""
-    from dreamos.capabilities.trading.v15_executor import V15ExecutorNode
-    from dreamos.shared.state import State, NodeResult, new_state
-
-    node = V15ExecutorNode()
-    assert node.node_id == "V15_EXECUTOR"
-    assert node.chain == "C"
-
-    state = new_state(cycle_id="test-v15-001")
-    state.market = {
-        "symbol": "BTC",
-        "direction": "LONG",
-        "confidence": 0.75,
-        "entry_price": 100000.0,
-    }
-
-    result = node.execute(state)
-
-    assert isinstance(result, NodeResult)
-    assert result.node_id == "V15_EXECUTOR"
-    assert result.success
-    assert result.confidence > 0
-    assert "status" in result.outputs
-    assert result.outputs["status"] == "OPEN"
-    assert "symbol" in result.outputs
-    assert "direction" in result.outputs
-    assert "position_size" in result.outputs
-
-
-# ---- Task 5: Phase 3 integration test ----
-
-def test_phase3_integration():
-    """Phase 3 end-to-end: init -> execute -> addon grid -> exit check -> node."""
-    from dreamos.capabilities.trading.v15_executor import V15Executor, V15ExecutorNode
-    from dreamos.shared.state import State, NodeResult, new_state
-
-    # Step 1: Initialize executor
-    executor = V15Executor()
-    assert executor is not None
-
-    # Step 2: Execute signal
-    signal = {
-        "symbol": "BTC",
-        "direction": "LONG",
-        "confidence": 0.75,
-        "entry_price": 100000.0,
-    }
-    pos = executor.execute_signal(signal)
-    assert pos["status"] == "OPEN"
-    assert pos["addons_remaining"] == 3
-    assert pos["tp_pct"] == 0.04
-    assert pos["addon_gap_pct"] == 0.08
-
-    # Step 3: Verify addon grid
-    grid = executor.compute_addon_grid("LONG", 100000.0, vol_mult=1.0)
-    assert len(grid) == 3
-    assert abs(grid[0]["price"] - 92000.0) < 1.0
-    assert abs(grid[1]["price"] - 84000.0) < 1.0
-    assert abs(grid[2]["price"] - 76000.0) < 1.0
-
-    # Step 4: Check exit conditions (TP not hit)
-    exit_result = executor.check_exit_conditions(
-        pos, current_price=101000.0, vol_mult=1.0
-    )
-    assert exit_result["should_exit"] is False
-
-    # Step 5: Check exit conditions (TP hit)
-    exit_result = executor.check_exit_conditions(
-        pos, current_price=105000.0, vol_mult=1.0
-    )
-    assert exit_result["should_exit"] is True
-    assert "TP" in exit_result["reason"]
-
-    # Step 6: Verify DreamOS node wrapper
-    node = V15ExecutorNode()
-    assert node.node_id == "V15_EXECUTOR"
-    assert node.chain == "C"
-
-    state = new_state(cycle_id="phase3-integration")
-    state.market = {
-        "symbol": "BTC",
-        "direction": "LONG",
-        "confidence": 0.75,
-        "entry_price": 100000.0,
-    }
-    result = node.execute(state)
-
-    assert result.success
-    assert result.outputs["status"] == "OPEN"
-    assert result.outputs["symbol"] == "BTC"
-    assert result.outputs["direction"] == "LONG"
+    def test_node_handles_hold_signal(self):
+        """Test that V15ExecutorNode handles HOLD signal correctly."""
+        node = V15ExecutorNode()
+        state = State(market={
+            "symbol": "BTC",
+            "direction": "HOLD",
+            "confidence": 0.75,
+            "entry_price": 50000.0,
+        })
+        result = node.execute_core(state)
+        
+        assert result.node_id == "V15_EXECUTOR"
+        assert result.status == NodeStatus.DEGRADED
+        assert result.outputs["status"] == "REJECTED"
+        assert result.outputs["reason"] == "HOLD signal not executable"

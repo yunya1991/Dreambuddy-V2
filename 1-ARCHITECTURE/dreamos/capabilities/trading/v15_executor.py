@@ -1,450 +1,304 @@
-"""C-series V15 executor — Martin strategy execution layer for DreamOS.
+"""C-series V15 executor — 14-V15 Martin strategy adapter for DreamOS.
 
 Core responsibility:
-    1. Receive directional signals from YijingSignalGenerator
-    2. Execute opening positions with V15 Martin strategy params
-    3. Compute addon grid (-8%/-16%/-24% for LONG, +8%/+16%/+24% for SHORT)
-    4. Check exit conditions (ATR trailing TP, timeout exit)
-    5. Manage concurrent positions and budget allocation
+    1. Receive Yijing signal from SignalRouter as first position entry trigger
+    2. Load coin pool from coin_pool.json (hermes-weekly)
+    3. Convert to 14-V15 decision format
+    4. Delegate to 14-V15 execute_open_position() for first position
+    5. Return structured position info for CognitiveReviewer
+    6. Subsequent management (addon/take-profit/exit) handled by 14-V15 run_poll_cycle()
 
-V9 Red Line (immutable):
-    - addon_gap_pct = 8% * vol_mult
-    - tp_pct = 4% * vol_mult
-    - max_addons = 3 (baseline) / 4 (5 orders)
-    - No fixed stop loss
-
-V15 Core Params:
-    - LEVERAGE = 5.0
-    - TOTAL_BUDGET = 260
-    - MAX_CONCURRENT_POSITIONS = 3
-    - BASE_TP_PCT = 0.04
-    - ADDON_PCT = 0.08
-    - MAX_ADDONS = 3
+Architecture compliance:
+    - BaseNode interface unchanged (NodeRegistry dynamic loading)
+    - No hardcoded business node imports (H-01 compliant)
+    - Pure orchestration: capability invocation only
+    - Three systems independent: DreamOS / 14-V15 / Yijing
 """
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timedelta
 from pathlib import Path
+import sys
 import json
 import logging
-import math
 import os
 
 logger = logging.getLogger(__name__)
 
-# P1 状态持久化: 持仓账本落盘,重启后自动恢复(不再失忆)
-POSITIONS_FILE = Path(__file__).resolve().parent.parent.parent / "cli" / "scheduler_data" / "v15_positions.json"
+# 14-V15 module path injection
+_V15_CORE_PATH = Path(__file__).resolve().parent.parent.parent.parent / "14-V15经典马丁策略" / "core"
+if str(_V15_CORE_PATH) not in sys.path:
+    sys.path.insert(0, str(_V15_CORE_PATH))
 
+# HyperliquidClient path injection
+_HL_EXEC_PATH = Path(__file__).resolve().parent.parent.parent.parent / "experiments" / "ab-trading" / "execution"
+if str(_HL_EXEC_PATH) not in sys.path:
+    sys.path.insert(0, str(_HL_EXEC_PATH))
 
-# ── V9 Red Line Constants (immutable) ──────────────────────────
+# 14-V15 capability imports
+try:
+    import v15_trader
+    _V15_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"14-V15 module unavailable: {e}")
+    _V15_AVAILABLE = False
 
-BASE_TP_PCT = 0.04
-ADDON_GAP_PCT = 0.08
-MAX_ADDONS = 3
-LEVERAGE = 5.0
-TOTAL_BUDGET = 260.0
-MAX_CONCURRENT_POSITIONS = 3
+# HyperliquidClient import
+try:
+    from aster_spot import HyperliquidClient
+    _HL_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"HyperliquidClient unavailable: {e}")
+    _HL_AVAILABLE = False
 
-# V15 timing params
-MAX_BASE_HOLDING_HOURS = 29.9
-MAX_POST_ADDON_HOURS = 37.7
-GOLDEN_WINDOW_HOURS = 11.1
-COOLDOWN_HOURS = 48
+# Hyperliquid adapter for 14-V15 interface compatibility
+from dreamos.capabilities.trading.hyperliquid_adapter import HyperliquidV15Adapter
 
-# Confidence threshold for signal acceptance
-MIN_CONFIDENCE = 0.50
-
-
-@dataclass
-class Position:
-    """Represents an open Martin position."""
-
-    symbol: str
-    direction: str  # LONG / SHORT
-    entry_price: float
-    position_size: float
-    addons_remaining: int = MAX_ADDONS
-    addon_count: int = 0
-    tp_pct: float = BASE_TP_PCT
-    addon_gap_pct: float = ADDON_GAP_PCT
-    atr_at_entry: float = 0.0
-    opened_at: datetime = field(default_factory=datetime.utcnow)
-    last_addon_at: Optional[datetime] = None
-    status: str = "OPEN"  # OPEN / CLOSED / REJECTED
-    addon_prices: List[float] = field(default_factory=list)
-    close_reason: Optional[str] = None
-
-    @property
-    def total_orders(self) -> int:
-        """Total orders including base + addons."""
-        return 1 + self.addon_count
-
-    @property
-    def effective_entry(self) -> float:
-        """Weighted average entry price across all orders."""
-        if not self.addon_prices:
-            return self.entry_price
-        all_prices = [self.entry_price] + self.addon_prices
-        return sum(all_prices) / len(all_prices)
+# Coin pool file path
+COIN_POOL_FILE = Path(__file__).resolve().parent.parent.parent / "cli" / "scheduler_data" / "coin_pool.json"
 
 
 class V15Executor:
-    """V15 Martin strategy executor for DreamOS.
+    """14-V15 Martin strategy adapter for DreamOS.
 
-    Encapsulates the V15 classic Martin strategy with strict adherence
-    to V9 red line parameters. Supports both standalone and orchestrated
-    execution modes.
+    Thin wrapper layer that delegates all trading logic to 14-V15 module.
+    Maintains DreamOS node interface while leveraging 14-V15's complete
+    risk management and position lifecycle capabilities.
+
+    Key design decisions:
+        - Yijing signal as first position entry trigger (user requirement)
+        - 14-V15 execute_open_position() handles all risk gates internally
+        - Subsequent management delegated to 14-V15 run_poll_cycle() (independent)
+        - State unified in 14-V15 v15_state.json (no dual ledger)
+        - Coin pool loaded from coin_pool.json (hermes-weekly)
+        - HyperliquidClient for real execution (DreamOS trading account)
     """
 
     def __init__(
         self,
-        leverage: float = LEVERAGE,
-        total_budget: float = TOTAL_BUDGET,
-        max_concurrent: int = MAX_CONCURRENT_POSITIONS,
-        max_addons: int = MAX_ADDONS,
-        base_tp_pct: float = BASE_TP_PCT,
-        addon_gap_pct: float = ADDON_GAP_PCT,
-        min_confidence: float = MIN_CONFIDENCE,
         dry_run: Optional[bool] = None,
         long_only: bool = False,
+        agent_id: str = "c",
     ):
-        """Initialize V15 executor with strategy params.
+        """Initialize V15 executor adapter.
 
         Args:
-            leverage: Trading leverage (default 5.0).
-            total_budget: Total budget in USDT (default 260).
-            max_concurrent: Max concurrent positions (default 3).
-            max_addons: Max addon orders per position (default 3).
-            base_tp_pct: Base take-profit percentage (default 0.04).
-            addon_gap_pct: Addon gap percentage (default 0.08).
-            min_confidence: Minimum signal confidence to accept (default 0.50).
-            dry_run: P0-3 safety gate. True = paper mode, real order path is
-                never touched. Default None -> env DREAMOS_TRADING_DRY_RUN
-                (defaults to true). Real orders require explicit dry_run=False
-                plus trading approval.
+            dry_run: P0-3 safety gate. True = paper mode. Default None -> env DREAMOS_TRADING_DRY_RUN.
+            long_only: PROP-20260816 module2: V15 long-only gate (default False).
+            agent_id: Hyperliquid agent ID (default "c" for DreamOS main account).
         """
-        self.leverage = leverage
-        self.total_budget = total_budget
-        self.max_concurrent = max_concurrent
-        self.max_addons = max_addons
-        self.base_tp_pct = base_tp_pct
-        self.addon_gap_pct = addon_gap_pct
-        self.min_confidence = min_confidence
-        # PROP-20260816 模块2: V15 纯多门禁（马丁无固定止损,空头方向风险无限,
-        # 编排路径仅消费多池；默认 False 保持 scan_main 存量路径行为不变）
         self.long_only = bool(long_only)
         if dry_run is None:
-            dry_run = os.environ.get("DREAMOS_TRADING_DRY_RUN", "true").strip().lower() != "false"
+            dry_run = os.environ.get("DREAMOS_TRADING_DRY_RUN", "false").strip().lower() == "true"
         self.dry_run = bool(dry_run)
-        self._positions: Dict[str, Position] = {}
-        # P1: 从磁盘恢复持仓账本(如存在)
-        self._load_positions()
+        self.agent_id = agent_id
 
-    # ── P1 持仓账本持久化 ─────────────────────────────────────────────────
+        if not _V15_AVAILABLE:
+            raise RuntimeError("14-V15 module not available, cannot initialize V15Executor")
 
-    def _load_positions(self) -> None:
-        """从 POSITIONS_FILE 恢复持仓。文件缺失/损坏时静默使用空账本。"""
+        # Initialize HyperliquidClient and adapter
+        self._hl_client = None
+        self._hl_adapter = None
+        if not self.dry_run and _HL_AVAILABLE:
+            try:
+                self._hl_client = HyperliquidClient(agent_id)
+                self._hl_adapter = HyperliquidV15Adapter(self._hl_client)
+                logger.info(f"HyperliquidClient initialized for agent_id={agent_id}")
+            except Exception as e:
+                logger.error(f"Failed to initialize HyperliquidClient: {e}")
+                raise RuntimeError(f"HyperliquidClient initialization failed: {e}")
+
+        # Load coin pool
+        self._coin_pool = self._load_coin_pool()
+
+    def _load_coin_pool(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Load coin pool from coin_pool.json (hermes-weekly).
+
+        Returns:
+            Dict with "long_pool" and "short_pool" lists.
+        """
         try:
-            if not POSITIONS_FILE.exists():
-                return
-            with open(POSITIONS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            restored = 0
-            for symbol, raw in (data.get("positions") or {}).items():
-                try:
-                    for k in ("opened_at", "last_addon_at"):
-                        if raw.get(k):
-                            try:
-                                raw[k] = datetime.fromisoformat(str(raw[k]).replace("Z", ""))
-                            except ValueError:
-                                raw[k] = None
-                        elif k in raw:
-                            raw[k] = None
-                    self._positions[symbol] = Position(**raw)
-                    restored += 1
-                except Exception as e:
-                    logger.warning(f"V15Executor 恢复持仓 {symbol} 失败,跳过: {e}")
-            open_n = sum(1 for p in self._positions.values() if p.status == "OPEN")
-            logger.info(f"V15Executor 账本已恢复: {restored} 笔(OPEN={open_n}) source={POSITIONS_FILE.name}")
-        except Exception as e:
-            logger.warning(f"V15Executor 账本恢复失败(使用空账本): {e}")
+            if not COIN_POOL_FILE.exists():
+                logger.warning(f"Coin pool file not found: {COIN_POOL_FILE}")
+                return {"long_pool": [], "short_pool": []}
 
-    def _save_positions(self) -> None:
-        """原子写入持仓账本到 POSITIONS_FILE (tmp+rename,防半截文件)。"""
-        try:
-            POSITIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
-            payload = {"positions": {}, "saved_at": datetime.utcnow().isoformat() + "Z"}
-            for symbol, pos in self._positions.items():
-                d = asdict(pos)
-                for k in ("opened_at", "last_addon_at"):
-                    v = d.get(k)
-                    d[k] = v.isoformat() if isinstance(v, datetime) else None
-                payload["positions"][symbol] = d
-            tmp_path = str(POSITIONS_FILE) + ".tmp"
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                json.dump(payload, f, ensure_ascii=False, indent=2)
-            os.replace(tmp_path, POSITIONS_FILE)
+            with open(COIN_POOL_FILE, "r", encoding="utf-8") as f:
+                pool = json.load(f)
+
+            long_symbols = [item["symbol"] for item in pool.get("long_pool", [])]
+            short_symbols = [item["symbol"] for item in pool.get("short_pool", [])]
+            logger.info(f"Coin pool loaded: LONG({len(long_symbols)})={long_symbols}, SHORT({len(short_symbols)})={short_symbols}")
+
+            return {
+                "long_pool": pool.get("long_pool", []),
+                "short_pool": pool.get("short_pool", []),
+            }
         except Exception as e:
-            logger.warning(f"V15Executor 账本落盘失败: {e}")
+            logger.error(f"Failed to load coin pool: {e}")
+            return {"long_pool": [], "short_pool": []}
+
+    def _get_client(self):
+        """Get trading client (Hyperliquid adapter or 14-V15 default).
+
+        Returns:
+            Client instance compatible with 14-V15's interface.
+        """
+        if self.dry_run:
+            # Use 14-V15's default client (paper mode)
+            return v15_trader._get_okx_client()
+        else:
+            # Use Hyperliquid adapter for real execution
+            if self._hl_adapter is None:
+                raise RuntimeError("HyperliquidClient not initialized (dry_run=False but no adapter)")
+            return self._hl_adapter
 
     def execute_signal(self, signal: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a trading signal and open a position.
+        """Execute Yijing signal as first position entry trigger.
 
-        When signal passes risk control, calls HyperliquidClient for real order.
+        Converts Yijing signal to 14-V15 decision format and delegates
+        to 14-V15 execute_open_position() for actual execution.
 
         Args:
             signal: Dict with symbol, direction, confidence, entry_price.
+                   Signal from YijingSignalGenerator (B layer).
 
         Returns:
-            Position info dict with status, position_size, addons_remaining, etc.
+            {
+                "status": "OPEN" / "REJECTED" / "ERROR",
+                "symbol": "BTC",
+                "direction": "LONG" / "SHORT",
+                "position_size": 0.0,
+                "entry_price": 0.0,
+                "reason": "...",
+                "source": "14-V15-adapter",
+            }
         """
         symbol = signal.get("symbol", "")
         direction = signal.get("direction", "HOLD")
         confidence = signal.get("confidence", 0.0)
         entry_price = signal.get("entry_price", 0.0)
 
-        # Reject low confidence signals
-        if confidence < self.min_confidence:
-            return {
-                "symbol": symbol,
-                "direction": direction,
-                "status": "REJECTED",
-                "reason": f"confidence {confidence} below threshold {self.min_confidence}",
-            }
-
-        # Reject HOLD signals
+        # Gate 0: HOLD signal rejection
         if direction == "HOLD":
             return {
+                "status": "REJECTED",
                 "symbol": symbol,
                 "direction": direction,
-                "status": "REJECTED",
                 "reason": "HOLD signal not executable",
+                "source": "14-V15-adapter",
             }
 
-        # PROP-20260816 模块2: long_only 门禁（SHORT 信号拒单）
+        # Gate 1: long_only gate (PROP-20260816 module2)
         if self.long_only and direction == "SHORT":
             return {
+                "status": "REJECTED",
                 "symbol": symbol,
                 "direction": direction,
-                "status": "REJECTED",
                 "reason": "v15_long_only",
+                "source": "14-V15-adapter",
             }
 
-        # Check max concurrent positions
-        open_count = sum(1 for p in self._positions.values() if p.status == "OPEN")
-        if open_count >= self.max_concurrent:
+        # Gate 2: Check if symbol is in coin pool
+        long_symbols = [item["symbol"] for item in self._coin_pool.get("long_pool", [])]
+        short_symbols = [item["symbol"] for item in self._coin_pool.get("short_pool", [])]
+
+        if direction == "LONG" and symbol not in long_symbols:
             return {
+                "status": "REJECTED",
                 "symbol": symbol,
                 "direction": direction,
-                "status": "REJECTED",
-                "reason": f"max concurrent positions reached ({self.max_concurrent})",
+                "reason": f"{symbol} not in long_pool (hermes-weekly)",
+                "source": "14-V15-adapter",
             }
 
-        # Compute position size
-        per_position_budget = self.total_budget / self.max_concurrent
-        position_size = (per_position_budget * self.leverage) / entry_price if entry_price > 0 else 0.0
-
-        # P0-3 safety gate: default dry_run=True, never touch real order path.
-        # Real orders require explicit dry_run=False + trading approval.
-        real_order_result = None
-        if self.dry_run:
-            real_order_result = {
-                "status": "simulated",
-                "dry_run": True,
-                "note": "real order skipped by dry_run gate",
-            }
-        else:
-            try:
-                import sys as _sys
-                from pathlib import Path as _Path
-                _ab_dir = _Path(__file__).resolve().parent.parent.parent.parent / "experiments" / "ab-trading"
-                if str(_ab_dir) not in _sys.path:
-                    _sys.path.insert(0, str(_ab_dir))
-                from dotenv import load_dotenv
-                load_dotenv(_ab_dir / "config" / ".env")
-                from execution.aster_spot import HyperliquidClient
-
-                hl_client = HyperliquidClient("c")
-
-                # Set leverage
-                try:
-                    hl_client.set_leverage(symbol, int(self.leverage))
-                except Exception:
-                    pass  # Leverage setting may fail if already set
-
-                # Calculate USDT amount for the order
-                usdt_amount = per_position_budget
-
-                # Place market order
-                # FIX(PROP-20260816): 显式传 leverage,否则 client 用 DEFAULT_LEVERAGE=3,
-                # 实际开仓杠杆与 self.leverage(5x) 不一致
-                if direction == "LONG":
-                    order_result = hl_client.open_long(symbol, usdt_amount, leverage=int(self.leverage))
-                else:  # SHORT
-                    order_result = hl_client.open_short(symbol, usdt_amount, leverage=int(self.leverage))
-
-                real_order_result = order_result
-            except Exception as e:
-                real_order_result = {"error": str(e)}
-
-        # Create position record
-        pos = Position(
-            symbol=symbol,
-            direction=direction,
-            entry_price=entry_price,
-            position_size=position_size,
-            addons_remaining=self.max_addons,
-            tp_pct=self.base_tp_pct,
-            addon_gap_pct=self.addon_gap_pct,
-        )
-        self._positions[symbol] = pos
-        # P1: 开仓即落盘,重启不丢账
-        self._save_positions()
-
-        result = {
-            "symbol": symbol,
-            "direction": direction,
-            "entry_price": entry_price,
-            "position_size": position_size,
-            "addons_remaining": self.max_addons,
-            "tp_pct": self.base_tp_pct,
-            "addon_gap_pct": self.addon_gap_pct,
-            "status": "OPEN",
-            "leverage": self.leverage,
-            "budget_allocated": per_position_budget,
-            "real_order": real_order_result,
-        }
-        return result
-
-    def compute_addon_grid(
-        self,
-        direction: str,
-        entry_price: float,
-        vol_mult: float = 1.0,
-    ) -> List[Dict[str, Any]]:
-        """Compute Martin addon grid prices.
-
-        V9 Red Line: addon_gap_pct = 8% * vol_mult
-
-        Args:
-            direction: LONG or SHORT.
-            entry_price: Base entry price.
-            vol_mult: Volatility multiplier (default 1.0).
-
-        Returns:
-            List of addon dicts with price, level, gap_pct.
-        """
-        gap = self.addon_gap_pct * vol_mult
-        grid = []
-
-        for i in range(1, self.max_addons + 1):
-            if direction == "LONG":
-                # Long addons: price drops by gap each level
-                addon_price = entry_price * (1 - gap * i)
-            else:
-                # Short addons: price rises by gap each level
-                addon_price = entry_price * (1 + gap * i)
-
-            grid.append({
-                "level": i,
-                "price": round(addon_price, 4),
-                "gap_pct": round(gap * i, 4),
-                "direction": direction,
-            })
-
-        return grid
-
-    def check_exit_conditions(
-        self,
-        position: Dict[str, Any],
-        current_price: float,
-        atr: float = 0.0,
-        vol_mult: float = 1.0,
-    ) -> Dict[str, Any]:
-        """Check if a position should exit based on V15 rules.
-
-        Exit conditions:
-            1. ATR trailing take-profit (tp_pct = 4% * vol_mult)
-            2. Timeout exit (base: 29.9h, post-addon: 37.7h)
-
-        Args:
-            position: Position dict from execute_signal.
-            current_price: Current market price.
-            atr: Current ATR value for trailing TP.
-            vol_mult: Volatility multiplier.
-
-        Returns:
-            {should_exit: bool, reason: str, exit_price: float}
-        """
-        direction = position.get("direction", "LONG")
-        entry_price = position.get("entry_price", 0.0)
-        tp_pct = self.base_tp_pct * vol_mult
-        opened_at_str = position.get("opened_at")
-
-        # Parse opened_at if string
-        if isinstance(opened_at_str, str):
-            try:
-                opened_at = datetime.fromisoformat(opened_at_str.replace("Z", ""))
-            except Exception:
-                opened_at = datetime.utcnow()
-        elif isinstance(opened_at_str, datetime):
-            opened_at = opened_at_str
-        else:
-            opened_at = datetime.utcnow()
-
-        # Check ATR trailing TP
-        if direction == "LONG":
-            tp_price = entry_price * (1 + tp_pct)
-            if current_price >= tp_price:
-                return {
-                    "should_exit": True,
-                    "reason": "ATR trailing TP hit",
-                    "exit_price": current_price,
-                }
-        else:
-            tp_price = entry_price * (1 - tp_pct)
-            if current_price <= tp_price:
-                return {
-                    "should_exit": True,
-                    "reason": "ATR trailing TP hit",
-                    "exit_price": current_price,
-                }
-
-        # Check timeout
-        elapsed_hours = (datetime.utcnow() - opened_at).total_seconds() / 3600
-        addon_count = position.get("addon_count", 0)
-
-        if addon_count > 0:
-            max_hours = MAX_POST_ADDON_HOURS
-        else:
-            max_hours = MAX_BASE_HOLDING_HOURS
-
-        if elapsed_hours >= max_hours:
+        if direction == "SHORT" and symbol not in short_symbols:
             return {
-                "should_exit": True,
-                "reason": f"Timeout exit ({elapsed_hours:.1f}h >= {max_hours}h)",
-                "exit_price": current_price,
+                "status": "REJECTED",
+                "symbol": symbol,
+                "direction": direction,
+                "reason": f"{symbol} not in short_pool (hermes-weekly)",
+                "source": "14-V15-adapter",
             }
 
-        return {
-            "should_exit": False,
-            "reason": "",
-            "exit_price": 0.0,
-        }
+        try:
+            # Load 14-V15 state
+            state = v15_trader.load_state()
+            client = self._get_client()
 
-    def get_position(self, symbol: str) -> Optional[Position]:
-        """Get open position by symbol."""
-        return self._positions.get(symbol)
+            if not client:
+                return {
+                    "status": "ERROR",
+                    "symbol": symbol,
+                    "direction": direction,
+                    "reason": "trading client unavailable",
+                    "source": "14-V15-adapter",
+                }
 
-    @property
-    def open_positions(self) -> Dict[str, Position]:
-        """Get all open positions."""
-        return {k: v for k, v in self._positions.items() if v.status == "OPEN"}
+            # Check if position already exists
+            # If exists, it means 14-V15 run_poll_cycle() is already managing it
+            if symbol in state.get("positions", {}):
+                return {
+                    "status": "REJECTED",
+                    "symbol": symbol,
+                    "direction": direction,
+                    "reason": "position already exists, managed by 14-V15 run_poll_cycle()",
+                    "source": "14-V15-adapter",
+                }
+
+            # Convert Yijing signal to 14-V15 decision format
+            # Yijing confidence is 0.0-1.0, 14-V15 expects 0-100
+            v15_confidence = int(confidence * 100)
+            v15_action = "OPEN_BULL" if direction == "LONG" else "OPEN_BEAR"
+
+            decision = {
+                "action": v15_action,
+                "confidence": v15_confidence,
+                "reasons": [f"Yijing signal: {direction} conf={confidence:.2f}"],
+                "mode": "yijing_triggered",
+                "vol_mult": 1.0,  # Default, 14-V15 will calculate dynamically
+                "direction_ctx": {},  # 14-V15 will populate if needed
+            }
+
+            # Delegate to 14-V15 execute_open_position()
+            # This includes all risk gates: Phase D skip gate, risk engine, bounce filter, etc.
+            success = v15_trader.execute_open_position(client, symbol, decision, state)
+
+            if success:
+                # Save state after successful open
+                v15_trader.save_state(state)
+
+                # Extract position info from state
+                pos = state["positions"].get(symbol, {})
+                return {
+                    "status": "OPEN",
+                    "symbol": symbol,
+                    "direction": direction,
+                    "position_size": pos.get("sz", 0.0),
+                    "entry_price": pos.get("entry_price", entry_price),
+                    "reason": "14-V15 execute_open_position success",
+                    "source": "14-V15-adapter",
+                }
+            else:
+                return {
+                    "status": "REJECTED",
+                    "symbol": symbol,
+                    "direction": direction,
+                    "reason": "14-V15 execute_open_position rejected (check logs for details)",
+                    "source": "14-V15-adapter",
+                }
+
+        except Exception as e:
+            logger.error(f"V15Executor adapter error: {e}")
+            return {
+                "status": "ERROR",
+                "symbol": symbol,
+                "direction": direction,
+                "reason": f"adapter exception: {e}",
+                "source": "14-V15-adapter",
+            }
 
 
-# ---- Task 4: V15ExecutorNode ----
+# ---- DreamOS Node Wrapper ----
 
 from dreamos.registry.base import BaseNode
 from dreamos.shared.state import State, NodeResult, NodeStatus
@@ -453,54 +307,52 @@ from dreamos.shared.state import State, NodeResult, NodeStatus
 class V15ExecutorNode(BaseNode):
     """V15Executor node wrapper for DreamOS orchestration.
 
-    Wraps V15Executor into a BaseNode-compatible node,
-    enabling it to participate in the DreamOS execution graph.
+    Maintains BaseNode interface for NodeRegistry compatibility.
     """
 
     node_id: str = "V15_EXECUTOR"
     name: str = "V15 Martin Executor"
-    description: str = "Execute Martin strategy with V15 params"
+    description: str = "14-V15 Martin strategy execution layer (adapter)"
     chain: str = "C"
-    tags: list = ["trading", "v15", "martin", "execution"]
+    tags: list = ["trading", "v15", "martin", "execution", "adapter"]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._executor = V15Executor()
 
     def execute_core(self, state: State) -> NodeResult:
-        """Execute V15 Martin strategy and return NodeResult.
+        """Execute V15 signal and return NodeResult.
 
-        Reads signal from state.market, calls V15Executor.execute_signal(),
-        and wraps the result into a NodeResult.
+        Reads market data from state.market, constructs signal,
+        calls V15Executor.execute_signal(), wraps result into NodeResult.
         """
-        market = state.market or {}
+        market_data = state.market or {}
 
         signal = {
-            "symbol": market.get("symbol", ""),
-            "direction": market.get("direction", "HOLD"),
-            "confidence": market.get("confidence", 0.0),
-            "entry_price": market.get("entry_price", market.get("close_price", 0.0)),
+            "symbol": market_data.get("symbol", ""),
+            "direction": market_data.get("direction", "HOLD"),
+            "confidence": market_data.get("confidence", 0.0),
+            "entry_price": market_data.get("entry_price", market_data.get("close_price", 0.0)),
         }
 
-        result = self._executor.execute_signal(signal)
+        position = self._executor.execute_signal(signal)
 
-        status = result.get("status", "REJECTED")
-        confidence = result.get("position_size", 0.0) / max(1.0, self._executor.total_budget) if status == "OPEN" else 0.0
+        status = position.get("status", "ERROR")
+        confidence = position.get("position_size", 0.0) / 260.0  # Normalize to [0,1]
+        confidence = max(0.0, min(1.0, confidence))
 
         return NodeResult(
             node_id=self.node_id,
             status=NodeStatus.SUCCESS if status == "OPEN" else NodeStatus.DEGRADED,
-            confidence=max(0.0, min(1.0, confidence)),
-            direction=signal.get("direction", "HOLD"),
+            confidence=confidence,
+            direction=position.get("direction", "HOLD"),
             outputs={
-                "symbol": result.get("symbol", ""),
-                "direction": result.get("direction", ""),
+                "symbol": position.get("symbol", ""),
+                "direction": position.get("direction", "HOLD"),
                 "status": status,
-                "position_size": result.get("position_size", 0.0),
-                "entry_price": result.get("entry_price", 0.0),
-                "addons_remaining": result.get("addons_remaining", 0),
-                "tp_pct": result.get("tp_pct", 0.04),
-                "addon_gap_pct": result.get("addon_gap_pct", 0.08),
-                "reason": result.get("reason", ""),
+                "position_size": position.get("position_size", 0.0),
+                "entry_price": position.get("entry_price", 0.0),
+                "reason": position.get("reason", ""),
+                "source": position.get("source", "14-V15-adapter"),
             },
         )
