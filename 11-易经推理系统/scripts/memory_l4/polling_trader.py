@@ -88,9 +88,9 @@ class PollingTrader:
         interval: int = 3600,
         coins: list = None,
         bar: str = "1H",
-        confidence_threshold: float = 0.55,
+        confidence_threshold: float = 0.70,
         short_confidence_threshold: float = 0.70,
-        max_positions: int = 3,
+        max_positions: int = 5,
         kline_limit: int = 200,
         initial_equity: float = 100.0,
         daily_loss_limit: float = -30.0,
@@ -156,6 +156,20 @@ class PollingTrader:
         self.bcrm2_failed_coins: dict = {}  # {coin: fail_ts}
         self.bcrm2_retry_interval_sec: int = 86400  # 训练失败后24h才重试
         self.bcrm2_min_samples: int = 100  # BCRM 2.0训练所需最小有效样本数
+
+        # P0-2: 币种黑名单 — 历史回测胜率0%的币种，禁止下单
+        # 数据来源：69笔交易复盘中 ETH(0/10) NEAR(0/6) XRP(0/5) LINK(0/4) BNB(0/4) 全部0胜率
+        # 可被 config.json 的 blacklist_coins 字段热重载覆盖
+        self.blacklist_coins: set = {"ETH", "NEAR", "XRP", "LINK", "BNB"}
+
+        # P0-3: 卦象黑名单 — 历史回测胜率0%的卦象，强制HOLD
+        # 数据来源：坤为地(7/7亏) 震为雷(5/5亏) 火地晋(2/2亏) 地雷复(2/2亏) 全部100%亏损
+        # 可被 config.json 的 hexagram_blacklist 字段热重载覆盖
+        self.hexagram_blacklist: set = {"坤为地", "震为雷", "火地晋", "地雷复"}
+
+        # P1-1: BTC趋势缓存（5分钟刷新一次，避免每币种重复拉取BTC日线K线）
+        self._btc_trend_cache: dict = {"ts": 0, "result": None}
+
         if self.use_bcrm2:
             # 措施1：启动时主动验证 BCRM 2.0 模块导入与核心依赖可用性
             # 避免运行时才发现 "No module named 'bcrm2'" 等导入错误
@@ -824,7 +838,7 @@ class PollingTrader:
                 symbol=coin,
                 timeframe=self.bar,
                 tp_atr=3.0,
-                sl_atr=1.5,
+                sl_atr=2.5,  # P1-2: 原1.5→2.5，与外层SL=3.0×ATR口径一致（2.5~3 ATR区间）
                 max_hold_bars=60,
                 macro_config=btc_macro_config,
             )
@@ -947,11 +961,12 @@ class PollingTrader:
                 self._log(f"[{coin}] CBR 增强失败: {e}", "WARN")
 
         # 计算 ATR 止盈止损
-        # 2026-08-06 上调：ATR 倍数 2.0→3.0 / 4.0→6.0（过近止损频繁扫损；高置信度再 ×1.3 放宽）
+        # P1-2: 统一ATR止损倍率为2.5~3.0区间（adapter=2.5, 主SL=3.0, ExitConfig=2.5）
+        # 高置信度(≥0.9)再×1.3放宽至3.9×ATR，盈亏比保持~2:1
         sl_px, tp_px = 0, 0
         if atr > 0:
-            sl_mult = 3.0  # 原 2.0
-            tp_mult = 6.0  # 原 4.0
+            sl_mult = 3.0  # 主止损线 3.0×ATR
+            tp_mult = 6.0  # 止盈 6.0×ATR
             if confidence >= 0.9:
                 sl_mult *= 1.3
                 tp_mult *= 1.3
@@ -1669,6 +1684,239 @@ class PollingTrader:
             self._log(f"[L4] Pipeline完成: case={case_id} status={l4_status}")
         except Exception as e:
             self._log(f"[L4] Pipeline执行失败: {e}", "WARN")
+
+    # ===== P1-1: 做空趋势过滤器 =====
+    # 加密货币用BTC趋势确认（参考V15马丁策略DirectionGate力学化模式）
+    # 非加密货币用自身日MA50趋势（未来可升级为标普500趋势线过滤）
+    CRYPTO_COINS = frozenset({
+        "BTC", "ETH", "SOL", "UNI", "LINK", "BNB", "OKB",
+        "HYPE", "PUMP", "NEAR", "XRP", "DOT", "ADA", "AVAX",
+    })
+
+    @staticmethod
+    def _ma_spring_force(price: float, ma: float, k: float = 2.0) -> float:
+        """双均线弹簧力：F = -k × (price - MA) / MA
+
+        符号语义:
+          F > 0 → 做多倾向（价格在MA下方时，MA作为支撑，弹簧向上推）
+          F < 0 → 做空倾向（价格在MA上方时，MA作为阻力，弹簧向下压）
+        来源: V15 direction_gate._ma_spring_force
+        """
+        if ma is None or ma <= 0:
+            return 0.0
+        return -k * (price - ma) / ma
+
+    @staticmethod
+    def _distance_weight(abs_dist_pct: float) -> float:
+        """距离权重函数: w = 1 / (1 + |dist%|)
+
+        距离越近权重越大 → 价格接近周MA200时，周线支撑权重大 → 偏见底
+        来源: V15 direction_gate._distance_weight
+        """
+        return 1.0 / (1.0 + abs(abs_dist_pct))
+
+    def _check_btc_trend(self) -> tuple:
+        """BTC日线趋势判定（参考V15 DirectionGate力学化模式）
+
+        算法（双均线弹簧力场 + 距离权重）：
+          1. 计算日线MA128 + 周线MA200（近似=日MA1400，200周×7日）
+          2. 对每条均线计算弹簧力 F = -k × (price - MA) / MA
+          3. 距离%权重 w = 1/(1+|dist%|)，越靠近哪条线，哪条线的话语权越大
+               → 价格跌近周MA200时，w_weekly >> w_daily → 周线支撑力（做多）主导 → 偏见底
+          4. 加权合力 F_net = F_128 × w_128 + F_200 × w_200
+          5. 三态映射:
+               F_net > +threshold → LONG_PREFERRED（多头趋势，禁止做空）
+               F_net < -threshold + 连续3日跌破MA128确认 → SHORT_ALLOWED（做空允许）
+               |F_net| ≤ threshold → 支撑区/筑底，偏见底，禁止做空
+          6. 兜底: 价格≤周MA200+1%缓冲 → LONG_ONLY_FORCE（绝对禁止做空）
+
+        Returns:
+            (bearish: bool, reason: str)
+        """
+        now = time.time()
+        cached = self._btc_trend_cache
+        if cached["result"] and (now - cached["ts"]) < 300:
+            return cached["result"]
+
+        try:
+            # 拉取足够长度（MA1400需要1400日数据，留余量）
+            btc_klines = _load_kline_from_okx(inst_id="BTC-USDT-SWAP", bar="1D", limit=1500)
+            if not btc_klines or len(btc_klines) < 1401:
+                # 数据不足1401日时降级到可用长度
+                limit = len(btc_klines) if btc_klines else 0
+                weekly_ma_period = min(1400, max(200, limit - 1)) if limit >= 201 else 200
+                if limit < 131:
+                    return False, f"BTC日线数据不足(<131,limit={limit})"
+            else:
+                weekly_ma_period = 1400  # 200周 × 7日 = 日MA1400近似周MA200
+
+            closes = [float(k.get("c", 0)) for k in btc_klines if k.get("c")]
+            # OKX返回 newest-first: closes[:N] = 最近N日
+            if len(closes) < 131:
+                return False, f"BTC收盘价数据不足(<131,len={len(closes)})"
+
+            current_price = closes[0]
+
+            # 日线MA128
+            ma128 = sum(closes[:128]) / 128
+            # 周线MA200 = 日MA1400（如果够则用1400，否则用可用长度）
+            daily_ma_period = min(weekly_ma_period, len(closes))
+            ma200_weekly = sum(closes[:daily_ma_period]) / daily_ma_period
+
+            # ===== 双均线力场合力（V15力学化核心） =====
+            # 1) 距离%
+            dist_daily = (current_price - ma128) / ma128 * 100 if ma128 else 0
+            dist_weekly = (current_price - ma200_weekly) / ma200_weekly * 100 if ma200_weekly else 0
+
+            # 2) 弹簧力
+            F_daily = self._ma_spring_force(current_price, ma128)
+            F_weekly = self._ma_spring_force(current_price, ma200_weekly)
+
+            # 3) 距离权重（距离越近权重越大 → 偏见底关键机制）
+            w_daily = self._distance_weight(abs(dist_daily))
+            w_weekly = self._distance_weight(abs(dist_weekly))
+
+            # 4) 加权合力
+            F_net = F_daily * w_daily + F_weekly * w_weekly
+
+            # 5) 有效跌破MA128确认（连续3日收盘≤MA128）
+            recent_3 = closes[:3]
+            valid_breakdown = all(c <= ma128 for c in recent_3)
+
+            # 6) 周线MA200兜底：价格≤周MA200+1%缓冲 → 强制做多
+            weekly_buffer = ma200_weekly * 0.01
+            if current_price <= ma200_weekly + weekly_buffer:
+                result = (
+                    False,
+                    f"BTC跌至周MA200附近(价={current_price:.0f}≤MA200+1%={ma200_weekly+weekly_buffer:.0f})"
+                    f" | 偏见底支撑，禁止做空 | F_net={F_net:+.3f}"
+                    f" | 日距={dist_daily:+.1f}%({w_daily:.2f}) 周距={dist_weekly:+.1f}%({w_weekly:.2f})"
+                )
+                self._btc_trend_cache = {"ts": now, "result": result}
+                return result
+
+            # 7) 三态映射（阈值0.02=2%等效速度）
+            threshold = 0.02
+            if F_net > threshold:
+                # 合力显著向上 → 多头趋势
+                result = (
+                    False,
+                    f"BTC多头趋势(F_net={F_net:+.3f}>+{threshold})"
+                    f" | 主导均线: {'日MA128' if w_daily>=w_weekly else '周MA200'}"
+                    f"({w_daily:.2f}/{w_weekly:.2f}), 日距={dist_daily:+.1f}% 周距={dist_weekly:+.1f}%"
+                    f" | 最新收盘={current_price:.0f}"
+                )
+            elif F_net < -threshold and valid_breakdown:
+                # 合力显著向下 + 有效跌破MA128双重确认 → 做空允许
+                result = (
+                    True,
+                    f"BTC做空允许(F_net={F_net:+.3f}<-{threshold} + 连续3日跌破MA128)"
+                    f" | 主导均线: {'日MA128' if w_daily>=w_weekly else '周MA200'}"
+                    f"({w_daily:.2f}/{w_weekly:.2f}), 日距={dist_daily:+.1f}% 周距={dist_weekly:+.1f}%"
+                    f" | MA128={ma128:.0f} MA200周={ma200_weekly:.0f} 近3日={'<'.join(str(int(c)) for c in recent_3)}"
+                )
+            else:
+                # 合力在阈值内 → 支撑/筑底区（或未达跌破确认），偏见底，禁止做空
+                if not valid_breakdown:
+                    extra = " | 无3日跌破MA128确认"
+                else:
+                    extra = " | |F|≤阈值 → 支撑筑底区"
+                result = (
+                    False,
+                    f"BTC震荡/筑底区(F_net={F_net:+.3f} |阈值{threshold}){extra}"
+                    f" | 日距={dist_daily:+.1f}%({w_daily:.2f}) 周距={dist_weekly:+.1f}%({w_weekly:.2f})"
+                    f" | MA128={ma128:.0f} MA200周={ma200_weekly:.0f}"
+                )
+
+            self._btc_trend_cache = {"ts": now, "result": result}
+            return result
+        except Exception as e:
+            return False, f"BTC趋势检查异常: {e}"
+
+    def _check_self_trend(self, coin: str) -> tuple:
+        """非加密货币自身日K线趋势（双均线力场）
+
+        与BTC趋势算法同构：日MA50（短）+ 日MA200（长）双均线弹簧力场。
+        未来可直接替换为"标普500趋势线过滤"（SPX ^GSPC的MA200/MA50）。
+
+        Returns:
+            (bearish: bool, reason: str)
+        """
+        try:
+            inst_id = f"{coin}-USDT-SWAP"
+            klines = _load_kline_from_okx(inst_id=inst_id, bar="1D", limit=250)
+            if not klines or len(klines) < 201:
+                return False, f"{coin}日线数据不足(<201)"
+            closes = [float(k.get("c", 0)) for k in klines if k.get("c")]
+            if len(closes) < 201:
+                return False, f"{coin}收盘价数据不足"
+            current_price = closes[0]
+            ma50 = sum(closes[:50]) / 50
+            ma200 = sum(closes[:200]) / 200
+
+            # 双均线力场（同构V15力学化）
+            dist_50 = (current_price - ma50) / ma50 * 100
+            dist_200 = (current_price - ma200) / ma200 * 100
+            F_50 = self._ma_spring_force(current_price, ma50)
+            F_200 = self._ma_spring_force(current_price, ma200)
+            w_50 = self._distance_weight(abs(dist_50))
+            w_200 = self._distance_weight(abs(dist_200))
+            F_net = F_50 * w_50 + F_200 * w_200
+
+            # 周MA200等价兜底：价格≤MA200+1%缓冲 → 偏见底
+            if current_price <= ma200 + ma200 * 0.01:
+                return False, (
+                    f"{coin}跌至MA200附近(价={current_price:.2f}≤MA200+1%) | "
+                    f"偏见底禁止做空 F_net={F_net:+.3f}"
+                )
+
+            # 跌破MA50+MA200双重确认 + F_net向下
+            recent_2 = closes[:2]
+            below_ma50 = recent_2[0] < ma50
+            if F_net < -0.02 and below_ma50:
+                return True, (
+                    f"{coin}趋势看空 F_net={F_net:+.3f} | "
+                    f"MA50={ma50:.2f} MA200={ma200:.2f} 最新={current_price:.2f}"
+                )
+            return False, (
+                f"{coin}无看空确认 F_net={F_net:+.3f} | "
+                f"MA50={ma50:.2f} MA200={ma200:.2f}"
+            )
+        except Exception as e:
+            return False, f"{coin}趋势检查异常: {e}"
+
+    def _check_short_trend_filter(self, coin: str, inference: dict) -> tuple:
+        """P1-1: 做空趋势确认过滤器
+
+        两道关卡：
+        1. 趋势确认：加密货币用BTC MA128风向标，非加密用自身日MA50
+        2. 短周期共振：当前K线EMA20/50/200需呈空头排列(SMA20<SMA50<SMA200)
+
+        Returns:
+            (allow_short: bool, reason: str)
+        """
+        # Step 1: 趋势确认
+        if coin.upper() in self.CRYPTO_COINS:
+            trend_bearish, trend_reason = self._check_btc_trend()
+        else:
+            trend_bearish, trend_reason = self._check_self_trend(coin)
+
+        if not trend_bearish:
+            return False, f"趋势未确认: {trend_reason}"
+
+        # Step 2: 短周期共振（SMA20<SMA50<SMA200 空头排列）
+        kline_data = inference.get("kline_data", [])
+        if kline_data and len(kline_data) >= 200:
+            closes = [float(c.get("c", 0)) for c in kline_data if c.get("c")]
+            if len(closes) >= 200:
+                sma20 = sum(closes[:20]) / 20
+                sma50 = sum(closes[:50]) / 50
+                sma200 = sum(closes[:200]) / 200
+                if sma20 < sma50 < sma200:
+                    return True, f"趋势确认+共振(SMA20<sma50<sma200) {trend_reason}"
+                return False, f"共振失败(SMA20={sma20:.2f}/50={sma50:.2f}/200={sma200:.2f}非空头排列)"
+
+        return True, f"趋势确认(无共振数据) {trend_reason}"
 
     def _execute_trade(self, inference: dict, confidence_threshold: float = None,
                        all_inferences: dict = None):
@@ -2500,7 +2748,7 @@ class PollingTrader:
             adjusted_threshold = self._adjust_confidence_threshold()
         except Exception:
             adjusted_threshold = self.confidence_threshold
-        A_SAFETY_FLOOR = 0.40
+        A_SAFETY_FLOOR = 0.70
         effective_a_floor = max(float(adjusted_threshold), A_SAFETY_FLOOR)
         if confidence < effective_a_floor:
             self._log(
@@ -2508,6 +2756,15 @@ class PollingTrader:
                 f"effective_a_floor={effective_a_floor:.4f}("
                 f"adjusted={adjusted_threshold:.4f}, safety_floor={A_SAFETY_FLOOR}) | "
                 f"方向={direction} 卦象={inference['hexagram']} 跳过"
+            )
+            return
+
+        # P0-3: 卦象黑名单 — 历史胜率0%的卦象强制HOLD
+        hex_name = inference.get("hexagram", "")
+        if hex_name in self.hexagram_blacklist:
+            self._log(
+                f"[{coin}] P0卦象黑名单 | {hex_name} 历史胜率0% | "
+                f"confidence={confidence:.4f} 方向={direction} 跳过"
             )
             return
 
@@ -2619,6 +2876,17 @@ class PollingTrader:
                 f"BCRM不确定，不开仓 (八卦方向={bagua_dir} 不作为开仓依据)"
             )
             return
+
+        # P1-1: 做空趋势过滤器
+        # 加密货币用BTC MA128趋势确认，非加密用自身日MA50；+短周期EMA共振
+        if direction == "DOWN":
+            trend_ok, trend_reason = self._check_short_trend_filter(coin, inference)
+            if not trend_ok:
+                self._log(
+                    f"[{coin}] P1做空趋势过滤 | {trend_reason} | "
+                    f"置信度={confidence:.2f} 方向={direction} 卦象={inference['hexagram']} 跳过"
+                )
+                return
 
         # 做空试错区间更窄（减少低置信度做空）
         if direction == "DOWN":
@@ -3346,6 +3614,10 @@ class PollingTrader:
         cycle_success = True
         all_inferences = {}
         for coin in self.coins:
+            # P0-2: 币种黑名单过滤
+            if coin in self.blacklist_coins:
+                self._log(f"[{coin}] P0币种黑名单 | 跳过（历史胜率0%）")
+                continue
             try:
                 inference = self._fetch_and_infer(coin)
                 if not inference.get("ok"):
