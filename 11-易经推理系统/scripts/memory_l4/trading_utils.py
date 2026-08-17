@@ -421,12 +421,69 @@ class RiskManager:
 
         return {"allowed": True, "reason": ""}
 
+    @staticmethod
+    def kelly_half_factor(win_rate: float, avg_win: float, avg_loss: float,
+                          kelly_shrink: float = 0.5,
+                          min_factor: float = 0.25, max_factor: float = 1.25) -> float:
+        """半凯利仓位系数。
+
+        Kelly 公式: f = (p·b − q) / b，其中 p=胜率, q=1-p, b=盈亏比=avg_win/avg_loss
+        保守取 kelly_shrink × f（默认半凯利），避免过拟合与过激进。
+        当样本不足或 b <= 0 时返回 1.0（保持默认仓位）。
+        """
+        if win_rate <= 0.0 or avg_loss <= 0.0 or avg_win <= 0.0:
+            return 1.0
+        b = avg_win / avg_loss
+        if b <= 0:
+            return 1.0
+        f = (win_rate * b - (1.0 - win_rate)) / b
+        f_shrunk = max(0.0, f) * kelly_shrink  # 半凯利 / 收缩
+        factor = 1.0 + (f_shrunk - 0.10)  # 以 f=10% 为基准线
+        factor = max(min_factor, min(factor, max_factor))
+        return factor
+
+    @staticmethod
+    def consecutive_loss_factor(loss_streak: int,
+                                factor_map: Optional[Dict[int, float]] = None) -> float:
+        """连续亏损缩仓系数：连亏越多，仓位越小，防止情绪失控与极端段放大回撤。
+
+        默认映射：连亏0→1.0；连亏1→0.85；连亏2→0.65；连亏3→0.45；连亏≥4→0.30
+        """
+        if loss_streak <= 0:
+            return 1.0
+        if factor_map is None:
+            factor_map = {0: 1.0, 1: 0.85, 2: 0.65, 3: 0.45}
+        return factor_map.get(loss_streak, 0.30)
+
+    @staticmethod
+    def hexagram_class_factor(hexagram: str,
+                              bullish_hexagrams: Optional[set] = None,
+                              bearish_hexagrams: Optional[set] = None) -> Tuple[float, str]:
+        """卦象类型仓位系数（复用 review_engine 中 BULLISH/BEARISH/NEUTRAL 分类）。
+
+        - BULLISH（吉卦，做多有利）×1.20  放大仓位
+        - BEARISH（凶卦，做空有利）×0.70  降低做多仓位
+        - NEUTRAL ×1.00  中性
+        返回 (factor, class_name)。
+        """
+        h = (hexagram or "").strip()
+        if not h:
+            return 1.0, "neutral"
+        if bullish_hexagrams and h in bullish_hexagrams:
+            return 1.20, "bullish"
+        if bearish_hexagrams and h in bearish_hexagrams:
+            return 0.70, "bearish"
+        return 1.0, "neutral"
+
     def calc_position_size(self,
                            confidence: float,
                            volatility: float,
                            current_equity: float,
                            base_pct: float = None,
-                           leverage: float = None) -> Dict:
+                           leverage: float = None,
+                           kelly_factor: float = 1.0,
+                           consecutive_loss_factor: float = 1.0,
+                           hexagram_factor: float = 1.0) -> Dict:
         """根据置信度和波动率动态计算仓位大小
 
         Args:
@@ -435,6 +492,9 @@ class RiskManager:
             current_equity: 当前权益
             base_pct: 基础仓位比例（默认用 state 中的值）
             leverage: 杠杆倍数（默认从环境变量读取）
+            kelly_factor: P2 凯利系数（半凯利动态仓位），范围 [0.25,1.25]
+            consecutive_loss_factor: P2 连亏缩仓系数，范围 [0.30,1.00]
+            hexagram_factor: P2 卦象类型系数，范围 [0.70,1.20]
 
         Returns:
             {position_usdt: float, margin_usdt: float, position_pct: float, reason: str}
@@ -443,6 +503,13 @@ class RiskManager:
             leverage = float(os.environ.get("DEFAULT_LEVERAGE", 10))
 
         base = base_pct or self.state.position_size_pct
+
+        # P2 动态仓位基础倍率：凯利 × 连亏 × 卦象 共同作用于 base
+        p2_base_multiplier = max(0.15, min(kelly_factor, 1.50)) \
+            * max(0.25, min(consecutive_loss_factor, 1.20)) \
+            * max(0.50, min(hexagram_factor, 1.50))
+        p2_base_multiplier = max(0.15, min(p2_base_multiplier, 1.80))  # 全局限制避免因子乘积爆炸
+        base = base * p2_base_multiplier
 
         # 置信度系数：分段线性动态缩放
         # 以 0.70 为基准点，低于基准减仓，高于基准加仓
@@ -483,7 +550,13 @@ class RiskManager:
             "position_pct": round(position_pct, 4),
             "confidence_factor": round(conf_factor, 4),
             "volatility_factor": round(vol_factor, 4),
+            "kelly_factor": round(kelly_factor, 4),
+            "consecutive_loss_factor": round(consecutive_loss_factor, 4),
+            "hexagram_factor": round(hexagram_factor, 4),
+            "p2_base_multiplier": round(p2_base_multiplier, 4),
             "reason": (
+                f"P2[Kelly={kelly_factor:.2f}×ConLoss={consecutive_loss_factor:.2f}"
+                f"×Hex={hexagram_factor:.2f}=×{p2_base_multiplier:.2f}] "
                 f"conf={confidence:.2f}(factor={conf_factor:.2f}) "
                 f"vol={volatility:.4f}(factor={vol_factor:.2f}) "
                 f"-> pos={position_usdt:.2f}USDT ({position_pct:.1%})"

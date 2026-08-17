@@ -51,6 +51,11 @@ from scripts.memory_l4.trading_utils import (
     RiskManager,
     register_trade_to_l4,
 )
+from scripts.memory_l4.review_engine import (
+    BULLISH_HEXAGRAMS,
+    BEARISH_HEXAGRAMS,
+    NEUTRAL_HEXAGRAMS,
+)
 from scripts.memory_l4.yijing_exit_system import (
     YijingExitAction,
     YijingExitConfig,
@@ -1311,6 +1316,77 @@ class PollingTrader:
     def _get_leverage(self) -> float:
         """获取当前默认杠杆倍数"""
         return float(self.okx_client.cfg.get("default_leverage", 3))
+
+    def _compute_p2_dynamic_sizing_factors(self, hexagram: str,
+                                           lookback: int = 30,
+                                           min_samples: int = 5) -> Dict:
+        """P2 动态仓位管理：计算三因子（凯利/连亏/卦象）。
+
+        - kelly_factor: 半凯利 f 换算的仓位系数；样本不足时返回 1.0
+        - consecutive_loss_factor: 连亏缩仓；从 risk_manager.state 读取 current_consecutive_losses
+        - hexagram_factor: 卦象类型系数；基于 BULLISH/BEARISH/NEUTRAL
+        - hexagram_class: 卦象分类名 bullish/bearish/neutral（用于日志）
+
+        Args:
+            hexagram: 当前卦名（如"泰"/"否"）
+            lookback: 取最近多少笔算 win_rate / avg_win / avg_loss
+            min_samples: 少于该样本数不启用凯利（保守保持默认仓位）
+
+        Returns:
+            Dict {kelly_factor, consecutive_loss_factor, hexagram_factor, hexagram_class,
+                  win_rate, avg_win, avg_loss, win_streak, loss_streak}
+        """
+        # 1. 连亏缩仓
+        streak = getattr(self.risk_manager.state, "current_consecutive_losses", 0) or 0
+        con_loss_f = RiskManager.consecutive_loss_factor(streak)
+
+        # 2. 卦象类型系数
+        hex_f, hex_cls = RiskManager.hexagram_class_factor(
+            hexagram,
+            bullish_hexagrams=set(BULLISH_HEXAGRAMS),
+            bearish_hexagrams=set(BEARISH_HEXAGRAMS),
+        )
+
+        # 3. 半凯利动态仓位
+        kelly_f = 1.0
+        wr = aw = al = 0.0
+        trades = list(getattr(self.perf_tracker, "trades", []) or [])
+        if trades:
+            recent = trades[-lookback:] if len(trades) > lookback else trades
+            pnls = [t.pnl for t in recent if t.pnl is not None]
+            total = len(pnls)
+            if total >= min_samples:
+                wins = [p for p in pnls if p >= 0]
+                losses = [abs(p) for p in pnls if p < 0]
+                wr = len(wins) / total if total else 0.0
+                aw = (sum(wins) / len(wins)) if wins else 0.0
+                al = (sum(losses) / len(losses)) if losses else 0.0
+                kelly_f = RiskManager.kelly_half_factor(wr, aw, al)
+
+        # 连胜/连亏（用于日志，不直接做仓位放大；连亏已用）
+        win_streak = 0
+        loss_streak_current = 0
+        for t in reversed(trades):
+            if t.pnl is None:
+                continue
+            if t.pnl >= 0 and loss_streak_current == 0:
+                win_streak += 1
+            elif t.pnl < 0 and win_streak == 0:
+                loss_streak_current += 1
+            else:
+                break
+
+        return {
+            "kelly_factor": kelly_f,
+            "consecutive_loss_factor": con_loss_f,
+            "hexagram_factor": hex_f,
+            "hexagram_class": hex_cls,
+            "win_rate": wr,
+            "avg_win": aw,
+            "avg_loss": al,
+            "win_streak": win_streak,
+            "loss_streak": streak,
+        }
 
     def _get_base_sl_roi(self, inst_id: str, entry_price: float = 0.0) -> float:
         """读取开仓时 ATR 基线止损收益率。
@@ -2962,13 +3038,36 @@ class PollingTrader:
                             total_imr += float(p.get("imr", 0))
                 available_equity = total_eq - total_imr
 
+        # P2 动态仓位：计算三因子（凯利/连亏/卦象）并注入 calc_position_size
+        # 样本量阈值 5 笔（启动初期不足 5 笔时，凯利=1.0 保持保守默认）
+        p2_hex = inference.get("hexagram", "") or ""
+        p2_f = self._compute_p2_dynamic_sizing_factors(p2_hex, lookback=30, min_samples=5)
+
         pos_size_info = self.risk_manager.calc_position_size(
             confidence=confidence,
             volatility=volatility,
             current_equity=available_equity,
+            kelly_factor=p2_f["kelly_factor"],
+            consecutive_loss_factor=p2_f["consecutive_loss_factor"],
+            hexagram_factor=p2_f["hexagram_factor"],
         )
         position_usdt = pos_size_info["position_usdt"]
         position_pct = pos_size_info["position_pct"]
+
+        # P2 动态仓位：日志输出
+        try:
+            self._log(
+                f"[{coin}] P2动态仓位 | 卦={p2_hex}({p2_f['hexagram_class']}) "
+                f"凯利={p2_f['kelly_factor']:.2f}(wr={p2_f['win_rate']:.0%} "
+                f"avg_win={p2_f['avg_win']:.2f} avg_loss={p2_f['avg_loss']:.2f}) "
+                f"连亏={p2_f['loss_streak']}(×{p2_f['consecutive_loss_factor']:.2f}) "
+                f"卦象系数=×{p2_f['hexagram_factor']:.2f} "
+                f"P2基准倍率=×{pos_size_info.get('p2_base_multiplier', 1.0):.2f} "
+                f"-> {position_usdt:.2f}USDT ({position_pct:.1%})",
+                "INFO",
+            )
+        except Exception:
+            pass
 
         if is_trial:
             position_usdt *= 0.4

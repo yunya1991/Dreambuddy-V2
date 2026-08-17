@@ -29,6 +29,27 @@ from scripts.memory_l4.tradingagents_reflector import (
 )
 
 
+# ── 64卦三分类（模块级常量，供仓位/卦象过滤统一使用） ─────────
+# 保持与 _hexagram_expected_outcome 内部完全一致，单一事实源
+BULLISH_HEXAGRAMS = frozenset([
+    "乾", "需", "比", "小畜", "履", "泰", "同人", "大有",
+    "谦", "豫", "随", "临", "复", "大畜", "颐",
+    "咸", "恒", "大壮", "晋", "家人", "解", "益", "夬",
+    "萃", "升", "鼎", "丰", "渐", "节", "中孚",
+])
+
+BEARISH_HEXAGRAMS = frozenset([
+    "蒙", "讼", "师", "否", "观", "噬嗑", "剥", "无妄",
+    "大过", "坎", "蛊", "遁", "明夷", "睽", "蹇", "损",
+    "姤", "困", "井", "归妹", "旅", "涣", "小过",
+])
+
+NEUTRAL_HEXAGRAMS = frozenset([
+    "坤", "屯", "贲", "离", "革", "震", "艮", "巽", "兑",
+    "既济", "未济",
+])
+
+
 def now_iso_local() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -220,30 +241,14 @@ def _hexagram_expected_outcome(hexagram: str, direction: str) -> str:
     - BULLISH（吉卦）：做多有利 → long=profit, short=loss
     - BEARISH（凶卦）：做空有利 → short=profit, long=loss
     - NEUTRAL（中性）：方向不明 → unknown
+
+    分类集合引用模块级常量 BULLISH_HEXAGRAMS / BEARISH_HEXAGRAMS，保持单一事实源。
     """
     hexagram = hexagram.strip()
 
-    # BULLISH：卦义主吉、主进、主涨（共30卦）
-    bullish_hexagrams = {
-        "乾", "需", "比", "小畜", "履", "泰", "同人", "大有",
-        "谦", "豫", "随", "临", "复", "大畜", "颐",
-        "咸", "恒", "大壮", "晋", "家人", "解", "益", "夬",
-        "萃", "升", "鼎", "丰", "渐", "节", "中孚",
-    }
-
-    # BEARISH：卦义主凶、主退、主跌（共23卦）
-    bearish_hexagrams = {
-        "蒙", "讼", "师", "否", "观", "噬嗑", "剥", "无妄",
-        "大过", "坎", "蛊", "遁", "明夷", "睽", "蹇", "损",
-        "姤", "困", "井", "归妹", "旅", "涣", "小过",
-    }
-
-    # NEUTRAL：纯卦/转折/过渡卦（共11卦）
-    # 坤, 屯, 贲, 离, 革, 震, 艮, 巽, 兑, 既济, 未济
-
-    if hexagram in bullish_hexagrams:
+    if hexagram in BULLISH_HEXAGRAMS:
         return "profit" if direction == "long" else "loss"
-    if hexagram in bearish_hexagrams:
+    if hexagram in BEARISH_HEXAGRAMS:
         return "profit" if direction == "short" else "loss"
     return "unknown"
 
