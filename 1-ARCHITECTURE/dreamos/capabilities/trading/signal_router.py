@@ -1,10 +1,12 @@
-"""Signal router — connects CoinSelector, YijingSignalGenerator, and V15Executor.
+"""Signal router — connects CoinSelector, YijingSignalGenerator, V15Executor, and HedgeExecutor.
 
 Core responsibility:
     1. Receive market data (single or batch)
     2. Route through CoinSelector to get coin pools
     3. Route through YijingSignalGenerator to get directional signals
-    4. Route through V15Executor to execute positions
+    4. Broadcast signals to multiple consumers:
+       a. V15Executor — first position entry for Martin strategy
+       b. HedgeExecutor — dual-leg hedge pair (if regime is RANGE_BOUND)
     5. Return unified result with signal + position info
 
 Flow:
@@ -12,6 +14,7 @@ Flow:
     pools + market_batch → YijingSignalGenerator.generate_from_pools() → signals
     signals → YijingSignalGenerator.fuse_signals() → decisions
     decisions → V15Executor.execute_signal() → positions
+    decisions → HedgeExecutor.evaluate_entry() → hedge pair (if applicable)
 """
 from __future__ import annotations
 
@@ -22,11 +25,20 @@ from dreamos.capabilities.trading.coin_selector import CoinSelector
 from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator
 from dreamos.capabilities.trading.v15_executor import V15Executor
 
+try:
+    from dreamos.capabilities.trading.hedge_executor import HedgeExecutor
+    _HEDGE_AVAILABLE = True
+except ImportError:
+    _HEDGE_AVAILABLE = False
+
 
 class SignalRouter:
-    """Signal router connecting the three core trading layers.
+    """Signal router connecting core trading layers with multi-consumer broadcast.
 
-    Orchestrates the flow: CoinSelector → YijingSignalGenerator → V15Executor.
+    Orchestrates the flow: CoinSelector → YijingSignalGenerator → [V15Executor, HedgeExecutor].
+    Yijing signals are broadcast to multiple consumers:
+    - V15Executor: first position entry for Martin strategy
+    - HedgeExecutor: dual-leg hedge pair (if regime is RANGE_BOUND)
     """
 
     def __init__(
@@ -35,18 +47,21 @@ class SignalRouter:
         seed: Optional[int] = 42,
         executor: Optional[V15Executor] = None,
         signal_generator: Optional[YijingSignalGenerator] = None,
+        hedge_executor: Optional[Any] = None,
     ):
-        """Initialize the signal router with all three layers.
+        """Initialize the signal router with all trading layers.
 
         Args:
             use_hermes: Whether to use Hermes for SKILL calls (default False = mock).
             seed: PRNG seed for YijingSignalGenerator.
-            executor: Optional custom V15Executor instance (注入可共享账本,避免双账本).
-            signal_generator: Optional custom YijingSignalGenerator instance (注入可共享PRNG状态).
+            executor: Optional custom V15Executor instance.
+            signal_generator: Optional custom YijingSignalGenerator instance.
+            hedge_executor: Optional custom HedgeExecutor instance.
         """
         self.coin_selector = CoinSelector(use_hermes=use_hermes)
         self.signal_generator = signal_generator or YijingSignalGenerator(seed=seed)
         self.executor = executor or V15Executor()
+        self.hedge_executor = hedge_executor or (HedgeExecutor() if _HEDGE_AVAILABLE else None)
 
     def route(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
         """Route a single symbol through all three layers.
@@ -173,9 +188,44 @@ class SignalRouter:
                 "position": position,
             })
 
+        # Multi-consumer broadcast: send signals to HedgeExecutor
+        hedge_result = None
+        if self.hedge_executor and long_results and short_results:
+            try:
+                # Pick best long and short candidates for hedge pair
+                best_long = max(long_results, key=lambda x: x.get("confidence", 0))
+                best_short = max(short_results, key=lambda x: x.get("confidence", 0))
+
+                # Extract prices from market_batch
+                hedge_prices = {}
+                for sym, md in market_batch.items():
+                    hedge_prices[sym] = md.get("entry_price", md.get("close_price", 0.0))
+
+                # Get regime from pools
+                regime = pools.get("regime", "")
+
+                long_cand = {"symbol": best_long.get("symbol", ""), "score": best_long.get("confidence", 0.0)}
+                short_cand = {"symbol": best_short.get("symbol", ""), "score": best_short.get("confidence", 0.0)}
+                long_signal = {"direction": "LONG", "confidence": best_long.get("confidence", 0.0), "hexagram": best_long.get("hexagram", {})}
+                short_signal = {"direction": "SHORT", "confidence": best_short.get("confidence", 0.0), "hexagram": best_short.get("hexagram", {})}
+
+                hedge_result = self.hedge_executor.evaluate_entry(
+                    long_cand=long_cand,
+                    short_cand=short_cand,
+                    long_signal=long_signal,
+                    short_signal=short_signal,
+                    regime=regime,
+                    prices=hedge_prices,
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"HedgeExecutor broadcast failed: {e}")
+                hedge_result = {"status": "ERROR", "reason": str(e)}
+
         return {
             "long_results": long_results,
             "short_results": short_results,
+            "hedge_result": hedge_result,
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "source": "signal-router-batch",
         }
