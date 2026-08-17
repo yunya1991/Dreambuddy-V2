@@ -2,7 +2,7 @@
   {
     "name": "scan_main",
     "cron_expr": "0 * * * *",
-    "enabled": true,
+    "enabled": false,
     "symbols": [
       "BTC",
       "ETH",
@@ -21,7 +21,7 @@
   {
     "name": "exit_check",
     "cron_expr": "*/30 * * * *",
-    "enabled": true,
+    "enabled": false,
     "symbols": [],
     "dry_run": true,
     "exchange": "hyperliquid",
