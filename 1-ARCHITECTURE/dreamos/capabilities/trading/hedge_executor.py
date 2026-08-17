@@ -1,11 +1,17 @@
 """C-series HedgeExecutor — 双腿市场中性对冲策略（PROP-20260816，用户批准 2026-08-16）。
 
+择股机制重构: PROP-20260816B（用户批准 2026-08-16）
+    - 候选供给 = 周报多/空池各 Top8（大模型粗选）
+    - 引擎对候选逐个推导 B层信号, 按 conf 排名择优（pick_best_candidate）
+    - MIN_LEG_CONF 0.62→0.45（相对择优为主, 绝对底线为辅）
+
 设计文档: 3-EVOLUTION/proposals/PROP-20260816-DREAMOS-双腿对冲策略与币池动态排名.md
+          3-EVOLUTION/proposals/PROP-20260816B-DREAMOS-对冲择股引擎驱动排名重构.md
 
 策略要点（与 V15 并列的新策略，V9 基线零改动）:
     - 仅 regime 含 RANGE_BOUND 激活
-    - 长腿 = 多池合并分 top1，短腿 = 空池合并分 top1
-    - B层双向验证: 长腿 dir=LONG、短腿 dir=SHORT，双腿 conf 均 ≥ 0.62
+    - 长腿 = 多池候选中引擎 conf 最高的 LONG 信号, 短腿 = 空池候选中 conf 最高的 SHORT 信号
+    - B层双向验证: 长腿 dir=LONG、短腿 dir=SHORT，双腿 conf 均 ≥ 0.45
     - 每腿 150U 名义 1:1，5x 杠杆（保证金 30U/腿）
     - 合并离场: combined_pnl_pct ≥ +4% → 双腿同平 (hedge_tp_combined)
                 combined_pnl_pct ≤ -6% → 熔断双腿同平 (hedge_sl_combined)
@@ -38,9 +44,12 @@ HEDGE_POSITIONS_FILE = (
 )
 
 # ── 策略参数（PROP-20260816 已确认）─────────────────────────────
-NOTIONAL_PER_LEG = 150.0      # 每腿名义 USDT
+NOTIONAL_PER_LEG = 30.0      # 每腿名义 USDT
 LEVERAGE = 5                  # 与 V15 一致
-MIN_LEG_CONF = 0.62           # 双腿 B层 conf 门槛
+# PROP-20260816B 门禁重标定: 0.62→0.45。实证依据: 极端空头 ACE(-24.5%) conf 0.5272、
+# 强多头 NIL(+6.7%) conf 0.5704 应可过; XMR 类横盘噪音 0.0796 仍被滤除。
+# 相对择优为主选机制, 绝对底线仅作安全网。
+MIN_LEG_CONF = 0.45           # 双腿 B层 conf 门槛
 TP_COMBINED_PCT = 0.04        # 合并止盈 +4%
 SL_COMBINED_PCT = -0.06       # 合并熔断 -6%
 MAX_OPEN_PAIRS = 1            # 同时最多 1 个对冲对
@@ -48,6 +57,34 @@ MAX_OPEN_PAIRS = 1            # 同时最多 1 个对冲对
 
 def _margin_per_leg(notional: float) -> float:
     return notional / LEVERAGE
+
+
+def pick_best_candidate(
+    evals: List[Dict[str, Any]],
+    want_direction: str,
+) -> Optional[Dict[str, Any]]:
+    """PROP-20260816B 模块3: 候选 B层结果中按引擎 conf 择优。
+
+    筛选: price_ok=True（有行情数据, 无数据候选自动淘汰 ← 根治 KPEPE 类问题）
+          且 direction == want_direction（方向匹配）。
+    排名: 纯引擎 confidence 降序（不设周报分 tiebreaker, 引擎说了算）。
+
+    Args:
+        evals: 候选评估结果列表, 每项含
+            {symbol, direction, confidence, price, price_ok, ...}
+        want_direction: 目标方向（长腿 "LONG" / 短腿 "SHORT"）
+
+    Returns:
+        conf 最高的候选 dict; 无匹配候选时 None（调用方跳过本周期对冲入场,
+        宁缺毋滥）。
+    """
+    matched = [
+        e for e in (evals or [])
+        if e.get("price_ok") and e.get("direction") == want_direction
+    ]
+    if not matched:
+        return None
+    return max(matched, key=lambda e: float(e.get("confidence", 0.0) or 0.0))
 
 
 @dataclass
@@ -388,7 +425,7 @@ class HedgeExecutor:
         if self._client is not None:
             return self._client
         import sys as _sys
-        _ab_dir = Path(__file__).resolve().parent.parent.parent.parent / "experiments" / "ab-trading"
+        _ab_dir = Path(__file__).resolve().parent.parent.parent.parent.parent / "experiments" / "ab-trading"
         if str(_ab_dir) not in _sys.path:
             _sys.path.insert(0, str(_ab_dir))
         from dotenv import load_dotenv
