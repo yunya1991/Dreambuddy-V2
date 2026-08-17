@@ -61,7 +61,7 @@ class SignalRouter:
         self.coin_selector = CoinSelector(use_hermes=use_hermes)
         self.signal_generator = signal_generator or YijingSignalGenerator(seed=seed)
         self.executor = executor or V15Executor()
-        self.hedge_executor = hedge_executor or (HedgeExecutor() if _HEDGE_AVAILABLE else None)
+        self.hedge_executor = hedge_executor or (HedgeExecutor(dry_run=False) if _HEDGE_AVAILABLE else None)
 
     def route(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
         """Route a single symbol through all three layers.
