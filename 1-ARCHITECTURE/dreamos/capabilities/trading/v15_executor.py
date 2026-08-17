@@ -26,12 +26,14 @@ import os
 logger = logging.getLogger(__name__)
 
 # 14-V15 module path injection
-_V15_CORE_PATH = Path(__file__).resolve().parent.parent.parent.parent / "14-V15经典马丁策略" / "core"
+# v15_executor.py -> trading -> capabilities -> dreamos -> 1-ARCHITECTURE -> repo_root
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
+_V15_CORE_PATH = _REPO_ROOT / "14-V15经典马丁策略" / "core"
 if str(_V15_CORE_PATH) not in sys.path:
     sys.path.insert(0, str(_V15_CORE_PATH))
 
 # HyperliquidClient path injection
-_HL_EXEC_PATH = Path(__file__).resolve().parent.parent.parent.parent / "experiments" / "ab-trading" / "execution"
+_HL_EXEC_PATH = _REPO_ROOT / "experiments" / "ab-trading" / "execution"
 if str(_HL_EXEC_PATH) not in sys.path:
     sys.path.insert(0, str(_HL_EXEC_PATH))
 
