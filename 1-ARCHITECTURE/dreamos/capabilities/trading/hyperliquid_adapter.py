@@ -136,6 +136,19 @@ class HyperliquidV15Adapter:
             logger.error(f"Failed to set TP/SL: {e}")
             return {"ok": False, "error": str(e)}
 
+    def cancel_algo_orders(self, inst_id: str = None, **kwargs) -> Dict[str, Any]:
+        """Adapt cancel_algo_orders to HyperliquidClient's cancel_all_tpsl.
+
+        14-V15 calls this to cancel old TP/SL trigger orders
+        before placing new ones.
+        """
+        try:
+            result = self._client.cancel_all_tpsl()
+            return {"ok": True, "data": result}
+        except Exception as e:
+            logger.error(f"Failed to cancel algo orders: {e}")
+            return {"ok": False, "error": str(e)}
+
     def get_all_positions(self) -> Dict[str, Any]:
         """Adapt get_all_positions to HyperliquidClient's get_account."""
         try:
