@@ -189,6 +189,9 @@ class WalkForwardBacktester:
         use_regime_switching: bool = False,  # 是否启用市态切换
         use_meta_labeling: bool = False,  # 是否启用L2 Meta-Labeling
         macro_config: Optional[dict] = None,  # 宏观特征维度开关（贝叶斯优化用）
+        # ---- P3-04 宏观特征 proxy 注入 ----
+        enable_ohlcv_macro_proxy: bool = False,  # 是否启用 OHLCV 合成宏观 proxy + 形态修正
+        macro_proxy_correction_strength: float = 0.6,  # 修正灵敏度 (0=关闭, 0.6=默认, 1.0=最灵敏)
     ):
         self.symbol = symbol
         self.n_folds = n_folds
@@ -208,6 +211,9 @@ class WalkForwardBacktester:
         self.use_regime_switching = use_regime_switching
         self.use_meta_labeling = use_meta_labeling
         self.macro_config = macro_config  # 宏观特征维度开关
+        # ---- P3-04 宏观特征 proxy ----
+        self.enable_ohlcv_macro_proxy = enable_ohlcv_macro_proxy
+        self.macro_proxy_correction_strength = macro_proxy_correction_strength
         self.enable_pentagon = True  # 五角校验开关
 
         # 五角校验器
@@ -632,6 +638,25 @@ class WalkForwardBacktester:
         └─────────────────────────────────────────────────┘
         """
         from .market_regime import DEFAULT_REGIME_PARAMS
+        # ---- P3-04 宏观特征 proxy 注入（延迟 import 避免循环依赖）----
+        _has_macro_proxy = False
+        _synthesize_macro_proxy = None
+        _apply_macro_correction = None
+        if self.enable_ohlcv_macro_proxy:
+            try:
+                from .market_regime import (
+                    synthesize_macro_proxy_from_ohlcv,
+                    apply_macro_regime_correction,
+                )
+                _synthesize_macro_proxy = synthesize_macro_proxy_from_ohlcv
+                _apply_macro_correction = apply_macro_regime_correction
+                _has_macro_proxy = True
+            except Exception as _e:
+                import logging as _log
+                _log.getLogger(__name__).warning(
+                    f"[P3-04] 宏观 proxy 加载失败，降级为纯 regime 切换: {_e}"
+                )
+                _has_macro_proxy = False
         try:
             from ..yijing_exit_system import YijingExitSystem, YijingExitConfig, YijingExitAction
             yijing_exit = YijingExitSystem(config=YijingExitConfig())
@@ -917,37 +942,63 @@ class WalkForwardBacktester:
 
                 if regime_names is not None and i < len(regime_names):
                     regime_name = regime_names[i]
-                    rp = DEFAULT_REGIME_PARAMS.get(regime_name)
-                    if rp is not None:
-                        # 方向过滤
-                        if direction == 1 and not rp.allow_long:
-                            allow_trade = False
-                        if direction == -1 and not rp.allow_short:
-                            allow_trade = False
 
-                        # 置信度阈值 (基础值)
-                        if direction == 1:
-                            effective_conf_thresh = rp.long_conf_threshold
-                        else:
-                            effective_conf_thresh = rp.short_conf_threshold
+                # ==============================================================
+                # P3-04 宏观特征 proxy → regime 二次修正（与实盘 apply_macro_regime_correction
+                # 口径 100% 一致，纯函数无副作用。开关 enable_ohlcv_macro_proxy=False
+                # 时 zero-drift：完全不运行，regime_name 与旧代码完全相同）
+                # ==============================================================
+                if _has_macro_proxy:
+                    _macro_feats = _synthesize_macro_proxy(df, bar_idx=bar_idx, lookback=60)
+                    _regime_before = regime_name
+                    regime_name = _apply_macro_correction(
+                        base_regime=regime_name,
+                        macro_feats=_macro_feats,
+                        strength=self.macro_proxy_correction_strength,
+                    )
+                    if regime_name != _regime_before:
+                        logger.debug(
+                            f"[P3-04] bar {bar_idx}: {_regime_before} → {regime_name} "
+                            f"(panic={_macro_feats.get('liq_panic_score_0_to_1'):.2f}, "
+                            f"iv={_macro_feats.get('btc_option_iv_level')}, "
+                            f"liq_hint={_macro_feats.get('liq_regime_hint')}, "
+                            f"opt_hint={_macro_feats.get('btc_options_regime_hint')})"
+                        )
 
-                        # 止盈止损
-                        effective_tp_atr = rp.tp_atr
-                        effective_sl_atr = rp.sl_atr
-                        effective_max_hold = rp.max_hold_bars
+                # ==============================================================
+                # 用 regime_name → 市态参数映射（与旧逻辑零差异）
+                # ==============================================================
+                rp = DEFAULT_REGIME_PARAMS.get(regime_name)
+                if rp is not None:
+                    # 方向过滤
+                    if direction == 1 and not rp.allow_long:
+                        allow_trade = False
+                    if direction == -1 and not rp.allow_short:
+                        allow_trade = False
 
-                        # 仓位系数 (市态自适应)
-                        position_factor = rp.position_factor
+                    # 置信度阈值 (基础值)
+                    if direction == 1:
+                        effective_conf_thresh = rp.long_conf_threshold
+                    else:
+                        effective_conf_thresh = rp.short_conf_threshold
 
-                        # 用仓位系数调整置信度阈值:
-                        # position_factor > 1: 降低阈值, 更容易开仓
-                        # position_factor < 1: 提高阈值, 更难开仓
-                        # 阈值调整幅度 = 0.20 * (1 - position_factor)
-                        # 例如: FOMO(position_factor=1.5) → 阈值降低0.10
-                        #       横盘(position_factor=0.5) → 阈值提高0.10
-                        conf_adjust = 0.20 * (1 - position_factor)
-                        effective_conf_thresh += conf_adjust
-                        effective_conf_thresh = max(0.20, min(0.70, effective_conf_thresh))
+                    # 止盈止损
+                    effective_tp_atr = rp.tp_atr
+                    effective_sl_atr = rp.sl_atr
+                    effective_max_hold = rp.max_hold_bars
+
+                    # 仓位系数 (市态自适应)
+                    position_factor = rp.position_factor
+
+                    # 用仓位系数调整置信度阈值:
+                    # position_factor > 1: 降低阈值, 更容易开仓
+                    # position_factor < 1: 提高阈值, 更难开仓
+                    # 阈值调整幅度 = 0.20 * (1 - position_factor)
+                    # 例如: FOMO(position_factor=1.5) → 阈值降低0.10
+                    #       横盘(position_factor=0.5) → 阈值提高0.10
+                    conf_adjust = 0.20 * (1 - position_factor)
+                    effective_conf_thresh += conf_adjust
+                    effective_conf_thresh = max(0.20, min(0.70, effective_conf_thresh))
 
                 # 置信度过滤 (用市态调整后的阈值)
                 if confidence < effective_conf_thresh:

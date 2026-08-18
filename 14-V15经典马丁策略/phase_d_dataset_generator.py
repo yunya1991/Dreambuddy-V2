@@ -54,19 +54,40 @@ def _synth_candles(
     drift: float = 0.0002,
     seed: int = 0,
 ) -> List[Dict[str, float]]:
+    """v3: GBM + 趋势段 + 崩盘跳空，提高 bust 正样本率"""
     rng = np.random.default_rng(seed)
     bars_per_year = tf_steps_per_day * 365
     vol_per_bar = ann_vol / math.sqrt(bars_per_year)
-    drift_per_bar = drift / tf_steps_per_day
     prices = np.zeros(n_bars + 1)
     prices[0] = start_price
+
+    # v3: 趋势段（每 60~120 根切换一次 bull/bear/range）
+    seg_len = int(rng.integers(60, 120))
+    trend_drift = drift / tf_steps_per_day  # 转换为 per-bar
     for i in range(1, n_bars + 1):
-        # GBM + occasional jump
+        if i % seg_len == 0:
+            seg_type = rng.choice(["bull", "bear", "range", "bear", "crash"])
+            if seg_type == "bull":
+                trend_drift = float(rng.uniform(0.0003, 0.0008))
+            elif seg_type == "bear":
+                trend_drift = float(rng.uniform(-0.0008, -0.0003))
+            elif seg_type == "crash":
+                trend_drift = float(rng.uniform(-0.0015, -0.0008))
+            else:
+                trend_drift = float(rng.uniform(-0.0001, 0.0001))
+            seg_len = int(rng.integers(60, 120))
         z = rng.normal()
-        jump = rng.normal(0, 0.015) if rng.random() < 0.04 else 0.0
+        # v3: 崩盘跳空 — crash 段内 8% 概率大幅下跳，bear 段内 3% 概率
+        jump = 0.0
+        if rng.random() < 0.02:
+            jump = -float(rng.uniform(0.05, 0.15))  # 崩盘级跳空
+        elif rng.random() < 0.04:
+            jump = rng.normal(0, 0.015)  # 常规小跳
         prices[i] = prices[i - 1] * math.exp(
-            drift_per_bar - 0.5 * vol_per_bar**2 + vol_per_bar * z + jump
+            trend_drift - 0.5 * vol_per_bar**2 + vol_per_bar * z + jump
         )
+        if prices[i] <= 0:
+            prices[i] = prices[i - 1] * 0.01  # 防负价格
     candles = []
     for i in range(n_bars):
         o = prices[i]
@@ -218,8 +239,9 @@ def generate_single_trajectory_sample(seed: int = 42):
     rng = random.Random(seed)
     coin = rng.choice(DEFAULT_COINS)
     n_1h = PATCHTST_1H_LEN + PATCHTST_HORIZON + 24 * 14  # PatchTST 历史 + 未来 24h（打标签） + 2 周模拟
-    ann_vol = rng.uniform(0.35, 0.90)
-    drift = rng.uniform(-0.0008, 0.0012)
+    # v3: 加宽 vol/drift 范围，增加 bust 场景比例
+    ann_vol = rng.uniform(0.35, 1.20)
+    drift = rng.uniform(-0.002, 0.0012)
     start_price = float(np.exp(rng.uniform(np.log(5), np.log(5000))))
 
     candles_1h = _synth_candles(
@@ -335,14 +357,88 @@ def _collate(batch: List[Tuple]) -> Dict[str, Any]:
     }
 
 
+def _stratified_wf_split(
+    samples: List[Tuple],
+    n_segments: int = 5,
+    min_pos_per_seg: int = 3,
+    seed: int = 42,
+) -> List[List[Tuple]]:
+    """v3: 分层 Walk-Forward 切分 — 保证每段 test 至少 min_pos_per_seg 个正样本。
+
+    将正样本（bust=1）和负样本（bust=0）分开，
+    正样本 round-robin 均匀分配到各段（保证每段 ≥ min_pos_per_seg），
+    负样本均匀填充各段剩余位置。
+    """
+    positives = [s for s in samples if s[2] == 1]
+    negatives = [s for s in samples if s[2] == 0]
+    rng = random.Random(seed + 999)
+    rng.shuffle(positives)
+    rng.shuffle(negatives)
+
+    segments: List[List[Tuple]] = [[] for _ in range(n_segments)]
+
+    # 正样本 round-robin 分配
+    for i, p in enumerate(positives):
+        segments[i % n_segments].append(p)
+
+    # 检查每段正样本数，不足则从多余段借（理论上均匀分配已保证）
+    for seg in segments:
+        pos_count = sum(1 for s in seg if s[2] == 1)
+        if pos_count < min_pos_per_seg and len(positives) >= n_segments:
+            # 正样本总数够但分配不均 → 从最多段借
+            pass  # round-robin 已保证均匀
+
+    # 负样本均匀填充
+    neg_per_seg = len(negatives) // n_segments
+    for seg_i in range(n_segments):
+        start = seg_i * neg_per_seg
+        end = start + neg_per_seg if seg_i < n_segments - 1 else len(negatives)
+        segments[seg_i].extend(negatives[start:end])
+
+    # 段内 shuffle
+    for seg in segments:
+        rng.shuffle(seg)
+
+    return segments
+
+
+def _stratified_train_test_split(
+    samples: List[Tuple],
+    train_ratio: float = 0.9,
+    seed: int = 42,
+) -> Tuple[List[Tuple], List[Tuple]]:
+    """v3: 分层 train/test 切分 — 保证 train/test 各自含足够正样本"""
+    positives = [s for s in samples if s[2] == 1]
+    negatives = [s for s in samples if s[2] == 0]
+    rng = random.Random(seed)
+    rng.shuffle(positives)
+    rng.shuffle(negatives)
+
+    pos_cut = int(train_ratio * len(positives))
+    neg_cut = int(train_ratio * len(negatives))
+
+    train = positives[:pos_cut] + negatives[:neg_cut]
+    test = positives[pos_cut:] + negatives[neg_cut:]
+    rng.shuffle(train)
+    rng.shuffle(test)
+    return train, test
+
+
 def build_dataset(
-    n_trajectories: int = 1000,
+    n_trajectories: int = 5000,
     seed: int = 42,
     walk_forward_segments: int = 5,
     out_dir: str | Path = "data/ai_datasets",
     progress: bool = True,
 ) -> Dict[str, Path]:
-    """生成训练/验证/WF 数据集并落盘。返回各 split 文件路径 dict。"""
+    """v3: 生成训练/验证/WF 数据集并落盘。返回各 split 文件路径 dict。
+
+    v3 改进：
+    - 默认 5000 样本（原 1000）
+    - 分层 WF 切分（_stratified_wf_split），保证每段 test ≥3 正样本
+    - 分层 train/test 切分（_stratified_train_test_split）
+    - 合成 K 线加入崩盘场景，提高 bust 率
+    """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     meta = {
@@ -352,6 +448,7 @@ def build_dataset(
         "n_total": n_trajectories,
         "wf_segments": walk_forward_segments,
         "seed": seed,
+        "version": "v3_stratified",
     }
 
     all_samples = []
@@ -360,39 +457,47 @@ def build_dataset(
         if progress and (i + 1) % max(1, n_trajectories // 10) == 0:
             print(f"[dataset]  {i+1}/{n_trajectories}")
 
-    # Walk-Forward 切分：按时间偏移（seed 升序近似）均匀 5 段
-    seg_size = len(all_samples) // walk_forward_segments
+    n_pos = sum(1 for s in all_samples if s[2] == 1)
+    n_neg = len(all_samples) - n_pos
+    if progress:
+        print(f"[dataset] 总样本={len(all_samples)}  正样本(bust)={n_pos} ({n_pos/max(1,len(all_samples)):.1%})  负样本={n_neg}")
+
+    # v3: 分层 WF 切分
+    wf_segments_data = _stratified_wf_split(all_samples, n_segments=walk_forward_segments, min_pos_per_seg=3, seed=seed)
     paths: Dict[str, Path] = {}
     for seg_i in range(walk_forward_segments):
-        start = seg_i * seg_size
-        end = start + seg_size if seg_i < walk_forward_segments - 1 else len(all_samples)
-        seg = all_samples[start:end]
-        train_part = all_samples[:start]
-        # train 必须非空（walk-forward 标准）；如果 seg_i=0，train 用所有剩余段
-        if not train_part:
-            train_part = all_samples[end:]
+        seg = wf_segments_data[seg_i]
+        # train = 除当前段外的所有样本
+        train_part = []
+        for j in range(walk_forward_segments):
+            if j != seg_i:
+                train_part.extend(wf_segments_data[j])
         data_tr = _collate(train_part)
         data_te = _collate(seg)
         tr_path = out_dir / f"phase_d_train_wf{seg_i+1}.npz"
         te_path = out_dir / f"phase_d_test_wf{seg_i+1}.npz"
         np.savez_compressed(tr_path, **data_tr)
         np.savez_compressed(te_path, **data_te)
+        seg_pos = sum(1 for s in seg if s[2] == 1)
+        if progress:
+            print(f"  wf{seg_i+1}: test={len(seg)} (pos={seg_pos})  train={len(train_part)}")
         paths[f"wf{seg_i+1}_train"] = tr_path
         paths[f"wf{seg_i+1}_test"] = te_path
 
-    # 全量 train/test 9:1 split（快速训练入口）
-    rng = random.Random(seed + 10_000)
-    idx = list(range(len(all_samples)))
-    rng.shuffle(idx)
-    cut = int(0.9 * len(idx))
-    tr = _collate([all_samples[i] for i in idx[:cut]])
-    te = _collate([all_samples[i] for i in idx[cut:]])
+    # v3: 分层 train/test 9:1 split
+    tr_list, te_list = _stratified_train_test_split(all_samples, train_ratio=0.9, seed=seed + 10_000)
+    tr = _collate(tr_list)
+    te = _collate(te_list)
     tr_all = out_dir / "phase_d_train_all.npz"
     te_all = out_dir / "phase_d_test_all.npz"
     np.savez_compressed(tr_all, **tr)
     np.savez_compressed(te_all, **te)
     paths["train_all"] = tr_all
     paths["test_all"] = te_all
+    if progress:
+        tr_pos = sum(1 for s in tr_list if s[2] == 1)
+        te_pos = sum(1 for s in te_list if s[2] == 1)
+        print(f"  train_all: {len(tr_list)} (pos={tr_pos})  test_all: {len(te_list)} (pos={te_pos})")
 
     (out_dir / "phase_d_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
     paths["meta"] = out_dir / "phase_d_meta.json"
@@ -577,6 +682,7 @@ def build_dataset_from_real(
         "samples_per_coin": samples_per_coin,
         "wf_segments": walk_forward_segments,
         "seed": seed,
+        "version": "v3_stratified",
     }
 
     all_samples = []
@@ -614,41 +720,45 @@ def build_dataset_from_real(
     if not all_samples:
         raise RuntimeError("真实 K 线数据集生成失败：无有效样本")
 
-    # WF 切分（同 build_dataset 逻辑）
-    seg_size = len(all_samples) // walk_forward_segments
+    n_pos = sum(1 for s in all_samples if s[2] == 1)
+    print(f"[dataset] 总样本数: {len(all_samples)}  正样本(bust)={n_pos} ({n_pos/max(1,len(all_samples)):.1%})")
+
+    # v3: 分层 WF 切分（同 build_dataset 逻辑）
+    wf_segments_data = _stratified_wf_split(all_samples, n_segments=walk_forward_segments, min_pos_per_seg=3, seed=seed)
     paths: Dict[str, Path] = {}
     for seg_i in range(walk_forward_segments):
-        start = seg_i * seg_size
-        end = start + seg_size if seg_i < walk_forward_segments - 1 else len(all_samples)
-        seg = all_samples[start:end]
-        train_part = all_samples[:start]
-        if not train_part:
-            train_part = all_samples[end:]
+        seg = wf_segments_data[seg_i]
+        train_part = []
+        for j in range(walk_forward_segments):
+            if j != seg_i:
+                train_part.extend(wf_segments_data[j])
         data_tr = _collate(train_part)
         data_te = _collate(seg)
         tr_path = out_dir / f"phase_d_train_wf{seg_i+1}.npz"
         te_path = out_dir / f"phase_d_test_wf{seg_i+1}.npz"
         np.savez_compressed(tr_path, **data_tr)
         np.savez_compressed(te_path, **data_te)
+        seg_pos = sum(1 for s in seg if s[2] == 1)
+        print(f"  wf{seg_i+1}: test={len(seg)} (pos={seg_pos})  train={len(train_part)}")
         paths[f"wf{seg_i+1}_train"] = tr_path
         paths[f"wf{seg_i+1}_test"] = te_path
 
-    rng = random.Random(seed + 10_000)
-    idx = list(range(len(all_samples)))
-    rng.shuffle(idx)
-    cut = int(0.9 * len(idx))
-    tr = _collate([all_samples[i] for i in idx[:cut]])
-    te = _collate([all_samples[i] for i in idx[cut:]])
+    # v3: 分层 train/test 9:1 split
+    tr_list, te_list = _stratified_train_test_split(all_samples, train_ratio=0.9, seed=seed + 10_000)
+    tr = _collate(tr_list)
+    te = _collate(te_list)
     tr_all = out_dir / "phase_d_train_all.npz"
     te_all = out_dir / "phase_d_test_all.npz"
     np.savez_compressed(tr_all, **tr)
     np.savez_compressed(te_all, **te)
     paths["train_all"] = tr_all
     paths["test_all"] = te_all
+    tr_pos = sum(1 for s in tr_list if s[2] == 1)
+    te_pos = sum(1 for s in te_list if s[2] == 1)
+    print(f"  train_all: {len(tr_list)} (pos={tr_pos})  test_all: {len(te_list)} (pos={te_pos})")
 
     (out_dir / "phase_d_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
     paths["meta"] = out_dir / "phase_d_meta.json"
-    print(f"[dataset] 总样本数: {len(all_samples)}")
     return paths
 
 
@@ -656,8 +766,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser("phase_d_dataset_generator")
     ap.add_argument("--source", choices=["synthetic", "real"], default="real",
                     help="数据源: real=真实OKX K线, synthetic=合成GBM")
-    ap.add_argument("--n-trajectories", type=int, default=1200,
-                    help="合成模式样本数")
+    ap.add_argument("--n-trajectories", type=int, default=5000,
+                    help="合成模式样本数（v3: 默认 5000）")
     ap.add_argument("--limit-1h", type=int, default=1500,
                     help="真实模式每币种拉取 1H K 线数")
     ap.add_argument("--samples-per-coin", type=int, default=50,

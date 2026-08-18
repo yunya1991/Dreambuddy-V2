@@ -765,6 +765,222 @@ class VectorMemoryInterface:
         results = self.search(content, top_k=top_k)
         return [r for r in results if r.score >= threshold]
 
+    # ============================================================
+    # 7标准接口补全：distill_candidates
+    # ============================================================
+
+    # 蒸馏阈值（对齐 DistillScheduler.QUALITY_THRESHOLDS，避免循环导入）
+    _DISTILL_THRESHOLDS: Dict[str, Dict[str, float]] = {
+        "S": {"min_verifies": 10, "min_confidence": 0.95},
+        "A": {"min_verifies": 3,  "min_confidence": 0.70},
+        "B": {"min_verifies": 1,  "min_confidence": 0.40},
+    }
+    _QUALITY_RANK: Dict[str, int] = {
+        "S": 0, "A": 1, "B": 2, "C": 3, "D": 4,
+        "archived": 99, "quarantined": 99,
+    }
+
+    def distill_candidates(
+        self,
+        min_quality: str = "B",
+        limit: int = 10,
+    ) -> List[Dict[str, Any]]:
+        """
+        7标准接口之蒸馏候选提取。
+
+        从 memories 表中筛选达到各档蒸馏阈值的高价值记忆：
+          - S 级: verify≥10 AND conf≥0.95
+          - A 级: verify≥3  AND conf≥0.70
+          - B 级: verify≥1  AND conf≥0.40
+        min_quality 控制最低档位（如 "A" 意味着只返回 S/A）。
+        结果按 质量优先级 → 验证次数多 → 置信度高 排序。
+
+        Args:
+            min_quality: 最低质量等级 ("S"/"A"/"B"/"C")，默认 "B"
+            limit:      返回条数上限，默认 10
+
+        Returns:
+            List[Dict]，每条带字段: id / content / quality_level / confidence /
+            tags (list) / memory_type / source / verify_count
+        """
+        # 1. 确定允许的档位集合
+        min_rank = self._QUALITY_RANK.get(min_quality, 2)  # 默认 B(2)
+        allowed_qualities = [
+            q for q, rank in self._QUALITY_RANK.items()
+            if rank <= min_rank and q in self._DISTILL_THRESHOLDS
+        ]  # ["S", "A", "B"] 等
+
+        if not allowed_qualities:
+            return []
+
+        # 2. 查询允许档位的所有记忆
+        placeholders = ",".join("?" * len(allowed_qualities))
+        sql = (
+            "SELECT id, content, quality_level, confidence, verify_count, "
+            "tags, memory_type, source FROM memories WHERE quality_level IN ("
+            + placeholders + ")"
+        )
+        with self._db_lock:
+            rows = self.db.execute(sql, allowed_qualities).fetchall()
+
+        # 3. 按各档独立阈值过滤
+        candidates: List[Dict[str, Any]] = []
+        for r in rows:
+            q = str(r["quality_level"] or "")
+            th = self._DISTILL_THRESHOLDS.get(q)
+            if not th:
+                continue
+            vc = int(r["verify_count"] or 0)
+            conf = float(r["confidence"] or 0.0)
+            if vc < th["min_verifies"] or conf < th["min_confidence"]:
+                continue  # 虽达到档位但 verify/conf 不达标，跳过
+            tags_raw = r["tags"]
+            tags_parsed = json.loads(tags_raw) if isinstance(tags_raw, str) else list(tags_raw or [])
+            candidates.append({
+                "id": r["id"],
+                "content": r["content"] or "",
+                "quality_level": q,
+                "confidence": conf,
+                "verify_count": vc,
+                "tags": tags_parsed,
+                "memory_type": r["memory_type"] or "",
+                "source": r["source"] or "",
+            })
+
+        # 4. 排序：质量(S>A>B) → verify_count 多→少 → confidence 高→低
+        candidates.sort(key=lambda c: (
+            self._QUALITY_RANK.get(c["quality_level"], 99),
+            -c["verify_count"],
+            -c["confidence"],
+        ))
+        return candidates[: int(limit or 0)]
+
+    # ============================================================
+    # 便捷方法补全
+    # ============================================================
+
+    def search_similar_cases(
+        self, content: str, top_k: int = 5, threshold: float = 0.3
+    ) -> List[SearchResult]:
+        """
+        便捷方法别名（统一规范命名）。功能与 search_similar 完全等价。
+        用于对齐"search_similar_cases"接口名规范。
+        """
+        return self.search_similar(content=content, top_k=top_k, threshold=threshold)
+
+    def run_distill_from_review(self, review_data: Dict[str, Any]) -> Dict[str, int]:
+        """
+        便捷方法：基于复盘Review（A8校验报告、case验证结果等）触发蒸馏。
+
+        行为闭环:
+          1. 从 review_data 中提取关键词集合（matched_patterns / matched /
+             doc_only / code_only / subsystem 等字段）
+          2. 对每个关键词做 search(top=3) 命中记忆
+          3. 对每条唯一命中 → increment_verify() +1
+          4. 检查质量阈值：若达到升级门槛（如 B→A 需 verify≥3 + conf≥0.70）
+             则调用 update_quality() 升级
+          5. 返回统计 {processed, upgraded, skipped}
+
+        Args:
+            review_data: 任意结构化 Review（A8Report dict、case验证记录等）
+
+        Returns:
+            {"processed": 唯一记忆数, "upgraded": 成功升级数, "skipped": 跳过数}
+        """
+        stats = {"processed": 0, "upgraded": 0, "skipped": 0}
+
+        # 1. 关键词收集（多策略兼容不同Review格式）
+        keywords: List[str] = []
+        if isinstance(review_data, dict):
+            for key in (
+                "matched_patterns", "matched", "keywords", "hotspots",
+                "matched_functions", "doc_only_functions", "code_only_functions",
+                "hits",
+            ):
+                val = review_data.get(key)
+                if isinstance(val, list):
+                    keywords.extend(str(v) for v in val if v)
+            # 文本字段：subsystem/summary → 按非单词字符切
+            for txt_key in ("subsystem", "summary", "title", "focus"):
+                txt = review_data.get(txt_key)
+                if isinstance(txt, str) and txt.strip():
+                    parts = [p for p in __import__("re").split(r"\W+", txt) if len(p) >= 2]
+                    keywords.extend(parts)
+
+        # 去重 + 过滤短词
+        seen_kw = set()
+        clean_keywords: List[str] = []
+        for kw in keywords:
+            k = str(kw).strip()
+            if len(k) < 2:
+                continue
+            kl = k.lower()
+            if kl in seen_kw:
+                continue
+            seen_kw.add(kl)
+            clean_keywords.append(k)
+
+        if not clean_keywords:
+            return stats
+
+        # 2. 搜索 + 合并唯一命中
+        unique_mem_ids: set = set()
+        hit_results: List[SearchResult] = []
+        for kw in clean_keywords:
+            try:
+                for r in self.search(kw, top_k=3):
+                    if r.id in unique_mem_ids:
+                        continue
+                    unique_mem_ids.add(r.id)
+                    hit_results.append(r)
+            except Exception:
+                continue  # 单个关键词失败不阻塞整体
+
+        # 3. 对每条唯一记忆：increment_verify → 判定升级
+        # 质量升级矩阵：(当前质量, 目标质量) → (verify阈值, conf阈值)
+        upgrade_paths: Dict[str, Dict[str, Dict[str, float]]] = {
+            "C": {"B": {"min_verifies": 1, "min_confidence": 0.40}},
+            "B": {"A": {"min_verifies": 3, "min_confidence": 0.70}},
+            "A": {"S": {"min_verifies": 10, "min_confidence": 0.95}},
+        }
+        # 升级后目标置信度：保守式提升（不一次性拉满，留后续增长空间）
+        _target_conf = {"B": 0.50, "A": 0.78, "S": 0.96}
+
+        for hit in hit_results:
+            stats["processed"] += 1
+            mem_id = hit.id
+            # a) increment_verify +1（A8闭环）
+            ok_inc = self.increment_verify(mem_id)
+            if not ok_inc:
+                stats["skipped"] += 1
+                continue
+
+            # b) 读取当前最新状态
+            current = self.get(mem_id)
+            if not current:
+                stats["skipped"] += 1
+                continue
+            q = current["quality_level"]
+            vc = int(current["verify_count"] or 0)
+            conf = float(current["confidence"] or 0.0)
+
+            # c) 找下一档是否达标
+            paths = upgrade_paths.get(q) or {}
+            upgraded_here = False
+            for target_q, th in paths.items():
+                if vc >= th["min_verifies"] and conf >= th["min_confidence"]:
+                    # 达标 → 升级到 target_q，置信度调到目标基准（介于当前和完美之间）
+                    new_conf = max(conf, _target_conf.get(target_q, conf))
+                    ok_up = self.update_quality(mem_id, target_q, new_conf)
+                    if ok_up:
+                        stats["upgraded"] += 1
+                        upgraded_here = True
+                    break  # 一次只升一级（避免大跳）
+            if not upgraded_here:
+                stats["skipped"] += 1
+
+        return stats
+
     def close(self) -> None:
         """关闭连接"""
         self.db.close()

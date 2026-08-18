@@ -48,6 +48,9 @@ class TradeRecord:
     # ATR 基线 SL/TP 收益率（开仓时记录，供易经离场系统调制使用）
     base_sl_roi: float = 0.0   # 开仓时 ATR 基线止损收益率（如 0.12 = 12%）
     base_tp_roi: float = 0.0   # 开仓时 ATR 基线止盈收益率（如 0.60 = 60%）
+    # P2-07: 形态预测器 regime + 参数乘数快照（开仓时记录，事后审计用）
+    regime_pred: str = None
+    regime_multipliers: Dict = None
     # Phase C (Spec §4.3.2): B 档排队止盈计划
     # {"type": "ranked_tp", "wait_cycles": 2, "trigger_rank": float, "set_at_cycle": int}
     reduce_plan: Optional[Dict] = None
@@ -1051,7 +1054,9 @@ class PositionTracker:
                       strategy_source: str = "bcrm",
                       enhance_info: Dict = None,
                       base_sl_roi: float = 0.0,
-                      base_tp_roi: float = 0.0) -> TradeRecord:
+                      base_tp_roi: float = 0.0,
+                      regime_pred: str = None,
+                      regime_multipliers: Dict = None) -> TradeRecord:
         """记录开仓"""
         trade_id = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
         rec = TradeRecord(
@@ -1071,6 +1076,8 @@ class PositionTracker:
             enhance_info=enhance_info or {},
             base_sl_roi=base_sl_roi,
             base_tp_roi=base_tp_roi,
+            regime_pred=regime_pred,
+            regime_multipliers=regime_multipliers,
         )
         self.open_positions[inst_id] = rec
         self._save_open_position(inst_id)

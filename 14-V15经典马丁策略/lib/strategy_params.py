@@ -8,7 +8,7 @@ V15-CT 策略参数计算模块
 - 资金计算：基于保证金和名义价值
 """
 import math
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Any
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import sys
@@ -477,9 +477,55 @@ def get_vol_adjusted_params(coin_vol: float, btc_vol: float,
         "btc_atr_pct": round(btc_atr_pct, 4) if btc_atr_pct else None,
         "take_profit_pct": round(tp_pct * 100, 2),
         "addon_pct": round(addon_pct * 100, 2),
+        "tp_pct": round(tp_pct * 100, 2),          # 同义：Phase E apply_param_multipliers 读取 tp_pct
         "base_tp_pct": round(base_tp_pct * 100, 2),
         "base_addon_pct": round(base_addon_pct * 100, 2),
     }
+
+
+def apply_param_multipliers(
+    base_params: Dict[str, Any],
+    action: Optional[Dict[str, Any]] = None,
+    *,
+    enforce_absolute: bool = True,
+) -> Dict[str, Any]:
+    """Point4b: Phase E 参数倍率应用（addon_pct / tp_pct）。
+
+    设计：
+      - 输入 base_params 来自 get_vol_adjusted_params（单位 %，形如 tp_pct=4.0, addon_pct=8.0）
+      - action 是 PhaseEGateway.apply_param_multipliers 输出的 dict（含 addon_pct_mult / tp_pct_mult）
+        若 action=None 则等价基线（mult=1.0），保证字节兼容
+      - 输出 params 中 addon_pct / tp_pct 被乘法调整，并通过 DS3/DS4 绝对值铁壳 [1.5,12] & [3,25]
+      - 保留原返回键名不变（take_profit_pct、addon_pct），旧调用方无需改动
+    """
+    result = dict(base_params)
+    if action is None:
+        return result
+
+    base_addon = float(base_params.get("addon_pct", base_params.get("base_addon_pct", 8.0)))
+    base_tp = float(base_params.get("tp_pct", base_params.get("take_profit_pct", base_params.get("base_tp_pct", 4.0))))
+
+    mult_addon = float(action.get("addon_pct_mult", 1.0))
+    mult_tp = float(action.get("tp_pct_mult", 1.0))
+
+    eff_addon = base_addon * mult_addon
+    eff_tp = base_tp * mult_tp
+
+    if enforce_absolute:
+        # DS3/DS4 绝对值铁壳（与 PhaseEGateway.shield_check 对齐，双保险）
+        eff_tp = max(1.5, min(12.0, eff_tp))
+        eff_addon = max(3.0, min(25.0, eff_addon))
+
+    eff_addon = round(eff_addon, 2)
+    eff_tp = round(eff_tp, 2)
+
+    # 双写：addon_pct / take_profit_pct（向后兼容），同步 tp_pct 键（Phase E 下游读取）
+    result["addon_pct"] = eff_addon
+    result["tp_pct"] = eff_tp
+    result["take_profit_pct"] = eff_tp
+    result["_phase_e_action_applied"] = True
+    return result
+
 
 
 # ── 三屏趋势过滤 ──────────────────────────────────────────────────────────

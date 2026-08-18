@@ -67,6 +67,7 @@ class PhaseEGateway:
         shield_check(action, s_state, alloc, params) → 盾后动作 dict + shield_flags
         apply_size_multipliers(alloc, s_state) → 最终 allocation dict
         apply_param_multipliers(coin, params, s_state) → 最终 params dict
+        write_decision_jsonl(record) → 决策归档（PhaseE_decisions.jsonl）
     """
 
     enabled: bool = False
@@ -74,21 +75,80 @@ class PhaseEGateway:
     k_bound: float = PHASE_E_DEFAULT_K_BOUND
     # §5.2 DS 盾开关（生产不可关，测试可关）
     shield_enabled: bool = True
+    # 归档 JSONL 路径：None 时使用默认路径 <project>/data/ai_logs/phase_e_decisions.jsonl
+    jsonl_log_path: Optional[str] = None
 
     # TDD 诊断
     last_shield_flags: list = field(default_factory=list, repr=False)
     _mock_action: Optional[Dict[str, Any]] = field(default=None, repr=False)
     _ppo_model: Any = field(default=None, repr=False)
+    _jsonl_fh: Any = field(default=None, repr=False)
 
     def __post_init__(self):
+        # 归档文件：若显式传路径用显式；否则用 PROJECT/data/ai_logs（懒打开，write_decision_jsonl 里开）
+        if self.jsonl_log_path is None:
+            default_dir = Path(__file__).resolve().parent.parent / "data" / "ai_logs"
+            self.jsonl_log_path = str(default_dir / "phase_e_decisions.jsonl")
+
         if self.enabled and self.ppo_model_path and os.path.isfile(self.ppo_model_path):
             try:
                 self._load_ppo_model()
             except Exception:
                 pass  # 加载失败 → 降级为中性动作
 
+    def _ensure_jsonl_open(self):
+        """懒打开 JSONL 文件句柄（append，line-buffered）。失败则 self._jsonl_fh=None 继续。"""
+        if self._jsonl_fh is not None:
+            return
+        try:
+            p = Path(self.jsonl_log_path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            self._jsonl_fh = open(p, "a", encoding="utf-8", buffering=1)
+        except Exception:
+            self._jsonl_fh = None
+
+    def write_decision_jsonl(self, record: Dict[str, Any]) -> None:
+        """Point4c: PhaseEGateway 推理决策归档写入 JSONL（可复现 & 事后回溯）。
+
+        record 推荐包含：
+            ts_iso, coin, s_state, inference_action, shield_action,
+            final_addon_pct, final_tp_pct, k_bound, ppo_model_path
+        """
+        if not self.enabled:
+            return
+        self._ensure_jsonl_open()
+        if self._jsonl_fh is None:
+            return
+        try:
+            from datetime import datetime, timezone
+
+            data = dict(record)
+            data.setdefault("ts_iso", datetime.now(timezone.utc).isoformat())
+            data.setdefault("k_bound", self.k_bound)
+            data.setdefault("ppo_model_path", self.ppo_model_path)
+            line = json.dumps(data, ensure_ascii=False, default=str)
+            self._jsonl_fh.write(line + "\n")
+        except Exception:
+            # 归档失败绝不影响主交易：吞掉异常（可能是磁盘满/权限等）
+            pass
+
+    def close(self) -> None:
+        """显式关闭 JSONL 文件句柄。"""
+        try:
+            if self._jsonl_fh is not None:
+                self._jsonl_fh.close()
+        except Exception:
+            pass
+        finally:
+            self._jsonl_fh = None
+
     def _load_ppo_model(self):
-        """加载 PPO-LSTM 权重，构造 PPOLSTMActorCritic 模型。"""
+        """加载 PPO-LSTM 权重，构造 PPOLSTMActorCritic 模型。
+
+        v6: 从 checkpoint 读取 action_bounds 传给模型，保证推理时
+        map_action_to_bounds 用训练时一致的边界。
+        旧版 checkpoint 无 action_bounds → 用模型默认 DEFAULT_ACTION_BOUNDS。
+        """
         import torch
 
         ai_trainers_path = str(Path(__file__).resolve().parent.parent / "ai_trainers")
@@ -98,10 +158,12 @@ class PhaseEGateway:
 
         payload = torch.load(self.ppo_model_path, map_location="cpu", weights_only=False)
         config = payload.get("config", {})
+        action_bounds = payload.get("action_bounds")  # v6: None 时模型用默认边界
         model = PPOLSTMActorCritic(
             state_dim=34,
             hidden_dim=config.get("hidden_dim", 128),
             num_layers=config.get("num_layers", 1),
+            action_bounds=action_bounds,
         )
         model.load_state_dict(payload["model_state_dict"])
         model.eval()
@@ -380,19 +442,40 @@ class PhaseEGateway:
         base_params: Dict[str, Any],
         s_state: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """应用动作到 strategy params（addon_pct / tp_pct）。"""
+        """应用动作到 strategy params（addon_pct / tp_pct）。
+
+        v2 Point4c: 每次调用都尝试 write_decision_jsonl 归档（可复现 & 事后回溯）。
+        """
         if not self.enabled:
             return dict(base_params)
 
-        action = self.get_action(s_state)
+        action_raw = self.get_action(s_state)
         # 盾检查需要 allocation（用空 dict 占位，DS1/DS2 不依赖 params）
-        action = self.shield_check(action, s_state, {"per_coin_budget": 0}, base_params)
+        action = self.shield_check(action_raw, s_state, {"per_coin_budget": 0}, base_params)
 
         result = dict(base_params)
         base_addon = float(base_params.get("addon_pct", 8.0))
         base_tp = float(base_params.get("tp_pct", 4.0))
 
-        result["addon_pct"] = round(base_addon * action["addon_pct_mult"], 2)
-        result["tp_pct"] = round(base_tp * action["tp_pct_mult"], 2)
+        eff_addon = round(base_addon * action["addon_pct_mult"], 2)
+        eff_tp = round(base_tp * action["tp_pct_mult"], 2)
+        result["addon_pct"] = eff_addon
+        result["tp_pct"] = eff_tp
         result["ai_action"] = action
+
+        # Point4c: 决策归档
+        try:
+            self.write_decision_jsonl({
+                "coin": coin,
+                "s_state": s_state,
+                "inference_action": action_raw,
+                "shield_action": action,
+                "base_addon_pct": base_addon,
+                "base_tp_pct": base_tp,
+                "final_addon_pct": eff_addon,
+                "final_tp_pct": eff_tp,
+                "shield_flags": action.get("shield_flags", []),
+            })
+        except Exception:
+            pass
         return result

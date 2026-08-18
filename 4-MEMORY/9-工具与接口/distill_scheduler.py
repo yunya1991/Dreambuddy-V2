@@ -98,8 +98,9 @@ class DistillScheduler:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             
-            # 获取接口类
-            interface_class = getattr(module, "RiskMemoryInterface", None) or \
+            # 获取接口类（按各应用记忆的实际类名查找）
+            interface_class = getattr(module, "TradingMemoryInterface", None) or \
+                              getattr(module, "RiskMemoryInterface", None) or \
                               getattr(module, "OpsMemoryInterface", None) or \
                               getattr(module, "AppMemoryInterface", None)
             

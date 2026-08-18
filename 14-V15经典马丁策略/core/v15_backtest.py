@@ -59,14 +59,28 @@ BASE_TP_PCT = 0.04
 
 
 # ── Phase D 回测侧 helpers（与 core/v15_trader.py 同构，字节级对齐开关） ──
-def _phase_d_make_gateway(enabled: bool, baseline_max: int = MAX_ADDONS):
-    """phase_d_ai_enabled=False 时返回 None → 所有分支完全走基线。"""
+def _phase_d_make_gateway(
+    enabled: bool,
+    baseline_max: int = MAX_ADDONS,
+    bilstm_model_path: str = None,
+    patchtst_model_path: str = None,
+    g_d1_bust_threshold: float = 0.60,
+):
+    """phase_d_ai_enabled=False 时返回 None → 所有分支完全走基线。
+
+    v3: 支持加载真实 BiLSTM/PatchTST 模型 + 自定义 bust_threshold（B 点扫参）。
+    """
     if not enabled:
         return None
     try:
         from phase_d_gateway import PhaseDGateway
 
-        return PhaseDGateway(enabled=True)
+        kw = {"enabled": True, "g_d1_bust_threshold": float(g_d1_bust_threshold)}
+        if bilstm_model_path:
+            kw["bilstm_model_path"] = bilstm_model_path
+        if patchtst_model_path:
+            kw["patchtst_model_path"] = patchtst_model_path
+        return PhaseDGateway(**kw)
     except Exception:
         return None
 
@@ -1377,8 +1391,15 @@ def run_backtest(
     # ---- Phase D: AI 闸门（BiLSTM 爆仓预警 + PatchTST dd24h 预测） ----
     # 默认 False=完全不运行 Phase D，保证与基线字节级等价
     phase_d_ai_enabled: bool = False,
+    # v3-B: 支持加载真实模型 + bust_threshold 扫参
+    phase_d_bilstm_model_path: str = None,
+    phase_d_patchtst_model_path: str = None,
+    phase_d_bust_threshold: float = 0.60,
     # ---- Phase E: PPO-LSTM 强化学习加仓金字塔 ----
     phase_e_ai_enabled: bool = False,
+    # v3-C: 支持加载真实 PPO 模型 + k_bound
+    phase_e_ppo_model_path: str = None,
+    phase_e_k_bound: float = 0.80,
 ) -> Dict:
     """
     运行V15策略回测 v4
@@ -1727,14 +1748,25 @@ def run_backtest(
             bar_yiji = None
 
     # Phase D: AI 闸门（默认关闭=完全不创建，字节等价基线）
-    _phase_d_gw = _phase_d_make_gateway(bool(phase_d_ai_enabled), baseline_max=int(max_addons))
+    # v3-B: 传入真实模型路径 + bust_threshold
+    _phase_d_gw = _phase_d_make_gateway(
+        bool(phase_d_ai_enabled), baseline_max=int(max_addons),
+        bilstm_model_path=phase_d_bilstm_model_path,
+        patchtst_model_path=phase_d_patchtst_model_path,
+        g_d1_bust_threshold=phase_d_bust_threshold,
+    )
 
     # Phase E: PPO-LSTM gateway（默认 None=基线等价）
+    # v3-C: 加载真实 PPO 模型 + k_bound
     _phase_e_gw = None
     if phase_e_ai_enabled:
         try:
             from phase_e_gateway import PhaseEGateway
-            _phase_e_gw = PhaseEGateway(enabled=True)
+            _phase_e_gw = PhaseEGateway(
+                enabled=True,
+                ppo_model_path=phase_e_ppo_model_path,
+                k_bound=float(phase_e_k_bound),
+            )
         except Exception:
             _phase_e_gw = None
 
@@ -2134,15 +2166,28 @@ def run_backtest(
                 if _phase_e_gw is not None:
                     try:
                         _pe_base_params = {"addon_pct": addon_pct * 100, "tp_pct": tp_pct * 100}
+                        # v3-C: 用真实回测上下文填充 state dict（非硬编码）
+                        _recent_trades = trades[-10:] if trades else []
+                        _recent_wins = sum(1 for t in _recent_trades if t.get("pnl", 0) > 0)
+                        _recent_10_wr = (_recent_wins / max(1, len(_recent_trades))) if _recent_trades else 0.5
+                        _recent_closes = closes[max(0, i-60):i+1]
+                        _recent_rets = [(_recent_closes[j] / _recent_closes[j-1] - 1) for j in range(1, len(_recent_closes)) if _recent_closes[j-1] > 0] if len(_recent_closes) > 2 else [0.0]
+                        _vol_z = 0.0
+                        if len(_recent_rets) >= 10:
+                            import numpy as _np
+                            _vol_mean = float(_np.mean(_recent_rets))
+                            _vol_std = float(_np.std(_recent_rets))
+                            _vol_z = max(-2.5, min(2.5, (_vol_std - _vol_mean) / max(1e-6, _vol_std))) if _vol_std > 1e-6 else 0.0
+                        _deployed = sum(t.get("cost", 0) for t in [position] if t) if position else 0.0
                         _pe_s = {
                             "timing_score": float(timing_mult),
                             "position_level": 0,
-                            "vol_zscore_60": 0.0,
-                            "recent_10_win_rate": 0.5,
-                            "recent_10_count": 0,
-                            "account_margin_ratio": 0.10,
+                            "vol_zscore_60": _vol_z,
+                            "recent_10_win_rate": _recent_10_wr,
+                            "recent_10_count": len(_recent_trades),
+                            "account_margin_ratio": min(0.95, _deployed / max(1.0, capital)),
                             "imr": 0.05,
-                            "coin_total_deployed": 0.0,
+                            "coin_total_deployed": _deployed,
                         }
                         _pe_params = _phase_e_gw.apply_param_multipliers(coin, _pe_base_params, _pe_s)
                         addon_pct = _pe_params["addon_pct"] / 100.0
