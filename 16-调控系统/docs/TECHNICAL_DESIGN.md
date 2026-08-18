@@ -1,11 +1,13 @@
 # 统一 AI 调控系统 — 技术设计文档
 
 > **定位：** 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
-> **版本：** v2.0 | **更新日期：** 2026-07-31
+> **版本：** v2.1 | **更新日期：** 2026-08-17
 > **系统类型：** 跨系统宏观战略离场决策层（统一 AI 离场评估系统）
-> **关联文档：** [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) v2.0、[14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md](../../14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md)
+> **关联文档：** [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) v2.1、[CAPITAL_CONTROL_DESIGN.md](./CAPITAL_CONTROL_DESIGN.md)、[14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md](../../14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md)
 >
 > **文档债务修复声明：** v2.0 修复 DD-004 范围错位。v1.0 仅覆盖"离场评估子模块"（持仓聚合 + A1/A2/A3 + A9 四态），未覆盖执行反馈、进化闭环、回测验证、技术融合、产物投递等全链路。v2.0 基于实际代码重写，覆盖 `core/` 全部 19 个核心 Python 文件，对齐 ENGINEERING_INDEX v2.0 的完整文件清单。
+>
+> **v2.1 变更：** 新增 L1.5 资金调控层（`core/capital_control/`），含 1 个主组件 + 4 条 CAPITAL 规则；`unified_position_query.py` 补齐 equity 字段与 `total_equity` 聚合；`auto_exit_system.py` 新增步骤 1.5 挂载 + 资金报告产物。详见 [CAPITAL_CONTROL_DESIGN.md](./CAPITAL_CONTROL_DESIGN.md)。
 
 ---
 
@@ -20,6 +22,7 @@
 - [7. 配置管理](#7-配置管理)
 - [8. 错误处理](#8-错误处理)
 - [9. 扩展性设计](#9-扩展性设计)
+- [10. 资金调控层（L1.5）](#10-资金调控层l15)
 - [变更记录](#变更记录)
 
 ---
@@ -67,7 +70,7 @@
 
 ### 2.1 分层架构
 
-系统采用五层架构，自上而下覆盖"数据 → 分析 → 决策 → 执行 → 进化"全链路：
+系统采用五层架构，自上而下覆盖"数据 → 分析 → 决策 → 执行 → 进化"全链路；v2.1 在 L1 与 L2 之间新增 **L1.5 资金调控层**，对 6 系统资金使用进行统一监控与建议：
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -78,9 +81,25 @@
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  L1 数据层                                                                 │
-│  unified_position_query.py（6 系统持仓聚合 + 降级容错 + 缓存）             │
+│  unified_position_query.py（6 系统持仓聚合 + equity 字段 + total_equity） │
 │  market_data_fetcher.py（Hyperliquid→CoinGecko→估算 三源降级 + 60s 缓存） │
 │  realtime_market_stream.py（Hyperliquid WS 全市场 ticker + 自动重连单例） │
+└─────────────────────────────┬───────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  L1.5 资金调控层（v2.1 新增）                                              │
+│  capital_control/component.py（CapitalControlComponent 主组件）          │
+│    · evaluate(systems) → CapitalSnapshot（60s 缓存 + 线程锁）             │
+│    · get_capital_advice(system, action) → 资金建议（一期只读 / 二期阻断） │
+│    · health_check() → 健康自检                                            │
+│  capital_control/capital_rules/（4 条 CAPITAL 规则，基于 RuleRegistry）  │
+│    · okx_live_rule（V15 实盘，priority=10）                                │
+│    · okx_simulated_rule（易经模拟盘，priority=20）                        │
+│    · hyperliquid_rule（Agent A/B/C，priority=30）                         │
+│    · aster_rule（三屏趋势，priority=40）                                   │
+│  一期定位：只读监控 + 健康评估 + 报告产物（phase2.enabled=false）          │
+│  二期规划：A9 Layer 5 接入，高压时阻断 RAISE_TP 等动作                     │
 └─────────────────────────────┬───────────────────────────────────────────┘
                               │
                               ▼
@@ -122,7 +141,8 @@
                               │
                               ▼
                     artifacts/ 产物目录
-  exit-evaluations/ · execution_logs/ · backtests/ · evolution/ · tests/
+  exit-evaluations/ · execution_logs/ · backtests/ · evolution/
+  tests/ · capital-reports/
 ```
 
 ### 2.2 模块关系
@@ -133,6 +153,10 @@ graph TD
         UPQ[unified_position_query]
         MDF[market_data_fetcher]
         RMS[realtime_market_stream]
+    end
+    subgraph L15[资金调控层 v2.1]
+        CCC[CapitalControlComponent]
+        CR[capital_rules 4条]
     end
     subgraph L2[SKILL 引擎与分析层]
         SE[skill_engine]
@@ -159,6 +183,8 @@ graph TD
         BF[backtest_framework]
     end
 
+    UPQ --> CCC
+    CR --> CCC
     UPQ --> A1
     MDF --> A1
     RMS --> A1
@@ -171,6 +197,7 @@ graph TD
     A1 --> A2
     A2 --> A3
     A3 --> A9
+    CCC -.phase2 建议注入.-> A9
     A9 --> TEA
     SEA --> TEA
     TEA --> EE
@@ -180,6 +207,7 @@ graph TD
     BF --> EL
     EE --> AAM
     EL --> AAM
+    CCC --> AAM
 ```
 
 **依赖关系要点**：
@@ -187,6 +215,7 @@ graph TD
 - `strategy_exit_adapter.py` 被 `technical_exit_adapter.py`（融合层）与 `evolution_loop.py`/`enhanced_evolution.py`（进化层）共同依赖，提供策略专属权重与门槛
 - `exit_executor.py` 执行结果回流到 `evolution_loop.record_outcome()`，形成闭环
 - `backtest_framework.py` 既独立运行三策略对比，也为进化层提供 `validate_evolution_adjustment()` 参数验证
+- **v2.1**：`CapitalControlComponent` 复用 `unified_position_query` 的 equity/avail 数据（共享 60s 缓存），一期只读产出 `CapitalSnapshot` 与资金报告；二期（`phase2.enabled=true`）通过虚线将资金压力建议注入 A9 Layer 5，对高压动作（如 `RAISE_TP`）施加置信度衰减或阻断
 
 ### 2.3 与现有系统的关系
 
@@ -492,6 +521,100 @@ def generate_simulated_bars(start_price, num_bars, volatility_pct, drift_pct, se
 
 **进化参数验证**（`validate_evolution_adjustment`）：用调优前后参数分别回测，采纳标准：收益改善 > 0.5% 且回撤恶化 < 2% 且胜率下降 < 5%。
 
+### 3.7 资金调控算法（`capital_control/`，v2.1 新增）
+
+资金调控层位于 L1 与 L2 之间，对 6 系统的账户资金（equity / avail / used_margin）进行统一聚合、健康评估与建议输出。核心思想：**只读监控优先，二期才注入动作阻断**，确保不干扰现有离场决策主链路。
+
+**两种调控模式**：
+
+| 模式 | CapitalMode | 行为 | 适用场景 |
+|------|-------------|------|----------|
+| 固定金额 | `FIXED` | 始终使用 `capital_control.json` 的 `fallback_static_budget` | 实盘不可达 / 演练 / 资金隔离 |
+| 动态资金（默认） | `DYNAMIC` | 优先实时查询 `unified_position_query`，失败时三级降级到静态预算 | 生产环境 |
+
+**动态模式三级降级链**：
+
+```
+Level 1 (API 实时查询):
+    fetch_all_positions(systems) → systems[sys].equity / avail_balance / used_margin
+    失败条件: API 异常 / equity=None / equity<=0
+
+Level 2 (缓存命中):
+    复用 unified_position_query 的 60s 进程缓存（_CACHE / _CACHE_TS）
+    失败条件: 缓存过期或未命中
+
+Level 3 (静态配置降级):
+    fallback_static_budget[sys]（capital_control.json）
+    标记 fallback_used=True, fallback_reason="static_budget_fallback"
+```
+
+**健康评估算法**（`assess_health`）：
+
+```
+used_pct = used_margin / total_eq × 100    # 单系统保证金使用率
+overall_used_pct = Σ(used_margin) / Σ(total_eq) × 100    # 全局加权
+
+if overall_used_pct <= healthy_threshold (默认 50%):   health = HEALTHY
+elif overall_used_pct <= warning_threshold (默认 80%):  health = WARNING
+else:                                                   health = CRITICAL
+```
+
+**资金建议算法**（`get_capital_advice`）：
+
+```python
+def get_capital_advice(self, system: str, action: str = "HOLD") -> Dict:
+    snap = self._last_snapshot or self.evaluate()
+    result = snap.by_system.get(system)
+    phase2_enabled = bool(self._config.get("phase2", {}).get("enabled", False))
+
+    if result is None:
+        return {allowed: True, reason: "system_not_in_capital_registry", ...}
+
+    margin_pressure = classify_pressure(result.used_pct)
+    # 一期（phase2.enabled=false）：只读，始终 allowed=True
+    # 二期（phase2.enabled=true）：
+    #   if margin_pressure == HIGH and action in high_pressure_actions_to_block:
+    #       return {allowed: False, reason: "capital_pressure_block",
+    #               confidence_multiplier: 0.8}
+    return {allowed: True, margin_pressure, used_pct, total_eq, ...}
+```
+
+**压力等级映射**：
+
+| used_pct 区间 | margin_pressure | 二期行为 |
+|---------------|-----------------|----------|
+| ≤ 50% | LOW | 放行所有动作 |
+| (50%, 80%] | MEDIUM | 放行，建议观察 |
+| > 80% | HIGH | 阻断 `high_pressure_actions_to_block`（默认含 `RAISE_TP`），置信度 × 0.8 |
+
+**RuleRegistry 扩展**（`13-通用风控模块/core/registry.py`）：
+
+```python
+class RuleCategory(str, Enum):
+    GATE = "gate"           # 既有
+    POSITION = "position"   # 既有
+    EXIT = "exit"           # 既有
+    CAPITAL = "capital"     # v2.1 新增
+
+@register_capital(name="capital.<account>", priority=N, config_schema={...}, description="...")
+def capital_handler(signal=None, context=None, base_risk=0.0, config=None, extra=None) -> CapitalResult:
+    ...
+```
+
+4 条 CAPITAL 规则按 priority 升序执行（priority 越小越优先），每条规则返回 `CapitalResult`，由 `CapitalControlComponent.evaluate()` 聚合为 `CapitalSnapshot`。
+
+**主流程挂载点**（`scripts/auto_exit_system.py`）：
+
+```
+Step 1:  fetch_all_positions()                         # L1 数据聚合
+Step 1.5: CapitalControlComponent.evaluate()          # v2.1 新增 — 资金快照 + 报告
+Step 2:  fetch_market_data()                         # 市场数据
+Step 3-7: A1 → A2 → A3 → 技术离场 → A9 融合          # L2/L3 决策
+Step 8:  exit_executor.execute_evaluations()          # L4 执行
+Step 9:  evolution_loop.record_decision()             # L5 进化
+Step 10: aam_deliverer.deliver_exit_evaluation()      # 产物投递
+```
+
 ---
 
 ## 4. 数据流
@@ -556,6 +679,9 @@ def generate_simulated_bars(start_price, num_bars, volatility_pct, drift_pct, se
 | `StrategyEvolutionParams` | `confidence_threshold_close/reduce/observe`, `technical/macro_signal_weight`, `accuracy_rate` | 可进化参数 |
 | `EvolutionProposal` | `proposal_id`, `source_layer`, `before_params`, `after_params`, `status`, `backtest_result` | 进化提议 |
 | `ExitExecution` | `execution_id`, `mode`, `allowed`, `status`, `executed_size`, `actual_pnl` | 执行记录 |
+| `CapitalMode` | `FIXED` / `DYNAMIC` | 资金调控模式枚举（v2.1） |
+| `CapitalResult` | `system`, `account_type`, `mode`, `total_eq`, `avail_balance`, `used_margin`, `used_pct`, `fallback_used`, `fallback_reason` | 单系统资金查询结果（v2.1） |
+| `CapitalSnapshot` | `timestamp`, `mode`, `by_system`, `total_equity`, `total_avail`, `total_used`, `overall_used_pct`, `health`, `recommendations` | 全局资金快照（v2.1） |
 
 ---
 
@@ -669,6 +795,12 @@ REJECTED (回测未通过)                              ADOPTED (观察期通过
 | `n_bins`（ECE） | `10` | 置信度校准分箱数 | enhanced_evolution 代码常量 |
 | `max_reconnect_attempts` | `10` | WS 最大重连次数 | realtime_market_stream 代码常量 |
 | `update_interval`（REST 轮询） | `10`s | WS 降级时 REST 轮询间隔 | realtime_market_stream 代码常量 |
+| `capital.mode` | `dynamic` | 资金调控模式：`fixed` / `dynamic` | `config/capital_control.json`（v2.1） |
+| `capital.cache_ttl_sec` | `60` | 资金快照缓存 TTL | `config/capital_control.json`（v2.1） |
+| `capital.healthy_used_pct_max` | `50.0` | 健康使用率上限（%） | `config/capital_control.json`（v2.1） |
+| `capital.warning_used_pct_max` | `80.0` | 警告使用率上限（%） | `config/capital_control.json`（v2.1） |
+| `capital.phase2.enabled` | `false` | 二期动作阻断开关（默认关闭） | `config/capital_control.json`（v2.1） |
+| `capital.fallback_static_budget.*` | 各系统静态预算 | 实时查询失败时的降级预算（USDT） | `config/capital_control.json`（v2.1） |
 
 **各系统默认权限**（`feedback_and_permission.py`）：
 
@@ -697,6 +829,9 @@ REJECTED (回测未通过)                              ADOPTED (观察期通过
 | L4 TradeEvent 注册异常 | 捕获异常，打印日志，不影响执行结果 | exit_executor |
 | 进化回测数据不足 | 返回默认案例，标注"暂无决策记录" | enhanced_evolution |
 | 决策记录 JSON 解析失败 | 跳过该行，继续解析 | evolution_loop |
+| 资金实时查询失败 / equity 缺失 | 三级降级：API → 缓存 → 静态预算（标记 `fallback_used`） | capital_control / unified_position_query |
+| CAPITAL 规则 handler 异常 | 跳过该规则，标记 `fallback_reason="rule_error"`，不影响其他系统 | capital_control.component |
+| RuleRegistry 导入失败 | 降级为空规则集，`evaluate()` 返回全静态预算快照 | capital_control.component |
 
 ### 8.2 降级机制
 
@@ -709,6 +844,7 @@ Hyperliquid REST ──失败──→  CoinGecko → 本地价格估算
 ClassicExitSystem──缺失──→  内置简化技术分析（P0/P1）
 实盘执行         ──失败──→  dry_run 模拟执行（默认）
 完整 A1/A2/A3    ──异常──→  SkillResult.fallback_used=True
+资金实时查询     ──失败──→  缓存 → 静态预算（capital_control 三级降级，v2.1）
 ```
 
 **安全设计要点**：
@@ -716,6 +852,7 @@ ClassicExitSystem──缺失──→  内置简化技术分析（P0/P1）
 - 每笔执行都经 `can_auto_execute()` 权限检查
 - 最大执行数量限制防批量砸盘
 - P0 硬退出不可被宏观轻易覆盖（除非 `allow_macro_override_p0=True` 且置信度 ≥ 0.9）
+- 资金调控一期 `phase2.enabled=false`，仅只读监控，不阻断任何离场动作（v2.1）
 
 ---
 
@@ -746,33 +883,100 @@ ClassicExitSystem──缺失──→  内置简化技术分析（P0/P1）
 3. 在 `run_full_evolution_cycle()` 中调用新方法
 4. 进化提议自动进入 pool，经回测验证 + 观察期后采纳
 
-### 9.4 模块文件索引（19 个核心文件全覆盖）
+### 9.4 模块文件索引（19 个核心文件 + capital_control 子包）
 
 | # | 文件 | 层 | 职责 |
 |---|------|---|------|
-| 1 | `unified_position_query.py` | L1 数据 | 6 系统持仓聚合 + 降级容错 + 缓存 |
+| 1 | `unified_position_query.py` | L1 数据 | 6 系统持仓聚合 + equity 字段 + total_equity + 降级容错 + 缓存 |
 | 2 | `market_data_fetcher.py` | L1 数据 | 多源市场数据 + 60s 缓存 |
 | 3 | `realtime_market_stream.py` | L1 数据 | Hyperliquid WS 实时流 + 自动重连单例 |
-| 4 | `skill_engine.py` | L2 引擎 | SKILL 注册/执行/降级框架 |
-| 5 | `llm_bridge.py` | L2 引擎 | 多 Provider LLM + 规则引擎降级 |
-| 6 | `a1_research_adapter.py` | L2 分析 | A1 调研 v1.7.0 |
-| 7 | `a2_first_principles_adapter.py` | L2 分析 | A2 第一性原理 v2.6.1 |
-| 8 | `a3_strategy_adapter.py` | L2 分析 | A3 战略合成 v2.7.0 |
-| 9 | `archive_center.py` | L2 分析 | 历史案例检索 + 加权相似度 |
-| 10 | `dream_insights_integration.py` | L2 分析 | 做梦产物解析 + A1 交叉验证 |
-| 11 | `a9_exit_decision.py` | L3 决策 | A9 四层决策链 v2.2.0 → 四态 |
-| 12 | `technical_exit_adapter.py` | L3 决策 | P0 否决 + 宏观/技术融合 |
-| 13 | `strategy_exit_adapter.py` | L3 决策 | 6 策略离场设计 + 合理性检查 |
-| 14 | `exit_executor.py` | L4 执行 | dry_run/实盘 + 权限 + L4 注册 |
-| 15 | `feedback_and_permission.py` | L4 执行 | 5 级权限 + 反馈 + 审计 |
-| 16 | `aam_deliverer.py` | L4 执行 | 双通道投递 + index.json |
-| 17 | `evolution_loop.py` | L5 进化 | 7 步基础闭环 |
-| 18 | `enhanced_evolution.py` | L5 进化 | 三层进化 + ECE + gap_score + Walk-Forward |
-| 19 | `backtest_framework.py` | L5 进化 | 随机漫步模拟 + 三策略对比 |
+| 4 | `capital_control/component.py` | **L1.5 资金** | CapitalControlComponent 主组件（evaluate / get_capital_advice / health_check） |
+| 5 | `capital_control/types.py` | **L1.5 资金** | 数据结构（CapitalMode / AccountType / CapitalResult / CapitalSnapshot / HealthLevel） |
+| 6 | `capital_control/capital_rules/_shared.py` | **L1.5 资金** | 共享辅助（build_result_from_system / _static_from_config） |
+| 7 | `capital_control/capital_rules/okx_live_rule.py` | **L1.5 资金** | capital.okx_live（V15 实盘，priority=10） |
+| 8 | `capital_control/capital_rules/okx_simulated_rule.py` | **L1.5 资金** | capital.okx_simulated（易经模拟盘，priority=20） |
+| 9 | `capital_control/capital_rules/hyperliquid_rule.py` | **L1.5 资金** | capital.hyperliquid（Agent A/B/C，priority=30） |
+| 10 | `capital_control/capital_rules/aster_rule.py` | **L1.5 资金** | capital.aster（三屏趋势，priority=40） |
+| 11 | `skill_engine.py` | L2 引擎 | SKILL 注册/执行/降级框架 |
+| 12 | `llm_bridge.py` | L2 引擎 | 多 Provider LLM + 规则引擎降级 |
+| 13 | `a1_research_adapter.py` | L2 分析 | A1 调研 v1.7.0 |
+| 14 | `a2_first_principles_adapter.py` | L2 分析 | A2 第一性原理 v2.6.1 |
+| 15 | `a3_strategy_adapter.py` | L2 分析 | A3 战略合成 v2.7.0 |
+| 16 | `archive_center.py` | L2 分析 | 历史案例检索 + 加权相似度 |
+| 17 | `dream_insights_integration.py` | L2 分析 | 做梦产物解析 + A1 交叉验证 |
+| 18 | `a9_exit_decision.py` | L3 决策 | A9 四层决策链 v2.2.0 → 四态 |
+| 19 | `technical_exit_adapter.py` | L3 决策 | P0 否决 + 宏观/技术融合 |
+| 20 | `strategy_exit_adapter.py` | L3 决策 | 6 策略离场设计 + 合理性检查 |
+| 21 | `exit_executor.py` | L4 执行 | dry_run/实盘 + 权限 + L4 注册 |
+| 22 | `feedback_and_permission.py` | L4 执行 | 5 级权限 + 反馈 + 审计 |
+| 23 | `aam_deliverer.py` | L4 执行 | 双通道投递 + index.json |
+| 24 | `evolution_loop.py` | L5 进化 | 7 步基础闭环 |
+| 25 | `enhanced_evolution.py` | L5 进化 | 三层进化 + ECE + gap_score + Walk-Forward |
+| 26 | `backtest_framework.py` | L5 进化 | 随机漫步模拟 + 三策略对比 |
 
-> 包入口 `core/__init__.py` 导出 `fetch_all_positions` / `get_position_summary` / `SkillEngine` / `SkillResult` / `register_skill`。
+> 包入口 `core/__init__.py` 导出 `fetch_all_positions` / `get_position_summary` / `SkillEngine` / `SkillResult` / `register_skill` / `CapitalControlComponent`（v2.1 新增导出）。
 
 > **关于 A8**：任务描述中提及的 `a8_design_check.py` 在实际代码中不存在。A8 理论实践验证能力内嵌于 `enhanced_evolution.py` 的 `run_a8_inspection()` 方法，检查 C_A8_001 ~ C_A8_004 四类矛盾。本设计文档基于实际代码描述。
+
+### 9.5 如何添加新资金规则（v2.1）
+
+1. 在 `capital_control/capital_rules/` 新建 `<account>_rule.py`
+2. 用 `@register_capital(name="capital.<account>", priority=N, config_schema={...}, description="...")` 装饰器注册到 `RuleRegistry`
+3. handler 签名：`def handler(signal=None, context=None, base_risk=0.0, config=None, extra=None) -> CapitalResult`
+4. 复用 `_shared.build_result_from_system()` 构造结果（自动处理三级降级 + fallback 标记）
+5. 在 `config/capital_control.json` 的 `enabled_systems` / `fallback_static_budget` / `account_mapping` 中配置该系统
+6. 在 `unified_position_query.py` 中确保该系统返回 `equity` / `avail_balance` / `used_margin` 字段
+
+**priority 约定**：实盘账户 priority 最小（最高优先级），模拟盘次之，第三方服务最大。现有：okx_live=10 / okx_simulated=20 / hyperliquid=30 / aster=40。
+
+---
+
+## 10. 资金调控层（L1.5）
+
+> 本节为 v2.1 新增，详细设计见 [CAPITAL_CONTROL_DESIGN.md](./CAPITAL_CONTROL_DESIGN.md)。
+
+### 10.1 组件定位
+
+`CapitalControlComponent` 是 L1.5 资金调控层的唯一主组件，位于数据层（L1）与分析层（L2）之间。它通过 `RuleRegistry` 编排 4 条 CAPITAL 规则，聚合 6 个交易系统的资金数据，输出 `CapitalSnapshot` 全局资金快照与 `get_capital_advice()` 资金建议。
+
+**一期定位（当前）**：只读监控 + 健康评估 + 报告产物，不干扰主链路（`phase2.enabled=false`）。
+**二期规划**：A9 Layer 5 接入，高压时对 `RAISE_TP` 等动作施加置信度衰减或阻断（`phase2.enabled=true`）。
+
+### 10.2 4 条 CAPITAL 规则
+
+| 规则名 | 系统对应 | 账户类型 | priority | 数据来源 |
+|--------|----------|----------|----------|----------|
+| `capital.okx_live` | v15_martin | OKX_LIVE | 10 | OKX API + v15_state.json |
+| `capital.okx_simulated` | yijing_bcrm | OKX_SIMULATED | 20 | OKX 模拟盘 API |
+| `capital.hyperliquid` | agent_a / agent_b / agent_c_memory | HYPERLIQUID | 30 | Hyperliquid REST |
+| `capital.aster` | three_screen | ASTER | 40 | ml_trade_service HTTP（不可用时降级静态预算） |
+
+### 10.3 6 系统 equity 字段与 total_equity 聚合
+
+`unified_position_query.py` 为 6 系统补齐 equity 字段并聚合 `total_equity`：
+
+| 系统 | equity 来源 | avail / used_margin 来源 | 降级条件 |
+|------|------------|--------------------------|----------|
+| agent_a | Hyperliquid `clearinghouseState.margin` | HL `spotClearinghouse` / 持仓初始保证金 | API 失败 → 静态 60U |
+| agent_b | 同上（B 账户地址） | 同上 | API 失败 → 静态 60U |
+| agent_c_memory | 共用 B 账户 equity | memory.json 推算 | 同 B |
+| v15_martin | OKX `account.balance` | OKX `account.avail_balance` / 持仓 margin | 无 API key → 静态 260U |
+| yijing_bcrm | OKX 模拟盘 `account.balance` | 同上 | 无 API key → 静态 150U |
+| three_screen | ml_trade_service `/tracker/stats` | 同上 | 服务不可用 → 静态 200U |
+
+**total_equity 聚合规则**：`total_equity = Σ(systems[sys].equity)`，数值加总，不可跨账户调度。
+
+### 10.4 测试覆盖
+
+| 测试文件 | 类型 | 覆盖内容 |
+|----------|------|----------|
+| `tests/capital_control/test_unit.py` | 单元 | 数据结构 / 健康评估 / CapitalMode 切换 |
+| `tests/capital_control/test_integration.py` | 集成 | 组件 evaluate / 60s 缓存 / 三级降级 / get_capital_advice |
+| `tests/capital_control/test_e2e.py` | 端到端 | 报告产物生成 / 6 系统聚合 / health_check |
+
+### 10.5 产物
+
+资金调控报告输出到 `artifacts/capital-reports/capital_YYYYMMDD_HHMMSS.json`，由 `auto_exit_system.py` 的 `_write_capital_report()` 在步骤 1.5 生成，结构对齐 `CapitalSnapshot.to_dict()`。
 
 ---
 
@@ -783,10 +987,11 @@ ClassicExitSystem──缺失──→  内置简化技术分析（P0/P1）
 | v0.1 | 2026-07-12 | 初始版本，Phase 0 完成后撰写 |
 | v1.0 | 2026-07-12 | Phase 2 SKILL 引擎集成，覆盖离场评估子模块（持仓聚合 + A1/A2/A3 + A9 四态） |
 | v2.0 | 2026-07-31 | **修复 DD-004 范围错位**：重写为覆盖完整调控系统的技术设计。新增覆盖 13 个此前未覆盖的核心文件（technical_exit_adapter / strategy_exit_adapter / exit_executor / feedback_and_permission / aam_deliverer / evolution_loop / enhanced_evolution / backtest_framework / llm_bridge / market_data_fetcher / realtime_market_stream / archive_center / dream_insights_integration）。补充分层架构（5 层）、宏观+技术融合算法（三层）、6 策略离场设计矩阵、增强进化闭环（三层进化 + 三层验证 + ECE + gap_score）、状态机（执行/进化提议）、5 级权限体系、AAM 双通道投递、降级机制、扩展性设计。核心算法均含伪代码。对齐 ENGINEERING_INDEX v2.0 全部 19 个核心文件。 |
+| v2.1 | 2026-08-17 | **新增 L1.5 资金调控层**：① 分层架构图新增 L1.5 层（`capital_control/` 子包）；② 模块关系图新增 CapitalControlComponent 节点与 phase2 虚线注入；③ 新增 §3.7 资金调控算法（双模式 / 三级降级 / 健康评估 / 资金建议 / 压力映射 / RuleRegistry 扩展 / 主流程挂载点）；④ 数据结构表新增 CapitalMode/CapitalResult/CapitalSnapshot；⑤ 配置管理新增 7 项 capital.* 配置；⑥ 错误处理新增 3 条资金降级场景；⑦ 文件索引扩展至 26 个文件（含 capital_control 7 个）；⑧ 新增 §9.5 如何添加资金规则；⑨ 新增 §10 资金调控层详细设计（组件定位 / 4 规则 / equity 聚合 / 测试覆盖 / 产物）。对齐 ENGINEERING_INDEX v2.1 与 CAPITAL_CONTROL_DESIGN.md。 |
 
 ---
 
-**文档版本**: v2.0
-**最后更新**: 2026-07-31
-**前一版本**: v1.0（2026-07-12，仅覆盖离场评估子模块）
-**对齐状态**: 已对齐 `core/` 实际代码结构（19 个核心 Python 文件 + `__init__.py`），关闭 DD-004
+**文档版本**: v2.1
+**最后更新**: 2026-08-17
+**前一版本**: v2.0（2026-07-31，覆盖 19 个核心文件，关闭 DD-004）
+**对齐状态**: 已对齐 `core/` 实际代码结构（19 个核心 Python 文件 + `capital_control/` 子包 7 个文件 + `__init__.py`），对齐 ENGINEERING_INDEX v2.1

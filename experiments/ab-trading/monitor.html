@@ -3356,7 +3356,7 @@ async function loadYijingAccountOverview() {
           <div style="font-size:18px;font-weight:700;color:${cl(totalPnl)};margin-top:3px">${fmtPct(pnlPct)}</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px">
         <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
           <div style="font-size:10px;color:var(--muted)">已实现盈亏</div>
           <div style="font-size:14px;font-weight:700;margin-top:2px;color:${cl(realizedPnl)}">${fmt(realizedPnl,true)}</div>
@@ -3369,9 +3369,19 @@ async function loadYijingAccountOverview() {
           <div style="font-size:10px;color:var(--muted)">盈利·胜率·交易</div>
           <div style="font-size:14px;font-weight:700;margin-top:2px">${winCount}·${winRatePct.toFixed(1)}%·${totalTrades}</div>
         </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px">
+        <div style="padding:7px 10px;background:linear-gradient(180deg,rgba(59,130,246,0.08),rgba(0,0,0,0.15));border:1px solid rgba(59,130,246,0.2);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--blue);font-weight:600">📊 策略可用资金（主）</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;color:var(--blue)">${fmt(d.strategy_avail ?? availBal)}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px">初始资金 + 策略盈亏</div>
+        </div>
         <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
-          <div style="font-size:10px;color:var(--muted)">可用余额</div>
-          <div style="font-size:14px;font-weight:700;margin-top:2px">${fmt(availBal)}</div>
+          <div style="font-size:10px;color:var(--muted)">🏦 OKX 账户可用保证金</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px">${fmt(d.account_avail)}${d.live_ok?'':'(离线)'}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px">
+            ${d.account_total_eq!=null ? `账户总权益 ${fmt(d.account_total_eq)}` : ''}
+          </div>
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted)">
@@ -3452,7 +3462,7 @@ async function loadV15AccountOverview() {
           <div style="font-size:18px;font-weight:700;color:${cl(totalPnl)};margin-top:3px">${fmtPct(pnlPct)}</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px">
         <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
           <div style="font-size:10px;color:var(--muted)">已实现盈亏</div>
           <div style="font-size:14px;font-weight:700;margin-top:2px;color:${cl(realizedPnl)}">${fmt(realizedPnl,true)}</div>
@@ -3465,9 +3475,22 @@ async function loadV15AccountOverview() {
           <div style="font-size:10px;color:var(--muted)">盈利·胜率·交易</div>
           <div style="font-size:14px;font-weight:700;margin-top:2px">${winCount}·${winRatePct.toFixed(1)}%·${totalTrades}</div>
         </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px">
+        <div style="padding:7px 10px;background:linear-gradient(180deg,rgba(59,130,246,0.08),rgba(0,0,0,0.15));border:1px solid rgba(59,130,246,0.2);border-radius:6px;text-align:center">
+          <div style="font-size:10px;color:var(--blue);font-weight:600">📊 策略可用资金（主）</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;color:var(--blue)">${fmt(d.strategy_avail ?? availBal)}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px">初始资金 + 策略盈亏</div>
+        </div>
         <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
-          <div style="font-size:10px;color:var(--muted)">连亏·可用余额</div>
-          <div style="font-size:14px;font-weight:700;margin-top:2px"><span style="color:${consecLoss>=3?'var(--red)':'var(--muted)'}">${consecLoss}</span>·${fmt(availBal)}</div>
+          <div style="font-size:10px;color:var(--muted)">🏦 连亏·OKX 账户可用保证金</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px">
+            <span style="color:${consecLoss>=3?'var(--red)':'var(--muted)'}">${consecLoss}连亏</span>
+            ·${fmt(d.account_avail)}${d.live_ok?'':'(离线)'}
+          </div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px">
+            ${d.account_total_eq!=null ? `账户总权益 ${fmt(d.account_total_eq)}` : ''}
+          </div>
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted)">

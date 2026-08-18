@@ -640,6 +640,11 @@ QMMOutput(
 - **置信度优化**: 实盘阈值 0.60（基于回测最优）；代码默认 0.55，通过 `confidence_threshold` 参数或环境变量覆写
 - **逐仓模式**: 默认 isolated 逐仓，每个币种独立保证金，风险隔离
 
+**相关设计提案（后续演进路线）：**
+- [PROP-20260818 BCRM2 满仓算力倾斜 + 三维度离场时机优化](./proposals/PROP-20260818-BCRM2-FULL-POSITION-EXIT-OPTIMIZATION.md)
+  覆盖：满仓 MODE1/2/3 算力重分配、风险-价值 EV 雷达、BCRM 多 horizon 预测最佳离场 K 线数、渐进式排名止盈换仓。三阶段落地 + 独立回滚开关。
+  链状态：待用户 Gate → E链实现。
+
 ---
 
 #### 3.2.2 记忆与进化类

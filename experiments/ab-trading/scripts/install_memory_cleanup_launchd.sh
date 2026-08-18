@@ -1,6 +1,8 @@
 #!/bin/bash
 # 记忆模块清理 — launchd 安装脚本
-# 每日凌晨 2:10 触发（策略更新之后），日志输出到 logs/memory_cleanup.log（业务）和 logs/memory_cleanup_launchd.log（stdout/stderr）
+# 每日凌晨 02:05 触发（策略更新02:00完成后执行，避免资源竞争）
+# 业务日志输出到 logs/memory_cleanup.log（由 Python MemoryManager 内部写入）
+# launchd 标准输出/错误输出到 logs/memory_cleanup_stdout.log 和 logs/memory_cleanup_stderr.log
 # 用法: bash scripts/install_memory_cleanup_launchd.sh [install|remove|status|kickstart]
 set -euo pipefail
 
@@ -54,10 +56,12 @@ case "$ACTION" in
     echo "=================================================="
     echo
     echo "服务标签:   $LABEL"
-    echo "触发时间:   每日 02:10 (StartCalendarInterval，策略更新后执行)"
+    echo "触发时间:   每日 02:05 (StartCalendarInterval，策略更新02:00后间隔5分钟)"
+    echo "入口脚本:   $PROJECT_DIR/scripts/run_memory_cleanup.sh"
     echo "执行命令:   cd $PROJECT_DIR && python3 -c 'from core.memory.memory_manager import MemoryManager; m = MemoryManager(); m.clean_expired_memories()'"
     echo "业务日志:   $PROJECT_DIR/logs/memory_cleanup.log"
-    echo "stdout日志: $PROJECT_DIR/logs/memory_cleanup_launchd.log"
+    echo "stdout日志: $PROJECT_DIR/logs/memory_cleanup_stdout.log"
+    echo "stderr日志: $PROJECT_DIR/logs/memory_cleanup_stderr.log"
     echo
     echo "常用命令:"
     echo "  查看状态:   launchctl list | grep $LABEL"
@@ -95,8 +99,12 @@ case "$ACTION" in
     tail -10 "$PROJECT_DIR/logs/memory_cleanup.log" 2>/dev/null || echo "(暂无日志)"
     echo
 
-    echo "── 最近10条 launchd stdout/stderr ──"
-    tail -10 "$PROJECT_DIR/logs/memory_cleanup_launchd.log" 2>/dev/null || echo "(暂无日志)"
+    echo "── 最近10条 launchd stdout ──"
+    tail -10 "$PROJECT_DIR/logs/memory_cleanup_stdout.log" 2>/dev/null || echo "(暂无日志)"
+    echo
+
+    echo "── 最近10条 launchd stderr ──"
+    tail -10 "$PROJECT_DIR/logs/memory_cleanup_stderr.log" 2>/dev/null || echo "(暂无日志)"
     ;;
 
   kickstart)

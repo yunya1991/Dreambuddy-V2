@@ -202,7 +202,7 @@
         "small_cap_weight": 0.25
       },
       "risk_control": {
-        "max_concurrent_positions": 4,
+        "max_concurrent_positions": 5,
         "max_portfolio_drawdown": 0.20
       }
     }

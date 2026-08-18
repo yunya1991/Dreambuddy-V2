@@ -392,10 +392,66 @@ class BCRM2Adapter:
             self.feature_names_by_gua = feature_names_by_gua
             self._df_cache = df.copy()
             self._last_train_time = time.time()
-            
-            # 保存缓存
+
+            # ── Phase C (Spec §4.3.3): 多 horizon 并行训练 ──────────────
+            # 每个 horizon h 独立训练 LGBM 模型，用于 predict_multi_horizon。
+            # 失败不影响主模型（主方向交易仍用 L1/L2）。
+            try:
+                from scripts.memory_l4.bcrm2.triple_barrier_labeler import triple_barrier_labels
+
+                HORIZONS_DEFAULT = [1, 2, 3, 6, 10, 20, 30]
+                mh_labels_dfs = triple_barrier_labels(
+                    df,
+                    tp_factor=float(self.tp_atr),
+                    sl_factor=float(self.sl_atr),
+                    max_bars=max(HORIZONS_DEFAULT),
+                    use_atr=True,
+                    atr_period=14,
+                    atr_multiplier_tp=float(self.tp_atr),
+                    atr_multiplier_sl=float(self.sl_atr),
+                    multi_horizons=HORIZONS_DEFAULT,
+                )
+                # 对齐 valid_idx + nan_mask 到特征集 X 有效样本（与 L1 完全一致）
+                X_all = features.values.copy()
+                X_nan_mask = ~np.isnan(X_all).any(axis=1)
+
+                labels_by_h = {}
+                horizons_ready = []
+                for h in HORIZONS_DEFAULT:
+                    mh_df = mh_labels_dfs.get(h)
+                    if mh_df is None:
+                        continue
+                    y_h_full = mh_df["label"].values.copy()
+                    # 对齐到 valid_idx
+                    y_valid = y_h_full[valid_idx] if len(y_h_full) >= len(df) else y_h_full
+                    # 对齐 nan_mask
+                    y_clean = y_valid[nan_mask]
+                    if len(y_clean) == len(X[nan_mask]):
+                        labels_by_h[h] = y_clean
+                        horizons_ready.append(h)
+
+                if horizons_ready:
+                    mh_report = engine.fit_multi_horizon(
+                        X[nan_mask], labels_by_h, horizons_ready
+                    )
+                    horizons_trained = [h for h, r in mh_report.items()
+                                        if float(r.get("train_accuracy", 0)) > 0]
+                    logger.info(
+                        f"[BCRM2] 多horizon训练完成 ({self.symbol})："
+                        f"{len(horizons_trained)}/{len(horizons_ready)} 个训练成功"
+                    )
+                else:
+                    logger.info(
+                        f"[BCRM2] 多horizon训练跳过：无可用标签 ({self.symbol})"
+                    )
+            except Exception as _mh_e:
+                logger.warning(
+                    f"[BCRM2] 多horizon训练失败(不影响主模型)：{_mh_e} ({self.symbol})"
+                )
+
+            # 保存缓存（包含多horizon模型）
             self._save_model_cache(cache_key, engine, feature_names, feature_names_by_gua)
-            
+
             logger.info(f"[BCRM2] 训练完成 ({self.symbol} {self.timeframe})")
             return True
             
@@ -696,3 +752,115 @@ class BCRM2Adapter:
         if time.time() - self._last_train_time < self._train_interval:
             return False
         return self.train(df, force_retrain=True)
+
+    def predict_multi_horizon(
+        self,
+        df: pd.DataFrame,
+        horizons: List[int] = None,
+        idx: int = -1,
+    ) -> Dict[str, Any]:
+        """Phase C (Spec §4.3.1): 多 horizon 预测接口。
+
+        复用 infer() 的特征计算管线，但调用 engine.predict_multi_horizon()
+        返回每个 horizon 的 P_up/P_down 概率对 + 合成曲线指标。
+
+        Args:
+            df: K线数据 DataFrame
+            horizons: horizon 列表，默认 [1,2,3,6,10,20,30]
+            idx: 推理位置（默认最后一根）
+
+        Returns:
+            {
+                "ok": bool,
+                "direction": "UP"|"DOWN",
+                "final_confidence": float,
+                "multi_horizon": {h: {"P_up": float, "P_down": float}},
+                "synthesis": {S_curve, L_curve, HORIZON_K_STAR, ...},
+                "is_fail_closed": callable,
+            }
+        """
+        if horizons is None:
+            horizons = [1, 2, 3, 6, 10, 20, 30]
+
+        # 确保引擎已加载
+        if self.engine is None:
+            cache_key = self._get_cache_key(df)
+            if not self._load_cached_model(cache_key):
+                if not self.train(df):
+                    return {
+                        "ok": False,
+                        "direction": "FLAT",
+                        "final_confidence": 0.0,
+                        "multi_horizon": {},
+                        "synthesis": {},
+                        "is_fail_closed": lambda: True,
+                        "fail_closed_reason": "模型未训练",
+                    }
+
+        try:
+            from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+            import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa: F401
+            import scripts.memory_l4.bcrm2.classic_experience_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.fibonacci_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.pivot_point_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.wdh_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
+            import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
+            import scripts.memory_l4.bcrm2.macro_features  # noqa: F401
+
+            df = df.copy()
+            df = df.ffill().bfill()
+            for col in ['open', 'high', 'low', 'close', 'volume']:
+                if col in df.columns:
+                    df[col] = df[col].replace([np.inf, -np.inf], np.nan).ffill().bfill()
+                    df[col] = df[col].values.copy()
+
+            ref_df = self._fetch_ref_df(df)
+            macro_df = self._fetch_macro_df(df)
+            features, _ = FeatureRegistry.compute_all(
+                df=df, ref_df=ref_df, macro_df=macro_df,
+                symbol=self.symbol, config=self.macro_config,
+            )
+
+            for fn in self.feature_names:
+                if fn not in features.columns:
+                    features[fn] = 0.0
+            X_row = features[self.feature_names].values[idx]
+            if np.isnan(X_row).any():
+                X_row = np.nan_to_num(X_row, nan=0.0)
+
+            # 多 horizon 预测
+            mh_result = self.engine.predict_multi_horizon(
+                X_row.reshape(1, -1), horizons
+            )
+
+            # 合成曲线
+            from scripts.memory_l4.trading_utils import RiskManager
+            pos_sign = 1 if mh_result["direction"] == "UP" else -1
+            synthesis = RiskManager.synthesize_horizon_curves(
+                mh_result["multi_horizon"], pos_sign=pos_sign
+            )
+
+            return {
+                "ok": True,
+                "direction": mh_result["direction"],
+                "final_confidence": mh_result["final_confidence"],
+                "multi_horizon": mh_result["multi_horizon"],
+                "synthesis": synthesis,
+                "is_fail_closed": lambda: False,
+            }
+
+        except Exception as e:
+            logger.error(f"[BCRM2] predict_multi_horizon 失败: {e}")
+            return {
+                "ok": False,
+                "direction": "FLAT",
+                "final_confidence": 0.0,
+                "multi_horizon": {},
+                "synthesis": {},
+                "is_fail_closed": lambda: True,
+                "fail_closed_reason": str(e),
+            }

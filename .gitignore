@@ -17,6 +17,9 @@ eggs/
 # 仅排除虚拟环境的标准路径结构
 */lib/python*/
 */lib64/python*/
+
+# 仅排除项目根目录下的运行时日志文件夹（不影响源码子目录中的 logs/）
+/logs/
 sdist/
 wheels/
 *.egg-info/

@@ -3,10 +3,11 @@
 ==========
 可插拔的风控规则注册与管理机制。
 
-支持三类规则：
+支持四类规则：
     - gate_rules:     事前门禁规则
     - position_rules: 仓位计算规则
     - exit_rules:     离场决策规则
+    - capital_rules:  资金调控规则（新增）
 
 每个规则是一个可调用对象，接收上下文参数，返回检查结果。
 """
@@ -22,6 +23,7 @@ class RuleCategory(str, Enum):
     GATE = "gate"
     POSITION = "position"
     EXIT = "exit"
+    CAPITAL = "capital"
 
 
 @dataclass
@@ -34,6 +36,12 @@ class RuleInfo:
     description: str = ""
     enabled: bool = True
     config_schema: Dict[str, Any] = field(default_factory=dict)
+
+
+# 模块级默认规则库。供 @register_gate/@register_position/@register_exit/@register_capital
+# 顶层装饰器注册，CapitalControlComponent 等使用方可通过
+# RuleRegistry().load_defaults() 一次性载入。
+DEFAULT_RULES: Dict[str, Dict[str, Any]] = {}
 
 
 class RuleRegistry:
@@ -138,6 +146,47 @@ class RuleRegistry:
             return func
 
         return decorator
+
+    def register_capital(self, name: str, priority: int = 100, description: str = "", **kwargs):
+        """资金调控规则装饰器"""
+
+        def decorator(func):
+            self.register(
+                name=name,
+                category=RuleCategory.CAPITAL,
+                handler=func,
+                priority=priority,
+                description=description,
+                **kwargs,
+            )
+            return func
+
+        return decorator
+
+    def load_defaults(self) -> int:
+        """将模块级 DEFAULT_RULES 载入当前注册表。
+
+        已存在同名规则会被跳过（不覆盖），返回实际载入条数。
+        """
+        loaded = 0
+        for name, entry in DEFAULT_RULES.items():
+            if name in self._rules:
+                continue
+            try:
+                self.register(
+                    name=name,
+                    category=entry["category"],
+                    handler=entry["handler"],
+                    priority=entry.get("priority", 100),
+                    description=entry.get("description", ""),
+                    config_schema=entry.get("config_schema") or {},
+                )
+                if not entry.get("enabled", True):
+                    self.disable(name)
+                loaded += 1
+            except Exception:
+                continue
+        return loaded
 
     def unregister(self, name: str) -> bool:
         """注销规则"""
@@ -262,3 +311,113 @@ class RuleRegistry:
 
     def __contains__(self, name: str) -> bool:
         return name in self._rules
+
+
+# ---------------------------------------------------------------------------
+# 模块级顶层装饰器（用于 import 阶段自动注册到 DEFAULT_RULES）
+# ---------------------------------------------------------------------------
+
+
+def _register_to_defaults(
+    name: str,
+    category: RuleCategory,
+    priority: int,
+    config_schema: Optional[Dict[str, Any]],
+    description: str,
+    enabled: bool,
+):
+    """内部辅助：将 decorated handler 注册到模块级 DEFAULT_RULES。"""
+
+    def decorator(func):
+        DEFAULT_RULES[name] = {
+            "name": name,
+            "category": category,
+            "priority": priority,
+            "description": description,
+            "config_schema": config_schema or {},
+            "enabled": enabled,
+            "handler": func,
+        }
+        return func
+
+    return decorator
+
+
+def register_gate(
+    name: str,
+    priority: int = 100,
+    config_schema: Optional[Dict[str, Any]] = None,
+    description: str = "",
+    enabled: bool = True,
+):
+    """顶层门禁规则装饰器——写入 DEFAULT_RULES。"""
+    return _register_to_defaults(
+        name=name,
+        category=RuleCategory.GATE,
+        priority=priority,
+        config_schema=config_schema,
+        description=description,
+        enabled=enabled,
+    )
+
+
+def register_position(
+    name: str,
+    priority: int = 100,
+    config_schema: Optional[Dict[str, Any]] = None,
+    description: str = "",
+    enabled: bool = True,
+):
+    """顶层仓位规则装饰器——写入 DEFAULT_RULES。"""
+    return _register_to_defaults(
+        name=name,
+        category=RuleCategory.POSITION,
+        priority=priority,
+        config_schema=config_schema,
+        description=description,
+        enabled=enabled,
+    )
+
+
+def register_exit(
+    name: str,
+    priority: int = 100,
+    config_schema: Optional[Dict[str, Any]] = None,
+    description: str = "",
+    enabled: bool = True,
+):
+    """顶层离场规则装饰器——写入 DEFAULT_RULES。"""
+    return _register_to_defaults(
+        name=name,
+        category=RuleCategory.EXIT,
+        priority=priority,
+        config_schema=config_schema,
+        description=description,
+        enabled=enabled,
+    )
+
+
+def register_capital(
+    name: str,
+    priority: int = 100,
+    config_schema: Optional[Dict[str, Any]] = None,
+    description: str = "",
+    enabled: bool = True,
+):
+    """顶层资金调控规则装饰器——写入 DEFAULT_RULES。
+
+    使用示例::
+
+        @register_capital(name="capital.okx_live", priority=10)
+        def okx_live_handler(context=None, config=None, extra=None):
+            ...
+            return CapitalResult(...)
+    """
+    return _register_to_defaults(
+        name=name,
+        category=RuleCategory.CAPITAL,
+        priority=priority,
+        config_schema=config_schema,
+        description=description,
+        enabled=enabled,
+    )

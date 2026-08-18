@@ -13,6 +13,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]  # 11-易经推理系统
@@ -140,9 +141,10 @@ class TestRegimeQuadrant(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             log_file = Path(td) / "agent_a" / "test_log.json"
             log_file.parent.mkdir(parents=True)
+            fresh_ts = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
             log_file.write_text(json.dumps({
                 "market_regime": "BULL", "confidence": 0.7,
-                "ts": "2026-08-09T00:00:00Z"}), encoding="utf-8")
+                "ts": fresh_ts}), encoding="utf-8")
             os.environ["AB_LOG_DIR"] = td
 
             probs, meta = self.engine._regime_adjusted_quadrant_probs()
@@ -199,6 +201,8 @@ class TestBacktestAndAdoptIntegration(unittest.TestCase):
         self.engine = SelfEvolutionEngine(llm_client=None)
         # 满足 recent_decisions >= 5 的门槛
         self.decisions = [{"decision": "HOLD"} for _ in range(6)]
+        # 满足 total_trades >= 5 的门槛（否则 a8 以外走 insufficient_data）
+        self.engine._last_stats = {"total_trades": 10}
 
     def test_whitelist_param_goes_through_walk_forward(self):
         """白名单可消费参数 → 走真实 walk-forward，采纳与否由回测决定"""
@@ -208,8 +212,10 @@ class TestBacktestAndAdoptIntegration(unittest.TestCase):
             "param_value": 0.26,  # 近基线值，delta 应在容忍带内
             "source": "a8",
         }]
-        # 隔离副作用: 不写 config/constraints
+        # 隔离副作用: 不写 config/constraints，不污染 seen_param_keys 磁盘状态
         self.engine._apply_adopted_to_config = lambda adopted: None
+        self.engine._load_seen_param_keys = lambda: set()
+        self.engine._save_seen_param_keys = lambda adopted: None
         adopted = self.engine._backtest_and_adopt(proposals, self.decisions)
         # 机制断言: 无论采纳与否，backtest_result 必须是真实 walk_forward
         bt = proposals[0].get("backtest_result", {})
@@ -238,6 +244,9 @@ class TestBacktestAndAdoptIntegration(unittest.TestCase):
             "source": "a8",
         }]
         self.engine._apply_adopted_to_config = lambda adopted: None
+        # 隔离磁盘残留的 seen_param_keys（避免之前测试残留导致跳过）
+        self.engine._load_seen_param_keys = lambda: set()
+        self.engine._save_seen_param_keys = lambda adopted: None
         adopted = self.engine._backtest_and_adopt(proposals, [{"decision": "HOLD"}])
         self.assertEqual(len(adopted), 1)
         bt = adopted[0]["backtest_result"]

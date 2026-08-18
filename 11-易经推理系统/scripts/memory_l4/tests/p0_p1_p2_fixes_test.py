@@ -81,7 +81,7 @@ def test_p4_xaut_to_xau_normalization():
     main_src = inspect.getsource(
         __import__("scripts.memory_l4.polling_trader", fromlist=["main"]).main
     )
-    m = re.search(r'add_argument\("--coins".*?default="([^"]+)"', main_src, re.S)
+    m = re.search(r'add_argument\([\s\S]*?"--coins".*?default="([^"]+)"', main_src, re.S)
     assert m, "找不到 --coins default 定义"
     coins_default_list = [c.strip().upper() for c in m.group(1).split(",")]
     assert (

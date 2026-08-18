@@ -21,8 +21,13 @@ from datetime import datetime
 TRADES_FILE = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl"
 TRADES_ARCHIVED_FILE = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/stats/all_trades_archived_20260804.jsonl"
 
-# P0-2: 币种黑名单 — 历史胜率0%的币种
-BLACKLIST_COINS = {"ETH", "NEAR", "XRP", "LINK", "BNB"}
+# P0-2: 静态永久黑名单（回测验证持续亏损币种） + 动态黑名单（连续2次亏损→3日）
+# 静态封禁：NEAR/XRP/DOT/ADA/AVAX/ETH/LINK/BNB 历史表现较差
+STATIC_BLACKLIST_COINS = {"NEAR", "XRP", "DOT", "ADA", "AVAX", "ETH", "LINK", "BNB"}
+
+# 动态黑名单参数
+DYNAMIC_BLACKLIST_CONSECUTIVE_LOSSES = 2
+DYNAMIC_BLACKLIST_DURATION_TRADES = 3 * 48  # 3日（48笔/日，回测中按交易序号近似）
 
 # P0-3: 卦象黑名单 — 历史胜率0%的卦象
 BLACKLIST_HEXAGRAMS = {"坤为地", "震为雷", "火地晋", "地雷复"}
@@ -67,9 +72,38 @@ P1_ATR_WIDEN_SL_LIMIT_PCT = -3.5  # 仅对 ≥-3.5% 的轻微亏损生效
 
 # P1 做空趋势过滤：加密币种做空需要 BTC 趋势 SHORT_ALLOWED
 CRYPTO_COINS = frozenset({
-    "BTC", "ETH", "SOL", "UNI", "LINK", "BNB", "OKB",
-    "HYPE", "PUMP", "NEAR", "XRP", "DOT", "ADA", "AVAX",
+    "BTC", "SOL", "UNI", "OKB", "HYPE", "PUMP",
 })
+
+# P3 波动率自适应参数
+import math
+
+P3_VOL_LOW = 0.02
+P3_VOL_HIGH = 0.05
+
+def p3_volatility_regime(vol: float) -> str:
+    if vol < P3_VOL_LOW:
+        return "LOW"
+    elif vol < P3_VOL_HIGH:
+        return "NORMAL"
+    return "HIGH"
+
+def p3_vol_position_factor(vol: float, f_min: float = 0.55, f_max: float = 1.00) -> float:
+    """分段函数：vol<0.04 → 1.0（不惩罚），vol≥0.04 → sigmoid衰减"""
+    if vol < 0.04:
+        return 1.0
+    sigmoid = 1.0 / (1.0 + math.exp(-(vol - 0.04) * 30.0))
+    return round(f_max - (f_max - f_min) * sigmoid, 4)
+
+def p3_vol_adaptive_atr_mult(vol: float, base_sl: float = 2.5, tp_ratio: float = 2.0) -> tuple:
+    """连续插值 ATR 倍率：低波紧(2.0)，正常(2.5)，高波宽(3.5+)"""
+    vol_excess = max(0.0, vol - 0.02)
+    sl_mult = base_sl + vol_excess * 25.0
+    sl_mult = max(2.0, min(sl_mult, 4.0))
+    if vol < 0.02:
+        sl_mult = max(2.0, base_sl - (0.02 - vol) * 25.0)
+    tp_mult = sl_mult * tp_ratio
+    return round(sl_mult, 2), round(tp_mult, 2)
 
 
 def load_trades():
@@ -168,12 +202,13 @@ def p0_filter(trade):
     return True, "default_pass"
 
 
-def p0_v2_filter(trade):
+def p0_v2_filter(trade, trade_idx=0, dynamic_blacklist=None):
     """
     P0 v2 完整过滤逻辑（三个动作全部生效）：
     1. 币种黑名单：ETH/NEAR/XRP/LINK/BNB → 跳过
     2. 卦象黑名单：坤为地/震为雷/火地晋/地雷复 → 跳过
     3. 置信度硬门槛：< 0.7 → 跳过（保留原有分级逻辑作为二级过滤）
+    4. 动态币种黑名单：连续2次亏损→封禁3日（按交易序号近似3日=144笔）
     返回 (should_trade: bool, reason: str)
     """
     coin = trade.get("coin", "")
@@ -181,9 +216,15 @@ def p0_v2_filter(trade):
     confidence = trade.get("confidence", 0)
     direction = trade.get("direction", "FLAT")
 
-    # P0-2: 币种黑名单
-    if coin in BLACKLIST_COINS:
-        return False, f"p0_v2_coin_blacklist({coin})"
+    # P0-1: 静态永久黑名单（NEAR/XRP 历史表现极差，即使趋势过滤下仍持续亏损）
+    if coin in STATIC_BLACKLIST_COINS:
+        return False, f"p0_v2_static_blacklist({coin})"
+
+    # P0-2: 动态币种黑名单（由 simulate_strategy 传入）
+    if dynamic_blacklist and coin in dynamic_blacklist:
+        expire_idx = dynamic_blacklist[coin]
+        if trade_idx < expire_idx:
+            return False, f"p0_v2_dynamic_blacklist({coin},至#{expire_idx})"
 
     # P0-3: 卦象黑名单
     if hexagram in BLACKLIST_HEXAGRAMS:
@@ -282,13 +323,13 @@ def compute_p2_position_multiplier(idx: int, trade, history_pnls, history_streak
 
 # ================ P1+P2 过滤函数 ================
 
-def p0_p1_filter(trade):
+def p0_p1_filter(trade, trade_idx=0, dynamic_blacklist=None):
     """P0 + P1 完整过滤：
-    - P0：币种黑 + 卦象黑 + 置信度硬门槛0.7 + 强震荡市
+    - P0：动态币种黑名单 + 卦象黑 + 置信度硬门槛0.7 + 强震荡市
     - P1-1：做空趋势过滤（加密货币做空 → 需要 BTC 趋势 SHORT_ALLOWED）
     - P1 ATR 放宽放在后处理（不在这里，直接改 PnL）
     """
-    ok, reason = p0_v2_filter(trade)
+    ok, reason = p0_v2_filter(trade, trade_idx=trade_idx, dynamic_blacklist=dynamic_blacklist)
     if not ok:
         return False, reason
 
@@ -314,12 +355,14 @@ def p0_p1_filter(trade):
 
 def simulate_strategy(trades, apply_p0=False, filter_fn=None,
                       apply_p1_atr_widen=False, apply_p2_sizing=False,
+                      apply_p3_vol_sizing=False,
                       seed=42):
     """
-    模拟策略执行（支持 P1 ATR 放宽 & P2 动态仓位）
+    模拟策略执行（支持 P1 ATR 放宽 & P2 动态仓位 & P3 波动率自适应）
 
     - apply_p1_atr_widen: 对小亏损交易，按概率 P1_ATR_WIDEN_SURVIVE_PROB "续命"为持平
     - apply_p2_sizing: 动态仓位，PnL 乘以 p2_base_multiplier（默认1.0）
+    - apply_p3_vol_sizing: 波动率自适应，额外乘 vol_regime_factor + ATR 倍率影响止损续命概率
     """
     import random
     sorted_trades = sorted(trades, key=lambda x: x['entry_time'])
@@ -334,9 +377,23 @@ def simulate_strategy(trades, apply_p0=False, filter_fn=None,
     history_pnls = []  # P2 历史盈亏（凯利）
     p2_sizing_log = []  # P2 仓位变化日志（前 N 笔）
 
+    # P0-2: 动态币种黑名单状态（回测模拟）
+    # {coin: expire_idx} — 交易序号达到 expire_idx 后自动释放
+    dynamic_bl = {}  # 动态黑名单：{coin: expire_trade_idx}
+    coin_consec_losses = {}  # 每币种连续亏损计数
+
     for idx, trade in enumerate(sorted_trades):
+        # 清理已过期的动态黑名单
+        expired = [c for c, exp in dynamic_bl.items() if idx >= exp]
+        for c in expired:
+            del dynamic_bl[c]
+
         if filter_fn is not None:
-            should_trade, reason = filter_fn(trade)
+            # 动态黑名单模式：传入 trade_idx 和 dynamic_bl
+            if filter_fn.__name__ == "p0_p1_filter":
+                should_trade, reason = p0_p1_filter(trade, trade_idx=idx, dynamic_blacklist=dynamic_bl)
+            else:
+                should_trade, reason = filter_fn(trade)
         elif apply_p0:
             should_trade, reason = p0_filter(trade)
         else:
@@ -407,8 +464,47 @@ def simulate_strategy(trades, apply_p0=False, filter_fn=None,
                     "mult": p2_mult,
                 })
 
-        final_pnl = pnl_after_atr * p2_mult
-        final_pnl_pct = pnl_pct_after_atr * p2_mult  # 近似
+        # P3 波动率自适应：额外仓位因子 + ATR 续命概率调整
+        p3_vol_f = 1.0
+        p3_info = {}
+        if apply_p3_vol_sizing:
+            snap = trade.get("market_snapshot", {}) or {}
+            vol_raw = float(snap.get("volatility", 0.03) or 0.03)
+            p3_vol_f = p3_vol_position_factor(vol_raw)
+            p3_regime = p3_volatility_regime(vol_raw)
+            p3_sl, p3_tp = p3_vol_adaptive_atr_mult(vol_raw)
+            p3_info = {
+                "volatility": vol_raw,
+                "regime": p3_regime,
+                "vol_position_factor": p3_vol_f,
+                "sl_mult": p3_sl,
+                "tp_mult": p3_tp,
+            }
+            if len(p2_sizing_log) < 50:
+                p2_sizing_log.append({
+                    "idx": idx,
+                    "coin": trade.get("coin"),
+                    "hex": trade.get("hexagram"),
+                    "hex_class": p2_info.get("hexagram_class") if p2_info else None,
+                    "kelly_factor": p2_info.get("kelly_factor") if p2_info else None,
+                    "streak_factor": p2_info.get("consecutive_loss_factor") if p2_info else None,
+                    "hex_factor": p2_info.get("hexagram_factor") if p2_info else None,
+                    "vol_regime": p3_regime,
+                    "vol_factor": p3_vol_f,
+                    "mult": p2_mult * p3_vol_f,
+                })
+
+            # P3 ATR 续命增强：高波动时 ATR 止损更宽 → 轻微亏损续命概率提升
+            if base_pnl_pct < 0 and base_pnl_pct >= P1_ATR_WIDEN_SL_LIMIT_PCT and not atr_saved:
+                # 高波动环境下，P3 宽 ATR 给了更多"喘息空间"
+                if p3_regime == "HIGH" and rng.random() < 0.30:
+                    pnl_after_atr = 0.0
+                    pnl_pct_after_atr = 0.0
+                    atr_saved = True
+
+        total_mult = p2_mult * p3_vol_f
+        final_pnl = pnl_after_atr * total_mult
+        final_pnl_pct = pnl_pct_after_atr * total_mult  # 近似
 
         executed_trade = {
             **trade,
@@ -421,6 +517,10 @@ def simulate_strategy(trades, apply_p0=False, filter_fn=None,
         if apply_p2_sizing:
             executed_trade["p2_info"] = p2_info
             executed_trade["p2_mult"] = p2_mult
+        if apply_p3_vol_sizing:
+            executed_trade["p3_info"] = p3_info
+            executed_trade["p3_vol_factor"] = p3_vol_f
+            executed_trade["total_mult"] = total_mult
         executed.append(executed_trade)
 
         # 更新连亏计数 & 历史 pnl（按最终 pnl）
@@ -430,6 +530,18 @@ def simulate_strategy(trades, apply_p0=False, filter_fn=None,
         else:
             current_consecutive_loss = 0
         history_pnls.append(final_pnl)
+
+        # P0-2: 动态黑名单更新（连续2次亏损→封禁3日=144笔交易序号）
+        trade_coin = trade.get("coin", "")
+        if final_pnl < 0:
+            coin_consec_losses[trade_coin] = coin_consec_losses.get(trade_coin, 0) + 1
+            if coin_consec_losses[trade_coin] >= DYNAMIC_BLACKLIST_CONSECUTIVE_LOSSES:
+                if trade_coin not in dynamic_bl:
+                    expire_idx = idx + DYNAMIC_BLACKLIST_DURATION_TRADES
+                    dynamic_bl[trade_coin] = expire_idx
+                coin_consec_losses[trade_coin] = 0
+        else:
+            coin_consec_losses[trade_coin] = 0
 
     return executed, filtered, {
         "max_consecutive_loss": max_consecutive_loss,
@@ -605,6 +717,13 @@ def main():
     p2_metrics = compute_metrics(p2_exec, "P0+P1+P2（P0+P1 + 动态仓位凯利/连亏/卦象）")
     print_metrics(p2_metrics, p2_stats)
 
+    # 5) P0+P1+P2+P3 (P0+P1 + 动态仓位 + 波动率自适应)
+    p3_exec, p3_filt, p3_stats = simulate_strategy(
+        trades, filter_fn=p0_p1_filter, apply_p1_atr_widen=True,
+        apply_p2_sizing=True, apply_p3_vol_sizing=True)
+    p3_metrics = compute_metrics(p3_exec, "P0+P1+P2+P3（+波动率自适应: 仓位因子+ATR动态）")
+    print_metrics(p3_metrics, p3_stats)
+
     # P0+P1 过滤原因 & 做空盈亏分析
     print(f"\n{'=' * 70}")
     print("🚫 P0+P1 过滤原因分布")
@@ -615,9 +734,9 @@ def main():
     for reason, count in sorted(reasons.items(), key=lambda x: -x[1]):
         print(f"  {reason:60s}: {count:3d} 次")
 
-    # 做空/做多分拆（对 P0+P1 与 P2 都计算）
+    # 做空/做多分拆（对 P0+P1 / P2 / P3 都计算）
     print(f"\n{'=' * 70}")
-    print("📊 做多/做空分拆（P0+P1 vs P2）")
+    print("📊 做多/做空分拆（P0+P1 vs P2 vs P3）")
     print(f"{'=' * 70}")
 
     def split_ls(tlist):
@@ -625,35 +744,43 @@ def main():
         shorts = [t for t in tlist if t.get("direction", "") in ("DOWN", "short")]
         return longs, shorts
 
-    for name, tlist in [("P0+P1", p1_exec), ("P0+P1+P2", p2_exec)]:
+    for name, tlist in [("P0+P1", p1_exec), ("P0+P1+P2", p2_exec), ("P0+P1+P2+P3", p3_exec)]:
         ls_t, ss_t = split_ls(tlist)
         ls_pnl = sum(t['pnl'] for t in ls_t)
         ss_pnl = sum(t['pnl'] for t in ss_t)
         ls_wr = sum(1 for t in ls_t if t['pnl_pct'] > 0) / len(ls_t) * 100 if ls_t else 0
         ss_wr = sum(1 for t in ss_t if t['pnl_pct'] > 0) / len(ss_t) * 100 if ss_t else 0
-        print(f"  [{name:10s}] 做多: {len(ls_t):>3d}笔  胜率={ls_wr:5.1f}%  PnL={ls_pnl:>+8.2f}U  "
+        print(f"  [{name:14s}] 做多: {len(ls_t):>3d}笔  胜率={ls_wr:5.1f}%  PnL={ls_pnl:>+8.2f}U  "
               f"| 做空: {len(ss_t):>3d}笔  胜率={ss_wr:5.1f}%  PnL={ss_pnl:>+8.2f}U")
 
-    # P2 仓位变化日志（前20笔）
-    p2_log = p2_stats.get("p2_sizing_log", [])
+    # P2/P3 仓位变化日志
+    p2_log = p3_stats.get("p2_sizing_log", []) or p2_stats.get("p2_sizing_log", [])
     if p2_log:
         print(f"\n{'=' * 70}")
-        print("🪜 P2 动态仓位变化（前 {:d} 笔）".format(len(p2_log)))
+        print("🪜 P3 动态仓位变化（前 {:d} 笔，含波动率因子）".format(len(p2_log)))
         print(f"{'=' * 70}")
-        hdr = f"  {'#':>3s} {'币种':<6s} {'卦':<10s} {'Cls':<8s} {'Kelly':>5s} {'连亏×':>5s} {'卦×':>4s} {'P2总倍':>6s}"
+        hdr = f"  {'#':>3s} {'币种':<6s} {'卦':<10s} {'Cls':<8s} {'Kelly':>5s} {'连亏×':>5s} {'卦×':>4s} {'VolReg':>7s} {'VolF':>5s} {'总倍':>6s}"
         print(hdr)
         print("  " + "-" * (len(hdr) - 2))
         for e in p2_log:
+            vr = e.get("vol_regime", "")
+            vf = e.get("vol_factor")
+            vr_str = f"{vr}×{vf:.2f}" if vf else ""
             print(f"  {e['idx']:>3d} {e.get('coin',''):<6s} {str(e.get('hex','')):<10s} "
-                  f"{e.get('hex_class',''):<8s} {e['kelly_factor']:>5.2f} "
-                  f"{e['streak_factor']:>5.2f} {e['hex_factor']:>4.2f} {e['mult']:>6.2f}")
+                  f"{str(e.get('hex_class','')):<8s} "
+                  f"{e.get('kelly_factor',1.0):>5.2f} "
+                  f"{e.get('streak_factor',1.0):>5.2f} "
+                  f"{e.get('hex_factor',1.0):>4.2f} "
+                  f"{vr_str:>7s} "
+                  f"{'':>5s} "
+                  f"{e.get('mult',1.0):>6.2f}")
 
-    # 四层对比表
+    # 五层对比表
     print(f"\n{'=' * 70}")
-    print(f"📈 四层对比分析（BASE → P0 → P0+P1 → P0+P1+P2）")
+    print(f"📈 五层对比分析（BASE → P0 → P0+P1 → P0+P1+P2 → P0+P1+P2+P3）")
     print(f"{'=' * 70}")
-    hdr = (f"{'指标':20s} {'BASE':>10s} {'P0':>10s} {'P0+P1':>10s} "
-           f"{'P0+P1+P2':>12s} {'P2 vs BASE':>12s}")
+    hdr = (f"{'指标':20s} {'BASE':>8s} {'P0':>8s} {'P0+P1':>8s} "
+           f"{'+P2':>8s} {'+P3':>8s} {'P3 vs BASE':>12s}")
     print(hdr)
     print(f"{'-' * (len(hdr))}")
 
@@ -670,32 +797,34 @@ def main():
         ('单笔期望(%)', 'exp_return_per_trade', False, True, '.4f'),
         ('最大回撤(U)', 'max_drawdown', False, True, '.2f'),
     ]
-    B, P0, P1, P2 = base_metrics, p0_metrics, p1_metrics, p2_metrics
+    B, P0M, P1, P2, P3 = base_metrics, p0_metrics, p1_metrics, p2_metrics, p3_metrics
     max_cl_b = base_stats.get('max_consecutive_loss', 0)
     max_cl_p0 = p0_stats.get('max_consecutive_loss', 0)
     max_cl_p1 = p1_stats.get('max_consecutive_loss', 0)
     max_cl_p2 = p2_stats.get('max_consecutive_loss', 0)
+    max_cl_p3 = p3_stats.get('max_consecutive_loss', 0)
 
     for label, key, is_int, is_pct, fmt in rows:
-        v_b = _g(B, key); v_p0 = _g(P0, key); v_p1 = _g(P1, key); v_p2 = _g(P2, key)
+        v_b = _g(B, key); v_p0 = _g(P0M, key); v_p1 = _g(P1, key)
+        v_p2 = _g(P2, key); v_p3 = _g(P3, key)
         if is_int:
-            print(f"{label:20s} {v_b:>10d} {v_p0:>10d} {v_p1:>10d} {v_p2:>12d} {v_p2 - v_b:>+12d}")
+            print(f"{label:20s} {v_b:>8d} {v_p0:>8d} {v_p1:>8d} {v_p2:>8d} {v_p3:>8d} {v_p3 - v_b:>+12d}")
         else:
-            fstr = "{:>10" + fmt + "}"
+            fstr = "{:>8" + fmt + "}"
             print(f"{label:20s} {fstr.format(v_b)} {fstr.format(v_p0)} {fstr.format(v_p1)} "
-                  f"{v_p2:>12{fmt}} {v_p2 - v_b:>+12{fmt}}")
-    print(f"{'最大连续亏损':20s} {max_cl_b:>10d} {max_cl_p0:>10d} {max_cl_p1:>10d} {max_cl_p2:>12d} {max_cl_p2 - max_cl_b:>+12d}")
+                  f"{fstr.format(v_p2)} {fstr.format(v_p3)} {v_p3 - v_b:>+12{fmt}}")
+    print(f"{'最大连续亏损':20s} {max_cl_b:>8d} {max_cl_p0:>8d} {max_cl_p1:>8d} {max_cl_p2:>8d} {max_cl_p3:>8d} {max_cl_p3 - max_cl_b:>+12d}")
 
-    # P2 改善明细
+    # P3 改善明细
     print(f"\n{'=' * 70}")
-    print("💡 P2 动态仓位效果明细（相对于 P0+P1）")
+    print("💡 P3 波动率自适应效果明细（相对于 P0+P1+P2）")
     print(f"{'=' * 70}")
-    pnl_delta_p2_vs_p1 = _g(p2_metrics, 'total_pnl') - _g(p1_metrics, 'total_pnl')
-    wr_delta_p2_vs_p1 = _g(p2_metrics, 'win_rate') - _g(p1_metrics, 'win_rate')
-    dd_delta_p2_vs_p1 = _g(p2_metrics, 'max_drawdown') - _g(p1_metrics, 'max_drawdown')
-    print(f"  PnL 变化 (P2 - P0+P1)  : {pnl_delta_p2_vs_p1:>+8.2f} USDT")
-    print(f"  胜率变化 (P2 - P0+P1)  : {wr_delta_p2_vs_p1:>+7.2f} %")
-    print(f"  最大回撤变化 (P2-P0+P1): {dd_delta_p2_vs_p1:>+7.2f} USDT")
+    pnl_delta_p3_vs_p2 = _g(p3_metrics, 'total_pnl') - _g(p2_metrics, 'total_pnl')
+    wr_delta_p3_vs_p2 = _g(p3_metrics, 'win_rate') - _g(p2_metrics, 'win_rate')
+    dd_delta_p3_vs_p2 = _g(p3_metrics, 'max_drawdown') - _g(p2_metrics, 'max_drawdown')
+    print(f"  PnL 变化 (P3 - P2)    : {pnl_delta_p3_vs_p2:>+8.2f} USDT")
+    print(f"  胜率变化 (P3 - P2)    : {wr_delta_p3_vs_p2:>+7.2f} %")
+    print(f"  最大回撤变化 (P3 - P2): {dd_delta_p3_vs_p2:>+7.2f} USDT")
 
     # 保存结果
     result = {
@@ -705,16 +834,17 @@ def main():
         "p0": {**p0_metrics, **p0_stats} if p0_metrics else {"note": "no trades"},
         "p0_p1": {**p1_metrics, **p1_stats} if p1_metrics else {"note": "no trades"},
         "p0_p1_p2": {**p2_metrics, **p2_stats} if p2_metrics else {"note": "no trades"},
-        "p2_improvement_vs_p1": {
-            "pnl_delta": pnl_delta_p2_vs_p1,
-            "win_rate_delta": wr_delta_p2_vs_p1,
-            "max_drawdown_delta": dd_delta_p2_vs_p1,
+        "p0_p1_p2_p3": {**p3_metrics, **p3_stats} if p3_metrics else {"note": "no trades"},
+        "p3_improvement_vs_p2": {
+            "pnl_delta": pnl_delta_p3_vs_p2,
+            "win_rate_delta": wr_delta_p3_vs_p2,
+            "max_drawdown_delta": dd_delta_p3_vs_p2,
         },
-        "p2_improvement_vs_base": {
-            "win_rate_delta": _g(p2_metrics, 'win_rate') - _g(base_metrics, 'win_rate'),
-            "pnl_delta": _g(p2_metrics, 'total_pnl') - _g(base_metrics, 'total_pnl'),
-            "max_consecutive_loss_delta": max_cl_p2 - max_cl_b,
-            "max_drawdown_delta": _g(p2_metrics, 'max_drawdown') - _g(base_metrics, 'max_drawdown'),
+        "p3_improvement_vs_base": {
+            "win_rate_delta": _g(p3_metrics, 'win_rate') - _g(base_metrics, 'win_rate'),
+            "pnl_delta": _g(p3_metrics, 'total_pnl') - _g(base_metrics, 'total_pnl'),
+            "max_consecutive_loss_delta": max_cl_p3 - max_cl_b,
+            "max_drawdown_delta": _g(p3_metrics, 'max_drawdown') - _g(base_metrics, 'max_drawdown'),
         },
     }
     output_path = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/p0_backtest_result.json"
@@ -722,16 +852,17 @@ def main():
         json.dump(result, f, indent=2, ensure_ascii=False, default=str)
     print(f"\n结果已保存: {output_path}")
 
-    # P2 观察期通过标准检查
+    # P3 观察期通过标准检查
     print(f"\n{'=' * 70}")
-    print(f"✅ P0+P1+P2 观察期通过标准检查")
+    print(f"✅ P0+P1+P2+P3 观察期通过标准检查")
     print(f"{'=' * 70}")
     checks = [
-        ("连续亏损次数 ≤ 5", max_cl_p2 <= 5),
-        ("胜率 ≥ 40%", _g(p2_metrics, 'win_rate', 0) >= 40),
-        ("总盈亏为正", _g(p2_metrics, 'total_pnl', 0) > 0),
-        ("盈亏比 ≥ 1.5", _g(p2_metrics, 'win_loss_ratio', 0) >= 1.5),
-        ("P2 相对 P0+P1 不降低总盈亏", pnl_delta_p2_vs_p1 >= -1e-6),
+        ("连续亏损次数 ≤ 5", max_cl_p3 <= 5),
+        ("胜率 ≥ 40%", _g(p3_metrics, 'win_rate', 0) >= 40),
+        ("总盈亏为正", _g(p3_metrics, 'total_pnl', 0) > 0),
+        ("盈亏比 ≥ 1.5", _g(p3_metrics, 'win_loss_ratio', 0) >= 1.5),
+        ("P3 相对 P2 不降低总盈亏", pnl_delta_p3_vs_p2 >= -1e-6),
+        ("P3 最大回撤 ≤ P2 最大回撤", _g(p3_metrics, 'max_drawdown', 0) <= _g(p2_metrics, 'max_drawdown', 0) + 0.01),
     ]
     for name, passed in checks:
         status = "✅ PASS" if passed else "❌ FAIL"
@@ -739,9 +870,9 @@ def main():
 
     all_pass = all(c[1] for c in checks)
     if all_pass:
-        print(f"\n🎉 P0+P1+P2 四层优化通过观察期验证！建议正式采纳。")
+        print(f"\n🎉 P0+P1+P2+P3 五层优化通过观察期验证！建议正式采纳。")
     else:
-        print(f"\n⚠️  P0+P1+P2 部分指标未达标，需进一步调整。")
+        print(f"\n⚠️  P0+P1+P2+P3 部分指标未达标，需进一步调整。")
 
 
 if __name__ == '__main__':

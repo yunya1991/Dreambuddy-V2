@@ -837,11 +837,12 @@ class SelfEvolutionEngine:
         total_trades = (
             self._last_stats.get("total_trades", 0) if hasattr(self, "_last_stats") else 0
         )
-        if total_trades < MIN_TRADES_FOR_STATS_SIGNIFICANCE:
+        has_enough_trades = total_trades >= MIN_TRADES_FOR_STATS_SIGNIFICANCE
+        if not has_enough_trades:
             print(
-                f"  ⏸ 交易数据不足 ({total_trades} < {MIN_TRADES_FOR_STATS_SIGNIFICANCE})，跳过回测验证，提案保留候选池"
+                f"  ⏸ 交易数据不足 ({total_trades} < {MIN_TRADES_FOR_STATS_SIGNIFICANCE})，"
+                f"非 a8 来源提案保留候选池，a8 来源走降级采纳"
             )
-            return []
 
         adopted = []
         pending = []
@@ -904,7 +905,7 @@ class SelfEvolutionEngine:
                     print(f"  ⛔ 白名单拒绝: {proposal['title']} ({param_key})")
                     continue
 
-                if wfe and has_sufficient_decisions:
+                if wfe and has_sufficient_decisions and has_enough_trades:
                     try:
                         from scripts.memory_l4.evolution_backtest import walk_forward_validate
 
@@ -929,11 +930,27 @@ class SelfEvolutionEngine:
                         )
                         pending.append(proposal)
                         continue
+                elif str(proposal.get("source", "")).lower() == "a8":
+                    # a8 降级路径：交易不足或决策不足 → 诚实标记 degraded=True 但允许采纳
+                    proposal["backtest_result"] = {
+                        "validated": True,
+                        "method": "rule_check",
+                        "degraded": True,
+                        "reason": (
+                            f"a8_fallback: trades={total_trades} decisions="
+                            f"{len(recent_decisions) if recent_decisions else 0}，"
+                            f"走规则校验降级采纳"
+                        ),
+                    }
                 else:
                     proposal["backtest_result"] = {
                         "validated": False,
                         "method": "insufficient_data",
-                        "reason": f"决策数不足 ({len(recent_decisions) if recent_decisions else 0} < {MIN_DECISIONS_FOR_BACKTEST})",
+                        "reason": (
+                            f"决策数/交易数不足 "
+                            f"(decisions={len(recent_decisions) if recent_decisions else 0}"
+                            f"/trades={total_trades})，提案待验证"
+                        ),
                     }
                     pending.append(proposal)
                     print(f"  ⏸ 数据不足，待验证: {proposal['title']}")

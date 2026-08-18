@@ -1,8 +1,10 @@
 # 接口规格文档 — 16-调控系统
 
 > **定位：** 调控系统全部公开 Python API 与 CLI 命令的签名、参数、返回值、调用示例
-> **版本：** v2.0 | **更新：** 2026-07-25
+> **版本：** v2.1 | **更新：** 2026-08-17
 > **说明：** 本系统无自有 HTTP 服务，由 TRAE Work 调度层定时调用，故以 Python API 与 CLI 为主
+>
+> **v2.1 变更：** 新增 §3.12 资金调控 API（CapitalControlComponent / 数据结构 / CAPITAL 规则注册器）；§3.1.1 补充 `total_equity` / `equity` / `avail_balance` / `used_margin` 字段说明；§1.1 接口列表新增资金调控行；§1.2 调用拓扑新增步骤 1.5；§4 新增资金降级状态码；§5.1 新增 v2.1 变更记录。
 
 ---
 
@@ -22,6 +24,7 @@
   - [3.9 回测框架 API (core/backtest_framework.py)](#39-回测框架-api-corebacktest_frameworkpy)
   - [3.10 AAM 产物投递 API (core/aam_deliverer.py)](#310-aam-产物投递-api-coreaam_delivererpy)
   - [3.11 CLI 命令 (scripts/)](#311-cli-命令-scripts)
+  - [3.12 资金调控 API (core/capital_control/) — v2.1 新增](#312-资金调控-api-corecapital_control--v21-新增)
 - [4. 错误码](#4-错误码)
 - [5. 版本管理](#5-版本管理)
 
@@ -33,8 +36,11 @@
 
 | 模块 | 入口 | 关键公开 API |
 |------|------|--------------|
-| 包入口 | `core/__init__.py` | `fetch_all_positions`, `get_position_summary`, `SkillEngine`, `SkillResult`, `register_skill` |
+| 包入口 | `core/__init__.py` | `fetch_all_positions`, `get_position_summary`, `SkillEngine`, `SkillResult`, `register_skill`, `CapitalControlComponent`（v2.1） |
 | 统一持仓查询 | `core/unified_position_query.py` | `fetch_all_positions(systems)`, `get_position_summary()`, `fetch_agent_a_positions()`, `fetch_agent_b_positions()`, `fetch_agent_c_positions()`, `fetch_v15_martin_positions()`, `fetch_yijing_positions()`, `fetch_three_screen_positions()` |
+| 资金调控（v2.1） | `core/capital_control/component.py` | `CapitalControlComponent(mode, config_path, registry, cache_ttl)`, `.evaluate(systems)`, `.get_capital_advice(system, action)`, `.get_snapshot()`, `.health_check()` |
+| 资金调控数据结构（v2.1） | `core/capital_control/types.py` | `CapitalMode`, `AccountType`, `HealthLevel`, `CapitalResult`, `CapitalSnapshot`, `assess_health()` |
+| CAPITAL 规则注册器（v2.1） | `13-通用风控模块/core/registry.py` | `register_capital(name, priority, config_schema, description)`, `RuleCategory.CAPITAL` |
 | SKILL 引擎 | `core/skill_engine.py` | `SkillEngine.execute()`, `SkillEngine.register()`, `register_skill()`, `SkillPhase`, `SkillResult` |
 | A9 离场决策 | `core/a9_exit_decision.py` | `a9_exit_decision_handler(inputs, engine)` |
 | A1 调研 | `core/a1_research_adapter.py` | `a1_research_handler(inputs, engine)` |
@@ -48,14 +54,16 @@
 | 增强进化闭环 | `core/enhanced_evolution.py` | `EnhancedEvolutionLoop.run_full_evolution_cycle()`, `run_a8_inspection()`, `run_dream_analysis()`, `get_summary()`, `get_enhanced_evolution()` |
 | 回测框架 | `core/backtest_framework.py` | `run_backtest(...)`, `generate_simulated_bars(...)`, `BacktestResult`, `Bar`, `Position`, `TradeRecord`, `ExitAction` |
 | AAM 产物投递 | `core/aam_deliverer.py` | `deliver_exit_evaluation(...)`, `deliver_artifact(...)`, `generate_frontmatter(...)`, `list_delivered_artifacts(...)` |
-| 自动化调度 | `scripts/auto_exit_system.py` | `run_exit_evaluation_cycle()`, `main()` |
+| 自动化调度 | `scripts/auto_exit_system.py` | `run_exit_evaluation_cycle()`, `main()`, `_write_capital_report()`（v2.1） |
 
 ### 1.2 调用拓扑
 
 ```
 TRAE Work 调度层（08:00 / 20:00）
   └─→ scripts/auto_exit_system.py::run_exit_evaluation_cycle()
-        ├─→ unified_position_query.fetch_all_positions()         (6 系统聚合)
+        ├─→ unified_position_query.fetch_all_positions()         (6 系统聚合 + equity)
+        ├─→ CapitalControlComponent.evaluate()                   (v2.1 资金快照, 步骤 1.5)
+        │     └─→ _write_capital_report()                       (资金报告产物)
         ├─→ market_data_fetcher.fetch_market_data()              (市场数据)
         ├─→ SkillEngine.execute("dream-strategy-research", ...)  (A1)
         ├─→ SkillEngine.execute("dream-first-principles", ...)   (A2)
@@ -129,6 +137,7 @@ def fetch_all_positions(systems: Optional[List[str]] = None) -> Dict
     "total_systems": 6,                          # 本轮实际查询的系统数
     "total_positions": 12,                       # 聚合后持仓总数
     "total_unrealized_pnl": 123.45,              # 聚合未实现盈亏（USDT，2 位小数）
+    "total_equity": 2364.56,                     # v2.1 新增：6 系统 equity 数值加总（USDT）
     "overall_status": "ok",                      # ok / degraded / failed
     "system_status": {                           # 每个系统的状态
         "agent_a": "ok",
@@ -139,7 +148,10 @@ def fetch_all_positions(systems: Optional[List[str]] = None) -> Dict
     "systems_summary": {"ok": 4, "partial": 1, "error": 1},
     "systems": {                                 # 每系统完整结果（见 _make_system_result）
         "agent_a": { "system": "agent_a", "exchange": "hyperliquid",
-                     "equity": 1234.56, "positions": [...],
+                     "equity": 1234.56,          # v2.1 补齐：账户权益
+                     "avail_balance": 800.0,     # v2.1 补齐：可用余额
+                     "used_margin": 434.56,      # v2.1 补齐：已用保证金
+                     "positions": [...],
                      "position_count": 3, "status": "ok" },
         # ...
     },
@@ -164,6 +176,8 @@ def fetch_all_positions(systems: Optional[List[str]] = None) -> Dict
     ],
 }
 ```
+
+> **v2.1 equity 字段说明**：`equity` / `avail_balance` / `used_margin` 为各系统从交易所 API 实时查询的账户资金字段，供 `CapitalControlComponent` 消费。`total_equity` 为 6 系统 equity 的数值加总，仅用于全局监控展示，不可跨账户调度。各系统降级规则：API 失败或 equity<=0 时回退到 `capital_control.json` 的 `fallback_static_budget`。
 
 **`overall_status` 取值规则：**
 - `ok` — 所有系统均 ok
@@ -230,12 +244,14 @@ def get_position_summary() -> Dict
 {
     "system": "agent_a",
     "exchange": "hyperliquid",
-    "equity": 1234.56,
+    "equity": 1234.56,               # v2.1 补齐：账户权益（USDT）
+    "avail_balance": 800.0,          # v2.1 补齐：可用余额（USDT）
+    "used_margin": 434.56,            # v2.1 补齐：已用保证金（USDT）
     "positions": [ <统一持仓对象> ],
     "position_count": 3,
     "status": "ok",                 # ok / partial / warning / error / unavailable
     "error": "",                    # status != "ok" 时存在
-    # ...各系统特有 extra 字段
+    # ...各系统特有 extra 字段（如 hl_extra: {account_type, fallback_used}）
 }
 ```
 
@@ -990,6 +1006,371 @@ python scripts/auto_exit_system.py
 
 ---
 
+### 3.12 资金调控 API (core/capital_control/) — v2.1 新增
+
+> 详细设计见 [CAPITAL_CONTROL_DESIGN.md](./CAPITAL_CONTROL_DESIGN.md)。
+
+#### 3.12.1 CapitalControlComponent 类
+
+```python
+from core.capital_control import CapitalControlComponent, CapitalMode
+
+class CapitalControlComponent:
+    def __init__(
+        self,
+        mode: Optional[CapitalMode] = None,
+        config_path: Optional[Path] = None,
+        registry: Optional[RuleRegistry] = None,
+        cache_ttl: Optional[int] = None,
+    )
+```
+
+**`__init__` 参数：**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| mode | Optional[CapitalMode] | None | 调控模式覆盖；None 时从 config 读取（默认 `DYNAMIC`） |
+| config_path | Optional[Path] | None | 配置文件路径；None 时使用 `config/capital_control.json` |
+| registry | Optional[RuleRegistry] | None | 规则注册表实例；None 时自动初始化并加载 4 条 CAPITAL 规则 |
+| cache_ttl | Optional[int] | None | 缓存 TTL 覆盖（秒）；None 时从 config `cache_ttl_sec` 读取（默认 60） |
+
+---
+
+#### 3.12.2 evaluate
+
+聚合 6 系统资金数据，输出全局资金快照。线程安全（`threading.Lock`），60s 缓存。
+
+```python
+def evaluate(self, systems: Optional[List[str]] = None) -> CapitalSnapshot
+```
+
+**参数：**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| systems | Optional[List[str]] | None | 指定查询的系统名列表；None 则查全部 enabled_systems |
+
+**返回值 `CapitalSnapshot`：**
+
+```python
+{
+    "timestamp": "2026-08-17T08:00:00+00:00",
+    "mode": "dynamic",                           # CapitalMode 值
+    "by_system": {                               # 按系统名分组
+        "v15_martin": { <CapitalResult> },
+        "yijing_bcrm": { <CapitalResult> },
+        # ...
+    },
+    "by_account": {                              # 按账户类型分组
+        "okx_live": { <CapitalResult> },
+        "hyperliquid": { <CapitalResult> },
+        # ...
+    },
+    "total_equity": 2364.56,                     # Σ equity（数值加总，不可跨账户调度）
+    "total_avail": 1500.0,                       # Σ avail_balance
+    "total_used": 864.56,                        # Σ used_margin
+    "overall_used_pct": 36.6,                    # total_used / total_equity × 100
+    "health": "HEALTHY",                         # HEALTHY / WARNING / CRITICAL
+    "recommendations": {},                       # 建议字典（一期为空）
+    "extra": {}                                  # 扩展字段
+}
+```
+
+**缓存行为**：当 `systems=None` 且距上次评估不足 `cache_ttl` 秒时，直接返回缓存的 `_last_snapshot`；传入 `systems` 参数或缓存过期时重新评估。
+
+**调用示例：**
+
+```python
+from core import CapitalControlComponent
+
+ccc = CapitalControlComponent()
+snapshot = ccc.evaluate()
+print(snapshot.total_equity)        # 2364.56
+print(snapshot.health)              # HEALTHY
+print(snapshot.by_system["v15_martin"].used_pct)  # 15.4
+```
+
+---
+
+#### 3.12.3 get_capital_advice
+
+为指定系统+动作提供资金建议（一期只读，二期可阻断）。
+
+```python
+def get_capital_advice(self, system: str, action: str = "HOLD") -> Dict[str, Any]
+```
+
+**参数：**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| system | str | — | 系统名（如 `v15_martin`） |
+| action | str | "HOLD" | 待执行动作：`CLOSE` / `REDUCE` / `HOLD` / `RAISE_TP` |
+
+**返回值：**
+
+```python
+{
+    "allowed": True,                             # 是否允许执行该动作
+    "reason": "ok",                              # 原因码（见下方枚举）
+    "max_position_usdt": 260.0,                  # 该系统最大建议持仓（USDT）
+    "current_avail": 200.0,                      # 当前可用余额
+    "margin_pressure": "LOW",                    # LOW / MEDIUM / HIGH
+    "used_pct": 15.4,                            # 该系统保证金使用率（%）
+    "total_eq": 260.0,                           # 该系统总权益
+    "phase2_enabled": False,                     # 二期是否启用
+}
+```
+
+**`reason` 取值：**
+
+| reason | 含义 | 触发条件 |
+|--------|------|----------|
+| `ok` | 正常放行 | 压力 LOW/MEDIUM，或一期模式 |
+| `system_not_in_capital_registry` | 系统不在资金注册表 | system 不在 by_system 中 |
+| `capital_pressure_block` | 资金压力阻断 | 二期 + 压力 HIGH + action 在 `high_pressure_actions_to_block` |
+| `rule_error` | 规则执行异常 | CAPITAL 规则 handler 抛异常（已降级） |
+
+**调用示例：**
+
+```python
+advice = ccc.get_capital_advice("v15_martin", "RAISE_TP")
+if not advice["allowed"]:
+    print(f"动作被阻断: {advice['reason']}")
+```
+
+---
+
+#### 3.12.4 get_snapshot
+
+获取最近一次 `evaluate()` 的缓存快照，不触发重新评估。
+
+```python
+def get_snapshot(self) -> Optional[CapitalSnapshot]
+```
+
+**返回值**：`CapitalSnapshot` 或 `None`（尚未调用过 `evaluate()`）。
+
+---
+
+#### 3.12.5 health_check
+
+组件健康自检，返回组件状态与配置摘要。
+
+```python
+def health_check(self) -> Dict[str, Any]
+```
+
+**返回值：**
+
+```python
+{
+    "status": "healthy",                         # healthy / degraded / unhealthy
+    "mode": "dynamic",
+    "enabled_systems": ["v15_martin", "yijing_bcrm", ...],
+    "rules_loaded": ["capital.okx_live", "capital.okx_simulated", ...],
+    "cache_ttl_sec": 60,
+    "phase2_enabled": False,
+    "last_snapshot_ts": "2026-08-17T08:00:00+00:00",
+    "fallback_systems": ["three_screen"],         # 使用静态预算降级的系统列表
+}
+```
+
+---
+
+#### 3.12.6 CapitalMode 枚举
+
+```python
+class CapitalMode(str, Enum):
+    FIXED = "fixed"        # 固定金额模式：始终使用静态预算
+    DYNAMIC = "dynamic"    # 动态资金模式（默认）：优先实时查询，失败时三级降级
+```
+
+---
+
+#### 3.12.7 AccountType 枚举
+
+```python
+class AccountType(str, Enum):
+    OKX_LIVE = "okx_live"
+    OKX_SIMULATED = "okx_simulated"
+    HYPERLIQUID = "hyperliquid"
+    ASTER = "aster"
+    UNKNOWN = "unknown"
+```
+
+---
+
+#### 3.12.8 HealthLevel 枚举
+
+```python
+class HealthLevel(str, Enum):
+    HEALTHY = "HEALTHY"    # overall_used_pct ≤ healthy_used_pct_max (默认 50%)
+    WARNING = "WARNING"    # healthy < used_pct ≤ warning_used_pct_max (默认 80%)
+    CRITICAL = "CRITICAL"  # used_pct > warning_used_pct_max
+```
+
+---
+
+#### 3.12.9 CapitalResult 数据类
+
+单系统资金查询结果，由每条 CAPITAL 规则 handler 产出。
+
+```python
+@dataclass
+class CapitalResult:
+    system: str                        # 系统名（如 "v15_martin"）
+    account_type: AccountType          # 账户类型
+    mode: CapitalMode                  # 调控模式
+    total_eq: float                    # 总权益（USDT）
+    avail_balance: float               # 可用余额
+    used_margin: float                 # 已用保证金
+    used_pct: float                    # 使用率（0-100）
+    fallback_used: bool = False        # 是否降级到静态预算
+    fallback_reason: str = ""         # 降级原因
+    timestamp: str = ""                # ISO8601 时间戳
+    extra: Dict[str, Any] = {}         # 扩展字段
+
+    def to_dict(self) -> Dict
+```
+
+---
+
+#### 3.12.10 CapitalSnapshot 数据类
+
+全局资金快照，由 `evaluate()` 聚合输出。
+
+```python
+@dataclass
+class CapitalSnapshot:
+    timestamp: str
+    mode: CapitalMode
+    by_system: Dict[str, CapitalResult]    # 按系统名分组
+    total_equity: float                    # 全局总权益（数值加总）
+    total_avail: float
+    total_used: float
+    overall_used_pct: float                # 全局保证金使用率（0-100）
+    health: HealthLevel
+    recommendations: Dict[str, str] = {}
+    by_account: Dict[str, CapitalResult] = {}   # 按账户类型分组
+    extra: Dict[str, Any] = {}
+
+    def to_dict(self) -> Dict
+```
+
+---
+
+#### 3.12.11 register_capital 装饰器
+
+将 CAPITAL 规则 handler 注册到 `RuleRegistry`，位于 `13-通用风控模块/core/registry.py`。
+
+```python
+def register_capital(
+    name: str,
+    priority: int = 50,
+    config_schema: Optional[Dict] = None,
+    description: str = "",
+) -> Callable
+```
+
+**参数：**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| name | str | — | 规则名（如 `"capital.okx_live"`） |
+| priority | int | 50 | 优先级，数值越小越优先执行 |
+| config_schema | Optional[Dict] | None | 配置 schema（用于校验 / 文档） |
+| description | str | "" | 规则描述 |
+
+**handler 签名：**
+
+```python
+@register_capital(name="capital.<account>", priority=N, ...)
+def capital_handler(
+    signal: Optional[Any] = None,
+    context: Any = None,           # 可含 mode / positions_result
+    base_risk: float = 0.0,
+    config: Optional[Dict[str, Any]] = None,
+    extra: Optional[Dict[str, Any]] = None,
+) -> CapitalResult
+```
+
+**已注册的 4 条 CAPITAL 规则：**
+
+| 规则名 | 模块 | priority | 系统 |
+|--------|------|----------|------|
+| `capital.okx_live` | `capital_rules/okx_live_rule.py` | 10 | v15_martin |
+| `capital.okx_simulated` | `capital_rules/okx_simulated_rule.py` | 20 | yijing_bcrm |
+| `capital.hyperliquid` | `capital_rules/hyperliquid_rule.py` | 30 | agent_a / agent_b / agent_c_memory |
+| `capital.aster` | `capital_rules/aster_rule.py` | 40 | three_screen |
+
+**调用示例（自定义规则）：**
+
+```python
+from core.registry import register_capital
+from core.capital_control.types import CapitalResult, AccountType, CapitalMode
+
+@register_capital(
+    name="capital.my_account",
+    priority=50,
+    config_schema={"fallback_static_budget": {"type": "object", "default": {"my_sys": 100.0}}},
+    description="自定义账户资金规则",
+)
+def my_capital_handler(signal=None, context=None, base_risk=0.0, config=None, extra=None):
+    return CapitalResult(
+        system="my_sys",
+        account_type=AccountType.UNKNOWN,
+        mode=CapitalMode.DYNAMIC,
+        total_eq=100.0,
+        avail_balance=80.0,
+        used_margin=20.0,
+        used_pct=20.0,
+    )
+```
+
+---
+
+#### 3.12.12 资金调控配置文件
+
+配置文件路径：`16-调控系统/config/capital_control.json`
+
+```json
+{
+  "version": "1.0",
+  "mode": "dynamic",
+  "enabled_systems": [
+    "v15_martin", "yijing_bcrm", "agent_a", "agent_b", "agent_c_memory", "three_screen"
+  ],
+  "cache_ttl_sec": 60,
+  "health_thresholds": {
+    "healthy_used_pct_max": 50.0,
+    "warning_used_pct_max": 80.0
+  },
+  "fallback_static_budget": {
+    "v15_martin": 260.0, "yijing_bcrm": 150.0, "agent_a": 60.0,
+    "agent_b": 60.0, "agent_c_memory": 0.0, "three_screen": 200.0
+  },
+  "account_mapping": {
+    "v15_martin": "okx_live", "yijing_bcrm": "okx_simulated",
+    "agent_a": "hyperliquid", "agent_b": "hyperliquid",
+    "agent_c_memory": "hyperliquid", "three_screen": "aster"
+  },
+  "phase2": {
+    "enabled": false,
+    "high_pressure_actions_to_block": ["RAISE_TP"],
+    "high_pressure_confidence_multiplier": 0.8
+  }
+}
+```
+
+---
+
+#### 3.12.13 资金报告产物
+
+由 `auto_exit_system.py::_write_capital_report()` 在步骤 1.5 生成，输出到 `artifacts/capital-reports/capital_YYYYMMDD_HHMMSS.json`，结构对齐 `CapitalSnapshot.to_dict()`。
+
+---
+
 ## 4. 错误码
 
 本系统使用字符串状态码而非数字错误码。以下是统一的状态/错误枚举：
@@ -1041,6 +1422,42 @@ python scripts/auto_exit_system.py
 | `CORRECT` | 决策正确（如平仓后行情继续反向） |
 | `INCORRECT` | 决策错误 |
 
+### 4.6 资金调控状态码（v2.1 新增）
+
+#### 4.6.1 健康等级 (`CapitalSnapshot.health`)
+
+| 取值 | 含义 | 触发条件 |
+|------|------|----------|
+| `HEALTHY` | 健康 | `overall_used_pct ≤ healthy_used_pct_max`（默认 50%） |
+| `WARNING` | 警告 | `50% < overall_used_pct ≤ warning_used_pct_max`（默认 80%） |
+| `CRITICAL` | 危险 | `overall_used_pct > warning_used_pct_max`（默认 80%） |
+
+#### 4.6.2 资金建议原因 (`get_capital_advice.reason`)
+
+| 取值 | 含义 | 触发条件 |
+|------|------|----------|
+| `ok` | 正常放行 | 压力 LOW/MEDIUM，或一期模式（`phase2.enabled=false`） |
+| `system_not_in_capital_registry` | 系统不在资金注册表 | system 不在 `by_system` 中 |
+| `capital_pressure_block` | 资金压力阻断 | 二期 + 压力 HIGH + action 在 `high_pressure_actions_to_block` |
+| `rule_error` | 规则执行异常 | CAPITAL 规则 handler 抛异常（已降级处理） |
+
+#### 4.6.3 资金降级标记 (`CapitalResult.fallback_used` / `fallback_reason`)
+
+| `fallback_used` | `fallback_reason` | 含义 |
+|-----------------|-------------------|------|
+| `False` | `""` | 实时查询成功 |
+| `True` | `static_budget_fallback` | API 失败 / equity 缺失，降级到静态预算 |
+| `True` | `equity_zero_or_none` | equity 为 0 或 None，触发降级 |
+| `True` | `rule_error` | 规则 handler 异常，降级处理 |
+
+#### 4.6.4 压力等级 (`get_capital_advice.margin_pressure`)
+
+| 取值 | used_pct 区间 | 二期行为 |
+|------|---------------|----------|
+| `LOW` | ≤ 50% | 放行所有动作 |
+| `MEDIUM` | (50%, 80%] | 放行，建议观察 |
+| `HIGH` | > 80% | 阻断 `high_pressure_actions_to_block`（默认含 `RAISE_TP`），置信度 × `high_pressure_confidence_multiplier`（默认 0.8） |
+
 ---
 
 ## 5. 版本管理
@@ -1050,6 +1467,7 @@ python scripts/auto_exit_system.py
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | v2.0 | 2026-07-25 | 首版 API_SPEC.md，对齐 `core/` 实际代码（19 个核心 Python 文件），覆盖持仓查询/SKILL 引擎/A9 决策/技术融合/执行器/权限/进化/回测/AAM 投递/CLI 全链路 |
+| v2.1 | 2026-08-17 | 新增 §3.12 资金调控 API（CapitalControlComponent 类 / evaluate / get_capital_advice / get_snapshot / health_check / 3 枚举 / 2 数据类 / register_capital 装饰器 / 配置文件 / 报告产物，共 13 小节）；§1.1 接口列表新增 3 行资金调控行；§1.2 调用拓扑新增步骤 1.5；§3.1.1 补充 `total_equity` / `equity` / `avail_balance` / `used_margin` 字段说明；§3.1.3 单系统结果结构补充资金字段；§4 新增 §4.6 资金调控状态码（健康等级 / 建议原因 / 降级标记 / 压力等级）；§5.3 接口版本策略新增资金调控导出符号。 |
 
 ### 5.2 SKILL 版本矩阵
 
@@ -1063,12 +1481,13 @@ python scripts/auto_exit_system.py
 
 ### 5.3 接口版本策略
 
-- **Python API**：通过 `core/__init__.py` 导出的公共符号（`fetch_all_positions` / `get_position_summary` / `SkillEngine` / `SkillResult` / `register_skill`）视为稳定接口，跨版本保持向后兼容。
+- **Python API**：通过 `core/__init__.py` 导出的公共符号（`fetch_all_positions` / `get_position_summary` / `SkillEngine` / `SkillResult` / `register_skill` / `CapitalControlComponent`）视为稳定接口，跨版本保持向后兼容。v2.1 新增 `CapitalControlComponent` 为稳定导出。
 - **SKILL 版本**：由 `@register_skill(name, path, version)` 显式声明，每个 SKILL 独立版本号。SKILL.md 路径变更需同步更新装饰器参数。
-- **持仓查询数据格式**：`fetch_all_positions` 返回值含 `"version": "1.0"` 字段，未来字段变更需提升该版本号。
-- **CLI 环境变量**：现有 7 个环境变量（`EXIT_MODE`/`USE_LLM`/`DELIVER`/`MAX_EXECUTIONS`/`MIN_POSITION_USDT`/`EVOLUTION`/`BACKFILL`）视为稳定契约，新增环境变量不破坏旧值语义。
-- **未版本化内部模块**：未通过 `core/__init__.py` 导出的函数/类（如 `_evaluate_single_position`、`_calc_simple_technical_signals` 等下划线前缀私有函数）不保证跨版本稳定。
+- **持仓查询数据格式**：`fetch_all_positions` 返回值含 `"version": "1.0"` 字段，未来字段变更需提升该版本号。v2.1 新增 `total_equity` 顶层字段与各系统 `equity` / `avail_balance` / `used_margin` 字段，属向后兼容增量。
+- **资金调控 API**（v2.1）：`CapitalControlComponent` 的 `evaluate` / `get_capital_advice` / `get_snapshot` / `health_check` 视为稳定接口；`CapitalSnapshot` / `CapitalResult` 数据类字段向后兼容（新增字段不破坏旧消费者）；`register_capital` 装饰器签名稳定。
+- **CLI 环境变量**：现有 7 个环境变量（`EXIT_MODE`/`USE_LLM`/`DELIVER`/`MAX_EXECUTIONS`/`MIN_POSITION_USDT`/`EVOLUTION`/`BACKFILL`）视为稳定契约，新增环境变量不破坏旧值语义。v2.1 新增 `DRY_RUN`（资金调控 dry-run 开关）不破坏现有语义。
+- **未版本化内部模块**：未通过 `core/__init__.py` 导出的函数/类（如 `_evaluate_single_position`、`_calc_simple_technical_signals`、`_shared.build_result_from_system` 等下划线前缀私有函数）不保证跨版本稳定。
 
 ---
 
-_最后更新：2026-07-25 | 来源：16-调控系统（统一 AI 调控系统）_
+_最后更新：2026-08-17 | 来源：16-调控系统（统一 AI 调控系统）_

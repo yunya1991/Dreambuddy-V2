@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "mode": "atr_adaptive",
+  "enabled_systems": [
+    "v15_martin",
+    "yijing_bcrm",
+    "agent_a",
+    "agent_b",
+    "agent_c_memory",
+    "three_screen"
+  ],
+  "cache_ttl_sec": 60,
+  "persist_enabled": true,
+  "persist_file": "artifacts/trailing-stop/state.json",
+  "algorithm": {
+    "arm_threshold_pct": 0.20,
+    "atr_period": 14,
+    "atr_multiplier": 2.5,
+    "min_trail_pct": 0.03,
+    "atr_fallback_pct": 0.02
+  },
+  "trigger_cooldown_sec": 300,
+  "auto_close_after_sec": 1800,
+  "report": {
+    "enabled": true,
+    "output_dir": "artifacts/trailing-stop/reports"
+  }
+}

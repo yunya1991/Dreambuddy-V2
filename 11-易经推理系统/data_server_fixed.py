@@ -22,7 +22,7 @@ os.environ["NO_PROXY"] = "localhost,127.0.0.1"
 BASE_DIR = Path(__file__).resolve().parent.parent / "experiments" / "ab-trading"
 LOG_A    = BASE_DIR / "logs" / "agent_a"
 LOG_B    = BASE_DIR / "logs" / "agent_b"
-PORT     = 8765
+PORT     = int(os.environ.get("DATA_SERVER_PORT", "8765"))
 
 BCRM_REPO = Path(os.environ.get(
     "BCRM_REPO",
@@ -1096,6 +1096,7 @@ def get_yijing_account_overview():
     live_ok = bool(okx_balance)
     live_error = ""
     okx_avail = float(okx_balance.get("avail", 0) or 0) if live_ok else None
+    okx_total_eq = float(okx_balance.get("total_eq", okx_balance.get("eq", 0)) or 0) if live_ok else None
 
     if okx_positions and isinstance(okx_positions[0], dict) and "error" in okx_positions[0]:
         live_error = str(okx_positions[0].get("error", ""))
@@ -1150,7 +1151,12 @@ def get_yijing_account_overview():
     total_pnl = realized_pnl + unrealized_pnl
     current_balance = YIJING_INITIAL_CAPITAL + total_pnl
     pnl_pct = (total_pnl / YIJING_INITIAL_CAPITAL) * 100 if YIJING_INITIAL_CAPITAL > 0 else 0
-    avail_balance = okx_avail if okx_avail is not None else current_balance
+    # 策略可用资金 = 初始资金 + 累计盈亏（策略自身预算口径）
+    strategy_avail = current_balance
+    # OKX 账户可用保证金（账户级，仅供参考）
+    account_avail = okx_avail
+    # OKX 账户总权益（账户级，仅供参考）
+    account_total_eq = okx_total_eq
 
     # 基准状态提示
     if realized_baseline is not None:
@@ -1166,7 +1172,14 @@ def get_yijing_account_overview():
         "baseline_realized_pnl": round(realized_baseline, 2) if realized_baseline is not None else None,
         "baseline_note": baseline_note,
         "current_balance": round(current_balance, 2),
-        "avail_balance": round(avail_balance, 2) if avail_balance is not None else None,
+        # 策略级：策略自身可用资金 = 初始资金 + 盈亏（主显示）
+        "avail_balance": round(strategy_avail, 2),
+        "strategy_avail": round(strategy_avail, 2),
+        # 账户级：OKX 账户可用保证金（参考显示，标注"账户可用保证金"）
+        "account_avail": round(account_avail, 2) if account_avail is not None else None,
+        "account_total_eq": round(account_total_eq, 2) if account_total_eq is not None else None,
+        # 向后兼容：旧命名字段保留，值为策略级口径（而非账户级）
+        # avail_balance 已改为 strategy_avail，与 current_balance 一致
         "total_pnl": round(total_pnl, 2),
         "pnl_pct": round(pnl_pct, 2),
         "realized_pnl": round(realized_pnl, 2),
@@ -1296,7 +1309,10 @@ def get_v15_account_overview():
     # ── 尝试 OKX 实时数据增强 ──
     live_ok = False
     live_error = ""
-    avail_balance = None
+    # OKX 账户级可用保证金（参考）
+    account_avail = None
+    # OKX 账户级总权益（参考）
+    account_total_eq = None
     current_okx_eq = None
 
     try:
@@ -1307,7 +1323,8 @@ def get_v15_account_overview():
         if balance.get("ok"):
             live_ok = True
             current_okx_eq = float(balance.get("total_eq", 0) or 0)
-            avail_balance = float(balance.get("avail_balance", 0) or 0)
+            account_avail = float(balance.get("avail_balance", 0) or 0)
+            account_total_eq = current_okx_eq
             # 首次成功获取 OKX 权益时写入基准
             if baseline.get("okx_total_eq_baseline") is None:
                 baseline["okx_total_eq_baseline"] = current_okx_eq
@@ -1397,8 +1414,8 @@ def get_v15_account_overview():
     else:
         baseline_note = "今日基准尚未建立（等待首次数据采样）"
 
-    if avail_balance is None:
-        avail_balance = current_balance
+    # 策略可用资金 = 初始资金 + 累计盈亏（策略自身预算口径，主显示）
+    strategy_avail = current_balance
 
     return {
         "strategy": "v15_martin",
@@ -1408,7 +1425,13 @@ def get_v15_account_overview():
         "baseline_okx_eq": round(baseline_eq, 2) if baseline_eq is not None else None,
         "baseline_note": baseline_note,
         "current_balance": round(current_balance, 2) if current_balance is not None else None,
-        "avail_balance": round(avail_balance, 2) if avail_balance is not None else None,
+        # 策略级：策略自身可用资金 = 初始资金 + 盈亏（主显示）
+        "avail_balance": round(strategy_avail, 2) if strategy_avail is not None else None,
+        "strategy_avail": round(strategy_avail, 2) if strategy_avail is not None else None,
+        # 账户级：OKX 账户可用保证金（参考显示，标注"账户可用保证金"）
+        "account_avail": round(account_avail, 2) if account_avail is not None else None,
+        "account_total_eq": round(account_total_eq, 2) if account_total_eq is not None else None,
+        # 向后兼容：旧 avail_balance 已改为策略级口径，而非账户级
         "total_pnl": round(total_pnl, 2) if total_pnl is not None else None,
         "pnl_pct": round(pnl_pct, 2) if pnl_pct is not None else None,
         "realized_pnl": round(realized_pnl, 2) if realized_pnl is not None else None,

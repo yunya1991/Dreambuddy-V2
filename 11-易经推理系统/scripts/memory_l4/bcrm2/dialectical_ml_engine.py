@@ -976,6 +976,129 @@ class DialecticalMLEngine:
         return self.predict(X_row.reshape(1, -1), with_gua=with_gua, df=df)[0]
 
     # --------------------------------------------------------
+    # Phase C (Spec §4.3.1): 多 horizon 训练 / 预测
+    # --------------------------------------------------------
+
+    def fit_multi_horizon(
+        self,
+        X: np.ndarray,
+        labels_by_horizon: Dict[int, np.ndarray],
+        horizons: List[int],
+    ) -> Dict:
+        """对每个 horizon h 独立训练 L1 模型（Spec §4.3.3）。
+
+        模型缓存 Key 加 horizon_h 后缀：self._multi_horizon_models[h] = model
+
+        Args:
+            X: 特征矩阵 (n_samples, n_features)
+            labels_by_horizon: {h: y_h} 其中 y_h ∈ {0,1}（0=DOWN, 1=UP），
+                               来自 triple_barrier_labels(multi_horizons=...) 的 label 列
+            horizons: horizon 列表，如 [1,2,3,6,10,20,30]
+
+        Returns:
+            训练报告 {h: {"train_accuracy": float, "n_samples": int}}
+        """
+        lgb = _get_lgb()
+        if not hasattr(self, "_multi_horizon_models"):
+            self._multi_horizon_models = {}
+
+        report = {}
+        for h in horizons:
+            y_h = labels_by_horizon.get(h)
+            if y_h is None or len(y_h) == 0:
+                continue
+
+            # 过滤 label=0（方向不明）的样本，只训练有明确方向的
+            mask = y_h != 0
+            X_h = X[mask]
+            y_binary = (y_h[mask] > 0).astype(int)  # +1→1(UP), -1→0(DOWN)
+
+            if len(X_h) < 30 or len(np.unique(y_binary)) < 2:
+                report[h] = {"train_accuracy": 0.0, "n_samples": int(len(X_h)),
+                             "note": "insufficient samples, skipped"}
+                continue
+
+            model_h = lgb.LGBMClassifier(**self.l1_params)
+            model_h.fit(X_h, y_binary)
+            pred_h = model_h.predict(X_h)
+            acc = float((pred_h == y_binary).mean())
+
+            self._multi_horizon_models[h] = model_h
+            report[h] = {"train_accuracy": round(acc, 4), "n_samples": int(len(X_h))}
+
+        return report
+
+    def predict_multi_horizon(
+        self,
+        X: np.ndarray,
+        horizons: List[int],
+    ) -> Dict:
+        """多 horizon 预测（Spec §4.3.1）。
+
+        对每个 horizon h 的独立模型做预测，返回 P_up(h) / P_down(h) 概率对。
+
+        Returns:
+            {
+                "direction": "UP"|"DOWN",
+                "final_confidence": float,
+                "multi_horizon": {
+                    1:  {"P_up": 0.52, "P_down": 0.48},
+                    2:  {"P_up": 0.58, "P_down": 0.42},
+                    ...
+                }
+            }
+        """
+        models = getattr(self, "_multi_horizon_models", {})
+        multi_horizon = {}
+
+        # 主模型（单 horizon）用于 fallback 和主方向
+        l1_pred_dir = 1  # 默认 UP
+        l1_conf = 0.5
+
+        for h in horizons:
+            if h in models:
+                model_h = models[h]
+                proba = self._predict_proba(model_h, X)
+                # 二分类: proba shape = (n, 2), 列 0=DOWN, 列 1=UP
+                if proba.shape[1] >= 2:
+                    p_up = float(proba[0, 1])
+                    p_down = float(proba[0, 0])
+                else:
+                    p_up = float(proba[0])
+                    p_down = 1.0 - p_up
+                multi_horizon[h] = {"P_up": round(p_up, 4), "P_down": round(p_down, 4)}
+            elif self.l1_model is not None:
+                # Fallback: 用主模型概率，按 horizon 衰减
+                proba = self._predict_proba(self.l1_model, X)
+                p_up = float(proba[0, 1]) if proba.shape[1] >= 2 else float(proba[0])
+                p_down = 1.0 - p_up
+                # 简单衰减：越远 horizon 越趋近 0.5
+                decay = 0.85 ** min(h, 30)
+                p_up_adj = 0.5 + (p_up - 0.5) * decay
+                p_down_adj = 1.0 - p_up_adj
+                multi_horizon[h] = {"P_up": round(p_up_adj, 4), "P_down": round(p_down_adj, 4)}
+                l1_pred_dir = 1 if p_up >= 0.5 else 0
+                l1_conf = max(p_up, p_down)
+            else:
+                multi_horizon[h] = {"P_up": 0.5, "P_down": 0.5}
+
+        # 主方向 = 最大 horizon 的方向（远期最稳定）
+        if horizons and multi_horizon:
+            last_h = max(multi_horizon.keys())
+            p_up_last = multi_horizon[last_h]["P_up"]
+            direction = "UP" if p_up_last >= 0.5 else "DOWN"
+            final_confidence = max(p_up_last, 1.0 - p_up_last)
+        else:
+            direction = "UP" if l1_pred_dir == 1 else "DOWN"
+            final_confidence = l1_conf
+
+        return {
+            "direction": direction,
+            "final_confidence": round(final_confidence, 4),
+            "multi_horizon": multi_horizon,
+        }
+
+    # --------------------------------------------------------
     # 模型保存/加载
     # --------------------------------------------------------
 
@@ -1006,6 +1129,21 @@ class DialecticalMLEngine:
 
             with open(os.path.join(dir_path, "model_meta.json"), "w", encoding="utf-8") as f:
                 json.dump(meta, f, indent=2, ensure_ascii=False)
+
+            # Phase C (Spec §4.3.3): 持久化多 horizon 独立模型
+            mh_models = getattr(self, "_multi_horizon_models", {})
+            if mh_models:
+                mh_dir = os.path.join(dir_path, "multi_horizon")
+                os.makedirs(mh_dir, exist_ok=True)
+                mh_meta = {"horizons": sorted([int(h) for h in mh_models.keys()])}
+                for h, m in mh_models.items():
+                    try:
+                        m.booster_.save_model(os.path.join(mh_dir, f"h{h}_model.txt"))
+                    except Exception:
+                        pass
+                with open(os.path.join(mh_dir, "mh_meta.json"), "w", encoding="utf-8") as f:
+                    json.dump(mh_meta, f)
+
             return True
         except Exception:
             return False
@@ -1040,6 +1178,24 @@ class DialecticalMLEngine:
             l2_path = os.path.join(dir_path, "l2_model.txt")
             if os.path.exists(l2_path):
                 self.l2_model = lgb.Booster(model_file=l2_path)
+
+            # Phase C (Spec §4.3.3): 恢复多 horizon 独立模型
+            mh_dir = os.path.join(dir_path, "multi_horizon")
+            mh_meta_path = os.path.join(mh_dir, "mh_meta.json")
+            if os.path.exists(mh_meta_path):
+                try:
+                    with open(mh_meta_path, "r", encoding="utf-8") as f:
+                        mh_meta = json.load(f)
+                    self._multi_horizon_models = {}
+                    for h in mh_meta.get("horizons", []):
+                        hp = os.path.join(mh_dir, f"h{h}_model.txt")
+                        if os.path.exists(hp):
+                            try:
+                                self._multi_horizon_models[int(h)] = lgb.Booster(model_file=hp)
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
 
             return True
         except Exception:
