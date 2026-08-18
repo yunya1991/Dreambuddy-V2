@@ -4,11 +4,14 @@ A9 离场决策模块 — 16-调控系统 Phase 2
 基于 A1/A2/A3 宏观战略分析，对每个持仓进行四态离场评估：
 CLOSE / REDUCE / HOLD / RAISE_TP
 
-四层决策链：
+五层决策链：
   Layer 1: 战略方向一致性检查
   Layer 2: 置信度加权
   Layer 3: 市场状态修正
   Layer 4: 最终合成 + 紧急度评级
+  Layer 5: 资金压力调整（v2.1 二期，phase2.enabled 时生效）
+           - 资金压力 HIGH 时 RAISE_TP → HOLD（阻断激进止盈上移）
+           - 置信度 × confidence_multiplier（默认 0.8）
 """
 
 import math
@@ -28,10 +31,11 @@ def a9_exit_decision_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
     a2_result = inputs.get("a2_result", {})
     a3_result = inputs.get("a3_result", {})
     market = inputs.get("market", {})
+    capital_advice = inputs.get("capital_advice", {}) or {}
 
     evaluations = []
     for pos in positions:
-        ev = _evaluate_single_position(pos, a1_result, a2_result, a3_result, market)
+        ev = _evaluate_single_position(pos, a1_result, a2_result, a3_result, market, capital_advice)
         evaluations.append(ev)
 
     stats = _calc_stats(evaluations)
@@ -44,6 +48,7 @@ def a9_exit_decision_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
             "layer2_confidence_weighting": "A2 path_confidence weight",
             "layer3_regime_correction": "market regime adjustment",
             "layer4_final_synthesis": "urgency + final action",
+            "layer5_capital_adjustment": "capital pressure adjustment (HIGH→RAISE_TP blocked, confidence×mult)",
         },
     }
 
@@ -54,7 +59,10 @@ def _evaluate_single_position(
     a2: Dict,
     a3: Dict,
     market: Dict,
+    capital_advice: Dict[str, Any] = None,
 ) -> Dict:
+    if capital_advice is None:
+        capital_advice = {}
     direction = position.get("direction", "UNKNOWN").upper()
     unrealized_pnl = float(position.get("unrealized_pnl", 0))
     entry_price = float(position.get("entry_price", 0))
@@ -102,10 +110,49 @@ def _evaluate_single_position(
 
     action, urgency = _score_to_action(final_score, direction, trend_phase, unrealized_pnl, entry_price)
 
+    # ---- Layer 5: 资金压力调整（v2.1 二期） ----
+    system_name = position.get("system", "")
+    advice = capital_advice.get(system_name) if capital_advice else None
+    original_action = action
+    original_confidence = path_confidence
+    final_confidence = path_confidence
+    layer5_adjusted = False
+    layer5_detail: Dict[str, Any] = {
+        "capital_advice_present": advice is not None,
+    }
+
+    if advice:
+        pressure = advice.get("margin_pressure", "LOW")
+        phase2_on = bool(advice.get("phase2_enabled", False))
+        layer5_detail["margin_pressure"] = pressure
+        layer5_detail["phase2_enabled"] = phase2_on
+        layer5_detail["used_pct"] = advice.get("used_pct", 0.0)
+        layer5_detail["total_eq"] = advice.get("total_eq", 0.0)
+
+        if phase2_on and pressure == "HIGH":
+            conf_mult = float(advice.get("confidence_multiplier", 0.8))
+            blocked_actions = set(advice.get("blocked_actions", []))
+            # 1. RAISE_TP → HOLD（阻断激进止盈上移）
+            if action == "RAISE_TP" and "RAISE_TP" in blocked_actions:
+                action = "HOLD"
+                layer5_adjusted = True
+                layer5_detail["action_adjustment"] = "RAISE_TP→HOLD"
+            # 2. 置信度 × multiplier（高压时降低所有信号置信度）
+            final_confidence = path_confidence * conf_mult
+            layer5_adjusted = True
+            layer5_detail["confidence_multiplier"] = conf_mult
+            layer5_detail["original_confidence"] = round(original_confidence, 3)
+
+    layer5_detail["adjusted"] = layer5_adjusted
+    layer5_detail["final_confidence"] = round(final_confidence, 3)
+    # ---- Layer 5 end ----
+
     reason = _generate_reason(
         action, direction, strategy_direction, least_resistance,
         path_confidence, regime, trend_phase, unrealized_pnl,
     )
+    if layer5_adjusted:
+        reason += " | Layer5 资金压力调整生效"
 
     current_price = entry_price * (1 + unrealized_pnl / 100) if entry_price > 0 else 0
 
@@ -134,7 +181,7 @@ def _evaluate_single_position(
         "recommended_action": action,
         "reason": reason,
         "urgency": urgency,
-        "confidence": round(path_confidence, 2),
+        "confidence": round(final_confidence, 2),
         "scoring": {
             "alignment_score": round(alignment_score, 3),
             "lr_alignment": round(lr_alignment, 3),
@@ -164,9 +211,10 @@ def _evaluate_single_position(
             },
             "layer4_synthesis": {
                 "final_score": round(final_score, 3),
-                "action": action,
+                "action": original_action,
                 "urgency": urgency,
             },
+            "layer5_capital_adjustment": layer5_detail,
         },
     }
 

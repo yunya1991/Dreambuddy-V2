@@ -399,14 +399,281 @@ def build_dataset(
     return paths
 
 
+# ================================================================
+# 真实 OKX K 线数据集生成（滑窗采样）
+# ================================================================
+def _fetch_real_1h_klines(coin: str, limit: int = 1500) -> List[Dict[str, float]]:
+    """从 OKX 公开 API 翻页拉取真实 1H K 线，标准化为 {o,h,l,c,v} 格式
+
+    OKX /api/v5/market/candles 单次上限 300 根，用 before 参数向前翻页。
+    返回按时间正序排列。
+    """
+    import json as _json
+    import urllib.request
+    inst_id = f"{coin}-USDT"
+    batch = 300  # OKX 单次上限
+    seen_ts = set()
+    all_candles: List[Dict[str, float]] = []
+    before = None  # 翻页游标（最早一根的 ts）
+    url_base = "https://www.okx.com/api/v5/market/candles"
+    while len(all_candles) < limit:
+        params = f"?instId={inst_id}&bar=1H&limit={batch}"
+        if before:
+            params += f"&before={before}"
+        try:
+            req = urllib.request.Request(url_base + params, headers={"User-Agent": "V15-DatasetGen/1.0"})
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                r = _json.loads(resp.read().decode("utf-8"))
+        except Exception as e:
+            if all_candles:
+                print(f"[dataset] {coin} 翻页中断 ({e}), 已获取 {len(all_candles)} 根")
+                break
+            raise RuntimeError(f"OKX API {coin} 失败: {e}")
+        if r.get("code") != "0":
+            if all_candles:
+                break
+            raise RuntimeError(f"OKX API {coin} 错误: {r.get('msg')}")
+        data = r.get("data", [])
+        if not data:
+            break
+        new_added = 0
+        for d in data:
+            ts = int(d[0])
+            if ts in seen_ts:
+                continue
+            seen_ts.add(ts)
+            all_candles.append({
+                "o": float(d[1]), "h": float(d[2]),
+                "l": float(d[3]), "c": float(d[4]),
+                "v": float(d[5]),
+            })
+            new_added += 1
+        before = data[-1][0]  # 最早一根的 ts 作为下一页游标
+        if new_added == 0 or len(data) < batch:
+            break
+    # OKX 返回倒序（最新在前），append 后列表为 [最新...最早]，reverse 成正序 [最早...最新]
+    all_candles.reverse()
+    return all_candles[:limit]
+
+
+def _build_sample_from_1h_candles(
+    candles_1h: List[Dict[str, float]],
+    coin: str,
+    start_1h_idx: int,
+    seed: int = 42,
+    ann_vol_hint: float = 0.6,
+):
+    """从 1H K 线序列的 start_1h_idx 起点构造单条样本（合成/真实通用）
+
+    BiLSTM 输入: start_1h_idx 之前 240 根 1H 聚合成 60 根 4H
+    PatchTST 输入: start_1h_idx 之前 120 根 1H
+    标签: 从 start_1h_idx 开始模拟马丁 → (bust, maxdd)
+    """
+    # 4H 聚合（start_1h_idx 之前 240 根 1H = 60 根 4H）
+    hist_1h_for_4h = candles_1h[max(0, start_1h_idx - 240):start_1h_idx]
+    candles_4h: List[Dict[str, float]] = []
+    for i in range(0, len(hist_1h_for_4h) - 3, 4):
+        b1, b2, b3, b4 = hist_1h_for_4h[i:i + 4]
+        candles_4h.append({
+            "o": b1["o"], "h": max(b1["h"], b2["h"], b3["h"], b4["h"]),
+            "l": min(b1["l"], b2["l"], b3["l"], b4["l"]),
+            "c": b4["c"], "v": b1["v"] + b2["v"] + b3["v"] + b4["v"],
+        })
+    if len(candles_4h) < BI_LSTM_4H_LEN:
+        pad = [candles_4h[0]] * (BI_LSTM_4H_LEN - len(candles_4h)) if candles_4h else \
+            [{"o": 1.0, "h": 1.0, "l": 1.0, "c": 1.0, "v": 0.0}] * BI_LSTM_4H_LEN
+        candles_4h = pad + candles_4h
+    take4h = candles_4h[-BI_LSTM_4H_LEN:]
+    ohlcv_4h = np.array(
+        [[b["o"], b["h"], b["l"], b["c"], b["v"]] for b in take4h],
+        dtype=np.float32,
+    )
+
+    # PatchTST 输入 120×5 (1H)
+    p_start = start_1h_idx - PATCHTST_1H_LEN
+    p_slice = candles_1h[max(0, p_start):start_1h_idx]
+    if len(p_slice) < PATCHTST_1H_LEN:
+        pad = [p_slice[0]] * (PATCHTST_1H_LEN - len(p_slice)) if p_slice else \
+            [{"o": 1.0, "h": 1.0, "l": 1.0, "c": 1.0, "v": 0.0}] * PATCHTST_1H_LEN
+        p_slice = pad + p_slice
+    patchtst_in = np.array(
+        [[b["o"], b["h"], b["l"], b["c"], b["v"]] for b in p_slice[-PATCHTST_1H_LEN:]],
+        dtype=np.float32,
+    )
+
+    # 标量特征
+    closes_4h = [b["c"] for b in take4h]
+    closes_1h_last30 = [b["c"] for b in candles_1h[max(0, start_1h_idx - 30 * 24):start_1h_idx]]
+    if len(closes_1h_last30) < 30:
+        closes_1h_last30 = list(closes_4h)
+    atr_14 = _atr_from_ohlcv(
+        [{"h": h, "l": l, "c": c} for h, l, c in zip(
+            ohlcv_4h[:, 1], ohlcv_4h[:, 2], ohlcv_4h[:, 3]
+        )], p=14,
+    )
+    price_now = closes_4h[-1] if closes_4h else 1.0
+    atrs_rolling = []
+    for w in range(max(0, len(closes_4h) - 60), len(closes_4h)):
+        seg = take4h[max(0, w - 15): w + 1]
+        if len(seg) >= 14:
+            atrs_rolling.append(_atr_from_ohlcv(seg, 14))
+    atr_z = (atr_14 - (sum(atrs_rolling) / len(atrs_rolling) if atrs_rolling else atr_14)) / (
+        1e-6 + (float(np.std(atrs_rolling)) if atrs_rolling else 1.0)
+    )
+    atr_z = max(-3.0, min(3.0, atr_z))
+    rets = [
+        math.log(closes_1h_last30[i] / closes_1h_last30[i - 1])
+        for i in range(1, len(closes_1h_last30))
+        if closes_1h_last30[i - 1] > 0
+    ]
+    vol_30 = float(np.std(rets)) * math.sqrt(365) if len(rets) >= 10 else ann_vol_hint
+    vol_z = min(2.5, max(-2.5, (vol_30 - ann_vol_hint) / max(ann_vol_hint * 0.3, 1e-4)))
+
+    # 标签
+    label_bust, label_maxdd = _simulate_martingale_labels(
+        candles_1h, start_idx=start_1h_idx, max_addons=4,
+        addon_budgets=(5.0, 10.0, 20.0, 35.0),
+    )
+    rng = random.Random(seed)
+    level = rng.randint(0, 2) if label_bust == 0 else rng.randint(2, 4)
+    pnl_pct = rng.uniform(-0.02, 0.01) if level == 0 else rng.uniform(-0.08 * level, -0.01 * level)
+
+    bilstm_in = {
+        "ohlcv": ohlcv_4h,
+        "scalar_features": np.array(
+            [float(level) / 4.0, pnl_pct, atr_z / 3.0, vol_z / 2.5, 0.70, 0.65, 0.75],
+            dtype=np.float32,
+        ),
+        "_meta": {
+            "coin": coin, "seed": seed,
+            "start_price": price_now, "vol_30_ann": vol_30, "atr_14": atr_14,
+            "level": level, "pnl_pct": pnl_pct,
+        },
+    }
+    return (bilstm_in, patchtst_in, int(label_bust), float(label_maxdd))
+
+
+def build_dataset_from_real(
+    coins: List[str] = None,
+    limit_1h: int = 1500,
+    samples_per_coin: int = 50,
+    seed: int = 42,
+    walk_forward_segments: int = 5,
+    out_dir: str | Path = "data/ai_datasets",
+    progress: bool = True,
+) -> Dict[str, Path]:
+    """从真实 OKX K 线生成数据集（每币种滑窗采样）"""
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    coins = coins or DEFAULT_COINS
+
+    meta = {
+        "source": "real_okx",
+        "BI_LSTM_4H_LEN": BI_LSTM_4H_LEN,
+        "PATCHTST_1H_LEN": PATCHTST_1H_LEN,
+        "PATCHTST_HORIZON": PATCHTST_HORIZON,
+        "coins": coins,
+        "limit_1h": limit_1h,
+        "samples_per_coin": samples_per_coin,
+        "wf_segments": walk_forward_segments,
+        "seed": seed,
+    }
+
+    all_samples = []
+    for coin in coins:
+        try:
+            candles_1h = _fetch_real_1h_klines(coin, limit=limit_1h)
+        except Exception as e:
+            print(f"[dataset] {coin} 拉取失败: {e}")
+            continue
+        if len(candles_1h) < PATCHTST_1H_LEN + 24 * 14 + 72:
+            print(f"[dataset] {coin} 数据不足 ({len(candles_1h)} 根), 跳过")
+            continue
+        # 采样起点范围：前留 240 (BiLSTM 4H 历史) + 72 (缓冲), 后留 24*14 (标签 horizon)
+        min_start = 240 + 72
+        max_start = len(candles_1h) - 24 * 14 - 1
+        if max_start <= min_start:
+            print(f"[dataset] {coin} 可采样范围不足, 跳过")
+            continue
+        step = max(1, (max_start - min_start) // samples_per_coin)
+        n_done = 0
+        for s_idx, start in enumerate(range(min_start, max_start, step)):
+            if n_done >= samples_per_coin:
+                break
+            try:
+                sample = _build_sample_from_1h_candles(
+                    candles_1h, coin, start, seed=seed + s_idx,
+                )
+                all_samples.append(sample)
+                n_done += 1
+            except Exception:
+                continue
+        if progress:
+            print(f"[dataset] {coin}: 采样 {n_done} 条 (共 {len(candles_1h)} 根 1H)")
+
+    if not all_samples:
+        raise RuntimeError("真实 K 线数据集生成失败：无有效样本")
+
+    # WF 切分（同 build_dataset 逻辑）
+    seg_size = len(all_samples) // walk_forward_segments
+    paths: Dict[str, Path] = {}
+    for seg_i in range(walk_forward_segments):
+        start = seg_i * seg_size
+        end = start + seg_size if seg_i < walk_forward_segments - 1 else len(all_samples)
+        seg = all_samples[start:end]
+        train_part = all_samples[:start]
+        if not train_part:
+            train_part = all_samples[end:]
+        data_tr = _collate(train_part)
+        data_te = _collate(seg)
+        tr_path = out_dir / f"phase_d_train_wf{seg_i+1}.npz"
+        te_path = out_dir / f"phase_d_test_wf{seg_i+1}.npz"
+        np.savez_compressed(tr_path, **data_tr)
+        np.savez_compressed(te_path, **data_te)
+        paths[f"wf{seg_i+1}_train"] = tr_path
+        paths[f"wf{seg_i+1}_test"] = te_path
+
+    rng = random.Random(seed + 10_000)
+    idx = list(range(len(all_samples)))
+    rng.shuffle(idx)
+    cut = int(0.9 * len(idx))
+    tr = _collate([all_samples[i] for i in idx[:cut]])
+    te = _collate([all_samples[i] for i in idx[cut:]])
+    tr_all = out_dir / "phase_d_train_all.npz"
+    te_all = out_dir / "phase_d_test_all.npz"
+    np.savez_compressed(tr_all, **tr)
+    np.savez_compressed(te_all, **te)
+    paths["train_all"] = tr_all
+    paths["test_all"] = te_all
+
+    (out_dir / "phase_d_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
+    paths["meta"] = out_dir / "phase_d_meta.json"
+    print(f"[dataset] 总样本数: {len(all_samples)}")
+    return paths
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser("phase_d_dataset_generator")
-    ap.add_argument("--n-trajectories", type=int, default=1200)
+    ap.add_argument("--source", choices=["synthetic", "real"], default="real",
+                    help="数据源: real=真实OKX K线, synthetic=合成GBM")
+    ap.add_argument("--n-trajectories", type=int, default=1200,
+                    help="合成模式样本数")
+    ap.add_argument("--limit-1h", type=int, default=1500,
+                    help="真实模式每币种拉取 1H K 线数")
+    ap.add_argument("--samples-per-coin", type=int, default=50,
+                    help="真实模式每币种采样起点数")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out-dir", type=str, default="data/ai_datasets")
     ap.add_argument("--wf", type=int, default=5)
     args = ap.parse_args(argv)
-    paths = build_dataset(args.n_trajectories, args.seed, args.wf, args.out_dir)
+    if args.source == "real":
+        paths = build_dataset_from_real(
+            coins=DEFAULT_COINS, limit_1h=args.limit_1h,
+            samples_per_coin=args.samples_per_coin, seed=args.seed,
+            walk_forward_segments=args.wf, out_dir=args.out_dir,
+        )
+    else:
+        paths = build_dataset(args.n_trajectories, args.seed, args.wf, args.out_dir)
     for k, v in paths.items():
         print(f"{k:20s}  {v}")
 

@@ -2464,7 +2464,6 @@ def run_backtest(
                             position["total_cost"] -= reduce_cost
                             position["total_size"] *= 1 - reduce_frac
                         # hold: 不做任何操作
-
                     except Exception:
                         # 降级：超时直接平仓
                         hit_time_exit = True

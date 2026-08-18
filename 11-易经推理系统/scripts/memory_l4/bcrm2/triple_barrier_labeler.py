@@ -39,7 +39,8 @@ def triple_barrier_labels(
     atr_period: int = 14,         # ATR周期
     atr_multiplier_tp: float = 3.0,  # 止盈ATR倍数
     atr_multiplier_sl: float = 2.0,  # 止损ATR倍数
-) -> pd.DataFrame:
+    multi_horizons: Optional[List[int]] = None,  # Phase C: 多 horizon 并行标注
+) -> pd.DataFrame | Dict[int, pd.DataFrame]:
     """
     三重障碍标注 (Triple Barrier Method)
 
@@ -57,15 +58,17 @@ def triple_barrier_labels(
         atr_period: ATR周期
         atr_multiplier_tp: 止盈的ATR倍数
         atr_multiplier_sl: 止损的ATR倍数
+        multi_horizons: Phase C (Spec §4.3.1) — 传入 [1,2,3,6,10,20,30] 时，
+            对每个 horizon h 独立运行 triple_barrier(max_bars=h)，返回
+            Dict[int, pd.DataFrame]（key=horizon, value=该 horizon 的标注 DataFrame）。
+            传入 None 时保持旧行为（返回单个 DataFrame）。
 
     Returns:
-        DataFrame with columns:
-        - label: 三重障碍标签 (-1/0/1)
-        - barrier_hit: 触碰的障碍 ('tp'/'sl'/'time')
-        - hit_bar: 触碰障碍的bar索引 (相对入场)
-        - tp_price: 上障价格
-        - sl_price: 下障价格
-        - return_pct: 持有到期的收益率
+        当 multi_horizons=None: DataFrame with columns:
+            label, barrier_hit, hit_bar, tp_price, sl_price, return_pct
+
+        当 multi_horizons=[h1,h2,...]: Dict[int, DataFrame]，
+            key=horizon h, value=该 horizon 的标注 DataFrame（列同上）。
     """
     close = df["close"].values
     high = df["high"].values
@@ -160,6 +163,19 @@ def triple_barrier_labels(
         "sl_price": sl_prices,
         "return_pct": returns_pct,
     }, index=df.index)
+
+    # Phase C (Spec §4.3.1): 多 horizon 并行标注
+    if multi_horizons is not None:
+        return {
+            h: triple_barrier_labels(
+                df, tp_factor=tp_factor, sl_factor=sl_factor,
+                max_bars=h, use_atr=use_atr, atr_period=atr_period,
+                atr_multiplier_tp=atr_multiplier_tp,
+                atr_multiplier_sl=atr_multiplier_sl,
+                multi_horizons=None,  # 防递归
+            )
+            for h in multi_horizons
+        }
 
     return result
 

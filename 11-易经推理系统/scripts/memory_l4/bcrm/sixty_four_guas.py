@@ -1095,8 +1095,8 @@ SIXTY_FOUR_GUAS = {
     },
     "lv": {
         "name_cn": "火山旅",
-        "inner_gua": "li",
-        "outer_gua": "gen",
+        "inner_gua": "gen",
+        "outer_gua": "li",
         "gua_ci": "旅：小亨，旅贞吉。",
         "tuan_zhuan": "旅，小亨。柔得中乎外而顺乎刚，止而丽乎明。",
         "xiang_zhuan": "山上有火，旅；君子以明慎用刑，而不留狱。",
@@ -1195,8 +1195,8 @@ SIXTY_FOUR_GUAS = {
     },
     "bi_gua": {
         "name_cn": "山火贲",
-        "inner_gua": "gen",
-        "outer_gua": "li",
+        "inner_gua": "li",
+        "outer_gua": "gen",
         "gua_ci": "贲：亨。小利有攸往。",
         "tuan_zhuan": "贲亨，柔来而文刚，故亨。",
         "xiang_zhuan": "山下有火，贲；君子以明庶政，无敢折狱。",

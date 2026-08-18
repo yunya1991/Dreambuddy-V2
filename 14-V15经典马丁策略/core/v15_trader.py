@@ -195,7 +195,14 @@ def _get_phase_d_gateway():
     try:
         from phase_d_gateway import PhaseDGateway
 
-        _PHASE_D_GW_SINGLETON = PhaseDGateway(enabled=True)
+        _bilstm_path = str(BASE_DIR / "data" / "phase_d_models_v1" / "bilstm.pt")
+        _patchtst_path = str(BASE_DIR / "data" / "phase_d_models_v1" / "patchtst.pt")
+        _PHASE_D_GW_SINGLETON = PhaseDGateway(
+            enabled=True,
+            bilstm_model_path=_bilstm_path,
+            patchtst_model_path=_patchtst_path,
+        )
+        _log(f"[Phase-D] Gateway 已加载: BiLSTM={_bilstm_path}, PatchTST={_patchtst_path}")
         return _PHASE_D_GW_SINGLETON
     except Exception as _e:
         _log(f"[Phase-D] Gateway 初始化失败(降级为None=基线): {_e}")
@@ -213,10 +220,12 @@ def _get_phase_e_gateway():
     try:
         from phase_e_gateway import PhaseEGateway
 
+        _ppo_path = str(BASE_DIR / "data" / "phase_e_models_v1" / "ppo_lstm.pt")
         _PHASE_E_GW_SINGLETON = PhaseEGateway(
             enabled=True,
-            ppo_model_path=V15_AI_PHASE_E_MODEL_PATH or None,
+            ppo_model_path=_ppo_path,
         )
+        _log(f"[Phase-E] Gateway 已加载: PPO={_ppo_path}")
         return _PHASE_E_GW_SINGLETON
     except Exception as _e:
         _log(f"[Phase-E] Gateway 初始化失败(降级为None=基线): {_e}")
@@ -284,6 +293,13 @@ def _phase_d_heuristic_p_bust(klines_4h, params: dict, direction: str) -> float:
         atr_sum += tr
     atr_pct = (atr_sum / n) / max(1e-9, closes[-1])
     elder = params.get("elder_ray", 0) if isinstance(params, dict) else 0
+    # elder_ray 可能是 dict（如 {bull_bars_pct, bear_bars_pct, avg_bull, avg_bear, score, state}），安全取标量
+    if isinstance(elder, dict):
+        elder = float(elder.get("score") or elder.get("value") or elder.get("bull_bars_pct") or 0)
+    try:
+        elder = float(elder)
+    except (TypeError, ValueError):
+        elder = 0.0
     # 方向冲突：做多但 elder<0 或 做空但 elder>0 → 恶化爆仓风险
     direction_ok = (direction == "LONG" and elder >= 0) or (direction == "SHORT" and elder <= 0)
     risk = (dd12 * 0.55) + (atr_pct * 0.25) + (0.0 if direction_ok else 0.20)
@@ -1061,15 +1077,29 @@ def _get_direction_ctx(coin):
                     if _pd_gw2 is not None:
                         try:
                             # 用 PatchTST 启发式 dd24h 估计作为"未来高波动 → 放宽入场评分"的信号
-                            _pd_klines_1h = [
+                            _pd_klines_1h_raw = params.get("klines_1h", [])
+                            _pd_klines_1h_close = [
                                 float(k["c"]) if isinstance(k, dict) and "c" in k else (float(k[4]) if isinstance(k, (list, tuple)) and len(k) >= 5 else None)
-                                for k in params.get("klines_1h", [])
+                                for k in _pd_klines_1h_raw
                             ]
-                            _pd_klines_1h = [v for v in _pd_klines_1h if v is not None]
-                            _pd_dd24h = _phase_d_heuristic_dd24h(_pd_klines_1h)
+                            _pd_klines_1h_close = [v for v in _pd_klines_1h_close if v is not None]
+                            _pd_dd24h = _phase_d_heuristic_dd24h(_pd_klines_1h_close)
                             _pd_old_score = ctx["timing_score"]
                             _pd_regime = str(tres.structure.kind if tres.structure else "UNCLEAR")
-                            _pd_ctx3 = {"p_bust": _phase_d_p_bust or 0.0, "p_dd": _pd_dd24h}
+                            # G-D3 在 TimingGate 作用域内，没有 execute_open_position 里的 _phase_d_p_bust 变量
+                            # 优先从 ctx 读，缺失用 heuristic 估算（与 G-D1 口径一致）
+                            _pd_p_bust_for_ctx = float(
+                                ctx.get("ai_p_bust")
+                                if ctx.get("ai_p_bust") is not None
+                                else _phase_d_heuristic_p_bust(params.get("klines_4h"), params, "LONG")
+                            )
+                            _pd_ctx3 = {
+                                "p_bust": _pd_p_bust_for_ctx,
+                                "p_dd": _pd_dd24h,
+                                "klines_4h": params.get("klines_4h", []),
+                                "klines_1h": _pd_klines_1h_raw,
+                                "level": 0, "pnl_pct": 0.0,
+                            }
                             _new_score, _new_power = _pd_gw2.apply_timing_relaxation(
                                 coin, _pd_old_score, V15_TIMING_SIZE_POWER, _pd_regime, ctx=_pd_ctx3
                             )
@@ -1283,33 +1313,51 @@ def execute_open_position(client, coin, decision, state):
         try:
             # 预取 dynamic params 里的 klines_4h / elder_ray 用于构造预估（不影响后续 params 取数）
             _pd_params = _get_dynamic_params(client, coin, direction)
+            _pd_klines_4h = _pd_params.get("klines_4h", [])
+            # 获取 1H K 线（PatchTST 推理需要 120 根）
+            try:
+                from strategy_params import fetch_klines
+                _pd_klines_1h = fetch_klines(client, to_swap(coin), "1H", 150)
+            except Exception:
+                _pd_klines_1h = []
             _phase_d_p_bust = _phase_d_heuristic_p_bust(
-                _pd_params.get("klines_4h"), _pd_params, direction
+                _pd_klines_4h, _pd_params, direction
             )
             _pd_dd24h = _phase_d_heuristic_dd24h([
                 float(k["c"]) if isinstance(k, dict) and "c" in k else (float(k[4]) if isinstance(k, (list, tuple)) and len(k) >= 5 else None)
-                for k in _pd_params.get("klines_1h", [])
+                for k in _pd_klines_1h
             ])
-            # ctx dict 携带 heuristic 预估，gateway 内部 predict 函数会优先读取
-            _pd_ctx = {"p_bust": _phase_d_p_bust, "p_dd": _pd_dd24h, "coin": coin}
+            # ctx 携带 klines 供真实模型推理 + heuristic 预估作为降级兜底
+            _pd_ctx = {
+                "p_bust": _phase_d_p_bust, "p_dd": _pd_dd24h, "coin": coin,
+                "klines_4h": _pd_klines_4h, "klines_1h": _pd_klines_1h,
+                "level": 0, "pnl_pct": 0.0,
+            }
             if V15_AI_SHADOW:
                 _skip_shadow = _phase_d_gw.should_skip_open(_pd_ctx)
                 _log(
                     f"[Phase-D-SHADOW][{coin}] G-D1 bust_prob={_phase_d_p_bust:.3f} dd24h={_pd_dd24h:.3f} should_skip={_skip_shadow}（SHADOW 不生效）"
                 )
             else:
-                if _phase_d_gw.should_skip_open(_pd_ctx):
-                    _log(f"[Phase-D][{coin}] G-D1 跳过开仓: BiLSTM 爆仓概率={_phase_d_p_bust:.3f}")
+                _real_skip = _phase_d_gw.should_skip_open(_pd_ctx)
+                _log(
+                    f"[Phase-D][{coin}] G-D1 决策: skip={_real_skip}, BiLSTM P_bust={_phase_d_p_bust:.3f}, PatchTST dd24h={_pd_dd24h:.3f}, gate_code={_phase_d_gw.last_gate_code}"
+                )
+                if _real_skip:
+                    _log(f"[Phase-D][{coin}] G-D1 跳过开仓: 命中 {_phase_d_gw.last_gate_code} 闸门")
                     return False
             # G-D2：effective_max_addons 保存起来，稍后在加仓预算/网格处使用
             _addon_budgets = {f"addon{k}_usd": 0 for k in [1, 2, 3, 4]}  # 占位，实际预算在 alloc 后填入
-            _eff, _ = _phase_d_gw.compute_effective_max_addons(
+            _eff, _trimmed = _phase_d_gw.compute_effective_max_addons(
                 coin, _pd_ctx, MAX_ADDONS, _addon_budgets
             )
             _phase_d_effective_max_addons = int(_eff)
-            if _phase_d_effective_max_addons != MAX_ADDONS:
+            _log(
+                f"[Phase-D][{coin}] G-D2 决策: 基线={MAX_ADDONS} → 实际={_phase_d_effective_max_addons}, trimmed={_trimmed}, P_bust={_phase_d_p_bust:.3f}{' [SHADOW]' if V15_AI_SHADOW else ''}"
+            )
+            if _phase_d_effective_max_addons != MAX_ADDONS and V15_AI_SHADOW:
                 _log(
-                    f"[Phase-D][{coin}] G-D2 加仓档数: 基线={MAX_ADDONS} → 实际={_phase_d_effective_max_addons} (bust_prob={_phase_d_p_bust:.3f}){' [SHADOW]' if V15_AI_SHADOW else ''}"
+                    f"[Phase-D-SHADOW][{coin}] G-D2 缩档: 基线={MAX_ADDONS} → {_phase_d_effective_max_addons}（SHADOW 不生效，仍按基线执行）"
                 )
         except Exception as _pd_e:
             _log(f"[Phase-D][{coin}] G-D1/G-D2 评估异常(降级基线): {_pd_e}")
@@ -2496,6 +2544,49 @@ def check_take_profit(client, coin, pos, state):
         return False
 
 
+def _rank_signal_against_market(coin, state):
+    """超时止盈信号排名：比较当前币种与其他未持仓币种的信号强度。
+
+    用 confidence (0-100) 作为信号强度，只对 action ∈ {OPEN_BULL, OPEN_BEAR}
+    的有效开仓信号参与排名；WAIT 状态视为 0。
+
+    Returns:
+        (current_conf, best_other_coin, best_other_conf, is_current_best)
+        - is_current_best=True  → 当前币种信号最强，应继续持有
+        - is_current_best=False → 存在更强币种，应平仓换仓
+    """
+    try:
+        current_decision = get_v15_decision(coin)
+        current_conf = current_decision.get("confidence", 0)
+        if current_decision.get("action", "WAIT") not in ("OPEN_BULL", "OPEN_BEAR"):
+            current_conf = 0
+
+        held_coins = set(state.get("positions", {}).keys())
+        best_other_coin = None
+        best_other_conf = 0
+
+        for other_coin in COINS:
+            if other_coin == coin or other_coin in held_coins:
+                continue
+            try:
+                other_decision = get_v15_decision(other_coin)
+                if other_decision.get("action", "WAIT") in ("OPEN_BULL", "OPEN_BEAR"):
+                    other_conf = other_decision.get("confidence", 0)
+                    if other_conf > best_other_conf:
+                        best_other_conf = other_conf
+                        best_other_coin = other_coin
+            except Exception as e:
+                _log(f"[{coin}] 信号排名: 获取 {other_coin} 信号异常: {e}")
+                continue
+
+        is_current_best = current_conf >= best_other_conf
+        return current_conf, best_other_coin, best_other_conf, is_current_best
+    except Exception as e:
+        _log(f"[{coin}] 信号排名异常: {e}")
+        # 异常时保守处理：视为当前币种最强（不平仓）
+        return 0, None, 0, True
+
+
 def check_time_exit(client, coin, pos, state):
     """
     分层超时离场评估（V15 自有逻辑，不依赖经典离场系统）。
@@ -2505,7 +2596,7 @@ def check_time_exit(client, coin, pos, state):
       - 无加仓：从开仓(open_time)计时，过底仓超时阈值
 
     超时后 V15 自有决策：
-      - 盈利 → 提高止盈价（让利润奔跑，不超过原始止盈2倍）
+      - 盈利 → 信号排名对比：当前币种最强则延长窗口继续持有；存在更强币种则平仓换仓
       - 亏损未触发止损 → 继续持有（马丁策略允许较长持仓+较高波动）
       止损由 check_tp_sl 的动态止损线（日/周MA200）和 OCO 硬单保护
     """
@@ -2541,6 +2632,11 @@ def check_time_exit(client, coin, pos, state):
             max_hours *= holding_mult
             golden_window *= holding_mult
 
+        # 超时止盈信号排名延长窗口（time_exit_extension 累计延长小时数）
+        time_exit_extension = pos.get("time_exit_extension", 0.0)
+        if time_exit_extension > 0:
+            max_hours += time_exit_extension
+
         if base_time.tzinfo is None:
             base_time = base_time.replace(tzinfo=timezone.utc)
 
@@ -2567,19 +2663,45 @@ def check_time_exit(client, coin, pos, state):
         )
 
         if profit_pct > 0:
-            # 盈利超时：提高止盈价 50%，让利润奔跑（上限为原始止盈的2倍）
-            original_tp = pos.get("take_profit_pct", BASE_TP_PCT)
-            new_tp = original_tp * 1.5
-            capped_tp = min(new_tp, original_tp * 2.0)
-            if capped_tp > original_tp:
-                pos["take_profit_pct"] = capped_tp
-                sl_price = params.get("stop_loss_price")
-                _sync_tp_sl_orders(client, coin, pos, entry_price, capped_tp, sl_price)
+            # 超时盈利：信号排名对比决定去留
+            # - 延长上限已达 → 直接平仓（避免无限延长时间成本）
+            # - 当前币种信号最强 → 延长超时窗口继续持有（避免频繁换仓）
+            # - 存在更强币种 → 平仓止盈释放仓位（下一轮 poll 自然开新仓）
+            max_extension = get_config_float("V15_TIME_EXIT_MAX_EXTENSION_HOURS", 24.0)
+            if time_exit_extension >= max_extension:
                 _log(
-                    f"[{coin}] 超时盈利, 提高止盈 {original_tp:.2%} → {capped_tp:.2%}, OCO挂单已同步"
+                    f"[{coin}] 超时盈利 {profit_pct:+.2%}, 持仓{hold_hours:.1f}h > {max_hours:.0f}h, "
+                    f"延长上限已达 {time_exit_extension:.0f}h/{max_extension:.0f}h, "
+                    f"直接平仓止盈释放仓位"
                 )
+                _execute_close_position(client, coin, pos, state, reason="time_exit_profit_max_ext")
+                return True
+
+            # 信号排名对比（当前币种 vs 其他未持仓币种）
+            current_conf, best_other_coin, best_other_conf, is_current_best = (
+                _rank_signal_against_market(coin, state)
+            )
+
+            if is_current_best:
+                # 当前币种信号最强 → 延长超时窗口继续持有
+                step = get_config_float("V15_TIME_EXIT_EXTENSION_STEP_HOURS", 6.0)
+                pos["time_exit_extension"] = time_exit_extension + step
+                save_state(state)
+                _log(
+                    f"[{coin}] 超时盈利 {profit_pct:+.2%}, 持仓{hold_hours:.1f}h > {max_hours:.0f}h, "
+                    f"信号排名最高(conf={current_conf:.0f}), "
+                    f"延长超时窗口 +{step:.0f}h (累计 {pos['time_exit_extension']:.0f}h/{max_extension:.0f}h), 继续持有"
+                )
+                return False
             else:
-                _log(f"[{coin}] 超时盈利, 止盈已达上限 {original_tp:.2%}, 继续持有")
+                # 存在更强币种 → 平仓止盈换仓
+                _log(
+                    f"[{coin}] 超时盈利 {profit_pct:+.2%}, 持仓{hold_hours:.1f}h > {max_hours:.0f}h, "
+                    f"信号排名落后(当前 conf={current_conf:.0f} < {best_other_coin} conf={best_other_conf:.0f}), "
+                    f"平仓止盈释放仓位换更强币种"
+                )
+                _execute_close_position(client, coin, pos, state, reason="time_exit_profit_switch")
+                return True
         else:
             # 亏损超时：未触发止损线则继续持有（马丁策略允许较长持仓等反弹）
             sl_price = params.get("stop_loss_price")

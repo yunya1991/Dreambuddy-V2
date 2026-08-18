@@ -857,11 +857,22 @@ class WalkForwardBacktester:
                     position = None
 
             # 如果无持仓，检查是否开仓
-            if position is None and pred["action"] == "OPEN" and pred["direction"] != 0:
+            # engine.predict 返回 direction: 0=DOWN, 1=UP
+            # Trade 内部期望 direction: 1=long(做多), -1=short(做空)
+            # 先做方向归一化映射，避免后续 pnl 计算与统计混淆
+            raw_direction = pred.get("direction", 0)
+            if raw_direction == 1:
+                pred_dir_norm = 1   # UP → 做多
+            elif raw_direction == 0:
+                pred_dir_norm = -1  # DOWN → 做空
+            else:
+                pred_dir_norm = 0   # FLAT / 非法值
+
+            if position is None and pred["action"] == "OPEN" and pred_dir_norm != 0:
                 if bar_idx + 1 >= len(df):
                     break
 
-                direction = pred["direction"]
+                direction = pred_dir_norm  # 1=long, -1=short (统一编码)
                 confidence = pred["final_confidence"]
 
                 # ── 五角校验：开仓过滤与调整 ──

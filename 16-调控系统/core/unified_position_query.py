@@ -152,12 +152,18 @@ def _fetch_hl_positions(user_addr: str, system: str) -> Dict:
                     },
                 ))
         equity = float(data.get("marginSummary", {}).get("accountValue", 0))
+        # 资金调控：Hyperliquid 账户 extra 字段（复用 Agent A/B 已有 equity）
+        hl_extra = {
+            "account_type": "hyperliquid",
+            "fallback_used": False,
+        }
         result = _make_system_result(
             system=system,
             exchange="hyperliquid",
             positions=positions,
             status="ok",
             equity=equity,
+            extra=hl_extra,
         )
         _cache_set(cache_key, result)
         return result
@@ -168,6 +174,12 @@ def _fetch_hl_positions(user_addr: str, system: str) -> Dict:
             positions=[],
             status="error",
             error=str(e),
+            equity=0.0,
+            extra={
+                "account_type": "hyperliquid",
+                "fallback_used": True,
+                "fallback_reason": f"hyperliquid_api_failed: {e}",
+            },
         )
         return result
 
@@ -189,12 +201,25 @@ def fetch_agent_c_positions() -> Dict:
     try:
         mem_file = AB_TRADING_DIR / "data" / "agent_c_b" / "memory.json"
         if not mem_file.exists():
+            # 资金调控：即使 memory.json 缺失，仍尝试复用 Agent B equity 缓存
+            agent_b_equity = 0.0
+            try:
+                agent_b_equity = float(_fetch_hl_positions(AGENT_B_ADDR, "agent_b").get("equity", 0.0))
+            except Exception:
+                pass
             return _make_system_result(
                 system="agent_c_memory",
                 exchange="hyperliquid",
                 positions=[],
                 status="error",
                 error=f"memory.json not found: {mem_file}",
+                equity=agent_b_equity,
+                extra={
+                    "shared_equity_with": "agent_b",
+                    "account_type": "hyperliquid",
+                    "fallback_used": True,
+                    "fallback_reason": "memory_json_missing",
+                },
             )
 
         with open(mem_file) as f:
@@ -223,18 +248,36 @@ def fetch_agent_c_positions() -> Dict:
             exchange="hyperliquid",
             positions=positions,
             status="ok",
+            # 资金调控：Agent C 共用 Agent B 账户，equity 复用 Agent B 缓存（避免重复 API 调用）
+            equity=_fetch_hl_positions(AGENT_B_ADDR, "agent_b").get("equity", 0.0),
             extra={
                 "note": "Agent C 内存持仓，共用 Agent B 交易所账户",
                 "position_count_from_exchange": 0,
+                "shared_equity_with": "agent_b",
+                "account_type": "hyperliquid",
+                "fallback_used": False,
             },
         )
     except Exception as e:
+        # 失败时仍尝试复用 Agent B equity 缓存
+        agent_b_equity = 0.0
+        try:
+            agent_b_equity = float(_fetch_hl_positions(AGENT_B_ADDR, "agent_b").get("equity", 0.0))
+        except Exception:
+            pass
         return _make_system_result(
             system="agent_c_memory",
             exchange="hyperliquid",
             positions=[],
             status="error",
             error=str(e),
+            equity=agent_b_equity,
+            extra={
+                "shared_equity_with": "agent_b",
+                "account_type": "hyperliquid",
+                "fallback_used": True,
+                "fallback_reason": f"agent_c_memory_load_failed: {e}",
+            },
         )
 
 
@@ -299,19 +342,58 @@ def fetch_v15_martin_positions() -> Dict:
     base_url = config.get("OKX_BASE_URL", "https://www.okx.com") if config else "https://www.okx.com"
     simulated = config.get("OKX_SIMULATED", "true").lower() == "true" if config else True
 
+    # 资金调控：equity 字段填充（直接调用 OKX get_balance，避免依赖环境变量）
+    equity = 0.0
+    equity_extra: Dict = {}
     if api_key and secret_key and passphrase:
         try:
             import sys
             sys.path.insert(0, str(V15_DIR / "lib"))
             from okx_client import OKXSimulatedClient
+            from capital_manager import TOTAL_BUDGET as _V15_TOTAL_BUDGET
 
-            client = OKXSimulatedClient(
-                api_key=api_key,
-                secret_key=secret_key,
-                passphrase=passphrase,
-                simulated=simulated,
-                base_url=base_url,
-            )
+            # V15 OKXSimulatedClient 接受 config dict（非关键字参数）
+            client = OKXSimulatedClient(config={
+                "api_key": api_key,
+                "secret_key": secret_key,
+                "passphrase": passphrase,
+                "simulated": simulated,
+                "base_url": base_url,
+                "dry_run": False,
+            })
+
+            # 直接用已构造的 client 查询余额，填充 equity 字段
+            try:
+                bal = client.get_balance()
+                if bal.get("ok"):
+                    equity = float(bal.get("total_eq", 0))
+                    usdt = bal.get("assets", {}).get("USDT", {})
+                    equity_extra = {
+                        "avail_balance": float(usdt.get("avail", equity)),
+                        "used_margin": float(usdt.get("frozen", 0)),
+                        "account_type": "okx_live" if not simulated else "okx_simulated",
+                        "fallback_used": False,
+                    }
+                else:
+                    # API 失败时回退到 TOTAL_BUDGET 静态值
+                    equity = float(_V15_TOTAL_BUDGET)
+                    equity_extra = {
+                        "avail_balance": float(_V15_TOTAL_BUDGET),
+                        "used_margin": 0.0,
+                        "account_type": "okx_live" if not simulated else "okx_simulated",
+                        "fallback_used": True,
+                        "fallback_reason": f"okx_balance_api_failed: {bal.get('error', '')}",
+                    }
+            except Exception as bal_err:
+                # get_balance 抛异常时降级
+                equity = float(_V15_TOTAL_BUDGET)
+                equity_extra = {
+                    "avail_balance": float(_V15_TOTAL_BUDGET),
+                    "used_margin": 0.0,
+                    "account_type": "okx_live" if not simulated else "okx_simulated",
+                    "fallback_used": True,
+                    "fallback_reason": f"okx_balance_exception: {bal_err}",
+                }
 
             for coin, state_pos in state_positions.items():
                 inst_id = state_pos.get("inst_id", f"{coin}-USDT-SWAP")
@@ -334,7 +416,7 @@ def fetch_v15_martin_positions() -> Dict:
                                     unrealized_pnl=float(p.get("upl", 0)),
                                     upl_ratio=float(p.get("upl_ratio", 0)),
                                     leverage=float(p.get("lever", 0) or 0),
-                                    stop_loss=float(state_pos.get("stop_loss_price", 0)),
+                                    stop_loss=float(state_pos.get("stop_loss_price") or 0),
                                     meta={
                                         "addons": state_pos.get("addons", 0),
                                         "confidence": state_pos.get("confidence", 0),
@@ -357,10 +439,10 @@ def fetch_v15_martin_positions() -> Dict:
                 symbol=coin,
                 inst_id=state_pos.get("inst_id", f"{coin}-USDT-SWAP"),
                 direction=state_pos.get("direction", "LONG"),
-                size=float(state_pos.get("sz", 0)),
-                entry_price=float(state_pos.get("entry_price", 0)),
+                size=float(state_pos.get("sz") or 0),
+                entry_price=float(state_pos.get("entry_price") or 0),
                 exchange="okx_state_only",
-                stop_loss=float(state_pos.get("stop_loss_price", 0)),
+                stop_loss=float(state_pos.get("stop_loss_price") or 0),
                 meta={
                     "addons": state_pos.get("addons", 0),
                     "confidence": state_pos.get("confidence", 0),
@@ -369,20 +451,25 @@ def fetch_v15_martin_positions() -> Dict:
                 },
             ))
 
+    # 合并 equity_extra 与现有 extra 字段
+    merged_extra = {
+        "state_position_count": len(state_positions),
+        "api_position_count": sum(1 for p in positions if p.get("meta", {}).get("source") != "state_file_only"),
+        "simulated": simulated if api_key else "unknown",
+        "total_trades": state_data.get("total_trades", 0),
+        "total_wins": state_data.get("total_wins", 0),
+        "daily_pnl": state_data.get("daily_pnl", 0),
+        "consecutive_losses": state_data.get("consecutive_losses", 0),
+    }
+    merged_extra.update(equity_extra)
+
     result = _make_system_result(
         system="v15_martin",
         exchange="okx" if api_key else "okx_state_only",
         positions=positions,
         status="ok" if positions else ("warning" if state_positions else "ok"),
-        extra={
-            "state_position_count": len(state_positions),
-            "api_position_count": sum(1 for p in positions if p.get("meta", {}).get("source") != "state_file_only"),
-            "simulated": simulated if api_key else "unknown",
-            "total_trades": state_data.get("total_trades", 0),
-            "total_wins": state_data.get("total_wins", 0),
-            "daily_pnl": state_data.get("daily_pnl", 0),
-            "consecutive_losses": state_data.get("consecutive_losses", 0),
-        },
+        equity=equity,
+        extra=merged_extra,
     )
     if not api_key:
         result["status"] = "partial"
@@ -429,6 +516,38 @@ def fetch_yijing_positions() -> Dict:
         _cache_set(cache_key, result)
         return result
 
+    # 资金调控：equity 字段填充（复用易经 OKXSimulatedClient，simulated=True）
+    equity = 0.0
+    equity_extra: Dict = {}
+    try:
+        import sys
+        sys.path.insert(0, str(YIJING_DIR / "scripts" / "memory_l4"))
+        from okx_simulated import OKXSimulatedClient
+
+        yj_client = OKXSimulatedClient()  # 默认 simulated=True，从 .env 加载凭证
+        bal = yj_client.get_balance()
+        if bal.get("ok"):
+            equity = float(bal.get("total_eq", 0))
+            usdt = bal.get("assets", {}).get("USDT", {})
+            equity_extra = {
+                "avail_balance": float(usdt.get("avail", equity)),
+                "used_margin": float(usdt.get("frozen", 0)),
+                "account_type": "okx_simulated",
+                "fallback_used": False,
+            }
+        else:
+            equity_extra = {
+                "account_type": "okx_simulated",
+                "fallback_used": True,
+                "fallback_reason": f"okx_balance_api_failed: {bal.get('error', '')}",
+            }
+    except Exception as e:
+        equity_extra = {
+            "account_type": "okx_simulated",
+            "fallback_used": True,
+            "fallback_reason": f"okx_simulated_import_or_query_exception: {e}",
+        }
+
     try:
         for f in pos_dir.glob("*.json"):
             try:
@@ -457,15 +576,19 @@ def fetch_yijing_positions() -> Dict:
             except Exception:
                 continue
 
+        merged_extra = {
+            "data_source": "local_json",
+            "total_files": len(list(pos_dir.glob("*.json"))),
+        }
+        merged_extra.update(equity_extra)
+
         result = _make_system_result(
             system="yijing_bcrm",
             exchange="okx_simulated",
             positions=positions,
             status="ok",
-            extra={
-                "data_source": "local_json",
-                "total_files": len(list(pos_dir.glob("*.json"))),
-            },
+            equity=equity,
+            extra=merged_extra,
         )
         _cache_set(cache_key, result)
         return result
@@ -476,6 +599,8 @@ def fetch_yijing_positions() -> Dict:
             positions=[],
             status="error",
             error=str(e),
+            equity=equity,
+            extra=equity_extra,
         )
         return result
 
@@ -518,6 +643,9 @@ def fetch_three_screen_positions() -> Dict:
     positions = []
     status = "ok"
     error_msg = ""
+    # 资金调控：equity 字段填充（通过 Aster 账户摘要端点获取 totalWalletBalance）
+    equity = 0.0
+    equity_extra: Dict = {}
 
     try:
         import requests
@@ -579,9 +707,41 @@ def fetch_three_screen_positions() -> Dict:
                 },
             ))
 
+        # 资金调控：equity 字段填充（通过 Aster 账户摘要端点获取 totalWalletBalance）
+        try:
+            acct_r = requests.get(
+                f"{THREE_SCREEN_API_BASE}/execution/aster/account_summary",
+                timeout=DEFAULT_TIMEOUT,
+            )
+            if acct_r.status_code == 200:
+                acct_data = acct_r.json()
+                if acct_data.get("ok"):
+                    summary = acct_data.get("summary", {})
+                    equity = float(summary.get("totalWalletBalance", 0))
+                    equity_extra = {
+                        "avail_balance": float(summary.get("availableBalance", 0)),
+                        "used_margin": float(summary.get("totalPositionInitialMargin", 0)),
+                        "account_type": "aster",
+                        "fallback_used": False,
+                    }
+        except Exception as acct_err:
+            equity_extra = {
+                "account_type": "aster",
+                "fallback_used": True,
+                "fallback_reason": f"aster_account_summary_failed: {acct_err}",
+            }
+
     except Exception as e:
         status = "unavailable"
         error_msg = f"ml_trade_service 不可用: {str(e)}"
+
+    merged_extra = {
+        "api_endpoint": THREE_SCREEN_API_BASE,
+        "architecture": "transitional",
+        "note": "三屏趋势系统是独立策略系统，当前持仓由经典系统 ml_trade_service 代为管理，未来将完全独立",
+        "future_plan": "三屏系统自建持仓管理和执行器后，查询来源将切换",
+    }
+    merged_extra.update(equity_extra)
 
     result = _make_system_result(
         system="three_screen",
@@ -589,12 +749,8 @@ def fetch_three_screen_positions() -> Dict:
         positions=positions,
         status=status,
         error=error_msg,
-        extra={
-            "api_endpoint": THREE_SCREEN_API_BASE,
-            "architecture": "transitional",
-            "note": "三屏趋势系统是独立策略系统，当前持仓由经典系统 ml_trade_service 代为管理，未来将完全独立",
-            "future_plan": "三屏系统自建持仓管理和执行器后，查询来源将切换",
-        },
+        equity=equity,
+        extra=merged_extra,
     )
     _cache_set(cache_key, result)
     return result
@@ -632,6 +788,8 @@ def fetch_all_positions(systems: Optional[List[str]] = None) -> Dict:
     all_positions = []
     system_status = {}
     total_unrealized_pnl = 0.0
+    total_equity = 0.0  # 资金调控：全局总权益聚合
+    equity_by_system: Dict[str, float] = {}
 
     for sys_name, fetch_fn in fetchers:
         try:
@@ -653,6 +811,11 @@ def fetch_all_positions(systems: Optional[List[str]] = None) -> Dict:
             all_positions.append(pos)
             total_unrealized_pnl += pos.get("unrealized_pnl", 0)
 
+        # 资金调控：聚合 equity
+        sys_equity = float(data.get("equity", 0.0) or 0.0)
+        equity_by_system[sys_name] = round(sys_equity, 2)
+        total_equity += sys_equity
+
     ok_count = sum(1 for s in system_status.values() if s == "ok")
     partial_count = sum(1 for s in system_status.values() if s == "partial" or s == "warning")
     error_count = sum(1 for s in system_status.values() if s == "error" or s == "unavailable")
@@ -665,10 +828,12 @@ def fetch_all_positions(systems: Optional[List[str]] = None) -> Dict:
 
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.0",
+        "version": "1.1",  # 资金调控：升级版本号，新增 total_equity 字段
         "total_systems": len(fetchers),
         "total_positions": len(all_positions),
         "total_unrealized_pnl": round(total_unrealized_pnl, 2),
+        "total_equity": round(total_equity, 2),  # 全局总权益（数值加总，不可跨账户调度）
+        "equity_by_system": equity_by_system,  # 各系统权益明细
         "overall_status": overall_status,
         "system_status": system_status,
         "systems_summary": {
@@ -686,15 +851,18 @@ def get_position_summary() -> Dict:
     result = fetch_all_positions()
     return {
         "timestamp": result["timestamp"],
+        "version": result.get("version", "1.1"),
         "total_systems": result["total_systems"],
         "total_positions": result["total_positions"],
         "total_unrealized_pnl": result["total_unrealized_pnl"],
+        "total_equity": result.get("total_equity", 0.0),  # 资金调控：摘要包含全局总权益
         "overall_status": result["overall_status"],
         "system_status": result["system_status"],
         "by_system": {
             sys_name: {
                 "position_count": data.get("position_count", 0),
                 "status": data.get("status", "unknown"),
+                "equity": float(data.get("equity", 0.0) or 0.0),  # 资金调控：各系统 equity
             }
             for sys_name, data in result["systems"].items()
         },

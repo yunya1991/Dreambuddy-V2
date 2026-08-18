@@ -109,7 +109,98 @@ def run_exit_evaluation_cycle():
         all_positions = positions_data.get("positions", [])
         
         _log(f"共 {len(all_positions)} 个持仓，{positions_data.get('total_systems', 0)} 个系统")
-        
+
+        # ==========================================
+        # 1.5 资金调控评估（一期：只读监控 / 二期：注入 A9 Layer 5）
+        # ==========================================
+        _log("\n[步骤 1.5/10] 资金调控评估...")
+        capital_snapshot = None
+        capital_advice = {}
+        try:
+            from capital_control import CapitalControlComponent, CapitalMode
+
+            capital_component = CapitalControlComponent(mode=CapitalMode.DYNAMIC)
+            capital_snapshot = capital_component.evaluate()
+            _log(
+                f"  资金健康: {capital_snapshot.health.value}, "
+                f"总权益: ${capital_snapshot.total_equity:,.2f}, "
+                f"使用率: {capital_snapshot.overall_used_pct:.1f}%"
+            )
+            for sys_name, r in capital_snapshot.by_system.items():
+                tag = "降级" if r.fallback_used else "正常"
+                _log(
+                    f"    - {sys_name}: ${r.total_eq:,.2f} ({tag}, {r.account_type.value})"
+                )
+            # 构建各系统的资金建议字典（供 A9 Layer 5 使用）
+            for sys_name in capital_snapshot.by_system.keys():
+                try:
+                    advice = capital_component.get_capital_advice(sys_name, "RAISE_TP")
+                    capital_advice[sys_name] = advice
+                except Exception:
+                    pass
+            phase2_on = bool(capital_component._config.get("phase2", {}).get("enabled", False))
+            high_pressure_sys = [
+                s for s, a in capital_advice.items()
+                if a.get("margin_pressure") == "HIGH"
+            ]
+            if phase2_on:
+                _log(f"  二期已启用，高压系统: {high_pressure_sys or '无'}")
+            else:
+                _log("  二期未启用（phase2.enabled=false），仅只读监控")
+            # 写入调控报告产物
+            _write_capital_report(capital_snapshot, positions_data)
+        except Exception as e:
+            _log(f"  资金调控评估失败（不影响主流程）: {e}", "WARN")
+
+        # ==========================================
+        # 1.6 移动止盈评估（ATR自适应法）
+        # ==========================================
+        _log("\n[步骤 1.6/10] 移动止盈评估...")
+        trailing_snapshot = None
+        trailing_triggers = []  # 收集 TRIGGER_CLOSE 结果用于直接执行
+        try:
+            from trailing_stop import (
+                TrailingStopComponent,
+                TrailingAction,
+            )
+
+            trailing_component = TrailingStopComponent()
+            trailing_snapshot = trailing_component.evaluate()
+            stats = trailing_snapshot.stats
+            _log(
+                f"  总持仓: {stats.total_positions}, "
+                f"已激活: {stats.armed_count}, 已触发: {stats.triggered_count}, "
+                f"历史触发累计: {stats.triggered_total}"
+            )
+            for sk, r in trailing_snapshot.by_state.items():
+                tag = ""
+                if r.action == TrailingAction.ARM:
+                    tag = " ⚡ARM"
+                elif r.action == TrailingAction.TRIGGER_CLOSE:
+                    tag = " 🔴TRIGGER"
+                    trailing_triggers.append({
+                        "state_key": sk,
+                        "system": r.system,
+                        "symbol": r.coin,
+                        "direction": r.side.upper(),
+                        "recommended_action": "CLOSE",
+                        "reason": r.reason,
+                        "confidence": 0.95,
+                        "urgency": "HIGH",
+                        "source": "trailing_stop",
+                        "locked_profit_pct": r.locked_profit_pct,
+                    })
+                elif r.status.value == "ARMED":
+                    tag = f" 🎯({r.trail_distance_pct:.1%}触发)"
+                if tag or r.action != TrailingAction.HOLD:
+                    _log(f"    - {sk}: {r.status.value}{tag} → {r.reason[:80]}")
+            # 写入移动止盈报告
+            _write_trailing_report(trailing_snapshot, positions_data)
+        except Exception as e:
+            _log(f"  移动止盈评估失败（不影响主流程）: {e}", "WARN")
+            import traceback as _tb
+            _log(_tb.format_exc(), "DEBUG")
+
         if not all_positions:
             _log("无持仓，跳过本次评估", "WARN")
             return {"status": "success", "reason": "no_positions"}
@@ -184,6 +275,7 @@ def run_exit_evaluation_cycle():
             "a2_result": a2_result.data,
             "a3_result": a3_result.data,
             "market": market,
+            "capital_advice": capital_advice,
         }, engine)
         a9_evals = a9_result_data.get("exit_evaluations", [])
         
@@ -201,6 +293,49 @@ def run_exit_evaluation_cycle():
         _log(f"  融合建议: CLOSE={close_count}, REDUCE={reduce_count}, HOLD={hold_count}, OBSERVE={observe_count}")
         _log(f"  置信度拦截: {gated_count} 个")
         
+        # ==========================================
+        # 7.5 合并移动止盈触发（P0 级强执行）
+        # ==========================================
+        if trailing_triggers:
+            _log(f"\n[步骤 7.5/10] 移动止盈触发: {len(trailing_triggers)} 笔 P0 级平仓...")
+            # 与 fused_evals 去重：如果某 system+symbol 已在 fused_evals 里作为 CLOSE，则替换
+            seen_keys = set()
+            for ev in fused_evals:
+                p = ev.get("position", {})
+                k = (p.get("system"), p.get("symbol"))
+                seen_keys.add(k)
+            # 用 trailing 结果补齐/覆盖：对于 trailing_trigger 条目，强制保留 CLOSE 且不被置信度拦截
+            for trig in trailing_triggers:
+                k = (trig["system"], trig["symbol"])
+                new_entry = dict(trig)
+                new_entry["position"] = {
+                    "symbol": trig["symbol"],
+                    "system": trig["system"],
+                    "strategy_id": _map_system_to_strategy_id(trig["system"]),
+                    "direction": trig["direction"],
+                    "size": 0,
+                    "entry_price": 0,
+                }
+                new_entry["confidence_gated"] = False
+                new_entry["permission_check"] = feedback_and_permission.can_auto_execute(
+                    trig["system"], "CLOSE", "HIGH"
+                )
+                new_entry["evolution_params"] = {}
+                if k in seen_keys:
+                    # 替换：确保 trailing 的 CLOSE 优先
+                    for idx, ev in enumerate(fused_evals):
+                        p = ev.get("position", {})
+                        if (p.get("system"), p.get("symbol")) == k:
+                            new_entry["position"]["size"] = p.get("size", 0)
+                            new_entry["position"]["entry_price"] = p.get("entry_price", 0)
+                            new_entry["decision_id"] = ev.get("decision_id", "")
+                            fused_evals[idx] = new_entry
+                            _log(f"  覆盖: {trig['system']}/{trig['symbol']} 动作升级为 CLOSE（移动止盈）")
+                            break
+                else:
+                    fused_evals.append(new_entry)
+                    _log(f"  新增: {trig['system']}/{trig['symbol']} CLOSE（移动止盈触发）")
+
         # ==========================================
         # 8. 执行交易
         # ==========================================
@@ -358,6 +493,129 @@ def run_exit_evaluation_cycle():
         return {"status": "error", "error": str(e)}
 
 
+def _write_capital_report(snapshot, positions_data):
+    """写入资金调控报告 JSON 产物。
+
+    产物路径: ``16-调控系统/artifacts/capital-reports/capital_YYYYMMDD_HHMMSS.json``
+    结构按 Spec 5.4 节。
+    """
+    reports_dir = BASE_DIR / "artifacts" / "capital-reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    json_path = reports_dir / f"capital_{timestamp}.json"
+
+    report_data = {
+        "timestamp": snapshot.timestamp,
+        "mode": snapshot.mode.value,
+        "health": snapshot.health.value,
+        "by_account": {k: v.to_dict() for k, v in snapshot.by_account.items()},
+        "by_system": {k: v.to_dict() for k, v in snapshot.by_system.items()},
+        "totals": {
+            "total_equity": snapshot.total_equity,
+            "total_avail": snapshot.total_avail,
+            "total_used": snapshot.total_used,
+            "overall_used_pct": snapshot.overall_used_pct,
+        },
+        "recommendations": dict(snapshot.recommendations),
+        "positions_summary": {
+            "total_positions": len(positions_data.get("positions", [])),
+            "total_systems": positions_data.get("total_systems", 0),
+            "total_equity_from_positions": positions_data.get("total_equity", 0),
+        },
+    }
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(report_data, f, ensure_ascii=False, indent=2)
+
+    _log(f"  资金调控报告: {json_path}")
+
+    # AAM 投递（可选，默认不投递；DELIVER=1 时投递）
+    if os.environ.get("DELIVER", "0") == "1":
+        try:
+            aam_deliverer.deliver_capital_report(report_data)
+            _log("  AAM 资金调控报告投递完成")
+        except Exception as e:
+            _log(f"  AAM 投递失败: {e}", "WARN")
+
+    return json_path
+
+
+def _write_trailing_report(snapshot, positions_data):
+    """写入移动止盈评估报告 JSON 产物。
+
+    产物路径: ``16-调控系统/artifacts/trailing-stop/reports/trailing_YYYYMMDD_HHMMSS.json``
+    """
+    reports_dir = BASE_DIR / "artifacts" / "trailing-stop" / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    json_path = reports_dir / f"trailing_{timestamp}.json"
+
+    stats = snapshot.stats
+    by_state_serializable = {}
+    for sk, r in snapshot.by_state.items():
+        try:
+            by_state_serializable[sk] = r.to_dict()
+        except Exception:
+            by_state_serializable[sk] = {
+                "state_key": r.state_key,
+                "system": r.system,
+                "coin": r.coin,
+                "side": r.side,
+                "action": r.action.value if hasattr(r.action, "value") else str(r.action),
+                "status": r.status.value if hasattr(r.status, "value") else str(r.status),
+                "current_pnl_eff_pct": r.current_pnl_eff_pct,
+                "peak_price": r.peak_price,
+                "trailing_stop_price": r.trailing_stop_price,
+                "current_atr": r.current_atr,
+                "trail_distance_pct": r.trail_distance_pct,
+                "locked_profit_pct": r.locked_profit_pct,
+                "reason": r.reason,
+            }
+
+    report_data = {
+        "timestamp": snapshot.timestamp,
+        "algorithm": snapshot.extra.get("algorithm", "atr_adaptive"),
+        "algorithm_params": snapshot.extra.get("algorithm_params", {}),
+        "stats": {
+            "total_positions": stats.total_positions,
+            "idle_count": stats.idle_count,
+            "armed_count": stats.armed_count,
+            "triggered_count": stats.triggered_count,
+            "closed_count": stats.closed_count,
+            "triggered_total": stats.triggered_total,
+            "avg_armed_pnl_pct": round(stats.avg_armed_pnl_pct, 4),
+            "avg_locked_profit_pct": round(stats.avg_locked_profit_pct, 4),
+        },
+        "by_state": by_state_serializable,
+        "recommendations": dict(snapshot.recommendations),
+        "positions_summary": {
+            "total_positions": len(positions_data.get("positions", [])),
+            "total_systems": positions_data.get("total_systems", 0),
+            "total_equity_from_positions": positions_data.get("total_equity", 0),
+        },
+        "fetch_error": snapshot.extra.get("fetch_error", ""),
+    }
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(report_data, f, ensure_ascii=False, indent=2)
+
+    _log(f"  移动止盈报告: {json_path}")
+
+    # AAM 投递（可选）
+    if os.environ.get("DELIVER", "0") == "1":
+        try:
+            import aam_deliverer as _ad
+            if hasattr(_ad, "deliver_trailing_report"):
+                _ad.deliver_trailing_report(report_data)
+                _log("  AAM 移动止盈报告投递完成")
+        except Exception as e:
+            _log(f"  AAM 移动止盈投递失败: {e}", "WARN")
+
+    return json_path
+
+
 def _fuse_with_evolution(a9_evals, positions, market, a1_result, evolution) -> list:
     """融合决策（使用进化后的参数）"""
     research = a1_result.data.get("research_report", {}) if a1_result.data else {}
@@ -463,8 +721,29 @@ def _find_decision_id(fused_evals: list, exec_result: dict) -> Optional[str]:
 
 def main():
     """主入口"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="AI 驱动离场系统 — 自动化调度")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="干跑模式（不执行真实交易）"
+    )
+    parser.add_argument(
+        "--simulated", action="store_true", help="模拟模式"
+    )
+    parser.add_argument(
+        "--real", action="store_true", help="实盘模式"
+    )
+    args = parser.parse_args()
+
+    if args.dry_run:
+        os.environ["EXIT_MODE"] = "dry_run"
+    elif args.simulated:
+        os.environ["EXIT_MODE"] = "simulated"
+    elif args.real:
+        os.environ["EXIT_MODE"] = "real"
+
     result = run_exit_evaluation_cycle()
-    
+
     if result.get("status") == "success":
         _log("周期执行成功", "INFO")
         return 0

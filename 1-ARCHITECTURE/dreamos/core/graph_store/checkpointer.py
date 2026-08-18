@@ -49,8 +49,39 @@ class Checkpointer:
         self._storage_dir = storage_dir
         self._checkpoints: OrderedDict[str, Checkpoint] = OrderedDict()
 
-        if storage_dir and not os.path.exists(storage_dir):
+        if storage_dir:
             os.makedirs(storage_dir, exist_ok=True)
+            # ── 修复 Bug 2：启动时扫描磁盘已有 ckpt，超过 max 的立即删除，保留的加载进 FIFO ──
+            # 防止每次重启后，上一次启动留下的 ckpt 没人管导致再次无限膨胀
+            try:
+                existing = [f for f in os.listdir(storage_dir)
+                            if f.startswith("ckpt_") and f.endswith(".json")]
+            except OSError:
+                existing = []
+            if existing:
+                # 文件名自带时间戳前缀（ckpt_YYYYMMDDHHMMSS_hash.json），按名排序=按时间升序
+                existing.sort()
+                # 超过 max 的直接删文件（只保留最新的 max 个）
+                if len(existing) > self._max:
+                    to_del = existing[:len(existing) - self._max]
+                    for _fname in to_del:
+                        try:
+                            os.remove(os.path.join(self._storage_dir, _fname))
+                        except OSError:
+                            pass
+                    existing = existing[len(to_del):]  # 剩下保留的 max 个（最新）
+                # 保留的加载进 OrderedDict（按时间顺序插入=先进先出）
+                for _fname in existing:
+                    _ckpt_id = _fname[:-5]  # 去掉 .json
+                    _cp = self._load_from_file(_ckpt_id)
+                    if _cp is not None:
+                        self._checkpoints[_ckpt_id] = _cp
+                    else:
+                        # 损坏的 json 文件直接清理掉
+                        try:
+                            os.remove(os.path.join(self._storage_dir, _fname))
+                        except OSError:
+                            pass
 
     def save(self, state: State, node_id: str = "",
              metadata: Optional[Dict[str, Any]] = None) -> str:
@@ -78,7 +109,15 @@ class Checkpointer:
         # 内存存储
         self._checkpoints[cp_id] = cp
         if len(self._checkpoints) > self._max:
-            self._checkpoints.popitem(last=False)  # FIFO 淘汰
+            _evicted_id, evicted_cp = self._checkpoints.popitem(last=False)  # FIFO 淘汰
+            # 同步删除被淘汰的磁盘文件（修复只写不删导致 59G 膨胀的 Bug）
+            if self._storage_dir and evicted_cp is not None:
+                _filepath = os.path.join(self._storage_dir, f"{_evicted_id}.json")
+                if os.path.exists(_filepath):
+                    try:
+                        os.remove(_filepath)
+                    except OSError:
+                        pass  # 删除失败不影响流程
 
         # 文件存储（可选）
         if self._storage_dir:
@@ -152,11 +191,30 @@ class Checkpointer:
         """
         if cycle_id is None:
             count = len(self._checkpoints)
+            # 同步清理磁盘上所有 checkpoint 文件（修复只清内存不清磁盘）
+            if self._storage_dir:
+                try:
+                    for _fname in os.listdir(self._storage_dir):
+                        if _fname.startswith("ckpt_") and _fname.endswith(".json"):
+                            try:
+                                os.remove(os.path.join(self._storage_dir, _fname))
+                            except OSError:
+                                pass
+                except OSError:
+                    pass
             self._checkpoints.clear()
             return count
 
         to_remove = [k for k, v in self._checkpoints.items() if v.cycle_id == cycle_id]
         for k in to_remove:
+            # 同步删除对应磁盘文件
+            if self._storage_dir:
+                _fp = os.path.join(self._storage_dir, f"{k}.json")
+                if os.path.exists(_fp):
+                    try:
+                        os.remove(_fp)
+                    except OSError:
+                        pass
             del self._checkpoints[k]
         return len(to_remove)
 

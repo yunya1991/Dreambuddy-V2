@@ -29,6 +29,27 @@ from scripts.memory_l4.tradingagents_reflector import (
 )
 
 
+# ── 64卦三分类（模块级常量，供仓位/卦象过滤统一使用） ─────────
+# 保持与 _hexagram_expected_outcome 内部完全一致，单一事实源
+BULLISH_HEXAGRAMS = frozenset([
+    "乾", "需", "比", "小畜", "履", "泰", "同人", "大有",
+    "谦", "豫", "随", "临", "复", "大畜", "颐",
+    "咸", "恒", "大壮", "晋", "家人", "解", "益", "夬",
+    "萃", "升", "鼎", "丰", "渐", "节", "中孚",
+])
+
+BEARISH_HEXAGRAMS = frozenset([
+    "蒙", "讼", "师", "否", "观", "噬嗑", "剥", "无妄",
+    "大过", "坎", "蛊", "遁", "明夷", "睽", "蹇", "损",
+    "姤", "困", "井", "归妹", "旅", "涣", "小过",
+])
+
+NEUTRAL_HEXAGRAMS = frozenset([
+    "坤", "屯", "贲", "离", "革", "震", "艮", "巽", "兑",
+    "既济", "未济",
+])
+
+
 def now_iso_local() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
@@ -214,18 +235,21 @@ def _verify_theory_practice(case: Dict[str, Any], pnl_pct: float) -> Dict[str, A
 
 
 def _hexagram_expected_outcome(hexagram: str, direction: str) -> str:
-    """根据卦象推断预期结果"""
+    """根据卦象推断预期结果
+
+    基于卦义将64卦分为三类（原实现63/64卦全为positive，等价于无判别力）：
+    - BULLISH（吉卦）：做多有利 → long=profit, short=loss
+    - BEARISH（凶卦）：做空有利 → short=profit, long=loss
+    - NEUTRAL（中性）：方向不明 → unknown
+
+    分类集合引用模块级常量 BULLISH_HEXAGRAMS / BEARISH_HEXAGRAMS，保持单一事实源。
+    """
     hexagram = hexagram.strip()
-    positive_hexagrams = ["乾", "坤", "屯", "蒙", "需", "讼", "师", "比",
-                          "小畜", "履", "泰", "否", "同人", "大有", "谦",
-                          "豫", "随", "蛊", "临", "观", "噬嗑", "贲", "剥",
-                          "复", "无妄", "大畜", "颐", "大过", "坎", "离",
-                          "咸", "恒", "遁", "大壮", "晋", "明夷", "家人",
-                          "睽", "蹇", "解", "损", "益", "夬", "姤", "萃",
-                          "升", "困", "井", "革", "鼎", "震", "艮", "渐",
-                          "归妹", "丰", "旅", "巽", "兑", "涣", "节", "中孚", "小过", "既济"]
-    if hexagram in positive_hexagrams:
+
+    if hexagram in BULLISH_HEXAGRAMS:
         return "profit" if direction == "long" else "loss"
+    if hexagram in BEARISH_HEXAGRAMS:
+        return "profit" if direction == "short" else "loss"
     return "unknown"
 
 

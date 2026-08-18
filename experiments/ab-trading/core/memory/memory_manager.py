@@ -12,11 +12,18 @@ MemoryManager — 记忆模块清理管理器
        - Pending Strategies：超过 7 天未验证的自动移除
        - Master Switch History：保留最近 10 条
 
-    2. Trading Memory：
+    2. Agent B 记忆：
+       - Lessons：保留最近 20 条，移除超过 30 天的过期教训
+       - Recent Decisions：保留最近 50 条
+       - Strategy Param History：保留最近 30 条
+       - Prior/Next Cycle Suggestions：超过 14 天的自动清理
+       - Regime History：保留最近 100 条
+
+    3. Trading Memory：
        - Verified Lessons：置信度 < 0.5 的淘汰，保留最近 30 条
        - Verification History：保留最近 50 条
 
-    3. G 层图存储：
+    4. G 层图存储：
        - 压缩超过 30 天的 Chronicle
        - 删除超过 90 天的压缩 Chronicle
 
@@ -68,12 +75,18 @@ class MemoryManager:
 
     def _init_paths(self):
         self.agent_a_memory_path = PROJECT_ROOT / "data" / "agent_a_memory.json"
+        self.agent_b_memory_path = PROJECT_ROOT / "data" / "agent_b_memory.json"
         self.trading_memory_path = PROJECT_ROOT / "data" / "trading_memory.json"
         self.graph_storage_path = PROJECT_ROOT / "data" / "graph_storage"
 
     def _parse_iso_timestamp(self, ts: str) -> Optional[datetime]:
         try:
-            return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            # 统一为 timezone-aware：无时区信息的字符串按 UTC 处理
+            # （Agent B / Agent A 主流程 ts 多存为 utcnow().isoformat() 即无时区后缀）
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
         except (ValueError, TypeError):
             return None
 
@@ -168,6 +181,143 @@ class MemoryManager:
             self.logger.info(f"  - Agent A 记忆已保存，共移除 {total_removed} 条记录")
         except Exception as e:
             self.logger.error(f"  - 保存 Agent A 记忆失败: {e}")
+
+        return memory
+
+    # ──────────────────────────────────────────────────────────────────────────────
+    # Agent B 记忆清理
+    # ──────────────────────────────────────────────────────────────────────────────
+
+    def _clean_agent_b_lessons(self, memory: Dict) -> int:
+        lessons = memory.get("lessons", [])
+        initial_count = len(lessons)
+
+        # Agent B 的 lessons 是纯字符串列表，过滤超过 30 天的模式
+        # 按顺序保留最近 20 条（lessons 列表是追加式，最新在尾部）
+        lessons = lessons[-20:]
+
+        memory["lessons"] = lessons
+        removed = initial_count - len(lessons)
+        if removed > 0:
+            self.logger.info(f"  - 清理 Agent B Lessons: {initial_count} -> {len(lessons)} (移除 {removed} 条)")
+        return removed
+
+    def _clean_agent_b_recent_decisions(self, memory: Dict) -> int:
+        decisions = memory.get("recent_decisions", [])
+        initial_count = len(decisions)
+
+        # 超过 14 天的决策或超过 50 条的旧记录清理
+        now = datetime.now(timezone.utc)
+        filtered = []
+        for d in decisions:
+            ts = d.get("ts", "")
+            dt = self._parse_iso_timestamp(ts)
+            if dt and (now - dt) > timedelta(days=14):
+                continue
+            filtered.append(d)
+
+        # 保留最近 50 条
+        filtered = filtered[-50:]
+
+        memory["recent_decisions"] = filtered
+        removed = initial_count - len(filtered)
+        if removed > 0:
+            self.logger.info(f"  - 清理 Agent B 决策记录: {initial_count} -> {len(filtered)} (移除 {removed} 条)")
+        return removed
+
+    def _clean_agent_b_strategy_param_history(self, memory: Dict) -> int:
+        history = memory.get("strategy_param_history", [])
+        initial_count = len(history)
+
+        # 保留最近 30 条
+        history = history[-30:]
+
+        memory["strategy_param_history"] = history
+        removed = initial_count - len(history)
+        if removed > 0:
+            self.logger.info(f"  - 清理 Agent B 参数调整历史: {initial_count} -> {len(history)} (移除 {removed} 条)")
+        return removed
+
+    def _clean_agent_b_suggestions(self, memory: Dict) -> int:
+        removed = 0
+        # suggestion_loop 内部清理：超过 14 天的 prior/next 建议
+        sl = memory.get("suggestion_loop", {})
+        if sl:
+            for key in ("prior_cycle_suggestions", "next_cycle_suggestions"):
+                sug = sl.get(key, {})
+                cycle_id = sug.get("cycle_id", "")
+                if cycle_id:
+                    # cycle_id 形如 20260810_020005，解析其中的日期
+                    try:
+                        date_part = cycle_id.split("_")[0]
+                        sug_date = datetime.strptime(date_part, "%Y%m%d").replace(tzinfo=timezone.utc)
+                        if (datetime.now(timezone.utc) - sug_date) > timedelta(days=14):
+                            sl[key] = {}
+                            removed += 1
+                    except (ValueError, IndexError):
+                        pass
+            # verified_lessons 和 verification_history 交给 Trading Memory 清理
+            memory["suggestion_loop"] = sl
+
+        # 同时清理兼容字段
+        for key in ("prior_cycle_suggestions", "next_cycle_suggestions"):
+            sug = memory.get(key, {})
+            cycle_id = sug.get("cycle_id", "")
+            if cycle_id:
+                try:
+                    date_part = cycle_id.split("_")[0]
+                    sug_date = datetime.strptime(date_part, "%Y%m%d").replace(tzinfo=timezone.utc)
+                    if (datetime.now(timezone.utc) - sug_date) > timedelta(days=14):
+                        memory[key] = {}
+                        removed += 1
+                except (ValueError, IndexError):
+                    pass
+
+        if removed > 0:
+            self.logger.info(f"  - 清理 Agent B 过期建议: 移除 {removed} 组")
+        return removed
+
+    def _clean_agent_b_regime_history(self, memory: Dict) -> int:
+        regimes = memory.get("regime_history", [])
+        initial_count = len(regimes)
+
+        # 保留最近 100 条
+        regimes = regimes[-100:]
+
+        memory["regime_history"] = regimes
+        removed = initial_count - len(regimes)
+        if removed > 0:
+            self.logger.info(f"  - 清理 Agent B Regime 历史: {initial_count} -> {len(regimes)} (移除 {removed} 条)")
+        return removed
+
+    def clean_agent_b_memory(self) -> Dict:
+        """清理 Agent B 记忆"""
+        self.logger.info("=== 清理 Agent B 记忆 ===")
+
+        if not self.agent_b_memory_path.exists():
+            self.logger.warning(f"  - Agent B 记忆文件不存在: {self.agent_b_memory_path}")
+            return {}
+
+        try:
+            with open(self.agent_b_memory_path, "r", encoding="utf-8") as f:
+                memory = json.load(f)
+        except Exception as e:
+            self.logger.error(f"  - 读取 Agent B 记忆失败: {e}")
+            return {}
+
+        total_removed = 0
+        total_removed += self._clean_agent_b_lessons(memory)
+        total_removed += self._clean_agent_b_recent_decisions(memory)
+        total_removed += self._clean_agent_b_strategy_param_history(memory)
+        total_removed += self._clean_agent_b_suggestions(memory)
+        total_removed += self._clean_agent_b_regime_history(memory)
+
+        try:
+            with open(self.agent_b_memory_path, "w", encoding="utf-8") as f:
+                json.dump(memory, f, indent=2, ensure_ascii=False)
+            self.logger.info(f"  - Agent B 记忆已保存，共移除 {total_removed} 条记录")
+        except Exception as e:
+            self.logger.error(f"  - 保存 Agent B 记忆失败: {e}")
 
         return memory
 
@@ -298,8 +448,9 @@ class MemoryManager:
 
         执行逻辑：
             1. 清理 Agent A 记忆（低价值 lessons、旧交易记录、过期待验证策略）
-            2. 清理 Trading Memory（低置信度教训、旧验证历史）
-            3. 清理 G 层图存储（过期 Chronicle）
+            2. 清理 Agent B 记忆（过期教训、旧决策记录、参数历史、过期建议）
+            3. 清理 Trading Memory（低置信度教训、旧验证历史）
+            4. 清理 G 层图存储（过期 Chronicle）
 
         日志输出：logs/memory_cleanup.log
         """
@@ -311,6 +462,7 @@ class MemoryManager:
 
         try:
             self.clean_agent_a_memory()
+            self.clean_agent_b_memory()
             self.clean_trading_memory()
             self.clean_graph_storage()
 
