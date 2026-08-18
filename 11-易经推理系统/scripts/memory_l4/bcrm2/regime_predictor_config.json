@@ -1,0 +1,55 @@
+{
+  "feature_groups": {
+    "morphology": [
+      "adx_14",
+      "adx_plus_di",
+      "adx_minus_di",
+      "adx_trend_strength_bucket",
+      "hurst_exp_50",
+      "hurst_exp_100",
+      "hurst_state",
+      "bb_width_percentile_252",
+      "bb_squeeze_signal",
+      "distance_to_high_60d",
+      "distance_to_high_120d",
+      "distance_to_high_lt_5_pct"
+    ],
+    "breadth": [
+      "breadth_ma128_align",
+      "breadth_ma128_align_change_20d",
+      "breadth_ma128_slope_align",
+      "breadth_ma128_slope_align_change_20d",
+      "breadth_dispersion_10d",
+      "btc_dominance_change_20d",
+      "btc_dominance_rolling_5d",
+      "breadth_new_high_3_ratio_ma20"
+    ]
+  },
+  "feature_weights": {
+    "morphology": 2.5,
+    "breadth": 1.5,
+    "other": 1.0
+  },
+  "lgbm_hparams": {
+    "learning_rate": 0.05,
+    "num_leaves": 63,
+    "feature_fraction": 0.9,
+    "bagging_fraction": 0.85,
+    "bagging_freq": 5,
+    "min_data_in_leaf": 20,
+    "num_boost_round": 350
+  },
+  "walk_forward": {
+    "n_splits": 5,
+    "gap": 20,
+    "train_ratio": 0.7,
+    "test_ratio": 0.2,
+    "expanding": true
+  },
+  "labeler": {
+    "forward_days": 20,
+    "lookback": 252
+  },
+  "feature_set": "btc_morphology",
+  "symbol": "BTCUSDT"
+}

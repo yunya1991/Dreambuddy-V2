@@ -45,7 +45,11 @@ class Incident:
     duration_minutes: Optional[int] = None
     impact: str = "unknown"  # none / minor / moderate / major / critical
     tags: List[str] = field(default_factory=list)
-    
+    # ---- 统一接口所需元字段（质量/验证/置信度） ----
+    quality_level: str = "C"
+    verify_count: int = 0
+    confidence: float = 0.0
+
     def to_dict(self) -> dict:
         return {
             "incident_id": self.incident_id,
@@ -60,6 +64,9 @@ class Incident:
             "duration_minutes": self.duration_minutes,
             "impact": self.impact,
             "tags": self.tags,
+            "quality_level": self.quality_level,
+            "verify_count": self.verify_count,
+            "confidence": self.confidence,
         }
 
 
@@ -77,7 +84,11 @@ class Playbook:
     usage_count: int = 0
     success_rate: float = 0.0
     tags: List[str] = field(default_factory=list)
-    
+    # ---- 统一接口所需元字段（质量/验证/置信度） ----
+    quality_level: str = "C"
+    verify_count: int = 0
+    confidence: float = 0.0
+
     def to_dict(self) -> dict:
         return {
             "playbook_id": self.playbook_id,
@@ -91,6 +102,9 @@ class Playbook:
             "usage_count": self.usage_count,
             "success_rate": self.success_rate,
             "tags": self.tags,
+            "quality_level": self.quality_level,
+            "verify_count": self.verify_count,
+            "confidence": self.confidence,
         }
 
 
@@ -225,7 +239,12 @@ class OpsMemoryInterface:
             记忆ID
         """
         memory_type = memory_entry.get("memory_type", "incident")
-        
+
+        # 防御式：确保子目录存在（即使被外部清理也能重建）
+        self.incidents_path.mkdir(parents=True, exist_ok=True)
+        self.playbooks_path.mkdir(parents=True, exist_ok=True)
+        self.baselines_path.mkdir(parents=True, exist_ok=True)
+
         if memory_type == "incident":
             incident = Incident(
                 incident_id=memory_entry.get("incident_id", f"INC-{datetime.now().strftime('%Y%m%d%H%M%S')}"),
@@ -240,6 +259,9 @@ class OpsMemoryInterface:
                 duration_minutes=memory_entry.get("duration_minutes"),
                 impact=memory_entry.get("impact", "unknown"),
                 tags=memory_entry.get("tags", []),
+                quality_level=str(memory_entry.get("quality_level", "C")).upper(),
+                verify_count=int(memory_entry.get("verify_count", 0)),
+                confidence=float(memory_entry.get("confidence", 0.0)),
             )
             
             inc_file = self.incidents_path / f"{incident.incident_id}.json"
@@ -262,7 +284,13 @@ class OpsMemoryInterface:
                 estimated_time_minutes=memory_entry.get("estimated_time_minutes", 0),
                 required_access=memory_entry.get("required_access", []),
                 created_at=datetime.now().isoformat(),
+                last_used=memory_entry.get("last_used"),
+                usage_count=int(memory_entry.get("usage_count", 0)),
+                success_rate=float(memory_entry.get("success_rate", 0.0)),
                 tags=memory_entry.get("tags", []),
+                quality_level=str(memory_entry.get("quality_level", "C")).upper(),
+                verify_count=int(memory_entry.get("verify_count", 0)),
+                confidence=float(memory_entry.get("confidence", 0.0)),
             )
             
             pb_file = self.playbooks_path / f"{playbook.playbook_id}.json"
@@ -352,21 +380,115 @@ class OpsMemoryInterface:
             "last_updated": datetime.now().isoformat(),
         }
     
-    def distill_candidates(self, min_quality: str = "C", limit: int = 10) -> List[Dict[str, Any]]:
-        """蒸馏候选。"""
-        candidates = []
-        
-        for inc_id, inc_data in self.index.get("incidents", {}).items():
-            if inc_data.get("resolution") and inc_data.get("root_cause"):
-                candidates.append({
-                    "incident_id": inc_id,
-                    "content": f"{inc_data['incident_type']}: {inc_data['root_cause']} → {inc_data['resolution']}",
-                    "source": inc_id,
-                    "ready_for_global": inc_data.get("severity") in ("critical", "high"),
-                })
-        
-        return candidates[:limit]
-    
+    def distill_candidates(self, min_quality: str = "B", limit: int = 10) -> List[Dict[str, Any]]:
+        """7标准接口补充：提取达阈值的 OPS 领域高价值候选，统一 8 字段返回。
+
+        仅 incident（已解决，有 root_cause+resolution） + playbook（已用，success_rate 高） 两类。
+        阈值矩阵与 DistillScheduler / VectorMemoryInterface 完全一致：
+          S: verify≥10 & conf≥0.95 ;  A: ≥3 & ≥0.70 ;  B: ≥1 & ≥0.40
+        """
+        QUALITY_ORDER = {"S": 0, "A": 1, "B": 2, "C": 3, "D": 4}
+        _TH: Dict[str, Dict[str, float]] = {
+            "S": {"min_verifies": 10, "min_confidence": 0.95},
+            "A": {"min_verifies": 3,  "min_confidence": 0.70},
+            "B": {"min_verifies": 1,  "min_confidence": 0.40},
+            "C": {"min_verifies": 0,  "min_confidence": 0.0},
+            "D": {"min_verifies": 0,  "min_confidence": 0.0},
+        }
+        min_order = QUALITY_ORDER.get(str(min_quality).upper(), 2)
+
+        candidates: List[Dict[str, Any]] = []
+
+        # ---- bucket 1: incident（必须已闭环：有根因+方案） ----
+        for inc_id, inc in self.index.get("incidents", {}).items():
+            if not inc.get("root_cause") or not inc.get("resolution"):
+                continue
+            q = str(inc.get("quality_level") or inc.get("quality") or "C").upper()
+            if q not in QUALITY_ORDER:
+                q = "C"
+            if QUALITY_ORDER[q] > min_order:
+                continue
+            vc = int(inc.get("verify_count") or 0)
+            conf = float(inc.get("confidence") or 0.0)
+            if conf <= 0.0:
+                impact = str(inc.get("impact") or "").lower()
+                sev = str(inc.get("severity") or "").lower()
+                base = 0.40 if q == "B" else (0.70 if q == "A" else (0.95 if q == "S" else 0.25))
+                # major/critical → 重大处置经验更有价值
+                if impact in ("major", "critical"):
+                    base = min(1.0, base + 0.15)
+                if sev in ("critical", "high"):
+                    base = min(1.0, base + 0.05)
+                conf = base
+            th = _TH.get(q) or _TH["C"]
+            if q not in ("C", "D") and (vc < th["min_verifies"] or conf < th["min_confidence"]):
+                continue
+            content = (
+                f"[{inc.get('incident_type', 'incident')}] {inc.get('root_cause', '')}"
+                f" → {inc.get('resolution', '')}"
+            )
+            tags = list(inc.get("tags") or [])
+            if inc.get("incident_type") and inc["incident_type"] not in tags:
+                tags.append(str(inc["incident_type"]))
+            sev = inc.get("severity")
+            if sev and sev not in tags:
+                tags.append(str(sev))
+            source = f"AM-OPS/incident/{inc_id}"
+            candidates.append({
+                "id": str(inc_id),
+                "content": content,
+                "quality_level": q,
+                "confidence": round(conf, 4),
+                "verify_count": vc,
+                "tags": tags,
+                "memory_type": "incident",
+                "source": source,
+            })
+
+        # ---- bucket 2: playbook（已实战使用且成功率≥0.6） ----
+        for pb_id, pb in self.index.get("playbooks", {}).items():
+            usage = int(pb.get("usage_count") or 0)
+            if usage < 1:
+                continue
+            sr = float(pb.get("success_rate") or 0.0)
+            if sr < 0.60:
+                continue
+            q = str(pb.get("quality_level") or pb.get("quality") or "C").upper()
+            if q not in QUALITY_ORDER:
+                q = "C"
+            if QUALITY_ORDER[q] > min_order:
+                continue
+            vc = int(pb.get("verify_count") or 0)
+            conf = float(pb.get("confidence") or max(sr, 0.50))
+            th = _TH.get(q) or _TH["C"]
+            if q not in ("C", "D") and (vc < th["min_verifies"] or conf < th["min_confidence"]):
+                continue
+            steps = pb.get("steps") or []
+            steps_text = "; ".join(str(s) for s in steps[:6])
+            content = (
+                f"[playbook] {pb.get('name', '')} | 触发条件: {pb.get('trigger_condition', '')}"
+                f" | 步骤: {steps_text}"
+            )
+            tags = list(pb.get("tags") or [])
+            source = f"AM-OPS/playbook/{pb_id}"
+            candidates.append({
+                "id": str(pb_id),
+                "content": content,
+                "quality_level": q,
+                "confidence": round(conf, 4),
+                "verify_count": vc,
+                "tags": tags,
+                "memory_type": "playbook",
+                "source": source,
+            })
+
+        candidates.sort(
+            key=lambda c: (QUALITY_ORDER.get(c["quality_level"], 4),
+                           -c["verify_count"],
+                           -c["confidence"])
+        )
+        return candidates[: max(0, int(limit))]
+
     def healthcheck(self) -> Dict[str, Any]:
         """健康检查。"""
         return {
@@ -377,12 +499,36 @@ class OpsMemoryInterface:
             "playbooks_count": len(self.index.get("playbooks", {})),
             "last_check": datetime.now().isoformat(),
         }
-    
+
+    # ---------------- 底层辅助：供 run_distill_from_review 闭环使用 ----------------
+
+    def increment_verify(self, memory_id: str) -> bool:
+        """命中复盘关键词后 verify_count +1（A8 校验闭环）。"""
+        cur = self.get(memory_id)
+        if not cur:
+            return False
+        vc = int(cur.get("verify_count") or 0) + 1
+        try:
+            return self.update(memory_id, {"verify_count": vc})
+        except Exception:
+            return False
+
+    def update_quality(self, memory_id: str, new_quality: str,
+                       new_confidence: Optional[float] = None) -> bool:
+        """调整质量等级 + 置信度（保守式）。"""
+        updates: Dict[str, Any] = {"quality_level": new_quality}
+        if new_confidence is not None:
+            updates["confidence"] = float(new_confidence)
+        try:
+            return self.update(memory_id, updates)
+        except Exception:
+            return False
+
     # ========== 便捷方法 ==========
     
     def find_playbook_for_incident(self, incident_type: str) -> List[Dict[str, Any]]:
         """
-        为故障类型查找预案（便捷方法）。
+        为故障类型查找预案（领域便捷方法，保留）。
         
         Args:
             incident_type: 故障类型
@@ -406,7 +552,7 @@ class OpsMemoryInterface:
         root_cause: str,
     ) -> bool:
         """
-        记录故障处理结果（便捷方法）。
+        记录故障处理结果（领域便捷方法，保留）。
         
         Args:
             incident_id: 故障ID
@@ -421,6 +567,146 @@ class OpsMemoryInterface:
             "root_cause": root_cause,
             "resolved_at": datetime.now().isoformat(),
         })
+
+    # ---------------- 2 统一便捷方法（对齐 MEMORY_SYSTEM.md 签名） ----------------
+
+    def search_similar_cases(
+        self, content: str, top_k: int = 5, threshold: float = 0.3
+    ) -> List[Dict[str, Any]]:
+        """统一签名：content/top_k/threshold，返回 id/score/metadata。"""
+        try:
+            raw_list = list(self.search(query=content, top_k=max(20, int(top_k) * 4)) or [])
+        except Exception:
+            raw_list = []
+
+        normalized: List[Dict[str, Any]] = []
+        for i, r in enumerate(raw_list):
+            rid = (r.get("incident_id") or r.get("playbook_id")
+                   or r.get("baseline_id") or r.get("memory_id") or str(i))
+            sev = str(r.get("severity") or "").lower()
+            impact = str(r.get("impact") or "").lower()
+            # 评分：顺序平滑 + severity/impact 加成 + playbook usage/success_rate 加成
+            base = max(0.0, 1.0 / (1.0 + i * 0.35))
+            if sev == "critical":
+                base = min(1.0, base + 0.12)
+            elif sev == "high":
+                base = min(1.0, base + 0.06)
+            if impact in ("major", "critical"):
+                base = min(1.0, base + 0.08)
+            usage = int(r.get("usage_count") or 0)
+            sr = float(r.get("success_rate") or 0.0)
+            if usage >= 1 and sr >= 0.80:
+                base = min(1.0, base + 0.10)
+            elif usage >= 1 and sr >= 0.60:
+                base = min(1.0, base + 0.05)
+            if base < float(threshold):
+                continue
+            q = str(r.get("quality_level") or "C").upper()
+            vc = int(r.get("verify_count") or 0)
+            conf = float(r.get("confidence") or sr or 0.0)
+            normalized.append({
+                "id": str(rid),
+                "score": round(base, 4),
+                "metadata": {
+                    "quality_level": q,
+                    "confidence": conf,
+                    "verify_count": vc,
+                    "tags": list(r.get("tags") or []),
+                    "memory_type": str(r.get("memory_type") or "incident"),
+                    "raw": r,
+                },
+            })
+            if len(normalized) >= int(top_k):
+                break
+        return normalized
+
+    def run_distill_from_review(self, review_data: Dict[str, Any]) -> Dict[str, int]:
+        """基于 OPS Review/A8 校验报告触发闭环，返回 processed/upgraded/skipped。"""
+        import re as _re
+        stats = {"processed": 0, "upgraded": 0, "skipped": 0}
+
+        keywords: List[str] = []
+        if isinstance(review_data, dict):
+            for key in ("matched_patterns", "matched", "keywords", "hotspots",
+                        "matched_functions", "doc_only_functions", "code_only_functions",
+                        "hits", "symptoms"):
+                val = review_data.get(key)
+                if isinstance(val, list):
+                    keywords.extend(str(v) for v in val if v)
+            for txt_key in ("subsystem", "summary", "title", "focus", "review",
+                            "incident_type", "severity", "impact", "host", "service",
+                            "root_cause", "resolution", "content"):
+                txt = review_data.get(txt_key)
+                if isinstance(txt, str) and txt.strip():
+                    keywords.extend(p for p in _re.split(r"\W+", txt) if len(p) >= 2)
+        seen_kw: set = set()
+        clean_kws: List[str] = []
+        for kw in keywords:
+            k = str(kw).strip()
+            if len(k) < 2:
+                continue
+            kl = k.lower()
+            if kl in seen_kw:
+                continue
+            seen_kw.add(kl)
+            clean_kws.append(k)
+        if not clean_kws:
+            return stats
+
+        unique_ids: set = set()
+        hits: List[Dict[str, Any]] = []
+        for kw in clean_kws:
+            try:
+                for r in (self.search(query=kw, top_k=3) or []):
+                    rid = (r.get("incident_id") or r.get("playbook_id")
+                           or r.get("baseline_id") or r.get("memory_id"))
+                    if not rid or rid in unique_ids:
+                        continue
+                    unique_ids.add(rid)
+                    hits.append(r)
+            except Exception:
+                continue
+
+        upgrade_paths: Dict[str, Dict[str, Dict[str, float]]] = {
+            "C": {"B": {"min_verifies": 1, "min_confidence": 0.40}},
+            "B": {"A": {"min_verifies": 3, "min_confidence": 0.70}},
+            "A": {"S": {"min_verifies": 10, "min_confidence": 0.95}},
+        }
+        target_conf = {"B": 0.50, "A": 0.78, "S": 0.96}
+
+        for hit in hits:
+            stats["processed"] += 1
+            mem_id = (hit.get("incident_id") or hit.get("playbook_id")
+                      or hit.get("baseline_id") or hit.get("memory_id"))
+            if not mem_id:
+                stats["skipped"] += 1
+                continue
+            if not self.increment_verify(str(mem_id)):
+                stats["skipped"] += 1
+                continue
+            cur = self.get(str(mem_id))
+            if not cur:
+                stats["skipped"] += 1
+                continue
+            q = str(cur.get("quality_level") or cur.get("quality") or "C").upper()
+            vc = int(cur.get("verify_count") or 0)
+            conf = float(cur.get("confidence") or cur.get("success_rate") or 0.0)
+            paths = upgrade_paths.get(q) or {}
+            moved = False
+            for target_q, th in paths.items():
+                if vc >= th["min_verifies"] and conf >= th["min_confidence"]:
+                    new_conf = max(conf, target_conf.get(target_q, conf))
+                    if self.update_quality(str(mem_id), target_q, new_conf):
+                        stats["upgraded"] += 1
+                        moved = True
+                    break
+            if not moved:
+                stats["skipped"] += 1
+        return stats
+
+
+# 别名：distill_scheduler 通过 getattr(module, "AppMemoryInterface") 查找
+AppMemoryInterface = OpsMemoryInterface
 
 
 if __name__ == "__main__":

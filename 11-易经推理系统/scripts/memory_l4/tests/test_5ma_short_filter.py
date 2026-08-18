@@ -131,8 +131,11 @@ class TestFiveMASpringForce(unittest.TestCase):
     """
 
     def test_5ma_bullish_strong_long_order(self):
-        """RED: 5均线完美多头排列（MA30>MA65>MA128>MA200>MA1400），价格在MA30上方
-        → 所有均线 = 下方支撑 → F_net 显著为负 → 多头趋势，禁止做空
+        """无过滤方案：5均线完美多头排列，价格在MA30上方
+        → F_net 显著为负 → 多头趋势特征验证
+        → 但 FMA_REGIME_FILTER_ENABLED=False（无过滤）→ 允许做空（回测验证整体更优）
+
+        注：此测试仅验证弹簧力场计算正确（F_net 应为负），不验证过滤行为
         """
         t = _make_trader()
         closes = _build_closes_5ma({
@@ -146,7 +149,8 @@ class TestFiveMASpringForce(unittest.TestCase):
                    return_value=[{"c": c} for c in closes]):
             bearish, reason = t._check_btc_trend()
 
-        self.assertFalse(bearish, f"5均线完美多头不应允许做空: {reason}")
+        # 无过滤方案：允许做空，但日志中应能识别为多头形态（F_net 为负）
+        self.assertTrue(bearish, f"无过滤应允许做空: {reason}")
         self.assertIn("F_net=", reason)
         import re
         m = re.search(r"F_net=([+-]?[\d.]+)", reason)
@@ -536,7 +540,11 @@ class TestMarketRegimeClassification(unittest.TestCase):
         self.assertIsInstance(res["market_regime"], str)
 
     def test_regime_trend_bull_detected(self):
-        """GREEN: 多头排列 + 斜率向上 + 发散 → TREND_BULL → 禁止做空"""
+        """无过滤方案：多头排列 + 斜率向上 + 发散 → TREND_BULL 形态识别
+        → 但 FMA_REGIME_FILTER_ENABLED=False（无过滤）→ 允许做空（回测验证整体更优）
+
+        此测试仅验证形态识别正确（应判定为 TREND_BULL），不验证过滤行为
+        """
         t = _make_trader()
         # 用真趋势数据构造多头趋势
         closes = _build_trend_closes_5ma(direction="bull")
@@ -544,12 +552,9 @@ class TestMarketRegimeClassification(unittest.TestCase):
         with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
                    return_value=[{"c": c} for c in closes]):
             bearish, reason = t._check_btc_trend()
-        self.assertFalse(bearish, f"TREND_BULL应禁止做空: {reason}")
-        # 多头趋势禁止做空（可能因偏见底兜底或TREND_BULL regime）
-        self.assertTrue(
-            "TREND_BULL" in reason or "偏见底" in reason,
-            f"应判定为TREND_BULL或偏见底: {reason}"
-        )
+        # 无过滤方案：允许做空，但日志中应能识别为 TREND_BULL 形态
+        self.assertTrue(bearish, f"无过滤应允许做空: {reason}")
+        self.assertIn("TREND_BULL", reason, f"应识别为TREND_BULL形态: {reason}")
 
     def test_regime_trend_bear_allows_short(self):
         """GREEN: 均线空头发散 + 斜率向下 + TR高 → TREND_BEAR → 允许做空"""
@@ -566,26 +571,32 @@ class TestMarketRegimeClassification(unittest.TestCase):
         )
 
     def test_regime_ranging_blocks_high_u(self):
-        """Phase D 优化后：均线密集（CV低）+ 大偏离 → RANGING + U超阈值 → 禁止做空
+        """Phase D 优化后：RANGING + U超阈值 → 禁止做空（超卖过滤）
 
-        优化后 RANGING 允许全档位 score，但 U_short > 0.003（约>5%偏离MA30）时仍禁止做空（超卖）。
+        优化后 RANGING 允许全档位 score，但 U_short > 0.003 时仍禁止做空（超卖）。
+        直接调用 _regime_short_filter 单元化测试超卖过滤逻辑。
         """
         t = _make_trader()
-        # 均线密集排列，差距<1%
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 95200, "ma128": 95400,
-            "ma200": 95600, "ma1400": 95800,
-        })
-        # 价格大幅偏离 MA30（~10% below）→ U_short > 0.003 → 超卖过滤
-        price = 85500
-        for i in range(3): closes[i] = price - i * 100
-        t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
-            bearish, reason = t._check_btc_trend()
-        # RANGING + 超卖（U > 0.003）→ 禁止做空
-        self.assertFalse(bearish, f"RANGING+超卖应禁止做空: {reason}")
+        # RANGING + score=STRONG（已被允许）+ U超阈值 + F_dot正常 + valid_bd
+        allow, reason = t._regime_short_filter(
+            regime="RANGING",
+            score="STRONG",
+            U=0.005,  # > FMA_U_THRESHOLD_RANGE(0.003) → 超卖
+            F_dot=0.0,  # 非收敛
+            valid_bd=True,
+        )
+        self.assertFalse(allow, f"RANGING+超卖应禁止做空: {reason}")
         self.assertIn("超卖", reason)
+
+        # 对照：U低于阈值时允许做空
+        allow2, reason2 = t._regime_short_filter(
+            regime="RANGING",
+            score="STRONG",
+            U=0.002,  # < 0.003 → 未超卖
+            F_dot=0.0,
+            valid_bd=True,
+        )
+        self.assertTrue(allow2, f"RANGING+低U应允许做空: {reason2}")
 
     def test_regime_mean_reverting_blocks_short(self):
         """GREEN: TR低 + F_dot收敛（偏离在收敛）→ MEAN_REVERTING → 严格过滤
@@ -612,29 +623,30 @@ class TestMarketRegimeClassification(unittest.TestCase):
         self.assertFalse(bearish, f"MEAN_REVERTING应禁止做空: {reason}")
 
     def test_regime_filter_strong_trend_more_permissive(self):
-        """GREEN: STRONG_TREND_BEAR 允许更大 U_short（阈值0.010 vs RANGING的0.001）
+        """Phase D 优化后：STRONG_TREND_BEAR 允许最大 U_short（0.010）
 
-        验证差异化过滤：趋势市允许更大偏离（均线成阻力=顺势做空）
-        注: U_short 仅含短期组(MA30/65)势能，尺度远小于原 U_potential
+        优化后阈值层级：
+          STRONG_TREND_BEAR (0.010) > TREND_BEAR (0.003) = RANGING (0.003) > MEAN_REVERTING (0.002)
+        差异化设计：强趋势市最宽松（均线成阻力=顺势做空）；弱趋势与震荡市收紧（假突破多）。
         """
         t = _make_trader()
-        # 验证阈值差异：STRONG_TREND_BEAR 的 U 阈值 > RANGING 的 U 阈值
+        # STRONG_TREND_BEAR 的 U 阈值最大（最宽松）
         self.assertGreater(
             t.FMA_U_THRESHOLD_STRONG_TREND,  # 0.010
-            t.FMA_U_THRESHOLD_RANGE,         # 0.001
-            "强趋势市应允许更大U_short（宽松过滤）"
+            t.FMA_U_THRESHOLD_TREND,        # 0.003
+            "强趋势市应最宽松"
         )
-        # TREND_BEAR 的 U 阈值也大于 RANGING
         self.assertGreater(
-            t.FMA_U_THRESHOLD_TREND,         # 0.005
-            t.FMA_U_THRESHOLD_RANGE,         # 0.001
-            "弱趋势市U_short阈值也应大于RANGING"
+            t.FMA_U_THRESHOLD_STRONG_TREND,  # 0.010
+            t.FMA_U_THRESHOLD_RANGE,         # 0.003
+            "强趋势市应比震荡市宽松"
         )
         # MEAN_REVERTING 的 score 限制最严（仅WEAK）
         self.assertEqual(t.FMA_ALLOW_SCORE_REVERT, ("WEAK",))
-        self.assertEqual(t.FMA_ALLOW_SCORE_RANGE, ("WEAK",))
-        # TREND 允许所有档位
-        self.assertEqual(t.FMA_ALLOW_SCORE_TREND, ("STRONG", "NORMAL", "WEAK"))
+        # TREND_BEAR 收紧：仅 STRONG/NORMAL（剔除WEAK，弱趋势市假突破多）
+        self.assertEqual(t.FMA_ALLOW_SCORE_TREND, ("STRONG", "NORMAL"))
+        # RANGING 放宽：全档位（震荡市胜率最高）
+        self.assertEqual(t.FMA_ALLOW_SCORE_RANGE, ("STRONG", "NORMAL", "WEAK"))
 
     def test_regime_trend_ratio_calculation(self):
         """GREEN: TR = |F_inter| / (|F_net| + |F_inter| + ε) 应在 [0, 1] 区间"""
@@ -661,6 +673,226 @@ class TestMarketRegimeClassification(unittest.TestCase):
         # 均线发散（95000/97000/99000/102000 差距较大）→ CV 应较大
         # std ≈ 2900, mean ≈ 98250 → CV ≈ 0.029
         self.assertGreater(cv, 0.01, f"发散均线CV应较大，实际{cv}")
+
+
+class TestDualTrackFilter(unittest.TestCase):
+    """双轨方案：趋势市走两均线（MA128+周线MA200），均值回归走多均线
+
+    传统金融逻辑：
+      - 价格 > MA128 → 牛市/反弹，禁止做空
+      - 3日收盘 ≤ MA128（有效跌破）→ 熊市确认
+      - 接近周线MA200 ±N% → 熊市底部，禁止做空
+      - 熊市中且远离周线MA200 → 允许做空
+    """
+
+    def test_trend_regime_price_above_ma128_blocks_short(self):
+        """趋势市 + 价格 > MA128 → 牛市/反弹，禁止做空"""
+        t = _make_trader()
+        allow, reason = t._regime_short_filter(
+            regime="TREND_BEAR",
+            score="STRONG",
+            U=0.001,
+            F_dot=0.0,
+            valid_bd=True,
+            ma_values={"ma128": 90000, "ma1400": 80000},
+            current_price=95000,  # > MA128
+            valid_bd_ma128=True,
+        )
+        self.assertFalse(allow, f"价格>MA128应禁止做空: {reason}")
+        self.assertIn("牛市/反弹", reason)
+
+    def test_trend_regime_no_breakdown_ma128_blocks_short(self):
+        """趋势市 + 价格 < MA128 但未3日跌破 → 禁止做空"""
+        t = _make_trader()
+        allow, reason = t._regime_short_filter(
+            regime="STRONG_TREND_BEAR",
+            score="STRONG",
+            U=0.001,
+            F_dot=0.0,
+            valid_bd=True,
+            ma_values={"ma128": 100000, "ma1400": 120000},
+            current_price=95000,  # < MA128
+            valid_bd_ma128=False,  # 未3日跌破
+        )
+        self.assertFalse(allow, f"MA128未有效跌破应禁止做空: {reason}")
+        self.assertIn("MA128未有效跌破", reason)
+
+    def test_trend_regime_near_ma200_week_blocks_short(self):
+        """趋势市 + 价格接近周线MA200 ±2% → 熊市底部，禁止做空"""
+        t = _make_trader()
+        allow, reason = t._regime_short_filter(
+            regime="TREND_BEAR",
+            score="STRONG",
+            U=0.001,
+            F_dot=0.0,
+            valid_bd=True,
+            ma_values={"ma128": 100000, "ma1400": 80000},
+            current_price=80500,  # 接近 MA1400(80000) 约 0.6% < 2%
+            valid_bd_ma128=True,
+        )
+        self.assertFalse(allow, f"接近周线MA200应禁止做空: {reason}")
+        self.assertIn("接近周线MA200底部", reason)
+
+    def test_trend_regime_valid_short_allowed(self):
+        """趋势市 + 价格<MA128 + 3日跌破 + 远离MA200 → 允许做空"""
+        t = _make_trader()
+        allow, reason = t._regime_short_filter(
+            regime="STRONG_TREND_BEAR",
+            score="STRONG",
+            U=0.001,
+            F_dot=0.0,
+            valid_bd=True,
+            ma_values={"ma128": 100000, "ma1400": 120000},  # MA200周线更高（长期牛市回调）
+            current_price=95000,  # < MA128，远离 MA1400
+            valid_bd_ma128=True,
+        )
+        self.assertTrue(allow, f"熊市中远离MA200应允许做空: {reason}")
+        self.assertIn("熊市做空", reason)
+
+    def test_trend_regime_ma128_missing_blocks_short(self):
+        """趋势市 + MA128数据缺失 → 保守禁止做空"""
+        t = _make_trader()
+        allow, reason = t._regime_short_filter(
+            regime="TREND_BEAR",
+            score="STRONG",
+            U=0.001,
+            F_dot=0.0,
+            valid_bd=True,
+            ma_values={"ma30": 95000},  # 缺少 ma128
+            current_price=94000,
+            valid_bd_ma128=False,
+        )
+        self.assertFalse(allow, f"MA128缺失应禁止做空: {reason}")
+
+    def test_mean_reverting_keeps_multi_ma_filter(self):
+        """均值回归市仍走多均线逻辑（不变）"""
+        t = _make_trader()
+        # MEAN_REVERTING + score=STRONG（非WEAK）→ 禁止做空（多均线逻辑）
+        allow, reason = t._regime_short_filter(
+            regime="MEAN_REVERTING",
+            score="STRONG",
+            U=0.001,
+            F_dot=0.0,
+            valid_bd=True,
+            ma_values={"ma128": 100000, "ma1400": 120000},
+            current_price=95000,
+            valid_bd_ma128=True,
+        )
+        self.assertFalse(allow, f"MEAN_REVERTING+STRONG应禁止做空: {reason}")
+        self.assertIn("仅WEAK允许", reason)
+
+    def test_ranging_keeps_multi_ma_filter(self):
+        """震荡市仍走多均线逻辑（U_short 超卖过滤）"""
+        t = _make_trader()
+        # RANGING + U超阈值 → 禁止做空（多均线逻辑）
+        allow, reason = t._regime_short_filter(
+            regime="RANGING",
+            score="WEAK",
+            U=0.005,  # > FMA_U_THRESHOLD_RANGE(0.003) → 超卖
+            F_dot=0.0,
+            valid_bd=True,
+            ma_values={"ma128": 100000, "ma1400": 120000},
+            current_price=95000,
+            valid_bd_ma128=True,
+        )
+        self.assertFalse(allow, f"RANGING+超卖应禁止做空: {reason}")
+        self.assertIn("超卖", reason)
+
+    def test_valid_breakdown_ma128_field_exists(self):
+        """_calc_5ma_spring_force 应输出 valid_breakdown_ma128 字段"""
+        t = _make_trader()
+        closes = _build_closes_5ma({
+            "ma30": 95000, "ma65": 97000, "ma128": 99000,
+            "ma200": 102000, "ma1400": 108000,
+        })
+        res = t._calc_5ma_spring_force(closes, tier="daily_btc")
+        self.assertIn("valid_breakdown_ma128", res)
+        self.assertIsInstance(res["valid_breakdown_ma128"], bool)
+
+
+class TestRegimeShortConfMultiplier(unittest.TestCase):
+    """market_regime 阈值调节器测试
+
+    回测数据验证：
+      TREND_BEAR  胜率 28.6% → 乘数 1.15（强抑制）
+      RANGING     胜率 68.6% → 乘数 0.90（放宽）
+      最终阈值 = base × score_multi × regime_multi
+    """
+
+    def test_regime_multiplier_trend_bear_increases_threshold(self):
+        """TREND_BEAR 应抬高空做阈值（乘数 1.15 > 1.0）"""
+        t = _make_trader()
+        multi = t._get_regime_short_multiplier("TREND_BEAR")
+        self.assertGreater(multi, 1.0, f"TREND_BEAR乘数应>1.0，实际{multi}")
+        self.assertAlmostEqual(multi, 1.15, places=2)
+
+    def test_regime_multiplier_trend_bull_increases_threshold(self):
+        """TREND_BULL 应抬高空做阈值（乘数 1.15 > 1.0）"""
+        t = _make_trader()
+        multi = t._get_regime_short_multiplier("TREND_BULL")
+        self.assertGreater(multi, 1.0, f"TREND_BULL乘数应>1.0，实际{multi}")
+
+    def test_regime_multiplier_ranging_decreases_threshold(self):
+        """RANGING 应降低做空阈值（乘数 0.90 < 1.0）"""
+        t = _make_trader()
+        multi = t._get_regime_short_multiplier("RANGING")
+        self.assertLess(multi, 1.0, f"RANGING乘数应<1.0，实际{multi}")
+        self.assertAlmostEqual(multi, 0.90, places=2)
+
+    def test_regime_multiplier_strong_trend_bear_neutral(self):
+        """STRONG_TREND_BEAR 乘数应为 1.0（中性）"""
+        t = _make_trader()
+        multi = t._get_regime_short_multiplier("STRONG_TREND_BEAR")
+        self.assertAlmostEqual(multi, 1.0, places=2)
+
+    def test_regime_multiplier_unknown_regime_defaults_neutral(self):
+        """未知 regime 应默认 1.0（中性）"""
+        t = _make_trader()
+        multi = t._get_regime_short_multiplier("UNKNOWN_REGIME")
+        self.assertAlmostEqual(multi, 1.0, places=2)
+
+    def test_parse_regime_from_reason_extracts_correct_regime(self):
+        """从 trend_reason 日志中正确解析 regime"""
+        t = _make_trader()
+        reason = "BTC做空允许 regime=TREND_BEAR TR=0.599 CV=0.0609 slope=-0.102% ..."
+        regime = t._parse_regime_from_reason(reason)
+        self.assertEqual(regime, "TREND_BEAR")
+
+    def test_parse_regime_from_reason_no_match_defaults_ranging(self):
+        """日志中无 regime 字段时默认 RANGING"""
+        t = _make_trader()
+        reason = "BTC做空允许 无regime字段"
+        regime = t._parse_regime_from_reason(reason)
+        self.assertEqual(regime, "RANGING")
+
+    def test_combined_multiplier_trend_bear_strong_score(self):
+        """TREND_BEAR + STRONG score 组合乘数验证
+
+        回测：TREND_BEAR 胜率 28.6%（应抑制）
+        理论：base 0.80 × STRONG(0.9091) × TREND_BEAR(1.15) = 0.836
+        """
+        t = _make_trader()
+        score_multi = t._compute_short_conf_multiplier("STRONG")
+        regime_multi = t._get_regime_short_multiplier("TREND_BEAR")
+        combined = score_multi * regime_multi
+        # 0.9091 × 1.15 ≈ 1.0455 > 1.0 → 抬高阈值
+        self.assertGreater(combined, 1.0, f"TREND_BEAR+STRONG组合应>1.0，实际{combined}")
+
+    def test_combined_multiplier_ranging_weak_score(self):
+        """RANGING + WEAK score 组合乘数验证
+
+        回测：RANGING 胜率 68.6%（应放宽）
+        理论：base 0.80 × WEAK(1.1765) × RANGING(0.90) = 0.847
+        """
+        t = _make_trader()
+        score_multi = t._compute_short_conf_multiplier("WEAK")
+        regime_multi = t._get_regime_short_multiplier("RANGING")
+        combined = score_multi * regime_multi
+        # 1.1765 × 0.90 ≈ 1.0589 > 1.0 → 仍略抬高（WEAK 本身就需要更高置信度）
+        # 但相比 WEAK + TREND_BEAR (1.1765 × 1.15 = 1.353)，已明显放宽
+        trend_bear_combined = t._compute_short_conf_multiplier("WEAK") * t._get_regime_short_multiplier("TREND_BEAR")
+        self.assertLess(combined, trend_bear_combined,
+                        f"RANGING+WEAK组合({combined})应<TREND_BEAR+WEAK组合({trend_bear_combined})")
 
 
 if __name__ == "__main__":

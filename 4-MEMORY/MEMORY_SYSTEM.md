@@ -324,6 +324,25 @@ OKX CLI命令使用`okx`而非`okx-trade`
 
 ---
 
+## 🔗 应用记忆统一接口索引（7标准+2便捷，A0可直接引用）
+
+> 与 `VectorMemoryInterface` 及各 `AppMemoryInterface` 签名 100% 对齐，便于 A0 矛盾分析引擎直接程序化调用。
+
+### 7标准接口补充：蒸馏候选提取
+
+| 签名 | 功能 | 主要参数 | 返回结构（每条候选字段） |
+|------|------|---------|------------------------|
+| `distill_candidates(min_quality: str = "B", limit: int = 10) -> List[Dict]` | 从 L1 `memories` 表提取 **达到各档蒸馏阈值（verify≥n + conf≥x）** 的高价值候选，用于上升到贝叶斯库 / Solution Paths 等上层单元；S档(verify≥10, conf≥0.95)、A档(≥3, ≥0.70)、B档(≥1, ≥0.40) | `min_quality`：最低质量档（S/A/B/C），低于该档 + 不达标阈值直接跳过；`limit`：返回最大条数（截断前按优先级排序） | `id`(str) / `content`(str) / `quality_level`("S"\|"A"\|"B") / `confidence`(float 0~1) / `verify_count`(int) / `tags`(list[str]) / `memory_type`(str) / `source`(str)；**排序**：质量 S>A>B → verify多→少 → confidence高→低 |
+
+### 2便捷方法补全
+
+| 签名 | 功能 | 主要参数 | 返回结构 |
+|------|------|---------|---------|
+| `search_similar_cases(content: str, top_k: int = 5, threshold: float = 0.3) -> List[SearchResult]` | 统一规范别名（与 `search_similar()` 功能 100% 等价）；`search()` 后按 cos score 阈值截断，用于"找同类已验证案例"的便捷调用 | `content`：查询内容；`top_k`：最多返回条数；`threshold`：最低相似度门槛 | 同 `SearchResult`：`id` / `score`(float) / `metadata`(含 quality_level / confidence / verify_count / tags 等) |
+| `run_distill_from_review(review_data: Dict) -> Dict[str, int]` | 基于复盘 Review（A8 校验报告、case 验证结果、issue 复盘记录等）**主动触发 A8 校验闭环**：自动提取 Review 关键词 → search 命中对应记忆 → 每条唯一命中 `increment_verify(+1)` → 按 C→B→A→S 阈值矩阵自动调用 `update_quality` 升级质量；**单条记忆一次最多升一级**（避免质量大跳） | `review_data`：结构化 dict，兼容 `A8Report.to_dict()` 输出；自动消费：`matched_patterns[]`、`matched[]` / `matched_functions[]`、`doc_only_functions[]` / `code_only_functions[]`、`keywords[]` / `hotspots[]`；文本字段 `subsystem` / `summary` / `title` / `focus` → 按非单词字符切 → 关键词去重 + 过滤短词 | `{"processed": int(唯一记忆命中数), "upgraded": int(实际升级成功数), "skipped": int(未达标/读写出错跳过数)}` |
+
+---
+
 ## 🎯 核心目标
 
 1. **快速意图识别**: 用户一句话 → 精准调度SKILL

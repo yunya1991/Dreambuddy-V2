@@ -99,6 +99,17 @@ class PollingTrader:
     SHORT_CONF_MULTI_MA_NORMAL: float = 1.0000
     SHORT_CONF_MULTI_MA_WEAK:   float = 1.1765  # ≈ 1/0.85
 
+    # --------- market_regime 阈值调节器（基于回测胜率反比）---------
+    # 理论：regime 反映市场形态，不同形态下做空胜率差异显著
+    #       回测数据：TREND_BEAR 28.6% < STRONG_TREND_BEAR 50.0% < RANGING 68.6%
+    #       乘数 > 1.0 = 抬高阈值 = 抑制做空；乘数 < 1.0 = 降低阈值 = 放宽做空
+    #       与 bearish_score 乘数叠加：final_threshold = base × score_multi × regime_multi
+    REGIME_SHORT_CONF_MULTI_TREND_BULL:        float = 1.15  # 胜率 42.9%，抑制（几乎禁止）
+    REGIME_SHORT_CONF_MULTI_TREND_BEAR:        float = 1.15  # 胜率 28.6%，强抑制
+    REGIME_SHORT_CONF_MULTI_STRONG_TREND_BEAR: float = 1.00  # 胜率 50.0%，中性
+    REGIME_SHORT_CONF_MULTI_MEAN_REVERTING:    float = 1.00  # 无回测数据，中性
+    REGIME_SHORT_CONF_MULTI_RANGING:           float = 0.90  # 胜率 68.6%，放宽（≈1/1.11）
+
     # --------- 做空仓位规模分层（bearish_score → position_multiplier）---------
     # 理论：周期越短可信度越低，但趋势识别越早 → 不禁开，而是控制资金规模
     #       随着跌破更多均线，弹簧压力越来越重 → 置信度越来越强 → 仓位越来越大
@@ -190,13 +201,18 @@ class PollingTrader:
     #   接近长期MA往往是大周期支撑位附近，直接禁止做空
     FMA_LONG_TERM_BOTTOM_BUFFER: float = 0.02
 
+    # 弹簧力场形态过滤开关（回测验证效果不佳，默认关闭）
+    #   False: 走简单趋势确认逻辑（偏见底兜底 + valid_breakdown + price<MA128）
+    #   True : 走 _regime_short_filter 形态差异化过滤（仅用于实验/对比）
+    FMA_REGIME_FILTER_ENABLED: bool = False
+
     def __init__(
         self,
         interval: int = 3600,
         coins: list = None,
         bar: str = "1H",
         confidence_threshold: float = 0.70,
-        short_confidence_threshold: float = 0.70,
+        short_confidence_threshold: float = 0.80,
         max_positions: int = 3,
         kline_limit: int = 200,
         initial_equity: float = 100.0,
@@ -635,6 +651,9 @@ class PollingTrader:
         # 保护期内：信号反转需更高置信度；易经TIGHTEN_SL/LOWER_TP/LOWER_SL/RAISE_TP全部屏蔽；
         #          P3提前退出需确认；仅保留开仓静态SL/TP + P0硬止损
         self.POSITION_PROTECTION_HOURS = 6.0  # 开仓后前6小时为保护期
+        # P2 总开关：形态预测器（S5）+ 爆仓/期权宏观特征（仅 True 时网络调用 + 乘数注入 + call site 注入）
+        #   False 时所有新代码路径 zero-byte 触达，字节等价旧路径，可随时回滚
+        self.ENABLE_REGIME_AND_MACRO_S5 = False
         # 保护期内信号反转所需额外置信度(在effective_threshold之上再加)
         self.PROTECTED_REVERSE_CONF_BOOST = 0.12  # 如原阈值0.7→保护期需≥0.82
         # 保护期内最小亏损比例才允许P3提前退出（否则假预警会走）
@@ -1020,8 +1039,18 @@ class PollingTrader:
                 scale_dict = bcrm_result.scale_params
 
         # P0修复：注入 regime 到 snapshot（卦象+is_ranging+closes推断）
+        # P2-06: 当 ENABLE_REGIME_AND_MACRO_S5 时，拉取全局宏观特征并注入；
+        #        False 时完全不传参，_infer_regime 走旧路径，字节等价
+        _p2_macro_feats = None
+        if self.ENABLE_REGIME_AND_MACRO_S5:
+            try:
+                _p2_macro_feats = self._fetch_global_macro_features_once()
+            except Exception:
+                _p2_macro_feats = None
         snapshot["regime"] = self._infer_regime(
-            hex_cn, snapshot.get("is_ranging", False), direction, closes_window
+            hex_cn, snapshot.get("is_ranging", False), direction, closes_window,
+            macro_features=_p2_macro_feats,
+            enable_macro_correction=self.ENABLE_REGIME_AND_MACRO_S5,
         )
 
         return {
@@ -1286,6 +1315,9 @@ class PollingTrader:
                     is_ranging,
                     direction,
                     list(closes[-60:]) if len(closes) >= 60 else list(closes),
+                    macro_features=(self._fetch_global_macro_features_once()
+                                    if self.ENABLE_REGIME_AND_MACRO_S5 else None),
+                    enable_macro_correction=self.ENABLE_REGIME_AND_MACRO_S5,
                 ),
             },
             "contradictions": bcrm_result.get("a0_analysis", {}).get("contradictions", []),
@@ -1394,20 +1426,16 @@ class PollingTrader:
         "泽": "dui",
     }
 
-    def _infer_regime(
+    # ──────────────────────────────────────────────────────────────
+    # P2-02 重构：把原推断逻辑抽为 _infer_regime_base（字节等价原实现）
+    #           外层 _infer_regime 加 macro correction 开关包裹
+    # ──────────────────────────────────────────────────────────────
+    def _infer_regime_base(
         self, hexagram_name: str, is_ranging: bool, direction: str = "", closes: list = None
     ) -> str:
-        """从卦象名+市场状态推断 regime（8态之一）
+        """[BYTE-EQUIVALENT 原实现] 从卦象名+市场状态推断 regime（8态之一）
 
         轻量级推断，不依赖 MarketRegimeClassifier 训练。
-        映射规则：
-          1. 从64卦名提取下卦（第1字）和上卦（第2字，若存在）
-          2. 下卦为主卦，映射到 GUA_REGIME_MAP 的8态
-          3. is_ranging=True 时，趋势类regime降级为震荡类
-          4. 特殊处理纯卦（"X为Y"格式）
-
-        Returns:
-            regime 名称（如 TREND_UP_STRONG / RANGE_BOUND / ...）
         """
         from scripts.memory_l4.bcrm2.market_regime import GUA_REGIME_MAP
 
@@ -1462,6 +1490,187 @@ class PollingTrader:
                 return "VOLATILE_DROP" if not is_ranging else "RANGE_BOUND"
 
         return "CONSOLIDATION"
+
+    def _infer_regime(
+        self,
+        hexagram_name: str,
+        is_ranging: bool,
+        direction: str = "",
+        closes: list = None,
+        macro_features: dict = None,
+        enable_macro_correction: bool = True,
+    ) -> str:
+        """[外层] 从卦象名 + 市场状态 + macro(爆仓/期权) 推断 8 态
+
+        Args:
+            hexagram_name:   卦象名（如 乾为天 / 水山蹇 / 已存在持仓）
+            is_ranging:      是否震荡市
+            direction:       价格方向（UP/DOWN/空）
+            closes:          收盘价序列（最长 20 根以上，用于无卦兜底）
+            macro_features:  collect_global() 顶层字段字典，缺省为 {}
+            enable_macro_correction: S5 开关，False 时字节等价旧路径
+        """
+        # ① 先跑基础推断（100% 字节等价旧实现，开关关时直接返回）
+        base = self._infer_regime_base(hexagram_name, is_ranging, direction, closes)
+
+        if not enable_macro_correction:
+            return base
+        if not macro_features:
+            return base
+
+        # ② 爆仓/期权 macro overlay 校正
+        from scripts.memory_l4.bcrm2.market_regime import apply_macro_regime_correction
+        try:
+            return apply_macro_regime_correction(base, macro_features)
+        except Exception:
+            # graceful：校正器任何异常 → 回退基础推断（不影响交易主链路）
+            return base
+
+    # ──────────────────────────────────────────────────────────────
+    # P2-03：FreeMarketFeed 集成 + 5 分钟缓存 + graceful 失败
+    # ──────────────────────────────────────────────────────────────
+    def _get_macro_feed_instance(self):
+        """获取 FreeMarketFeed 单例（懒加载，仅首次调用时实例化 + 注入 sys.path）
+
+        单独抽出来是为了 P2-03 T4 monkeypatch mock 测试覆盖异常分支。
+        """
+        import sys as _sys, os as _os
+        if not hasattr(self, "_macro_feed_singleton") or self._macro_feed_singleton is None:
+            # 注入 1-ARCHITECTURE 包路径到 sys.path（项目跨 package 引用）
+            _proj_root = _os.path.abspath(_os.path.join(
+                _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                "..", "..", "..", "1-ARCHITECTURE"
+            ))
+            if _proj_root not in _sys.path:
+                _sys.path.insert(0, _proj_root)
+            from dreamos.capabilities.trading.free_market_feed import FreeMarketFeed
+            self._macro_feed_singleton = FreeMarketFeed()
+        return self._macro_feed_singleton
+
+    def _fetch_global_macro_features_once(
+        self,
+        cache_ttl_sec: int = 300,
+        _test_skip_network: bool = False,
+    ) -> dict:
+        """形态预测器专用：从 FreeMarketFeed.collect_global 取顶层 liq_/crypto_vix_/btc_option_* 字段
+
+        Cache：5 分钟 TTL（形态慢变量，过高频调用会被 OKX/Binance rate-limit）
+        Graceful：任何异常 → 返回空 {}，不冒泡阻塞主链路
+        """
+        import time as _time
+        # lazy 初始化 cache 结构（不写 __init__ 防旧实例化路径崩）
+        if not hasattr(self, "_macro_feature_cache") or self._macro_feature_cache is None:
+            self._macro_feature_cache = {"ts": 0, "data": {}}
+
+        now = _time.time()
+        # TTL 命中缓存直接返回
+        if (now - self._macro_feature_cache.get("ts", 0)) < cache_ttl_sec:
+            return dict(self._macro_feature_cache["data"])  # 浅拷贝避免外部污染
+
+        if _test_skip_network:
+            # TTL 失效 + 跳过网络调用（测试模式）→ 返回空 dict，不写入 cache
+            return {}
+
+        # 真实调用 FMF
+        try:
+            feed = self._get_macro_feed_instance()
+            global_snap = feed.collect_global()
+            # 只取形态预测器消费的顶层字段（约 10 个），避免整包序列化开销
+            whitelist = [
+                "liq_panic_score_0_to_1", "liq_panic_level", "liq_regime_hint",
+                "liq_long_short_ratio", "liq_cascade_hours", "liq_total_24h_usd",
+                "crypto_vix_proxy_pct", "options_regime_hint",
+                "btc_option_atm_iv_pct", "btc_option_pc_skew_25d_pct",
+                "btc_option_iv_level", "btc_option_skew_sentiment",
+                "eth_option_atm_iv_pct", "eth_option_pc_skew_25d_pct",
+                "eth_option_iv_level", "eth_option_skew_sentiment",
+            ]
+            filtered = {k: global_snap.get(k) for k in whitelist if k in global_snap}
+        except Exception:
+            # 任何错误（网络/路径/实例化/超时）→ 空 dict，不写 cache（下次重试）
+            return {}
+
+        # 写 cache，ts 记录成功调用时刻
+        self._macro_feature_cache = {"ts": now, "data": filtered}
+        return dict(filtered)
+
+    # ──────────────────────────────────────────────────────────────
+    # P2-04：REGIME_MULTIPLIERS（8 态 × 4 维参数乘数）+ 查询接口
+    # ──────────────────────────────────────────────────────────────
+    REGIME_MULTIPLIERS: dict = {
+        # Spec §5.1 表：强趋势 → 加仓、放止盈、松止损、宽门槛
+        "TREND_UP_STRONG": {
+            "position_mult":  1.20,
+            "tp_mult":        1.30,
+            "sl_mult":        1.15,
+            "threshold_mult": 0.80,
+        },
+        "TREND_UP_MILD": {
+            "position_mult":  1.05,
+            "tp_mult":        1.10,
+            "sl_mult":        1.05,
+            "threshold_mult": 0.92,
+        },
+        "BREAKOUT": {
+            "position_mult":  1.10,
+            "tp_mult":        1.20,
+            "sl_mult":        1.00,
+            "threshold_mult": 0.85,
+        },
+        # 震荡类 → 减仓、紧止盈、宽止损（震荡别追、别打止损）
+        "RANGE_BOUND": {
+            "position_mult":  0.80,
+            "tp_mult":        0.85,
+            "sl_mult":        1.20,
+            "threshold_mult": 1.15,
+        },
+        "CONSOLIDATION": {
+            "position_mult":  0.70,
+            "tp_mult":        0.80,
+            "sl_mult":        1.25,
+            "threshold_mult": 1.20,
+        },
+        # 风险/反转类 → 极度保守
+        "VOLATILE_DROP": {
+            "position_mult":  0.35,
+            "tp_mult":        0.75,
+            "sl_mult":        0.65,
+            "threshold_mult": 1.30,
+        },
+        "FOMO_RALLY": {
+            "position_mult":  0.85,
+            "tp_mult":        0.60,
+            "sl_mult":        0.70,
+            "threshold_mult": 1.15,
+        },
+        "REVERSAL": {
+            "position_mult":  0.50,
+            "tp_mult":        0.75,
+            "sl_mult":        0.80,
+            "threshold_mult": 1.25,
+        },
+    }
+
+    def _get_regime_pred_multipliers(
+        self,
+        regime: str,
+        enable_regime_pred: bool = True,
+    ) -> dict:
+        """查 8 态乘数表；开关关 / regime 非法 → 全 1.0
+
+        返回格式: {position_mult, tp_mult, sl_mult, threshold_mult}
+        """
+        # 开关关 → 字节等价旧路径（全 1.0）
+        if not enable_regime_pred:
+            return {"position_mult": 1.0, "tp_mult": 1.0,
+                    "sl_mult": 1.0, "threshold_mult": 1.0}
+        # regime 未命中表 → 全 1.0 fallback，不抛异常
+        m = self.REGIME_MULTIPLIERS.get(regime)
+        if not m:
+            return {"position_mult": 1.0, "tp_mult": 1.0,
+                    "sl_mult": 1.0, "threshold_mult": 1.0}
+        # 返回浅拷贝，避免外部误改类常量表
+        return dict(m)
 
     # ══════════════════════════════════════════════════════════════
     # v5.0 离场防频繁：离场确认状态机 + 持仓保护期门禁
@@ -3369,6 +3578,17 @@ class PollingTrader:
         else:
             valid_breakdown = False
 
+        # 5b2) MA128 专属3日跌破确认（双轨方案：趋势市简化两均线过滤用）
+        #   传统金融定义：3日收盘价 ≤ MA128 → 有效跌破 → 熊市确认
+        ma128_val = ma_values.get("ma128")
+        if ma128_val and len(closes) >= self.FMA_SHORT_TIER_BREAKDOWN_BARS:
+            valid_breakdown_ma128 = all(
+                closes[i] <= ma128_val
+                for i in range(self.FMA_SHORT_TIER_BREAKDOWN_BARS)
+            )
+        else:
+            valid_breakdown_ma128 = False
+
         # 5c) 排列类型
         mas_list = sorted(ma_values.items(), key=lambda x: x[1])
         ascending = all(mas_list[i][1] <= mas_list[i+1][1] for i in range(len(mas_list)-1))
@@ -3490,6 +3710,7 @@ class PollingTrader:
             "bearish_score": bearish_score,
             "bearish_n": below_count,
             "valid_breakdown": valid_breakdown,
+            "valid_breakdown_ma128": valid_breakdown_ma128,  # MA128专属3日跌破确认（双轨方案）
             "current_price": current_price,
             "ma_values": {k: round(v, 2) for k, v in ma_values.items()},
             "ma_slopes": {k: round(v, 4) for k, v in ma_slopes.items()},
@@ -3504,13 +3725,60 @@ class PollingTrader:
             "threshold": 0.02,
         }
 
-    def _regime_short_filter(self, regime: str, score: str, U: float,
-                              F_dot: float, valid_bd: bool) -> tuple:
-        """Phase D 形态差异化做空过滤
+    def _trend_regime_short_filter(self, ma_values: dict, current_price: float,
+                                     valid_bd_ma128: bool) -> tuple:
+        """双轨方案：趋势市简化两均线过滤（MA128 + 周线MA200）
 
-        根据 market_regime 走不同的过滤阈值，解决弹簧力 F 双重身份问题：
-          - 趋势市：F>0 = 均线阻力 = 顺势做空（宽松）
-          - 均值回归市：F>0 = 超卖 = 禁止做空（严格）
+        传统金融逻辑：
+          - 价格 > MA128 → 牛市/反弹，禁止做空
+          - 3日收盘 ≤ MA128（有效跌破）→ 熊市确认
+          - 接近周线MA200 ±N% → 熊市底部，禁止做空（可能反弹）
+          - 熊市中且远离周线MA200 → 允许做空
+
+        Args:
+            ma_values: {"ma128": ..., "ma1400": ...} (ma1400 ≈ 周线MA200)
+            current_price: 当前价格
+            valid_bd_ma128: MA128 的3日跌破确认
+
+        Returns:
+            (allow_short: bool, reason_tag: str)
+        """
+        ma128 = ma_values.get("ma128")
+        ma200_week = ma_values.get("ma1400")  # 周线MA200 ≈ 日线MA1400
+
+        # 1) 数据不足 → 保守禁止
+        if not ma128:
+            return False, "趋势市 MA128数据缺失"
+
+        # 2) 价格 > MA128 → 牛市/反弹，禁止做空
+        if current_price > ma128:
+            return False, f"趋势市 价({current_price:.0f})>MA128({ma128:.0f}) 牛市/反弹"
+
+        # 3) 未有效跌破 MA128（3日收盘 < MA128）→ 跌破未确认
+        if not valid_bd_ma128:
+            return False, "趋势市 MA128未有效跌破(3日收盘<MA128)"
+
+        # 4) 接近周线MA200 ±N% → 熊市底部，禁止做空
+        if ma200_week:
+            dist_to_bottom = abs(current_price - ma200_week) / ma200_week
+            if dist_to_bottom <= self.FMA_LONG_TERM_BOTTOM_BUFFER:
+                return False, (f"趋势市 接近周线MA200底部(价={current_price:.0f}"
+                               f"≈MA1400({ma200_week:.0f})±{self.FMA_LONG_TERM_BOTTOM_BUFFER*100:.0f}%)")
+
+        # 5) 熊市中且远离周线MA200 → 允许做空
+        bottom_str = f" 距周线MA200({ma200_week:.0f})={((current_price-ma200_week)/ma200_week*100):+.1f}%" if ma200_week else ""
+        return True, f"趋势市 熊市做空(价<MA128有效跌破){bottom_str}"
+
+    def _regime_short_filter(self, regime: str, score: str, U: float,
+                              F_dot: float, valid_bd: bool,
+                              ma_values: dict = None,
+                              current_price: float = 0.0,
+                              valid_bd_ma128: bool = False) -> tuple:
+        """Phase D 形态差异化做空过滤（双轨方案）
+
+        双轨分流：
+          - 趋势市（TREND_BULL/STRONG_TREND_BEAR/TREND_BEAR）→ 两均线简化过滤
+          - 均值回归/震荡（MEAN_REVERTING/RANGING）→ 多均线差异化过滤
 
         Returns:
             (allow_short: bool, reason_tag: str)
@@ -3519,27 +3787,17 @@ class PollingTrader:
         if regime == "TREND_BULL":
             return False, "TREND_BULL 禁止做空"
 
-        # 强空头趋势：宽松（均线成阻力，顺势做空）
-        if regime == "STRONG_TREND_BEAR":
-            if score not in self.FMA_ALLOW_SCORE_STRONG_TREND:
-                return False, f"STRONG_TREND_BEAR 但 score={score} 未达档"
-            if U > self.FMA_U_THRESHOLD_STRONG_TREND:
-                return False, f"STRONG_TREND_BEAR 超卖 U={U:.5f}>{self.FMA_U_THRESHOLD_STRONG_TREND}"
-            if F_dot < self.FMA_FDOT_STRONG_TREND:
-                return False, f"STRONG_TREND_BEAR 收敛 F_dot={F_dot:.4f}<{self.FMA_FDOT_STRONG_TREND}"
-            return True, "STRONG_TREND_BEAR 顺势做空"
-
-        # 弱空头趋势：收紧（弱趋势市假突破多，回测胜率仅 28.6%）
-        if regime == "TREND_BEAR":
-            if not valid_bd:
-                return False, "TREND_BEAR 无3日跌破确认"
-            if score not in self.FMA_ALLOW_SCORE_TREND:
-                return False, f"TREND_BEAR 仅STRONG/NORMAL允许，score={score}"
-            if U > self.FMA_U_THRESHOLD_TREND:
-                return False, f"TREND_BEAR 超卖 U={U:.5f}>{self.FMA_U_THRESHOLD_TREND}"
-            if F_dot < self.FMA_FDOT_TREND:
-                return False, f"TREND_BEAR 收敛 F_dot={F_dot:.4f}<{self.FMA_FDOT_TREND}"
-            return True, "TREND_BEAR 收紧做空（STRONG/NORMAL+低U+加速）"
+        # 趋势市（强空头/弱空头）→ 走两均线简化过滤
+        if regime in ("STRONG_TREND_BEAR", "TREND_BEAR"):
+            if not ma_values or current_price <= 0:
+                return False, f"{regime} 缺少ma_values/current_price参数"
+            allow, trend_reason = self._trend_regime_short_filter(
+                ma_values=ma_values,
+                current_price=current_price,
+                valid_bd_ma128=valid_bd_ma128,
+            )
+            prefix = "STRONG_TREND_BEAR" if regime == "STRONG_TREND_BEAR" else "TREND_BEAR"
+            return allow, f"{prefix} | {trend_reason}"
 
         # 均值回归：严格（F>0 = 超卖 = 禁止做空）
         if regime == "MEAN_REVERTING":
@@ -3641,14 +3899,25 @@ class PollingTrader:
                 self._btc_trend_cache = {"ts": now, "result": result}
                 return result
 
-            # 6) Phase D：按 regime 走差异化过滤（使用 U_short 检测超卖）
-            allow_short, filter_reason = self._regime_short_filter(
-                regime=regime,
-                score=score,
-                U=U_short,
-                F_dot=F_dot,
-                valid_bd=res["valid_breakdown"],
-            )
+            # 6) 做空过滤：开关控制
+            #    FMA_REGIME_FILTER_ENABLED=False（默认）→ 简单趋势确认
+            #    FMA_REGIME_FILTER_ENABLED=True         → 形态差异化过滤（实验用）
+            if self.FMA_REGIME_FILTER_ENABLED:
+                # 形态差异化过滤（双轨方案，回测效果不佳，仅实验用）
+                allow_short, filter_reason = self._regime_short_filter(
+                    regime=regime,
+                    score=score,
+                    U=U_short,
+                    F_dot=F_dot,
+                    valid_bd=res["valid_breakdown"],
+                    ma_values=mav,
+                    current_price=res["current_price"],
+                    valid_bd_ma128=res.get("valid_breakdown_ma128", False),
+                )
+            else:
+                # 无过滤（回测验证：无过滤胜率56.8% > 所有过滤方案，信号整体更好）
+                # 历史方案：曾尝试3日跌破确认+price<MA128，均过滤掉高胜率信号
+                allow_short, filter_reason = True, "无趋势过滤(回测验证最优)"
 
             if allow_short:
                 result = (
@@ -3717,14 +3986,22 @@ class PollingTrader:
                     f" ±{self.FMA_LONG_TERM_BOTTOM_BUFFER*100:.0f}%) | {dynamics} | {bd_summary}"
                 )
 
-            # Phase D：按 regime 走差异化过滤（使用 U_short 检测超卖）
-            allow_short, filter_reason = self._regime_short_filter(
-                regime=regime,
-                score=score,
-                U=U_short,
-                F_dot=F_dot,
-                valid_bd=res["valid_breakdown"],
-            )
+            # 做空过滤：开关控制（与 _check_btc_trend 同构）
+            if self.FMA_REGIME_FILTER_ENABLED:
+                # 形态差异化过滤（双轨方案，回测效果不佳，仅实验用）
+                allow_short, filter_reason = self._regime_short_filter(
+                    regime=regime,
+                    score=score,
+                    U=U_short,
+                    F_dot=F_dot,
+                    valid_bd=res["valid_breakdown"],
+                    ma_values=res["ma_values"],
+                    current_price=res["current_price"],
+                    valid_bd_ma128=res.get("valid_breakdown_ma128", False),
+                )
+            else:
+                # 无过滤（与 _check_btc_trend 同构，回测验证无过滤最优）
+                allow_short, filter_reason = True, "无趋势过滤(回测验证最优)"
 
             if allow_short:
                 return True, (
@@ -3824,6 +4101,36 @@ class PollingTrader:
             return self.SHORT_CONF_MULTI_MA_WEAK
         return 0.00
 
+    def _get_regime_short_multiplier(self, regime: str) -> float:
+        """根据 market_regime 返回做空阈值调节乘数（阈值调节器）
+
+        理论：regime 反映市场形态，不同形态下做空胜率差异显著
+              回测数据：TREND_BEAR 28.6% < STRONG_TREND_BEAR 50.0% < RANGING 68.6%
+              乘数 > 1.0 = 抬高阈值 = 抑制做空；乘数 < 1.0 = 降低阈值 = 放宽做空
+
+        与 bearish_score 乘数叠加使用：
+            final_threshold = base_threshold × score_multiplier × regime_multiplier
+        """
+        mapping = {
+            "TREND_BULL":         self.REGIME_SHORT_CONF_MULTI_TREND_BULL,
+            "TREND_BEAR":         self.REGIME_SHORT_CONF_MULTI_TREND_BEAR,
+            "STRONG_TREND_BEAR":  self.REGIME_SHORT_CONF_MULTI_STRONG_TREND_BEAR,
+            "MEAN_REVERTING":     self.REGIME_SHORT_CONF_MULTI_MEAN_REVERTING,
+            "RANGING":            self.REGIME_SHORT_CONF_MULTI_RANGING,
+        }
+        return mapping.get(regime, 1.00)
+
+    def _parse_regime_from_reason(self, reason: str) -> str:
+        """从 trend_reason 日志中解析 market_regime
+
+        日志格式示例：
+            "... regime=TREND_BEAR TR=0.599 ..."
+            "... regime=RANGING TR=0.396 ..."
+        """
+        import re
+        m = re.search(r"regime=(\w+)", reason)
+        return m.group(1) if m else "RANGING"
+
     def _compute_short_position_multiplier(self, bearish_score: str) -> float:
         """根据 bearish_score 返回做空仓位规模乘数
 
@@ -3871,6 +4178,12 @@ class PollingTrader:
         bearish_score = self._parse_bearish_score_from_reason(trend_reason)
         conf_multiplier = self._compute_short_conf_multiplier(bearish_score)
 
+        # market_regime 阈值调节器：解析 regime 并叠加调节乘数
+        regime = self._parse_regime_from_reason(trend_reason)
+        regime_multi = self._get_regime_short_multiplier(regime)
+        # 最终乘数 = bearish_score 乘数 × regime 乘数
+        final_multiplier = conf_multiplier * regime_multi
+
         if not trend_bearish:
             return False, f"趋势未确认: {trend_reason}", 0.00
 
@@ -3890,10 +4203,12 @@ class PollingTrader:
                     elif bearish_score == "NORMAL":
                         bearish_score = "STRONG"
                         conf_multiplier = self.SHORT_CONF_MULTI_MA_STRONG
+                    # 共振提升 score 后重新计算 final 乘数
+                    final_multiplier = conf_multiplier * regime_multi
                     return (
                         True,
-                        f"趋势确认+共振(SMA20<50<200) score={bearish_score} ×{conf_multiplier:.2f} | {trend_reason}",
-                        conf_multiplier,
+                        f"趋势确认+共振(SMA20<50<200) score={bearish_score} ×{conf_multiplier:.2f} regime={regime} ×{regime_multi:.2f} =×{final_multiplier:.2f} | {trend_reason}",
+                        final_multiplier,
                     )
                 return (
                     False,
@@ -3904,8 +4219,8 @@ class PollingTrader:
         # 无共振数据时降级：仅趋势确认
         return (
             True,
-            f"趋势确认(无共振数据) score={bearish_score} ×{conf_multiplier:.2f} | {trend_reason}",
-            conf_multiplier,
+            f"趋势确认(无共振数据) score={bearish_score} ×{conf_multiplier:.2f} regime={regime} ×{regime_multi:.2f} =×{final_multiplier:.2f} | {trend_reason}",
+            final_multiplier,
         )
 
     def _execute_trade(self, inference: dict, confidence_threshold: float = None,
@@ -3918,6 +4233,30 @@ class PollingTrader:
         fail_closed = inference["fail_closed"]
         is_ranging = inference["is_ranging"]
         inference.get("volatility", 0.03)
+
+        # P2-05: 形态乘数快照（仅 S5 打开时注入，关闭时 inference 不带字段 → 1.0 全程）
+        #   写入 inference 私有字段 _regime_pred / _regime_multipliers，供下游 _open_position 读取
+        if self.ENABLE_REGIME_AND_MACRO_S5:
+            try:
+                _snap = inference.get("snapshot", {}) or {}
+                _pred = _snap.get("regime") or inference.get("regime")
+                _mult = self._get_regime_pred_multipliers(
+                    _pred, enable_regime_pred=True
+                )
+                inference["_regime_pred"] = _pred
+                inference["_regime_multipliers"] = _mult
+            except Exception:
+                inference["_regime_pred"] = None
+                inference["_regime_multipliers"] = {
+                    "position_mult": 1.0, "tp_mult": 1.0,
+                    "sl_mult": 1.0, "threshold_mult": 1.0,
+                }
+        else:
+            inference["_regime_pred"] = None
+            inference["_regime_multipliers"] = {
+                "position_mult": 1.0, "tp_mult": 1.0,
+                "sl_mult": 1.0, "threshold_mult": 1.0,
+            }
 
         effective_threshold = confidence_threshold or self.confidence_threshold
 
@@ -5016,6 +5355,19 @@ class PollingTrader:
             # 覆盖全局 effective_threshold（仅DOWN方向有效）
             effective_threshold = effective_short_threshold
 
+        # P2-05: 形态乘数作用到置信度阈值（放在所有阈值调整之后、最终比对之前）
+        #   高风险 regime（VOLATILE_DROP/FOMO_RALLY）抬高门槛，强势趋势放宽门槛
+        _reg_mult = inference.get("_regime_multipliers", {})
+        _thr_mult = _reg_mult.get("threshold_mult", 1.0)
+        if _thr_mult != 1.0:
+            _orig_thr = effective_threshold
+            effective_threshold = effective_threshold * _thr_mult
+            self._log(
+                f"[{coin}] 形态阈值调整 | regime={inference.get('_regime_pred','')} ×{_thr_mult:.2f}"
+                f" 阈值 {_orig_thr:.4f}→{effective_threshold:.4f}",
+                "INFO",
+            )
+
         # 做空试错区间更窄（减少低置信度做空）
         if direction == "DOWN":
             trial_threshold = max(0.40, effective_threshold - 0.10)
@@ -5156,6 +5508,20 @@ class PollingTrader:
                 "INFO",
             )
 
+        # P2-05: 形态乘数 → 仓位规模（乘在所有仓位调整之后，最终下单前）
+        _reg_mult = inference.get("_regime_multipliers", {})
+        _pos_mult = _reg_mult.get("position_mult", 1.0)
+        _regime_pred = inference.get("_regime_pred")
+        if _pos_mult != 1.0:
+            _old = position_usdt
+            position_usdt *= _pos_mult
+            position_pct *= _pos_mult
+            self._log(
+                f"[{coin}] 形态仓位调整 | regime={_regime_pred or ''} ×{_pos_mult:.2f}"
+                f" 仓位 {_old:.2f}→{position_usdt:.2f}USDT",
+                "INFO",
+            )
+
         action = "open_long" if direction == "UP" else "open_short"
         pos_side = "long" if direction == "UP" else "short"
         sl_px = inference["stop_loss_px"]
@@ -5169,6 +5535,27 @@ class PollingTrader:
             sl_px = round(price + (sl_px - price) * sl_tighten_factor, 4)
             self._log(
                 f"[{coin}] v4止损收紧 | factor={sl_tighten_factor:.2f} SL {old_sl}→{sl_px}", "WARN"
+            )
+
+        # P2-05: 形态乘数 → SL/TP 价格距离（乘在所有 v4 风控之后，SLTP 冻结前）
+        #   VOLATILE_DROP → sl_mult=0.65（紧止损）、TREND_UP_STRONG → tp_mult=1.30（放止盈）
+        _sl_mult = _reg_mult.get("sl_mult", 1.0)
+        _tp_mult = _reg_mult.get("tp_mult", 1.0)
+        if _sl_mult != 1.0 and sl_px and price > 0:
+            _old_sl = sl_px
+            sl_px = round(price + (sl_px - price) * _sl_mult, 6)
+            self._log(
+                f"[{coin}] 形态SL调整 | regime={_regime_pred or ''} ×{_sl_mult:.2f}"
+                f" SL {_old_sl}→{sl_px}",
+                "INFO",
+            )
+        if _tp_mult != 1.0 and tp_px and price > 0:
+            _old_tp = tp_px
+            tp_px = round(price + (tp_px - price) * _tp_mult, 6)
+            self._log(
+                f"[{coin}] 形态TP调整 | regime={_regime_pred or ''} ×{_tp_mult:.2f}"
+                f" TP {_old_tp}→{tp_px}",
+                "INFO",
             )
 
         # v4 风险评分风控：止盈调整
@@ -5322,6 +5709,8 @@ class PollingTrader:
                 enhance_info=inference.get("enhance_result"),
                 base_sl_roi=base_sl_roi,
                 base_tp_roi=base_tp_roi,
+                regime_pred=inference.get("_regime_pred"),
+                regime_multipliers=inference.get("_regime_multipliers"),
             )
             self._log(f"[{coin}] 开仓成功 | ordId={ord_id} | " f"入场价≈{entry_price}")
 
@@ -6306,8 +6695,8 @@ def main():
     parser.add_argument(
         "--short-confidence",
         type=float,
-        default=0.70,
-        help="做空置信度阈值（高于做多以减少做空频率），默认 0.70",
+        default=0.80,
+        help="做空置信度阈值（高于做空以减少做空频率），默认 0.80",
     )
     parser.add_argument("--max-positions", type=int, default=3, help="最大同时持仓数，默认 3")
     parser.add_argument("--once", action="store_true", help="只执行一次，不循环")

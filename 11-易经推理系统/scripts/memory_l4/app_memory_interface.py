@@ -701,17 +701,265 @@ class TradingMemoryInterface:
     def stats(self) -> Dict[str, Any]:
         return stats()
 
-    def distill_candidates(self, min_quality: str = "C", limit: int = 10) -> List[Dict[str, Any]]:
-        return distill_candidates(min_quality=min_quality, limit=limit)
+    # ---------------- 底层辅助：供 run_distill_from_review 闭环使用 ----------------
+
+    def increment_verify(self, memory_id: str) -> bool:
+        """命中复盘关键词后，将记忆的 verify_count +1（A8 校验闭环）。"""
+        current = self.get(memory_id)
+        if not current:
+            return False
+        vc = int(current.get("verify_count") or current.get("verification_count") or 0) + 1
+        try:
+            return self.update(memory_id, {"verify_count": vc})
+        except Exception:
+            return False
+
+    def update_quality(self, memory_id: str, new_quality: str, new_confidence: Optional[float] = None) -> bool:
+        """调整质量等级 + 置信度（保守式）。"""
+        updates: Dict[str, Any] = {"quality_level": new_quality}
+        if new_confidence is not None:
+            updates["confidence"] = float(new_confidence)
+        # L4 交易记忆用 quadrant.y 存质量分，同步写一份兼容字段
+        if new_confidence is not None:
+            updates["quadrant"] = {"y": float(new_confidence)}
+        try:
+            return self.update(memory_id, updates)
+        except Exception:
+            return False
+
+    # ---------------- 7 标准接口：蒸馏候选提取（对齐 MEMORY_SYSTEM.md 签名） ----------------
+
+    def distill_candidates(self, min_quality: str = "B", limit: int = 10) -> List[Dict[str, Any]]:
+        """7标准接口补充：提取达阈值（verify≥n + conf≥x）的高价值候选，统一8字段返回。
+
+        阈值矩阵（与 VectorMemoryInterface / DistillScheduler 完全一致）：
+          S: verify≥10 & conf≥0.95 ;  A: ≥3 & ≥0.70 ;  B: ≥1 & ≥0.40
+        低于 min_quality 档且不达阈值的记忆直接跳过。
+        """
+        QUALITY_ORDER = {"S": 0, "A": 1, "B": 2, "C": 3, "D": 4}
+        _TH: Dict[str, Dict[str, float]] = {
+            "S": {"min_verifies": 10, "min_confidence": 0.95},
+            "A": {"min_verifies": 3,  "min_confidence": 0.70},
+            "B": {"min_verifies": 1,  "min_confidence": 0.40},
+            "C": {"min_verifies": 0,  "min_confidence": 0.0},
+            "D": {"min_verifies": 0,  "min_confidence": 0.0},
+        }
+        min_order = QUALITY_ORDER.get(str(min_quality).upper(), 2)  # 默认 B
+
+        # 扫描三类源：case / review / distill
+        candidates: List[Dict[str, Any]] = []
+        try:
+            all_items: List[Dict[str, Any]] = []
+            for mtype in ("case", "review", "distill"):
+                try:
+                    batch = self.search(query="", memory_type=mtype, top_k=5000)
+                except Exception:
+                    batch = []
+                all_items.extend(batch)
+        except Exception:
+            all_items = []
+
+        for item in all_items:
+            q = str(item.get("quality_level") or item.get("quality") or "C").upper()
+            if q not in QUALITY_ORDER:
+                q = "C"
+            # 只保留 ≥ min_quality 档（B档及以上默认走 S/A/B）
+            if QUALITY_ORDER[q] > min_order:
+                continue
+            vc = int(item.get("verify_count") or item.get("verification_count") or 0)
+            conf = float(
+                item.get("confidence")
+                or (item.get("quadrant", {}) or {}).get("y")
+                or 0.0
+            )
+            th = _TH.get(q) or _TH["C"]
+            # 至少达到当前档的阈值才算有效候选（否则即使质量字面值写着B也不入选）
+            if vc < th["min_verifies"] or conf < th["min_confidence"]:
+                # C/D档无硬性门槛，但若写了C档 + min_quality=C 也允许进入
+                if q not in ("C", "D"):
+                    continue
+            _id = item.get("id") or item.get("memory_id") or item.get("case_id") or item.get("distill_id")
+            if not _id:
+                continue
+            content = (
+                item.get("content")
+                or item.get("claim")
+                or item.get("summary")
+                or item.get("review")
+                or ""
+            )
+            tags = list(item.get("tags") or [])
+            mtype = str(item.get("memory_type") or item.get("type") or "case").lower()
+            source = (
+                item.get("source")
+                or (f"L4-TRD/{mtype}/" + (item.get("distill_id") or item.get("case_id") or _id))
+            )
+            candidates.append({
+                "id": str(_id),
+                "content": str(content),
+                "quality_level": q,
+                "confidence": round(conf, 4),
+                "verify_count": vc,
+                "tags": tags,
+                "memory_type": mtype,
+                "source": source,
+            })
+
+        # 统一排序：质量 S>A>B → verify多→少 → confidence高→低
+        candidates.sort(
+            key=lambda c: (QUALITY_ORDER.get(c["quality_level"], 4),
+                           -c["verify_count"],
+                           -c["confidence"])
+        )
+        return candidates[: max(0, int(limit))]
 
     def healthcheck(self) -> Dict[str, Any]:
         return healthcheck()
 
-    def search_similar_cases(self, **kwargs) -> List[Dict[str, Any]]:
-        return search_similar_cases(**kwargs)
+    # ---------------- 2 便捷方法（对齐 MEMORY_SYSTEM.md 签名） ----------------
 
-    def run_distill_from_review(self, **kwargs) -> Dict[str, Any]:
-        return run_distill_from_review(**kwargs)
+    def search_similar_cases(
+        self, content: str, top_k: int = 5, threshold: float = 0.3
+    ) -> List[Dict[str, Any]]:
+        """便捷方法统一签名：content/top_k/threshold，返回 id/score/metadata 结构。"""
+        hits_raw: List[Dict[str, Any]] = []
+        try:
+            # 优先用 CBR 引擎（如果能加载）
+            result = search_similar_cases(inst_id=None, regime=content,
+                                          decision=None, top_k=top_k)
+            hits_raw = result if isinstance(result, list) else []
+        except Exception:
+            pass
+        if not hits_raw and content:
+            try:
+                hits_raw = list(self.search(query=content, top_k=top_k) or [])
+            except Exception:
+                hits_raw = []
+
+        normalized: List[Dict[str, Any]] = []
+        for i, r in enumerate(hits_raw):
+            rid = (
+                r.get("id") or r.get("memory_id")
+                or r.get("case_id") or str(i)
+            )
+            raw_score = r.get("score") or r.get("similarity") or r.get("match_score")
+            if raw_score is None:
+                raw_score = max(0.0, 1.0 / (1.0 + i))  # 顺序平滑估值
+            try:
+                s = float(raw_score)
+            except Exception:
+                s = 0.0
+            if s < float(threshold):
+                continue
+            q = str(r.get("quality_level") or "C").upper()
+            vc = int(r.get("verify_count") or 0)
+            conf = float(r.get("confidence") or 0.0)
+            normalized.append({
+                "id": str(rid),
+                "score": round(s, 4),
+                "metadata": {
+                    "quality_level": q,
+                    "confidence": conf,
+                    "verify_count": vc,
+                    "tags": list(r.get("tags") or []),
+                    "memory_type": str(r.get("memory_type") or r.get("type") or "case"),
+                    "raw": r,
+                },
+            })
+            if len(normalized) >= int(top_k):
+                break
+        return normalized
+
+    def run_distill_from_review(self, review_data: Dict[str, Any]) -> Dict[str, int]:
+        """基于复盘 Review（A8 校验报告等）触发 A8 蒸馏闭环。
+
+        返回 {"processed": 唯一记忆命中数, "upgraded": 升级成功数, "skipped": 跳过数}
+        """
+        import re as _re
+        stats = {"processed": 0, "upgraded": 0, "skipped": 0}
+
+        # 1) 关键词收集（兼容不同 Review 结构）
+        keywords: List[str] = []
+        if isinstance(review_data, dict):
+            for key in ("matched_patterns", "matched", "keywords", "hotspots",
+                        "matched_functions", "doc_only_functions", "code_only_functions",
+                        "hits", "supporting_case_ids"):
+                val = review_data.get(key)
+                if isinstance(val, list):
+                    keywords.extend(str(v) for v in val if v)
+            for txt_key in ("subsystem", "summary", "title", "focus", "claim",
+                            "inst_id", "regime", "decision", "review"):
+                txt = review_data.get(txt_key)
+                if isinstance(txt, str) and txt.strip():
+                    keywords.extend(p for p in _re.split(r"\W+", txt) if len(p) >= 2)
+        seen_kw: set = set()
+        clean_kws: List[str] = []
+        for kw in keywords:
+            k = str(kw).strip()
+            if len(k) < 2:
+                continue
+            kl = k.lower()
+            if kl in seen_kw:
+                continue
+            seen_kw.add(kl)
+            clean_kws.append(k)
+        if not clean_kws:
+            return stats
+
+        # 2) 搜索 + 合并唯一命中
+        unique_ids: set = set()
+        hits: List[Dict[str, Any]] = []
+        for kw in clean_kws:
+            try:
+                for r in (self.search(query=kw, top_k=3) or []):
+                    rid = r.get("id") or r.get("memory_id") or r.get("case_id")
+                    if not rid or rid in unique_ids:
+                        continue
+                    unique_ids.add(rid)
+                    hits.append(r)
+            except Exception:
+                continue
+
+        # 3) 升级矩阵：与 VectorMemoryInterface 完全一致，一次最多升一级
+        upgrade_paths: Dict[str, Dict[str, Dict[str, float]]] = {
+            "C": {"B": {"min_verifies": 1, "min_confidence": 0.40}},
+            "B": {"A": {"min_verifies": 3, "min_confidence": 0.70}},
+            "A": {"S": {"min_verifies": 10, "min_confidence": 0.95}},
+        }
+        target_conf = {"B": 0.50, "A": 0.78, "S": 0.96}
+
+        for hit in hits:
+            stats["processed"] += 1
+            mem_id = hit.get("id") or hit.get("memory_id") or hit.get("case_id")
+            if not mem_id:
+                stats["skipped"] += 1
+                continue
+            if not self.increment_verify(str(mem_id)):
+                stats["skipped"] += 1
+                continue
+            cur = self.get(str(mem_id))
+            if not cur:
+                stats["skipped"] += 1
+                continue
+            q = str(cur.get("quality_level") or cur.get("quality") or "C").upper()
+            vc = int(cur.get("verify_count") or cur.get("verification_count") or 0)
+            conf = float(
+                cur.get("confidence")
+                or (cur.get("quadrant", {}) or {}).get("y")
+                or 0.0
+            )
+            paths = upgrade_paths.get(q) or {}
+            moved = False
+            for target_q, th in paths.items():
+                if vc >= th["min_verifies"] and conf >= th["min_confidence"]:
+                    new_conf = max(conf, target_conf.get(target_q, conf))
+                    if self.update_quality(str(mem_id), target_q, new_conf):
+                        stats["upgraded"] += 1
+                        moved = True
+                    break
+            if not moved:
+                stats["skipped"] += 1
+        return stats
 
 
 # 别名：distill_scheduler 通过 getattr(module, "AppMemoryInterface") 查找

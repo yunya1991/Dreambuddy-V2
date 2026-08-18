@@ -195,8 +195,10 @@ def run_backtest():
     trader._log = MagicMock()
     trader._btc_trend_cache = {"ts": 0, "result": None}
     trader._us_index_trend_cache = {"ts": 0, "result": None}
-    trader.short_confidence_threshold = 0.70
+    trader.short_confidence_threshold = 0.80  # 提高做空阈值（过滤低质量信号）
     trader.confidence_threshold = 0.70
+    # FMA_REGIME_FILTER_ENABLED 默认 False（走简单趋势确认）
+    # 回测脚本默认走简单逻辑，不走形态过滤
 
     # 4. 逐笔计算弹簧力场 + Phase D 形态判定
     print("\n[3] 逐笔计算弹簧力场 + Phase D 形态判定...")
@@ -224,19 +226,29 @@ def run_backtest():
         U_short = res.get("U_short", 0)
         slope = res.get("slope_avg", 0)
         valid_bd = res.get("valid_breakdown", False)
+        valid_bd_ma128 = res.get("valid_breakdown_ma128", False)
         F_dot = res.get("F_dot", 0.0)
         regime = res.get("market_regime", "RANGING")
         TR = res.get("trend_ratio", 0.0)
         CV = res.get("cv_dispersion", 0.0)
+        mav = res.get("ma_values", {})
+        current_price = res.get("current_price", 0.0)
 
-        # Phase D: 用 _regime_short_filter 判定
-        allow_short, filter_reason = trader._regime_short_filter(
-            regime=regime,
-            score=score,
-            U=U_short,
-            F_dot=F_dot,
-            valid_bd=valid_bd,
-        )
+        # 做空过滤：开关控制（与生产代码一致）
+        # FMA_REGIME_FILTER_ENABLED 默认 False → 无趋势过滤（回测验证最优）
+        if trader.FMA_REGIME_FILTER_ENABLED:
+            allow_short, filter_reason = trader._regime_short_filter(
+                regime=regime,
+                score=score,
+                U=U_short,
+                F_dot=F_dot,
+                valid_bd=valid_bd,
+                ma_values=mav,
+                current_price=current_price,
+                valid_bd_ma128=valid_bd_ma128,
+            )
+        else:
+            allow_short, filter_reason = True, "无趋势过滤(回测验证最优)"
 
         # 计算持有 5 天的盈亏
         pnl_pct, _ = calculate_hold_pnl(closes, idx, "short", hold_days=5)
@@ -346,7 +358,55 @@ def run_backtest():
             print(f"  {score_name:6s}: n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}% "
                   f"avg_F={avg_f:+.3f} avg_U_s={avg_u:.5f}")
 
-        # 5e) 被过滤掉的做空信号
+        # 5e) regime 阈值调节器效果模拟
+        # 理论：final_threshold = base(0.80) × score_multi × regime_multi
+        #       信号置信度 >= final_threshold 才允许做空
+        # 由于回测无 confidence 值，用"信号在各 regime 下的保留比例"模拟
+        # 假设：confidence ~ Uniform(0.5, 1.0) 近似分布
+        #       threshold > 1.0 → 几乎全部过滤；threshold < 0.8 → 几乎全部保留
+        print(f"\n  --- regime 阈值调节器效果模拟 ---")
+        import random
+        random.seed(42)
+        base_threshold = 0.80
+        regime_filtered = []
+        for r in results_short:
+            idx_r, price_r, score_r = r[0], r[1], r[2]
+            regime_r = r[9]
+            pnl_r = r[15]
+            # 模拟 confidence（假设均匀分布 0.5~1.0）
+            sim_conf = random.uniform(0.50, 1.00)
+            # 计算 final threshold
+            score_multi = trader._compute_short_conf_multiplier(score_r)
+            regime_multi = trader._get_regime_short_multiplier(regime_r)
+            final_thr = base_threshold * score_multi * regime_multi
+            # 模拟过滤
+            if sim_conf >= final_thr:
+                regime_filtered.append((regime_r, score_r, pnl_r, sim_conf, final_thr))
+
+        if regime_filtered:
+            rf_wins = [x for x in regime_filtered if x[2] > 0]
+            rf_pnl = sum(x[2] for x in regime_filtered)
+            rf_wr = len(rf_wins) / len(regime_filtered) * 100
+            print(f"  基础阈值: {base_threshold:.2f}")
+            print(f"  调节后信号数: {len(regime_filtered)} / {len(results_short)} (模拟过滤 {len(results_short) - len(regime_filtered)} 个)")
+            print(f"  调节后胜率: {rf_wr:.1f}% ({len(rf_wins)}胜)")
+            print(f"  调节后累计盈亏: {rf_pnl*100:.2f}%")
+            print(f"  平均盈亏: {rf_pnl/len(regime_filtered)*100:.3f}%")
+
+            # 按 regime 分组调节后表现
+            print(f"\n  --- 调节后按 regime 分组 ---")
+            for regime_name in regime_order:
+                group = [x for x in regime_filtered if x[0] == regime_name]
+                if not group:
+                    continue
+                gw = [x for x in group if x[2] > 0]
+                gp = sum(x[2] for x in group)
+                gwr = len(gw) / len(group) * 100
+                # 该 regime 的乘数
+                gm = trader._get_regime_short_multiplier(regime_name)
+                print(f"  {regime_name:20s}: n={len(group):3d} 胜率={gwr:5.1f}% 累计={gp*100:+7.2f}% ×{gm:.2f}")
+
+        # 5f) 被过滤掉的做空信号
         blocked = [r for r in results_short if not r[13]]
         if blocked:
             blocked_wins = [r for r in blocked if r[15] > 0]

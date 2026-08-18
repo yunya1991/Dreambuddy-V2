@@ -1682,13 +1682,33 @@ def execute_addon(client, coin, pos, state):
         return False
 
 
-def _get_dynamic_params(client, coin, direction="LONG"):
-    """获取币种的动态策略参数（止盈、加仓、止损）"""
-    from strategy_params import get_coin_strategy_params
+def _get_dynamic_params(client, coin, direction="LONG", *, _apply_phase_e: bool = True):
+    """获取币种的动态策略参数（止盈、加仓、止损）
+
+    v2 Point4b: 若 PhaseEGateway 已启用 → 将 addon_pct / tp_pct 用 apply_param_multipliers 调整
+                返回键向后兼容（take_profit_pct, addon_pct），新键 phase_e_action 存动作供归档。
+    """
+    from strategy_params import get_coin_strategy_params, apply_param_multipliers
 
     params = get_coin_strategy_params(coin, direction)
     if "error" in params:
         raise ValueError(params["error"])
+
+    phase_e_action = None
+    if _apply_phase_e:
+        egw = _get_phase_e_gateway()
+        if egw is not None:
+            try:
+                s_state = _phase_e_build_s_state(coin, params, pos=None)
+                base_for_e = {
+                    "addon_pct": float(params.get("addon_pct", 8.0)),
+                    "tp_pct": float(params.get("take_profit_pct", params.get("tp_pct", 4.0))),
+                }
+                phase_e_action = egw.apply_param_multipliers(coin, base_for_e, s_state)
+                params = apply_param_multipliers(params, phase_e_action, enforce_absolute=True)
+            except Exception as _e:
+                _log(f"[{coin}] Phase E apply_param_multipliers 失败(走基线): {_e}")
+                phase_e_action = None
 
     sl = params["stop_loss"]
     vol = params["volatility"]
@@ -1714,6 +1734,7 @@ def _get_dynamic_params(client, coin, direction="LONG"):
         "volatility": vol,
         "elder_ray": params.get("elder_ray"),
         "klines_4h": params.get("klines_4h"),
+        "phase_e_action": phase_e_action,
     }
 
 

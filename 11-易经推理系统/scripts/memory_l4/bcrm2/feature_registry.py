@@ -25,6 +25,15 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+# ============================================================
+# Enabled Sets：配置化的特征启用集合（一键启用组合）
+# ============================================================
+ENABLED_SETS: Dict[str, List[str]] = {
+    "btc_morphology": ["morphology_core", "breadth_market"],   # Phase 0 12 项形态+广度特征
+    "default_all": None,  # None = 启用所有 default_enabled=True 的模块
+}
+
+
 @dataclass
 class FeatureModuleSpec:
     """特征模块规格定义"""
@@ -102,6 +111,8 @@ class FeatureRegistry:
         symbol: str = "BTC",
         config: Optional[dict] = None,
         enabled: Optional[List[str]] = None,
+        enabled_set: Optional[str] = None,
+        coins_closes: Optional[dict] = None,
         verbose: bool = False,
     ) -> Tuple[pd.DataFrame, Dict[str, List[str]]]:
         """计算所有启用模块的特征
@@ -112,7 +123,9 @@ class FeatureRegistry:
             macro_df: 宏观数据 DataFrame（P1），已对齐到 df.index
             symbol: 交易标的符号
             config: 配置字典（如 wdh_weekly_only, cycle_halving 等开关）
-            enabled: 启用的模块名列表。None 表示启用所有 default_enabled=True 的模块
+            enabled: 启用的模块名列表。None 表示根据 enabled_set / default_enabled 决定
+            enabled_set: 启用集合名（如 "btc_morphology"）。若 enabled 未提供，则通过该集合名查找 enabled 列表
+            coins_closes: dict[coin] → list[float] newest-first；用于广度特征（breadth_market）
             verbose: 是否打印详细日志
 
         Returns:
@@ -126,7 +139,14 @@ class FeatureRegistry:
             "macro_df": macro_df,
             "symbol": symbol,
             "config": config or {},
+            "coins_closes": coins_closes,
         }
+
+        # 确定 enabled_list 优先级: explicit enabled > enabled_set → default_all
+        if enabled is None and enabled_set is not None:
+            enabled = ENABLED_SETS.get(enabled_set)
+            if enabled is None:
+                logger.warning(f"FeatureRegistry: enabled_set='{enabled_set}' 未在 ENABLED_SETS 中注册，回退为所有 default_enabled=True")
 
         # 确定启用列表
         if enabled is None:
@@ -191,6 +211,9 @@ class FeatureRegistry:
                 elif name == "merrill_clock":
                     cycle_phase = cycle_feats if cycle_feats is not None else None
                     feats = instance.compute(df, ref_df=ref_df, cycle_phase=cycle_phase)
+                elif name == "breadth_market":
+                    # 广度模块：透传 coins_closes
+                    feats = instance.compute(df, coins_closes=ctx["coins_closes"])
                 elif spec.requires_macro_df:
                     # 提取 macro_ 前缀的维度开关配置传给宏观特征模块
                     macro_config = {k: v for k, v in ctx["config"].items() if k.startswith("macro_")}
@@ -239,3 +262,43 @@ class FeatureRegistry:
         """清空注册表（仅用于测试）"""
         cls._registry.clear()
         cls._order.clear()
+
+
+# ============================================================
+# sys.modules 别名同步：消除「bcrm2.feature_registry」和
+# 「scripts.memory_l4.bcrm2.feature_registry」两条导入路径
+# 带来的「两个独立 module → 两个独立 FeatureRegistry 类」问题。
+# 当任一路径先被 import 后，会自动把另一路径也指向本 module，
+# 从而保证 FeatureRegistry 的类变量（注册表）全局唯一。
+# ============================================================
+def _sync_module_aliases():
+    import sys as _sys
+    # 当前文件真实路径形式：module.__name__ =
+    #   "scripts.memory_l4.bcrm2.feature_registry"  或
+    #   "bcrm2.feature_registry"
+    this_mod = _sys.modules.get(__name__)
+    if this_mod is None:
+        return
+    candidates = [
+        "bcrm2.feature_registry",
+        "scripts.memory_l4.bcrm2.feature_registry",
+    ]
+    for alias in candidates:
+        existing = _sys.modules.get(alias)
+        if existing is None:
+            _sys.modules[alias] = this_mod
+        elif existing is not this_mod:
+            # 已经加载了另一个 module：把它的 FeatureRegistry 类也同步
+            # 为「同一个 FeatureRegistry 类（this_mod 的）」。
+            # 注意：我们同步类属性引用到外部类，防止外部类的注册表实例
+            # 继续在错误的字典上操作。
+            other_cls = getattr(existing, "FeatureRegistry", None)
+            our_cls = getattr(this_mod, "FeatureRegistry", None)
+            if other_cls is not None and our_cls is not None and other_cls is not our_cls:
+                other_cls._registry = our_cls._registry
+                other_cls._order = our_cls._order
+                other_cls.ENABLED_SETS = our_cls.ENABLED_SETS
+
+
+_sync_module_aliases()
+del _sync_module_aliases

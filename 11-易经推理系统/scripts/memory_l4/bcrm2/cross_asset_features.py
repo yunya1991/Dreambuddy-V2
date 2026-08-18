@@ -15,6 +15,7 @@
 
 import numpy as np
 import pandas as pd
+import math
 from typing import Optional, Dict, List
 
 
@@ -249,6 +250,195 @@ def _feature_names() -> List[str]:
     ]
 
 
+# ============================================================
+# P0-05 / P0-06：市场广度特征（8 币维度）
+# ============================================================
+
+EIGHT_COINS_BREADTH = [
+    "BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX",
+]
+
+
+def _smma(arr: list, period: int) -> float:
+    """Simple Moving Average: 取 arr[:period]（newest-first）的均值"""
+    if len(arr) < period:
+        return float("nan")
+    seg = list(arr[:period])
+    seg = [x for x in seg if x is not None and not (isinstance(x, float) and math.isnan(x))]
+    if not seg:
+        return float("nan")
+    return sum(seg) / len(seg)
+
+
+def compute_breadth_ma128_align(coins_closes: dict, ma_period: int = 128):
+    """8 主流币 MA128 同向比例 + 斜率同向比例。
+
+    Args:
+        coins_closes: dict[coin] → list[float] newest-first（index 0 最新）
+        ma_period: MA 周期，默认 128
+
+    Returns:
+        (breadth_align: float, breadth_slope: float)
+    """
+    above_count = 0
+    slope_up_count = 0
+    for coin in EIGHT_COINS_BREADTH:
+        closes = coins_closes.get(coin) or []
+        if len(closes) < ma_period + 1:
+            continue
+        ma_cur = _smma(closes, ma_period)
+        # newest-first：ma_prev 对应 closes[1:ma_period+1] 的 MA
+        ma_prev = _smma(list(closes[1:]), ma_period)
+        if math.isnan(ma_cur):
+            continue
+        newest = closes[0]
+        if newest is None or math.isnan(float(newest)):
+            continue
+        if float(newest) > ma_cur:
+            above_count += 1
+        if (not math.isnan(ma_prev)) and ma_cur > ma_prev:
+            slope_up_count += 1
+    total = len(EIGHT_COINS_BREADTH)
+    return (above_count / total) if total else 0.0, (slope_up_count / total) if total else 0.0
+
+
+def compute_btc_dominance_change_proxy(coins_closes: dict, lookback: int = 30) -> float:
+    """BTC 市占率（8 币代理）变化 Δdom = dom_now - dom_past。
+
+    正值 = BTC 走强（避险/山寨熊市），负值 = 山寨走强（风险偏好高）
+    """
+    dom_now = dom_past = float("nan")
+    total_now = 0.0
+    btc_now = None
+    total_past = 0.0
+    btc_past = None
+    for c in EIGHT_COINS_BREADTH:
+        arr = coins_closes.get(c) or []
+        if len(arr) <= 0:
+            continue
+        v0 = float(arr[0])
+        total_now += v0
+        if c == "BTC":
+            btc_now = v0
+        if len(arr) > lookback:
+            v_lb = float(arr[lookback])
+            total_past += v_lb
+            if c == "BTC":
+                btc_past = v_lb
+    if btc_now is not None and total_now > 0:
+        dom_now = btc_now / total_now
+    if btc_past is not None and total_past > 0:
+        dom_past = btc_past / total_past
+    if math.isnan(dom_now) or math.isnan(dom_past):
+        return 0.0
+    return float(dom_now - dom_past)
+
+
+def _safe_list(arr, n):
+    return [float(x) for x in (arr or [])[:n] if x is not None and not (isinstance(x, float) and math.isnan(x))]
+
+
+def compute_all_breadth_features(coins_closes: dict) -> dict:
+    """Phase 0 广度 8 项特征汇总输出（graceful fallback：数据不足返回 NaN/0 不报错）。
+
+    输出 dict keys:
+      - breadth_ma128_align / breadth_ma128_slope      # P0-05
+      - btc_dominance_change_30d                         # P0-06-1
+      - breadth_new_high_low_ratio_30d                   # P0-06-2
+      - breadth_vol_correlation_20d                      # P0-06-3
+      - alt_vs_btc_excess_return_30d                     # P0-06-4
+      - btc_mcap_ma128_slope_proxy                       # P0-06-5（用 BTC 价 MA128 斜率代理）
+      - breadth_momentum_5d                              # P0-06-6
+    """
+    out: Dict[str, float] = {}
+    # P0-05
+    a, s = compute_breadth_ma128_align(coins_closes)
+    out["breadth_ma128_align"] = float(a)
+    out["breadth_ma128_slope"] = float(s)
+
+    # BTC.D 变化
+    out["btc_dominance_change_30d"] = float(compute_btc_dominance_change_proxy(coins_closes, lookback=30))
+
+    # 新高/新低比例 30D
+    new_highs = 0
+    new_lows = 0
+    for c in EIGHT_COINS_BREADTH:
+        arr = _safe_list(coins_closes.get(c), n=31)
+        if len(arr) < 31:
+            continue
+        window = arr[1:31]  # 前 30 日（newest-first：index 0 是最新）
+        cur = arr[0]
+        hi = max(window)
+        lo = min(window)
+        if cur >= hi:
+            new_highs += 1
+        if cur <= lo:
+            new_lows += 1
+    out["breadth_new_high_low_ratio_30d"] = float(
+        (new_highs / (new_lows + 1e-9)) if (new_highs + new_lows) > 0 else 1.0
+    )
+
+    # 20D 收益两两相关系数平均（简化：8 币 20 日收益的横截面标准差，近似同步度；越大=越同步）
+    returns_20d = []
+    for c in EIGHT_COINS_BREADTH:
+        arr = _safe_list(coins_closes.get(c), n=21)
+        if len(arr) < 21:
+            continue
+        r20 = (arr[0] / (arr[20] + 1e-12)) - 1.0
+        returns_20d.append(r20)
+    out["breadth_vol_correlation_20d"] = float(np.std(returns_20d)) if len(returns_20d) >= 3 else 0.0
+
+    # 山寨相对超额（7 山寨等权 30D 收益 - BTC 30D 收益）
+    btc_ret30 = None
+    alt_rets30 = []
+    for c in EIGHT_COINS_BREADTH:
+        arr = _safe_list(coins_closes.get(c), n=31)
+        if len(arr) < 31:
+            continue
+        r30 = (arr[0] / (arr[30] + 1e-12)) - 1.0
+        if c == "BTC":
+            btc_ret30 = r30
+        else:
+            alt_rets30.append(r30)
+    if btc_ret30 is not None and alt_rets30:
+        out["alt_vs_btc_excess_return_30d"] = float(np.mean(alt_rets30) - btc_ret30)
+    else:
+        out["alt_vs_btc_excess_return_30d"] = 0.0
+
+    # BTC 市值 MA128 斜率代理（= BTC 价 MA128 斜率 percent change）
+    btc_closes = coins_closes.get("BTC") or []
+    if len(btc_closes) >= 129:
+        ma_now = _smma(list(btc_closes), 128)
+        ma_prev = _smma(list(btc_closes[1:]), 128)
+        if not math.isnan(ma_now) and not math.isnan(ma_prev) and ma_prev > 0:
+            out["btc_mcap_ma128_slope_proxy"] = float((ma_now - ma_prev) / ma_prev)
+        else:
+            out["btc_mcap_ma128_slope_proxy"] = 0.0
+    else:
+        out["btc_mcap_ma128_slope_proxy"] = 0.0
+
+    # 5 日广度动量同向比例（5 日收益为正的币 / 8）
+    up_5d = 0
+    total_5d = 0
+    for c in EIGHT_COINS_BREADTH:
+        arr = _safe_list(coins_closes.get(c), n=6)
+        if len(arr) < 6:
+            continue
+        total_5d += 1
+        r5 = (arr[0] / (arr[5] + 1e-12)) - 1.0
+        if r5 > 0:
+            up_5d += 1
+    out["breadth_momentum_5d"] = float(up_5d / total_5d) if total_5d else 0.0
+
+    # 数值替换 NaN/Inf → 0.0
+    for k, v in list(out.items()):
+        if not isinstance(v, (int, float, np.floating, np.integer)):
+            out[k] = 0.0
+        elif not np.isfinite(v):
+            out[k] = 0.0
+    return out
+
+
 # ===== FeatureRegistry 注册 =====
 class CrossAssetFeatureWrapper:
     """将 compute_cross_asset_features 函数包装为类，适配 FeatureRegistry"""
@@ -261,10 +451,46 @@ class CrossAssetFeatureWrapper:
         return compute_cross_asset_features(df, ref_df, symbol=symbol, ref_symbol=ref_symbol)
 
 
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+class BreadthMarketFeatures:
+    """Phase 0 市场广度组：8 币广度 8 项特征（纯价格合成，零外部依赖）。
+
+    FeatureRegistry 调用签名：compute(df, coins_closes=dict[str→newest_first list])。
+    FeatureRegistry 会通过 `config={"coins_closes": ...}` 传入。
+    """
+
+    def compute(self, df: pd.DataFrame, coins_closes: Optional[dict] = None) -> pd.DataFrame:
+        feats = pd.DataFrame(index=df.index)
+        if coins_closes is None:
+            # 无 8 币 closes → 全部填 0
+            all_keys = [
+                "breadth_ma128_align", "breadth_ma128_slope",
+                "btc_dominance_change_30d", "breadth_new_high_low_ratio_30d",
+                "breadth_vol_correlation_20d", "alt_vs_btc_excess_return_30d",
+                "btc_mcap_ma128_slope_proxy", "breadth_momentum_5d",
+            ]
+            for k in all_keys:
+                feats[k] = 0.0
+            return feats
+        breadth_dict = compute_all_breadth_features(coins_closes)
+        for k, v in breadth_dict.items():
+            feats[k] = float(v)
+        feats = feats.ffill().fillna(0)
+        feats = feats.replace([np.inf, -np.inf], 0)
+        return feats
+
+
+# ===== FeatureRegistry 注册（延迟导入避免循环依赖）=====
+# 注意：必须使用包相对路径 `from bcrm2.feature_registry`，否则会从
+# scripts.memory_l4.bcrm2 导入另一个独立 module，导致注册丢失
+from bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 FeatureRegistry.register(
     name="cross_asset",
     factory=CrossAssetFeatureWrapper,
     requires_ref_df=True,
+)
+# P0-07: 注册广度模块（8 项广度字段输出）
+FeatureRegistry.register(
+    name="breadth_market",
+    factory=BreadthMarketFeatures,
 )

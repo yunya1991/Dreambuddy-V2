@@ -31,19 +31,20 @@ from ai_trainers.phase_e_models import PPOLSTMActorCritic
 from ai_trainers.v15_gym_env import V15MartingaleGymEnv, GAMMA
 
 
-# ── PPO 超参数（路线图 §5.4 默认值） ──
+# ── PPO 超参数（v2 提 entropy / 短 rollout，避免 identity 收敛） ──
 PPO_CONFIG = {
-    "lr": 3e-4,
+    "lr": 2e-4,
     "gamma": GAMMA,           # 0.995
     "clip_eps": 0.2,
-    "ent_coef": 0.01,
+    "ent_coef": 0.03,         # v2: 0.01 → 0.03，防 identity 过早收敛
     "vf_coef": 0.5,
     "max_grad_norm": 0.5,
-    "n_steps": 2048,          # rollout 长度
+    "n_steps": 512,           # v2: 2048 → 512，每 episode 一次更频繁更新
     "batch_size": 64,
-    "n_epochs": 4,            # 每次更新的 epoch 数
+    "n_epochs": 4,
     "hidden_dim": 128,
     "num_layers": 1,
+    "reward_window": 20,      # v2: 每 20 ep 计算 moving best，防偶发 0 值卡住
 }
 
 
@@ -110,7 +111,9 @@ def train_ppo(
         log_interval = 1
 
     device = torch.device("cpu")
-    env = V15MartingaleGymEnv()
+    # v2: 每 episode 一个新 env 实例，K 线分布不同（PPO 的多样性至关重要）
+    env_fn = lambda s: V15MartingaleGymEnv(seed=s)
+    env = env_fn(1000)
     model = PPOLSTMActorCritic(
         state_dim=env.observation_dim,
         hidden_dim=cfg["hidden_dim"],
@@ -120,14 +123,20 @@ def train_ppo(
 
     best_reward = -float("inf")
     all_rewards: List[float] = []
+    reward_window_size = int(cfg.get("reward_window", 20))
+    rolling_best_moving = -float("inf")
 
     for ep in range(1, episodes + 1):
+        # v2: 换 seed，避免 PPO 记住一份 K 线
+        env = env_fn(1000 + ep)
         # ── Rollout ──
         buf = RolloutBuffer()
         obs = env.reset()
         h = None
         ep_reward = 0.0
         steps = 0
+        n_tp_ep = 0
+        n_bust_ep = 0
 
         for _ in range(cfg["n_steps"]):
             x = torch.FloatTensor(obs).unsqueeze(0).unsqueeze(0).to(device)  # (1, 1, 34)
@@ -154,6 +163,13 @@ def train_ppo(
             obs = next_obs
             ep_reward += reward
             steps += 1
+            if info.get("n_trades"):
+                last_tr = env.trade_history[-1] if env.trade_history else None
+                if last_tr:
+                    if last_tr.get("exit_reason") == "take_profit":
+                        n_tp_ep += 1
+                    elif last_tr.get("exit_reason") == "bust":
+                        n_bust_ep += 1
 
             if done:
                 obs = env.reset()
@@ -204,12 +220,29 @@ def train_ppo(
                 nn.utils.clip_grad_norm_(model.parameters(), cfg["max_grad_norm"])
                 optimizer.step()
 
-        # ── 日志 & 保存 ──
+        # ── 日志 & 保存（v2: rolling window best 防偶发 0 值卡 best_reward=0） ──
         if ep % log_interval == 0 or ep == 1:
-            avg_r = np.mean(all_rewards[-log_interval:])
-            print(f"  ep {ep:4d}/{episodes}  avg_reward={avg_r:.2f}  best={best_reward:.2f}  steps={steps}")
+            avg_r = float(np.mean(all_rewards[-log_interval:]))
+            win_r = float(np.mean(all_rewards[-reward_window_size:])) if len(all_rewards) >= reward_window_size else float("nan")
+            print(
+                f"  ep {ep:4d}/{episodes}  avg_r={avg_r:+.2f}  win_r={win_r:+.2f}  "
+                f"best={best_reward:+.2f}  steps={steps}  TP≈{n_tp_ep}  bust≈{n_bust_ep}  "
+                f"capital={info.get('capital',0):.0f}"
+            )
+            # v2: 如果 rolling window 创了新高，同样视为 best（避免 ep_reward==0 的边缘 episode 永远不保存）
+            if len(all_rewards) >= reward_window_size and win_r > rolling_best_moving:
+                rolling_best_moving = win_r
+                Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+                torch.save({
+                    "model_state_dict": model.state_dict(),
+                    "config": cfg,
+                    "episode": ep,
+                    "best_reward": rolling_best_moving,
+                    "best_kind": "rolling_window",
+                    "window_size": reward_window_size,
+                }, out_path)
 
-        # 保存 best
+        # 保存单集 best
         if ep_reward > best_reward:
             best_reward = ep_reward
             Path(out_path).parent.mkdir(parents=True, exist_ok=True)
@@ -218,6 +251,7 @@ def train_ppo(
                 "config": cfg,
                 "episode": ep,
                 "best_reward": best_reward,
+                "best_kind": "single_episode",
             }, out_path)
 
     print(f"\n✅ PPO 训练完成: {episodes} episodes, best_reward={best_reward:.2f}")

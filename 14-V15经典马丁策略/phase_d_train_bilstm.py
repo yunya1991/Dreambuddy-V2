@@ -57,24 +57,24 @@ def _make_smoke_dataset(n=128, seed=1):
     return TensorDataset(ohlcv, scalar, y), TensorDataset(ohlcv[-32:], scalar[-32:], y[-32:])
 
 
-def compute_balanced_bce(pred: Tensor, y: Tensor) -> Tensor:
-    """F.binary_cross_entropy 本身不支持 pos_weight 关键字；手动给正样本加权。"""
+def compute_balanced_bce(pred: Tensor, y: Tensor, pos_weight_cap: float = 15.0) -> Tensor:
+    """BiLSTM v2: pos_weight 上限 15（原 5 过小，样本不平衡时无法让模型注意爆仓）。"""
     pos_mask = (y > 0.5).float()
     neg_mask = 1.0 - pos_mask
-    pos_w = (neg_mask.sum() / max(1, pos_mask.sum())).clamp(min=0.2, max=5.0)
+    pos_w = (neg_mask.sum() / max(1, pos_mask.sum())).clamp(min=0.2, max=float(pos_weight_cap))
     weight = pos_mask * pos_w + neg_mask * 1.0
     pointwise = F.binary_cross_entropy(pred, y, reduction="none")
     return (pointwise * weight).mean()
 
 
-def train_one_epoch(model, loader, opt, device):
+def train_one_epoch(model, loader, opt, device, pos_weight_cap: float = 15.0):
     model.train()
     tot, loss_sum, correct, total = 0, 0.0, 0, 0
     for ohlcv, s, y in loader:
         ohlcv, s, y = ohlcv.to(device), s.to(device), y.to(device)
         opt.zero_grad()
         p = model(ohlcv, s)
-        loss = compute_balanced_bce(p, y)
+        loss = compute_balanced_bce(p, y, pos_weight_cap=pos_weight_cap)
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         opt.step()
@@ -114,11 +114,15 @@ def main(argv=None):
     ap.add_argument("--data", type=str, default="data/ai_datasets/phase_d_train_all.npz")
     ap.add_argument("--val", type=str, default="data/ai_datasets/phase_d_test_all.npz")
     ap.add_argument("--out", type=str, default="data/ai_models/phase_d_bilstm_v1.pt")
-    ap.add_argument("--epochs", type=int, default=15)
+    ap.add_argument("--epochs", type=int, default=30)   # v2: 20 → 30，配合 EarlyStop
     ap.add_argument("--batch", type=int, default=64)
-    ap.add_argument("--lr", type=float, default=1e-3)
-    ap.add_argument("--hidden", type=int, default=48)
+    ap.add_argument("--lr", type=float, default=8e-4)   # v2: 1e-3 → 8e-4，稳
+    ap.add_argument("--hidden", type=int, default=32)   # v2: 48 → 32，减少容量防泛化
     ap.add_argument("--n-layers", type=int, default=2)
+    ap.add_argument("--dropout", type=float, default=0.30)  # v2: 加强正则
+    ap.add_argument("--weight-decay", type=float, default=5e-4)  # v2: 1e-4 → 5e-4
+    ap.add_argument("--early-stop-patience", type=int, default=6, help="val AUC 连续几轮无上升则早停")
+    ap.add_argument("--pos-weight-cap", type=float, default=15.0, help="正样本权重上限")
     ap.add_argument("--quick-smoke", action="store_true",
                     help="跳过读NPZ，使用内置假数据，用于CLI冒烟测试")
     ap.add_argument("--seed", type=int, default=42)
@@ -137,28 +141,39 @@ def main(argv=None):
     tr_ld = DataLoader(tr_ds, batch_size=args.batch, shuffle=True, drop_last=False)
     va_ld = DataLoader(va_ds, batch_size=args.batch * 2, shuffle=False)
 
-    model = BiLSTMAttentionBust(hidden=args.hidden, n_layers=args.n_layers).to(device)
+    model = BiLSTMAttentionBust(
+        hidden=args.hidden, n_layers=args.n_layers,
+        dropout=args.dropout,  # v2: 更强正则
+    ).to(device)
     n_params = sum(p.numel() for p in model.parameters())
     print(f"[BiLSTM] params={n_params:,}  device={device}  train_samples={len(tr_ds)}  val_samples={len(va_ds)}")
-    opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
+    opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, args.epochs))
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     best_auc = -1.0
     best_state = None
+    patience_left = int(args.early_stop_patience)
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
-        tr_loss, tr_acc = train_one_epoch(model, tr_ld, opt, device)
+        tr_loss, tr_acc = train_one_epoch(model, tr_ld, opt, device, pos_weight_cap=args.pos_weight_cap)
         metrics = evaluate(model, va_ld, device)
         sched.step()
         dt = time.time() - t0
         print(
             f"[BiLSTM] epoch={epoch:02d}/{args.epochs}  loss={tr_loss:.4f}  tr_acc={tr_acc:.2%}  "
-            f"val_bce={metrics['bce']:.4f}  val_acc={metrics['acc']:.2%}  val_auc={metrics['auc']:.3f}  dt={dt:.1f}s"
+            f"val_bce={metrics['bce']:.4f}  val_acc={metrics['acc']:.2%}  val_auc={metrics['auc']:.3f}  "
+            f"patience={patience_left}  dt={dt:.1f}s"
         )
-        if (not np.isnan(metrics["auc"])) and metrics["auc"] > best_auc:
+        if (not np.isnan(metrics["auc"])) and metrics["auc"] > best_auc + 1e-6:
             best_auc = metrics["auc"]
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+            patience_left = args.early_stop_patience
+        else:
+            patience_left -= 1
+            if patience_left <= 0:
+                print(f"[BiLSTM] EarlyStop @ epoch={epoch}  (best_auc={best_auc:.3f})")
+                break
 
     if best_state is None:
         best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
@@ -168,9 +183,12 @@ def main(argv=None):
         "meta": {
             "ohlcv_len": 60, "n_channels": 5, "n_scalar": 7,
             "hidden": args.hidden, "n_layers": args.n_layers,
+            "dropout": args.dropout, "weight_decay": args.weight_decay,
+            "pos_weight_cap": args.pos_weight_cap,
             "best_val_auc": best_auc, "epochs": args.epochs, "seed": args.seed,
             "quick_smoke": bool(args.quick_smoke),
             "train_date": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "version": "v2",
         },
     }
     torch.save(payload, args.out)
