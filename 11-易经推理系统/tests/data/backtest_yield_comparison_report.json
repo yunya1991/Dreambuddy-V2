@@ -1,0 +1,511 @@
+{
+  "backtest_time": "2026-07-31 11:39:45",
+  "data_source": "data/bcrm2_phase0/trades_{BTC,ETH,SOL,UNI}_1H.csv",
+  "leverage": 3.0,
+  "symbols": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "UNI"
+  ],
+  "bug1_impact": {
+    "total_trades": 252,
+    "timeout_trades_48h": 66,
+    "timeout_ratio_pct": 26.2,
+    "note": "Bug1修复在polling_trader层，此为历史数据评估其潜在影响"
+  },
+  "exit_reason_comparison": [
+    {
+      "exit_reason": "",
+      "before_fix": 1,
+      "after_fix": 1,
+      "no_risk_gate": 1,
+      "delta_after_vs_before": 0
+    },
+    {
+      "exit_reason": "L0_RISK_GATE",
+      "before_fix": 137,
+      "after_fix": 0,
+      "no_risk_gate": 0,
+      "delta_after_vs_before": -137
+    },
+    {
+      "exit_reason": "L0_STOP_LOSS",
+      "before_fix": 20,
+      "after_fix": 34,
+      "no_risk_gate": 34,
+      "delta_after_vs_before": 14
+    },
+    {
+      "exit_reason": "TB_TAKE_PROFIT",
+      "before_fix": 3,
+      "after_fix": 4,
+      "no_risk_gate": 4,
+      "delta_after_vs_before": 1
+    },
+    {
+      "exit_reason": "TRAILING_TP",
+      "before_fix": 45,
+      "after_fix": 114,
+      "no_risk_gate": 114,
+      "delta_after_vs_before": 69
+    },
+    {
+      "exit_reason": "TSTP_CHOP_300m",
+      "before_fix": 10,
+      "after_fix": 11,
+      "no_risk_gate": 11,
+      "delta_after_vs_before": 1
+    },
+    {
+      "exit_reason": "TSTP_CHOP_360m",
+      "before_fix": 13,
+      "after_fix": 11,
+      "no_risk_gate": 11,
+      "delta_after_vs_before": -2
+    },
+    {
+      "exit_reason": "TSTP_CHOP_420m",
+      "before_fix": 5,
+      "after_fix": 7,
+      "no_risk_gate": 7,
+      "delta_after_vs_before": 2
+    },
+    {
+      "exit_reason": "TSTP_CHOP_480m",
+      "before_fix": 5,
+      "after_fix": 9,
+      "no_risk_gate": 9,
+      "delta_after_vs_before": 4
+    },
+    {
+      "exit_reason": "TSTP_CHOP_540m",
+      "before_fix": 6,
+      "after_fix": 19,
+      "no_risk_gate": 19,
+      "delta_after_vs_before": 13
+    },
+    {
+      "exit_reason": "TSTP_CHOP_600m",
+      "before_fix": 2,
+      "after_fix": 7,
+      "no_risk_gate": 7,
+      "delta_after_vs_before": 5
+    },
+    {
+      "exit_reason": "TSTP_CHOP_660m",
+      "before_fix": 0,
+      "after_fix": 3,
+      "no_risk_gate": 3,
+      "delta_after_vs_before": 3
+    },
+    {
+      "exit_reason": "TSTP_CHOP_720m",
+      "before_fix": 1,
+      "after_fix": 4,
+      "no_risk_gate": 4,
+      "delta_after_vs_before": 3
+    },
+    {
+      "exit_reason": "TSTP_CHOP_780m",
+      "before_fix": 2,
+      "after_fix": 2,
+      "no_risk_gate": 2,
+      "delta_after_vs_before": 0
+    },
+    {
+      "exit_reason": "TSTP_CHOP_840m",
+      "before_fix": 0,
+      "after_fix": 1,
+      "no_risk_gate": 1,
+      "delta_after_vs_before": 1
+    },
+    {
+      "exit_reason": "TSTP_CHOP_REDUCE_NO_PROFIT",
+      "before_fix": 0,
+      "after_fix": 11,
+      "no_risk_gate": 11,
+      "delta_after_vs_before": 11
+    },
+    {
+      "exit_reason": "TSTP_TREND_REDUCE",
+      "before_fix": 1,
+      "after_fix": 7,
+      "no_risk_gate": 7,
+      "delta_after_vs_before": 6
+    },
+    {
+      "exit_reason": "TSTP_TREND_REDUCE_NO_PROFIT",
+      "before_fix": 0,
+      "after_fix": 6,
+      "no_risk_gate": 6,
+      "delta_after_vs_before": 6
+    },
+    {
+      "exit_reason": "data_end",
+      "before_fix": 1,
+      "after_fix": 1,
+      "no_risk_gate": 1,
+      "delta_after_vs_before": 0
+    }
+  ],
+  "configs": {
+    "before_fix": {
+      "long_thr": 0.5,
+      "short_thr": 0.5,
+      "min_hold_sec": 0.0,
+      "profit_bypass_pct": 0.03,
+      "risk_gate_enabled": true
+    },
+    "after_fix": {
+      "long_thr": 0.65,
+      "short_thr": 0.6,
+      "min_hold_sec": 3600.0,
+      "profit_bypass_pct": 0.05,
+      "risk_gate_enabled": true
+    },
+    "no_risk_gate": {
+      "long_thr": 0.75,
+      "short_thr": 0.65,
+      "min_hold_sec": 0.0,
+      "profit_bypass_pct": 0.03,
+      "risk_gate_enabled": false
+    }
+  },
+  "results": {
+    "before_fix": {
+      "name": "A_修复前(Bug2未修复)",
+      "config": {
+        "long_thr": 0.5,
+        "short_thr": 0.5,
+        "min_hold_sec": 0.0,
+        "profit_bypass_pct": 0.03,
+        "risk_gate_enabled": true
+      },
+      "metrics": {
+        "total_trades": 252,
+        "win_rate": 61.51,
+        "total_return_pct": 3.36,
+        "total_return_account_pct": 0.17,
+        "avg_return_pct": 0.0133,
+        "sharpe_ratio": 20.08,
+        "max_drawdown_pct_account": 0.02,
+        "profit_factor": 2.3,
+        "avg_hold_bars": 4.93,
+        "exit_reason_dist": {
+          "L0_RISK_GATE": 137,
+          "TSTP_CHOP_360m": 13,
+          "TSTP_CHOP_420m": 5,
+          "TRAILING_TP": 45,
+          "L0_STOP_LOSS": 20,
+          "TSTP_TREND_REDUCE": 1,
+          "TSTP_CHOP_540m": 6,
+          "TSTP_CHOP_300m": 10,
+          "": 1,
+          "TSTP_CHOP_720m": 1,
+          "TSTP_CHOP_600m": 2,
+          "TSTP_CHOP_480m": 5,
+          "TSTP_CHOP_780m": 2,
+          "data_end": 1,
+          "TB_TAKE_PROFIT": 3
+        },
+        "symbol_metrics": {
+          "BTC": {
+            "trades": 43,
+            "win_rate": 69.76744186046511,
+            "total_return": 0.26663903495441427,
+            "sharpe": 22.774138200318585,
+            "avg_atr_pct": 0.6336892415416713,
+            "avg_hold_bars": 4.930232558139535,
+            "max_dd_raw": 1.8800306074019522
+          },
+          "ETH": {
+            "trades": 52,
+            "win_rate": 57.692307692307686,
+            "total_return": -0.13221001826170378,
+            "sharpe": -6.65908271192326,
+            "avg_atr_pct": 0.9197654300308679,
+            "avg_hold_bars": 4.5576923076923075,
+            "max_dd_raw": 2.805888285756389
+          },
+          "SOL": {
+            "trades": 65,
+            "win_rate": 63.07692307692307,
+            "total_return": 1.310212892385523,
+            "sharpe": 37.863666295658525,
+            "avg_atr_pct": 1.1496420114741401,
+            "avg_hold_bars": 5.476923076923077,
+            "max_dd_raw": 2.337023370233696
+          },
+          "UNI": {
+            "trades": 92,
+            "win_rate": 58.69565217391305,
+            "total_return": 1.9123905001503287,
+            "sharpe": 22.592096378389922,
+            "avg_atr_pct": 1.5664348215877217,
+            "avg_hold_bars": 4.75,
+            "max_dd_raw": 5.98520511096168
+          }
+        },
+        "regime_metrics": {
+          "uptrend": {
+            "trades": 70,
+            "win_rate": 62.857142857142854,
+            "total_return": 1.098528203039001,
+            "avg_return": 0.015693260043414297,
+            "avg_hold_bars": 4.8428571428571425
+          },
+          "downtrend": {
+            "trades": 90,
+            "win_rate": 64.44444444444444,
+            "total_return": 1.295206710019079,
+            "avg_return": 0.014391185666878652,
+            "avg_hold_bars": 4.5777777777777775
+          },
+          "trend": {
+            "trades": 30,
+            "win_rate": 46.666666666666664,
+            "total_return": -0.04438354360793477,
+            "avg_return": -0.001479451453597826,
+            "avg_hold_bars": 5.166666666666667
+          },
+          "chop": {
+            "trades": 62,
+            "win_rate": 62.903225806451616,
+            "total_return": 1.0076810397784175,
+            "avg_return": 0.01625291999642609,
+            "avg_hold_bars": 5.419354838709677
+          }
+        }
+      },
+      "elapsed_sec": 0.4
+    },
+    "after_fix": {
+      "name": "B_修复后(Bug2已修复)",
+      "config": {
+        "long_thr": 0.65,
+        "short_thr": 0.6,
+        "min_hold_sec": 3600.0,
+        "profit_bypass_pct": 0.05,
+        "risk_gate_enabled": true
+      },
+      "metrics": {
+        "total_trades": 252,
+        "win_rate": 76.59,
+        "total_return_pct": 5.23,
+        "total_return_account_pct": 0.26,
+        "avg_return_pct": 0.0207,
+        "sharpe_ratio": 27.73,
+        "max_drawdown_pct_account": 0.02,
+        "profit_factor": 2.77,
+        "avg_hold_bars": 7.07,
+        "exit_reason_dist": {
+          "TSTP_CHOP_720m": 4,
+          "TRAILING_TP": 114,
+          "TSTP_CHOP_480m": 9,
+          "TSTP_CHOP_660m": 3,
+          "TSTP_TREND_REDUCE_NO_PROFIT": 6,
+          "TSTP_TREND_REDUCE": 7,
+          "TSTP_CHOP_600m": 7,
+          "TSTP_CHOP_360m": 11,
+          "TSTP_CHOP_420m": 7,
+          "TSTP_CHOP_540m": 19,
+          "L0_STOP_LOSS": 34,
+          "TSTP_CHOP_REDUCE_NO_PROFIT": 11,
+          "TSTP_CHOP_300m": 11,
+          "": 1,
+          "TSTP_CHOP_780m": 2,
+          "TSTP_CHOP_840m": 1,
+          "data_end": 1,
+          "TB_TAKE_PROFIT": 4
+        },
+        "symbol_metrics": {
+          "BTC": {
+            "trades": 43,
+            "win_rate": 72.09302325581395,
+            "total_return": 0.6330457597205831,
+            "sharpe": 41.55327818006623,
+            "avg_atr_pct": 0.6336892415416713,
+            "avg_hold_bars": 8.906976744186046,
+            "max_dd_raw": 1.8800306074019522
+          },
+          "ETH": {
+            "trades": 52,
+            "win_rate": 75.0,
+            "total_return": 0.36977502959254505,
+            "sharpe": 14.004303908172966,
+            "avg_atr_pct": 0.9197654300308679,
+            "avg_hold_bars": 7.0,
+            "max_dd_raw": 2.805888285756389
+          },
+          "SOL": {
+            "trades": 65,
+            "win_rate": 84.61538461538461,
+            "total_return": 2.0357837196586166,
+            "sharpe": 50.06490130613572,
+            "avg_atr_pct": 1.1496420114741401,
+            "avg_hold_bars": 7.492307692307692,
+            "max_dd_raw": 3.1260123096857786
+          },
+          "UNI": {
+            "trades": 92,
+            "win_rate": 73.91304347826086,
+            "total_return": 2.1896309744597082,
+            "sharpe": 23.596227098160334,
+            "avg_atr_pct": 1.5664348215877217,
+            "avg_hold_bars": 5.945652173913044,
+            "max_dd_raw": 5.98520511096168
+          }
+        },
+        "regime_metrics": {
+          "uptrend": {
+            "trades": 70,
+            "win_rate": 80.0,
+            "total_return": 1.576543562038493,
+            "avg_return": 0.022522050886264185,
+            "avg_hold_bars": 6.628571428571429
+          },
+          "downtrend": {
+            "trades": 90,
+            "win_rate": 76.66666666666667,
+            "total_return": 1.7871108041047576,
+            "avg_return": 0.01985678671227508,
+            "avg_hold_bars": 5.844444444444444
+          },
+          "trend": {
+            "trades": 30,
+            "win_rate": 63.33333333333333,
+            "total_return": 0.11589130415465654,
+            "avg_return": 0.0038630434718218845,
+            "avg_hold_bars": 10.4
+          },
+          "chop": {
+            "trades": 62,
+            "win_rate": 79.03225806451613,
+            "total_return": 1.7486898131335455,
+            "avg_return": 0.028204674405379774,
+            "avg_hold_bars": 7.725806451612903
+          }
+        }
+      },
+      "elapsed_sec": 0.5
+    },
+    "no_risk_gate": {
+      "name": "C_参照组(关闭risk_gate)",
+      "config": {
+        "long_thr": 0.75,
+        "short_thr": 0.65,
+        "min_hold_sec": 0.0,
+        "profit_bypass_pct": 0.03,
+        "risk_gate_enabled": false
+      },
+      "metrics": {
+        "total_trades": 252,
+        "win_rate": 76.59,
+        "total_return_pct": 5.23,
+        "total_return_account_pct": 0.26,
+        "avg_return_pct": 0.0207,
+        "sharpe_ratio": 27.73,
+        "max_drawdown_pct_account": 0.02,
+        "profit_factor": 2.77,
+        "avg_hold_bars": 7.07,
+        "exit_reason_dist": {
+          "TSTP_CHOP_720m": 4,
+          "TRAILING_TP": 114,
+          "TSTP_CHOP_480m": 9,
+          "TSTP_CHOP_660m": 3,
+          "TSTP_TREND_REDUCE_NO_PROFIT": 6,
+          "TSTP_TREND_REDUCE": 7,
+          "TSTP_CHOP_600m": 7,
+          "TSTP_CHOP_360m": 11,
+          "TSTP_CHOP_420m": 7,
+          "TSTP_CHOP_540m": 19,
+          "L0_STOP_LOSS": 34,
+          "TSTP_CHOP_REDUCE_NO_PROFIT": 11,
+          "TSTP_CHOP_300m": 11,
+          "": 1,
+          "TSTP_CHOP_780m": 2,
+          "TSTP_CHOP_840m": 1,
+          "data_end": 1,
+          "TB_TAKE_PROFIT": 4
+        },
+        "symbol_metrics": {
+          "BTC": {
+            "trades": 43,
+            "win_rate": 72.09302325581395,
+            "total_return": 0.6330457597205831,
+            "sharpe": 41.55327818006623,
+            "avg_atr_pct": 0.6336892415416713,
+            "avg_hold_bars": 8.906976744186046,
+            "max_dd_raw": 1.8800306074019522
+          },
+          "ETH": {
+            "trades": 52,
+            "win_rate": 75.0,
+            "total_return": 0.36977502959254505,
+            "sharpe": 14.004303908172966,
+            "avg_atr_pct": 0.9197654300308679,
+            "avg_hold_bars": 7.0,
+            "max_dd_raw": 2.805888285756389
+          },
+          "SOL": {
+            "trades": 65,
+            "win_rate": 84.61538461538461,
+            "total_return": 2.0357837196586166,
+            "sharpe": 50.06490130613572,
+            "avg_atr_pct": 1.1496420114741401,
+            "avg_hold_bars": 7.492307692307692,
+            "max_dd_raw": 3.1260123096857786
+          },
+          "UNI": {
+            "trades": 92,
+            "win_rate": 73.91304347826086,
+            "total_return": 2.1896309744597082,
+            "sharpe": 23.596227098160334,
+            "avg_atr_pct": 1.5664348215877217,
+            "avg_hold_bars": 5.945652173913044,
+            "max_dd_raw": 5.98520511096168
+          }
+        },
+        "regime_metrics": {
+          "uptrend": {
+            "trades": 70,
+            "win_rate": 80.0,
+            "total_return": 1.576543562038493,
+            "avg_return": 0.022522050886264185,
+            "avg_hold_bars": 6.628571428571429
+          },
+          "downtrend": {
+            "trades": 90,
+            "win_rate": 76.66666666666667,
+            "total_return": 1.7871108041047576,
+            "avg_return": 0.01985678671227508,
+            "avg_hold_bars": 5.844444444444444
+          },
+          "trend": {
+            "trades": 30,
+            "win_rate": 63.33333333333333,
+            "total_return": 0.11589130415465654,
+            "avg_return": 0.0038630434718218845,
+            "avg_hold_bars": 10.4
+          },
+          "chop": {
+            "trades": 62,
+            "win_rate": 79.03225806451613,
+            "total_return": 1.7486898131335455,
+            "avg_return": 0.028204674405379774,
+            "avg_hold_bars": 7.725806451612903
+          }
+        }
+      },
+      "elapsed_sec": 0.5
+    }
+  },
+  "summary": {
+    "total_return_delta": 1.87,
+    "win_rate_delta": 15.08,
+    "sharpe_delta": 7.65,
+    "l0_risk_gate_before_pct": 54.4,
+    "l0_risk_gate_after_pct": 0.0
+  }
+}

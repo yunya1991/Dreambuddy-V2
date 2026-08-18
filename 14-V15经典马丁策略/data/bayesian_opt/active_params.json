@@ -1,0 +1,15 @@
+{
+  "params": {
+    "trailing_atr_mult": 1.0,
+    "trailing_start_ratio": 0.8,
+    "elder_ray_floor": 0.9,
+    "elder_ray_ceil": 1.5,
+    "btc_windvane_confirm_days": 1,
+    "max_base_holding_hours": 30.8,
+    "max_post_addon_hours": 39.9,
+    "golden_window_hours": 16.8
+  },
+  "source": "bayesian_optimization",
+  "score": 2272.6533,
+  "timestamp": "2026-08-04T02:51:42.696708+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "required": ["distill_id", "kind", "claim"],
+  "properties": {
+    "distill_id": {"type": "string"},
+    "kind": {"type": "string", "enum": ["lesson", "pattern", "anti_pattern", "insight"]},
+    "claim": {"type": "string"},
+    "supporting_case_ids": {"type": "array"},
+    "quadrant": {"type": "object"},
+    "migration_history": {"type": "array"}
+  }
+}

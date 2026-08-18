@@ -1,0 +1,32 @@
+{
+  "template_id": "APP-1785406016237",
+  "name": "python-development 的解决路径",
+  "steps": [
+    "理解需求",
+    "写失败测试",
+    "验证结果"
+  ],
+  "description": "python-development 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "TDD-001",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat: add feature",
+    "action_count": 4,
+    "files_touched": [
+      "main.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "abc123",
+    "created_at": 1785406016.2455392
+  }
+}

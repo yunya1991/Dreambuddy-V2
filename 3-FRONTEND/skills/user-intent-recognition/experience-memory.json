@@ -1,0 +1,109 @@
+{
+  "version": "1.1",
+  "updated_at": "2026-06-20",
+  "description": "经验长期记忆 - 常见用户意图模式库 (auto-evolved)",
+  "patterns": [
+    {
+      "id": "eq_001",
+      "patterns": [
+        "当前",
+        "当前美",
+        "前美"
+      ],
+      "intent": "simple_qa",
+      "confidence": 0.97,
+      "entities_template": {
+        "symbol": "{{auto_detect}}"
+      },
+      "complexity": "moderate",
+      "source": "llm_discovery",
+      "usage_count": 3
+    },
+    {
+      "id": "eq_002",
+      "patterns": [
+        "价格",
+        "查询",
+        "查询下"
+      ],
+      "intent": "market_query",
+      "confidence": 0.94,
+      "entities_template": {
+        "symbol": "{{auto_detect}}"
+      },
+      "complexity": "moderate",
+      "source": "llm_discovery",
+      "usage_count": 20
+    },
+    {
+      "id": "eq_003",
+      "patterns": [
+        "bt",
+        "btc",
+        "tc"
+      ],
+      "intent": "market_query",
+      "confidence": 0.95,
+      "entities_template": {
+        "symbol": "{{auto_detect}}"
+      },
+      "complexity": "moderate",
+      "source": "llm_discovery",
+      "usage_count": 5
+    },
+    {
+      "id": "eq_004",
+      "patterns": [
+        "分析",
+        "bt",
+        "btc"
+      ],
+      "intent": "deep_analysis",
+      "confidence": 0.92,
+      "entities_template": {
+        "symbol": "{{auto_detect}}"
+      },
+      "complexity": "moderate",
+      "source": "llm_discovery",
+      "usage_count": 19
+    },
+    {
+      "id": "eq_005",
+      "patterns": [
+        "bt",
+        "btc",
+        "tc"
+      ],
+      "intent": "market_query",
+      "confidence": 0.95,
+      "entities_template": {
+        "symbol": "{{auto_detect}}"
+      },
+      "complexity": "moderate",
+      "source": "llm_discovery",
+      "usage_count": 5
+    },
+    {
+      "id": "eq_006",
+      "patterns": [
+        "bt",
+        "btc",
+        "tc"
+      ],
+      "intent": "market_query",
+      "confidence": 0.95,
+      "entities_template": {
+        "symbol": "{{auto_detect}}"
+      },
+      "complexity": "moderate",
+      "source": "llm_discovery",
+      "usage_count": 5
+    }
+  ],
+  "total_patterns": 6,
+  "intent_distribution": {
+    "simple_qa": 1,
+    "market_query": 4,
+    "deep_analysis": 1
+  }
+}

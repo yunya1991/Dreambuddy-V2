@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dreambuddy.v15_light_poll</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/anaconda3/bin/python3</string>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/run.py</string>
+        <string>poll_light</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略</string>
+    <key>StartInterval</key>
+    <integer>300</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/logs/v15_light_poll.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/logs/v15_light_poll.log</string>
+</dict>
+</plist>

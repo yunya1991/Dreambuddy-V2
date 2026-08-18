@@ -1,0 +1,42 @@
+---
+name: Knowledge Base Maintenance
+version: 1.0.0
+description: Dream-MultiSkill 知识库72小时自动维护任务 - 评估、清理、更新评分
+trigger: dream-knowledge maintenance, knowledge base auto, 知识库自动维护
+integration: Integrates with dream-knowledge skill and auto-repair system
+---
+
+# 知识库72小时自动维护任务
+
+## 执行频率
+每72小时（3天）执行一次
+
+## 核心功能
+
+### 1. 评估队列检查
+- 扫描 `.knowledge_base/pending/` 待评估知识
+- 执行评分引擎评分
+- 根据评分分配到对应等级
+
+### 2. 评分进化检查
+- 检查已验证的episode
+- 根据验证结果调整评分：
+  - 验证成功 → 加分
+  - 验证失败 → 降分
+- 更新索引文件
+
+### 3. 过期知识清理
+- 检查知识有效期
+- 清理过期条目
+- 归档低价值知识
+
+### 4. 报告生成
+- 生成维护报告
+- 写入秘书邮箱
+
+## 执行流程
+
+1. 调用 dream-knowledge skill 的 evaluator 模块
+2. 执行评分和索引更新
+3. 生成维护报告
+4. 写入 `~/.workbuddy/skills/boss-secretary/reports/knowledge_maintenance_report_*.md`

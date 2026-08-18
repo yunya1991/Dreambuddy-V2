@@ -1,0 +1,48 @@
+{
+  "userId": "diagnostic_session_001",
+  "memories": [
+    {
+      "id": "mem_1781718890920_jxyg",
+      "type": "risk_tolerance",
+      "value": [
+        "稳健型"
+      ],
+      "importance": 1,
+      "lastReinforced": 1781763933855,
+      "createdAt": 1781718890920,
+      "reinforcementCount": 4,
+      "source": "user_profile",
+      "evidence": "诊断任务模拟"
+    },
+    {
+      "id": "mem_1781718890921_3cmo",
+      "type": "trading_style",
+      "value": [
+        "趋势跟随",
+        "分批入场"
+      ],
+      "importance": 0.9500000000000001,
+      "lastReinforced": 1781763933856,
+      "createdAt": 1781718890921,
+      "reinforcementCount": 4,
+      "source": "user_profile",
+      "evidence": "诊断任务模拟"
+    },
+    {
+      "id": "mem_1781718890921_6azq",
+      "type": "preferred_symbols",
+      "value": [
+        "BTC"
+      ],
+      "importance": 0.8500000000000001,
+      "lastReinforced": 1781763933856,
+      "createdAt": 1781718890921,
+      "reinforcementCount": 4,
+      "source": "implicit_behavior",
+      "evidence": "诊断任务模拟"
+    }
+  ],
+  "evolutionCount": 9,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-18T06:25:33.856Z"
+}

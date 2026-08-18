@@ -1,0 +1,43 @@
+==========================================================================================
+  MA200牛熊经验法则 vs 综合最优LR vs 买入持有
+==========================================================================================
+
+==========================================================================================
+  BTC
+==========================================================================================
+  获取 BTC-USDT 1D 数据，目标 1500 天...
+  [WARN] 第1页异常: HTTPSConnectionPool(host='www.okx.com', port=443): Max retries exceeded with url: /api/v5/market/history-candles?instId=BTC-USDT&bar=1D&limit=300 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))
+  获取到 0 条
+  数据获取失败
+
+==========================================================================================
+  ETH
+==========================================================================================
+  获取 ETH-USDT 1D 数据，目标 1500 天...
+  [WARN] 第1页异常: HTTPSConnectionPool(host='www.okx.com', port=443): Max retries exceeded with url: /api/v5/market/history-candles?instId=ETH-USDT&bar=1D&limit=300 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))
+  获取到 0 条
+  数据获取失败
+
+==========================================================================================
+  SOL
+==========================================================================================
+  获取 SOL-USDT 1D 数据，目标 1500 天...
+  [WARN] 第1页异常: HTTPSConnectionPool(host='www.okx.com', port=443): Max retries exceeded with url: /api/v5/market/history-candles?instId=SOL-USDT&bar=1D&limit=300 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))
+  获取到 0 条
+  数据获取失败
+
+==========================================================================================
+  UNI
+==========================================================================================
+  获取 UNI-USDT 1D 数据，目标 1500 天...
+  [WARN] 第1页异常: HTTPSConnectionPool(host='www.okx.com', port=443): Max retries exceeded with url: /api/v5/market/history-candles?instId=UNI-USDT&bar=1D&limit=300 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))
+  获取到 0 条
+  数据获取失败
+
+
+==========================================================================================
+  汇总：各策略平均收益
+==========================================================================================
+
+              策略        BTC        ETH        SOL        UNI         平均       夏普      回撤%     交易
+  -----------------------------------------------------------------------------------------------

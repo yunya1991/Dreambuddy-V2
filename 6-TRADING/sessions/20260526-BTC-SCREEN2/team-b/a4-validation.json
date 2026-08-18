@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-05-26T09:00:00+08:00",
+  "gate": "A4",
+  "gate_name": "Real-time Entry Condition Validation",
+  "result": "WAITING",
+  "current_price_est": 107750,
+  "entry_zone": [
+    103000,
+    105000
+  ],
+  "target_price": 104000,
+  "price_gap_pct": 3.6,
+  "entry_condition_met": false,
+  "reason": "Current price ~$107,750 is $2,750-$4,750 above entry zone $103K-$105K. Waiting for pullback.",
+  "trigger_condition": "Price enters $103,000-$105,000 AND daily candle closes above zone OR lower wick >1.5%",
+  "estimated_wait": "3-7 trading days"
+}

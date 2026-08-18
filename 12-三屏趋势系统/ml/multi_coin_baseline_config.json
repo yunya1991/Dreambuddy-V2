@@ -1,0 +1,94 @@
+{
+  "version": "v1.0.0-multi-coin-baseline",
+  "name": "多币种策略-趋势跟随基线",
+  "created_at": "2026-07-17",
+  "description": "多币种BTC趋势跟随模式作为基线：BTC看多/震荡→小币只做多，BT看空→小币只做空。基于AI V2优化参数+多币种回测对比（BTC/ETH/SOL/UNI），平均收益-6.73%，优于独立模式(-7.19%)。",
+  "mode": "btc_trend_follow",
+  "mode_description": {
+    "mode_a": "独立趋势模式（各币种独立运行AI V2）",
+    "mode_b": "BTC趋势跟随模式（基线）",
+    "mode_c": "BTC均线过滤模式（数据约束下不可行，已弃用）"
+  },
+  "btc_trend_follow_params": {
+    "trend_window": 7,
+    "long_threshold": 0.1,
+    "short_threshold": -0.1,
+    "neutral_treatment": "as_long",
+    "neutral_description": "BTC震荡时允许小币做多（资金可能流入小币）"
+  },
+  "dynamic_weight_fusion": {
+    "base_rule_weight": 0.3,
+    "min_rule_weight": 0.2,
+    "max_rule_weight": 0.9,
+    "trend_sensitivity": 0.25,
+    "vol_sensitivity": 0.25,
+    "volume_sensitivity": 0.2,
+    "duration_sensitivity": 0.25
+  },
+  "strategy_params": {
+    "label_lookahead": 7,
+    "train_window": 200,
+    "retrain_interval": 30,
+    "min_ml_confidence": 0.1,
+    "min_train_samples": 40,
+    "enable_fundamental": true,
+    "enable_multitask": true,
+    "enable_dynamic_weight": true,
+    "enable_feature_selection": false,
+    "top_k_features": 40,
+    "base_rule_weight": 0.3
+  },
+  "multitask_model": {
+    "conf_scale_factor": 10.0,
+    "task_weights": {
+      "direction": 0.5,
+      "confidence": 0.3,
+      "drive_mode": 0.2
+    }
+  },
+  "coins": ["BTC", "ETH", "SOL", "UNI"],
+  "backtest_results": {
+    "data_period": "300天日线（OKX限制）",
+    "data_start": "2025-09-20",
+    "data_end": "2026-07-17",
+    "mode_a_independent": {
+      "BTC": {"return_pct": -4.35, "sharpe": -1.280, "trades": 1},
+      "ETH": {"return_pct": -10.08, "sharpe": -1.680, "trades": 1},
+      "SOL": {"return_pct": 3.99, "sharpe": 1.720, "trades": 5},
+      "UNI": {"return_pct": -18.31, "sharpe": -1.570, "trades": 1},
+      "avg_return_pct": -7.19
+    },
+    "mode_b_btc_follow_baseline": {
+      "BTC": {"return_pct": -4.35, "sharpe": -1.280, "trades": 1},
+      "ETH": {"return_pct": -8.03, "sharpe": -1.430, "trades": 1},
+      "SOL": {"return_pct": 2.89, "sharpe": 1.530, "trades": 2},
+      "UNI": {"return_pct": -17.42, "sharpe": -1.500, "trades": 1},
+      "avg_return_pct": -6.73
+    },
+    "mode_c_ma_filter": {
+      "BTC": {"return_pct": -4.35, "sharpe": -1.280, "trades": 1},
+      "ETH": {"return_pct": -10.08, "sharpe": -1.680, "trades": 1},
+      "SOL": {"return_pct": 1.40, "sharpe": 1.070, "trades": 1},
+      "UNI": {"return_pct": -18.31, "sharpe": -1.570, "trades": 1},
+      "avg_return_pct": -7.83,
+      "note": "周线MA200需要~200周数据，OKX仅返回300天日线，无法生效"
+    }
+  },
+  "conclusion": {
+    "best_mode": "B",
+    "best_avg_return": -6.73,
+    "improvement_vs_mode_a": "+0.46%",
+    "improvement_vs_mode_c": "+1.10%",
+    "per_coin_best": {
+      "BTC": "A",
+      "ETH": "B",
+      "SOL": "A",
+      "UNI": "B"
+    }
+  },
+  "ai_strategy_version": "v2.1.0-optimized",
+  "related_configs": {
+    "ai_v2_baseline": "ml/baseline_config.json",
+    "ai_v2_optimized": "ml/optimized_config.json"
+  }
+}

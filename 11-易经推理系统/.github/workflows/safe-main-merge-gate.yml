@@ -1,0 +1,13 @@
+name: Safe Main Merge Gate
+on:
+  pull_request:
+    branches: [main]
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+jobs:
+  test-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run CI Tests
+        run: python3 -m pytest tests/test_ci_trading_scheduler_workflows_p0.py -v

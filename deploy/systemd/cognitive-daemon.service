@@ -1,0 +1,13 @@
+[Unit]
+Description=DreamBuddy Cognitive Daemon (file watching + memory capture)
+After=default.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/Dreambuddy-V2-main
+ExecStart=/usr/bin/python3 -u /home/ubuntu/Dreambuddy-V2-main/4-MEMORY/9-工具与接口/cognitive_daemon.py --watch /home/ubuntu/Dreambuddy-V2-main --interval 5 --debounce 10
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

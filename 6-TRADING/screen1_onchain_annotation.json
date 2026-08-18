@@ -1,0 +1,14 @@
+{
+  "dimension": "onchain_valuation",
+  "weight": 15,
+  "mvrv_z_score": 1.25,
+  "nupl": -0.15,
+  "realized_price": 61120,
+  "price_to_realized": 1.1,
+  "rhodl_ratio": "accumulation_zone",
+  "sth_mvrv": 0.92,
+  "score": 12,
+  "reasoning": "MVRV Z-Score ~1.25处于历史低估区间(ETF后峰值阈值~3.5)。NUPL约-0.15进入投降区。BTC仅高于Realized Price 10%($61,120)，历史上此估值对应底部区域。STH-MVRV 0.92表明短期持有者已亏损，清洗浮筹。",
+  "generated_at": "2026-06-03T10:50:46Z",
+  "freshness_days": 7
+}

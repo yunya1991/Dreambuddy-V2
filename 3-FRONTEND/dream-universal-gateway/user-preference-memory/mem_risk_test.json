@@ -1,0 +1,54 @@
+{
+  "userId": "mem_risk_test",
+  "memories": [
+    {
+      "id": "mem_1781668762851_0grb",
+      "type": "risk_tolerance",
+      "value": "high",
+      "importance": 0.7,
+      "lastReinforced": 1781668762851,
+      "createdAt": 1781668762851,
+      "reinforcementCount": 1,
+      "source": "implicit_behavior",
+      "evidence": "深度分析 SOL，我非常激进，重仓干"
+    },
+    {
+      "id": "mem_1781668762853_n2qh",
+      "type": "preferred_symbols",
+      "value": [
+        "SOL"
+      ],
+      "importance": 0.4,
+      "lastReinforced": 1781668762853,
+      "createdAt": 1781668762853,
+      "reinforcementCount": 1,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 SOL"
+    },
+    {
+      "id": "mem_1781668801132_nywd",
+      "type": "interaction_count",
+      "value": 1,
+      "importance": 0.2,
+      "lastReinforced": 1781668801132,
+      "createdAt": 1781668801132,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第1次交互"
+    },
+    {
+      "id": "mem_1781668823174_njm6",
+      "type": "interaction_count",
+      "value": 2,
+      "importance": 0.2,
+      "lastReinforced": 1781668823174,
+      "createdAt": 1781668823174,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第2次交互"
+    }
+  ],
+  "evolutionCount": 0,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-17T04:00:23.175Z"
+}

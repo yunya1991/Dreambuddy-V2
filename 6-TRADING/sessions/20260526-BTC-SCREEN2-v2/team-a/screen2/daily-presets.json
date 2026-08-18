@@ -1,0 +1,71 @@
+{
+  "session_id": "20260526-BTC-SCREEN2-v2",
+  "date": "2026-05-26",
+  "symbol": "BTC-USDT-SWAP",
+  "direction": "SHORT",
+  "strategy_type": "futures_martingale",
+  "data_sources": [
+    "tavily_search",
+    "screen1_v2"
+  ],
+  "current_price_basis": 76981,
+  "entry_zone": [
+    77000,
+    79000
+  ],
+  "preferred_entry": 77800,
+  "entry_trigger": "Bounce to 77500-79000 zone with 1h rejection candle (bearish engulfing or upper shadow, volume declining)",
+  "entry_conditions": [
+    "Price enters 77000-79000 range",
+    "1h RSI < 55 at entry",
+    "Volume declining on bounce",
+    "No news-driven spike (verify Tavily)"
+  ],
+  "position_sizing": {
+    "max_pct_of_capital": 30,
+    "note": "Total across all martingale levels; funding rate -6% risk warrants conservative sizing"
+  },
+  "key_levels": {
+    "resistance_band": [
+      77000,
+      80000
+    ],
+    "cme_gap": [
+      79000,
+      84000
+    ],
+    "liquidity_wall_above": 78500,
+    "recent_low": 74344,
+    "liquidity_void_below": 70000,
+    "major_support": 62700
+  },
+  "risk_factors": [
+    {
+      "factor": "funding_rate",
+      "value": "-6%",
+      "risk": "Short Squeeze 40% probability, avg +8-12% spike"
+    },
+    {
+      "factor": "etf_outflow_7d",
+      "value": "-1.42B USD",
+      "signal": "BEAR - structural selling"
+    },
+    {
+      "factor": "cme_gap",
+      "range": [
+        79000,
+        84000
+      ],
+      "risk": "Magnetic pull upward"
+    }
+  ],
+  "invalidation": {
+    "price": 81500,
+    "condition": "Daily close above 81000 OR 4h 2 consecutive bull closes above 80500",
+    "action": "Hard stop all positions, await Screen1 re-score"
+  },
+  "a1_score": 62,
+  "a2_score": 68,
+  "a3_primary_scenario": "S1_45pct",
+  "composite_confidence": 64
+}

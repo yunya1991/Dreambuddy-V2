@@ -1,0 +1,15 @@
+matplotlib
+bayesian-optimization
+requests
+redis
+websockets
+minio
+psycopg2-binary
+python-dotenv
+cachetools
+hyperliquid-python-sdk
+eth-account
+numpy
+pandas
+pytest
+flask

@@ -1,0 +1,10 @@
+[Unit]
+Description=SR Snapshot Job %i
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/curl -s -X POST "http://localhost:8080/api/v3/sr-snapshot/run?symbol=BTC-USDT&timeframe=1h&count=500"
+
+[Install]
+WantedBy=multi-user.target

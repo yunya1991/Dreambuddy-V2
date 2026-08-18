@@ -1,0 +1,86 @@
+{
+  "ts_ms": 1782028510101,
+  "generated_at": "2026-06-21T07:55:10.101181+00:00",
+  "overall_sentiment": 0.3,
+  "window_hours": 24,
+  "source": "tavily_fundamental_generator",
+  "narratives": [
+    {
+      "id": "nar_etf_buying",
+      "name": "ETF 机构持续买入",
+      "narrative": "BTC ETF 持续净流入，机构买家在 64-66K 区间执行积极建仓策略，推动总资金流为正。",
+      "summary": "ETF 本周净流入 1.2 B USD，机构买家主导 BTC 上行",
+      "sentiment": 0.45,
+      "confidence": 0.82,
+      "weight": 0.28,
+      "evidence_count": 8,
+      "category": "institutional",
+      "generated_at": "2026-06-21T07:55:10.101181+00:00"
+    },
+    {
+      "id": "nar_macro_cut",
+      "name": "宏观降息预期升温",
+      "narrative": "美联储多位官员讲话暗示下半年可能开始降息，美元指数走弱，对风险资产形成利好。",
+      "summary": "降息预期升温，美元走弱 + 黄金/加密同涨",
+      "sentiment": 0.38,
+      "confidence": 0.76,
+      "weight": 0.22,
+      "evidence_count": 5,
+      "category": "macro",
+      "generated_at": "2026-06-21T07:55:10.101181+00:00"
+    },
+    {
+      "id": "nar_eth_etf",
+      "name": "ETH 现货 ETF 获批预期",
+      "narrative": "市场预期 ETH 现货 ETF 可能在未来 1-2 个月获批，以太坊链上活动与 Gas 同步上升。",
+      "summary": "ETH 现货 ETF 预期推动链上活动与资产价格",
+      "sentiment": 0.41,
+      "confidence": 0.7,
+      "weight": 0.18,
+      "evidence_count": 6,
+      "category": "asset_specific",
+      "generated_at": "2026-06-21T07:55:10.101181+00:00"
+    },
+    {
+      "id": "nar_alt_season",
+      "name": "山寨季信号显现",
+      "narrative": "BTC 市值占比下降至 51.2%，Meme/Alt 代币表现领先，交易活跃度由 BTC 向 Alt 扩散。",
+      "summary": "BTC 占比下降，Alt 轮动启动",
+      "sentiment": 0.3,
+      "confidence": 0.65,
+      "weight": 0.14,
+      "evidence_count": 4,
+      "category": "market_structure",
+      "generated_at": "2026-06-21T07:55:10.101181+00:00"
+    },
+    {
+      "id": "nar_whale_exit",
+      "name": "交易所持续净流出",
+      "narrative": "过去 24 小时交易所净流出约 12K BTC，巨鲸转账增加 14%，但未见明显集中抛售。",
+      "summary": "投资者持仓离场，短期供应减少",
+      "sentiment": 0.25,
+      "confidence": 0.78,
+      "weight": 0.1,
+      "evidence_count": 3,
+      "category": "onchain",
+      "generated_at": "2026-06-21T07:55:10.101181+00:00"
+    },
+    {
+      "id": "nar_reg_risk",
+      "name": "监管不确定性溢价",
+      "narrative": "SEC 对 DeFi 监管框架磋商正在推进，虽然整体信号回暖，但部分司法辖区依然可能有强监管风险。",
+      "summary": "监管前景更具确定性，但尾部风险仍存",
+      "sentiment": -0.1,
+      "confidence": 0.55,
+      "weight": 0.08,
+      "evidence_count": 3,
+      "category": "regulation",
+      "generated_at": "2026-06-21T07:55:10.101181+00:00"
+    }
+  ],
+  "quality": {
+    "sources_used": 12,
+    "distinct_categories": 6,
+    "overall_quality": "good"
+  }
+}

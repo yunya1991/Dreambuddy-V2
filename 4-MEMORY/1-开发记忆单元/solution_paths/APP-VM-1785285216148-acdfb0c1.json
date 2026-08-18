@@ -1,0 +1,20 @@
+{
+  "template_id": "APP-VM-1785285216148-acdfb0c1",
+  "title": "MCP server可用纯Python标准库实现JSON-RPC 2.0 over stdio，不需要安装mcp包。核心是handle_jsonrpc(requ",
+  "content": "MCP server可用纯Python标准库实现JSON-RPC 2.0 over stdio，不需要安装mcp包。核心是handle_jsonrpc(request)函数+stdin/stdout循环。工具定义用inputSchema(JSON Schema)，返回content数组[{type:text,text:...}]。",
+  "quality_level": "A",
+  "confidence": 0.95,
+  "verify_count": 20,
+  "tags": [
+    "MCP",
+    "JSON-RPC",
+    "零依赖",
+    "协议层"
+  ],
+  "memory_type": "experience",
+  "source": "认知闭环开发-2026-07-29",
+  "created_at": "2026-07-29T00:33:36.148555+00:00",
+  "updated_at": "2026-08-01T10:20:41.224176+00:00",
+  "rebuilt_from_memory_id": "VM-1785285216148-acdfb0c1",
+  "rebuild_version": 1
+}

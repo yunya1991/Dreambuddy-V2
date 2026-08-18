@@ -1,0 +1,132 @@
+{
+  "trailing_atr_mult": 1.5,
+  "trailing_start_pct_of_tp": 0.5,
+  "results": [
+    {
+      "coin": "BTC",
+      "base": {
+        "total_return_pct": -5.5,
+        "max_drawdown_pct": 5.57,
+        "sharpe_ratio": -1.1072,
+        "total_trades": 9,
+        "win_rate": 0.3333,
+        "profit_factor": 0.3437
+      },
+      "trailing": {
+        "total_return_pct": 1.77,
+        "max_drawdown_pct": 0.14,
+        "sharpe_ratio": 3.5209,
+        "total_trades": 21,
+        "win_rate": 0.7619,
+        "profit_factor": 2.3555,
+        "trailing_tp_trades": 11,
+        "fixed_tp_trades": 4
+      }
+    },
+    {
+      "coin": "ETH",
+      "base": {
+        "total_return_pct": -1.45,
+        "max_drawdown_pct": 2.21,
+        "sharpe_ratio": -0.0653,
+        "total_trades": 55,
+        "win_rate": 0.5273,
+        "profit_factor": 0.8597
+      },
+      "trailing": {
+        "total_return_pct": 1.2,
+        "max_drawdown_pct": 0.32,
+        "sharpe_ratio": 1.5967,
+        "total_trades": 56,
+        "win_rate": 0.5536,
+        "profit_factor": 1.5371,
+        "trailing_tp_trades": 3,
+        "fixed_tp_trades": 0
+      }
+    },
+    {
+      "coin": "SOL",
+      "base": {
+        "total_return_pct": -2.35,
+        "max_drawdown_pct": 2.63,
+        "sharpe_ratio": -0.7771,
+        "total_trades": 67,
+        "win_rate": 0.4776,
+        "profit_factor": 0.7631
+      },
+      "trailing": {
+        "total_return_pct": 0.83,
+        "max_drawdown_pct": 0.54,
+        "sharpe_ratio": 0.4585,
+        "total_trades": 67,
+        "win_rate": 0.4925,
+        "profit_factor": 1.235,
+        "trailing_tp_trades": 2,
+        "fixed_tp_trades": 0
+      }
+    },
+    {
+      "coin": "ARB",
+      "base": {
+        "total_return_pct": -0.28,
+        "max_drawdown_pct": 0.72,
+        "sharpe_ratio": -0.4389,
+        "total_trades": 61,
+        "win_rate": 0.541,
+        "profit_factor": 0.7203
+      },
+      "trailing": {
+        "total_return_pct": -0.28,
+        "max_drawdown_pct": 0.72,
+        "sharpe_ratio": -0.4389,
+        "total_trades": 61,
+        "win_rate": 0.541,
+        "profit_factor": 0.7203,
+        "trailing_tp_trades": 0,
+        "fixed_tp_trades": 0
+      }
+    },
+    {
+      "coin": "OP",
+      "base": {
+        "total_return_pct": -0.29,
+        "max_drawdown_pct": 0.87,
+        "sharpe_ratio": -0.4093,
+        "total_trades": 66,
+        "win_rate": 0.4848,
+        "profit_factor": 0.9249
+      },
+      "trailing": {
+        "total_return_pct": -0.29,
+        "max_drawdown_pct": 0.87,
+        "sharpe_ratio": -0.4093,
+        "total_trades": 66,
+        "win_rate": 0.4848,
+        "profit_factor": 0.9249,
+        "trailing_tp_trades": 0,
+        "fixed_tp_trades": 0
+      }
+    },
+    {
+      "coin": "UNI",
+      "base": {
+        "total_return_pct": -0.51,
+        "max_drawdown_pct": 0.78,
+        "sharpe_ratio": -0.8427,
+        "total_trades": 73,
+        "win_rate": 0.5342,
+        "profit_factor": 0.6743
+      },
+      "trailing": {
+        "total_return_pct": -0.51,
+        "max_drawdown_pct": 0.78,
+        "sharpe_ratio": -0.8427,
+        "total_trades": 73,
+        "win_rate": 0.5342,
+        "profit_factor": 0.6743,
+        "trailing_tp_trades": 0,
+        "fixed_tp_trades": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,989 @@
+# strategy_library.yaml v3.3
+# 7种Regime × 策略+工具 精炼匹配库
+# 设计原则: 直白命名 | 收益预期排序 | 总仓位≤20% | A4快速索引
+# 替代: v2.2的22条概念策略 → 本文件为唯一策略源
+# 对接: dream-strategy-parser / A4战术验证
+# v3.1新增: 10条大师历史实践知识策略(蒸馏自8位经典交易大师)
+# v3.2新增: 三类知识源体系 + 实践策略库(5_practice_strategies)
+# v3.3新增: 三层索引体系(v7.0)对接 | 工具索引字段 | 跨资产字段
+
+_meta:
+  version: "3.3.0"
+  updated: "2026-04-28"
+  total_strategies: 48
+  total_regimes: 7
+  master_strategies: 10  # 大师蒸馏策略数
+  practice_strategies: 3  # 实践验证策略数
+  position_cap: 20%  # 多策略并行总仓位上限
+  priority_rule: "收益预期从高到低"
+  naming_rule: "直白描述型，禁止概念命名"
+  option_scope: "BTC为主，ETH非必要不入，其余不做"
+  
+  # ⭐ v7.0三层索引检索优先级 (必须严格按顺序)
+  retrieval_priority_tier1:
+    - tier: "1st"
+      source: "master_strategies"
+      description: "大师策略(最高优先)"
+      criteria: "master_*前缀策略，priority=0优先"
+    - tier: "2nd"  
+      source: "online_strategies"
+      description: "联网搜索策略(次优先)"
+      criteria: "Tavily/Odaily/Agent-Reach实时搜索"
+    - tier: "3rd"
+      source: "practice_strategies"
+      description: "实践经验策略(兜底)"
+      criteria: "P-S级策略，verifications≥3"
+
+  # ⭐ v7.0工具索引字段
+  tool_index:
+    regime_matrix:
+      RANGE_BOUND: ["grid", "farming"]
+      TREND_DOWN: ["dca", "swap"]
+      TREND_STRONG_UP: ["swap", "dca"]
+      COMPRESSION: ["option", "swap"]
+      FUNDING_EXTREME: ["farming", "grid"]
+      MACRO_DIVERGE: ["cross_asset", "swap"]
+      UNCLEAR: ["swap", "grid"]
+
+  # ⭐ v7.0跨资产设计字段
+  cross_asset_support:
+    instruments:
+      - "BTC-USDT-SWAP"  # 主交易标的
+      - "ETH-USDT-SWAP"  # 备选标的
+      - "XAUT-USDT"      # 黄金现货(避险)
+      - "COIN-USDT-SWAP" # Coinbase股票(行业)
+      - "SOL-USDT-SWAP"   # 高波动备选
+    macro_correlation:
+      BTC_XAUT: "常规正相关，避险时负相关"
+      BTC_COIN: "行业共振，正相关"
+      BTC_ETH: "高相关，同涨同跌"
+      BTC_SOL: "中高相关，波动更大"
+
+# ============================================================
+# 7种市场状态定义
+# ============================================================
+regimes:
+  TREND_STRONG_UP:
+    name: "强上涨趋势"
+    detect: "周线+日线+1H三屏多 + MA7>MA25>MA99 + ATR扩张"
+    si_range: [35, 80]
+    bias: LONG
+
+  TREND_UP:
+    name: "温和上涨"
+    detect: "日线多+1H偏多 + MA7>MA25 + ATR正常"
+    si_range: [20, 34]
+    bias: LONG
+
+  RANGE_BOUND:
+    name: "震荡区间"
+    detect: "三屏分化 + MA7≈MA25 + ATR收缩 + 支撑阻力明确"
+    si_range: [15, 25]
+    bias: NEUTRAL
+
+  COMPRESSION:
+    name: "压缩蓄力"
+    detect: "ATR持续收窄至历史低位 + 布林带收窄 + OI增加 + 波动率极低"
+    si_range: [10, 20]
+    bias: WAIT
+    notes: "暴风雨前的宁静，方向选择在即"
+
+  TRANSITION:
+    name: "过渡转换"
+    detect: "Regime刚切换(3日内) + 旧趋势衰减+新趋势未确认 + 信号矛盾"
+    si_range: [10, 25]
+    bias: WAIT
+    notes: "旧状态已破，新状态未立，轻仓试探"
+
+  TREND_DOWN:
+    name: "下行趋势"
+    detect: "日线空+1H偏空 + MA7<MA25<MA99 + 价格低于EMA60"
+    si_range: [5, 15]
+    bias: SHORT
+
+  EXTREME:
+    name: "极端行情"
+    detect: "单日涨跌>5% + FGI<15或>85 + 费率极端 + 流动性枯竭"
+    si_range: [0, 100]
+    bias: CONTRARIAN
+    notes: "恐慌=机会，贪婪=危险"
+
+# ============================================================
+# 策略库: 按Regime分组，每组按收益预期从高到低排序
+# ============================================================
+strategies:
+  # ──────────────────────────────────────────────────────
+  # R1: TREND_STRONG_UP — 强上涨趋势
+  # 核心逻辑: 趋势是你朋友，跟着走别逆着干
+  # ──────────────────────────────────────────────────────
+  - id: trend_long_margin
+    name: "趋势跟随做多(合约杠杆)"
+    regime: TREND_STRONG_UP
+    priority: 1
+    expected_return: "高"
+    tool: swap
+    description: "三屏共振多头，杠杆合约顺势做多，突破加仓"
+    trigger: "regime==TREND_STRONG_UP AND SI≥35 AND Edge>0"
+    entry: "市价开多 + 突破前高加仓"
+    exit: "trailing_stop 3% + 日线MA7破位止盈"
+    risk: "趋势反转回撤"
+    position: 10%
+    leverage: 3-5x
+    instruments: ["BTC-USDT-SWAP", "ETH-USDT-SWAP"]
+    command: 'okx swap place --instId {instId} --side buy --ordType market --sz {sz} --posSide long --tdMode isolated --lever {lever} --profile dreamdemo'
+
+  - id: trend_long_option_call
+    name: "看涨期权杠杆放大"
+    regime: TREND_STRONG_UP
+    priority: 2
+    expected_return: "极高(有限亏损)"
+    tool: option
+    description: "买入虚值看涨期权，以小博大，最大亏损=权利金"
+    trigger: "regime==TREND_STRONG_UP AND SI≥40 AND volatility_rank<70"
+    entry: "买入BTC虚值5-10%看涨期权，期限2-4周"
+    exit: "到期前1周评估是否行权/平仓，或目标价位平仓"
+    risk: "时间价值衰减，趋势不及预期"
+    position: 3%
+    leverage: "N/A(期权自带杠杆)"
+    instruments: ["BTC-USD-UM"]  # 仅BTC期权
+    notes: "⚠️仅BTC，ETH非必要不入 | ⚠️需账户≥$15K(1张=1BTC权利金$500+)"
+    command: 'okx option place --instId {optionInstId} --tdMode cross --side buy --ordType limit --sz 1 --px {px} --profile dreamdemo'
+
+  - id: trend_long_dca
+    name: "趋势定投加仓"
+    regime: TREND_STRONG_UP
+    priority: 3
+    expected_return: "中高"
+    tool: dca
+    description: "合约DCA沿着趋势方向分批建仓，回踩加仓"
+    trigger: "regime==TREND_STRONG_UP AND SI≥30"
+    entry: "回踩MA25附近触发DCA，3-5档加仓"
+    exit: "tpPct 3-5%"
+    risk: "趋势末期追高"
+    position: 5%
+    leverage: 2-3x
+    instruments: ["BTC-USDT-SWAP"]
+    command: 'okx bot dca create --algoOrdType contract_dca --instId {instId} --direction long --initOrdAmt 10 --maxSafetyOrds 5 --safetyOrdAmt 12 --pxSteps 0.015 --tpPct 3 --lever {lever} --triggerStrategy instant --tag "a4_trend_dca" --profile dreamdemo'
+
+  - id: trend_grid_long
+    name: "多头合约网格(趋势增利)"
+    regime: TREND_STRONG_UP
+    priority: 4
+    expected_return: "中"
+    tool: grid
+    description: "方向性网格，只做多单，趋势中高抛低吸增厚收益"
+    trigger: "regime==TREND_STRONG_UP AND 区间宽度>5%"
+    entry: "设定支撑~阻力区间，long方向合约网格"
+    exit: "bot止盈或手动平仓"
+    risk: "趋势加速突破上轨后空仓"
+    position: 5%
+    leverage: 2-3x
+    instruments: ["BTC-USDT-SWAP", "ETH-USDT-SWAP"]
+    command: 'okx bot grid create --instId {instId} --algoOrdType contract_grid --maxPx {upper} --minPx {lower} --gridNum {grids} --direction long --lever {lever} --sz {margin} --runType 1 --tag "a4_trend_grid" --profile dreamdemo'
+
+  - id: trend_funding_long
+    name: "费率+趋势双重收入(做多收息)"
+    regime: TREND_STRONG_UP
+    priority: 5
+    expected_return: "中(叠加费率)"
+    tool: farming
+    description: "趋势做多+负费率时额外收息，正费率则纯趋势不收息"
+    trigger: "regime==TREND_STRONG_UP AND funding_rate<0"
+    entry: "开多仓 + 持仓收负费率(空头付费率给多头)"
+    exit: "费率翻正评估是否继续持有"
+    risk: "费率翻转+趋势反转双重打击"
+    position: 5%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    notes: "费率三层用法: 增收层(同向收费率)"
+
+  # ──────────────────────────────────────────────────────
+  # R2: TREND_UP — 温和上涨
+  # 核心逻辑: 趋势偏多但不强，稳着来
+  # ──────────────────────────────────────────────────────
+  - id: mild_trend_long
+    name: "温和做多(低杠杆合约)"
+    regime: TREND_UP
+    priority: 1
+    expected_return: "中高"
+    tool: swap
+    description: "日线偏多但不够强，低杠杆做多，严格止损"
+    trigger: "regime==TREND_UP AND SI≥20 AND Edge>0"
+    entry: "回踩MA7/MA25支撑做多"
+    exit: "止损1.5% + 止盈3-5%"
+    risk: "假突破变震荡"
+    position: 8%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    command: 'okx swap place --instId {instId} --side buy --ordType market --sz {sz} --posSide long --tdMode isolated --lever 2 --profile dreamdemo'
+
+  - id: mild_grid_long
+    name: "偏多合约网格"
+    regime: TREND_UP
+    priority: 2
+    expected_return: "中"
+    tool: grid
+    description: "趋势偏多但力度不够，用多头网格兼顾方向+区间"
+    trigger: "regime==TREND_UP AND 区间明确"
+    entry: "long方向合约网格，区间偏上设"
+    exit: "bot自动止盈"
+    risk: "趋势变震荡或下跌"
+    position: 5%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    command: 'okx bot grid create --instId {instId} --algoOrdType contract_grid --maxPx {upper} --minPx {lower} --gridNum {grids} --direction long --lever 2 --sz {margin} --runType 1 --tag "a4_mild_grid" --profile dreamdemo'
+
+  - id: mild_dca_long
+    name: "逢低定投做多"
+    regime: TREND_UP
+    priority: 3
+    expected_return: "中"
+    tool: dca
+    description: "温和上涨中用DCA分批低吸，避免追高"
+    trigger: "regime==TREND_UP AND SI≥20"
+    entry: "DCA 4档，pxSteps 1.5%"
+    exit: "tpPct 2-3%"
+    risk: "上涨不及预期变横盘"
+    position: 5%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    command: 'okx bot dca create --algoOrdType contract_dca --instId {instId} --direction long --initOrdAmt 8 --maxSafetyOrds 4 --safetyOrdAmt 10 --pxSteps 0.015 --tpPct 2 --lever 2 --triggerStrategy instant --tag "a4_mild_dca" --profile dreamdemo'
+
+  - id: mild_spot_accumulate
+    name: "现货逢低建仓"
+    regime: TREND_UP
+    priority: 4
+    expected_return: "中低(稳健)"
+    tool: spot
+    description: "温和上涨中分批买入现货，长期持有"
+    trigger: "regime==TREND_UP AND FGI<50"
+    entry: "回调至支撑位买入现货"
+    exit: "趋势变空时卖出"
+    risk: "买入后继续下跌"
+    position: 5%
+    leverage: "1x(无杠杆)"
+    instruments: ["BTC-USDT", "ETH-USDT"]
+    command: 'okx swap place --instId {instId} --side buy --ordType limit --sz {sz} --px {px} --tdMode cash --profile dreamdemo'
+
+  # ──────────────────────────────────────────────────────
+  # R3: RANGE_BOUND — 震荡区间
+  # 核心逻辑: 不猜方向，赚区间的钱
+  # ──────────────────────────────────────────────────────
+  - id: range_neutral_grid
+    name: "中性双向网格"
+    regime: RANGE_BOUND
+    priority: 1
+    expected_return: "中(稳定)"
+    tool: grid
+    description: "震荡区间首选！不判断方向，高抛低吸赚价差"
+    trigger: "regime==RANGE_BOUND AND 区间宽度>3%"
+    entry: "现货网格或合约中性网格"
+    exit: "bot自动运行，区间破位手动停"
+    risk: "区间突破后单边亏损"
+    position: 5%
+    leverage: "1x(现货) / 2x(合约)"
+    instruments: ["BTC-USDT", "BTC-USDT-SWAP"]
+    command_spot: 'okx bot grid create --instId {instId} --algoOrdType grid --maxPx {upper} --minPx {lower} --gridNum {grids} --quoteSz {quoteSz} --runType 1 --tag "a4_range_grid" --profile dreamdemo'
+    command_contract: 'okx bot grid create --instId {instId} --algoOrdType contract_grid --maxPx {upper} --minPx {lower} --gridNum {grids} --direction long --lever 2 --sz {margin} --runType 1 --tag "a4_range_cgrid" --profile dreamdemo'
+
+  - id: range_farming_income
+    name: "费率+网格双重收入"
+    regime: RANGE_BOUND
+    priority: 2
+    expected_return: "中(双重叠加)"
+    tool: farming+grid
+    description: "震荡中持仓收负费率+网格赚区间，双份收入"
+    trigger: "regime==RANGE_BOUND AND funding_rate<0"
+    entry: "开多收费率 + 同时开网格"
+    exit: "费率翻正或区间破位"
+    risk: "费率翻转+破位双重亏损"
+    position: 5%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    notes: "费率三层用法: 增收层(同向)+套利层(Delta中性)"
+
+  - id: range_dca_bottom
+    name: "区间下部DCA低吸"
+    regime: RANGE_BOUND
+    priority: 3
+    expected_return: "中低"
+    tool: dca
+    description: "在区间下部用DCA分批买入，反弹止盈"
+    trigger: "regime==RANGE_BOUND AND price<区间中轴"
+    entry: "DCA做多，3-4档，pxSteps 1%"
+    exit: "tpPct 1.5-2%"
+    risk: "跌破区间下沿"
+    position: 5%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    command: 'okx bot dca create --algoOrdType contract_dca --instId {instId} --direction long --initOrdAmt 8 --maxSafetyOrds 4 --safetyOrdAmt 10 --pxSteps 0.01 --tpPct 1.5 --lever 2 --triggerStrategy instant --tag "a4_range_dca" --profile dreamdemo'
+
+  - id: range_funding_signal
+    name: "费率极端反转信号"
+    regime: RANGE_BOUND
+    priority: 4
+    expected_return: "中(信号驱动)"
+    tool: farming
+    description: "震荡中费率极端→拥挤交易→反转信号，反向开仓"
+    trigger: "regime==RANGE_BOUND AND abs(funding_rate)>0.01"
+    entry: "费率极端正→开空，费率极端负→开多"
+    exit: "费率回归中性时止盈"
+    risk: "费率极端持续更久"
+    position: 3%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    notes: "费率三层用法: 信号层(极端→反转)"
+
+  - id: range_funding_arb
+    name: "Delta中性费率套利"
+    regime: RANGE_BOUND
+    priority: 5
+    expected_return: "低(但稳定)"
+    tool: farming
+    description: "震荡中开空收正费率+开小仓多对冲，纯吃费率"
+    trigger: "regime==RANGE_BOUND AND funding_rate>0.0003 AND 持续3天+"
+    entry: "开空收费率 + 开1/3仓多对冲上行风险"
+    exit: "费率收窄至0.0001以下"
+    risk: "对冲不完全+单边突破"
+    position: 5%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    notes: "费率三层用法: 套利层(Delta中性纯收费率)"
+
+  # ──────────────────────────────────────────────────────
+  # R4: COMPRESSION — 压缩蓄力
+  # 核心逻辑: 暴风雨前布局，方向出来后加码
+  # ──────────────────────────────────────────────────────
+  - id: comp_straddle_option
+    name: "跨式期权做多波动率"
+    regime: COMPRESSION
+    priority: 1
+    expected_return: "极高(方向无关)"
+    tool: option
+    description: "压缩期买入同执行价看涨+看跌，方向出来后一边大赚"
+    trigger: "regime==COMPRESSION AND ATR<历史20%分位 AND 布林带收窄"
+    entry: "买入BTC ATM跨式(Call+Put同执行价)，期限2-4周"
+    exit: "方向突破后平掉亏损端，持有盈利端；或到期"
+    risk: "继续压缩，时间价值衰减"
+    position: 3%
+    leverage: "N/A"
+    instruments: ["BTC-USD-UM"]
+    notes: "⚠️仅BTC期权，这是压缩期最佳策略 | ⚠️需账户≥$25K(跨式权利金$1000+)"
+
+  - id: comp_pending_both
+    name: "双向挂单捕捉突破"
+    regime: COMPRESSION
+    priority: 2
+    expected_return: "高"
+    tool: swap
+    description: "在压缩区间上下沿各挂突破单，谁先触发跟谁"
+    trigger: "regime==COMPRESSION AND 支撑阻力明确"
+    entry: "阻力位上0.5%挂多单 + 支撑位下0.5%挂空单"
+    exit: "突破方向trailing 3% + 未触发端取消"
+    risk: "假突破两头打"
+    position: 5%
+    leverage: 2-3x
+    instruments: ["BTC-USDT-SWAP"]
+    command_long: 'okx swap place --instId {instId} --side buy --ordType conditional --sz {sz} --posSide long --tdMode isolated --lever 3 --slTriggerPx {slPx} --profile dreamdemo'
+    command_short: 'okx swap place --instId {instId} --side sell --ordType conditional --sz {sz} --posSide short --tdMode isolated --lever 3 --slTriggerPx {slPx} --profile dreamdemo'
+
+  - id: comp_grid_narrow
+    name: "窄区间网格收粮"
+    regime: COMPRESSION
+    priority: 3
+    expected_return: "中低(等待期收入)"
+    tool: grid
+    description: "压缩区间内开窄网格，等突破前先赚点小区间利润"
+    trigger: "regime==COMPRESSION AND 区间宽度2-4%"
+    entry: "窄区间现货网格或低杠杆合约网格"
+    exit: "区间突破立即手动停止网格"
+    risk: "突破后网格单边持仓"
+    position: 3%
+    leverage: 1-2x
+    instruments: ["BTC-USDT", "BTC-USDT-SWAP"]
+
+  - id: comp_dca_probe
+    name: "小幅DCA试水"
+    regime: COMPRESSION
+    priority: 4
+    expected_return: "中"
+    tool: dca
+    description: "压缩期小量DCA做多(赌向上突破)，失败止损小"
+    trigger: "regime==COMPRESSION AND SI>15(偏多)"
+    entry: "极小量DCA，2档，pxSteps 1%"
+    exit: "tpPct 2% + 破支撑止损"
+    risk: "向下突破亏损"
+    position: 3%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+
+  # ──────────────────────────────────────────────────────
+  # R5: TRANSITION — 过渡转换
+  # 核心逻辑: 方向不明，轻仓多策略试探
+  # ──────────────────────────────────────────────────────
+  - id: trans_multi_probe
+    name: "多策略轻仓试探"
+    regime: TRANSITION
+    priority: 1
+    expected_return: "中(分散)"
+    tool: multi
+    description: "同时运行2-3个小仓策略，看哪个方向先确认"
+    trigger: "regime==TRANSITION AND 信号矛盾"
+    entry: "小仓做多2% + 小仓做空2% + 小网格3%"
+    exit: "方向确认后保留顺向仓，平掉逆向仓"
+    risk: "方向迟迟不明，手续费消耗"
+    position: "总计7%(3%+2%+2%)"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    notes: "A4最常用策略！C9多维度试探要求"
+
+  - id: trans_funding_wait
+    name: "费率观察+等待"
+    regime: TRANSITION
+    priority: 2
+    expected_return: "低(但安全)"
+    tool: farming
+    description: "方向不明时只做费率观察，费率极端信号确认后再动"
+    trigger: "regime==TRANSITION AND 方向不明"
+    entry: "观望，监控费率变化速度"
+    exit: "费率给出方向信号后入场"
+    risk: "错过初期趋势"
+    position: 0%
+    leverage: "N/A"
+    instruments: ["BTC-USDT-SWAP"]
+    notes: "费率三层用法: 信号层(等费率方向确认)"
+
+  - id: trans_option_straddle
+    name: "小仓跨式期权"
+    regime: TRANSITION
+    priority: 3
+    expected_return: "高(方向无关)"
+    tool: option
+    description: "过渡期用小仓跨式赌方向，最大亏损=权利金"
+    trigger: "regime==TRANSITION AND 方向即将选择"
+    entry: "买入BTC ATM跨式，小仓1-2%"
+    exit: "方向确认后平亏损端"
+    risk: "时间价值衰减"
+    position: 2%
+    leverage: "N/A"
+    instruments: ["BTC-USD-UM"]
+
+  # ──────────────────────────────────────────────────────
+  # R6: TREND_DOWN — 下行趋势
+  # 核心逻辑: 空头强势，谨慎做多摊薄或做空
+  # ──────────────────────────────────────────────────────
+  - id: down_short_margin
+    name: "趋势跟随做空(合约)"
+    regime: TREND_DOWN
+    priority: 1
+    expected_return: "高"
+    tool: swap
+    description: "日线空+1H空，做空合约顺势"
+    trigger: "regime==TREND_DOWN AND SI≤15 AND Edge<-20"
+    entry: "反弹至MA7/MA25阻力做空"
+    exit: "trailing_stop 3% + 支撑位止盈"
+    risk: "空头陷阱反弹"
+    position: 8%
+    leverage: 2-3x
+    instruments: ["BTC-USDT-SWAP"]
+    command: 'okx swap place --instId {instId} --side sell --ordType market --sz {sz} --posSide short --tdMode isolated --lever {lever} --profile dreamdemo'
+
+  - id: down_dca_long_average
+    name: "做多马丁摊薄(等反弹)"
+    regime: TREND_DOWN
+    priority: 2
+    expected_return: "中(反弹时兑现)"
+    tool: dca
+    description: "下行但有支撑位，用马丁DCA做多摊薄成本，等反弹"
+    trigger: "regime==TREND_DOWN AND support_level存在 AND 距支撑<5%"
+    entry: "DCA做多 3-5档，pxSteps 1.5-2%"
+    exit: "tpPct 2-3%"
+    risk: "跌破支撑连续加仓亏损放大"
+    position: 5%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    command: 'okx bot dca create --algoOrdType contract_dca --instId {instId} --direction long --initOrdAmt 5 --maxSafetyOrds 5 --safetyOrdAmt 8 --pxSteps 0.02 --tpPct 2 --lever 2 --triggerStrategy instant --tag "a4_down_dca" --profile dreamdemo'
+
+  - id: down_option_put
+    name: "看跌期权对冲"
+    regime: TREND_DOWN
+    priority: 3
+    expected_return: "中高(有限亏损)"
+    tool: option
+    description: "买入看跌期权，下行赚钱，最大亏损=权利金"
+    trigger: "regime==TREND_DOWN AND SI≤15"
+    entry: "买入BTC虚值5%看跌期权，期限2-4周"
+    exit: "目标价位平仓或到期行权"
+    risk: "下跌不及预期，时间价值衰减"
+    position: 2%
+    leverage: "N/A"
+    instruments: ["BTC-USD-UM"]
+
+  - id: down_grid_short
+    name: "空头合约网格"
+    regime: TREND_DOWN
+    priority: 4
+    expected_return: "中"
+    tool: grid
+    description: "下行趋势中用空头方向合约网格，每次反弹做空"
+    trigger: "regime==TREND_DOWN AND 区间明确"
+    entry: "short方向合约网格"
+    exit: "趋势转多时手动停止"
+    risk: "趋势反转"
+    position: 5%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    command: 'okx bot grid create --instId {instId} --algoOrdType contract_grid --maxPx {upper} --minPx {lower} --gridNum {grids} --direction short --lever 2 --sz {margin} --runType 1 --tag "a4_down_grid" --profile dreamdemo'
+
+  - id: down_funding_short
+    name: "费率+做空双重收入"
+    regime: TREND_DOWN
+    priority: 5
+    expected_return: "中(叠加费率)"
+    tool: farming
+    description: "下行趋势做空+正费率时额外收息"
+    trigger: "regime==TREND_DOWN AND funding_rate>0"
+    entry: "开空仓 + 正费率(多头付费率给空头)"
+    exit: "费率翻负或趋势反转"
+    risk: "反弹+费率翻转"
+    position: 5%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+
+  # ──────────────────────────────────────────────────────
+  # R7: EXTREME — 极端行情
+  # 核心逻辑: 别人恐惧我贪婪，别人贪婪我恐惧
+  # ──────────────────────────────────────────────────────
+  - id: ext_contrarian_long
+    name: "恐慌抄底做多"
+    regime: EXTREME
+    priority: 1
+    expected_return: "极高(但高风险)"
+    tool: swap
+    description: "FGI<15 + 单日暴跌>5% + 费率极端负→逆向做多"
+    trigger: "regime==EXTREME AND FGI<15 AND single_day_drop>5%"
+    entry: "极小仓试探做多，2%仓位"
+    exit: "反弹3%减半 + 5%全平"
+    risk: "继续暴跌"
+    position: 3%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    notes: "⚠️必须严格止损！PTSD熔断检查"
+
+  - id: ext_contrarian_short
+    name: "贪婪做空降温"
+    regime: EXTREME
+    priority: 2
+    expected_return: "高"
+    tool: swap
+    description: "FGI>85 + 单日暴涨>5% + 费率极端正→逆向做空"
+    trigger: "regime==EXTREME AND FGI>85 AND single_day_rise>5%"
+    entry: "小仓做空，2-3%仓位"
+    exit: "回落3%减半 + 5%全平"
+    risk: "继续暴涨(逼空)"
+    position: 3%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    notes: "⚠️需P002例外条款激活才可执行做空"
+
+  - id: ext_option_tail_hedge
+    name: "尾部风险期权对冲"
+    regime: EXTREME
+    priority: 3
+    expected_return: "对冲成本(非盈利)"
+    tool: option
+    description: "极端行情买入OTM看跌期权保护持仓"
+    trigger: "regime==EXTREME AND 有多头持仓"
+    entry: "买入BTC OTM看跌期权对冲下行风险"
+    exit: "市场稳定后平仓或到期"
+    risk: "对冲成本(权利金)"
+    position: 2%
+    leverage: "N/A"
+    instruments: ["BTC-USD-UM"]
+
+  - id: ext_reduce_all
+    name: "全面降仓观望"
+    regime: EXTREME
+    priority: 4
+    expected_return: "保本(最优先)"
+    tool: swap
+    description: "极端行情无法判断方向，先降仓到5%以下"
+    trigger: "regime==EXTREME AND 方向不明"
+    entry: "平掉所有杠杆仓，仅保留最小现货"
+    exit: "市场稳定后重新入场"
+    risk: "错过反弹"
+    position: 0-3%
+    leverage: 1x
+    instruments: ["BTC-USDT-SWAP"]
+
+  # ──────────────────────────────────────────────────────
+  # 跨Regime通用策略(任何状态可用)
+  # ──────────────────────────────────────────────────────
+  - id: cross_asset_safe_haven
+    name: "BTC空+黄金多(避险对冲)"
+    regime: [TREND_DOWN, EXTREME, TRANSITION]
+    priority: 1
+    expected_return: "中(对冲收益)"
+    tool: cross_asset
+    description: "加密恐惧+黄金上涨时，BTC空+XAUT多对冲"
+    trigger: "FGI<30 AND gold_trend==UP AND crypto_trend==DOWN"
+    entry: "BTC-USDT-SWAP做空 + XAUT-USDT做多"
+    exit: "FGI回升至40+ 或 黄金趋势反转"
+    risk: "两资产同跌"
+    position: "各3%(总6%)"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP", "XAUT-USDT"]
+    notes: "OKX上XAUT-USDT可交易黄金现货"
+
+  - id: cross_asset_industry_resonance
+    name: "BTC多+COIN多(行业共振)"
+    regime: [TREND_STRONG_UP, TREND_UP]
+    priority: 5
+    expected_return: "高(但叠加风险)"
+    tool: cross_asset
+    description: "加密牛市+Coinbase股票同步上涨，双做多"
+    trigger: "crypto_trend==UP AND coin_stock_trend==UP"
+    entry: "BTC-USDT-SWAP做多 + COIN-USDT-SWAP做多"
+    exit: "任一资产趋势反转"
+    risk: "行业系统性风险(两资产同跌)"
+    position: "各3%(总6%)"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP", "COIN-USDT-SWAP"]
+
+  - id: cross_asset_mean_revert
+    name: "BTC空+COIN多(均值回归)"
+    regime: [RANGE_BOUND, TRANSITION]
+    priority: 3
+    expected_return: "中"
+    tool: cross_asset
+    description: "COIN相对BTC走强时，赌价差收敛"
+    trigger: "coin_outperform_btc == true"
+    entry: "BTC小仓空 + COIN小仓多"
+    exit: "价差收敛至均值"
+    risk: "价差继续扩大"
+    position: "各2%(总4%)"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP", "COIN-USDT-SWAP"]
+
+  - id: cross_asset_gold_btc_corr
+    name: "黄金-BTC相关性套利"
+    regime: [RANGE_BOUND, COMPRESSION]
+    priority: 4
+    expected_return: "中低(但分散风险)"
+    tool: cross_asset
+    description: "利用黄金和BTC相关性破裂时做配对交易"
+    trigger: "correlation_break == true"
+    entry: "做多弱势资产 + 做空强势资产"
+    exit: "相关性恢复"
+    risk: "相关性持续破裂"
+    position: "各2%(总4%)"
+    leverage: 1-2x
+    instruments: ["BTC-USDT-SWAP", "XAUT-USDT"]
+
+  - id: cross_eth_btc_rotation
+    name: "ETH/BTC轮动套利"
+    regime: [TREND_UP, RANGE_BOUND]
+    priority: 4
+    expected_return: "中"
+    tool: cross_asset
+    description: "ETH相对BTC强弱轮动时，做多强势+做空弱势"
+    trigger: "eth_btc_ratio_breakout == true"
+    entry: "ETH/BTC比率突破→多ETH空BTC，或反之"
+    exit: "比率回归均值"
+    risk: "比率趋势延续"
+    position: "各2%(总4%)"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP", "ETH-USDT-SWAP"]
+
+  - id: funding_mean_revert
+    name: "费率均值回归交易"
+    regime: [RANGE_BOUND, COMPRESSION, TRANSITION]
+    priority: 3
+    expected_return: "中(费率层面)"
+    tool: farming
+    description: "费率极端偏离均值→赌回归，开反向仓收极端费率+价差收敛"
+    trigger: "abs(funding_rate) > historical_2sigma"
+    entry: "极端正→开空收费率，极端负→开多收费率"
+    exit: "费率回归至1sigma内"
+    risk: "费率极端持续更久"
+    position: 3%
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP", "ETH-USDT-SWAP"]
+    notes: "费率三层用法: 套利层+信号层组合"
+
+  # ──────────────────────────────────────────────────────
+  # 大师历史实践知识策略 (v3.1新增)
+  # 蒸馏自8位经典交易大师的历史操作
+  # 知识策略详细文档: .knowledge_base/2_classic_strategies/MASTER_KNOWLEDGE_STRATEGIES.md
+  # ──────────────────────────────────────────────────────
+
+  # M1: Livermore关键点突破做多
+  - id: master_livermore_breakout_long
+    name: "Livermore关键点突破做多(金字塔加仓)"
+    regime: TREND_STRONG_UP
+    priority: 0  # 大师策略优先级0=最优先
+    expected_return: "极高(趋势确认后金字塔放大)"
+    tool: swap
+    source_master: "Jesse Livermore"
+    source_score: 78
+    description: "压缩蓄力→突破关键阻力+放量确认→市价做多→金字塔加仓(5%→8%→12%)"
+    trigger: "regime==TREND_STRONG_UP AND 关键点突破+放量 AND SI≥35"
+    entry: "突破关键阻力位+放量确认→初始5-8%仓位"
+    pyramid: "回踩确认+涨2-3%→加仓3-5%→再涨→加仓3-5%(总≤20%)"
+    exit: "trailing_stop 3% + MA7破位止盈"
+    risk: "假突破回撤"
+    position: "5%→8%→12%(金字塔)"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    master_quote: "在关键点买入，意味着你从一开始就获得了利润"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略1"
+    command: 'okx swap place --instId {instId} --side buy --ordType market --sz {sz} --posSide long --tdMode isolated --lever 2 --profile dreamdemo'
+
+  # M2: Livermore关键点突破做空
+  - id: master_livermore_breakout_short
+    name: "Livermore关键点突破做空(金字塔加仓)"
+    regime: TREND_DOWN
+    priority: 0
+    expected_return: "高(恐慌放大收益)"
+    tool: swap
+    source_master: "Jesse Livermore"
+    source_score: 75
+    description: "压缩蓄力→跌破关键支撑+放量→做空→反弹确认后加仓"
+    trigger: "regime==TREND_DOWN AND 关键支撑跌破+放量 AND SI≤15"
+    entry: "跌破关键支撑+放量确认→初始5-8%仓位"
+    pyramid: "反弹不破前低→加仓(总≤15%)"
+    exit: "trailing_stop 3% + 支撑位止盈"
+    risk: "空头陷阱反弹"
+    position: "5%→8%→15%(金字塔)"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    master_quote: "市场永远沿着阻力最小的方向运行"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略2"
+    command: 'okx swap place --instId {instId} --side sell --ordType market --sz {sz} --posSide short --tdMode isolated --lever 2 --profile dreamdemo'
+
+  # M3: Soros反身性做空
+  - id: master_soros_reflexivity_short
+    name: "Soros反身性做空(宏观不对称)"
+    regime: [EXTREME, TREND_DOWN]
+    priority: 0
+    expected_return: "极高(制度崩溃级收益)"
+    tool: swap
+    source_master: "George Soros"
+    source_score: 82
+    description: "识别制度性失衡→确认不可持续→试探做空→崩溃确认后激进加仓"
+    trigger: "制度性锚定不可持续 AND 基本面失衡 AND 反身性裂隙扩大"
+    entry: "小仓试探5%→崩溃确认→激进加仓至15-20%"
+    exit: "制度崩溃完成+新均衡建立后止盈"
+    risk: "锚定方成功维持→立即止损(不对称:成功>>失败)"
+    position: "5%→15%→20%(确认加仓)"
+    leverage: 2-3x
+    instruments: ["BTC-USDT-SWAP"]
+    master_quote: "市场总是错的，错误的大小决定了获利空间"
+    crypto_mapping: "极端正费率>0.05%→多头拥挤→反身性做空"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略3"
+    command: 'okx swap place --instId {instId} --side sell --ordType market --sz {sz} --posSide short --tdMode cross --lever {lever} --profile dreamdemo'
+
+  # M4: Druckenmiller确认加仓法
+  - id: master_druckenmiller_conviction_pyramid
+    name: "Druckenmiller确认加仓法(三段式)"
+    regime: [TREND_STRONG_UP, TREND_DOWN, TRANSITION]
+    priority: 1
+    expected_return: "高(集中投资+确认后加仓)"
+    tool: swap
+    source_master: "Stanley Druckenmiller"
+    source_score: 80
+    description: "试探1-2%→确认加至5-8%→激进加至15-20%(由浮盈支撑)"
+    trigger: "12-18月制度转变识别 AND 技术面确认基本假设"
+    entry: "Step1:1-2%风险试探 | Step2:确认→5-8% | Step3:利润加速→15-20%"
+    exit: "结构破裂→立即退出(即使利润丰厚)"
+    risk: "基本面假设破坏"
+    position: "2%→8%→20%(三段式)"
+    leverage: 2-3x
+    instruments: ["BTC-USDT-SWAP"]
+    master_quote: "70-80%资金集中在TOP3-5高确信交易"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略4"
+    command: 'okx swap place --instId {instId} --side {side} --ordType market --sz {sz} --posSide {posSide} --tdMode isolated --lever {lever} --profile dreamdemo'
+
+  # M5: PTJ防守优先逆向
+  - id: master_ptj_defensive_contrarian
+    name: "PTJ防守优先逆向(5:1风收比)"
+    regime: [EXTREME, TREND_DOWN]
+    priority: 0
+    expected_return: "极高(但风控优先)"
+    tool: swap
+    source_master: "Paul Tudor Jones"
+    source_score: 80
+    description: "极端行情逆向操作，每笔风险≤1%，目标5:1风收比，绝不在亏损仓加仓"
+    trigger: "FGI<15或>85 AND 单日涨跌>5% AND 200日均线突破"
+    entry: "FGI<15+暴跌>5%→极小仓做多(2%风险)"
+    exit: "5:1风收比目标位(反弹3%减半+5%全平)"
+    risk: "继续暴跌→严格1%止损"
+    position: "2-3%(波动率决定)"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    master_quote: "Losers average losers — 绝不在亏损仓位加仓"
+    ptj_mechanisms: "每日重置心态 | 波动率决定仓位(非信念) | 历史类比法"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略5"
+    command: 'okx swap place --instId {instId} --side {side} --ordType market --sz {sz} --posSide {posSide} --tdMode isolated --lever 2 --profile dreamdemo'
+
+  # M6: Sperandeo 1-2-3趋势反转
+  - id: master_sperandeo_123_reversal
+    name: "Sperandeo 1-2-3趋势反转(底部73%胜率)"
+    regime: [TRANSITION, COMPRESSION]
+    priority: 1
+    expected_return: "高(趋势反转捕获)"
+    tool: swap
+    source_master: "Victor Sperandeo"
+    source_score: 72
+    description: "三步确认趋势反转: 1.趋势线突破 2.价格测试高低点 3.突破关键高低点"
+    trigger: "趋势线突破(Step1) + 价格测试确认(Step2) + 突破关键位(Step3)"
+    entry: "Step3完成时入场(收盘价突破关键高低点)"
+    exit: "跟随新趋势(trailing stop) + 止损在Step2位置"
+    risk: "反转失败(底部73%/顶部43%胜率)"
+    position: "5-8%"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    master_quote: "发现趋势何时改变并利用它——这就是交易的本质"
+    success_rate: "底部反转73% | 顶部反转43%"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略6"
+    command: 'okx swap place --instId {instId} --side {side} --ordType conditional --sz {sz} --posSide {posSide} --tdMode isolated --lever 2 --profile dreamdemo'
+
+  # M7: Hayes费率套利+宏观杠杆
+  - id: master_hayes_funding_macro_leverage
+    name: "Hayes费率套利+宏观杠杆(三层)"
+    regime: [RANGE_BOUND, EXTREME, TREND_UP]
+    priority: 1
+    expected_return: "中-极高(三层策略分层)"
+    tool: farming+swap
+    source_master: "Arthur Hayes"
+    source_score: 78
+    description: "A层:Delta中性费率套利 | B层:高信念宏观杠杆 | C层:清算级联反向"
+    trigger: "A:正费率>0.03% | B:宏观冲击+负费率+高信念 | C:连环爆仓+流动性真空"
+    entry: "A:空永续+多现货 | B:高杠杆方向仓 | C:级联中逆向做多"
+    exit: "A:费率收窄 | B:趋势反转 | C:价格企稳"
+    risk: "A:基差回归 | B:插针清算 | C:级联深化"
+    position: "A:5% | B:3-5% | C:2%"
+    leverage: "A:2x | B:5-10x | C:2x"
+    instruments: ["BTC-USDT-SWAP", "BTC-USDT"]
+    master_quote: "100x杠杆仅用于高信念、短周期、宏观冲击后"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略7"
+
+  # M8: Seykota系统化趋势跟踪
+  - id: master_seykota_systematic_trend
+    name: "Seykota系统化趋势跟踪(5条铁律)"
+    regime: [TREND_STRONG_UP, TREND_UP, TREND_DOWN]
+    priority: 2
+    expected_return: "中高(系统化复利)"
+    tool: swap
+    source_master: "Ed Seykota"
+    source_score: 76
+    description: "截断亏损+让利润奔跑+保持小额下注+坚持规则+知道何时破规"
+    trigger: "突破20日高/低点 + 均线交叉确认"
+    entry: "突破N日高点做多 / 跌破N日低点做空"
+    exit: "trailing_stop 2-3% + 均线交叉离场"
+    risk: "震荡市假突破"
+    position: "ATR基础仓位 = 账户1% / (ATR × 合约乘数)"
+    leverage: 2x
+    instruments: ["BTC-USDT-SWAP"]
+    master_quote: "截断亏损(Rule#1) + 让利润奔跑(Rule#2) + 保持小额(Rule#3)"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略8"
+    command: 'okx swap place --instId {instId} --side {side} --ordType market --sz {sz} --posSide {posSide} --tdMode isolated --lever 2 --profile dreamdemo'
+
+  # M9: Dalio风险平价全天候
+  - id: master_dalio_risk_parity_allweather
+    name: "Dalio风险平价+全天候(加密适配)"
+    regime: [RANGE_BOUND]
+    priority: 3
+    expected_return: "中(分散+稳定)"
+    tool: cross_asset
+    source_master: "Ray Dalio"
+    source_score: 70
+    description: "四种经济环境×风险平价配置: BTC=增长+XAUT=通胀对冲+稳定币=防御+做空=衰退"
+    trigger: "经济环境识别: 通胀↑↓ × 增长↑↓"
+    entry: "按风险贡献(非资金比例)分配四类资产"
+    exit: "经济环境转变→重新平衡"
+    risk: "相关性破裂"
+    position: "各资产25%风险权重"
+    leverage: 1-2x
+    instruments: ["BTC-USDT-SWAP", "XAUT-USDT"]
+    master_quote: "按风险贡献分配，而非资金比例"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略9"
+
+  # M10: 耐心等待+系统化复合
+  - id: master_composite_patience_system
+    name: "耐心等待+系统化复合(Livermore×Seykota)"
+    regime: [COMPRESSION, TRANSITION, RANGE_BOUND]
+    priority: 1
+    expected_return: "中(等待期网格+突破收益)"
+    tool: swap+grid
+    source_master: "Jesse Livermore + Ed Seykota"
+    source_score: 74
+    description: "无方向→窄区间网格收粮+突破挂单等待→关键点确认→系统化执行"
+    trigger: "COMPRESSION(无方向) + 窄区间2-4%"
+    entry: "窄区间网格3% + 阻力上0.5%挂多+支撑下0.5%挂空各5%"
+    exit: "网格:区间破位停 | 挂单:trailing 3%"
+    risk: "假突破两头打"
+    position: "网格3% + 挂单各5%(总13%)"
+    leverage: "网格2x + 挂单2-3x"
+    instruments: ["BTC-USDT-SWAP"]
+    master_quote: "赚大钱的秘诀在于坐得住(Seykota:不持仓=不亏损)"
+    knowledge_ref: "MASTER_KNOWLEDGE_STRATEGIES.md#策略10"
+
+# ============================================================
+# 费率三层用法速查
+# ============================================================
+funding_layers:
+  layer_1_arb:
+    name: "套利层"
+    method: "Delta中性纯收费率"
+    when: "费率持续同向3天+ AND 震荡市"
+    risk: "对冲不完全"
+    example: "开空收正费率 + 开1/3仓多对冲"
+
+  layer_2_signal:
+    name: "信号层"
+    method: "极端费率→拥挤→反转"
+    when: "费率极端(>2σ) AND 有反向催化剂"
+    risk: "极端持续更久"
+    example: "费率极端正→开空(赌多头拥挤→踩踏)"
+
+  layer_3_income:
+    name: "增收层"
+    method: "持仓方向同向额外收息"
+    when: "趋势方向与费率方向一致"
+    risk: "趋势+费率同时反转"
+    example: "多头趋势+负费率→做多收息双重收益"
+
+# ============================================================
+# OKX工具命令速查
+# ============================================================
+tool_commands:
+  spot_grid: 'okx bot grid create --instId {instId} --algoOrdType grid --maxPx {upper} --minPx {lower} --gridNum {grids} --quoteSz {quoteSz} --runType 1 --tag "{tag}" --profile dreamdemo'
+  contract_grid_long: 'okx bot grid create --instId {instId} --algoOrdType contract_grid --maxPx {upper} --minPx {lower} --gridNum {grids} --direction long --lever {lever} --sz {margin} --runType 1 --tag "{tag}" --profile dreamdemo'
+  contract_grid_short: 'okx bot grid create --instId {instId} --algoOrdType contract_grid --maxPx {upper} --minPx {lower} --gridNum {grids} --direction short --lever {lever} --sz {margin} --runType 1 --tag "{tag}" --profile dreamdemo'
+  dca_long: 'okx bot dca create --algoOrdType contract_dca --instId {instId} --direction long --initOrdAmt {initAmt} --maxSafetyOrds {safetyOrds} --safetyOrdAmt {safetyAmt} --pxSteps {pxSteps} --tpPct {tpPct} --lever {lever} --triggerStrategy instant --tag "{tag}" --profile dreamdemo'
+  dca_short: 'okx bot dca create --algoOrdType contract_dca --instId {instId} --direction short --initOrdAmt {initAmt} --maxSafetyOrds {safetyOrds} --safetyOrdAmt {safetyAmt} --pxSteps {pxSteps} --tpPct {tpPct} --lever {lever} --triggerStrategy instant --tag "{tag}" --profile dreamdemo'
+  swap_long: 'okx swap place --instId {instId} --side buy --ordType market --sz {sz} --posSide long --tdMode isolated --lever {lever} --profile dreamdemo'
+  swap_short: 'okx swap place --instId {instId} --side sell --ordType market --sz {sz} --posSide short --tdMode isolated --lever {lever} --profile dreamdemo'
+  tp_sl: 'okx swap algo-place --instId {instId} --side {closeSide} --ordType conditional --sz {sz} --posSide {posSide} --tpTriggerPx {tpPx} --tpOrdPx -1 --slTriggerPx {slPx} --slOrdPx -1 --profile dreamdemo'
+  bot_list: 'okx bot list --profile dreamdemo'
+  bot_stop: 'okx bot stop --algoId {algoId} --profile dreamdemo'
+  positions: 'okx swap positions --profile dreamdemo'
+  balance: 'okx account balance --profile dreamdemo'
+
+# ============================================================
+# OKX踩坑速查(策略库内置)
+# ============================================================
+okx_pitfalls:
+  - "CLI命令是okx非okx-trade"
+  - "funding-rate命令路由: okx market funding-rate(非swap!)"
+  - "bar小写 | sz整手 | algo多头TP/SL: side=sell"
+  - "posSide必需: 多头也必须指定--posSide long"
+  - "合约网格sz需≥$126保证金 | gridNum>20报51340"
+  - "现货网格quoteSz≥15.5U | DCA需pxStepsMult+volMult"
+  - "⚠️ tpPct方向差异: LONG=整数(2=2%), SHORT=小数(0.02=2%)!"
+  - "签名timestamp: ISO8601毫秒(报50112) | GET签名: query拼入path(报50113)"
+  - "⚠️ 期权需先激活! 报51198→网页点期权合约激活(模拟盘同理)"
+  - "⚠️ 期权instId用短横线: BTC-USD-260515-78000-C (非下划线_UM格式)"
+  - "⚠️ BTC期权1张=1BTC，权利金最低$200+，小账户(<$10K)不建议"
+  - "⚠️ 期权tdMode: 需cross/isolated模式，简单模式cash可能报51000"

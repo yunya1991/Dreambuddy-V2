@@ -1,0 +1,19 @@
+[Unit]
+Description=Binance TSDB Incremental Ingest Batch %i
+After=network.target
+
+[Service]
+Type=oneshot
+# 修改为你的项目根目录
+WorkingDirectory=/path/to/project
+Environment=PYTHONPATH=/path/to/project
+Environment=BINANCE_TOP_N=100
+Environment=BINANCE_BATCH_SIZE=25
+Environment=BINANCE_BATCH_INDEX=%i
+Environment=BINANCE_REQ_DELAY_SEC=1
+Environment=BINANCE_SYMBOL_DELAY_SEC=0.5
+ExecStart=/path/to/project/venv/bin/python /path/to/project/scripts/binance_tsdb_incremental.py
+
+[Install]
+WantedBy=multi-user.target
+

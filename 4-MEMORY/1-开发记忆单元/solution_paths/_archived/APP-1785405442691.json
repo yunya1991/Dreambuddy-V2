@@ -1,0 +1,33 @@
+{
+  "template_id": "APP-1785405442691",
+  "name": "memory-system 的解决路径",
+  "steps": [
+    "理解需求",
+    "写失败测试",
+    "验证结果"
+  ],
+  "description": "memory-system 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "TDD-001",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "fix: 认知闭环会话恢复bug修复",
+    "action_count": 1,
+    "files_touched": [
+      "4-MEMORY/9-工具与接口/cognitive_session.py",
+      "4-MEMORY/9-工具与接口/cognitive_hook.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "test123",
+    "created_at": 1785405442.716748
+  }
+}

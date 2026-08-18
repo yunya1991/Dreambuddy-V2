@@ -1,0 +1,152 @@
+name: pr9-governance-agent
+
+on:
+  schedule:
+    - cron: "10 */4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pr9-governance-agent
+  cancel-in-progress: true
+
+jobs:
+  pr9-governance:
+    runs-on: [self-hosted, macOS, workbuddy]
+    env:
+      PR_NUMBER: "9"
+      TASK_ID: "task-pr9-artifact-hub-v2-build-1"
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify gh
+        run: gh --version
+
+      - name: Resolve PR head
+        id: pr
+        run: |
+          echo "head_ref=$(gh pr view ${PR_NUMBER} --json headRefName --jq .headRefName)" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(gh pr view ${PR_NUMBER} --json headRefOid --jq .headRefOid)" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch PR comments
+        id: comments
+        run: |
+          gh pr view ${PR_NUMBER} --json comments --jq '.comments[].body' > pr_comments.txt || true
+          echo "comment_file=pr_comments.txt" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure STARTED anchor exists
+        run: |
+          if grep -q '^\[协作开工声明 / STARTED\]' "${{ steps.comments.outputs.comment_file }}"; then
+            exit 0
+          fi
+
+          {
+            printf '%s\n' \
+              '[协作开工声明 / STARTED]' \
+              '' \
+              'Agent: pr9-governance-agent' \
+              '任务: PR9 / 7-ARTIFACT-HUB-V2 build+test governance bootstrap' \
+              "Task ID: ${TASK_ID}" \
+              "分支: ${{ steps.pr.outputs.head_ref }}" \
+              'Workspace Path: self-hosted-runner(workbuddy)' \
+              'Execution Mode: STANDARD' \
+              'Direct Takeover: no' \
+              'Governance Agent: pr9-governance-agent' \
+              'Task Type: shared-sync' \
+              'Dependency Gate: accepted' \
+              'Current Sync State: pending' \
+              'Next Required Action: developer: post TEST_REPORT; validator: post VALIDATION_RESULT with Governance Handoff: ledgered if PASS' \
+              "Claim Target: ${TASK_ID}" \
+              '计划修改:' \
+              '- 7-ARTIFACT-HUB-V2/*' \
+              '' \
+              '预期产出:' \
+              '- TEST_REPORT' \
+              '- VALIDATION_RESULT (handoff ledgered)' \
+              '' \
+              '占用范围:' \
+              '- 7-ARTIFACT-HUB-V2/*' \
+              '' \
+              '同步触发条件:' \
+              '- validation pass -> ledgered' \
+              '' \
+              '下一同步点:' \
+              '- shared-sync review via VALIDATION_RESULT' \
+              '' \
+              '冲突门禁结果:' \
+              '- decision: SAFE' \
+              '- reason_codes: []' \
+              '' \
+              '状态: STARTED' \
+              '说明:' \
+              '- owner 目录内默认并行推进' \
+              '- 仅在范围变化、真实阻塞或阶段收口时补充评论'
+          } > pr_started.md
+          gh pr comment ${PR_NUMBER} --body-file pr_started.md
+
+      - name: Protocol completeness check
+        run: |
+          started_ok=0
+          test_report_ok=0
+          validation_ok=0
+
+          if grep -q '^\[协作开工声明 / STARTED\]' "${{ steps.comments.outputs.comment_file }}"; then
+            started_ok=1
+          fi
+          if grep -q '^\[测试报告 / TEST_REPORT\]' "${{ steps.comments.outputs.comment_file }}"; then
+            test_report_ok=1
+          fi
+          if grep -q '^\[验证结论 / VALIDATION_RESULT\]' "${{ steps.comments.outputs.comment_file }}"; then
+            validation_ok=1
+          fi
+
+          if [ "$started_ok" -eq 1 ] && [ "$test_report_ok" -eq 1 ] && [ "$validation_ok" -eq 1 ]; then
+            exit 0
+          fi
+
+          next_action="developer: post TEST_REPORT; validator: post VALIDATION_RESULT with Governance Handoff: ledgered"
+          if [ "$started_ok" -eq 0 ]; then
+            next_action="governance: post STARTED anchor"
+          elif [ "$test_report_ok" -eq 0 ]; then
+            next_action="developer: run build/test and post TEST_REPORT"
+          elif [ "$validation_ok" -eq 0 ]; then
+            next_action="validator: re-run build/test and post VALIDATION_RESULT"
+          fi
+
+          {
+            printf '%s\n' \
+              '[协作状态更新 / UPDATED]' \
+              '' \
+              'Agent: pr9-governance-agent' \
+              '任务: PR9 / 7-ARTIFACT-HUB-V2 build+test protocol check' \
+              'Execution Mode: STANDARD' \
+              'Direct Takeover: no' \
+              'Governance Agent: pr9-governance-agent' \
+              'Task Type: shared-sync' \
+              'Current Sync State: pending' \
+              "Next Required Action: ${next_action}" \
+              '变更说明:' \
+              '- protocol anchor missing' \
+              '' \
+              '当前占用范围:' \
+              '- 7-ARTIFACT-HUB-V2/*' \
+              '' \
+              '阶段:' \
+              '- Phase 0' \
+              '' \
+              '下一同步点:' \
+              '- validation -> ledgered' \
+              '' \
+              '状态: UPDATED'
+          } > pr_updated.md
+          gh pr comment ${PR_NUMBER} --body-file pr_updated.md

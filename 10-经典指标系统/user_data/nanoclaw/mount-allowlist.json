@@ -1,0 +1,41 @@
+{
+  "allowedRoots": [
+    {
+      "path": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data",
+      "allowReadWrite": false,
+      "description": "QF system user_data (read-only)"
+    },
+    {
+      "path": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data_prod",
+      "allowReadWrite": false,
+      "description": "QF system user_data_prod (read-only)"
+    },
+    {
+      "path": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data_pilot",
+      "allowReadWrite": false,
+      "description": "QF system user_data_pilot (read-only)"
+    },
+    {
+      "path": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data_explore",
+      "allowReadWrite": false,
+      "description": "QF system user_data_explore (read-only)"
+    },
+    {
+      "path": "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/nanoclaw",
+      "allowReadWrite": true,
+      "description": "NanoClaw workspace/state/logs (read-write)"
+    },
+    {
+      "path": "/Users/zhangjiangtao/ft_userdata/基本面分析_fundamental",
+      "allowReadWrite": true,
+      "description": "Fundamental Analysis System (read-write for MCP & Agent)"
+    },
+    {
+      "path": "/Users/zhangjiangtao/ft_userdata/工作文件处理工具",
+      "allowReadWrite": true,
+      "description": "L3 Command Center System (read-write for Agent)"
+    }
+  ],
+  "blockedPatterns": [],
+  "nonMainReadOnly": true
+}

@@ -1,0 +1,28 @@
+{
+  "session_id": "20260527-BTC-SCREEN3",
+  "date": "2026-05-27",
+  "step": "Step0_strategy_parser",
+  "skill": "dream-strategy-parser",
+  "input": {
+    "screen1_direction": "SHORT",
+    "screen1_score": 68,
+    "btc_price": 77267,
+    "btc_price_basis": 76981,
+    "price_drift_pct": 0.37,
+    "red_team_flag": false
+  },
+  "regime_detection": {
+    "market_regime": "RESISTANCE_TEST",
+    "trend": "sideways_to_downtrend",
+    "volatility": "moderate",
+    "momentum": "recovering_approaching_resistance",
+    "structure": "below_key_resistance_77800_78000"
+  },
+  "routing": {
+    "strategy_type": "short_martingale",
+    "directive_bias": "SHORT",
+    "conviction": "moderate",
+    "entry_mode": "WAIT_RESISTANCE_REJECTION",
+    "rationale": "Price at 77267, approaching resistance 77800-78000. Screen1 SHORT direction intact. Macro risk-off maintains. Wait for rejection signal before executing."
+  }
+}

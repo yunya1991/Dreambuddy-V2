@@ -1,0 +1,117 @@
+name: ledger-protocol-agent
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  monitor-and-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refresh open task index
+        id: refresh_tasks
+        run: |
+          python3 "AGENT协作工具/github-actions/refresh_open_tasks.py" "AGENT协作工具/ledger/tasks/index.json" > /tmp/open_tasks_result.json
+          changed=$(python3 -c "import json; print('true' if json.load(open('/tmp/open_tasks_result.json'))['changed'] else 'false')")
+          echo "changed=${changed}" >> "$GITHUB_OUTPUT"
+
+      - name: Check for protocol doc changes
+        id: check_changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const handbookPath = 'AGENT协作工具/Claude-code-memory-and-team.md';
+            let lastSyncedSHA = '';
+            if (fs.existsSync(handbookPath)) {
+              const content = fs.readFileSync(handbookPath, 'utf8');
+              const match = content.match(/最后同步 commit：([a-f0-9]{7,40})/);
+              if (match) lastSyncedSHA = match[1];
+            }
+            console.log('Last synced SHA:', lastSyncedSHA || '(none)');
+            const commits = await github.paginate(
+              github.rest.repos.listCommits,
+              { owner: context.repo.owner, repo: context.repo.repo, path: 'AGENT协作工具/docs', per_page: 20 }
+            );
+            if (commits.length === 0) { core.setOutput('has_changes', 'false'); return; }
+            const latestSHA = commits[0].sha;
+            if (lastSyncedSHA && latestSHA.startsWith(lastSyncedSHA)) {
+              console.log('Already up to date'); core.setOutput('has_changes', 'false'); return;
+            }
+            const { data: tree } = await github.rest.git.getTree({
+              owner: context.repo.owner, repo: context.repo.repo, tree_sha: 'main', recursive: 'true'
+            });
+            const docFiles = tree.tree
+              .filter(f => f.path.startsWith('AGENT协作工具/docs/') && f.path.endsWith('.md'))
+              .map(f => f.path);
+            const docsContent = {};
+            for (const filePath of docFiles) {
+              try {
+                const { data } = await github.rest.repos.getContent({
+                  owner: context.repo.owner, repo: context.repo.repo, path: filePath
+                });
+                docsContent[filePath] = Buffer.from(data.content, 'base64').toString('utf8');
+              } catch(e) { console.log('Could not read:', filePath); }
+            }
+            fs.writeFileSync('/tmp/docs_content.json', JSON.stringify(docsContent, null, 2));
+            core.setOutput('has_changes', 'true');
+            core.setOutput('latest_sha', latestSHA);
+            core.setOutput('latest_sha_short', latestSHA.substring(0, 7));
+
+      - name: Update handbook
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const latestSHAShort = '${{ steps.check_changes.outputs.latest_sha_short }}';
+            const latestSHA = '${{ steps.check_changes.outputs.latest_sha }}';
+            const today = new Date().toISOString().slice(0, 10);
+            const handbookPath = 'AGENT协作工具/Claude-code-memory-and-team.md';
+            let content = fs.existsSync(handbookPath) ? fs.readFileSync(handbookPath, 'utf8') : '';
+            const docsContent = JSON.parse(fs.readFileSync('/tmp/docs_content.json', 'utf8'));
+            const docSummary = Object.keys(docsContent)
+              .map(p => p.replace('AGENT协作工具/docs/', '').replace('.md', ''))
+              .join(' / ');
+            content = content
+              .replace(/> 最后更新：[\d-]+/, '> 最后更新：' + today)
+              .replace(/最后同步 commit：[a-f0-9]+/, '最后同步 commit：' + latestSHAShort);
+            if (!content.includes('最后同步 commit：')) {
+              content = content.replace('> 最后更新：' + today,
+                '> 最后更新：' + today + '\n> 最后同步 commit：' + latestSHAShort);
+            }
+            const newRow = `| v-auto | ${today} | 自动同步：检测到协议文档变更（${docSummary}），commit ${latestSHAShort} |`;
+            const insertPoint = content.lastIndexOf('\n---\n');
+            if (insertPoint !== -1) {
+              content = content.slice(0, insertPoint) + '\n' + newRow + content.slice(insertPoint);
+            } else { content += '\n' + newRow; }
+            fs.writeFileSync(handbookPath, content);
+            fs.writeFileSync('AGENT协作工具/.protocol-sync-state.json',
+              JSON.stringify({ last_synced_sha: latestSHA, last_synced_date: today, synced_docs: Object.keys(docsContent) }, null, 2));
+
+      - name: Commit changes
+        if: steps.check_changes.outputs.has_changes == 'true' || steps.refresh_tasks.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "AGENT协作工具/ledger/tasks/index.json"
+          if [ "${{ steps.check_changes.outputs.has_changes }}" = "true" ]; then
+            git add "AGENT协作工具/Claude-code-memory-and-team.md" "AGENT协作工具/.protocol-sync-state.json"
+          fi
+          git diff --cached --quiet && echo "Nothing to commit" || \
+            (
+              msg="chore(ledger): refresh open task index"
+              if [ "${{ steps.check_changes.outputs.has_changes }}" = "true" ]; then
+                msg="chore(docs): auto-sync protocol monitor → handbook (commit ${{ steps.check_changes.outputs.latest_sha_short }})"
+              fi
+              git commit -m "$msg" && git push
+            )

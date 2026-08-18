@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dreambuddy.yijing_monitor</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/anaconda3/bin/python3</string>
+        <string>-m</string>
+        <string>scripts.memory_l4.yijing_monitor</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统</string>
+    <key>StartInterval</key>
+    <integer>14400</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/logs/yijing_monitor_launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/logs/yijing_monitor_launchd.log</string>
+</dict>
+</plist>

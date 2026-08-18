@@ -1,0 +1,24 @@
+{
+  "RANGING": {},
+  "calibration": {
+    "pulse_diagnosis": {
+      "a": 0.0,
+      "b": 1.0
+    },
+    "traditional_diagnosis": {
+      "a": 0.5,
+      "b": 0.1
+    }
+  },
+  "updated_at": {
+    "BREAKOUT": 1766075379341
+  },
+  "BREAKOUT": {
+    "pulse_diagnosis": -0.01694915254237288,
+    "traditional_diagnosis": 0.01694915254237288,
+    "acupuncture_therapy": 0.0,
+    "prescription_formulation": -0.013559322033898306,
+    "constitution_analysis": 0.01694915254237288
+  },
+  "sample_size": 211
+}

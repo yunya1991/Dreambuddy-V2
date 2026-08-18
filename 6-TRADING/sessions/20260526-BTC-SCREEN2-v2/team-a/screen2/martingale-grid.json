@@ -1,0 +1,85 @@
+{
+  "session_id": "20260526-BTC-SCREEN2-v2",
+  "direction": "SHORT",
+  "strategy": "futures_martingale",
+  "scenario_default": "S1",
+  "scenario_adaptive": "If price breaks 78500 with volume, switch to S2",
+  "scenarios": {
+    "S1": {
+      "name": "Base: Bear Continuation",
+      "probability": 0.45,
+      "trigger": "Price bounces to 77500-78500 then rejects",
+      "grid": [
+        {
+          "level": "L0",
+          "entry_price": 77500,
+          "position_pct": 30,
+          "rationale": "First short at resistance band lower bound"
+        },
+        {
+          "level": "L1",
+          "entry_price": 79000,
+          "position_pct": 40,
+          "rationale": "CME gap lower bound - add if price pumps"
+        },
+        {
+          "level": "L2",
+          "entry_price": 80500,
+          "position_pct": 30,
+          "rationale": "Near CME gap middle - final add before hard stop"
+        }
+      ],
+      "stop_loss": 81500,
+      "tp1": 74500,
+      "tp2": 72000,
+      "risk_reward_L0": "3.2:1 (L0@77500, SL@81500=-5.2%, TP1@74500=+3.9%)"
+    },
+    "S2": {
+      "name": "Short Squeeze First, Then Short",
+      "probability": 0.35,
+      "trigger": "Price breaks 78500 with volume spike > 120%",
+      "grid": [
+        {
+          "level": "L0",
+          "entry_price": 79000,
+          "position_pct": 25,
+          "rationale": "Post-squeeze entry at CME gap lower bound"
+        },
+        {
+          "level": "L1",
+          "entry_price": 80500,
+          "position_pct": 40,
+          "rationale": "CME gap mid - squeeze likely exhausted here"
+        },
+        {
+          "level": "L2",
+          "entry_price": 81200,
+          "position_pct": 35,
+          "rationale": "Final add just below hard stop"
+        }
+      ],
+      "stop_loss": 81800,
+      "tp1": 75000,
+      "tp2": 72000,
+      "note": "Wait for 1h bearish divergence signal before L0 entry"
+    },
+    "S3": {
+      "name": "Bull Reversal - Stop Loss Execution",
+      "probability": 0.2,
+      "trigger": "Daily close above 81000",
+      "grid": [],
+      "stop_loss": 81500,
+      "note": "No new shorts. Execute stop loss. Wait Screen1 re-score."
+    }
+  },
+  "position_limits": {
+    "total_max_pct": 30,
+    "per_level_max_pct": 15,
+    "hard_stop": 81500,
+    "no_add_above": 81500
+  },
+  "funding_rate_adjustment": {
+    "current_rate": -0.06,
+    "note": "-6% funding means short pays long. At 30% total position, daily funding cost ~0.18% of capital. Budget for 3-5 days holding before TP1."
+  }
+}

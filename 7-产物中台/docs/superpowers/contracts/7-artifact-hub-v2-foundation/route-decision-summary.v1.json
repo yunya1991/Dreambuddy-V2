@@ -1,0 +1,22 @@
+{
+  "contract": "route-decision-summary.v1",
+  "level": "L1",
+  "owner": "solo",
+  "frozen_at": "2026-05-16",
+  "schema": {
+    "trace_id": "string",
+    "decision_id": "string",
+    "selected_route": "RUN_CHAIN | SKIP | DELEGATE | ABORT",
+    "decision_level": "L0 | L1 | L2",
+    "policy_version": "string",
+    "reason": "string"
+  },
+  "example": {
+    "trace_id": "trace_demo_001",
+    "decision_id": "decision_demo_001",
+    "selected_route": "RUN_CHAIN",
+    "decision_level": "L1",
+    "policy_version": "v1",
+    "reason": "mock decision for collaboration foundation"
+  }
+}

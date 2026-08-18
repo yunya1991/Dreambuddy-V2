@@ -1,0 +1,37 @@
+{
+  "trace_id": "TC_LOSS_01",
+  "inst_id": "TC_LOSS_01_INST",
+  "ts": "2026-08-02T15:57:52.697947+00:00",
+  "decision": "short",
+  "status": "closed",
+  "regime": "bear",
+  "pnl_pct": -2.0,
+  "pnl_usdt": -200.0,
+  "drawdown": 1.0,
+  "exit_reason": "stop_loss",
+  "goal_achieved": false,
+  "outcome": {
+    "realized_pnl_pct": -2.0,
+    "realized_pnl_usdt": -200.0,
+    "max_drawdown": 1.0,
+    "exit_reason": "stop_loss",
+    "goal_achieved": false
+  },
+  "reason_codes": [
+    "reason_TC_LOSS_01"
+  ],
+  "total_score": 66.0,
+  "edge": -20.0,
+  "scores": {
+    "momentum": 0.7,
+    "volatility": 0.5,
+    "trend": 0.8
+  },
+  "strategy_result": {
+    "strategy_directive": {
+      "matched_strategy": "momentum_breakout",
+      "category": "trend_following",
+      "directive_bias": "bearish"
+    }
+  }
+}

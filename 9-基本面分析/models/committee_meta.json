@@ -1,0 +1,1 @@
+{"latest_version": 1, "model_type": "xgb", "model_path": "/Users/zhangjiangtao/ft_userdata/v3_restore_222710/models/committee_meta.xgb", "feature_names": ["proba_lr_up", "proba_rf_up", "proba_xgb_up", "proba_nn_up", "proba_lstm_att_up", "agg_score", "tech_proba_up", "tech_proba_down", "uncertainty", "regime_TREND", "regime_RANGE", "regime_VOLATILE"]}

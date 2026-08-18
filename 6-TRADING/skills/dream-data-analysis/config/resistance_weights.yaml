@@ -1,0 +1,143 @@
+# dream-data-analysis/config/resistance_weights.yaml
+# 阻力项权重配置
+# 阻力越大，越倾向建议提高 λ 或提高 edge_min_bps
+
+# ============== 默认权重向量 ==============
+default_weights:
+  # 成本摩擦 (手续费/滑点)
+  cost_friction: 0.30
+  # 流动性摩擦 (spread/depth/orderbook_imbalance)
+  liquidity_friction: 0.35
+  # 拥挤度摩擦 (funding/OI 拥挤信号)
+  crowding_friction: 0.20
+  # 波动率摩擦 (ATR/vol_regime=high)
+  vol_friction: 0.15
+
+# 验证：权重和应为 1.0
+_default_total: 1.0
+
+# ============== 风险偏好预设 ==============
+risk_profiles:
+
+  # 保守型 (conservative)
+  # 适用于: 高波动市场、新策略验证期、大仓位
+  conservative:
+    cost_friction: 0.35
+    liquidity_friction: 0.40
+    crowding_friction: 0.15
+    vol_friction: 0.10
+    description: "保守型配置，流动性权重最高，适合高风险环境"
+
+  # 平衡型 (balanced) - 默认
+  balanced:
+    cost_friction: 0.30
+    liquidity_friction: 0.35
+    crowding_friction: 0.20
+    vol_friction: 0.15
+    description: "平衡型配置，适合大多数市场环境"
+
+  # 激进型 (aggressive)
+  # 适用于: 低波动趋势市场、小仓位、成熟策略
+  aggressive:
+    cost_friction: 0.20
+    liquidity_friction: 0.25
+    crowding_friction: 0.30
+    vol_friction: 0.25
+    description: "激进型配置，拥挤度权重较高，适合趋势明确的低摩擦市场"
+
+  # 流动性优先 (liquidity_first)
+  # 适用于: 大额订单、机构级执行
+  liquidity_first:
+    cost_friction: 0.15
+    liquidity_friction: 0.50
+    crowding_friction: 0.20
+    vol_friction: 0.15
+    description: "流动性优先配置，大额订单必选"
+
+  # 成本优先 (cost_first)
+  # 适用于: 高频交易、刷单策略
+  cost_first:
+    cost_friction: 0.45
+    liquidity_friction: 0.25
+    crowding_friction: 0.15
+    vol_friction: 0.15
+    description: "成本优先配置，适合高频/刷单策略"
+
+# ============== 市场状态自适应配置 ==============
+market_state_adaptation:
+
+  # 高波动市场
+  high_volatility:
+    multiplier_liquidity: 1.5
+    multiplier_vol: 1.3
+    multiplier_cost: 1.0
+    description: "高波动时增加流动性和波动率权重"
+
+  # 低波动市场
+  low_volatility:
+    multiplier_liquidity: 0.8
+    multiplier_vol: 0.7
+    multiplier_cost: 1.1
+    description: "低波动时减少流动性和波动率权重"
+
+  # 趋势市场
+  trending:
+    multiplier_crowding: 1.3
+    multiplier_vol: 1.2
+    description: "趋势市场增加拥挤度和波动率权重"
+
+  # 区间市场
+  ranging:
+    multiplier_liquidity: 1.2
+    multiplier_cost: 1.1
+    description: "区间市场增加流动性权重"
+
+# ============== 阻力阈值 ==============
+resistance_thresholds:
+  # 阻力评分阈值 (0-100)
+  LOW: 30      # 低阻力，放心执行
+  MEDIUM: 50   # 中等阻力，谨慎执行
+  HIGH: 70     # 高阻力，降低仓位
+  EXTREME: 85  # 极高阻力，建议观望
+
+  # 对应校准建议
+  calibration_advice:
+    LOW: "resistance_low"
+    MEDIUM: "resistance_medium"
+    HIGH: "reduce_position"
+    EXTREME: "blackout_window"
+
+# ============== 阻力项归一化规则 ==============
+normalization_rules:
+  # 各阻力项输入范围 (0-100)
+  input_ranges:
+    cost_friction:
+      min: 0
+      max: 100
+      unit: "bps"
+      description: "成本摩擦 (手续费 + 滑点)"
+
+    liquidity_friction:
+      min: 0
+      max: 100
+      unit: "score"
+      description: "流动性摩擦 (spread/depth/imbalance)"
+
+    crowding_friction:
+      min: 0
+      max: 100
+      unit: "score"
+      description: "拥挤度摩擦 (funding rate/OI change)"
+
+    vol_friction:
+      min: 0
+      max: 100
+      unit: "score"
+      description: "波动率摩擦 (ATR ratio/vol regime)"
+
+# ============== 日志配置 ==============
+logging:
+  enabled: true
+  level: "INFO"
+  log_weights_used: true
+  log_calibration_decisions: true

@@ -1,0 +1,13 @@
+{"ts": 1772108586549, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772112186703}
+{"ts": 1772118446839, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772122050131}
+{"ts": 1772119692910, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772123293423}
+{"ts": 1772119693091, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772123293624}
+{"ts": 1772119692967, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772123293605}
+{"ts": 1772123174260, "type": "btcalt_op_gate", "blocked": true, "reason": "vol:alt_atr_high:GRIFFAIN", "until_ms": 1772126776903}
+{"ts": 1772126817890, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772130418170}
+{"ts": 1772129921811, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772133522268}
+{"ts": 1772133665611, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772137267283}
+{"ts": 1772137595284, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KBONK", "until_ms": 1772141197365}
+{"ts": 1772141688653, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KPEPE", "until_ms": 1772145288745}
+{"ts": 1772145895859, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KBONK", "until_ms": 1772149496008}
+{"ts": 1772150178946, "type": "btcalt_op_gate", "blocked": true, "reason": "event:external_event_vol_alt:KSHIB", "until_ms": 1772153779435}

@@ -1,0 +1,33 @@
+{
+  "template_id": "APP-1785292560413",
+  "name": "memory-system 的解决路径",
+  "steps": [
+    "理解需求",
+    "写失败测试",
+    "验证结果"
+  ],
+  "description": "memory-system 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "TDD-001",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat: 新增元认知-应用认知双层架构",
+    "action_count": 5,
+    "files_touched": [
+      "4-MEMORY/9-工具与接口/cognitive_superpowers.py",
+      "4-MEMORY/9-工具与接口/cognitive_session.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "abc123chain",
+    "created_at": 1785292560.431764
+  }
+}

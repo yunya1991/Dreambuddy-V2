@@ -1,0 +1,151 @@
+name: "Agent A Trading - Actions Runner"
+
+on:
+  schedule:
+    # 每 4 小时执行，北京时间 02:00, 06:00, 10:00, 14:00, 18:00, 22:00
+    # UTC 时间 = 北京时间 - 8
+    - cron: "0 2,6,10,14,18,22 * * *"
+  workflow_dispatch:
+    inputs:
+      force_execute:
+        description: "强制执行（忽略时间检查）"
+        required: false
+        default: "false"
+        type: boolean
+
+env:
+  SKIP_THRESHOLD_HOURS: 5  # 超过 5 小时没新评论则执行
+
+jobs:
+  check-and-trade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r experiments/ab-trading/requirements.txt
+          
+      - name: Get latest PR comment time
+        id: pr-check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // 查找固定 PR（标题包含 "Agent A Trading Log"）
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+            });
+            
+            let tradingPr = null;
+            for (const pr of prs.data) {
+              if (pr.title.includes('Agent A Trading Log')) {
+                tradingPr = pr;
+                break;
+              }
+            }
+            
+            if (!tradingPr) {
+              console.log('未找到交易日志 PR，跳过执行');
+              core.setOutput('pr_number', '0');
+              core.setOutput('should_execute', 'false');
+              core.setOutput('reason', 'NO_PR');
+              return;
+            }
+            
+            console.log('找到交易日志 PR:', tradingPr.number);
+            core.setOutput('pr_number', String(tradingPr.number));
+            
+            // 获取最新评论
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: tradingPr.number,
+              per_page: 1,
+              sort: 'created',
+              direction: 'desc',
+            });
+            
+            if (comments.data.length === 0) {
+              console.log('PR 无评论，执行交易');
+              core.setOutput('should_execute', 'true');
+              core.setOutput('reason', 'NO_COMMENT');
+              return;
+            }
+            
+            const lastComment = comments.data[0];
+            const commentTime = new Date(lastComment.created_at);
+            const now = new Date();
+            const hoursSince = (now - commentTime) / (1000 * 60 * 60);
+            
+            console.log('最新评论时间:', commentTime.toISOString());
+            console.log('距离现在:', hoursSince.toFixed(2), '小时');
+            console.log('阈值:', process.env.SKIP_THRESHOLD_HOURS, '小时');
+            
+            const shouldExecute = hoursSince >= parseInt(process.env.SKIP_THRESHOLD_HOURS);
+            
+            core.setOutput('should_execute', String(shouldExecute));
+            core.setOutput('hours_since', hoursSince.toFixed(2));
+            core.setOutput('reason', shouldExecute ? 'EXPIRED' : 'FRESH');
+            
+      - name: Decision summary
+        id: decision
+        run: |
+          PR_NUM="${{ steps.pr-check.outputs.pr_number }}"
+          SHOULD_EXECUTE="${{ steps.pr-check.outputs.should_execute }}"
+          REASON="${{ steps.pr-check.outputs.reason }}"
+          FORCE="${{ github.event.inputs.force_execute }}"
+          
+          echo "PR #: $PR_NUM"
+          echo "Should execute: $SHOULD_EXECUTE"
+          echo "Reason: $REASON"
+          echo "Force: $FORCE"
+          
+          if [[ "$FORCE" == "true" ]]; then
+            echo "decision=execute" >> $GITHUB_OUTPUT
+            echo "reason=强制执行"
+          elif [[ "$SHOULD_EXECUTE" == "true" ]]; then
+            echo "decision=execute" >> $GITHUB_OUTPUT
+            echo "reason=超过 $SKIP_THRESHOLD_HOURS 小时无新评论"
+          else
+            echo "decision=skip" >> $GITHUB_OUTPUT
+            echo "reason=Trae 已执行（${{ steps.pr-check.outputs.hours_since }} 小时前），跳过"
+          fi
+          
+      - name: Execute trading (if needed)
+        if: steps.decision.outputs.decision == 'execute'
+        env:
+          HL_SIGNER_PRIVATE_KEY: ${{ secrets.HL_SIGNER_PRIVATE_KEY }}
+          HL_SIGNER_ADDRESS: ${{ secrets.HL_SIGNER_ADDRESS }}
+          HL_USER_ADDRESS: ${{ secrets.HL_USER_ADDRESS }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          AUTO_EXECUTE: 'true'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr-check.outputs.pr_number }}
+          PR_COMMENT_SOURCE: 'GitHub Actions'
+        run: |
+          echo "=== 开始执行交易 ==="
+          echo "决策: ${{ steps.decision.outputs.decision }}"
+          echo "原因: ${{ steps.decision.outputs.reason }}"
+          
+          cd experiments/ab-trading
+          python3 agents/agent_a_runner.py
+          
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-a-logs-${{ github.run_number }}
+          path: experiments/ab-trading/logs/agent_a/*.json
+          retention-days: 7

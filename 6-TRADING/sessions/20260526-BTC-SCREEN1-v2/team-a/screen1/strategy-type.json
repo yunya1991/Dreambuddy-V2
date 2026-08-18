@@ -1,0 +1,35 @@
+{
+  "type": "futures_martingale",
+  "direction": "SHORT",
+  "score": 72,
+  "valid_until": "2026-06-09T20:00:00+08:00",
+  "data_driven": true,
+  "data_sources": [
+    "tavily:2026-05-22~05-26"
+  ],
+  "btc_price_basis": 76981,
+  "confidence_breakdown": {
+    "A1": {
+      "direction": "DOWN",
+      "confidence": 72,
+      "main_contradictions": [
+        "C1 war-inflation locks Fed",
+        "C3 ETF outflows"
+      ]
+    },
+    "A2": {
+      "direction": "BEARISH_CONSOLIDATION",
+      "stage": "exhaustion",
+      "key_support": 75000,
+      "key_resistance": 80000
+    },
+    "A3": {
+      "scenario_A_range_pct": 42,
+      "scenario_B_breakdown_pct": 38,
+      "scenario_C_rally_pct": 20
+    }
+  },
+  "synthesis": "3/3 agents SHORT. Score 72 >= 70 threshold. Futures martingale SHORT, position cap 40%, entry on $75K breakdown confirmation.",
+  "entry_condition": "wait for $75K daily close break OR short at resistance $79K-$80K range",
+  "stop_loss": 80500
+}

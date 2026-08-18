@@ -1,0 +1,80 @@
+{
+  "regime": "TREND_EXHAUSTION",
+  "confidence": 68,
+  "reasoning": [
+    "200日均线($83,300)突破失败，上涨动量衰竭",
+    "FGI修复至中性(47)但未能进入贪婪区间(>55)",
+    "资金费率负值(BTC -0.0019%, ETH -0.0034%)，空头主导",
+    "1小时爆仓$62.84M，多单占比95%，杠杆多头被清洗",
+    "ETF持续流入但价格背离，机构买盘不敌散户抛压"
+  ],
+  "price": {
+    "BTC": {
+      "current": 79844,
+      "change_24h_pct": -2.09,
+      "high_24h": 81683.9,
+      "low_24h": 79640.7,
+      "support_levels": [78000, 75000],
+      "resistance_levels": [80000, 81700, 83300]
+    },
+    "ETH": {
+      "current": 2291.53,
+      "change_24h_pct": -2.83
+    },
+    "SOL": {
+      "current": 88.43,
+      "change_24h_pct": -0.95
+    }
+  },
+  "sentiment": {
+    "FGI": 47,
+    "FGI_status": "Neutral",
+    "FGI_yesterday": 46,
+    "FGI_last_week": 29,
+    "FGI_last_month": 11
+  },
+  "funding_rates": {
+    "BTC": -0.0019,
+    "ETH": -0.0034
+  },
+  "etf_flows": {
+    "BTC_ETF": 261,
+    "ETH_ETF": 663,
+    "unit": "coins",
+    "date": "2026-05-07"
+  },
+  "liquidation_1h": {
+    "total": 62.84,
+    "long": 59.6,
+    "short": 3.24,
+    "unit": "million_USD"
+  },
+  "macro": {
+    "fed_rate": "3.50%-3.75%",
+    "next_chair": "Kevin Warsh (2026-05-15)",
+    "CPI": 3.3,
+    "june_cut_probability": 28
+  },
+  "geopolitical": {
+    "us_iran": {
+      "status": " Ceasefire proposed, Iran rejected 14-point plan",
+      "hormuz": "Iran new rules for passage (40+ questions)",
+      "impact": "Risk premium support, but de-escalation = risk-on"
+    }
+  },
+  "alternative_regimes": [
+    {"regime": "BEAR_TREND", "confidence": 25},
+    {"regime": "TREND_NEUTRAL", "confidence": 7}
+  ],
+  "scenario_probabilities": {
+    "range_bound_78K_83K": 50,
+    "down_75K": 30,
+    "up_85K": 20
+  },
+  "key_levels": {
+    "strong_support": [78000, 75000],
+    "strong_resistance": [83300, 85000],
+    "watch_levels": [80000, 81700]
+  },
+  "timestamp": "2026-05-08T01:04:00+08:00"
+}

@@ -1,0 +1,26 @@
+{
+  "updated": "2026-06-02",
+  "generated_at": "2026-06-02T20:00:00Z",
+  "freshness_days": 7,
+  "mvrv_z": 1.0,
+  "nupl": 0.23,
+  "rhodl_ratio": 4.5,
+  "sth_mvrv": 0.76,
+  "sth_realized_price": 97000,
+  "score_adjustment": 2,
+  "final_score": 32,
+  "final_signal": "BULL",
+  "confidence": 0.88,
+  "narrative": "MVRV Z-Score约1.0，处于ETF时代新定义的低估区（旧规则顶部Z=7，新规则高位Z=3.5），当前估值明显偏低。NUPL约0.23，位于Hope/Fear边界，市场情绪尚未从恐惧中完全恢复。RHODL Ratio达4.5，历史上仅2015年底（后续+10000%）和2022年底（后续+350%）出现过更高读数——长期持有者（1-2年持币者）的锁定价值远超短期投机者，底部结构极强。STH-MVRV=0.76确认短期持有者整体亏损约-24%（STH成本约$97K），$97K形成重要阻力位。四指标信号高度一致（CONSISTENT），全部指向底部积累阶段，这是链上维度迄今为止最强BULL信号。ETF时代校准：机构持仓压低MVRV Z永久性阈值，当前Z=1.0的估值水平在旧时代对应Z≈2.0。",
+  "etf_era_calibrated": true,
+  "etf_era_note": "ETF时代MVRV Z阈值永久性下移（高位从7→3.5），当前Z=1.0属于严重低估。机构持仓约130万BTC形成结构性托底，MVRV Z峰值递减规律确认（2013=12→2017=10→2021=7→2025=3.5）。",
+  "signal_consistency": "CONSISTENT",
+  "data_sources": ["BitcoinMagazinePro MVRV Z-Score chart", "Glassnode NUPL/RHODL", "LookIntoBitcoin RHODL Ratio", "CryptoQuant STH-MVRV"],
+  "dimension_scores": {
+    "mvrv_z": 10,
+    "nupl": 5,
+    "rhodl": 10,
+    "sth_mvrv": 5,
+    "qualitative_adj": 2
+  }
+}

@@ -1,0 +1,265 @@
+{
+  "version": "2.0.0",
+  "name": "BCRM 2.0 基线配置",
+  "description": "市态切换（含仓位管理）+ auto_mcap + 特征选择 + 组合回测",
+  "updated_at": "2026-07-13",
+  "backtest_date": "2026-07-13",
+
+  "data_config": {
+    "symbols": ["BTC", "ETH", "SOL", "UNI"],
+    "timeframe": "1H",
+    "max_bars": 6000,
+    "data_source": "okx",
+    "time_range": {
+      "start": "2025-11-05T03:00:00",
+      "end": "2026-07-13T02:00:00"
+    }
+  },
+
+  "walk_forward_config": {
+    "n_folds": 5,
+    "conf_threshold": 0.40,
+    "tp_atr": 3.0,
+    "sl_atr": 2.0,
+    "max_hold_bars": 60,
+    "fee_rate": 0.0005,
+    "slippage_rate": 0.001
+  },
+
+  "core_modules": {
+    "market_regime_switching": {
+      "enabled": true,
+      "description": "市态切换模块 - 8种市态分类及自适应参数调整",
+      "position_management": {
+        "enabled": true,
+        "description": "仓位管理 - 通过position_factor调整置信度阈值",
+        "regimes": {
+          "TREND_UP_STRONG": {
+            "allow_long": true,
+            "allow_short": false,
+            "long_conf_threshold": 0.35,
+            "short_conf_threshold": 0.60,
+            "tp_atr": 4.0,
+            "sl_atr": 1.5,
+            "max_hold_bars": 80,
+            "position_factor": 1.2
+          },
+          "TREND_UP_MILD": {
+            "allow_long": true,
+            "allow_short": false,
+            "long_conf_threshold": 0.38,
+            "short_conf_threshold": 0.55,
+            "tp_atr": 3.0,
+            "sl_atr": 1.8,
+            "max_hold_bars": 70,
+            "position_factor": 1.0
+          },
+          "RANGE_BOUND": {
+            "allow_long": true,
+            "allow_short": true,
+            "long_conf_threshold": 0.45,
+            "short_conf_threshold": 0.45,
+            "tp_atr": 2.0,
+            "sl_atr": 2.0,
+            "max_hold_bars": 30,
+            "position_factor": 0.8
+          },
+          "CONSOLIDATION": {
+            "allow_long": true,
+            "allow_short": true,
+            "long_conf_threshold": 0.50,
+            "short_conf_threshold": 0.50,
+            "tp_atr": 2.0,
+            "sl_atr": 2.0,
+            "max_hold_bars": 25,
+            "position_factor": 0.5
+          },
+          "BREAKOUT": {
+            "allow_long": true,
+            "allow_short": true,
+            "long_conf_threshold": 0.35,
+            "short_conf_threshold": 0.35,
+            "tp_atr": 3.5,
+            "sl_atr": 2.5,
+            "max_hold_bars": 50,
+            "position_factor": 1.0
+          },
+          "FOMO_RALLY": {
+            "allow_long": true,
+            "allow_short": false,
+            "long_conf_threshold": 0.30,
+            "short_conf_threshold": 0.65,
+            "tp_atr": 5.0,
+            "sl_atr": 1.2,
+            "max_hold_bars": 40,
+            "position_factor": 1.5
+          },
+          "VOLATILE_DROP": {
+            "allow_long": false,
+            "allow_short": true,
+            "long_conf_threshold": 0.60,
+            "short_conf_threshold": 0.35,
+            "tp_atr": 2.5,
+            "sl_atr": 3.0,
+            "max_hold_bars": 40,
+            "position_factor": 0.8
+          },
+          "REVERSAL": {
+            "allow_long": true,
+            "allow_short": true,
+            "long_conf_threshold": 0.45,
+            "short_conf_threshold": 0.45,
+            "tp_atr": 2.5,
+            "sl_atr": 2.5,
+            "max_hold_bars": 35,
+            "position_factor": 1.0
+          }
+        }
+      }
+    },
+
+    "auto_mcap": {
+      "enabled": true,
+      "description": "auto_mcap - 按市值等级自动配置特征开关",
+      "market_cap_levels": {
+        "BTC": "large",
+        "ETH": "large",
+        "SOL": "mid",
+        "UNI": "small"
+      },
+      "feature_configs": {
+        "large": {
+          "enable_bagua": true,
+          "enable_classic": true,
+          "enable_fibonacci": true,
+          "enable_pivot": true,
+          "enable_rsi": false,
+          "enable_wdh": true,
+          "wdh_weekly_only": false,
+          "enable_cycle": true,
+          "cycle_halving": true,
+          "cycle_ath": true,
+          "cycle_inventory": true,
+          "cycle_long_term": true,
+          "enable_cross_asset": true,
+          "enable_mcap_feature": true,
+          "enable_meta_labeling": false,
+          "enable_merrill": false
+        },
+        "mid": {
+          "enable_bagua": true,
+          "enable_classic": true,
+          "enable_fibonacci": true,
+          "enable_pivot": true,
+          "enable_rsi": false,
+          "enable_wdh": true,
+          "wdh_weekly_only": false,
+          "enable_cycle": true,
+          "cycle_halving": true,
+          "cycle_ath": true,
+          "cycle_inventory": true,
+          "cycle_long_term": true,
+          "enable_cross_asset": true,
+          "enable_mcap_feature": true,
+          "enable_meta_labeling": false,
+          "enable_merrill": false
+        },
+        "small": {
+          "enable_bagua": true,
+          "enable_classic": true,
+          "enable_fibonacci": true,
+          "enable_pivot": true,
+          "enable_rsi": false,
+          "enable_wdh": true,
+          "wdh_weekly_only": false,
+          "enable_cycle": false,
+          "cycle_halving": false,
+          "cycle_ath": false,
+          "cycle_inventory": false,
+          "cycle_long_term": false,
+          "enable_cross_asset": true,
+          "enable_mcap_feature": true,
+          "enable_meta_labeling": false,
+          "enable_merrill": false
+        }
+      }
+    },
+
+    "feature_selection": {
+      "enabled": true,
+      "description": "特征选择 - LightGBM重要性+相关性去冗余",
+      "imp_threshold": 0.05,
+      "corr_threshold": 0.85,
+      "method": "per_fold"
+    },
+
+    "portfolio_backtest": {
+      "enabled": true,
+      "description": "组合回测 - 多币种资金分配+组合层指标",
+      "allocation": {
+        "large_cap_weight": 0.40,
+        "mid_cap_weight": 0.35,
+        "small_cap_weight": 0.25
+      },
+      "risk_control": {
+        "max_concurrent_positions": 5,
+        "max_portfolio_drawdown": 0.20
+      }
+    }
+  },
+
+  "backtest_results": {
+    "test_date": "2026-07-13",
+    "data_bars": 6000,
+    "timeframe": "1H",
+    "symbols": {
+      "BTC": {
+        "trades": 43,
+        "win_rate": 81.4,
+        "total_return": 68.52,
+        "max_drawdown": 4.58,
+        "profit_factor": 5.14,
+        "sharpe_ratio": 10.67,
+        "feature_count": 429
+      },
+      "ETH": {
+        "trades": 52,
+        "win_rate": 71.2,
+        "total_return": 53.79,
+        "max_drawdown": 14.30,
+        "profit_factor": 2.37,
+        "sharpe_ratio": 5.77,
+        "feature_count": 463
+      },
+      "SOL": {
+        "trades": 65,
+        "win_rate": 75.4,
+        "total_return": 92.92,
+        "max_drawdown": 11.20,
+        "profit_factor": 3.02,
+        "sharpe_ratio": 7.88,
+        "feature_count": 463
+      },
+      "UNI": {
+        "trades": 92,
+        "win_rate": 60.9,
+        "total_return": 119.48,
+        "max_drawdown": 33.45,
+        "profit_factor": 2.12,
+        "sharpe_ratio": 5.62,
+        "feature_count": 402
+      }
+    },
+    "portfolio": {
+      "total_return": 86.85,
+      "win_rate": 70.2,
+      "profit_factor": 2.61,
+      "sharpe_ratio": 6.61,
+      "max_drawdown": 12.75,
+      "total_trades": 252,
+      "weighted_sharpe": 7.45
+    }
+  },
+
+  "execution_command": "python -m memory_l4.bcrm2.run_phase0_validation --symbols BTC,ETH,SOL,UNI --timeframe 1H --n-folds 5 --max-bars 6000 --feature-selection --portfolio"
+}

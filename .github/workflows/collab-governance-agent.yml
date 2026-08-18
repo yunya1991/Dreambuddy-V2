@@ -1,0 +1,97 @@
+name: collab-governance-agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Target PR number"
+        required: true
+        type: string
+      task_id:
+        description: "Task ID (ledger pointer)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: collab-governance-agent-${{ inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  governance:
+    runs-on: [self-hosted, macOS, workbuddy]
+    env:
+      PR_NUMBER: ${{ inputs.pr_number }}
+      TASK_ID: ${{ inputs.task_id }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify gh
+        run: gh --version
+
+      - name: Fetch PR comments
+        id: comments
+        run: |
+          gh pr view ${PR_NUMBER} --json comments --jq '.comments[].body' > pr_comments.txt || true
+          echo "comment_file=pr_comments.txt" >> "$GITHUB_OUTPUT"
+
+      - name: Protocol completeness check
+        run: |
+          started_ok=0
+          test_report_ok=0
+          validation_ok=0
+
+          if grep -q '^\[协作开工声明 / STARTED\]' "${{ steps.comments.outputs.comment_file }}"; then
+            started_ok=1
+          fi
+          if grep -q '^\[测试报告 / TEST_REPORT\]' "${{ steps.comments.outputs.comment_file }}"; then
+            test_report_ok=1
+          fi
+          if grep -q '^\[验证结论 / VALIDATION_RESULT\]' "${{ steps.comments.outputs.comment_file }}"; then
+            validation_ok=1
+          fi
+
+          if [ "$started_ok" -eq 1 ] && [ "$test_report_ok" -eq 1 ] && [ "$validation_ok" -eq 1 ]; then
+            exit 0
+          fi
+
+          next_action="developer: post TEST_REPORT; validator: post VALIDATION_RESULT with Governance Handoff: ledgered"
+          if [ "$started_ok" -eq 0 ]; then
+            next_action="developer: post STARTED"
+          elif [ "$test_report_ok" -eq 0 ]; then
+            next_action="developer: run build/test and post TEST_REPORT"
+          elif [ "$validation_ok" -eq 0 ]; then
+            next_action="validator: re-run build/test and post VALIDATION_RESULT"
+          fi
+
+          {
+            printf '%s\n' \
+              '[协作状态更新 / UPDATED]' \
+              '' \
+              'Agent: collab-governance-agent' \
+              "任务: protocol completeness check for PR${PR_NUMBER}" \
+              'Execution Mode: STANDARD' \
+              'Direct Takeover: no' \
+              'Governance Agent: collab-governance-agent' \
+              'Task Type: shared-sync' \
+              'Current Sync State: pending' \
+              "Next Required Action: ${next_action}" \
+              '变更说明:' \
+              '- protocol anchor missing' \
+              '' \
+              '当前占用范围:' \
+              '- (see STARTED comment)' \
+              '' \
+              '状态: UPDATED'
+          } > pr_updated.md
+          gh pr comment ${PR_NUMBER} --body-file pr_updated.md

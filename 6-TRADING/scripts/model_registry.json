@@ -1,0 +1,51 @@
+{
+  "registry_version": "1.0",
+  "updated": "2026-06-02",
+  "base_fallback": "deepseek-v4",
+  "note": "scores: 1-5 scale. cost_tier: 1=cheapest, 5=most expensive. Updated by ProcessD feedback loop.",
+
+  "models": {
+    "deepseek-v4": {
+      "available": true,
+      "cost_tier": 1,
+      "provider": "hermes",
+      "scores": {
+        "reasoning_depth":    3,
+        "chinese_finance":    4,
+        "structured_output":  5,
+        "instruction_follow": 4,
+        "context_window_k":  64
+      },
+      "process_d_accuracy": null,
+      "last_evaluated": null
+    },
+    "claude-opus-4": {
+      "available": false,
+      "cost_tier": 5,
+      "provider": "anthropic_api",
+      "scores": {
+        "reasoning_depth":    5,
+        "chinese_finance":    4,
+        "structured_output":  5,
+        "instruction_follow": 5,
+        "context_window_k": 200
+      },
+      "process_d_accuracy": null,
+      "last_evaluated": null
+    },
+    "claude-sonnet-4": {
+      "available": false,
+      "cost_tier": 3,
+      "provider": "anthropic_api",
+      "scores": {
+        "reasoning_depth":    4,
+        "chinese_finance":    4,
+        "structured_output":  5,
+        "instruction_follow": 5,
+        "context_window_k": 200
+      },
+      "process_d_accuracy": null,
+      "last_evaluated": null
+    }
+  }
+}

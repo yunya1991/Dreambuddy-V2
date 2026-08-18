@@ -1,0 +1,45 @@
+{
+  "swarms": [
+    {
+      "id": "market_intel_swarm",
+      "goal": "输出可执行的市场情报摘要并标注证据可信度",
+      "agents": [
+        {"name": "sentiment_agent", "focus": "舆情与新闻热度变化"},
+        {"name": "macro_agent", "focus": "宏观事件与风险偏好变化"},
+        {"name": "onchain_agent", "focus": "链上资金与地址行为"},
+        {"name": "strategy_review_agent", "focus": "策略表现与风险归因"}
+      ],
+      "output_contract": {
+        "required_fields": ["trace_id", "summary", "evidence", "risk_flags", "actions"],
+        "max_actions": 5
+      }
+    },
+    {
+      "id": "ops_guard_swarm",
+      "goal": "在不改交易执行面的前提下给出运维止血建议",
+      "agents": [
+        {"name": "ops_guard_agent", "focus": "系统健康与告警聚合"},
+        {"name": "execution_agent", "focus": "执行质量与异常重试"},
+        {"name": "governance_agent", "focus": "审批链与合规检查"}
+      ],
+      "output_contract": {
+        "required_fields": ["trace_id", "incident_level", "recommendations", "approval_required", "rollback_hint"],
+        "max_recommendations": 6
+      }
+    },
+    {
+      "id": "multi_agent_committee_swarm",
+      "goal": "融合基本面产物与多Agent辩论结果，输出可审计的投决链路",
+      "agents": [
+        {"name": "fundamental_agent", "focus": "新闻/资金流/叙事证据链"},
+        {"name": "technical_agent", "focus": "价格结构与技术指标"},
+        {"name": "debate_agent", "focus": "多空论点与分歧点归纳"},
+        {"name": "risk_agent", "focus": "风控约束与执行过滤"}
+      ],
+      "output_contract": {
+        "required_fields": ["trace_id", "asset", "evidence_chain", "meeting_record", "decision_summary"],
+        "max_actions": 5
+      }
+    }
+  ]
+}

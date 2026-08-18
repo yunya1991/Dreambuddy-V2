@@ -1,0 +1,64 @@
+{
+  "version": "3.0",
+  "name": "最小阻力策略-趋势优化基线",
+  "description": "基于9年历史数据参数扫描得到的最优固定参数组合，适用于三屏趋势策略的长持趋势确认定位",
+  "created_at": "2026-07-17",
+  "optimization_method": "分市场状态参数扫描（288种组合）",
+  "data_range": "2017-10-11 ~ 2026-07-17（BTC 3202天）",
+
+  "strategy": "LeastResistanceStrategy",
+  "params": {
+    "min_holding_bars": 15,
+    "signal_confirm_bars": 4,
+    "max_position": 1.0,
+    "update_step": 1,
+    "warmup_periods": 80,
+    "enable_trend_filter": true,
+    "bear_short_only": true,
+    "bull_long_only": false
+  },
+
+  "trend_filter": {
+    "method": "MA50/MA200双均线",
+    "bull_condition": "MA50 > MA200 且 MA200斜率 > 0",
+    "bear_condition": "MA50 < MA200 且 MA200斜率 < 0",
+    "rule": "牛市禁止做空，熊市禁止做多"
+  },
+
+  "market_regime_distribution": {
+    "BTC": {"bull": "41%", "bear": "29%", "sideways": "30%"},
+    "ETH": {"bull": "39%", "bear": "32%", "sideways": "30%"},
+    "SOL": {"bull": "31%", "bear": "30%", "sideways": "39%"},
+    "UNI": {"bull": "16%", "bear": "40%", "sideways": "43%"}
+  },
+
+  "backtest_results": {
+    "BTC": {"return_pct": 125.65, "sharpe": 0.340, "max_drawdown_pct": 48.23, "trades": 50, "avg_holding_days": 21.2},
+    "ETH": {"return_pct": 134.00, "sharpe": 0.300, "max_drawdown_pct": 64.33, "trades": 65, "avg_holding_days": 18.3},
+    "SOL": {"return_pct": 108.51, "sharpe": 0.480, "max_drawdown_pct": 55.65, "trades": 24, "avg_holding_days": 21.0},
+    "UNI": {"return_pct": 300.97, "sharpe": 0.590, "max_drawdown_pct": 46.43, "trades": 28, "avg_holding_days": 17.8},
+    "average": {"return_pct": 167.28, "sharpe": 0.427, "max_drawdown_pct": 53.66, "trades": 42}
+  },
+
+  "buy_hold_baseline": {
+    "BTC": 1191.04,
+    "ETH": 511.94,
+    "SOL": 85.18,
+    "UNI": 17.45,
+    "average": 451.40
+  },
+
+  "comparison_with_previous": {
+    "previous_version": "AI V2基线（base_rule_weight=0.3）",
+    "previous_avg_return": -3.86,
+    "current_avg_return": 167.28,
+    "improvement": "+171.14pp"
+  },
+
+  "design_rationale": {
+    "min_holding_bars_15": "趋势确认后长持，避免频繁调仓，符合三屏趋势策略定位",
+    "signal_confirm_bars_4": "连续4天同方向信号才入场，过滤噪音和假突破",
+    "max_position_1.0": "大周期趋势确认后满仓，允许放大波动",
+    "trend_filter": "MA50/MA200牛熊过滤，避免逆势交易"
+  }
+}

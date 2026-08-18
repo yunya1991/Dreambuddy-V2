@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.ft.ml_trade_service.pilot</string>
+
+  <key>WorkingDirectory</key>
+  <string>__PROJECT_DIR__</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string>
+    <string>PORT=8094</string>
+    <string>ML_USER_DATA_DIR=__USER_DATA_DIR__</string>
+    <string>AGENT_OUTBOX_DIR_PILOT=__OUTBOX_DIR__</string>
+    <string>python3</string>
+    <string>ml_trade_service.py</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>__USER_DATA_DIR__/logs/ml_trade_service_pilot_8094.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__USER_DATA_DIR__/logs/ml_trade_service_pilot_8094.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONUNBUFFERED</key>
+    <string>1</string>
+  </dict>
+
+  <key>ThrottleInterval</key>
+  <integer>3</integer>
+</dict>
+</plist>

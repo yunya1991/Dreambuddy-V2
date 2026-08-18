@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.yijing.trading</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>-m</string>
+        <string>scripts.memory_l4.polling_trader</string>
+        <string>--interval</string>
+        <string>3600</string>
+        <string>--coins</string>
+        <string>UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB</string>
+        <string>--confidence</string>
+        <string>0.35</string>
+        <string>--max-positions</string>
+        <string>10</string>
+        <string>--position-pct</string>
+        <string>0.10</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统</string>
+    <key>StandardOutPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/logs/trading_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/logs/trading_stderr.log</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>StartInterval</key>
+    <integer>3600</integer>
+    <key>ExitTimeOut</key>
+    <integer>60</integer>
+</dict>
+</plist>

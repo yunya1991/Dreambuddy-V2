@@ -1,0 +1,52 @@
+{
+  "template_id": "APP-1785563503084",
+  "name": "python-development 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "python-development 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": null,
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "任务涉及 1 个文件",
+    "action_count": 2,
+    "files_touched": [
+      "_trigger_test.py"
+    ],
+    "duration_minutes": 30.9,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1785565357.45778,
+    "parent_skill_ids": [
+      "custom-path"
+    ],
+    "process_verify_report": {},
+    "task_type": "python-development",
+    "reproducible_steps": [
+      "added: _trigger_test.py（共 2 次修改）"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "_trigger_test.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

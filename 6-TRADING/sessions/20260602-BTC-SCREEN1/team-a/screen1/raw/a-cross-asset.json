@@ -1,0 +1,56 @@
+{
+  "updated": "2026-06-02",
+  "generated_at": "2026-06-02T20:00:00Z",
+  "clock_stage": "STAGFLATION_LITE",
+  "btc_role": "high_beta_short",
+  "skill_regime": "WEAK_BEAR",
+  "season": "Autumn",
+  "phase1_only": true,
+  "position_multiplier": 0.4,
+  "allocation_long": [],
+  "allocation_short": [
+    {
+      "asset": "BTC",
+      "weight": 0.10,
+      "direction": "SHORT",
+      "martin_mode": "wide_interval",
+      "martin_params": {
+        "interval_pct": 12,
+        "tp_pct": 6,
+        "max_layers": 3,
+        "single_layer": false,
+        "position_cap_usdt": 150
+      }
+    },
+    {
+      "asset": "ETH",
+      "weight": 0.05,
+      "direction": "SHORT",
+      "martin_mode": "single_layer",
+      "martin_params": {
+        "interval_pct": 0,
+        "tp_pct": 5,
+        "max_layers": 1,
+        "single_layer": true,
+        "position_cap_usdt": 75
+      }
+    }
+  ],
+  "cash_pct": 0.85,
+  "total_deployed": 0.15,
+  "best_hedge_pair": {
+    "long_asset": "XLP",
+    "short_asset": "ETH",
+    "note": "相关-0.10，最佳对冲对（Phase 2 启用）"
+  },
+  "excluded_phase2": ["XLP", "XLE", "GOLD"],
+  "regime_trigger": {
+    "to_recovery": "CPI连续2月<2.5% AND 10Y<4% 或 Fed首次降息",
+    "to_overheat": "GDP>3% AND CPI>3%",
+    "to_reflation": "GDP<0 AND CPI<2%"
+  },
+  "clock_transition_risk": "2026Q3-Q4预期转向Reflation（40%概率）或Recovery（30%概率），维持Stagflation Lite概率30%",
+  "strategy_note": "Stagflation Lite Phase1：轻度滞胀，GDP仍正增长(~2.2%)，BTC阶段性反弹概率高于经典Stagflation。仅保留BTC/ETH空头（wide_interval防逼空），XLP/XLE/GOLD多头权重全部转现金（85%）。总敞口仅15%，防御为主但保留空头受益于下跌趋势。注意：onchain底部结构极强(RHODL=4.5)，若CPI数据改善或Fed转向，需立即评估quadrant切换。",
+  "stop_rule": "10% 组合回撤止损",
+  "confidence": 0.82
+}

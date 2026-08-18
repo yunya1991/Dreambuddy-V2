@@ -1,0 +1,9 @@
+{
+    "exchange": {
+        "pair_whitelist": [
+            "ATOM/USDT",
+            "DOT/USDT",
+            "AVAX/USDT"
+        ]
+    }
+}

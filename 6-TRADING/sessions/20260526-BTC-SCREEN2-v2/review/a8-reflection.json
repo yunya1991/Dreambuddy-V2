@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "analyst": "A8-ProcessD",
+    "session_date": "2026-05-26",
+    "sessions_reviewed": [
+      "20260526-BTC-SCREEN1",
+      "20260526-BTC-SCREEN1-v2",
+      "20260526-BTC-SCREEN2",
+      "20260526-BTC-SCREEN2-v2"
+    ]
+  },
+  "retrospective_score": 54,
+  "score_breakdown": {
+    "data_integrity": 2,
+    "self_correction_ability": 9,
+    "process_adherence": 6,
+    "api_resilience": 3,
+    "output_quality_v2": 8,
+    "deduction_wasted_sessions": -24
+  },
+  "critical_finding": "Screen1 trigger prompt has no Phase-0 mandatory data collection. Sub-agents default to training data (07K) instead of real price (6,981). Direction was WRONG: LONG vs SHORT actual.",
+  "p0_fix": "Insert Phase-0 Tavily data collection before A1/A2/A3 spawn. Hard block if data unavailable.",
+  "data_source_status": {
+    "tier_1_okx": "BLOCKED (DNS)",
+    "tier_1_binance": "BLOCKED (firewall timeout)",
+    "tier_2_coingecko": "BLOCKED (firewall timeout)",
+    "tier_3_tavily": "AVAILABLE",
+    "current_tier": "tier_3_emergency"
+  },
+  "next_week_screen1_rerun_needed": false,
+  "screen1_valid_until": "2026-06-09",
+  "screen1_rerun_triggers": {
+    "btc_below": 69283,
+    "btc_above": 84679,
+    "other": [
+      "Fed emergency action",
+      "War escalation",
+      "Funding rate flips positive >0.05%"
+    ]
+  },
+  "top_improvements": [
+    "PI-01 P0: Add Phase-0 Tavily data collection to Screen1 trigger prompt",
+    "PI-02 P0: Add price drift check to Screen2 trigger prompt",
+    "PI-03 P1: API health check at Screen1 start",
+    "PI-04 P1: Standardize 6 Tavily query templates (parallel execution)",
+    "PI-05 P2: Session folder archival for v2 sessions",
+    "PI-06 P2: Fix dream_stop_loss_monitor.py hardcoded credentials"
+  ],
+  "what_worked": [
+    "3-agent parallel: 100% direction consistency when data correct",
+    "A7 gate: 35/40, blocked wrong-data execution",
+    "Meta-cognition: system identified v1 error and self-corrected with v2",
+    "Tavily pivot: successfully found alternative data source"
+  ]
+}

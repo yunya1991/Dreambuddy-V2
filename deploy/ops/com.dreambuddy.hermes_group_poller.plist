@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dreambuddy.hermes_group_poller</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/zhangjiangtao/.hermes/group_poller.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/zhangjiangtao/.hermes</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/zhangjiangtao</string>
+        <key>HERMES_HOME</key>
+        <string>/Users/zhangjiangtao/.hermes</string>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>15</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/zhangjiangtao/.hermes/logs/poller.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/zhangjiangtao/.hermes/logs/poller.log</string>
+</dict>
+</plist>

@@ -1,0 +1,5135 @@
+{
+  "timestamp": "2026-07-17T10:47:39.773121",
+  "search_space": {
+    "fusion_base_rule_weight": [
+      0.45,
+      0.55,
+      0.65
+    ],
+    "fusion_trend_sensitivity": [
+      0.15,
+      0.25,
+      0.35
+    ],
+    "fusion_vol_sensitivity": [
+      0.15,
+      0.25,
+      0.35
+    ],
+    "min_ml_confidence": [
+      0.05,
+      0.1,
+      0.15
+    ],
+    "train_window": [
+      150,
+      200,
+      250
+    ]
+  },
+  "results": [
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -12.57,
+        "sharpe_ratio": -1.14,
+        "max_drawdown_pct": 21.47,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -12.57,
+        "sharpe_ratio": -1.14,
+        "max_drawdown_pct": 21.47,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -12.57,
+        "sharpe_ratio": -1.14,
+        "max_drawdown_pct": 21.47,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -14.32,
+        "sharpe_ratio": -1.21,
+        "max_drawdown_pct": 22.65,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -14.32,
+        "sharpe_ratio": -1.21,
+        "max_drawdown_pct": 22.65,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -14.32,
+        "sharpe_ratio": -1.21,
+        "max_drawdown_pct": 22.65,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -14.78,
+        "sharpe_ratio": -1.21,
+        "max_drawdown_pct": 23.5,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -16.14,
+        "sharpe_ratio": -1.32,
+        "max_drawdown_pct": 23.5,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -16.14,
+        "sharpe_ratio": -1.32,
+        "max_drawdown_pct": 23.5,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -16.23,
+        "sharpe_ratio": -1.29,
+        "max_drawdown_pct": 23.81,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -16.89,
+        "sharpe_ratio": -1.32,
+        "max_drawdown_pct": 24.98,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -17.09,
+        "sharpe_ratio": -1.32,
+        "max_drawdown_pct": 24.63,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -17.53,
+        "sharpe_ratio": -1.33,
+        "max_drawdown_pct": 25.13,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -18.15,
+        "sharpe_ratio": -1.44,
+        "max_drawdown_pct": 23.81,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -18.15,
+        "sharpe_ratio": -1.44,
+        "max_drawdown_pct": 23.81,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -18.19,
+        "sharpe_ratio": -1.34,
+        "max_drawdown_pct": 25.71,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -18.52,
+        "sharpe_ratio": -1.38,
+        "max_drawdown_pct": 26.02,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -18.63,
+        "sharpe_ratio": -1.46,
+        "max_drawdown_pct": 24.98,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -18.63,
+        "sharpe_ratio": -1.46,
+        "max_drawdown_pct": 24.98,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -18.65,
+        "sharpe_ratio": -1.37,
+        "max_drawdown_pct": 26.25,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -18.79,
+        "sharpe_ratio": -1.37,
+        "max_drawdown_pct": 26.07,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -19.71,
+        "sharpe_ratio": -1.52,
+        "max_drawdown_pct": 24.63,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -19.71,
+        "sharpe_ratio": -1.52,
+        "max_drawdown_pct": 24.63,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -19.96,
+        "sharpe_ratio": -1.42,
+        "max_drawdown_pct": 26.92,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -20.03,
+        "sharpe_ratio": -1.43,
+        "max_drawdown_pct": 27.01,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -20.03,
+        "sharpe_ratio": -1.44,
+        "max_drawdown_pct": 27.34,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -20.11,
+        "sharpe_ratio": -1.43,
+        "max_drawdown_pct": 27.12,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -20.15,
+        "sharpe_ratio": -1.43,
+        "max_drawdown_pct": 27.23,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -20.76,
+        "sharpe_ratio": -1.57,
+        "max_drawdown_pct": 25.43,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -20.76,
+        "sharpe_ratio": -1.57,
+        "max_drawdown_pct": 25.43,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -20.81,
+        "sharpe_ratio": -1.45,
+        "max_drawdown_pct": 27.9,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -20.83,
+        "sharpe_ratio": -1.45,
+        "max_drawdown_pct": 28.02,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.02,
+        "sharpe_ratio": -1.46,
+        "max_drawdown_pct": 28.27,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.03,
+        "sharpe_ratio": -1.46,
+        "max_drawdown_pct": 28.16,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.5,
+        "sharpe_ratio": -1.48,
+        "max_drawdown_pct": 28.75,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.69,
+        "sharpe_ratio": -1.48,
+        "max_drawdown_pct": 29.0,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.76,
+        "sharpe_ratio": -1.49,
+        "max_drawdown_pct": 29.09,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.91,
+        "sharpe_ratio": -1.61,
+        "max_drawdown_pct": 25.74,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.91,
+        "sharpe_ratio": -1.61,
+        "max_drawdown_pct": 25.74,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.94,
+        "sharpe_ratio": -1.51,
+        "max_drawdown_pct": 29.11,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.96,
+        "sharpe_ratio": -1.62,
+        "max_drawdown_pct": 26.69,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -21.96,
+        "sharpe_ratio": -1.62,
+        "max_drawdown_pct": 26.69,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -22.04,
+        "sharpe_ratio": -1.64,
+        "max_drawdown_pct": 26.34,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -22.04,
+        "sharpe_ratio": -1.64,
+        "max_drawdown_pct": 26.34,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -22.55,
+        "sharpe_ratio": -1.52,
+        "max_drawdown_pct": 29.99,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -22.57,
+        "sharpe_ratio": -1.64,
+        "max_drawdown_pct": 26.45,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -22.57,
+        "sharpe_ratio": -1.64,
+        "max_drawdown_pct": 26.45,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -22.59,
+        "sharpe_ratio": -1.53,
+        "max_drawdown_pct": 29.94,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -22.99,
+        "sharpe_ratio": -1.54,
+        "max_drawdown_pct": 30.46,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.28,
+        "sharpe_ratio": -1.65,
+        "max_drawdown_pct": 27.15,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.28,
+        "sharpe_ratio": -1.65,
+        "max_drawdown_pct": 27.15,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.32,
+        "sharpe_ratio": -1.66,
+        "max_drawdown_pct": 27.23,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.32,
+        "sharpe_ratio": -1.66,
+        "max_drawdown_pct": 27.23,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.65,
+        "sharpe_ratio": -1.7,
+        "max_drawdown_pct": 28.05,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.65,
+        "sharpe_ratio": -1.7,
+        "max_drawdown_pct": 28.05,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.79,
+        "sharpe_ratio": -1.69,
+        "max_drawdown_pct": 27.71,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.79,
+        "sharpe_ratio": -1.69,
+        "max_drawdown_pct": 27.71,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.92,
+        "sharpe_ratio": -1.69,
+        "max_drawdown_pct": 27.91,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -23.92,
+        "sharpe_ratio": -1.69,
+        "max_drawdown_pct": 27.91,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.08,
+        "sharpe_ratio": -1.68,
+        "max_drawdown_pct": 28.13,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.08,
+        "sharpe_ratio": -1.68,
+        "max_drawdown_pct": 28.13,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.11,
+        "sharpe_ratio": -1.67,
+        "max_drawdown_pct": 28.26,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.11,
+        "sharpe_ratio": -1.67,
+        "max_drawdown_pct": 28.26,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.2,
+        "sharpe_ratio": -1.98,
+        "max_drawdown_pct": 25.55,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.2,
+        "sharpe_ratio": -1.98,
+        "max_drawdown_pct": 25.55,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.2,
+        "sharpe_ratio": -1.98,
+        "max_drawdown_pct": 25.55,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.3,
+        "sharpe_ratio": -1.69,
+        "max_drawdown_pct": 28.33,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.3,
+        "sharpe_ratio": -1.69,
+        "max_drawdown_pct": 28.33,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.67,
+        "sharpe_ratio": -1.71,
+        "max_drawdown_pct": 28.81,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.67,
+        "sharpe_ratio": -1.71,
+        "max_drawdown_pct": 28.81,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.74,
+        "sharpe_ratio": -1.7,
+        "max_drawdown_pct": 29.01,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.74,
+        "sharpe_ratio": -1.7,
+        "max_drawdown_pct": 29.01,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.92,
+        "sharpe_ratio": -1.7,
+        "max_drawdown_pct": 29.26,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -24.92,
+        "sharpe_ratio": -1.7,
+        "max_drawdown_pct": 29.26,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -25.0,
+        "sharpe_ratio": -1.7,
+        "max_drawdown_pct": 29.38,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -25.0,
+        "sharpe_ratio": -1.7,
+        "max_drawdown_pct": 29.38,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -25.16,
+        "sharpe_ratio": -1.72,
+        "max_drawdown_pct": 29.36,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -25.16,
+        "sharpe_ratio": -1.72,
+        "max_drawdown_pct": 29.36,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -25.74,
+        "sharpe_ratio": -1.74,
+        "max_drawdown_pct": 30.18,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -25.74,
+        "sharpe_ratio": -1.74,
+        "max_drawdown_pct": 30.18,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -25.82,
+        "sharpe_ratio": -1.74,
+        "max_drawdown_pct": 30.16,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -25.82,
+        "sharpe_ratio": -1.74,
+        "max_drawdown_pct": 30.16,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -26.47,
+        "sharpe_ratio": -1.77,
+        "max_drawdown_pct": 30.85,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 200,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -26.47,
+        "sharpe_ratio": -1.77,
+        "max_drawdown_pct": 30.85,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -27.45,
+        "sharpe_ratio": -2.1,
+        "max_drawdown_pct": 28.75,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -27.45,
+        "sharpe_ratio": -2.1,
+        "max_drawdown_pct": 28.75,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -27.45,
+        "sharpe_ratio": -2.1,
+        "max_drawdown_pct": 28.75,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -28.47,
+        "sharpe_ratio": -2.11,
+        "max_drawdown_pct": 29.86,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -29.62,
+        "sharpe_ratio": -2.19,
+        "max_drawdown_pct": 30.98,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -29.62,
+        "sharpe_ratio": -2.19,
+        "max_drawdown_pct": 30.98,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -29.66,
+        "sharpe_ratio": -2.13,
+        "max_drawdown_pct": 30.95,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -30.68,
+        "sharpe_ratio": -2.18,
+        "max_drawdown_pct": 32.04,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -30.85,
+        "sharpe_ratio": -2.15,
+        "max_drawdown_pct": 32.2,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -31.15,
+        "sharpe_ratio": -2.23,
+        "max_drawdown_pct": 32.41,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -31.15,
+        "sharpe_ratio": -2.23,
+        "max_drawdown_pct": 32.41,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -31.62,
+        "sharpe_ratio": -2.17,
+        "max_drawdown_pct": 32.98,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -32.33,
+        "sharpe_ratio": -2.3,
+        "max_drawdown_pct": 33.66,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -32.33,
+        "sharpe_ratio": -2.3,
+        "max_drawdown_pct": 33.66,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -32.47,
+        "sharpe_ratio": -2.19,
+        "max_drawdown_pct": 33.8,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -32.51,
+        "sharpe_ratio": -2.16,
+        "max_drawdown_pct": 33.83,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -32.76,
+        "sharpe_ratio": -2.28,
+        "max_drawdown_pct": 34.07,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -32.76,
+        "sharpe_ratio": -2.28,
+        "max_drawdown_pct": 34.07,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -32.9,
+        "sharpe_ratio": -2.2,
+        "max_drawdown_pct": 34.23,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -33.26,
+        "sharpe_ratio": -2.18,
+        "max_drawdown_pct": 34.59,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.06,
+        "sharpe_ratio": -2.34,
+        "max_drawdown_pct": 35.37,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.06,
+        "sharpe_ratio": -2.34,
+        "max_drawdown_pct": 35.37,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.33,
+        "sharpe_ratio": -2.23,
+        "max_drawdown_pct": 35.63,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.33,
+        "sharpe_ratio": -2.24,
+        "max_drawdown_pct": 35.63,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.49,
+        "sharpe_ratio": -2.21,
+        "max_drawdown_pct": 35.79,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.58,
+        "sharpe_ratio": -2.23,
+        "max_drawdown_pct": 35.88,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.75,
+        "sharpe_ratio": -2.23,
+        "max_drawdown_pct": 36.05,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.89,
+        "sharpe_ratio": -2.36,
+        "max_drawdown_pct": 36.17,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.89,
+        "sharpe_ratio": -2.36,
+        "max_drawdown_pct": 36.17,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.91,
+        "sharpe_ratio": -2.32,
+        "max_drawdown_pct": 36.18,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -34.91,
+        "sharpe_ratio": -2.32,
+        "max_drawdown_pct": 36.18,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -35.31,
+        "sharpe_ratio": -2.24,
+        "max_drawdown_pct": 36.6,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -35.39,
+        "sharpe_ratio": -2.37,
+        "max_drawdown_pct": 36.67,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -35.39,
+        "sharpe_ratio": -2.37,
+        "max_drawdown_pct": 36.67,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -35.44,
+        "sharpe_ratio": -2.24,
+        "max_drawdown_pct": 36.72,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -35.51,
+        "sharpe_ratio": -2.25,
+        "max_drawdown_pct": 36.79,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -35.61,
+        "sharpe_ratio": -2.25,
+        "max_drawdown_pct": 36.89,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -35.72,
+        "sharpe_ratio": -2.35,
+        "max_drawdown_pct": 36.99,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -35.72,
+        "sharpe_ratio": -2.35,
+        "max_drawdown_pct": 36.99,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.03,
+        "sharpe_ratio": -2.26,
+        "max_drawdown_pct": 37.3,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.25,
+        "sharpe_ratio": -2.27,
+        "max_drawdown_pct": 37.52,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.35,
+        "sharpe_ratio": -2.28,
+        "max_drawdown_pct": 37.61,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.36,
+        "sharpe_ratio": -2.27,
+        "max_drawdown_pct": 37.62,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.38,
+        "sharpe_ratio": -2.36,
+        "max_drawdown_pct": 37.64,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.38,
+        "sharpe_ratio": -2.36,
+        "max_drawdown_pct": 37.64,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.53,
+        "sharpe_ratio": -2.34,
+        "max_drawdown_pct": 37.79,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.53,
+        "sharpe_ratio": -2.34,
+        "max_drawdown_pct": 37.79,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.8,
+        "sharpe_ratio": -2.41,
+        "max_drawdown_pct": 38.05,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.8,
+        "sharpe_ratio": -2.41,
+        "max_drawdown_pct": 38.05,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.93,
+        "sharpe_ratio": -2.38,
+        "max_drawdown_pct": 38.18,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -36.93,
+        "sharpe_ratio": -2.38,
+        "max_drawdown_pct": 38.18,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.01,
+        "sharpe_ratio": -2.29,
+        "max_drawdown_pct": 38.26,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.01,
+        "sharpe_ratio": -2.3,
+        "max_drawdown_pct": 38.26,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.17,
+        "sharpe_ratio": -2.39,
+        "max_drawdown_pct": 38.41,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.17,
+        "sharpe_ratio": -2.39,
+        "max_drawdown_pct": 38.41,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.31,
+        "sharpe_ratio": -2.36,
+        "max_drawdown_pct": 38.56,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.31,
+        "sharpe_ratio": -2.36,
+        "max_drawdown_pct": 38.56,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.36,
+        "sharpe_ratio": -2.3,
+        "max_drawdown_pct": 38.61,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.44,
+        "sharpe_ratio": -2.37,
+        "max_drawdown_pct": 38.68,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.44,
+        "sharpe_ratio": -2.37,
+        "max_drawdown_pct": 38.68,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.53,
+        "sharpe_ratio": -2.38,
+        "max_drawdown_pct": 38.77,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.53,
+        "sharpe_ratio": -2.38,
+        "max_drawdown_pct": 38.77,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.93,
+        "sharpe_ratio": -2.4,
+        "max_drawdown_pct": 39.16,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -37.93,
+        "sharpe_ratio": -2.4,
+        "max_drawdown_pct": 39.16,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.01,
+        "sharpe_ratio": -2.38,
+        "max_drawdown_pct": 39.24,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.01,
+        "sharpe_ratio": -2.38,
+        "max_drawdown_pct": 39.24,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.22,
+        "sharpe_ratio": -2.39,
+        "max_drawdown_pct": 39.45,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.22,
+        "sharpe_ratio": -2.39,
+        "max_drawdown_pct": 39.45,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.31,
+        "sharpe_ratio": -2.4,
+        "max_drawdown_pct": 39.54,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.31,
+        "sharpe_ratio": -2.4,
+        "max_drawdown_pct": 39.54,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.33,
+        "sharpe_ratio": -2.4,
+        "max_drawdown_pct": 39.55,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.33,
+        "sharpe_ratio": -2.4,
+        "max_drawdown_pct": 39.55,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.6,
+        "sharpe_ratio": -3.88,
+        "max_drawdown_pct": 39.69,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.6,
+        "sharpe_ratio": -3.88,
+        "max_drawdown_pct": 39.69,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.6,
+        "sharpe_ratio": -3.88,
+        "max_drawdown_pct": 39.69,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.96,
+        "sharpe_ratio": -2.41,
+        "max_drawdown_pct": 40.17,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -38.96,
+        "sharpe_ratio": -2.41,
+        "max_drawdown_pct": 40.17,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -39.0,
+        "sharpe_ratio": -2.42,
+        "max_drawdown_pct": 40.21,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -39.0,
+        "sharpe_ratio": -2.42,
+        "max_drawdown_pct": 40.21,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -39.55,
+        "sharpe_ratio": -2.43,
+        "max_drawdown_pct": 40.75,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 250,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -39.55,
+        "sharpe_ratio": -2.43,
+        "max_drawdown_pct": 40.75,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -42.51,
+        "sharpe_ratio": -4.01,
+        "max_drawdown_pct": 43.55,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -42.51,
+        "sharpe_ratio": -4.01,
+        "max_drawdown_pct": 43.55,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -42.51,
+        "sharpe_ratio": -4.01,
+        "max_drawdown_pct": 43.55,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -43.26,
+        "sharpe_ratio": -3.94,
+        "max_drawdown_pct": 44.35,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -44.16,
+        "sharpe_ratio": -4.02,
+        "max_drawdown_pct": 45.24,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -44.16,
+        "sharpe_ratio": -4.02,
+        "max_drawdown_pct": 45.24,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -45.51,
+        "sharpe_ratio": -4.03,
+        "max_drawdown_pct": 46.51,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -45.59,
+        "sharpe_ratio": -3.99,
+        "max_drawdown_pct": 46.66,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -46.6,
+        "sharpe_ratio": -4.01,
+        "max_drawdown_pct": 47.64,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -46.7,
+        "sharpe_ratio": -4.14,
+        "max_drawdown_pct": 47.67,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -46.7,
+        "sharpe_ratio": -4.14,
+        "max_drawdown_pct": 47.67,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -46.73,
+        "sharpe_ratio": -4.09,
+        "max_drawdown_pct": 47.77,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -46.73,
+        "sharpe_ratio": -4.09,
+        "max_drawdown_pct": 47.77,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -47.21,
+        "sharpe_ratio": -4.0,
+        "max_drawdown_pct": 48.26,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -48.12,
+        "sharpe_ratio": -4.15,
+        "max_drawdown_pct": 49.13,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -48.12,
+        "sharpe_ratio": -4.15,
+        "max_drawdown_pct": 49.13,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -48.2,
+        "sharpe_ratio": -4.0,
+        "max_drawdown_pct": 49.22,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -48.88,
+        "sharpe_ratio": -4.03,
+        "max_drawdown_pct": 49.9,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -48.99,
+        "sharpe_ratio": -4.15,
+        "max_drawdown_pct": 50.01,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -48.99,
+        "sharpe_ratio": -4.15,
+        "max_drawdown_pct": 50.01,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -49.08,
+        "sharpe_ratio": -4.02,
+        "max_drawdown_pct": 50.08,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -49.67,
+        "sharpe_ratio": -4.02,
+        "max_drawdown_pct": 50.67,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -49.93,
+        "sharpe_ratio": -4.15,
+        "max_drawdown_pct": 50.92,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -49.93,
+        "sharpe_ratio": -4.15,
+        "max_drawdown_pct": 50.92,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -50.68,
+        "sharpe_ratio": -4.18,
+        "max_drawdown_pct": 51.66,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -50.68,
+        "sharpe_ratio": -4.18,
+        "max_drawdown_pct": 51.66,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -50.77,
+        "sharpe_ratio": -4.08,
+        "max_drawdown_pct": 51.75,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -50.77,
+        "sharpe_ratio": -4.16,
+        "max_drawdown_pct": 51.73,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -50.77,
+        "sharpe_ratio": -4.16,
+        "max_drawdown_pct": 51.73,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -51.4,
+        "sharpe_ratio": -4.17,
+        "max_drawdown_pct": 52.36,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -51.4,
+        "sharpe_ratio": -4.17,
+        "max_drawdown_pct": 52.36,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -51.51,
+        "sharpe_ratio": -4.11,
+        "max_drawdown_pct": 52.47,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -51.74,
+        "sharpe_ratio": -4.1,
+        "max_drawdown_pct": 52.7,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -51.76,
+        "sharpe_ratio": -4.11,
+        "max_drawdown_pct": 52.72,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -52.01,
+        "sharpe_ratio": -4.12,
+        "max_drawdown_pct": 52.96,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -52.5,
+        "sharpe_ratio": -4.23,
+        "max_drawdown_pct": 53.44,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -52.5,
+        "sharpe_ratio": -4.23,
+        "max_drawdown_pct": 53.44,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -52.89,
+        "sharpe_ratio": -4.22,
+        "max_drawdown_pct": 53.83,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -52.89,
+        "sharpe_ratio": -4.22,
+        "max_drawdown_pct": 53.83,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.19,
+        "sharpe_ratio": -4.15,
+        "max_drawdown_pct": 54.12,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.25,
+        "sharpe_ratio": -4.16,
+        "max_drawdown_pct": 54.18,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.31,
+        "sharpe_ratio": -4.15,
+        "max_drawdown_pct": 54.23,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.37,
+        "sharpe_ratio": -4.23,
+        "max_drawdown_pct": 54.3,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.65,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.37,
+        "sharpe_ratio": -4.23,
+        "max_drawdown_pct": 54.3,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.37,
+        "sharpe_ratio": -4.24,
+        "max_drawdown_pct": 54.29,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.37,
+        "sharpe_ratio": -4.24,
+        "max_drawdown_pct": 54.29,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.4,
+        "sharpe_ratio": -4.23,
+        "max_drawdown_pct": 54.32,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.4,
+        "sharpe_ratio": -4.23,
+        "max_drawdown_pct": 54.32,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -53.42,
+        "sharpe_ratio": -4.17,
+        "max_drawdown_pct": 54.34,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.12,
+        "sharpe_ratio": -4.17,
+        "max_drawdown_pct": 55.03,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.28,
+        "sharpe_ratio": -4.18,
+        "max_drawdown_pct": 55.19,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.33,
+        "sharpe_ratio": -4.17,
+        "max_drawdown_pct": 55.23,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.45,
+        "sharpe_ratio": -4.18,
+        "max_drawdown_pct": 55.35,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.52,
+        "sharpe_ratio": -4.25,
+        "max_drawdown_pct": 55.43,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.52,
+        "sharpe_ratio": -4.25,
+        "max_drawdown_pct": 55.43,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.57,
+        "sharpe_ratio": -4.26,
+        "max_drawdown_pct": 55.47,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.57,
+        "sharpe_ratio": -4.26,
+        "max_drawdown_pct": 55.47,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.74,
+        "sharpe_ratio": -4.27,
+        "max_drawdown_pct": 55.64,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.74,
+        "sharpe_ratio": -4.27,
+        "max_drawdown_pct": 55.64,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.86,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 55.76,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -54.86,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 55.76,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.04,
+        "sharpe_ratio": -4.18,
+        "max_drawdown_pct": 55.94,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.15,
+        "sharpe_ratio": -4.19,
+        "max_drawdown_pct": 56.04,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.41,
+        "sharpe_ratio": -4.27,
+        "max_drawdown_pct": 56.3,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.55,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.41,
+        "sharpe_ratio": -4.27,
+        "max_drawdown_pct": 56.3,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.15,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.46,
+        "sharpe_ratio": -4.18,
+        "max_drawdown_pct": 56.35,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.57,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 56.45,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.15,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.57,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 56.45,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.62,
+        "sharpe_ratio": -4.27,
+        "max_drawdown_pct": 56.5,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.62,
+        "sharpe_ratio": -4.27,
+        "max_drawdown_pct": 56.5,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.74,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 56.62,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.35,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -55.74,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 56.62,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -56.34,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 57.2,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.25,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -56.34,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 57.2,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -56.41,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 57.28,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.25,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -56.41,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 57.28,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.05,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -56.9,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 57.75,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    },
+    {
+      "params": {
+        "fusion_base_rule_weight": 0.45,
+        "fusion_trend_sensitivity": 0.15,
+        "fusion_vol_sensitivity": 0.35,
+        "min_ml_confidence": 0.1,
+        "train_window": 150,
+        "label_lookahead": 7,
+        "retrain_interval": 30,
+        "base_rule_weight": 0.3,
+        "fusion_volume_sensitivity": 0.2,
+        "fusion_duration_sensitivity": 0.25
+      },
+      "metrics": {
+        "total_return_pct": -56.9,
+        "sharpe_ratio": -4.28,
+        "max_drawdown_pct": 57.75,
+        "win_rate": 0,
+        "trade_count": 0
+      }
+    }
+  ]
+}

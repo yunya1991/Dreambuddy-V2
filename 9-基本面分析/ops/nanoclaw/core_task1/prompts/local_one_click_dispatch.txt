@@ -1,0 +1,32 @@
+请执行“核心任务1一键调度”：
+
+步骤1：先执行任务A（crypto_news_collect），采集最近24小时加密新闻（星球日报/金色财经/BlockBeats），入口：
+- https://www.odaily.news/zh-CN/newsflash
+- https://jinse.cn/lives
+- https://api.theblockbeats.news/v2/rss/newsflash
+结果命名：raw_crypto_${YYYYMMDD_HHMM}.json
+
+步骤2：再执行任务B（macro_news_collect），采集华尔街见闻早餐与美国宏观条目，入口：
+- https://wallstreetcn.com/search?q=%E6%97%A9%E9%A4%90
+- https://wallstreetcn.com/articles/3766936
+结果命名：raw_macro_${YYYYMMDD_HHMM}.json
+
+步骤3：最后执行任务C（briefing_synthesis），读取步骤1和步骤2结果，输出简报：
+- brief_${YYYYMMDD_HHMM}.md
+
+步骤4：生成事件账本（JSONL）与口径更新日志：
+- event_ledger_${YYYYMMDD_HHMM}.jsonl
+- methodology_changelog.jsonl（append）
+
+兼容输出（保留）：brief_v2_${YYYYMMDD_HHMM}.md（如有 JSON 则 brief_v2_${YYYYMMDD_HHMM}.json）
+
+执行约束：
+1) 时间窗固定最近24小时；
+2) A/B/C 顺序执行，不并行；
+3) 每条要点必须附来源URL；
+4) 若正文缺失，标记“正文缺失，仅标题级信息”；
+5) 结束时返回以下落盘路径：raw_crypto/raw_macro/brief/event_ledger/methodology_changelog，并给一句摘要结论。
+
+落盘目录：
+- 原始：ops/nanoclaw/core_task1/raw/
+- 简报：ops/nanoclaw/core_task1/outputs/

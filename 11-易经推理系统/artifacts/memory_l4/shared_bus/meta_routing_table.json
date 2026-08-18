@@ -1,0 +1,9 @@
+{
+  "TREND_DOWN|recovery|sprout": {
+    "agent_b": {
+      "win_rate": 1.0,
+      "total": 1,
+      "wins": 1
+    }
+  }
+}

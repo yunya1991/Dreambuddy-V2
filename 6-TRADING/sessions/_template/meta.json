@@ -1,0 +1,37 @@
+{
+  "_comment": "会话元数据模板 - 每次创建 session 时复制此文件并填写字段",
+  "session_id": "{YYYYMMDD}-{SYMBOL}-{TRIGGER}",
+  "symbol": "BTC-USDT-SWAP",
+  "trigger": "cron_screen1_weekly",
+  "trigger_types": {
+    "cron_screen1_weekly": "每周日 Screen 1 定时触发",
+    "cron_screen2_daily": "每工作日 Screen 2 定时触发",
+    "cron_teamb_check": "每工作日 Team B 状态检查",
+    "cron_review_weekly": "每周一 Process D 复盘",
+    "manual": "手动触发"
+  },
+  "created_at": null,
+  "status": "created",
+  "status_flow": [
+    "created",
+    "team_a_running",
+    "team_a_complete",
+    "team_b_running",
+    "gate_c_check",
+    "executing",
+    "monitoring",
+    "closed"
+  ],
+  "team_a_complete_at": null,
+  "team_b_started_at": null,
+  "gate_c_result": null,
+  "execution_at": null,
+  "closed_at": null,
+  "screen1_direction": null,
+  "screen1_strategy_type": null,
+  "screen1_score": null,
+  "screen2_presets_ready": false,
+  "martingale_level": 0,
+  "position_status": "no_position",
+  "notes": ""
+}

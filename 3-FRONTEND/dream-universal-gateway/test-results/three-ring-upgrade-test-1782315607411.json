@@ -1,0 +1,326 @@
+{
+  "testTime": "2026-06-24T15:40:07.411Z",
+  "totalScenarios": 10,
+  "results": [
+    {
+      "scenarioId": "SC01",
+      "scenarioName": "新用户首次登录 + 价格查询",
+      "category": "login_flow",
+      "threeRingQuality": {
+        "structureScore": 75,
+        "depthScore": 50,
+        "actionabilityScore": 55,
+        "riskAwarenessScore": 40,
+        "traceabilityScore": 58,
+        "costEfficiencyScore": 85
+      },
+      "vanillaQuality": {
+        "structureScore": 45,
+        "depthScore": 40,
+        "actionabilityScore": 35,
+        "riskAwarenessScore": 20,
+        "traceabilityScore": 15,
+        "costEfficiencyScore": 55
+      },
+      "performance": {
+        "threeRingTotalMs": 5569.954023076833,
+        "vanillaTotalMs": 3000,
+        "threeRingTokens": 900,
+        "vanillaTokens": 800,
+        "threeRingArtifactsCount": 0
+      },
+      "loopType": "general",
+      "chainSteps": 1,
+      "artifactsCount": 0,
+      "gatePassed": false
+    },
+    {
+      "scenarioId": "SC02",
+      "scenarioName": "概念解释咨询",
+      "category": "shallow_query",
+      "threeRingQuality": {
+        "structureScore": 75,
+        "depthScore": 45,
+        "actionabilityScore": 55,
+        "riskAwarenessScore": 40,
+        "traceabilityScore": 53,
+        "costEfficiencyScore": 85
+      },
+      "vanillaQuality": {
+        "structureScore": 45,
+        "depthScore": 40,
+        "actionabilityScore": 35,
+        "riskAwarenessScore": 20,
+        "traceabilityScore": 15,
+        "costEfficiencyScore": 55
+      },
+      "performance": {
+        "threeRingTotalMs": 573.6616835848733,
+        "vanillaTotalMs": 2000,
+        "threeRingTokens": 200,
+        "vanillaTokens": 500,
+        "threeRingArtifactsCount": 0
+      },
+      "loopType": "general",
+      "chainSteps": 1,
+      "artifactsCount": 0,
+      "gatePassed": true
+    },
+    {
+      "scenarioId": "SC03",
+      "scenarioName": "币种走势分析",
+      "category": "medium_analysis",
+      "threeRingQuality": {
+        "structureScore": 89,
+        "depthScore": 72,
+        "actionabilityScore": 68,
+        "riskAwarenessScore": 70,
+        "traceabilityScore": 84,
+        "costEfficiencyScore": 78
+      },
+      "vanillaQuality": {
+        "structureScore": 50,
+        "depthScore": 55,
+        "actionabilityScore": 45,
+        "riskAwarenessScore": 30,
+        "traceabilityScore": 20,
+        "costEfficiencyScore": 50
+      },
+      "performance": {
+        "threeRingTotalMs": 17060.798994991776,
+        "vanillaTotalMs": 5000,
+        "threeRingTokens": 3250,
+        "vanillaTokens": 1200,
+        "threeRingArtifactsCount": 2
+      },
+      "loopType": "execution",
+      "chainSteps": 3,
+      "artifactsCount": 2,
+      "gatePassed": true
+    },
+    {
+      "scenarioId": "SC04",
+      "scenarioName": "宏观面分析",
+      "category": "medium_analysis",
+      "threeRingQuality": {
+        "structureScore": 87,
+        "depthScore": 72,
+        "actionabilityScore": 68,
+        "riskAwarenessScore": 70,
+        "traceabilityScore": 81,
+        "costEfficiencyScore": 78
+      },
+      "vanillaQuality": {
+        "structureScore": 50,
+        "depthScore": 55,
+        "actionabilityScore": 45,
+        "riskAwarenessScore": 30,
+        "traceabilityScore": 20,
+        "costEfficiencyScore": 50
+      },
+      "performance": {
+        "threeRingTotalMs": 11244.249567379344,
+        "vanillaTotalMs": 5000,
+        "threeRingTokens": 2310,
+        "vanillaTokens": 1200,
+        "threeRingArtifactsCount": 1
+      },
+      "loopType": "intelligence",
+      "chainSteps": 5,
+      "artifactsCount": 1,
+      "gatePassed": true
+    },
+    {
+      "scenarioId": "SC05",
+      "scenarioName": "交易决策咨询",
+      "category": "deep_strategy",
+      "threeRingQuality": {
+        "structureScore": 100,
+        "depthScore": 88,
+        "actionabilityScore": 85,
+        "riskAwarenessScore": 87,
+        "traceabilityScore": 100,
+        "costEfficiencyScore": 75
+      },
+      "vanillaQuality": {
+        "structureScore": 55,
+        "depthScore": 65,
+        "actionabilityScore": 55,
+        "riskAwarenessScore": 40,
+        "traceabilityScore": 25,
+        "costEfficiencyScore": 45
+      },
+      "performance": {
+        "threeRingTotalMs": 17556.288382740677,
+        "vanillaTotalMs": 8000,
+        "threeRingTokens": 2800,
+        "vanillaTokens": 2000,
+        "threeRingArtifactsCount": 4
+      },
+      "loopType": "execution",
+      "chainSteps": 4,
+      "artifactsCount": 4,
+      "gatePassed": true
+    },
+    {
+      "scenarioId": "SC06",
+      "scenarioName": "情景推演",
+      "category": "deep_strategy",
+      "threeRingQuality": {
+        "structureScore": 94,
+        "depthScore": 88,
+        "actionabilityScore": 85,
+        "riskAwarenessScore": 87,
+        "traceabilityScore": 94,
+        "costEfficiencyScore": 75
+      },
+      "vanillaQuality": {
+        "structureScore": 55,
+        "depthScore": 65,
+        "actionabilityScore": 55,
+        "riskAwarenessScore": 40,
+        "traceabilityScore": 25,
+        "costEfficiencyScore": 45
+      },
+      "performance": {
+        "threeRingTotalMs": 11267.618889754462,
+        "vanillaTotalMs": 8000,
+        "threeRingTokens": 2310,
+        "vanillaTokens": 2000,
+        "threeRingArtifactsCount": 1
+      },
+      "loopType": "intelligence",
+      "chainSteps": 5,
+      "artifactsCount": 1,
+      "gatePassed": true
+    },
+    {
+      "scenarioId": "SC07",
+      "scenarioName": "完整交易策略构建",
+      "category": "full_chain",
+      "threeRingQuality": {
+        "structureScore": 99,
+        "depthScore": 95,
+        "actionabilityScore": 92,
+        "riskAwarenessScore": 95,
+        "traceabilityScore": 100,
+        "costEfficiencyScore": 72
+      },
+      "vanillaQuality": {
+        "structureScore": 55,
+        "depthScore": 60,
+        "actionabilityScore": 50,
+        "riskAwarenessScore": 40,
+        "traceabilityScore": 25,
+        "costEfficiencyScore": 40
+      },
+      "performance": {
+        "threeRingTotalMs": 21562.593892054818,
+        "vanillaTotalMs": 12000,
+        "threeRingTokens": 4180,
+        "vanillaTokens": 3000,
+        "threeRingArtifactsCount": 2
+      },
+      "loopType": "execution",
+      "chainSteps": 5,
+      "artifactsCount": 2,
+      "gatePassed": true
+    },
+    {
+      "scenarioId": "SC08",
+      "scenarioName": "策略回测验证",
+      "category": "governance",
+      "threeRingQuality": {
+        "structureScore": 94,
+        "depthScore": 90,
+        "actionabilityScore": 80,
+        "riskAwarenessScore": 100,
+        "traceabilityScore": 100,
+        "costEfficiencyScore": 70
+      },
+      "vanillaQuality": {
+        "structureScore": 55,
+        "depthScore": 60,
+        "actionabilityScore": 50,
+        "riskAwarenessScore": 40,
+        "traceabilityScore": 25,
+        "costEfficiencyScore": 40
+      },
+      "performance": {
+        "threeRingTotalMs": 23569.016249463457,
+        "vanillaTotalMs": 12000,
+        "threeRingTokens": 3970,
+        "vanillaTokens": 3000,
+        "threeRingArtifactsCount": 2
+      },
+      "loopType": "governance",
+      "chainSteps": 5,
+      "artifactsCount": 2,
+      "gatePassed": true
+    },
+    {
+      "scenarioId": "SC09",
+      "scenarioName": "LLM配额耗尽降级测试",
+      "category": "governance",
+      "threeRingQuality": {
+        "structureScore": 94,
+        "depthScore": 85,
+        "actionabilityScore": 80,
+        "riskAwarenessScore": 100,
+        "traceabilityScore": 100,
+        "costEfficiencyScore": 70
+      },
+      "vanillaQuality": {
+        "structureScore": 55,
+        "depthScore": 60,
+        "actionabilityScore": 50,
+        "riskAwarenessScore": 40,
+        "traceabilityScore": 25,
+        "costEfficiencyScore": 40
+      },
+      "performance": {
+        "threeRingTotalMs": 3944.2123103563213,
+        "vanillaTotalMs": 12000,
+        "threeRingTokens": 0,
+        "vanillaTokens": 3000,
+        "threeRingArtifactsCount": 2
+      },
+      "loopType": "execution",
+      "chainSteps": 2,
+      "artifactsCount": 2,
+      "gatePassed": false
+    },
+    {
+      "scenarioId": "SC10",
+      "scenarioName": "多轮对话上下文连续",
+      "category": "full_chain",
+      "threeRingQuality": {
+        "structureScore": 95,
+        "depthScore": 95,
+        "actionabilityScore": 92,
+        "riskAwarenessScore": 95,
+        "traceabilityScore": 98,
+        "costEfficiencyScore": 72
+      },
+      "vanillaQuality": {
+        "structureScore": 55,
+        "depthScore": 60,
+        "actionabilityScore": 50,
+        "riskAwarenessScore": 40,
+        "traceabilityScore": 25,
+        "costEfficiencyScore": 40
+      },
+      "performance": {
+        "threeRingTotalMs": 5540.664988006641,
+        "vanillaTotalMs": 12000,
+        "threeRingTokens": 900,
+        "vanillaTokens": 3000,
+        "threeRingArtifactsCount": 0
+      },
+      "loopType": "general",
+      "chainSteps": 2,
+      "artifactsCount": 0,
+      "gatePassed": true
+    }
+  ]
+}

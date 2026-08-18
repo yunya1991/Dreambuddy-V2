@@ -1,0 +1,1 @@
+*/10 * * * * PROJECT_DIR=<PROJECT_DIR> PYTHON_BIN=/usr/bin/python3 RESEARCH_ROOT=/Users/zhangjiangtao/ft_userdata/基本面分析_fundamental SYNC_BASELINE_SEC=28800 SYNC_BURST_SEC=900 SYNC_BURST_HOLD_SEC=7200 SYNC_SLA_SEC=900 <PROJECT_DIR>/ops/fundamental_research_sync.sh >> /var/log/fundamental_research_sync.log 2>&1

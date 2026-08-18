@@ -1,0 +1,19 @@
+{
+  "incident_id": "INC-20260727111511",
+  "incident_type": "cpu",
+  "severity": "high",
+  "timestamp": "2026-07-27T11:15:11.432397",
+  "host": "node-1",
+  "service": "l3-scheduler",
+  "symptoms": [
+    "CPU使用率超过90%",
+    "响应延迟"
+  ],
+  "root_cause": null,
+  "resolution": null,
+  "duration_minutes": null,
+  "impact": "moderate",
+  "tags": [
+    "性能告警"
+  ]
+}

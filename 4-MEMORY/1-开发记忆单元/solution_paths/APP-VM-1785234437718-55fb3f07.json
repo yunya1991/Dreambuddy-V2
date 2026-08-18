@@ -1,0 +1,20 @@
+{
+  "template_id": "APP-VM-1785234437718-55fb3f07",
+  "title": "Python sqlite3 线程安全需要 check_same_thread=False 和锁保护",
+  "content": "Python sqlite3 线程安全需要 check_same_thread=False 和锁保护",
+  "quality_level": "S",
+  "confidence": 1.0,
+  "verify_count": 22,
+  "tags": [
+    "sqlite3",
+    "多线程",
+    "并发",
+    "反模式"
+  ],
+  "memory_type": "experience",
+  "source": "trae",
+  "created_at": "2026-07-28T10:27:17.718700+00:00",
+  "updated_at": "2026-08-01T10:20:41.206355+00:00",
+  "rebuilt_from_memory_id": "VM-1785234437718-55fb3f07",
+  "rebuild_version": 1
+}

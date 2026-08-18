@@ -1,0 +1,19 @@
+{
+  "template_id": "APP-VM-1785434052331-f973c706",
+  "title": "[文件变更] 1个文件变更 | 修改(1): 4-MEMORY/9-工具与接口/cognitive_loop_entry.py",
+  "content": "[文件变更] 1个文件变更 | 修改(1): 4-MEMORY/9-工具与接口/cognitive_loop_entry.py",
+  "quality_level": "B",
+  "confidence": 0.5,
+  "verify_count": 3,
+  "tags": [
+    "file-change",
+    "daemon",
+    "4-MEMORY"
+  ],
+  "memory_type": "experience",
+  "source": "cognitive-daemon",
+  "created_at": "2026-07-30T17:54:12.331346+00:00",
+  "updated_at": "2026-08-01T10:20:41.237930+00:00",
+  "rebuilt_from_memory_id": "VM-1785434052331-f973c706",
+  "rebuild_version": 1
+}

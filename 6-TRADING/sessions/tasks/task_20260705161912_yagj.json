@@ -1,0 +1,23 @@
+{
+  "task_id": "task_20260705161912_yagj",
+  "status": "failed",
+  "created_at": "2026-07-05T16:19:12.902Z",
+  "updated_at": "2026-07-05T16:19:12.902Z",
+  "source": "dashboard",
+  "message": "你好",
+  "intent": {
+    "type": "simple_qa",
+    "confidence": 0.4,
+    "entities": {},
+    "reasoning": "Default fallback: no pattern matched"
+  },
+  "thinking_mode": "quick",
+  "trading_mode": "ai_skill",
+  "session_id": "test_e2e_001",
+  "priority": "medium",
+  "metadata": {
+    "user_agent": "DreamGateway/1.0",
+    "intent_method": "default"
+  },
+  "error": "Task timed out (stale pending > 5min)"
+}

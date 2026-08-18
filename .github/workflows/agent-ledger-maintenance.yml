@@ -1,0 +1,24 @@
+name: agent-ledger-maintenance
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  maintain-ledger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate collaboration and governance assets
+        run: python3 -m unittest discover -s "AGENT协作工具/github-actions/tests" -p "test_*.py"

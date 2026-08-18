@@ -1,0 +1,187 @@
+{
+  "best_params": {
+    "trailing_atr_mult": 1.0,
+    "trailing_start_ratio": 0.8,
+    "elder_ray_floor": 0.9,
+    "elder_ray_ceil": 1.5,
+    "btc_windvane_confirm_days": 3,
+    "max_base_holding_hours": 29.9,
+    "max_post_addon_hours": 37.7,
+    "golden_window_hours": 11.1
+  },
+  "best_score": 4112.8704,
+  "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "ARB",
+    "OP",
+    "UNI"
+  ],
+  "initial_capital": 10000.0,
+  "objective_weights": {
+    "calmar": 0.4,
+    "sharpe": 0.2,
+    "win_rate": 0.15,
+    "capital_efficiency": 0.25
+  },
+  "hard_constraints": {
+    "max_drawdown_limit": 60.0,
+    "min_win_rate": 0.4,
+    "min_trades": 10
+  },
+  "results_count": 25,
+  "top_10_results": [
+    {
+      "params": {
+        "trailing_atr_mult": 1.0,
+        "trailing_start_ratio": 0.8,
+        "elder_ray_floor": 0.9,
+        "elder_ray_ceil": 1.5,
+        "btc_windvane_confirm_days": 3,
+        "max_base_holding_hours": 29.9,
+        "max_post_addon_hours": 37.7,
+        "golden_window_hours": 11.1
+      },
+      "score": 4112.8704,
+      "total_trades": 131,
+      "timestamp": "2026-07-15T19:26:56.010757+00:00"
+    },
+    {
+      "params": {
+        "trailing_atr_mult": 1.1,
+        "trailing_start_ratio": 0.77,
+        "elder_ray_floor": 0.89,
+        "elder_ray_ceil": 1.44,
+        "btc_windvane_confirm_days": 2,
+        "max_base_holding_hours": 31.0,
+        "max_post_addon_hours": 36.6,
+        "golden_window_hours": 12.8
+      },
+      "score": 3892.7305,
+      "total_trades": 131,
+      "timestamp": "2026-07-15T19:24:01.499763+00:00"
+    },
+    {
+      "params": {
+        "trailing_atr_mult": 1.22,
+        "trailing_start_ratio": 0.8,
+        "elder_ray_floor": 0.89,
+        "elder_ray_ceil": 1.4,
+        "btc_windvane_confirm_days": 2,
+        "max_base_holding_hours": 32.3,
+        "max_post_addon_hours": 36.7,
+        "golden_window_hours": 11.9
+      },
+      "score": 3745.9358,
+      "total_trades": 130,
+      "timestamp": "2026-07-15T19:26:47.384338+00:00"
+    },
+    {
+      "params": {
+        "trailing_atr_mult": 1.01,
+        "trailing_start_ratio": 0.8,
+        "elder_ray_floor": 0.76,
+        "elder_ray_ceil": 1.46,
+        "btc_windvane_confirm_days": 4,
+        "max_base_holding_hours": 76.5,
+        "max_post_addon_hours": 16.0,
+        "golden_window_hours": 13.6
+      },
+      "score": 3709.3836,
+      "total_trades": 131,
+      "timestamp": "2026-07-15T19:26:04.070172+00:00"
+    },
+    {
+      "params": {
+        "trailing_atr_mult": 1.56,
+        "trailing_start_ratio": 0.79,
+        "elder_ray_floor": 0.9,
+        "elder_ray_ceil": 1.31,
+        "btc_windvane_confirm_days": 3,
+        "max_base_holding_hours": 34.2,
+        "max_post_addon_hours": 36.5,
+        "golden_window_hours": 10.6
+      },
+      "score": 3308.6994,
+      "total_trades": 128,
+      "timestamp": "2026-07-15T19:26:29.715877+00:00"
+    },
+    {
+      "params": {
+        "trailing_atr_mult": 1.37,
+        "trailing_start_ratio": 0.8,
+        "elder_ray_floor": 0.81,
+        "elder_ray_ceil": 1.23,
+        "btc_windvane_confirm_days": 4,
+        "max_base_holding_hours": 39.7,
+        "max_post_addon_hours": 36.9,
+        "golden_window_hours": 6.0
+      },
+      "score": 3213.103,
+      "total_trades": 129,
+      "timestamp": "2026-07-15T19:25:38.197176+00:00"
+    },
+    {
+      "params": {
+        "trailing_atr_mult": 1.56,
+        "trailing_start_ratio": 0.78,
+        "elder_ray_floor": 0.79,
+        "elder_ray_ceil": 1.38,
+        "btc_windvane_confirm_days": 2,
+        "max_base_holding_hours": 35.2,
+        "max_post_addon_hours": 14.1,
+        "golden_window_hours": 21.3
+      },
+      "score": 3181.6362,
+      "total_trades": 128,
+      "timestamp": "2026-07-15T19:23:27.655611+00:00"
+    },
+    {
+      "params": {
+        "trailing_atr_mult": 1.82,
+        "trailing_start_ratio": 0.8,
+        "elder_ray_floor": 0.68,
+        "elder_ray_ceil": 1.36,
+        "btc_windvane_confirm_days": 2,
+        "max_base_holding_hours": 60.9,
+        "max_post_addon_hours": 47.1,
+        "golden_window_hours": 5.2
+      },
+      "score": 2826.0761,
+      "total_trades": 122,
+      "timestamp": "2026-07-15T19:24:42.594185+00:00"
+    },
+    {
+      "params": {
+        "trailing_atr_mult": 2.48,
+        "trailing_start_ratio": 0.74,
+        "elder_ray_floor": 0.9,
+        "elder_ray_ceil": 1.31,
+        "btc_windvane_confirm_days": 4,
+        "max_base_holding_hours": 34.9,
+        "max_post_addon_hours": 47.0,
+        "golden_window_hours": 23.8
+      },
+      "score": 2725.6666,
+      "total_trades": 129,
+      "timestamp": "2026-07-15T19:25:08.218311+00:00"
+    },
+    {
+      "params": {
+        "trailing_atr_mult": 1.97,
+        "trailing_start_ratio": 0.72,
+        "elder_ray_floor": 0.85,
+        "elder_ray_ceil": 1.32,
+        "btc_windvane_confirm_days": 3,
+        "max_base_holding_hours": 27.5,
+        "max_post_addon_hours": 34.0,
+        "golden_window_hours": 9.5
+      },
+      "score": 2689.8204,
+      "total_trades": 130,
+      "timestamp": "2026-07-15T19:26:12.881673+00:00"
+    }
+  ],
+  "timestamp": "2026-07-15T19:27:04.655941+00:00"
+}

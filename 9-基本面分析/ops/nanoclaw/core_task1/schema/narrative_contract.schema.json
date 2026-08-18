@@ -1,0 +1,349 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/nanoclaw/core_task1/narrative_contract.schema.json",
+  "title": "core_task1 narrative contract",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "module": {
+      "type": "string",
+      "const": "fundamental.narrative.v1"
+    },
+    "execution_gate": {
+      "type": "string",
+      "const": "readonly_advisory"
+    },
+    "time_window": {
+      "type": "string",
+      "minLength": 2
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scores": {
+      "$ref": "#/$defs/Scores"
+    },
+    "top_narratives": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/TopNarrative"
+      }
+    },
+    "quality": {
+      "$ref": "#/$defs/Quality"
+    },
+    "advisory": {
+      "$ref": "#/$defs/Advisory"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EvidenceRef"
+      }
+    },
+    "doc_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "notes": {
+      "$ref": "#/$defs/Notes"
+    }
+  },
+  "required": [
+    "module",
+    "execution_gate",
+    "time_window",
+    "generated_at",
+    "scores",
+    "top_narratives",
+    "quality",
+    "advisory",
+    "doc_refs"
+  ],
+  "$defs": {
+    "NarrativeStress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stress_level": {
+          "type": "string",
+          "enum": ["low", "med", "high", "unknown"]
+        },
+        "trigger_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "recommended_action": {
+          "type": "string",
+          "enum": ["hold", "reduce", "hedge", "slowdown", "stop_loss"]
+        }
+      },
+      "required": ["stress_level", "trigger_reasons", "recommended_action"]
+    },
+    "Scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "community_base_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "decay_half_life_hours": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "decay_factor": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "community_effective_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "community_impulse": {
+          "type": "number"
+        },
+        "narrative_stress": {
+          "$ref": "#/$defs/NarrativeStress"
+        }
+      },
+      "required": [
+        "community_base_score",
+        "decay_half_life_hours",
+        "decay_factor",
+        "community_effective_score",
+        "community_impulse",
+        "narrative_stress"
+      ]
+    },
+    "SourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["url", "ts"]
+    },
+    "TopNarrative": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "topic_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "topic_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attention_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "attention_type": {
+          "type": "string",
+          "enum": ["momentum", "event", "policy", "security", "market_microstructure", "other"]
+        },
+        "source_diversity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_grade": {
+          "type": "string",
+          "enum": ["A", "B", "C", "D", "unknown"]
+        },
+        "narrative_status": {
+          "type": "string",
+          "enum": ["active", "cooling", "archive"]
+        },
+        "risk_flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          }
+        }
+      },
+      "required": [
+        "topic_id",
+        "topic_label",
+        "attention_score",
+        "attention_type",
+        "source_diversity",
+        "evidence_grade",
+        "narrative_status",
+        "risk_flags",
+        "sources"
+      ]
+    },
+    "Quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "overall_quality": {
+          "type": "string",
+          "enum": ["ok", "stale", "missing", "backfilled", "suspect"]
+        },
+        "coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "quality_flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["ok", "stale", "missing", "backfilled", "suspect"]
+          },
+          "uniqueItems": true
+        },
+        "missing_disclosure": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "backfilled_disclosure": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["overall_quality", "coverage", "quality_flags", "missing_disclosure", "backfilled_disclosure"]
+    },
+    "BiasAdvice": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bias_dir": {
+          "type": "string",
+          "enum": ["long_only", "short_only", "two_sided", "neutral"]
+        },
+        "reasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["bias_dir", "reasons"]
+    },
+    "FilterAdvice": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "execution_filter": {
+          "type": "string",
+          "enum": ["allow", "block", "slowdown"]
+        },
+        "blocked_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["execution_filter", "blocked_reasons"]
+    },
+    "RiskOffAdvice": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "risk_action_proposal": {
+          "type": "string",
+          "enum": ["hold", "reduce", "hedge", "stop_loss"]
+        },
+        "position_scale": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "ttl": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["risk_action_proposal", "position_scale", "ttl"]
+    },
+    "Advisory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bias": {
+          "$ref": "#/$defs/BiasAdvice"
+        },
+        "filter": {
+          "$ref": "#/$defs/FilterAdvice"
+        },
+        "risk_off": {
+          "$ref": "#/$defs/RiskOffAdvice"
+        }
+      },
+      "required": ["bias", "filter", "risk_off"]
+    },
+    "EvidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["base", "source", "timestamp"]
+    },
+    "Notes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "factor_boundary": {
+          "type": "string",
+          "enum": ["not_primary_direction_factor"]
+        },
+        "fail_closed_applied": {
+          "type": "boolean"
+        }
+      },
+      "required": ["factor_boundary", "fail_closed_applied"]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "template_id": "APP-VM-1785434164143-96f689b1",
+  "title": "verify路径蒸馏测试：突破后跟涨",
+  "content": "verify路径蒸馏测试：突破后跟涨",
+  "quality_level": "B",
+  "confidence": 0.55,
+  "verify_count": 5,
+  "tags": [
+    "test",
+    "verify"
+  ],
+  "memory_type": "experience",
+  "source": "trae",
+  "created_at": "2026-07-30T17:56:04.143135+00:00",
+  "updated_at": "2026-08-01T10:20:41.248136+00:00",
+  "rebuilt_from_memory_id": "VM-1785434164143-96f689b1",
+  "rebuild_version": 1
+}

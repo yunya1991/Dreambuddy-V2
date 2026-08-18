@@ -1,0 +1,66 @@
+{
+  "session_id": "20260527-BTC-SCREEN3",
+  "skill": "dream-signal-scoring-spec",
+  "btc_price": 77267,
+  "entry_zone": [
+    77500,
+    78000
+  ],
+  "entry_zone_reached": false,
+  "dimensions": {
+    "D1_screen1_alignment": {
+      "score": 5,
+      "max": 5,
+      "weight": 1.5,
+      "rationale": "screen1_direction=SHORT, 完全对齐"
+    },
+    "D2_technical_setup": {
+      "score": 2,
+      "max": 5,
+      "weight": 1.2,
+      "rationale": "价格7,267低于入场区7,500-8,000，尚未到达阻力区，无拒绝信号"
+    },
+    "D3_macro_environment": {
+      "score": 4,
+      "max": 5,
+      "weight": 1.0,
+      "rationale": "Fed鹰派+关税升级+油价>00，宏观支持SHORT"
+    },
+    "D4_funding_rate": {
+      "score": 3,
+      "max": 5,
+      "weight": 0.8,
+      "rationale": "资金费率中性偏负（46天负值后brief recovery），对SHORT中性有利"
+    },
+    "D5_etf_flows": {
+      "score": 2,
+      "max": 5,
+      "weight": 1.0,
+      "rationale": "ETF 9日+.7B流入，看涨流量是SHORT的逆风因素"
+    },
+    "D6_fear_greed": {
+      "score": 3,
+      "max": 5,
+      "weight": 0.7,
+      "rationale": "恐惧区间35-40，不强烈，两向中性"
+    },
+    "D7_momentum": {
+      "score": 2,
+      "max": 5,
+      "weight": 0.8,
+      "rationale": "日线动能偏多（从5k反弹），短期不利于立即做空"
+    },
+    "D8_strategy_match": {
+      "score": 4,
+      "max": 5,
+      "weight": 1.0,
+      "rationale": "SHORT martingale策略匹配当前市场结构（阻力区震荡）"
+    }
+  },
+  "raw_sum": 25,
+  "weighted_sum": 26.0,
+  "max_weighted": 40.0,
+  "composite_score_raw": "25/40 = 62.5%",
+  "composite_score_weighted": "65.0%",
+  "status": "OK"
+}

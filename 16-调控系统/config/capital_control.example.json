@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "mode": "dynamic",
+  "enabled_systems": [
+    "v15_martin",
+    "yijing_bcrm",
+    "agent_a",
+    "agent_b",
+    "agent_c_memory",
+    "three_screen"
+  ],
+  "cache_ttl_sec": 60,
+  "health_thresholds": {
+    "healthy_used_pct_max": 50.0,
+    "warning_used_pct_max": 80.0
+  },
+  "fallback_static_budget": {
+    "v15_martin": 260.0,
+    "yijing_bcrm": 150.0,
+    "agent_a": 60.0,
+    "agent_b": 60.0,
+    "agent_c_memory": 0.0,
+    "three_screen": 200.0
+  },
+  "account_mapping": {
+    "v15_martin": "okx_live",
+    "yijing_bcrm": "okx_simulated",
+    "agent_a": "hyperliquid",
+    "agent_b": "hyperliquid",
+    "agent_c_memory": "hyperliquid",
+    "three_screen": "aster"
+  },
+  "phase2": {
+    "enabled": false,
+    "high_pressure_actions_to_block": ["RAISE_TP"],
+    "high_pressure_confidence_multiplier": 0.8
+  }
+}

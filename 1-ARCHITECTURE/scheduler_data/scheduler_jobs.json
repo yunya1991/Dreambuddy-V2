@@ -1,0 +1,19 @@
+[
+  {
+    "name": "scan_main",
+    "cron_expr": "*/15 * * * *",
+    "enabled": true,
+    "symbols": [
+      "BTC",
+      "ETH",
+      "SOL",
+      "AVAX",
+      "LINK",
+      "ARB",
+      "OP",
+      "DOT"
+    ],
+    "dry_run": true,
+    "exchange": "hyperliquid"
+  }
+]

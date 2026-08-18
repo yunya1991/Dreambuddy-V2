@@ -1,0 +1,89 @@
+{
+  "template_id": "APP-1785718162820",
+  "name": "configuration 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "configuration 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "任务涉及 6 个文件",
+    "action_count": 6,
+    "files_touched": [
+      "experiments/ab-trading/data/agent_b_graph.json",
+      "4-MEMORY/0-元记忆/template_mappings.json",
+      "experiments/ab-trading/data/agent_b_memory.json",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1785717523959.json",
+      "experiments/ab-trading/data/agent_a_llm_quota.json",
+      "experiments/ab-trading/data/agent_a_memory.json"
+    ],
+    "duration_minutes": 10.6,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1785718801.490001,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "configuration",
+    "reproducible_steps": [
+      "modified: experiments/ab-trading/data/agent_a_memory.json",
+      "modified: experiments/ab-trading/data/agent_a_llm_quota.json",
+      "modified: experiments/ab-trading/data/agent_b_graph.json",
+      "added: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1785717523959.json",
+      "modified: 4-MEMORY/0-元记忆/template_mappings.json",
+      "modified: experiments/ab-trading/data/agent_b_memory.json"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "experiments/ab-trading/data/agent_b_graph.json",
+        "4-MEMORY/0-元记忆/template_mappings.json",
+        "experiments/ab-trading/data/agent_b_memory.json",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1785717523959.json",
+        "experiments/ab-trading/data/agent_a_llm_quota.json",
+        "experiments/ab-trading/data/agent_a_memory.json"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

@@ -1,0 +1,37 @@
+{
+  "template_id": "APP-neg",
+  "name": "t",
+  "steps": [
+    "s"
+  ],
+  "description": "t",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "tdd",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "",
+    "action_count": 0,
+    "files_touched": [],
+    "duration_minutes": 0,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1785686126.7129102,
+    "parent_skill_ids": [
+      "tdd"
+    ]
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

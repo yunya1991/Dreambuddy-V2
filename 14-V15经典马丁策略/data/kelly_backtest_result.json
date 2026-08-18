@@ -1,0 +1,217 @@
+{
+  "base_pct": 0.22,
+  "kelly_fraction": 0.5,
+  "max_risk_pct": 0.02,
+  "results": [
+    {
+      "coin": "BTC",
+      "base": {
+        "total_return_pct": -24.01,
+        "max_drawdown_pct": 24.25,
+        "sharpe_ratio": -1.1072,
+        "total_trades": 9,
+        "win_rate": 0.3333
+      },
+      "kelly": {
+        "total_return_pct": -20.79,
+        "max_drawdown_pct": 23.56,
+        "sharpe_ratio": -0.6942,
+        "total_trades": 9,
+        "win_rate": 0.4444,
+        "effective_base_pct": 0.22
+      },
+      "kelly_params": {
+        "p": 0.5,
+        "b": 1.0,
+        "f_star": 0.0,
+        "f_fractional": 0.0,
+        "f_capped": 0.0,
+        "final_pct": 0.22,
+        "avg_win_pct": 0.0,
+        "avg_loss_pct": 0.0,
+        "raw_p": 0.0,
+        "raw_b": 0.0,
+        "total_trades": 9,
+        "win_count": 0,
+        "loss_count": 0,
+        "used_kelly": false,
+        "reason": "交易数不足(9<20)，使用基线22%"
+      }
+    },
+    {
+      "coin": "ETH",
+      "base": {
+        "total_return_pct": -6.57,
+        "max_drawdown_pct": 9.72,
+        "sharpe_ratio": -0.0653,
+        "total_trades": 55,
+        "win_rate": 0.5273
+      },
+      "kelly": {
+        "total_return_pct": -0.58,
+        "max_drawdown_pct": 0.89,
+        "sharpe_ratio": -0.3364,
+        "total_trades": 55,
+        "win_rate": 0.5273,
+        "effective_base_pct": 0.02
+      },
+      "kelly_params": {
+        "p": 0.5231818181818181,
+        "b": 0.7644343117697351,
+        "f_star": 0,
+        "f_fractional": 0.0,
+        "f_capped": 0,
+        "final_pct": 0.02,
+        "avg_win_pct": 1.143793103448276,
+        "avg_loss_pct": 1.5823076923076924,
+        "raw_p": 0.5272727272727272,
+        "raw_b": 0.7228638961996883,
+        "total_trades": 55,
+        "win_count": 29,
+        "loss_count": 26,
+        "used_kelly": true,
+        "reason": "凯利建议降仓: f*=0.0000 → 0.5x=0.0000 → 风控=0.0000 → 触底最小2%"
+      }
+    },
+    {
+      "coin": "SOL",
+      "base": {
+        "total_return_pct": -10.29,
+        "max_drawdown_pct": 11.42,
+        "sharpe_ratio": -0.7771,
+        "total_trades": 67,
+        "win_rate": 0.4776
+      },
+      "kelly": {
+        "total_return_pct": -0.91,
+        "max_drawdown_pct": 0.96,
+        "sharpe_ratio": -1.1563,
+        "total_trades": 66,
+        "win_rate": 0.4697,
+        "effective_base_pct": 0.02
+      },
+      "kelly_params": {
+        "p": 0.47424242424242424,
+        "b": 0.6523311491935484,
+        "f_star": 0,
+        "f_fractional": 0.0,
+        "f_capped": 0,
+        "final_pct": 0.02,
+        "avg_win_pct": 0.9077419354838709,
+        "avg_loss_pct": 1.536,
+        "raw_p": 0.4696969696969697,
+        "raw_b": 0.5909778225806451,
+        "total_trades": 66,
+        "win_count": 31,
+        "loss_count": 35,
+        "used_kelly": true,
+        "reason": "凯利建议降仓: f*=0.0000 → 0.5x=0.0000 → 风控=0.0000 → 触底最小2%"
+      }
+    },
+    {
+      "coin": "ARB",
+      "base": {
+        "total_return_pct": -1.24,
+        "max_drawdown_pct": 3.16,
+        "sharpe_ratio": -0.4389,
+        "total_trades": 61,
+        "win_rate": 0.541
+      },
+      "kelly": {
+        "total_return_pct": -0.11,
+        "max_drawdown_pct": 0.29,
+        "sharpe_ratio": -0.4389,
+        "total_trades": 61,
+        "win_rate": 0.541,
+        "effective_base_pct": 0.02
+      },
+      "kelly_params": {
+        "p": 0.5348360655737705,
+        "b": 0.762244863857767,
+        "f_star": 0,
+        "f_fractional": 0.0,
+        "f_capped": 0,
+        "final_pct": 0.02,
+        "avg_win_pct": 0.933030303030303,
+        "avg_loss_pct": 1.2953571428571429,
+        "raw_p": 0.5409836065573771,
+        "raw_b": 0.7202880751267847,
+        "total_trades": 61,
+        "win_count": 33,
+        "loss_count": 28,
+        "used_kelly": true,
+        "reason": "凯利建议降仓: f*=0.0000 → 0.5x=0.0000 → 风控=0.0000 → 触底最小2%"
+      }
+    },
+    {
+      "coin": "OP",
+      "base": {
+        "total_return_pct": -1.29,
+        "max_drawdown_pct": 3.78,
+        "sharpe_ratio": -0.4093,
+        "total_trades": 66,
+        "win_rate": 0.4848
+      },
+      "kelly": {
+        "total_return_pct": -0.11,
+        "max_drawdown_pct": 0.35,
+        "sharpe_ratio": -0.4093,
+        "total_trades": 66,
+        "win_rate": 0.4848,
+        "effective_base_pct": 0.02
+      },
+      "kelly_params": {
+        "p": 0.4871212121212121,
+        "b": 0.9361334818368746,
+        "f_star": 0,
+        "f_fractional": 0.0,
+        "f_capped": 0,
+        "final_pct": 0.02,
+        "avg_win_pct": 1.190625,
+        "avg_loss_pct": 1.2873529411764706,
+        "raw_p": 0.48484848484848486,
+        "raw_b": 0.9248629198080878,
+        "total_trades": 66,
+        "win_count": 32,
+        "loss_count": 34,
+        "used_kelly": true,
+        "reason": "凯利建议降仓: f*=0.0000 → 0.5x=0.0000 → 风控=0.0000 → 触底最小2%"
+      }
+    },
+    {
+      "coin": "UNI",
+      "base": {
+        "total_return_pct": -2.24,
+        "max_drawdown_pct": 3.41,
+        "sharpe_ratio": -0.8427,
+        "total_trades": 73,
+        "win_rate": 0.5342
+      },
+      "kelly": {
+        "total_return_pct": -0.2,
+        "max_drawdown_pct": 0.31,
+        "sharpe_ratio": -0.8427,
+        "total_trades": 73,
+        "win_rate": 0.5342,
+        "effective_base_pct": 0.02
+      },
+      "kelly_params": {
+        "p": 0.5291095890410958,
+        "b": 0.7231616654314391,
+        "f_star": 0,
+        "f_fractional": 0.0,
+        "f_capped": 0,
+        "final_pct": 0.02,
+        "avg_win_pct": 0.8851282051282052,
+        "avg_loss_pct": 1.3126470588235295,
+        "raw_p": 0.5342465753424658,
+        "raw_b": 0.674307841684046,
+        "total_trades": 73,
+        "win_count": 39,
+        "loss_count": 34,
+        "used_kelly": true,
+        "reason": "凯利建议降仓: f*=0.0000 → 0.5x=0.0000 → 风控=0.0000 → 触底最小2%"
+      }
+    }
+  ]
+}

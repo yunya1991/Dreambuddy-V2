@@ -1,0 +1,56 @@
+[
+  {
+    "bindBase": "social_heat_event_score__btc__all__na",
+    "affects": "community_impulse / narrative_stress",
+    "path": "source_snapshot.social_sentiment -> feature_cube.narrative.sentiment_impulse -> narrative_stress.trigger_reasons[]",
+    "gate": "execution_filter=slowdown"
+  },
+  {
+    "bindBase": "smart_money_inflow_score__all__all__all",
+    "affects": "community_effective_score / narrative_stress",
+    "path": "source_snapshot.smart_money -> feature_cube.narrative.flow_heat -> community_effective_score",
+    "gate": "risk_action_proposal=reduce"
+  },
+  {
+    "bindBase": "whale_transfer_count__btc__all__btc",
+    "affects": "narrative_stress / risk_flags",
+    "path": "source_snapshot.onchain_whale -> feature_cube.onchain.abnormal_path -> narrative_stress.trigger_reasons[]",
+    "gate": "risk_action_proposal=slowdown"
+  },
+  {
+    "bindBase": "funding_rate_bps__btc__binance__na",
+    "affects": "narrative_stress",
+    "path": "source_snapshot.derivatives -> leverage_fragility -> NarrativeStress(双确认)",
+    "gate": "risk_action_proposal=reduce"
+  },
+  {
+    "bindBase": "oi_usd__btc__coinglass__na",
+    "affects": "narrative_stress",
+    "path": "source_snapshot.derivatives -> leverage_fragility -> NarrativeStress(双确认)",
+    "gate": "execution_filter=slowdown"
+  },
+  {
+    "bindBase": "market_breadth_score__all__all__na",
+    "affects": "community_effective_score / narrative_stress",
+    "path": "source_snapshot.market.market_summary -> feature_cube.market.regime_context -> community_effective_score",
+    "gate": "execution_filter=slowdown"
+  },
+  {
+    "bindBase": "dominance_shift_score__btc__all__na",
+    "affects": "narrative_stress",
+    "path": "feature_cube.market.sector_rotation -> risk_preference_shift -> narrative_stress.trigger_reasons[]",
+    "gate": "risk_action_proposal=reduce"
+  },
+  {
+    "bindBase": "defi_tvl_momentum_score__all__defi__na",
+    "affects": "community_effective_score",
+    "path": "feature_cube.onchain.defi_liquidity -> liquidity_momentum -> community_effective_score",
+    "gate": "execution_filter=hold_or_slowdown"
+  },
+  {
+    "bindBase": "macro_event_pressure_score__all__all__na",
+    "affects": "narrative_stress / risk_flags",
+    "path": "feature_cube.event_macro.shock_layer -> stress_overlay -> narrative_stress.trigger_reasons[]",
+    "gate": "risk_action_proposal=hold_reduce_hedge"
+  }
+]

@@ -1,0 +1,72 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        args: [--fix]
+        language_version: python3
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff (format)
+        language_version: python3
+        types_or: [python, pyi]
+
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 24.8.0
+    hooks:
+      - id: black
+        name: black
+        language_version: python3
+        types_or: [python, pyi]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        name: trim trailing whitespace
+      - id: end-of-file-fixer
+        name: fix end of files
+      - id: check-yaml
+        name: check yaml
+      - id: check-json
+        name: check json
+      - id: check-added-large-files
+        name: check for added large files
+        args: ['--maxkb=5000']
+      - id: check-case-conflict
+        name: check case conflicts
+      - id: check-merge-conflict
+        name: check for merge conflicts
+      - id: detect-private-key
+        name: detect private keys
+
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-blanket-noqa
+        name: check blanket noqa
+      - id: python-check-mock-methods
+        name: check mock methods
+      - id: python-no-eval
+        name: no eval()
+      - id: python-use-type-annotations
+        name: use type annotations
+
+  - repo: local
+    hooks:
+      - id: pytest-quick
+        name: pytest (quick)
+        entry: python -m pytest -x -q -m "not slow and not integration and not e2e and not stress"
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [manual]
+
+      - id: debt-check
+        name: check for new TODO/FIXME
+        entry: bash -c 'grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.py" . | grep -v "test_" | grep -v "__pycache__" | wc -l && echo "Reminder: Track new tech debt in DEBT_INDEX.md"'
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [manual]

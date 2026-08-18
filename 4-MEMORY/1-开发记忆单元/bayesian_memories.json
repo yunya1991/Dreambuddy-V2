@@ -1,0 +1,62 @@
+{
+  "updated_at": "2026-07-31T15:46:13.156348",
+  "memory_count": 3,
+  "schema_version": 2,
+  "memories": [
+    {
+      "memory_id": "GM-DEV-001",
+      "content": "代码变更必须同步更新文档，否则将导致理论与实践不一致",
+      "category": "principle",
+      "confidence": 1.0,
+      "quality_level": "B",
+      "verify_count": 1,
+      "conflict_count": 0,
+      "beta_alpha": 2,
+      "beta_beta": 1,
+      "created_at": "2026-07-27T11:05:04.472246",
+      "last_updated": "2026-07-27T11:05:04.472246",
+      "source": "工程实践",
+      "tags": [
+        "文档同步",
+        "A8校验"
+      ]
+    },
+    {
+      "memory_id": "GM-DEV-002",
+      "content": "新功能开发前必须先进行 A1 调研，充分了解上下文和历史决策",
+      "category": "methodology",
+      "confidence": 0.739459,
+      "quality_level": "C",
+      "verify_count": 0,
+      "conflict_count": 0,
+      "beta_alpha": 1,
+      "beta_beta": 1,
+      "created_at": "2026-07-27T11:05:04.472065",
+      "last_updated": "2026-07-29T07:49:56.553716",
+      "source": "A1 SKILL 实践",
+      "tags": [
+        "A1调研",
+        "开发流程"
+      ]
+    },
+    {
+      "memory_id": "GM-DEV-003",
+      "content": "subprocess + shlex.split 在设置 PYTHONPATH 等环境变量时会失败，应使用 shell=True",
+      "category": "lesson",
+      "confidence": 0.6,
+      "quality_level": "C",
+      "verify_count": 0,
+      "conflict_count": 0,
+      "beta_alpha": 1,
+      "beta_beta": 1,
+      "created_at": "2026-07-27T11:05:04.472163",
+      "last_updated": "2026-07-27T11:05:04.472163",
+      "source": "L3 调度器崩溃案例",
+      "tags": [
+        "subprocess",
+        "环境变量",
+        "反模式"
+      ]
+    }
+  ]
+}

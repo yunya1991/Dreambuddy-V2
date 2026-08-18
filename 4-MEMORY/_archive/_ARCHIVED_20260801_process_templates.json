@@ -1,0 +1,141 @@
+{
+  "TDD-001": {
+    "template_id": "TDD-001",
+    "name": "测试驱动开发",
+    "steps": [
+      "理解需求",
+      "写失败测试",
+      "写最小实现",
+      "测试通过",
+      "重构"
+    ],
+    "description": "先写测试再写代码的工程实践",
+    "confidence": 0.85,
+    "verify_count": 15,
+    "quality_level": "A",
+    "source": "software-engineering-best-practices",
+    "tags": [
+      "testing",
+      "development",
+      "quality"
+    ],
+    "layer": "meta",
+    "parent_template_id": null,
+    "metadata": {}
+  },
+  "DEBUG-001": {
+    "template_id": "DEBUG-001",
+    "name": "系统化调试",
+    "steps": [
+      "复现问题",
+      "定位根因",
+      "编写修复",
+      "验证修复",
+      "添加防御"
+    ],
+    "description": "科学调试方法论",
+    "confidence": 0.8,
+    "verify_count": 12,
+    "quality_level": "A",
+    "source": "software-engineering-best-practices",
+    "tags": [
+      "debugging",
+      "troubleshooting"
+    ],
+    "layer": "meta",
+    "parent_template_id": null,
+    "metadata": {}
+  },
+  "REFACTOR-001": {
+    "template_id": "REFACTOR-001",
+    "name": "代码重构",
+    "steps": [
+      "识别坏味道",
+      "小步修改",
+      "运行测试",
+      "验证行为"
+    ],
+    "description": "安全重构的渐进式方法",
+    "confidence": 0.75,
+    "verify_count": 10,
+    "quality_level": "A",
+    "source": "software-engineering-best-practices",
+    "tags": [
+      "refactoring",
+      "clean-code"
+    ],
+    "layer": "meta",
+    "parent_template_id": null,
+    "metadata": {}
+  },
+  "REVIEW-001": {
+    "template_id": "REVIEW-001",
+    "name": "代码审查",
+    "steps": [
+      "检查逻辑正确性",
+      "检查边界条件",
+      "检查命名清晰度",
+      "检查文档完整性"
+    ],
+    "description": "系统性代码审查流程",
+    "confidence": 0.7,
+    "verify_count": 8,
+    "quality_level": "A",
+    "source": "software-engineering-best-practices",
+    "tags": [
+      "review",
+      "quality"
+    ],
+    "layer": "meta",
+    "parent_template_id": null,
+    "metadata": {}
+  },
+  "DESIGN-001": {
+    "template_id": "DESIGN-001",
+    "name": "系统化设计",
+    "steps": [
+      "明确需求",
+      "分析矛盾",
+      "设计方案",
+      "验证可行性",
+      "落地实现"
+    ],
+    "description": "系统化设计方法论（对齐矛盾分析）",
+    "confidence": 0.7,
+    "verify_count": 5,
+    "quality_level": "A",
+    "source": "systems-engineering",
+    "tags": [
+      "design",
+      "architecture",
+      "contradiction"
+    ],
+    "layer": "meta",
+    "parent_template_id": null,
+    "metadata": {}
+  },
+  "TDD-DEBUG-001": {
+    "template_id": "TDD-DEBUG-001",
+    "name": "TDD+调试复合流程",
+    "steps": [
+      "复现问题",
+      "写失败测试",
+      "定位根因",
+      "写最小实现",
+      "测试通过"
+    ],
+    "description": "TDD与调试结合的复合流程",
+    "confidence": 0.65,
+    "verify_count": 3,
+    "quality_level": "B",
+    "source": "composed-practice",
+    "tags": [
+      "testing",
+      "debugging",
+      "composite"
+    ],
+    "layer": "meta",
+    "parent_template_id": null,
+    "metadata": {}
+  }
+}

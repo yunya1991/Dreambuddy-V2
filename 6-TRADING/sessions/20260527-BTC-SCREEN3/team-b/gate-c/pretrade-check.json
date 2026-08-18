@@ -1,0 +1,106 @@
+{
+  "session_id": "20260527-BTC-SCREEN3",
+  "skill": "dream-pretrade-gatekeeper",
+  "date": "2026-05-27",
+  "hard_gates": {
+    "H001_capital_cap": {
+      "result": "PASS",
+      "detail": "L0=5 <= 50"
+    },
+    "H002_direction_screen1": {
+      "result": "PASS",
+      "detail": "SHORT == screen1_direction"
+    },
+    "H003_screen1_valid": {
+      "result": "PASS",
+      "detail": "valid_until=2026-06-09 > today"
+    },
+    "H004_no_conflict_position": {
+      "result": "PASS",
+      "detail": "status=no_position"
+    },
+    "H005_sl_defined": {
+      "result": "PASS",
+      "detail": "SL=0,600 defined"
+    },
+    "H006_risk_pct": {
+      "result": "PASS",
+      "detail": "L0 risk=1.2% of cap < 4%"
+    },
+    "H007_phase0_complete": {
+      "result": "PASS",
+      "detail": "P0.1-P0.6 all OK (tavily)"
+    },
+    "H008_no_hard_block": {
+      "result": "PASS",
+      "detail": "No SCREEN1_BLOCKED, no PARALLEL_INPUT_INCOMPLETE"
+    },
+    "H009_constitution": {
+      "result": "PASS",
+      "detail": "No proposal auto-deployment"
+    }
+  },
+  "hard_gates_all_pass": true,
+  "red_team_flag": false,
+  "confidence_threshold": 60,
+  "ach_verification": {
+    "method": "Competing Hypotheses Analysis (IA-GC)",
+    "hypothesis_a": {
+      "label": "入场有效 (Entry Valid)",
+      "evidence": [
+        {
+          "item": "资金费率方向与入场方向一致(SHORT)",
+          "diagnostic": "HIGH",
+          "result": "ALIGNED",
+          "supports": "A"
+        },
+        {
+          "item": "screen1_btc_price_basis偏差<5% (0.37%)",
+          "diagnostic": "HIGH",
+          "result": "PASS",
+          "supports": "A"
+        }
+      ],
+      "supporting_count": 2
+    },
+    "hypothesis_b": {
+      "label": "虚假信号 (False Signal)",
+      "evidence": [
+        {
+          "item": "A7 gate score <= 30/40 (28)",
+          "diagnostic": "MEDIUM",
+          "result": "B_FAVORED",
+          "supports": "B"
+        },
+        {
+          "item": "入场区未到达 (7,267 < 7,500)",
+          "diagnostic": "HIGH",
+          "result": "B_FAVORED",
+          "supports": "B"
+        },
+        {
+          "item": "ETF 9日+.7B流入 (看涨逆风)",
+          "diagnostic": "MEDIUM",
+          "result": "B_FAVORED",
+          "supports": "B"
+        }
+      ],
+      "supporting_count": 3
+    },
+    "ach_result": "HYPOTHESIS_B_WINS",
+    "ach_rationale": "Hypothesis B (false signal) 证据数3 >= Hypothesis A 证据数2。核心问题：入场区尚未到达，A7实践门禁未通过。技术信号尚不具备。",
+    "ach_action": "Gate C降级为SKIP（按TRIGGER_PROMPTS规则：假设B诊断证据数 >= 假设A）"
+  },
+  "composite_confidence": 57,
+  "composite_confidence_detail": {
+    "signal_score_weighted": "65.0%",
+    "entry_zone_penalty": "-8%",
+    "final": "57%"
+  },
+  "threshold_check": "57% < 60% threshold → SKIP",
+  "ach_summary": "Hypothesis B wins (3 vs 2). Entry zone not reached. A7 score 28 < 30. ETF bullish headwind. composite_confidence=57% < 60%.",
+  "result": "SKIP",
+  "skip_reason": "ENTRY_ZONE_NOT_REACHED",
+  "skip_detail": "当前价格7,267低于入场区7,500-8,000。等待价格到达阻力区并出现拒绝信号（长上影线 or 成交量萎缩）。",
+  "next_check": "下一次Team B检查时重新评估（明日09:00 CronCreate）"
+}

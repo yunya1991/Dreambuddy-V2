@@ -1,0 +1,128 @@
+{
+  "date": "2026-07-09",
+  "time": "00:55",
+  "regime": "BEAR_RECOVERY",
+  "regime_level": 3,
+  "regime_level_desc": "⚠️⚠️⚠️",
+  "confidence": 82,
+  "confidence_change": "+10pp",
+  "prev_regime": "BULL_RECOVERY",
+  "prev_regime_level": 2,
+  "regime_change": "DOWNGRADE from BULL_RECOVERY→BEAR_RECOVERY",
+  "btc_price": 62090.4,
+  "btc_24h_change": -3.10,
+  "btc_7d_change": 0.82,
+  "eth_price": 1736.76,
+  "sol_price": 77.29,
+  "fgi": 20,
+  "fgi_class": "Extreme Fear",
+  "fgi_change": "-7 from 27",
+  "funding_rate": 0.0000940178,
+  "funding_rate_days_positive": 26,
+  "etf_net_10d": -1844.7,
+  "etf_last_positive": "2026-07-06 +$260.8M",
+  "si_index": -12,
+  "si_index_class": "NEUTRAL偏BEAR",
+  "si_index_prev": 45,
+  "si_index_change": "-57",
+  "position_mapping": "0.2-0.3x标准仓位",
+  "three_screen": {
+    "weekly": -2,
+    "daily": -2,
+    "hourly": -1,
+    "total": -5,
+    "total_class": "STRONG_BEAR偏BEAR"
+  },
+  "ma_status": {
+    "ma5": 62944,
+    "ma10": 61648,
+    "ma20": 61876,
+    "btc_vs_ma5": -854,
+    "btc_vs_ma10": 443,
+    "ma_cross": "GOLDEN (narrowing +1297, -38% from +2082)"
+  },
+  "rsi_14": 47.1,
+  "contradictions": [
+    {
+      "id": "CX_033",
+      "status": "NEW/P0",
+      "pair": "伊朗停火破裂 vs 市场韧性",
+      "side_a": "伊朗停火OVER+油价+7%",
+      "side_b": "鲸鱼积累+费率正值",
+      "dominant": "A",
+      "direction": "恐慌→防御"
+    },
+    {
+      "id": "CX_034",
+      "status": "NEW/P0",
+      "pair": "通胀陷阱 vs 降息预期",
+      "side_a": "油价暴涨→CPI上行",
+      "side_b": "Fed仍预期降息",
+      "dominant": "A偏强",
+      "direction": "鹰派→压制"
+    },
+    {
+      "id": "CX_031",
+      "status": "升级",
+      "pair": "恐惧 vs 反弹",
+      "side_a": "FGI=20 Extreme Fear",
+      "side_b": "BTC仍高于MA10+鲸鱼积累",
+      "dominant": "A偏强",
+      "direction": "恐惧加剧"
+    },
+    {
+      "id": "CX_030",
+      "status": "维持",
+      "pair": "鲸鱼积累 vs ETF流出",
+      "side_a": "270K BTC@$59K",
+      "side_b": "$1.84B/10日流出",
+      "dominant": "中性→B偏强",
+      "direction": "流出加剧"
+    },
+    {
+      "id": "CX_021",
+      "status": "降级",
+      "pair": "滞胀 vs 复苏",
+      "side_a": "CPI 4.2%+油价",
+      "side_b": "S&P 7,504近ATH",
+      "dominant": "次要",
+      "direction": "油价加剧滞胀"
+    }
+  ],
+  "key_levels": {
+    "previous_high": 64729,
+    "resistance_1": 64000,
+    "ma5": 62944,
+    "current": 62090,
+    "ma10_support": 61648,
+    "whale_cost": 59000,
+    "previous_low": 58384,
+    "structural_support": 55000
+  },
+  "72h_watch": {
+    "iran_72h": "军事行动72h窗口→升级=防御/降温=反弹",
+    "ma10_test": "BTC是否守住$61,648",
+    "cpi_7_14": "CPI数据<4.0%=鸽派/>4.5%=鹰派",
+    "etf_confirm": "连续3日流入=转折/继续流出=确认"
+  },
+  "p0_events": [
+    "伊朗停火破裂 — 特朗普宣布'OVER'",
+    "美伊互相军事打击 — 80+目标 vs 85基地",
+    "油价暴涨7% — WTI $75.45 / Brent $79.80",
+    "霍尔木兹海峡通行量36艘/日(from 100+)",
+    "S&P 500 -0.5% / Dow -650pts / Nasdaq -1.2%"
+  ],
+  "downgrade_reasons": [
+    "伊朗停火破裂 → P0级地缘黑天鹅",
+    "BTC跌破MA5 → 短期趋势反转",
+    "FGI暴跌至20 → 恐惧急剧恶化",
+    "ETF近10日净流出$1.84B → 机构持续撤离",
+    "油价+7% → 通胀→Fed鹰派 → 利率压制"
+  ],
+  "recovery_not_acceleration_reasons": [
+    "费率仍正值(26天) → 多头未完全崩溃",
+    "BTC仍高于MA10 → 中期支撑未破",
+    "鲸鱼积累持续 → 底部力量存在",
+    "MA金叉仍在 → 虽收窄但未死叉"
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "date": "2026-07-11",
+  "report_time": "2026-07-11T00:55:05+08:00",
+  "regime": "BEAR_RECOVERY",
+  "confidence": 0.75,
+  "level": 2,
+  "level_desc": "中低风险",
+  "signal": "NEUTRAL-BULL",
+  "si_index": 1,
+  "si_state": "NEUTRAL",
+  "three_screen": -1,
+  "three_screen_state": "NEUTRAL偏BEAR",
+  "market_data": {
+    "BTC": {
+      "price": 64038.4,
+      "change_24h_pct": 2.17,
+      "high_24h": 64675.0,
+      "low_24h": 62640.5,
+      "funding_rate": 0.0000947,
+      "ma5": 63191.66,
+      "ma10": 62711.84,
+      "atr5": 2252.8
+    },
+    "ETH": {
+      "price": 1793.58,
+      "change_24h_pct": 3.20,
+      "high_24h": 1812.82,
+      "low_24h": 1736.12,
+      "funding_rate": 0.0000027,
+      "ma5": 1767.16,
+      "ma10": 1767.13,
+      "atr5": 76.46
+    },
+    "SOL": {
+      "price": 77.92,
+      "change_24h_pct": 0.35,
+      "high_24h": 79.64,
+      "low_24h": 77.02,
+      "funding_rate": 0.0000726,
+      "ma5": 79.18,
+      "ma10": 80.31,
+      "atr5": 3.60
+    }
+  },
+  "sentiment": {
+    "fgi": 23,
+    "fgi_state": "Extreme Fear",
+    "fgi_yesterday": 22,
+    "fgi_last_week": 21,
+    "fgi_last_month": 9,
+    "total_crypto_market_cap_usd": "2.28T",
+    "btc_dominance_pct": 56.29
+  },
+  "etf_flows": {
+    "btc_etf_1d_btc": -1791,
+    "btc_etf_1d_usd_million": -84.9,
+    "eth_etf_1d_eth": -27487,
+    "btc_etf_3d_inflow_usd_million": 510.7,
+    "june_btc_etf_outflow_usd_billion": 4.51,
+    "note": "三日流入后7/8再度流出，机构端仍处反复"
+  },
+  "onchain": {
+    "whale_accumulation_btc_30d": 270000,
+    "whale_cost_basis_usd": 59000,
+    "exchange_reserves_btc": 2510000,
+    "exchange_30d_netflow_btc": -10207,
+    "exchange_30d_netflow_state": "Neutral"
+  },
+  "macro": {
+    "cpi_release_date": "2026-07-14T20:30:00-04:00",
+    "cpi_expected_headline_yoy": 3.9,
+    "cpi_expected_core_yoy": "2.9-3.0",
+    "fomc_meeting": "2026-07-28至2026-07-29",
+    "july_hold_probability_pct": 74.9,
+    "september_hike_probability_pct": 35.0,
+    "oil_wti": 71.80,
+    "oil_brent": 76.11,
+    "gold": 4075,
+    "iran_sanctions_deadline": "2026-07-17"
+  },
+  "a0_main_contradiction": "ETF机构赎回 vs 链上鲸鱼抄底吸筹",
+  "key_levels": {
+    "support": [62000, 60000, 59000, 57750],
+    "resistance": [65000, 67000, 70000]
+  },
+  "scenarios": [
+    {
+      "name": "区间震荡",
+      "probability": 0.45,
+      "range": [58000, 67000],
+      "trigger": "ETF与鲸鱼继续拉锯，宏观无惊喜"
+    },
+    {
+      "name": "向上突破",
+      "probability": 0.30,
+      "target": "70000+",
+      "trigger": "CPI低于预期、ETF连续大额流入、突破$67.3K"
+    },
+    {
+      "name": "向下破位",
+      "probability": 0.25,
+      "target": "55300以下",
+      "trigger": "CPI超预期、地缘升级、ETF大额流出、跌破$57.7K"
+    }
+  ],
+  "position_notes": {
+    "account": "dreamdemo",
+    "holdings": [
+      {"instId": "BTC-USDT-SWAP", "side": "short", "pos": 0.01, "avgPx": 62907.2, "upl": -0.1127, "lever": 2},
+      {"instId": "ETH-USDT-SWAP", "side": "short", "pos": 0.01, "avgPx": 1757.26, "upl": -0.0363, "lever": 3},
+      {"instId": "SOL-USDT-SWAP", "side": "short", "pos": 0.05, "avgPx": 78.96, "upl": 0.051, "lever": 3}
+    ]
+  },
+  "next_trigger": "2026-07-14美国6月CPI公布",
+  "recommended_action": "维持0.2-0.4x标准仓位，等待CPI与FOMC确认方向，短线关注$62K-$67K区间"
+}

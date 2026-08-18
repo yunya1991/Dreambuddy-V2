@@ -1,0 +1,34 @@
+{
+  "session_id": "20260527-BTC-SCREEN3",
+  "skill": "dream-risk-position-sizing",
+  "inputs": {
+    "capital_cap_usdt": 150,
+    "entry_price_estimate": 77650,
+    "stop_loss_price": 80600,
+    "direction": "SHORT"
+  },
+  "atr_estimate": 1800,
+  "stop_distance_pct": 3.8,
+  "sizing": {
+    "L0_pct": 30,
+    "L0_usdt": 45,
+    "L1_pct": 20,
+    "L1_usdt": 30,
+    "L2_pct": 20,
+    "L2_usdt": 30,
+    "L3_pct": 15,
+    "L3_usdt": 22.5,
+    "max_total_usdt": 127.5
+  },
+  "risk_per_trade": {
+    "L0_max_loss_usdt": 1.8,
+    "all_layers_max_loss_usdt": 5.1,
+    "risk_pct_of_cap": 3.4
+  },
+  "compliance": {
+    "single_trade_cap_ok": true,
+    "H001_capital_check": "PASS",
+    "H006_risk_pct": "1.2% L0 only"
+  },
+  "status": "OK"
+}

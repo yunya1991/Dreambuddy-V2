@@ -1,0 +1,43 @@
+{
+  "userId": "mem_test_01",
+  "memories": [
+    {
+      "id": "mem_1781668328669_0s29",
+      "type": "strategy_feedback",
+      "value": "止损设置严格一点",
+      "importance": 1,
+      "lastReinforced": 1781668575116,
+      "createdAt": 1781668328669,
+      "reinforcementCount": 8,
+      "source": "explicit_feedback",
+      "evidence": "止损设置严格一点"
+    },
+    {
+      "id": "mem_1781667959958_t4z2",
+      "type": "preferred_symbols",
+      "value": [
+        "BTC"
+      ],
+      "importance": 0.55,
+      "lastReinforced": 1781668125720,
+      "createdAt": 1781667959958,
+      "reinforcementCount": 2,
+      "source": "implicit_behavior",
+      "evidence": "用户启动 S系列策略链分析 BTC"
+    },
+    {
+      "id": "mem_1781668218526_xygp",
+      "type": "interaction_count",
+      "value": 1,
+      "importance": 0.2,
+      "lastReinforced": 1781668218526,
+      "createdAt": 1781668218526,
+      "reinforcementCount": 1,
+      "source": "pattern_inference",
+      "evidence": "S系列策略链第1次交互"
+    }
+  ],
+  "evolutionCount": 8,
+  "pruneCount": 0,
+  "updatedAt": "2026-06-17T03:56:15.116Z"
+}

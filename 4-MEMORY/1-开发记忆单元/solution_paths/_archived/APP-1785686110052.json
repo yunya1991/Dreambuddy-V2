@@ -1,0 +1,119 @@
+{
+  "template_id": "APP-1785686110052",
+  "name": "python-development 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "调用工具进行分析/实现",
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "python-development 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "test-driven-development",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat: add feature",
+    "action_count": 4,
+    "files_touched": [
+      "main.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "abc123",
+    "created_at": 1785686110.1009762,
+    "parent_skill_ids": [
+      "test-driven-development",
+      "writing-skills"
+    ],
+    "process_verify_report": {
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "test-driven-development": {
+        "score": 0.55,
+        "followed": true,
+        "checklist_matched": [
+          "Every new function/method has a test",
+          "All tests pass"
+        ],
+        "checklist_missed": [
+          "Watched each test fail before implementing",
+          "Each test failed for expected reason (feature missing, not typo)",
+          "Wrote minimal code to pass each test",
+          "Output pristine (no errors, warnings)",
+          "Tests use real code (mocks only if unavoidable)",
+          "Edge cases and errors covered"
+        ],
+        "gate_violations": []
+      },
+      "writing-skills": {
+        "score": 0.49,
+        "followed": true,
+        "checklist_matched": [
+          "Identify patterns in rationalizations/failures",
+          "Description written in third person",
+          "Build rationalization table from all test iterations",
+          "Re-test until bulletproof"
+        ],
+        "checklist_missed": [
+          "Create pressure scenarios (3+ combined pressures for discipline skills)",
+          "Run scenarios WITHOUT skill - document baseline behavior verbatim",
+          "Name uses only letters, numbers, hyphens (no parentheses/special chars)",
+          "YAML frontmatter with required `name` and `description` fields (max 1024 chars; see [spec](https://agentskills.io/specification))",
+          "Description starts with \"Use when...\" and includes specific triggers/symptoms",
+          "Keywords throughout for search (errors, symptoms, tools)",
+          "Clear overview with core principle",
+          "Address specific baseline failures identified in RED",
+          "Guidance form matches the failure type (see Match the Form to the Failure)",
+          "For behavior-shaping guidance: wording micro-tested against a no-guidance control (5+ reps, every flagged match read manually) — N/A for pure reference skills",
+          "Code inline OR link to separate file",
+          "One excellent example (not multi-language)",
+          "Run scenarios WITH skill - verify agents now comply",
+          "Identify NEW rationalizations from testing",
+          "Add explicit counters (if discipline skill)",
+          "Create red flags list",
+          "Small flowchart only if decision non-obvious",
+          "Quick reference table",
+          "Common mistakes section",
+          "No narrative storytelling",
+          "Supporting files only for tools or heavy reference",
+          "Commit skill to git and push to your fork (if configured)",
+          "Consider contributing back via PR (if broadly useful)"
+        ],
+        "gate_violations": []
+      }
+    },
+    "task_type": "python-development",
+    "reproducible_steps": [
+      "added: main.py",
+      "调用工具 recall: recall({'query': 'test'})",
+      "调用工具 record: record({'content': 'test'})",
+      "提交 commit abc123: feat: add feature"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "main.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

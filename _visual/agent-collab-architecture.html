@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AGENT 协作系统 v1 架构图</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0b0d12;
+        --panel: #121724;
+        --text: #e8ecf1;
+        --muted: #a7b0be;
+        --border: rgba(255, 255, 255, 0.08);
+        --accent: #7aa2ff;
+        --good: #3ddc97;
+        --warn: #ffcc66;
+        --bad: #ff5c7a;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: radial-gradient(1200px 800px at 20% 0%, rgba(122, 162, 255, 0.18), transparent 60%),
+          radial-gradient(900px 700px at 90% 10%, rgba(61, 220, 151, 0.12), transparent 55%),
+          var(--bg);
+        color: var(--text);
+      }
+      header {
+        padding: 28px 20px 10px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(18, 23, 36, 0.7), rgba(18, 23, 36, 0));
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+      .sub {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .wrap {
+        padding: 16px 20px 28px;
+        max-width: 1180px;
+        margin: 0 auto;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 14px;
+      }
+      .card {
+        background: rgba(18, 23, 36, 0.85);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 14px 10px;
+        overflow: hidden;
+      }
+      .card h2 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+      .card p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+      }
+      .dot.good {
+        background: var(--good);
+      }
+      .dot.warn {
+        background: var(--warn);
+      }
+      .dot.bad {
+        background: var(--bad);
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+      }
+      .full {
+        grid-column: 1 / -1;
+      }
+      .mermaid {
+        background: rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px;
+      }
+      footer {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      ul {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      li + li {
+        margin-top: 6px;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      @media (max-width: 980px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <h1>AGENT 协作系统 v1（GitHub 原生）架构图</h1>
+        <p class="sub">
+          目标：让多 AGENT 协作输出落在可见落脚点（PR 结构化评论 + 账本）并由 workflow 控制器自动推进
+          accepted → ledgered → archived → knowledge_synced。
+        </p>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <div class="grid">
+        <section class="card full">
+          <h2>1) 总览架构（控制面 / 执行面 / 裁决面 / 规则面）</h2>
+          <div class="legend">
+            <span class="chip"><span class="dot"></span>可见落脚点</span>
+            <span class="chip"><span class="dot good"></span>自动化写回</span>
+            <span class="chip"><span class="dot warn"></span>人为输出（可粘贴草稿）</span>
+            <span class="chip"><span class="dot bad"></span>硬阻断点</span>
+          </div>
+          <div class="mermaid">
+flowchart LR
+  subgraph Roles["三角色（强治理）"]
+    G["治理 AGENT<br/>任务树/排程/收口(巡检型)"]:::human
+    D["开发 AGENT<br/>改代码/跑 build+test"]:::human
+    V["验证 AGENT<br/>VALIDATION_RESULT 裁决"]:::human
+  end
+
+  subgraph Anchors["协作落脚点（GitHub 可见）"]
+    PR["PR #9<br/>结构化评论"]:::anchor
+    L1["ledger/tasks/index.json"]:::anchor
+    L2["ledger/rewards/index.json"]:::anchor
+  end
+
+  subgraph Rules["规则面（仓库内可审计）"]
+    TPL["templates/*<br/>STARTED/UPDATED/TEST_REPORT/VALIDATION_RESULT"]:::rule
+    CK["check_agent_collaboration.py<br/>decision/reason_codes/recommended_next_action"]:::rule
+    UP["update_agent_ledger.py<br/>apply_status_transition + reward"]:::rule
+  end
+
+  subgraph Automation["自动化执行面（GitHub Actions）"]
+    WF["agent-collaboration-claim-guard.yml<br/>(issue_comment触发)"]:::auto
+    CTRL["run_governance_ledger_cycle.py<br/>控制器（单入口）"]:::auto
+  end
+
+  D -->|STARTED / UPDATED / TEST_REPORT / DONE| PR
+  V -->|VALIDATION_RESULT (含 Governance Handoff)| PR
+  G -->|STARTED/UPDATED/BLOCKED 草稿 + 账本建议| PR
+
+  PR -->|触发| WF
+  WF --> CTRL
+  CTRL -->|build_payload| TPL
+  CTRL -->|checker| CK
+  CTRL -->|updater| UP
+  CTRL -->|写回| L1
+  CTRL -->|写回| L2
+
+  classDef anchor fill:#0e1528,stroke:#7aa2ff,stroke-width:1px,color:#e8ecf1;
+  classDef auto fill:#0f2430,stroke:#3ddc97,stroke-width:1px,color:#e8ecf1;
+  classDef rule fill:#221a2a,stroke:#ffcc66,stroke-width:1px,color:#e8ecf1;
+  classDef human fill:#141a22,stroke:#a7b0be,stroke-width:1px,color:#e8ecf1;
+          </div>
+          <footer>
+            关键点：只有 <span class="mono">[验证结论 / VALIDATION_RESULT]</span>（含 <span class="mono">Governance Handoff</span>）
+            才会触发控制器推进并写回账本；开发的 TEST_REPORT 是验证证据，不直接触发记账。
+          </footer>
+        </section>
+
+        <section class="card full">
+          <h2>2) 协议层（区块链式映射：声明链 / 交付块 / 验证块 / 记账）</h2>
+          <p>
+            把 GitHub 原生对象组织成“弱链式账本”：结构化评论是输入块，账本文件是索引真源；通过指针与摘要实现可追溯而非强共识。
+          </p>
+          <div class="mermaid">
+flowchart LR
+  subgraph Proto["协议对象（弱链式账本）"]
+    TASK["TaskRecord<br/>task_id / status / depends_on / sync_checkpoint"]:::p
+    CLAIM["Claim<br/>STARTED 评论"]:::p
+    TEST["Test Evidence<br/>TEST_REPORT 评论"]:::p
+    DONE["DeliveryBlock<br/>DONE 评论"]:::p
+    HEAD["Delivery Header<br/>commit_sha / changed_files / delivery_hash"]:::p
+    VAL["ValidationRecord<br/>VALIDATION_RESULT 评论<br/>score/decision/handoff"]:::p
+    REWARD["RewardRecord<br/>final_reward/credited_agent"]:::p
+    CLOSE["GovernanceClosure<br/>archive_summary/index_updates/faq_decision"]:::p
+  end
+
+  subgraph Store["账本真源（索引链头）"]
+    TIDX["ledger/tasks/index.json<br/>(当前状态索引)"]:::anchor
+    RIDX["ledger/rewards/index.json<br/>(奖励追加记录)"]:::anchor
+  end
+
+  CLAIM -->|"claim_pointer"| TASK
+  TEST -->|"evidence_ref"| DONE
+  DONE --> HEAD
+  DONE -->|"parent_pointer (optional)"| DONE
+  DONE -->|"claim_pointer"| CLAIM
+  VAL -->|"validation_pointer"| TASK
+  VAL -->|"handoff → requested_status"| TIDX
+  REWARD --> RIDX
+  TIDX --> TASK
+  TASK --> CLOSE
+  CLOSE -->|"closure_completed_at"| TIDX
+
+  classDef p fill:#1a1622,stroke:#ffcc66,stroke-width:1px,color:#e8ecf1;
+          </div>
+          <footer>
+            要点：不做“强共识链”，而做“可追溯指针链 + 可审计索引真源”。硬规则由 checker/updater 执行，评论/指针是证据链。
+          </footer>
+        </section>
+
+        <section class="card">
+          <h2>3) 最小闭环状态推进</h2>
+          <p>
+            目前控制器只承诺自动推进三段：accepted→ledgered→archived→knowledge_synced。
+            其余状态由人/协议驱动。
+          </p>
+          <div class="mermaid">
+stateDiagram-v2
+  [*] --> accepted
+  accepted --> ledgered: VALIDATION_RESULT\nDecision=ACCEPTED\nHandoff=ledgered
+  ledgered --> archived: VALIDATION_RESULT\nHandoff=archived
+  archived --> knowledge_synced: VALIDATION_RESULT\nHandoff=knowledge_synced\nclosure完整
+  knowledge_synced --> [*]
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>4) 触发与硬阻断点（最容易出“逻辑漏洞”的地方）</h2>
+          <ul>
+            <li><span class="mono">Task ID</span> 缺失：控制器直接 BLOCK（无法定位任务）。</li>
+            <li><span class="mono">Governance Handoff</span> 缺失：控制器 BLOCK（无法得知 requested_status）。</li>
+            <li>账本缺 Task：BLOCK（<span class="mono">RULE_TASK_NOT_FOUND</span>）。</li>
+            <li>shared-sync 且 <span class="mono">Current Sync State=pending</span> 但无 DESIGN_REVIEW：BLOCK。</li>
+            <li>幂等性：重复触发应 PASS 且不重复追加 reward（已做）。</li>
+            <li>权限：workflow 写回 main 需要 <span class="mono">contents: write</span>（已改）。</li>
+          </ul>
+        </section>
+
+        <section class="card full">
+          <h2>5) PR9 任务树如何支撑多 AGENT 协作（文档真源挂载）</h2>
+          <p>
+            任务的 <span class="mono">sync_checkpoint</span> 直接挂设计真源文件（例如 COMPANY_CENTRAL_HUB + 7-ARTIFACT-HUB-V2 子设计文档），
+            使协作不依赖“口头记忆”。
+          </p>
+          <div class="mermaid">
+flowchart TB
+  HUB["task-pr9-central-hub-v2-0<br/>COMPANY_CENTRAL_HUB + 子设计锚点"]:::t
+  BUILD["task-pr9-artifact-hub-v2-build-1<br/>npm ci/build/test green"]:::t
+  MODEL["task-pr9-ahv2-object-model-align-1<br/>OBJECT_MODEL 对齐"]:::t
+  CHAIN["task-pr9-ahv2-chain-workflows-plan-1<br/>CHAIN_WORKFLOWS 兼容护栏"]:::t
+  OPSUI["task-pr9-ahv2-ops-ui-skeleton-1<br/>OPS_UI_README 规划态骨架"]:::t
+
+  HUB --> BUILD
+  BUILD --> MODEL
+  MODEL --> CHAIN
+  BUILD --> OPSUI
+
+  classDef t fill:#101827,stroke:#7aa2ff,stroke-width:1px,color:#e8ecf1;
+          </div>
+          <footer>
+            你现在可以用它做“逻辑漏洞扫描”：每条边都对应 <span class="mono">depends_on + dependency_gate</span>；
+            每个节点的 <span class="mono">sync_checkpoint</span> 是“设计一致性验收锚点”。
+          </footer>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "dark",
+        themeVariables: {
+          fontFamily:
+            "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial",
+          primaryColor: "#0e1528",
+          primaryTextColor: "#e8ecf1",
+          primaryBorderColor: "rgba(255,255,255,0.18)",
+          lineColor: "rgba(255,255,255,0.25)",
+          secondaryColor: "#0f2430",
+          tertiaryColor: "#221a2a"
+        },
+        flowchart: {
+          curve: "basis"
+        }
+      });
+    </script>
+  </body>
+</html>

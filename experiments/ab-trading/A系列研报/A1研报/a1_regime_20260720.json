@@ -1,0 +1,285 @@
+{
+  "date": "2026-07-20",
+  "timestamp": "2026-07-20T00:55:12+08:00",
+  "regime": "BULL_RECOVERY_L2",
+  "regime_name": "BULL_RECOVERY",
+  "regime_level": 2,
+  "confidence": 72,
+  "si_index": 1,
+  "si_index_category": "NEUTRAL_BULL",
+  "three_screen": {
+    "weekly": 0,
+    "daily": 0,
+    "hourly": 0,
+    "composite": 0
+  },
+  "regime_change": {
+    "previous": "BEAR_RECOVERY_L2",
+    "previous_date": "2026-07-19",
+    "current": "BULL_RECOVERY_L2",
+    "change_type": "UPGRADE_L1_TO_L1",
+    "rationale": "7/19 BEAR_RECOVERY L2 维持伊朗升级担忧;但 7/20 数据显示 ETF 4 日连流入(累计$390M+)、FGI 25→28 改善、资金费率接近零(0.0027% 8h)、B 端韧性强化→从 BEAR 回升至 BULL 同级"
+  },
+  "market_snapshot": {
+    "btc_price": 64499.3,
+    "btc_24h_change_pct": 0.36,
+    "eth_price": 1865.62,
+    "eth_24h_change_pct": 0.91,
+    "sol_price": 75.82,
+    "sol_24h_change_pct": 0.88,
+    "fgi": 28,
+    "fgi_classification": "Fear",
+    "fgi_24h_change": 3,
+    "fgi_30d_avg": 19,
+    "funding_rate_btc": 0.0000267,
+    "funding_rate_eth": 0.0000661,
+    "etf_net_flow_1d_usd": 84800000,
+    "etf_trend": "5_consecutive_inflows",
+    "ibit_flow_1d_usd": 102700000,
+    "fbtc_flow_1d_usd": 2800000
+  },
+  "technical": {
+    "ma5": 64429.0,
+    "ma10": 64178.0,
+    "ma20": 62697.0,
+    "ma30": 60444.0,
+    "ma5_ma10_spread": 251.0,
+    "rsi14": 52.0,
+    "atr14": 1780.0,
+    "high_30d": 67253.3,
+    "low_30d": 57750.0,
+    "current_vs_low_pct": 11.7,
+    "position_in_30d_range_pct": 64.0,
+    "resistance": 65000,
+    "resistance_2": 65500,
+    "resistance_3": 67253,
+    "support": 63700,
+    "support_2": 62500,
+    "hard_support": 60000,
+    "extreme_support": 58384
+  },
+  "macro": {
+    "cpi_yoy": 3.5,
+    "cpi_yoy_expectation": 3.8,
+    "cpi_yoy_previous": 4.2,
+    "cpi_mom": -0.4,
+    "core_cpi_yoy": 2.6,
+    "core_cpi_mom": 0.0,
+    "fed_rate_range": "4.25-4.50%",
+    "july_hike_probability": 0.20,
+    "september_cut_probability": 0.45,
+    "wti_price": 84.0,
+    "wti_24h_change_pct": 1.83,
+    "wti_weekly_change_pct": 15.5,
+    "brent_price": 89.0,
+    "brent_24h_change_pct": 1.02,
+    "brent_weekly_change_pct": 15.9,
+    "gold_price": 4023,
+    "sp500": 7457.69,
+    "nasdaq": 25520.24,
+    "vix": 18.77,
+    "dxy": 100.0,
+    "fomc_next": "2026-07-28/29",
+    "fomc_status": "july_meeting_held"
+  },
+  "geopolitical": {
+    "iran_hormuz_status": "fully_closed",
+    "oil_tanker_incident": "2 tankers exploded 7/17",
+    "us_strikes_iran": "8 consecutive nights (7/12-7/19)",
+    "us_strike_7_19": "8th consecutive night",
+    "iran_retaliation": "shot down MQ-9 drone over Bushehr 7/19",
+    "iran_mou_status": "stopped complying per deputy FM 7/19",
+    "us_force_deployment": "2 carriers + 10K+ troops",
+    "hormuz_traffic": "8 ships/day (10% of pre-war)",
+    "sanctions_deadline": "2026-07-17 (passed, snapback activated)",
+    "escalation_risk": "HIGH",
+    "nuclear_strike_probability": 0.20
+  },
+  "etf_data": {
+    "flow_7_14_usd": 297000000,
+    "flow_7_16_usd": 79150000,
+    "flow_7_17_usd": 132300000,
+    "flow_7_18_usd": 84800000,
+    "ibit_7_17_usd": 136500000,
+    "ibit_7_18_usd": 102700000,
+    "fbtc_7_17_usd": -4180000,
+    "fbtc_7_18_usd": 2800000,
+    "consecutive_inflow_days": 5,
+    "weekly_cumulative_btc_usd": 75500000,
+    "weekly_cumulative_eth_usd": 105500000,
+    "total_aum_usd": 77800000000,
+    "ratio_to_btc_marketcap_pct": 6.04,
+    "cumulative_inflow_usd": 51220000000,
+    "ytd_inflow_usd": -5560000000
+  },
+  "key_events": [
+    {
+      "date": "2026-07-15",
+      "event": "CPI 3.5% 爆冷, 6 年首次环比负增长",
+      "impact": "BULL (已被地缘部分抵消)"
+    },
+    {
+      "date": "2026-07-16",
+      "event": "霍尔木兹海峡升级, 油价开始暴涨",
+      "impact": "BEAR"
+    },
+    {
+      "date": "2026-07-17",
+      "event": "两艘油轮在霍尔木兹海峡爆炸, 伊朗宣布完全关闭海峡",
+      "impact": "BEAR (P0)"
+    },
+    {
+      "date": "2026-07-17",
+      "event": "WTI 暴涨 4.48% 至 $82.49, Brent 涨 4.59% 至 $88.10",
+      "impact": "BEAR (P0)"
+    },
+    {
+      "date": "2026-07-17",
+      "event": "ETF 净流入 $132M (IBIT $136M), 4 日连续流入",
+      "impact": "BULL (对冲)"
+    },
+    {
+      "date": "2026-07-18",
+      "event": "BTC 收盘 $64,093 (+0.36%), 5 次冲 $65,000 未果",
+      "impact": "NEUTRAL"
+    },
+    {
+      "date": "2026-07-18",
+      "event": "ETF 净流入 $84.8M (IBIT $102.7M), 5 日连续流入",
+      "impact": "BULL (强化韧性)"
+    },
+    {
+      "date": "2026-07-19",
+      "event": "美军连续第八晚空袭伊朗",
+      "impact": "BEAR (P0)"
+    },
+    {
+      "date": "2026-07-19",
+      "event": "伊朗革命卫队在布什尔上空击落美军 MQ-9 无人机",
+      "impact": "BEAR (P0)"
+    },
+    {
+      "date": "2026-07-19",
+      "event": "伊朗副外长宣布停止履行伊美谅解备忘录",
+      "impact": "BEAR"
+    },
+    {
+      "date": "2026-07-19",
+      "event": "WTI 涨破 $84, Brent 涨破 $89 (本周 +15.5%/15.9%)",
+      "impact": "BEAR (P0)"
+    },
+    {
+      "date": "2026-07-19",
+      "event": "BTC 收盘 $64,549.5 (+0.71%), FGI 25→28 改善",
+      "impact": "BULL (韧性强化)"
+    },
+    {
+      "date": "2026-07-19",
+      "event": "资金费率降至 0.0000267 (8h), 较 7/19 下降 65%",
+      "impact": "NEUTRAL (方向性爆发前置)"
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "CX_033",
+      "name": "伊朗地缘升级 vs 市场韧性",
+      "side_a": "8 晚空袭 + MQ-9 击落 + 停止 MOU + 油价 $84+",
+      "side_b": "BTC 收 $64,549 + ETF 5 日连流入 + FGI 改善",
+      "bias": "A 仍主导但 B 强化",
+      "trend": "B 端通过结构性买盘消化 A 端利空, 韧性持续显现"
+    },
+    {
+      "id": "CX_034",
+      "name": "通胀陷阱 vs 降息预期",
+      "side_a": "油价 $84+ / 7 月 CPI 或反弹",
+      "side_b": "6 月 CPI 3.5% 爆冷",
+      "bias": "A 偏强",
+      "trend": "油价持续高位削弱 CPI 利多, 7 月加息概率回升至 20-35%"
+    },
+    {
+      "id": "CX_035",
+      "name": "油价回落 vs 制裁恢复",
+      "side_a": "7/17 制裁+油轮+8 晚空袭",
+      "side_b": "OPEC+ 增产乏力",
+      "bias": "A 持续主导",
+      "trend": "本周油价 +15.5%, A 占绝对优"
+    },
+    {
+      "id": "CX_031",
+      "name": "恐惧 vs 反弹韧性",
+      "side_a": "FGI=28 (Fear, 仍低于均值)",
+      "side_b": "ETF 4 日连流入 + 鲸鱼 270K BTC + FGI 改善",
+      "bias": "B 强化",
+      "trend": "FGI 脱离 Extreme Fear 区间, 情绪与价格背离信号加强"
+    },
+    {
+      "id": "CX_036",
+      "name": "MA 死叉 vs 鲸鱼积累",
+      "side_a": "5x 失败 $65,000 / MA5-MA10 差值收窄至 +251",
+      "side_b": "链上 270K BTC 积累 + 交易所储备 7 年低 + 金叉维持",
+      "bias": "B 中性",
+      "trend": "金叉维持但差值从 +441→+367→+251 持续收窄, 动能耗尽"
+    },
+    {
+      "id": "CX_037",
+      "name": "资金费率接近零 vs 历史极端",
+      "side_a": "BTC 8h 费率 0.0000267 (接近零)",
+      "side_b": "2018.12 / 2020.3 / 2022.11 历史极低费率后均方向性爆发",
+      "bias": "B 偏强",
+      "trend": "新增矛盾, 等待方向选择"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "情景一: 霍尔木兹维持封锁但无升级 + ETF 持续流入",
+      "probability": 0.40,
+      "wti_range": "80-86",
+      "btc_range": "63500-65000",
+      "action": "中性 0.3-0.5x, 等待 $65,000 突破信号"
+    },
+    {
+      "name": "情景二: 危机升级 (打击核设施)",
+      "probability": 0.30,
+      "wti_range": "90+",
+      "btc_range": "58000-60000",
+      "action": "全面防御 0.1-0.2x, 减仓避险"
+    },
+    {
+      "name": "情景三: 危机降级 (重开海峡)",
+      "probability": 0.30,
+      "wti_range": "75以下",
+      "btc_range": "65000-67000",
+      "action": "转中性偏多 0.5-0.6x, 突破追多"
+    }
+  ],
+  "key_observations": [
+    "BTC 5 次冲击 $65,000 全部失败, 形成强阻力位",
+    "FGI 25→28 改善脱离 Extreme Fear 区间, 情绪修复",
+    "资金费率 0.0000267 8h 接近零, 历史对应方向性爆发",
+    "ETF 5 日连续流入累计 $390M+, 结构性买盘持续",
+    "伊朗连续 8 晚空袭 + MQ-9 击落, 地缘利空持续",
+    "油价本周 +15.5%, 但 BTC 同期 -0.36%, 韧性显著",
+    "ETH 巨鲸 3 日累计买入 89,396 ETH ($165M), 现货买盘积极",
+    "BTC-纳指相关 +0.72, 科技股大跌(芯片股)为独立风险",
+    "MA5-MA10 差值从 +441 持续收窄至 +251, 多头动能耗尽",
+    "30 日区间 $57,750-$67,253, 当前 64% 分位, 中位震荡"
+  ],
+  "operations_advice": {
+    "position": "0.3-0.5x 标准仓位",
+    "stance": "中性偏多, 等待方向选择",
+    "key_levels": {
+      "entry_breakout": "65,000 (带量 > $70 亿)",
+      "entry_pullback": "62,500-63,200",
+      "stop_loss": "59,500 (鲸鱼成本下)",
+      "take_profit_1": "65,000 (突破加仓)",
+      "take_profit_2": "67,000 (前高)"
+    },
+    "wait_for": [
+      "7/20-22 周末霍尔木兹局势明朗",
+      "7/22-25 ETF 持续流入 > $200M/日",
+      "7/28-29 FOMC 确认 9 月降息信号",
+      "7/30 BTC 期权到期($1.2B 名义)前后波动"
+    ]
+  },
+  "next_observation_window": "2026-07-20 to 2026-07-22 (weekend geopolitical clarity)"
+}

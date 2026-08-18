@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "updated_at": 1785503351.4688342,
+  "mappings": [
+    {
+      "parent_id": "TDD-001",
+      "applied_id": "APP-1785292560413",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1785292560.431865,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "TDD-001",
+      "applied_id": "APP-1785382661193",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1785382661.216972,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "TDD-001",
+      "applied_id": "APP-1785405385546",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1785405385.5780458,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "TDD-001",
+      "applied_id": "APP-1785405385582",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1785405385.589501,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "TDD-001",
+      "applied_id": "APP-1785405442691",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1785405442.716914,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "TDD-001",
+      "applied_id": "APP-1785406016201",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1785406016.23394,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "TDD-001",
+      "applied_id": "APP-1785406016237",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1785406016.245717,
+      "total_count": 2,
+      "success_rate": 1.0
+    }
+  ]
+}

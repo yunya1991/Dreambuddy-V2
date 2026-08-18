@@ -1,0 +1,19 @@
+{
+  "template_id": "APP-VM-1785286219807-2a158a53",
+  "title": "[新功能] feat: relay verify test | 变更文件: _daemon_test.py | +5 -0",
+  "content": "[新功能] feat: relay verify test | 变更文件: _daemon_test.py | +5 -0",
+  "quality_level": "A",
+  "confidence": 0.85,
+  "verify_count": 16,
+  "tags": [
+    "feature",
+    "git-hook",
+    "_daemon_test.py"
+  ],
+  "memory_type": "experience",
+  "source": "git-post-commit",
+  "created_at": "2026-07-29T00:50:19.807527+00:00",
+  "updated_at": "2026-07-31T13:09:11.421684+00:00",
+  "rebuilt_from_memory_id": "VM-1785286219807-2a158a53",
+  "rebuild_version": 1
+}

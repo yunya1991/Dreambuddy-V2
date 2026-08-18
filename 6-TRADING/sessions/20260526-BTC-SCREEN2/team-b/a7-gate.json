@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-05-26T09:00:00+08:00",
+  "gate": "A7",
+  "gate_name": "Theory-Practice Alignment Check",
+  "result": "PASS",
+  "checks": [
+    {
+      "id": "A7-1",
+      "name": "Screen1-Screen2 direction consistency",
+      "result": "PASS",
+      "detail": "Both LONG"
+    },
+    {
+      "id": "A7-2",
+      "name": "Score-position matching",
+      "screen1_score": 58,
+      "position_limit_pct": 40,
+      "result": "PASS",
+      "detail": "Score 58 in 50-65 light range, 40% cap correct"
+    },
+    {
+      "id": "A7-3",
+      "name": "Stop-loss magnitude",
+      "entry": 104000,
+      "stop": 90000,
+      "drawdown_pct": 13.46,
+      "threshold_pct": 15,
+      "result": "PASS"
+    },
+    {
+      "id": "A7-4",
+      "name": "Martingale interval vs volatility",
+      "interval_pct": 5,
+      "monthly_vol_pct": 15,
+      "ratio": 0.333,
+      "result": "PASS",
+      "detail": "5%=1/3 monthly vol, in range 0.28-0.38"
+    }
+  ],
+  "summary": "4/4 checks PASS",
+  "next_gate": "A4"
+}

@@ -1,0 +1,42 @@
+{
+  "id": "sme_mr7tuofm_2a13_SUP-ARTIFACT-SEARCH",
+  "createdAt": 1783258136624,
+  "updatedAt": 1783258136653,
+  "intent": "artifact_query",
+  "userRequestSummary": "分析第3条消息的BTC数据",
+  "nodeSpec": {
+    "id": "SUP-ARTIFACT-SEARCH",
+    "name": "知识库检索",
+    "description": "从内部知识库中检索与当前交易标的（如BTC）相关的历史行情数据、分析报告、市场背景或过往类似情形下的决策参考，为本次分析提供背景支持。",
+    "stage": "research",
+    "chain": "A",
+    "coreQuestion": "知识库中有哪些关于BTC的历史数据、分析观点或相关上下文信息可用于当前分析？",
+    "expectedOutputs": [
+      "检索到的相关文档或数据片段列表",
+      "关键知识摘要（如历史价格区间、重大事件、常见分析结论）"
+    ],
+    "recommendedSkillCategories": [
+      "knowledge_retrieval",
+      "data_mining"
+    ],
+    "confidenceThresholds": {
+      "high": 75,
+      "medium": 55,
+      "low": 35
+    },
+    "source": "llm_supplement",
+    "rationale": "当前系统缺少从内部知识库获取历史参考信息的能力，而交易分析常需借助过往相似情境的知识。补充此节点可以填补研究阶段的信息检索缺口，为后续分析提供事实基础。"
+  },
+  "status": "draft",
+  "validationCount": 1,
+  "successCount": 1,
+  "failureCount": 0,
+  "avgConfidenceContribution": 21,
+  "totalConfidenceSum": 21,
+  "evolutionTags": [
+    "llm-generated",
+    "pending-validation"
+  ],
+  "evolutionHistory": [],
+  "lastVerifiedAt": 1783258136653
+}

@@ -1,0 +1,3539 @@
+{
+  "version": "3.0.0",
+  "timestamp": "2026-07-13T23:28:21.953056+00:00",
+  "phase": "phase3",
+  "positions_overview": {
+    "total_systems": 6,
+    "total_positions": 21,
+    "system_status": {
+      "agent_a": "ok",
+      "agent_b": "ok",
+      "agent_c_memory": "ok",
+      "v15_martin": "ok",
+      "yijing_bcrm": "ok",
+      "three_screen": "unavailable"
+    }
+  },
+  "market_snapshot": {
+    "UNI": {
+      "symbol": "UNI",
+      "current_price": 8.7356,
+      "price": 8.7356,
+      "last": 8.7356,
+      "change_24h_pct": 2.77,
+      "change_pct": 2.77,
+      "volume_24h": 0,
+      "high_24h": 8.78,
+      "low_24h": 8.42,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607540+00:00"
+    },
+    "XRP": {
+      "symbol": "XRP",
+      "current_price": 0.5428,
+      "price": 0.5428,
+      "last": 0.5428,
+      "change_24h_pct": -1.31,
+      "change_pct": -1.31,
+      "volume_24h": 0,
+      "high_24h": 0.56,
+      "low_24h": 0.54,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607554+00:00"
+    },
+    "ETH": {
+      "symbol": "ETH",
+      "current_price": 3639.8857,
+      "price": 3639.8857,
+      "last": 3639.8857,
+      "change_24h_pct": 1.11,
+      "change_pct": 1.11,
+      "volume_24h": 0,
+      "high_24h": 3652.05,
+      "low_24h": 3568.5,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607559+00:00"
+    },
+    "WLD": {
+      "symbol": "WLD",
+      "current_price": 2.2007,
+      "price": 2.2007,
+      "last": 2.2007,
+      "change_24h_pct": 0.03,
+      "change_pct": 0.03,
+      "volume_24h": 0,
+      "high_24h": 2.22,
+      "low_24h": 2.17,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607564+00:00"
+    },
+    "DOGE": {
+      "symbol": "DOGE",
+      "current_price": 0.1185,
+      "price": 0.1185,
+      "last": 0.1185,
+      "change_24h_pct": -1.23,
+      "change_pct": -1.23,
+      "volume_24h": 0,
+      "high_24h": 0.12,
+      "low_24h": 0.12,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607568+00:00"
+    },
+    "LDO": {
+      "symbol": "LDO",
+      "current_price": 2.853,
+      "price": 2.853,
+      "last": 2.853,
+      "change_24h_pct": 1.89,
+      "change_pct": 1.89,
+      "volume_24h": 0,
+      "high_24h": 2.87,
+      "low_24h": 2.75,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607572+00:00"
+    },
+    "ZRO": {
+      "symbol": "ZRO",
+      "current_price": 1.521,
+      "price": 1.521,
+      "last": 1.521,
+      "change_24h_pct": 1.4,
+      "change_pct": 1.4,
+      "volume_24h": 0,
+      "high_24h": 1.53,
+      "low_24h": 1.48,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607576+00:00"
+    },
+    "NEAR": {
+      "symbol": "NEAR",
+      "current_price": 6.6688,
+      "price": 6.6688,
+      "last": 6.6688,
+      "change_24h_pct": 2.6,
+      "change_pct": 2.6,
+      "volume_24h": 0,
+      "high_24h": 6.7,
+      "low_24h": 6.41,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607579+00:00"
+    },
+    "INJ": {
+      "symbol": "INJ",
+      "current_price": 27.2654,
+      "price": 27.2654,
+      "last": 27.2654,
+      "change_24h_pct": -2.62,
+      "change_pct": -2.62,
+      "volume_24h": 0,
+      "high_24h": 28.26,
+      "low_24h": 27.2,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607583+00:00"
+    },
+    "DOT": {
+      "symbol": "DOT",
+      "current_price": 7.2212,
+      "price": 7.2212,
+      "last": 7.2212,
+      "change_24h_pct": 0.29,
+      "change_pct": 0.29,
+      "volume_24h": 0,
+      "high_24h": 7.26,
+      "low_24h": 7.13,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607587+00:00"
+    },
+    "SOL": {
+      "symbol": "SOL",
+      "current_price": 174.98,
+      "price": 174.98,
+      "last": 174.98,
+      "change_24h_pct": -0.01,
+      "change_pct": -0.01,
+      "volume_24h": 0,
+      "high_24h": 177.38,
+      "low_24h": 174.58,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607591+00:00"
+    },
+    "ENA": {
+      "symbol": "ENA",
+      "current_price": 0.8355,
+      "price": 0.8355,
+      "last": 0.8355,
+      "change_24h_pct": -1.71,
+      "change_pct": -1.71,
+      "volume_24h": 0,
+      "high_24h": 0.87,
+      "low_24h": 0.83,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607595+00:00"
+    },
+    "XAU": {
+      "symbol": "XAU",
+      "current_price": 2364.4467,
+      "price": 2364.4467,
+      "last": 2364.4467,
+      "change_24h_pct": 0.61,
+      "change_pct": 0.61,
+      "volume_24h": 0,
+      "high_24h": 2385.53,
+      "low_24h": 2338.17,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607599+00:00"
+    },
+    "TIA": {
+      "symbol": "TIA",
+      "current_price": 12.2885,
+      "price": 12.2885,
+      "last": 12.2885,
+      "change_24h_pct": 2.4,
+      "change_pct": 2.4,
+      "volume_24h": 0,
+      "high_24h": 12.32,
+      "low_24h": 11.82,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607602+00:00"
+    },
+    "ARB": {
+      "symbol": "ARB",
+      "current_price": 0.9676,
+      "price": 0.9676,
+      "last": 0.9676,
+      "change_24h_pct": 1.85,
+      "change_pct": 1.85,
+      "volume_24h": 0,
+      "high_24h": 0.98,
+      "low_24h": 0.93,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607607+00:00"
+    },
+    "ZEC": {
+      "symbol": "ZEC",
+      "current_price": 63.7928,
+      "price": 63.7928,
+      "last": 63.7928,
+      "change_24h_pct": -1.86,
+      "change_pct": -1.86,
+      "volume_24h": 0,
+      "high_24h": 65.73,
+      "low_24h": 63.17,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607612+00:00"
+    },
+    "BTC": {
+      "symbol": "BTC",
+      "current_price": 67441.8513,
+      "price": 67441.8513,
+      "last": 67441.8513,
+      "change_24h_pct": -0.82,
+      "change_pct": -0.82,
+      "volume_24h": 0,
+      "high_24h": 68690.04,
+      "low_24h": 67042.66,
+      "market_cap": 0,
+      "source": "estimated",
+      "timestamp": "2026-07-13T23:28:15.607616+00:00"
+    }
+  },
+  "a1_research": {
+    "research_report": {
+      "summary": "BTC当前价格$67,442，趋势NEUTRAL_DOWN，信号充分性MODERATE",
+      "triangle_compliance": {
+        "memory_research": {
+          "completed": true,
+          "episodes_found": 3,
+          "key_findings": [
+            "EP201 震荡整理行情：持续时间平均5-7天",
+            "EP178 窄幅震荡后选择方向通常伴随放量"
+          ]
+        },
+        "historical_research": {
+          "completed": true,
+          "cases_found": 2,
+          "similarity_scores": [
+            0.78,
+            0.84
+          ],
+          "outcomes": [
+            "继续下跌探底",
+            "继续下跌探底"
+          ]
+        },
+        "strategy_research": {
+          "completed": true,
+          "strategies_found": 3,
+          "recommendations": [
+            "range_trade_001 区间交易策略适用"
+          ]
+        },
+        "current_sentiment": {
+          "completed": true,
+          "bullish_ratio": 0.48,
+          "key_sources": [
+            "Tavily",
+            "Twitter",
+            "TradingView"
+          ],
+          "主流观点": "多空分歧，观望为主等待方向"
+        },
+        "regime_research": {
+          "completed": true,
+          "technical_regime": "RANGE_BOUND",
+          "fundamental_regime": "RATE_EASING",
+          "composite_score": 32,
+          "pattern_match": "RANGE_BOUND",
+          "similarity": 0.69,
+          "triple_screen": {
+            "S1_week": "NEUTRAL",
+            "S2_day": "BEARISH",
+            "S3_hour": "BEARISH"
+          },
+          "regime_change_signals": [
+            "关注MA50/MA200多空排列变化"
+          ],
+          "recommendations": [
+            "继续使用RANGE_BOUND策略"
+          ]
+        }
+      },
+      "market_state": {
+        "price": 67441.85,
+        "trend_direction": "NEUTRAL_DOWN",
+        "trend_continuation": false,
+        "resistance_minimum": "NEUTRAL",
+        "rsi_1h": 26.48,
+        "rsi_state": "oversold",
+        "atr_pct": 2.4427,
+        "vol_regime": "unknown",
+        "funding_rate": 7.8e-05,
+        "oi_delta_pct": -0.8
+      },
+      "macro_snapshot": {
+        "sentiment": "risk_off",
+        "risk_level": "2",
+        "key_events": [
+          "美联储议息会议临近，市场观望情绪浓厚",
+          "BTC现货ETF资金流向观察",
+          "技术面超卖，关注反弹机会"
+        ]
+      },
+      "onchain_signals": {
+        "whale_activity": "outflow",
+        "etf_flow": "outflow",
+        "prediction_bias": "bearish"
+      },
+      "macro_assets_background": {
+        "enabled": true,
+        "assets": [
+          {
+            "inst_id": "XAU-USDT-SWAP",
+            "name": "黄金",
+            "price": 2350.5,
+            "change_1h_pct": 1.21,
+            "trend_direction": "UP",
+            "correlation_with_btc": "NEGATIVE",
+            "signal_to_btc": "黄金涨→BTC可能面临避险资金流出"
+          },
+          {
+            "inst_id": "CL-USDT-SWAP",
+            "name": "原油",
+            "price": 78.5,
+            "change_1h_pct": -0.6,
+            "trend_direction": "DOWN",
+            "correlation_with_btc": "WEAK",
+            "signal_to_btc": "原油跌→通胀预期降低→BTC可能受益"
+          },
+          {
+            "inst_id": "HG-USDT-SWAP",
+            "name": "铜",
+            "price": 4.25,
+            "change_1h_pct": 0.7,
+            "trend_direction": "UP",
+            "correlation_with_btc": "POSITIVE",
+            "signal_to_btc": "铜涨→经济乐观→风险资产普涨→BTC受益"
+          },
+          {
+            "inst_id": "TSLA-USDT-SWAP",
+            "name": "TSLA",
+            "price": 245.3,
+            "change_1h_pct": 0.4,
+            "trend_direction": "UP",
+            "correlation_with_btc": "POSITIVE",
+            "signal_to_btc": "TSLA涨→科技股风险偏好回升→BTC受益"
+          },
+          {
+            "inst_id": "COIN-USDT-SWAP",
+            "name": "COIN",
+            "price": 215.8,
+            "change_1h_pct": -0.77,
+            "trend_direction": "DOWN",
+            "correlation_with_btc": "STRONG_POSITIVE",
+            "signal_to_btc": "COIN跌→加密行业降温→BTC可能承压"
+          }
+        ],
+        "resonance_signals": [
+          {
+            "signal_type": "RISK_ON_BROAD",
+            "description": "多数宏观风险资产上涨，风险偏好整体回升",
+            "assets_involved": [
+              "XAU-USDT-SWAP",
+              "HG-USDT-SWAP",
+              "TSLA-USDT-SWAP"
+            ],
+            "direction_implication": "UP",
+            "strength": "MODERATE",
+            "action_suggestion": "可考虑轻仓试探BTC多单"
+          }
+        ],
+        "summary": "宏观资产背景：黄金上涨1.21%，原油下跌0.6%，铜上涨0.7%"
+      },
+      "dream_insights": {
+        "incorporated": true,
+        "suppressed_signals": [],
+        "nightmare_scenarios": [
+          "### 场景：黑色星期五的连锁爆仓",
+          "### 噩梦A：门槛的永久崩塌",
+          "### 噩梦A：持仓永久量子化"
+        ],
+        "counter_intuitive": [
+          "1. **🔔 震荡市频率降级信号** — 当震荡市标记连续出现6+次时，应将轮询间隔从1H延长至4H。当前236次震荡标记 = 约39个币种小时全部为震荡，系统应该\"睡觉\"而不是交易。",
+          "1. **SL@$77K触发** — 如果BTC继续下跌至$77K，SL触发后系统必须按A3方向执行SHORT",
+          "1. **持仓再次\"出现\"** — 如果明天OKX同步恢复，持仓\"量子态坍缩\"——系统需要解释为什么它又出现了"
+        ],
+        "products_info": [
+          {
+            "type": "dream_journal",
+            "title": "dream_journal_20260712",
+            "date": "2026-07-12T23:45:00+08:00",
+            "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/sessions/20260712-YIJING-ONEIROLOGY/dream_journal_20260712.md"
+          },
+          {
+            "type": "dream_journal",
+            "title": "dream_journal_20260508",
+            "date": "2026-05-08T17:00:00+08:00",
+            "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/skills/3-SUPPORT/boss-secretary/reports/oneirology/dream_journal_20260508.md"
+          },
+          {
+            "type": "dream_journal",
+            "title": "dream_journal_20260507",
+            "date": "2026-05-07",
+            "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/skills/3-SUPPORT/boss-secretary/reports/trading/dream_journal_20260507.md"
+          }
+        ],
+        "latest_date": "2026-07-12T23:45:00+08:00",
+        "note": ""
+      },
+      "archive_findings": [
+        {
+          "case_id": "EP_test_ci_review_polic",
+          "similarity_score": 0.84,
+          "outcome": "历史案例结果待补充",
+          "lessons": [],
+          "date": "2026-07-08",
+          "title": "Test Ci Review Policy Guard",
+          "market_condition": "UNKNOWN"
+        },
+        {
+          "case_id": "EP_performance_review_2",
+          "similarity_score": 0.84,
+          "outcome": "| PIP ID | 技能 | 结果 | 评分变化 | 备注 |",
+          "lessons": [
+            "EP061-R执行：持仓恢复（LONG 0.02@$79,632），但方向与A3冲突",
+            "A7门禁P0：连续3天被EP061-R绕过（P0→P-1累积）",
+            "做梦部洞察：门槛裂缝（方向分裂），预言命中率25%连续4日"
+          ],
+          "date": "\"2026-05-0",
+          "title": "Dream-MultiSkill 日度绩效报告 2026-05-08",
+          "market_condition": "UNKNOWN"
+        },
+        {
+          "case_id": "EP_performance_review_2",
+          "similarity_score": 0.84,
+          "outcome": "| PIP ID | 技能 | 结果 | 评分变化 | 备注 |",
+          "lessons": [
+            "历史PIP失败（multiSkill有失败记录）",
+            "**KPI历史**: `~/.workbuddy/skills/dream-performance-review/kpi_history.jsonl`",
+            "**KPI当前**: `~/.workbuddy/skills/dream-performance-review/kpi_current.json`"
+          ],
+          "date": "\"2026-05-0",
+          "title": "Dream-MultiSkill 日度绩效报告 2026-05-07",
+          "market_condition": "UNKNOWN"
+        }
+      ],
+      "key_insights": [
+        "RSI1小时超卖(26.5)，反弹概率高",
+        "注意风险：趋势方向NEUTRAL_DOWN，空头占优"
+      ],
+      "risk_warnings": [
+        "趋势方向NEUTRAL_DOWN，空头占优"
+      ],
+      "signal_sufficiency": {
+        "level": "MODERATE",
+        "directional_signals": [
+          "RSI1小时超卖(26.5)，反弹概率高"
+        ],
+        "counter_signals": [
+          "趋势方向NEUTRAL_DOWN，空头占优"
+        ],
+        "net_direction": "MIXED",
+        "sufficiency_rationale": "共2个有效信号，方向性信号1个，反向信号1个，净方向MIXED"
+      },
+      "action_pressure": {
+        "consecutive_skip_days": 0,
+        "pressure_level": "LOW",
+        "probe_recommendation": "连续SKIP0天，压力较低，按正常流程执行。",
+        "probe_conditions": [
+          "信号充分性达到MODERATE以上"
+        ]
+      },
+      "contradiction_list": {
+        "contradictions": [
+          {
+            "id": "CX_003",
+            "dimension": "C4-C6",
+            "name": "短期波动 vs 中期格局",
+            "side_a": "短期震荡加剧，方向性不明",
+            "side_b": "中期格局未破，维持原有判断",
+            "strength_a": "LOW",
+            "strength_b": "MODERATE",
+            "dominance": "B",
+            "evidence": {
+              "a": [
+                "波动率上升",
+                "多空拉锯"
+              ],
+              "b": [
+                "周线级别趋势未变",
+                "关键支撑/阻力有效"
+              ]
+            },
+            "c4_c5_note": "C4=存在(短期波动无序 vs 中期趋势清晰)；C5=不显著(显性信号已覆盖主要判断)"
+          }
+        ],
+        "total_contradictions": 1,
+        "contradiction_intensity": "MODERATE",
+        "dream_contradictions_included": false,
+        "c4_c5_note_standard": {
+          "description": "C4(时序矛盾)/C5(隐性与显性矛盾)维度无显著矛盾时的规范化标注规则",
+          "annotation_rules": [
+            {
+              "condition": "C4维度存在显著时序矛盾",
+              "note": "C4=存在(描述矛盾内容)",
+              "field_filled": true
+            },
+            {
+              "condition": "C4维度无显著时序矛盾",
+              "note": "C4=不显著(当前时间框架内各周期方向一致)",
+              "field_filled": true
+            },
+            {
+              "condition": "C5维度存在显性 vs 隐性矛盾",
+              "note": "C5=存在(描述矛盾内容)",
+              "field_filled": true
+            },
+            {
+              "condition": "C5维度无显性 vs 隐性矛盾",
+              "note": "C5=不显著(所有矛盾均已在显性层面体现)",
+              "field_filled": true
+            }
+          ],
+          "format": "每个矛盾对象的c4_c5_note字段必须填写，标注'存在'或'不显著'及简要说明，不得留空"
+        }
+      },
+      "llm_enhancement": null
+    },
+    "data_freshness": {
+      "market_data_ts": "2026-07-13T23:28:21.921014+00:00",
+      "macro_data_ts": "2026-07-13T23:28:21.921014+00:00",
+      "onchain_data_ts": "2026-07-13T23:28:21.921014+00:00",
+      "dream_insights_ts": "2026-07-12T23:45:00+08:00"
+    },
+    "meta": {
+      "research_id": "A1-20260714-072821",
+      "researcher_version": "2.0.0-enhanced",
+      "triangle_compliance": true,
+      "timestamp": "2026-07-13T23:28:21.921014+00:00",
+      "dream_integrated": true,
+      "archive_integrated": true,
+      "llm_enhanced": false
+    }
+  },
+  "a2_first_principles": {
+    "first_principles_analysis": {
+      "dual_dimension_analysis": {
+        "fundamental": {
+          "capital_flow": {
+            "macro_liquidity": {
+              "direction": "CONTRACT",
+              "score": 45.9
+            },
+            "etf_flow": {
+              "direction": "OUTFLOW",
+              "score": 43.4,
+              "amount": "$0.41亿"
+            },
+            "oi_change": {
+              "direction": "UP",
+              "score": 56.4
+            },
+            "micro_liquidity": {
+              "depth": "$67,441,851",
+              "spread": "9.5bps"
+            }
+          },
+          "sentiment": {
+            "fear_greed": 49,
+            "funding_rate": "0.0300%",
+            "long_short_ratio": "0.98",
+            "signal": "NEUTRAL"
+          },
+          "geopolitical": {
+            "key_events": [
+              "美联储政策观望期，市场等待新的催化",
+              "BTC ETF资金流向为关键观察指标"
+            ],
+            "impact": "NEUTRAL",
+            "weight": 0.25
+          },
+          "policy": {
+            "central_bank": "NEUTRAL",
+            "regulatory": "NEUTRAL"
+          },
+          "synthesis": {
+            "fundamental_direction": "NEUTRAL",
+            "fundamental_score": 48.7,
+            "confidence": 0.51
+          }
+        },
+        "technical": {
+          "trend_indicators": {
+            "ema_alignment": "MIXED",
+            "ma_slopes": {
+              "short": "-0.164%",
+              "medium": "-0.0656%",
+              "long": "-0.0246%"
+            },
+            "ma_trajectory": "DOWN",
+            "trajectory_strength": 12.3
+          },
+          "momentum": {
+            "rsi": 0,
+            "rsi_state": "OVERSOLD",
+            "macd": {
+              "signal": "NEUTRAL"
+            },
+            "stochastic": "43.4%"
+          },
+          "volatility": {
+            "atr": "2.44%",
+            "atr_state": "NORMAL",
+            "bollinger_position": "41.8%"
+          },
+          "support_resistance": {
+            "key_levels": [
+              "$64,070",
+              "$62,047",
+              "$59,349",
+              "$70,814",
+              "$72,837",
+              "$75,535"
+            ],
+            "nearest_support": "$64,070",
+            "nearest_resistance": "$70,814"
+          },
+          "synthesis": {
+            "technical_direction": "BEARISH",
+            "technical_score": 30.1,
+            "confidence": 0.7
+          }
+        },
+        "cross_dimension": {
+          "alignment": "MIXED",
+          "synthesis_confidence": 0.51
+        }
+      },
+      "macro_asset_analysis": {
+        "assets": [
+          {
+            "inst_id": "XAU-USDT-SWAP",
+            "name": "黄金",
+            "price": 2353.59,
+            "ma_trend": "UP",
+            "correlation_with_btc": "NEGATIVE",
+            "signal_to_btc": "黄金涨→BTC可能面临避险资金流出"
+          },
+          {
+            "inst_id": "CL-USDT-SWAP",
+            "name": "原油",
+            "price": 79.44,
+            "ma_trend": "UP",
+            "correlation_with_btc": "WEAK",
+            "signal_to_btc": "原油涨→通胀预期升温→BTC可能承压"
+          },
+          {
+            "inst_id": "XCU-USDT-SWAP",
+            "name": "铜",
+            "price": 4.29,
+            "ma_trend": "UP",
+            "correlation_with_btc": "POSITIVE",
+            "signal_to_btc": "铜涨→经济乐观→风险资产普涨→BTC受益"
+          },
+          {
+            "inst_id": "TSLA-USDT-SWAP",
+            "name": "TSLA",
+            "price": 247.01,
+            "ma_trend": "UP",
+            "correlation_with_btc": "POSITIVE",
+            "signal_to_btc": "TSLA涨→科技股风险偏好回升→BTC受益"
+          },
+          {
+            "inst_id": "COIN-USDT-SWAP",
+            "name": "COIN",
+            "price": 213.67,
+            "ma_trend": "DOWN",
+            "correlation_with_btc": "STRONG_POSITIVE",
+            "signal_to_btc": "COIN跌→加密行业降温→BTC可能承压"
+          }
+        ],
+        "resonance_signals": [
+          {
+            "signal_type": "RISK_OFF",
+            "description": "黄金↑ + BTC↓ 同时发生，避险情绪主导",
+            "assets_involved": [
+              "XAU-USDT-SWAP",
+              "BTC-USDT-SWAP"
+            ],
+            "direction_implication": "DOWN",
+            "strength": "MODERATE",
+            "action_suggestion": "考虑减仓或做空BTC"
+          }
+        ],
+        "divergence_detected": false,
+        "divergence_details": [],
+        "macro_trend_score": 3.8,
+        "macro_trend_interpretation": "宏观环境中性，技术分析权重增加",
+        "summary": "宏观资产分析：黄金UP，原油UP，铜UP，宏观趋势评分3.8"
+      },
+      "brain_analysis": {
+        "left_brain": {
+          "quantitative_signals": [
+            {
+              "signal": "RSI超卖",
+              "score": 20,
+              "direction": "UP"
+            }
+          ],
+          "deterministic_score": 39.4,
+          "direction": "DOWN"
+        },
+        "right_brain": {
+          "pattern_recognition": [
+            {
+              "pattern": "RSI极度超卖",
+              "confidence": "HIGH",
+              "implication": "反弹概率高"
+            }
+          ],
+          "fuzzy_bias": "NEUTRAL",
+          "confidence_interval": [
+            24.4,
+            39.4,
+            54.4
+          ]
+        },
+        "contradiction": {
+          "detected": false,
+          "left_vs_right": "SYNTHESIZED",
+          "contradiction_strength": "WEAK",
+          "reconciled_direction": "DOWN",
+          "action_advice": "跟踪确认",
+          "probe_conditions": [
+            "趋势延续性确认"
+          ]
+        },
+        "main_contradiction": {
+          "primary": "趋势延续 vs 超买超卖反转压力",
+          "secondary": "短期波动 vs 中期趋势",
+          "weight_adjustment": {
+            "fundamental": "55%",
+            "technical": "45%"
+          }
+        },
+        "a0_contradiction_analysis": {
+          "primary_contradiction": {
+            "id": "CX_001",
+            "dimension": "C1",
+            "description": "趋势延续 vs 超买超卖反转压力",
+            "dominant_side": "B",
+            "direction_implication": "DOWN",
+            "confidence": 0.6,
+            "transformation": {
+              "condition": "关键支撑/阻力位突破，伴随成交量放大",
+              "probability": "MODERATE"
+            }
+          },
+          "contradiction_ranking": [
+            {
+              "id": "CX_001",
+              "score": 4.85,
+              "rank": 1
+            },
+            {
+              "id": "CX_002",
+              "score": 3.2,
+              "rank": 2
+            }
+          ],
+          "action_pressure_from_a1": {
+            "consecutive_skip_days": 3,
+            "pressure_level": "LOW",
+            "source": "A1.action_pressure字段",
+            "impact_on_direction": "HIGH压力时，方向权重+15%",
+            "constraint": "HIGH压力→A3禁止WAIT，必须PROBE"
+          }
+        }
+      },
+      "resistance_analysis": {
+        "resistance_score": 48.9,
+        "resistance_direction": "NEUTRAL",
+        "resistance_components": {
+          "cost_friction": {
+            "score": 47.5,
+            "weight": 0.3
+          },
+          "liquidity_friction": {
+            "score": 45.9,
+            "weight": 0.35
+          },
+          "crowding_friction": {
+            "score": 51.5,
+            "weight": 0.2
+          },
+          "vol_friction": {
+            "score": 55,
+            "weight": 0.15
+          }
+        },
+        "resistance_minimum_path": "NEUTRAL",
+        "resistance_confidence": 0.68,
+        "contrarian_compensation": {
+          "triggered": false,
+          "condition": "",
+          "adjustment": 0,
+          "original_score": 48.9,
+          "adjusted_score": 48.9
+        }
+      },
+      "trend_analysis": {
+        "ma_trajectory_method": {
+          "ma_slopes": {
+            "MA5": "-0.164%",
+            "MA20": "-0.0656%",
+            "MA60": "-0.0246%"
+          },
+          "trajectory_value": "-0.0828",
+          "trajectory_normalized": "-0.17σ",
+          "trend_strength": "WEAK"
+        },
+        "trend_phase": "启动期",
+        "trend_direction": "BEAR",
+        "trend_strength": 1.6,
+        "trend_momentum": "decelerating",
+        "trend_confidence": 0.58,
+        "historical_stats": {
+          "similar_patterns": 6,
+          "success_rate": "57.5%",
+          "avg_reversal_point": "$64,070"
+        }
+      },
+      "synthesis": {
+        "least_resistance_path": "DOWN",
+        "path_confidence": 0.78,
+        "contradictions": [],
+        "action_recommendation": "PROBE_SHORT",
+        "action_rationale": "阻力最小路径向下，趋势配合，置信度较高",
+        "alternative_scenarios": [
+          {
+            "scenario": "乐观",
+            "probability": 0.19,
+            "condition": "突破关键阻力位，成交量放大，目标2.2%涨幅"
+          },
+          {
+            "scenario": "基准",
+            "probability": 0.63,
+            "condition": "沿阻力最小方向运行，预期波动1.0%"
+          },
+          {
+            "scenario": "悲观",
+            "probability": 0.18,
+            "condition": "反向突破关键支撑/阻力，触发止损，最大风险2.8%"
+          }
+        ]
+      }
+    },
+    "market_regime_classification": {
+      "regime": "TREND_STRONG",
+      "confidence": 0.7,
+      "signals": [
+        "趋势阶段：启动期",
+        "趋势方向：BEAR",
+        "阻力最小路径：NEUTRAL"
+      ]
+    },
+    "llm_enhancement": null,
+    "meta": {
+      "analysis_id": "a2_20260713_232821",
+      "version": "2.6.1-enhanced",
+      "timestamp": "2026-07-13T23:28:21.921324+00:00",
+      "left_right_brain_integrated": true,
+      "ma_trajectory_method": true,
+      "llm_enhanced": false
+    }
+  },
+  "a3_strategy": {
+    "strategy_directive": {
+      "directive_bias": "SHORT",
+      "position_modifier": 0.78,
+      "leverage_cap": 3,
+      "target_coins": [
+        "BTC",
+        "ETH"
+      ],
+      "exit_conditions": [
+        {
+          "type": "stop_loss",
+          "trigger": "亏损达到5%",
+          "action": "全部平仓",
+          "enforcement": "HARD"
+        },
+        {
+          "type": "take_profit",
+          "trigger": "盈利达到10%",
+          "action": "分批止盈，先平50%",
+          "enforcement": "SOFT"
+        },
+        {
+          "type": "trailing_stop",
+          "trigger": "从最高点回撤5%",
+          "action": "逐步止盈",
+          "enforcement": "SOFT"
+        },
+        {
+          "type": "timeout",
+          "trigger": "持仓超过72小时方向未明",
+          "action": "评估是否离场",
+          "enforcement": "SOFT"
+        }
+      ],
+      "risk_rules": [
+        {
+          "rule": "单币种最大亏损不超过总资金的4%",
+          "enforcement": "HARD"
+        },
+        {
+          "rule": "杠杆上限 3x",
+          "enforcement": "HARD"
+        },
+        {
+          "rule": "总仓位不超过总资金的60%",
+          "enforcement": "HARD"
+        },
+        {
+          "rule": "禁止无止损开仓",
+          "enforcement": "HARD"
+        },
+        {
+          "rule": "单日亏损超过5%强制停止交易",
+          "enforcement": "HARD"
+        }
+      ],
+      "timing_guidance": "顺势操作，回踩关键均线时入场，不要追高，让利润奔跑",
+      "contradiction_handling": {
+        "primary_contradiction": "趋势延续 vs 超买超卖反转压力",
+        "contradiction_clarity": "MODERATE",
+        "strategic_response": "顺主要矛盾方向做空，密切关注矛盾是否有转化迹象",
+        "monitoring_points": [],
+        "transformation_risk": "LOW"
+      }
+    },
+    "evidence_chain": {
+      "a1_inputs": {
+        "research_summary": "BTC当前价格$67,442，趋势NEUTRAL_DOWN，信号充分性MODERATE",
+        "key_findings": [],
+        "market_state": {}
+      },
+      "a2_inputs": {
+        "regime": "TREND_STRONG",
+        "least_resistance_path": "DOWN",
+        "trend_direction": "BEAR",
+        "main_contradiction": "趋势延续 vs 超买超卖反转压力",
+        "confidence": 0.78
+      },
+      "feature_distillation": {
+        "direction": "BEAR",
+        "momentum": "decelerating",
+        "resistance": "EASY",
+        "volatility": "NORMAL",
+        "sentiment": "risk_off",
+        "capital": "outflow",
+        "regime": "TREND_STRONG",
+        "timing": "MID"
+      }
+    },
+    "llm_enhancement": null,
+    "meta": {
+      "version": "2.7.0-enhanced",
+      "timestamp": "2026-07-13T23:28:21.921366+00:00",
+      "llm_enhanced": false
+    }
+  },
+  "a9_macro_exit": {
+    "exit_evaluations": [
+      {
+        "position": {
+          "symbol": "ARB",
+          "system": "agent_a",
+          "direction": "SHORT",
+          "size": 169.8,
+          "entry_price": 0.08833,
+          "current_price": 0.0881,
+          "unrealized_pnl": -0.247908
+        },
+        "recommended_action": "HOLD",
+        "reason": "战略方向中性，阻力最小路径(DOWN)不明朗，TREND_STRONG市场状态，维持现有持仓",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "HOLD",
+            "urgency": "LOW"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "UNI",
+          "system": "agent_a",
+          "direction": "SHORT",
+          "size": 8.1,
+          "entry_price": 3.49939,
+          "current_price": 3.4896,
+          "unrealized_pnl": -0.2803
+        },
+        "recommended_action": "HOLD",
+        "reason": "战略方向中性，阻力最小路径(DOWN)不明朗，TREND_STRONG市场状态，维持现有持仓",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "HOLD",
+            "urgency": "LOW"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "ZRO",
+          "system": "agent_a",
+          "direction": "SHORT",
+          "size": 20.4,
+          "entry_price": 0.8572,
+          "current_price": 0.8561,
+          "unrealized_pnl": -0.125381
+        },
+        "recommended_action": "HOLD",
+        "reason": "战略方向中性，阻力最小路径(DOWN)不明朗，TREND_STRONG市场状态，维持现有持仓",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "HOLD",
+            "urgency": "LOW"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "ENA",
+          "system": "agent_a",
+          "direction": "SHORT",
+          "size": 27.0,
+          "entry_price": 0.078001,
+          "current_price": 0.078,
+          "unrealized_pnl": -0.011583
+        },
+        "recommended_action": "HOLD",
+        "reason": "战略方向中性，阻力最小路径(DOWN)不明朗，TREND_STRONG市场状态，维持现有持仓",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "HOLD",
+            "urgency": "LOW"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "ETH",
+          "system": "agent_b",
+          "direction": "SHORT",
+          "size": 0.0012,
+          "entry_price": 1812.3,
+          "current_price": 1813.2351,
+          "unrealized_pnl": 0.0516
+        },
+        "recommended_action": "RAISE_TP",
+        "reason": "战略方向(SHORT)与持仓方向一致，阻力最小路径(DOWN)同向，启动期趋势阶段，建议提高止盈让利润奔跑",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 1668.1763,
+          "new_tp_pct": 8.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "RAISE_TP",
+            "urgency": "LOW"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "ARB",
+          "system": "agent_b",
+          "direction": "LONG",
+          "size": 124.6,
+          "entry_price": 0.08837,
+          "current_price": 0.0885,
+          "unrealized_pnl": 0.176932
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "LDO",
+          "system": "agent_b",
+          "direction": "SHORT",
+          "size": 375.7,
+          "entry_price": 0.31433,
+          "current_price": 0.3166,
+          "unrealized_pnl": 0.734138
+        },
+        "recommended_action": "RAISE_TP",
+        "reason": "战略方向(SHORT)与持仓方向一致，阻力最小路径(DOWN)同向，启动期趋势阶段，建议提高止盈让利润奔跑",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 0.2913,
+          "new_tp_pct": 8.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "RAISE_TP",
+            "urgency": "LOW"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "WLD",
+          "system": "agent_b",
+          "direction": "LONG",
+          "size": 7.3,
+          "entry_price": 0.3887,
+          "current_price": 0.3888,
+          "unrealized_pnl": 0.017812
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "ZRO",
+          "system": "agent_b",
+          "direction": "LONG",
+          "size": 10.8,
+          "entry_price": 0.86345,
+          "current_price": 0.8634,
+          "unrealized_pnl": -0.00108
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "ZEC",
+          "system": "agent_b",
+          "direction": "SHORT",
+          "size": 0.01,
+          "entry_price": 511.28,
+          "current_price": 512.1528,
+          "unrealized_pnl": 0.1707
+        },
+        "recommended_action": "RAISE_TP",
+        "reason": "战略方向(SHORT)与持仓方向一致，阻力最小路径(DOWN)同向，启动期趋势阶段，建议提高止盈让利润奔跑",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 471.1805,
+          "new_tp_pct": 8.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "RAISE_TP",
+            "urgency": "LOW"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "TIA",
+          "system": "v15_martin",
+          "direction": "LONG",
+          "size": 1109.0,
+          "entry_price": 0.4109,
+          "current_price": 0.4109,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "INJ",
+          "system": "v15_martin",
+          "direction": "LONG",
+          "size": 96.0,
+          "entry_price": 5.041,
+          "current_price": 5.041,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "BTC",
+          "system": "v15_martin",
+          "direction": "LONG",
+          "size": 0.19,
+          "entry_price": 63837.7,
+          "current_price": 63837.7,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "ZEC",
+          "system": "v15_martin",
+          "direction": "LONG",
+          "size": 27.0,
+          "entry_price": 504.67,
+          "current_price": 504.67,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "NEAR",
+          "system": "v15_martin",
+          "direction": "LONG",
+          "size": 1.8,
+          "entry_price": 1.911,
+          "current_price": 1.911,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "WLD",
+          "system": "v15_martin",
+          "direction": "LONG",
+          "size": 228.0,
+          "entry_price": 0.4237,
+          "current_price": 0.4237,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "DOT",
+          "system": "yijing_bcrm",
+          "direction": "LONG",
+          "size": 0.0,
+          "entry_price": 0.87,
+          "current_price": 0.87,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "BTC",
+          "system": "yijing_bcrm",
+          "direction": "SHORT",
+          "size": 0.0,
+          "entry_price": 62701.1,
+          "current_price": 62701.1,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "HOLD",
+        "reason": "战略方向中性，阻力最小路径(DOWN)不明朗，TREND_STRONG市场状态，维持现有持仓",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "HOLD",
+            "urgency": "LOW"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "DOGE",
+          "system": "yijing_bcrm",
+          "direction": "LONG",
+          "size": 0.0,
+          "entry_price": 0.07427,
+          "current_price": 0.0743,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "CLOSE",
+        "reason": "战略方向(SHORT)与持仓方向(LONG)严重矛盾，阻力最小路径(DOWN)反向，高置信度，TREND_STRONG市场状态，建议平仓",
+        "urgency": "CRITICAL",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": -1,
+          "lr_alignment": -1,
+          "weighted_score": -0.74,
+          "regime_bonus": -0.15,
+          "final_score": -0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "LONG",
+            "strategy_direction": "SHORT",
+            "alignment_score": -1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": -0.15
+          },
+          "layer4_synthesis": {
+            "final_score": -0.89,
+            "action": "CLOSE",
+            "urgency": "CRITICAL"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "XRP",
+          "system": "yijing_bcrm",
+          "direction": "SHORT",
+          "size": 0.0,
+          "entry_price": 1.0688,
+          "current_price": 1.0688,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "HOLD",
+        "reason": "战略方向中性，阻力最小路径(DOWN)不明朗，TREND_STRONG市场状态，维持现有持仓",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "HOLD",
+            "urgency": "LOW"
+          }
+        }
+      },
+      {
+        "position": {
+          "symbol": "XAU",
+          "system": "yijing_bcrm",
+          "direction": "SHORT",
+          "size": 0.0,
+          "entry_price": 4040.9,
+          "current_price": 4040.9,
+          "unrealized_pnl": 0.0
+        },
+        "recommended_action": "HOLD",
+        "reason": "战略方向中性，阻力最小路径(DOWN)不明朗，TREND_STRONG市场状态，维持现有持仓",
+        "urgency": "LOW",
+        "confidence": 0.78,
+        "scoring": {
+          "alignment_score": 1,
+          "lr_alignment": 1,
+          "weighted_score": 0.74,
+          "regime_bonus": 0.15,
+          "final_score": 0.89
+        },
+        "parameters": {
+          "new_tp_price": 0,
+          "new_tp_pct": 0.0,
+          "reduce_fraction": 0.0
+        },
+        "layers": {
+          "layer1_alignment": {
+            "position_direction": "SHORT",
+            "strategy_direction": "SHORT",
+            "alignment_score": 1
+          },
+          "layer2_confidence": {
+            "path_confidence": 0.78,
+            "confidence_weight": 0.89
+          },
+          "layer3_regime": {
+            "regime": "TREND_STRONG",
+            "trend_phase": "启动期",
+            "regime_bonus": 0.15
+          },
+          "layer4_synthesis": {
+            "final_score": 0.89,
+            "action": "HOLD",
+            "urgency": "LOW"
+          }
+        }
+      }
+    ],
+    "overall_summary": {
+      "total_evaluated": 21,
+      "close_count": 11,
+      "reduce_count": 0,
+      "hold_count": 7,
+      "raise_tp_count": 3,
+      "overall_stance": "CLOSE",
+      "rationale": "有 11 个持仓建议平仓，需紧急处理",
+      "urgency_breakdown": {
+        "critical": 11,
+        "high": 0,
+        "medium": 0,
+        "low": 10
+      }
+    },
+    "decision_layers": {
+      "layer1_strategy_alignment": "strategic direction vs position direction",
+      "layer2_confidence_weighting": "A2 path_confidence weight",
+      "layer3_regime_correction": "market regime adjustment",
+      "layer4_final_synthesis": "urgency + final action"
+    }
+  },
+  "technical_exit": {
+    "technical_evaluations": [
+      {
+        "position": {
+          "symbol": "ARB",
+          "system": "agent_a",
+          "direction": "SHORT"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "UNI",
+          "system": "agent_a",
+          "direction": "SHORT"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "ZRO",
+          "system": "agent_a",
+          "direction": "SHORT"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "ENA",
+          "system": "agent_a",
+          "direction": "SHORT"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "ETH",
+          "system": "agent_b",
+          "direction": "SHORT"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "ARB",
+          "system": "agent_b",
+          "direction": "LONG"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "LDO",
+          "system": "agent_b",
+          "direction": "SHORT"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "WLD",
+          "system": "agent_b",
+          "direction": "LONG"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "ZRO",
+          "system": "agent_b",
+          "direction": "LONG"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "ZEC",
+          "system": "agent_b",
+          "direction": "SHORT"
+        },
+        "technical_action": "HOLD",
+        "technical_urgency": "LOW",
+        "technical_confidence": 0.5,
+        "technical_reason": "[技术] 无明确技术离场信号",
+        "signal_layers": {
+          "p0_triggered": false,
+          "p1_triggered": false,
+          "all_signals": []
+        }
+      },
+      {
+        "position": {
+          "symbol": "TIA",
+          "system": "v15_martin",
+          "direction": "LONG"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "INJ",
+          "system": "v15_martin",
+          "direction": "LONG"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "BTC",
+          "system": "v15_martin",
+          "direction": "LONG"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "ZEC",
+          "system": "v15_martin",
+          "direction": "LONG"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "NEAR",
+          "system": "v15_martin",
+          "direction": "LONG"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "WLD",
+          "system": "v15_martin",
+          "direction": "LONG"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "DOT",
+          "system": "yijing_bcrm",
+          "direction": "LONG"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "BTC",
+          "system": "yijing_bcrm",
+          "direction": "SHORT"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "DOGE",
+          "system": "yijing_bcrm",
+          "direction": "LONG"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "XRP",
+          "system": "yijing_bcrm",
+          "direction": "SHORT"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      },
+      {
+        "position": {
+          "symbol": "XAU",
+          "system": "yijing_bcrm",
+          "direction": "SHORT"
+        },
+        "technical_action": "CLOSE",
+        "technical_urgency": "CRITICAL",
+        "technical_confidence": 0.95,
+        "technical_reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+        "signal_layers": {
+          "p0_triggered": true,
+          "p1_triggered": true,
+          "all_signals": [
+            {
+              "layer": "P0",
+              "type": "max_loss",
+              "action": "CLOSE",
+              "urgency": "CRITICAL",
+              "confidence": 0.95,
+              "detail": "有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_stop_loss",
+              "action": "CLOSE",
+              "urgency": "HIGH",
+              "confidence": 0.75,
+              "detail": "有效盈亏 0.0% 触发 ATR 止损 (2×ATR=4.9%)"
+            },
+            {
+              "layer": "P1",
+              "type": "atr_take_profit",
+              "action": "REDUCE",
+              "urgency": "MEDIUM",
+              "confidence": 0.65,
+              "detail": "有效盈亏 0.0% 触发 ATR 止盈 (3×ATR=7.3%)"
+            }
+          ]
+        }
+      }
+    ],
+    "summary": {
+      "total_positions": 21,
+      "p0_triggered_count": 11,
+      "p1_triggered_count": 11,
+      "close_count": 11,
+      "reduce_count": 0,
+      "hold_count": 10
+    },
+    "meta": {
+      "version": "1.0.0-phase3",
+      "source": "simplified_technical_analysis",
+      "note": "ClassicExitSystem 完整集成需导入对应模块，当前为内置简化版"
+    }
+  },
+  "fused_evaluations": [
+    {
+      "recommended_action": "HOLD",
+      "urgency": "LOW",
+      "confidence": 0.64,
+      "reason": "宏观+技术均无离场信号，相互确认持有",
+      "fusion_mode": "mutual_confirm_hold",
+      "macro_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "ARB",
+        "system": "agent_a",
+        "direction": "SHORT",
+        "size": 169.8,
+        "entry_price": 0.08833,
+        "unrealized_pnl": -0.247908,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "HOLD 类建议无需自动执行",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "HOLD",
+      "urgency": "LOW",
+      "confidence": 0.64,
+      "reason": "宏观+技术均无离场信号，相互确认持有",
+      "fusion_mode": "mutual_confirm_hold",
+      "macro_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "UNI",
+        "system": "agent_a",
+        "direction": "SHORT",
+        "size": 8.1,
+        "entry_price": 3.49939,
+        "unrealized_pnl": -0.2803,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "HOLD 类建议无需自动执行",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "HOLD",
+      "urgency": "LOW",
+      "confidence": 0.64,
+      "reason": "宏观+技术均无离场信号，相互确认持有",
+      "fusion_mode": "mutual_confirm_hold",
+      "macro_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "ZRO",
+        "system": "agent_a",
+        "direction": "SHORT",
+        "size": 20.4,
+        "entry_price": 0.8572,
+        "unrealized_pnl": -0.125381,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "HOLD 类建议无需自动执行",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "HOLD",
+      "urgency": "LOW",
+      "confidence": 0.64,
+      "reason": "宏观+技术均无离场信号，相互确认持有",
+      "fusion_mode": "mutual_confirm_hold",
+      "macro_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "ENA",
+        "system": "agent_a",
+        "direction": "SHORT",
+        "size": 27.0,
+        "entry_price": 0.078001,
+        "unrealized_pnl": -0.011583,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "HOLD 类建议无需自动执行",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "HOLD",
+      "urgency": "LOW",
+      "confidence": 0.74,
+      "reason": "宏观(RAISE_TP)与技术(HOLD)方向一致，信号强化",
+      "fusion_mode": "mutual_confirm_strengthen",
+      "macro_input": {
+        "action": "RAISE_TP",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 1668.1763,
+        "new_tp_pct": 8.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "ETH",
+        "system": "agent_b",
+        "direction": "SHORT",
+        "size": 0.0012,
+        "entry_price": 1812.3,
+        "unrealized_pnl": 0.0516,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "HOLD 类建议无需自动执行",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "REDUCE",
+      "urgency": "HIGH",
+      "confidence": 0.58,
+      "reason": "宏观(CLOSE)主导但与技术(HOLD)矛盾，建议降级执行",
+      "fusion_mode": "macro_primary_tech_contradict",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.1
+      },
+      "position": {
+        "symbol": "ARB",
+        "system": "agent_b",
+        "direction": "LONG",
+        "size": 124.6,
+        "entry_price": 0.08837,
+        "unrealized_pnl": 0.176932,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "紧急度(HIGH)低于自动执行阈值(CRITICAL)",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "HOLD",
+      "urgency": "LOW",
+      "confidence": 0.74,
+      "reason": "宏观(RAISE_TP)与技术(HOLD)方向一致，信号强化",
+      "fusion_mode": "mutual_confirm_strengthen",
+      "macro_input": {
+        "action": "RAISE_TP",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 0.2913,
+        "new_tp_pct": 8.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "LDO",
+        "system": "agent_b",
+        "direction": "SHORT",
+        "size": 375.7,
+        "entry_price": 0.31433,
+        "unrealized_pnl": 0.734138,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "HOLD 类建议无需自动执行",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "REDUCE",
+      "urgency": "HIGH",
+      "confidence": 0.58,
+      "reason": "宏观(CLOSE)主导但与技术(HOLD)矛盾，建议降级执行",
+      "fusion_mode": "macro_primary_tech_contradict",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.1
+      },
+      "position": {
+        "symbol": "WLD",
+        "system": "agent_b",
+        "direction": "LONG",
+        "size": 7.3,
+        "entry_price": 0.3887,
+        "unrealized_pnl": 0.017812,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "紧急度(HIGH)低于自动执行阈值(CRITICAL)",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "REDUCE",
+      "urgency": "HIGH",
+      "confidence": 0.58,
+      "reason": "宏观(CLOSE)主导但与技术(HOLD)矛盾，建议降级执行",
+      "fusion_mode": "macro_primary_tech_contradict",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.1
+      },
+      "position": {
+        "symbol": "ZRO",
+        "system": "agent_b",
+        "direction": "LONG",
+        "size": 10.8,
+        "entry_price": 0.86345,
+        "unrealized_pnl": -0.00108,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "紧急度(HIGH)低于自动执行阈值(CRITICAL)",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "HOLD",
+      "urgency": "LOW",
+      "confidence": 0.74,
+      "reason": "宏观(RAISE_TP)与技术(HOLD)方向一致，信号强化",
+      "fusion_mode": "mutual_confirm_strengthen",
+      "macro_input": {
+        "action": "RAISE_TP",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.5,
+        "p0_triggered": false,
+        "reason": "[技术] 无明确技术离场信号"
+      },
+      "parameters": {
+        "new_tp_price": 471.1805,
+        "new_tp_pct": 8.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "ZEC",
+        "system": "agent_b",
+        "direction": "SHORT",
+        "size": 0.01,
+        "entry_price": 511.28,
+        "unrealized_pnl": 0.1707,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "HOLD 类建议无需自动执行",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "TIA",
+        "system": "v15_martin",
+        "direction": "LONG",
+        "size": 1109.0,
+        "entry_price": 0.4109,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(NOTIFY)不允许自动平仓，需要人工确认",
+        "permission_level": "NOTIFY",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "INJ",
+        "system": "v15_martin",
+        "direction": "LONG",
+        "size": 96.0,
+        "entry_price": 5.041,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(NOTIFY)不允许自动平仓，需要人工确认",
+        "permission_level": "NOTIFY",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "BTC",
+        "system": "v15_martin",
+        "direction": "LONG",
+        "size": 0.19,
+        "entry_price": 63837.7,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(NOTIFY)不允许自动平仓，需要人工确认",
+        "permission_level": "NOTIFY",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "ZEC",
+        "system": "v15_martin",
+        "direction": "LONG",
+        "size": 27.0,
+        "entry_price": 504.67,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(NOTIFY)不允许自动平仓，需要人工确认",
+        "permission_level": "NOTIFY",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "NEAR",
+        "system": "v15_martin",
+        "direction": "LONG",
+        "size": 1.8,
+        "entry_price": 1.911,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(NOTIFY)不允许自动平仓，需要人工确认",
+        "permission_level": "NOTIFY",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "WLD",
+        "system": "v15_martin",
+        "direction": "LONG",
+        "size": 228.0,
+        "entry_price": 0.4237,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(NOTIFY)不允许自动平仓，需要人工确认",
+        "permission_level": "NOTIFY",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "DOT",
+        "system": "yijing_bcrm",
+        "direction": "LONG",
+        "size": 0.0,
+        "entry_price": 0.87,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(ADVISE)不允许自动平仓，需要人工确认",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "BTC",
+        "system": "yijing_bcrm",
+        "direction": "SHORT",
+        "size": 0.0,
+        "entry_price": 62701.1,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(ADVISE)不允许自动平仓，需要人工确认",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "DOGE",
+        "system": "yijing_bcrm",
+        "direction": "LONG",
+        "size": 0.0,
+        "entry_price": 0.07427,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(ADVISE)不允许自动平仓，需要人工确认",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "XRP",
+        "system": "yijing_bcrm",
+        "direction": "SHORT",
+        "size": 0.0,
+        "entry_price": 1.0688,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(ADVISE)不允许自动平仓，需要人工确认",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    },
+    {
+      "recommended_action": "CLOSE",
+      "urgency": "CRITICAL",
+      "confidence": 0.95,
+      "reason": "技术P0硬退出触发，一票否决。[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%",
+      "fusion_mode": "technical_p0_veto",
+      "macro_input": {
+        "action": "HOLD",
+        "urgency": "LOW",
+        "confidence": 0.78
+      },
+      "technical_input": {
+        "action": "CLOSE",
+        "urgency": "CRITICAL",
+        "confidence": 0.95,
+        "p0_triggered": true,
+        "reason": "[P0 硬退出] 有效盈亏 0.0% 触及最大亏损阈值 -0.0%"
+      },
+      "parameters": {
+        "new_tp_price": 0,
+        "new_tp_pct": 0.0,
+        "reduce_fraction": 0.0
+      },
+      "position": {
+        "symbol": "XAU",
+        "system": "yijing_bcrm",
+        "direction": "SHORT",
+        "size": 0.0,
+        "entry_price": 4040.9,
+        "unrealized_pnl": 0.0,
+        "upl_ratio": 0.0
+      },
+      "permission_check": {
+        "can_execute": false,
+        "reason": "权限等级(ADVISE)不允许自动平仓，需要人工确认",
+        "permission_level": "ADVISE",
+        "max_reduce_pct": 0.0
+      }
+    }
+  ],
+  "fused_summary": {
+    "close_count": 11,
+    "reduce_count": 3,
+    "hold_count": 7,
+    "raise_tp_count": 0,
+    "auto_executable_count": 0
+  },
+  "permission_config": {
+    "systems": {
+      "agent_a": {
+        "permission_level": "ADVISE",
+        "auto_execute_urgency": "CRITICAL",
+        "max_auto_reduce_pct": 0.3,
+        "notes": "默认建议制，CRITICAL 级别可自动减仓30%"
+      },
+      "agent_b": {
+        "permission_level": "ADVISE",
+        "auto_execute_urgency": "CRITICAL",
+        "max_auto_reduce_pct": 0.3,
+        "notes": "默认建议制，CRITICAL 级别可自动减仓30%"
+      },
+      "agent_c": {
+        "permission_level": "ADVISE",
+        "auto_execute_urgency": "CRITICAL",
+        "max_auto_reduce_pct": 0.3,
+        "notes": "默认建议制，CRITICAL 级别可自动减仓30%"
+      },
+      "v15_martin": {
+        "permission_level": "NOTIFY",
+        "auto_execute_urgency": "CRITICAL",
+        "max_auto_reduce_pct": 0.0,
+        "notes": "马丁系统以自主离场为主，仅通知"
+      },
+      "yijing_bcrm": {
+        "permission_level": "ADVISE",
+        "auto_execute_urgency": "HIGH",
+        "max_auto_reduce_pct": 0.5,
+        "notes": "易经系统建议制，HIGH 以上可减仓50%"
+      },
+      "screen_trend": {
+        "permission_level": "NOTIFY",
+        "auto_execute_urgency": "CRITICAL",
+        "max_auto_reduce_pct": 0.0,
+        "notes": "三屏趋势以技术离场为主，仅通知"
+      }
+    },
+    "version": "1.0.0-default"
+  }
+}

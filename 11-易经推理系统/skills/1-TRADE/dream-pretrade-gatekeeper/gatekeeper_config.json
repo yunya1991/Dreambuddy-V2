@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-04-20",
+  "circuit_breakers": {
+    "max_daily_drawdown_pct": 4.0,
+    "max_single_loss_pct": 3.0,
+    "consecutive_stop_loss_limit": 3,
+    "rsi_extreme_overbought": 85,
+    "rsi_extreme_oversold": 15
+  },
+  "position_limits": {
+    "max_position_pct": 0.2,
+    "max_leverage": 5,
+    "default_risk_pct": 2.0,
+    "conservative_risk_pct": 1.0
+  },
+  "time_gates": {
+    "non_trading_hours_slow_mode": true,
+    "funding_rate_check": true,
+    "weekend_reduced_mode": true
+  }
+}

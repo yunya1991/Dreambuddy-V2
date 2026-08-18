@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+logs/
+*.log
+node_modules/
+.DS_Store
+.vscode/
+.idea/
+.trash/
+# 临时文件
+tmp*/
+temp*/
+tmp.*

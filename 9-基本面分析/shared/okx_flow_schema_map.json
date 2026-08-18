@@ -1,0 +1,68 @@
+[
+  {
+    "key": "funding_rate_bps",
+    "layer": "L4",
+    "desc": "OKX 永续资金费率",
+    "freq": "15m~1h",
+    "lag": "0~12h",
+    "quality": "延迟<2 bars",
+    "degrade": "仅保留风险提示",
+    "okx": "cmc-okx",
+    "bindBase": "funding_rate_bps__btc__okx__perp"
+  },
+  {
+    "key": "oi_usd",
+    "layer": "L4",
+    "desc": "OKX 持仓量",
+    "freq": "15m~1h",
+    "lag": "0~24h",
+    "quality": "时间连续性通过",
+    "degrade": "禁止加仓建议",
+    "okx": "cmc-okx",
+    "bindBase": "oi_usd__btc__okx__perp"
+  },
+  {
+    "key": "spread_bps",
+    "layer": "L5",
+    "desc": "OKX 买卖价差",
+    "freq": "1m~15m",
+    "lag": "实时~4h",
+    "quality": "异常跳扩过滤后可用",
+    "degrade": "execution_filter=slowdown",
+    "okx": "cmc-okx",
+    "bindBase": "spread_bps__btc__okx__spot"
+  },
+  {
+    "key": "market_intel_heat",
+    "layer": "事件压力",
+    "desc": "OKX market-intel 叙事热度",
+    "freq": "15m~1h",
+    "lag": "0~24h",
+    "quality": "事件源可追溯",
+    "degrade": "只做风险过滤",
+    "okx": "market-intel",
+    "bindBase": "social_heat_event_score__btc__okx__na"
+  },
+  {
+    "key": "macro_pressure_score",
+    "layer": "L3/宏观",
+    "desc": "Alpha Vantage 宏观压力评分",
+    "freq": "1h~1d",
+    "lag": "0~3d",
+    "quality": "宏观指标可追溯",
+    "degrade": "仅允许hold/reduce/hedge",
+    "okx": "alpha-vantage",
+    "bindBase": "macro_event_pressure_score__btc__macro__na"
+  },
+  {
+    "key": "whale_position_delta_usd",
+    "layer": "链上确认",
+    "desc": "Hyperliquid 巨鲸仓位变化",
+    "freq": "15m~4h",
+    "lag": "0~24h",
+    "quality": "样本覆盖与来源标注完整",
+    "degrade": "仅做确认与风控",
+    "okx": "hyperliquid-analyzer",
+    "bindBase": "whale_position_delta_usd__btc__hyperliquid__perp"
+  }
+]

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/nanoclaw/core_task1/feature_cube_v1.schema.json",
+  "title": "core_task1 feature cube v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "feature_cube_v1"
+    },
+    "asset": {
+      "type": "string",
+      "minLength": 1
+    },
+    "asof_ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["feature_key", "value", "horizon", "quality", "source_refs"],
+        "properties": {
+          "feature_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": ["number", "null"]
+          },
+          "horizon": {
+            "type": "string",
+            "minLength": 1
+          },
+          "regime_tag": {
+            "type": ["string", "null"]
+          },
+          "weight": {
+            "type": ["number", "null"]
+          },
+          "contribution": {
+            "type": ["number", "null"]
+          },
+          "quality": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["ok", "stale", "missing", "backfilled", "suspect", "unknown"]
+              }
+            }
+          },
+          "source_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["schema", "asset", "asof_ts", "features"]
+}

@@ -1,0 +1,181 @@
+{
+  "date": "2026-07-10",
+  "time": "00:55",
+  "regime": "BEAR_RECOVERY",
+  "regime_level": 2,
+  "regime_level_desc": "⚠️⚠️",
+  "confidence": 75,
+  "confidence_change": "-7pp from 82%",
+  "prev_regime": "BEAR_RECOVERY",
+  "prev_regime_level": 3,
+  "regime_change": "LEVEL_DOWN from 3→2 (油价回落+BTC企稳)",
+  "btc_price": 62649.6,
+  "btc_24h_change": 0.84,
+  "btc_7d_change": 4.2,
+  "eth_price": 1737.14,
+  "sol_price": 77.61,
+  "fgi": 22,
+  "fgi_class": "Extreme Fear",
+  "fgi_change": "+2 from 20, +3 from 19(上周), +12 from 10(上月)",
+  "funding_rate": 0.0000508625,
+  "funding_rate_days_positive": 27,
+  "etf_net_10d": -1474.7,
+  "etf_last_positive": "2026-07-07 +$21.5M (3日连续流入$510.7M)",
+  "etf_7_status": "7/8数据待确认(Farside未更新)",
+  "si_index": 1,
+  "si_index_class": "NEUTRAL",
+  "si_index_prev": -12,
+  "si_index_change": "+13",
+  "si_index_breakdown": {
+    "positive": {
+      "etf_3day_reversal": 8,
+      "fgi_contrarian_below25": 8,
+      "whale_270k_accumulation": 12,
+      "exchange_reserve_7y_low": 5,
+      "oil_price_retreat": 5
+    },
+    "negative": {
+      "iran_ceasefire_over": -10,
+      "funding_rate_positive": -10,
+      "fed_hawkish_higher_for_longer": -5,
+      "btc_below_ma5": -2,
+      "options_put_skew": -5,
+      "usd_near_13m_high": -3
+    },
+    "net": 1
+  },
+  "position_mapping": "0.2-0.4x标准仓位",
+  "three_screen": {
+    "weekly": -2,
+    "daily": 0,
+    "hourly": 1,
+    "total": -1,
+    "total_class": "NEUTRAL偏BEAR",
+    "change_from_prev": "+4 from -5"
+  },
+  "ma_status": {
+    "ma5": 62918,
+    "ma10": 62381,
+    "btc_vs_ma5": -268,
+    "btc_vs_ma10": 269,
+    "ma_cross": "GOLDEN (narrowing +537, ↓59% from +1297)"
+  },
+  "rsi_14": 48,
+  "oil_data": {
+    "wti": 71.80,
+    "brent": 76.11,
+    "wti_change": "-4.8% from $75.45",
+    "brent_change": "-4.6% from $79.80",
+    "hormuz_vessels": "100+等待通行, 36艘/日通行",
+    "iran_sanctions": "7/17全面终止截止"
+  },
+  "macro_data": {
+    "fed_rate": "unchanged (hawkish)",
+    "nfp_june": 57000,
+    "unemployment": 4.2,
+    "cpi_last": 4.2,
+    "cpi_next": "7/14",
+    "us_10y_yield": 4.51,
+    "gold": 4075.21,
+    "usd_index": "near 13-month highs"
+  },
+  "contradictions": [
+    {
+      "id": "CX_033",
+      "status": "P0/演化",
+      "pair": "伊朗停火破裂 vs 油价回落",
+      "side_a": "停火OVER+制裁恢复(7/17)+军事对抗回归",
+      "side_b": "OPEC+增产压价+WTI$71.80+油价从恐慌高点回落",
+      "dominant": "B偏强(转变)",
+      "direction": "供给侧缓解对冲地缘溢价",
+      "change_from_prev": "A→B偏强(油价回落改变格局)"
+    },
+    {
+      "id": "CX_034",
+      "status": "P0/维持",
+      "pair": "通胀陷阱 vs 降息预期",
+      "side_a": "Fed鹰派+半数预期加息+油价仍>$70",
+      "side_b": "NFP仅57K+失业4.2%+油价回落减轻通胀",
+      "dominant": "A偏强(减弱)",
+      "direction": "鹰派但边际减弱(油价回落)",
+      "change_from_prev": "A偏强→A偏强(减弱)"
+    },
+    {
+      "id": "CX_031",
+      "status": "演化",
+      "pair": "恐惧 vs 反弹韧性(Wyckoff D)",
+      "side_a": "FGI=22 Extreme Fear",
+      "side_b": "BTC守住MA10+从$62,090→$62,650+鲸鱼270K积累",
+      "dominant": "B偏强(增强)",
+      "direction": "恐惧见底回升+反弹韧性增强",
+      "change_from_prev": "A偏强→B偏强(转化)"
+    },
+    {
+      "id": "CX_030",
+      "status": "演化",
+      "pair": "鲸鱼积累 vs ETF流出",
+      "side_a": "270K BTC@$59K+交易所7年低+LTH 78%",
+      "side_b": "6月流出$4.51B+7/8数据未确认",
+      "dominant": "中性→A偏强",
+      "direction": "3日ETF流入+鲸鱼持续积累→底部增强",
+      "change_from_prev": "B偏强→A偏强(ETF反转)"
+    },
+    {
+      "id": "CX_035",
+      "status": "NEW",
+      "pair": "油价回落 vs 制裁恢复",
+      "side_a": "OPEC+增产+WTI$71.80",
+      "side_b": "7/17伊朗石油全面终止→供应收紧预期",
+      "dominant": "未定",
+      "direction": "短期A偏强, 7/17后可能逆转"
+    }
+  ],
+  "key_levels": {
+    "breakout_confirm": 64729,
+    "resistance_1": 64000,
+    "ma5": 62918,
+    "current": 62650,
+    "ma10": 62381,
+    "psychological_support": 60000,
+    "whale_cost": 59000,
+    "previous_low": 57750,
+    "structural_support": 55000
+  },
+  "72h_watch": {
+    "iran_sanctions_7_17": "制裁全面终止→油价可能二次跳升",
+    "cpi_7_14": "<4.0%=鸽派转机 / >4.5%=鹰派确认",
+    "etf_7_8_confirm": "7/8数据是否仍正流入(伊朗冲击日)",
+    "ma_cross_watch": "金叉差值仅+537, 本周可能死叉"
+  },
+  "p0_events": [
+    "伊朗停火OVER — 特朗普7/8安卡拉宣布",
+    "制裁恢复 — 7/17全面终止截止",
+    "油价回落 — WTI $71.80(-4.8%), Brent $76.11(-4.6%)",
+    "Fed鹰派 — Higher for Longer, 半数预期加息",
+    "6月NFP仅57K — 劳动力疲软信号"
+  ],
+  "upgrade_from_level3_reasons": [
+    "油价大幅回落WTI $71.80(从$75.45) → 地缘溢价消退",
+    "BTC企稳$62,650(从$62,090) → 守住MA10",
+    "FGI从20→22 → 恐惧见底回升",
+    "ETF连续3日流入$510M → 机构反转信号",
+    "期权BTC已高于max pain $61K → 空头压力减轻"
+  ],
+  "not_bull_reasons": [
+    "伊朗停火OVER → 地缘风险持续(制裁7/17)",
+    "MA金叉加速收窄(+537, ↓59%) → 可能本周死叉",
+    "Fed鹰派未改 → Higher for Longer压制",
+    "7/8 ETF数据未确认 → 反转可能为假",
+    "美元近13月高点 → BTC承压"
+  ],
+  "options_data": {
+    "btc_pcr": 0.7,
+    "btc_max_pain": 61000,
+    "btc_25d_skew_1d": -0.11,
+    "btc_25d_skew_7d": -0.11,
+    "btc_25d_skew_1m": -0.08,
+    "eth_pcr": 1.29,
+    "eth_max_pain": 1650,
+    "dvol": 36.11
+  }
+}

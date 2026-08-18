@@ -1,0 +1,89 @@
+name: "AB Trading Monitor — Snapshot & Pages"
+
+on:
+  schedule:
+    # 每 5 分钟生成一次快照（UTC 时间）
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/ab-trading/monitor.html'
+      - 'experiments/ab-trading/export_state.py'
+      - '.github/workflows/ab-trading-monitor.yml'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  snapshot-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch latest logs from main branch
+        run: |
+          # Fetch main branch (gh-pages is already checked out)
+          git fetch origin main
+          # Checkout logs from main branch into current working tree
+          git checkout FETCH_HEAD -- experiments/ab-trading/logs/ 2>/dev/null || \
+            git checkout origin/main -- experiments/ab-trading/logs/
+          echo "Agent A logs: $(ls experiments/ab-trading/logs/agent_a/ 2>/dev/null | wc -l | tr -d ' ') files"
+          echo "Agent B logs: $(ls experiments/ab-trading/logs/agent_b/ 2>/dev/null | wc -l | tr -d ' ') files"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+
+      - name: Generate state snapshot
+        run: |
+          cd experiments/ab-trading
+          python3 export_state.py
+
+      - name: Commit and push snapshot
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git stash
+          git rebase origin/main || git merge origin/main
+          git stash pop || true
+          git add experiments/ab-trading/state.json
+          git diff --cached --quiet && echo "No changes to commit on main" || \
+            (git commit -m "chore(monitor): auto-update state snapshot" && git push)
+          # Sync to gh-pages
+          git push --force origin main:gh-pages || echo "gh-pages push skipped"
+          # Ensure .nojekyll exists on gh-pages to disable Jekyll processing
+          git fetch origin gh-pages
+          git checkout origin/gh-pages -- .nojekyll 2>/dev/null || echo ".nojekyll not in gh-pages, creating"
+          git add .nojekyll 2>/dev/null && git commit -m "chore: ensure .nojekyll" --allow-empty 2>/dev/null || true
+          git push origin gh-pages 2>/dev/null || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'experiments/ab-trading'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

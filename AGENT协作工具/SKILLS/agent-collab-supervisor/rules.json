@@ -1,0 +1,65 @@
+{
+  "version": "1.0",
+  "rules": [
+    {
+      "id": "RULE_001_TASK_CARD_REQUIRED",
+      "severity": "block",
+      "check": "task_card_present",
+      "checker": "check_task_card_present"
+    },
+    {
+      "id": "RULE_002_DESIGN_REVIEW_REQUIRED",
+      "severity": "block",
+      "check": "design_review_present",
+      "checker": "check_design_review_present"
+    },
+    {
+      "id": "RULE_003_STARTED_REQUIRED",
+      "severity": "block",
+      "check": "started_comment_present",
+      "checker": "check_started_comment_present"
+    },
+    {
+      "id": "RULE_004_SCOPE_CHANGE_MUST_UPDATE",
+      "severity": "block",
+      "check": "updated_comment_present_when_scope_changes",
+      "checker": "check_scope_change_announcement"
+    },
+    {
+      "id": "RULE_005_BLOCK_MUST_ANNOUNCE",
+      "severity": "block",
+      "check": "blocked_comment_present_when_execution_blocked",
+      "checker": "check_block_announcement"
+    },
+    {
+      "id": "RULE_006_TEST_EVIDENCE_REQUIRED",
+      "severity": "block",
+      "check": "test_report_present",
+      "checker": "check_test_report_present"
+    },
+    {
+      "id": "RULE_007_REVIEW_BY_NON_OWNER",
+      "severity": "block",
+      "check": "non_owner_review_present",
+      "checker": "check_non_owner_review_present"
+    },
+    {
+      "id": "RULE_008_DONE_REQUIRED",
+      "severity": "block",
+      "check": "done_comment_present",
+      "checker": "check_done_comment_present"
+    },
+    {
+      "id": "RULE_009_BRANCH_POLICY_ENFORCED",
+      "severity": "block",
+      "check": "branch_policy_valid",
+      "checker": "check_branch_policy_valid"
+    },
+    {
+      "id": "RULE_010_SHARED_FILE_DECLARATION",
+      "severity": "block",
+      "check": "shared_files_declared",
+      "checker": "check_shared_files_declared"
+    }
+  ]
+}

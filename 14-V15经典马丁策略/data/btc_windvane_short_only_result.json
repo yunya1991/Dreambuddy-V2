@@ -1,0 +1,100 @@
+{
+  "mode": "btc_windvane_short_only_comparison",
+  "results": [
+    {
+      "coin": "ETH",
+      "both_sides": {
+        "total_return_pct": 16.69,
+        "max_drawdown_pct": 1.28,
+        "sharpe_ratio": 2.905,
+        "total_trades": 72,
+        "win_rate": 0.625,
+        "profit_factor": 1.7034
+      },
+      "short_only": {
+        "total_return_pct": 17.19,
+        "max_drawdown_pct": 1.44,
+        "sharpe_ratio": 3.678,
+        "total_trades": 27,
+        "win_rate": 0.8889,
+        "profit_factor": 0.7549
+      }
+    },
+    {
+      "coin": "SOL",
+      "both_sides": {
+        "total_return_pct": 14.52,
+        "max_drawdown_pct": 1.33,
+        "sharpe_ratio": 3.4691,
+        "total_trades": 42,
+        "win_rate": 0.7143,
+        "profit_factor": 2.037
+      },
+      "short_only": {
+        "total_return_pct": 20.35,
+        "max_drawdown_pct": 0.05,
+        "sharpe_ratio": 5.8704,
+        "total_trades": 21,
+        "win_rate": 0.9524,
+        "profit_factor": 15.0152
+      }
+    },
+    {
+      "coin": "ARB",
+      "both_sides": {
+        "total_return_pct": 30.15,
+        "max_drawdown_pct": 1.24,
+        "sharpe_ratio": 4.5963,
+        "total_trades": 55,
+        "win_rate": 0.7636,
+        "profit_factor": 2.2169
+      },
+      "short_only": {
+        "total_return_pct": 29.32,
+        "max_drawdown_pct": 0,
+        "sharpe_ratio": 8.5428,
+        "total_trades": 23,
+        "win_rate": 1.0,
+        "profit_factor": 0
+      }
+    },
+    {
+      "coin": "OP",
+      "both_sides": {
+        "total_return_pct": 17.68,
+        "max_drawdown_pct": 2.97,
+        "sharpe_ratio": 2.4779,
+        "total_trades": 70,
+        "win_rate": 0.5714,
+        "profit_factor": 1.8467
+      },
+      "short_only": {
+        "total_return_pct": 24.45,
+        "max_drawdown_pct": 0.4,
+        "sharpe_ratio": 5.3874,
+        "total_trades": 21,
+        "win_rate": 0.8571,
+        "profit_factor": 6.1137
+      }
+    },
+    {
+      "coin": "UNI",
+      "both_sides": {
+        "total_return_pct": 27.61,
+        "max_drawdown_pct": 1.75,
+        "sharpe_ratio": 3.1088,
+        "total_trades": 86,
+        "win_rate": 0.6163,
+        "profit_factor": 1.7741
+      },
+      "short_only": {
+        "total_return_pct": 31.72,
+        "max_drawdown_pct": 0.7,
+        "sharpe_ratio": 6.0518,
+        "total_trades": 23,
+        "win_rate": 0.9565,
+        "profit_factor": 1.5273
+      }
+    }
+  ]
+}

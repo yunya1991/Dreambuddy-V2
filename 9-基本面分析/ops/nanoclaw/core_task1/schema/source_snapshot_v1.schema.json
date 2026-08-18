@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/nanoclaw/core_task1/source_snapshot_v1.schema.json",
+  "title": "core_task1 source snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "source_snapshot_v1"
+    },
+    "asset": {
+      "type": "string",
+      "minLength": 1
+    },
+    "asof_ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "execution_gate": {
+      "type": "string",
+      "enum": ["readonly_advisory"]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["bindBase", "value", "quality", "generated_at"],
+        "properties": {
+          "bindBase": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {},
+          "unit": {
+            "type": ["string", "null"]
+          },
+          "source": {
+            "type": ["string", "null"]
+          },
+          "latency_sec": {
+            "type": ["number", "null"]
+          },
+          "revision": {
+            "type": ["object", "null"]
+          },
+          "quality": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["ok", "stale", "missing", "backfilled", "suspect", "unknown"]
+              },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "error": {
+                "type": "string"
+              }
+            }
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["schema", "asset", "asof_ts", "items", "execution_gate"]
+}
