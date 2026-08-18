@@ -143,7 +143,12 @@ class PhaseEGateway:
             self._jsonl_fh = None
 
     def _load_ppo_model(self):
-        """加载 PPO-LSTM 权重，构造 PPOLSTMActorCritic 模型。"""
+        """加载 PPO-LSTM 权重，构造 PPOLSTMActorCritic 模型。
+
+        v6: 从 checkpoint 读取 action_bounds 传给模型，保证推理时
+        map_action_to_bounds 用训练时一致的边界。
+        旧版 checkpoint 无 action_bounds → 用模型默认 DEFAULT_ACTION_BOUNDS。
+        """
         import torch
 
         ai_trainers_path = str(Path(__file__).resolve().parent.parent / "ai_trainers")
@@ -153,10 +158,12 @@ class PhaseEGateway:
 
         payload = torch.load(self.ppo_model_path, map_location="cpu", weights_only=False)
         config = payload.get("config", {})
+        action_bounds = payload.get("action_bounds")  # v6: None 时模型用默认边界
         model = PPOLSTMActorCritic(
             state_dim=34,
             hidden_dim=config.get("hidden_dim", 128),
             num_layers=config.get("num_layers", 1),
+            action_bounds=action_bounds,
         )
         model.load_state_dict(payload["model_state_dict"])
         model.eval()

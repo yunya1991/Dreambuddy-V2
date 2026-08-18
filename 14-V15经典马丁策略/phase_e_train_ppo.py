@@ -28,7 +28,29 @@ if str(_BASE_DIR) not in sys.path:
     sys.path.insert(0, str(_BASE_DIR))
 
 from ai_trainers.phase_e_models import PPOLSTMActorCritic
-from ai_trainers.v15_gym_env import V15MartingaleGymEnv, GAMMA
+from ai_trainers.v15_gym_env import (
+    V15MartingaleGymEnv,
+    GAMMA,
+    ACTION_BOUNDS,
+    _apply_k_bound_to_bounds,
+)
+
+# v6: 连续动作键顺序必须与 PPOLSTMActorCritic.DEFAULT_ACTION_BOUNDS 一致
+_CONTINUOUS_ACTION_KEYS = ("addon_pct_mult", "addon_size_mult", "tp_pct_mult", "base_position_mult")
+
+
+def _compute_effective_bounds(k_bound: float) -> List[Tuple[float, float]]:
+    """v6: 根据 env 的 k_bound 计算连续动作的有效边界，传给 PPO 模型。
+
+    保证模型 action_bounds 与 v15_gym_env.clamp_action 的有效边界严格一致，
+    使 env 内部 clamp 成为 idempotent，PPO 梯度可流过 map_action_to_bounds。
+    """
+    bounds: List[Tuple[float, float]] = []
+    for key in _CONTINUOUS_ACTION_KEYS:
+        b = ACTION_BOUNDS[key]
+        lo_eff, hi_eff = _apply_k_bound_to_bounds(b["lo"], b["hi"], k_bound)
+        bounds.append((lo_eff, hi_eff))
+    return bounds
 
 
 # ── PPO 超参数（v2 提 entropy / 短 rollout，避免 identity 收敛） ──
@@ -114,10 +136,13 @@ def train_ppo(
     # v2: 每 episode 一个新 env 实例，K 线分布不同（PPO 的多样性至关重要）
     env_fn = lambda s: V15MartingaleGymEnv(seed=s)
     env = env_fn(1000)
+    # v6: 从 env 的 k_bound 计算有效 action bounds，传给模型（保证训练/推理边界一致）
+    effective_bounds = _compute_effective_bounds(env.k_bound)
     model = PPOLSTMActorCritic(
         state_dim=env.observation_dim,
         hidden_dim=cfg["hidden_dim"],
         num_layers=cfg["num_layers"],
+        action_bounds=effective_bounds,
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=cfg["lr"])
 
@@ -144,22 +169,25 @@ def train_ppo(
                 out = model.sample_action(x, h)
                 h = out["h_n"]
 
-            action_cont = out["action_cont"].squeeze(0).cpu().numpy()
+            # v6: 原始动作存 buffer（保持 PPO log_prob 一致性），映射后传 env
+            action_cont_raw = out["action_cont"].squeeze(0)  # (4,) tensor in raw space
+            action_cont_mapped = model.map_action_to_bounds(action_cont_raw).cpu().numpy()
+            action_cont_np = action_cont_raw.cpu().numpy()  # buffer 存原始采样
             action_disc = int(out["action_disc"].item())
             log_prob = float(out["log_prob"].item())
             value = float(out["value"].item())
 
-            # 映射到 action dict
+            # 映射后的动作传给 env（env 内部 clamp_action 对已映射值 idempotent）
             action_dict = {
-                "addon_pct_mult": float(action_cont[0]),
-                "addon_size_mult": float(action_cont[1]),
-                "tp_pct_mult": float(action_cont[2]),
-                "base_position_mult": float(action_cont[3]),
+                "addon_pct_mult": float(action_cont_mapped[0]),
+                "addon_size_mult": float(action_cont_mapped[1]),
+                "tp_pct_mult": float(action_cont_mapped[2]),
+                "base_position_mult": float(action_cont_mapped[3]),
                 "max_addons_delta": action_disc - 1,  # 0→-1, 1→0
             }
 
             next_obs, reward, done, info = env.step(action_dict)
-            buf.add(obs, action_cont, action_disc, log_prob, reward, value, done)
+            buf.add(obs, action_cont_np, action_disc, log_prob, reward, value, done)
             obs = next_obs
             ep_reward += reward
             steps += 1
@@ -236,6 +264,7 @@ def train_ppo(
                 torch.save({
                     "model_state_dict": model.state_dict(),
                     "config": cfg,
+                    "action_bounds": effective_bounds,  # v6: 推理时恢复边界
                     "episode": ep,
                     "best_reward": rolling_best_moving,
                     "best_kind": "rolling_window",
@@ -249,6 +278,7 @@ def train_ppo(
             torch.save({
                 "model_state_dict": model.state_dict(),
                 "config": cfg,
+                "action_bounds": effective_bounds,  # v6: 推理时恢复边界
                 "episode": ep,
                 "best_reward": best_reward,
                 "best_kind": "single_episode",

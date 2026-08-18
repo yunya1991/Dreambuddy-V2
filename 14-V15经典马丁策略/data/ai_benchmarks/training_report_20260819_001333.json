@@ -1,0 +1,457 @@
+{
+  "started_at": "2026-08-19T00:13:33.613699",
+  "pipeline_log": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/ai_benchmarks/pipeline_20260819_001333.log",
+  "versions": {
+    "dataset_meta": {
+      "BI_LSTM_4H_LEN": 60,
+      "PATCHTST_1H_LEN": 120,
+      "PATCHTST_HORIZON": 24,
+      "n_total": 5000,
+      "wf_segments": 5,
+      "seed": 42,
+      "version": "v3_stratified"
+    },
+    "env_ai_enabled": ""
+  },
+  "phase_d_full_training": {
+    "bilstm": {
+      "model": "bilstm",
+      "weights": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/phase_d_models_v1/bilstm.pt",
+      "best_val_auc": 0.9539762563018377,
+      "last_val_acc": 0.85628741979599,
+      "last_val_bce": 0.34430718421936035,
+      "history": [
+        {
+          "epoch": 15,
+          "val_auc": 0.9539762563018377,
+          "val_acc": 0.85628741979599,
+          "val_bce": 0.34430718421936035,
+          "hidden": 32,
+          "dropout": 0.3,
+          "weight_decay": 0.0005,
+          "pos_weight_cap": 15.0
+        }
+      ],
+      "epochs_run": 15,
+      "meta": {
+        "ohlcv_len": 60,
+        "n_channels": 5,
+        "n_scalar": 7,
+        "hidden": 32,
+        "n_layers": 2,
+        "dropout": 0.3,
+        "weight_decay": 0.0005,
+        "pos_weight_cap": 15.0,
+        "best_val_auc": 0.9539762563018377,
+        "epochs": 15,
+        "seed": 42,
+        "quick_smoke": false,
+        "train_date": "2026-08-19T00:14:13",
+        "version": "v2"
+      }
+    },
+    "patchtst": {
+      "model": "patchtst",
+      "weights": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/phase_d_models_v1/patchtst.pt",
+      "best_val_mse": 0.0830342024564743,
+      "last_hit8pct_acc": 0.6327345371246338,
+      "history": [
+        {
+          "epoch": 1,
+          "tr_huber": 0.00799839868679954,
+          "val_mse": 0.0830342024564743,
+          "val_mae": 0.270095556974411,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.9856917858123779
+        },
+        {
+          "epoch": 2,
+          "tr_huber": 0.007441226695835007,
+          "val_mse": 0.08708476275205612,
+          "val_mae": 0.2636469006538391,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 1.084110975265503
+        },
+        {
+          "epoch": 3,
+          "tr_huber": 0.007381642101923342,
+          "val_mse": 0.08974643796682358,
+          "val_mae": 0.26316195726394653,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.8740458488464355
+        },
+        {
+          "epoch": 4,
+          "tr_huber": 0.007412202135233528,
+          "val_mse": 0.08497191220521927,
+          "val_mae": 0.26325497031211853,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.7296121120452881
+        },
+        {
+          "epoch": 5,
+          "tr_huber": 0.007462046585358542,
+          "val_mse": 0.08685115724802017,
+          "val_mae": 0.26367613673210144,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.7669570446014404
+        },
+        {
+          "epoch": 6,
+          "tr_huber": 0.007360162636669649,
+          "val_mse": 0.08721894770860672,
+          "val_mae": 0.26341840624809265,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.7792797088623047
+        },
+        {
+          "epoch": 7,
+          "tr_huber": 0.007373165755211201,
+          "val_mse": 0.08691605180501938,
+          "val_mae": 0.26352658867836,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.7069048881530762
+        },
+        {
+          "epoch": 8,
+          "tr_huber": 0.007303307402177661,
+          "val_mse": 0.09001384675502777,
+          "val_mae": 0.2628021836280823,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.8391232490539551
+        },
+        {
+          "epoch": 9,
+          "tr_huber": 0.007372113052055084,
+          "val_mse": 0.08933847397565842,
+          "val_mae": 0.26351282000541687,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.6873829364776611
+        },
+        {
+          "epoch": 10,
+          "tr_huber": 0.007369321849214538,
+          "val_mse": 0.08873303979635239,
+          "val_mae": 0.2633320391178131,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.6883001327514648
+        },
+        {
+          "epoch": 11,
+          "tr_huber": 0.00733630618717663,
+          "val_mse": 0.08796918392181396,
+          "val_mae": 0.26332008838653564,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 0.9180660247802734
+        },
+        {
+          "epoch": 12,
+          "tr_huber": 0.007302428833572275,
+          "val_mse": 0.08818964660167694,
+          "val_mae": 0.2631591856479645,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 1.058326005935669
+        },
+        {
+          "epoch": 13,
+          "tr_huber": 0.007339369714720484,
+          "val_mse": 0.08856383711099625,
+          "val_mae": 0.26305538415908813,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 1.0024213790893555
+        },
+        {
+          "epoch": 14,
+          "tr_huber": 0.007303423608526352,
+          "val_mse": 0.08877260237932205,
+          "val_mae": 0.26304250955581665,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 1.0794343948364258
+        },
+        {
+          "epoch": 15,
+          "tr_huber": 0.007335177108634675,
+          "val_mse": 0.08883342891931534,
+          "val_mae": 0.26305314898490906,
+          "hit8pct_acc": 0.6327345371246338,
+          "dt": 1.074535846710205
+        }
+      ],
+      "epochs_run": 15
+    }
+  },
+  "phase_d_walk_forward": [
+    {
+      "wf": "wf1",
+      "bilstm_val_auc": 0.9586543054143755,
+      "bilstm_val_acc": 0.8579999804496765,
+      "bilstm_positive": true,
+      "patchtst_val_mse": 0.08205428719520569,
+      "patchtst_hit8pct_acc": 0.6389999985694885,
+      "patchtst_positive": true
+    },
+    {
+      "wf": "wf2",
+      "bilstm_val_auc": 0.9578500891986006,
+      "bilstm_val_acc": 0.8539999723434448,
+      "bilstm_positive": true,
+      "patchtst_val_mse": 0.08516810834407806,
+      "patchtst_hit8pct_acc": 0.6460000276565552,
+      "patchtst_positive": true
+    },
+    {
+      "wf": "wf3",
+      "bilstm_val_auc": 0.958712632396843,
+      "bilstm_val_acc": 0.8588588833808899,
+      "bilstm_positive": true,
+      "patchtst_val_mse": 0.08872511982917786,
+      "patchtst_hit8pct_acc": 0.630630612373352,
+      "patchtst_positive": true
+    },
+    {
+      "wf": "wf4",
+      "bilstm_val_auc": 0.951482435692962,
+      "bilstm_val_acc": 0.8368368148803711,
+      "bilstm_positive": true,
+      "patchtst_val_mse": 0.08378590643405914,
+      "patchtst_hit8pct_acc": 0.6486486196517944,
+      "patchtst_positive": true
+    },
+    {
+      "wf": "wf5",
+      "bilstm_val_auc": 0.9514863547758284,
+      "bilstm_val_acc": 0.8532934188842773,
+      "bilstm_positive": true,
+      "patchtst_val_mse": 0.08579106628894806,
+      "patchtst_hit8pct_acc": 0.652694582939148,
+      "patchtst_positive": true
+    },
+    {
+      "wf_summary": {
+        "bilstm_positive_segments": 5,
+        "patchtst_positive_segments": 5,
+        "total_segments": 5,
+        "warnings": []
+      }
+    }
+  ],
+  "phase_e_training": {
+    "model": "ppo_lstm",
+    "weights": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/phase_e_models_v1/ppo_lstm.pt",
+    "best_reward": 161.9779974906204,
+    "episodes_run": 4000,
+    "last_20_avg_reward": 38.24790705579529,
+    "last_10_avg_reward": 37.77473067231922,
+    "s_bt": 8.452837817549824,
+    "k_bound": 1.2,
+    "boundary_state_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/ai_boundary_state.json",
+    "duration_sec": 1363.9
+  },
+  "backtest": {
+    "per_coin_mode": [
+      {
+        "coin": "BTC",
+        "total_return_pct": 0.44,
+        "total_trades": 25,
+        "win_rate": 0.76,
+        "profit_factor": 0.657,
+        "max_drawdown_pct": 9.3,
+        "sharpe_ratio": 1.0165,
+        "mode": "Baseline",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "BTC",
+        "total_return_pct": 0.44,
+        "total_trades": 25,
+        "win_rate": 0.76,
+        "profit_factor": 0.657,
+        "max_drawdown_pct": 9.3,
+        "sharpe_ratio": 1.0165,
+        "mode": "PhaseD",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "BTC",
+        "total_return_pct": 2.41,
+        "total_trades": 25,
+        "win_rate": 0.76,
+        "profit_factor": 0.7948,
+        "max_drawdown_pct": 9.53,
+        "sharpe_ratio": 1.3643,
+        "mode": "PhaseDE",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "ETH",
+        "total_return_pct": 9.26,
+        "total_trades": 18,
+        "win_rate": 0.8333,
+        "profit_factor": 1.5632,
+        "max_drawdown_pct": 0.38,
+        "sharpe_ratio": 2.8585,
+        "mode": "Baseline",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "ETH",
+        "total_return_pct": 8.68,
+        "total_trades": 17,
+        "win_rate": 0.8824,
+        "profit_factor": 1.1132,
+        "max_drawdown_pct": 0.38,
+        "sharpe_ratio": 3.3394,
+        "mode": "PhaseD",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "ETH",
+        "total_return_pct": 11.11,
+        "total_trades": 16,
+        "win_rate": 0.875,
+        "profit_factor": 1.8875,
+        "max_drawdown_pct": 0.27,
+        "sharpe_ratio": 3.6215,
+        "mode": "PhaseDE",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "SOL",
+        "total_return_pct": 7.5,
+        "total_trades": 31,
+        "win_rate": 0.9355,
+        "profit_factor": 0.347,
+        "max_drawdown_pct": 7.52,
+        "sharpe_ratio": 2.6268,
+        "mode": "Baseline",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "SOL",
+        "total_return_pct": 7.67,
+        "total_trades": 32,
+        "win_rate": 0.9375,
+        "profit_factor": 0.3339,
+        "max_drawdown_pct": 7.52,
+        "sharpe_ratio": 2.7258,
+        "mode": "PhaseD",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "SOL",
+        "total_return_pct": 3.84,
+        "total_trades": 27,
+        "win_rate": 0.9259,
+        "profit_factor": 0.3873,
+        "max_drawdown_pct": 7.45,
+        "sharpe_ratio": 2.751,
+        "mode": "PhaseDE",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "ARB",
+        "total_return_pct": -6.68,
+        "total_trades": 21,
+        "win_rate": 0.9048,
+        "profit_factor": 0.2534,
+        "max_drawdown_pct": 14.18,
+        "sharpe_ratio": 1.2619,
+        "mode": "Baseline",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "ARB",
+        "total_return_pct": -6.46,
+        "total_trades": 21,
+        "win_rate": 0.9048,
+        "profit_factor": 0.2496,
+        "max_drawdown_pct": 14.18,
+        "sharpe_ratio": 1.2312,
+        "mode": "PhaseD",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "ARB",
+        "total_return_pct": -2.77,
+        "total_trades": 21,
+        "win_rate": 0.9048,
+        "profit_factor": 0.3334,
+        "max_drawdown_pct": 13.52,
+        "sharpe_ratio": 1.7859,
+        "mode": "PhaseDE",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "OP",
+        "total_return_pct": -7.32,
+        "total_trades": 21,
+        "win_rate": 0.8571,
+        "profit_factor": 0.3951,
+        "max_drawdown_pct": 15.71,
+        "sharpe_ratio": 1.1464,
+        "mode": "Baseline",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "OP",
+        "total_return_pct": -7.85,
+        "total_trades": 21,
+        "win_rate": 0.8571,
+        "profit_factor": 0.3666,
+        "max_drawdown_pct": 15.71,
+        "sharpe_ratio": 1.0738,
+        "mode": "PhaseD",
+        "bust_threshold": 0.5
+      },
+      {
+        "coin": "OP",
+        "total_return_pct": -10.22,
+        "total_trades": 16,
+        "win_rate": 0.875,
+        "profit_factor": 0.2669,
+        "max_drawdown_pct": 15.48,
+        "sharpe_ratio": 0.7984,
+        "mode": "PhaseDE",
+        "bust_threshold": 0.5
+      }
+    ],
+    "aggregate": {
+      "Baseline": {
+        "avg_return_pct": 0.6399999999999999,
+        "avg_win_rate": 0.85814,
+        "avg_profit_factor": 0.64314,
+        "avg_max_drawdown_pct": 9.418000000000001,
+        "avg_sharpe": 1.78202,
+        "total_trades": 116
+      },
+      "PhaseD": {
+        "avg_return_pct": 0.496,
+        "avg_win_rate": 0.86836,
+        "avg_profit_factor": 0.54406,
+        "avg_max_drawdown_pct": 9.418000000000001,
+        "avg_sharpe": 1.8773399999999998,
+        "total_trades": 116
+      },
+      "PhaseDE": {
+        "avg_return_pct": 0.8739999999999999,
+        "avg_win_rate": 0.86814,
+        "avg_profit_factor": 0.73398,
+        "avg_max_drawdown_pct": 9.25,
+        "avg_sharpe": 2.0642199999999997,
+        "total_trades": 105
+      }
+    },
+    "validation": {
+      "baseline_avg_return_pct": 0.6399999999999999,
+      "phase_de_avg_return_pct": 0.8739999999999999,
+      "return_degenerate_rate": -0.36562500000000003,
+      "return_degenerate_pass": true,
+      "mdd_ratio_de_vs_base": 0.9821618177957102,
+      "mdd_110_pass": true,
+      "overall_backtest_pass": true,
+      "best_bust_threshold": 0.5
+    }
+  },
+  "finished_at": "2026-08-19T00:45:14.698652",
+  "duration_sec": 1901.1
+}

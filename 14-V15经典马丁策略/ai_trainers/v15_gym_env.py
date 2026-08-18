@@ -1,7 +1,13 @@
-"""Phase E: V15 马丁策略 Gym 环境 (v2 修复 PPO 不学习)
+"""Phase E: V15 马丁策略 Gym 环境 (v4 动作 clamp 对齐)
 
 包装 v15_backtest.py 为 Gymnasium 风格环境，供 PPO 训练。
-状态 34 维 / 动作 5 维 / 奖励事件驱动（TP=+5, addon=-3*level, bust=-20, shield=-3）。
+状态 34 维 / 动作 5 维 / 奖励事件驱动（TP=+10, addon=-0.5*level, bust=-20）。
+
+v4 关键修复（动作 clamp 对齐）：
+- step() 开头调用 clamp_action()，将 PPO 原始输出 clamp 到 ACTION_BOUNDS
+- 与 lib/phase_e_gateway._clamp_action 完全一致（含 K_bound 缩放）
+- 修复 v3 中 PPO 输出 tp_pct_mult=7 / addon_size_mult=8 导致策略崩溃的问题
+- 移除旧 penalty-based shield（clamp 后极端值不可能出现）
 
 v2 关键修复：
 - _generate_synthetic_klines：加入 bull/bear 段与 1% 爆仓跳空，保证信号多样
@@ -45,8 +51,56 @@ REWARD_ADDON_LEVEL = -0.5       # v3: -3.0→-0.5，加仓是策略核心而非�
 REWARD_BUST = -20.0
 REWARD_SHIELD_VIOLATION = -3.0
 REWARD_OPEN_TRADE = 0.0
-REWARD_PNL_SCALE = 0.01         # v3: realized PnL 直接乘入 reward（使 PPO 感受到真实盈亏）
+REWARD_PNL_SCALE = 0.03         # v5: 0.01→0.03，让 PPO 更关注真实盈利（关闭剩余收益差距）
 GAMMA = 0.995
+
+# ── §3.3 动作边界（v4: 必须与 lib/phase_e_gateway.py ACTION_BOUNDS 保持一致） ──
+# 训练时若不 clamp，PPO 会输出 tp_pct_mult=7 / addon_size_mult=8 等越界值导致策略崩溃。
+ACTION_BOUNDS = {
+    "addon_pct_mult":      {"lo": 0.80, "hi": 1.30, "abs_lo": 0.375, "abs_hi": 3.125},
+    "addon_size_mult":     {"lo": 0.60, "hi": 1.50, "abs_lo": 0.60, "abs_hi": 1.50},
+    "tp_pct_mult":         {"lo": 0.80, "hi": 1.30, "abs_lo": 0.375, "abs_hi": 3.00},
+    "base_position_mult":  {"lo": 0.70, "hi": 1.20, "abs_lo": 0.50, "abs_hi": 2.00},
+    "max_addons_delta":    {"lo": -1,   "hi": 0,    "abs_lo": -1,   "abs_hi": 0},
+}
+PHASE_E_DEFAULT_K_BOUND = 0.80
+
+
+def _clamp_value(value: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, value))
+
+
+def _apply_k_bound_to_bounds(lo: float, hi: float, k_bound: float) -> Tuple[float, float]:
+    """§3.4 K_bound 缩放边界（与 phase_e_gateway 完全一致）。"""
+    if k_bound <= 0:
+        k_bound = 0.50
+    if lo < 1.0:
+        lo_eff = 1.0 - (1.0 - lo) / k_bound
+    else:
+        lo_eff = lo
+    if hi > 1.0:
+        hi_eff = 1.0 + (hi - 1.0) * k_bound
+    else:
+        hi_eff = hi
+    return lo_eff, hi_eff
+
+
+def clamp_action(raw: Dict[str, Any], k_bound: float = PHASE_E_DEFAULT_K_BOUND) -> Dict[str, Any]:
+    """§3.3+§3.4 双层 clamp（与 phase_e_gateway._clamp_action 完全一致）。
+
+    训练和推理必须使用同一套 clamp，否则 PPO 学到的策略无法迁移。
+    """
+    clamped: Dict[str, Any] = {}
+    for key, bounds in ACTION_BOUNDS.items():
+        val = raw.get(key, 1.0 if key != "max_addons_delta" else 0)
+        if key == "max_addons_delta":
+            clamped[key] = int(max(bounds["abs_lo"], min(bounds["abs_hi"], int(val))))
+            continue
+        lo_eff, hi_eff = _apply_k_bound_to_bounds(bounds["lo"], bounds["hi"], k_bound)
+        val = _clamp_value(float(val), lo_eff, hi_eff)
+        val = _clamp_value(val, 0.01, 100.0)
+        clamped[key] = val
+    return clamped
 
 
 def _one_hot(idx: int, n: int) -> List[float]:
@@ -100,12 +154,14 @@ class V15MartingaleGymEnv:
         max_addons: int = 4,
         use_shield: bool = True,
         seed: int = 42,
+        k_bound: float = PHASE_E_DEFAULT_K_BOUND,
     ):
         self._seed = seed
         self._rng = np.random.RandomState(seed)
         self.initial_capital = initial_capital
         self.max_addons = max_addons
         self.use_shield = use_shield
+        self.k_bound = k_bound
         self.observation_dim = 34
         self.action_dim = 5  # 4 continuous + 1 discrete
         # Episode state (在 reset 里填充 klines)
@@ -284,6 +340,9 @@ class V15MartingaleGymEnv:
 
     # ── Step: 引入真实开仓逻辑 ──
     def step(self, action: Dict[str, Any]) -> Tuple[np.ndarray, float, bool, Dict]:
+        # v4: 动作 clamp 对齐推理口径（与 phase_e_gateway._clamp_action 完全一致）
+        # 不 clamp 时 PPO 会输出 tp_pct_mult=7 等越界值导致策略崩溃
+        action = clamp_action(action, self.k_bound)
         i = self.current_step
         reward = 0.0
         info: Dict[str, Any] = {"step": i, "shield_flags": []}
@@ -452,13 +511,8 @@ class V15MartingaleGymEnv:
                 reward += REWARD_PNL_SCALE * pnl_usd  # v3-D: EOD 强平也计入 PnL
                 self.position = None
 
-        # ── DS 盾（简化） ──
-        if self.use_shield:
-            for kk in ["addon_size_mult", "base_position_mult"]:
-                if abs(float(action.get(kk, 1.0)) - 1.0) > 0.75:  # > 1.75 或 < 0.25
-                    reward += REWARD_SHIELD_VIOLATION
-                    self.shield_violations += 1
-                    info["shield_flags"].append(kk)
+        # v4: 旧 DS 盾（基于 penalty）已移除——clamp_action 保证动作始终在有效边界内，
+        # shield_flags 永远为空。生产环境的 DS1-DS6 盾仍在 phase_e_gateway.shield_check 中。
 
         self.total_reward += reward
         info["capital"] = float(self.capital)

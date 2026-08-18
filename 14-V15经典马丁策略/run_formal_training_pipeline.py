@@ -408,7 +408,7 @@ def train_phase_e_full(episodes: Optional[int] = None) -> Dict[str, Any]:
     )
 
     if episodes is None:
-        episodes = int(os.environ.get("V15_PPO_EPISODES", 2000))
+        episodes = int(os.environ.get("V15_PPO_EPISODES", 4000))
     episodes = int(episodes)
 
     log.info("=" * 72)
