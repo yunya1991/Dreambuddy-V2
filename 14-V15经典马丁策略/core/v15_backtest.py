@@ -10,6 +10,7 @@ V15 经典马丁策略回测引擎
 """
 import copy
 import json
+import os
 import sys
 import time
 import warnings
@@ -66,8 +67,10 @@ def _phase_d_make_gateway(
     patchtst_model_path: str = None,
     g_d1_bust_threshold: float = 0.60,
 ):
-    """phase_d_ai_enabled=False 时返回 None → 所有分支完全走基线。
+    """工厂：构造 PhaseDGateway 实例。TDD 测试可用 monkeypatch 注入 mock 实例工厂。
 
+    模型路径优先从参数传入，缺失时从 config_loader（.env.common）读取，再回退环境变量；
+    权重不存在/加载失败时 gateway 内部自动降级 heuristic（铁律1: 失败=基线）。
     v3: 支持加载真实 BiLSTM/PatchTST 模型 + 自定义 bust_threshold（B 点扫参）。
     """
     if not enabled:
@@ -75,6 +78,20 @@ def _phase_d_make_gateway(
     try:
         from phase_d_gateway import PhaseDGateway
 
+        # 模型路径：参数传入优先 → config_loader → 环境变量
+        if not bilstm_model_path or not patchtst_model_path:
+            try:
+                from config_loader import get_config
+
+                if not bilstm_model_path:
+                    bilstm_model_path = str(get_config("V15_AI_PHASE_D_BILSTM_MODEL_PATH", "") or "") or None
+                if not patchtst_model_path:
+                    patchtst_model_path = str(get_config("V15_AI_PHASE_D_PATCHTST_MODEL_PATH", "") or "") or None
+            except Exception:
+                if not bilstm_model_path:
+                    bilstm_model_path = os.environ.get("V15_AI_PHASE_D_BILSTM_MODEL_PATH", "") or None
+                if not patchtst_model_path:
+                    patchtst_model_path = os.environ.get("V15_AI_PHASE_D_PATCHTST_MODEL_PATH", "") or None
         kw = {"enabled": True, "g_d1_bust_threshold": float(g_d1_bust_threshold)}
         if bilstm_model_path:
             kw["bilstm_model_path"] = bilstm_model_path
@@ -2029,16 +2046,28 @@ def run_backtest(
                     try:
                         _slice_start = max(0, i - 13)
                         _kl_win = klines[_slice_start : i + 1]
-                        _elder_i = (
+                        # elder_ray_list 元素为 dict（prepare_elder_ray_for_4h）→ 提取 strength 标量
+                        # （与 §资金调度 line 844 同约定：strength≈50 中性，>50 偏多）
+                        _elder_raw = (
                             elder_ray_list[i]
                             if elder_ray_list is not None
                             and i < len(elder_ray_list)
                             and elder_ray_list[i] is not None
-                            else 0.0
+                            else None
                         )
+                        if isinstance(_elder_raw, dict):
+                            _elder_i = float(_elder_raw.get("strength", 50) or 50) - 50.0
+                        else:
+                            _elder_i = float(_elder_raw or 0.0)
                         _pd_p_bust = _phase_d_heuristic_p_bust(_kl_win, _elder_i, direction)
                         _pd_dd24h = _phase_d_heuristic_dd24h(closes, i)
-                        _pd_ctx = {"p_bust": _pd_p_bust, "p_dd": _pd_dd24h, "coin": coin}
+                        # heuristic 预估 + 原始特征（真实模型推理用；无权重时 gateway 走 heuristic）
+                        _pd_ctx = {
+                            "p_bust": _pd_p_bust, "p_dd": _pd_dd24h, "coin": coin,
+                            "klines_4h": klines[max(0, i - 59): i + 1],
+                            "klines_1h": None,  # 回测无 1H 数据 → gateway 内部 4H→1H 确定性展开
+                            "level": 0, "pnl_pct": 0.0,  # 开仓时刻无持仓
+                        }
                         if _phase_d_gw.should_skip_open(_pd_ctx):
                             continue  # G-D1: 高风险爆仓概率 → 跳过此单
                         _eff, _ = _phase_d_gw.compute_effective_max_addons(

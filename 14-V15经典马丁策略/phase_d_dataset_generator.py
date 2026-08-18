@@ -508,56 +508,68 @@ def build_dataset(
 # 真实 OKX K 线数据集生成（滑窗采样）
 # ================================================================
 def _fetch_real_1h_klines(coin: str, limit: int = 1500) -> List[Dict[str, float]]:
-    """从 OKX 公开 API 翻页拉取真实 1H K 线，标准化为 {o,h,l,c,v} 格式
+    """从 Hyperliquid API 翻页拉取真实 1H K 线，标准化为 {o,h,l,c,v} 格式
 
-    OKX /api/v5/market/candles 单次上限 300 根，用 before 参数向前翻页。
-    返回按时间正序排列。
+    Hyperliquid candleSnapshot API 单次上限约 500 根，用 startTime 向前翻页。
+    返回按时间正序排列（最早在前）。
     """
-    import json as _json
-    import urllib.request
-    inst_id = f"{coin}-USDT"
-    batch = 300  # OKX 单次上限
+    import sys as _sys
+    import time as _time
+    from pathlib import Path as _Path
+
+    # Path injection for aster_spot
+    _hl_dir = _Path(__file__).resolve().parent.parent / "experiments" / "ab-trading" / "execution"
+    if str(_hl_dir) not in _sys.path:
+        _sys.path.insert(0, str(_hl_dir))
+
+    from aster_spot import _info
+
+    batch = 500  # Hyperliquid 单次请求量
     seen_ts = set()
     all_candles: List[Dict[str, float]] = []
-    before = None  # 翻页游标（最早一根的 ts）
-    url_base = "https://www.okx.com/api/v5/market/candles"
+    now_ms = int(_time.time() * 1000)
+    interval_ms = 3600000  # 1h in ms
+    end_ms = now_ms
+
     while len(all_candles) < limit:
-        params = f"?instId={inst_id}&bar=1H&limit={batch}"
-        if before:
-            params += f"&before={before}"
+        count = min(batch, limit - len(all_candles))
+        start_ms = end_ms - interval_ms * count
         try:
-            req = urllib.request.Request(url_base + params, headers={"User-Agent": "V15-DatasetGen/1.0"})
-            with urllib.request.urlopen(req, timeout=20) as resp:
-                r = _json.loads(resp.read().decode("utf-8"))
+            raw = _info({
+                "type": "candleSnapshot",
+                "req": {"coin": coin, "interval": "1h",
+                        "startTime": start_ms, "endTime": end_ms}
+            })
+            raw = raw if isinstance(raw, list) else []
         except Exception as e:
             if all_candles:
                 print(f"[dataset] {coin} 翻页中断 ({e}), 已获取 {len(all_candles)} 根")
                 break
-            raise RuntimeError(f"OKX API {coin} 失败: {e}")
-        if r.get("code") != "0":
-            if all_candles:
-                break
-            raise RuntimeError(f"OKX API {coin} 错误: {r.get('msg')}")
-        data = r.get("data", [])
-        if not data:
+            raise RuntimeError(f"Hyperliquid API {coin} 失败: {e}")
+        if not raw:
             break
         new_added = 0
-        for d in data:
-            ts = int(d[0])
-            if ts in seen_ts:
+        for d in raw:
+            ts = int(d.get("t", 0))
+            if ts in seen_ts or ts == 0:
                 continue
             seen_ts.add(ts)
             all_candles.append({
-                "o": float(d[1]), "h": float(d[2]),
-                "l": float(d[3]), "c": float(d[4]),
-                "v": float(d[5]),
+                "o": float(d.get("o", 0)),
+                "h": float(d.get("h", 0)),
+                "l": float(d.get("l", 0)),
+                "c": float(d.get("c", 0)),
+                "v": float(d.get("v", 0)),
             })
             new_added += 1
-        before = data[-1][0]  # 最早一根的 ts 作为下一页游标
-        if new_added == 0 or len(data) < batch:
+        if new_added == 0:
             break
-    # OKX 返回倒序（最新在前），append 后列表为 [最新...最早]，reverse 成正序 [最早...最新]
-    all_candles.reverse()
+        # Move end_ms back to the earliest candle's timestamp for next page
+        earliest_ts = min(int(d.get("t", end_ms)) for d in raw)
+        end_ms = earliest_ts
+        if len(raw) < count:
+            break
+    # Hyperliquid returns ascending by t; pages are appended oldest-first
     return all_candles[:limit]
 
 

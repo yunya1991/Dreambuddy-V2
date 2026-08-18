@@ -186,7 +186,11 @@ _PHASE_D_GW_SINGLETON = None
 
 
 def _get_phase_d_gateway():
-    """懒加载 PhaseDGateway 单例。关闭开关时返回 None，保证调用方直接走基线分支。"""
+    """懒加载 PhaseDGateway 单例。关闭开关时返回 None，保证调用方直接走基线分支。
+
+    模型路径从配置读取（roadmap §7）：权重存在且加载成功 → 真实模型推理；
+    否则 gateway 内部自动降级 heuristic 桥接（铁律1: 失败=基线）。
+    """
     global _PHASE_D_GW_SINGLETON
     if not V15_AI_ENABLED:
         return None
@@ -195,14 +199,13 @@ def _get_phase_d_gateway():
     try:
         from phase_d_gateway import PhaseDGateway
 
-        _bilstm_path = str(BASE_DIR / "data" / "phase_d_models_v1" / "bilstm.pt")
-        _patchtst_path = str(BASE_DIR / "data" / "phase_d_models_v1" / "patchtst.pt")
+        _pd_bilstm_path = str(get_config("V15_AI_PHASE_D_BILSTM_MODEL_PATH", "") or "")
+        _pd_patchtst_path = str(get_config("V15_AI_PHASE_D_PATCHTST_MODEL_PATH", "") or "")
         _PHASE_D_GW_SINGLETON = PhaseDGateway(
             enabled=True,
-            bilstm_model_path=_bilstm_path,
-            patchtst_model_path=_patchtst_path,
+            bilstm_model_path=_pd_bilstm_path or None,
+            patchtst_model_path=_pd_patchtst_path or None,
         )
-        _log(f"[Phase-D] Gateway 已加载: BiLSTM={_bilstm_path}, PatchTST={_patchtst_path}")
         return _PHASE_D_GW_SINGLETON
     except Exception as _e:
         _log(f"[Phase-D] Gateway 初始化失败(降级为None=基线): {_e}")
@@ -220,12 +223,10 @@ def _get_phase_e_gateway():
     try:
         from phase_e_gateway import PhaseEGateway
 
-        _ppo_path = str(BASE_DIR / "data" / "phase_e_models_v1" / "ppo_lstm.pt")
         _PHASE_E_GW_SINGLETON = PhaseEGateway(
             enabled=True,
-            ppo_model_path=_ppo_path,
+            ppo_model_path=V15_AI_PHASE_E_MODEL_PATH or None,
         )
-        _log(f"[Phase-E] Gateway 已加载: PPO={_ppo_path}")
         return _PHASE_E_GW_SINGLETON
     except Exception as _e:
         _log(f"[Phase-E] Gateway 初始化失败(降级为None=基线): {_e}")
@@ -292,14 +293,12 @@ def _phase_d_heuristic_p_bust(klines_4h, params: dict, direction: str) -> float:
         tr = highs[i] - lows[i]
         atr_sum += tr
     atr_pct = (atr_sum / n) / max(1e-9, closes[-1])
-    elder = params.get("elder_ray", 0) if isinstance(params, dict) else 0
-    # elder_ray 可能是 dict（如 {bull_bars_pct, bear_bars_pct, avg_bull, avg_bear, score, state}），安全取标量
-    if isinstance(elder, dict):
-        elder = float(elder.get("score") or elder.get("value") or elder.get("bull_bars_pct") or 0)
-    try:
-        elder = float(elder)
-    except (TypeError, ValueError):
-        elder = 0.0
+    # elder_ray 为 dict（calc_elder_ray）→ 提取 strength 标量（≈50 中性，>50 偏多）
+    _er = params.get("elder_ray", 0) if isinstance(params, dict) else 0
+    if isinstance(_er, dict):
+        elder = float(_er.get("strength", 50) or 50) - 50.0
+    else:
+        elder = float(_er or 0.0)
     # 方向冲突：做多但 elder<0 或 做空但 elder>0 → 恶化爆仓风险
     direction_ok = (direction == "LONG" and elder >= 0) or (direction == "SHORT" and elder <= 0)
     risk = (dd12 * 0.55) + (atr_pct * 0.25) + (0.0 if direction_ok else 0.20)
@@ -653,11 +652,26 @@ def _get_okx_client():
         except Exception as e:
             _log(f"Paper客户端初始化失败: {e}")
             return None
-    # 硬安全闸：HL 数据源（网络封锁环境标志）只允许配合 paper 执行，
+    # V15_EXECUTION=hyperliquid 时使用 Hyperliquid 实盘客户端
+    if exec_mode == "hyperliquid":
+        try:
+            import sys as _sys
+            _aster_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+                os.path.abspath(__file__)))), "experiments", "ab-trading", "execution")
+            if _aster_dir not in _sys.path:
+                _sys.path.insert(0, _aster_dir)
+            from aster_spot import HyperliquidClient
+            client = HyperliquidClient(agent_id="v15")
+            _log(f"Hyperliquid实盘客户端已连接 | wallet={client.user_addr[:12]}...")
+            return client
+        except Exception as e:
+            _log(f"Hyperliquid客户端连接失败: {e}")
+            return None
+    # 硬安全闸：HL 数据源（网络封锁环境标志）只允许配合 paper/hyperliquid 执行，
     # 禁止构造 OKX 实盘客户端 —— 配置错误时快速失败而非静默降级
     if get_config("V15_DATA_SOURCE", "").strip().lower() == "hyperliquid":
         raise RuntimeError(
-            "硬安全闸: V15_DATA_SOURCE=hyperliquid 必须配合 V15_EXECUTION=paper, "
+            "硬安全闸: V15_DATA_SOURCE=hyperliquid 必须配合 V15_EXECUTION=paper|hyperliquid, "
             "禁止在网络封锁环境构造 OKX 实盘客户端")
     try:
         from okx_client import OKXSimulatedClient
@@ -714,6 +728,90 @@ def load_state():
         "cooldown_reason": "",
         "cooldown_triggered_at": "",
     }
+
+
+TRADE_HISTORY_FILE = BASE_DIR / "data" / "trade_history.json"
+
+
+def _save_trade_to_history(coin: str, pos: dict, exit_price: float, reason: str, profit_pct: float):
+    """平仓后持久化交易记录到 trade_history.json，供增量训练读取。
+
+    记录字段：coin, direction, entry_price, exit_price, pnl_pct, addons,
+    hold_hours, exit_reason, confidence, timing_score, ai_p_bust, timestamp。
+    """
+    try:
+        entry_price = pos.get("entry_price", 0)
+        direction = pos.get("direction", "LONG")
+        open_time = pos.get("open_time", "")
+        addons = pos.get("addons", 0)
+        confidence = pos.get("confidence", 50)
+        timing_score = pos.get("timing_score", 1.0)
+        ai_p_bust = pos.get("ai_p_bust", 0.0)
+        per_coin_budget = pos.get("per_coin_budget", 0)
+
+        # 计算持仓时长（小时）
+        hold_hours = 0.0
+        if open_time:
+            try:
+                from datetime import datetime, timezone
+                if "+00:00" in open_time:
+                    ot = datetime.fromisoformat(open_time)
+                else:
+                    ot = datetime.fromisoformat(open_time.replace("Z", "+00:00"))
+                hold_hours = (datetime.now(timezone.utc) - ot).total_seconds() / 3600.0
+            except Exception:
+                hold_hours = 0.0
+
+        # 计算 PnL (USDT)
+        pnl_usdt = profit_pct * pos.get("sz", 0) * entry_price if entry_price > 0 else 0.0
+
+        record = {
+            "coin": coin,
+            "direction": direction,
+            "entry_price": round(entry_price, 6),
+            "exit_price": round(exit_price, 6),
+            "pnl_pct": round(profit_pct, 6),
+            "pnl_usdt": round(pnl_usdt, 4),
+            "addons": addons,
+            "hold_hours": round(hold_hours, 2),
+            "exit_reason": reason,
+            "confidence": confidence,
+            "timing_score": timing_score,
+            "ai_p_bust": round(ai_p_bust, 6),
+            "per_coin_budget": per_coin_budget,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+        # 读取现有历史
+        history = []
+        if TRADE_HISTORY_FILE.exists():
+            try:
+                history = json.loads(TRADE_HISTORY_FILE.read_text(encoding="utf-8"))
+                if not isinstance(history, list):
+                    history = []
+            except Exception:
+                history = []
+
+        history.append(record)
+
+        # 保留最近 500 条
+        if len(history) > 500:
+            history = history[-500:]
+
+        # 原子写入
+        import tempfile
+        with tempfile.NamedTemporaryFile(
+            mode="w", dir=str(TRADE_HISTORY_FILE.parent),
+            suffix=".tmp", delete=False, encoding="utf-8",
+        ) as tmp:
+            json.dump(history, tmp, indent=2, ensure_ascii=False)
+            tmp_path = tmp.name
+        import os as _os
+        _os.replace(tmp_path, str(TRADE_HISTORY_FILE))
+
+        _log(f"[{coin}] 交易记录已保存到 trade_history.json (第{len(history)}条)")
+    except Exception as e:
+        _log(f"[{coin}] 交易记录保存失败: {e}")
 
 
 def save_state(state):
@@ -1077,28 +1175,19 @@ def _get_direction_ctx(coin):
                     if _pd_gw2 is not None:
                         try:
                             # 用 PatchTST 启发式 dd24h 估计作为"未来高波动 → 放宽入场评分"的信号
-                            _pd_klines_1h_raw = params.get("klines_1h", [])
-                            _pd_klines_1h_close = [
+                            _pd_klines_1h = [
                                 float(k["c"]) if isinstance(k, dict) and "c" in k else (float(k[4]) if isinstance(k, (list, tuple)) and len(k) >= 5 else None)
-                                for k in _pd_klines_1h_raw
+                                for k in params.get("klines_1h", [])
                             ]
-                            _pd_klines_1h_close = [v for v in _pd_klines_1h_close if v is not None]
-                            _pd_dd24h = _phase_d_heuristic_dd24h(_pd_klines_1h_close)
+                            _pd_klines_1h = [v for v in _pd_klines_1h if v is not None]
+                            _pd_dd24h = _phase_d_heuristic_dd24h(_pd_klines_1h)
                             _pd_old_score = ctx["timing_score"]
                             _pd_regime = str(tres.structure.kind if tres.structure else "UNCLEAR")
-                            # G-D3 在 TimingGate 作用域内，没有 execute_open_position 里的 _phase_d_p_bust 变量
-                            # 优先从 ctx 读，缺失用 heuristic 估算（与 G-D1 口径一致）
-                            _pd_p_bust_for_ctx = float(
-                                ctx.get("ai_p_bust")
-                                if ctx.get("ai_p_bust") is not None
-                                else _phase_d_heuristic_p_bust(params.get("klines_4h"), params, "LONG")
-                            )
                             _pd_ctx3 = {
-                                "p_bust": _pd_p_bust_for_ctx,
-                                "p_dd": _pd_dd24h,
-                                "klines_4h": params.get("klines_4h", []),
-                                "klines_1h": _pd_klines_1h_raw,
-                                "level": 0, "pnl_pct": 0.0,
+                                "p_bust": _phase_d_p_bust or 0.0, "p_dd": _pd_dd24h,
+                                "klines_4h": params.get("klines_4h"),
+                                "klines_1h": params.get("klines_1h"),
+                                "timing_score": _pd_old_score,
                             }
                             _new_score, _new_power = _pd_gw2.apply_timing_relaxation(
                                 coin, _pd_old_score, V15_TIMING_SIZE_POWER, _pd_regime, ctx=_pd_ctx3
@@ -1313,25 +1402,19 @@ def execute_open_position(client, coin, decision, state):
         try:
             # 预取 dynamic params 里的 klines_4h / elder_ray 用于构造预估（不影响后续 params 取数）
             _pd_params = _get_dynamic_params(client, coin, direction)
-            _pd_klines_4h = _pd_params.get("klines_4h", [])
-            # 获取 1H K 线（PatchTST 推理需要 120 根）
-            try:
-                from strategy_params import fetch_klines
-                _pd_klines_1h = fetch_klines(client, to_swap(coin), "1H", 150)
-            except Exception:
-                _pd_klines_1h = []
             _phase_d_p_bust = _phase_d_heuristic_p_bust(
-                _pd_klines_4h, _pd_params, direction
+                _pd_params.get("klines_4h"), _pd_params, direction
             )
             _pd_dd24h = _phase_d_heuristic_dd24h([
                 float(k["c"]) if isinstance(k, dict) and "c" in k else (float(k[4]) if isinstance(k, (list, tuple)) and len(k) >= 5 else None)
-                for k in _pd_klines_1h
+                for k in _pd_params.get("klines_1h", [])
             ])
-            # ctx 携带 klines 供真实模型推理 + heuristic 预估作为降级兜底
+            # ctx dict 携带 heuristic 预估 + 原始特征（真实模型推理用；无权重时 gateway 走 heuristic）
             _pd_ctx = {
                 "p_bust": _phase_d_p_bust, "p_dd": _pd_dd24h, "coin": coin,
-                "klines_4h": _pd_klines_4h, "klines_1h": _pd_klines_1h,
-                "level": 0, "pnl_pct": 0.0,
+                "klines_4h": _pd_params.get("klines_4h"),
+                "klines_1h": _pd_params.get("klines_1h"),
+                "level": 0, "pnl_pct": 0.0,  # 开仓时刻无持仓
             }
             if V15_AI_SHADOW:
                 _skip_shadow = _phase_d_gw.should_skip_open(_pd_ctx)
@@ -1339,25 +1422,18 @@ def execute_open_position(client, coin, decision, state):
                     f"[Phase-D-SHADOW][{coin}] G-D1 bust_prob={_phase_d_p_bust:.3f} dd24h={_pd_dd24h:.3f} should_skip={_skip_shadow}（SHADOW 不生效）"
                 )
             else:
-                _real_skip = _phase_d_gw.should_skip_open(_pd_ctx)
-                _log(
-                    f"[Phase-D][{coin}] G-D1 决策: skip={_real_skip}, BiLSTM P_bust={_phase_d_p_bust:.3f}, PatchTST dd24h={_pd_dd24h:.3f}, gate_code={_phase_d_gw.last_gate_code}"
-                )
-                if _real_skip:
-                    _log(f"[Phase-D][{coin}] G-D1 跳过开仓: 命中 {_phase_d_gw.last_gate_code} 闸门")
+                if _phase_d_gw.should_skip_open(_pd_ctx):
+                    _log(f"[Phase-D][{coin}] G-D1 跳过开仓: BiLSTM 爆仓概率={_phase_d_p_bust:.3f}")
                     return False
             # G-D2：effective_max_addons 保存起来，稍后在加仓预算/网格处使用
             _addon_budgets = {f"addon{k}_usd": 0 for k in [1, 2, 3, 4]}  # 占位，实际预算在 alloc 后填入
-            _eff, _trimmed = _phase_d_gw.compute_effective_max_addons(
+            _eff, _ = _phase_d_gw.compute_effective_max_addons(
                 coin, _pd_ctx, MAX_ADDONS, _addon_budgets
             )
             _phase_d_effective_max_addons = int(_eff)
-            _log(
-                f"[Phase-D][{coin}] G-D2 决策: 基线={MAX_ADDONS} → 实际={_phase_d_effective_max_addons}, trimmed={_trimmed}, P_bust={_phase_d_p_bust:.3f}{' [SHADOW]' if V15_AI_SHADOW else ''}"
-            )
-            if _phase_d_effective_max_addons != MAX_ADDONS and V15_AI_SHADOW:
+            if _phase_d_effective_max_addons != MAX_ADDONS:
                 _log(
-                    f"[Phase-D-SHADOW][{coin}] G-D2 缩档: 基线={MAX_ADDONS} → {_phase_d_effective_max_addons}（SHADOW 不生效，仍按基线执行）"
+                    f"[Phase-D][{coin}] G-D2 加仓档数: 基线={MAX_ADDONS} → 实际={_phase_d_effective_max_addons} (bust_prob={_phase_d_p_bust:.3f}){' [SHADOW]' if V15_AI_SHADOW else ''}"
                 )
         except Exception as _pd_e:
             _log(f"[Phase-D][{coin}] G-D1/G-D2 评估异常(降级基线): {_pd_e}")
@@ -2564,49 +2640,6 @@ def check_take_profit(client, coin, pos, state):
         return False
 
 
-def _rank_signal_against_market(coin, state):
-    """超时止盈信号排名：比较当前币种与其他未持仓币种的信号强度。
-
-    用 confidence (0-100) 作为信号强度，只对 action ∈ {OPEN_BULL, OPEN_BEAR}
-    的有效开仓信号参与排名；WAIT 状态视为 0。
-
-    Returns:
-        (current_conf, best_other_coin, best_other_conf, is_current_best)
-        - is_current_best=True  → 当前币种信号最强，应继续持有
-        - is_current_best=False → 存在更强币种，应平仓换仓
-    """
-    try:
-        current_decision = get_v15_decision(coin)
-        current_conf = current_decision.get("confidence", 0)
-        if current_decision.get("action", "WAIT") not in ("OPEN_BULL", "OPEN_BEAR"):
-            current_conf = 0
-
-        held_coins = set(state.get("positions", {}).keys())
-        best_other_coin = None
-        best_other_conf = 0
-
-        for other_coin in COINS:
-            if other_coin == coin or other_coin in held_coins:
-                continue
-            try:
-                other_decision = get_v15_decision(other_coin)
-                if other_decision.get("action", "WAIT") in ("OPEN_BULL", "OPEN_BEAR"):
-                    other_conf = other_decision.get("confidence", 0)
-                    if other_conf > best_other_conf:
-                        best_other_conf = other_conf
-                        best_other_coin = other_coin
-            except Exception as e:
-                _log(f"[{coin}] 信号排名: 获取 {other_coin} 信号异常: {e}")
-                continue
-
-        is_current_best = current_conf >= best_other_conf
-        return current_conf, best_other_coin, best_other_conf, is_current_best
-    except Exception as e:
-        _log(f"[{coin}] 信号排名异常: {e}")
-        # 异常时保守处理：视为当前币种最强（不平仓）
-        return 0, None, 0, True
-
-
 def check_time_exit(client, coin, pos, state):
     """
     分层超时离场评估（V15 自有逻辑，不依赖经典离场系统）。
@@ -2616,7 +2649,7 @@ def check_time_exit(client, coin, pos, state):
       - 无加仓：从开仓(open_time)计时，过底仓超时阈值
 
     超时后 V15 自有决策：
-      - 盈利 → 信号排名对比：当前币种最强则延长窗口继续持有；存在更强币种则平仓换仓
+      - 盈利 → 提高止盈价（让利润奔跑，不超过原始止盈2倍）
       - 亏损未触发止损 → 继续持有（马丁策略允许较长持仓+较高波动）
       止损由 check_tp_sl 的动态止损线（日/周MA200）和 OCO 硬单保护
     """
@@ -2652,11 +2685,6 @@ def check_time_exit(client, coin, pos, state):
             max_hours *= holding_mult
             golden_window *= holding_mult
 
-        # 超时止盈信号排名延长窗口（time_exit_extension 累计延长小时数）
-        time_exit_extension = pos.get("time_exit_extension", 0.0)
-        if time_exit_extension > 0:
-            max_hours += time_exit_extension
-
         if base_time.tzinfo is None:
             base_time = base_time.replace(tzinfo=timezone.utc)
 
@@ -2683,45 +2711,19 @@ def check_time_exit(client, coin, pos, state):
         )
 
         if profit_pct > 0:
-            # 超时盈利：信号排名对比决定去留
-            # - 延长上限已达 → 直接平仓（避免无限延长时间成本）
-            # - 当前币种信号最强 → 延长超时窗口继续持有（避免频繁换仓）
-            # - 存在更强币种 → 平仓止盈释放仓位（下一轮 poll 自然开新仓）
-            max_extension = get_config_float("V15_TIME_EXIT_MAX_EXTENSION_HOURS", 24.0)
-            if time_exit_extension >= max_extension:
+            # 盈利超时：提高止盈价 50%，让利润奔跑（上限为原始止盈的2倍）
+            original_tp = pos.get("take_profit_pct", BASE_TP_PCT)
+            new_tp = original_tp * 1.5
+            capped_tp = min(new_tp, original_tp * 2.0)
+            if capped_tp > original_tp:
+                pos["take_profit_pct"] = capped_tp
+                sl_price = params.get("stop_loss_price")
+                _sync_tp_sl_orders(client, coin, pos, entry_price, capped_tp, sl_price)
                 _log(
-                    f"[{coin}] 超时盈利 {profit_pct:+.2%}, 持仓{hold_hours:.1f}h > {max_hours:.0f}h, "
-                    f"延长上限已达 {time_exit_extension:.0f}h/{max_extension:.0f}h, "
-                    f"直接平仓止盈释放仓位"
+                    f"[{coin}] 超时盈利, 提高止盈 {original_tp:.2%} → {capped_tp:.2%}, OCO挂单已同步"
                 )
-                _execute_close_position(client, coin, pos, state, reason="time_exit_profit_max_ext")
-                return True
-
-            # 信号排名对比（当前币种 vs 其他未持仓币种）
-            current_conf, best_other_coin, best_other_conf, is_current_best = (
-                _rank_signal_against_market(coin, state)
-            )
-
-            if is_current_best:
-                # 当前币种信号最强 → 延长超时窗口继续持有
-                step = get_config_float("V15_TIME_EXIT_EXTENSION_STEP_HOURS", 6.0)
-                pos["time_exit_extension"] = time_exit_extension + step
-                save_state(state)
-                _log(
-                    f"[{coin}] 超时盈利 {profit_pct:+.2%}, 持仓{hold_hours:.1f}h > {max_hours:.0f}h, "
-                    f"信号排名最高(conf={current_conf:.0f}), "
-                    f"延长超时窗口 +{step:.0f}h (累计 {pos['time_exit_extension']:.0f}h/{max_extension:.0f}h), 继续持有"
-                )
-                return False
             else:
-                # 存在更强币种 → 平仓止盈换仓
-                _log(
-                    f"[{coin}] 超时盈利 {profit_pct:+.2%}, 持仓{hold_hours:.1f}h > {max_hours:.0f}h, "
-                    f"信号排名落后(当前 conf={current_conf:.0f} < {best_other_coin} conf={best_other_conf:.0f}), "
-                    f"平仓止盈释放仓位换更强币种"
-                )
-                _execute_close_position(client, coin, pos, state, reason="time_exit_profit_switch")
-                return True
+                _log(f"[{coin}] 超时盈利, 止盈已达上限 {original_tp:.2%}, 继续持有")
         else:
             # 亏损超时：未触发止损线则继续持有（马丁策略允许较长持仓等反弹）
             sl_price = params.get("stop_loss_price")
@@ -2788,6 +2790,14 @@ def _execute_close_position(client, coin, pos, state, reason="", exit_price=None
                     _on_loss_trade(state, coin, reason=f"平仓({reason}) {pnl_label}")
 
                 if coin in state["positions"]:
+                    # 保存交易记录到 trade_history.json（供增量训练读取）
+                    _save_trade_to_history(
+                        coin=coin,
+                        pos=pos,
+                        exit_price=final_exit_price,
+                        reason=reason,
+                        profit_pct=profit_pct,
+                    )
                     # 注册到 L4
                     _register_martin_trade_to_l4(
                         coin=coin,
@@ -3082,6 +3092,139 @@ def run_light_poll_cycle():
             _log(
                 f"  [{coin}] mark=${pos.get('current_price', 0):.4f} pnl=${pnl:.2f} ({pnl_pct:+.2%})"
             )
+
+
+def manage_all_positions(client):
+    """持仓管理完整周期（不含信号计算和开仓）
+
+    由 DreamOS V15Executor 薄包装层调用，封装以下逻辑：
+    1. 冷却期检查（exit_cooldown_if_expired + is_in_cooldown）
+    2. 月度重建检查（check_monthly_rebuild + trigger_capital_rebuild）
+    3. 反弹监控（影子模式，仅输出不决策）
+    4. 遍历持仓执行管理链路：
+       check_take_profit → check_time_exit
+       → _check_addon_grid_status → execute_addon
+       → _update_tp_sl_dynamic
+    5. 保存状态并返回结构化管理结果摘要
+
+    Args:
+        client: 交易客户端实例（由调用方注入，兼容 14-V15 接口）
+
+    Returns:
+        Dict: 管理结果摘要
+        {
+            "managed_count": int,      # 管理的持仓数量
+            "closed_count": int,       # 本轮平仓数量
+            "addon_count": int,        # 本轮加仓数量
+            "cooldown_active": bool,   # 冷却期是否激活
+            "details": [               # 逐币种管理详情
+                {"coin": str, "action": str, "pnl": float}, ...
+            ]
+        }
+    """
+    state = load_state()
+
+    if not client:
+        _log("[manage_all_positions] 客户端不可用, 跳过本轮")
+        save_state(state)
+        return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
+                "cooldown_active": False, "details": []}
+
+    # ── 冷却状态检查（每轮必检）──
+    exit_cooldown_if_expired(state)
+    in_cd, remain_hours, cd_reason = is_in_cooldown(state)
+    if in_cd:
+        _log(
+            f"[风控-冷却] 交易暂停中，剩余 {remain_hours:.1f}h "
+            f"(原因: {cd_reason})，跳过开仓，仅监控现有持仓"
+        )
+
+    # ── 月度重建检查 ──
+    if check_monthly_rebuild(state):
+        trigger_capital_rebuild(state, reason="月度定时优化（每月1号）")
+
+    # ── 反弹监控（影子模式：只输出不决策）──
+    if BOUNCE_MONITOR_ENABLED:
+        _log("--- 反弹潜力监控（影子模式）---")
+        try:
+            signal_result = monitor_bounce_signals(COINS, lookback=60, min_signals=1)
+            if signal_result["highlighted_count"] > 0:
+                for r in signal_result["highlighted"]:
+                    triggers = ", ".join(r["triggered_list"])
+                    _log(f"[{r['coin']}] 信号触发({triggers}): n_triggered={r['n_triggered']}")
+                highlighted_coins = ", ".join([r["coin"] for r in signal_result["highlighted"]])
+                _log(f"潜在高价值币种({signal_result['highlighted_count']}个): {highlighted_coins}")
+            else:
+                _log("无信号触发币种")
+        except Exception as e:
+            _log(f"信号监控异常: {e}")
+        _log("--- 监控结束 ---")
+
+    # ── 持仓管理 ──
+    managed_count = 0
+    closed_count = 0
+    addon_count = 0
+    details = []
+
+    _log(f"=== 持仓管理开始 ({len(COINS)}币种, 持仓{len(state['positions'])}个) ===")
+
+    for coin in COINS:
+        try:
+            if coin in state["positions"]:
+                pos = state["positions"][coin]
+                managed_count += 1
+
+                # 兼容旧持仓：补充移动止盈状态字段
+                if "trailing_active" not in pos:
+                    pos["trailing_active"] = False
+                    pos["trailing_price"] = None
+                    pos["peak_price"] = pos.get("entry_price", 0)
+
+                action = "HOLD"
+                pnl = 0.0
+
+                if not check_take_profit(client, coin, pos, state):
+                    if not check_time_exit(client, coin, pos, state):
+                        # 先检查加仓网格挂单状态（已成交则更新持仓）
+                        _check_addon_grid_status(client, coin, pos)
+                        # execute_addon 作为兜底：网格未覆盖或挂单失败时市价加仓
+                        added = execute_addon(client, coin, pos, state)
+                        if added:
+                            action = "ADDON"
+                            addon_count += 1
+                        else:
+                            _update_tp_sl_dynamic(client, coin, pos)
+                            action = "MANAGE"
+                    else:
+                        action = "TIME_EXIT"
+                        closed_count += 1
+                        pnl = pos.get("realized_pnl", 0)
+                else:
+                    action = "TP_HIT"
+                    closed_count += 1
+                    pnl = pos.get("realized_pnl", 0)
+
+                details.append({"coin": coin, "action": action, "pnl": pnl})
+
+            save_state(state)
+
+        except Exception as e:
+            _log(f"[{coin}] 持仓管理异常: {e}")
+            details.append({"coin": coin, "action": "ERROR", "pnl": 0.0})
+
+    _log(
+        f"=== 持仓管理完成 | 管理:{managed_count} 平仓:{closed_count} 加仓:{addon_count} "
+        f"冷却:{'是' if in_cd else '否'} ==="
+    )
+    save_state(state)
+
+    return {
+        "managed_count": managed_count,
+        "closed_count": closed_count,
+        "addon_count": addon_count,
+        "cooldown_active": in_cd,
+        "details": details,
+    }
 
 
 def run_poll_cycle():

@@ -407,6 +407,32 @@ class HyperliquidClient:
             "mode":      "perp",
         }
 
+    def get_balance(self) -> Dict:
+        """获取账户余额（兼容 14-V15 capital_manager 期望的 OKX 格式）
+
+        capital_manager.get_account_balance() 调用 client.get_balance()，
+        期望返回: {ok, total_eq, assets: {USDT: {avail, frozen}}}
+        """
+        try:
+            acct = self.get_account()
+            if not acct.get("ok"):
+                return {"ok": False, "error": acct.get("error", "get_account failed")}
+            equity = float(acct.get("equity", 0))
+            avail = float(acct.get("avail", 0))
+            frozen = max(0, equity - avail)
+            return {
+                "ok": True,
+                "total_eq": equity,
+                "assets": {
+                    "USDT": {
+                        "avail": avail,
+                        "frozen": frozen,
+                    }
+                },
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def get_mid_price(self, coin: str) -> float:
         mids = self.get_all_mids()
         return float(mids.get(coin, 0))
@@ -453,7 +479,7 @@ class HyperliquidClient:
             "orders": [{
                 "a":  self._asset_index(coin),
                 "b":  is_buy,
-                "p":  _price_to_wire(limit_px),
+                "p":  _price_to_wire(limit_px, coin),
                 "s":  float_to_wire(round(sz, _size_decimals(coin))),
                 "r":  reduce_only,
                 "t":  {"limit": {"tif": "Ioc"}},
@@ -476,6 +502,94 @@ class HyperliquidClient:
             "filled":   filled,
             "raw":      resp,
         }
+
+    def limit_order(self, coin: str, is_buy: bool, sz: float, px: float,
+                    leverage: int = DEFAULT_LEVERAGE,
+                    reduce_only: bool = False,
+                    tag: str = "ab") -> Dict:
+        """合约限价单（GTC - Good Till Cancel）
+
+        用于加仓网格挂单等需要持续挂着的限价单。
+        与 market_order 的区别：使用用户指定价格 + GTC 时效。
+        """
+        leverage = min(max(1, leverage), MAX_LEVERAGE)
+        try:
+            self.set_leverage(coin, leverage)
+        except Exception:
+            pass
+
+        action = {
+            "type": "order",
+            "orders": [{
+                "a":  self._asset_index(coin),
+                "b":  is_buy,
+                "p":  _price_to_wire(px, coin),
+                "s":  float_to_wire(round(sz, _size_decimals(coin))),
+                "r":  reduce_only,
+                "t":  {"limit": {"tif": "Gtc"}},
+            }],
+            "grouping": "na",
+        }
+        resp = self._exchange(action)
+        filled = {}
+        oid = None
+        try:
+            filled = resp.get("response", {}).get("data", {}).get("statuses", [{}])[0]
+            if "error" in filled:
+                return {
+                    "ok":       False,
+                    "coin":     coin,
+                    "side":     "BUY" if is_buy else "SELL",
+                    "sz":       sz,
+                    "px":       px,
+                    "leverage": leverage,
+                    "filled":   filled,
+                    "ord_id":   None,
+                    "error":    filled["error"],
+                    "raw":      resp,
+                }
+            if "resting" in filled:
+                oid = filled["resting"].get("oid")
+            elif "filled" in filled:
+                oid = filled["filled"].get("oid")
+        except Exception:
+            pass
+        ok = resp.get("status") == "ok" and oid is not None
+        return {
+            "ok":       ok,
+            "coin":     coin,
+            "side":     "BUY" if is_buy else "SELL",
+            "sz":       sz,
+            "px":       px,
+            "leverage": leverage,
+            "filled":   filled,
+            "ord_id":   oid,
+            "raw":      resp,
+        }
+
+    def cancel_order(self, coin: str, oid: int) -> Dict:
+        """取消单个挂单（含 trigger 条件单）
+
+        Args:
+            coin: 币种名称
+            oid: 订单 ID
+        """
+        asset_idx = self._asset_index(coin)
+        action = {
+            "type": "cancel",
+            "cancels": [{"a": asset_idx, "o": oid}],
+        }
+        try:
+            resp = self._exchange(action)
+            statuses = resp.get("response", {}).get("data", {}).get("statuses", [])
+            ok = resp.get("status") == "ok" and any(s == "success" for s in statuses)
+            return {
+                "ok": ok,
+                "cancelled": 1 if ok else 0,
+                "raw": resp,
+            }
+        except Exception as e:
+            return {"ok": False, "error": str(e), "cancelled": 0}
 
     def open_long(self, coin: str, usdt_amount: float,
                   leverage: int = DEFAULT_LEVERAGE, tag: str = "ab") -> Dict:
@@ -532,13 +646,13 @@ class HyperliquidClient:
             order = {
                 "a": asset_idx,
                 "b": not is_long,
-                "p": _price_to_wire(stop_loss_price),
+                "p": _price_to_wire(stop_loss_price, coin),
                 "s": float_to_wire(round(sz, _size_decimals(coin))),
                 "r": True,
                 "t": {
                     "trigger": {
                         "isMarket": is_market,
-                        "triggerPx": _price_to_wire(stop_loss_price),
+                        "triggerPx": _price_to_wire(stop_loss_price, coin),
                         "tpsl": "sl",
                     }
                 },
@@ -549,13 +663,13 @@ class HyperliquidClient:
             order = {
                 "a": asset_idx,
                 "b": not is_long,
-                "p": _price_to_wire(take_profit_price),
+                "p": _price_to_wire(take_profit_price, coin),
                 "s": float_to_wire(round(sz, _size_decimals(coin))),
                 "r": True,
                 "t": {
                     "trigger": {
                         "isMarket": is_market,
-                        "triggerPx": _price_to_wire(take_profit_price),
+                        "triggerPx": _price_to_wire(take_profit_price, coin),
                         "tpsl": "tp",
                     }
                 },
@@ -809,6 +923,7 @@ class HyperliquidClient:
 # 永续合约 asset index
 _ASSET_INDEX = {
     "BTC": 0, "ETH": 1, "HYPE": 159, "UNI": 39, "SOL": 5, "ZEC": 214, "LIT": 223, "ARB": 11, "XRP": 25, "WLD": 31, "NEAR": 74, "SUI": 14, "LDO": 17, "ADA": 65, "ZRO": 46, "ENA": 122, "ETHFI": 121, "JUP": 90, "JTO": 94, "SYRUP": 199,
+    "AVAX": 6, "DOGE": 12, "INJ": 13, "AAVE": 28, "ONDO": 106, "TAO": 116, "KAITO": 185, "HEMI": 211,
 }
 
 # 现货 token ID（Hyperliquid spot，asset = token_id + 10000）
@@ -817,22 +932,26 @@ _SPOT_TOKEN = {
     "HYPE": 10150, "AVAX": 10007,
 }
 
-def _price_to_wire(px: float) -> str:
-    """Hyperliquid 要求价格用 5 位有效数字"""
-    import math
+def _price_to_wire(px: float, coin: str = "") -> str:
+    """按币种精度格式化价格，替代旧的5位有效数字方案。
+
+    Hyperliquid 各币种价格精度不同（如 BTC=1位小数, ARB=4位小数）。
+    旧方案使用5位有效数字导致非标准精度币种下单失败。
+    现在按 _price_decimals(coin) 四舍五入后转为字符串。
+    """
     if px <= 0:
         return "0"
-    mag = math.floor(math.log10(abs(px)))
-    factor = 10 ** (4 - mag)
-    rounded = round(px * factor) / factor
-    return float_to_wire(rounded)
+    decimals = _price_decimals(coin) if coin else 4
+    return float_to_wire(round(px, decimals))
 
 def _price_decimals(coin: str) -> int:
-    return {"BTC": 1, "ETH": 2, "HYPE": 3, "UNI": 3, "SOL": 3, "ZEC": 3, "LIT": 5, "ARB": 4, "XRP": 5, "WLD": 4, "NEAR": 4, "SUI": 4, "LDO": 4, "ADA": 5, "ZRO": 4, "ENA": 5, "ETHFI": 4, "JUP": 5, "JTO": 5, "SYRUP": 5}.get(coin, 4)
+    return {"BTC": 0, "ETH": 1, "HYPE": 3, "UNI": 3, "SOL": 3, "ZEC": 3, "LIT": 5, "ARB": 4, "XRP": 5, "WLD": 4, "NEAR": 4, "SUI": 4, "LDO": 4, "ADA": 5, "ZRO": 4, "ENA": 5, "ETHFI": 4, "JUP": 5, "JTO": 5, "SYRUP": 5,
+            "AVAX": 4, "DOGE": 5, "INJ": 4, "AAVE": 3, "ONDO": 4, "TAO": 3, "KAITO": 4, "HEMI": 6}.get(coin, 4)
 
 def _size_decimals(coin: str) -> int:
     return {
         "BTC": 5, "ETH": 4, "HYPE": 2, "UNI": 1, "SOL": 2, "ZEC": 2, "LIT": 0, "ARB": 1, "XRP": 0, "WLD": 1, "NEAR": 1, "SUI": 1, "LDO": 1, "ADA": 0, "ZRO": 1, "ENA": 0, "ETHFI": 1, "JUP": 0, "JTO": 0, "SYRUP": 0,
+        "AVAX": 2, "DOGE": 0, "INJ": 1, "AAVE": 2, "ONDO": 0, "TAO": 3, "KAITO": 0, "HEMI": 0,
     }.get(coin, 2)
 
 
