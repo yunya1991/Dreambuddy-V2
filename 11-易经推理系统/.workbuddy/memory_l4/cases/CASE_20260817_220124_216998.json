@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [BTC]: UNCERTAIN → HOLD (confidence=0.26, latency=78544ms, tokens=0)",
+  "confidence": 0.2622,
+  "tags": [
+    "BTC",
+    "UNCERTAIN",
+    "HOLD",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260817_220124_216998",
+  "timestamp": "2026-08-17T22:01:24+08:00"
+}

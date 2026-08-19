@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260814030321_a2a4ec",
+    "title": "交易分析: 分析 SOL 的交易机会",
+    "goal": "symbol=SOL, price=75.9155",
+    "status": "running",
+    "started_at": "2026-08-14T03:03:21.032839+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 SOL 的交易机会",
+      "goal": "symbol=SOL, price=75.9155"
+    },
+    "estimated_tokens": 15
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 SOL 的交易机会",
+      "symbol": "SOL",
+      "price": "75.9155",
+      "intent_type": "UNCERTAIN",
+      "intent_confidence": "0.68",
+      "recommended_chain": "",
+      "scenario_id": "NEUTRAL_NORMAL_ACCELERATING"
+    },
+    "estimated_tokens": 41
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"UNCERTAIN\", \"confidence\": 0.68, \"chain\": \"\", \"rationale\": \"SOL价格与24H涨跌幅接近中性，RSI14为47.2且成交量、资金费率、ADX等关键数据缺失，无法确认趋势、突破或均值回归机会。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 9, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"A6\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 9, \"success_nodes\": 9, \"skipped_nodes\": 0, \"total_nodes\": 9, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 111
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 SOL 的交易机会",
+        "goal": "symbol=SOL, price=75.9155"
+      },
+      "timestamp": "2026-08-14T03:03:21.032913+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-14T03:03:21.032920+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-14T03:03:21.032929+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-14T03:03:21.032935+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-14T03:03:30.430653+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-14T03:03:30.430672+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-14T03:03:30.430678+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-14T03:03:30.430740+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-14T03:04:57.417063+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-14T03:04:57.417100+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-14T03:04:57.417107+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-14T03:04:57.417417+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-14T03:04:57.450515+00:00"
+    }
+  ],
+  "saved_at": "2026-08-14T03:04:57.452362+00:00"
+}

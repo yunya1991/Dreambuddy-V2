@@ -1,0 +1,891 @@
+{
+  "NEUTRAL_NORMAL_DECELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T11:21:39.944370",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08706,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T12:12:06.101519",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08714,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T12:13:31.471291",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07513,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T13:10:33.590646",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08719,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T13:12:00.251211",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07517,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T16:39:22.803193",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.1395,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T16:47:46.905757",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08617,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T17:05:44.826662",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.0565,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T17:09:27.303940",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "DOT",
+      "entry_price": 0.76968,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T17:13:46.633414",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07415,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T18:05:08.967036",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.1765,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T18:12:38.808114",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.0742,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T18:40:50.280449",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.2645,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T18:50:12.062745",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07446,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T20:14:06.751789",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08621,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T04:12:33.847368",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08541,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T05:04:55.577227",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.5005,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T08:05:01.495986",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.3045,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T08:09:17.432687",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "DOT",
+      "entry_price": 0.76065,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T08:14:05.448005",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07266,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T12:13:31.917504",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08496,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T20:13:32.285225",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08476,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T20:15:15.544830",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07349,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T00:12:20.027685",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07497,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T04:11:08.554312",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08421,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T23:11:22.539478",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07513,
+      "exit_price": 0
+    }
+  ],
+  "NEUTRAL_NORMAL_ACCELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T11:22:39.029497",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07517,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T14:10:47.580933",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08734,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T14:12:16.218609",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07524,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T15:12:34.292647",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07504,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T16:14:53.402378",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07419,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T16:44:11.653923",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "DOT",
+      "entry_price": 0.76991,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T16:49:20.642559",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07424,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T17:12:25.678574",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08603,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T20:05:45.257745",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.2045,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T20:07:32.903721",
+      "status": "open",
+      "direction": "LONG",
+      "result": 0.0,
+      "expected_direction": "LONG",
+      "symbol": "AVAX",
+      "entry_price": 6.5668,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T20:15:51.916504",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07427,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T00:06:09.379519",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.4515,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T00:10:46.326838",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "DOT",
+      "entry_price": 0.77476,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T00:14:21.624725",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08596,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T00:16:13.249377",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07409,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T04:09:18.470104",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "DOT",
+      "entry_price": 0.76667,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T04:14:05.572995",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07361,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T08:12:29.540430",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08504,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T12:05:27.895910",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.5745,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T12:15:07.195051",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.0728,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T16:00:21.446936",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08508,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T16:02:49.248385",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07356,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T19:47:19.898061",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "AVAX",
+      "entry_price": 6.3645,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T22:06:07.799813",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "AVAX",
+      "entry_price": 6.3833,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T22:07:24.700908",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "AVAX",
+      "entry_price": 6.3842,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T00:11:07.107021",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.0854,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T04:12:28.409199",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07437,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T08:11:16.958980",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08332,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T08:12:37.993160",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07347,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T12:12:02.984284",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08487,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T16:16:38.076950",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08462,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T16:18:01.063982",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ARB",
+      "entry_price": 0.07475,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T20:07:29.244847",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "OP",
+      "entry_price": 0.08379,
+      "exit_price": 0
+    }
+  ],
+  "BULL_NORMAL_DECELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T12:06:15.044475",
+      "status": "open",
+      "direction": "LONG",
+      "result": 0.0,
+      "expected_direction": "LONG",
+      "symbol": "AVAX",
+      "entry_price": 6.7776,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T13:05:47.785206",
+      "status": "open",
+      "direction": "LONG",
+      "result": 0.0,
+      "expected_direction": "LONG",
+      "symbol": "AVAX",
+      "entry_price": 6.725,
+      "exit_price": 0
+    }
+  ],
+  "NEUTRAL_HIGH_ACCELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T16:07:43.877955",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "AVAX",
+      "entry_price": 0,
+      "exit_price": 0
+    }
+  ],
+  "NEUTRAL_LOW_DECELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T16:46:01.506418",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 610.805,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T18:47:25.951752",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 611.36,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T04:03:27.674353",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ETH",
+      "entry_price": 1883.75,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T04:11:03.094890",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 611.015,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T18:11:57.819544",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 606.195,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T20:11:38.038910",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 606.985,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T04:09:49.331365",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 605.025,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T12:10:32.546247",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 604.87,
+      "exit_price": 0
+    }
+  ],
+  "NEUTRAL_LOW_ACCELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-15T20:12:20.276850",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 612.345,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T00:04:12.030791",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ETH",
+      "entry_price": 1884.25,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T01:10:49.080511",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 611.275,
+      "exit_price": 0
+    }
+  ],
+  "BEAR_NORMAL_DECELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T16:07:24.670069",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.4005,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-16T20:05:51.245664",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "SOL",
+      "entry_price": 75.2485,
+      "exit_price": 0
+    }
+  ],
+  "BEAR_LOW_DECELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T08:09:56.672616",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 602.205,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T20:06:29.800945",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 604.465,
+      "exit_price": 0
+    }
+  ],
+  "BEAR_LOW_ACCELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T16:15:28.938138",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BNB",
+      "entry_price": 603.965,
+      "exit_price": 0
+    }
+  ],
+  "BULL_LOW_DECELERATING": [
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-17T23:02:57.309289",
+      "status": "open",
+      "direction": "LONG",
+      "result": 0.0,
+      "expected_direction": "LONG",
+      "symbol": "ETH",
+      "entry_price": 1906.15,
+      "exit_price": 0
+    }
+  ]
+}

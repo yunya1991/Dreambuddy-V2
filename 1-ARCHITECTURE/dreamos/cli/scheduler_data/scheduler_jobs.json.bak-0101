@@ -1,0 +1,48 @@
+[
+  {
+    "name": "scan_main",
+    "cron_expr": "0 * * * *",
+    "enabled": true,
+    "symbols": [
+      "BTC",
+      "ETH",
+      "SOL",
+      "AVAX",
+      "LINK",
+      "DOT",
+      "BNB",
+      "OP",
+      "ARB"
+    ],
+    "dry_run": true,
+    "exchange": "hyperliquid",
+    "job_type": "scan"
+  },
+  {
+    "name": "exit_check",
+    "cron_expr": "*/30 * * * *",
+    "enabled": true,
+    "symbols": [],
+    "dry_run": true,
+    "exchange": "hyperliquid",
+    "job_type": "exit_check"
+  },
+  {
+    "name": "backtest_evaluation",
+    "cron_expr": "0 */6 * * *",
+    "enabled": true,
+    "symbols": [],
+    "dry_run": true,
+    "exchange": "hyperliquid",
+    "job_type": "backtest"
+  },
+  {
+    "name": "orchestration_optimize",
+    "cron_expr": "0 3 * * 1",
+    "enabled": true,
+    "symbols": [],
+    "dry_run": true,
+    "exchange": "hyperliquid",
+    "job_type": "optimize"
+  }
+]

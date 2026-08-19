@@ -1,0 +1,51 @@
+{
+  "id": "CS-1786846214005",
+  "start_time": 1786846214.0053024,
+  "end_time": 1786848017.4361653,
+  "status": "ended",
+  "task_type": "strategy-execution",
+  "action_count": 1,
+  "recalled_memory_ids": [
+    "VM-1786781770811-b879025a",
+    "VM-1786646938426-bac2ac3c",
+    "VM-1786324739675-1e9dbf76",
+    "VM-1786647110263-08d88a9d",
+    "VM-1786647429645-58f5cef5"
+  ],
+  "recalled_processes": [
+    {
+      "kind": "meta",
+      "match_score": 1.0,
+      "match_reason": "kw:execution",
+      "skill_id": "t2-trade-execution",
+      "applied_id": null,
+      "meta_skill_id": "t2-trade-execution",
+      "meta_display_name": "t2-trade-execution",
+      "applied_summary": null
+    },
+    {
+      "kind": "meta",
+      "match_score": 0.0,
+      "match_reason": "",
+      "skill_id": "t0-market-cognition",
+      "applied_id": null,
+      "meta_skill_id": "t0-market-cognition",
+      "meta_display_name": "t0-market-cognition",
+      "applied_summary": null
+    },
+    {
+      "kind": "meta",
+      "match_score": 0.0,
+      "match_reason": "",
+      "skill_id": "t1-strategy-synthesis",
+      "applied_id": null,
+      "meta_skill_id": "t1-strategy-synthesis",
+      "meta_display_name": "t1-strategy-synthesis",
+      "applied_summary": null
+    }
+  ],
+  "files_touched": [
+    "experiments/ab-trading/data/screen_self_schedule.json"
+  ],
+  "task_type_history": []
+}

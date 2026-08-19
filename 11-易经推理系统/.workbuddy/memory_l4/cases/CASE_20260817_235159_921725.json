@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [ETH]: MEAN_REVERSION → LONG (confidence=0.62, latency=86753ms, tokens=0)",
+  "confidence": 0.622,
+  "tags": [
+    "ETH",
+    "MEAN_REVERSION",
+    "LONG",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260817_235159_921725",
+  "timestamp": "2026-08-17T23:51:59+08:00"
+}

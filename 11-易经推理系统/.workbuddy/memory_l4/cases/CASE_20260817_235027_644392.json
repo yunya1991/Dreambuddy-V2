@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [BTC]: MEAN_REVERSION → LONG (confidence=0.60, latency=105677ms, tokens=0)",
+  "confidence": 0.601,
+  "tags": [
+    "BTC",
+    "MEAN_REVERSION",
+    "LONG",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260817_235027_644392",
+  "timestamp": "2026-08-17T23:50:27+08:00"
+}

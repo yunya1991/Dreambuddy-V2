@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260815083532_e6f0d6",
+    "title": "交易分析: 分析 ETH 的交易机会",
+    "goal": "symbol=ETH, price=1879.15",
+    "status": "running",
+    "started_at": "2026-08-15T08:35:32.875070+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 ETH 的交易机会",
+      "goal": "symbol=ETH, price=1879.15"
+    },
+    "estimated_tokens": 15
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 ETH 的交易机会",
+      "symbol": "ETH",
+      "price": "1879.15",
+      "intent_type": "UNCERTAIN",
+      "intent_confidence": "0.78",
+      "recommended_chain": "",
+      "scenario_id": "NEUTRAL_LOW_ACCELERATING"
+    },
+    "estimated_tokens": 41
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"UNCERTAIN\", \"confidence\": 0.78, \"chain\": \"\", \"rationale\": \"用户仅要求分析 ETH 交易机会，未给出明确方向或策略偏好；当前价格涨跌幅接近持平，RSI 中性，且成交量、资金费率、ADX、市场状态等关键数据缺失，同时标的显示为 BTC-USDT，与 ETH 请求存在不一致，因此需要更多信息确认。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 8, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 8, \"success_nodes\": 8, \"skipped_nodes\": 0, \"total_nodes\": 8, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 123
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 ETH 的交易机会",
+        "goal": "symbol=ETH, price=1879.15"
+      },
+      "timestamp": "2026-08-15T08:35:32.875147+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-15T08:35:32.875154+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-15T08:35:32.875161+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-15T08:35:32.875165+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-15T08:35:47.890965+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-15T08:35:47.890982+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-15T08:35:47.890987+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-15T08:35:47.891017+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-15T08:37:25.326893+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-15T08:37:25.326916+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-15T08:37:25.326921+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-15T08:37:25.327307+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-15T08:37:25.362529+00:00"
+    }
+  ],
+  "saved_at": "2026-08-15T08:37:25.364593+00:00"
+}

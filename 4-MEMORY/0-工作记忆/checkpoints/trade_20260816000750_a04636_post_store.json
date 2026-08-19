@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260816000750_a04636",
+    "title": "交易分析: 分析 DOT 的交易机会",
+    "goal": "symbol=DOT, price=0.76065",
+    "status": "running",
+    "started_at": "2026-08-16T00:07:50.197814+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 DOT 的交易机会",
+      "goal": "symbol=DOT, price=0.76065"
+    },
+    "estimated_tokens": 15
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 DOT 的交易机会",
+      "symbol": "DOT",
+      "price": "0.76065",
+      "intent_type": "UNCERTAIN",
+      "intent_confidence": "0.78",
+      "recommended_chain": "",
+      "scenario_id": "NEUTRAL_NORMAL_DECELERATING"
+    },
+    "estimated_tokens": 41
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"UNCERTAIN\", \"confidence\": 0.78, \"chain\": \"\", \"rationale\": \"用户请求分析DOT交易机会，但市场数据不完整且标的显示为BTC-USDT，RSI中性偏强、涨跌幅接近零，缺乏趋势、突破或基本面确认信号。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 8, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 8, \"success_nodes\": 8, \"skipped_nodes\": 0, \"total_nodes\": 8, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 110
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 DOT 的交易机会",
+        "goal": "symbol=DOT, price=0.76065"
+      },
+      "timestamp": "2026-08-16T00:07:50.197882+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-16T00:07:50.197888+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-16T00:07:50.197896+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-16T00:07:50.197901+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-16T00:08:00.403165+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-16T00:08:00.403183+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-16T00:08:00.403188+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-16T00:08:00.403219+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-16T00:09:12.529449+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-16T00:09:12.529477+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-16T00:09:12.529486+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-16T00:09:12.529951+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-16T00:09:12.565404+00:00"
+    }
+  ],
+  "saved_at": "2026-08-16T00:09:12.567552+00:00"
+}

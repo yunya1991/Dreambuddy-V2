@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260810053847_a3287a",
+    "title": "交易分析: 分析 ARB 的交易机会",
+    "goal": "symbol=ARB, price=0.0792",
+    "status": "running",
+    "started_at": "2026-08-10T05:38:47.330773+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 ARB 的交易机会",
+      "goal": "symbol=ARB, price=0.0792"
+    },
+    "estimated_tokens": 14
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 ARB 的交易机会",
+      "symbol": "ARB",
+      "price": "0.0792",
+      "intent_type": "UNCERTAIN",
+      "intent_confidence": "0.78",
+      "recommended_chain": "",
+      "scenario_id": "NEUTRAL_NORMAL_DECELERATING"
+    },
+    "estimated_tokens": 41
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"UNCERTAIN\", \"confidence\": 0.78, \"chain\": \"\", \"rationale\": \"用户请求泛化分析，市场数据中性且关键指标缺失，同时输入ARB与提供BTC-USDT标的不一致，需更多数据确认策略。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 8, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 8, \"success_nodes\": 8, \"skipped_nodes\": 0, \"total_nodes\": 8, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 108
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 ARB 的交易机会",
+        "goal": "symbol=ARB, price=0.0792"
+      },
+      "timestamp": "2026-08-10T05:38:47.330843+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-10T05:38:47.330850+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-10T05:38:47.330859+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-10T05:38:47.330864+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-10T05:39:01.639628+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-10T05:39:01.639644+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-10T05:39:01.639650+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-10T05:39:01.639690+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-10T05:40:37.605827+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-10T05:40:37.605851+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-10T05:40:37.605858+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-10T05:40:37.606139+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-10T05:40:37.631025+00:00"
+    }
+  ],
+  "saved_at": "2026-08-10T05:40:37.632797+00:00"
+}

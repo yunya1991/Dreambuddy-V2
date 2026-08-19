@@ -1,0 +1,11 @@
+{
+  "pid": 92842,
+  "ts": 1786681976.0671873,
+  "ts_str": "2026-08-14T04:32:56.067189+00:00",
+  "cycle_count": 0,
+  "status": "stopped",
+  "last_error": "",
+  "last_error_ts": 0.0,
+  "memory_usage_mb": 0.0,
+  "cpu_usage_pct": 0.0
+}

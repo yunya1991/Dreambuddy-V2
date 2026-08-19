@@ -1,0 +1,140 @@
+{
+  "template_id": "APP-1786240861902",
+  "name": "memory-system 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "memory-system 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "任务涉及 27 个文件",
+    "action_count": 29,
+    "files_touched": [
+      "deploy/ops/master_daemon.py",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-reflection/SKILL.md",
+      "deploy/ops/launchd_manage.py",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intelligence-radar/cognitive-supplement.md",
+      "deploy/hermes/sitecustomize.py",
+      "deploy/hermes/skills/trading/evolution-system-sync/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/cognitive-supplement.md",
+      "0-系统文档管理/2-文档地图/EVOLUTION_BOUNDARY_MAP.md",
+      "deploy/hermes/group_poller.py",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/SKILL.md",
+      "deploy/ops/install_all_launchd.py",
+      "deploy/ops/install_all_launchd.sh",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786238933440.json",
+      "4-MEMORY/0-元记忆/template_mappings.json",
+      "deploy/hermes/start_gateway.sh",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-reflection/cognitive-supplement.md",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786240855183.json",
+      "deploy/hermes/SOUL.md",
+      "experiments/ab-trading/data/screen_self_schedule.json",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/SKILL.md",
+      "deploy/hermes/start_dashboard.sh",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/cognitive-supplement.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intelligence-radar/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/cognitive-supplement.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/cognitive-supplement.md"
+    ],
+    "duration_minutes": 39.2,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1786243215.8004744,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "memory-system",
+    "reproducible_steps": [
+      "modified: 0-系统文档管理/2-文档地图/EVOLUTION_BOUNDARY_MAP.md",
+      "modified: 4-MEMORY/0-元记忆/template_mappings.json",
+      "added: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1786240855183.json",
+      "modified: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1786238933440.json",
+      "added: deploy/ops/master_daemon.py",
+      "added: deploy/ops/launchd_manage.py",
+      "added: deploy/hermes/SOUL.md",
+      "added: deploy/hermes/group_poller.py",
+      "added: deploy/hermes/sitecustomize.py",
+      "modified: 4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/cognitive-supplement.md",
+      "modified: 4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/cognitive-supplement.md",
+      "modified: 4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/cognitive-supplement.md",
+      "modified: 4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/cognitive-supplement.md",
+      "modified: 4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-reflection/SKILL.md",
+      "modified: experiments/ab-trading/data/screen_self_schedule.json"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "deploy/ops/master_daemon.py",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-reflection/SKILL.md",
+        "deploy/ops/launchd_manage.py",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intelligence-radar/cognitive-supplement.md",
+        "deploy/hermes/sitecustomize.py",
+        "deploy/hermes/skills/trading/evolution-system-sync/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/cognitive-supplement.md",
+        "0-系统文档管理/2-文档地图/EVOLUTION_BOUNDARY_MAP.md",
+        "deploy/hermes/group_poller.py",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/SKILL.md",
+        "deploy/ops/install_all_launchd.py",
+        "deploy/ops/install_all_launchd.sh",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786238933440.json",
+        "4-MEMORY/0-元记忆/template_mappings.json",
+        "deploy/hermes/start_gateway.sh",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-reflection/cognitive-supplement.md",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786240855183.json",
+        "deploy/hermes/SOUL.md",
+        "experiments/ab-trading/data/screen_self_schedule.json",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/SKILL.md",
+        "deploy/hermes/start_dashboard.sh",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/cognitive-supplement.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intelligence-radar/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/cognitive-supplement.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/cognitive-supplement.md"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

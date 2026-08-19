@@ -1,0 +1,441 @@
+{
+  "generated_at": "2026-08-17 23:48:36.205112",
+  "total_scenarios": 36,
+  "source_distribution": {
+    "default": 36
+  },
+  "recommendations": {
+    "BULL_EXTREME_ACCELERATING": {
+      "scenario_id": "BULL_EXTREME_ACCELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_EXTREME_DECELERATING": {
+      "scenario_id": "BULL_EXTREME_DECELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_EXTREME_EXHAUSTION": {
+      "scenario_id": "BULL_EXTREME_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_HIGH_ACCELERATING": {
+      "scenario_id": "BULL_HIGH_ACCELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_HIGH_DECELERATING": {
+      "scenario_id": "BULL_HIGH_DECELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_HIGH_EXHAUSTION": {
+      "scenario_id": "BULL_HIGH_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_NORMAL_ACCELERATING": {
+      "scenario_id": "BULL_NORMAL_ACCELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_NORMAL_DECELERATING": {
+      "scenario_id": "BULL_NORMAL_DECELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_NORMAL_EXHAUSTION": {
+      "scenario_id": "BULL_NORMAL_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_LOW_ACCELERATING": {
+      "scenario_id": "BULL_LOW_ACCELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_LOW_DECELERATING": {
+      "scenario_id": "BULL_LOW_DECELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BULL_LOW_EXHAUSTION": {
+      "scenario_id": "BULL_LOW_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_EXTREME_ACCELERATING": {
+      "scenario_id": "BEAR_EXTREME_ACCELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_EXTREME_DECELERATING": {
+      "scenario_id": "BEAR_EXTREME_DECELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_EXTREME_EXHAUSTION": {
+      "scenario_id": "BEAR_EXTREME_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_HIGH_ACCELERATING": {
+      "scenario_id": "BEAR_HIGH_ACCELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_HIGH_DECELERATING": {
+      "scenario_id": "BEAR_HIGH_DECELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_HIGH_EXHAUSTION": {
+      "scenario_id": "BEAR_HIGH_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_NORMAL_ACCELERATING": {
+      "scenario_id": "BEAR_NORMAL_ACCELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_NORMAL_DECELERATING": {
+      "scenario_id": "BEAR_NORMAL_DECELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_NORMAL_EXHAUSTION": {
+      "scenario_id": "BEAR_NORMAL_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_LOW_ACCELERATING": {
+      "scenario_id": "BEAR_LOW_ACCELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_LOW_DECELERATING": {
+      "scenario_id": "BEAR_LOW_DECELERATING",
+      "recommended_nodes": [
+        "C_S3_TREND"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "BEAR_LOW_EXHAUSTION": {
+      "scenario_id": "BEAR_LOW_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_EXTREME_ACCELERATING": {
+      "scenario_id": "NEUTRAL_EXTREME_ACCELERATING",
+      "recommended_nodes": [
+        "C_MARTIN_V15"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_EXTREME_DECELERATING": {
+      "scenario_id": "NEUTRAL_EXTREME_DECELERATING",
+      "recommended_nodes": [
+        "C_MARTIN_V15"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_EXTREME_EXHAUSTION": {
+      "scenario_id": "NEUTRAL_EXTREME_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_HIGH_ACCELERATING": {
+      "scenario_id": "NEUTRAL_HIGH_ACCELERATING",
+      "recommended_nodes": [
+        "C_MARTIN_V15"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_HIGH_DECELERATING": {
+      "scenario_id": "NEUTRAL_HIGH_DECELERATING",
+      "recommended_nodes": [
+        "C_MARTIN_V15"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_HIGH_EXHAUSTION": {
+      "scenario_id": "NEUTRAL_HIGH_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_NORMAL_ACCELERATING": {
+      "scenario_id": "NEUTRAL_NORMAL_ACCELERATING",
+      "recommended_nodes": [
+        "C_MARTIN_V15"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_NORMAL_DECELERATING": {
+      "scenario_id": "NEUTRAL_NORMAL_DECELERATING",
+      "recommended_nodes": [
+        "C_MARTIN_V15"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_NORMAL_EXHAUSTION": {
+      "scenario_id": "NEUTRAL_NORMAL_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_LOW_ACCELERATING": {
+      "scenario_id": "NEUTRAL_LOW_ACCELERATING",
+      "recommended_nodes": [
+        "C_MARTIN_V15"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_LOW_DECELERATING": {
+      "scenario_id": "NEUTRAL_LOW_DECELERATING",
+      "recommended_nodes": [
+        "C_MARTIN_V15"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    },
+    "NEUTRAL_LOW_EXHAUSTION": {
+      "scenario_id": "NEUTRAL_LOW_EXHAUSTION",
+      "recommended_nodes": [
+        "A_YJ_INFER"
+      ],
+      "l4_best": null,
+      "l4_confidence": 0.0,
+      "bt_effective": false,
+      "bt_score": 0.0,
+      "final_confidence": 0.3,
+      "source": "default"
+    }
+  }
+}

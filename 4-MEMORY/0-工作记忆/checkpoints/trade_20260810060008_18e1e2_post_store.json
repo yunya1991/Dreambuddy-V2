@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260810060008_18e1e2",
+    "title": "交易分析: 分析 BTC 的交易机会",
+    "goal": "symbol=BTC, price=65100.5",
+    "status": "running",
+    "started_at": "2026-08-10T06:00:08.440310+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 BTC 的交易机会",
+      "goal": "symbol=BTC, price=65100.5"
+    },
+    "estimated_tokens": 15
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 BTC 的交易机会",
+      "symbol": "BTC",
+      "price": "65100.5",
+      "intent_type": "UNCERTAIN",
+      "intent_confidence": "0.82",
+      "recommended_chain": "",
+      "scenario_id": "NEUTRAL_LOW_ACCELERATING"
+    },
+    "estimated_tokens": 41
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"UNCERTAIN\", \"confidence\": 0.82, \"chain\": \"\", \"rationale\": \"用户仅要求分析 BTC 交易机会，未指定策略；价格基本横盘，RSI 中性偏弱，且成交量、资金费率、ADX 等关键数据缺失，无法明确趋势、突破或均值回归意图。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 8, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 8, \"success_nodes\": 8, \"skipped_nodes\": 0, \"total_nodes\": 8, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 113
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 BTC 的交易机会",
+        "goal": "symbol=BTC, price=65100.5"
+      },
+      "timestamp": "2026-08-10T06:00:08.440383+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-10T06:00:08.440390+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-10T06:00:08.440399+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-10T06:00:08.440405+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-10T06:00:22.067279+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-10T06:00:22.067296+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-10T06:00:22.067302+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-10T06:00:22.067328+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-10T06:02:07.518696+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-10T06:02:07.518752+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-10T06:02:07.518758+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-10T06:02:07.519056+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-10T06:02:07.544427+00:00"
+    }
+  ],
+  "saved_at": "2026-08-10T06:02:07.546061+00:00"
+}

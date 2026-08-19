@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260815210315_b7e422",
+    "title": "交易分析: 分析 SOL 的交易机会",
+    "goal": "symbol=SOL, price=75.5005",
+    "status": "running",
+    "started_at": "2026-08-15T21:03:15.914152+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 SOL 的交易机会",
+      "goal": "symbol=SOL, price=75.5005"
+    },
+    "estimated_tokens": 15
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 SOL 的交易机会",
+      "symbol": "SOL",
+      "price": "75.5005",
+      "intent_type": "UNCERTAIN",
+      "intent_confidence": "0.82",
+      "recommended_chain": "",
+      "scenario_id": "NEUTRAL_NORMAL_DECELERATING"
+    },
+    "estimated_tokens": 41
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"UNCERTAIN\", \"confidence\": 0.82, \"chain\": \"\", \"rationale\": \"用户仅要求分析 SOL 交易机会，未给出明确方向；当前价格涨跌幅接近零，RSI 中性，且成交量、资金费率、ADX 和市场状态缺失，同时标的显示为 BTC-USDT 与 SOL 不一致，无法确认明确交易策略。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 8, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 8, \"success_nodes\": 8, \"skipped_nodes\": 0, \"total_nodes\": 8, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 119
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 SOL 的交易机会",
+        "goal": "symbol=SOL, price=75.5005"
+      },
+      "timestamp": "2026-08-15T21:03:15.914218+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-15T21:03:15.914224+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-15T21:03:15.914232+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-15T21:03:15.914237+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-15T21:03:25.578935+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-15T21:03:25.578962+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-15T21:03:25.578968+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-15T21:03:25.578995+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-15T21:04:49.936338+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-15T21:04:49.936363+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-15T21:04:49.936370+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-15T21:04:49.936759+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-15T21:04:49.970162+00:00"
+    }
+  ],
+  "saved_at": "2026-08-15T21:04:49.972231+00:00"
+}

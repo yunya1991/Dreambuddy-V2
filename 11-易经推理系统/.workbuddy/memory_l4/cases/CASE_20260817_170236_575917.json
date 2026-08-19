@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [ETH]: UNCERTAIN → SHORT (confidence=0.58, latency=61334ms, tokens=0)",
+  "confidence": 0.583,
+  "tags": [
+    "ETH",
+    "UNCERTAIN",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260817_170236_575917",
+  "timestamp": "2026-08-17T17:02:36+08:00"
+}

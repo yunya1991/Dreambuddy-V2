@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260815060508_b4f28d",
+    "title": "交易分析: 分析 AVAX 的交易机会",
+    "goal": "symbol=AVAX, price=6.692",
+    "status": "running",
+    "started_at": "2026-08-15T06:05:08.336971+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 AVAX 的交易机会",
+      "goal": "symbol=AVAX, price=6.692"
+    },
+    "estimated_tokens": 15
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 AVAX 的交易机会",
+      "symbol": "AVAX",
+      "price": "6.692",
+      "intent_type": "MEAN_REVERSION",
+      "intent_confidence": "0.23",
+      "recommended_chain": "A",
+      "scenario_id": "BULL_NORMAL_ACCELERATING"
+    },
+    "estimated_tokens": 42
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"MEAN_REVERSION\", \"confidence\": 0.226, \"chain\": \"A\", \"rationale\": \"RSI=30 偏弱\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 9, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"A6\", \"C_S3_TREND\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 9, \"success_nodes\": 8, \"skipped_nodes\": 0, \"total_nodes\": 9, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 98
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 AVAX 的交易机会",
+        "goal": "symbol=AVAX, price=6.692"
+      },
+      "timestamp": "2026-08-15T06:05:08.337051+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-15T06:05:08.337058+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-15T06:05:08.337067+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-15T06:05:08.337072+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-15T06:05:12.572823+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-15T06:05:12.572841+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-15T06:05:12.572848+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-15T06:05:12.572878+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-15T06:06:17.206767+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-15T06:06:17.206797+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-15T06:06:17.206804+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-15T06:06:17.207109+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-15T06:06:17.248615+00:00"
+    }
+  ],
+  "saved_at": "2026-08-15T06:06:17.250798+00:00"
+}

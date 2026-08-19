@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260816010500_a37426",
+    "title": "交易分析: 分析 AVAX 的交易机会",
+    "goal": "symbol=AVAX, price=6.3206",
+    "status": "running",
+    "started_at": "2026-08-16T01:05:00.118563+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 AVAX 的交易机会",
+      "goal": "symbol=AVAX, price=6.3206"
+    },
+    "estimated_tokens": 15
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 AVAX 的交易机会",
+      "symbol": "AVAX",
+      "price": "6.3206",
+      "intent_type": "UNCERTAIN",
+      "intent_confidence": "0.72",
+      "recommended_chain": "",
+      "scenario_id": "NEUTRAL_NORMAL_DECELERATING"
+    },
+    "estimated_tokens": 42
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"UNCERTAIN\", \"confidence\": 0.72, \"chain\": \"\", \"rationale\": \"用户请求分析 AVAX，但提供的市场数据标的为 BTC-USDT，且成交量比、资金费率、ADX、市场状态等关键数据缺失；RSI14 为 55 属中性，24H涨跌幅接近持平，不足以确认趋势、突破或均值回归意图。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 8, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 8, \"success_nodes\": 8, \"skipped_nodes\": 0, \"total_nodes\": 8, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 119
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 AVAX 的交易机会",
+        "goal": "symbol=AVAX, price=6.3206"
+      },
+      "timestamp": "2026-08-16T01:05:00.118628+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-16T01:05:00.118635+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-16T01:05:00.118643+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-16T01:05:00.118648+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-16T01:05:10.078502+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-16T01:05:10.078520+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-16T01:05:10.078525+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-16T01:05:10.078553+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-16T01:06:24.063285+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-16T01:06:24.063309+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-16T01:06:24.063314+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-16T01:06:24.063684+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-16T01:06:24.097428+00:00"
+    }
+  ],
+  "saved_at": "2026-08-16T01:06:24.099531+00:00"
+}

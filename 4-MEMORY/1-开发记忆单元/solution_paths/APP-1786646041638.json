@@ -1,0 +1,77 @@
+{
+  "template_id": "APP-1786646041638",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat(dreamos): Phase1 Task5 - persist_pools and State integration (TDD)",
+    "action_count": 1,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/tests/test_coin_selector.py",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/coin_selector.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "315b3c6",
+    "created_at": 1786646041.7294128,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "提交 commit 315b3c6: feat(dreamos): Phase1 Task5 - persist_pools and State integration (TDD)\n\n- New persist_pools method saves pools to JSON with persisted_at timestamp\n- Writes long_pool, short_pool, timestamp, source, persisted_at\n- 10 tests all pass"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "1-ARCHITECTURE/dreamos/tests/test_coin_selector.py"
+      ],
+      "modified_files": [
+        "1-ARCHITECTURE/dreamos/capabilities/trading/coin_selector.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

@@ -731,6 +731,74 @@ def load_state():
 
 
 TRADE_HISTORY_FILE = BASE_DIR / "data" / "trade_history.json"
+_AB_COMPARATOR_SINGLETON = None  # 懒加载单例（在 _save_trade_to_history / 开仓决策注入中共享）
+
+
+def _get_ab_comparator():
+    # 懒加载 ABShadowComparator 单例；导入失败或 AB 禁用开关为真时返回 None（安全降级）。
+    global _AB_COMPARATOR_SINGLETON
+    if _AB_COMPARATOR_SINGLETON is False:
+        return None  # 已判定不可用
+    if _AB_COMPARATOR_SINGLETON is not None:
+        return _AB_COMPARATOR_SINGLETON
+    try:
+        from ab_shadow_comparator import ABShadowComparator as _Cls
+        from pathlib import Path as _Path
+        state_file = BASE_DIR / "data" / "ab_comparator_state.json"
+        _AB_COMPARATOR_SINGLETON = _Cls(state_file=str(state_file))
+        return _AB_COMPARATOR_SINGLETON
+    except Exception:
+        _AB_COMPARATOR_SINGLETON = False
+        return None
+
+
+
+
+def _prep_ctx_position_ref(ctx, coin: str, pos=None):
+    """在 should_skip_open_with_baseline 之前把 position_ref 写进 ctx（无损幂等）。
+
+    - 如果 ctx 不是 dict 或已有 position_ref，直接返回
+    - 优先用 pos.get("open_time")（已存在仓位缩档场景）；否则用当前时间（新开仓决策）。
+    """
+    if not isinstance(ctx, dict):
+        return ctx
+    if "position_ref" in ctx and ctx["position_ref"]:
+        return ctx
+    entry_ts = None
+    if isinstance(pos, dict):
+        entry_ts = pos.get("open_time")
+    if not entry_ts:
+        # 新决策：当前 UTC 分钟级时间戳作为近似锚；回填时 fallback 也能匹配。
+        from datetime import datetime, timezone as _tz
+        entry_ts = datetime.now(_tz.utc).replace(second=0, microsecond=0).isoformat()
+    try:
+        comp = _get_ab_comparator()
+        if comp is not None:
+            ref = comp.build_position_ref(coin, entry_ts)
+        else:
+            # 没有 comparator 也尽量生成一致格式
+            from datetime import datetime
+            if isinstance(entry_ts, datetime):
+                dt = entry_ts
+            elif isinstance(entry_ts, (int, float)):
+                dt = datetime.utcfromtimestamp(float(entry_ts))
+            else:
+                s = str(entry_ts).strip()
+                if s.endswith("Z"):
+                    s = s[:-1] + "+00:00"
+                try:
+                    dt = datetime.fromisoformat(s)
+                except Exception:
+                    dt = datetime.utcnow()
+                if dt.tzinfo is not None:
+                    from datetime import timezone as _tz2
+                    dt = dt.astimezone(_tz2.utc).replace(tzinfo=None)
+                dt = dt.replace(second=0, microsecond=0)
+            ref = f"{coin}|{dt.isoformat()}"
+        ctx["position_ref"] = ref
+    except Exception:
+        pass
+    return ctx
 
 
 def _save_trade_to_history(coin: str, pos: dict, exit_price: float, reason: str, profit_pct: float):
@@ -810,6 +878,32 @@ def _save_trade_to_history(coin: str, pos: dict, exit_price: float, reason: str,
         _os.replace(tmp_path, str(TRADE_HISTORY_FILE))
 
         _log(f"[{coin}] 交易记录已保存到 trade_history.json (第{len(history)}条)")
+
+        # ---- PnL 回填到 A/B Shadow Comparator（让 AB 晋升真正有 paired PnL） ----
+        try:
+            comp = _get_ab_comparator()
+            if comp is not None:
+                entry_time = pos.get("open_time", "")
+                p_ref = comp.build_position_ref(coin, entry_time)
+                backfilled = comp.backfill_trade_result(
+                    symbol=coin,
+                    entry_timestamp=entry_time,
+                    baseline_pnl_usdt=float(pnl_usdt),
+                    baseline_pnl_pct=float(profit_pct),
+                    exit_reason=str(reason),
+                )
+                if backfilled:
+                    # 每次回填后尝试 evaluate，状态变化会写入日志
+                    try:
+                        ev = comp.evaluate()
+                        trans = ev.get("transition")
+                        if trans:
+                            _log(f"[AB-Comparator] 状态变化: {trans} (新状态={ev.get('state')}, n={ev.get('n_samples')})")
+                    except Exception:
+                        pass
+        except Exception:
+            # AB 回填失败绝对不能影响主交易流程（铁律：不允许异常向核心冒泡）
+            pass
     except Exception as e:
         _log(f"[{coin}] 交易记录保存失败: {e}")
 

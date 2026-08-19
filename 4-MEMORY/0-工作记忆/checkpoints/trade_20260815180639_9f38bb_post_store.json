@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260815180639_9f38bb",
+    "title": "交易分析: 分析 BNB 的交易机会",
+    "goal": "symbol=BNB, price=610.605",
+    "status": "running",
+    "started_at": "2026-08-15T18:06:39.034570+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 BNB 的交易机会",
+      "goal": "symbol=BNB, price=610.605"
+    },
+    "estimated_tokens": 15
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 BNB 的交易机会",
+      "symbol": "BNB",
+      "price": "610.605",
+      "intent_type": "UNCERTAIN",
+      "intent_confidence": "0.82",
+      "recommended_chain": "",
+      "scenario_id": "NEUTRAL_LOW_ACCELERATING"
+    },
+    "estimated_tokens": 41
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"UNCERTAIN\", \"confidence\": 0.82, \"chain\": \"\", \"rationale\": \"用户请求分析 BNB，但提供的市场数据标的为 BTC-USDT，且价格涨跌幅接近零、RSI 中性，关键趋势与量能指标缺失，无法确认明确交易策略。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 8, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 8, \"success_nodes\": 8, \"skipped_nodes\": 0, \"total_nodes\": 8, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 111
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 BNB 的交易机会",
+        "goal": "symbol=BNB, price=610.605"
+      },
+      "timestamp": "2026-08-15T18:06:39.034639+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-15T18:06:39.034645+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-15T18:06:39.034652+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-15T18:06:39.034657+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-15T18:06:55.344676+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-15T18:06:55.344692+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-15T18:06:55.344698+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-15T18:06:55.344756+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-15T18:08:20.326389+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-15T18:08:20.326409+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-15T18:08:20.326415+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-15T18:08:20.326801+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-15T18:08:20.360417+00:00"
+    }
+  ],
+  "saved_at": "2026-08-15T18:08:20.362518+00:00"
+}

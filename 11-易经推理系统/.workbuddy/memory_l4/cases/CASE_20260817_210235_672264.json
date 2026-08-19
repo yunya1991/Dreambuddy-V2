@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [ETH]: UNCERTAIN → LONG (confidence=0.61, latency=63113ms, tokens=0)",
+  "confidence": 0.611,
+  "tags": [
+    "ETH",
+    "UNCERTAIN",
+    "LONG",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260817_210235_672264",
+  "timestamp": "2026-08-17T21:02:35+08:00"
+}

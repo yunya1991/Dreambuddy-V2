@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [BNB]: TREND_FOLLOWING → SHORT (confidence=0.73, latency=61013ms, tokens=0)",
+  "confidence": 0.726,
+  "tags": [
+    "BNB",
+    "TREND_FOLLOWING",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260817_170538_888577",
+  "timestamp": "2026-08-17T17:05:38+08:00"
+}

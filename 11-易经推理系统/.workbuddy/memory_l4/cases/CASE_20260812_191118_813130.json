@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [BNB]: MEAN_REVERSION → SHORT (confidence=0.57, latency=105359ms, tokens=0)",
+  "confidence": 0.571,
+  "tags": [
+    "BNB",
+    "MEAN_REVERSION",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260812_191118_813130",
+  "timestamp": "2026-08-12T19:11:18+08:00"
+}

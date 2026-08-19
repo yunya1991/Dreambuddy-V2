@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260809000935_112fca",
+    "title": "交易分析: 分析 BNB 的交易机会",
+    "goal": "symbol=BNB, price=601.65",
+    "status": "running",
+    "started_at": "2026-08-09T00:09:35.359152+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 BNB 的交易机会",
+      "goal": "symbol=BNB, price=601.65"
+    },
+    "estimated_tokens": 14
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 BNB 的交易机会",
+      "symbol": "BNB",
+      "price": "601.65",
+      "intent_type": "UNCERTAIN",
+      "intent_confidence": "0.72",
+      "recommended_chain": "",
+      "scenario_id": "NEUTRAL_LOW_DECELERATING"
+    },
+    "estimated_tokens": 40
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"UNCERTAIN\", \"confidence\": 0.72, \"chain\": \"\", \"rationale\": \"价格几乎持平且RSI接近超卖但未确认，缺少成交量、资金费率、ADX和市场状态，且标的与目标不一致，需更多信息。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 8, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 10, \"success_nodes\": 10, \"skipped_nodes\": 0, \"total_nodes\": 8, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 108
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 BNB 的交易机会",
+        "goal": "symbol=BNB, price=601.65"
+      },
+      "timestamp": "2026-08-09T00:09:35.359232+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-09T00:09:35.359238+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-09T00:09:35.359246+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-09T00:09:35.359250+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-09T00:09:48.745019+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-09T00:09:48.745039+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-09T00:09:48.745046+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-09T00:09:48.745082+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-09T00:11:13.147809+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-09T00:11:13.147831+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-09T00:11:13.147836+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-09T00:11:13.148098+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-09T00:11:13.179455+00:00"
+    }
+  ],
+  "saved_at": "2026-08-09T00:11:13.181064+00:00"
+}

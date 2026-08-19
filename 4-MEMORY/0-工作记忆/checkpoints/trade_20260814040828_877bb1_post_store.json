@@ -1,0 +1,144 @@
+{
+  "task_info": {
+    "task_id": "trade_20260814040828_877bb1",
+    "title": "交易分析: 分析 DOT 的交易机会",
+    "goal": "symbol=DOT, price=0.76441",
+    "status": "running",
+    "started_at": "2026-08-14T04:08:28.537498+00:00",
+    "completed_at": ""
+  },
+  "task_block": {
+    "name": "task",
+    "max_tokens": 500,
+    "items": {
+      "title": "交易分析: 分析 DOT 的交易机会",
+      "goal": "symbol=DOT, price=0.76441"
+    },
+    "estimated_tokens": 15
+  },
+  "context_block": {
+    "name": "context",
+    "max_tokens": 2000,
+    "items": {
+      "user_input": "分析 DOT 的交易机会",
+      "symbol": "DOT",
+      "price": "0.76441",
+      "intent_type": "MEAN_REVERSION",
+      "intent_confidence": "0.55",
+      "recommended_chain": "A",
+      "scenario_id": "NEUTRAL_NORMAL_DECELERATING"
+    },
+    "estimated_tokens": 43
+  },
+  "scratch_block": {
+    "name": "scratch",
+    "max_tokens": 1500,
+    "items": {
+      "intent_result": "{\"type\": \"MEAN_REVERSION\", \"confidence\": 0.55, \"chain\": \"A\", \"rationale\": \"RSI14 达到 71 显示短线超买，但 24H 涨幅接近停滞且缺少成交量、ADX、资金费率确认，更适合谨慎的均值回归观察而非趋势追单。\"}",
+      "arrange_result": "{\"chain\": \"A\", \"node_count\": 9, \"node_ids\": [\"C1\", \"C2\", \"C3\", \"A2\", \"A4\", \"A5\", \"A9\", \"A6\", \"C_MARTIN_V15\"], \"budget_allocated\": 0}",
+      "compute_result": "{\"executed_nodes\": 9, \"success_nodes\": 9, \"skipped_nodes\": 0, \"total_nodes\": 9, \"total_tokens\": 0, \"early_terminated\": false}"
+    },
+    "estimated_tokens": 113
+  },
+  "episodic_block": {
+    "name": "episodic",
+    "max_tokens": 800,
+    "items": {},
+    "estimated_tokens": 0
+  },
+  "operation_log": [
+    {
+      "operation": "set_task",
+      "details": {
+        "title": "交易分析: 分析 DOT 的交易机会",
+        "goal": "symbol=DOT, price=0.76441"
+      },
+      "timestamp": "2026-08-14T04:08:28.537570+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "user_input"
+      },
+      "timestamp": "2026-08-14T04:08:28.537577+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-14T04:08:28.537585+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-14T04:08:28.537590+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_type"
+      },
+      "timestamp": "2026-08-14T04:08:55.803214+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "intent_confidence"
+      },
+      "timestamp": "2026-08-14T04:08:55.803233+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "recommended_chain"
+      },
+      "timestamp": "2026-08-14T04:08:55.803238+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "intent_result"
+      },
+      "timestamp": "2026-08-14T04:08:55.803265+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "symbol"
+      },
+      "timestamp": "2026-08-14T04:10:13.133129+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "price"
+      },
+      "timestamp": "2026-08-14T04:10:13.133151+00:00"
+    },
+    {
+      "operation": "set_context",
+      "details": {
+        "key": "scenario_id"
+      },
+      "timestamp": "2026-08-14T04:10:13.133158+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "arrange_result"
+      },
+      "timestamp": "2026-08-14T04:10:13.133438+00:00"
+    },
+    {
+      "operation": "set_scratch",
+      "details": {
+        "key": "compute_result"
+      },
+      "timestamp": "2026-08-14T04:10:13.167636+00:00"
+    }
+  ],
+  "saved_at": "2026-08-14T04:10:13.169400+00:00"
+}

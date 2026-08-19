@@ -1,0 +1,59 @@
+{
+  "gate_type": "A7_pre_execution",
+  "timestamp": "2026-08-13T19:58:59.848019",
+  "passed": true,
+  "pass_rate": 1.0,
+  "checks": [
+    {
+      "name": "信号有效性",
+      "passed": true,
+      "score": 0.3246,
+      "details": "方向=UP 置信度=0.32",
+      "severity": "info"
+    },
+    {
+      "name": "实践验证充分性",
+      "passed": true,
+      "score": 0.5,
+      "details": "CBR引擎未接入，跳过样本检查（降分）",
+      "severity": "warn"
+    },
+    {
+      "name": "真理标准验证",
+      "passed": true,
+      "score": 0.5,
+      "details": "CBR引擎未接入，跳过胜率检查",
+      "severity": "warn"
+    },
+    {
+      "name": "风险可控性",
+      "passed": true,
+      "score": 0.8,
+      "details": "风控通过 (日亏损=0.00% 连亏=0)",
+      "severity": "info"
+    },
+    {
+      "name": "执行纪律",
+      "passed": true,
+      "score": 0.8,
+      "details": "vol=0.0123 pos=0/10 sl_atr=1.5",
+      "severity": "info"
+    },
+    {
+      "name": "A0矛盾预警",
+      "passed": true,
+      "score": 0.5,
+      "details": "A0分析未执行，跳过",
+      "severity": "warn"
+    },
+    {
+      "name": "三角校验",
+      "passed": true,
+      "score": 0.5,
+      "details": "三角校验未执行，跳过",
+      "severity": "warn"
+    }
+  ],
+  "blocking_reasons": [],
+  "recommendation": "门禁通过，可以执行"
+}

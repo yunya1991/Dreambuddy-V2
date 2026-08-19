@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [SOL]: UNCERTAIN → LONG (confidence=0.60, latency=93046ms, tokens=0)",
+  "confidence": 0.599,
+  "tags": [
+    "SOL",
+    "UNCERTAIN",
+    "LONG",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260811_050457_064859",
+  "timestamp": "2026-08-11T05:04:57+08:00"
+}

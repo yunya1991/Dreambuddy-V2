@@ -1,0 +1,77 @@
+{
+  "template_id": "APP-1786647429738",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat(dreamos): Phase4 Task2+3 - SignalRouterNode + integration (TDD)",
+    "action_count": 1,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/capabilities/trading/signal_router.py",
+      "1-ARCHITECTURE/dreamos/tests/test_signal_router.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "e97b185",
+    "created_at": 1786647429.8317335,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "提交 commit e97b185: feat(dreamos): Phase4 Task2+3 - SignalRouterNode + integration (TDD)\n\n- New SignalRouterNode extends BaseNode\n- node_id=SIGNAL_ROUTER, chain=D\n- execute_core reads state.market, calls route()\n- End-to-end integration: COIN_SELECTOR -> YIJING_SIGNAL -> V15_EXECUTOR\n- 5 tests all pass"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "1-ARCHITECTURE/dreamos/tests/test_signal_router.py"
+      ],
+      "modified_files": [
+        "1-ARCHITECTURE/dreamos/capabilities/trading/signal_router.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

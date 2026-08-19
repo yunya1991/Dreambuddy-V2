@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [ETH]: TREND_FOLLOWING → SHORT (confidence=0.73, latency=105403ms, tokens=0)",
+  "confidence": 0.729,
+  "tags": [
+    "ETH",
+    "TREND_FOLLOWING",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260813_190350_998009",
+  "timestamp": "2026-08-13T19:03:50+08:00"
+}

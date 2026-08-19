@@ -1,0 +1,124 @@
+{
+  "template_id": "APP-1786238933440",
+  "name": "memory-system 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "memory-system 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "任务涉及 19 个文件",
+    "action_count": 22,
+    "files_touched": [
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-reflection/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intelligence-radar/cognitive-supplement.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/cognitive-supplement.md",
+      "0-系统文档管理/2-文档地图/EVOLUTION_BOUNDARY_MAP.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/SKILL.md",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786238933440.json",
+      "4-MEMORY/0-元记忆/template_mappings.json",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-reflection/cognitive-supplement.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gate/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-review/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/cognitive-supplement.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intel-radar/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intelligence-radar/SKILL.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/cognitive-supplement.md",
+      "4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/cognitive-supplement.md",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786240081638.json"
+    ],
+    "duration_minutes": 32.1,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1786240861.9005692,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "memory-system",
+    "reproducible_steps": [
+      "modified: 0-系统文档管理/2-文档地图/EVOLUTION_BOUNDARY_MAP.md",
+      "added: 4-MEMORY/0-元记忆/template_mappings.json",
+      "added: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1786238933440.json",
+      "modified: 4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/SKILL.md",
+      "deleted: 4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-review/SKILL.md",
+      "documentation → memory-system",
+      "deleted: 4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gate/SKILL.md",
+      "deleted: 4-MEMORY/0-元记忆/trading-cognition/skills/t4-intel-radar/SKILL.md",
+      "added: 4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/cognitive-supplement.md",
+      "modified: 4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/SKILL.md",
+      "added: 4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/cognitive-supplement.md",
+      "modified: 4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/SKILL.md",
+      "added: 4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/cognitive-supplement.md",
+      "modified: 4-MEMORY/0-元记忆/template_mappings.json",
+      "added: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1786240081638.json"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-reflection/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intelligence-radar/cognitive-supplement.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/cognitive-supplement.md",
+        "0-系统文档管理/2-文档地图/EVOLUTION_BOUNDARY_MAP.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t0-market-cognition/SKILL.md",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786238933440.json",
+        "4-MEMORY/0-元记忆/template_mappings.json",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-reflection/cognitive-supplement.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gate/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t5-meta-review/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/cognitive-supplement.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intel-radar/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t4-intelligence-radar/SKILL.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t2-trade-execution/cognitive-supplement.md",
+        "4-MEMORY/0-元记忆/trading-cognition/skills/t1-strategy-synthesis/cognitive-supplement.md",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786240081638.json"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

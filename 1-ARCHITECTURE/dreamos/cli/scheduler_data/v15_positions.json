@@ -1,0 +1,69 @@
+{
+  "positions": {
+    "BTC": {
+      "symbol": "BTC",
+      "direction": "LONG",
+      "entry_price": 63051.5,
+      "position_size": 0.00017446056001839763,
+      "addons_remaining": 3,
+      "addon_count": 0,
+      "tp_pct": 0.04,
+      "addon_gap_pct": 0.08,
+      "atr_at_entry": 0.0,
+      "opened_at": "2026-08-16T08:40:45.936617",
+      "last_addon_at": null,
+      "status": "CLOSED",
+      "addon_prices": [],
+      "close_reason": "PROP-20260816 smoke test manual exit"
+    },
+    "ACE": {
+      "symbol": "ACE",
+      "direction": "SHORT",
+      "entry_price": 0.1387,
+      "position_size": 3124.2489786109113,
+      "addons_remaining": 3,
+      "addon_count": 0,
+      "tp_pct": 0.04,
+      "addon_gap_pct": 0.08,
+      "atr_at_entry": 0.0,
+      "opened_at": "2026-08-16T11:30:20.381762",
+      "last_addon_at": null,
+      "status": "CLOSED",
+      "addon_prices": [],
+      "close_reason": "dry_run ghost position cleanup 2026-08-17"
+    },
+    "HEMI": {
+      "symbol": "HEMI",
+      "direction": "SHORT",
+      "entry_price": 0.006459,
+      "position_size": 67089.84878980234,
+      "addons_remaining": 3,
+      "addon_count": 0,
+      "tp_pct": 0.04,
+      "addon_gap_pct": 0.08,
+      "atr_at_entry": 0.0,
+      "opened_at": "2026-08-16T11:30:03.710621",
+      "last_addon_at": null,
+      "status": "CLOSED",
+      "addon_prices": [],
+      "close_reason": "dry_run ghost position cleanup 2026-08-17"
+    },
+    "NIL": {
+      "symbol": "NIL",
+      "direction": "LONG",
+      "entry_price": 0.047361,
+      "position_size": 9149.581582596089,
+      "addons_remaining": 3,
+      "addon_count": 0,
+      "tp_pct": 0.04,
+      "addon_gap_pct": 0.08,
+      "atr_at_entry": 0.0,
+      "opened_at": "2026-08-16T13:30:08.384657",
+      "last_addon_at": null,
+      "status": "CLOSED",
+      "addon_prices": [],
+      "close_reason": "dry_run ghost position cleanup 2026-08-17"
+    }
+  },
+  "saved_at": "2026-08-16T13:30:08.384696Z"
+}

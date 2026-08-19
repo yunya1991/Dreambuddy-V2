@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [BTC]: UNCERTAIN → SHORT (confidence=0.59, latency=109058ms, tokens=0)",
+  "confidence": 0.589,
+  "tags": [
+    "BTC",
+    "UNCERTAIN",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260816_010151_856066",
+  "timestamp": "2026-08-16T01:01:51+08:00"
+}

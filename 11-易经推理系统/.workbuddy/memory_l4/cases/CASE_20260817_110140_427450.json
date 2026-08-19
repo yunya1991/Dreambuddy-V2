@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [BTC]: MEAN_REVERSION → HOLD (confidence=0.26, latency=97326ms, tokens=0)",
+  "confidence": 0.2622,
+  "tags": [
+    "BTC",
+    "MEAN_REVERSION",
+    "HOLD",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260817_110140_427450",
+  "timestamp": "2026-08-17T11:01:40+08:00"
+}

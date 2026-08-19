@@ -1,0 +1,92 @@
+{
+  "template_id": "APP-1786782608850",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "任务涉及 6 个文件",
+    "action_count": 10,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/cli/backtest_reports/backtest_1h_20260815_1633.md",
+      "1-ARCHITECTURE/dreamos/shared/llm_client.py",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/reports/dynamic_orchestration_20260815_163344.json",
+      "4-MEMORY/0-元记忆/template_mappings.json",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786781414570.json",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786782608850.json"
+    ],
+    "duration_minutes": 34.6,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1786784687.157737,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "modified: 1-ARCHITECTURE/dreamos/shared/llm_client.py（共 2 次修改）",
+      "modified: 4-MEMORY/0-元记忆/template_mappings.json",
+      "modified: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1786781414570.json",
+      "modified: 1-ARCHITECTURE/dreamos/shared/llm_client.py（共 2 次修改）",
+      "added: 1-ARCHITECTURE/dreamos/cli/backtest_reports/backtest_1h_20260815_1633.md",
+      "added: 1-ARCHITECTURE/dreamos/capabilities/trading/reports/dynamic_orchestration_20260815_163344.json",
+      "modified: 4-MEMORY/0-元记忆/template_mappings.json",
+      "added: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1786782608850.json"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "1-ARCHITECTURE/dreamos/cli/backtest_reports/backtest_1h_20260815_1633.md"
+      ],
+      "modified_files": [
+        "1-ARCHITECTURE/dreamos/shared/llm_client.py",
+        "1-ARCHITECTURE/dreamos/capabilities/trading/reports/dynamic_orchestration_20260815_163344.json",
+        "4-MEMORY/0-元记忆/template_mappings.json",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786781414570.json",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786782608850.json"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

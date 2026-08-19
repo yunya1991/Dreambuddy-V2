@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [LINK]: UNCERTAIN → HOLD (confidence=0.26, latency=82148ms, tokens=0)",
+  "confidence": 0.2616,
+  "tags": [
+    "LINK",
+    "UNCERTAIN",
+    "HOLD",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260810_230825_386009",
+  "timestamp": "2026-08-10T23:08:25+08:00"
+}

@@ -1,0 +1,708 @@
+{
+  "version": 1,
+  "updated_at": 1787073743.7198417,
+  "mappings": [
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786240081638",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786240081.9173234,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786240855183",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786240855.5224693,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786238933440",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786240861.9009378,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786240861902",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786243215.8008902,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786323935067",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786325659.1115308,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786327019034",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786327019.2336972,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786327730280",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786329890.2372553,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786641933223",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786641933.3156576,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786645536315",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786645536.402351,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786645651180",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786645651.267902,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786645960003",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786645960.0918436,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646041638",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646041.729734,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646101557",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646101.6471906,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646230392",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646230.482104,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646435979",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646436.068572,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646516720",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646516.8098536,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646593476",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646593.5637238,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646652838",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646652.9297504,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646689039",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646689.1314807,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646750935",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646751.0296402,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646938531",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646938.6197324,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786646976512",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786646976.6007438,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647039354",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647039.4468646,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647110380",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647110.479511,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647156565",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647156.6572747,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647232059",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647232.1530166,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647352846",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647352.936149,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647429738",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647429.8320208,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647498495",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647498.5901937,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647631616",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647631.70949,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647710736",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647710.8291335,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647784016",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647784.1122677,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786647911429",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786647911.5226486,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786648081766",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786648081.865232,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786648212285",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786648212.3840055,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786648411413",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786648411.5079978,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786644616682",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786649141.5837128,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786719485705",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786719486.0042338,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786725345683",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786729215.0113716,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786762979052",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786765261.7547152,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786782608850",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786784687.158078,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786803016479",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786805263.4435651,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786805706545",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786805706.6603243,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786806964957",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786806965.0756,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786806992273",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786806992.3782306,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786805263446",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786808551.613539,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786862402599",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786864214.040113,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786866236074",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786867815.8071308,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786878978558",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786878978.683314,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786880386393",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786880386.5089295,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786878005478",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786882218.1419878,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786969587290",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786969587.4300284,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786970266044",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786970266.191762,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786970555624",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786970555.7633202,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786969603270",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786971174.6799026,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786971810583",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1786971810.7278018,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786971174682",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786973520.5839036,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1786975672156",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786979418.9592662,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1787073730752",
+      "success_count": 2,
+      "fail_count": 0,
+      "last_verified": 1787073730.898308,
+      "total_count": 2,
+      "success_rate": 1.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1786251283329",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786254788.1355114,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1786284343043",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786286741.803905,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1786326302012",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786327730.279559,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1786553109310",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786556533.7399335,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-1786781414570",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786782608.848357,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1786887060331",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786888455.612303,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-1786973520586",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786974962.4293804,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1786301958677",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786304414.964261,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-1786337838462",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786341697.1122174,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1786528814566",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786532486.151973,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1786810214864",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786811976.2247446,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1786811976227",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786813813.8036096,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1786888455614",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786890368.681274,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787055700113",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787057637.6116104,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787057637615",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787060713.5493386,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787060713552",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787063764.6151268,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787072150602",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787073743.7198405,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t4-intelligence-radar",
+      "applied_id": "APP-TRD-1786640075296",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786641945.6738725,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "test-driven-development",
+      "applied_id": "APP-1786966333563",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1786967469.4621487,
+      "total_count": 1,
+      "success_rate": 0.0
+    }
+  ]
+}

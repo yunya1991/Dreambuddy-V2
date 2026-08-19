@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [ARB]: UNCERTAIN → SHORT (confidence=0.74, latency=68469ms, tokens=0)",
+  "confidence": 0.738,
+  "tags": [
+    "ARB",
+    "UNCERTAIN",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260810_011313_602277",
+  "timestamp": "2026-08-10T01:13:13+08:00"
+}

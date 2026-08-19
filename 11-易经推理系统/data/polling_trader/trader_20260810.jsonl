@@ -1,0 +1,1325 @@
+{"ts": "2026-08-10 03:48:55", "level": "INFO", "msg": "[CBR] 案例检索增强已初始化"}
+{"ts": "2026-08-10 03:48:55", "level": "INFO", "msg": "[A7] 实践论门禁已初始化"}
+{"ts": "2026-08-10 03:48:55", "level": "WARN", "msg": "[P3] 认知召回桥接初始化失败: No module named 'cognitive_loop_entry'，继续运行"}
+{"ts": "2026-08-10 03:48:55", "level": "INFO", "msg": "[持仓同步] 检查 OKX 已有持仓..."}
+{"ts": "2026-08-10 03:52:40", "level": "INFO", "msg": "[持仓同步] 完成，共 0 个持仓 (BCRM=0 外部=0)"}
+{"ts": "2026-08-10 03:52:40", "level": "INFO", "msg": "[离场防频繁] v5.0优化已启用：保护期=6h | 离场确认=2次/5min | 保护期反转置信+12%"}
+{"ts": "2026-08-10 03:52:40", "level": "INFO", "msg": "[系统诊断] 启动时执行状态检查..."}
+{"ts": "2026-08-10 03:52:40", "level": "WARN", "msg": "[系统诊断] 执行失败: No module named 'scripts.memory_l4.inspect'，继续运行"}
+{"ts": "2026-08-10 03:52:40", "level": "INFO", "msg": "轮询交易器启动 | 间隔=3600s 币种=['UNI', 'PUMP', 'MU', 'SKHYNIX', 'HYPE', 'ETH', 'BTC', 'SOL', 'XAUT', 'XAG', 'GOOGL', 'NVDA', 'AMZN', 'OKB', 'BNB'] 周期=1H | 置信度阈值=0.35 最大持仓=5 | dry_run=False simulated=False"}
+{"ts": "2026-08-10 03:52:40", "level": "INFO", "msg": "[风控] 日亏损上限=-30.0USDT | 最大连续亏损=999 | 默认仓位=20.0%"}
+{"ts": "2026-08-10 03:52:40", "level": "INFO", "msg": "[绩效] 初始权益=100.0 | 当前权益=100.00 | 历史交易=0笔"}
+{"ts": "2026-08-10 03:52:40", "level": "INFO", "msg": "═══ 轮询 #1 开始 ═══"}
+{"ts": "2026-08-10 03:52:40", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 03:56:41", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:56:56", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:57:11", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:57:26", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:57:41", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:57:56", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:58:11", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:58:26", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:58:41", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:58:56", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:59:11", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:59:26", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:59:41", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 03:59:56", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:00:11", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:00:11", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 04:00:11", "level": "INFO", "msg": "[学习] 当前案例=316 | 新增自上次重训=316 | 上次重训=从未"}
+{"ts": "2026-08-10 04:00:11", "level": "INFO", "msg": "═══ 轮询 #1 结束 ═══\n"}
+{"ts": "2026-08-10 04:18:37", "level": "WARN", "msg": "收到退出信号，正在停止..."}
+{"ts": "2026-08-10 04:18:37", "level": "INFO", "msg": "轮询交易器已停止"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "[CBR] 案例检索增强已初始化"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "[A7] 实践论门禁已初始化"}
+{"ts": "2026-08-10 04:18:47", "level": "WARN", "msg": "[P3] 认知召回桥接初始化失败: No module named 'cognitive_loop_entry'，继续运行"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "[持仓同步] 检查 OKX 已有持仓..."}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "[持仓同步] 完成，共 0 个持仓 (BCRM=0 外部=0)"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "[离场防频繁] v5.0优化已启用：保护期=6h | 离场确认=2次/5min | 保护期反转置信+12%"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "[系统诊断] 启动时执行状态检查..."}
+{"ts": "2026-08-10 04:18:47", "level": "WARN", "msg": "[系统诊断] 执行失败: No module named 'scripts.memory_l4.inspect'，继续运行"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "轮询交易器启动 | 间隔=3600s 币种=['UNI', 'PUMP', 'MU', 'SKHYNIX', 'HYPE', 'ETH', 'BTC', 'SOL', 'XAUT', 'XAG', 'GOOGL', 'NVDA', 'AMZN', 'OKB', 'BNB'] 周期=1H | 置信度阈值=0.35 最大持仓=5 | dry_run=True simulated=True"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "[风控] 日亏损上限=-30.0USDT | 最大连续亏损=999 | 默认仓位=20.0%"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "[绩效] 初始权益=100.0 | 当前权益=100.00 | 历史交易=0笔"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "═══ 轮询 #1 开始 ═══"}
+{"ts": "2026-08-10 04:18:47", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 04:22:47", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:23:02", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:23:17", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:23:32", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:23:47", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:24:02", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:24:17", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:24:32", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:24:47", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:25:02", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:25:17", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:25:32", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:25:47", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:26:02", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:26:17", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 04:26:17", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 04:26:17", "level": "INFO", "msg": "[学习] 当前案例=328 | 新增自上次重训=328 | 上次重训=从未"}
+{"ts": "2026-08-10 04:26:17", "level": "INFO", "msg": "═══ 轮询 #1 结束 ═══\n"}
+{"ts": "2026-08-10 05:26:18", "level": "INFO", "msg": "═══ 轮询 #2 开始 ═══"}
+{"ts": "2026-08-10 05:26:18", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 05:30:18", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:30:33", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:30:48", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:31:03", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:31:18", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:31:33", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:31:48", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:32:03", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:32:18", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:32:33", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:32:48", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:33:03", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:33:18", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:33:33", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:33:48", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 05:33:48", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 05:33:48", "level": "INFO", "msg": "[学习] 当前案例=337 | 新增自上次重训=337 | 上次重训=从未"}
+{"ts": "2026-08-10 05:33:48", "level": "INFO", "msg": "═══ 轮询 #2 结束 ═══\n"}
+{"ts": "2026-08-10 06:33:49", "level": "INFO", "msg": "═══ 轮询 #3 开始 ═══"}
+{"ts": "2026-08-10 06:33:49", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 06:37:49", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:38:04", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:38:19", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:38:34", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:38:49", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:39:04", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:39:19", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:39:34", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:39:49", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:40:04", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:40:19", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:40:34", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:40:49", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:41:04", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:41:19", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 06:41:19", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 06:41:19", "level": "INFO", "msg": "[学习] 当前案例=346 | 新增自上次重训=346 | 上次重训=从未"}
+{"ts": "2026-08-10 06:41:19", "level": "INFO", "msg": "═══ 轮询 #3 结束 ═══\n"}
+{"ts": "2026-08-10 07:41:19", "level": "INFO", "msg": "═══ 轮询 #4 开始 ═══"}
+{"ts": "2026-08-10 07:41:19", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 07:45:20", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:45:35", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:45:50", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:46:05", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:46:20", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:46:35", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:46:50", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:47:05", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:47:20", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:47:35", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:47:50", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:48:05", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:48:20", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:48:35", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:48:50", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 07:48:50", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 07:48:50", "level": "INFO", "msg": "[学习] 当前案例=355 | 新增自上次重训=355 | 上次重训=从未"}
+{"ts": "2026-08-10 07:48:50", "level": "INFO", "msg": "═══ 轮询 #4 结束 ═══\n"}
+{"ts": "2026-08-10 08:48:50", "level": "INFO", "msg": "═══ 轮询 #5 开始 ═══"}
+{"ts": "2026-08-10 08:48:50", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 08:52:50", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:53:06", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:53:21", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:53:36", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:53:51", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:54:06", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:54:21", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:54:36", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:54:51", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:55:06", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:55:08", "level": "WARN", "msg": "收到退出信号，正在停止..."}
+{"ts": "2026-08-10 08:55:21", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:55:24", "level": "WARN", "msg": "收到退出信号，正在停止..."}
+{"ts": "2026-08-10 08:55:36", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:55:51", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:56:06", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:56:21", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 08:56:21", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 08:56:21", "level": "INFO", "msg": "[学习] 当前案例=364 | 新增自上次重训=364 | 上次重训=从未"}
+{"ts": "2026-08-10 08:56:21", "level": "INFO", "msg": "═══ 轮询 #5 结束 ═══\n"}
+{"ts": "2026-08-10 08:56:21", "level": "INFO", "msg": "轮询交易器已停止"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[CBR] 案例检索增强已初始化"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[A7] 实践论门禁已初始化"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[P3] 认知召回桥接已初始化"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[持仓同步] 检查 OKX 已有持仓..."}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[持仓同步] 完成，共 0 个持仓 (BCRM=0 外部=0)"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[离场防频繁] v5.0优化已启用：保护期=6h | 离场确认=2次/5min | 保护期反转置信+12%"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[系统诊断] 启动时执行状态检查..."}
+{"ts": "2026-08-10 08:56:35", "level": "OK", "msg": "  ✅ [🏛️ 系统状态] 系统运行正常"}
+{"ts": "2026-08-10 08:56:35", "level": "OK", "msg": "  ✅ [💼 持仓状态] 持仓一致 (0 个)"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ local_position_count: 0"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ okx_position_count: 0"}
+{"ts": "2026-08-10 08:56:35", "level": "OK", "msg": "  ✅ [🧠 模型状态] 14个L1模型, 0个L2模型, 5币种, 4周期"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ models_dir_exists: True"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ total_models: 14"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ l1_count: 14"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ l2_count: 0"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ latest_model: BTC_1D_72fd285e0dc68659"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ latest_train_time: 2026-08-08 12:09:02"}
+{"ts": "2026-08-10 08:56:35", "level": "WARN", "msg": "  ⚠️ [🔗 连接状态] OKX 连接失败"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ okx_connected: False"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ sqlite_connected: True"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ feishu_error: FEISHU_WEBHOOK_URL 未配置"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ feishu_configured: False"}
+{"ts": "2026-08-10 08:56:35", "level": "OK", "msg": "  ✅ [💰 风控状态] 风控状态正常"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ today_pnl: 0"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ today_trades: 0"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ consecutive_losses: 0"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "    └─ win_rate: 0"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[系统诊断] 启动检查通过"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "轮询交易器启动 | 间隔=3600s 币种=['UNI', 'PUMP', 'MU', 'SKHYNIX', 'HYPE', 'ETH', 'BTC', 'SOL', 'XAUT', 'XAG', 'GOOGL', 'NVDA', 'AMZN', 'OKB', 'BNB'] 周期=1H | 置信度阈值=0.35 最大持仓=5 | dry_run=True simulated=True"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[风控] 日亏损上限=-30.0USDT | 最大连续亏损=999 | 默认仓位=20.0%"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[绩效] 初始权益=100.0 | 当前权益=100.00 | 历史交易=0笔"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "═══ 轮询 #1 开始 ═══"}
+{"ts": "2026-08-10 08:56:35", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 09:00:35", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:00:50", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:01:05", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:01:20", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:01:35", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:01:50", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:02:05", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:02:20", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:02:35", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:02:50", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:03:05", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:03:20", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:03:35", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:03:50", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:04:05", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 09:04:05", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 09:04:05", "level": "INFO", "msg": "[学习] 当前案例=366 | 新增自上次重训=366 | 上次重训=从未"}
+{"ts": "2026-08-10 09:04:05", "level": "INFO", "msg": "═══ 轮询 #1 结束 ═══\n"}
+{"ts": "2026-08-10 10:04:05", "level": "INFO", "msg": "═══ 轮询 #2 开始 ═══"}
+{"ts": "2026-08-10 10:04:05", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 10:08:06", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:08:21", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:08:36", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:08:51", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:09:06", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:09:21", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:09:36", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:09:51", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:10:06", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:10:21", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:10:36", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:10:51", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:11:06", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:11:21", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:11:36", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 10:11:36", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 10:11:36", "level": "INFO", "msg": "[学习] 当前案例=379 | 新增自上次重训=379 | 上次重训=从未"}
+{"ts": "2026-08-10 10:11:36", "level": "INFO", "msg": "═══ 轮询 #2 结束 ═══\n"}
+{"ts": "2026-08-10 11:11:36", "level": "INFO", "msg": "═══ 轮询 #3 开始 ═══"}
+{"ts": "2026-08-10 11:11:36", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 11:15:37", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:15:52", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:16:07", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:16:22", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:16:37", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:16:52", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:17:07", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:17:22", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:17:37", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:17:52", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:18:07", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:18:22", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:18:37", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:18:52", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:19:07", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 11:19:07", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 11:19:07", "level": "INFO", "msg": "[学习] 当前案例=391 | 新增自上次重训=391 | 上次重训=从未"}
+{"ts": "2026-08-10 11:19:07", "level": "INFO", "msg": "═══ 轮询 #3 结束 ═══\n"}
+{"ts": "2026-08-10 12:19:07", "level": "INFO", "msg": "═══ 轮询 #4 开始 ═══"}
+{"ts": "2026-08-10 12:19:07", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 12:23:07", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:23:22", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:23:37", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:23:52", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:24:07", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:24:22", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:24:37", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:24:52", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:25:07", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:25:23", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:25:38", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:25:53", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:26:08", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:26:23", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:26:38", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 12:26:38", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 12:26:38", "level": "INFO", "msg": "[学习] 当前案例=400 | 新增自上次重训=400 | 上次重训=从未"}
+{"ts": "2026-08-10 12:26:38", "level": "INFO", "msg": "═══ 轮询 #4 结束 ═══\n"}
+{"ts": "2026-08-10 13:26:38", "level": "INFO", "msg": "═══ 轮询 #5 开始 ═══"}
+{"ts": "2026-08-10 13:26:38", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 13:30:38", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:30:53", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:31:08", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:31:23", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:31:38", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:31:53", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:32:08", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:32:23", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:32:38", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:32:53", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:33:08", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:33:23", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:33:38", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:33:53", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:34:08", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 13:34:08", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 13:34:08", "level": "INFO", "msg": "[学习] 当前案例=414 | 新增自上次重训=414 | 上次重训=从未"}
+{"ts": "2026-08-10 13:34:08", "level": "INFO", "msg": "═══ 轮询 #5 结束 ═══\n"}
+{"ts": "2026-08-10 14:34:09", "level": "INFO", "msg": "═══ 轮询 #6 开始 ═══"}
+{"ts": "2026-08-10 14:34:09", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 14:38:09", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:38:24", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:38:39", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:38:54", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:39:09", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:39:24", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:39:39", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:39:54", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:40:09", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:40:24", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:40:39", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:40:54", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:41:09", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:41:24", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:41:39", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 14:41:39", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 14:41:39", "level": "INFO", "msg": "[学习] 当前案例=427 | 新增自上次重训=427 | 上次重训=从未"}
+{"ts": "2026-08-10 14:41:39", "level": "INFO", "msg": "═══ 轮询 #6 结束 ═══\n"}
+{"ts": "2026-08-10 15:41:40", "level": "INFO", "msg": "═══ 轮询 #7 开始 ═══"}
+{"ts": "2026-08-10 15:41:40", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 15:45:40", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:45:55", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:46:10", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:46:25", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:46:40", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:46:55", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:47:10", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:47:25", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:47:40", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:47:55", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:48:10", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:48:25", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:48:40", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:48:55", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:49:10", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 15:49:10", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 15:49:10", "level": "INFO", "msg": "[学习] 当前案例=436 | 新增自上次重训=436 | 上次重训=从未"}
+{"ts": "2026-08-10 15:49:10", "level": "INFO", "msg": "═══ 轮询 #7 结束 ═══\n"}
+{"ts": "2026-08-10 16:49:10", "level": "INFO", "msg": "═══ 轮询 #8 开始 ═══"}
+{"ts": "2026-08-10 16:49:10", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 16:53:11", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:53:26", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:53:41", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:53:56", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:54:11", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:54:26", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:54:41", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:54:56", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:55:11", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:55:26", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:55:41", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:55:56", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:56:11", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:56:26", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:56:41", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 16:56:41", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 16:56:41", "level": "INFO", "msg": "[学习] 当前案例=445 | 新增自上次重训=445 | 上次重训=从未"}
+{"ts": "2026-08-10 16:56:41", "level": "INFO", "msg": "═══ 轮询 #8 结束 ═══\n"}
+{"ts": "2026-08-10 17:56:41", "level": "INFO", "msg": "═══ 轮询 #9 开始 ═══"}
+{"ts": "2026-08-10 17:56:41", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 18:00:41", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:00:56", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:01:11", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:01:26", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:01:41", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:01:56", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:02:11", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:02:27", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:02:42", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:02:57", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:03:12", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:03:27", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:03:42", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:03:57", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:04:12", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 18:04:12", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 18:04:12", "level": "INFO", "msg": "[学习] 当前案例=456 | 新增自上次重训=456 | 上次重训=从未"}
+{"ts": "2026-08-10 18:04:12", "level": "INFO", "msg": "═══ 轮询 #9 结束 ═══\n"}
+{"ts": "2026-08-10 19:04:12", "level": "INFO", "msg": "═══ 轮询 #10 开始 ═══"}
+{"ts": "2026-08-10 19:04:12", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 19:08:12", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:08:27", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:08:42", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:08:57", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:09:12", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:09:27", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:09:42", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:09:57", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:10:12", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:10:27", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:10:42", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:10:57", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:11:12", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:11:27", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:11:42", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 19:11:42", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 19:11:42", "level": "INFO", "msg": "[学习] 当前案例=469 | 新增自上次重训=469 | 上次重训=从未"}
+{"ts": "2026-08-10 19:11:42", "level": "INFO", "msg": "═══ 轮询 #10 结束 ═══\n"}
+{"ts": "2026-08-10 20:11:43", "level": "INFO", "msg": "═══ 轮询 #11 开始 ═══"}
+{"ts": "2026-08-10 20:11:43", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 20:15:43", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:15:58", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:16:13", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:16:28", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:16:43", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:16:58", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:17:13", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:17:28", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:17:43", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:17:58", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:18:13", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:18:28", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:18:43", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:18:58", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:19:13", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 20:19:13", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 20:19:13", "level": "INFO", "msg": "[学习] 当前案例=481 | 新增自上次重训=481 | 上次重训=从未"}
+{"ts": "2026-08-10 20:19:13", "level": "INFO", "msg": "═══ 轮询 #11 结束 ═══\n"}
+{"ts": "2026-08-10 21:19:14", "level": "INFO", "msg": "═══ 轮询 #12 开始 ═══"}
+{"ts": "2026-08-10 21:19:14", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 21:23:14", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:23:29", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:23:44", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:23:59", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:24:14", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:24:29", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:24:44", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:24:59", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:25:14", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:25:29", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:25:44", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:25:59", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:26:14", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:26:29", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:26:44", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 21:26:44", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 21:26:44", "level": "INFO", "msg": "[学习] 当前案例=490 | 新增自上次重训=490 | 上次重训=从未"}
+{"ts": "2026-08-10 21:26:44", "level": "INFO", "msg": "═══ 轮询 #12 结束 ═══\n"}
+{"ts": "2026-08-10 22:26:45", "level": "INFO", "msg": "═══ 轮询 #13 开始 ═══"}
+{"ts": "2026-08-10 22:26:45", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 22:30:45", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:31:00", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:31:15", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:31:30", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:31:45", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:32:00", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:32:15", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:32:30", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:32:45", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:33:00", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:33:15", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:33:31", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:33:46", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:34:01", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:34:16", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 22:34:16", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 22:34:16", "level": "INFO", "msg": "[学习] 当前案例=499 | 新增自上次重训=499 | 上次重训=从未"}
+{"ts": "2026-08-10 22:34:16", "level": "INFO", "msg": "═══ 轮询 #13 结束 ═══\n"}
+{"ts": "2026-08-10 23:34:16", "level": "INFO", "msg": "═══ 轮询 #14 开始 ═══"}
+{"ts": "2026-08-10 23:34:16", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-10 23:38:17", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:38:32", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:38:47", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:39:02", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:39:17", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:39:32", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:39:47", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:40:02", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:40:17", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:40:32", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:40:47", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:41:02", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:41:17", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:41:32", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:41:47", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-10 23:41:47", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-10 23:41:47", "level": "INFO", "msg": "[学习] 当前案例=508 | 新增自上次重训=508 | 上次重训=从未"}
+{"ts": "2026-08-10 23:41:47", "level": "INFO", "msg": "═══ 轮询 #14 结束 ═══\n"}
+{"ts": "2026-08-11 00:41:48", "level": "INFO", "msg": "[每日摘要] 2026-08-10 已落盘: daily_summary_2026-08-10.json | 日交易0笔 盈亏0.00U 整体夏普0.00"}
+{"ts": "2026-08-11 00:41:48", "level": "INFO", "msg": "[风控] 新的一天 2026-08-11，重置每日风控统计"}
+{"ts": "2026-08-11 00:41:48", "level": "INFO", "msg": "═══ 轮询 #15 开始 ═══"}
+{"ts": "2026-08-11 00:41:48", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 00:45:48", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:46:03", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:46:18", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:46:33", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:46:48", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:47:03", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:47:18", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:47:33", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:47:48", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:48:03", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:48:18", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:48:33", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:48:48", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:49:03", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:49:18", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 00:49:18", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 00:49:18", "level": "INFO", "msg": "[学习] 当前案例=517 | 新增自上次重训=517 | 上次重训=从未"}
+{"ts": "2026-08-11 00:49:18", "level": "INFO", "msg": "═══ 轮询 #15 结束 ═══\n"}
+{"ts": "2026-08-11 01:49:19", "level": "INFO", "msg": "═══ 轮询 #16 开始 ═══"}
+{"ts": "2026-08-11 01:49:19", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 01:53:19", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:53:34", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:53:49", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:54:04", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:54:19", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:54:34", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:54:49", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:55:04", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:55:19", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:55:34", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:55:49", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:56:04", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:56:19", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:56:34", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:56:49", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 01:56:49", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 01:56:49", "level": "INFO", "msg": "[学习] 当前案例=526 | 新增自上次重训=526 | 上次重训=从未"}
+{"ts": "2026-08-11 01:56:49", "level": "INFO", "msg": "═══ 轮询 #16 结束 ═══\n"}
+{"ts": "2026-08-11 02:56:50", "level": "INFO", "msg": "═══ 轮询 #17 开始 ═══"}
+{"ts": "2026-08-11 02:56:50", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 03:00:50", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:01:05", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:01:20", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:01:35", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:01:50", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:02:05", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:02:20", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:02:35", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:02:50", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:03:05", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:03:20", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:03:35", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:03:50", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:04:05", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:04:20", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 03:04:20", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 03:04:20", "level": "INFO", "msg": "[学习] 当前案例=537 | 新增自上次重训=537 | 上次重训=从未"}
+{"ts": "2026-08-11 03:04:20", "level": "INFO", "msg": "═══ 轮询 #17 结束 ═══\n"}
+{"ts": "2026-08-11 04:04:21", "level": "INFO", "msg": "═══ 轮询 #18 开始 ═══"}
+{"ts": "2026-08-11 04:04:21", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 04:08:21", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:08:36", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:08:51", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:09:06", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:09:21", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:09:36", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:09:51", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:10:06", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:10:21", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:10:36", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:10:51", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:11:06", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:11:21", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:11:36", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:11:51", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 04:11:51", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 04:11:51", "level": "INFO", "msg": "[学习] 当前案例=551 | 新增自上次重训=551 | 上次重训=从未"}
+{"ts": "2026-08-11 04:11:51", "level": "INFO", "msg": "═══ 轮询 #18 结束 ═══\n"}
+{"ts": "2026-08-11 05:11:52", "level": "INFO", "msg": "═══ 轮询 #19 开始 ═══"}
+{"ts": "2026-08-11 05:11:52", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 05:15:52", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:16:07", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:16:22", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:16:37", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:16:52", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:17:07", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:17:22", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:17:37", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:17:52", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:18:07", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:18:22", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:18:37", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:18:52", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:19:07", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:19:22", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 05:19:22", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 05:19:22", "level": "INFO", "msg": "[学习] 当前案例=562 | 新增自上次重训=562 | 上次重训=从未"}
+{"ts": "2026-08-11 05:19:22", "level": "INFO", "msg": "═══ 轮询 #19 结束 ═══\n"}
+{"ts": "2026-08-11 06:19:23", "level": "INFO", "msg": "═══ 轮询 #20 开始 ═══"}
+{"ts": "2026-08-11 06:19:23", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 06:23:23", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:23:38", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:23:53", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:24:08", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:24:23", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:24:38", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:24:53", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:25:08", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:25:23", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:25:38", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:25:53", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:26:08", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:26:23", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:26:38", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:26:53", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 06:26:53", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 06:26:53", "level": "INFO", "msg": "[学习] 当前案例=571 | 新增自上次重训=571 | 上次重训=从未"}
+{"ts": "2026-08-11 06:26:53", "level": "INFO", "msg": "═══ 轮询 #20 结束 ═══\n"}
+{"ts": "2026-08-11 07:26:53", "level": "INFO", "msg": "═══ 轮询 #21 开始 ═══"}
+{"ts": "2026-08-11 07:26:53", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 07:30:54", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:31:09", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:31:24", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:31:39", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:31:54", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:32:09", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:32:24", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:32:39", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:32:54", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:33:09", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:33:24", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:33:39", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:33:54", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:34:09", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:34:24", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 07:34:24", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 07:34:24", "level": "INFO", "msg": "[学习] 当前案例=580 | 新增自上次重训=580 | 上次重训=从未"}
+{"ts": "2026-08-11 07:34:24", "level": "INFO", "msg": "═══ 轮询 #21 结束 ═══\n"}
+{"ts": "2026-08-11 08:34:24", "level": "INFO", "msg": "═══ 轮询 #22 开始 ═══"}
+{"ts": "2026-08-11 08:34:24", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 08:38:25", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:38:40", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:38:55", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:39:10", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:39:25", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:39:40", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:39:55", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:40:10", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:40:25", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:40:40", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:40:55", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:41:10", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:41:25", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:41:40", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:41:55", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 08:41:55", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 08:41:55", "level": "INFO", "msg": "[学习] 当前案例=589 | 新增自上次重训=589 | 上次重训=从未"}
+{"ts": "2026-08-11 08:41:55", "level": "INFO", "msg": "═══ 轮询 #22 结束 ═══\n"}
+{"ts": "2026-08-11 09:41:55", "level": "INFO", "msg": "═══ 轮询 #23 开始 ═══"}
+{"ts": "2026-08-11 09:41:55", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 09:45:55", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:46:11", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:46:26", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:46:41", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:46:56", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:47:11", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:47:26", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:47:41", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:47:56", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:48:11", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:48:26", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:48:41", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:48:56", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:49:11", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:49:26", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 09:49:26", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 09:49:26", "level": "INFO", "msg": "[学习] 当前案例=598 | 新增自上次重训=598 | 上次重训=从未"}
+{"ts": "2026-08-11 09:49:26", "level": "INFO", "msg": "═══ 轮询 #23 结束 ═══\n"}
+{"ts": "2026-08-11 10:49:26", "level": "INFO", "msg": "═══ 轮询 #24 开始 ═══"}
+{"ts": "2026-08-11 10:49:26", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 10:53:26", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:53:41", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:53:56", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:54:11", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:54:26", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:54:41", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:54:56", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:55:11", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:55:26", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:55:42", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:55:57", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:56:12", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:56:27", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:56:42", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:56:57", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 10:56:57", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 10:56:57", "level": "INFO", "msg": "[学习] 当前案例=607 | 新增自上次重训=607 | 上次重训=从未"}
+{"ts": "2026-08-11 10:56:57", "level": "INFO", "msg": "═══ 轮询 #24 结束 ═══\n"}
+{"ts": "2026-08-11 11:56:57", "level": "INFO", "msg": "═══ 轮询 #25 开始 ═══"}
+{"ts": "2026-08-11 11:56:57", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 12:00:57", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:01:12", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:01:27", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:01:42", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:01:57", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:02:12", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:02:27", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:02:42", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:02:57", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:03:12", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:03:27", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:03:42", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:03:57", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:04:12", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:04:27", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 12:04:27", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 12:04:27", "level": "INFO", "msg": "[学习] 当前案例=618 | 新增自上次重训=618 | 上次重训=从未"}
+{"ts": "2026-08-11 12:04:27", "level": "INFO", "msg": "═══ 轮询 #25 结束 ═══\n"}
+{"ts": "2026-08-11 13:04:28", "level": "INFO", "msg": "═══ 轮询 #26 开始 ═══"}
+{"ts": "2026-08-11 13:04:28", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 13:08:28", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:08:43", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:08:58", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:09:13", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:09:28", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:09:43", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:09:58", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:10:13", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:10:28", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:10:43", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:10:58", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:11:13", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:11:28", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:11:43", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:11:58", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 13:11:58", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 13:11:58", "level": "INFO", "msg": "[学习] 当前案例=631 | 新增自上次重训=631 | 上次重训=从未"}
+{"ts": "2026-08-11 13:11:58", "level": "INFO", "msg": "═══ 轮询 #26 结束 ═══\n"}
+{"ts": "2026-08-11 14:11:59", "level": "INFO", "msg": "═══ 轮询 #27 开始 ═══"}
+{"ts": "2026-08-11 14:11:59", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 14:15:59", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:16:14", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:16:29", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:16:44", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:16:59", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:17:14", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:17:29", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:17:44", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:17:59", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:18:14", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:18:29", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:18:44", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:18:59", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:19:14", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:19:29", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 14:19:29", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 14:19:29", "level": "INFO", "msg": "[学习] 当前案例=643 | 新增自上次重训=643 | 上次重训=从未"}
+{"ts": "2026-08-11 14:19:29", "level": "INFO", "msg": "═══ 轮询 #27 结束 ═══\n"}
+{"ts": "2026-08-11 15:19:30", "level": "INFO", "msg": "═══ 轮询 #28 开始 ═══"}
+{"ts": "2026-08-11 15:19:30", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 15:23:30", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:23:45", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:24:00", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:24:15", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:24:30", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:24:45", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:25:00", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:25:15", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:25:30", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:25:45", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:26:00", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:26:15", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:26:30", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:26:45", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:27:00", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 15:27:00", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 15:27:00", "level": "INFO", "msg": "[学习] 当前案例=652 | 新增自上次重训=652 | 上次重训=从未"}
+{"ts": "2026-08-11 15:27:00", "level": "INFO", "msg": "═══ 轮询 #28 结束 ═══\n"}
+{"ts": "2026-08-11 16:27:00", "level": "INFO", "msg": "═══ 轮询 #29 开始 ═══"}
+{"ts": "2026-08-11 16:27:00", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 16:31:01", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:31:16", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:31:31", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:31:46", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:32:01", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:32:16", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:32:31", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:32:46", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:33:01", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:33:16", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:33:31", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:33:46", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:34:01", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:34:16", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:34:31", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 16:34:31", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 16:34:31", "level": "INFO", "msg": "[学习] 当前案例=661 | 新增自上次重训=661 | 上次重训=从未"}
+{"ts": "2026-08-11 16:34:31", "level": "INFO", "msg": "═══ 轮询 #29 结束 ═══\n"}
+{"ts": "2026-08-11 17:34:31", "level": "INFO", "msg": "═══ 轮询 #30 开始 ═══"}
+{"ts": "2026-08-11 17:34:31", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 17:38:32", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:38:47", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:39:02", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:39:17", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:39:32", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:39:47", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:40:02", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:40:17", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:40:32", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:40:47", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:41:02", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:41:17", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:41:32", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:41:47", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:42:02", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 17:42:02", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 17:42:02", "level": "INFO", "msg": "[学习] 当前案例=670 | 新增自上次重训=670 | 上次重训=从未"}
+{"ts": "2026-08-11 17:42:02", "level": "INFO", "msg": "═══ 轮询 #30 结束 ═══\n"}
+{"ts": "2026-08-11 18:42:02", "level": "INFO", "msg": "═══ 轮询 #31 开始 ═══"}
+{"ts": "2026-08-11 18:42:02", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 18:46:02", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:46:18", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:46:33", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:46:48", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:47:03", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:47:18", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:47:33", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:47:48", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:48:03", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:48:18", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:48:33", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:48:48", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:49:03", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:49:18", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:49:33", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 18:49:33", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 18:49:33", "level": "INFO", "msg": "[学习] 当前案例=679 | 新增自上次重训=679 | 上次重训=从未"}
+{"ts": "2026-08-11 18:49:33", "level": "INFO", "msg": "═══ 轮询 #31 结束 ═══\n"}
+{"ts": "2026-08-11 19:49:33", "level": "INFO", "msg": "═══ 轮询 #32 开始 ═══"}
+{"ts": "2026-08-11 19:49:33", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 19:53:33", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:53:48", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:54:03", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:54:18", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:54:33", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:54:48", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:55:03", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:55:18", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:55:33", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:55:48", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:56:04", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:56:19", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:56:34", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:56:49", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:57:04", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 19:57:04", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 19:57:04", "level": "INFO", "msg": "[学习] 当前案例=688 | 新增自上次重训=688 | 上次重训=从未"}
+{"ts": "2026-08-11 19:57:04", "level": "INFO", "msg": "═══ 轮询 #32 结束 ═══\n"}
+{"ts": "2026-08-11 20:57:04", "level": "INFO", "msg": "═══ 轮询 #33 开始 ═══"}
+{"ts": "2026-08-11 20:57:04", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 21:01:04", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:01:19", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:01:34", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:01:49", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:02:04", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:02:19", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:02:34", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:02:49", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:03:04", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:03:19", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:03:34", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:03:49", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:04:04", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:04:19", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:04:34", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 21:04:34", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 21:04:34", "level": "INFO", "msg": "[学习] 当前案例=699 | 新增自上次重训=699 | 上次重训=从未"}
+{"ts": "2026-08-11 21:04:34", "level": "INFO", "msg": "═══ 轮询 #33 结束 ═══\n"}
+{"ts": "2026-08-11 22:04:35", "level": "INFO", "msg": "═══ 轮询 #34 开始 ═══"}
+{"ts": "2026-08-11 22:04:35", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 22:08:35", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:08:50", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:09:05", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:09:20", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:09:35", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:09:50", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:10:05", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:10:20", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:10:35", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:10:50", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:11:05", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:11:21", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:11:36", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:11:51", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:12:06", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 22:12:06", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 22:12:06", "level": "INFO", "msg": "[学习] 当前案例=713 | 新增自上次重训=713 | 上次重训=从未"}
+{"ts": "2026-08-11 22:12:06", "level": "INFO", "msg": "═══ 轮询 #34 结束 ═══\n"}
+{"ts": "2026-08-11 23:12:06", "level": "INFO", "msg": "═══ 轮询 #35 开始 ═══"}
+{"ts": "2026-08-11 23:12:06", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-11 23:16:06", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:16:21", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:16:36", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:16:51", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:17:06", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:17:21", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:17:36", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:17:51", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:18:06", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:18:21", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:18:36", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:18:51", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:19:06", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:19:21", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:19:36", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-11 23:19:36", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-11 23:19:36", "level": "INFO", "msg": "[学习] 当前案例=724 | 新增自上次重训=724 | 上次重训=从未"}
+{"ts": "2026-08-11 23:19:36", "level": "INFO", "msg": "═══ 轮询 #35 结束 ═══\n"}
+{"ts": "2026-08-12 00:19:37", "level": "INFO", "msg": "[每日摘要] 2026-08-11 已落盘: daily_summary_2026-08-11.json | 日交易0笔 盈亏0.00U 整体夏普0.00"}
+{"ts": "2026-08-12 00:19:37", "level": "INFO", "msg": "[风控] 新的一天 2026-08-12，重置每日风控统计"}
+{"ts": "2026-08-12 00:19:37", "level": "INFO", "msg": "═══ 轮询 #36 开始 ═══"}
+{"ts": "2026-08-12 00:19:37", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 00:23:37", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:23:52", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:24:07", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:24:22", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:24:37", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:24:52", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:25:07", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:25:22", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:25:37", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:25:52", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:26:07", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:26:22", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:26:37", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:26:52", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:27:07", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 00:27:07", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 00:27:07", "level": "INFO", "msg": "[学习] 当前案例=733 | 新增自上次重训=733 | 上次重训=从未"}
+{"ts": "2026-08-12 00:27:07", "level": "INFO", "msg": "═══ 轮询 #36 结束 ═══\n"}
+{"ts": "2026-08-12 01:27:08", "level": "INFO", "msg": "═══ 轮询 #37 开始 ═══"}
+{"ts": "2026-08-12 01:27:08", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 01:31:08", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:31:23", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:31:38", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:31:53", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:32:08", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:32:23", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:32:38", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:32:53", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:33:08", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:33:23", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:33:38", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:33:53", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:34:08", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:34:23", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:34:38", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 01:34:38", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 01:34:38", "level": "INFO", "msg": "[学习] 当前案例=742 | 新增自上次重训=742 | 上次重训=从未"}
+{"ts": "2026-08-12 01:34:38", "level": "INFO", "msg": "═══ 轮询 #37 结束 ═══\n"}
+{"ts": "2026-08-12 02:34:39", "level": "INFO", "msg": "═══ 轮询 #38 开始 ═══"}
+{"ts": "2026-08-12 02:34:39", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 02:38:39", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:38:54", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:39:09", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:39:24", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:39:39", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:39:54", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:40:09", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:40:24", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:40:39", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:40:54", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:41:09", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:41:24", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:41:39", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:41:54", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:42:09", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 02:42:09", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 02:42:09", "level": "INFO", "msg": "[学习] 当前案例=751 | 新增自上次重训=751 | 上次重训=从未"}
+{"ts": "2026-08-12 02:42:09", "level": "INFO", "msg": "═══ 轮询 #38 结束 ═══\n"}
+{"ts": "2026-08-12 03:42:10", "level": "INFO", "msg": "═══ 轮询 #39 开始 ═══"}
+{"ts": "2026-08-12 03:42:10", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 03:46:10", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:46:25", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:46:40", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:46:55", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:47:10", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:47:25", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:47:40", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:47:55", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:48:10", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:48:25", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:48:40", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:48:55", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:49:10", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:49:25", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:49:40", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 03:49:40", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 03:49:40", "level": "INFO", "msg": "[学习] 当前案例=760 | 新增自上次重训=760 | 上次重训=从未"}
+{"ts": "2026-08-12 03:49:40", "level": "INFO", "msg": "═══ 轮询 #39 结束 ═══\n"}
+{"ts": "2026-08-12 04:49:40", "level": "INFO", "msg": "═══ 轮询 #40 开始 ═══"}
+{"ts": "2026-08-12 04:49:40", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 04:53:41", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:53:56", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:54:11", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:54:26", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:54:41", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:54:56", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:55:11", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:55:26", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:55:41", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:55:56", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:56:11", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:56:26", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:56:41", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:56:56", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:57:11", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 04:57:11", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 04:57:11", "level": "INFO", "msg": "[学习] 当前案例=769 | 新增自上次重训=769 | 上次重训=从未"}
+{"ts": "2026-08-12 04:57:11", "level": "INFO", "msg": "═══ 轮询 #40 结束 ═══\n"}
+{"ts": "2026-08-12 05:57:11", "level": "INFO", "msg": "═══ 轮询 #41 开始 ═══"}
+{"ts": "2026-08-12 05:57:11", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 06:01:11", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:01:26", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:01:41", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:01:57", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:02:12", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:02:27", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:02:42", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:02:57", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:03:12", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:03:27", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:03:42", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:03:57", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:04:12", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:04:27", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:04:42", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 06:04:42", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 06:04:42", "level": "INFO", "msg": "[学习] 当前案例=780 | 新增自上次重训=780 | 上次重训=从未"}
+{"ts": "2026-08-12 06:04:42", "level": "INFO", "msg": "═══ 轮询 #41 结束 ═══\n"}
+{"ts": "2026-08-12 07:04:42", "level": "INFO", "msg": "═══ 轮询 #42 开始 ═══"}
+{"ts": "2026-08-12 07:04:42", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 07:08:42", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:08:57", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:09:12", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:09:27", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:09:42", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:09:57", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:10:12", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:10:27", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:10:42", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:10:58", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:11:13", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:11:28", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:11:43", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:11:58", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:12:13", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 07:12:13", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 07:12:13", "level": "INFO", "msg": "[学习] 当前案例=795 | 新增自上次重训=795 | 上次重训=从未"}
+{"ts": "2026-08-12 07:12:13", "level": "INFO", "msg": "═══ 轮询 #42 结束 ═══\n"}
+{"ts": "2026-08-12 08:12:13", "level": "INFO", "msg": "═══ 轮询 #43 开始 ═══"}
+{"ts": "2026-08-12 08:12:13", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 08:16:13", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:16:28", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:16:43", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:16:58", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:17:13", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:17:28", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:17:43", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:17:58", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:18:13", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:18:28", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:18:43", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:18:58", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:19:13", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:19:28", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:19:43", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 08:19:43", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 08:19:43", "level": "INFO", "msg": "[学习] 当前案例=805 | 新增自上次重训=805 | 上次重训=从未"}
+{"ts": "2026-08-12 08:19:43", "level": "INFO", "msg": "═══ 轮询 #43 结束 ═══\n"}
+{"ts": "2026-08-12 09:19:44", "level": "INFO", "msg": "═══ 轮询 #44 开始 ═══"}
+{"ts": "2026-08-12 09:19:44", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 09:23:44", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:23:59", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:24:14", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:24:29", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:24:44", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:24:59", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:25:14", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:25:29", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:25:44", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:25:59", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:26:14", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:26:29", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:26:44", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:26:59", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:27:14", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 09:27:14", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 09:27:14", "level": "INFO", "msg": "[学习] 当前案例=814 | 新增自上次重训=814 | 上次重训=从未"}
+{"ts": "2026-08-12 09:27:14", "level": "INFO", "msg": "═══ 轮询 #44 结束 ═══\n"}
+{"ts": "2026-08-12 10:27:15", "level": "INFO", "msg": "═══ 轮询 #45 开始 ═══"}
+{"ts": "2026-08-12 10:27:15", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 10:31:15", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:31:30", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:31:45", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:32:00", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:32:15", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:32:30", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:32:45", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:33:00", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:33:15", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:33:30", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:33:45", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:34:00", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:34:15", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:34:30", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:34:45", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 10:34:45", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 10:34:45", "level": "INFO", "msg": "[学习] 当前案例=823 | 新增自上次重训=823 | 上次重训=从未"}
+{"ts": "2026-08-12 10:34:45", "level": "INFO", "msg": "═══ 轮询 #45 结束 ═══\n"}
+{"ts": "2026-08-12 11:34:46", "level": "INFO", "msg": "═══ 轮询 #46 开始 ═══"}
+{"ts": "2026-08-12 11:34:46", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 11:38:46", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:39:01", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:39:16", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:39:31", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:39:46", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:40:01", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:40:16", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:40:31", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:40:46", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:41:01", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:41:16", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:41:31", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:41:46", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:42:01", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:42:16", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 11:42:16", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 11:42:16", "level": "INFO", "msg": "[学习] 当前案例=832 | 新增自上次重训=832 | 上次重训=从未"}
+{"ts": "2026-08-12 11:42:16", "level": "INFO", "msg": "═══ 轮询 #46 结束 ═══\n"}
+{"ts": "2026-08-12 12:42:17", "level": "INFO", "msg": "═══ 轮询 #47 开始 ═══"}
+{"ts": "2026-08-12 12:42:17", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 12:46:17", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:46:32", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:46:47", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:47:02", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:47:17", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:47:32", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:47:47", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:48:02", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:48:17", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:48:32", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:48:47", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:49:02", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:49:17", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:49:32", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:49:47", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 12:49:47", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 12:49:47", "level": "INFO", "msg": "[学习] 当前案例=841 | 新增自上次重训=841 | 上次重训=从未"}
+{"ts": "2026-08-12 12:49:47", "level": "INFO", "msg": "═══ 轮询 #47 结束 ═══\n"}
+{"ts": "2026-08-12 13:49:47", "level": "INFO", "msg": "═══ 轮询 #48 开始 ═══"}
+{"ts": "2026-08-12 13:49:47", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 13:53:48", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:54:03", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:54:18", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:54:33", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:54:48", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:55:03", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:55:18", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:55:33", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:55:48", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:56:03", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:56:18", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:56:33", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:56:48", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:57:03", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:57:18", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 13:57:18", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 13:57:18", "level": "INFO", "msg": "[学习] 当前案例=850 | 新增自上次重训=850 | 上次重训=从未"}
+{"ts": "2026-08-12 13:57:18", "level": "INFO", "msg": "═══ 轮询 #48 结束 ═══\n"}
+{"ts": "2026-08-12 14:57:18", "level": "INFO", "msg": "═══ 轮询 #49 开始 ═══"}
+{"ts": "2026-08-12 14:57:18", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 15:01:18", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:01:33", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:01:48", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:02:03", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:02:18", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:02:33", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:02:49", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:03:04", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:03:19", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:03:34", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:03:49", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:04:04", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:04:19", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:04:34", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:04:49", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 15:04:49", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 15:04:49", "level": "INFO", "msg": "[学习] 当前案例=861 | 新增自上次重训=861 | 上次重训=从未"}
+{"ts": "2026-08-12 15:04:49", "level": "INFO", "msg": "═══ 轮询 #49 结束 ═══\n"}
+{"ts": "2026-08-12 16:04:49", "level": "INFO", "msg": "═══ 轮询 #50 开始 ═══"}
+{"ts": "2026-08-12 16:04:49", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 16:08:49", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:09:04", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:09:19", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:09:34", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:09:49", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:10:04", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:10:19", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:10:34", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:10:49", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:11:04", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:11:19", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:11:34", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:11:50", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:12:05", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:12:20", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 16:12:20", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 16:12:20", "level": "INFO", "msg": "[学习] 当前案例=875 | 新增自上次重训=875 | 上次重训=从未"}
+{"ts": "2026-08-12 16:12:20", "level": "INFO", "msg": "═══ 轮询 #50 结束 ═══\n"}
+{"ts": "2026-08-12 17:12:20", "level": "INFO", "msg": "═══ 轮询 #51 开始 ═══"}
+{"ts": "2026-08-12 17:12:20", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 17:16:20", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:16:35", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:16:50", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:17:05", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:17:20", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:17:35", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:17:50", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:18:05", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:18:20", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:18:35", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:18:50", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:19:05", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:19:20", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:19:35", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:19:50", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 17:19:50", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 17:19:50", "level": "INFO", "msg": "[学习] 当前案例=886 | 新增自上次重训=886 | 上次重训=从未"}
+{"ts": "2026-08-12 17:19:50", "level": "INFO", "msg": "═══ 轮询 #51 结束 ═══\n"}
+{"ts": "2026-08-12 18:19:51", "level": "INFO", "msg": "═══ 轮询 #52 开始 ═══"}
+{"ts": "2026-08-12 18:19:51", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 18:23:51", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:24:06", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:24:21", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:24:36", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:24:51", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:25:06", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:25:21", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:25:36", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:25:51", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:26:06", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:26:21", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:26:36", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:26:51", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:27:06", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:27:21", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 18:27:21", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 18:27:21", "level": "INFO", "msg": "[学习] 当前案例=895 | 新增自上次重训=895 | 上次重训=从未"}
+{"ts": "2026-08-12 18:27:21", "level": "INFO", "msg": "═══ 轮询 #52 结束 ═══\n"}
+{"ts": "2026-08-12 19:27:22", "level": "INFO", "msg": "═══ 轮询 #53 开始 ═══"}
+{"ts": "2026-08-12 19:27:22", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 19:31:22", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:31:37", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:31:52", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:32:07", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:32:22", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:32:37", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:32:52", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:33:07", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:33:22", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:33:37", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:33:52", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:34:07", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:34:22", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:34:37", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:34:52", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 19:34:52", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 19:34:52", "level": "INFO", "msg": "[学习] 当前案例=904 | 新增自上次重训=904 | 上次重训=从未"}
+{"ts": "2026-08-12 19:34:52", "level": "INFO", "msg": "═══ 轮询 #53 结束 ═══\n"}
+{"ts": "2026-08-12 20:34:53", "level": "INFO", "msg": "═══ 轮询 #54 开始 ═══"}
+{"ts": "2026-08-12 20:34:53", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 20:38:53", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:39:08", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:39:23", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:39:38", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:39:53", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:40:08", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:40:23", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:40:38", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:40:53", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:41:08", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:41:23", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:41:38", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:41:53", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:42:08", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:42:23", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 20:42:23", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 20:42:23", "level": "INFO", "msg": "[学习] 当前案例=913 | 新增自上次重训=913 | 上次重训=从未"}
+{"ts": "2026-08-12 20:42:23", "level": "INFO", "msg": "═══ 轮询 #54 结束 ═══\n"}
+{"ts": "2026-08-12 21:42:23", "level": "INFO", "msg": "═══ 轮询 #55 开始 ═══"}
+{"ts": "2026-08-12 21:42:23", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 21:46:24", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:46:39", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:46:54", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:47:09", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:47:24", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:47:39", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:47:54", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:48:09", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:48:24", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:48:39", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:48:54", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:49:09", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:49:24", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:49:39", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:49:54", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 21:49:54", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 21:49:54", "level": "INFO", "msg": "[学习] 当前案例=922 | 新增自上次重训=922 | 上次重训=从未"}
+{"ts": "2026-08-12 21:49:54", "level": "INFO", "msg": "═══ 轮询 #55 结束 ═══\n"}
+{"ts": "2026-08-12 22:49:54", "level": "INFO", "msg": "═══ 轮询 #56 开始 ═══"}
+{"ts": "2026-08-12 22:49:54", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-12 22:53:55", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:54:10", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:54:25", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:54:40", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:54:55", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:55:11", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:55:26", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:55:41", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:55:56", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:56:11", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:56:26", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:56:41", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:56:56", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:57:11", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:57:26", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-12 22:57:26", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-12 22:57:26", "level": "INFO", "msg": "[学习] 当前案例=931 | 新增自上次重训=931 | 上次重训=从未"}
+{"ts": "2026-08-12 22:57:26", "level": "INFO", "msg": "═══ 轮询 #56 结束 ═══\n"}
+{"ts": "2026-08-12 23:57:26", "level": "INFO", "msg": "═══ 轮询 #57 开始 ═══"}
+{"ts": "2026-08-12 23:57:26", "level": "INFO", "msg": "[状态] 日盈亏=0.00 | 连亏=0/999 | 交易暂停=False | 今日交易=0笔"}
+{"ts": "2026-08-13 00:01:26", "level": "ERROR", "msg": "[UNI] 推理失败: 获取 UNI-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:01:41", "level": "ERROR", "msg": "[PUMP] 推理失败: 获取 PUMP-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:01:56", "level": "ERROR", "msg": "[MU] 推理失败: 获取 MU-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:02:11", "level": "ERROR", "msg": "[SKHYNIX] 推理失败: 获取 SKHYNIX-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:02:26", "level": "ERROR", "msg": "[HYPE] 推理失败: 获取 HYPE-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:02:41", "level": "ERROR", "msg": "[ETH] 推理失败: 获取 ETH-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:02:57", "level": "ERROR", "msg": "[BTC] 推理失败: 获取 BTC-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:03:12", "level": "ERROR", "msg": "[SOL] 推理失败: 获取 SOL-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:03:27", "level": "ERROR", "msg": "[XAUT] 推理失败: 获取 XAUT-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:03:42", "level": "ERROR", "msg": "[XAG] 推理失败: 获取 XAG-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:03:57", "level": "ERROR", "msg": "[GOOGL] 推理失败: 获取 GOOGL-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:04:12", "level": "ERROR", "msg": "[NVDA] 推理失败: 获取 NVDA-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:04:27", "level": "ERROR", "msg": "[AMZN] 推理失败: 获取 AMZN-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:04:42", "level": "ERROR", "msg": "[OKB] 推理失败: 获取 OKB-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:04:57", "level": "ERROR", "msg": "[BNB] 推理失败: 获取 BNB-USDT-SWAP K线失败"}
+{"ts": "2026-08-13 00:04:57", "level": "INFO", "msg": "[持仓跟踪] 记录中持仓数: 0"}
+{"ts": "2026-08-13 00:04:57", "level": "INFO", "msg": "[学习] 当前案例=942 | 新增自上次重训=942 | 上次重训=从未"}
+{"ts": "2026-08-13 00:04:57", "level": "INFO", "msg": "═══ 轮询 #57 结束 ═══\n"}
+{"ts": "2026-08-13 00:47:35", "level": "WARN", "msg": "收到退出信号，正在停止..."}
+{"ts": "2026-08-13 00:47:36", "level": "INFO", "msg": "轮询交易器已停止"}

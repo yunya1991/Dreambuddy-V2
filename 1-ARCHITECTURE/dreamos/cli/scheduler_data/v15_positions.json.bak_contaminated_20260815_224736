@@ -1,0 +1,21 @@
+{
+  "positions": {
+    "BTC": {
+      "symbol": "BTC",
+      "direction": "LONG",
+      "entry_price": 100000.0,
+      "position_size": 0.004333333333333334,
+      "addons_remaining": 3,
+      "addon_count": 0,
+      "tp_pct": 0.04,
+      "addon_gap_pct": 0.08,
+      "atr_at_entry": 0.0,
+      "opened_at": "2026-08-15T14:19:49.732158",
+      "last_addon_at": null,
+      "status": "OPEN",
+      "addon_prices": [],
+      "close_reason": null
+    }
+  },
+  "saved_at": "2026-08-15T14:19:49.732182Z"
+}

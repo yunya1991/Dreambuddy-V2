@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [OP]: MEAN_REVERSION → SHORT (confidence=0.67, latency=67034ms, tokens=0)",
+  "confidence": 0.672,
+  "tags": [
+    "OP",
+    "MEAN_REVERSION",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260816_145950_462424",
+  "timestamp": "2026-08-16T14:59:50+08:00"
+}

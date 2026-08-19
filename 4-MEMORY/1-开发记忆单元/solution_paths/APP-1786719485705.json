@@ -1,0 +1,78 @@
+{
+  "template_id": "APP-1786719485705",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat(dreamos): track C_MARTIN_V15 node + PROP-20260810 proposals",
+    "action_count": 1,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/capabilities/trading/nodes/c_martin_v15.py",
+      "1-ARCHITECTURE/dreamos/docs/proposals/PROP-20260810-scheduler-paths.md",
+      "1-ARCHITECTURE/dreamos/docs/proposals/PROP-20260810-cmartin-node.md"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "5e5f3c9",
+    "created_at": 1786719486.0039299,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "提交 commit 5e5f3c9: feat(dreamos): track C_MARTIN_V15 node + PROP-20260810 proposals\n\n- c_martin_v15.py: v15基线策略C链节点(PROP-20260810-CMARTIN-NODE方案A, 用户8/10批准)\n- 恢复NEUTRAL_*场景→v15基线路由; V9等价6/6 + 基线锚点+6.27%, 8/10激活已验证\n- 附带提案文档: cmartin-node + scheduler-paths"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "1-ARCHITECTURE/dreamos/capabilities/trading/nodes/c_martin_v15.py",
+        "1-ARCHITECTURE/dreamos/docs/proposals/PROP-20260810-scheduler-paths.md",
+        "1-ARCHITECTURE/dreamos/docs/proposals/PROP-20260810-cmartin-node.md"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

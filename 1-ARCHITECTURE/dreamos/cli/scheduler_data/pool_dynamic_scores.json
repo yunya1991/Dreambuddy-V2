@@ -1,0 +1,166 @@
+{
+  "updated_at": "2026-08-19T01:30:16.643214+00:00",
+  "scores": {
+    "HEMI": {
+      "dyn_score": 0.2695,
+      "cycles_seen": 67,
+      "last_conf": 0.2695,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-19T01:30:16.639875+00:00"
+    },
+    "HYPE": {
+      "dyn_score": 0.2188,
+      "cycles_seen": 67,
+      "last_conf": 0.2188,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-19T01:30:16.640371+00:00"
+    },
+    "XMR": {
+      "dyn_score": 0.1576,
+      "cycles_seen": 66,
+      "last_conf": 0.1576,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-19T01:30:16.642546+00:00"
+    },
+    "NIL": {
+      "dyn_score": 0.5186,
+      "cycles_seen": 56,
+      "last_conf": 0.5186,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-19T01:30:16.641231+00:00"
+    },
+    "ACE": {
+      "dyn_score": 0.2558,
+      "cycles_seen": 67,
+      "last_conf": 0.2558,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-19T01:30:16.641991+00:00"
+    },
+    "ETHFI": {
+      "dyn_score": 0.187,
+      "cycles_seen": 56,
+      "last_conf": 0.187,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-19T01:30:16.643184+00:00"
+    },
+    "KPEPE": {
+      "dyn_score": 0.2968,
+      "cycles_seen": 1,
+      "last_conf": 0.2968,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-16T11:40:53.946428+00:00"
+    },
+    "CHIP": {
+      "dyn_score": 0.1022,
+      "cycles_seen": 49,
+      "last_conf": 0.1022,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-18T08:30:25.786733+00:00"
+    },
+    "LINK": {
+      "dyn_score": 0.0983,
+      "cycles_seen": 39,
+      "last_conf": 0.0983,
+      "last_dir": "HOLD",
+      "updated_at": "2026-08-18T06:30:27.023125+00:00"
+    },
+    "LIT": {
+      "dyn_score": 0.1347,
+      "cycles_seen": 1,
+      "last_conf": 0.1347,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-16T12:30:25.499760+00:00"
+    },
+    "KAITO": {
+      "dyn_score": 0.3369,
+      "cycles_seen": 34,
+      "last_conf": 0.3369,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-17T19:30:45.124059+00:00"
+    },
+    "BOME": {
+      "dyn_score": 0.1672,
+      "cycles_seen": 3,
+      "last_conf": 0.1672,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-17T05:30:30.890877+00:00"
+    },
+    "XPL": {
+      "dyn_score": 0.12,
+      "cycles_seen": 1,
+      "last_conf": 0.12,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-16T13:06:05.428144+00:00"
+    },
+    "ENA": {
+      "dyn_score": 0.0906,
+      "cycles_seen": 33,
+      "last_conf": 0.0906,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-17T19:30:45.124524+00:00"
+    },
+    "JUP": {
+      "dyn_score": 0.1757,
+      "cycles_seen": 33,
+      "last_conf": 0.1757,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-17T19:30:45.125286+00:00"
+    },
+    "ONDO": {
+      "dyn_score": 0.1687,
+      "cycles_seen": 33,
+      "last_conf": 0.1687,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-17T19:30:45.125761+00:00"
+    },
+    "AVAX": {
+      "dyn_score": 0.0794,
+      "cycles_seen": 33,
+      "last_conf": 0.0794,
+      "last_dir": "HOLD",
+      "updated_at": "2026-08-17T19:30:45.126556+00:00"
+    },
+    "AAVE": {
+      "dyn_score": 0.1074,
+      "cycles_seen": 33,
+      "last_conf": 0.1074,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-17T19:30:45.127025+00:00"
+    },
+    "ADA": {
+      "dyn_score": 0.1507,
+      "cycles_seen": 33,
+      "last_conf": 0.1507,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-17T19:30:45.127744+00:00"
+    },
+    "FARTCOIN": {
+      "dyn_score": 0.1808,
+      "cycles_seen": 1,
+      "last_conf": 0.1808,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-16T13:30:31.249617+00:00"
+    },
+    "WLD": {
+      "dyn_score": 0.183,
+      "cycles_seen": 1,
+      "last_conf": 0.183,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-16T13:30:31.250134+00:00"
+    },
+    "VVV": {
+      "dyn_score": 0.1829,
+      "cycles_seen": 1,
+      "last_conf": 0.1829,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-16T13:58:47.854309+00:00"
+    },
+    "PUMP": {
+      "dyn_score": 0.1689,
+      "cycles_seen": 1,
+      "last_conf": 0.1689,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-16T13:58:47.854868+00:00"
+    }
+  }
+}

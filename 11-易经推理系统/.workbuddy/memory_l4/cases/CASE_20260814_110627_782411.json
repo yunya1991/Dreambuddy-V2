@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [AVAX]: UNCERTAIN → HOLD (confidence=0.26, latency=87231ms, tokens=0)",
+  "confidence": 0.258,
+  "tags": [
+    "AVAX",
+    "UNCERTAIN",
+    "HOLD",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260814_110627_782411",
+  "timestamp": "2026-08-14T11:06:27+08:00"
+}

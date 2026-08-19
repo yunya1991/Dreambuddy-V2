@@ -1,0 +1,16 @@
+{
+  "confirmed_regime": "long_only_force",
+  "pending_regime": null,
+  "pending_count": 0,
+  "confirm_days": 3,
+  "last_date": "2026-08-17",
+  "last_change_date": "2026-08-16",
+  "last_zone": "accel",
+  "velocity_integrator_state": {
+    "decay": 0.85,
+    "market_mass": 1.0,
+    "threshold": 0.02,
+    "velocity": 0.1893854551567014,
+    "step_count": 34
+  }
+}

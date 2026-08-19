@@ -1,0 +1,89 @@
+{
+  "template_id": "APP-1786880386393",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "DreamOS: PROP-20260816 双腿对冲策略+币池动态排名 (E链实施)",
+    "action_count": 1,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/tests/conftest.py",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/coin_selector.py",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/v15_executor.py",
+      "1-ARCHITECTURE/dreamos/cli/auto_trader.py",
+      "\"3-EVOLUTION/proposals/PROP-20260816-DREAMOS-\\345\\217\\214\\350\\205\\277\\345\\257\\271\\345\\206\\262\\347\\255\\226\\347\\225\\245\\344\\270\\216\\345\\270\\201\\346\\261\\240\\345\\212\\250\\346\\200\\201\\346\\216\\222\\345\\220\\215.md\"",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/hedge_executor.py",
+      "1-ARCHITECTURE/dreamos/cli/scheduler.py",
+      "1-ARCHITECTURE/dreamos/tests/test_hedge_strategy.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "9a53323",
+    "created_at": 1786880386.5086107,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "提交 commit 9a53323: DreamOS: PROP-20260816 双腿对冲策略+币池动态排名 (E链实施)\n\n- 新增 hedge_executor.py: HedgeExecutor(RANGE_BOUND门禁/双腿conf≥0.62/每腿150U 1:1 5x/合并PnL +4%TP -6%熔断/孤儿腿保护/独立账本hedge_positions.json)\n- coin_selector: 动态排名层pool_dynamic_scores(merged=0.7×weekly+0.3×dyn, 冷启动0.5) + regime透传\n- v15_executor: long_only门禁(SHORT拒单reason=v15_long_only, 默认False向后兼容)\n- scheduler orchestrate: 选币仅多池top6+对冲路径(存量离场巡检/新对入场评估)+动态分回写\n- auto_trader: run_exit_check_all增加hedge离场分支(独立巡检不影响主流程)\n- 测试: test_hedge_strategy.py 18用例 + conftest账本隔离; 全回归93/93; 生产完整性核验前后一致\n- dry_run复用DREAMOS_TRADING_DRY_RUN, paper先行, 实盘另行审批"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "1-ARCHITECTURE/dreamos/tests/conftest.py",
+        "1-ARCHITECTURE/dreamos/tests/test_hedge_strategy.py"
+      ],
+      "modified_files": [
+        "1-ARCHITECTURE/dreamos/capabilities/trading/coin_selector.py",
+        "1-ARCHITECTURE/dreamos/capabilities/trading/v15_executor.py",
+        "1-ARCHITECTURE/dreamos/cli/auto_trader.py",
+        "\"3-EVOLUTION/proposals/PROP-20260816-DREAMOS-\\345\\217\\214\\350\\205\\277\\345\\257\\271\\345\\206\\262\\347\\255\\226\\347\\225\\245\\344\\270\\216\\345\\270\\201\\346\\261\\240\\345\\212\\250\\346\\200\\201\\346\\216\\222\\345\\220\\215.md\"",
+        "1-ARCHITECTURE/dreamos/capabilities/trading/hedge_executor.py",
+        "1-ARCHITECTURE/dreamos/cli/scheduler.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

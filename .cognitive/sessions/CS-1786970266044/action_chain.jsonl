@@ -1,0 +1,1 @@
+{"timestamp": 1786970266.0921478, "session_id": "CS-1786970266044", "action_type": "git_commit", "detail": "feat: SignalRouter multi-consumer broadcast — Yijing signals to V15Executor + HedgeExecutor", "commit_hash": "c19bdcf", "files": ["1-ARCHITECTURE/dreamos/capabilities/trading/signal_router.py"]}

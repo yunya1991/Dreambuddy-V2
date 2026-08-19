@@ -1,0 +1,23 @@
+{
+  "date": "2026-08-13",
+  "generated_at": "2026-08-14T00:34:39.181038",
+  "daily": {
+    "total_trades": 0,
+    "win_trades": 0,
+    "loss_trades": 0,
+    "total_pnl": 0,
+    "win_rate": 0,
+    "max_drawdown": 0,
+    "consecutive_losses": 0
+  },
+  "overall": {
+    "total_trades": 0,
+    "win_rate": 0,
+    "total_pnl": 0,
+    "profit_factor": 0,
+    "max_drawdown": 0.0,
+    "current_equity": 100.0,
+    "sharpe_ratio": 0.0,
+    "trading_days": 0
+  }
+}

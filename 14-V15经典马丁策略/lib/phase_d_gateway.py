@@ -46,6 +46,34 @@ _MODEL_CACHE: Dict[Any, Any] = {}
 _AI_TRAINERS_DIR = str(Path(__file__).resolve().parent.parent / "ai_trainers")
 
 
+def _invalidate_model_cache(kind: Optional[str] = None, path: Optional[str] = None) -> int:
+    """清除缓存条目（用于热切换模型权重）。返回清除条目数。
+
+    kind: "bilstm" | "patchtst" | None（全清）
+    path: 指定要清除的具体权重路径（None = 该 kind 全清）
+    """
+    removed = 0
+    if kind is None and path is None:
+        removed = len(_MODEL_CACHE)
+        _MODEL_CACHE.clear()
+        return removed
+    keys_to_drop = []
+    for k in _MODEL_CACHE.keys():
+        if not isinstance(k, tuple) or len(k) != 2:
+            continue
+        k_kind, k_path = k
+        if kind is not None and k_kind != kind:
+            continue
+        if path is not None and k_path != path:
+            continue
+        keys_to_drop.append(k)
+    for k in keys_to_drop:
+        _MODEL_CACHE.pop(k, None)
+        removed += 1
+    return removed
+
+
+
 def _candle_val(k: Any, key: str, idx: int) -> Optional[float]:
     """K线取值：兼容 dict / list|tuple 两种形态（v15 数据约定 o=1,h=2,l=3,c=4,v=5）。"""
     try:
@@ -221,6 +249,35 @@ def _load_patchtst_model(path: str):
         return None
 
 
+def _probe_load_model(kind: str, path: Optional[str]) -> Tuple[bool, str]:
+    """尝试加载模型但不写入缓存（hot-swap 预检）。返回 (ok, reason)。
+
+    - kind: "bilstm" | "patchtst"
+    - path: 若为 None 或不存在 → 直接返回 False
+    """
+    if not path or not os.path.isfile(path):
+        return False, f"权重文件不存在: {path!r}"
+    # 临时 key，避免污染真实缓存；用后立即 pop
+    probe_key = (f"__probe__{kind}", path)
+    try:
+        if kind == "bilstm":
+            result = _load_bilstm_model(path)
+            # _load_bilstm_model 写到 ("bilstm", path) 键；probe_key 单独没用，直接删对应项
+            if result is None:
+                return False, "BiLSTM 加载异常 (state_dict 不匹配/损坏)"
+            return True, "ok"
+        if kind == "patchtst":
+            result = _load_patchtst_model(path)
+            if result is None:
+                return False, "PatchTST 加载异常 (state_dict 不匹配/损坏)"
+            return True, "ok"
+        return False, f"未知模型类型: {kind}"
+    except Exception as e:
+        return False, f"{type(e).__name__}: {e}"
+    finally:
+        _invalidate_model_cache(kind=f"__probe__{kind}")
+
+
 # ================================================================
 # §3.3 双层 clamp（相对边界 + 绝对铁壳）—— 纯函数独立导出
 # ================================================================
@@ -326,6 +383,73 @@ class PhaseDGateway:
         )
 
     # ================================================================
+    # 热切换模型权重（在线学习 promote_shadow 时调用）
+    # ================================================================
+    def hot_swap_models(
+        self,
+        bilstm_model_path: Optional[str] = None,
+        patchtst_model_path: Optional[str] = None,
+        *,
+        strict: bool = False,
+    ) -> Tuple[bool, str]:
+        """在线热切换 Phase D 模型权重（支持增量训练后 promote_shadow 自动调用）。
+
+        语义：
+          - 只更新传了非 None 的模型路径；None 代表保持现状不动
+          - **先预加载（不写 cache 不污染）** 全部通过后再同时替换路径 + 清空旧缓存
+          - 任一预加载失败：不改变任何状态，返回 (False, reason)
+          - strict=True：BiLSTM / PatchTST 任一缺失直接失败；strict=False：缺失跳过、只更新能加载的
+
+        返回 (ok: bool, reason: str)
+        """
+        candidates: Dict[str, Optional[str]] = {}
+        if bilstm_model_path is not None:
+            candidates["bilstm"] = bilstm_model_path
+        if patchtst_model_path is not None:
+            candidates["patchtst"] = patchtst_model_path
+
+        if not candidates:
+            return False, "未提供任何要切换的模型路径（bilstm/patchtst 两者都为 None）"
+
+        # Step 1: 预检全部（严格模式下缺失路径 = 失败）
+        probes: Dict[str, Tuple[bool, str]] = {}
+        for kind, path in candidates.items():
+            ok, reason = _probe_load_model(kind, path)
+            probes[kind] = (ok, reason)
+            if strict and not ok:
+                return False, f"strict 模式 {kind} 加载失败: {reason}"
+
+        # Step 2: 至少一个成功才能继续
+        any_success = any(ok for ok, _ in probes.values())
+        if not any_success:
+            return False, "所有候选模型均加载失败，拒绝热切换：" + "; ".join(
+                f"{k}={r}" for k, (_, r) in probes.items()
+            )
+
+        # Step 3: 原子替换 — 先 invalidate 旧缓存，再写新路径
+        swapped: list = []
+        skipped: list = []
+        for kind, path in candidates.items():
+            ok, reason = probes[kind]
+            if not ok:
+                skipped.append(f"{kind}(skip:{reason})")
+                continue
+            old_path = None
+            if kind == "bilstm":
+                old_path = self.bilstm_model_path
+                self.bilstm_model_path = path
+            elif kind == "patchtst":
+                old_path = self.patchtst_model_path
+                self.patchtst_model_path = path
+            # 清掉旧路径和新路径的缓存（确保下次推理用新权重）
+            if old_path:
+                _invalidate_model_cache(kind=kind, path=old_path)
+            _invalidate_model_cache(kind=kind, path=path)
+            swapped.append(f"{kind}: {old_path!r} -> {path!r}")
+
+        return True, f"热切换成功: {', '.join(swapped)}" + (f"; 跳过: {', '.join(skipped)}" if skipped else "")
+
+    # ================================================================
     # 预测函数：真实加载模型 & 推理；或走 mock（TDD 场景）
     # 此处先以 mock + 随机兜底实现，真实模型权重在训练脚本交付后注入
     # ================================================================
@@ -429,8 +553,19 @@ class PhaseDGateway:
         """实盘真正调用版本：结合基线信号，保证最高优先级铁律。
 
         ctx 必须含键 baseline_can_open (bool) = v15 基线 16 层决策 + DirectionGate 判定的「是否能开」。
+        ctx 可选键: position_ref (str) = 由 v15_trader._prep_ctx_position_ref 生成；若缺失则本函数自动补（用 coin+now 近似）
         返回 (must_skip, reason)
         """
+        # 确保 ctx 有 position_ref，供后续 ab_comparator 回填 PnL 匹配
+        if self.ab_comparator is not None and isinstance(ctx, dict) and not ctx.get("position_ref"):
+            try:
+                from datetime import datetime, timezone as _tz
+                coin = ctx.get("symbol") or ctx.get("coin") or "UNKNOWN"
+                ts = ctx.get("open_time") or datetime.now(_tz.utc).replace(second=0, microsecond=0).isoformat()
+                ctx["position_ref"] = type(self.ab_comparator).build_position_ref(coin, ts)
+            except Exception:
+                pass
+
         baseline_can_open = bool(ctx.get("baseline_can_open", False))
 
         # ---- 最高优先级铁律：基线不同意开 → 必须 Skip（AI 不得强开） ----
@@ -456,6 +591,7 @@ class PhaseDGateway:
                     ai_p_bust=_p_bust,
                     ai_drawdown=_p_dd,
                     decision_diff=f"G-D1 skip: {self.last_gate_code or 'unknown'}",
+                    position_ref=str(ctx.get("position_ref", "") if isinstance(ctx, dict) else ""),
                 )
             return True, f"ai_{self.last_gate_code or 'unknown'}"
         if self.ab_comparator:
@@ -473,6 +609,7 @@ class PhaseDGateway:
                 ai_p_bust=_p_bust,
                 ai_drawdown=_p_dd,
                 decision_diff="G-D1 agree: baseline and AI both open",
+                position_ref=str(ctx.get("position_ref", "") if isinstance(ctx, dict) else ""),
             )
         return False, "baseline_agrees_and_ai_has_no_objection"
 

@@ -1,0 +1,101 @@
+{
+  "template_id": "APP-1786971174682",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "任务涉及 8 个文件",
+    "action_count": 15,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/capabilities/trading/hedge_executor.py",
+      "experiments/ab-trading/data/screen_self_schedule.json",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786969603270.json",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/hyperliquid_adapter.py",
+      "experiments/ab-trading/execution/aster_spot.py",
+      "4-MEMORY/0-元记忆/template_mappings.json",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786971810583.json",
+      "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786971174682.json"
+    ],
+    "duration_minutes": 39.1,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1786973520.583516,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "modified: 1-ARCHITECTURE/dreamos/capabilities/trading/hyperliquid_adapter.py",
+      "modified: 4-MEMORY/0-元记忆/template_mappings.json",
+      "added: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1786971174682.json",
+      "modified: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1786969603270.json",
+      "modified: 1-ARCHITECTURE/dreamos/capabilities/trading/hedge_executor.py",
+      "architecture-design → memory-system",
+      "modified: 1-ARCHITECTURE/dreamos/capabilities/trading/hedge_executor.py",
+      "modified: 4-MEMORY/0-元记忆/template_mappings.json",
+      "added: 4-MEMORY/1-开发记忆单元/solution_paths/APP-1786971810583.json",
+      "modified: 1-ARCHITECTURE/dreamos/capabilities/trading/hyperliquid_adapter.py（共 2 次修改）",
+      "memory-system → architecture-design",
+      "modified: experiments/ab-trading/data/screen_self_schedule.json",
+      "modified: 1-ARCHITECTURE/dreamos/capabilities/trading/hedge_executor.py",
+      "modified: experiments/ab-trading/execution/aster_spot.py"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "1-ARCHITECTURE/dreamos/capabilities/trading/hedge_executor.py",
+        "experiments/ab-trading/data/screen_self_schedule.json",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786969603270.json",
+        "1-ARCHITECTURE/dreamos/capabilities/trading/hyperliquid_adapter.py",
+        "experiments/ab-trading/execution/aster_spot.py",
+        "4-MEMORY/0-元记忆/template_mappings.json",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786971810583.json",
+        "4-MEMORY/1-开发记忆单元/solution_paths/APP-1786971174682.json"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

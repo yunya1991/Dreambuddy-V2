@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [AVAX]: MEAN_REVERSION → HOLD (confidence=0.27, latency=80129ms, tokens=0)",
+  "confidence": 0.2694,
+  "tags": [
+    "AVAX",
+    "MEAN_REVERSION",
+    "HOLD",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260815_111658_547924",
+  "timestamp": "2026-08-15T11:16:58+08:00"
+}

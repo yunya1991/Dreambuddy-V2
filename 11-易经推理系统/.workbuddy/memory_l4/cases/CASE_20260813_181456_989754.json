@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [ARB]: MEAN_REVERSION → SHORT (confidence=0.65, latency=88323ms, tokens=0)",
+  "confidence": 0.649,
+  "tags": [
+    "ARB",
+    "MEAN_REVERSION",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260813_181456_989754",
+  "timestamp": "2026-08-13T18:14:56+08:00"
+}

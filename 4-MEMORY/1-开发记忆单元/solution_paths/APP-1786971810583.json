@@ -1,0 +1,76 @@
+{
+  "template_id": "APP-1786971810583",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "fix: unified budget management — V15 TOTAL_BUDGET=120, Hedge NOTIONAL_PER_LEG=30",
+    "action_count": 1,
+    "files_touched": [
+      "\"14-V15\\347\\273\\217\\345\\205\\270\\351\\251\\254\\344\\270\\201\\347\\255\\226\\347\\225\\245/config/.env.common\"",
+      "1-ARCHITECTURE/dreamos/capabilities/trading/hedge_executor.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "77e5d04",
+    "created_at": 1786971810.727467,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "提交 commit 77e5d04: fix: unified budget management — V15 TOTAL_BUDGET=120, Hedge NOTIONAL_PER_LEG=30, fix HedgeExecutor path calculation"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "\"14-V15\\347\\273\\217\\345\\205\\270\\351\\251\\254\\344\\270\\201\\347\\255\\226\\347\\225\\245/config/.env.common\"",
+        "1-ARCHITECTURE/dreamos/capabilities/trading/hedge_executor.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

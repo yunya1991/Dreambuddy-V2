@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [BTC]: TREND_FOLLOWING → SHORT (confidence=0.73, latency=71873ms, tokens=0)",
+  "confidence": 0.73,
+  "tags": [
+    "BTC",
+    "TREND_FOLLOWING",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260812_110115_597905",
+  "timestamp": "2026-08-12T11:01:15+08:00"
+}

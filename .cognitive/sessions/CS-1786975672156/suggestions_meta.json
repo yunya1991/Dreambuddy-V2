@@ -1,0 +1,6 @@
+{
+  "refresh_count": 2,
+  "actions_at_last_refresh": 5,
+  "last_refresh_ts": 1786978117.659311,
+  "last_refresh_reason": "TTL过期 (1679s > 900s)"
+}

@@ -1,0 +1,101 @@
+{
+  "long_pool": [
+    {
+      "symbol": "LINK",
+      "score": 0.82,
+      "reasons": [
+        "7日动量之王 +16.9%（3日 +12.0% 加速中）",
+        "预言机蓝筹，成交量 $12.6M 放大",
+        "注意力雷达: 异动突破，趋势启动信号"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-15T03:11:43.724167+00:00"
+    },
+    {
+      "symbol": "BTC",
+      "score": 0.74,
+      "reasons": [
+        "成交量之王 $1.24B，流动性最佳",
+        "FGI 27→34 恐惧见底回升，底部修复结构",
+        "63K 区间震荡筑底，风控友好"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-15T03:11:43.724167+00:00"
+    },
+    {
+      "symbol": "HYPE",
+      "score": 0.71,
+      "reasons": [
+        "Hyperliquid 生态币，成交量 $130M 全场第三",
+        "7日 +2.6% 独立强势，抗跌性验证",
+        "生态 TVL/叙事关注度持续"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-15T03:11:43.724167+00:00"
+    },
+    {
+      "symbol": "ETH",
+      "score": 0.66,
+      "reasons": [
+        "成交量 $463M 第二，资金费率中性",
+        "3日 +0.28% 企稳，补涨候选",
+        "基本面稳健，回测基线币种"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-15T03:11:43.724167+00:00"
+    },
+    {
+      "symbol": "NEAR",
+      "score": 0.6,
+      "reasons": [
+        "7日 +3.1% 温和走强，AI 叙事关注",
+        "低市值弹性标的，仓位需缩减"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-15T03:11:43.724167+00:00"
+    }
+  ],
+  "short_pool": [
+    {
+      "symbol": "UNI",
+      "score": 0.66,
+      "reasons": [
+        "7日 -18.3%，3日 -8.4% 持续走弱",
+        "DeFi 板块轮动流出",
+        "成交量 $10M 尚可作为空头标的"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-15T03:11:43.724167+00:00"
+    },
+    {
+      "symbol": "KAITO",
+      "score": 0.62,
+      "reasons": [
+        "7日 -44% 崩跌趋势延续",
+        "风险: 资金费率 -3.15bps 空头拥挤，存在挤压风险，轻仓"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-15T03:11:43.724167+00:00"
+    },
+    {
+      "symbol": "PUMP",
+      "score": 0.55,
+      "reasons": [
+        "动量衰减: 7日 +14.9% 但 3日仅 +0.47%",
+        "发射台代币热度轮动风险",
+        "成交量 $40M 高位，出货结构"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-15T03:11:43.724167+00:00"
+    }
+  ],
+  "timestamp": "2026-08-15T03:11:43.724167+00:00",
+  "source": "hermes-weekly",
+  "week": "2026-W33",
+  "regime": "底部修复/震荡（FGI=34恐惧回升，BTC 63K 筑底，山寨分化）",
+  "notes": "LINK 动量一枝独秀；ZEC 抛物线后高波动不入池观察；整体中性偏谨慎，多头以强势动量为主、空头选趋势崩跌但需防空头挤压",
+  "version": 2,
+  "producers": [
+    "hermes-weekly"
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "template_id": "APP-1786647039354",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "test(dreamos): Phase3 Task3 - ATR trailing TP and timeout exit",
+    "action_count": 1,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/tests/test_v15_executor.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "001462b",
+    "created_at": 1786647039.446569,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "提交 commit 001462b: test(dreamos): Phase3 Task3 - ATR trailing TP and timeout exit\n\n- Test ATR trailing TP: LONG +4.5% triggers exit\n- Test timeout exit: 35h > 29.9h base limit triggers exit\n- V15 params: base 29.9h, post-addon 37.7h\n- 7 tests all pass"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "1-ARCHITECTURE/dreamos/tests/test_v15_executor.py"
+      ],
+      "modified_files": [],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [ETH]: UNCERTAIN → HOLD (confidence=0.30, latency=94458ms, tokens=0)",
+  "confidence": 0.2958,
+  "tags": [
+    "ETH",
+    "UNCERTAIN",
+    "HOLD",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260817_150331_552080",
+  "timestamp": "2026-08-17T15:03:31+08:00"
+}

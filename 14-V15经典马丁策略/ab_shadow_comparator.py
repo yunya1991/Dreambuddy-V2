@@ -51,19 +51,22 @@ LIVE_EVALUATION_WINDOW_DAYS = 7  # 7-day window for LIVE mode
 
 @dataclass
 class DecisionRecord:
-    """A single paired decision record (baseline vs AI)."""
+    # A single paired decision record (baseline vs AI).
     timestamp: str
     symbol: str
     baseline_action: str          # OPEN / SKIP / ADDON / CLOSE
     ai_action: str               # OPEN / SKIP / ADDON / CLOSE
     baseline_confidence: float
     ai_confidence: float
-    baseline_pnl: float          # Realized PnL for baseline path
+    baseline_pnl: float          # Realized PnL for baseline path (placeholder at decision time)
     ai_predicted_pnl: float      # Predicted PnL for AI path (shadow)
     ai_p_bust: float = 0.0       # BiLSTM bust probability
     ai_drawdown: float = 0.0    # PatchTST predicted drawdown
     decision_diff: str = ''     # Description of difference
-    
+    position_ref: str = ''      # Backfill anchor: '{symbol}|{entry_time_floor_1min}'
+    pnl_backfilled: bool = False  # True once baseline_pnl is filled by close-settle
+    baseline_pnl_pct: float = 0.0 # Close-time % return (PnL / notional)
+
     def to_dict(self) -> Dict:
         return asdict(self)
 
@@ -124,6 +127,7 @@ class ABShadowComparator:
         ai_p_bust: float = 0.0,
         ai_drawdown: float = 0.0,
         decision_diff: str = '',
+        position_ref: str = '',
     ) -> None:
         """Record a paired decision (baseline vs AI).
         
@@ -151,6 +155,9 @@ class ABShadowComparator:
             ai_p_bust=round(ai_p_bust, 4),
             ai_drawdown=round(ai_drawdown, 4),
             decision_diff=decision_diff,
+            position_ref=position_ref or '',
+            pnl_backfilled=False,
+            baseline_pnl_pct=0.0,
         )
         self.state.records.append(record.to_dict())
         
@@ -160,6 +167,64 @@ class ABShadowComparator:
         
         self._save_state()
     
+    # ----------------------------------------------------------------
+    # Numerical helpers: regularized incomplete beta I_x(a,b) via
+    # Lentz's continued fraction (Numerical Recipes §6.4).
+    # Used by _paired_t_test for an exact student-t CDF (p-value)
+    # without requiring scipy.
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def _betacf(a, b, x, max_iter=200, eps=3e-7):
+        fpmin = 1.0e-30
+        qab = a + b
+        qap = a + 1.0
+        qam = a - 1.0
+        c = 1.0
+        d = 1.0 - qab * x / qap
+        if abs(d) < fpmin:
+            d = fpmin
+        d = 1.0 / d
+        h = d
+        for m in range(1, max_iter + 1):
+            m2 = 2 * m
+            aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+            d = 1.0 + aa * d
+            if abs(d) < fpmin:
+                d = fpmin
+            c = 1.0 + aa / c
+            if abs(c) < fpmin:
+                c = fpmin
+            d = 1.0 / d
+            h *= d * c
+            aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+            d = 1.0 + aa * d
+            if abs(d) < fpmin:
+                d = fpmin
+            c = 1.0 + aa / c
+            if abs(c) < fpmin:
+                c = fpmin
+            d = 1.0 / d
+            delta = d * c
+            h *= delta
+            if abs(delta - 1.0) < eps:
+                break
+        return h
+
+    @staticmethod
+    def _betai(a, b, x):
+        from math import lgamma, exp, log
+        if x <= 0.0:
+            return 0.0
+        if x >= 1.0:
+            return 1.0
+        log_beta_ab = lgamma(a) + lgamma(b) - lgamma(a + b)
+        bt = exp(a * log(x) + b * log(1.0 - x) - log_beta_ab)
+        if x < (a + 1.0) / (a + b + 2.0):
+            return bt * ABShadowComparator._betacf(a, b, x) / a
+        else:
+            return 1.0 - bt * ABShadowComparator._betacf(b, a, 1.0 - x) / b
+
     def _paired_t_test(self, baseline_pnls: List[float], ai_pnls: List[float]) -> Dict:
         """Paired t-test on baseline vs AI PnL.
         
@@ -186,21 +251,26 @@ class ABShadowComparator:
         else:
             t_stat = 0.0
         
-        # Approximate p-value (two-tailed) using normal approximation
-        # For large n, t-distribution approaches normal
-        # p = 2 * (1 - CDF(|t|))
-        # Using simple approximation: p ≈ 2 * exp(-t^2 / 2) / sqrt(2*pi) for large |t|
-        if abs(t_stat) > 3.0:
-            # Very significant
-            p_value = 0.001
-        elif abs(t_stat) > 2.0:
-            p_value = 0.05
-        elif abs(t_stat) > 1.5:
-            p_value = 0.13
-        elif abs(t_stat) > 1.0:
-            p_value = 0.32
-        else:
-            p_value = 0.50
+        # Two-tailed p-value: exact student-t CDF via regularized incomplete beta.
+        # df = n - 1; I_x(df/2, 1/2) where x = df / (df + t^2)
+        try:
+            df = n - 1
+            x = df / (df + t_stat * t_stat)
+            p_value = ABShadowComparator._betai(0.5 * df, 0.5, x)
+            p_value = float(max(1e-6, min(1.0, p_value)))
+        except Exception:
+            # Fallback: 6-point table (prior behaviour)
+            at = abs(t_stat)
+            if at > 3.0:
+                p_value = 0.001
+            elif at > 2.0:
+                p_value = 0.05
+            elif at > 1.5:
+                p_value = 0.13
+            elif at > 1.0:
+                p_value = 0.32
+            else:
+                p_value = 0.50
         
         return {
             'mean_diff': round(mean_diff, 6),
@@ -385,7 +455,7 @@ class ABShadowComparator:
         return self.state.state
     
     def force_state(self, new_state: str) -> None:
-        """Force state transition (manual override)."""
+        # Force state transition (manual override).
         if new_state not in (STATE_SHADOW, STATE_LIVE, STATE_DISABLED):
             raise ValueError(f'Invalid state: {new_state}')
         self.state.state = new_state
@@ -394,6 +464,137 @@ class ABShadowComparator:
         elif new_state == STATE_DISABLED:
             self.state.disabled_at = datetime.utcnow().isoformat() + 'Z'
         self._save_state()
+
+    # ----------------------------------------------------------------
+    # PnL 回填：v15_trader 在平仓结算（_save_trade_to_history）时调用，
+    # 把真实基线收益写回到决策时点 record_decision 留下的占位条目，
+    # 让 AB 状态机真正拥有可统计的 paired PnL。
+    # ----------------------------------------------------------------
+
+    @staticmethod
+    def build_position_ref(symbol, entry_timestamp):
+        # Build a deterministic backfill-key from (symbol, entry open time).
+        # Minutes resolution to avoid 1-ms drift mismatch between decision-record
+        # timestamp and pos.open_time.
+        try:
+            if isinstance(entry_timestamp, datetime):
+                dt = entry_timestamp
+            elif isinstance(entry_timestamp, (int, float)):
+                dt = datetime.utcfromtimestamp(float(entry_timestamp))
+            else:
+                s = str(entry_timestamp).strip()
+                if s.endswith('Z'):
+                    s = s[:-1] + '+00:00'
+                try:
+                    dt = datetime.fromisoformat(s)
+                except Exception:
+                    dt = datetime.utcnow()
+            if dt.tzinfo is not None:
+                # Convert to naive UTC
+                from datetime import timezone as _tz2
+                dt = dt.astimezone(_tz2.utc).replace(tzinfo=None)
+            dt = dt.replace(second=0, microsecond=0)
+            return f"{symbol}|{dt.isoformat()}"
+        except Exception:
+            return f"{symbol}|{str(entry_timestamp)}"
+
+    def backfill_trade_result(
+        self,
+        symbol: str,
+        entry_timestamp,
+        baseline_pnl_usdt: float,
+        baseline_pnl_pct: float = 0.0,
+        *,
+        ai_skipped_open_pnl: float = 0.0,
+        ai_addon_delta_ratio: float = 0.0,
+        exit_reason: str = "",
+    ) -> int:
+        # Fill baseline_pnl + ai_predicted_pnl for the pending record matching
+        # (symbol, entry_timestamp). Returns number of records updated (0 or 1).
+        target_ref = self.build_position_ref(symbol, entry_timestamp)
+        matched_idx = -1
+        records = self.state.records
+
+        # 1) Exact position_ref match (fastest, highest accuracy).
+        for i, r in enumerate(records):
+            if r.get("pnl_backfilled"):
+                continue
+            if r.get("symbol") == symbol and r.get("position_ref", "") == target_ref:
+                matched_idx = i
+                break
+
+        # 2) Fallback: same symbol + OPEN/ADDON + not backfilled + within 7 days.
+        if matched_idx < 0:
+            cutoff = (datetime.utcnow() - timedelta(days=7)).isoformat() + "Z"
+            best_diff = None
+            for i, r in enumerate(records):
+                if r.get("pnl_backfilled"):
+                    continue
+                if r.get("symbol") != symbol:
+                    continue
+                if r.get("baseline_action") not in ("OPEN", "ADDON"):
+                    continue
+                if r.get("timestamp", "") < cutoff:
+                    continue
+                try:
+                    ts = r.get("timestamp", "")
+                    if ts.endswith("Z"):
+                        ts = ts[:-1]
+                    dt_r = datetime.fromisoformat(ts)
+                except Exception:
+                    continue
+                diff = abs((datetime.utcnow() - dt_r).total_seconds())
+                if best_diff is None or diff < best_diff:
+                    best_diff = diff
+                    matched_idx = i
+
+        # 3) Last-resort: same symbol, empty position_ref, OPEN/ADDON, latest.
+        if matched_idx < 0:
+            for i in range(len(records) - 1, -1, -1):
+                r = records[i]
+                if r.get("pnl_backfilled"):
+                    continue
+                if r.get("symbol") != symbol:
+                    continue
+                if r.get("baseline_action") not in ("OPEN", "ADDON"):
+                    continue
+                if r.get("position_ref", ""):
+                    continue
+                matched_idx = i
+                break
+
+        if matched_idx < 0:
+            return 0
+
+        r = records[matched_idx]
+        ba = r.get("baseline_action", "")
+        aa = r.get("ai_action", "")
+        baseline_usdt = float(baseline_pnl_usdt)
+        baseline_pct = float(baseline_pnl_pct)
+
+        if ba == "OPEN" and aa == "SKIP":
+            # Baseline actually opened (lost or won); AI correctly vetoed → AI = 0
+            ai_pnl = float(ai_skipped_open_pnl)
+        elif ba == aa:
+            # Same action → same PnL (both OPEN / both SKIP → 0 since baseline also skipped via §3.3)
+            ai_pnl = baseline_usdt
+        elif aa == "ADDON" and ba in ("OPEN", "ADDON"):
+            # AI added more layers than baseline → magnify by delta_ratio
+            ai_pnl = baseline_usdt * (1.0 + float(ai_addon_delta_ratio))
+        else:
+            # Conservative fallback: assume same PnL
+            ai_pnl = baseline_usdt
+
+        r["baseline_pnl"] = round(baseline_usdt, 4)
+        r["ai_predicted_pnl"] = round(ai_pnl, 4)
+        r["baseline_pnl_pct"] = round(baseline_pct, 6)
+        if exit_reason and not r.get("decision_diff"):
+            r["decision_diff"] = f"exit:{exit_reason}"
+        if not r.get("position_ref"):
+            r["position_ref"] = target_ref
+        r["pnl_backfilled"] = True
+        self._save_state()
+        return 1
 
 
 # ── Self-test ─────────────────────────────────────────────────────────────────
@@ -439,5 +640,67 @@ if __name__ == '__main__':
     print('    t_test:', eval_r.get('t_test', {}))
     print('    bootstrap:', eval_r.get('bootstrap', {}))
     print('    transition:', eval_r.get('transition', None))
+    print()
+    # Stat sanity: exact t CDF via _betai (student-t df=24 @ t=2.064 two-tailed ≈ 0.05)
+    print('[Stat] 精确 t-CDF 验证...', end=' ')
+    comp2 = ABShadowComparator(state_file='/tmp/_ab_stat_probe.json')
+    t_null = comp2._paired_t_test([0.0]*10, [0.0]*10)  # mean_diff=0 → p should be ~1.0
+    assert t_null['p_value'] > 0.9, f"零差 p_value={t_null['p_value']} 应接近1"
+    # AI strictly better, with variance so t-stat is finite and p is tiny.
+    # Noise differs between baseline and AI so diffs have positive variance.
+    base_l = [-1.0 + ((i * 37) % 7 - 3) * 0.08 for i in range(40)]
+    ai_l = [0.0 + ((i * 53) % 7 - 3) * 0.08 for i in range(40)]
+    t_big = comp2._paired_t_test(base_l, ai_l)
+    assert t_big['p_value'] < 0.01, f"大差异 p_value={t_big['p_value']} 应<0.01"
+    print(f"OK 零差p={t_null['p_value']:.3f} 大差异p={t_big['p_value']:.4f}")
+
+    # Backfill → promote 闭环
+    print('[Backfill] 30笔样本回填 → SHADOW→LIVE 晋升验证...')
+    import os as _os, random as rnd2
+    for fn in ['/tmp/_ab_backfill_probe.json', '/tmp/_ab_backfill_probe.json.tmp']:
+        if _os.path.exists(fn): _os.remove(fn)
+    comp3 = ABShadowComparator(state_file='/tmp/_ab_backfill_probe.json')
+    comp3.force_state(STATE_SHADOW)
+    rnd2.seed(7)
+    # 前15笔: AI同意开 且 基线赚1%
+    # 后15笔: AI否决SKIP 基线亏3% → AI显著好
+    for i in range(30):
+        from datetime import timedelta as _td
+        entry_dt = datetime(2026, 8, 1) + _td(hours=i*4)
+        entry_ts = entry_dt.isoformat() + "Z"
+        coin = "BTC"
+        p_ref = ABShadowComparator.build_position_ref(coin, entry_ts)
+        if i < 15:
+            comp3.record_decision(symbol=coin, baseline_action='OPEN', ai_action='OPEN',
+                                  baseline_confidence=0.9, ai_confidence=0.95,
+                                  baseline_pnl=0.0, ai_predicted_pnl=0.0, decision_diff='',
+                                  position_ref=p_ref)
+            comp3.backfill_trade_result(symbol=coin, entry_timestamp=entry_ts,
+                                        baseline_pnl_usdt=0.10, baseline_pnl_pct=0.01,
+                                        exit_reason='tp')
+        else:
+            comp3.record_decision(symbol=coin, baseline_action='OPEN', ai_action='SKIP',
+                                  baseline_confidence=0.9, ai_confidence=0.2,
+                                  baseline_pnl=0.0, ai_predicted_pnl=0.0,
+                                  decision_diff=f'G-D1: skip drawdown#{i}',
+                                  position_ref=p_ref)
+            comp3.backfill_trade_result(symbol=coin, entry_timestamp=entry_ts,
+                                        baseline_pnl_usdt=-0.30, baseline_pnl_pct=-0.03,
+                                        ai_skipped_open_pnl=0.0, exit_reason='bust')
+    rep = comp3.generate_report()
+    ev = rep.get('evaluation', {})
+    print(f'  records={rep["total_records"]} n_samples={ev.get("n_samples")} state={rep["current_state"]}')
+    print(f'  baseline_pnl={ev.get("baseline_total_pnl")} ai_pnl={ev.get("ai_total_pnl")}')
+    print(f'  t_test: mean_diff={ev["t_test"]["mean_diff"]} p={ev["t_test"]["p_value"]} sig={ev["t_test"]["significant"]} trans={ev.get("transition")}')
+    assert ev['t_test']['significant'], f"应达到统计显著 p={ev['t_test']['p_value']}"
+    assert ev['t_test']['mean_diff'] > SHADOW_TO_LIVE_MIN_GAIN, f"AI 改善应超2%阈值"
+    assert ev['bootstrap']['positive'], "Bootstrap CI 下限应>0"
+    assert rep['current_state'] == STATE_LIVE or ev.get('transition') == 'SHADOW→LIVE', (
+        f"应晋升 LIVE 但 state={rep['current_state']} trans={ev.get('transition')}"
+    )
+    print('  BACKFILL → PROMOTE 闭环 OK')
+    for fn in ['/tmp/_ab_backfill_probe.json', '/tmp/_ab_backfill_probe.json.tmp',
+               '/tmp/_ab_stat_probe.json', '/tmp/_ab_stat_probe.json.tmp']:
+        if _os.path.exists(fn): _os.remove(fn)
     print()
     print('Test complete!')

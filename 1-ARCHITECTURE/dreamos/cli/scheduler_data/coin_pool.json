@@ -1,0 +1,342 @@
+{
+  "long_pool": [
+    {
+      "symbol": "HEMI",
+      "score": 0.9,
+      "reasons": [
+        "周线结构修复(站上MA20, wRSI 50)",
+        "7日动量+46%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304776+00:00"
+    },
+    {
+      "symbol": "HYPE",
+      "score": 0.81,
+      "reasons": [
+        "周线结构修复(站上MA20, wRSI 54)",
+        "7日小幅走高+7%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304805+00:00"
+    },
+    {
+      "symbol": "XMR",
+      "score": 0.63,
+      "reasons": [
+        "周线结构修复(站上MA20, wRSI 58)",
+        "7日小幅走高+3%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304813+00:00"
+    },
+    {
+      "symbol": "NIL",
+      "score": 0.6,
+      "reasons": [
+        "日线均线多头排列",
+        "7日动量+15%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304818+00:00"
+    },
+    {
+      "symbol": "ACE",
+      "score": 0.6,
+      "reasons": [
+        "7日动量+19%",
+        "资金+情绪+周期三源一致",
+        "负费率空头拥挤有挤压燃料"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304827+00:00"
+    },
+    {
+      "symbol": "ETHFI",
+      "score": 0.57,
+      "reasons": [
+        "日线均线多头排列",
+        "7日动量+26%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304833+00:00"
+    },
+    {
+      "symbol": "CHIP",
+      "score": 0.57,
+      "reasons": [
+        "日线均线多头排列",
+        "7日动量+33%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304838+00:00"
+    },
+    {
+      "symbol": "LINK",
+      "score": 0.57,
+      "reasons": [
+        "日线均线多头排列",
+        "7日动量+16%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304849+00:00"
+    },
+    {
+      "symbol": "LIT",
+      "score": 0.55,
+      "reasons": [
+        "周线结构修复(站上MA20, wRSI 52)",
+        "OI $84M流动性充足"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304861+00:00"
+    },
+    {
+      "symbol": "BOME",
+      "score": 0.55,
+      "reasons": [
+        "日线均线多头排列",
+        "7日小幅走高+4%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304866+00:00"
+    },
+    {
+      "symbol": "XPL",
+      "score": 0.54,
+      "reasons": [
+        "日线均线多头排列",
+        "7日小幅走高+2%"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304870+00:00"
+    },
+    {
+      "symbol": "FARTCOIN",
+      "score": 0.53,
+      "reasons": [
+        "日线均线多头排列",
+        "7日小幅走高+10%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304874+00:00"
+    },
+    {
+      "symbol": "WLD",
+      "score": 0.52,
+      "reasons": [
+        "日线均线多头排列",
+        "7日动量+11%",
+        "资金+情绪+周期三源一致"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304878+00:00"
+    },
+    {
+      "symbol": "VVV",
+      "score": 0.51,
+      "reasons": [
+        "7日小幅走高+3%"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304882+00:00"
+    },
+    {
+      "symbol": "PUMP",
+      "score": 0.48,
+      "reasons": [
+        "周线结构修复(站上MA20, wRSI 60)",
+        "7日小幅走高+3%",
+        "资金/周期双源看多"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304886+00:00"
+    }
+  ],
+  "short_pool": [
+    {
+      "symbol": "KPEPE",
+      "score": 0.42,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "周RSI弱势(38)",
+        "资金/情绪尚暖但周期头看空(M10背离)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304908+00:00"
+    },
+    {
+      "symbol": "KAITO",
+      "score": 0.41,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "7日下跌-47%",
+        "周RSI弱势(42)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304912+00:00"
+    },
+    {
+      "symbol": "ENA",
+      "score": 0.4,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "周RSI弱势(40)",
+        "资金/情绪尚暖但周期头看空(M10背离)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304917+00:00"
+    },
+    {
+      "symbol": "JUP",
+      "score": 0.4,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "30日下跌-13%",
+        "周RSI弱势(42)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304921+00:00"
+    },
+    {
+      "symbol": "ONDO",
+      "score": 0.39,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "30日下跌-13%",
+        "周RSI弱势(44)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304925+00:00"
+    },
+    {
+      "symbol": "AVAX",
+      "score": 0.38,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "周RSI弱势(31)",
+        "资金/情绪尚暖但周期头看空(M10背离)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304929+00:00"
+    },
+    {
+      "symbol": "AAVE",
+      "score": 0.37,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "周RSI弱势(40)",
+        "三源分歧降置信(M12)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304932+00:00"
+    },
+    {
+      "symbol": "ADA",
+      "score": 0.35,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "周RSI弱势(36)",
+        "三源分歧降置信(M12)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304936+00:00"
+    },
+    {
+      "symbol": "SUI",
+      "score": 0.35,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "周RSI弱势(34)",
+        "三源分歧降置信(M12)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304940+00:00"
+    },
+    {
+      "symbol": "TAO",
+      "score": 0.34,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "周RSI弱势(43)",
+        "三源分歧降置信(M12)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304944+00:00"
+    },
+    {
+      "symbol": "UNI",
+      "score": 0.34,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "7日下跌-18%",
+        "周RSI弱势(44)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304948+00:00"
+    },
+    {
+      "symbol": "DOGE",
+      "score": 0.34,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "周RSI弱势(31)",
+        "三源分歧降置信(M12)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304955+00:00"
+    },
+    {
+      "symbol": "INJ",
+      "score": 0.34,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "30日下跌-20%",
+        "周RSI弱势(44)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304959+00:00"
+    },
+    {
+      "symbol": "NEAR",
+      "score": 0.34,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "30日下跌-16%",
+        "三源分歧降置信(M12)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304962+00:00"
+    },
+    {
+      "symbol": "ARB",
+      "score": 0.32,
+      "reasons": [
+        "周线空头排列(价格<MA20<MA60)",
+        "30日下跌-18%",
+        "周RSI弱势(33)"
+      ],
+      "source": "hermes-weekly",
+      "updated_at": "2026-08-16T09:56:22.304966+00:00"
+    }
+  ],
+  "timestamp": "2026-08-16T09:56:22.304981+00:00",
+  "source": "hermes-weekly",
+  "week": "2026-W33",
+  "regime": "RANGE_BOUND底部修复(长周期BEAR_TREND未破坏, 置信55%)",
+  "notes": "宏观顺风(美元-1.4%/10Y-9bp/FGI 27→34) vs BTC仍在全周线均线下方；动量强币多(LINK/HYPE/XMR/HEMI)、结构破位币空(kPEPE/KAITO/ENA)；空头整体逆宏观顺风需防挤压",
+  "version": 2,
+  "producers": [
+    "hermes-weekly"
+  ],
+  "conflict_symbols": []
+}

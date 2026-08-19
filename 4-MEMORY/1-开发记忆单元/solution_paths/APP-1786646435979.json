@@ -1,0 +1,77 @@
+{
+  "template_id": "APP-1786646435979",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat(dreamos): Phase2 Task1 - YijingSignalGenerator base (TDD)",
+    "action_count": 1,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/capabilities/trading/yijing_signal_generator.py",
+      "1-ARCHITECTURE/dreamos/tests/test_yijing_signal_generator.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "42b4022",
+    "created_at": 1786646436.0682616,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "提交 commit 42b4022: feat(dreamos): Phase2 Task1 - YijingSignalGenerator base (TDD)\n\n- New YijingSignalGenerator class with I Ching reasoning\n- Four-dim scores to inner/outer trigrams to 64-hexagram\n- Moving yaos via coin-cast with market modulation\n- Direction via weighted voting (4-dim 0.35 + MA 0.25 + hex 0.20 + changed 0.15 + mom 0.05)\n- Confidence: base * yao_penalty * trend * consistency * clarity\n- Phase positioning and risk level\n- 3 tests pass"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "1-ARCHITECTURE/dreamos/tests/test_yijing_signal_generator.py"
+      ],
+      "modified_files": [
+        "1-ARCHITECTURE/dreamos/capabilities/trading/yijing_signal_generator.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

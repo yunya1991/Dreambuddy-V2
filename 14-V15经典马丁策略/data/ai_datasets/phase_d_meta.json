@@ -1,0 +1,18 @@
+{
+  "source": "real_okx",
+  "BI_LSTM_4H_LEN": 60,
+  "PATCHTST_1H_LEN": 120,
+  "PATCHTST_HORIZON": 24,
+  "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "ARB",
+    "OP",
+    "UNI"
+  ],
+  "limit_1h": 1500,
+  "samples_per_coin": 50,
+  "wf_segments": 5,
+  "seed": 42
+}

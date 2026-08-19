@@ -1,0 +1,187 @@
+{
+  "phase": "D",
+  "mode": "heuristic",
+  "git_sha": "2f0376d",
+  "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "ARB",
+    "OP"
+  ],
+  "baseline_form": "v15-final (Phase B+) per data/v15_final_deployment.json",
+  "criteria": {
+    "1_full_backtest": {
+      "pass": true,
+      "total_return_base_pct": 33.57,
+      "total_return_test_pct": 40.63,
+      "required_test_min_pct": 38.57,
+      "calmar_base_avg": 7.052,
+      "calmar_test_avg": 7.974,
+      "return_ok": true,
+      "calmar_ok": true
+    },
+    "2_walk_forward": {
+      "pass": true,
+      "segments": [
+        {
+          "seg": 1,
+          "base_pnl": 1786.82,
+          "test_pnl": 2466.49,
+          "degradation_pct": 0.0,
+          "degraded": false,
+          "positive": true
+        },
+        {
+          "seg": 2,
+          "base_pnl": 408.24,
+          "test_pnl": 417.18,
+          "degradation_pct": 0.0,
+          "degraded": false,
+          "positive": true
+        },
+        {
+          "seg": 3,
+          "base_pnl": 762.27,
+          "test_pnl": 778.93,
+          "degradation_pct": 0.0,
+          "degraded": false,
+          "positive": true
+        },
+        {
+          "seg": 4,
+          "base_pnl": 299.35,
+          "test_pnl": 303.49,
+          "degradation_pct": 0.0,
+          "degraded": false,
+          "positive": true
+        },
+        {
+          "seg": 5,
+          "base_pnl": 99.56,
+          "test_pnl": 96.19,
+          "degradation_pct": 3.38,
+          "degraded": false,
+          "positive": false
+        }
+      ],
+      "degraded_segments": 0,
+      "positive_segments": 4,
+      "rule": "0 段退化≥10% 且 ≥3 段正向"
+    },
+    "3_drawdown": {
+      "pass": true,
+      "mdd_base_avg_pct": 3.2,
+      "mdd_test_avg_pct": 3.45,
+      "mdd_ok": true,
+      "consec_loss_ok": true
+    },
+    "4_ood": "SKIPPED_OFFLINE"
+  },
+  "per_coin": {
+    "BTC": {
+      "base": {
+        "total_return_pct": 25.4,
+        "sharpe_ratio": 6.9232,
+        "max_drawdown_pct": 0.88,
+        "total_trades": 37,
+        "win_rate": 0.8108,
+        "profit_factor": 2.9056
+      },
+      "test": {
+        "total_return_pct": 27.5,
+        "sharpe_ratio": 8.1757,
+        "max_drawdown_pct": 0.88,
+        "total_trades": 38,
+        "win_rate": 0.8421,
+        "profit_factor": 3.7006
+      },
+      "base_max_consec_loss": 3,
+      "test_max_consec_loss": 3
+    },
+    "ETH": {
+      "base": {
+        "total_return_pct": 7.76,
+        "sharpe_ratio": 1.8381,
+        "max_drawdown_pct": 1.6,
+        "total_trades": 79,
+        "win_rate": 0.6076,
+        "profit_factor": 1.2636
+      },
+      "test": {
+        "total_return_pct": 10.38,
+        "sharpe_ratio": 1.9528,
+        "max_drawdown_pct": 1.6,
+        "total_trades": 77,
+        "win_rate": 0.6104,
+        "profit_factor": 1.3829
+      },
+      "base_max_consec_loss": 5,
+      "test_max_consec_loss": 5
+    },
+    "SOL": {
+      "base": {
+        "total_return_pct": 8.31,
+        "sharpe_ratio": 1.2839,
+        "max_drawdown_pct": 2.81,
+        "total_trades": 78,
+        "win_rate": 0.5128,
+        "profit_factor": 1.5242
+      },
+      "test": {
+        "total_return_pct": 8.86,
+        "sharpe_ratio": 1.3786,
+        "max_drawdown_pct": 2.81,
+        "total_trades": 76,
+        "win_rate": 0.5132,
+        "profit_factor": 1.6043
+      },
+      "base_max_consec_loss": 6,
+      "test_max_consec_loss": 6
+    },
+    "ARB": {
+      "base": {
+        "total_return_pct": -5.83,
+        "sharpe_ratio": -1.6376,
+        "max_drawdown_pct": 5.96,
+        "total_trades": 66,
+        "win_rate": 0.4394,
+        "profit_factor": 0.7106
+      },
+      "test": {
+        "total_return_pct": -2.77,
+        "sharpe_ratio": -0.6485,
+        "max_drawdown_pct": 5.96,
+        "total_trades": 66,
+        "win_rate": 0.4545,
+        "profit_factor": 0.9377
+      },
+      "base_max_consec_loss": 6,
+      "test_max_consec_loss": 6
+    },
+    "OP": {
+      "base": {
+        "total_return_pct": -2.07,
+        "sharpe_ratio": -0.5858,
+        "max_drawdown_pct": 4.77,
+        "total_trades": 52,
+        "win_rate": 0.4808,
+        "profit_factor": 0.8594
+      },
+      "test": {
+        "total_return_pct": -3.34,
+        "sharpe_ratio": -0.6795,
+        "max_drawdown_pct": 6.01,
+        "total_trades": 51,
+        "win_rate": 0.4902,
+        "profit_factor": 0.7698
+      },
+      "base_max_consec_loss": 4,
+      "test_max_consec_loss": 4
+    }
+  },
+  "s_bt": 1.0756,
+  "k_bound_recommendation": 1.0,
+  "overall_pass": true,
+  "note": "④ OOD 需 2024-11/2025-05 数据，离线缓存不覆盖，启用前须补验；heuristic 模式=MVP桥接闸门逻辑验证"
+}

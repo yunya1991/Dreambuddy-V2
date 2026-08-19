@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [AVAX]: MEAN_REVERSION → SHORT (confidence=0.55, latency=103448ms, tokens=0)",
+  "confidence": 0.554,
+  "tags": [
+    "AVAX",
+    "MEAN_REVERSION",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260811_230802_986696",
+  "timestamp": "2026-08-11T23:08:02+08:00"
+}

@@ -1,0 +1,110 @@
+{
+  "version": "qmm-v1.0",
+  "snapshot_ts": "2026-08-13T01:25:24+08:00",
+  "data_version": "dv-20260812-001",
+  "feature_def_version": "fd-1.0",
+  "qmm_version": "qmm-v1.0",
+  "trend_state": "DOWN",
+  "trend_change_point": "STABLE",
+  "mrd_vector": {
+    "direction": "NEUTRAL",
+    "resistance_up": 0.0,
+    "resistance_down": 0.0,
+    "confidence": 0
+  },
+  "uncertainty": 0.25,
+  "triple_screen": {
+    "long": {
+      "timeframe": "long",
+      "direction": "DOWN",
+      "confidence": 0.5,
+      "x_mean": -1.0,
+      "y_mean": 0.5,
+      "profit_rate": 0.0,
+      "case_count": 20
+    },
+    "mid": {
+      "timeframe": "mid",
+      "direction": "DOWN",
+      "confidence": 0.25,
+      "x_mean": -1.0,
+      "y_mean": 0.5,
+      "profit_rate": 0.0,
+      "case_count": 10
+    },
+    "short": {
+      "timeframe": "short",
+      "direction": "DOWN",
+      "confidence": 0.125,
+      "x_mean": -1.0,
+      "y_mean": 0.5,
+      "profit_rate": 0.0,
+      "case_count": 5
+    },
+    "alignment": 1.0
+  },
+  "velocity": {
+    "price": 0.0,
+    "confidence": 1.0
+  },
+  "acceleration": {
+    "price": 0.0
+  },
+  "reason_codes": [
+    "BULLISH_ALIGNMENT"
+  ],
+  "evidence_refs": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "system_source_stats": {
+    "unknown": {
+      "count": 50,
+      "profit_count": 0,
+      "loss_count": 0,
+      "total_pnl": 0.0,
+      "avg_pnl": 0.0,
+      "quality_sum": 19.000000000000007,
+      "quality_avg": 0.38,
+      "win_rate": 0.0
+    }
+  },
+  "gate_status": "FAILED",
+  "gate_results": {
+    "passed": false,
+    "reason_codes": [
+      "LOW_ACCURACY"
+    ],
+    "backtest": {
+      "total_predictions": 0,
+      "overall_accuracy": 0.0,
+      "high_confidence_accuracy": 0.0,
+      "fold_accuracies": [],
+      "train_test_gap": 0,
+      "by_regime": {}
+    },
+    "overfitting": {
+      "is_overfit": false,
+      "train_test_gap": 0,
+      "fold_variance": 0.0,
+      "regime_max_gap": 0.0,
+      "recommendation": "ACCEPT"
+    },
+    "drift": {
+      "drift_detected": false,
+      "drift_type": "NONE",
+      "severity": 0.0,
+      "psi_x": 0,
+      "performance_drift": 0.0,
+      "recommendation": "NO_ACTION"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [ETH]: MEAN_REVERSION → SHORT (confidence=0.57, latency=162387ms, tokens=0)",
+  "confidence": 0.572,
+  "tags": [
+    "ETH",
+    "MEAN_REVERSION",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260809_230504_077772",
+  "timestamp": "2026-08-09T23:05:04+08:00"
+}

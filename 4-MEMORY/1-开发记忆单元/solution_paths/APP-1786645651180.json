@@ -1,0 +1,77 @@
+{
+  "template_id": "APP-1786645651180",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat(dreamos): Phase1 Task3 - 多空代币池融合逻辑 (TDD)",
+    "action_count": 1,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/capabilities/trading/coin_selector.py",
+      "1-ARCHITECTURE/dreamos/tests/test_coin_selector.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "032c51f",
+    "created_at": 1786645651.2675943,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "提交 commit 032c51f: feat(dreamos): Phase1 Task3 - 多空代币池融合逻辑 (TDD)\n\n- _fuse_results 加入 crypto_priority 降权逻辑（priority=1.0 保持原分，0.5 降权）\n- select mock 模式改为调用 _call_asset_research + _call_attention_radar + _fuse_results 融合流程\n- 新增 2 个测试：crypto_priority 降权验证、select 融合调用验证\n- 8 个测试用例全部通过"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "1-ARCHITECTURE/dreamos/tests/test_coin_selector.py"
+      ],
+      "modified_files": [
+        "1-ARCHITECTURE/dreamos/capabilities/trading/coin_selector.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

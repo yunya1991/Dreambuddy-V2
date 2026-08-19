@@ -1,0 +1,74 @@
+{
+  "template_id": "APP-1786806992273",
+  "name": "general 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "general 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "PROP-20260816: 补充实施结果(实测验收数据)",
+    "action_count": 1,
+    "files_touched": [
+      "\"3-EVOLUTION/proposals/PROP-20260816-DREAMOS-\\351\\227\\255\\347\\216\\257\\346\\225\\260\\346\\215\\256\\351\\223\\276\\350\\267\\257\\350\\241\\245\\345\\205\\250-B\\345\\261\\202\\346\\214\\207\\346\\240\\207\\346\\263\\250\\345\\205\\245\\344\\270\\216\\345\\271\\263\\344\\273\\223\\345\\257\\271\\350\\264\\246.md\""
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "2f0376d",
+    "created_at": 1786806992.3779573,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "general",
+    "reproducible_steps": [
+      "提交 commit 2f0376d: PROP-20260816: 补充实施结果(实测验收数据)"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "\"3-EVOLUTION/proposals/PROP-20260816-DREAMOS-\\351\\227\\255\\347\\216\\257\\346\\225\\260\\346\\215\\256\\351\\223\\276\\350\\267\\257\\350\\241\\245\\345\\205\\250-B\\345\\261\\202\\346\\214\\207\\346\\240\\207\\346\\263\\250\\345\\205\\245\\344\\270\\216\\345\\271\\263\\344\\273\\223\\345\\257\\271\\350\\264\\246.md\""
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

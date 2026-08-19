@@ -1,0 +1,79 @@
+{
+  "lessons": [
+    {
+      "lesson_id": "lesson-0001-lowconf",
+      "category": "direction",
+      "description": "Low confidence (0.50) trade on SOL resulted in loss (-0.45 USDT): raise minimum confidence threshold",
+      "symbol": "SOL",
+      "trade_pnl": -0.450283,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-08-15T17:30:01.599264Z"
+    },
+    {
+      "lesson_id": "lesson-0002-goodentry",
+      "category": "direction",
+      "description": "High confidence (0.50) trade on ETH profited (0.16 USDT): maintain entry criteria quality",
+      "symbol": "ETH",
+      "trade_pnl": 0.160587,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-08-16T08:30:01.896967Z"
+    },
+    {
+      "lesson_id": "lesson-0003-lowconf",
+      "category": "direction",
+      "description": "Low confidence (0.50) trade on SOL resulted in loss (-0.23 USDT): raise minimum confidence threshold",
+      "symbol": "SOL",
+      "trade_pnl": -0.227261,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-08-16T08:30:02.557879Z"
+    },
+    {
+      "lesson_id": "lesson-0004-lowconf",
+      "category": "direction",
+      "description": "Low confidence (0.50) trade on ARB resulted in loss (-0.15 USDT): raise minimum confidence threshold",
+      "symbol": "ARB",
+      "trade_pnl": -0.146118,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-08-16T08:30:03.426818Z"
+    },
+    {
+      "lesson_id": "lesson-0005-lowconf",
+      "category": "direction",
+      "description": "Low confidence (0.50) trade on BTC resulted in loss (-0.00 USDT): raise minimum confidence threshold",
+      "symbol": "BTC",
+      "trade_pnl": -0.0002,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-08-16T08:42:33.246697Z"
+    },
+    {
+      "lesson_id": "lesson-0006-lowconf",
+      "category": "direction",
+      "description": "Low confidence (0.50) trade on SOL resulted in loss (-0.27 USDT): raise minimum confidence threshold",
+      "symbol": "SOL",
+      "trade_pnl": -0.273986,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-08-17T07:00:01.801174Z"
+    },
+    {
+      "lesson_id": "lesson-0007-goodentry",
+      "category": "direction",
+      "description": "High confidence (0.50) trade on ARB profited (0.05 USDT): maintain entry criteria quality",
+      "symbol": "ARB",
+      "trade_pnl": 0.052367,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-08-17T10:30:01.422757Z"
+    },
+    {
+      "lesson_id": "lesson-0008-lowconf",
+      "category": "direction",
+      "description": "Low confidence (0.50) trade on HYPE resulted in loss (-0.30 USDT): raise minimum confidence threshold",
+      "symbol": "HYPE",
+      "trade_pnl": -0.297559,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-08-17T14:30:05.512505Z"
+    }
+  ],
+  "total_reviews": 8,
+  "total_pnl": -1.1824529999999998,
+  "persisted_at": "2026-08-17T14:30:05.512539Z"
+}

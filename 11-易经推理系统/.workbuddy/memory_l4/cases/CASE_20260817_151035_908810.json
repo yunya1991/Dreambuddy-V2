@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [BNB]: UNCERTAIN → SHORT (confidence=0.65, latency=98638ms, tokens=0)",
+  "confidence": 0.651,
+  "tags": [
+    "BNB",
+    "UNCERTAIN",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260817_151035_908810",
+  "timestamp": "2026-08-17T15:10:35+08:00"
+}

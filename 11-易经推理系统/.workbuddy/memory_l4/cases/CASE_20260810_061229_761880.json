@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [OP]: MEAN_REVERSION → HOLD (confidence=0.29, latency=84595ms, tokens=0)",
+  "confidence": 0.2946,
+  "tags": [
+    "OP",
+    "MEAN_REVERSION",
+    "HOLD",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260810_061229_761880",
+  "timestamp": "2026-08-10T06:12:29+08:00"
+}

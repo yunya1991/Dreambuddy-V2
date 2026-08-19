@@ -1,0 +1,139 @@
+{
+  "template_id": "APP-TRD-1786810214864",
+  "name": "strategy-execution 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "回顾与沉淀"
+  ],
+  "description": "strategy-execution 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "t1-strategy-synthesis",
+  "metadata": {
+    "unit_id": "MU-TRD",
+    "problem": "任务涉及 8 个文件",
+    "action_count": 12,
+    "files_touched": [
+      "experiments/ab-trading/data/screen_self_schedule.json",
+      "14-V15经典马丁策略/data/ai_datasets/phase_d_meta.json",
+      "14-V15经典马丁策略/phase_d_validate_iron2.py",
+      "14-V15经典马丁策略/core/v15_trader.py",
+      "14-V15经典马丁策略/data/ai_benchmarks/phase_D_heuristic_2f0376d_wf_report.json",
+      "14-V15经典马丁策略/data/ai_benchmarks/phase_D_model_2f0376d_wf_report.json",
+      "14-V15经典马丁策略/lib/phase_d_gateway.py",
+      "14-V15经典马丁策略/core/v15_backtest.py"
+    ],
+    "duration_minutes": 29.3,
+    "success": false,
+    "commit_hash": "",
+    "created_at": 1786811976.2244015,
+    "parent_skill_ids": [
+      "t2-trade-execution",
+      "t0-market-cognition",
+      "t1-strategy-synthesis"
+    ],
+    "process_verify_report": {
+      "t2-trade-execution": {
+        "score": 0.56,
+        "followed": true,
+        "checklist_matched": [
+          "是否已完成三层索引（策略 / 工具 / 跨资产）？",
+          "是否至少下了 1 笔试探单（C8）？",
+          "仓位是否在 T3 风险预算内？",
+          "C5 四项熔断阈值是否实时监控？"
+        ],
+        "checklist_missed": [
+          "候选策略是否来自矩阵\"首选\"或\"备选\"格（非禁忌）？",
+          "模拟盘验证是否 ≥2 次且通过验证前置检查？",
+          "最佳策略指标（win_rate / profit_factor / sharpe / max_drawdown）是否已传递？",
+          "是否已设置止损且止损位基于结构？",
+          "离场预案是否四层齐备（TP/SL、风险事件、情报联动、熔断）？",
+          "是否持续监控四层离场信号？",
+          "trailing stop 是否随盈利上移？",
+          "是否每笔离场都记录了 episode？",
+          "是否已平仓且未补仓摊平？",
+          "是否进入反思→重新研判→重新验证闭环？",
+          "熔断期间是否禁止开新仓？"
+        ],
+        "gate_violations": []
+      },
+      "t0-market-cognition": {
+        "score": 0.47,
+        "followed": true,
+        "checklist_matched": [
+          "`market_cognition_report` 已结构化输出，移交 T1"
+        ],
+        "checklist_missed": [
+          "7 维信息采集完成，每维至少 1 观察 + 1 证据",
+          "每条进入冲突分析的论据 ≥2 独立源交叉验证",
+          "冲突已按 4 维评分排序，主冲突唯一",
+          "4 个摩擦分量均已计算，阻力分数已得出",
+          "情绪极端时已施加逆向补偿（如适用）",
+          "Regime 已分类（7 选 1），不允许多选",
+          "方向判定有冲突分析 + 阻力路径双支撑，非纯技术面",
+          "三角准则调研完成，与结论无严重背离"
+        ],
+        "gate_violations": []
+      },
+      "t1-strategy-synthesis": {
+        "score": 0.6,
+        "followed": true,
+        "checklist_matched": [
+          "T0 `market_cognition_report` 已读取，Regime / 阻力 / 方向完整",
+          "S1/S2/S3 三情景已构建，每情景含目标价 + 触发 + 验证 + 证伪 + 止损",
+          "phase7_contingency 三层预案齐全"
+        ],
+        "checklist_missed": [
+          "directive_bias 已按映射表生成，与 T0 输出一致",
+          "历史模式匹配已检索（无记录时标记 `none` 并保守化）",
+          "三情景概率经贝叶斯校准，之和 = 1.0（±0.01）",
+          "沙盘推演映射表已完成",
+          "若 directive_bias = WAIT，已给出具体触发入场条件",
+          "`strategy_directive` 已结构化输出"
+        ],
+        "gate_violations": []
+      }
+    },
+    "task_type": "strategy-execution",
+    "reproducible_steps": [
+      "modified: experiments/ab-trading/data/screen_self_schedule.json",
+      "added: 14-V15经典马丁策略/data/ai_datasets/phase_d_meta.json",
+      "added: 14-V15经典马丁策略/data/ai_benchmarks/phase_D_heuristic_2f0376d_wf_report.json",
+      "modified: 14-V15经典马丁策略/lib/phase_d_gateway.py（共 2 次修改）",
+      "modified: 14-V15经典马丁策略/core/v15_trader.py",
+      "modified: 14-V15经典马丁策略/core/v15_backtest.py",
+      "modified: 14-V15经典马丁策略/core/v15_trader.py",
+      "modified: 14-V15经典马丁策略/core/v15_backtest.py",
+      "modified: 14-V15经典马丁策略/phase_d_validate_iron2.py",
+      "modified: 14-V15经典马丁策略/data/ai_benchmarks/phase_D_heuristic_2f0376d_wf_report.json",
+      "added: 14-V15经典马丁策略/data/ai_benchmarks/phase_D_model_2f0376d_wf_report.json"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "experiments/ab-trading/data/screen_self_schedule.json",
+        "14-V15经典马丁策略/data/ai_datasets/phase_d_meta.json",
+        "14-V15经典马丁策略/phase_d_validate_iron2.py",
+        "14-V15经典马丁策略/core/v15_trader.py",
+        "14-V15经典马丁策略/data/ai_benchmarks/phase_D_heuristic_2f0376d_wf_report.json",
+        "14-V15经典马丁策略/data/ai_benchmarks/phase_D_model_2f0376d_wf_report.json",
+        "14-V15经典马丁策略/lib/phase_d_gateway.py",
+        "14-V15经典马丁策略/core/v15_backtest.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

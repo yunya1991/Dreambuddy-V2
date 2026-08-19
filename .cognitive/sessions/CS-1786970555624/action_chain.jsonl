@@ -1,0 +1,1 @@
+{"timestamp": 1786970555.6722915, "session_id": "CS-1786970555624", "action_type": "git_commit", "detail": "feat: HedgeExecutor live mode — dry_run=False for real trading", "commit_hash": "8f61e98", "files": ["1-ARCHITECTURE/dreamos/capabilities/trading/signal_router.py"]}

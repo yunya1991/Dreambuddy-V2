@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [OP]: UNCERTAIN → SHORT (confidence=0.59, latency=65613ms, tokens=0)",
+  "confidence": 0.589,
+  "tags": [
+    "OP",
+    "UNCERTAIN",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260812_171632_336360",
+  "timestamp": "2026-08-12T17:16:32+08:00"
+}

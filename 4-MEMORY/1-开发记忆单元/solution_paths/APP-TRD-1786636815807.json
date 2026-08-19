@@ -1,0 +1,63 @@
+{
+  "template_id": "APP-TRD-1786636815807",
+  "name": "strategy-execution 的解决路径",
+  "steps": [
+    "识别问题并修改文件",
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "strategy-execution 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": null,
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat(v15): 引入BTC风向标智能模式选择(§16) - 双模式方向控制",
+    "action_count": 12,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/cli/backtest_reports/backtest_1h_20260814_0000.md",
+      "experiments/ab-trading/data/screen_self_schedule.json",
+      "14-V15经典马丁策略/core/v15_trader.py"
+    ],
+    "duration_minutes": 27.3,
+    "success": true,
+    "commit_hash": "012a49c",
+    "created_at": 1786638456.2431295,
+    "parent_skill_ids": [
+      "custom-path"
+    ],
+    "process_verify_report": {},
+    "task_type": "strategy-execution",
+    "reproducible_steps": [
+      "added: 1-ARCHITECTURE/dreamos/cli/backtest_reports/backtest_1h_20260814_0000.md",
+      "modified: 14-V15经典马丁策略/core/v15_trader.py（共 3 次修改）",
+      "architecture-design → strategy-execution",
+      "modified: experiments/ab-trading/data/screen_self_schedule.json",
+      "modified: 14-V15经典马丁策略/core/v15_trader.py（共 5 次修改）",
+      "提交 commit 012a49c: feat(v15): 引入BTC风向标智能模式选择(§16) - 双模式方向控制\n\n- 新增 _is_crypto_asset() 资产类型判断函数（基于V15_ASSET_TYPES配置）\n- 加密资产: BTC用自身MA128+DirectionGate, 非BTC用BTC风向标3日确认+short_only\n- 非加密资产: 保留旧版MA200止损+DirectionGate\n- 非BTC加密币种移除自身MA200止损, 由BTC风向标状态控制平仓\n- check_take_profit新增BTC风向标止损触发逻辑\n- 持仓信息新增btc_regime_at_open和use_btc_windvane字段\n- 更新v15_trader.py注释为MA128+BTC风向标三状态模型"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "1-ARCHITECTURE/dreamos/cli/backtest_reports/backtest_1h_20260814_0000.md"
+      ],
+      "modified_files": [
+        "experiments/ab-trading/data/screen_self_schedule.json",
+        "14-V15经典马丁策略/core/v15_trader.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

@@ -1,0 +1,10 @@
+{
+  "confidence_threshold": 0.258351,
+  "_meta": {
+    "approval_instance": "B4929C68-A87A-4F27-8889-7E256AC7DD8A",
+    "released_at": "2026-08-14",
+    "source": "8/9 进化采纳，DETGATE 确定性门禁重裁 PASS（delta +0.0021, std 0.0018）",
+    "param_key": "min_confidence_threshold",
+    "previous_value": 0.25
+  }
+}

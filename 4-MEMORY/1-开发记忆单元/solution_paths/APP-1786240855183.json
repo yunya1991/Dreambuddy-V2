@@ -1,0 +1,74 @@
+{
+  "template_id": "APP-1786240855183",
+  "name": "general 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "general 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "docs(cognitive): 修正认知系统结构表述——分类轴×层级轴两种划分（用户澄清）",
+    "action_count": 1,
+    "files_touched": [
+      "\"0-\\347\\263\\273\\347\\273\\237\\346\\226\\207\\346\\241\\243\\347\\256\\241\\347\\220\\206/2-\\346\\226\\207\\346\\241\\243\\345\\234\\260\\345\\233\\276/EVOLUTION_BOUNDARY_MAP.md\""
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "01562ff",
+    "created_at": 1786240855.5221844,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "general",
+    "reproducible_steps": [
+      "提交 commit 01562ff: docs(cognitive): 修正认知系统结构表述——分类轴×层级轴两种划分（用户澄清）"
+    ],
+    "key_artifacts": {
+      "added_files": [],
+      "modified_files": [
+        "\"0-\\347\\263\\273\\347\\273\\237\\346\\226\\207\\346\\241\\243\\347\\256\\241\\347\\220\\206/2-\\346\\226\\207\\346\\241\\243\\345\\234\\260\\345\\233\\276/EVOLUTION_BOUNDARY_MAP.md\""
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}

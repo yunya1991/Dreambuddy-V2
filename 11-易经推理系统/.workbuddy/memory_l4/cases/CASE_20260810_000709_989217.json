@@ -1,0 +1,13 @@
+{
+  "memory_type": "lesson",
+  "content": "交易分析 [AVAX]: UNCERTAIN → SHORT (confidence=0.60, latency=80080ms, tokens=0)",
+  "confidence": 0.6,
+  "tags": [
+    "AVAX",
+    "UNCERTAIN",
+    "SHORT",
+    "trading_agent"
+  ],
+  "case_id": "CASE_20260810_000709_989217",
+  "timestamp": "2026-08-10T00:07:09+08:00"
+}

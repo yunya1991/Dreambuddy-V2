@@ -1,0 +1,77 @@
+{
+  "template_id": "APP-1786647631616",
+  "name": "architecture-design 的解决路径",
+  "steps": [
+    "验证并提交代码",
+    "回顾与沉淀"
+  ],
+  "description": "architecture-design 的解决路径",
+  "confidence": 0.3,
+  "verify_count": 0,
+  "quality_level": "C",
+  "source": "cognitive-session",
+  "tags": [
+    "solution_path",
+    "applied-cognition"
+  ],
+  "layer": "applied",
+  "parent_template_id": "brainstorming",
+  "metadata": {
+    "unit_id": "MU-DEV",
+    "problem": "feat(dreamos): Phase5 Task1 - CognitiveReviewer base (TDD)",
+    "action_count": 1,
+    "files_touched": [
+      "1-ARCHITECTURE/dreamos/capabilities/trading/cognitive_reviewer.py",
+      "1-ARCHITECTURE/dreamos/tests/test_cognitive_reviewer.py"
+    ],
+    "duration_minutes": 0.0,
+    "success": true,
+    "commit_hash": "a6bdb63",
+    "created_at": 1786647631.7091982,
+    "parent_skill_ids": [
+      "brainstorming"
+    ],
+    "process_verify_report": {
+      "brainstorming": {
+        "score": 0.4,
+        "followed": true,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "dispatching-parallel-agents": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      },
+      "executing-plans": {
+        "score": 0.0,
+        "followed": false,
+        "checklist_matched": [],
+        "checklist_missed": [],
+        "gate_violations": []
+      }
+    },
+    "task_type": "architecture-design",
+    "reproducible_steps": [
+      "提交 commit a6bdb63: feat(dreamos): Phase5 Task1 - CognitiveReviewer base (TDD)\n\n- New CognitiveReviewer class for trade result review\n- review(): assesses trade quality (GOOD/NEUTRAL/BAD) with score\n- extract_lessons(): 5 lesson types (timeout, lowconf, goodentry, holdtime, addon)\n- get_cognitive_context(): runtime injection with confidence adjustment\n- persist_lessons(): saves to JSON\n- TradeLesson dataclass with category/symbol/pnl tracking\n- 3 tests pass"
+    ],
+    "key_artifacts": {
+      "added_files": [
+        "1-ARCHITECTURE/dreamos/tests/test_cognitive_reviewer.py"
+      ],
+      "modified_files": [
+        "1-ARCHITECTURE/dreamos/capabilities/trading/cognitive_reviewer.py"
+      ],
+      "debt_items": []
+    }
+  },
+  "quality_level_override": null,
+  "path_advantage_history": [],
+  "evaluation_count": 0,
+  "last_evaluated_at": 0,
+  "consecutive_positive": 0,
+  "consecutive_negative": 0
+}
