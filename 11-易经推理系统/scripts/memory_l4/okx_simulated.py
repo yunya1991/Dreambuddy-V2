@@ -249,7 +249,8 @@ class OKXSimulatedClient:
 
     def _probe_proxy_or_log(self):
         """P0 诊断：探测当前代理能否连通 OKX。失败时用 print 打到 stdout（会被重定向到 trading_stdout.log）。
-        注意：不能用 self._log / _audit_log，因为这些在 __init__ 早期可能未准备好。"""
+        注意：不能用 self._log / _audit_log，因为这些在 __init__ 早期可能未准备好。
+        成功时静默（避免高频实例化导致 stdout I/O 阻塞 GIL 拖慢整个服务）。"""
         import time as _t
 
         proxies = dict(getattr(self, "session", None) and self.session.proxies or {})
@@ -265,12 +266,12 @@ class OKXSimulatedClient:
             except Exception:
                 j = {}
             ok = (j.get("code") == "0") or (200 <= r.status_code < 300)
-            tag = "OK" if ok else "FAIL"
-            print(
-                f"[OKX 代理探测/{tag}] status={r.status_code} code={j.get('code')} "
-                f"t={dt_ms}ms proxies={proxies}",
-                flush=True,
-            )
+            if not ok:
+                print(
+                    f"[OKX 代理探测/FAIL] status={r.status_code} code={j.get('code')} "
+                    f"t={dt_ms}ms proxies={proxies}",
+                    flush=True,
+                )
         except Exception as e:
             print(
                 f"[OKX 代理探测/FAIL] {type(e).__name__}: {e} | proxies={proxies} | "

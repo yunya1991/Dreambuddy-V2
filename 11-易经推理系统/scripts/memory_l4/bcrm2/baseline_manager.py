@@ -345,3 +345,91 @@ class BaselineManager:
         path.write_text(report.to_json())
         logger.info(f"对比报告已保存: {path}")
         return path
+
+    # ============================================================
+    # Phase C: 双基线评估（静态 + 动态）
+    # ============================================================
+
+    def compare_dual_baseline(
+        self,
+        new_result: dict,
+        static_baseline_version: str = "v15_strategy",
+        dynamic_baseline_version: str = "current_best",
+    ) -> Dict[str, Any]:
+        """双基线评估（project_memory 硬约束）。
+
+        静态基线（v15 策略）评估 AI 整体有效性；
+        动态基线（当前最优 AI 版本）评估新版本是否更优。
+        双基线均通过才允许版本晋升。
+
+        首版本无动态基线时通过 bootstrap 逻辑自动晋升，
+        晋升后新版本自动设为动态基线。
+
+        Args:
+            new_result: 新版本回测结果
+            static_baseline_version: 静态基线版本号
+            dynamic_baseline_version: 动态基线版本号
+
+        Returns:
+            {
+                "static_report": ComparisonReport.to_dict(),
+                "dynamic_report": ComparisonReport.to_dict() | None,
+                "both_passed": bool,
+                "recommendation": "promote" | "hold" | "reject",
+                "bootstrap": bool,  # True 表示无动态基线走了 bootstrap
+            }
+        """
+        # 1. 静态基线对比
+        static_report = self.compare(new_result, baseline_version=static_baseline_version)
+
+        # 2. 动态基线对比（可能不存在）
+        dynamic_baseline = self.load_baseline(dynamic_baseline_version)
+        if dynamic_baseline is None:
+            # 无动态基线 → bootstrap 逻辑
+            # 仅需静态基线通过即可 bootstrap 晋升
+            if static_report.passed:
+                # 晋升后自动设为动态基线
+                self.snapshot(new_result, version=dynamic_baseline_version)
+                logger.info(f"[双基线] bootstrap 晋升，已设为动态基线 {dynamic_baseline_version}")
+                return {
+                    "static_report": static_report.to_dict(),
+                    "dynamic_report": None,
+                    "both_passed": True,
+                    "recommendation": "promote",
+                    "bootstrap": True,
+                }
+            else:
+                logger.info(f"[双基线] 静态基线未通过，reject")
+                return {
+                    "static_report": static_report.to_dict(),
+                    "dynamic_report": None,
+                    "both_passed": False,
+                    "recommendation": "reject",
+                    "bootstrap": True,
+                }
+
+        # 3. 动态基线存在 → 双基线评估
+        dynamic_report = self.compare(new_result, baseline_version=dynamic_baseline_version)
+
+        if not static_report.passed:
+            # 静态不通过 → reject
+            recommendation = "reject"
+            both_passed = False
+        elif not dynamic_report.passed:
+            # 静态通过但动态不通过 → hold
+            recommendation = "hold"
+            both_passed = False
+        else:
+            # 双基线均通过 → promote，并更新动态基线
+            recommendation = "promote"
+            both_passed = True
+            self.snapshot(new_result, version=dynamic_baseline_version)
+            logger.info(f"[双基线] 双基线通过，已更新动态基线 {dynamic_baseline_version}")
+
+        return {
+            "static_report": static_report.to_dict(),
+            "dynamic_report": dynamic_report.to_dict(),
+            "both_passed": both_passed,
+            "recommendation": recommendation,
+            "bootstrap": False,
+        }

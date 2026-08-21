@@ -57,6 +57,14 @@
     ├── 资金分配权重
     └── 组合层风险指标
 
+持仓与离场管理层 (Exit Management) ✅ v4.4 新增
+├── ExitManager 策略链（硬风控优先级链式调用）
+│   ├── P3 提前退出 / 信号反转 / EV 雷达强平
+│   ├── 超时止盈 / EV 雷达调整（移动止盈）
+│   └── exit_strategy_log 策略贡献值追踪
+├── 卦象主离场 (YijingExitSystem: FORCE_CLOSE/RAISE_TP/HOLD)
+└── Classic 兜底 (ClassicExitSystem: 无卦象或降级时调用)
+
 支撑层 (Infrastructure)
 ├── 特征工程 (Feature Engineering)
 │   ├── 八卦特征 (~111) / 经典经验 (~30) / 斐波那契 (~10)
@@ -102,6 +110,7 @@
 | **五角校验** | 启用 | BCRM2×力学×A0×Ising×TDA 五源交叉验证，P3预警联动 |
 | **五象力场** | 启用 | 时/空/表/里/流 + Verlet辛积分 + Langevin随机项 + 卡尔曼滤波 |
 | **易经离场** | 启用 | `YijingExitSystem` 主离场（FORCE_CLOSE/RAISE_TP/HOLD），classic 降为备用 |
+| **持仓与离场管理** | 启用 | `ExitManager` 策略链（P3→信号反转→EV雷达强平→超时止盈→EV雷达调整），核心层卦象主离场+Classic兜底不动，`exit_strategy_log` 贡献值追踪 |
 | **震荡市增强** | 启用 | 5态自适应 + 布林双信号 + 动态止损 + 置信度校准 |
 | **CBR 案例检索** | 启用 | 4R循环 + 三融合策略（cbr_override/cbr_blend/bcrm_only）；兼容 Python 3.9+ |
 | **逐仓风控** | 启用 | `td_mode=isolated`，每个币种独立保证金，风险隔离 |

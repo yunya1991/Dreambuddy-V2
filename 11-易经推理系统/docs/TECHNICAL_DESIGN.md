@@ -1,6 +1,6 @@
 # 易经推理系统 技术设计文档
 
-> **版本**: v4.1 | **日期**: 2026-08-06
+> **版本**: v4.4 | **日期**: 2026-08-20
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引）
 
@@ -13,7 +13,7 @@
 本文档是易经推理系统（I Ching Reasoning System）的技术设计总览，涵盖：
 
 - 系统级架构范式（约束层驱动 + 记忆底座 + 并联工作流）
-- 三大核心引擎（BCRM 1.0 / BCRM 2.0 / QMM）
+- 三层架构：前置层（市场形态演化引擎）/ 核心层（BCRM 1.0 / BCRM 2.0 / QMM）/ 后置层（弹簧力场 + 回测数据）
 - L4 记忆体系与自进化闭环
 - A0-A9 决策链编排
 - CI/CD 与治理架构
@@ -26,6 +26,7 @@
 | L0 | `constraints/system-index/engineering-architecture.md` | 约束层面最高 |
 | L0 | 本文件（TECHNICAL_DESIGN.md） | 架构层面最高 |
 | L0 | [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | 工程索引层面 |
+| L1 | 前置层技术细节（本文第3.5章 + [前置层设计文档](../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md)） | 该子模块内最高 |
 | L1 | BCRM 2.0 技术细节（本文第4章） | 该子模块内最高 |
 | L2 | 各模块内联注释 / docstring | 代码级 |
 
@@ -114,17 +115,37 @@
 └───────────────────────────┬─────────────────────────────────┘
                             │ 意图/策略/信号
 ┌───────────────────────────▼─────────────────────────────────┐
+│              前置层 (Pre-Decision Layer) ✅ v4.3 新增        │
+│  市场形态演化引擎 (6 层流水线) / MorphCyclePredictor        │
+│  大小周期弹性边界约束 / Shadow 模式 / Phase C α blend        │
+│  → 输出 6 全局参数 + 5 板块权重 + (L_forecast, T_forecast)   │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ 前瞻参数 + 反应式参数
+┌───────────────────────────▼─────────────────────────────────┐
 │                    决策层 (Decision Engine)                   │
 │  BCRM 1.0 (矛盾力学) / BCRM 2.0 (辩证ML) / QMM (量化记忆)   │
-│  八卦力学引擎 / 市态切换 / 组合策略 / 离场决策                │
+│  八卦力学引擎 / 市态切换 / 组合策略 / 入场信号计算            │
 └───────────────────────────┬─────────────────────────────────┘
-                            │ 特征/数据/记忆
+                            │ 入场信号 + 持仓状态
+┌───────────────────────────▼─────────────────────────────────┐
+│           持仓与离场管理层 (Exit Management) ✅ v4.4 新增     │
+│  ExitManager 策略链（硬风控优先级链式调用）                   │
+│  ├─ 扩展层：P3提前退出 / 信号反转 / EV雷达强平 / 超时止盈    │
+│  │         排名止盈A/B/C / EV雷达调整(移动止盈)              │
+│  └─ 核心层：卦象主离场(YijingExitSystem) / Classic兜底       │
+│  → exit_strategy_log 策略贡献值追踪                          │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ 离场/调整/保持决策
 ┌───────────────────────────▼─────────────────────────────────┐
 │                    支撑层 (Infrastructure)                    │
 │  特征工程 / 数据服务 / 回测引擎 / 增量学习 / 共享内存总线     │
 │  进程守护 / 访问控制 / CI/CD / 约束层                        │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+> **v4.3 变更**：在编排层与决策层之间新增「前置层」，负责市场形态预测与前瞻参数生成。前置层输出被核心层 BCRM 2.0 实际消费（通过 ParameterMapper 的 α blend 机制）。详见 §3.5。
+>
+> **v4.4 变更**：在决策层与支撑层之间新增「持仓与离场管理层」，统一管理 8 个离场机制。扩展层 ExitManager 策略链按硬风控优先级链式调用（P3提前退出→信号反转→EV雷达强平→超时止盈→排名止盈→EV雷达调整），核心层（卦象主离场+Classic兜底）保持原样不动。BCRM2 spec 的 S2/S3/S4 开关作为 ExitStrategy.enabled 属性融入。详见 [ExitManager 设计 Spec](../../docs/superpowers/specs/2026-08-20-exit-manager-design.md)。
 
 ### 2.3 通信与调用结构（强制遵守）
 
@@ -147,7 +168,7 @@ evolution → constraints（唯一允许的约束升级通道）
 
 ### 3.1 三引擎协同架构
 
-易经推理系统采用"三引擎协同"的决策架构：
+易经推理系统采用"三引擎协同"的决策架构，前置层为三引擎提供前瞻参数输入：
 
 ```
                     ┌──────────────────┐
@@ -155,6 +176,12 @@ evolution → constraints（唯一允许的约束升级通道）
                     │   轮询交易器      │
                     └────────┬─────────┘
                              │
+           ┌─────────────────▼─────────────────┐
+           │    前置层 (Pre-Decision Layer)     │  ← v4.3 新增
+           │  市场形态演化引擎 + MorphCyclePredictor │
+           │  → (L_forecast, T_forecast) + α blend │
+           └─────────────────┬─────────────────┘
+                             │ 前瞻参数
            ┌─────────────────┼─────────────────┐
            ▼                 ▼                 ▼
 ┌──────────────────┐ ┌──────────────┐ ┌───────────────┐
@@ -176,6 +203,8 @@ evolution → constraints（唯一允许的约束升级通道）
                     │  风控 + 离场      │
                     └──────────────────┘
 ```
+
+> **前置层定位**：前置层不是第四个引擎，而是为三引擎提供前瞻参数输入的「参数生成层」。它通过 ParameterMapper 输出 6 全局参数 + 5 板块权重，通过 α blend 机制将 forecast_L/T 与 reactive_L/T 混合，使 BCRM 2.0 的参数输出具备预见性而非仅反应性。详见 §3.5。
 
 ### 3.2 BCRM 1.0 — 矛盾力学推理引擎
 
@@ -333,6 +362,341 @@ QMM 输出经过 Gate 验证后才可用于决策：
 - 不确定性阈值检查
 - 过拟合风险评估
 - 漂移检测（概念漂移/数据漂移）
+
+---
+
+### 3.5 前置层 — 市场形态演化引擎 ✅ v4.3 新增
+
+> **关联文档**：[2026-08-19-morph-cycle-dynamic-correction-design.md](../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md)（动态修正与全局同步架构设计，v1.1 Implemented）
+> **关联代码**：`scripts/memory_l4/bcrm2/` 目录下的 `indicators.py`、`score_composer.py`、`temporal_smoother.py`、`regime_mapper.py`、`parameter_mapper.py`、`morph_cycle_predictor.py`、`shadow_logger.py`
+
+#### 3.5.1 定位与核心问题
+
+**定位**：前置层位于编排层与决策层之间，负责市场形态预测与前瞻参数生成，为核心层 BCRM 2.0 提供具备预见性的参数输入。
+
+**核心问题（已解决）**：ParameterMapper 原是"孤儿"扩展层——输出 6 全局参数 + 5 板块权重仅写入 JSON payload，没有任何交易决策模块实际消费。通过 Phase A/B/C 三阶段落地，ParameterMapper 输出已被 `polling_trader.py` 实际消费（通过 α blend + forecast_L/T 注入），原"孤儿"问题已解决。
+
+**三阶段目标**：
+- **Phase A**：预测层动态修正（FFT 权重在线学习 + 误差反馈）✅ 已实施
+- **Phase B**：BCRM 2.0 集成（Shadow 模式对比，不改变实际交易）✅ 已实施
+- **Phase C**：前瞻参数上线（预测 L/T 替代滞后值，需回测验证）✅ 已实施
+
+#### 3.5.2 市场形态演化引擎 6 层流水线
+
+前置层核心是市场形态演化引擎，采用 6 层流水线架构，实现 Level/Trend 双维坐标连续评分：
+
+```
+Layer 0: 数据层          读取 BTC 1D OHLCV，保证 timestamp + close/high/low/volume
+    ↓
+Layer 1: 指标银行         IndicatorBank 计算 12 主指标 + 6 __raw_ 列
+    ↓
+Layer 2: 评分合成         ScoreComposer → (level_raw, trend_raw)，钳制到 [-4, 4]
+    ↓
+Layer 3: 时序平滑         TemporalSmoother → (level_smooth, trend_smooth, hmm_state, ema, bocpd)
+    ↓
+Layer 4: 概率映射         RegimeMapper → 逐帧 regime_probs / Top3 / consensus
+    ↓
+Layer 5: 参数映射         ParameterMapper → 6 全局参数范围 + 5 板块权重 Σ=1
+```
+
+**Level-Trend 双维坐标**：
+- **Level (L ∈ [-4, 4])**：市场长周期位置（-4 恐慌底 → +4 极端狂热顶）
+- **Trend (T ∈ [-4, 4])**：市场动量与方向（-4 强下跌 → +4 强上涨）
+- **Consensus (C ∈ [0, 1])**：共识度，越高带宽越窄
+
+**四条连续化规则**：
+1. **日变化钳制**：防止单日跳变
+2. **量变→质变**：Sperandeo 1-2-3 法则判定趋势反转
+3. **HMM 平滑**：隐马尔可夫模型平滑状态切换
+4. **BOCPD 变点加权**：贝叶斯在线变点检测，变点处降权
+
+**无偏不变量**：L=0, T=0, C=0 时参数直通默认值（mult=1.0, ls_cap=0.5, bias=0, threshold_mult=1.0），5 板块权重均匀 0.20。
+
+#### 3.5.3 MorphCyclePredictor 周期曲线预测器
+
+**位置**：`bcrm2/morph_cycle_predictor.py`
+
+**核心类**：
+```python
+class MorphCyclePredictor:
+    """周期曲线预测器 + 在线学习误差修正。"""
+    def predict(self, symbol, hist_days=60, forecast_days=20) -> dict:
+        """生成预测曲线 + 记录预测快照供后续误差评估。"""
+    def predict_with_fallback(self, symbol, hist_days=60, forecast_days=5) -> dict:
+        """带 BTC 锚定 fallback 的预测（非 BTC 币种自动回退到 BTC 预测并按 β 缩放）。"""
+    def evaluate_and_correct(self, symbol) -> dict:
+        """评估历史预测误差 + 修正模型参数。"""
+    def get_correction_metrics(self) -> dict:
+        """返回误差修正指标。"""
+```
+
+**输出四条曲线**：
+- ① `cycle_4y`：四年大周期理论曲线（PCHIP + 16 历史锚点）
+- ② `classic_cycle`：小周期理论拟合曲线（FFT top-3 叠加）
+- ③ `current_stage`：小周期现实曲线（60 天历史实际值）
+- ④ `forecast`：小周期预测曲线（Hermite 样条，20 天未来）
+
+**三轨修正机制**（在线学习）：
+
+| 轨道 | 修正对象 | 触发条件 | 冷却 | 持久化表 |
+|---|---|---|---|---|
+| **轨道一·小修正** | FFT 权重 + Hermite 切线 | 预测误差回填 ≥ 3 | 23h | `morph_correction_state` |
+| **轨道二·大调整** | 四年周期锚点 t_rel/level | 市场形态确认切换（3天） | 72h | `morph_anchor_state` |
+| **轨道三·边界约束** | FFT 振幅 + 预测回拉 | 每次预测前（无冷却） | - | 不持久化（纯计算） |
+
+**关键超参**：
+```python
+# 小修正
+FFT_LEARNING_RATE = 0.15          # FFT 权重 Bayesian 更新步长
+FFT_WEIGHT_CLIP = (0.5, 2.0)      # 单分量权重乘数范围
+# 大调整
+ANCHOR_T_REL_ADJUST_RATE = 0.15   # t_rel_mean 单次调整幅度上限
+ANCHOR_LEVEL_ADJUST_RATE = 0.20  # level_mean 单次调整幅度上限
+# 边界约束
+CYCLE_BOUNDS_ENABLED = False     # 总开关（默认关闭，保持 CLI 字节等价）
+CYCLE_BOUNDS_DECAY_BY_PHASE = {"蓄力": 0.15, "上升": 0.20, "顶部": 0.25, "顶点": 0.30, ...}
+```
+
+#### 3.5.4 大小周期弹性边界约束
+
+大周期（4年）为小周期（120天）提供弹性边界，小周期可短暂越界但受回拉力约束。
+
+**三类调整动作**：
+- **动作 A（FFT 振幅缩放）**：tanh 软缩放 + 硬保底，确保振幅 ≤ amplitude_cap
+- **动作 B（预测曲线回拉）**：越界部分保留 decay 比例（0.15~0.30）
+- **动作 C（越界信号检测）**：现实曲线不调整，连续越界 ≥5 天触发锚点大调整
+
+**16 锚点参数范围**：从 3 次完整 BTC 减半周期（2012/2016/2020）真实回测数据推导，硬约束大调整的修正幅度。例如：
+- 锚点 6「极端狂热顶」: t_rel_range [369, 548], level_range [3.5, 4.0]
+- 锚点 11「恐慌底」: t_rel_range [782, 930], level_range [-4.0, -3.5]
+
+#### 3.5.5 ParameterMapper 参数映射
+
+**位置**：`bcrm2/parameter_mapper.py`
+
+**核心映射**：
+- **Layer 0 全局 BTC 形态**：(L, T, C) → 6 全局参数范围
+  - `global_position_mult` / `ls_ratio_cap` / `long_bias` / `short_bias` / `long_threshold_mult` / `short_threshold_mult`
+- **Layer 1 板块龙头形态**：(L, T, C) + 5 板块 (β, α, corr) → 5 板块权重 Σ=1
+  - DeFi / AI / RWA / MEME / L2
+
+**Phase C α blend 增强**：
+```python
+# L_effective = (1-α)·L_reactive + α·L_forecast
+ALPHA_BLEND_ENABLED: bool = True    # Phase C 总开关（已开启）
+DEFAULT_ALPHA_BLEND: float = 0.0    # 默认 α（0=纯反应式，字节等价）
+ALPHA_BLEND_MAX: float = 0.5       # α 上限（硬约束）
+ALPHA_BLEND_STEP: float = 0.1      # 渐进步长
+```
+
+无偏不变量：`alpha_blend=0.0` 或 `forecast=None` 时不改变 L/T，字节等价 Phase 0。
+
+#### 3.5.6 Shadow 模式集成
+
+**位置**：`bcrm2/shadow_logger.py` + `polling_trader.py`
+
+ShadowLogger 在 `polling_trader.py` `_execute_trade` 调用后记录（L7803/L7941 两处调用点），记录三组参数对比快照：
+- **reactive 参数**：现状用的 L/T/C + 4 multiplier（从 `inference.snapshot` 取 `level_smooth`/`trend_smooth`/`consensus`）
+- **forecast 参数**：MorphCyclePredictor 预测的 L_forecast/T_forecast + 6 全局参数 + 5 板块权重（带 BTC 锚定 fallback，非 BTC 币种自动回退）
+- **三值对比**：
+  - `baseline`：静态基线（v15 regime 查表，enable_inject=False）
+  - `ai_injected`：AI 注入理论值（强制 enable_inject=True 计算）
+  - `effective`：当前实际使用的值（由调用方开关决定）
+- **actual 交易参数**：direction/confidence/position/tp/sl/threshold
+
+**record_polling() 完整签名**：
+```python
+def record_polling(self, symbol: str, inference: dict,
+                   actual_params: dict,
+                   enable_inject: bool = False,
+                   alpha_blend: float = 0.0,
+                   fma_on_allowed: bool = None,
+                   fma_on_eff_threshold: float = None) -> Optional[int]:
+```
+
+**关键设计**：
+- `SHADOW_LOGGER_ENABLED = True`（已开启，用于 AB 评估数据采集；α=0 时仍字节等价）
+- forecast 带 1h 缓存（`SHADOW_FORECAST_CACHE_TTL = 3600`，避免每次轮询重算）
+- 非 BTC 币种使用 `predict_with_fallback()` 自动回退到 BTC 预测
+- 异常被 catch，不阻断主流程
+
+**shadow_param_log 表**：40+ 字段，包含 reactive/forecast/三值（baseline/ai/effective）/actual/FMA 元数据，索引 `(symbol, timestamp)`
+
+**API**：`GET /api/shadow/report?symbol=BTC&days=7`
+
+#### 3.5.7 Phase C 渐进上线
+
+**位置**：`bcrm2/scripts/phase_c_rollout_manager.py`
+
+`RolloutManager` 管理 α 从 0 渐进提升至 target（0.5）：
+- `promote()`：α + step（不超过 target）
+- `rollback()`：α - step（不下穿 0）
+- 状态持久化到 JSON，重启可恢复
+- α 达到 target 后 `is_complete=True`
+
+**上线门禁（硬约束）**：
+1. WalkForward 5 折回测：前瞻式 PnL/夏普 > 反应式
+2. 贝叶斯优化：优化 α / FFT learning_rate / Hermite 修正系数
+3. AB 影子对比：静态基线（v15 策略）+ 动态基线（当前最优）双基线通过
+4. 无偏不变量：α=0 时字节等价 Phase 0
+
+**API**：
+- `GET /api/alpha/status`：查询 α 状态
+- `GET /api/alpha/promote`：提升 α
+- `GET /api/alpha/rollback`：降低 α
+
+#### 3.5.8 前置层与核心层的集成
+
+**集成位置**：`polling_trader.py`（L2160 前置层注入 / L5394-5510 T4 融合层 / L7803+L7941 ShadowLogger 记录）
+
+```
+polling_trader 参数映射阶段
+  → 从 inference.snapshot 取 reactive L/T/C
+  → 从 MorphCyclePredictor 获取 forecast_L/T（L2160 前置层注入段）
+  → AB闸门动态刷新 α（L1002，从 alpha_rollout_state.json 读取）
+  → ParameterMapper._resolve_effective_params（L5476，注入 6 参数+板块乘数）
+  → 输出 6 全局参数 + 5 板块权重 → 注入 inference
+  → BCRM 2.0 + 弹簧力场实际消费 ✅
+  → 融合层 T4 注入生效（L5510 日志确认）
+  → ShadowLogger._record_shadow_log 同步记录（L7803/L7941）✅
+```
+
+**测试覆盖**：
+- Phase A（MorphCyclePredictor + 边界约束）：11 个测试文件，72 个测试用例
+- Phase B（ShadowLogger）：6 个测试文件，36 个测试用例
+- Phase C（α blend + 渐进上线）：7 个测试文件，49 个测试用例
+- **合计**：24 个测试文件，157 个测试用例全部通过
+
+---
+
+### 3.6 持仓与离场管理层 — ExitManager 策略链 ✅ v4.4 新增
+
+**设计动机**：系统原有 8 个离散离场机制（P3 提前退出、信号反转、EV 雷达强平、超时止盈、排名止盈 A/B/C、EV 雷达调整、卦象主离场、Classic 兜底），散落在 `polling_trader._execute_trade` 的 262 行内联代码中，缺乏统一管理和贡献值追踪。
+
+**设计 Spec**：[2026-08-20-exit-manager-design.md](../../docs/superpowers/specs/2026-08-20-exit-manager-design.md)
+
+#### 3.6.1 架构设计
+
+```
+                    ┌──────────────────────────┐
+                    │   polling_trader         │
+                    │   _execute_trade()       │
+                    └───────────┬──────────────┘
+                                │ 持仓 + 推理 + EV
+                    ┌───────────▼──────────────┐
+                    │   ExitManager            │  ← 扩展层
+                    │   evaluate()             │
+                    │   ├─ 策略链按优先级调用   │
+                    │   └─ 返回首个非 pass 决策 │
+                    └───────────┬──────────────┘
+                                │
+         ┌──────────────────────┼──────────────────────┐
+         │                      │                      │
+  ┌──────▼──────┐  ┌───────────▼───────────┐  ┌──────▼──────┐
+  │ P3(10)      │  │ SignalReverse(20)     │  │ EvFC(30)     │
+  │ 提前退出    │  │ 信号反转               │  │ EV雷达强平   │
+  └─────────────┘  └───────────────────────┘  └──────────────┘
+  ┌─────────────┐  ┌───────────────────────┐  ┌──────────────┐
+  │ Timeout(40) │  │ RankedTp(50)          │  │ EvAdj(60)    │
+  │ 超时止盈    │  │ 排名止盈（跨持仓循环） │  │ EV雷达调整   │
+  └─────────────┘  └───────────────────────┘  └──────────────┘
+                                │
+                    全部 pass → 核心层
+                                │
+                    ┌───────────▼──────────────┐
+                    │   YijingExitSystem       │  ← 核心层（不动）
+                    │   卦象主离场             │
+                    │   + ClassicExitSystem    │  ← 核心层（不动）
+                    │   + 保护期 + 静态SLTP    │
+                    └──────────────────────────┘
+```
+
+**核心原则**：
+- 扩展层策略链按**硬风控优先级**链式调用（P3=10 → SignalRev=20 → EvFC=30 → Timeout=40 → EvAdj=60）
+- `ExitManager.evaluate()` 返回**首个非 pass 的 ExitDecision**，全部 pass 时由核心层接管
+- 核心层（卦象主离场 + Classic 兜底 + 保护期 + 静态 SLTP）**原封不动**
+- BCRM2 spec 的 S2/S3/S4 开关作为 `ExitStrategy.enabled` 属性融入
+
+#### 3.6.2 核心接口
+
+**文件**：`bcrm2/exit_manager.py`
+
+```python
+@dataclass
+class ExitContext:
+    """传入各 ExitStrategy 的上下文快照"""
+    coin: str
+    inference: Dict[str, Any]
+    pos_info: Dict[str, Any]
+    tracker_pos: Any
+    in_protection: bool
+    age_hours: float
+    ev: Optional[float] = None
+    multi_horizon: Optional[Dict[str, Any]] = None
+    confidence: float = 0.0
+    all_inferences: Optional[Dict[str, Any]] = None  # 跨币种推理
+    held_coins: Optional[Any] = None                 # 已持仓集合
+    effective_threshold: Optional[float] = None      # per-call 动态阈值
+
+@dataclass
+class ExitDecision:
+    """ExitStrategy 返回的离场决策"""
+    action: str  # "force_close" | "adjust_sl_tp" | "hold" | "pass"
+    reason: str
+    params: Optional[Dict[str, Any]] = None
+    strategy_name: str = ""
+
+class ExitManager:
+    def evaluate(self, coin, inference, pos_info, tracker_pos,
+                 in_protection, age_hours, **kwargs) -> ExitDecision:
+        """按优先级链调用各策略，返回首个非 pass 的决策"""
+```
+
+#### 3.6.3 6 个 ExitStrategy 子类
+
+**文件**：`bcrm2/exit_strategies.py`
+
+| 策略 | 优先级 | 触发条件 | action |
+|------|--------|----------|--------|
+| `P3EarlyExitStrategy` | 10 | P3 预警 + 亏损 ≥ protected_p3_min_loss_pct + 确认 | force_close |
+| `SignalReverseStrategy` | 20 | 反向信号 confidence ≥ threshold + 确认 | force_close |
+| `EvForceCloseStrategy` | 30 | EV ≤ force_below + 确认 | force_close |
+| `TimeoutProfitSwitchStrategy` | 40 | age ≥ timeout_hours + 盈利 + 无更强候选 | hold（继续持有） |
+| `RankedTpStrategy` | 50 | S3 多 horizon ranked_tp gap ≥ 阈值 | force_close |
+| `EvAdjustStrategy` | 60 | EV ≥ strong_above 或 EV ≤ warn_lower | adjust_sl_tp |
+
+#### 3.6.4 exit_strategy_log 贡献值追踪
+
+**表结构**（`data/bcrm2_phase0/evolution.db`）：
+
+```sql
+CREATE TABLE IF NOT EXISTS exit_strategy_log (
+    id, symbol, timestamp, strategy_name, action, reason,
+    age_hours, in_protection, ev, confidence,
+    pnl, win  -- 平仓后回填
+);
+```
+
+**CRUD 方法**（`bcrm2/storage.py`）：
+- `save_exit_strategy_log(symbol, record)` — 插入决策记录
+- `get_exit_strategy_log(symbol, days)` — 查询近 N 天记录
+- `update_exit_strategy_outcome(log_id, pnl, win)` — 平仓后回填
+- `get_exit_strategy_contribution(days)` — 按 strategy_name 聚合 triggers/wins/win_rate/avg_pnl
+
+#### 3.6.5 测试覆盖与实盘验证
+
+**测试**：59 个测试用例全部通过（`tests/test_exit_manager.py`）
+- Step 1 接口骨架：3 个
+- Step 2 策略迁移：44 个（6 策略 × 7-8 用例）
+- Step 4 贡献值统计：8 个
+- Step 5 核心层等价：7 个
+
+**实盘验证**（2026-08-20 重启进程 PID 28767）：
+- `[ExitManager] 策略链初始化 | 5 策略 | P3(10)→SignalRev(20)→EvFC(30)→Timeout(40)→EvAdj(60) | timeout=29.0h`
+- `[XAG] [ev_adjust] ADJUST_SL_TP | mode=relax | EV=0.554` — 替代内联 `T4 STRONG_HOLD`
+- 核心层 `易经主离场 [HOLD]` 日志格式和决策结果**完全一致**
+- `exit_strategy_log` 表 2 条记录（XAG + MU ev_adjust）
+- **无迁移相关新增错误**
 
 ---
 
@@ -1608,6 +1972,8 @@ export OKX_TD_MODE=isolated
 
 ✅ **本系统负责：**
 - 易经哲学框架下的交易决策推理
+- 前置层市场形态演化引擎（6层流水线 + MorphCyclePredictor + 大小周期弹性边界约束 + Shadow 模式 + Phase C α blend 渐进上线）— v4.3 新增
+- 持仓与离场管理层（ExitManager 策略链 + 6 个 ExitStrategy 子类 + exit_strategy_log 贡献值追踪）— v4.4 新增
 - BCRM 1.0/2.0 双引擎的开发与维护
 - QMM量化记忆模型的开发与维护
 - L4级记忆体系（案例、复盘、蒸馏、索引）
@@ -1669,7 +2035,21 @@ export OKX_TD_MODE=isolated
 - [ ] 统一API网关
 - [ ] 配置中心化
 
-### 15.5 Phase 4 🧠 认知增强
+### 15.5 Phase 5 ✅ 前置层 — 市场形态演化引擎（v4.3 新增）
+- [x] **Phase A: MorphCyclePredictor 动态修正** ✅ 已实现 — FFT top-3 周期检测 + Hermite 样条预测 + 双轨修正（小修正 23h 冷却 + 大调整 72h 冷却），11 个测试文件 72 个测试用例通过
+- [x] **Phase A: 大小周期弹性边界约束** ✅ 已实现 — 三轨修正机制（FFT 振幅缩放 + 预测回拉 + 越界检测），16 锚点参数范围从 3 次 BTC 减半周期推导
+- [x] **Phase B: Shadow 模式集成** ✅ 已实现 — ShadowLogger 记录 reactive vs forecast 参数对比，6 个测试文件 36 个测试用例通过
+- [x] **Phase C: ParameterMapper α blend 增强** ✅ 已实现 — `L_effective = (1-α)·L_reactive + α·L_forecast`，无偏不变量保持
+- [x] **Phase C: WalkForward 回测脚本** ✅ 已实现 — `run_alpha_blend_comparison()` 5 折回测，避免 look-ahead bias
+- [x] **Phase C: 贝叶斯优化器** ✅ 已实现 — `PhaseCBayesianOptimizer` 优化 α/FFT learning_rate/Hermite 修正系数
+- [x] **Phase C: 双基线 AB 影子对比** ✅ 已实现 — `compare_dual_baseline()` 静态基线（v15）+ 动态基线（当前最优）双基线评估
+- [x] **Phase C: 渐进上线管理器** ✅ 已实现 — `RolloutManager` 管理 α 从 0→0.5 渐进提升，状态持久化
+- [x] **Phase C: 3 个 alpha API** ✅ 已实现 — `/api/alpha/status`、`/api/alpha/promote`、`/api/alpha/rollback`
+- [x] **Phase C: polling_trader 集成** ✅ 已实现 — α blend 参数注入 ParameterMapper，AB 闸门日志输出 α 值
+
+**测试合计**：24 个测试文件，157 个测试用例全部通过。详见 §3.5。
+
+### 15.6 Phase 4 🧠 认知增强
 - [x] **CBR 案例检索引擎** ✅ 已实现 — 基于 Case-Based Reasoning 的相似案例检索与策略适配
   - 已实现：4R 循环（Retrieve → Reuse → Revise → Retain），参考 cbrkit（ICCBR 2024 Best Student Paper）
   - 已实现：案例相似度计算（特征距离 + 卦象匹配 + 市态对齐）、分片检索（`cbr_sharded_retriever.py`）
@@ -1678,12 +2058,23 @@ export OKX_TD_MODE=isolated
 - [ ] LLM 驱动的案例摘要生成（长案例压缩为决策要点）
 - [ ] 跨币种案例迁移学习（BTC 成功案例适配到 ETH/SOL）
 
+### 15.7 Phase 6 ✅ 持仓与离场管理层 — ExitManager 策略链（v4.4 新增）
+- [x] **Step 1: 接口骨架 TDD** ✅ — ExitDecision / ExitContext / ExitStrategy / ExitManager，3 个测试
+- [x] **Step 2: 6 个 ExitStrategy 子类迁移** ✅ — P3/SignalReverse/EvForceClose/Timeout/RankedTp/EvAdjust，44 个测试
+- [x] **Step 3: polling_trader._execute_trade 切换** ✅ — 262 行内联代码替换为 ExitManager.evaluate() 调用
+- [x] **Step 4: exit_strategy_log 表 + 贡献值统计** ✅ — 4 个 CRUD 方法 + storage 适配器注入，8 个测试
+- [x] **Step 5: 核心层行为等价验证** ✅ — 7 个测试验证扩展层全关时核心层原封不动
+
+**测试合计**：59 个测试用例全部通过。实盘验证通过（2026-08-20 PID 28767）。详见 §3.6。
+
 ---
 
 ## 16. 变更日志
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-08-20 | v4.4 | **持仓与离场管理层纳入技术文档**：①§2.2 四层功能架构图在决策层与支撑层之间新增「持仓与离场管理层」；②**新增 §3.6 持仓与离场管理层 — ExitManager 策略链**（5 个小节：架构设计/核心接口/6 个 ExitStrategy 子类/exit_strategy_log 贡献值追踪/测试覆盖与实盘验证）；③§15.7 新增 Phase 6 持仓与离场管理层已完成；④关联文档 [2026-08-20-exit-manager-design.md](../docs/superpowers/specs/2026-08-20-exit-manager-design.md)；版本号 v4.3→v4.4 | DreamBuddy v2 |
+| 2026-08-20 | v4.3 | **前置层市场形态演化引擎纳入技术文档**：①§0.1/§0.2 文档范围新增前置层 + SSoT 层级新增 L1 前置层技术细节；②§2.2 四层功能架构图在编排层与决策层之间新增「前置层」；③§3.1 三引擎协同架构图新增前置层参数输入路径；④**新增 §3.5 前置层 — 市场形态演化引擎**（8 个小节：定位/6层流水线/MorphCyclePredictor/大小周期弹性边界约束/ParameterMapper/Shadow模式/Phase C渐进上线/与核心层集成），覆盖 Phase A/B/C 三阶段全部实现，24 个测试文件 157 个测试用例通过；⑤§14.1 负责范围新增前置层；⑥§15.5 新增 Phase 5 前置层已完成；⑦关联文档 [2026-08-19-morph-cycle-dynamic-correction-design.md](../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md) v1.1 Implemented；版本号 v4.2→v4.3 | DreamBuddy v2 |
 | 2026-08-06 | v4.2 | **宏观特征优化 + 风控规则改造**：①§9.3.1 新增宏观特征层章节（MacroFeatures 24特征/6维度+两级开关机制+v4前向贪心选择验证）；②BTC启用3个验证有效特征（fgi_zscore+fgi_extreme_fear+hash_rate_trend，BTC验证得分+23.8%）；③BCRM2Adapter增加macro_config参数+缓存键含macro_config哈希（配置变更自动重训）；④§11.3.1 风控规则改造：移除连续亏损笔数触发，改为亏损金额>权益×20%触发（默认可用150U→阈值30U）；⑤进化系统适配（yijing_monitor/self_evolution_engine 默认值与白名单同步）；版本号 v4.1→v4.2 | DreamBuddy v2 |
 | 2026-08-05 | v4.1 | **认知科学 P2 落地与实盘修复**：①P2-9 主动推理事前预测落地（`prediction_engine.py` + `prediction_bridge.py`，开仓生成 prediction，平仓计算 prediction_error 驱动贝叶斯，TDD 通过）；②P2-7 静息态反刍落地（`rumination_engine.py`，daemon 空闲>30min 统计聚类近7天 episode 产出 C 级假设记忆，TDD 通过）；③P2-8 双通道回测环境就绪（`experiments/ab-trading/core/dual_channel/`：胼胝体整合器+双通道运行器+AB 对比框架，9/9 测试通过，BTC 500bars 回测 path_advantage=-0.2315 待 metrics 调优）；④反刍实盘路径 bug 修复（`_find_episodes_dir()` 多路径搜索替代硬编码，找到 85 个 episode 文件）；⑤反刍模块详细日志增强（idle 检查/触发原因/执行流程/样本详情）；⑥认知回测框架扩展（`cognitive_backtest.py` 新增 P2-9/P2-7 回测，4/5 项 path_advantage ≥ +0.2）；⑦实盘重启（polling_trader 加载 P2-9 prediction；cognitive_daemon 加载 P2-7 路径修复+日志，PID 31219）；版本号 v4.0→v4.1 | DreamBuddy v2 |
 | 2026-08-05 | v4.0 | **五角校验 v4 风险评分风控版**：①§4.1.1c 五角校验架构重写为 v4（五源风险信号综合评分+风险注意力动态加权+仓位/杠杆/止盈/止损双向调控+v3双预警底线）；②§1.3 核心指标更新为 BTC/ETH/SOL 6000bars/5folds 回测（夏普10.16→10.20、回撤10.12%→10.34%、收益135.31%→139.40%，四项标准全通过）；③推理链更新五角校验输出字段（risk_score/risk_level/leverage_factor/tp_adjustment）；④§8.1 性能基线更新；⑤v1/v2 方向投票+贝叶斯优化方案废弃；版本号 v3.0→v4.0 | DreamBuddy v2 |

@@ -27,8 +27,10 @@ import numpy as np
 import pandas as pd
 
 SELF_DIR = Path(__file__).resolve().parent
-if str(SELF_DIR) not in sys.path:
-    sys.path.insert(0, str(SELF_DIR))
+# 添加 SELF_DIR（直接模块导入）和 SELF_DIR.parent（bcrm2 包导入）到 sys.path
+for _p in [str(SELF_DIR), str(SELF_DIR.parent)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 ROOT = SELF_DIR.parent.parent.parent
 ARTIFACT_DIR = ROOT / "artifacts" / "regime_predictor_btc"
 ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
@@ -39,9 +41,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("train_btc_regime_predictor")
 
-# 注册 FeatureRegistry 中的形态+广度模块
+# 注册 FeatureRegistry 中的形态+广度+MA200周期+多时间框架模块
 import bcrm2.classic_experience_features as _c  # noqa: F401 触发注册
 import bcrm2.cross_asset_features as _x          # noqa: F401 触发注册
+import bcrm2.ma200_cycle_features as _mc          # noqa: F401 触发注册
+import bcrm2.multi_timeframe_features as _mt      # noqa: F401 触发注册
 
 from bcrm2.feature_registry import FeatureRegistry
 from bcrm2.labels.regime_labeler import REGIME_ORDER, generate_8state_label
@@ -55,6 +59,74 @@ BREADTH_COINS = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"]
 def load_config(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def fetch_external_data(df: pd.DataFrame, enable_external: bool = True) -> pd.DataFrame:
+    """OPT-2: 拉取外部数据并合并到特征 DataFrame。
+
+    获取 VIX、Fear & Greed Index 作为附加特征列。
+    失败时用前向填充，保留 OHLCV 原始数据不变。
+
+    Args:
+        df: OHLCV DataFrame, index 为 DatetimeIndex
+        enable_external: 是否启用外部数据
+
+    Returns:
+        df 附带 vix, fear_greed_index 列
+    """
+    if not enable_external:
+        df["vix"] = np.nan
+        df["fear_greed_index"] = np.nan
+        return df
+
+    logger.info("   拉取外部数据（VIX, F&G）...")
+
+    # VIX via yfinance
+    vix_series = None
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker("^VIX")
+        vix_hist = ticker.history(start=df.index[0], end=df.index[-1] + pd.Timedelta(days=1))
+        if not vix_hist.empty:
+            vix_series = vix_hist["Close"].copy()
+            vix_series.index = vix_series.index.tz_localize(None).normalize()
+            logger.info(f"   VIX 数据: {len(vix_series)} 条")
+    except Exception as e:
+        logger.warning(f"   VIX 获取失败: {e}")
+
+    # Fear & Greed Index via alternative.me
+    fgi_series = None
+    try:
+        import requests
+        # 拉取历史 F&G 数据（最大 limit）
+        r = requests.get("https://api.alternative.me/fng/?limit=0", timeout=15)
+        if r.status_code == 200:
+            data = r.json().get("data", [])
+            if data:
+                fgi_df = pd.DataFrame(data)
+                fgi_df["timestamp"] = pd.to_datetime(fgi_df["timestamp"].astype(int), unit="s")
+                fgi_df["value"] = fgi_df["value"].astype(float)
+                fgi_series = fgi_df.set_index("timestamp")["value"]
+                fgi_series.index = fgi_series.index.tz_localize(None).normalize()
+                logger.info(f"   F&G 数据: {len(fgi_series)} 条")
+    except Exception as e:
+        logger.warning(f"   F&G 获取失败: {e}")
+
+    # 合并到 df
+    df_idx = df.index.tz_localize(None).normalize() if df.index.tz else df.index.normalize()
+    df["vix"] = np.nan
+    df["fear_greed_index"] = np.nan
+    if vix_series is not None:
+        df["vix"] = df_idx.map(vix_series).values
+    if fgi_series is not None:
+        df["fear_greed_index"] = df_idx.map(fgi_series).values
+
+    # 前向填充
+    df["vix"] = df["vix"].ffill().bfill()
+    df["fear_greed_index"] = df["fear_greed_index"].ffill().bfill()
+
+    logger.info(f"   外部数据合并完成: vix非空={df['vix'].notna().sum()}, fgi非空={df['fear_greed_index'].notna().sum()}")
+    return df
 
 
 def load_ohlcv(
@@ -137,12 +209,16 @@ def compute_features(
     symbol: str,
     feature_set: str,
     coins_closes: Dict[str, List[float]],
+    cfg: dict | None = None,
 ) -> pd.DataFrame:
     FeatureRegistry.clear()
     importlib.reload(_c)
     importlib.reload(_x)
+    importlib.reload(_mc)
+    importlib.reload(_mt)
     feats, _names = FeatureRegistry.compute_all(
         df=df, symbol=symbol, enabled_set=feature_set, coins_closes=coins_closes,
+        config=cfg or {},
     )
     for col in ["open", "high", "low", "close", "volume"]:
         feats[col] = df[col].values
@@ -164,8 +240,16 @@ def evaluate(y_true, y_pred) -> Dict[str, float]:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default=str(SELF_DIR / "regime_predictor_config.json"))
-    parser.add_argument("--csv", default=None, help="BTCUSDT.csv 真实数据路径")
+    # 默认使用真实 BTC 日线数据（2020-01-01 ~ 至今，~2400 行）
+    _default_csv = str(ROOT / "scripts" / "data" / "klines" / "BTC_1D_full.csv")
+    parser.add_argument("--csv", default=_default_csv, help="BTCUSDT.csv 真实数据路径")
     parser.add_argument("--n-samples", type=int, default=1825)
+    parser.add_argument("--enable-external", action="store_true", default=True,
+                        help="启用 P5 外部数据（VIX, F&G）")
+    parser.add_argument("--enable-ensemble", action="store_true", default=True,
+                        help="启用 P4 BOCPD+HMM 集成")
+    parser.add_argument("--no-external", dest="enable_external", action="store_false")
+    parser.add_argument("--no-ensemble", dest="enable_ensemble", action="store_false")
     args = parser.parse_args()
 
     cfg = load_config(Path(args.config))
@@ -176,13 +260,27 @@ def main():
     df, coins_closes = load_ohlcv(cfg["symbol"], args.csv, args.n_samples)
     logger.info(f"   {len(df)} bars, {df.index[0].date()} ~ {df.index[-1].date()}")
 
+    # OPT-2: 外部数据接入
+    if args.enable_external:
+        logger.info("1b. 拉取外部数据（VIX, Fear & Greed）")
+        df = fetch_external_data(df, enable_external=True)
+
     logger.info("2. 计算 Phase 0 形态 + 广度特征")
-    features_df = compute_features(df, cfg["symbol"], cfg["feature_set"], coins_closes)
+    features_df = compute_features(df, cfg["symbol"], cfg["feature_set"], coins_closes, cfg=cfg)
     feature_cols = [c for c in features_df.columns
                     if c not in ("open", "high", "low", "close", "volume")]
+
+    # OPT-2: 将外部数据列加入特征
+    if args.enable_external and "vix" in df.columns:
+        for ext_col in ["vix", "fear_greed_index"]:
+            if ext_col in df.columns:
+                features_df[ext_col] = df[ext_col].values
+                feature_cols.append(ext_col)
+        logger.info(f"   外部特征已加入: vix, fear_greed_index")
+
     logger.info(f"   {len(feature_cols)} 个特征列")
 
-    logger.info("3. 生成 8 态标签")
+    logger.info("3. 生成 8 态标签（滚动分位数动态阈值）")
     labels = generate_8state_label(features_df, **labeler_cfg)
     features_df["label"] = labels
     df2 = features_df.dropna(subset=feature_cols + ["label"])
@@ -202,6 +300,13 @@ def main():
     logger.info(f"4. WalkForward {len(splits)} 折")
 
     report: Dict[str, object] = {"folds": [], "regime_order": REGIME_ORDER}
+    report["config"] = {
+        "enable_external": args.enable_external,
+        "enable_ensemble": args.enable_ensemble,
+        "feature_count": len(feature_cols),
+        "sample_count": int(len(df2)),
+        "label_distribution": df2["label"].value_counts().to_dict(),
+    }
     best_f1 = -1.0
     best_fold_path = None
 
@@ -210,10 +315,27 @@ def main():
         X_te, y_te = X_all[te_idx], y_all[te_idx]
         logger.info(f"   fold {i}: train={len(tr_idx)}, test={len(te_idx)}")
 
+        # OPT-4: LightGBM 首选引擎（强正则 + 早停）
         predictor = RegimePredictor(config_dict=cfg)
         predictor.fit(X_tr, y_tr, feature_names=feature_cols,
                       lgbm_params=cfg.get("lgbm_hparams"))
-        y_pred, _, _ = predictor.predict(X_te)
+
+        # OPT-3: P4 BOCPD+HMM 集成
+        if args.enable_ensemble:
+            try:
+                from models.hmm_regime import HMMRegime
+                predictor.enable_bocpd_hmm = True
+                hmm = HMMRegime(n_states=8, n_iter=50)
+                hmm.fit_with_labels(X_tr, y_tr, predictor.REGIME_ORDER)
+                predictor.hmm_model = hmm
+                y_pred, _, _ = predictor.predict_with_ensemble(X_te, X_te, feature_names=feature_cols)
+                logger.info(f"        集成预测已启用（LGBM×0.7 + HMM×0.3）")
+            except Exception as e:
+                logger.warning(f"        HMM 集成失败，回退纯 LGBM: {e}")
+                y_pred, _, _ = predictor.predict(X_te, feature_names=feature_cols)
+        else:
+            y_pred, _, _ = predictor.predict(X_te, feature_names=feature_cols)
+
         metrics = evaluate(y_te, y_pred)
         logger.info(f"        MacroF1={metrics['macro_f1']:.3f} BalAcc={metrics['balanced_accuracy']:.3f}")
         fold_path = ARTIFACT_DIR / f"fold_{i}"

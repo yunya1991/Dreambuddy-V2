@@ -30,6 +30,28 @@ logger = logging.getLogger(__name__)
 # ============================================================
 ENABLED_SETS: Dict[str, List[str]] = {
     "btc_morphology": ["morphology_core", "breadth_market"],   # Phase 0 12 项形态+广度特征
+    "btc_morphology_v2": ["morphology_core", "breadth_market", "ma200_cycle"],  # +MA200+4年周期
+    "btc_morphology_v3": ["morphology_core", "ma200_cycle"],  # 移除无效广度特征，保留高重要性特征
+    "btc_morphology_v5": ["morphology_core", "ma200_cycle", "multi_timeframe"],  # v2周期 + 多时间框架
+    # 🔄 Phase 1 更新（2026-08-19）：btc_morphology_v4 改为 4 基础模块形态 + 滚动统计
+    #   LGBM 校正器池 = morphology_core + ma200_cycle + multi_timeframe（前 3 个）
+    #   ParameterMapper 池 = rolling_regime_stats
+    "btc_morphology_v4": [
+        "morphology_core", "ma200_cycle", "multi_timeframe",
+        "rolling_regime_stats",
+    ],
+    # Layer 1（板块龙头权重用）：v4 + sector_beta_pool
+    "btc_morphology_v4_layer1": [
+        "morphology_core", "ma200_cycle", "multi_timeframe",
+        "rolling_regime_stats", "sector_beta_pool",
+    ],
+    # 🔄 Macro F1 优化（2026-08-19）：v6 = v5 + rolling_regime_stats（16 列滚动分位/熵/量zscore）
+    #   rolling_regime_stats 全部基于历史 rolling 窗口，无标签泄露；L/T 滚动分位提供
+    #   形态的相对历史位置信息，有助于小类（TREND_UP_STRONG/REVERSAL）识别。
+    "btc_morphology_v6": [
+        "morphology_core", "ma200_cycle", "multi_timeframe",
+        "rolling_regime_stats",
+    ],
     "default_all": None,  # None = 启用所有 default_enabled=True 的模块
 }
 
@@ -214,6 +236,17 @@ class FeatureRegistry:
                 elif name == "breadth_market":
                     # 广度模块：透传 coins_closes
                     feats = instance.compute(df, coins_closes=ctx["coins_closes"])
+                elif name == "ma200_cycle":
+                    # MA200+周期模块：支持 enable_cycle 配置
+                    enable_cycle = ctx["config"].get("enable_cycle_features", True)
+                    instance = spec.factory(enable_cycle=enable_cycle)
+                    feats = instance.compute(df)
+                elif name == "rolling_regime_stats":
+                    # Phase 1：L/T 滚动分位 + 熵/共识滚动 + 量 zscore（内部跑 Phase 0 流水线）
+                    feats = instance.compute(df)
+                elif name == "sector_beta_pool":
+                    # Phase 1：Layer 1 板块β池；透传 coins_closes
+                    feats = instance.compute(df, coins_closes=ctx["coins_closes"])
                 elif spec.requires_macro_df:
                     # 提取 macro_ 前缀的维度开关配置传给宏观特征模块
                     macro_config = {k: v for k, v in ctx["config"].items() if k.startswith("macro_")}
@@ -263,6 +296,70 @@ class FeatureRegistry:
         cls._registry.clear()
         cls._order.clear()
 
+    # ============================================================
+    # Phase 1：FeatureSchema 持久化（T13 schema 严格校验）
+    # ============================================================
+    @classmethod
+    def build_feature_schema(cls, set_name: str = "btc_morphology_v4") -> Dict[str, Any]:
+        """返回 schema dict（可 dump 为 JSON 给 LGBM 推理侧用）。
+
+        实现方式：import 所有 ENABLED_SETS 中出现过的 v4 模块触发 register；
+        构造 300 行最小合成数据跑一次 compute_all，拿到真实列顺序。
+        """
+        # (1) 强制触发 v4 所有模块的 import（触发内部 FeatureRegistry.register）
+        import importlib
+        for mod in ("morphology_core", "ma200_cycle", "multi_timeframe",
+                    "rolling_regime_stats", "sector_beta_pool",
+                    "breadth_market"):
+            try:
+                importlib.import_module(f"bcrm2.{mod}")
+            except Exception:
+                pass
+        # (2) 最小 300 行合成 OHLCV（触发各模块列名稳定输出）
+        rng = np.random.default_rng(0)
+        n = 300
+        t = np.linspace(100, 200, n) * (1 + rng.normal(0, 0.01, n))
+        idx = pd.date_range("2021-01-01", periods=n, freq="D")
+        df = pd.DataFrame({
+            "open":  t * (1 + rng.normal(0, 0.004, n)),
+            "high":  t * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low":   t * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": t,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        }, index=idx)
+        modules = ENABLED_SETS.get(set_name)
+        if modules is None:
+            modules = list(cls._order)
+        # lgbm_pool 固定为三大基础模块（按新路线：排除 rolling_regime_stats 和 sector_beta_pool）
+        LGBM_POOL = {"morphology_core", "ma200_cycle", "multi_timeframe"}
+        features, _ = cls.compute_all(df=df, enabled_set=set_name, enabled=list(modules))
+        names = [c for c in features.columns]
+        # per_feature_scale_note：按前缀规则标记
+        notes: Dict[str, str] = {}
+        for c in names:
+            cl = c.lower()
+            if "adx" in cl:
+                notes[c] = "raw 0-100"
+            elif "_pct" in cl or "distance" in cl or "_ratio" in cl[:6]:
+                notes[c] = "% relative raw"
+            elif "zscore" in cl:
+                notes[c] = "zscore"
+            elif "_beta_" in cl or "_alpha_" in cl or "_correl_" in cl:
+                notes[c] = "raw (cross-asset)"
+            else:
+                notes[c] = "raw"
+        return {
+            "schema_version": "feature.v4",
+            "set_name": set_name,
+            "feature_names_in_order": names,
+            "groups": {
+                "lgbm_pool": sorted(m for m in modules if m in LGBM_POOL),
+                "range_mapper": sorted(m for m in modules if m == "rolling_regime_stats"),
+                "sector_pool": sorted(m for m in modules if m == "sector_beta_pool"),
+            },
+            "per_feature_scale_note": notes,
+        }
+
 
 # ============================================================
 # sys.modules 别名同步：消除「bcrm2.feature_registry」和
@@ -298,6 +395,15 @@ def _sync_module_aliases():
                 other_cls._registry = our_cls._registry
                 other_cls._order = our_cls._order
                 other_cls.ENABLED_SETS = our_cls.ENABLED_SETS
+                # 同步所有新增的 classmethod/staticmethod 到另一个类对象（兼容之前已加载的旧类）
+                for attr_name in dir(our_cls):
+                    if attr_name.startswith("_") and not attr_name.startswith("__"):
+                        continue
+                    if hasattr(other_cls, attr_name):
+                        continue
+                    our_val = getattr(our_cls, attr_name)
+                    if callable(our_val) or isinstance(our_val, (classmethod, staticmethod, property)):
+                        setattr(other_cls, attr_name, our_val)
 
 
 _sync_module_aliases()

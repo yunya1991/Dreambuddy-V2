@@ -23,7 +23,6 @@ export FEISHU_APP_ID="cli_aa9442bde4b89be9"
 export FEISHU_APP_SECRET="dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70"
 exec /opt/anaconda3/bin/python3 -u -m scripts.memory_l4.polling_trader \
     --interval 300 \
-    --coins UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB,LINK,SNDK,SPCX \
     --confidence 0.7955 \
     --max-positions 3 \
     --position-pct 0.20 \

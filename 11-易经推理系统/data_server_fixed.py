@@ -30,11 +30,34 @@ BCRM_REPO = Path(os.environ.get(
 ))
 
 sys.path.insert(0, str(BASE_DIR))
+# 确保 scripts/memory_l4 在 sys.path 最前（bcrm2 包在此目录下）
+_BCRM_PKG_DIR = str(BCRM_REPO / "scripts" / "memory_l4")
+if _BCRM_PKG_DIR not in sys.path:
+    sys.path.insert(0, _BCRM_PKG_DIR)
 try:
     from screen_engine import get_all as get_screen_data
     SCREEN_AVAILABLE = True
 except ImportError:
     SCREEN_AVAILABLE = False
+
+# Phase B: ShadowLogger 影子模式开关（从 bcrm2.shadow_logger 导入，默认 False）
+try:
+    from bcrm2.shadow_logger import ShadowLogger, SHADOW_LOGGER_ENABLED
+    _sl_import_ok = True
+except ImportError as _e:
+    _sl_import_ok = False
+    SHADOW_LOGGER_ENABLED = False
+    ShadowLogger = None
+
+# Phase C: α blend 前瞻参数上线开关（从 bcrm2.parameter_mapper 导入，默认 False）
+try:
+    from bcrm2.parameter_mapper import ALPHA_BLEND_ENABLED, ALPHA_BLEND_MAX, DEFAULT_ALPHA_BLEND
+    _pm_import_ok = True
+except ImportError as _e:
+    _pm_import_ok = False
+    ALPHA_BLEND_ENABLED = False
+    ALPHA_BLEND_MAX = 0.5
+    DEFAULT_ALPHA_BLEND = 0.0
 
 USER_A = "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934"
 USER_B = "0x6632da9c91A959eEBf1343f8AFAbf2807414004A"
@@ -145,9 +168,15 @@ def _cache_set(key, value):
         _cache[key] = {"data": value, "ts": time.time()}
 
 
+# ── Hyperliquid API 代理 + 缓存 ──
+# trust_env=True 让 requests 自动使用系统代理（macOS 系统代理 / HTTPS_PROXY）
+_HL_CACHE: dict = {}  # {wallet: {"data": ..., "ts": ...}}
+_HL_CACHE_TTL = 300   # 缓存有效期 5 分钟
+
+
 def _make_session():
     s = requests.Session()
-    s.trust_env = False
+    s.trust_env = True   # 启用系统代理（Clash/mihomo 等）
     return s
 
 
@@ -171,8 +200,15 @@ def get_perp_state(user: str) -> dict:
     s = _make_session()
     try:
         r = s.post("https://api.hyperliquid.xyz/info",
-                   json={"type": "clearinghouseState", "user": user}, timeout=8).json()
+                   json={"type": "clearinghouseState", "user": user}, timeout=10).json()
     except Exception as e:
+        # API 不可达时返回缓存数据（如有）
+        cached = _HL_CACHE.get(user)
+        if cached and (time.time() - cached["ts"] < _HL_CACHE_TTL):
+            data = dict(cached["data"])
+            data["cached"] = True
+            data["error"] = f"API不可达，使用缓存数据: {e}"
+            return data
         return {"equity": 0, "avail": 0, "positions": [], "error": str(e)}
     m = r.get("marginSummary", {})
     positions = []
@@ -191,7 +227,7 @@ def get_perp_state(user: str) -> dict:
     if equity == 0:
         try:
             r2 = s.post("https://api.hyperliquid.xyz/info",
-                        json={"type": "spotClearinghouseState", "user": user}, timeout=8).json()
+                        json={"type": "spotClearinghouseState", "user": user}, timeout=10).json()
             spot_usdc = next(
                 (float(b["total"]) for b in r2.get("balances", []) if b.get("coin") == "USDC"), 0
             )
@@ -200,7 +236,11 @@ def get_perp_state(user: str) -> dict:
                 avail  = spot_usdc
         except Exception:
             pass
-    return {"equity": equity, "avail": avail, "positions": positions}
+    result = {"equity": equity, "avail": avail, "positions": positions}
+    # 缓存成功响应
+    if equity > 0 or positions:
+        _HL_CACHE[user] = {"data": result, "ts": time.time()}
+    return result
 
 
 def get_hl_state():
@@ -222,7 +262,89 @@ def get_hl_state():
     }
 
 
+def _read_yijing_okx_config():
+    """从 11-易经推理系统/.env 直接读取 OKX 凭据，返回 config dict。
+
+    不走 os.environ，避免与 V15 capital_manager 写入的 OKX_* 环境变量冲突。
+    """
+    env_path = Path(__file__).resolve().parent / ".env"
+    raw = {}
+    if env_path.exists():
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                raw[k.strip()] = v.strip()
+    return {
+        "api_key":          raw.get("OKX_API_KEY", ""),
+        "secret_key":       raw.get("OKX_SECRET_KEY", ""),
+        "passphrase":       raw.get("OKX_PASSPHRASE", ""),
+        "base_url":         raw.get("OKX_BASE_URL", "https://www.okx.com"),
+        "simulated":        raw.get("OKX_SIMULATED", "false").lower() in ("true", "1", "yes"),
+        "dry_run":          raw.get("OKX_DRY_RUN", "false").lower() in ("true", "1", "yes"),
+        "default_inst_id":  raw.get("OKX_DEFAULT_INST_ID", "BTC-USDT-SWAP"),
+        "default_usdt_amount": 100,
+        "default_leverage": float(raw.get("DEFAULT_LEVERAGE", "5") or 5),
+    }
+
+
+def get_yijing_okx_state():
+    """查询易经推理系统的 OKX 实盘账户（持仓 + 余额）
+
+    使用易经推理系统专属的 OKX 凭据（apikey=d988a164...），
+    通过 config dict 直接传入 OKXSimulatedClient，不依赖 os.environ，
+    避免与 V15 马丁策略的 OKX 凭据（apikey=5af4066c...）冲突。
+
+    返回格式与 get_hl_state() 兼容：
+      total_equity / perp_avail / perp_positions (+ b/c 空列表保持兼容)
+    """
+    try:
+        V15_DIR = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略")
+        sys.path.insert(0, str(V15_DIR / "lib"))
+        from okx_client import OKXSimulatedClient
+        # 直接传 config dict，绕过 _load_config() 读 os.environ
+        client = OKXSimulatedClient(config=_read_yijing_okx_config())
+        bal = client.get_balance()
+        if not bal.get("ok"):
+            return {"total_equity": 0, "perp_avail": 0, "perp_positions": [],
+                    "b_positions": [], "c_positions": [], "error": bal.get("error", "")}
+        total_eq = float(bal.get("total_eq", 0) or 0)
+        avail = 0.0
+        for ccy, asset in (bal.get("assets") or {}).items():
+            if ccy == "USDT":
+                avail = float(asset.get("avail", 0) or 0)
+                break
+        pos_r = client.get_all_positions()
+        positions = []
+        if pos_r.get("ok"):
+            for coin, p in (pos_r.get("positions") or {}).items():
+                size = float(p.get("pos", 0) or 0)
+                if abs(size) < 1e-12:
+                    continue
+                positions.append({
+                    "coin":     coin,
+                    "size":     size,
+                    "entry_px": float(p.get("avg_px", 0) or 0),
+                    "upnl":     float(p.get("upl", 0) or 0),
+                    "leverage": float(str(p.get("lever", "1")).replace("x", "") or 1),
+                })
+        return {
+            "total_equity":   total_eq,
+            "perp_avail":     avail,
+            "perp_positions": positions,
+            "b_positions":    [],
+            "c_positions":    [],
+        }
+    except Exception as e:
+        return {"total_equity": 0, "perp_avail": 0, "perp_positions": [],
+                "b_positions": [], "c_positions": [], "error": str(e)}
+
+
 def get_full_state():
+    # Agent A/B/C 使用 Hyperliquid 实盘账户（本机和云端均为 Hyperliquid）。
+    # 易经推理系统的 OKX 持仓通过 /api/yijing-positions 单独查询。
     try:
         hl = get_hl_state()
     except Exception as e:
@@ -361,10 +483,7 @@ def get_trend_screen_state(symbol: str = "BTC"):
                 f"基本面={tf.get('fundamental', {}).get('direction', '--')}"
             )
 
-        # 附加账户与持仓（Screen3 渲染需要，从 Hyperliquid 趋势策略钱包拉取）
-        # P2 修复: 原代码通过 ml_trade_service._aster_fetch_positions 从 OKX 获取持仓，
-        # 但实际交易已在 Hyperliquid 执行。改为调用 get_perp_state(USER_B) 获取
-        # Hyperliquid 清算状态，USER_B=0x6632da9c... 是趋势策略专用钱包。
+        # 附加账户与持仓（Screen3 渲染需要，从 Agent C Hyperliquid 钱包拉取）
         try:
             account = {"equity": 0, "available": 0}
             position = None
@@ -684,8 +803,7 @@ def get_dreamos_state():
             pass
 
         # ── Hyperliquid 实盘账户（Agent C 钱包，DreamOS 主交易账户）──
-        # P2 修复: 原代码从 Aster/OKX 获取持仓，但实际交易已在 Hyperliquid 执行。
-        # 改为调用 get_perp_state(USER_C) 获取 Agent C 钱包的持仓和余额。
+        # Agent C = USER_C，Hyperliquid 独立钱包，本机和云端均使用 Hyperliquid。
         try:
             hl_state = get_perp_state(USER_C)
             positions = {}
@@ -943,7 +1061,7 @@ def _fetch_market_data_for_v2(symbol="BTC"):
         price_str = mids.get(symbol, "0")
         close_price = float(price_str)
 
-        # 获取账户信息
+        # 获取账户信息（Agent C Hyperliquid 钱包）
         account = client.get_account()
         equity = float(account.get("equity", 0))
         avail = float(account.get("avail", 0))
@@ -1193,37 +1311,34 @@ def get_yijing_positions():
             except Exception:
                 pass
 
-    # ── Hyperliquid 实盘持仓查询 ──
-    # P2 修复: 原代码从 OKX 获取持仓，但实际交易已在 Hyperliquid 执行。
-    # 改为调用 get_hl_state() 获取两个钱包的持仓和余额。
+    # ── OKX 实盘持仓查询 ──
+    # 本机使用 OKX 实盘（云端 OKX 不可用时才切 Hyperliquid）。
+    # 调用 get_yijing_okx_state() 获取易经策略 OKX 账户的持仓和余额。
     okx_positions = []
     okx_balance = {}
     try:
-        hl = get_hl_state()
+        okx_state = get_yijing_okx_state()
         okx_balance = {
-            "total_eq": hl.get("total_equity", 0),
-            "avail": hl.get("perp_avail", 0),
+            "total_eq": okx_state.get("total_equity", 0),
+            "avail": okx_state.get("perp_avail", 0),
         }
-        # 合并三个钱包的持仓
-        for wallet_key, positions in [("perp", hl.get("perp_positions", [])),
-                                       ("b", hl.get("b_positions", [])),
-                                       ("c", hl.get("c_positions", []))]:
-            for p in (positions or []):
-                size = float(p.get("size", 0) or 0)
-                if abs(size) < 1e-12:
-                    continue
-                okx_positions.append({
-                    "coin": p.get("coin", ""),
-                    "inst_id": f"{p.get('coin', '')}-USDT-SWAP",
-                    "direction": "long" if size > 0 else "short",
-                    "entry_price": float(p.get("entry_px", 0) or 0),
-                    "pos_size": abs(size),
-                    "upl": float(p.get("upnl", 0) or 0),
-                    "upl_ratio": 0,
-                    "mark_px": 0,
-                    "leverage": str(p.get("leverage", "")),
-                    "source": "hl_live",
-                })
+        # OKX 持仓（perp_positions 即主账户持仓）
+        for p in (okx_state.get("perp_positions") or []):
+            size = float(p.get("size", 0) or 0)
+            if abs(size) < 1e-12:
+                continue
+            okx_positions.append({
+                "coin": p.get("coin", ""),
+                "inst_id": f"{p.get('coin', '')}-USDT-SWAP",
+                "direction": "long" if size > 0 else "short",
+                "entry_price": float(p.get("entry_px", 0) or 0),
+                "pos_size": abs(size),
+                "upl": float(p.get("upnl", 0) or 0),
+                "upl_ratio": 0,
+                "mark_px": 0,
+                "leverage": str(p.get("leverage", "")),
+                "source": "okx_live",
+            })
     except Exception as e:
         okx_positions = [{"error": str(e)}]
 
@@ -1666,6 +1781,15 @@ def get_l4_status():
         return {"error": str(e)}
 
 
+def _refresh_global_trade_stats_async():
+    """后台异步刷新 global-trade-stats 缓存（遍历 16 万案例文件较重，避免阻塞请求线程）"""
+    try:
+        data = get_global_trade_stats()
+        _cache_set("global_trade_stats", data)
+    except Exception:
+        pass
+
+
 def get_global_trade_stats():
     """获取跨系统交易统计：从 L4 案例库读取各系统的胜率、PnL 等指标"""
     try:
@@ -1852,6 +1976,7 @@ def _bg_refresh_state(interval: int = 5):
 
 
 def _bg_refresh_yijing(interval: int = 60):
+    fail_streak = 0
     while True:
         try:
             data = get_yijing_state()
@@ -1860,11 +1985,23 @@ def _bg_refresh_yijing(interval: int = 60):
                 _cache_set("yijing", data)
         except Exception:
             pass
+        okx_ok = True
         try:
-            _cache_set("yijing_account", get_yijing_account_overview())
+            acct = get_yijing_account_overview()
+            _cache_set("yijing_account", acct)
+            # OKX 不可达时 live_ok=False，连续失败则退避拉长间隔
+            if isinstance(acct, dict) and acct.get("live_error") and not acct.get("live_ok"):
+                okx_ok = False
         except Exception:
-            pass
-        time.sleep(interval)
+            okx_ok = False
+        if okx_ok:
+            fail_streak = 0
+            sleep_s = interval
+        else:
+            fail_streak += 1
+            # 指数退避：60→120→180→240→300s，封顶 5 分钟，避免反复重试耗 CPU
+            sleep_s = min(interval * min(fail_streak, 5), 300)
+        time.sleep(sleep_s)
 
 
 def _bg_refresh_screen(interval: int = 30):
@@ -1945,11 +2082,713 @@ def _start_bg_refresh():
         threading.Thread(target=_bg_refresh_screen, args=(30,), daemon=True),
         threading.Thread(target=_bg_refresh_dreamos, args=(15,), daemon=True),
         threading.Thread(target=_bg_refresh_token_signals, args=(300,), daemon=True),
-        threading.Thread(target=_bg_refresh_l4_status, args=(10,), daemon=True),
+        threading.Thread(target=_bg_refresh_l4_status, args=(60,), daemon=True),
     ]
     for t in threads:
         t.start()
     return threads
+
+
+# ── 市场形态预测 / BCRM 2.0 参数输出 ──────────────────────────────────────────
+# 直接调用 bcrm2.ParameterMapper，避免 HTTP 依赖 8092 Flask 服务
+_BCRM2_L4_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4"
+if _BCRM2_L4_DIR not in sys.path:
+    sys.path.insert(0, _BCRM2_L4_DIR)
+
+_MORPH_CACHE = {"key": None, "ts": 0, "data": None}
+_MORPH_TTL = 60  # 秒
+
+
+def get_morph_params(symbol: str = "BTCUSDT"):
+    """返回 ParameterMapper 输出：6 全局参数 + 5 板块权重 + identity 基线。
+
+    结构与 8092 Flask 的 /regime/evolution/params 完全一致，确保双前端数据等价。
+    """
+    cache_key = f"morph_{symbol}"
+    now = time.time()
+    if (_MORPH_CACHE["key"] == cache_key
+            and _MORPH_CACHE["data"] is not None
+            and now - _MORPH_CACHE["ts"] < _MORPH_TTL):
+        return _MORPH_CACHE["data"]
+
+    try:
+        from bcrm2.run_evolution_pipeline import get_storage, _DEFAULT_IDENTITY_BETAS
+        from bcrm2.parameter_mapper import ParameterMapper
+
+        storage = get_storage()
+        snapshot = storage.get_snapshot(symbol)
+        if snapshot is None:
+            return {"ok": False, "error": f"symbol={symbol} 无 snapshot，请先运行 run_evolution_pipeline --sqlite-db"}
+
+        L = float(snapshot.get("level_smooth", 0.0))
+        T = float(snapshot.get("trend_smooth", 0.0))
+        C = float(snapshot.get("consensus", 0.0))
+
+        pm = ParameterMapper()
+        global_params = pm.map_global_parameters(L, T, C)
+        _sw_full = pm.map_sector_weights(L, T, C, sector_betas=_DEFAULT_IDENTITY_BETAS)
+        sector_weights = _sw_full.get("weights", _sw_full) if isinstance(_sw_full, dict) else _sw_full
+
+        identity_global = pm.map_global_parameters(0.0, 0.0, 0.0)
+        _isw_full = pm.map_sector_weights(0.0, 0.0, 0.0, sector_betas=_DEFAULT_IDENTITY_BETAS)
+        identity_sector = _isw_full.get("weights", _isw_full) if isinstance(_isw_full, dict) else _isw_full
+
+        global_list = [
+            {
+                "name": name,
+                "lo": round(lo, 6),
+                "hi": round(hi, 6),
+                "center": round((lo + hi) / 2.0, 6),
+                "bandwidth": round(hi - lo, 6),
+                "identity_center": round((identity_global[name][0] + identity_global[name][1]) / 2.0, 6),
+            }
+            for name, (lo, hi) in global_params.items()
+        ]
+
+        def _safe_sector(sw: dict, n: str, default: float) -> float:
+            if isinstance(sw, dict):
+                if n in sw:
+                    return float(sw[n])
+                if "weights" in sw and isinstance(sw["weights"], dict) and n in sw["weights"]:
+                    return float(sw["weights"][n])
+            return default
+        sector_list = [
+            {
+                "name": name,
+                "weight": round(_safe_sector(sector_weights, name, 1.0/5.0), 6),
+                "identity_weight": round(_safe_sector(identity_sector, name, 1.0/5.0), 6),
+            }
+            for name in ("defi", "ai", "rwa", "meme", "l2")
+        ]
+        # 附加：前端 tab 需要展示板块级 tp/sl 乘数（T3 扩展，形态→止盈止损分别作用）
+        if isinstance(_sw_full, dict):
+            extra = {}
+            if "sector_tp_mult" in _sw_full:
+                extra["sector_tp_mult"] = {k: round(float(v),6) for k,v in _sw_full["sector_tp_mult"].items()}
+            if "sector_sl_mult" in _sw_full:
+                extra["sector_sl_mult"] = {k: round(float(v),6) for k,v in _sw_full["sector_sl_mult"].items()}
+            if extra:
+                for s in sector_list:
+                    if "sector_tp_mult" in extra:
+                        s["tp_mult"] = extra["sector_tp_mult"].get(s["name"])
+                    if "sector_sl_mult" in extra:
+                        s["sl_mult"] = extra["sector_sl_mult"].get(s["name"])
+
+        data = {
+            "ok": True,
+            "symbol": symbol,
+            "snapshot_t": snapshot.get("t", ""),
+            "inputs": {
+                "level_smooth": round(L, 4),
+                "trend_smooth": round(T, 4),
+                "consensus": round(C, 4),
+            },
+            "global_params": global_list,
+            "sector_weights": sector_list,
+            "sector_weights_sum": round(sum(sector_weights.values()), 6),
+            "identity": {
+                "global_params": [
+                    {
+                        "name": name,
+                        "lo": round(lo, 6),
+                        "hi": round(hi, 6),
+                        "center": round((lo + hi) / 2.0, 6),
+                    }
+                    for name, (lo, hi) in identity_global.items()
+                ],
+                "sector_weights": [
+                    {"name": name, "weight": round(float(identity_sector[name]), 6)}
+                    for name in ("defi", "ai", "rwa", "meme", "l2")
+                ],
+            },
+        }
+        _MORPH_CACHE.update(key=cache_key, ts=now, data=data)
+        return data
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
+_MORPH_CYCLE_CACHE = {"key": None, "ts": 0, "data": None}
+_MORPH_CYCLE_TTL = 120  # 秒
+_MORPH_METRICS_TTL = 60   # 秒
+_MORPH_METRICS_CACHE = {"key": None, "ts": 0, "data": None}
+_MORPH_PREDICTOR_SINGLETON = None  # MorphCyclePredictor 单例
+
+
+def _get_predictor():
+    """延迟加载 Predictor 单例（首次请求时构造）。"""
+    global _MORPH_PREDICTOR_SINGLETON
+    if _MORPH_PREDICTOR_SINGLETON is not None:
+        return _MORPH_PREDICTOR_SINGLETON
+    try:
+        from bcrm2.run_evolution_pipeline import get_storage
+        from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+        _MORPH_PREDICTOR_SINGLETON = MorphCyclePredictor(get_storage())
+        return _MORPH_PREDICTOR_SINGLETON
+    except Exception:
+        return None
+
+
+def _get_correction_cache_tag(symbol: str, predictor) -> str:
+    """把「上次修正时间戳」加入 cache key 后缀，使修正后缓存自动失效。"""
+    try:
+        if predictor is not None and hasattr(predictor, "storage"):
+            state = predictor.storage.get_correction_state(symbol) or {}
+            ts = state.get("last_corrected_at") or ""
+            count = state.get("correction_count", 0)
+            return f"corr@{ts}#{count}"
+    except Exception:
+        pass
+    return "corr@none"
+
+
+def get_morph_cycle(symbol: str = "BTCUSDT", hist_days: int = 60, forecast_days: int = 20):
+    """市场形态周期曲线（Phase A：Predictor.predict()，预测前自动回填+修正，冷却 23h）。"""
+    predictor = _get_predictor()
+    tag = _get_correction_cache_tag(symbol, predictor)
+    cache_key = f"cycle_{symbol}_{hist_days}_{forecast_days}_{tag}"
+    now = time.time()
+    if (_MORPH_CYCLE_CACHE["key"] == cache_key
+            and _MORPH_CYCLE_CACHE["data"] is not None
+            and now - _MORPH_CYCLE_CACHE["ts"] < _MORPH_CYCLE_TTL):
+        return _MORPH_CYCLE_CACHE["data"]
+
+    try:
+        if predictor is None:
+            return {"ok": False, "error": "无法构造 MorphCyclePredictor，请检查 bcrm2 模块"}
+        result = predictor.predict(symbol, hist_days=hist_days, forecast_days=forecast_days)
+        if result.get("ok"):
+            # Predictor 可能在 predict() 内部触发了自动修正 → tag 可能已变化 → 用最新 tag 存缓存
+            latest_tag = _get_correction_cache_tag(symbol, predictor)
+            final_key = f"cycle_{symbol}_{hist_days}_{forecast_days}_{latest_tag}"
+            _MORPH_CYCLE_CACHE.update(key=final_key, ts=now, data=result)
+        return result
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
+def get_morph_metrics(symbol: str = "BTCUSDT", lookback: int = 30):
+    """返回预测修正指标（MAE / RMSE / 分 horizon / 修正状态 / 误差历史序列）。"""
+    cache_key = f"metrics_{symbol}_{lookback}"
+    now = time.time()
+    if (_MORPH_METRICS_CACHE["key"] == cache_key
+            and _MORPH_METRICS_CACHE["data"] is not None
+            and now - _MORPH_METRICS_CACHE["ts"] < _MORPH_METRICS_TTL):
+        return _MORPH_METRICS_CACHE["data"]
+    try:
+        predictor = _get_predictor()
+        if predictor is None:
+            return {"ok": False, "error": "无法构造 MorphCyclePredictor"}
+        metrics = predictor.get_correction_metrics(symbol, lookback=lookback)
+        data = {"ok": True, "symbol": symbol, "metrics": metrics}
+        _MORPH_METRICS_CACHE.update(key=cache_key, ts=now, data=data)
+        return data
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
+def trigger_morph_correct(symbol: str = "BTCUSDT", min_samples: int = 3):
+    """触发一次误差回填 + 在线学习修正（手动触发）。"""
+    try:
+        predictor = _get_predictor()
+        if predictor is None:
+            return {"ok": False, "error": "无法构造 MorphCyclePredictor"}
+        result = predictor.evaluate_and_correct(symbol, min_filled_samples=min_samples)
+        # 修正后清缓存，下一次请求走新参数
+        global _MORPH_CYCLE_CACHE, _MORPH_METRICS_CACHE
+        _MORPH_CYCLE_CACHE = {"key": None, "ts": 0, "data": None}
+        _MORPH_METRICS_CACHE = {"key": None, "ts": 0, "data": None}
+        return {"ok": True, "result": result}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
+def get_cycle_bounds(symbol: str = "BTCUSDT"):
+    """返回大周期对小周期的弹性边界参数（Spec §3bis.7）。"""
+    try:
+        from bcrm2.morph_cycle_predictor import cycle4y_theory
+        predictor = _get_predictor()
+        if predictor is None:
+            return {"ok": False, "error": "无法构造 MorphCyclePredictor"}
+        storage = predictor.storage
+        anchor_state = storage.get_anchor_state(symbol)
+        anchor_overrides = anchor_state["anchor_overrides"] if anchor_state else {}
+        cycle_4y = cycle4y_theory(today=None, samples=365, anchor_overrides=anchor_overrides)
+        bounds = predictor._interp_cycle_bounds(cycle_4y["t_rel_current"])
+        return {"ok": True, "symbol": symbol, "cycle_4y": cycle_4y, "bounds": bounds}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
+def _get_shadow_logger():
+    """构造 ShadowLogger 实例（用于 /api/shadow/report）。
+
+    复用 _get_predictor() 的 storage，避免重复 DB 连接。
+    """
+    if ShadowLogger is None:
+        return None
+    predictor = _get_predictor()
+    if predictor is None:
+        return None
+    storage = predictor.storage
+    from bcrm2.parameter_mapper import ParameterMapper
+    mapper = ParameterMapper()
+    return ShadowLogger(storage, predictor, mapper)
+
+
+def get_shadow_report(symbol: str = "BTC", days: int = 7):
+    """返回 Shadow 影子模式评估报告。
+
+    开关关闭时返回 ok=False；开启时返回 ok=True 和 report。
+    """
+    try:
+        if not SHADOW_LOGGER_ENABLED:
+            return {"ok": False, "error": "ShadowLogger 未启用（SHADOW_LOGGER_ENABLED=False）"}
+
+        logger = _get_shadow_logger()
+        if logger is None:
+            return {"ok": False, "error": "无法构造 ShadowLogger，请检查 bcrm2 模块"}
+
+        report = logger.get_comparison_report(symbol, days)
+        return {"ok": True, "report": report}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
+# ================================================================
+# Phase C: α blend 前瞻参数上线 API
+# ================================================================
+
+_rollout_manager = None  # 全局 RolloutManager 实例（懒加载）
+
+
+def _get_rollout_manager():
+    """获取全局 RolloutManager 实例（懒加载）。"""
+    global _rollout_manager
+    if _rollout_manager is not None:
+        return _rollout_manager
+    try:
+        from bcrm2.scripts.phase_c_rollout_manager import RolloutManager
+        import os
+        state_path = Path(os.environ.get(
+            "V15_AI_ROLLOUT_STATE_PATH",
+            "data/alpha_rollout_state.json",
+        ))
+        _rollout_manager = RolloutManager(state_path=state_path)
+        return _rollout_manager
+    except Exception:
+        return None
+
+
+def get_alpha_status() -> dict:
+    """返回当前 α blend 上线状态。
+
+    Returns:
+        开关关闭时: {"ok": False, "error": "AlphaBlend 未启用"}
+        开关开启时: {"ok": True, "status": {...}}
+    """
+    if not ALPHA_BLEND_ENABLED:
+        return {"ok": False, "error": "AlphaBlend 未启用（ALPHA_BLEND_ENABLED=False）"}
+    mgr = _get_rollout_manager()
+    if mgr is None:
+        return {"ok": False, "error": "无法构造 RolloutManager，请检查 bcrm2 模块"}
+    return {"ok": True, "status": mgr.get_status()}
+
+
+def promote_alpha() -> dict:
+    """提升 α（步长 0.1，上限 0.5），并持久化状态。"""
+    if not ALPHA_BLEND_ENABLED:
+        return {"ok": False, "error": "AlphaBlend 未启用"}
+    mgr = _get_rollout_manager()
+    if mgr is None:
+        return {"ok": False, "error": "无法构造 RolloutManager"}
+    try:
+        new_alpha = mgr.promote()
+        mgr.save()
+        return {"ok": True, "new_alpha": new_alpha, "status": mgr.get_status()}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
+def rollback_alpha() -> dict:
+    """降低 α（步长 0.1，不下穿 0），并持久化状态。"""
+    if not ALPHA_BLEND_ENABLED:
+        return {"ok": False, "error": "AlphaBlend 未启用"}
+    mgr = _get_rollout_manager()
+    if mgr is None:
+        return {"ok": False, "error": "无法构造 RolloutManager"}
+    try:
+        new_alpha = mgr.rollback()
+        mgr.save()
+        return {"ok": True, "new_alpha": new_alpha, "status": mgr.get_status()}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
+# ── H3：FMA 弹簧力场 5态差异化过滤 渐进开关 API（与 polling_trader 共享 phase_c_rollout_state.json）
+_FMA_ROLLOUT_MGR_CACHE: dict = {"mgr": None}
+
+
+def _get_fma_rollout_mgr():
+    """获取/懒加载 FMA 专属 RolloutManager（使用与 polling_trader AB闸门口 一致的 state_path：data/phase_c_rollout_state.json）"""
+    if _FMA_ROLLOUT_MGR_CACHE["mgr"] is not None:
+        return _FMA_ROLLOUT_MGR_CACHE["mgr"]
+    try:
+        from bcrm2.scripts.phase_c_rollout_manager import RolloutManager
+        import os
+        state_path = Path(os.environ.get(
+            "PHASE_C_ROLLOUT_STATE",
+            "data/phase_c_rollout_state.json",
+        ))
+        mgr = RolloutManager(state_path=state_path)
+        _FMA_ROLLOUT_MGR_CACHE["mgr"] = mgr
+        return mgr
+    except Exception as e:
+        import traceback
+        _FMA_ROLLOUT_MGR_CACHE["_err"] = f"{e} | {traceback.format_exc(limit=1)}"
+        return None
+
+
+def fma_status() -> dict:
+    mgr = _get_fma_rollout_mgr()
+    if mgr is None:
+        return {"ok": False, "error": _FMA_ROLLOUT_MGR_CACHE.get("_err", "无法构造 RolloutManager")}
+    return {"ok": True, **mgr.get_status()}
+
+
+def fma_set(enabled: bool, reason: str = "API手动切换") -> dict:
+    mgr = _get_fma_rollout_mgr()
+    if mgr is None:
+        return {"ok": False, "error": _FMA_ROLLOUT_MGR_CACHE.get("_err", "无法构造 RolloutManager")}
+    prev = bool(getattr(mgr, "fma_enabled", False))
+    changed = mgr.set_fma_enabled(bool(enabled), reason=reason)
+    mgr.save()
+    return {"ok": True, "changed": bool(changed),
+            "prev_enabled": prev, "new_enabled": bool(mgr.fma_enabled),
+            "status": mgr.get_status()}
+
+
+def fma_eval_now(days: int = 7) -> dict:
+    """强制立即执行一次 FMA 渐进评估（忽略 20h 冷却期）。"""
+    mgr = _get_fma_rollout_mgr()
+    if mgr is None:
+        return {"ok": False, "error": _FMA_ROLLOUT_MGR_CACHE.get("_err", "无法构造 RolloutManager")}
+    # 拉 7 天所有币种 shadow log
+    all_records: list = []
+    try:
+        from bcrm2.run_evolution_pipeline import get_storage
+        storage = get_storage()
+        for sym in ["BTC", "SOL", "XAU", "XAG", "NVDA", "GOOGL", "AMZN",
+                    "MU", "SNDK", "SPCX", "OKB", "HYPE", "PUMP", "UNI", "SKHYNIX", "ETH"]:
+            try:
+                all_records.extend(storage.get_shadow_log(sym, days=days))
+            except Exception:
+                continue
+    except Exception as _e:
+        import traceback
+        return {"ok": False, "error": f"shadow log 加载失败: {_e}", "traceback": traceback.format_exc()}
+    prev = bool(mgr.fma_enabled)
+    result = mgr.evaluate_fma_toggle(all_records)
+    mgr.save()
+    return {"ok": True,
+            "prev_enabled": prev,
+            "new_enabled": bool(mgr.fma_enabled),
+            "records_pulled": len(all_records),
+            "evaluation": result,
+            "status": mgr.get_status()}
+
+
+# ── T6：Enable Inject 开关持久化 ────────────────────────────────
+_INJECT_STATE_PATH: Path | None = None
+_INJECT_RUNTIME: dict = {"enabled": None}  # None 表示尚未从文件加载
+
+
+def _inject_state_path() -> Path:
+    global _INJECT_STATE_PATH
+    if _INJECT_STATE_PATH is None:
+        import os
+        _INJECT_STATE_PATH = Path(os.environ.get(
+            "V15_AI_INJECT_STATE_PATH",
+            "data/enable_inject_state.json",
+        ))
+    return _INJECT_STATE_PATH
+
+
+def _load_inject_state() -> bool:
+    """首次读取：从磁盘文件加载（默认 False = 字节等价的安全模式）。"""
+    if _INJECT_RUNTIME["enabled"] is not None:
+        return bool(_INJECT_RUNTIME["enabled"])
+    fp = _inject_state_path()
+    try:
+        if fp.exists():
+            with open(fp, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            enabled = bool(data.get("enabled", False))
+        else:
+            enabled = False
+            # 首次启动写默认值
+            try:
+                fp.parent.mkdir(parents=True, exist_ok=True)
+                with open(fp, "w", encoding="utf-8") as f:
+                    json.dump({"enabled": False, "created_at": time.time()}, f,
+                              ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+    except Exception:
+        enabled = False
+    _INJECT_RUNTIME["enabled"] = enabled
+    return enabled
+
+
+def _save_inject_state(enabled: bool) -> None:
+    _INJECT_RUNTIME["enabled"] = bool(enabled)
+    fp = _inject_state_path()
+    try:
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        with open(fp, "w", encoding="utf-8") as f:
+            json.dump({
+                "enabled": bool(enabled),
+                "updated_at": time.time(),
+            }, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def get_enable_inject_status() -> dict:
+    """返回当前 enable_inject（融合层注入）开关状态。"""
+    enabled = _load_inject_state()
+    return {
+        "ok": True,
+        "enabled": enabled,
+        "note": "False=完全基线字节等价，True=AI 注入 (T4 融合层生效)",
+    }
+
+
+def set_enable_inject(enabled: bool) -> dict:
+    """设置 enable_inject 开关并持久化。"""
+    try:
+        _save_inject_state(bool(enabled))
+        return {
+            "ok": True,
+            "enabled": bool(enabled),
+            "note": "已持久化，下次轮询周期自动生效（进程重启也保留）",
+        }
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
+# ── T7：双基线评估框架（静态基线 + 动态基线）───────────────────
+# 静态基线（v15 策略）：regime 查表，不注入任何 AI 参数 → baseline_*
+# 动态基线（当前版本）：当前 enable_inject + alpha_blend 下的 effective_*
+# 版本晋升规则：
+#   1. AI 版（ai_*）在样本窗口内：
+#      - 全局仓位偏差绝对值 ≤ 0.35（不超过 ±35% 激进/保守）
+#      - 止盈止损乘数整体分布与 baseline 在同一数量级（0.5×~2.0× 区间内）
+#      - 阈值修改方向与 forecast 方向一致性 ≥ 60%
+#   2. 比静态基线更好：样本内「激进程度」≤ 125% baseline（或更保守）
+#   3. 比动态基线更好：若当前已是 AI 版，新候选必须 ≥ 旧版得分 × 1.05（5% 改善门槛）
+#   通过则 allow_promotion=True；否则 False，附带原因列表。
+
+def _shadow_logs_window(days: int) -> list:
+    """从 evolution.db 中读取 shadow_param_log 表最近 N 天记录。"""
+    try:
+        sys.path.insert(0, str(BASE_DIR / "scripts" / "memory_l4"))
+        from bcrm2.storage import EvolutionStorageSQLite
+        storage = EvolutionStorageSQLite(str(
+            BASE_DIR / "scripts" / "memory_l4" / "data" / "evolution.db"
+        ))
+        try:
+            records = storage.get_shadow_log(None, days)  # None=all symbols
+        except TypeError:
+            # 如果接口只支持 symbol 必传，再兜底 BTC 拉一次 + 其他尝试
+            records = storage.get_shadow_log("BTC", days)
+        return records or []
+    except Exception:
+        return []
+
+
+def _agg_scores(records: list) -> dict:
+    """给 shadow records 窗口打分：返回 ai_vs_static / ai_vs_dynamic 得分。"""
+    if not records:
+        return {"n": 0}
+    # 提取三值字段
+    pos_diffs_vs_static: list = []   # ai_pos / baseline_pos - 1
+    pos_diffs_vs_dynamic: list = []  # ai_pos / effective_pos - 1
+    thr_consistency: list = []       # 阈值与 L 方向一致
+    tp_inside_ratio: list = []
+    sl_inside_ratio: list = []
+    for r in records:
+        b_pos = float(r.get("baseline_pos_mult") or r.get("reactive_pos_mult") or 1.0)
+        a_pos = r.get("ai_pos_mult")
+        e_pos = r.get("effective_pos_mult")
+        if a_pos is not None and b_pos and abs(b_pos) > 1e-9:
+            pos_diffs_vs_static.append(float(a_pos) / b_pos - 1.0)
+        if a_pos is not None and e_pos:
+            try:
+                pos_diffs_vs_dynamic.append(float(a_pos) / float(e_pos) - 1.0)
+            except (TypeError, ZeroDivisionError):
+                pass
+        # tp/sl 范围约束检查 (0.5×~2×)
+        for k_v, k_b, buf in [("ai_tp_mult", "baseline_tp_mult", tp_inside_ratio),
+                              ("ai_sl_mult", "baseline_sl_mult", sl_inside_ratio)]:
+            v = r.get(k_v)
+            b = r.get(k_b) or r.get(f"reactive_{k_b.split('_',1)[1]}")
+            if v is None or b is None:
+                continue
+            try:
+                ratio = float(v) / float(b)
+            except (TypeError, ZeroDivisionError):
+                continue
+            buf.append(1.0 if 0.5 <= ratio <= 2.0 else 0.0)
+        # 阈值方向一致性：forecast_L>=0 且 ai_threshold_mult <= baseline 则一致（降低门槛）
+        fL = r.get("forecast_L")
+        b_thr = float(r.get("baseline_threshold_mult") or r.get("reactive_threshold") or 1.0)
+        a_thr = r.get("ai_threshold_mult")
+        if fL is not None and a_thr is not None:
+            try:
+                fL = float(fL)
+                a_thr = float(a_thr)
+                ok = ((fL >= 0 and a_thr <= b_thr)
+                      or (fL < 0 and a_thr >= b_thr))
+                thr_consistency.append(1.0 if ok else 0.0)
+            except (TypeError, ValueError):
+                pass
+
+    def _mean(xs):
+        return round(sum(xs) / len(xs), 4) if xs else None
+
+    def _absmean(xs):
+        return round(sum(abs(x) for x in xs) / len(xs), 4) if xs else None
+
+    return {
+        "n": len(records),
+        "ai_vs_static_pos_bias_mean": _mean(pos_diffs_vs_static),
+        "ai_vs_static_pos_bias_absmean": _absmean(pos_diffs_vs_static),
+        "ai_vs_dynamic_pos_bias_mean": _mean(pos_diffs_vs_dynamic),
+        "ai_vs_dynamic_pos_bias_absmean": _absmean(pos_diffs_vs_dynamic),
+        "threshold_direction_consistency": _mean(thr_consistency),
+        "tp_inside_05x_2x_ratio": _mean(tp_inside_ratio),
+        "sl_inside_05x_2x_ratio": _mean(sl_inside_ratio),
+    }
+
+
+def evaluate_version_promotion(records: list,
+                               min_samples: int = 30,
+                               ) -> dict:
+    """判断当前候选版本（ai_injected 计算）是否满足晋升条件。
+
+    Returns:
+        {
+            "allow_promotion": bool,
+            "static_baseline_pass": bool,   # 优于静态 v15 基线
+            "dynamic_baseline_pass": bool,  # 优于当前动态基线（若当前是纯基线则自动 True）
+            "reasons": [str, ...],
+            "scores": {...},
+        }
+    """
+    reasons: list = []
+    scores = _agg_scores(records)
+    n = scores.get("n", 0)
+
+    # ── 样本量门槛 ──
+    if n < min_samples:
+        reasons.append(f"样本不足：{n} < {min_samples}（至少需要 {min_samples} 条 shadow 记录）")
+        return {
+            "allow_promotion": False,
+            "static_baseline_pass": False,
+            "dynamic_baseline_pass": False,
+            "reasons": reasons,
+            "scores": scores,
+        }
+
+    # ── 1. 静态基线（v15）通过条件 ──
+    sb_pass = True
+    pos_abs = scores.get("ai_vs_static_pos_bias_absmean")
+    if pos_abs is None or pos_abs > 0.35:  # 整体仓位偏差 ≤ 35%
+        sb_pass = False
+        reasons.append(
+            f"静态基线不通过：全局仓位 |偏差|={pos_abs} > 0.35（阈值 ±35%）"
+        )
+    thr_cons = scores.get("threshold_direction_consistency") or 0.0
+    if thr_cons < 0.60:
+        sb_pass = False
+        reasons.append(
+            f"静态基线不通过：阈值与方向一致性={thr_cons:.2%} < 60%"
+        )
+    tp_ok = scores.get("tp_inside_05x_2x_ratio") or 0.0
+    sl_ok = scores.get("sl_inside_05x_2x_ratio") or 0.0
+    if min(tp_ok, sl_ok) < 0.90:
+        sb_pass = False
+        reasons.append(
+            f"静态基线不通过：TP/SL 在[0.5x,2x]区间率 tp={tp_ok:.2%} sl={sl_ok:.2%}，都需≥90%"
+        )
+
+    # ── 2. 动态基线通过条件（当前运行值 vs AI 注入值）：
+    #    如果 enable_inject=False（当前纯基线）→ 动态 = 静态，只要静态过即可，动态条件 auto 通过
+    #    如果 enable_inject=True → 要求 AI 相对 effective 偏差 ≤ 静态偏差的 80%（更优）
+    db_pass = True
+    cur_enabled = _load_inject_state()
+    if cur_enabled:
+        # 动态要求：ai_vs_dynamic 的 |仓位偏差| 必须 ≤ ai_vs_static 的 80% 且 ≤ 0.25
+        dyn_abs = scores.get("ai_vs_dynamic_pos_bias_absmean") or 1.0
+        sta_abs = pos_abs or 1.0
+        if dyn_abs > 0.25 or dyn_abs > sta_abs * 0.80:
+            db_pass = False
+            reasons.append(
+                f"动态基线不通过：候选 vs 当前版 |pos偏差|={dyn_abs}，"
+                f"需 ≤ 0.25 且 ≤ 静态偏差×80%（静态偏差={sta_abs}）"
+            )
+
+    if sb_pass and db_pass:
+        reasons.insert(0, f"双基线通过（n={n}），允许版本晋升")
+
+    return {
+        "allow_promotion": bool(sb_pass and db_pass),
+        "static_baseline_pass": bool(sb_pass),
+        "dynamic_baseline_pass": bool(db_pass),
+        "reasons": reasons,
+        "scores": scores,
+        "current_enable_inject": cur_enabled,
+        "min_samples": min_samples,
+    }
+
+
+def get_dual_baseline_report(days: int = 7) -> dict:
+    """返回完整双基线评估报告（T7 对外 API）。"""
+    records = _shadow_logs_window(days=days)
+    promotion = evaluate_version_promotion(records)
+    # 统计 enable_inject 历史比例（评估当前运行模式占比）
+    enable_true = 0
+    enable_false = 0
+    for r in records:
+        v = r.get("enable_inject")
+        if v is True:
+            enable_true += 1
+        elif v is False:
+            enable_false += 1
+    inject_stats = {
+        "enable_true": enable_true,
+        "enable_false": enable_false,
+        "inject_ratio": round(enable_true / max(enable_true + enable_false, 1), 4),
+    }
+    return {
+        "ok": True,
+        "days": days,
+        "window_records": len(records),
+        "inject_run_stats": inject_stats,
+        "alpha_status": get_alpha_status(),
+        "inject_status": get_enable_inject_status(),
+        "evaluation": promotion,
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -2035,7 +2874,13 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": "reports loading"})
 
         elif path == "/api/yijing-positions":
-            self._json(get_yijing_positions())
+            cached = _cache_get("yijing_positions")
+            if cached and (time.time() - cached["ts"] < 10):
+                self._json(cached["data"])
+            else:
+                data = get_yijing_positions()
+                _cache_set("yijing_positions", data)
+                self._json(data)
 
         elif path == "/api/yijing/account-overview":
             cached = _cache_get("yijing_account")
@@ -2354,19 +3199,25 @@ class Handler(BaseHTTPRequestHandler):
             if cached and (time.time() - cached["ts"] < 30):
                 self._json(cached["data"])
             else:
-                data = get_global_trade_stats()
-                _cache_set("global_trade_stats", data)
-                self._json(data)
+                # 无缓存时返回降级数据，后台异步刷新避免遍历 16 万案例文件阻塞请求
+                if not cached:
+                    threading.Thread(target=_refresh_global_trade_stats_async, daemon=True).start()
+                    self._json({"loading": True, "message": "交易统计加载中，请稍后刷新",
+                                "systems": {}, "summary": {}})
+                else:
+                    # 缓存过期但仍有旧数据，先返回旧数据再后台刷新
+                    threading.Thread(target=_refresh_global_trade_stats_async, daemon=True).start()
+                    self._json(cached["data"])
 
         # ── API: L4 认知闭环状态仪表盘 ─────────────────────────────────────
         elif path == "/api/l4-status":
             cached = _cache_get("l4_status")
-            if cached and (time.time() - cached["ts"] < 10):
+            if cached and (time.time() - cached["ts"] < 30):
                 self._json(cached["data"])
             else:
-                data = get_l4_status()
-                _cache_set("l4_status", data)
-                self._json(data)
+                # 无缓存时返回降级数据，避免同步遍历 16 万案例文件阻塞请求
+                # 后台线程 _bg_refresh_l4_status 会异步刷新缓存
+                self._json({"loading": True, "message": "L4 状态加载中，请稍后刷新"})
 
         # ── API: DreamOS V2 六层闭环 ─────────────────────────────────────
         elif path == "/api/dreamos-v2/cycle":
@@ -2383,6 +3234,93 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(data)
             except Exception as e:
                 self._json({"error": str(e)})
+
+        # ── API: 市场形态预测 / BCRM 2.0 参数输出 ─────────────────────
+        elif path == "/api/morph/params":
+            symbol = (self._get_query_param("symbol") or "BTCUSDT").upper()
+            self._json(get_morph_params(symbol))
+
+        elif path == "/api/morph/cycle":
+            symbol = (self._get_query_param("symbol") or "BTCUSDT").upper()
+            hist_days = int(self._get_query_param("hist") or "60")
+            forecast_days = int(self._get_query_param("forecast") or "20")
+            self._json(get_morph_cycle(symbol, hist_days, forecast_days))
+
+        elif path == "/api/morph/metrics":
+            symbol = (self._get_query_param("symbol") or "BTCUSDT").upper()
+            lookback = int(self._get_query_param("lookback") or "30")
+            self._json(get_morph_metrics(symbol, lookback))
+
+        elif path == "/api/morph/correct":
+            symbol = (self._get_query_param("symbol") or "BTCUSDT").upper()
+            min_samples = int(self._get_query_param("min") or "3")
+            self._json(trigger_morph_correct(symbol, min_samples))
+
+        elif path == "/api/morph/cycle_bounds":
+            symbol = (self._get_query_param("symbol") or "BTCUSDT").upper()
+            self._json(get_cycle_bounds(symbol))
+
+        # ── API: Shadow 影子模式评估报告 ──────────────────────────────
+        elif path == "/api/shadow/report":
+            symbol = (self._get_query_param("symbol") or "BTC").upper()
+            days = int(self._get_query_param("days") or "7")
+            self._json(get_shadow_report(symbol, days))
+
+        # ── API: Phase C α blend 状态查询 ────────────────────────────
+        elif path == "/api/alpha/status":
+            self._json(get_alpha_status())
+
+        # ── API: Phase C α blend 提升 ────────────────────────────────
+        elif path == "/api/alpha/promote":
+            self._json(promote_alpha())
+
+        # ── API: Phase C α blend 回退 ────────────────────────────────
+        elif path == "/api/alpha/rollback":
+            self._json(rollback_alpha())
+
+        # ── API: H3 FMA 渐进开关（状态/开启/关闭/立即评估）────────────
+        elif path == "/api/fma/status":
+            self._json(fma_status())
+
+        elif path == "/api/fma/on":
+            reason = self._get_query_param("reason") or "HTTP /api/fma/on 手动开启"
+            self._json(fma_set(True, reason=reason))
+
+        elif path == "/api/fma/off":
+            reason = self._get_query_param("reason") or "HTTP /api/fma/off 手动关闭"
+            self._json(fma_set(False, reason=reason))
+
+        elif path == "/api/fma/eval":
+            days = int(self._get_query_param("days") or "7")
+            self._json(fma_eval_now(days=days))
+
+        # ── API: 健康检查（bcrm2 import 状态 + 基线模式核对）─────────
+        elif path == "/api/baseline/health":
+            self._json({
+                "ok": True,
+                "shadow_logger_imported": _sl_import_ok,
+                "shadow_logger_enabled": bool(SHADOW_LOGGER_ENABLED),
+                "param_mapper_imported": _pm_import_ok,
+                "alpha_blend_enabled": bool(ALPHA_BLEND_ENABLED),
+                "alpha_blend_max": float(ALPHA_BLEND_MAX),
+                "default_alpha_blend": float(DEFAULT_ALPHA_BLEND),
+                "baseline_equivalent": (
+                    # alpha=0 且 enable_inject=false 时字节等价基线
+                    float(DEFAULT_ALPHA_BLEND) == 0.0
+                ),
+            })
+
+        # ── API: T6 Enable Inject 融合层开关状态查询 ─────────────────
+        elif path == "/api/inject/status":
+            self._json(get_enable_inject_status())
+
+        # ── API: T7 双基线评估报告查询 ───────────────────────────────
+        elif path == "/api/eval/baseline":
+            try:
+                days = int(self._get_query_param("days") or "7")
+                self._json(get_dual_baseline_report(days=days))
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)})
 
         elif path == "/" or path == "/index.html":
             self._file(BASE_DIR / "monitor.html", "text/html")
@@ -2444,6 +3382,13 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(result)
             except Exception as e:
                 self._json({"error": str(e)})
+
+        # ── T6: Enable Inject 融合层开关 ────────────────────────────
+        elif path == "/api/inject/enable":
+            self._json(set_enable_inject(True))
+
+        elif path == "/api/inject/disable":
+            self._json(set_enable_inject(False))
 
         else:
             self.send_response(404)

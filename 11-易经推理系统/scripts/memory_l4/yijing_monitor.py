@@ -23,6 +23,29 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict
 
+
+def _load_polling_coins_default():
+    """从公共代币池(token_registry.json)加载默认币种列表，失败回退硬编码"""
+    try:
+        registry = Path(__file__).resolve().parents[3] / "config" / "token_registry.json"
+        if registry.exists():
+            data = json.loads(registry.read_text(encoding="utf-8"))
+            tokens = data.get("tokens", [])
+            syms = []
+            for t in tokens:
+                if isinstance(t, dict):
+                    if t.get("enabled", True):
+                        s = str(t.get("symbol", "")).strip().upper()
+                        if s:
+                            syms.append(s)
+                elif isinstance(t, str) and t.strip():
+                    syms.append(t.strip().upper())
+            if syms:
+                return ",".join(syms)
+    except Exception:
+        pass
+    return "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB,CRCL,COIN,BMNR,MSTR"
+
 warnings.filterwarnings("ignore")
 
 # ── 路径设置 ────────────────────────────────────────────────────────────────
@@ -258,7 +281,7 @@ def run_polling_trader():
         import os
 
         coins = os.environ.get(
-            "POLLING_COINS", "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB"
+            "POLLING_COINS", _load_polling_coins_default()
         )
         interval = os.environ.get("POLLING_INTERVAL", "300")
         confidence = os.environ.get("CONFIDENCE_THRESHOLD", "0.7955")

@@ -1,6 +1,6 @@
 # 易经推理系统 工程索引（SSoT）
 
-> **版本**: v2.6 | **更新日期**: 2026-07-25
+> **版本**: v2.7 | **更新日期**: 2026-08-20
 > **定位**: 易经推理系统的工程入口索引（Single Source of Truth），包含所有子模块的文件级索引、入口锚点、依赖关系和快速导航
 > **维护原则**: 任何子系统变更影响入口、依赖关系、配置层级的，必须同步更新本文件
 
@@ -63,6 +63,9 @@
 | 交易执行 | `polling_trader.py` → `PollingTrader` | 顶层 |
 | 离场决策（主） | `yijing_exit_system.py` → `YijingExitSystem` | 顶层（v2架构反转后为主） |
 | 离场决策（备用） | `classic_exit_system.py` → `ClassicExitSystem` | 顶层（无卦象或降级时调用） |
+| 持仓与离场管理 | `bcrm2/exit_manager.py` → `ExitManager` | 顶层（v4.4 扩展层策略链，5 策略按优先级链式调用） |
+| 离场策略实现 | `bcrm2/exit_strategies.py` → 6 个 `ExitStrategy` 子类 | 顶层（v4.4 策略实现：P3/SignalReverse/EvForceClose/TimeoutProfitSwitch/RankedTp/EvAdjust） |
+| 策略贡献追踪 | `bcrm2/storage.py` → `exit_strategy_log` CRUD | 顶层（v4.4 贡献值统计：save/get/update_outcome/get_contribution） |
 | 离场决策（DreamOS） | `exit_module_adapter.py` → `YijingExitAdapter` | DreamOS（统一接口+三级卦象降级+9→4映射，详见 TECHNICAL_DESIGN §9.8） |
 | 震荡市增强 | `ranging_market_enhancer.py` → `RangingMarketEnhancer` | 顶层（BCRM信号后置增强） |
 | CBR 案例检索 | `cbr_engine.py` → `CBREngine` / `cbr_adapter.py` → `CBRSignalEnhancer` | 顶层（BCRM2辅助决策层） |
@@ -77,6 +80,7 @@
 | BCRM 2.0 | `configs/baseline_config.json` | `data/bcrm2_phase0/` |
 | BCRM 2.0 模型 | 按币种_周期分目录 | `scripts/data/bcrm2_models/{SYMBOL}_{TIMEFRAME}/` |
 | 轮询交易器 | 环境变量 + 代码默认值 | `data/polling_trader/trader_*.jsonl` |
+| 离场策略贡献 | 代码内配置（ExitManager.set_storage） | `data/bcrm2_phase0/evolution.db → exit_strategy_log` |
 | OKX模拟 | `data/okx_sim/config.json` | `data/okx_sim/sim_trades_audit.jsonl` |
 | L4记忆 | `scripts/memory_l4/paths.py` 配置 | `artifacts/memory_l4/` |
 | 共享内存总线 | 代码内配置 | `artifacts/memory_l4/shared_bus/` |

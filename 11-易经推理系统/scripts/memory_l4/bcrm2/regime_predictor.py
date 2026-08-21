@@ -43,11 +43,26 @@ DEFAULT_FEATURE_GROUPS: Dict[str, List[str]] = {
         "btc_dominance_change_20d", "btc_dominance_rolling_5d",
         "breadth_new_high_3_ratio_ma20",
     ],
+    # MA200 牛熊分界 + 价格驱动周期特征 10 列（v2：移除 halving 日期）
+    "ma200_cycle": [
+        "ma200_distance_pct", "ma200_above", "ma200_slope_20d",
+        "cycle_distance_from_365d_high", "cycle_distance_from_365d_low",
+        "cycle_position_in_range", "cycle_time_since_peak",
+        "cycle_momentum_180d", "cycle_vol_regime_90d", "cycle_trend_365d",
+    ],
+    # 多时间框架特征 6 列
+    "multi_timeframe": [
+        "ma_alignment_score", "ma_cross_50_200_signal",
+        "log_ret_30d", "log_ret_90d",
+        "vol_60d_percentile_252d", "volume_ma20_ratio",
+    ],
 }
 
 DEFAULT_WEIGHTS: Dict[str, float] = {
     "morphology": 2.5,
     "breadth": 1.5,
+    "ma200_cycle": 2.0,        # MA200+周期：经典经验，高权重
+    "multi_timeframe": 1.8,    # 多时间框架：跨周期结构，较高权重
     "other": 1.0,
 }
 
@@ -85,6 +100,11 @@ class RegimePredictor:
         # 与父类构造签名保持一致，以实现 spec 语义上的「继承」
         feature_names_by_gua: Optional[Dict[str, List[str]]] = None,
         lookback_bars: int = 20,
+        # Phase 4: S6 开关（BOCPD + HMM 集成，默认关闭）
+        enable_bocpd_hmm: bool = False,
+        ensemble_alpha: float = 0.7,
+        # Phase 5: S7 开关（外部数据源，默认关闭）
+        enable_external_data: bool = False,
     ):
         self.feature_names_by_gua = feature_names_by_gua or {}
         self.lookback_bars = lookback_bars
@@ -101,6 +121,15 @@ class RegimePredictor:
         self._model = None
         self._feature_names: List[str] = []
         self._group_idx: Dict[str, List[int]] = {}
+
+        # Phase 4: S6 开关 + HMM 模型 + 集成参数
+        self.enable_bocpd_hmm = enable_bocpd_hmm
+        self.ensemble_alpha = ensemble_alpha  # α=0.7（LGBM 主导）
+        self.hmm_model = None  # HMMRegime 实例，由外部 set 或 predict_with_ensemble 内部加载
+
+        # Phase 5: S7 开关（外部数据源，默认关闭）
+        self.enable_external_data = enable_external_data
+        self._external_data: Optional[dict] = None  # 外部数据缓存
 
         # 父类兼容的 regime params（与 market_regime.DEFAULT_REGIME_PARAMS 对齐）
         try:
@@ -219,55 +248,109 @@ class RegimePredictor:
                 y_codes.append(label_to_code[s])
         y_codes = np.asarray(y_codes, dtype=int)
 
-        # 构造 LGBM 参数（小数据友好：减小 leaf 粒度、加大迭代数、类别平衡）
-        params = {
-            "objective": "multiclass",
-            "num_class": len(self.REGIME_ORDER),
-            "metric": "multi_logloss",
-            "learning_rate": 0.05,
-            "num_leaves": 31,
-            "feature_fraction": 0.9,
-            "bagging_fraction": 0.9,
-            "bagging_freq": 3,
-            "min_data_in_leaf": 5,
-            "lambda_l2": 1.0,
-            "class_weight": "balanced",  # 对 8 态不平衡友好
-            "verbose": -1,
-            "seed": 42,
-            "num_boost_round": 600,
-        }
-        if lgbm_params:
-            params.update(lgbm_params)
+        # ============================================================
+        # 训练引擎选择（OPT-4 升级）：
+        # 首选 LightGBM（强正则 + 早停），配合 sample_weight 平衡类别。
+        # LightGBM 优势：
+        #   1. 非线性判别力强于 LogisticRegression，能捕捉特征交互
+        #   2. 通过 num_leaves/min_data_in_leaf/lambda_l1/l2 强正则防过拟合
+        #   3. 原生支持 sample_weight，类别平衡更自然
+        #   4. feature_importance 可解释
+        # 回退：LightGBM 不可用时，使用 sklearn LogisticRegression。
+        # ============================================================
+        if lgbm_params is None:
+            lgbm_params = {}
 
+        # 类别平衡 sample_weight（class_weight='balanced' 公式）
+        counts = np.bincount(y_codes, minlength=len(self.REGIME_ORDER)).astype(float)
+        counts = np.where(counts == 0, 1.0, counts)
+        weights_per_class = len(y_codes) / (len(self.REGIME_ORDER) * counts)
+        sample_w = weights_per_class[y_codes]
+
+        used_lgbm = False
         try:
             import lightgbm as lgb
-            train_data = lgb.Dataset(X_scaled, label=y_codes)
-            num_boost_round = int(params.pop("num_boost_round", 600))
-            model = lgb.train(
-                params,
-                train_data,
-                num_boost_round=num_boost_round,
-                valid_sets=None,
-                callbacks=[],
-            )
-        except ImportError:
-            # Fallback: sklearn RandomForestClassifier（天然多分类 + class_weight 平衡）
-            from sklearn.ensemble import RandomForestClassifier
 
-            logger.warning("lightgbm 未安装，回退到 sklearn RandomForestClassifier(class_weight=balanced)")
-            model = _SklearnMulticlassWrap(
-                RandomForestClassifier(
-                    n_estimators=400,
-                    max_depth=8,
-                    min_samples_leaf=3,
-                    max_features="sqrt",
-                    class_weight="balanced",
-                    n_jobs=-1,
-                    random_state=42,
+            # LightGBM 强正则参数（防止训练 0.9 / 测试 0.0 的过拟合）
+            params = {
+                "objective": "multiclass",
+                "num_class": len(self.REGIME_ORDER),
+                "metric": "multi_logloss",
+                "learning_rate": 0.03,
+                "num_leaves": 15,               # 限制叶节点数防过拟合
+                "feature_fraction": 0.85,        # 特征采样
+                "bagging_fraction": 0.85,        # 样本采样
+                "bagging_freq": 5,
+                "min_data_in_leaf": 20,           # 叶节点最小样本数
+                "lambda_l1": 1.0,                 # L1 正则
+                "lambda_l2": 5.0,                 # L2 正则
+                "max_depth": 6,                   # 限制树深
+                "min_gain_to_split": 0.01,       # 最小分裂增益
+                "verbose": -1,
+                "seed": 42,
+                "num_boost_round": 400,
+            }
+            params.update(lgbm_params)
+            num_boost_round = int(params.pop("num_boost_round", 400))
+
+            # 早停：20% 数据做验证，50 轮无提升则停止
+            from sklearn.model_selection import train_test_split
+            if len(X_scaled) > 100:
+                X_tr, X_val, y_tr, y_val, w_tr, w_val = train_test_split(
+                    X_scaled, y_codes, sample_w, test_size=0.2,
+                    random_state=42, stratify=y_codes if len(np.unique(y_codes)) > 1 else None
                 )
+                train_data = lgb.Dataset(X_tr, label=y_tr, weight=w_tr)
+                valid_data = lgb.Dataset(X_val, label=y_val, weight=w_val, reference=train_data)
+                model = lgb.train(
+                    params,
+                    train_data,
+                    num_boost_round=num_boost_round,
+                    valid_sets=[valid_data],
+                    valid_names=["valid"],
+                    callbacks=[
+                        lgb.early_stopping(stopping_rounds=30, verbose=False),
+                        lgb.log_evaluation(period=0),
+                    ],
+                )
+                # 用全量数据重训到早停轮数
+                best_round = model.best_iteration or num_boost_round
+                train_data_full = lgb.Dataset(X_scaled, label=y_codes, weight=sample_w)
+                model = lgb.train(
+                    params,
+                    train_data_full,
+                    num_boost_round=int(best_round),
+                    valid_sets=None,
+                    callbacks=[lgb.log_evaluation(period=0)],
+                )
+            else:
+                train_data = lgb.Dataset(X_scaled, label=y_codes, weight=sample_w)
+                model = lgb.train(
+                    params,
+                    train_data,
+                    num_boost_round=num_boost_round,
+                    valid_sets=None,
+                    callbacks=[],
+                )
+            used_lgbm = True
+        except ImportError:
+            # 回退：sklearn LogisticRegression
+            from sklearn.linear_model import LogisticRegression
+
+            lr_params = dict(
+                multi_class="ovr",
+                class_weight="balanced",
+                C=1.0,
+                max_iter=3000,
+                solver="liblinear",
+                random_state=42,
             )
+            if "lr_C" in lgbm_params:
+                lr_params["C"] = float(lgbm_params.pop("lr_C"))
+            model = _SklearnMulticlassWrap(LogisticRegression(**lr_params))
             model.fit(X_scaled, y_codes)
 
+        self._used_lgbm = used_lgbm
         self._model = model
         self._log_feature_importance()
         return self
@@ -345,6 +428,113 @@ class RegimePredictor:
         confidence = proba[np.arange(len(code)), code]
         y_pred = np.array([self.REGIME_ORDER[c] for c in code], dtype=object)
         return y_pred, confidence, proba
+
+    # ============================================================
+    # Phase 4: LGBM + HMM 集成
+    # ============================================================
+    def predict_with_ensemble(
+        self,
+        X_lgbm: np.ndarray,
+        X_hmm: np.ndarray,
+        feature_names: Optional[List[str]] = None,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """LGBM + HMM 集成预测
+
+        Spec §7.3:
+            final_prob = α × P_LGBM + (1-α) × P_HMM
+            α = 0.7（LGBM 主导，可通过 WalkForward 调参）
+
+        Args:
+            X_lgbm: (n_samples, n_features) LGBM 特征矩阵
+            X_hmm: (n_samples, n_features_hmm) HMM 特征矩阵（可与 X_lgbm 相同）
+            feature_names: 可选列名（传给 LGBM 权重映射）
+
+        Returns:
+            y_pred: (n_samples,) str — 每个样本一个 REGIME_ORDER 标签
+            confidence: (n_samples,) float — 最大类概率 ∈ [0,1]
+            proba: (n_samples, 8) float — 每行加总=1
+        """
+        if not self.enable_bocpd_hmm or self.hmm_model is None:
+            # S6 关闭 / HMM 未训练 → 降级为纯 LGBM
+            return self.predict(X_lgbm, feature_names=feature_names)
+
+        # 1. LGBM 概率
+        _, _, p_lgbm = self.predict(X_lgbm, feature_names=feature_names)
+        # p_lgbm: (n, 8) 归一化
+
+        # 1.1 LGBM 温度 sharpening：LogisticRegression 输出概率常过于分散
+        #     （max≈0.3-0.4），在 8 分类下无法有效主导 argmax。
+        #     对 log 概率 ×T（T=3）使分布更尖锐，提升高置信样本的 max prob。
+        #     这是集成前的概率校准步骤，不改变 argmax（sharpening 是单调变换）。
+        T_sharp = 3.0
+        log_lgbm = np.log(np.clip(p_lgbm, 1e-12, 1.0))
+        p_lgbm = np.exp(log_lgbm * T_sharp)
+        row_sum = p_lgbm.sum(axis=1, keepdims=True)
+        row_sum = np.where(row_sum < 1e-12, 1.0, row_sum)
+        p_lgbm = p_lgbm / row_sum
+
+        # 2. HMM 概率
+        p_hmm = self.hmm_model.predict_proba(X_hmm)
+        # p_hmm: (n, 8) 归一化
+        # 对齐列数
+        if p_hmm.shape[1] != len(self.REGIME_ORDER):
+            full = np.zeros((p_hmm.shape[0], len(self.REGIME_ORDER)))
+            n = min(p_hmm.shape[1], len(self.REGIME_ORDER))
+            full[:, :n] = p_hmm[:, :n]
+            p_hmm = full
+        # 归一化
+        row_sum = p_hmm.sum(axis=1, keepdims=True)
+        row_sum = np.where(row_sum < 1e-12, 1.0, row_sum)
+        p_hmm = p_hmm / row_sum
+
+        # 2.1 HMM 温度平滑：无监督训练输出概率常接近 one-hot（max≈0.98+），
+        #     混合 50% 均匀分布软化到 max≈0.56，避免 HMM 硬概率主导 argmax。
+        #     HMM 在此仅作为时序先验修正，不应覆盖 LGBM 的特征判别。
+        eps_smooth = 0.5
+        p_hmm = (1.0 - eps_smooth) * p_hmm + eps_smooth / len(self.REGIME_ORDER)
+
+        # 3. 集成: final_prob = α × P_LGBM + (1-α) × P_HMM
+        alpha = self.ensemble_alpha
+        final_prob = alpha * p_lgbm + (1.0 - alpha) * p_hmm
+
+        # 4. 归一化 + argmax
+        row_sum = final_prob.sum(axis=1, keepdims=True)
+        row_sum = np.where(row_sum < 1e-12, 1.0, row_sum)
+        final_prob = final_prob / row_sum
+
+        code = np.argmax(final_prob, axis=1)
+        confidence = final_prob[np.arange(len(code)), code]
+        y_pred = np.array([self.REGIME_ORDER[c] for c in code], dtype=object)
+        return y_pred, confidence, final_prob
+
+    # ============================================================
+    # Phase 5: 外部数据源（S7 开关）
+    # ============================================================
+    def set_external_data(self, data: dict) -> "RegimePredictor":
+        """注入外部数据源数据
+
+        Spec §8 — S7 打开时，外部数据（USDT 市值、BTC.D、VIX、F&G）
+        通过此方法注入，用于：
+          1. 替代代理特征（如 stablecoin_inflow_proxy → 真实 USDT 市值变化）
+          2. 作为附加特征参与预测
+
+        Args:
+            data: 外部数据 dict，典型字段：
+                  - usdt_market_cap: USDT 总市值（USD）
+                  - btc_dominance: BTC 市占率（%）
+                  - vix: VIX 恐慌指数
+                  - fear_greed_index: 恐慌贪婪指数（0-100）
+
+        Returns:
+            self
+        """
+        self._external_data = dict(data)
+        logger.info(f"S7 外部数据已注入: {list(self._external_data.keys())}")
+        return self
+
+    def get_external_data(self) -> Optional[dict]:
+        """获取已注入的外部数据"""
+        return self._external_data
 
     # ============================================================
     # 父类兼容 API（predict_regime_names / get_regime_params）

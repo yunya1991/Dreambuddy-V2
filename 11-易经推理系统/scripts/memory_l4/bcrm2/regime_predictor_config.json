@@ -23,21 +23,46 @@
       "btc_dominance_change_20d",
       "btc_dominance_rolling_5d",
       "breadth_new_high_3_ratio_ma20"
+    ],
+    "ma200_cycle": [
+      "ma200_distance_pct",
+      "ma200_above",
+      "ma200_slope_20d",
+      "cycle_distance_from_365d_high",
+      "cycle_distance_from_365d_low",
+      "cycle_position_in_range",
+      "cycle_time_since_peak",
+      "cycle_momentum_180d",
+      "cycle_vol_regime_90d",
+      "cycle_trend_365d"
+    ],
+    "multi_timeframe": [
+      "ma_alignment_score",
+      "ma_cross_50_200_signal",
+      "log_ret_30d",
+      "log_ret_90d",
+      "vol_60d_percentile_252d",
+      "volume_ma20_ratio"
     ]
   },
   "feature_weights": {
     "morphology": 2.5,
     "breadth": 1.5,
+    "ma200_cycle": 2.0,
+    "multi_timeframe": 1.8,
     "other": 1.0
   },
   "lgbm_hparams": {
-    "learning_rate": 0.05,
-    "num_leaves": 63,
-    "feature_fraction": 0.9,
-    "bagging_fraction": 0.85,
+    "learning_rate": 0.02,
+    "num_leaves": 15,
+    "feature_fraction": 0.7,
+    "bagging_fraction": 0.7,
     "bagging_freq": 5,
-    "min_data_in_leaf": 20,
-    "num_boost_round": 350
+    "min_data_in_leaf": 30,
+    "lambda_l1": 2.0,
+    "lambda_l2": 10.0,
+    "max_depth": 5,
+    "num_boost_round": 800
   },
   "walk_forward": {
     "n_splits": 5,
@@ -50,6 +75,7 @@
     "forward_days": 20,
     "lookback": 252
   },
-  "feature_set": "btc_morphology",
+  "feature_set": "btc_morphology_v5",
+  "enable_cycle_features": true,
   "symbol": "BTCUSDT"
 }

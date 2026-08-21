@@ -17,6 +17,7 @@
 """
 import argparse
 import json
+import os
 import signal as signal_module
 import time
 from datetime import datetime, timezone
@@ -27,6 +28,10 @@ import numpy as np
 from scripts.memory_l4.bcrm.bagua_engine import BaguaEngine
 from scripts.memory_l4.bcrm.engine import BCRMEngine
 from scripts.memory_l4.bcrm2.incremental_learner import IncrementalLearner
+from scripts.memory_l4.bcrm2.shadow_logger import ShadowLogger, SHADOW_LOGGER_ENABLED
+from scripts.memory_l4.bcrm2.parameter_mapper import (
+    ALPHA_BLEND_ENABLED, DEFAULT_ALPHA_BLEND, ALPHA_BLEND_MAX,
+)
 from scripts.memory_l4.bcrm2_adapter import BCRM2Adapter
 from scripts.memory_l4.classic_exit_system import (
     ClassicExitSystem,
@@ -71,6 +76,41 @@ from scripts.memory_l4.yijing_trainer import (
     _load_kline_from_okx,
 )
 import pandas as pd
+
+# ── 公共代币池加载器（方案B：运行时读取，8h自动刷新）──
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+_REGISTRY_PATHS = [
+    Path(os.environ.get("TOKEN_REGISTRY_PATH", ""))
+    if os.environ.get("TOKEN_REGISTRY_PATH")
+    else None,
+    _PROJECT_ROOT / "config" / "token_registry.json",
+]
+_POOL_TTL = 28800  # 8小时
+
+
+def _load_registry_symbols():
+    """从 token_registry.json 加载启用的币种列表。文件不存在/损坏时返回 None。"""
+    for p in _REGISTRY_PATHS:
+        if p is None or not p.exists():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+            tokens = data.get("tokens", [])
+            syms = []
+            for t in tokens:
+                if isinstance(t, dict):
+                    if not t.get("enabled", True):
+                        continue
+                    s = str(t.get("symbol", "")).strip().upper()
+                    if s:
+                        syms.append(s)
+                elif isinstance(t, str) and t.strip():
+                    syms.append(t.strip().upper())
+            if syms:
+                return syms
+        except Exception:
+            continue
+    return None
 
 
 class PollingTrader:
@@ -119,6 +159,40 @@ class PollingTrader:
     SHORT_POSITION_MULTI_STRONG: float = 1.0
     SHORT_POSITION_MULTI_NORMAL: float = 0.7
     SHORT_POSITION_MULTI_WEAK:   float = 0.4
+
+    # ================================================================
+    # H1 / H4 补充：长多 UP 方向（与做空方向对称）的弹簧力场阈值+仓位分层常量
+    # 回测逻辑：胜率反比 → 抑制追顶，放宽震荡蓄势
+    # ================================================================
+    # --------- 长多置信度阈值乘数（基于 MA 评分档位）---------
+    # STRONG: 5均线多头排列       → ×0.9091 ≈ 1/1.10 略微放宽阈值（顺势，但避免追极强顶）
+    # NORMAL: 3~4均线多头         → ×1.0000 标准
+    # WEAK  : 仅1~2均线短周期多头 → ×1.1111 ≈ 1/0.90 提高门槛（弱趋势/反抽诱多）
+    LONG_CONF_MULTI_MA_STRONG: float = 0.9091
+    LONG_CONF_MULTI_MA_NORMAL: float = 1.0000
+    LONG_CONF_MULTI_MA_WEAK:   float = 1.1111
+
+    # --------- market_regime 长多阈值调节器（基于回测/经验胜率反比）---------
+    #   乘数 > 1.0 = 抬高阈值 = 抑制做多；乘数 < 1.0 = 降低阈值 = 放宽做多
+    #   TREND_BULL        ：胜率 ~55% → ×1.05（略微抑制：避免末端追顶）
+    #   STRONG_TREND_BULL ：胜率 ~45% → ×1.10（强抑制：强趋势末端大概率顶背离诱多）
+    #   TREND_BEAR        ：胜率 ~30% → ×1.15（强抑制：逆势抄底）
+    #   MEAN_REVERTING    ：无回测 → ×1.00（中性）
+    #   RANGING           ：胜率 ~68% → ×0.85（放宽：震荡蓄势向上突破）
+    REGIME_LONG_CONF_MULTI_TREND_BULL:        float = 1.05
+    REGIME_LONG_CONF_MULTI_STRONG_TREND_BULL: float = 1.10
+    REGIME_LONG_CONF_MULTI_TREND_BEAR:        float = 1.15
+    REGIME_LONG_CONF_MULTI_MEAN_REVERTING:    float = 1.00
+    REGIME_LONG_CONF_MULTI_RANGING:           float = 0.85
+
+    # --------- 长多仓位规模分层（bullish_score → position_multiplier）---------
+    #   理论：突破越多均线弹簧恢复力越强→仓位越大；强顶背离/末端追涨反而降仓
+    #   STRONG: 5均线多头排列确认 → 顺势 → 标准仓位 ×1.0（保守，不主动加杠杆追）
+    #   NORMAL: 3~4均线多头       → 中等 → ×0.7
+    #   WEAK  : 1~2短周期多头反抽 → 轻仓 → ×0.4
+    LONG_POSITION_MULTI_STRONG: float = 1.0
+    LONG_POSITION_MULTI_NORMAL: float = 0.7
+    LONG_POSITION_MULTI_WEAK:   float = 0.4
 
     # --------- 五均线分层弹簧力场：组权重（sum=1.00）---------
     # 短中期组 (MA30 + MA65)   : 0.35
@@ -224,7 +298,7 @@ class PollingTrader:
         use_bcrm2: bool = True,
     ):
         self.interval = interval
-        default_coins = [
+        default_coins = _load_registry_symbols() or [
             "UNI",
             "PUMP",
             "MU",
@@ -240,6 +314,10 @@ class PollingTrader:
             "OKB",
             "SNDK",
             "SPCX",
+            "CRCL",
+            "COIN",
+            "BMNR",
+            "MSTR",
         ]
         # P4 修复：币种规范化映射
         # 实际 OKX 合约：
@@ -255,6 +333,7 @@ class PollingTrader:
             return _NORMALIZE_COIN.get(cu, cu)
 
         self.coins = [_norm(c) for c in (coins or default_coins)]
+        self._last_pool_refresh = 0.0  # 公共代币池8h刷新时间戳
         self.bar = bar
         self.confidence_threshold = confidence_threshold
         self.short_confidence_threshold = short_confidence_threshold  # 做空独立阈值（高于做多）
@@ -497,6 +576,62 @@ class PollingTrader:
             "liquidity_risk_s": 0.10,
         }
 
+        # ── 持仓与离场管理层：ExitManager 策略链（v4.4 新增） ──
+        # Spec: docs/superpowers/specs/2026-08-20-exit-manager-design.md
+        # 5 个 per-position 策略（RankedTp 由全局跨持仓循环处理）
+        from scripts.memory_l4.bcrm2.exit_manager import ExitManager
+        from scripts.memory_l4.bcrm2.exit_strategies import (
+            P3EarlyExitStrategy, SignalReverseStrategy,
+            EvForceCloseStrategy, TimeoutProfitSwitchStrategy,
+            EvAdjustStrategy,
+        )
+        _timeout_hours = 29.0
+        try:
+            _veto_sec = self.yijing_exit_system.config.veto_max_hold_sec
+            if _veto_sec and _veto_sec > 0:
+                _timeout_hours = _veto_sec / 3600.0
+        except Exception:
+            pass
+        self._ev_force_close_strategy = EvForceCloseStrategy(
+            force_below=self.EV_FORCE_CLOSE_BELOW,
+            exit_confirm_required=self.EXIT_CONFIRM_REQUIRED,
+            enabled=self.enable_ev_radar,
+        )
+        self._ev_adjust_strategy = EvAdjustStrategy(
+            warn_lower=self.EV_WARN_LOWER_BOUND,
+            warn_upper=self.EV_WARN_UPPER_BOUND,
+            strong_above=self.EV_STRONG_HOLD_ABOVE,
+            enabled=self.enable_ev_radar,
+        )
+        self.exit_manager = ExitManager(strategies=[
+            P3EarlyExitStrategy(
+                exit_confirm_required=self.EXIT_CONFIRM_REQUIRED,
+                protected_p3_min_loss_pct=self.PROTECTED_P3_MIN_LOSS_PCT,
+            ),
+            SignalReverseStrategy(
+                base_threshold=float(self.confidence_threshold),
+                protected_conf_boost=self.PROTECTED_REVERSE_CONF_BOOST,
+                exit_confirm_required=self.EXIT_CONFIRM_REQUIRED,
+            ),
+            self._ev_force_close_strategy,
+            TimeoutProfitSwitchStrategy(timeout_hours=_timeout_hours),
+            self._ev_adjust_strategy,
+        ])
+        # ── 注入 storage 适配器，用于 exit_strategy_log 贡献值统计 ──
+        try:
+            from scripts.memory_l4.bcrm2.run_evolution_pipeline import get_storage
+            _exit_storage = get_storage()
+            if _exit_storage is not None:
+                self.exit_manager.set_storage(_exit_storage)
+        except Exception as _e:
+            self._log(f"[ExitManager] storage 注入失败，贡献值统计降级关闭: {_e}", "WARN")
+        self._log(
+            f"[ExitManager] 策略链初始化 | 5 策略 | "
+            f"P3(10)→SignalRev(20)→EvFC(30)→Timeout(40)→EvAdj(60) | "
+            f"timeout={_timeout_hours:.1f}h",
+            "INFO",
+        )
+
         # ──────────────────────────────────────────────────────
         # Phase C: 多 horizon 预测 + 排名止盈 默认参数
         # ──────────────────────────────────────────────────────
@@ -512,6 +647,837 @@ class PollingTrader:
         self.S3_PREP_EXIT_CONFIRM_WINDOW: int = 3      # 回看最近 3 轮预测
         self.S3_PREP_EXIT_CONFIRM_RATE: float = 0.67   # ≥ 2/3 轮一致 → 允许进入离场确认
         self.EXIT_ACT_S3_PREP_EXIT = "s3_prep_exit"    # 离场确认 tag
+
+        # ──────────────────────────────────────────────────────
+        # H3-FMA 渐进自动开关：RolloutManager 状态（与 data_server 共用 phase_c_rollout_state.json）
+        #   • phase_c_rollout_state_path 存路径 + phase_c_rollout_mgr 存实例（懒加载）
+        #   • FMA 最后检查时间戳（避免每1小时轮询都调一次评估，每天最多1次）
+        # ──────────────────────────────────────────────────────
+        self._fma_phase_c_state_path = None
+        self._fma_phase_c_mgr = None        # 懒加载：AB闸门口才创建（异常不影响主流程）
+        self._fma_last_auto_check_ts: float = 0.0   # 上次自动调 evaluate_fma_toggle 时间戳
+        self._FMA_AUTO_CHECK_INTERVAL_SEC = 20 * 3600   # 每 20 小时评估一次（保守，每天至多1次切换扰动）
+
+        # ──────────────────────────────────────────────────────
+        # Phase B: ShadowLogger 影子模式初始化
+        # 开关 SHADOW_LOGGER_ENABLED 默认 False，关闭时 _shadow_logger=None
+        # 确保 CLI 字节等价（不影响任何交易逻辑）
+        # ──────────────────────────────────────────────────────
+        self._shadow_logger: ShadowLogger = None  # type: ignore[assignment]
+        self._init_shadow_logger()
+
+        # ──────────────────────────────────────────────────────
+        # Phase C: α blend 前瞻参数上线初始化
+        # 开关 ALPHA_BLEND_ENABLED 默认 False，关闭时 _alpha_blend=0.0
+        # 确保 CLI 字节等价（α=0 时 ParameterMapper 输出不变）
+        # ──────────────────────────────────────────────────────
+        self._alpha_blend_enabled: bool = False
+        self._alpha_blend: float = 0.0
+        self._init_alpha_blend()
+
+        # T4: enable_inject 融合层开关（进程级，从文件读取）
+        self._enable_inject_runtime: bool = False
+        self._enable_inject_last_reload: float = 0.0
+        self._enable_inject_reload_interval: float = 300.0  # 每 5 分钟重读一次
+        self._init_enable_inject()
+
+        # ──────────────────────────────────────────────────────
+        # H3-FMA 渐进：冷启动时从 rollout_state.json 还原 FMA_REGIME_FILTER_ENABLED
+        #   优先级：rollout state 中的 fma_enabled（人工/自动渐进切换） > 类默认 False
+        #   失败：兜底保留类默认 False（不影响交易）
+        # ──────────────────────────────────────────────────────
+        self._fma_load_from_rollout()
+
+        # ──────────────────────────────────────────────────────
+        # Phase C+: 大小周期 MorphCyclePredictor + ParameterMapper 单例
+        #   目的：① 日志审计（大小周期→形态→六维→注入BCRM闭环）
+        #         ② 后续 enable_inject=True 时直接复用
+        #   约束：无论开关状态，均不改变任何交易参数（字节等价）
+        # ──────────────────────────────────────────────────────
+        self._morph_predictor = None
+        self._param_mapper = None
+        self._init_morph_and_param_mapper()
+
+    # ================================================================
+    # Phase C+: 大小周期预测器 + ParameterMapper 初始化
+    # 设计原则：失败降级为 None，仅影响日志，不影响交易逻辑
+    # ================================================================
+
+    def _init_morph_and_param_mapper(self):
+        """初始化大小周期 MorphCyclePredictor（单例）与 ParameterMapper。
+
+        storage 优先复用 bcrm2_adapters（所有 adapter 共享同一 storage），
+        兜底使用 run_evolution_pipeline.get_storage()。异常被 catch，
+        self._morph_predictor / self._param_mapper 置为 None，后续方法会安全 return。
+        """
+        try:
+            from scripts.memory_l4.bcrm2.morph_cycle_predictor import MorphCyclePredictor
+            from scripts.memory_l4.bcrm2.parameter_mapper import ParameterMapper
+            from scripts.memory_l4.bcrm2.run_evolution_pipeline import get_storage
+        except Exception as e:
+            self._log(f"[Morph] 导入失败，大小周期预测日志降级关闭: {e}", "WARN")
+            return
+
+        storage = None
+        try:
+            if hasattr(self, "bcrm2_adapters") and self.bcrm2_adapters:
+                first_adapter = next(iter(self.bcrm2_adapters.values()))
+                if hasattr(first_adapter, "storage"):
+                    storage = first_adapter.storage
+        except Exception:
+            storage = None
+        if storage is None:
+            try:
+                storage = get_storage()
+            except Exception:
+                storage = None
+
+        if storage is not None:
+            try:
+                self._morph_predictor = MorphCyclePredictor(storage)
+            except Exception as e:
+                self._log(f"[Morph] Predictor 构造失败: {e}", "WARN")
+                self._morph_predictor = None
+        else:
+            self._log(f"[Morph] storage 不可用，大小周期预测日志降级关闭", "WARN")
+
+        try:
+            self._param_mapper = ParameterMapper()
+        except Exception as e:
+            self._log(f"[Morph] ParameterMapper 构造失败: {e}", "WARN")
+            self._param_mapper = None
+
+        # 初始化结果 INFO 日志（审计要求：启动时明确知道大小周期/六维已加载）
+        predictor_ready = getattr(self._morph_predictor, "storage", None) is not None
+        mapper_ready = self._param_mapper is not None
+        self._log(
+            f"[Morph] 大小周期预测器/ParameterMapper 初始化完成 "
+            f"(predictor={'ON' if predictor_ready else 'OFF'}, "
+            f"mapper={'ON' if mapper_ready else 'OFF'})",
+            "INFO",
+        )
+
+    def _log_morph_cycle_for_coin(self, coin: str, inst_id: str) -> None:
+        """对单个币种运行大小周期预测并打 INFO 日志（只读，不影响交易逻辑）。
+
+        日志覆盖：大周期 4y t_rel/阶段 + 小周期主周期/振幅/L/T +
+        FFT 权重修正 + Hermite 切线修正 + 大周期边界约束(phase/level/amp_cap/decay)。
+        与 data_server tab-morph 的 /cycle + /cycle_bounds 输出对齐，
+        用于「大小周期 → 市场形态 → 六维参数」传递链的闭环审计。
+
+        异常直接被吞，不影响主流程。
+        """
+        predictor = getattr(self, "_morph_predictor", None)
+        if predictor is None:
+            return
+        try:
+            _full = inst_id or f"{coin.upper()}USDT"
+            mp = predictor.predict_with_fallback(_full, hist_days=60, forecast_days=5)
+            if not mp.get("ok"):
+                # 样本不足 / BTC fallback 失败 -> 降级记录（也算审计闭环：大小周期已执行）
+                err = mp.get("error") or "未知"
+                fallback = mp.get("fallback_used", False)
+                self._log(
+                    f"[{coin}] 大小周期预测(只读)未就绪 | fallback={fallback} | reason={err}",
+                    "INFO",
+                )
+                return
+            params = mp.get("params") or {}
+            # 大周期 4 年：tab-morph 的 cycle4y + bounds（如果 predictor 内部附了）
+            c4y = mp.get("cycle_4y") or {}
+            bounds = mp.get("bounds") or {}
+            t_rel = c4y.get("t_rel_current") or (bounds.get("t_rel_current") if isinstance(bounds, dict) else None)
+            phase = (bounds.get("phase_hint") if isinstance(bounds, dict) else None) or c4y.get("stage")
+            # 权重修正 / 切线修正
+            corr = mp.get("correction_applied") or {}
+            wc_pre = corr.get("weight_correction_pre") or {}
+            tc_pre = corr.get("tangent_correction_pre") or {}
+            # 边界约束三类动作（predictor 返回）
+            fft_scale = mp.get("fft_scale_result") or {}
+            pullback = mp.get("pullback_result") or {}
+            overshoot = mp.get("overshoot_events") or []
+            anchor = mp.get("anchor_correction_result")
+            auto = mp.get("auto_correction_result")
+            # 小周期主周期/振幅
+            top3 = mp.get("top3_components") or []
+            main_p = top3[0]["period"] if top3 else params.get("detected_period")
+            main_a = top3[0]["amplitude"] if top3 else params.get("amplitude")
+
+            wc_keys_n = len(wc_pre)
+            tc_str = (f"m0×{float(tc_pre.get('m0_mul',1.0)):.3f} m1×{float(tc_pre.get('m1_mul',1.0)):.3f} "
+                      f"bias={float(tc_pre.get('bias',0.0)):+.4f}" if tc_pre else "n/a")
+            fft_a = f"amp×{float(fft_scale.get('scale_factor',1.0)):.3f}(orig={float(fft_scale.get('original_amp',0)):.3f})" if isinstance(fft_scale,dict) and fft_scale.get("applied") else "未触发"
+            pb = f"回拉{int(pullback.get('overshoot_count',0))}次" if isinstance(pullback,dict) and pullback.get("applied") else "未越界"
+            anchor_note = ""
+            if isinstance(anchor, dict):
+                tag = "OK" if anchor.get("ok") or anchor.get("applied") else "冷却"
+                anchor_note = f" | 锚定大修正={tag}"
+            auto_note = ""
+            if isinstance(auto, dict):
+                if auto.get("ok") or auto.get("reason"):
+                    auto_note = f" | 在线小修正={auto.get('reason') or 'OK'}"
+            overshoot_n = len(overshoot) if isinstance(overshoot, list) else 0
+
+            self._log(
+                f"[{coin}] 大小周期预测(只读) | "
+                f"大周期 t_rel={t_rel} phase={phase or '-'} | "
+                f"小周期 主周期={main_p}d amp={main_a} L={params.get('current_L','-')} T={params.get('current_T','-')} | "
+                f"权重修正={wc_keys_n}键 | 切线修正=[{tc_str}] | "
+                f"边界约束[FFT {fft_a} | 预测{pb} | 越界事件={overshoot_n}]{anchor_note}{auto_note}",
+                "INFO",
+            )
+        except Exception:
+            # 全分支兜底，任何异常都不影响主轮询
+            return
+
+    def _log_param_mapper_snapshot(self, coin: str, inst_id: str, inference: dict) -> None:
+        """对齐 tab-morph /api/morph/params：ParameterMapper 六维参数快照（只读）。
+
+        目的：审计「市场形态 → 六维参数 → 注入 BCRM 2.0」段③的理论值日志。
+        优先使用 inference.snapshot.level_smooth/trend_smooth/consensus（若存在），
+        否则兜底：大小周期预测 current_L/current_T + C=0.5（保守中性）。
+        结果只打日志，不改变任何交易参数。
+        """
+        mapper = getattr(self, "_param_mapper", None)
+        if mapper is None:
+            return
+        try:
+            snap = (inference or {}).get("snapshot") or {}
+            L = float(snap.get("level_smooth", 0.0) or 0.0)
+            T = float(snap.get("trend_smooth", 0.0) or 0.0)
+            C = float(snap.get("consensus", 0.0) or 0.0)
+            src_tag = "snapshot"
+            if L == 0.0 and T == 0.0 and C == 0.0:
+                # 兜底：从大小周期预测器取 L/T，C 默认 0.5（中性），让日志可闭环
+                predictor = getattr(self, "_morph_predictor", None)
+                if predictor is not None:
+                    try:
+                        _full = inst_id or f"{coin.upper()}USDT"
+                        _cy = predictor.predict_with_fallback(_full, hist_days=60, forecast_days=5)
+                        if _cy.get("ok"):
+                            _pa = _cy.get("params") or {}
+                            _L = _pa.get("current_L")
+                            _T = _pa.get("current_T")
+                            if _L is not None and _T is not None:
+                                L = float(_L); T = float(_T)
+                                C = 0.5
+                                src_tag = f"predictor(consensus=default0.5)"
+                    except Exception:
+                        pass
+            if L == 0.0 and T == 0.0 and C == 0.0:
+                return
+
+            global_params = mapper.map_global_parameters(L, T, C)
+            sw_full = mapper.map_sector_weights(L, T, C, sector_betas=getattr(mapper, "_DEFAULT_IDENTITY_BETAS", None) or {
+                "defi": (1.0,0.0,0.0),"ai":(1.0,0.0,0.0),"rwa":(1.0,0.0,0.0),"meme":(1.0,0.0,0.0),"l2":(1.0,0.0,0.0),
+            })
+            if isinstance(sw_full, dict) and "weights" in sw_full:
+                sw = sw_full["weights"]
+                tp_m = sw_full.get("sector_tp_mult") or {}
+                sl_m = sw_full.get("sector_sl_mult") or {}
+            else:
+                sw, tp_m, sl_m = sw_full or {}, {}, {}
+
+            def _gp(name):
+                rng = global_params.get(name)
+                if isinstance(rng, tuple) and len(rng) == 2:
+                    lo, hi = map(float, rng)
+                    return round((lo + hi) / 2.0, 5)
+                return float(rng or 1.0)
+            pos_c = _gp("global_position_mult")
+            lscap_c = _gp("ls_ratio_cap")
+            lb_c = _gp("long_bias")
+            sb_c = _gp("short_bias")
+            lt_c = _gp("long_threshold_mult")
+            st_c = _gp("short_threshold_mult")
+            sw_sorted = sorted(sw.items(), key=lambda kv: -float(kv[1]))[:3] if isinstance(sw, dict) else []
+            sw_str = ",".join(f"{k}={float(v):.3f}(tp×{float(tp_m.get(k,1.0)):.2f}/sl×{float(sl_m.get(k,1.0)):.2f})" for k,v in sw_sorted) or "n/a"
+            self._log(
+                f"[{coin}] ParameterMapper 六维(只读对齐tab-morph src={src_tag}) | L={L:+.4f} T={T:+.4f} C={C:.4f} | "
+                f"pos×{pos_c:.3f} ls_cap={lscap_c:.3f} "
+                f"long_bias={lb_c:+.3f}/sh_bias={sb_c:+.3f} "
+                f"long_thr×{lt_c:.3f}/short_thr×{st_c:.3f} | "
+                f"sector_top3=[{sw_str}]",
+                "INFO",
+            )
+        except Exception:
+            return
+
+    def _log_regime_hold_confirmation(self, coin: str, inference: dict, pos_info: dict) -> None:
+        """已持仓形态乘数中性确认日志（段④ 注入 BCRM：持仓配置/资金风控）。
+
+        即便没有新开仓（形态仓位调整/SL/TP 日志因为在 _open_position 未走而缺失），
+        也在持仓路径打印一条确认：当前形态 regime 的 pos/tp/sl 乘数 × 实际持仓方向/持仓金额/
+        实际 S2 调整后 SLTP ROI 是否与乘数单调一致（=1.0 也算「生效路径闭环」）。
+        纯描述性 INFO，不修改任何变量。
+        """
+        try:
+            _reg = inference.get("_regime_pred") or "UNKNOWN"
+            _rm = dict(inference.get("_regime_multipliers") or {})
+            pm_pos = float(_rm.get("position_mult", 1.0))
+            pm_tp  = float(_rm.get("tp_mult", 1.0))
+            pm_sl  = float(_rm.get("sl_mult", 1.0))
+            pm_thr = float(_rm.get("threshold_mult", 1.0))
+            pos_side = pos_info.get("pos_side") or "-"
+            upl = float(pos_info.get("upl", 0) or 0)
+            upl_pct = float(pos_info.get("upl_ratio", 0) or 0)
+            entry_px = float(pos_info.get("entry_px", 0) or inference.get("price", 0) or 0)
+            pos_sz = float(pos_info.get("position_size", 0) or 0)
+            self._log(
+                f"[{coin}] 已持仓形态乘数作用确认 | regime={_reg} "
+                f"pos×{pm_pos:.3f} tp×{pm_tp:.3f} sl×{pm_sl:.3f} thr×{pm_thr:.3f} | "
+                f"持仓={pos_side} 金额≈{pos_sz*entry_px:+.1f}U 盈亏={upl:+.2f}({upl_pct:+.2%}) "
+                f"(基线路径，乘数仅用于记录/后续promote对比，不改变当前持仓)",
+                "INFO",
+            )
+        except Exception:
+            return
+
+    def _run_polling_level_learning_and_ab(self):
+        """每轮轮询结束时执行：段⑤在线学习 + 段⑥AB闸门状态（只读审计日志）。
+
+        对应 data_server 的 /api/morph/correct?min=3 与 /api/eval/baseline：
+          - 在线学习：对 BTC 执行一次 evaluate_and_correct（最小样本由方法内兜底判断不足 3 条会返回 reason 不修正）
+            + 再对持仓币种（self.position_tracker.open）尝试运行（对 fallback_used=False 且 trajectory>=20 的币）
+          - AB 闸门：读 RolloutManager 的 dual baseline 评估结果（与 data_server 共用 state）
+        全部只记录日志，不做任何 promote 动作（promote 保留为 data_server 手动 API 触发，避免自动升级）。
+        """
+        # --- [段①②③ 核心锚定币种 BTCUSDT：对齐 tab-morph /api/morph/cycle+/params] ---
+        # 用户指定以 http://127.0.0.1:8765 市场形态预测 tab 数据为基准 → 直接复用
+        # data_server_fixed.get_morph_cycle() + get_morph_params() 同一函数（与 tab HTTP
+        # 路由共享实现），确保 BTC 的 大小周期 / 六维 值与 tab 完全一致，不留偏差。
+        # 其他币种的大小周期&六维已经在 _execute_trade 内 _log_morph_cycle_for_coin +
+        # _log_param_mapper_snapshot 兜底生成。此处 BTC 作为基准锚，强制使用 tab 同源函数。
+        try:
+            try:
+                from data_server_fixed import get_morph_cycle, get_morph_params  # type: ignore
+            except Exception:
+                # 若主包路径 import 失败（不同 CWD 场景），补 sys.path 再试
+                import sys as _sys
+                import pathlib as _pl
+                _sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent.parent))
+                from data_server_fixed import get_morph_cycle, get_morph_params  # type: ignore
+
+            mc = get_morph_cycle("BTCUSDT", hist_days=60, forecast_days=5) or {}
+            mp = get_morph_params("BTCUSDT") or {}
+            if mc.get("ok") or mp.get("ok"):
+                # 段①：大小周期预测（tab-morph 同源）
+                _p = mc.get("params") or {}
+                _t3 = mc.get("top3_components") or []
+                _t4y = mc.get("cycle_4y") or {}
+                _trel = (_t4y.get("t_rel_current")
+                         or ((mc.get("bounds") or {}).get("t_rel_current")
+                             if isinstance(mc.get("bounds"), dict) else None))
+                _ph = (((mc.get("bounds") or {}).get("phase_hint")
+                        if isinstance(mc.get("bounds"), dict) else None)
+                       or _t4y.get("stage"))
+                _corr = mc.get("correction_applied") or {}
+                _wc_n = len(_corr.get("weight_correction_pre") or {})
+                _tct = _corr.get("tangent_correction_pre") or {}
+                _tcs = (f"m0×{float(_tct.get('m0_mul',1.0)):.3f} m1×{float(_tct.get('m1_mul',1.0)):.3f} "
+                        f"bias={float(_tct.get('bias',0.0)):+.4f}" if _tct else "n/a")
+                _fs = mc.get("fft_scale_result") or {}
+                _pb = mc.get("pullback_result") or {}
+                _oa = len(mc.get("overshoot_events") or [])
+                _t3s = [(round(c['period'],1), round(c['amplitude'],4)) for c in _t3] if _t3 else []
+                self._log(
+                    f"[BTC] 大小周期预测(锚定tab-morph同源) | "
+                    f"大周期 t_rel={_trel} phase={_ph or '-'} halving_days_left={_t4y.get('halving_days_left')} | "
+                    f"小周期 top3={_t3s} main={(_t3[0]['period'] if _t3 else '-')}d amp={(_t3[0]['amplitude'] if _t3 else '-')} | "
+                    f"形态三维 L={_p.get('current_L','-')} T={_p.get('current_T','-')} | "
+                    f"权重修正={_wc_n}键 | 切线修正=[{_tcs}] | "
+                    f"边界约束[FFT amp×{_fs.get('scale_factor',1.0):.3f} applied={_fs.get('applied')} | "
+                    f"预测pullback applied={_pb.get('applied')} | 越界事件={_oa}] | "
+                    f"fallback={mc.get('fallback_used')} final_sym={mc.get('final_symbol')}",
+                    "INFO",
+                )
+                # 段②③：六维参数（tab-morph 同源 / api/morph/params inputs 与 BTC 六维）
+                if mp.get("ok"):
+                    _ins = mp.get("inputs") or {}
+                    _L = _ins.get("level_smooth")
+                    _T = _ins.get("trend_smooth")
+                    _C = _ins.get("consensus")
+                    _gp = mp.get("global_params") or []
+                    _gpd = {g["name"]: (g["center"], g.get("identity_center")) for g in _gp}
+                    _pos = (_gpd.get("global_position_mult") or (1.0, 1.0))[0]
+                    _lsc = (_gpd.get("ls_ratio_cap") or (1.15, 0.5))[0]
+                    _lbi = (_gpd.get("long_bias") or (0.0, 0.0))[0]
+                    _sbi = (_gpd.get("short_bias") or (0.0, 0.0))[0]
+                    _ltt = (_gpd.get("long_threshold_mult") or (1.0, 1.0))[0]
+                    _stt = (_gpd.get("short_threshold_mult") or (1.0, 1.0))[0]
+                    _sw = mp.get("sector_weights") or []
+                    _sws = sorted(_sw, key=lambda s: -float(s.get("weight", 0)))[:3]
+                    _sw_str = ",".join(
+                        f"{s.get('name','?')}={float(s.get('weight',0)):.3f}"
+                        f"(tp×{float(s.get('tp_mult',1.0)):.2f}/sl×{float(s.get('sl_mult',1.0)):.2f})"
+                        for s in _sws
+                    ) or "n/a"
+                    _sw_sum = round(sum(float(s.get("weight", 0)) for s in _sw), 6)
+                    self._log(
+                        f"[BTC] ParameterMapper 六维(锚定tab-morph同源 inputs) | "
+                        f"L={_L} T={_T} C={_C} | "
+                        f"pos×{_pos:.3f} ls_cap={_lsc:.3f} "
+                        f"long_bias={_lbi:+.3f}/sh_bias={_sbi:+.3f} "
+                        f"long_thr×{_ltt:.3f}/short_thr×{_stt:.3f} | "
+                        f"sector_top3=[{_sw_str}] Σsw={_sw_sum}",
+                        "INFO",
+                    )
+        except Exception:
+            # 同源函数异常时，降级回 polling_trader 内部 predictor 生成（仍能闭环，只是数值与 tab 有差异）
+            try:
+                self._log_morph_cycle_for_coin("BTC", "BTCUSDT")
+                self._log_param_mapper_snapshot("BTC", "BTCUSDT", {})
+            except Exception:
+                pass
+
+        # --- ⑤ 在线学习：MorphCyclePredictor.evaluate_and_correct ---
+        predictor = getattr(self, "_morph_predictor", None)
+        if predictor is not None:
+            # 目标币种列表：BTC(主) + 实际持仓币 + self.coins 列表头部 3 个
+            targets: list = []
+            if "BTC" not in targets:
+                targets.append(("BTCUSDT", 3))
+            try:
+                for pos in (self.position_tracker.all_open_positions() if hasattr(self.position_tracker,"all_open_positions") else []):
+                    inst = f"{pos.coin.upper()}USDT"
+                    if inst not in [t[0] for t in targets]:
+                        targets.append((inst, 3))
+            except Exception:
+                pass
+            for coin_i in (getattr(self, "coins", []) or [])[:3]:
+                inst = f"{str(coin_i).upper()}USDT"
+                if inst not in [t[0] for t in targets]:
+                    targets.append((inst, 3))
+            for (inst, min_s) in targets:
+                try:
+                    res = predictor.evaluate_and_correct(inst, min_filled_samples=min_s)
+                    backfilled = int(res.get("backfilled", 0) or 0)
+                    filled_total = int(res.get("filled_total", 0) or 0)
+                    mae_before = res.get("mae_before")
+                    mae_after = res.get("mae_after")
+                    reason = res.get("reason") or ""
+                    corr = res.get("correction") or {}
+                    wc_n = len(corr.get("weight_correction") or {})
+                    tc = corr.get("tangent_correction") or {}
+                    tc_str = (f"m0×{float(tc.get('m0_mul',1.0)):.3f} m1×{float(tc.get('m1_mul',1.0)):.3f} bias={float(tc.get('bias',0.0)):+.4f}"
+                              if tc else "-")
+                    if filled_total >= min_s:
+                        self._log(
+                            f"[Morph][在线学习] {inst} 执行修正 | "
+                            f"backfilled={backfilled} filled={filled_total} "
+                            f"MAE {mae_before}->{mae_after} | "
+                            f"weight修正={wc_n}键 tangent修正=[{tc_str}]",
+                            "INFO",
+                        )
+                    else:
+                        self._log(
+                            f"[Morph][在线学习] {inst} 跳过修正 | "
+                            f"backfilled={backfilled} filled={filled_total}/{min_s} reason={reason or '样本不足'}",
+                            "INFO",
+                        )
+                except Exception:
+                    continue
+
+        # --- ⑥ AB 闸门：RolloutManager allow_promotion / 当前α / shadow样本数 ---
+        try:
+            from scripts.memory_l4.bcrm2.scripts.phase_c_rollout_manager import RolloutManager  # type: ignore
+            import os
+            from pathlib import Path
+            # 统一使用 alpha_rollout_state.json（与 data_server API 共享）
+            state_path = Path(os.environ.get(
+                "V15_AI_ROLLOUT_STATE_PATH",
+                str(Path(__file__).resolve().parent.parent.parent / "data" / "alpha_rollout_state.json"),
+            ))
+            mgr = RolloutManager(state_path=state_path)
+            status = mgr.get_status()
+            # 同步刷新实盘 alpha_blend 值（每次 AB 闸门检查时重新读取）
+            _latest_alpha = status.get("current_alpha")
+            if _latest_alpha is not None and self._alpha_blend_enabled:
+                _new_alpha = min(float(_latest_alpha), ALPHA_BLEND_MAX)
+                if abs(_new_alpha - self._alpha_blend) > 1e-6:
+                    self._log(
+                        f"[AlphaBlend] AB闸门刷新 α: {self._alpha_blend:.4f} → {_new_alpha:.4f}",
+                        "INFO",
+                    )
+                    self._alpha_blend = _new_alpha
+        except Exception as e:
+            status = {"error": str(e)}
+
+        # Shadow 记录数（直接用 RolloutManager 内部 window 统计，若没有则从 shadow DB 估算）
+        try:
+            from data_server_fixed import get_dual_baseline_report  # type: ignore
+            report = get_dual_baseline_report(days=7)
+            inject_stats = (report.get("inject_run_stats") or {}) if report.get("ok") else {}
+            ev = (report.get("evaluation") or {}) if report.get("ok") else {}
+            n_shadow = report.get("window_records", 0) if report.get("ok") else 0
+            allow_promo = ev.get("allow_promotion", False)
+            reasons = ev.get("reasons") or []
+            enable_true = inject_stats.get("enable_true", 0)
+            enable_false = inject_stats.get("enable_false", 0)
+            inject_ratio = inject_stats.get("inject_ratio", 0.0)
+        except Exception:
+            n_shadow = 0
+            allow_promo = False
+            reasons = ["AB报告读取失败"]
+            enable_true = enable_false = 0
+            inject_ratio = 0.0
+
+        cur_alpha = None
+        if isinstance(status, dict) and "error" not in status:
+            cur_alpha = status.get("current_alpha")
+            hist_n = status.get("history_length", 0)
+        else:
+            cur_alpha = status.get("current_alpha") if isinstance(status, dict) else None
+            hist_n = 0
+        reasons_str = "；".join(str(r) for r in reasons) if reasons else "n/a"
+        # H3(P1)：FMA_REGIME_FILTER_ENABLED（后置层 5态差异化过滤开关）目前默认 False（回测验证效果不佳），
+        #          在 AB闸门日志中显示，避免审计时遗漏能力状态；等 Shadow ≥60 条再评估是否打开 True。
+        fma_on = bool(getattr(self, "FMA_REGIME_FILTER_ENABLED", False))
+
+        # ── H3-FMA 渐进自动检查：每 20h 评估一次，若样本≥60+达标则自动切 FMA=ON
+        try:
+            _all_7d_records = []
+            try:
+                # 直接从 data_server 复用 shadow_records_7d（若 data_server_fixed 模块有缓存）
+                from data_server_fixed import _shadow_logs_window  # type: ignore
+                _all_7d_records = list(_shadow_logs_window(days=7))
+            except Exception:
+                _all_7d_records = []
+            _fma_check = self._fma_auto_check(n_shadow_total=n_shadow,
+                                               shadow_records_7d=_all_7d_records)
+        except Exception as _e1:
+            _fma_check = {"triggered": False, "action": "ERROR", "delta": 0.0,
+                          "shadow_off_total": 0, "shadow_on_total": 0,
+                          "win_rate_off": 0.0, "win_rate_on": 0.0,
+                          "reason": f"调用失败: {_e1}"}
+        self._log(
+            f"[AB闸门][双基线评估] 样本={n_shadow}/30 | inject={enable_true}T/{enable_false}F(ratio={inject_ratio:.2f}) | "
+            f"α={self._alpha_blend:.4f} "
+            f"allow_promotion={'ALLOW' if allow_promo else 'BLOCK'} | "
+            f"原因: {reasons_str} | "
+            f"FMA_5态过滤开关={'ON(实验/对比)' if fma_on else 'OFF(默认双均线确认趋势)'}",
+            "INFO",
+        )
+        _fma_triggered = bool(_fma_check.get("triggered", False))
+        _fma_action = str(_fma_check.get("action", "SKIP"))
+        _fma_delta = float(_fma_check.get("delta", 0.0) or 0.0)
+        _fma_off_total = int(_fma_check.get("shadow_off_total", 0) or 0)
+        _fma_on_total = int(_fma_check.get("shadow_on_total", 0) or 0)
+        _fma_min_samples = 60
+        try:
+            _fm = self._fma_get_rollout_manager()
+            if _fm is not None:
+                _fma_min_samples = int(getattr(_fm, "fma_min_samples", 60) or 60)
+        except Exception:
+            pass
+        self._log(
+            f"[FMA渐进自动检查] 触发={'YES' if _fma_triggered else 'BLOCK'} "
+            f"action={_fma_action} | "
+            f"FMA_OFF样本={_fma_off_total}/{_fma_min_samples}(≥触发门槛) | "
+            f"FMA_ON样本={_fma_on_total} | "
+            f"Δ={_fma_delta:+.2%}(ON-OFF胜率差) | "
+            f"当前={'ON' if fma_on else 'OFF'} | "
+            f"说明: {_fma_check.get('reason','n/a')}",
+            "INFO" if _fma_action in ("KEEP", "SKIP", "SKIP_TIME_GATE") else "WARN",
+        )
+
+    # ================================================================
+    # Phase B: ShadowLogger 影子模式集成
+    # 设计原则：
+    #   • SHADOW_LOGGER_ENABLED 默认 False → _shadow_logger=None → 字节等价
+    #   • 只记录，不改变任何交易参数
+    #   • 异常被 catch，不影响主流程
+    # ================================================================
+
+    def _init_shadow_logger(self):
+        """初始化 ShadowLogger（若开关开启）。
+
+        开关关闭时：_shadow_logger = None，后续 _record_shadow_log 直接 return。
+        开关开启时：尝试构造 ShadowLogger，失败降级为 None（不抛异常）。
+        """
+        if not SHADOW_LOGGER_ENABLED:
+            self._shadow_logger = None
+            return
+        try:
+            from scripts.memory_l4.bcrm2.morph_cycle_predictor import MorphCyclePredictor
+            from scripts.memory_l4.bcrm2.parameter_mapper import ParameterMapper
+
+            # 复用 bcrm2_adapters 中的 storage（若已初始化）
+            storage = None
+            if hasattr(self, "bcrm2_adapters") and self.bcrm2_adapters:
+                # 取第一个 adapter 的 storage（所有 adapter 共享同一 storage）
+                first_adapter = next(iter(self.bcrm2_adapters.values()))
+                if hasattr(first_adapter, "storage"):
+                    storage = first_adapter.storage
+            if storage is None:
+                # 兜底：新建一个 storage（Phase B 影子模式独立 DB）
+                from scripts.memory_l4.bcrm2.run_evolution_pipeline import get_storage
+                storage = get_storage()
+
+            predictor = MorphCyclePredictor(storage)
+            mapper = ParameterMapper()
+            self._shadow_logger = ShadowLogger(storage, predictor, mapper)
+            self._log("[ShadowLogger] 影子模式已启用（只记录，不影响交易）", "INFO")
+        except Exception as e:
+            self._shadow_logger = None
+            self._log(f"[ShadowLogger] 初始化失败，降级为关闭: {e}", "WARN")
+
+    def _record_shadow_log(self, coin: str, inference: dict,
+                            actual_params: dict):
+        """记录一条 Shadow 日志（若开关开启且 logger 可用）。
+
+        异常被 catch，不影响主流程。开关关闭或 logger 为 None 时直接 return。
+        """
+        if not SHADOW_LOGGER_ENABLED:
+            return
+        if not getattr(self, "_shadow_logger", None):
+            return
+        try:
+            enable_inject = getattr(self, "_enable_inject_runtime", False)
+            alpha_blend = getattr(self, "_alpha_blend", 0.0)
+            fma_shadow_allowed = inference.get("fma_shadow_allowed")
+            fma_shadow_eff_thr = inference.get("fma_shadow_eff_threshold")
+            self._shadow_logger.record_polling(
+                coin, inference, actual_params,
+                enable_inject=enable_inject, alpha_blend=alpha_blend,
+                fma_on_allowed=fma_shadow_allowed,
+                fma_on_eff_threshold=fma_shadow_eff_thr,
+            )
+        except Exception as e:
+            self._log(f"[{coin}] Shadow 记录失败（已忽略）: {e}", "DEBUG")
+
+    # ================================================================
+    # Phase C: α blend 前瞻参数上线集成
+    # 设计原则：
+    #   • ALPHA_BLEND_ENABLED 默认 False → _alpha_blend=0.0 → 字节等价
+    #   • α blend 在 ParameterMapper 层实现，交易层只传值
+    #   • DEFAULT_ALPHA_BLEND 受 ALPHA_BLEND_MAX=0.5 硬约束
+    # ================================================================
+
+    def _init_alpha_blend(self):
+        """初始化 α blend 参数（若开关开启）。
+
+        开关关闭时：_alpha_blend=0.0（字节等价 Phase 0）。
+        开关开启时：从 RolloutManager 状态文件读取 current_alpha（受 ALPHA_BLEND_MAX 约束），
+                   若状态文件不存在或读取失败则回退到 DEFAULT_ALPHA_BLEND。
+        """
+        if not ALPHA_BLEND_ENABLED:
+            self._alpha_blend_enabled = False
+            self._alpha_blend = 0.0
+            return
+        # 开关开启：优先从 RolloutManager 状态文件读取 current_alpha
+        self._alpha_blend_enabled = True
+        _alpha = DEFAULT_ALPHA_BLEND
+        try:
+            import os
+            from pathlib import Path
+            # 与 data_server_fixed.py _get_rollout_manager() 使用同一状态文件
+            _state_path = Path(os.environ.get(
+                "V15_AI_ROLLOUT_STATE_PATH",
+                str(Path(__file__).resolve().parent.parent.parent / "data" / "alpha_rollout_state.json"),
+            ))
+            from scripts.memory_l4.bcrm2.scripts.phase_c_rollout_manager import RolloutManager  # type: ignore
+            _mgr = RolloutManager(state_path=_state_path)
+            _mgr.load()
+            if _mgr.current_alpha is not None:
+                _alpha = float(_mgr.current_alpha)
+                self._log(
+                    f"[AlphaBlend] 从状态文件读取 α={_alpha:.4f} "
+                    f"(path={_state_path.name})",
+                    "INFO",
+                )
+        except Exception as _e:
+            self._log(f"[AlphaBlend] 状态文件读取失败，回退到默认 α={DEFAULT_ALPHA_BLEND}: {_e}", "WARN")
+        self._alpha_blend = min(_alpha, ALPHA_BLEND_MAX)
+        self._log(
+            f"[AlphaBlend] 前瞻参数上线已启用，当前 α={self._alpha_blend:.4f} "
+            f"(max={ALPHA_BLEND_MAX})",
+            "INFO",
+        )
+
+    # ================================================================
+    # H3-FMA 渐进自动开关：还原 + 懒加载 RolloutManager + 自动评估
+    # 设计原则：
+    #   • 任何错误被 catch，默认 FMA=False（不影响主交易）
+    #   • RolloutManager 通过 phase_c_rollout_state.json 与 data_server / CLI 共享状态
+    #   • 冷启动时只做一次 restore；自动评估只在 AB闸门口 + 样本≥60 + 距上次≥20h 触发
+    # ================================================================
+
+    def _fma_get_rollout_state_path(self):
+        """返回 alpha_rollout_state.json 路径（与 data_server API 共享同一文件）。"""
+        if self._fma_phase_c_state_path:
+            return self._fma_phase_c_state_path
+        import os
+        from pathlib import Path
+        # 统一使用 alpha_rollout_state.json（与 data_server_fixed.py _get_rollout_manager 一致）
+        # RolloutManager 同时管理 alpha_blend 和 fma_enabled 字段
+        path = Path(os.environ.get(
+            "V15_AI_ROLLOUT_STATE_PATH",
+            str(Path(__file__).resolve().parent.parent.parent / "data" / "alpha_rollout_state.json"),
+        ))
+        self._fma_phase_c_state_path = path
+        return path
+
+    def _fma_get_rollout_manager(self, force_new: bool = False):
+        """懒加载 RolloutManager（单例）。失败返回 None。"""
+        if (not force_new) and self._fma_phase_c_mgr is not None:
+            return self._fma_phase_c_mgr
+        try:
+            from scripts.memory_l4.bcrm2.scripts.phase_c_rollout_manager import RolloutManager  # type: ignore
+            mgr = RolloutManager(state_path=self._fma_get_rollout_state_path())
+            self._fma_phase_c_mgr = mgr
+            return mgr
+        except Exception as e:
+            self._log(f"[FMA渐进] RolloutManager 初始化失败（保持默认开关）: {e}", "WARN")
+            return None
+
+    def _fma_load_from_rollout(self):
+        """冷启动：从 phase_c_rollout_state.json 读 fma_enabled 覆盖类默认 False。"""
+        try:
+            mgr = self._fma_get_rollout_manager()
+            if mgr is None:
+                return
+            prev = bool(getattr(self, "FMA_REGIME_FILTER_ENABLED", False))
+            new = bool(getattr(mgr, "fma_enabled", False))
+            self.FMA_REGIME_FILTER_ENABLED = new
+            if prev != new:
+                self._log(
+                    f"[FMA渐进] 冷启动还原开关: FMA={'ON' if new else 'OFF'} "
+                    f"(类默认={'ON' if prev else 'OFF'} → rollout同步={'ON' if new else 'OFF'}) "
+                    f"min_samples={getattr(mgr,'fma_min_samples',60)} "
+                    f"delta={getattr(mgr,'fma_required_delta',0.05):.0%}",
+                    "INFO",
+                )
+            else:
+                self._log(
+                    f"[FMA渐进] 冷启动开关未变更: {'ON' if new else 'OFF'} "
+                    f"(类默认=rollout一致) min_samples={getattr(mgr,'fma_min_samples',60)}",
+                    "DEBUG",
+                )
+        except Exception as e:
+            self._log(f"[FMA渐进] 冷启动加载失败（保留类默认）: {e}", "WARN")
+
+    def _fma_auto_check(self, n_shadow_total: int,
+                        shadow_records_7d: list = None) -> dict:
+        """AB闸门口调用：距上次≥20h 且 shadow_off_total ≥ mgr.fma_min_samples 时，
+        调 evaluate_fma_toggle 并 自动切换 self.FMA_REGIME_FILTER_ENABLED + 写回 rollout_state。
+
+        返回当前 check 结果 dict（用于打印日志）。
+        """
+        import time
+        now = time.time()
+        fallback = {"triggered": False, "action": "SKIP_TIME_GATE",
+                    "prev_enabled": bool(getattr(self, "FMA_REGIME_FILTER_ENABLED", False)),
+                    "new_enabled": bool(getattr(self, "FMA_REGIME_FILTER_ENABLED", False)),
+                    "shadow_off_total": 0, "win_rate_off": 0.0,
+                    "shadow_on_total": 0, "win_rate_on": 0.0, "delta": 0.0,
+                    "reason": f"评估冷却期未到（剩余 {int(self._FMA_AUTO_CHECK_INTERVAL_SEC - (now - self._fma_last_auto_check_ts)) // 3600}h）"}
+        if (now - self._fma_last_auto_check_ts) < self._FMA_AUTO_CHECK_INTERVAL_SEC:
+            return fallback
+        self._fma_last_auto_check_ts = now
+        try:
+            mgr = self._fma_get_rollout_manager()
+            if mgr is None:
+                return {**fallback, "reason": "RolloutManager不可用"}
+            # 如果调用方没传 records，自行从 storage 拉 7 天（所有币种）
+            if shadow_records_7d is None:
+                shadow_records_7d = []
+                try:
+                    # 复用 _init_shadow_logger 里的 storage（懒加载）
+                    storage = None
+                    if hasattr(self, "_shadow_logger") and getattr(self, "_shadow_logger", None):
+                        storage = getattr(self._shadow_logger, "storage", None)
+                    if storage is None:
+                        if hasattr(self, "bcrm2_adapters") and self.bcrm2_adapters:
+                            first_adapter = next(iter(self.bcrm2_adapters.values()))
+                            storage = getattr(first_adapter, "storage", None)
+                    if storage is None:
+                        try:
+                            from scripts.memory_l4.bcrm2.run_evolution_pipeline import get_storage  # type: ignore
+                            storage = get_storage()
+                        except Exception:
+                            storage = None
+                    if storage:
+                        for sym in list(getattr(self, "coins", []) or []):
+                            try:
+                                shadow_records_7d.extend(storage.get_shadow_log(sym, days=7))
+                            except Exception:
+                                continue
+                except Exception:
+                    shadow_records_7d = shadow_records_7d or []
+
+            prev = bool(getattr(self, "FMA_REGIME_FILTER_ENABLED", False))
+            result = mgr.evaluate_fma_toggle(shadow_records_7d)
+            new_enabled = bool(result.get("new_enabled", prev))
+            # 应用到 trader 实例（内存实时生效，下一轮 threshold 段就自动走到 FMA=ON 差异化过滤）
+            if new_enabled != prev:
+                self.FMA_REGIME_FILTER_ENABLED = new_enabled
+                self._log(
+                    f"[FMA渐进] 自动切换: {'ON' if prev else 'OFF'} → {'ON' if new_enabled else 'OFF'} | "
+                    f"{result.get('reason','')}",
+                    "WARN",
+                )
+            else:
+                self.FMA_REGIME_FILTER_ENABLED = new_enabled
+            # 持久化回 rollout_state.json（下次冷启动可还原；data_server API 同步可见）
+            try:
+                mgr.save()
+            except Exception as _es:
+                self._log(f"[FMA渐进] rollout_state.json 保存失败（仅内存生效）: {_es}", "WARN")
+            # 附带当前样本数给日志
+            result["n_shadow_total"] = int(n_shadow_total or 0)
+            result.setdefault("reason", result.get("reason") or "n/a")
+            return result
+        except Exception as e:
+            self._log(f"[FMA渐进] 自动评估失败（已忽略）: {e}", "WARN")
+            return {**fallback, "reason": f"异常: {e}"}
+
+    def _enable_inject_file_path(self):
+        """返回 enable_inject 状态文件路径（与 data_server 共用）。"""
+        import os
+        return os.environ.get(
+            "V15_AI_INJECT_STATE_PATH",
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+                os.path.abspath(__file__)
+            ))), "data/enable_inject_state.json"),
+        )
+
+    def _reload_enable_inject_if_stale(self, force: bool = False) -> bool:
+        """周期性刷新 enable_inject 开关（5 分钟缓存，避免磁盘 IO）。"""
+        import os as _os
+        import json as _json
+        import time as _time
+        now = _time.time()
+        if (not force) and (now - self._enable_inject_last_reload
+                            < self._enable_inject_reload_interval):
+            return bool(self._enable_inject_runtime)
+        fp = self._enable_inject_file_path()
+        enabled = False
+        try:
+            if _os.path.exists(fp):
+                with open(fp, "r", encoding="utf-8") as f:
+                    data = _json.load(f)
+                enabled = bool(data.get("enabled", False))
+        except Exception as _e:
+            self._log(f"[Inject] 读取 enable_inject 文件失败（使用默认 False）: {_e}",
+                      "WARN")
+            enabled = False
+        was = self._enable_inject_runtime
+        self._enable_inject_runtime = enabled
+        self._enable_inject_last_reload = now
+        if was != enabled:
+            self._log(
+                f"[Inject] 融合层 enable_inject 切换：{was} → {enabled} "
+                f"（{('字节等价模式' if not enabled else 'AI 注入模式')}）",
+                "INFO",
+            )
+        return enabled
+
+    def _init_enable_inject(self):
+        """初始化 enable_inject 开关（启动时从磁盘文件加载）。"""
+        # 默认 False = 字节等价安全模式，完全不注入
+        self._enable_inject_runtime = False
+        self._reload_enable_inject_if_stale(force=True)
 
     def _check_dynamic_blacklist(self, coin: str) -> tuple:
         """检查币种是否在动态黑名单中（未过期则拦截）
@@ -653,7 +1619,7 @@ class PollingTrader:
         self.POSITION_PROTECTION_HOURS = 6.0  # 开仓后前6小时为保护期
         # P2 总开关：形态预测器（S5）+ 爆仓/期权宏观特征（仅 True 时网络调用 + 乘数注入 + call site 注入）
         #   False 时所有新代码路径 zero-byte 触达，字节等价旧路径，可随时回滚
-        self.ENABLE_REGIME_AND_MACRO_S5 = False
+        self.ENABLE_REGIME_AND_MACRO_S5 = True
         # 保护期内信号反转所需额外置信度(在effective_threshold之上再加)
         self.PROTECTED_REVERSE_CONF_BOOST = 0.12  # 如原阈值0.7→保护期需≥0.82
         # 保护期内最小亏损比例才允许P3提前退出（否则假预警会走）
@@ -664,6 +1630,33 @@ class PollingTrader:
             f"| 保护期反转置信+{self.PROTECTED_REVERSE_CONF_BOOST:.0%}",
             "INFO",
         )
+
+    def _save_exit_strategy_decision(
+        self, coin: str, decision, age_hours: float,
+        in_protection: bool, ev, confidence: float,
+        pnl=None, win=None,
+    ) -> None:
+        """记录 ExitManager 策略决策到 exit_strategy_log（异常不阻断主流程）。
+
+        Spec: docs/superpowers/specs/2026-08-20-exit-manager-design.md §5
+        """
+        try:
+            _storage = getattr(self.exit_manager, "_storage", None)
+            if _storage is None:
+                return
+            _storage.save_exit_strategy_log(coin, {
+                "strategy_name": decision.strategy_name or "",
+                "action": decision.action,
+                "reason": decision.reason,
+                "age_hours": age_hours,
+                "in_protection": in_protection,
+                "ev": ev,
+                "confidence": confidence,
+                "pnl": pnl,
+                "win": win,
+            })
+        except Exception as _e:
+            self._log(f"[{coin}] exit_strategy_log 记录失败（不阻断）: {_e}", "WARN")
 
     def _run_startup_inspection(self):
         """启动时运行 inspect 诊断命令，快速检查系统状态"""
@@ -1288,6 +2281,30 @@ class PollingTrader:
             "INFO",
         )
 
+        # ── 前置层注入：从 MorphCyclePredictor 获取 level_smooth/trend_smooth/consensus ──
+        # BCRM 2.0 推理结果不含前置层 6 层流水线输出，需主动调用预测器获取 L/T/C
+        # 使 ParameterMapper / ShadowLogger / α blend 能正确读取 reactive 参数
+        _morph_L = 0.0
+        _morph_T = 0.0
+        _morph_C = 0.0
+        _morph_src = "none"
+        _predictor = getattr(self, "_morph_predictor", None)
+        if _predictor is not None:
+            try:
+                _full_sym = inst_id or f"{coin.upper()}USDT"
+                _cy = _predictor.predict_with_fallback(_full_sym, hist_days=60, forecast_days=5)
+                if _cy.get("ok"):
+                    _pa = _cy.get("params") or {}
+                    _L_val = _pa.get("current_L")
+                    _T_val = _pa.get("current_T")
+                    if _L_val is not None and _T_val is not None:
+                        _morph_L = float(_L_val)
+                        _morph_T = float(_T_val)
+                        _morph_C = 0.5  # 保守中性共识
+                        _morph_src = "predictor"
+            except Exception as _e:
+                self._log(f"[{coin}] 前置层 L/T/C 注入失败: {_e}", "DEBUG")
+
         return {
             "ok": True,
             "coin": coin,
@@ -1310,6 +2327,11 @@ class PollingTrader:
                 "price": price,
                 "volatility": volatility,
                 "is_ranging": is_ranging,
+                # ── 前置层 6 层流水线输出（L/T/C 双维坐标）──
+                "level_smooth": _morph_L,
+                "trend_smooth": _morph_T,
+                "consensus": _morph_C,
+                "morph_src": _morph_src,
                 "regime": self._infer_regime(
                     hex_cn,
                     is_ranging,
@@ -1659,18 +2681,39 @@ class PollingTrader:
         """查 8 态乘数表；开关关 / regime 非法 → 全 1.0
 
         返回格式: {position_mult, tp_mult, sl_mult, threshold_mult}
+
+        注意：弹簧力场分类器（5 态：TREND_BULL/TREND_BEAR/...）与形态预测
+        S5 REGIME_MULTIPLIERS（8 态：TREND_UP_STRONG/BREAKOUT/...）是两套独立标签
+        体系；这里通过 FMA5→S5 映射桥兼容，保证「S5 形态乘数永远=1.0」的问题不会出现。
         """
         # 开关关 → 字节等价旧路径（全 1.0）
         if not enable_regime_pred:
             return {"position_mult": 1.0, "tp_mult": 1.0,
                     "sl_mult": 1.0, "threshold_mult": 1.0}
+
+        # ── FMA5→S5 标签桥（5 态 → 8 态，保守映射）─────────────────
+        #   映射原则：强度对齐 + 风险偏好偏保守（宁可低估牛市也不错误高估）
+        _FMA_TO_S5 = {
+            "TREND_BULL":        "TREND_UP_MILD",    # 普通多头趋势
+            "STRONG_TREND_BULL": "TREND_UP_STRONG",  # 若上游未来新增强牛标签
+            "STRONG_TREND_BEAR": "VOLATILE_DROP",    # 强空头趋势 → 视为暴跌态（保守）
+            "TREND_BEAR":        "REVERSAL",         # 弱空头 → 反转态
+            "MEAN_REVERTING":    "CONSOLIDATION",    # 均值回归 → 整理（偏保守）
+            "RANGING":           "RANGE_BOUND",      # 震荡 → 区间震荡
+        }
+        _resolved = regime
+        if isinstance(regime, str) and (regime not in self.REGIME_MULTIPLIERS):
+            _mapped = _FMA_TO_S5.get(regime)
+            if _mapped and _mapped in self.REGIME_MULTIPLIERS:
+                _resolved = _mapped
+
         # regime 未命中表 → 全 1.0 fallback，不抛异常
-        m = self.REGIME_MULTIPLIERS.get(regime)
-        if not m:
+        if not isinstance(_resolved, str) or (_resolved not in self.REGIME_MULTIPLIERS):
             return {"position_mult": 1.0, "tp_mult": 1.0,
                     "sl_mult": 1.0, "threshold_mult": 1.0}
-        # 返回浅拷贝，避免外部误改类常量表
-        return dict(m)
+
+        # 返回一份副本，避免外部改动污染 class 常量
+        return dict(self.REGIME_MULTIPLIERS[_resolved])
 
     # ══════════════════════════════════════════════════════════════
     # v5.0 离场防频繁：离场确认状态机 + 持仓保护期门禁
@@ -3317,7 +4360,7 @@ class PollingTrader:
     US_STOCK_COINS = frozenset({
         "AAPL", "AMZN", "GOOGL", "NVDA", "MSFT", "TSLA",
         "META", "NFLX", "BABA", "MU", "SKHYNIX", "SNDK", "SPCX",
-        "COIN", "MSTR", "PLTR",
+        "COIN", "MSTR", "PLTR", "CRCL", "BMNR",
     })
 
     @staticmethod
@@ -3786,6 +4829,8 @@ class PollingTrader:
         # 多头趋势：任何情况都不做空
         if regime == "TREND_BULL":
             return False, "TREND_BULL 禁止做空"
+        if regime == "STRONG_TREND_BULL":
+            return False, "STRONG_TREND_BULL 禁止做空"
 
         # 趋势市（强空头/弱空头）→ 走两均线简化过滤
         if regime in ("STRONG_TREND_BEAR", "TREND_BEAR"):
@@ -3825,7 +4870,63 @@ class PollingTrader:
 
         return False, f"未知 regime={regime}"
 
-    def _check_btc_trend(self) -> tuple:
+    def _regime_long_filter(self, regime: str, bullish_score: str,
+                             U_long: float, F_dot: float,
+                             valid_breakout_up: bool,
+                             ma_values: dict = None,
+                             current_price: float = 0.0) -> tuple:
+        """Phase D 形态差异化做多过滤（与 _regime_short_filter 对称；FMA=ON 影子路径专用）。
+
+        Returns:
+            (allow_long: bool, reason_tag: str)
+        """
+        if not bullish_score or bullish_score == "NONE":
+            return False, f"bullish_score={bullish_score} 未达档"
+
+        # 熊市趋势：任何情况都不追多
+        if regime in ("TREND_BEAR", "STRONG_TREND_BEAR"):
+            return False, f"{regime} 熊市禁止追多"
+
+        # 多头趋势 → 对称做空两均线过滤：要求价格>MA128 + 有效向上突破
+        if regime in ("TREND_BULL", "STRONG_TREND_BULL"):
+            if not ma_values or current_price <= 0:
+                return False, f"{regime} 缺少ma_values/current_price参数"
+            ma128 = float(ma_values.get("ma128", 0) or 0)
+            if ma128 <= 0:
+                return False, f"{regime} 缺少ma128"
+            if current_price <= ma128:
+                return False, f"{regime} 价格{current_price:.2f}≤MA128={ma128:.2f}(未站在牛市上方)"
+            prefix = "STRONG_TREND_BULL" if regime == "STRONG_TREND_BULL" else "TREND_BULL"
+            # STRONG档允许放宽U限制；NORMAL档需要当前价不破MA128
+            allow_scores = ("STRONG", "NORMAL") if regime == "STRONG_TREND_BULL" else ("STRONG", "NORMAL", "WEAK")
+            if bullish_score not in allow_scores:
+                return False, f"{prefix} bullish_score={bullish_score} 未达档"
+            return True, f"{prefix} 趋势牛市做多（价>MA128站在牛线上）"
+
+        # 均值回归：严格（F<0 = 超买 → 禁止追多；仅刚从下跌拐头向上突破允许）
+        if regime == "MEAN_REVERTING":
+            if not valid_breakout_up:
+                return False, "MEAN_REVERTING 无3日向上突破确认"
+            if bullish_score not in ("WEAK",):
+                return False, f"MEAN_REVERTING 仅WEAK档允许（刚拐头），score={bullish_score}"
+            if U_long > self.FMA_U_THRESHOLD_REVERT:
+                return False, f"MEAN_REVERTING 超买 U={U_long:.5f}>{self.FMA_U_THRESHOLD_REVERT}"
+            if F_dot > self.FMA_FDOT_REVERT:  # 反向：F_dot>0 表示F收敛（回落压力）→ 禁止
+                return False, f"MEAN_REVERTING 回落收敛 F_dot={F_dot:.4f}>{self.FMA_FDOT_REVERT}"
+            return True, "MEAN_REVERTING 保守做多（仅WEAK档+拐头向上）"
+
+        # 震荡/筑底：放宽（回测 RANGING 胜率最高）
+        if regime == "RANGING":
+            if bullish_score not in self.FMA_ALLOW_SCORE_RANGE:
+                return False, f"RANGING bullish_score={bullish_score} 未达档"
+            if U_long > self.FMA_U_THRESHOLD_RANGE:
+                return False, f"RANGING 超买 U={U_long:.5f}>{self.FMA_U_THRESHOLD_RANGE}"
+            # RANGING 不严格要求 3日向上突破（震荡区间内上下均可）
+            return True, "RANGING 放宽做多（震荡区间内尝试）"
+
+        return False, f"未知 regime={regime}"
+
+    def _check_btc_trend(self, _force_regime_filter_on: bool = False) -> tuple:
         """BTC日线趋势判定（Phase D：形态差异化做空过滤）
 
         核心改进：
@@ -3902,7 +5003,9 @@ class PollingTrader:
             # 6) 做空过滤：开关控制
             #    FMA_REGIME_FILTER_ENABLED=False（默认）→ 简单趋势确认
             #    FMA_REGIME_FILTER_ENABLED=True         → 形态差异化过滤（实验用）
-            if self.FMA_REGIME_FILTER_ENABLED:
+            #    _force_regime_filter_on=True           → 强制走形态差异化（H3-FMA影子决策专用，即便当前全局OFF）
+            fma_switch = bool(self.FMA_REGIME_FILTER_ENABLED) or bool(_force_regime_filter_on)
+            if fma_switch:
                 # 形态差异化过滤（双轨方案，回测效果不佳，仅实验用）
                 allow_short, filter_reason = self._regime_short_filter(
                     regime=regime,
@@ -3939,7 +5042,7 @@ class PollingTrader:
             import traceback
             return False, f"BTC趋势检查异常: {e} | {traceback.format_exc(limit=1)}"
 
-    def _check_self_trend(self, coin: str) -> tuple:
+    def _check_self_trend(self, coin: str, _force_regime_filter_on: bool = False) -> tuple:
         """非加密货币自身日K线趋势（Phase D 形态差异化做空过滤）
 
         与 BTC 算法同构，用 MA30/65/128/200 + 可用长期均线；
@@ -3987,7 +5090,8 @@ class PollingTrader:
                 )
 
             # 做空过滤：开关控制（与 _check_btc_trend 同构）
-            if self.FMA_REGIME_FILTER_ENABLED:
+            _fma_on = bool(self.FMA_REGIME_FILTER_ENABLED) or bool(_force_regime_filter_on)
+            if _fma_on:
                 # 形态差异化过滤（双轨方案，回测效果不佳，仅实验用）
                 allow_short, filter_reason = self._regime_short_filter(
                     regime=regime,
@@ -4014,7 +5118,7 @@ class PollingTrader:
         except Exception as e:
             return False, f"{coin}趋势检查异常: {e}"
 
-    def _check_us_index_trend(self) -> tuple:
+    def _check_us_index_trend(self, _force_regime_filter_on: bool = False) -> tuple:
         """美股大盘趋势判定（Phase C+ 两指数各五均线后平均）
 
         对 IXIC / GSPC 各自计算五均线评分，取 F 平均；任一指数 STRICT 空头排列即允许，
@@ -4026,7 +5130,9 @@ class PollingTrader:
         now = time.time()
         cached = getattr(self, "_us_index_trend_cache", None)
         if cached and cached.get("result") and (now - cached["ts"]) < 300:
-            return cached["result"]
+            # _force_regime_filter_on=True 时不使用缓存（需要重跑 FMA=ON 差异化过滤）
+            if not _force_regime_filter_on:
+                return cached["result"]
 
         try:
             import yfinance as yf
@@ -4150,7 +5256,135 @@ class PollingTrader:
             return self.SHORT_POSITION_MULTI_WEAK
         return 0.3  # 兜底：极小仓位
 
-    def _check_short_trend_filter(self, coin: str, inference: dict) -> tuple:
+    # ================================================================
+    # H1 / H4 新增：长多方向 弹簧力场 评分解析 + 阈值+仓位 乘数方法
+    # 设计原则：与做空方向对称（牛市形态为做空熊市的镜像）
+    # ================================================================
+
+    def _parse_bullish_score_from_reason(self, reason: str) -> str:
+        """从趋势确认 reason 解析长多评分 STRONG/NORMAL/WEAK/NONE（对称 bearish）"""
+        if not reason:
+            return "NONE"
+        if "5均线多头" in reason or "5条长周期均线多头" in reason or ("全部" in reason and "均线多头" in reason):
+            return "STRONG"
+        if "4条均线多头" in reason or "4均线多头" in reason:
+            return "NORMAL"
+        if "3条均线多头" in reason or "3均线多头" in reason:
+            return "NORMAL"
+        if "2条均线多头" in reason or "2均线多头" in reason:
+            return "WEAK"
+        if "1条均线多头" in reason or "1均线多头" in reason:
+            return "WEAK"
+        if "纳斯达克100" in reason or "标普500" in reason:
+            if "强牛" in reason or "5均线多头" in reason:
+                return "STRONG"
+            if "牛市" in reason:
+                return "NORMAL"
+            return "NONE"
+        return "NONE"
+
+    def _compute_long_conf_multiplier(self, bullish_score: str) -> float:
+        if bullish_score == "STRONG":
+            return self.LONG_CONF_MULTI_MA_STRONG
+        elif bullish_score == "NORMAL":
+            return self.LONG_CONF_MULTI_MA_NORMAL
+        elif bullish_score == "WEAK":
+            return self.LONG_CONF_MULTI_MA_WEAK
+        return 1.0
+
+    def _get_regime_long_multiplier(self, regime: str) -> float:
+        """5态 spring regime → 长多阈值乘数（基于回测胜率反比，与 _short 对称）"""
+        if not regime:
+            return 1.0
+        mapping = {
+            "TREND_BULL":        self.REGIME_LONG_CONF_MULTI_TREND_BULL,
+            "STRONG_TREND_BULL": self.REGIME_LONG_CONF_MULTI_STRONG_TREND_BULL,
+            "TREND_BEAR":        self.REGIME_LONG_CONF_MULTI_TREND_BEAR,
+            "MEAN_REVERTING":    self.REGIME_LONG_CONF_MULTI_MEAN_REVERTING,
+            "RANGING":           self.REGIME_LONG_CONF_MULTI_RANGING,
+        }
+        return float(mapping.get(regime, 1.0))
+
+    def _compute_long_position_multiplier(self, bullish_score: str) -> float:
+        """弹簧力场评分 → 长多仓位规模分层（H4：对称做空仓位分层）"""
+        if bullish_score == "STRONG":
+            return self.LONG_POSITION_MULTI_STRONG
+        elif bullish_score == "NORMAL":
+            return self.LONG_POSITION_MULTI_NORMAL
+        elif bullish_score == "WEAK":
+            return self.LONG_POSITION_MULTI_WEAK
+        return 1.0
+
+    def _check_long_trend_filter(self, coin: str, inference: dict = None,
+                                  _force_regime_filter_on: bool = False):
+        """长多 UP 方向弹簧力场过滤（对称 _check_short_trend_filter；H1 缺口修复）。
+
+        Returns:
+            (allow_long: bool, reason: str, conf_multiplier: float)
+            - 与做空过滤返回签名完全一致，调用方兼容三解包
+        """
+        coin_upper = coin.upper()
+        # Step 1: 大盘/自身 趋势原因（复用 _check_*_trend；bearish/bullish 共享同一 reason 文本）
+        if coin_upper in self.CRYPTO_COINS:
+            _, trend_reason = self._check_btc_trend(_force_regime_filter_on=_force_regime_filter_on)
+        elif coin_upper in self.US_STOCK_COINS:
+            _, trend_reason = self._check_us_index_trend(_force_regime_filter_on=_force_regime_filter_on)
+        else:
+            _, trend_reason = self._check_self_trend(coin, _force_regime_filter_on=_force_regime_filter_on)
+
+        # spring_regime 5 态 + bullish_score：
+        #   ① 先按 5均线多头结构化理由解析
+        #   ② 兜底：按 regime 代理（TREND_BULL 系列 & RANGING 视作多头结构；其余反转/熊市禁止追多）
+        bullish_score = self._parse_bullish_score_from_reason(trend_reason)
+        regime = self._parse_regime_from_reason(trend_reason)
+        if bullish_score == "NONE":
+            if regime == "STRONG_TREND_BULL":
+                bullish_score = "STRONG"
+            elif regime == "TREND_BULL":
+                bullish_score = "NORMAL"
+            elif regime == "RANGING":
+                bullish_score = "WEAK"
+            else:
+                return False, f"趋势未确认(多头代理={regime} 属反转/熊市，禁止追多): {trend_reason}", 0.00
+
+        conf_multiplier = self._compute_long_conf_multiplier(bullish_score)
+        regime_multi = self._get_regime_long_multiplier(regime)
+        final_multiplier = conf_multiplier * regime_multi
+
+        # Step 2: 短周期共振（SMA20 > SMA50 > SMA200 多头排列）
+        kline_data = (inference or {}).get("kline_data", [])
+        if kline_data and len(kline_data) >= 200:
+            closes = [float(c.get("c", 0)) for c in kline_data if c.get("c")]
+            if len(closes) >= 200:
+                sma20 = sum(closes[:20]) / 20
+                sma50 = sum(closes[:50]) / 50
+                sma200 = sum(closes[:200]) / 200
+                if sma20 > sma50 > sma200:
+                    if bullish_score == "WEAK":
+                        bullish_score = "NORMAL"
+                        conf_multiplier = self.LONG_CONF_MULTI_MA_NORMAL
+                    elif bullish_score == "NORMAL":
+                        bullish_score = "STRONG"
+                        conf_multiplier = self.LONG_CONF_MULTI_MA_STRONG
+                    final_multiplier = conf_multiplier * regime_multi
+                    return (
+                        True,
+                        f"趋势确认+共振(SMA20>50>200) score={bullish_score} ×{conf_multiplier:.2f} regime={regime} ×{regime_multi:.2f} =×{final_multiplier:.2f} | {trend_reason}",
+                        final_multiplier,
+                    )
+                return (
+                    False,
+                    f"共振失败(SMA20={sma20:.2f}/50={sma50:.2f}/200={sma200:.2f}非多头排列) score={bullish_score}",
+                    0.00,
+                )
+        # 无共振数据时降级：仅趋势确认
+        return (
+            True,
+            f"趋势确认(无共振数据) score={bullish_score} ×{conf_multiplier:.2f} regime={regime} ×{regime_multi:.2f} =×{final_multiplier:.2f} | {trend_reason}",
+            final_multiplier,
+        )
+
+    def _check_short_trend_filter(self, coin: str, inference: dict, _force_regime_filter_on: bool = False) -> tuple:
         """P1-1: 做空趋势确认过滤器（Phase C+ 五均线版）
 
         三道关卡：
@@ -4169,11 +5403,11 @@ class PollingTrader:
         # Step 1: 大盘趋势确认
         coin_upper = coin.upper()
         if coin_upper in self.CRYPTO_COINS:
-            trend_bearish, trend_reason = self._check_btc_trend()
+            trend_bearish, trend_reason = self._check_btc_trend(_force_regime_filter_on=_force_regime_filter_on)
         elif coin_upper in self.US_STOCK_COINS:
-            trend_bearish, trend_reason = self._check_us_index_trend()
+            trend_bearish, trend_reason = self._check_us_index_trend(_force_regime_filter_on=_force_regime_filter_on)
         else:
-            trend_bearish, trend_reason = self._check_self_trend(coin)
+            trend_bearish, trend_reason = self._check_self_trend(coin, _force_regime_filter_on=_force_regime_filter_on)
 
         bearish_score = self._parse_bearish_score_from_reason(trend_reason)
         conf_multiplier = self._compute_short_conf_multiplier(bearish_score)
@@ -4239,12 +5473,35 @@ class PollingTrader:
         if self.ENABLE_REGIME_AND_MACRO_S5:
             try:
                 _snap = inference.get("snapshot", {}) or {}
+                # H2(P1)：优先级 snapshot.regime（BCRM2.0 内部判定）> inference.regime >
+                #         spring_regime_5（后置层弹簧力场输出）经 _FMA_TO_S5 桥映射 → S5 8态
+                #   目的：两套标签体系对齐审计；当 BCRM 未给出 regime 时，用后置层 5 态兜底
                 _pred = _snap.get("regime") or inference.get("regime")
+                _src_label = "snapshot" if _snap.get("regime") else ("inference.regime" if inference.get("regime") else None)
+                if not _pred:
+                    _sp5 = inference.get("spring_regime_5")
+                    if isinstance(_sp5, str):
+                        try:
+                            _FMA_TO_S5 = {
+                                "TREND_BULL":        "TREND_UP_MILD",
+                                "STRONG_TREND_BULL": "TREND_UP_STRONG",
+                                "STRONG_TREND_BEAR": "VOLATILE_DROP",
+                                "TREND_BEAR":        "REVERSAL",
+                                "MEAN_REVERTING":    "CONSOLIDATION",
+                                "RANGING":           "RANGE_BOUND",
+                            }
+                            if _sp5 in _FMA_TO_S5 and _FMA_TO_S5[_sp5] in self.REGIME_MULTIPLIERS:
+                                _pred = _FMA_TO_S5[_sp5]
+                                _src_label = f"spring_bridge({_sp5}→{_pred})"
+                        except Exception:
+                            _pred, _src_label = None, None
                 _mult = self._get_regime_pred_multipliers(
                     _pred, enable_regime_pred=True
                 )
                 inference["_regime_pred"] = _pred
                 inference["_regime_multipliers"] = _mult
+                if _src_label:
+                    inference["_regime_pred_source"] = _src_label
             except Exception:
                 inference["_regime_pred"] = None
                 inference["_regime_multipliers"] = {
@@ -4258,15 +5515,188 @@ class PollingTrader:
                 "sl_mult": 1.0, "threshold_mult": 1.0,
             }
 
-        effective_threshold = confidence_threshold or self.confidence_threshold
+        # ── T4 融合层：调用 ParameterMapper._resolve_effective_params 注入 6 参数+板块乘数 ──
+        #   设计 A.5 不变量：enable_inject=False → 完全字节等价于 regime 查表（单测验证）
+        #   1. 每 5 分钟重读一次 enable_inject 文件
+        #   2. 构建 ranges / stats_row / sector_weights_result（从 inference 读，缺失则安全兜底）
+        #   3. 覆盖 effective_threshold / _regime_multipliers / 后续 TP/SL 计算使用乘数
+        self._reload_enable_inject_if_stale()
+        _inject = bool(getattr(self, "_enable_inject_runtime", False))
+        _eff_params: dict | None = None
+        try:
+            if _inject and getattr(self, "_param_mapper", None) is not None:
+                # 输入准备
+                _snap = inference.get("snapshot", {}) or {}
+                _stats_row = (inference.get("stats_row")
+                              or _snap.get("stats_row")
+                              or {"L_p10_252d": -3.0, "L_p90_252d": 3.0,
+                                  "T_p10_252d": -2.5, "T_p90_252d": 2.5})
+                _reactive_L = float(_snap.get("level_smooth", 0.0))
+                _reactive_T = float(_snap.get("trend_smooth", 0.0))
+                _reactive_C = float(_snap.get("consensus", 0.0))
+                # forecast：若 inference 自带则直接用，否则按形态预测兜底
+                _forecast_L = inference.get("forecast_L")
+                _forecast_T = inference.get("forecast_T")
+                if _forecast_L is None and getattr(self, "_morph_predictor", None):
+                    try:
+                        _full = inst_id  # 形如 BTCUSDT
+                        _mp = self._morph_predictor.predict_with_fallback(
+                            _full, hist_days=60, forecast_days=5
+                        )
+                        if _mp.get("ok"):
+                            _series = _mp.get("series", {}) or {}
+                            _fc = _series.get("forecast", []) or []
+                            if _fc:
+                                _forecast_L = float(_fc[-1])
+                                if len(_fc) >= 2:
+                                    _forecast_T = float(_fc[-1] - _fc[0])
+                    except Exception:
+                        _forecast_L, _forecast_T = None, None
+                # ranges / sector_weights：优先用 inference 内缓存的（forecast 输入）
+                try:
+                    if inference.get("ai_global_ranges"):
+                        _ranges = inference["ai_global_ranges"]
+                    else:
+                        _ranges = self._param_mapper.map_global_parameters(
+                            _forecast_L if _forecast_L is not None else _reactive_L,
+                            _forecast_T if _forecast_T is not None else _reactive_T,
+                            _reactive_C, stats_row=_stats_row,
+                        )
+                except Exception:
+                    _ranges = {}
+                try:
+                    if inference.get("ai_sector_weights"):
+                        _sector_w = inference["ai_sector_weights"]
+                    else:
+                        # 兜底 betas：identity（无真实 betas 时均匀权重 + 1.0 乘数）
+                        _def_betas = {"defi": (1.0, 0.0, 0.5), "ai": (1.0, 0.0, 0.5),
+                                      "rwa": (1.0, 0.0, 0.5), "meme": (1.0, 0.0, 0.5),
+                                      "l2": (1.0, 0.0, 0.5)}
+                        _sector_w = self._param_mapper.map_sector_weights(
+                            _forecast_L if _forecast_L is not None else _reactive_L,
+                            _forecast_T if _forecast_T is not None else _reactive_T,
+                            _reactive_C, _def_betas,
+                        )
+                except Exception:
+                    _sector_w = {}
 
-        # 做空方向使用独立的更高阈值
-        if direction == "DOWN":
-            effective_threshold = max(effective_threshold, self.short_confidence_threshold)
+                _symbol_sector = (inference.get("sector")
+                                  or _snap.get("sector"))
+                _reg_mult = dict(inference.get("_regime_multipliers", {}) or {})
+                # 把 regime_baselines（global_position_mult/ls_ratio_cap/long_bias/...）注入
+                _rb = dict(getattr(self, "_param_mapper", None)
+                           and getattr(self._param_mapper, "REGIME_BASE_PARAMS", {})
+                           or {})
+                # 如果 inference 提供过 baseline，则用 inference 的（保证 shadow 一致）
+                if inference.get("_regime_baselines"):
+                    _rb.update(dict(inference["_regime_baselines"]))
+                inference["_regime_baselines"] = _rb
+                # 暴露 stats_row / sector 到 inference（ShadowLogger 需要）
+                inference["stats_row"] = _stats_row
+                inference["sector"] = _symbol_sector
+                inference["base_long_threshold"] = float(self.confidence_threshold)
+                inference["base_short_threshold"] = float(self.short_confidence_threshold)
+
+                _eff_params = self._param_mapper._resolve_effective_params(
+                    ranges=_ranges,
+                    stats_row=_stats_row,
+                    forecast_L=_forecast_L,
+                    forecast_T=_forecast_T,
+                    alpha_blend=getattr(self, "_alpha_blend", 0.0),
+                    regime_baselines=_rb,
+                    sector_weights_result=_sector_w,
+                    symbol_sector=_symbol_sector,
+                    regime_multipliers=_reg_mult,
+                    enable_inject=True,
+                    base_long_threshold=float(self.confidence_threshold),
+                    base_short_threshold=float(self.short_confidence_threshold),
+                )
+        except Exception as _e:
+            self._log(f"[{coin}] 融合层调用失败（已降级为不注入）：{_e}", "WARN")
+            _eff_params = None
+            _inject = False
+
+        if _inject and _eff_params:
+            # ⚡ 注入生效：覆盖 regime_multipliers（下游 _open_position 读）
+            _reg = dict(inference.get("_regime_multipliers", {}) or {})
+            _reg["position_mult"] = float(_eff_params["position_mult_final"])
+            _reg["tp_mult"] = float(_eff_params["tp_mult_final"])
+            _reg["sl_mult"] = float(_eff_params["sl_mult_final"])
+            _reg["threshold_mult"] = float(_eff_params["threshold_mult_final"])
+            inference["_regime_multipliers"] = _reg
+            inference["_effective_params"] = _eff_params
+            # ⚡ 覆盖 threshold（多空各自独立阈值：long_conf / short_conf 实际）
+            if direction == "DOWN":
+                effective_threshold = float(_eff_params["short_conf_threshold"])
+            else:
+                effective_threshold = float(_eff_params["long_conf_threshold"])
+            self._log(
+                f"[{coin}] 融合层 T4 注入生效 | pos={_reg['position_mult']:.3f}"
+                f" tp={_reg['tp_mult']:.3f} sl={_reg['sl_mult']:.3f}"
+                f" thr_mult={_reg['threshold_mult']:.3f}"
+                f" long_thr={_eff_params['long_conf_threshold']:.4f}"
+                f" short_thr={_eff_params['short_conf_threshold']:.4f}"
+                f" ls_cap={_eff_params['ls_ratio_cap']:.3f}"
+                f" (α={getattr(self, '_alpha_blend', 0.0):.2f})",
+                "INFO",
+            )
+        else:
+            # 融合层未生效：初始化 effective_threshold 与原逻辑一致
+            effective_threshold = confidence_threshold or self.confidence_threshold
+            # 做空方向使用独立的更高阈值（原版逻辑）
+            if direction == "DOWN":
+                effective_threshold = max(effective_threshold, self.short_confidence_threshold)
+
+            # ── 基线模式下统一暴露「六维参数 + 形态乘数」（审计要求：日志中可见）
+            #    即便乘数=1.0 也要打一条汇总，让实盘日志明确看到：spec §10.6 的 Layer0 参数
+            #    已通过 _regime_multipliers 传递链（阈值×/仓位×/SL×/TP×）生效到核心层
+            try:
+                _rbs = getattr(self, "_param_mapper", None) and \
+                       getattr(self._param_mapper, "REGIME_BASE_PARAMS", {}) or {}
+                _rbs_merged = dict(_rbs)
+                if inference.get("_regime_baselines"):
+                    _rbs_merged.update(dict(inference["_regime_baselines"]))
+                _reg_mult2 = dict(inference.get("_regime_multipliers", {}) or {})
+                _sector_w = (inference.get("ai_sector_weights")
+                             or (inference.get("_effective_params") or {}).get("sector_weights_result")
+                             or None)
+                _base_long = float(getattr(self, "confidence_threshold", 0.35))
+                _base_short = float(getattr(self, "short_confidence_threshold", 0.80))
+                _thr_mult_2 = float(_reg_mult2.get("threshold_mult", 1.0))
+                _eff_long = _base_long * _thr_mult_2
+                _eff_short = max(_base_long, _base_short) * _thr_mult_2
+                # sector 若存在：取前 3 个最高权重
+                _sector_str = "n/a(均匀分配)"
+                if isinstance(_sector_w, dict) and len(_sector_w):
+                    _sorted = sorted(_sector_w.items(), key=lambda kv: float(kv[1]), reverse=True)[:3]
+                    _sector_str = ", ".join(f"{k}={float(v):.2f}" for k, v in _sorted)
+                self._log(
+                    f"[{coin}] 形态查表参数（基线模式，S5={self.ENABLE_REGIME_AND_MACRO_S5} "
+                    f"α={getattr(self, '_alpha_blend', 0.0):.2f}） | "
+                    f"regime={inference.get('_regime_pred') or 'UNKNOWN'} "
+                    f"src={inference.get('_regime_pred_source') or 'n/a'} "
+                    f"pos=×{float(_reg_mult2.get('position_mult', 1.0)):.3f} "
+                    f"tp=×{float(_reg_mult2.get('tp_mult', 1.0)):.3f} "
+                    f"sl=×{float(_reg_mult2.get('sl_mult', 1.0)):.3f} "
+                    f"thr_mult=×{_thr_mult_2:.3f} "
+                    f"long_thr={_eff_long:.4f} short_thr={_eff_short:.4f} "
+                    f"ls_cap={float(_rbs_merged.get('ls_ratio_cap', 1.15)):.3f} "
+                    f"sector_top3=[{_sector_str}]",
+                    "INFO",
+                )
+            except Exception:
+                pass
+
+        # ── 段①②③ 只读审计日志：大小周期→市场形态→六维（对齐 tab-morph /cycle+/params）──
+        # 无论基线/融合层开启状态，均只读取并记录，不修改任何交易参数
+        self._log_morph_cycle_for_coin(coin, inst_id)
+        self._log_param_mapper_snapshot(coin, inst_id, inference)
 
         pos_info = self._check_positions(coin)
 
         if pos_info.get("has_position"):
+            # ── 段④ 注入BCRM（持仓路径）：形态乘数作用到 SLTP/仓位 中性确认日志 ──
+            self._log_regime_hold_confirmation(coin, inference, pos_info)
             pos_side = pos_info["pos_side"]
             upl = pos_info.get("upl", 0)
             upl_ratio = pos_info.get("upl_ratio", 0)
@@ -4285,173 +5715,175 @@ class PollingTrader:
                 position_age_sec = time.time() - open_time
             in_protection = self._is_position_protected(position_age_sec)
 
-            # ── ① 信号反转：v5.0优化 提高门槛 + 离场确认 ──
-            # 基础门槛
-            reverse_threshold = effective_threshold
-            # 保护期内：额外+12%置信度（原0.7→0.82），最低不低于0.85
-            if in_protection:
-                reverse_threshold = max(reverse_threshold + self.PROTECTED_REVERSE_CONF_BOOST, 0.85)
-            signal_reverse = (
-                pos_side == "long" and direction == "DOWN" and confidence >= reverse_threshold
-            ) or (pos_side == "short" and direction == "UP" and confidence >= reverse_threshold)
+            # ════════════════════════════════════════════════════════════════
+            # ── 持仓与离场管理层：ExitManager 策略链（v4.4 重构）──
+            #    替换原 ① 信号反转 + ② P3提前退出 + Phase B EV 雷达四档决策
+            #    优先级：P3(10) → SignalRev(20) → EvFC(30) → Timeout(40) → EvAdj(60)
+            #    全部 pass → 继续走 Phase C (S3) → 核心层（卦象主离场 + Classic 兜底）
+            #    Spec: docs/superpowers/specs/2026-08-20-exit-manager-design.md
+            # ════════════════════════════════════════════════════════════════
 
-            if signal_reverse:
-                # 离场确认：需2次轮询连续触发（避免单根K线假反转）
-                confirmed, cnt = self._exit_confirm(coin, self.EXIT_ACT_SIGNAL_REVERSE)
-                if not confirmed:
+            # ── 计算 EV（如果 EV 雷达开启，供 EvForceClose/EvAdjust 策略使用）──
+            _ev = None
+            _ev_subs: Dict = {}
+            if getattr(self, "enable_ev_radar", False):
+                try:
+                    from scripts.memory_l4.trading_utils import RiskManager
+                    _ev_subs = self._build_ev_subscores(
+                        pos_side, position_age_sec, upl_ratio, inference
+                    )
+                    _weights = getattr(self, "ev_weights", None) or {
+                        k: 1 / 7 for k in _ev_subs
+                    }
+                    _ev, _ev_subs = RiskManager.calc_position_ev(_ev_subs, _weights)
                     self._log(
-                        f"[{coin}] 信号反转待确认 [{cnt}/{self.EXIT_CONFIRM_REQUIRED}] "
-                        f"{pos_side}→{direction} | 置信度={confidence:.2f}(≥{reverse_threshold:.2f}) "
-                        f"{'[保护期]' if in_protection else ''} 卦象={inference['hexagram']} "
-                        f"盈亏={upl:.2f}({upl_ratio:.2%})",
+                        f"[{coin}] EV={_ev:.3f} | "
+                        f"trend={_ev_subs.get('trend_alignment_s', 0):.2f} "
+                        f"liq={_ev_subs.get('liquidity_risk_s', 0):.2f} "
+                        f"dir={_ev_subs.get('direction_consistency_s', 0):.2f} "
+                        f"pnl_mom={_ev_subs.get('pnl_momentum_s', 0):.2f}",
                         "INFO",
                     )
-                    return  # 未确认：等待下次轮询
+                except Exception as _e:
+                    self._log(f"[{coin}] EV 计算异常: {_e}", "WARN")
+                    _ev = None
+            else:
+                self._log(f"[{coin}] EV BYPASS (S2=off)", "INFO")
 
-                # 确认通过：清除状态后执行
-                self._clear_exit_confirm(coin, self.EXIT_ACT_SIGNAL_REVERSE)
+            # ── 构造 held_coins 集合（供 TimeoutProfitSwitch 排除已持仓币种）──
+            _held_coins = {coin}
+            for _inst in getattr(self.position_tracker, "open_positions", {}):
+                _c = _inst.split("-")[0] if _inst else ""
+                if _c:
+                    _held_coins.add(_c)
+
+            # ── 调用 ExitManager（按优先级链评估扩展层离场策略）──
+            _exit_decision = self.exit_manager.evaluate(
+                coin=coin,
+                inference=inference,
+                pos_info=pos_info,
+                tracker_pos=tracker_pos,
+                in_protection=in_protection,
+                age_hours=position_age_sec / 3600.0,
+                ev=_ev,
+                confidence=confidence,
+                all_inferences=all_inferences or {},
+                held_coins=_held_coins,
+                effective_threshold=effective_threshold,
+            )
+
+            # ── 处理 ExitManager 决策 ──
+            _act = _exit_decision.action
+            _sname = _exit_decision.strategy_name or "exit_manager"
+            _ev_str = f"{_ev:.3f}" if _ev is not None else "N/A"
+
+            if _act == "force_close":
+                # 执行平仓（P3/SignalReverse/EvForceClose/TimeoutProfitSwitch）
+                _exit_price = pos_info.get("mark_px", inference["price"])
+                _exit_reason = _exit_decision.reason or _sname
                 self._log(
-                    f"[{coin}] 信号反转✅已确认 {pos_side}→{direction} | "
-                    f"置信度={confidence:.2f}(≥{reverse_threshold:.2f}) "
-                    f"{'[保护期]' if in_protection else ''} 卦象={inference['hexagram']} "
-                    f"盈亏={upl:.2f}({upl_ratio:.2%}) 持仓={position_age_sec/3600:.1f}h"
+                    f"[{coin}] [{_sname}] FORCE_CLOSE✅ | reason={_exit_reason} | "
+                    f"{'[保护期]' if in_protection else ''} "
+                    f"卦象={inference.get('hexagram', '-')} "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%}) "
+                    f"持仓={position_age_sec/3600:.1f}h",
+                    "WARN",
                 )
-
-                exit_price = pos_info.get("mark_px", inference["price"])
                 if pos_side == "long":
-                    r = self.okx_client.market_close_long(
-                        inst_id, reason=f"反转平多 conf={confidence}"
+                    _r = self.okx_client.market_close_long(
+                        inst_id, reason=_exit_reason
                     )
                 else:
-                    r = self.okx_client.market_close_short(
-                        inst_id, reason=f"反转平空 conf={confidence}"
+                    _r = self.okx_client.market_close_short(
+                        inst_id, reason=_exit_reason
                     )
-
-                if r.get("ok") or r.get("dry_run"):
+                if _r.get("ok") or _r.get("dry_run"):
                     self._handle_close_position(
-                        inst_id=inst_id,
-                        coin=coin,
-                        pos_side=pos_side,
-                        exit_price=exit_price,
-                        exit_reason="signal_reverse",
-                        pnl=upl,
-                        pnl_pct=upl_ratio,
+                        inst_id=inst_id, coin=coin, pos_side=pos_side,
+                        exit_price=_exit_price, exit_reason=_exit_reason,
+                        pnl=upl, pnl_pct=upl_ratio,
                     )
-
-                    # 统一冷静期：平仓后 8h 内不反手（防止来回割肉循环）
-                    _side_map = {"UP": "long", "DOWN": "short"}
-                    want_side = _side_map.get(direction)
-                    in_cd, cd_reason = self.position_tracker.is_in_cooldown(
-                        inst_id, want_side, self.COOLDOWN_SEC
+                    # ── 记录 exit_strategy_log（含 pnl/win 贡献值回填）──
+                    self._save_exit_strategy_decision(
+                        coin=coin, decision=_exit_decision,
+                        age_hours=position_age_sec / 3600.0,
+                        in_protection=in_protection, ev=_ev,
+                        confidence=confidence, pnl=upl, win=(upl > 0),
                     )
-                    if in_cd:
-                        self._log(
-                            f"[{coin}] 信号反转已平仓，但统一冷静期生效，跳过反手开仓: {cd_reason}",
-                            "INFO",
+                    # 信号反转特殊处理：平仓后开反手仓
+                    if _sname == "signal_reverse":
+                        _side_map = {"UP": "long", "DOWN": "short"}
+                        _want_side = _side_map.get(direction)
+                        _in_cd, _cd_reason = self.position_tracker.is_in_cooldown(
+                            inst_id, _want_side, self.COOLDOWN_SEC
                         )
-                        return
-
-                    risk_check = self.risk_manager.can_trade(self.perf_tracker.current_equity)
-                    if not risk_check["allowed"]:
-                        self._log(f"[{coin}] 风控拦截反手开仓: {risk_check['reason']}", "WARN")
-                        return
-
-                    total_pos = self._count_total_positions()
-                    if total_pos >= self.max_positions:
-                        self._log(f"[{coin}] 已达最大持仓数 {self.max_positions}，跳过反手")
-                        return
-
-                    self._open_position(inference, is_reverse=True)
+                        if _in_cd:
+                            self._log(
+                                f"[{coin}] 信号反转已平仓，但统一冷静期生效，跳过反手开仓: {_cd_reason}",
+                                "INFO",
+                            )
+                            return
+                        _risk_check = self.risk_manager.can_trade(
+                            self.perf_tracker.current_equity
+                        )
+                        if not _risk_check["allowed"]:
+                            self._log(
+                                f"[{coin}] 风控拦截反手开仓: {_risk_check['reason']}",
+                                "WARN",
+                            )
+                            return
+                        _total_pos = self._count_total_positions()
+                        if _total_pos >= self.max_positions:
+                            self._log(
+                                f"[{coin}] 已达最大持仓数 {self.max_positions}，跳过反手",
+                                "INFO",
+                            )
+                            return
+                        self._open_position(inference, is_reverse=True)
                 return
-            else:
-                # 反转条件不再满足：清除累计确认状态
-                self._clear_exit_confirm(coin, self.EXIT_ACT_SIGNAL_REVERSE)
 
-            # ── ② P3提前退出：v5.0优化 离场确认 + 保护期门槛 ──
-            early_exit = inference.get("early_exit_signal", False)
-            if early_exit:
-                # 保护期内：浮亏≥8%才允许P3退出（否则假预警直接走）
-                p3_allowed = True
-                if in_protection:
-                    if float(upl_ratio) > self.PROTECTED_P3_MIN_LOSS_PCT:
-                        p3_allowed = False
-                        self._log(
-                            f"[{coin}] P3提前退出 [保护期拦截] 盈亏={upl_ratio:.2%}"
-                            f">阈值{self.PROTECTED_P3_MIN_LOSS_PCT:.0%}，忽略预警",
-                            "INFO",
-                        )
-                if p3_allowed:
-                    # 离场确认：需2次连续触发
-                    confirmed, cnt = self._exit_confirm(coin, self.EXIT_ACT_P3_EARLY_EXIT)
-                    if not confirmed:
-                        tri_ver = inference.get("triangle_verification") or {}
-                        self._log(
-                            f"[{coin}] P3提前退出待确认 [{cnt}/{self.EXIT_CONFIRM_REQUIRED}] "
-                            f"{'[保护期]' if in_protection else ''} | "
-                            f"盈亏={upl:.2f}({upl_ratio:.2%}) "
-                            f"预警={tri_ver.get('risk_warnings', [])}",
-                            "WARN",
-                        )
-                        return  # 待确认
-                    # 确认通过
-                    self._clear_exit_confirm(coin, self.EXIT_ACT_P3_EARLY_EXIT)
-                    tri_ver = inference.get("triangle_verification") or {}
-                    self._log(
-                        f"[{coin}] P3提前退出✅已确认 TDA+Ising双重预警 "
-                        f"{'[保护期]' if in_protection else ''} | "
-                        f"盈亏={upl:.2f}({upl_ratio:.2%}) "
-                        f"持仓={position_age_sec/3600:.1f}h "
-                        f"预警={tri_ver.get('risk_warnings', [])}",
-                        "WARN",
-                    )
-                    exit_price = pos_info.get("mark_px", inference["price"])
-                    if pos_side == "long":
-                        r = self.okx_client.market_close_long(
-                            inst_id, reason="P3_early_exit:TDA+Ising"
-                        )
-                    else:
-                        r = self.okx_client.market_close_short(
-                            inst_id, reason="P3_early_exit:TDA+Ising"
-                        )
-                    if r.get("ok") or r.get("dry_run"):
-                        self._handle_close_position(
-                            inst_id=inst_id,
-                            coin=coin,
-                            pos_side=pos_side,
-                            exit_price=exit_price,
-                            exit_reason="p3_early_exit",
-                            pnl=upl,
-                            pnl_pct=upl_ratio,
-                        )
-                    return
-            else:
-                # P3信号消失：清除累计确认
-                self._clear_exit_confirm(coin, self.EXIT_ACT_P3_EARLY_EXIT)
-
-            # ════════════════════════════════════════════════════════════════
-            # ── Phase B/C: 新型离场信号层（插入 P3提前退出 → 主易经离场 之间）
-            #    优先级：Phase A(S1算力重分配) → ①反转 → ②P3提前退出 →
-            #           → B(S2 EV雷达强制离场+SLTP调节)
-            #           → C(S3 多horizon最佳K推荐, 日志辅助)
-            #           → v3.1 29h超时 → 主易经离场 → 经典备用
-            # ════════════════════════════════════════════════════════════════
-
-            # ── Phase B (S2): EV 风险-价值雷达 四档决策 ──
-            #   T1(FORCE_CLOSE): EV < -0.35 + 2/2 确认 → 平仓 return
-            #   T2(WARN tighten_sl): -0.35 ≤ EV < -0.10 → _adjust_sl_tp(mode="tighten")
-            #   T3(NORMAL): 不动作
-            #   T4(STRONG_HOLD relax_sl): EV > +0.30 → _adjust_sl_tp(mode="relax")
-            # S2 开关短路在 _handle_ev_four_tier 内部（对应 B-4 测试）
-            ev_result = self._handle_ev_four_tier(
-                coin=coin, inst_id=inst_id, pos_side=pos_side,
-                position_age_sec=position_age_sec, in_protection=in_protection,
-                upl=upl, upl_ratio=upl_ratio,
-                inference=inference, all_inferences=all_inferences or {},
-            )
-            # T1 FORCE_CLOSE 已通过 _handle_close_position 执行平仓 → return 跳过后续所有离场
-            ev_act = str(ev_result.get("action", "") or "")
-            if "closed" in ev_act:
+            elif _act == "hold":
+                # 等待确认（P3/SignalReverse/EvForceClose 待确认状态）
+                self._log(
+                    f"[{coin}] [{_sname}] HOLD 待确认 | "
+                    f"{_exit_decision.reason} | "
+                    f"{'[保护期]' if in_protection else ''} "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%}) "
+                    f"持仓={position_age_sec/3600:.1f}h",
+                    "INFO",
+                )
+                # ── 记录 exit_strategy_log（pnl/win 留空，待确认）──
+                self._save_exit_strategy_decision(
+                    coin=coin, decision=_exit_decision,
+                    age_hours=position_age_sec / 3600.0,
+                    in_protection=in_protection, ev=_ev,
+                    confidence=confidence, pnl=None, win=None,
+                )
                 return
+
+            elif _act == "adjust_sl_tp":
+                # 调用 _adjust_sl_tp（T2 收紧 / T4 放宽）
+                _mode = (_exit_decision.params or {}).get("mode", "tighten")
+                self._log(
+                    f"[{coin}] [{_sname}] ADJUST_SL_TP | mode={_mode} | "
+                    f"reason={_exit_decision.reason} | EV={_ev_str} | "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%})",
+                    "INFO",
+                )
+                try:
+                    self._adjust_sl_tp(coin, inst_id, pos_side, mode=_mode)
+                except Exception as _e:
+                    self._log(f"[{coin}] _adjust_sl_tp 异常: {_e}", "WARN")
+                # ── 记录 exit_strategy_log（SL/TP 调整无 pnl/win）──
+                self._save_exit_strategy_decision(
+                    coin=coin, decision=_exit_decision,
+                    age_hours=position_age_sec / 3600.0,
+                    in_protection=in_protection, ev=_ev,
+                    confidence=confidence, pnl=None, win=None,
+                )
+                # 继续走 Phase C (S3) 和核心层（不 return）
+
+            # action == "pass": 继续走 Phase C (S3) 和核心层
 
             # ── Phase C (S3): 多 horizon 最佳离场 K 线推荐 ──
             # 三档动作：
@@ -4579,100 +6011,29 @@ class PollingTrader:
                 ]
 
             # ── v3.1: 29h持仓超时全局门控（回测最佳持仓时间）──
-            # 持仓超过29h后：
-            #   盈利 → 信号排名对比：有更强信号则止盈换仓，否则继续持有追求更大利润
-            #   亏损 → 跳过yijing评估，直接走classic备用离场
+            # TimeoutProfitSwitchStrategy (ExitManager priority=40) 已处理"有更强候选→force_close"
+            # 此处仅处理：超时+盈利+无更强候选→继续持有 / 超时+亏损→走classic备用离场
             position_timeout_sec = self.yijing_exit_system.config.veto_max_hold_sec  # 104400 = 29h
             position_timed_out = position_age_sec > position_timeout_sec
             if position_timed_out:
                 if upl > 0 and all_inferences:
-                    # ── 超时止盈：信号排名对比 ──
-                    # 持仓盈利且超时，重新排名当前币种 vs 其他候选币种信号
-                    # 有更强信号 → 止盈换仓（Phase 3 自动开新仓）
-                    # 无更强信号 → 继续持有，追求更大利润
-                    _base_threshold = confidence_threshold or self.confidence_threshold
-                    held_conf = inference.get("confidence", 0)
-                    held_dir = inference.get("direction", "")
-                    held_score = held_conf * (0.95 if held_dir == "DOWN" else 1.0)
-
-                    best_candidate = None
-                    best_score = held_score  # 必须严格大于当前持仓才替换
-                    _side_map = {"UP": "long", "DOWN": "short"}
-
-                    for other_coin, other_inf in all_inferences.items():
-                        if other_coin == coin:
-                            continue
-                        other_inst = f"{other_coin}-USDT-SWAP"
-                        # 本地检查持仓（无API调用）
-                        if self.position_tracker.has_open_position(other_inst):
-                            continue
-                        other_dir = other_inf.get("direction", "")
-                        if other_dir not in ("UP", "DOWN"):
-                            continue
-                        if other_inf.get("fail_closed", True):
-                            continue
-                        other_conf = other_inf.get("confidence", 0)
-                        # 阈值筛选（做空用更高阈值）
-                        other_threshold = _base_threshold
-                        if other_dir == "DOWN":
-                            other_threshold = max(other_threshold, self.short_confidence_threshold)
-                        if other_conf < other_threshold:
-                            continue
-                        # 冷静期检查
-                        in_cd, _ = self.position_tracker.is_in_cooldown(
-                            other_inst, _side_map.get(other_dir), self.COOLDOWN_SEC
-                        )
-                        if in_cd:
-                            continue
-                        other_score = other_conf * (0.95 if other_dir == "DOWN" else 1.0)
-                        if other_score > best_score:
-                            best_candidate = (other_coin, other_dir, other_conf, other_score)
-                            best_score = other_score
-
-                    if best_candidate:
-                        bc_coin, bc_dir, bc_conf, bc_score = best_candidate
-                        self._log(
-                            f"[{coin}] 超时止盈换仓(>29h) | 盈利={upl:.2f}({upl_ratio:.2%}) | "
-                            f"当前信号={held_score:.2f} < 候选{bc_coin}={bc_score:.2f} "
-                            f"(conf={bc_conf:.2f} dir={bc_dir}) | 止盈后Phase3自动开新仓",
-                            "INFO",
-                        )
-                        exit_price = pos_info.get("mark_px", inference["price"])
-                        if pos_side == "long":
-                            r = self.okx_client.market_close_long(
-                                inst_id, reason=f"超时止盈换仓:更强信号{bc_coin}"
-                            )
-                        else:
-                            r = self.okx_client.market_close_short(
-                                inst_id, reason=f"超时止盈换仓:更强信号{bc_coin}"
-                            )
-                        if r.get("ok") or r.get("dry_run"):
-                            self._handle_close_position(
-                                inst_id=inst_id,
-                                coin=coin,
-                                pos_side=pos_side,
-                                exit_price=exit_price,
-                                exit_reason="timeout_profit_switch",
-                                pnl=upl,
-                                pnl_pct=upl_ratio,
-                            )
-                        return
-                    else:
-                        # 没有更强信号 → 继续持有
-                        self._log(
-                            f"[{coin}] 超时继续持有(>29h) | 盈利={upl:.2f}({upl_ratio:.2%}) | "
-                            f"当前信号={held_score:.2f}仍为最强，继续持有追求更大利润",
-                            "INFO",
-                        )
-                        return
-                else:
-                    # 持仓亏损 → 走classic备用离场
+                    # 超时+盈利+无更强候选（ExitManager 已检查）→ 继续持有追求更大利润
                     self._log(
-                        f"[{coin}] 持仓超时(>29h)启用经典备用离场 | "
-                        f"持仓={position_age_sec/3600:.1f}h > {position_timeout_sec/3600:.0f}h阈值 | "
+                        f"[{coin}] 超时继续持有(>{position_timeout_sec/3600:.0f}h) | "
+                        f"盈利={upl:.2f}({upl_ratio:.2%}) | "
+                        f"当前信号仍为最强，继续持有追求更大利润",
+                        "INFO",
+                    )
+                    return
+                else:
+                    # 亏损 → 走 classic 备用离场（跳过 yijing 评估）
+                    self._log(
+                        f"[{coin}] 持仓超时(>{position_timeout_sec/3600:.0f}h)启用经典备用离场 | "
+                        f"持仓={position_age_sec/3600:.1f}h | "
                         f"亏损={upl:.2f} | 跳过yijing评估，直接走classic备用离场",
                         "WARN",
                     )
+                    # fall through to core layer (yijing_available=False)
 
             # ── 主离场层：易经推理专属离场（基于卦象风险-价值评估）──
             # 架构反转：yijing 作为主决策，classic 降为备用（仅在 yijing 不可用或信号中性时调用）
@@ -5325,6 +6686,7 @@ class PollingTrader:
         # 加密货币用BTC 5均线排列，美股用IXIC/GSPC 5均线，其他用自身5均线；+做空阈值乘数+仓位规模乘数
         short_conf_multi = 1.00
         short_bearish_score = "NONE"
+        short_regime_from_spring = None
         if direction == "DOWN":
             # 兼容: 旧版返回2元组, 新版返回3元组(allow, reason, multiplier)
             filter_result = self._check_short_trend_filter(coin, inference)
@@ -5334,6 +6696,7 @@ class PollingTrader:
                 trend_ok, trend_reason = filter_result
                 short_conf_multi = 1.00
             short_bearish_score = self._parse_bearish_score_from_reason(trend_reason)
+            short_regime_from_spring = self._parse_regime_from_reason(trend_reason)
             if not trend_ok:
                 self._log(
                     f"[{coin}] P1做空趋势过滤 | {trend_reason} | "
@@ -5355,6 +6718,43 @@ class PollingTrader:
             # 覆盖全局 effective_threshold（仅DOWN方向有效）
             effective_threshold = effective_short_threshold
 
+        # H1(P0)新增：P1 长多趋势过滤器（与做空对称，UP方向弹簧力场阈值分层）
+        long_conf_multi = 1.00
+        long_bullish_score = "NONE"
+        long_regime_from_spring = None
+        if direction == "UP":
+            filter_result = self._check_long_trend_filter(coin, inference)
+            if len(filter_result) >= 3:
+                trend_ok_up, trend_reason_up, long_conf_multi = filter_result
+            else:
+                trend_ok_up, trend_reason_up = filter_result
+                long_conf_multi = 1.00
+            long_bullish_score = self._parse_bullish_score_from_reason(trend_reason_up)
+            long_regime_from_spring = self._parse_regime_from_reason(trend_reason_up)
+            if not trend_ok_up:
+                self._log(
+                    f"[{coin}] P1长多趋势过滤 | {trend_reason_up} | "
+                    f"置信度={confidence:.2f} 方向={direction} 卦象={inference['hexagram']} 跳过"
+                )
+                return
+            raw_long_thr = confidence_threshold or self.confidence_threshold
+            effective_long_threshold = raw_long_thr * long_conf_multi
+            self._log(
+                f"[{coin}] P1长多阈值分层 | 基础阈值={raw_long_thr:.4f} ×{long_conf_multi:.2f}"
+                f" = 有效阈值={effective_long_threshold:.4f}",
+                "INFO",
+            )
+            effective_threshold = effective_long_threshold
+
+        # H2(P1)：弹簧力场 5态/评分 双向写入 inference，后续 _get_regime_pred_multipliers / AB审计 可追溯
+        spring_regime_5 = long_regime_from_spring if direction == "UP" else (short_regime_from_spring if direction == "DOWN" else None)
+        if spring_regime_5:
+            inference["spring_regime_5"] = spring_regime_5
+        if direction == "UP" and long_bullish_score:
+            inference["spring_bullish_score"] = long_bullish_score
+        if direction == "DOWN" and short_bearish_score:
+            inference["spring_bearish_score"] = short_bearish_score
+
         # P2-05: 形态乘数作用到置信度阈值（放在所有阈值调整之后、最终比对之前）
         #   高风险 regime（VOLATILE_DROP/FOMO_RALLY）抬高门槛，强势趋势放宽门槛
         _reg_mult = inference.get("_regime_multipliers", {})
@@ -5367,6 +6767,56 @@ class PollingTrader:
                 f" 阈值 {_orig_thr:.4f}→{effective_threshold:.4f}",
                 "INFO",
             )
+
+        # ── H3-FMA 影子决策：无论当前 FMA_REGIME_FILTER_ENABLED 是否开启，
+        #    强制跑一遍 FMA=True 的差异化过滤流程，得到 fma_on_allow + fma_on_effective_threshold
+        #    写入 inference.fma_shadow_* 供 ShadowLogger 入库 → 未来评估 FMA 渐进自动开关。
+        fma_shadow_allowed = None
+        fma_shadow_eff_thr = None
+        try:
+            # 当前实际生效的 effective_threshold（作为 FMA=ON 的保底 baseline 阈值）
+            _fma_shadow_base_thr = float(effective_threshold)
+            if direction == "UP":
+                _fma_res = self._check_long_trend_filter(coin, inference, _force_regime_filter_on=True)
+                if len(_fma_res) >= 3:
+                    _fma_ok, _fma_reason, _fma_conf_multi = _fma_res
+                else:
+                    _fma_ok, _fma_reason = _fma_res
+                    _fma_conf_multi = 1.00
+                if _fma_ok:
+                    _raw_thr = (confidence_threshold or self.confidence_threshold) * _fma_conf_multi
+                    # 再 × 形态乘数（完全对称上方实际阈值）
+                    _fma_eff = _raw_thr * float(_thr_mult or 1.0)
+                    fma_shadow_allowed = True
+                    fma_shadow_eff_thr = round(_fma_eff, 6)
+                else:
+                    fma_shadow_allowed = False
+                    fma_shadow_eff_thr = _fma_shadow_base_thr
+            elif direction == "DOWN":
+                _fma_res = self._check_short_trend_filter(coin, inference, _force_regime_filter_on=True)
+                if len(_fma_res) >= 3:
+                    _fma_ok, _fma_reason, _fma_conf_multi = _fma_res
+                else:
+                    _fma_ok, _fma_reason = _fma_res
+                    _fma_conf_multi = 1.00
+                if _fma_ok:
+                    _raw_thr = max(
+                        confidence_threshold or self.confidence_threshold,
+                        self.short_confidence_threshold,
+                    ) * _fma_conf_multi
+                    _fma_eff = _raw_thr * float(_thr_mult or 1.0)
+                    fma_shadow_allowed = True
+                    fma_shadow_eff_thr = round(_fma_eff, 6)
+                else:
+                    fma_shadow_allowed = False
+                    fma_shadow_eff_thr = _fma_shadow_base_thr
+            else:
+                fma_shadow_allowed = False
+                fma_shadow_eff_thr = _fma_shadow_base_thr
+        except Exception as _ef:
+            self._log(f"[{coin}] FMA影子决策计算失败(已忽略): {_ef}", "DEBUG")
+        inference["fma_shadow_allowed"] = fma_shadow_allowed
+        inference["fma_shadow_eff_threshold"] = fma_shadow_eff_thr
 
         # 做空试错区间更窄（减少低置信度做空）
         if direction == "DOWN":
@@ -5412,6 +6862,11 @@ class PollingTrader:
         volatility = inference.get("volatility", 0.03)
         # P3: 缓存当前波动率，供 _compute_p2_dynamic_sizing_factors 中波动率自适应使用
         self._last_volatility = volatility
+
+        # H1/H2/H4: 从 inference 读取前置层已缓存的弹簧评分/5态（避免 _open_position 访问不到 _execute_trade 局部变量）
+        #   若 inference 未填（如手工调用 _open_position），则安全回退 "NONE"，仓位乘数保持 1.0
+        short_bearish_score = inference.get("spring_bearish_score", "NONE") or "NONE"
+        long_bullish_score = inference.get("spring_bullish_score", "NONE") or "NONE"
 
         leverage = self.okx_client.cfg.get("default_leverage", 3)
         td_mode = self.okx_client.cfg.get("td_mode", "isolated")
@@ -5496,6 +6951,19 @@ class PollingTrader:
                 "INFO",
             )
 
+        # H4(P2): 长多仓位规模分层（弹簧力场→仓位，与做空方向对称）
+        #   score=STRONG/NORMAL/WEAK → ×1.0/0.7/0.4 保守策略；避免追顶
+        if direction == "UP" and long_bullish_score != "NONE":
+            pos_multi = self._compute_long_position_multiplier(long_bullish_score)
+            old_usdt = position_usdt
+            position_usdt *= pos_multi
+            position_pct *= pos_multi
+            self._log(
+                f"[{coin}] P1长多仓位分层 | score={long_bullish_score} ×{pos_multi:.1f} "
+                f"仓位 {old_usdt:.2f}→{position_usdt:.2f}USDT",
+                "INFO",
+            )
+
         # v4 风险评分风控：仓位调整
         position_factor = inference.get("position_factor", 1.0)
         if position_factor != 1.0:
@@ -5566,6 +7034,22 @@ class PollingTrader:
             self._log(
                 f"[{coin}] v4止盈调整 | factor={tp_adjustment:.2f} TP {old_tp}→{tp_px}", "INFO"
             )
+
+        # ── v4 风险评分：汇总级（即便全=1.0 也打印一次，方便审计「前置层评分功能已跑」）
+        try:
+            lf = float(inference.get("leverage_factor", 1.0))
+            pf = float(inference.get("position_factor", 1.0))
+            stf = float(inference.get("sl_tighten_factor", 1.0))
+            taf = float(inference.get("tp_adjustment", 1.0))
+            rl = inference.get("risk_level", "NORMAL") or "NORMAL"
+            if lf == 1.0 and pf == 1.0 and stf == 1.0 and taf == 1.0:
+                self._log(
+                    f"[{coin}] v4风险评分中性 | risk_level={rl} "
+                    f"lev×{lf:.2f} pos×{pf:.2f} sl×{stf:.2f} tp×{taf:.2f}（无异常收紧/放宽）",
+                    "INFO",
+                )
+        except Exception:
+            pass
 
         # 优化3：动态止损宽度（如果增强器有推荐，覆盖默认值）
         # 关键口径：先按"订单收益率"定义，再通过 leverage 换算成价格
@@ -6127,8 +7611,39 @@ class PollingTrader:
 
         return base_threshold
 
+    def _maybe_refresh_coins(self):
+        """8h 刷新公共代币池，保留有持仓的币种（不从池中移除有仓位的币）"""
+        now = time.time()
+        if now - self._last_pool_refresh < _POOL_TTL:
+            return
+        self._last_pool_refresh = now
+        new_syms = _load_registry_symbols()
+        if not new_syms:
+            return
+        new_coins = [self._norm(c) for c in new_syms]
+        for coin in self.coins:
+            inst_id = f"{coin}-USDT-SWAP"
+            try:
+                if self.position_tracker.has_open_position(inst_id):
+                    if coin not in new_coins:
+                        new_coins.append(coin)
+                        self._log(f"[币池刷新] 保留持仓币种: {coin}")
+            except Exception:
+                pass
+        old_set = set(self.coins)
+        new_set = set(new_coins)
+        added = new_set - old_set
+        removed = old_set - new_set
+        if added or removed:
+            self._log(
+                f"[币池刷新] 新增={sorted(added)} 移除={sorted(removed)} "
+                f"最终={len(new_coins)}币"
+            )
+        self.coins = new_coins
+
     def run_once(self):
         """执行一轮推理 + 交易"""
+        self._maybe_refresh_coins()
         self._check_date_rollover()
         self._load_external_knowledge()
         # A-1修复：每轮热 reload 进化后的阈值
@@ -6370,6 +7885,15 @@ class PollingTrader:
                     # 有持仓：执行持仓管理（离场评估、信号反转等）
                     self._execute_trade(inference, confidence_threshold=effective_threshold,
                                         all_inferences=all_inferences)
+                    # ── Phase B: ShadowLogger 影子记录（只记录，不影响交易）──
+                    self._record_shadow_log(coin, inference, {
+                        "direction": inference.get("direction"),
+                        "confidence": inference.get("confidence"),
+                        "position_usdt": inference.get("position_usdt"),
+                        "tp_px": inference.get("take_profit_px"),
+                        "sl_px": inference.get("stop_loss_px"),
+                        "threshold": effective_threshold,
+                    })
             except Exception as e:
                 cycle_success = False
                 self._log(f"[{coin}] 持仓管理异常: {e}", "ERROR")
@@ -6499,6 +8023,15 @@ class PollingTrader:
                     f"置信度={confidence:.2f} 方向={candidate['direction']}"
                 )
                 self._execute_trade(inference, confidence_threshold=effective_threshold)
+                # ── Phase B: ShadowLogger 影子记录（只记录，不影响交易）──
+                self._record_shadow_log(coin, inference, {
+                    "direction": inference.get("direction"),
+                    "confidence": inference.get("confidence"),
+                    "position_usdt": inference.get("position_usdt"),
+                    "tp_px": inference.get("take_profit_px"),
+                    "sl_px": inference.get("stop_loss_px"),
+                    "threshold": effective_threshold,
+                })
             except Exception as e:
                 cycle_success = False
                 self._log(f"[{coin}] 排名开仓异常: {e}", "ERROR")
@@ -6519,6 +8052,9 @@ class PollingTrader:
             f"新增自上次重训={learn_state['new_cases_since']} | "
             f"上次重训={learn_state['last_retrain_time_str']}"
         )
+
+        # ── 段⑤+段⑥ 审计：在线学习 evaluate_and_correct + AB双基线闸门状态（只读，不做 promote）──
+        self._run_polling_level_learning_and_ab()
 
         if self.guardian:
             self.guardian.record_heartbeat(
@@ -6687,8 +8223,12 @@ def main():
     parser.add_argument(
         "--coins",
         type=str,
-        default="UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB",
-        help="币种列表，逗号分隔，默认 15币种固定候选池（注意：使用 XAU 而非 XAUT，OKX 实际合约为 XAU-USDT-SWAP）",
+        default=",".join(_load_registry_symbols() or [
+            "UNI", "PUMP", "MU", "SKHYNIX", "HYPE", "ETH", "BTC", "SOL",
+            "XAU", "XAG", "GOOGL", "NVDA", "AMZN", "OKB", "BNB",
+            "CRCL", "COIN", "BMNR", "MSTR",
+        ]),
+        help="币种列表，逗号分隔，默认读取公共代币池(config/token_registry.json)，可override",
     )
     parser.add_argument("--bar", type=str, default="1H", help="K线周期，默认 1H")
     parser.add_argument("--confidence", type=float, default=0.35, help="置信度阈值，默认 0.35")
