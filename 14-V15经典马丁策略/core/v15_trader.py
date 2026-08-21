@@ -18,12 +18,14 @@ import subprocess
 import sys
 import threading
 import time
+import dataclasses
 from datetime import datetime, timezone
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
+from token_pool_loader import load_coins_with_override, get_pool_symbols
 
 # L4 TradeEvent 注册（跨系统统一交易记录）
 try:
@@ -143,10 +145,9 @@ STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 POLL_INTERVAL = int(get_config("V15_POLL_INTERVAL", "3600"))
 AUTO_EXECUTE = str(get_config("V15_AUTO_EXECUTE", "true")).lower() == "true"
-# 币种池：从配置加载后，用 SymbolMapper 过滤出 OKX 支持的币种
-_RAW_COINS = get_config_list(
-    "V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
-)
+# 币种池：公共代币池(token_registry.json) > V15_COINS env(override) > 硬编码默认
+_V15_DEFAULT_COINS = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
+_RAW_COINS = load_coins_with_override("V15_COINS", _V15_DEFAULT_COINS)
 _OKX_SUPPORTED = [c for c in _RAW_COINS if _coin_supported(c, "okx")] or _RAW_COINS
 # ── 马丁策略风控过滤：市值等级 + 上线时间 ──
 # min_tier: 最低市值等级 (large/mid/small)，默认 mid（剔除 small）
@@ -158,6 +159,42 @@ COINS = [
 ]
 # 记录被风控剔除的币种（供启动日志输出）
 _MARTIN_REJECTED = [c for c in _OKX_SUPPORTED if c not in COINS]
+
+# ── 公共代币池 8h 刷新（方案B：运行时读取，无需重启）──
+_last_pool_refresh_ts = 0.0
+_POOL_TTL = 28800  # 8小时
+
+
+def refresh_coin_pool(held_coins=None):
+    """8h TTL 刷新公共代币池。更新模块级 COINS（原地修改保持引用一致）。
+
+    Args:
+        held_coins: 当前持仓币种列表，刷新时保留（不从池中移除有仓位的币）
+    """
+    global _last_pool_refresh_ts, _RAW_COINS, _OKX_SUPPORTED
+    now = time.time()
+    if (now - _last_pool_refresh_ts) < _POOL_TTL:
+        return  # 未到刷新时间
+    _last_pool_refresh_ts = now
+    _RAW_COINS = load_coins_with_override("V15_COINS", _V15_DEFAULT_COINS)
+    _OKX_SUPPORTED = [c for c in _RAW_COINS if _coin_supported(c, "okx")] or _RAW_COINS
+    new_coins = [
+        c for c in _OKX_SUPPORTED
+        if _coin_martin_safe(c, _MARTIN_MIN_TIER, _MARTIN_MIN_HISTORY_DAYS)
+    ]
+    if held_coins:
+        for c in held_coins:
+            if c not in new_coins and c in _OKX_SUPPORTED:
+                new_coins.append(c)
+    COINS[:] = new_coins
+    _MARTIN_REJECTED[:] = [c for c in _OKX_SUPPORTED if c not in COINS]
+    try:
+        _log(
+            f"[币池刷新] OKX支持={len(_OKX_SUPPORTED)} 风控通过={len(COINS)} "
+            f"| {','.join(COINS)}"
+        )
+    except Exception:
+        pass
 V15_MAX_ADDONS = get_config_int("MAX_ADDONS_PER_POSITION", 4)  # 4档加仓=总5单（实盘测试版本）
 MAX_ADDONS = V15_MAX_ADDONS
 BASE_TP_PCT = get_config_float("BASE_TP_PCT", 0.04)
@@ -180,6 +217,10 @@ V15_AI_STATE_FILE = BASE_DIR / "data" / "phase_d_ai_state.json"
 V15_AI_PHASE_E_ENABLED = str(get_config("V15_AI_PHASE_E_ENABLED", "false")).lower() == "true"
 V15_AI_PHASE_E_MODEL_PATH = str(get_config("V15_AI_PHASE_E_MODEL_PATH", ""))
 
+# ── 增量在线学习（主循环末尾自动检查）──
+V15_INCREMENTAL_LEARNING = str(get_config("V15_INCREMENTAL_LEARNING", "false")).lower() == "true"
+V15_INCREMENTAL_MIN_TRADES = get_config_int("V15_INCREMENTAL_MIN_TRADES", 5)
+
 _PHASE_E_GW_SINGLETON = None
 
 _PHASE_D_GW_SINGLETON = None
@@ -201,10 +242,15 @@ def _get_phase_d_gateway():
 
         _pd_bilstm_path = str(get_config("V15_AI_PHASE_D_BILSTM_MODEL_PATH", "") or "")
         _pd_patchtst_path = str(get_config("V15_AI_PHASE_D_PATCHTST_MODEL_PATH", "") or "")
+        import os as _os
+        _bilstm_ok = bool(_pd_bilstm_path) and _os.path.exists(_pd_bilstm_path)
+        _patchtst_ok = bool(_pd_patchtst_path) and _os.path.exists(_pd_patchtst_path)
+        _log(f"[Phase-D] Gateway 初始化: BiLSTM={'加载' if _bilstm_ok else '缺失/启发式'} ({_pd_bilstm_path or 'None'}) PatchTST={'加载' if _patchtst_ok else '缺失/启发式'} ({_pd_patchtst_path or 'None'})")
         _PHASE_D_GW_SINGLETON = PhaseDGateway(
             enabled=True,
             bilstm_model_path=_pd_bilstm_path or None,
             patchtst_model_path=_pd_patchtst_path or None,
+            ab_comparator=_get_ab_comparator(),
         )
         return _PHASE_D_GW_SINGLETON
     except Exception as _e:
@@ -1277,8 +1323,10 @@ def _get_direction_ctx(coin):
                             _pd_dd24h = _phase_d_heuristic_dd24h(_pd_klines_1h)
                             _pd_old_score = ctx["timing_score"]
                             _pd_regime = str(tres.structure.kind if tres.structure else "UNCLEAR")
+                            # 注意：此阶段 _phase_d_p_bust 尚未计算（在开仓阶段 L1494 才赋值），
+                            # 用 None 让 "or 0.0" 回退为 0.0，避免 NameError
                             _pd_ctx3 = {
-                                "p_bust": _phase_d_p_bust or 0.0, "p_dd": _pd_dd24h,
+                                "p_bust": locals().get("_phase_d_p_bust") or 0.0, "p_dd": _pd_dd24h,
                                 "klines_4h": params.get("klines_4h"),
                                 "klines_1h": params.get("klines_1h"),
                                 "timing_score": _pd_old_score,
@@ -1305,7 +1353,7 @@ def _get_direction_ctx(coin):
                     ctx["timing_reason"] = tres.reason
                     # breakdown 透传到 dashboard
                     ctx["timing_breakdown"] = (
-                        tres.score_breakdown._asdict() if tres.score_breakdown else {}
+                        dataclasses.asdict(tres.score_breakdown) if tres.score_breakdown else {}
                     )
                     # 透传 diagnostic（整包）
                     ctx["timing_diag"] = tres.to_diagnostic()
@@ -1509,15 +1557,22 @@ def execute_open_position(client, coin, decision, state):
                 "klines_4h": _pd_params.get("klines_4h"),
                 "klines_1h": _pd_params.get("klines_1h"),
                 "level": 0, "pnl_pct": 0.0,  # 开仓时刻无持仓
+                # AB 影子对比：基线已判定能开（conf>=60 通过），注入 baseline_can_open 让
+                # should_skip_open_with_baseline 记录 paired decision（baseline=OPEN vs AI=OPEN/SKIP）
+                "baseline_can_open": True,
+                "symbol": coin,
             }
+            # 注入 position_ref（供 AB 回填匹配）
+            _prep_ctx_position_ref(_pd_ctx, coin)
             if V15_AI_SHADOW:
-                _skip_shadow = _phase_d_gw.should_skip_open(_pd_ctx)
+                _skip_shadow, _skip_reason = _phase_d_gw.should_skip_open_with_baseline(_pd_ctx)
                 _log(
-                    f"[Phase-D-SHADOW][{coin}] G-D1 bust_prob={_phase_d_p_bust:.3f} dd24h={_pd_dd24h:.3f} should_skip={_skip_shadow}（SHADOW 不生效）"
+                    f"[Phase-D-SHADOW][{coin}] G-D1 bust_prob={_phase_d_p_bust:.3f} dd24h={_pd_dd24h:.3f} should_skip={_skip_shadow} reason={_skip_reason}（SHADOW 不生效）"
                 )
             else:
-                if _phase_d_gw.should_skip_open(_pd_ctx):
-                    _log(f"[Phase-D][{coin}] G-D1 跳过开仓: BiLSTM 爆仓概率={_phase_d_p_bust:.3f}")
+                _skip_real, _skip_reason = _phase_d_gw.should_skip_open_with_baseline(_pd_ctx)
+                if _skip_real:
+                    _log(f"[Phase-D][{coin}] G-D1 跳过开仓: {_skip_reason} (BiLSTM 爆仓概率={_phase_d_p_bust:.3f})")
                     return False
             # G-D2：effective_max_addons 保存起来，稍后在加仓预算/网格处使用
             _addon_budgets = {f"addon{k}_usd": 0 for k in [1, 2, 3, 4]}  # 占位，实际预算在 alloc 后填入
@@ -2086,6 +2141,16 @@ def _place_addon_grid_orders(client, coin, pos):
         return
 
     inst_id = pos["inst_id"]
+
+    # 挂新单前，撤掉该币种遗留的加仓网格限价单（防止重复挂单）
+    _existing_grid = pos.get("addon_grid", [])
+    if _existing_grid:
+        try:
+            _cancel_addon_grid_orders(client, coin, pos)
+            _log(f"[{coin}] 开仓挂单前清理旧加仓网格 ({len(_existing_grid)} 档)")
+        except Exception as _e:
+            _log(f"[{coin}] 开仓前清理旧挂单异常: {_e}")
+
     direction = pos.get("direction", "LONG")
     is_short = direction == "SHORT"
     open_price = pos.get("open_price", pos.get("entry_price", 0))
@@ -2637,6 +2702,10 @@ def check_take_profit(client, coin, pos, state):
                                 _log(f"[{coin}] 移动止盈平仓成功")
                                 state["total_wins"] += 1
                                 state["consecutive_losses"] = 0
+                                try:
+                                    _save_trade_to_history(coin, pos, current_price, "trailing_tp", profit_pct)
+                                except Exception:
+                                    pass
                                 del state["positions"][coin]
                                 return True
                             else:
@@ -2668,6 +2737,10 @@ def check_take_profit(client, coin, pos, state):
                     _log(f"[{coin}] 止盈平仓成功")
                     state["total_wins"] += 1
                     state["consecutive_losses"] = 0
+                    try:
+                        _save_trade_to_history(coin, pos, current_price, "tp", profit_pct)
+                    except Exception:
+                        pass
                     del state["positions"][coin]
                     return True
                 else:
@@ -2713,6 +2786,10 @@ def check_take_profit(client, coin, pos, state):
                 if r.get("ok"):
                     _log(f"[{coin}] 止损平仓 ({sl_type})")
                     _on_loss_trade(state, coin, reason=f"止损平仓({sl_type})")
+                    try:
+                        _save_trade_to_history(coin, pos, current_price, f"sl_{sl_type}", profit_pct)
+                    except Exception:
+                        pass
                     if coin in state["positions"]:
                         del state["positions"][coin]
                     return True
@@ -2723,6 +2800,10 @@ def check_take_profit(client, coin, pos, state):
                     if "51169" in err_str or "don't have any positions" in err_str:
                         _log(f"[{coin}] 检测到交易所无持仓，按外部止损平仓处理")
                         _on_loss_trade(state, coin, reason=f"外部止损平仓({sl_type})")
+                        try:
+                            _save_trade_to_history(coin, pos, current_price, f"external_sl_{sl_type}", profit_pct)
+                        except Exception:
+                            pass
                         if coin in state["positions"]:
                             del state["positions"][coin]
                         return True
@@ -3140,6 +3221,15 @@ def run_light_poll_cycle():
             exit_price=current_price,
             exit_reason="external_close",
         )
+        # 撤掉遗留的加仓网格限价单（与内部平仓路径一致）
+        try:
+            _cancel_addon_grid_orders(client, coin, pos)
+        except Exception as _e:
+            _log(f"[{coin}] 外部平仓撤加仓网格单异常: {_e}")
+        try:
+            _save_trade_to_history(coin, pos, current_price, "external_close", profit_pct)
+        except Exception:
+            pass
         if coin in state["positions"]:
             del state["positions"][coin]
 
@@ -3324,6 +3414,8 @@ def manage_all_positions(client):
 def run_poll_cycle():
     """执行一次完整轮询（信号计算+交易执行）"""
     state = load_state()
+    # 8h 刷新公共代币池（保留持仓币种，不从池中移除有仓位的币）
+    refresh_coin_pool(held_coins=list(state.get("positions", {}).keys()))
     client = _get_okx_client()
 
     if not client:
@@ -3461,6 +3553,86 @@ def run_poll_cycle():
     )
     save_state(state)
 
+    # ── 增量在线学习：主循环末尾自动检查 ──
+    if V15_INCREMENTAL_LEARNING:
+        try:
+            _check_incremental_retrain()
+        except Exception as _e:
+            _log(f"[增量学习] 检查异常: {_e}")
+
+
+# ── 增量在线学习：后台线程单例，防止重复触发 ──
+_INCREMENTAL_THREAD = None
+
+def _check_incremental_retrain():
+    """主循环末尾检查是否满足增量训练触发条件。
+
+    触发条件：累积新交易数 >= V15_INCREMENTAL_MIN_TRADES（默认 5 笔）
+    执行方式：后台线程异步执行重训，避免阻塞主循环
+    重训完成后：双基线评估（静态 v15 + 动态最优版本），通过则热切换晋升
+    """
+    global _INCREMENTAL_THREAD
+    # 已有重训线程在跑，跳过
+    if _INCREMENTAL_THREAD is not None and _INCREMENTAL_THREAD.is_alive():
+        _log("[增量学习] 上一轮重训仍在执行，跳过")
+        return
+
+    try:
+        from incremental_trainer import IncrementalTrainer, TRIGGER_THRESHOLD
+        from ab_shadow_comparator import ABShadowComparator
+
+        _ab_comp = _get_ab_comparator()
+        _trainer = IncrementalTrainer(
+            model_base_dir=str(BASE_DIR / "data" / "phase_d_models"),
+            state_file=str(BASE_DIR / "data" / "incremental_trainer_state.json"),
+            ab_comparator=_ab_comp,
+            min_new_trades=V15_INCREMENTAL_MIN_TRADES,
+        )
+
+        # 检查累积新交易数
+        check = _trainer.check_new_trades()
+        if not check.get("should_retrain", False):
+            _log(f"[增量学习] 新交易 {check.get('new_trades', 0)}/{V15_INCREMENTAL_MIN_TRADES}，未达阈值，跳过")
+            return
+
+        _log(f"[增量学习] 达到阈值（{check.get('new_trades', 0)} 笔新交易），启动后台重训")
+
+        # 后台线程执行重训
+        def _retrain_worker():
+            global _INCREMENTAL_THREAD
+            try:
+                _log("[增量学习] 重训开始...")
+                result = _trainer.run_retrain_cycle(trigger=TRIGGER_THRESHOLD)
+                status = result.get("status", "unknown")
+                if status == "skipped":
+                    _log(f"[增量学习] 重训跳过: {result.get('reason', '')}")
+                else:
+                    _log(f"[增量学习] 重训完成，开始双基线评估...")
+                    promote_result = _trainer.evaluate_and_promote()
+                    action = promote_result.get("action", "unknown")
+                    transition = promote_result.get("transition", "")
+                    new_status = promote_result.get("new_status", "")
+                    _log(f"[增量学习] 评估完成: action={action} transition={transition} new_status={new_status}")
+                    if action == "promoted":
+                        _log(f"[增量学习] ✅ 新版本晋升 LIVE，已热切换模型")
+                    elif action == "rejected":
+                        _log(f"[增量学习] ❌ 新版本劣于基线，拒绝晋升，旧版本继续服务")
+                    else:
+                        _log(f"[增量学习] ⏸ 新版本待评估: {promote_result}")
+            except Exception as e:
+                _log(f"[增量学习] 重训异常: {e}")
+                import traceback
+                _log(traceback.format_exc())
+            finally:
+                _INCREMENTAL_THREAD = None
+
+        _INCREMENTAL_THREAD = threading.Thread(target=_retrain_worker, name="incremental-retrain", daemon=True)
+        _INCREMENTAL_THREAD.start()
+    except ImportError as e:
+        _log(f"[增量学习] 模块导入失败: {e}")
+    except Exception as e:
+        _log(f"[增量学习] 检查异常: {e}")
+
 
 def main():
     _log("V15 经典马丁策略自动交易器启动")
@@ -3479,6 +3651,11 @@ def main():
         f"  实盘风控: 连亏≥{consec_threshold}笔 → {cooldown_h}h冷却 | "
         f"最大持仓 {max_pos} 笔 | 门禁: {'开启' if gate_enabled else '影子模式'} "
         f"| 飞书告警: {'开启' if V15_FEISHU_ALERT_ENABLED else '关闭'}"
+    )
+    _log(
+        f"  增量学习: {'开启' if V15_INCREMENTAL_LEARNING else '关闭'}"
+        f" | 触发阈值: {V15_INCREMENTAL_MIN_TRADES} 笔新交易"
+        f" | Timing: {'开启' if V15_USE_TIMING_GATE else '关闭'}"
     )
     # 启动飞书通知
     details = {

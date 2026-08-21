@@ -313,6 +313,73 @@ def test_t7_corrupted_state_recovery(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# T8: 双基线版本对比 — 静态基线（v15策略）+ 动态基线（最优AI版本）
+# ---------------------------------------------------------------------------
+
+def test_t8_dynamic_baseline_set_and_get(tmp_path):
+    """set_dynamic_baseline + generate_report 包含动态基线信息。"""
+    comp = ABShadowComparator(state_file=str(tmp_path / "ab.json"))
+    assert comp.state.dynamic_baseline_version is None
+    metrics = {"total_pnl": 1.5, "win_rate": 0.65, "max_drawdown": 0.08}
+    comp.set_dynamic_baseline("v1", metrics)
+    assert comp.state.dynamic_baseline_version == "v1"
+    assert comp.state.dynamic_baseline_metrics == metrics
+
+    report = comp.generate_report()
+    assert report["dynamic_baseline_version"] == "v1"
+    assert report["dynamic_baseline_metrics"]["total_pnl"] == 1.5
+
+
+def test_t9_version_comparison_promote(tmp_path):
+    """新版本优于动态基线 → should_promote=True。"""
+    comp = ABShadowComparator(state_file=str(tmp_path / "ab.json"))
+    comp.set_dynamic_baseline("v1", {"total_pnl": 1.0, "win_rate": 0.60, "max_drawdown": 0.10})
+
+    candidate = {"total_pnl": 1.5, "win_rate": 0.70, "max_drawdown": 0.08}
+    result = comp.evaluate_version_comparison("v2", candidate, ("bilstm.pt", "patchtst.pt"))
+    assert result["should_promote"] is True
+    assert result["score"] == 3  # 3/3 全优于基线
+    assert result["pnl_delta_pct"] == 50.0  # (1.5-1.0)/1.0*100
+    assert "pnl" in result["reason"]
+    assert result["comparison"]["baseline_version"] == "v1"
+
+
+def test_t10_version_comparison_reject(tmp_path):
+    """新版本劣于动态基线 → should_promote=False。"""
+    comp = ABShadowComparator(state_file=str(tmp_path / "ab.json"))
+    comp.set_dynamic_baseline("v1", {"total_pnl": 2.0, "win_rate": 0.70, "max_drawdown": 0.05})
+
+    candidate = {"total_pnl": 1.0, "win_rate": 0.50, "max_drawdown": 0.12}
+    result = comp.evaluate_version_comparison("v2", candidate, ("bilstm.pt", "patchtst.pt"))
+    assert result["should_promote"] is False
+    assert result["score"] == 0  # 0/3 全劣于基线
+    assert result["pnl_delta_pct"] == -50.0
+
+
+def test_t11_version_comparison_no_baseline_auto_promote(tmp_path):
+    """无动态基线（首次训练）→ 自动通过。"""
+    comp = ABShadowComparator(state_file=str(tmp_path / "ab.json"))
+    assert comp.state.dynamic_baseline_version is None
+
+    candidate = {"total_pnl": 0.5, "win_rate": 0.55, "max_drawdown": 0.06}
+    result = comp.evaluate_version_comparison("v1", candidate, ("bilstm.pt", "patchtst.pt"))
+    assert result["should_promote"] is True
+    assert "no dynamic baseline" in result["reason"]
+
+
+def test_t12_version_comparison_partial_win(tmp_path):
+    """2/3 优于基线但 PnL 略差（>-2%）→ 仍然通过（score>=2）。"""
+    comp = ABShadowComparator(state_file=str(tmp_path / "ab.json"))
+    comp.set_dynamic_baseline("v1", {"total_pnl": 1.0, "win_rate": 0.60, "max_drawdown": 0.12})
+
+    # PnL 略差（-1%），但胜率和回撤更好 → score=2 → 通过
+    candidate = {"total_pnl": 0.99, "win_rate": 0.70, "max_drawdown": 0.08}
+    result = comp.evaluate_version_comparison("v2", candidate, ("bilstm.pt", "patchtst.pt"))
+    assert result["should_promote"] is True
+    assert result["score"] == 2
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 

@@ -148,6 +148,22 @@ def configure(api_key: str = None, secret_key: str = None,
     return safe_cfg
 
 
+def _friendly_okx_error(e: Exception) -> str:
+    """将底层网络异常转为对前端友好的中文提示，避免暴露原始 HTTPSConnectionPool 堆栈"""
+    msg = str(e)
+    if "Max retries exceeded" in msg or "HTTPSConnectionPool" in msg:
+        return "OKX 连接失败，请检查网络/代理（www.okx.com 不可达）"
+    if "timed out" in msg.lower() or "timeout" in msg.lower():
+        return "OKX 请求超时，请检查网络/代理连通性"
+    if "ProxyError" in msg or "proxy" in msg.lower():
+        return "代理连接失败，请检查 Clash/代理配置"
+    if "SSLError" in msg or "ssl" in msg.lower():
+        return "OKX SSL 握手失败，请检查网络/代理"
+    if "ConnectionError" in msg or "Connection refused" in msg:
+        return "OKX 连接被拒绝，请检查网络/代理"
+    return msg[:120]
+
+
 class _CustomDNSAdapter(requests.adapters.HTTPAdapter):
     def init_poolmanager(self, *args, **kwargs):
         import urllib3
@@ -236,11 +252,11 @@ class OKXSimulatedClient:
         try:
             resp = self.session.get(
                 self.base_url + path, params=params,
-                headers=headers, timeout=15
+                headers=headers, timeout=(5, 8)
             )
             return resp.json()
         except Exception as e:
-            return {"code": "-1", "msg": str(e), "data": []}
+            return {"code": "-1", "msg": _friendly_okx_error(e), "data": []}
 
     def _post(self, path: str, body: Dict, auth: bool = True) -> Dict:
         body_str = json.dumps(body)
@@ -248,11 +264,11 @@ class OKXSimulatedClient:
         try:
             resp = self.session.post(
                 self.base_url + path, data=body_str,
-                headers=headers, timeout=15
+                headers=headers, timeout=(5, 8)
             )
             return resp.json()
         except Exception as e:
-            return {"code": "-1", "msg": str(e), "data": []}
+            return {"code": "-1", "msg": _friendly_okx_error(e), "data": []}
 
     def _audit_log(self, action: str, payload: Dict, result: Dict):
         record = {

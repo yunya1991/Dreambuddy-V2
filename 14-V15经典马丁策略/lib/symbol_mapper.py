@@ -227,6 +227,10 @@ class SymbolMapper:
             ("AMZN",     "Amazon",             0.01, 0.01, 1.0, "1997-05-15"),   # 亚马逊
             ("SNDK",     "SanDisk",            0.01, 0.01, 1.0, "1995-03-08"),   # 闪迪
             ("SPCX",     "SpaceX",             0.01, 0.01, 1.0, "2024-01-01"),   # SpaceX (OKX永续)
+            ("MSTR",     "MicroStrategy",      0.01, 0.01, 1.0, "1999-06-11"),   # 微策略
+            ("COIN",     "Coinbase",           0.01, 0.01, 1.0, "2021-04-14"),   # Coinbase
+            ("CRCL",     "Circle",             0.01, 0.01, 1.0, "2025-06-05"),   # Circle (USDC发行商, IPO 2025-06-05)
+            ("BMNR",     "Bitmine Immersion",  0.01, 0.01, 1.0, "2025-06-05"),   # Bitmine (BTC矿企, 微型股市值~$15M)
         ]
         for sym, name, lot, tick, ctval, ld in us_stocks:
             self.register(AssetInfo(

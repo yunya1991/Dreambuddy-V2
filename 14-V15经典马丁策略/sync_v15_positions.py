@@ -61,7 +61,7 @@ def main():
     if not r.get("ok"):
         print(f"  全部持仓查询失败: {r.get('error')}，尝试逐个币种...")
         all_positions = []
-        coins = ["BTC", "ETH", "SOL", "BNB", "OKB", "PUMP", "UNI", "AMZN", "XAU", "HYPE", "MU", "SKHYNIX", "NVDA", "GOOGL", "XAG"]
+        coins = ["BTC", "ETH", "SOL", "BNB", "OKB", "PUMP", "UNI", "AMZN", "XAU", "HYPE", "MU", "SKHYNIX", "NVDA", "GOOGL", "XAG", "CRCL", "COIN", "BMNR", "MSTR"]
         for coin in coins:
             inst_id = f"{coin}-USDT-SWAP"
             rr = okx.get_positions(inst_id)

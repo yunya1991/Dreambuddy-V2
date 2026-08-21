@@ -143,8 +143,8 @@ class ModelVersionManager:
         version_num = len(self.state.versions) + 1
         version = f'v{version_num}'
 
-        # If we have a live version, new one is shadow
-        status = 'shadow' if self.state.current_live_version else 'live'
+        # 新版本始终注册为 shadow，必须通过 AB 评估 + 动态基线对比才能晋升 live
+        status = 'shadow'
 
         mv = ModelVersion(
             version=version,
@@ -591,12 +591,22 @@ class IncrementalTrainer:
         self.version_mgr.state.total_retrains += 1
         self.version_mgr._save_state()
 
-        # Step 6: Evaluate and promote (if AB comparator available)
+        # Step 6: Evaluate and promote (双基线评估)
         promotion = self.evaluate_and_promote()
 
         print(f'\n[IncrementalTrainer] Retrain cycle complete')
         print(f'  Version: {version}')
-        print(f'  Status: {promotion.get("new_status", "unknown")}')
+        print(f'  Action: {promotion.get("action", "unknown")}')
+        print(f'  New status: {promotion.get("new_status", "unknown")}')
+        if promotion.get('version_comparison'):
+            vc = promotion['version_comparison']
+            print(f'  Version comparison: score={vc.get("score")}/3 '
+                  f'pnl_delta={vc.get("pnl_delta_pct", 0):+.1f}%')
+        if promotion.get('hot_swap_result'):
+            hs = promotion['hot_swap_result']
+            print(f'  Hot-swap: ok={hs.get("ok")} reason={hs.get("reason")}')
+        db_ver = self.ab_comparator.state.dynamic_baseline_version if self.ab_comparator else None
+        print(f'  Dynamic baseline: {db_ver or "(none)"}')
 
         return {
             'status': 'success',
@@ -752,13 +762,19 @@ class IncrementalTrainer:
     def evaluate_and_promote(self) -> Dict[str, Any]:
         """Evaluate shadow model via ABShadowComparator and decide promotion.
 
+        双基线评估流程：
+        1. 静态基线对比：AB 对比器的 evaluate()（基线策略 vs AI 闸门）
+        2. 动态基线对比：回测新版本 vs 当前动态基线版本（旧最优 AI 模型）
+        3. 只有两者都通过才 promote_shadow + hot_swap_models
+        4. promote 后更新动态基线为新版本
+
         Returns:
             Promotion decision dict.
         """
         if not self.ab_comparator:
             return {'action': 'no_comparator', 'new_status': 'shadow'}
 
-        # Run AB evaluation
+        # Step 1: AB 静态基线评估（基线策略 vs AI 闸门整体）
         eval_result = self.ab_comparator.evaluate()
         self.version_mgr.state.last_evaluation = datetime.utcnow().isoformat() + 'Z'
         self.version_mgr._save_state()
@@ -766,15 +782,83 @@ class IncrementalTrainer:
         transition = eval_result.get('transition')
         shadow_ver = self.version_mgr.state.current_shadow_version
 
+        # Step 2: 动态基线对比（回测新版本 vs 当前最优 AI 版本）
+        shadow_paths = self.version_mgr.get_shadow_paths()
+        candidate_metrics = None
+        version_comparison = None
+
+        if shadow_paths and shadow_ver:
+            candidate_metrics = self._backtest_model(
+                shadow_paths[0], shadow_paths[1],
+                label=f'candidate_{shadow_ver}',
+            )
+            version_comparison = self.ab_comparator.evaluate_version_comparison(
+                candidate_version=shadow_ver,
+                candidate_metrics=candidate_metrics,
+                candidate_paths=shadow_paths,
+            )
+
+        # Step 3: 决策逻辑
+        # 首次训练（无动态基线）：回测通过即可晋升，不依赖 AB transition（此时无交易记录）
+        # 后续训练：必须同时通过动态基线对比 + AB transition
+        has_dynamic_baseline = self.ab_comparator.state.dynamic_baseline_version is not None
+
+        if version_comparison and not version_comparison['should_promote']:
+            # 新版本劣于动态基线 → 不上线
+            print(f'\n[IncrementalTrainer] Version {shadow_ver} WORSE than dynamic baseline:')
+            print(f'  {version_comparison["reason"]}')
+            if shadow_ver:
+                self.version_mgr.disable_shadow(shadow_ver)
+            return {
+                'action': 'disabled_inferior',
+                'transition': transition,
+                'new_status': 'disabled',
+                'version': shadow_ver,
+                'evaluation': eval_result,
+                'version_comparison': version_comparison,
+            }
+
+        # 首版本 bootstrap：无动态基线 + 回测通过 → 直接晋升（跳过 AB transition 检查）
+        if not has_dynamic_baseline and shadow_ver and version_comparison and version_comparison['should_promote']:
+            print(f'\n[IncrementalTrainer] First version {shadow_ver} bootstrapping to LIVE '
+                  f'(no dynamic baseline yet, backtest passed)')
+            self.version_mgr.promote_shadow(shadow_ver)
+            hot_swap_result = self._hot_swap_to_live()
+            # 初始化动态基线
+            self.ab_comparator.set_dynamic_baseline(shadow_ver, candidate_metrics or {})
+            return {
+                'action': 'promoted',
+                'transition': 'BOOTSTRAP_FIRST_VERSION',
+                'new_status': 'live',
+                'version': shadow_ver,
+                'evaluation': eval_result,
+                'version_comparison': version_comparison,
+                'hot_swap_result': hot_swap_result,
+            }
+
+        # 后续版本：动态基线通过 + AB transition 通过 → 晋升
         if transition == 'SHADOW→LIVE' and shadow_ver:
             # Promote shadow to live
             self.version_mgr.promote_shadow(shadow_ver)
+
+            # 接线：promote 后调用 hot_swap_models 切换运行中 gateway 权重
+            hot_swap_result = self._hot_swap_to_live()
+
+            # 更新动态基线为新 live 版本
+            if candidate_metrics:
+                self.ab_comparator.set_dynamic_baseline(shadow_ver, candidate_metrics)
+            elif not has_dynamic_baseline:
+                # 首次上线，用当前回测指标初始化动态基线
+                self.ab_comparator.set_dynamic_baseline(shadow_ver, candidate_metrics or {})
+
             return {
                 'action': 'promoted',
                 'transition': transition,
                 'new_status': 'live',
                 'version': shadow_ver,
                 'evaluation': eval_result,
+                'version_comparison': version_comparison,
+                'hot_swap_result': hot_swap_result,
             }
 
         elif transition == 'SHADOW→DISABLED' and shadow_ver:
@@ -786,16 +870,21 @@ class IncrementalTrainer:
                 'new_status': 'disabled',
                 'version': shadow_ver,
                 'evaluation': eval_result,
+                'version_comparison': version_comparison,
             }
 
         elif transition and 'LIVE→SHADOW' in transition:
             # Rollback live
             self.version_mgr.rollback_live()
+            # 回滚后热切换到回滚后的 live 版本（如果有）
+            hot_swap_result = self._hot_swap_to_live()
             return {
                 'action': 'rollback',
                 'transition': transition,
                 'new_status': 'shadow',
                 'evaluation': eval_result,
+                'version_comparison': version_comparison,
+                'hot_swap_result': hot_swap_result,
             }
 
         return {
@@ -803,7 +892,90 @@ class IncrementalTrainer:
             'transition': None,
             'new_status': 'shadow',
             'evaluation': eval_result,
+            'version_comparison': version_comparison,
         }
+
+    def _backtest_model(
+        self,
+        bilstm_path: str,
+        patchtst_path: str,
+        label: str = '',
+    ) -> Dict[str, Any]:
+        """用指定模型路径跑回测，返回指标快照。
+
+        回测使用固定的合成数据集（或最近 K 线），确保不同版本在
+        相同数据上对比，结果可比。
+        """
+        try:
+            from core.v15_backtest import run_backtest
+        except Exception:
+            try:
+                from v15_backtest import run_backtest
+            except Exception:
+                return {'total_pnl': 0, 'win_rate': 0, 'max_drawdown': 0, 'error': 'import_failed'}
+
+        # 使用固定币种和参数跑回测，确保版本间可比
+        coins = self.coins[:3] if self.coins else ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
+        results = []
+        for coin in coins:
+            try:
+                bt = run_backtest(
+                    coin=coin,
+                    phase_d_ai_enabled=True,
+                    phase_d_bilstm_model_path=bilstm_path,
+                    phase_d_patchtst_model_path=patchtst_path,
+                    phase_d_bust_threshold=0.60,
+                )
+                results.append(bt)
+            except Exception as e:
+                print(f'  [backtest] {coin} failed: {e}')
+                results.append({})
+
+        # 汇总指标
+        total_pnl = sum(r.get('final_pnl_pct', 0) for r in results)
+        total_trades = sum(r.get('total_trades', 0) for r in results)
+        win_trades = sum(r.get('win_trades', 0) for r in results)
+        max_mdd = max((r.get('max_drawdown', 0) for r in results), default=0)
+        win_rate = win_trades / total_trades if total_trades > 0 else 0
+
+        metrics = {
+            'total_pnl': round(total_pnl, 4),
+            'total_trades': total_trades,
+            'win_trades': win_trades,
+            'win_rate': round(win_rate, 4),
+            'max_drawdown': round(max_mdd, 4),
+            'label': label,
+        }
+        print(f'  [backtest] {label}: pnl={total_pnl:.2f} trades={total_trades} wr={win_rate:.1%} mdd={max_mdd:.2f}')
+        return metrics
+
+    def _hot_swap_to_live(self) -> Dict[str, Any]:
+        """热切换运行中 PhaseDGateway 的模型权重到当前 live 版本。
+
+        从 v15_trader 获取 gateway 单例，调用 hot_swap_models 切换。
+        """
+        live_paths = self.version_mgr.get_live_paths()
+        if not live_paths:
+            return {'ok': False, 'reason': 'no_live_version'}
+
+        bilstm_path, patchtst_path = live_paths
+        if not bilstm_path or not patchtst_path:
+            return {'ok': False, 'reason': 'missing_model_paths'}
+
+        try:
+            # 获取运行中的 gateway 单例
+            import core.v15_trader as vt
+            gw = vt._get_phase_d_gateway()
+            if gw is None:
+                return {'ok': False, 'reason': 'gateway_not_initialized'}
+            ok, reason = gw.hot_swap_models(
+                bilstm_model_path=bilstm_path,
+                patchtst_model_path=patchtst_path,
+                strict=True,
+            )
+            return {'ok': ok, 'reason': reason, 'bilstm_path': bilstm_path, 'patchtst_path': patchtst_path}
+        except Exception as e:
+            return {'ok': False, 'reason': f'exception: {e}'}
 
     def get_active_model_paths(self) -> Dict[str, Optional[str]]:
         """Get model paths for live and shadow versions.

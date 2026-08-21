@@ -445,7 +445,8 @@ def get_vol_adjusted_params(coin_vol: float, btc_vol: float,
                             base_tp_pct: float = None,
                             base_addon_pct: float = None,
                             coin_atr_pct: Optional[float] = None,
-                            btc_atr_pct: Optional[float] = None) -> Dict:
+                            btc_atr_pct: Optional[float] = None,
+                            leverage: float = None) -> Dict:
     if base_tp_pct is None:
         base_tp_pct = get_config_float("BASE_TP_PCT", 0.04)
     if base_addon_pct is None:
@@ -467,6 +468,18 @@ def get_vol_adjusted_params(coin_vol: float, btc_vol: float,
 
     tp_pct = base_tp_pct * ratio * atr_factor
     addon_pct = base_addon_pct * ratio * atr_factor
+
+    # ── 杠杆感知上限：防止加仓单落在爆仓价之下 ──
+    # 爆仓跌幅 = 1/leverage，加仓跌幅必须 < 爆仓跌幅 × 0.7（留 30% 安全边际）
+    # 否则第一档加仓价就在爆仓价之下，永远不会触发，且误导风控
+    if leverage is None:
+        leverage = get_config_float("LEVERAGE", 5.0)
+    if leverage > 0:
+    # 第一档加仓跌幅上限 = 爆仓跌幅 × 0.7
+    # 总加仓跌幅上限 = 爆仓跌幅 × 0.9（4档累计不超过爆仓价的 90%）
+        max_addon_pct_t1 = (1.0 / leverage) * 0.7
+        if addon_pct > max_addon_pct_t1:
+            addon_pct = max_addon_pct_t1
 
     return {
         "btc_volatility": round(btc_vol * 100, 4),

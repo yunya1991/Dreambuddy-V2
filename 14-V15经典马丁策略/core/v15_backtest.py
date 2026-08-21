@@ -342,7 +342,7 @@ def fetch_klines(coin: str, interval: str = "4h", limit: int = 1000) -> List[Dic
                     "endTime": now_ms,
                 },
             },
-            timeout=60,
+            timeout=10,
         )
         data = r.json()
 

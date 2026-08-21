@@ -31,6 +31,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
+from token_pool_loader import load_coins_with_override
 
 try:
     from config_loader import (
@@ -70,6 +71,34 @@ ADDON_PCT = get_config_float("ADDON_PCT", 0.08)  # 加仓间距（保持不变�
 BASE_POSITION_PCT = get_config_float("BASE_POSITION_PCT", 0.22)
 LEVERAGE = get_config_float("LEVERAGE", 5.0)
 
+# Kelly 底仓优化开关（true=凯利公式计算底仓，false=固定22%基线等价）
+V15_USE_KELLY = str(get_config("V15_USE_KELLY", "false")).lower() == "true"
+
+
+def _get_effective_base_pct() -> float:
+    """获取生效的底仓比例。
+
+    V15_USE_KELLY=true: 从 trade_history.json 读取历史交易，用凯利公式计算最优底仓
+                        样本不足（<20笔）或计算失败时回退 BASE_POSITION_PCT
+    V15_USE_KELLY=false: 固定返回 BASE_POSITION_PCT（基线等价）
+    """
+    if not V15_USE_KELLY:
+        return BASE_POSITION_PCT
+    try:
+        trade_history_file = BASE_DIR / "data" / "trade_history.json"
+        if not trade_history_file.exists():
+            return BASE_POSITION_PCT
+        history = json.loads(trade_history_file.read_text(encoding="utf-8"))
+        if not isinstance(history, list) or len(history) < 20:
+            return BASE_POSITION_PCT
+        from kelly_optimizer import calculate_kelly_from_trades
+        kp = calculate_kelly_from_trades(history, base_pct=BASE_POSITION_PCT)
+        if kp.used_kelly:
+            return kp.final_pct
+        return BASE_POSITION_PCT
+    except Exception:
+        return BASE_POSITION_PCT
+
 # 加仓资金分配（金字塔结构：越跌加仓越大，经典马丁）
 ADDON1_PCT = get_config_float("ADDON1_PCT", 0.05)  # 加仓1：5%（黑天鹅第一档）
 ADDON2_PCT = get_config_float("ADDON2_PCT", 0.10)  # 加仓2：10%
@@ -79,9 +108,9 @@ ADDON4_PCT = get_config_float("ADDON4_PCT", 0.35)  # 加仓4：35%（最深档�
 MAX_POSITION_PCT = get_config_float("MAX_POSITION_PCT", 0.60)
 MIN_MARGIN_USD = get_config_float("MIN_MARGIN_USD", 20)
 
-# 币种池：用 SymbolMapper 过滤出 OKX 支持的币种
-_RAW_COINS = get_config_list(
-    "V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
+# 币种池：公共代币池(token_registry.json) > V15_COINS env(override) > 硬编码默认
+_RAW_COINS = load_coins_with_override(
+    "V15_COINS", ["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
 )
 FILTERED_COINS = [c for c in _RAW_COINS if _coin_supported(c, "okx")] or _RAW_COINS
 V15CT_COINS = FILTERED_COINS
@@ -213,7 +242,8 @@ def calculate_single_position_cost(budget=None):
     if budget is None:
         budget = _get_dynamic_budget()
 
-    base_usd = budget * BASE_POSITION_PCT
+    effective_base_pct = _get_effective_base_pct()
+    base_usd = budget * effective_base_pct
 
     addon1_usd = budget * ADDON1_PCT
     addon2_usd = budget * ADDON2_PCT
@@ -374,13 +404,14 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
     per_coin_budget = min(per_coin_budget, max_per_coin)
 
     # 不低于 MIN_MARGIN_USD / BASE_POSITION_PCT（确保底仓 >= MIN_MARGIN_USD）
-    min_budget = MIN_MARGIN_USD / BASE_POSITION_PCT if BASE_POSITION_PCT > 0 else MIN_MARGIN_USD * 5
+    _eff_base_pct = _get_effective_base_pct()
+    min_budget = MIN_MARGIN_USD / _eff_base_pct if _eff_base_pct > 0 else MIN_MARGIN_USD * 5
     per_coin_budget = max(per_coin_budget, min_budget) if per_coin_budget > 0 else 0
 
     # ── 资金分配 ──
     # 固定：底仓22%，5x杠杆
     # 动态（贝叶斯优化）：addon1/2/3/4
-    base_usd = per_coin_budget * BASE_POSITION_PCT
+    base_usd = per_coin_budget * _eff_base_pct
     addon1_usd = per_coin_budget * ADDON1_PCT
     addon2_usd = per_coin_budget * ADDON2_PCT
     addon3_usd = per_coin_budget * ADDON3_PCT

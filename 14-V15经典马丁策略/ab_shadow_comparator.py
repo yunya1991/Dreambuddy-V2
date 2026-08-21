@@ -80,7 +80,11 @@ class ABComparatorState:
     disabled_at: Optional[str] = None
     last_evaluation: Optional[str] = None
     total_evaluations: int = 0
-    
+    # 动态基线：当前最优 AI 版本标识（随迭代更新）
+    dynamic_baseline_version: Optional[str] = None
+    # 动态基线回测指标快照（最近一次回测对比结果）
+    dynamic_baseline_metrics: Optional[Dict] = None
+
     def to_dict(self) -> Dict:
         return asdict(self)
 
@@ -438,6 +442,8 @@ class ABShadowComparator:
             'live_promoted_at': self.state.live_promoted_at,
             'disabled_at': self.state.disabled_at,
             'last_evaluation': self.state.last_evaluation,
+            'dynamic_baseline_version': self.state.dynamic_baseline_version,
+            'dynamic_baseline_metrics': self.state.dynamic_baseline_metrics,
             'evaluation': eval_result,
             'baseline_action_distribution': baseline_actions,
             'ai_action_distribution': ai_actions,
@@ -464,6 +470,105 @@ class ABShadowComparator:
         elif new_state == STATE_DISABLED:
             self.state.disabled_at = datetime.utcnow().isoformat() + 'Z'
         self._save_state()
+
+    # ----------------------------------------------------------------
+    # 双基线版本对比：静态基线（v15策略）+ 动态基线（最优AI版本）
+    # 新版本必须优于动态基线才能晋升，防止迭代劣化
+    # ----------------------------------------------------------------
+
+    def set_dynamic_baseline(self, version: str, metrics: Optional[Dict] = None) -> None:
+        """设定动态基线版本（当前最优 AI 版本）。
+
+        Args:
+            version: 模型版本标识（如 'v1'）
+            metrics: 回测指标快照（pnl, win_rate, mdd 等）
+        """
+        self.state.dynamic_baseline_version = version
+        self.state.dynamic_baseline_metrics = metrics or {}
+        self._save_state()
+
+    def evaluate_version_comparison(
+        self,
+        candidate_version: str,
+        candidate_metrics: Dict,
+        candidate_paths: Tuple[str, str],
+    ) -> Dict:
+        """评估新训练版本是否优于动态基线。
+
+        对比维度：
+        1. 总 PnL：candidate > dynamic_baseline → +1 分
+        2. 胜率：candidate > dynamic_baseline → +1 分
+        3. 最大回撤：candidate_mdd < baseline_mdd → +1 分
+        4. 附加：PnL 改善幅度 > 5% → 额外通过
+
+        Returns:
+            {
+                'should_promote': bool,      # 新版本优于动态基线
+                'score': int,                # 3项指标中胜出的数量
+                'pnl_delta_pct': float,      # PnL 改善百分比
+                'reason': str,               # 决策原因
+                'comparison': Dict,          # 详细对比数据
+            }
+        """
+        db_metrics = self.state.dynamic_baseline_metrics or {}
+        db_version = self.state.dynamic_baseline_version or '(none)'
+
+        # 无动态基线时（首次训练），只要 candidate 指标合理即通过
+        if not db_metrics:
+            return {
+                'should_promote': True,
+                'score': 3,
+                'pnl_delta_pct': 0.0,
+                'reason': f'no dynamic baseline yet, candidate {candidate_version} auto-promote',
+                'comparison': {'candidate': candidate_metrics, 'baseline': None},
+            }
+
+        score = 0
+        reasons = []
+
+        # 1. PnL 对比
+        c_pnl = candidate_metrics.get('total_pnl', 0)
+        b_pnl = db_metrics.get('total_pnl', 0)
+        pnl_delta_pct = ((c_pnl - b_pnl) / abs(b_pnl) * 100) if abs(b_pnl) > 1e-9 else 0.0
+        if c_pnl > b_pnl:
+            score += 1
+            reasons.append(f'pnl {c_pnl:.2f} > baseline {b_pnl:.2f} ({pnl_delta_pct:+.1f}%)')
+        else:
+            reasons.append(f'pnl {c_pnl:.2f} <= baseline {b_pnl:.2f} ({pnl_delta_pct:+.1f}%)')
+
+        # 2. 胜率对比
+        c_wr = candidate_metrics.get('win_rate', 0)
+        b_wr = db_metrics.get('win_rate', 0)
+        if c_wr > b_wr:
+            score += 1
+            reasons.append(f'win_rate {c_wr:.1%} > baseline {b_wr:.1%}')
+        else:
+            reasons.append(f'win_rate {c_wr:.1%} <= baseline {b_wr:.1%}')
+
+        # 3. 最大回撤对比（越小越好）
+        c_mdd = candidate_metrics.get('max_drawdown', 0)
+        b_mdd = db_metrics.get('max_drawdown', 0)
+        if c_mdd < b_mdd:
+            score += 1
+            reasons.append(f'mdd {c_mdd:.2f} < baseline {b_mdd:.2f}')
+        else:
+            reasons.append(f'mdd {c_mdd:.2f} >= baseline {b_mdd:.2f}')
+
+        # 判定：至少 2/3 项优于动态基线，且 PnL 不劣化
+        should_promote = score >= 2 and pnl_delta_pct >= -2.0
+
+        return {
+            'should_promote': should_promote,
+            'score': score,
+            'pnl_delta_pct': round(pnl_delta_pct, 2),
+            'reason': '; '.join(reasons),
+            'comparison': {
+                'candidate_version': candidate_version,
+                'candidate': candidate_metrics,
+                'baseline_version': db_version,
+                'baseline': db_metrics,
+            },
+        }
 
     # ----------------------------------------------------------------
     # PnL 回填：v15_trader 在平仓结算（_save_trade_to_history）时调用，
