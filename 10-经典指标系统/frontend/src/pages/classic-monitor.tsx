@@ -30,14 +30,6 @@ interface RollbackPoint {
   created_at: string;
 }
 
-interface PipelineHistory {
-  strategy_name: string;
-  trace_id: string;
-  status: string;
-  timestamp: number;
-  phases: string[];
-}
-
 export default function ClassicMonitorPage() {
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [rollbackPoints, setRollbackPoints] = useState<RollbackPoint[]>([]);

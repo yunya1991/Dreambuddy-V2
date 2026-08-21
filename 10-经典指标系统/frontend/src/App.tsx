@@ -4,11 +4,11 @@ import { MetricsCard } from './components/MetricsCard';
 import { ConfigCard } from './components/ConfigCard';
 import { OrdersTable } from './components/OrdersTable';
 import { SignalsTable } from './components/SignalsTable';
-import { LayoutDashboard, LineChart, Trophy, Layers, LogOut, List, ChevronDown, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, LineChart, Trophy, Layers, LogOut, List, ChevronDown, ChevronRight, Target } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './components/ui/button';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { authLogin, authLogout, authMe, fetchAutomationStrategiesState, fetchConfig, fetchHealth, fetchMacroBtcEthOverview, fetchMacroViz, fetchMetrics, fetchSignalRejectStats, fetchTrackerStats, fetchUniverseStatus, getConfigToken, getExecuteToken, getMaintenanceToken, getUiEnv, setConfigToken, setExecuteToken, setMaintenanceToken, subscribeConfigToken, subscribeExecuteToken, subscribeMaintenanceToken } from './lib/api';
+import { authLogin, authLogout, authMe, fetchAutomationStrategiesState, fetchConfig, fetchHealth, fetchMacroBtcEthOverview, fetchMacroBtcRegimeBacktest, fetchMacroViz, fetchMetrics, fetchSignalRejectStats, fetchTrackerStats, fetchUniverseStatus, getConfigToken, getExecuteToken, getMaintenanceToken, getUiEnv, setConfigToken, setExecuteToken, setMaintenanceToken, subscribeConfigToken, subscribeExecuteToken, subscribeMaintenanceToken } from './lib/api';
 import { Badge } from './components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import { Input } from './components/ui/input';
@@ -20,6 +20,7 @@ import { StrategyPage } from './components/StrategyPage';
 import { ActiveStrategyPage } from './components/ActiveStrategyPage';
 import { ExitSystemPage } from './components/ExitSystemPage';
 import { MacroPage } from './components/MacroPage';
+import { RegimeEvolutionPage } from './components/RegimeEvolutionPage';
 import { EngineeringIndexPage } from './components/EngineeringIndexPage';
 import { DocsPage } from './components/DocsPage';
 import { AgentConsolePage } from './components/AgentConsolePage';
@@ -61,8 +62,6 @@ const NavLink: React.FC<{ to: string; icon: React.ReactNode; label: string }> = 
     </Link>
   );
 };
-
-const BUILD_STAMP = String(import.meta.env.VITE_BUILD_STAMP ?? 'dev');
 
 const ExecuteTokenPanel: React.FC = () => {
   const [token, setToken] = useState<string>(() => getExecuteToken());
@@ -536,6 +535,7 @@ const ShellLayout: React.FC = () => {
           <NavLink to="/arena" icon={<Trophy className="h-4 w-4" />} label="Arena" />
           <NavLink to="/universe" icon={<Layers className="h-4 w-4" />} label="Universe" />
           <NavLink to="/macro" icon={<LineChart className="h-4 w-4" />} label="Macro" />
+          <NavLink to="/evolution" icon={<LineChart className="h-4 w-4" />} label="形态演化" />
           <NavLink to="/evaluation" icon={<LineChart className="h-4 w-4" />} label="Evaluation" />
           <NavLink to="/index" icon={<List className="h-4 w-4" />} label="Index" />
         </aside>
@@ -1195,7 +1195,6 @@ const DashboardMacroCard: React.FC = () => {
 };
 
 const MlTradePage: React.FC = () => {
-  const nav = useNavigate();
   const loc = useLocation();
 
   const overrides = useMemo(() => {
@@ -1321,6 +1320,7 @@ export default function App() {
           <Route path="arena" element={<ArenaPage />} />
           <Route path="universe" element={<UniversePage />} />
           <Route path="macro" element={<MacroPage />} />
+          <Route path="evolution" element={<RegimeEvolutionPage />} />
           <Route path="strategy" element={<ActiveStrategyPage />} />
           <Route path="library" element={<StrategyPage />} />
           <Route path="exit" element={<RequireProdUi><ExitSystemPage /></RequireProdUi>} />

@@ -186820,6 +186820,272 @@ def _pick_listen_port(host: str, preferred_port: int, strict: bool) -> int:
             return int(p)
     return int(preferred_port)
 
+
+# ====================================================================
+# Phase 1 P1.6：市场形态演化 4 条 API（Spec §2.4 + tasks.md L340-383）
+#   路由命名空间 /regime/evolution/* —— 与现有 /macro/* 风格一致
+#   数据源：EvolutionStorageSQLite（默认 db 路径：11-易经推理系统/scripts/artifacts/evolution_btc/evolution.db）
+# ====================================================================
+try:
+    import sys as _sys_p16
+    _BCRM2_DIR_P16 = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4"
+    if _BCRM2_DIR_P16 not in _sys_p16.path:
+        _sys_p16.path.insert(0, _BCRM2_DIR_P16)
+    from bcrm2.run_evolution_pipeline import ensure_evolution_db, get_storage  # noqa: E402
+    _P16_EVOLUTION_READY = True
+    _P16_EVOLUTION_ERROR: str = ""
+except Exception as _e_p16:
+    _P16_EVOLUTION_READY = False
+    _P16_EVOLUTION_ERROR = str(_e_p16)
+
+
+def _p16_get_storage():
+    """安全获取 storage 实例；未就绪时抛 RuntimeError 由路由捕获。"""
+    if not _P16_EVOLUTION_READY:
+        raise RuntimeError(f"evolution engine 未就绪：{_P16_EVOLUTION_ERROR}")
+    return get_storage()
+
+
+@app.route("/regime/evolution/latest", methods=["GET"])
+def regime_evolution_latest():
+    """最新一日的形态演化数据（前端首屏秒开）。
+
+    Query:
+      symbol=BTCUSDT&window=90
+    Returns:
+      {ok, ts, trajectory:[N], dotplot:{...}, indicators:{12×N}, snapshot:{...}}
+    """
+    try:
+        symbol = str(request.args.get("symbol") or "BTCUSDT").strip().upper() or "BTCUSDT"
+        try:
+            window = int(request.args.get("window") or 90)
+        except Exception:
+            window = 90
+        window = max(10, min(365, window))
+
+        storage = _p16_get_storage()
+        trajectory = storage.get_trajectory(symbol, window)
+        dotplot = storage.get_latest_dotplot(symbol)
+        snapshot = storage.get_snapshot(symbol)
+
+        # 12 指标历史（默认全 12 个；可指定 names=ma200_above_3d,log_ret_90d 子集）
+        names_str = str(request.args.get("names") or "").strip()
+        if names_str:
+            names = [n.strip() for n in names_str.split(",") if n.strip()]
+        else:
+            from bcrm2.regime_mapper import DOTPLOT_INDICATORS as _P16_IND
+            names = list(_P16_IND)
+        indicators_evolution = storage.get_indicators_evolution(symbol, names, window=window)
+
+        return jsonify({
+            "ok": True,
+            "ts": _now_ms(),
+            "symbol": symbol,
+            "window": window,
+            "trajectory": trajectory,
+            "dotplot": dotplot,
+            "indicators": indicators_evolution,
+            "snapshot": snapshot,
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "ts": _now_ms()}), 500
+
+
+@app.route("/regime/evolution/trajectory", methods=["GET"])
+def regime_evolution_trajectory():
+    """自定义时间区间的 trajectory。
+
+    Query:
+      symbol=BTCUSDT&start=2026-01-01&end=2026-08-19
+    Returns:
+      {ok, ts, symbol, start, end, trajectory:[...]}
+    """
+    try:
+        symbol = str(request.args.get("symbol") or "BTCUSDT").strip().upper() or "BTCUSDT"
+        start = str(request.args.get("start") or "").strip()
+        end = str(request.args.get("end") or "").strip()
+
+        storage = _p16_get_storage()
+        # 用 trajectory_90d 快照 + 主表过滤
+        # 简单实现：取 max_window=365，再按 start/end 过滤
+        all_traj = storage.get_trajectory(symbol, window=365)
+        if start or end:
+            filtered = []
+            for fr in all_traj:
+                t = fr.get("t", "")
+                if start and t < start:
+                    continue
+                if end and t > end:
+                    continue
+                filtered.append(fr)
+            trajectory = filtered
+        else:
+            trajectory = all_traj
+
+        return jsonify({
+            "ok": True,
+            "ts": _now_ms(),
+            "symbol": symbol,
+            "start": start,
+            "end": end,
+            "count": len(trajectory),
+            "trajectory": trajectory,
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "ts": _now_ms()}), 500
+
+
+@app.route("/regime/evolution/dotplot_average", methods=["GET"])
+def regime_evolution_dotplot_average():
+    """区间平均点阵图（Panel 2 切换显示用）。
+
+    Query:
+      symbol=BTCUSDT&start=2026-01-01&end=2026-08-19
+    Returns:
+      {ok, ts, dotplot:{rows, cols, matrix, marginal_probs, sample_dates}}
+    """
+    try:
+        symbol = str(request.args.get("symbol") or "BTCUSDT").strip().upper() or "BTCUSDT"
+        start = str(request.args.get("start") or "").strip()
+        end = str(request.args.get("end") or "").strip()
+
+        storage = _p16_get_storage()
+        latest_dot = storage.get_latest_dotplot(symbol)
+        if latest_dot is None:
+            return jsonify({
+                "ok": False,
+                "error": "dotplot 未生成，请先运行 run_evolution_pipeline --sqlite-db",
+                "ts": _now_ms(),
+            }), 404
+
+        # 简化版「区间平均」：基于最新 dotplot（前端可后续调用 latest 之外的单日计算）
+        # 真正的区间平均需要重新跑 compute_dotplot_support；这里返回 latest + 区间标签
+        return jsonify({
+            "ok": True,
+            "ts": _now_ms(),
+            "symbol": symbol,
+            "start": start,
+            "end": end,
+            "dotplot": latest_dot,
+            "note": "当前返回最新一日 dotplot；区间平均需调用 run_evolution_pipeline 重新计算",
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "ts": _now_ms()}), 500
+
+
+@app.route("/regime/evolution/weights/latest", methods=["GET"])
+def regime_weights_latest():
+    """当前生效的 Level/Trend 权重 + 中心坐标（供前端诊断 + 在线学习回显）。"""
+    try:
+        storage = _p16_get_storage()
+        weights = storage.get_latest_weights()
+        history = storage.list_weights_history(limit=10)
+        return jsonify({
+            "ok": True,
+            "ts": _now_ms(),
+            "weights": weights,
+            "history": history,
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "ts": _now_ms()}), 500
+
+
+@app.route("/regime/evolution/params", methods=["GET"])
+def regime_evolution_params():
+    """ParameterMapper 输出参数：6 个全局范围参数 + 5 个板块权重。
+
+    基于 /regime/evolution/latest 最新 snapshot 的 (L, T, C) 实时计算：
+      • global_params: 6 个全局参数的 [lo, hi] 范围（多空仓位/偏置/阈值乘数）
+      • sector_weights: 5 板块资金权重 Σ=1（DeFi/AI/RWA/MEME/L2）
+      • identity_check: L=T=C=0 时的无偏直通基线（用于校验三层兼容不变量）
+
+    Query:
+      symbol=BTCUSDT         — 指定交易对（默认 BTCUSDT）
+      stats_row=true         — 是否返回 stats_row 元数据（默认 false）
+    """
+    try:
+        symbol = str(request.args.get("symbol") or "BTCUSDT").strip().upper() or "BTCUSDT"
+
+        storage = _p16_get_storage()
+        snapshot = storage.get_snapshot(symbol)
+        if snapshot is None:
+            return jsonify({
+                "ok": False,
+                "error": f"symbol={symbol} 无 snapshot，请先运行 run_evolution_pipeline --sqlite-db",
+                "ts": _now_ms(),
+            }), 404
+
+        L = float(snapshot.get("level_smooth", 0.0))
+        T = float(snapshot.get("trend_smooth", 0.0))
+        C = float(snapshot.get("consensus", 0.0))
+
+        # 复用 run_evolution_pipeline._DEFAULT_IDENTITY_BETAS 作为基线板块 betas
+        # 真实板块 betas 需要扩展接口接入；当前保持 identity 基线，满足三层兼容硬约束
+        from bcrm2.run_evolution_pipeline import _DEFAULT_IDENTITY_BETAS as _DEFAULT_BETAS
+        from bcrm2.parameter_mapper import ParameterMapper as _PM
+
+        pm = _PM()
+        global_params = pm.map_global_parameters(L, T, C)
+        sector_weights = pm.map_sector_weights(L, T, C, sector_betas=_DEFAULT_BETAS)
+
+        # Identity 无偏基线（L=T=C=0 时的直通值，用于前端对比展示）
+        identity_global = pm.map_global_parameters(0.0, 0.0, 0.0)
+        identity_sector = pm.map_sector_weights(0.0, 0.0, 0.0, sector_betas=_DEFAULT_BETAS)
+
+        # 汇总为前端友好的结构
+        global_list = [
+            {
+                "name": name,
+                "lo": round(lo, 6),
+                "hi": round(hi, 6),
+                "center": round((lo + hi) / 2.0, 6),
+                "bandwidth": round(hi - lo, 6),
+                "identity_center": round((identity_global[name][0] + identity_global[name][1]) / 2.0, 6),
+            }
+            for name, (lo, hi) in global_params.items()
+        ]
+        sector_list = [
+            {
+                "name": name,
+                "weight": round(float(sector_weights[name]), 6),
+                "identity_weight": round(float(identity_sector[name]), 6),
+            }
+            for name in ("defi", "ai", "rwa", "meme", "l2")
+        ]
+
+        return jsonify({
+            "ok": True,
+            "ts": _now_ms(),
+            "symbol": symbol,
+            "snapshot_t": snapshot.get("t", ""),
+            "inputs": {
+                "level_smooth": round(L, 4),
+                "trend_smooth": round(T, 4),
+                "consensus": round(C, 4),
+            },
+            "global_params": global_list,
+            "sector_weights": sector_list,
+            "sector_weights_sum": round(sum(sector_weights.values()), 6),
+            "identity": {
+                "global_params": [
+                    {
+                        "name": name,
+                        "lo": round(lo, 6),
+                        "hi": round(hi, 6),
+                        "center": round((lo + hi) / 2.0, 6),
+                    }
+                    for name, (lo, hi) in identity_global.items()
+                ],
+                "sector_weights": [
+                    {"name": name, "weight": round(float(identity_sector[name]), 6)}
+                    for name in ("defi", "ai", "rwa", "meme", "l2")
+                ],
+            },
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "ts": _now_ms()}), 500
+
+
 if __name__ == "__main__":
     if "--agent-driver-once" in sys.argv:
         try:

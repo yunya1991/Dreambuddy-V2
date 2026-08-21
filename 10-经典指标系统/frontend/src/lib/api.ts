@@ -7225,3 +7225,167 @@ export const postPressureExecFailure = async (payload: {
   path?: string;
   http_status?: number;
 }) => (await api.post<PressureExecFailureResponse>('/agent/pressure/exec_failure', payload)).data;
+
+// ================================================================
+// Regime Evolution — 形态演化引擎 API（Phase 2 前端四面板数据源）
+// 对应后端 /regime/evolution/* 4 条 Flask 路由
+// ================================================================
+
+export const REGIME_EVOLUTION_ORDER = [
+  'TREND_UP_STRONG', 'TREND_UP_MILD', 'RANGE_BOUND', 'CONSOLIDATION',
+  'REVERSAL', 'VOLATILE_DROP', 'FOMO_RALLY', 'DISTRIBUTION',
+] as const;
+
+export const REGIME_EVOLUTION_COLORS: Record<string, string> = {
+  TREND_UP_STRONG: '#16a34a',
+  TREND_UP_MILD: '#84cc16',
+  RANGE_BOUND: '#a3a3a3',
+  CONSOLIDATION: '#78716c',
+  REVERSAL: '#f59e0b',
+  VOLATILE_DROP: '#ef4444',
+  FOMO_RALLY: '#ec4899',
+  DISTRIBUTION: '#8b5cf6',
+};
+
+export const DOTPLOT_INDICATOR_NAMES = [
+  'ma200_above_3d', 'ma50_above', 'ma20_vs_ma50_order',
+  'cycle_position_365d', 'ma_alignment_score', 'ma200_slope_signed',
+  'dow_hhhl_score', 'log_ret_90d', 'log_ret_30d',
+  'ma_slope_wavg', 'volume_trend_conf', 'vol_60d_pct',
+] as const;
+
+export const DOTPLOT_INDICATOR_LABELS: Record<string, string> = {
+  ma200_above_3d: 'MA200三日确认',
+  ma50_above: 'MA50上方',
+  ma20_vs_ma50_order: 'MA20/50排列',
+  cycle_position_365d: '365d区间位置',
+  ma_alignment_score: 'MA对齐评分',
+  ma200_slope_signed: 'MA200斜率',
+  dow_hhhl_score: '道氏HH/HL',
+  log_ret_90d: '90d对数收益',
+  log_ret_30d: '30d对数收益',
+  ma_slope_wavg: 'MA斜率加权',
+  volume_trend_conf: '量能趋势确认',
+  vol_60d_pct: '60d波动分位',
+};
+
+export type RegimeTrajectoryItem = {
+  t: string;
+  price: number;
+  level_raw: number;
+  trend_raw: number;
+  level_smooth: number;
+  trend_smooth: number;
+  regime_probs: Record<string, number>;
+  top3: Array<[string, number]>;
+  consensus: number;
+  hmm_state: number;
+  bocpd_cp_prob: number;
+  indicators?: Record<string, number>;
+};
+
+export type RegimeDotplot = {
+  rows: string[];
+  cols: string[];
+  matrix: number[][];
+  marginal_probs: number[];
+  target_index: number;
+  sample_counts: Record<string, number>;
+} | null;
+
+export type RegimeSnapshot = RegimeTrajectoryItem | null;
+
+export type RegimeEvolutionLatestResponse = {
+  ok: boolean;
+  ts: number;
+  symbol: string;
+  window: number;
+  trajectory: RegimeTrajectoryItem[];
+  dotplot: RegimeDotplot;
+  indicators: Record<string, number[]>;
+  snapshot: RegimeSnapshot;
+};
+
+export type RegimeEvolutionTrajectoryResponse = {
+  ok: boolean;
+  ts: number;
+  symbol: string;
+  start: string;
+  end: string;
+  trajectory: RegimeTrajectoryItem[];
+};
+
+export type RegimeDotplotAverageResponse = {
+  ok: boolean;
+  ts: number;
+  symbol: string;
+  start: string;
+  end: string;
+  dotplot: RegimeDotplot;
+};
+
+export type RegimeWeightsLatestResponse = {
+  ok: boolean;
+  ts: number;
+  weights: {
+    week_start: string;
+    level_weights: Record<string, number>;
+    trend_weights: Record<string, number>;
+    regime_centers: Record<string, [number, number]>;
+    max_daily_delta: number;
+    objective: number;
+    comment: string;
+  } | null;
+};
+
+// ============================================================
+// BCRM 2.0 ParameterMapper 输出参数（6 全局 + 5 板块 + identity 基线）
+// ============================================================
+export type RegimeParamGlobalItem = {
+  name: string;
+  lo: number;
+  hi: number;
+  center: number;
+  bandwidth: number;
+  identity_center: number;
+};
+
+export type RegimeParamSectorItem = {
+  name: string;
+  weight: number;
+  identity_weight: number;
+};
+
+export type RegimeEvolutionParamsResponse = {
+  ok: boolean;
+  ts: number;
+  symbol: string;
+  snapshot_t: string;
+  inputs: {
+    level_smooth: number;
+    trend_smooth: number;
+    consensus: number;
+  };
+  global_params: RegimeParamGlobalItem[];
+  sector_weights: RegimeParamSectorItem[];
+  sector_weights_sum: number;
+  identity: {
+    global_params: { name: string; lo: number; hi: number; center: number }[];
+    sector_weights: { name: string; weight: number }[];
+  };
+};
+
+export const fetchRegimeEvolutionLatest = async (params?: { symbol?: string; window?: number }) =>
+  (await api.get<RegimeEvolutionLatestResponse>('/regime/evolution/latest', { params, timeout: 60000 })).data;
+
+export const fetchRegimeEvolutionTrajectory = async (params: { symbol?: string; start?: string; end?: string }) =>
+  (await api.get<RegimeEvolutionTrajectoryResponse>('/regime/evolution/trajectory', { params, timeout: 60000 })).data;
+
+export const fetchRegimeDotplotAverage = async (params: { symbol?: string; start: string; end: string }) =>
+  (await api.get<RegimeDotplotAverageResponse>('/regime/evolution/dotplot_average', { params, timeout: 60000 })).data;
+
+export const fetchRegimeWeightsLatest = async (params?: { symbol?: string }) =>
+  (await api.get<RegimeWeightsLatestResponse>('/regime/evolution/weights/latest', { params, timeout: 30000 })).data;
+
+export const fetchRegimeEvolutionParams = async (params?: { symbol?: string }) =>
+  (await api.get<RegimeEvolutionParamsResponse>('/regime/evolution/params', { params, timeout: 30000 })).data;
