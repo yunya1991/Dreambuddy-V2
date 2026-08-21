@@ -377,5 +377,5603 @@
         "adopted": true
       }
     ]
+  },
+  {
+    "ts": "2026-08-19T05:01:02.088675+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00017435622317596566,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 46,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1
+      },
+      "total_trades": 149120
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 75.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.4702792746878471,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.4702792746878471,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 26,
+              "wrong_predictions": 65,
+              "direction_accuracy": 0.2857,
+              "avg_confidence": 0.4494,
+              "fail_closed_count": 9,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 19,
+              "wrong_predictions": 53,
+              "direction_accuracy": 0.2639,
+              "avg_confidence": 0.5035,
+              "fail_closed_count": 28,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.0218,
+              "avg_confidence": 0.0541,
+              "fail_closed": 19
+            },
+            "tolerance": 0.02,
+            "fail_limit": 15.799999999999999,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T05:01:04.122992+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T05:01:04.123493+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T05:01:05.731947+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.4702792746878471,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.4702792746878471,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 26,
+            "wrong_predictions": 65,
+            "direction_accuracy": 0.2857,
+            "avg_confidence": 0.4494,
+            "fail_closed_count": 9,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 19,
+            "wrong_predictions": 53,
+            "direction_accuracy": 0.2639,
+            "avg_confidence": 0.5035,
+            "fail_closed_count": 28,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.0218,
+            "avg_confidence": 0.0541,
+            "fail_closed": 19
+          },
+          "tolerance": 0.02,
+          "fail_limit": 15.799999999999999,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T06:23:21.672448+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00017431414089946097,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 46,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1
+      },
+      "total_trades": 149156
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 75.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.6148192396337511,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise"
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T06:23:54.231950+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T06:23:54.232892+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T06:23:59.979216+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.6148192396337511,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise"
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T08:35:59.423098+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00018097363817337275,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 46,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 149193
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 74.2%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.6150058237924231,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.6150058237924231,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 31,
+              "wrong_predictions": 60,
+              "direction_accuracy": 0.3407,
+              "avg_confidence": 0.4854,
+              "fail_closed_count": 9,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 10,
+              "wrong_predictions": 40,
+              "direction_accuracy": 0.2,
+              "avg_confidence": 0.5468,
+              "fail_closed_count": 50,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.1407,
+              "avg_confidence": 0.0614,
+              "fail_closed": 41
+            },
+            "tolerance": 0.02,
+            "fail_limit": 15.799999999999999,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T08:36:33.012244+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T08:36:33.013027+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T08:36:35.868749+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.6150058237924231,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.6150058237924231,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 31,
+            "wrong_predictions": 60,
+            "direction_accuracy": 0.3407,
+            "avg_confidence": 0.4854,
+            "fail_closed_count": 9,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 10,
+            "wrong_predictions": 40,
+            "direction_accuracy": 0.2,
+            "avg_confidence": 0.5468,
+            "fail_closed_count": 50,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.1407,
+            "avg_confidence": 0.0614,
+            "fail_closed": 41
+          },
+          "tolerance": 0.02,
+          "fail_limit": 15.799999999999999,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T10:25:08.737514+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00019688527495028647,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 49,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 152373
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 75.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.593663634736008,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.593663634736008,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 30,
+              "wrong_predictions": 61,
+              "direction_accuracy": 0.3297,
+              "avg_confidence": 0.4817,
+              "fail_closed_count": 9,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 21,
+              "wrong_predictions": 45,
+              "direction_accuracy": 0.3182,
+              "avg_confidence": 0.5489,
+              "fail_closed_count": 34,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.0115,
+              "avg_confidence": 0.0672,
+              "fail_closed": 25
+            },
+            "tolerance": 0.02,
+            "fail_limit": 15.799999999999999,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T10:25:14.754389+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T10:25:14.755084+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T10:25:18.061939+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.593663634736008,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.593663634736008,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 30,
+            "wrong_predictions": 61,
+            "direction_accuracy": 0.3297,
+            "avg_confidence": 0.4817,
+            "fail_closed_count": 9,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 21,
+            "wrong_predictions": 45,
+            "direction_accuracy": 0.3182,
+            "avg_confidence": 0.5489,
+            "fail_closed_count": 34,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.0115,
+            "avg_confidence": 0.0672,
+            "fail_closed": 25
+          },
+          "tolerance": 0.02,
+          "fail_limit": 15.799999999999999,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T11:04:30.942115+00:00",
+    "trigger_stats": {
+      "win_rate": 0.0001968620194105951,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 49,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 152391
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 75.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5341361556212608,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5341361556212608,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 26,
+              "wrong_predictions": 64,
+              "direction_accuracy": 0.2889,
+              "avg_confidence": 0.4446,
+              "fail_closed_count": 10,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 18,
+              "wrong_predictions": 52,
+              "direction_accuracy": 0.2571,
+              "avg_confidence": 0.5415,
+              "fail_closed_count": 30,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.0318,
+              "avg_confidence": 0.0969,
+              "fail_closed": 20
+            },
+            "tolerance": 0.02,
+            "fail_limit": 17.0,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T11:04:34.000191+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T11:04:34.000510+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T11:04:37.056134+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5341361556212608,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5341361556212608,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 26,
+            "wrong_predictions": 64,
+            "direction_accuracy": 0.2889,
+            "avg_confidence": 0.4446,
+            "fail_closed_count": 10,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 18,
+            "wrong_predictions": 52,
+            "direction_accuracy": 0.2571,
+            "avg_confidence": 0.5415,
+            "fail_closed_count": 30,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.0318,
+            "avg_confidence": 0.0969,
+            "fail_closed": 20
+          },
+          "tolerance": 0.02,
+          "fail_limit": 17.0,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T14:25:59.904402+00:00",
+    "trigger_stats": {
+      "win_rate": 0.0002033506946722118,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 50,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 152446
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 75.8%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5382343366529851,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5382343366529851,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 21,
+              "wrong_predictions": 66,
+              "direction_accuracy": 0.2414,
+              "avg_confidence": 0.4611,
+              "fail_closed_count": 13,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 19,
+              "wrong_predictions": 45,
+              "direction_accuracy": 0.2969,
+              "avg_confidence": 0.5569,
+              "fail_closed_count": 36,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": 0.0555,
+              "avg_confidence": 0.0958,
+              "fail_closed": 23
+            },
+            "tolerance": 0.02,
+            "fail_limit": 20.6,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T14:26:01.764145+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T14:26:01.765565+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T14:26:03.057867+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5382343366529851,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5382343366529851,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 21,
+            "wrong_predictions": 66,
+            "direction_accuracy": 0.2414,
+            "avg_confidence": 0.4611,
+            "fail_closed_count": 13,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 19,
+            "wrong_predictions": 45,
+            "direction_accuracy": 0.2969,
+            "avg_confidence": 0.5569,
+            "fail_closed_count": 36,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": 0.0555,
+            "avg_confidence": 0.0958,
+            "fail_closed": 23
+          },
+          "tolerance": 0.02,
+          "fail_limit": 20.6,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T17:06:39.064537+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00019917247050962452,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 50,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 155644
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 75.8%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.4843682962723618,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.4843682962723618,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 27,
+              "wrong_predictions": 59,
+              "direction_accuracy": 0.314,
+              "avg_confidence": 0.4313,
+              "fail_closed_count": 14,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 21,
+              "wrong_predictions": 44,
+              "direction_accuracy": 0.3231,
+              "avg_confidence": 0.4974,
+              "fail_closed_count": 35,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": 0.0091,
+              "avg_confidence": 0.0661,
+              "fail_closed": 21
+            },
+            "tolerance": 0.02,
+            "fail_limit": 21.8,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T17:06:40.903319+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T17:06:40.903846+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T17:06:42.085901+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.4843682962723618,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.4843682962723618,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 27,
+            "wrong_predictions": 59,
+            "direction_accuracy": 0.314,
+            "avg_confidence": 0.4313,
+            "fail_closed_count": 14,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 21,
+            "wrong_predictions": 44,
+            "direction_accuracy": 0.3231,
+            "avg_confidence": 0.4974,
+            "fail_closed_count": 35,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": 0.0091,
+            "avg_confidence": 0.0661,
+            "fail_closed": 21
+          },
+          "tolerance": 0.02,
+          "fail_limit": 21.8,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T18:26:58.641510+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00020556833219842482,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 54,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 155666
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 77.1%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5966983748210553,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5966983748210553,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 34,
+              "wrong_predictions": 53,
+              "direction_accuracy": 0.3908,
+              "avg_confidence": 0.4268,
+              "fail_closed_count": 13,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 13,
+              "wrong_predictions": 40,
+              "direction_accuracy": 0.2453,
+              "avg_confidence": 0.5377,
+              "fail_closed_count": 47,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.1455,
+              "avg_confidence": 0.1109,
+              "fail_closed": 34
+            },
+            "tolerance": 0.02,
+            "fail_limit": 20.6,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T18:26:59.673668+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T18:26:59.674328+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T18:27:00.747326+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5966983748210553,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5966983748210553,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 34,
+            "wrong_predictions": 53,
+            "direction_accuracy": 0.3908,
+            "avg_confidence": 0.4268,
+            "fail_closed_count": 13,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 13,
+            "wrong_predictions": 40,
+            "direction_accuracy": 0.2453,
+            "avg_confidence": 0.5377,
+            "fail_closed_count": 47,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.1455,
+            "avg_confidence": 0.1109,
+            "fail_closed": 34
+          },
+          "tolerance": 0.02,
+          "fail_limit": 20.6,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T21:56:14.312988+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00020549704597996405,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 54,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 155720
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 77.1%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.48547856954149426,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.48547856954149426,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 29,
+              "wrong_predictions": 63,
+              "direction_accuracy": 0.3152,
+              "avg_confidence": 0.4344,
+              "fail_closed_count": 8,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 18,
+              "wrong_predictions": 42,
+              "direction_accuracy": 0.3,
+              "avg_confidence": 0.5297,
+              "fail_closed_count": 40,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.0152,
+              "avg_confidence": 0.0953,
+              "fail_closed": 32
+            },
+            "tolerance": 0.02,
+            "fail_limit": 14.6,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T21:56:15.415114+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T21:56:15.415743+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T21:56:16.457567+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.48547856954149426,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.48547856954149426,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 29,
+            "wrong_predictions": 63,
+            "direction_accuracy": 0.3152,
+            "avg_confidence": 0.4344,
+            "fail_closed_count": 8,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 18,
+            "wrong_predictions": 42,
+            "direction_accuracy": 0.3,
+            "avg_confidence": 0.5297,
+            "fail_closed_count": 40,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.0152,
+            "avg_confidence": 0.0953,
+            "fail_closed": 32
+          },
+          "tolerance": 0.02,
+          "fail_limit": 14.6,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T22:27:53.459157+00:00",
+    "trigger_stats": {
+      "win_rate": 0.0002139899047115542,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 58,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 158886
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5848787626264446,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5848787626264446,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 31,
+              "wrong_predictions": 56,
+              "direction_accuracy": 0.3563,
+              "avg_confidence": 0.4519,
+              "fail_closed_count": 13,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 14,
+              "wrong_predictions": 33,
+              "direction_accuracy": 0.2979,
+              "avg_confidence": 0.5685,
+              "fail_closed_count": 53,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.0584,
+              "avg_confidence": 0.1166,
+              "fail_closed": 40
+            },
+            "tolerance": 0.02,
+            "fail_limit": 20.6,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T22:27:54.551859+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T22:27:54.552219+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T22:27:55.600529+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5848787626264446,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5848787626264446,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 31,
+            "wrong_predictions": 56,
+            "direction_accuracy": 0.3563,
+            "avg_confidence": 0.4519,
+            "fail_closed_count": 13,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 14,
+            "wrong_predictions": 33,
+            "direction_accuracy": 0.2979,
+            "avg_confidence": 0.5685,
+            "fail_closed_count": 53,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.0584,
+            "avg_confidence": 0.1166,
+            "fail_closed": 40
+          },
+          "tolerance": 0.02,
+          "fail_limit": 20.6,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-19T23:36:17.359208+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00021396566480390676,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 58,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 158904
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.6231867534844409,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.6231867534844409,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 27,
+              "wrong_predictions": 67,
+              "direction_accuracy": 0.2872,
+              "avg_confidence": 0.4607,
+              "fail_closed_count": 6,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 17,
+              "wrong_predictions": 33,
+              "direction_accuracy": 0.34,
+              "avg_confidence": 0.5644,
+              "fail_closed_count": 50,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": 0.0528,
+              "avg_confidence": 0.1037,
+              "fail_closed": 44
+            },
+            "tolerance": 0.02,
+            "fail_limit": 12.2,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-19T23:36:18.497119+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-19T23:36:18.497952+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-19T23:36:19.594040+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.6231867534844409,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.6231867534844409,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 27,
+            "wrong_predictions": 67,
+            "direction_accuracy": 0.2872,
+            "avg_confidence": 0.4607,
+            "fail_closed_count": 6,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 17,
+            "wrong_predictions": 33,
+            "direction_accuracy": 0.34,
+            "avg_confidence": 0.5644,
+            "fail_closed_count": 50,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": 0.0528,
+            "avg_confidence": 0.1037,
+            "fail_closed": 44
+          },
+          "tolerance": 0.02,
+          "fail_limit": 12.2,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T02:28:47.628862+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00021389297801935103,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 58,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 158958
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5927698793193609,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5927698793193609,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 31,
+              "wrong_predictions": 55,
+              "direction_accuracy": 0.3605,
+              "avg_confidence": 0.4397,
+              "fail_closed_count": 14,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 18,
+              "wrong_predictions": 40,
+              "direction_accuracy": 0.3103,
+              "avg_confidence": 0.5531,
+              "fail_closed_count": 42,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.0502,
+              "avg_confidence": 0.1134,
+              "fail_closed": 28
+            },
+            "tolerance": 0.02,
+            "fail_limit": 21.8,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T02:28:49.621418+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T02:28:49.622156+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T02:28:54.581056+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5927698793193609,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5927698793193609,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 31,
+            "wrong_predictions": 55,
+            "direction_accuracy": 0.3605,
+            "avg_confidence": 0.4397,
+            "fail_closed_count": 14,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 18,
+            "wrong_predictions": 40,
+            "direction_accuracy": 0.3103,
+            "avg_confidence": 0.5531,
+            "fail_closed_count": 42,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.0502,
+            "avg_confidence": 0.1134,
+            "fail_closed": 28
+          },
+          "tolerance": 0.02,
+          "fail_limit": 21.8,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T05:05:31.769548+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00020967592735345812,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 58,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 162155
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.4854839857113491,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.4854839857113491,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 27,
+              "wrong_predictions": 67,
+              "direction_accuracy": 0.2872,
+              "avg_confidence": 0.468,
+              "fail_closed_count": 6,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 22,
+              "wrong_predictions": 44,
+              "direction_accuracy": 0.3333,
+              "avg_confidence": 0.519,
+              "fail_closed_count": 34,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": 0.0461,
+              "avg_confidence": 0.051,
+              "fail_closed": 28
+            },
+            "tolerance": 0.02,
+            "fail_limit": 12.2,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T05:05:35.060002+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T05:05:35.060630+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T05:05:42.958296+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.4854839857113491,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.4854839857113491,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 27,
+            "wrong_predictions": 67,
+            "direction_accuracy": 0.2872,
+            "avg_confidence": 0.468,
+            "fail_closed_count": 6,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 22,
+            "wrong_predictions": 44,
+            "direction_accuracy": 0.3333,
+            "avg_confidence": 0.519,
+            "fail_closed_count": 34,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": 0.0461,
+            "avg_confidence": 0.051,
+            "fail_closed": 28
+          },
+          "tolerance": 0.02,
+          "fail_limit": 12.2,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T06:30:05.342120+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00020965265488089878,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 58,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 162173
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5848787626264446,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5848787626264446,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 27,
+              "wrong_predictions": 57,
+              "direction_accuracy": 0.3214,
+              "avg_confidence": 0.4913,
+              "fail_closed_count": 16,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 21,
+              "wrong_predictions": 44,
+              "direction_accuracy": 0.3231,
+              "avg_confidence": 0.5561,
+              "fail_closed_count": 35,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": 0.0017,
+              "avg_confidence": 0.0648,
+              "fail_closed": 19
+            },
+            "tolerance": 0.02,
+            "fail_limit": 24.2,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T06:30:09.209681+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T06:30:09.210509+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T06:30:24.585562+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5848787626264446,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5848787626264446,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 27,
+            "wrong_predictions": 57,
+            "direction_accuracy": 0.3214,
+            "avg_confidence": 0.4913,
+            "fail_closed_count": 16,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 21,
+            "wrong_predictions": 44,
+            "direction_accuracy": 0.3231,
+            "avg_confidence": 0.5561,
+            "fail_closed_count": 35,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": 0.0017,
+            "avg_confidence": 0.0648,
+            "fail_closed": 19
+          },
+          "tolerance": 0.02,
+          "fail_limit": 24.2,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T07:13:14.631930+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00020962938757390978,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 58,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 162191
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.4%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5241128815197356,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5241128815197356,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 16,
+              "wrong_predictions": 75,
+              "direction_accuracy": 0.1758,
+              "avg_confidence": 0.4489,
+              "fail_closed_count": 9,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 27,
+              "wrong_predictions": 56,
+              "direction_accuracy": 0.3253,
+              "avg_confidence": 0.548,
+              "fail_closed_count": 17,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": 0.1495,
+              "avg_confidence": 0.0991,
+              "fail_closed": 8
+            },
+            "tolerance": 0.02,
+            "fail_limit": 15.799999999999999,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T07:13:17.082784+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T07:13:17.083740+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T07:13:24.503333+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5241128815197356,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5241128815197356,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 16,
+            "wrong_predictions": 75,
+            "direction_accuracy": 0.1758,
+            "avg_confidence": 0.4489,
+            "fail_closed_count": 9,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 27,
+            "wrong_predictions": 56,
+            "direction_accuracy": 0.3253,
+            "avg_confidence": 0.548,
+            "fail_closed_count": 17,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": 0.1495,
+            "avg_confidence": 0.0991,
+            "fail_closed": 8
+          },
+          "tolerance": 0.02,
+          "fail_limit": 15.799999999999999,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T10:31:35.687627+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00020557345925715427,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 60,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 165391
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.9%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.6148192396337511,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise"
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T10:31:35.817437+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T10:31:35.818146+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T10:31:35.923927+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.6148192396337511,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise"
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T13:16:45.325467+00:00",
+    "trigger_stats": {
+      "win_rate": 0.0002055063616307534,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 60,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 165445
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.9%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5024337453920354,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5024337453920354,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 34,
+              "wrong_predictions": 55,
+              "direction_accuracy": 0.382,
+              "avg_confidence": 0.4679,
+              "fail_closed_count": 11,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 14,
+              "wrong_predictions": 52,
+              "direction_accuracy": 0.2121,
+              "avg_confidence": 0.5147,
+              "fail_closed_count": 34,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.1699,
+              "avg_confidence": 0.0468,
+              "fail_closed": 23
+            },
+            "tolerance": 0.02,
+            "fail_limit": 18.2,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T13:16:45.439485+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T13:16:45.440011+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T13:16:45.543878+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5024337453920354,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5024337453920354,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 34,
+            "wrong_predictions": 55,
+            "direction_accuracy": 0.382,
+            "avg_confidence": 0.4679,
+            "fail_closed_count": 11,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 14,
+            "wrong_predictions": 52,
+            "direction_accuracy": 0.2121,
+            "avg_confidence": 0.5147,
+            "fail_closed_count": 34,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.1699,
+            "avg_confidence": 0.0468,
+            "fail_closed": 23
+          },
+          "tolerance": 0.02,
+          "fail_limit": 18.2,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T14:32:39.820513+00:00",
+    "trigger_stats": {
+      "win_rate": 0.000211526374317072,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 61,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 165464
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 79.2%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5615626764384435,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5615626764384435,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 30,
+              "wrong_predictions": 63,
+              "direction_accuracy": 0.3226,
+              "avg_confidence": 0.4736,
+              "fail_closed_count": 7,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 15,
+              "wrong_predictions": 50,
+              "direction_accuracy": 0.2308,
+              "avg_confidence": 0.5416,
+              "fail_closed_count": 35,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.0918,
+              "avg_confidence": 0.068,
+              "fail_closed": 28
+            },
+            "tolerance": 0.02,
+            "fail_limit": 13.4,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T14:32:39.966289+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T14:32:39.966782+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T14:32:40.101614+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5615626764384435,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5615626764384435,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 30,
+            "wrong_predictions": 63,
+            "direction_accuracy": 0.3226,
+            "avg_confidence": 0.4736,
+            "fail_closed_count": 7,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 15,
+            "wrong_predictions": 50,
+            "direction_accuracy": 0.2308,
+            "avg_confidence": 0.5416,
+            "fail_closed_count": 35,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.0918,
+            "avg_confidence": 0.068,
+            "fail_closed": 28
+          },
+          "tolerance": 0.02,
+          "fail_limit": 13.4,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T18:35:16.510734+00:00",
+    "trigger_stats": {
+      "win_rate": 0.0002074934787763813,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 61,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 168680
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 79.2%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.45234675274298397,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.45234675274298397,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 29,
+              "wrong_predictions": 65,
+              "direction_accuracy": 0.3085,
+              "avg_confidence": 0.4823,
+              "fail_closed_count": 6,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 21,
+              "wrong_predictions": 61,
+              "direction_accuracy": 0.2561,
+              "avg_confidence": 0.51,
+              "fail_closed_count": 18,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.0524,
+              "avg_confidence": 0.0277,
+              "fail_closed": 12
+            },
+            "tolerance": 0.02,
+            "fail_limit": 12.2,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T18:35:16.760081+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T18:35:16.760759+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T18:35:16.874150+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.45234675274298397,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.45234675274298397,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 29,
+            "wrong_predictions": 65,
+            "direction_accuracy": 0.3085,
+            "avg_confidence": 0.4823,
+            "fail_closed_count": 6,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 21,
+            "wrong_predictions": 61,
+            "direction_accuracy": 0.2561,
+            "avg_confidence": 0.51,
+            "fail_closed_count": 18,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.0524,
+            "avg_confidence": 0.0277,
+            "fail_closed": 12
+          },
+          "tolerance": 0.02,
+          "fail_limit": 12.2,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T19:23:21.660663+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00020747133931641156,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 61,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 168698
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 79.2%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.6433219598897629,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.6433219598897629,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 35,
+              "wrong_predictions": 51,
+              "direction_accuracy": 0.407,
+              "avg_confidence": 0.4521,
+              "fail_closed_count": 14,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 19,
+              "wrong_predictions": 44,
+              "direction_accuracy": 0.3016,
+              "avg_confidence": 0.5523,
+              "fail_closed_count": 37,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.1054,
+              "avg_confidence": 0.1002,
+              "fail_closed": 23
+            },
+            "tolerance": 0.02,
+            "fail_limit": 21.8,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T19:23:21.799098+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T19:23:21.800293+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T19:23:22.344974+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.6433219598897629,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.6433219598897629,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 35,
+            "wrong_predictions": 51,
+            "direction_accuracy": 0.407,
+            "avg_confidence": 0.4521,
+            "fail_closed_count": 14,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 19,
+            "wrong_predictions": 44,
+            "direction_accuracy": 0.3016,
+            "avg_confidence": 0.5523,
+            "fail_closed_count": 37,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.1054,
+            "avg_confidence": 0.1002,
+            "fail_closed": 23
+          },
+          "tolerance": 0.02,
+          "fail_limit": 21.8,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T21:12:35.621608+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00020742584526031943,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 61,
+        "VOLATILE_DROP": 9,
+        "bull": 5,
+        "TREND_UP_MILD": 1,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 168735
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.2%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.5433131843398319,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.5433131843398319,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 24,
+              "wrong_predictions": 62,
+              "direction_accuracy": 0.2791,
+              "avg_confidence": 0.4069,
+              "fail_closed_count": 14,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 18,
+              "wrong_predictions": 46,
+              "direction_accuracy": 0.2812,
+              "avg_confidence": 0.5186,
+              "fail_closed_count": 36,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": 0.0021,
+              "avg_confidence": 0.1117,
+              "fail_closed": 22
+            },
+            "tolerance": 0.02,
+            "fail_limit": 21.8,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T21:12:35.830872+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T21:12:35.831519+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T21:12:35.996028+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.5433131843398319,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.5433131843398319,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 24,
+            "wrong_predictions": 62,
+            "direction_accuracy": 0.2791,
+            "avg_confidence": 0.4069,
+            "fail_closed_count": 14,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 18,
+            "wrong_predictions": 46,
+            "direction_accuracy": 0.2812,
+            "avg_confidence": 0.5186,
+            "fail_closed_count": 36,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": 0.0021,
+            "avg_confidence": 0.1117,
+            "fail_closed": 22
+          },
+          "tolerance": 0.02,
+          "fail_limit": 21.8,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T22:28:56.486907+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00020942286548653003,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 64,
+        "VOLATILE_DROP": 10,
+        "bull": 5,
+        "TREND_UP_MILD": 1,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 171901
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.0%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.6069203009006903,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.6069203009006903,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 33,
+              "wrong_predictions": 50,
+              "direction_accuracy": 0.3976,
+              "avg_confidence": 0.4447,
+              "fail_closed_count": 17,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 8,
+              "wrong_predictions": 45,
+              "direction_accuracy": 0.1509,
+              "avg_confidence": 0.5393,
+              "fail_closed_count": 47,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.2467,
+              "avg_confidence": 0.0946,
+              "fail_closed": 30
+            },
+            "tolerance": 0.02,
+            "fail_limit": 25.4,
+            "gate_detail": {
+              "accuracy_ok": false,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T22:28:56.629666+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T22:28:56.630345+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T22:28:56.745303+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.6069203009006903,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.6069203009006903,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 33,
+            "wrong_predictions": 50,
+            "direction_accuracy": 0.3976,
+            "avg_confidence": 0.4447,
+            "fail_closed_count": 17,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 8,
+            "wrong_predictions": 45,
+            "direction_accuracy": 0.1509,
+            "avg_confidence": 0.5393,
+            "fail_closed_count": 47,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.2467,
+            "avg_confidence": 0.0946,
+            "fail_closed": 30
+          },
+          "tolerance": 0.02,
+          "fail_limit": 25.4,
+          "gate_detail": {
+            "accuracy_ok": false,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-20T22:38:05.408975+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00021523891519586742,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 65,
+        "VOLATILE_DROP": 10,
+        "bull": 5,
+        "TREND_UP_MILD": 1,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 171902
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.3%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.6449498535337618,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.6449498535337618,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 24,
+              "wrong_predictions": 68,
+              "direction_accuracy": 0.2609,
+              "avg_confidence": 0.4822,
+              "fail_closed_count": 8,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 15,
+              "wrong_predictions": 28,
+              "direction_accuracy": 0.3488,
+              "avg_confidence": 0.5646,
+              "fail_closed_count": 57,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": 0.0879,
+              "avg_confidence": 0.0824,
+              "fail_closed": 49
+            },
+            "tolerance": 0.02,
+            "fail_limit": 14.6,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-20T22:38:05.710984+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-20T22:38:05.711599+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-20T22:38:05.870222+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.6449498535337618,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.6449498535337618,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 24,
+            "wrong_predictions": 68,
+            "direction_accuracy": 0.2609,
+            "avg_confidence": 0.4822,
+            "fail_closed_count": 8,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 15,
+            "wrong_predictions": 28,
+            "direction_accuracy": 0.3488,
+            "avg_confidence": 0.5646,
+            "fail_closed_count": 57,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": 0.0879,
+            "avg_confidence": 0.0824,
+            "fail_closed": 49
+          },
+          "tolerance": 0.02,
+          "fail_limit": 14.6,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
+  },
+  {
+    "ts": "2026-08-21T01:30:12.027953+00:00",
+    "trigger_stats": {
+      "win_rate": 0.00021517132289655493,
+      "hold_rate": 0.0,
+      "hold_streak": 0,
+      "top_hexagrams": {
+        "unknown": 65,
+        "VOLATILE_DROP": 10,
+        "bull": 5,
+        "TREND_UP_MILD": 1,
+        "bear": 1,
+        "REVERSAL": 1
+      },
+      "total_trades": 171956
+    },
+    "layer1_a8": {
+      "gaps": [
+        {
+          "type": "卦象单一化",
+          "desc": "unknown 占比 78.3%，系统推理退化为默认卦",
+          "severity": "high"
+        },
+        {
+          "type": "置信度虚高",
+          "desc": "胜率 0.0% 但系统置信度未相应下调",
+          "severity": "medium"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "增加市场状态区分度",
+          "param_key": "velocity_threshold",
+          "param_value": 0.015,
+          "rationale": "降低速度阈值增加方向信号多样性",
+          "source": "a8",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "raise"
+        },
+        {
+          "title": "上调置信度门槛",
+          "param_key": "min_confidence_threshold",
+          "param_value": 0.6449498535337618,
+          "rationale": "实际胜率偏低，提高入场门槛减少错误",
+          "source": "a8",
+          "param_value_original": 0.45,
+          "value_source": "optuna",
+          "value_direction": "raise",
+          "backtest_result": {
+            "validated": false,
+            "method": "walk_forward",
+            "affected_engine": true,
+            "param_key": "min_confidence_threshold",
+            "proposed_value": 0.6449498535337618,
+            "baseline": {
+              "total_bars": 249,
+              "correct_predictions": 25,
+              "wrong_predictions": 64,
+              "direction_accuracy": 0.2809,
+              "avg_confidence": 0.4741,
+              "fail_closed_count": 11,
+              "windows": 10
+            },
+            "proposed": {
+              "total_bars": 249,
+              "correct_predictions": 16,
+              "wrong_predictions": 42,
+              "direction_accuracy": 0.2759,
+              "avg_confidence": 0.5715,
+              "fail_closed_count": 42,
+              "windows": 10
+            },
+            "delta": {
+              "direction_accuracy": -0.005,
+              "avg_confidence": 0.0974,
+              "fail_closed": 31
+            },
+            "tolerance": 0.02,
+            "fail_limit": 18.2,
+            "gate_detail": {
+              "accuracy_ok": true,
+              "coverage_ok": false
+            },
+            "data": {
+              "symbol": "BTC",
+              "timeframe": "1H",
+              "bars": 249
+            }
+          }
+        }
+      ],
+      "consistency_score": 0.6,
+      "checked_at": "2026-08-21T01:30:12.172130+00:00"
+    },
+    "layer2_dream": {
+      "subconscious_signals": [
+        "被忽视情景: 主流观点一致时的反向黑天鹅"
+      ],
+      "proposals": [],
+      "four_quadrant": {
+        "optimistic": {
+          "prob": 0.15,
+          "scenario": "市场突破关键阻力，信号明确"
+        },
+        "neutral": {
+          "prob": 0.35,
+          "scenario": "区间震荡，当前主要场景"
+        },
+        "pessimistic": {
+          "prob": 0.3,
+          "scenario": "趋势反转，止损触发"
+        },
+        "ignored": {
+          "prob": 0.2,
+          "scenario": "主流观点一致时的反向黑天鹅"
+        }
+      },
+      "four_quadrant_meta": {
+        "regime": null,
+        "prob_source": "static_fallback",
+        "reason": "no_regime_data"
+      },
+      "analyzed_at": "2026-08-21T01:30:12.172844+00:00"
+    },
+    "layer3_online": {
+      "sources": [
+        {
+          "type": "github",
+          "repo": "backtrader/ema_cross",
+          "insight": "趋势跟踪策略的信号阈值应基于 ATR 动态调整而非固定值"
+        },
+        {
+          "type": "github",
+          "repo": "QuantConnect/Lean",
+          "insight": "LEAN 的 TrendFollow 在 ATR>均值时强制评估入场"
+        }
+      ],
+      "proposals": [
+        {
+          "title": "ATR 动态 velocity threshold",
+          "param_key": "velocity_threshold_mode",
+          "param_value": "atr_based",
+          "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+          "source": "github_backtrader",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        },
+        {
+          "title": "高波动期强制评估入场机会",
+          "param_key": "force_evaluate_high_vol",
+          "param_value": true,
+          "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+          "source": "github_lean",
+          "value_source": "shadow_no_consumer",
+          "value_direction": "around"
+        }
+      ],
+      "searched_at": "2026-08-21T01:30:12.315131+00:00"
+    },
+    "proposals": [
+      {
+        "title": "增加市场状态区分度",
+        "param_key": "velocity_threshold",
+        "param_value": 0.015,
+        "rationale": "降低速度阈值增加方向信号多样性",
+        "source": "a8",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "raise"
+      },
+      {
+        "title": "上调置信度门槛",
+        "param_key": "min_confidence_threshold",
+        "param_value": 0.6449498535337618,
+        "rationale": "实际胜率偏低，提高入场门槛减少错误",
+        "source": "a8",
+        "param_value_original": 0.45,
+        "value_source": "optuna",
+        "value_direction": "raise",
+        "backtest_result": {
+          "validated": false,
+          "method": "walk_forward",
+          "affected_engine": true,
+          "param_key": "min_confidence_threshold",
+          "proposed_value": 0.6449498535337618,
+          "baseline": {
+            "total_bars": 249,
+            "correct_predictions": 25,
+            "wrong_predictions": 64,
+            "direction_accuracy": 0.2809,
+            "avg_confidence": 0.4741,
+            "fail_closed_count": 11,
+            "windows": 10
+          },
+          "proposed": {
+            "total_bars": 249,
+            "correct_predictions": 16,
+            "wrong_predictions": 42,
+            "direction_accuracy": 0.2759,
+            "avg_confidence": 0.5715,
+            "fail_closed_count": 42,
+            "windows": 10
+          },
+          "delta": {
+            "direction_accuracy": -0.005,
+            "avg_confidence": 0.0974,
+            "fail_closed": 31
+          },
+          "tolerance": 0.02,
+          "fail_limit": 18.2,
+          "gate_detail": {
+            "accuracy_ok": true,
+            "coverage_ok": false
+          },
+          "data": {
+            "symbol": "BTC",
+            "timeframe": "1H",
+            "bars": 249
+          }
+        }
+      },
+      {
+        "title": "ATR 动态 velocity threshold",
+        "param_key": "velocity_threshold_mode",
+        "param_value": "atr_based",
+        "rationale": "借鉴 backtrader: threshold = atr_pct * 0.3",
+        "source": "github_backtrader",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      },
+      {
+        "title": "高波动期强制评估入场机会",
+        "param_key": "force_evaluate_high_vol",
+        "param_value": true,
+        "rationale": "借鉴 QuantConnect: 波动率突破均值时不能持续观望",
+        "source": "github_lean",
+        "value_source": "shadow_no_consumer",
+        "value_direction": "around"
+      }
+    ],
+    "adopted": []
   }
 ]

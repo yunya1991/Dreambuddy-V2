@@ -1,56 +1,27 @@
 {
   "version": "qmm-v1.0",
-  "snapshot_ts": "2026-08-13T01:25:24+08:00",
-  "data_version": "dv-20260812-001",
+  "snapshot_ts": "2026-08-21T09:30:08+08:00",
+  "data_version": "dv-20260821-001",
   "feature_def_version": "fd-1.0",
   "qmm_version": "qmm-v1.0",
   "trend_state": "DOWN",
   "trend_change_point": "STABLE",
-  "uncertainty": 0.25,
+  "uncertainty": 0.3409,
   "reason_codes": [
     "BULLISH_ALIGNMENT"
   ],
   "evidence_refs": [
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    ""
+    "tc_yijing_inference_1787155594_251194",
+    "tc_yijing_inference_1787159028_19090f",
+    "tc_agent_a_agent_a_1787178030_HYPE",
+    "tc_agent_a_agent_a_1787178029_HYPE",
+    "tc_agent_a_agent_a_1787221404_ZRO",
+    "tc_agent_a_agent_a_1787235849_HYPE",
+    "tc_agent_a_agent_a_1787264782_HYPE",
+    "tc_agent_a_agent_a_1787264786_HYPE",
+    "TC_live_SNDK-USDT-SWAP_20260820_211238",
+    "TC_live_MU-USDT-SWAP_20260820_222858"
   ],
-  "gate_status": "FAILED",
-  "output_file": "/home/ubuntu/Dreambuddy-V2-main/11-易经推理系统/.workbuddy/memory_l4/qmm/qmm_snapshot_2026-08-13T01-25-24+08-00.json",
-  "gate_results": {
-    "passed": false,
-    "reason_codes": [
-      "LOW_ACCURACY"
-    ],
-    "backtest": {
-      "total_predictions": 0,
-      "overall_accuracy": 0.0,
-      "high_confidence_accuracy": 0.0,
-      "fold_accuracies": [],
-      "train_test_gap": 0,
-      "by_regime": {}
-    },
-    "overfitting": {
-      "is_overfit": false,
-      "train_test_gap": 0,
-      "fold_variance": 0.0,
-      "regime_max_gap": 0.0,
-      "recommendation": "ACCEPT"
-    },
-    "drift": {
-      "drift_detected": false,
-      "drift_type": "NONE",
-      "severity": 0.0,
-      "psi_x": 0,
-      "performance_drift": 0.0,
-      "recommendation": "NO_ACTION"
-    }
-  }
+  "gate_status": "OFFLINE",
+  "output_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/qmm/qmm_snapshot_2026-08-21T09-30-08+08-00.json"
 }
