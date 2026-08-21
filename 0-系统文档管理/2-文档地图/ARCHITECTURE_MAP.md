@@ -86,7 +86,7 @@
 | 子系统 | 技术设计 | 5 文档齐全 | 核心架构（SSoT 映射） |
 |--------|----------|-----------|----------------------|
 | 10-经典指标 | [docs/TECHNICAL_DESIGN.md](../../10-经典指标系统/docs/TECHNICAL_DESIGN.md) | ✅ 已迁移 | 16层信号 + ClassicExitSystem → C_domain 经典量化 |
-| 11-易经推理 | [docs/TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) **v2.9** | ✅ 齐全 | BCRM 2.0 + 辩证ML + 五角校验 → A_domain AI交易核心 |
+| 11-易经推理 | [docs/TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) **v4.4** | ✅ 齐全 | BCRM 2.0 + 辩证ML + 五角校验 + ExitManager 策略链 → A_domain AI交易核心 |
 | 12-三屏趋势 | [docs/TECHNICAL_DESIGN.md](../../12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) **v4.0** | ✅ 齐全 | V4+波浪互斥融合 + 双线架构 → A/C 融合策略 |
 | 13-通用风控 | [docs/TECHNICAL_DESIGN.md](../../13-通用风控模块/docs/TECHNICAL_DESIGN.md) | ✅ 齐全 | 三层风控 + L1评估 + ML → T_domain 系统支撑横切 |
 | 14-V15马丁 | [docs/TECHNICAL_DESIGN.md](../../14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md) **v5.1** | ✅ 齐全 | 马丁格尔 + Kelly + 仓位管理 → C_domain 经典策略 |

@@ -136,12 +136,12 @@ DreamBuddy-V2/
 |------|-----|
 | 定位 | BCRM 2.0 + 易经推理 + 辩证 ML |
 | 主入口 | [README.md](../../11-易经推理系统/README.md) |
-| 核心模块 | polling_trader.py、yijing_exit_system.py、bcrm2_adapter.py |
+| 核心模块 | polling_trader.py、yijing_exit_system.py、bcrm2_adapter.py、bcrm2/exit_manager.py |
 | 文档评级 | A |
 
 **文档清单**：
-- [docs/ENGINEERING_INDEX.md](../../11-易经推理系统/docs/ENGINEERING_INDEX.md) v2.6
-- [docs/TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) v2.9
+- [docs/ENGINEERING_INDEX.md](../../11-易经推理系统/docs/ENGINEERING_INDEX.md) v2.7
+- [docs/TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) v4.4
 - [docs/API_SPEC.md](../../11-易经推理系统/docs/API_SPEC.md) v2.9
 - [docs/CHANGELOG.md](../../11-易经推理系统/docs/CHANGELOG.md) v2.9
 

@@ -69,11 +69,12 @@
 | 加密板块分类 | DeFi / AI-Web3 / RWA / MEME / L2（每板块 4 个龙头币）| 主流板块覆盖，每板块龙头数足够形成板块形态信号 |
 | 美股板块分类 | 科技 / 金融 / 能源 / 医药 / 消费（用板块 ETF 龙头）| 传统金融成熟板块划分 |
 | 核心层（BCRM 2.0）职责 | **聚焦具体币种**（各板块的强势币种）方向预测 | 前置层决定"给板块多少钱"，核心层决定"选板块内哪个币+做多做空" |
-| 数值范围化原则 | **偏置/阈值/持仓比都设计为 min~max 范围** | 单点值不灵活，范围便于弹簧力场后置回测针对性调节（如牛市末期多空阈值都上调） |
+| 数值范围化原则 | **偏置/阈值/持仓比都设计为 min~max 范围** | 单点值不灵活，范围便于弹簧力场后置回测针对性调节（如牛市末期多空阈值都上调）。形态识别本身也是区间（Level-Trend 连续评分）而非跳变。 |
 | 多空持仓比控制 | **全局 ls_ratio_cap（如牛市≤0.10, 熊市≤2.0）** | 极端市场下限制反向开仓：牛市几乎禁止空头，熊市允许空头 |
-| 形态分类体系 | **8 态 BCRM 2.0 体系** | 与现有体系对齐，复用 MarketRegimeClassifier |
-| 特征策略 | **形态核心组高权重 + 市场广度组辅助 + 板块间广度组** | 形态预测 ≠ 方向预测；新增板块间广度特征（板块强弱对比） |
-| 权重机制 | **方差放大（×2.5/×1.5/×1.0）** | 简单稳定，不改模型管线 |
+| **🔄 形态识别路线（2026-08-19 更新）** | **Level-Trend 双维度连续区间 + 8 态软概率 + LightGBM 概率校正（美联储点阵图式融合）** | **不做 LGBM 直接硬分类**。核心锚点是 Level(-4~4)/Trend(-4~4) 两个连续量 + Consensus(0~1) + 8 态概率分布；LightGBM 仅作为"数据驱动的概率校正器"以 0.4 权重与高斯中心概率加权融合。 |
+| **输出范围的生成策略（2026-08-19 更新）** | **Level-Trend 纯连续函数方案 A** | 6 全局范围参数 + 5 板块权重 = `clip(base + w_L·L/4 + w_T·T/4 + w_C·(C-0.5))` 的线性函数；区间带宽 = 历史分位宽度 × consensus 收窄系数，随时间自动滚动更新极值。符合「道氏趋势 + 量变引起质变 + 数据驱动修正」。 |
+| 特征策略 | **v4 五模块：形态核心 / MA200周期 / 多时间框架 / 滚动统计 / 板块β** | 前三 = LightGBM 校正器特征池；后两 = 方案 A 范围映射和板块权重用 |
+| 权重机制 | **LightGBM 概率校正用 log-odds 加权融合（w_gauss=0.6 / w_lgbm=0.4）** | 不改 6 层核心流水线权重；LGBM 权重 Phase 3 P3.3 用 WalkForward PnL 网格调优 |
 | 市场广度数据 | **纯价格合成（8 币 MA128 同向等）+ 板块强弱对比** | 零外部依赖，零开发风险 |
 
 ### 0.3 调研结论的关键完善点
@@ -96,21 +97,21 @@
 
 | 模块 | 允许改动 | 严格禁止 |
 |------|---------|---------|
-| `feature_registry.py` | 新增 6 个形态特征的注册（ADX/Hurst/BB宽度/60日高点距/BOCPD/广度组） | 不得修改已有特征的 compute 行为与字段名 |
-| `classic_experience_features.py` | 新增 ADX/DI 计算函数 + Hurst 指数 + BB 宽度百分位 + 60日高点距 | 不得修改已有特征字段 |
-| `cross_asset_features.py` | 新增 8 币 MA128 同向比例、BTC 市占率变化等广度特征 | 不得修改已有 cross_asset 计算逻辑 |
-| `market_regime.py`（BCRM 2.0） | 新增 `RegimePredictor` 子类，继承 `MarketRegimeClassifier`，覆写 `fit/predict` 接受特征权重配置 | 不得修改 `MarketRegimeClassifier` 的默认行为与字节签名 |
-| `walk_forward_backtester.py` | 新增 `use_regime_predictor` 分支（与 `use_regime_switching` 并列，互斥） | 不得修改 `use_regime_switching` 已有逻辑 |
-| `polling_trader.py` | 新增 `enable_regime_predictor` 开关 + `_get_regime_pred_multi` 方法 + 仓位/止盈止损/阈值调节分支 | 不得修改 `enable_mode_switch/enable_ev_radar` 等已有开关行为 |
-| `trading_utils.py` | 新增 `regime_multipliers` 字段到 `OpenPosition`（向后兼容，默认 None） | 不得修改 `PositionTracker` 核心状态流转 |
-| 新增 `regime_predictor_config.json` | 配置形态核心组/广度组/时序组列名 + 权重倍数 + BTC/美股 enabled_feature_set | — |
+| `bcrm2/feature_registry.py` | 新增 `ENABLED_SETS["btc_morphology_v4"]` / `v4_layer1`；注册 `rolling_regime_stats` 和 `sector_beta_pool` 两个新模块；新增 `build_feature_schema()` 方法导出 schema.json | 不得修改已有 3 个基础模块的 compute 行为与字段名；不得移除任何 ENABLED_SETS 历史版本 |
+| `bcrm2/rolling_regime_stats.py` | 🆕 新建：L/T 滚动分位 (60d/252d) + 共识/熵 20d 均值 + 量 zscore（共 16 列） | 不得依赖 Phase 4 BOCPD/HMM 的任何未落地输出 |
+| `bcrm2/sector_beta_pool.py` | 🆕 新建：5 板块 β(252d) / α(60d) / 相关系数 (共 15 列)；调用侧传 `coins_closes` dict | 不允许内置 OKX API 抓行情（调用方负责提供 closes 数据） |
+| `bcrm2/lgbm_calibrator.py` | 🆕 新建：LightGBM 8 态概率校正器。fit(X_lgbm_pool=形态三基础模块, y=8态标签)，calibrate(p_gauss, X_lgbm_pool) 返回 p_out；配套 feature_schema.json 校验 + schema 不一致抛 ValueError | **禁止**把 LightGBM 当硬分类器；禁止丢弃高斯中心概率；单条预测与批量必须同一入口走 calibrate(=predict_proba) |
+| `bcrm2/parameter_mapper.py` | 🆕 新建：Level-Trend 纯连续函数（方案 A）→ 6 全局范围 (lower, upper) + 5 板块权重 Σ=1 + tp/sl 乘数。随时间自动滚动 min/max 差值界定区间。 | 不得出现 8 态硬查表；不得出现任何 8 态→中心值的经验映射表；所有映射必须是 Level/Trend/Cons 的可微分分段函数。 |
+| `bcrm2/regime_mapper.py` | Phase 1 仅允许在构造 `RegimeMapper` 时增加 `lgbm_calibrator` 可选参数，把 `p_gauss` 喂给 LGBM 融合后再走 softmax/Top3/Consensus | 不得修改高斯中心 REGIME_CENTERS 默认坐标；不得改动 `w_mapper=1.0` 时既有行为 |
+| `run_evolution_pipeline.py` | 新增 `--with-lgbm model_path` 参数；新增 `--feature-schema-out` 参数；最后一帧增加字段 `global_ranges` 和 `sector_weights`（如传了板块β池） | 不得移除或改变 JSON 中已有的 trajectory/snapshot 字段（防回滚） |
+| 新增 `artifacts/btc_lgbm_v4/` 目录 | 保存 booster.json + feature_schema.json + feature_importance.csv | 不提交 > 20MB 模型文件到 git（.gitignore） |
 
 ### 1.2 交付物清单（按 Phase 分拆，每个 Phase 独立验收）
 
 | 阶段 | 新增/修改文件 | 交付成果 | 验收通过标准 |
 |------|-------------|---------|-------------|
-| **Phase 0 形态核心特征新增** | `classic_experience_features.py`（+4特征）/ `cross_asset_features.py`（+8广度特征）/ `feature_registry.py`（注册）/ `tests/test_morphology_features.py` | ADX/DI、Hurst、BB宽度百分位、60日高点距 + 8币 MA128 同向等广度特征 | 单元测试 100% 绿；ADX 对 BTC 日线 2023-2026 计算值与 TA-Lib 偏差 ≤ 1%；Hurst 对已知趋势序列 > 0.55，对震荡序列 < 0.45 |
-| **Phase 1 形态预测器训练（BTC 日线）** | `regime_predictor.py`（新建）/ `regime_predictor_config.json`（新建）/ `labels/regime_labeler.py`（8态自动标签）/ `scripts/train_btc_regime_predictor.py`（训练脚本）/ `tests/test_regime_labeler.py` + `test_regime_predictor.py` | 8态自动标签生成器、RegimePredictor 类（继承 MarketRegimeClassifier）、WalkForward 5折训练 + 混淆矩阵 | Macro F1 ≥ 0.55；Balanced Accuracy ≥ 0.65；混淆矩阵相邻态容错后准确率 ≥ 0.75；所有 8 态样本数 ≥ 50（避免类别稀缺） |
+| **Phase 0（已完成 · 2026-08-18~2026-08-19 Day 0-3）** | `bcrm2/indicators.py`（IndicatorBank）/ `score_composer.py` / `temporal_smoother.py` / `regime_mapper.py` / `storage.py` / `run_evolution_pipeline.py` + 3 份 TDD | 6 层核心流水线（IndicatorBank 12 原子 → Level-Trend 钳制 → HMM 平滑 → 高斯 8 态软概率 → JSON Storage → CLI 6/6 验收） | 10 项 TDD 全过；Phase 0 最终验收检查单 6/6：关键日期象限 PASS；consensus≥0.30 占 100%（mean 0.632）；连续性 p99=0.176；概率归一化 100%；Top1 覆盖 4 类、Top3 覆盖 6 类（不坍缩）；BTC 2422 根 × 90 日窗口端到端 1.7 秒 |
+| **Phase 1（本阶段）** | `feature_registry.py`（ENABLED_SETS v4 + schema 导出）/ `rolling_regime_stats.py` / `sector_beta_pool.py` / `lgbm_calibrator.py` / `parameter_mapper.py` / `train_lgbm_calibrator_v4.py` 脚本 + `tests/test_feature_registry_v4.py` + `test_lgbm_calibrator.py` + `test_parameter_mapper.py` | **FeatureRegistry v4**（5 模块）+ **LightGBM 概率校正器**（log-odds 融合 w_gauss=0.6 / w_lgbm=0.4，schema 严格校验）+ **Level-Trend 纯连续参数映射器**（方案 A）+ 4 项 TDD 全通过 | T11 LGBM 融合生效（JS 散度 ≥ 0.02）；T12 参数映射单调性成立（C 高带宽窄 + L/T 单调性）；T13 schema 错列顺序抛 ValueError；T14 5 板块权重 Σ=1 + β 高权重大；（可选 T15）BTC 3 关键日期参数方向正确 |
 | **Phase 2 前置形态层接入 BTC** | `polling_trader.py`（开关 S5 + 仓位/止盈止损/阈值调节分支）/ `trading_utils.py`（regime_multipliers 字段）/ `tests/test_regime_pred_integration.py` | enable_regime_predictor 开关 + 仓位/止盈止损/阈值调节器 | 开关关闭时行为 100% 等价旧路径（TDD 断言）；开关打开时各 regime 乘数正确应用；回测 PnL ≥ 基线 95% / Sharpe 提升 ≥ 15% |
 | **Phase 3 美股形态预测器** | `datafeeds/us_stock_feed.py`（新建）/ `scripts/train_us_stock_regime_predictor.py`/ `polling_trader_us.py`（美股独立策略）/ `tests/test_us_stock_regime.py` | 美股数据源（Yahoo Finance）+ 美股形态预测器 + 独立美股交易策略 | 美股 8 态分类 Macro F1 ≥ 0.50（美股样本更少，阈值略低）；美股独立回测 Sharpe ≥ 0.8 |
 | **Phase 4（可选）BOCPD + HMM 集成** | `features/bocpd.py`（新建）/ `models/hmm_regime.py`（新建）/ `regime_predictor.py`（集成接口扩展）/ `tests/test_bocpd_hmm_integration.py` | BOCPD 在线变点检测 + HMM 时序状态建模 + LGBM 集成 | BOCPD 比实际形态转移提前 ≥ 3 日；集成后 Macro F1 ≥ 0.65；HMM 转移矩阵可视化通过 |
@@ -140,11 +141,48 @@
 
 ---
 
-## 3. Phase 0: 形态核心特征新增（4 + 8 = 12 个新特征）
+## 3. Phase 0：6 层核心流水线落地（Day 0-3 已完成 · 原 4+8 特征设计保留为附录 3A）
 
-### 3.1 形态核心组（4 个新特征，在 `classic_experience_features.py`）
+> **说明（2026-08-19 更新）**：原 §3 方案（ADX/DI/Hurst/BB宽/广度 12 原子特征直接喂 LGBM 硬分类）在 Day 1 中期评估中与用户的「道氏理论 + 量变引起质变 + 美联储点阵图式软概率区间」方法论不完全对齐。经 Brainstorming 三轮澄清后，Phase 0 最终调整为 **Level-Trend 双维度连续锚点 + 高斯中心 8 态软概率 + HMM 平滑** 方案，同时原 ADX/Hurst/BB 宽等 12 个计算被作为 `IndicatorBank` 的 12 主指标内核保留下来（不喂 LGBM 硬分类，而是加权合成 Level/Trend）。下面的 §3.0 是 Phase 0 **已落地内容**；§3.A 之后的小节保留为「原始设计附录」。
 
-#### 3.1.1 ADX(14) + DI（Wilder 1978 标准实现）
+### 3.0 Phase 0 已交付（Day 0-3 2026-08-18 ~ 2026-08-19 · TDD 10/10 通过 · 验收 6/6）
+
+**6 层核心流水线（Layer 1~5）**：
+
+```
+IndicatorBank (12 主指标 + 辅助原始值)
+     ↓ 12×权重 → 加权合成
+ScoreComposer (Level / Trend 双维度 9 格扩展 + 每日钳制 Δmax=0.4/0.3)
+     ↓ 连续序列
+TemporalSmoother (HMM 3态 Viterbi 解码 + EMA 兜底 + 0.7/0.3 软混合)
+     ↓ (L_smooth, T_smooth) ∈ [-4,4]×[-4,4]
+RegimeMapper (8 态高斯中心 → softmax(T=0.6) → Top3 + Consensus；冷启动 BTC 8 中心已校准)
+     ↓ regime_probs + consensus
+Storage JSON（RegimeStateFrame 15 字段 + snapshot_latest + trajectory）
+     ↓ CLI
+run_evolution_pipeline（6 层串联 + BTC 冷启动校准 + 3 关键日期象限验收 + --window/--out）
+```
+
+**验收检查单最终结果（BTC 2021-05 ~ 2026-08 共 2422 根 1D，窗口 90 日）**：
+
+| # | 验收项 | 结果 | 数值 |
+|---|---|---|---|
+| 1 | 3 关键日期象限方向正确（ATH/FTX/减半）| ✅ PASS | ATH 69k (L=+3.08, T=+1.57) / FTX (L=-2.30, T=-1.54) / 2024 减半 (L=+2.75, T=+1.45) |
+| 2 | 90% 日 Consensus ≥ 0.30 | ✅ PASS | 覆盖率 100%，Consensus 均值 = 0.632 |
+| 3 | 连续性 p99 = \|ΔL+ΔT\| ≤ 1.0 | ✅ PASS | p99 = 0.176 |
+| 4 | JSON 字段完整 (meta/snapshot/trajectory) | ✅ PASS | 2422 帧 × 15 字段完整，round-trip 100% |
+| 5 | 8 态概率归一化（所有帧 Σ=1 ±1e-6）| ✅ PASS | 0 帧不归一 |
+| 6 | 不坍缩（Top1 覆盖 ≥ 3 类 / Top3 ≥ 5 类）| ✅ PASS | Top1=4 类 · Top3=6 类 |
+
+### 3.A 原 Phase 0 原子特征设计（已内化为 IndicatorBank 子模块，保留为设计背景）
+
+> 本节剩余内容（3.1 ADX/DI → 3.3 BOCPD 特征清单）为 Phase 0 Day 0 早期设计，**最终未作为独立 FeatureRegistry 模块落地**；但 ADX/DI、Hurst、BB 宽、60 日高点比例、道氏 HHHL 等指标全部已纳入 `IndicatorBank` 12 主指标的内部计算实现（见 `bcrm2/indicators.py`），仅不再作为单独特征列输出。保留本节仅为读者理解特征背景来源。
+
+---
+
+### 3.A.1 形态核心组（4 个新特征，在 `classic_experience_features.py`）
+
+#### 3.A.1.1 ADX(14) + DI（Wilder 1978 标准实现）
 
 ```python
 def compute_adx(highs, lows, closes, period=14):
@@ -354,9 +392,132 @@ def compute_btc_dominance_change(coins_closes: dict, lookback=30):
 
 ---
 
-## 4. Phase 1: 形态预测器训练（BTC 日线）
+## 4. Phase 1: FeatureRegistry v4 + LightGBM 概率校正器 + Level-Trend 纯连续参数映射
 
-### 4.1 8 态自动标签生成器（数据驱动）
+> **方法论更新（2026-08-19）**：原 §4 方案（LGBM 多分类器继承 MarketRegimeClassifier，直接输出 8 态硬标签/概率）与当前「Level-Trend 连续区间 + 美联储点阵图式融合」的方法论冲突，已废弃。当前 Phase 1 的 LightGBM **仅作为概率校正器参与 log-odds 加权融合**，不改变 8 态概率的核心来源（Phase 0 高斯中心软分配），参数范围输出采用「Level-Trend 纯连续函数」随时间自动滚动分位界定区间（方案 A）。
+
+### 4.1 FeatureRegistry v4（5 模块 + schema 严格校验）
+
+#### 4.1.1 ENABLED_SETS 新增
+
+```python
+ENABLED_SETS["btc_morphology_v4"]        = ["morphology_core","ma200_cycle","multi_timeframe","rolling_regime_stats"]
+ENABLED_SETS["btc_morphology_v4_layer1"] = ["morphology_core","ma200_cycle","multi_timeframe","rolling_regime_stats","sector_beta_pool"]
+```
+
+| 模块 | 列数 | 作用 | 特征池归属 |
+|---|---|---|---|
+| morphology_core | ~20 | ADX/Hurst/BB宽/道氏 HHHL/Sperandeo 原子形态特征（已有） | LightGBM 校正器 ✅ |
+| ma200_cycle | 10 | MA200 距离 3 列 + 纯价格周期 7 列（已有） | LightGBM 校正器 ✅ |
+| multi_timeframe | 7 | MA 对齐/交叉/对数收益/波动率分位/量比（已有） | LightGBM 校正器 ✅ |
+| rolling_regime_stats | 16 | 🆕 L/T 60d/252d 分位+熵 20d + 共识 20d 均值 + 量 zscore | **仅参数映射用**（**排除 LGBM 池** 防标签泄露） |
+| sector_beta_pool | 15 | 🆕 5 板块 β(252d) + α(60d) + correl(60d) | **仅 Layer1 权重用**（排除 LGBM 池） |
+
+#### 4.1.2 feature_schema.json 持久化（强制校验，防止经验 122221 尺度漂移）
+
+`FeatureRegistry.build_feature_schema(set_name)` 输出：
+
+```json
+{
+  "schema_version": "feature.v4",
+  "set_name": "btc_morphology_v4",
+  "feature_names_in_order": ["adx_14", "ma200_distance_pct", "..."],
+  "groups": {
+    "lgbm_pool":    ["morphology_core", "ma200_cycle", "multi_timeframe"],
+    "range_mapper": ["rolling_regime_stats"],
+    "sector_pool":  ["sector_beta_pool"]
+  },
+  "per_feature_scale_note": {
+    "adx_14": "raw 0-100",
+    "ma200_distance_pct": "% relative raw",
+    "volume_zscore_252d": "z-score"
+  }
+}
+```
+
+**LGBM 推理入口必须加载 schema 并逐列比对**：列数不一致 / 列名不一致 / 顺序不一致 → 立即抛 `ValueError`。**禁止**静默 reindex 或 fillna 兜底。
+
+---
+
+### 4.2 LightGBM 概率校正器（`bcrm2/lgbm_calibrator.py`）
+
+```python
+class LGBMCalibrator:
+    EPS = 1e-12
+    REGIME_ORDER = REGIME_ORDER  # 与 regime_labeler.py 8 态顺序严格同一
+
+    # 训练：X ∈ (形态三基础模块 lgbm_pool)；y = 自动生成的 8 态标签
+    def fit(self, X: pd.DataFrame, y: pd.Series, schema_path=None):
+        """LGBMClassifier(class_weight='balanced', num_leaves=31,
+                          lambda_l2=0.5, min_data_in_leaf=80, verbose=-1)"""
+
+    # 推理：log-odds 加权融合（w_gauss=0.6 / w_lgbm=0.4，Phase 3 可调）
+    def calibrate(self, p_gauss: np.ndarray, X_lgbm_pool: pd.DataFrame) -> np.ndarray:
+        """返回 (n, 8) 归一概率；单条/批量统一入口走 calibrate（=predict_proba）"""
+
+    @staticmethod
+    def log_odds_mix(p_gauss, p_lgbm, w_gauss=0.6, w_lgbm=0.4, temperature=0.6) -> np.ndarray:
+```
+
+**设计铁律**：
+- 「融合」必须生效：`p_out` 对 `p_gauss` 的 JS 散度 ≥ 0.02（TDD T11）。
+- 绝不输出硬分类：无 `predict()` 接口；只有 `calibrate()`。
+- schema 不匹配 → 直接 `raise ValueError`（TDD T13）。
+
+---
+
+### 4.3 Level-Trend 纯连续参数映射（方案 A · `bcrm2/parameter_mapper.py`）
+
+**核心设计原则**：**无硬查表；一切都是 Level/Trend/Consensus 三个连续量的 clip+线性函数**；区间带宽 = 历史滚动百分位宽度 × consensus 收窄系数，**随时间自动滚动更新 min/max 差值界定范围**（契合「数据驱动+量变引起质变」）。
+
+```python
+class ParameterMapper:
+    DEFAULT_COEFFS = {
+        # center = base + w_L*(L/4) + w_T*(T/4) + w_C*(C-0.5)
+        # 输出所有范围 = [center × (1 - half_width), center × (1 + half_width)] ∩ clip
+        "global_position_mult":  dict(base=1.0, w_L=+0.4, w_T=+0.2, w_C=+0.1, clip=[0.3, 1.6]),
+        "ls_ratio_cap":          dict(base=0.5, w_L=+0.25,w_T=+0.15,w_C=0.0,  clip=[0.2, 1.0]),
+        "long_bias":             dict(base=0.5, w_L=+0.2, w_T=+0.15,w_C=0.0,  clip=[0.0, 1.0]),
+        "short_bias":            dict(base=0.5, w_L=-0.2, w_T=-0.15,w_C=0.0,  clip=[0.0, 1.0]),
+        "long_threshold_mult":   dict(base=1.0, w_L=-0.1, w_T=-0.1, w_C=0.0,  clip=[0.6, 1.4]),
+        "short_threshold_mult":  dict(base=1.0, w_L=+0.1, w_T=+0.1, w_C=0.0,  clip=[0.6, 1.4]),
+        # 区间宽度：基础 ±12%；C=0 额外 ±12%；C=1 不放大
+        "bandwidth_pct":                 0.12,
+        "bandwidth_consensus_factor":    0.12,
+    }
+
+    # 6 个全局范围（Layer0 输出）
+    def map_global_parameters(L, T, C, stats_row) -> dict[str, tuple[float, float]]:
+        """返回 {global_position_mult: (lower, upper), ls_ratio_cap: (...), ... ×6}"""
+
+    # 5 板块权重 Σ=1（Layer1 输出）
+    def map_sector_weights(L, T, C, sector_betas) -> dict[str, float]:
+        """score_s = clip(β_s*(1+α_s)) * (1 + 0.3*L/4 + 0.2*T/4); w_s = softmax(score_s / temp)"""
+```
+
+**单调性要求（TDD T12/T14/T15）**：
+- 带宽：`C=1.0` 的 6 参数区间宽度 **必须 ≤** `C=0.0`。
+- 仓位：`L=+4,T=+4` → global_position_mult 中心 ≥ 1.4；`L=-4,T=-4` → ≤ 0.5。
+- 阈值：BTC 牛市时 long_threshold_mult ≤ 1.0（降低做多门槛）；熊市时 short_threshold_mult ≤ 1.0（降低做空门槛）。
+- 板块权重：β=1.5 板块在 `L=+3` 时权重 ≥ β=0.5 板块 × 1.15 倍；5 板块权重 Σ ≡ 1（浮点误差 ≤1e-9）。
+
+---
+
+### 4.4 Phase 1 TDD 验收矩阵
+
+| 测试 | 名称 | 通过标准 |
+|---|---|---|
+| T11 | `test_lgbm_calibrator_shape` | `p_out` 形状 (n,8) Σ=1；纯随机 X 场景下 `p_out` 对 `p_gauss` JS 散度 ≥ 0.02（融合确实生效，不被权重淹掉）|
+| T12 | `test_parameter_mapper_ranges` | C=1 → 带宽 ≤ C=0 带宽；`L=+4,T=+4` → mult≥1.4；`L=-4,T=-4` → mult≤0.5（单调性 4 条）|
+| T13 | `test_feature_schema_alignment` | 训练时存 schema → 推理时改列顺序 / 删列 / 列数不对 → 必须抛 `ValueError` |
+| T14 | `test_sector_weights_sum_to_1` | 5 板块权重 Σ=1；β=1.5 板块权重 ÷ β=0.5 板块权重 ≥ 1.15（L=+3 场景）|
+| (T15) | `test_btc_3_dates_parameter_direction`（可选）| ATH 69k → ls_ratio_cap ≥ 0.7；FTX Low → ls_ratio_cap ≤ 0.5；减半 → global_position_mult ≥ 1.15 |
+
+---
+
+### 4.A 原 Phase 1 LGBM 硬分类方案（已废弃，仅归档 · 2026-08-18 初版设计）
+
+#### 4.A.1 8 态自动标签生成器（数据驱动）
 
 放弃手工标注，参考 LucasLarese 4 态方法扩展到 8 态：
 
