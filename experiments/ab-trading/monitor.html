@@ -185,6 +185,7 @@
   <!-- <div class="tab" onclick="switchTab('screen', event)">🎯 三屏马丁</div> -->
   <div class="tab" onclick="switchTab('v15ct', event)">⚡ 马丁策略</div>
   <div class="tab" onclick="switchTab('yijing', event)">🗼 易经推理</div>
+  <div class="tab" onclick="switchTab('morph', event)">🔮 市场形态预测</div>
   <div class="tab" onclick="switchTab('dreamos', event)">⚙️ Dream OS</div>
   <div class="tab" onclick="switchTab('signals', event)">📡 代币信号</div>
   <div class="tab" onclick="switchTab('global', event)">🌐 全局统计</div>
@@ -779,7 +780,7 @@
     <!-- 实盘持仓卡片 -->
     <div class="card full-width" style="margin-bottom:16px">
       <div class="card-title">
-        <div class="dot" style="background:var(--green)"></div>Hyperliquid 实盘持仓
+        <div class="dot" style="background:var(--green)"></div>OKX 实盘持仓
         <span id="yj-pos-count-badge" style="margin-left:8px;font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(63,185,80,0.15);color:var(--green);border:1px solid rgba(63,185,80,0.3)">0 持仓</span>
         <button onclick="loadYijingPositions()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新持仓</button>
       </div>
@@ -892,7 +893,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
         <!-- OKX 模拟盘 -->
         <div>
-          <div class="memory-label">Hyperliquid 实盘（持仓/余额/Algo单）</div>
+          <div class="memory-label">OKX 实盘（持仓/余额/Algo单）</div>
           <div id="yj-exec-okx" style="font-size:12px"><div style="color:var(--muted);padding:8px">加载中...</div></div>
         </div>
         <!-- 模拟交易统计 -->
@@ -929,6 +930,115 @@
     </div>
 
     </div>
+  </div>
+
+  <!-- 市场形态预测 Tab -->
+  <div id="tab-morph" class="tab-content">
+  <div class="tab-grid">
+
+    <!-- 顶部快照条：输入 L/T/C + Identity 校验 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:var(--purple)"></div>🔮 市场形态预测 · ParameterMapper 输出
+        <span id="morph-snapshot-t" style="margin-left:auto;color:var(--muted);font-size:11px">--</span>
+        <button onclick="loadMorphData()" style="margin-left:8px;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div id="morph-snapshot" style="display:flex;flex-wrap:wrap;gap:16px;padding:8px 0;font-size:12px">
+        <div style="color:var(--muted)">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 6 全局参数表 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:var(--blue)"></div>① 6 个全局参数范围（中心 + 带宽随 C 收窄）
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:left">
+              <th style="padding:6px 8px;font-weight:600">参数</th>
+              <th style="padding:6px 8px;font-weight:600">中心</th>
+              <th style="padding:6px 8px;font-weight:600">范围 [lo, hi]</th>
+              <th style="padding:6px 8px;font-weight:600">带宽</th>
+              <th style="padding:6px 8px;font-weight:600">直通中心</th>
+              <th style="padding:6px 8px;font-weight:600">偏移</th>
+              <th style="padding:6px 8px;font-weight:600">可视化</th>
+            </tr>
+          </thead>
+          <tbody id="morph-global-tbody">
+            <tr><td colspan="7" style="padding:16px;text-align:center;color:var(--muted)">加载中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5 板块资金权重 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:var(--purple)"></div>② 5 板块资金权重（Σ=1，softmax((1-C)·uniform + C·score)）
+        <span style="margin-left:auto;color:var(--muted);font-size:11px">当前 vs 直通基线 20%</span>
+      </div>
+      <div id="morph-sectors" style="padding:8px 0">
+        <div style="color:var(--muted);padding:8px;font-size:12px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- ① BTC 4 年教科书级周期定位（减半锚定 · 18 月见顶 · 4 子波 · 7 大形态） -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:#c084fc"></div>① BTC 4 年教科书级周期（减半 2024-04-20 锚定 · T+18月见顶 · 4 子波合成 · 7 大形态阶段）
+        <span id="morph-4y-info" style="margin-left:auto;color:var(--muted);font-size:11px">--</span>
+        <button onclick="loadMorphCycle()" style="margin-left:8px;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div id="morph-4y-chart" style="padding:8px 0">
+        <div style="color:var(--muted);padding:16px;text-align:center;font-size:12px">加载中...</div>
+      </div>
+      <div id="morph-4y-legend" style="display:flex;flex-wrap:wrap;gap:12px 16px;padding:4px 8px;font-size:11px;color:var(--muted)"></div>
+    </div>
+
+    <!-- ②③④ 市场形态周期曲线（理论拟合 / 现阶段 / 预测 三阶段共享 X 轴） -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:var(--green)"></div>②③④ 市场形态周期曲线（理论拟合 · 现阶段 · 预测 · 三阶段同色相对应）
+        <span id="morph-cycle-info" style="margin-left:auto;color:var(--muted);font-size:11px">--</span>
+        <button onclick="loadMorphCycle()" style="margin-left:8px;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div id="morph-cycle-chart" style="padding:8px 0">
+        <div style="color:var(--muted);padding:16px;text-align:center;font-size:12px">加载中...</div>
+      </div>
+      <div id="morph-cycle-legend" style="display:flex;gap:16px;padding:4px 8px;font-size:11px;color:var(--muted)"></div>
+    </div>
+
+    <!-- 误差修正指标 + 历史图 -->
+    <div class="card full-width" id="morph-metrics-card">
+      <div class="card-title">
+        <div class="dot" style="background:var(--purple)"></div>④ 预测修正指标（在线学习闭环）
+        <button onclick="loadMorphMetrics()" style="margin-left:8px;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+        <button onclick="triggerMorphCorrect()" style="margin-left:8px;background:#facc1533;border:1px solid #facc1588;color:var(--yellow);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">触发修正</button>
+      </div>
+      <div id="morph-metrics-summary" style="padding:6px 8px;font-size:12px">
+        <span style="color:var(--muted)">加载中...</span>
+      </div>
+      <div id="morph-error-chart" style="padding:0 4px 8px">
+        <div style="color:var(--muted);padding:16px;text-align:center;font-size:12px">暂无数据（首次使用需积累至少 3 条回填预测）</div>
+      </div>
+      <div id="morph-correction-state" style="padding:4px 8px;font-size:11px;color:var(--muted)"></div>
+    </div>
+
+    <!-- 说明 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>说明</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.6;padding:4px 0">
+        <div>• <b style="color:var(--text)">ParameterMapper 方案 A</b>：Level-Trend 纯连续函数映射，输入 (L, T, C) 输出 6 全局参数 + 5 板块权重，作为核心层 BCRM 2.0 的输入。</div>
+        <div>• <b style="color:var(--text)">三层兼容不变量</b>：L=0, T=0, C=0 时所有参数直通（mult=1.0, ls_cap=0.5, bias=0, threshold_mult=1.0），板块权重均匀 0.20。</div>
+        <div>• <b style="color:var(--text)">单调性</b>：L+4 加仓 / L-4 砍仓；牛市降做多门槛 / 熊市降做空门槛；共识 C 越高 → 6 参数带宽越窄。</div>
+        <div>• 当前板块权重基于 <b>identity betas</b> (β=1.0, α=0, corr=0.5)，仅反映 (L, T, C) 影响；接入真实板块 betas 后将叠加 β/α/corr 项。</div>
+        <div>• 数据源：<code style="color:var(--blue)">/api/morph/params</code> → <code style="color:var(--blue)">bcrm2.ParameterMapper</code> + evolution SQLite snapshot</div>
+      </div>
+    </div>
+
+  </div>
   </div>
 
   <!-- V15-CT 马丁策略 Tab -->
@@ -1609,6 +1719,7 @@ let currentTab = 'local';
 let cloudDataLoaded = false;
 let screenDataLoaded = false;
 let yijingDataLoaded = false;
+let morphDataLoaded = false;
 let currentScreenSymbol = 'BTC';
 let signalsDataLoaded = false;
 let trendDataLoaded = false;
@@ -1623,7 +1734,7 @@ function switchTab(tab, evt) {
     evt.target.classList.add('active');
   } else {
     const tabs = document.querySelectorAll('.tab');
-    const tabNames = ['local', 'cloud', 'trend', 'v15ct', 'yijing', 'dreamos', 'signals'];
+    const tabNames = ['local', 'cloud', 'trend', 'v15ct', 'yijing', 'morph', 'dreamos', 'signals'];
     const idx = tabNames.indexOf(tab);
     if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
   }
@@ -1647,6 +1758,9 @@ function switchTab(tab, evt) {
   if (tab === 'yijing' && !yijingDataLoaded) {
     loadYijingData();
   }
+  if (tab === 'morph' && !morphDataLoaded) {
+    loadMorphData();
+  }
   if (tab === 'dreamos') {
     dosRefresh();
     dosLoadScenarios();
@@ -1668,6 +1782,9 @@ function currentTabRefresh() {
     loadScreenData();
   } else if (currentTab === 'yijing') {
     loadYijingData();
+  } else if (currentTab === 'morph') {
+    loadMorphData();
+    loadMorphCycle();
   } else if (currentTab === 'signals') {
     loadTokenSignals();
   } else if (currentTab === 'v15ct') {
@@ -3533,6 +3650,760 @@ async function yjFetch(url, timeoutMs) {
   }
 }
 
+// ── 市场形态预测 / BCRM 2.0 参数输出 ────────────────────────────────────
+const MORPH_PARAM_LABELS = {
+  global_position_mult: { label: '全局仓位乘数', desc: 'L+4 加仓 / L-4 砍仓 / clip [0.30, 1.60]' },
+  ls_ratio_cap: { label: '多空持仓比上限', desc: 'clip [0.20, 1.00]' },
+  long_bias: { label: '多头偏置', desc: '加性偏置 / clip [-0.30, 0.30]' },
+  short_bias: { label: '空头偏置', desc: '加性偏置 / clip [-0.30, 0.30]' },
+  long_threshold_mult: { label: '多头阈值乘数', desc: '牛市降做多门槛' },
+  short_threshold_mult: { label: '空头阈值乘数', desc: '熊市降做空门槛' },
+};
+const MORPH_SECTOR_LABELS = { defi: 'DeFi', ai: 'AI/WEB3', rwa: 'RWA', meme: 'MEME', l2: 'L2' };
+const MORPH_SECTOR_COLORS = { defi: '#58a6ff', ai: '#bc8cff', rwa: '#3fb950', meme: '#d29922', l2: '#f778ba' };
+
+function fmt(v, d = 4) { return Number(v).toFixed(d); }
+
+function renderMorphSnapshot(data) {
+  const inp = data.inputs;
+  const lColor = inp.level_smooth >= 0 ? 'var(--green)' : 'var(--red)';
+  const tColor = inp.trend_smooth >= 0 ? 'var(--green)' : 'var(--red)';
+  const sumOk = Math.abs(data.sector_weights_sum - 1.0) < 1e-3;
+  const idSum = (data.identity?.sector_weights || []).reduce((a, w) => a + w.weight, 0);
+  const idSumOk = Math.abs(idSum - 1.0) < 1e-3;
+  const idUniform = (data.identity?.sector_weights || []).every(w => Math.abs(w.weight - 0.2) < 1e-3);
+  const allOk = sumOk && idSumOk && idUniform;
+  const okColor = allOk ? 'var(--green)' : 'var(--red)';
+  const okText = allOk ? '三层兼容不变量 ✓' : '不变量异常 ✗';
+
+  document.getElementById('morph-snapshot-t').textContent = 'snapshot: ' + (data.snapshot_t || '--');
+
+  document.getElementById('morph-snapshot').innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="color:var(--muted)">输入</span>
+      <span style="font-family:monospace;font-weight:600;color:${lColor}">L = ${fmt(inp.level_smooth)}</span>
+      <span style="font-family:monospace;font-weight:600;color:${tColor}">T = ${fmt(inp.trend_smooth)}</span>
+      <span style="font-family:monospace;font-weight:600;color:var(--text)">C = ${(inp.consensus * 100).toFixed(1)}%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;color:var(--muted)">
+      <span>板块权重 Σ =</span>
+      <span style="font-family:monospace;color:${sumOk ? 'var(--green)' : 'var(--red)'}">${fmt(data.sector_weights_sum, 6)}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;color:${okColor};font-weight:600">${okText}</div>
+    <div style="color:var(--muted);font-size:11px">共识越高 → 6 参数带宽越窄</div>
+  `;
+}
+
+function renderMorphGlobalParams(items) {
+  if (!items || !items.length) {
+    document.getElementById('morph-global-tbody').innerHTML = '<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--muted)">无数据</td></tr>';
+    return;
+  }
+  // 全局 min/max 用于 SVG 可视化统一比例
+  let gMin = Infinity, gMax = -Infinity;
+  for (const it of items) { gMin = Math.min(gMin, it.lo, it.identity_center); gMax = Math.max(gMax, it.hi, it.identity_center); }
+  if (!Number.isFinite(gMin)) { gMin = 0; gMax = 1; }
+  const span = gMax - gMin || 1;
+  const BAR_W = 180, BAR_H = 14;
+
+  const rows = items.map(it => {
+    const meta = MORPH_PARAM_LABELS[it.name] || { label: it.name, desc: '' };
+    const offset = it.center - it.identity_center;
+    const offsetColor = Math.abs(offset) < 1e-4 ? 'var(--muted)' : (offset > 0 ? 'var(--green)' : 'var(--red)');
+    const offsetSign = offset > 0 ? '+' : '';
+    // SVG: 范围条 + 中心点 + 直通中心点
+    const xLo = ((it.lo - gMin) / span) * BAR_W;
+    const wRange = ((it.hi - it.lo) / span) * BAR_W;
+    const xCenter = ((it.center - gMin) / span) * BAR_W;
+    const xId = ((it.identity_center - gMin) / span) * BAR_W;
+    const svg = `
+      <svg width="${BAR_W + 8}" height="${BAR_H + 4}" style="vertical-align:middle">
+        <rect x="${xLo}" y="2" width="${wRange}" height="${BAR_H}" fill="#30363d" rx="2"/>
+        <line x1="${xCenter}" y1="0" x2="${xCenter}" y2="${BAR_H + 4}" stroke="var(--blue)" stroke-width="2"/>
+        <line x1="${xId}" y1="0" x2="${xId}" y2="${BAR_H + 4}" stroke="var(--yellow)" stroke-width="1.5" stroke-dasharray="2 2"/>
+      </svg>`;
+    return `
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:6px 8px">
+          <div style="font-weight:600;color:var(--text)">${meta.label}</div>
+          <div style="font-size:10px;color:var(--muted)">${meta.desc}</div>
+        </td>
+        <td style="padding:6px 8px;font-family:monospace;font-weight:600;color:var(--blue)">${fmt(it.center)}</td>
+        <td style="padding:6px 8px;font-family:monospace;color:var(--text)">[${fmt(it.lo)}, ${fmt(it.hi)}]</td>
+        <td style="padding:6px 8px;font-family:monospace;color:var(--muted)">${fmt(it.bandwidth)}</td>
+        <td style="padding:6px 8px;font-family:monospace;color:var(--muted)">${fmt(it.identity_center)}</td>
+        <td style="padding:6px 8px;font-family:monospace;font-weight:600;color:${offsetColor}">${offsetSign}${fmt(offset)}</td>
+        <td style="padding:6px 8px">${svg}</td>
+      </tr>`;
+  }).join('');
+  document.getElementById('morph-global-tbody').innerHTML = rows
+    + `<tr style="font-size:10px;color:var(--muted)">
+         <td colspan="7" style="padding:6px 8px">
+           <span style="display:inline-block;width:10px;height:10px;background:#30363d;vertical-align:middle"></span> 范围 [lo,hi] &nbsp;
+           <span style="color:var(--blue)">■</span> 当前中心 &nbsp;
+           <span style="color:var(--yellow)">┊</span> 直通中心 (identity)
+         </td>
+       </tr>`;
+}
+
+function renderMorphSectors(items) {
+  if (!items || !items.length) {
+    document.getElementById('morph-sectors').innerHTML = '<div style="color:var(--muted);padding:8px;font-size:12px">无数据</div>';
+    return;
+  }
+  const BAR_W = 240, BAR_H = 18;
+  const rows = items.map(it => {
+    const label = MORPH_SECTOR_LABELS[it.name] || it.name.toUpperCase();
+    const color = MORPH_SECTOR_COLORS[it.name] || '#94a3b8';
+    const curPct = (it.weight * 100).toFixed(2);
+    const idPct = (it.identity_weight * 100).toFixed(2);
+    const wCur = it.weight * BAR_W;
+    const wId = it.identity_weight * BAR_W;
+    const diff = it.weight - it.identity_weight;
+    const diffColor = Math.abs(diff) < 1e-4 ? 'var(--muted)' : (diff > 0 ? 'var(--green)' : 'var(--red)');
+    const diffSign = diff > 0 ? '+' : '';
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
+        <div style="width:72px;font-size:11px;font-weight:600;color:var(--text)">${label}</div>
+        <svg width="${BAR_W + 4}" height="${BAR_H}">
+          <rect x="0" y="2" width="${BAR_W}" height="${BAR_H}" fill="#21262d" rx="2"/>
+          <rect x="0" y="2" width="${wId}" height="${BAR_H / 2}" fill="#6e7681" rx="1"/>
+          <rect x="0" y="${BAR_H / 2 + 2}" width="${wCur}" height="${BAR_H / 2}" fill="${color}" rx="1"/>
+          <line x1="${wId}" y1="0" x2="${wId}" y2="${BAR_H + 4}" stroke="var(--yellow)" stroke-width="1.5" stroke-dasharray="2 2"/>
+        </svg>
+        <div style="font-family:monospace;font-size:11px">
+          <span style="color:${color};font-weight:600">${curPct}%</span>
+          <span style="color:var(--muted)"> / ${idPct}%</span>
+        </div>
+        <div style="font-family:monospace;font-size:11px;color:${diffColor};font-weight:600">${diffSign}${(diff * 100).toFixed(2)}%</div>
+      </div>`;
+  }).join('');
+  document.getElementById('morph-sectors').innerHTML = rows
+    + `<div style="font-size:10px;color:var(--muted);padding-top:6px">
+         <span style="display:inline-block;width:10px;height:5px;background:#6e7681;vertical-align:middle"></span> 直通基线 (identity) &nbsp;
+         <span style="display:inline-block;width:10px;height:5px;background:var(--blue);vertical-align:middle"></span> 当前权重 &nbsp;
+         <span style="color:var(--yellow)">┊</span> 20% 参考线
+       </div>`;
+}
+
+async function loadMorphData() {
+  try {
+    const data = await yjFetch('/api/morph/params?symbol=BTCUSDT', 30000);
+    if (data.error || !data.ok) {
+      const msg = data.error || '未知错误';
+      document.getElementById('morph-snapshot').innerHTML = `<div style="color:var(--red);padding:8px">加载失败: ${msg}</div>`;
+      document.getElementById('morph-global-tbody').innerHTML = `<tr><td colspan="7" style="padding:12px;text-align:center;color:var(--red)">${msg}</td></tr>`;
+      document.getElementById('morph-sectors').innerHTML = `<div style="color:var(--red);padding:8px">${msg}</div>`;
+      morphDataLoaded = false;
+      return;
+    }
+    renderMorphSnapshot(data);
+    renderMorphGlobalParams(data.global_params || []);
+    renderMorphSectors(data.sector_weights || []);
+    morphDataLoaded = true;
+    // 同时加载周期曲线
+    if (!morphCycleLoaded) loadMorphCycle();
+  } catch (err) {
+    const isProxy = err.message && (err.message.includes('proxy_502') || err.message.includes('502') || err.message.includes('Failed to fetch'));
+    const msg = isProxy ? '请求被代理拦截 (502)，请直访 http://127.0.0.1:8765/' : '加载失败: ' + err.message;
+    document.getElementById('morph-snapshot').innerHTML = `<div style="color:var(--red);padding:8px">${msg}</div>`;
+    morphDataLoaded = false;
+  }
+}
+
+// ── 市场形态周期曲线 ──────────────────────────────────────────────────
+let morphCycleLoaded = false;
+
+// ── 周期阶段颜色映射（Level → 颜色）：易经周期 7 档，红/橙/绿/黄/蓝/靛/紫 ──
+// 三条曲线共享【同一套 7 档色相】，保证"同阶段同色"，一眼可对比。
+// 区别仅在【粗细 + 虚实 + 饱和度】：
+//   · 理论完美曲线：降饱和+提亮 → 细点划线（更浅，代表参考框架，可对照）
+//   · 现阶段（真实）曲线：高饱和 → 粗实线（最醒目，代表事实）
+//   · 预测轨迹：高饱和 → 按学习次数/MAE 决定虚实+粗细，远端渐淡
+const MORPH_REGIME_PALETTE = [
+  // [level下限, hex高饱和色, 阶段名称]
+  [-Infinity, "#a855f7", "恐慌"],            // < -2.5
+  [-2.5,      "#6366f1", "深度衰退"],        // [-2.5, -1.25)
+  [-1.25,     "#3b82f6", "温和衰退"],        // [-1.25, -0.4)
+  [-0.4,      "#eab308", "均衡（蓄力）"],    // [-0.4, +0.4)
+  [+0.4,      "#10b981", "稳健扩张"],        // [+0.4, +1.25)
+  [+1.25,     "#f97316", "繁荣过热"],        // [+1.25, +2.5)
+  [+2.5,      "#dc2626", "极端狂热"],        // ≥ +2.5
+];
+
+/** hex → {r,g,b} */
+function _hex2rgb(h) {
+  h = h.replace('#','');
+  if (h.length === 3) h = h.split('').map(c => c+c).join('');
+  const n = parseInt(h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+/** {r,g,b} → #rrggbb */
+function _rgb2hex({r,g,b}) {
+  const to = v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2,'0');
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+/** hex → 降饱和并提亮（用于"理论完美曲线"视觉降级） */
+function _desaturateLighten(hex, saturation = 0.45, lightnessBoost = 15) {
+  const {r,g,b} = _hex2rgb(hex);
+  const gray = Math.round(0.299*r + 0.587*g + 0.114*b);
+  const mix = (a, b, t) => a + (b - a) * t;
+  const mr = mix(gray, r, saturation);
+  const mg = mix(gray, g, saturation);
+  const mb = mix(gray, b, saturation);
+  const L = Math.max(0, Math.min(1, lightnessBoost / 100));
+  return _rgb2hex({
+    r: mix(mr, 255, L),
+    g: mix(mg, 255, L),
+    b: mix(mb, 255, L),
+  });
+}
+
+function _morphLevelToColor(v, tone) {
+  tone = tone || 'live';
+  let col = MORPH_REGIME_PALETTE[0][1];
+  for (const [lo, c] of MORPH_REGIME_PALETTE) { if (v >= lo) col = c; else break; }
+  return tone === 'theoretical' ? _desaturateLighten(col, 0.5, 18) : col;
+}
+function _morphLevelToName(v) {
+  let name = MORPH_REGIME_PALETTE[0][2];
+  for (const [lo, _c, n] of MORPH_REGIME_PALETTE) { if (v >= lo) name = n; else break; }
+  return name;
+}
+
+/** 用 userSpaceOnUse 的线性渐变给一条曲线「按 Level 逐点染色」，返回 path+defs 片段
+ * tone: 'live'（高饱和，实际/预测）| 'theoretical'（降饱和+提亮，理论）
+ */
+function _buildGradientPath(values, xScale, yScale, offsetIdx, gradId,
+                             strokeWidth, dashArr, opacityFunc, tone) {
+  tone = tone || 'live';
+  const stops = values.map((v, i) => {
+    const x = xScale(i + offsetIdx);
+    const col = _morphLevelToColor(v, tone);
+    const op = opacityFunc ? opacityFunc(i, values.length) : 1.0;
+    return `    <stop offset="${x}" stop-color="${col}" stop-opacity="${op}"/>`;
+  }).join("\n");
+  const defs = `<linearGradient id="${gradId}" gradientUnits="userSpaceOnUse" x1="0" x2="${xScale(offsetIdx + values.length - 1)}" y1="0" y2="0">\n${stops}\n  </linearGradient>`;
+  const d = values.map((v, i) => `${i === 0 ? "M" : "L"}${xScale(i + offsetIdx)},${yScale(v)}`).join(" ");
+  const dashAttr = dashArr ? `stroke-dasharray="${dashArr}"` : "";
+  const path = `<path d="${d}" fill="none" stroke="url(#${gradId})" stroke-width="${strokeWidth}" stroke-linejoin="round" stroke-linecap="round" ${dashAttr}/>`;
+  return { defs, path };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ① BTC 4 年教科书级周期定位卡（单独 DOM，不共享主图 X 轴）
+//   · 最浅 7 档阶段色 × 极细点划 × 1460 天完整周期
+//   · 减半 / 见顶 / 恐慌底 / 下一轮减半 4 个锚点
+//   · 紫色大圆 = 当前日期定位（含文字标签 繁荣过热 T+851 天 · 进度 58.3%）
+// ─────────────────────────────────────────────────────────────────
+function render4YearCycleBar(data) {
+  // 支持两种入参：① 已解包的 cycle_4y dict（主流）；② 顶层 response（data.params.cycle_4y 存在时）
+  const c4 = (data && (data.series && (data.series.level || data.series.t_rel)))
+    ? data
+    : (data && data.params && data.params.cycle_4y);
+  if (!c4 || !c4.series || !c4.series.level) {
+    document.getElementById('morph-4y-chart').innerHTML = `<div style="color:var(--yellow);padding:8px">后端尚未提供 4 年周期数据（params.cycle_4y 缺失）。请升级后端 Predictor。</div>`;
+    document.getElementById('morph-4y-info').textContent = '（无 4 年周期数据）';
+    return;
+  }
+  const W = 860, H = 200, padL = 36, padR = 16, padT = 14, padB = 42;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const levels = c4.series.level.map(Number);
+  const N = levels.length;
+  const absMax = Math.max(4, Math.ceil(Math.max(Math.abs(Math.min(...levels)), Math.abs(Math.max(...levels)))));
+  const yMin = -absMax, yMax = absMax;
+  const xScale = i => padL + (i / Math.max(N - 1, 1)) * plotW;
+  const yScale = v => padT + ((yMax - Math.max(yMin, Math.min(yMax, v))) / (yMax - yMin)) * plotH;
+  // t_rel 到 X 的映射：x = padL + (t_rel / total_days) * plotW（供锚点用）
+  const totalD = +c4.total_days || 1460;
+  const tRelToX = tr => padL + Math.max(0, Math.min(1, tr / totalD)) * plotW;
+
+  // tone = 'textbook'：教科书级 → 灰度 65% 混合 + 提亮 22%（最浅）
+  function _textbookColor(hex) { return _desaturateLighten(hex, 0.35, 22); }
+  // 7 档渐变 stops（按 Level 值 → _textbookLevelColor），用 userSpaceOnUse 沿 t_rel 映射
+  const stops = levels.map((v, i) => {
+    const x = xScale(i);
+    const col = _textbookColor(_morphLevelToColor(v));
+    return `    <stop offset="${x}" stop-color="${col}" stop-opacity="0.9"/>`;
+  }).join("\n");
+  const gradDef = `<linearGradient id="grad_4y" gradientUnits="userSpaceOnUse" x1="0" x2="${W-padR}" y1="0" y2="0">\n${stops}\n  </linearGradient>`;
+  const pathD = levels.map((v, i) => `${i === 0 ? "M" : "L"}${xScale(i)},${yScale(v)}`).join(" ");
+  const path = `<path d="${pathD}" fill="none" stroke="url(#grad_4y)" stroke-width="1.0" stroke-dasharray="1 2 3 2" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+  // 网格 Y 轴（-4..4 每 2）
+  const yTicks = [];
+  for (let y = -absMax; y <= absMax; y += 2) yTicks.push(y);
+  const gridLines = yTicks.map(v => {
+    const y = yScale(v);
+    const color = v === 0 ? 'var(--border)' : '#21262d';
+    const dash = v === 0 ? '' : 'stroke-dasharray="2 4"';
+    return `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="${color}" stroke-width="0.5" ${dash}/><text x="${padL-5}" y="${y+3}" fill="var(--muted)" font-size="9" text-anchor="end">${v>0?'+':''}${v}</text>`;
+  }).join('');
+
+  // 8 个里程碑锚点：减半复苏、稳健扩张、繁荣过热前加速、繁荣顶部、狂热回落、温和衰退、恐慌底部、下一轮减半
+  const ms = c4.milestones || [];
+  const msMarks = ms.map(m => {
+    const x = tRelToX(+m.t_rel);
+    return `<line x1="${x}" y1="${padT}" x2="${x}" y2="${H-padB}" stroke="#7c3aed" stroke-width="0.6" stroke-dasharray="1 3" opacity="0.4"/>
+            <text x="${x}" y="${H-padB+20}" fill="#a855f7" font-size="8" text-anchor="middle" transform="rotate(-15 ${x} ${H-padB+20})">${m.date.substring(5)} · ${m.label}</text>`;
+  }).join('');
+
+  // 当前点紫色大圆 + 文字（t_rel_current 对应位置）
+  const curX = tRelToX(+c4.t_rel_current);
+  const curY = yScale(+c4.current_level);
+  const curStageName = c4.current_stage_name || _morphLevelToName(+c4.current_level);
+  const progressPct = (c4.progress != null) ? (c4.progress * 100).toFixed(1) : '--';
+  // 当前点颜色：用当前阶段色（7 档高饱和），外层描边皇家紫突出身份
+  const curDotColor = _morphLevelToColor(+c4.current_level);
+  const currentDot =
+    `<circle cx="${curX}" cy="${curY}" r="7" fill="${curDotColor}" stroke="#8b5cf6" stroke-width="2.2"/>
+     <circle cx="${curX}" cy="${curY}" r="11" fill="none" stroke="#8b5cf6" stroke-width="0.6" opacity="0.55"/>
+     <text x="${curX-8}" y="${curY-12}" fill="#8b5cf6" font-size="9.5" text-anchor="end" font-weight="700">
+       今天 · ${curStageName} · L=${(+c4.current_level).toFixed(2)}（进度 ${progressPct}% · T+${c4.t_rel_current} 天）
+     </text>`;
+
+  // X 轴主标签：减半 / 见顶 / 下一轮减半
+  const msKey = ms.filter(m => /减半|顶部（极端|恐慌底部/.test(m.label));
+  const axisLabels = msKey.length ? msKey.map(m => {
+    const x = tRelToX(+m.t_rel);
+    const isEnd = /下一轮/.test(m.label);
+    return `<text x="${x}" y="${H-padB+8}" fill="${isEnd ? '#a855f7' : '#c084fc'}" font-size="9" text-anchor="middle" font-weight="600">${m.label}（${m.date.substring(5)}）</text>`;
+  }).join('') : '';
+  // 次标签：进度条轴（0% / 50% / 100%）
+  const axisPct = `
+    <text x="${padL}" y="${H-4}" fill="var(--muted)" font-size="8" text-anchor="start">0%</text>
+    <text x="${(padL + W-padR)/2}" y="${H-4}" fill="var(--muted)" font-size="8" text-anchor="middle">50%</text>
+    <text x="${W-padR}" y="${H-4}" fill="var(--muted)" font-size="8" text-anchor="end">100%</text>`;
+
+  const svg = `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:${H}px">
+      <defs>${gradDef}</defs>
+      ${gridLines}
+      <!-- 里程碑竖线 + 斜标 -->
+      ${msMarks}
+      <!-- 4 年教科书曲线（最浅灰度色） -->
+      ${path}
+      <!-- 当前点紫大圆定位 -->
+      ${currentDot}
+      <!-- X 轴 -->
+      <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--border)" stroke-width="0.5"/>
+      ${axisLabels}
+      ${axisPct}
+    </svg>`;
+  document.getElementById('morph-4y-chart').innerHTML = svg;
+
+  // 信息栏
+  const anc = c4.anchor || {};
+  const subWaves = (anc.subwaves || []).map(w => `${w.freq_ratio}×(A${w.amp_ratio})`).join(' + ');
+  const info = `锚定 ${anc.halving_date || '--'} 减半 → 见顶 ${anc.peak_date || '--'}（+${anc.peak_after_days || '--'} 天）· 4 子波：${subWaves} · 当前 4Y 定位 ${curStageName}（${progressPct}%）`;
+  document.getElementById('morph-4y-info').textContent = info;
+
+  // 图例
+  const theorHues4y = MORPH_REGIME_PALETTE.map(([_, hex]) => _textbookColor(hex)).join(',');
+  document.getElementById('morph-4y-legend').innerHTML = `
+    <span><span style="display:inline-block;width:16px;height:1px;background:linear-gradient(to right,${theorHues4y});vertical-align:middle;border-top:1px dotted #999"></span> ① 教科书理论（最浅 7 档色 · 最细点划 · 完整 4 年 7 阶段齐全）</span>
+    <span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#8b5cf6;border:2px solid ${curDotColor};vertical-align:middle"></span> 今天 · 减半后 T+${c4.t_rel_current} 天 · ${progressPct}% · ${curStageName}</span>
+    <span style="color:#a855f7">⬐ 里程碑：减半 / 稳健扩张 / 繁荣过热加速 / 顶部 / 回落 / 衰退 / 恐慌底 / 下一轮减半 ⬎</span>
+  `;
+}
+
+function renderMorphCycle(data) {
+  const p = data.params;
+  const s = data.series;
+  const dates = data.dates;
+  const corr = data.correction || {};
+  const corrState = corr.state || {};
+  const correctionCount = Number(corrState.correction_count || 0);
+  const lastMAE = Number(corrState.last_mae != null ? corrState.last_mae : NaN);
+  const autoT = corr.auto || {};
+
+  const nHist = s.current_stage.length;
+  const nForecast = s.forecast.length;
+  const windowN = nHist + nForecast;                      // 现实+预测窗口（"片段"）
+
+  // ──────────────────────────────────────────────────────
+  // ① 生成【完整周期】理论曲线：按 fft_components 合成长度 ≈ 1.2·主周期
+  //   相位对齐：令 fullClassicArr[alignIdx] == s.current_stage[nHist-1]（当前 Level）
+  //   这样现实+预测窗口就"嵌入"在完整周期的 alignIdx - nHist + 1 ~ alignIdx + nForecast 位置
+  // ──────────────────────────────────────────────────────
+  const detected = Math.max(30, +p.detected_period || 120);
+  const fullN = Math.round(detected * 1.2);              // 完整周期长度（含余量，确保 7 阶段扫到）
+  const ffts = Array.isArray(p.fft_components) && p.fft_components.length ? p.fft_components : [{period: detected, amplitude: 1, weight: 1, phase: 0}];
+
+  // 用后端原相同公式生成原始波形（未平移）：rawClassic(t) = Σ amplitude * weight * sin(2π·t/period + phase)
+  function rawClassic(t) {
+    let v = 0;
+    for (const c of ffts) {
+      const period = Math.max(1, +c.period || 30);
+      const amp = +c.amplitude || 0;
+      const w = +c.weight || 0;
+      const ph = +c.phase || 0;
+      v += amp * w * Math.sin((2 * Math.PI / period) * t + ph);
+    }
+    return v;
+  }
+  // 对齐索引：窗口"最后历史点=今天"位于完整周期的什么位置
+  // 选 0.35·fullN，这样左侧有约 35% 周期历程（包含衰退→恐慌），右侧 65%（复苏→狂热）
+  const alignIdx = Math.round(fullN * 0.35);
+  // 原始 rawClassic(alignIdx) 作为基准：求 offset 让 fullClassicArr[alignIdx] = current_L
+  const currentL = +p.current_L;
+  const rawAtAlign = rawClassic(alignIdx);
+  // 再估计整体直流偏置 dc：用窗口内 s.classic_cycle 做最小二乘匹配 rawClassic(n + k), k∈[-alignIdx..]
+  // 简化：dc = 窗口经典均值 - rawClassic(对应位置) 均值
+  const rawWindowVals = s.classic_cycle.map((_, k) => rawClassic((alignIdx - nHist + 1) + k));
+  const m1 = rawWindowVals.reduce((a,b)=>a+b,0) / Math.max(1,rawWindowVals.length);
+  const m2 = s.classic_cycle.reduce((a,b)=>a+b,0) / Math.max(1,s.classic_cycle.length);
+  const dc = m2 - m1;
+  function fullClassic(t) { return rawClassic(t) + dc; }
+  // 生成 fullClassicArr
+  const fullClassicArr = new Array(fullN);
+  let fmin = +Infinity, fmax = -Infinity;
+  for (let i = 0; i < fullN; i++) {
+    const v = fullClassic(i);
+    fullClassicArr[i] = v;
+    if (v < fmin) fmin = v;
+    if (v > fmax) fmax = v;
+  }
+  const totalN = fullN;
+
+  // SVG 尺寸
+  const W = 860, H = 300, padL = 40, padR = 20, padT = 16, padB = 30;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  // Y 范围：把完整周期极值纳入（clip ±4），保证全阶段能看见
+  const absMax = Math.max(4, Math.ceil(Math.max(Math.abs(fmin), Math.abs(fmax)) + 0.5));
+  const yMin = -absMax, yMax = absMax;
+  const xScale = i => padL + (i / Math.max(totalN - 1, 1)) * plotW;
+  const yScale = v => padT + ((yMax - Math.max(yMin, Math.min(yMax, v))) / (yMax - yMin)) * plotH;
+
+  // ── 在线学习 → 预测曲线样式动态 ──────────────────────────────
+  // 现实（current）= 实线（最确定=事实）
+  // 预测（forecast）= 修正次数多 且 MAE 低 → 实线，否则 虚线（容错）
+  const hasCorrection = correctionCount > 0 && !isNaN(lastMAE);
+  const maeHigh = !isNaN(lastMAE) && lastMAE > 0.5;
+  const forecastDash = (!hasCorrection || maeHigh) ? "6 4" : null;   // 虚线=容错
+  const forecastWidth = hasCorrection ? Math.min(2.6, 1.8 + correctionCount * 0.1) : 1.8;
+  // 距离当前越远越淡：forecast 第 0 点 opacity 1 → 最后 1 点 opacity 0.55
+  const forecastOpacityFunc = (i, n) => {
+    if (n <= 1) return 1.0;
+    return Math.max(0.55, 1.0 - (i / Math.max(n - 1, 1)) * 0.45);
+  };
+
+  // ── 窗口定位：现实 / 预测在完整周期的 offset ───────────────
+  const windowStartIdx = alignIdx - nHist + 1;          // 现实起点（60 天前对应完整周期索引）
+  // ── 三条曲线 SVG ────────────────────────────────────────────
+  const { defs: gradClassicDefs, path: classicPath } = _buildGradientPath(
+    fullClassicArr, xScale, yScale, 0,
+    "grad_classic", 1.2, "3 2 1 2", null, "theoretical"
+  );
+  const { defs: gradCurrentDefs, path: currentPath } = _buildGradientPath(
+    s.current_stage, xScale, yScale, windowStartIdx,
+    "grad_current", 2.2, null, null, "live"
+  );
+  const forecastArr = [s.current_stage[nHist - 1], ...s.forecast];
+  const forecastOffset = windowStartIdx + nHist - 1;
+  const { defs: gradForecastDefs, path: forecastPath } = _buildGradientPath(
+    forecastArr, xScale, yScale, forecastOffset,
+    "grad_forecast", forecastWidth, forecastDash, forecastOpacityFunc, "live"
+  );
+
+  // 网格
+  const yTicks = Array.from({ length: 2 * Math.round(absMax / 2) + 1 }, (_, k) => -absMax + k * 2);
+  // 确保含 0
+  if (!yTicks.includes(0)) yTicks.push(0);
+  yTicks.sort((a,b)=>a-b);
+  const gridLines = yTicks.map(v => {
+    const y = yScale(v);
+    const color = v === 0 ? 'var(--border)' : '#21262d';
+    const dash = v === 0 ? '' : 'stroke-dasharray="2 4"';
+    return `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${color}" stroke-width="0.5" ${dash}/>` +
+           `<text x="${padL - 6}" y="${y + 3}" fill="var(--muted)" font-size="9" text-anchor="end">${v > 0 ? '+' : ''}${v}</text>`;
+  }).join('');
+
+  // X 轴标签：
+  // · 完整周期："周期起点 / 周期中 / 周期终点"（粗字 + 紫色）
+  // · 现实/预测窗口：前几个月日期 + +Nd，"今天"对齐标记在 alignIdx
+  const xLabels = [];
+  xLabels.push(`<text x="${xScale(0)}" y="${H - padB + 14}" fill="#a855f7" font-size="9" font-weight="600" text-anchor="start">周期起点</text>`);
+  xLabels.push(`<text x="${xScale(Math.floor(totalN/2))}" y="${H - padB + 14}" fill="#a855f7" font-size="9" font-weight="600" text-anchor="middle">周期中</text>`);
+  xLabels.push(`<text x="${xScale(totalN-1)}" y="${H - padB + 14}" fill="#a855f7" font-size="9" font-weight="600" text-anchor="end">周期终点</text>`);
+  // 日期：窗口内每 10 天
+  for (let i = 0; i < nHist; i += 10) {
+    const x = xScale(windowStartIdx + i);
+    const label = dates[i] ? dates[i].substring(5) : '';
+    xLabels.push(`<text x="${x}" y="${H - padB + 2}" fill="var(--muted)" font-size="9" text-anchor="middle">${label}</text>`);
+  }
+  for (let i = 0; i <= nForecast; i += 5) {
+    const x = xScale(alignIdx + i);
+    xLabels.push(`<text x="${x}" y="${H - padB + 2}" fill="var(--yellow)" font-size="9" text-anchor="middle">+${i}d</text>`);
+  }
+  // "今天"对齐标记（窗口中现实末端 = 当前点）
+  const todayX = xScale(alignIdx);
+  const todayMark = `<line x1="${todayX}" y1="${padT}" x2="${todayX}" y2="${H - padB}" stroke="#a855f7" stroke-width="1" stroke-dasharray="2 3" opacity="0.45"/>` +
+                    `<text x="${todayX + 3}" y="${H - padB + 14}" fill="#a855f7" font-size="9" font-weight="600">← 今天 · ${dates[nHist-1] ? dates[nHist-1].substring(5) : ''}</text>`;
+
+  // 预测分界线：仍在今天对齐位置的"现在→未来"
+  const dividerX = todayX;
+  const divider = `<line x1="${dividerX}" y1="${padT}" x2="${dividerX}" y2="${H - padB}" stroke="var(--yellow)" stroke-width="1" stroke-dasharray="4 4" opacity="0.55"/>` +
+                  `<text x="${dividerX + 4}" y="${padT + 10}" fill="var(--yellow)" font-size="9">预测 →</text>`;
+  const zeroLabel = `<text x="${W - padR}" y="${yScale(0) - 4}" fill="var(--muted)" font-size="8" text-anchor="end">零线 (无偏)</text>`;
+
+  // 窗口区域矩形高亮：明示"现实+预测只是完整周期里的局部片段（=完整性区分）"
+  const winRectX0 = xScale(Math.max(0, windowStartIdx));
+  const winRectX1 = xScale(Math.min(totalN - 1, alignIdx + nForecast - 1));
+  const windowHighlight = `<rect x="${winRectX0}" y="${padT}" width="${winRectX1 - winRectX0}" height="${plotH}" fill="var(--green)" opacity="0.04" stroke="var(--green)" stroke-dasharray="3 3" stroke-width="0.5"/>` +
+                          `<text x="${winRectX1 - 3}" y="${padT + 10}" fill="var(--green)" font-size="9" text-anchor="end" opacity="0.85">↓ 现实+预测窗口 (片段)</text>`;
+
+  // 当前点标注（根据当前 Level 选对应阶段颜色）
+  const lastHistV = s.current_stage[nHist - 1];
+  const curColor = _morphLevelToColor(lastHistV);
+  const curName = _morphLevelToName(lastHistV);
+  const lastHistX = todayX;
+  const lastHistY = yScale(lastHistV);
+  const currentDot = `<circle cx="${lastHistX}" cy="${lastHistY}" r="4" fill="${curColor}" stroke="var(--bg)" stroke-width="1.5"/>` +
+                     `<text x="${lastHistX - 6}" y="${lastHistY - 8}" fill="${curColor}" font-size="9" text-anchor="end" font-weight="600">当前 ${curName} · L=${p.current_L}</text>`;
+
+  // 当前阶段色阶色带（Y 轴左侧图例小色块）
+  const reversed = MORPH_REGIME_PALETTE.slice().reverse();
+  const regimeLegendSwatches = reversed.map(([lo, col, name], i) => {
+    const yy = padT + 4 + i * 16;
+    const loLabel = lo === -Infinity ? "" : (lo > 0 ? `≥+${Math.abs(lo)}` : `≥${lo}`);
+    const prev = i > 0 ? reversed[i - 1] : null;
+    const hiLabel = prev && prev[0] !== +Infinity
+      ? (prev[0] > 0 ? `<+${Math.abs(prev[0])}` : `<${prev[0]}`)
+      : "";
+    return `<rect x="4" y="${yy}" width="10" height="10" fill="${col}" stroke="#0b0d10" stroke-width="0.5"/>
+            <text x="17" y="${yy + 9}" fill="var(--muted)" font-size="8">${name}${loLabel||hiLabel?` · ${(loLabel + (loLabel&&hiLabel?' ':'') + hiLabel).trim()}`:''}</text>`;
+  }).join("");
+
+  const svg = `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:${H}px">
+      <defs>
+        ${gradClassicDefs}
+        ${gradCurrentDefs}
+        ${gradForecastDefs}
+      </defs>
+      ${gridLines}
+      <!-- 阶段色阶图例 -->
+      <g>
+        ${regimeLegendSwatches}
+      </g>
+      <!-- 窗口高亮：现实+预测 vs 完整周期的完整性区分 -->
+      ${windowHighlight}
+      <!-- ② 理论拟合曲线（降饱和阶段色 × 细点划 × 完整 144 点 — FFT 合波 + 历史 dc 校准；①4 年教科书级见独立卡） -->
+      ${classicPath}
+      <!-- ③ 现阶段（真实）曲线（高饱和阶段色 × 粗实线 → 仅窗口片段；虚实线维度：③=实 ④=虚实动态 区分） -->
+      ${currentPath}
+      <!-- ④ 预测轨迹（高饱和阶段色 × 虚实/粗细随在线学习动态 → 远端渐淡；完整性维度：窗口片段） -->
+      ${forecastPath}
+      <!-- 今天对齐线（紫）+ 预测开始（黄） -->
+      ${todayMark}
+      ${divider}
+      ${zeroLabel}
+      ${currentDot}
+      <!-- X 轴 -->
+      <line x1="${padL}" y1="${H - padB}" x2="${W - padR}" y2="${H - padB}" stroke="var(--border)" stroke-width="0.5"/>
+      ${xLabels.join('')}
+    </svg>`;
+
+  document.getElementById('morph-cycle-chart').innerHTML = svg;
+
+  // ── 顶部信息栏（主图 = ②理论拟合/③现阶段/④预测；① 4 年教科书级见独立卡） ──
+  const fullMinIdx = fullClassicArr.indexOf(Math.min(...fullClassicArr));
+  const fullMaxIdx = fullClassicArr.indexOf(Math.max(...fullClassicArr));
+  const minName = _morphLevelToName(fullClassicArr[fullMinIdx]);
+  const maxName = _morphLevelToName(fullClassicArr[fullMaxIdx]);
+  // 4 年教科书周期（如存在；后端 cycle_4y 在 data.params.cycle_4y 下，也支持顶层透传）
+  const c4 = p.cycle_4y || (data && data.params && data.params.cycle_4y);
+  const fourYearHint = c4
+    ? ` · 4 年进度 ${(c4.progress * 100).toFixed(1)}% · 4Y阶段 ${c4.current_stage_name}（L=${c4.current_level}）`
+    : "";
+  const baseInfo = `中短周期 ${detected}天 · 理论拟合 ${totalN}点（${minName}↔${maxName}）· 当前 L=${p.current_L}(${curName}) T=${p.current_T}${fourYearHint}`;
+  const corrInfo = hasCorrection
+    ? ` · 在线学习×${correctionCount} · MAE=${lastMAE.toFixed(3)} · ${maeHigh ? '⚠④预测虚线=高误差容错' : '④预测实线=高置信'}`
+    : (autoT.triggered
+        ? ` · 本次自动修正：回填 ${autoT.backfilled} · MAE ${autoT.mae_before ?? '--'}→${autoT.mae_after ?? '--'}`
+        : correctionCount === 0
+          ? ` · （未积累样本，等待④的在线学习校正）`
+          : ` · 已修正×${correctionCount}（冷却中）`);
+  document.getElementById('morph-cycle-info').textContent = baseInfo + corrInfo;
+
+  // ── 图例（②③④ 主图三线段；①见独立卡） ───────────────────
+  const fftInfo = ffts.map(c => `P${c.period}d(A${c.amplitude},w${(c.weight*100).toFixed(0)}%)`).join(' + ');
+  const theorHues = MORPH_REGIME_PALETTE.map(([_, hex]) => _desaturateLighten(hex, 0.5, 18)).join(',');
+  const forecastStyleLegend = hasCorrection
+    ? (maeHigh
+        ? `<span style="display:inline-block;width:16px;height:2px;background:linear-gradient(to right,#a855f7,#3b82f6,#eab308,#10b981,#f97316,#dc2626);vertical-align:middle;border-top:1px dashed #888"></span> ④ 预测（⚠高 MAE 虚线容错 · MAE=${lastMAE.toFixed(2)} · 远端渐淡 · 窗口局部）`
+        : `<span style="display:inline-block;width:16px;height:2.2px;background:linear-gradient(to right,#a855f7,#3b82f6,#eab308,#10b981,#f97316,#dc2626);vertical-align:middle"></span> ④ 预测（实线高置信 · 在线学习×${correctionCount} · 远端渐淡 · 窗口局部）`)
+    : `<span style="display:inline-block;width:16px;height:2px;background:linear-gradient(to right,#a855f7,#3b82f6,#eab308,#10b981,#f97316,#dc2626);vertical-align:middle;border-top:1px dashed #666"></span> ④ 预测（虚线=未修正容错 · 远端渐淡 · 窗口局部）`;
+
+  document.getElementById('morph-cycle-legend').innerHTML = `
+    <span><span style="display:inline-block;width:16px;height:2px;background:linear-gradient(to right,${theorHues});vertical-align:middle;border-top:1px dashed #555"></span> ② 理论拟合（FFT=${fftInfo} · 完整中短周期 · 完整局部对照）</span>
+    <span><span style="display:inline-block;width:16px;height:2.2px;background:linear-gradient(to right,#a855f7,#3b82f6,#eab308,#10b981,#f97316,#dc2626);vertical-align:middle"></span> ③ 现阶段（实线·高饱和 · 事实 · 窗口局部）</span>
+    <span>${forecastStyleLegend}</span>
+  `;
+}
+
+async function loadMorphCycle() {
+  try {
+    const data = await yjFetch('/api/morph/cycle?symbol=BTCUSDT&hist=60&forecast=20', 30000);
+    if (data.error || !data.ok) {
+      const msg = data.error || '未知错误';
+      document.getElementById('morph-cycle-chart').innerHTML = `<div style="color:var(--red);padding:8px">加载失败: ${msg}</div>`;
+      const el4y = document.getElementById('morph-4y-chart');
+      if (el4y) el4y.innerHTML = `<div style="color:var(--red);padding:16px;text-align:center;font-size:12px">加载失败: ${msg}</div>`;
+      morphCycleLoaded = false;
+      return;
+    }
+    renderMorphCycle(data);
+    // ① 4 年教科书级周期定位（后端 cycle_4y 在 data.params.cycle_4y 下，也支持顶层透传）
+    const c4 = data.cycle_4y || (data.params && data.params.cycle_4y);
+    if (c4 && typeof render4YearCycleBar === 'function') {
+      render4YearCycleBar(c4);
+    }
+    morphCycleLoaded = true;
+    // 同步尝试加载修正指标
+    if (window._morphMetricsRequested !== true) {
+      window._morphMetricsRequested = true;
+      loadMorphMetrics();
+    }
+  } catch (err) {
+    const isProxy = err.message && (err.message.includes('proxy_502') || err.message.includes('502') || err.message.includes('Failed to fetch'));
+    const msg = isProxy ? '请求被代理拦截 (502)' : '加载失败: ' + err.message;
+    document.getElementById('morph-cycle-chart').innerHTML = `<div style="color:var(--red);padding:8px">${msg}</div>`;
+    const el4y = document.getElementById('morph-4y-chart');
+    if (el4y) el4y.innerHTML = `<div style="color:var(--red);padding:16px;text-align:center;font-size:12px">${msg}</div>`;
+    morphCycleLoaded = false;
+  }
+}
+
+// ── 修正指标 + 误差历史图 ────────────────────────────────────────
+function renderMorphMetrics(data) {
+  const m = data.metrics || {};
+  const state = m.correction_state;
+  const summary = document.getElementById('morph-metrics-summary');
+  if (!m.sample_count || m.sample_count === 0) {
+    summary.innerHTML = '<span style="color:var(--yellow)">📡 等待积累预测记录（当前 0 条回填）。每次生成周期曲线会记录 20 条预测快照，待目标日期到达后可回填。</span>';
+    document.getElementById('morph-correction-state').innerHTML = '';
+    return;
+  }
+  const byH = m.by_horizon || {};
+  const byHStr = Object.keys(byH).sort((a,b)=>+a - +b).slice(0, 8).map(h => {
+    const d = byH[h];
+    return `<span style="padding:2px 6px;background:var(--border);border-radius:4px;margin-right:4px">H${h}d · MAE ${d.mae} · n=${d.count}</span>`;
+  }).join('');
+  summary.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+      <span>📊 样本数: <b style="color:var(--text)">${m.sample_count}</b></span>
+      <span>MAE: <b style="color:var(--text)">${m.mae ?? '--'}</b></span>
+      <span>RMSE: <b style="color:var(--text)">${m.rmse ?? '--'}</b></span>
+      ${byHStr ? `<div style="flex:1;min-width:100%">分 horizon MAE: ${byHStr}</div>` : ''}
+    </div>`;
+
+  // 修正状态
+  if (state) {
+    const wc = state.weight_correction || {};
+    const tc = state.tangent_correction || {};
+    const wcStr = Object.keys(wc).length ? '{' + Object.entries(wc).map(([k,v]) => `P${k}:${v.toFixed(3)}`).join(', ') + '}' : '{}';
+    document.getElementById('morph-correction-state').innerHTML =
+      `✅ 修正次数: <b>${state.correction_count}</b> · 上次 MAE: <b>${state.last_mae ?? '--'}</b> · 权重修正: ${wcStr} · 切线修正(m0=${tc.m0_mul?.toFixed(3)}, m1=${tc.m1_mul?.toFixed(3)}, bias=${tc.bias?.toFixed(3)}) · 最近修正: ${state.last_corrected_at ?? '--'}`;
+  } else {
+    document.getElementById('morph-correction-state').innerHTML = '⏳ 尚未触发修正。积累 ≥ 3 条回填后，点击「触发修正」。';
+  }
+
+  // 误差历史图
+  const series = m.error_series || [];
+  if (series.length < 3) {
+    document.getElementById('morph-error-chart').innerHTML = `<div style="color:var(--muted);padding:16px;text-align:center;font-size:12px">误差历史不足 ${series.length}/3 条</div>`;
+    return;
+  }
+  const n = series.length;
+  const W = 860, H = 140, padL = 36, padR = 12, padT = 10, padB = 24;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const errors = series.map(p => +p.error);
+  const absErr = errors.map(e => Math.abs(e));
+  const yMax = Math.max(0.5, ...absErr);
+  const xScale = i => padL + (i / Math.max(n - 1, 1)) * plotW;
+  const yScale = v => padT + ((yMax - v) / (2 * yMax)) * plotH;
+  const yScaleNeg = v => padT + ((yMax - (-v)) / (2 * yMax)) * plotH;
+  const zeroY = yScale(0);
+
+  // 条形 + 零线
+  const bars = series.map((p, i) => {
+    const e = +p.error;
+    const x = xScale(i);
+    const color = e >= 0 ? 'var(--green)' : 'var(--red)';
+    const y0 = zeroY;
+    const y1 = e >= 0 ? yScale(e) : yScaleNeg(-e);
+    const top = Math.min(y0, y1);
+    const h = Math.abs(y1 - y0);
+    return `<rect x="${x-1}" y="${top}" width="2" height="${h}" fill="${color}" opacity="0.7"/>`;
+  }).join('');
+
+  const xLabels = [];
+  for (let i = 0; i < n; i += Math.max(1, Math.floor(n/8))) {
+    const x = xScale(i);
+    xLabels.push(`<text x="${x}" y="${H-padB+14}" fill="var(--muted)" font-size="9" text-anchor="middle">${String(series[i].t).substring(5)}</text>`);
+  }
+  const yTicks = [-yMax, -yMax/2, 0, yMax/2, yMax];
+  const gridLines = yTicks.map(v => {
+    const y = yScale(Math.abs(v));
+    return `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="${v===0?'var(--border)':'#21262d'}" stroke-width="0.5" stroke-dasharray="${v===0?'':'2 4'}"/>
+            <text x="${padL-4}" y="${y+3}" fill="var(--muted)" font-size="9" text-anchor="end">${v>0?'+':''}${v.toFixed(2)}</text>`;
+  }).join('');
+
+  document.getElementById('morph-error-chart').innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:${H}px">
+      ${gridLines}
+      ${bars}
+      ${xLabels.join('')}
+    </svg>
+    <div style="font-size:10px;color:var(--muted);padding:0 4px">
+      <span style="color:var(--green)">● 绿柱：预测偏低（实际 > 预测）</span>
+      &nbsp;·&nbsp;
+      <span style="color:var(--red)">● 红柱：预测偏高（实际 < 预测）</span>
+      &nbsp;·&nbsp;柱高 = |误差|，零线居中
+    </div>`;
+}
+
+async function loadMorphMetrics() {
+  try {
+    const data = await yjFetch('/api/morph/metrics?symbol=BTCUSDT&lookback=60', 15000);
+    if (data.error || !data.ok) {
+      document.getElementById('morph-metrics-summary').innerHTML = `<span style="color:var(--red)">加载失败: ${data.error || '未知'}</span>`;
+      return;
+    }
+    renderMorphMetrics(data);
+  } catch (err) {
+    const msg = err.message?.includes('proxy_502') ? '代理拦截(502)' : err.message;
+    document.getElementById('morph-metrics-summary').innerHTML = `<span style="color:var(--red)">加载失败: ${msg}</span>`;
+  }
+}
+
+async function triggerMorphCorrect() {
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = '修正中...'; }
+  try {
+    const data = await yjFetch('/api/morph/correct?symbol=BTCUSDT&min=3', 45000);
+    if (!data.ok) {
+      alert(`修正失败: ${data.error || '未知'}`);
+      return;
+    }
+    const r = data.result || {};
+    alert(`✅ 修正完成\n回填: ${r.backfilled} 条\n已回填总数: ${r.filled_total}\n修正前 MAE: ${r.mae_before ?? '--'}\n修正后(模拟) MAE: ${r.mae_after ?? '--'}\n原因: ${r.reason}`);
+    loadMorphMetrics();
+    // 触发修正后，周期曲线缓存已被服务端清除，重新拉取
+    if (morphCycleLoaded) loadMorphCycle();
+  } catch (err) {
+    alert('修正异常: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '触发修正'; }
+  }
+}
+
 async function loadYijingData() {
   try {
     // 并行加载账户总览
@@ -3634,15 +4505,15 @@ async function loadYijingPositions() {
     const okxAvail = okxBalance.avail || 0;
     const balanceHtml = okxEq > 0 ? `
       <div style="display:flex;gap:12px;margin-bottom:10px;padding:8px 12px;background:rgba(63,185,80,0.08);border-radius:6px;border:1px solid rgba(63,185,80,0.2)">
-        <div><span style="font-size:10px;color:var(--muted)">HL总权益</span> <span style="font-size:14px;font-weight:700;color:var(--green)">$${okxEq.toFixed(2)}</span></div>
+        <div><span style="font-size:10px;color:var(--muted)">OKX总权益</span> <span style="font-size:14px;font-weight:700;color:var(--green)">$${okxEq.toFixed(2)}</span></div>
         <div><span style="font-size:10px;color:var(--muted)">可用</span> <span style="font-size:14px;font-weight:700">$${okxAvail.toFixed(2)}</span></div>
       </div>` : '';
 
-    // Hyperliquid 实盘持仓列表
+    // OKX 实盘持仓列表
     let okxPosHtml = '';
     const validOkxPos = okxPositions.filter(p => !p.error);
     if (okxPositions.length > 0 && okxPositions[0].error) {
-      okxPosHtml = `<div style="color:var(--red);padding:6px;font-size:11px">HL API错误: ${okxPositions[0].error}</div>`;
+      okxPosHtml = `<div style="color:var(--red);padding:6px;font-size:11px">OKX API错误: ${okxPositions[0].error}</div>`;
     } else if (validOkxPos.length === 0) {
       okxPosHtml = `<div style="color:var(--muted);font-style:italic;padding:6px;font-size:11px">📭 OKX实盘无持仓</div>`;
     } else {
@@ -3730,7 +4601,7 @@ async function loadYijingPositions() {
         ${haltBadge}
         <span style="font-size:10px;color:var(--muted)">日期: ${risk.date||'--'}</span>
       </div>
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Hyperliquid 实盘持仓:</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">OKX 实盘持仓:</div>
       ${okxPosHtml}
       ${localPosHtml}
     `;

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dreambuddy.daily_scheduler</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/python3</string>
+        <string>-u</string>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/daily_scheduler_daemon.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading</string>
+
+    <!-- 用户登录后自动启动，并保持常驻（崩溃自动重启） -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONIOENCODING</key>
+        <string>utf-8</string>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+        <key>LANG</key>
+        <string>en_US.UTF-8</string>
+        <key>LC_ALL</key>
+        <string>en_US.UTF-8</string>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/logs/daily_scheduler_stdouterr.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/logs/daily_scheduler_stdouterr.log</string>
+</dict>
+</plist>
