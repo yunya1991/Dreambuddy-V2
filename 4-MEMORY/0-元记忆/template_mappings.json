@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": 1787073743.7198417,
+  "updated_at": 1787266070.351497,
   "mappings": [
     {
       "parent_id": "brainstorming",
@@ -534,6 +534,24 @@
       "success_rate": 1.0
     },
     {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1787104433620",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787108720.556086,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "brainstorming",
+      "applied_id": "APP-1787193464716",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787195889.963259,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
       "parent_id": "t2-trade-execution",
       "applied_id": "APP-TRD-1786251283329",
       "success_count": 0,
@@ -593,6 +611,114 @@
       "success_count": 0,
       "fail_count": 1,
       "last_verified": 1786974962.4293804,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787116576853",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787119599.870723,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787144521341",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787154186.181996,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787166887758",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787168698.4089851,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787168698412",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787170508.814822,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787170508818",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787173541.387865,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787177771919",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787178978.869129,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787195889966",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787197093.872788,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787199513317",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787206161.211835,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787206161215",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787208590.312609,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787212223183",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787214648.982837,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787221277552",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787222483.567699,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t2-trade-execution",
+      "applied_id": "APP-TRD-1787235752719",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787236961.225149,
       "total_count": 1,
       "success_rate": 0.0
     },
@@ -683,6 +809,96 @@
       "success_count": 0,
       "fail_count": 1,
       "last_verified": 1787073743.7198405,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787108720560",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787116576.850684,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787119599873",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787121426.966542,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787132985725",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787135421.735114,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787139071914",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787144521.3388958,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787154186185",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787157209.3530061,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787157209357",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787166887.75534,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787192243415",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787193464.71173,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787197093875",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787199513.3150542,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787250305017",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787251518.1462772,
+      "total_count": 1,
+      "success_rate": 0.0
+    },
+    {
+      "parent_id": "t1-strategy-synthesis",
+      "applied_id": "APP-TRD-1787263039042",
+      "success_count": 0,
+      "fail_count": 1,
+      "last_verified": 1787266070.351497,
       "total_count": 1,
       "success_rate": 0.0
     },

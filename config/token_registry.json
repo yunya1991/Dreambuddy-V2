@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "updated_at": "2026-08-20T21:00:00+08:00",
+  "source": "manual",
+  "description": "公共代币池 - 单一数据源，各子系统启动时读取，8h自动刷新内存。env/命令行参数仅作override",
+  "refresh_interval_hours": 8,
+  "tokens": [
+    {"symbol": "BTC", "name": "Bitcoin", "category": "crypto", "enabled": true},
+    {"symbol": "ETH", "name": "Ethereum", "category": "crypto", "enabled": true},
+    {"symbol": "SOL", "name": "Solana", "category": "crypto", "enabled": true},
+    {"symbol": "BNB", "name": "BNB", "category": "crypto", "enabled": true},
+    {"symbol": "OKB", "name": "OKB", "category": "crypto", "enabled": true},
+    {"symbol": "UNI", "name": "Uniswap", "category": "crypto", "enabled": true},
+    {"symbol": "HYPE", "name": "Hyperliquid", "category": "crypto", "enabled": true},
+    {"symbol": "PUMP", "name": "Pump", "category": "crypto", "enabled": true},
+    {"symbol": "LINK", "name": "Chainlink", "category": "crypto", "enabled": true},
+    {"symbol": "XAU", "name": "Gold", "category": "metal", "enabled": true},
+    {"symbol": "XAG", "name": "Silver", "category": "metal", "enabled": true},
+    {"symbol": "MU", "name": "Micron", "category": "stock", "enabled": true},
+    {"symbol": "SKHYNIX", "name": "SK hynix", "category": "stock", "enabled": true},
+    {"symbol": "GOOGL", "name": "Alphabet", "category": "stock", "enabled": true},
+    {"symbol": "NVDA", "name": "NVIDIA", "category": "stock", "enabled": true},
+    {"symbol": "AMZN", "name": "Amazon", "category": "stock", "enabled": true},
+    {"symbol": "SNDK", "name": "SanDisk", "category": "stock", "enabled": true},
+    {"symbol": "SPCX", "name": "SpaceX", "category": "stock", "enabled": true},
+    {"symbol": "MSTR", "name": "MicroStrategy", "category": "stock", "enabled": true},
+    {"symbol": "COIN", "name": "Coinbase", "category": "stock", "enabled": true},
+    {"symbol": "CRCL", "name": "Circle", "category": "stock", "enabled": true},
+    {"symbol": "BMNR", "name": "Bitmine Immersion", "category": "stock", "risk_flag": "micro_cap", "enabled": true}
+  ]
+}

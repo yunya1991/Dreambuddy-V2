@@ -1,0 +1,666 @@
+{
+  "checkpoint_id": "ckpt_20260821010254_fe629f",
+  "cycle_id": "trade_20260821010242_c721a3",
+  "node_id": "A9",
+  "state_snapshot": {
+    "intent": {
+      "direction": "SHORT",
+      "confidence": 0.842
+    },
+    "market": null,
+    "memory": null,
+    "config": null,
+    "blueprint": null,
+    "plan": {
+      "planned_chain": "A",
+      "selected_nodes": [
+        {
+          "node_id": "C1",
+          "name": "技术扫描",
+          "chain": "C",
+          "priority": 0,
+          "allocated_tokens": 200,
+          "estimated_latency_ms": 100,
+          "depends_on": [],
+          "tags": [
+            "technical",
+            "classic",
+            "trend"
+          ],
+          "condition": null
+        },
+        {
+          "node_id": "C2",
+          "name": "动量分析",
+          "chain": "C",
+          "priority": 0,
+          "allocated_tokens": 200,
+          "estimated_latency_ms": 100,
+          "depends_on": [],
+          "tags": [
+            "momentum",
+            "classic",
+            "divergence"
+          ],
+          "condition": null
+        },
+        {
+          "node_id": "C3",
+          "name": "波动率分析",
+          "chain": "C",
+          "priority": 0,
+          "allocated_tokens": 200,
+          "estimated_latency_ms": 100,
+          "depends_on": [],
+          "tags": [
+            "volatility",
+            "classic",
+            "atr",
+            "bollinger"
+          ],
+          "condition": null
+        },
+        {
+          "node_id": "A2",
+          "name": "综合分析",
+          "chain": "A",
+          "priority": 0,
+          "allocated_tokens": 200,
+          "estimated_latency_ms": 80,
+          "depends_on": [],
+          "tags": [
+            "analysis",
+            "fusion",
+            "multi-dimension"
+          ],
+          "condition": null
+        },
+        {
+          "node_id": "A4",
+          "name": "门禁闸门",
+          "chain": "A",
+          "priority": 0,
+          "allocated_tokens": 200,
+          "estimated_latency_ms": 50,
+          "depends_on": [],
+          "tags": [
+            "gate",
+            "risk-control",
+            "practice-theory"
+          ],
+          "condition": null
+        },
+        {
+          "node_id": "A5",
+          "name": "交易执行",
+          "chain": "A",
+          "priority": 0,
+          "allocated_tokens": 200,
+          "estimated_latency_ms": 60,
+          "depends_on": [],
+          "tags": [
+            "execution",
+            "trade",
+            "final-decision"
+          ],
+          "condition": null
+        },
+        {
+          "node_id": "A9",
+          "name": "离场决策",
+          "chain": "A",
+          "priority": 0,
+          "allocated_tokens": 200,
+          "estimated_latency_ms": 70,
+          "depends_on": [],
+          "tags": [
+            "exit",
+            "stop-loss",
+            "take-profit"
+          ],
+          "condition": null
+        },
+        {
+          "node_id": "A6",
+          "name": "情报监控",
+          "chain": "A",
+          "priority": 2,
+          "allocated_tokens": 3700,
+          "estimated_latency_ms": 80,
+          "depends_on": [],
+          "tags": [
+            "regime",
+            "monitor",
+            "intelligence"
+          ],
+          "condition": null
+        },
+        {
+          "node_id": "A_YJ_INFER",
+          "name": "易经卦象推理",
+          "chain": "A",
+          "priority": 1,
+          "allocated_tokens": 100,
+          "estimated_latency_ms": 500,
+          "depends_on": [],
+          "tags": [
+            "inference",
+            "yijing",
+            "bcrm",
+            "external"
+          ],
+          "condition": null
+        }
+      ],
+      "budget": {
+        "total_budget": 6000,
+        "allocated": {
+          "C1": 200,
+          "C2": 200,
+          "C3": 200,
+          "A2": 200,
+          "A4": 200,
+          "A5": 200,
+          "A9": 200,
+          "A_YJ_INFER": 100,
+          "A6": 3700
+        },
+        "reserved": 900,
+        "mode": "standard",
+        "total_allocated": 5200,
+        "remaining": -100
+      },
+      "chain_spec": {
+        "chain_id": "A",
+        "name": "执行环·技术分析主线",
+        "description": "C1技术面→C2动量→C3波动率→A1发现矛盾(含A0)→A2辩证矛盾(含C/F信号)→A3解决矛盾→A4门禁→A5执行→A9离场",
+        "node_ids": [
+          "C1",
+          "C2",
+          "C3",
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A9"
+        ],
+        "optional_nodes": [
+          "A6"
+        ],
+        "scenario_nodes": {
+          "BULL_LOW_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BULL_LOW_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BULL_LOW_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "BULL_NORMAL_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BULL_NORMAL_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BULL_NORMAL_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "BULL_HIGH_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BULL_HIGH_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BULL_HIGH_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "BULL_EXTREME_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BULL_EXTREME_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BULL_EXTREME_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_LOW_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_LOW_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_LOW_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_NORMAL_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_NORMAL_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_NORMAL_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_HIGH_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_HIGH_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_HIGH_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_EXTREME_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_EXTREME_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "BEAR_EXTREME_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_LOW_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_LOW_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_LOW_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_NORMAL_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_NORMAL_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_NORMAL_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_HIGH_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_HIGH_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_HIGH_EXHAUSTION": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_EXTREME_ACCELERATING": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_EXTREME_DECELERATING": [
+            "A_YJ_INFER"
+          ],
+          "NEUTRAL_EXTREME_EXHAUSTION": [
+            "A_YJ_INFER"
+          ]
+        }
+      },
+      "conditions": {},
+      "rationale": "链路=A(执行环·技术分析主线)，节点=9(必须7+可选2)，置信度=30%, 场景=NEUTRAL_LOW_DECELERATING",
+      "estimated_total_tokens": 5200,
+      "estimated_total_latency_ms": 1140,
+      "capability_id": "trading"
+    },
+    "results": {
+      "C1": {
+        "node_id": "C1",
+        "status": "success",
+        "outputs": {
+          "price": 0.09065,
+          "ema20": 0.09,
+          "ema50": 0.09,
+          "ema200": 0.08,
+          "rsi": 77.0,
+          "macd": 0,
+          "macd_signal": 0,
+          "vol_ratio": 1.0,
+          "atr_pct": 0.0071,
+          "regime": "RANGE",
+          "scores": {
+            "long": 0.15,
+            "short": 0.23,
+            "hold": 0.1
+          },
+          "rationale": [
+            "[C1技术扫描] 价格=$0.09 | RSI=77.0 | 量比=1.00x",
+            "偏多排列（2/3）",
+            "RSI=77.0 超买，回调风险高",
+            "MACD 死叉（零轴上）",
+            "震荡行情，建议观望",
+            "  方向: SHORT | 置信度: 37.7%"
+          ]
+        },
+        "confidence": 0.377,
+        "direction": "SHORT",
+        "error": null,
+        "error_code": null,
+        "latency_ms": 0.17891702009364963,
+        "tokens_used": 0,
+        "retries": 0,
+        "degraded": false
+      },
+      "C2": {
+        "node_id": "C2",
+        "status": "success",
+        "outputs": {
+          "momentum_score": -0.05,
+          "divergence": "none",
+          "price_momentum": {
+            "change_1h": 0.0,
+            "change_4h": 0.012509999999999999,
+            "change_24h": 0.027200000000000002
+          },
+          "rsi_momentum": 77.0,
+          "macd_momentum": {
+            "macd": 0,
+            "signal": 0,
+            "histogram": 0
+          },
+          "scores": {
+            "long": 0.1,
+            "short": 0.15
+          },
+          "rationale": [
+            "[C2动量分析] 动量得分=-0.05 | 背离=none",
+            "动量平稳：4h(0.0%) ≈ 24h平均(0.0%)",
+            "RSI动量偏多(77.0)",
+            "MACD动量偏空(macd=0.000, signal=0.000)",
+            "  方向: SHORT | 置信度: 53.0%"
+          ]
+        },
+        "confidence": 0.53,
+        "direction": "SHORT",
+        "error": null,
+        "error_code": null,
+        "latency_ms": 0.01687504118308425,
+        "tokens_used": 0,
+        "retries": 0,
+        "degraded": false
+      },
+      "C3": {
+        "node_id": "C3",
+        "status": "success",
+        "outputs": {
+          "volatility_level": "low",
+          "squeeze": false,
+          "atr": 0,
+          "atr_pct": 0.0071,
+          "atr_change": 0,
+          "bollinger": {
+            "upper": 0.09065,
+            "middle": 0.09065,
+            "lower": 0.09065,
+            "width": 0.05
+          },
+          "volume_ratio": 1.0,
+          "scores": {
+            "long": 0,
+            "short": 0.15,
+            "hold": 0.25
+          },
+          "rationale": [
+            "[C3波动率] 级别=low | ATR=0.7% | 带宽=5.0%",
+            "低波动(ATR=0.7%)，方向不明",
+            "正常布林带宽(5.0%)",
+            "触及布林上轨(0.09)，超买",
+            "  方向: HOLD | 置信度: 62.5%"
+          ]
+        },
+        "confidence": 0.625,
+        "direction": "HOLD",
+        "error": null,
+        "error_code": null,
+        "latency_ms": 0.012082979083061218,
+        "tokens_used": 0,
+        "retries": 0,
+        "degraded": false
+      },
+      "A2": {
+        "node_id": "A2",
+        "status": "success",
+        "outputs": {
+          "dimension_scores": {
+            "technical": {
+              "direction": "SHORT",
+              "confidence": 1.0,
+              "sources": [
+                {
+                  "node": "C1",
+                  "direction": "SHORT",
+                  "confidence": 0.377
+                },
+                {
+                  "node": "C2",
+                  "direction": "SHORT",
+                  "confidence": 0.53
+                },
+                {
+                  "node": "C3",
+                  "direction": "HOLD",
+                  "confidence": 0.625
+                }
+              ]
+            },
+            "subsystem": {
+              "direction": "HOLD",
+              "confidence": 0.3,
+              "sources": [
+                "none"
+              ]
+            },
+            "fundamental": {
+              "direction": "HOLD",
+              "confidence": 0.3,
+              "source": "none"
+            },
+            "research": {
+              "direction": "HOLD",
+              "confidence": 0.3,
+              "source": "none"
+            },
+            "sentiment": {
+              "direction": "HOLD",
+              "confidence": 0.3,
+              "source": "none"
+            }
+          },
+          "long_score": 0.0,
+          "short_score": 0.3,
+          "diff": 0.3,
+          "active_dimensions": 1,
+          "rationale": [
+            "[A2综合分析] 跨维度融合（含子系统信号）",
+            "  technical: SHORT (conf=100%, 权重30%, 来源=[{'node': 'C1', 'direction': 'SHORT', 'confidence': 0.377}, {'node': 'C2', 'direction': 'SHORT', 'confidence': 0.53}, {'node': 'C3', 'direction': 'HOLD', 'confidence': 0.625}])",
+            "  subsystem: HOLD (conf=30%, 权重25%, 来源=['none'])",
+            "  fundamental: HOLD (conf=30%, 权重20%, 来源=['none'])",
+            "  research: HOLD (conf=30%, 权重15%, 来源=['none'])",
+            "  sentiment: HOLD (conf=30%, 权重10%, 来源=['none'])",
+            "  综合: SHORT | 置信度 30.0% | 多空差 30.0%",
+            "  有效维度: 1/5"
+          ]
+        },
+        "confidence": 0.3,
+        "direction": "SHORT",
+        "error": null,
+        "error_code": null,
+        "latency_ms": 0.07791694952175021,
+        "tokens_used": 0,
+        "retries": 0,
+        "degraded": false
+      },
+      "A4": {
+        "node_id": "A4",
+        "status": "success",
+        "outputs": {
+          "gate_passed": true,
+          "gate_reason": "置信度84% ≥ 门槛62%，允许开仓",
+          "rationale": [
+            "[A4/A7 门禁] 置信度: 84% | 门槛: 62%",
+            "方向: SHORT",
+            "✅ A7 闸门通过: 84% ≥ 62%",
+            "[A8 知行合一] 意图=30% vs 执行=84% | Gap=+54%",
+            "⚠️ 知行偏差大，建议反思"
+          ]
+        },
+        "confidence": 0.842,
+        "direction": "SHORT",
+        "error": null,
+        "error_code": null,
+        "latency_ms": 0.05329097621142864,
+        "tokens_used": 0,
+        "retries": 0,
+        "degraded": false
+      },
+      "A5": {
+        "node_id": "A5",
+        "status": "success",
+        "outputs": {
+          "rationale": [
+            "[A5交易执行] SHORT ARB @ $0.0906",
+            "  仓位: 5.00 USDT",
+            "  Kelly 仓位模型: eq=0.0USDT kelly=15.00% conf=1.00 vol=1.50 max=15%",
+            "  杠杆: 5x (置信度=0.84 ATR%=0.7%)",
+            "  动态ATR乘数: 1.11x",
+            "  ATR止损: 1.11x ATR (0.79%)",
+            "  R:R=2.0:1 止盈",
+            "  止损: $0.0914",
+            "  止盈: $0.0892",
+            "  R:R: 2.00:1",
+            "  [A7门禁] 通过 (校准置信84.2% >= 65%)"
+          ],
+          "trade_order": {
+            "action": "SHORT",
+            "coin": "ARB",
+            "entry_price": 0.09065,
+            "position_size": 5.0,
+            "leverage": 5,
+            "stop_loss": 0.0914,
+            "take_profit": 0.0892,
+            "risk_per_trade": 0.03950000000000001,
+            "rr_ratio": 2.0,
+            "stop_strategy": "atr",
+            "take_strategy": "ratio"
+          },
+          "gate_passed": true,
+          "a7_gate": {
+            "gate_passed": true,
+            "gate_result": "passed",
+            "calibrated_confidence": 0.842,
+            "confidence_threshold": 0.62,
+            "direction": "SHORT",
+            "history": {
+              "total_trades": 0,
+              "win_trades": 0,
+              "win_rate": 0.0,
+              "loss_streak": 0,
+              "similar_trades_count": 0,
+              "similar_win_rate": 0
+            }
+          }
+        },
+        "confidence": 0.842,
+        "direction": "SHORT",
+        "error": null,
+        "error_code": null,
+        "latency_ms": 0.07958401693031192,
+        "tokens_used": 0,
+        "retries": 0,
+        "degraded": false
+      },
+      "A9": {
+        "node_id": "A9",
+        "status": "success",
+        "outputs": {
+          "rationale": [
+            "[A9离场] 无需离场，继续持有",
+            "  当前盈亏: +0.00%"
+          ],
+          "exit_decision": "HOLD",
+          "exit_reason": "",
+          "exit_price": 0.09065,
+          "current_price": 0.09065,
+          "entry_price": 0.09065,
+          "direction": "SHORT",
+          "leverage": 5
+        },
+        "confidence": 0.6,
+        "direction": "HOLD",
+        "error": null,
+        "error_code": null,
+        "latency_ms": 0.06233301246538758,
+        "tokens_used": 0,
+        "retries": 0,
+        "degraded": false
+      }
+    },
+    "trace": [
+      {
+        "node_id": "C1",
+        "status": "success",
+        "confidence": 0.377,
+        "direction": "SHORT",
+        "ts": "2026-08-21T01:02:54.161121"
+      },
+      {
+        "node_id": "C2",
+        "status": "success",
+        "confidence": 0.53,
+        "direction": "SHORT",
+        "ts": "2026-08-21T01:02:54.163329"
+      },
+      {
+        "node_id": "C3",
+        "status": "success",
+        "confidence": 0.625,
+        "direction": "HOLD",
+        "ts": "2026-08-21T01:02:54.165220"
+      },
+      {
+        "node_id": "A2",
+        "status": "success",
+        "confidence": 0.3,
+        "direction": "SHORT",
+        "ts": "2026-08-21T01:02:54.226163"
+      },
+      {
+        "node_id": "A4",
+        "status": "success",
+        "confidence": 0.842,
+        "direction": "SHORT",
+        "ts": "2026-08-21T01:02:54.232238"
+      },
+      {
+        "node_id": "A5",
+        "status": "success",
+        "confidence": 0.842,
+        "direction": "SHORT",
+        "ts": "2026-08-21T01:02:54.245304"
+      },
+      {
+        "node_id": "A9",
+        "status": "success",
+        "confidence": 0.6,
+        "direction": "HOLD",
+        "ts": "2026-08-21T01:02:54.311762"
+      }
+    ],
+    "final_action": null,
+    "final_confidence": 0.0,
+    "cycle_id": "trade_20260821010242_c721a3",
+    "session_id": "",
+    "started_at": "2026-08-21T01:02:47.306978",
+    "updated_at": "2026-08-21T01:02:54.311772",
+    "extra": {}
+  },
+  "metadata": {
+    "phase": "post_node",
+    "step": 7,
+    "is_gate": false,
+    "tokens_used": 0
+  },
+  "created_at": "2026-08-21T01:02:54.312827"
+}
