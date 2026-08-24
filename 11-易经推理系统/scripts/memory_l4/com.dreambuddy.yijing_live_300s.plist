@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- =============================================================
+     com.dreambuddy.yijing_live_300s.plist
+     易经推理 LIVE 加密货币 300s 轮询（生产配置）
+     放：~/Library/LaunchAgents/com.dreambuddy.yijing_live_300s.plist
+     加载：launchctl bootstrap gui/$UID  ~/Library/LaunchAgents/com.dreambuddy.yijing_live_300s.plist
+     重启：launchctl kickstart -k gui/$UID/com.dreambuddy.yijing_live_300s
+     卸载：launchctl bootout   gui/$UID/com.dreambuddy.yijing_live_300s
+     查状态：launchctl print gui/$UID/com.dreambuddy.yijing_live_300s
+     ============================================================= -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dreambuddy.yijing_live_300s</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader_live_300s.sh</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>LANG</key>
+        <string>en_US.UTF-8</string>
+        <key>LC_ALL</key>
+        <string>en_US.UTF-8</string>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+    </dict>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>NetworkState</key>
+        <true/>
+        <key>AfterInitialDemand</key>
+        <true/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>3</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/logs/polling_trader_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/logs/polling_trader_stderr.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>2048</integer>
+    </dict>
+</dict>
+</plist>

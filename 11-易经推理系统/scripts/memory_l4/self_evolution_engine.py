@@ -52,8 +52,10 @@ REGIME_MAP_PATH = BASE_DIR / "config" / "regime_quadrant_map.json"
 
 # adopted 提案 param_key → config.json 键的映射
 # SelfEvolutionEngine 的安全参数名与 config.json 字段名不同，需要桥接
+# 键分层：引擎层进化值写入 engine_min_confidence_threshold（专用键）
+# 不再桥接到 confidence_threshold（PollingTrader 层专用，避免跨层覆盖命令行参数）
 _PARAM_KEY_TO_CONFIG = {
-    "min_confidence_threshold": "confidence_threshold",
+    "min_confidence_threshold": "engine_min_confidence_threshold",
 }
 
 # ── 停滞检测阈值 ─────────────────────────────────────────────────────────────
@@ -1067,7 +1069,7 @@ class SelfEvolutionEngine:
             # 只写 config.json 已知的进化键
             # 注：max_consecutive_losses 已禁用（风控改以亏损金额为准），不再自动进化
             if config_key in (
-                "confidence_threshold",
+                "engine_min_confidence_threshold",
                 "daily_loss_limit",
                 "default_position_pct",
                 "loss_limit_pct",

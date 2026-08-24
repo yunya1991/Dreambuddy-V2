@@ -15,8 +15,11 @@ from typing import Dict, Any, List, Optional
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-# 导入内部模块
-from data_collector import DataCollector, generate_timeseries
+# 导入内部模块（切换到 data_center.compat 兼容层）
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "18-数据获取中心"))
+from data_center.compat import DataCollector, generate_timeseries
 from engines.least_resistance import compute_resistance_3d, generate_signal, summarize_trend
 from engines.sentiment_engine import create_sentiment_engine
 from engines.signal_engine import create_signal_engine

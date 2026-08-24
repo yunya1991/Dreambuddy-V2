@@ -1,8 +1,9 @@
 # 易经推理系统 技术设计文档
 
-> **版本**: v4.4 | **日期**: 2026-08-20
+> **版本**: v4.6.1 | **日期**: 2026-08-24
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
-> **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引）
+> **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引） · [CHANGELOG.md](./CHANGELOG.md)（代码级变更日志）
+> **关联 Spec**: [方案 C：CBR 双闭环+Elder-ray+三层弹性闸门](../docs/superpowers/specs/2026-08-23-cbr-ema-winprob-enhancement-spec.md) v3.0（已全量上线，8 开关默认开启）
 
 ---
 
@@ -146,6 +147,284 @@
 > **v4.3 变更**：在编排层与决策层之间新增「前置层」，负责市场形态预测与前瞻参数生成。前置层输出被核心层 BCRM 2.0 实际消费（通过 ParameterMapper 的 α blend 机制）。详见 §3.5。
 >
 > **v4.4 变更**：在决策层与支撑层之间新增「持仓与离场管理层」，统一管理 8 个离场机制。扩展层 ExitManager 策略链按硬风控优先级链式调用（P3提前退出→信号反转→EV雷达强平→超时止盈→排名止盈→EV雷达调整），核心层（卦象主离场+Classic兜底）保持原样不动。BCRM2 spec 的 S2/S3/S4 开关作为 ExitStrategy.enabled 属性融入。详见 [ExitManager 设计 Spec](../../docs/superpowers/specs/2026-08-20-exit-manager-design.md)。
+>
+> **v4.5 视角补充**：§2.2 是用户交互到支撑层的横向视角，下一节 §2.2b 是交易决策链纵向的「七层交易决策栈」（战略→过滤→离场），两视角互补不冲突。
+
+### 2.2b 七层交易决策栈（v4.5 重新梳理 · 战略到执行）
+
+> **定位**：本章节是「交易决策链路」的纵向功能分层，对应 PollingTrader 轮询交易器从战略评估到实际下单→持仓→离场的完整路径。与 §2.2 四层功能架构（横向系统视角）互补，不冲突。
+>
+> **架构来源**：[方案 C Spec v3.0](../../docs/superpowers/specs/2026-08-23-cbr-ema-winprob-enhancement-spec.md)（已全量上线）+ 代码实现 [polling_trader.py#L6516-L8003](../scripts/memory_l4/polling_trader.py#L6516-L8003) + 实战案例（COIN/SOL/HYPE 2026-08-23~24）。
+>
+> **分层总原则**：**战略定方向、过滤拦风险、校准调仓位、策略定动作、离场管盈亏**。每层职责单一、边界清晰、开关独立、fail-open 可旁路。
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Layer 0: 五计庙算（战略层 / Five-Domain Heuristic Scoring）                │
+│  总开关 enable_five_domain + 7 子开关；道/天/地/将/法 五维加权总分；            │
+│  → 输出 war_state(ALLOW/CAUTION/BLOCK) + strategy_mask + cap + score(0~100)│
+│  → 三档决策：≥75进攻 / 60-74低仓防御 / <60防守；仓位四档映射；维度否决规则       │
+│  代码锚点：[FiveDomainHeuristicScorer](../scripts/memory_l4/five_domain_*.py)│
+│            polling_trader._run_once_five_domain_daily_update()             │
+└────────────────────────────────────┬───────────────────────────────────────┘
+                                     ▼ 战略总基调 + 仓位上限
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Layer 1: 前置层（市场形态识别层 / Pre-Decision Layer）                      │
+│  市场形态演化引擎（6 层流水线）+ MorphCyclePredictor + ParameterMapper       │
+│  → 输出 6 全局参数 + 5 板块权重 + (L_forecast, T_forecast) + α blend       │
+│  → 为核心层提供前瞻参数，使 BCRM 2.0 具备预见性而非纯反应性                     │
+│  代码锚点：§3.5 本章 · [morph_cycle_*.py](../scripts/memory_l4/)           │
+└────────────────────────────────────┬───────────────────────────────────────┘
+                                     ▼ 前瞻参数 + 形态学特征
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Layer 2: 核心层（BCRM 2.0 信号层 / Core Signal Layer）                     │
+│  BCRM 2.0 辩证 ML 引擎 + 八卦力学 + 市态切换 + QMM 量化记忆                   │
+│  → 输出 direction(LONG/SHORT) + confidence + hexagram + risk_level         │
+│  → 本系统的方向与置信度信号源；后续所有层均围绕此信号做过滤与校准                │
+│  代码锚点：§4 本章 · [bcrm2_adapter.py](../scripts/memory_l4/bcrm2_adapter.py)
+│            polling_trader._run_inference_once()                            │
+└────────────────────────────────────┬───────────────────────────────────────┘
+                                     ▼ 方向 + 置信度 + 卦象信号
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Layer 3: 后置校准层（Post-Core Calibration Layer）—— 调仓位，不拦截         │
+│  三算子级联：① 弹簧力场 5 态评分档位映射 → p1_output_label                   │
+│             ② 三层动态权重 w_p:w_e:w_b（FiveDomain差异化权重查表）            │
+│             ③ WinProb 盈亏概率动态权重（CBR TopK 相似案例 + Brier 自校验）    │
+│  + 做空三重动态收紧：Score_B<0.70→clip0.55 / Elder≤NEUTRAL降级 / w_b×0.70   │
+│  → 输出 final_pos_mult（经校准的仓位倍率，范围 0.05~1.50）                   │
+│  代码锚点：polling_trader._get_regime_pred_multipliers() H2 弹簧写入         │
+│            [three_layer_weighter.py](../scripts/memory_l4/three_layer_weighter.py)
+│            [elastic_gate_3l.py](../scripts/memory_l4/elastic_gate_3l.py#L212-L308) 方向校准
+│            [win_prob_engine.py](../scripts/memory_l4/win_prob_engine.py)
+└────────────────────────────────────┬───────────────────────────────────────┘
+                                     ▼ 已校准仓位倍率 + Score_P/E/B
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Layer 4: 弹性放行层（Elastic Gate Layer / Spec v3.0 严格对齐）—— 永不硬拦截    │
+│  ★ Spec F1 铁则：永不BLOCK，BLOCK也给 0.10 试错仓                              │
+│  ★ P1/Elder/BCRM 三层产出 Score（不拦截），交给 ElasticGate3L 计算仓位倍率：    │
+│    ① P1 均线 → Score_P: STANDARD=1.0 / WEAK=0.60 / BLOCK=0.10                  │
+│    ② Elder-ray → Score_E: ALIGN_FULL=1.0 / ALIGN_BASIC=0.85 / NEUTRAL=0.65    │
+│       / DIVERGE_BASIC=0.45 / SEVERE=0.30                                       │
+│    ③ BCRM N=5 → Score_B: 0.60×continuity + 0.40×conf_norm                     │
+│  + CBR 双闭环（建库+检索）+ ElasticGate3L 三层弹性闸门（Score_consensus→倍率） │
+│        + BTC 自反特权闸门（仅BTC多头λ惩罚+G-01冷却熔断）                       │
+│        + WinProb盈亏概率动态权重 + 组合级熔断G-02/G-04（方案C 8开关全启）       │
+│  → ① score_consensus < base_threshold(默认0.40) → 不开仓（L4唯一硬门槛）        │
+│  → ② score_consensus ≥ base_threshold 且 conf≥eff → 正常开仓（L3仓位原样+叠加） │
+│  → ③ score_consensus ≥ base_threshold 但 conf<eff → is_trial=True（试错）       │
+│       轻仓试错时：★跳过 L3 弹簧/形态/v4 仓位校准（L3后置层不介入）              │
+│                  ★由 L4 过滤层 ElasticGate3L F1 下界 0.10 接管仓位控制          │
+│  → 30min 试错评估周期：趋势确认→可加仓信号、不明→维持、逆转→平仓                │
+│  代码锚点：polling_trader._execute_trade()                                   │
+│            [polling_trader.py#L7656-L7860](../scripts/memory_l4/polling_trader.py#L7656-L7860)
+│            [elder_ray_engine.py](../scripts/memory_l4/elder_ray_engine.py)
+│            [bcrm_continuity_observer.py](../scripts/memory_l4/bcrm_continuity_observer.py)
+│            [cbr_engine.py](../scripts/memory_l4/cbr_engine.py)
+│            [btc_self_reflex_valve.py](../scripts/memory_l4/btc_self_reflex_valve.py)
+│            [portfolio_risk_fuses.py](../scripts/memory_l4/portfolio_risk_fuses.py)
+└────────────────────────────────────┬───────────────────────────────────────┘
+                                     ▼ 通过过滤 + 熔断未触发
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Layer 5: 策略层（Strategy Layer / _open_position 数据链路确认）             │
+│  enable_strategy_layer 总开关 + 3 模式开关；仓位/方向/阈值最终确认；            │
+│  静态止损 SL + 静态止盈 TP 写入 TradeRecord；                                │
+│  → 调用 OKXSimulatedClient / OKXClient 下单接口                              │
+│  代码锚点：polling_trader._open_position()                                  │
+│            [polling_trader.py#L7974-L8003](../scripts/memory_l4/polling_trader.py#L7974-L8003)
+└────────────────────────────────────┬───────────────────────────────────────┘
+                                     ▼ 已开仓 + 持仓记录
+┌────────────────────────────────────────────────────────────────────────────┐
+│  Layer 6: 持仓管理与离场层（Position & Exit Management）                      │
+│  ExitManager 策略链（硬风控优先级链式调用）                                   │
+│    扩展层：P3 提前退出 → 信号反转（SignalReverseStrategy）→ EV 雷达强平       │
+│            → 超时止盈（29H CRCL）→ 排名止盈 A/B/C → EV 雷达调整（移动止盈）     │
+│    核心层：卦象主离场（YijingExitSystem） — v4.4 已删除 Classic 兜底备用层     │
+│  + 每 5min 刷新 ExitManager TP/SL；SL 触发时同步清理本地残留持仓记录           │
+│  → exit_strategy_log 策略贡献值追踪；CBR 离场回填 exit_snapshot + PnL         │
+│  代码锚点：§3.6 本章 · [exit_manager.py](../scripts/memory_l4/bcrm2/exit_manager.py)
+│            [yijing_exit_system.py](../scripts/memory_l4/yijing_exit_system.py)
+│            polling_trader._check_and_exit_positions()
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 七层职责边界速查表
+
+| 层级 | 名称 | 动作类型 | 典型操作 | 失败旁路 |
+|------|------|----------|----------|----------|
+| L0 | 五计庙算（战略层） | **定总基调** | war_state / cap / mask 输出 | war_state=ALLOW, cap=1.0, mask全True |
+| L1 | 前置层（市场形态识别） | **生前瞻参数** | L_forecast / T_forecast / α blend / 弹簧5态评分（前置层只定范围，不给具体仓位） | 纯反应式 reactive 参数，弹簧评分=NONE（不做分档） |
+| L2 | 核心层（BCRM 2.0信号） | **生方向信号** | direction / confidence / hexagram | 信号丢弃不进入后续 |
+| L3 | 后置校准层 | **正常开仓=调仓位大小**；**轻仓试错=跳过** | 弹簧力场仓位分档（STRONG/NORMAL/WEAK→×1.0/0.7/0.4）+ 五维风险评分 ×position_factor + 形态乘数 ×position_mult + WinProb + 做空收紧 + SL价格空间下限 | pos_mult = 1.0 字节等价；若 is_trial=True 则完全旁路（不改变仓位基线） |
+| L4 | 弹性放行层（Spec v3.0） | **统一共识评分 + 基础门槛**；**接管试错仓仓位** | P1→S_P + Elder→S_E + BCRM→S_B → ElasticGate3L 加权（w_p/ w_e/ w_b 动态权重）→ `score_consensus` 与 `_gate_base_threshold(0.40)` 判断 → ①<0.40→不开仓（L4唯一硬门槛）；②≥ + conf≥eff→通过（用L3结果+叠加 PhaseC）；③≥ + conf<eff→is_trial→跳过L3由L4 EG3L F1 下界 0.10 接管仓位 | BLOCK→0.10 试错仓 + is_trial + 30min 评估（L5 最大持仓/G-04 回撤熔断不属于 L4） |
+| L5 | 策略层 | **确认下单** | 仓位最终确认 + SL/TP 冻结 + 下单接口调用 + 风控（can_trade / 最大持仓数 / G-04 权益回撤熔断） | 不下单（fail-closed） |
+| L6 | 持仓管理与离场层 | **管持仓盈亏** | ExitManager 链式 + 卦象主离场 + 试错评估周期（持仓≥30min）+ CBR 离场回填 + 基础阈值盈亏样本记录（30-150 笔滑窗动态调 base_threshold） | SL 静态止损兜底 |
+
+> **关键分层修正（v4.6.1 仓位归属严格对齐）**：
+> - **L3 后置校准层的职责是「调正常开仓的仓位规模」，不介入试错仓**：
+>   - 正常开仓（conf ≥ eff）→ 弹簧力场分档 / 形态乘数 / v4 风险评分仓位调整 全部应用，最后叠加 PhaseC EG3L×WinProb×BTCλ
+>   - 轻仓试错（score_cons ≥ 0.40，conf < eff）→ 跳过 L3 所有校准（弹簧/形态/v4），仓位由 L4 过滤层 ElasticGate3L 最终决定（F1 永不 BLOCK 下界 0.10）
+> - 原因：试错仓本质是"共识方向没问题，但单笔置信度不足"的探路仓位；用 L3 强弱趋势分档去放大/缩小探路仓位不符合设计意图（探路仓位应该保守且由过滤层弹性矩阵统一控制）。
+> - **P1/Elder/BCRM 三层全部取消硬拦截（return）**，改为产出 Score_P/Score_E/Score_B 交给 ElasticGate3L 加权计算 `score_consensus`。
+> - Spec F1 铁则「永不 BLOCK」严格执行：`score_consensus ≥ base_threshold` 时，即使单因子 BLOCK（P1=BLOCK 或 Elder=DIVERGE_SEVERE）也能通过综合加权达到门槛，进入试错或正常通道。
+> - 删除原 is_trial × 0.4 简单乘法，交给 ElasticGate3L/F1 下界 0.10 精确控制试错仓仓位。
+> - 唯一保留的 L4 硬拦截：`score_consensus < base_threshold（默认0.40，范围[0.25,0.60]）`；G-04 3% 权益回撤 / 最大持仓数 / can_trade 熔断 归 L5 策略层风控。
+> - 做空方向三重收紧严格生效：Score_B<0.70→clip0.55、Elder≤NEUTRAL降级、BCRM自身权重w_b×0.70。
+> - 方案 C 8 开关（SW-C1~C8）默认全部 True：开仓必经 CBR/Elder/ElasticGate/ThreeLayer/BTCReflex/WinProb/ContinuityObs/PortfolioFuses 全部链路；G-04 单日 3% 回撤全开关旁路 24h。
+> - **动态基础阈值（基于聚合 30-150 笔盈亏滑动窗口，非单笔调节）**：胜<40%或平均盈亏<-3%→+0.03；胜≥60%且平均盈亏>+2%→-0.02；冷却期 30min，避免单笔摆动。
+
+#### §2.2b.1 SL/TP 价格空间下限保护（v4.5 新增 · XAG 案例修复）
+
+> **触发场景**：ATR 极低时（如 XAG 波动率 0.27%），3.3×ATR 仅 0.90% 价格空间，5x 杠杆下 4.50% 保证金损失，小幅波动即扫损。
+>
+> **设计原理**：轻仓试错核心是仓位小，不是 SL 近；ATR 极低时按常规标准设置 SL/TP，不按 ATR 收紧。
+
+| 仓位类型 | SL 最低价格空间 | TP 最低价格空间 | 说明 |
+|----------|----------------|----------------|------|
+| 常规仓 | 1.5% | 3.0% | 保障最低波动容错 |
+| 轻仓试错 | 2.0% | 4.0% | 仓位小可承受更宽 SL |
+
+> **代码锚点**：[polling_trader.py L8398-L8427](../scripts/memory_l4/polling_trader.py#L8398-L8427) — 在所有 SL/TP 调整（v4 风控收紧 → 组合熔断 → 形态乘数 → ATR 动态止损）之后、SLTP 冻结之前，执行最终下限保护。
+>
+> **XAG 修复效果**：原 SL=0.90%（3.3×ATR=0.0027）→ 自动放宽到 2.0%（试错仓），不再被小幅波动扫损。
+
+#### §2.2b.2 轻仓试错评估周期（v4.5 新增）
+
+> **设计目标**：轻仓试错开仓后，经过一个评估周期（30min），根据趋势确认情况决定后续动作，避免试错仓长期无管理。
+
+```
+开仓(is_trial=True, trial_open_ts=now)
+  │
+  ├─ 持仓 < 30min → 正常管理（ExitManager 链式评估）
+  │
+  └─ 持仓 ≥ 30min 且 trial_eval_done=False → 触发评估（仅一次）
+       │
+       ├─ 价格朝有利方向 > +1.0% → "趋势确认" → 标记可加仓信号（后续置信度达标可正常开仓加仓）
+       │
+       ├─ 价格朝不利方向 > -0.5% → "趋势逆转" → 平仓 + 跳过 ExitManager
+       │
+       └─ 价格变动在 ±0.5~1.0% 内       → "趋势不明" → 维持试错仓位
+       │
+       └─ 标记 trial_eval_done=True → 后续由 ExitManager 正常管理
+```
+
+> **TradeRecord 新增字段**（[trading_utils.py L57-60](../scripts/memory_l4/trading_utils.py#L57-L60)）：
+> - `is_trial: bool` — 是否轻仓试错开仓
+> - `trial_eval_done: bool` — 评估周期是否已完成
+> - `trial_open_ts: float` — 试错开仓时间戳（秒）
+>
+> **评估逻辑代码锚点**：[polling_trader.py L6826-L6894](../scripts/memory_l4/polling_trader.py#L6826-L6894) — 在 ExitManager 评估之前执行，如试错评估已平仓则 `return` 跳过 ExitManager。
+>
+> **设计要点**：
+> - 评估仅触发一次（`trial_eval_done` 标记后不再重复）
+> - 做空方向价格变化取反（价格下跌为有利）
+> - 趋势确认只打日志信号，实际加仓由开仓逻辑根据置信度自行决策
+> - 趋势逆转直接平仓，不等 ExitManager 链式评估
+
+#### §2.2b.3 过滤层统一基础阈值门控（v4.6 新增 · 修复"硬拦截 vs 试错"语义混乱）
+
+> **核心修正**：删除「P1=BLOCK → is_trial=True」的语义绑定，改为：**P1/Elder/BCRM 三层过滤因子均产出 Score → ElasticGate3L 加权获得 `score_consensus` → 若 `score_consensus < base_threshold` 则不开仓（唯一硬门槛）；若 ≥ 基础门槛但 confidence < effective_threshold 则统一轻仓试错（is_trial=True）**。
+>
+> **架构动机**：
+> - 过滤层（L4）的核心职责是「共识评分」，不是「拦截或放行的二元决策」；单因子 BLOCK 只是贡献低分，由三层加权综合判断。
+> - 轻仓试错的本质是「BCRM 单笔置信度不足」，但「大中小三周期共识方向健康」—— 这是通过 score_consensus 与 base_threshold 的比较体现的，而非 P1=BLOCK 单因子语义。
+>
+> **判定流程**：
+>
+> ```
+> inference产出 p1_output_label / elder_ray_grade / bcrm_score_b
+>   │
+>   ▼
+> ElasticGate3L.compute(weights=ThreeLayerWeighter)
+>   → score_consensus = w_p·S_P + w_e·S_E + w_b·S_B（归一化权重 Σ=1）
+>   │
+>   ├─ score_consensus < _gate_base_threshold（默认 0.40）→ 不开仓（硬门槛，唯一硬拦截）
+>   │
+>   └─ score_consensus ≥ _gate_base_threshold：
+>        ├─ confidence ≥ effective_threshold → 正常开仓
+>        └─ 否则（共识好但单笔conf不够）  → 轻仓试错 is_trial=True，仓位由 EG3L×WinProb×BTCλ 乘积控制
+> ```
+>
+> **动态阈值调节（聚合样本、非单笔）**：
+> - 冷启动默认 `base_threshold = 0.40`，硬边界 [0.25, 0.60]
+> - 最近 N≥30 笔样本（滑动窗口 30~150 笔）胜率 <40% 或 平均盈亏 <-3% → 阈值上调 +0.03（收紧）
+> - 最近 N≥30 笔样本胜率 ≥60% 且 平均盈亏 >+2% → 阈值下调 -0.02（放宽）
+> - 调节冷却期：30 分钟最多一次，避免频繁摆动
+>
+> **方案 C 子系统生效审计（v4.6 日志可见性增强）**：
+> 为确认各子系统（SW-C1~C8）是否真正发挥作用，v4.6 在 PhaseC 仓位调控日志中输出 EG3L 明细：
+>
+> ```
+> PhaseC 仓位调控 | EG3L=1.25 ... S_P=1.00 S_E=0.85 S_B=0.71 cons=0.846 w_p=0.45 w_e=0.30 w_b=0.25 w_src=fail_open src=normal
+> ```
+>
+> 可直接从日志中判断：
+> - `w_src=fail_open` → ThreeLayerWeighter 尚未完成回测校准（使用默认权重 0.45:0.30:0.25），需要积累足够 BCRM 盈亏样本后才产出 calibrated 动态权重
+> - `src=short_tightened:...` → 做空方向三重收紧生效
+> - `WinProb=1.00` → WinProb 旁路（样本不足，G-2 兜底），需要 CBR 建库 ≥20 条有效样本才会 ≠1.0
+> - `BTCλ=1.00` → BTC 自反闸门仅 BTC LONG 生效，非 BTC 场景默认 1.00 正确
+>
+> **TradeRecord 新增字段**（[trading_utils.py L61-63](../scripts/memory_l4/trading_utils.py#L61-L63)）：
+> - `score_consensus: float` — 开仓时 ElasticGate3L 共识分快照（供事后审计 + 动态调节）
+> - `gate_base_threshold: float` — 开仓时基础阈值快照
+>
+> **代码锚点**：
+> - 基础门槛判断 & 共识分计算：[polling_trader.py L7936-L8038](../scripts/memory_l4/polling_trader.py#L7936-L8038)
+> - 动态阈值调节方法：[polling_trader.py L9170-L9224](../scripts/memory_l4/polling_trader.py#L9170-L9224)
+> - 平仓时记录盈亏样本：[polling_trader.py L5002-L5018](../scripts/memory_l4/polling_trader.py#L5002-L5018)
+> - EG3L 明细日志组装：[polling_trader.py L8361-L8384](../scripts/memory_l4/polling_trader.py#L8361-L8384)
+>
+> **与 v4.5 的关键差异**：
+> - v4.5：「P1=BLOCK → is_trial=True」（单因子绑定语义，与 Spec F1 矛盾）
+> - v4.6：「score_consensus ≥ base_threshold 且 confidence 不足 → is_trial=True」（综合共识，统一 P1=WEAK/STANDARD/BLOCK 三种标签下的试错通道）
+>
+> **分层修正补充（v4.6 与 Spec v3.0 对齐）**：
+> - v4.6 中「过滤层唯一硬拦截」只有 `score_consensus < base_threshold`；其余风控拦截（G-04 3% 权益回撤、最大持仓数、can_trade 熔断）属于 L5 策略层风控，不属于 L4 过滤层。
+
+#### §2.2b.4 L3/L4 仓位归属语义（v4.6.1 新增 · 澄清分层职责边界）
+
+> **核心语义**：**后置层(L3)管"正常开仓的仓位校准"；过滤层(L4)管"门槛判定 + 试错仓的仓位"**。
+
+**仓位流向总览**：
+
+```
+[P3 动态仓位基线（凯利/连亏/卦象/波动率四因子）— 所有类型共同起点]
+   │
+   ├─ is_trial=False（正常开仓，conf≥eff）：
+   │   │
+   │   ▼ L3 后置校准层（完整应用）
+   │   弹簧做多/做空分档（×1.0/0.7/0.4）+ v4 风险评分×position_factor + 形态乘数×position_mult
+   │   │
+   │   ▼ L4 过滤层 PhaseC（叠加）
+   │   ElasticGate3L × WinProb × BTCλ（EG3L 仅做弹性叠加，不推翻 L3 校准结果）
+   │   │
+   │   ▼ 资金调控 16 号系统 min 约束 → OKXClient 下单
+   │
+   └─ is_trial=True（轻仓试错，score_cons≥base_threshold 但 conf<eff）：
+       │
+       ■ L3 后置校准层 → ★全部跳过★（弹簧/形态/v4 全部旁路，不改变仓位基线）
+       │   日志："[币种] 轻仓试错(过滤层接管仓位) | 跳过L3弹簧/形态/v4分档 → 交由 ElasticGate3L/F1..."
+       │
+       ▼ L4 过滤层 PhaseC（直接接管）
+       ElasticGate3L 直接基于 F1 下界 0.10（BLOCK=0.10 / WEAK=0.30 / STANDARD=0.50 等弹性档）给出最终仓位
+       │
+       ▼ 资金调控 16 号系统 min 约束 → OKXClient 下单
+```
+
+**设计理由**：
+
+| 问题 | 旧实现 v4.5 及之前 | 新实现 v4.6.1 |
+|------|-----------------|---------------|
+| 试错仓的仓位来源 | `is_trial=True → 仓位×0.4` 简单乘法，同时叠加 L3 弹簧/形态乘数 → 最终试错仓倍率非保守，甚至被趋势放大 | 跳过 L3 所有校准，直接由 L4 EG3L 弹性矩阵 + F1 下界 0.10 保守控制 |
+| L3 职责 | 试错仓和正常仓一样叠加弹簧/形态分档 | L3 仅服务「高置信度 + 强共识」的正常开仓，做精细化仓位分档 |
+| L4 职责 | 门槛判定 + EG3L 仅做叠加乘数 | 门槛判定 + 正常仓叠加 + **试错仓仓位接管** |
+| Spec F1 永不 BLOCK 语义 | BLOCK→×0.10 叠加但再叠加 L3 分档可能被削弱或放大 → 不等价于真正的 0.10 | **完全等价于 F1 下界**：试错跳过 L3 → EG3L.F1=0.10 直接决定仓位下限 |
+
+**代码锚点**：
+- 分层语义判定与跳过程序：[polling_trader.py#L8224-L8292](../scripts/memory_l4/polling_trader.py#L8224-L8292)
+  - `if not is_trial:` → L3 四条（弹簧做空、弹簧做多、v4 仓位、形态乘数）
+  - `else:` → 日志：「轻仓试错(过滤层接管仓位) | 跳过L3弹簧/形态/v4分档 → 交由 ElasticGate3L/F1 弹性闸门控制最终仓位」
+- 分层修正与 v4.5 基础阈值判定：[polling_trader.py#L7936-L8038](../scripts/memory_l4/polling_trader.py#L7936-L8038)
+- EG3L 明细可见性日志：[polling_trader.py#L8361-L8384](../scripts/memory_l4/polling_trader.py#L8361-L8384)（S_P/S_E/S_B/w_p/w_e/w_b/w_src/src 确认三层权重来源）
 
 ### 2.3 通信与调用结构（强制遵守）
 
@@ -2073,6 +2352,9 @@ export OKX_TD_MODE=isolated
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-08-24 | v4.6.1 | **L3/L4 仓位归属语义重构 + 分层职责严格对齐**：①**核心修复 is_trial 仓位基线**：删除旧实现 `is_trial: position_usdt ×= 0.4` 简单乘法；重构 `_open_position L8224-L8292` 仓位流向：**L3 后置层（弹簧做多做空分档 + v4 风险评分仓位调整 + 形态乘数 position_mult）只在正常开仓（is_trial=False）时完整应用**；**轻仓试错（is_trial=True）全部跳过 L3 校准**，日志输出「轻仓试错(过滤层接管仓位) | 跳过L3弹簧/形态/v4分档 → 交由 ElasticGate3L/F1 弹性闸门控制最终仓位」，完全由 L4 过滤层 EG3L 的 F1 下界 0.10 弹性档控制试错仓仓位（BLOCK=0.10 / WEAK=0.30 / STANDARD=0.50 ...），使 Spec F1 永不 BLOCK 语义真正等价于仓位下限不被 L3 再叠加削弱或放大；②**七层职责速查表重写**：L3 标注「正常开仓=调仓位大小；轻仓试错=跳过」、L4 标注「统一共识评分 + 基础门槛 + 接管试错仓仓位」；③**关键分层修正说明升级 v4.5→v4.6.1**：明确 6 条核心边界（L3 不介入试错 / L4 接管试错仓位 / 删除 is_trial×0.4 / L4 唯一硬门槛只有 score_consensus<0.40 / G-04/最大持仓归 L5 / 动态阈值基于 30-150 笔聚合）；④**新增 §2.2b.4 L3/L4 仓位归属语义章节**：含仓位流向总览 ASCII 图、旧vs新设计理由对照表（4 项对比）、代码锚点；⑤架构七层图 L4 节点更新为三分支判定（①<0.40 不开仓 ②≥+conf达标→正常 ③≥+conf不够→试错，试错跳过 L3）；⑥版本号 v4.6→v4.6.1；实盘验证：进程 PID=25232 启动成功；当前 5/5 持仓满容量待腾出后触发「过滤层共识分低于基础门槛」「轻仓试错(共识分达标)」「跳过L3接管仓位」「PhaseC S_P= w_src=」等新日志 | DreamBuddy v2 |
+| 2026-08-24 | v4.6 | **过滤层统一基础阈值门控 + 方案C子系统生效审计增强**：①**核心重构 L4 过滤层判定逻辑（v4.5→v4.6 语义修正）**：删除「P1=BLOCK → is_trial=True」的单因子绑定，改为 P1/Elder/BCRM 三层均产出 Score → ElasticGate3L 加权（支持 ThreeLayerWeighter 动态权重 w_p:w_e:w_b）→ `score_consensus` 与 `_gate_base_threshold（默认0.40）` 做判断：<base_threshold→不开仓（唯一硬门槛）、≥且 confidence 不达标→轻仓试错 is_trial=True（统一 P1=WEAK/STANDARD/BLOCK 三标签的试错通道）；②**新增 §2.2b.3 过滤层统一基础阈值门控**：包含判定流程图、动态阈值调节规则（近30笔胜率<40%或亏-3%→+0.03，胜率≥60%且盈>2%→-0.02，边界[0.25,0.60]，冷却30min）、TradeRecord 新增 score_consensus/gate_base_threshold 两字段、方案C子系统生效审计方法（日志中 w_src/fail_open/calibrated/WinProb样本数/BTCλ条件 可直接判断是否生效）；③**EG3L 明细日志可见性增强**：PhaseC 仓位调控追加 S_P/S_E/S_B/cons/w_p/w_e/w_b/w_src/src 字段，解决 v4.5 无法确认 3LW、做空收紧是否真实生效的黑盒问题；④**ThreeLayerWeighter（SW-C3）调用链路核查**：权重已透传至 ElasticGate3L.compute()，但 v4.6 日志显示实盘 w_src=fail_open（需要 ≥30 笔 BCRM 盈亏样本做回归校准才产出动态权重）；⑤**WinProb（SW-C7）恒=1.00 原因确认**：`sample_count=0 < G2 MIN_SAMPLES=20` 触发旁路，需 CBR Jsonl 建库积累样本；⑥版本号 v4.5→v4.6；代码锚点见 §2.2b.3 | DreamBuddy v2 |
+| 2026-08-24 | v4.5 | **七层交易决策栈梳理 + 方案 C 全量上线 + P1 升级版分层定位修正 + SL 下限保护 + 试错评估周期**：①§2.2 四层功能架构补充 v4.5 视角说明（与七层栈互补）；②**新增 §2.2b 七层交易决策栈（纵向交易决策链）**：L0 五计庙算战略层 → L1 前置层市场形态识别 → L2 核心层 BCRM 2.0 信号 → L3 后置校准层（弹簧力场+五维权重+WinProb+做空三重收紧，调仓位不拦截）→ L4 过滤层（P1升级版：原均线/Elder-ray日线/BCRM N=5连续信号三道并行拦截 + CBR/ElasticGate3L/BTC自反/WinProb/组合熔断G-02/G-04）→ L5 策略层下单确认 → L6 持仓管理与离场层（ExitManager链式+卦象主离场，已删除 Classic 兜底备用层）；③七层职责边界速查表（动作类型/典型操作/失败旁路）；④关键分层修正说明（COIN做空教训：Elder/BCRM连续属过滤层L4拦截，Score_B/做空收紧属后置校准层L3调仓位）；⑤方案 C 8 开关默认全部 True（SW-C1 CBR建库 / SW-C2 Elder-ray / SW-C3 三层权重 / SW-C4 ElasticGate3L / SW-C5 BTC自反 / SW-C6 WinProb / SW-C7 BCRMContinuityObs / SW-C8 组合熔断），开仓必经所有风控链路，G-04 单日 3% 回撤全开关旁路 24h；⑥删除 classic 备用离场层（polling_trader L7208-7394）；⑦VOLATILE_DROP threshold_mult 1.30→1.15 + effective_threshold 上限 clip 0.98，修复做空阈值 >1.0 硬禁问题；⑧confidence 阈值分层（engine_min_confidence_threshold vs confidence_threshold，解决进化值覆盖冲突）；⑨**新增 §2.2b.1 SL/TP 价格空间下限保护**（XAG 案例修复）：ATR 极低时 SL 最低 1.5%（试错仓 2.0%）、TP 最低 3.0%（试错仓 4.0%），轻仓试错核心是仓位小而非 SL 近；⑩**新增 §2.2b.2 轻仓试错评估周期**：持仓≥30min 后触发趋势评估（仅一次），趋势确认→加仓信号、趋势不明→维持、趋势逆转→平仓；TradeRecord 新增 is_trial/trial_eval_done/trial_open_ts 三字段；⑪关联文档 [方案 C Spec v3.0](../../docs/superpowers/specs/2026-08-23-cbr-ema-winprob-enhancement-spec.md) 已上线生效；版本号 v4.4→v4.5 | DreamBuddy v2 |
 | 2026-08-20 | v4.4 | **持仓与离场管理层纳入技术文档**：①§2.2 四层功能架构图在决策层与支撑层之间新增「持仓与离场管理层」；②**新增 §3.6 持仓与离场管理层 — ExitManager 策略链**（5 个小节：架构设计/核心接口/6 个 ExitStrategy 子类/exit_strategy_log 贡献值追踪/测试覆盖与实盘验证）；③§15.7 新增 Phase 6 持仓与离场管理层已完成；④关联文档 [2026-08-20-exit-manager-design.md](../docs/superpowers/specs/2026-08-20-exit-manager-design.md)；版本号 v4.3→v4.4 | DreamBuddy v2 |
 | 2026-08-20 | v4.3 | **前置层市场形态演化引擎纳入技术文档**：①§0.1/§0.2 文档范围新增前置层 + SSoT 层级新增 L1 前置层技术细节；②§2.2 四层功能架构图在编排层与决策层之间新增「前置层」；③§3.1 三引擎协同架构图新增前置层参数输入路径；④**新增 §3.5 前置层 — 市场形态演化引擎**（8 个小节：定位/6层流水线/MorphCyclePredictor/大小周期弹性边界约束/ParameterMapper/Shadow模式/Phase C渐进上线/与核心层集成），覆盖 Phase A/B/C 三阶段全部实现，24 个测试文件 157 个测试用例通过；⑤§14.1 负责范围新增前置层；⑥§15.5 新增 Phase 5 前置层已完成；⑦关联文档 [2026-08-19-morph-cycle-dynamic-correction-design.md](../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md) v1.1 Implemented；版本号 v4.2→v4.3 | DreamBuddy v2 |
 | 2026-08-06 | v4.2 | **宏观特征优化 + 风控规则改造**：①§9.3.1 新增宏观特征层章节（MacroFeatures 24特征/6维度+两级开关机制+v4前向贪心选择验证）；②BTC启用3个验证有效特征（fgi_zscore+fgi_extreme_fear+hash_rate_trend，BTC验证得分+23.8%）；③BCRM2Adapter增加macro_config参数+缓存键含macro_config哈希（配置变更自动重训）；④§11.3.1 风控规则改造：移除连续亏损笔数触发，改为亏损金额>权益×20%触发（默认可用150U→阈值30U）；⑤进化系统适配（yijing_monitor/self_evolution_engine 默认值与白名单同步）；版本号 v4.1→v4.2 | DreamBuddy v2 |

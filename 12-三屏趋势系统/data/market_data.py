@@ -8,11 +8,20 @@
 - 使用OKX Python SDK（okx包）的history-candles接口
 - 使用before/after参数进行分页
 - 自动去重和数据合并
+
+@deprecated: 已废弃，请迁移到 from data_center.compat import fetch_candles, resample_candles
 """
 
 import subprocess
 import os
 import time
+import warnings
+
+warnings.warn(
+    "market_data 已废弃，请迁移到 from data_center.compat import fetch_candles, resample_candles",
+    DeprecationWarning,
+    stacklevel=2,
+)
 from typing import List, Dict, Optional
 import json
 

@@ -1,0 +1,23 @@
+# 18-数据获取中心 依赖（按里程碑分组）
+# === M1: 核心契约 + FRED macro collector + CLI 壳 ===
+typer>=0.12
+fredapi>=0.6.0
+python-dotenv>=1.0
+pytest>=8.0
+pytest-mock>=3.12
+
+# === M2: SDK 适配轨补全 ===
+yfinance>=0.2.40
+ccxt>=4.3.0
+etherscan-python>=0.1.0
+feedparser>=6.0
+tavily-python>=0.5.0
+requests>=2.31.0
+
+# === M3: 爬虫轨 ===
+scrapy>=2.11
+playwright>=1.40
+itemadapter>=0.7
+beautifulsoup4>=4.12
+lxml>=5.0
+pyyaml>=6.0

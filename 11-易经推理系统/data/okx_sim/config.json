@@ -1,5 +1,6 @@
 {
-  "confidence_threshold": 0.258351,
+  "confidence_threshold": 0.7955,
+  "engine_min_confidence_threshold": 0.258351,
   "_meta": {
     "approval_instance": "B4929C68-A87A-4F27-8889-7E256AC7DD8A",
     "released_at": "2026-08-14",
@@ -10,6 +11,6 @@
   "daily_loss_limit": -30.0,
   "max_consecutive_losses": 999,
   "loss_limit_pct": 0.2,
-  "default_position_pct": 0.14,
-  "last_evolve": "2026-08-21 01:30:14 UTC"
+  "default_position_pct": 0.2,
+  "last_evolve": "2026-08-24 12:39:20 UTC"
 }

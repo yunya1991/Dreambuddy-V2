@@ -12,6 +12,7 @@ SUBMODULES = [
     "13-通用风控模块",
     "12-三屏趋势系统",
     "11-易经推理系统",
+    "19-数据访问层",  # DAL 统一数据访问层（P0 新加入，便于全局 pytest 发现 import dreambuddy_dal）
 ]
 
 for submodule in SUBMODULES:

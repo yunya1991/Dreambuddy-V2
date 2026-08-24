@@ -33,8 +33,18 @@ cmd = [
     "scripts.memory_l4.polling_trader",
     "--interval", "300",
     "--confidence", "0.7955",
-    "--max-positions", "3",
+    "--max-positions", "5",
     "--position-pct", "0.20",
+    # ── Phase1（CBR v3.0）三开关 ──
+    "--enable-cbr-cycle-log",
+    "--enable-elder-ray-c4",
+    "--enable-win-prob-factor",
+    # ── 方案C v3.0 SW-C3~C8 六个调控开关（影子生效，异常时可独立关断）──
+    "--enable-three-layer-weighter",
+    "--enable-elastic-gate-3l",
+    "--enable-bcrm-continuity-obs",
+    "--enable-btc-self-reflex-valve",
+    "--enable-portfolio-risk-fuses",
 ]
 
 with open(LOG_FILE, "w", encoding="utf-8") as log_f:

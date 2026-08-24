@@ -655,3 +655,320 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# ================================================================
+# Phase1: CBRJsonlStore（JSONL 双时点建库存储，G3 文件锁 + fail-open）
+#
+# 职责：仅负责 JSONL 文件的半条 entry_snapshot 写入 + exit 回填，与原
+#       CBREngine（4R 检索复用）职责完全解耦。
+# 存储：runtime/cbr_cases_v03.jsonl（每行一条完整 JSON，UTF-8，schema=v0.3）
+# 配对方式：开仓写 semi_entry（exit 全占位 null）；离场按 case_id 全量读→
+#           内存更新→全量重写（atomic via temp + os.replace）
+# Phase2 迁移：migrate_jsonl_to_sqlite() 空壳已预留，抛 NotImplementedError
+# 约束：G1（enable=False 时零副作用）/ G2（任何异常返回 False 不 raise）/
+#       G3（flock LOCK_EX|LOCK_NB 非阻塞，0.1s 超时→failopen）/
+#       G6（缺 case_id 静默 False，不抛 KeyError）
+# ================================================================
+import fcntl as _fcntl
+import tempfile as _tempfile
+import os as _os
+import time as _time
+
+_JSONL_LOCK_TIMEOUT_S = 0.1
+_JSONL_SCHEMA_VERSION = "v0.3"
+
+
+# ── §2.3.1 五维特征 17 键规范化（Spec §2.3.1 表，用于 TDD C7 逐字对齐）──
+CBR_CANONICAL_5D_KEYS = {
+    # momentum 5 项
+    "momentum": ["rsi_14", "macd_hist", "roc_5d", "roc_20d", "hexagram_confidence"],
+    # ma_position 5 项
+    "ma_position": ["dist_sma20_pct", "dist_sma50_pct", "dist_sma200_pct",
+                    "ma20_50_gap_pct", "triple_ma_order"],
+    # volatility 3 项
+    "volatility": ["atr14_norm_pct", "atr14_20d_quantile", "bollinger_width_pct"],
+    # volume 2 项
+    "volume": ["vol_20d_quantile", "vol_ma20_ratio"],
+    # hexagram_meta 2 项
+    "hexagram_meta": ["hexagram_risk_level", "conf_decision_align"],
+}
+
+
+_TAG_MULTIPLIERS = {
+    "MANUAL_CLASSIC": 1.05,
+    "HIGH_WIN": 1.02,
+    "HIGH_LOSS": 1.02,
+    "NORMAL": 1.0,
+}
+_BASELINE_DECAY_HALF_LIFE_DAYS = 90.0
+_THETA_DEFAULT = 0.80
+_GAMMA_DEFAULT = 0.20
+
+
+class CBRJsonlStore:
+    """Phase1 CBR JSONL 双时点建库存储。Phase2 追加 retrieve_similar 接口。"""
+
+    def __init__(self, runtime_dir: Optional[Path] = None, enable: bool = False):
+        self.enable = bool(enable)
+        if runtime_dir is None:
+            runtime_dir = Path(__file__).resolve().parent / "runtime"
+        self._runtime_dir: Path = runtime_dir
+        self._jsonl_path: Path = self._runtime_dir / "cbr_cases_v03.jsonl"
+        self._params_path: Path = self._runtime_dir / "cbr_baseline_params.json"
+        # ── CBR v3.0 §2.2：θ_match*/γ_max* 动态加载（文件不存在→默认 0.80/0.20）──
+        self.theta_match_star: float = _THETA_DEFAULT
+        self.gamma_max_star: float = _GAMMA_DEFAULT
+        try:
+            if self._params_path.exists():
+                _raw = json.loads(self._params_path.read_text(encoding="utf-8"))
+                if isinstance(_raw.get("theta_match_star"), (int, float)):
+                    self.theta_match_star = float(_raw["theta_match_star"])
+                if isinstance(_raw.get("gamma_max_star"), (int, float)):
+                    self.gamma_max_star = float(_raw["gamma_max_star"])
+        except Exception:  # noqa: BLE001 / fail-open：任何异常回退默认
+            self.theta_match_star = _THETA_DEFAULT
+            self.gamma_max_star = _GAMMA_DEFAULT
+        # C1 / C8: auto mkdir；异常 → force disable（fail-open 字节等价）
+        if self.enable:
+            try:
+                self._runtime_dir.mkdir(parents=True, exist_ok=True)
+                if not self._jsonl_path.exists():
+                    self._jsonl_path.touch(mode=0o644, exist_ok=True)
+            except Exception as _e:  # noqa: BLE001
+                import logging as _logging
+                _logging.getLogger(__name__).warning(
+                    f"[CBRJsonlStore] runtime init failed, force-disable: {_e}"
+                )
+                self.enable = False
+
+    # ──────── internal helpers（G3 lock）────────
+    def _lock_ex_nb(self, fd: int) -> bool:
+        """Non-blocking exclusive flock. True=acquired, False=contention failopen."""
+        try:
+            _fcntl.flock(fd, _fcntl.LOCK_EX | _fcntl.LOCK_NB)
+            return True
+        except (BlockingIOError, OSError):
+            return False
+
+    @staticmethod
+    def _unlock(fd: int) -> None:
+        try:
+            _fcntl.flock(fd, _fcntl.LOCK_UN)
+        except OSError:
+            pass
+
+    # ──────── public Phase1 APIs ────────
+    def append_entry_semi(self, case: Dict[str, Any]) -> bool:
+        """Append half-entry (exit_* = null placeholders). Returns True on persistence."""
+        if not self.enable:
+            return False
+        try:
+            cid = str(case["case_id"])
+            record: Dict[str, Any] = {
+                "schema": _JSONL_SCHEMA_VERSION,
+                "case_id": cid,
+                "symbol": str(case.get("symbol", "")),
+                "asset_class": str(case.get("asset_class", "")),
+                "entry_snapshot": case["entry_snapshot"],
+                "exit_snapshot": None,
+                "pnl_pct": None,
+                "pnl_usdt": None,
+                "is_profit": None,
+                "create_ts": int(case.get("create_ts") or int(_time.time() * 1000)),
+                "close_ts": None,
+            }
+            line = json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n"
+            with open(self._jsonl_path, "a", encoding="utf-8") as f:
+                if not self._lock_ex_nb(f.fileno()):
+                    # G3: contention, fail this round（avoid blocking hot path）
+                    return False
+                try:
+                    f.write(line)
+                    f.flush()
+                    _os.fsync(f.fileno())
+                finally:
+                    self._unlock(f.fileno())
+            return True
+        except Exception:  # noqa: BLE001 / G2: never raise to caller
+            return False
+
+    def finalize_by_case_id(self, case_id: str, exit_snapshot: Dict[str, Any],
+                            pnl_pct: Optional[float], pnl_usdt: Optional[float],
+                            is_profit: Optional[bool]) -> bool:
+        """Finalize a semi entry by case_id (read → update → atomic rewrite).
+
+        Missing case_id → silently False (G6). Idempotent on repeated identical calls.
+        """
+        if not self.enable or not case_id:
+            return False
+        try:
+            with open(self._jsonl_path, "r+", encoding="utf-8") as f:
+                if not self._lock_ex_nb(f.fileno()):
+                    return False
+                try:
+                    raw_text = f.read()
+                    raw_lines = [ln for ln in raw_text.split("\n") if ln]
+                    updated = False
+                    new_lines: list[str] = []
+                    for ln in raw_lines:
+                        try:
+                            rec = json.loads(ln)
+                        except json.JSONDecodeError:
+                            # C6: tolerate corrupt line, skip as-is（don't break others）
+                            new_lines.append(ln)
+                            continue
+                        if rec.get("case_id") == case_id:
+                            rec["exit_snapshot"] = exit_snapshot
+                            rec["pnl_pct"] = pnl_pct
+                            rec["pnl_usdt"] = pnl_usdt
+                            rec["is_profit"] = bool(is_profit) if is_profit is not None else None
+                            rec["close_ts"] = int(_time.time() * 1000)
+                            updated = True
+                        new_lines.append(json.dumps(rec, ensure_ascii=False, sort_keys=True))
+                    if not updated:
+                        # G6: missing case_id → silent skip, no crash, no raise
+                        return False
+                    # atomic rewrite（temp file + fsync + os.replace）
+                    with _tempfile.NamedTemporaryFile(
+                            "w", encoding="utf-8", dir=str(self._runtime_dir),
+                            delete=False, suffix=".jsonl.tmp") as tf:
+                        tf.write("\n".join(new_lines) + "\n")
+                        tf.flush()
+                        _os.fsync(tf.fileno())
+                        tmp_path = tf.name
+                    try:
+                        _os.replace(tmp_path, str(self._jsonl_path))
+                    except OSError:
+                        # cleanup temp on failure
+                        try:
+                            _os.unlink(tmp_path)
+                        except OSError:
+                            pass
+                        return False
+                    return True
+                finally:
+                    self._unlock(f.fileno())
+        except Exception:  # noqa: BLE001 / G2: any anomaly → false never raise
+            return False
+
+    # ──────── CBR v3.0 §2：_rank_score（tag 加成 + 90d 半衰时间衰减）────────
+    def _rank_score(self, case: Dict[str, Any], raw_match: float) -> float:
+        """Sort-only rank score（不修改真实相似度 raw_match，仅用于排序）。
+
+        rank_score = raw_match × tag_mult × age_decay
+        - tag_mult：MANUAL_CLASSIC=1.05 / HIGH_WIN|HIGH_LOSS=1.02 / NORMAL=1.00
+        - age_decay：P5=90天半衰 = exp(-age_days / 90)，age_days基于case.entry_ts
+        """
+        tag = str(case.get("tag", "NORMAL"))
+        tag_mult = _TAG_MULTIPLIERS.get(tag, 1.0)
+        # age_days：entry_ts 可能是 datetime / int(ms timestamp) / 缺省（=0天）
+        entry_ts = case.get("entry_ts")
+        age_days = 0.0
+        if isinstance(entry_ts, datetime):
+            age_days = max(0.0, (datetime.now() - entry_ts).total_seconds() / 86400.0)
+        elif isinstance(entry_ts, (int, float)):
+            try:
+                ts_sec = entry_ts / 1000.0 if entry_ts > 1e12 else entry_ts
+                age_days = max(0.0, (datetime.now().timestamp() - ts_sec) / 86400.0)
+            except Exception:  # noqa: BLE001
+                age_days = 0.0
+        age_decay = math.exp(-age_days / _BASELINE_DECAY_HALF_LIFE_DAYS)
+        return float(raw_match) * tag_mult * age_decay
+
+    # ──────── CBR v3.0 §2.5：predict_topk（θ*门槛命中 + HIGH_LOSS 负对称 boost）────────
+    def predict_topk(self, top_cases: List[Dict[str, Any]],
+                     raw_scores: Dict[str, float]) -> Dict[str, Any]:
+        """对 topk 候选计算最终排序与 match_boost（w_B 合成项）。
+
+        返回结构：
+        {
+            "top1_case_id": str,
+            "top1_tag": str,
+            "top1_raw_score": float,
+            "ranked": [(case_id, rank_score, raw_score, tag, age_decay)],
+            "match_boost": float,     # ∈ [-γ_max*, +γ_max*]，HIGH_LOSS 负对称
+            "match_boost_note": str,  # 人类可读解释
+        }
+
+        match_boost 规则：
+          仅当 top1 的 raw_score ≥ theta_match_star 时生效（θ*门槛命中）
+          HIGH_WIN | MANUAL_CLASSIC → +γ_max* × clip(5×(score-θ*), 0, 1) × age_decay
+          HIGH_LOSS                 → −γ_max* × clip(5×(score-θ*), 0, 1) × age_decay
+          NORMAL 或未命中 θ*        → 0
+        """
+        try:
+            now = datetime.now()
+            ranked: List[Tuple[str, float, float, str, float]] = []
+            for case in top_cases:
+                cid = str(case.get("case_id", ""))
+                raw = float(raw_scores.get(cid, 0.0))
+                tag = str(case.get("tag", "NORMAL"))
+                # age_decay（与_rank_score同公式，此处单独再算，保证可解释性）
+                entry_ts = case.get("entry_ts")
+                age_days = 0.0
+                if isinstance(entry_ts, datetime):
+                    age_days = max(0.0, (now - entry_ts).total_seconds() / 86400.0)
+                elif isinstance(entry_ts, (int, float)):
+                    try:
+                        ts_sec = entry_ts / 1000.0 if entry_ts > 1e12 else entry_ts
+                        age_days = max(0.0, (now.timestamp() - ts_sec) / 86400.0)
+                    except Exception:  # noqa: BLE001
+                        age_days = 0.0
+                age_decay = math.exp(-age_days / _BASELINE_DECAY_HALF_LIFE_DAYS)
+                rank = self._rank_score(case, raw)
+                ranked.append((cid, rank, raw, tag, age_decay))
+            # sort by rank_score desc
+            ranked.sort(key=lambda x: x[1], reverse=True)
+            top1 = ranked[0] if ranked else ("", 0.0, 0.0, "NORMAL", 1.0)
+            top1_cid, _, top1_raw, top1_tag, top1_age_decay = top1
+            # ── match_boost 计算 ──
+            theta = self.theta_match_star
+            gamma = self.gamma_max_star
+            score_above = max(0.0, top1_raw - theta)
+            activation = min(1.0, 5.0 * score_above)  # clip(5*(s-θ),0,1)
+            if top1_raw < theta:
+                match_boost = 0.0
+                note = f"未命中θ*={theta:.2f}（top1={top1_raw:.3f}）"
+            elif top1_tag in ("HIGH_WIN", "MANUAL_CLASSIC"):
+                match_boost = +gamma * activation * top1_age_decay
+                note = (f"正基线命中[{top1_tag}]：+{gamma:.2f} × {activation:.2f}(act) "
+                        f"× {top1_age_decay:.2f}(decay) = {match_boost:+.4f}")
+            elif top1_tag == "HIGH_LOSS":
+                match_boost = -gamma * activation * top1_age_decay
+                note = (f"负基线命中[HIGH_LOSS]：-{gamma:.2f} × {activation:.2f}(act) "
+                        f"× {top1_age_decay:.2f}(decay) = {match_boost:+.4f}")
+            else:
+                match_boost = 0.0
+                note = f"NORMAL 无加成（命中θ*={theta:.2f}但tag无乘数）"
+            return {
+                "top1_case_id": top1_cid,
+                "top1_tag": top1_tag,
+                "top1_raw_score": top1_raw,
+                "ranked": ranked,
+                "match_boost": float(match_boost),
+                "match_boost_note": note,
+            }
+        except Exception:  # noqa: BLE001 / fail-open
+            return {
+                "top1_case_id": "",
+                "top1_tag": "NORMAL",
+                "top1_raw_score": 0.0,
+                "ranked": [],
+                "match_boost": 0.0,
+                "match_boost_note": "fail-open：异常旁路 match_boost=0",
+            }
+
+    # ──────── Phase2 reserved shells（not implemented yet）────────
+    def retrieve_similar(self, query_vec: Dict[str, float], top_k: int = 5,
+                         mu: Optional[Dict[str, float]] = None,
+                         sigma: Optional[Dict[str, float]] = None):
+        raise NotImplementedError(
+            "Phase2: call migrate_jsonl_to_sqlite() OR after sample>=50."
+        )
+
+    def migrate_jsonl_to_sqlite(self, sqlite_path: Optional[Path] = None) -> int:
+        raise NotImplementedError(
+            "Phase2 one-off JSONL→SQLite migration: will be delivered in next plan."
+        )
+

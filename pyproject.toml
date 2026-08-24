@@ -117,7 +117,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["dreamos"]
+known-first-party = ["dreamos", "dreambuddy_dal"]
 known-third-party = ["pandas", "numpy", "flask", "requests"]
 
 [tool.ruff.format]

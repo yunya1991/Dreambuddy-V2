@@ -1,54 +1,54 @@
 {
-  "updated_at": "2026-08-19T01:30:16.643214+00:00",
+  "updated_at": "2026-08-24T14:30:19.489844+00:00",
   "scores": {
     "HEMI": {
-      "dyn_score": 0.2695,
-      "cycles_seen": 67,
-      "last_conf": 0.2695,
-      "last_dir": "LONG",
-      "updated_at": "2026-08-19T01:30:16.639875+00:00"
+      "dyn_score": 0.15,
+      "cycles_seen": 92,
+      "last_conf": 0.15,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-24T14:30:18.952789+00:00"
     },
     "HYPE": {
-      "dyn_score": 0.2188,
-      "cycles_seen": 67,
-      "last_conf": 0.2188,
+      "dyn_score": 0.1901,
+      "cycles_seen": 92,
+      "last_conf": 0.1901,
       "last_dir": "SHORT",
-      "updated_at": "2026-08-19T01:30:16.640371+00:00"
+      "updated_at": "2026-08-24T14:30:18.954862+00:00"
     },
     "XMR": {
-      "dyn_score": 0.1576,
-      "cycles_seen": 66,
-      "last_conf": 0.1576,
-      "last_dir": "SHORT",
-      "updated_at": "2026-08-19T01:30:16.642546+00:00"
+      "dyn_score": 0.0792,
+      "cycles_seen": 91,
+      "last_conf": 0.0792,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-24T14:30:18.956222+00:00"
     },
     "NIL": {
-      "dyn_score": 0.5186,
-      "cycles_seen": 56,
-      "last_conf": 0.5186,
-      "last_dir": "SHORT",
-      "updated_at": "2026-08-19T01:30:16.641231+00:00"
+      "dyn_score": 0.1649,
+      "cycles_seen": 81,
+      "last_conf": 0.1649,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-24T14:30:18.960355+00:00"
     },
     "ACE": {
-      "dyn_score": 0.2558,
-      "cycles_seen": 67,
-      "last_conf": 0.2558,
-      "last_dir": "LONG",
-      "updated_at": "2026-08-19T01:30:16.641991+00:00"
+      "dyn_score": 0.2272,
+      "cycles_seen": 92,
+      "last_conf": 0.2272,
+      "last_dir": "SHORT",
+      "updated_at": "2026-08-24T14:30:18.959105+00:00"
     },
     "ETHFI": {
-      "dyn_score": 0.187,
-      "cycles_seen": 56,
-      "last_conf": 0.187,
-      "last_dir": "SHORT",
-      "updated_at": "2026-08-19T01:30:16.643184+00:00"
+      "dyn_score": 0.0956,
+      "cycles_seen": 66,
+      "last_conf": 0.0956,
+      "last_dir": "HOLD",
+      "updated_at": "2026-08-23T23:30:06.458081+00:00"
     },
     "KPEPE": {
-      "dyn_score": 0.2968,
-      "cycles_seen": 1,
-      "last_conf": 0.2968,
+      "dyn_score": 0.2964,
+      "cycles_seen": 19,
+      "last_conf": 0.2964,
       "last_dir": "SHORT",
-      "updated_at": "2026-08-16T11:40:53.946428+00:00"
+      "updated_at": "2026-08-24T14:30:19.489783+00:00"
     },
     "CHIP": {
       "dyn_score": 0.1022,
@@ -72,18 +72,18 @@
       "updated_at": "2026-08-16T12:30:25.499760+00:00"
     },
     "KAITO": {
-      "dyn_score": 0.3369,
-      "cycles_seen": 34,
-      "last_conf": 0.3369,
-      "last_dir": "SHORT",
-      "updated_at": "2026-08-17T19:30:45.124059+00:00"
+      "dyn_score": 0.0933,
+      "cycles_seen": 35,
+      "last_conf": 0.0933,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-23T15:30:30.056129+00:00"
     },
     "BOME": {
-      "dyn_score": 0.1672,
-      "cycles_seen": 3,
-      "last_conf": 0.1672,
+      "dyn_score": 0.2848,
+      "cycles_seen": 18,
+      "last_conf": 0.2848,
       "last_dir": "SHORT",
-      "updated_at": "2026-08-17T05:30:30.890877+00:00"
+      "updated_at": "2026-08-24T14:30:18.957721+00:00"
     },
     "XPL": {
       "dyn_score": 0.12,
@@ -161,6 +161,48 @@
       "last_conf": 0.1689,
       "last_dir": "SHORT",
       "updated_at": "2026-08-16T13:58:47.854868+00:00"
+    },
+    "SUI": {
+      "dyn_score": 0.3349,
+      "cycles_seen": 1,
+      "last_conf": 0.3349,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-23T15:05:00.219253+00:00"
+    },
+    "TAO": {
+      "dyn_score": 0.3576,
+      "cycles_seen": 1,
+      "last_conf": 0.3576,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-23T16:30:23.867567+00:00"
+    },
+    "UNI": {
+      "dyn_score": 0.2877,
+      "cycles_seen": 1,
+      "last_conf": 0.2877,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-23T17:30:11.618823+00:00"
+    },
+    "DOGE": {
+      "dyn_score": 0.1095,
+      "cycles_seen": 1,
+      "last_conf": 0.1095,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-23T18:30:08.299941+00:00"
+    },
+    "INJ": {
+      "dyn_score": 0.2653,
+      "cycles_seen": 1,
+      "last_conf": 0.2653,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-23T19:30:08.169116+00:00"
+    },
+    "NEAR": {
+      "dyn_score": 0.3574,
+      "cycles_seen": 1,
+      "last_conf": 0.3574,
+      "last_dir": "LONG",
+      "updated_at": "2026-08-23T20:30:08.520725+00:00"
     }
   }
 }

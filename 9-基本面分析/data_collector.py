@@ -4,6 +4,8 @@
 - metrics 中仅存放 number/string，不嵌套对象
 - 金融逻辑驱动：基准值 + 合理波动 + 跨模块一致性（通过 _MODULE_CONTEXT）
 - 采集层直接产出结构化数据，API 服务层仅负责组装
+
+@deprecated: 已废弃，请迁移到 from data_center.compat import DataCollector, generate_timeseries
 """
 
 import os
@@ -11,8 +13,15 @@ import json
 import random
 import math
 import hashlib
+import warnings
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
+
+warnings.warn(
+    "data_collector 已废弃，请迁移到 from data_center.compat import ...",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 # 加载同目录 .env（若存在）
 try:

@@ -1,5 +1,5 @@
 {
-  "total_cycles": 691,
+  "total_cycles": 870,
   "total_pnl": -33.274186,
   "wins": 3,
   "losses": 11,
@@ -8,901 +8,6 @@
   "last_profit_date": "2026-08-18T12:26:43.153350",
   "last_optimization_date": "2026-08-18T12:27:27.500369",
   "cycle_history": [
-    {
-      "cycle_id": "cycle-0492",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T17:30:23.825612Z"
-    },
-    {
-      "cycle_id": "cycle-0493",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T17:30:29.073133Z"
-    },
-    {
-      "cycle_id": "cycle-0494",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T18:30:02.536265Z"
-    },
-    {
-      "cycle_id": "cycle-0495",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T18:30:05.152323Z"
-    },
-    {
-      "cycle_id": "cycle-0496",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T18:30:07.898096Z"
-    },
-    {
-      "cycle_id": "cycle-0497",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T18:30:10.574450Z"
-    },
-    {
-      "cycle_id": "cycle-0498",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T18:30:13.623899Z"
-    },
-    {
-      "cycle_id": "cycle-0499",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T18:30:16.162768Z"
-    },
-    {
-      "cycle_id": "cycle-0500",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:01:12.375869Z"
-    },
-    {
-      "cycle_id": "cycle-0501",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:01:12.383675Z"
-    },
-    {
-      "cycle_id": "cycle-0502",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:05:48.132717Z"
-    },
-    {
-      "cycle_id": "cycle-0503",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:06:28.504776Z"
-    },
-    {
-      "cycle_id": "cycle-0504",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:30:04.198903Z"
-    },
-    {
-      "cycle_id": "cycle-0505",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:30:07.597626Z"
-    },
-    {
-      "cycle_id": "cycle-0506",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:30:11.785680Z"
-    },
-    {
-      "cycle_id": "cycle-0507",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:30:16.070854Z"
-    },
-    {
-      "cycle_id": "cycle-0508",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:30:18.936519Z"
-    },
-    {
-      "cycle_id": "cycle-0509",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T19:30:21.580721Z"
-    },
-    {
-      "cycle_id": "cycle-0510",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T20:30:02.938444Z"
-    },
-    {
-      "cycle_id": "cycle-0511",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T20:30:05.919015Z"
-    },
-    {
-      "cycle_id": "cycle-0512",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T20:30:08.806130Z"
-    },
-    {
-      "cycle_id": "cycle-0513",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T20:30:11.840855Z"
-    },
-    {
-      "cycle_id": "cycle-0514",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T20:30:14.544482Z"
-    },
-    {
-      "cycle_id": "cycle-0515",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T20:30:17.077475Z"
-    },
-    {
-      "cycle_id": "cycle-0516",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T21:30:02.394368Z"
-    },
-    {
-      "cycle_id": "cycle-0517",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T21:30:05.181570Z"
-    },
-    {
-      "cycle_id": "cycle-0518",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T21:30:07.617806Z"
-    },
-    {
-      "cycle_id": "cycle-0519",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T21:30:10.033769Z"
-    },
-    {
-      "cycle_id": "cycle-0520",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T21:30:12.485569Z"
-    },
-    {
-      "cycle_id": "cycle-0521",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T21:30:15.152792Z"
-    },
-    {
-      "cycle_id": "cycle-0522",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T22:30:02.558462Z"
-    },
-    {
-      "cycle_id": "cycle-0523",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T22:30:05.081303Z"
-    },
-    {
-      "cycle_id": "cycle-0524",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T22:30:07.537403Z"
-    },
-    {
-      "cycle_id": "cycle-0525",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T22:30:10.245487Z"
-    },
-    {
-      "cycle_id": "cycle-0526",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T22:30:12.755604Z"
-    },
-    {
-      "cycle_id": "cycle-0527",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T22:30:15.345467Z"
-    },
-    {
-      "cycle_id": "cycle-0528",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T23:30:02.278602Z"
-    },
-    {
-      "cycle_id": "cycle-0529",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T23:30:04.924779Z"
-    },
-    {
-      "cycle_id": "cycle-0530",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T23:30:07.274949Z"
-    },
-    {
-      "cycle_id": "cycle-0531",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T23:30:09.795639Z"
-    },
-    {
-      "cycle_id": "cycle-0532",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T23:30:12.358649Z"
-    },
-    {
-      "cycle_id": "cycle-0533",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-17T23:30:15.191259Z"
-    },
-    {
-      "cycle_id": "cycle-0534",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T00:30:02.516019Z"
-    },
-    {
-      "cycle_id": "cycle-0535",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T00:30:05.475856Z"
-    },
-    {
-      "cycle_id": "cycle-0536",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T00:30:08.144690Z"
-    },
-    {
-      "cycle_id": "cycle-0537",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T00:30:10.709983Z"
-    },
-    {
-      "cycle_id": "cycle-0538",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T00:30:13.480468Z"
-    },
-    {
-      "cycle_id": "cycle-0539",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T00:30:16.104410Z"
-    },
-    {
-      "cycle_id": "cycle-0540",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T01:30:02.699797Z"
-    },
-    {
-      "cycle_id": "cycle-0541",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T01:30:06.216471Z"
-    },
-    {
-      "cycle_id": "cycle-0542",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T01:30:12.158905Z"
-    },
-    {
-      "cycle_id": "cycle-0543",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T01:30:15.137382Z"
-    },
-    {
-      "cycle_id": "cycle-0544",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T01:30:19.327556Z"
-    },
-    {
-      "cycle_id": "cycle-0545",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T01:30:21.915258Z"
-    },
-    {
-      "cycle_id": "cycle-0546",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T02:30:12.583365Z"
-    },
-    {
-      "cycle_id": "cycle-0547",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T02:30:15.881326Z"
-    },
-    {
-      "cycle_id": "cycle-0548",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T02:30:19.476685Z"
-    },
-    {
-      "cycle_id": "cycle-0549",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T02:30:22.056964Z"
-    },
-    {
-      "cycle_id": "cycle-0550",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T02:30:25.238094Z"
-    },
-    {
-      "cycle_id": "cycle-0551",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T02:30:30.028869Z"
-    },
-    {
-      "cycle_id": "cycle-0552",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T03:30:02.716887Z"
-    },
-    {
-      "cycle_id": "cycle-0553",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T03:30:06.302200Z"
-    },
-    {
-      "cycle_id": "cycle-0554",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T03:30:11.023395Z"
-    },
-    {
-      "cycle_id": "cycle-0555",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T03:30:14.414110Z"
-    },
-    {
-      "cycle_id": "cycle-0556",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T03:30:19.925325Z"
-    },
-    {
-      "cycle_id": "cycle-0557",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T03:30:23.126753Z"
-    },
-    {
-      "cycle_id": "cycle-0558",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T04:30:03.132263Z"
-    },
-    {
-      "cycle_id": "cycle-0559",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T04:30:07.955215Z"
-    },
-    {
-      "cycle_id": "cycle-0560",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T04:30:12.111723Z"
-    },
-    {
-      "cycle_id": "cycle-0561",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T04:30:15.876536Z"
-    },
-    {
-      "cycle_id": "cycle-0562",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T04:30:20.759512Z"
-    },
-    {
-      "cycle_id": "cycle-0563",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T04:30:26.843922Z"
-    },
-    {
-      "cycle_id": "cycle-0564",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T05:30:05.607903Z"
-    },
-    {
-      "cycle_id": "cycle-0565",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T05:30:09.520560Z"
-    },
-    {
-      "cycle_id": "cycle-0566",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T05:30:12.595763Z"
-    },
-    {
-      "cycle_id": "cycle-0567",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T05:30:17.305979Z"
-    },
-    {
-      "cycle_id": "cycle-0568",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T05:30:21.022386Z"
-    },
-    {
-      "cycle_id": "cycle-0569",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T05:30:24.765808Z"
-    },
-    {
-      "cycle_id": "cycle-0570",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T06:30:03.467726Z"
-    },
-    {
-      "cycle_id": "cycle-0571",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T06:30:08.082303Z"
-    },
-    {
-      "cycle_id": "cycle-0572",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T06:30:13.154888Z"
-    },
-    {
-      "cycle_id": "cycle-0573",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T06:30:18.616324Z"
-    },
-    {
-      "cycle_id": "cycle-0574",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T06:30:22.813187Z"
-    },
-    {
-      "cycle_id": "cycle-0575",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T06:30:27.016766Z"
-    },
-    {
-      "cycle_id": "cycle-0576",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T07:30:05.559095Z"
-    },
-    {
-      "cycle_id": "cycle-0577",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T07:30:09.505147Z"
-    },
-    {
-      "cycle_id": "cycle-0578",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T07:30:13.934245Z"
-    },
-    {
-      "cycle_id": "cycle-0579",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T07:30:18.175488Z"
-    },
-    {
-      "cycle_id": "cycle-0580",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T07:30:22.450208Z"
-    },
-    {
-      "cycle_id": "cycle-0581",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T07:30:25.979235Z"
-    },
-    {
-      "cycle_id": "cycle-0582",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T08:30:03.760110Z"
-    },
-    {
-      "cycle_id": "cycle-0583",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T08:30:07.050380Z"
-    },
-    {
-      "cycle_id": "cycle-0584",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T08:30:12.106322Z"
-    },
-    {
-      "cycle_id": "cycle-0585",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T08:30:17.348333Z"
-    },
-    {
-      "cycle_id": "cycle-0586",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T08:30:21.073438Z"
-    },
-    {
-      "cycle_id": "cycle-0587",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T08:30:25.782421Z"
-    },
-    {
-      "cycle_id": "cycle-0588",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T09:30:04.167084Z"
-    },
-    {
-      "cycle_id": "cycle-0589",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T09:30:08.197873Z"
-    },
-    {
-      "cycle_id": "cycle-0590",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T09:30:11.725512Z"
-    },
-    {
-      "cycle_id": "cycle-0591",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T09:30:15.607061Z"
-    },
-    {
-      "cycle_id": "cycle-0592",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T09:30:18.758975Z"
-    },
-    {
-      "cycle_id": "cycle-0593",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T09:30:23.915795Z"
-    },
-    {
-      "cycle_id": "cycle-0594",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T10:30:03.764092Z"
-    },
-    {
-      "cycle_id": "cycle-0595",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T10:30:07.890179Z"
-    },
-    {
-      "cycle_id": "cycle-0596",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T10:30:12.472827Z"
-    },
-    {
-      "cycle_id": "cycle-0597",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T10:30:16.146794Z"
-    },
-    {
-      "cycle_id": "cycle-0598",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T10:30:19.529399Z"
-    },
-    {
-      "cycle_id": "cycle-0599",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T10:30:25.374931Z"
-    },
-    {
-      "cycle_id": "cycle-0600",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T11:30:04.036736Z"
-    },
-    {
-      "cycle_id": "cycle-0601",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T11:30:11.207556Z"
-    },
-    {
-      "cycle_id": "cycle-0602",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T11:30:16.163264Z"
-    },
-    {
-      "cycle_id": "cycle-0603",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T11:30:21.017767Z"
-    },
-    {
-      "cycle_id": "cycle-0604",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T11:30:23.749963Z"
-    },
-    {
-      "cycle_id": "cycle-0605",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T11:30:26.326051Z"
-    },
-    {
-      "cycle_id": "cycle-0606",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T12:26:43.152041Z"
-    },
-    {
-      "cycle_id": "cycle-0607",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T12:27:27.500371Z"
-    },
-    {
-      "cycle_id": "cycle-0608",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T12:30:05.961912Z"
-    },
-    {
-      "cycle_id": "cycle-0609",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T12:30:10.071334Z"
-    },
-    {
-      "cycle_id": "cycle-0610",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T12:30:13.631359Z"
-    },
-    {
-      "cycle_id": "cycle-0611",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T12:30:19.371275Z"
-    },
-    {
-      "cycle_id": "cycle-0612",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T12:30:23.820418Z"
-    },
-    {
-      "cycle_id": "cycle-0613",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T12:30:28.074138Z"
-    },
-    {
-      "cycle_id": "cycle-0614",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T13:30:03.069410Z"
-    },
-    {
-      "cycle_id": "cycle-0615",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T13:30:09.213946Z"
-    },
-    {
-      "cycle_id": "cycle-0616",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T13:30:12.001748Z"
-    },
-    {
-      "cycle_id": "cycle-0617",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T13:30:18.897173Z"
-    },
-    {
-      "cycle_id": "cycle-0618",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T13:30:22.202104Z"
-    },
-    {
-      "cycle_id": "cycle-0619",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T13:30:28.853464Z"
-    },
-    {
-      "cycle_id": "cycle-0620",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T14:30:05.056833Z"
-    },
-    {
-      "cycle_id": "cycle-0621",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T14:30:09.291459Z"
-    },
-    {
-      "cycle_id": "cycle-0622",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T14:30:14.700464Z"
-    },
-    {
-      "cycle_id": "cycle-0623",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T14:30:20.506160Z"
-    },
-    {
-      "cycle_id": "cycle-0624",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T14:30:26.390833Z"
-    },
-    {
-      "cycle_id": "cycle-0625",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T14:30:30.122477Z"
-    },
-    {
-      "cycle_id": "cycle-0626",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T15:30:07.194292Z"
-    },
-    {
-      "cycle_id": "cycle-0627",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T15:30:14.227352Z"
-    },
-    {
-      "cycle_id": "cycle-0628",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T15:30:23.027278Z"
-    },
-    {
-      "cycle_id": "cycle-0629",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T15:30:30.057671Z"
-    },
-    {
-      "cycle_id": "cycle-0630",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T15:30:34.270234Z"
-    },
-    {
-      "cycle_id": "cycle-0631",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T15:30:39.196783Z"
-    },
-    {
-      "cycle_id": "cycle-0632",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T16:30:06.970389Z"
-    },
-    {
-      "cycle_id": "cycle-0633",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T16:30:10.686926Z"
-    },
-    {
-      "cycle_id": "cycle-0634",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T16:30:13.763483Z"
-    },
-    {
-      "cycle_id": "cycle-0635",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T16:30:19.435349Z"
-    },
-    {
-      "cycle_id": "cycle-0636",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T16:30:24.370809Z"
-    },
-    {
-      "cycle_id": "cycle-0637",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T16:30:30.600370Z"
-    },
-    {
-      "cycle_id": "cycle-0638",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T17:30:03.055982Z"
-    },
-    {
-      "cycle_id": "cycle-0639",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T17:30:06.141694Z"
-    },
-    {
-      "cycle_id": "cycle-0640",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T17:30:11.178409Z"
-    },
-    {
-      "cycle_id": "cycle-0641",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T17:30:13.920283Z"
-    },
-    {
-      "cycle_id": "cycle-0642",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T17:30:16.910308Z"
-    },
-    {
-      "cycle_id": "cycle-0643",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T17:30:19.457056Z"
-    },
-    {
-      "cycle_id": "cycle-0644",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T18:30:02.845255Z"
-    },
-    {
-      "cycle_id": "cycle-0645",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T18:30:05.414695Z"
-    },
-    {
-      "cycle_id": "cycle-0646",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T18:30:08.589393Z"
-    },
-    {
-      "cycle_id": "cycle-0647",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T18:30:11.223879Z"
-    },
-    {
-      "cycle_id": "cycle-0648",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T18:30:13.792381Z"
-    },
-    {
-      "cycle_id": "cycle-0649",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T18:30:16.900930Z"
-    },
-    {
-      "cycle_id": "cycle-0650",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T19:30:02.556957Z"
-    },
-    {
-      "cycle_id": "cycle-0651",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T19:30:05.235052Z"
-    },
-    {
-      "cycle_id": "cycle-0652",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T19:30:07.573230Z"
-    },
-    {
-      "cycle_id": "cycle-0653",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T19:30:10.478495Z"
-    },
-    {
-      "cycle_id": "cycle-0654",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T19:30:13.114211Z"
-    },
-    {
-      "cycle_id": "cycle-0655",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T19:30:15.776869Z"
-    },
-    {
-      "cycle_id": "cycle-0656",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T20:30:02.287961Z"
-    },
-    {
-      "cycle_id": "cycle-0657",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T20:30:04.587573Z"
-    },
-    {
-      "cycle_id": "cycle-0658",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T20:30:07.504577Z"
-    },
-    {
-      "cycle_id": "cycle-0659",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T20:30:10.189910Z"
-    },
-    {
-      "cycle_id": "cycle-0660",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T20:30:12.883659Z"
-    },
-    {
-      "cycle_id": "cycle-0661",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T20:30:15.651010Z"
-    },
-    {
-      "cycle_id": "cycle-0662",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T21:30:03.156261Z"
-    },
-    {
-      "cycle_id": "cycle-0663",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T21:30:05.847845Z"
-    },
-    {
-      "cycle_id": "cycle-0664",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T21:30:08.791370Z"
-    },
-    {
-      "cycle_id": "cycle-0665",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T21:30:11.188828Z"
-    },
-    {
-      "cycle_id": "cycle-0666",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T21:30:13.774697Z"
-    },
-    {
-      "cycle_id": "cycle-0667",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T21:30:16.600858Z"
-    },
-    {
-      "cycle_id": "cycle-0668",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T22:30:02.662184Z"
-    },
-    {
-      "cycle_id": "cycle-0669",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T22:30:05.398613Z"
-    },
-    {
-      "cycle_id": "cycle-0670",
-      "status": "COMPLETED",
-      "timestamp": "2026-08-18T22:30:08.058234Z"
-    },
     {
       "cycle_id": "cycle-0671",
       "status": "COMPLETED",
@@ -1007,7 +112,902 @@
       "cycle_id": "cycle-0691",
       "status": "COMPLETED",
       "timestamp": "2026-08-19T01:30:16.638323Z"
+    },
+    {
+      "cycle_id": "cycle-0692",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:02:57.308408Z"
+    },
+    {
+      "cycle_id": "cycle-0693",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:03:03.885022Z"
+    },
+    {
+      "cycle_id": "cycle-0694",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:03:07.026998Z"
+    },
+    {
+      "cycle_id": "cycle-0695",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:03:11.577672Z"
+    },
+    {
+      "cycle_id": "cycle-0696",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:03:56.550302Z"
+    },
+    {
+      "cycle_id": "cycle-0697",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:04:01.703948Z"
+    },
+    {
+      "cycle_id": "cycle-0698",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:04:08.434669Z"
+    },
+    {
+      "cycle_id": "cycle-0699",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:04:13.571358Z"
+    },
+    {
+      "cycle_id": "cycle-0700",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:04:17.908852Z"
+    },
+    {
+      "cycle_id": "cycle-0701",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:04:33.079906Z"
+    },
+    {
+      "cycle_id": "cycle-0702",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:05:00.081737Z"
+    },
+    {
+      "cycle_id": "cycle-0703",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:30:05.259427Z"
+    },
+    {
+      "cycle_id": "cycle-0704",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:30:09.497948Z"
+    },
+    {
+      "cycle_id": "cycle-0705",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:30:11.768864Z"
+    },
+    {
+      "cycle_id": "cycle-0706",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:30:18.906337Z"
+    },
+    {
+      "cycle_id": "cycle-0707",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:30:21.581386Z"
+    },
+    {
+      "cycle_id": "cycle-0708",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:30:25.170956Z"
+    },
+    {
+      "cycle_id": "cycle-0709",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T15:30:30.047181Z"
+    },
+    {
+      "cycle_id": "cycle-0710",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T16:30:01.750598Z"
+    },
+    {
+      "cycle_id": "cycle-0711",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T16:30:03.982332Z"
+    },
+    {
+      "cycle_id": "cycle-0712",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T16:30:07.063027Z"
+    },
+    {
+      "cycle_id": "cycle-0713",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T16:30:15.659927Z"
+    },
+    {
+      "cycle_id": "cycle-0714",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T16:30:17.419391Z"
+    },
+    {
+      "cycle_id": "cycle-0715",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T16:30:20.669045Z"
+    },
+    {
+      "cycle_id": "cycle-0716",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T16:30:23.865117Z"
+    },
+    {
+      "cycle_id": "cycle-0717",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T17:30:01.651542Z"
+    },
+    {
+      "cycle_id": "cycle-0718",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T17:30:03.400123Z"
+    },
+    {
+      "cycle_id": "cycle-0719",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T17:30:04.730886Z"
+    },
+    {
+      "cycle_id": "cycle-0720",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T17:30:06.352221Z"
+    },
+    {
+      "cycle_id": "cycle-0721",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T17:30:08.518115Z"
+    },
+    {
+      "cycle_id": "cycle-0722",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T17:30:10.035296Z"
+    },
+    {
+      "cycle_id": "cycle-0723",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T17:30:11.615482Z"
+    },
+    {
+      "cycle_id": "cycle-0724",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T18:30:01.298854Z"
+    },
+    {
+      "cycle_id": "cycle-0725",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T18:30:02.514902Z"
+    },
+    {
+      "cycle_id": "cycle-0726",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T18:30:03.724625Z"
+    },
+    {
+      "cycle_id": "cycle-0727",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T18:30:04.845455Z"
+    },
+    {
+      "cycle_id": "cycle-0728",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T18:30:05.942993Z"
+    },
+    {
+      "cycle_id": "cycle-0729",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T18:30:07.079941Z"
+    },
+    {
+      "cycle_id": "cycle-0730",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T18:30:08.297854Z"
+    },
+    {
+      "cycle_id": "cycle-0731",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T19:30:01.236814Z"
+    },
+    {
+      "cycle_id": "cycle-0732",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T19:30:02.342361Z"
+    },
+    {
+      "cycle_id": "cycle-0733",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T19:30:03.637693Z"
+    },
+    {
+      "cycle_id": "cycle-0734",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T19:30:04.789783Z"
+    },
+    {
+      "cycle_id": "cycle-0735",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T19:30:05.928796Z"
+    },
+    {
+      "cycle_id": "cycle-0736",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T19:30:07.022526Z"
+    },
+    {
+      "cycle_id": "cycle-0737",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T19:30:08.166581Z"
+    },
+    {
+      "cycle_id": "cycle-0738",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T20:30:01.396972Z"
+    },
+    {
+      "cycle_id": "cycle-0739",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T20:30:02.551349Z"
+    },
+    {
+      "cycle_id": "cycle-0740",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T20:30:03.849726Z"
+    },
+    {
+      "cycle_id": "cycle-0741",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T20:30:05.212712Z"
+    },
+    {
+      "cycle_id": "cycle-0742",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T20:30:06.316344Z"
+    },
+    {
+      "cycle_id": "cycle-0743",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T20:30:07.427366Z"
+    },
+    {
+      "cycle_id": "cycle-0744",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T20:30:08.517568Z"
+    },
+    {
+      "cycle_id": "cycle-0745",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T21:30:01.351469Z"
+    },
+    {
+      "cycle_id": "cycle-0746",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T21:30:02.524670Z"
+    },
+    {
+      "cycle_id": "cycle-0747",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T21:30:03.790504Z"
+    },
+    {
+      "cycle_id": "cycle-0748",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T21:30:04.930770Z"
+    },
+    {
+      "cycle_id": "cycle-0749",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T21:30:06.171515Z"
+    },
+    {
+      "cycle_id": "cycle-0750",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T21:30:07.231935Z"
+    },
+    {
+      "cycle_id": "cycle-0751",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T21:30:07.744675Z"
+    },
+    {
+      "cycle_id": "cycle-0752",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T22:30:01.327718Z"
+    },
+    {
+      "cycle_id": "cycle-0753",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T22:30:02.500184Z"
+    },
+    {
+      "cycle_id": "cycle-0754",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T22:30:03.587469Z"
+    },
+    {
+      "cycle_id": "cycle-0755",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T22:30:04.650701Z"
+    },
+    {
+      "cycle_id": "cycle-0756",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T22:30:05.719828Z"
+    },
+    {
+      "cycle_id": "cycle-0757",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T22:30:06.799382Z"
+    },
+    {
+      "cycle_id": "cycle-0758",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T22:30:07.222455Z"
+    },
+    {
+      "cycle_id": "cycle-0759",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T23:30:01.307320Z"
+    },
+    {
+      "cycle_id": "cycle-0760",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T23:30:02.285689Z"
+    },
+    {
+      "cycle_id": "cycle-0761",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T23:30:03.310016Z"
+    },
+    {
+      "cycle_id": "cycle-0762",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T23:30:04.330542Z"
+    },
+    {
+      "cycle_id": "cycle-0763",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T23:30:05.341827Z"
+    },
+    {
+      "cycle_id": "cycle-0764",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T23:30:06.443628Z"
+    },
+    {
+      "cycle_id": "cycle-0765",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-23T23:30:06.826056Z"
+    },
+    {
+      "cycle_id": "cycle-0766",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T00:30:01.426096Z"
+    },
+    {
+      "cycle_id": "cycle-0767",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T00:30:02.617001Z"
+    },
+    {
+      "cycle_id": "cycle-0768",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T00:30:03.683581Z"
+    },
+    {
+      "cycle_id": "cycle-0769",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T00:30:04.709085Z"
+    },
+    {
+      "cycle_id": "cycle-0770",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T00:30:05.655238Z"
+    },
+    {
+      "cycle_id": "cycle-0771",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T00:30:06.942479Z"
+    },
+    {
+      "cycle_id": "cycle-0772",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T00:30:07.348395Z"
+    },
+    {
+      "cycle_id": "cycle-0773",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T01:30:01.407581Z"
+    },
+    {
+      "cycle_id": "cycle-0774",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T01:30:02.397767Z"
+    },
+    {
+      "cycle_id": "cycle-0775",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T01:30:03.425837Z"
+    },
+    {
+      "cycle_id": "cycle-0776",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T01:30:04.445102Z"
+    },
+    {
+      "cycle_id": "cycle-0777",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T01:30:05.463729Z"
+    },
+    {
+      "cycle_id": "cycle-0778",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T01:30:06.907711Z"
+    },
+    {
+      "cycle_id": "cycle-0779",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T01:30:07.718643Z"
+    },
+    {
+      "cycle_id": "cycle-0780",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T02:30:01.532579Z"
+    },
+    {
+      "cycle_id": "cycle-0781",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T02:30:03.030345Z"
+    },
+    {
+      "cycle_id": "cycle-0782",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T02:30:04.798983Z"
+    },
+    {
+      "cycle_id": "cycle-0783",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T02:30:05.889956Z"
+    },
+    {
+      "cycle_id": "cycle-0784",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T02:30:07.585329Z"
+    },
+    {
+      "cycle_id": "cycle-0785",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T02:30:08.657564Z"
+    },
+    {
+      "cycle_id": "cycle-0786",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T02:30:09.262072Z"
+    },
+    {
+      "cycle_id": "cycle-0787",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T03:30:01.231149Z"
+    },
+    {
+      "cycle_id": "cycle-0788",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T03:30:02.547302Z"
+    },
+    {
+      "cycle_id": "cycle-0789",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T03:30:03.632358Z"
+    },
+    {
+      "cycle_id": "cycle-0790",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T03:30:04.652692Z"
+    },
+    {
+      "cycle_id": "cycle-0791",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T03:30:06.132947Z"
+    },
+    {
+      "cycle_id": "cycle-0792",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T03:30:07.238494Z"
+    },
+    {
+      "cycle_id": "cycle-0793",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T03:30:07.723684Z"
+    },
+    {
+      "cycle_id": "cycle-0794",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T04:30:02.140556Z"
+    },
+    {
+      "cycle_id": "cycle-0795",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T04:30:03.729611Z"
+    },
+    {
+      "cycle_id": "cycle-0796",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T04:30:05.469603Z"
+    },
+    {
+      "cycle_id": "cycle-0797",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T04:30:07.052505Z"
+    },
+    {
+      "cycle_id": "cycle-0798",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T04:30:08.834609Z"
+    },
+    {
+      "cycle_id": "cycle-0799",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T04:30:10.422116Z"
+    },
+    {
+      "cycle_id": "cycle-0800",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T04:30:11.138600Z"
+    },
+    {
+      "cycle_id": "cycle-0801",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T05:30:02.172925Z"
+    },
+    {
+      "cycle_id": "cycle-0802",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T05:30:03.666933Z"
+    },
+    {
+      "cycle_id": "cycle-0803",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T05:30:05.333220Z"
+    },
+    {
+      "cycle_id": "cycle-0804",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T05:30:06.942051Z"
+    },
+    {
+      "cycle_id": "cycle-0805",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T05:30:08.892786Z"
+    },
+    {
+      "cycle_id": "cycle-0806",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T05:30:10.739901Z"
+    },
+    {
+      "cycle_id": "cycle-0807",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T05:30:11.486033Z"
+    },
+    {
+      "cycle_id": "cycle-0808",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T06:30:05.716038Z"
+    },
+    {
+      "cycle_id": "cycle-0809",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T06:30:09.164284Z"
+    },
+    {
+      "cycle_id": "cycle-0810",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T06:30:14.808827Z"
+    },
+    {
+      "cycle_id": "cycle-0811",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T06:30:20.111205Z"
+    },
+    {
+      "cycle_id": "cycle-0812",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T06:30:21.946756Z"
+    },
+    {
+      "cycle_id": "cycle-0813",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T06:30:23.365566Z"
+    },
+    {
+      "cycle_id": "cycle-0814",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T06:30:24.036483Z"
+    },
+    {
+      "cycle_id": "cycle-0815",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T07:30:23.186882Z"
+    },
+    {
+      "cycle_id": "cycle-0816",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T07:30:26.842580Z"
+    },
+    {
+      "cycle_id": "cycle-0817",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T07:30:30.914794Z"
+    },
+    {
+      "cycle_id": "cycle-0818",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T07:30:36.130110Z"
+    },
+    {
+      "cycle_id": "cycle-0819",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T07:30:42.521604Z"
+    },
+    {
+      "cycle_id": "cycle-0820",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T07:30:50.526603Z"
+    },
+    {
+      "cycle_id": "cycle-0821",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T07:30:53.027758Z"
+    },
+    {
+      "cycle_id": "cycle-0822",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T08:30:01.792563Z"
+    },
+    {
+      "cycle_id": "cycle-0823",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T08:30:03.326866Z"
+    },
+    {
+      "cycle_id": "cycle-0824",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T08:30:04.777699Z"
+    },
+    {
+      "cycle_id": "cycle-0825",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T08:30:11.930604Z"
+    },
+    {
+      "cycle_id": "cycle-0826",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T08:30:14.359918Z"
+    },
+    {
+      "cycle_id": "cycle-0827",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T08:30:16.829522Z"
+    },
+    {
+      "cycle_id": "cycle-0828",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T08:30:17.544459Z"
+    },
+    {
+      "cycle_id": "cycle-0829",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T09:30:03.022475Z"
+    },
+    {
+      "cycle_id": "cycle-0830",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T09:30:05.007673Z"
+    },
+    {
+      "cycle_id": "cycle-0831",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T09:30:08.608524Z"
+    },
+    {
+      "cycle_id": "cycle-0832",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T09:30:15.318617Z"
+    },
+    {
+      "cycle_id": "cycle-0833",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T09:30:18.794968Z"
+    },
+    {
+      "cycle_id": "cycle-0834",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T09:30:21.496523Z"
+    },
+    {
+      "cycle_id": "cycle-0835",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T09:30:21.976809Z"
+    },
+    {
+      "cycle_id": "cycle-0836",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T10:30:02.131277Z"
+    },
+    {
+      "cycle_id": "cycle-0837",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T10:30:03.689385Z"
+    },
+    {
+      "cycle_id": "cycle-0838",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T10:30:05.247339Z"
+    },
+    {
+      "cycle_id": "cycle-0839",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T10:30:06.605638Z"
+    },
+    {
+      "cycle_id": "cycle-0840",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T10:30:08.060502Z"
+    },
+    {
+      "cycle_id": "cycle-0841",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T10:30:09.662030Z"
+    },
+    {
+      "cycle_id": "cycle-0842",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T10:30:10.377990Z"
+    },
+    {
+      "cycle_id": "cycle-0843",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T11:30:01.613373Z"
+    },
+    {
+      "cycle_id": "cycle-0844",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T11:30:03.518043Z"
+    },
+    {
+      "cycle_id": "cycle-0845",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T11:30:04.729786Z"
+    },
+    {
+      "cycle_id": "cycle-0846",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T11:30:06.030367Z"
+    },
+    {
+      "cycle_id": "cycle-0847",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T11:30:07.188831Z"
+    },
+    {
+      "cycle_id": "cycle-0848",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T11:30:08.617756Z"
+    },
+    {
+      "cycle_id": "cycle-0849",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T11:30:09.121542Z"
+    },
+    {
+      "cycle_id": "cycle-0850",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T12:30:02.624017Z"
+    },
+    {
+      "cycle_id": "cycle-0851",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T12:30:04.603554Z"
+    },
+    {
+      "cycle_id": "cycle-0852",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T12:30:06.283464Z"
+    },
+    {
+      "cycle_id": "cycle-0853",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T12:30:08.012030Z"
+    },
+    {
+      "cycle_id": "cycle-0854",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T12:30:11.213026Z"
+    },
+    {
+      "cycle_id": "cycle-0855",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T12:30:12.963527Z"
+    },
+    {
+      "cycle_id": "cycle-0856",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T12:30:13.541339Z"
+    },
+    {
+      "cycle_id": "cycle-0857",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T13:30:01.418532Z"
+    },
+    {
+      "cycle_id": "cycle-0858",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T13:30:03.004226Z"
+    },
+    {
+      "cycle_id": "cycle-0859",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T13:30:04.449594Z"
+    },
+    {
+      "cycle_id": "cycle-0860",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T13:30:05.775838Z"
+    },
+    {
+      "cycle_id": "cycle-0861",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T13:30:07.268268Z"
+    },
+    {
+      "cycle_id": "cycle-0862",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T13:30:08.453845Z"
+    },
+    {
+      "cycle_id": "cycle-0863",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T13:30:08.848643Z"
+    },
+    {
+      "cycle_id": "cycle-0864",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T14:30:03.756500Z"
+    },
+    {
+      "cycle_id": "cycle-0865",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T14:30:07.677974Z"
+    },
+    {
+      "cycle_id": "cycle-0866",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T14:30:10.079863Z"
+    },
+    {
+      "cycle_id": "cycle-0867",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T14:30:13.148825Z"
+    },
+    {
+      "cycle_id": "cycle-0868",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T14:30:17.142216Z"
+    },
+    {
+      "cycle_id": "cycle-0869",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T14:30:18.949301Z"
+    },
+    {
+      "cycle_id": "cycle-0870",
+      "status": "COMPLETED",
+      "timestamp": "2026-08-24T14:30:19.487098Z"
     }
   ],
-  "saved_at": "2026-08-19T01:30:16.638367Z"
+  "saved_at": "2026-08-24T14:30:19.487169Z"
 }

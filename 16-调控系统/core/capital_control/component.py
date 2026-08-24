@@ -288,13 +288,14 @@ class CapitalControlComponent:
         if result.fallback_used:
             reason_parts.append("fallback_to_static_budget")
 
-        # 简单 max_position_usdt：可用余额的 20%
+        # max_position_usdt：保证金口径（可用余额的 20%），不含杠杆
+        # 调用方需乘杠杆转为名义价值后再与 position_usdt 比较
         max_position_usdt = round(max(0.0, result.avail_balance) * 0.2, 2)
 
         return {
             "allowed": allowed,
             "reason": "; ".join(reason_parts) or "ok",
-            "max_position_usdt": max_position_usdt,
+            "max_position_usdt": max_position_usdt,  # 保证金口径，非名义价值
             "current_avail": round(result.avail_balance, 2),
             "margin_pressure": pressure,
             "used_pct": round(result.used_pct, 2),

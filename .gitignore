@@ -27,3 +27,80 @@ threshold
 # 敏感配置文件
 .env
 .env.*
+
+# === 运行时工作记忆与交易记忆数据(海量生成,不纳入版本控制) ===
+4-MEMORY/0-工作记忆/
+4-MEMORY/1-开发记忆单元/
+4-MEMORY/2-交易记忆单元/solution_paths/
+4-MEMORY/0-元记忆/evaluation_history.jsonl
+4-MEMORY/0-元记忆/*.bak_*
+4-MEMORY/archive/
+4-MEMORY/data/cognitive_memory.db-journal
+4-MEMORY/data/p2_rebuild_sp_manifest.json
+4-MEMORY/data/p3_upgrade_manifest.json
+
+# === 工具与会话运行时状态 ===
+.cognitive/
+.asset-research-history/
+.research-scheduler
+.sandbox-home
+.trae/
+.claude/
+.codebuddy/
+.workbuddy/
+deploy/ops/state/
+*.pid
+.cognitive_daemon.pid
+
+# === 产物/缓存/测试输出/回测报告 ===
+artifacts/
+data/
+7-产物中台/系统研究索引体系/scripts/stress_test_output/
+12-三屏趋势系统/.cache/
+12-三屏趋势系统/ml/backtest_results/
+12-三屏趋势系统/ml/loop_data/
+12-三屏趋势系统/ml/models/ensemble/collected/
+12-三屏趋势系统/ml/ewave_*.json
+14-V15经典马丁策略/.coverage
+14-V15经典马丁策略/output/
+14-V15经典马丁策略/reports/
+14-V15经典马丁策略/docs/test_junit.xml
+1-ARCHITECTURE/dreamos/capabilities/trading/reports/
+1-ARCHITECTURE/dreamos/capabilities/trading/backtest/backtest_reports/
+1-ARCHITECTURE/dreamos/capabilities/trading/observation/reports/
+1-ARCHITECTURE/dreamos/cli/multi_scenario_stress_report.json
+1-ARCHITECTURE/dreamos/core/memory/*_memory.json
+1-ARCHITECTURE/dreamos/core/memory/*.bak
+16-调控系统/a8_*.json
+16-调控系统/core/intent-specs/spec_task_*.json
+11-易经推理系统/constraints/releases/
+11-易经推理系统/scripts/memory_l4/_archived/
+
+# === 实验:运行时数据/截图/决策快照 ===
+experiments/ab-trading/.workbuddy/
+experiments/ab-trading/A系列研报/A1研报/a1_regime_*.json
+experiments/ab-trading/decision.json
+experiments/ab-trading/shots_*.png
+
+# === 二进制压缩包/数据库journal/备份文件 ===
+*.tar.gz
+*.db-journal
+*.bak_*
+*.bak
+BAK_M1_START
+
+# === 数据库与运行时状态文件 ===
+3-FRONTEND/dream-universal-gateway/dev.db
+3-FRONTEND/dream-universal-gateway/prisma/dev.db
+3.1-FRONTEND/dev.db
+3.1-FRONTEND/intent-memory/
+16-调控系统/core/meta/artifact_hub.sqlite
+1-ARCHITECTURE/dreamos/capabilities/trading/execution/.4h_dedup.json
+1-ARCHITECTURE/dreamos/cli/backtest_reports/
+11-易经推理系统/scripts/memory_l4/runtime/
+11-易经推理系统/scripts/memory_l4/bcrm2/datafeeds/
+11-易经推理系统/scripts/memory_l4/bcrm2/models/
+11-易经推理系统/scripts/memory_l4/bcrm2/features/
+11-易经推理系统/scripts/memory_l4/new_methodology_backtest_result.json
+11-易经推理系统/tests/data/
+10-经典指标系统/user_data/ai_integration/

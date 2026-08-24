@@ -2,6 +2,8 @@
 """
 加密市场资金流数据采集模块
 优先级：P0 (CoinGlass/Binance) -> P1 (DefiLlama/Yahoo) -> P2 (SoSoValue/Etherscan)
+
+@deprecated: 已废弃，请迁移到 from data_center.compat import run_full_collection
 """
 
 import json
@@ -9,10 +11,17 @@ import os
 import hashlib
 import csv
 import re
+import warnings
 from datetime import datetime, timezone
 from typing import Any
 from pathlib import Path
 import urllib.request
+
+warnings.warn(
+    "flow_collector 已废弃，请迁移到 from data_center.compat import run_full_collection",
+    DeprecationWarning,
+    stacklevel=2,
+)
 import urllib.error
 import urllib.parse
 

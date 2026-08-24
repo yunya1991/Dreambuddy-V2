@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """
 交易工具集：风险控制、绩效统计、Case 生成、动态仓位
+
+⚠️ P0 DAL 接入（Experience 698940）：本文件内 TradeRecord / DailyStats 为历史独立定义，
+   后续（P1 接入完成后）需改为：
+       from dreambuddy_dal.unified_models import TradeRecord, DailyStats
+   截止日期 2026-09-30（配合 dreambuddy_dal.compat 兼容层）。
+   SSoT 文档：19-数据访问层/docs/SCHEMA_DESIGN.md §3.1 / §3.2
 """
 import json
 import os
@@ -54,6 +60,13 @@ class TradeRecord:
     # Phase C (Spec §4.3.2): B 档排队止盈计划
     # {"type": "ranked_tp", "wait_cycles": 2, "trigger_rank": float, "set_at_cycle": int}
     reduce_plan: Optional[Dict] = None
+    # 轻仓试错标记 + 评估周期（v4.5 新增）
+    is_trial: bool = False         # 是否轻仓试错开仓
+    trial_eval_done: bool = False  # 评估周期是否已完成
+    trial_open_ts: float = 0.0     # 试错开仓时间戳（秒），用于计算评估周期
+    # v4.6：开仓时的过滤层共识分快照，用于基础阈值动态调节（聚合非单笔）
+    score_consensus: float = 0.0   # 开仓时 ElasticGate3L 共识分 score_consensus
+    gate_base_threshold: float = 0.40  # 开仓时的基础阈值快照
 
 
 @dataclass
@@ -419,7 +432,7 @@ class RiskManager:
         # 动态亏损阈值：亏损超过当前权益的 loss_limit_pct（默认20%）则拦截
         # 兜底固定值 daily_loss_limit（默认-30U，即150U可用金的20%）
         dynamic_limit = -(current_equity * self.state.loss_limit_pct) if current_equity > 0 else self.state.daily_loss_limit
-        effective_limit = max(dynamic_limit, self.state.daily_loss_limit)  # 取更严格的阈值
+        effective_limit = min(dynamic_limit, self.state.daily_loss_limit)  # 取更宽松阈值，确保大余额时按比例放行
 
         if self.state.daily_pnl <= effective_limit:
             return {"allowed": False,
@@ -878,7 +891,7 @@ class RiskManager:
 
         # 仅以亏损金额触发halt，不以连续亏损笔数触发
         dynamic_limit = -(current_equity * self.state.loss_limit_pct) if current_equity > 0 else self.state.daily_loss_limit
-        effective_limit = max(dynamic_limit, self.state.daily_loss_limit)
+        effective_limit = min(dynamic_limit, self.state.daily_loss_limit)
 
         if self.state.daily_pnl <= effective_limit:
             self.state.trading_halted = True
@@ -935,12 +948,121 @@ def register_trade_to_l4(trade: TradeRecord) -> Tuple[str, bool]:
 
     使用 TradeEvent + UnifiedCaseRegistry 生成标准 TradeCase v0.3
 
+    P1 DAL 双写：若环境变量 DB_BACKEND ∈ {dual_write, sqlite_unified}，
+    同步把 trade 写入 19-数据访问层的统一 SQLite 库（保证三批 Import 后数据一致）。
+    DAL 写入失败不阻塞 L4 Case 注册（logger.warning 即回退）。
+
     Returns:
         (case_id, success)
     """
+    _dal_write_trade_if_enabled(trade)
     event = TradeEvent.from_trade_record(trade)
     registry = UnifiedCaseRegistry()
     return registry.register_trade_event(event)
+
+
+def _dal_write_trade_if_enabled(trade: TradeRecord) -> None:
+    """消费方最小侵入双写：DB_BACKEND ∈ {dual_write, sqlite_unified} → add_trade 到 DAL。"""
+    backend = (os.environ.get("DB_BACKEND") or "json_legacy").lower()
+    if backend not in {"dual_write", "sqlite_unified"}:
+        return
+    try:
+        from dreambuddy_dal import di as _dal_di  # 局部导入，无 DAL 时也不破坏
+        from dreambuddy_dal.unified_models import (
+            TradeRecord as UnifiedTradeRecord,
+            TradeDirection,
+            ExitReason,
+            CloseInfo,
+        )
+    except Exception as exc:  # pragma: no cover - 部署未装 dreambuddy_dal 包路径
+        logger.warning("[DAL-p1] import failed: %s", exc)
+        return
+    try:
+        repo = _dal_di.get_trade_repo()
+    except Exception as exc:  # pragma: no cover - Kill-Switch / schema 异常
+        logger.warning("[DAL-p1] get_trade_repo fallback to json_legacy: %s", exc)
+        return
+    try:
+        unified = _convert_tradingutils_trade_to_unified(
+            trade,
+            UnifiedTradeRecord=UnifiedTradeRecord,
+            TradeDirection=TradeDirection,
+            ExitReason=ExitReason,
+            CloseInfo=CloseInfo,
+        )
+    except Exception as exc:  # pragma: no cover - 字段漂移容错
+        logger.warning("[DAL-p1] skip convert trade_id=%s err=%s", trade.trade_id, exc)
+        return
+    try:
+        repo.add_trade(unified)
+    except Exception as exc:  # pragma: no cover - DBCONSTRAINT / DB busy
+        logger.warning("[DAL-p1] add_trade failed trade_id=%s: %s", trade.trade_id, exc)
+
+
+def _convert_tradingutils_trade_to_unified(
+    trade: TradeRecord, *, UnifiedTradeRecord, TradeDirection, ExitReason, CloseInfo
+):
+    """字段漂移 adapter（trading_utils.py TradeRecord → dreambuddy_dal.unified_models.TradeRecord）。"""
+    # --- direction enum ---
+    _raw_dir = (getattr(trade, "direction", "") or "").lower() or "long"
+    if _raw_dir in {"long", "short"}:
+        direction = TradeDirection(_raw_dir)
+    else:
+        direction = TradeDirection.LONG
+
+    # --- close_info / is_closed ---
+    exit_price = float(getattr(trade, "exit_price", 0.0) or 0.0)
+    exit_time = getattr(trade, "exit_time", None) or None
+    is_closed = bool(exit_price or exit_time)
+    close_info: CloseInfo | None = None
+    if is_closed:
+        exit_reason_raw = (getattr(trade, "exit_reason", None) or "manual").lower()
+        try:
+            exit_reason = ExitReason(exit_reason_raw)
+        except Exception:
+            exit_reason = ExitReason.MANUAL
+        close_info = CloseInfo(
+            exit_price=exit_price,
+            exit_time=exit_time or getattr(trade, "entry_time", None),
+            pnl=float(getattr(trade, "pnl", 0.0) or 0.0),
+            pnl_pct=float(getattr(trade, "pnl_pct", 0.0) or 0.0),
+            exit_reason=exit_reason,
+        )
+
+    extra = {
+        "hexagram": getattr(trade, "hexagram", None),
+        "liangyi_state": getattr(trade, "liangyi_state", None),
+        "scale_params": getattr(trade, "scale_params", None),
+        "market_snapshot": getattr(trade, "market_snapshot", None),
+        "contradiction_list": getattr(trade, "contradiction_list", None),
+        "enhance_info": getattr(trade, "enhance_info", None),
+        "regime_pred": getattr(trade, "regime_pred", None),
+        "regime_multipliers": getattr(trade, "regime_multipliers", None),
+        "reduce_plan": getattr(trade, "reduce_plan", None),
+        "is_trial": getattr(trade, "is_trial", None),
+        "trial_eval_done": getattr(trade, "trial_eval_done", None),
+        "trial_open_ts": getattr(trade, "trial_open_ts", None),
+        "score_consensus": getattr(trade, "score_consensus", None),
+        "gate_base_threshold": getattr(trade, "gate_base_threshold", None),
+        "base_sl_roi": getattr(trade, "base_sl_roi", None),
+        "base_tp_roi": getattr(trade, "base_tp_roi", None),
+    }
+    strategy_source = getattr(trade, "strategy_source", None) or None
+
+    return UnifiedTradeRecord(
+        trade_id=getattr(trade, "trade_id", None) or None,
+        inst_id=getattr(trade, "inst_id", None) or getattr(trade, "coin", "") or "",
+        symbol=getattr(trade, "coin", "") or "",
+        direction=direction,
+        entry_price=float(getattr(trade, "entry_price", 0.0) or 0.0),
+        entry_time=getattr(trade, "entry_time", None) or None,
+        confidence=float(getattr(trade, "confidence", 0.0) or 0.0),
+        is_closed=is_closed,
+        close_info=close_info,
+        reduce_count=int(getattr(trade, "reduce_count", 0) or 0),
+        strategy_source=strategy_source,
+        extra_payload=extra,
+    )
 
 
 # ── 持仓跟踪器 ────────────────────────────────────────
@@ -1056,7 +1178,10 @@ class PositionTracker:
                       base_sl_roi: float = 0.0,
                       base_tp_roi: float = 0.0,
                       regime_pred: str = None,
-                      regime_multipliers: Dict = None) -> TradeRecord:
+                      regime_multipliers: Dict = None,
+                      is_trial: bool = False,
+                      score_consensus: float = 0.0,
+                      gate_base_threshold: float = 0.40) -> TradeRecord:
         """记录开仓"""
         trade_id = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
         rec = TradeRecord(
@@ -1078,6 +1203,10 @@ class PositionTracker:
             base_tp_roi=base_tp_roi,
             regime_pred=regime_pred,
             regime_multipliers=regime_multipliers,
+            is_trial=is_trial,
+            trial_open_ts=time.time() if is_trial else 0.0,
+            score_consensus=float(score_consensus),
+            gate_base_threshold=float(gate_base_threshold),
         )
         self.open_positions[inst_id] = rec
         self._save_open_position(inst_id)

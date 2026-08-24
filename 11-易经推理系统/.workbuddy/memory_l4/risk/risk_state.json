@@ -1,7 +1,7 @@
 {
-  "date": "2026-08-21",
-  "daily_pnl": 13.345250000000018,
-  "consecutive_losses": 0,
+  "date": "2026-08-24",
+  "daily_pnl": 0.0,
+  "consecutive_losses": 2,
   "trading_halted": false,
   "halt_reason": "",
   "daily_loss_limit": -30.0,

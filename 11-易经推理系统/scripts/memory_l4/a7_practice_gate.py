@@ -95,7 +95,7 @@ class A7PracticeGate:
         risk_manager=None,
         cbr_engine=None,
         current_equity: float = 0.0,
-        max_positions: int = 3,
+        max_positions: int = 5,
         current_positions: int = 0,
     ) -> A7GateReport:
         """

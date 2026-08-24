@@ -1,27 +1,27 @@
 {
   "version": "qmm-v1.0",
-  "snapshot_ts": "2026-08-21T09:30:08+08:00",
-  "data_version": "dv-20260821-001",
+  "snapshot_ts": "2026-08-24T20:38:00+08:00",
+  "data_version": "dv-20260824-006",
   "feature_def_version": "fd-1.0",
   "qmm_version": "qmm-v1.0",
   "trend_state": "DOWN",
-  "trend_change_point": "STABLE",
-  "uncertainty": 0.3409,
+  "trend_change_point": "REVERSING",
+  "uncertainty": 0.5161,
   "reason_codes": [
-    "BULLISH_ALIGNMENT"
+    "REVERSING"
   ],
   "evidence_refs": [
-    "tc_yijing_inference_1787155594_251194",
-    "tc_yijing_inference_1787159028_19090f",
-    "tc_agent_a_agent_a_1787178030_HYPE",
-    "tc_agent_a_agent_a_1787178029_HYPE",
-    "tc_agent_a_agent_a_1787221404_ZRO",
-    "tc_agent_a_agent_a_1787235849_HYPE",
-    "tc_agent_a_agent_a_1787264782_HYPE",
-    "tc_agent_a_agent_a_1787264786_HYPE",
-    "TC_live_SNDK-USDT-SWAP_20260820_211238",
-    "TC_live_MU-USDT-SWAP_20260820_222858"
+    "tc_agent_a_agent_a_1787482458_ETHFI",
+    "tc_yijing_inference_1787444347_900e86",
+    "tc_agent_a_agent_a_1787511583_SUI",
+    "tc_agent_a_agent_a_1787511579_SUI",
+    "TC_live_SKHYNIX-USDT-SWAP_20260823_054624",
+    "TC_live_PUMP-USDT-SWAP_20260823_064052",
+    "tc_agent_a_agent_a_1787496985_UNI",
+    "TC_live_SOL-USDT-SWAP_20260823_115057",
+    "tc_agent_a_agent_a_1787555178_HYPE",
+    "tc_agent_a_agent_a_1787555151_HYPE"
   ],
   "gate_status": "OFFLINE",
-  "output_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/qmm/qmm_snapshot_2026-08-21T09-30-08+08-00.json"
+  "output_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/qmm/qmm_snapshot_2026-08-24T20-38-00+08-00.json"
 }

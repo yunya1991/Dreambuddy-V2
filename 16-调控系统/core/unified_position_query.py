@@ -368,8 +368,9 @@ def fetch_v15_martin_positions() -> Dict:
                 if bal.get("ok"):
                     equity = float(bal.get("total_eq", 0))
                     usdt = bal.get("assets", {}).get("USDT", {})
+                    # avail 来自 OKX availBal，已排除冻结保证金（含其他策略持仓占用）
                     equity_extra = {
-                        "avail_balance": float(usdt.get("avail", equity)),
+                        "avail_balance": float(usdt.get("avail", 0.0)),
                         "used_margin": float(usdt.get("frozen", 0)),
                         "account_type": "okx_live" if not simulated else "okx_simulated",
                         "fallback_used": False,
@@ -529,8 +530,10 @@ def fetch_yijing_positions() -> Dict:
         if bal.get("ok"):
             equity = float(bal.get("total_eq", 0))
             usdt = bal.get("assets", {}).get("USDT", {})
+            # avail 来自 OKX availBal，已排除冻结保证金（含其他策略持仓占用）
+            # USDT 缺失时用 0.0 而非 equity，避免把冻结资金误算为可用
             equity_extra = {
-                "avail_balance": float(usdt.get("avail", equity)),
+                "avail_balance": float(usdt.get("avail", 0.0)),
                 "used_margin": float(usdt.get("frozen", 0)),
                 "account_type": "okx_simulated",
                 "fallback_used": False,

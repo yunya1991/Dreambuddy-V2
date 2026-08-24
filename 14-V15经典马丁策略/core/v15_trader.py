@@ -10,6 +10,12 @@ V15 经典马丁策略自动交易器
   - 做多：价格在日 MA200 上方（LONG_PREFERRED）
   - 做空：跌破日 MA200 但在周 MA200 上方（SHORT_ALLOWED，反向马丁）
   - 强制做多：跌至周 MA200（LONG_ONLY_FORCE，禁止做空）
+
+⚠️ P0 DAL 接入（对齐 ENGINEERING_INDEX §2.1 6 依赖注入入口）：
+   P1 后本文件交易写入/查询将改为：
+       from dreambuddy_dal import get_trade_repo, get_position_repo, get_config_repo
+       trade_repo = get_trade_repo()  # 三后端自动切 + Kill-Switch 物理双保险
+   SSoT 文档：19-数据访问层/docs/TECHNICAL_DESIGN.md §2.2 / §3.2
 """
 import json
 import math
@@ -600,6 +606,103 @@ def _log(msg):
         f.write(line + "\n")
 
 
+def _dal_write_martin_trade_if_enabled(
+    *,
+    trade_id: str,
+    inst_id: str,
+    symbol: str,
+    direction: str,
+    entry_price: float,
+    exit_price: float,
+    ts_entry,
+    ts_exit,
+    pnl,
+    pnl_pct,
+    exit_reason: str,
+    addons: int,
+    leverage: int,
+    pos: dict,
+) -> None:
+    """消费方最小侵入双写：DB_BACKEND ∈ {dual_write, sqlite_unified} → DAL.add_trade。"""
+    import os
+
+    backend = (os.environ.get("DB_BACKEND") or "json_legacy").lower()
+    if backend not in {"dual_write", "sqlite_unified"}:
+        return
+    try:
+        from dreambuddy_dal import di as _dal_di
+        from dreambuddy_dal.unified_models import (
+            TradeRecord as UnifiedTradeRecord,
+            TradeDirection,
+            ExitReason,
+            CloseInfo,
+        )
+    except Exception as exc:  # pragma: no cover - 部署路径无 DAL
+        _log(f"[DAL-p1] import failed: {exc}")
+        return
+    try:
+        repo = _dal_di.get_trade_repo()
+    except Exception as exc:  # pragma: no cover - Kill-Switch / schema
+        _log(f"[DAL-p1] get_trade_repo fallback: {exc}")
+        return
+    try:
+        direction_enum = (
+            TradeDirection.SHORT
+            if str(direction).lower() == "short"
+            else TradeDirection.LONG
+        )
+        # 马丁策略平仓时调用本函数，因此 is_closed=True
+        try:
+            exit_reason_enum = ExitReason(str(exit_reason).lower())
+        except Exception:
+            exit_reason_enum = ExitReason.MANUAL
+        close_info = CloseInfo(
+            exit_price=float(exit_price or 0.0),
+            exit_time=ts_exit,
+            pnl=float(pnl or 0.0),
+            pnl_pct=float(pnl_pct or 0.0),
+            exit_reason=exit_reason_enum,
+        )
+        extra = {
+            "strategy_source": "martin_v15",
+            "addon_level": addons,
+            "leverage": leverage,
+            "martin_config": {
+                "max_addons": MAX_ADDONS,
+                "base_tp_pct": BASE_TP_PCT,
+                "leverage": leverage,
+            },
+            "grid_params": pos.get("grid_params", {}),
+            "take_profit_pct": pos.get("take_profit_pct"),
+            "stop_loss_price": pos.get("stop_loss_price"),
+            "regime": pos.get("regime", "unknown"),
+            "volatility": pos.get("volatility"),
+            "sz": pos.get("sz", 0),
+            "margin_usdt": pos.get("margin_usdt", 0),
+        }
+        unified = UnifiedTradeRecord(
+            trade_id=trade_id,
+            inst_id=inst_id,
+            symbol=symbol,
+            direction=direction_enum,
+            entry_price=float(entry_price or 0.0),
+            entry_time=ts_entry,
+            confidence=0.5,  # 马丁策略无独立置信度，中性 0.5
+            is_closed=True,
+            close_info=close_info,
+            reduce_count=int(addons or 0),
+            strategy_source="martin_v15",
+            extra_payload=extra,
+        )
+    except Exception as exc:  # pragma: no cover - 字段构造失败
+        _log(f"[DAL-p1] convert failed trade_id={trade_id}: {exc}")
+        return
+    try:
+        repo.add_trade(unified)
+    except Exception as exc:  # pragma: no cover - 约束/锁
+        _log(f"[DAL-p1] add_trade failed trade_id={trade_id}: {exc}")
+
+
 def _register_martin_trade_to_l4(
     coin: str,
     pos: dict,
@@ -659,6 +762,24 @@ def _register_martin_trade_to_l4(
             },
             leverage=LEVERAGE,
             margin_usdt=pos.get("margin_usdt", 0),
+        )
+
+        # P1 DAL 双写：JSON 薄写不变，额外写入 19-数据访问层 Unified SQLite
+        _dal_write_martin_trade_if_enabled(
+            trade_id=trade_id,
+            inst_id=pos.get("inst_id", to_swap(coin)),
+            symbol=coin,
+            direction=direction.lower(),
+            entry_price=entry_price,
+            exit_price=exit_price,
+            ts_entry=pos.get("open_time", datetime.now(timezone.utc).isoformat()),
+            ts_exit=datetime.now(timezone.utc).isoformat(),
+            pnl=pnl,
+            pnl_pct=pnl_pct * 100 if abs(pnl_pct) < 10 else pnl_pct,
+            exit_reason=exit_reason,
+            addons=addons,
+            leverage=LEVERAGE,
+            pos=pos,
         )
 
         registry = UnifiedCaseRegistry()
@@ -867,7 +988,6 @@ def _save_trade_to_history(coin: str, pos: dict, exit_price: float, reason: str,
         hold_hours = 0.0
         if open_time:
             try:
-                from datetime import datetime, timezone
                 if "+00:00" in open_time:
                     ot = datetime.fromisoformat(open_time)
                 else:
@@ -1852,6 +1972,7 @@ def execute_open_position(client, coin, decision, state):
                     "confidence": conf,
                     "open_time": datetime.now(timezone.utc).isoformat(),
                     "take_profit_pct": tp_pct,
+                    "original_tp_pct": tp_pct,  # 开仓时原始止盈比例，作为超时放大的绝对上限基准
                     "addon_pct": addon_pct,
                     "stop_loss_price": sl_price,
                     "stop_loss_type": sl_type,
@@ -2815,16 +2936,84 @@ def check_take_profit(client, coin, pos, state):
         return False
 
 
+def _evaluate_signal_strength(elder_ray, direction="LONG"):
+    """评估当前持仓方向的信号强度是否已弱化。
+
+    基于 Elder-ray 趋势强度检测，判断持仓方向的信号是否仍然有效：
+    - 多头持仓：STRONG_BULL / BULL_TREND → 信号仍强；BULL_REVERSAL / SIDEWAYS → 信号弱化
+    - 空头持仓：STRONG_BEAR / BEAR_TREND → 信号仍强；BEAR_REVERSAL / SIDEWAYS → 信号弱化
+    - 多空力量同时减弱（both_weakening）→ 信号弱化
+
+    Args:
+        elder_ray: calc_elder_ray() 返回的 dict（含 direction, strength, both_weakening 等）
+        direction: 持仓方向 "LONG" 或 "SHORT"
+
+    Returns:
+        dict: {
+            "signal_weak": bool,   # True 表示信号已弱化，建议止盈
+            "score": float,        # 信号强度得分 0-100
+            "reason": str,          # 弱化原因（用于日志）
+        }
+    """
+    if not elder_ray or not isinstance(elder_ray, dict):
+        return {"signal_weak": True, "score": 0, "reason": "elder_ray_data_missing"}
+
+    er_direction = elder_ray.get("direction", "SIDEWAYS")
+    strength = float(elder_ray.get("strength", 50))
+    both_weakening = elder_ray.get("both_weakening", False)
+    bull_out_of_control = elder_ray.get("bull_out_of_control", False)
+    bear_out_of_control = elder_ray.get("bear_out_of_control", False)
+
+    is_long = direction.upper() == "LONG"
+
+    # ── 信号弱化判定 ──
+    weak_reasons = []
+
+    # 1. 方向逆转：持仓方向与 Elder-ray 方向不一致
+    if is_long:
+        strong_directions = ("STRONG_BULL", "BULL_TREND")
+        weak_directions = ("BULL_REVERSAL", "STRONG_BEAR", "BEAR_TREND", "BEAR_REVERSAL")
+        if er_direction in weak_directions:
+            weak_reasons.append(f"方向逆转:{er_direction}")
+        if bull_out_of_control:
+            weak_reasons.append("多头失控:Bull转负")
+    else:
+        strong_directions = ("STRONG_BEAR", "BEAR_TREND")
+        weak_directions = ("BEAR_REVERSAL", "STRONG_BULL", "BULL_TREND", "BULL_REVERSAL")
+        if er_direction in weak_directions:
+            weak_reasons.append(f"方向逆转:{er_direction}")
+        if bear_out_of_control:
+            weak_reasons.append("空头失控:Bear转正")
+
+    # 2. 多空力量同时减弱 → 可能变盘
+    if both_weakening:
+        weak_reasons.append("多空同时减弱")
+
+    # 3. 强度过低（仅在方向已不一致时作为额外弱化信号）
+    if strength < 40 and weak_reasons:
+        weak_reasons.append(f"强度过低:{strength:.0f}")
+
+    signal_weak = len(weak_reasons) > 0
+    reason = "; ".join(weak_reasons) if weak_reasons else "信号仍强"
+
+    return {
+        "signal_weak": signal_weak,
+        "score": strength,
+        "reason": reason,
+    }
+
+
 def check_time_exit(client, coin, pos, state):
     """
-    分层超时离场评估（V15 自有逻辑，不依赖经典离场系统）。
+    分层超时离场评估（V15 自有逻辑 + 信号强度评估）。
 
     分层计时：
       - 有加仓：从最后一次加仓(last_addon_time)计时，先过黄金窗口再过超时阈值
       - 无加仓：从开仓(open_time)计时，过底仓超时阈值
 
-    超时后 V15 自有决策：
-      - 盈利 → 提高止盈价（让利润奔跑，不超过原始止盈2倍）
+    超时后决策（集成信号强度评估，类似易经推理 TimeoutProfitSwitchStrategy）：
+      - 盈利 + 信号弱化 → 直接止盈平仓（不让利润回吐）
+      - 盈利 + 信号仍强 → 提高止盈价（让利润奔跑，不超过原始止盈2倍）
       - 亏损未触发止损 → 继续持有（马丁策略允许较长持仓+较高波动）
       止损由 check_tp_sl 的动态止损线（日/周MA200）和 OCO 硬单保护
     """
@@ -2873,7 +3062,7 @@ def check_time_exit(client, coin, pos, state):
         if hold_hours < max_hours:
             return False
 
-        # ── V15 自有超时决策（不调用经典离场系统）──
+        # ── 超时决策 ──
         entry_price = pos["entry_price"]
         if is_short:
             profit_pct = (entry_price - current_price) / entry_price
@@ -2886,19 +3075,43 @@ def check_time_exit(client, coin, pos, state):
         )
 
         if profit_pct > 0:
-            # 盈利超时：提高止盈价 50%，让利润奔跑（上限为原始止盈的2倍）
-            original_tp = pos.get("take_profit_pct", BASE_TP_PCT)
-            new_tp = original_tp * 1.5
-            capped_tp = min(new_tp, original_tp * 2.0)
-            if capped_tp > original_tp:
-                pos["take_profit_pct"] = capped_tp
-                sl_price = params.get("stop_loss_price")
-                _sync_tp_sl_orders(client, coin, pos, entry_price, capped_tp, sl_price)
+            # ── 盈利超时：先评估信号强度，再决定止盈还是提高 ──
+            elder_ray = params.get("elder_ray")
+            signal = _evaluate_signal_strength(elder_ray, direction)
+
+            if signal["signal_weak"]:
+                # 信号已弱化 → 直接止盈平仓，不让利润回吐
                 _log(
-                    f"[{coin}] 超时盈利, 提高止盈 {original_tp:.2%} → {capped_tp:.2%}, OCO挂单已同步"
+                    f"[{coin}] 超时盈利 {profit_pct:+.2%}, 信号弱化(强度={signal['score']:.0f}, "
+                    f"原因={signal['reason']}), 止盈平仓"
                 )
+                _execute_close_position(
+                    client, coin, pos, state,
+                    reason=f"timeout_profit_signal_weak:{signal['reason']}",
+                    exit_price=current_price,
+                )
+                return True
             else:
-                _log(f"[{coin}] 超时盈利, 止盈已达上限 {original_tp:.2%}, 继续持有")
+                # 信号仍强 → 提高止盈价让利润奔跑（上限 = 原始止盈 × 2.0）
+                original_tp = pos.get("original_tp_pct") or pos.get("take_profit_pct", BASE_TP_PCT)
+                current_tp = pos.get("take_profit_pct", original_tp)
+                new_tp = current_tp * 1.5
+                capped_tp = min(new_tp, original_tp * 2.0)
+                if capped_tp > current_tp:
+                    pos["take_profit_pct"] = capped_tp
+                    sl_price = params.get("stop_loss_price")
+                    _sync_tp_sl_orders(client, coin, pos, entry_price, capped_tp, sl_price)
+                    _log(
+                        f"[{coin}] 超时盈利, 信号仍强(强度={signal['score']:.0f}), "
+                        f"提高止盈 {current_tp:.2%} → {capped_tp:.2%}"
+                        f" (原始={original_tp:.2%}, 上限={original_tp*2.0:.2%}), OCO挂单已同步"
+                    )
+                else:
+                    pos["take_profit_pct"] = original_tp * 2.0
+                    _log(
+                        f"[{coin}] 超时盈利, 信号仍强(强度={signal['score']:.0f}), "
+                        f"止盈已达上限 {original_tp*2.0:.2%} (原始={original_tp:.2%}), 继续持有"
+                    )
         else:
             # 亏损超时：未触发止损线则继续持有（马丁策略允许较长持仓等反弹）
             sl_price = params.get("stop_loss_price")

@@ -812,6 +812,28 @@
       "symbol": "BNB",
       "entry_price": 611.275,
       "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-23T23:46:58.360969",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "BTC",
+      "entry_price": 77225.5,
+      "exit_price": 0
+    },
+    {
+      "pattern": "c_chain",
+      "timestamp": "2026-08-23T23:48:06.095822",
+      "status": "open",
+      "direction": "SHORT",
+      "result": 0.0,
+      "expected_direction": "SHORT",
+      "symbol": "ETH",
+      "entry_price": 2448.05,
+      "exit_price": 0
     }
   ],
   "BEAR_NORMAL_DECELERATING": [

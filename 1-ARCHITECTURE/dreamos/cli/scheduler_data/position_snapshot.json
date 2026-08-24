@@ -1,20 +1,14 @@
 {
-  "AVAX": {
-    "entry_price": 6.3196,
-    "size": 4.75,
-    "direction": "LONG",
-    "ts": 1786981718.0245004
-  },
-  "AAVE": {
-    "entry_price": 88.2288,
-    "size": 0.34,
-    "direction": "SHORT",
-    "ts": 1786981718.0245004
-  },
   "HYPE": {
-    "entry_price": 59.261,
-    "size": 0.92,
+    "entry_price": 73.168,
+    "size": 7.44,
     "direction": "LONG",
     "ts": 1786980601.863554
+  },
+  "HEMI": {
+    "entry_price": 0.012102,
+    "size": 3913.0,
+    "direction": "LONG",
+    "ts": 1787497374.467852
   }
 }

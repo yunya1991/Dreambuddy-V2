@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dreambuddy.trailing-stop-runner</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/env</string>
+        <string>python3</string>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/scripts/trailing_stop_runner.py</string>
+        <string>--real</string>
+        <string>--interval</string>
+        <string>300</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>EXIT_MODE</key>
+        <string>real</string>
+        <key>PYTHONPATH</key>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/core:/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/scripts</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>RestartInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/logs/trailing_runner.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/logs/trailing_runner.stderr.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>Nice</key>
+    <integer>10</integer>
+</dict>
+</plist>

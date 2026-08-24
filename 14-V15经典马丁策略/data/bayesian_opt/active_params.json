@@ -4,12 +4,13 @@
     "trailing_start_ratio": 0.8,
     "elder_ray_floor": 0.9,
     "elder_ray_ceil": 1.5,
-    "btc_windvane_confirm_days": 1,
-    "max_base_holding_hours": 30.8,
-    "max_post_addon_hours": 39.9,
-    "golden_window_hours": 16.8
+    "btc_windvane_confirm_days": 3,
+    "max_base_holding_hours": 29.9,
+    "max_post_addon_hours": 37.7,
+    "golden_window_hours": 11.1,
+    "regime_cooldown_bars": 12
   },
-  "source": "bayesian_optimization",
-  "score": 2272.6533,
-  "timestamp": "2026-08-04T02:51:42.696708+00:00"
+  "source": "smart_baseline_rollback",
+  "score": 0,
+  "timestamp": "2026-08-21T07:13:26.097437+00:00"
 }

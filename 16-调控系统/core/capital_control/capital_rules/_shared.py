@@ -123,18 +123,25 @@ def build_result_from_system(
             extra=dict(extra_extract),
         )
 
-    extra_data = sys_data.get("extra") or {}
-    account_type = _account_type_from_str(extra_data.get("account_type"))
+    # _make_system_result 将 extra 字段合并到顶层（无 "extra" 键），
+    # 因此直接从 sys_data 读取 avail_balance/used_margin/account_type 等字段
+    _CAPITAL_FIELDS = (
+        "avail_balance", "used_margin", "account_type",
+        "fallback_used", "fallback_reason",
+        "data_source", "total_files",
+    )
+    extra_data = {k: v for k, v in sys_data.items() if k in _CAPITAL_FIELDS}
+    account_type = _account_type_from_str(sys_data.get("account_type"))
     if account_type == AccountType.UNKNOWN:
         account_type = account_type_default
 
     equity = float(sys_data.get("equity") or 0.0)
-    avail = float(extra_data.get("avail_balance") or 0.0)
-    used = float(extra_data.get("used_margin") or 0.0)
-    data_fallback_used = bool(sys_data.get("fallback_used") or extra_data.get("fallback_used"))
-    data_fallback_reason = str(
-        sys_data.get("fallback_reason") or extra_data.get("fallback_reason") or ""
-    )
+    # 追踪数据源是否显式提供了 avail_balance（OKX 系统会提供，Hyperliquid 等可能不提供）
+    has_explicit_avail = "avail_balance" in sys_data
+    avail = float(sys_data.get("avail_balance") or 0.0)
+    used = float(sys_data.get("used_margin") or 0.0)
+    data_fallback_used = bool(sys_data.get("fallback_used"))
+    data_fallback_reason = str(sys_data.get("fallback_reason") or "")
 
     # 如果 equity <= 0 → 视为不可用，静态兜底；保留 fallback_reason 溯源
     if equity <= 0.0:
@@ -152,8 +159,11 @@ def build_result_from_system(
             extra={**extra_extract, **extra_data},
         )
 
-    # avail/used 兜底：equity 有但 extra 没字段
-    if avail <= 0.0 and equity > 0.0:
+    # 可用余额兜底逻辑：
+    # - 数据源未提供 avail_balance（如 Hyperliquid）：用 equity 兜底（无冻结概念）
+    # - 数据源显式提供 avail_balance=0（OKX：全部资金被其他策略冻结）：保留 0，不可开新仓
+    # - 数据源提供 avail_balance>0：直接使用，已排除冻结保证金
+    if not has_explicit_avail and avail <= 0.0 and equity > 0.0:
         avail = equity
     if used <= 0.0 and equity > 0.0:
         used = max(0.0, equity - avail)

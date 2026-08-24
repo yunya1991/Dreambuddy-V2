@@ -1,0 +1,54 @@
+# 爬虫轨目标站点配置 — 对齐 TECHNICAL_DESIGN.md §9.1
+# enabled=false 的站点不会被 runner 调用。
+# selectors 为 CSS 选择器，generic_spider 按选择器提取字段。
+# js_render=true 的站点走 playwright_fallback 渲染后再解析。
+
+sites:
+  # --- 央行/政策官网 ---
+  pbc_announcement:
+    enabled: true
+    source: pbc
+    sub_category: announcement
+    url: "http://www.pbc.gov.cn/goutongjiaoliu/113456/113469/index.html"
+    js_render: false
+    selectors:
+      item: ".newslist a"          # 每条新闻的容器
+      title: "text"                # 文本提取（特殊值 "text"）
+      link: "href"
+      date: ""
+
+  fed_minutes:
+    enabled: false
+    source: fed
+    sub_category: minutes
+    url: "https://www.federalreserve.gov/monetarypolicy/fomcminutes.htm"
+    js_render: false
+    selectors:
+      item: ".col-md-8 a"
+      title: "text"
+      link: "href"
+
+  # --- 加密新闻站 ---
+  coindesk_rss:
+    enabled: true
+    source: coindesk
+    sub_category: news
+    url: "https://www.coindesk.com/arc/outboundfeeds/rss/"
+    js_render: false
+    selectors:
+      item: "item"
+      title: "title::text"
+      link: "link::text"
+      date: "pubDate::text"
+
+  # --- JS 渲染站点示例 ---
+  binance_announcement:
+    enabled: false
+    source: binance
+    sub_category: announcement
+    url: "https://www.binance.com/en/support/announcement/new-cryptocurrency-listing"
+    js_render: true
+    selectors:
+      item: "[class*='announcement-item']"
+      title: "text"
+      link: "href"

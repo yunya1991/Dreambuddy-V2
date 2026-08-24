@@ -301,10 +301,10 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         # 断言 place_stop_loss_take_profit 被调用一次
         t.okx_client.place_stop_loss_take_profit.assert_called_once()
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
-        self.assertEqual(kwargs["instId"], "BTC-USDT-SWAP")
-        self.assertEqual(kwargs["posSide"], "long")
-        sl_px = float(kwargs["sl_price"])
-        tp_px = float(kwargs["tp_price"])
+        self.assertEqual(kwargs["inst_id"], "BTC-USDT-SWAP")
+        self.assertEqual(kwargs["pos_side"], "long")
+        sl_px = float(kwargs["stop_loss_px"])
+        tp_px = float(kwargs["take_profit_px"])
         # LONG：SL < entry(65000) < TP
         self.assertLess(sl_px, 65000, f"tighten SL {sl_px} 应 < entry 65000")
         self.assertGreater(tp_px, 65000, f"tighten TP {tp_px} 应 > entry 65000")
@@ -325,8 +325,8 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         ok = t._adjust_sl_tp(coin="BTC", inst_id="BTC-USDT-SWAP", pos_side="long", mode="relax")
         self.assertTrue(ok)
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
-        sl_px = float(kwargs["sl_price"])
-        tp_px = float(kwargs["tp_price"])
+        sl_px = float(kwargs["stop_loss_px"])
+        tp_px = float(kwargs["take_profit_px"])
         # relax SL = 65000 × (1 − 0.039/3) = 65000 × 0.987 = 64155
         # relax TP = 65000 × (1 + 0.1125/3) = 65000 × 1.0375 = 67437.5
         self.assertAlmostEqual(sl_px, 64155.0, delta=0.5,
@@ -345,8 +345,8 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         ok = t._adjust_sl_tp(coin="BTC", inst_id="BTC-USDT-SWAP", pos_side="short", mode="relax")
         self.assertTrue(ok)
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
-        sl_px = float(kwargs["sl_price"])
-        tp_px = float(kwargs["tp_price"])
+        sl_px = float(kwargs["stop_loss_px"])
+        tp_px = float(kwargs["take_profit_px"])
         # SHORT：SL 是"高于 entry 触发"的那一侧，TP 是"低于 entry 触发"
         self.assertLess(tp_px, 65000, f"short relax TP {tp_px} 应 < entry")
         self.assertGreater(sl_px, 65000, f"short relax SL {sl_px} 应 > entry")
@@ -391,7 +391,7 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         t.logger = MagicMock()
         t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "tighten")
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
-        sl_px = float(kwargs["sl_price"])
+        sl_px = float(kwargs["stop_loss_px"])
         # 未 floor 时：0.007 ROI → SL_px = 100 × (1 − 0.007/3) = 99.7667
         # floor 后: 0.015 ROI → SL_px = 100 × (1 − 0.015/3) = 99.5
         self.assertAlmostEqual(sl_px, 99.5, delta=0.01,
@@ -440,7 +440,7 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         ok2 = t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "relax")
         self.assertTrue(ok2)
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
-        sl_px = float(kwargs["sl_price"])
+        sl_px = float(kwargs["stop_loss_px"])
         self.assertAlmostEqual(sl_px, 64155.0, delta=1.0,
                                msg=f"B3 未冻结时 relax 会漂移到 64408.5；现 SL={sl_px}（应≈64155）")
 

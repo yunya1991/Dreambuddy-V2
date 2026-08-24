@@ -74,6 +74,15 @@ LEVERAGE = get_config_float("LEVERAGE", 5.0)
 # Kelly 底仓优化开关（true=凯利公式计算底仓，false=固定22%基线等价）
 V15_USE_KELLY = str(get_config("V15_USE_KELLY", "false")).lower() == "true"
 
+# ── 资金模式切换开关（默认 dynamic，暂时禁用 fixed；保留配置允许未来切换）──
+#   "dynamic" : 优先读取 OKX 实盘账户余额（total_eq / avail_balance），失败时回退到 TOTAL_BUDGET（仅兜底，不改变模式判定）
+#   "fixed"   : 完全忽略 OKX 余额，强制使用配置的 TOTAL_BUDGET 作为预算源（总权益=可用余额=TOTAL_BUDGET，已用保证金=0）
+_V15_CAPITAL_MODE_RAW = str(get_config("V15_CAPITAL_MODE", "dynamic")).lower().strip()
+V15_CAPITAL_MODE = "fixed" if _V15_CAPITAL_MODE_RAW == "fixed" else "dynamic"
+# 显式兜底：若配置错误（拼写错误/未知值），默认走 dynamic
+if V15_CAPITAL_MODE not in ("dynamic", "fixed"):
+    V15_CAPITAL_MODE = "dynamic"
+
 
 def _get_effective_base_pct() -> float:
     """获取生效的底仓比例。
@@ -232,15 +241,25 @@ def get_current_positions():
 def calculate_single_position_cost(budget=None):
     """计算单个仓位完整资金需求（底仓+所有加仓）
 
-    动态预算模式：当 budget=None 时，使用 OKX 实际账户余额作为预算
+    资金模式由 ``V15_CAPITAL_MODE`` 统一开关控制（见 :func:`_resolve_capital_budget`）：
+
+    * ``dynamic``（默认）：当 *budget* =None 时，使用 OKX 实盘账户余额；
+      OKX 查询失败时自动回退到 ``TOTAL_BUDGET``（仅兜底，不改变模式判定）
+    * ``fixed``：无论 *budget* 是否传值，预算都强制等于配置的 ``TOTAL_BUDGET``
+
     贝叶斯优化后的资金分配：
     - 底仓 = BASE_POSITION_PCT(22%) * budget
-    - 加仓1 = ADDON1_PCT(20%) * budget  ← 黑天鹅第一档
-    - 加仓2 = ADDON2_PCT(5%) * budget
-    - 加仓3 = ADDON3_PCT(10%) * budget
+    - 加仓1 = ADDON1_PCT(5%) * budget   ← 黑天鹅第一档
+    - 加仓2 = ADDON2_PCT(10%) * budget
+    - 加仓3 = ADDON3_PCT(20%) * budget
+    - 加仓4 = ADDON4_PCT(35%) * budget  ← 最深档黑天鹅加仓
     """
-    if budget is None:
-        budget = _get_dynamic_budget()
+    cap = _resolve_capital_budget()
+    # Fixed 模式：强制 TOTAL_BUDGET（即使外部显式传了 budget，也按配置拦截，避免口径分裂）
+    if V15_CAPITAL_MODE == "fixed":
+        budget = cap["total_eq"]
+    elif budget is None:
+        budget = cap["total_eq"]
 
     effective_base_pct = _get_effective_base_pct()
     base_usd = budget * effective_base_pct
@@ -253,11 +272,14 @@ def calculate_single_position_cost(budget=None):
 
     total_cost = base_usd + addon_total
     return {
+        "capital_mode": cap["mode"],
+        "budget_source": cap["budget_source"],
+        "fallback_used": cap["fallback_used"],
         "base_usd": round(base_usd, 2),
         "addon_total_usd": round(addon_total, 2),
         "total_cost_usd": round(total_cost, 2),
-        "budget_source": "dynamic" if budget != TOTAL_BUDGET else "static",
         "budget_value": round(budget, 2),
+        "total_budget_config": TOTAL_BUDGET,
         "addon_details": [
             {
                 "addon": 1,
@@ -307,16 +329,20 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
 
     分配逻辑：
     1. per_coin_budget = available_budget / remaining_slots
-    2. 根据 Elder-ray 趋势强度调整 (0.5x - 1.5x)
+    2. 根据 Elder-ray 趋势强度调整 (0.3x - 1.5x)
     3. 根据信号置信度调整 (0.5x - 1.5x)
     4. 扣除基础仓占用 + 下跌带来保证金占用
+
+    备注：
+    * ``V15_CAPITAL_MODE == "fixed"`` 时，忽略外部传入的 available_budget，
+      强制使用配置的 ``TOTAL_BUDGET`` 作为可用余额，避免口径分裂。
+    * ``V15_CAPITAL_MODE == "dynamic"`` 且 available_budget=None 时，
+      通过 OKX 实盘查询可用余额；失败时自动回退 ``TOTAL_BUDGET`` 兜底。
     """
-    # 获取可用预算
-    if available_budget is None:
-        balance = get_account_balance()
-        available_budget = (
-            balance.get("avail_balance", TOTAL_BUDGET) if balance.get("ok") else TOTAL_BUDGET
-        )
+    # ── 统一资金口径（所有返回值中附带模式/来源/兜底三字段）──
+    cap = _resolve_capital_budget()
+    if V15_CAPITAL_MODE == "fixed" or available_budget is None:
+        available_budget = cap["avail_balance"]
 
     # 获取当前持仓数
     positions = get_current_positions()
@@ -327,8 +353,12 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
         return {
             "allowed": False,
             "reason": f"已达最大持仓数({MAX_CONCURRENT_POSITIONS})",
+            "capital_mode": cap["mode"],
+            "budget_source": cap["budget_source"],
+            "fallback_used": cap["fallback_used"],
             "current_positions": current_count,
             "remaining_slots": 0,
+            "available_budget": round(available_budget, 2),
         }
 
     # 获取币种波动率
@@ -441,6 +471,9 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
     return {
         "allowed": allowed,
         "symbol": symbol,
+        "capital_mode": cap["mode"],
+        "budget_source": cap["budget_source"],
+        "fallback_used": cap["fallback_used"],
         "per_coin_budget": round(per_coin_budget, 2),
         "base_usd": round(base_usd, 2),
         "addon1_usd": round(addon1_usd, 2),
@@ -469,28 +502,95 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
     }
 
 
-def _get_dynamic_budget():
-    """获取动态预算：优先使用 OKX 实际账户余额，失败时回退到配置的 TOTAL_BUDGET"""
+def _resolve_capital_budget() -> dict:
+    """统一资金口径解析器（按 V15_CAPITAL_MODE 开关决定预算来源）。
+
+    对外返回标准 dict，所有计算函数只应通过本函数取数，避免三处口径不一致。
+
+    返回结构::
+
+        {
+          "mode":              "dynamic" | "fixed",                 # 当前实际模式（等于 V15_CAPITAL_MODE，不因 fallback 改变）
+          "budget_source":     str,                                  # 人类可读的来源说明（用于日志/报告）
+          "fallback_used":     bool,                                 # dynamic 模式下是否因 OKX 失败而回退到 TOTAL_BUDGET
+          "total_eq":          float,                                # 总权益（马丁预算基数）
+          "avail_balance":     float,                                # 可用余额（开仓/加仓门禁基数）
+          "used_margin":       float,                                # 已用保证金
+          "balance_raw":       dict,                                 # get_account_balance() 原始返回（保留 OKX 错误信息）
+        }
+    """
+    # ── Fixed 模式：完全忽略 OKX，强制用配置值 ──
+    if V15_CAPITAL_MODE == "fixed":
+        _tb = float(TOTAL_BUDGET)
+        return {
+            "mode": "fixed",
+            "budget_source": f"config(TOTAL_BUDGET={_tb:.2f})",
+            "fallback_used": False,
+            "total_eq": _tb,
+            "avail_balance": _tb,
+            "used_margin": 0.0,
+            "balance_raw": {
+                "ok": True,
+                "mode_note": "fixed_mode_forced_TOTAL_BUDGET",
+                "total_eq": _tb,
+                "avail_balance": _tb,
+                "used_margin": 0.0,
+            },
+        }
+
+    # ── Dynamic 模式（默认）：优先 OKX 实盘，失败兜底 TOTAL_BUDGET 但不改 mode ──
+    bal = {"ok": False, "error": "unknown", "total_eq": TOTAL_BUDGET, "avail_balance": TOTAL_BUDGET, "used_margin": 0.0}
     try:
-        balance = get_account_balance()
-        if balance.get("ok") and balance.get("total_eq", 0) > 0:
-            return balance["total_eq"]
-    except Exception:
-        pass
-    return TOTAL_BUDGET
+        bal = get_account_balance()
+    except Exception as _e:
+        bal = dict(bal)
+        bal["error"] = f"get_account_balance_exception:{_e}"
+
+    if bal.get("ok") and float(bal.get("total_eq", 0) or 0) > 0:
+        total_eq = float(bal["total_eq"])
+        avail = float(bal.get("avail_balance", total_eq) or total_eq)
+        used = float(bal.get("used_margin", 0) or 0)
+        return {
+            "mode": "dynamic",
+            "budget_source": "okx_live_api",
+            "fallback_used": False,
+            "total_eq": round(total_eq, 2),
+            "avail_balance": round(avail, 2),
+            "used_margin": round(used, 2),
+            "balance_raw": bal,
+        }
+
+    # OKX 失败：fallback 到 TOTAL_BUDGET，但保持 mode=dynamic（不伪装成 fixed）
+    _tb = float(TOTAL_BUDGET)
+    return {
+        "mode": "dynamic",
+        "budget_source": f"static_fallback(TOTAL_BUDGET={_tb:.2f})",
+        "fallback_used": True,
+        "total_eq": _tb,
+        "avail_balance": _tb,
+        "used_margin": 0.0,
+        "balance_raw": bal,
+    }
+
+
+def _get_dynamic_budget():
+    """获取动态预算（已废弃，保留向后兼容——新代码请用 _resolve_capital_budget()）。
+
+    优先使用 OKX 实际账户余额，失败时回退到配置的 TOTAL_BUDGET。
+    Fixed 模式下强制返回 TOTAL_BUDGET。
+    """
+    return _resolve_capital_budget()["total_eq"]
 
 
 def calculate_capital_allocation():
-    balance = get_account_balance()
+    cap = _resolve_capital_budget()
     positions = get_current_positions()
 
-    # 动态预算：用实际账户余额替代配置的 TOTAL_BUDGET
-    dynamic_budget = balance.get("total_eq", TOTAL_BUDGET) if balance.get("ok") else TOTAL_BUDGET
-    single_cost = calculate_single_position_cost(budget=dynamic_budget)
+    single_cost = calculate_single_position_cost(budget=cap["total_eq"])
 
-    total_eq = balance["total_eq"]
-    avail_balance = balance["avail_balance"]
-    used_margin = balance["used_margin"]
+    total_eq = cap["total_eq"]
+    avail_balance = cap["avail_balance"]
+    used_margin = cap["used_margin"]
 
     current_positions_count = len(positions)
     max_positions_allowed = MAX_CONCURRENT_POSITIONS - current_positions_count
@@ -509,14 +609,19 @@ def calculate_capital_allocation():
 
     allocation = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "balance": balance,
+        "balance": cap["balance_raw"],
+        "capital_mode": cap["mode"],
+        "budget_source": cap["budget_source"],
+        "fallback_used": cap["fallback_used"],
         "positions": positions,
         "coins_monitored": V15CT_COINS,
         "single_position_cost": single_cost,
         "parameters": {
-            "total_budget": round(dynamic_budget, 2),
+            "total_budget": round(cap["total_eq"], 2),
             "total_budget_config": TOTAL_BUDGET,
-            "budget_mode": "dynamic" if balance.get("ok") else "static_fallback",
+            "budget_mode": cap["mode"],
+            "budget_source_detail": cap["budget_source"],
+            "capital_mode_switch": V15_CAPITAL_MODE,
             "max_concurrent_positions": MAX_CONCURRENT_POSITIONS,
             "max_addons_per_position": MAX_ADDONS_PER_POSITION,
             "addon_pct": ADDON_PCT,
@@ -538,6 +643,9 @@ def calculate_capital_allocation():
             "remaining_after_open_usd": round(remaining_after_open, 2),
             "margin_usage_pct": round(margin_usage_pct, 2),
             "avail_balance_pct": round((avail_balance / total_eq) * 100, 2),
+            "avail_balance": avail_balance,
+            "total_eq": total_eq,
+            "used_margin": used_margin,
         },
         "recommendations": {
             "allow_open_new_position": positions_can_open > 0

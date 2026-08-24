@@ -369,7 +369,9 @@ class TestIntegrationShortFilter(unittest.TestCase):
 
         self.assertTrue(ok, f"TREND_BEAR+高置信+美股多头 = 应允许做空: {reason}")
         self.assertIn("score=STRONG", reason)
-        self.assertAlmostEqual(multi, 0.9091, places=3)
+        # final_multiplier = SHORT_CONF_MULTI_MA_STRONG(0.9091) × REGIME_SHORT_CONF_MULTI_TREND_BEAR(1.15)
+        expected_multi = 0.9091 * 1.15
+        self.assertAlmostEqual(multi, expected_multi, places=3)
 
     def test_short_blocked_by_high_threshold_when_weak(self):
         """RED: WEAK档 → 抬高门槛 + 小仓试水

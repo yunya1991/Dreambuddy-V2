@@ -7,7 +7,11 @@ V15 经典马丁策略压力测试
 3. 多持仓场景测试
 4. 资金计算器准确性验证
 5. 资金充足时控制不开新仓验证
+
+注：资金规模场景强制使用 fixed 模式（V15_CAPITAL_MODE=fixed），
+    否则 dynamic 模式会读取 OKX 实盘余额，无法验证 100/200/500U 这些固定预算场景。
 """
+import importlib
 import json, os, sys, time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,7 +21,25 @@ sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
 
 from config_loader import load_config, get_config_float, get_config_int, get_config_list
-from capital_manager import calculate_capital_allocation, get_signal_trigger_status
+import capital_manager as _cm
+calculate_capital_allocation = _cm.calculate_capital_allocation
+get_signal_trigger_status = _cm.get_signal_trigger_status
+
+
+def _reload_capital_for_stress(total_budget: str | None = None, mode: str = "fixed") -> None:
+    """重新加载 capital_manager 模块（在压力测试中用于切换预算/模式）。
+
+    由于 ``TOTAL_BUDGET`` / ``V15_CAPITAL_MODE`` 是 capital_manager 加载时解析的
+    模块级常量，修改 ``os.environ`` 后必须 reload 才能生效。同时同步更新本文件
+    顶部的 ``calculate_capital_allocation`` / ``get_signal_trigger_status`` 绑定。
+    """
+    if total_budget is not None:
+        os.environ["TOTAL_BUDGET"] = str(total_budget)
+    os.environ["V15_CAPITAL_MODE"] = mode
+    global calculate_capital_allocation, get_signal_trigger_status, _cm
+    _cm = importlib.reload(_cm)
+    calculate_capital_allocation = _cm.calculate_capital_allocation
+    get_signal_trigger_status = _cm.get_signal_trigger_status
 
 
 class MockOKXClient:
@@ -123,13 +145,14 @@ def run_stress_test():
     print("\n--- 场景2: 资金规模测试 (100U) ---")
     def test_capital_100u():
         original_budget = get_config_float("TOTAL_BUDGET", 100)
-        os.environ["TOTAL_BUDGET"] = "100"
+        _reload_capital_for_stress(total_budget="100", mode="fixed")
 
         alloc = calculate_capital_allocation()
         single_cost = alloc["single_position_cost"]["total_cost_usd"]
         can_open = alloc["recommendations"]["allow_open_new_position"]
         positions_can_open = alloc["calculations"]["positions_can_open"]
 
+        print(f"  资金模式: {alloc.get('capital_mode')} / source={alloc.get('budget_source')}")
         print(f"  单仓位总需求: ${single_cost}")
         print(f"  可用资金: ${alloc['balance']['avail_balance']}")
         print(f"  可开仓位数: {positions_can_open}")
@@ -139,7 +162,7 @@ def run_stress_test():
         result = can_open == expected_can_open
         print(f"  验证: 资金计算器判断正确 = {result}")
 
-        os.environ["TOTAL_BUDGET"] = str(original_budget)
+        _reload_capital_for_stress(total_budget=str(original_budget), mode="dynamic")
         return result
 
     test("100U资金规模测试", test_capital_100u)
@@ -147,13 +170,14 @@ def run_stress_test():
     # 场景3: 资金规模200U测试
     def test_capital_200u():
         original_budget = get_config_float("TOTAL_BUDGET", 100)
-        os.environ["TOTAL_BUDGET"] = "200"
+        _reload_capital_for_stress(total_budget="200", mode="fixed")
 
         alloc = calculate_capital_allocation()
         single_cost = alloc["single_position_cost"]["total_cost_usd"]
         can_open = alloc["recommendations"]["allow_open_new_position"]
         positions_can_open = alloc["calculations"]["positions_can_open"]
 
+        print(f"  资金模式: {alloc.get('capital_mode')} / source={alloc.get('budget_source')}")
         print(f"  单仓位总需求: ${single_cost}")
         print(f"  可用资金: ${alloc['balance']['avail_balance']}")
         print(f"  可开仓位数: {positions_can_open}")
@@ -163,7 +187,7 @@ def run_stress_test():
         result = can_open == expected_can_open
         print(f"  验证: 资金计算器判断正确 = {result}")
 
-        os.environ["TOTAL_BUDGET"] = str(original_budget)
+        _reload_capital_for_stress(total_budget=str(original_budget), mode="dynamic")
         return result
 
     test("200U资金规模测试", test_capital_200u)
@@ -172,7 +196,7 @@ def run_stress_test():
     print("\n--- 场景4: 资金充足时控制策略 (500U) ---")
     def test_capital_500u():
         original_budget = get_config_float("TOTAL_BUDGET", 100)
-        os.environ["TOTAL_BUDGET"] = "500"
+        _reload_capital_for_stress(total_budget="500", mode="fixed")
 
         alloc = calculate_capital_allocation()
         single_cost = alloc["single_position_cost"]["total_cost_usd"]
@@ -180,6 +204,7 @@ def run_stress_test():
         positions_can_open = alloc["calculations"]["positions_can_open"]
         advice = alloc["recommendations"]["advice"]
 
+        print(f"  资金模式: {alloc.get('capital_mode')} / source={alloc.get('budget_source')}")
         print(f"  单仓位总需求: ${single_cost}")
         print(f"  可用资金: ${alloc['balance']['avail_balance']}")
         print(f"  可开仓位数: {positions_can_open}")
@@ -189,7 +214,7 @@ def run_stress_test():
         has_warning = "资金过于充足" in advice
         print(f"  验证: 资金充足时有警告提示 = {has_warning}")
 
-        os.environ["TOTAL_BUDGET"] = str(original_budget)
+        _reload_capital_for_stress(total_budget=str(original_budget), mode="dynamic")
         return has_warning
 
     test("500U资金充足控制测试", test_capital_500u)
@@ -198,12 +223,13 @@ def run_stress_test():
     print("\n--- 场景5: 多持仓场景测试 ---")
     def test_multi_positions():
         original_budget = get_config_float("TOTAL_BUDGET", 100)
-        os.environ["TOTAL_BUDGET"] = "200"
+        _reload_capital_for_stress(total_budget="200", mode="fixed")
 
         alloc = calculate_capital_allocation()
         single_cost = alloc["single_position_cost"]["total_cost_usd"]
         max_positions = alloc["parameters"]["max_concurrent_positions"]
 
+        print(f"  资金模式: {alloc.get('capital_mode')} / source={alloc.get('budget_source')}")
         print(f"  测试目标: 模拟{max_positions}个持仓")
         print(f"  单仓位成本: ${single_cost}")
         print(f"  预计总占用: ${single_cost * max_positions}")
@@ -212,7 +238,7 @@ def run_stress_test():
         positions_can_open = alloc["calculations"]["positions_can_open"]
         print(f"  可开新仓位: {positions_can_open}")
 
-        os.environ["TOTAL_BUDGET"] = str(original_budget)
+        _reload_capital_for_stress(total_budget=str(original_budget), mode="dynamic")
         return True
 
     test("多持仓场景测试", test_multi_positions)

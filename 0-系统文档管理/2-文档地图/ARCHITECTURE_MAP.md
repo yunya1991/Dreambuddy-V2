@@ -1,9 +1,10 @@
 # 架构文档地图 — ARCHITECTURE_MAP
 
-> **版本**: v2.0 | **更新日期**: 2026-07-31
+> **版本**: v2.2 | **更新日期**: 2026-08-24
 > **定位（视角 B）**: **架构导航地图，不是架构内容本身**。告诉你「架构文档有哪些、到哪里找」。
 > **架构唯一事实源（SSoT）**: ★ [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v3.0**。所有架构设计争议、硬约束、模块边界以该文档为准。
 > **关联**: [SYSTEM_MAP.md](./SYSTEM_MAP.md) · [TOPIC_MAP.md](./TOPIC_MAP.md) · [INDEX.md](../INDEX.md)
+> **11号子系统交易决策栈（v4.6.1 最新）**: 详见 [11-易经推理系统 TECHNICAL_DESIGN §2.2b](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md)，七层：五计庙算→前置层→核心层→后置校准层→弹性放行层→策略层→持仓与离场层
 
 ---
 
@@ -48,7 +49,64 @@
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 双闭环对称架构（SSoT §1.3.2, §5.4, §6.1）
+### 1.2 11-易经推理系统 · 七层交易决策栈（v4.6.1 对齐 Spec v3.0 永不BLOCK）
+
+> **详细实现**：[11-易经推理系统 TECHNICAL_DESIGN §2.2b](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) v4.6.1
+
+```
+                    【交易决策链纵向七层 · v4.6.1】
+         ┌─────────────────────────────────────────┐
+L0 战略  │  五计庙算（enable_five_domain + 7子开关）│  → war_state / cap / mask / 五维总分
+         └──────────────────┬──────────────────────┘
+                            ▼
+L1 前置  │  市场形态演化引擎 + MorphCyclePredictor  │  → L_forecast / T_forecast / α blend / 弹簧5态（只定范围）
+         └──────────────────┬──────────────────────┘
+                            ▼
+L2 核心  │  BCRM 2.0 辩证ML + 八卦力学 + QMM         │  → direction / confidence / hexagram
+         └──────────────────┬──────────────────────┘
+                            ▼
+L3 校准  │  弹簧力场 + v4风险评分 + 形态乘数         │  → 仅正常开仓（conf≥eff）调仓位大小
+         │  + WinProb + 做空三重收紧                 │  → ★轻仓试错（is_trial=True）全部跳过
+         │  + SL/TP 价格空间下限保护（常规≥1.5%/试错≥2.0%）│  → ATR 极低时防扫损
+         └──────────────────┬──────────────────────┘
+                            ▼
+L4 放行  │  ★ Spec v3.0 F1 永不硬拦截：BLOCK→0.10    │  P1→S_P + Elder→S_E + BCRM→S_B
+         │  ElasticGate3L 三层加权（w_p/w_e/w_b）    │  → score_consensus 与 base_threshold（默认0.40）比较
+         │  + CBR双闭环 / BTC自反 / 组合熔断G-02/G-04│  ① <0.40 → 不开仓（L4唯一硬门槛）
+         │  + 做空三重收紧（Score_B<0.7→clip/Elder降级/w_b×0.7）│  ② ≥0.40 + conf≥eff → 正常开仓→叠加L3仓位
+         │  + 动态基础阈值（30-150笔滑窗 ±0.03/-0.02）│  ③ ≥0.40 + conf<eff → is_trial→跳过L3→EG3L F1接管仓位
+         └──────────────────┬──────────────────────┘
+                            ▼
+L5 策略  │  enable_strategy_layer + 下单确认         │  → OKXClient / SimClient 下单
+         │  + G-04 权益回撤熔断 / 最大持仓 / can_trade│  → L4 不拦截，L5 最终风控确认
+         └──────────────────┬──────────────────────┘
+                            ▼
+L6 离场  │  ExitManager 策略链 + 卦象主离场           │  → exit_strategy_log + CBR 回填
+         │  已删除 Classic 兜底备用层                │  → base_threshold 盈亏样本记录
+         │  + 轻仓试错评估周期（≥30min 趋势评估）     │  → 确认→加仓信号 / 逆转→平仓 / 不明→维持
+         └──────────────────────────────────────────┘
+```
+
+| 层级 | 名称 | 动作类型 | 关键开关 |
+|------|------|----------|----------|
+| L0 | 五计庙算（战略层） | 定总基调 | enable_five_domain（默认 False，中性旁路） |
+| L1 | 前置层（市场形态识别） | 生前瞻参数 | enable_morph_cycle（随前置层总开关） |
+| L2 | 核心层（BCRM 2.0信号） | 生方向信号 | BCRM2Adapter enable |
+| L3 | 后置校准层（只调正常仓位） | **正常开仓=调仓位大小；轻仓试错=全跳过** | SW-C3 三层权重 / SW-C4 ElasticGate / SW-C6 WinProb（默认全 True）；`if not is_trial:` 才执行弹簧做多做空分档 + v4 风险评分仓位调整 + 形态乘数 position_mult |
+| L4 | 弹性放行层（Spec v3.0 永不BLOCK） | **统一共识评分 + 唯一硬门槛 + 接管试错仓仓位** | SW-C1 CBR / SW-C2 Elder / SW-C7 ContinuityObs / SW-C5 BTC自反 / SW-C8 组合熔断；唯一硬拦截=`score_consensus < _gate_base_threshold（默认0.40，边界[0.25,0.60]）`；BLOCK→0.10试错仓 |
+| L5 | 策略层（最终风控+下单） | 确认下单 + 最终熔断 | enable_strategy_layer（默认 False）+ G-04 3%权益回撤熔断 / 最大持仓数 / can_trade 熔断 |
+| L6 | 持仓管理与离场层 | 管持仓盈亏 + 动态阈值样本 | ExitManager 各策略独立开关 + 轻仓试错评估周期（≥30min一次性评估）+ 盈亏样本驱动 base_threshold 动态调节 |
+
+> **核心语义修正（v4.6 → v4.6.1 仓位归属严格对齐）**：
+> - **L3 后置校准层不介入试错仓**：正常开仓（conf≥eff）→ 弹簧分档/v4风险/形态乘数全部应用；轻仓试错（score_cons≥门槛但conf不足）→ 全部跳过 L3 校准，日志输出「轻仓试错(过滤层接管仓位) | 跳过L3弹簧/形态/v4分档」
+> - **L4 弹性放行层接管试错仓仓位**：直接由 ElasticGate3L 弹性矩阵 + F1 下界 0.10 控制（BLOCK=0.10 / WEAK=0.30 / STANDARD=0.50 等），完全等价于 Spec F1 永不 BLOCK 语义
+> - **P1/Elder/BCRM 取消硬拦截（return）**：全部产出 Score_P/Score_E/Score_B 交给 EG3L 加权综合；单因子 BLOCK 只是贡献低分，可由其他高分因子拉高 `score_consensus` 通过门槛
+> - **删除 is_trial × 0.4 简单乘法**：旧实现叠加 L3 分档会非预期放大/削弱试错仓，新实现精确控制
+> - **做空三重收紧严格生效**：Score_B<0.70→clip0.55 / Elder≤NEUTRAL→降级 / BCRM自身权重 w_b×0.70
+> - **方案 C 8 开关（SW-C1~C8）默认全 True**：G-04 单日 3% 权益回撤触发全开关旁路 24h
+> - **动态基础阈值（聚合样本、非单笔）**：近30-150笔胜<40%或亏-3%→+0.03；胜≥60%且盈>2%→-0.02；冷却30min
+
+### 1.3 双闭环对称架构（SSoT §1.3.2, §5.4, §6.1）
 
 | 闭环 | 定位 | 核心组件 | 结果产物 |
 |------|------|----------|----------|
@@ -86,7 +144,7 @@
 | 子系统 | 技术设计 | 5 文档齐全 | 核心架构（SSoT 映射） |
 |--------|----------|-----------|----------------------|
 | 10-经典指标 | [docs/TECHNICAL_DESIGN.md](../../10-经典指标系统/docs/TECHNICAL_DESIGN.md) | ✅ 已迁移 | 16层信号 + ClassicExitSystem → C_domain 经典量化 |
-| 11-易经推理 | [docs/TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) **v4.4** | ✅ 齐全 | BCRM 2.0 + 辩证ML + 五角校验 + ExitManager 策略链 → A_domain AI交易核心 |
+| 11-易经推理 | [docs/TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) **v4.5** ✅ | ✅ 齐全 | **七层交易决策栈**（L0 五计庙算战略→L6 持仓管理与离场）· BCRM 2.0 + 辩证ML + 五角校验 + ExitManager 策略链 + 方案 C v3.0 全量上线（8 开关默认 True） → A_domain AI交易核心 |
 | 12-三屏趋势 | [docs/TECHNICAL_DESIGN.md](../../12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) **v4.0** | ✅ 齐全 | V4+波浪互斥融合 + 双线架构 → A/C 融合策略 |
 | 13-通用风控 | [docs/TECHNICAL_DESIGN.md](../../13-通用风控模块/docs/TECHNICAL_DESIGN.md) | ✅ 齐全 | 三层风控 + L1评估 + ML → T_domain 系统支撑横切 |
 | 14-V15马丁 | [docs/TECHNICAL_DESIGN.md](../../14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md) **v5.1** | ✅ 齐全 | 马丁格尔 + Kelly + 仓位管理 → C_domain 经典策略 |
@@ -136,6 +194,6 @@
 
 ---
 
-**文档版本**: v2.0（视角 B 对齐版）
-**最后更新**: 2026-07-31
+**文档版本**: v2.1（新增 11-易经推理系统七层交易决策栈总览 + 子系统 TECHNICAL_DESIGN 版本对齐 v4.5）
+**最后更新**: 2026-08-24
 **下一步**: 等待 SSoT v3.0 草稿 review 确认后，同步更新 SYSTEM_MAP / TOPIC_MAP / DOC_DEBT_INDEX 关联项

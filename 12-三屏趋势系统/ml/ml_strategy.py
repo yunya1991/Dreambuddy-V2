@@ -84,6 +84,24 @@ class MLTrendStrategy(BaseStrategy):
         self.enable_tuning = enable_tuning
         self.n_trials = n_trials
 
+    # ------------------------------------------------------------------
+    # H3 灰度接入点：EN_FEATUREHUB_TRIPLE_SCREEN=true → FeatureHub；否则原始 FE
+    # 集合 triple_screen_only + strip_prefix=True → 列名与原始 FE 100% 一致
+    # （T29 验证：列名交集 100%、数值相关性 1.0000、方向一致率 100%）
+    # 异常自动回退原始 FE（fail-open）；秒级回滚=设 EN_FEATUREHUB_TRIPLE_SCREEN=false
+    # ------------------------------------------------------------------
+    def _compute_features(self, prices: pd.DataFrame) -> pd.DataFrame:
+        from feature_hub.h3_wrapper import wrap_featurehub
+        return wrap_featurehub(
+            strategy_name="triple_screen",
+            ohlcv_df=prices,
+            symbol="BTC",
+            set_name="triple_screen_only",
+            original_fe_fn=lambda: self.feature_engineer.create_features(
+                prices, self.label_lookahead),
+            strip_prefix=True,
+        )
+
     def generate_signals(self, prices: pd.DataFrame) -> pd.Series:
         n = len(prices)
         positions = np.zeros(n)
@@ -92,7 +110,7 @@ class MLTrendStrategy(BaseStrategy):
             return pd.Series(positions, index=prices.index, name="position")
 
         # 1. 提取特征
-        features_df = self.feature_engineer.create_features(prices, self.label_lookahead)
+        features_df = self._compute_features(prices)
 
         # 如果有预训练模型，用模型的feature_names（可能做过特征选择）
         if self.model is not None and hasattr(self.model, 'feature_names') and self.model.feature_names:
@@ -195,7 +213,7 @@ class MLTrendStrategy(BaseStrategy):
         if self.model is None:
             return pd.Series(dtype=float)
 
-        features_df = self.feature_engineer.create_features(prices, self.label_lookahead)
+        features_df = self._compute_features(prices)
         feature_names = self.feature_engineer.feature_names
 
         probs = []

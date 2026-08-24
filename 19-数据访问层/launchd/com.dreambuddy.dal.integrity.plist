@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dreambuddy.dal.integrity</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>python3</string>
+        <string>-m</string>
+        <string>dreambuddy_dal.cron_runner</string>
+        <string>integrity</string>
+    </array>
+
+    <!-- 每 6 小时完整性检查 -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>0</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>6</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>12</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>18</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>DATA_DIR</key>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/data</string>
+        <key>DAL_DB_PATH</key>
+        <string>$(DATA_DIR)/dreambuddy_core.db</string>
+        <key>PYTHONPATH</key>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/dreambuddy_dal_integrity.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/dreambuddy_dal_integrity.err</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>

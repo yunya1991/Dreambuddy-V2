@@ -1,0 +1,41 @@
+# 特征启用集合配置 — 策略 → 模块映射
+# 对齐 feature_hub/modules/loader.py _default_sets()
+
+feature_sets:
+  # BTC 形态学核心集（单模块快速验证）
+  btc_morph_v6:
+    modules:
+      - crypto_morphology
+
+  # Alt 趋势综合集（加密 + Elder + 三屏）
+  alt_trend_ensemble:
+    modules:
+      - crypto_morphology
+      - elder_ray
+      - triple_screen_trend
+
+  # 三屏单模块集（灰度对齐用：仅 triple_screen_trend，strip_prefix=True 后列名与原始 FE 一致）
+  triple_screen_only:
+    modules:
+      - triple_screen_trend
+
+  # 经典 talib 对齐集（灰度对齐用：仅 talib_aligned，列名与 talib.abstract/qtpylib 100% 对齐，
+  #   覆盖 rsi / ema_fast / ema_slow / ema_trend / bb_* / adx / atr / volume_mean /
+  #   macd* / willr / cci / obv，供 10-经典指标系统 Bot2 系列策略接入）
+  classic_talib_only:
+    modules:
+      - talib_aligned
+
+  # 股票经典趋势集（三屏 + 经典 + 五维）
+  equity_classic_trend:
+    modules:
+      - triple_screen_trend
+      - classic_indicators
+      - five_domain_fc
+
+  # 商品避险集（经典 + 五维 + Elder）
+  commodity_safe_haven:
+    modules:
+      - classic_indicators
+      - five_domain_fc
+      - elder_ray

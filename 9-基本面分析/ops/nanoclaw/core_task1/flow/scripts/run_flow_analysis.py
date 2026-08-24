@@ -19,8 +19,10 @@ from pathlib import Path
 
 # 添加 scripts 目录到路径
 sys.path.insert(0, str(Path(__file__).parent))
+# 添加 data_center 包路径
+sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "18-数据获取中心"))
 
-from flow_collector import run_full_collection
+from data_center.compat import run_full_collection
 from regime_classifier import run_regime_classification
 from storage import (
     save_layer_raw,

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dreambuddy.dal.backup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>python3</string>
+        <string>-m</string>
+        <string>dreambuddy_dal.cron_runner</string>
+        <string>backup</string>
+    </array>
+
+    <!-- 每天 04:00 全量备份（交易低谷期） -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>4</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>DATA_DIR</key>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/data</string>
+        <key>DAL_DB_PATH</key>
+        <string>$(DATA_DIR)/dreambuddy_core.db</string>
+        <key>BACKUP_DIR</key>
+        <string>$(DATA_DIR)/backups</string>
+        <key>BACKUP_PASSPHRASE</key>
+        <string>SET_YOUR_PASSPHRASE_HERE</string>
+        <key>PYTHONPATH</key>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/dreambuddy_dal_backup.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/dreambuddy_dal_backup.err</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

@@ -1,0 +1,43 @@
+# SDK 轨数据源配置 — 对齐 TECHNICAL_DESIGN.md §7.1
+# enabled=false 的源不会被 dispatcher 调用；default_series 为不指定 series 时的默认拉取清单。
+
+macro:
+  fred:
+    enabled: true
+    default_series:
+      - FEDFUNDS        # 联邦基金利率
+      - RRPONTSYD       # 隔夜逆回购余额
+      - DFII10          # 10 年期实际收益率
+      - T10YIE          # 10 年期通胀预期
+
+finance:
+  yfinance:
+    enabled: true
+    default_symbols:
+      - DX-Y.NYB        # 美元指数 DXY
+      - ^TNX            # 10 年期美债收益率
+      - ^IRX            # 13 周国库券
+      - GC=F            # 黄金期货
+      - ^GSPC           # 标普 500
+
+chain:
+  ccxt:
+    enabled: true
+    default_exchanges: [binance, coinbase, kraken]
+    default_symbols: [BTC/USDT, ETH/USDT, SOL/USDT]
+  etherscan:
+    enabled: true
+    kinds: [gas, balance, whales]
+
+news:
+  feedparser:
+    enabled: true
+  rsshub:
+    enabled: true
+    base_url: https://rsshub.app
+  tavily:
+    enabled: true
+    default_max_results: 10
+  gdelt:
+    enabled: true
+    default_max_records: 10

@@ -16,9 +16,11 @@ import numpy as np
 
 # 添加项目路径
 sys.path.insert(0, str(Path(__file__).parent.parent))
+# 添加 data_center 包路径
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "18-数据获取中心"))
 
 from live.paper_trading import PaperTradingEngine
-from data.market_data import fetch_candles, resample_candles
+from data_center.compat import fetch_candles, resample_candles
 from core.least_resistance import compute_least_resistance
 from core.config import CANDIDATE_COINS
 

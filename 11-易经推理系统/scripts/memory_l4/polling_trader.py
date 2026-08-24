@@ -11,6 +11,12 @@
 - P2-4: BCRM 矛盾格式修复
 - P2-5: 进程守护 + 异常告警 + 日志持久化
 
+⚠️ P0 DAL 接入（对齐 ENGINEERING_INDEX §2.1 6 依赖注入入口）：
+   P1 后本文件交易写入/查询将改为：
+       from dreambuddy_dal import get_trade_repo, get_position_repo, get_risk_repo
+       repo = get_trade_repo()  # 按 DB_BACKEND=json_legacy/dual_write/sqlite 自动切
+   SSoT 文档：19-数据访问层/docs/TECHNICAL_DESIGN.md §2.2 / §3.2
+
 用法:
   python -m scripts.memory_l4.polling_trader --once
   python -m scripts.memory_l4.polling_trader --interval 300 --coins BTC,ETH
@@ -20,9 +26,10 @@ import json
 import os
 import signal as signal_module
 import time
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from scripts.memory_l4.bcrm.bagua_engine import BaguaEngine
@@ -123,6 +130,14 @@ class PollingTrader:
         "max_consecutive_losses",
         "default_position_pct",
     )
+
+    # 币种规范化映射（OKX 合约 ticker 修正）
+    _NORMALIZE_COIN = {"XAUT": "XAU", "XSNDK": "SNDK", "XSPCX": "SPCX"}
+
+    @classmethod
+    def _norm(cls, c):
+        cu = str(c).strip().upper()
+        return cls._NORMALIZE_COIN.get(cu, cu)
 
     # 统一冷静期：平仓后 N 秒内禁止该币种任何方向新开仓（含反手）
     # 防止"平仓→立即反手→又亏→再反手"的频繁来回割肉循环
@@ -287,7 +302,7 @@ class PollingTrader:
         bar: str = "1H",
         confidence_threshold: float = 0.70,
         short_confidence_threshold: float = 0.80,
-        max_positions: int = 3,
+        max_positions: int = 5,
         kline_limit: int = 200,
         initial_equity: float = 100.0,
         daily_loss_limit: float = -30.0,
@@ -296,8 +311,26 @@ class PollingTrader:
         guardian: ProcessGuardian = None,
         shared_dir=None,
         use_bcrm2: bool = True,
+        shadow_mode: bool = False,
+        # Phase1 三开关（默认全 True → 方案 C spec 强制经过，必须经过）
+        enable_cbr_cycle_log: bool = True,
+        enable_elder_ray_c4: bool = True,
+        enable_win_prob_factor: bool = True,
+        # 方案 C v3.0 方案级开关（默认全 True → 方案 C spec 强制经过，必须经过）
+        # SW-C3：三层动态权重引擎；SW-C4：三层弹性放行矩阵；SW-C5：BCRM 连续信号观察器
+        # SW-C6：BTC 自反调控闸门；SW-C8：组合级风险熔断（G-02/G-04）
+        enable_three_layer_weighter: bool = True,
+        enable_elastic_gate_3l: bool = True,
+        enable_bcrm_continuity_obs: bool = True,
+        enable_btc_self_reflex_valve: bool = True,
+        enable_portfolio_risk_fuses: bool = True,
     ):
         self.interval = interval
+        # ★ shadow-mode 全局硬闸门：True 时严格禁止所有开/平/减仓指令（仅执行推理逻辑/写shadow日志/写diagnostic）
+        self.shadow_mode = bool(shadow_mode)
+        if self.shadow_mode:
+            # 构造阶段即醒目打印一次，防止误启用真钱模式
+            print("[SHADOW MODE] 全局影子冷启动模式：所有开仓/平仓/减仓将被 BLOCKED，仅推理+影子日志+监控正常运行")
         default_coins = _load_registry_symbols() or [
             "UNI",
             "PUMP",
@@ -319,20 +352,8 @@ class PollingTrader:
             "BMNR",
             "MSTR",
         ]
-        # P4 修复：币种规范化映射
-        # 实际 OKX 合约：
-        #   XAU-USDT-SWAP  (黄金现货杠杆代币, ticker code=0, 存在)
-        #   XAUT-USDT-SWAP (Tether黄金代币,          ticker code=51001, 不存在/已下线)
-        #   XSNDK → SNDK-USDT-SWAP (闪迪, OKX用SNDK而非XSNDK)
-        #   XSPCX → SPCX-USDT-SWAP  (SpaceX, OKX用SPCX而非XSPCX)
-        # 所以如果用户/旧启动命令写了 XAUT/XSNDK/XSPCX，必须映射，避免 K线拉取失败。
-        _NORMALIZE_COIN = {"XAUT": "XAU", "XSNDK": "SNDK", "XSPCX": "SPCX"}
-
-        def _norm(c):
-            cu = str(c).strip().upper()
-            return _NORMALIZE_COIN.get(cu, cu)
-
-        self.coins = [_norm(c) for c in (coins or default_coins)]
+        # P4 修复：币种规范化映射（_norm 已提升为类方法，供 __init__ 和 _maybe_refresh_coins 共用）
+        self.coins = [self._norm(c) for c in (coins or default_coins)]
         self._last_pool_refresh = 0.0  # 公共代币池8h刷新时间戳
         self.bar = bar
         self.confidence_threshold = confidence_threshold
@@ -369,6 +390,11 @@ class PollingTrader:
         # 数据来源：坤为地(7/7亏) 震为雷(5/5亏) 火地晋(2/2亏) 地雷复(2/2亏) 全部100%亏损
         # 可被 config.json 的 hexagram_blacklist 字段热重载覆盖
         self.hexagram_blacklist: set = {"坤为地", "震为雷", "火地晋", "地雷复"}
+
+        # [PUMP修复 2026-08-23] 卦象→方向决策历史滑窗（每币种独立缓存最近 N=30 笔推理）
+        # 用于开仓前校验"同一卦象是否出现方向矛盾"（如天地否本轮判UP但历史全SHORT）
+        self.HEX_HISTORY_WINDOW_PER_COIN: int = 30
+        self._recent_hex_decisions: Dict[str, deque] = {}
 
         # P1-1: BTC趋势缓存（5分钟刷新一次，避免每币种重复拉取BTC日线K线）
         self._btc_trend_cache: dict = {"ts": 0, "result": None}
@@ -612,6 +638,12 @@ class PollingTrader:
                 base_threshold=float(self.confidence_threshold),
                 protected_conf_boost=self.PROTECTED_REVERSE_CONF_BOOST,
                 exit_confirm_required=self.EXIT_CONFIRM_REQUIRED,
+                # [PUMP修复 2026-08-23] 反转阈值硬下限 + 余量保护
+                # - 避免 barely pass（如 0.65 vs 0.6357，margin仅0.014）就触发
+                # - 保护期内 margin ×2 = 0.10 （更严格）
+                min_reverse_threshold=0.70,
+                reverse_confidence_margin=0.05,
+                protected_margin_multiplier=2.0,
             ),
             self._ev_force_close_strategy,
             TimeoutProfitSwitchStrategy(timeout_hours=_timeout_hours),
@@ -689,6 +721,67 @@ class PollingTrader:
         self._fma_load_from_rollout()
 
         # ──────────────────────────────────────────────────────
+        # 通用资金调控组件（16-调控系统）
+        #   设计：① 懒加载，失败降级为 None（fail-open，不阻塞易经自有风控）
+        #         ② 作为前置约束叠加使用：allowed=False 拦截开仓 / max_position_usdt 取 min
+        #         ③ 系统名 yijing_bcrm → okx_simulated 账户
+        # ──────────────────────────────────────────────────────
+        self._capital_ctrl = None                # CapitalControlComponent 实例
+        self._capital_ctrl_last_result = None    # 最近一次 advice 结果（dict/frozen）
+        self._capital_ctrl_last_ts: float = 0.0  # 上次调用时间戳（控制调用频率）
+        self._CAPITAL_CTRL_MIN_INTERVAL: float = 240.0  # 每 4 分钟至多调用一次 real evaluate
+        self._init_capital_control()
+
+        # ──────────────────────────────────────────────────────
+        # v1.4.1 Stage 1: 战略层五计庙算 + 策略算法层（影子模式，默认全关）
+        # 设计原则：所有开关默认 False → 两个组件均为 None → 字节等价
+        #           异常 catch → None → 不阻塞 __init__
+        # ──────────────────────────────────────────────────────
+        self._five_domain_scorer = None  # type: ignore[assignment]
+        self._five_domain_feature_computer = None  # type: ignore[assignment]
+        self._strategy_algo_layer = None  # type: ignore[assignment]
+        self._five_domain_state_cache = None  # type: ignore[assignment]
+        self._init_five_domain_and_strategy_layer()
+
+        # ──────────────────────────────────────────────────────
+        # Phase1：CBR JSONL 双时点建库 + Elder-ray 日线影子 + 盈亏因子旁路
+        # 三开关默认全 False = 字节等价（G1 红线）；任何异常 → 三属性全 None（fail-open G2）
+        # 零侵入（Phase1 G5：Elder/WinProb 实际 multiplier 恒=1.00，只记录预测）
+        # ──────────────────────────────────────────────────────
+        self.enable_cbr_cycle_log = bool(enable_cbr_cycle_log)
+        self.enable_elder_ray_c4 = bool(enable_elder_ray_c4)
+        self.enable_win_prob_factor = bool(enable_win_prob_factor)
+        # 方案 C v3.0 开关（默认全 False，字节等价旁路）
+        self.enable_three_layer_weighter = bool(enable_three_layer_weighter)
+        self.enable_elastic_gate_3l = bool(enable_elastic_gate_3l)
+        self.enable_bcrm_continuity_obs = bool(enable_bcrm_continuity_obs)
+        self.enable_btc_self_reflex_valve = bool(enable_btc_self_reflex_valve)
+        self.enable_portfolio_risk_fuses = bool(enable_portfolio_risk_fuses)
+        self._cbr_store = None       # CBRJsonlStore（JSONL 双时点建库）
+        self._elder_engine = None    # ElderRayEngine（日线观察器）
+        self._win_prob_engine = None # WinProbEngine（盈亏因子旁路，恒=1.0）
+        # 方案 C v3.0 组件引用（开关 False 时保持 None，字节等价零侵入）
+        self._three_layer_weighter = None   # ThreeLayerWeighter（SW-C3）
+        self._elastic_gate_3l = None        # ElasticGate3L（SW-C4）
+        self._bcrm_continuity = None        # BCRMContinuityObserver（SW-C5）
+        self._btc_self_reflex_valve = None  # BTCSelfReflexValve（SW-C6）
+        self._portfolio_fuses = None        # PortfolioRiskFuses（SW-C8）
+        self._current_fuse_action = None    # 本轮 run_once 的 FuseAction 缓存（None→视为无熔断旁路）
+        self._last_prf_failopen_hour: str = ""
+        # v4.6 过滤层统一弹性放行：score_consensus < 基础阈值 → 不开仓；≥基础阈值才可能试错
+        # 基础阈值（冷启动默认 0.40，基于历史盈亏动态调节，范围 [0.25, 0.60]）
+        self._gate_base_threshold: float = 0.40
+        # 基础阈值动态调节状态：聚合最近 N=30 笔盈亏样本
+        self._gate_threshold_state: dict = {
+            "n_min": 30,           # 至少 30 笔才启动调节（非单笔）
+            "n_max": 150,          # 滑动窗口上限
+            "recent_pnl": [],      # [(pnl_ratio, score_consensus, direction), ...]
+            "last_adjust_ts": 0.0, # 上次调节时间戳
+            "adjust_cooldown_s": 1800,  # 30 分钟最多调一次
+        }
+        self._init_phase1_three_components()
+
+        # ──────────────────────────────────────────────────────
         # Phase C+: 大小周期 MorphCyclePredictor + ParameterMapper 单例
         #   目的：① 日志审计（大小周期→形态→六维→注入BCRM闭环）
         #         ② 后续 enable_inject=True 时直接复用
@@ -697,6 +790,985 @@ class PollingTrader:
         self._morph_predictor = None
         self._param_mapper = None
         self._init_morph_and_param_mapper()
+
+    # ================================================================
+    # 通用资金调控组件集成（16-调控系统）
+    # 设计原则：① fail-open 失败降级；② 仅作为前置约束，不替代易经自有风控
+    # ================================================================
+
+    def _init_capital_control(self):
+        """初始化通用资金调控组件。失败时 self._capital_ctrl=None，所有后续方法安全降级。"""
+        try:
+            import sys
+            from pathlib import Path
+            _PROJECT_DIR = Path(__file__).resolve().parents[2]  # 11-易经推理系统
+            _ROOT = _PROJECT_DIR.parent  # dreambuddy-v2
+            # CapitalControlComponent 使用相对导入 from .types import ...，
+            # 必须以"capital_control.component"子包路径导入：把 16-调控系统/core 加为模块根
+            _CORE_ROOT = _ROOT / "16-调控系统" / "core"
+            if str(_CORE_ROOT) not in sys.path:
+                sys.path.insert(0, str(_CORE_ROOT))
+            from capital_control.component import CapitalControlComponent, CapitalMode
+            self._capital_ctrl = CapitalControlComponent(mode=CapitalMode.DYNAMIC)
+            # 启动时不主动 evaluate，避免拖慢初始化；懒评估
+            self._log(
+                "[资金调控] 16-调控系统 CapitalControlComponent 初始化完成 "
+                "(system=yijing_bcrm, mode=DYNAMIC, fail-open)",
+                "INFO",
+            )
+        except Exception as _e:
+            self._capital_ctrl = None
+            self._log(
+                f"[资金调控] 初始化失败，降级使用易经自有风控: {_e}",
+                "WARN",
+            )
+
+    def _fetch_capital_advice(self, force: bool = False):
+        """每轮轮询/开仓前获取通用资金调控建议。
+
+        - 内部限流：距离上次 < _CAPITAL_CTRL_MIN_INTERVAL 时直接复用缓存结果
+        - 组件为 None 或任何异常 → 返回 None 表示无外部约束（易经自有风控生效）
+        """
+        if self._capital_ctrl is None:
+            return None
+        _now = time.time()
+        if (not force) and (
+            self._capital_ctrl_last_ts > 0
+            and (_now - self._capital_ctrl_last_ts) < self._CAPITAL_CTRL_MIN_INTERVAL
+            and self._capital_ctrl_last_result is not None
+        ):
+            return self._capital_ctrl_last_result
+        try:
+            advice = self._capital_ctrl.get_capital_advice("yijing_bcrm", action="OPEN")
+            self._capital_ctrl_last_result = advice
+            self._capital_ctrl_last_ts = _now
+            return advice
+        except Exception as _e:
+            self._log(f"[资金调控] get_capital_advice 异常，降级: {_e}", "WARN")
+            return None
+
+    def _apply_capital_control_to_position(self, coin: str, position_usdt: float, available_equity: float):
+        """将通用资金调控组件的约束叠加到仓位上。
+
+        返回: (final_position_usdt: float, cap_reason_log: str)
+        若 advice=None，直接 return (position_usdt, "") 表示无外部约束。
+
+        规则（与易经自有风控取更严格，叠加而非替换）：
+          1. advice.allowed=False → final_position_usdt=0（拦截）
+          2. advice.max_position_usdt（保证金口径）→ 乘杠杆转名义价值后与 position_usdt 取 min（缩仓）
+          3. advice.confidence_multiplier(Phase2) 不在此层处理，保留给未来接入
+        """
+        advice = self._fetch_capital_advice()
+        if advice is None:
+            return position_usdt, ""
+
+        logs: List[str] = []
+        _reason = advice.get("reason", "") or "ok"
+        _pressure = advice.get("margin_pressure", "LOW")
+        _used_pct = float(advice.get("used_pct", 0.0) or 0.0)
+        _avail = float(advice.get("current_avail", 0.0) or 0.0)
+        _total_eq = float(advice.get("total_eq", 0.0) or 0.0)
+        logs.append(
+            f"pressure={_pressure} used={_used_pct:.1f}% avail={_avail:.1f}U eq={_total_eq:.1f}U({_reason})"
+        )
+
+        # 1) 明确拦截：allowed=False
+        if not bool(advice.get("allowed", True)):
+            logs.append("ALLOWED=FALSE")
+            self._log(
+                f"[{coin}] [资金调控] 前置约束拦截 | {' | '.join(logs)}",
+                "WARN",
+            )
+            return 0.0, " | ".join(logs)
+
+        # 2) 仓位上限叠加：cap_max 是保证金口径，position_usdt 是名义价值（含杠杆）
+        #    将 cap_max 乘杠杆转为名义价值后比较，避免保证金与名义价值混比导致缩仓 10 倍
+        cap_max_margin = float(advice.get("max_position_usdt", 0.0) or 0.0)
+        if cap_max_margin > 0:
+            leverage = self._get_leverage()
+            cap_max_notional = cap_max_margin * leverage
+            if position_usdt > cap_max_notional:
+                logs.append(
+                    f"cap_max_margin={cap_max_margin:.2f}U(×{leverage:.0f}x={cap_max_notional:.2f}U名义) → 仓位 {position_usdt:.2f}→{cap_max_notional:.2f}U"
+                )
+                self._log(
+                    f"[{coin}] [资金调控] 仓位上限叠加缩仓 | {' | '.join(logs)}",
+                    "WARN",
+                )
+                return cap_max_notional, " | ".join(logs)
+
+        # 3) 其余正常通过
+        if position_usdt > 0:
+            self._log(
+                f"[{coin}] [资金调控] 前置约束通过 | {' | '.join(logs)}",
+                "INFO",
+            )
+        return position_usdt, " | ".join(logs)
+
+    # ================================================================
+    # v1.4.1 Stage 1: 战略层五计庙算 + 策略算法层（影子模式初始化）
+    # 设计原则：失败降级为 None，仅影响影子日志，不改变任何交易逻辑
+    # ================================================================
+
+    def _init_five_domain_and_strategy_layer(self):
+        """初始化五计庙算评分器 + 策略算法层（默认全关=fail-open字节等价）。
+
+        state_cache_path = runtime/five_domain_state.json（日级缓存，5分钟热路径只读）
+        """
+        from pathlib import Path as _Path
+        try:
+            from scripts.memory_l4.five_domain_scorer import FiveDomainHeuristicScorer
+            from scripts.memory_l4.strategy_algo_layer import StrategyAlgorithmLayer, StrategyAlgoConfig
+        except Exception as e:
+            self._log(f"[战略层/策略层] import失败，影子模式关闭（字节等价）: {e}", "WARN")
+            return
+
+        # cfg：2总+7子+3模式+1放宽 共13开关，默认全部False（符合§三开关表fail-open）
+        cfg = StrategyAlgoConfig(
+            enable_strategy_layer=True,  # P0 开关：策略算法层影子（只打日志+enhance_info，不影响交易）
+            enable_five_domain=False,
+            # 7 子开关默认 False（B1已开启style_mask，其余保持False=下游零影响）
+            enable_five_domain_war_state=False,
+            enable_five_domain_style_mask=True,  # B1: 开启战略层 allowed_style_mask 消费 → allowed_mask下架策略匹配时真实生效
+            enable_five_domain_position_cap=False,
+            enable_five_domain_cross_asset=False,
+            enable_five_domain_dimensio=False,
+            enable_five_domain_front_layer_band=False,
+            enable_five_domain_ol=False,
+            # 影子 AB 模式默认 False
+            enable_five_domain_shadow_mode=True,  # P0 开关：ShadowLogger 12字段(fd_*/sal_)结构化写入
+            enable_shadow_ab_static_baseline_v15=False,
+            enable_shadow_ab_dynamic_baseline=False,
+            # R5 红线：放宽阈值默认不允许
+            enable_strategy_layer_relax_allowed=False,
+        )
+        try:
+            cache_path = _Path(__file__).resolve().parent / "runtime" / "five_domain_state.json"
+            # A3: enable=True（影子模式），真实应用6决策不等式计算war_state/cap/mask/mult/band
+            # 零风险：7子开关(enable_five_domain_war_state/...)全False，下游不消费仅日志记录
+            self._five_domain_scorer = FiveDomainHeuristicScorer(enable=True, state_cache_path=cache_path)
+            # FiveDomainFeatureComputer：特征→评分计算层（A1: enable=True 影子模式，真实计算五维评分）
+            from scripts.memory_l4.five_domain_feature_computer import FiveDomainFeatureComputer
+            self._five_domain_feature_computer = FiveDomainFeatureComputer(enable=True)
+            self._strategy_algo_layer = StrategyAlgorithmLayer(cfg=cfg)
+            # 初始化 state_cache（A3后不再字节等价 default_fail_open，因为Scorer.enable=True）
+            # 日级刷新时会通过 A2 的真实 coin_data/system_state 重算，这里先用 fail-open 作为占位
+            self._five_domain_state_cache = self._five_domain_scorer.score_and_decide(persist=True)
+            from scripts.memory_l4.five_domain_scorer import FiveDomainState
+            from dataclasses import asdict as _asdict
+            # F1 影子红线：7子开关全False时，war_state必须=ALLOW，cap必须=1.0（下游零影响校验）
+            if not (cfg.enable_five_domain_war_state or cfg.enable_five_domain_style_mask
+                    or cfg.enable_five_domain_position_cap or cfg.enable_five_domain_cross_asset
+                    or cfg.enable_five_domain_dimensio or cfg.enable_five_domain_front_layer_band):
+                _st = self._five_domain_state_cache
+                _default = FiveDomainState.default_fail_open()
+                for _c in _st.war_state.keys():
+                    assert _st.war_state.get(_c) == _default.war_state.get(_c) or (
+                        _st.war_state.get(_c) == "ALLOW"
+                    ), (
+                        f"[F1影子红线违规] 7子开关全False时 war_state[{_c}]={_st.war_state.get(_c)}≠ALLOW"
+                    )
+                    assert abs(_st.aggregate_position_cap_pct.get(_c, 1.0) - 1.0) < 1e-6, (
+                        f"[F1影子红线违规] 7子开关全False时 cap[{_c}]={_st.aggregate_position_cap_pct.get(_c)}≠1.0"
+                    )
+            # ★ FIX 问题2：动态描述7子开关状态，避免 style_mask=True 时误写「全False」
+            try:
+                from scripts.memory_l4.five_domain_feature_computer import (
+                    describe_five_domain_subswitches as _desc_sw,
+                )
+                _sw_desc = _desc_sw(cfg)
+            except Exception:
+                _sw_desc = "子开关状态描述生成失败（详见five_domain_feature_computer.describe_five_domain_subswitches）"
+            self._log(
+                f"[战略层/策略层] 初始化完成（A1+A2+A3影子模式已启用，{_sw_desc}）",
+                "INFO",
+            )
+        except Exception as e:
+            self._five_domain_scorer = None
+            self._five_domain_feature_computer = None
+            self._strategy_algo_layer = None
+            self._five_domain_state_cache = None
+            self._log(f"[战略层/策略层] 构造失败，降级关闭（字节等价）: {e}", "WARN")
+
+    def _init_phase1_three_components(self):
+        """Phase1 三组件 + 方案C v3.0 五组件初始化（CBR/Elder/WinProb + C3~C6/C8）。
+
+        强制约束（必须全部满足）：
+          G1：8 开关全 False → 所有组件引用全部为 None
+              （字节等价改造前状态，不影响任何交易逻辑）
+          G2：任何 import 异常 / 构造异常 → 全量降级为 None（不影响 __init__）
+          G5：ElderRayEngine / WinProbEngine 在 Phase1 中均返回 multiplier=1.0（仅记录预测值）
+        """
+        from pathlib import Path as _P
+        total_enabled = (
+            int(bool(self.enable_cbr_cycle_log))
+            + int(bool(self.enable_elder_ray_c4))
+            + int(bool(self.enable_win_prob_factor))
+            # 方案 C v3.0 开关：C3/C4/C5/C6/C8
+            + int(bool(self.enable_three_layer_weighter))
+            + int(bool(self.enable_elastic_gate_3l))
+            + int(bool(self.enable_bcrm_continuity_obs))
+            + int(bool(self.enable_btc_self_reflex_valve))
+            + int(bool(self.enable_portfolio_risk_fuses))
+        )
+        if total_enabled == 0:
+            # G1：全关 → 全 None（与 __init__ 初始化占位保持一致，字节等价）
+            assert self._cbr_store is None and self._elder_engine is None \
+                   and self._win_prob_engine is None, (
+                "G1红线：三开关全False时组件初始值必须全None，请检查__init__占位"
+            )
+            # 方案 C v3.0 同样必须全部是 None
+            assert (self._three_layer_weighter is None and self._elastic_gate_3l is None
+                    and self._bcrm_continuity is None and self._btc_self_reflex_valve is None
+                    and self._portfolio_fuses is None), (
+                "G1红线(方案C)：五开关全False时组件初始值必须全None，请检查__init__占位"
+            )
+            self._log("[Phase1+方案C] 8开关全=False → 旁路（字节等价）", "DEBUG")
+            return
+        # 按开关独立构造；一个失败不影响其他（fail-open 粒度最小化）
+        try:
+            if self.enable_cbr_cycle_log:
+                from scripts.memory_l4.cbr_engine import CBRJsonlStore as _CBR
+                self._cbr_store = _CBR(
+                    runtime_dir=_P(__file__).resolve().parent / "runtime", enable=True)
+                if self._cbr_store is not None:
+                    self._log(
+                        f"[Phase1/P0] CBRJsonlStore 已加载季度校准参数："
+                        f"θ_match*={self._cbr_store.theta_match_star:.4f}  "
+                        f"γ_max*={self._cbr_store.gamma_max_star:.4f}", "INFO")
+        except Exception as _e:
+            self._cbr_store = None
+            self._log(f"[Phase1/P0] CBRJsonlStore 初始化失败，旁路（fail-open）：{_e}", "WARN")
+        try:
+            if self.enable_elder_ray_c4:
+                from scripts.memory_l4.elder_ray_engine import ElderRayEngine as _ERE
+                self._elder_engine = _ERE(enable=True)
+        except Exception as _e:
+            self._elder_engine = None
+            self._log(f"[Phase1/P1] ElderRayEngine 初始化失败，旁路（fail-open）：{_e}", "WARN")
+        try:
+            if self.enable_win_prob_factor:
+                from scripts.memory_l4.winprob_engine import WinProbEngine as _WPE
+                self._win_prob_engine = _WPE(enable=True)
+        except Exception as _e:
+            self._win_prob_engine = None
+            self._log(f"[Phase1/P3] WinProbEngine 初始化失败，旁路（fail-open）：{_e}", "WARN")
+
+        # ──────────────────────────────────────────────────────
+        # 方案 C v3.0 5 个新组件初始化（C3/C4/C5/C6/C8）
+        # 每个组件独立 try/except，异常时属性保持 None = fail-open 旁路
+        # ──────────────────────────────────────────────────────
+        try:
+            if self.enable_three_layer_weighter:
+                from scripts.memory_l4.three_layer_weighter import ThreeLayerWeighter as _TLW
+                self._three_layer_weighter = _TLW(
+                    runtime_dir=_P(__file__).resolve().parent / "runtime")
+        except Exception as _e:
+            self._three_layer_weighter = None
+            self._log(f"[方案C/C3] ThreeLayerWeighter 初始化失败，旁路（fail-open）：{_e}", "WARN")
+        try:
+            if self.enable_elastic_gate_3l:
+                from scripts.memory_l4.elastic_gate_3l import ElasticGate3L as _EG3L
+                self._elastic_gate_3l = _EG3L()
+        except Exception as _e:
+            self._elastic_gate_3l = None
+            self._log(f"[方案C/C4] ElasticGate3L 初始化失败，旁路（fail-open）：{_e}", "WARN")
+        try:
+            if self.enable_bcrm_continuity_obs:
+                from scripts.memory_l4.bcrm_continuity_observer import BCRMContinuityObserver as _BCO
+                self._bcrm_continuity = _BCO(enable=True)
+        except Exception as _e:
+            self._bcrm_continuity = None
+            self._log(f"[方案C/C5] BCRMContinuityObserver 初始化失败，旁路（fail-open）：{_e}", "WARN")
+        try:
+            if self.enable_btc_self_reflex_valve:
+                from scripts.memory_l4.btc_self_reflex_valve import BTCSelfReflexValve as _BSRV
+                self._btc_self_reflex_valve = _BSRV()
+        except Exception as _e:
+            self._btc_self_reflex_valve = None
+            self._log(f"[方案C/C6] BTCSelfReflexValve 初始化失败，旁路（fail-open）：{_e}", "WARN")
+        try:
+            if self.enable_portfolio_risk_fuses:
+                from scripts.memory_l4.portfolio_risk_fuses import PortfolioRiskFuses as _PRF
+                self._portfolio_fuses = _PRF()
+        except Exception as _e:
+            self._portfolio_fuses = None
+            self._log(f"[方案C/C8] PortfolioRiskFuses 初始化失败，旁路（fail-open）：{_e}", "WARN")
+
+        # 初始化完成日志（便于日志追踪 gate 是否生效）
+        self._log(
+            f"[Phase1+方案C] 初始化结果："
+            f"CBR={self._cbr_store is not None}({self.enable_cbr_cycle_log}) | "
+            f"Elder={self._elder_engine is not None}({self.enable_elder_ray_c4}) | "
+            f"WinProb={self._win_prob_engine is not None}({self.enable_win_prob_factor}) | "
+            f"3LW={self._three_layer_weighter is not None}({self.enable_three_layer_weighter}) | "
+            f"EG3L={self._elastic_gate_3l is not None}({self.enable_elastic_gate_3l}) | "
+            f"BCO={self._bcrm_continuity is not None}({self.enable_bcrm_continuity_obs}) | "
+            f"BSRV={self._btc_self_reflex_valve is not None}({self.enable_btc_self_reflex_valve}) | "
+            f"PRF={self._portfolio_fuses is not None}({self.enable_portfolio_risk_fuses})",
+            "INFO",
+        )
+
+    def _run_once_five_domain_daily_update(self):
+        """§15.4.2 战略层日级打分影子（热路径只读，5分钟轮询不重算）。
+
+        日级缓存文件：runtime/five_domain_state.json，带 _meta.updated_date 防重算。
+        异常时 fail-open = FiveDomainState.default_fail_open()，仅 WARN 不阻塞。
+        """
+        from pathlib import Path as _Path
+        from dataclasses import asdict as _asdict
+
+        if self._five_domain_scorer is None:
+            return
+
+        # ═══════════════════════════════════════════════════════════════════
+        # 辅助：把 FiveDomainState 对象 → 打 5 条影子日志 + 填缓存属性
+        # ═══════════════════════════════════════════════════════════════════
+        def _emit_shadow_logs(state_obj, src_label: str):
+            try:
+                from scripts.memory_l4.five_domain_scorer import CLASSES as _CLASSES
+                _scorer = self._five_domain_scorer
+                _war = getattr(state_obj, "war_state", {})
+                _scores = getattr(state_obj, "five_scores", {})
+                _caps = getattr(state_obj, "aggregate_position_cap_pct", {})
+                _mults = getattr(state_obj, "position_mult", {})
+                _totals = {}
+                _dao_scores = {}
+                for _c in _CLASSES:
+                    _s = _scores.get(_c, {})
+                    _dao_scores[_c] = _s.get("dao", 50)
+                    if _scorer is not None:
+                        try:
+                            _totals[_c] = _scorer._weighted_total(_s, _c)
+                        except Exception:
+                            _totals[_c] = 50
+                    else:
+                        _totals[_c] = 50
+                _cls_list = list(_CLASSES)
+                self._log(
+                    f"[战略层影子][{src_label}] war_state | " +
+                    " | ".join(f"{_c}={_war.get(_c, 'ALLOW')}" for _c in _cls_list),
+                    "INFO",
+                )
+                self._log(
+                    f"[战略层影子][{src_label}] total_score | " +
+                    " | ".join(f"{_c}={_totals.get(_c, 50)}" for _c in _cls_list),
+                    "INFO",
+                )
+                self._log(
+                    f"[战略层影子][{src_label}] dao_score | " +
+                    " | ".join(f"{_c}={_dao_scores.get(_c, 50)}" for _c in _cls_list),
+                    "INFO",
+                )
+                self._log(
+                    f"[战略层影子][{src_label}] cap_mode | " +
+                    " | ".join(f"{_c}={_caps.get(_c, 1.0):.2f}" for _c in _cls_list),
+                    "INFO",
+                )
+                self._log(
+                    f"[战略层影子][{src_label}] mult_mode | " +
+                    " | ".join(f"{_c}={_mults.get(_c, 1.0):.2f}" for _c in _cls_list),
+                    "INFO",
+                )
+            except Exception as _log_e:
+                # 影子日志失败绝对不阻塞主流程
+                try:
+                    self._log(f"[战略层影子] 日志打印异常(不阻塞): {_log_e}", "WARN")
+                except Exception:
+                    pass
+
+        try:
+            state_cache_path = (
+                _Path(__file__).resolve().parent / "runtime" / "five_domain_state.json"
+            )
+            import datetime as _dt
+            today_str = _dt.date.today().isoformat()
+
+            need_recalc = True
+            _cached = None
+            if state_cache_path.exists():
+                try:
+                    with state_cache_path.open("r", encoding="utf-8") as _f:
+                        _cached = json.load(_f)
+                    _meta = (_cached or {}).get("_meta", {})
+                    if _meta.get("updated_date") == today_str:
+                        need_recalc = False
+                except Exception:
+                    need_recalc = True
+                    _cached = None
+
+            # ── 分支 A：今日缓存命中（need_recalc=False）→ 读缓存，不重算，但必须：
+            #    1) 反序列化填 self._five_domain_state_cache（否则策略层取不到）
+            #    2) 补打影子日志（否则看不到战略层今天在跑什么）
+            # ──────────────────────────────────────────────────────────────
+            if not need_recalc and _cached is not None:
+                try:
+                    from scripts.memory_l4.five_domain_scorer import FiveDomainState as _FDS
+                    self._five_domain_state_cache = _FDS.from_json(
+                        state_cache_path, fallback_on_error=True
+                    )
+                except Exception:
+                    # from_json 失败：手工从 _cached 构造最小可用对象或 fail-open
+                    try:
+                        from scripts.memory_l4.five_domain_scorer import FiveDomainState as _FDS2
+                        self._five_domain_state_cache = _FDS2.default_fail_open()
+                    except Exception:
+                        self._five_domain_state_cache = None
+                _emit_shadow_logs(self._five_domain_state_cache, "CACHE")
+                return  # ← 缓存命中：当日不再重算（保留原语义）
+
+            # ── 分支 B：需要重算（缓存缺失 / 日期不匹配 / 解析失败）
+            # ──────────────────────────────────────────────────────────────
+            try:
+                from scripts.memory_l4.five_domain_scorer import FiveDomainState
+            except Exception:
+                FiveDomainState = None
+
+            # ★ BUG FIX 1：删除「先 score_and_decide(None) 写一次中性分」的错误顺序
+            # 改为：先 FeatureComputer → 再 Scorer；失败兜底才 Scorer(None)
+            result_state = None
+            if self._five_domain_feature_computer is not None:
+                try:
+                    # ── coin_data：从现有系统可用数据中尽力构造（缺失=50）──
+                    import datetime as _dt_coin
+                    _month = _dt_coin.date.today().month
+                    # 美林时钟默认=RECOVERY（当前市场大周期假设，fail-open可换）
+                    _merrill = "RECOVERY"
+                    try:
+                        _y = _dt_coin.date.today().year
+                        _m = _month
+                        # 距离 2024-04 BTC 减半的月数 / 48 = 4年周期位置 0~1
+                        _cycle_months = ((_y - 2024) * 12 + (_m - 4))
+                        _t_rel = max(0.0, min(1.0, _cycle_months / 48.0))
+                    except Exception:
+                        _t_rel = 0.5
+                    # P2-fix: 美股/黄金4年周期位置（暂用相同基准，后续可按选举周期/商品周期独立计算）
+                    _us_t_rel = _t_rel
+                    _metal_t_rel = _t_rel
+                    try:
+                        _ov = (
+                            self.perf_tracker.get_overall_stats()
+                            if hasattr(self, "perf_tracker") else {}
+                        )
+                        _win_rate = float(_ov.get("win_rate", 0.5) or 0.5)
+                        _pf = float(_ov.get("profit_factor", 1.5) or 1.5)
+                        _total_trades = int(_ov.get("total_trades", 0) or 0)
+                        _max_dd = float(_ov.get("max_drawdown", 0.10) or 0.10)
+                        _sharpe = float(_ov.get("sharpe_ratio", 3.0) or 3.0)
+                    except Exception:
+                        _ov, _win_rate, _pf, _total_trades, _max_dd, _sharpe = (
+                            {}, 0.5, 1.5, 0, 0.10, 3.0,
+                        )
+                    try:
+                        _open_pos_count = (
+                            len(getattr(self.position_tracker, "open_positions", {}))
+                            if hasattr(self, "position_tracker") else 0
+                        )
+                    except Exception:
+                        _open_pos_count = 0
+
+                    # ★ FIX 问题1 + P1：三类资产构造差异化 coin_data
+                    # P1-地维度：从弹簧力场真实计算 regime + spring_force_score（替代硬编码）
+                    # P1-道维度：从 FiveDomainFetcher 代理指标替代 fail-open=50
+                    # 所有数据获取 fail-open：异常时回退到硬编码默认值
+
+                    # ── P1: 尝试获取真实弹簧力场数据 ──
+                    _spring_crypto = self._try_get_spring_force("BTC-USDT-SWAP", "daily_btc")
+                    _spring_stock = self._try_get_spring_force_yf("SPY", "daily_index")
+                    _spring_metal = self._try_get_spring_force_yf("GLD", "daily_index")
+
+                    # ── P1: 尝试获取真实宏观代理指标（道维度）──
+                    _macro = self._try_fetch_macro_proxies()
+
+                    # P2-4: 美林时钟优先从真实 CPI/INDPRO 计算，缺失时回退 RECOVERY
+                    _merrill = _macro.get("merrill_phase") or _merrill
+                    # P2-4: ATR 分位优先从 VIX 代理获取，缺失时回退硬编码
+                    _atr_proxy = _macro.get("atr_percentile_proxy")
+                    # P2-4: 真实流动性评分
+                    _liq_score = _macro.get("liquidity_score")
+
+                    # P2-5: 按资产类获取差异化统计（将维度补强）
+                    _cls_stats = self._get_class_stats()
+
+                    # regime 映射：弹簧力场 market_regime → FeatureComputer 期望值
+                    _regime_map = {
+                        "TREND_BULL": "trend_up",
+                        "STRONG_TREND_BEAR": "trend_down",
+                        "TREND_BEAR": "trend_down",
+                        "MEAN_REVERTING": "ranging",
+                        "RANGING": "ranging",
+                    }
+
+                    # 加密货币（BTC减半周期 + 美林时钟原始值 + 真实弹簧力场）
+                    _crypto_regime = _regime_map.get(
+                        _spring_crypto.get("market_regime", ""),
+                        "trend_up" if _t_rel < 0.35 else "ranging"
+                    )
+                    _crypto_coin = {
+                        "cycle4y_t_rel": _t_rel,
+                        "merrill_phase": _merrill,
+                        "atr_percentile": _atr_proxy if _atr_proxy is not None else 0.62,
+                        "liquidity_score": _liq_score if _liq_score is not None else 0.65,
+                        "regime": _crypto_regime,
+                        "spring_force_score": _spring_crypto.get("spring_force_score", 70),
+                        "spring_force_F_total": _spring_crypto.get("F_total", 0.0),
+                        "spring_force_bearish_score": _spring_crypto.get("bearish_score", "NONE"),
+                        "price_amplitude": 4.2,
+                        "atr": 1.15,
+                        "ftd_signal": 1 if _t_rel < 0.25 else 0,
+                        "ma200_distance_percentile": 0.68,
+                        # P1-道维度代理指标
+                        "vix_close": _macro.get("vix_close"),
+                        "stablecoin_mcap_bln": _macro.get("stablecoin_mcap_bln"),
+                        "fedfunds_rate": _macro.get("fedfunds_rate"),
+                        "policy_sentiment_score": _macro.get("policy_sentiment_score"),
+                        # P2-3: 道维度变化率（稳定币市值一阶差分）
+                        "stablecoin_change_rate": _macro.get("stablecoin_change_rate"),
+                    }
+                    # 美股（总统周期中段 + 过热期倾向 + 真实弹簧力场）
+                    _stock_regime = _regime_map.get(
+                        _spring_stock.get("market_regime", ""),
+                        "ranging"
+                    )
+                    _stock_coin = {
+                        "cycle4y_t_rel": _us_t_rel,
+                        "merrill_phase": _merrill,  # P2-4: 使用真实美林时钟（非硬编码 OVERHEAT）
+                        "atr_percentile": _atr_proxy if _atr_proxy is not None else 0.42,
+                        "liquidity_score": _liq_score if _liq_score is not None else 0.52,
+                        "regime": _stock_regime,
+                        "spring_force_score": _spring_stock.get("spring_force_score", 58),
+                        "spring_force_F_total": _spring_stock.get("F_total", 0.0),
+                        "spring_force_bearish_score": _spring_stock.get("bearish_score", "NONE"),
+                        "price_amplitude": 2.1,
+                        "atr": 0.78,
+                        "ftd_signal": 0,
+                        "ma200_distance_percentile": 0.46,
+                        # P1-道维度代理指标
+                        "vix_close": _macro.get("vix_close"),
+                        "fedfunds_rate": _macro.get("fedfunds_rate"),
+                    }
+                    # 贵金属/黄金（避险周期中段 + 滞胀期倾向 + 真实弹簧力场）
+                    _metal_phase = "STAGFLATION" if _merrill in ("OVERHEAT", "STAGFLATION") else "RECOVERY"
+                    _metal_regime = _regime_map.get(
+                        _spring_metal.get("market_regime", ""),
+                        "breakout" if _merrill in ("STAGFLATION", "REFLATION") else "ranging"
+                    )
+                    _metal_coin = {
+                        "cycle4y_t_rel": _metal_t_rel,
+                        "merrill_phase": _metal_phase,
+                        "atr_percentile": _atr_proxy if _atr_proxy is not None else 0.50,
+                        "liquidity_score": _liq_score if _liq_score is not None else 0.56,
+                        "regime": _metal_regime,
+                        "spring_force_score": _spring_metal.get("spring_force_score", 66),
+                        "spring_force_F_total": _spring_metal.get("F_total", 0.0),
+                        "spring_force_bearish_score": _spring_metal.get("bearish_score", "NONE"),
+                        "price_amplitude": 2.7,
+                        "atr": 0.92,
+                        "ftd_signal": 0,
+                        "ma200_distance_percentile": 0.60,
+                        # P1-道维度代理指标
+                        "vix_close": _macro.get("vix_close"),
+                        "fedfunds_rate": _macro.get("fedfunds_rate"),
+                    }
+                    coin_data = {
+                        "crypto_usdt": _crypto_coin,
+                        "us_stock": _stock_coin,
+                        "precious_metal": _metal_coin,
+                        # ---- 兼容键（旧扁平结构字段，用于_Flat判定保留，未来可删）----
+                        "cycle4y_t_rel": _t_rel,
+                        "merrill_phase": _merrill,
+                    }
+
+                    system_state = {
+                        "factor_coverage_pct": 0.80,
+                        "win_rate": _win_rate,
+                        "profit_factor": _pf,
+                        "position_pct": float(
+                            getattr(self, "default_position_pct", 0.10) or 0.10
+                        ),
+                        "max_consecutive_losses": int(
+                            getattr(self, "max_consecutive_losses", 999) or 999
+                        ),
+                        "auto_execute": True,
+                        "has_stop_loss": True,
+                        "has_drawdown_limit": True,
+                        "has_daily_trade_limit": False,
+                        "has_position_cap": True,
+                        "implemented_strategies": [True, True, True, True, False, True],
+                        "strategy_match_pct": 0.70,
+                        "risk_rules": {
+                            "stop_loss": True,
+                            "drawdown_limit": True,
+                            "position_cap": True,
+                            "correlation_limit": False,
+                        },
+                        "backtest_metrics": {"sharpe": _sharpe, "max_drawdown": _max_dd},
+                        "has_review_cycle": True,
+                        "has_strategy_retirement": True,
+                        # ── P2-5: _by_class 按类差异化统计（替代 P0 占位值）──
+                        # 从 perf_tracker.trades 按资产类筛选 win_rate/pf/max_dd
+                        # 策略库实现/风控规则/适配度按资产类差异化
+                        "_by_class": {
+                            "crypto_usdt": {
+                                "factor_coverage_pct": 0.80,
+                                "win_rate": _cls_stats.get("crypto_usdt", {}).get("win_rate", _win_rate),
+                                "profit_factor": _cls_stats.get("crypto_usdt", {}).get("profit_factor", _pf),
+                                "position_pct": float(getattr(self, "default_position_pct", 0.10) or 0.10),
+                                "max_consecutive_losses": int(getattr(self, "max_consecutive_losses", 999) or 999),
+                                "auto_execute": True,
+                                "has_stop_loss": True,
+                                "has_drawdown_limit": True,
+                                "has_daily_trade_limit": False,
+                                "has_position_cap": True,
+                                # crypto: 6类策略实现5类（波动率策略未实现）
+                                "implemented_strategies": [True, True, True, True, False, True],
+                                "strategy_match_pct": 0.70,
+                                "risk_rules": {"stop_loss": True, "drawdown_limit": True, "position_cap": True, "correlation_limit": False},
+                                "backtest_metrics": {
+                                    "sharpe": _cls_stats.get("crypto_usdt", {}).get("sharpe_ratio", _sharpe),
+                                    "max_drawdown": _cls_stats.get("crypto_usdt", {}).get("max_drawdown", _max_dd),
+                                },
+                                "has_review_cycle": True,
+                                "has_strategy_retirement": True,
+                            },
+                            "us_stock": {
+                                "factor_coverage_pct": 0.65,  # 美股因子覆盖低于加密
+                                "win_rate": _cls_stats.get("us_stock", {}).get("win_rate", _win_rate),
+                                "profit_factor": _cls_stats.get("us_stock", {}).get("profit_factor", _pf),
+                                "position_pct": float(getattr(self, "default_position_pct", 0.10) or 0.10),
+                                "max_consecutive_losses": int(getattr(self, "max_consecutive_losses", 999) or 999),
+                                "auto_execute": True,
+                                "has_stop_loss": True,
+                                "has_drawdown_limit": True,
+                                "has_daily_trade_limit": True,  # 美股有日内交易限制
+                                "has_position_cap": True,
+                                # us_stock: 4类策略（趋势/突破/动量/应急，均值回归和波动率未实现）
+                                "implemented_strategies": [True, True, False, True, False, True],
+                                "strategy_match_pct": 0.55,  # 美股策略适配度低于加密
+                                "risk_rules": {"stop_loss": True, "drawdown_limit": True, "position_cap": True, "correlation_limit": True},  # 美股有相关性限制
+                                "backtest_metrics": {
+                                    "sharpe": _cls_stats.get("us_stock", {}).get("sharpe_ratio", _sharpe),
+                                    "max_drawdown": _cls_stats.get("us_stock", {}).get("max_drawdown", _max_dd),
+                                },
+                                "has_review_cycle": True,
+                                "has_strategy_retirement": True,
+                            },
+                            "precious_metal": {
+                                "factor_coverage_pct": 0.55,  # 黄金因子覆盖最低
+                                "win_rate": _cls_stats.get("precious_metal", {}).get("win_rate", _win_rate),
+                                "profit_factor": _cls_stats.get("precious_metal", {}).get("profit_factor", _pf),
+                                "position_pct": float(getattr(self, "default_position_pct", 0.10) or 0.10),
+                                "max_consecutive_losses": int(getattr(self, "max_consecutive_losses", 999) or 999),
+                                "auto_execute": True,
+                                "has_stop_loss": True,
+                                "has_drawdown_limit": True,
+                                "has_daily_trade_limit": False,
+                                "has_position_cap": True,
+                                # precious_metal: 3类策略（趋势/突破/应急）
+                                "implemented_strategies": [True, True, False, False, False, True],
+                                "strategy_match_pct": 0.45,  # 黄金策略适配度最低
+                                "risk_rules": {"stop_loss": True, "drawdown_limit": True, "position_cap": True, "correlation_limit": False},
+                                "backtest_metrics": {
+                                    "sharpe": _cls_stats.get("precious_metal", {}).get("sharpe_ratio", _sharpe),
+                                    "max_drawdown": _cls_stats.get("precious_metal", {}).get("max_drawdown", _max_dd),
+                                },
+                                "has_review_cycle": True,
+                                "has_strategy_retirement": False,  # 黄金未实现策略退役
+                            },
+                        },
+                    }
+                    _raw_scores = self._five_domain_feature_computer.compute(
+                        coin_data=coin_data, system_state=system_state,
+                    )
+                    result_state = self._five_domain_scorer.score_and_decide(
+                        raw_scores_by_class=_raw_scores, persist=True,
+                    )
+                except Exception as _fe:
+                    # ★ BUG FIX 3：异常时追加 traceback 便于定位（否则只看到"降级fail-open"）
+                    import traceback as _tb
+                    _tb_str = _tb.format_exc(limit=6)
+                    self._log(
+                        f"[战略层] feature computer 异常，降级 fail-open: "
+                        f"{type(_fe).__name__}: {_fe}\n{_tb_str}",
+                        "WARN",
+                    )
+                    # 兜底：用中性分 fail-open（FiveDomainHeuristicScorer(enable=True, raw=None)）
+                    try:
+                        if result_state is None:
+                            result_state = self._five_domain_scorer.score_and_decide(
+                                raw_scores_by_class=None, persist=True,
+                            )
+                    except Exception:
+                        pass
+
+            # FeatureComputer 不存在或最终 result_state 仍为空：走 Scorer 无参兜底
+            if result_state is None:
+                try:
+                    result_state = self._five_domain_scorer.score_and_decide(
+                        raw_scores_by_class=None, persist=True,
+                    )
+                except Exception:
+                    try:
+                        from scripts.memory_l4.five_domain_scorer import (
+                            FiveDomainState as _FDS3,
+                        )
+                        result_state = _FDS3.default_fail_open()
+                    except Exception:
+                        result_state = None
+
+            self._five_domain_state_cache = result_state
+
+            # ── 写缓存 _meta.updated_date=今天（to_json 已经写过 state；这里只补充/更新 _meta）
+            try:
+                if state_cache_path.exists():
+                    with state_cache_path.open("r", encoding="utf-8") as _f:
+                        _data = json.load(_f)
+                else:
+                    _data = (
+                        _asdict(result_state)
+                        if result_state is not None
+                        and hasattr(result_state, "__dataclass_fields__")
+                        else {}
+                    )
+                if "_meta" not in _data:
+                    _data["_meta"] = {}
+                _data["_meta"]["updated_date"] = today_str
+                state_cache_path.parent.mkdir(parents=True, exist_ok=True)
+                with state_cache_path.open("w", encoding="utf-8") as _f:
+                    json.dump(_data, _f, ensure_ascii=False, indent=2, sort_keys=True)
+            except Exception:
+                pass
+
+            _emit_shadow_logs(result_state, "RECALC")
+        except Exception as _e:
+            try:
+                from scripts.memory_l4.five_domain_scorer import FiveDomainState
+                self._five_domain_state_cache = FiveDomainState.default_fail_open()
+            except Exception:
+                self._five_domain_state_cache = None
+            self._log(f"[战略层影子] 日级打分异常，fail-open降级: {_e}", "WARN")
+
+    # ================================================================
+    # P1 辅助方法：获取真实弹簧力场数据 + 宏观代理指标（fail-open）
+    # ================================================================
+
+    # ================================================================
+    # P2-5: 按资产类获取差异化统计（将维度补强）
+    # ================================================================
+
+    # 资产类符号识别规则
+    _CRYPTO_SYMBOLS = frozenset({
+        "BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "DOT", "MATIC",
+        "BNB", "LTC", "BCH", "UNI", "ATOM", "NEAR", "APT", "ARB", "OP", "SUI",
+    })
+    _METAL_SYMBOLS = frozenset({"XAG", "XAU", "GLD", "SLV", "GOLD", "SILVER", "PAXG"})
+
+    @classmethod
+    def _classify_symbol(cls, symbol: str) -> str:
+        """从交易符号判定资产类 → crypto_usdt / us_stock / precious_metal。"""
+        if not symbol:
+            return "crypto_usdt"
+        s = symbol.upper().split("-")[0].split("/")[0].strip()
+        # 加密：含 USDT/USD-SWAP 或已知加密币前缀
+        if "USDT" in symbol.upper() or "USD-SWAP" in symbol.upper():
+            return "crypto_usdt"
+        if s in cls._CRYPTO_SYMBOLS:
+            return "crypto_usdt"
+        # 贵金属
+        if s in cls._METAL_SYMBOLS:
+            return "precious_metal"
+        # 默认美股
+        return "us_stock"
+
+    def _get_class_stats(self) -> dict:
+        """P2-5: 从 perf_tracker.trades 按资产类统计差异化指标。
+
+        Returns: {cls: {win_rate, profit_factor, max_drawdown, sharpe_ratio, total_trades}}
+        """
+        result = {cls: {} for cls in ("crypto_usdt", "us_stock", "precious_metal")}
+        try:
+            trades = list(getattr(self.perf_tracker, "trades", []))
+            if not trades:
+                return result
+            # 按 asset_class 分组
+            by_cls = {"crypto_usdt": [], "us_stock": [], "precious_metal": []}
+            for t in trades:
+                sym = getattr(t, "coin", "") or getattr(t, "inst_id", "")
+                cls = self._classify_symbol(sym)
+                by_cls[cls].append(t)
+            # 按类计算
+            for cls, cls_trades in by_cls.items():
+                n = len(cls_trades)
+                if n == 0:
+                    result[cls] = {"total_trades": 0}
+                    continue
+                wins = [t for t in cls_trades if getattr(t, "pnl", 0) >= 0]
+                losses = [abs(getattr(t, "pnl", 0)) for t in cls_trades if getattr(t, "pnl", 0) < 0]
+                win_rate = len(wins) / n if n else 0.5
+                avg_win = sum(getattr(t, "pnl", 0) for t in wins) / len(wins) if wins else 0
+                avg_loss = sum(losses) / len(losses) if losses else 0
+                profit_factor = avg_win / avg_loss if avg_loss > 0 else 1.5
+                # max_drawdown: 该类连续亏损序列的最大累积
+                max_dd = 0.0
+                cum = 0.0
+                for t in cls_trades:
+                    pnl = getattr(t, "pnl", 0)
+                    cum += pnl
+                    if cum < 0:
+                        max_dd = max(max_dd, abs(cum))
+                    else:
+                        cum = 0.0
+                max_dd_pct = max_dd / getattr(self.perf_tracker, "initial_equity", 10000) if max_dd > 0 else 0.10
+                result[cls] = {
+                    "win_rate": win_rate,
+                    "profit_factor": profit_factor,
+                    "max_drawdown": min(max_dd_pct, 1.0),
+                    "total_trades": n,
+                    "sharpe_ratio": 3.0,  # 简化：按类夏普暂用全局值或3.0兜底
+                }
+        except Exception:
+            pass
+        return result
+
+    def _try_get_spring_force(self, inst_id: str, tier: str) -> dict:
+        """P1: 从 OKX K线计算真实弹簧力场（加密专用）。fail-open 返回空 dict。
+
+        Returns: {"market_regime": str, "spring_force_score": int(0-100),
+                   "F_total": float, "bearish_score": str} 或 {}
+        """
+        try:
+            from scripts.memory_l4.yijing_trainer import _load_kline_from_okx
+            klines = _load_kline_from_okx(inst_id=inst_id, bar="1D", limit=1500)
+            closes = [float(k.get("c", 0)) for k in klines if k.get("c")]
+            if len(closes) < 131:
+                return {}
+            res = self._calc_5ma_spring_force(closes, tier=tier)
+            f_total = res.get("F_total", 0.0)
+            bearish_score = res.get("bearish_score", "NONE")
+            # P2-1: F_total → 0-100 非线性映射（tanh），避免强空头直接0分
+            # tanh 映射：F=0→57.5中性, F=-0.3→30底线, F=+0.05→70, F=+0.1→79
+            score = int(np.clip(round(57.5 + 27.5 * np.tanh(f_total * 10)), 0, 100))
+            return {
+                "market_regime": res.get("market_regime", "RANGING"),
+                "spring_force_score": score,
+                "F_total": round(f_total, 6),
+                "bearish_score": bearish_score,
+            }
+        except Exception:
+            return {}
+
+    def _try_get_spring_force_yf(self, symbol: str, tier: str) -> dict:
+        """P1: 从 yfinance 获取 K线计算弹簧力场（美股 SPY / 黄金 GLD）。fail-open。
+
+        Returns: 同 _try_get_spring_force 格式。
+        """
+        try:
+            import yfinance as yf
+            ticker = yf.Ticker(symbol)
+            hist = ticker.history(period="5y", interval="1d")
+            if hist is None or len(hist) < 201:
+                return {}
+            closes = hist["Close"].tolist()
+            closes.reverse()  # yfinance 返回最新在最后，_calc_5ma_spring_force 期望 newest-first
+            if len(closes) < 201:
+                return {}
+            res = self._calc_5ma_spring_force(closes, tier=tier)
+            f_total = res.get("F_total", 0.0)
+            bearish_score = res.get("bearish_score", "NONE")
+            # P2-1: 非线性映射（同 _try_get_spring_force）
+            score = int(np.clip(round(57.5 + 27.5 * np.tanh(f_total * 10)), 0, 100))
+            return {
+                "market_regime": res.get("market_regime", "RANGING"),
+                "spring_force_score": score,
+                "F_total": round(f_total, 6),
+                "bearish_score": bearish_score,
+            }
+        except Exception:
+            return {}
+
+    def _try_fetch_macro_proxies(self) -> dict:
+        """P1+P2: 获取道/天维度宏观代理指标（VIX/稳定币市值/利率/政策情绪/美林时钟）。
+
+        优先尝试 FiveDomainFetcher（需 data_center），失败则多路 fallback。
+        所有异常均 fail-open 返回空 dict，调用方用 .get(key, default) 兜底。
+        """
+        result: dict = {}
+        # ── 尝试 1: FiveDomainFetcher（完整宏观数据）──
+        try:
+            from scripts.memory_l4.fivedomain_fetcher import FiveDomainFetcher
+            fetcher = FiveDomainFetcher()
+            coin_data_all = fetcher.fetch_coin_data()
+            crypto_data = coin_data_all.get("crypto_usdt", {})
+            result["vix_close"] = crypto_data.get("vix_close")
+            result["stablecoin_mcap_bln"] = crypto_data.get("stablecoin_mcap_bln")
+            result["fedfunds_rate"] = crypto_data.get("fedfunds_rate")
+            result["policy_sentiment_score"] = crypto_data.get("policy_sentiment_score")
+            result["liquidity_score"] = crypto_data.get("liquidity_score")
+            # P2-4: 天维度真实美林时钟 + CPI/INDPRO 数据
+            result["merrill_phase"] = crypto_data.get("merrill_phase")
+            result["us_cpi_yoy_pct"] = crypto_data.get("us_cpi_yoy_pct")
+            result["us_indpro_yoy_pct"] = crypto_data.get("us_indpro_yoy_pct")
+            result["m2_yoy_pct"] = crypto_data.get("m2_yoy_pct")
+            result["fed_balance_sheet_trillion"] = crypto_data.get("fed_balance_sheet_trillion")
+            # 派生：VIX → 天维度波动率代理
+            vix = result.get("vix_close")
+            if vix is not None:
+                # VIX > 30 = 高恐慌 → 低分；VIX < 15 = 低波动 → 高分
+                result["atr_percentile_proxy"] = float(np.clip((vix - 10) / 40.0, 0.0, 1.0))
+        except Exception:
+            pass
+        # ── 尝试 2: 如果 VIX 仍缺失，直接用 yfinance 补取（去掉^前缀重试）──
+        if not result.get("vix_close"):
+            try:
+                import yfinance as yf
+                # 先试 ^VIX，再试 VIX（不同 yfinance 版本兼容性）
+                for sym in ("^VIX", "VIX"):
+                    try:
+                        vix_ticker = yf.Ticker(sym)
+                        vix_hist = vix_ticker.history(period="5d")
+                        if vix_hist is not None and len(vix_hist) > 0:
+                            result["vix_close"] = float(vix_hist["Close"].iloc[-1])
+                            break
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+        # ── P2-2 尝试 3: 如果 VIX 仍缺失，从 FRED VIXCLS 获取 ──
+        if not result.get("vix_close"):
+            try:
+                from scripts.memory_l4.fivedomain_fetcher import FiveDomainFetcher as _FDF
+                _fdf = _FDF.__new__(_FDF)
+                _fdf.dc = None  # 避免 DataCenter 初始化
+                # 直接用 DataCenter 获取 FRED VIXCLS
+                import sys as _sys
+                _dc_path = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心"
+                if _dc_path not in _sys.path:
+                    _sys.path.insert(0, _dc_path)
+                from data_center import DataCenter
+                _dc = DataCenter()
+                _records = _dc.fetch("macro", source="fred", series="VIXCLS")
+                if _records:
+                    _v = getattr(_records[0], "metrics", None)
+                    if isinstance(_v, dict):
+                        result["vix_close"] = _v.get("value") or _v.get("price")
+            except Exception:
+                pass
+        # ── 派生：如果 VIX 获取成功但 atr_percentile_proxy 缺失，补算 ──
+        if result.get("vix_close") and not result.get("atr_percentile_proxy"):
+            vix = result["vix_close"]
+            result["atr_percentile_proxy"] = float(np.clip((vix - 10) / 40.0, 0.0, 1.0))
+        # ── P2-3: 道维度变化率（稳定币市值一阶差分）──
+        # 与上次快照对比，计算资金流入/流出加速度
+        _sc_now = result.get("stablecoin_mcap_bln")
+        if _sc_now is not None and isinstance(_sc_now, (int, float)) and _sc_now > 0:
+            _sc_prev = getattr(self, "_last_stablecoin_mcap", None)
+            if _sc_prev is not None and isinstance(_sc_prev, (int, float)) and _sc_prev > 0:
+                # 变化率 = (当前 - 上次) / 上次
+                _sc_change_rate = (_sc_now - _sc_prev) / _sc_prev
+                result["stablecoin_change_rate"] = float(_sc_change_rate)
+            # 更新快照
+            self._last_stablecoin_mcap = float(_sc_now)
+        return result
 
     # ================================================================
     # Phase C+: 大小周期预测器 + ParameterMapper 初始化
@@ -892,6 +1964,65 @@ class PollingTrader:
             st_c = _gp("short_threshold_mult")
             sw_sorted = sorted(sw.items(), key=lambda kv: -float(kv[1]))[:3] if isinstance(sw, dict) else []
             sw_str = ",".join(f"{k}={float(v):.3f}(tp×{float(tp_m.get(k,1.0)):.2f}/sl×{float(sl_m.get(k,1.0)):.2f})" for k,v in sw_sorted) or "n/a"
+
+            # =====================================================================
+            # Task T3：ParameterMapper 战略层带宽 clip 影子（仅写影子，真实参数不动）
+            # =====================================================================
+            try:
+                layer = self._strategy_algo_layer
+                if layer is None:
+                    pass
+                elif not layer.cfg.enable_five_domain_front_layer_band:
+                    pass
+                else:
+                    L_r = float(L)
+                    T_r = float(T)
+                    sec_raw_vals = [float(sw.get(k, 0.5)) for k in ("defi", "ai", "rwa", "meme", "l2")]
+                    state = self._five_domain_state_cache
+                    if state is None and self._five_domain_scorer is not None:
+                        try:
+                            state = self._five_domain_scorer.score_and_decide(persist=False)
+                        except Exception:
+                            state = None
+                    band = None
+                    if state is not None:
+                        try:
+                            cls_bands = getattr(state, "front_layer_band", {}) or {}
+                            band = cls_bands.get("crypto_usdt")
+                        except Exception:
+                            band = None
+                    if band is None:
+                        pass
+                    else:
+                        Lf, Tf, Sf = layer.apply_band_with_switch(
+                            np.asarray([L_r], dtype=float),
+                            np.asarray([T_r], dtype=float),
+                            np.asarray(sec_raw_vals, dtype=float),
+                            band,
+                        )
+                        front_band_switch_on = bool(layer.cfg.enable_five_domain_front_layer_band)
+                        inference["_band_shadow"] = {
+                            "L_before": L_r,
+                            "T_before": T_r,
+                            "L_after": float(Lf[0]),
+                            "T_after": float(Tf[0]),
+                            "sec_before": sec_raw_vals,
+                            "sec_after": [float(x) for x in Sf],
+                            "band": band,
+                            "front_band_switch_on": front_band_switch_on,
+                        }
+                        L_before = L_r
+                        L_after = float(Lf[0])
+                        T_before = T_r
+                        T_after = float(Tf[0])
+                        self._log(
+                            f"[战略层带宽影子] {coin} L: {L_before:.4f}→{L_after:.4f}, "
+                            f"T: {T_before:.4f}→{T_after:.4f}, switch={front_band_switch_on}",
+                            "INFO",
+                        )
+            except Exception:
+                pass
+
             self._log(
                 f"[{coin}] ParameterMapper 六维(只读对齐tab-morph src={src_tag}) | L={L:+.4f} T={T:+.4f} C={C:.4f} | "
                 f"pos×{pos_c:.3f} ls_cap={lscap_c:.3f} "
@@ -1278,8 +2409,8 @@ class PollingTrader:
             ))
             from scripts.memory_l4.bcrm2.scripts.phase_c_rollout_manager import RolloutManager  # type: ignore
             _mgr = RolloutManager(state_path=_state_path)
-            _mgr.load()
-            if _mgr.current_alpha is not None:
+            _loaded_ok = _mgr.load()
+            if _loaded_ok and _mgr.current_alpha is not None:
                 _alpha = float(_mgr.current_alpha)
                 self._log(
                     f"[AlphaBlend] 从状态文件读取 α={_alpha:.4f} "
@@ -1662,7 +2793,7 @@ class PollingTrader:
         """启动时运行 inspect 诊断命令，快速检查系统状态"""
         self._log("[系统诊断] 启动时执行状态检查...", "INFO")
         try:
-            from scripts.memory_l4.inspect import SystemInspector
+            from scripts.memory_l4.system_inspect import SystemInspector
 
             inspector = SystemInspector()
             report = inspector.inspect(
@@ -2368,65 +3499,233 @@ class PollingTrader:
         Returns:
             卦象方向: "long" / "short" / "neutral" / "" (未知)
         """
-        # 卦象名到方向的映射 (基于SIXTY_FOUR_GUAS)
+        # 卦象名到方向的映射 (严格对齐 SIXTY_FOUR_GUAS 权威表 — dialectical_ml_engine.py)
+        # 修复: 2026-08-23 (PUMP事件) — 原L2929注释导致隐式字符串拼接bug，
+        #       "山水蒙_dup" + "山风蛊" 拼成垃圾键，丢失11卦+另有6卦方向错误
         HEX_TO_DIRECTION = {
+            # 乾为天系列
             "乾为天": "long",
-            "坤为地": "short",
-            "水雷屯": "neutral",
-            "山水蒙": "neutral",
-            "水天需": "long",
-            "天水讼": "neutral",
-            "地水师": "short",
-            "水地比": "long",
-            "风雷益": "long",
-            "雷风恒": "neutral",
-            "离为火": "long",
-            "泽火革": "neutral",
-            "火风鼎": "long",
-            "巽为风": "long",
-            "兑为泽": "long",
-            "艮为山": "neutral",
-            "山地剥": "short",
-            "地雷复": "long",
-            "坎为水": "short",
-            "水火既济": "neutral",
-            "火水未济": "neutral",
-            "地天泰": "long",
             "天地否": "short",
-            "天雷无妄": "neutral",
-            "山天大畜": "long",
-            "山雷颐": "neutral",
-            "泽天夬": "long",
+            "天雷无妄": "long",
             "天风姤": "short",
-            "泽地萃": "long",
+            "天水讼": "neutral",
+            "天火同人": "long",
+            "天山遁": "short",
+            "天泽履": "long",
+            # 坤为地系列
+            "地天泰": "long",
+            "坤为地": "neutral",
+            "地雷复": "long",
+            "地风升": "long",
+            "地水师": "short",
+            "地火明夷": "short",
+            "地山谦": "neutral",
             "地泽临": "long",
-            "风天小畜": "neutral",
-            "风地观": "neutral",
-            "风火家人": "long",
-            "风山渐": "long",
-            "风泽中孚": "long",
+            # 震为雷系列
             "雷天大壮": "long",
             "雷地豫": "long",
             "震为雷": "long",
+            "雷风恒": "long",
             "雷水解": "long",
             "雷火丰": "long",
             "雷山小过": "short",
             "雷泽归妹": "short",
+            # 巽为风系列
+            "风天小畜": "neutral",
+            "风地观": "neutral",
+            "风雷益": "long",
+            "巽为风": "long",
+            "风水涣": "short",
+            "风火家人": "long",
+            "风山渐": "long",
+            "风泽中孚": "long",
+            # 坎为水系列
+            "水天需": "long",
+            "水地比": "long",
+            "水雷屯": "neutral",
             "水风井": "neutral",
+            "坎为水": "short",
+            "水火既济": "short",
+            "水山蹇": "short",
+            "水泽节": "neutral",
+            # 离为火系列
             "火天大有": "long",
             "火地晋": "long",
             "火雷噬嗑": "long",
+            "火风鼎": "long",
+            "火水未济": "neutral",
+            "离为火": "long",
             "火山旅": "short",
             "火泽睽": "short",
-            "山水蒙_dup"  # noqa: F601 - intentional duplicate per 易经修复说明: "short",
+            # 艮为山系列
+            "山天大畜": "long",
+            "山地剥": "short",
+            "山雷颐": "neutral",
             "山风蛊": "short",
+            "山水蒙": "short",
             "山火贲": "long",
+            "艮为山": "neutral",
             "山泽损": "short",
-            "泽水困": "short",
-            "泽山咸": "long",
+            # 兑为泽系列
+            "泽天夬": "long",
+            "泽地萃": "long",
+            "泽雷随": "long",
             "泽风大过": "short",
+            "泽水困": "short",
+            "泽火革": "long",
+            "泽山咸": "long",
+            "兑为泽": "long",
         }
         return HEX_TO_DIRECTION.get(hexagram_name, "")
+
+    # ──────────────────────────────────────────────────────────────
+    # [PUMP事件 2026-08-23] 开仓前卦象→方向一致性校验
+    # 目标：避免同一卦象（如天地否）历史SHORT但本轮异常输出UP导致反向开仓
+    # 判决矩阵（从最严到最轻）：
+    #   ① 查表冲突 AND 历史主导冲突 → 硬 block
+    #   ② 查表冲突 alone → 置信度×0.70 + A项门槛抬到 0.85
+    #   ③ 历史方向不稳定（同卦同方向比例<60%）→ 置信度×0.90
+    #   ④ 历史主导方向一致 & 查表一致 → 无惩罚（全通）
+    # ──────────────────────────────────────────────────────────────
+    @staticmethod
+    def _check_hexagram_consistency_for_entry(
+        hex_name: str,
+        decision_direction: str,           # "UP" 或 "DOWN"
+        decision_confidence: float,
+        history_window: List[Tuple[str, str]] = None,  # [(hex_name, "long"/"short"), ...]
+        min_hist_for_dominant: int = 3,
+        dominant_min_ratio: float = 0.60,
+        lookup_conflict_conf_mult: float = 0.70,
+        lookup_conflict_raise_a_floor: float = 0.85,
+        lookup_hist_conflict_hard_block: bool = True,
+        unstable_conf_mult: float = 0.90,
+    ) -> Dict[str, Any]:
+        """开仓前一致性校验（查表 + 历史滑窗）。返回统一 dict 便于单元测试。
+
+        Returns:
+            {
+              "block": bool,                # True → 直接跳过开仓（硬拦截）
+              "confidence_multiplier": float, # ≤1.0，直接乘到 decision_confidence
+              "raise_a_floor_to": Optional[float], # A 项过滤最低门槛（如 0.85）
+              "reason": str,                 # 日志用，简要说明判决依据
+              "lookup_direction": str,       # 查表方向(long/short/neutral/空)
+              "dominant_hist_dir": Optional[str],
+              "dominant_hist_ratio": Optional[float],
+            }
+        """
+        # 路径兼容：tests/ 目录下 sys.path 直接插入 memory_l4 → `from bcrm2.xxx import`；
+        # 顶层 root 运行时 → `from scripts.memory_l4.bcrm2.xxx import`
+        try:
+            from bcrm2.dialectical_ml_engine import SIXTY_FOUR_GUAS
+        except ModuleNotFoundError:
+            from scripts.memory_l4.bcrm2.dialectical_ml_engine import SIXTY_FOUR_GUAS
+
+        # 决策方向归一化
+        dec_dir = "long" if decision_direction == "UP" else (
+            "short" if decision_direction == "DOWN" else "neutral"
+        )
+
+        # (1) 权威查表（直接查 SIXTY_FOUR_GUAS，避免再引入破损的实例映射）
+        lookup_dir = "neutral"
+        for info in SIXTY_FOUR_GUAS.values():
+            if info.get("name") == hex_name:
+                lookup_dir = info.get("direction", "neutral")
+                break
+
+        lookup_conflict = (
+            lookup_dir in ("long", "short") and lookup_dir != dec_dir
+        )
+
+        # (2) 历史滑窗主导方向统计（仅统计"同一卦象"的历史记录）
+        dominant_hist_dir: Optional[str] = None
+        dominant_hist_ratio: Optional[float] = None
+        hist_unstable = False
+        hist_count_for_same_hex = 0
+        same_hex_hist = []
+        if history_window:
+            same_hex_hist = [d for h, d in history_window if h == hex_name
+                             and d in ("long", "short")]
+            hist_count_for_same_hex = len(same_hex_hist)
+            if hist_count_for_same_hex >= min_hist_for_dominant:
+                cnts: Dict[str, int] = {}
+                for d in same_hex_hist:
+                    cnts[d] = cnts.get(d, 0) + 1
+                top_dir, top_cnt = max(cnts.items(), key=lambda kv: kv[1])
+                ratio = top_cnt / hist_count_for_same_hex
+                dominant_hist_dir = top_dir
+                dominant_hist_ratio = ratio
+                if ratio < dominant_min_ratio:
+                    # 同卦历史方向分歧大 → 不稳定
+                    hist_unstable = True
+
+        hist_conflict_with_decision = (
+            dominant_hist_dir is not None and dominant_hist_dir != dec_dir
+        )
+        hist_conflict_with_lookup = (
+            dominant_hist_dir is not None and lookup_dir in ("long", "short")
+            and dominant_hist_dir != lookup_dir
+        )
+
+        # (3) 判决
+        # 注：需要 (lookup_conflict ∧ hist_conflict_with_decision ∧ ¬hist_conflict_with_lookup)
+        #    即「查表」与「历史主导方向」一致反对决策方向时，才触发「硬拦截」。
+        #    缺 ¬hist_conflict_with_lookup → 当 lookup=SHORT 历史主导=LONG 决策=UP 时
+        #    两者虽都不等于决策方向，但互相矛盾，不应硬拦截。
+        if (lookup_conflict and hist_conflict_with_decision
+                and not hist_conflict_with_lookup
+                and lookup_hist_conflict_hard_block):
+            return {
+                "block": True,
+                "confidence_multiplier": 0.0,
+                "raise_a_floor_to": None,
+                "reason": (
+                    f"查表({lookup_dir})+历史({dominant_hist_dir},"
+                    f"{(dominant_hist_ratio or 0):.0%})双冲突，硬拦截"
+                ),
+                "lookup_direction": lookup_dir,
+                "dominant_hist_dir": dominant_hist_dir,
+                "dominant_hist_ratio": dominant_hist_ratio,
+            }
+
+        if lookup_conflict:
+            return {
+                "block": False,
+                "confidence_multiplier": lookup_conflict_conf_mult,
+                "raise_a_floor_to": lookup_conflict_raise_a_floor,
+                "reason": (
+                    f"查表冲突: {hex_name}={lookup_dir}(权威) vs 决策{dec_dir} "
+                    f"→ 置信度×{lookup_conflict_conf_mult:.2f} + A项地板"
+                    f"={lookup_conflict_raise_a_floor:.2f}"
+                ),
+                "lookup_direction": lookup_dir,
+                "dominant_hist_dir": dominant_hist_dir,
+                "dominant_hist_ratio": dominant_hist_ratio,
+            }
+
+        if hist_unstable:
+            return {
+                "block": False,
+                "confidence_multiplier": unstable_conf_mult,
+                "raise_a_floor_to": None,
+                "reason": (
+                    f"同卦历史方向不稳定({hist_count_for_same_hex}笔，"
+                    f"一致率仅{(dominant_hist_ratio or 0):.0%}<"
+                    f"{dominant_min_ratio:.0%}) → 置信度×{unstable_conf_mult:.2f}"
+                ),
+                "lookup_direction": lookup_dir,
+                "dominant_hist_dir": dominant_hist_dir,
+                "dominant_hist_ratio": dominant_hist_ratio,
+            }
+
+        return {
+            "block": False,
+            "confidence_multiplier": 1.0,
+            "raise_a_floor_to": None,
+            "reason": "查表+历史均一致",
+            "lookup_direction": lookup_dir,
+            "dominant_hist_dir": dominant_hist_dir,
+            "dominant_hist_ratio": dominant_hist_ratio,
+        }
 
     # 64卦名首字 → 八卦元素映射（上卦/下卦提取）
     _HEX_CHAR_TO_GUA = {
@@ -2657,7 +3956,7 @@ class PollingTrader:
             "position_mult":  0.35,
             "tp_mult":        0.75,
             "sl_mult":        0.65,
-            "threshold_mult": 1.30,
+            "threshold_mult": 1.15,
         },
         "FOMO_RALLY": {
             "position_mult":  0.85,
@@ -4112,6 +5411,24 @@ class PollingTrader:
             # P0-2: 动态黑名单更新（连续2次亏损→封禁3日）
             self._update_dynamic_blacklist_on_close(coin, pnl)
 
+            # v4.6：过滤层基础阈值动态调节（聚合 N=30 笔，非单笔）
+            try:
+                _sc = float(getattr(trade_rec, "score_consensus", 0.0) or 0.0)
+                _dr = str(getattr(trade_rec, "direction", "") or "")
+                self._gate_threshold_state["recent_pnl"].append(
+                    (float(pnl_pct), _sc, _dr)
+                )
+                _n_max = int(self._gate_threshold_state.get("n_max", 150))
+                if len(self._gate_threshold_state["recent_pnl"]) > _n_max:
+                    self._gate_threshold_state["recent_pnl"] = (
+                        self._gate_threshold_state["recent_pnl"][-_n_max:]
+                    )
+                self._maybe_adjust_gate_base_threshold(trade_snapshot={
+                    "coin": coin, "pnl_pct": float(pnl_pct), "score_consensus": _sc,
+                })
+            except Exception as _gte:
+                self._log(f"[{coin}] 基础阈值动态调节记录异常（忽略）：{type(_gte).__name__}", "DEBUG")
+
             case_id, saved = register_trade_to_l4(trade_rec)
 
             self._log(
@@ -4355,12 +5672,19 @@ class PollingTrader:
         "BTC", "SOL", "UNI", "OKB", "HYPE", "PUMP",
     })
 
-    # 美股代币（OKX 上以 USDT-SWAP 交易的美股代币化合约）
+    # 加密属性美股代币（COIN=Coinbase/MSTR=MicroStrategy/CRCL=Circle）
+    # 此类币种本质跟随加密市场，不跟随美股大盘趋势，路由到 BTC 弹簧力场确认
+    CRYPTO_US_STOCK_COINS = frozenset({
+        "COIN", "MSTR", "CRCL",
+    })
+
+    # 纯美股代币（OKX 上以 USDT-SWAP 交易的美股代币化合约）
     # 做空这些币种时需要纳斯达克/标普500大盘趋势确认
+    # 注：加密属性币种(COIN/MSTR/CRCL)已单独分组，跟随BTC而非美股大盘
     US_STOCK_COINS = frozenset({
         "AAPL", "AMZN", "GOOGL", "NVDA", "MSFT", "TSLA",
         "META", "NFLX", "BABA", "MU", "SKHYNIX", "SNDK", "SPCX",
-        "COIN", "MSTR", "PLTR", "CRCL", "BMNR",
+        "PLTR", "BMNR",
     })
 
     @staticmethod
@@ -4420,6 +5744,108 @@ class PollingTrader:
         slope = numerator / denominator
         # 归一化为百分比: slope_pct = slope / MA_current * 100
         return slope / y_mean * 100
+
+    def _compute_f_total_snapshot(self, closes: list, k: float = 2.0,
+                                   tier: str = "daily_btc") -> float:
+        """Non-recursive snapshot of _calc_5ma_spring_force returning ONLY F_total.
+
+        Intended for computing the (t-1) look-back needed by F_dot inside
+        _calc_5ma_spring_force itself. Keeping it small and loop-free (no F_dot,
+        no regime classification, no breakdown window) avoids cascading
+        recursion when `closes` has thousands of elements (e.g. 5y daily index
+        data from yfinance → ~1254 bars would otherwise blow CPython's default
+        recursionlimit=1000).
+
+        Mirrors: actual_periods selection + slope modulation → k_eff →
+                 F_net (group-weighted price→MA forces) +
+                 F_inter_net (intra-group & cross-group inter-MA forces).
+        """
+        if not closes:
+            return 0.0
+
+        # --- mirror L4579–L4604 (periods + MA values + slope_modulated k_eff) -
+        ma_periods = [30, 65, 128, 200]
+        if tier in ("daily_btc", "daily_self", "daily_index"):
+            ma_periods.append(min(1400, len(closes)))
+        actual_periods = [p for p in ma_periods if len(closes) >= p + 1]
+        if len(actual_periods) < 2:
+            return 0.0
+
+        current_price = closes[0]
+        ma_values = {f"ma{p}": sum(closes[:p]) / p for p in actual_periods}
+        ma_slopes = {
+            f"ma{p}": self._calc_ma_slope(closes, p, self.FMA_SLOPE_WINDOW)
+            for p in actual_periods
+        }
+        slope_avg = sum(ma_slopes.values()) / len(ma_slopes) if ma_slopes else 0.0
+        import math
+        slope_modulation = 1.0 + self.FMA_SLOPE_ALPHA * math.tanh(slope_avg / 0.5)
+        k_eff = k * slope_modulation
+
+        def _p(k_str): return int(k_str.replace("ma", ""))
+
+        group_short = {p: v for p, v in ma_values.items() if _p(p) < 80}
+        group_mid = {p: v for p, v in ma_values.items() if 80 <= _p(p) < 1000}
+        group_long = {p: v for p, v in ma_values.items() if _p(p) >= 1000}
+        gw_cfg = {"short": self.FMA_GROUP_WEIGHT_SHORT,
+                  "mid": self.FMA_GROUP_WEIGHT_MID,
+                  "long": self.FMA_GROUP_WEIGHT_LONG}
+
+        def _group_internal(group_dict):
+            items = []
+            for p_str, ma in group_dict.items():
+                dist_pct = (current_price - ma) / ma * 100
+                F = -k_eff * (current_price - ma) / ma
+                w = self._distance_weight(abs(dist_pct))
+                items.append((_p(p_str), F, w))
+            w_sum = sum(i[2] for i in items) or 1.0
+            return [(p, F, w / w_sum) for p, F, w in items]
+
+        short_items = _group_internal(group_short)
+        mid_items = _group_internal(group_mid)
+        long_items = _group_internal(group_long)
+
+        # --- F_net (group weighted) -------------------------------------------
+        F_net = 0.0
+        for name, items, g_w in [("short", short_items, gw_cfg["short"]),
+                                 ("mid",   mid_items,   gw_cfg["mid"]),
+                                 ("long",  long_items,  gw_cfg["long"])]:
+            for _p, F, internal_pct in items:
+                F_net += F * g_w * internal_pct
+
+        # --- F_inter_net ------------------------------------------------------
+        k_inter = k_eff * self.FMA_INTER_K_RATIO
+        F_inter_net = 0.0
+
+        def _sorted_items(it): return sorted(it, key=lambda x: x[0])  # period asc
+
+        for items in (short_items, mid_items, long_items):
+            if len(items) < 2:
+                continue
+            sitems = _sorted_items(items)
+            for i in range(len(sitems) - 1):
+                p1, F1, _ = sitems[i]
+                p2, F2, _ = sitems[i + 1]
+                ma1 = ma_values[f"ma{p1}"]
+                ma2 = ma_values[f"ma{p2}"]
+                inter_dist = (ma1 - ma2) / ma2
+                F_inter_net += (-k_inter * inter_dist)
+
+        # cross-group (period-adjacent pairs)
+        def _max_period(items): return max((p for p, _, _ in items), default=None)
+        def _min_period(items): return min((p for p, _, _ in items), default=None)
+        pairs = []
+        if short_items and mid_items:
+            pairs.append((_max_period(short_items), _min_period(mid_items)))
+        if mid_items and long_items:
+            pairs.append((_max_period(mid_items), _min_period(long_items)))
+        for p1, p2 in pairs:
+            ma1 = ma_values[f"ma{p1}"]
+            ma2 = ma_values[f"ma{p2}"]
+            inter_dist = (ma1 - ma2) / ma2
+            F_inter_net += (-k_inter * inter_dist) * 0.15
+
+        return F_net + F_inter_net
 
     def _calc_5ma_spring_force(self, closes: list, k: float = 2.0,
                                  tier: str = "daily_btc") -> dict:
@@ -4673,13 +6099,22 @@ class PollingTrader:
 
         # ④ F_dot：F_total 的变化率（趋势加速度）
         # F_dot = F_total(t) - F_total(t-1)
-        # 需要 t-1 时刻的 F_total，用 closes[1] 代替 closes[0] 重新计算
+        # 需要 t-1 时刻的 F_total，用 closes[1:] 作为"去掉当前bar"的快照。
+        # ⚠️ 注意：直接递归调用本方法会引发级联递归（closes[1:]再计算closes[2:]…），
+        #    对 5y 日线约 1254 条数据会压栈至 ~1054 层，击穿 CPython 默认
+        #    recursionlimit=1000 并触发 RecursionError。这里改为复用当前 F_total
+        #    的核心计算片段，只计算 prev 的 F_total，不再做第 N+1 阶差分。
         F_dot = 0.0
         if len(closes) >= 2:
             prev_closes = closes[1:]  # 去掉最新一根
             if len(prev_closes) >= max(actual_periods) + 1:
-                prev_res = self._calc_5ma_spring_force(prev_closes, k=k, tier=tier)
-                F_dot = F_total - prev_res.get("F_total", F_total)
+                try:
+                    prev_F_total = self._compute_f_total_snapshot(
+                        prev_closes, k=k, tier=tier
+                    )
+                except Exception:
+                    prev_F_total = F_total
+                F_dot = F_total - prev_F_total
 
         # ⑤ Phase D：4维度市场形态判定（Market Regime Classification）
         # 维度1: 趋势强度比 TR = |F_inter| / (|F_net_short| + |F_inter| + ε)
@@ -5134,16 +6569,24 @@ class PollingTrader:
             if not _force_regime_filter_on:
                 return cached["result"]
 
+        # 兜底：提高递归限制，防止yfinance在长时运行进程内触发RecursionError
+        if not getattr(self, "_recursion_limit_raised", False):
+            import sys as _sys
+            if _sys.getrecursionlimit() < 3000:
+                _sys.setrecursionlimit(3000)
+            self._recursion_limit_raised = True
+
         try:
             import yfinance as yf
 
             indices = {"IXIC": "^IXIC", "GSPC": "^GSPC"}
             results_idx = {}
             for name, ticker in indices.items():
-                hist = yf.Ticker(ticker).history(period="5y")
+                # 改用 yf.download 函数式调用，绕过 Ticker.__getattr__ 动态代理递归
+                hist = yf.download(ticker, period="5y", progress=False)
                 if hist.empty or len(hist) < 131:
                     continue
-                closes_oa = list(hist["Close"].values)  # oldest-first
+                closes_oa = list(np.asarray(hist["Close"].values).ravel())  # oldest-first，ravel兼容yf.download MultiIndex列
                 closes_nf = closes_oa[::-1]              # newest-first
                 res = self._calc_5ma_spring_force(closes_nf, tier="daily_index")
                 results_idx[name] = res
@@ -5156,10 +6599,15 @@ class PollingTrader:
             # 任意一个 STRICT=STRONG → 允许
             any_strict = any(r["bearish_score"] == "STRONG" and r["valid_breakdown"]
                              for r in results_idx.values())
-            # 或者 F_avg < -0.02 + score!=NONE + valid_breakdown → 允许
+            # 条件B（原）：F_avg < -0.02 + score!=NONE + valid_breakdown → 允许
             F_avg = sum(r["F_net"] for r in results_idx.values()) / len(results_idx)
             any_weak_plus = any(r["bearish_score"] != "NONE" and r["valid_breakdown"]
                                 for r in results_idx.values())
+            # 条件B'（新增放宽）：F_avg < -0.02 + 两指数评分都至少 WEAK（无需 valid_breakdown 3日确认）
+            #   覆盖：F_avg=-0.064 强度已达标，但均线跌破还在孕育期（未满足3日确认→valid_breakdown=False）
+            #   放行后 score=WEAK，下游阈值乘数抬高(×1.1765)需要更高置信度通过门槛
+            all_scores_not_none = all(r["bearish_score"] != "NONE" for r in results_idx.values())
+            both_weak_favg_path = (F_avg < -0.02) and all_scores_not_none and not any_weak_plus
             # 任一长期均线触底 → 全部禁止
             any_bottom = any(r["in_long_term_window"] for r in results_idx.values())
 
@@ -5172,11 +6620,22 @@ class PollingTrader:
                 result = (False, f"美股大盘偏见底 | {name_score}")
             elif any_strict or (F_avg < -0.02 and any_weak_plus):
                 result = (True, f"[SHORT_ALLOWED] 美股大盘趋势看空 F_avg={F_avg:+.3f} | {name_score}")
+            elif both_weak_favg_path:
+                # 放宽路径：统一打 WEAK 级，下游抬高置信度门槛
+                result = (True, f"[SHORT_ALLOWED] 美股大盘趋势看空(双指数WEAK+F强) score=WEAK F_avg={F_avg:+.3f} | {name_score}")
             else:
                 result = (False, f"美股大盘无看空确认 F_avg={F_avg:+.3f} | {name_score}")
 
             self._us_index_trend_cache = {"result": result, "ts": now}
             return result
+        except RecursionError:
+            # yfinance递归异常(数据获取问题，非趋势判断)：优先用上次成功缓存的真实趋势，无则降级放行避免误拦截
+            cached = getattr(self, "_us_index_trend_cache", None)
+            if cached and cached.get("result"):
+                self._log("美股大盘yfinance递归异常，降级使用上次缓存结果", "WARN")
+                return cached["result"]
+            self._log("美股大盘yfinance递归异常且无缓存，降级放行(不拦截做空信号)", "WARN")
+            return (True, "美股大盘检查降级放行(yfinance递归异常)")
         except Exception as e:
             return False, f"美股大盘检查异常: {e}"
 
@@ -5325,7 +6784,10 @@ class PollingTrader:
         """
         coin_upper = coin.upper()
         # Step 1: 大盘/自身 趋势原因（复用 _check_*_trend；bearish/bullish 共享同一 reason 文本）
-        if coin_upper in self.CRYPTO_COINS:
+        # 路由优先级：纯加密币种 ∪ 加密属性美股 → BTC趋势
+        #           纯美股科技代币 → 美股大盘趋势
+        #           其余(黄金等) → 自身趋势
+        if coin_upper in self.CRYPTO_COINS or coin_upper in self.CRYPTO_US_STOCK_COINS:
             _, trend_reason = self._check_btc_trend(_force_regime_filter_on=_force_regime_filter_on)
         elif coin_upper in self.US_STOCK_COINS:
             _, trend_reason = self._check_us_index_trend(_force_regime_filter_on=_force_regime_filter_on)
@@ -5402,7 +6864,10 @@ class PollingTrader:
         """
         # Step 1: 大盘趋势确认
         coin_upper = coin.upper()
-        if coin_upper in self.CRYPTO_COINS:
+        # 路由优先级（与长过滤器对称）：纯加密 ∪ 加密属性美股 → BTC
+        #                                纯美股 → 美股大盘
+        #                                其他 → 自身
+        if coin_upper in self.CRYPTO_COINS or coin_upper in self.CRYPTO_US_STOCK_COINS:
             trend_bearish, trend_reason = self._check_btc_trend(_force_regime_filter_on=_force_regime_filter_on)
         elif coin_upper in self.US_STOCK_COINS:
             trend_bearish, trend_reason = self._check_us_index_trend(_force_regime_filter_on=_force_regime_filter_on)
@@ -5444,6 +6909,38 @@ class PollingTrader:
                         f"趋势确认+共振(SMA20<50<200) score={bearish_score} ×{conf_multiplier:.2f} regime={regime} ×{regime_multi:.2f} =×{final_multiplier:.2f} | {trend_reason}",
                         final_multiplier,
                     )
+                # Step 2.5 弱共振分级（多头排列反转前夜 / 混合排列收敛态）
+                #   触发条件：
+                #     1. |SMA20 - SMA50| / SMA50 < 5%  →  短中期均线收窄至变盘前夜区间
+                #     2. 核心层置信度 > 0.85（严格大于，0.85不触发） →  高确信信号
+                #   放行等级：WEAK（抬高阈值×1.1765 + 小仓×0.4），不升级评分
+                sma20_50_gap_pct = abs(sma20 - sma50) / max(sma50, 1e-9)
+                WEAK_RESONANCE_GAP_PCT = 0.05  # 5% 收敛阈值（2026-08-23 放宽：原3%覆盖BTC 3.7%-4.4%真实收敛态）
+                WEAK_RESONANCE_CONF_MIN = 0.85  # 置信门槛：严格 >
+                confidence = float(inference.get("confidence", 0.0))
+                if sma20_50_gap_pct < WEAK_RESONANCE_GAP_PCT:
+                    if confidence > WEAK_RESONANCE_CONF_MIN:
+                        # 弱共振放行：统一 WEAK 级乘数，不升级评分
+                        weak_conf_mult = self.SHORT_CONF_MULTI_MA_WEAK
+                        weak_final_mult = weak_conf_mult * regime_multi
+                        return (
+                            True,
+                            (f"趋势确认+弱共振(MA20-50差值{sma20_50_gap_pct*100:.2f}%<5%"
+                             f" + 置信{confidence:.2f}>{WEAK_RESONANCE_CONF_MIN})"
+                             f" score=WEAK ×{weak_conf_mult:.2f} regime={regime} ×{regime_multi:.2f}"
+                             f" =×{weak_final_mult:.2f} | {trend_reason}"),
+                            weak_final_mult,
+                        )
+                    else:
+                        # 收敛但置信不足：明确说明弱共振条件因高置信门槛未满足而拦截
+                        return (
+                            False,
+                            (f"弱共振不满足(收窄{sma20_50_gap_pct*100:.2f}%但置信"
+                             f"{confidence:.2f}≤{WEAK_RESONANCE_CONF_MIN})"
+                             f" score={bearish_score}"),
+                            0.00,
+                        )
+                # 非收敛 + 非严格空头排列 → 标准拦截
                 return (
                     False,
                     f"共振失败(SMA20={sma20:.2f}/50={sma50:.2f}/200={sma200:.2f}非空头排列) score={bearish_score}",
@@ -5467,6 +6964,16 @@ class PollingTrader:
         fail_closed = inference["fail_closed"]
         is_ranging = inference["is_ranging"]
         inference.get("volatility", 0.03)
+
+        # [PUMP修复 2026-08-23] 卦象→方向决策历史滑窗：本轮追加（用于后续开仓一致性校验）
+        # 不论本轮后续是否开仓，都写入滑窗（保证全量推理可追溯）
+        _hex_curr = inference.get("hexagram", "") or ""
+        _dir_curr = "long" if direction == "UP" else "short"
+        if coin not in self._recent_hex_decisions:
+            self._recent_hex_decisions[coin] = deque(
+                maxlen=self.HEX_HISTORY_WINDOW_PER_COIN
+            )
+        self._recent_hex_decisions[coin].append((_hex_curr, _dir_curr))
 
         # P2-05: 形态乘数快照（仅 S5 打开时注入，关闭时 inference 不带字段 → 1.0 全程）
         #   写入 inference 私有字段 _regime_pred / _regime_multipliers，供下游 _open_position 读取
@@ -5757,7 +7264,75 @@ class PollingTrader:
                 if _c:
                     _held_coins.add(_c)
 
+            # ── 轻仓试错评估周期（v4.5 新增）──
+            # 持仓≥30min 后评估趋势：确认→加仓信号，不明→维持，逆转→平仓
+            _trial_eval_min_sec = 1800  # 30 分钟评估周期
+            _trial_closed = False  # 试错评估是否已平仓
+            if (tracker_pos and getattr(tracker_pos, "is_trial", False)
+                    and not getattr(tracker_pos, "trial_eval_done", False)
+                    and position_age_sec >= _trial_eval_min_sec):
+                _cur_price = float(pos_info.get("mark_px", 0) or inference.get("price", 0) or 0)
+                _entry_price = float(tracker_pos.entry_price or 0)
+                _trial_action = "maintain"  # 默认维持
+                if _cur_price > 0 and _entry_price > 0:
+                    _price_chg_pct = (_cur_price - _entry_price) / _entry_price
+                    if pos_side == "short":
+                        _price_chg_pct = -_price_chg_pct  # 做空反转：价格下跌为正
+                    if _price_chg_pct > 0.010:
+                        _trial_action = "confirm"
+                    elif _price_chg_pct < -0.005:
+                        _trial_action = "reverse"
+
+                    self._log(
+                        f"[{coin}] 试错评估 | 持仓={position_age_sec/60:.0f}min "
+                        f"价格变化={_price_chg_pct:+.2%} "
+                        f"入场={_entry_price} 当前={_cur_price} "
+                        f"判定={_trial_action}",
+                        "INFO",
+                    )
+
+                    if _trial_action == "reverse":
+                        # 趋势逆转 → 平仓
+                        self._log(
+                            f"[{coin}] 试错评估:趋势逆转 → 平仓 | "
+                            f"盈亏={upl:.2f}({upl_ratio:.2%})",
+                            "WARN",
+                        )
+                        _exit_price = _cur_price
+                        if pos_side == "long":
+                            _r = self.okx_client.market_close_long(
+                                inst_id, reason="trial_trend_reverse"
+                            )
+                        else:
+                            _r = self.okx_client.market_close_short(
+                                inst_id, reason="trial_trend_reverse"
+                            )
+                        if _r.get("ok") or _r.get("dry_run"):
+                            self._handle_close_position(
+                                inst_id=inst_id, coin=coin, pos_side=pos_side,
+                                exit_price=_exit_price, exit_reason="trial_trend_reverse",
+                                inference=inference,
+                            )
+                            _trial_closed = True
+                    elif _trial_action == "confirm":
+                        # 趋势确认 → 标记可加仓（日志信号，实际加仓由开仓逻辑处理）
+                        self._log(
+                            f"[{coin}] 试错评估:趋势确认 | 标记可加仓信号 "
+                            f"(后续如置信度达标可正常开仓加仓)",
+                            "INFO",
+                        )
+                    else:
+                        self._log(
+                            f"[{coin}] 试错评估:趋势不明 → 维持试错仓位",
+                            "INFO",
+                        )
+                # 标记评估已完成（不论结果如何，只评估一次）
+                tracker_pos.trial_eval_done = True
+
             # ── 调用 ExitManager（按优先级链评估扩展层离场策略）──
+            # 如果试错评估已平仓，跳过 ExitManager
+            if _trial_closed:
+                return
             _exit_decision = self.exit_manager.evaluate(
                 coin=coin,
                 inference=inference,
@@ -6010,37 +7585,16 @@ class PollingTrader:
                     for c in kline_data
                 ]
 
-            # ── v3.1: 29h持仓超时全局门控（回测最佳持仓时间）──
-            # TimeoutProfitSwitchStrategy (ExitManager priority=40) 已处理"有更强候选→force_close"
-            # 此处仅处理：超时+盈利+无更强候选→继续持有 / 超时+亏损→走classic备用离场
+            # ── 29h 持仓超时标记（仅供日志/ExitManager 策略链参考，不再跳过 yijing）──
             position_timeout_sec = self.yijing_exit_system.config.veto_max_hold_sec  # 104400 = 29h
             position_timed_out = position_age_sec > position_timeout_sec
-            if position_timed_out:
-                if upl > 0 and all_inferences:
-                    # 超时+盈利+无更强候选（ExitManager 已检查）→ 继续持有追求更大利润
-                    self._log(
-                        f"[{coin}] 超时继续持有(>{position_timeout_sec/3600:.0f}h) | "
-                        f"盈利={upl:.2f}({upl_ratio:.2%}) | "
-                        f"当前信号仍为最强，继续持有追求更大利润",
-                        "INFO",
-                    )
-                    return
-                else:
-                    # 亏损 → 走 classic 备用离场（跳过 yijing 评估）
-                    self._log(
-                        f"[{coin}] 持仓超时(>{position_timeout_sec/3600:.0f}h)启用经典备用离场 | "
-                        f"持仓={position_age_sec/3600:.1f}h | "
-                        f"亏损={upl:.2f} | 跳过yijing评估，直接走classic备用离场",
-                        "WARN",
-                    )
-                    # fall through to core layer (yijing_available=False)
 
             # ── 主离场层：易经推理专属离场（基于卦象风险-价值评估）──
-            # 架构反转：yijing 作为主决策，classic 降为备用（仅在 yijing 不可用或信号中性时调用）
+            # yijing 始终为主决策层，classic 备用离场已移除
+            # 超时后仍由 yijing + ExitManager 策略链管理，依赖开仓静态 SL/TP 兜底
             yijing_hexagram = self._infer_current_hexagram(coin, inference, kline_data)
             yijing_decision = None
-            # Bug1修复: 超时后直接标记yijing不可用，强制走classic降级路径
-            yijing_available = (not position_timed_out) and (yijing_hexagram is not None)
+            yijing_available = yijing_hexagram is not None
 
             if yijing_available:
                 yijing_decision = self.yijing_exit_system.evaluate(
@@ -6318,222 +7872,44 @@ class PollingTrader:
                     self._log(f"[{coin}] 易经收紧止损异常: {e}", "WARN")
                 return
 
-            # 6) 易经主决策 NO_INTERVENE：持仓<29h维持持仓，不降级classic
-            #    v3.1: 经典离场仅在持仓>29h且易经离场不工作时启用（用户需求）
-            #    持仓<29h时，NO_INTERVENE即维持持仓，仅依赖开仓静态SL/TP+易经动态调整
+            # 6) 易经主决策 NO_INTERVENE：维持持仓，不降级 classic
+            #    classic 备用离场已移除，NO_INTERVENE 即维持持仓
+            #    依赖：开仓静态 SL/TP + yijing 动态 SL 调整 + ExitManager 策略链
             if yijing_decision and yijing_decision.action == YijingExitAction.NO_INTERVENE:
-                if not position_timed_out:
-                    # 持仓<29h：维持持仓，不降级classic
-                    self._log(
-                        f"[{coin}] 易经主离场 [HOLD] {yijing_decision.reason} | "
-                        f"卦象={yijing_decision.hexagram_name or '-'} "
-                        f"风险={yijing_decision.yijing_risk_score:.2f} "
-                        f"价值={yijing_decision.yijing_value_score:.2f} "
-                        f"盈亏={upl:.2f}({upl_ratio:.2%}) 持仓={position_age_sec/3600:.1f}h "
-                        f"行情={regime} | 维持持仓（<29h不启用经典备用）"
-                    )
-                    return
-                # 持仓>29h但yijing仍返回NO_INTERVENE（防御性，正常超时后yijing_available=False）
                 self._log(
-                    f"[{coin}] 易经信号中性(超时>29h)，降级经典备用离场 | "
+                    f"[{coin}] 易经主离场 [HOLD] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name or '-'} "
                     f"风险={yijing_decision.yijing_risk_score:.2f} "
                     f"价值={yijing_decision.yijing_value_score:.2f} "
-                    f"盈亏={upl_ratio:.2%} 持仓={position_age_sec/3600:.1f}h"
+                    f"盈亏={upl:.2f}({upl_ratio:.2%}) 持仓={position_age_sec/3600:.1f}h "
+                    f"行情={regime} | 维持持仓"
                 )
+                return
             elif not yijing_available:
-                # yijing不可用有两种原因：超时(>29h) 或 无卦象数据
-                if position_timed_out:
-                    self._log(
-                        f"[{coin}] 易经卦象不可用(超时>29h)，启用经典离场备用层 | "
-                        f"盈亏={upl:.2f}({upl_ratio:.2%})",
-                        "WARN",
-                    )
-                else:
-                    self._log(
-                        f"[{coin}] 易经卦象不可用(无卦象数据)，持仓<29h仅依赖静态SL/TP | "
-                        f"盈亏={upl:.2f}({upl_ratio:.2%})",
-                        "WARN",
-                    )
-
-            # ── v3.1: 备用离场层门禁 ──
-            # 经典离场仅在持仓>29h且易经离场不工作时启用（用户需求）
-            # 持仓<29h时完全跳过经典离场，仅依赖易经主离场+开仓静态SL/TP
-            if not position_timed_out:
-                # 持仓<29h：经典离场不启用，已通过上方HOLD return或yijing动态调整处理
-                return
-
-            # ── 备用离场层：经典指标离场（仅在持仓>29h且易经不工作时调用）──
-            # v3.1: 到这里说明 position_timed_out=True（持仓>29h），classic 全四优先级启用
-            # 短期修复 2：震荡市动态放宽止损（is_ranging / 弱趋势 → 止损更宽）
-            # 注意：传入 dict（含 is_ranging/adx/trend_strength），而非字符串 regime
-            self._adjust_exit_config_for_regime(
-                {
-                    "is_ranging": is_ranging,
-                    "adx": float(inference.get("adx", 0) or 0),
-                    "trend_strength": inference.get("trend_strength", 0.5),
-                }
-            )
-
-            # 持仓>29h，classic 启用全部四大优先级（P0/P1/P2/P3）
-            exit_decision = self.exit_system.evaluate_full(
-                pos=exit_pos,
-                candles_1h=candles_1h,
-                regime=regime,
-                p0_only=False,
-            )
-
-            # VETO_CLOSE/VETO_REDUCE 检查：classic 决定离场前，易经二次评估可否决
-            # 注意：超时后 yijing_available=False，此否决分支不会触发
-            if (
-                yijing_available
-                and yijing_decision
-                and exit_decision.action in (ExitAction.CLOSE, ExitAction.REDUCE)
-            ):
-                veto_decision = self.yijing_exit_system.evaluate(
-                    hexagram=yijing_hexagram,
-                    pos_side=pos_side,
-                    entry_price=float(entry_price) if entry_price else 0,
-                    current_price=float(current_price),
-                    position_age_sec=position_age_sec,
-                    unrealized_pnl_pct=float(upl_ratio),
-                    classic_decision=exit_decision,  # 传入 classic 决策用于否决判断
-                    mfe_pnl_pct=max(0.0, float(upl_ratio)),
-                    coin=coin,
-                    open_time_sec=float(open_time) if open_time else 0.0,
-                    mode="veto",  # P0修复：veto 模式绕过 1h 门禁 + 不写缓存，避免被主评估缓存吞掉
-                )
-                if veto_decision.action == YijingExitAction.VETO_CLOSE:
-                    self._log(
-                        f"[{coin}] 易经否决 [VETO_CLOSE] {veto_decision.reason} | "
-                        f"卦象={veto_decision.hexagram_name} "
-                        f"风险={veto_decision.yijing_risk_score:.2f} "
-                        f"价值={veto_decision.yijing_value_score:.2f} "
-                        f"经典离场原因={exit_decision.reason} "
-                        f"盈亏={upl:.2f}({upl_ratio:.2%}) 持仓={position_age_sec/3600:.1f}h | "
-                        f"否决 classic 离场，维持持仓"
-                    )
-                    return
-                if veto_decision.action == YijingExitAction.VETO_REDUCE:
-                    self._log(
-                        f"[{coin}] 易经否决 [VETO_REDUCE] {veto_decision.reason} | "
-                        f"卦象={veto_decision.hexagram_name} "
-                        f"风险={veto_decision.yijing_risk_score:.2f} "
-                        f"价值={veto_decision.yijing_value_score:.2f} "
-                        f"经典减仓原因={exit_decision.reason} "
-                        f"盈亏={upl:.2f}({upl_ratio:.2%}) | "
-                        f"否决 classic 减仓，维持持仓"
-                    )
-                    return
-
-            # 执行 classic 决策
-            if exit_decision.action == ExitAction.CLOSE:
+                # yijing 不可用（无卦象数据）→ 依赖开仓静态 SL/TP 兜底
                 self._log(
-                    f"[{coin}] 经典备用离场 [CLOSE] {exit_decision.reason} | "
-                    f"优先级={exit_decision.priority.value} "
-                    f"置信度={exit_decision.confidence:.2f} "
-                    f"盈亏={upl:.2f}({upl_ratio:.2%})"
+                    f"[{coin}] 易经卦象不可用(无卦象数据) | "
+                    f"依赖静态SL/TP | "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%})",
+                    "WARN",
                 )
-                if pos_side == "long":
-                    r = self.okx_client.market_close_long(
-                        inst_id, reason=f"经典备用离场:{exit_decision.reason}"
-                    )
-                else:
-                    r = self.okx_client.market_close_short(
-                        inst_id, reason=f"经典备用离场:{exit_decision.reason}"
-                    )
-                if r.get("ok") or r.get("dry_run"):
-                    self._handle_close_position(
-                        inst_id=inst_id,
-                        coin=coin,
-                        pos_side=pos_side,
-                        exit_price=current_price,
-                        exit_reason=f"classic_backup:{exit_decision.reason}",
-                        pnl=upl,
-                        pnl_pct=upl_ratio,
-                    )
                 return
 
-            if exit_decision.action == ExitAction.REDUCE:
+            # 7) 兜底：yijing 决策为空或动作未匹配 → 维持持仓
+            #    classic 备用离场已移除，依赖：开仓静态 SL/TP + ExitManager 策略链
+            else:
+                _reason = (
+                    "yijing_decision_empty"
+                    if yijing_decision is None
+                    else f"unhandled_action:{yijing_decision.action}"
+                )
                 self._log(
-                    f"[{coin}] 经典备用离场 [REDUCE] {exit_decision.reason} | "
-                    f"减仓比例={exit_decision.reduce_frac:.0%} "
-                    f"盈亏={upl:.2f}({upl_ratio:.2%})"
+                    f"[{coin}] 易经主离场 [HOLD] {_reason} | "
+                    f"卦象={yijing_decision.hexagram_name if yijing_decision else '-'} "
+                    f"盈亏={upl:.2f}({upl_ratio:.2%}) 持仓={position_age_sec/3600:.1f}h "
+                    f"行情={regime} | 维持持仓，依赖静态SL/TP"
                 )
-                reduce_result = self.okx_client.reduce_position(
-                    inst_id=inst_id,
-                    pos_side=pos_side,
-                    reduce_ratio=exit_decision.reduce_frac,
-                    reason=f"classic_backup:{exit_decision.reason}",
-                )
-                if reduce_result.get("ok"):
-                    # E项优化：递增减仓次数并持久化
-                    if tracker_pos:
-                        tracker_pos.reduce_count += 1
-                        self.position_tracker._save_open_position(inst_id)
-                    self._log(
-                        f"[{coin}] 减仓成功 | "
-                        f"原持仓={reduce_result.get('original_pos')} "
-                        f"减仓量={reduce_result.get('reduce_sz')} "
-                        f"剩余={reduce_result.get('remaining_pos')} "
-                        f"累计减仓={tracker_pos.reduce_count if tracker_pos else '?'}/{self.exit_system.config.max_reduce_count}"
-                    )
-                else:
-                    self._log(f"[{coin}] 减仓失败: {reduce_result.get('error', 'unknown')}", "WARN")
                 return
-
-            if exit_decision.action == ExitAction.RAISE_TP:
-                new_tp_price = exit_decision.new_tp_price
-                new_tp_pct = exit_decision.new_tp_pct
-                self._log(
-                    f"[{coin}] 经典备用离场 [RAISE_TP] {exit_decision.reason} | "
-                    f"新止盈={new_tp_price:.2f}({new_tp_pct:.2%}) "
-                    f"盈亏={upl:.2f}({upl_ratio:.2%})"
-                )
-                try:
-                    tp_result = self.okx_client.place_stop_loss_take_profit(
-                        inst_id=inst_id,
-                        pos_side=pos_side,
-                        stop_loss_px=None,
-                        take_profit_px=new_tp_price,
-                        reason=f"raise_tp_backup:{exit_decision.reason}",
-                    )
-                    if tp_result.get("ok"):
-                        self._log(f"[{coin}] 止盈价已上调至 {new_tp_price:.2f}")
-                    else:
-                        self._log(
-                            f"[{coin}] 上调止盈失败: {tp_result.get('error', 'unknown')}", "WARN"
-                        )
-                except Exception as e:
-                    self._log(f"[{coin}] 上调止盈异常: {e}", "WARN")
-                return
-
-            # 维持持仓日志（含易经风险评估）
-            hold_risk = (
-                exit_decision.features.hold_risk
-                if exit_decision and exit_decision.features
-                else 0.5
-            )
-            hold_value = (
-                exit_decision.features.hold_value
-                if exit_decision and exit_decision.features
-                else 0.5
-            )
-            yijing_risk = yijing_decision.yijing_risk_score if yijing_decision else 0.5
-            yijing_value = yijing_decision.yijing_value_score if yijing_decision else 0.5
-            hex_display = (
-                yijing_decision.hexagram_name if yijing_decision else "无卦象"
-            ) or "无卦象"
-            yijing_phase = (yijing_decision.current_phase if yijing_decision else "") or "-"
-            self._log(
-                f"[{coin}] 持仓中 {pos_side} | "
-                f"浮动盈亏={upl:.2f}({upl_ratio:.2%}) | "
-                f"卦象={hex_display} 易经风险={yijing_risk:.2f} 易经价值={yijing_value:.2f} "
-                f"阶段={yijing_phase} "
-                f"持有风险={hold_risk:.2f} 持有价值={hold_value:.2f} "
-                f"行情={regime} | 维持持仓"
-            )
-            return
 
         trend_strength = inference.get("trend_strength", 0.5)
         ranging_confidence = inference.get("ranging_confidence", 0.0)
@@ -6572,6 +7948,42 @@ class PollingTrader:
                 f"confidence={confidence:.4f} 方向={direction} 跳过"
             )
             return
+
+        # ===== P0-4 [PUMP事件修复 2026-08-23] 开仓前卦象→方向一致性校验 =====
+        # 查表（权威SIXTY_FOUR_GUAS）+ 币种滑窗历史方向分布 → 判决
+        _hist_win = list(self._recent_hex_decisions.get(coin, []))
+        _hex_check = PollingTrader._check_hexagram_consistency_for_entry(
+            hex_name=hex_name,
+            decision_direction=direction,
+            decision_confidence=confidence,
+            history_window=_hist_win,
+        )
+        if _hex_check["block"]:
+            self._log(
+                f"[{coin}] P0卦象一致性硬拦截 | {_hex_check['reason']} | "
+                f"conf={confidence:.2f} dir={direction} hex={hex_name} 跳过",
+                "WARN",
+            )
+            return
+        _mult = float(_hex_check.get("confidence_multiplier") or 1.0)
+        if _mult != 1.0:
+            _old_conf = confidence
+            confidence = round(confidence * _mult, 4)
+            self._log(
+                f"[{coin}] P0卦象一致性惩罚 | 置信度×{_mult:.2f} = {_old_conf:.4f}→{confidence:.4f} | "
+                f"{_hex_check['reason']}",
+                "WARN",
+            )
+        _raise_floor = _hex_check.get("raise_a_floor_to") or 0.0
+        if _raise_floor and confidence < _raise_floor:
+            self._log(
+                f"[{coin}] P0卦象一致性地板抬升 | "
+                f"confidence={confidence:.4f} < 抬升地板={_raise_floor:.4f} | "
+                f"{_hex_check['reason']} 跳过",
+                "WARN",
+            )
+            return
+        # end: P0-4 卦象一致性校验
 
         # ===== 震荡市增强器（优化1-5统一入口）=====
         # 包含：
@@ -6684,67 +8096,196 @@ class PollingTrader:
 
         # P1-1: 做空趋势过滤器（Phase C+ 五均线版）
         # 加密货币用BTC 5均线排列，美股用IXIC/GSPC 5均线，其他用自身5均线；+做空阈值乘数+仓位规模乘数
+        # v4.5 Spec 严格对齐：取消硬拦截，改为产出 Score_P 传给 ElasticGate3L（F1: 永不BLOCK）
         short_conf_multi = 1.00
         short_bearish_score = "NONE"
         short_regime_from_spring = None
+        short_trend_ok = True  # 默认通过，BLOCK 由 ElasticGate3L 处理
         if direction == "DOWN":
             # 兼容: 旧版返回2元组, 新版返回3元组(allow, reason, multiplier)
             filter_result = self._check_short_trend_filter(coin, inference)
             if len(filter_result) >= 3:
-                trend_ok, trend_reason, short_conf_multi = filter_result
+                short_trend_ok, trend_reason, short_conf_multi = filter_result
             else:
-                trend_ok, trend_reason = filter_result
+                short_trend_ok, trend_reason = filter_result
                 short_conf_multi = 1.00
             short_bearish_score = self._parse_bearish_score_from_reason(trend_reason)
             short_regime_from_spring = self._parse_regime_from_reason(trend_reason)
-            if not trend_ok:
+            if not short_trend_ok:
+                # Spec v3.0: BLOCK 不硬拦截，交给 ElasticGate3L 给 0.10 试错仓
                 self._log(
                     f"[{coin}] P1做空趋势过滤 | {trend_reason} | "
-                    f"置信度={confidence:.2f} 方向={direction} 卦象={inference['hexagram']} 跳过"
+                    f"置信度={confidence:.2f} 方向={direction} 卦象={inference['hexagram']} "
+                    f"→ BLOCK（弹性放行，ElasticGate3L 将给 0.10 试错仓）",
+                    "INFO",
                 )
-                return
-            # 做空阈值 = (short_confidence_threshold 或 confidence_threshold) × 乘数
-            # 关键：×0.9091(STRONG)=降低门槛=放宽；×1.1765(WEAK)=抬高门槛=收紧
-            raw_short_thr = max(
-                confidence_threshold or self.confidence_threshold,
-                self.short_confidence_threshold,
-            )
-            effective_short_threshold = raw_short_thr * short_conf_multi
-            self._log(
-                f"[{coin}] P1做空阈值分层 | 基础阈值={raw_short_thr:.4f} ×{short_conf_multi:.2f}"
-                f" = 有效阈值={effective_short_threshold:.4f}",
-                "INFO",
-            )
-            # 覆盖全局 effective_threshold（仅DOWN方向有效）
-            effective_threshold = effective_short_threshold
+            else:
+                # 做空阈值 = (short_confidence_threshold 或 confidence_threshold) × 乘数
+                raw_short_thr = max(
+                    confidence_threshold or self.confidence_threshold,
+                    self.short_confidence_threshold,
+                )
+                effective_short_threshold = raw_short_thr * short_conf_multi
+                self._log(
+                    f"[{coin}] P1做空阈值分层 | 基础阈值={raw_short_thr:.4f} ×{short_conf_multi:.2f}"
+                    f" = 有效阈值={effective_short_threshold:.4f}",
+                    "INFO",
+                )
+                # 覆盖全局 effective_threshold（仅DOWN方向有效）
+                effective_threshold = effective_short_threshold
 
         # H1(P0)新增：P1 长多趋势过滤器（与做空对称，UP方向弹簧力场阈值分层）
+        # v4.5 Spec 严格对齐：取消硬拦截，改为产出 Score_P 传给 ElasticGate3L
         long_conf_multi = 1.00
         long_bullish_score = "NONE"
         long_regime_from_spring = None
+        long_trend_ok = True  # 默认通过，BLOCK 由 ElasticGate3L 处理
         if direction == "UP":
             filter_result = self._check_long_trend_filter(coin, inference)
             if len(filter_result) >= 3:
-                trend_ok_up, trend_reason_up, long_conf_multi = filter_result
+                long_trend_ok, trend_reason_up, long_conf_multi = filter_result
             else:
-                trend_ok_up, trend_reason_up = filter_result
+                long_trend_ok, trend_reason_up = filter_result
                 long_conf_multi = 1.00
             long_bullish_score = self._parse_bullish_score_from_reason(trend_reason_up)
             long_regime_from_spring = self._parse_regime_from_reason(trend_reason_up)
-            if not trend_ok_up:
+            if not long_trend_ok:
+                # Spec v3.0: BLOCK 不硬拦截，交给 ElasticGate3L 给 0.10 试错仓
                 self._log(
                     f"[{coin}] P1长多趋势过滤 | {trend_reason_up} | "
-                    f"置信度={confidence:.2f} 方向={direction} 卦象={inference['hexagram']} 跳过"
+                    f"置信度={confidence:.2f} 方向={direction} 卦象={inference['hexagram']} "
+                    f"→ BLOCK（弹性放行，ElasticGate3L 将给 0.10 试错仓）",
+                    "INFO",
                 )
-                return
-            raw_long_thr = confidence_threshold or self.confidence_threshold
-            effective_long_threshold = raw_long_thr * long_conf_multi
+            else:
+                raw_long_thr = confidence_threshold or self.confidence_threshold
+                effective_long_threshold = raw_long_thr * long_conf_multi
+                self._log(
+                    f"[{coin}] P1长多阈值分层 | 基础阈值={raw_long_thr:.4f} ×{long_conf_multi:.2f}"
+                    f" = 有效阈值={effective_long_threshold:.4f}",
+                    "INFO",
+                )
+                effective_threshold = effective_long_threshold
+
+        # ══════════════════════════════════════════════════════════════════
+        # 方案 C v3.0 Spec 严格对齐：P1/Elder/BCRM 三层弹性放行（永不硬拦截）
+        #   P1 SMA → Score_P: STANDARD=1.0 / WEAK=0.60 / BLOCK=0.10
+        #   Elder-ray → Score_E: ALIGN_FULL=1.0 / ALIGN_BASIC=0.85 / NEUTRAL=0.65 / DIVERGE_BASIC=0.45 / SEVERE=0.30
+        #   BCRM N=5 → Score_B: 0.30~1.0
+        #   三层 Score 交给 ElasticGate3L 计算仓位倍率（F1 铁则：永不BLOCK，BLOCK也给0.10试错仓）
+        # ══════════════════════════════════════════════════════════════════
+        _p1_label = "STANDARD"
+        _elder_grade = "NEUTRAL"
+        _score_b = 0.65
+        _cont_grade = "NEUTRAL"
+        _cont_score = 0.65
+        try:
+            # Step 1: P1 档位映射（弹簧评分 + 趋势过滤结果 → STANDARD/WEAK/BLOCK）
+            _short_score = short_bearish_score if direction == "DOWN" else "NONE"
+            _long_score = long_bullish_score if direction == "UP" else "NONE"
+            _score_use = _long_score if direction == "UP" else _short_score
+            # 趋势过滤未通过 → BLOCK（不再硬拦截，交给 ElasticGate3L 给 0.10 试错仓）
+            _trend_ok = long_trend_ok if direction == "UP" else short_trend_ok
+            if not _trend_ok:
+                _p1_label = "BLOCK"
+            elif _score_use in ("STRONG", "NORMAL"):
+                _p1_label = "STANDARD"
+            elif _score_use == "WEAK":
+                _p1_label = "WEAK"
+            elif _score_use == "NONE":
+                _p1_label = "STANDARD"  # fail-open 中性
+            else:
+                _p1_label = "BLOCK"
+
+            # Step 2: Elder-ray 日线趋势对齐 → 产出 Score_E（不硬拦截）
+            #   Spec v3.0: Score_E = ALIGN_FULL=1.0/ALIGN_BASIC=0.85/NEUTRAL=0.65/DIVERGE_BASIC=0.45/SEVERE=0.30
+            #   不再硬拦截，Score_E 交给 ElasticGate3L 调节仓位
+            _decision_dir = "LONG" if direction == "UP" else "SHORT"
+            _hex_name = inference.get("hexagram", "") or ""
+            if self._elder_engine is not None:
+                try:
+                    _daily_klines = _load_kline_from_okx(inst_id=inst_id, bar="1D", limit=120)
+                    if _daily_klines and len(_daily_klines) >= 30:
+                        _elder_res = self._elder_engine.calc_and_record(
+                            symbol=coin,
+                            decision=_decision_dir,
+                            p1_output=_p1_label,
+                            daily_klines=_daily_klines,
+                        )
+                        _elder_grade = str(getattr(_elder_res, "judge_level", "NEUTRAL") or "NEUTRAL")
+                    else:
+                        _elder_grade = "NEUTRAL"
+                except Exception as _er_e:
+                    self._log(
+                        f"[{coin}] [方案C] Elder-ray调用失败(NEUTRAL旁路)：{type(_er_e).__name__}",
+                        "WARN",
+                    )
+                    _elder_grade = "NEUTRAL"
+            else:
+                _elder_grade = "NEUTRAL"
+            # Spec v3.0: Elder-ray 不再硬拦截，仅记录 Score_E 等级
+            if _elder_grade in ("DIVERGE_BASIC", "DIVERGE_SEVERE"):
+                self._log(
+                    f"[{coin}] 方案C | Elder-ray={_elder_grade} (日线背离) | "
+                    f"方向={direction} 卦={_hex_name} → Score_E 降级，ElasticGate3L 将缩减仓位",
+                    "INFO",
+                )
+
+            # Step 3: BCRM N=5 笔连续性 → 产出 Score_B（不硬拦截）
+            #   Spec v3.0: Score_B = 0.60×continuity_score + 0.40×conf_norm
+            #   不再硬拦截，Score_B 交给 ElasticGate3L 调节仓位
+            if self._bcrm_continuity is not None:
+                try:
+                    import datetime as _dt_now
+                    _cont_grade, _cont_score = self._bcrm_continuity.append_and_grade(
+                        symbol=coin,
+                        direction=_decision_dir,
+                        ts=_dt_now.datetime.now(),
+                        confidence=float(confidence or 0.0),
+                        hexagram_name=_hex_name,
+                    )
+                except Exception as _co_e:
+                    self._log(
+                        f"[{coin}] [方案C] 连续信号观察器调用失败(NEUTRAL旁路)：{type(_co_e).__name__}",
+                        "WARN",
+                    )
+                    _cont_grade, _cont_score = "NEUTRAL", 0.65
+            else:
+                _cont_grade, _cont_score = "NEUTRAL", 0.65
+            # Spec v3.0: BCRM 连续性不再硬拦截，仅记录 Score_B 等级
+            if _cont_grade in ("DIVERGE_BASIC", "DIVERGE_SEVERE"):
+                self._log(
+                    f"[{coin}] 方案C | BCRM连续={_cont_grade}({_cont_score:.2f}) "
+                    f"单笔conf={float(confidence or 0):.2f} 卦={_hex_name} "
+                    f"→ Score_B 降级，ElasticGate3L 将缩减仓位",
+                    "INFO",
+                )
+
+            # Score_B = 0.60×continuity_score + 0.40×conf_norm（spec P7，后置校准层输入）
+            _conf_norm = max(0.40, min(1.0, float(confidence or 0.0)))
+            _score_b = 0.60 * float(_cont_score) + 0.40 * _conf_norm
+
+            # 把 P1 档位 + Elder 等级 + Score_B（后置校准语义）写入 inference 缓存
+            inference["p1_output_label"] = _p1_label
+            inference["elder_ray_grade"] = _elder_grade
+            inference["bcrm_continuity_grade"] = _cont_grade
+            inference["bcrm_continuity_score"] = float(_cont_score)
+            inference["bcrm_score_b"] = float(_score_b)
+
             self._log(
-                f"[{coin}] P1长多阈值分层 | 基础阈值={raw_long_thr:.4f} ×{long_conf_multi:.2f}"
-                f" = 有效阈值={effective_long_threshold:.4f}",
+                f"[{coin}] 方案C 三层弹性放行 | P1={_p1_label} "
+                f"Elder={_elder_grade} BCRM连续={_cont_grade}({_cont_score:.2f}) "
+                f"Score_B={_score_b:.2f} 单conf={float(confidence or 0):.2f} 卦={_hex_name} 方向={_decision_dir}",
                 "INFO",
             )
-            effective_threshold = effective_long_threshold
+        except Exception as _setup_e:
+            self._log(
+                f"[{coin}] 方案C P1升级 异常(中性旁路)：{type(_setup_e).__name__}，继续原流程",
+                "WARN",
+            )
+            inference.setdefault("p1_output_label", "STANDARD")
+            inference.setdefault("elder_ray_grade", "NEUTRAL")
+            inference.setdefault("bcrm_score_b", 0.65)
 
         # H2(P1)：弹簧力场 5态/评分 双向写入 inference，后续 _get_regime_pred_multipliers / AB审计 可追溯
         spring_regime_5 = long_regime_from_spring if direction == "UP" else (short_regime_from_spring if direction == "DOWN" else None)
@@ -6767,6 +8308,10 @@ class PollingTrader:
                 f" 阈值 {_orig_thr:.4f}→{effective_threshold:.4f}",
                 "INFO",
             )
+        # 上限 clip：防止做空阈值在多重收紧因子叠加下超过 1.0（硬禁）
+        #   后续有 ElasticGate3L/WinProb 等精细调控，前置层不需要硬禁
+        if effective_threshold > 0.98:
+            effective_threshold = 0.98
 
         # ── H3-FMA 影子决策：无论当前 FMA_REGIME_FILTER_ENABLED 是否开启，
         #    强制跑一遍 FMA=True 的差异化过滤流程，得到 fma_on_allow + fma_on_effective_threshold
@@ -6818,25 +8363,100 @@ class PollingTrader:
         inference["fma_shadow_allowed"] = fma_shadow_allowed
         inference["fma_shadow_eff_threshold"] = fma_shadow_eff_thr
 
-        # 做空试错区间更窄（减少低置信度做空）
-        if direction == "DOWN":
-            trial_threshold = max(0.40, effective_threshold - 0.10)
-        else:
-            trial_threshold = max(0.25, effective_threshold - 0.15)
-        if confidence >= effective_threshold:
-            pass
-        elif confidence >= trial_threshold:
-            is_trial = True
+        # v4.6 过滤层统一弹性放行机制：
+        #   ① P1/Elder/BCRM 三层各自产出 Score（永不硬拦截）
+        #   ② 传给 ElasticGate3L 加权 → score_consensus（共识分）
+        #   ③ score_consensus < _gate_base_threshold → 不开仓（基础门槛）
+        #   ④ ≥ 基础门槛 且 置信度不达标 → 轻仓试错（is_trial=True，仓位由 EG3L 控制）
+        #   ⑤ 基础阈值基于历史盈亏聚合动态调节（≥30 笔样本才调，非单笔）
+        _p1_out_for_gate = str(inference.get("p1_output_label", "STANDARD") or "STANDARD")
+        _elder_grade_for_gate = str(inference.get("elder_ray_grade", "NEUTRAL") or "NEUTRAL")
+        _score_b_for_gate = float(inference.get("bcrm_score_b", 0.65) or 0.65)
+        _dir_long_short = "LONG" if direction == "UP" else ("SHORT" if direction == "DOWN" else None)
+        _weights_for_gate = None
+        if self._three_layer_weighter is not None:
+            try:
+                _weights_for_gate = self._three_layer_weighter.get_current_weights()
+            except Exception:
+                _weights_for_gate = None
+        _score_consensus = None
+        _base_pos_mult_precheck = None
+        _gate_debug_info = ""
+        if self._elastic_gate_3l is not None and _dir_long_short:
+            try:
+                # 只走 compute（不叠加 F1~F4 铁则），取 score_consensus 做基础门槛判断
+                _out = self._elastic_gate_3l.compute(
+                    p1_out=_p1_out_for_gate,
+                    elder_grade=_elder_grade_for_gate,
+                    score_b=_score_b_for_gate,
+                    weights=_weights_for_gate,
+                    direction=_dir_long_short,
+                )
+                _score_consensus = float(_out.score_consensus)
+                _base_pos_mult_precheck = float(_out.base_pos_mult)
+                try:
+                    _w_p_v = getattr(_weights_for_gate, "w_p", None) if _weights_for_gate is not None else None
+                    if _w_p_v is None and isinstance(_weights_for_gate, dict):
+                        _w_p_v = _weights_for_gate.get("w_p")
+                    if _w_p_v is None:
+                        from scripts.memory_l4 import phase_c_constants as _C
+                        _w_p_v, _w_e_v, _w_b_v = _C.FAILOPEN_WP, _C.FAILOPEN_WE, _C.FAILOPEN_WB
+                    else:
+                        _w_e_v = float(getattr(_weights_for_gate, "w_e",
+                                               _weights_for_gate.get("w_e") if isinstance(_weights_for_gate, dict) else 0.30))
+                        _w_b_v = float(getattr(_weights_for_gate, "w_b",
+                                               _weights_for_gate.get("w_b") if isinstance(_weights_for_gate, dict) else 0.25))
+                    _w_src = getattr(_weights_for_gate, "source",
+                                     _weights_for_gate.get("source") if isinstance(_weights_for_gate, dict) else "fail_open")
+                    _gate_debug_info = (
+                        f" S_P={_out.score_p:.2f} S_E={_out.score_e:.2f} S_B={_out.score_b:.2f}"
+                        f" w_p={_w_p_v:.2f} w_e={_w_e_v:.2f} w_b={_w_b_v:.2f} w_src={_w_src}"
+                        f" src={getattr(_out, 'source', '')}"
+                    )
+                except Exception:
+                    _gate_debug_info = f" S_P={getattr(_out, 'score_p', 0):.2f} S_E={getattr(_out, 'score_e', 0):.2f} S_B={getattr(_out, 'score_b', 0):.2f}"
+            except Exception as _gate_e:
+                self._log(f"[{coin}] 过滤层共识分计算异常（fail-open：视为不过门槛）：{type(_gate_e).__name__}", "WARN")
+                _score_consensus = None
+
+        # 冷启动兜底：EG3L 不存在时，用 P1+Elder 的近似分
+        if _score_consensus is None:
+            _sp_map = {"STANDARD": 1.0, "WEAK": 0.60, "BLOCK": 0.10}
+            _se_map = {"ALIGN_FULL": 1.00, "ALIGN_BASIC": 0.85, "NEUTRAL": 0.65, "DIVERGE_BASIC": 0.45, "DIVERGE_SEVERE": 0.30}
+            _score_consensus = 0.45 * _sp_map.get(_p1_out_for_gate, 0.60) + 0.30 * _se_map.get(_elder_grade_for_gate, 0.65) + 0.25 * _score_b_for_gate
+            _gate_debug_info = _gate_debug_info + " [冷启动兜底权重]"
+
+        inference["score_consensus"] = _score_consensus
+        inference["gate_base_threshold"] = float(self._gate_base_threshold)
+        inference["p1_output_label"] = _p1_out_for_gate
+        inference["elder_ray_grade"] = _elder_grade_for_gate
+        inference["bcrm_score_b"] = _score_b_for_gate
+
+        # Step ③ 基础门槛判断：score_consensus < base_threshold → 不开仓（唯一硬门槛）
+        if _score_consensus < self._gate_base_threshold:
             self._log(
-                f"[{coin}] 轻仓试错模式 | 置信度={confidence:.2f} 在试错区间 [{trial_threshold}, {effective_threshold}) 方向={direction}"
-            )
-        else:
-            self._log(
-                f"[{coin}] 置信度不足 "
-                f"{confidence:.2f} < {trial_threshold} | "
-                f"方向={direction} 卦象={inference['hexagram']}"
+                f"[{coin}] 过滤层共识分低于基础门槛 跳过开仓 | "
+                f"score_cons={_score_consensus:.3f} < threshold={self._gate_base_threshold:.3f}"
+                f" P1={_p1_out_for_gate} Elder={_elder_grade_for_gate} S_B={_score_b_for_gate:.2f}"
+                f" conf={confidence:.2f} 方向={direction}{_gate_debug_info}",
+                "INFO",
             )
             return
+
+        # Step ④/⑤ 正常开仓 vs 轻仓试错：
+        #   - confidence ≥ effective_threshold → 正常开仓
+        #   - 否则：只要过了过滤层基础门槛，一律轻仓试错（不再区分 P1=BLOCK/P1=WEAK）
+        if confidence >= effective_threshold:
+            pass  # 置信度达标，正常开仓
+        else:
+            is_trial = True
+            self._log(
+                f"[{coin}] 轻仓试错(共识分达标) | "
+                f"score_cons={_score_consensus:.3f} ≥ threshold={self._gate_base_threshold:.3f} "
+                f"但 conf={confidence:.2f} < eff_thr={effective_threshold:.4f}"
+                f" P1={_p1_out_for_gate} Elder={_elder_grade_for_gate} 方向={direction}{_gate_debug_info}",
+                "INFO",
+            )
 
         if direction not in ("UP", "DOWN"):
             self._log(f"[{coin}] 方向不明确 {direction} 跳过")
@@ -6855,6 +8475,56 @@ class PollingTrader:
 
     def _open_position(self, inference: dict, is_reverse: bool = False, is_trial: bool = False):
         """开仓（动态仓位 + 持仓跟踪）"""
+        # ★ shadow-mode 全局硬闸门：禁止所有开仓（仅记录一条blocked日志，保留推理上下文用于shadow评估）
+        if self.shadow_mode:
+            coin = inference.get("coin", "UNKNOWN")
+            inst_id = inference.get("inst_id", "UNKNOWN")
+            direction = inference.get("direction", "UNKNOWN")
+            confidence = inference.get("confidence", 0.0)
+            self._log(
+                f"[SHADOW MODE BLOCKED-OPEN] {inst_id} {direction} conf={confidence:.3f} | "
+                f"reason={inference.get('reason', '')[:60]} | 仅记录不真实下单",
+                "WARN",
+            )
+            return
+        # ═══ 方案 C v3.0：组合级熔断闸门（SW-C8）═══
+        #   - 优先级：G-04 emergency_shutdown > G-02 block_new_open > 正常放行
+        #   - fail-open：_current_fuse_action 缺失/None → 视为无熔断，直接通过
+        #     ★ FIX legacy#3：_make_bare_trader用__new__绕过__init__未初始化属性时也能fail-open
+        _fuse = getattr(self, "_current_fuse_action", None)
+        if _fuse is not None:
+            try:
+                _blocked_by_fuse = False
+                _block_reason = ""
+                if getattr(_fuse, "emergency_shutdown", False):
+                    _blocked_by_fuse = True
+                    _block_reason = (
+                        f"G-04 终极熔断（until={getattr(_fuse, 'block_until_ts', 0)}）："
+                        f"单日权益回撤≥3%，自动block开仓"
+                    )
+                elif getattr(_fuse, "block_new_open", False):
+                    _blocked_by_fuse = True
+                    _block_reason = (
+                        f"G-02 黑天鹅熔断（reason={getattr(_fuse, 'reason', '')} "
+                        f"until={getattr(_fuse, 'block_until_ts', 0)}）：暂停开新仓"
+                    )
+                if _blocked_by_fuse:
+                    _coin = inference.get("coin", "UNKNOWN")
+                    _inst_id = inference.get("inst_id", "UNKNOWN")
+                    _dir = inference.get("direction", "UNKNOWN")
+                    _conf = inference.get("confidence", 0.0)
+                    self._log(
+                        f"[组合熔断拦截-BLOCKED] {_inst_id} {_dir} conf={_conf:.3f} | "
+                        f"{_block_reason}",
+                        "WARN",
+                    )
+                    return
+            except Exception as _fse:
+                # 熔断判定异常 → 安全放行，不阻塞主流程
+                self._log(
+                    f"[组合熔断] 熔断闸门判定异常（fail-open放行）：{type(_fse).__name__}",
+                    "WARN",
+                )
         coin = inference["coin"]
         inst_id = inference["inst_id"]
         direction = inference["direction"]
@@ -6862,6 +8532,37 @@ class PollingTrader:
         volatility = inference.get("volatility", 0.03)
         # P3: 缓存当前波动率，供 _compute_p2_dynamic_sizing_factors 中波动率自适应使用
         self._last_volatility = volatility
+
+        # ═══════════════════════════════════════════════════
+        # 方案 C v3.0：P1 过滤层→校准层 数据链路确认
+        #   趋势过滤层（拦截）已在 _execute_trade 的 P1 升级版完成：
+        #     均线/偏见底 → Elder（日线对齐）→ BCRM N=5 连续
+        #   此处（_open_position）仅使用 P1 层写入的缓存，负责后置校准层（仓位规模）
+        #   兜底：若缺失则中性填充（兼容手工直接调用 _open_position 的场景）
+        # ═══════════════════════════════════════════════════
+        try:
+            if "p1_output_label" not in inference:
+                # 兼容手工调用：用弹簧评分兜底推导 P1 档位
+                _short_score = inference.get("spring_bearish_score", "NONE") or "NONE"
+                _long_score = inference.get("spring_bullish_score", "NONE") or "NONE"
+                _decision_dir = str(direction).upper()
+                _score = _long_score if _decision_dir == "UP" else _short_score
+                if _score in ("STRONG", "NORMAL"):
+                    inference["p1_output_label"] = "STANDARD"
+                elif _score == "WEAK":
+                    inference["p1_output_label"] = "WEAK"
+                else:
+                    inference["p1_output_label"] = "STANDARD"  # fail-open：无评分允许中性通过
+            inference.setdefault("elder_ray_grade", "NEUTRAL")
+            if "bcrm_score_b" not in inference:
+                _cont = float(inference.get("bcrm_continuity_score", 0.65) or 0.65)
+                _c_norm = max(0.40, min(1.0, float(confidence or 0.0)))
+                inference["bcrm_score_b"] = 0.60 * _cont + 0.40 * _c_norm
+            inference.setdefault("bcrm_continuity_grade", "NEUTRAL")
+        except Exception:
+            inference.setdefault("p1_output_label", "STANDARD")
+            inference.setdefault("elder_ray_grade", "NEUTRAL")
+            inference.setdefault("bcrm_score_b", 0.65)
 
         # H1/H2/H4: 从 inference 读取前置层已缓存的弹簧评分/5态（避免 _open_position 访问不到 _execute_trade 局部变量）
         #   若 inference 未填（如手工调用 _open_position），则安全回退 "NONE"，仓位乘数保持 1.0
@@ -6933,60 +8634,249 @@ class PollingTrader:
         except Exception:
             pass
 
-        if is_trial:
-            position_usdt *= 0.4
-            position_pct *= 0.4
+        # ══════════════════════════════════════════════════
+        # v4.6 分层语义对齐（战略→前置→核心→后置→过滤）
+        #   ① 后置层（L3）：弹簧力场 + 形态乘数 + v4风险评分 等仓位校准
+        #       → 在 "正常开仓（is_trial=False）" 时完整应用（给出具体仓位规模）
+        #       → 在 "轻仓试错（is_trial=True）" 时跳过：
+        #         试错仓本质是"共识分够，但置信度不够"的探路仓位。
+        #         其仓位不以后置层"强/弱趋势分档"为准，而是交给过滤层
+        #         EG3L（F1 永不BLOCK）最终控制（通常 0.05~0.10 倍率）
+        # ══════════════════════════════════════════════════
+        if not is_trial:
+            # —— 后置层（L3）仓位校准，仅用于正常开仓 ——
+            # Phase C+: 做空仓位规模分层（弹簧力场→仓位）
+            # 理论：周期短可信度低但识别早 → 不禁开，而是控制资金规模
+            #       跌破更多均线 → 弹簧压力更重 → 仓位更大
+            if direction == "DOWN" and short_bearish_score != "NONE":
+                pos_multi = self._compute_short_position_multiplier(short_bearish_score)
+                old_usdt = position_usdt
+                position_usdt *= pos_multi
+                position_pct *= pos_multi
+                self._log(
+                    f"[{coin}] P1做空仓位分层(后置层) | score={short_bearish_score} ×{pos_multi:.1f} "
+                    f"仓位 {old_usdt:.2f}→{position_usdt:.2f}USDT",
+                    "INFO",
+                )
 
-        # Phase C+: 做空仓位规模分层（弹簧力场→仓位）
-        # 理论：周期短可信度低但识别早 → 不禁开，而是控制资金规模
-        #       跌破更多均线 → 弹簧压力更重 → 仓位更大
-        if direction == "DOWN" and short_bearish_score != "NONE":
-            pos_multi = self._compute_short_position_multiplier(short_bearish_score)
-            old_usdt = position_usdt
-            position_usdt *= pos_multi
-            position_pct *= pos_multi
+            # H4(P2): 长多仓位规模分层（弹簧力场→仓位，与做空方向对称）
+            #   score=STRONG/NORMAL/WEAK → ×1.0/0.7/0.4 保守策略；避免追顶
+            if direction == "UP" and long_bullish_score != "NONE":
+                pos_multi = self._compute_long_position_multiplier(long_bullish_score)
+                old_usdt = position_usdt
+                position_usdt *= pos_multi
+                position_pct *= pos_multi
+                self._log(
+                    f"[{coin}] P1长多仓位分层(后置层) | score={long_bullish_score} ×{pos_multi:.1f} "
+                    f"仓位 {old_usdt:.2f}→{position_usdt:.2f}USDT",
+                    "INFO",
+                )
+
+            # v4 风险评分风控：仓位调整
+            position_factor = inference.get("position_factor", 1.0)
+            if position_factor != 1.0:
+                old_usdt = position_usdt
+                position_usdt *= position_factor
+                position_pct *= position_factor
+                self._log(
+                    f"[{coin}] v4仓位调整(后置层) | risk_level={risk_level} factor={position_factor:.2f} "
+                    f"仓位 {old_usdt:.2f}→{position_usdt:.2f}USDT",
+                    "INFO",
+                )
+
+            # P2-05: 形态乘数 → 仓位规模（乘在所有仓位调整之后，最终下单前）
+            _reg_mult = inference.get("_regime_multipliers", {})
+            _pos_mult = _reg_mult.get("position_mult", 1.0)
+            _regime_pred = inference.get("_regime_pred")
+            if _pos_mult != 1.0:
+                _old = position_usdt
+                position_usdt *= _pos_mult
+                position_pct *= _pos_mult
+                self._log(
+                    f"[{coin}] 形态仓位调整(后置层) | regime={_regime_pred or ''} ×{_pos_mult:.2f}"
+                    f" 仓位 {_old:.2f}→{position_usdt:.2f}USDT",
+                    "INFO",
+                )
+        else:
+            # —— 轻仓试错：跳过 L3 后置仓位校准，交由过滤层 EG3L 控制仓位
             self._log(
-                f"[{coin}] P1做空仓位分层 | score={short_bearish_score} ×{pos_multi:.1f} "
-                f"仓位 {old_usdt:.2f}→{position_usdt:.2f}USDT",
+                f"[{coin}] 轻仓试错(过滤层接管仓位) | 跳过L3弹簧/形态/v4分档 → 交由 ElasticGate3L/F1 弹性闸门控制最终仓位",
                 "INFO",
             )
 
-        # H4(P2): 长多仓位规模分层（弹簧力场→仓位，与做空方向对称）
-        #   score=STRONG/NORMAL/WEAK → ×1.0/0.7/0.4 保守策略；避免追顶
-        if direction == "UP" and long_bullish_score != "NONE":
-            pos_multi = self._compute_long_position_multiplier(long_bullish_score)
-            old_usdt = position_usdt
-            position_usdt *= pos_multi
-            position_pct *= pos_multi
+        # ═══════════════════════════════════════════════════
+        # 通用资金调控：前置约束叠加（所有仓位调整完成之后，最终下单之前）
+        #   - allowed=False → position_usdt=0 → 不开仓
+        #   - max_position_usdt → 与 position_usdt 取 min（缩仓）
+        #   - 异常或初始化失败 → fail-open 保持易经自有仓位（直接返回原值）
+        # ═══════════════════════════════════════════════════
+        _cap_old_pos = position_usdt
+        position_usdt, _cap_log = self._apply_capital_control_to_position(
+            coin, position_usdt, available_equity
+        )
+        if _cap_old_pos > 0 and _cap_old_pos != position_usdt:
+            position_pct = position_pct * (position_usdt / _cap_old_pos) if _cap_old_pos > 0 else 0.0
+        if position_usdt <= 0:
             self._log(
-                f"[{coin}] P1长多仓位分层 | score={long_bullish_score} ×{pos_multi:.1f} "
-                f"仓位 {old_usdt:.2f}→{position_usdt:.2f}USDT",
-                "INFO",
+                f"[{coin}] 通用资金调控前置约束拦截 → 不开仓（{_cap_log or '通用模块要求拦截'}）",
+                "WARN",
+            )
+            return
+
+        # ═══════════════════════════════════════════════════
+        # 方案 C v3.0：三层弹性仓位 + WinProb + BTC 自反 调控（SW-C4/C6/C7/C3）
+        #   顺序：ElasticGate3L(final_pos_mult) → WinProb(winprob_mult) → BTCSelfReflex(λ)
+        #   全部 fail-open：None/异常 → ×1.0（零影响，字节等价）
+        # ═══════════════════════════════════════════════════
+        _phase_c_final_pos_mult = 1.0
+        _phase_c_winprob_mult = 1.0
+        _phase_c_btc_lambda = 1.0
+        _phase_c_eg3l_detail = ""  # v4.6 新增：EG3L明细用于日志审计（确认3LW权重生效）
+        try:
+            # ── Step A: ElasticGate3L × 三层权重 ──
+            if self._elastic_gate_3l is not None:
+                try:
+                    # inference 中已有的前置层/核心层标签（找不到则中性 "STANDARD"/"NEUTRAL"/0.65）
+                    _p1_out = str(inference.get("p1_output_label", "STANDARD") or "STANDARD")
+                    _elder_grade = str(inference.get("elder_ray_grade", "NEUTRAL") or "NEUTRAL")
+                    _score_b = float(inference.get("bcrm_score_b", 0.65) or 0.65)
+                    _decision_dir = str(inference.get("direction", "")).upper()
+                    _dir_long_short = "LONG" if _decision_dir == "UP" else (
+                        "SHORT" if _decision_dir == "DOWN" else None
+                    )
+                    _weights = None
+                    if self._three_layer_weighter is not None:
+                        try:
+                            _weights = self._three_layer_weighter.get_current_weights()
+                        except Exception:
+                            _weights = None
+                    # CBR F4 baseline family 红利
+                    _f4_hit = bool(inference.get("cbr_f4_hit", False))
+                    _f4_sim = float(inference.get("cbr_f4_similarity", 0.0) or 0.0)
+                    # v4.6：先 compute() 获明细，再 apply_fuses 叠加铁则
+                    _eg_out = self._elastic_gate_3l.compute(
+                        p1_out=_p1_out, elder_grade=_elder_grade, score_b=_score_b,
+                        weights=_weights, direction=_dir_long_short,
+                    )
+                    # 做空方向改写 Elder：对应 apply_fuses 用改写后的 elder_grade
+                    _eg_for_fuses = _elder_grade
+                    try:
+                        _src = str(getattr(_eg_out, "source", "") or "")
+                        if _src.startswith("short_tightened:") and "Elder→" in _src:
+                            import re as _re
+                            _m = _re.search(r"Elder→([A-Z_]+)", _src)
+                            if _m:
+                                _eg_for_fuses = _m.group(1)
+                    except Exception:
+                        pass
+                    _phase_c_final_pos_mult = self._elastic_gate_3l.apply_fuses(
+                        base_pos_mult=float(_eg_out.base_pos_mult),
+                        p1_out=_p1_out, elder_grade=_eg_for_fuses,
+                        f4_hit=_f4_hit, f4_similarity=_f4_sim,
+                    )
+                    # F1 永不 BLOCK：clip 下界
+                    try:
+                        from scripts.memory_l4 import phase_c_constants as _C
+                        _phase_c_final_pos_mult = max(
+                            float(_C.F1_NEVER_BLOCK_FLOOR),
+                            min(float(getattr(_C, "FINAL_POS_MULT_CLIP_HIGH_DEFAULT", 1.50)),
+                                _phase_c_final_pos_mult),
+                        )
+                    except Exception:
+                        _phase_c_final_pos_mult = max(0.05, min(1.50, _phase_c_final_pos_mult))
+                    # 组装明细日志（确认三层权重来源 fail_open/calibrated 等）
+                    try:
+                        _w_p_v = getattr(_weights, "w_p", None) if _weights is not None else None
+                        if _w_p_v is None and isinstance(_weights, dict):
+                            _w_p_v = _weights.get("w_p")
+                        if _w_p_v is None:
+                            from scripts.memory_l4 import phase_c_constants as _C2
+                            _w_p_v, _w_e_v, _w_b_v = _C2.FAILOPEN_WP, _C2.FAILOPEN_WE, _C2.FAILOPEN_WB
+                            _w_src = "fail_open"
+                        else:
+                            _w_e_v = float(getattr(_weights, "w_e",
+                                                   _weights.get("w_e") if isinstance(_weights, dict) else 0.30))
+                            _w_b_v = float(getattr(_weights, "w_b",
+                                                   _weights.get("w_b") if isinstance(_weights, dict) else 0.25))
+                            _w_src = getattr(_weights, "source",
+                                             _weights.get("source") if isinstance(_weights, dict) else "fail_open")
+                        _phase_c_eg3l_detail = (
+                            f" S_P={_eg_out.score_p:.2f} S_E={_eg_out.score_e:.2f} S_B={_eg_out.score_b:.2f}"
+                            f" cons={_eg_out.score_consensus:.3f}"
+                            f" w_p={_w_p_v:.2f} w_e={_w_e_v:.2f} w_b={_w_b_v:.2f} w_src={_w_src}"
+                            f" src={getattr(_eg_out, 'source', '')}"
+                        )
+                    except Exception:
+                        _phase_c_eg3l_detail = ""
+                except Exception as _ege:
+                    self._log(
+                        f"[{coin}] ElasticGate3L 异常（fail-open=1.0）：{type(_ege).__name__}",
+                        "WARN",
+                    )
+                    _phase_c_final_pos_mult = 1.0
+            # ── Step B: WinProb（盈亏概率动态权重）──
+            if self._win_prob_engine is not None:
+                try:
+                    _sample_count = int(inference.get("winprob_sample_count", 0) or 0)
+                    _pred_win_rate = float(inference.get("winprob_pred_win_rate", 0.0) or 0.0)
+                    _q_vec = {
+                        "sample_count": _sample_count,
+                        "pred_win_rate": _pred_win_rate,
+                        "symbol": coin,
+                        "direction": "LONG" if direction == "UP" else "SHORT",
+                    }
+                    _wp_mult, _wp_shadow = self._win_prob_engine.get_multiplier(_q_vec)
+                    _phase_c_winprob_mult = float(_wp_mult) if _wp_mult is not None else 1.0
+                except Exception as _wpe:
+                    self._log(
+                        f"[{coin}] WinProbEngine 异常（fail-open=1.0）：{type(_wpe).__name__}",
+                        "WARN",
+                    )
+                    _phase_c_winprob_mult = 1.0
+            # ── Step C: BTC 自反闸门（仅 BTC + LONG 才生效）──
+            if self._btc_self_reflex_valve is not None:
+                try:
+                    _btc_ctx = {
+                        "symbol": coin,
+                        "direction": "LONG" if direction == "UP" else "SHORT",
+                        "d_pe_sign": int(inference.get("btc_d_pe_sign", 0) or 0),
+                        "btc_cont_grade": str(inference.get("btc_cont_grade", "NEUTRAL") or "NEUTRAL"),
+                        "s_btc_only": float(inference.get("btc_s_btc_only", 0.0) or 0.0),
+                        "window_fill_ratio": float(inference.get("btc_window_fill", 0.0) or 0.0),
+                        "fuse_24h_ok": not (getattr(getattr(self, "_current_fuse_action", None), "emergency_shutdown", False)),
+                    }
+                    _lam, _btc_shadow = self._btc_self_reflex_valve.get_lambda(_btc_ctx)
+                    _phase_c_btc_lambda = float(_lam) if _lam is not None else 1.0
+                    # 缓存在 self._last_btc_lambda，供 run_once 的 PRF ctx 使用（注意：仅 BTC 才改）
+                    if coin.upper() in ("BTC", "BTCUSDT"):
+                        self._last_btc_lambda = _phase_c_btc_lambda
+                except Exception as _btce:
+                    self._log(
+                        f"[{coin}] BTCSelfReflexValve 异常（fail-open=1.0）：{type(_btce).__name__}",
+                        "WARN",
+                    )
+                    _phase_c_btc_lambda = 1.0
+        except Exception as _phce:
+            # 外层总兜底：三数都回到 1.0
+            _phase_c_final_pos_mult = 1.0
+            _phase_c_winprob_mult = 1.0
+            _phase_c_btc_lambda = 1.0
+            self._log(
+                f"[{coin}] PhaseC 仓位调控外层异常（fail-open=1.0）：{type(_phce).__name__}",
+                "WARN",
             )
 
-        # v4 风险评分风控：仓位调整
-        position_factor = inference.get("position_factor", 1.0)
-        if position_factor != 1.0:
-            old_usdt = position_usdt
-            position_usdt *= position_factor
-            position_pct *= position_factor
+        # 应用三项乘积到 position_usdt / position_pct（任一 != 1.0 才 log，避免刷屏）
+        _combined_mult = _phase_c_final_pos_mult * _phase_c_winprob_mult * _phase_c_btc_lambda
+        if abs(_combined_mult - 1.0) > 1e-9:
+            _old_usdt = position_usdt
+            position_usdt = position_usdt * _combined_mult
+            position_pct = position_pct * _combined_mult
             self._log(
-                f"[{coin}] v4仓位调整 | risk_level={risk_level} factor={position_factor:.2f} "
-                f"仓位 {old_usdt:.2f}→{position_usdt:.2f}USDT",
-                "INFO",
-            )
-
-        # P2-05: 形态乘数 → 仓位规模（乘在所有仓位调整之后，最终下单前）
-        _reg_mult = inference.get("_regime_multipliers", {})
-        _pos_mult = _reg_mult.get("position_mult", 1.0)
-        _regime_pred = inference.get("_regime_pred")
-        if _pos_mult != 1.0:
-            _old = position_usdt
-            position_usdt *= _pos_mult
-            position_pct *= _pos_mult
-            self._log(
-                f"[{coin}] 形态仓位调整 | regime={_regime_pred or ''} ×{_pos_mult:.2f}"
-                f" 仓位 {_old:.2f}→{position_usdt:.2f}USDT",
+                f"[{coin}] PhaseC 仓位调控 | "
+                f"EG3L={_phase_c_final_pos_mult:.2f} WinProb={_phase_c_winprob_mult:.2f} "
+                f"BTCλ={_phase_c_btc_lambda:.2f} combined=×{_combined_mult:.3f} "
+                f"仓位 {_old_usdt:.2f}→{position_usdt:.2f}U{_phase_c_eg3l_detail}",
                 "INFO",
             )
 
@@ -7003,6 +8893,39 @@ class PollingTrader:
             sl_px = round(price + (sl_px - price) * sl_tighten_factor, 4)
             self._log(
                 f"[{coin}] v4止损收紧 | factor={sl_tighten_factor:.2f} SL {old_sl}→{sl_px}", "WARN"
+            )
+
+        # ═══ 方案 C v3.0：组合熔断 SL/TP 微调整（SW-C8 G-02）═══
+        #   - 顺序：sl_tighten（v4风控） → 组合熔断 SL_adj/TP_adj → 形态乘数
+        #   - 计算：按"距离 price 的比例"乘系数，保证价格与 SL/TP 的间距正确缩放
+        #   - fail-open：_current_fuse_action 缺失/None → SL_adj=1.0, TP_adj=1.0
+        #     ★ FIX legacy#3：兼容__new__绕过__init__未初始化属性的场景
+        _fuse_sl_adj = 1.0
+        _fuse_tp_adj = 1.0
+        _fuse = getattr(self, "_current_fuse_action", None)
+        if _fuse is not None:
+            try:
+                _fuse_sl_adj = float(getattr(_fuse, "sl_mult_adj", 1.0) or 1.0)
+                _fuse_tp_adj = float(getattr(_fuse, "tp_mult_adj", 1.0) or 1.0)
+            except Exception:
+                _fuse_sl_adj = 1.0
+                _fuse_tp_adj = 1.0
+        _fuse_adj_applied = False
+        if abs(_fuse_sl_adj - 1.0) > 1e-9 and sl_px and price > 0:
+            _old_sl = sl_px
+            sl_px = round(price + (sl_px - price) * _fuse_sl_adj, 6)
+            _fuse_adj_applied = True
+            self._log(
+                f"[{coin}] PhaseC 组合熔断SL调整 | SL_adj={_fuse_sl_adj:.2f} SL {_old_sl}→{sl_px}",
+                "INFO",
+            )
+        if abs(_fuse_tp_adj - 1.0) > 1e-9 and tp_px and price > 0:
+            _old_tp = tp_px
+            tp_px = round(price + (tp_px - price) * _fuse_tp_adj, 6)
+            _fuse_adj_applied = True
+            self._log(
+                f"[{coin}] PhaseC 组合熔断TP调整 | TP_adj={_fuse_tp_adj:.2f} TP {_old_tp}→{tp_px}",
+                "INFO",
             )
 
         # P2-05: 形态乘数 → SL/TP 价格距离（乘在所有 v4 风控之后，SLTP 冻结前）
@@ -7086,6 +9009,37 @@ class PollingTrader:
                         f"TP={tp_mult:.1f}×ATR(订单盈{tp_roi_pct:.2%}/价格{tp_price_change_pct:.2%}) "
                         f"(原SL={old_sl_pct:.1f}%)"
                     )
+
+        # ── SL/TP 价格空间下限保护（ATR 极低时 SL 过紧无意义）──
+        # 原理：轻仓试错核心是仓位小，不是 SL 近；ATR 极低时按常规标准设置
+        _min_sl_pct = 0.020 if is_trial else 0.015  # 试错仓 2.0%，常规仓 1.5%
+        _min_tp_pct = 0.040 if is_trial else 0.030  # 试错仓 4.0%，常规仓 3.0%
+        if sl_px and price > 0:
+            _cur_sl_pct = abs(sl_px - price) / price
+            if _cur_sl_pct < _min_sl_pct:
+                _old_sl = sl_px
+                if direction == "UP":
+                    sl_px = round(price * (1 - _min_sl_pct), 6)
+                else:
+                    sl_px = round(price * (1 + _min_sl_pct), 6)
+                self._log(
+                    f"[{coin}] SL价格空间下限保护 | {'轻仓试错' if is_trial else '常规'} "
+                    f"原SL间距={_cur_sl_pct:.2%}<{_min_sl_pct:.2%} SL {_old_sl}→{sl_px}",
+                    "WARN",
+                )
+        if tp_px and price > 0:
+            _cur_tp_pct = abs(tp_px - price) / price
+            if _cur_tp_pct < _min_tp_pct:
+                _old_tp = tp_px
+                if direction == "UP":
+                    tp_px = round(price * (1 + _min_tp_pct), 6)
+                else:
+                    tp_px = round(price * (1 - _min_tp_pct), 6)
+                self._log(
+                    f"[{coin}] TP价格空间下限保护 | {'轻仓试错' if is_trial else '常规'} "
+                    f"原TP间距={_cur_tp_pct:.2%}<{_min_tp_pct:.2%} TP {_old_tp}→{tp_px}",
+                    "WARN",
+                )
 
         # 输出：换算订单收益率（杠杆×价格波动%）
         # 同时记录 ATR 基线 SL/TP 收益率，供易经离场系统调制使用
@@ -7179,6 +9133,84 @@ class PollingTrader:
         entry_price = order_result.get("estimated_price", inference["price"])
 
         if ok or order_result.get("dry_run"):
+            enhance_info = inference.get("enhance_result")
+            _original_enhance_info = enhance_info
+            try:
+                if self._strategy_algo_layer is not None and self._strategy_algo_layer.cfg.enable_strategy_layer:
+                    from dataclasses import asdict as _asdict_t4
+                    from statistics import median as _median_t4
+
+                    if coin in self.US_STOCK_COINS:
+                        cls = "us_stock"
+                    elif coin in {"XAU", "XAG"}:
+                        cls = "precious_metal"
+                    else:
+                        cls = "crypto_usdt"
+
+                    _raw_dir = inference.get("direction", "")
+                    if _raw_dir == "UP":
+                        direction_sel = "LONG"
+                    elif _raw_dir == "DOWN":
+                        direction_sel = "SHORT"
+                    else:
+                        direction_sel = ""
+
+                    market_regime = inference.get("_regime_pred") or inference.get("regime_pred") or "UNKNOWN"
+                    confidence_sel = float(inference.get("confidence", 0.0) or 0.0)
+                    five_domain_state = self._five_domain_state_cache
+
+                    _fd_scores_cls = {}
+                    if five_domain_state is not None:
+                        try:
+                            _fd_scores_cls = dict(getattr(five_domain_state, "five_scores", {}).get(cls, {}) or {})
+                        except Exception:
+                            _fd_scores_cls = {}
+                    if not _fd_scores_cls:
+                        try:
+                            from scripts.memory_l4.strategy_algo_layer import DEFAULT_NEUTRAL_SCORES as _DNS
+                            _fd_scores_cls = dict(_DNS)
+                        except Exception:
+                            _fd_scores_cls = {"dao": 50, "tian": 50, "di": 50, "jiang": 50, "fa": 70}
+
+                    _regime_summary = {"phase": market_regime}
+                    _liquidity_tier = "G2"
+                    try:
+                        selection = self._strategy_algo_layer.select(
+                            asset_class=cls,
+                            five_scores=_fd_scores_cls,
+                            regime_summary=_regime_summary,
+                            liquidity_tier=_liquidity_tier,
+                            five_domain_state=five_domain_state,
+                        )
+                        selection_snapshot = _asdict_t4(selection)
+                        if enhance_info is None:
+                            enhance_info = {}
+                        enhance_info["strategy_selection"] = selection_snapshot
+
+                        _cb_values = []
+                        for _v in (selection.calibration_biases or {}).values():
+                            if isinstance(_v, (int, float)):
+                                _cb_values.append(float(_v))
+                        if _cb_values:
+                            _calib_median = float(_median_t4(_cb_values))
+                        else:
+                            _calib_median = 1.0
+                        self._log(
+                            f"[策略算法层影子] {coin} cls={cls} type={selection.strategy_type} "
+                            f"gate={selection.calibration_biases.get('hard_relax_gate', False) if isinstance(selection.calibration_biases, dict) else False} "
+                            f"calib_median={_calib_median:.3f} "
+                            f"switch={self._strategy_algo_layer.cfg.enable_strategy_layer}",
+                            "INFO",
+                        )
+                    except Exception:
+                        enhance_info = _original_enhance_info
+                        pass
+                else:
+                    pass
+            except Exception:
+                enhance_info = _original_enhance_info
+                pass
+
             self.position_tracker.open_position(
                 coin=coin,
                 inst_id=inst_id,
@@ -7190,11 +9222,14 @@ class PollingTrader:
                 scale_params=inference.get("scale_params"),
                 market_snapshot=inference.get("snapshot"),
                 contradiction_list=inference.get("contradictions"),
-                enhance_info=inference.get("enhance_result"),
+                enhance_info=enhance_info,
                 base_sl_roi=base_sl_roi,
                 base_tp_roi=base_tp_roi,
                 regime_pred=inference.get("_regime_pred"),
                 regime_multipliers=inference.get("_regime_multipliers"),
+                is_trial=is_trial,
+                score_consensus=float(inference.get("score_consensus", 0.0) or 0.0),
+                gate_base_threshold=float(inference.get("gate_base_threshold", 0.40) or 0.40),
             )
             self._log(f"[{coin}] 开仓成功 | ordId={ord_id} | " f"入场价≈{entry_price}")
 
@@ -7519,26 +9554,29 @@ class PollingTrader:
 
             updated = []
 
-            # confidence_threshold
+            # confidence_threshold（PollingTrader 层：A 项过滤门槛）
+            # 仅加载 yijing_monitor 微调值，不再被引擎层进化值覆盖
             new_conf = cfg.get("confidence_threshold")
             if new_conf is not None and new_conf != self.confidence_threshold:
                 self.confidence_threshold = new_conf
                 updated.append(f"confidence_threshold={new_conf}")
 
-            # PROP-20260810: 引擎层阈值同步（进化采纳值热重载到引擎）
+            # 引擎层阈值（独立键：engine_min_confidence_threshold）
+            # 自进化引擎写入此键，仅作用于 BCRM 信号产生门槛，不覆盖 PollingTrader 层
+            new_engine_conf = cfg.get("engine_min_confidence_threshold")
             if (
                 hasattr(self, "bcrm_engine")
                 and self.bcrm_engine is not None
-                and new_conf is not None
+                and new_engine_conf is not None
             ):
                 try:
-                    new_conf_f = float(new_conf)
+                    new_engine_conf_f = float(new_engine_conf)
                     if (
-                        0.01 <= new_conf_f <= 0.95
-                        and new_conf_f != self.bcrm_engine.min_confidence_threshold
+                        0.01 <= new_engine_conf_f <= 0.95
+                        and new_engine_conf_f != self.bcrm_engine.min_confidence_threshold
                     ):
-                        self.bcrm_engine.min_confidence_threshold = new_conf_f
-                        updated.append(f"engine.min_confidence_threshold={new_conf_f}")
+                        self.bcrm_engine.min_confidence_threshold = new_engine_conf_f
+                        updated.append(f"engine.min_confidence_threshold={new_engine_conf_f}")
                 except (TypeError, ValueError):
                     pass
 
@@ -7594,6 +9632,62 @@ class PollingTrader:
                 pass
             else:
                 self._log(f"[进化阈值/reload] 加载失败: {e}", "WARN")
+
+    def _maybe_adjust_gate_base_threshold(self, trade_snapshot: Optional[dict] = None) -> None:
+        """v4.6: 基于聚合样本（≥30 笔，非单笔）动态调节过滤层基础阈值。
+
+        规则：
+          - 最近 N≥30 笔整体胜率 < 40% → 阈值上调 +0.03（收紧过滤）
+          - 最近 N≥30 笔整体胜率 ≥ 60% → 阈值下调 -0.02（放宽过滤）
+          - 其他情况：不调整
+          - 调节步长单次最大 ±0.03，硬边界 [0.25, 0.60]
+          - 冷却期：30 分钟最多调节 1 次
+        """
+        import time as _t
+        _state = getattr(self, "_gate_threshold_state", None) or {}
+        _recent = list(_state.get("recent_pnl") or [])
+        _n_min = int(_state.get("n_min", 30))
+        _cd = int(_state.get("adjust_cooldown_s", 1800))
+        _now = _t.time()
+        if len(_recent) < _n_min:
+            return
+        if _now - float(_state.get("last_adjust_ts", 0.0) or 0.0) < _cd:
+            return
+
+        try:
+            wins = sum(1 for (pnl_pct, _sc, _dr) in _recent if pnl_pct > 0)
+            total = len(_recent)
+            win_rate = wins / max(1, total)
+            avg_pnl = sum(pnl_pct for (pnl_pct, _, _) in _recent) / max(1, total)
+            old_thr = float(self._gate_base_threshold)
+            delta = 0.0
+
+            # 聚合判定（非单笔）：
+            if win_rate < 0.40 or avg_pnl < -0.03:
+                delta = +0.03  # 胜率<40% 或 平均亏损>3% → 收紧
+            elif win_rate >= 0.60 and avg_pnl > 0.02:
+                delta = -0.02  # 胜率≥60% 且 平均盈利>2% → 放宽
+
+            if abs(delta) < 1e-9:
+                return
+
+            new_thr = max(0.25, min(0.60, old_thr + delta))
+            if abs(new_thr - old_thr) < 1e-5:
+                return
+
+            self._gate_base_threshold = float(new_thr)
+            self._gate_threshold_state["last_adjust_ts"] = _now
+            snap_coin = (trade_snapshot or {}).get("coin", "N/A")
+            self._log(
+                f"[基础阈值动态调节] 触发样本={total}/{_n_min} | 胜率={win_rate:.2%} "
+                f"平均盈亏={avg_pnl:+.3%} | 阈值 {old_thr:.3f}→{new_thr:.3f} Δ={delta:+.3f}"
+                f" | 触发平仓={snap_coin} 本次={((trade_snapshot or {}).get('pnl_pct') or 0):+.3%}",
+                "INFO",
+            )
+        except Exception as _ate:
+            self._log(
+                f"[基础阈值动态调节] 异常（忽略）：{type(_ate).__name__}", "WARN"
+            )
 
     def _adjust_confidence_threshold(self) -> float:
         """根据外部知识调整置信度阈值"""
@@ -7659,6 +9753,119 @@ class PollingTrader:
             f"交易暂停={risk_state['trading_halted']} | "
             f"今日交易={perf_stats.get('total_trades', 0)}笔"
         )
+
+        # 通用资金调控组件状态输出（非阻塞，每轮懒拉取一次 advice 并打印摘要）
+        if self._capital_ctrl is not None:
+            try:
+                _ca = self._fetch_capital_advice(force=False)
+                if _ca is not None:
+                    _alw = _ca.get("allowed", True)
+                    _press = _ca.get("margin_pressure", "LOW")
+                    _up = float(_ca.get("used_pct", 0.0) or 0.0)
+                    _avail = float(_ca.get("current_avail", 0.0) or 0.0)
+                    _capmax = float(_ca.get("max_position_usdt", 0.0) or 0.0)
+                    _teq = float(_ca.get("total_eq", 0.0) or 0.0)
+                    _rsn = _ca.get("reason", "") or "ok"
+                    self._log(
+                        f"[资金调控] 前置约束层就绪 | allowed={_alw} pressure={_press} "
+                        f"used_pct={_up:.1f}% avail={_avail:.1f}U eq={_teq:.1f}U "
+                        f"max_position_usdt={_capmax:.2f} ({_rsn})",
+                        "INFO" if _alw else "WARN",
+                    )
+                else:
+                    self._log("[资金调控] 前置约束层：advice拉取失败，降级易经自有风控", "WARN")
+            except Exception as _ce:
+                self._log(f"[资金调控] 轮询摘要异常，不影响交易: {_ce}", "WARN")
+
+        try:
+            self._run_once_five_domain_daily_update()
+        except Exception as _fde:
+            self._log(f"[战略层影子] 日级打分更新异常，不阻塞: {_fde}", "WARN")
+
+        # ═══════════════════════════════════════════════════
+        # 方案 C v3.0：组合级熔断（SW-C8）每轮 tick 一次
+        #   - G-04 终极熔断 → 24h emergency_shutdown
+        #   - G-02 黑天鹅 → 1h block_new_open + SL/TP 微调整
+        #   - 组件未初始化或异常 → self._current_fuse_action=None（视为无熔断旁路）
+        # ═══════════════════════════════════════════════════
+        self._current_fuse_action = None
+        if self._portfolio_fuses is not None:
+            try:
+                import datetime as _dt
+                # 合成 ctx（字段不足时 fail-open，PRF 内部再兜底）
+                _prf_ctx: Dict[str, Any] = {}
+                # ① positions_by_direction：从持仓 tracker 汇总
+                try:
+                    _pos_by_dir: Dict[str, int] = {"LONG": 0, "SHORT": 0}
+                    for _tp in getattr(self.position_tracker, "open_positions", {}).values():
+                        _side = getattr(_tp, "pos_side", "") or ""
+                        if _side.lower() == "long":
+                            _pos_by_dir["LONG"] += 1
+                        elif _side.lower() == "short":
+                            _pos_by_dir["SHORT"] += 1
+                    _prf_ctx["positions_by_direction"] = _pos_by_dir
+                except Exception:
+                    _prf_ctx["positions_by_direction"] = {"LONG": 0, "SHORT": 0}
+                # ② avg_float_loss_pct_15m：perf_tracker 近似（拿不到就 0.0，PRF 内部旁路 cond2）
+                try:
+                    _today_stats = self.perf_tracker.get_today_stats() or {}
+                    _avg_loss = float(_today_stats.get("avg_float_loss_pct_15m", 0.0) or 0.0)
+                    _prf_ctx["avg_float_loss_pct_15m"] = _avg_loss
+                except Exception:
+                    _prf_ctx["avg_float_loss_pct_15m"] = 0.0
+                # ③ btc_lambda：BTC 自反阀门本轮值（无则 1.0，cond3 不命中）
+                try:
+                    _btc_lambda = getattr(self, "_last_btc_lambda", 1.0) or 1.0
+                    _prf_ctx["btc_lambda"] = float(_btc_lambda)
+                except Exception:
+                    _prf_ctx["btc_lambda"] = 1.0
+                # ④ daily_equity_prev/now：权益回撤计算（prev=昨日收盘权益，now=当前权益）
+                try:
+                    _eq_now = float(getattr(self.perf_tracker, "current_equity", 0.0) or 0.0)
+                    _eq_prev = float(getattr(self.perf_tracker, "yesterday_close_equity", 0.0) or 0.0)
+                    if _eq_prev <= 0:
+                        _eq_prev = _eq_now if _eq_now > 0 else 0.0
+                    _prf_ctx["daily_equity_prev"] = _eq_prev
+                    _prf_ctx["daily_equity_now"] = _eq_now
+                except Exception:
+                    _prf_ctx["daily_equity_prev"] = 0.0
+                    _prf_ctx["daily_equity_now"] = 0.0
+
+                _act = self._portfolio_fuses.tick_and_check(_prf_ctx)
+                self._current_fuse_action = _act
+
+                # 影子日志：触发时输出（no_trigger 不打印，避免刷屏）
+                if _act.reason and _act.reason != "no_trigger" and not _act.reason.startswith("fail_open:"):
+                    try:
+                        _sd = _act.as_shadow_dict()
+                        self._log(
+                            f"[组合熔断影子] {_sd.get('reason')} | "
+                            f"block_new={_sd.get('block_new_open')} "
+                            f"SL_adj={_sd.get('sl_mult_adj'):.2f} TP_adj={_sd.get('tp_mult_adj'):.2f} "
+                            f"emergency={_sd.get('emergency_shutdown')} "
+                            f"valid_until={_sd.get('block_until')}",
+                            "WARN" if _act.block_new_open or _act.emergency_shutdown else "INFO",
+                        )
+                        if _act.emergency_shutdown:
+                            self._log(
+                                "[组合熔断] ★ G-04 终极熔断触发：单日权益回撤≥3%，"
+                                "需人工复盘并手动关断 SW-C1~SW-C8 共 24h；"
+                                "系统当前自动进入 block_new_open=True 状态",
+                                "ERROR",
+                            )
+                    except Exception:
+                        pass
+            except Exception as _prfe:
+                import datetime as _dt2
+                _hour_tag = _dt2.datetime.now().strftime("%Y-%m-%dT%H")
+                if getattr(self, "_last_prf_failopen_hour", "") != _hour_tag:
+                    self._log(
+                        f"[组合熔断] fail-open（每小时 1 次）：{type(_prfe).__name__}，"
+                        f"视为无熔断（不阻塞任何开仓）",
+                        "WARN",
+                    )
+                    self._last_prf_failopen_hour = _hour_tag
+                self._current_fuse_action = None
 
         effective_threshold = self._adjust_confidence_threshold()
 
@@ -8272,6 +10479,79 @@ def main():
         help="使用 BCRM 2.0 (辩证ML引擎)，默认启用",
     )
     parser.add_argument("--use-bcrm1", action="store_true", help="使用 BCRM 1.0 (矛盾力学引擎)")
+    parser.add_argument(
+        "--shadow-mode",
+        action="store_true",
+        default=False,
+        help="全局影子冷启动模式：所有开仓/平仓/减仓BLOCKED，仅执行推理+影子日志+监控（冷启动验证必选）",
+    )
+    # ================================================================
+    # Phase1 三开关（默认全 True → 方案 C spec 强制经过，必须经过）
+    # 使用：
+    #   python3 start_daemon.py \
+    #       --enable-cbr-cycle-log \
+    #       --enable-elder-ray-c4 \
+    #       --enable-win-prob-factor
+    # ================================================================
+    parser.add_argument(
+        "--enable-cbr-cycle-log",
+        action="store_true",
+        default=True,
+        help="Phase1/P0：启用CBR JSONL 双时点建库（entry_snapshot 开仓半写入+exit_snapshot 离场补全），默认开启（强制经过方案C）",
+    )
+    parser.add_argument(
+        "--enable-elder-ray-c4",
+        action="store_true",
+        default=True,
+        help="Phase1/P1：启用Elder-ray日线观察器（参与仓位调控=弹性闸门Score_E），默认开启（强制经过方案C）",
+    )
+    parser.add_argument(
+        "--enable-win-prob-factor",
+        action="store_true",
+        default=True,
+        help="Phase1/P3：启用盈亏因子动态权重（≥30条样本生效，<30 旁路=1.0），默认开启（强制经过方案C）",
+    )
+    # ================================================================
+    # 方案 C v3.0 方案级开关（默认全 True → 方案 C spec 强制经过，必须经过）
+    # 对应 Spec §十 10.1：SW-C3~SW-C8（C6 已复用为 --enable-win-prob-factor）
+    # 使用：
+    #   python3 start_daemon.py \
+    #       --enable-three-layer-weighter \
+    #       --enable-elastic-gate-3l \
+    #       --enable-bcrm-continuity-obs \
+    #       --enable-btc-self-reflex-valve \
+    #       --enable-portfolio-risk-fuses
+    # ================================================================
+    parser.add_argument(
+        "--enable-three-layer-weighter",
+        action="store_true",
+        default=True,
+        help="方案C v3.0 SW-C3：启用三层动态权重引擎（日级重算 w_p:w_e:w_b），默认开启（强制经过方案C）",
+    )
+    parser.add_argument(
+        "--enable-elastic-gate-3l",
+        action="store_true",
+        default=True,
+        help="方案C v3.0 SW-C4：启用三层弹性放行矩阵（P1×Elder×BCRM Score_B），默认开启（强制经过方案C）",
+    )
+    parser.add_argument(
+        "--enable-bcrm-continuity-obs",
+        action="store_true",
+        default=True,
+        help="方案C v3.0 SW-C5：启用BCRM连续信号观察器（N=5五级判定，防单次偶然信号），默认开启（强制经过方案C）",
+    )
+    parser.add_argument(
+        "--enable-btc-self-reflex-valve",
+        action="store_true",
+        default=True,
+        help="方案C v3.0 SW-C6：启用BTC自反调控闸门（仅限BTC多头惩罚λ∈[0.60,1.0]），默认开启（强制经过方案C）",
+    )
+    parser.add_argument(
+        "--enable-portfolio-risk-fuses",
+        action="store_true",
+        default=True,
+        help="方案C v3.0 SW-C8：启用组合级风险熔断（G-02黑天鹅+G-04终极3%回撤），默认开启（强制经过方案C）",
+    )
     args = parser.parse_args()
 
     coins = [c.strip().upper() for c in args.coins.split(",")]
@@ -8321,6 +10601,17 @@ def main():
         default_position_pct=args.position_pct,
         guardian=guardian,
         use_bcrm2=not args.use_bcrm1,
+        shadow_mode=args.shadow_mode,
+        # Phase1 三开关（默认全 False → G1 红线字节等价）
+        enable_cbr_cycle_log=args.enable_cbr_cycle_log,
+        enable_elder_ray_c4=args.enable_elder_ray_c4,
+        enable_win_prob_factor=args.enable_win_prob_factor,
+        # 方案 C v3.0 五开关（默认全 False → 字节等价旁路）
+        enable_three_layer_weighter=args.enable_three_layer_weighter,
+        enable_elastic_gate_3l=args.enable_elastic_gate_3l,
+        enable_bcrm_continuity_obs=args.enable_bcrm_continuity_obs,
+        enable_btc_self_reflex_valve=args.enable_btc_self_reflex_valve,
+        enable_portfolio_risk_fuses=args.enable_portfolio_risk_fuses,
     )
 
     if guardian:

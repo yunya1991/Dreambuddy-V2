@@ -399,11 +399,11 @@ def _extract_json_from_stdout(stdout: str):
 def get_yijing_state():
     try:
         # 使用 anaconda python3 绝对路径（与 data_server 进程一致），
-        # 避免系统 python3 与 anaconda 环境差异；超时从 45s 提升到 90s
-        # 留足余量（实测 yijing-status 耗时 20-25s，含 BCRM 推理+对比学习）
+        # 避免系统 python3 与 anaconda 环境差异；超时从 90s 提升到 300s
+        # 留足余量（高负载下 yijing-status 耗时可达 160s+，含 BCRM 推理+对比学习）
         result = subprocess.run(
             [sys.executable, "-m", "scripts.memory_l4.ab_bridge", "yijing-status"],
-            capture_output=True, text=True, timeout=90,
+            capture_output=True, text=True, timeout=300,
             cwd=str(BCRM_REPO),
             env={**os.environ, "NO_PROXY": "localhost,127.0.0.1",
                  "no_proxy": "localhost,127.0.0.1"},

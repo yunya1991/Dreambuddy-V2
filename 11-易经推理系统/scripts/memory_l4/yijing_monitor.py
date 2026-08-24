@@ -285,7 +285,7 @@ def run_polling_trader():
         )
         interval = os.environ.get("POLLING_INTERVAL", "300")
         confidence = os.environ.get("CONFIDENCE_THRESHOLD", "0.7955")
-        max_positions = os.environ.get("MAX_POSITIONS", "3")
+        max_positions = os.environ.get("MAX_POSITIONS", "5")
         position_pct = os.environ.get("DEFAULT_POSITION_PCT", "0.20")
         initial_equity = os.environ.get("INITIAL_EQUITY", "200.0")
 

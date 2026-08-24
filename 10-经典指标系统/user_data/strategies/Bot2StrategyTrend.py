@@ -77,25 +77,65 @@ class Bot2StrategyTrend(IStrategy):
     anti_chase_recent_pump_max = DecimalParameter(0.05, 0.15, default=0.10, decimals=2, space="buy")
     anti_chase_lookback = IntParameter(12, 48, default=12, space="buy")  # 1~4小时
 
+    # ------------------------------------------------------------------
+    # H3 FeatureHub 灰度接入点：EN_FEATUREHUB_EQUITY_CLASSIC=true → talib_aligned；
+    #   否则原始 talib.abstract / qtpylib。异常自动回退原始实现（fail-open）。
+    # 一致性证据（T31）：核心列交集 100%、Pearson 0.999962、方向一致率 100%
+    # 秒级回滚 = 设 EN_FEATUREHUB_EQUITY_CLASSIC=false
+    # ------------------------------------------------------------------
+    def _compute_talib_indicators_h3(self, dataframe: DataFrame) -> DataFrame:
+        """H3 wrapper 写 talib 指标（13 列）→ 返回合并后 dataframe。"""
+        import os
+        from typing import Callable
+        import pandas as pd
+
+        def _original_talib_block(df: DataFrame) -> DataFrame:
+            df["rsi"] = ta.RSI(df)
+            df["ema_fast"] = ta.EMA(df, timeperiod=int(self.buy_ema_fast_period.value))
+            df["ema_slow"] = ta.EMA(df, timeperiod=int(self.buy_ema_slow_period.value))
+            df["ema_trend"] = ta.EMA(df, timeperiod=int(self.buy_ema_trend_period.value))
+            bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(df), window=20, stds=2)
+            df["bb_lower"] = bollinger["lower"]
+            df["bb_mid"] = bollinger["mid"]
+            df["bb_upper"] = bollinger["upper"]
+            df["adx"] = ta.ADX(df)
+            df["atr"] = ta.ATR(df, timeperiod=14)
+            df["volume_mean"] = df["volume"].rolling(50).mean()
+            return df
+
+        if str(os.environ.get("EN_FEATUREHUB_EQUITY_CLASSIC", "")).lower() not in (
+            "1", "true", "yes", "on"):
+            return _original_talib_block(dataframe)
+
+        try:
+            from feature_hub.h3_wrapper import wrap_featurehub
+            fh_df = wrap_featurehub(
+                strategy_name="equity_classic",
+                ohlcv_df=dataframe,
+                symbol="BTC",
+                set_name="classic_talib_only",
+                original_fe_fn=lambda: _original_talib_block(dataframe.copy()),
+                strip_prefix=True,
+            )
+            if fh_df is None or fh_df.empty:
+                return _original_talib_block(dataframe)
+            # FH 指标列 → 写入原 dataframe 对应列（保持原 index 和行顺序）
+            for col in fh_df.columns:
+                if col in dataframe.columns:
+                    dataframe[col] = fh_df[col].reindex(dataframe.index)
+                else:
+                    dataframe = dataframe.join(fh_df[[col]])
+            return dataframe
+        except Exception:  # noqa: BLE001
+            # fail-open：任何异常都回退到原始 talib
+            return _original_talib_block(dataframe)
+
     def informative_pairs(self):
         return [("BTC/USDT", "4h")]
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # Main 5m indicators
-        dataframe["rsi"] = ta.RSI(dataframe)
-
-        dataframe["ema_fast"] = ta.EMA(dataframe, timeperiod=self.buy_ema_fast_period.value)
-        dataframe["ema_slow"] = ta.EMA(dataframe, timeperiod=self.buy_ema_slow_period.value)
-        dataframe["ema_trend"] = ta.EMA(dataframe, timeperiod=self.buy_ema_trend_period.value)
-
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
-        dataframe["bb_lower"] = bollinger["lower"]
-        dataframe["bb_mid"] = bollinger["mid"]
-        dataframe["bb_upper"] = bollinger["upper"]
-
-        dataframe["adx"] = ta.ADX(dataframe)
-        dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
-        dataframe["volume_mean"] = dataframe["volume"].rolling(50).mean()
+        # Main 5m indicators（H3 灰度：EN_FEATUREHUB_EQUITY_CLASSIC=true → FH talib_aligned）
+        dataframe = self._compute_talib_indicators_h3(dataframe)
 
         # 修复：BTC 4h volatility regime
         try:

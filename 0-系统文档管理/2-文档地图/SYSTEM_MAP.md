@@ -1,8 +1,9 @@
 # 全系统文档地图 — SYSTEM_MAP
 
-> **版本**: v2.0 | **更新日期**: 2026-07-31
+> **版本**: v2.1 | **更新日期**: 2026-08-24
 > **定位**: 按系统组织的全项目文档导航地图（对齐 SSoT v3.0）
 > **关联**: [INDEX.md](../INDEX.md) · [TOPIC_MAP.md](./TOPIC_MAP.md) · [ARCHITECTURE_MAP.md](./ARCHITECTURE_MAP.md)
+> **11号子系统七层交易决策栈（v4.5）**: L0 五计庙算→L1 前置层→L2 核心层→L3 后置校准层→L4 过滤层→L5 策略层→L6 持仓与离场层（方案 C v3.0 全量上线，8 开关默认 True）
 
 ---
 
@@ -134,16 +135,17 @@ DreamBuddy-V2/
 
 | 属性 | 值 |
 |------|-----|
-| 定位 | BCRM 2.0 + 易经推理 + 辩证 ML |
+| 定位 | BCRM 2.0 + 易经推理 + 辩证 ML · **七层交易决策栈（v4.5）**：五计庙算战略→前置层→核心层→后置校准→过滤层→策略层→持仓管理与离场 |
 | 主入口 | [README.md](../../11-易经推理系统/README.md) |
-| 核心模块 | polling_trader.py、yijing_exit_system.py、bcrm2_adapter.py、bcrm2/exit_manager.py |
+| 核心模块 | polling_trader.py（七层决策链）、yijing_exit_system.py、bcrm2_adapter.py、bcrm2/exit_manager.py、方案 C 8 子系统（CBR/Elder/3LW/EG3L/ContinuityObs/BTCValve/WinProb/PortfolioFuses） |
 | 文档评级 | A |
 
 **文档清单**：
 - [docs/ENGINEERING_INDEX.md](../../11-易经推理系统/docs/ENGINEERING_INDEX.md) v2.7
-- [docs/TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) v4.4
+- [docs/TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) **v4.5**（**新增 §2.2b 七层交易决策栈 + P1 升级版分层定位修正**）
 - [docs/API_SPEC.md](../../11-易经推理系统/docs/API_SPEC.md) v2.9
 - [docs/CHANGELOG.md](../../11-易经推理系统/docs/CHANGELOG.md) v2.9
+- 关联设计 Spec：[方案 C v3.0](../../docs/superpowers/specs/2026-08-23-cbr-ema-winprob-enhancement-spec.md)（已全量上线，8 开关默认 True）
 
 ### 12-三屏趋势系统
 

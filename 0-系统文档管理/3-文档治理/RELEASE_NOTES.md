@@ -1,8 +1,72 @@
 # 文档体系版本日志 — RELEASE_NOTES
 
-> **版本**: v1.3 | **更新日期**: 2026-08-02
+> **版本**: v1.5 | **更新日期**: 2026-08-24
 > **定位**: 记录 0-系统文档管理 体系本身的版本变更
 > **关联**: [INDEX.md](../INDEX.md) · [DOC_DEBT_INDEX.md](./DOC_DEBT_INDEX.md)
+
+---
+
+## [v1.5] - 2026-08-24
+
+### 修改
+
+- **变更内容**: 11-易经推理系统 **v4.6 过滤层统一基础阈值门控** + **v4.6.1 L3/L4 仓位归属语义重构** 架构文档同步
+- **影响范围**: 11-易经推理系统 技术文档 · 0-系统文档管理/2-文档地图
+- **验证方式**: 代码锚点对齐 polling_trader.py L7936-L8038（基础阈值判定）+ L8224-L8292（L3/L4 仓位流向分流）+ L9170-L9224（动态阈值调节）+ trading_utils.py L57-63（TradeRecord 新增字段）
+- **触发原因**: ①v4.5 中「P1=BLOCK→is_trial=True」单因子绑定语义与 Spec F1「永不 BLOCK」冲突；②旧实现中 is_trial×0.4 简单乘法同时叠加 L3 弹簧/形态分档，导致试错仓仓位基线非保守、非预期
+
+#### 11-易经推理系统 TECHNICAL_DESIGN v4.6 → v4.6.1 架构升级
+- [TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) v4.5→v4.6→v4.6.1
+- **v4.6 过滤层统一基础阈值门控（§2.2b.3 新增）**：
+  - 核心修正：删除「P1=BLOCK → is_trial=True」单因子绑定，改为 P1/Elder/BCRM 三层均产出 Score_P/Score_E/Score_B → ElasticGate3L 三层加权（ThreeLayerWeighter 动态权重 w_p:w_e:w_b）→ `score_consensus` 与 `_gate_base_threshold（默认0.40，边界[0.25,0.60]）` 统一比较
+  - L4 唯一硬拦截：`score_consensus < base_threshold`；≥门槛但 confidence<eff→统一轻仓试错 is_trial=True（P1=WEAK/STANDARD/BLOCK 全走同一通道）
+  - 动态阈值调节（30-150 笔聚合样本、非单笔）：胜率<40%或亏-3%→+0.03；胜≥60%且盈>2%→-0.02；冷却 30min
+  - 方案 C 子系统生效审计增强：PhaseC 仓位调控日志输出 S_P/S_E/S_B/cons/w_p/w_e/w_b/w_src/src 明细，可直接判断 ThreeLayerWeighter（fail_open→需≥30 BCRM盈亏样本）、WinProb（sample_count≥20 才≠1.00）、做空收紧（src=short_tightened）是否真实生效
+  - TradeRecord 新增 `score_consensus` / `gate_base_threshold` 两字段用于审计和动态调节
+- **v4.6.1 L3/L4 仓位归属语义重构（§2.2b.4 新增）**：
+  - **L3 后置校准层不介入试错仓**：`if not is_trial:` 才执行弹簧做多做空分档 + v4 风险评分仓位调整 + 形态乘数 position_mult；`is_trial=True` 时日志输出「轻仓试错(过滤层接管仓位) | 跳过L3弹簧/形态/v4分档 → 交由 ElasticGate3L/F1 弹性闸门控制最终仓位」
+  - **L4 过滤层接管试错仓仓位**：删除旧实现 `is_trial: position_usdt ×= 0.4` 简单乘法；直接由 ElasticGate3L 弹性矩阵 + F1 下界 0.10 控制（BLOCK=0.10 / WEAK=0.30 / STANDARD=0.50 等），完全等价于 Spec F1 永不 BLOCK 语义
+  - 七层职责速查表重写：L3 标注「正常开仓=调仓位大小；轻仓试错=全跳过」；L4 标注「统一共识评分 + 唯一硬门槛 + 接管试错仓仓位」
+  - 分层关键边界 8 条明确：P1/Elder/BCRM 取消硬拦截 return；G-04/最大持仓/can_trade 熔断归 L5；做空三重收紧严格生效；方案 C 8 开关默认全 True；动态阈值基于聚合样本
+- 七层架构 ASCII 图更新：L4 改名「弹性放行层」；三分支判定（①<0.40不开仓 ②≥+conf达标→正常 ③≥+conf不够→试错跳过L3）
+- §16 变更日志顶部新增 v4.6 / v4.6.1 两条目
+
+#### 0-系统文档管理 地图同步
+- [ARCHITECTURE_MAP.md](../2-文档地图/ARCHITECTURE_MAP.md) v2.1→v2.2：
+  - §1.2 标题更新为「七层交易决策栈（v4.6.1 对齐 Spec v3.0 永不BLOCK）」；关联 TECHNICAL_DESIGN 版本 v4.6.1
+  - ASCII 架构图升级：L4 改名「弹性放行层」；标注三分支判定和 L3/L4 仓位流向差异；L5 明确 G-04/最大持仓/can_trade 熔断；L6 增加 base_threshold 盈亏样本记录
+  - 分层速查表 L3/L4 动作类型和关键开关升级：L3 标注「正常开仓=调仓位大小；轻仓试错=全跳过」；L4 标注「统一共识评分 + 唯一硬门槛 + 接管试错仓仓位」；唯一硬拦截=`score_consensus < _gate_base_threshold(默认0.40，边界[0.25,0.60])`
+  - 实战修正升级为「核心语义修正（v4.6 → v4.6.1 仓位归属严格对齐）」7 条要点（L3 不介入试错仓 / L4 接管试错仓位 / P1ElderBCRM 取消硬拦截 / 删除 is_trial×0.4 / 做空三重收紧 / 方案 C 8开关全启 / 动态阈值聚合）
+
+---
+
+## [v1.4] - 2026-08-24
+
+### 新增
+
+- **变更内容**: 11-易经推理系统 **七层交易决策栈（v4.5）** 架构梳理与文档同步 + 方案 C 全量上线记录
+- **影响范围**: 11-易经推理系统 技术文档 · 0-系统文档管理/2-文档地图 · 3-文档治理
+- **验证方式**: 代码锚点对齐 polling_trader.py _execute_trade()（L7652-L7802 趋势过滤层）+ _open_position()（L7974-L8003 策略层）+ 方案 C 8 开关默认 True（L307-L320 init 参数）
+- **触发原因**: 2026-08-23~24 COIN（做空方向错误被 OKX SL 触发）/ SOL（29H 超时平仓）/ HYPE（做空阈值>1.0硬禁）实战暴露的分层语义模糊 → 明确「过滤层拦截 vs 校准层调仓位」边界
+
+#### 11-易经推理系统 TECHNICAL_DESIGN v4.5 架构升级
+- [TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) v4.4→v4.5
+- 新增 **§2.2b 七层交易决策栈（纵向交易决策链）**：
+  - L0 五计庙算（战略层）：enable_five_domain + 7 子开关；道/天/地/将/法 五维加权；三档决策（≥75进攻 / 60-74低仓 / <60防守）+ 仓位四档映射 + 维度否决规则
+  - L1 前置层（市场形态识别）：市场形态演化引擎 + MorphCyclePredictor + α blend → 前瞻参数
+  - L2 核心层（BCRM 2.0信号）：辩证ML + 八卦力学 + QMM → direction/confidence/hexagram
+  - L3 后置校准层（调仓位不拦截）：弹簧力场 5 态 + 五维权重 w_p:w_e:w_b + WinProb + **做空三重收紧**（Score_B<0.70→clip0.55 / Elder≤NEUTRAL降级 / w_b×0.70）
+  - L4 过滤层（P1升级版，不通过直接拦截）：三道并行拦截（原均线过滤 + Elder-ray日线 + BCRM N=5连续），SHORT 要求更严（≥ALIGN_BASIC）；后续 CBR/ElasticGate3L/BTC自反/WinProb/组合熔断 G-02/G-04 全链路
+  - L5 策略层：enable_strategy_layer + SL/TP 写入 + 下单接口调用 + **SL/TP 价格空间下限保护**（ATR 极低时 SL≥1.5%/试错≥2.0%）
+  - L6 持仓管理与离场层：ExitManager 策略链 + 卦象主离场（已删除 Classic 兜底备用层）+ **轻仓试错评估周期**（持仓≥30min 趋势评估：确认→加仓 / 不明→维持 / 逆转→平仓）
+- §2.2 四层功能架构补充 v4.5 视角说明（横向系统视角 vs 纵向交易决策链互补）
+- **新增 §2.2b.1 SL/TP 价格空间下限保护**（XAG 案例修复）：ATR 极低时 SL 最低 1.5%（试错仓 2.0%）、TP 最低 3.0%（试错仓 4.0%）
+- **新增 §2.2b.2 轻仓试错评估周期**：TradeRecord 新增 is_trial/trial_eval_done/trial_open_ts 三字段；持仓≥30min 后触发趋势评估（仅一次）
+- §16 变更日志顶部新增 v4.5 条目（方案 C 8 开关全启 + 删除 classic 备用离场层 + VOLATILE_DROP 阈值优化 + confidence 阈值分层 + SL 下限保护 + 试错评估周期 + COIN/SOL/XAG 案例教训）
+
+#### 0-系统文档管理 地图同步
+- [ARCHITECTURE_MAP.md](../2-文档地图/ARCHITECTURE_MAP.md) v2.0→v2.1：新增 §1.2「11-易经推理系统 · 七层交易决策栈」架构总览图 + 分层速查表 + 实战修正要点（过滤层 L4 拦截 vs 校准层 L3 调仓位）；子系统矩阵 TECHNICAL_DESIGN 版本对齐 v4.5
+- [SYSTEM_MAP.md](../2-文档地图/SYSTEM_MAP.md) v2.0→v2.1：11-易经推理系统定位更新为含七层交易决策栈 + 方案 C 8 子系统；文档版本对齐 v4.5；关联方案 C Spec v3.0 链接
 
 ---
 
@@ -154,5 +218,5 @@
 
 ---
 
-**文档版本**: v1.2
-**最后更新**: 2026-07-31
+**文档版本**: v1.5（同步 11-易经推理系统 v4.6 基础阈值门控与 v4.6.1 L3/L4 仓位归属重构）
+**最后更新**: 2026-08-24
