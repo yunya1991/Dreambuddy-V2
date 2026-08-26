@@ -20,9 +20,14 @@ def stable_id(rec: DataRecord) -> str:
         )
         return url or rec.sub_category
     if rec.category == "chain":
-        return rec.metrics.get("tx_hash") or rec.metrics.get(
-            "symbol", rec.sub_category
-        )
+        tx = rec.metrics.get("tx_hash")
+        if tx:
+            return tx  # 链上交易按 tx_hash 唯一去重
+        # 行情/TVL/Gas 类（ccxt/defillama/etherscan）：持续采集场景下 symbol 固定，
+        # 加入时间桶（分钟级）让不同次采集保留新行，避免旧值被永久锁定。
+        sym = rec.metrics.get("symbol", rec.sub_category)
+        ts_bucket = (rec.timestamp or "")[:16]  # YYYY-MM-DDTHH:MM
+        return f"{sym}|{ts_bucket}"
     # macro / finance
     return f"{rec.sub_category}:{rec.metrics.get('date', '')}"
 

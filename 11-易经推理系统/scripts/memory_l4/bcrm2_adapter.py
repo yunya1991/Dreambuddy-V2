@@ -71,6 +71,65 @@ class BCRM2Adapter:
         self._df_cache = None
         self._last_train_time = 0
         self._train_interval = 86400  # 24小时重训一次
+
+    # ============================================================
+    # H3 FeatureHub 灰度接入：EN_FEATUREHUB_YIJING_BTC=true → bagua+cycle 走 FH
+    #   一致性证据（T32）：列交集≥95%、Pearson≥0.97、gua_map 等价、关断零回归
+    #   秒级回滚 = 设 EN_FEATUREHUB_YIJING_BTC=false
+    # ============================================================
+    def _compute_features_h3(
+        self, df: pd.DataFrame, need_gua_map: bool = True,
+    ):
+        """H3 wrapper 替代三处 FeatureRegistry.compute_all(训练/单条推理/多周期推理)。
+
+        默认最小集合 bagua+cycle（易经 BTC 训练主用）；若调用者启用 macro/跨资产等
+        其他模块，灰度期间会走 original_fe_fn（整链 FR）保持 fail-open。
+        """
+        import os
+
+        def _original_branch():
+            from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+            ref_df = self._fetch_ref_df(df)
+            macro_df = self._fetch_macro_df(df)
+            return FeatureRegistry.compute_all(
+                df=df, ref_df=ref_df, macro_df=macro_df,
+                symbol=self.symbol, config=self.macro_config,
+            )
+
+        if str(os.environ.get("EN_FEATUREHUB_YIJING_BTC", "")).lower() not in (
+            "1", "true", "yes", "on"):
+            return _original_branch()
+
+        try:
+            from feature_hub.h3_wrapper import wrap_featurehub
+            # 目前 FH 只支持 bagua+cycle（yijing_bagua_cycle 集合），其他模块仍走 FR；
+            # 如调用方通过 macro_config 启用了 wdh/macro/cross/merrill/breadth 等，
+            # 直接 fail-open 到原分支，防止启用集合差异造成特征缺失。
+            extra_keys = {
+                "wdh_weekly_only", "cycle_halving", "cycle_ath",
+                "cycle_inventory", "cycle_long_term", "enable_cycle_features",
+            }
+            macro_used = {
+                k for k in (self.macro_config or {}) if k.startswith("macro_")
+            }
+            nondefault_cfg = (set(self.macro_config or {}) - extra_keys) | macro_used
+            if nondefault_cfg:
+                return _original_branch()
+
+            features, gua = wrap_featurehub(
+                strategy_name="yijing_btc",
+                ohlcv_df=df,
+                symbol=self.symbol,
+                set_name="yijing_bagua_cycle",
+                original_fe_fn=_original_branch,
+                strip_prefix=True,
+                return_tuple=True,
+            )
+            if need_gua_map:
+                return features, gua
+            return features, {}
+        except Exception:  # noqa: BLE001
+            return _original_branch()
     
     def _get_cache_key(self, df: pd.DataFrame) -> str:
         """生成数据缓存键（含 macro_config 哈希，配置变更自动重训）"""
@@ -256,13 +315,8 @@ class BCRM2Adapter:
             # 获取宏观数据（P1）
             macro_df = self._fetch_macro_df(df)
 
-            features, feature_names_by_gua = FeatureRegistry.compute_all(
-                df=df,
-                ref_df=ref_df,
-                macro_df=macro_df,
-                symbol=self.symbol,
-                config=self.macro_config,
-                verbose=True,
+            features, feature_names_by_gua = self._compute_features_h3(
+                df, need_gua_map=True,
             )
             feature_names = list(features.columns)
 
@@ -510,12 +564,8 @@ class BCRM2Adapter:
             # 计算特征
             ref_df = self._fetch_ref_df(df)
             macro_df = self._fetch_macro_df(df)
-            features, feature_names_by_gua = FeatureRegistry.compute_all(
-                df=df,
-                ref_df=ref_df,
-                macro_df=macro_df,
-                symbol=self.symbol,
-                config=self.macro_config,
+            features, feature_names_by_gua = self._compute_features_h3(
+                df, need_gua_map=True,
             )
             
             # 确保特征顺序一致
@@ -820,10 +870,7 @@ class BCRM2Adapter:
 
             ref_df = self._fetch_ref_df(df)
             macro_df = self._fetch_macro_df(df)
-            features, _ = FeatureRegistry.compute_all(
-                df=df, ref_df=ref_df, macro_df=macro_df,
-                symbol=self.symbol, config=self.macro_config,
-            )
+            features, _ = self._compute_features_h3(df, need_gua_map=False)
 
             for fn in self.feature_names:
                 if fn not in features.columns:

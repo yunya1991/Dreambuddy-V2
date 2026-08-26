@@ -39,3 +39,10 @@ feature_sets:
       - classic_indicators
       - five_domain_fc
       - elder_ray
+
+  # 易经八卦 + 周期集（bagua + cycle 最小组合，返回 (features, feature_names_by_gua) 元组；
+  #   feature_names_by_gua 含 8 卦 + cycle 4 子组（halving/ath/inventory/long_term），
+  #   供 11-易经 BTC BCRM2 DialecticalMLEngine 的 L2 train_l2/predict 消费）
+  yijing_bagua_cycle:
+    modules:
+      - yijing_cycle

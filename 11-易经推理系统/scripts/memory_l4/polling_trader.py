@@ -1689,11 +1689,30 @@ class PollingTrader:
     def _try_fetch_macro_proxies(self) -> dict:
         """P1+P2: 获取道/天维度宏观代理指标（VIX/稳定币市值/利率/政策情绪/美林时钟）。
 
-        优先尝试 FiveDomainFetcher（需 data_center），失败则多路 fallback。
+        优先从数据中心 SQLite 读（持续采集调度器已落库），命中则直接返回，避免每次
+        日级重算都实时打外部 API；SQLite 缺失/异常时回退 FiveDomainFetcher 实时采集。
         所有异常均 fail-open 返回空 dict，调用方用 .get(key, default) 兜底。
         """
         result: dict = {}
-        # ── 尝试 1: FiveDomainFetcher（完整宏观数据）──
+        # ── 尝试 0: 从数据中心 SQLite 读已落库的五维数据（持续采集落库）──
+        try:
+            from scripts.memory_l4.five_domain_sqlite_reader import read_macro_from_sqlite
+            _sqlite_data = read_macro_from_sqlite()
+            # 关键宏观数据存在（利率/VIX）则视为 SQLite 命中
+            if _sqlite_data.get("fedfunds_rate") is not None or _sqlite_data.get("vix_close") is not None:
+                result = _sqlite_data
+                # 派生：稳定币市值一阶差分（与原末尾逻辑一致，SQLite 命中时在此结算）
+                _sc_now = result.get("stablecoin_mcap_bln")
+                if _sc_now is not None and isinstance(_sc_now, (int, float)) and _sc_now > 0:
+                    _sc_prev = getattr(self, "_last_stablecoin_mcap", None)
+                    if _sc_prev is not None and isinstance(_sc_prev, (int, float)) and _sc_prev > 0:
+                        result["stablecoin_change_rate"] = float((_sc_now - _sc_prev) / _sc_prev)
+                    self._last_stablecoin_mcap = float(_sc_now)
+                self._log("[战略层] 宏观代理数据来源: SQLite（数据中心持续采集落库）", "INFO")
+                return result
+        except Exception as _se:
+            self._log(f"[战略层] SQLite 读取异常，回退实时采集: {type(_se).__name__}: {_se}", "WARN")
+        # ── 尝试 1: FiveDomainFetcher（完整宏观数据，实时采集兜底）──
         try:
             from scripts.memory_l4.fivedomain_fetcher import FiveDomainFetcher
             fetcher = FiveDomainFetcher()
@@ -2368,11 +2387,72 @@ class PollingTrader:
             alpha_blend = getattr(self, "_alpha_blend", 0.0)
             fma_shadow_allowed = inference.get("fma_shadow_allowed")
             fma_shadow_eff_thr = inference.get("fma_shadow_eff_threshold")
+
+            # ── T5 战略层影子字段（fd_*）从 FiveDomainState 提取 ──
+            fd_crypto_war_state = None
+            fd_crypto_total_score = None
+            fd_crypto_cap_mode = None
+            fd_crypto_mult_mode = None
+            fd_us_stock_war_state = None
+            fd_us_stock_total_score = None
+            _fds = self._five_domain_state_cache
+            if _fds is not None:
+                _ws = getattr(_fds, "war_state", {}) or {}
+                fd_crypto_war_state = _ws.get("crypto_usdt")
+                fd_us_stock_war_state = _ws.get("us_stock")
+                _cap = getattr(_fds, "aggregate_position_cap_pct", {}) or {}
+                fd_crypto_cap_mode = _cap.get("crypto_usdt")
+                _mult = getattr(_fds, "cross_asset_multiplier", {}) or {}
+                fd_crypto_mult_mode = _mult.get("crypto_usdt")
+                _scores = getattr(_fds, "five_scores", {}) or {}
+                _crypto_scores = _scores.get("crypto_usdt", {})
+                if _crypto_scores:
+                    fd_crypto_total_score = float(sum(_crypto_scores.values()))
+                _us_scores = _scores.get("us_stock", {})
+                if _us_scores:
+                    fd_us_stock_total_score = float(sum(_us_scores.values()))
+
+            # ── T5 策略层影子字段（sal_*）从 enhance_result.strategy_selection 提取 ──
+            sal_type = None
+            sal_regime = None
+            sal_calib_median = None
+            sal_calib_min = None
+            sal_calib_max = None
+            sal_gate = None
+            _er = inference.get("enhance_result") or {}
+            _sel = _er.get("strategy_selection") if isinstance(_er, dict) else None
+            if isinstance(_sel, dict):
+                sal_type = _sel.get("strategy_type")
+                sal_regime = _sel.get("regime") or inference.get("_regime_pred")
+                _cb = _sel.get("calibration_biases") or {}
+                _cb_vals = [float(v) for v in _cb.values() if isinstance(v, (int, float))]
+                if _cb_vals:
+                    sal_calib_median = sorted(_cb_vals)[len(_cb_vals) // 2]
+                    sal_calib_min = min(_cb_vals)
+                    sal_calib_max = max(_cb_vals)
+                _gate_val = _cb.get("hard_relax_gate")
+                if isinstance(_gate_val, bool):
+                    sal_gate = 1 if _gate_val else 0
+                elif isinstance(_gate_val, (int, float)):
+                    sal_gate = int(_gate_val)
+
             self._shadow_logger.record_polling(
                 coin, inference, actual_params,
                 enable_inject=enable_inject, alpha_blend=alpha_blend,
                 fma_on_allowed=fma_shadow_allowed,
                 fma_on_eff_threshold=fma_shadow_eff_thr,
+                fd_crypto_war_state=fd_crypto_war_state,
+                fd_crypto_total_score=fd_crypto_total_score,
+                fd_crypto_cap_mode=fd_crypto_cap_mode,
+                fd_crypto_mult_mode=fd_crypto_mult_mode,
+                fd_us_stock_war_state=fd_us_stock_war_state,
+                fd_us_stock_total_score=fd_us_stock_total_score,
+                sal_type=sal_type,
+                sal_regime=sal_regime,
+                sal_calib_median=sal_calib_median,
+                sal_calib_min=sal_calib_min,
+                sal_calib_max=sal_calib_max,
+                sal_gate=sal_gate,
             )
         except Exception as e:
             self._log(f"[{coin}] Shadow 记录失败（已忽略）: {e}", "DEBUG")
@@ -9186,6 +9266,8 @@ class PollingTrader:
                         if enhance_info is None:
                             enhance_info = {}
                         enhance_info["strategy_selection"] = selection_snapshot
+                        # 回写 inference，确保下游 _record_shadow_log 能取到 sal_* 字段
+                        inference["enhance_result"] = enhance_info
 
                         _cb_values = []
                         for _v in (selection.calibration_biases or {}).values():

@@ -25,6 +25,7 @@ _MODULE_IMPORTS = {
     "five_domain_fc": "feature_hub.modules.five_domain_fc",
     "martin_features": "feature_hub.modules.martin_features",
     "fundamental_ratios": "feature_hub.modules.fundamental_ratios",
+    "yijing_cycle": "feature_hub.modules.yijing_cycle",
 }
 
 
@@ -82,4 +83,5 @@ def _default_sets() -> Dict[str, List[str]]:
         "classic_talib_only": ["talib_aligned"],
         "equity_classic_trend": ["triple_screen_trend", "classic_indicators", "five_domain_fc"],
         "commodity_safe_haven": ["classic_indicators", "five_domain_fc", "elder_ray"],
+        "yijing_bagua_cycle": ["yijing_cycle"],
     }

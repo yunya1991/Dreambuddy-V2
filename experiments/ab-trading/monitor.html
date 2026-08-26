@@ -189,6 +189,8 @@
   <div class="tab" onclick="switchTab('dreamos', event)">⚙️ Dream OS</div>
   <div class="tab" onclick="switchTab('signals', event)">📡 代币信号</div>
   <div class="tab" onclick="switchTab('global', event)">🌐 全局统计</div>
+  <div class="tab" onclick="switchTab('datacenter', event)">📊 数据中心</div>
+  <div class="tab" onclick="switchTab('wujimiaosuan', event)">🏛️ 五计庙算</div>
 </div>
 
 <div class="main">
@@ -494,7 +496,7 @@
 
       <!-- Freqtrade 策略信号 -->
       <div class="card full-width">
-        <div class="card-title"><div class="dot" style="background:var(--orange)"></div>Freqtrade 策略信号（4h + 1h）</div>
+        <div class="card-title"><div class="dot" style="background:var(--yellow)"></div>Freqtrade 策略信号（4h + 1h）</div>
         <div id="trend-freqtrade-detail" style="padding:4px 0">
           <div style="text-align:center;color:var(--muted);padding:16px">等待数据...</div>
         </div>
@@ -1355,6 +1357,104 @@
     </div>
   </div>
 
+  <!-- 📊 数据中心 tab -->
+  <div id="tab-datacenter" class="tab-content">
+    <div class="tab-grid">
+
+      <!-- 源健康 -->
+      <div class="card full-width">
+        <div class="card-title">
+          <div class="dot" style="background:var(--green)"></div>📡 数据源健康
+          <button onclick="loadDataCenter()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">🔄 刷新</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="log-table">
+            <thead><tr><th>数据源</th><th>最后状态</th><th>最后采集时间</th><th>记录数</th></tr></thead>
+            <tbody id="dc-health-tbody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">点击刷新加载</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 采集趋势 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--blue)"></div>📈 采集调用统计</div>
+        <div style="overflow-x:auto">
+          <table class="log-table">
+            <thead><tr><th>源/类别</th><th>总调用</th><th>成功</th><th>失败</th><th>记录数</th><th>平均耗时(ms)</th></tr></thead>
+            <tbody id="dc-summary-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">点击刷新加载</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 最新样本 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--purple)"></div>🔬 最新采集样本</div>
+        <div style="overflow-x:auto">
+          <table class="log-table">
+            <thead><tr><th>时间</th><th>源</th><th>类别</th><th>子类</th><th>关键指标</th></tr></thead>
+            <tbody id="dc-records-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">点击刷新加载</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 质量告警 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--red)"></div>⚠️ 质量问题 & 告警</div>
+        <div style="overflow-x:auto">
+          <table class="log-table">
+            <thead><tr><th>时间</th><th>源</th><th>问题类型</th><th>详情</th></tr></thead>
+            <tbody id="dc-quality-tbody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">无质量问题</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 五计庙算 Tab ── -->
+  <div id="tab-wujimiaosuan" class="tab-content">
+    <div class="tab-grid">
+
+      <!-- 战略层状态卡片 -->
+      <div class="card full-width">
+        <div class="card-title">
+          <div class="dot" style="background:var(--blue)"></div>🏛️ 战略层状态（五计庙算）
+          <button onclick="loadWujiMiaosuan()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">🔄 刷新</button>
+        </div>
+        <div id="wm-strategic" style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="text-align:center;color:var(--muted);padding:20px;width:100%">点击刷新加载</div>
+        </div>
+      </div>
+
+      <!-- AB 闸门状态 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--green)"></div>⚖️ AB 闸门 / 影子统计</div>
+        <div id="wm-abgate" style="display:flex;gap:12px;flex-wrap:wrap">
+          <div style="text-align:center;color:var(--muted);padding:20px;width:100%">点击刷新加载</div>
+        </div>
+      </div>
+
+      <!-- 影子记录表格 -->
+      <div class="card full-width">
+        <div class="card-title"><div class="dot" style="background:var(--purple)"></div>📋 最近影子记录</div>
+        <div style="overflow-x:auto">
+          <table class="log-table">
+            <thead><tr>
+              <th>时间</th><th>币种</th>
+              <th>战略层 war</th><th>总分</th><th>cap</th><th>mult</th>
+              <th>策略层 type</th><th>regime</th><th>calib</th><th>gate</th>
+              <th>实际方向</th><th>置信度</th><th>注入</th>
+            </tr></thead>
+            <tbody id="wm-records-tbody">
+              <tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">点击刷新加载</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -1725,6 +1825,143 @@ let signalsDataLoaded = false;
 let trendDataLoaded = false;
 let currentTrendSymbol = 'BTC';
 
+// ── 数据中心监控（源健康/采集趋势/最新样本/质量告警）─────────────────
+// ── 五计庙算 Tab：战略层/策略层影子数据 ──
+function loadWujiMiaosuan() {
+  const apiBase = location.hostname === 'localhost' ? `http://127.0.0.1:${location.port}` : '';
+  fetch(`${apiBase}/api/shadow/strategy-layer?limit=50`).then(r=>r.json()).then(d=>{
+    if(!d.ok){
+      document.getElementById('wm-strategic').innerHTML=`<div style="color:var(--red);padding:20px">${d.error}</div>`;
+      return;
+    }
+    // 战略层状态卡片
+    const ls = d.latest_strategic || {};
+    const classes = [
+      {key:'crypto_usdt', label:'加密货币', icon:'₿'},
+      {key:'us_stock', label:'美股', icon:'📈'},
+      {key:'precious_metal', label:'贵金属', icon:'🥇'}
+    ];
+    let stratHtml = '';
+    classes.forEach(c => {
+      const s = ls[c.key] || {};
+      const war = s.war_state || '--';
+      const score = s.total_score != null ? s.total_score : '--';
+      const cap = s.cap_mode != null ? s.cap_mode : '--';
+      const mult = s.mult_mode != null ? s.mult_mode : '--';
+      const wc = war==='ALLOW'?'var(--green)':war==='COOLDOWN'?'var(--yellow)':war==='FREEZE'?'var(--red)':'var(--muted)';
+      stratHtml += `<div style="flex:1;min-width:200px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">${c.icon} ${c.label}</div>
+        <div style="font-size:24px;font-weight:700;color:${wc};margin-bottom:8px">${war}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px">
+          <div>总分: <b>${score}</b></div><div>cap: <b>${cap}</b></div><div>mult: <b>${mult}</b></div>
+        </div></div>`;
+    });
+    document.getElementById('wm-strategic').innerHTML = stratHtml || '<div style="color:var(--muted);padding:20px">无战略层数据</div>';
+    // AB 闸门状态
+    const sm = d.summary || {};
+    const ir = parseFloat((sm.inject_ratio||'0%').replace('%',''));
+    const gc = ir > 90 ? 'var(--green)' : 'var(--yellow)';
+    document.getElementById('wm-abgate').innerHTML = `
+      <div style="flex:1;min-width:140px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px">
+        <div style="font-size:11px;color:var(--muted)">总记录</div><div style="font-size:20px;font-weight:700">${sm.total_records||0}</div></div>
+      <div style="flex:1;min-width:140px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px">
+        <div style="font-size:11px;color:var(--muted)">战略层填充</div><div style="font-size:20px;font-weight:700;color:var(--blue)">${sm.fd_fill_rate||'0%'}</div>
+        <div style="font-size:10px;color:var(--muted)">${sm.fd_filled||0} 条</div></div>
+      <div style="flex:1;min-width:140px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px">
+        <div style="font-size:11px;color:var(--muted)">策略层填充</div><div style="font-size:20px;font-weight:700;color:var(--purple)">${sm.sal_fill_rate||'0%'}</div>
+        <div style="font-size:10px;color:var(--muted)">${sm.sal_filled||0} 条</div></div>
+      <div style="flex:1;min-width:140px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px">
+        <div style="font-size:11px;color:var(--muted)">AI 注入比</div><div style="font-size:20px;font-weight:700;color:${gc}">${sm.inject_ratio||'0%'}</div>
+        <div style="font-size:10px;color:var(--muted)">${sm.inject_true||0}T / ${sm.inject_false||0}F</div></div>`;
+    // 影子记录表格
+    const records = d.records || [];
+    let recHtml = '';
+    if(!records.length){
+      recHtml = '<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">无记录</td></tr>';
+    } else {
+      records.forEach(r => {
+        const dc = r.actual_direction==='UP'?'var(--green)':r.actual_direction==='DOWN'?'var(--red)':'var(--muted)';
+        const wc = r.fd_war_state==='ALLOW'?'var(--green)':r.fd_war_state==='COOLDOWN'?'var(--yellow)':r.fd_war_state==='FREEZE'?'var(--red)':'var(--muted)';
+        recHtml += `<tr>
+          <td style="font-size:11px">${r.timestamp?r.timestamp.substring(11,19):'--'}</td>
+          <td><b>${r.symbol||'--'}</b></td>
+          <td style="color:${wc}">${r.fd_war_state||'--'}</td>
+          <td>${r.fd_total_score!=null?r.fd_total_score.toFixed(1):'--'}</td>
+          <td>${r.fd_cap_mode!=null?r.fd_cap_mode:'--'}</td>
+          <td>${r.fd_mult_mode!=null?r.fd_mult_mode:'--'}</td>
+          <td>${r.sal_type||'--'}</td><td>${r.sal_regime||'--'}</td>
+          <td>${r.sal_calib_median!=null?r.sal_calib_median.toFixed(3):'--'}</td>
+          <td>${r.sal_gate!=null?r.sal_gate:'--'}</td>
+          <td style="color:${dc}">${r.actual_direction||'--'}</td>
+          <td>${r.actual_confidence!=null?r.actual_confidence.toFixed(2):'--'}</td>
+          <td style="color:${r.enable_inject?'var(--green)':'var(--muted)'}">${r.enable_inject?'✓':'—'}</td>
+        </tr>`;
+      });
+    }
+    document.getElementById('wm-records-tbody').innerHTML = recHtml;
+  }).catch(e=>{
+    document.getElementById('wm-strategic').innerHTML=`<div style="color:var(--red);padding:20px">加载失败: ${e}</div>`;
+  });
+}
+
+function loadDataCenter() {
+  const apiBase = location.hostname === 'localhost' ? `http://127.0.0.1:${location.port}` : '';
+  // 源健康
+  fetch(`${apiBase}/api/data-center/health`).then(r=>r.json()).then(d=>{
+    const el = document.getElementById('dc-health-tbody');
+    if(!d.ok){el.innerHTML=`<tr><td colspan="4" style="color:var(--red)">${d.error}</td></tr>`;return;}
+    const h=d.health||{};let html='';
+    Object.keys(h).sort().forEach(src=>{
+      const s=h[src];const st=s.last_status||'--';
+      const c=st==='ok'?'var(--green)':st==='error'?'var(--red)':'var(--muted)';
+      html+=`<tr><td><b>${src}</b></td><td style="color:${c}">${st}</td><td>${fmtTime(s.last_ts)}</td><td>${s.total_records||0}</td></tr>`;
+    });
+    el.innerHTML=html||'<tr><td colspan="4" style="color:var(--muted)">无数据</td></tr>';
+  }).catch(e=>{document.getElementById('dc-health-tbody').innerHTML=`<tr><td colspan="4" style="color:var(--red)">加载失败: ${e}</td></tr>`;});
+
+  // 采集趋势
+  fetch(`${apiBase}/api/data-center/summary`).then(r=>r.json()).then(d=>{
+    const el = document.getElementById('dc-summary-tbody');
+    if(!d.ok){el.innerHTML=`<tr><td colspan="6" style="color:var(--red)">${d.error}</td></tr>`;return;}
+    const s=d.summary||{};let html='';
+    Object.keys(s).sort().forEach(k=>{
+      const v=s[k];
+      html+=`<tr><td><b>${k}</b></td><td>${v.total||0}</td><td style="color:var(--green)">${v.ok_count||0}</td><td style="color:var(--red)">${v.error_count||0}</td><td>${v.total_records||0}</td><td>${fmt(v.avg_duration_ms,0)}</td></tr>`;
+    });
+    el.innerHTML=html||'<tr><td colspan="6" style="color:var(--muted)">无数据</td></tr>';
+  }).catch(e=>{document.getElementById('dc-summary-tbody').innerHTML=`<tr><td colspan="6" style="color:var(--red)">加载失败: ${e}</td></tr>`;});
+
+  // 最新样本
+  fetch(`${apiBase}/api/data-center/records?limit=20`).then(r=>r.json()).then(d=>{
+    const el = document.getElementById('dc-records-tbody');
+    if(!d.ok){el.innerHTML=`<tr><td colspan="5" style="color:var(--red)">${d.error}</td></tr>`;return;}
+    const recs=d.records||[];let html='';
+    recs.forEach(r=>{
+      const m=r.metrics||{};let mk='';
+      if(m.value!=null)mk=`value=${m.value}`;
+      else if(m.price!=null)mk=`price=${m.price}`;
+      else if(m.last!=null)mk=`last=${m.last}`;
+      else if(m.total_tvl_bln!=null)mk=`TVL=${m.total_tvl_bln}B`;
+      else if(m.propose_gas!=null)mk=`gas=${m.propose_gas}`;
+      else if(m.title)mk=(m.title||'').slice(0,50);
+      else mk=JSON.stringify(m).slice(0,60);
+      html+=`<tr><td>${fmtTime(r.timestamp)}</td><td>${r.source}</td><td>${r.category}</td><td>${r.sub_category}</td><td style="font-family:monospace;font-size:11px">${mk}</td></tr>`;
+    });
+    el.innerHTML=html||'<tr><td colspan="5" style="color:var(--muted)">无数据</td></tr>';
+  }).catch(e=>{document.getElementById('dc-records-tbody').innerHTML=`<tr><td colspan="5" style="color:var(--red)">加载失败: ${e}</td></tr>`;});
+
+  // 质量告警
+  fetch(`${apiBase}/api/data-center/quality?limit=20`).then(r=>r.json()).then(d=>{
+    const el = document.getElementById('dc-quality-tbody');
+    if(!d.ok){el.innerHTML=`<tr><td colspan="4" style="color:var(--red)">${d.error}</td></tr>`;return;}
+    const q=d.issues||[];let html='';
+    q.forEach(i=>{
+      html+=`<tr><td>${fmtTime(i.ts)}</td><td>${i.source||'--'}</td><td style="color:var(--red)">${i.code||i.issue_code||'--'}</td><td style="font-size:11px">${(i.detail||i.message||'').slice(0,80)}</td></tr>`;
+    });
+    el.innerHTML=html||'<tr><td colspan="4" style="color:var(--green)">无质量问题 ✅</td></tr>';
+  }).catch(e=>{document.getElementById('dc-quality-tbody').innerHTML=`<tr><td colspan="4" style="color:var(--red)">加载失败: ${e}</td></tr>`;});
+}
+
 function switchTab(tab, evt) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1754,6 +1991,12 @@ function switchTab(tab, evt) {
   }
   if (tab === 'v15ct') {
     loadV15CTData();
+  }
+  if (tab === 'datacenter') {
+    loadDataCenter();
+  }
+  if (tab === 'wujimiaosuan') {
+    loadWujiMiaosuan();
   }
   if (tab === 'yijing' && !yijingDataLoaded) {
     loadYijingData();
@@ -2183,7 +2426,7 @@ function renderModeStatus(data) {
   }
 
   const isAI = data.mode === 'ai_directed';
-  const modeColor = isAI ? 'var(--green)' : 'var(--orange)';
+  const modeColor = isAI ? 'var(--green)' : 'var(--yellow)';
   const modeText = isAI ? 'AI 主导' : '经典接管';
   const modeDesc = isAI
     ? 'AI 负责前两屏战略决策，经典指标执行第三屏'
@@ -2789,7 +3032,7 @@ function renderDirectivePanel(mode, classic) {
   const conflict = mode.position_conflict;
 
   const dirColor = directive.direction === 'long' ? 'var(--green)' : directive.direction === 'short' ? 'var(--red)' : 'var(--muted)';
-  const modeColor = currentMode === 'ai_directed' ? 'var(--green)' : 'var(--orange)';
+  const modeColor = currentMode === 'ai_directed' ? 'var(--green)' : 'var(--yellow)';
 
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:6px;font-size:11px">
@@ -3373,7 +3616,7 @@ function renderSixDimensions(data, symbol) {
             <div>• <span style="color:var(--green)">技术指标 (40%)</span>: MA200 + RSI + MACD</div>
             <div>• <span style="color:var(--blue)">链上数据 (15%)</span>: SMA50/200 + 回撤分析</div>
             <div>• <span style="color:var(--purple)">减半周期 (15%)</span>: 距上次减半天数</div>
-            <div>• <span style="color:var(--orange)">矿工经济 (15%)</span>: 波动率判断</div>
+            <div>• <span style="color:var(--yellow)">矿工经济 (15%)</span>: 波动率判断</div>
             <div>• <span style="color:var(--yellow)">宏观金融 (10%)</span>: 30日动量</div>
             <div>• <span style="color:var(--muted)">跨市场联动 (5%)</span>: 20日波动率</div>
           </div>
@@ -3437,13 +3680,14 @@ async function loadYijingAccountOverview() {
       return;
     }
 
-    const initCap = d.initial_capital || 150;
+    const initCap = d.initial_capital;
     const curBal = d.current_balance;
     const totalPnl = d.total_pnl;
     const pnlPct = d.pnl_pct;
     const realizedPnl = d.realized_pnl;
     const unrealizedPnl = d.unrealized_pnl;
-    const availBal = d.avail_balance;
+    const marginUsed = d.margin_used;       // 策略占用资金（保证金占用）
+    const strategyAvail = d.strategy_avail; // 策略可用资金（OKX可用保证金）
     const totalTrades = d.total_trades || 0;
     const winCount = d.win_count || 0;
     const winRatePct = d.win_rate_pct || 0;
@@ -3457,25 +3701,25 @@ async function loadYijingAccountOverview() {
     el.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
         <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid var(--blue)">
-          <div style="font-size:10px;color:var(--muted)">初始资金（今日起）</div>
-          <div style="font-size:18px;font-weight:700;margin-top:3px">$${initCap.toFixed(2)}</div>
+          <div style="font-size:10px;color:var(--muted)">初始资金（8/22起始）</div>
+          <div style="font-size:18px;font-weight:700;margin-top:3px">$${initCap!=null?initCap.toFixed(2):'--'}</div>
         </div>
         <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid var(--green)">
           <div style="font-size:10px;color:var(--muted)">当前账户余额</div>
           <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:3px">${fmt(curBal)}</div>
         </div>
         <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid ${cl(totalPnl)}">
-          <div style="font-size:10px;color:var(--muted)">策略盈亏</div>
+          <div style="font-size:10px;color:var(--muted)">策略盈亏（累计）</div>
           <div style="font-size:18px;font-weight:700;color:${cl(totalPnl)};margin-top:3px">${fmt(totalPnl,true)}</div>
         </div>
         <div style="padding:10px;background:rgba(0,0,0,0.25);border-radius:6px;text-align:center;border-top:2px solid ${cl(totalPnl)}">
-          <div style="font-size:10px;color:var(--muted)">涨跌幅</div>
+          <div style="font-size:10px;color:var(--muted)">涨跌幅（累计）</div>
           <div style="font-size:18px;font-weight:700;color:${cl(totalPnl)};margin-top:3px">${fmtPct(pnlPct)}</div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px">
         <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
-          <div style="font-size:10px;color:var(--muted)">已实现盈亏</div>
+          <div style="font-size:10px;color:var(--muted)">已实现盈亏（累计）</div>
           <div style="font-size:14px;font-weight:700;margin-top:2px;color:${cl(realizedPnl)}">${fmt(realizedPnl,true)}</div>
         </div>
         <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
@@ -3489,13 +3733,13 @@ async function loadYijingAccountOverview() {
       </div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px">
         <div style="padding:7px 10px;background:linear-gradient(180deg,rgba(59,130,246,0.08),rgba(0,0,0,0.15));border:1px solid rgba(59,130,246,0.2);border-radius:6px;text-align:center">
-          <div style="font-size:10px;color:var(--blue);font-weight:600">📊 策略可用资金（主）</div>
-          <div style="font-size:14px;font-weight:700;margin-top:2px;color:var(--blue)">${fmt(d.strategy_avail ?? availBal)}</div>
-          <div style="font-size:9px;color:var(--muted);margin-top:1px">初始资金 + 策略盈亏</div>
+          <div style="font-size:10px;color:var(--blue);font-weight:600">📊 策略占用资金（保证金）</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px;color:var(--blue)">${fmt(marginUsed)}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:1px">Σ(持仓名义价值 / 杠杆)</div>
         </div>
         <div style="padding:7px 10px;background:rgba(0,0,0,0.15);border-radius:6px;text-align:center">
-          <div style="font-size:10px;color:var(--muted)">🏦 OKX 账户可用保证金</div>
-          <div style="font-size:14px;font-weight:700;margin-top:2px">${fmt(d.account_avail)}${d.live_ok?'':'(离线)'}</div>
+          <div style="font-size:10px;color:var(--muted)">🏦 策略可用资金（OKX可用保证金）</div>
+          <div style="font-size:14px;font-weight:700;margin-top:2px">${fmt(strategyAvail)}${d.live_ok?'':'(离线)'}</div>
           <div style="font-size:9px;color:var(--muted);margin-top:1px">
             ${d.account_total_eq!=null ? `账户总权益 ${fmt(d.account_total_eq)}` : ''}
           </div>
@@ -5988,7 +6232,7 @@ function renderTrendFreqtradeDetail(data) {
         <div style="font-size:9px;color:var(--muted);margin-top:4px">MultiGroupStrategy(55%) + TrendConfirmationStrategy(45%)</div>
       </div>
       <div style="padding:12px;background:rgba(0,0,0,0.15);border-radius:8px">
-        <div style="font-size:12px;font-weight:600;color:var(--orange);margin-bottom:8px">1h 短线信号</div>
+        <div style="font-size:12px;font-weight:600;color:var(--yellow);margin-bottom:8px">1h 短线信号</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <div style="font-size:24px;font-weight:700;color:${s1h.color}">${s1h.signal}</div>
           <div style="font-size:14px;color:var(--muted)">置信度 ${s1h.conf.toFixed(0)}%</div>

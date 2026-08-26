@@ -23,3 +23,10 @@ if str(_DATA_18) not in sys.path:
 _CLASSIC_10 = _PROJECT_ROOT / "10-经典指标系统"
 if str(_CLASSIC_10) not in sys.path:
     sys.path.insert(0, str(_CLASSIC_10))
+
+# 11号（供 T32 测试 易经 BTC / BCRM2 bagua+cycle 一致性）
+_YIJING_11 = _PROJECT_ROOT / "11-易经推理系统"
+_YIJING_11_BCRM2 = _PROJECT_ROOT / "11-易经推理系统" / "scripts" / "memory_l4"
+for p in (str(_YIJING_11), str(_YIJING_11_BCRM2)):
+    if p not in sys.path:
+        sys.path.insert(0, p)

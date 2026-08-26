@@ -1,27 +1,27 @@
 {
   "version": "qmm-v1.0",
-  "snapshot_ts": "2026-08-24T20:38:00+08:00",
-  "data_version": "dv-20260824-006",
+  "snapshot_ts": "2026-08-26T09:16:57+08:00",
+  "data_version": "dv-20260826-002",
   "feature_def_version": "fd-1.0",
   "qmm_version": "qmm-v1.0",
-  "trend_state": "DOWN",
-  "trend_change_point": "REVERSING",
-  "uncertainty": 0.5161,
+  "trend_state": "TRANSITIONING",
+  "trend_change_point": "STABLE",
+  "uncertainty": 0.5586,
   "reason_codes": [
-    "REVERSING"
+    "DIVERGENCE"
   ],
   "evidence_refs": [
-    "tc_agent_a_agent_a_1787482458_ETHFI",
-    "tc_yijing_inference_1787444347_900e86",
-    "tc_agent_a_agent_a_1787511583_SUI",
-    "tc_agent_a_agent_a_1787511579_SUI",
-    "TC_live_SKHYNIX-USDT-SWAP_20260823_054624",
-    "TC_live_PUMP-USDT-SWAP_20260823_064052",
-    "tc_agent_a_agent_a_1787496985_UNI",
-    "TC_live_SOL-USDT-SWAP_20260823_115057",
-    "tc_agent_a_agent_a_1787555178_HYPE",
-    "tc_agent_a_agent_a_1787555151_HYPE"
+    "tc_agent_a_agent_a_1787584356_LIT",
+    "tc_agent_a_agent_a_1787584347_LIT",
+    "tc_agent_a_agent_a_1787627914_BTC",
+    "tc_agent_a_agent_a_1787627915_BTC",
+    "tc_agent_a_agent_a_1787627915_XRP",
+    "tc_agent_a_agent_a_1787627914_XRP",
+    "tc_agent_a_agent_a_1787685999_XRP",
+    "tc_agent_a_agent_a_1787685990_XRP",
+    "tc_agent_a_agent_a_1787700487_LIT",
+    "tc_agent_a_agent_a_1787700495_LIT"
   ],
   "gate_status": "OFFLINE",
-  "output_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/qmm/qmm_snapshot_2026-08-24T20-38-00+08-00.json"
+  "output_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/qmm/qmm_snapshot_2026-08-26T09-16-57+08-00.json"
 }

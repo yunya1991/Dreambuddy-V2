@@ -81,27 +81,43 @@ class FeaturePipeline:
         # 2) 逐模块计算
         features = pd.DataFrame(index=df.index)
         meta: Dict[str, Any] = {"set_name": set_name, "modules_run": []}
+        # 模块级 extra_ctx 聚合：{mod_name: ctx_dict}，易经用 bagua.feature_names_by_gua + cycle 等
+        extra_ctx_agg: Dict[str, Any] = {}
 
         for mod_name in modules:
             try:
                 if mod_name in self._modules:
-                    # 本地模块
-                    feats = self._modules[mod_name](
+                    # 本地模块 — compute 支持 (df, **kw) 或返回 (df, ctx_dict) 元组
+                    raw = self._modules[mod_name](
                         df, ref_df=ref_df, macro_df=macro_df, symbol=symbol,
                     )
                 else:
-                    # 尝试 FR 注册模块
+                    # FR 注册模块：compute_all 返回 (df, gua_map) 元组
                     from feature_hub.hub.feature_registry import FeatureRegistry
-                    feats, _ = FeatureRegistry.compute_all(
+                    raw = FeatureRegistry.compute_all(
                         df=df, ref_df=ref_df, macro_df=macro_df,
                         symbol=symbol, enabled=[mod_name],
                     )
+
+                # 兼容：模块可返回 DataFrame 或 (DataFrame, extra_ctx_dict) 元组
+                extra_ctx: Dict[str, Any] = {}
+                if isinstance(raw, tuple):
+                    if len(raw) == 0:
+                        feats = None
+                    elif len(raw) == 1:
+                        feats = raw[0]
+                    else:
+                        feats, extra_ctx = raw[0], raw[1]
+                else:
+                    feats = raw
 
                 if feats is not None and len(feats.columns) > 0:
                     # 加模块名前缀避免列名冲突
                     prefixed = feats.add_prefix(f"{mod_name}__")
                     features = pd.concat([features, prefixed], axis=1)
                     meta["modules_run"].append(mod_name)
+                    if extra_ctx:
+                        extra_ctx_agg[mod_name] = extra_ctx
             except Exception as exc:
                 logger.warning(
                     "[FeatureHub] module '%s' failed: %s — skipping (fail-open)",
@@ -112,6 +128,8 @@ class FeaturePipeline:
         # 3) 清洗链
         cleaned = self._cleaning_chain.fit_transform(features, y=y)
 
-        # 4) 返回 FeatureVector
+        # 4) 返回 FeatureVector（extra_ctx 放进 meta 便于 H3 wrapper / 上层消费）
         meta["feature_count"] = len(cleaned.columns)
+        if extra_ctx_agg:
+            meta["extra_ctx"] = extra_ctx_agg
         return FeatureVector(df=cleaned, meta=meta)

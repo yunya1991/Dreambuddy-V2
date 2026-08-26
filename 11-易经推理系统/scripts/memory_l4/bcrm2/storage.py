@@ -1312,14 +1312,23 @@ class EvolutionStorageSQLite:
             self._conn.commit()
             return int(cur.lastrowid)
 
-    def get_shadow_log(self, symbol: str, days: int = 7) -> List[Dict[str, Any]]:
-        """查询某 symbol 最近 N 天的 shadow 记录（含三值列 + T5战略/策略影子12列，按时间正序）。"""
-        symbol = symbol or "BTCUSDT"
+    def get_shadow_log(self, symbol: Optional[str], days: int = 7) -> List[Dict[str, Any]]:
+        """查询某 symbol 最近 N 天的 shadow 记录（含三值列 + T5战略/策略影子12列，按时间正序）。
+
+        symbol=None 时返回所有 symbol 的记录。
+        """
         cur = self._conn.cursor()
         from datetime import datetime, timedelta, timezone
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(timespec="seconds")
+        # symbol=None → 查询所有 symbol；否则按 symbol 过滤
+        if symbol is None:
+            where_clause = "WHERE timestamp >= ?"
+            params: tuple = (cutoff,)
+        else:
+            where_clause = "WHERE symbol = ? AND timestamp >= ?"
+            params = (symbol, cutoff)
         try:
-            rows = cur.execute("""
+            rows = cur.execute(f"""
                 SELECT id, symbol, timestamp,
                        reactive_L, reactive_T, reactive_C, reactive_regime,
                        reactive_pos_mult, reactive_tp_mult, reactive_sl_mult, reactive_threshold,
@@ -1338,11 +1347,11 @@ class EvolutionStorageSQLite:
                        fd_us_stock_war_state, fd_us_stock_total_score,
                        sal_type, sal_regime, sal_calib_median, sal_calib_min, sal_calib_max, sal_gate
                 FROM shadow_param_log
-                WHERE symbol = ? AND timestamp >= ?
+                {where_clause}
                 ORDER BY timestamp ASC
-            """, (symbol, cutoff)).fetchall()
+            """, params).fetchall()
         except sqlite3.OperationalError:
-            rows = cur.execute("""
+            rows = cur.execute(f"""
                 SELECT id, symbol, timestamp,
                        reactive_L, reactive_T, reactive_C, reactive_regime,
                        reactive_pos_mult, reactive_tp_mult, reactive_sl_mult, reactive_threshold,
@@ -1358,9 +1367,9 @@ class EvolutionStorageSQLite:
                        actual_tp_px, actual_sl_px, actual_threshold,
                        fma_on_allowed, fma_on_eff_threshold
                 FROM shadow_param_log
-                WHERE symbol = ? AND timestamp >= ?
+                {where_clause}
                 ORDER BY timestamp ASC
-            """, (symbol, cutoff)).fetchall()
+            """, params).fetchall()
         out: List[Dict[str, Any]] = []
         for r in rows:
             d = dict(r)

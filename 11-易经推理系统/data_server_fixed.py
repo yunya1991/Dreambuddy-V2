@@ -30,6 +30,12 @@ BCRM_REPO = Path(os.environ.get(
 ))
 
 sys.path.insert(0, str(BASE_DIR))
+# 18-数据获取中心 包路径（数据中心 SQLite 查询）
+# BASE_DIR = experiments/ab-trading，需上溯两级到 dreambuddy-v2 根
+_DC_PKG_DIR = BASE_DIR.parent.parent / "18-数据获取中心"
+if str(_DC_PKG_DIR) not in sys.path:
+    sys.path.insert(0, str(_DC_PKG_DIR))
+_DC_DB_PATH = str(_DC_PKG_DIR / "data_center.db")
 # 确保 scripts/memory_l4 在 sys.path 最前（bcrm2 包在此目录下）
 _BCRM_PKG_DIR = str(BCRM_REPO / "scripts" / "memory_l4")
 if _BCRM_PKG_DIR not in sys.path:
@@ -81,8 +87,11 @@ if _DREAMOS_ENV_FILE.exists():
             if _k.startswith("ASTER_"):
                 os.environ.setdefault(_k, _v)
 
-# 易经推理策略固定初始资金（USDT）—— 小额观测实际表现
-YIJING_INITIAL_CAPITAL = 150.0
+# 易经推理策略初始资金（USDT）
+# 2026-08-22 策略正式起始日，通过 OKX asset-valuation 接口查询的 8/22 0点 UTC 总余额
+# 该值固定不再每日重置，累计策略盈亏 = 当前OKX账户总权益 - 初始资金
+YIJING_STRATEGY_START_DATE = "2026-08-22"
+YIJING_INITIAL_CAPITAL = 2046.75
 
 _cache = {}
 
@@ -110,13 +119,14 @@ def _json_default(obj):
 
 
 def _load_yijing_baseline():
-    """加载或创建易经策略每日基准快照（从今天起以 150 为基准）
+    """加载易经策略基准快照（固定 2026-08-22 为起始日，不再每日重置）
 
-    基准值 = 今天起始时 performance.json 的累计已实现盈亏 total_pnl
-    从今天起已实现盈亏 = 当前 total_pnl - 基准 total_pnl
+    初始资金 = 2026-08-22 0点 OKX 账户总余额（通过 asset-valuation 接口查询得到 = 2046.75）
+    累计策略盈亏 = 当前OKX账户总权益 - 初始资金
+    累计已实现盈亏 = performance.total_pnl（自策略上线累计）
+    浮动盈亏 = 当前持仓未实现盈亏之和
     """
     baseline_file = Path(__file__).parent / ".workbuddy" / "memory_l4" / "stats" / "account_baseline.json"
-    today = datetime.datetime.now().strftime("%Y-%m-%d")
     baseline = None
     if baseline_file.exists():
         try:
@@ -124,31 +134,14 @@ def _load_yijing_baseline():
                 baseline = json.load(fp)
         except Exception:
             baseline = None
-    # 读取当前累计已实现盈亏作为基准候选
-    perf_path = Path(__file__).parent / ".workbuddy" / "memory_l4" / "stats" / "performance.json"
-    current_realized = None
-    if perf_path.exists():
-        try:
-            with open(perf_path) as fp:
-                current_realized = float(json.load(fp).get("total_pnl", 0) or 0)
-        except Exception:
-            pass
-    # 日期变更或不存在 → 初始化新基准
-    if not baseline or baseline.get("baseline_date") != today:
+    # 固定基准日 2026-08-22，不再按今天重置
+    if not baseline or baseline.get("baseline_date") != YIJING_STRATEGY_START_DATE:
         baseline = {
-            "baseline_date": today,
+            "baseline_date": YIJING_STRATEGY_START_DATE,
             "initial_capital": YIJING_INITIAL_CAPITAL,
-            "realized_pnl_baseline": current_realized,  # 可能为 None（performance 未生成）
+            "initial_balance_source": "okx_asset_valuation_2026-08-22T00:00:00Z",
             "created_at": datetime.datetime.now().isoformat(),
         }
-        try:
-            with open(baseline_file, "w") as fp:
-                json.dump(baseline, fp, indent=2, ensure_ascii=False)
-        except Exception:
-            pass
-    elif baseline.get("realized_pnl_baseline") is None and current_realized is not None:
-        # 补填基准（首次创建时 performance 未就绪）
-        baseline["realized_pnl_baseline"] = current_realized
         try:
             with open(baseline_file, "w") as fp:
                 json.dump(baseline, fp, indent=2, ensure_ascii=False)
@@ -1379,19 +1372,21 @@ def get_yijing_positions():
 
 
 def get_yijing_account_overview():
-    """易经推理策略账户总览：从今天起以 150 USDT 为基准
+    """易经推理策略账户总览：固定 2026-08-22 为起始日，累计计算
 
-    复用 get_yijing_positions() 的持仓数据（与页面持仓同源）：
-      - 基准日 = 今天，初始资金 = 150
-      - 从今天起已实现盈亏 = 当前 performance.total_pnl - 基准日 total_pnl
-      - 未实现盈亏 = 当前持仓 upl 之和（OKX 实时优先，降级用本地跟踪 pnl）
-      - 总盈亏 = 从今天起已实现 + 未实现
-      - 当前余额 = 150 + 总盈亏
-      - 涨跌幅 = 总盈亏 / 150 × 100%
+    口径（用户确认）：
+      - 初始资金 = 2026-08-22 0点 OKX 账户总余额（2046.75，通过 asset-valuation 查询）
+      - 当前账户余额 = OKX 账户总权益（实时）
+      - 策略盈亏（累计）= 当前账户余额 - 初始资金
+      - 涨跌幅（累计）= 策略盈亏 / 初始资金 × 100%
+      - 已实现盈亏（累计）= performance.total_pnl（自策略上线累计）
+      - 浮动盈亏 = 当前持仓未实现盈亏之和
+      - 策略占用资金 = Σ(持仓名义价值 / 杠杆)（保证金占用）
+      - 策略可用资金 = OKX 账户可用保证金
     """
-    # ── 基准快照（从今天起）──
+    # ── 基准快照（固定 2026-08-22）──
     baseline = _load_yijing_baseline()
-    realized_baseline = baseline.get("realized_pnl_baseline")
+    initial_capital = float(baseline.get("initial_capital", YIJING_INITIAL_CAPITAL))
     baseline_date = baseline.get("baseline_date")
 
     # ── 复用持仓查询（与页面持仓数据同源，避免重复调 OKX）──
@@ -1401,17 +1396,11 @@ def get_yijing_account_overview():
     local_positions = pos_data.get("positions", []) or []
     performance = pos_data.get("performance", {}) or {}
 
-    # ── 累计已实现盈亏 + 从今天起已实现盈亏 ──
-    cumulative_realized = float(performance.get("total_pnl", 0) or 0)
+    # ── 累计已实现盈亏（自策略上线累计，不再按今日剥离）──
+    realized_pnl = float(performance.get("total_pnl", 0) or 0)
     total_trades = int(performance.get("total_trades", 0) or 0)
     win_count = int(performance.get("win_count", 0) or 0)
     win_rate = float(performance.get("win_rate", 0) or 0)
-
-    if realized_baseline is not None:
-        realized_pnl = cumulative_realized - realized_baseline
-    else:
-        # 基准未建立（performance 未就绪）：当作 0
-        realized_pnl = 0.0
 
     # ── OKX 连接状态 ──
     live_ok = bool(okx_balance)
@@ -1423,26 +1412,43 @@ def get_yijing_account_overview():
         live_error = str(okx_positions[0].get("error", ""))
         okx_positions = []
 
-    # 持仓明细 + 未实现盈亏
+    # 持仓明细 + 未实现盈亏 + 保证金占用
     positions_detail = []
     unrealized_pnl = 0.0
+    margin_used = 0.0  # 策略占用资金（保证金占用 = Σ notional / leverage）
     open_positions_count = 0
 
     # 优先 OKX 实时持仓的 upl
     for p in okx_positions:
         try:
             upl = float(p.get("upl", 0) or 0)
-            if abs(float(p.get("pos_size", p.get("pos", 0)) or 0)) > 0 or upl != 0:
+            pos_size = abs(float(p.get("pos_size", p.get("pos", 0)) or 0))
+            if pos_size > 0 or upl != 0:
                 unrealized_pnl += upl
                 open_positions_count += 1
+                # 保证金占用计算：notional = pos × mark_px，margin = notional / leverage
+                mark_px = float(p.get("mark_px", 0) or 0)
+                entry_px = float(p.get("entry_price", p.get("avg_px", 0)) or 0)
+                lever = float(p.get("leverage", 0) or 0)
+                # OKX 持仓通过 get_yijing_okx_state 返回的 leverage 可能是数值或字符串
+                if isinstance(p.get("leverage"), str):
+                    lever = float(p.get("leverage", "0").replace("x", "") or 0)
+                px_for_notional = mark_px if mark_px > 0 else entry_px
+                notional = pos_size * px_for_notional if px_for_notional > 0 else 0.0
+                pos_margin = (notional / lever) if (lever > 0 and notional > 0) else 0.0
+                margin_used += pos_margin
                 positions_detail.append({
                     "coin": p.get("coin", ""),
                     "inst_id": p.get("inst_id", ""),
                     "direction": p.get("direction", p.get("pos_side", "")),
                     "upl": upl,
                     "upl_ratio": float(p.get("upl_ratio", 0) or 0),
-                    "mark_px": float(p.get("mark_px", 0) or 0),
-                    "entry_price": float(p.get("entry_price", p.get("avg_px", 0)) or 0),
+                    "mark_px": mark_px,
+                    "entry_price": entry_px,
+                    "pos_size": pos_size,
+                    "leverage": lever if lever > 0 else None,
+                    "notional": round(notional, 2) if notional > 0 else None,
+                    "margin": round(pos_margin, 2) if pos_margin > 0 else None,
                     "source": "okx_live",
                 })
         except Exception:
@@ -1468,43 +1474,44 @@ def get_yijing_account_overview():
             except Exception:
                 continue
 
-    # ── 盈亏计算（从今天起，基于基准差值）──
-    total_pnl = realized_pnl + unrealized_pnl
-    current_balance = YIJING_INITIAL_CAPITAL + total_pnl
-    pnl_pct = (total_pnl / YIJING_INITIAL_CAPITAL) * 100 if YIJING_INITIAL_CAPITAL > 0 else 0
-    # 策略可用资金 = 初始资金 + 累计盈亏（策略自身预算口径）
-    strategy_avail = current_balance
-    # OKX 账户可用保证金（账户级，仅供参考）
-    account_avail = okx_avail
-    # OKX 账户总权益（账户级，仅供参考）
-    account_total_eq = okx_total_eq
+    # ── 盈亏计算（累计口径，基于 OKX 账户总权益）──
+    # 当前账户余额 = OKX 账户总权益（实时）
+    current_balance = okx_total_eq if okx_total_eq is not None else (initial_capital + realized_pnl + unrealized_pnl)
+    # 策略盈亏（累计）= 当前账户余额 - 初始资金
+    total_pnl = current_balance - initial_capital
+    # 涨跌幅（累计）= 策略盈亏 / 初始资金 × 100%
+    pnl_pct = (total_pnl / initial_capital) * 100 if initial_capital > 0 else 0
+    # 策略可用资金 = OKX 账户可用保证金
+    strategy_avail = okx_avail if okx_avail is not None else None
+    # 策略占用资金 = Σ(持仓保证金占用)
+    # margin_used 已在持仓循环中计算
 
     # 基准状态提示
-    if realized_baseline is not None:
-        baseline_note = f"基准日 {baseline_date} 起累计已实现 {round(realized_baseline, 2)}"
-    else:
-        baseline_note = "今日基准尚未建立（performance 未就绪）"
+    baseline_note = f"起始日 {baseline_date}，初始资金 {round(initial_capital, 2)}（OKX账户总余额）"
 
     return {
         "strategy": "yijing",
         "strategy_name": "易经推理策略",
-        "initial_capital": YIJING_INITIAL_CAPITAL,
+        "initial_capital": round(initial_capital, 2),
         "baseline_date": baseline_date,
-        "baseline_realized_pnl": round(realized_baseline, 2) if realized_baseline is not None else None,
         "baseline_note": baseline_note,
+        # 当前账户余额 = OKX 账户总权益（实时）
         "current_balance": round(current_balance, 2),
-        # 策略级：策略自身可用资金 = 初始资金 + 盈亏（主显示）
-        "avail_balance": round(strategy_avail, 2),
-        "strategy_avail": round(strategy_avail, 2),
-        # 账户级：OKX 账户可用保证金（参考显示，标注"账户可用保证金"）
-        "account_avail": round(account_avail, 2) if account_avail is not None else None,
-        "account_total_eq": round(account_total_eq, 2) if account_total_eq is not None else None,
-        # 向后兼容：旧命名字段保留，值为策略级口径（而非账户级）
-        # avail_balance 已改为 strategy_avail，与 current_balance 一致
+        # 策略盈亏（累计）= 当前账户余额 - 初始资金
         "total_pnl": round(total_pnl, 2),
         "pnl_pct": round(pnl_pct, 2),
+        # 已实现盈亏（累计）= performance.total_pnl（自策略上线累计）
         "realized_pnl": round(realized_pnl, 2),
+        # 浮动盈亏 = 当前持仓未实现盈亏之和
         "unrealized_pnl": round(unrealized_pnl, 2),
+        # 策略占用资金 = Σ(持仓名义价值 / 杠杆)（保证金占用）
+        "margin_used": round(margin_used, 2),
+        # 策略可用资金 = OKX 账户可用保证金
+        "strategy_avail": round(strategy_avail, 2) if strategy_avail is not None else None,
+        # OKX 账户总权益（= 当前账户余额，冗余字段方便前端引用）
+        "account_total_eq": round(okx_total_eq, 2) if okx_total_eq is not None else None,
+        "account_avail": round(okx_avail, 2) if okx_avail is not None else None,
+        # 交易统计
         "total_trades": total_trades,
         "win_count": win_count,
         "win_rate": round(win_rate, 4),
@@ -2361,6 +2368,111 @@ def get_shadow_report(symbol: str = "BTC", days: int = 7):
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
+def get_strategy_layer_shadow(limit: int = 50):
+    """返回战略层/策略层影子模式数据，供前端五计庙算 Tab 展示。
+
+    数据来源：shadow_param_log 表最近 N 条记录。
+    """
+    try:
+        if not SHADOW_LOGGER_ENABLED:
+            return {"ok": False, "error": "ShadowLogger 未启用"}
+
+        predictor = _get_predictor()
+        if predictor is None:
+            return {"ok": False, "error": "无法获取 predictor"}
+        storage = predictor.storage
+        conn = storage._conn if hasattr(storage, "_conn") else storage.conn
+        cur = conn.cursor()
+
+        # 统计总记录数和字段填充率
+        cur.execute("""
+            SELECT COUNT(*) AS total,
+                   SUM(CASE WHEN fd_crypto_war_state IS NOT NULL THEN 1 ELSE 0 END) AS fd_filled,
+                   SUM(CASE WHEN sal_type IS NOT NULL THEN 1 ELSE 0 END) AS sal_filled
+            FROM shadow_param_log
+        """)
+        stats = cur.fetchone()
+        total_records = stats[0] or 0
+        fd_filled = stats[1] or 0
+        sal_filled = stats[2] or 0
+
+        # 最新战略层状态（从最近 fd_* 记录提取）
+        cur.execute("""
+            SELECT fd_crypto_war_state, fd_crypto_total_score, fd_crypto_cap_mode, fd_crypto_mult_mode,
+                   fd_us_stock_war_state, fd_us_stock_total_score
+            FROM shadow_param_log
+            WHERE fd_crypto_war_state IS NOT NULL
+            ORDER BY id DESC LIMIT 1
+        """)
+        fd_row = cur.fetchone()
+        latest_strategic = {}
+        if fd_row:
+            latest_strategic = {
+                "crypto_usdt": {
+                    "war_state": fd_row[0], "total_score": fd_row[1],
+                    "cap_mode": fd_row[2], "mult_mode": fd_row[3]
+                },
+                "us_stock": {
+                    "war_state": fd_row[4], "total_score": fd_row[5]
+                }
+            }
+
+        # 最近 N 条记录
+        cur.execute("""
+            SELECT timestamp, symbol,
+                   fd_crypto_war_state, fd_crypto_total_score, fd_crypto_cap_mode, fd_crypto_mult_mode,
+                   fd_us_stock_war_state, fd_us_stock_total_score,
+                   sal_type, sal_regime, sal_calib_median, sal_calib_min, sal_calib_max, sal_gate,
+                   actual_direction, actual_confidence, actual_position_usdt,
+                   enable_inject, alpha_blend
+            FROM shadow_param_log
+            ORDER BY id DESC LIMIT ?
+        """, (limit,))
+        records = []
+        for r in cur.fetchall():
+            records.append({
+                "timestamp": r[0], "symbol": r[1],
+                "fd_war_state": r[2], "fd_total_score": r[3],
+                "fd_cap_mode": r[4], "fd_mult_mode": r[5],
+                "fd_us_war_state": r[6], "fd_us_total_score": r[7],
+                "sal_type": r[8], "sal_regime": r[9],
+                "sal_calib_median": r[10], "sal_calib_min": r[11],
+                "sal_calib_max": r[12], "sal_gate": r[13],
+                "actual_direction": r[14], "actual_confidence": r[15],
+                "actual_position": r[16],
+                "enable_inject": r[17], "alpha_blend": r[18]
+            })
+
+        # AB 闸门 inject 统计
+        cur.execute("""
+            SELECT SUM(CASE WHEN enable_inject = 1 THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN enable_inject = 0 THEN 1 ELSE 0 END)
+            FROM shadow_param_log
+        """)
+        inj = cur.fetchone()
+        inject_true = inj[0] or 0
+        inject_false = inj[1] or 0
+
+        return {
+            "ok": True,
+            "summary": {
+                "total_records": total_records,
+                "fd_filled": fd_filled,
+                "sal_filled": sal_filled,
+                "fd_fill_rate": f"{fd_filled/total_records*100:.1f}%" if total_records else "0%",
+                "sal_fill_rate": f"{sal_filled/total_records*100:.1f}%" if total_records else "0%",
+                "inject_true": inject_true,
+                "inject_false": inject_false,
+                "inject_ratio": f"{inject_true/total_records*100:.1f}%" if total_records else "0%"
+            },
+            "latest_strategic": latest_strategic,
+            "records": records
+        }
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
 # ================================================================
 # Phase C: α blend 前瞻参数上线 API
 # ================================================================
@@ -2602,10 +2714,8 @@ def _shadow_logs_window(days: int) -> list:
     """从 evolution.db 中读取 shadow_param_log 表最近 N 天记录。"""
     try:
         sys.path.insert(0, str(BASE_DIR / "scripts" / "memory_l4"))
-        from bcrm2.storage import EvolutionStorageSQLite
-        storage = EvolutionStorageSQLite(str(
-            BASE_DIR / "scripts" / "memory_l4" / "data" / "evolution.db"
-        ))
+        from bcrm2.run_evolution_pipeline import get_storage
+        storage = get_storage()  # 使用统一 _DEFAULT_DB_PATH（scripts/artifacts/evolution_btc/evolution.db）
         try:
             records = storage.get_shadow_log(None, days)  # None=all symbols
         except TypeError:
@@ -2650,6 +2760,7 @@ def _agg_scores(records: list) -> dict:
                 continue
             buf.append(1.0 if 0.5 <= ratio <= 2.0 else 0.0)
         # 阈值方向一致性：forecast_L>=0 且 ai_threshold_mult <= baseline 则一致（降低门槛）
+        # 容差带：|a_thr - b_thr| < 0.01 时视为"中性"（几乎无调整），计为一致
         fL = r.get("forecast_L")
         b_thr = float(r.get("baseline_threshold_mult") or r.get("reactive_threshold") or 1.0)
         a_thr = r.get("ai_threshold_mult")
@@ -2657,9 +2768,14 @@ def _agg_scores(records: list) -> dict:
             try:
                 fL = float(fL)
                 a_thr = float(a_thr)
-                ok = ((fL >= 0 and a_thr <= b_thr)
-                      or (fL < 0 and a_thr >= b_thr))
-                thr_consistency.append(1.0 if ok else 0.0)
+                _thr_diff = abs(a_thr - b_thr)
+                if _thr_diff < 0.01:
+                    # 容差带内：阈值几乎未调整，视为一致
+                    thr_consistency.append(1.0)
+                else:
+                    ok = ((fL >= 0 and a_thr <= b_thr)
+                          or (fL < 0 and a_thr >= b_thr))
+                    thr_consistency.append(1.0 if ok else 0.0)
             except (TypeError, ValueError):
                 pass
 
@@ -2739,8 +2855,11 @@ def evaluate_version_promotion(records: list,
     cur_enabled = _load_inject_state()
     if cur_enabled:
         # 动态要求：ai_vs_dynamic 的 |仓位偏差| 必须 ≤ ai_vs_static 的 80% 且 ≤ 0.25
-        dyn_abs = scores.get("ai_vs_dynamic_pos_bias_absmean") or 1.0
-        sta_abs = pos_abs or 1.0
+        # 注意：用 is not None 防止 0.0 被当作 falsy
+        dyn_abs = scores.get("ai_vs_dynamic_pos_bias_absmean")
+        if dyn_abs is None:
+            dyn_abs = 1.0
+        sta_abs = pos_abs if pos_abs is not None else 1.0
         if dyn_abs > 0.25 or dyn_abs > sta_abs * 0.80:
             db_pass = False
             reasons.append(
@@ -3266,6 +3385,11 @@ class Handler(BaseHTTPRequestHandler):
             days = int(self._get_query_param("days") or "7")
             self._json(get_shadow_report(symbol, days))
 
+        # ── API: 战略层/策略层影子数据（五计庙算 Tab）──────────────────
+        elif path == "/api/shadow/strategy-layer":
+            limit = int(self._get_query_param("limit") or "50")
+            self._json(get_strategy_layer_shadow(limit))
+
         # ── API: Phase C α blend 状态查询 ────────────────────────────
         elif path == "/api/alpha/status":
             self._json(get_alpha_status())
@@ -3321,6 +3445,38 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(get_dual_baseline_report(days=days))
             except Exception as e:
                 self._json({"ok": False, "error": str(e)})
+
+        # ── API: 数据中心监控（源健康/采集趋势/最新样本/质量告警）────────
+        elif path.startswith("/api/data-center/"):
+            try:
+                from data_center.storage.sink_sqlite import SqliteSink
+                _sink = SqliteSink(_DC_DB_PATH)
+                _sub = path.rsplit("/", 1)[-1]
+                if _sub == "health":
+                    self._json({"ok": True, "health": _sink.source_health()})
+                elif _sub == "summary":
+                    _raw = _sink.summary()
+                    # summary key 是 (source, category) tuple，转字符串以 JSON 序列化
+                    _data = {f"{k[0]}/{k[1]}": v for k, v in _raw.items()}
+                    self._json({"ok": True, "summary": _data})
+                elif _sub == "records":
+                    _limit = int(self._get_query_param("limit") or "20")
+                    _recs = _sink.query_records(limit=_limit)
+                    _data = [{"source": r.source, "category": r.category,
+                              "sub_category": r.sub_category, "timestamp": r.timestamp,
+                              "metrics": r.metrics}
+                             for r in _recs]
+                    self._json({"ok": True, "records": _data, "count": len(_data)})
+                elif _sub == "quality":
+                    _limit = int(self._get_query_param("limit") or "20")
+                    self._json({"ok": True, "issues": _sink.recent_issues(limit=_limit)})
+                elif _sub == "alerts":
+                    _limit = int(self._get_query_param("limit") or "20")
+                    self._json({"ok": True, "alerts": _sink.recent_alerts(limit=_limit)})
+                else:
+                    self._json({"ok": False, "error": f"unknown sub: {_sub}"})
+            except Exception as e:
+                self._json({"ok": False, "error": f"{type(e).__name__}: {e}"})
 
         elif path == "/" or path == "/index.html":
             self._file(BASE_DIR / "monitor.html", "text/html")
