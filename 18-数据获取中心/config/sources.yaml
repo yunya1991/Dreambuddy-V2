@@ -28,6 +28,12 @@ chain:
   etherscan:
     enabled: true
     kinds: [gas, balance, whales]
+  defillama:
+    enabled: true
+  panewslab:
+    enabled: true
+  stablecoin_transparency:
+    enabled: true
 
 news:
   feedparser:
@@ -41,3 +47,5 @@ news:
   gdelt:
     enabled: true
     default_max_records: 10
+  odaily_newsflash:
+    enabled: true

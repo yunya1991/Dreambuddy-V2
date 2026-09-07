@@ -11,7 +11,9 @@ from datetime import datetime
 from data_center.core.errors import ContractError
 
 # 合法的 category 域
-CATEGORIES = ("macro", "finance", "chain", "news", "web")
+# 🆕 Phase A1：新增 "protocol" 用于 per-protocol TVL/费用数据（CoinFundamentalRanker 数据源）
+# 🆕 Phase A2：新增 "coin" 用于 per-coin market_cap/supply 数据（CoinFundamentalRanker 数据源）
+CATEGORIES = ("macro", "finance", "chain", "news", "web", "protocol", "coin", "bdsm")
 
 
 @dataclass

@@ -338,8 +338,9 @@ def run_agents(reason: str, memories: dict = None, skill_status: dict = None):
             continue
         agent_label = "A" if "agent_a" in agent_script else "B"
         try:
+            # 用当前解释器启动子进程，避免 launchd 环境下 python3 被解析到系统 Python 3.9 (LibreSSL)
             result = subprocess.run(
-                ["python3", str(script_path)],
+                [sys.executable, str(script_path)],
                 cwd=str(BASE_DIR),
                 capture_output=True, text=True, timeout=180
             )

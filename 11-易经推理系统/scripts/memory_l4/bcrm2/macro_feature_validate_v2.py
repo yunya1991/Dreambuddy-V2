@@ -34,7 +34,7 @@ from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
 # ============================================================
 # 配置（与 run_baseline_comparison.py 对齐）
 # ============================================================
-COINS = ["UNI", "PUMP", "HYPE", "ETH", "BTC", "SOL", "XAUT", "OKB", "BNB"]
+COINS = ["UNI", "PUMP", "HYPE", "ETH", "BTC", "SOL", "ZEC", "ARB", "XAUT", "OKB", "BNB"]
 TIMEFRAME = "1H"
 MAX_BARS = 6000
 N_FOLDS = 5

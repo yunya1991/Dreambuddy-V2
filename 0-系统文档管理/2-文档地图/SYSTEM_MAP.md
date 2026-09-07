@@ -1,6 +1,6 @@
 # 全系统文档地图 — SYSTEM_MAP
 
-> **版本**: v2.1 | **更新日期**: 2026-08-24
+> **版本**: v2.2 | **更新日期**: 2026-09-07
 > **定位**: 按系统组织的全项目文档导航地图（对齐 SSoT v3.0）
 > **关联**: [INDEX.md](../INDEX.md) · [TOPIC_MAP.md](./TOPIC_MAP.md) · [ARCHITECTURE_MAP.md](./ARCHITECTURE_MAP.md)
 > **11号子系统七层交易决策栈（v4.5）**: L0 五计庙算→L1 前置层→L2 核心层→L3 后置校准层→L4 过滤层→L5 策略层→L6 持仓与离场层（方案 C v3.0 全量上线，8 开关默认 True）
@@ -9,7 +9,7 @@
 
 ## 系统全景
 
-DreamBuddy-V2 由 **1 个文档元层 + 7 个顶层模块 + 7 个交易子系统 + 6 个辅助模块** 组成。
+DreamBuddy-V2 由 **1 个文档元层 + 7 个顶层模块 + 8 个交易子系统 + 6 个辅助模块** 组成。
 
 ```
 DreamBuddy-V2/
@@ -30,6 +30,7 @@ DreamBuddy-V2/
 ├── 14-V15经典马丁策略/          💰 马丁格尔策略（标杆）
 ├── 16-调控系统/                 🎛️ 宏观离场调控
 ├── 17-v4-wave-strategy/         🌊 V4波浪策略
+├── 23-四层闭环自进化交易架构/    🧬 四层闭环自进化
 │
 ├── 3-EVOLUTION/                 🧬 进化引擎（实验）
 ├── 6-图结构上下文压缩/          🔗 图压缩（实验）
@@ -106,7 +107,7 @@ DreamBuddy-V2/
 | 模块 | 入口 | 说明 |
 |------|------|------|
 | [3-FRONTEND](../../3-FRONTEND/) | [FRONTEND_SYSTEM.md](../../3-FRONTEND/FRONTEND_SYSTEM.md) | 前端架构 |
-| [4-MEMORY](../../4-MEMORY/) | [MEMORY_SYSTEM.md](../../4-MEMORY/MEMORY_SYSTEM.md) | 记忆学习 |
+| [4-MEMORY](../../4-MEMORY/) | [MEMORY_SYSTEM_ARCHITECTURE.md](../../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) | 记忆系统（v5.0 双层架构） |
 | [5-BUSINESS](../../5-BUSINESS/) | [BUSINESS_SYSTEM.md](../../5-BUSINESS/BUSINESS_SYSTEM.md) | 业务运营 |
 | [6-TRADING](../../6-TRADING/) | [TRADING_SYSTEM.md](../../6-TRADING/TRADING_SYSTEM.md) | A0-A9 流水线 |
 
@@ -114,7 +115,7 @@ DreamBuddy-V2/
 
 ## L2 — 交易子系统
 
-> 7 个子系统均遵循 [DOC_STANDARD.md](../1-规范体系/DOC_STANDARD.md) 规范，5 文档齐全。
+> 8 个子系统均遵循 [DOC_STANDARD.md](../1-规范体系/DOC_STANDARD.md) 规范，5 文档齐全。
 
 ### 10-经典指标系统
 
@@ -222,6 +223,29 @@ DreamBuddy-V2/
 - [docs/API_SPEC.md](../../17-v4-wave-strategy/docs/API_SPEC.md) v1.0
 - [docs/CHANGELOG.md](../../17-v4-wave-strategy/docs/CHANGELOG.md) v1.0
 
+### 23-四层闭环自进化交易架构
+
+| 属性 | 值 |
+|------|-----|
+| 定位 | 四层闭环自进化交易架构：观察→推断→实验→反思→回馈（RippleEngine + ReflectionEngine + ESS 紧耦合闭环） |
+| 主入口 | [docs/ENGINEERING_INDEX.md](../../23-四层闭环自进化交易架构/docs/ENGINEERING_INDEX.md) |
+| 核心模块 | `engines/kline_event_handler.py`（双起点RI+三层仓位+SL/TP兜底）、`engines/ripple_engine.py`、`engines/reflection_engine.py`、`engines/reflection_scanner.py`（反思学习起点）、`engines/trade_index_builder.py`（系统级交易索引库）、`engines/tight_coupling_orchestrator.py`、`adapters/coin_scanner.py`（50币池+美股代币配额） |
+| 文档评级 | A |
+
+**核心能力（2026-09-06 高频进化增强）**：
+- **双起点触发**：涟漪检测（外察式）+ 反思学习（内省式胜率→reflection_ri），`ri = max(ripple_ri, reflection_ri)`
+- **三层仓位分级**：probe(ri≥0.40, ×0.4) / standard(ri≥0.55, ×0.7) / trend(ri≥0.70, ×1.0) + 市场状态乘数
+- **SL/TP 兜底**：建仓后立即按 tier 设置止损止盈（probe 5%/10%、standard 3%/6%、trend 2%/4%）
+- **系统级交易索引库**：自动发现全子系统 JSONL+SQLite 交易记录，聚合去重为统一索引（83 笔/25 币/4 源）
+- **50 币种池**：基础 24 币 + CoinScanner 扫描 50 币（美股代币配额 50%）
+
+**关联文档**：
+- [docs/ENGINEERING_INDEX.md](../../23-四层闭环自进化交易架构/docs/ENGINEERING_INDEX.md) v1.0
+- [docs/TECHNICAL_DESIGN.md](../../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.0
+- [docs/API_SPEC.md](../../23-四层闭环自进化交易架构/docs/API_SPEC.md) v1.0
+- [docs/CHANGELOG.md](../../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.0
+- [四层闭环进化架构-最小阻力路径总览.md](../../2-KNOWLEDGE/1-TRADING/四层闭环进化架构-最小阻力路径总览.md)
+
 ---
 
 ## L3 — 辅助模块
@@ -237,5 +261,5 @@ DreamBuddy-V2/
 
 ---
 
-**文档版本**: v2.0
-**最后更新**: 2026-07-31
+**文档版本**: v2.2
+**最后更新**: 2026-09-07

@@ -190,10 +190,45 @@ class OKXSimulatedClient:
         self.base_url = self.cfg["base_url"]
         self.simulated = self.cfg["simulated"]
         self.dry_run = self.cfg["dry_run"]
+        self.default_leverage = self.cfg.get("default_leverage", 5.0)
         self.session = requests.Session()
         self.session.trust_env = False
 
         self._proxy_setup()
+
+    def set_leverage(self, inst_id, leverage=None, mgn_mode="isolated"):
+        """设置OKX币种杠杆（先显式设杠杆，再下单，防止交易所默认杠杆与本地不一致）"""
+        if leverage is None:
+            leverage = self.default_leverage
+        try:
+            _lev_float = float(leverage)
+            if _lev_float == int(_lev_float):
+                lever_str = str(int(_lev_float))
+            else:
+                lever_str = str(_lev_float)
+        except (TypeError, ValueError):
+            lever_str = str(self.default_leverage)
+
+        body = {
+            "instId": inst_id,
+            "lever": lever_str,
+            "mgnMode": mgn_mode,
+        }
+
+        if self.dry_run or not self._has_credentials():
+            r = {
+                "ok": True,
+                "code": "0",
+                "msg": "",
+                "data": [{"instId": inst_id, "lever": lever_str, "mgnMode": mgn_mode}],
+                "dry_run": True,
+            }
+            self._audit_log("set_leverage_dry", body, r)
+            return r
+
+        r = self._post("/api/v5/account/set-leverage", body)
+        self._audit_log("set_leverage", body, r)
+        return r
 
     def _proxy_setup(self):
         # 1) 优先使用环境变量代理
@@ -305,6 +340,60 @@ class OKXSimulatedClient:
             "ts": d.get("ts"),
         }
 
+    def get_orderbook(self, inst_id: str = None, sz: int = 10) -> Dict:
+        """Top-N 档订单簿。
+
+        Wraps OKX REST ``/api/v5/market/books``.  Returns a uniform shape
+        consumed by ``SlippageEstimator`` (FR-0.1 data source):
+
+        .. code-block:: python
+
+            {
+                "ok": True,
+                "inst_id": "BTC-USDT-SWAP",
+                "bids": [[px_str, sz_str, liq, ord_count], ...],  # best → worst
+                "asks": [[px_str, sz_str, liq, ord_count], ...],  # best → worst
+                "ts":   "1700000000000",
+            }
+
+        FAIL-OPEN dry-run branch: when ``self.dry_run`` and HTTP is not
+        reachable, synthesise a 1-level synthetic book from get_ticker().
+        """
+        inst_id = inst_id or self.cfg["default_inst_id"]
+
+        if self.dry_run:
+            # Synthesise from ticker so estimator works offline / paper
+            t = self.get_ticker(inst_id)
+            if not t.get("ok"):
+                return {"ok": False, "error": t.get("error", "get_ticker failed"),
+                        "inst_id": inst_id, "bids": [], "asks": [],
+                        "ts": str(int(time.time() * 1000))}
+            last_bid = str(t.get("bid", t.get("last", 0)))
+            last_ask = str(t.get("ask", t.get("last", 0)))
+            bid_sz = ask_sz = "1.0"
+            return {
+                "ok": True, "inst_id": inst_id,
+                "bids": [[last_bid, bid_sz, "1", "1"]],
+                "asks": [[last_ask, ask_sz, "1", "1"]],
+                "ts": str(int(time.time() * 1000)),
+                "__fallback__": "ticker_only_dry_run",
+            }
+
+        params = {"instId": inst_id, "sz": str(int(sz or 10))}
+        r = self._get("/api/v5/market/books", params, auth=False)
+        if r.get("code") != "0":
+            return {"ok": False, "error": r.get("msg", "unknown"),
+                    "inst_id": inst_id, "bids": [], "asks": [],
+                    "ts": str(int(time.time() * 1000))}
+        data = r["data"][0]
+        return {
+            "ok": True,
+            "inst_id": inst_id,
+            "bids": data.get("bids", []),
+            "asks": data.get("asks", []),
+            "ts": data.get("ts") or str(int(time.time() * 1000)),
+        }
+
     def get_instrument(self, inst_id: str = None) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
         # 使用 public/instruments 接口（market/instruments 对股票永续等部分合约返回 Not Found）
@@ -408,6 +497,71 @@ class OKXSimulatedClient:
                 "vol": float(d[5]),
             })
         return {"ok": True, "inst_id": inst_id, "bar": bar, "candles": candles}
+
+    # ── 衍生品数据（自进化架构 R 向量用）────────────────────────
+
+    def get_long_short_ratio(self, inst_id: str = None,
+                             period: str = "1H") -> Dict:
+        """OKX 公开多空持仓比 → R_up/R_down 筹码维度
+
+        接口: /api/v5/rubik/stat/contracts/long-short-account-ratio (无需认证)
+        参数: ccy (从 inst_id 提取币种, 如 BTC-USDT-SWAP → BTC)
+        响应: data=[[ts, longShortRatio], ...], data[0] 为最新
+        Returns: {ok, long_ratio, short_ratio, long_short_ratio, ts}
+        FAIL-OPEN: 失败 → {ok: False, error}
+        """
+        inst_id = inst_id or self.cfg["default_inst_id"]
+        # inst_id 格式 BTC-USDT-SWAP → ccy=BTC
+        ccy = inst_id.split("-")[0] if inst_id else ""
+        if not ccy:
+            return {"ok": False, "error": "ccy empty from inst_id"}
+        r = self._get(
+            "/api/v5/rubik/stat/contracts/long-short-account-ratio",
+            {"ccy": ccy, "period": period},
+            auth=False,
+        )
+        if r.get("code") != "0" or not r.get("data"):
+            return {"ok": False, "error": r.get("msg", "no data"), "raw": r}
+        # data[0] = [ts, longShortRatio], longShortRatio = longCount/shortCount
+        d = r["data"][0]
+        ts = int(d[0])
+        lsr = float(d[1])  # longShortRatio
+        # longAccount = lsr / (1 + lsr), shortAccount = 1 / (1 + lsr)
+        long_ratio = lsr / (1.0 + lsr)
+        short_ratio = 1.0 / (1.0 + lsr)
+        return {
+            "ok": True,
+            "inst_id": inst_id,
+            "long_ratio": long_ratio,
+            "short_ratio": short_ratio,
+            "long_short_ratio": lsr,
+            "ts": ts,
+        }
+
+    def get_open_interest(self, inst_id: str = None) -> Dict:
+        """OKX 未平仓合约（OI）→ R_capital 资金流维度
+
+        接口: /api/v5/public/open-interest (无需认证)
+        Returns: {ok, open_interest, oi_ccy, inst_type, ts}
+        FAIL-OPEN: 失败 → {ok: False, error}
+        """
+        inst_id = inst_id or self.cfg["default_inst_id"]
+        r = self._get(
+            "/api/v5/public/open-interest",
+            {"instId": inst_id},
+            auth=False,
+        )
+        if r.get("code") != "0" or not r.get("data"):
+            return {"ok": False, "error": r.get("msg", "no data"), "raw": r}
+        d = r["data"][0]
+        return {
+            "ok": True,
+            "inst_id": inst_id,
+            "open_interest": float(d.get("oi", 0)),
+            "oi_ccy": float(d.get("oiCcy", 0)),
+            "inst_type": d.get("instType", ""),
+            "ts": int(d.get("ts", 0)),
+        }
 
     # ── 账户信息 ──────────────────────────────────────────────
 
@@ -513,13 +667,14 @@ class OKXSimulatedClient:
 
     # ── 交易下单 ──────────────────────────────────────────────
 
-    def place_order(self, inst_id: str, side: str, ord_type: str = "market",
-                    sz: float = None, px: float = None,
-                    td_mode: str = "isolated", pos_side: str = "net",
-                    tag: str = "yijingsim",
-                    reason: str = "") -> Dict:
+    def place_order(self, inst_id, side, ord_type="market",
+                    sz=None, px=None,
+                    td_mode="isolated", pos_side="net",
+                    tag="yijingsim", reason="",
+                    leverage=None, max_slippage_bps: float = None):
         """
         下单（默认 dry_run 模式，仅记录不下单）
+        **重要：下单前先调set_leverage同步交易所端杠杆，防止币种默认杠杆与本地不一致**
 
         Args:
             inst_id: 合约/现货 ID，如 BTC-USDT-SWAP
@@ -531,47 +686,112 @@ class OKXSimulatedClient:
             pos_side: net / long / short
             tag: 订单标签
             reason: 下单原因（审计用）
+            leverage: 杠杆倍率（None时用default_leverage=5x）
+            max_slippage_bps: （可选，TEE执行层用）当ord_type=market时生效的最大
+                滑点保护闸（单位：基点，1bps=0.01%）。对**合约**，将市价单改写为
+                price-capped 限价单：buy 用 best_ask × (1 + bps/10000)，sell 用
+                best_bid × (1 - bps/10000)，避免极端盘口吃下十几档。
+                当 best_bid/ask 不可得时，退回纯市价单（FAIL-OPEN）。
+                对**限价单**或**不传该参数**的情况，此参数不起作用——保持完全
+                字节等价于历史行为（TR-2.3 的基线兼容性保障）。
         """
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials",
                     "dry_run_result": None}
 
+        # ── 先同步杠杆（SOL交易所默认可能是10x，代码LEVERAGE=5x）──
+        _lev = self.default_leverage if leverage is None else leverage
+        _sl_resp = self.set_leverage(inst_id, _lev, mgn_mode=td_mode)
+        if _sl_resp is None:
+            pass
+        elif _sl_resp.get("code") not in ("0", None) and not _sl_resp.get("dry_run"):
+            # set_leverage失败但非致命（如币种不支持该杠杆），记录告警，继续下单
+            self._audit_log("set_leverage_warn",
+                           {"inst_id": inst_id, "leverage": _lev},
+                           _sl_resp)
+
+        # ── 滑点硬闸：合约市价单 → 限价偏移 ──────────────────────
+        # NOTE: 仅当 max_slippage_bps 明确传入且 ord_type=market 时生效。
+        #       不改变默认不传时的请求体（TR-2.3 字节等价）。
+        _effective_ord_type = ord_type
+        _effective_px = px
+        _slippage_applied = False
+        _slippage_fallback_reason: Optional[str] = None
+        if ord_type == "market" and max_slippage_bps is not None:
+            ticker = self.get_ticker(inst_id)
+            if ticker.get("ok"):
+                _bid = ticker.get("bid")
+                _ask = ticker.get("ask")
+                try:
+                    bid_f = float(_bid) if _bid not in (None, "") else None
+                    ask_f = float(_ask) if _ask not in (None, "") else None
+                except (TypeError, ValueError):
+                    bid_f = ask_f = None
+
+                if side == "buy" and ask_f is not None:
+                    _effective_px = ask_f * (1.0 + float(max_slippage_bps) / 10000.0)
+                    _effective_ord_type = "limit"
+                    _slippage_applied = True
+                elif side == "sell" and bid_f is not None:
+                    _effective_px = bid_f * (1.0 - float(max_slippage_bps) / 10000.0)
+                    _effective_ord_type = "limit"
+                    _slippage_applied = True
+                else:
+                    _slippage_fallback_reason = (
+                        f"side={side} lacks {'ask' if side=='buy' else 'bid'} in ticker"
+                    )
+            else:
+                _slippage_fallback_reason = "get_ticker() not ok during slippage rewrite"
+
         body = {
             "instId": inst_id,
             "tdMode": td_mode,
             "side": side,
-            "ordType": ord_type,
+            "ordType": _effective_ord_type,
             "posSide": pos_side,
             "tag": tag or "yijingsim",
         }
 
-        if ord_type == "market":
+        if _effective_ord_type == "market":
             body["sz"] = str(sz)
         else:
-            body["px"] = str(px)
+            body["px"] = str(_effective_px)
             body["sz"] = str(sz)
 
         if self.dry_run:
-            ticker = self.get_ticker(inst_id)
-            estimated_price = ticker.get("last", 0) if ticker["ok"] else 0
+            _ticker = self.get_ticker(inst_id)
+            estimated_price = _ticker.get("last", 0) if _ticker["ok"] else 0
             dry_result = {
                 "ok": True,
                 "dry_run": True,
                 "simulated": self.simulated,
                 "inst_id": inst_id,
                 "side": side,
-                "ord_type": ord_type,
+                "ord_type": ord_type,         # return caller's original type
+                "effective_ord_type": _effective_ord_type,  # hint about rewrite
                 "sz": sz,
                 "px": px,
+                "effective_px": _effective_px if _slippage_applied else None,
+                "max_slippage_bps": max_slippage_bps,
+                "slippage_applied": _slippage_applied,
+                "slippage_fallback_reason": _slippage_fallback_reason,
                 "estimated_price": estimated_price,
                 "reason": reason,
                 "ord_id": f"dry_run_{int(time.time()*1000)}",
             }
-            self._audit_log("place_order_dry", body, {"code": "0", "msg": "dry_run", "data": [dry_result]})
+            self._audit_log("place_order_dry", body, {
+                "code": "0", "msg": "dry_run", "data": [dry_result],
+            })
             return dry_result
 
         r = self._post("/api/v5/trade/order", body)
-        self._audit_log("place_order", body, r)
+        self._audit_log("place_order", {
+            **body,
+            "__orig_ordType": ord_type,
+            "__max_slippage_bps": max_slippage_bps,
+            "__slippage_applied": _slippage_applied,
+            "__slippage_fallback_reason": _slippage_fallback_reason,
+        }, r)
 
         ok = r.get("code") == "0"
         return {
@@ -579,6 +799,10 @@ class OKXSimulatedClient:
             "dry_run": False,
             "simulated": self.simulated,
             "ord_id": r["data"][0]["ordId"] if ok and r.get("data") else None,
+            "effective_ord_type": _effective_ord_type,
+            "effective_px": _effective_px if _slippage_applied else None,
+            "slippage_applied": _slippage_applied,
+            "slippage_fallback_reason": _slippage_fallback_reason,
             "raw": r,
         }
 

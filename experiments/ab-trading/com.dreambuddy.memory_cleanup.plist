@@ -25,6 +25,20 @@
     <key>RunAtLoad</key>
     <false/>
 
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>PYTHONIOENCODING</key>
+        <string>utf-8</string>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+        <key>LANG</key>
+        <string>en_US.UTF-8</string>
+        <key>LC_ALL</key>
+        <string>en_US.UTF-8</string>
+    </dict>
+
     <key>StandardOutPath</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/logs/memory_cleanup_stdout.log</string>
 

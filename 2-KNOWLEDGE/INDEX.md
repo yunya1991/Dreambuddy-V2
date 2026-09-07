@@ -37,12 +37,41 @@
 │   ├── 索引体系.md
 │   ├── OKR管理.md
 │   └── 审批工作流.md
-└── 5-CHAIN-DEVELOPMENT/  # 三链开发方法论
+├── 5-CHAIN-DEVELOPMENT/  # 三链开发方法论
+│   ├── INDEX.md
+│   ├── D-调研方法论.md
+│   ├── Z-规划方法论.md
+│   ├── E-执行方法论.md
+│   └── 三链接力协议.md
+├── 6-PRODUCT-BUSINESS/   # 产品业务与系统工作流程
+│   ├── INDEX.md
+│   ├── 产品定位与边界.md
+│   ├── 核心目录架构.md
+│   ├── 系统工作流程总览.md
+│   ├── 模块间关系图.md
+│   ├── 交易执行链路.md
+│   └── 风控体系工作流.md
+├── 7-EXTERNAL-RESEARCH/  # 外部资料素材库
+│   ├── INDEX.md
+│   ├── finance/          # 传统金融调研
+│   │   ├── quant-methods/    # 量化方法
+│   │   ├── risk-models/      # 风控模型
+│   │   ├── market-structure/ # 市场结构
+│   │   └── trading-psychology/ # 交易心理
+│   ├── github/           # GitHub开源调研
+│   │   ├── ml-frameworks/    # 机器学习框架
+│   │   ├── trading-systems/  # 交易系统
+│   │   ├── data-engineering/ # 数据工程
+│   │   └── infra-tools/      # 基础设施工具
+│   └── technical/         # 技术方案调研
+│       ├── architecture/     # 架构模式
+│       ├── algorithms/       # 算法实现
+│       └── testing/          # 测试方法
+└── 8-AI-COGNITION/       # AI沉淀资料库索引
     ├── INDEX.md
-    ├── D-调研方法论.md
-    ├── Z-规划方法论.md
-    ├── E-执行方法论.md
-    └── 三链接力协议.md
+    ├── 认知系统架构.md
+    ├── 记忆类型映射.md
+    └── 检索指南.md
 ```
 
 ## 建设原则
@@ -57,8 +86,11 @@
 
 | 域 | 文件数 | 状态 |
 |:---|:---:|:---:|
-| 1-TRADING | 9 | ✅ 已完成 |
+| 1-TRADING | 19 | ✅ 已完成 |
 | 2-TECHNICAL | 5 | ✅ 已完成 |
 | 3-THEORY | 4 | ✅ 已完成 |
 | 4-OPERATIONS | 6 | ✅ 已完成 |
 | 5-CHAIN-DEVELOPMENT | 5 | ✅ 已完成 |
+| 6-PRODUCT-BUSINESS | 7 | ✅ 已完成 |
+| 7-EXTERNAL-RESEARCH | 4+11目录 | ✅ 骨架完成，随开发自动积累 |
+| 8-AI-COGNITION | 4 | ✅ 已完成 |

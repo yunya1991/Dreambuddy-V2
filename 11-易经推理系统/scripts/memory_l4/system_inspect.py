@@ -254,27 +254,19 @@ class PositionsPanel(BasePanel):
             from scripts.memory_l4.okx_simulated import OKXSimulatedClient
 
             client = OKXSimulatedClient()
-            # 从 .env 读取 POLLING_COINS，缺省时回退到默认列表
-            _env_coins = os.environ.get("POLLING_COINS", "")
-            if _env_coins:
-                coins = [c.strip() for c in _env_coins.split(",") if c.strip()]
-            else:
-                coins = ["UNI", "PUMP", "MU", "SKHYNIX", "HYPE", "ETH", "BTC", "SOL",
-                         "XAU", "XAG", "GOOGL", "NVDA", "AMZN", "OKB", "BNB"]
-            for coin in coins:
-                inst_id = f"{coin}-USDT-SWAP"
-                result = client.get_positions(inst_id)
-                if result.get("ok"):
-                    for pos in result.get("positions", []):
-                        if float(pos["pos"]) > 0:
-                            okx_positions.append(
-                                {
-                                    "inst_id": inst_id,
-                                    "direction": pos["pos_side"],
-                                    "size": float(pos["pos"]),
-                                    "avg_px": float(pos.get("avg_px", 0)),
-                                }
-                            )
+            # 一次性查询全部持仓（避免按币种列表逐个查询导致漏查）
+            result = client.get_positions()
+            if result.get("ok"):
+                for pos in result.get("positions", []):
+                    if float(pos.get("pos", 0)) > 0:
+                        okx_positions.append(
+                            {
+                                "inst_id": pos.get("inst_id", ""),
+                                "direction": pos.get("pos_side", "net"),
+                                "size": float(pos.get("pos", 0)),
+                                "avg_px": float(pos.get("avg_px", 0)),
+                            }
+                        )
             details["okx_position_count"] = len(okx_positions)
         except Exception as e:
             status = "warn"

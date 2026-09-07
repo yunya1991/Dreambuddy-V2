@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-MACD-HIST-3BAR-X",
+  "category": "reversal",
+  "condition_type": "indicator",
+  "expression": "macd_histogram_3bar_green_cross",
+  "parameters": {
+    "window": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 200
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "9-基本面分析/engines/sentiment_engine.py",
+    "lines": {
+      "low": 368,
+      "high": 375
+    }
+  },
+  "tags": [
+    "reversal",
+    "indicator",
+    "MACD-HIST-3BAR-X"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #7 MVP seed (auto-gen reproducible)."
+}

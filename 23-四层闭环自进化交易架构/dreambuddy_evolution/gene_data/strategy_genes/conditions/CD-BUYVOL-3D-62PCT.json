@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-BUYVOL-3D-62PCT",
+  "category": "momentum",
+  "condition_type": "indicator",
+  "expression": "buy_volume_ratio_3d > 0.62",
+  "parameters": {
+    "vol_baseline_days": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 90
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "21-特征工程中心/feature_hub/resistance_features.py",
+    "lines": {
+      "low": 10,
+      "high": 23
+    }
+  },
+  "tags": [
+    "momentum",
+    "indicator",
+    "BUYVOL-3D-62PCT"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #14 MVP seed (auto-gen reproducible)."
+}

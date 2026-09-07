@@ -17,6 +17,7 @@ from flask_cors import CORS
 
 # 导入内部模块（切换到 data_center.compat 兼容层）
 import sys as _sys
+import sqlite3 as _sqlite3
 from pathlib import Path as _Path
 _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "18-数据获取中心"))
 from data_center.compat import DataCollector, generate_timeseries
@@ -29,6 +30,9 @@ app = Flask(__name__)
 CORS(app)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT_DIR = str(_Path(BASE_DIR).resolve().parent)
+DATA_CENTER_DB = os.path.join(REPO_ROOT_DIR, "18-数据获取中心", "data_center.db")
+
 STORAGE_DIR = os.path.join(BASE_DIR, "storage")
 SNAPSHOT_DIR = os.path.join(STORAGE_DIR, "snapshots")
 TIMESERIES_DIR = os.path.join(STORAGE_DIR, "timeseries")
@@ -504,6 +508,164 @@ def make_module_handlers():
 make_module_handlers()
 
 
+# ============== FundamentalPage 新闻子模块 stub 路由（内存友好版占位，不产生真实数据）==============
+# 精确匹配 10-经典指标系统/frontend/src/lib/api.ts 的 FundamentalNews*Response TS 类型
+# 目的：前端 FundamentalPage 不白屏、不抛 zod validation / network 404 错误；卡片显示空列表即可。
+
+def _stub_ts() -> int:
+    return int(datetime.now(timezone.utc).timestamp() * 1000)
+
+
+@app.route("/fundamental/news/brief/latest", methods=["GET"], endpoint="news_stub__brief_latest")
+@handle_errors
+def news_brief_latest():
+    # FundamentalNewsBriefResponse
+    max_chars_raw = request.args.get("max_chars")
+    return jsonify({
+        "ok": True,
+        "ts": _stub_ts(),
+        "path": "",
+        "name": request.args.get("name") or "",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "content": "",
+        "content_chars": 0,
+        "content_truncated": False,
+        "max_chars": (int(max_chars_raw) if str(max_chars_raw or "").isdigit() else None),
+        "quality": "stub",
+        "coverage": None,
+        "missing_data": ["data_center.news_automation: stub only, 内存友好模式，真实新闻管道未启动"],
+        "turning_point_state": "UNKNOWN",
+        "trigger_reasons": [],
+        "confirm_bars": 0,
+        "turning_point_detail": {"level": None, "slope": None, "stress": "none"},
+        "execution_gate": "STUB_SKIP",
+        "monitoring_clocks": {
+            "update_frequency_sec": 0,
+            "max_tolerated_delay_sec": 0,
+            "backfill_freeze_window_sec": 0,
+        },
+        "template_guard": None,
+        "error": None,
+    })
+
+
+@app.route("/fundamental/news/event_ledger/latest", methods=["GET"], endpoint="news_stub__event_ledger_latest")
+@handle_errors
+def news_event_ledger_latest():
+    # FundamentalNewsEventLedgerResponse
+    limit_raw = request.args.get("limit")
+    limit = int(limit_raw) if str(limit_raw or "").isdigit() else 20
+    return jsonify({
+        "ok": True,
+        "ts": _stub_ts(),
+        "path": "",
+        "name": request.args.get("name") or "",
+        "items": [],
+        "count": 0,
+        "limit": limit,
+        "error": None,
+    })
+
+
+@app.route("/fundamental/news/risk_action_events/latest", methods=["GET"], endpoint="news_stub__risk_action_latest")
+@handle_errors
+def news_risk_action_latest():
+    # FundamentalNewsRiskActionResponse
+    limit_raw = request.args.get("limit")
+    limit = int(limit_raw) if str(limit_raw or "").isdigit() else 20
+    return jsonify({
+        "ok": True,
+        "ts": _stub_ts(),
+        "path": "",
+        "name": request.args.get("name") or "",
+        "items": [],
+        "count": 0,
+        "limit": limit,
+        "error": None,
+    })
+
+
+@app.route("/fundamental/news/anchor_delta_view/latest", methods=["GET"], endpoint="news_stub__anchor_delta_view_latest")
+@handle_errors
+def news_anchor_delta_view_latest():
+    # FundamentalNewsAnchorDeltaViewResponse
+    return jsonify({
+        "ok": True,
+        "ts": _stub_ts(),
+        "path": "",
+        "name": request.args.get("name") or "",
+        "record": {},
+        "error": None,
+    })
+
+
+@app.route("/fundamental/news/evaluation/history", methods=["GET"], endpoint="news_stub__evaluation_history")
+@handle_errors
+def news_evaluation_history():
+    # FundamentalNewsEvaluationHistoryResponse
+    return jsonify({
+        "ok": True,
+        "ts": _stub_ts(),
+        "anchor_hour": None,
+        "rows": [],
+        "anchor_run": None,
+        "latest_run": None,
+        "delta": {},
+        "error": None,
+    })
+
+
+@app.route("/fundamental/news/automation", methods=["GET"], endpoint="news_stub__automation_state")
+@handle_errors
+def news_automation_state():
+    # FundamentalNewsAutomationStateResponse
+    return jsonify({
+        "ok": True,
+        "ts": _stub_ts(),
+        "enabled": False,
+        "period_hours": 0,
+        "period_sec": 0,
+        "window_hours": 0,
+        "state": {"mode": "stub_memory_saver"},
+        "latest": None,
+        "error": None,
+    })
+
+
+@app.route("/fundamental/news/automation/config", methods=["POST"], endpoint="news_stub__automation_config")
+@handle_errors
+def news_automation_config():
+    # FundamentalNewsAutomationConfigResponse
+    payload = request.get_json(silent=True) or {}
+    return jsonify({
+        "ok": True,
+        "ts": _stub_ts(),
+        "enabled": bool(payload.get("enabled", False)),
+        "period_hours": int(payload.get("period_hours", 0) or 0),
+        "period_sec": int((payload.get("period_hours", 0) or 0)) * 3600,
+        "window_hours": int(payload.get("window_hours", 0) or 0),
+        "state": {"mode": "stub_memory_saver", "config_accepted": True, "applied": False},
+        "error": None,
+    })
+
+
+@app.route("/fundamental/news/automation/run", methods=["POST"], endpoint="news_stub__automation_run")
+@handle_errors
+def news_automation_run():
+    # FundamentalNewsAutomationRunResponse
+    payload = request.get_json(silent=True) or {}
+    return jsonify({
+        "ok": True,
+        "queued": False,
+        "ts": _stub_ts(),
+        "hours": int(payload.get("hours", 0) or 0),
+        "source": "stub",
+        "trigger_event": str(payload.get("trigger_event") or "manual"),
+        "state": {"skipped": True, "reason": "memory_saver_mode: stub only"},
+        "error": None,
+    })
+
+
 # ============== 启动函数 ==============
 
 def background_collector():
@@ -526,29 +688,41 @@ def start_background_thread():
 
 
 def main():
-    """主入口"""
+    """主入口（内存友好：--no-collect 默认启用、关闭 Flask reloader，避免双进程）"""
+    t0 = datetime.now(timezone.utc)
     parser = argparse.ArgumentParser(description="基本面分析API服务 v2")
     parser.add_argument("--port", type=int, default=9094, help="端口号")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="主机地址")
-    parser.add_argument("--no-collect", action="store_true", help="禁用自动采集")
+    parser.add_argument("--no-collect", action="store_true", default=True,
+                        help="禁用自动采集（内存友好，默认开启；传 --collect 才启动后台线程）")
+    parser.add_argument("--collect", dest="collect", action="store_true", default=False,
+                        help="显式启动后台采集线程（内存更大）")
     args = parser.parse_args()
+    enable_collect = bool(args.collect) and not args.no_collect
 
-    print(f"[Init] 初始化数据采集...")
+    print(f"[Milestone 1/4] 冷启动 Python 常量 & 导入完成  {(datetime.now(timezone.utc)-t0).total_seconds()*1000:.0f}ms")
 
-    # 初始化所有模块数据
+    # 初始化所有模块数据（逐个模块做：不并行，内存峰值最小）
+    t1 = datetime.now(timezone.utc)
+    print(f"[Milestone 2/4] 初始化 {len(MODULES)} 模块数据（内存友好：逐模块、不预热 timeseries）...")
     for module in MODULES:
         try:
             refresh_module(module)
             print(f"[Init] {module} initialized")
         except Exception as e:
-            print(f"[Init] {module} init failed: {e}")
+            print(f"[Init] {module} init failed (skipped, 不影响其它模块): {type(e).__name__}: {e}")
+    print(f"[Milestone 2/4 ✓] 数据初始化完成  耗时 {(datetime.now(timezone.utc)-t1).total_seconds():.1f}s")
 
-    # 启动后台采集
-    if not args.no_collect:
+    # 启动后台采集（默认不启用，内存友好）
+    if enable_collect:
         start_background_thread()
+    else:
+        print("[Background] Collector thread SKIPPED (--no-collect / memory_saver mode)")
 
-    print(f"[Init] 启动Flask服务 on {args.host}:{args.port}")
-    app.run(host=args.host, port=args.port, debug=False, threaded=True)
+    print(f"[Milestone 3/4] 路由注册: /fundamental/{{health,overview,composite-signal,snapshot}} + 10 modules × 5 sub-routes + 7 news stubs")
+    print(f"[Milestone 4/4] 启动Flask(no_reloader) on {args.host}:{args.port}  —  {datetime.now(timezone.utc).isoformat()}")
+    # 关闭 use_reloader: 防止 werkzeug 启动父子 2 个 Python 进程（内存直接翻倍）
+    app.run(host=args.host, port=args.port, debug=False, threaded=True, use_reloader=False)
 
 
 if __name__ == "__main__":

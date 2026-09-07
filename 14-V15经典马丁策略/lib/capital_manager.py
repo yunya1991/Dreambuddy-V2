@@ -28,6 +28,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
@@ -115,7 +116,39 @@ ADDON3_PCT = get_config_float("ADDON3_PCT", 0.20)  # 加仓3：20%
 ADDON4_PCT = get_config_float("ADDON4_PCT", 0.35)  # 加仓4：35%（最深档，5单结构的末端黑天鹅加仓）
 
 MAX_POSITION_PCT = get_config_float("MAX_POSITION_PCT", 0.60)
-MIN_MARGIN_USD = get_config_float("MIN_MARGIN_USD", 20)
+MIN_MARGIN_USD = get_config_float("MIN_MARGIN_USD", 30)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# §1/§2/§3 动态V15预算池配置（spec 2026-09-01）
+# 全部 FAIL-OPEN：任何异常/非数字/拼写错误→硬编码安全默认值，不抛异常
+# ═══════════════════════════════════════════════════════════════════════════
+def _safe_cfg_float(key: str, default: float) -> float:
+    try:
+        v = get_config(key, None)
+        if v is None or str(v).strip() == "":
+            return float(default)
+        return float(v)
+    except Exception:
+        return float(default)
+
+def _safe_cfg_bool(key: str, default: bool) -> bool:
+    try:
+        v = get_config(key, None)
+        if v is None or str(v).strip() == "":
+            return bool(default)
+        return str(v).strip().lower() in ("1", "true", "yes", "on", "enabled")
+    except Exception:
+        return bool(default)
+
+# §1 预算分子：默认POOL=$200, UTIL=1.0, CAP=50%权益
+V15_POOL_SIZE_USDT      = _safe_cfg_float("V15_POOL_SIZE_USDT",       200.0)
+V15_BUDGET_UTIL_PCT     = _safe_cfg_float("V15_BUDGET_UTIL_PCT",      1.0)
+V15_MAX_RATIO_CAP       = _safe_cfg_float("V15_MAX_RATIO_CAP",        0.5)
+# §2 已用扣减 & §3 MIN自适应
+V15_DEDUCT_V15_USED     = _safe_cfg_bool("V15_DEDUCT_V15_USED",       True)
+V15_DYNAMIC_MIN_MARGIN  = _safe_cfg_bool("V15_DYNAMIC_MIN_MARGIN",    True)
+V15_MIN_MARGIN_FLOOR    = _safe_cfg_float("V15_MIN_MARGIN_FLOOR",     5.0)
+
 
 # 币种池：公共代币池(token_registry.json) > V15_COINS env(override) > 硬编码默认
 _RAW_COINS = load_coins_with_override(
@@ -309,13 +342,23 @@ def calculate_single_position_cost(budget=None):
     }
 
 
-def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, available_budget=None):
+def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, available_budget=None,
+                                  pos_count_override=None,
+                                  v15_used_usd=None, v15_state_positions=None):
     """基于趋势强度+置信度+波动率的智能资金分配
 
     资金管理器三大职责：
     1. 最大持仓币种数控制
     2. 各币种总预算管理（基于 Elder-ray 趋势强度 + 信号置信度）
     3. 3次加仓资金预算分配
+
+    V15动态预算池（spec 2026-09-01）：优先使用独立的V15_POOL_SIZE下限保障计算出的
+    budget_pool_net作为available_budget；调用方可显式传available_budget覆盖（传统fixed兼容）。
+
+    FIX-C(override) + 预算池override扩展：
+    - pos_count_override（int）：V15 state内持有的仓位数量（不含L4/polling_trader外部仓位）
+    - v15_used_usd（float，可选）：V15 state中已占用per_coin_budget总和（§2扣减项分子）
+    - v15_state_positions（dict/list，可选）：v15_used_usd未传时从此state累加per_coin_budget
 
     固定参数（不参与优化）：
     - BTC 基础仓 22%
@@ -341,12 +384,34 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
     """
     # ── 统一资金口径（所有返回值中附带模式/来源/兜底三字段）──
     cap = _resolve_capital_budget()
-    if V15_CAPITAL_MODE == "fixed" or available_budget is None:
+
+    # ── V15动态预算池（spec 2026-09-01 §1/§2/§3）优先于cap.avail_balance ──
+    #   只有当调用方显式传入available_budget（fixed/回归兼容）时才用旧口径；
+    #   否则（默认路径）计算budget_pool_net，替换available_budget。
+    pool_info = _resolve_v15_budget_pool(cap,
+                                         v15_used_usd=v15_used_usd,
+                                         v15_state_positions=v15_state_positions)
+    if V15_CAPITAL_MODE == "fixed" and available_budget is None:
+        # fixed模式按配置TOTAL_BUDGET（不改原有行为，但仍返回预算池字段）
         available_budget = cap["avail_balance"]
+    elif available_budget is None:
+        # 动态预算池默认路径
+        available_budget = pool_info["budget_pool_net"]
+    else:
+        # 调用方显式传available_budget：保持旧行为，但同步§3 MIN自适应口径
+        # （将pool_info当作仅用于MIN计算，需基于override值临时重算一次MIN保持一致）
+        # 简化：不重算，沿用pool_info的MIN；扣减不再影响
+        pass
+    _EFF_MIN = pool_info["effective_min_margin"]
 
     # 获取当前持仓数
-    positions = get_current_positions()
-    current_count = len(positions)
+    # FIX-C: 调用方（V15主循环）传入state中持仓数，避免计入L4/polling_trader等外部仓位
+    # 若未传入则回退到OKX账户全量持仓（向后兼容）
+    if pos_count_override is not None and isinstance(pos_count_override, int) and pos_count_override >= 0:
+        current_count = pos_count_override
+    else:
+        positions = get_current_positions()
+        current_count = len(positions)
     remaining_slots = MAX_CONCURRENT_POSITIONS - current_count
 
     if remaining_slots <= 0:
@@ -433,9 +498,9 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
     max_per_coin = available_budget * MAX_POSITION_PCT
     per_coin_budget = min(per_coin_budget, max_per_coin)
 
-    # 不低于 MIN_MARGIN_USD / BASE_POSITION_PCT（确保底仓 >= MIN_MARGIN_USD）
+    # 不低于 _EFF_MIN / BASE_POSITION_PCT（确保底仓 >= §3自适应的MIN门槛，默认$20或更小）
     _eff_base_pct = _get_effective_base_pct()
-    min_budget = MIN_MARGIN_USD / _eff_base_pct if _eff_base_pct > 0 else MIN_MARGIN_USD * 5
+    min_budget = _EFF_MIN / _eff_base_pct if _eff_base_pct > 0 else _EFF_MIN * 5
     per_coin_budget = max(per_coin_budget, min_budget) if per_coin_budget > 0 else 0
 
     # ── 资金分配 ──
@@ -466,7 +531,7 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
         drawdown_margin *= scale
 
     remaining_after = available_budget - total_needed - drawdown_margin
-    allowed = remaining_after > MIN_MARGIN_USD and base_usd >= MIN_MARGIN_USD
+    allowed = remaining_after > _EFF_MIN and base_usd >= _EFF_MIN
 
     return {
         "allowed": allowed,
@@ -474,6 +539,14 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
         "capital_mode": cap["mode"],
         "budget_source": cap["budget_source"],
         "fallback_used": cap["fallback_used"],
+        # ── 动态预算池6字段（spec §1/§2/§3）──
+        "pool_size_usdt": pool_info["pool_size_usdt"],
+        "budget_pool_gross": pool_info["budget_pool_gross"],
+        "v15_used_deducted": pool_info["v15_used_deducted"],
+        "budget_pool_net": pool_info["budget_pool_net"],
+        "effective_min_margin": pool_info["effective_min_margin"],
+        "dynamic_min_applied": pool_info["dynamic_min_applied"],
+        # ── 分配明细 ──
         "per_coin_budget": round(per_coin_budget, 2),
         "base_usd": round(base_usd, 2),
         "addon1_usd": round(addon1_usd, 2),
@@ -570,6 +643,118 @@ def _resolve_capital_budget() -> dict:
         "avail_balance": _tb,
         "used_margin": 0.0,
         "balance_raw": bal,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# §1+§2 V15独立动态预算池计算（spec 2026-09-01）
+# ═══════════════════════════════════════════════════════════════════════════
+def _calc_v15_used_from_state(v15_state_positions) -> float:
+    """§2 从V15 state的positions dict累加per_coin_budget，算出已占用预算。
+    位置信息缺失/字段为空时视为0（FAIL-OPEN）。"""
+    if not v15_state_positions:
+        return 0.0
+    try:
+        total = 0.0
+        if isinstance(v15_state_positions, dict):
+            iterator = v15_state_positions.values()
+        else:
+            iterator = iter(v15_state_positions)
+        for pos in iterator:
+            try:
+                v = pos.get("per_coin_budget", 0) if isinstance(pos, dict) else 0
+                if isinstance(v, (int, float)):
+                    total += float(v)
+            except Exception:
+                continue
+        return max(0.0, total)
+    except Exception:
+        return 0.0
+
+
+def _resolve_v15_budget_pool(cap: dict,
+                             v15_used_usd: Optional[float] = None,
+                             v15_state_positions=None) -> dict:
+    """§1预算分子 + §2已用扣减 计算。
+    纯函数（只依赖cap入参），不直接读OKX或配置——便于单元测试mock。
+
+    Args:
+        cap: _resolve_capital_budget()的返回（必含total_eq/avail_balance）
+        v15_used_usd: 可选。调用方显式传的V15已占用预算（若传则优先用）。
+        v15_state_positions: 可选。v15_used_usd未传时，从此状态累加per_coin_budget。
+
+    Returns:
+        附带§3 effective_min_margin/dynamic_min_applied字段的统一预算池dict：
+        {pool_size_usdt, budget_pool_gross, v15_used_deducted, budget_pool_net,
+         effective_min_margin, dynamic_min_applied}
+    """
+    # §0 安全钳制输入
+    total_eq = float(cap.get("total_eq") or 0)
+    if total_eq <= 0:
+        total_eq = float(TOTAL_BUDGET)
+    avail_balance = float(cap.get("avail_balance") or 0)
+    if avail_balance < 0:
+        avail_balance = 0.0
+
+    pool_size = float(V15_POOL_SIZE_USDT)
+    util_pct = float(V15_BUDGET_UTIL_PCT)
+    max_ratio = float(V15_MAX_RATIO_CAP)
+    # 钳制比例到(0, 1.0] 防止配置填错放大到2x/5x权益
+    if max_ratio <= 0:
+        max_ratio = 0.5
+    if max_ratio > 1.0:
+        max_ratio = 1.0
+
+    # §1 预算分子公式
+    raw_pool = max(pool_size, avail_balance)
+    utilized = raw_pool * util_pct
+    cap_by_equity = total_eq * max_ratio
+    # clamp: util_pct如果负→0；超过equity cap→cap
+    budget_pool_gross = float(max(0.0, min(utilized, cap_by_equity)))
+
+    # §2 已用扣减
+    deducted = 0.0
+    if V15_DEDUCT_V15_USED:
+        if isinstance(v15_used_usd, (int, float)):
+            deducted = max(0.0, float(v15_used_usd))
+        elif v15_state_positions is not None:
+            deducted = _calc_v15_used_from_state(v15_state_positions)
+        # 安全钳制：
+        #  a) 不允许扣减后净池为负（deducted ≤ gross基础）
+        #  b) H4改进：扣减最多到 gross - (max(gross, POOL_SIZE)×50%)，即保底保留池一半
+        #     防止历史遗留大仓位（如LINK per_coin=$202 > $200池）把整池吃死。
+        #     名义预算不是交易所真实保证金（unified账户用EQ共享），所以扣减过度会
+        #     误伤新开机会但无实际风险缓解。
+        half_pool = max(budget_pool_gross, pool_size) * 0.5
+        max_allowed_deduct = max(0.0, budget_pool_gross - half_pool)
+        # 当used ≤ max_allowed_deduct → 全数扣；反之扣到 net=half_pool 为止
+        if deducted > max_allowed_deduct:
+            deducted = max_allowed_deduct
+        # 理论上a)应已满足，最后防线
+        if deducted > budget_pool_gross:
+            deducted = budget_pool_gross
+    budget_pool_net = max(0.0, budget_pool_gross - deducted)
+
+    # §3 MIN自适应
+    effective_min = float(MIN_MARGIN_USD)
+    dynamic_applied = bool(V15_DYNAMIC_MIN_MARGIN)
+    if dynamic_applied:
+        # 净预算池的10% 与 MIN_MARGIN 取更小者
+        ratio_bound = budget_pool_net * 0.10
+        # 若净预算池太小（≤50即10%≤5），用MIN_FLOOR兜底防止名义值低于交易所最低
+        eff = min(MIN_MARGIN_USD, ratio_bound) if budget_pool_net > 0 else MIN_MARGIN_USD
+        floor = float(V15_MIN_MARGIN_FLOOR)
+        if floor < 1.0:
+            floor = 1.0
+        effective_min = max(floor, eff)
+
+    return {
+        "pool_size_usdt": round(pool_size, 2),
+        "budget_pool_gross": round(budget_pool_gross, 2),
+        "v15_used_deducted": round(deducted, 2),
+        "budget_pool_net": round(budget_pool_net, 2),
+        "effective_min_margin": round(effective_min, 2),
+        "dynamic_min_applied": dynamic_applied,
     }
 
 

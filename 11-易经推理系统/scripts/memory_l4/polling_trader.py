@@ -95,6 +95,256 @@ _REGISTRY_PATHS = [
 _POOL_TTL = 28800  # 8小时
 
 
+# ─────────────────────────────────────────────────────────────
+# P0: 事件驱动注入（odaily 快讯 → Score_B event_boost clamp[0,0.10]
+#     + 卦冲突方向一致性惩罚 + 0.85 地板抬升硬拦截
+# ─────────────────────────────────────────────────────────────
+def compute_score_b_with_event_boost(
+    continuity_score: float,
+    conf_norm: float,
+    event_positive_strength: Optional[float],
+) -> Tuple[float, float]:
+    """方案C Step3 Score_B 注入 event_positive_strength（FAIL-OPEN绝对安全）。
+
+    公式（对齐 TDD 用例 param）：
+      (A) 当 event_positive_strength 为 None / 非数 / 异常 / ≤ 0.35（弱信号/无明确利好）
+            → boost=0，Score_B = 0.60×continuity + 0.40×conf_norm（**原公式完全等价，兼容回滚**）
+      (B) 当 event_positive_strength ∈ (0.35, 1.0]
+            → boost = clip( 0.10 * (strength - 0.35) / 0.65 , 0, 0.10 )
+              Score_B_new = 0.58×continuity + 0.37×conf_norm + 0.05×strength + boost
+      (C) clamp 上限：strength越界(如2.0)时 boost≤0.10 硬上限（防过拟合）
+
+    Returns:
+        (score_b_final, event_boost_applied)
+    """
+    try:
+        cont = max(0.0, min(1.0, float(continuity_score)))
+        conf = max(0.40, min(1.0, float(conf_norm)))
+        # 解析 event_positive_strength（FAIL-OPEN 解析）
+        if event_positive_strength is None:
+            strength_ok, strength_val = False, 0.0
+        else:
+            try:
+                sv = float(event_positive_strength)
+                strength_val = max(0.0, min(2.0, sv))
+                strength_ok = True
+            except (TypeError, ValueError):
+                strength_ok, strength_val = False, 0.0
+
+        if not strength_ok or strength_val <= 0.35:
+            # 中性/无信号 → 与原v3.0公式完全一致（可随时100%回滚兼容）
+            baseline = 0.60 * cont + 0.40 * conf
+            return max(0.0, min(1.0, baseline)), 0.0
+
+        # (B) 明确正面 → 3系数新合成 + boost clamp[0, 0.10]
+        raw_boost = 0.10 * max(0.0, (strength_val - 0.35)) / 0.65
+        boost = max(0.0, min(0.10, raw_boost))
+        score = 0.58 * cont + 0.37 * conf + 0.05 * min(1.0, strength_val) + boost
+
+        # ── 🆕 P1 C1④ G2护栏：EV门槛>0.05（掐弱正面吹票新闻）──
+        #    boost≤0.050（如单条小合作/次升级 strength≈0.40~0.675）→
+        #    清零boost，Score_B 回退 baseline=0.60*cont+0.40*conf（字节等价v3.0，100%兼容）
+        #    原 strength>0.35 前置门槛仍保留 → 两层夹（0.35→0.05→0.10）更保守
+        #    浮点误差容限：二进制浮点0.1/0.675是循环小数，round到6位对齐SPEC边界0.050
+        if round(boost, 6) <= 0.050:
+            boost = 0.0
+            score = 0.60 * cont + 0.40 * conf  # 回退 baseline
+
+        return max(0.0, min(1.0, score)), boost
+    except Exception:  # noqa: BLE003  FAIL-OPEN L2：任何异常→baseline+boost=0
+        try:
+            cont = max(0.0, min(1.0, float(continuity_score)))
+            conf = max(0.40, min(1.0, float(conf_norm)))
+            return max(0.0, min(1.0, 0.60 * cont + 0.40 * conf)), 0.0
+        except Exception:
+            return 0.65, 0.0  # 最底保底 fail-open neutral
+
+
+def apply_hex_conflict_multiplier_and_floor(
+    confidence: float,
+    hex_name: str,
+    hex_authoritative_dir: str,
+    decision_dir: str,
+) -> Tuple[float, bool]:
+    """⚠️ @DEPRECATED（2026-09-01 冗余确认）—— 生产统一走更完整的
+    `PollingTrader._check_hexagram_consistency_for_entry(hex_name, decision_direction=UP/DOWN, ...)`
+    调用点在 L9238（P0-4 卦一致性校验段，已全币种全场景永久生效，默认参数：
+    lookup_conflict_conf_mult=0.70 × lookup_conflict_raise_a_floor=0.85 硬地板
+    + 查表+历史滑窗双冲突 TRUE 时硬拦截 block=True + 同卦历史不稳 ×0.90 三层判决）。
+
+    本函数仅保留用于 `test_p0_score_b_event_boost.py::TestHexConflictFloor` 后向兼容 TDD，
+    生产注入点永不调用。FAIL-OPEN 与生产实现等价（无卦/解析错→eff=conf 不罚不抬）。
+
+    对齐 TDD：
+      - 一致性（LONG↔LONG / SHORT↔SHORT）：不惩罚，eff_conf=confidence, floor_hit=False
+      - 冲突（如：水天需卦权威LONG ↔ 决策SHORT）：eff_conf = confidence × 0.70
+                                再 floor 到 max(eff_conf, 0.85)（冲突时抬高门槛侧，地板抬升=True）
+    """
+    try:
+        _hex_dir = (hex_authoritative_dir or "").strip().upper()[:4]
+        _dec_dir = (decision_dir or "").strip().upper()[:4]
+        _conf = max(0.0, min(1.0, float(confidence)))
+        # 归一：LONG/LONG_DIR/UP/多  → LONG ; SHORT/SHORT_DIR/DOWN/空 → SHORT ; 其他 NEUT
+        def _norm(d: str) -> str:
+            if d in ("LONG", "UP"): return "LONG"
+            if d in ("SHOR", "DOWN"): return "SHORT"
+            return "NEUT"
+        h = _norm(_hex_dir)
+        d = _norm(_dec_dir)
+        conflict = (h != "NEUT" and d != "NEUT" and h != d)
+        if not conflict:
+            return _conf, False
+        # ×0.70 + 0.85 地板抬升（抬到≥0.85）
+        eff = _conf * 0.70
+        floor_hit = eff < 0.85
+        if floor_hit:
+            eff = 0.85
+        return max(0.0, min(1.0, eff)), True
+    except Exception:  # noqa: BLE003  FAIL-OPEN：不惩罚不抬
+        try:
+            return max(0.0, min(1.0, float(confidence))), False
+        except Exception:
+            return 0.65, False
+
+
+# P0-DC-桥：_polling_get_coin_event_positive_strength(coin)
+# 直接从 18-数据获取中心/data_center.db records表 读最近72h odaily_newsflash
+# → 转为 dict-like → 调用 DC compute_coin_event_positive_strength
+# FAIL-OPEN：任何异常（DB不存在/import失败）→ 返回0.0（不抬升，保守安全）
+def _polling_get_coin_event_positive_strength(coin: str) -> Tuple[float, Dict[str, Any]]:
+    coin_up = (coin or "").strip().upper()
+    if not coin_up:
+        return 0.0, {"reason": "empty_coin"}
+    try:
+        import sys as _sys
+        import math as _m
+        _dc_root = str(_PROJECT_ROOT / "18-数据获取中心")
+        if _dc_root not in _sys.path:
+            _sys.path.insert(0, _dc_root)
+        from data_center.collectors.news.odaily_newsflash import compute_coin_event_positive_strength  # noqa: E402
+        import sqlite3 as _sq3  # noqa: E402
+        import pathlib as _pl  # noqa: E402
+        # ── 🆕 P1 C1④ G3-A 护栏：TDD 隔离 override（测试时 monkeypatch 模块级变量读 tmp mock DB）
+        #    生产：_PROJECT_ROOT 拼接真实路径；TDD：hasattr → 读 override，不污染 prod DB
+        _mod_self = _sys.modules[__name__]
+        if hasattr(_mod_self, "_P1_C14_TEST_DB_OVERRIDE"):
+            _db = _pl.Path(str(getattr(_mod_self, "_P1_C14_TEST_DB_OVERRIDE")))
+        else:
+            _db = _PROJECT_ROOT / "18-数据获取中心" / "data_center.db"
+        if not _db.exists():
+            return 0.0, {"reason": "db_missing"}
+        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+        # G3-A 护栏：120s 未来冷却（防时钟漂移/第三方返回未来时间戳）+ 168h=一周内信息截止
+        cool_cut_ms = now_ms - 120_000          # 120s 前及更早才允许
+        max_age_ms = now_ms - 168 * 3_600_000  # 一周内（SPEC §1 精确对齐）
+        conn = _sq3.connect(str(_db))
+        cur = conn.cursor()
+        try:
+            # 从 records 表 取 source='odaily_newsflash'（contract写死）
+            # schema: source/category/sub_category/timestamp(ISO)/metrics(JSON)/events(JSON)/timeseries(JSON)/raw(JSON)
+            cur.execute(
+                "SELECT metrics, events, raw, timestamp FROM records "
+                " WHERE source='odaily_newsflash' ORDER BY rowid DESC LIMIT 400"
+            )
+            rows = cur.fetchall()
+        except Exception:
+            # schema老版本/列名不同：尝试 records表
+            rows = []
+            try:
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'record%' LIMIT 5")
+                tbls = cur.fetchall()
+                for (t,) in tbls:
+                    try:
+                        cur.execute(f"SELECT metrics,events,raw,timestamp FROM {t} WHERE source='odaily_newsflash' ORDER BY rowid DESC LIMIT 400")
+                        rows.extend(cur.fetchall())
+                    except Exception:
+                        pass
+            except Exception:
+                rows = []
+        conn.close()
+
+        def _parse_json_maybe(s):
+            if s is None:
+                return None
+            if isinstance(s, (dict, list)):
+                return s
+            try:
+                return json.loads(s)
+            except Exception:
+                return None
+
+        recs_like: list[dict] = []
+        n_used = 0
+        for row in rows:
+            if not isinstance(row, (list, tuple)):
+                continue
+            m = _parse_json_maybe(row[0]) or {}
+            e = _parse_json_maybe(row[1]) or []
+            raw = _parse_json_maybe(row[2]) or {}
+            # timestamp列(ISO str / int 秒级 / int ms级)转published_ms兜底
+            pub_ms = 0
+            if len(row) >= 4 and row[3] is not None:
+                ts = row[3]
+                try:
+                    if isinstance(ts, (int, float)):
+                        tv = float(ts)
+                        if tv > 1_000_000_000_000:
+                            pub_ms = int(tv)
+                        elif tv > 1_000_000_000:
+                            pub_ms = int(tv * 1000)
+                    elif isinstance(ts, str):
+                        # ISO str → 解析
+                        try:
+                            if ts.endswith("Z"):
+                                ts = ts[:-1] + "+00:00"
+                            pub_ms = int(datetime.fromisoformat(ts).timestamp() * 1000)
+                        except Exception:
+                            pass
+                except Exception:
+                    pub_ms = 0
+            # events结构补齐（与compute_coin_event_positive_strength对齐）
+            if not isinstance(e, list) or len(e) == 0:
+                e = [{"event_type": str(m.get("od_event_type", "market_sentiment") or "market_sentiment"),
+                     "importance": 2 if str(m.get("od_is_important", "false")) == "true" else 1,
+                     "published_ms": int(pub_ms) if pub_ms > 0 else 0}]
+            else:
+                # 确保第一个 event 有 published_ms（用于衰减）
+                if isinstance(e[0], dict) and pub_ms > 0 and not e[0].get("published_ms"):
+                    e[0]["published_ms"] = int(pub_ms)
+            # ── 🆕 P1 C1④ G3-A 护栏：120s未来冷却 + 168h一周截止双保险（WHERE 等价快速失败）
+            #    范围 published_ms ∈ [now-168h, now-120s]；pms=0(未知老schema)→保守丢弃
+            #    与 DC 侧 compute_coin_event_positive_strength G3-B dt 范围断言字节对称
+            if isinstance(e, list) and len(e) >= 1 and isinstance(e[0], dict):
+                pms = int(e[0].get("published_ms", 0) or 0)
+                if pms <= 0 or pms > cool_cut_ms or pms < max_age_ms:
+                    continue
+            # tickers_hit：raw里（新格式）或 metrics里的 od_tickers_hit_csl（老格式兼容）
+            ticks = None
+            if isinstance(raw, dict):
+                t = raw.get("tickers_hit")
+                if isinstance(t, list):
+                    ticks = [str(x) for x in t]
+            if not ticks and isinstance(m, dict):
+                csl = m.get("od_tickers_hit_csl")
+                if isinstance(csl, str) and csl:
+                    ticks = [x.strip().upper() for x in csl.split(",") if x.strip()]
+            recs_like.append({
+                "metrics": m if isinstance(m, dict) else {},
+                "events": e,
+                "raw": raw if isinstance(raw, dict) else {},
+                "tickers_hit": ticks or [],
+            })
+            n_used += 1
+            if n_used >= 300:
+                break
+        strength, debug = compute_coin_event_positive_strength(coin_up, recs_like, now_ms=now_ms)
+        debug.setdefault("records_in_db", len(rows))
+        debug.setdefault("records_parsed", n_used)
+        return float(max(0.0, min(1.0, strength))), debug
+    except Exception as e:  # noqa: BLE003  FAIL-OPEN：DB路径/列/import全失败→0.0不抬
+        return 0.0, {"error": f"{type(e).__name__}:{str(e)[:80]}"}
+
+
 def _load_registry_symbols():
     """从 token_registry.json 加载启用的币种列表。文件不存在/损坏时返回 None。"""
     for p in _REGISTRY_PATHS:
@@ -324,6 +574,10 @@ class PollingTrader:
         enable_bcrm_continuity_obs: bool = True,
         enable_btc_self_reflex_valve: bool = True,
         enable_portfolio_risk_fuses: bool = True,
+        # — BDSM 微仓实盘测试硬上限：None=沿用 scaling_plan 默认(167U)，否则 min(plan, 该值) —
+        #   设计意图：小额真实环境测试阶段，将单币预算封顶到安全范围（如 20~30 U），
+        #   等 10+ 笔完整交易、胜率 ≥70%、回撤 OK 后再移除小帽恢复到 scaling_plan 默认。
+        bdsm_budget_per_coin: float = None,
     ):
         self.interval = interval
         # ★ shadow-mode 全局硬闸门：True 时严格禁止所有开/平/减仓指令（仅执行推理逻辑/写shadow日志/写diagnostic）
@@ -331,14 +585,36 @@ class PollingTrader:
         if self.shadow_mode:
             # 构造阶段即醒目打印一次，防止误启用真钱模式
             print("[SHADOW MODE] 全局影子冷启动模式：所有开仓/平仓/减仓将被 BLOCKED，仅推理+影子日志+监控正常运行")
+        # — BDSM 微仓实盘测试参数 —
+        #   None：使用 scaling_plan 默认剩余预算（167U/币）
+        #   float：对 scaling_plan.remaining_budget 做 min 覆盖，保证单币绝对预算不突破
+        #   设置场景：shadow_mode=False 后首次真实环境测试阶段，值如 20~30 U 防单次过大
+        try:
+            self.bdsm_budget_per_coin: float | None = (
+                float(bdsm_budget_per_coin) if bdsm_budget_per_coin is not None else None
+            )
+        except (TypeError, ValueError):
+            self.bdsm_budget_per_coin = None
+        if self.bdsm_budget_per_coin is not None:
+            print(
+                f"[BDSM 微仓实盘] 单币预算硬上限={self.bdsm_budget_per_coin:.2f} U "
+                f"（将覆盖 scaling_plan.remaining_budget=167U 的默认值）"
+            )
         default_coins = _load_registry_symbols() or [
+            # — BDSM 权威池 10 币（按 spec §R4，优先排在池前端，BCRM 引擎共享）—
             "UNI",
             "PUMP",
+            "HYPE",
+            "AAVE",  # BDSM 新增
+            "SOL",
+            "CRCL",
+            "ETH",  # BDSM 新增：仅做多允许（SHORT_BAN，见下方 SHORT_ONLY_BLACKLIST 过滤）
+            "BTC",
+            "ZEC",  # BDSM 新增（L1 隐私币）
+            "ARB",  # BDSM 新增（L2 龙头）
+            # — 其他非 BDSM 币种（BCRM & 混合池）—
             "MU",
             "SKHYNIX",
-            "HYPE",
-            "BTC",
-            "SOL",
             "XAU",
             "XAG",
             "GOOGL",
@@ -347,7 +623,6 @@ class PollingTrader:
             "OKB",
             "SNDK",
             "SPCX",
-            "CRCL",
             "COIN",
             "BMNR",
             "MSTR",
@@ -360,6 +635,10 @@ class PollingTrader:
         self.short_confidence_threshold = short_confidence_threshold  # 做空独立阈值（高于做多）
         self.max_positions = max_positions
         self.kline_limit = kline_limit
+        # 将/法维度 system_state 自省专用：缓存 P0 风控配置，便于 FiveDomainFeatureComputer
+        # 通过 _cls_get(_by_class) 取 factor_coverage_pct / implemented_strategies。
+        self.default_position_pct = float(default_position_pct or 0.10)
+        self.max_consecutive_losses = int(max_consecutive_losses or 999)
 
         # A-1修复：启动时从 OKX_SIM/config.json 加载进化后的阈值，覆盖默认值
         # 注意：需要在 risk_manager 创建后调用，才能同时更新 risk_manager.state
@@ -368,6 +647,16 @@ class PollingTrader:
         self.bcrm_engine = BCRMEngine.from_config()  # PROP-20260810
         self.bagua_engine = BaguaEngine()
         self.okx_client = OKXSimulatedClient()
+
+        # ── TEE 执行引擎影子模式开关（2026-09-06 全系统统一开启）─────────
+        # enable_tee=False + shadow_mode=True → TEE 完整决策但只记录不拦截
+        # 实际下单仍走原始 okx_client.place_order()，TEE 审计日志记录差异
+        # 引擎构造延迟到 log_file 初始化之后（见 _init_tee_shadow）
+        import os as _os
+        self._tee_enable = _os.environ.get("YIJING_ENABLE_TEE", "").lower() in ("1", "true")
+        self._tee_shadow = _os.environ.get("YIJING_TEE_SHADOW_MODE", "").lower() in ("1", "true")
+        self._tee_engine = None
+        self._tee_engine_init_lock = __import__("threading").Lock()
 
         self.use_bcrm2 = use_bcrm2
         self.bcrm2_adapters = {}
@@ -381,7 +670,42 @@ class PollingTrader:
         # 到期后自动释放（有趋势过滤保护，不需要永久封禁）
         # 可被 config.json 的 blacklist_coins 字段热重载覆盖（追加手动黑名单）
         # 静态永久封禁（回测验证历史表现极差，即使趋势过滤下仍持续亏损）
-        self.blacklist_coins: set = {"NEAR", "XRP", "DOT", "ADA", "AVAX", "ETH", "LINK", "BNB"}  # 手动永久黑名单
+        # — BDSM 2026-09 调整：ETH 从全黑名单降级为仅做空禁（SHORT_BAN），做多按 BDSM/BCRM 信号允许
+        self.blacklist_coins: set = {"NEAR", "XRP", "DOT", "ADA", "AVAX", "LINK", "BNB"}  # 手动永久黑名单
+        # SHORT_BAN：这些币种只允许做多，不允许做空（历史验证做空持续亏损，或 BDSM 协议模型为 LONG_ONLY）
+        # ETH：历史做空样本亏损率高，且 BDSM 方向约束默认 LONG_ONLY；BTC：BCRM 做空信号已 100% 亏损
+        self.SHORT_ONLY_BLACKLIST: set = {"ETH", "BTC"}
+        # —— R5 铁律 · 仓位子池隔离（互不抢占）——
+        #   BDSM 子池：币种 ∈ BDSM_COINS，标签 source_tag="bdsm"，最多 3 仓
+        #   BCRM 子池：币种 ∉ BDSM_COINS，标签 source_tag="bcrm"，最多 5 仓
+        #   evolution 子池（P2-S4b）：紧耦合流自动建仓，标签 source_tag="evolution"，最多 3 仓
+        #   共享 OKX 可用资金余额（不做资金切分）
+        # 用户决策 2026-09-07：三子池各自独立开仓，evolution(3)/BDSM(3)/BCRM(5) 互不串扰
+        self.SUBPOOL_MAX_POSITIONS: Dict[str, int] = {"bdsm": 3, "bcrm": 5, "evolution": 3}
+        # 易经子池兜底上限（BCRM 5 + BDSM 3 = 8，不含 evolution 子池），不受启动参数覆盖
+        _yijing_max = self.SUBPOOL_MAX_POSITIONS["bcrm"] + self.SUBPOOL_MAX_POSITIONS["bdsm"]
+        self.max_positions = _yijing_max  # 固定 8
+        self._legacy_global_max_positions = int(_yijing_max)
+        # BDSM 权威池（供 is_bdsm_coin / _classify_source_tag 使用，懒加载 FAIL-OPEN）
+        # ★ FIX(2026-09-02 实盘 daemon 跑 `-m scripts.memory_l4.polling_trader` 时 import 根=scripts.memory_l4,
+        #   force_vector 作为兄弟子包 需要 `scripts.memory_l4.force_vector.xxx` 路径才能 import；
+        #   直接 `from force_vector...` 会持续 FAIL-OPEN 成 frozenset()，导致 BDSM 7 币全当成 BCRM。
+        _bdsm_coins_src = frozenset()
+        for _mod_path in (
+            "scripts.memory_l4.force_vector.coin_fundamental_ranker",
+            "force_vector.coin_fundamental_ranker",
+        ):
+            try:
+                _pkg = __import__(_mod_path, fromlist=["BDSM_COINS"])
+                _bdsm_coins_src = frozenset(getattr(_pkg, "BDSM_COINS", frozenset()) or frozenset())
+                if _bdsm_coins_src:
+                    break
+            except Exception:
+                _bdsm_coins_src = frozenset()
+                continue
+        # 最终兜底（绝对不能变空集 → 退化成 BCRM 5 仓单池）：Spec v1.4 §R4 权威池 静态 8 币
+        _BDSM_FALLBACK = frozenset({"UNI", "PUMP", "HYPE", "AAVE", "SOL", "CRCL", "ETH", "BTC", "ZEC", "ARB"})  # noqa: N806
+        self.BDSM_COINS: frozenset = frozenset(_bdsm_coins_src) or _BDSM_FALLBACK
         self.dynamic_blacklist: dict = {}  # {coin: {"expire_ts": float, "reason": str, "added_ts": float}}
         self.DYNAMIC_BLACKLIST_CONSECUTIVE_LOSSES = 2  # 连续亏损次数阈值
         self.DYNAMIC_BLACKLIST_DURATION_SEC = 3 * 86400  # 3日（秒）
@@ -430,7 +754,7 @@ class PollingTrader:
             daily_loss_limit_usdt=daily_loss_limit,
             max_consecutive_losses=max_consecutive_losses,
             default_position_pct=default_position_pct,
-            min_position_usdt=20.0,
+            min_position_usdt=250.0,
         )
 
         # A-1修复：risk_manager 创建后，从 config.json 加载进化后的阈值覆盖默认值
@@ -497,6 +821,10 @@ class PollingTrader:
         self.log_dir = Path("data/polling_trader")
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.log_file = self.log_dir / f"trader_{datetime.now().strftime('%Y%m%d')}.jsonl"
+
+        # ── TEE 影子模式引擎构造（log_file 就绪后）─────────────────────
+        if self._tee_enable or self._tee_shadow:
+            self._wrap_place_order_with_tee()
 
         self.incremental_learner = IncrementalLearner(
             retrain_trade_threshold=100,
@@ -618,6 +946,20 @@ class PollingTrader:
                 _timeout_hours = _veto_sec / 3600.0
         except Exception:
             pass
+        # 确保离场确认常量在 ExitManager 创建前已初始化（v5.0 离场防频繁优化）
+        if not hasattr(self, 'EXIT_CONFIRM_REQUIRED'):
+            self.EXIT_CONFIRM_REQUIRED = 2
+            self.EXIT_CONFIRM_WINDOW_SEC = 300
+            self.PROTECTED_REVERSE_CONF_BOOST = 0.12
+            self.PROTECTED_P3_MIN_LOSS_PCT = -0.08
+            self.ENABLE_REGIME_AND_MACRO_S5 = True
+            self.POSITION_PROTECTION_HOURS = 6.0
+            self._exit_confirm_state: Dict[str, Dict[str, Any]] = {}
+            self.EXIT_ACT_SIGNAL_REVERSE = "signal_reverse"
+            self.EXIT_ACT_YIJING_FORCE_CLOSE = "yijing_force_close"
+            self.EXIT_ACT_P3_EARLY_EXIT = "p3_early_exit"
+            self.EXIT_ACT_EV_FORCE_CLOSE = "ev_force_close"
+            self.EXIT_ACT_RANKED_TP = "ranked_tp"
         self._ev_force_close_strategy = EvForceCloseStrategy(
             force_below=self.EV_FORCE_CLOSE_BELOW,
             exit_confirm_required=self.EXIT_CONFIRM_REQUIRED,
@@ -741,6 +1083,7 @@ class PollingTrader:
         self._five_domain_feature_computer = None  # type: ignore[assignment]
         self._strategy_algo_layer = None  # type: ignore[assignment]
         self._five_domain_state_cache = None  # type: ignore[assignment]
+        self._five_domain_state_shadow = None  # 真实计算值（供ShadowLogger记录，影子模式下不被中性值覆盖）
         self._init_five_domain_and_strategy_layer()
 
         # ──────────────────────────────────────────────────────
@@ -910,6 +1253,23 @@ class PollingTrader:
     # 设计原则：失败降级为 None，仅影响影子日志，不改变任何交易逻辑
     # ================================================================
 
+    def _apply_fd_shadow_intercept(self, cfg, FiveDomainState):
+        """影子拦截：7子开关全开后，shadow_mode=True 时保存真实计算值到 _shadow，
+        下游 _state_cache 替换为中性默认值（war_state=ALLOW/cap=1.0/mask全True/band=None）。
+        确保战略层完整计算所有输出但不影响实盘，ShadowLogger 记录真实值供观测。"""
+        if self._five_domain_state_cache is None:
+            return
+        # 保存真实计算值（供 ShadowLogger 读取）
+        self._five_domain_state_shadow = self._five_domain_state_cache
+        # shadow_mode=True 时，下游消费中性默认值（字节等价"战略层不存在"）
+        if cfg.enable_five_domain_shadow_mode:
+            self._five_domain_state_cache = FiveDomainState.default_fail_open()
+            self._log(
+                "[战略层/影子拦截] 7子开关全开+影子模式：战略层完整计算所有6类输出，"
+                "下游消费中性默认值（不影响实盘），ShadowLogger 记录真实值供观测",
+                "INFO",
+            )
+
     def _init_five_domain_and_strategy_layer(self):
         """初始化五计庙算评分器 + 策略算法层（默认全关=fail-open字节等价）。
 
@@ -927,14 +1287,15 @@ class PollingTrader:
         cfg = StrategyAlgoConfig(
             enable_strategy_layer=True,  # P0 开关：策略算法层影子（只打日志+enhance_info，不影响交易）
             enable_five_domain=False,
-            # 7 子开关默认 False（B1已开启style_mask，其余保持False=下游零影响）
-            enable_five_domain_war_state=False,
-            enable_five_domain_style_mask=True,  # B1: 开启战略层 allowed_style_mask 消费 → allowed_mask下架策略匹配时真实生效
-            enable_five_domain_position_cap=False,
-            enable_five_domain_cross_asset=False,
-            enable_five_domain_dimensio=False,
-            enable_five_domain_front_layer_band=False,
-            enable_five_domain_ol=False,
+            # 7 子开关全部 True：让战略层完整计算所有6类输出（war_state/cap/mask/mult/band/veto）
+            # 影子拦截确保：shadow_mode=True 时下游消费中性默认值，不影响实盘
+            enable_five_domain_war_state=True,
+            enable_five_domain_style_mask=True,
+            enable_five_domain_position_cap=True,
+            enable_five_domain_cross_asset=True,
+            enable_five_domain_dimensio=True,
+            enable_five_domain_front_layer_band=True,
+            enable_five_domain_ol=True,
             # 影子 AB 模式默认 False
             enable_five_domain_shadow_mode=True,  # P0 开关：ShadowLogger 12字段(fd_*/sal_)结构化写入
             enable_shadow_ab_static_baseline_v15=False,
@@ -956,20 +1317,20 @@ class PollingTrader:
             self._five_domain_state_cache = self._five_domain_scorer.score_and_decide(persist=True)
             from scripts.memory_l4.five_domain_scorer import FiveDomainState
             from dataclasses import asdict as _asdict
-            # F1 影子红线：7子开关全False时，war_state必须=ALLOW，cap必须=1.0（下游零影响校验）
-            if not (cfg.enable_five_domain_war_state or cfg.enable_five_domain_style_mask
-                    or cfg.enable_five_domain_position_cap or cfg.enable_five_domain_cross_asset
-                    or cfg.enable_five_domain_dimensio or cfg.enable_five_domain_front_layer_band):
+            # ★ 影子拦截：7子开关全开后，shadow_mode=True 时保存真实值到 _shadow，
+            #   下游 _state_cache 替换为中性默认值（war_state=ALLOW/cap=1.0/mask全True/band=None）
+            #   确保战略层完整计算所有输出但不影响实盘，ShadowLogger 记录真实值供观测
+            self._apply_fd_shadow_intercept(cfg, FiveDomainState)
+            # F1 影子红线：shadow_mode=True 时下游 _state_cache 必须为中性默认值
+            if cfg.enable_five_domain_shadow_mode:
                 _st = self._five_domain_state_cache
                 _default = FiveDomainState.default_fail_open()
                 for _c in _st.war_state.keys():
-                    assert _st.war_state.get(_c) == _default.war_state.get(_c) or (
-                        _st.war_state.get(_c) == "ALLOW"
-                    ), (
-                        f"[F1影子红线违规] 7子开关全False时 war_state[{_c}]={_st.war_state.get(_c)}≠ALLOW"
+                    assert _st.war_state.get(_c) == _default.war_state.get(_c), (
+                        f"[F1影子红线违规] shadow_mode=True时 war_state[{_c}]={_st.war_state.get(_c)}≠ALLOW"
                     )
                     assert abs(_st.aggregate_position_cap_pct.get(_c, 1.0) - 1.0) < 1e-6, (
-                        f"[F1影子红线违规] 7子开关全False时 cap[{_c}]={_st.aggregate_position_cap_pct.get(_c)}≠1.0"
+                        f"[F1影子红线违规] shadow_mode=True时 cap[{_c}]={_st.aggregate_position_cap_pct.get(_c)}≠1.0"
                     )
             # ★ FIX 问题2：动态描述7子开关状态，避免 style_mask=True 时误写「全False」
             try:
@@ -1039,6 +1400,33 @@ class PollingTrader:
         except Exception as _e:
             self._cbr_store = None
             self._log(f"[Phase1/P0] CBRJsonlStore 初始化失败，旁路（fail-open）：{_e}", "WARN")
+        # CBR 相似度 top-3 检索融合引擎（shadow 模式：真参数不改动，仅打结构化 JSONL 日志）
+        self._cbr_engine = None
+        self._cbr_retrieval_log_path = None  # type: ignore[assignment]
+        if self.enable_cbr_cycle_log and self._cbr_store is not None:
+            try:
+                from scripts.memory_l4.cbr_engine import CBREngine  # noqa: F401
+                self._cbr_engine = CBREngine(
+                    top_k=5,
+                    similarity_threshold=0.0,  # 检索门槛放宽，后续再按θ*过滤 top-3
+                )
+                self._cbr_engine.load(use_index=True)
+                runtime_dir = _P(__file__).resolve().parent / "runtime"
+                runtime_dir.mkdir(parents=True, exist_ok=True)
+                self._cbr_retrieval_log_path = runtime_dir / "cbr_retrieval_records.jsonl"
+                n_cases = len(getattr(self._cbr_engine, "case_base", None) or [])
+                self._log(
+                    f"[Phase1/P0] CBREngine 加载完成：案例库 {n_cases:,} 条 "
+                    f"(θ_match*={self._cbr_store.theta_match_star:.4f} → "
+                    f"shadow JSONL 落盘: {self._cbr_retrieval_log_path})",
+                    "INFO",
+                )
+            except Exception as _e:
+                self._cbr_engine = None
+                self._log(
+                    f"[Phase1/P0] CBREngine 初始化失败，CBR top-3 融合旁路（fail-open）：{_e}",
+                    "WARN",
+                )
         try:
             if self.enable_elder_ray_c4:
                 from scripts.memory_l4.elder_ray_engine import ElderRayEngine as _ERE
@@ -1122,16 +1510,21 @@ class PollingTrader:
             return
 
         # ═══════════════════════════════════════════════════════════════════
-        # 辅助：把 FiveDomainState 对象 → 打 5 条影子日志 + 填缓存属性
+        # 辅助：把 FiveDomainState 对象 → 打 9 条影子日志（war/total/dao/cap/mult/mask/veto/band/fc）
         # ═══════════════════════════════════════════════════════════════════
         def _emit_shadow_logs(state_obj, src_label: str):
             try:
                 from scripts.memory_l4.five_domain_scorer import CLASSES as _CLASSES
+                from scripts.memory_l4.strategy_algo_layer import STYLE_ORDER as _STYLES
                 _scorer = self._five_domain_scorer
-                _war = getattr(state_obj, "war_state", {})
-                _scores = getattr(state_obj, "five_scores", {})
-                _caps = getattr(state_obj, "aggregate_position_cap_pct", {})
-                _mults = getattr(state_obj, "position_mult", {})
+                _war = getattr(state_obj, "war_state", {}) or {}
+                _scores = getattr(state_obj, "five_scores", {}) or {}
+                _caps = getattr(state_obj, "aggregate_position_cap_pct", {}) or {}
+                _mults = getattr(state_obj, "cross_asset_multiplier", {}) or {}
+                _mask = getattr(state_obj, "allowed_style_mask", {}) or {}
+                _veto = getattr(state_obj, "dimension_veto_flags", {}) or {}
+                _band = getattr(state_obj, "front_layer_band", {}) or {}
+                _fc = getattr(state_obj, "forced_close_flags", {}) or {}
                 _totals = {}
                 _dao_scores = {}
                 for _c in _CLASSES:
@@ -1170,6 +1563,47 @@ class PollingTrader:
                     " | ".join(f"{_c}={_mults.get(_c, 1.0):.2f}" for _c in _cls_list),
                     "INFO",
                 )
+                # ★ FIX-字段补全：style_mask / dimension_veto / front_layer_band / forced_close_flags
+                # 6 类策略掩码：列出每类被禁用(False)的策略名
+                def _fmt_mask(c):
+                    _m = _mask.get(c, {}) or {}
+                    _disabled = [s for s in _STYLES if not _m.get(s, True)]
+                    return "all" if not _disabled else ",".join(_disabled)
+                self._log(
+                    f"[战略层影子][{src_label}] style_mask | " +
+                    " | ".join(f"{_c}=disabled[{_fmt_mask(_c)}]" for _c in _cls_list),
+                    "INFO",
+                )
+                # 5 个维度否决旗标：列出每类生效(True)的否决项
+                def _fmt_veto(c):
+                    _v = _veto.get(c, {}) or {}
+                    _active = [k for k, v in _v.items() if v]
+                    return "none" if not _active else ",".join(_active)
+                self._log(
+                    f"[战略层影子][{src_label}] dimension_veto | " +
+                    " | ".join(f"{_c}=[{_fmt_veto(_c)}]" for _c in _cls_list),
+                    "INFO",
+                )
+                # 前置层带宽：None=不clip，否则输出 min/max
+                def _fmt_band(c):
+                    _b = _band.get(c)
+                    if _b is None:
+                        return "None"
+                    return f"min={_b.get('min')},max={_b.get('max')}"
+                self._log(
+                    f"[战略层影子][{src_label}] front_layer_band | " +
+                    " | ".join(f"{_c}={_fmt_band(_c)}" for _c in _cls_list),
+                    "INFO",
+                )
+                # 强平标志：strong / protect
+                def _fmt_fc(c):
+                    _f = _fc.get(c, {}) or {}
+                    return f"strong={_f.get('strong', False)},protect={_f.get('protect', False)}"
+                self._log(
+                    f"[战略层影子][{src_label}] forced_close | " +
+                    " | ".join(f"{_c}={_fmt_fc(_c)}" for _c in _cls_list),
+                    "INFO",
+                )
             except Exception as _log_e:
                 # 影子日志失败绝对不阻塞主流程
                 try:
@@ -1202,11 +1636,13 @@ class PollingTrader:
             #    2) 补打影子日志（否则看不到战略层今天在跑什么）
             # ──────────────────────────────────────────────────────────────
             if not need_recalc and _cached is not None:
+                _real_state = None
                 try:
                     from scripts.memory_l4.five_domain_scorer import FiveDomainState as _FDS
                     self._five_domain_state_cache = _FDS.from_json(
                         state_cache_path, fallback_on_error=True
                     )
+                    _real_state = self._five_domain_state_cache
                 except Exception:
                     # from_json 失败：手工从 _cached 构造最小可用对象或 fail-open
                     try:
@@ -1214,7 +1650,23 @@ class PollingTrader:
                         self._five_domain_state_cache = _FDS2.default_fail_open()
                     except Exception:
                         self._five_domain_state_cache = None
-                _emit_shadow_logs(self._five_domain_state_cache, "CACHE")
+                # ★ FIX-日志一致性：显式同步 shadow 为 from_json 真实值，
+                #   防止 _apply_fd_shadow_intercept 被跳过时 shadow 停留在 init 的 stale 状态（dao=50）
+                if _real_state is not None:
+                    self._five_domain_state_shadow = _real_state
+                # ★ 影子拦截：缓存命中时先保存真实值到 _shadow 再替换 _state_cache
+                _fd_cls = _FDS if '_FDS' in locals() else None
+                _fd_cfg = self._strategy_algo_layer.cfg if self._strategy_algo_layer else None
+                if _fd_cls is not None and _fd_cfg is not None:
+                    self._apply_fd_shadow_intercept(_fd_cfg, _fd_cls)
+                # ★ 影子日志优先读 _real_state（from_json 结果），与缓存文件口径严格一致，
+                #   避免 stale _shadow 导致 dao_score 日志与 five_domain_state.json 不一致
+                _shadow_state = (
+                    self._five_domain_state_shadow
+                    or _real_state
+                    or self._five_domain_state_cache
+                )
+                _emit_shadow_logs(_shadow_state, "CACHE")
                 return  # ← 缓存命中：当日不再重算（保留原语义）
 
             # ── 分支 B：需要重算（缓存缺失 / 日期不匹配 / 解析失败）
@@ -1370,6 +1822,40 @@ class PollingTrader:
                         "vix_close": _macro.get("vix_close"),
                         "fedfunds_rate": _macro.get("fedfunds_rate"),
                     }
+                    # ── Phase L：Panewslab 三类 coin_data 增量合并 ──
+                    # 调用 _try_fetch_coin_data_three_classes()：
+                    #   - 命中 SQLite（持续采集 4h 落库）→ 快省 API
+                    #   - 否则 FiveDomainFetcher 实时 → 兜底
+                    #   - 全失败 → 返回 {}（保持原有硬编码 coin_data，字节等价 fail-open）
+                    try:
+                        _three_cls = self._try_fetch_coin_data_three_classes()
+                    except Exception:
+                        _three_cls = {}
+                    # 把 panewslab proxy（pn_*）和额外宏观 proxy 增量合并进
+                    # _crypto_coin / _stock_coin / _metal_coin。
+                    # 原则：「只补不覆」——只有当原硬编码字段的值是 None/占位
+                    # (0.5/0.62/0.65这类 经验占位值 也被覆写，因为 panewslab 是真实数据)
+                    # 但 cycle4y_t_rel / regime / spring_force_* / price_amplitude /
+                    # atr / ftd_signal / ma200_distance_percentile 保留原内联。
+                    _OVERLAY_BLACKLIST = {
+                        "cycle4y_t_rel", "regime", "spring_force_score",
+                        "spring_force_F_total", "spring_force_bearish_score",
+                        "price_amplitude", "atr", "ftd_signal",
+                        "ma200_distance_percentile",
+                    }
+                    for _cls, _template in (
+                        ("crypto_usdt", _crypto_coin),
+                        ("us_stock",   _stock_coin),
+                        ("precious_metal", _metal_coin),
+                    ):
+                        _external = (_three_cls or {}).get(_cls) or {}
+                        for _k, _v in _external.items():
+                            if _k in _OVERLAY_BLACKLIST:
+                                continue
+                            # 有真实值才 overlay；None 不覆盖（保留原占位值/None）
+                            if _v is None:
+                                continue
+                            _template[_k] = _v
                     coin_data = {
                         "crypto_usdt": _crypto_coin,
                         "us_stock": _stock_coin,
@@ -1540,6 +2026,14 @@ class PollingTrader:
                 pass
 
             _emit_shadow_logs(result_state, "RECALC")
+            # ★ 影子拦截：日级重算后也需保存真实值到 _shadow 并替换 _state_cache
+            _fd_cfg = self._strategy_algo_layer.cfg if self._strategy_algo_layer else None
+            if _fd_cfg is not None:
+                try:
+                    from scripts.memory_l4.five_domain_scorer import FiveDomainState as _FDS4
+                    self._apply_fd_shadow_intercept(_fd_cfg, _FDS4)
+                except Exception:
+                    pass
         except Exception as _e:
             try:
                 from scripts.memory_l4.five_domain_scorer import FiveDomainState
@@ -1559,7 +2053,7 @@ class PollingTrader:
     # 资产类符号识别规则
     _CRYPTO_SYMBOLS = frozenset({
         "BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "DOT", "MATIC",
-        "BNB", "LTC", "BCH", "UNI", "ATOM", "NEAR", "APT", "ARB", "OP", "SUI",
+        "BNB", "LTC", "BCH", "UNI", "ATOM", "NEAR", "APT", "ARB", "OP", "SUI", "ZEC",
     })
     _METAL_SYMBOLS = frozenset({"XAG", "XAU", "GLD", "SLV", "GOLD", "SILVER", "PAXG"})
 
@@ -1788,6 +2282,59 @@ class PollingTrader:
             # 更新快照
             self._last_stablecoin_mcap = float(_sc_now)
         return result
+
+    # ================================================================
+    # Phase L: Panewslab + SQLite → 三类 coin_data 拉取
+    # 失败：fail-open 返回空 dict（调用方用自身硬编码兜底，字节等价未接入前）
+    # ================================================================
+    def _try_fetch_coin_data_three_classes(self) -> Dict[str, Dict[str, Any]]:
+        """获取三类资产 coin_data（含 panewslab 的 42 个 pn_* proxy）。
+
+        优先级：
+          1. FiveDomainSqliteReader.read_three_classes_from_sqlite() → 快、省 API
+          2. FiveDomainFetcher().fetch_coin_data() → 实时采集（兜底）
+
+        两类路径产出完全一致的字段名（crypto_usdt / us_stock / precious_metal）。
+        任一异常返回 {}，后续调用方会用内联硬编码 coin_data 替代。
+        """
+        fallback: Dict[str, Dict[str, Any]] = {}
+        # ── 1. SQLite reader（热路径） ──
+        try:
+            from scripts.memory_l4.five_domain_sqlite_reader import (
+                read_three_classes_from_sqlite,
+            )
+            three = read_three_classes_from_sqlite() or {}
+            crypto = three.get("crypto_usdt") or {}
+            # 判断 panewslab proxy 至少有 5+ 非空字段才算「命中」，
+            # 否则 panewslab collector 还没跑过 → 走实时路径。
+            pn_filled = sum(1 for v in crypto.values() if v is not None)
+            if crypto and pn_filled >= 5:
+                self._log("[战略层] coin_data 来源: SQLite(五维+Panewslab 落库)", "INFO")
+                return three
+        except Exception as _e:
+            self._log(
+                f"[战略层] read_three_classes_from_sqlite 异常: {type(_e).__name__}: {_e}",
+                "WARN",
+            )
+        # ── 2. 实时 Fetcher（慢路径兜底） ──
+        try:
+            from scripts.memory_l4.fivedomain_fetcher import FiveDomainFetcher
+            fetcher = FiveDomainFetcher()
+            coin_data = fetcher.fetch_coin_data() or {}
+            crypto = coin_data.get("crypto_usdt") or {}
+            pn_keys = [k for k in crypto.keys() if k.startswith("pn_")]
+            self._log(
+                f"[战略层] coin_data 来源: FiveDomainFetcher(实时采集)  "
+                f"crypto pn_*={len(pn_keys)} 个",
+                "INFO",
+            )
+            return coin_data
+        except Exception as _e:
+            self._log(
+                f"[战略层] FiveDomainFetcher 异常: {type(_e).__name__}: {_e}",
+                "WARN",
+            )
+            return fallback
 
     # ================================================================
     # Phase C+: 大小周期预测器 + ParameterMapper 初始化
@@ -2395,7 +2942,7 @@ class PollingTrader:
             fd_crypto_mult_mode = None
             fd_us_stock_war_state = None
             fd_us_stock_total_score = None
-            _fds = self._five_domain_state_cache
+            _fds = getattr(self, "_five_domain_state_shadow", None) or self._five_domain_state_cache
             if _fds is not None:
                 _ws = getattr(_fds, "war_state", {}) or {}
                 fd_crypto_war_state = _ws.get("crypto_usdt")
@@ -2405,12 +2952,25 @@ class PollingTrader:
                 _mult = getattr(_fds, "cross_asset_multiplier", {}) or {}
                 fd_crypto_mult_mode = _mult.get("crypto_usdt")
                 _scores = getattr(_fds, "five_scores", {}) or {}
+                _fd_scorer = getattr(self, "_five_domain_scorer", None)
                 _crypto_scores = _scores.get("crypto_usdt", {})
                 if _crypto_scores:
-                    fd_crypto_total_score = float(sum(_crypto_scores.values()))
+                    if _fd_scorer is not None:
+                        try:
+                            fd_crypto_total_score = float(_fd_scorer._weighted_total(_crypto_scores, "crypto_usdt"))
+                        except Exception:
+                            fd_crypto_total_score = 50.0
+                    else:
+                        fd_crypto_total_score = 50.0
                 _us_scores = _scores.get("us_stock", {})
                 if _us_scores:
-                    fd_us_stock_total_score = float(sum(_us_scores.values()))
+                    if _fd_scorer is not None:
+                        try:
+                            fd_us_stock_total_score = float(_fd_scorer._weighted_total(_us_scores, "us_stock"))
+                        except Exception:
+                            fd_us_stock_total_score = 50.0
+                    else:
+                        fd_us_stock_total_score = 50.0
 
             # ── T5 策略层影子字段（sal_*）从 enhance_result.strategy_selection 提取 ──
             sal_type = None
@@ -2435,6 +2995,12 @@ class PollingTrader:
                     sal_gate = 1 if _gate_val else 0
                 elif isinstance(_gate_val, (int, float)):
                     sal_gate = int(_gate_val)
+            else:
+                # P1 fix: 无策略匹配时填充默认值，确保影子覆盖率≥95%
+                sal_type = "baseline_v15"
+                _snap = inference.get("snapshot", {}) or {}
+                sal_regime = inference.get("_regime_pred") or _snap.get("regime")
+                sal_gate = 0
 
             self._shadow_logger.record_polling(
                 coin, inference, actual_params,
@@ -2756,7 +3322,7 @@ class PollingTrader:
                 self._coin_consecutive_losses[coin] = 0
 
     def _sync_existing_positions(self):
-        """同步 OKX 已有持仓到本地跟踪器"""
+        """同步 OKX 已有持仓到本地跟踪器，同步止损/止盈挂单，并修复不合理SL（如PUMP 0.586%过近止损）"""
         self._log("[持仓同步] 检查 OKX 已有持仓...", "INFO")
         for coin in self.coins:
             inst_id = f"{coin}-USDT-SWAP"
@@ -2768,19 +3334,64 @@ class PollingTrader:
                 if float(pos["pos"]) <= 0:
                     continue
                 if self.position_tracker.has_open_position(inst_id):
+                    # ★ FIX Bug#3：已有持仓也同步OKX上的SL/TP挂单到market_snapshot，防止后续调整
+                    #   以错误的"反算基线"继续收紧（PUMP 0.586%案例的另一条路径）
+                    self._sync_and_repair_sl_tp_for_position(coin, inst_id, pos)
                     continue
+                # 尝试读取 OKX 上的 SL/TP algo 订单，注入到 market_snapshot
+                _sl_px, _tp_px = self._fetch_sl_tp_from_okx(inst_id)
+                entry_px = float(pos["avg_px"])
+                pos_side = pos["pos_side"]
+                # ★ FIX Bug#3：开仓同步前对SL做硬门禁（含爆仓安全约束），发现不合理止损自动修复
+                if _sl_px and _sl_px > 0:
+                    _lev_here = self._get_leverage()
+                    _new_sl, _clamped, _old_pct, _cfl = self._enforce_sl_price_floor(
+                        _sl_px, entry_px, pos_side, leverage=_lev_here,
+                        allow_tighten=False, coin=coin)
+                    if _clamped:
+                        _msg_tail = ""
+                        if _cfl.get("liq_conflict"):
+                            _msg_tail = " 【间距/爆仓冲突已按爆仓优先钳制】强烈建议降杠杆≤20x"
+                        self._log(
+                            f"[持仓同步] {coin} 同步发现不合理止损: "
+                            f"间距{_old_pct*100:.2f}%<下限→自动修复为 "
+                            f"SL={_new_sl:.6f} (间距{abs(_new_sl-entry_px)/entry_px*100:.2f}%)"
+                            f"{_msg_tail}",
+                            "WARN",
+                        )
+                        # 实际下发正确的止损挂单到交易所
+                        try:
+                            if self.okx_client and hasattr(self.okx_client, "place_stop_loss_take_profit"):
+                                _r = self.okx_client.place_stop_loss_take_profit(
+                                    inst_id=inst_id, pos_side=pos_side,
+                                    stop_loss_px=_new_sl, take_profit_px=_tp_px,
+                                    reason=f"sync_repair_bad_sl:{_old_pct*100:.2f}pct",
+                                )
+                                if _r.get("ok"):
+                                    self._log(f"[持仓同步] {coin} 止损已自动修复并推送交易所", "INFO")
+                        except Exception as _e:
+                            self._log(f"[持仓同步] {coin} 自动修复止损推送失败: {_e}", "WARN")
+                        _sl_px = _new_sl
+                snapshot = {
+                    "price": float(pos.get("mark_px", entry_px)),
+                    "stop_loss_px": _sl_px,
+                    "take_profit_px": _tp_px,
+                }
                 self.position_tracker.open_position(
                     coin=coin,
                     inst_id=inst_id,
-                    direction=pos["pos_side"],
-                    entry_price=float(pos["avg_px"]),
+                    direction=pos_side,
+                    entry_price=entry_px,
                     confidence=0.8,
                     hexagram="已存在持仓",
-                    market_snapshot={"price": float(pos.get("mark_px", pos["avg_px"]))},
+                    market_snapshot=snapshot,
                     strategy_source="bcrm",
+                    # — BDSM 协作 R5：启动同步持仓也要打标签，保证子池计数完整 —
+                    source_tag=self._classify_source_tag(coin),
                 )
                 self._log(
-                    f"[持仓同步] 已同步 {coin} {pos['pos_side']} @ {pos['avg_px']} [易经推理持仓·启动同步]",
+                    f"[持仓同步] 已同步 {coin} {pos['pos_side']} @ {pos['avg_px']}"
+                    f" SL={_sl_px} TP={_tp_px} [易经推理持仓·启动同步]",
                     "INFO",
                 )
 
@@ -2807,6 +3418,174 @@ class PollingTrader:
             f"[持仓同步] 完成，共 {open_count} 个持仓 (BCRM={open_count-external_count} 外部={external_count})",
             "INFO",
         )
+
+    def _fetch_sl_tp_from_okx(self, inst_id: str) -> tuple:
+        """从 OKX 交易所读取当前有效的 SL/TP algo 挂单。
+
+        Returns: (sl_px, tp_px)，未找到则为 (None, None)
+        """
+        sl_px = None
+        tp_px = None
+        try:
+            if self.okx_client and hasattr(self.okx_client, "get_algo_orders"):
+                orders = self.okx_client.get_algo_orders(inst_id=inst_id)
+                for od in orders.get("orders", []):
+                    _sl = od.get("stop_loss_px") or od.get("sl_trigger_px") or od.get("sl_px")
+                    _tp = od.get("take_profit_px") or od.get("tp_trigger_px") or od.get("tp_px")
+                    if _sl:
+                        try: sl_px = float(_sl)
+                        except: pass
+                    if _tp:
+                        try: tp_px = float(_tp)
+                        except: pass
+        except Exception as _e:
+            self._log(f"[_fetch_sl_tp_from_okx] {inst_id} 读取失败（忽略）: {_e}", "DEBUG")
+        return sl_px, tp_px
+
+    def _sync_and_repair_sl_tp_for_position(self, coin: str, inst_id: str, pos: dict):
+        """对已同步过的持仓，检查OKX上实际SL/TP挂单是否合理，不合理则自动修复。
+
+        ★ PUMP案例修复项（2026-08-28）：
+        ① 缺 SL/TP 任一，不再直接return，改用基线ATR公式自动下发一套完整SL+TP套单
+        ② leverage 优先取OKX API返回的 pos["lever"] 真实单币杠杆，取不到再fallback _get_leverage()
+        ③ SL/TP 双通道门禁校验+修复（之前只修SL）
+        ④ FAIL-OPEN：异常中性兜底不阻塞交易
+        """
+        try:
+            entry_px = float(pos.get("avg_px", 0))
+            pos_side = pos.get("pos_side", "long")
+            if entry_px <= 0:
+                return
+
+            # ── 漏洞②修复：优先取OKX返回的真实单币杠杆（兼容lever/lev大小写）
+            _lev_here = None
+            for _lk in ("lever", "lev", "leverage"):
+                if _lk in pos and pos.get(_lk):
+                    try:
+                        _lev_here = float(pos[_lk])
+                        if _lev_here > 0:
+                            break
+                    except Exception:
+                        _lev_here = None
+            if _lev_here is None or _lev_here <= 0:
+                _lev_here = self._get_leverage()
+
+            # ── 读取交易所当前挂单 ──────────────────────────
+            try:
+                _sl_px, _tp_px = self._fetch_sl_tp_from_okx(inst_id)
+            except Exception as _fe:
+                self._log(
+                    f"[持仓同步·SLTP修复] {coin} 读取OKX SL/TP异常，降级为全量重算下发: {_fe}",
+                    "WARN",
+                )
+                _sl_px, _tp_px = None, None
+
+            # ── 判断是缺套单场景还是修复场景 ─────────────────
+            _sl_missing = (not _sl_px) or (_sl_px <= 0)
+            _tp_missing = (not _tp_px) or (_tp_px <= 0)
+            _need_issue = False
+            _reason_tag = "startup_repair"
+
+            # ── 漏洞①修复：缺SL/TP任一→全量按基线ATR+门禁重算
+            if _sl_missing or _tp_missing:
+                # 取开仓基线ROI
+                _base_sl_roi = self._get_base_sl_roi(inst_id, entry_px)
+                _base_tp_roi = self._get_base_tp_roi(inst_id, entry_px)
+                # FAIL-OPEN: base取不到就用项目记忆下限（常规SL≥1.5%价格、TP≥3%价格，对应订单ROI=价格%×L）
+                if _base_sl_roi <= 0:
+                    _base_sl_roi = 0.015 * _lev_here  # 订单ROI: 1.5%价格间距
+                if _base_tp_roi <= 0:
+                    _base_tp_roi = 0.03 * _lev_here   # 订单ROI: 3%价格间距
+                try:
+                    _trial_flag = bool(getattr(self, "_last_open_was_trial", False)
+                                       if hasattr(self, "_last_open_was_trial") else False)
+                except Exception:
+                    _trial_flag = False
+                _sl_px = self._calc_sl_price(entry_px, pos_side, _base_sl_roi, _lev_here)
+                _tp_px = self._calc_tp_price(entry_px, pos_side, _base_tp_roi, _lev_here)
+                _need_issue = True
+                _reason_tag = "startup_issue_missing"
+                self._log(
+                    f"[持仓同步·SLTP修复] {coin} {pos_side} L={_lev_here:.0f}x 缺SL={_sl_missing}"
+                    f"/缺TP={_tp_missing}，按基线ATR+门禁自动下发套单 | "
+                    f"基线SL价格间距={(entry_px - _sl_px) / entry_px * 100 if pos_side == 'long' else (_sl_px - entry_px) / entry_px * 100:.2f}%"
+                    f", TP价格间距={(_tp_px - entry_px) / entry_px * 100 if pos_side == 'long' else (entry_px - _tp_px) / entry_px * 100:.2f}%",
+                    "WARN",
+                )
+
+            # ── 双门禁：SL/TP分别校验，过近/致命→钳制 ─────────
+            _new_sl, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
+                _sl_px, entry_px, pos_side, leverage=_lev_here,
+                allow_tighten=False, coin=coin)
+            _new_tp, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
+                _tp_px, entry_px, pos_side, leverage=_lev_here,
+                allow_lower=False, coin=coin)
+
+            # ── 有任一门禁钳制 或 触发缺套单重算 → 下发新套单
+            if _need_issue or _sl_clamped or _tp_clamped:
+                _extra = ""
+                if _sl_cfl.get("liq_conflict") or _tp_cfl.get("liq_conflict"):
+                    _extra = f" 【间距/爆仓冲突→已按爆仓安全优先】L={_lev_here:.0f}x过高，请立即将{coin}杠杆降到≤20x，否则SL/TP永远在爆仓线附近漂移！"
+                _parts = []
+                if _need_issue:
+                    _parts.append("缺套单→全量下发")
+                if _sl_clamped:
+                    _parts.append(
+                        f"SL修复: {_sl_px:.6f}(间距{_sl_old_pct*100:.2f}%) → {_new_sl:.6f}"
+                        f"(间距{abs(_new_sl-entry_px)/entry_px*100:.2f}%)"
+                    )
+                if _tp_clamped:
+                    _parts.append(
+                        f"TP修复: {_tp_px:.6f}(间距{_tp_old_pct*100:.2f}%) → {_new_tp:.6f}"
+                        f"(间距{abs(_new_tp-entry_px)/entry_px*100:.2f}%)"
+                    )
+                self._log(
+                    f"[持仓同步·SLTP修复] {coin} {pos_side} L={_lev_here:.0f}x | "
+                    + " | ".join(_parts)
+                    + _extra,
+                    "WARN" if (_sl_clamped or _tp_clamped or _need_issue) else "INFO",
+                )
+                try:
+                    if self.okx_client and hasattr(self.okx_client, "place_stop_loss_take_profit"):
+                        _r = self.okx_client.place_stop_loss_take_profit(
+                            inst_id=inst_id, pos_side=pos_side,
+                            stop_loss_px=_new_sl, take_profit_px=_new_tp,
+                            reason=f"{_reason_tag}:sl={(_sl_old_pct if _sl_clamped else 0)*100:.2f}pct,tp={(_tp_old_pct if _tp_clamped else 0)*100:.2f}pct,L={_lev_here:.0f}x",
+                        )
+                        if _r.get("ok"):
+                            self._log(
+                                f"[持仓同步·SLTP修复] {coin} SL/TP已推送交易所 OK | "
+                                f"final SL={_new_sl:.6f}, TP={_new_tp:.6f}", "INFO",
+                            )
+                        else:
+                            self._log(
+                                f"[持仓同步·SLTP修复] {coin} 推送失败: {_r.get('error','unknown')}",
+                                "WARN",
+                            )
+                except Exception as _e:
+                    self._log(f"[持仓同步·SLTP修复] {coin} 推送异常(FAIL-OPEN忽略): {_e}", "WARN")
+                # 修复本地 tracker 记录的快照
+                try:
+                    rec = self.position_tracker.get_open_position(inst_id)
+                    if rec and rec.market_snapshot:
+                        rec.market_snapshot["stop_loss_px"] = _new_sl
+                        rec.market_snapshot["take_profit_px"] = _new_tp
+                except Exception:
+                    pass
+            else:
+                # 全部合理
+                self._log(
+                    f"[持仓同步·SLTP修复] {coin} {pos_side} L={_lev_here:.0f}x "
+                    f"SL={_sl_px:.6f}(间距{_sl_old_pct*100:.2f}%) / "
+                    f"TP={_tp_px:.6f}(间距{_tp_old_pct*100:.2f}%) → 双门禁均合规，无需修复",
+                    "DEBUG",
+                )
+        except Exception as _top_e:
+            # FAIL-OPEN铁律：异常不阻塞交易
+            self._log(
+                f"[持仓同步·SLTP修复] {coin} 顶层异常FAIL-OPEN，跳过本轮巡检: {_top_e}",
+                "WARN",
+            )
 
         # ══════════════════════════════════════════════════════════════
         # v5.0 离场防频繁优化：离场确认状态机 + 持仓保护门禁
@@ -4184,6 +4963,13 @@ class PollingTrader:
                         open_time_sec = _dt.fromisoformat(ts).timestamp()
                     except Exception:
                         open_time_sec = 0.0
+                # ★ FIX Bug: entry_time 解析失败时记录告警，便于排查 yijing_window_wait 永久死锁
+                if open_time_sec <= 0:
+                    self._log(
+                        f"[{coin}] OKX API 限流且 entry_time 解析失败 | "
+                        f"entry_time={getattr(tracker_rec, 'entry_time', None)} → open_time=0",
+                        "WARN",
+                    )
                 return {
                     "has_position": True,
                     "pos_side": tracker_rec.direction,
@@ -4215,12 +5001,21 @@ class PollingTrader:
             except Exception:
                 open_time_sec = 0.0
         if open_time_sec <= 0:
-            # OKX 回退：取 ctime（字符串秒）
+            # OKX 回退：取 cTime（字符串秒）
+            # ★ FIX Bug: okx_simulated.get_positions 现已返回 cTime 字段（之前缺失导致永久 fallback 失败）
             ctime = pos.get("cTime") or pos.get("ctime") or pos.get("created_at", "0")
             try:
                 open_time_sec = float(ctime) / 1000 if float(ctime) > 1e12 else float(ctime)
             except Exception:
                 open_time_sec = 0.0
+            # ★ FIX Bug: OKX ctime 也解析失败时记录告警
+            if open_time_sec <= 0:
+                self._log(
+                    f"[{coin}] open_time 双路失败 | tracker.entry_time="
+                    f"{getattr(tracker_rec, 'entry_time', None) if tracker_rec else 'None'}, "
+                    f"OKX.cTime={ctime} → open_time=0",
+                    "WARN",
+                )
 
         return {
             "has_position": True,
@@ -4240,6 +5035,860 @@ class PollingTrader:
             return len(pos_result.get("positions", []))
         # API失败时回退到本地持仓跟踪器
         return len(self.position_tracker.all_open_positions())
+
+    def _count_yijing_positions(self) -> int:
+        """统计易经推理系统（bcrm + bdsm 子池）的持仓数，不含 evolution 子池。
+
+        R5 隔离：易经系统与自进化系统共享资金账户但仓位配额独立。
+        开仓检查时只看易经子池持仓，避免 evolution 持仓占用易经配额。
+        """
+        try:
+            positions = self.position_tracker.all_open_positions()
+        except Exception:
+            return 0
+        total = 0
+        for p in positions:
+            ptag = str(getattr(p, "source_tag", "") or "")
+            if ptag in ("bcrm", "bdsm"):
+                total += 1
+        return total
+
+    def _classify_source_tag(self, coin: str) -> str:
+        """按币种打子池标签：BDSM_COINS → bdsm；否则 → bcrm。FAIL-OPEN → bcrm。"""
+        try:
+            if coin and coin.upper() in (getattr(self, "BDSM_COINS", None) or frozenset()):
+                return "bdsm"
+        except Exception:
+            pass
+        return "bcrm"
+
+    def _count_subpool_positions(self, source_tag: str) -> int:
+        """按 source_tag 统计本地持仓跟踪器里的子池持仓数量。
+
+        R5 隔离核心：计数时只看 TradeRecord.source_tag == 目标标签；
+        若 source_tag 为空或未知，不计入任何子池（避免污染边界计数）。
+        API 不可用时用本地 tracker 是安全的：每笔下单/平仓都会同步 tracker。
+        """
+        tag = str(source_tag or "")
+        total = 0
+        try:
+            positions = self.position_tracker.all_open_positions()
+        except Exception:
+            positions = []
+        for p in positions:
+            ptag = str(getattr(p, "source_tag", "") or "")
+            if not ptag:
+                # 老仓位没打 source_tag：按币名回溯分类（兼容启动同步持仓）
+                ptag = self._classify_source_tag(str(getattr(p, "coin", "") or ""))
+            if ptag == tag:
+                total += 1
+        return total
+
+    def _check_subpool_capacity(self, coin: str) -> Tuple[bool, str]:
+        """开仓前判断该币种对应子池是否还有空闲仓位（R5 铁律）。
+
+        Returns: (passed: bool, reason: str)
+        """
+        tag = self._classify_source_tag(coin)
+        max_pos = int(self.SUBPOOL_MAX_POSITIONS.get(tag, 0) or 0)
+        if max_pos <= 0:
+            return False, f"子池{tag}配置无效"
+        cur = self._count_subpool_positions(tag)
+        if cur >= max_pos:
+            return False, f"子池{tag}已满 {cur}/{max_pos}"
+        return True, f"子池{tag} {cur}/{max_pos}"
+
+    # ==============================================================
+    # BDSM × BCRM 协作 helpers（Phase 2 强耦合 缺口 1/2/3）
+    # 统一 FAIL-OPEN：缺失/异常 → 字节等价「BDSM 不存在」
+    # ==============================================================
+    _BDSM_SNAPSHOT_TTL_SEC = 5 * 60  # 5 min 内复用同一快照，避免每 tick 读盘
+
+    def _neutral_bdsm_skeleton(self, reason: str) -> Dict:
+        """FAIL-OPEN 中性骨架 — 字节等价「BDSM 不存在」。"""
+        coins: Dict[str, Dict] = {}
+        for c in getattr(self, "BDSM_COINS", frozenset()) or frozenset():
+            coins[c] = {
+                "available": False,
+                "score": 0.0,
+                "rank": "B",
+                "direction_constraint": "NEUTRAL",
+                "cap_multiplier": 1.0,
+                "exit_action": "NONE",
+                "exit_triggers": [],
+                "data_quality": "insufficient",
+                "phase": "P1",
+            }
+        return {
+            "version": "1.0",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "neutral_fallback_reason": reason,
+            "coins": coins,
+        }
+
+    def _ensure_bdsm_snapshot_today(self) -> None:
+        """确保今日 BDSM 快照已生成。每轮 run_once 调用一次（幂等）。
+
+        快照不存在时调用 write_snapshot() 生成，已存在则跳过。
+        FAIL-OPEN：任何异常仅打 WARN，不阻塞主链路。
+        """
+        try:
+            from datetime import date as _date
+            _today_str = _date.today().isoformat()
+            _filename = f"bdsm_snapshot_{_today_str.replace('-', '')}.json"
+
+            # 复用 _get_bdsm_snapshot_today 的路径逻辑
+            try:
+                from scripts.memory_l4.force_vector.bdsm_snapshot_writer import (
+                    DEFAULT_BDSM_DIR,
+                )
+            except Exception:
+                from force_vector.bdsm_snapshot_writer import (
+                    DEFAULT_BDSM_DIR,
+                )
+
+            _out_dir = getattr(self, "_bdsm_snapshot_dir", None) or DEFAULT_BDSM_DIR
+            _target = os.path.join(_out_dir, _filename)
+            if os.path.exists(_target):
+                return  # 已生成，跳过
+
+            # 生成快照
+            self._log(f"[BDSM] 今日快照不存在，开始生成: {_target}")
+            try:
+                from scripts.memory_l4.force_vector.bdsm_snapshot_writer import (
+                    write_snapshot as _write_snap,
+                )
+            except Exception:
+                from force_vector.bdsm_snapshot_writer import (
+                    write_snapshot as _write_snap,
+                )
+
+            _write_snap(out_dir=_out_dir, dry_run_read_coin_data_from_db=True)
+            self._log(f"[BDSM] 快照生成完成: {_target}")
+        except Exception as exc:
+            self._log(f"[BDSM] 快照自动生成失败(FAIL-OPEN): {exc}", "WARN")
+
+    def _get_bdsm_snapshot_today(self) -> Dict:
+        """读取今日 BDSM 快照（5min TTL 进程缓存）。FAIL-OPEN → neutral_skeleton。"""
+        try:
+            import time as _t
+            now = _t.time()
+            cache = getattr(self, "_bdsm_snapshot_cache", None)
+            if (
+                isinstance(cache, dict)
+                and (now - float(cache.get("ts", 0))) <= self._BDSM_SNAPSHOT_TTL_SEC
+                and isinstance(cache.get("snapshot"), dict)
+            ):
+                return cache["snapshot"]
+
+            try:
+                from scripts.memory_l4.force_vector.bdsm_snapshot_writer import (
+                    load_today_snapshot,
+                    DEFAULT_BDSM_DIR,
+                )
+            except Exception as exc:  # 模块缺失：lazy import FAIL-OPEN
+                snap = self._neutral_bdsm_skeleton(
+                    f"polling_trader.bdsm_import_fail:{exc}"
+                )
+                self._bdsm_snapshot_cache = {"ts": now, "snapshot": snap}
+                return snap
+
+            try:
+                out_dir = getattr(self, "_bdsm_snapshot_dir", None) or DEFAULT_BDSM_DIR
+                snap = load_today_snapshot(out_dir=out_dir)
+                if not isinstance(snap, dict) or "coins" not in snap:
+                    raise ValueError("bad_snapshot_schema: missing coins")
+            except Exception as exc:  # 缺文件 / schema 错误 / JSON 解析失败
+                snap = self._neutral_bdsm_skeleton(f"bdsm_snapshot_load_fail:{exc}")
+
+            self._bdsm_snapshot_cache = {"ts": now, "snapshot": snap}
+            return snap
+        except Exception as exc:
+            # 终极兜底：任何未捕获异常都不能阻塞执行链
+            return self._neutral_bdsm_skeleton(f"bdsm_snapshot_fatal:{exc}")
+
+    def _apply_bdsm_direction_constraint(
+        self, coin: str, direction: str
+    ) -> Tuple[bool, str]:
+        """缺口 1 纯函数：根据 direction_constraint 判定本次开仓方向是否放行。
+
+        Returns:
+            (is_pass, drop_reason)  — reason 同时用于日志关键字。
+        """
+        try:
+            coin_up = (coin or "").upper()
+            bdsm_coins = getattr(self, "BDSM_COINS", frozenset()) or frozenset()
+            if coin_up not in bdsm_coins:
+                return True, "not_bdsm_coin"
+
+            snap = self._get_bdsm_snapshot_today()
+            coin_entry = (snap.get("coins") or {}).get(coin_up) or {}
+            constraint = str(coin_entry.get("direction_constraint") or "NEUTRAL").upper()
+
+            want = "long" if direction == "UP" else "short" if direction == "DOWN" else "?"
+
+            if constraint == "LONG_ONLY":
+                if want != "long":
+                    return (
+                        False,
+                        f"bdsm_long_only_dropped: snapshot={constraint} want_direction={direction}",
+                    )
+                return True, "bdsm_long_only_same_direction"
+            if constraint == "SHORT_ONLY":
+                if want != "short":
+                    return (
+                        False,
+                        f"bdsm_short_only_dropped: snapshot={constraint} want_direction={direction}",
+                    )
+                return True, "bdsm_short_only_same_direction"
+            # NEUTRAL / 其他：FAIL-OPEN 放行
+            return True, "neutral_pass"
+        except Exception as exc:
+            # FAIL-OPEN：约束判断异常 → 放行（BCRM 技术方向）
+            return True, f"bdsm_direction_check_failopen:{exc}"
+
+    def _apply_bdsm_cap_multiplier(
+        self, coin: str, position_usdt: float
+    ) -> Tuple[float, float, str]:
+        """缺口 2 纯函数：MIN(position_usdt, position_usdt × cap_multiplier)。
+
+        Returns:
+            (actual_usdt, cap_used, info_tag)
+            info_tag 取值:
+              - not_bdsm_coin
+              - fail_open_cap_default_1.0
+              - bdsm_cap_applied
+              - bdsm_cap_zero_blocked
+        """
+        try:
+            coin_up = (coin or "").upper()
+            bdsm_coins = getattr(self, "BDSM_COINS", frozenset()) or frozenset()
+            if coin_up not in bdsm_coins:
+                return float(position_usdt), 1.0, "not_bdsm_coin"
+
+            snap = self._get_bdsm_snapshot_today()
+            coin_entry = (snap.get("coins") or {}).get(coin_up) or {}
+            if "cap_multiplier" not in coin_entry:
+                return float(position_usdt), 1.0, "fail_open_cap_default_1.0"
+            try:
+                cap_raw = float(coin_entry["cap_multiplier"] or 0.0)
+            except (TypeError, ValueError):
+                return float(position_usdt), 1.0, "fail_open_cap_default_1.0"
+            cap = max(0.0, min(1.0, cap_raw))
+            base = max(0.0, float(position_usdt or 0.0))
+            if cap <= 0.0:
+                return 0.0, 0.0, "bdsm_cap_zero_blocked"
+            actual = min(base, base * cap)
+            return actual, cap, "bdsm_cap_applied"
+        except Exception as exc:
+            # FAIL-OPEN：cap 判断异常 → 原样仓位
+            return (
+                float(position_usdt or 0.0),
+                1.0,
+                f"bdsm_cap_check_failopen:{exc}",
+            )
+
+    def _get_bdsm_accumulated_position(self, coin: str) -> float:
+        """Phase 1 辅助：从 PositionTracker 读取该币的已建仓名义金额。
+
+        FAIL-OPEN：tracker 缺失 / 异常 → 0.0（等价「无历史仓位」）。
+        用于 _apply_bdsm_scaling 计算 remaining = remaining_budget - accumulated。
+        """
+        try:
+            coin_up = (coin or "").upper()
+            tracker = getattr(self, "position_tracker", None)
+            if tracker is None:
+                return 0.0
+            all_pos = tracker.all_open_positions() or []
+            total = 0.0
+            for rec in all_pos:
+                if (getattr(rec, "coin", "") or "").upper() == coin_up:
+                    # 累加 source_tag=bdsm 的仓位（仅 BDSM 子池已建仓）
+                    stag = (getattr(rec, "source_tag", "") or "").lower()
+                    usdt = float(getattr(rec, "position_usdt", 0.0) or 0.0)
+                    if stag and "bdsm" in stag and usdt > 0:
+                        total += usdt
+            return round(total, 4)
+        except Exception:
+            return 0.0
+
+    # ── TEE 执行引擎集成（影子模式）──────────────────────────────────
+    def _ensure_yijing_engine(self):
+        """懒加载 TEE 引擎（NFR-4：构造发生在 tee_core 外部，raw_client 由本方法传入）。"""
+        if self._tee_engine is not None:
+            return self._tee_engine
+        if not self._tee_enable and not self._tee_shadow:
+            return None
+        with self._tee_engine_init_lock:
+            if self._tee_engine is not None:
+                return self._tee_engine
+            try:
+                import importlib.util as _ilu
+                import sys as _sys
+                from pathlib import Path as _P
+                _tee_root = _P(__file__).resolve().parents[3] / "22-执行引擎中心"
+                _p = _tee_root / "tee_core/integrations/yijing_integration.py"
+                if not _p.is_file():
+                    return None
+                _name = "_tee_yijing_integration_lazy"
+                _spec = _ilu.spec_from_file_location(_name, str(_p))
+                _mod = _ilu.module_from_spec(_spec)
+                _sys.modules.setdefault(_name, _mod)
+                _spec.loader.exec_module(_mod)
+                engine, _info = _mod.build_yijing_engine(
+                    raw_client=self.okx_client,
+                    enable_tee=self._tee_enable,
+                    shadow_mode=self._tee_shadow,
+                )
+                self._tee_engine = engine
+                self._log(
+                    f"[TEE] 易经推理 TEE 引擎已加载 "
+                    f"enable_tee={self._tee_enable} shadow={self._tee_shadow}",
+                    "INFO",
+                )
+            except BaseException as exc:
+                # FAIL-OPEN：集成加载失败 → 完全退化为直传，不抛错阻塞轮询
+                self._tee_engine = None
+                self._log(f"[TEE] 引擎加载失败，退化为直传: {exc}", "WARN")
+        return self._tee_engine
+
+    def _wrap_place_order_with_tee(self):
+        """包装 okx_client.place_order，实现双轨影子模式。
+
+        双轨影子模式（enable_tee=True, shadow_mode=True）：
+          - 调用 TEE execute_market_compat（完整决策链，shadow auditor 只记录不下单）
+          - 然后继续走原始 place_order（实际成交不变）
+          - TEE shadow 审计日志记录 TEE 决策 vs 实际成交的差异
+
+        真实执行模式（enable_tee=True, shadow_mode=False）：
+          - 完全由 TEE execute_market_compat 执行下单，不走原始路径
+        """
+        engine = self._ensure_yijing_engine()
+        if engine is None:
+            return
+
+        original_place_order = self.okx_client.place_order
+
+        def _tee_wrapped_place_order(**kwargs):
+            # 限价单/带 px → 始终直传（TEE 暂不托管限价单）
+            if kwargs.get("px") is not None or kwargs.get("ord_type") not in (None, "market"):
+                return original_place_order(**kwargs)
+
+            try:
+                tee_result = engine.execute_market_compat(
+                    inst_id=kwargs.get("inst_id", ""),
+                    side=kwargs.get("side", ""),
+                    sz=kwargs.get("sz"),
+                    td_mode=kwargs.get("td_mode", "isolated"),
+                    pos_side=kwargs.get("pos_side", "net"),
+                    leverage=kwargs.get("leverage"),
+                    tag="yijing_shadow",
+                    reason=kwargs.get("reason", ""),
+                )
+                # 如果 TEE 真实执行（非 shadow），直接返回 TEE 结果
+                if not self._tee_shadow:
+                    return tee_result
+                # shadow 模式：TEE 只记录，实际下单走原始路径
+            except BaseException:
+                pass  # FAIL-OPEN：TEE 执行失败不影响实际下单
+            return original_place_order(**kwargs)
+
+        self.okx_client.place_order = _tee_wrapped_place_order
+
+    def _apply_bdsm_scaling(
+        self, coin: str, position_usdt: float, current_price: float
+    ) -> Tuple[float, float, str]:
+        """Phase 1（gap2 升级）：动态评估器（CVS）驱动的分批建仓。
+
+        spec §3.2.2 + §5.3 Phase 1：
+          - CVS < 0.3 或 scaling_plan 缺失 → FAIL-OPEN 回退 _apply_bdsm_cap_multiplier
+          - CVS 0.3~0.6 → batch = remaining × 0.3
+          - CVS 0.6~0.8 → batch = remaining × 0.5
+          - CVS >= 0.8 → 打完子弹 batch = remaining
+          - remaining <= 0 → (0.0, 0.0, "bdsm_scaling_completed")
+
+        Returns:
+            (batch_notional, cap_used, info_tag)
+        """
+        try:
+            coin_up = (coin or "").upper()
+            bdsm_coins = getattr(self, "BDSM_COINS", frozenset()) or frozenset()
+            if coin_up not in bdsm_coins:
+                return float(position_usdt), 1.0, "not_bdsm_coin"
+
+            snap = self._get_bdsm_snapshot_today()
+            coin_entry = (snap.get("coins") or {}).get(coin_up) or {}
+
+            try:
+                cvs = float(coin_entry.get("cvs", 0.0) or 0.0)
+                ratio = float(coin_entry.get("cvs_ratio", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                cvs, ratio = 0.0, 0.0
+
+            plan = coin_entry.get("scaling_plan") or {}
+
+            # FAIL-OPEN：CVS 不达标 或 plan 缺失 → 回退原 cap 逻辑
+            if not plan or cvs < 0.3:
+                # ── 战术小仓分支（2026-09-06 新增）──────────────────────
+                # BDSM 标准仓因 cvs<0.3 被拦截，但标的基本面强（bds≥0.3）且
+                # 估值偏高/超买 → 用战术小仓（林奇观察仓 + 欧奈尔止损 + 德鲁肯米勒小仓）
+                _tactical = self._try_tactical_micro_position(coin_up, coin_entry)
+                if _tactical is not None:
+                    return _tactical
+                return self._apply_bdsm_cap_multiplier(coin, position_usdt)
+
+            # ── P0-A2: spec §3.5 加仓前置检查 5 条（P1-2 实盘对齐）───────
+            # 已有 2 条: ③CVS≥0.3  ⑥remaining>0 (下方资金)
+            # 新增 5 条：
+            #   ① BDS 基本面未恶化（bds_score ≥ 0.0）
+            #   ④ war_state = ALLOW（五计庙算宏观允许）
+            #   ⑦ value_exit.action ≠ full_exit（未触发完整出场信号）
+            #   ⑧ trend_stop.action == none（未触发趋势止损）
+            #   ⑨ 距上次加仓 ≥ 间隔 (实盘用 _last_bdsm_entry_ts 追踪，默认≥1 tick=300s/5min>4h)
+            # FAIL-OPEN：任何一条不满足 → 回退 cap_multiplier（等价 BDSM 不参与，安全兜底）
+            _pre_block_tag = None
+            try:
+                # ① BDS ≥ 0
+                _bds = float(coin_entry.get("bds_score", 0.0) or 0.0)
+                if _bds < 0.0:
+                    _pre_block_tag = f"bds_below_zero_{_bds:.2f}"
+                # ④ war_state = ALLOW（战略层 cache 读取）
+                if _pre_block_tag is None:
+                    _war_cache = getattr(self, "_state_cache", None)
+                    if _war_cache is not None:
+                        _war = getattr(_war_cache, "war_state", None)
+                        if isinstance(_war, dict) and _war.get("crypto_usdt", "ALLOW") != "ALLOW":
+                            _pre_block_tag = "war_state_blocked"
+                # ⑦ value_exit.action ≠ full_exit
+                if _pre_block_tag is None:
+                    _ve = coin_entry.get("value_exit") or {}
+                    if str(_ve.get("action", "none") or "none").lower() in ("full_exit", "reduce50"):
+                        _pre_block_tag = f"value_exit_{_ve.get('action')}"
+                # ⑧ trend_stop.action == none（reduce 也不能加仓，趋势坏了不摊平）
+                if _pre_block_tag is None:
+                    _ts = coin_entry.get("trend_stop") or {}
+                    if str(_ts.get("action", "none") or "none").lower() != "none":
+                        _pre_block_tag = f"trend_stop_{_ts.get('action')}"
+                # ⑨ 加仓间隔 ≥ 1 tick（300s，远大于 spec 的 4h）
+                if _pre_block_tag is None:
+                    _last_ts = getattr(self, "_last_bdsm_entry_days", None)
+                    if isinstance(_last_ts, dict):
+                        _last_day = _last_ts.get(coin_up)
+                        if _last_day is not None:
+                            import time as _t
+                            _now_day = int(_t.time() // 86400)  # 日级序号
+                            if _now_day - int(_last_day) < 1:
+                                _pre_block_tag = "entry_interval_too_soon"
+            except Exception:
+                _pre_block_tag = None  # 异常不阻断（FAIL-OPEN）
+
+            if _pre_block_tag is not None:
+                self._log(
+                    f"[{coin_up}] BDSM 加仓前置检查拦截 → {_pre_block_tag} | 回退 cap 逻辑",
+                    "WARN",
+                )
+                return self._apply_bdsm_cap_multiplier(coin, position_usdt)
+
+            try:
+                remaining_budget = float(plan.get("remaining_budget", 167.0) or 167.0)
+            except (TypeError, ValueError):
+                remaining_budget = 167.0
+
+            # — BDSM 微仓实盘测试硬上限：CLI 通过 --bdsm-budget-per-coin 传入时
+            #   对 scaling_plan.remaining_budget 做 min 覆盖，防止首次真实环境测试
+            #   单次投放过大。FAIL-OPEN：类型异常/None → 不覆盖，沿用 plan。
+            try:
+                _budget_cap = getattr(self, "bdsm_budget_per_coin", None)
+                if _budget_cap is not None:
+                    _cap = float(_budget_cap)
+                    if _cap > 0:
+                        if remaining_budget > _cap:
+                            self._log(
+                                f"[{coin_up}] BDSM 微仓硬上限生效 scaling_plan.remaining_budget "
+                                f"{remaining_budget:.2f}U → min= {_cap:.2f}U",
+                                "INFO",
+                            )
+                        remaining_budget = min(remaining_budget, _cap)
+            except (TypeError, ValueError):
+                pass  # FAIL-OPEN：覆盖失败，沿用解析好的 remaining_budget
+
+            accumulated = float(self._get_bdsm_accumulated_position(coin) or 0.0)
+            remaining = remaining_budget - accumulated
+
+            # 已建满 → 拦截
+            if remaining <= 0:
+                return 0.0, 0.0, "bdsm_scaling_completed"
+
+            batch_notional = remaining * ratio
+
+            # "打完子弹"：CVS >= 0.8 → 全投
+            if cvs >= 0.8:
+                batch_notional = remaining
+
+            # P0-A2 ⑨：记录此次加仓日（供下次间隔检查）
+            try:
+                import time as _t
+                if not hasattr(self, "_last_bdsm_entry_days") or not isinstance(getattr(self, "_last_bdsm_entry_days", None), dict):
+                    self._last_bdsm_entry_days = {}
+                self._last_bdsm_entry_days[coin_up] = int(_t.time() // 86400)
+            except Exception:
+                pass
+
+            return (
+                float(batch_notional),
+                1.0,
+                f"bdsm_cvs_{cvs:.2f}_ratio_{ratio:.1f}",
+            )
+        except Exception as exc:
+            # FAIL-OPEN：scaling 异常 → 回退原 cap 逻辑
+            return self._apply_bdsm_cap_multiplier(coin, position_usdt)
+
+    def _try_tactical_micro_position(
+        self, coin_up: str, coin_entry: Dict[str, Any]
+    ) -> Optional[Tuple[float, float, str]]:
+        """战术小仓分支：基本面强但标准仓被估值/超买拦截时，小仓入场。
+
+        融合林奇观察仓 + 欧奈尔止损 + 德鲁肯米勒小仓。
+        开关：ENABLE_TACTICAL_MICRO_POSITION（默认 False → 不生效）
+
+        Returns:
+            (batch_notional, cap_used, info_tag) 或 None（不走战术小仓）
+        """
+        try:
+            from force_vector.bdsm_tactical_position import (
+                ENABLE_TACTICAL_MICRO_POSITION,
+                TACTICAL_MICRO_BUDGET_USDT,
+                TACTICAL_MAX_POSITIONS,
+                tactical_entry_check,
+            )
+
+            if not ENABLE_TACTICAL_MICRO_POSITION:
+                return None
+
+            if not tactical_entry_check(coin_entry):
+                return None
+
+            # 战术小仓配额不占用 BDSM 标准仓预算，独立计数
+            accumulated = float(self._get_bdsm_accumulated_position(coin_up) or 0.0)
+            if accumulated >= TACTICAL_MICRO_BUDGET_USDT:
+                return None
+
+            batch_notional = TACTICAL_MICRO_BUDGET_USDT - accumulated
+
+            self._log(
+                f"[{coin_up}] 战术小仓入场 bds={float(coin_entry.get('bds_score', 0)):.3f} "
+                f"batch={batch_notional:.2f}U",
+                "INFO",
+            )
+            return (
+                float(batch_notional),
+                1.0,
+                "tactical_micro_position",
+            )
+        except Exception:
+            return None  # FAIL-OPEN
+
+    def _get_coin_position_info(self, coin: str) -> Dict[str, Any]:
+        """缺口 3 辅助：按币名从 PositionTracker.open_positions 取持仓信息。
+
+        统一返回 has_position 键；失败 → has_position=False。
+        """
+        try:
+            coin_up = (coin or "").upper()
+            tracker = getattr(self, "position_tracker", None)
+            if tracker is None:
+                return {"has_position": False}
+            all_pos = tracker.all_open_positions() or []
+            for rec in all_pos:
+                if (getattr(rec, "coin", "") or "").upper() == coin_up:
+                    inst_id = getattr(rec, "inst_id", "") or f"{coin_up}-USDT-SWAP"
+                    pos_side = getattr(rec, "direction", "") or "long"
+                    entry_px = float(getattr(rec, "entry_price", 0.0) or 0.0)
+                    exit_px = float(getattr(rec, "exit_price", 0.0) or entry_px)
+                    # 盈亏近似：用 entry / exit 价格差比率 ×100 (单位百分比)
+                    if pos_side == "long" and entry_px:
+                        pnl_pct = (exit_px - entry_px) / entry_px
+                    elif pos_side == "short" and entry_px:
+                        pnl_pct = (entry_px - exit_px) / entry_px
+                    else:
+                        pnl_pct = 0.0
+                    usdt_amt = float(getattr(rec, "position_usdt", 0.0) or 0.0)
+                    upl = usdt_amt * pnl_pct
+                    entry_time = getattr(rec, "entry_time", None) or ""
+                    open_ts: float = 0.0
+                    try:
+                        if entry_time:
+                            from datetime import datetime as _dt, timezone as _tz
+                            open_ts = _dt.fromisoformat(entry_time.replace("Z", "+00:00")).timestamp()
+                    except Exception:
+                        open_ts = 0.0
+                    return {
+                        "has_position": True,
+                        "inst_id": inst_id,
+                        "coin": coin_up,
+                        "pos_side": pos_side,
+                        "pos": float(getattr(rec, "position_qty", 0.0) or 0.0),
+                        "avg_px": entry_px,
+                        "mark_px": exit_px or entry_px,
+                        "upl": float(getattr(rec, "pnl", upl) or upl),
+                        "upl_ratio": float(getattr(rec, "pnl_pct", pnl_pct) or pnl_pct),
+                        "open_time_sec": open_ts,
+                        "position_usdt": usdt_amt,
+                        "_trade_record": rec,
+                    }
+            return {"has_position": False}
+        except Exception:
+            return {"has_position": False}
+
+    def _bdsm_check_exit_actions(self) -> List[Dict[str, Any]]:
+        """缺口 3：出场巡检入口。按 BDSM 快照 exit_action 先于 BCRM 技术出场执行。
+
+        优先级：CLOSE_ALL > REDUCE_80 > REDUCE_50 > NONE（快照 _detect_exit_action 已保证）。
+        仅作用于 BDSM 币 且 position_tracker 里有真实持仓者；非 BDSM 币直接跳过。
+        REDUCE_* 复用 OKX market_close_* 方法但只提交 sz×ratio 等价订单（若 client 不支持 reduce
+        专用接口，则拆成「平 80%/50% 再重开 20%/50%」的等价操作由上层 _handle_close_position 记录部分平仓）；
+        为了保持实盘一致性，本实现优先走「全平 + 立即重开剩余」路径，并记录一条半仓 pnl 记录。
+
+        Returns:
+            本次执行的动作摘要列表，用于日志聚合。
+        """
+        actions: List[Dict[str, Any]] = []
+        try:
+            bdsm_coins = getattr(self, "BDSM_COINS", frozenset()) or frozenset()
+            if not bdsm_coins:
+                return actions
+            snap = self._get_bdsm_snapshot_today()
+            coins = snap.get("coins") or {}
+
+            okx_client = getattr(self, "okx_client", None)
+            tracker = getattr(self, "position_tracker", None)
+            if okx_client is None or tracker is None:
+                return actions
+
+            for coin_up in sorted(bdsm_coins):
+                try:
+                    entry = coins.get(coin_up) or {}
+
+                    # Phase 2：合并三个出场源（exit_action + trend_stop + value_exit）
+                    _exit_prio = {
+                        "CLOSE_ALL": 5, "full_exit": 5,
+                        "REDUCE_80": 4,
+                        "REDUCE_50": 3, "reduce50": 3,
+                        "reduce30": 2,
+                        "NONE": 0, "none": 0,
+                    }
+                    exit_raw = str(entry.get("exit_action") or "NONE").upper()
+                    trend_raw = str((entry.get("trend_stop") or {}).get("action") or "none").lower()
+                    value_raw = str((entry.get("value_exit") or {}).get("action") or "none").lower()
+
+                    # 取优先级最高的 action 作为本轮执行动作
+                    best_action = max(
+                        [exit_raw, trend_raw, value_raw],
+                        key=lambda a: _exit_prio.get(a, 0),
+                    )
+                    if _exit_prio.get(best_action, 0) == 0:
+                        continue  # 三个源均为 NONE → 无动作
+
+                    triggers = entry.get("exit_triggers") or []
+                    # 非 BDSM 币（BDSM_COINS 里本来就是全的，skip 非重点）
+                    pos_info = self._get_coin_position_info(coin_up)
+                    if not pos_info.get("has_position"):
+                        continue
+                    inst_id = pos_info["inst_id"]
+                    pos_side = pos_info.get("pos_side") or "long"
+                    mark_px = pos_info.get("mark_px") or pos_info.get("avg_px") or 0.0
+                    upl = float(pos_info.get("upl") or 0.0)
+                    upl_ratio = float(pos_info.get("upl_ratio") or 0.0)
+
+                    close_method = (
+                        okx_client.market_close_long
+                        if pos_side == "long"
+                        else okx_client.market_close_short
+                    )
+                    # 标注触发来源
+                    _src_tag = (
+                        "exit" if best_action == exit_raw and _exit_prio.get(exit_raw, 0) > 0
+                        else "trend_stop" if best_action == trend_raw and _exit_prio.get(trend_raw, 0) > 0
+                        else "value_exit"
+                    )
+                    reason = f"bdsm_exit:{best_action}({','.join(triggers) or 'none'},{_src_tag})"
+
+                    if best_action in ("CLOSE_ALL", "full_exit"):
+                        r = close_method(inst_id, reason=reason)
+                        if r.get("ok") or r.get("dry_run"):
+                            self._handle_close_position(
+                                inst_id=inst_id,
+                                coin=coin_up,
+                                pos_side=pos_side,
+                                exit_price=mark_px,
+                                exit_reason=reason,
+                                pnl=upl,
+                                pnl_pct=upl_ratio,
+                            )
+                            actions.append({"coin": coin_up, "action": "CLOSE_ALL", "ok": True,
+                                            "reason": reason})
+                        else:
+                            self._log(
+                                f"[{coin_up}] BDSM CLOSE_ALL 失败: {r.get('error')}", "WARN"
+                            )
+                            actions.append({"coin": coin_up, "action": "CLOSE_ALL", "ok": False,
+                                            "error": r.get("error")})
+                        continue
+
+                    if best_action in ("REDUCE_80", "REDUCE_50", "reduce50", "reduce30"):
+                        # 参数化 reduce_ratio（Phase 2 新增 reduce30 支持）
+                        _ratio_map = {"REDUCE_80": 0.80, "REDUCE_50": 0.50,
+                                      "reduce50": 0.50, "reduce30": 0.30}
+                        reduce_ratio = _ratio_map.get(best_action, 0.50)
+                        reduce_result = self._bdsm_partial_reduce_position(
+                            coin=coin_up, inst_id=inst_id, pos_side=pos_side,
+                            reduce_ratio=reduce_ratio, mark_px=mark_px,
+                            upl=upl, upl_ratio=upl_ratio, reason=reason,
+                        )
+                        actions.append({"coin": coin_up, "action": best_action, **reduce_result})
+                        continue
+
+                    # 未知 action → FAIL-OPEN 不动
+                    self._log(
+                        f"[{coin_up}] BDSM 未知 best_action={best_action}（FAIL-OPEN 跳过）",
+                        "WARN",
+                    )
+                except Exception as cex:
+                    self._log(
+                        f"[{coin_up}] BDSM exit 单币处理异常（FAIL-OPEN 跳过）: {cex}", "WARN"
+                    )
+            return actions
+        except Exception as exc:
+            self._log(f"BDSM exit_actions 巡检异常（FAIL-OPEN 跳过）: {exc}", "WARN")
+            return actions
+
+    def _bdsm_partial_reduce_position(
+        self,
+        coin: str,
+        inst_id: str,
+        pos_side: str,
+        reduce_ratio: float,
+        mark_px: float,
+        upl: float,
+        upl_ratio: float,
+        reason: str,
+    ) -> Dict[str, Any]:
+        """缺口 3 子步骤：按 reduce_ratio (0.8 / 0.5) 部分平仓。
+
+        优先：如果 okx_client 有 place_order 接口（OKXSimulatedClient 有），
+        直接下「反方向 sz×reduce_ratio」市价单 等价部分平仓；否则回退为全平后立即按剩余仓位
+        以当前 mark_px 开一条新 TradeRecord（记账型，不发新单），保持本地 PositionTracker 一致。
+        """
+        okx_client = getattr(self, "okx_client", None)
+        tracker = getattr(self, "position_tracker", None)
+        if okx_client is None or tracker is None:
+            return {"ok": False, "error": "client/tracker_missing"}
+        pos_rec = tracker.get_open_position(inst_id)
+        if pos_rec is None:
+            return {"ok": False, "error": "no_open_position"}
+        try:
+            original_sz = float(getattr(pos_rec, "position_qty", 0.0) or 0.0)
+            original_usdt = float(getattr(pos_rec, "position_usdt", 0.0) or 0.0)
+        except Exception:
+            original_sz = 0.0
+            original_usdt = 0.0
+        if original_sz <= 0 and original_usdt <= 0:
+            return {"ok": False, "error": "empty_position_size"}
+
+        reduce_sz = original_sz * reduce_ratio
+        reduce_usdt = original_usdt * reduce_ratio
+        side = "sell" if pos_side == "long" else "buy"
+
+        reduce_px = mark_px or float(getattr(pos_rec, "entry_price", 0.0) or 0.0)
+        partial_upl = upl * reduce_ratio if reduce_ratio else 0.0
+        partial_upl_ratio = float(upl_ratio or 0.0)
+
+        tried_place_order = False
+        if reduce_sz > 0 and hasattr(okx_client, "place_order"):
+            try:
+                r = okx_client.place_order(
+                    inst_id=inst_id,
+                    side=side,
+                    ord_type="market",
+                    sz=reduce_sz,
+                    pos_side=pos_side,
+                    reason=reason,
+                )
+                tried_place_order = True
+            except Exception as exc:
+                r = {"ok": False, "error": f"place_order_exc:{exc}"}
+        else:
+            r = {"ok": False, "error": "reduce_sz_zero_or_no_place_order"}
+
+        ok_flag = bool(r.get("ok") or r.get("dry_run"))
+
+        # 记账：部分平仓等价于「一条 close + 一条重新 open 剩余部分」
+        # close 记录 对应 reduce_ratio 的 pnl
+        try:
+            close_rec = tracker.close_position(
+                inst_id=inst_id,
+                exit_price=reduce_px,
+                exit_reason=reason,
+                pnl=partial_upl,
+                pnl_pct=partial_upl_ratio,
+            )
+            if close_rec is None:
+                return {"ok": False, "error": "partial_close_record_missing"}
+        except Exception as close_exc:
+            return {"ok": False, "error": f"close_position_exc:{close_exc}"}
+
+        # 剩下的 (1 - reduce_ratio) 重新 open —— 复用现 TradeRecord 字段复制
+        left_ratio = 1.0 - reduce_ratio
+        if left_ratio > 0:
+            try:
+                new_entry_px = reduce_px or float(getattr(pos_rec, "entry_price", 0.0) or 0.0)
+                # 按比例缩放 qty / usdt
+                new_sz = original_sz * left_ratio
+                new_usdt = original_usdt * left_ratio
+                tracker.open_position(
+                    trade_id=getattr(pos_rec, "trade_id", "") + f":reduce{int(reduce_ratio*100)}",
+                    inst_id=inst_id,
+                    coin=coin,
+                    direction=pos_side,
+                    entry_price=new_entry_px,
+                    confidence=float(getattr(pos_rec, "confidence", 0.0) or 0.0),
+                    hexagram=getattr(pos_rec, "hexagram", "") or "",
+                    stop_loss_px=float(getattr(pos_rec, "stop_loss_px", 0.0) or 0.0),
+                    take_profit_px=float(getattr(pos_rec, "take_profit_px", 0.0) or 0.0),
+                    position_usdt=new_usdt,
+                    position_qty=new_sz,
+                    leverage=float(getattr(pos_rec, "leverage", 1.0) or 1.0),
+                    source_tag=getattr(pos_rec, "source_tag", "") or "",
+                    extra={"bdsm_reduce_from": reduce_ratio,
+                           "bdsm_partial_exited_usdt": reduce_usdt},
+                )
+            except Exception as reopen_exc:
+                self._log(
+                    f"[{coin}] BDSM reduce 剩余仓位重开失败: {reopen_exc}", "WARN"
+                )
+                return {"ok": False, "error": f"reopen_left_ratio_exc:{reopen_exc}"}
+
+        perf_tracker = getattr(self, "perf_tracker", None)
+        risk_manager = getattr(self, "risk_manager", None)
+        try:
+            if perf_tracker is not None and close_rec is not None:
+                perf_tracker.record_trade(close_rec)
+            if risk_manager is not None and close_rec is not None:
+                risk_manager.update_after_trade(
+                    partial_upl, partial_upl >= 0,
+                    current_equity=getattr(perf_tracker, "current_equity", 0.0) if perf_tracker else 0.0,
+                )
+        except Exception as perf_exc:
+            self._log(f"[{coin}] BDSM reduce perf/risk update 异常（FAIL-OPEN 忽略）: {perf_exc}", "WARN")
+
+        return {
+            "ok": ok_flag,
+            "tried_place_order": tried_place_order,
+            "reduce_ratio": reduce_ratio,
+            "reduce_usdt": reduce_usdt,
+            "error": r.get("error", ""),
+            "reason": reason,
+        }
 
     # ──────────────────────────────────────────────────────────
     # Phase A: MODE 算力重分配工具函数（Spec §3.2 / §3.3）
@@ -4699,6 +6348,211 @@ class PollingTrader:
             leverage = self._get_leverage()
         return price_change_pct * leverage
 
+    # ── SL/TP 硬门禁（间距% + 爆仓安全边际 双重约束） ──────────────
+    # ★ 2026-08-28 PUMP案例修复：必须同时满足 2 条约束，爆仓约束优先
+    #   约束1【间距下限】：常规仓 SL≥1.5%价格间距 / TP≥3.0%，轻仓试错 SL≥2.0% / TP≥4.0%
+    #                     TIGHTEN/LOWER 收紧场景允许放宽到 常规×70%（SL≥1.05% / TP≥2.1%）
+    #                     绝对硬下限（最后保险）：SL≥1.0% / TP≥2.0%
+    #   约束2【爆仓安全】：SL/TP 与爆仓价之间必须有 ≥ LIQ_BUFFER_PCT 安全边际，禁止先爆仓
+    #                     当约束1 vs 约束2冲突（高杠杆场景）：爆仓约束优先，同时强制告警
+    #                     建议杠杆≤20x，此时爆仓间距≈4.6% > 1.5%，两约束无冲突
+    MIN_SL_PCT_NORMAL = 0.015     # 常规仓 SL 价格间距下限 1.5%
+    MIN_TP_PCT_NORMAL = 0.030     # 常规仓 TP 价格间距下限 3.0%
+    MIN_SL_PCT_TRIAL  = 0.020     # 轻仓试错 SL 价格间距下限 2.0%
+    MIN_TP_PCT_TRIAL  = 0.040     # 轻仓试错 TP 价格间距下限 4.0%
+    TIGHTEN_SL_FLOOR_RATIO = 0.70 # 收紧时最多收紧到基线的 70%
+    ABS_HARD_SL_PCT   = 0.010     # 绝对硬下限：任何情况 SL≥1.0% 价格间距
+    ABS_HARD_TP_PCT   = 0.020     # 绝对硬下限：任何情况 TP≥2.0% 价格间距
+    LIQ_MMR_PCT       = 0.004     # 维持保证金率（OKX小仓位 meme USDT永续约 0.4%）
+    LIQ_BUFFER_PCT    = 0.003     # 爆仓安全边际：SL 与爆仓价之间至少 0.3% 价格间距
+    LIQ_HARD_WARN_L   = 25        # 超过该杠杆（约爆仓间距3.6%）就触发"建议降杠杆"告警
+    LIQ_HARD_LIMIT_L  = 70        # 该杠杆以上爆仓间距≈1.0%<1.5%，两约束必然冲突
+
+    def _estimate_liq_price(self, entry_price: float, pos_side: str, leverage: float) -> float:
+        """估算爆仓价（简化公式，带维持保证金率 LIQ_MMR_PCT）。
+
+        简化公式：
+          LONG:  liq ≈ entry × (1 - 1/L + MMR)
+          SHORT: liq ≈ entry × (1 + 1/L - MMR)
+        忽略手续费、资金费率、动态阶梯MMR，作为门禁的保守估计即可。
+        """
+        if leverage is None or leverage <= 0:
+            leverage = self._get_leverage()
+        L = max(1.0, float(leverage))
+        inv_L = 1.0 / L
+        if pos_side == "long":
+            return entry_price * (1.0 - inv_L + self.LIQ_MMR_PCT)
+        else:
+            return entry_price * (1.0 + inv_L - self.LIQ_MMR_PCT)
+
+    def _enforce_sl_price_floor(self,
+                                 sl_px: float,
+                                 entry_price: float,
+                                 pos_side: str,
+                                 leverage: float = None,
+                                 is_trial: bool = False,
+                                 allow_tighten: bool = False,
+                                 coin: str = "") -> tuple:
+        """止损价格硬门禁：【间距下限约束】+【爆仓安全约束】双重钳制。
+
+        - 约束1（间距下限）：保证不会被立即扫损（PUMP 0.586%案例的原始问题）
+        - 约束2（爆仓安全）：保证 SL > liq + buffer，不会先爆仓再止损（用户反馈的关键）
+        - 两约束冲突时：爆仓安全约束优先 → 将SL抬到爆仓安全边界，同时输出WARN级告警
+                      （建议：降低杠杆到≤20x，让两约束天然兼容）
+
+        Returns:
+            (new_sl_px, was_clamped, clamped_pct, conflict_flags)
+              conflict_flags: dict(liq_conflict=bool, spacing_clamped=bool, 推荐杠杆=bool)
+        """
+        conflict = {"liq_conflict": False, "spacing_clamped": False, "warn_leverage": False}
+        if sl_px is None or sl_px <= 0 or entry_price <= 0:
+            return sl_px, False, 0.0, conflict
+        if leverage is None or leverage <= 0:
+            leverage = self._get_leverage()
+        L = max(1.0, float(leverage))
+
+        # ── 约束1：间距下限 ──────────────────────────────────
+        base_min_sl = self.MIN_SL_PCT_TRIAL if is_trial else self.MIN_SL_PCT_NORMAL
+        if allow_tighten:
+            pct_floor = max(base_min_sl * self.TIGHTEN_SL_FLOOR_RATIO, self.ABS_HARD_SL_PCT)
+        else:
+            pct_floor = max(base_min_sl, self.ABS_HARD_SL_PCT)
+
+        # long: SL必须 ≤ entry*(1-pct_floor);   short: SL必须 ≥ entry*(1+pct_floor)
+        if pos_side == "long":
+            sl_spacing_limit = round(entry_price * (1 - pct_floor), 6)
+        else:
+            sl_spacing_limit = round(entry_price * (1 + pct_floor), 6)
+
+        # ── 约束2：爆仓安全边际 ──────────────────────────────
+        # SL 必须距离爆仓价至少 LIQ_BUFFER_PCT (0.3%)
+        #   LONG： SL 必须 > liq*(1+buffer) → SL下限 = liq × (1+buffer)
+        #   SHORT：SL 必须 < liq*(1-buffer) → SL上限 = liq × (1-buffer)
+        liq = self._estimate_liq_price(entry_price, pos_side, L)
+        if pos_side == "long":
+            sl_liq_safety_limit = round(liq * (1 + self.LIQ_BUFFER_PCT), 6)
+        else:
+            sl_liq_safety_limit = round(liq * (1 - self.LIQ_BUFFER_PCT), 6)
+
+        # ── 双重约束合成（对LONG取最大的SL下限，对SHORT取最小的SL上限） ──
+        # 目标：使 SL 的"安全区域"是 [spacing, liq_safety] 的交集
+        #   LONG：SL的合法上限 = min(spacing_limit, entry)  （间距要求SL足够低）
+        #         SL的合法下限 = max(liq_safety_limit, 0)   （爆仓要求SL足够高，>liq+buf）
+        #         → 如果 SL上限 < SL下限：冲突！必须优先爆仓约束，把SL抬到SL下限（爆仓安全侧）
+        #   SHORT：对称，SL下限 vs SL上限
+        liq_pct = abs(entry_price - liq) / entry_price
+        if pos_side == "long":
+            spacing_cap = sl_spacing_limit    # long: SL不能高于此价  （间距约束：SL≤）
+            liq_floor = sl_liq_safety_limit   # long: SL不能低于此价  （爆仓约束：SL≥）
+            # 合价：最终SL 必须同时满足 ≤spacing_cap 且 ≥liq_floor
+            if spacing_cap >= liq_floor:
+                # 无冲突：如果输入SL在合法区域就不动；否则钳制到最近的边界
+                #   先把SL推到"间距下限"（沿用原门禁逻辑）
+                final_sl = min(sl_px, spacing_cap)
+                #   再确保SL不跌破爆仓安全边界
+                if final_sl < liq_floor:
+                    final_sl = liq_floor
+                    conflict["liq_conflict"] = False
+                    conflict["spacing_clamped"] = True
+                elif final_sl != sl_px:
+                    conflict["spacing_clamped"] = True
+            else:
+                # ★ CONFLICT：间距约束要求SL ≤ spacing_cap，但爆仓约束要求SL ≥ liq_floor，
+                #   两者不相交！此时必须优先爆仓约束（否则先爆仓，止损无效），
+                #   将SL设置到爆仓安全边界，并强制告警"必须降杠杆"
+                conflict["liq_conflict"] = True
+                conflict["spacing_clamped"] = True
+                conflict["warn_leverage"] = True
+                final_sl = liq_floor
+        else:
+            # SHORT：SL必须 ≥ spacing_limit（间距下限，short方向SL更高）
+            #         SL必须 ≤ liq_safety_limit（爆仓安全：SL < liq - buffer）
+            spacing_floor = sl_spacing_limit
+            liq_cap = sl_liq_safety_limit
+            if spacing_floor <= liq_cap:
+                # 无冲突
+                final_sl = max(sl_px, spacing_floor)
+                if final_sl > liq_cap:
+                    final_sl = liq_cap
+                    conflict["liq_conflict"] = False
+                    conflict["spacing_clamped"] = True
+                elif final_sl != sl_px:
+                    conflict["spacing_clamped"] = True
+            else:
+                # ★ CONFLICT
+                conflict["liq_conflict"] = True
+                conflict["spacing_clamped"] = True
+                conflict["warn_leverage"] = True
+                final_sl = liq_cap
+
+        # 日志：高杠杆告警（即使无冲突，若超过阈值也提示）
+        if L >= self.LIQ_HARD_WARN_L and not conflict["warn_leverage"]:
+            conflict["warn_leverage"] = True
+        if conflict["warn_leverage"] or conflict["liq_conflict"]:
+            self._log(
+                f"[SL门禁·爆仓告警] {coin or '?'} L={int(L)}x | entry={entry_price:.6f} "
+                f"输入SL={sl_px:.6f}(间距{abs(sl_px-entry_price)/entry_price*100:.2f}%) "
+                f"→ 最终SL={final_sl:.6f}(间距{abs(final_sl-entry_price)/entry_price*100:.2f}%) | "
+                f"爆仓价≈{liq:.6f}(间距{liq_pct*100:.2f}%) 安全buffer={self.LIQ_BUFFER_PCT*100:.1f}% | "
+                f"间距下限{pct_floor*100:.2f}% → spacing界={sl_spacing_limit:.6f} | "
+                f"爆仓安全界={sl_liq_safety_limit:.6f} | "
+                f"CONFLICT={conflict['liq_conflict']} 建议降杠杆到≤20x",
+                "WARN",
+            )
+
+        was_clamped = (final_sl != sl_px)
+        cur_pct = abs(sl_px - entry_price) / entry_price
+        return final_sl, was_clamped, cur_pct, conflict
+
+    def _enforce_tp_price_floor(self,
+                                 tp_px: float,
+                                 entry_price: float,
+                                 pos_side: str,
+                                 leverage: float = None,
+                                 is_trial: bool = False,
+                                 allow_lower: bool = False,
+                                 coin: str = "") -> tuple:
+        """止盈价格硬门禁：【间距下限约束】+【爆仓安全约束】的对称实现。
+
+        TP相对SL风险较小（TP在盈利侧，不会爆仓），但仍需：
+        1. 保证最低TP间距（避免0.x%TP毫无意义）
+        2. SHORT的TP理论上也要检查爆仓侧（SHORT TP < entry 距离足够，一般不会有冲突）
+        3. 同样在超高杠杆场景触发降杠杆告警（门禁共用告警阈值）
+        """
+        conflict = {"liq_conflict": False, "spacing_clamped": False, "warn_leverage": False}
+        if tp_px is None or tp_px <= 0 or entry_price <= 0:
+            return tp_px, False, 0.0, conflict
+        if leverage is None or leverage <= 0:
+            leverage = self._get_leverage()
+        L = max(1.0, float(leverage))
+        # ── 约束1：间距下限 ──────────────────────────────────
+        base_min_tp = self.MIN_TP_PCT_TRIAL if is_trial else self.MIN_TP_PCT_NORMAL
+        if allow_lower:
+            pct_floor = max(base_min_tp * self.TIGHTEN_SL_FLOOR_RATIO, self.ABS_HARD_TP_PCT)
+        else:
+            pct_floor = max(base_min_tp, self.ABS_HARD_TP_PCT)
+        # LONG: TP ≥ entry*(1+pct_floor)  SHORT: TP ≤ entry*(1-pct_floor)
+        if pos_side == "long":
+            tp_spacing_limit = round(entry_price * (1 + pct_floor), 6)
+            final_tp = max(tp_px, tp_spacing_limit)
+        else:
+            tp_spacing_limit = round(entry_price * (1 - pct_floor), 6)
+            final_tp = min(tp_px, tp_spacing_limit)
+        # TP 爆仓侧无冲突（TP在盈利方向远离爆仓），但仍做超高杠杆告警
+        cur_pct = abs(tp_px - entry_price) / entry_price
+        liq_pct = abs(entry_price - self._estimate_liq_price(entry_price, pos_side, L)) / entry_price
+        if final_tp != tp_px:
+            conflict["spacing_clamped"] = True
+        if L >= self.LIQ_HARD_WARN_L:
+            conflict["warn_leverage"] = True
+            self._log(
+                f"[TP门禁·高杠杆] {coin or '?'} L={int(L)}x 爆仓仅{liq_pct*100:.2f}% < 1.5%间距，"
+                f"建议降杠杆到≤20x以确保SL/TP两约束兼容",
+                "WARN",
+            )
+        was_clamped = (final_tp != tp_px)
+        return final_tp, was_clamped, cur_pct, conflict
+
     def _calc_sl_price(
         self, entry_price: float, pos_side: str, sl_roi_pct: float, leverage: float = None
     ) -> float:
@@ -5018,12 +6872,38 @@ class PollingTrader:
             sl_k, tp_k = 0.7, 0.85     # 收紧：止损近30%、止盈降15%
         else:  # relax
             sl_k, tp_k = 1.3, 1.25     # 放宽：止损远30%、止盈提25%
-        ATR_FLOOR_ROI = 0.015          # 1.5% ROI 绝对下限：避免过度收紧到开仓价附近
+        # ★ FIX Bug#2：原 ATR_FLOOR_ROI=0.015（订单ROI 1.5%）@10x = 仅 0.15% 价格间距，远小于约定
+        #   改为"价格间距%口径"的硬下限：tighten模式允许 SL≥1.05%（常规1.5%×0.7），relax模式 SL≥1.5%
+        #   先用 ROI 维度钳制，再在后面用真实价格二次硬门禁（双保险）
+        _tighten_floor_price_pct = (self.MIN_SL_PCT_NORMAL * self.TIGHTEN_SL_FLOOR_RATIO)  # 1.05%
+        _relax_floor_price_pct = self.MIN_SL_PCT_NORMAL  # 1.5%
+        _floor_price_pct = _tighten_floor_price_pct if mode == "tighten" else _relax_floor_price_pct
+        ATR_FLOOR_ROI = self._price_change_to_roi(_floor_price_pct, leverage)  # 换算为订单ROI口径
         new_sl_roi = max(base_sl_roi * sl_k, ATR_FLOOR_ROI)
         new_tp_roi = base_tp_roi * tp_k
         # ── 换算真实价格 ──────────────────────────────────
         new_sl_px = self._calc_sl_price(entry_price, pos_side, new_sl_roi, leverage)
         new_tp_px = self._calc_tp_price(entry_price, pos_side, new_tp_roi, leverage)
+        # ── ★ FIX：SL/TP 硬门禁（间距下限 + 爆仓安全边际 双约束） ──
+        _allow_tighten = (mode == "tighten")
+        new_sl_px, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
+            new_sl_px, entry_price, pos_side, leverage=leverage,
+            allow_tighten=_allow_tighten, coin=coin)
+        new_tp_px, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
+            new_tp_px, entry_price, pos_side, leverage=leverage,
+            allow_lower=_allow_tighten, coin=coin)
+        if _sl_clamped or _tp_clamped:
+            _tail = ""
+            if _sl_cfl.get("liq_conflict") or _tp_cfl.get("liq_conflict"):
+                _tail = " 【爆仓约束优先】当前杠杆过高，建议≤20x"
+            self._log(
+                f"[S2调整SLTP] {coin} 硬门禁钳制 | mode={mode} "
+                f"SL: {_sl_old_pct*100:.2f}%→{abs(new_sl_px-entry_price)/entry_price*100:.2f}% "
+                f"{'(已钳制)' if _sl_clamped else ''} | "
+                f"TP: {_tp_old_pct*100:.2f}%→{abs(new_tp_px-entry_price)/entry_price*100:.2f}% "
+                f"{'(已钳制)' if _tp_clamped else ''}{_tail}",
+                "WARN",
+            )
         # ── 方向合理性校验（顺序不可乱） ───────────────────
         if pos_side == "long":
             ok = (new_sl_px < entry_price < new_tp_px)
@@ -5046,8 +6926,8 @@ class PollingTrader:
                 "INFO",
             )
             try:
-                if self.okx_client and hasattr(self.okx_client, "cancel_all_algo_orders"):
-                    self.okx_client.cancel_all_algo_orders(instId=inst_id)
+                if self.okx_client and hasattr(self.okx_client, "cancel_algo_orders"):
+                    self.okx_client.cancel_algo_orders(instId=inst_id)
             except Exception as ce:
                 self._log(f"[S2调整SLTP] 取消旧algo（可能无）：{ce}", "DEBUG")
             if self.okx_client and hasattr(self.okx_client, "place_stop_loss_take_profit"):
@@ -5461,18 +7341,58 @@ class PollingTrader:
         exit_reason: str,
         pnl: float,
         pnl_pct: float,
+        inference=None,
+        **kwargs,
     ):
         """处理平仓：生成交易记录、更新绩效、生成 case、更新风控、增量学习
+
+        Args:
+            inference: 开仓推理快照（兼容旧调用方传入，当前仅占位不使用）。
+            **kwargs: 兜底吸收其它遗留关键字参数，防止签名漂移导致记账中断。
 
         Returns:
             trade summary dict
         """
+        # P0-修复：inference/kwargs 兼容占位。旧版调用方会传入 inference=，
+        # 若签名不接受将抛 TypeError 导致平仓后记账全流程中断（trade_rec/绩效/case/增量学习全部丢失）。
+        _ = (inference, kwargs)
         # v3.0：平仓后立即清除易经离场系统的评估缓存，
         # 避免下次开仓的前1小时评估被上次持仓的1h窗口缓存污染
         try:
             self.yijing_exit_system.clear_cache(coin=coin, pos_side=pos_side)
         except Exception:
             pass
+
+        # PUMP案例·新增：仓位非0→0统一清理hook（ExperienceRecall 1156213）
+        # 任何导致close_position的路径（SL/TP/手动/时间止损）都必须清理该symbol的残留Algo条件单
+        try:
+            if self.okx_client and hasattr(self.okx_client, "cancel_algo_orders"):
+                _clr = self.okx_client.cancel_algo_orders(instId=inst_id)
+                self._log(
+                    f"[{coin}] 平仓后清理{inst_id}残留Algo条件单 | ok={_clr.get('ok')} "
+                    f"canceled={_clr.get('canceled_count', 0)} err={_clr.get('error','')}",
+                    "INFO" if _clr.get("ok") else "WARN",
+                )
+            elif self.okx_client and hasattr(self.okx_client, "get_algo_orders"):
+                # fallback：显式两步法——先GET pending列表，再逐个DELETE
+                try:
+                    _pending = self.okx_client.get_algo_orders(inst_id=inst_id)
+                    _ids = []
+                    for _o in _pending.get("data", []) or []:
+                        _aid = _o.get("algoId") or _o.get("algo_id")
+                        if _aid:
+                            _ids.append(_aid)
+                    if _ids and hasattr(self.okx_client, "_cancel_algo_by_ids"):
+                        self.okx_client._cancel_algo_by_ids(inst_id, _ids)
+                    self._log(
+                        f"[{coin}] 平仓后清理{inst_id} Algo条件单(fallback两步法) | 待清理={len(_ids)}",
+                        "INFO",
+                    )
+                except Exception as _fb:
+                    self._log(f"[{coin}] 平仓后清理Algo条件单fallback异常（FAIL-OPEN忽略）: {_fb}", "WARN")
+        except Exception as _ce:
+            # FAIL-OPEN铁律：条件单清理失败绝不阻断交易记录
+            self._log(f"[{coin}] 平仓后清理Algo条件单异常（FAIL-OPEN忽略）: {_ce}", "WARN")
 
         trade_rec = self.position_tracker.close_position(
             inst_id=inst_id,
@@ -5605,10 +7525,72 @@ class PollingTrader:
             except Exception as e:
                 self._log(f"[{coin}] L4 Pipeline自动触发失败: {e}", "WARN")
 
+            # P2-S4: 紧耦合流平仓反思回调
+            try:
+                self._trigger_evolution_reflection(trade_rec)
+            except Exception as e:
+                self._log(f"[{coin}] 紧耦合流反思回调异常（FAIL-OPEN忽略）: {e}", "WARN")
+
             return perf_summary
         else:
             self._log(f"[{coin}] 警告：平仓但无对应开仓记录 {inst_id}", "WARN")
             return {}
+
+    # ── P1: 轻仓试错评估辅助方法 ──
+    # 阈值常量：confirm=+1%，reverse=-3%（放宽，轻仓绝对亏损小可容忍噪音）
+    TRIAL_CONFIRM_PCT = 0.010
+    TRIAL_REVERSE_PCT = -0.030
+    TRIAL_FIRST_EVAL_SEC = 1800       # 首次评估：持仓≥30min
+    TRIAL_REEVAL_INTERVAL_SEC = 3600  # 重评估间隔：每60min一次
+
+    def _compute_trial_action(self, price_chg_pct: float) -> str:
+        """根据价格变动判定试错动作。
+
+        Args:
+            price_chg_pct: 相对入场价的价格变动比例（做多为正、做空已反转），
+                           如 -0.03 表示跌 3%。
+
+        Returns:
+            "confirm" (≥+1%) / "maintain" (-3%~+1%) / "reverse" (≤-3%)
+        """
+        if price_chg_pct >= self.TRIAL_CONFIRM_PCT:
+            return "confirm"
+        if price_chg_pct <= self.TRIAL_REVERSE_PCT:
+            return "reverse"
+        return "maintain"
+
+    def _should_run_trial_eval(self, tracker_pos, position_age_sec: float,
+                               now_ts: float = None) -> bool:
+        """是否应运行试错评估（定期重评估）。
+
+        - 非试错仓 → False
+        - 持仓 < 30min → False
+        - 从未评估过 → True
+        - 距上次评估 ≥ 60min → True（定期重评估）
+        - 距上次评估 < 60min → False
+        """
+        if not tracker_pos or not getattr(tracker_pos, "is_trial", False):
+            return False
+        if position_age_sec < self.TRIAL_FIRST_EVAL_SEC:
+            return False
+        last_eval = float(getattr(tracker_pos, "last_trial_eval_ts", 0.0) or 0.0)
+        if last_eval == 0.0:
+            return True
+        now = now_ts if now_ts is not None else time.time()
+        return (now - last_eval) >= self.TRIAL_REEVAL_INTERVAL_SEC
+
+    # ── P2: 易经离场浮亏+风险联合强制平仓 ──
+    YIJING_JOINT_LOSS_PCT = -0.03   # 浮亏阈值：≤-3%（保证金收益率）
+    YIJING_JOINT_RISK = 0.7         # 风险分阈值：>0.7（低于硬阈值 0.80）
+
+    def _should_joint_force_close(self, upl_ratio: float, risk_score: float) -> bool:
+        """浮亏≥3% 且 风险分>0.7 → 联合触发 FORCE_CLOSE。
+
+        填补原硬阈值 risk≥0.80 过高导致的盲区：当卦象风险中等偏高(0.7~0.8)
+        且持仓已出现实际亏损(≥3%)时，主动离场而非放任漂移到 SL。
+        两个条件必须同时满足。
+        """
+        return upl_ratio <= self.YIJING_JOINT_LOSS_PCT and risk_score > self.YIJING_JOINT_RISK
 
     def _trigger_bcrm2_retrain(self, coin: str) -> bool:
         """触发 BCRM 2.0 增量重训
@@ -5745,11 +7727,456 @@ class PollingTrader:
         except Exception as e:
             self._log(f"[L4] Pipeline执行失败: {e}", "WARN")
 
+    def _trigger_evolution_reflection(self, trade_rec):
+        """P2-S4: 平仓后触发紧耦合流反思回路
+
+        仅对 source_tag="evolution" 的持仓执行反思与 ESS 更新。
+        调用 TradeSettlementBridge → ReflectionEngine measure→reflect→learn→feedback
+        → ESSProvider.update_ess 写回基因库（闭环学习）
+        FAIL-OPEN: 任何异常不阻断交易
+        """
+        # 仅处理自进化系统的交易
+        _src_tag = str(getattr(trade_rec, "source_tag", "") or "")
+        if _src_tag != "evolution":
+            return
+        try:
+            import sys as _sys
+            _evo_root = str(_PROJECT_ROOT / "23-四层闭环自进化交易架构")
+            if _evo_root not in _sys.path:
+                _sys.path.insert(0, _evo_root)
+            from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+            bridge = TradeSettlementBridge()
+            result = bridge.on_trade_settled(trade_rec)
+            ess_delta = result.get("ess_delta", 0.0)
+            cs = result.get("cs", 0.0)
+            _symbol = str(getattr(trade_rec, "inst_id", "?") or "?").split("-")[0]
+            if ess_delta != 0:
+                # P0 闭环修复：将 ess_delta 写回基因库
+                _updated = False
+                if hasattr(self, "_data_pipeline") and self._data_pipeline is not None \
+                        and getattr(self._data_pipeline, "_ess", None) is not None:
+                    _updated = self._data_pipeline._ess.update_ess(ess_delta, _symbol)
+                self._log(
+                    f"[P2-S4] {_symbol} 反思完成: CS={cs:.2f} "
+                    f"ESS_delta={ess_delta:+.3f} 写回={'OK' if _updated else 'FAIL'}"
+                )
+            else:
+                self._log(
+                    f"[P2-S4] {_symbol} 反思完成: CS={cs:.2f} (ESS不变)",
+                    "DEBUG",
+                )
+
+            # Phase 6: 记录交易结果到传统金融绩效跟踪器（Sharpe/Sortino/Kelly）
+            try:
+                _pnl_pct = float(getattr(trade_rec, "pnl_pct", 0.0) or 0.0)
+                if hasattr(self, "_data_pipeline") and self._data_pipeline is not None:
+                    self._data_pipeline.record_trade_result(_pnl_pct)
+                    _perf = self._data_pipeline._trad_fin._perf.summary()
+                    self._log(
+                        f"[P2-S4] {_symbol} 绩效更新: pnl={_pnl_pct:+.2%} "
+                        f"sharpe={_perf['sharpe']:.2f} win={_perf['win_rate']:.0%} "
+                        f"kelly_f={_perf['payoff_ratio']:.1f}",
+                        "DEBUG",
+                    )
+
+                    # Phase 7: 记录路径盈亏评分（盈亏是路径有效性的唯一标准）
+                    # 优先记录到 regime_adaptive（元路径，始终激活）
+                    # 显著盈亏同时记录到具体路径，让盈亏作为标注驱动路径评分
+                    try:
+                        self._data_pipeline.record_path_trade("regime_adaptive", _pnl_pct)
+                        if abs(_pnl_pct) > 0.01:  # 显著盈亏才记录到具体路径
+                            self._data_pipeline.record_path_trade("capital_rotation", _pnl_pct)
+                            self._data_pipeline.record_path_trade("momentum_breakout", _pnl_pct)
+                            self._data_pipeline.record_path_trade("protocol_revenue", _pnl_pct)
+                            self._data_pipeline.record_path_trade("funding_squeeze", _pnl_pct)
+                            self._data_pipeline.record_path_trade("etf_flow_amplification", _pnl_pct)
+                            self._data_pipeline.record_path_trade("attention_capital_breakout", _pnl_pct)
+                    except Exception:
+                        pass
+
+                    # Phase 4(FTC): 盈亏回灌 FTCEvolutionBridge → ESS/gmax/ε 更新
+                    try:
+                        _snapshot = getattr(trade_rec, "market_snapshot", None) or {}
+                        _ftc_id = str(_snapshot.get("ftc_id", "") or "")
+                        if _ftc_id:
+                            _ftc_orch = self._data_pipeline.get_ftc_orchestrator()
+                            if _ftc_orch is not None:
+                                from dreambuddy_evolution.adapters.ftc_evolution_bridge import FTCEvolutionBridge
+                                _ftc_bridge = FTCEvolutionBridge(
+                                    ftc_orchestrator=_ftc_orch,
+                                    path_library=self._data_pipeline.get_path_library(),
+                                )
+                                _outcome = "TP" if _pnl_pct >= 0 else "SL"
+                                _ftc_res = _ftc_bridge.on_trade_settlement(
+                                    ftc_id=_ftc_id,
+                                    confidence_score=cs,
+                                    outcome=_outcome,
+                                    pnl_pct=_pnl_pct,
+                                )
+                                self._log(
+                                    f"[P2-S4-FTC] {_symbol} FTC={_ftc_id} "
+                                    f"pnl={_pnl_pct:+.2%} "
+                                    f"ess={_ftc_res.get('ftc_ess_after', 0):.3f} "
+                                    f"gmax={_ftc_res.get('gmax', 0):.3f} "
+                                    f"ε={_ftc_res.get('epsilon', 0):.3f}",
+                                    "INFO",
+                                )
+                    except Exception as _ftc_e:
+                        self._log(f"[P2-S4-FTC] FTC 回灌异常(fail-open): {_ftc_e}", "DEBUG")
+            except Exception:
+                pass  # FAIL-OPEN
+        except Exception:
+            pass  # FAIL-OPEN 铁律
+
+    # ===== P2-S4b: 紧耦合流真实建仓 + KlineEventHandler 集成 =====
+
+    _EVOLUTION_KLINE_COINS = None  # None → 使用易经系统全部币种（self.coins）
+    _EVOLUTION_BUDGET_PER_COIN = 2000.0  # 单币预算上限 2000U（用户决策 2026-09-07）
+    _EVOLUTION_MIN_NOTIONAL = 200.0      # 单币最小开仓名义价值 200U
+    _EVOLUTION_MAX_NOTIONAL = 2000.0     # 单币最大开仓名义价值 2000U
+    _EVOLUTION_COIN_INTERVAL = 0.2       # 币种间限流间隔（秒），防止 OKX API 限频
+
+    def _init_data_pipeline(self):
+        """P2-S4b: 懒初始化 DataPipelineAdapter（统一数据管线装配器）"""
+        if hasattr(self, "_data_pipeline") and self._data_pipeline is not None:
+            return
+        try:
+            import sys as _sys
+            _evo_root = str(_PROJECT_ROOT / "23-四层闭环自进化交易架构")
+            if _evo_root not in _sys.path:
+                _sys.path.insert(0, _evo_root)
+            from dreambuddy_evolution.adapters.data_pipeline import DataPipelineAdapter
+            _gene_root = str(_PROJECT_ROOT / "23-四层闭环自进化交易架构"
+                             / "dreambuddy_evolution" / "gene_data")
+            self._data_pipeline = DataPipelineAdapter(
+                okx_client=self.okx_client,
+                trader=self,
+                data_center_db=str(_PROJECT_ROOT / "18-数据获取中心" / "data_center.db"),
+                gene_data_root=_gene_root,
+                min_sample=0,  # Phase 0 降级：允许样本不足
+            )
+            self._log("[P2-S4b] DataPipelineAdapter initialized", "INFO")
+        except Exception as _e:
+            self._log(f"[P2-S4b] DataPipelineAdapter init crash (FAIL-OPEN): {_e}", "WARN")
+            self._data_pipeline = None
+
+    def _evolution_build_position(self, symbol, action, u_open, d_star, confidence, tier="standard"):
+        """P2-S4b: 紧耦合流自动建仓回调（三层仓位分级）
+
+        被 KlineEventHandler 在 auto_execute=True 时调用：
+        1. 组合熔断检查（_current_fuse_action 拦截）
+        2. evolution 子池仓位计数（≤3）
+        3. 仓位计算：base_budget × FTC轨道乘数 × tier仓位乘数
+           - tier=probe:    0.4 × base（轻仓试探，震荡态）
+           - tier=standard: 0.7 × base（标准仓）
+           - tier=trend:    1.0 × base（趋势加仓）
+        4. OKX 市价建仓（5x isolated）
+        5. position_tracker 打标签 source_tag="evolution"
+
+        FAIL-OPEN: 任何异常不阻断主循环
+        """
+        try:
+            # 1. 组合熔断检查
+            _fuse = getattr(self, "_current_fuse_action", None)
+            if _fuse is not None and getattr(_fuse, "block_new_open", False):
+                self._log(f"[P2-S4b] {symbol} 组合熔断拦截新仓: {_fuse}", "WARN")
+                return
+
+            # 2. evolution 子池仓位计数
+            _evo_count = sum(
+                1 for p in self.position_tracker.all_open_positions()
+                if getattr(p, "source_tag", "") == "evolution"
+            )
+            if _evo_count >= int(self.SUBPOOL_MAX_POSITIONS.get("evolution", 3)):
+                self._log(
+                    f"[P2-S4b] {symbol} evolution 子池已满 {_evo_count}/"
+                    f"{self.SUBPOOL_MAX_POSITIONS.get('evolution', 3)}，跳过",
+                    "DEBUG",
+                )
+                return
+
+            # 3. 仓位计算（三层分级 × FTC 轨道乘数 × regime 乘数）
+            # u_open 已是 KlineEventHandler 计算好的最终 position_mult = tier_mult × regime_mult
+            try:
+                _equity = float(self.perf_tracker.current_equity)
+            except Exception:
+                _equity = 100.0
+            _available = _equity * 1.0  # 100% 可用作保证金（用户决策 2026-09-07）
+            _leverage = 5  # 与 set_leverage(lever=5) 一致
+            _notional_budget = _available * _leverage  # 名义价值预算 = 保证金 × 杠杆
+            _base_budget = min(_notional_budget, self._EVOLUTION_BUDGET_PER_COIN)  # 单币名义价值上限
+            # FTC 轨道仓位乘数（Phase 4）
+            _track_mult = 1.0
+            _last_kd = getattr(self, "_last_evolution_kline", None)
+            if _last_kd is not None:
+                _track = _last_kd.get("top_ftc_track", "exploit")
+                if self._data_pipeline is not None:
+                    try:
+                        _track_mult = self._data_pipeline.get_ftc_track_multiplier(_track)
+                    except Exception:
+                        _track_mult = 1.0
+                if _track_mult <= 0.0:
+                    self._log(
+                        f"[P2-S4b] {symbol} FTC track={_track} 仓位为 0，跳过建仓",
+                        "DEBUG",
+                    )
+                    return
+            # 三层仓位乘数（u_open 已包含 regime 调整，这里取其作为最终乘数）
+            _position_usdt = _base_budget * _track_mult * float(u_open)
+            # 上限钳位：单币最大开仓名义价值 2000U
+            if _position_usdt > self._EVOLUTION_MAX_NOTIONAL:
+                self._log(
+                    f"[P2-S4b] {symbol} 仓位 {_position_usdt:.1f}U > 最大 "
+                    f"{self._EVOLUTION_MAX_NOTIONAL}U，钳位至上限",
+                    "DEBUG",
+                )
+                _position_usdt = float(self._EVOLUTION_MAX_NOTIONAL)
+            # 下限校验：单币最小开仓名义价值 200U
+            if _position_usdt < self._EVOLUTION_MIN_NOTIONAL:
+                self._log(
+                    f"[P2-S4b] {symbol} 仓位 {_position_usdt:.1f}U < 最小 "
+                    f"{self._EVOLUTION_MIN_NOTIONAL}U (tier={tier} mult={u_open:.2f})，跳过",
+                    "DEBUG",
+                )
+                return
+
+            inst_id = f"{symbol}-USDT-SWAP"
+
+            # 4. OKX 市价建仓
+            try:
+                _lev_res = self.okx_client.set_leverage(
+                    inst_id=inst_id, lever=5, mgn_mode="isolated"
+                )
+            except Exception as _le:
+                self._log(f"[P2-S4b] {symbol} set_leverage 异常(fail-open): {_le}", "DEBUG")
+
+            _reason = f"evolution_auto_{action} conf={confidence:.2f} d*={d_star} tier={tier}"
+            if action == "long":
+                _result = self.okx_client.market_open_long(
+                    inst_id, usdt_amount=_position_usdt, reason=_reason
+                )
+            else:
+                _result = self.okx_client.market_open_short(
+                    inst_id, usdt_amount=_position_usdt, reason=_reason
+                )
+
+            if not _result.get("ok"):
+                self._log(
+                    f"[P2-S4b] {symbol} {action} 建仓失败: {_result.get('error', 'unknown')}",
+                    "WARN",
+                )
+                return
+
+            # 5. position_tracker 打标签
+            _entry_px = float(_result.get("avg_px", 0) or _result.get("price", 0) or 0)
+            _ftc_id = ""
+            _ftc_track = "exploit"
+            if _last_kd is not None:
+                _ftc_id = _last_kd.get("top_ftc", "")
+                _ftc_track = _last_kd.get("top_ftc_track", "exploit")
+
+            # 6. 开仓后立即设置 SL/TP 兜底（测试仓幅度更大）
+            # tier 分层 SL/TP（价格间距，非订单 ROI）：
+            #   probe:    SL=5%, TP=10%（轻仓试探，给足空间避免噪音扫损）
+            #   standard: SL=3%, TP=6% （标准仓）
+            #   trend:    SL=2%, TP=4% （趋势仓，紧贴趋势）
+            _tier_sl_pct = {"probe": 0.05, "standard": 0.03, "trend": 0.02}.get(tier, 0.03)
+            _tier_tp_pct = {"probe": 0.10, "standard": 0.06, "trend": 0.04}.get(tier, 0.06)
+            # regime 调整：震荡态放宽 SL（避免噪音扫损），趋势态收紧
+            _regime = str(_last_kd.get("regime", "")).lower() if _last_kd else ""
+            if "ranging" in _regime or "consolidation" in _regime or "mean_revert" in _regime:
+                _tier_sl_pct *= 1.3   # 震荡态 SL 放宽 30%
+                _tier_tp_pct *= 0.8   # 震荡态 TP 收紧 20%
+            elif "trend" in _regime and "down" not in _regime:
+                _tier_tp_pct *= 1.2    # 趋势态 TP 放宽 20%（让利润奔跑）
+            _lev = 5  # 进化子池固定 5x
+            _sl_px = _entry_px * (1 - _tier_sl_pct) if action == "long" else _entry_px * (1 + _tier_sl_pct)
+            _tp_px = _entry_px * (1 + _tier_tp_pct) if action == "long" else _entry_px * (1 - _tier_tp_pct)
+            try:
+                if self.okx_client and hasattr(self.okx_client, "place_stop_loss_take_profit"):
+                    _sltp_r = self.okx_client.place_stop_loss_take_profit(
+                        inst_id=inst_id,
+                        pos_side=action,
+                        stop_loss_px=_sl_px,
+                        take_profit_px=_tp_px,
+                        reason=f"evolution_sltp tier={tier} sl={_tier_sl_pct*100:.1f}% tp={_tier_tp_pct*100:.1f}%",
+                    )
+                    if _sltp_r.get("ok"):
+                        self._log(
+                            f"[P2-S4b] {symbol} SL/TP 兜底已设置 | "
+                            f"SL={_sl_px:.6f}({ _tier_sl_pct*100:.1f}%) TP={_tp_px:.6f}({ _tier_tp_pct*100:.1f}%)",
+                            "INFO",
+                        )
+                    else:
+                        self._log(
+                            f"[P2-S4b] {symbol} SL/TP 设置失败: {_sltp_r.get('error', 'unknown')}（持仓同步会补）",
+                            "WARN",
+                        )
+            except Exception as _sltp_e:
+                self._log(f"[P2-S4b] {symbol} SL/TP 异常(FAIL-OPEN): {_sltp_e}", "WARN")
+
+            self.position_tracker.open_position(
+                coin=symbol,
+                inst_id=inst_id,
+                direction=action,
+                entry_price=_entry_px,
+                confidence=float(confidence),
+                hexagram="evolution_auto",
+                strategy_source="evolution",
+                source_tag="evolution",
+                market_snapshot={
+                    "d_star": d_star, "u_open": u_open, "ri": confidence,
+                    "ftc_id": _ftc_id, "ftc_track": _ftc_track,
+                    "tier": tier,
+                    "stop_loss_px": _sl_px,
+                    "take_profit_px": _tp_px,
+                    "sl_pct": _tier_sl_pct,
+                    "tp_pct": _tier_tp_pct,
+                },
+            )
+            self._log(
+                f"[P2-S4b] {symbol} {action} 建仓成功 @ {_entry_px} | "
+                f"仓位={_position_usdt:.1f}U 5x tier={tier} mult={u_open:.2f} "
+                f"track={_ftc_track} ftc={_ftc_id} | conf={confidence:.2f} d*={d_star}",
+                "INFO",
+            )
+        except Exception as _e:
+            self._log(f"[P2-S4b] _evolution_build_position crash (FAIL-OPEN): {_e}", "WARN")
+
+    def _check_evolution_kline_signal(self):
+        """P2-S4b: 获取 BTC/ETH/SOL 1h K线 → KlineEventHandler 触发推断+建仓
+
+        数据管线已升级为 DataPipelineAdapter.assemble()，
+        自动装配 R 向量 5 维所需全部字段（OHLCV + ma_200 + spread + 清算 + 情绪 + ESS方向 + war_state）。
+        Phase 3: alpha=0.1 (R_narrative), beta=0.2 (R_sentiment), gamma=0.2 (R_capital)
+                 修饰子权重上限 0.2（蓝图 §1.9.6 硬约束）
+                 odaily 叙事标签库已就绪 → alpha 激活
+
+        FAIL-OPEN: 任何异常不阻断主循环
+        """
+        try:
+            import sys as _sys
+            _evo_root = str(_PROJECT_ROOT / "23-四层闭环自进化交易架构")
+            if _evo_root not in _sys.path:
+                _sys.path.insert(0, _evo_root)
+            from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
+            if not hasattr(self, "_kline_handler"):
+                self._kline_handler = KlineEventHandler(
+                    mode="Phase2",
+                    build_position_callback=self._evolution_build_position,
+                    ripple_kwargs={"vol_ratio_threshold": 1.3},  # 训练期：1.3倍量即可触发
+                    project_root=str(_PROJECT_ROOT),  # 反思学习起点：系统级交易索引库（含所有子系统）
+                )
+
+            # 懒初始化数据管线
+            self._init_data_pipeline()
+
+            # Phase 8: 全市场扫描（50+ OKX 币种），发现当前未跟踪的机会
+            _scan_coins: list[str] = []
+            try:
+                if self._data_pipeline is not None:
+                    _scan = self._data_pipeline.scan_market(top_n=50)
+                    if _scan:
+                        _scan_coins = [c["symbol"] for c in _scan]
+                        _top5 = _scan[:5]
+                        _scan_str = " | ".join(
+                            f"{c['symbol']}:{c['signal']:+.2f}@{c['confidence']:.2f}"
+                            for c in _top5
+                        )
+                        self._log(f"[P2-S4b-SCAN] 市场扫描({len(_scan_coins)}币) Top5: {_scan_str}", "DEBUG")
+            except Exception as _scan_e:
+                self._log(f"[P2-S4b-SCAN] 扫描异常(FAIL-OPEN): {_scan_e}", "DEBUG")
+
+            # 币种池：基础 22 币 + CoinScanner 扫描 Top 50（去重合并，上限 50）
+            _evo_coins = self._EVOLUTION_KLINE_COINS
+            if _evo_coins is None:
+                _base_coins = list(getattr(self, "coins", []) or [])
+                _evo_coins = _base_coins + [c for c in _scan_coins if c not in _base_coins]
+                _evo_coins = _evo_coins[:50]
+                self._log(
+                    f"[P2-S4b-POOL] 进化币种池: 基础{len(_base_coins)} + 扫描{len([c for c in _scan_coins if c not in _base_coins])} = {len(_evo_coins)} 币",
+                    "DEBUG",
+                )
+
+            for _coin in _evo_coins:
+                try:
+                    _inst_id = f"{_coin}-USDT-SWAP"
+
+                    # 通过 DataPipelineAdapter 装配全字段 kline_data
+                    if self._data_pipeline is not None:
+                        _kline_data = self._data_pipeline.assemble(
+                            symbol=_coin, inst_id=_inst_id
+                        )
+                    else:
+                        # 降级：手工获取 K线（仅 OHLCV）
+                        _kline_resp = self.okx_client.get_kline(
+                            _inst_id, bar="1H", limit=200
+                        )
+                        if not _kline_resp.get("ok"):
+                            continue
+                        _candles = _kline_resp.get("candles", [])
+                        _candles_asc = list(reversed(_candles))
+                        _kline_data = {
+                            "symbol": _coin,
+                            "close": [c["c"] for c in _candles_asc],
+                            "high": [c["h"] for c in _candles_asc],
+                            "low": [c["l"] for c in _candles_asc],
+                            "volume": [c["vol"] for c in _candles_asc],
+                        }
+
+                    _result = self._kline_handler.on_kline_close(
+                        _kline_data, alpha=0.1, beta=0.2, gamma=0.2
+                    )
+                    # 保存最近一次 kline_data，供建仓回调读取 FTC 轨道分档
+                    self._last_evolution_kline = _kline_data
+                    # 诊断日志：观察涟漪检测与下单触发
+                    _rot = _kline_data.get("capital_rotation", 0.0)
+                    _regime = _kline_data.get("regime", "?")
+                    _kelly = _kline_data.get("kelly_fraction", 0.0)
+                    _vs = _kline_data.get("vol_scalar", 1.0)
+                    _path = _kline_data.get("top_path", "")
+                    _path_dir = _kline_data.get("top_path_direction", "?")
+                    _path_conf = _kline_data.get("top_path_confidence", 0.0)
+                    _ftc = _kline_data.get("top_ftc", "")
+                    _ftc_dir = _kline_data.get("top_ftc_direction", "?")
+                    _ftc_ess = _kline_data.get("top_ftc_ess", 0.0)
+                    _ftc_track = _kline_data.get("top_ftc_track", "exploit")
+                    _significant = abs(_rot) > 0.10
+                    self._log(
+                        f"[P2-S4b] {_coin} d*={_result.get('d_star')} "
+                        f"ri={_result.get('ri', 0):.3f} "
+                        f"src={_result.get('signal_source', '?')} "
+                        f"rfl_ri={_result.get('reflection_ri', 0):.3f} "
+                        f"rfl_ok={_result.get('reflection_eligible')} "
+                        f"rot={_rot:+.3f} "
+                        f"regime={_regime} "
+                        f"path={_path}({_path_dir})@{_path_conf:.2f} "
+                        f"ftc={_ftc}({_ftc_dir})@{_ftc_ess:.2f}/{_ftc_track} "
+                        f"kelly={_kelly:.3f} "
+                        f"vol_s={_vs:.2f} "
+                        f"is_source={_result.get('is_ripple_source')} "
+                        f"inferred={_result.get('inference_formed')} "
+                        f"auto_exec={_result.get('auto_execute')}",
+                        "INFO" if (_result.get("auto_execute") or _significant) else "DEBUG",
+                    )
+                except Exception as _ce:
+                    self._log(
+                        f"[P2-S4b] {_coin} K线检查异常(FAIL-OPEN): {_ce}",
+                        "DEBUG",
+                    )
+                # 币种间限流，防止 OKX API 限频
+                import time as _time
+                _time.sleep(self._EVOLUTION_COIN_INTERVAL)
+        except Exception as _e:
+            self._log(f"[P2-S4b] _check_evolution_kline_signal crash: {_e}", "WARN")
+
     # ===== P1-1: 做空趋势过滤器 =====
     # 加密货币用BTC趋势确认（参考V15马丁策略DirectionGate力学化模式）
     # 非加密货币用自身日MA50趋势（未来可升级为标普500趋势线过滤）
     CRYPTO_COINS = frozenset({
-        "BTC", "SOL", "UNI", "OKB", "HYPE", "PUMP",
+        # — BDSM 2026-09 扩展：加密币种池补齐 AAVE, CRCL, ETH（ETH 仅做多）—
+        "BTC", "ETH", "SOL", "UNI", "OKB", "HYPE", "PUMP", "AAVE", "CRCL",
     })
 
     # 加密属性美股代币（COIN=Coinbase/MSTR=MicroStrategy/CRCL=Circle）
@@ -7204,6 +9631,282 @@ class PollingTrader:
             _inject = False
 
         if _inject and _eff_params:
+            # ── [CBR shadow] θ_match* top-3 相似度融合（F1 红线：真参数字节等价不变） ──
+            # 约束：
+            #   · FAIL-OPEN：CBREngine 任一异常 / top3<3 / 任一 <θ_match* → applied=False，
+            #     仅写结构化 JSONL + WARN 一行，绝不阻塞开仓；
+            #   · F1红线：_reg[...] 与 _eff_params[..._final] 所有行字节不变；
+            #     融合目标值仅进入 _eff_params["_cbr_shadow"] 与 JSONL 审计；
+            #   · θ_match* 取 CBRJsonlStore.theta_match_star（季度校准值，不硬编码）。
+            _cbr_shadow: Dict[str, Any] = {"applied": False, "fail_open_reason": None}
+            _cbr_jsonl_record: Dict[str, Any] = {}
+            try:
+                _theta_star = float(getattr(
+                    getattr(self, "_cbr_store", None), "theta_match_star", 0.71,
+                ))
+                _cbr_engine = getattr(self, "_cbr_engine", None)
+                _cbr_log_path = getattr(self, "_cbr_retrieval_log_path", None)
+                _retrieved: List[Any] = []
+                _baseline: Dict[str, Any] = {}  # noqa: E501  placeholder，JSONL 异常兜底前会被真正 baseline 覆盖
+                _top3: List[Any] = []
+                _war_state_5d_mean = None
+                try:
+                    _ws_history = (inference.get("_five_domain") or {}).get("war_state_history") or []
+                    if _ws_history:
+                        allow_n = sum(1 for _x in _ws_history if str(_x) == "ALLOW")
+                        _war_state_5d_mean = round(allow_n / max(1, len(_ws_history)), 3)
+                except Exception:
+                    _war_state_5d_mean = None
+                # (i) Query 构造（缺失字段默认值，不抛）
+                _qr_conf = float(
+                    _eff_params.get("confidence_final")
+                    if _eff_params.get("confidence_final") is not None
+                    else inference.get("confidence") or 0.0
+                )
+                _qr_vol = float(
+                    inference.get("volatility_pct")
+                    if inference.get("volatility_pct") is not None
+                    else (_eff_params.get("volatility_pct") or 0.0)
+                )
+                _qr_price = float(inference.get("price") or 0.0)
+                _qr_decision = "SHORT" if direction == "DOWN" else "LONG"
+                _qr_regime = str(inference.get("regime_label") or "") or None
+                from scripts.memory_l4.cbr_engine import CBRQuery as _CBRQuery
+                _cbr_query = _CBRQuery(
+                    inst_id=str(coin or ""),
+                    regime=_qr_regime,
+                    decision=_qr_decision,
+                    confidence=float(np.clip(_qr_conf, 0.0, 1.0)),
+                    volatility=float(_qr_vol),
+                    entry_price=float(_qr_price),
+                    max_drawdown=float(_eff_params.get("max_drawdown") or 0.05),
+                    risk_budget=float(_eff_params.get("risk_budget") or 0.02),
+                )
+                # 基线快照（F1 红线：blended 永不覆盖这些值）
+                _baseline = {
+                    "position_mult": float(_eff_params["position_mult_final"]),
+                    "tp_mult": float(_eff_params["tp_mult_final"]),
+                    "sl_mult": float(_eff_params["sl_mult_final"]),
+                    "threshold_mult": float(_eff_params["threshold_mult_final"]),
+                    "long_conf_threshold": float(_eff_params["long_conf_threshold"]),
+                    "short_conf_threshold": float(_eff_params["short_conf_threshold"]),
+                    "leverage": float(_eff_params.get("leverage_final") or
+                                     inference.get("leverage") or 1.0),
+                    "best_holding_hours": int(_eff_params.get("best_holding_hours") or
+                                              inference.get("best_holding_hours") or 60),
+                }
+                if _cbr_engine is None:
+                    _fail_reason = "cbr_engine is None"
+                    _cbr_shadow["fail_open_reason"] = _fail_reason
+                else:
+                    # (ii) Retrieve → top-5 → sim≥θ* → top-3 严格等长才融合
+                    _retrieved = list(_cbr_engine.retrieve(_cbr_query))
+                    _filtered = [_r for _r in _retrieved if float(_r.similarity) >= _theta_star]
+                    _top3 = _filtered[:3]
+                    if len(_top3) != 3:
+                        if not _filtered:
+                            _fail_reason = f"all_below_theta (theta={_theta_star:.3f}, top_sim={(_retrieved[0].similarity if _retrieved else 0.0):.3f})"
+                        else:
+                            _fail_reason = f"top3_len<3 (actual={len(_top3)}, theta={_theta_star:.3f})"
+                        _cbr_shadow["fail_open_reason"] = _fail_reason
+                    # top3 元信息（无论是否融合，都结构化落盘）
+                    _top3_meta = []
+                    for _r in _top3:
+                        _case = _r.case
+                        _raw = getattr(_case, "raw", None) or {}
+                        _exec = _raw.get("execution") if isinstance(_raw, dict) else None
+                        _hold_h = None
+                        _ts_entry = _raw.get("entry_time") or (_exec or {}).get("entry_time") if isinstance(_exec, dict) else None
+                        _ts_exit = _raw.get("exit_time") or (_exec or {}).get("exit_time") if isinstance(_exec, dict) else None
+                        if _ts_entry and _ts_exit:
+                            try:
+                                if isinstance(_ts_entry, (int, float)) and isinstance(_ts_exit, (int, float)):
+                                    _hold_h = max(0, round(float(_ts_exit - _ts_entry) / 3600.0, 2))
+                            except Exception:
+                                _hold_h = None
+                        if _hold_h is None:
+                            _hold_h = int(_baseline["best_holding_hours"])
+                        _top3_meta.append({
+                            "case_id": str(getattr(_case, "case_id", "") or ""),
+                            "sim": round(float(_r.similarity), 4),
+                            "pnl_pct": round(float(getattr(_case, "pnl_pct", 0.0) or 0.0), 4),
+                            "holding_h": _hold_h,
+                            "leverage": round(float(getattr(_case, "leverage", 1.0) or 1.0), 2),
+                            "outcome": "WIN" if bool(getattr(_case, "is_profit", False)) else "LOSS",
+                            "raw_position_pct": round(float(
+                                (isinstance(_raw, dict) and (_raw.get("position_pct") if _raw.get("position_pct") is not None
+                                 else ((_raw.get("execution") or {}).get("position_pct") if isinstance(_raw.get("execution"), dict) else None)))
+                                or 0.0), 6),
+                        })
+                    # (iii) Weighted fusion + soft blend cap ≤ 0.15（仅 shadow，不生效）
+                    _blended: Dict[str, float] = dict(_baseline)
+                    _soft_alpha = 0.0
+                    if len(_top3) == 3:
+                        _sims = [float(_r.similarity) for _r in _top3]
+                        _sim_sum = sum(_sims)
+                        if _sim_sum <= 0:
+                            _fail_reason = "top3_sim_sum_zero"
+                            _cbr_shadow["fail_open_reason"] = _fail_reason
+                        else:
+                            _ws = [_s / _sim_sum for _s in _sims]
+                            # 从 raw/execution 取 position_pct → 映射成 position_mult 相对单位
+                            def _case_position_mult(_rc: Any) -> float:
+                                _raw_c = getattr(_rc.case, "raw", None) or {}
+                                _exec_c = _raw_c.get("execution") if isinstance(_raw_c, dict) else None
+                                _pp = None
+                                if isinstance(_raw_c, dict):
+                                    _pp = _raw_c.get("position_pct")
+                                if _pp is None and isinstance(_exec_c, dict):
+                                    _pp = _exec_c.get("position_pct")
+                                if _pp is None:
+                                    return float(_baseline["position_mult"])
+                                try:
+                                    _pv = float(_pp)
+                                except Exception:
+                                    return float(_baseline["position_mult"])
+                                # 历史 position_pct ∈ [0,1]；基线 position_mult_final ∈ [0.1,5.0] 倍率
+                                #   → 用 case_pct / 0.05 相对基准 (0.05 = 默认 5% 轻仓) 作为 case_mult
+                                _denom = 0.05
+                                if _pv <= 0:
+                                    return float(_baseline["position_mult"])
+                                return float(_pv / _denom)
+                            def _case_holding_h(_rc: Any) -> int:
+                                _raw_c = getattr(_rc.case, "raw", None) or {}
+                                _exec_c = _raw_c.get("execution") if isinstance(_raw_c, dict) else None
+                                if isinstance(_raw_c, dict):
+                                    _ent = _raw_c.get("entry_time")
+                                    _ext = _raw_c.get("exit_time")
+                                    if _ent is None and isinstance(_exec_c, dict):
+                                        _ent = _exec_c.get("entry_time")
+                                    if _ext is None and isinstance(_exec_c, dict):
+                                        _ext = _exec_c.get("exit_time")
+                                    try:
+                                        if isinstance(_ent, (int, float)) and isinstance(_ext, (int, float)):
+                                            return max(1, int(round(float(_ext - _ent) / 3600.0)))
+                                    except Exception:
+                                        pass
+                                return int(_baseline["best_holding_hours"])
+                            def _case_long_thr(_rc: Any) -> float:
+                                _cc = getattr(_rc.case, "confidence", None)
+                                try:
+                                    return float(np.clip(float(_cc or 0.0), 0.0, 1.0)) if _cc is not None else float(_baseline["long_conf_threshold"])
+                                except Exception:
+                                    return float(_baseline["long_conf_threshold"])
+                            # 加权融合（每维独立 Σw×value）
+                            _b_pos = sum(_ws[i] * _case_position_mult(_top3[i]) for i in range(3))
+                            _b_lev = sum(_ws[i] * float(getattr(_top3[i].case, "leverage", 1.0) or 1.0) for i in range(3))
+                            _b_hold = sum(_ws[i] * float(_case_holding_h(_top3[i])) for i in range(3))
+                            _b_long_thr = sum(_ws[i] * _case_long_thr(_top3[i]) for i in range(3))
+                            # soft blend：α = min(0.15, mean(sim_i - θ*) × 2)，上限 0.15
+                            _sim_over = max(0.0, sum(_sims[i] - _theta_star for i in range(3)) / 3.0)
+                            _soft_alpha = float(min(0.15, max(0.0, _sim_over * 2.0)))
+                            if _soft_alpha > 0:
+                                _a = _soft_alpha
+                                _blended = {
+                                    "position_mult": float(_a * _b_pos + (1 - _a) * _baseline["position_mult"]),
+                                    "tp_mult": float(_baseline["tp_mult"]),   # CBR 暂不直接推 TP 乘数
+                                    "sl_mult": float(_baseline["sl_mult"]),   # CBR 暂不直接推 SL 乘数
+                                    "threshold_mult": float(_baseline["threshold_mult"]),
+                                    "long_conf_threshold": float(_a * _b_long_thr + (1 - _a) * _baseline["long_conf_threshold"]),
+                                    "short_conf_threshold": float(_baseline["short_conf_threshold"]),
+                                    "leverage": float(_a * _b_lev + (1 - _a) * _baseline["leverage"]),
+                                    "best_holding_hours": int(round(_a * _b_hold + (1 - _a) * float(_baseline["best_holding_hours"]))),
+                                    "_raw_blend_pos_mult": round(_b_pos, 4),
+                                    "_raw_blend_leverage": round(_b_lev, 2),
+                                    "_raw_blend_hold_h": round(_b_hold, 1),
+                                    "_raw_blend_long_thr": round(_b_long_thr, 4),
+                                }
+                            else:
+                                _blended = dict(_baseline)
+                            # applied 标记为 True（仅 shadow；真参数仍保持基线）
+                            _cbr_shadow["applied"] = True
+                            _cbr_shadow["fail_open_reason"] = None
+                    _cbr_shadow.update({
+                        "theta_match_star": round(_theta_star, 4),
+                        "soft_cap_alpha": round(_soft_alpha, 4),
+                        "top3_meta": _top3_meta,
+                        "top3_count": len(_top3),
+                        "retrieved_count": len(_retrieved) if "_retrieved" in locals() else 0,
+                        "baseline_values": _baseline,
+                        "blended_values_before_shadow": _blended,
+                    })
+                _eff_params["_cbr_shadow"] = _cbr_shadow
+                # (v) 结构化 JSONL 写入（所有分支均落：含 fail-open reason）
+                try:
+                    if _cbr_log_path:
+                        _cbr_jsonl_record = {
+                            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                            "symbol": str(coin or ""),
+                            "query_features": {
+                                "inst_id": _cbr_query.inst_id,
+                                "regime": _cbr_query.regime,
+                                "decision": _cbr_query.decision,
+                                "confidence": round(float(_cbr_query.confidence), 4),
+                                "volatility": round(float(_cbr_query.volatility), 6),
+                                "war_state_5d_mean": _war_state_5d_mean,
+                            },
+                            "top3": _cbr_shadow.get("top3_meta", []),
+                            "baseline_values": _cbr_shadow.get("baseline_values", _baseline if "_baseline" in locals() else {}),
+                            "blended_values": _cbr_shadow.get("blended_values_before_shadow", {}),
+                            "blend_config": {
+                                "theta_match_star": round(_theta_star, 4),
+                                "soft_cap_alpha": round(_cbr_shadow.get("soft_cap_alpha", 0.0), 4),
+                                "applied": bool(_cbr_shadow.get("applied", False)),
+                                "fail_open_reason": _cbr_shadow.get("fail_open_reason"),
+                            },
+                        }
+                        with open(str(_cbr_log_path), "a", encoding="utf-8") as _fp:
+                            _fp.write(json.dumps(_cbr_jsonl_record, ensure_ascii=False) + "\n")
+                except Exception as _je:
+                    self._log(
+                        f"[{coin}] [CBR shadow] JSONL 写入失败（非阻塞）：{_je}", "WARN",
+                    )
+                # Shadow 审计日志（applied=False 也打一行，便于 fail-open 追踪）
+                self._log(
+                    f"[{coin}] [CBR shadow] top3_count={_cbr_shadow.get('top3_count', 0)} "
+                    f"theta*={_cbr_shadow.get('theta_match_star', _theta_star):.3f} "
+                    f"α={_cbr_shadow.get('soft_cap_alpha', 0.0):.3f} "
+                    f"applied={_cbr_shadow.get('applied', False)} "
+                    f"reason={_cbr_shadow.get('fail_open_reason') or 'ok'}",
+                    "INFO" if _cbr_shadow.get("applied", False) else "DEBUG",
+                )
+            except Exception as _cbr_e:
+                # FAIL-OPEN 最后兜底：异常绝不阻塞，真参数字节保持基线
+                try:
+                    _eff_params["_cbr_shadow"] = {
+                        "applied": False,
+                        "fail_open_reason": f"exception::{type(_cbr_e).__name__}:{_cbr_e}",
+                        "theta_match_star": float(getattr(getattr(self, "_cbr_store", None), "theta_match_star", 0.71)),
+                        "soft_cap_alpha": 0.0,
+                        "top3_meta": [],
+                        "top3_count": 0,
+                        "baseline_values": {},
+                        "blended_values_before_shadow": {},
+                    }
+                    if getattr(self, "_cbr_retrieval_log_path", None):
+                        _rec = {
+                            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                            "symbol": str(coin or ""),
+                            "query_features": {},
+                            "top3": [],
+                            "baseline_values": {},
+                            "blended_values": {},
+                            "blend_config": {
+                                "theta_match_star": _eff_params["_cbr_shadow"]["theta_match_star"],
+                                "soft_cap_alpha": 0.0,
+                                "applied": False,
+                                "fail_open_reason": _eff_params["_cbr_shadow"]["fail_open_reason"],
+                            },
+                        }
+                        with open(str(self._cbr_retrieval_log_path), "a", encoding="utf-8") as _fp:  # type: ignore[arg-type]
+                            _fp.write(json.dumps(_rec, ensure_ascii=False) + "\n")
+                except Exception:
+                    pass
+                self._log(
+                    f"[{coin}] [CBR shadow] 异常旁路（fail-open，真参数不变）：{type(_cbr_e).__name__}:{_cbr_e}",
+                    "WARN",
+                )
+
             # ⚡ 注入生效：覆盖 regime_multipliers（下游 _open_position 读）
             _reg = dict(inference.get("_regime_multipliers", {}) or {})
             _reg["position_mult"] = float(_eff_params["position_mult_final"])
@@ -7300,6 +10003,41 @@ class PollingTrader:
             open_time = pos_info.get("open_time", 0)
             if open_time > 0:
                 position_age_sec = time.time() - open_time
+            else:
+                # ★ FIX Bug: open_time=0 时尝试从 position_tracker.entry_time 重新解析
+                # 多进程并发或 entry_time 丢失时，open_time 可能为 0，导致 yijing_window_wait 永久死锁
+                # 根因：okx_simulated.get_positions 未返回 cTime，且 PositionTracker.entry_time 可能因
+                # 多进程并发写入丢失 → open_time=0 → position_age_sec=0 → yijing_window_wait 永远 < 60min
+                _tracker_rec_fb = self.position_tracker.get_open_position(inst_id)
+                if _tracker_rec_fb and _tracker_rec_fb.entry_time:
+                    try:
+                        _ts_fb = _tracker_rec_fb.entry_time
+                        if _ts_fb.endswith("Z"):
+                            _ts_fb = _ts_fb.replace("Z", "+00:00")
+                        from datetime import datetime as _dt_fb
+                        _open_time_fb = _dt_fb.fromisoformat(_ts_fb).timestamp()
+                        if _open_time_fb > 0:
+                            open_time = _open_time_fb
+                            position_age_sec = time.time() - open_time
+                            self._log(
+                                f"[{coin}] 持仓时间戳恢复(tracker) | entry_time="
+                                f"{_tracker_rec_fb.entry_time} → open_time={open_time}",
+                                "WARN",
+                            )
+                    except Exception as _e_fb:
+                        self._log(
+                            f"[{coin}] 持仓时间戳恢复失败: {_e_fb} | "
+                            f"entry_time={getattr(_tracker_rec_fb, 'entry_time', None)}",
+                            "WARN",
+                        )
+
+                # 如果 tracker 也没有 entry_time，触发硬告警（但仍继续，FAIL-OPEN）
+                if position_age_sec == 0:
+                    self._log(
+                        f"[{coin}] 持仓时间戳丢失告警 | has_position=True 但 open_time=0，"
+                        f"易经离场系统将无法评估（yijing_window_wait 永久死锁风险）",
+                        "ERROR",
+                    )
             in_protection = self._is_position_protected(position_age_sec)
 
             # ════════════════════════════════════════════════════════════════
@@ -7344,13 +10082,11 @@ class PollingTrader:
                 if _c:
                     _held_coins.add(_c)
 
-            # ── 轻仓试错评估周期（v4.5 新增）──
-            # 持仓≥30min 后评估趋势：确认→加仓信号，不明→维持，逆转→平仓
-            _trial_eval_min_sec = 1800  # 30 分钟评估周期
+            # ── 轻仓试错评估周期（P1 升级：定期重评估 + 放宽阈值）──
+            # 持仓≥30min 首次评估，之后每60min重评估一次；
+            # reverse 阈值从 -0.5% 放宽到 -3%（轻仓绝对亏损小，容忍噪音）。
             _trial_closed = False  # 试错评估是否已平仓
-            if (tracker_pos and getattr(tracker_pos, "is_trial", False)
-                    and not getattr(tracker_pos, "trial_eval_done", False)
-                    and position_age_sec >= _trial_eval_min_sec):
+            if self._should_run_trial_eval(tracker_pos, position_age_sec):
                 _cur_price = float(pos_info.get("mark_px", 0) or inference.get("price", 0) or 0)
                 _entry_price = float(tracker_pos.entry_price or 0)
                 _trial_action = "maintain"  # 默认维持
@@ -7358,10 +10094,7 @@ class PollingTrader:
                     _price_chg_pct = (_cur_price - _entry_price) / _entry_price
                     if pos_side == "short":
                         _price_chg_pct = -_price_chg_pct  # 做空反转：价格下跌为正
-                    if _price_chg_pct > 0.010:
-                        _trial_action = "confirm"
-                    elif _price_chg_pct < -0.005:
-                        _trial_action = "reverse"
+                    _trial_action = self._compute_trial_action(_price_chg_pct)
 
                     self._log(
                         f"[{coin}] 试错评估 | 持仓={position_age_sec/60:.0f}min "
@@ -7391,7 +10124,7 @@ class PollingTrader:
                             self._handle_close_position(
                                 inst_id=inst_id, coin=coin, pos_side=pos_side,
                                 exit_price=_exit_price, exit_reason="trial_trend_reverse",
-                                inference=inference,
+                                pnl=upl, pnl_pct=upl_ratio,
                             )
                             _trial_closed = True
                     elif _trial_action == "confirm":
@@ -7406,8 +10139,9 @@ class PollingTrader:
                             f"[{coin}] 试错评估:趋势不明 → 维持试错仓位",
                             "INFO",
                         )
-                # 标记评估已完成（不论结果如何，只评估一次）
+                # 标记评估时间戳（支持60min定期重评估），并保留 trial_eval_done 向后兼容
                 tracker_pos.trial_eval_done = True
+                tracker_pos.last_trial_eval_ts = time.time()
 
             # ── 调用 ExitManager（按优先级链评估扩展层离场策略）──
             # 如果试错评估已平仓，跳过 ExitManager
@@ -7487,10 +10221,10 @@ class PollingTrader:
                                 "WARN",
                             )
                             return
-                        _total_pos = self._count_total_positions()
+                        _total_pos = self._count_yijing_positions()
                         if _total_pos >= self.max_positions:
                             self._log(
-                                f"[{coin}] 已达最大持仓数 {self.max_positions}，跳过反手",
+                                f"[{coin}] 已达易经系统最大持仓数 {self.max_positions}，跳过反手",
                                 "INFO",
                             )
                             return
@@ -7690,6 +10424,20 @@ class PollingTrader:
                     open_time_sec=float(open_time) if open_time else 0.0,  # v3.0：开仓时间戳
                 )
 
+            # P2: 浮亏≥3% 且 风险分>0.7 → 升级为 FORCE_CLOSE（填补 risk 0.7~0.8 盲区）
+            if (yijing_decision
+                    and yijing_decision.action != YijingExitAction.FORCE_CLOSE
+                    and self._should_joint_force_close(
+                        float(upl_ratio),
+                        float(getattr(yijing_decision, "yijing_risk_score", 0.0) or 0.0),
+                    )):
+                yijing_decision.action = YijingExitAction.FORCE_CLOSE
+                yijing_decision.reason = (
+                    f"loss_risk_joint(pnl={float(upl_ratio):.2%},"
+                    f"risk={float(getattr(yijing_decision, 'yijing_risk_score', 0.0) or 0.0):.2f}):"
+                    f"{getattr(yijing_decision, 'reason', '')}"
+                )
+
             # 1) 易经强制平仓：卦象风险极高 + 方向冲突 → 离场确认后执行
             if yijing_decision and yijing_decision.action == YijingExitAction.FORCE_CLOSE:
                 # v5.0：FORCE_CLOSE 加2次离场确认（避免卦象波动误平仓，尤其是中高风险时）
@@ -7784,12 +10532,23 @@ class PollingTrader:
                 target_tp_roi = YijingExitSystem.apply_atr_floor(target_tp_roi, base_tp_roi)
                 new_tp_price = self._calc_tp_price(entry_price, pos_side, target_tp_roi, leverage)
                 tp_price_change_pct = self._roi_to_price_change(target_tp_roi, leverage)
+                # ★ FIX：RAISE_TP 是放宽止盈，使用常规TP下限（不允许收紧）+ 爆仓安全约束
+                new_tp_price, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
+                    new_tp_price, entry_price, pos_side, leverage=leverage,
+                    allow_lower=False, coin=coin)
+                if _tp_clamped:
+                    _tail = "【爆仓约束优先】降杠杆≤20x" if _tp_cfl.get("liq_conflict") else ""
+                    self._log(
+                        f"[{coin}] 易经主离场 [RAISE_TP] 硬门禁钳制 | TP间距 "
+                        f"{_tp_old_pct*100:.2f}%→{abs(new_tp_price-entry_price)/entry_price*100:.2f}% {_tail}",
+                        "WARN",
+                    )
                 self._log(
                     f"[{coin}] 易经主离场 [RAISE_TP] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name} 杠杆={leverage}x "
                     f"ATR基线={base_tp_roi:.2%} × 调制{tp_modulation:.2f} = {target_tp_roi:.2%} "
                     f"(价{tp_price_change_pct:.2%}) "
-                    f"新止盈={new_tp_price:.2f} 盈亏={upl:.2f}({upl_ratio:.2%})"
+                    f"新止盈={new_tp_price:.6f} 盈亏={upl:.2f}({upl_ratio:.2%})"
                 )
                 try:
                     tp_result = self.okx_client.place_stop_loss_take_profit(
@@ -7800,7 +10559,7 @@ class PollingTrader:
                         reason=f"yijing_raise_tp:{yijing_decision.reason}",
                     )
                     if tp_result.get("ok"):
-                        self._log(f"[{coin}] 易经止盈价已上调至 {new_tp_price:.2f}")
+                        self._log(f"[{coin}] 易经止盈价已上调至 {new_tp_price:.6f}")
                     else:
                         self._log(
                             f"[{coin}] 易经上调止盈失败: {tp_result.get('error', 'unknown')}",
@@ -7832,12 +10591,23 @@ class PollingTrader:
                 new_sl_roi = YijingExitSystem.apply_atr_floor(new_sl_roi, base_sl_roi)
                 new_sl_price = self._calc_sl_price(entry_price, pos_side, new_sl_roi, leverage)
                 sl_price_change_pct = self._roi_to_price_change(new_sl_roi, leverage)
+                # ★ FIX：LOWER_SL 是放宽止损（SL值更小），双约束（间距下限+爆仓安全）
+                new_sl_price, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
+                    new_sl_price, entry_price, pos_side, leverage=leverage,
+                    allow_tighten=False, coin=coin)
+                if _sl_clamped:
+                    _tail = "【爆仓约束优先】降杠杆≤20x" if _sl_cfl.get("liq_conflict") else ""
+                    self._log(
+                        f"[{coin}] 易经主离场 [LOWER_SL] 硬门禁钳制 | SL间距 "
+                        f"{_sl_old_pct*100:.2f}%→{abs(new_sl_price-entry_price)/entry_price*100:.2f}% {_tail}",
+                        "WARN",
+                    )
                 self._log(
                     f"[{coin}] 易经主离场 [LOWER_SL] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name} 杠杆={leverage}x "
                     f"ATR基线={base_sl_roi:.2%} × 调制{sl_modulation:.2f} = {new_sl_roi:.2%} "
                     f"(价{sl_price_change_pct:.2%}) "
-                    f"新止损={new_sl_price:.2f} 盈亏={upl:.2f}({upl_ratio:.2%})"
+                    f"新止损={new_sl_price:.6f} 盈亏={upl:.2f}({upl_ratio:.2%})"
                 )
                 try:
                     sl_result = self.okx_client.place_stop_loss_take_profit(
@@ -7848,7 +10618,7 @@ class PollingTrader:
                         reason=f"yijing_lower_sl:{yijing_decision.reason}",
                     )
                     if sl_result.get("ok"):
-                        self._log(f"[{coin}] 易经止损价已放宽至 {new_sl_price:.2f}")
+                        self._log(f"[{coin}] 易经止损价已放宽至 {new_sl_price:.6f}")
                     else:
                         self._log(
                             f"[{coin}] 易经放宽止损失败: {sl_result.get('error', 'unknown')}",
@@ -7879,12 +10649,23 @@ class PollingTrader:
                 target_tp_roi = YijingExitSystem.apply_atr_floor(target_tp_roi, base_tp_roi)
                 new_tp_price = self._calc_tp_price(entry_price, pos_side, target_tp_roi, leverage)
                 tp_price_change_pct = self._roi_to_price_change(target_tp_roi, leverage)
+                # ★ FIX：LOWER_TP 双约束（间距下限×0.7 + 爆仓安全约束）
+                new_tp_price, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
+                    new_tp_price, entry_price, pos_side, leverage=leverage,
+                    allow_lower=True, coin=coin)
+                if _tp_clamped:
+                    _tail = "【爆仓约束优先】降杠杆≤20x" if _tp_cfl.get("liq_conflict") else ""
+                    self._log(
+                        f"[{coin}] 易经主离场 [LOWER_TP] 硬门禁钳制 | TP间距 "
+                        f"{_tp_old_pct*100:.2f}%→{abs(new_tp_price-entry_price)/entry_price*100:.2f}% {_tail}",
+                        "WARN",
+                    )
                 self._log(
                     f"[{coin}] 易经主离场 [LOWER_TP] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name} 杠杆={leverage}x "
                     f"ATR基线={base_tp_roi:.2%} × 调制{tp_modulation:.2f} = {target_tp_roi:.2%} "
                     f"(价{tp_price_change_pct:.2%}) "
-                    f"新止盈={new_tp_price:.2f} 盈亏={upl:.2f}({upl_ratio:.2%})"
+                    f"新止盈={new_tp_price:.6f} 盈亏={upl:.2f}({upl_ratio:.2%})"
                 )
                 try:
                     tp_result = self.okx_client.place_stop_loss_take_profit(
@@ -7895,7 +10676,7 @@ class PollingTrader:
                         reason=f"yijing_lower_tp:{yijing_decision.reason}",
                     )
                     if tp_result.get("ok"):
-                        self._log(f"[{coin}] 易经止盈价已下调至 {new_tp_price:.2f}")
+                        self._log(f"[{coin}] 易经止盈价已下调至 {new_tp_price:.6f}")
                     else:
                         self._log(
                             f"[{coin}] 易经下调止盈失败: {tp_result.get('error', 'unknown')}",
@@ -7926,12 +10707,26 @@ class PollingTrader:
                 new_sl_roi = YijingExitSystem.apply_atr_floor(new_sl_roi, base_sl_roi)
                 new_sl_price = self._calc_sl_price(entry_price, pos_side, new_sl_roi, leverage)
                 sl_price_change_pct = self._roi_to_price_change(new_sl_roi, leverage)
+                # ★ FIX：TIGHTEN_SL 双约束（间距下限×0.7 + 爆仓安全约束 爆仓优先）
+                #   ★ 这是 PUMP 0.586% SL + 高杠杆冲突 的核心修复！
+                #     - 低杠杆(≤20x)：爆仓间距>4.6%，间距下限1.05%独立生效，SL=0.586%会被钳制到1.05%
+                #     - 高杠杆(≥70x)：爆仓间距<1.0%，两约束冲突，SL抬到"爆仓价+0.3%"并强制告警
+                new_sl_price, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
+                    new_sl_price, entry_price, pos_side, leverage=leverage,
+                    allow_tighten=True, coin=coin)
+                if _sl_clamped:
+                    _tail = "【间距/爆仓冲突！已按爆仓安全优先】立即降杠杆到≤20x，否则无效止损" if _sl_cfl.get("liq_conflict") else ""
+                    self._log(
+                        f"[{coin}] 易经主离场 [TIGHTEN_SL] 硬门禁钳制 | SL间距 "
+                        f"{_sl_old_pct*100:.2f}%→{abs(new_sl_price-entry_price)/entry_price*100:.2f}% {_tail}",
+                        "WARN",
+                    )
                 self._log(
                     f"[{coin}] 易经主离场 [TIGHTEN_SL] {yijing_decision.reason} | "
                     f"卦象={yijing_decision.hexagram_name} 杠杆={leverage}x "
                     f"ATR基线={base_sl_roi:.2%} × 调制{sl_modulation:.2f} = {new_sl_roi:.2%} "
                     f"(价{sl_price_change_pct:.2%}) "
-                    f"新止损={new_sl_price:.2f} 盈亏={upl:.2f}({upl_ratio:.2%})"
+                    f"新止损={new_sl_price:.6f} 盈亏={upl:.2f}({upl_ratio:.2%})"
                 )
                 try:
                     sl_result = self.okx_client.place_stop_loss_take_profit(
@@ -7942,7 +10737,7 @@ class PollingTrader:
                         reason=f"yijing_tighten_sl:{yijing_decision.reason}",
                     )
                     if sl_result.get("ok"):
-                        self._log(f"[{coin}] 易经止损价已收紧至 {new_sl_price:.2f}")
+                        self._log(f"[{coin}] 易经止损价已收紧至 {new_sl_price:.6f}")
                     else:
                         self._log(
                             f"[{coin}] 易经收紧止损失败: {sl_result.get('error', 'unknown')}",
@@ -8341,23 +11136,50 @@ class PollingTrader:
                     "INFO",
                 )
 
-            # Score_B = 0.60×continuity_score + 0.40×conf_norm（spec P7，后置校准层输入）
+            # ── P0 事件驱动注入：读 odaily 快讯 → 计算 event_positive_strength → 注入 Score_B ──
+            # （FAIL-OPEN：DB不可用/快讯无命中/抛异常 → strength=0.0，boost=0，Score_B 等价v3.0原公式）
+            _event_strength = 0.0
+            _event_debug: Dict[str, Any] = {"reason": "skipped"}
+            try:
+                _event_strength, _event_debug = _polling_get_coin_event_positive_strength(coin)
+            except Exception:  # noqa: BLE003
+                _event_strength, _event_debug = 0.0, {"error": "bridge_exception"}
             _conf_norm = max(0.40, min(1.0, float(confidence or 0.0)))
-            _score_b = 0.60 * float(_cont_score) + 0.40 * _conf_norm
+            _score_b, _event_boost_applied = compute_score_b_with_event_boost(
+                float(_cont_score),
+                _conf_norm,
+                _event_strength if _event_strength > 0 else None,  # ≤0一律走 None → baseline 兼容
+            )
+            _score_b = max(0.0, min(1.0, float(_score_b)))
+            _event_boost_applied = max(0.0, min(0.10, float(_event_boost_applied)))
 
-            # 把 P1 档位 + Elder 等级 + Score_B（后置校准语义）写入 inference 缓存
+            # 把 P1 档位 + Elder 等级 + Score_B（后置校准语义）+ event_boost 写入 inference 缓存（便于ShadowLogger+回溯）
             inference["p1_output_label"] = _p1_label
             inference["elder_ray_grade"] = _elder_grade
             inference["bcrm_continuity_grade"] = _cont_grade
             inference["bcrm_continuity_score"] = float(_cont_score)
             inference["bcrm_score_b"] = float(_score_b)
+            inference["event_positive_strength"] = float(_event_strength)
+            inference["event_boost_applied"] = float(_event_boost_applied)
+            inference["event_debug_snippet"] = str({k: v for k, v in list(_event_debug.items())[:5]}) if isinstance(_event_debug, dict) else ""
 
-            self._log(
-                f"[{coin}] 方案C 三层弹性放行 | P1={_p1_label} "
-                f"Elder={_elder_grade} BCRM连续={_cont_grade}({_cont_score:.2f}) "
-                f"Score_B={_score_b:.2f} 单conf={float(confidence or 0):.2f} 卦={_hex_name} 方向={_decision_dir}",
-                "INFO",
-            )
+            # 日志：带事件驱动注入细节（便于运维/审计）
+            if _event_boost_applied > 0.001:
+                self._log(
+                    f"[{coin}] 方案C 三层弹性放行 | P1={_p1_label} "
+                    f"Elder={_elder_grade} BCRM连续={_cont_grade}({_cont_score:.2f}) "
+                    f"Score_B={_score_b:.3f} (+boost={_event_boost_applied:.3f}, "
+                    f"ev_strength={_event_strength:.2f} {_event_debug.get('reason','') if isinstance(_event_debug, dict) else ''}) "
+                    f"单conf={float(confidence or 0):.2f} 卦={_hex_name} 方向={_decision_dir}",
+                    "INFO",
+                )
+            else:
+                self._log(
+                    f"[{coin}] 方案C 三层弹性放行 | P1={_p1_label} "
+                    f"Elder={_elder_grade} BCRM连续={_cont_grade}({_cont_score:.2f}) "
+                    f"Score_B={_score_b:.2f} 单conf={float(confidence or 0):.2f} 卦={_hex_name} 方向={_decision_dir}",
+                    "INFO",
+                )
         except Exception as _setup_e:
             self._log(
                 f"[{coin}] 方案C P1升级 异常(中性旁路)：{type(_setup_e).__name__}，继续原流程",
@@ -8547,9 +11369,29 @@ class PollingTrader:
             self._log(f"[{coin}] 风控拦截: {risk_check['reason']}", "WARN")
             return
 
-        if self._count_total_positions() >= self.max_positions:
-            self._log(f"[{coin}] 已达最大持仓数 {self.max_positions} 跳过")
+        if self._count_yijing_positions() >= self.max_positions:
+            self._log(f"[{coin}] 已达易经系统最大持仓数 {self.max_positions} 跳过")
             return
+        # —— R5 铁律 · 子池隔离：BDSM(≤3) vs BCRM(≤5) 互不抢占 ——
+        sub_ok, sub_reason = self._check_subpool_capacity(coin)
+        if not sub_ok:
+            self._log(f"[{coin}] 子池仓位已满 | {sub_reason}（R5 隔离跳过）", "WARN")
+            return
+        self._log(f"[{coin}] 子池容量预检通过 | {sub_reason}")
+
+        # —— BDSM 协作 · 缺口 1：方向硬约束（子池预检通过后、_open_position 之前）——
+        #   LONG_ONLY ∩ BCRM 开 SHORT → DROP→HOLD；SHORT_ONLY 对称；NEUTRAL=放行；非BDSM=放行
+        #   FAIL-OPEN：任何异常 → is_pass=True 放行（BCRM 技术方向不受 BDSM 干扰）
+        _dir_ok, _dir_reason = self._apply_bdsm_direction_constraint(coin, direction)
+        if not _dir_ok:
+            self._log(
+                f"[{coin}] BDSM 方向约束拦截 | {_dir_reason}（DROP→HOLD，不调用 _open_position）",
+                "WARN",
+            )
+            return
+        # 命中日志：约束存在且同方向时打 INFO（非非 BDSM/非 neutral 才显示，避免刷屏）
+        if _dir_reason and _dir_reason.startswith("bdsm_") and "same_direction" in _dir_reason:
+            self._log(f"[{coin}] BDSM 方向约束与 BCRM 同向 | {_dir_reason}", "INFO")
 
         self._open_position(inference, is_reverse=False, is_trial=is_trial)
 
@@ -8783,6 +11625,9 @@ class PollingTrader:
                 f"[{coin}] 轻仓试错(过滤层接管仓位) | 跳过L3弹簧/形态/v4分档 → 交由 ElasticGate3L/F1 弹性闸门控制最终仓位",
                 "INFO",
             )
+            # ★ 兜底：L10877 _reg_mult 最终再从 inference 取一次 保证后续 sl_mult / tp_mult 恒可用，
+            #   此处仅保证 _regime_pred 不崩（后续 regime 日志可能用到）
+            _regime_pred = inference.get("_regime_pred", None) if '_regime_pred' not in dir() else _regime_pred  # noqa: WPS427
 
         # ═══════════════════════════════════════════════════
         # 通用资金调控：前置约束叠加（所有仓位调整完成之后，最终下单之前）
@@ -8962,6 +11807,47 @@ class PollingTrader:
 
         action = "open_long" if direction == "UP" else "open_short"
         pos_side = "long" if direction == "UP" else "short"
+
+        # —— BDSM 协作 · 缺口 2：动态评估器(CVS)驱动分批建仓（Phase 1 升级）——
+        #   CVS>=0.3 → batch=remaining×ratio（≥0.8 打完子弹）
+        #   CVS<0.3 或 plan 缺失 → FAIL-OPEN 回退 _apply_bdsm_cap_multiplier
+        #   remaining<=0 → 拦截不开仓（已建满）
+        _cap_before = float(position_usdt or 0.0)
+        _bdsm_pos, _bdsm_cap, _bdsm_cap_tag = self._apply_bdsm_scaling(
+            coin, position_usdt, inference.get("price", 0.0)
+        )
+        if _bdsm_cap_tag.startswith("bdsm_") and _bdsm_cap_tag != "not_bdsm_coin":
+            self._log(
+                f"[{coin}] BDSM_SCALING | cap=×{_bdsm_cap:.3f} tag={_bdsm_cap_tag} "
+                f"USDT {_cap_before:.2f} U→{float(_bdsm_pos):.2f} U",
+                "INFO",
+            )
+        position_usdt = float(_bdsm_pos)
+        position_pct = position_pct * (_bdsm_cap if _cap_before > 0 else 1.0)
+        # 最低名义仓位价值兜底（与 BCRM 口径一致：50U保证金×5x=250U名义价值）
+        _min_notional = float(getattr(self.risk_manager.state, "min_position_usdt", 250.0))
+        if 0 < position_usdt < _min_notional:
+            self._log(
+                f"[{coin}] BDSM 最低仓位兜底 | {position_usdt:.2f}U→{_min_notional:.2f}U（min_position_usdt）",
+                "INFO",
+            )
+            position_usdt = _min_notional
+        if position_usdt <= 0.0:
+            self._log(
+                f"[{coin}] BDSM scaling=0 拦截开仓（tag={_bdsm_cap_tag}）",
+                "WARN",
+            )
+            return None
+
+        # —— BDSM 协作 · SHORT_BAN 铁律：SHORT_ONLY_BLACKLIST 币种禁止做空
+        # （ETH/BTC 等，P0 历史验证做空样本亏损率极高；BDSM 模型本身默认 LONG_ONLY）
+        # 做空 → 直接跳过该信号，等效于「BDSM 不存在」(FAIL-OPEN 中性)
+        if pos_side == "short" and coin.upper() in getattr(self, "SHORT_ONLY_BLACKLIST", set()):
+            self._log(
+                f"[{coin}] SHORT_BAN 命中 | 方向={direction} 跳过开空（SHORT_ONLY_BLACKLIST）",
+                "WARN",
+            )
+            return None
         sl_px = inference["stop_loss_px"]
         tp_px = inference["take_profit_px"]
         price = inference["price"]
@@ -9010,6 +11896,9 @@ class PollingTrader:
 
         # P2-05: 形态乘数 → SL/TP 价格距离（乘在所有 v4 风控之后，SLTP 冻结前）
         #   VOLATILE_DROP → sl_mult=0.65（紧止损）、TREND_UP_STRONG → tp_mult=1.30（放止盈）
+        # ★ BUGFIX(2026-09-02 GOOGL 试错仓崩 UnboundLocalError _reg_mult)：
+        #   所有分支最终汇总点再从 inference 取一次，消除「if 分支赋值但 else 分支跳过」导致的未绑定隐患。
+        _reg_mult = inference.get("_regime_multipliers", {}) if not isinstance(inference.get("_regime_multipliers"), dict) else dict(inference.get("_regime_multipliers") or {})
         _sl_mult = _reg_mult.get("sl_mult", 1.0)
         _tp_mult = _reg_mult.get("tp_mult", 1.0)
         if _sl_mult != 1.0 and sl_px and price > 0:
@@ -9197,6 +12086,29 @@ class PollingTrader:
             )
             return
 
+        # ★ S级 硬约束：下单前 必须 同步 OKX 交易所 端 杠杆，避免 代码 计算 杠杆（默认 5x）
+        # 与 OKX 端 设置（可能上次 会话 是 10x/20x）不一致 导致 实际 保证金 占用 / 爆仓 价
+        # 计算 偏差。FAIL-OPEN：设置 失败 不 阻塞，记录 WARN 后 继续 下单（主链路不中断）。
+        try:
+            _lev_to_set = max(1, int(round(float(leverage or self.okx_client.cfg.get("default_leverage", 3)))))
+            _lev_res = self.okx_client.set_leverage(inst_id=inst_id, lever=_lev_to_set, mgn_mode=td_mode)
+            if not _lev_res.get("ok"):
+                self._log(
+                    f"[{coin}] set_leverage 失败(fail-open继续) | 目标={_lev_to_set}x 模式={td_mode} "
+                    f"err={_lev_res.get('error', 'unknown')}",
+                    "WARN",
+                )
+            else:
+                self._log(
+                    f"[{coin}] set_leverage OKX端 同步 成功 | 实际={_lev_res.get('lever')}x 模式={_lev_res.get('mgn_mode')}",
+                    "INFO",
+                )
+        except Exception as _lev_e:
+            self._log(
+                f"[{coin}] set_leverage 异常(fail-open继续) | err={type(_lev_e).__name__}:{_lev_e}",
+                "WARN",
+            )
+
         if direction == "UP":
             order_result = self.okx_client.market_open_long(
                 inst_id, usdt_amount=position_usdt, reason=f"yijing_open_long conf={confidence:.2f}"
@@ -9312,6 +12224,8 @@ class PollingTrader:
                 is_trial=is_trial,
                 score_consensus=float(inference.get("score_consensus", 0.0) or 0.0),
                 gate_base_threshold=float(inference.get("gate_base_threshold", 0.40) or 0.40),
+                # — BDSM 协作 R5 铁律 · 子池隔离标签（持久化 JSON positions/{inst_id}.json）—
+                source_tag=self._classify_source_tag(coin),
             )
             self._log(f"[{coin}] 开仓成功 | ordId={ord_id} | " f"入场价≈{entry_price}")
 
@@ -9821,6 +12735,11 @@ class PollingTrader:
         """执行一轮推理 + 交易"""
         self._maybe_refresh_coins()
         self._check_date_rollover()
+        # BDSM 每日快照自动生成（幂等，已存在则跳过）
+        try:
+            self._ensure_bdsm_snapshot_today()
+        except Exception as _bdsm_e:
+            self._log(f"[BDSM] 快照确保失败(FAIL-OPEN): {_bdsm_e}", "WARN")
         self._load_external_knowledge()
         # A-1修复：每轮热 reload 进化后的阈值
         self._load_evolution_config(initial=False)
@@ -9951,6 +12870,14 @@ class PollingTrader:
 
         effective_threshold = self._adjust_confidence_threshold()
 
+        # ══ P2-S4b: 紧耦合流 K线级触发（BTC/ETH/SOL 1H）══════════════════════
+        #   每轮调用 _check_evolution_kline_signal → KlineEventHandler →
+        #   auto_execute=True 时触发 _evolution_build_position（25U硬上限）
+        try:
+            self._check_evolution_kline_signal()
+        except Exception as _evo_e:
+            self._log(f"[P2-S4b] K线触发异常(FAIL-OPEN): {_evo_e}", "WARN")
+
         # ══ Phase A (S1): MODE 算力重分配入口 ══════════════════════════════
         # 在执行任何昂贵操作（anomaly检测/BCRM2全推理）之前先决定 MODE：
         #   MODE-OFF（S1关） ：anom/full/coarse 全沿用 self.coins（旧路径等价）
@@ -10042,7 +12969,7 @@ class PollingTrader:
 
                 # A7 实践论门禁检查（代码驱动，执行前拦截）
                 if self.a7_gate and not inference.get("fail_closed", False):
-                    current_positions = self._count_total_positions()
+                    current_positions = self._count_yijing_positions()
                     cbr_engine = getattr(self.cbr_bridge, "cbr", None) if self.cbr_bridge else None
                     gate_report = self.a7_gate.check_before_execute(
                         inference=inference,
@@ -10119,7 +13046,7 @@ class PollingTrader:
                             cbr_engine=cbr_engine,
                             current_equity=self.perf_tracker.current_equity,
                             max_positions=self.max_positions,
-                            current_positions=self._count_total_positions(),
+                            current_positions=self._count_yijing_positions(),
                         )
                         a7_ok = gp.passed
                         if not a7_ok:
@@ -10138,6 +13065,33 @@ class PollingTrader:
                     )
             except Exception as e:
                 self._log(f"[{topup_coin}] [MODE3][补全] 异常: {e}", "ERROR")
+
+        # —— BDSM 协作 · 缺口 3：出场 OR 逻辑（先于 BCRM S4 排名止盈 + 单币离场评估）——
+        #   按 BDSM 快照 exit_action 优先级 CLOSE_ALL > REDUCE_80 > REDUCE_50 先执行；
+        #   仅对 BDSM_COINS 且 PositionTracker 内有真实持仓者生效；非 BDSM 直接跳过；
+        #   FAIL-OPEN：任何读取/序列化异常 → 字节等价 NONE（BDSM 不存在），绝不误平仓。
+        try:
+            bdsm_exit_actions = self._bdsm_check_exit_actions() or []
+            if bdsm_exit_actions:
+                _exit_log = " | ".join(
+                    f"{a.get('coin')}:{a.get('action')} ok={a.get('ok')} rsn={a.get('reason','')}"
+                    for a in bdsm_exit_actions
+                )
+                self._log(
+                    f"[BDSM 出场巡检] 本轮执行 {len(bdsm_exit_actions)} 项: {_exit_log}",
+                    "INFO",
+                )
+            else:
+                # ★ 空 action 也必须打日志（证明 gap3 巡检入口已进入 daemon 执行链；不打则无法从日志 grep 验证上线）
+                self._log(
+                    "[BDSM 出场巡检] 本轮 0 项（快照 exit=NONE 或 BDSM_COINS 无真实持仓，FAIL-OPEN 安全态）",
+                    "INFO",
+                )
+        except Exception as _bdsm_exit_exc:
+            # 终极 FAIL-OPEN：exit 巡检发生任何外部异常 → 跳过，不影响后续 BCRM 离场
+            self._log(
+                f"[BDSM 出场巡检] 顶层异常（FAIL-OPEN 跳过不阻断）: {_bdsm_exit_exc}", "WARN"
+            )
 
         # ── Phase C (S4): 全局排名止盈 Top1（跨持仓统一比较） ──
         # 原因：S4 需要比较"当前所有持仓 upl 的全局排名"，
@@ -10299,10 +13253,10 @@ class PollingTrader:
                     self._log(f"[{coin}] 排名开仓前风控拦截: {risk_check['reason']}", "WARN")
                     break
 
-                current_positions = self._count_total_positions()
+                current_positions = self._count_yijing_positions()
                 if current_positions >= self.max_positions:
                     self._log(
-                        f"[{coin}] 已达最大持仓数 {self.max_positions}，"
+                        f"[{coin}] 已达易经系统最大持仓数 {self.max_positions}，"
                         f"剩余 {len(open_candidates) - open_candidates.index(candidate) - 1} 个候选跳过"
                     )
                     break
@@ -10567,6 +13521,13 @@ def main():
         default=False,
         help="全局影子冷启动模式：所有开仓/平仓/减仓BLOCKED，仅执行推理+影子日志+监控（冷启动验证必选）",
     )
+    parser.add_argument(
+        "--bdsm-budget-per-coin",
+        type=float,
+        default=None,
+        help="[小额实盘测试] BDSM 单币预算硬上限（USDT）。None=沿用 scaling_plan 默认 167U；"
+             "值如 20~30 代表首次真实环境测试阶段单币最多投 20~30U，等 10+ 笔完整样本再拆除小帽。",
+    )
     # ================================================================
     # Phase1 三开关（默认全 True → 方案 C spec 强制经过，必须经过）
     # 使用：
@@ -10684,6 +13645,8 @@ def main():
         guardian=guardian,
         use_bcrm2=not args.use_bcrm1,
         shadow_mode=args.shadow_mode,
+        # BDSM 微仓实盘测试：单币预算硬上限覆盖 scaling_plan 默认 167U
+        bdsm_budget_per_coin=args.bdsm_budget_per_coin,
         # Phase1 三开关（默认全 False → G1 红线字节等价）
         enable_cbr_cycle_log=args.enable_cbr_cycle_log,
         enable_elder_ray_c4=args.enable_elder_ray_c4,

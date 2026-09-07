@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  com.dreambuddy.data-center-scheduler — 持续采集调度器 launchd 托管
+  com.dreambuddy.dc-scheduler — 持续采集调度器 launchd 托管
 
   安装：
-    cp com.dreambuddy.data-center-scheduler.plist ~/Library/LaunchAgents/
-    launchctl load ~/Library/LaunchAgents/com.dreambuddy.data-center-scheduler.plist
+    cp com.dreambuddy.data-center-scheduler.plist ~/Library/LaunchAgents/com.dreambuddy.dc-scheduler.plist
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.dreambuddy.dc-scheduler.plist
 
   卸载：
-    launchctl unload ~/Library/LaunchAgents/com.dreambuddy.data-center-scheduler.plist
+    launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.dreambuddy.dc-scheduler.plist
 
   查看状态：
-    launchctl list | grep dreambuddy
+    launchctl list | grep dc-scheduler
     tail -f 18-数据获取中心/logs/scheduler.log
 -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.dreambuddy.data-center-scheduler</string>
+    <string>com.dreambuddy.dc-scheduler</string>
 
     <key>ProgramArguments</key>
     <array>
@@ -33,15 +33,6 @@
 
     <key>KeepAlive</key>
     <true/>
-
-    <key>LimitLoadToSessionType</key>
-    <array><string>Aqua</string><string>Background</string></array>
-
-    <key>ThrottleInterval</key>
-    <integer>30</integer>
-
-    <key>ExitTimeOut</key>
-    <integer>25</integer>
 
     <key>StandardOutPath</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/logs/scheduler.log</string>

@@ -8,7 +8,7 @@ echo "启动易经推理轮询交易器..."
 echo "配置: 15币种(含美股/贵金属) | 1小时间隔 | 做多置信度0.55 | 做空置信度0.70 | 最大持仓10 | BCRM 2.0 (辩证ML引擎) | 逐仓模式(独立保证金) | 易经专属离场层"
 echo "日志: logs/trading_stdout.log"
 
-nohup env FEISHU_APP_ID="cli_aa9442bde4b89be9" FEISHU_APP_SECRET="dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70" /opt/anaconda3/bin/python3 -m scripts.memory_l4.polling_trader \
+nohup env FEISHU_APP_ID="cli_aa9442bde4b89be9" FEISHU_APP_SECRET="dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70" ODAILY_ENGINE_BOOST=1 FUND_7ENGINES_BOOST=1 /opt/anaconda3/bin/python3 -m scripts.memory_l4.polling_trader \
     --interval 3600 \
     --coins UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB \
     --confidence 0.55 \

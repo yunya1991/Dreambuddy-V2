@@ -114,9 +114,9 @@ def test_default_tasks_config(tmp_path):
         dc=dc, sink=sink, quality=QualityChecker(),
         tasks=CollectionScheduler.default_tasks(),
     )
-    # 默认应有任务覆盖 macro/finance/chain/news 四类
+    # 默认应有任务覆盖 macro/finance/chain/news/coin 五类（🆕 Phase A4 新增 coin）
     cats = {t.category for t in sched.tasks}
-    assert cats == {"macro", "finance", "chain", "news"}
+    assert cats == {"macro", "finance", "chain", "news", "coin"}
     # 链上频率最高（≤ 5min），宏观最低（≥ 1h）
     chain_task = next(t for t in sched.tasks if t.category == "chain")
     macro_task = next(t for t in sched.tasks if t.category == "macro")

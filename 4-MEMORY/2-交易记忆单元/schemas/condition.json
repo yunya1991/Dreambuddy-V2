@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "condition.schema.json",
+  "title": "L2 Strategy CONDITION Gene Schema (MVP §3.2.2)",
+  "type": "object",
+  "required": ["gene_id", "category", "condition_type", "expression", "parameters", "code_ref", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "gene_id": {
+      "type": "string",
+      "pattern": "^CD-[A-Z0-9_-]{3,64}$",
+      "description": "全局唯一 condition 基因 ID，前缀 CD-，大写字母数字下划线，长度 3-64。可追溯唯一。"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["trend", "reversal", "range", "momentum", "volatility", "liquidity", "sentiment", "correlation", "scale_bucket", "macroeconomics"],
+      "description": "10 大标准类别（用于倒排索引 TR-SG-10）"
+    },
+    "condition_type": {
+      "type": "string",
+      "enum": ["indicator", "combination", "market_state", "fundamental_sentiment", "scale_class", "liquidity_window", "event_driven"],
+      "description": "MVP §3.2.2 条件基因 7 类 enum"
+    },
+    "expression": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "人类可读条件表达式（如 ma_200 > fib_0786），支持占位符 {参数名}"
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value", "range"],
+        "description": "每个参数的 Schluter gmax 扰动轴预留：value 是默认值，range 是 gmax 可变异范围",
+        "properties": {
+          "value": {"type": ["number", "string", "boolean", "integer"]},
+          "range": {
+            "type": "object",
+            "required": ["low", "high"],
+            "properties": {
+              "low":  {"type": ["number", "integer", "string"]},
+              "high": {"type": ["number", "integer", "string"]}
+            },
+            "allOf": [
+              { "$comment": "TR-SG-09 断言 low <= high（数值或字典序都成立，低 < 高）" }
+            ]
+          }
+        }
+      }
+    },
+    "inverted": {"type": "boolean", "default": false, "description": "True = 反条件（表达式取反）"},
+    "weight":   {"type": "number", "minimum": 0.0, "maximum": 1.0, "default": 1.0, "description": "条件投票权重"},
+    "code_ref": {
+      "type": "object",
+      "required": ["file", "lines"],
+      "description": "gene_id 来源代码文件引用（TDD TR-SG-02 100%覆盖）",
+      "properties": {
+        "file": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_\\-\\u4e00-\\u9fa5./\\\\]+$",
+          "minLength": 5,
+          "description": "相对项目根的文件路径（中文目录名允许；禁止注入字符 <>\"'&;）"
+        },
+        "lines": {
+          "type": "object",
+          "required": ["low", "high"],
+          "properties": {
+            "low":  {"type": "integer", "minimum": 1, "maximum": 100000},
+            "high": {"type": "integer", "minimum": 1, "maximum": 100000}
+          }
+        }
+      }
+    },
+    "tags":    {"type": "array", "items": {"type": "string", "maxLength": 32}, "default": []},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"},
+    "notes":   {"type": "string", "maxLength": 2048}
+  }
+}

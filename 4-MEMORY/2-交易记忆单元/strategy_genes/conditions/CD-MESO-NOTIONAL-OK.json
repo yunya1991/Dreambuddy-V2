@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-MESO-NOTIONAL-OK",
+  "category": "scale_bucket",
+  "condition_type": "scale_class",
+  "expression": "notional_in_meso_cap_bucket_and_vol_compatible",
+  "parameters": {
+    "vol_baseline_days": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 90
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "13-通用风控模块/rules/gate_rules.py",
+    "lines": {
+      "low": 68,
+      "high": 129
+    }
+  },
+  "tags": [
+    "scale_bucket",
+    "scale_class",
+    "MESO-NOTIONAL-OK"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #24 MVP seed (auto-gen reproducible)."
+}

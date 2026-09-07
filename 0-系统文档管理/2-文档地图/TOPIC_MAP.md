@@ -1,6 +1,6 @@
 # 主题索引 — TOPIC_MAP
 
-> **版本**: v2.0 | **更新日期**: 2026-07-31
+> **版本**: v2.1 | **更新日期**: 2026-09-07
 > **定位**: 按主题组织的跨系统文档索引（对齐 SSoT v3.0）
 > **关联**: [SYSTEM_MAP.md](./SYSTEM_MAP.md) · [ARCHITECTURE_MAP.md](./ARCHITECTURE_MAP.md)
 
@@ -88,6 +88,8 @@
 | 回测验证框架 | [16-调控系统/docs/ENGINEERING_INDEX.md](../../16-调控系统/docs/ENGINEERING_INDEX.md) | `core/backtest_framework.py` |
 | L4 记忆管道 | [11-易经推理系统/docs/API_SPEC.md](../../11-易经推理系统/docs/API_SPEC.md) | `scripts/memory_l4/pipeline.py` |
 | 自进化引擎 | [11-易经推理系统/docs/API_SPEC.md](../../11-易经推理系统/docs/API_SPEC.md) | `scripts/memory_l4/self_evolution_engine.py` |
+| 四层闭环自进化（紧耦合） | [四层闭环进化架构-最小阻力路径总览.md](../../2-KNOWLEDGE/1-TRADING/四层闭环进化架构-最小阻力路径总览.md) | `23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py` |
+| 系统级交易索引库 | [四层闭环进化架构-最小阻力路径总览.md](../../2-KNOWLEDGE/1-TRADING/四层闭环进化架构-最小阻力路径总览.md) §1.13.7 | `23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_index_builder.py` |
 
 ---
 

@@ -46,6 +46,8 @@ export HTTP_PROXY="http://127.0.0.1:7890"
 export FEISHU_APP_ID="cli_aa9442bde4b89be9"
 export FEISHU_APP_SECRET="dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70"
 export PYTHONUNBUFFERED=1
+export ODAILY_ENGINE_BOOST=1  # Spec §5.3 H8: 7日shadow观察期 — boost注入+JSONL审计
+export FUND_7ENGINES_BOOST=1  # Spec §6.3: Fundamental 7引擎shadow审计 — 注入+JSONL (7门槛×1500样本)
 
 exec "$PYTHON" -u -m scripts.memory_l4.polling_trader \
   --no-guardian \

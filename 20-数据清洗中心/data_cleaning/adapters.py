@@ -119,11 +119,28 @@ def cleaned_df_to_records(
         work[asset_col] = work[asset_col].where(work[asset_col].notna(), "").astype(str)
 
     records: list[DataRecord] = []
-    assets = work[asset_col].unique() if asset_col in work.columns else [""]
-    for asset in assets:
-        grp = work[work[asset_col] == asset] if asset_col in work.columns else work
+    # 关键：按 sub_category 分组 → 每组一条 DataRecord（异质 news/macro，避免不同指标共用一个 sub_category 时丢失）
+    # 缺少 sub_category 列时 fallback 按 asset 分组（原行为）
+    if "sub_category" in work.columns:
+        # 先把 sub_category 内 NaN → ""，避免被 groupby 丢弃
+        work["sub_category"] = (
+            work["sub_category"].where(work["sub_category"].notna(), "").astype(str)
+        )
+        group_assets = list(work[["sub_category", asset_col]].drop_duplicates().itertuples(index=False, name=None))
+        group_filter = lambda sub, a: (work["sub_category"] == sub) & (work[asset_col] == a)
+    else:
+        assets = work[asset_col].unique() if asset_col in work.columns else [""]
+        group_assets = [(None, a) for a in assets]  # sub=None 作为不分组标记
+        group_filter = lambda sub, a: (work[asset_col] == a) if asset_col in work.columns else True
+
+    for sub, asset in group_assets:
+        grp = work[group_filter(sub, asset)]
+        if grp.empty:
+            continue
         grp_cols = set(grp.columns)
         grp = grp.reset_index(drop=True)
+        # 实际 sub_category（sub=None 时用上层参数；否则用 group 内值）
+        grp_sub_category = sub if sub else sub_category
 
         metrics_cols = {
             c for c in grp_cols
@@ -140,7 +157,7 @@ def cleaned_df_to_records(
                 for c in metrics_cols & set(sample.index):
                     metrics[c] = sample[c]
             records.append(DataRecord(
-                source=source, category=category, sub_category=sub_category,
+                source=source, category=category, sub_category=grp_sub_category,
                 timestamp=_first_iso(grp, timestamp_col),
                 metrics=metrics, events=events, timeseries=[], raw={},
             ))
@@ -161,7 +178,7 @@ def cleaned_df_to_records(
                     if not _is_nan(v):
                         metrics[c] = v
             records.append(DataRecord(
-                source=source, category=category, sub_category=sub_category,
+                source=source, category=category, sub_category=grp_sub_category,
                 timestamp=_first_iso(grp, timestamp_col),
                 metrics=metrics, events=[], timeseries=timeseries, raw={},
             ))
@@ -178,7 +195,7 @@ def cleaned_df_to_records(
                     else:
                         metrics[c] = str(v)
                 records.append(DataRecord(
-                    source=source, category=category, sub_category=sub_category,
+                    source=source, category=category, sub_category=grp_sub_category,
                     timestamp=_to_iso_str(row[timestamp_col]) if timestamp_col in grp_cols
                     else datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                     metrics=metrics, events=[], timeseries=[], raw={},

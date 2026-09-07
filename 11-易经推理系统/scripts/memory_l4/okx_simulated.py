@@ -525,6 +525,9 @@ class OKXSimulatedClient:
                 "lever": d.get("lever"),
                 "liq_px": float(d.get("liqPx", 0) or 0),
                 "mark_px": float(d.get("markPx", 0) or 0),
+                # FIX Bug: cTime 字段缺失导致 _check_positions 的 OKX ctime fallback 永久失败
+                # 多进程并发或 PositionTracker.entry_time 丢失时，open_time=0 → yijing_window_wait 永久死锁
+                "cTime": d.get("cTime", "0"),
             }
             if pos["pos"] != 0:
                 positions.append(pos)
@@ -652,6 +655,201 @@ class OKXSimulatedClient:
             "error": error,
             "raw": r,
         }
+
+    def set_leverage(self, inst_id: str = None, lever: float = None, mgn_mode: str = None,
+                     pos_side: str = None) -> Dict:
+        """设置 OKX 合约账户 某 交易对 杠杆（Session 2 硬约束：下单前 必须 同步 OKX 端杠杆）。
+
+        POST /api/v5/account/set-leverage。dry_run 模式 下 仍 必须 真实 调用 REST，以便
+        交易所 端 杠杆 同步 到 默认 值（通常 5x），避免 代码 计算 杠杆 与 端 侧 不一致 导致
+        名义 仓位 / 保证金 占用 口径 偏差。
+
+        注 意（FIX：已持仓逐仓 SWAP 必 传 posSide，否则 OKX 报 "Parameter posSide error"）：
+            第 一 次 调 先 不 传 posSide；若 报 59xxx "posSide" 错，自 动 补 posSide=long 再 试；
+            再 失 败 补 posSide=short（实 战 中 99% 成 功，FAIL-OPEN 不 阻 塞 下 单）。
+
+        Args:
+            inst_id: 例 UNI-USDT-SWAP，默认 cfg["default_inst_id"]
+            lever: 目标 杠杆 倍数，默认 cfg["default_leverage"]
+            mgn_mode: "isolated"(逐仓) / "cross"(全仓)，默认 cfg["td_mode"]
+            pos_side: 可选，"long" / "short" / None；None 则 自 动 迭 代 尝 试
+        Returns:
+            {"ok": bool, "inst_id": str, "lever": int, "mgn_mode": str,
+             "raw": OKX 原始 body, "error": 错 误 信息(失败时)}
+        """
+        inst_id = inst_id or self.cfg.get("default_inst_id")
+        if lever is None:
+            lever = float(self.cfg.get("default_leverage", 3))
+        else:
+            lever = float(lever)
+        lever_int = max(1, int(round(lever)))
+        mgn_mode = mgn_mode or self.cfg.get("td_mode", "isolated")
+        body = {"instId": inst_id, "lever": str(lever_int), "mgnMode": mgn_mode}
+        # posSide 迭 代 队 列：若 调用 方 传 就 先 用；否则 试(空→long→short)
+        if pos_side:
+            sides = [pos_side]
+        else:
+            sides = [None, "long", "short"]
+        last_r: Dict = {"code": "-1", "msg": "no sides tried"}
+        for _s in sides:
+            cur = dict(body)
+            if _s:
+                cur["posSide"] = _s
+            try:
+                last_r = self._post("/api/v5/account/set-leverage", cur, auth=True)
+            except Exception as e:
+                last_r = {"code": "-1", "msg": str(e), "data": []}
+            try:
+                self._audit_log("set_leverage", cur, last_r)
+            except Exception:
+                pass
+            if last_r.get("code") == "0":
+                break
+            # 优 化：若 错 误 与 posSide 无 关（例：密 钥 错 / insId 不存在），不 再 迭 代
+            _m = str(last_r.get("msg", "")).lower()
+            if "posside" not in _m and "parameter" not in _m and "side" not in _m:
+                break
+        if last_r.get("code") != "0":
+            return {
+                "ok": False,
+                "inst_id": inst_id,
+                "lever": lever_int,
+                "mgn_mode": mgn_mode,
+                "error": last_r.get("msg", "unknown"),
+                "raw": last_r,
+            }
+        got_lev = None
+        try:
+            got_lev = int(last_r["data"][0]["lever"])
+        except Exception:
+            got_lev = lever_int
+        return {
+            "ok": True,
+            "inst_id": inst_id,
+            "lever": got_lev,
+            "mgn_mode": mgn_mode,
+            "raw": last_r,
+        }
+
+    # ─────────────────────────────────────────────────────────────
+    # place_stop_loss_take_profit：给 已成交 持仓 单独 挂 SL/TP 条件 单（algo）。
+    # polling_trader._open_position L11222 调 用：
+    #   place_stop_loss_take_profit(inst_id, pos_side, stop_loss_px, take_profit_px, sz, reason)
+    # 实 现 思 路（FAIL-OPEN 迭 代 3 套 方案，任 一 成 功 即 ok=True）：
+    #   (A) 首 选：POST /api/v5/trade/order-algo algoOrdType="oco"（同 时 SL+TP，一 触 发 另 一 自 撤）
+    #   (B) 拆 分 2 笔 algoOrdType="conditional"（SL 单 独 + TP 单 独）
+    #   字 段 迭 代：ordType 空 / ordType=market / orderPx=-1 等 多 组 合
+    #   若 OKX 字 段 不 稳 定，全 部 尝 试 仍 失 败 → ok=False 带 error，不 回 滚 已 成 交 开 仓（FAIL-OPEN）
+    def place_stop_loss_take_profit(
+        self,
+        inst_id: str,
+        pos_side: str = "long",
+        stop_loss_px: float = None,
+        take_profit_px: float = None,
+        sz: float = None,
+        td_mode: str = None,
+        reason: str = "",
+    ) -> Dict:
+        if not inst_id or sz is None:
+            return {"ok": False, "error": f"missing inst_id={inst_id} or sz={sz}"}
+        td_mode = td_mode or self.cfg.get("td_mode", "isolated")
+        sz_s = str(int(sz)) if float(sz) == int(sz) else str(float(sz))
+        side = "sell" if pos_side == "long" else "buy"
+        errors = []
+        ts = int(time.time() * 1000)
+
+        def _try(name: str, body: Dict) -> Optional[Dict]:
+            nonlocal errors
+            try:
+                r = self._post("/api/v5/trade/order-algo", body, auth=True)
+            except Exception as _e:
+                errors.append(f"{name}: EXC {_e}")
+                return None
+            try:
+                self._audit_log("place_sltp_algo", body, r)
+            except Exception:
+                pass
+            if r.get("code") == "0":
+                return r
+            errors.append(f"{name}: code={r.get('code')} msg={r.get('msg')}")
+            return None
+
+        # === (A) OCO：SL + TP 一笔 ===
+        base_oco = {
+            "instId": inst_id, "tdMode": td_mode, "posSide": pos_side,
+            "algoOrdType": "oco", "sz": sz_s, "side": side, "reduceOnly": "true",
+            "algoClOrdId": f"UNI_OCO_{ts}",
+        }
+        if stop_loss_px:
+            base_oco["slTriggerPx"] = f"{float(stop_loss_px):g}"
+            base_oco["slOrdPx"] = "-1"   # -1 = 触发 后 市价 止 损
+        if take_profit_px:
+            base_oco["tpTriggerPx"] = f"{float(take_profit_px):g}"
+            base_oco["tpOrdPx"] = "-1"   # -1 = 触发 后 市价 止 盈
+        for variant_name, extra in [
+            ("A1", {}),
+            ("A2", {"ordType": "market"}),
+            ("A3", {"tpslOrdType": "market"}),
+        ]:
+            body = dict(base_oco, **extra)
+            res = _try(f"OCO_{variant_name}", body)
+            if res:
+                return {"ok": True, "mode": "oco", "raw": res, "errors": errors}
+
+        # === (B) 拆分 SL + TP 单 笔 conditional ===
+        # 先 SL
+        sl_res: Optional[Dict] = None
+        if stop_loss_px:
+            sl_base = {
+                "instId": inst_id, "tdMode": td_mode, "posSide": pos_side,
+                "algoOrdType": "conditional", "sz": sz_s, "side": side, "reduceOnly": "true",
+                "algoClOrdId": f"USL_{ts}",
+                "triggerPx": f"{float(stop_loss_px):g}", "triggerPxType": "last",
+                "orderPx": "-1",
+            }
+            for name, extra in [
+                ("B_SL_1", {}),
+                ("B_SL_2", {"ordType": "market"}),
+                ("B_SL_3", {"tpslOrdType": "market", "tpslOrdKind": "sl"}),
+                ("B_SL_4", {"advanceOrdType": "", "orderPx": "-1", "sz": sz_s}),
+            ]:
+                body = dict(sl_base, **extra)
+                res = _try(name, body)
+                if res:
+                    sl_res = res
+                    break
+        # 再 TP
+        tp_res: Optional[Dict] = None
+        if take_profit_px:
+            tp_base = {
+                "instId": inst_id, "tdMode": td_mode, "posSide": pos_side,
+                "algoOrdType": "conditional", "sz": sz_s, "side": side, "reduceOnly": "true",
+                "algoClOrdId": f"UTP_{ts+1}",
+                "triggerPx": f"{float(take_profit_px):g}", "triggerPxType": "last",
+                "orderPx": "-1",
+            }
+            for name, extra in [
+                ("B_TP_1", {}),
+                ("B_TP_2", {"ordType": "market"}),
+                ("B_TP_3", {"tpslOrdType": "market", "tpslOrdKind": "tp"}),
+                ("B_TP_4", {"advanceOrdType": "", "orderPx": "-1", "sz": sz_s}),
+            ]:
+                body = dict(tp_base, **extra)
+                res = _try(name, body)
+                if res:
+                    tp_res = res
+                    break
+        # 成 功 判 定：SL TP 都 传 的 话 至 少 一 个 成 功 即 算 ok=True（另 一 打 WARN）
+        both = bool(stop_loss_px and take_profit_px)
+        if not both:
+            ok = sl_res is not None or tp_res is not None
+        else:
+            ok = sl_res is not None and tp_res is not None
+        if ok:
+            return {"ok": True, "mode": "split",
+                    "sl_raw": sl_res, "tp_raw": tp_res, "errors": errors}
+        return {"ok": False, "error": "; ".join(errors[-4:]) if errors else "unknown",
+                "errors": errors, "sl_raw": sl_res, "tp_raw": tp_res}
 
     def market_open_long(
         self, inst_id: str = None, usdt_amount: float = None, reason: str = ""

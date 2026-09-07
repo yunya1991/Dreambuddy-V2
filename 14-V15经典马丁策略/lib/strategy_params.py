@@ -61,6 +61,18 @@ def calc_daily_ema200(klines_1d: List[Dict]) -> Optional[float]:
     return _calc_ema(closes, 200)
 
 
+def calc_daily_ema128(klines_1d: List[Dict]) -> Optional[float]:
+    """FIX-A: 当MA200/EMA200历史不足（<200根）时的fallback次优最长EMA均线"""
+    closes = [float(k["c"]) for k in klines_1d if "c" in k]
+    return _calc_ema(closes, 128)
+
+
+def calc_daily_ma100(klines_1d: List[Dict]) -> Optional[float]:
+    """FIX-A: 当MA128仍不足时的二级fallback均线"""
+    closes = [float(k["c"]) for k in klines_1d if "c" in k]
+    return _calc_sma(closes, 100)
+
+
 def calc_weekly_ma200(klines_1w: List[Dict]) -> Optional[float]:
     closes = [float(k["c"]) for k in klines_1w if "c" in k]
     return _calc_sma(closes, 200)
@@ -740,6 +752,84 @@ def fetch_klines(client, inst_id: str, bar: str = "4H", limit: int = 200) -> Lis
     return []
 
 
+def _calc_fibonacci_fallback_sl(direction: str, current_price: float,
+                                  daily_closes: List[float]) -> Optional[Dict]:
+    """
+    斐波那契0.786回撤+swing low兜底SL计算。
+
+    当MA200/EMA200/MA128等均线都不可用时，基于市场结构(swing高低点)计算SL：
+    - 找到最近一个swing high和它之前的swing low（定义上升趋势段）
+    - 0.786回撤位 = swing_high - (swing_high - swing_low) × 0.786
+    - swing_low × 1.02 = 趋势翻转最后防线+2%缓冲
+    - SL = max(0.786回撤位, swing_low×1.02) for LONG
+    - SHORT镜像
+
+    返回None表示swing数据不足，交给下层vol×2.5兜底。
+    """
+    if not daily_closes or len(daily_closes) < 7:
+        return None
+
+    try:
+        from direction_gate import detect_swing_points
+    except Exception:
+        return None
+
+    swings = detect_swing_points(daily_closes, window=3)
+    if len(swings) < 2:
+        return None
+
+    _is_long = direction.upper() == "LONG"
+
+    # 找到最近的swing high和它之前最近的swing low
+    recent_high = None
+    recent_low = None
+    for s in reversed(swings):
+        if recent_high is None and s.type == "high":
+            recent_high = s
+        elif recent_low is None and s.type == "low":
+            recent_low = s
+        if recent_high and recent_low:
+            break
+
+    if not recent_high or not recent_low:
+        return None
+
+    swing_high = recent_high.price
+    swing_low = recent_low.price
+    if swing_high <= swing_low or swing_high <= 0 or swing_low <= 0:
+        return None
+
+    swing_range = swing_high - swing_low
+
+    if _is_long:
+        # LONG: SL在下方
+        fib_0786 = swing_high - swing_range * 0.786
+        swing_low_buffer = swing_low * 1.02
+        sl_price = max(fib_0786, swing_low_buffer)
+        # SL必须在当前价下方
+        if sl_price >= current_price:
+            return None
+        dist = (current_price - sl_price) / current_price
+    else:
+        # SHORT: SL在上方
+        fib_0786 = swing_low + swing_range * 0.786
+        swing_high_buffer = swing_high * 0.98
+        sl_price = min(fib_0786, swing_high_buffer)
+        # SL必须在当前价上方
+        if sl_price <= current_price:
+            return None
+        dist = (sl_price - current_price) / current_price
+
+    return {
+        "stop_loss_price": round(sl_price, 4),
+        "stop_loss_pct": round(dist * 100, 2),
+        "stop_type": "Fib0.786回撤+swing(FB)",
+        "is_triggered": False,
+        "fb_swing_high": swing_high,
+        "fb_swing_low": swing_low,
+    }
+
+
 def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
     client = _get_okx_client()
     if not client:
@@ -768,6 +858,8 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
     daily_ma200 = calc_daily_ma200(coin_daily)
     daily_ma128 = calc_daily_ma128(coin_daily)
     daily_ema200 = calc_daily_ema200(coin_daily)
+    daily_ema128 = calc_daily_ema128(coin_daily)  # FIX-A: MA200不足时fallback均线
+    daily_ma100  = calc_daily_ma100(coin_daily)   # FIX-A: 二级fallback均线
     weekly_ma200 = calc_weekly_ma200(coin_weekly)
     weekly_ema200 = calc_weekly_ema200(coin_weekly)
 
@@ -784,6 +876,59 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
                                        daily_ma200, daily_ema200,
                                        weekly_ma200, weekly_ema200,
                                        last_daily_close, last_weekly_close)
+
+    # ═════════════════════════════════════════════════════════════════
+    # FIX-A: SL均线fallback兜底（MA200历史不足时永不裸奔）
+    # 优先级: 次优均线（MA128/EMA128/MA100）→ 斐波那契0.786回撤+swing low → vol×2.5
+    # ═══════════════════════════════════════════════════════════════════
+    if stop_loss.get("stop_loss_price") is None:
+        _is_long = direction.upper() == "LONG"
+        _candidates = []  # (name, price, dist%)
+        # --- 次优均线候选（保护性：LONG在当前下方，SHORT在当前上方） ---
+        for _name, _val in [
+            ("日MA128",  daily_ma128),
+            ("日EMA128", daily_ema128),
+            ("日MA100",  daily_ma100),
+        ]:
+            if _val is None or _val <= 0:
+                continue
+            if _is_long and _val < current_price:
+                _d = (current_price - _val) / current_price
+                _candidates.append((_name, _val, _d))
+            elif (not _is_long) and _val > current_price:
+                _d = (_val - current_price) / current_price
+                _candidates.append((_name, _val, _d))
+        # --- 斐波那契0.786回撤+swing low兜底（基于市场结构，非固定百分比）---
+        _daily_closes = [float(k["c"]) for k in coin_daily if k and k.get("c")]
+        _fib_result = _calc_fibonacci_fallback_sl(direction, current_price, _daily_closes)
+        if _fib_result:
+            _candidates.append((
+                _fib_result["stop_type"].replace("(FB)", ""),
+                _fib_result["stop_loss_price"],
+                _fib_result["stop_loss_pct"] / 100,
+            ))
+            stop_loss["fb_swing_high"] = _fib_result["fb_swing_high"]
+            stop_loss["fb_swing_low"] = _fib_result["fb_swing_low"]
+        # --- vol×2.5 fallback（以current_price为基准，最后防线）---
+        _vol_mult_pct = max(coin_vol * 2.5, 0.12)  # 至少12%
+        if _is_long:
+            _sl_px = current_price * (1 - _vol_mult_pct)
+            _candidates.append(("2.5×30d波动率", _sl_px, _vol_mult_pct))
+        else:
+            _sl_px = current_price * (1 + _vol_mult_pct)
+            _candidates.append(("2.5×30d波动率", _sl_px, _vol_mult_pct))
+        # --- 选距当前最近的候选（dist最小） ---
+        if _candidates:
+            _candidates.sort(key=lambda x: x[2])
+            _fb_name, _fb_px, _fb_dist = _candidates[0]
+            stop_loss["stop_loss_price"] = round(_fb_px, 4)
+            stop_loss["stop_loss_pct"] = round(_fb_dist * 100, 2)
+            stop_loss["stop_type"] = _fb_name + "(FB)"
+            stop_loss["is_triggered"] = False  # fallback型SL：绝对价跌破触发，不等收盘
+            # 把fallback依据也保存，便于日志审计
+            stop_loss["fb_daily_ma128"] = daily_ma128
+            stop_loss["fb_daily_ema128"] = daily_ema128
+            stop_loss["fb_daily_ma100"] = daily_ma100
 
     # 三屏趋势过滤
     trend_filter = check_trend_filter(current_price, coin_daily, coin_weekly)

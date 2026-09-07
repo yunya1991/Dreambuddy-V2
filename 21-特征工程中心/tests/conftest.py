@@ -1,32 +1,58 @@
-"""conftest.py — 21-特征工程中心 测试路径配置"""
+"""21-特征工程中心 tests conftest.py — 为 test_resistance_features.py 提供 monkeypatch fixtures（fake_alerts / fake_sentiment_0）
+与 4-MEMORY/tests/conftest.py 平行（pytest conftest 目录隔离规则）"""
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_21_ROOT = Path(__file__).resolve().parents[1]
+import pytest
 
-for p in [str(_21_ROOT), str(_21_ROOT / "feature_hub")]:
-    if p not in sys.path:
-        sys.path.insert(0, p)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-# 19号（dreambuddy_dal 供 GoldReader 读取）
-_DAL_19 = _PROJECT_ROOT / "19-数据访问层"
-if str(_DAL_19) not in sys.path:
-    sys.path.insert(0, str(_DAL_19))
 
-# 18号（data_center 供 GoldReader 获取 OHLCV）
-_DATA_18 = _PROJECT_ROOT / "18-数据获取中心"
-if str(_DATA_18) not in sys.path:
-    sys.path.insert(0, str(_DATA_18))
+@pytest.fixture
+def fake_alerts(monkeypatch):
+    """monkeypatch dreambuddy_core.alert_bridge.send_alert → FakeAlert 计数（TR-RV-08 5min3次触发≥1）"""
+    class FakeAlert:
+        counts: dict[str, int] = {"warn": 0, "critical": 0, "error": 0, "info": 0}
+        last_messages: list[str] = []
 
-# 10号（供 T31 测试 Bot2StrategyTrend 策略一致性）
-_CLASSIC_10 = _PROJECT_ROOT / "10-经典指标系统"
-if str(_CLASSIC_10) not in sys.path:
-    sys.path.insert(0, str(_CLASSIC_10))
+        @classmethod
+        def send(cls, level: str, message: str, **_kwargs):
+            level_key = str(level).lower() if isinstance(level, str) else "warn"
+            if level_key not in cls.counts:
+                cls.counts[level_key] = 0
+            cls.counts[level_key] += 1
+            cls.last_messages.append(str(message)[:160])
 
-# 11号（供 T32 测试 易经 BTC / BCRM2 bagua+cycle 一致性）
-_YIJING_11 = _PROJECT_ROOT / "11-易经推理系统"
-_YIJING_11_BCRM2 = _PROJECT_ROOT / "11-易经推理系统" / "scripts" / "memory_l4"
-for p in (str(_YIJING_11), str(_YIJING_11_BCRM2)):
-    if p not in sys.path:
-        sys.path.insert(0, p)
+    try:
+        from dreambuddy_core import alert_bridge as ab
+        monkeypatch.setattr(ab, "send_alert", FakeAlert.send, raising=False)
+    except Exception:  # pragma: no cover — 如模块缺失（未来 refactor），Fixture 仍返回 FakeAlert 计数对象
+        pass
+    return FakeAlert
+
+
+@pytest.fixture
+def fake_sentiment_0(monkeypatch):
+    """模拟 SentimentEngine USE_FINBERT=0 → FO-1：quality_score -0.15pp（TR-RV-06）
+    通过 monkeypatch resistance_features._SENTIMENT_FO1_ACTIVE = True（resistance_features 每次 calculate 会读这个全局变量）。"""
+    try:
+        # 先注入 feature_hub 到 sys.path（否则 import resistance_features 找不到）
+        hub = REPO_ROOT / "21-特征工程中心" / "feature_hub"
+        if str(hub) not in sys.path:
+            sys.path.insert(0, str(hub))
+        import resistance_features as rf_mod  # noqa: E402
+        monkeypatch.setattr(rf_mod, "_SENTIMENT_FO1_ACTIVE", True, raising=False)
+    except Exception:
+        pass
+
+    class _FakeEngine:
+        USE_FINBERT: int = 0
+
+        def get_sentiment(self, *a, **kw) -> float:
+            return 0.5  # L1 55:45 中性
+
+    return _FakeEngine()

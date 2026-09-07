@@ -69,7 +69,7 @@ except ImportError:
 # ── 交易标的池（实验允许范围） ───────────────────────────────────────────────
 UNIVERSE = ["BTC", "ETH", "HYPE", "UNI", "SOL", "ZEC", "LIT", "ARB", "XRP", "WLD", "NEAR", "SUI", "LDO", "ADA", "ZRO", "ENA", "ETHFI", "JUP", "JTO", "SYRUP"]
 MAX_LEVERAGE = 5
-DEFAULT_LEVERAGE = 3
+DEFAULT_LEVERAGE = 5
 
 
 def _now_ms() -> int:

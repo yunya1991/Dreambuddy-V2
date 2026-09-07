@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "combination.schema.json",
+  "title": "L2 StrategyCombination Schema (MVP §3.2.4)",
+  "type": "object",
+  "required": ["combo_id", "condition_ids", "action_ids", "meta", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "combo_id": {
+      "type": "string",
+      "pattern": "^CB-[A-Z0-9_-]{3,64}$",
+      "description": "组合全局唯一 ID（前缀 CB-）"
+    },
+    "condition_ids": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^CD-[A-Z0-9_-]{3,64}$"},
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true
+    },
+    "action_ids": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^AC-[A-Z0-9_-]{3,64}$"},
+      "minItems": 1,
+      "maxItems": 4,
+      "uniqueItems": true
+    },
+    "condition_logic": {
+      "type": "string",
+      "enum": ["all", "any", "majority", "weighted"],
+      "default": "all",
+      "description": "多条件逻辑：全满足/任一满足/多数满足/加权满足（权重condition.weight）"
+    },
+    "ess": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "ESS 适应度（4:4:2公式），≥1.0 clamp到1.0（TR-SG-05边界断言）"
+    },
+    "n_samples": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "ESS 计算样本数 N（用于 γ·√(N/500) 小样本惩罚项 TR-SG-06）"
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": {"type": ["number", "string", "boolean", "integer", "array"]},
+      "default": {}
+    },
+    "meta": {
+      "type": "object",
+      "required": ["strategy_type", "author", "created_at"],
+      "properties": {
+        "strategy_type": {
+          "type": "string",
+          "enum": ["trend_follow", "mean_reversion", "breakout", "scalp", "momentum", "macro_rotation", "event_arbitrage"]
+        },
+        "source_backtest_id": {"type": "string", "pattern": "^[A-Z0-9_-]{8,64}$"},
+        "author": {"type": "string", "minLength": 1},
+        "created_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "tags":    {"type": "array", "items": {"type": "string", "maxLength": 32}, "default": []},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"},
+    "notes":   {"type": "string", "maxLength": 2048}
+  }
+}

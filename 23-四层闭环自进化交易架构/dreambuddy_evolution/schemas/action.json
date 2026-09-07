@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "action.schema.json",
+  "title": "L2 Strategy ACTION Gene Schema (MVP §3.2.3)",
+  "type": "object",
+  "required": ["gene_id", "category", "action_kind", "direction", "sl_template", "tp_template", "size_pct", "parameters", "code_ref", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "gene_id": {
+      "type": "string",
+      "pattern": "^AC-[A-Z0-9_-]{3,64}$",
+      "description": "全局唯一 action 基因ID（前缀 AC-）"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["entry_long", "entry_short", "exit_profit", "exit_stop", "reduce", "risk_rebalance", "alert_only"],
+      "description": "7 大动作类别（SL/TP下限保护：MVP Spec §3.6）"
+    },
+    "action_kind": {
+      "type": "string",
+      "enum": ["open", "close", "reduce", "risk_rebalance", "alert_only"]
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["long", "short", "both", "neutral"]
+    },
+    "sl_template": {
+      "type": "number",
+      "minimum": 0.005,
+      "maximum": 0.20,
+      "description": "MVP SL下限 0.5%（对齐项目风控硬约束），上限20%防错"
+    },
+    "tp_template": {
+      "type": "number",
+      "minimum": 0.010,
+      "maximum": 0.50,
+      "description": "MVP TP下限 1%（对齐项目风控硬约束）"
+    },
+    "size_pct": {
+      "type": "number",
+      "minimum": 0.05,
+      "maximum": 1.0,
+      "description": "仓位比例（5%~100%），MVP 默认档 1/4 1/2 全仓 3档"
+    },
+    "rr_ratio_floor": {
+      "type": "number",
+      "minimum": 1.0,
+      "default": 1.2,
+      "description": "风险回报比下限（TP/SL ≥ 1.2 默认），小于则自动过滤"
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value", "range"],
+        "properties": {
+          "value": {"type": ["number", "string", "boolean", "integer"]},
+          "range": {
+            "type": "object",
+            "required": ["low", "high"],
+            "properties": {
+              "low":  {"type": ["number", "integer", "string"]},
+              "high": {"type": ["number", "integer", "string"]}
+            }
+          }
+        }
+      }
+    },
+    "code_ref": {
+      "type": "object",
+      "required": ["file", "lines"],
+      "properties": {
+        "file": {"type": "string", "pattern": "^[A-Za-z0-9_\\-\\u4e00-\\u9fa5./\\\\]+$", "minLength": 5},
+        "lines": {"type": "object", "required": ["low", "high"],
+                  "properties": {"low": {"type": "integer", "minimum": 1},
+                                 "high": {"type": "integer", "minimum": 1}}}
+      }
+    },
+    "tags":    {"type": "array", "items": {"type": "string", "maxLength": 32}, "default": []},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"},
+    "notes":   {"type": "string", "maxLength": 2048}
+  }
+}

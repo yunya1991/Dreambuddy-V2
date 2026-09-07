@@ -340,6 +340,14 @@ def handle_jsonrpc(request: Dict[str, Any]) -> Dict[str, Any]:
     if method == "tools/call":
         tool_name = params.get("name", "")
         tool_args = params.get("arguments", {})
+        # 部分MCP客户端将arguments序列化为JSON字符串而非嵌套对象，需统一解析为dict
+        if isinstance(tool_args, str):
+            try:
+                tool_args = json.loads(tool_args)
+            except json.JSONDecodeError:
+                tool_args = {}
+        if not isinstance(tool_args, dict):
+            tool_args = {}
 
         if tool_name not in TOOL_NAMES:
             return {

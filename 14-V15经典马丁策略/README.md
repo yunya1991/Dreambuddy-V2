@@ -1,6 +1,8 @@
 # V15 经典马丁策略
 
 > 基于斐波那契回调 + 布林带均值回归 + RSI/MACD/ADX 的纯技术分析马丁格尔交易策略
+>
+> **文档对齐**: 2026-09-03 按 `core/v15_trader.py` 实际代码对齐，修正 6 处过时值：① 加仓次数 3→4（共5单）② 币种池 34→22（含美股/贵金属合约）③ 并发持仓 4→3 ④ 轮询间隔 3600→300/900 ⑤ 参数表标注代码行号 ⑥ V15-CT 币种池同步
 
 ## 目录
 
@@ -27,15 +29,15 @@ V15 经典马丁策略是一个**只做多**的马丁格尔交易策略，核心
 - **方向判断优先**：通过4条均线系统判断价格位置，只在多头排列时入场
 - **斐波那契回调入场**：在趋势中等待回调至黄金区间（38.2%-61.8%）再进场
 - **布林带均值回归**：震荡区利用布林带上下轨做均值回归
-- **马丁加仓**：入场后若继续下跌，按递增间距分批加仓（最多3次）
+- **马丁加仓**：入场后若继续下跌，按递增间距分批加仓（最多4次）
 - **波动率自适应**：所有参数根据30天波动率动态调整
 
 **交易周期**：4H
-**最大加仓**：3次（共4层仓位）
+**最大加仓**：4次（共5单，代码 `MAX_ADDONS_PER_POSITION=4`）
 **交易方向**：只做多
 **入场决策**：16层入场体系（满足任一指标条件即可开仓）
 **技术指标**：16项
-**监控币种**：34个 — BTC, ETH, SOL, BNB, XRP, ADA, DOGE, LTC, LINK, AVAX, DOT, UNI, NEAR, APT, ARB, OP, INJ, SUI, SEI, TIA, AAVE, COMP, CRV, DYDX, LDO, PEPE, SAND, SHIB, STX, SUSHI, WLD, ZEC, OKB, HYPE
+**监控币种**：22个（继承 .env.common V15_COINS，含美股/贵金属合约）— BTC, ETH, SOL, BNB, OKB, UNI, HYPE, PUMP, MU, SKHYNIX, GOOGL, NVDA, AMZN, SNDK, SPCX, LINK, XAU, XAG, CRCL, COIN, BMNR, MSTR
 
 ---
 
@@ -540,7 +542,7 @@ V15独立系统最多同时持有 4 个币种的仓位（贝叶斯优化可调�
 | TOTAL_BUDGET | 260 | 总资金（USDT），V15-CT覆盖为100 |
 | LEVERAGE | 5.0 | 杠杆倍数（固定5x，不参与优化） |
 | MIN_MARGIN_USD | 10 | 最小保证金（美元），V15-CT覆盖为20 |
-| MAX_ADDONS_PER_POSITION | 3 | 每仓最大加仓次数 |
+| MAX_ADDONS_PER_POSITION | 4 | 每仓最大加仓次数（4档=总5单，代码 L204） |
 | ADDON_PCT | 0.08 | 加仓比例基准（8%） |
 | BASE_POSITION_PCT | 0.05 | 底仓比例（5%），V15-CT覆盖为0.22 |
 | MAX_POSITION_PCT | 0.25 | 单仓最大占比（25%），V15-CT覆盖为0.60 |
@@ -553,10 +555,10 @@ V15独立系统最多同时持有 4 个币种的仓位（贝叶斯优化可调�
 | STRATEGY_ID | v15 | 策略标识 |
 | V15_MODE | auto | 运行模式 |
 | V15_AUTO_EXECUTE | true | 是否自动执行交易 |
-| V15_COINS | BTC,ETH,SOL,... | 监控币种列表（34个） |
-| MAX_CONCURRENT_POSITIONS | 4 | 最大并发持仓数（V15-CT覆盖为6） |
+| V15_COINS | BTC,ETH,SOL,... | 监控币种列表（22个，继承 .env.common） |
+| MAX_CONCURRENT_POSITIONS | 3 | 最大并发持仓数（代码 L208，V15-CT覆盖为6） |
 | V15_TAKE_PROFIT_PCT | 0.04 | 基础止盈比例（4%） |
-| V15_POLL_INTERVAL | 3600 | 轮询间隔（秒） |
+| V15_POLL_INTERVAL | 300 | light_poll 轮询间隔（秒，orchestrator 为 900） |
 | V15_DAILY_LOSS_LIMIT | -50 | 日亏损限制（USDT） |
 | V15_MAX_CONSECUTIVE_LOSSES | 5 | 最大连续亏损次数（代码在3次时触发资金管理引擎） |
 | V15_LOG_LEVEL | INFO | 日志级别 |
@@ -594,7 +596,7 @@ V15-CT 版本在 `experiments/ab-trading/` 目录下运行，配置前缀为 `V1
 | MIN_MARGIN_USD | 20 | 最小保证金（美元） |
 | TREND_FILTER_MODE | both_bear | 三屏趋势过滤（周线+日线都看空时禁止做多） |
 | TREND_FILTER_PERIOD | 107 | 趋势过滤均线周期（约5个月均线） |
-| V15CT_COINS | BTC,ETH,SOL,... | 监控币种列表（34个） |
+| V15CT_COINS | BTC,ETH,SOL,... | 监控币种列表（22个，同 V15_COINS） |
 | V15CT_VOL_MULT | 1.875 | 波动率倍数 |
 | V15CT_MIN_VOL_MULT | 0.3 | 最小波动率倍数 |
 | V15CT_MAX_VOL_MULT | 4.0 | 最大波动率倍数 |

@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-BTC-ETH-CORR-030",
+  "category": "correlation",
+  "condition_type": "combination",
+  "expression": "btc_eth_rolling_corr < 0.30_rotation_start",
+  "parameters": {
+    "strength_threshold": {
+      "value": 0.7,
+      "range": {
+        "low": 0.3,
+        "high": 0.98
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "15-监控告警系统/scheduler.py",
+    "lines": {
+      "low": 35,
+      "high": 35
+    }
+  },
+  "tags": [
+    "correlation",
+    "combination",
+    "BTC-ETH-CORR<030"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #23 MVP seed (auto-gen reproducible)."
+}

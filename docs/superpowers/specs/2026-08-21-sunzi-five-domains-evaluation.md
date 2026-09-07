@@ -20,14 +20,28 @@
 
 现有系统的决策链是：**前置层(L/T 评分) → 核心层(ML 方向预测) → 五角校验(风险评分) → 离场管理**。这条链缺一个"要不要打、值不值得打"的战略前置判断——当前直接从 L/T 评分跳到 ML 方向预测，跳过了"大局观"评估。
 
-孙子五维度恰好填补这个缺口。最终输出不是单一买卖信号，而是**按三类资产（加密代币 / 美股 ADR / 黄金白银）互相独立**的 6 类决策（某类不出战不阻止其他类交易，对应 §5.3「三类不出战互相独立」原则）：
+孙子五维度恰好填补这个缺口。最终输出不是单一买卖信号，而是**按三类资产（加密代币 / 美股 ADR / 黄金白银）互相独立**的 9 类决策（某类不出战不阻止其他类交易，对应 §5.3「三类不出战互相独立」原则）。
 
-- **是否允许交易**（按资产类独立判断：war_state ∈ {FREEZE, COOLDOWN} → 不允许；加密熊市不阻止美股开仓）
-- **允许哪类策略**（按资产类独立白名单：加密「地+天双差」只允许应急策略，美股可全开放）
-- **允许多大仓位**（按资产类独立四档映射：加密总分 78 → 80% 仓位 cap；美股总分 48 → 20% cap，互不影响）
-- **是否必须止损**（按资产类强制闸门：法<40 纪律崩溃 → 仅该类立即强平，不波及其他类）
-- **是否需要降仓**（按资产类强制乘数：道<40 → 该类所有持仓压到 ≤30%；其他类不降仓）
-- **是否需要空仓等待**（与「是否允许交易」同属 war_state 载体，额外带 5 分滞回冷却防抖动）
+#### 庙算九问框架
+
+九问分为两层：**战略推演三问**（因——判断值不值得打）+ **操作执行六问**（果——执行决策）。
+
+**战略推演三问**（传统金融 SAA 层对应）：
+
+- **① 市场形态**：当前处于什么周期阶段？（道=大周期位置 4y 锚点 + 地=后置层 regime 5 态 + 天=美林时钟四阶段 → 判断牛市/熊市/震荡市生命周期）
+- **② 多空方向**：宏观偏多还是偏空？（道=政策/资金方向一致性：道>60 偏多，<40 偏空；地=价格结构位置辅助确认）
+- **③ 出手胜率**：现在出手值得吗？（庙算总分四档：≥75 高胜率可进攻 / 60-74 中等可防御 / 50-59 轻仓防守 / <50 不出手 + 将=历史执行质量校准）
+
+**操作执行六问**（原有六问，仓位管理提升为显式第⑥问）：
+
+- **④ 是否允许交易**（按资产类独立判断：war_state ∈ {FREEZE, COOLDOWN} → 不允许；加密熊市不阻止美股开仓）
+- **⑤ 允许哪类策略**（按资产类独立白名单：加密「地+天双差」只允许应急策略，美股可全开放）
+- **⑥ 仓位管理**：允许多大仓位？（按资产类独立四档映射：加密总分 78 → 80% 仓位 cap；美股总分 48 → 20% cap，互不影响。最终仓位 = cap × position_mult(维度否决) × cross_asset_multiplier(跨类约束)）
+- **⑦ 是否必须止损**（按资产类强制闸门：法<40 纪律崩溃 → 仅该类立即强平，不波及其他类）
+- **⑧ 是否需要降仓**（按资产类强制乘数：道<40 → 该类所有持仓压到 ≤30%；其他类不降仓）
+- **⑨ 是否需要空仓等待**（与「是否允许交易」同属 war_state 载体，额外带 5 分滞回冷却防抖动）
+
+> 九问全部从五维评分输出派生，不新增计算逻辑。三问推演是"因"（市场形态+方向+胜率→判断值不值得打），六问操作是"果"（允许/策略/仓位/止损/降仓/空仓→执行决策）。
 
 **"胜负在交易之前就已经决定了，系统做的只是执行预先计算好的最优决策。"**
 
@@ -1007,6 +1021,8 @@ class ExitContext:
 | 法 < 40 | 不开新仓 |
 | 地 < 40 且 天 < 40 | 只允许对冲或空仓 |
 
+> **九问第⑥问映射**：仓位管理（第⑥问）显式映射到上表四档 cap + 维度否决 position_mult + 跨类约束 cross_asset_multiplier。最终仓位 = cap × position_mult × cross_asset_multiplier。详见 §一庙算九问框架。
+
 ### 5.3 风控独立否决层
 
 风控不应散落在各个维度中，应抽离为**独立模块**，作为所有策略的"否决权"层——**"先为不可胜，以待敌之可胜"**。
@@ -1201,7 +1217,8 @@ class ExitContext:
 | 层级 | 运行周期（推荐） | 核心职责（只做这几件事） | 输入依赖 | 输出物 | 战略层/五计的边界关系 | 关断/异常降级 |
 |---|---|---|---|---|---|---|
 | **前置层**（MorphCyclePredictor + ParameterMapper） | 热路径每 5min 轮询；内部 4y / 120d 周期每**日**重算锚点；forecast 每 5min 重推 | **只做参数优化，不做是否开战判断**。大小周期形态分析 → L/T 评分 → 6 全局参数 + 5 板块权重 → α blend 注入核心层 | 1–5 年日线（BTC/代理币）、FMA 16 锚点、yfinance 板块行情、预测修正三轨（大调/小调/边界） | `forecast_L / forecast_T`、`L_effective / T_effective`（经 α blend）、板块权重向量 | **不向战略层输出开战/不开战信号**。战略层可选读前置层的 `regime_summary`（120d 小周期位置）作为"地"维度的**一个子因子**，但战略层的"不出战"判断独立于前置层。战略层可 veto 预测参数注入（强制 α=0 走 reactive 基线）。 | `enable_inject_runtime=false`、`_alpha_blend=0.0`、或 MorphCyclePredictor 抛异常 → ParameterMapper 直接输出 `reactive_L / reactive_T`，系统**字节等价于融合前**。Fail-open。 |
-| **战略层**（五计庙算引擎，新增） | **推荐日级一次**粗评分（每小时可选轻刷新）；「道」维度**周级离线**批量打分不进热路径；「不出战冷却 + 滞回」每轮轮询（5min）检查计数器状态 | **大局观六问**（§一、L19-L26）：① 是否允许交易 / ② 允许哪类策略 / ③ 仓位总 cap / ④ 是否必须止损 / ⑤ 是否需要降仓 / ⑥ 是否需空仓等待。+ 跨类相关性约束（三类资产同时低分 × 0.5、两类 × 0.8）。 | 道（离线周缓存：政策/资金）、天（日历+美林时钟+波动率周期）、地（后置层 `regime` 代理 + MA 结构）、将（audit_score 系统行为审计）、法（策略库生命周期状态） | `five_scores: {dao,tian,di,jiang,fa}`、`war_state`（正常/冷却/冻结）、`aggregate_position_cap_pct`、`allowed_style_mask`（哪些策略族可开）、`cross_asset_multiplier`（三类资产约束） | **是前置层的绝对上游闸门**：战略层「不出战」→ 前置层即使给出乐观参数（forecast_L 很高）也不允许开新仓。战略层**不消费**前置层的 forecast 细节（forecast_L / forecast_T 不进五计分），仅读 `regime_summary` 作为"地"的代理。**避免与前置层争夺"周期话语权"**——战略层只在更高的时间粒度上判断"本季度/本月/本周的整体时间节奏"，不去判断"当前处于哪个形态波峰"。 | `enable_five_domain=false` 关闭战略层整体 → `war_state` 永远允许、`aggregate_position_cap_pct` 不额外收紧（=100%）、`allowed_style_mask` 全开放、`cross_asset_multiplier`=1.0。所有约束从决策链中移除。Fail-open。 |
+| **战略层**（五计庙算引擎，新增） | **推荐日级一次**粗评分（每小时可选轻刷新）；「道」维度**周级离线**批量打分不进热路径；「不出战冷却 + 滞回」每轮轮询（5min）检查计数器状态 | **庙算九问**（§一）：战略推演三问（①市场形态/②多空方向/③出手胜率）+ 操作执行六问（④是否允许交易/⑤哪类策略/⑥仓位管理/⑦是否止损/⑧是否降仓/⑨是否空仓等待）。+ 跨类相关性约束（三类资产同时低分 × 0.5、两类 × 0.8）。 | 道（离线周缓存：政策/资金）、天（日历+美林时钟+波动率周期+FinBERT/Odaily情绪4h聚合）、地（后置层 `regime` 代理 + MA 结构）、将（audit_score 系统行为审计）、法（策略库生命周期状态） | `five_scores: {dao,tian,di,jiang,fa}`、`war_state`（正常/冷却/冻结）、`aggregate_position_cap_pct`、`allowed_style_mask`（哪些策略族可开）、`cross_asset_multiplier`（三类资产约束） | **是前置层的绝对上游闸门**：战略层「不出战」→ 前置层即使给出乐观参数（forecast_L 很高）也不允许开新仓。战略层**不消费**前置层的 forecast 细节（forecast_L / forecast_T 不进五计分），仅读 `regime_summary` 作为"地"的代理。**避免与前置层争夺"周期话语权"**——战略层只在更高的时间粒度上判断"本季度/本月/本周的整体时间节奏"，不去判断"当前处于哪个形态波峰"。 | `enable_five_domain=false` 关闭战略层整体 → `war_state` 永远允许、`aggregate_position_cap_pct` 不额外收紧（=100%）、`allowed_style_mask` 全开放、`cross_asset_multiplier`=1.0。所有约束从决策链中移除。Fail-open。 |
+| **情绪数据源**（FinBERT + Odaily，辅助） | FinBERT 情绪引擎 300s Shadow JSONL 审计；Odaily 政策快讯 4h 调度器采集入库 SQLite | **不独立输出决策**，仅作为天维度 T1 政策情绪子项的数据源。FinBERT 300s 采集但**不直接注入日级**；Odaily 4h 采集入库。两者通过 4h 滑动窗口 + time_decay_weight(τ=24h) 加权平均聚合后，在日级刷新时注入天维度 T1。 | FinBERT analyze_text 情感分 + Odaily policy_sentiment_score | 聚合值注入天维度 T1 子项 | **是天维度的下游数据源，不独立构成决策层**。当前代码 72h 窗口 + time_decay_weight 已等价实现聚合降噪效果。 | FinBERT 不可用 → USE_FINBERT=0 回退纯规则；Odaily 无数据 → T1 仅用 FinBERT；两者均无 → T1=0 中性。Fail-open。 |
 | **策略层**（StrategySelector，新增） | 每 5min 轮询（每币一次）；但权重向量用 EMA α≈0.15 平滑（G3），避免每轮跳变 | 根据战略层五计分 + 后置层 regime → 风格权重向量（G1/G2） + SL/TP 覆盖（单调性 R3） + 风险预算 sizing（§4.12.3 #2） + RankedTp allow-gate（R4） + 离场 exit_config（§4.13.3 对照表 G6） + 3×ATR Chandelier（G7） + LiquidityTier 过滤（§4.12.3 #6）。 | `five_scores`、`enhance_result.regime`、direction/confidence（核心层）、`liquidity_tier`、EMA 上一轮权重状态 | `StrategySelection(strategy_type / style_exposures / sl_mult_override / tp_mult_override / risk_budget_pct / enable_ranked_tp_allow / exit_config / strategy_version / liquidity_tier)` | **是战略层的下游执行器，不是替代**。战略层给出 `allowed_style_mask` 和 `aggregate_position_cap_pct`，策略层只在允许范围内做细调（权重向量、exit 参数、sizing 分布）。战略层「不出战」时策略层固定输出 `emergency + position_mult=0.30 + risk_budget_pct≤0.4%`（不绕过、不放大）。 | `enable_strategy_layer=false` 关闭策略层整体 → `StrategySelection` 走默认空实现：`style_exposures={trend_follow:1.0}`, `sl/tp_mult=None`, `risk_budget_pct=1.0`, `exit_config={}`, `strategy_version="disabled"`，**字节等价于策略层改造前**。 |
 | **核心层**（BCRM 2.0 + 弹簧力场兜底） | 每 5min 轮询（每币一次） | ML 方向预测（L1 多分类 + L2 Meta-Labeling + L3 辩证裁决）+ 卦象映射 + 风险等级。完全独立于战略/策略层。 | 特征 ~200+（八卦/五力场/弹簧 MA/FMA/跨资产/V4 等）+ 前置层注入的 6 全局参数（经 α blend） | `direction / confidence / hexagram / risk_level` | **正交**。战略层/策略层不修改 BCRM 推理，只消费输出。战略层低分时通过后置层收紧 `confidence_threshold`（间接过滤），不改 BCRM 输出。 | v1.0（弹簧力场 + Classic）兜底；LightGBM 不可用时走经典路径。 |
 | **后置层**（RangingMarketEnhancer） | 每 5min 轮询（每币一次） | 市场 5 态识别 + 布林带确认 + MA200 方向偏向 + SL/TP 倍数推荐 + 置信度阈值校准 + `should_trade` 综合判断。 | `closes / ATR / regime_pred / ADX / Bollinger` + 核心层 `direction / confidence` | `enhance_result {sl_atr_mult, tp_atr_mult, recommended_long_threshold, recommended_short_threshold, should_trade, regime}` | 作为战略层「地」维度的 regime 代理（地=regime→分数映射）；策略层消费其 regime / sl_mult / tp_mult。后置层本身不改。 | 异常时不 enhance → 走默认阈值（SL=2.5×ATR, TP=5.0×ATR, confidence_threshold=0.70）。Fail-open。 |

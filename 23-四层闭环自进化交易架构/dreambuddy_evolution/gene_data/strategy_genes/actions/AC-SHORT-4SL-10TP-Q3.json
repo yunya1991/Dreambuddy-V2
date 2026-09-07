@@ -1,0 +1,47 @@
+{
+  "gene_id": "AC-SHORT-4SL-10TP-Q3",
+  "category": "entry_short",
+  "action_kind": "open",
+  "direction": "short",
+  "sl_template": 0.04,
+  "tp_template": 0.1,
+  "size_pct": 0.75,
+  "rr_ratio_floor": 2.5,
+  "parameters": {
+    "sl_atr_mult": {
+      "value": 2.0,
+      "range": {
+        "low": 1.0,
+        "high": 4.0
+      }
+    },
+    "tp_rr_ratio": {
+      "value": 2.5,
+      "range": {
+        "low": 1.0,
+        "high": 5.0
+      }
+    },
+    "max_slippage_bps": {
+      "value": 5,
+      "range": {
+        "low": 1,
+        "high": 30
+      }
+    }
+  },
+  "code_ref": {
+    "file": "18-数据获取中心/data_center/monitoring/quality.py",
+    "lines": {
+      "low": 39,
+      "high": 74
+    }
+  },
+  "tags": [
+    "entry_short",
+    "short",
+    "open"
+  ],
+  "version": "1.0",
+  "notes": "Baseline action #7 MVP seed."
+}

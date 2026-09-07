@@ -60,13 +60,19 @@ class TradeRecord:
     # Phase C (Spec §4.3.2): B 档排队止盈计划
     # {"type": "ranked_tp", "wait_cycles": 2, "trigger_rank": float, "set_at_cycle": int}
     reduce_plan: Optional[Dict] = None
-    # 轻仓试错标记 + 评估周期（v4.5 新增）
+    # 轻仓试错标记 + 评估周期（v4.5 新增；P1 改为定期重评估）
     is_trial: bool = False         # 是否轻仓试错开仓
-    trial_eval_done: bool = False  # 评估周期是否已完成
+    trial_eval_done: bool = False  # 是否已完成过首次评估（向后兼容）
     trial_open_ts: float = 0.0     # 试错开仓时间戳（秒），用于计算评估周期
+    last_trial_eval_ts: float = 0.0  # 上次试错评估时间戳（秒），用于 60min 定期重评估
     # v4.6：开仓时的过滤层共识分快照，用于基础阈值动态调节（聚合非单笔）
     score_consensus: float = 0.0   # 开仓时 ElasticGate3L 共识分 score_consensus
     gate_base_threshold: float = 0.40  # 开仓时的基础阈值快照
+    # — BDSM 2026-09 协作 · 仓位子池隔离标签 —
+    #   "bdsm"  : BDSM 权威池币种（BDSM_COINS，≤3 仓），触发 BDSM 方向/仓位/出场协作
+    #   "bcrm"  : 非 BDSM 池币种（≤5 仓），纯 BCRM 推理
+    #   ""      : 未知/外部策略来源（计数时忽略不计入两子池）
+    source_tag: str = ""
 
 
 @dataclass
@@ -105,7 +111,7 @@ class RiskState:
     position_size_pct: float = 0.10        # 默认单笔仓位 10%
     min_position_size_pct: float = 0.02
     max_position_size_pct: float = 0.20
-    min_position_usdt: float = 20.0       # 最低名义仓位价值（USDT，传给OKX的下单金额）
+    min_position_usdt: float = 250.0      # 最低名义仓位价值（USDT，传给OKX的下单金额；=50U保证金×5x杠杆）
 
 
 # ── 绩效统计器 ────────────────────────────────────────
@@ -335,7 +341,7 @@ class RiskManager:
                  default_position_pct: float = 0.10,
                  min_position_pct: float = 0.02,
                  max_position_pct: float = 0.20,
-                 min_position_usdt: float = 20.0,
+                 min_position_usdt: float = 250.0,
                  loss_limit_pct: float = 0.20):
         self.state = RiskState(
             daily_loss_limit=daily_loss_limit_usdt,
@@ -1181,7 +1187,8 @@ class PositionTracker:
                       regime_multipliers: Dict = None,
                       is_trial: bool = False,
                       score_consensus: float = 0.0,
-                      gate_base_threshold: float = 0.40) -> TradeRecord:
+                      gate_base_threshold: float = 0.40,
+                      source_tag: str = "") -> TradeRecord:
         """记录开仓"""
         trade_id = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
         rec = TradeRecord(
@@ -1207,6 +1214,7 @@ class PositionTracker:
             trial_open_ts=time.time() if is_trial else 0.0,
             score_consensus=float(score_consensus),
             gate_base_threshold=float(gate_base_threshold),
+            source_tag=source_tag,
         )
         self.open_positions[inst_id] = rec
         self._save_open_position(inst_id)
@@ -1232,7 +1240,9 @@ class PositionTracker:
         rec.exit_reason = exit_reason
 
         if pnl is None:
-            if rec.direction == "long":
+            if rec.entry_price == 0:
+                rec.pnl = 0.0
+            elif rec.direction == "long":
                 rec.pnl = (exit_price - rec.entry_price) / rec.entry_price * 100
             else:
                 rec.pnl = (rec.entry_price - exit_price) / rec.entry_price * 100

@@ -1,0 +1,47 @@
+{
+  "gene_id": "AC-LONG-TIGHT-1-5SL-RR3",
+  "category": "entry_long",
+  "action_kind": "open",
+  "direction": "long",
+  "sl_template": 0.015,
+  "tp_template": 0.045,
+  "size_pct": 0.25,
+  "rr_ratio_floor": 3.0,
+  "parameters": {
+    "sl_atr_mult": {
+      "value": 0.75,
+      "range": {
+        "low": 1.0,
+        "high": 4.0
+      }
+    },
+    "tp_rr_ratio": {
+      "value": 3.0,
+      "range": {
+        "low": 1.0,
+        "high": 5.0
+      }
+    },
+    "max_slippage_bps": {
+      "value": 5,
+      "range": {
+        "low": 1,
+        "high": 30
+      }
+    }
+  },
+  "code_ref": {
+    "file": "15-监控告警系统/scheduler.py",
+    "lines": {
+      "low": 53,
+      "high": 81
+    }
+  },
+  "tags": [
+    "entry_long",
+    "long",
+    "open"
+  ],
+  "version": "1.0",
+  "notes": "Baseline action #4 MVP seed."
+}

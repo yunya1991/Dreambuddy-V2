@@ -13,6 +13,8 @@
     {"symbol": "UNI", "name": "Uniswap", "category": "crypto", "enabled": true},
     {"symbol": "HYPE", "name": "Hyperliquid", "category": "crypto", "enabled": true},
     {"symbol": "PUMP", "name": "Pump", "category": "crypto", "enabled": true},
+    {"symbol": "ZEC", "name": "Zcash", "category": "crypto", "enabled": true},
+    {"symbol": "ARB", "name": "Arbitrum", "category": "crypto", "enabled": true},
     {"symbol": "LINK", "name": "Chainlink", "category": "crypto", "enabled": true},
     {"symbol": "XAU", "name": "Gold", "category": "metal", "enabled": true},
     {"symbol": "XAG", "name": "Silver", "category": "metal", "enabled": true},

@@ -43,6 +43,19 @@
 - 将法读取系统配置状态（RiskManager/PerformanceStats/strategy_algo_layer）
 - 公共入口：`compute(coin_data, system_state) -> Dict[str, Dict[str, int]]`
 
+### 情绪数据消费频率约束
+
+天维度 T1 政策情绪子项消费 FinBERT 情绪引擎 + Odaily 政策快讯两类数据源，遵循三层频率隔离：
+
+| 层级 | 数据源 | 采集频率 | 聚合方式 | 注入频率 |
+|---|---|---|---|---|
+| L0 采集 | FinBERT 情绪引擎 | 300s（Shadow JSONL） | 不聚合，仅审计 | 不注入（Shadow） |
+| L0 采集 | Odaily 政策快讯 | 4h 调度器 | 入库 SQLite | 不直接注入 |
+| L1 聚合 | FinBERT + Odaily | — | 4h 滑动窗口 + time_decay_weight(τ=24h) 加权平均 | 日级注入天维度 T1 |
+| L2 消费 | 天维度 T1 | — | 日级粗评分读取 L1 最新聚合值 | 日级 |
+
+> 当前代码 72h 窗口 + time_decay_weight 已等价实现聚合降噪效果，本约束是对现有代码行为的 Spec 级确认。
+
 ### 集成点
 
 修改 [polling_trader.py:1100](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L1100) `_run_once_five_domain_daily_update()`：
@@ -107,6 +120,7 @@ else:
 | 美林时钟位置 | 复苏/过热/滞胀/衰退四阶段 | [merrill_clock_features.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/merrill_clock_features.py) | ✅ 计算 |
 | 波动率周期 | VIX/ATR分位 | ATR(现有) | ✅ ATR分位计算（VIX无数据→用ATR代理） |
 | 流动性周期 | QE/QT阶段 | [merrill_clock_features.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/merrill_clock_features.py) `liquidity_credit_features()` | ✅ 计算 |
+| 政策情绪（T1） | FinBERT 情感分 + Odaily policy_sentiment | SentimentEngine + SQLite 72h 窗口 | ✅ 计算（4h 聚合 → 日级注入，详见§二情绪数据消费频率约束） |
 
 **输出**：`seasonality_score ∈ [-1, +1]`，叠加到前置层 Level 评分上（§三 L132）。
 
@@ -198,6 +212,44 @@ else:
 | 将<40 | 仓位上限≤30% |
 | 法<40 | 不开新仓 |
 | 地<40 且 天<40 | 只允许对冲或空仓 |
+
+### 策略风格掩码细粒度阈值（代码增强）
+
+仓位映射四档决策之上，`allowed_style_mask` 对 6 类策略风格做更细粒度的放行/下架控制。代码实现见 `five_domain_scorer.py:L336-363`。
+
+**三档场景判定**：
+
+| 场景 | 触发条件 | 说明 |
+|---|---|---|
+| 极差 `is_extreme_bad` | total<50 或 dao<40(否决) 或 fa<40(否决) | 除 emergency 外几乎全部下架 |
+| 防守 `is_defensive` | 50≤total<60 且非极差 | 禁趋势追涨，保留均值回归+波动率对冲 |
+| 正常 `else` | total≥60 且非极差 | 按细粒度阈值放行 |
+
+**正常档细粒度策略放行阈值**：
+
+| 策略风格 | 放行条件 | 代码行 |
+|---|---|---|
+| `trend_follow` | total≥70 且 非(地<40且天<40) | L358 |
+| `breakout` | total≥65 且 di≥60 | L359 |
+| `mean_revert` | 40≤di≤60 | L360 |
+| `momentum` | dao≥70 且 非(地<40且天<40) | L361 |
+| `volatility` | 地<40且天<40（仅对冲场景放行） | L362 |
+| `emergency` | 永远 True（R7 红线） | L338 |
+
+> **注**：文档四档决策中"进攻≥75"是概念描述，代码在正常档内用 70/65 细分 trend/breakout 放行门槛，行为等价但更精细。total=70-74 区间趋势策略已放行。
+
+### 跨类相关性乘数（代码增强）
+
+当多个资产类庙算总分同时低迷时，触发跨类相关性降仓乘数。代码实现见 `five_domain_scorer.py:L382-386`。
+
+| 条件 | 乘数 | 说明 |
+|---|---|---|
+| ≥2 类 total<60 | `cross_asset_multiplier=0.8` | 跨市场风险蔓延，三类全部降仓 20% |
+| <2 类 total<60 | `cross_asset_multiplier=1.0` | 正常 |
+
+**作用机制**：乘数写入 `state.cross_asset_multiplier[cls]`，下游消费层（polling_trader）将其叠加到最终仓位计算：`final_cap = cap × position_mult × cross_asset_multiplier`。
+
+> **注**：此规则为 Spec 原始设计之外的代码增强项，用于防范跨市场系统性风险。当前运行时三类 total 均≥60 时乘数=1.0，不影响正常场景。
 
 ---
 

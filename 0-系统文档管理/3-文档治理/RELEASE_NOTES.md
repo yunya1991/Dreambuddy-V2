@@ -1,8 +1,71 @@
 # 文档体系版本日志 — RELEASE_NOTES
 
-> **版本**: v1.5 | **更新日期**: 2026-08-24
+> **版本**: v1.6 | **更新日期**: 2026-09-07
 > **定位**: 记录 0-系统文档管理 体系本身的版本变更
 > **关联**: [INDEX.md](../INDEX.md) · [DOC_DEBT_INDEX.md](./DOC_DEBT_INDEX.md)
+
+---
+
+## [v1.6] - 2026-09-07
+
+### 新增
+
+- **变更内容**: 新增 `23-四层闭环自进化交易架构` 模块地图登记 + 文档四件套补齐 + 2026-09-06 高频进化增强（双起点触发/三层仓位/SLTP兜底/50币池/系统级交易索引库）文档同步
+- **影响范围**: 0-系统文档管理/2-文档地图 · 2-KNOWLEDGE/1-TRADING
+- **验证方式**: 代码锚点对齐 `23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py`（双起点RI+三层仓位+SL/TP兜底）+ `trade_index_builder.py`（系统级交易索引库）+ `reflection_scanner.py`（反思学习起点）+ `adapters/coin_scanner.py`（50币池+美股配额）
+- **触发原因**: 23 号模块此前未纳入文档地图体系；2026-09-06 五项高频进化增强落地后需同步文档地图与边界地图
+
+#### 2-文档地图 同步
+- [SYSTEM_MAP.md](../2-文档地图/SYSTEM_MAP.md) v2.1→v2.2：
+  - 系统全景从 7 个交易子系统更新为 **8 个**，新增 `23-四层闭环自进化交易架构` 条目
+  - L2 交易子系统新增 23 号模块详细条目（定位/核心模块/五项核心能力/关联文档/5文档齐全）
+- [ARCHITECTURE_MAP.md](../2-文档地图/ARCHITECTURE_MAP.md) v2.2→v2.3：
+  - 子系统矩阵新增 23-四层闭环自进化行（✅ 齐全，TECHNICAL_DESIGN v1.0）
+  - 文档齐全率更新为 8/8 子系统
+- [EVOLUTION_BOUNDARY_MAP.md](../2-文档地图/EVOLUTION_BOUNDARY_MAP.md) v1.0→v1.1：
+  - "相关但独立的进化实体"从 4 个扩展为 5 个，新增 `23-四层闭环自进化交易架构`（A 类，策略基因+ESS 紧耦合闭环）
+  - 新增 §3.1 `23-四层闭环自进化交易架构` 子模块边界表（6 个子模块职责与红线）
+- [TOPIC_MAP.md](../2-文档地图/TOPIC_MAP.md) v2.0→v2.1：
+  - 「进化与学习」主题新增 2 行：四层闭环自进化（紧耦合）+ 系统级交易索引库
+
+#### 23-四层闭环自进化 文档四件套补齐（DD-025 关闭）
+- [docs/ENGINEERING_INDEX.md](../../23-四层闭环自进化交易架构/docs/ENGINEERING_INDEX.md) v1.0：目录地图/文件清单/核心流程/配置参数/测试体系
+- [docs/TECHNICAL_DESIGN.md](../../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.0：四层架构/双起点/三层仓位/SL-TP/数据管线/权重/稳定性证明
+- [docs/API_SPEC.md](../../23-四层闭环自进化交易架构/docs/API_SPEC.md) v1.0：13个核心类/函数完整签名+输入输出字段表
+- [docs/CHANGELOG.md](../../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.0：变更日志
+
+#### 2-KNOWLEDGE/1-TRADING 技术文档同步
+- [四层闭环进化架构-最小阻力路径总览.md](../../2-KNOWLEDGE/1-TRADING/四层闭环进化架构-最小阻力路径总览.md)：
+  - §1.7.3 三层仓位双重角色（替代原 u=0.1 小仓）
+  - §1.7.5 Phase2 流程：双起点 RI + 三层仓位 + SL/TP 兜底 + 50 币种池
+  - §1.7.6 硬约束 #2：三层仓位分级定义
+  - §1.7.7 传递函数 G₁ 更新为 tier 加权；G_open 从 0.0020→0.0119（仍 <1，稳定）
+  - §1.10.2 反身性自激上限更新为 trend×1.0
+  - §1.13.1 交付物表新增 #6 TradeIndexBuilder + #7 ReflectionScanner
+  - §1.13.7 新增 2026-09-06 高频进化增强完整说明（含日志验证证据）
+
+---
+
+## [v1.5] - 2026-08-24
+
+### 修改
+
+- **变更内容**: 11-易经推理系统 **战略层影子日志修复（dao 一致性 + 字段补全）** 文档同步
+- **影响范围**: 11-易经推理系统 docs/（CHANGELOG + TECHNICAL_DESIGN）
+- **验证方式**: 代码锚点对齐 polling_trader.py L1513-L1624（`_emit_shadow_logs` 9 字段输出 + CACHE 分支 `_real_state` 显式同步）
+- **触发原因**: 战略层影子日志 dao_score 与 `five_domain_state.json` 缓存不一致（stale shadow state 读取 init 默认值 dao=50），且影子日志仅输出 5 类字段（缺 style_mask/veto/band/forced_close）
+
+#### 11-易经推理系统 CHANGELOG v4.3.1 追加
+- [CHANGELOG.md](../../11-易经推理系统/docs/CHANGELOG.md) 新增 v4.3.1 条目：
+  - **修复** CACHE 分支 dao 不一致：`_real_state` 捕获 `from_json` 结果，显式同步 `_five_domain_state_shadow`，日志取值优先级 `shadow → _real_state → cache`
+  - **修改** 影子日志 5→9 字段：新增 `style_mask` / `dimension_veto` / `front_layer_band` / `forced_close`
+  - **防御增强**：所有 `getattr` 加 `or {}`，移除临时 DEBUG 代码
+
+#### 11-易经推理系统 TECHNICAL_DESIGN 战略层章节补充
+- [TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) §2.2b L0 五计庙算 ASCII 图补充：
+  - 影子日志 9 类字段清单（对齐 `FiveDomainState` 全部输出）
+  - 日志一致性保证说明（CACHE 分支显式同步 + 优先读 `_real_state`）
+- §16 变更日志表格顶部追加 v4.3.1 条目
 
 ---
 
@@ -218,5 +281,5 @@
 
 ---
 
-**文档版本**: v1.5（同步 11-易经推理系统 v4.6 基础阈值门控与 v4.6.1 L3/L4 仓位归属重构）
-**最后更新**: 2026-08-24
+**文档版本**: v1.6（同步 11-易经推理系统 v4.3.1 战略层影子日志修复）
+**最后更新**: 2026-09-07

@@ -52,7 +52,8 @@ logger = logging.getLogger(__name__)
 # ============================================================
 # 配置 — 与 baseline-v1 完全对齐
 # ============================================================
-COINS = ["UNI", "PUMP", "HYPE", "ETH", "BTC", "SOL", "XAUT", "OKB", "BNB"]
+# — BDSM 2026-09 扩展：权威池补 AAVE + CRCL + ZEC + ARB；ETH 已在此列表
+COINS = ["UNI", "PUMP", "HYPE", "AAVE", "CRCL", "ETH", "BTC", "SOL", "ZEC", "ARB", "XAUT", "OKB", "BNB"]
 TIMEFRAME = "1H"
 MAX_BARS = 6000
 N_FOLDS = 5

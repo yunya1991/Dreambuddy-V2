@@ -31,7 +31,8 @@ from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBackteste
 # ============================================================
 COINS = [
     "UNI", "PUMP", "MU", "SKHYNIX", "HYPE",
-    "ETH", "BTC", "SOL", "XAUT", "XAG",
+    "ETH", "BTC", "SOL", "ZEC", "ARB",
+    "XAUT", "XAG",
     "GOOGL", "NVDA", "AMZN", "OKB", "BNB",
 ]
 

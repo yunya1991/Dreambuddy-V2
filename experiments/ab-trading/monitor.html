@@ -164,7 +164,19 @@
   .workflow-row:last-child { border-bottom: none; }
   .workflow-name { font-weight: 600; font-size: 13px; }
   .workflow-time { font-size: 11px; color: var(--muted); }
+  /* 力向量可视化子Tab */
+  .fv-subtab-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.15s; }
+  .fv-subtab-btn:hover { border-color: var(--purple); color: var(--text); }
+  .fv-subtab-btn.active { background: rgba(188,140,255,0.12); border-color: var(--purple); color: var(--purple); }
+  .fv-subtab-content { min-height: 300px; }
+  .fv-lamp { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); font-size: 11px; cursor: default; }
+  .fv-lamp-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .fv-formula-panel { font-size: 11px; color: var(--muted); background: rgba(13,17,23,0.5); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; margin-top: 4px; font-family: monospace; line-height: 1.6; }
+  .fv-chart-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .fv-chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 900px) { .fv-chart-grid, .fv-chart-grid-2 { grid-template-columns: 1fr; } }
 </style>
+<script src="/static/echarts.min.js"></script>
 </head>
 <body>
 
@@ -179,7 +191,8 @@
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab('local', event)">📊 本地监控</div>
-  <div class="tab" onclick="switchTab('cloud', event)">☁️ 云端调度</div>
+  <div class="tab" onclick="switchTab('evolution', event)">🧬 自进化架构</div>
+  <!-- <div class="tab" onclick="switchTab('cloud', event)">☁️ 云端调度</div> -->  <!-- 隐藏：价值有限，由自进化架构Tab取代。恢复时取消注释即可 -->
   <div class="tab" onclick="switchTab('trend', event)">📈 三屏趋势（模拟）</div>
   <div class="tab" onclick="switchTab('v4wave', event)">⚡ 趋势策略（V4+波浪）</div>
   <!-- <div class="tab" onclick="switchTab('screen', event)">🎯 三屏马丁</div> -->
@@ -394,11 +407,11 @@
   </div>
 </div>
 
-  <!-- 云端调度 Tab -->
+  <!-- 云端调度 Tab（已隐藏：价值有限，由自进化架构Tab取代。恢复时取消注释即可） -->
+  <!--
   <div id="tab-cloud" class="tab-content">
   <div class="tab-grid">
 
-    <!-- 三级调度架构 -->
     <div class="card full-width">
       <div class="card-title"><div class="dot dot-green"></div>三级调度架构</div>
       <div class="schedule-grid-3">
@@ -420,7 +433,6 @@
       </div>
     </div>
 
-    <!-- 执行统计 -->
     <div class="card full-width">
       <div class="card-title"><div class="dot dot-green"></div>云端执行统计</div>
       <div class="stats-grid">
@@ -431,7 +443,6 @@
       </div>
     </div>
 
-    <!-- 执行记录 -->
     <div class="card full-width">
       <div class="card-title"><div class="dot dot-green"></div>云端执行记录（最近 10 条）</div>
       <div id="cloud-comments">
@@ -440,6 +451,80 @@
     </div>
 
   </div>
+  </div>
+  -->
+
+  <!-- 🧬 自进化架构 Tab -->
+  <div id="tab-evolution" class="tab-content">
+  <div class="tab-grid">
+
+    <!-- 顶部时间窗口切换 + 最后更新 -->
+    <div class="card full-width" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:18px;font-weight:bold">🧬 自进化架构</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="evo-range-btn" data-range="7d" style="background:var(--border);border:none;color:var(--text);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px">7天</button>
+        <button class="evo-range-btn" data-range="30d" style="background:var(--border);border:none;color:var(--text);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px">30天</button>
+        <button class="evo-range-btn active" data-range="all" style="background:var(--blue);border:none;color:#fff;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px">全部</button>
+        <span id="evo-last-update" style="margin-left:16px;color:var(--muted);font-size:12px"></span>
+      </div>
+    </div>
+
+    <!-- 区块1: 核心盈亏指标卡片 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot dot-green"></div>核心盈亏指标（演化子池 vs 主池）</div>
+      <div class="schedule-grid-3" style="grid-template-columns:1fr 1fr">
+        <div id="evo-overview-evolution" class="schedule-card" style="text-align:left">
+          <div style="text-align:center;color:var(--muted);padding:30px">加载中...</div>
+        </div>
+        <div id="evo-overview-main" class="schedule-card" style="text-align:left">
+          <div style="text-align:center;color:var(--muted);padding:30px">加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 区块2: 累计盈亏曲线对比 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot dot-green"></div>累计盈亏曲线对比（点击节点查看交易详情）</div>
+      <div id="evo-chart-cumulative" style="height:360px"></div>
+    </div>
+
+    <!-- 区块3: 每日盈亏柱状对比 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot dot-green"></div>每日盈亏柱状对比（点击柱子查看当日交易）</div>
+      <div id="evo-chart-daily" style="height:300px"></div>
+    </div>
+
+    <!-- 区块4: 进化证据 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot dot-green"></div>进化证据（ESS / 反思 / gmax / CS）</div>
+      <div id="evo-evidence-container" style="text-align:center;color:var(--muted);padding:30px">
+        加载中...
+      </div>
+      <div id="evo-evidence-grid" style="display:none;grid-template-columns:1fr 1fr;gap:16px;padding:0 16px 16px">
+        <div><div style="font-weight:bold;margin-bottom:8px">ESS 评分曲线</div><div id="evo-chart-ess" style="height:240px"></div></div>
+        <div><div style="font-weight:bold;margin-bottom:8px">反思触发次数</div><div id="evo-chart-reflection" style="height:240px"></div></div>
+        <div><div style="font-weight:bold;margin-bottom:8px">gmax 校准轨迹</div><div id="evo-chart-gmax" style="height:240px"></div></div>
+        <div><div style="font-weight:bold;margin-bottom:8px">CS 一致性分布</div><div id="evo-chart-cs" style="height:240px"></div></div>
+      </div>
+    </div>
+
+    <!-- 区块5: FTC 金融思维链核心指标 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#a855f7"></div>FTC 金融思维链核心指标（自进化路径层）</div>
+      <div id="evo-ftc-container" style="padding:16px">
+        <div style="text-align:center;color:var(--muted);padding:30px">加载中...</div>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <!-- 下钻 modal -->
+  <div id="evo-detail-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999">
+    <div style="background:var(--bg);margin:5% auto;padding:24px;width:80%;max-width:800px;border-radius:8px;max-height:80%;overflow:auto">
+      <div id="evo-detail-content"></div>
+      <button onclick="document.getElementById('evo-detail-modal').style.display='none'" style="margin-top:16px;background:var(--border);border:none;color:var(--text);padding:6px 16px;border-radius:4px;cursor:pointer">关闭</button>
+    </div>
   </div>
 
   <!-- 三屏趋势 Tab -->
@@ -1361,6 +1446,30 @@
   <div id="tab-datacenter" class="tab-content">
     <div class="tab-grid">
 
+      <!-- 律动专属汇总面板 -->
+      <div class="card full-width">
+        <div class="card-title">
+          <div class="dot" style="background:linear-gradient(135deg,#ff8a00,#e52e71)"></div>🌊 区块律动 Dataview · 采集快照
+          <button onclick="loadBlockBeatsPanel()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">🔄 刷新律动</button>
+          <span id="bb-batch-ts" style="margin-left:10px;font-size:11px;color:var(--muted)">--</span>
+        </div>
+        <div id="bb-panel" style="display:grid;grid-template-columns:220px 1fr 1fr;gap:14px;margin-top:6px">
+          <div style="text-align:center;color:var(--muted);padding:24px;grid-column:1/4">点击刷新加载律动数据</div>
+        </div>
+      </div>
+
+      <!-- Panewslab 八大板块面板 -->
+      <div class="card full-width">
+        <div class="card-title">
+          <div class="dot" style="background:linear-gradient(135deg,#3b82f6,#06b6d4)"></div>📊 Panewslab · 八大板块总览
+          <button onclick="loadPanewslabPanel()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">🔄 刷新</button>
+          <span id="pn-batch-ts" style="margin-left:10px;font-size:11px;color:var(--muted)">--</span>
+        </div>
+        <div id="pn-panel" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:6px">
+          <div style="text-align:center;color:var(--muted);padding:24px;grid-column:1/5">点击刷新加载 Panewslab 数据</div>
+        </div>
+      </div>
+
       <!-- 源健康 -->
       <div class="card full-width">
         <div class="card-title">
@@ -1450,9 +1559,36 @@
             </tbody>
           </table>
         </div>
+        <div id="wm-records-toggle" style="display:none;text-align:center;padding:6px 0;cursor:pointer;color:var(--blue);font-size:12px;border-top:1px solid var(--border)" onclick="toggleWmRecords()">展开全部</div>
       </div>
 
     </div>
+
+    <!-- 力向量可视化（最小阻力方向） -->
+    <div class="card full-width" style="margin-top:16px">
+      <div class="card-title">
+        <div class="dot" style="background:var(--purple)"></div>📊 力向量可视化（最小阻力方向）
+        <span id="fv-demo-badge" style="margin-left:auto;font-size:11px"></span>
+        <button onclick="loadFvAll()" style="background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px;margin-left:8px">🔄 刷新</button>
+      </div>
+      <!-- 矛盾转化灯号（常驻） -->
+      <div id="fv-transform-lamps" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;width:100%">
+        <div style="color:var(--muted);padding:8px;font-size:12px">点击刷新加载</div>
+      </div>
+      <!-- 子Tab导航 -->
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button class="fv-subtab-btn active" onclick="switchWujiSubTab('five-dim',event)">①五维统计</button>
+        <button class="fv-subtab-btn" onclick="switchWujiSubTab('contradiction',event)">②主要矛盾</button>
+        <button class="fv-subtab-btn" onclick="switchWujiSubTab('resonance',event)">③共振分析</button>
+        <button class="fv-subtab-btn" onclick="switchWujiSubTab('cycle-ma',event)">④周期比对</button>
+      </div>
+      <!-- 子Tab内容 -->
+      <div id="fv-sub-five-dim" class="fv-subtab-content" style="display:block"></div>
+      <div id="fv-sub-contradiction" class="fv-subtab-content" style="display:none"></div>
+      <div id="fv-sub-resonance" class="fv-subtab-content" style="display:none"></div>
+      <div id="fv-sub-cycle-ma" class="fv-subtab-content" style="display:none"></div>
+    </div>
+
   </div>
 
 </div>
@@ -1873,39 +2009,293 @@ function loadWujiMiaosuan() {
       <div style="flex:1;min-width:140px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:6px">
         <div style="font-size:11px;color:var(--muted)">AI 注入比</div><div style="font-size:20px;font-weight:700;color:${gc}">${sm.inject_ratio||'0%'}</div>
         <div style="font-size:10px;color:var(--muted)">${sm.inject_true||0}T / ${sm.inject_false||0}F</div></div>`;
-    // 影子记录表格
+    // 影子记录表格（默认折叠，仅展示前5条）
     const records = d.records || [];
-    let recHtml = '';
-    if(!records.length){
-      recHtml = '<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">无记录</td></tr>';
+    const FOLD_LIMIT = 5;
+    window._wmRecordsAll = records;
+    window._wmRecordsExpanded = false;
+    document.getElementById('wm-records-tbody').innerHTML = _renderWmRecords(records, FOLD_LIMIT, false);
+    const tg = document.getElementById('wm-records-toggle');
+    if(records.length > FOLD_LIMIT){
+      tg.style.display = 'block';
+      tg.textContent = `展开全部（共${records.length}条）`;
     } else {
-      records.forEach(r => {
-        const dc = r.actual_direction==='UP'?'var(--green)':r.actual_direction==='DOWN'?'var(--red)':'var(--muted)';
-        const wc = r.fd_war_state==='ALLOW'?'var(--green)':r.fd_war_state==='COOLDOWN'?'var(--yellow)':r.fd_war_state==='FREEZE'?'var(--red)':'var(--muted)';
-        recHtml += `<tr>
-          <td style="font-size:11px">${r.timestamp?r.timestamp.substring(11,19):'--'}</td>
-          <td><b>${r.symbol||'--'}</b></td>
-          <td style="color:${wc}">${r.fd_war_state||'--'}</td>
-          <td>${r.fd_total_score!=null?r.fd_total_score.toFixed(1):'--'}</td>
-          <td>${r.fd_cap_mode!=null?r.fd_cap_mode:'--'}</td>
-          <td>${r.fd_mult_mode!=null?r.fd_mult_mode:'--'}</td>
-          <td>${r.sal_type||'--'}</td><td>${r.sal_regime||'--'}</td>
-          <td>${r.sal_calib_median!=null?r.sal_calib_median.toFixed(3):'--'}</td>
-          <td>${r.sal_gate!=null?r.sal_gate:'--'}</td>
-          <td style="color:${dc}">${r.actual_direction||'--'}</td>
-          <td>${r.actual_confidence!=null?r.actual_confidence.toFixed(2):'--'}</td>
-          <td style="color:${r.enable_inject?'var(--green)':'var(--muted)'}">${r.enable_inject?'✓':'—'}</td>
-        </tr>`;
-      });
+      tg.style.display = 'none';
     }
-    document.getElementById('wm-records-tbody').innerHTML = recHtml;
   }).catch(e=>{
     document.getElementById('wm-strategic').innerHTML=`<div style="color:var(--red);padding:20px">加载失败: ${e}</div>`;
   });
 }
 
+// ── 影子记录折叠/展开 ──
+function _renderWmRecords(records, limit, expanded){
+  if(!records.length){
+    return '<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">无记录</td></tr>';
+  }
+  const shown = expanded ? records : records.slice(0, limit);
+  let html = '';
+  shown.forEach(r => {
+    const dc = r.actual_direction==='UP'?'var(--green)':r.actual_direction==='DOWN'?'var(--red)':'var(--muted)';
+    const wc = r.fd_war_state==='ALLOW'?'var(--green)':r.fd_war_state==='COOLDOWN'?'var(--yellow)':r.fd_war_state==='FREEZE'?'var(--red)':'var(--muted)';
+    html += `<tr>
+      <td style="font-size:11px">${r.timestamp?r.timestamp.substring(11,19):'--'}</td>
+      <td><b>${r.symbol||'--'}</b></td>
+      <td style="color:${wc}">${r.fd_war_state||'--'}</td>
+      <td>${r.fd_total_score!=null?r.fd_total_score.toFixed(1):'--'}</td>
+      <td>${r.fd_cap_mode!=null?r.fd_cap_mode:'--'}</td>
+      <td>${r.fd_mult_mode!=null?r.fd_mult_mode:'--'}</td>
+      <td>${r.sal_type||'--'}</td><td>${r.sal_regime||'--'}</td>
+      <td>${r.sal_calib_median!=null?r.sal_calib_median.toFixed(3):'--'}</td>
+      <td>${r.sal_gate!=null?r.sal_gate:'--'}</td>
+      <td style="color:${dc}">${r.actual_direction||'--'}</td>
+      <td>${r.actual_confidence!=null?r.actual_confidence.toFixed(2):'--'}</td>
+      <td style="color:${r.enable_inject?'var(--green)':'var(--muted)'}">${r.enable_inject?'✓':'—'}</td>
+    </tr>`;
+  });
+  if(!expanded && records.length > limit){
+    html += `<tr><td colspan="13" style="text-align:center;color:var(--muted);font-size:11px;padding:4px">… 还有 ${records.length - limit} 条未显示</td></tr>`;
+  }
+  return html;
+}
+
+function toggleWmRecords(){
+  const all = window._wmRecordsAll || [];
+  const tg = document.getElementById('wm-records-toggle');
+  if(window._wmRecordsExpanded){
+    document.getElementById('wm-records-tbody').innerHTML = _renderWmRecords(all, 5, false);
+    window._wmRecordsExpanded = false;
+    tg.textContent = `展开全部（共${all.length}条）`;
+  } else {
+    document.getElementById('wm-records-tbody').innerHTML = _renderWmRecords(all, 5, true);
+    window._wmRecordsExpanded = true;
+    tg.textContent = '收起';
+  }
+}
+
+// ══ 力向量可视化（五计庙算 4 子Tab）═══════════════════════════
+let fvCharts = {};
+let fvSubTabLoaded = {};
+const FV_COLORS = ['#58a6ff','#bc8cff','#3fb950','#d29922','#f85149'];
+const FV_DIM_LABELS = {dao:'道',tian:'天',di:'地',jiang:'将',fa:'法'};
+const FV_DARK = {
+  backgroundColor:'transparent', textStyle:{color:'#e6edf3',fontSize:11},
+  grid:{left:50,right:20,top:30,bottom:30},
+  xAxis:{type:'category',axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:10},splitLine:{show:false}},
+  yAxis:{type:'value',axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:10},splitLine:{lineStyle:{color:'#21262d'}}},
+  tooltip:{trigger:'axis',backgroundColor:'#161b22',borderColor:'#30363d',textStyle:{color:'#e6edf3',fontSize:11}},
+  legend:{textStyle:{color:'#7d8590',fontSize:10},top:0},
+};
+
+function _fvDispose(id){if(fvCharts[id]){fvCharts[id].dispose();delete fvCharts[id];}}
+function _fvInit(id,opt){
+  const el=document.getElementById(id); if(!el||!window.echarts) return null;
+  _fvDispose(id); const c=echarts.init(el,null,{renderer:'canvas'}); c.setOption(opt); fvCharts[id]=c; return c;
+}
+
+function loadFvAll(){
+  loadFvTransformLamps();
+  const ab=document.querySelector('.fv-subtab-btn.active');
+  if(ab){const m=ab.getAttribute('onclick').match(/'([^']+)'/);if(m){fvSubTabLoaded[m[1]]=false;loadWujiSubTab(m[1]);}}
+  else{loadWujiSubTab('five-dim');}
+}
+
+function switchWujiSubTab(sub,event){
+  document.querySelectorAll('.fv-subtab-btn').forEach(b=>b.classList.remove('active'));
+  if(event)event.target.classList.add('active');
+  document.querySelectorAll('.fv-subtab-content').forEach(c=>c.style.display='none');
+  const el=document.getElementById('fv-sub-'+sub); if(el)el.style.display='block';
+  if(!fvSubTabLoaded[sub])loadWujiSubTab(sub);
+}
+
+function loadWujiSubTab(sub){
+  const apiBase=location.hostname==='localhost'?`http://127.0.0.1:${location.port}`:'';
+  const apiMap={'five-dim':'time-series','contradiction':'contradictions-top8','resonance':'resonance','cycle-ma':'cycle-ma'};
+  const apiSub=apiMap[sub]||sub;
+  const el=document.getElementById('fv-sub-'+sub);
+  if(el)el.innerHTML='<div style="color:var(--muted);padding:20px;text-align:center">加载中...</div>';
+  fetch(`${apiBase}/api/shadow/force-vector/${apiSub}`).then(r=>r.json()).then(d=>{
+    if(!d.ok){if(el)el.innerHTML=`<div style="color:var(--red);padding:20px">${d.error||'加载失败'}</div>`;return;}
+    renderFvDemoBadge(d);
+    if(sub==='five-dim')initChartFiveDim(d);
+    else if(sub==='contradiction')initChartContradiction(d);
+    else if(sub==='resonance')initChartResonance(d);
+    else if(sub==='cycle-ma')initChartCycleMA(d);
+    fvSubTabLoaded[sub]=true;
+  }).catch(e=>{if(el)el.innerHTML=`<div style="color:var(--red);padding:20px">加载失败: ${e}</div>`;});
+}
+
+function loadFvTransformLamps(){
+  const apiBase=location.hostname==='localhost'?`http://127.0.0.1:${location.port}`:'';
+  fetch(`${apiBase}/api/shadow/force-vector/transform-lamps`).then(r=>r.json()).then(d=>{
+    if(d.ok)renderTransformLamps(d);
+  }).catch(()=>{});
+}
+
+function renderFvDemoBadge(d){
+  const b=document.getElementById('fv-demo-badge'); if(!b)return;
+  if(d.is_demo){
+    b.innerHTML=`⚠️ DEMO 合成 | ${d.shadow_days}/${d.threshold_days}天 Shadow 真实自动替换`;
+    b.style.cssText='margin-left:auto;font-size:11px;padding:2px 10px;border-radius:4px;background:rgba(210,153,34,0.15);color:var(--yellow);border:1px solid rgba(210,153,34,0.3)';
+  }else{
+    b.innerHTML=`✅ 真实数据 | ${d.shadow_days}天 Shadow`;
+    b.style.cssText='margin-left:auto;font-size:11px;padding:2px 10px;border-radius:4px;background:rgba(63,185,80,0.15);color:var(--green);border:1px solid rgba(63,185,80,0.3)';
+  }
+}
+
+function renderTransformLamps(d){
+  const el=document.getElementById('fv-transform-lamps'); if(!el)return;
+  const lamps=d.lamps||[];
+  let html='<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%">';
+  lamps.forEach(l=>{
+    const c=l.on?'#f85149':'#7d8590';
+    const bg=l.on?'rgba(248,81,73,0.08)':'var(--surface)';
+    const bd=l.on?'rgba(248,81,73,0.4)':'var(--border)';
+    html+=`<div class="fv-lamp" style="flex:1;min-width:140px;border-color:${bd};background:${bg}" title="${l.detail}">
+      <div class="fv-lamp-dot" style="background:${c};${l.on?'box-shadow:0 0 6px '+c:''}"></div>
+      <div><div style="font-weight:600;color:${l.on?'var(--red)':'var(--text)'}">${l.name}</div>
+      <div style="font-size:10px;color:var(--muted)">${l.on?'触发':'未触发'} · conf=${(l.confidence*100).toFixed(0)}%</div></div></div>`;
+  });
+  const tc=d.transforming?'#f85149':'#3fb950';
+  html+=`<div style="flex:1;min-width:140px;padding:6px 10px;border-radius:6px;border:1px solid ${tc};background:${d.transforming?'rgba(248,81,73,0.05)':'rgba(63,185,80,0.05)'};display:flex;align-items:center;gap:6px">
+    <div style="font-size:11px;color:${tc};font-weight:600">${d.transforming?'⚠️ 矛盾转化中':'✓ 稳定'}</div>
+    <div style="font-size:10px;color:var(--muted)">置信度=${((d.overall_confidence||0)*100).toFixed(0)}%</div></div>`;
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ── ① 五维统计 ──
+function initChartFiveDim(d){
+  const el=document.getElementById('fv-sub-five-dim'); if(!el)return;
+  const dims=d.dimensions||{}, ts=d.timestamps||[];
+  const step=Math.max(1,Math.floor(ts.length/168));
+  const sliceTs=ts.filter((_,i)=>i%step===0);
+  const cfgs=[
+    {n:'dao',l:'道',c:0},{n:'tian',l:'天',c:1},{n:'di',l:'地',c:2},
+    {n:'jiang',l:'将',c:3},{n:'fa',l:'法',c:4},
+  ];
+  let html='<div class="fv-chart-grid">';
+  cfgs.forEach(cfg=>{
+    const dim=dims[cfg.n]||{};
+    html+=`<div><div style="font-size:12px;font-weight:600;color:${FV_COLORS[cfg.c]};margin-bottom:4px">${cfg.l} · ${dim.algorithm||''}</div>
+    <div id="fv-chart-${cfg.n}" style="height:150px"></div>
+    <div class="fv-formula-panel">📊 ${dim.source_engine||''}<br>📝 ${dim.code_ref||''}</div></div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+  cfgs.forEach(cfg=>{
+    const dim=dims[cfg.n]; if(!dim)return;
+    const dir=(dim.direction||[]).filter((_,i)=>i%step===0);
+    _fvInit('fv-chart-'+cfg.n,{
+      ...FV_DARK, grid:{left:40,right:10,top:5,bottom:20}, legend:{show:false},
+      xAxis:{type:'category',data:sliceTs,axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:9,interval:Math.floor(sliceTs.length/3)}},
+      yAxis:{type:'value',axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:9},splitLine:{lineStyle:{color:'#21262d'}},min:-1,max:1},
+      series:[{type:'line',data:dir,smooth:true,symbol:'none',lineStyle:{color:FV_COLORS[cfg.c],width:1.5},areaStyle:{color:FV_COLORS[cfg.c],opacity:0.08}}],
+    });
+  });
+}
+
+// ── ② 主要矛盾 ──
+function initChartContradiction(d){
+  const el=document.getElementById('fv-sub-contradiction'); if(!el)return;
+  const top8=d.top8_features||[], sw=d.dominant_switch_24h||{};
+  let html='<div class="fv-chart-grid-2">';
+  html+='<div><div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:4px">Top8 特征 IC×MI 权重</div><div id="fv-chart-top8" style="height:280px"></div></div>';
+  html+='<div><div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:4px">24h 主导维切换</div><div id="fv-chart-switch" style="height:280px"></div></div>';
+  html+='</div>';
+  html+=`<div class="fv-formula-panel" style="margin-top:8px">${d.algorithm||''}<br>📝 ${d.code_ref||''}</div>`;
+  el.innerHTML=html;
+  _fvInit('fv-chart-top8',{
+    ...FV_DARK, grid:{left:100,right:40,top:10,bottom:20}, legend:{show:false},
+    xAxis:{type:'value',axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:10},splitLine:{lineStyle:{color:'#21262d'}}},
+    yAxis:{type:'category',data:top8.map(f=>f.name),axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:10}},
+    series:[{type:'bar',data:top8.map(f=>f.final_score),itemStyle:{color:p=>FV_COLORS[p.dataIndex%5]},label:{show:true,position:'right',color:'#7d8590',fontSize:10,formatter:'{c}'}}],
+    tooltip:{trigger:'item',backgroundColor:'#161b22',borderColor:'#30363d',textStyle:{color:'#e6edf3',fontSize:11},formatter:p=>{const f=top8[p.dataIndex];return `${f.name}<br/>IC:${f.ic} | MI:${f.mi}<br/>权重:${f.final_score} | AW:${f.adaptive_weight}`;}},
+  });
+  const dimC={dao:'#58a6ff',tian:'#bc8cff',di:'#3fb950',jiang:'#d29922',fa:'#f85149'};
+  _fvInit('fv-chart-switch',{
+    ...FV_DARK, grid:{left:40,right:40,top:30,bottom:20},
+    legend:{show:true,textStyle:{color:'#7d8590',fontSize:10},top:0,data:['道','天','地','将','法']},
+    xAxis:{type:'category',data:sw.timestamps||[],axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:10}},
+    yAxis:{type:'value',axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:10},splitLine:{lineStyle:{color:'#21262d'}},min:0,max:1},
+    series:['dao','tian','di','jiang','fa'].map(dim=>({
+      name:FV_DIM_LABELS[dim],type:'line',
+      data:(sw.timestamps||[]).map((_,t)=>(sw.dominant_dim||[])[t]===dim?(sw.strengths||[])[t]:null),
+      connectNulls:false,symbol:'circle',symbolSize:8,lineStyle:{color:dimC[dim],width:2},itemStyle:{color:dimC[dim]},
+    })),
+  });
+}
+
+// ── ③ 共振分析 ──
+function initChartResonance(d){
+  const el=document.getElementById('fv-sub-resonance'); if(!el)return;
+  const radar=d.radar||{}, pca=d.pca||{}, dual=d.force_price_dual||{};
+  let html='<div class="fv-chart-grid-2">';
+  html+='<div><div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:4px">五维雷达 + PCA共振</div><div id="fv-chart-radar" style="height:300px"></div></div>';
+  html+='<div><div style="font-size:12px;font-weight:600;color:var(--yellow);margin-bottom:4px">Δ力方向(柱)+强度(线)+价格(右轴)</div><div id="fv-chart-dual" style="height:300px"></div></div>';
+  html+='</div>';
+  html+=`<div class="fv-formula-panel" style="margin-top:8px">PCA: ${(pca.explained_ratio||[]).map((v,i)=>`PC${i+1}=${(v*100).toFixed(0)}%`).join(' / ')} | sign_alignment=${pca.sign_alignment} | 强度系数=${pca.strength_coefficient} (${pca.resonance_label})<br>📝 ${d.code_ref||''}</div>`;
+  el.innerHTML=html;
+  _fvInit('fv-chart-radar',{
+    backgroundColor:'transparent',
+    radar:{indicator:(radar.labels||[]).map(l=>({name:l,max:1})),axisName:{color:'#e6edf3',fontSize:12},splitLine:{lineStyle:{color:'#30363d'}},splitArea:{areaStyle:{color:['transparent','rgba(22,27,34,0.5)']}},axisLine:{lineStyle:{color:'#30363d'}}},
+    series:[{type:'radar',data:[{value:radar.values||[],name:'当前',areaStyle:{color:'rgba(188,140,255,0.15)'},lineStyle:{color:'#bc8cff',width:2},itemStyle:{color:'#bc8cff'}}]}],
+    tooltip:{backgroundColor:'#161b22',borderColor:'#30363d',textStyle:{color:'#e6edf3',fontSize:11}},
+  });
+  const dualTs=dual.timestamps||[];
+  _fvInit('fv-chart-dual',{
+    ...FV_DARK, grid:{left:50,right:60,top:30,bottom:30},
+    legend:{show:true,textStyle:{color:'#7d8590',fontSize:10},top:0,data:['Δ方向','强度','价格']},
+    xAxis:{type:'category',data:dualTs,axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:9,interval:Math.floor(dualTs.length/4)}},
+    yAxis:[{type:'value',name:'力',axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:9},splitLine:{lineStyle:{color:'#21262d'}}},{type:'value',name:'价格',axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:9},splitLine:{show:false}}],
+    series:[
+      {name:'Δ方向',type:'bar',data:dual.delta_direction||[],itemStyle:{color:p=>p.value>=0?'rgba(63,185,80,0.6)':'rgba(248,81,73,0.6)'}},
+      {name:'强度',type:'line',data:dual.strength||[],smooth:true,symbol:'none',lineStyle:{color:'#bc8cff',width:1.5}},
+      {name:'价格',type:'line',yAxisIndex:1,data:dual.price||[],smooth:true,symbol:'none',lineStyle:{color:'#7d8590',width:1,type:'dashed'}},
+    ],
+  });
+}
+
+// ── ④ 周期比对 ──
+function initChartCycleMA(d){
+  const el=document.getElementById('fv-sub-cycle-ma'); if(!el)return;
+  const ma=d.ma_series||{}, states=d.consistency_states||[], signals=d.signals||[];
+  const ts=ma.timestamps||[];
+  const step=Math.max(1,Math.floor(ts.length/168));
+  const sliceTs=ts.filter((_,i)=>i%step===0);
+  let html='<div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:4px">MA7 / MA30 双均线 + 价差带</div>';
+  html+='<div id="fv-chart-ma" style="height:260px"></div>';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--yellow);margin:12px 0 4px">一致性状态 6态</div>';
+  html+='<div id="fv-states-bar" style="display:flex;height:24px;border-radius:4px;overflow:hidden;border:1px solid var(--border)"></div>';
+  const sigC={golden_cross:'#3fb950',death_cross:'#f85149',top_divergence:'#d29922',bottom_divergence:'#58a6ff'};
+  const sigB={golden_cross:'rgba(63,185,80,0.1)',death_cross:'rgba(248,81,73,0.1)',top_divergence:'rgba(210,153,34,0.1)',bottom_divergence:'rgba(88,166,255,0.1)'};
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">';
+  signals.forEach(s=>{
+    const c=sigC[s.type]||'#7d8590', bg=sigB[s.type]||'rgba(125,133,144,0.1)';
+    html+=`<div style="padding:4px 10px;border-radius:999px;border:1px solid ${c};background:${bg};font-size:11px;color:${c};font-weight:600">${s.label||s.type} @ ${s.at}</div>`;
+  });
+  html+='</div>';
+  html+=`<div class="fv-formula-panel" style="margin-top:8px">📝 ${d.code_ref||''}</div>`;
+  el.innerHTML=html;
+  _fvInit('fv-chart-ma',{
+    ...FV_DARK, grid:{left:50,right:20,top:30,bottom:30},
+    legend:{show:true,textStyle:{color:'#7d8590',fontSize:10},top:0,data:['MA7','MA30']},
+    xAxis:{type:'category',data:sliceTs,axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:9,interval:Math.floor(sliceTs.length/4)}},
+    yAxis:{type:'value',axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#7d8590',fontSize:9},splitLine:{lineStyle:{color:'#21262d'}}},
+    series:[
+      {name:'MA7',type:'line',data:(ma.ma7||[]).filter((_,i)=>i%step===0),smooth:true,symbol:'none',lineStyle:{color:'#58a6ff',width:2},areaStyle:{color:'rgba(88,166,255,0.05)'}},
+      {name:'MA30',type:'line',data:(ma.ma30||[]).filter((_,i)=>i%step===0),smooth:true,symbol:'none',lineStyle:{color:'#d29922',width:2}},
+    ],
+  });
+  const stC={resonance:'#bc8cff',emerging:'#58a6ff',divergence:'#d29922',persistent:'#3fb950',turning:'#f85149',observation:'#7d8590'};
+  const stL={resonance:'共振',emerging:'新兴',divergence:'背离',persistent:'持续',turning:'转折',observation:'观察'};
+  const sEl=document.getElementById('fv-states-bar');
+  if(sEl){let sh='';states.forEach(s=>{const c=stC[s.state]||'#7d8590';sh+=`<div title="${stL[s.state]||s.state}(${s.coef})" style="flex:1;background:${c};opacity:0.7;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:600">${stL[s.state]||s.state}</div>`;});sEl.innerHTML=sh;}
+}
+
 function loadDataCenter() {
   const apiBase = location.hostname === 'localhost' ? `http://127.0.0.1:${location.port}` : '';
+  // 律动面板（datacenter tab 打开时一并刷新）
+  loadBlockBeatsPanel();
   // 源健康
   fetch(`${apiBase}/api/data-center/health`).then(r=>r.json()).then(d=>{
     const el = document.getElementById('dc-health-tbody');
@@ -1914,7 +2304,8 @@ function loadDataCenter() {
     Object.keys(h).sort().forEach(src=>{
       const s=h[src];const st=s.last_status||'--';
       const c=st==='ok'?'var(--green)':st==='error'?'var(--red)':'var(--muted)';
-      html+=`<tr><td><b>${src}</b></td><td style="color:${c}">${st}</td><td>${fmtTime(s.last_ts)}</td><td>${s.total_records||0}</td></tr>`;
+      const via = s.via==='records_bypass' ? ' <span style="color:var(--orange);font-size:10px">[records]</span>' : '';
+      html+=`<tr><td><b>${src}</b>${via}</td><td style="color:${c}">${st}</td><td>${fmtTime(s.last_ts)}</td><td>${s.total_records||0}</td></tr>`;
     });
     el.innerHTML=html||'<tr><td colspan="4" style="color:var(--muted)">无数据</td></tr>';
   }).catch(e=>{document.getElementById('dc-health-tbody').innerHTML=`<tr><td colspan="4" style="color:var(--red)">加载失败: ${e}</td></tr>`;});
@@ -1926,25 +2317,19 @@ function loadDataCenter() {
     const s=d.summary||{};let html='';
     Object.keys(s).sort().forEach(k=>{
       const v=s[k];
-      html+=`<tr><td><b>${k}</b></td><td>${v.total||0}</td><td style="color:var(--green)">${v.ok_count||0}</td><td style="color:var(--red)">${v.error_count||0}</td><td>${v.total_records||0}</td><td>${fmt(v.avg_duration_ms,0)}</td></tr>`;
+      const via = v.via==='records_bypass' ? ' <span style="color:var(--orange);font-size:10px">[records]</span>' : '';
+      html+=`<tr><td><b>${k}</b>${via}</td><td>${v.total||0}</td><td style="color:var(--green)">${v.ok_count||0}</td><td style="color:var(--red)">${v.error_count||0}</td><td>${v.total_records||0}</td><td>${fmt(v.avg_duration_ms,0)}</td></tr>`;
     });
     el.innerHTML=html||'<tr><td colspan="6" style="color:var(--muted)">无数据</td></tr>';
   }).catch(e=>{document.getElementById('dc-summary-tbody').innerHTML=`<tr><td colspan="6" style="color:var(--red)">加载失败: ${e}</td></tr>`;});
 
-  // 最新样本
-  fetch(`${apiBase}/api/data-center/records?limit=20`).then(r=>r.json()).then(d=>{
+  // 最新样本（limit=50 保证老批次 source 也能显示，不再被 5min 滚动的 ccxt/defillama 20 条淹没）
+  fetch(`${apiBase}/api/data-center/records?limit=50`).then(r=>r.json()).then(d=>{
     const el = document.getElementById('dc-records-tbody');
     if(!d.ok){el.innerHTML=`<tr><td colspan="5" style="color:var(--red)">${d.error}</td></tr>`;return;}
     const recs=d.records||[];let html='';
     recs.forEach(r=>{
-      const m=r.metrics||{};let mk='';
-      if(m.value!=null)mk=`value=${m.value}`;
-      else if(m.price!=null)mk=`price=${m.price}`;
-      else if(m.last!=null)mk=`last=${m.last}`;
-      else if(m.total_tvl_bln!=null)mk=`TVL=${m.total_tvl_bln}B`;
-      else if(m.propose_gas!=null)mk=`gas=${m.propose_gas}`;
-      else if(m.title)mk=(m.title||'').slice(0,50);
-      else mk=JSON.stringify(m).slice(0,60);
+      const m=r.metrics||{};let mk=renderBlockbeatsMetricsShort(m,r);
       html+=`<tr><td>${fmtTime(r.timestamp)}</td><td>${r.source}</td><td>${r.category}</td><td>${r.sub_category}</td><td style="font-family:monospace;font-size:11px">${mk}</td></tr>`;
     });
     el.innerHTML=html||'<tr><td colspan="5" style="color:var(--muted)">无数据</td></tr>';
@@ -1962,6 +2347,279 @@ function loadDataCenter() {
   }).catch(e=>{document.getElementById('dc-quality-tbody').innerHTML=`<tr><td colspan="4" style="color:var(--red)">加载失败: ${e}</td></tr>`;});
 }
 
+// ── 最新样本：关键指标渲染（扩展blockbeats脉动/信号/Top10专属key）─────────────
+function renderBlockbeatsMetricsShort(m, r) {
+  if (!m) return '--';
+  // 1) 脉动：score(0-100) + powered_by
+  if (typeof m.score==='number' && m.five_dimension && r && r.sub_category==='bottom_pulse_index') {
+    const sent = m.score>=80?'亢奋🔥':m.score>=60?'乐观😊':m.score>=40?'中性😐':m.score>=20?'悲观😟':'恐慌⛈️';
+    return `<b style="color:${m.score>=60?'var(--green)':m.score<=40?'var(--red)':'var(--muted)'}">脉动=${m.score}</b> (${sent})`;
+  }
+  // 2) 信号：signal_name + status + score
+  if (m.signal_name && m.status!=null) {
+    const sc = m.score>0?'📈':m.score<0?'📉':'➖';
+    const col = m.score>0?'var(--green)':m.score<0?'var(--red)':'var(--muted)';
+    return `${sc} ${m.signal_name}: <b style="color:${col}">${m.status}</b>`;
+  }
+  // 3) Top10 净流入：rank + symbol + inflow_text + inflow_usd
+  if (m.rank!=null && m.symbol && (m.inflow_text!=null || m.inflow_usd!=null)) {
+    let amt = m.inflow_text;
+    if (!amt && m.inflow_usd!=null) {
+      const u = Number(m.inflow_usd);
+      amt = u>=1e6 ? (u/1e6).toFixed(2)+'M' : u>=1e3 ? (u/1e3).toFixed(2)+'K' : u.toFixed(0);
+    }
+    return `#${m.rank} <b>${m.symbol}</b> +${amt}`;
+  }
+  // 4) 卡片：metric_title + time_range 或 five_dimension
+  if (m.metric_title) {
+    return `📋${m.metric_title}${m.time_range?` (${m.time_range})`:''}${m.five_dimension?` [${m.five_dimension}]`:''}`;
+  }
+  // 5) 通用原有匹配
+  if(m.value!=null)return `value=${m.value}`;
+  else if(m.price!=null)return `price=${m.price}`;
+  else if(m.last!=null)return `last=${m.last}`;
+  else if(m.total_tvl_bln!=null)return `TVL=${m.total_tvl_bln}B`;
+  else if(m.propose_gas!=null)return `gas=${m.propose_gas}`;
+  else if(m.title)return (m.title||'').slice(0,50);
+  return JSON.stringify(m).slice(0,60);
+}
+
+// ── 律动专属面板渲染 ─────────────────────────────────────────────────────────
+function loadBlockBeatsPanel() {
+  const apiBase = location.hostname === 'localhost' ? `http://127.0.0.1:${location.port}` : '';
+  const host = document.getElementById('bb-panel');
+  if (!host) return;
+  host.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px;grid-column:1/4">加载中…</div>`;
+  fetch(`${apiBase}/api/data-center/blockbeats`).then(r=>r.json()).then(d=>{
+    if(!d.ok){host.innerHTML=`<div style="color:var(--red);padding:16px;grid-column:1/4">加载失败：${d.error||'未知错误'}</div>`;return;}
+    const tsEl = document.getElementById('bb-batch-ts');
+    if (tsEl) tsEl.textContent = d.batch_ts ? `batch@ ${fmtTime(d.batch_ts)} · n=${d.batch_count}` : '暂无采集批次';
+    if (!d.batch_count) {
+      host.innerHTML = `<div style="text-align:center;color:var(--muted);padding:32px;grid-column:1/4">暂无律动采集数据，请先运行数据采集。</div>`;
+      return;
+    }
+    // ---- 卡片1：脉动指数 ----
+    let pulseHtml = '';
+    if (d.pulse) {
+      const p = Number(d.pulse.metrics.score) || 0;
+      const pct = Math.max(0, Math.min(100, p));
+      let label, color;
+      if (pct>=80){label='亢奋🔥';color='#e52e71';}
+      else if (pct>=60){label='乐观😊';color='#2ecc71';}
+      else if (pct>=40){label='中性😐';color='#f1c40f';}
+      else if (pct>=20){label='悲观😟';color='#e67e22';}
+      else {label='恐慌⛈️';color='#9b59b6';}
+      const ringR = 78;
+      const C = 2 * Math.PI * ringR;
+      const dash = (pct/100) * C;
+      pulseHtml = `
+        <div style="text-align:center;background:linear-gradient(160deg,rgba(255,138,0,0.08),rgba(229,46,113,0.06));border-radius:12px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">🌊 市场脉动指数</div>
+          <svg viewBox="0 0 200 200" width="170" height="170" style="display:block;margin:0 auto">
+            <defs>
+              <linearGradient id="bbPulseGrad" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stop-color="#ff8a00"/>
+                <stop offset="100%" stop-color="#e52e71"/>
+              </linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r="${ringR}" stroke="var(--border)" stroke-width="14" fill="none"/>
+            <circle cx="100" cy="100" r="${ringR}" stroke="url(#bbPulseGrad)" stroke-width="14" fill="none"
+                    stroke-linecap="round" transform="rotate(-90 100 100)"
+                    stroke-dasharray="${dash} ${C-dash}"/>
+            <text x="100" y="96" text-anchor="middle" font-size="36" font-weight="700" fill="${color}">${p}</text>
+            <text x="100" y="120" text-anchor="middle" font-size="13" fill="var(--muted)">/100 ${label}</text>
+          </svg>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted)">归一 ${(pct/100).toFixed(2)} · 五维映射 ${d.pulse.metrics.five_dimension||'tian'}</div>
+        </div>`;
+    } else {
+      pulseHtml = `<div style="color:var(--muted);padding:32px;text-align:center">脉动数据缺失</div>`;
+    }
+    // ---- 卡片2：11 抄底逃顶信号 ----
+    let sigHtml = `<div style="background:rgba(100,120,255,0.05);border-radius:12px;padding:14px;border:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">🎯 抄底/逃顶信号 (${d.signals.length})</div>
+      <div style="display:grid;grid-template-columns:1fr;gap:6px">`;
+    const knownMap = {
+      bottom_signal_tian: {label:'天维', dim:'时间/情绪'},
+      bottom_signal_di:   {label:'地维', dim:'结构/链上'},
+      bottom_signal_jiang:{label:'将维', dim:'机构/共识'},
+    };
+    const list = d.signals.length ? d.signals : [{sub_category:'no_signals', metrics:{signal_name:'暂无信号记录',status:'保持持有',score:0,five_dimension:''}}];
+    for (const s of list) {
+      const k = knownMap[s.sub_category] || {label:'信号', dim:''};
+      const score = Number(s.metrics.score) || 0;
+      const icon = score>0?'✅ 买入':score<0?'🔴 卖出':'➖ 持有';
+      const badge = score>0?'badge-long':score<0?'badge-block':'badge-hold';
+      const col = s.metrics.five_dimension||'';
+      sigHtml += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg-alt);border-radius:6px">
+        <span style="min-width:60px;font-size:11px;color:var(--muted)">${k.label}${col?'<br>['+col+']':''}</span>
+        <span style="flex:1;font-size:12px">${s.metrics.signal_name||s.sub_category||''}</span>
+        <span class="badge ${badge}" style="font-size:11px">${icon} ${s.metrics.status||''}</span>
+      </div>`;
+    }
+    sigHtml += `</div></div>`;
+    // ---- 卡片3：Top10 净流入 + 卡片Meta ----
+    let top10Html = `<div style="background:rgba(50,200,140,0.05);border-radius:12px;padding:14px;border:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">💸 Smart Money · Top10 净流入榜</div>
+      <table class="log-table" style="margin:0">
+        <thead><tr><th style="width:32px">#</th><th style="text-align:left">币种</th><th style="text-align:right">流入额</th><th style="text-align:right">占比</th></tr></thead>
+        <tbody>`;
+    const total = d.top10_inflow.reduce((s,x)=>s + (Number(x.metrics.inflow_usd)||0), 0);
+    for (const row of d.top10_inflow) {
+      const m = row.metrics || {};
+      const rank = m.rank ?? '--';
+      const sym = m.symbol || '--';
+      const text = m.inflow_text || '';
+      const usd = Number(m.inflow_usd) || 0;
+      const pct = total>0 ? (usd/total*100).toFixed(1)+'%' : '--';
+      const barPct = total>0 ? Math.min(100, usd/total*100) : 0;
+      const usdTxt = text || (usd>=1e6?(usd/1e6).toFixed(2)+'M':usd>=1e3?(usd/1e3).toFixed(1)+'K':usd.toFixed(0));
+      top10Html += `<tr>
+        <td style="text-align:center;font-size:11px;color:var(--muted)">${rank}</td>
+        <td style="text-align:left"><b>${sym}</b></td>
+        <td style="text-align:right;font-family:monospace;font-size:11px;color:var(--green)">+${usdTxt}</td>
+        <td style="text-align:right;width:32%"><div style="position:relative;height:14px;background:var(--border);border-radius:7px;overflow:hidden">
+          <div style="width:${barPct}%;height:100%;background:linear-gradient(90deg,#32c88c,#2ecc71)"></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;font-size:10px;color:var(--text)">${pct}</div>
+        </div></td>
+      </tr>`;
+    }
+    if (!d.top10_inflow.length) top10Html += `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:16px">暂无Top10流入数据</td></tr>`;
+    top10Html += `</tbody></table>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:right">合计流入: <b style="color:var(--green)">$${total>=1e6?(total/1e6).toFixed(2)+'M':total.toLocaleString()}</b></div>`;
+    // 额外：echarts_card_meta（M2/Bitfinex等）
+    if (d.cards && d.cards.length) {
+      top10Html += `<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">📌 宏观/机构卡片</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">`;
+      for (const c of d.cards) {
+        const m = c.metrics || {};
+        const dim = m.five_dimension ? `<span style="color:var(--blue)">[${m.five_dimension}]</span>` : '';
+        top10Html += `<div style="background:var(--bg-alt);border-radius:6px;padding:6px 10px;font-size:11px">
+          📋 <b>${m.metric_title||'卡片'}</b> ${dim}
+          ${m.time_range?`<span style="color:var(--muted)">(${m.time_range})</span>`:''}
+        </div>`;
+      }
+      top10Html += `</div></div>`;
+    }
+    top10Html += `</div>`;
+    host.innerHTML = pulseHtml + sigHtml + top10Html;
+  }).catch(e=>{
+    host.innerHTML = `<div style="color:var(--red);padding:16px;grid-column:1/4">加载失败：${e.message||e}</div>`;
+  });
+}
+
+// ── Panewslab 八大板块面板渲染 ───────────────────────────────────────────────
+function loadPanewslabPanel() {
+  const apiBase = location.hostname === 'localhost' ? `http://127.0.0.1:${location.port}` : '';
+  const host = document.getElementById('pn-panel');
+  if (!host) return;
+  host.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px;grid-column:1/5">加载中…</div>`;
+  fetch(`${apiBase}/api/data-center/panewslab`).then(r=>r.json()).then(d=>{
+    if(!d.ok){host.innerHTML=`<div style="color:var(--red);padding:16px;grid-column:1/5">加载失败：${d.error||'未知错误'}</div>`;return;}
+    const tsEl = document.getElementById('pn-batch-ts');
+    if (tsEl) tsEl.textContent = d.batch_ts ? `batch@ ${fmtTime(d.batch_ts)} · n=${d.batch_count}` : '暂无采集批次';
+    if (!d.batch_count) {
+      host.innerHTML = `<div style="text-align:center;color:var(--muted);padding:32px;grid-column:1/5">暂无 Panewslab 采集数据，请先运行数据采集。</div>`;
+      return;
+    }
+    const S = d.sections || {};
+    const fmtUsd = v => {
+      if (v==null) return '--';
+      const n = Number(v); if(!isFinite(n)) return '--';
+      const a = Math.abs(n);
+      if(a>=1e12) return (n/1e12).toFixed(2)+'T';
+      if(a>=1e9) return (n/1e9).toFixed(2)+'B';
+      if(a>=1e6) return (n/1e6).toFixed(2)+'M';
+      if(a>=1e3) return (n/1e3).toFixed(1)+'K';
+      return n.toFixed(2);
+    };
+    const fmtPct = v => {
+      if (v==null) return '--';
+      const n = Number(v); if(!isFinite(n)) return '--';
+      return (n>=0?'+':'')+n.toFixed(2)+'%';
+    };
+    const pctColor = v => {
+      if (v==null) return 'var(--muted)';
+      const n = Number(v); if(!isFinite(n)) return 'var(--muted)';
+      return n>0?'var(--green)':n<0?'var(--red)':'var(--muted)';
+    };
+    const m = (sec, k) => (S[sec] && S[sec].metrics) ? S[sec].metrics[k] : null;
+    const num = (sec, k) => { const v = m(sec,k); const n = Number(v); return isFinite(n)?n:null; };
+    const fmtNum = (sec, k, d=2) => { const v = m(sec,k); const n = Number(v); return isFinite(n)?n.toFixed(d):'--'; };
+    // 8 板块定义：[图标, 标题, [[label, value, color], ...]]
+    const boards = [
+      {icon:'🌍', title:'市场总览', rows: [
+        ['全球市值', '$'+fmtUsd(num('overview_market','global_market_cap_usd')), 'var(--text)'],
+        ['BTC 占比', fmtNum('overview_market','btc_dominance_pct')+'%', 'var(--blue)'],
+        ['24h 涨跌', fmtPct(m('overview_market','global_change24_pct')), pctColor(m('overview_market','global_change24_pct'))],
+        [m('overview_market','top1_symbol')||'Top1', '$'+fmtUsd(num('overview_market','top1_price')), 'var(--text)'],
+      ]},
+      {icon:'🔄', title:'周期信号', rows: [
+        ['抄底命中', `${m('cycle_signals','bottom_hit_count')??'-'}/${m('cycle_signals','bottom_total_count')??'-'}`, 'var(--text)'],
+        ['命中率', (m('cycle_signals','bottom_hit_ratio_pct')!=null?m('cycle_signals','bottom_hit_ratio_pct')+'%':'--'), 'var(--text)'],
+        ['MVRV', fmtNum('cycle_signals','bottom_mvrv_value',3), 'var(--text)'],
+        ['恐贪指数', (m('cycle_signals','bottom_fear-greed_value')!=null?m('cycle_signals','bottom_fear-greed_value'):'--'), 'var(--text)'],
+      ]},
+      {icon:'🏛️', title:'ETF与机构', rows: [
+        ['BTC ETF AUM', '$'+fmtUsd(num('etf_institutional','btc_etf_total_aum_usd')), 'var(--text)'],
+        ['BTC ETF 日流', fmtUsd(num('etf_institutional','btc_etf_daily_flow_usd')), pctColor(num('etf_institutional','btc_etf_daily_flow_usd'))],
+        ['ETH ETF AUM', '$'+fmtUsd(num('etf_institutional','eth_etf_total_aum_usd')), 'var(--text)'],
+        ['国库 BTC', fmtUsd(num('etf_institutional','treasury_total_btc_holdings'))+' 枚', 'var(--text)'],
+      ]},
+      {icon:'💵', title:'稳定币与RWA', rows: [
+        ['RWA TVL', '$'+fmtUsd(num('stablecoin_rwa','rwa_tvl_usd')), 'var(--text)'],
+        ['RWA 1d', fmtPct(m('stablecoin_rwa','rwa_change1d_pct')), pctColor(m('stablecoin_rwa','rwa_change1d_pct'))],
+        ['RWA 7d', fmtPct(m('stablecoin_rwa','rwa_change7d_pct')), pctColor(m('stablecoin_rwa','rwa_change7d_pct'))],
+        ['国债 TVL', '$'+fmtUsd(num('stablecoin_rwa','rwa_cat1_TreasuryBills_tvl')), 'var(--text)'],
+      ]},
+      {icon:'⚡', title:'现货与衍生品', rows: [
+        ['期货持仓', '$'+fmtUsd(num('derivatives_spot','fut_open_interest_usd')), 'var(--text)'],
+        ['24h爆仓', '$'+fmtUsd(num('derivatives_spot','fut_liq_total_24h_usd')), 'var(--red)'],
+        ['多头爆仓', '$'+fmtUsd(num('derivatives_spot','fut_liq_long_24h_usd')), 'var(--red)'],
+        ['空头爆仓', '$'+fmtUsd(num('derivatives_spot','fut_liq_short_24h_usd')), 'var(--green)'],
+      ]},
+      {icon:'🐋', title:'交易所与巨鲸', rows: [
+        ['交易所24h', fmtUsd(num('exchanges_whales','ex_summary_balanceChangeUsd24h')), pctColor(num('exchanges_whales','ex_summary_balanceChangeUsd24h'))],
+        ['BTC 30d', fmtPct(m('exchanges_whales','ex_bal_BTC_chg30d_pct')), pctColor(m('exchanges_whales','ex_bal_BTC_chg30d_pct'))],
+        ['交易所数', (m('exchanges_whales','ex_summary_exchangeCount')??'--')+'', 'var(--text)'],
+        ['巨鲸转账', (m('exchanges_whales','whales_transfer_count')??'--')+' 笔', 'var(--text)'],
+      ]},
+      {icon:'🔗', title:'链上资金', rows: [
+        ['国库 BTC', fmtUsd(num('holdings_onchain_funds','holdings_treasury_btc_sum'))+' 枚', 'var(--text)'],
+        ['美国 BTC', fmtUsd(num('holdings_onchain_funds','holdings_country1_US_btc'))+' 枚', 'var(--text)'],
+        ['国库数', (m('holdings_onchain_funds','holdings_treasury_count')??'--')+'', 'var(--text)'],
+        ['DeFi广度', (m('holdings_onchain_funds','holdings_defi-fundamental-breadth_currentRange')||{}).label||'--', 'var(--blue)'],
+      ]},
+      {icon:'📈', title:'美股与宏观', rows: [
+        ['标普500', fmtNum('macro_us_stocks','us_SP500_value',1), 'var(--text)'],
+        ['标普24h', fmtPct(m('macro_us_stocks','us_SP500_chg_pct')), pctColor(m('macro_us_stocks','us_SP500_chg_pct'))],
+        ['纳指', fmtNum('macro_us_stocks','us_NASDAQCOM_value',1), 'var(--text)'],
+        ['纳指24h', fmtPct(m('macro_us_stocks','us_NASDAQCOM_chg_pct')), pctColor(m('macro_us_stocks','us_NASDAQCOM_chg_pct'))],
+      ]},
+    ];
+    let html = '';
+    for (const b of boards) {
+      let rowsHtml = '';
+      for (const [label, value, color] of b.rows) {
+        rowsHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11px">
+          <span style="color:var(--muted)">${label}</span>
+          <span style="font-family:monospace;color:${color};font-weight:600">${value}</span>
+        </div>`;
+      }
+      html += `<div style="background:linear-gradient(160deg,rgba(59,130,246,0.04),rgba(6,182,212,0.02));border-radius:10px;padding:12px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">
+          <span style="font-size:14px">${b.icon}</span>
+          <span style="font-size:12px;font-weight:700;color:var(--text)">${b.title}</span>
+        </div>
+        ${rowsHtml}
+      </div>`;
+    }
+    host.innerHTML = html;
+  }).catch(e=>{
+    host.innerHTML = `<div style="color:var(--red);padding:16px;grid-column:1/5">加载失败：${e.message||e}</div>`;
+  });
+}
+
 function switchTab(tab, evt) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1971,14 +2629,14 @@ function switchTab(tab, evt) {
     evt.target.classList.add('active');
   } else {
     const tabs = document.querySelectorAll('.tab');
-    const tabNames = ['local', 'cloud', 'trend', 'v15ct', 'yijing', 'morph', 'dreamos', 'signals'];
+    const tabNames = ['local', 'evolution', 'trend', 'v15ct', 'yijing', 'morph', 'dreamos', 'signals'];
     const idx = tabNames.indexOf(tab);
     if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
   }
   document.getElementById('tab-' + tab).classList.add('active');
 
-  if (tab === 'cloud' && !cloudDataLoaded) {
-    loadCloudData();
+  if (tab === 'evolution' && !window._evoDataLoaded) {
+    if (typeof loadEvolutionData === 'function') loadEvolutionData();
   }
   if (tab === 'trend' && !trendDataLoaded) {
     loadTrendScreenData();
@@ -1994,9 +2652,11 @@ function switchTab(tab, evt) {
   }
   if (tab === 'datacenter') {
     loadDataCenter();
+    loadPanewslabPanel();
   }
   if (tab === 'wujimiaosuan') {
     loadWujiMiaosuan();
+    loadFvAll();
   }
   if (tab === 'yijing' && !yijingDataLoaded) {
     loadYijingData();
@@ -2036,8 +2696,8 @@ function currentTabRefresh() {
     loadV4WaveStrategy();
   } else if (currentTab === 'global') {
     loadGlobalTradeStats();
-  } else {
-    loadCloudData();
+  } else if (currentTab === 'evolution') {
+    if (typeof loadEvolutionData === 'function') loadEvolutionData();
   }
 }
 
@@ -2219,7 +2879,8 @@ function hexToRgb(hex) {
   return result ? `${parseInt(result[1], 16)},${parseInt(result[2], 16)},${parseInt(result[3], 16)}` : '107,114,136';
 }
 
-// ── 云端调度数据加载 ──────────────────────────────────────────────────────
+// ── 云端调度数据加载（已隐藏：价值有限，由自进化架构Tab取代。恢复时取消注释即可） ──
+/*
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_REPO = 'yunya1991/Dreambuddy-V2';
 const PR_NUMBER = 52;
@@ -2243,56 +2904,56 @@ function cloudFormatDate(dateStr) {
 
 function parseCloudComment(body) {
   const result = { action: '--', coin: '--', confidence: 0, source: 'Unknown', summary: body };
-  
+
   if (body.includes('Trae') || body.includes('trae')) result.source = 'Trae';
   else if (body.includes('GitHub Actions') || body.includes('Actions')) result.source = 'Actions';
-  
+
   if (body.includes('LONG')) result.action = 'LONG';
   else if (body.includes('SHORT')) result.action = 'SHORT';
   else if (body.includes('CLOSE')) result.action = 'CLOSE';
   else if (body.includes('HOLD')) result.action = 'HOLD';
-  
+
   const coinMatch = body.match(/\*\*币种\*\*:\s*(\S+)/);
   if (coinMatch) result.coin = coinMatch[1];
-  
+
   const confMatch = body.match(/\*\*置信度\*\*:\s*(\d+)%/);
   if (confMatch) result.confidence = parseInt(confMatch[1]);
-  
+
   const lines = body.split('\n').filter(l => l.trim()).slice(0, 6);
   result.summary = lines.join('\n');
-  
+
   return result;
 }
 
 async function loadCloudData() {
   const container = document.getElementById('cloud-comments');
   container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px">加载中...</div>';
-  
+
   try {
     const res = await fetch(`${GITHUB_API}/repos/${GITHUB_REPO}/issues/${PR_NUMBER}/comments?per_page=20&sort=created&direction=desc`, {
       headers: { 'Accept': 'application/vnd.github.v3+json' }
     });
-    
+
     if (!res.ok) throw new Error('GitHub API 请求失败: ' + res.status);
-    
+
     const comments = await res.json();
-    
+
     let traeCount = 0, actionsCount = 0;
     comments.forEach(c => {
       const parsed = parseCloudComment(c.body);
       if (parsed.source === 'Trae') traeCount++;
       else if (parsed.source === 'Actions') actionsCount++;
     });
-    
+
     document.getElementById('cloud-total').textContent = comments.length;
     document.getElementById('cloud-trae').textContent = traeCount;
     document.getElementById('cloud-actions').textContent = actionsCount;
-    
+
     if (comments.length > 0) {
       const hours = ((new Date() - new Date(comments[0].created_at)) / 3600000).toFixed(1);
       document.getElementById('cloud-last').textContent = hours + 'h';
     }
-    
+
     const recent = comments.slice(0, 10);
     if (recent.length === 0) {
       container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-style:italic">暂无执行记录</div>';
@@ -2300,7 +2961,7 @@ async function loadCloudData() {
       container.innerHTML = recent.map(c => {
         const parsed = parseCloudComment(c.body);
         const sourceClass = parsed.source === 'Trae' ? 'trae' : 'actions';
-        const actionColor = parsed.action === 'LONG' ? 'var(--green)' : 
+        const actionColor = parsed.action === 'LONG' ? 'var(--green)' :
                             parsed.action === 'SHORT' ? 'var(--red)' : 'var(--muted)';
         return `
           <div class="pr-comment">
@@ -2313,7 +2974,7 @@ async function loadCloudData() {
         `;
       }).join('');
     }
-    
+
     cloudDataLoaded = true;
     document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
   } catch (e) {
@@ -2321,6 +2982,7 @@ async function loadCloudData() {
     container.innerHTML = `<div style="text-align:center;color:var(--red);padding:30px">加载失败: ${e.message}<br><span style="font-size:11px;color:var(--muted)">可能是 GitHub API 限流，请稍后再试</span></div>`;
   }
 }
+*/
 
 // ── 三屏马丁交易数据加载 ──────────────────────────────────────────────────
 async function fetchJson(url, timeoutMs = 10000) {
@@ -6484,5 +7146,8 @@ function renderGlobalBarChart(containerId, systems, valueKey, displayKey, unit, 
   }).join('');
 }
 </script>
+
+<!-- 🧬 自进化架构可视化 -->
+<script src="/static/evolution.js"></script>
 </body>
 </html>

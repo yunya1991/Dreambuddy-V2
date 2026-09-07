@@ -252,6 +252,20 @@ def check_yijing_health() -> tuple[bool, str, dict]:
 # ── 恢复执行 ────────────────────────────────────────────────────────────────
 
 
+def _build_popen_env() -> dict:
+    """构造 Popen env，确保三引擎 env 变量传递给 polling_trader 子进程。
+
+    Gap2：当 yijing_monitor 从 launchd 自动触发时，父进程可能没有
+    ODAILY_ENGINE_BOOST / FUND_7ENGINES_BOOST / FORCE_VECTOR_SHADOW，导致子进程也不继承。
+    使用 setdefault（不覆盖已有值），然后显式传 env 给 Popen。
+    """
+    env = os.environ.copy()
+    env.setdefault("ODAILY_ENGINE_BOOST", "1")
+    env.setdefault("FUND_7ENGINES_BOOST", "1")
+    env.setdefault("FORCE_VECTOR_SHADOW", "1")
+    return env
+
+
 def run_polling_trader():
     """启动易经推理轮询交易器"""
     _log("=" * 60)
@@ -321,6 +335,7 @@ def run_polling_trader():
                 stdout=out_f,
                 stderr=err_f,
                 start_new_session=True,
+                env=_build_popen_env(),
             )
         _log(f"Popen 启动成功 PID={proc.pid}")
         # 短等待确认进程未立即退出

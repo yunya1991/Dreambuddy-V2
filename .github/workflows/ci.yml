@@ -73,6 +73,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov pytest-asyncio pytest-timeout
           pip install pandas numpy scipy requests python-dotenv flask flask-cors
+          pip install jsonschema pytest-parallel  # dreambuddy-v2 MVP L1/L2 需求（schema校验+并行冒烟）
 
       - name: Run V15 martin tests
         run: |
@@ -92,6 +93,23 @@ jobs:
       - name: Run yijing tests
         run: |
           cd 11-易经推理系统 && python -m pytest tests/ -v --tb=short -k "not stress"
+        continue-on-error: true
+
+      # === dreambuddy-v2 MVP: L1 Resistance Vector + 权重冒烟（18+10 = 28 条）===
+      - name: Run MVP L1 Resistance + Weights unit tests
+        run: |
+          PYTHONPATH=$GITHUB_WORKSPACE:$PYTHONPATH \
+          python -m pytest \
+            '21-特征工程中心/tests/unit/test_resistance_features.py' \
+            '21-特征工程中心/tests/unit/test_default_weights.py' \
+            -v --tb=short
+        continue-on-error: true
+
+      # === dreambuddy-v2 MVP: L2 Strategy Gene schema + 库（12 条）===
+      - name: Run MVP L2 Strategy Gene schema + library tests
+        run: |
+          PYTHONPATH=$GITHUB_WORKSPACE:$PYTHONPATH \
+          python -m pytest '4-MEMORY/tests/test_strategy_genes.py' -v --tb=short
         continue-on-error: true
 
   coverage:
@@ -120,11 +138,16 @@ jobs:
             --cov=13-通用风控模块/core \
             --cov=13-通用风控模块/rules \
             --cov=12-三屏趋势系统/core \
+            --cov=dreambuddy_core \
+            --cov='21-特征工程中心/feature_hub/resistance_features.py' \
+            --cov='4-MEMORY/2-交易记忆单元/strategy_gene_schema.py' \
             --cov-report=term-missing \
             --cov-report=xml \
             14-V15经典马丁策略/tests/ \
             13-通用风控模块/tests/ \
             12-三屏趋势系统/tests/ \
+            '21-特征工程中心/tests/unit/' \
+            '4-MEMORY/tests/' \
             -v
         continue-on-error: true
 

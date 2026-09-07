@@ -40,6 +40,18 @@
 │  4-OPERATIONS/     — 运营治理知识（索引体系、OKR、门禁、审批）             │
 │  文件：5个                                                             │
 │  ⚡ 谁应该读：治理者 — 需要管理系统状态的人                              │
+│                                                                        │
+│  6-PRODUCT-BUSINESS/ — 产品业务与系统工作流程                             │
+│  文件：7个                                                             │
+│  ⚡ 谁应该读：新成员、开发者、产品决策者 — 理解系统全貌                    │
+│                                                                        │
+│  7-EXTERNAL-RESEARCH/ — 外部资料素材库（传统金融/GitHub/技术方案调研）     │
+│  文件：4+11目录                                                       │
+│  ⚡ 谁应该读：需要复用调研结论、追溯调研路径的开发者                      │
+│                                                                        │
+│  8-AI-COGNITION/    — AI沉淀资料库索引（指向4-MEMORY的导航）              │
+│  文件：4个                                                             │
+│  ⚡ 谁应该读：需要从知识库反查认知记忆的开发者                            │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -49,22 +61,27 @@
 |:---|:---|:---:|
 | L1 | 0-SCHEMA | 4 |
 | L2 | 5-METHODOLOGY | 6 |
-| L3 | 1-TRADING | 9 |
+| L3 | 1-TRADING | 19 |
 | L3 | 2-TECHNICAL | 5 |
 | L3 | 3-THEORY | 4 |
 | L3 | 4-OPERATIONS | 5 |
-| | **合计** | **33** |
+| L3 | 6-PRODUCT-BUSINESS | 7 |
+| L3 | 7-EXTERNAL-RESEARCH | 4+11目录 |
+| L3 | 8-AI-COGNITION | 4 |
+| | **合计** | **48+** |
 
-> **注：** 合计33个文件 = 4(L1) + 6(L2) + 23(L3) + 根INDEX.md(备用) + _analysis/ 2个文件
+> **注：** 合计48+个文件 = 4(L1) + 6(L2) + 23(L3原有) + 15(L3新增) + 根INDEX.md + _analysis/ 2个文件
+> **2026-08-30增量重构：** 新增6-PRODUCT-BUSINESS(7) + 7-EXTERNAL-RESEARCH(4+11目录) + 8-AI-COGNITION(4)
 
 ## 导航建议
 
 | 你的角色 | 从哪开始 |
 |:---|:---|
-| 🆕 新用户 | [使用指南.md](./使用指南.md) → L3 1-TRADING/ → L2 5-METHODOLOGY/ |
+| 🆕 新用户 | [使用指南.md](./使用指南.md) → L3 6-PRODUCT-BUSINESS/产品定位与边界.md → L3 1-TRADING/ |
 | 📊 交易员 | L3 1-TRADING/三屏系统架构.md → L2 5-METHODOLOGY/Z-规划方法论.md |
-| 🔧 开发者 | L3 2-TECHNICAL/Hermes-架构.md → L2 5-METHODOLOGY/ |
+| 🔧 开发者 | L3 6-PRODUCT-BUSINESS/核心目录架构.md → L3 2-TECHNICAL/Hermes-架构.md → L2 5-METHODOLOGY/ |
 | 🏛️ 治理者 | [跨域映射.md](./跨域映射.md) → [质量标准.md](./质量标准.md) → L2 5-METHODOLOGY/知识库管理框架.md |
+| 🔬 调研者 | L3 7-EXTERNAL-RESEARCH/INDEX.md → L3 8-AI-COGNITION/检索指南.md |
 
 ## 快速跳转
 
@@ -75,4 +92,4 @@
 
 ---
 
-_最后更新：2026-06-13 | 来源：知识库三层架构_
+_最后更新：2026-08-30 | 来源：知识库三层架构 + 增量重构方案A_

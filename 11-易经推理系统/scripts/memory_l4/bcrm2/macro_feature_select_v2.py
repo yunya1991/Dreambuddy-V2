@@ -58,7 +58,16 @@ FEE_RATE = 0.0005
 SLIPPAGE_RATE = 0.001
 
 # 待测试的 top-K 值
-TOP_K_CANDIDATES = [0, 3, 5, 8, 12, 24]
+TOP_K_CANDIDATES = [0, 3, 5, 8, 12, 24, 37]
+
+# 第一轮 13 个新特征（宏金融扩展 7 + 残差 1 + BTC 链上扩展 5），用于 NEW13_ONLY 独立评估
+FIRST_ROUND_13_NEW_FEATURES = [
+    "vix_zone", "us_macro_regime", "sp500_7d_break", "dxy_strength",
+    "btc_etf_flow_3d", "rwa_liquidity_pulse", "treasury_balance_delta",
+    "stablecoin_minus_rwa",
+    "whale_netflow_pulse", "exchange_btc_30d", "defi_breadth",
+    "oi_liq_pressure", "btc_dom_delta",
+]
 
 # 数据缓存
 _KLINE_CACHE = {}
@@ -135,10 +144,16 @@ def analyze_feature_importance():
         if macro_df is not None and not macro_df.empty:
             enabled.append("macro")
 
+        # === [REG] 三层判据日志：开关真命中证据（经验 1433933）===
+        _log_registry_evidence(enabled=enabled, extra_cfg=None)
+
         features, _ = FeatureRegistry.compute_all(
             df=df, ref_df=ref_df, macro_df=macro_df,
             symbol=symbol, enabled=enabled, verbose=False,
         )
+
+        # === [DF] 三层判据日志：新特征真注入证据（经验 1433933）===
+        _log_dataframe_evidence(features_df=features, macro_df=macro_df, symbol=symbol)
 
         # 生成标签
         labeler = DialecticalLabeler(
@@ -177,6 +192,9 @@ def analyze_feature_importance():
             }
             model = lgb.train(params, train_data, num_boost_round=100)
             importances = dict(zip(X.columns, model.feature_importance(importance_type="split")))
+
+            # === [LGBM] 三层判据日志：模型真消费新特征证据（经验 1433933）===
+            _log_lgbm_evidence(importances=importances, symbol=symbol)
         except Exception as e:
             print(f"    LightGBM 训练失败: {e}")
             continue
@@ -373,37 +391,313 @@ def test_top_k_subsets(ranked_features):
             print(f"    → 平均: 得分={avg_score:.3f}, 夏普={avg_sharpe:.2f}, "
                   f"胜率={avg_wr:.1%}, 收益={avg_ret:+.1f}%, 回撤={avg_dd:.2f}%")
 
+    # ──────────────────────────────────────────────────────────────────────
+    # NEW13_ONLY 附加模式：只启用第一轮 13 新特征（完全不用旧 24 宏观特征的重要性排名）
+    # 目的：评估「独立注入新13特征」本身是否具备增量价值（即便尾段只有3bars有值的严苛情形）
+    # ──────────────────────────────────────────────────────────────────────
+    _NEW13_KEY = "NEW13"
+    print(f"\n  [测试] NEW13_ONLY: 启用第一轮13新特征独立 (subset = FIRST_ROUND_13_NEW_FEATURES)")
+    subset_new13 = list(FIRST_ROUND_13_NEW_FEATURES)
+    macro_cfg_new13 = build_macro_feat_config(subset_new13)
+    coin_res_new13 = {}
+    scores_new13 = []
+    for symbol in TEST_COINS:
+        df = load_klines(symbol)
+        if df is None or len(df) < 800:
+            continue
+        try:
+            result = run_backtest_with_features(symbol, df, macro_cfg_new13, n_folds=N_FOLDS_FAST)
+            s = compute_score(result)
+            coin_res_new13[symbol] = {
+                "trades": result.total_trades,
+                "win_rate": round(result.overall_win_rate, 4),
+                "return_pct": round(result.total_return, 2),
+                "max_drawdown": round(result.max_drawdown, 2),
+                "sharpe": round(result.sharpe_ratio, 4),
+                "profit_factor": round(result.profit_factor, 4),
+                "score": round(s, 4),
+            }
+            scores_new13.append(s)
+            print(f"    {symbol}: 交易={result.total_trades:>3} "
+                  f"胜率={result.overall_win_rate:.1%} "
+                  f"收益={result.total_return:+.1f}% "
+                  f"夏普={result.sharpe_ratio:.2f} "
+                  f"回撤={result.max_drawdown:.2f}% "
+                  f"得分={s:.3f}")
+        except Exception as e:
+            print(f"    {symbol}: NEW13 回测失败: {e}")
+            coin_res_new13[symbol] = None
+    if scores_new13:
+        avg_s = float(np.mean(scores_new13))
+        avg_sh = float(np.mean([c["sharpe"] for c in coin_res_new13.values() if c]))
+        avg_w = float(np.mean([c["win_rate"] for c in coin_res_new13.values() if c]))
+        avg_r = float(np.mean([c["return_pct"] for c in coin_res_new13.values() if c]))
+        avg_d = float(np.mean([c["max_drawdown"] for c in coin_res_new13.values() if c]))
+        results_by_k[_NEW13_KEY] = {
+            "label": "NEW13_ONLY（第一轮13新特征独立）",
+            "features": subset_new13,
+            "n_features": len(subset_new13),
+            "avg_score": round(avg_s, 4),
+            "avg_sharpe": round(avg_sh, 4),
+            "avg_win_rate": round(avg_w, 4),
+            "avg_return_pct": round(avg_r, 2),
+            "avg_drawdown": round(avg_d, 2),
+            "coin_results": coin_res_new13,
+        }
+        print(f"    → NEW13 平均: 得分={avg_s:.3f}, 夏普={avg_sh:.2f}, "
+              f"胜率={avg_w:.1%}, 收益={avg_r:+.1f}%, 回撤={avg_d:.2f}%")
+    else:
+        print("    → NEW13_ONLY: 全部回测无有效结果")
+
     # 汇总对比
     print(f"\n  {'='*80}")
-    print(f"  Top-K 子集对比汇总")
+    print(f"  Top-K 子集 + NEW13_ONLY 汇总")
     print(f"  {'='*80}")
-    print(f"  {'K':<5} {'特征数':>5} {'得分':>8} {'夏普':>8} {'胜率':>8} {'收益%':>8} {'回撤%':>8}")
-    print(f"  {'-'*55}")
+    print(f"  {'Config':<7} {'特征数':>5} {'得分':>8} {'夏普':>8} {'胜率':>8} {'收益%':>8} {'回撤%':>8}")
+    print(f"  {'-'*60}")
+    # 先按 TOP_K 顺序输出
     for k in TOP_K_CANDIDATES:
         if k in results_by_k:
             r = results_by_k[k]
-            print(f"  K={k:<3} {r['n_features']:>5} {r['avg_score']:>8.3f} "
+            print(f"  K={k:<5} {r['n_features']:>5} {r['avg_score']:>8.3f} "
                   f"{r['avg_sharpe']:>8.2f} {r['avg_win_rate']:>8.1%} "
                   f"{r['avg_return_pct']:>+8.1f} {r['avg_drawdown']:>8.2f}")
+    # 再单独输出 NEW13
+    if _NEW13_KEY in results_by_k:
+        r = results_by_k[_NEW13_KEY]
+        print(f"  NEW13   {r['n_features']:>5} {r['avg_score']:>8.3f} "
+              f"{r['avg_sharpe']:>8.2f} {r['avg_win_rate']:>8.1%} "
+              f"{r['avg_return_pct']:>+8.1f} {r['avg_drawdown']:>8.2f}")
 
-    # 找最优 K
-    best_k = max(results_by_k.keys(), key=lambda k: results_by_k[k]["avg_score"])
-    baseline_k = 0
-    best_score = results_by_k[best_k]["avg_score"]
-    baseline_score = results_by_k.get(baseline_k, {}).get("avg_score", 0)
+    # 找最优配置（含 NEW13）
+    all_keys = list(TOP_K_CANDIDATES) + ([_NEW13_KEY] if _NEW13_KEY in results_by_k else [])
+    valid_keys = [k for k in all_keys if k in results_by_k]
+    if not valid_keys:
+        return results_by_k, None
+    best_key = max(valid_keys, key=lambda k: results_by_k[k]["avg_score"])
+    baseline_key = 0
+    best_score = results_by_k[best_key]["avg_score"]
+    baseline_score = results_by_k.get(baseline_key, {}).get("avg_score", 0)
 
-    print(f"\n  最优 K={best_k}, 得分={best_score:.3f}")
+    print(f"\n  最优配置={'K='+str(best_key) if isinstance(best_key,int) else best_key}, 得分={best_score:.3f}")
     print(f"  基线 K=0, 得分={baseline_score:.3f}")
     print(f"  提升: {best_score - baseline_score:+.3f}")
 
-    if best_k > 0 and best_score > baseline_score:
-        print(f"\n  ✓ 最优子集优于无宏观基线")
-        print(f"  启用特征 ({len(results_by_k[best_k]['features'])}个): "
-              f"{results_by_k[best_k]['features']}")
+    if best_key != 0 and best_score > baseline_score:
+        print(f"\n  ✓ 最优配置优于无宏观基线")
+        print(f"  启用特征 ({len(results_by_k[best_key]['features'])}个): "
+              f"{results_by_k[best_key]['features']}")
     else:
-        print(f"\n  ✗ 最优子集未超过无宏观基线，宏观特征不建议启用")
+        print(f"\n  ✗ 最优配置未超过无宏观基线，宏观特征不建议启用")
 
-    return results_by_k, best_k
+    return results_by_k, best_key
+
+
+# ============================================================
+# Phase 2-3: 严格型一损全弃判定 + 基线打印 + 子集剪枝 + t 检验
+# 严格型（A）验收门槛：
+#   任一指标劣于下限 → FAIL（一损全弃）；显著提升项 < 2 → FAIL。
+#   下限 = 容差保护的 min(B0,B1)；显著 = 比 max(B0,B1) 再上一个台阶。
+#   回撤指标为反向：上限 = max(B0,B1)+容差；显著 = 低于 min(B0,B1) - 阈值。
+# ============================================================
+
+# 严格型门槛（可全局配置，默认按 A 标准）
+_STRICT_THRESHOLDS = {
+    # (劣于下限的容差减法, 显著高于 max 的加法门槛)
+    # 对反向指标（drawdown）, 含义为: (上限加法, 显著低于 min 的减法门槛)
+    "sharpe":        {"worse_tol": 0.05, "sig_delta": 0.20},
+    "win_pct":       {"worse_tol": 0.005, "sig_delta": 0.02},
+    "return_pct":    {"worse_tol": 0.02,  "sig_delta": 0.05},
+    "max_dd_pct":    {"worse_tol": 0.02,  "sig_delta": 0.03},  # 反向指标
+    "profit_factor": {"worse_tol": 0.05,  "sig_delta": 0.10},
+}
+
+
+def evaluate_strict_criteria(cand: dict, B0: dict, B1: dict) -> tuple:
+    """严格型一损全弃判定。
+
+    Args:
+        cand: 候选方案 5 指标 dict {sharpe,win_pct,return_pct,max_dd_pct,profit_factor}
+        B0: 基线 K=0（无宏观）5 指标
+        B1: 基线 Top-K（现有宏观）5 指标
+
+    Returns:
+        (ok: bool, reasons: list[str])
+        任一指标「劣」→ ok=False；或显著项 <2 → ok=False。
+    """
+    reasons = []
+    sig_count = 0
+
+    # 指标分两类：正向（越大越好）/ 反向（越小越好，max_dd_pct）
+    forward_metrics = ["sharpe", "win_pct", "return_pct", "profit_factor"]
+    reverse_metrics = ["max_dd_pct"]
+
+    for m in forward_metrics:
+        th = _STRICT_THRESHOLDS[m]
+        b0v, b1v, cv = B0[m], B1[m], cand[m]
+        baseline_min = min(b0v, b1v)
+        baseline_max = max(b0v, b1v)
+        lower_floor = baseline_min - th["worse_tol"]
+        sig_line = baseline_max + th["sig_delta"]
+        if cv < lower_floor:
+            reasons.append(
+                f"{m} 劣于下限: cand={cv:.4f} < min(B0={b0v:.4f},B1={b1v:.4f})-{th['worse_tol']:.4f}={lower_floor:.4f}"
+            )
+        elif cv >= sig_line:
+            sig_count += 1
+
+    for m in reverse_metrics:
+        th = _STRICT_THRESHOLDS[m]
+        b0v, b1v, cv = B0[m], B1[m], cand[m]
+        baseline_min = min(b0v, b1v)
+        baseline_max = max(b0v, b1v)
+        upper_cap = baseline_max + th["worse_tol"]  # 回撤不能超过上限
+        sig_line = baseline_min - th["sig_delta"]  # 显著=比最好基线还低一截（回撤越小越好）
+        if cv > upper_cap:
+            reasons.append(
+                f"{m}(回撤) 劣于上限: cand={cv:.4f} > max(B0={b0v:.4f},B1={b1v:.4f})+{th['worse_tol']:.4f}={upper_cap:.4f}"
+            )
+        elif cv <= sig_line:
+            sig_count += 1
+
+    if reasons:
+        return False, reasons  # 一损全弃
+
+    if sig_count < 2:
+        reasons.append(
+            f"显著提升项不足: 仅 {sig_count} 项达到显著门槛（要求≥2）。5项均不劣但未形成共振优势。"
+        )
+        return False, reasons
+
+    return True, [f"通过：5指标均不劣 + {sig_count} 项显著提升（≥2项要求）"]
+
+
+def print_baseline_with_evidence(B0: dict, B1: dict, coin: str, fold: int) -> str:
+    """Phase0 基线打印：返回一条包含 [BASELINE] 前缀、币种、折数、两基线 5 指标的可读字符串。
+
+    （经验 1433933：不新建脚本，直接在现有入口处打印可操作判据行）
+    """
+    def _row(d: dict) -> str:
+        return (f"S={d['sharpe']:.3f} WR={d['win_pct']*100:.2f}% "
+                f"R={d['return_pct']*100:+.2f}% DD={d['max_dd_pct']*100:.2f}% PF={d['profit_factor']:.3f}")
+    line = (f"[BASELINE] coin={coin} fold={fold} | B0(无宏观): {_row(B0)} | "
+            f"B1(现有TopK): {_row(B1)}")
+    print(line)
+    return line
+
+
+def best_subset_search(scores: dict, threshold: float = 0.0) -> tuple:
+    """Phase3 最佳子集剪枝搜索。
+
+    Args:
+        scores: {subset_key: score}，subset_key 可为 str（单特征）或 tuple/list（组合）
+        threshold: 仅 score >= threshold 的候选参与竞争（剪枝）
+
+    Returns:
+        (best_names: tuple, best_score: float)
+    """
+    eligible = [(k, v) for k, v in scores.items() if v >= threshold]
+    if not eligible:
+        return (tuple(), 0.0)
+    best_key, best_score = max(eligible, key=lambda kv: kv[1])
+    if isinstance(best_key, (tuple, list)):
+        best_names = tuple(best_key)
+    else:
+        best_names = (str(best_key),)
+    return best_names, best_score
+
+
+def paired_improvement_significant(baseline_metrics: list, cand_metrics: list,
+                                   alpha: float = 0.05) -> bool:
+    """配对 t 检验（单侧，cand 是否显著优于 baseline）。
+
+    n_fold * n_coin = 3*5 = 15 样本。scipy 优先；缺失时用正态近似。
+    """
+    b = np.asarray(baseline_metrics, dtype=float)
+    c = np.asarray(cand_metrics, dtype=float)
+    if len(b) != len(c) or len(b) < 3:
+        return False
+    diff = c - b
+    try:
+        from scipy import stats as _stats  # 延迟导入，避免 import 成本
+        # 单侧 t 检验：cand 是否 > baseline → H1: diff_mean > 0
+        t_stat, p_two = _stats.ttest_rel(c, b)  # two-sided by default
+        # 单侧 p = 如果 t>0（cand 更优）→ p_two/2；否则 1 - p_two/2
+        if t_stat > 0:
+            p_one = p_two / 2.0
+        else:
+            p_one = 1.0 - (p_two / 2.0) if p_two is not None else 1.0
+        return bool(p_one < alpha)
+    except Exception:
+        # 无 scipy fallback：z-score 近似（正态）
+        dmean = diff.mean()
+        dstd = diff.std(ddof=1) + 1e-12
+        z = dmean / (dstd / np.sqrt(len(diff)))
+        # Φ(z) >= 1-α → z >= norminv(1-α) ≈ 1.645 for α=0.05
+        from math import erf, sqrt
+        phi = 0.5 * (1.0 + erf(z / sqrt(2.0)))
+        return bool(phi > (1.0 - alpha))
+
+
+# ============================================================
+# Phase 0-3 三层判据日志点（经验 1433933：不新建脚本，直接在现有文件打可操作证据行）
+#   [REG] 启动时：FeatureRegistry 启用的特征列表 → 证明两级开关真命中
+#   [DF]  特征合并后：features.shape + 宏观列 null_counts → 证明新特征真注入进 DataFrame
+#   [LGBM] LightGBM 训练后：importance top10 + 新特征 gain>0 列表 → 证明模型真消费了新特征
+# ============================================================
+
+# 12/13 个第一轮新特征名（用于 [LGBM] 日志筛选）
+_NEW_EXT_FEATURES = [
+    "vix_zone", "us_macro_regime", "sp500_7d_break", "dxy_strength",
+    "btc_etf_flow_3d", "rwa_liquidity_pulse", "treasury_balance_delta",
+    "stablecoin_minus_rwa",  # 宏金融扩展 + 残差 8 个
+    "whale_netflow_pulse", "exchange_btc_30d", "defi_breadth",
+    "oi_liq_pressure", "btc_dom_delta",  # BTC 链上扩展 5 个
+]
+
+
+def _log_registry_evidence(enabled: list, extra_cfg: dict | None = None) -> None:
+    """[REG] 层日志：打印 FeatureRegistry.compute_all 实际启用的卦名/特征开关覆盖。"""
+    cfg_snippet = ""
+    if extra_cfg:
+        # 只展示 macro 相关开关（前 8 个，避免日志泛滥）
+        macro_keys = [k for k in extra_cfg.keys() if k.startswith("macro_")][:8]
+        if macro_keys:
+            cfg_snippet = f" | macro_cfg_sample={[(k, extra_cfg[k]) for k in macro_keys]}"
+    line = f"[REG] FeatureRegistry enabled_gua={enabled} count={len(enabled)}{cfg_snippet}"
+    print(line)
+    logger.info(line)
+
+
+def _log_dataframe_evidence(features_df: pd.DataFrame, macro_df: pd.DataFrame | None,
+                            symbol: str) -> None:
+    """[DF] 层日志：特征合并后的形状 + 新特征空值计数（证明数据底座真注入）。"""
+    shape = tuple(features_df.shape)
+    # 统计第一轮 13 个新特征的 null 率
+    new_col_stats = {}
+    for col in _NEW_EXT_FEATURES:
+        if col in features_df.columns:
+            total = len(features_df[col])
+            nulls = int(features_df[col].isna().sum())
+            new_col_stats[col] = f"{total - nulls}/{total}"
+    macro_shape = tuple(macro_df.shape) if macro_df is not None else None
+    line = (f"[DF] merge_klines_with_macro sym={symbol} feat_shape={shape} "
+            f"macro_shape={macro_shape} | new_ext_nonnull={new_col_stats}")
+    print(line)
+    logger.info(line)
+
+
+def _log_lgbm_evidence(importances: dict, symbol: str) -> None:
+    """[LGBM] 层日志：importance Top10 + 第一轮 13 新特征中 gain>0 的名单。"""
+    top10 = sorted(importances.items(), key=lambda x: -x[1])[:10]
+    new_ext_used = [
+        (f, float(importances[f])) for f in _NEW_EXT_FEATURES
+        if f in importances and importances[f] > 0
+    ]
+    line = (f"[LGBM] sym={symbol} top10_gain={[(k, round(v, 2)) for k, v in top10]} "
+            f"| new_ext_with_gain>0={new_ext_used}")
+    print(line)
+    logger.info(line)
 
 
 # ============================================================

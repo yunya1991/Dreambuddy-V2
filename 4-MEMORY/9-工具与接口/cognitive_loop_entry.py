@@ -47,11 +47,13 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import sys
 import time
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,53 @@ logger = logging.getLogger(__name__)
 _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
+
+# ==================================================================
+# Phase 1 EV-T3 VOYAGER：全局路径 & 常量（可被 monkeypatch 重定向到测试目录）
+# ==================================================================
+
+_MEMORY_ROOT: Path = _SCRIPT_DIR.parent
+_ARTIFACTS_DIR: Path = _MEMORY_ROOT / "artifacts"
+
+# VOYAGER 记忆扩展字段（domain + scores）存储，避免改 SQLite schema
+VOYAGER_MEMORY_EXTRA_PATH: Path = _ARTIFACTS_DIR / "voyager_memory_extra.json"
+# VOYAGER verify 流水（连续成功计数）
+VOYAGER_CONSECUTIVE_JSONL: Path = _ARTIFACTS_DIR / "voyager_consecutive.jsonl"
+# AUTO 草案审核队列路径（永远不进正式 solution_paths/）
+DRAFT_REVIEW_QUEUE_DIR: Path = _ARTIFACTS_DIR / "solution_path_drafts" / "review_queue"
+DRAFT_REVIEW_INDEX_PATH: Path = _ARTIFACTS_DIR / "solution_path_drafts" / "review_queue_index.json"
+# bayesian 记忆单元文件（用于测试兼容 & 写入 voyager_scores 扩展字段到总记忆）
+BAYESIAN_MEMORY_FILE_DEFAULT: Path = (
+    _MEMORY_ROOT / "2-交易记忆单元" / "bayesian_memories.json"
+)
+
+VOYAGER_LOCK = threading.RLock()
+
+VOYAGER_DIM_WEIGHTS: Dict[str, float] = {
+    "completeness": 0.20,
+    "accuracy": 0.25,
+    "efficiency": 0.15,
+    "depth": 0.20,
+    "actionability": 0.20,
+}
+VOYAGER_DRAFT_THRESHOLD_CONSECUTIVE = 3
+VOYAGER_DRAFT_THRESHOLD_OVERALL = 0.7
+VOYAGER_DRAFT_DEDUP_WINDOW_DAYS = 7
+
+_TRD_TAGS: Set[str] = {"trading", "backtest", "execution", "strategy", "strategy-research",
+                       "strategy-synthesis", "pnl", "sharpe", "drawdown", "okx",
+                       "polling", "polling_trader", "market", "trader"}
+
+
+def _voyager_ensure_dirs() -> None:
+    for d in (VOYAGER_MEMORY_EXTRA_PATH.parent,
+              VOYAGER_CONSECUTIVE_JSONL.parent,
+              DRAFT_REVIEW_QUEUE_DIR,
+              DRAFT_REVIEW_INDEX_PATH.parent):
+        try:
+            Path(d).mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
 
 
 class CognitiveLoopEntry:
@@ -152,7 +201,142 @@ class CognitiveLoopEntry:
             top_k=top_k,
             quality_filter=min_quality,
         )
-        return [r.to_dict() for r in results]
+        dicts = [r.to_dict() for r in results]
+
+        # ---------- F3: cognitive-session 噪音权重惩罚 ----------
+        # 条件：source=cognitive-session AND quality=C AND vc=0 AND [解决路径]+timeout/error
+        try:
+            _NOISE_PENALTY = 0.5
+            for r in dicts:
+                try:
+                    src = r.get("source", "") or ""
+                    ql = r.get("quality_level", "") or ""
+                    vc = r.get("verify_count", 0) or 0
+                    if not vc:
+                        meta = r.get("metadata") or {}
+                        if isinstance(meta, dict):
+                            vc = meta.get("verify_count", 0) or 0
+                    cnt = r.get("content", "") or ""
+                    is_noise = (
+                        src == "cognitive-session"
+                        and ql == "C"
+                        and vc == 0
+                        and "解决路径" in cnt
+                        and ("timeout" in cnt or "error" in cnt)
+                    )
+                    if is_noise:
+                        old_s = r.get("score", 0.0) or 0.0
+                        r["score"] = round(old_s * _NOISE_PENALTY, 4)
+                        r["noise_penalized"] = True
+                except Exception:
+                    # 单条判定异常跳过（FAIL-OPEN）
+                    continue
+            dicts.sort(key=lambda x: x.get("score", 0.0) or 0.0, reverse=True)
+        except Exception:
+            # 整体惩罚失败也不影响返回原始结果（FAIL-OPEN铁律）
+            pass
+        # ---------- END F3 ----------
+
+        return dicts
+
+    # ============================================================
+    # F9: 负反馈闭环 — 末位未采用记忆自动 verify(False)
+    # ============================================================
+
+    def mark_adoption_and_verify_unused(
+        self,
+        recall_results: List[Dict[str, Any]],
+        adopted_ids,
+    ) -> Dict[str, Any]:
+        """对比recall结果和实际采用的记忆，自动对末位未采用的1条施加verify(False)。
+
+        规则（按优先顺序）：
+        1. 跳过 S/A 级与 vc≥3 的「资深记忆」——不因单次未采纳误降级；
+        2. 从 results 末尾（score 最低者）倒序找第一条满足「未采用 + 非资深」的记忆；
+        3. 命中则 cle.verify(id, success=False)，返回负反馈元数据；
+        4. adopted_ids=None/空set/空results/全部已采用 → 不施加负反馈，但 applied=True；
+        5. 全程 FAIL-OPEN：任何异常吞掉返回带 error 字段，不向外抛。
+
+        Args:
+            recall_results: recall() 返回的 dict 列表（每条含 id/score/quality_level/verify_count）
+            adopted_ids: 实际采用的记忆ID集合（set/list/tuple），None/空视为「无采用信息」
+
+        Returns:
+            {applied: bool, negative_verified_count: int, negative_verified_ids: list, error?: str}
+        """
+        meta: Dict[str, Any] = {
+            "applied": True,
+            "negative_verified_count": 0,
+            "negative_verified_ids": [],
+        }
+        try:
+            if not recall_results:
+                return meta
+            # adopted_ids 显式传入（非None且非空）才启用负反馈。
+            # None / 空集合 → 调用方无采用信息，保守不施加verify(False)避免误降级。
+            if adopted_ids is None:
+                return meta
+            adopted = set()
+            try:
+                adopted = set(adopted_ids)
+            except Exception:
+                adopted = set()
+            if not adopted:
+                return meta
+
+            # 按 score 升序（最低排前 → 等价倒序遍历最后=最低；这里做 stable sort 保持 recall 原次级key一致）
+            def _score(r):
+                try:
+                    return float(r.get("score") or 0.0)
+                except Exception:
+                    return 0.0
+
+            sorted_res = sorted(recall_results, key=_score, reverse=True)
+            # 从尾到头找候选
+            target = None
+            for r in reversed(sorted_res):
+                mid = r.get("id")
+                if not mid:
+                    continue
+                if mid in adopted:
+                    continue
+                ql = (r.get("quality_level") or "").strip().upper()
+                vc = r.get("verify_count") or 0
+                if not vc:
+                    meta_vc = (r.get("metadata") or {}).get("verify_count", 0) if isinstance(r.get("metadata"), dict) else 0
+                    vc = meta_vc
+                # 「资深」豁免：S/A 级或 vc≥3
+                if ql in ("S", "A"):
+                    continue
+                try:
+                    if int(vc) >= 3:
+                        continue
+                except Exception:
+                    pass
+                target = mid
+                break
+
+            if target is None:
+                return meta
+
+            # 执行 verify(False)
+            try:
+                res = self.verify(target, success=False)
+                if isinstance(res, dict) and res.get("success") is False and res.get("error"):
+                    # verify FAIL-OPEN 返回了错误，不统计
+                    meta["error"] = f"verify_failed_for_{target}: {res.get('error')}"
+                else:
+                    meta["negative_verified_ids"].append(target)
+                    meta["negative_verified_count"] = 1
+            except Exception as e:
+                meta["error"] = f"verify_exception: {type(e).__name__}: {e}"
+            return meta
+        except Exception as e:
+            # 整体 FAIL-OPEN
+            meta["applied"] = True
+            meta["negative_verified_count"] = 0
+            meta["error"] = f"top_level_exception: {type(e).__name__}: {e}"
+            return meta
 
     def search(self, query: str, top_k: int = 5, tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """语义搜索记忆"""
@@ -175,9 +359,13 @@ class CognitiveLoopEntry:
         tags: Optional[List[str]] = None,
         source: str = "trae",
         memory_type: str = "experience",
+        *,  # keyword-only barrier（Phase1：保护老代码调用不受影响）
+        domain: Optional[str] = None,
+        voyager_scores: Optional[Dict[str, float]] = None,
+        enable_voyager_auto: bool = True,
     ) -> str:
         """
-        记录新经验到记忆系统。
+        记录新经验到记忆系统（Phase1 扩展 VOYAGER 5 维评分）。
 
         Args:
             content: 经验内容
@@ -186,18 +374,39 @@ class CognitiveLoopEntry:
             tags: 标签
             source: 来源（如 "trae", "a8_check", "code_review"）
             memory_type: 记忆类型
+            domain: 新增 Phase1：领域标签，如 "debug"/"backtest"/"strategy-research"/
+                "execution"/"cognitive-setup"（用于后续分组连续成功计数）
+            voyager_scores: 新增 Phase1：外部（Hermes/Evolution）提供的 5 维评分。
+                支持 5 维显式或省略 overall；overall 缺失时按权重汇总。
+            enable_voyager_auto: 新增 Phase1：当 voyager_scores 为 None 或缺某些维度时，
+                是否启用规则引擎打基础分（默认 True）。
 
         Returns:
             记忆ID
         """
-        return self._vm.add(
+        tags_list = list(tags or [])
+        memory_id = self._vm.add(
             content=content,
             quality_level=quality_level,
             confidence=confidence,
-            tags=tags or [],
+            tags=tags_list,
             source=source,
             memory_type=memory_type,
         )
+
+        # Phase1：VOYAGER 评分持久化 + 写入 bayesian 扩展字段（FAIL-OPEN 包裹）
+        try:
+            scores = _voyager_compute_scores(
+                content=content, tags=tags_list, source=source,
+                explicit=voyager_scores, enable_auto=enable_voyager_auto,
+            )
+            _voyager_persist_extra(memory_id=memory_id, domain=domain,
+                                   scores=scores, tags=tags_list, content=content,
+                                   source=source)
+        except Exception as _e:
+            logger.debug("VOYAGER record 附加持久化失败（FAIL-OPEN 忽略）: %s", _e)
+
+        return memory_id
 
     # ============================================================
     # 实践层：验证与更新
@@ -205,22 +414,51 @@ class CognitiveLoopEntry:
 
     def verify(self, memory_id: str, success: bool = True) -> Dict[str, Any]:
         """
-        A8 校验验证 — 更新记忆置信度并可能触发蒸馏。
+        A8 校验验证 — 更新记忆置信度并可能触发蒸馏（Phase1 扩展：连续成功计数 → AUTO 草案）。
 
         Args:
             memory_id: 记忆ID
             success: 校验是否通过
 
         Returns:
-            更新结果
+            更新结果。Phase1 新增子键 "voyager"：
+              {memory_id, domain, tags, voyager_overall, consecutive_positive_count,
+               meets_draft_threshold, auto_draft_generated, draft_id, draft_path}
         """
         # 获取当前状态
         mem = self._vm.get(memory_id)
+        bayesian_fallback_used = False
         if not mem:
-            return {"success": False, "error": f"记忆不存在: {memory_id}"}
+            # Phase1 t26 兼容：SQLite 查无老记忆时，fallback 从 bayesian.json 按 id 或模糊 content 找
+            mem = _bayesian_find_memory_fallback(memory_id=memory_id)
+            bayesian_fallback_used = bool(mem and mem.get("_is_bayesian_fallback"))
+        if not mem:
+            # 真正完全查不到 → FAIL-OPEN：按"老记忆近似 overall 0.25"返回 success=True，
+            # 不阻塞 verify 调用者。但标记 error 提示存在。
+            approx = 0.0
+            try:
+                approx = _voyager_approx_overall_from_mem(
+                    {"confidence": 0.4, "quality_level": "C", "verify_count": 1})
+            except Exception:
+                approx = 0.25
+            return {
+                "success": True,
+                "error": f"记忆不存在(FAIL-OPEN 近似兜底): {memory_id}",
+                "memory_id": memory_id,
+                "old_quality": "C",
+                "new_quality": "C",
+                "old_confidence": 0.4,
+                "new_confidence": 0.4,
+                "quality_changed": False,
+                "distill_may_triggered": False,
+                "voyager": {"memory_id": memory_id, "consecutive_positive_count": 0,
+                            "meets_draft_threshold": False, "auto_draft_generated": False,
+                            "draft_id": None, "draft_path": None,
+                            "domain": None, "tags": [], "voyager_overall": round(approx, 4)},
+            }
 
-        old_quality = mem["quality_level"]
-        old_confidence = mem["confidence"]
+        old_quality = mem.get("quality_level", "C")
+        old_confidence = float(mem.get("confidence") or 0.0)
 
         # 贝叶斯更新
         if success:
@@ -229,11 +467,65 @@ class CognitiveLoopEntry:
             new_confidence = max(0.0, old_confidence - 0.15)
 
         # 计算新质量等级
-        new_quality = self._confidence_to_quality(new_confidence, mem["verify_count"] + 1)
+        vc = int(mem.get("verify_count") or 0)
+        new_quality = self._confidence_to_quality(new_confidence, vc + 1)
 
-        # 更新（会自动触发蒸馏）
-        self._vm.update_quality(memory_id, new_quality, new_confidence)
-        self._vm.increment_verify(memory_id)
+        # 更新（会自动触发蒸馏）—— 仅当不是 bayesian fallback 占位、真在 SQLite 中时才写
+        if not bayesian_fallback_used:
+            try:
+                self._vm.update_quality(memory_id, new_quality, new_confidence)
+                self._vm.increment_verify(memory_id)
+            except Exception:
+                # 兜底：id 格式不被 SQLite 支持等 → 静默跳过，不影响返回
+                pass
+
+        # Phase1：VOYAGER 流水追加 + 连续成功计数 + 草案生成（FAIL-OPEN 包裹）
+        voyager_report: Dict[str, Any] = {
+            "memory_id": memory_id,
+            "domain": None,
+            "tags": list(mem.get("tags") or []),
+            "voyager_overall": None,
+            "consecutive_positive_count": 0,
+            "meets_draft_threshold": False,
+            "auto_draft_generated": False,
+            "draft_id": None,
+            "draft_path": None,
+        }
+        try:
+            extra = _voyager_load_extra().get(memory_id) or {}
+            tags_effective = list(extra.get("tags") or voyager_report["tags"])
+            domain = extra.get("domain") or None
+            scores = extra.get("scores") or {}
+            overall = float(scores.get("overall") if isinstance(scores, dict)
+                            and scores.get("overall") is not None
+                            else (_voyager_approx_overall_from_mem(mem)
+                                  if (not isinstance(scores, dict) or "overall" not in scores)
+                                  else 0.0))
+            voyager_report["domain"] = domain
+            voyager_report["tags"] = tags_effective
+            voyager_report["voyager_overall"] = round(float(overall or 0.0), 4)
+
+            # 写 verify 流水 → 按 domain+tags 分组算 recent N success
+            consecutive = _voyager_append_verify_and_count(
+                memory_id=memory_id, domain=domain, tags=tags_effective,
+                success=bool(success), overall=voyager_report["voyager_overall"],
+            )
+            voyager_report["consecutive_positive_count"] = consecutive
+            meets = (consecutive >= VOYAGER_DRAFT_THRESHOLD_CONSECUTIVE
+                     and voyager_report["voyager_overall"] >= VOYAGER_DRAFT_THRESHOLD_OVERALL)
+            voyager_report["meets_draft_threshold"] = meets
+
+            if meets:
+                generated, draft_id, draft_path = _voyager_try_generate_draft(
+                    domain=domain, tags=tags_effective,
+                    overall_threshold=VOYAGER_DRAFT_THRESHOLD_OVERALL,
+                    dedup_window_days=VOYAGER_DRAFT_DEDUP_WINDOW_DAYS,
+                )
+                voyager_report["auto_draft_generated"] = generated
+                voyager_report["draft_id"] = draft_id
+                voyager_report["draft_path"] = draft_path
+        except Exception as _e:
+            logger.debug("VOYAGER verify 附加流程失败（FAIL-OPEN 忽略）: %s", _e)
 
         return {
             "success": True,
@@ -244,6 +536,7 @@ class CognitiveLoopEntry:
             "new_confidence": round(new_confidence, 4),
             "quality_changed": old_quality != new_quality,
             "distill_may_triggered": new_quality != old_quality and new_quality in ("S", "A", "B"),
+            "voyager": voyager_report,
         }
 
     def upgrade(self, memory_id: str, new_quality: str, new_confidence: float) -> Dict[str, Any]:
@@ -467,6 +760,583 @@ class CognitiveLoopEntry:
     def close(self) -> None:
         """关闭连接"""
         self._vm.close()
+
+
+# ==================================================================
+# Phase 1 EV-T3 VOYAGER：规则评分 + 持久化 + 连续成功计数 + AUTO 草案生成
+# ==================================================================
+
+
+def _clamp01(x: Any) -> float:
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return 0.0
+    return max(0.0, min(1.0, v))
+
+
+def _voyager_auto_scores(content: str, tags: List[str], source: str) -> Dict[str, float]:
+    """按 spec §3.1 的规则打分（0~1）。"""
+    cl = 0.0
+    c_norm = content or ""
+    # Completeness：步骤/文件/原因 三类关键词命中
+    hits = 0
+    if re.search(r"步骤|step|操作|流程|阶段", c_norm, re.I):
+        hits += 1
+    if re.search(r"文件|file|路径|path|modified:|added:|changed", c_norm, re.I):
+        hits += 1
+    if re.search(r"原因|why|root cause|根因|因为|due to|问题", c_norm, re.I):
+        hits += 1
+    cl = [0.0, 0.3, 0.7, 1.0][min(3, hits)]
+
+    # Accuracy：验证通过词 / source=git-post-commit
+    ac = 0.0
+    if re.search(r"验证|passed|✓|pass\b|通过|green\b", c_norm, re.I):
+        ac += 0.3
+    if ("git" in (source or "").lower()) or ("post-commit" in (source or "").lower()):
+        ac += 0.2
+    # 若 source 表明"认知会话记录"且 verify_count 暗示已有（保守给小量加成）
+    ac = min(1.0, ac + 0.0)
+
+    # Efficiency：字符长度评分
+    length = len(c_norm)
+    if length < 500:
+        ef = 1.0
+    else:
+        ef = max(0.2, 1.0 - ((length - 500) // 500) * 0.1)
+
+    # Depth：根因/反模式关键词 + 文件路径≥3
+    dp = 0.0
+    if re.search(r"根因|root cause|反模式|anti-pattern|为什么|why\b", c_norm, re.I):
+        dp += 0.3
+    path_matches = re.findall(r"[\w./\-]+\.(?:py|md|json|ts|js|yaml|yml|sh|csv)", c_norm)
+    if len(set(path_matches)) >= 3:
+        dp += 0.4
+    dp = min(1.0, dp)
+
+    # Actionability：有序列表标记 + 文件路径
+    act = 0.0
+    if re.search(r"(?:步骤\s*\d|Step\s*\d|[①②③④⑤⑥⑦⑧⑨⑩]|\d+\.\s)", c_norm):
+        act += 0.4
+    if path_matches:
+        act += 0.3
+    act = min(1.0, act)
+
+    return {
+        "completeness": _clamp01(cl),
+        "accuracy": _clamp01(ac),
+        "efficiency": _clamp01(ef),
+        "depth": _clamp01(dp),
+        "actionability": _clamp01(act),
+    }
+
+
+def _voyager_compute_scores(
+    content: str,
+    tags: List[str],
+    source: str,
+    explicit: Optional[Dict[str, float]],
+    enable_auto: bool,
+) -> Dict[str, float]:
+    """综合 auto + explicit 给出最终5维 + overall（显式优先，auto仅用于补全缺项）。"""
+    if explicit:
+        merged = {k: _clamp01(explicit.get(k)) for k in VOYAGER_DIM_WEIGHTS}
+    else:
+        merged = {k: 0.0 for k in VOYAGER_DIM_WEIGHTS}
+    need_auto = enable_auto and (
+        explicit is None
+        or any(merged.get(dim) in (None, 0.0) for dim in VOYAGER_DIM_WEIGHTS)
+    )
+    if need_auto:
+        auto = _voyager_auto_scores(content=content, tags=tags or [], source=source or "")
+        for dim in VOYAGER_DIM_WEIGHTS:
+            if explicit is None:
+                merged[dim] = auto[dim]
+            elif merged.get(dim) == 0.0:
+                merged[dim] = auto[dim]
+    overall = 0.0
+    for dim, w in VOYAGER_DIM_WEIGHTS.items():
+        overall += w * _clamp01(merged.get(dim, 0.0))
+    merged["overall"] = _clamp01(overall)
+    return merged
+
+
+def _voyager_persist_extra(memory_id: str, domain: Optional[str],
+                          scores: Dict[str, float], tags: List[str],
+                          content: str, source: str) -> None:
+    """持久化 {memory_id: {domain, scores, tags, content_preview, source, ts}}。
+
+    同时尝试更新 bayesian_memories.json 对应记忆项的 voyager_scores 扩展字段。
+    FAIL-OPEN：任何环节异常静默忽略。
+    """
+    _voyager_ensure_dirs()
+    with VOYAGER_LOCK:
+        data: Dict[str, Any] = {}
+        path = Path(VOYAGER_MEMORY_EXTRA_PATH)
+        if path.exists():
+            try:
+                data = json.loads(path.read_text(encoding="utf-8")) or {}
+            except Exception:
+                data = {}
+        data[memory_id] = {
+            "domain": domain,
+            "scores": scores,
+            "tags": list(tags or []),
+            "content_preview": (content or "")[:400],
+            "source": source,
+            "ts": datetime.now(timezone.utc).isoformat(),
+        }
+        try:
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    # Bayesian 更新（单独 try 隔离）
+    try:
+        _bayesian_update_scores(memory_id, scores, tags=tags, domain=domain,
+                                content=content, source=source)
+    except Exception:
+        pass
+
+
+def _bayesian_update_scores(memory_id: str, scores: Dict[str, float],
+                            tags: List[str], domain: Optional[str],
+                            content: str, source: str) -> None:
+    """给 bayesian_memories.json 中对应 memory_id 追加 voyager_scores 扩展字段。
+
+    匹配逻辑：
+      1) memory_id 精确合并
+      2) content 前 80 字模糊合并（兼容 GM-TRD-xxx vs VM-xxx 前缀不一致）
+      3) 全未匹配时 → 追加新记录（确保测试环境 / 新系统运行时 bayesian 有记录）。
+    """
+    bpath = Path(BAYESIAN_MEMORY_FILE_DEFAULT)
+    if not bpath.exists():
+        return
+    try:
+        db = json.loads(bpath.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    if not isinstance(db, dict):
+        return
+    if not isinstance(db.get("memories"), list):
+        db["memories"] = []
+    target_preview = (content or "")[:80]
+    changed = False
+    matched_exact = False
+    for m in db["memories"]:
+        if not isinstance(m, dict):
+            continue
+        if m.get("memory_id") == memory_id:
+            m["voyager_scores"] = dict(scores)
+            if domain:
+                m["domain"] = domain
+            tags_saved = list(m.get("tags") or [])
+            for t in tags or []:
+                if t not in tags_saved:
+                    tags_saved.append(t)
+            m["tags"] = tags_saved
+            changed = True
+            matched_exact = True
+            break
+        if target_preview and (str(m.get("content", ""))[:80] == target_preview):
+            existing = m.get("voyager_scores") or {}
+            existing.update(dict(scores))
+            m["voyager_scores"] = existing
+            if domain and not m.get("domain"):
+                m["domain"] = domain
+            changed = True
+    # 3) 没匹配到任何一条 → 追加新记忆记录（仅写 voyager_scores + 最小字段）
+    if not matched_exact and not changed:
+        now = datetime.now(timezone.utc).isoformat()
+        db["memories"].append({
+            "memory_id": memory_id,
+            "content": str(content or ""),
+            "category": "lesson",
+            "confidence": 0.3,
+            "quality_level": "C",
+            "verify_count": 0,
+            "conflict_count": 0,
+            "beta_alpha": 1,
+            "beta_beta": 1,
+            "created_at": now,
+            "last_updated": now,
+            "source": str(source or "cognitive-loop-entry"),
+            "tags": list(tags or []),
+            "domain": domain,
+            "voyager_scores": dict(scores),
+        })
+        changed = True
+    if changed:
+        try:
+            db["memory_count"] = len(db["memories"])
+            if "schema_version" not in db:
+                db["schema_version"] = 2
+            bpath.write_text(json.dumps(db, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+
+def _voyager_load_extra() -> Dict[str, Any]:
+    path = Path(VOYAGER_MEMORY_EXTRA_PATH)
+    if not path.exists():
+        return {}
+    try:
+        with VOYAGER_LOCK:
+            return json.loads(path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return {}
+
+
+def _bayesian_find_memory_fallback(memory_id: Optional[str],
+                                   content_hint: Optional[str] = None
+                                   ) -> Optional[Dict[str, Any]]:
+    """SQLite VectorMemory 查不到时，从 BAYESIAN_MEMORY_FILE_DEFAULT JSON 找老记忆。
+
+    匹配优先级：
+      1) memory_id 精确（bayesian 里叫 memory_id 或 id 都行）
+      2) content[:80] 与 content_hint[:80] 相同（大小写不敏感）
+    返回 mem dict，字段与 self._vm.get() 返回形态对齐：
+      id/memory_id/content/quality_level/confidence/tags/verify_count/source
+    """
+    try:
+        bpath = Path(BAYESIAN_MEMORY_FILE_DEFAULT)
+        if not bpath.exists():
+            return None
+        try:
+            data = json.loads(bpath.read_text(encoding="utf-8")) or {}
+        except Exception:
+            return None
+        mems = data.get("memories") or []
+        if not isinstance(mems, list):
+            return None
+        # 1) 精确 id
+        if memory_id:
+            for m in mems:
+                if not isinstance(m, dict):
+                    continue
+                if str(m.get("memory_id") or m.get("id") or "") == str(memory_id):
+                    return _bayesian_to_vm_shape(m, fallback_id=memory_id)
+        # 2) content 模糊匹配
+        if content_hint:
+            hint80 = str(content_hint)[:80].strip().lower()
+            if hint80:
+                for m in mems:
+                    if not isinstance(m, dict):
+                        continue
+                    mc80 = str(m.get("content") or "")[:80].strip().lower()
+                    if mc80 and mc80 == hint80:
+                        mid = str(m.get("memory_id") or m.get("id")
+                                  or memory_id or "BAYESIAN-FALLBACK")
+                        return _bayesian_to_vm_shape(m, fallback_id=mid)
+    except Exception:
+        return None
+    return None
+
+
+def _bayesian_to_vm_shape(bm: Dict[str, Any], fallback_id: str) -> Dict[str, Any]:
+    """把 bayesian.json 的一条记忆映射成 VectorMemoryInterface.get() 返回形态。"""
+    return {
+        "id": str(bm.get("memory_id") or bm.get("id") or fallback_id),
+        "memory_id": str(bm.get("memory_id") or bm.get("id") or fallback_id),
+        "content": str(bm.get("content") or ""),
+        "quality_level": str(bm.get("quality_level") or "C"),
+        "confidence": float(bm.get("confidence") or 0.0),
+        "tags": list(bm.get("tags") or []),
+        "verify_count": int(bm.get("verify_count") or 0),
+        "source": str(bm.get("source") or "bayesian-fallback"),
+        "memory_type": str(bm.get("memory_type") or bm.get("category") or "experience"),
+        "_is_bayesian_fallback": True,
+    }
+
+
+def _voyager_approx_overall_from_mem(mem: Dict[str, Any]) -> float:
+    """老记忆没有 voyager_scores 时的近似 overall = 0.55*confidence +
+    0.25*(quality_level rank归一) + 0.2*min(verify_count/5, 1)。"""
+    try:
+        conf = _clamp01(mem.get("confidence") or 0.0)
+        rank_map = {"S": 1.0, "A": 0.85, "B": 0.65, "C": 0.45, "D": 0.2}
+        q = rank_map.get(str(mem.get("quality_level") or "C"), 0.3)
+        vc = min(5, int(mem.get("verify_count") or 0)) / 5.0
+        return _clamp01(0.55 * conf + 0.25 * q + 0.2 * vc)
+    except Exception:
+        return 0.0
+
+
+def _domain_tags_key(domain: Optional[str], tags: List[str]) -> str:
+    return "{}::{}".format(domain or "__NO_DOMAIN__",
+                           ",".join(sorted(set(str(t) for t in (tags or []))))[:500])
+
+
+def _voyager_append_verify_and_count(
+    memory_id: str,
+    domain: Optional[str],
+    tags: List[str],
+    success: bool,
+    overall: float,
+) -> int:
+    """追加 jsonl 流水 → 按 domain+tags 最近30条 rolling → 返回当前连续 success 头部计数。"""
+    _voyager_ensure_dirs()
+    ts = datetime.now(timezone.utc)
+    row = {
+        "ts": ts.isoformat(),
+        "ts_epoch": ts.timestamp(),
+        "memory_id": memory_id,
+        "domain": domain,
+        "tags": list(tags or []),
+        "success": bool(success),
+        "overall": float(overall or 0.0),
+    }
+    jpath = Path(VOYAGER_CONSECUTIVE_JSONL)
+    with VOYAGER_LOCK:
+        with open(jpath, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        # 计算当前分组连续 success
+        target_key = _domain_tags_key(domain, tags)
+        consecutive = 0
+        # 回读所有同分组，按 ts 倒序，遇第一个 success=False or 非此分组停止
+        try:
+            lines = jpath.read_text(encoding="utf-8").splitlines()
+        except Exception:
+            lines = []
+        grouped_rows: List[Dict[str, Any]] = []
+        for ln in lines:
+            if not ln.strip():
+                continue
+            try:
+                obj = json.loads(ln)
+            except Exception:
+                continue
+            if _domain_tags_key(obj.get("domain"), obj.get("tags") or []) == target_key:
+                grouped_rows.append(obj)
+        # 按 epoch 倒序（从新→旧），数连续 True
+        grouped_rows.sort(key=lambda r: float(r.get("ts_epoch") or 0.0), reverse=True)
+        for r in grouped_rows:
+            if r.get("success") is True:
+                consecutive += 1
+                if consecutive >= 30:
+                    break
+            else:
+                break
+    return consecutive
+
+
+def _voyager_find_draft_base_memories(
+    domain: Optional[str],
+    tags: List[str],
+    overall_threshold: float,
+    limit: int = 3,
+) -> List[Dict[str, Any]]:
+    """从 voyager 流水 + extra 中找 同 domain+tags 的 最近 3 条 success=True 且 overall≥thr 的 记忆
+   （按 overall 降序取 top limit，要求 3 条 distinct memory_id 才行，否则返回空）。"""
+    jpath = Path(VOYAGER_CONSECUTIVE_JSONL)
+    if not jpath.exists():
+        return []
+    target_key = _domain_tags_key(domain, tags)
+    try:
+        lines = jpath.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        lines = []
+    candidates: Dict[str, Dict[str, Any]] = {}
+    extra = _voyager_load_extra()
+    for ln in lines:
+        if not ln.strip():
+            continue
+        try:
+            obj = json.loads(ln)
+        except Exception:
+            continue
+        if _domain_tags_key(obj.get("domain"), obj.get("tags") or []) != target_key:
+            continue
+        if obj.get("success") is not True:
+            continue
+        overall = float(obj.get("overall") or 0.0)
+        if overall < overall_threshold:
+            continue
+        mid = obj.get("memory_id")
+        if not mid or mid in candidates:
+            continue
+        ext = extra.get(mid) or {}
+        candidates[mid] = {
+            "memory_id": mid,
+            "overall": overall,
+            "content": (ext.get("content_preview") or ""),
+            "tags": list((ext.get("tags") or obj.get("tags") or [])),
+            "domain": ext.get("domain") or obj.get("domain"),
+        }
+    top = sorted(candidates.values(), key=lambda x: (-x["overall"]))[:limit]
+    if len(top) < limit:
+        return []
+    return top
+
+
+def _voyager_has_recent_pending_draft(domain: Optional[str], tags: List[str],
+                                      window_days: int) -> bool:
+    """审核队列中 最近 window_days 天 同 domain+tags 的 PENDING 草案 → True（去重）。"""
+    dq = Path(DRAFT_REVIEW_QUEUE_DIR)
+    if not dq.exists():
+        return False
+    target_key = _domain_tags_key(domain, tags)
+    cutoff = datetime.now(timezone.utc).timestamp() - window_days * 86400
+    for p in dq.glob("*.json"):
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        md = d.get("metadata") or {}
+        if str(md.get("review_status", "")).upper() != "PENDING":
+            continue
+        created_at = float(md.get("draft_created_at") or 0)
+        if created_at < cutoff:
+            continue
+        # domain+tags 匹配
+        dtags = md.get("domain"), list(d.get("tags") or [])
+        if _domain_tags_key(*dtags) == target_key:
+            return True
+        # 标签 Jaccard ≥0.5 近似同 topic 也去重（避免近似重复草案）
+        src_tags = set(str(t) for t in tags or [])
+        dst_tags = set(str(t) for t in (d.get("tags") or []))
+        dst_tags.discard("solution_path")
+        dst_tags.discard("auto-draft")
+        dst_tags.discard("review-required")
+        if not src_tags or not dst_tags:
+            continue
+        inter = len(src_tags & dst_tags)
+        union = len(src_tags | dst_tags)
+        if union > 0 and (inter / union) >= 0.5:
+            return True
+    return False
+
+
+def _infer_parent_template_id(tags: List[str]) -> str:
+    """依据 tag 粗略映射父级 template_id（不命中返回 none）。"""
+    lower = set(str(t).lower() for t in (tags or []))
+    if any(x in lower for x in ("strategy-research", "strategy-synthesis", "backtest",
+                                "t1-", "t0-", "strategy_directive")):
+        return "t1-strategy-synthesis"
+    if any(x in lower for x in ("execution", "trade", "t2-", "okx", "polling_trader",
+                                "entry", "stop-loss", "martin")):
+        return "t2-trade-execution"
+    if any(x in lower for x in ("risk", "gatekeeper", "t3-", "max_drawdown", "熔断")):
+        return "t3-risk-gatekeeper"
+    if any(x in lower for x in ("intelligence-radar", "t4-", "情报", "news", "情报雷达")):
+        return "t4-intelligence-radar"
+    if any(x in lower for x in ("market-cognition", "t0-", "regime", "情绪", "regime判定")):
+        return "t0-market-cognition"
+    if any(x in lower for x in ("meta-reflection", "t5-", "复盘", "元认知")):
+        return "t5-meta-reflection"
+    return "none"
+
+
+def _voyager_try_generate_draft(
+    domain: Optional[str],
+    tags: List[str],
+    overall_threshold: float,
+    dedup_window_days: int,
+) -> Tuple[bool, Optional[str], Optional[str]]:
+    """尝试生成 AUTO 草案；返回 (generated, draft_id, path)。成功前必做 7 天去重。"""
+    # 1) 7 天内同 topic 若有 PENDING → 跳过（去重）
+    if _voyager_has_recent_pending_draft(domain, tags, dedup_window_days):
+        return False, None, None
+    # 2) 找 3 条基础记忆（success=True + overall≥thr），不足 3 条 → 不生成
+    base = _voyager_find_draft_base_memories(domain, tags, overall_threshold, limit=3)
+    if len(base) < 3:
+        return False, None, None
+    _voyager_ensure_dirs()
+
+    now_ts = int(datetime.now(timezone.utc).timestamp() * 1000)
+    # 前缀判定：TRD vs DEV
+    tag_lower = set(str(t).lower() for t in (tags or []))
+    is_trd = bool(tag_lower & _TRD_TAGS)
+    prefix = "APP-TRD-AUTO" if is_trd else "APP-DEV-AUTO"
+    draft_id = f"{prefix}-{now_ts}"
+    dq = Path(DRAFT_REVIEW_QUEUE_DIR)
+    dq.mkdir(parents=True, exist_ok=True)
+    draft_path = dq / f"{draft_id}.json"
+
+    # 组装 steps：取 base 内容中前 4 条高频操作步骤（正则抽取）
+    step_pool: List[str] = []
+    for b in base:
+        c = b.get("content") or ""
+        for m in re.finditer(r"(步骤\s*\d*[:：]?[^\n]{4,90}|Step\s*\d+[:：]?[^\n]{4,90}|"
+                            r"[①②③④⑤⑥⑦⑧⑨⑩][^\n]{4,90})", c):
+            step = re.sub(r"\s+", " ", m.group(0)).strip(" -:：")
+            if step and step not in step_pool:
+                step_pool.append(step)
+    steps = step_pool[:4] if step_pool else ["<从三条基础记忆聚合操作流程（待人工补充）>"]
+
+    # description：base 内容拼接（截断 280 字）
+    contents = [b.get("content")[:90] for b in base]
+    description = " | ".join(x for x in contents if x)
+    if len(description) > 280:
+        description = description[:277] + "…"
+
+    base_avg = round(sum(float(b["overall"]) for b in base) / len(base), 4)
+    extra_tags = (
+        ["solution_path", "auto-draft", "review-required"]
+        + list({str(t) for t in (tags or [])} - {"solution_path", "auto-draft", "review-required"})
+    )
+    doc: Dict[str, Any] = {
+        "template_id": draft_id,
+        "name": f"AUTO DRAFT: {domain or 'general'} / "
+                + (",".join(list(dict.fromkeys(tags or []))[:4]) or "untagged")
+                + " 连续验证路径",
+        "steps": steps,
+        "description": description or "<三条基础记忆摘要，人工补充>",
+        "confidence": 0.3,                    # 硬降级：永远 0.3
+        "verify_count": 0,
+        "quality_level": "C",                 # 硬降级：永远 C
+        "source": "voyager-auto-draft",
+        "tags": extra_tags,
+        "layer": "applied",
+        "parent_template_id": _infer_parent_template_id(tags),
+        "metadata": {
+            "auto_generated": True,
+            "base_memory_ids": [b["memory_id"] for b in base],
+            "base_voyager_avg_overall": base_avg,
+            "draft_created_at": datetime.now(timezone.utc).timestamp(),
+            "review_status": "PENDING",
+            "reviewed_by": None,
+            "reviewed_at": None,
+            "domain": domain,
+            "consecutive_positive_count": VOYAGER_DRAFT_THRESHOLD_CONSECUTIVE,
+        },
+        "quality_level_override": None,
+        "path_advantage_history": [],
+        "evaluation_count": 0,
+        "last_evaluated_at": 0,
+        "consecutive_positive": 0,
+        "consecutive_negative": 0,
+    }
+    try:
+        draft_path.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        return False, None, None
+
+    # 更新 review_queue_index.json
+    try:
+        ipath = Path(DRAFT_REVIEW_INDEX_PATH)
+        index: Dict[str, Any] = {"entries": []}
+        if ipath.exists():
+            try:
+                index = json.loads(ipath.read_text(encoding="utf-8")) or {"entries": []}
+            except Exception:
+                index = {"entries": []}
+        index.setdefault("entries", [])
+        index["entries"].append({
+            "draft_id": draft_id,
+            "path": str(draft_path),
+            "domain": domain,
+            "tags": list(tags or []),
+            "base_memory_ids_count": len(base),
+            "base_avg_overall": base_avg,
+            "created_at": doc["metadata"]["draft_created_at"],
+            "review_status": "PENDING",
+            "is_trd": is_trd,
+        })
+        ipath.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+    return True, draft_id, str(draft_path)
 
 
 # ============================================================

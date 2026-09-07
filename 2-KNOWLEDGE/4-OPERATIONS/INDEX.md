@@ -7,12 +7,33 @@
 
 ## 文件列表
 
+### 顶层文档
+
 | 文件 | 说明 | 来源 Skill |
 |:---|---|:---|
 | [三段式门禁](./三段式门禁.md) | 链路1→Spec→链路2 三段门禁规则与回滚约束 | governance-meta-chain |
 | [索引体系](./索引体系.md) | Z轴层级索引架构、51 INDEX/README、每日审计 | index-ops |
 | [OKR管理](./OKR管理.md) | OKR 结构、进展更新方法、API 命令 | lark-okr, feishu-orchestrator |
 | [审批工作流](./审批工作流.md) | 审批创建、超时自动批准、OKR-Base同步链 | lark-approval, approval-timeout-check |
+
+### plans/ 实施计划（按时间降序）
+
+| 文件 | 说明 | 来源 Skill |
+|:---|---|:---|
+| [2026-07-10 市场场景编排实现计划](./plans/2026-07-10-market-scenario-orchestration-plan.md) | 市场Scenario Orchestrator架构、6种场景模板、回测链路 | scenario-orchestration |
+| [2026-06-15 策略链实现计划](./plans/2026-06-15-strategy-chain-impl-plan.md) | BCRM2→七维→信号→力向量→执行→风控7环节策略链 | strategy-chain |
+| [2026-05-18 四角色Agent自动化实现计划](./plans/2026-05-18-four-role-agent-automation-plan.md) | Planner/Reviewer/Executor/Reporter 四闭环角色架构 | four-role-agent |
+| [2026-05-17 PR9 自托管Runner Agent自动化计划](./plans/2026-05-17-pr9-self-hosted-runner-agent-automation-plan.md) | GitHub Actions自托管Runner部署与CI/CD流水线 | pr9-runner |
+| [2026-05-17 Agent标准研发生命周期实现计划](./plans/2026-05-17-agent-standard-dev-lifecycle-implementation-plan.md) | Agent迭代门禁、版本语义、发布灰度流程 | agent-lifecycle |
+| [2026-05-16 双Agent基座实现计划](./plans/2026-05-16-dual-agent-foundation-implementation-plan.md) | 交易Agent+认知Agent双基座分工、桥接与通信 | dual-agent |
+| [2026-05-15 前端V2实现计划](./plans/2026-05-15-3-frontend-v2-implementation-plan.md) | 三屏系统前端架构、力向量可视化、BCRM2推理面板 | frontend-v2 |
+
+### checklists/ 门禁清单
+
+| 文件 | 说明 | 来源 Skill |
+|:---|---|:---|
+| [2026-05-16 M1双Agent基座Checklist](./checklists/2026-05-16-m1-dual-agent-foundation-checklist.md) | M1里程碑交付验收12项门禁 | dual-agent-m1 |
+| [2026-05-16 M1双Agent基座任务板](./plans/2026-05-16-m1-dual-agent-foundation-task-board.md) | M1任务拆分、依赖关系、完成度追踪 | dual-agent-m1 |
 |
 ## 治理核心原则
 

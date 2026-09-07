@@ -45,6 +45,11 @@ class DeFiLlamaCollector(BaseCollector):
                 return self._fetch_historical_chain_tvl(params.get("chain", "Ethereum"))
             if route == "fees":
                 return self._fetch_fees(params.get("chain", "Ethereum"))
+            # 🆕 Phase A1：per-protocol 路由（CoinFundamentalRanker 数据源）
+            if route == "protocols":
+                return self._fetch_protocols()
+            if route == "protocol_fees":
+                return self._fetch_protocol_fees(params.get("protocol", ""))
             # 未知路由：静默返回空，避免意外触发网络
             return []
         except RateLimitError:
@@ -179,6 +184,95 @@ class DeFiLlamaCollector(BaseCollector):
             events=[],
             timeseries=ts,
             raw={"url": f"/summary/fees/{chain}"},
+        )
+        validate_record(rec)
+        return [rec]
+
+    # ------------------------------------------------------------------
+    # 🆕 Phase A1：per-protocol 路由（CoinFundamentalRanker 数据源）
+    # ------------------------------------------------------------------
+    def _fetch_protocols(self) -> list[DataRecord]:
+        """GET /v2/protocols → per-protocol TVL 列表。
+
+        用于 CoinFundamentalRanker 的 TVL Growth Momentum + Revenue Quality 信号。
+        """
+        data = self._get(f"{_BASE}/v2/protocols")
+        protocols = []
+        total_tvl = 0.0
+        for p in data or []:
+            try:
+                name = str(p.get("name") or p.get("id") or "unknown")
+                tvl = float(p.get("tvl") or 0.0)
+            except (TypeError, ValueError):
+                continue
+            slug = str(p.get("id") or name.lower().replace(" ", "-"))
+            protocols.append({
+                "name": name,
+                "slug": slug,
+                "tvl": tvl,
+                "tvl_bln": round(tvl / 1e9, 4),
+                "symbol": p.get("symbol"),
+                "mcap": float(p.get("mcap") or 0.0),
+                "gecko_id": p.get("gecko_id"),
+                "category": p.get("category"),
+            })
+            total_tvl += tvl
+        now = datetime.now(timezone.utc).astimezone().isoformat()
+        rec = DataRecord(
+            source="defillama",
+            category="protocol",
+            sub_category="all_protocols",
+            timestamp=now,
+            metrics={
+                "protocol_count": len(protocols),
+                "total_tvl": total_tvl,
+                "total_tvl_bln": round(total_tvl / 1e9, 4),
+            },
+            events=[],
+            timeseries=protocols,
+            raw={"url": "/v2/protocols", "protocol_count": len(data or [])},
+        )
+        validate_record(rec)
+        return [rec]
+
+    def _fetch_protocol_fees(self, protocol: str) -> list[DataRecord]:
+        """GET /summary/fees/{protocol} → per-protocol 费用收入。
+
+        用于 CoinFundamentalRanker 的 Revenue Stability + MC/Fees Mean Reversion 信号。
+        """
+        if not protocol:
+            return []
+        data = self._get(f"{_BASE}/summary/fees/{protocol}")
+        if not isinstance(data, dict):
+            return []
+        total_24h = float(data.get("total24h") or 0.0)
+        total_7d = float(data.get("total7d") or 0.0)
+        total_30d = float(data.get("total30d") or 0.0)
+        ts = []
+        raw_chart = data.get("totalDataChart")
+        for item in raw_chart or []:
+            try:
+                d_ts, val = item[0], item[1]
+                dt = datetime.fromtimestamp(int(d_ts), tz=timezone.utc).date().isoformat()
+                ts.append({"date": dt, "fees_usd": float(val)})
+            except (TypeError, IndexError, ValueError):
+                continue
+        now = datetime.now(timezone.utc).astimezone().isoformat()
+        rec = DataRecord(
+            source="defillama",
+            category="protocol",
+            sub_category=f"fees_{protocol}",
+            timestamp=now,
+            metrics={
+                "protocol": protocol,
+                "fees_24h": total_24h,
+                "fees_7d": total_7d,
+                "fees_30d": total_30d,
+                "points": len(ts),
+            },
+            events=[],
+            timeseries=ts,
+            raw={"url": f"/summary/fees/{protocol}"},
         )
         validate_record(rec)
         return [rec]

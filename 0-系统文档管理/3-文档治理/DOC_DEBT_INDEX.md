@@ -1,6 +1,6 @@
 # 文档技术债清单 — DOC_DEBT_INDEX
 
-> **版本**: v2.1 | **更新日期**: 2026-08-07
+> **版本**: v2.2 | **更新日期**: 2026-09-07
 > **定位**: 文档类技术债的专项管理清单，从 [DEBT_INDEX.md](../../DEBT_INDEX.md) DOC 类债务抽离细化
 > **关联**: [DEBT_INDEX.md](../../DEBT_INDEX.md)（代码债）· [DOC_QUALITY_AUDIT.md](./DOC_QUALITY_AUDIT.md) · [audits/](./audits/)（审计报告）
 
@@ -20,6 +20,7 @@
 |----|--------|--------|------|------|-----------------|
 | DD-008 | L3 辅助模块 | 5 个模块无完整文档 | 15/7 号已补 ENGINEERING_INDEX+TECHNICAL_DESIGN；剩余 15/7 API_SPEC+CHANGELOG、experiments README | 🟡 进行中 | — |
 | DD-022 | 全项目 | 1440 断链需分流 | link_checker 全项目扫描出 1440/2373 断链，多为子系统文档引用代码/归档文件；需增代码白名单后重新基线 | 🔴 待办 | — |
+| DD-025 | 23-四层闭环自进化 | 5 文档不全 | 已补齐 ENGINEERING_INDEX/TECHNICAL_DESIGN/API_SPEC/CHANGELOG 四件套 | ✅ 已关闭 | — |
 
 ### 1.3 P3 低优先级
 
@@ -61,6 +62,7 @@
 | DD-028 | 0-系统文档管理 | DOC_DEBT_INDEX 链接多一层 ../ | 2026-08-02 | `../../../` → `../../`，修 2 处断链 |
 | DD-029 | 0-系统文档管理 | link_checker 误报内联代码 | 2026-08-02 | 增 INLINE_CODE_RE 剥离 `` `...` `` span |
 | DD-023 | L3 辅助模块 | L3_MODULE_DOC_PLAN 现状过时 | 2026-08-02 | 现状表刷新：3/6 号 README 已存在 v0.2 |
+| DD-030 | 11-易经推理系统 + 18-数据获取中心 | Odaily 集成文档同步 | 2026-08-29 | 11 CHANGELOG v4.3 + ENGINEERING_INDEX v2.8 + 18 README 变更日志 + Spec 状态页 + DOC_DEBT_INDEX 销项 |
 | DD-008a | 15-监控告警系统 | 缺 ENGINEERING_INDEX+TECHNICAL_DESIGN | 2026-08-02 | 补建 2 文档，138 函数/38 配置项从代码提取 |
 | DD-008b | 7-产物中台 | 缺 TECHNICAL_DESIGN | 2026-08-02 | 补建文档，58 接口，修正原文档 5 处与代码不一致 |
 

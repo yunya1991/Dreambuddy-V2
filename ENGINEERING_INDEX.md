@@ -198,7 +198,7 @@ dreambuddy-v2/
 │   └── prisma/schema.prisma     # 数据库Schema
 │
 ├── 4-MEMORY/                    # 记忆系统
-│   └── MEMORY_SYSTEM.md         # 四级记忆架构设计（L1-L4）
+│   └── MEMORY_SYSTEM_ARCHITECTURE.md  # 顶层架构设计 v5.0（取代 v2.0）
 │
 ├── 5-BUSINESS/                  # 业务管理系统
 │   └── BUSINESS_SYSTEM.md
@@ -543,7 +543,7 @@ dreambuddy-v2/
 | 治理合规 | `2-GOVERNANCE/` | 5 | GOVERNANCE_CHARTER.md, COMPLIANCE_RULES.md |
 | 知识库 | `2-KNOWLEDGE/` | 7个INDEX | 1-TRADING/, 2-TECHNICAL/, 3-THEORY/, 5-METHODOLOGY/ |
 | 链开发协议 | `3-CHAIN-DEVELOPMENT/` | 21 | D1-D4调研链, Z1-Z4规划链, E1-E3执行链 |
-| 记忆系统 | `4-MEMORY/` | 2 | MEMORY_SYSTEM.md（L1-L4四级架构） |
+| 记忆系统 | `4-MEMORY/` | 2 | MEMORY_SYSTEM_ARCHITECTURE.md v5.0（总记忆+应用记忆双层架构） |
 | 业务管理 | `5-BUSINESS/` | 2 | BUSINESS_SYSTEM.md |
 | 交易研究 | `6-TRADING/` | 132 | A0-A9技能集, 架构设计v2.0, 桥接架构 |
 | 图结构压缩 | `6-图结构上下文压缩/` | 5 | SPEC.md, TECHNICAL-DOC.md, IMPLEMENTATION.md |

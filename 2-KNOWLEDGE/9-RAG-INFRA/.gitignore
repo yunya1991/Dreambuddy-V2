@@ -1,0 +1,9 @@
+# RAG基础设施 - 持久化数据（不纳入git）
+chroma_db/
+file_hashes.json
+graph_db/
+keyword_index/
+feedback_weights.json
+neo4j_data/
+__pycache__/
+*.pyc

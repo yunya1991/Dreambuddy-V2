@@ -1,0 +1,50 @@
+# 宏观特征 → 维度映射配置
+# 修改后调用 MacroFeatures.reload() 或重启进程生效
+# FAIL-OPEN：本文件缺失/解析失败 → 使用代码内 _DEFAULT_FEATURE_TO_DIM 硬编码默认值
+
+features:
+  # ── 情绪 (sentiment) ──
+  fgi_zscore: sentiment
+  fgi_extreme_fear: sentiment
+  fgi_extreme_greed: sentiment
+  fgi_divergence: sentiment
+  fgi_trend_7d: sentiment
+  # ── 资金/衍生品 (funding) ──
+  funding_rate_zscore: funding
+  funding_extreme_positive: funding
+  funding_extreme_negative: funding
+  oi_change_rate: funding
+  funding_divergence: funding
+  # ── 流动性 (liquidity) ──
+  stablecoin_growth: liquidity
+  liquidity_expanding: liquidity
+  liquidity_contracting: liquidity
+  tvl_change_7d: liquidity
+  # ── 链上 (onchain) ──
+  hash_rate_trend: onchain
+  miner_accumulation: onchain
+  miners_revenue_zscore: onchain
+  # ── 聪明钱/社交 (smart_money) ──
+  smart_money_direction: smart_money
+  smart_money_divergence: smart_money
+  social_hype_zscore: smart_money
+  hype_extreme: smart_money
+  # ── 估值 (valuation) ──
+  market_cap_rank: valuation
+  ath_drop_pct: valuation
+  undervalued: valuation
+  # ── 宏观金融扩展 (macro_finance_ext) ──
+  vix_zone: macro_finance_ext
+  us_macro_regime: macro_finance_ext
+  sp500_7d_break: macro_finance_ext
+  dxy_strength: macro_finance_ext
+  btc_etf_flow_3d: macro_finance_ext
+  rwa_liquidity_pulse: macro_finance_ext
+  treasury_balance_delta: macro_finance_ext
+  stablecoin_minus_rwa: macro_finance_ext
+  # ── BTC 链上扩展 (btc_onchain_ext) ──
+  whale_netflow_pulse: btc_onchain_ext
+  exchange_btc_30d: btc_onchain_ext
+  defi_breadth: btc_onchain_ext
+  oi_liq_pressure: btc_onchain_ext
+  btc_dom_delta: btc_onchain_ext

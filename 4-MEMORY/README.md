@@ -34,6 +34,40 @@
 
 ---
 
+## 文档权威性矩阵（2026-09-03 对齐）
+
+> 4-MEMORY 下曾存在多份架构文档，部分已过时。本矩阵明确每份文档的状态，避免引用废弃内容。
+
+### 权威文档（当前有效，引用基准）
+
+| 文档 | 版本 | 定位 |
+|------|------|------|
+| [README.md](./README.md) | v5.0 | AI 入口索引（本文件） |
+| [MEMORY_SYSTEM_ARCHITECTURE.md](./MEMORY_SYSTEM_ARCHITECTURE.md) | v5.0 | 记忆系统顶层架构设计 |
+| [0-元记忆/COGNITIVE_ARCHITECTURE.md](./0-元记忆/COGNITIVE_ARCHITECTURE.md) | v3.4 | 认知架构（认知-理论-实践闭环） |
+| [CORE.md](./CORE.md) | 实时 | 核心常驻记忆（每次会话注入） |
+
+### 专题文档（0-元记忆/，特定主题，有效）
+
+| 文档 | 版本 | 主题 |
+|------|------|------|
+| MEMORY_HIERARCHY_ANALYSIS.md | v1.0 | 总记忆与应用记忆层级关系 |
+| MEMORY_LIFECYCLE.md | v1.0 | 记忆生命周期 |
+| MEMORY_QUALITY.md | v1.0 | 记忆质量标准（S/A/B/C/D） |
+| MEMORY_TYPES.md | v1.0 | 记忆类型定义 |
+| MEMORY_UNITS.md | v1.0 | 记忆单元管理规范 |
+
+### 过时文档（已被取代，建议归档，不再引用）
+
+| 文档 | 版本 | 状态 | 取代者 |
+|------|------|------|--------|
+| MEMORY_SYSTEM.md | v2.0 (2026-05-14) | 严重过时 | MEMORY_SYSTEM_ARCHITECTURE.md v5.0 |
+| DESIGN_V5_MEMORY_UNITS.md | v1.0草案 (2026-07-27) | 方案已落地 | README.md v5.0 |
+| ARCHITECTURE_EVALUATION_V3.md | 2026-07-27 | 一次性评估 | 归档至 `_archive/` |
+| WORK_SUMMARY_20260727.md | 2026-07-27 | 一次性总结 | 归档至 `_archive/` |
+
+---
+
 ## 核心设计：双层记忆架构
 
 ```

@@ -71,8 +71,11 @@ P1_ATR_WIDEN_SURVIVE_PROB = 0.70
 P1_ATR_WIDEN_SL_LIMIT_PCT = -3.5  # 仅对 ≥-3.5% 的轻微亏损生效
 
 # P1 做空趋势过滤：加密币种做空需要 BTC 趋势 SHORT_ALLOWED
+# — BDSM 2026-09 扩展：加密币种补齐 AAVE, CRCL, ETH
+#   注意：ETH 属于 STATIC_BLACKLIST_COINS（仅用于回测「全局禁 ETH」的基线），
+#   真钱执行已改用 SHORT_ONLY_BLACKLIST(仅禁空允许做多) 机制
 CRYPTO_COINS = frozenset({
-    "BTC", "SOL", "UNI", "OKB", "HYPE", "PUMP",
+    "BTC", "SOL", "UNI", "OKB", "HYPE", "PUMP", "AAVE", "CRCL", "ETH",
 })
 
 # P3 波动率自适应参数

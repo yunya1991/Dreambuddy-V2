@@ -25,7 +25,7 @@ import random
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 
@@ -428,7 +428,7 @@ def build_dataset(
     n_trajectories: int = 5000,
     seed: int = 42,
     walk_forward_segments: int = 5,
-    out_dir: str | Path = "data/ai_datasets",
+    out_dir: Union[str, Path] = "data/ai_datasets",
     progress: bool = True,
 ) -> Dict[str, Path]:
     """v3: 生成训练/验证/WF 数据集并落盘。返回各 split 文件路径 dict。
@@ -676,7 +676,7 @@ def build_dataset_from_real(
     samples_per_coin: int = 50,
     seed: int = 42,
     walk_forward_segments: int = 5,
-    out_dir: str | Path = "data/ai_datasets",
+    out_dir: Union[str, Path] = "data/ai_datasets",
     progress: bool = True,
 ) -> Dict[str, Path]:
     """从真实 OKX K 线生成数据集（每币种滑窗采样）"""

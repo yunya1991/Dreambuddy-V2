@@ -27,6 +27,7 @@ import time
 import dataclasses
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
@@ -151,6 +152,175 @@ STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 POLL_INTERVAL = int(get_config("V15_POLL_INTERVAL", "3600"))
 AUTO_EXECUTE = str(get_config("V15_AUTO_EXECUTE", "true")).lower() == "true"
+
+# ─── TEE (Trade Execution Engine) 集成开关 — Task 12 生产替换 ───
+# 硬约束 AC-7：ENABLE_TEE=False 时，所有 place_order() 调用字节等价于 legacy。
+# 可通过 config.json 中的 { "ENABLE_TEE": true, "TEE_SHADOW_MODE": true } 控制。
+ENABLE_TEE = str(get_config("ENABLE_TEE", "false")).lower() == "true"
+SHADOW_MODE = str(get_config("TEE_SHADOW_MODE", "false")).lower() == "true"
+TEE_AUDIT_DIR = get_config("TEE_AUDIT_DIR", None)
+# 单例：V15_ENGINE = None → 首次调用 _ensure_v15_engine() 时懒加载；
+# 仅在 ENABLE_TEE 或 SHADOW_MODE 为真时构造；保持为 None 时基线完全不变。
+V15_ENGINE: Any = None
+_V15_ENGINE_INIT_LOCK = threading.Lock()
+
+
+def _ensure_v15_engine(client: Any):
+    """懒加载 TEE 引擎（NFR-4：构造发生在 tee_core 外部，raw_client 由本函数传入）。"""
+    global V15_ENGINE
+    if V15_ENGINE is not None:
+        return V15_ENGINE
+    if not ENABLE_TEE and not SHADOW_MODE:
+        return None
+    with _V15_ENGINE_INIT_LOCK:
+        if V15_ENGINE is not None:
+            return V15_ENGINE
+        try:
+            import importlib.util as _ilu
+            import sys as _sys
+            from pathlib import Path as _P
+            _TEE_ROOT = _P(__file__).resolve().parents[2] / "22-执行引擎中心"
+            _p = _TEE_ROOT / "tee_core/integrations/v15_integration.py"
+            if not _p.is_file():
+                return None
+            _name = "_tee_v15_integration_lazy"
+            _spec = _ilu.spec_from_file_location(_name, str(_p))
+            _mod = _ilu.module_from_spec(_spec)
+            _sys.modules.setdefault(_name, _mod)
+            _spec.loader.exec_module(_mod)
+            engine, _info = _mod.build_v15_engine(
+                raw_client=client,
+                enable_tee=ENABLE_TEE,
+                shadow_mode=SHADOW_MODE,
+                audit_dir=TEE_AUDIT_DIR,
+            )
+            V15_ENGINE = engine
+        except BaseException:
+            # FAIL-OPEN：集成加载失败 → 完全退化为 legacy 直传，不抛错阻塞轮询
+            V15_ENGINE = None
+    return V15_ENGINE
+
+
+def _v15_place_order(
+    *,
+    client: Any,
+    order_reason: str,
+    source_coin: str,
+    inst_id: str,
+    side: str,
+    sz: Any,
+    td_mode: str,
+    pos_side: str,
+    ord_type: str | None = None,
+    px: Any = None,
+    leverage: Any = None,
+    tag: str | None = None,
+    reason: str | None = None,
+    **_ignored_extra: Any,
+) -> Dict[str, Any]:
+    """V15 统一 place_order 分发器（字节等价基线 + TEE 升级双路径）。
+
+    路由规则：
+      ① LIMIT / 带 px / 带 tag / 非 None ord_type 且非 market 类型
+        → 直传 raw client.place_order()（SmartPassive 暂不托管网格限价单）
+      ② ENABLE_TEE=False 且 SHADOW_MODE=False → 直传（字节等价 AC-7）
+      ③ ENABLE_TEE=True 或 SHADOW_MODE=True → engine.execute_market_compat()
+        + FAIL-OPEN：任何 BaseException → 降级为 ② 直传，保证成交不阻塞。
+
+    对于 case ②（legacy path），严格仅携带 **5 legacy 纯市价 keys**：
+      inst_id, side, sz, td_mode, pos_side
+    外加 ord_type=limit / px / leverage / tag / reason 当显式传入时（但
+    这种情况在 case ② 只有限价才会出现，纯市价永远不带它们）。
+    """
+    is_limit = bool(
+        (ord_type and ord_type != "market") or px is not None
+    )
+
+    # ── 情况1：限价 / 网格类 → 始终直传 raw client 不经过 engine ──
+    if is_limit:
+        kwargs: Dict[str, Any] = {
+            "inst_id": inst_id, "side": side, "sz": sz,
+            "td_mode": td_mode, "pos_side": pos_side,
+        }
+        if ord_type is not None:
+            kwargs["ord_type"] = ord_type
+        if px is not None:
+            kwargs["px"] = px
+        if leverage is not None:
+            kwargs["leverage"] = leverage
+        if tag:
+            kwargs["tag"] = tag
+        kwargs["reason"] = reason or order_reason
+        return client.place_order(**kwargs)
+
+    # ── 情况2：基线关闭（ENABLE_TEE=False + SHADOW=False）→ 字节等价直传 ──
+    if not ENABLE_TEE and not SHADOW_MODE:
+        return client.place_order(
+            inst_id=inst_id, side=side, sz=sz,
+            td_mode=td_mode, pos_side=pos_side,
+        )
+
+    # ── 情况3：TEE 或 SHADOW 打开 → engine compat + FAIL-OPEN 兜底 ──
+    try:
+        engine = _ensure_v15_engine(client)
+        if engine is None:
+            return client.place_order(
+                inst_id=inst_id, side=side, sz=sz,
+                td_mode=td_mode, pos_side=pos_side,
+            )
+        compat_kwargs = {
+            "inst_id": inst_id,
+            "side": side,
+            "sz": sz,
+            "td_mode": td_mode,
+            "pos_side": pos_side,
+            # tag/source_coin 合并进 tag，方便审计查询
+            "tag": f"V15|{source_coin}",
+            "reason": order_reason,
+        }
+        if leverage is not None:
+            compat_kwargs["leverage"] = leverage
+        result = engine.execute_market_compat(**compat_kwargs)
+        # V15 上层代码统一期望 r={ok, ord_id, data, error?}
+        shadow_hit = bool(
+            result.get("shadow_mode_hit") is True
+            or result.get("shadow") is True
+            or result.get("total_filled_sz", 1) == 0
+        )
+        ok = bool(result.get("ok") or result.get("status") == "FILLED" or shadow_hit)
+        out: Dict[str, Any] = {
+            "ok": ok,
+            "shadow_mode_hit": shadow_hit,
+            "ord_id": (
+                result.get("parent_id") or result.get("ord_id")
+                or f"tee_{order_reason}_{int(time.time()*1000)}"
+            ),
+            "data": [{
+                "ordId": result.get("parent_id") or "",
+                "fillSz": str(result.get("total_filled_sz", sz)),
+                "avgPx": str(
+                    result.get("estimated_vwap")
+                    or result.get("final_vwap")
+                    or result.get("exec", {}).get("avg_fill_px")
+                    or 0
+                ),
+                "engine": "TEE",
+                "reason": order_reason,
+                "tag": f"V15|{source_coin}",
+            }],
+            "engine_result": result,
+        }
+        if not ok:
+            err = result.get("fail_open") or result.get("kill_switch") or result.get("error") or "tee_unknown"
+            out["error"] = err
+        return out
+    except BaseException:
+        # FAIL-OPEN (Business AC-6 + AC-7)：engine 异常直接降级，保留字节等价 5 键
+        return client.place_order(
+            inst_id=inst_id, side=side, sz=sz,
+            td_mode=td_mode, pos_side=pos_side,
+        )
+
 # 币种池：公共代币池(token_registry.json) > V15_COINS env(override) > 硬编码默认
 _V15_DEFAULT_COINS = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
 _RAW_COINS = load_coins_with_override("V15_COINS", _V15_DEFAULT_COINS)
@@ -1818,7 +1988,25 @@ def execute_open_position(client, coin, decision, state):
         from capital_manager import calculate_per_coin_allocation
 
         elder_ray = params.get("elder_ray")
-        alloc = calculate_per_coin_allocation(coin, effective_conf, elder_ray)
+        # FIX-C: 传入V15 state中实际持仓数，避免L4/polling_trader管理的BTC/ETH/SOL等外部仓位占满3名额
+        _v15_active_pos = len(state.get("positions", {}))
+        # V15动态预算池(§2独立扣减): 从V15 state.positions的per_coin_budget累加已占用
+        _v15_positions = state.get("positions", {})
+        _v15_used_usd = sum(float(p.get("per_coin_budget", 0) or 0)
+                           for p in _v15_positions.values()
+                           if isinstance(p, dict))
+        alloc = calculate_per_coin_allocation(
+            coin, effective_conf, elder_ray,
+            pos_count_override=_v15_active_pos,
+            v15_used_usd=_v15_used_usd,
+            v15_state_positions=_v15_positions)
+
+        # 日志：预算池来源gross/net/有效MIN（§1/§2/§3）
+        _log(f"[{coin}] 预算池 gross=${alloc.get('budget_pool_gross'):.1f} "
+             f"net=${alloc.get('budget_pool_net'):.1f} "
+             f"eff_MIN=${alloc.get('effective_min_margin'):.1f} "
+             f"(deducted=${alloc.get('v15_used_deducted'):.1f} "
+             f"pool_size=${alloc.get('pool_size_usdt')})")
 
         if not alloc.get("allowed"):
             _log(f"[{coin}] 资金分配不允许: {alloc.get('reason', '资金不足')}")
@@ -1953,7 +2141,10 @@ def execute_open_position(client, coin, decision, state):
             # 做空: side="sell", pos_side="short"; 做多: side="buy", pos_side="long"
             side = "sell" if is_short else "buy"
             pos_side = "short" if is_short else "long"
-            r = client.place_order(
+            r = _v15_place_order(
+                client=client,
+                order_reason="v15_open",
+                source_coin=coin,
                 inst_id=inst_id,
                 side=side,
                 sz=sz,
@@ -2010,7 +2201,8 @@ def execute_open_position(client, coin, decision, state):
                     "use_btc_windvane": dir_ctx.get("use_btc_windvane", False),
                 }
                 state["total_trades"] += 1
-                _sync_tp_sl_orders(client, coin, state["positions"][coin], price, tp_pct, sl_price)
+                _sync_tp_sl_orders(client, coin, state["positions"][coin], price, tp_pct, sl_price,
+                                   current_price=price)
                 _place_addon_grid_orders(client, coin, state["positions"][coin])
                 return True
             else:
@@ -2125,7 +2317,10 @@ def execute_addon(client, coin, pos, state):
             # 做空加仓: side="sell", pos_side="short"; 做多加仓: side="buy", pos_side="long"
             side = "sell" if is_short else "buy"
             pos_side = "short" if is_short else "long"
-            r = client.place_order(
+            r = _v15_place_order(
+                client=client,
+                order_reason="v15_addon",
+                source_coin=coin,
                 inst_id=inst_id,
                 side=side,
                 sz=sz,
@@ -2441,7 +2636,8 @@ def _check_addon_grid_status(client, coin, pos):
                     # 同步 TP/SL（均价变化后需更新）
                     tp_pct = pos.get("take_profit_pct", addon_pct)
                     sl_price = pos.get("stop_loss_price", 0)
-                    _sync_tp_sl_orders(client, coin, pos, pos["entry_price"], tp_pct, sl_price)
+                    _sync_tp_sl_orders(client, coin, pos, pos["entry_price"], tp_pct, sl_price,
+                                       current_price=pos.get("entry_price"))
                     continue
                 elif state_code in ("canceled", "cancelled"):
                     entry["status"] = "cancelled"
@@ -2530,7 +2726,7 @@ def _cancel_addon_grid_orders(client, coin, pos):
                 _log(f"[{coin}] 加仓网格#{entry['tier']} 平仓撤单异常: {e}")
 
 
-def _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price):
+def _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price, current_price=None):
     """同步设置/更新 OCO 止盈止损条件单
 
     开仓后立即调用，加仓后再次调用（先取消旧单，再下新单）。
@@ -2543,6 +2739,8 @@ def _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price):
         entry_price: 当前均价
         tp_pct: 止盈比例（小数，如 0.04 = 4%）
         sl_price: 止损价格（None 表示不设止损）
+        current_price: 当前市场价（用于防止SL秒触发；
+                       LONG时 sl_price >= current_price → 只挂TP不挂SL）
     """
     if not AUTO_EXECUTE:
         return
@@ -2562,12 +2760,27 @@ def _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price):
         # 先取消旧的条件单，避免多单冲突
         client.cancel_algo_orders(inst_id)
 
-        # 止损价校验：必须与方向一致
+        # 止损价校验：必须与方向一致，且不能在当前价上方（LONG）/下方（SHORT）
         valid_sl = sl_price is not None and sl_price > 0
         if valid_sl:
             if is_short and sl_price <= entry_price:
                 valid_sl = False
             elif not is_short and sl_price >= entry_price:
+                valid_sl = False
+
+        # 防SL秒触发：SL在当前价上方（LONG）或下方（SHORT）时不挂SL
+        if valid_sl and current_price is not None and current_price > 0:
+            if not is_short and sl_price >= current_price:
+                _log(
+                    f"[{coin}] SL={sl_price:.4f} >= 当前价={current_price:.4f}，"
+                    f"SL在当前价上方→跳过SL只挂TP（防止OCO秒触发）"
+                )
+                valid_sl = False
+            elif is_short and sl_price <= current_price:
+                _log(
+                    f"[{coin}] SL={sl_price:.4f} <= 当前价={current_price:.4f}，"
+                    f"SL在当前价下方→跳过SL只挂TP（防止OCO秒触发）"
+                )
                 valid_sl = False
 
         if valid_sl:
@@ -2619,6 +2832,18 @@ def _update_tp_sl_dynamic(client, coin, pos):
         current_price = params["current_price"]
         tp_pct = pos.get("take_profit_pct", params["take_profit_pct"])
         sl_price = params["stop_loss_price"]
+        # ── SL回退保护（2026-09-01补丁）：当params算不出SL（如MA200历史不足），
+        #    但pos中已有有效非风向标SL（如手动设置的日MA128），则保留现有SL不撤销。─
+        if sl_price is None:
+            _pos_sl = pos.get("stop_loss_price")
+            _pos_sl_type = pos.get("stop_loss_type")
+            if (
+                _pos_sl is not None and isinstance(_pos_sl, (int, float)) and _pos_sl > 0
+                and _pos_sl_type
+                and _pos_sl_type not in ("BTC_WINDVANE",)
+            ):
+                _log(f"[{coin}] 动态SL计算为None，保留持仓中的手动SL {_pos_sl_type} @{_pos_sl}")
+                sl_price = _pos_sl
         if current_price <= 0:
             return
 
@@ -2666,7 +2891,8 @@ def _update_tp_sl_dynamic(client, coin, pos):
                     need_update = True
 
         if need_update:
-            _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price)
+            _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price,
+                               current_price=current_price)
             pos["last_sl_price"] = sl_price
             pos["last_tp_price"] = current_tp
     except Exception as e:
@@ -2703,6 +2929,24 @@ def check_take_profit(client, coin, pos, state):
         sl_price = params["stop_loss_price"]
         sl_type = params["stop_loss_type"]
         sl_triggered = params["stop_loss_triggered"]
+        # ── SL回退保护（2026-09-01补丁）：params算不出SL时，用pos中已有的手动SL ─
+        if sl_price is None:
+            _pos_sl = pos.get("stop_loss_price")
+            _pos_sl_type = pos.get("stop_loss_type")
+            if (
+                _pos_sl is not None and isinstance(_pos_sl, (int, float)) and _pos_sl > 0
+                and _pos_sl_type
+                and _pos_sl_type not in ("BTC_WINDVANE",)
+            ):
+                sl_price = _pos_sl
+                sl_type = _pos_sl_type
+                # 手动SL的触发：价格有效跌破SL绝对价（不用MA200的收盘确认）
+                if not is_short and current_price <= sl_price:
+                    sl_triggered = True
+                    _log(f"[{coin}] 手动SL({sl_type})触发: 当前价={current_price:.4g} <= SL={sl_price}")
+                elif is_short and current_price >= sl_price:
+                    sl_triggered = True
+                    _log(f"[{coin}] 手动SL({sl_type})触发: 当前价={current_price:.4g} >= SL={sl_price}")
 
         # ── BTC风向标智能模式：加密资产非BTC币种由BTC风向标状态控制止损 ──
         # 非加密资产（如美股）使用旧版MA200止损，不进入此分支
@@ -2812,7 +3056,10 @@ def check_take_profit(client, coin, pos, state):
                             close_sz = round(close_sz, decimals)
                             side = "buy" if is_short else "sell"
                             pos_side = "short" if is_short else "long"
-                            r = client.place_order(
+                            r = _v15_place_order(
+                                client=client,
+                                order_reason="v15_trailing_tp",
+                                source_coin=coin,
                                 inst_id=inst_id,
                                 side=side,
                                 sz=close_sz,
@@ -2847,7 +3094,10 @@ def check_take_profit(client, coin, pos, state):
                 # 做空平仓: side="buy", pos_side="short"; 做多平仓: side="sell", pos_side="long"
                 side = "buy" if is_short else "sell"
                 pos_side = "short" if is_short else "long"
-                r = client.place_order(
+                r = _v15_place_order(
+                    client=client,
+                    order_reason="v15_fixed_tp",
+                    source_coin=coin,
                     inst_id=inst_id,
                     side=side,
                     sz=close_sz,
@@ -2897,7 +3147,10 @@ def check_take_profit(client, coin, pos, state):
                 close_sz = round(close_sz, decimals)
                 side = "buy" if is_short else "sell"
                 pos_side = "short" if is_short else "long"
-                r = client.place_order(
+                r = _v15_place_order(
+                    client=client,
+                    order_reason="v15_stop_loss",
+                    source_coin=coin,
                     inst_id=inst_id,
                     side=side,
                     sz=close_sz,
@@ -3074,6 +3327,61 @@ def check_time_exit(client, coin, pos, state):
             f"盈亏={profit_pct:+.2%}"
         )
 
+        # ═══════════════════════════════════════════════════════════════
+        # FIX-B: 两层超时硬闸——防止"僵尸仓"（SKHYNIX式11天+0.95%复现）
+        # ═══════════════════════════════════════════════════════════════
+        hard_gate_mult   = get_config_float("V15_TIMEOUT_HARD_GATE_MULT",   3.0)  # 硬闸: max×3
+        micro_profit_mult= get_config_float("V15_TIMEOUT_MICRO_GATE_MULT", 2.0)  # 微盈闸: max×2
+        micro_profit_cap = get_config_float("V15_TIMEOUT_MICRO_PROFIT_CAP", 0.02) # 微盈阈值 <2%
+
+        # FIX-B 闸1：硬闸——持超max_hours×3（如36×3=108h=4.5天）不问盈亏强制止盈/止损
+        if hold_hours >= max_hours * hard_gate_mult:
+            if profit_pct >= 0:
+                _log(
+                    f"[{coin}] FIX-B硬闸触发: hold={hold_hours:.0f}h>={max_hours*hard_gate_mult:.0f}h, "
+                    f"盈利{profit_pct:+.2%}, 不问信号强制止盈离场(释放名额)"
+                )
+                _execute_close_position(
+                    client, coin, pos, state,
+                    reason=f"FIX-B_timeout_hard_gate_profit:{hold_hours:.0f}h",
+                    exit_price=current_price,
+                )
+                return True
+            else:
+                # 硬闸亏损：给一次最后SL保护，或用户设置了V15_HARD_GATE_LOSS_CLOSE=true才强平
+                if get_config("V15_HARD_GATE_LOSS_CLOSE", "false").lower() == "true":
+                    _log(
+                        f"[{coin}] FIX-B硬闸亏损强平: hold={hold_hours:.0f}h>={max_hours*hard_gate_mult:.0f}h, "
+                        f"亏损{profit_pct:+.2%}, V15_HARD_GATE_LOSS_CLOSE=true → 强制平仓"
+                    )
+                    _execute_close_position(
+                        client, coin, pos, state,
+                        reason=f"FIX-B_timeout_hard_gate_loss_force:{hold_hours:.0f}h",
+                        exit_price=current_price,
+                    )
+                    return True
+                else:
+                    # 默认：硬闸亏损不强制平，只打日志+后续靠SL保护
+                    _log(
+                        f"[{coin}] FIX-B硬闸触发(亏损): hold={hold_hours:.0f}h>={max_hours*hard_gate_mult:.0f}h, "
+                        f"亏损{profit_pct:+.2%}, 维持持仓(依赖SL触发)。如需强制止损，设V15_HARD_GATE_LOSS_CLOSE=true"
+                    )
+
+        # FIX-B 闸2：微盈强止——持超max×2且盈利0<profit<2% → 证明价格横盘无起色，止盈释放名额
+        if 0 < profit_pct < micro_profit_cap and hold_hours >= max_hours * micro_profit_mult:
+            elder_ray = params.get("elder_ray")
+            signal = _evaluate_signal_strength(elder_ray, direction)
+            _log(
+                f"[{coin}] FIX-B微盈强止触发: hold={hold_hours:.0f}h>={max_hours*micro_profit_mult:.0f}h, "
+                f"微盈{profit_pct:+.2%}<{micro_profit_cap*100:.1f}%, 信号强度={signal['score']:.0f} → 止盈离场换强势币"
+            )
+            _execute_close_position(
+                client, coin, pos, state,
+                reason=f"FIX-B_timeout_microprofit_gate:hold={hold_hours:.0f}h,pf={profit_pct*100:.2f}%",
+                exit_price=current_price,
+            )
+            return True
+
         if profit_pct > 0:
             # ── 盈利超时：先评估信号强度，再决定止盈还是提高 ──
             elder_ray = params.get("elder_ray")
@@ -3100,7 +3408,8 @@ def check_time_exit(client, coin, pos, state):
                 if capped_tp > current_tp:
                     pos["take_profit_pct"] = capped_tp
                     sl_price = params.get("stop_loss_price")
-                    _sync_tp_sl_orders(client, coin, pos, entry_price, capped_tp, sl_price)
+                    _sync_tp_sl_orders(client, coin, pos, entry_price, capped_tp, sl_price,
+                                       current_price=current_price)
                     _log(
                         f"[{coin}] 超时盈利, 信号仍强(强度={signal['score']:.0f}), "
                         f"提高止盈 {current_tp:.2%} → {capped_tp:.2%}"
@@ -3159,7 +3468,10 @@ def _execute_close_position(client, coin, pos, state, reason="", exit_price=None
             # 做空平仓: side="buy", pos_side="short"; 做多平仓: side="sell", pos_side="long"
             side = "buy" if is_short else "sell"
             pos_side = "short" if is_short else "long"
-            r = client.place_order(
+            r = _v15_place_order(
+                client=client,
+                order_reason="v15_force_close",
+                source_coin=coin,
                 inst_id=inst_id,
                 side=side,
                 sz=close_sz,
@@ -3223,7 +3535,10 @@ def _execute_reduce_position(client, coin, pos, state, reduce_frac):
             # 做空减仓: side="buy", pos_side="short"; 做多减仓: side="sell", pos_side="long"
             side = "buy" if is_short else "sell"
             pos_side = "short" if is_short else "long"
-            r = client.place_order(
+            r = _v15_place_order(
+                client=client,
+                order_reason="v15_reduce_position",
+                source_coin=coin,
                 inst_id=inst_id,
                 side=side,
                 sz=reduce_sz,

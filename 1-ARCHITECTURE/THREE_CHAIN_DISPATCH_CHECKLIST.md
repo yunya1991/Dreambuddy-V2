@@ -255,7 +255,7 @@ deployed_canary                            deployed_full
 |------|------|
 | `hl_size_mode` | 仓位计算模式（notional_usdc） |
 | `hl_default_slippage` | 默认滑点（0.02） |
-| `hl_min_notional_usdc` | 最小名义价值（30） |
+| `hl_min_notional_usdc` | 最小名义价值（200） |
 | `hl_max_notional_usdc` | 最大名义价值（2000） |
 | `hl_default_leverage` | 默认杠杆（3x） |
 

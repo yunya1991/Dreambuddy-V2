@@ -1,0 +1,45 @@
+{
+  "gene_id": "CD-DONCHIAN-20-BREAK",
+  "category": "trend",
+  "condition_type": "indicator",
+  "expression": "donchian_20_high_break AND atr < 1.5*ma_atr",
+  "parameters": {
+    "window": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 200
+      }
+    },
+    "atr_window": {
+      "value": 14,
+      "range": {
+        "low": 7,
+        "high": 50
+      }
+    },
+    "atr_mult": {
+      "value": 1.5,
+      "range": {
+        "low": 0.5,
+        "high": 4.0
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "13-通用风控模块/rules/gate_rules.py",
+    "lines": {
+      "low": 286,
+      "high": 317
+    }
+  },
+  "tags": [
+    "trend",
+    "indicator",
+    "DONCHIAN-20-BREA"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #4 MVP seed (auto-gen reproducible)."
+}

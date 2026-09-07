@@ -176,6 +176,9 @@ class FiveDomainHeuristicScorer:
     """
 
     # §4.2 三类资产差异化权重（和为 1.00，TDD 断言）
+    # 🆕 Phase 2：此权重为 FAIL-OPEN 回退常量。当 force_vectors 不可用或置信度不足时使用。
+    #   当 _compute_adaptive_weights() 收到有效 force_vectors 且 avg_conf > 0.3 时，
+    #   会按 alpha 混合自适应权重，逐步替代硬编码值。
     WEIGHTS_BY_CLASS: Dict[str, Dict[str, float]] = {
         # 加密：政策一致性最重要 → dao 30%；趋势结构→地25%
         "crypto_usdt":    {"dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15},
@@ -206,6 +209,14 @@ class FiveDomainHeuristicScorer:
         #   导致 dao<40 → FREEZE、total≥60 → ALLOW 等决策不等式永远无法生效。
         #   文件缓存仍用于 persist=True，供下游（polling_trader）消费 war_state/cap。
         self._last_state = FiveDomainState.default_fail_open()
+        # ★ P1: 解冻滞回计数器（连续N日≥60）。每类cls独立维护连续达标天数。
+        #   避免单点顶解冻（某1天冲高触发ALLOW第二天回落）。
+        self._hysteresis_config = {
+            "thaw_days": 3,     # 解冻门槛：连续3天 total≥60
+            "thaw_score": 60,   # 解冻分数线：≥60
+            "re_freeze_score": 58,  # 解冻后回落门槛：<58 才重新冻回（2分缓冲，避免反复切）
+        }
+        self._thaw_consecutive = {c: 0 for c in CLASSES}  # 连续达标日计数器
 
     # =================================================================
     # 对外：score_and_decide —— 日级打分+决策 → 返回 FiveDomainState
@@ -252,10 +263,70 @@ class FiveDomainHeuristicScorer:
         return state
 
     # =================================================================
+    # 内部：_compute_adaptive_weights（力向量 magnitude → 自适应权重）
+    # =================================================================
+    def _compute_adaptive_weights(self, cls: str,
+                                 force_vectors: Optional[Dict] = None) -> Dict[str, float]:
+        """从力向量 magnitude 计算自适应权重。
+
+        权重 = |magnitude[dim]| / sum(|magnitude[dim]|)，再与硬编码权重 alpha 混合。
+        alpha 由平均 confidence 决定：conf<0.3→纯硬编码，conf≥0.8→最多50%自适应。
+
+        Phase 2：基础设施就绪。当前调用方未传 force_vectors → 仍用硬编码权重。
+        后续 Shadow 数据充足后（avg_conf > 0.3），调用方可传入 force_vectors 启用自适应。
+        """
+        fallback = self.WEIGHTS_BY_CLASS.get(cls, self.WEIGHTS_BY_CLASS["crypto_usdt"])
+        if not force_vectors or not isinstance(force_vectors, dict):
+            return fallback
+
+        try:
+            mags = {}
+            confs = {}
+            for dim in ("dao", "tian", "di", "jiang", "fa"):
+                fv = force_vectors.get(dim, {})
+                if not isinstance(fv, dict):
+                    fv = {}
+                mags[dim] = abs(float(fv.get("magnitude", 0)))
+                confs[dim] = float(fv.get("confidence", 0))
+
+            total_mag = sum(mags.values())
+            if total_mag < 1e-6:
+                return fallback  # 全零 → 回退
+
+            w_adaptive = {k: v / total_mag for k, v in mags.items()}
+            avg_conf = sum(confs.values()) / 5.0
+            # alpha：conf<0.3→0（纯硬编码），conf≥0.8→0.5（最多50%自适应）
+            alpha = max(0.0, min(0.5, (avg_conf - 0.3) / 1.0))
+
+            if alpha < 1e-6:
+                return fallback  # 置信度不足 → 回退
+
+            w_hard = fallback
+            w_final = {
+                k: alpha * w_adaptive.get(k, 0) + (1 - alpha) * w_hard.get(k, 0.2)
+                for k in w_hard
+            }
+            s = sum(w_final.values())
+            if s > 0:
+                w_final = {k: v / s for k, v in w_final.items()}
+            else:
+                return fallback
+            return w_final
+        except Exception:
+            return fallback  # FAIL-OPEN
+
+    # =================================================================
     # 内部：_weighted_total（§4.1 五维加权汇总庙算总分）
     # =================================================================
-    def _weighted_total(self, scores_cls: Dict[str,int], cls: str) -> int:
-        w = self.WEIGHTS_BY_CLASS.get(cls, self.WEIGHTS_BY_CLASS["crypto_usdt"])
+    def _weighted_total(self, scores_cls: Dict[str, int], cls: str,
+                        force_vectors: Optional[Dict] = None) -> int:
+        """§4.1 五维加权汇总庙算总分。
+
+        权重选择优先级：
+        1. 如果传入 force_vectors 且置信度足够 → 自适应权重（alpha 混合）
+        2. 否则 → WEIGHTS_BY_CLASS 硬编码权重（FAIL-OPEN 回退）
+        """
+        w = self._compute_adaptive_weights(cls, force_vectors)
         assert abs(sum(w.values()) - 1.00) < 1e-6, f"[{cls}] 权重和≠1：{w}"
         return int(round(sum(scores_cls.get(k, DEFAULT_NEUTRAL_SCORES[k]) * ww for k, ww in w.items())))
 
@@ -286,14 +357,37 @@ class FiveDomainHeuristicScorer:
             }
 
             # ===== 不等式1：war_state（Q1+Q6：是否允许交易+空仓等待）=====
-            # 解冻滞回5分：FREEZE/COOLDOWN → 下次需 total≥65 才解冻回ALLOW
+            # ★ P1 修复：解冻滞回改为「连续 thaw_days 日≥thaw_score(60)」才 ALLOW，
+            #    解冻后回冻需 <re_freeze_score(58)（2分缓冲），避免单点顶解冻+冻结抖动。
+            #   dao_jv_fou_jue(道<40) 一票否决 → 立即 FREEZE，且清零计数器（达标链断裂）。
+            hcfg = self._hysteresis_config
             prev_ws = getattr(self._last_state, "war_state", {}).get(cls, "ALLOW")
-            if (prev_ws in ("FREEZE", "COOLDOWN")) and (total < 65):
-                state.war_state[cls] = "COOLDOWN"
-            elif (total < 60) or (veto["dao_jv_fou_jue"] is True):
+            # ① 道维度一票否决：立即冻结 + 解冻达标链清零
+            if veto["dao_jv_fou_jue"]:
+                self._thaw_consecutive[cls] = 0
                 state.war_state[cls] = "FREEZE"
-            else:
-                state.war_state[cls] = "ALLOW"
+            # ② 上一轮已 ALLOW → 只需 <re_freeze_score 才重新冻回（否则继续 ALLOW）
+            elif prev_ws == "ALLOW":
+                if total < hcfg["re_freeze_score"]:
+                    self._thaw_consecutive[cls] = 0
+                    state.war_state[cls] = "FREEZE"
+                else:
+                    # 维持 ALLOW：计数器也可重置（ALL AWAY 状态下无需累积）
+                    self._thaw_consecutive[cls] = 0
+                    state.war_state[cls] = "ALLOW"
+            # ③ 上一轮 FREEZE/COOLDOWN → 维护连续达标计数器
+            else:  # prev_ws in ("FREEZE", "COOLDOWN")
+                if total >= hcfg["thaw_score"]:
+                    self._thaw_consecutive[cls] += 1
+                else:
+                    self._thaw_consecutive[cls] = 0  # 未达标 → 达标链断裂，重新计数
+                # 计数器达到解冻门槛 → ALLOW；否则 COOLDOWN（或继续 FREEZE 视 total<60？此处 COOLDOWN 更清晰）
+                if self._thaw_consecutive[cls] >= hcfg["thaw_days"]:
+                    state.war_state[cls] = "ALLOW"
+                elif total < 60:
+                    state.war_state[cls] = "FREEZE"   # 仍<60 → 实质冻结态
+                else:
+                    state.war_state[cls] = "COOLDOWN"  # 60≤total<threshold_days 达标中
 
             # ===== 不等式2：aggregate_position_cap_pct（Q3：允许多大仓位）=====
             if   total >= 85: cap = 1.00
@@ -305,28 +399,37 @@ class FiveDomainHeuristicScorer:
             # ===== 不等式3：allowed_style_mask（Q2：允许哪类策略）=====
             m = state.allowed_style_mask[cls]
             m["emergency"]     = True   # R7红线：应急策略永不下架（强制赋值）
-            # ★ 极差场景（FREEZE：total<60/dao否决/法否决）→ 除emergency外全部下架（只留应急豁免）
-            is_extreme_bad = (total < 60) or veto["dao_jv_fou_jue"] or veto["fa_xiao_40"]
+            # ★ 极差场景（total<50/dao否决/法否决）→ 除emergency+volatility外全部下架
+            # ★ 防守场景（50≤total<60/COOLDOWN）→ 禁趋势策略，保留mean_revert+volatility
+            is_extreme_bad = (total < 50) or veto["dao_jv_fou_jue"] or veto["fa_xiao_40"]
+            is_defensive = (50 <= total < 60) and not is_extreme_bad
             if is_extreme_bad:
                 m["trend_follow"]  = False
                 m["breakout"]      = False
                 m["mean_revert"]   = False
                 m["momentum"]      = False
-                m["volatility"]    = False
+                m["volatility"]    = bool(veto["di_tian_shuang_cha"])  # 地天双差时允许对冲(波动率)策略
+            elif is_defensive:
+                # 防守档：禁趋势追涨杀跌，保留震荡回归+波动率对冲
+                m["trend_follow"]  = False
+                m["breakout"]      = False
+                m["mean_revert"]   = True   # 震荡市适合均值回归
+                m["momentum"]      = False
+                m["volatility"]    = True   # 允许波动率/对冲策略
             else:
                 # 非极差：按不等式正常放行（符合project_memory维度否决规则）
                 m["trend_follow"]  = bool(total >= 70 and not veto["di_tian_shuang_cha"])
                 m["breakout"]      = bool(total >= 65 and s["di"] >= 60)
                 m["mean_revert"]   = bool(40 <= s["di"] <= 60)
-                m["momentum"]      = bool(s["dao"] >= 70)
-                m["volatility"]    = bool(veto["di_tian_shuang_cha"])  # 双差极端波动 → 波动率策略允许
+                m["momentum"]      = bool(s["dao"] >= 70 and not veto["di_tian_shuang_cha"])  # 地天双差时禁止动量策略
+                m["volatility"]    = bool(veto["di_tian_shuang_cha"])  # 双差极端波动 → 只允许对冲(波动率)策略
             # 注意：emergency 永远 True，其余可被否决；且按类独立不串值（TDD #9/#10）。
 
             # ===== 不等式4：position_mult（Q5：是否需要降仓）=====
             if veto["dao_xiao_40"] or veto["jiang_xiao_40"]:
                 mult = 0.30
             elif veto["fa_xiao_40"]:
-                mult = 0.50
+                mult = 0.0  # 设计文档§5.2：法<40→不开新仓（position_mult=0.0）
             else:
                 mult = 1.0
             state.position_mult[cls] = float(mult)

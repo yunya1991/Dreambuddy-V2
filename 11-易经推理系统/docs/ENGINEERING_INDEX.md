@@ -1,8 +1,9 @@
 # 易经推理系统 工程索引（SSoT）
 
-> **版本**: v2.7 | **更新日期**: 2026-08-20
+> **版本**: v2.8 | **更新日期**: 2026-08-29
 > **定位**: 易经推理系统的工程入口索引（Single Source of Truth），包含所有子模块的文件级索引、入口锚点、依赖关系和快速导航
 > **维护原则**: 任何子系统变更影响入口、依赖关系、配置层级的，必须同步更新本文件
+> **v2.8 变更**: Odaily policy→dao/tian boost 注入（Spec: odaily-policy-tian-integration）— `five_domain_feature_computer.py` 新增 `_od_dao_boost`/`_od_tian_boost`/`_od_engine_shadow_compute` + `enable_odaily_engine_boost` 红线；`five_domain_sqlite_reader.py` 新增 §ODAILY 9字段派生；`odaily_shadow_hitrate_eval.py` 4门槛评估
 
 ---
 

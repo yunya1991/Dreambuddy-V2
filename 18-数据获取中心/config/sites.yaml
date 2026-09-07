@@ -52,3 +52,70 @@ sites:
       item: "[class*='announcement-item']"
       title: "text"
       link: "href"
+
+  # ============================================================
+  # 律动 PAData (data.panewslab.com) — 多板块数据补充
+  # SDK 轨 panewslab collector 已覆盖 8 大板块的结构化 JSON API。
+  # 爬虫轨（Playwright 渲染）聚焦抓取 SDK 不暴露的 DOM 展示数据：
+  #   - 链上资金主体实体 (#holdings section cards)
+  #   - 单板块快照卡片 headline 数值展示（独立校验 SDK vs UI）
+  # enabled=false：默认走 SDK 轨（更稳定、更快）。需要 DOM 展示级数据时手动开。
+  # ============================================================
+  panewslab_holdings_cards:
+    enabled: false
+    source: panewslab
+    sub_category: holdings_cards
+    url: "https://data.panewslab.com/#holdings"
+    js_render: true
+    selectors:
+      # #holdings 区 entity 卡片：标题、持仓金额、24h/7d 流量
+      item: "section#holdings [data-entity-slug]"
+      slug: "[data-entity-slug]::attr(data-entity-slug)"
+      title: "[data-role='entity-name']::text"
+      total_usd: "[data-role='entity-total']::text"
+      flow24h: "[data-role='entity-flow24h']::text"
+      flow7d: "[data-role='entity-flow7d']::text"
+      entity_url: "a[href]::attr(href)"
+
+  panewslab_overview_cards:
+    enabled: false
+    source: panewslab
+    sub_category: overview_cards
+    url: "https://data.panewslab.com/#overview"
+    js_render: true
+    selectors:
+      # 市场总览 6 张 snapshot 卡片：标题/数值/30日变化
+      item: "section#overview article.snapshot-card"
+      label: "header > span::text"
+      change30d: "header > em::text"
+      value: "strong[data-live]::text"
+      role: "strong::attr(data-live)"
+      footer_label: "footer > span::text"
+      footer_window: "footer > b::text"
+
+  # ============================================================
+  # 律动 TheBlockBeats Dataview 直抓（双轨并存）
+  #
+  # 主要采集路径（SDK轨，默认启用 / CollectionScheduler.default_tasks 已有登记）：
+  #   data_center.collectors.news.theblockbeats_dataview.TheBlockBeatsDataviewCollector
+  #   → Playwright 渲染整页 → dataview_html_parser.parse() → to_records()
+  #   → 26 条 DataRecord(宏观卡片/脉动指数/11信号/Top10净流入)
+  #
+  # 爬虫轨备用（下面这个 site，默认 disabled）：
+  #   当 SDK 轨 PlaywrightFallback 环境不可用或需要快速按 CSS selector 抓局部 DOM 时启用。
+  #   走 CrawlerRunner.js_render=true → PlaywrightFallback → GenericSpider CSS selector。
+  #   提取粒度：echarts 卡片标题/时间范围（粗粒度 meta）。
+  #   更全的结构化解析（脉动指数/信号/净流入Top10）只在 SDK 轨提供。
+  # ============================================================
+  theblockbeats_dataview_cards:
+    enabled: false
+    source: theblockbeats_dataview
+    sub_category: echarts_cards
+    url: "https://www.theblockbeats.info/dataview"
+    js_render: true
+    selectors:
+      item: ".kline-chart-wrap-head"
+      metric_title: ".kline-chart-wrap-head-left::text"
+      time_range: ".home-inflow-top-rgt::text"
+
+

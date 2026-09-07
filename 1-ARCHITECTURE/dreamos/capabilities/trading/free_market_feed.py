@@ -78,6 +78,31 @@ class FreeMarketFeed:
             "User-Agent": "DreamOS-FreeMarketFeed/1.0",
             "Accept": "application/json",
         })
+        # 显式配置代理（与 OKXSimulatedClient._proxy_setup 对齐）
+        # DNS 污染环境下 trust_env 默认行为失效，必须显式 proxies
+        import os as _os
+        _https_proxy = _os.environ.get("HTTPS_PROXY") or _os.environ.get("https_proxy")
+        _http_proxy = _os.environ.get("HTTP_PROXY") or _os.environ.get("http_proxy")
+        _proxies = {}
+        if _https_proxy:
+            _proxies["https"] = _https_proxy
+        if _http_proxy:
+            _proxies["http"] = _http_proxy
+        # 环境变量未设置时，探测本地 Clash 默认端口
+        if not _proxies:
+            import socket as _sock
+            for _port in (7890, 7891, 14122, 38324):
+                try:
+                    with _sock.create_connection(("127.0.0.1", _port), timeout=0.3):
+                        _proxies = {
+                            "http": f"http://127.0.0.1:{_port}",
+                            "https": f"http://127.0.0.1:{_port}",
+                        }
+                        break
+                except Exception:
+                    continue
+        if _proxies:
+            self._session.proxies.update(_proxies)
         self._cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}  # key -> (ts, data)
 
     # ============================================================
@@ -906,8 +931,8 @@ class FreeMarketFeed:
 
             # --- 4) Taker buy/sell volume（Rubik 端点，部分情况需 key，失败就跳） ---
             tv = self._get_json(
-                f"{base}/api/v5/rubik/stat/contracts/taker-volume",
-                params={"ccy": ccy, "period": period_bar, "limit": str(limit)},
+                f"{base}/api/v5/rubik/stat/taker-volume-contract",
+                params={"instId": inst_id, "period": period_bar, "limit": str(limit)},
             )
             if tv and tv.get("code") == "0" and tv.get("data"):
                 tv_list = []
@@ -1226,22 +1251,23 @@ class FreeMarketFeed:
           - posSide="long"  被清算 → 多单爆仓，对应 side=BUY（回补）
           - posSide="short" 被清算 → 空单爆仓，对应 side=SELL（止盈）
         """
-        CCYS = ccy_list or ["USDT"]  # USDT 本位覆盖全市场
+        # OKX API 要求 uly（如 BTC-USDT）或 instFamily，非单一币种
+        ULYS = ccy_list or ["BTC-USDT", "ETH-USDT", "SOL-USDT", "BNB-USDT"]
         bucket_s = per_bucket_hours * 3600
         end_s = int(time.time())
         start_s = end_s - lookback_hours * 3600
 
         def _fetch() -> Dict[str, Any]:
             base = "https://www.okx.com"
-            result: Dict[str, Any] = {"_ok": False, "_ccys_queried": list(CCYS)}
+            result: Dict[str, Any] = {"_ok": False, "_ccys_queried": list(ULYS)}
             _META_KEYS = {"_ok", "_ccys_queried"}
             buckets: Dict[int, Dict[str, float]] = {}
             any_api_reached = False
 
-            for ccy in CCYS:
+            for uly in ULYS:
                 raw = self._get_json(
                     f"{base}/api/v5/public/liquidation-orders",
-                    params={"instType": inst_type, "ccy": ccy,
+                    params={"instType": inst_type, "uly": uly,
                             "limit": "100", "state": "filled"},
                 )
                 if raw and raw.get("code") == "0":
@@ -1344,7 +1370,7 @@ class FreeMarketFeed:
 
             result["_ok"] = bool(any(k for k in result.keys() if k not in _META_KEYS))
             return result
-        cache_key = f"okxliq_{inst_type.lower()}_{len(CCYS)}_{lookback_hours}h"
+        cache_key = f"okxliq_{inst_type.lower()}_{len(ULYS)}_{lookback_hours}h"
         return self._cached(cache_key, _fetch, ttl=300)
 
     # ============================================================

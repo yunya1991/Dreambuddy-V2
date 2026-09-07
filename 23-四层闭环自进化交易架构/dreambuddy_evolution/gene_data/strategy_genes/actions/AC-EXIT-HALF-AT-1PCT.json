@@ -1,0 +1,47 @@
+{
+  "gene_id": "AC-EXIT-HALF-AT-1PCT",
+  "category": "exit_profit",
+  "action_kind": "close",
+  "direction": "both",
+  "sl_template": 0.005,
+  "tp_template": 0.01,
+  "size_pct": 1.0,
+  "rr_ratio_floor": 2.0,
+  "parameters": {
+    "sl_atr_mult": {
+      "value": 0.25,
+      "range": {
+        "low": 1.0,
+        "high": 4.0
+      }
+    },
+    "tp_rr_ratio": {
+      "value": 2.0,
+      "range": {
+        "low": 1.0,
+        "high": 5.0
+      }
+    },
+    "max_slippage_bps": {
+      "value": 5,
+      "range": {
+        "low": 1,
+        "high": 30
+      }
+    }
+  },
+  "code_ref": {
+    "file": "18-数据获取中心/data_center/monitoring/quality.py",
+    "lines": {
+      "low": 149,
+      "high": 188
+    }
+  },
+  "tags": [
+    "exit_profit",
+    "both",
+    "close"
+  ],
+  "version": "1.0",
+  "notes": "Baseline action #8 MVP seed."
+}

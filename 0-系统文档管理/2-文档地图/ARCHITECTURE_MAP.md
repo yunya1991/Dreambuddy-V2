@@ -1,6 +1,6 @@
 # 架构文档地图 — ARCHITECTURE_MAP
 
-> **版本**: v2.2 | **更新日期**: 2026-08-24
+> **版本**: v2.3 | **更新日期**: 2026-09-07
 > **定位（视角 B）**: **架构导航地图，不是架构内容本身**。告诉你「架构文档有哪些、到哪里找」。
 > **架构唯一事实源（SSoT）**: ★ [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v3.0**。所有架构设计争议、硬约束、模块边界以该文档为准。
 > **关联**: [SYSTEM_MAP.md](./SYSTEM_MAP.md) · [TOPIC_MAP.md](./TOPIC_MAP.md) · [INDEX.md](../INDEX.md)
@@ -150,8 +150,9 @@ L6 离场  │  ExitManager 策略链 + 卦象主离场           │  → exit_
 | 14-V15马丁 | [docs/TECHNICAL_DESIGN.md](../../14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md) **v5.1** | ✅ 齐全 | 马丁格尔 + Kelly + 仓位管理 → C_domain 经典策略 |
 | 16-调控系统 | [docs/TECHNICAL_DESIGN.md](../../16-调控系统/docs/TECHNICAL_DESIGN.md) **v2.0** | ✅ 齐全 | 宏观离场 + SKILL引擎 + 进化闭环 → A8/A9 知行/离场 |
 | 17-V4波浪 | [docs/TECHNICAL_DESIGN.md](../../17-v4-wave-strategy/docs/TECHNICAL_DESIGN.md) **v1.0** | ✅ 齐全 | V4减半+艾略特波浪互斥融合 → A/C_domain（依赖12号物理引擎） |
+| 23-四层闭环自进化 | [docs/TECHNICAL_DESIGN.md](../../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) **v1.0** | ✅ 齐全 | **双起点紧耦合闭环**：RippleEngine(涟漪) + ReflectionScanner(反思胜率) → KlineEventHandler(三层仓位+SL/TP兜底) → ReflectionEngine(ESS奖惩) → ESS 回馈。50 币池 + 系统级交易索引库 → A_domain 自进化策略核心 |
 
-> **完整 7 子系统 × 5 文档版本对照矩阵**见 SSoT §4.2.1 表。文档债（DD-xxx）登记于 [DOC_DEBT_INDEX.md](../3-文档治理/DOC_DEBT_INDEX.md)。当前 7/7 子系统 5 文档齐全。
+> **完整子系统 × 5 文档版本对照矩阵**见 SSoT §4.2.1 表。文档债（DD-xxx）登记于 [DOC_DEBT_INDEX.md](../3-文档治理/DOC_DEBT_INDEX.md)。当前 8/8 子系统文档齐全。
 
 ### 2.3 专题架构文档
 

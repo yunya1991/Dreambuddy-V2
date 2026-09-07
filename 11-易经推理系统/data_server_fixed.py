@@ -30,6 +30,9 @@ BCRM_REPO = Path(os.environ.get(
 ))
 
 sys.path.insert(0, str(BASE_DIR))
+# BCRM_REPO (11-易经推理系统) 加入 sys.path，确保 scripts.* 包可导入
+if str(BCRM_REPO) not in sys.path:
+    sys.path.insert(0, str(BCRM_REPO))
 # 18-数据获取中心 包路径（数据中心 SQLite 查询）
 # BASE_DIR = experiments/ab-trading，需上溯两级到 dreambuddy-v2 根
 _DC_PKG_DIR = BASE_DIR.parent.parent / "18-数据获取中心"
@@ -161,6 +164,12 @@ def _cache_set(key, value):
         _cache[key] = {"data": value, "ts": time.time()}
 
 
+# ── 日志文件 mtime 指纹缓存 ──
+# load_logs 每 5s 被 _bg_refresh_state 调用，每次 glob+open+json.load 60 个文件。
+# 用 mtime 指纹缓存：文件集合及 mtime 未变 → 直接返回缓存，避免重复 open/parse。
+_LOGS_CACHE: dict = {}  # {dir_str: {"mtime_sig": tuple, "result": list}}
+
+
 # ── Hyperliquid API 代理 + 缓存 ──
 # trust_env=True 让 requests 自动使用系统代理（macOS 系统代理 / HTTPS_PROXY）
 _HL_CACHE: dict = {}  # {wallet: {"data": ..., "ts": ...}}
@@ -177,15 +186,23 @@ def load_logs(log_dir: Path, limit: int = 30):
     logs = []
     if not log_dir.exists():
         return logs
-    for f in sorted(log_dir.glob("*.json"))[-limit:]:
+    files = sorted(log_dir.glob("*.json"))[-limit:]
+    # mtime 指纹：文件名+mtime 未变 → 命中缓存，跳过 open/json.load（高 CPU 根因修复）
+    try:
+        mtime_sig = tuple((f.name, f.stat().st_mtime) for f in files)
+    except Exception:
+        mtime_sig = ()
+    key = str(log_dir)
+    cached = _LOGS_CACHE.get(key)
+    if cached and cached.get("mtime_sig") == mtime_sig:
+        return cached.get("result", [])
+    for f in files:
         try:
             with open(f) as fp:
-                d = json.load(fp)
-                if "coin" not in d and d.get("entry_price"):
-                    pass
-                logs.append(d)
+                logs.append(json.load(fp))
         except Exception:
             pass
+    _LOGS_CACHE[key] = {"mtime_sig": mtime_sig, "result": logs}
     return logs
 
 
@@ -1964,27 +1981,36 @@ def get_global_trade_stats():
 def _bg_refresh_l4_status(interval: int = 10):
     """后台定时刷新 L4 认知闭环状态"""
     while True:
+        t0 = time.time()
         try:
             data = get_l4_status()
             _cache_set("l4_status", data)
         except Exception:
             pass
+        dt = time.time() - t0
+        if dt > 0.3:
+            print(f"[perf] l4_status {dt:.2f}s", flush=True)
         time.sleep(interval)
 
 
 def _bg_refresh_state(interval: int = 5):
     while True:
+        t0 = time.time()
         try:
             data = get_full_state()
             _cache_set("state", data)
         except Exception:
             pass
+        dt = time.time() - t0
+        if dt > 0.3:
+            print(f"[perf] state {dt:.2f}s", flush=True)
         time.sleep(interval)
 
 
 def _bg_refresh_yijing(interval: int = 60):
     fail_streak = 0
     while True:
+        t0 = time.time()
         try:
             data = get_yijing_state()
             # 仅缓存成功结果（非 error），避免单次超时覆盖掉上次的有效数据
@@ -2008,11 +2034,15 @@ def _bg_refresh_yijing(interval: int = 60):
             fail_streak += 1
             # 指数退避：60→120→180→240→300s，封顶 5 分钟，避免反复重试耗 CPU
             sleep_s = min(interval * min(fail_streak, 5), 300)
+        dt = time.time() - t0
+        if dt > 0.3:
+            print(f"[perf] yijing {dt:.2f}s", flush=True)
         time.sleep(sleep_s)
 
 
 def _bg_refresh_screen(interval: int = 30):
     while True:
+        t0 = time.time()
         try:
             _cache_set("screen_trade", get_screen_state())
         except Exception:
@@ -2047,11 +2077,15 @@ def _bg_refresh_screen(interval: int = 30):
             _cache_set("fundamental_signals_BTC", get_fundamental_signals("BTC"))
         except Exception:
             pass
+        dt = time.time() - t0
+        if dt > 0.3:
+            print(f"[perf] screen {dt:.2f}s", flush=True)
         time.sleep(interval)
 
 
 def _bg_refresh_dreamos(interval: int = 15):
     while True:
+        t0 = time.time()
         try:
             _cache_set("dreamos", get_dreamos_state())
         except Exception:
@@ -2064,6 +2098,9 @@ def _bg_refresh_dreamos(interval: int = 15):
             _cache_set("dreamos_scenarios", get_dreamos_scenarios())
         except Exception:
             pass
+        dt = time.time() - t0
+        if dt > 0.3:
+            print(f"[perf] dreamos {dt:.2f}s", flush=True)
         time.sleep(interval)
 
 
@@ -2084,12 +2121,16 @@ def _bg_refresh_token_signals(interval: int = 300):
 
 def _start_bg_refresh():
     threads = [
-        threading.Thread(target=_bg_refresh_state, args=(5,), daemon=True),
+        # state 5→10s：load_logs 已加 mtime 缓存，降频减少 glob/stat 系统调用
+        threading.Thread(target=_bg_refresh_state, args=(10,), daemon=True),
         threading.Thread(target=_bg_refresh_yijing, args=(60,), daemon=True),
-        threading.Thread(target=_bg_refresh_screen, args=(30,), daemon=True),
-        threading.Thread(target=_bg_refresh_dreamos, args=(15,), daemon=True),
+        # screen 30→180s：7 个 import+状态获取单次 73s，interval 必须 >> 执行时间
+        threading.Thread(target=_bg_refresh_screen, args=(180,), daemon=True),
+        # dreamos 30→300s：AgentC.get_memory+register_all 单次 89s，5 分钟刷新足够
+        threading.Thread(target=_bg_refresh_dreamos, args=(300,), daemon=True),
         threading.Thread(target=_bg_refresh_token_signals, args=(300,), daemon=True),
-        threading.Thread(target=_bg_refresh_l4_status, args=(60,), daemon=True),
+        # l4 60→300s：案例库遍历单次 52s，5 分钟刷新足够
+        threading.Thread(target=_bg_refresh_l4_status, args=(300,), daemon=True),
     ]
     for t in threads:
         t.start()
@@ -2474,6 +2515,456 @@ def get_strategy_layer_shadow(limit: int = 50):
 
 
 # ================================================================
+# 力向量可视化 API（五计庙算 4 子Tab）
+# ================================================================
+
+_FV_JSONL_PATH = Path(__file__).resolve().parent / "scripts" / "runtime" / "force_vector_records.jsonl"
+
+
+def _read_force_vector_jsonl(path):
+    """读取 force_vector_records.jsonl，返回记录列表。"""
+    records = []
+    if not path.exists():
+        return records
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    records.append(json.loads(line))
+                except (json.JSONDecodeError, ValueError):
+                    continue
+    except Exception:
+        pass
+    return records
+
+
+def _count_shadow_days(records):
+    """统计 JSONL 累积天数（按日期去重）。
+
+    支持 ts_ms（int 毫秒时间戳）、timestamp、ts、datetime 多种字段名。
+    """
+    import datetime as _dt
+    dates = set()
+    for r in records:
+        ts = r.get("ts_ms") or r.get("timestamp") or r.get("ts") or r.get("datetime")
+        if not ts:
+            continue
+        try:
+            if isinstance(ts, (int, float)) and ts > 1e12:
+                # 毫秒时间戳
+                dates.add(_dt.datetime.fromtimestamp(ts / 1000.0).strftime("%Y-%m-%d"))
+            elif isinstance(ts, (int, float)):
+                dates.add(_dt.datetime.fromtimestamp(ts).strftime("%Y-%m-%d"))
+            else:
+                dates.add(str(ts)[:10])
+        except Exception:
+            continue
+    return len(dates)
+
+
+def _generate_demo_timestamps(n=2880):
+    """生成 30 天 × 96 点/天 的时间戳列表。"""
+    import datetime as _dt
+    now = _dt.datetime.now()
+    start = now - _dt.timedelta(days=30)
+    return [(start + _dt.timedelta(minutes=15 * i)).strftime("%Y-%m-%dT%H:%M") for i in range(n)]
+
+
+def _generate_demo_data(sub_type, seed):
+    """生成稳定的合成数据（seed=当日0点时间戳，同日刷新不跳变）。"""
+    import random as _rng
+    import math as _math
+    rng = _rng.Random(seed)
+    timestamps = _generate_demo_timestamps()
+    n = len(timestamps)
+
+    if sub_type == "time-series":
+        dims = {}
+        configs = [
+            ("dao",   "Z-Score + OLS β",   "S1 sentiment_engine",   "force_vector_calculator.py _compute_dao()"),
+            ("tian",  "条件期望+分位数",    "S2 event_ledger",      "force_vector_calculator.py _compute_tian()"),
+            ("di",    "百分位+MA",         "S5 narrative_engine",   "force_vector_calculator.py _compute_di()"),
+            ("jiang", "Sharpe+偏度",       "A6 least_resistance",   "force_vector_calculator.py _compute_jiang()"),
+            ("fa",    "IC滚动+IR",         "A7 signal_engine",      "force_vector_calculator.py _compute_fa()"),
+        ]
+        for i, (dim_name, algo, engine, code_ref) in enumerate(configs):
+            freq = 0.02 + i * 0.008
+            base = 0.5 + 0.2 * _math.sin(i * 1.5)
+            wave = [base * _math.sin(t * freq + i) + rng.gauss(0, 0.08) for t in range(n)]
+            smoothed = []
+            prev = wave[0]
+            for v in wave:
+                prev = prev + 0.3 * (v - prev)
+                smoothed.append(round(prev, 4))
+            direction = [round(max(-1, min(1, v)), 4) for v in smoothed]
+            magnitude = [round(abs(v), 4) for v in smoothed]
+            confidence = [round(max(0, min(1, 0.5 + 0.3 * v + rng.gauss(0, 0.05))), 4) for v in smoothed]
+            velocity = [round(rng.gauss(0, 0.02), 4) for _ in range(n)]
+            dims[dim_name] = {
+                "direction": direction, "magnitude": magnitude,
+                "confidence": confidence, "velocity": velocity,
+                "algorithm": algo, "source_engine": engine, "code_ref": code_ref,
+            }
+        return {
+            "timestamps": timestamps,
+            "dimensions": dims,
+            "kalman_params": {"F": "[[1,dt],[0,1]]", "Q": "diag(0.001,0.0001)", "R": "σ²_raw"},
+        }
+
+    elif sub_type == "contradictions-top8":
+        feature_names = [
+            "pn_news_volume", "sent_score", "evt_ledger_count", "narr_engagement",
+            "cbr_expectation", "resistance_3d", "evt_mapping_crr", "contract_pass_rate",
+        ]
+        top8 = []
+        for i, name in enumerate(feature_names):
+            ic = round(max(0.05, 0.40 - i * 0.04 + rng.gauss(0, 0.02)), 4)
+            mi = round(max(0.05, 0.50 - i * 0.05 + rng.gauss(0, 0.03)), 4)
+            aw = round(max(0.3, 0.95 - i * 0.07 + rng.gauss(0, 0.02)), 4)
+            top8.append({"rank": i + 1, "name": name, "ic": ic, "mi": mi,
+                         "final_score": round(ic * aw, 4), "adaptive_weight": aw})
+        return {
+            "top8_features": top8,
+            "dominant_switch_24h": {
+                "timestamps": ["T-24h", "T-18h", "T-12h", "T-6h", "T-0"],
+                "dominant_dim": ["dao", "dao", "tian", "tian", "dao"],
+                "strengths": [0.82, 0.75, 0.68, 0.71, 0.79],
+                "switches": [{"at": "T-12h", "from": "dao", "to": "tian", "type": "dominant_shift"}],
+            },
+            "algorithm": "IC=Spearman(feature[t-1],ret[t]) | MI=互信息熵归一 | fuse=IC×adaptive_weight",
+            "code_ref": "feature_correlation_calculator.py compute_ic()/compute_mi_normalized()/fuse_with_beta()",
+        }
+
+    elif sub_type == "resonance":
+        delta_dir, strength, price = [], [], []
+        base_price = 65000
+        for t in range(120):
+            delta_dir.append(round(rng.gauss(0, 0.04), 4))
+            strength.append(round(0.5 + 0.2 * _math.sin(t * 0.05) + rng.gauss(0, 0.03), 4))
+            base_price += rng.gauss(0, 200)
+            price.append(round(base_price, 2))
+        return {
+            "radar": {"labels": ["道", "天", "地", "将", "法"],
+                      "values": [0.82, 0.45, 0.61, 0.38, 0.29],
+                      "dominant": "dao", "dominant_value": 0.82},
+            "pca": {"explained_ratio": [0.42, 0.28, 0.15, 0.10, 0.05],
+                    "sign_alignment": 0.75, "strength_coefficient": 1.3,
+                    "resonance_label": "strong"},
+            "force_price_dual": {
+                "timestamps": timestamps[-120:],
+                "delta_direction": delta_dir, "strength": strength, "price": price,
+                "events": [
+                    {"at": timestamps[len(timestamps) // 2], "type": "resonance_break", "label": "共振破裂"},
+                    {"at": timestamps[len(timestamps) * 3 // 4], "type": "dominant_shift", "label": "维度切换"},
+                ],
+            },
+            "elasticity_beta": {"beta": 1.2, "label": "放大", "decay_days": 0, "amp_days": 4},
+            "code_ref": "pca_resonance_analyzer.py / elasticity_beta_calculator.py",
+        }
+
+    elif sub_type == "cycle-ma":
+        ma7, ma30, spread = [], [], []
+        base = 0.70
+        for t in range(n):
+            v7 = round(base + 0.05 * _math.sin(t * 0.03) + rng.gauss(0, 0.02), 4)
+            v30 = round(base + 0.02 * _math.sin(t * 0.01) + rng.gauss(0, 0.01), 4)
+            ma7.append(v7); ma30.append(v30); spread.append(round(v7 - v30, 4))
+        return {
+            "ma_series": {"timestamps": timestamps, "ma7": ma7, "ma30": ma30, "spread": spread},
+            "consistency_states": [
+                {"start": timestamps[0], "end": timestamps[n // 5], "state": "resonance", "coef": 1.2},
+                {"start": timestamps[n // 5], "end": timestamps[2 * n // 5], "state": "divergence", "coef": 0.6},
+                {"start": timestamps[2 * n // 5], "end": timestamps[3 * n // 5], "state": "persistent", "coef": 1.0},
+                {"start": timestamps[3 * n // 5], "end": timestamps[4 * n // 5], "state": "turning", "coef": 0.7},
+                {"start": timestamps[4 * n // 5], "end": timestamps[-1], "state": "resonance", "coef": 1.2},
+            ],
+            "signals": [
+                {"at": timestamps[n // 2], "type": "golden_cross", "label": "金叉", "ma7": 0.74, "ma30": 0.71},
+                {"at": timestamps[4 * n // 5], "type": "death_cross", "label": "死叉", "ma7": 0.66, "ma30": 0.69},
+                {"at": timestamps[3 * n // 5], "type": "top_divergence", "label": "顶背离"},
+            ],
+            "code_ref": "cycle_comparator.py compare()",
+        }
+
+    elif sub_type == "transform-lamps":
+        return {
+            "lamps": [
+                {"id": 1, "name": "弹性衰减β", "on": False, "confidence": 0.0, "detail": "β<0.5持续3天"},
+                {"id": 2, "name": "弹性放大β", "on": True, "confidence": 0.67, "detail": "β>2.0持续3天, amp_days=4"},
+                {"id": 3, "name": "维度主导切换", "on": False, "confidence": 0.0, "detail": "dominant_dim未变化", "s4_crr": 0.12, "s4_mr": 0.85},
+                {"id": 4, "name": "共振破裂", "on": False, "confidence": 0.0, "detail": "sign_alignment=0.75, 未破裂"},
+                {"id": 5, "name": "CBR背离", "on": False, "confidence": 0.0, "detail": "E[r|current]与E[r|all]同向"},
+                {"id": 6, "name": "数据质量预警⚠️S3", "on": False, "confidence": 0.0, "detail": "pass_rate=0.92, 阈值0.7", "s3_pass_rate": 0.92},
+            ],
+            "transforming": True,
+            "overall_confidence": 0.17,
+            "code_ref": "contradiction_transform_detector.py detect()",
+        }
+
+    return {"error": f"unknown sub_type: {sub_type}"}
+
+
+def _aggregate_real_data(sub_type, records, asset_class="crypto_usdt"):
+    """从真实 JSONL 记录聚合数据。
+
+    Shadow 运行期间积累的真实记录，按 sub_type 聚合为前端可展示格式。
+    数据不足的部分用合理默认值填充（非 demo 随机），确保前端可正常展示。
+    FAIL-OPEN：任何异常回退 demo 数据。
+    """
+    import datetime as _dt
+
+    if not records:
+        seed = int(time.time()) // 86400
+        return _generate_demo_data(sub_type, seed)
+
+    # 按时间戳排序
+    def _get_ts(r):
+        ts = r.get("ts_ms", 0)
+        if isinstance(ts, (int, float)):
+            return ts
+        return 0
+
+    records_sorted = sorted(records, key=_get_ts)
+
+    def _fmt_ts(ts_ms):
+        if not ts_ms:
+            return "?"
+        try:
+            return _dt.datetime.fromtimestamp(ts_ms / 1000.0).strftime("%Y-%m-%dT%H:%M")
+        except Exception:
+            return "?"
+
+    def _get_cls(rec, cls=asset_class):
+        return rec.get("per_class", {}).get(cls, {})
+
+    latest = records_sorted[-1]
+    latest_cls = _get_cls(latest)
+    latest_fv = latest_cls.get("force_vectors", {})
+    timestamps = [_fmt_ts(_get_ts(r)) for r in records_sorted]
+    _configs = [
+        ("dao",   "Z-Score + OLS β",   "S1 sentiment_engine",   "force_vector_calculator.py _compute_dao()"),
+        ("tian",  "条件期望+分位数",    "S2 event_ledger",      "force_vector_calculator.py _compute_tian()"),
+        ("di",    "百分位+MA",         "S5 narrative_engine",   "force_vector_calculator.py _compute_di()"),
+        ("jiang", "Sharpe+偏度",       "A6 least_resistance",   "force_vector_calculator.py _compute_jiang()"),
+        ("fa",    "IC滚动+IR",         "A7 signal_engine",      "force_vector_calculator.py _compute_fa()"),
+    ]
+    _meta = {"data_source": "real_jsonl", "record_count": len(records_sorted),
+             "selected_class": asset_class}
+
+    # ── sub_type: time-series ──
+    if sub_type == "time-series":
+        dims = {}
+        for dim_name, algo, engine, code_ref in _configs:
+            direction, magnitude, confidence, velocity = [], [], [], []
+            for r in records_sorted:
+                fv = _get_cls(r).get("force_vectors", {}).get(dim_name, {})
+                direction.append(round(float(fv.get("direction", 0)), 4))
+                magnitude.append(round(float(fv.get("magnitude", 0)), 4))
+                confidence.append(round(float(fv.get("confidence", 0.5)), 4))
+                velocity.append(round(float(fv.get("velocity", 0)), 4))
+            dims[dim_name] = {
+                "direction": direction, "magnitude": magnitude,
+                "confidence": confidence, "velocity": velocity,
+                "algorithm": algo, "source_engine": engine, "code_ref": code_ref,
+            }
+        return {
+            "timestamps": timestamps, "dimensions": dims,
+            "kalman_params": {"F": "[[1,dt],[0,1]]", "Q": "diag(0.001,0.0001)", "R": "σ²_raw"},
+            **_meta,
+        }
+
+    # ── sub_type: contradictions-top8 ──
+    if sub_type == "contradictions-top8":
+        feat_corr = latest_cls.get("feature_correlation", [])
+        top8 = []
+        for i, fc in enumerate(feat_corr[:8]):
+            top8.append({
+                "rank": fc.get("rank", i + 1),
+                "name": fc.get("feature_name", fc.get("dimension", f"feature_{i}")),
+                "ic": round(float(fc.get("ic_30d", 0)), 4),
+                "mi": round(float(fc.get("mi_30d", 0)), 4),
+                "final_score": round(float(fc.get("combined_score", 0)), 4),
+                "adaptive_weight": round(float(fc.get("final_weight", fc.get("beta_weight", 1.0))), 4),
+            })
+        if not top8:
+            top8 = [{"rank": 1, "name": "awaiting_data", "ic": 0, "mi": 0,
+                     "final_score": 0, "adaptive_weight": 0}]
+        recent = records_sorted[-5:] if len(records_sorted) >= 5 else records_sorted
+        dom_dims, strengths = [], []
+        for r in recent:
+            pca = _get_cls(r).get("pca_resonance", {})
+            dom_dims.append(pca.get("dominant_dim", "?"))
+            strengths.append(round(float(pca.get("strength_coefficient", 0.5)), 4))
+        switches = []
+        for i in range(1, len(dom_dims)):
+            if dom_dims[i] != dom_dims[i - 1]:
+                switches.append({"at": f"T-{(len(recent) - i) * 6}h",
+                                 "from": dom_dims[i - 1], "to": dom_dims[i],
+                                 "type": "dominant_shift"})
+        return {
+            "top8_features": top8,
+            "dominant_switch_24h": {
+                "timestamps": [f"T-{(len(recent) - 1 - i) * 6}h" for i in range(len(recent))],
+                "dominant_dim": dom_dims, "strengths": strengths, "switches": switches,
+            },
+            "algorithm": "IC=Spearman(feature[t-1],ret[t]) | MI=互信息熵归一 | fuse=IC×adaptive_weight",
+            "code_ref": "feature_correlation_calculator.py compute_ic()/compute_mi_normalized()/fuse_with_beta()",
+            **_meta,
+        }
+
+    # ── sub_type: resonance ──
+    if sub_type == "resonance":
+        radar_keys = ["dao", "tian", "di", "jiang", "fa"]
+        radar_labels = ["道", "天", "地", "将", "法"]
+        radar_values = []
+        for k in radar_keys:
+            fv = latest_fv.get(k, {})
+            radar_values.append(round(float(fv.get("magnitude", 0)), 4))
+        pca = latest_cls.get("pca_resonance", {})
+        dominant = pca.get("dominant_dim", "dao")
+        dominant_idx = radar_keys.index(dominant) if dominant in radar_keys else 0
+        recent_n = min(120, len(records_sorted))
+        recent = records_sorted[-recent_n:]
+        delta_dir, strength = [], []
+        for r in recent:
+            dom_fv = _get_cls(r).get("force_vectors", {}).get(dominant, {})
+            delta_dir.append(round(float(dom_fv.get("direction", 0)), 4))
+            strength.append(round(float(dom_fv.get("magnitude", 0)), 4))
+        eb = latest_cls.get("elasticity_beta", {})
+        beta_ratio = float(eb.get("beta_ratio", 1.0))
+        sign_align = float(pca.get("sign_alignment", 1.0))
+        return {
+            "radar": {"labels": radar_labels, "values": radar_values,
+                      "dominant": dominant,
+                      "dominant_value": radar_values[dominant_idx] if radar_values else 0},
+            "pca": {
+                "explained_ratio": [round(float(pca.get("explained_ratio", 0.5)), 4)],
+                "sign_alignment": round(sign_align, 4),
+                "strength_coefficient": round(float(pca.get("strength_coefficient", 0.5)), 4),
+                "resonance_label": ("strong" if sign_align > 0.7
+                                     else "weak" if sign_align < 0.3 else "moderate"),
+            },
+            "force_price_dual": {
+                "timestamps": [_fmt_ts(_get_ts(r)) for r in recent],
+                "delta_direction": delta_dir, "strength": strength,
+                "price": [],  # 价格不在 JSONL 中，留空
+                "events": [],
+            },
+            "elasticity_beta": {
+                "beta": round(beta_ratio, 4),
+                "label": "放大" if beta_ratio > 1.5 else "衰减" if beta_ratio < 0.5 else "正常",
+                "decay_days": int(eb.get("decay_days", 0)),
+                "amp_days": int(eb.get("amplification_days", 0)),
+            },
+            "code_ref": "pca_resonance_analyzer.py / elasticity_beta_calculator.py",
+            **_meta,
+        }
+
+    # ── sub_type: cycle-ma ──
+    if sub_type == "cycle-ma":
+        ma7, ma30, spread = [], [], []
+        for r in records_sorted:
+            cc = _get_cls(r).get("cycle_comparison", {})
+            s_avg = float(cc.get("short_window_avg", 0))
+            l_avg = float(cc.get("long_window_avg", 0))
+            ma7.append(round(s_avg, 4))
+            ma30.append(round(l_avg, 4))
+            spread.append(round(s_avg - l_avg, 4))
+        states = []
+        for r in records_sorted:
+            cc = _get_cls(r).get("cycle_comparison", {})
+            states.append({"state": cc.get("consistency_state", "observation"),
+                           "coef": round(float(cc.get("adjustment_coefficient", 1.0)), 4)})
+        signals = []
+        for i in range(1, len(spread)):
+            if spread[i - 1] < 0 and spread[i] >= 0:
+                signals.append({"at": timestamps[i], "type": "golden_cross",
+                                "label": "金叉", "ma7": ma7[i], "ma30": ma30[i]})
+            elif spread[i - 1] >= 0 and spread[i] < 0:
+                signals.append({"at": timestamps[i], "type": "death_cross",
+                                "label": "死叉", "ma7": ma7[i], "ma30": ma30[i]})
+        return {
+            "ma_series": {"timestamps": timestamps, "ma7": ma7, "ma30": ma30, "spread": spread},
+            "consistency_states": states, "signals": signals,
+            "code_ref": "cycle_comparator.py compare()", **_meta,
+        }
+
+    # ── sub_type: transform-lamps ──
+    if sub_type == "transform-lamps":
+        ct = latest_cls.get("contradiction_transform", {})
+        eb = latest_cls.get("elasticity_beta", {})
+        pca = latest_cls.get("pca_resonance", {})
+        ra = latest_cls.get("regime_adjustment", {})
+        recent = records_sorted[-2:] if len(records_sorted) >= 2 else records_sorted
+        dom_changed = False
+        if len(recent) >= 2:
+            d1 = _get_cls(recent[0]).get("pca_resonance", {}).get("dominant_dim", "")
+            d2 = _get_cls(recent[1]).get("pca_resonance", {}).get("dominant_dim", "")
+            dom_changed = d1 != d2
+        sign_align = float(pca.get("sign_alignment", 1.0))
+        data_ok = latest_cls.get("data_ok", True)
+        return {
+            "lamps": [
+                {"id": 1, "name": "弹性衰减β", "on": bool(eb.get("decay_signal", False)),
+                 "confidence": round(float(eb.get("beta_ratio", 1.0)), 4) if eb.get("decay_signal") else 0.0,
+                 "detail": f"β_ratio={float(eb.get('beta_ratio', 1.0)):.4f}"},
+                {"id": 2, "name": "弹性放大β", "on": bool(eb.get("amplification_signal", False)),
+                 "confidence": round(float(eb.get("beta_ratio", 1.0)), 4) if eb.get("amplification_signal") else 0.0,
+                 "detail": f"amp_days={int(eb.get('amplification_days', 0))}"},
+                {"id": 3, "name": "维度主导切换", "on": dom_changed,
+                 "confidence": 0.8 if dom_changed else 0.0,
+                 "detail": "dominant_dim变化" if dom_changed else "dominant_dim未变化"},
+                {"id": 4, "name": "共振破裂", "on": sign_align < 0.3,
+                 "confidence": round(1 - sign_align, 4) if sign_align < 0.3 else 0.0,
+                 "detail": f"sign_alignment={sign_align:.4f}"},
+                {"id": 5, "name": "CBR背离", "on": bool(ra.get("cbr_divergence_detected", False)),
+                 "confidence": round(float(ra.get("adjustment_ratio", 1.0)), 4) if ra.get("cbr_divergence_detected") else 0.0,
+                 "detail": f"E[r|cur]={float(ra.get('e_r_current', 0)):.6f} vs E[r|all]={float(ra.get('e_r_all', 0)):.6f}"},
+                {"id": 6, "name": "数据质量预警⚠️S3", "on": not data_ok,
+                 "confidence": 0.9 if not data_ok else 0.0,
+                 "detail": f"data_ok={data_ok}"},
+            ],
+            "transforming": bool(ct.get("transforming", False)),
+            "overall_confidence": round(float(ct.get("confidence", 0)), 4),
+            "code_ref": "contradiction_transform_detector.py detect()", **_meta,
+        }
+
+    return {"error": f"unknown sub_type: {sub_type}"}
+
+
+def get_force_vector_data(sub_type):
+    """力向量可视化数据（含合成兜底）。
+
+    门槛规则：有真实记录（≥1天）→ 用真实数据；无记录 → demo。
+    data_sufficient 标记数据是否充足（≥7天），供前端展示数据质量提示。
+    """
+    try:
+        records = _read_force_vector_jsonl(_FV_JSONL_PATH)
+        shadow_days = _count_shadow_days(records)
+        is_demo = shadow_days < 1
+
+        if is_demo:
+            seed = int(time.time()) // 86400
+            data = _generate_demo_data(sub_type, seed)
+        else:
+            data = _aggregate_real_data(sub_type, records)
+
+        data["ok"] = True
+        data["is_demo"] = is_demo
+        data["shadow_days"] = shadow_days
+        data["threshold_days"] = 7
+        data["data_sufficient"] = shadow_days >= 7
+        return data
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc(),
+                "is_demo": True, "shadow_days": 0}
+
+
+# ================================================================
 # Phase C: α blend 前瞻参数上线 API
 # ================================================================
 
@@ -2599,7 +3090,9 @@ def fma_eval_now(days: int = 7) -> dict:
         from bcrm2.run_evolution_pipeline import get_storage
         storage = get_storage()
         for sym in ["BTC", "SOL", "XAU", "XAG", "NVDA", "GOOGL", "AMZN",
-                    "MU", "SNDK", "SPCX", "OKB", "HYPE", "PUMP", "UNI", "SKHYNIX", "ETH"]:
+                    "MU", "SNDK", "SPCX", "OKB", "HYPE", "PUMP", "UNI", "SKHYNIX", "ETH",
+                    # — BDSM 2026-09 扩展：权威池 7 币审计 AAVE / CRCL（shadow 7 天）—
+                    "AAVE", "CRCL"]:
             try:
                 all_records.extend(storage.get_shadow_log(sym, days=days))
             except Exception:
@@ -3031,7 +3524,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from screen_executor import _v15_real_decision
-                coins_param = self._get_query_param("coins") or "BTC,ETH,SOL,ARB,OP,UNI,HYPE,OKB"
+                coins_param = self._get_query_param("coins") or "BTC,ETH,SOL,ARB,OP,UNI,HYPE,OKB,PUMP,AAVE,CRCL"
                 coins = [c.strip() for c in coins_param.split(",") if c.strip()]
                 decisions = []
                 for coin in coins:
@@ -3390,6 +3883,22 @@ class Handler(BaseHTTPRequestHandler):
             limit = int(self._get_query_param("limit") or "50")
             self._json(get_strategy_layer_shadow(limit))
 
+        # ── API: 力向量可视化（五计庙算 4 子Tab）──────────────────────
+        elif path == "/api/shadow/force-vector/time-series":
+            self._json(get_force_vector_data("time-series"))
+
+        elif path == "/api/shadow/force-vector/contradictions-top8":
+            self._json(get_force_vector_data("contradictions-top8"))
+
+        elif path == "/api/shadow/force-vector/resonance":
+            self._json(get_force_vector_data("resonance"))
+
+        elif path == "/api/shadow/force-vector/cycle-ma":
+            self._json(get_force_vector_data("cycle-ma"))
+
+        elif path == "/api/shadow/force-vector/transform-lamps":
+            self._json(get_force_vector_data("transform-lamps"))
+
         # ── API: Phase C α blend 状态查询 ────────────────────────────
         elif path == "/api/alpha/status":
             self._json(get_alpha_status())
@@ -3450,23 +3959,159 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/api/data-center/"):
             try:
                 from data_center.storage.sink_sqlite import SqliteSink
+                import sqlite3 as _sq3_mod
                 _sink = SqliteSink(_DC_DB_PATH)
                 _sub = path.rsplit("/", 1)[-1]
                 if _sub == "health":
-                    self._json({"ok": True, "health": _sink.source_health()})
+                    base = _sink.source_health()
+                    # 补充：仅写入 records 表、未写入 metrics 表的源（如手工单次 Collector.fetch 直写records）
+                    try:
+                        conn = _sq3_mod.connect(_DC_DB_PATH)
+                        rows = conn.execute(
+                            "SELECT source, COUNT(*) AS cnt, MAX(timestamp) AS last_ts "
+                            "FROM records GROUP BY source"
+                        ).fetchall()
+                        conn.close()
+                        _rsrc = {r[0]: {"cnt": r[1], "last_ts": r[2]} for r in rows}
+                        for src, info in _rsrc.items():
+                            if src in base:
+                                base[src].setdefault("total_records", info["cnt"])
+                                continue
+                            # 合成 health 条目：非调度走records旁路
+                            base[src] = {
+                                "last_status": "ok" if info["cnt"] > 0 else "unknown",
+                                "last_ts": info["last_ts"] or "",
+                                "last_duration_ms": None,
+                                "last_records": None,
+                                "total": 0, "ok_count": 0, "error_count": 0,
+                                "total_records": info["cnt"],
+                                "via": "records_bypass",
+                            }
+                    except Exception as _he:
+                        base["_records_bypass_error"] = {"last_status": "error",
+                                                          "last_ts": "", "note": str(_he)}
+                    self._json({"ok": True, "health": base})
                 elif _sub == "summary":
-                    _raw = _sink.summary()
-                    # summary key 是 (source, category) tuple，转字符串以 JSON 序列化
-                    _data = {f"{k[0]}/{k[1]}": v for k, v in _raw.items()}
+                    base_raw = _sink.summary()
+                    # key 是 (source, category) tuple，转字符串以 JSON 序列化，并补 records 旁路
+                    try:
+                        conn = _sq3_mod.connect(_DC_DB_PATH)
+                        rows = conn.execute(
+                            "SELECT source, category, COUNT(*) AS cnt, MAX(timestamp) AS last_ts "
+                            "FROM records GROUP BY source, category"
+                        ).fetchall()
+                        conn.close()
+                        for src, cat, cnt, last_ts in rows:
+                            k = (src, cat)
+                            if k in base_raw:
+                                base_raw[k]["total_records"] = max(
+                                    base_raw[k].get("total_records") or 0, cnt)
+                            else:
+                                base_raw[k] = {
+                                    "total": 0, "ok_count": 0, "error_count": 0,
+                                    "avg_duration_ms": 0,
+                                    "total_records": cnt,
+                                    "last_ts_records": last_ts,
+                                    "via": "records_bypass",
+                                }
+                    except Exception as _se:
+                        base_raw[("_records_bypass_error_", "")] = {"total": 0, "ok_count": 0,
+                                                                      "error_count": 1,
+                                                                      "note": str(_se)}
+                    _data = {f"{k[0]}/{k[1]}": v for k, v in base_raw.items()}
                     self._json({"ok": True, "summary": _data})
                 elif _sub == "records":
                     _limit = int(self._get_query_param("limit") or "20")
-                    _recs = _sink.query_records(limit=_limit)
+                    _source = self._get_query_param("source") or None
+                    _category = self._get_query_param("category") or None
+                    _recs = _sink.query_records(limit=_limit, source=_source, category=_category)
                     _data = [{"source": r.source, "category": r.category,
                               "sub_category": r.sub_category, "timestamp": r.timestamp,
-                              "metrics": r.metrics}
+                              "metrics": r.metrics, "events": r.events}
                              for r in _recs]
                     self._json({"ok": True, "records": _data, "count": len(_data)})
+                elif _sub == "blockbeats":
+                    # 专属律动 latest batch：脉动/信号/卡片/Top10 结构化聚合给前端面板
+                    try:
+                        conn = _sq3_mod.connect(_DC_DB_PATH)
+                        ts_rows = conn.execute(
+                            "SELECT DISTINCT timestamp FROM records "
+                            "WHERE source='theblockbeats_dataview' "
+                            "ORDER BY id DESC LIMIT 1"
+                        ).fetchone()
+                        latest_ts = ts_rows[0] if ts_rows else None
+                        batch = []
+                        if latest_ts:
+                            batch = conn.execute(
+                                "SELECT source, category, sub_category, timestamp, metrics, events "
+                                "FROM records WHERE source='theblockbeats_dataview' AND timestamp=?",
+                                (latest_ts,)
+                            ).fetchall()
+                        conn.close()
+                        import json as _j
+                        pulse = None; signals = []; cards = []; top10 = []
+                        for r in batch:
+                            src, cat, sub, ts, metrics_json, events_json = r
+                            try:
+                                m = _j.loads(metrics_json)
+                            except Exception:
+                                m = {}
+                            item = {"sub_category": sub, "timestamp": ts, "metrics": m}
+                            if sub == "bottom_pulse_index":
+                                pulse = item
+                            elif sub and sub.startswith("bottom_signal_"):
+                                signals.append(item)
+                            elif sub and sub.startswith("echarts_card_meta_"):
+                                cards.append(item)
+                            elif sub == "top10_inflow_di":
+                                top10.append(item)
+                        # Top10 inflow 按 rank 升序排
+                        def _rank(r):
+                            try:
+                                return int(r["metrics"].get("rank", 9999) or 9999)
+                            except Exception:
+                                return 9999
+                        top10.sort(key=_rank)
+                        self._json({
+                            "ok": True,
+                            "batch_ts": latest_ts,
+                            "batch_count": len(batch),
+                            "pulse": pulse,
+                            "signals": signals,
+                            "cards": cards,
+                            "top10_inflow": top10,
+                        })
+                    except Exception as e:
+                        self._json({"ok": False, "error": f"{type(e).__name__}: {e}"})
+                elif _sub == "panewslab":
+                    # Panewslab 8大板块最新批次聚合（市场总览/周期/ETF/稳定币RWA/衍生品/交易所巨鲸/链上资金/美股宏观）
+                    try:
+                        conn = _sq3_mod.connect(_DC_DB_PATH)
+                        # panewslab 各板块采集时刻不同（毫秒级），不能用单一 timestamp 精确匹配；
+                        # 改为按 sub_category 取最新一条（MAX(id)）
+                        batch = conn.execute(
+                            "SELECT sub_category, timestamp, metrics FROM records "
+                            "WHERE source='panewslab' AND id IN ("
+                            "SELECT MAX(id) FROM records WHERE source='panewslab' GROUP BY sub_category)"
+                        ).fetchall()
+                        latest_ts = max((r[1] for r in batch), default=None) if batch else None
+                        conn.close()
+                        import json as _j
+                        sections = {}
+                        for sub, ts, metrics_json in batch:
+                            try:
+                                m = _j.loads(metrics_json)
+                            except Exception:
+                                m = {}
+                            sections[sub] = {"timestamp": ts, "metrics": m}
+                        self._json({
+                            "ok": True,
+                            "batch_ts": latest_ts,
+                            "batch_count": len(batch),
+                            "sections": sections,
+                        })
+                    except Exception as e:
+                        self._json({"ok": False, "error": f"{type(e).__name__}: {e}"})
                 elif _sub == "quality":
                     _limit = int(self._get_query_param("limit") or "20")
                     self._json({"ok": True, "issues": _sink.recent_issues(limit=_limit)})
@@ -3477,6 +4122,119 @@ class Handler(BaseHTTPRequestHandler):
                     self._json({"ok": False, "error": f"unknown sub: {_sub}"})
             except Exception as e:
                 self._json({"ok": False, "error": f"{type(e).__name__}: {e}"})
+
+        # ── 静态文件服务 /static/（ECharts 本地路由，零CDN）─────────
+        elif path.startswith("/static/"):
+            static_file = BASE_DIR / path.lstrip("/")
+            if static_file.exists() and static_file.is_file():
+                if path.endswith(".js"):
+                    mime = "application/javascript"
+                elif path.endswith(".css"):
+                    mime = "text/css"
+                else:
+                    mime = "application/octet-stream"
+                self._file(static_file, mime)
+            else:
+                self.send_response(404)
+                self.end_headers()
+
+        # ── 🧬 自进化架构可视化 API（spec: 2026-09-05-evolution-arch-visualization） ──
+        elif path == "/api/evolution-overview":
+            try:
+                import importlib.util as _ilu
+                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+                _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
+                _mod = _ilu.module_from_spec(_spec)
+                _spec.loader.exec_module(_mod)
+                EvolutionDataAccessor = _mod.EvolutionDataAccessor
+                _stats_dir = Path(__file__).resolve().parent / ".workbuddy" / "memory_l4" / "stats"
+                _acc = EvolutionDataAccessor(
+                    trades_file=str(_stats_dir / "all_trades.jsonl"),
+                    perf_file=str(_stats_dir / "performance.json"),
+                )
+                range_str = self._get_query_param("range") or "all"
+                range_days = None if range_str == "all" else int(range_str.replace("d", ""))
+                self._json(_acc.get_evolution_overview(range_days=range_days))
+            except Exception as e:
+                self._json({"error": str(e), "fallback": True, "evolution": None, "main_pool": None})
+
+        elif path == "/api/evolution-timeline":
+            try:
+                import importlib.util as _ilu
+                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+                _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
+                _mod = _ilu.module_from_spec(_spec)
+                _spec.loader.exec_module(_mod)
+                EvolutionDataAccessor = _mod.EvolutionDataAccessor
+                _stats_dir = Path(__file__).resolve().parent / ".workbuddy" / "memory_l4" / "stats"
+                _acc = EvolutionDataAccessor(
+                    trades_file=str(_stats_dir / "all_trades.jsonl"),
+                    perf_file=str(_stats_dir / "performance.json"),
+                )
+                range_str = self._get_query_param("range") or "all"
+                range_days = None if range_str == "all" else int(range_str.replace("d", ""))
+                self._json(_acc.get_evolution_timeline(range_days=range_days))
+            except Exception as e:
+                self._json({"error": str(e), "fallback": True, "dates": [], "cumulative": {"evolution": [], "main_pool": []}, "daily": {"evolution": [], "main_pool": []}, "trade_points": {"evolution": [], "main_pool": []}})
+
+        elif path == "/api/evolution-evidence":
+            try:
+                import importlib.util as _ilu
+                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+                _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
+                _mod = _ilu.module_from_spec(_spec)
+                _spec.loader.exec_module(_mod)
+                EvolutionDataAccessor = _mod.EvolutionDataAccessor
+                _stats_dir = Path(__file__).resolve().parent / ".workbuddy" / "memory_l4" / "stats"
+                _acc = EvolutionDataAccessor(
+                    trades_file=str(_stats_dir / "all_trades.jsonl"),
+                    perf_file=str(_stats_dir / "performance.json"),
+                )
+                range_str = self._get_query_param("range") or "all"
+                range_days = None if range_str == "all" else int(range_str.replace("d", ""))
+                self._json(_acc.get_evolution_evidence(range_days=range_days))
+            except Exception as e:
+                self._json({"error": str(e), "fallback": True, "degraded": True})
+
+        elif path == "/api/evolution-detail":
+            try:
+                import importlib.util as _ilu
+                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+                _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
+                _mod = _ilu.module_from_spec(_spec)
+                _spec.loader.exec_module(_mod)
+                EvolutionDataAccessor = _mod.EvolutionDataAccessor
+                _stats_dir = Path(__file__).resolve().parent / ".workbuddy" / "memory_l4" / "stats"
+                _acc = EvolutionDataAccessor(
+                    trades_file=str(_stats_dir / "all_trades.jsonl"),
+                    perf_file=str(_stats_dir / "performance.json"),
+                )
+                detail_type = self._get_query_param("type") or "trade"
+                detail_id = self._get_query_param("id") or ""
+                result = _acc.get_evolution_detail(detail_type=detail_type, detail_id=detail_id)
+                if result is None:
+                    self._json({"error": "not found"}, status=404)
+                else:
+                    self._json(result)
+            except Exception as e:
+                self._json({"error": str(e), "fallback": True})
+
+        elif path == "/api/evolution-ftc":
+            try:
+                import importlib.util as _ilu
+                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+                _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
+                _mod = _ilu.module_from_spec(_spec)
+                _spec.loader.exec_module(_mod)
+                EvolutionDataAccessor = _mod.EvolutionDataAccessor
+                _stats_dir = Path(__file__).resolve().parent / ".workbuddy" / "memory_l4" / "stats"
+                _acc = EvolutionDataAccessor(
+                    trades_file=str(_stats_dir / "all_trades.jsonl"),
+                    perf_file=str(_stats_dir / "performance.json"),
+                )
+                self._json(_acc.get_ftc_status())
+            except Exception as e:
+                self._json({"degraded": True, "error": str(e)})
 
         elif path == "/" or path == "/index.html":
             self._file(BASE_DIR / "monitor.html", "text/html")

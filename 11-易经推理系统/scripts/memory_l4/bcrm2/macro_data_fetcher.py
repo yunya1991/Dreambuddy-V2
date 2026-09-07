@@ -631,6 +631,19 @@ class MacroDataFetcher:
         except Exception as e:
             source_status["market_cap"] = f"error:{type(e).__name__}"
 
+        # 6b. Panewslab + BlockBeats（从数据中心 SQLite 读已落库记录）
+        #     返回：1 行 DataFrame（最新采集批次展平为 pn_*/blockbeats_* 列）
+        #     更早的 bar 对齐时为 NaN，符合 FAIL-OPEN 字节等价旧逻辑（无历史=不生成新特征）
+        try:
+            pn_df = self._fetch_panewslab_blockbeats_snapshot_latest()
+            if pn_df is not None and not pn_df.empty:
+                all_dfs.append(pn_df)
+                source_status["panewslab_blockbeats"] = f"ok:{pn_df.shape[1]}cols"
+            else:
+                source_status["panewslab_blockbeats"] = "missing"
+        except Exception as e:
+            source_status["panewslab_blockbeats"] = f"error:{type(e).__name__}:{e}"
+
         # 6. Blockchain.info hash_rate（仅 BTC）
         if sym == "BTC":
             try:
@@ -707,14 +720,190 @@ class MacroDataFetcher:
         return aligned
 
     # ============================================================
+    # Panewslab / BlockBeats 数据中心 SQLite 读取（用于第一轮 13 新特征的
+    # pn_* / blockbeats_* 代理列注入）。返回 1 行 DataFrame：index=采集timestamp
+    # columns=所有 panewslab.* / blockbeats.* 的 metrics 数字键（前缀原样保留）
+    # 若 SQLite 缺记录则返回空 DataFrame（上游 FAIL-OPEN 字节等价旧逻辑）。
+    # ============================================================
+
+    def _fetch_panewslab_blockbeats_snapshot_latest(self) -> pd.DataFrame:
+        """从数据中心 SQLite 读 panewslab 和 theblockbeats_dataview 两个源的
+        每个 sub_category 最新一条 metrics JSON，展平为单 row DataFrame。
+
+        列名规则：
+          - source=panewslab 的 metrics 键原样使用（约定已以 "pn_" 开头，如 pn_us_vix）
+          - source=theblockbeats_dataview 的 metrics 键前统一加 "bb_" 前缀，
+            与 FiveDomainSqliteReader 返回的 blockbeats_* 派生字段并行存在（不冲突）。
+            如果 BlockBeats 某维度需要显式派生前缀，也可以在这里处理。
+        """
+        import json as _json_mod
+
+        try:
+            from scripts.memory_l4.five_domain_sqlite_reader import DEFAULT_DB_PATH  # 复用已解析路径
+        except Exception:
+            # fallback：与 DEFAULT_DB_PATH 相同逻辑计算
+            _THIS_DIR = Path(__file__).resolve().parents[3]
+            DEFAULT_DB_PATH = _THIS_DIR / "18-数据获取中心" / "data_center.db"
+
+        dbp = DEFAULT_DB_PATH
+        if isinstance(dbp, Path):
+            dbp = str(dbp)
+        import os as _os_mod
+        if not dbp or not _os_mod.path.exists(dbp):
+            return pd.DataFrame()
+
+        try:
+            conn = sqlite3.connect(f"file:{dbp}?mode=ro", uri=True)
+            rows = conn.execute(
+                "SELECT source, sub_category, metrics, timestamp, id "
+                "FROM records WHERE source IN ('panewslab','theblockbeats_dataview') "
+                "ORDER BY id DESC"
+            ).fetchall()
+            conn.close()
+        except Exception as e:
+            logger.debug(f"MacroDataFetcher panewslab sqlite 读取失败: {e}")
+            return pd.DataFrame()
+
+        if not rows:
+            return pd.DataFrame()
+
+        # 按 (source, sub_category) 保留最新一条
+        latest: dict = {}
+        latest_ts_by_source: dict = {}
+        for r in rows:
+            key = (r[0], r[1])  # source, sub_category
+            if key not in latest:
+                latest[key] = (r[2], r[3])  # metrics_json_str, timestamp(unix sec)
+                src = r[0]
+                if src not in latest_ts_by_source or r[3] > latest_ts_by_source[src]:
+                    latest_ts_by_source[src] = r[3]
+
+        # 展平为 {col: value}
+        flat: Dict[str, Any] = {}
+        for (src, sub), (metrics_json, _ts) in latest.items():
+            # 解析 metrics JSON
+            if isinstance(metrics_json, str):
+                try:
+                    md = _json_mod.loads(metrics_json)
+                except Exception:
+                    md = {}
+            elif isinstance(metrics_json, dict):
+                md = metrics_json
+            else:
+                md = {}
+            if not isinstance(md, dict):
+                continue
+
+            if src == "panewslab":
+                # Panewslab 采集的 metrics 键已按约定命名为 "pn_us_vix"/"pn_sp500_close" 等
+                # 只保留数字型值（float/int/bool → 转为 float，NaN/np.nan/None 也接受以便后续 ffill）
+                for k, v in md.items():
+                    if isinstance(v, bool):
+                        flat[str(k)] = float(v)
+                    elif isinstance(v, (int, float)):
+                        flat[str(k)] = float(v)
+                    elif v is None:
+                        flat[str(k)] = np.nan
+            elif src == "theblockbeats_dataview":
+                # BlockBeats: 为避免与 Panewslab 列撞名，加 "bb_" 前缀
+                # 同时把高频使用的 score 等重命名为 blockbeats_*（与战略层 reader 返回名对齐）
+                for k, v in md.items():
+                    col = f"bb_{sub}_{k}"
+                    if isinstance(v, bool):
+                        flat[col] = float(v)
+                    elif isinstance(v, (int, float)):
+                        flat[col] = float(v)
+                    elif v is None:
+                        flat[col] = np.nan
+
+        if not flat:
+            return pd.DataFrame()
+
+        # 把战略层 FiveDomainSqliteReader 的派生列也补一下（更直接命中 macro_features.py 里的
+        # 检查名：blockbeats_pulse_index 等）—— 直接再调一次 reader 拿派生 dict 合并。
+        try:
+            from scripts.memory_l4.five_domain_sqlite_reader import read_macro_from_sqlite
+            derived = read_macro_from_sqlite(dbp) or {}
+            for k, v in derived.items():
+                if isinstance(v, bool):
+                    flat[str(k)] = float(v)
+                elif isinstance(v, (int, float)):
+                    flat[str(k)] = float(v)
+                # v 是字符串（非数字）不注入（macro_features.py 只处理数值列）
+        except Exception:
+            derived = {}
+
+        # 构造 1-row DataFrame：timestamp = panewslab 最新批次的 timestamp
+        # （若没有 panewslab，退回用 blockbeats 最新时间；若都无则用当前 UTC 时间）
+        ts_raw = None
+        for s in ("panewslab", "theblockbeats_dataview"):
+            if s in latest_ts_by_source:
+                ts_raw = latest_ts_by_source[s]
+                break
+        if ts_raw is None:
+            idx_ts = pd.Timestamp.now(tz="UTC")
+        else:
+            # 兼容 records.timestamp 的两种存储形式：unix int(秒) / ISO 字符串
+            try:
+                if isinstance(ts_raw, (int, float)):
+                    idx_ts = pd.to_datetime(int(ts_raw), unit="s", utc=True, errors="coerce")
+                else:
+                    idx_ts = pd.to_datetime(str(ts_raw), utc=True, errors="coerce")
+                if pd.isna(idx_ts):
+                    raise ValueError("coerced to NaT")
+            except Exception:
+                idx_ts = pd.Timestamp.now(tz="UTC")
+        # ── 严格无泄漏对齐修复（经验 1191536 / 1433933） ──
+        # Panewslab / BlockBeats 慢变量按 4h 批次更新：采集时间(如 16:11) 属于「12:00~16:00 批次」，
+        # 该批次的指标最早可用于 16:00 之后。考虑 fetch_all 在 align_to_klines 时会统一施加
+        # lookahead_guard=1（search_ts = kline_ts - 1h），最后一根 16:00 K线实际只接受
+        # macro_ts <= 15:00 的观测。若直接用采集时间 16:11，backward merge 必 miss → 全 NaN。
+        #
+        # 统一处理：floor 到 4h 边界 → 再固定回退 4h 批次（保证 lookahead_guard=1 安全空间）
+        #   16:11 → floor(4h)=16:00 → -4h=12:00
+        #   15:40 → floor(4h)=12:00 → -4h=08:00  (更松但 point-in-time 仍正确)
+        #   16:00 边界 → floor(4h)=16:00 → -4h=12:00  (与 16:11 相同，不触发边界漏匹配)
+        # 效果：非空 bars = 13:00 / 14:00 / 15:00 / 16:00 共 4 根（~ 3-4 bars，FAIL-OPEN 严苛但真实）。
+        idx_floor = idx_ts.floor("4h")
+        idx_ts_effective = idx_floor - pd.Timedelta(hours=4)
+        return pd.DataFrame(flat, index=pd.DatetimeIndex([idx_ts_effective]))
+
+    # ============================================================
     # 时间对齐 + 未来函数防护
     # ============================================================
+
+    @staticmethod
+    def compute_alignment_evidence(
+        macro_df: pd.DataFrame,
+        kline_index: pd.DatetimeIndex,
+    ) -> tuple:
+        """按经验 979688：返回时间对齐三要素证据。
+
+        Returns:
+            (kline_first, kline_last, pn_first, pn_last, intersected_count)
+        """
+        if len(kline_index) == 0 or macro_df.empty:
+            k0 = k1 = None
+            m0 = m1 = None
+            inter = 0
+        else:
+            kline_sorted = kline_index.sort_values()
+            macro_sorted_index = macro_df.index.sort_values()
+            k0 = kline_sorted[0]
+            k1 = kline_sorted[-1]
+            m0 = macro_sorted_index[0]
+            m1 = macro_sorted_index[-1]
+            # 交集 = 宏观时间在 [k0, k1] 内的点数（宏观必须早于K线才能对齐）
+            mask = (macro_sorted_index >= k0) & (macro_sorted_index <= k1)
+            inter = int(mask.sum())
+        return (k0, k1, m0, m1, inter)
 
     @staticmethod
     def align_to_klines(
         macro_df: pd.DataFrame,
         kline_index: pd.DatetimeIndex,
         lookahead_guard: int = 1,
+        max_gap_bars: Optional[int] = None,
     ) -> pd.DataFrame:
         """将宏观数据对齐到 K 线时间戳
 
@@ -723,11 +912,14 @@ class MacroDataFetcher:
         2. K 线时间戳 t_kline
         3. 只有当 t_macro <= t_kline - lookahead_guard * bar_size 时才填充
         4. 否则填充 NaN（特征模块自动跳过）
+        5. 若 max_gap_bars 设定：连续 NaN 超过此数后保持 NaN（禁止跨 gap 前向填充，
+           严禁 bfill / interpolate，避免未来信息泄漏）。
 
         Args:
             macro_df: 宏观数据 DataFrame（任意频率）
             kline_index: K 线时间索引
             lookahead_guard: 发布延迟保护（≥1 根 K 线）
+            max_gap_bars: 允许连续填充的最大 bar 数（None=不限；Panewslab 4h→1h 用 4）
 
         Returns:
             对齐到 kline_index 的 DataFrame
@@ -758,12 +950,16 @@ class MacroDataFetcher:
         kline_df["_kline_ts"] = kline_index
 
         macro_reset = macro_df.reset_index()
-        col_name = macro_reset.columns[0]  # timestamp 列名
-        macro_reset = macro_reset.rename(columns={col_name: "_macro_ts"})
+        ts_col = macro_reset.columns[0]
+        macro_reset = macro_reset.rename(columns={ts_col: "_macro_ts"})
 
         # 将 K 线时间减去 guard_delta，然后用 asof 找 <= 该时间的宏观数据
         kline_df["_search_ts"] = kline_index - guard_delta
 
+        # ── 用 asof backward 找到「最近一个宏观点」——同时我们记录「距离多少bar」用于 gap limit
+        # 先得到 merge_asof 的 index 对。使用 asof 的 tolerance 特性做不了 gap limit（
+        # tolerance 是绝对时间差，而 gap 基于 bar 数）。方案：先对齐，再根据「last_valid_idx」
+        # 计算连续填充距离，max_gap_bars 超出的位置清零为 NaN。
         aligned = pd.merge_asof(
             kline_df.sort_values("_search_ts"),
             macro_reset.sort_values("_macro_ts"),
@@ -774,11 +970,28 @@ class MacroDataFetcher:
 
         # 设回 K 线索引
         aligned = aligned.set_index(kline_index)
-        # 删除辅助列
-        aligned = aligned.drop(columns=["_kline_ts", "_search_ts", "_macro_ts"], errors="ignore")
 
-        # 只保留原始宏观数据列
+        # ── max_gap_bars 限制：基于「上一个非 NaN 宏观观测点的 bar 距离」 ──
+        # 对每一行，找到对应的最近 _macro_ts（存在则为有效值），计算其与当前 bar 之间间隔多少 bar
         macro_cols = [c for c in aligned.columns if c in macro_df.columns]
-        aligned = aligned[macro_cols]
+        out = aligned[macro_cols].copy()
 
-        return aligned
+        if max_gap_bars is not None and max_gap_bars > 0 and len(out) > 0 and not out.empty:
+            # 构造一列「最近 _macro_ts 在 kline 中的索引位置（可能不存在/插值）」，用该位置距离当前 i 的 gap
+            kline_series = pd.Series(np.arange(len(kline_index)), index=kline_index.sort_values())
+            macro_ts_in_kline_ref = aligned["_macro_ts"].map(
+                lambda t: kline_series.asof(t) if pd.notna(t) else np.nan
+            )
+            macro_ts_in_kline_arr = macro_ts_in_kline_ref.values
+            gap_arr = np.arange(len(kline_index)) - macro_ts_in_kline_arr
+            # gap<0 说明无对应前向点 → NaN（已为 nan 保持）
+            # gap>max_gap_bars → 清零（保持 NaN）
+            # 注意：nan 位置的 gap 本身也会是 nan，判断时跳过
+            for col in macro_cols:
+                vals = out[col].to_numpy()
+                bad_mask = ~np.isnan(gap_arr) & (gap_arr > max_gap_bars)
+                vals[bad_mask] = np.nan
+                out[col] = vals
+
+        # 删除辅助列（原始 aligned 的辅助列不出现在 out 中）
+        return out

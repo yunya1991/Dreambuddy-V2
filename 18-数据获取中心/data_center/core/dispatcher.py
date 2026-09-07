@@ -30,22 +30,47 @@ def _register_defaults(reg: Registry) -> None:
     from data_center.collectors.chain.ccxt_collector import CcxtCollector
     from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
     from data_center.collectors.chain.etherscan_collector import EtherscanCollector
+    from data_center.collectors.chain.panewslab_collector import PanewslabCollector
+    from data_center.collectors.chain.stablecoin_transparency_collector import StablecoinTransparencyCollector
+    from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector
     from data_center.collectors.finance.yfinance_collector import YFinanceCollector
     from data_center.collectors.macro.fred_collector import FredCollector
     from data_center.collectors.news.feedparser_collector import FeedparserCollector
     from data_center.collectors.news.gdelt_collector import GdeltCollector
+    from data_center.collectors.news.odaily_newsflash import OdailyNewsflashCollector
     from data_center.collectors.news.rsshub_collector import RsshubCollector
     from data_center.collectors.news.tavily_collector import TavilyCollector
+    from data_center.collectors.news.theblockbeats_dataview import TheBlockBeatsDataviewCollector
+    # 🆕 Phase G：BDSM 原生数据采集器（项目官网爬虫）
+    from data_center.collectors.bdsm.pump_native_collector import PumpNativeCollector
+    from data_center.collectors.bdsm.aave_native_collector import AaveNativeCollector
+    from data_center.collectors.bdsm.hype_native_collector import HypeNativeCollector
+    from data_center.collectors.bdsm.uniswap_native_collector import UniswapNativeCollector
+    from data_center.collectors.bdsm.circle_native_collector import CircleNativeCollector
+    from data_center.collectors.bdsm.solana_native_collector import SolanaNativeCollector
 
     reg.register("macro", "fred", FredCollector)
     reg.register("finance", "yfinance", YFinanceCollector)
     reg.register("chain", "ccxt", CcxtCollector)
     reg.register("chain", "etherscan", EtherscanCollector)
     reg.register("chain", "defillama", DeFiLlamaCollector)
+    reg.register("chain", "panewslab", PanewslabCollector)
+    reg.register("chain", "stablecoin_transparency", StablecoinTransparencyCollector)
     reg.register("news", "feedparser", FeedparserCollector)
     reg.register("news", "rsshub", RsshubCollector)
     reg.register("news", "tavily", TavilyCollector)
     reg.register("news", "gdelt", GdeltCollector)
+    reg.register("news", "theblockbeats_dataview", TheBlockBeatsDataviewCollector)
+    reg.register("news", "odaily_newsflash", OdailyNewsflashCollector)
+    # 🆕 Phase A4：CoinFundamentalRanker 数据源
+    reg.register("coin", "coingecko", CoinGeckoCollector)
+    # 🆕 Phase G：BDSM 原生采集器（项目官网爬虫，E5/E6/E7 信号数据源）
+    reg.register("bdsm", "pump", PumpNativeCollector)
+    reg.register("bdsm", "aave", AaveNativeCollector)
+    reg.register("bdsm", "hype", HypeNativeCollector)
+    reg.register("bdsm", "uniswap", UniswapNativeCollector)
+    reg.register("bdsm", "circle", CircleNativeCollector)
+    reg.register("bdsm", "solana", SolanaNativeCollector)
 
 
 class DataCenter:
@@ -161,6 +186,7 @@ class DataCenter:
                     enforce_hard_block=False,
                     fail_open=_fail_open,
                     freshness_threshold=_td(hours=_hours),
+                    category=category,   # ← news → DedupAlign FLAT 模式，保留每条 sub_category 语义
                 ))
                 _silver = _pipe.clean(result, source=source, category=category)
                 # Gate passed → 用 Silver DF 还原 records + 写入 DAL；否则原 result

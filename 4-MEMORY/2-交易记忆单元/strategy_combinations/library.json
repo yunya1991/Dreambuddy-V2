@@ -1,0 +1,824 @@
+[
+  {
+    "combo_id": "CB-GRID-001",
+    "condition_ids": [
+      "CD-MA200GT50"
+    ],
+    "action_ids": [
+      "AC-LONG-2SL-4TP-Q1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.7376,
+    "n_samples": 255,
+    "parameters": {
+      "risk_multiplier": 0.7,
+      "timeframe": "1d"
+    },
+    "meta": {
+      "strategy_type": "mean_reversion",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-29077734"
+    },
+    "tags": [
+      "255",
+      "H0.71",
+      "S0.77"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.738 N=255"
+  },
+  {
+    "combo_id": "CB-GRID-002",
+    "condition_ids": [
+      "CD-MA200GT50"
+    ],
+    "action_ids": [
+      "AC-LONG-3SL-6TP-H1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.8516,
+    "n_samples": 488,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "1h"
+    },
+    "meta": {
+      "strategy_type": "breakout",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-13713457"
+    },
+    "tags": [
+      "488",
+      "H0.82",
+      "S0.82"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.852 N=488"
+  },
+  {
+    "combo_id": "CB-GRID-003",
+    "condition_ids": [
+      "CD-MA200GT50"
+    ],
+    "action_ids": [
+      "AC-LONG-5SL-12TP-FULL"
+    ],
+    "condition_logic": "all",
+    "ess": 0.5961,
+    "n_samples": 287,
+    "parameters": {
+      "risk_multiplier": 0.7,
+      "timeframe": "1d"
+    },
+    "meta": {
+      "strategy_type": "macro_rotation",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-85035154"
+    },
+    "tags": [
+      "287",
+      "H0.28",
+      "S0.83"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.596 N=287"
+  },
+  {
+    "combo_id": "CB-GRID-004",
+    "condition_ids": [
+      "CD-MA200GT50"
+    ],
+    "action_ids": [
+      "AC-LONG-TIGHT-1-5SL-RR3"
+    ],
+    "condition_logic": "all",
+    "ess": 0.7236,
+    "n_samples": 321,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "1d"
+    },
+    "meta": {
+      "strategy_type": "mean_reversion",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-95176265"
+    },
+    "tags": [
+      "321",
+      "H0.76",
+      "S0.65"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.724 N=321"
+  },
+  {
+    "combo_id": "CB-GRID-005",
+    "condition_ids": [
+      "CD-PRICEGTEMA200"
+    ],
+    "action_ids": [
+      "AC-LONG-2SL-4TP-Q1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.5769,
+    "n_samples": 400,
+    "parameters": {
+      "risk_multiplier": 1.0,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "macro_rotation",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-29363775"
+    },
+    "tags": [
+      "400",
+      "H0.78",
+      "S0.21"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.577 N=400"
+  },
+  {
+    "combo_id": "CB-GRID-006",
+    "condition_ids": [
+      "CD-PRICEGTEMA200"
+    ],
+    "action_ids": [
+      "AC-LONG-3SL-6TP-H1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.6248,
+    "n_samples": 93,
+    "parameters": {
+      "risk_multiplier": 1.0,
+      "timeframe": "1h"
+    },
+    "meta": {
+      "strategy_type": "trend_follow",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-34964997"
+    },
+    "tags": [
+      "93",
+      "H0.64",
+      "S0.71"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.625 N=93"
+  },
+  {
+    "combo_id": "CB-GRID-007",
+    "condition_ids": [
+      "CD-PRICEGTEMA200"
+    ],
+    "action_ids": [
+      "AC-LONG-5SL-12TP-FULL"
+    ],
+    "condition_logic": "all",
+    "ess": 0.4508,
+    "n_samples": 73,
+    "parameters": {
+      "risk_multiplier": 1.0,
+      "timeframe": "1h"
+    },
+    "meta": {
+      "strategy_type": "mean_reversion",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-58683518"
+    },
+    "tags": [
+      "73",
+      "H0.71",
+      "S0.23"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.451 N=73"
+  },
+  {
+    "combo_id": "CB-GRID-008",
+    "condition_ids": [
+      "CD-PRICEGTEMA200"
+    ],
+    "action_ids": [
+      "AC-LONG-TIGHT-1-5SL-RR3"
+    ],
+    "condition_logic": "all",
+    "ess": 0.5125,
+    "n_samples": 158,
+    "parameters": {
+      "risk_multiplier": 1.0,
+      "timeframe": "1h"
+    },
+    "meta": {
+      "strategy_type": "macro_rotation",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-31043541"
+    },
+    "tags": [
+      "158",
+      "H0.32",
+      "S0.68"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.513 N=158"
+  },
+  {
+    "combo_id": "CB-GRID-009",
+    "condition_ids": [
+      "CD-UPTREND-FIB618"
+    ],
+    "action_ids": [
+      "AC-LONG-2SL-4TP-Q1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.3291,
+    "n_samples": 59,
+    "parameters": {
+      "risk_multiplier": 1.0,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "trend_follow",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-55588365"
+    },
+    "tags": [
+      "59",
+      "H0.28",
+      "S0.37"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.329 N=59"
+  },
+  {
+    "combo_id": "CB-GRID-010",
+    "condition_ids": [
+      "CD-UPTREND-FIB618"
+    ],
+    "action_ids": [
+      "AC-LONG-3SL-6TP-H1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.5503,
+    "n_samples": 147,
+    "parameters": {
+      "risk_multiplier": 0.7,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "mean_reversion",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-23379397"
+    },
+    "tags": [
+      "147",
+      "H0.60",
+      "S0.50"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.550 N=147"
+  },
+  {
+    "combo_id": "CB-GRID-011",
+    "condition_ids": [
+      "CD-UPTREND-FIB618"
+    ],
+    "action_ids": [
+      "AC-LONG-5SL-12TP-FULL"
+    ],
+    "condition_logic": "all",
+    "ess": 0.8042,
+    "n_samples": 519,
+    "parameters": {
+      "risk_multiplier": 0.7,
+      "timeframe": "1d"
+    },
+    "meta": {
+      "strategy_type": "trend_follow",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-54046692"
+    },
+    "tags": [
+      "519",
+      "H0.64",
+      "S0.87"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.804 N=519"
+  },
+  {
+    "combo_id": "CB-GRID-012",
+    "condition_ids": [
+      "CD-UPTREND-FIB618"
+    ],
+    "action_ids": [
+      "AC-LONG-TIGHT-1-5SL-RR3"
+    ],
+    "condition_logic": "all",
+    "ess": 0.6712,
+    "n_samples": 390,
+    "parameters": {
+      "risk_multiplier": 0.7,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "mean_reversion",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-98663484"
+    },
+    "tags": [
+      "390",
+      "H0.41",
+      "S0.82"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.671 N=390"
+  },
+  {
+    "combo_id": "CB-GRID-013",
+    "condition_ids": [
+      "CD-DONCHIAN-20-BREAK"
+    ],
+    "action_ids": [
+      "AC-LONG-2SL-4TP-Q1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.5909,
+    "n_samples": 257,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "1d"
+    },
+    "meta": {
+      "strategy_type": "momentum",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-71178163"
+    },
+    "tags": [
+      "257",
+      "H0.79",
+      "S0.33"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.591 N=257"
+  },
+  {
+    "combo_id": "CB-GRID-014",
+    "condition_ids": [
+      "CD-DONCHIAN-20-BREAK"
+    ],
+    "action_ids": [
+      "AC-LONG-3SL-6TP-H1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.9138,
+    "n_samples": 391,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "breakout",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-91682969"
+    },
+    "tags": [
+      "391",
+      "H0.91",
+      "S0.94"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.914 N=391"
+  },
+  {
+    "combo_id": "CB-GRID-015",
+    "condition_ids": [
+      "CD-DONCHIAN-20-BREAK"
+    ],
+    "action_ids": [
+      "AC-LONG-5SL-12TP-FULL"
+    ],
+    "condition_logic": "all",
+    "ess": 0.7557,
+    "n_samples": 202,
+    "parameters": {
+      "risk_multiplier": 0.7,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "trend_follow",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-39243879"
+    },
+    "tags": [
+      "202",
+      "H0.85",
+      "S0.72"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.756 N=202"
+  },
+  {
+    "combo_id": "CB-GRID-016",
+    "condition_ids": [
+      "CD-DONCHIAN-20-BREAK"
+    ],
+    "action_ids": [
+      "AC-LONG-TIGHT-1-5SL-RR3"
+    ],
+    "condition_logic": "all",
+    "ess": 0.6481,
+    "n_samples": 409,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "1h"
+    },
+    "meta": {
+      "strategy_type": "breakout",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-10306708"
+    },
+    "tags": [
+      "409",
+      "H0.60",
+      "S0.56"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.648 N=409"
+  },
+  {
+    "combo_id": "CB-GRID-017",
+    "condition_ids": [
+      "CD-SUPERTREND-BUY"
+    ],
+    "action_ids": [
+      "AC-LONG-2SL-4TP-Q1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.3463,
+    "n_samples": 202,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "1h"
+    },
+    "meta": {
+      "strategy_type": "momentum",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-93334805"
+    },
+    "tags": [
+      "202",
+      "H0.29",
+      "S0.26"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.346 N=202"
+  },
+  {
+    "combo_id": "CB-GRID-018",
+    "condition_ids": [
+      "CD-SUPERTREND-BUY"
+    ],
+    "action_ids": [
+      "AC-LONG-3SL-6TP-H1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.563,
+    "n_samples": 58,
+    "parameters": {
+      "risk_multiplier": 1.0,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "momentum",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-49711169"
+    },
+    "tags": [
+      "58",
+      "H0.80",
+      "S0.44"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.563 N=58"
+  },
+  {
+    "combo_id": "CB-GRID-019",
+    "condition_ids": [
+      "CD-SUPERTREND-BUY"
+    ],
+    "action_ids": [
+      "AC-LONG-5SL-12TP-FULL"
+    ],
+    "condition_logic": "all",
+    "ess": 0.5493,
+    "n_samples": 332,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "momentum",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-96198394"
+    },
+    "tags": [
+      "332",
+      "H0.45",
+      "S0.52"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.549 N=332"
+  },
+  {
+    "combo_id": "CB-GRID-020",
+    "condition_ids": [
+      "CD-SUPERTREND-BUY"
+    ],
+    "action_ids": [
+      "AC-LONG-TIGHT-1-5SL-RR3"
+    ],
+    "condition_logic": "all",
+    "ess": 0.6877,
+    "n_samples": 134,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "1d"
+    },
+    "meta": {
+      "strategy_type": "momentum",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-63294914"
+    },
+    "tags": [
+      "134",
+      "H0.77",
+      "S0.69"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.688 N=134"
+  },
+  {
+    "combo_id": "CB-GRID-021",
+    "condition_ids": [
+      "CD-BUYVOL-3D-62PCT",
+      "CD-ADI-UP-5BAR"
+    ],
+    "action_ids": [
+      "AC-LONG-3SL-6TP-H1"
+    ],
+    "condition_logic": "weighted",
+    "ess": 0.7689,
+    "n_samples": 296,
+    "parameters": {
+      "risk_multiplier": 1.0,
+      "timeframe": "1d"
+    },
+    "meta": {
+      "strategy_type": "breakout",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-81993307"
+    },
+    "tags": [
+      "296",
+      "H0.69",
+      "S0.84"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.769 N=296"
+  },
+  {
+    "combo_id": "CB-GRID-022",
+    "condition_ids": [
+      "CD-MACD-HIST-3BAR-X",
+      "CD-FIB0786-REJECT",
+      "CD-MORNINGSTAR-VOL2X"
+    ],
+    "action_ids": [
+      "AC-LONG-2SL-4TP-Q1",
+      "AC-RISK-EQUAL-REBAL"
+    ],
+    "condition_logic": "majority",
+    "ess": 0.8719,
+    "n_samples": 444,
+    "parameters": {
+      "risk_multiplier": 1.0,
+      "timeframe": "1h"
+    },
+    "meta": {
+      "strategy_type": "macro_rotation",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-67810859"
+    },
+    "tags": [
+      "444",
+      "H0.86",
+      "S0.85"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.872 N=444"
+  },
+  {
+    "combo_id": "CB-GRID-023",
+    "condition_ids": [
+      "CD-KELTNER-MID-STUCK"
+    ],
+    "action_ids": [
+      "AC-EXIT-TIME-5DAY",
+      "AC-REDUCE-50PCT-LOCK"
+    ],
+    "condition_logic": "all",
+    "ess": 0.8306,
+    "n_samples": 471,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "breakout",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-56674717"
+    },
+    "tags": [
+      "471",
+      "H0.79",
+      "S0.80"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.831 N=471"
+  },
+  {
+    "combo_id": "CB-GRID-024",
+    "condition_ids": [
+      "CD-IV365-GT70-WIDE",
+      "CD-SHORT-GAMMA-NEG"
+    ],
+    "action_ids": [
+      "AC-EXIT-HALF-AT-1PCT",
+      "AC-STOP-BREAKEVEN"
+    ],
+    "condition_logic": "all",
+    "ess": 0.8589,
+    "n_samples": 331,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "mean_reversion",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-60186210"
+    },
+    "tags": [
+      "331",
+      "H0.92",
+      "S0.82"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.859 N=331"
+  },
+  {
+    "combo_id": "CB-GRID-025",
+    "condition_ids": [
+      "CD-RSI30-BOLL-TOUCH"
+    ],
+    "action_ids": [
+      "AC-LONG-5SL-12TP-FULL",
+      "AC-EXIT-HALF-AT-1PCT"
+    ],
+    "condition_logic": "all",
+    "ess": 0.875,
+    "n_samples": 547,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "1h"
+    },
+    "meta": {
+      "strategy_type": "macro_rotation",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-76730848"
+    },
+    "tags": [
+      "547",
+      "H0.91",
+      "S0.78"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.875 N=547"
+  },
+  {
+    "combo_id": "CB-GRID-026",
+    "condition_ids": [
+      "CD-PRICE-IN-BOLL1STD-5B"
+    ],
+    "action_ids": [
+      "AC-ALERT-CROSS-MA200",
+      "AC-RISK-EQUAL-REBAL"
+    ],
+    "condition_logic": "all",
+    "ess": 0.7814,
+    "n_samples": 206,
+    "parameters": {
+      "risk_multiplier": 1.0,
+      "timeframe": "1h"
+    },
+    "meta": {
+      "strategy_type": "trend_follow",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-14225065"
+    },
+    "tags": [
+      "206",
+      "H0.68",
+      "S0.95"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.781 N=206"
+  },
+  {
+    "combo_id": "CB-GRID-027",
+    "condition_ids": [
+      "CD-DXY-DROP-RISKON"
+    ],
+    "action_ids": [
+      "AC-SHORT-4SL-10TP-Q3",
+      "AC-LONG-3SL-6TP-H1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.8428,
+    "n_samples": 421,
+    "parameters": {
+      "risk_multiplier": 1.3,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "trend_follow",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-17835851"
+    },
+    "tags": [
+      "421",
+      "H0.93",
+      "S0.72"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.843 N=421"
+  },
+  {
+    "combo_id": "CB-GRID-028",
+    "condition_ids": [
+      "CD-DXY-DROP-RISKON"
+    ],
+    "action_ids": [
+      "AC-ALERT-CROSS-MA200"
+    ],
+    "condition_logic": "all",
+    "ess": 0.2373,
+    "n_samples": 60,
+    "parameters": {
+      "risk_multiplier": 0.7,
+      "timeframe": "4h"
+    },
+    "meta": {
+      "strategy_type": "trend_follow",
+      "author": "mvp-seeder",
+      "created_at": "2026-09-03T16:35:17Z",
+      "source_backtest_id": "BT-MVP-SEED-84412719"
+    },
+    "tags": [
+      "60",
+      "H0.20",
+      "S0.22"
+    ],
+    "version": "1.0",
+    "notes": "Auto-gen combo ess=0.237 N=60"
+  }
+]

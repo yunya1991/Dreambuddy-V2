@@ -162,10 +162,30 @@
 ┌────────────────────────────────────────────────────────────────────────────┐
 │  Layer 0: 五计庙算（战略层 / Five-Domain Heuristic Scoring）                │
 │  总开关 enable_five_domain + 7 子开关；道/天/地/将/法 五维加权总分；            │
-│  → 输出 war_state(ALLOW/CAUTION/BLOCK) + strategy_mask + cap + score(0~100)│
-│  → 三档决策：≥75进攻 / 60-74低仓防御 / <60防守；仓位四档映射；维度否决规则       │
+│  → 输出 war_state(ALLOW/COOLDOWN/FREEZE) + strategy_mask + cap + score(0~100)│
+│  → 四档决策：≥75进攻 / 60-74低仓防御 / 50-59轻仓防守 / <50全禁；仓位四档映射    │
+│  → 维度否决规则(道/将<40降仓30%, 法<40不开新仓, 地天双差只允许对冲)            │
+│  → 策略风格掩码细粒度：正常档内 trend≥70/breakout≥65/mean_revert 40≤di≤60     │
+│  → 跨类相关性乘数：≥2类 total<60 → 三类全部 ×0.8                              │
+│  → war_state 滞回：连续3日≥60解冻，<58回冻，道<40一票否决立即FREEZE            │
+│  ★ 力向量 Shadow：FORCE_VECTOR_SHADOW=1 已开启，JSONL 真实记录积累中           │
+│    - 五维力向量(direction/magnitude/confidence)实时计算并写入 JSONL            │
+│    - 前端 5 子Tab(time-series/resonance/contradictions/cycle-ma/transform)   │
+│      从 JSONL 真实记录聚合展示（_aggregate_real_data），非 demo 合成数据        │
+│    - Shadow 输入从 JSONL 历史真实方向序列构建（Phase 1B），不足时回退合成        │
+│  ★ 自适应权重（Phase 2）：_compute_adaptive_weights() 基础设施已就绪           │
+│    - 当 force_vectors 有效且 avg_conf>0.3 → 按 alpha 混合自适应权重           │
+│    - 否则 → WEIGHTS_BY_CLASS 硬编码权重（FAIL-OPEN 回退，当前生产路径）         │
+│    - 后续 Shadow 数据积累充足后，调用方可传入 force_vectors 启用自适应           │
 │  代码锚点：[FiveDomainHeuristicScorer](../scripts/memory_l4/five_domain_*.py)│
+│            [ForceVectorCalculator](../scripts/memory_l4/force_vector/)      │
 │            polling_trader._run_once_five_domain_daily_update()             │
+│  ★ 影子日志（v4.3.1）：_emit_shadow_logs() 输出 9 类字段，对齐 FiveDomainState │
+│    - war_state / total_score / dao_score / cap_mode / mult_mode（原有 5 类）   │
+│    - style_mask（禁用策略列表）/ dimension_veto（生效否决旗标）                │
+│    - front_layer_band（min/max 或 None）/ forced_close（strong/protect）      │
+│  ★ 日志一致性保证（v4.3.1）：CACHE 分支显式同步 _five_domain_state_shadow     │
+│    = from_json 真实值，日志优先读 _real_state，杜绝 stale shadow 导致 dao=50   │
 └────────────────────────────────────┬───────────────────────────────────────┘
                                      ▼ 战略总基调 + 仓位上限
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -980,6 +1000,11 @@ CREATE TABLE IF NOT EXISTS exit_strategy_log (
 ---
 
 ## 4. BCRM 2.0 技术深度
+
+> **重要：§4 推理细节增补文档已完成（2026-09-03）** — 字段 Schema / 五角 v4 算法 / 溯源链 / FAIL-CLOSED 速查 见：
+> [BCRM2_INFERENCE_DEEP_DIVE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/docs/BCRM2_INFERENCE_DEEP_DIVE.md)（9 章 + 2 附录，完整推理细节）
+>
+> 本 §4 保留"方法论/特征/架构"的高层描述；代码级推理实现以上述文档为准。
 
 ### 4.1 决策层核心组件
 
@@ -2352,6 +2377,7 @@ export OKX_TD_MODE=isolated
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-09-07 | v4.3.1 | **战略层影子日志修复（dao 一致性 + 字段补全）**：①**修复 CACHE 分支 dao_score 日志与 five_domain_state.json 缓存不一致**——根因：`_shadow_state = _five_domain_state_shadow or _five_domain_state_cache`，当 `_apply_fd_shadow_intercept` 被跳过时 shadow 停留在 init 阶段 stale 状态（dao=50 默认值）；修复：用 `_real_state` 捕获 `from_json` 结果，显式同步 `_five_domain_state_shadow = _real_state`，日志优先读 `_real_state`；②**影子日志字段从 5 类补全到 9 类**——新增 `style_mask`（禁用策略列表）、`dimension_veto`（生效否决旗标）、`front_layer_band`（min/max 或 None）、`forced_close`（strong/protect），对齐 `FiveDomainState` 全部输出字段；③所有 `getattr` 加 `or {}` 防御 None，移除临时 DEBUG 代码；验证：stale shadow 模拟 dao=50→49 一致，`test_shadow_mode_gate.py` 5/5 + `test_t5/t6_shadow` 3/3 通过 | DreamBuddy v2 |
 | 2026-08-24 | v4.6.1 | **L3/L4 仓位归属语义重构 + 分层职责严格对齐**：①**核心修复 is_trial 仓位基线**：删除旧实现 `is_trial: position_usdt ×= 0.4` 简单乘法；重构 `_open_position L8224-L8292` 仓位流向：**L3 后置层（弹簧做多做空分档 + v4 风险评分仓位调整 + 形态乘数 position_mult）只在正常开仓（is_trial=False）时完整应用**；**轻仓试错（is_trial=True）全部跳过 L3 校准**，日志输出「轻仓试错(过滤层接管仓位) | 跳过L3弹簧/形态/v4分档 → 交由 ElasticGate3L/F1 弹性闸门控制最终仓位」，完全由 L4 过滤层 EG3L 的 F1 下界 0.10 弹性档控制试错仓仓位（BLOCK=0.10 / WEAK=0.30 / STANDARD=0.50 ...），使 Spec F1 永不 BLOCK 语义真正等价于仓位下限不被 L3 再叠加削弱或放大；②**七层职责速查表重写**：L3 标注「正常开仓=调仓位大小；轻仓试错=跳过」、L4 标注「统一共识评分 + 基础门槛 + 接管试错仓仓位」；③**关键分层修正说明升级 v4.5→v4.6.1**：明确 6 条核心边界（L3 不介入试错 / L4 接管试错仓位 / 删除 is_trial×0.4 / L4 唯一硬门槛只有 score_consensus<0.40 / G-04/最大持仓归 L5 / 动态阈值基于 30-150 笔聚合）；④**新增 §2.2b.4 L3/L4 仓位归属语义章节**：含仓位流向总览 ASCII 图、旧vs新设计理由对照表（4 项对比）、代码锚点；⑤架构七层图 L4 节点更新为三分支判定（①<0.40 不开仓 ②≥+conf达标→正常 ③≥+conf不够→试错，试错跳过 L3）；⑥版本号 v4.6→v4.6.1；实盘验证：进程 PID=25232 启动成功；当前 5/5 持仓满容量待腾出后触发「过滤层共识分低于基础门槛」「轻仓试错(共识分达标)」「跳过L3接管仓位」「PhaseC S_P= w_src=」等新日志 | DreamBuddy v2 |
 | 2026-08-24 | v4.6 | **过滤层统一基础阈值门控 + 方案C子系统生效审计增强**：①**核心重构 L4 过滤层判定逻辑（v4.5→v4.6 语义修正）**：删除「P1=BLOCK → is_trial=True」的单因子绑定，改为 P1/Elder/BCRM 三层均产出 Score → ElasticGate3L 加权（支持 ThreeLayerWeighter 动态权重 w_p:w_e:w_b）→ `score_consensus` 与 `_gate_base_threshold（默认0.40）` 做判断：<base_threshold→不开仓（唯一硬门槛）、≥且 confidence 不达标→轻仓试错 is_trial=True（统一 P1=WEAK/STANDARD/BLOCK 三标签的试错通道）；②**新增 §2.2b.3 过滤层统一基础阈值门控**：包含判定流程图、动态阈值调节规则（近30笔胜率<40%或亏-3%→+0.03，胜率≥60%且盈>2%→-0.02，边界[0.25,0.60]，冷却30min）、TradeRecord 新增 score_consensus/gate_base_threshold 两字段、方案C子系统生效审计方法（日志中 w_src/fail_open/calibrated/WinProb样本数/BTCλ条件 可直接判断是否生效）；③**EG3L 明细日志可见性增强**：PhaseC 仓位调控追加 S_P/S_E/S_B/cons/w_p/w_e/w_b/w_src/src 字段，解决 v4.5 无法确认 3LW、做空收紧是否真实生效的黑盒问题；④**ThreeLayerWeighter（SW-C3）调用链路核查**：权重已透传至 ElasticGate3L.compute()，但 v4.6 日志显示实盘 w_src=fail_open（需要 ≥30 笔 BCRM 盈亏样本做回归校准才产出动态权重）；⑤**WinProb（SW-C7）恒=1.00 原因确认**：`sample_count=0 < G2 MIN_SAMPLES=20` 触发旁路，需 CBR Jsonl 建库积累样本；⑥版本号 v4.5→v4.6；代码锚点见 §2.2b.3 | DreamBuddy v2 |
 | 2026-08-24 | v4.5 | **七层交易决策栈梳理 + 方案 C 全量上线 + P1 升级版分层定位修正 + SL 下限保护 + 试错评估周期**：①§2.2 四层功能架构补充 v4.5 视角说明（与七层栈互补）；②**新增 §2.2b 七层交易决策栈（纵向交易决策链）**：L0 五计庙算战略层 → L1 前置层市场形态识别 → L2 核心层 BCRM 2.0 信号 → L3 后置校准层（弹簧力场+五维权重+WinProb+做空三重收紧，调仓位不拦截）→ L4 过滤层（P1升级版：原均线/Elder-ray日线/BCRM N=5连续信号三道并行拦截 + CBR/ElasticGate3L/BTC自反/WinProb/组合熔断G-02/G-04）→ L5 策略层下单确认 → L6 持仓管理与离场层（ExitManager链式+卦象主离场，已删除 Classic 兜底备用层）；③七层职责边界速查表（动作类型/典型操作/失败旁路）；④关键分层修正说明（COIN做空教训：Elder/BCRM连续属过滤层L4拦截，Score_B/做空收紧属后置校准层L3调仓位）；⑤方案 C 8 开关默认全部 True（SW-C1 CBR建库 / SW-C2 Elder-ray / SW-C3 三层权重 / SW-C4 ElasticGate3L / SW-C5 BTC自反 / SW-C6 WinProb / SW-C7 BCRMContinuityObs / SW-C8 组合熔断），开仓必经所有风控链路，G-04 单日 3% 回撤全开关旁路 24h；⑥删除 classic 备用离场层（polling_trader L7208-7394）；⑦VOLATILE_DROP threshold_mult 1.30→1.15 + effective_threshold 上限 clip 0.98，修复做空阈值 >1.0 硬禁问题；⑧confidence 阈值分层（engine_min_confidence_threshold vs confidence_threshold，解决进化值覆盖冲突）；⑨**新增 §2.2b.1 SL/TP 价格空间下限保护**（XAG 案例修复）：ATR 极低时 SL 最低 1.5%（试错仓 2.0%）、TP 最低 3.0%（试错仓 4.0%），轻仓试错核心是仓位小而非 SL 近；⑩**新增 §2.2b.2 轻仓试错评估周期**：持仓≥30min 后触发趋势评估（仅一次），趋势确认→加仓信号、趋势不明→维持、趋势逆转→平仓；TradeRecord 新增 is_trial/trial_eval_done/trial_open_ts 三字段；⑪关联文档 [方案 C Spec v3.0](../../docs/superpowers/specs/2026-08-23-cbr-ema-winprob-enhancement-spec.md) 已上线生效；版本号 v4.4→v4.5 | DreamBuddy v2 |

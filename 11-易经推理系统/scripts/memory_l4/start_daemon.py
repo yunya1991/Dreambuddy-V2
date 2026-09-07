@@ -21,7 +21,7 @@ env["LANG"] = "en_US.UTF-8"
 env["LC_ALL"] = "en_US.UTF-8"
 
 # 杀掉旧进程
-subprocess.run(["pkill", "-f", "scripts.memory_l4.polling_trader"],
+subprocess.run(["/usr/bin/pkill", "-f", "scripts.memory_l4.polling_trader"],
                capture_output=True)
 time.sleep(2)
 
@@ -35,11 +35,16 @@ cmd = [
     "--confidence", "0.7955",
     "--max-positions", "5",
     "--position-pct", "0.20",
+    # — BDSM 小额实盘测试参数（2026-09 用户决策：跳过影子期直接进入微仓真实环境）
+    #   单币预算硬上限 = 250 U 名义价值（=50U保证金×5x杠杆）：覆盖 scaling_plan 默认 167U 防止单次过大
+    #   5 前置检查(BDS≥0/war=ALLOW/VE非极端/TS无减仓/隔日) 已双重兜底
+    #   小帽取消条件：10+ 笔完整交易 + 胜率 ≥70% + 回撤满意 → 删本行恢复到167U
+    "--bdsm-budget-per-coin", "250",
     # ── Phase1（CBR v3.0）三开关 ──
     "--enable-cbr-cycle-log",
     "--enable-elder-ray-c4",
     "--enable-win-prob-factor",
-    # ── 方案C v3.0 SW-C3~C8 六个调控开关（影子生效，异常时可独立关断）──
+    # ── 方案C v3.0 SW-C3~C8 六个调控开关 ──
     "--enable-three-layer-weighter",
     "--enable-elastic-gate-3l",
     "--enable-bcrm-continuity-obs",

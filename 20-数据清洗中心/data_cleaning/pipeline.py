@@ -48,6 +48,8 @@ class PipelineConfig:
     allow_empty_degraded_sources: tuple = ()
     # timestamp 列名（Cleaners 默认"timestamp"，可传"event_ts"等）
     timestamp_col: str = "timestamp"
+    # 数据类别："news"/"macro"/"finance"/"chain"。news → DedupAlign FLAT 模式（不跨 sub_category resample）
+    category: Optional[str] = None
     # fail-open 开关：任意异常兜底为 gate_passed=False SilverRecord（不向上抛）
     fail_open: bool = False
     # unit 规范化：是否启用汇率/百分比转换（默认关，保持字段语义不变）
@@ -74,6 +76,7 @@ class DataCleaningPipeline:
             target_freq=cfg.target_freq,
             ffill_limit=cfg.ffill_limit,
             timestamp_col=cfg.timestamp_col,
+            category=getattr(cfg, "category", None),  # Dispatcher 透传 category→news FLAT 识别
         )
         self.outlier = Outlier3LFilter(
             z_threshold=cfg.z_threshold,
@@ -112,7 +115,8 @@ class DataCleaningPipeline:
 
         # ---------- Cleaner 链（fail-open: 任意异常→记 trace, 保持原 df, 进 Gate）
         try:
-            df = self._run_cleaner(self.dedup, df, trace, asset=_extract_first_asset(cleaned))
+            df = self._run_cleaner(self.dedup, df, trace, asset=_extract_first_asset(cleaned),
+                                   category=category)
             df = self._run_cleaner(self.outlier, df, trace, asset=_extract_first_asset(cleaned))
             df = self._run_cleaner(self.missing, df, trace)
             if self.cfg.enable_unit_normalize:

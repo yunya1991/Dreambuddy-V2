@@ -1,0 +1,47 @@
+{
+  "gene_id": "AC-REDUCE-SHORT-50PCT",
+  "category": "reduce",
+  "action_kind": "reduce",
+  "direction": "short",
+  "sl_template": 0.01,
+  "tp_template": 0.02,
+  "size_pct": 0.5,
+  "rr_ratio_floor": 2.0,
+  "parameters": {
+    "sl_atr_mult": {
+      "value": 0.5,
+      "range": {
+        "low": 1.0,
+        "high": 4.0
+      }
+    },
+    "tp_rr_ratio": {
+      "value": 2.0,
+      "range": {
+        "low": 1.0,
+        "high": 5.0
+      }
+    },
+    "max_slippage_bps": {
+      "value": 5,
+      "range": {
+        "low": 1,
+        "high": 30
+      }
+    }
+  },
+  "code_ref": {
+    "file": "18-数据获取中心/data_center/monitoring/quality.py",
+    "lines": {
+      "low": 28,
+      "high": 83
+    }
+  },
+  "tags": [
+    "reduce",
+    "short",
+    "reduce"
+  ],
+  "version": "1.0",
+  "notes": "Baseline action #13 MVP seed."
+}

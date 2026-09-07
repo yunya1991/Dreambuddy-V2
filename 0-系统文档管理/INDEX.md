@@ -54,7 +54,7 @@
 | 合规规则 | [2-GOVERNANCE/COMPLIANCE_RULES.md](../2-GOVERNANCE/COMPLIANCE_RULES.md) | 合规检查清单 | 🟡 部分 |
 | 审计日志 | [2-GOVERNANCE/AUDIT_LOGS.md](../2-GOVERNANCE/AUDIT_LOGS.md) | 审计记录 | ⚠️ |
 | 知识库入口 | [2-KNOWLEDGE/INDEX.md](../2-KNOWLEDGE/INDEX.md) | 交易/技术/理论领域知识库 | ✅ |
-| 记忆系统架构 | [4-MEMORY/MEMORY_SYSTEM.md](../4-MEMORY/MEMORY_SYSTEM.md) · [4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md](../4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) | L0/L1/L2 三层记忆 + 7+2 接口契约 + 贝叶斯进化 v2 | 🟡 参考 v3.0 §6, §10.2 |
+| 记忆系统架构 | [4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md](../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) v5.0 · [4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md](../4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) | 双层架构（总记忆+应用记忆）+ 7+2 接口契约 + 贝叶斯进化 v5 | 🟡 参考 v3.0 §6, §10.2 |
 | 业务管理 | [5-BUSINESS/BUSINESS_SYSTEM.md](../5-BUSINESS/BUSINESS_SYSTEM.md) | 业务运营系统设计 | ⚠️ |
 | 交易中台 | [6-TRADING/TRADING_SYSTEM.md](../6-TRADING/TRADING_SYSTEM.md) | A0-A9 交易流水线与 SKILL 引擎 | 🟡 |
 | 前端系统 | [3-FRONTEND/FRONTEND_SYSTEM.md](../3-FRONTEND/FRONTEND_SYSTEM.md) | 前端架构设计 | ⚠️ 待更新 |

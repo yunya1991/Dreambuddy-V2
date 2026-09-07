@@ -15,6 +15,7 @@ import importlib
 import json, os, sys, time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
@@ -26,7 +27,7 @@ calculate_capital_allocation = _cm.calculate_capital_allocation
 get_signal_trigger_status = _cm.get_signal_trigger_status
 
 
-def _reload_capital_for_stress(total_budget: str | None = None, mode: str = "fixed") -> None:
+def _reload_capital_for_stress(total_budget: Optional[str] = None, mode: str = "fixed") -> None:
     """重新加载 capital_manager 模块（在压力测试中用于切换预算/模式）。
 
     由于 ``TOTAL_BUDGET`` / ``V15_CAPITAL_MODE`` 是 capital_manager 加载时解析的

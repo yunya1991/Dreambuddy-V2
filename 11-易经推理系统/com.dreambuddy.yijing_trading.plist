@@ -17,9 +17,17 @@
         <string>--confidence</string>
         <string>0.7955</string>
         <string>--max-positions</string>
-        <string>3</string>
+        <string>5</string>
         <string>--position-pct</string>
         <string>0.20</string>
+        <string>--enable-cbr-cycle-log</string>
+        <string>--enable-elder-ray-c4</string>
+        <string>--enable-win-prob-factor</string>
+        <string>--enable-three-layer-weighter</string>
+        <string>--enable-elastic-gate-3l</string>
+        <string>--enable-bcrm-continuity-obs</string>
+        <string>--enable-btc-self-reflex-valve</string>
+        <string>--enable-portfolio-risk-fuses</string>
     </array>
     <key>WorkingDirectory</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统</string>

@@ -2096,6 +2096,115 @@ def get_all(symbol: str = None):
     }
 
 
+# ============================================================================
+# 特征集成双保险三层防护（L1 审计 / L2 同向抑制 / L3 反向熔断）
+# 与 scripts.memory_l4.bcrm2.screen_engine 同步保持一致。
+# ============================================================================
+import copy as _copy_guard
+import pandas as _pd_guard
+
+FEATURE_INTEGRATION_GUARD = {
+    "enable_l1_audit_tag": True,
+    "enable_l2_same_direction_suppression": True,
+    "enable_l3_conflict_circuit_breaker": False,
+    "l2_war_state_threshold": "COOLDOWN",
+    "l2_position_cap_before": 0.50,
+    "l2_position_cap_after": 0.40,
+    "l2_overlap_pct_threshold": 0.40,
+    "l3_consecutive_losses": 3,
+    "l3_pause_duration_hours": 4,
+}
+
+_WAR_STATE_RANK_G = {"ALLOW": 0, "COOLDOWN": 1, "FREEZE": 2}
+
+
+def get_feature_integration_guard():
+    return _copy_guard.deepcopy(FEATURE_INTEGRATION_GUARD)
+
+
+def attach_l1_audit(trade_dict, war_state, overlap_pct):
+    out = dict(trade_dict) if isinstance(trade_dict, dict) else {}
+    out["strategic_war_state"] = war_state
+    out["feature_overlap_pct"] = float(overlap_pct)
+    return out
+
+
+def compute_source_overlap_pct(lstar_sources, strategic_sources):
+    L = set(lstar_sources); S = set(strategic_sources)
+    if not L or not S:
+        return 0.0
+    return len(L & S) / min(len(L), len(S))
+
+
+def _war_state_ge_g(ws, threshold):
+    return _WAR_STATE_RANK_G.get(ws, 0) >= _WAR_STATE_RANK_G.get(threshold, 0)
+
+
+def apply_l2_if_needed(position_pct, war_state, overlap_pct, guard_cfg, trade_id=""):
+    cfg = guard_cfg or FEATURE_INTEGRATION_GUARD
+    if not cfg.get("enable_l2_same_direction_suppression", True):
+        return float(position_pct), ""
+    threshold_ws = cfg.get("l2_war_state_threshold", "COOLDOWN")
+    cap_before = float(cfg.get("l2_position_cap_before", 0.50))
+    cap_after = float(cfg.get("l2_position_cap_after", 0.40))
+    overlap_thr = float(cfg.get("l2_overlap_pct_threshold", 0.40))
+    if not (_war_state_ge_g(war_state, threshold_ws)
+            and float(position_pct) > cap_before
+            and float(overlap_pct) > overlap_thr):
+        return float(position_pct), ""
+    new_pos = min(float(position_pct), cap_after)
+    tid = f"trade={trade_id} " if trade_id else ""
+    pp_str = f"{position_pct:.2f}" if abs(position_pct - round(position_pct, 2)) < 1e-9 else f"{position_pct}"
+    np_str = f"{new_pos:.2f}" if abs(new_pos - round(new_pos, 2)) < 1e-9 else f"{new_pos}"
+    log_line = (
+        f"[L2-SUPPRESS] {tid}war={war_state} overlap={overlap_pct:.3f} "
+        f"pos={pp_str}→{np_str} (cap_before={cap_before:.2f} cap_after={cap_after:.2f})"
+    )
+    return new_pos, log_line
+
+
+def _is_defensive_g(ws):
+    return _WAR_STATE_RANK_G.get(ws, 0) >= _WAR_STATE_RANK_G["COOLDOWN"]
+
+
+def check_l3_and_maybe_pause(recent_trades, guard_cfg, now=None):
+    cfg = guard_cfg or FEATURE_INTEGRATION_GUARD
+    if not cfg.get("enable_l3_conflict_circuit_breaker", False):
+        return False, None, ""
+    need = int(cfg.get("l3_consecutive_losses", 3))
+    pause_h = int(cfg.get("l3_pause_duration_hours", 4))
+    min_pos = 0.30
+    streak = 0
+    for t in recent_trades:
+        ws = t.get("war_state", "ALLOW") if isinstance(t, dict) else "ALLOW"
+        pos = float(t.get("position_pct", 0.0)) if isinstance(t, dict) else 0.0
+        pnl = float(t.get("pnl", 0.0)) if isinstance(t, dict) else 0.0
+        if _is_defensive_g(ws) and pos >= min_pos and pnl < 0.0:
+            streak += 1
+            if streak >= need:
+                break
+        else:
+            streak = 0
+    if streak < need:
+        return False, None, ""
+    if now is None:
+        now_ts = _pd_guard.Timestamp.now(tz="UTC")
+    elif isinstance(now, _pd_guard.Timestamp):
+        now_ts = now.tz_localize("UTC") if now.tzinfo is None else now
+    elif isinstance(now, datetime):
+        now_ts = _pd_guard.Timestamp(now)
+        if now_ts.tzinfo is None:
+            now_ts = now_ts.tz_localize("UTC")
+    else:
+        now_ts = _pd_guard.Timestamp(str(now), tz="UTC")
+    until_ts = now_ts + _pd_guard.Timedelta(hours=pause_h)
+    log_line = (
+        f"[L3-CIRCUIT] defensive_war_streak_stopped streak={streak} "
+        f"pause={pause_h}h until={until_ts.isoformat()}"
+    )
+    return True, until_ts, log_line
+
+
 if __name__ == "__main__":
     result = get_all()
     print(json.dumps(result, ensure_ascii=False, indent=2))

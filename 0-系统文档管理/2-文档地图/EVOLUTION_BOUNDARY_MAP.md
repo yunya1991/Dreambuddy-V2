@@ -1,6 +1,6 @@
 # 进化系统边界地图（EVOLUTION_BOUNDARY_MAP）
 
-> **版本**: v1.0 | **创建**: 2026-08-09 | **依据**: SSoT v3.0 §2.5.2 + COGNITIVE_ARCHITECTURE.md v3.4 + superpowers-integration-design.md
+> **版本**: v1.1 | **创建**: 2026-08-09 | **更新**: 2026-09-07 | **依据**: SSoT v3.0 §2.5.2 + COGNITIVE_ARCHITECTURE.md v3.4 + superpowers-integration-design.md
 > **目的**: 理清两大进化系统与认知系统两分结构，**防止跨层误改**。任何涉及"进化"的修改前必读本文档。
 
 ---
@@ -81,14 +81,26 @@
 
 ---
 
-## 3. 相关但独立的"进化"实体（四个同名，勿混淆）
+## 3. 相关但独立的"进化"实体（五个同名，勿混淆）
 
 | 实体 | 位置 | 性质 | 状态 |
 |:---|:---|:---|:---|
 | `self_evolution_engine.py` | 11-易经推理系统/scripts/memory_l4/ | 交易**参数**进化（A 类） | 🟢 生产（PROP-20260809/810 升级） |
 | `EvolutionEngine`（evaluation_memory.py） | 1-ARCHITECTURE/dreamos/core/memory/ | DreamOS **经验教训**进化（LessonDistiller/GapAnalyzer/NodeOptimizer） | 🟢 已实现 |
+| `23-四层闭环自进化交易架构` | 23-四层闭环自进化交易架构/dreambuddy_evolution/ | 交易**策略基因+ESS**进化（A 类，紧耦合闭环：RippleEngine↔ReflectionEngine↔ESS） | 🟢 生产（2026-09-06 高频进化增强） |
 | `3-EVOLUTION/` TS 引擎 | 3-EVOLUTION/*.ts | 实验进化引擎（9 阶段流水线 + 三桥接） | ⚠️ **实验态，未集成主线**，改动不影响生产 |
-| 「记忆进化」cron | 治理周二 22:00 | 记忆审计/压缩（治理层） | 🟢 运行中，与上面三者无关 |
+| 「记忆进化」cron | 治理周二 22:00 | 记忆审计/压缩（治理层） | 🟢 运行中，与上面四者无关 |
+
+### 3.1 `23-四层闭环自进化交易架构` 子模块边界
+
+| 子模块 | 位置 | 职责 | 红线 |
+|:---|:---|:---|:---|
+| `ripple_engine.py` | engines/ | 涟漪检测（外察式），计算 ripple_ri | 不直接开仓，只输出 RI |
+| `reflection_scanner.py` | engines/ | 反思学习起点（内省式），从交易索引库历史胜率计算 reflection_ri | 不直接开仓，只输出 RI |
+| `trade_index_builder.py` | engines/ | 系统级交易索引库（自动发现 JSONL+SQLite） | 只读交易记录，不修改 |
+| `kline_event_handler.py` | engines/ | 双起点 RI 聚合 + 三层仓位分级 + SL/TP 兜底 | 是唯一开仓决策入口 |
+| `reflection_engine.py` | engines/ | 后验反思（CS 一致性→ESS 奖惩） | 仅在仓位结算后触发 |
+| `coin_scanner.py` | adapters/ | 50 币池扫描 + 美股代币配额 | 不做交易决策 |
 
 ---
 

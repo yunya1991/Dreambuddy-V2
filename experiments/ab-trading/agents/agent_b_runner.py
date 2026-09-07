@@ -59,7 +59,7 @@ STOP_LOSS_PCT   = 0.04        # 合约止损 4%
 TP_PCT          = 0.08        # 合约止盈 8%
 CONFIDENCE_GATE = 0.55
 MAX_LEVERAGE    = 5
-DEFAULT_LEVERAGE = 3
+DEFAULT_LEVERAGE = 5
 # Agent B 用合约，可交易全部标的池（与 A 相同，但决策框架不同）
 UNIVERSE_B = ["BTC", "ETH", "HYPE", "UNI", "SOL", "ZEC", "LIT", "ARB", "XRP", "WLD", "NEAR", "SUI", "LDO", "ADA", "ZRO", "ENA", "ETHFI", "JUP", "JTO", "SYRUP"]
 
@@ -117,9 +117,100 @@ def normalize_action(action: Optional[str]) -> str:
     return action_upper
 
 
+def _extract_closed_pnl_size(item: Dict):
+    """
+    从一条平仓记录中提取 (pnl_pct, position_size_usdt)。
+
+    兼容两种形态：
+      A. closed_info 直出形态（l1_exits / OS 模式下的 l3_exits / a9_exits）：
+         pnl_pct / position_size_usdt 在 item 顶层
+      B. ClassicDriver exit_info 形态（全量 Classic 路径下的 l3_exits / classic_exits）：
+         pnl_pct / position_size_usdt 嵌套在 item["result"]["closed"] 下
+
+    任一形态无法提取则返回 (None, 0)，fail-open 不抛异常。
+    """
+    if not isinstance(item, dict):
+        return None, 0
+
+    def _safe_cast(val, default: float) -> float:
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return default
+
+    # ── 形态 A：closed_info 直出 ──
+    pnl = item.get("pnl_pct")
+    if pnl is not None:
+        pnl_f = _safe_cast(pnl, None)  # type: ignore[arg-type]
+        if pnl_f is not None:
+            sz  = item.get("position_size_usdt", 0)
+            sz_f = _safe_cast(sz if sz is not None else 0, 0.0)
+            return pnl_f, sz_f
+    # ── 形态 B：ClassicDriver exit_info 嵌套 ──
+    result = item.get("result")
+    if isinstance(result, dict):
+        closed = result.get("closed")
+        if isinstance(closed, dict):
+            pnl = closed.get("pnl_pct")
+            if pnl is not None:
+                pnl_f = _safe_cast(pnl, None)  # type: ignore[arg-type]
+                if pnl_f is not None:
+                    sz  = closed.get("position_size_usdt", 0)
+                    sz_f = _safe_cast(sz if sz is not None else 0, 0.0)
+                    return pnl_f, sz_f
+    return None, 0
+
+
+def _aggregate_cycle_pnl_from_decision(decision: Dict) -> Optional[float]:
+    """
+    从决策日志中汇总本周期所有已实现平仓的加权 PnL（Fix-1 核心）。
+
+    聚合策略：按 position_size_usdt 加权平均。
+    - 所有平仓均无 size 信息时，退化为简单算术平均。
+    - 无任何平仓记录时返回 None（等价于本轮未实现盈亏，streak 不更新）。
+    - 任何异常 fail-open：返回 None，不阻塞记忆写入。
+    """
+    if not isinstance(decision, dict):
+        return None
+    try:
+        all_pairs: list = []
+        for key in ("l1_exits", "l3_exits", "a9_exits"):
+            exits = decision.get(key) or []
+            if not isinstance(exits, list):
+                continue
+            for it in exits:
+                p, s = _extract_closed_pnl_size(it)
+                if p is not None:
+                    all_pairs.append((p, max(0.0, float(s) if s is not None else 0.0)))
+
+        if not all_pairs:
+            return None
+
+        total_sz = sum(s for _, s in all_pairs)
+        if total_sz > 0:
+            return sum(p * s for p, s in all_pairs) / total_sz
+        # 全部无 size：退化为简单平均
+        return sum(p for p, _ in all_pairs) / len(all_pairs)
+    except Exception:
+        # 绝对 fail-open：任何异常都不阻塞记忆主流程
+        return None
+
+
 def save_memory(memory: Dict, decision: Dict, pnl_pct: Optional[float] = None,
-                next_suggestions: Optional[Dict] = None):
-    """将本次决策写回记忆，提炼教训，保存下轮建议"""
+                next_suggestions: Optional[Dict] = None,
+                memory_path = None):
+    """将本次决策写回记忆，提炼教训，保存下轮建议
+
+    Args:
+        memory_path: 可覆盖的写入路径（Fix-4：单测用临时目录隔离 I/O，
+            防止污染生产 data/agent_b_memory.json）。None 时使用默认
+            MEMORY_PATH，与旧签名完全向后兼容。
+    """
+    # ── Fix-1：若调用方未显式传 pnl_pct，从 decision 的 L1/L3/A9 平仓记录
+    #          自动推算本周期已实现盈亏，打通连胜/连败/教训/胜率闭环 ──
+    if pnl_pct is None:
+        pnl_pct = _aggregate_cycle_pnl_from_decision(decision)
+
     memory["total_cycles"] = memory.get("total_cycles", 0) + 1
     memory["last_regime"] = decision.get("market_regime")
 
@@ -165,19 +256,35 @@ def save_memory(memory: Dict, decision: Dict, pnl_pct: Optional[float] = None,
         memory["prior_cycle_suggestions"] = next_suggestions
         memory["next_cycle_suggestions"] = next_suggestions
 
-    MEMORY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(MEMORY_PATH, "w") as f:
+    # Fix-4: memory_path 注入点，默认仍使用 MEMORY_PATH（向后兼容）
+    if memory_path is None:
+        memory_path = MEMORY_PATH
+    memory_path = Path(memory_path)
+    memory_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(memory_path, "w") as f:
         json.dump(memory, f, ensure_ascii=False, indent=2)
 
 def apply_lessons(memory: Dict) -> float:
-    """根据教训动态调整置信度门槛"""
+    """根据教训动态调整置信度门槛
+
+    解析教训中的连败次数阈值（如"连败3次"→3），仅当当前连败数 ≥ 阈值时应用提门槛教训；
+    连败已解除或未达阈值时不应用，避免门槛被永久抬高。
+    """
     gate = CONFIDENCE_GATE
-    for lesson in memory.get("lessons", []):
-        if "提升置信度门槛至" in lesson:
-            try:
-                gate = max(gate, float(lesson.split("至")[-1]))
-            except ValueError:
-                pass
+    loss_streaks = memory.get("loss_streaks", 0)
+    if loss_streaks > 0:
+        import re
+        for lesson in memory.get("lessons", []):
+            if "提升置信度门槛至" not in lesson:
+                continue
+            # 提取连败次数阈值，如 "连败3次" → 3；未匹配则默认 1（任何连败都生效）
+            m = re.search(r"连败(\d+)次", lesson)
+            threshold = int(m.group(1)) if m else 1
+            if loss_streaks >= threshold:
+                try:
+                    gate = max(gate, float(lesson.split("至")[-1]))
+                except ValueError:
+                    pass
     return gate
 
 # ─── 市场数据采集 ────────────────────────────────────────────────────────────
@@ -669,12 +776,12 @@ def a3_master_seminar(mkt: Dict, a0: Dict, a2: Dict) -> Dict:
     price    = mkt["price"]
     rsi      = mkt["rsi14"]
     ch24     = mkt["change_24h"]
-    dom      = a0["dominant_force"]
-    trend    = a2["trend"]
-    a2_dir   = a2["direction"]
-    a2_conf  = a2["confidence"]
-    bull_cnt = a0["bull_count"]
-    bear_cnt = a0["bear_count"]
+    dom      = a0.get("dominant_force", "NEUTRAL")
+    trend    = a2.get("trend", "RANGE")
+    a2_dir   = a2.get("direction", "HOLD")
+    a2_conf  = a2.get("confidence", 0.5)
+    bull_cnt = a0.get("bull_count", 0)
+    bear_cnt = a0.get("bear_count", 0)
 
     opinions = []
 
@@ -714,7 +821,7 @@ def a3_master_seminar(mkt: Dict, a0: Dict, a2: Dict) -> Dict:
                      "score": m2_score, "reason": m2_reason})
 
     # 大师3: 风险管理者（Dalio风格）
-    conflict_cnt = a0["conflict_count"]
+    conflict_cnt = a0.get("conflict_count", 0)
     if conflict_cnt >= 2:
         m3_score = 2; m3_vote = "HOLD"
         m3_reason = f"{conflict_cnt}个维度信号冲突，风险不对称，建议观望"
@@ -2130,7 +2237,7 @@ DEFAULT_STRATEGY_PARAMS = {
     "take_profit_pct": 0.08,
     "confidence_gate": 0.55,
     "max_leverage": 5,
-    "default_leverage": 3,
+    "default_leverage": 5,
     "per_trade_pct": 0.05,
     "max_positions": 3,
     "rsi_overbought": 70,
@@ -2145,6 +2252,19 @@ DEFAULT_STRATEGY_PARAMS = {
     "trailing_stop_activation_pct": 0.03,
     "trailing_stop_distance_pct": 0.015,
     "cooldown_sec": 300,
+}
+
+# ── Fix-3: 策略参数安全边界（放宽夹死问题，每维给 TREND/RANGE ×系数 至少 2~3 轮自由空间）
+#    风控下限约束：常规仓 SL≥1.5% / TP≥3.0%，与项目记忆一致
+PARAM_BOUNDS = {
+    "stop_loss_pct":    (0.015, 0.10),   # 止损 1.5%-10%   (低限=常规仓SL下限1.5%)
+    "take_profit_pct":  (0.03,  0.25),   # 止盈 3%-25%     (低限=常规仓TP下限3%)
+    "atr_sl_multiplier": (0.8,   3.0),   # ATR止损乘数 0.8-3.0
+    "atr_tp_multiplier": (1.5,   7.0),   # ATR止盈乘数 1.5-7.0
+    "per_trade_pct":    (0.02,  0.15),   # 单笔仓位 2%-15%
+    "confidence_gate":  (0.40,  0.85),   # 置信度门槛 40%-85%
+    "default_leverage": (1,     5),      # 杠杆 1x-5x
+    "max_positions":    (1,     5),      # 最大持仓数 1-5
 }
 
 
@@ -2199,6 +2319,13 @@ def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Di
     elif loss_streaks >= 1:
         adjustments["confidence_gate"] = min(params["confidence_gate"] + 0.03, 0.75)
 
+    # ── 1b. 连败解除回调：loss_streaks==0 且有连胜时，逐步回调门槛至默认 ──
+    if loss_streaks == 0 and win_streaks >= 1:
+        default_gate = DEFAULT_STRATEGY_PARAMS["confidence_gate"]
+        if params["confidence_gate"] > default_gate:
+            # 每次连胜回调 0.05，不低于默认值
+            adjustments["confidence_gate"] = max(params["confidence_gate"] - 0.05, default_gate)
+
     # ── 2. 连胜放宽：连胜3次以上可适度加仓 ──
     if win_streaks >= 5 and loss_streaks == 0:
         adjustments["per_trade_pct"] = min(params["per_trade_pct"] * 1.2, 0.10)
@@ -2206,30 +2333,28 @@ def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Di
     elif win_streaks >= 3 and loss_streaks == 0:
         adjustments["per_trade_pct"] = min(params["per_trade_pct"] * 1.1, 0.08)
 
-    # ── 3. 教训驱动调整 ──
-    for lesson in memory.get("lessons", []):
-        if "提升置信度门槛至" in lesson:
-            try:
-                target = float(lesson.split("至")[-1])
-                adjustments["confidence_gate"] = max(
-                    adjustments.get("confidence_gate", params["confidence_gate"]),
-                    target,
-                )
-            except ValueError:
-                pass
+    # ── 3. 教训驱动调整（仅当连败数达到教训中记录的阈值时生效）──
+    if loss_streaks > 0:
+        import re
+        for lesson in memory.get("lessons", []):
+            if "提升置信度门槛至" not in lesson:
+                continue
+            # 解析连败次数阈值，如 "连败3次" → 3
+            m = re.search(r"连败(\d+)次", lesson)
+            threshold = int(m.group(1)) if m else 1
+            if loss_streaks >= threshold:
+                try:
+                    target = float(lesson.split("至")[-1])
+                    adjustments["confidence_gate"] = max(
+                        adjustments.get("confidence_gate", params["confidence_gate"]),
+                        target,
+                    )
+                except ValueError:
+                    pass
 
     # ── 4. 波动率适应：根据近期决策的 regime 统计调整止损/止盈 ──
-    # 参数安全边界（防止漂移失控）
-    PARAM_BOUNDS = {
-        "stop_loss_pct":    (0.02, 0.08),   # 止损 2%-8%
-        "take_profit_pct":  (0.04, 0.15),   # 止盈 4%-15%
-        "atr_sl_multiplier": (1.0, 2.5),     # ATR止损乘数 1.0-2.5
-        "atr_tp_multiplier": (2.0, 5.0),     # ATR止盈乘数 2.0-5.0
-        "per_trade_pct":    (0.02, 0.10),    # 单笔仓位 2%-10%
-        "confidence_gate":  (0.40, 0.85),    # 置信度门槛 40%-85%
-        "default_leverage": (1, 5),           # 杠杆 1x-5x
-        "max_positions":    (1, 5),           # 最大持仓数 1-5
-    }
+    # 安全边界 PARAM_BOUNDS 已提升为模块级常量（Fix-3），支持测试 mock 注入
+    # 和统一的风控下限（常规仓 SL≥1.5% / TP≥3%）。
 
     regime_counts = {"TREND_UP": 0, "TREND_DOWN": 0, "RANGE": 0}
     for d in recent_decisions:
@@ -2273,6 +2398,21 @@ def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Di
         if k in PARAM_BOUNDS:
             lo, hi = PARAM_BOUNDS[k]
             adjustments[k] = max(lo, min(v, hi))
+
+    # ── 7. 过滤无变化项：调整后值 == 当前参数原值则剔除，避免假更新（Fix-2）──
+    def _val_changed(a, b) -> bool:
+        # 浮点用 eps 比较，避免 0.15 与 0.1500000001 被误判为变化
+        if isinstance(a, float) or isinstance(b, float):
+            try:
+                return abs(float(a) - float(b)) > 1e-9
+            except (TypeError, ValueError):
+                return True
+        return a != b
+
+    adjustments = {
+        k: v for k, v in adjustments.items()
+        if _val_changed(params.get(k), v)
+    }
 
     return adjustments
 

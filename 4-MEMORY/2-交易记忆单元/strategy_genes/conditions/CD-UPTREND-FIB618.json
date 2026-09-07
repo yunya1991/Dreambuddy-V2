@@ -1,0 +1,38 @@
+{
+  "gene_id": "CD-UPTREND-FIB618",
+  "category": "trend",
+  "condition_type": "indicator",
+  "expression": "price > fib_0618 AND ma_slope_positive",
+  "parameters": {
+    "window": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 200
+      }
+    },
+    "fib_level": {
+      "value": 0.618,
+      "range": {
+        "low": 0.236,
+        "high": 0.886
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "21-特征工程中心/feature_hub/resistance_features.py",
+    "lines": {
+      "low": 131,
+      "high": 167
+    }
+  },
+  "tags": [
+    "trend",
+    "indicator",
+    "UPTREND-FIB618+"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #3 MVP seed (auto-gen reproducible)."
+}

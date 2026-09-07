@@ -45,7 +45,7 @@ def main():
         daily_loss_limit_usdt=float(os.environ.get("DAILY_LOSS_LIMIT", -50.0)),
         max_consecutive_losses=int(os.environ.get("MAX_CONSECUTIVE_LOSSES", 5)),
         default_position_pct=float(os.environ.get("DEFAULT_POSITION_PCT", 0.20)),
-        min_position_usdt=float(os.environ.get("MIN_POSITION_USDT", 20.0)),
+        min_position_usdt=float(os.environ.get("MIN_POSITION_USDT", 250.0)),
     )
 
     # ── 1. 正向同步：OKX → 本地 ──────────────────────────────────────

@@ -153,6 +153,7 @@ def monitor_health() -> None:
         ("chain", "ccxt"): {"symbol": "BTC/USDT", "timeframe": "1h", "limit": 2},
         ("chain", "etherscan"): {"address": "0x0000000000000000000000000000000000000000"},
         ("chain", "defillama"): {"route": "chains"},
+        ("chain", "panewslab"): {"route": "overview"},
         ("news", "feedparser"): {"url": "https://hnrss.org/frontpage"},
         ("news", "rsshub"): {"route": "/"},
         ("news", "tavily"): {"query": "test"},

@@ -2,9 +2,47 @@
 
 > **定位**：记录每次变更的原因、内容、验证方式
 > **格式**：`[版本] - 日期 → 变更类型（新增/修改/修复/删除）`
-> **版本**：v4.2 | **更新**：2026-08-06
+> **版本**：v4.3.1 | **更新**：2026-09-07
 
 ---
+
+## [v4.3.1] - 2026-09-07
+
+### 战略层影子日志修复（dao 一致性 + 字段补全）
+
+- **修复**: `polling_trader.py` `_run_once_five_domain_daily_update()` CACHE 分支 dao_score 日志与 `five_domain_state.json` 缓存不一致
+  - **根因**: CACHE 分支 `_shadow_state = _five_domain_state_shadow or _five_domain_state_cache`，当 `_apply_fd_shadow_intercept` 被跳过（`_fd_cls`/`_fd_cfg` 为 None）时，`_five_domain_state_shadow` 停留在 init 阶段 `score_and_decide()` 无参调用产生的 stale 状态（dao=50 默认值），而缓存文件已有真实值
+  - **修复**: 用 `_real_state` 局部变量捕获 `from_json` 结果，显式 `self._five_domain_state_shadow = _real_state`（不依赖 intercept 是否执行）；日志取值优先级 `_five_domain_state_shadow → _real_state → _five_domain_state_cache`
+  - **影响范围**: `polling_trader.py` `_run_once_five_domain_daily_update` CACHE 分支（L1592-L1624）
+  - **验证方式**: 模拟 stale shadow 场景——修复前日志 dao=50（缓存=49，不一致），修复后 dao=49（一致）；`test_shadow_mode_gate.py` 5/5、`test_t5_shadow_schema_compat.py`+`test_t6_shadow_byte_equivalence.py` 3/3 通过
+- **修改**: `_emit_shadow_logs()` 影子日志字段从 5 类补全到 9 类（对齐 `FiveDomainState` 全部输出字段）
+  - **新增 4 类日志**: `style_mask`（每类禁用策略列表）、`dimension_veto`（每类生效维度否决旗标）、`front_layer_band`（每类前置层带宽 min/max）、`forced_close`（每类 strong/protect 强平标志）
+  - **原有 5 类**: `war_state` / `total_score` / `dao_score` / `cap_mode` / `mult_mode` 保持不变
+  - **防御增强**: 所有 `getattr(state_obj, field, {})` 加 `or {}` 防止 None；移除临时 DEBUG 代码
+  - **影响范围**: `polling_trader.py` `_emit_shadow_logs` 闭包函数（L1513-L1610）
+  - **验证方式**: `py_compile` 通过；用缓存文件 `FiveDomainState.from_json()` 模拟输出，9 字段齐全且 dao 与文件一致
+- **回滚策略**: `git checkout` 恢复 `polling_trader.py` 对应行段
+
+## [v4.3] - 2026-08-29
+
+### Odaily 政策情绪→天/道 Boost 注入（Spec: odaily-policy-tian-integration）
+
+- **新增**: `five_domain_feature_computer.py` Odaily 乘法 boost 两方法 + Shadow 审计
+  - `_od_dao_boost(coin_data)` / `_od_tian_boost(coin_data)` — Spec §5.2.3 三 delta 求和 clamp [-0.1,+0.1]
+  - `enable_odaily_engine_boost` 类属性 = False（红线默认关，环境变量 `ODAILY_ENGINE_BOOST=1` 打开）
+  - L244/L349 红线守卫：`if self.enable_odaily_engine_boost` 才乘法注入 od boost
+  - `_od_engine_shadow_compute()` — JSONL 审计 8 字段 schema，5 原因码，PermissionError/ImportError 全吞
+  - `_shadow_infer_policy_ts_20()` — 4引擎-like 近似 policy_ts_20（sent±0.05高斯噪声，长度20∈[0,1]）
+- **新增**: `five_domain_sqlite_reader.py` §ODAILY 段落 — 9 字段 72h 指数衰减加权派生
+  - `odaily_policy_sentiment_3d` / `important_ratio` / `crypto_reg_ratio` / `reg_policy_ratio` / `security_hits` / `geopolitics_hits` / `batch_size` / `avg_decay_hl_hrs` / `narrative_hot`
+  - `policy_sentiment_score` 极值保护 [0.2,0.8] → 覆盖写；否则回退 blockbeats→pn→None
+  - 修复 sqlite3.Row 无 `.get()` → `dict(rec)` 转换
+- **新增**: `odaily_shadow_hitrate_eval.py` — 4 门槛评估脚本（hit_rate≥60%/thaw_acc≥70%/sharpe≥1.05/IMPORT_FAIL=0）
+- **新增**: `scripts/runtime/odaily_engine_boost_records.jsonl` — 空占位（0B）
+- **新增**: 测试 `test_odaily_booster_stage1.py`（8 TC）+ `test_odaily_engine_shadow_stage2.py`（9 TC）= 17 TC GREEN
+- **验证**: 红线 enable=False → dao=53/tian=56（pre-Odaily 基线）；enable=True → dao=55/tian=57（+2/+1 boost）
+- **验证**: R3 sample dao=0.032∈[0.028±0.005] tian=0.030∈[0.034±0.005]；None 字节 SHA256 一致
+- **状态**: 7 日历天 shadow 观察期启动中（T41）；4 门槛全 PASS 后 PR+CR 改默认 True（T42）
 
 ## [v4.2] - 2026-08-06
 

@@ -118,6 +118,46 @@ class V15PaperClient:
     def get_ticker(self, inst_id: str = None) -> Dict:
         return self._data.get_ticker(inst_id)
 
+    def get_orderbook(self, inst_id: str = None, sz: int = 10) -> Dict:
+        """Top-N档订单簿 (Protocol parity with OKXSimulatedClient).
+
+        Paper has no real L2 feed. Synthesise a 1-level (per sz)
+        synthetic book from the HL mid price: bid at mid × (1 - tick_spread)
+        and ask at mid × (1 + tick_spread), each with sz = 1.0 contract
+        unit. The resulting shape matches the real adapter so
+        SlippageEstimator can be exercised in backtests / paper runs.
+        Estimator will correctly emit a thin_book_warning when the order
+        exceeds the synthesised depth, which is the expected behaviour for
+        a paper-only engine.
+        """
+        inst_id = inst_id or self.cfg["default_inst_id"]
+        coin = _coin(inst_id)
+        mid = self._mid(coin)
+        ts_ms = str(int(time.time() * 1000))
+        if not mid:
+            return {
+                "ok": False, "error": f"paper: no mid for {coin}",
+                "inst_id": inst_id, "bids": [], "asks": [], "ts": ts_ms,
+            }
+
+        # Fixed 1 bps half-spread — neutral, neutral choice for a book
+        # that is only used to feed the estimator's "how much depth" question.
+        half_spread_bps = 1.0
+        bid_px = mid * (1.0 - half_spread_bps / 10000.0)
+        ask_px = mid * (1.0 + half_spread_bps / 10000.0)
+        # Each level: [px_str, sz_str, liq_orders, ord_count]
+        level_count = max(1, int(sz or 1))  # replicate best level sz times
+        bids = [[f"{bid_px:.8f}", "1.0", "1", "1"] for _ in range(level_count)]
+        asks = [[f"{ask_px:.8f}", "1.0", "1", "1"] for _ in range(level_count)]
+        return {
+            "ok": True,
+            "inst_id": inst_id,
+            "bids": bids,
+            "asks": asks,
+            "ts": ts_ms,
+            "__fallback__": "paper_synthetic_1bps",
+        }
+
     def get_instrument(self, inst_id: str = None) -> Dict:
         lot, ct = self._lot_and_ct(inst_id)
         return {"ok": True, "inst_id": inst_id, "lot_sz": lot, "ct_val": ct}
@@ -334,7 +374,19 @@ class V15PaperClient:
     def place_order(self, inst_id: str, side: str, ord_type: str = "market",
                     sz: float = None, px: float = None,
                     td_mode: str = "isolated", pos_side: str = "net",
-                    tag: str = "v15paper", reason: str = "") -> Dict:
+                    tag: str = "v15paper", reason: str = "",
+                    leverage: float = None,
+                    max_slippage_bps: float = None) -> Dict:
+        """Place order — OKX signature parity.
+
+        New optional kwargs (added for TEE Protocol parity with real client):
+          leverage:          accepted for Protocol parity; currently unused
+                             inside PaperClient (all fills use mid / limit cross).
+          max_slippage_bps:  accepted for Protocol parity; Paper fills do not
+                             model slippage tiering so this parameter has no
+                             behavioural effect here (Paper is always a
+                             best-effort engine for backtests).
+        """
         if not inst_id or sz is None or float(sz) <= 0:
             return {"ok": False, "error": f"参数非法: inst_id={inst_id} sz={sz}"}
         coin = _coin(inst_id)

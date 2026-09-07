@@ -422,7 +422,7 @@ def prepare_daily_sma_for_4h(
     # 创建日期->MA映射
     daily_ma_dict = {p: {} for p in periods}
     for p in periods:
-        for k, ma in zip(klines_1d, daily_ma_series[p], strict=False):
+        for k, ma in zip(klines_1d, daily_ma_series[p]):
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma_dict[p][date_str] = ma
@@ -454,7 +454,7 @@ def prepare_ma200_for_4h(
 
         # 创建日期->MA200映射
         daily_ma200_dict = {}
-        for k, ma in zip(klines_1d, daily_ma200_series, strict=False):
+        for k, ma in zip(klines_1d, daily_ma200_series):
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma200_dict[date_str] = ma
@@ -471,7 +471,7 @@ def prepare_ma200_for_4h(
 
         # 创建周开始日期->MA200映射
         weekly_ma200_dict = {}
-        for k, ma in zip(klines_1w, weekly_ma200_series, strict=False):
+        for k, ma in zip(klines_1w, weekly_ma200_series):
             if ma is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ma200_dict[week_str] = ma
@@ -517,7 +517,7 @@ def prepare_ema200_for_4h(
         daily_ema200_series = _calc_ema_series(daily_closes, 200)
 
         daily_ema200_dict = {}
-        for k, ema in zip(klines_1d, daily_ema200_series, strict=False):
+        for k, ema in zip(klines_1d, daily_ema200_series):
             if ema is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ema200_dict[date_str] = ema
@@ -532,7 +532,7 @@ def prepare_ema200_for_4h(
         weekly_ema200_series = _calc_ema_series(weekly_closes, 200)
 
         weekly_ema200_dict = {}
-        for k, ema in zip(klines_1w, weekly_ema200_series, strict=False):
+        for k, ema in zip(klines_1w, weekly_ema200_series):
             if ema is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ema200_dict[week_str] = ema
@@ -557,7 +557,7 @@ def prepare_ma128_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> List[O
         daily_ma128_series = calc_ma_series(daily_closes, 128)
 
         daily_ma128_dict = {}
-        for k, ma in zip(klines_1d, daily_ma128_series, strict=False):
+        for k, ma in zip(klines_1d, daily_ma128_series):
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma128_dict[date_str] = ma
@@ -1072,7 +1072,7 @@ def prepare_weekly_ma_for_4h(
         weekly_ma_series = calc_ma_series(weekly_closes, period)
 
         weekly_ma_dict = {}
-        for k, ma in zip(klines_1w, weekly_ma_series, strict=False):
+        for k, ma in zip(klines_1w, weekly_ma_series):
             if ma is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ma_dict[week_str] = ma
@@ -1096,7 +1096,7 @@ def prepare_daily_ma_for_4h(
         daily_ma_series = calc_ma_series(daily_closes, period)
 
         daily_ma_dict = {}
-        for k, ma in zip(klines_1d, daily_ma_series, strict=False):
+        for k, ma in zip(klines_1d, daily_ma_series):
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma_dict[date_str] = ma

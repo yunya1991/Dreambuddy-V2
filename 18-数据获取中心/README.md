@@ -4,6 +4,22 @@ DataBuddy 的**唯一数据入口与信息收口层**——万能爬虫 + 信息
 
 > 设计文档：[docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) ｜ 实现计划：[docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
 
+## 变更日志
+
+### 2026-08-29: Odaily 星球日报快讯采集器
+
+- **新增**: `collectors/news/odaily_newsflash.py` — OdailyNewsflashCollector(BaseCollector)
+  - source=`odaily_newsflash`, category=`news`, 14 关键词 8 类 event_type, 5 类 attention_type
+  - 三端点：`/newsflash/page` + `/newsflash/checkHasNew` + `/hotWord/list`（host=web-api.odaily.news）
+  - 7 扁平 metrics: `od_source_id`/`od_policy_sentiment_0_1`/`od_event_type`/`od_attention_type`/`od_is_important`/`od_decay_hl_hrs`/`od_title_hash`
+  - FAIL-OPEN: Session Timeout/Exception→[]，SentimentEngine ImportError→sentiment=0.5
+  - 增量去重：`checkHasNew` lastId 三态（首屏=0/无新=空/有新=新批次）
+- **修改**: `core/dispatcher.py` — register("news","odaily_newsflash",OdailyNewsflashCollector)
+- **修改**: `config/sources.yaml` — `odaily_newsflash: enabled: true`
+- **修改**: `scheduler.py` — CollectionTask(interval_sec=14400=4hr, route=latest)
+- **测试**: `tests/news/test_odaily_collector.py` — 5 TC GREEN（真 HTTP 20 条 + 增量三态 + FAIL-OPEN）
+- **质量**: B7 四门禁全 PASS（DUPLICATE=0/SCHEMA=0/IMPORT_FAIL=0/MISSING=0，20条∈[15,25]）
+
 ## 当前状态：M1（已完成）
 
 - ✅ `DataRecord` 统一契约（`core/contract.py`）+ 校验

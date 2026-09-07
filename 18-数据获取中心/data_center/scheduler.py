@@ -223,4 +223,102 @@ class CollectionScheduler:
             params={"query": "Fed monetary policy", "max_results": 5},
             interval_sec=1800,
         ))
+        # ── news/theblockbeats_dataview（30min，Playwright 渲染 ~27s + 结构化解析）
+        #    产出 26 条 DataRecord：道(M2/DXY/美债)、天(脉动指数+6个流动性信号)、
+        #    将(Bitfinex多单+4个衍生品信号)、地(USDC/USDT溢价+Top10链上净流入)
+        #    频率 30min 足以覆盖情绪/净流入/溢价的更新节奏；
+        #    若需要更快可下调到 900s(15min)，但要考虑律动服务器响应慢。
+        tasks.append(CollectionTask(
+            name="theblockbeats_dataview",
+            category="news", source="theblockbeats_dataview",
+            params={},
+            interval_sec=1800,
+        ))
+        # ── chain/panewslab route=all（4h，~17 次 HTTP，8 大板块 200+ metrics）
+        #    panewslab 是易经战略层 D1~D10/T1/T4 proxy 的核心补充源：
+        #    市场总览 / 周期判断 / ETF+机构 / 稳定币+RWA / 衍生品 / 交易所 /
+        #    链上资金(treasury BTC+巨鲸+DeFi广度) / 美股+宏观 SP500/NASDAQ/VIX/10Y/DXY/DFF
+        #    4h 更新频率足够覆盖日级战略决策（持仓/仓位），并避免 17 HTTP/次被限流。
+        tasks.append(CollectionTask(
+            name="panewslab_all",
+            category="chain", source="panewslab",
+            params={"route": "all"},
+            interval_sec=14400,  # 4 小时
+        ))
+        # ── chain/stablecoin_transparency（Tether+USDC 官网真实供应量 + DeFiLlama 归档）
+        #    用户要求"直接在官网抓取"，我们用官网__NEXT_DATA__+DeFiLlama官方透明度日档两级fallback。
+        #    latest_snapshot 1h 更新 / top_n 4h（地维度稳定币双寡头份额观测）/ USDT&USDC 历史（1年初始化+周级刷新）
+        tasks.append(CollectionTask(
+            name="stablecoin_latest",
+            category="chain", source="stablecoin_transparency",
+            params={"route": "latest_snapshot"},
+            interval_sec=3600,   # 1 小时
+        ))
+        tasks.append(CollectionTask(
+            name="stablecoins_top10",
+            category="chain", source="stablecoin_transparency",
+            params={"route": "top_n", "n": 10},
+            interval_sec=14400,  # 4 小时
+        ))
+        tasks.append(CollectionTask(
+            name="stablecoin_hist_usdt_1y",
+            category="chain", source="stablecoin_transparency",
+            params={"route": "historical", "symbol": "USDT", "days": 365},
+            interval_sec=604800,  # 7 天（周级刷新，初始化首跑会填充365天timeseries）
+        ))
+        tasks.append(CollectionTask(
+            name="stablecoin_hist_usdc_1y",
+            category="chain", source="stablecoin_transparency",
+            params={"route": "historical", "symbol": "USDC", "days": 365},
+            interval_sec=604800,
+        ))
+        # ── P0 扩窗 · 一次性初始化 backfill（≥60 天真五维回测窗）
+        #    Panewslab/BlockBeats 仅抓当日快照，但 timeseries 携带 30/90 天趋势点；
+        #    我们用更大 interval=24h(一次性) 的 backfill 任务先运行一次把 timeseries 宽度落到 Silver，
+        #    stablecoin 历史同上拉满 365d，FRED/Macro 已按 series 自带全量历史。
+        tasks.append(CollectionTask(
+            name="panewslab_all_init_backfill",
+            category="chain", source="panewslab",
+            params={"route": "all"},
+            interval_sec=86400,   # 24h 仅每日补一次，主要靠运行时落库的首条backfill拉到30/90天series
+        ))
+        tasks.append(CollectionTask(
+            name="theblockbeats_dataview_init_backfill",
+            category="news", source="theblockbeats_dataview",
+            params={},
+            interval_sec=86400,
+        ))
+        # ── news/odaily_newsflash 星球日报快讯（4h，与 panewslab route=all 对齐）
+        #    Spec P0-2：政策维度主数据源，web-api 公开无反爬无鉴权，
+        #    首屏20条+增量checkHasNew去重。4h 更新足够覆盖日级战略决策。
+        tasks.append(CollectionTask(
+            name="odaily_newsflash_latest",
+            category="news", source="odaily_newsflash",
+            params={"route": "latest"},
+            interval_sec=14400,   # 4 小时
+        ))
+        # ── Phase A4：CoinFundamentalRanker 数据源（6h）──
+        #    defillama protocols：全量 per-protocol TVL（Revenue Quality + TVL Growth 信号）
+        tasks.append(CollectionTask(
+            name="defillama_protocols",
+            category="chain", source="defillama",
+            params={"route": "protocols"},
+            interval_sec=21600,  # 6h
+        ))
+        #    CoinGecko coin_info：核心币种 market_cap / supply（MC/Fees Mean Reversion 信号）
+        for coin_id in ("bitcoin", "ethereum", "uniswap", "chainlink"):
+            tasks.append(CollectionTask(
+                name=f"coingecko_info_{coin_id}",
+                category="coin", source="coingecko",
+                params={"route": "coin_info", "coin_id": coin_id},
+                interval_sec=21600,  # 6h
+            ))
+        #    yfinance stock_info：核心美股 PE / margins / ROE（Earnings Stability + PE Mean Reversion 信号）
+        for symbol in ("NVDA", "AAPL", "MSFT"):
+            tasks.append(CollectionTask(
+                name=f"yfinance_stock_info_{symbol.lower()}",
+                category="finance", source="yfinance",
+                params={"route": "stock_info", "symbol": symbol},
+                interval_sec=21600,  # 6h
+            ))
         return tasks

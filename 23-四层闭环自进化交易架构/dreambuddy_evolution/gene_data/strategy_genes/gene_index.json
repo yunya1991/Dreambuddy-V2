@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-03T16:35:17Z",
+  "index": {
+    "correlation": [
+      "CD-BTC-ETH-CORR-030"
+    ],
+    "liquidity": [
+      "CD-FUNDING-NEUTRAL-OI",
+      "CD-SPREAD-3BP-DEPTH-5M"
+    ],
+    "macroeconomics": [
+      "CD-DXY-DROP-RISKON"
+    ],
+    "momentum": [
+      "CD-ADI-UP-5BAR",
+      "CD-BUYVOL-3D-62PCT",
+      "CD-ROC20-PLUS5-VOL"
+    ],
+    "range": [
+      "CD-ADX-18-LOWVOL",
+      "CD-KELTNER-MID-STUCK",
+      "CD-PRICE-IN-BOLL1STD-5B"
+    ],
+    "reversal": [
+      "CD-FIB0786-REJECT",
+      "CD-MACD-HIST-3BAR-X",
+      "CD-MORNINGSTAR-VOL2X",
+      "CD-RSI30-BOLL-TOUCH"
+    ],
+    "scale_bucket": [
+      "CD-MESO-NOTIONAL-OK"
+    ],
+    "sentiment": [
+      "CD-FEAR-GREED-25",
+      "CD-SENT-24H-GT062"
+    ],
+    "trend": [
+      "CD-DONCHIAN-20-BREAK",
+      "CD-MA200GT50",
+      "CD-PRICEGTEMA200",
+      "CD-SUPERTREND-BUY",
+      "CD-UPTREND-FIB618"
+    ],
+    "volatility": [
+      "CD-IV365-GT70-WIDE",
+      "CD-SHORT-GAMMA-NEG",
+      "CD-VGX-ATR-HIGH"
+    ]
+  },
+  "md5_condition_files": "43684fe42f9548e8f8191733d63c92b4"
+}

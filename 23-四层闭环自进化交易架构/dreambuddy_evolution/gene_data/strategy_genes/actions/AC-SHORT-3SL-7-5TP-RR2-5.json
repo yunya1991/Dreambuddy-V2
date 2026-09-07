@@ -1,0 +1,47 @@
+{
+  "gene_id": "AC-SHORT-3SL-7-5TP-RR2-5",
+  "category": "entry_short",
+  "action_kind": "open",
+  "direction": "short",
+  "sl_template": 0.03,
+  "tp_template": 0.075,
+  "size_pct": 0.5,
+  "rr_ratio_floor": 2.5,
+  "parameters": {
+    "sl_atr_mult": {
+      "value": 1.5,
+      "range": {
+        "low": 1.0,
+        "high": 4.0
+      }
+    },
+    "tp_rr_ratio": {
+      "value": 2.5,
+      "range": {
+        "low": 1.0,
+        "high": 5.0
+      }
+    },
+    "max_slippage_bps": {
+      "value": 5,
+      "range": {
+        "low": 1,
+        "high": 30
+      }
+    }
+  },
+  "code_ref": {
+    "file": "13-通用风控模块/rules/gate_rules.py",
+    "lines": {
+      "low": 197,
+      "high": 206
+    }
+  },
+  "tags": [
+    "entry_short",
+    "short",
+    "open"
+  ],
+  "version": "1.0",
+  "notes": "Baseline action #6 MVP seed."
+}

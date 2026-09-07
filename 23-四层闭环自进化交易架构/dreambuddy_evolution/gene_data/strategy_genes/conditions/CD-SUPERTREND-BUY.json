@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-SUPERTREND-BUY",
+  "category": "trend",
+  "condition_type": "indicator",
+  "expression": "supertrend_buy_signal",
+  "parameters": {
+    "strength_threshold": {
+      "value": 0.7,
+      "range": {
+        "low": 0.3,
+        "high": 0.98
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "13-通用风控模块/rules/gate_rules.py",
+    "lines": {
+      "low": 199,
+      "high": 233
+    }
+  },
+  "tags": [
+    "trend",
+    "indicator",
+    "SUPERTREND-BUY"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #5 MVP seed (auto-gen reproducible)."
+}

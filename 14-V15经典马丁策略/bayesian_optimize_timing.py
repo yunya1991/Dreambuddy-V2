@@ -232,7 +232,7 @@ def bayesian_optimize(
             "stage": "init",
             "elapsed_sec": round(dt, 1),
             "objective": round(val, 4),
-            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x, strict=False)},
+            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x)},
         }
         trace.append(row)
         print(f"  [init {i+1}/{n_init}] obj={val:.4f} t={dt:.1f}s")
@@ -285,7 +285,7 @@ def bayesian_optimize(
             "stage": "BO",
             "elapsed_sec": round(dt, 1),
             "objective": round(val_next, 4),
-            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x_next, strict=False)},
+            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x_next)},
         }
         trace.append(row)
         best_so_far = float(np.max(y_arr))

@@ -21,9 +21,12 @@ if [ -f "$ENV_FILE" ]; then
     export $(grep -v '^#' "$ENV_FILE" | xargs)
 fi
 
+# 用 anaconda Python，避免系统 Python 3.9 (LibreSSL) 与 urllib3 v2 不兼容
+PYTHON="/opt/anaconda3/bin/python3"
+
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Agent B (Dreambuddy OS) 开始执行" >> "$LOG_FILE"
 
-python3 agents/agent_b_runner.py >> "$LOG_FILE" 2>&1
+"$PYTHON" agents/agent_b_runner.py >> "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
 

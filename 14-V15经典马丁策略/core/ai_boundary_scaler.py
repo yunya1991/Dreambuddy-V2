@@ -22,7 +22,7 @@ import json
 import os
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 
 def compute_s_bt(
@@ -128,7 +128,7 @@ class BoundaryState:
 
 
 class BoundaryStateStore:
-    def __init__(self, state_file: str | os.PathLike[str]):
+    def __init__(self, state_file: Union[str, os.PathLike]):
         self.state_file = Path(state_file)
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
 
