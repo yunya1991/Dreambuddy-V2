@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.1 | **更新日期**: 2026-08-02
+> **版本**: v2.2 | **更新日期**: 2026-09-10
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 为准。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -135,6 +135,15 @@
 | 接口规格 | [17-v4-wave-strategy/docs/API_SPEC.md](../17-v4-wave-strategy/docs/API_SPEC.md) | v1.0 |
 | 变更日志 | [17-v4-wave-strategy/docs/CHANGELOG.md](../17-v4-wave-strategy/docs/CHANGELOG.md) | v1.0 |
 
+### 23-四层闭环自进化交易架构
+
+| 文档 | 路径 | 版本 |
+|------|------|------|
+| 技术设计 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) | v1.1 |
+| 接口规格 | [23-四层闭环自进化交易架构/docs/API_SPEC.md](../23-四层闭环自进化交易架构/docs/API_SPEC.md) | v1.0 |
+| 变更日志 | [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) | v1.1 |
+| SPEC | [2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md](../2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md) | v1.0（已完成） |
+
 ---
 
 ## L3 — 辅助系统与实验性模块
@@ -152,6 +161,7 @@
 | 1-ARCHITECTURE/dreamos | [1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md](../1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | ⚠️ 部分完整 | DreamOS CLI |
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |
+| **2-KNOWLEDGE/9-RAG-INFRA** | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) | ✅ v2.0 | RAG三层融合+桥接模块+热路径集成 |
 
 ---
 
@@ -167,6 +177,9 @@
 | 交易策略 | [12-三屏趋势系统/docs/](../12-三屏趋势系统/docs/) · [14-V15经典马丁策略/docs/](../14-V15经典马丁策略/docs/) · [17-v4-wave-strategy/](../17-v4-wave-strategy/) |
 | 波浪策略 | [17-v4-wave-strategy/ewave_strategy_adapter.py](../17-v4-wave-strategy/ewave_strategy_adapter.py) · [17-v4-wave-strategy/backtest_results/](../17-v4-wave-strategy/backtest_results/) |
 | 人机协作 | [8-FEISHU/README.md](../8-FEISHU/README.md) · [6-TRADING/scripts/feishu_notify.py](../6-TRADING/scripts/feishu_notify.py) |
+| RAG检索 | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) v2.0 · [.trae/documents/rag-hotpath-integration.md](../.trae/documents/rag-hotpath-integration.md) |
+| 交易知识 | [2-KNOWLEDGE/1-TRADING/经典模式/](../2-KNOWLEDGE/1-TRADING/经典模式/) · [2-KNOWLEDGE/1-TRADING/硬约束总表.md](../2-KNOWLEDGE/1-TRADING/硬约束总表.md) |
+| 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.1 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.1 |
 | 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.0 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 |
 
 ---
@@ -175,11 +188,11 @@
 
 | 层级 | 模块数 | 文档齐全 | 部分完整 | 缺失 | 覆盖率 |
 |------|--------|----------|----------|------|--------|
-| L2 子系统 | 7 | 7 | 0 | 0 | 100% |
-| L3 辅助模块 | 9 | 2 | 6 | 1 | 44% |
-| **合计** | **16** | **9** | **6** | **1** | **69%** |
+| L2 子系统 | 8 | 8 | 0 | 0 | 100% |
+| L3 辅助模块 | 10 | 3 | 6 | 1 | 50% |
+| **合计** | **18** | **11** | **6** | **1** | **72% |
 
-> 统计由 `4-工具与自动化/doc_coverage.py` 生成；L3 较上期（39%→44%）提升，15/7 号补建技术设计文档。完整审计见 [3-文档治理/audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md)。
+> 统计由 `4-工具与自动化/doc_coverage.py` 生成；2026-09-10 更新：新增 23-四层闭环 L2 子系统 + 2-KNOWLEDGE/9-RAG-INFRA L3 模块。完整审计见 [3-文档治理/audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md)。
 
 ---
 

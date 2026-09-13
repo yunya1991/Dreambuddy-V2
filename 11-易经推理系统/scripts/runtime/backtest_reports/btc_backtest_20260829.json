@@ -1,0 +1,27 @@
+{
+  "symbol": "BTC",
+  "bars": 1440,
+  "backtest_bars": 1379,
+  "empyrical": {
+    "sharpe_ratio": 0.7059342855787148,
+    "sortino_ratio": 1.4684824600683726,
+    "max_drawdown": -0.05569599440433371,
+    "calmar_ratio": 0.4809044591356326,
+    "annual_return": 0.026784452065037323,
+    "annual_volatility": 0.03848037516674376,
+    "tail_ratio": 1.1113128693506513,
+    "omega_ratio": 1.4369527236974722
+  },
+  "custom": {
+    "win_rate": 0.4842105263157895,
+    "profit_factor": 1.5306670317646984,
+    "signal_coverage": 0.20667150108774474,
+    "long_ratio": 0.20667150108774474,
+    "short_ratio": 0.0,
+    "total_trades": 140
+  },
+  "benchmark": {
+    "buy_hold_return": 0.15562570100837392,
+    "random_signal_mean_sharpe": 0.0
+  }
+}

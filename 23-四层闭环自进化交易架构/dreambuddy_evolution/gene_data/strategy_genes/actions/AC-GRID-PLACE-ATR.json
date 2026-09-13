@@ -1,0 +1,62 @@
+{
+  "gene_id": "AC-GRID-PLACE-ATR",
+  "category": "entry_long",
+  "action_kind": "open",
+  "direction": "both",
+  "sl_template": 0.08,
+  "tp_template": 0.12,
+  "size_pct": 0.05,
+  "rr_ratio_floor": 1.5,
+  "parameters": {
+    "grid_atr_multiplier": {
+      "value": 1.0,
+      "range": {
+        "low": 0.5,
+        "high": 2.0
+      }
+    },
+    "grid_max_count": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 50
+      }
+    },
+    "grid_single_budget_ratio": {
+      "value": 0.05,
+      "range": {
+        "low": 0.02,
+        "high": 0.10
+      }
+    },
+    "grid_stop_loss_pct": {
+      "value": 0.08,
+      "range": {
+        "low": 0.04,
+        "high": 0.15
+      }
+    },
+    "regime_filter": {
+      "value": 1,
+      "range": {
+        "low": 0,
+        "high": 1
+      }
+    }
+  },
+  "code_ref": {
+    "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/engines/grid_trading/grid_trading_engine.py",
+    "lines": {
+      "low": 41,
+      "high": 74
+    }
+  },
+  "tags": [
+    "entry_long",
+    "grid",
+    "atr-spacing",
+    "range-market"
+  ],
+  "version": "1.0",
+  "notes": "网格 ATR 自适应间距布置。HC-TF-05: 硬止损8%，趋势市暂停。Phase E 新增。"
+}

@@ -65,6 +65,9 @@ class GenericSpider:
             return item.css("::text").get()
         if sel == "href":
             return item.attrib.get("href")
+        # 跳过空选择器（配置中可选字段留空时）
+        if not sel or not sel.strip():
+            return None
         # 标准 Scrapy CSS 选择器（含 ::text / ::attr 后缀）
         return item.css(sel).get()
 

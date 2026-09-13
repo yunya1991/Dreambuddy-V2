@@ -37,7 +37,12 @@ from scripts.memory_l4.paths import memory_l4_cases_dir, workbuddy_dir
 
 @dataclass
 class CBRCase:
-    """CBR 案例表示（从 TradeCase v0.3 转换）。"""
+    """CBR 案例表示（从 TradeCase v0.3 转换）。
+
+    扩展字段：
+        pattern: 价格形态（head_shoulders_top, neckline_break 等）
+        case_type: 案例类型（trade=交易案例 / pattern=形态案例）
+    """
     case_id: str
     inst_id: Optional[str] = None
     regime: Optional[str] = None           # 市态，如 "recovery|sprout"
@@ -59,6 +64,9 @@ class CBRCase:
     tags: List[str] = field(default_factory=list)
     system_source: Optional[str] = None
     timestamp: Optional[str] = None
+    # P2 扩展：形态案例字段
+    pattern: Optional[str] = None           # 价格形态（head_shoulders_top 等）
+    case_type: str = "trade"               # trade / pattern
     # 原始 case 字典（保留完整信息）
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
 
@@ -74,12 +82,18 @@ class CBRCase:
             "quadrant": self.quadrant,
             "evidence_chain": self.evidence_chain,
             "pnl_pct": self.pnl_pct or 0.0,
+            "pattern": self.pattern,
+            "case_type": self.case_type,
         }
 
 
 @dataclass
 class CBRQuery:
-    """CBR 查询（当前市场状态）。"""
+    """CBR 查询（当前市场状态）。
+
+    扩展字段：
+        pattern: 当前价格形态（用于检索形态案例）
+    """
     inst_id: Optional[str] = None
     regime: Optional[str] = None
     decision: Optional[str] = None         # 拟议方向
@@ -91,6 +105,8 @@ class CBRQuery:
     # 风险预算
     max_drawdown: float = 0.05
     risk_budget: float = 0.02
+    # P2 扩展：形态查询字段
+    pattern: Optional[str] = None          # 当前价格形态
 
     def to_feature_dict(self) -> Dict[str, Any]:
         return {
@@ -102,6 +118,7 @@ class CBRQuery:
             "entry_price": self.entry_price,
             "quadrant": self.quadrant,
             "evidence_chain": self.evidence_chain,
+            "pattern": self.pattern,
         }
 
 

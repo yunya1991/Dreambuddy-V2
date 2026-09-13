@@ -121,7 +121,110 @@ class FiveDomainFetcher:
         raw["policy:events"] = policy_events
         # ── Panewslab 8 板块（律动 PAData 聚合：CoinGecko/CoinGlass/DefiLlama/Treasury）
         raw.update(self._collect_panewslab_raw())
+        # ── 🆕 P0-P2 新数据源接入 ─────────────────────────────────────
+        raw.update(self._collect_new_sources())
         return raw
+
+    # ==================================================================
+    # 🆕 新增 P0-P2 数据源（fail-open，任何异常不阻塞上层）
+    # 覆盖五维设计 R 标记 + AGI 蓝图 L1 感知层缺口
+    # ==================================================================
+    def _collect_new_sources(self) -> Dict[str, Any]:
+        out: Dict[str, Any] = {}
+        # ── P0-1: Fear & Greed 指数（五维 T4 情绪因子）──
+        try:
+            recs = self.dc.fetch("chain", source="fear_greed", params={"limit": 7})
+            out["fear_greed"] = self._safe_first_metric(recs)
+        except Exception:
+            out["fear_greed"] = None
+
+        # ── P0-2: ETF 净流入/流出（AGI Phase4.3 + 五维 D7）──
+        try:
+            recs = self.dc.fetch("finance", source="etf_flow", params={})
+            out["etf_flow"] = self._safe_first_metric(recs)
+        except Exception:
+            out["etf_flow"] = None
+
+        # ── P0-3: Coinglass 衍生品（OI/Funding/清算/多空比）──
+        try:
+            recs = self.dc.fetch("chain", source="coinglass",
+                                 params={"pages": ["oi", "funding", "liquidations", "long_short"]})
+            out["coinglass"] = self._safe_first(recs)
+        except Exception:
+            out["coinglass"] = None
+
+        # ── P0-4: mempool.space BTC 链上（D9 扩展）──
+        try:
+            recs = self.dc.fetch("chain", source="mempool", params={"kind": "overview"})
+            out["mempool"] = self._safe_first_metric(recs)
+        except Exception:
+            out["mempool"] = None
+
+        # ── P0-5: BGeometrics BTC 链上深度（MVRV/SOPR/NUPL）──
+        try:
+            recs = self.dc.fetch("chain", source="bgeometrics", params={"metrics": "all"})
+            out["bgeometrics"] = self._safe_first_metric(recs)
+        except Exception:
+            out["bgeometrics"] = None
+
+        # ── P1-1: Deribit 期权（Max Pain/P-C Ratio）──
+        try:
+            recs = self.dc.fetch("chain", source="deribit",
+                                 params={"currency": "BTC", "kind": "option"})
+            out["deribit"] = self._safe_first_metric(recs)
+        except Exception:
+            out["deribit"] = None
+
+        # ── P1-2: CFTC COT 机构持仓 ──
+        try:
+            recs = self.dc.fetch("finance", source="cftc_cot", params={"market": "bitcoin"})
+            out["cftc_cot"] = self._safe_first_metric(recs)
+        except Exception:
+            out["cftc_cot"] = None
+
+        # ── P1-3: DefiLlama 稳定币总供应（五维 D7）──
+        try:
+            recs = self.dc.fetch("chain", source="defillama", params={"route": "stablecoins"})
+            out["stablecoins"] = self._safe_first_metric(recs)
+        except Exception:
+            out["stablecoins"] = None
+
+        # ── P1-4: 增强F&G（含链上组件，与alternative.me交叉验证）──
+        try:
+            recs = self.dc.fetch("chain", source="fear_greed_enhanced", params={"action": "crypto"})
+            out["fear_greed_enhanced"] = self._safe_first_metric(recs)
+        except Exception:
+            out["fear_greed_enhanced"] = None
+
+        # ── P1-5: Blockscout ETH 链上 ──
+        try:
+            recs = self.dc.fetch("chain", source="blockscout", params={"kind": "overview"})
+            out["blockscout"] = self._safe_first_metric(recs)
+        except Exception:
+            out["blockscout"] = None
+
+        # ── P2-1: Google Trends 搜索热度（零售FOMO）──
+        try:
+            recs = self.dc.fetch("chain", source="google_trends", params={"keyword": "buy bitcoin"})
+            out["google_trends"] = self._safe_first_metric(recs)
+        except Exception:
+            out["google_trends"] = None
+
+        # ── P2-3: CryptoPanic 新闻情绪 ──
+        try:
+            recs = self.dc.fetch("news", source="cryptopanic", params={"currencies": "BTC"})
+            out["cryptopanic"] = self._safe_first_metric(recs)
+        except Exception:
+            out["cryptopanic"] = None
+
+        # ── P2-5: Blockchain.com BTC 基础（备份）──
+        try:
+            recs = self.dc.fetch("chain", source="blockchain_info", params={})
+            out["blockchain_info"] = self._safe_first_metric(recs)
+        except Exception:
+            out["blockchain_info"] = None
+
+        return out
 
     # ==================================================================
     # Panewslab：8 大板块一次性采集（route=all，fail-open 任何异常不阻塞上层）

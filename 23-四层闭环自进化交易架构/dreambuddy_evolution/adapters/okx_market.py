@@ -68,11 +68,13 @@ class OKXMarketAdapter:
             candles_asc = list(reversed(candles))
 
             close_arr = np.array([float(c["c"]) for c in candles_asc], dtype=float)
+            open_arr = np.array([float(c["o"]) for c in candles_asc], dtype=float)
             high_arr = np.array([float(c["h"]) for c in candles_asc], dtype=float)
             low_arr = np.array([float(c["l"]) for c in candles_asc], dtype=float)
             vol_arr = np.array([float(c["vol"]) for c in candles_asc], dtype=float)
 
             out["close"] = close_arr
+            out["open"] = open_arr
             out["high"] = high_arr
             out["low"] = low_arr
             out["volume"] = vol_arr

@@ -360,5 +360,81 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
             for r in rows
         ]
 
+    # ================================================================ 5.7 通用指标
+    def upsert_metric(
+        self,
+        source: str,
+        sub_category: str,
+        metric_name: str,
+        metric_value: float,
+        ts: datetime,
+    ) -> bool:
+        unix = _to_unix_sec(ts)
+        with get_sqlite_connection(self.db_path) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS mm_metrics (
+                    source TEXT NOT NULL,
+                    sub_category TEXT NOT NULL,
+                    metric_name TEXT NOT NULL,
+                    metric_value REAL,
+                    timestamp INTEGER NOT NULL,
+                    PRIMARY KEY (source, sub_category, metric_name, timestamp)
+                ) WITHOUT ROWID
+                """,
+            )
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO mm_metrics
+                    (source, sub_category, metric_name, metric_value, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (source, sub_category, metric_name, float(metric_value), unix),
+            )
+        return True
+
+    def query_metric_by_time(
+        self,
+        sub_category: str,
+        metric_name: str,
+        start_ts: datetime,
+        end_ts: datetime,
+    ) -> List[Tuple[str, str, float, datetime]]:
+        s = _to_unix_sec(start_ts)
+        e = _to_unix_sec(end_ts)
+        with get_sqlite_connection(self.db_path) as conn:
+            rows = conn.execute(
+                """
+                SELECT source, metric_name, metric_value, timestamp
+                FROM mm_metrics
+                WHERE sub_category = ? AND metric_name = ? AND timestamp >= ? AND timestamp < ?
+                ORDER BY timestamp ASC
+                """,
+                (sub_category, metric_name, s, e),
+            ).fetchall()
+        return [
+            (r[0], r[1], float(r[2] or 0), _from_unix_sec(r[3]))
+            for r in rows
+        ]
+
+    def query_latest_metric(
+        self,
+        sub_category: str,
+        metric_name: str,
+    ) -> Tuple[str, float, datetime] | None:
+        with get_sqlite_connection(self.db_path) as conn:
+            row = conn.execute(
+                """
+                SELECT source, metric_value, timestamp
+                FROM mm_metrics
+                WHERE sub_category = ? AND metric_name = ?
+                ORDER BY timestamp DESC LIMIT 1
+                """,
+                (sub_category, metric_name),
+            ).fetchone()
+        if row is None:
+            return None
+        return (row[0], float(row[1] or 0), _from_unix_sec(row[2]))
+
 
 __all__ = ["SqliteMarketMacroRepository"]

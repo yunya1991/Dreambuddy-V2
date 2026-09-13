@@ -186822,6 +186822,75 @@ def _pick_listen_port(host: str, preferred_port: int, strict: bool) -> int:
 
 
 # ====================================================================
+# AGI 自进化系统可视化 API（L2-L5 数据快照）
+#   路由命名空间 /agi/* —— 读取 agi_snapshot.jsonl
+#   数据源：23-四层闭环自进化交易架构/dreambuddy_evolution/data/agi_snapshot.jsonl
+# ====================================================================
+_AGI_SNAPSHOT_PATH = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/data/agi_snapshot.jsonl"
+
+
+def _read_agi_snapshots(n=50, symbol=None):
+    """读取最近 N 条 AGI 快照."""
+    import json as _json
+    from pathlib import Path as _P
+    p = _P(_AGI_SNAPSHOT_PATH)
+    if not p.exists():
+        return []
+    lines = p.read_text(encoding="utf-8").splitlines()
+    records = []
+    for line in reversed(lines):
+        if not line.strip():
+            continue
+        try:
+            rec = _json.loads(line)
+            if symbol and rec.get("symbol") != symbol:
+                continue
+            records.append(rec)
+            if len(records) >= n:
+                break
+        except Exception:
+            continue
+    records.reverse()
+    return records
+
+
+@app.route("/agi/snapshot", methods=["GET"])
+def agi_snapshot():
+    """最新 AGI 快照（每个 symbol 最新一条）.
+
+    Query:
+        n: 返回最近 N 条（默认 50）
+        symbol: 过滤特定币种
+    """
+    n = request.args.get("n", 50, type=int)
+    symbol = request.args.get("symbol", None)
+    records = _read_agi_snapshots(n=n, symbol=symbol)
+    return jsonify({"ok": True, "count": len(records), "snapshots": records})
+
+
+@app.route("/agi/status", methods=["GET"])
+def agi_status():
+    """AGI 系统全局状态概览."""
+    records = _read_agi_snapshots(n=200)
+    if not records:
+        return jsonify({"ok": False, "error": "no snapshots yet"})
+    # 汇总每个 symbol 最新状态
+    latest_by_symbol = {}
+    for rec in records:
+        sym = rec.get("symbol", "?")
+        latest_by_symbol[sym] = rec
+    # 全局统计
+    sde_backends = [r.get("neural_sde_backend") for r in latest_by_symbol.values() if r.get("neural_sde_backend")]
+    return jsonify({
+        "ok": True,
+        "symbols": list(latest_by_symbol.keys()),
+        "latest": list(latest_by_symbol.values()),
+        "neural_sde_backend": sde_backends[0] if sde_backends else "unavailable",
+        "total_snapshots": len(records),
+    })
+
+
+# ====================================================================
 # Phase 1 P1.6：市场形态演化 4 条 API（Spec §2.4 + tasks.md L340-383）
 #   路由命名空间 /regime/evolution/* —— 与现有 /macro/* 风格一致
 #   数据源：EvolutionStorageSQLite（默认 db 路径：11-易经推理系统/scripts/artifacts/evolution_btc/evolution.db）

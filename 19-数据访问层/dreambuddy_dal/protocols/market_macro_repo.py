@@ -92,3 +92,30 @@ class MarketMacroRepository(ABC):
     def query_taker_volume_by_time(
         self, symbol: str, start_ts: datetime, end_ts: datetime
     ) -> List[Tuple[str, Decimal, Decimal, Decimal, Decimal, datetime]]: ...
+
+    # ---------- 5.7 通用指标 (ETF/期权/COT/链上/情绪等) ----------
+    @abstractmethod
+    def upsert_metric(
+        self,
+        source: str,
+        sub_category: str,
+        metric_name: str,
+        metric_value: float,
+        ts: datetime,
+    ) -> bool: ...
+
+    @abstractmethod
+    def query_metric_by_time(
+        self,
+        sub_category: str,
+        metric_name: str,
+        start_ts: datetime,
+        end_ts: datetime,
+    ) -> List[Tuple[str, str, float, datetime]]: ...
+
+    @abstractmethod
+    def query_latest_metric(
+        self,
+        sub_category: str,
+        metric_name: str,
+    ) -> Tuple[str, float, datetime] | None: ...

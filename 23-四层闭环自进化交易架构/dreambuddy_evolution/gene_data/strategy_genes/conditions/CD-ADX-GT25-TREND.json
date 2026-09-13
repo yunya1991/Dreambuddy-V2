@@ -1,0 +1,39 @@
+{
+  "gene_id": "CD-ADX-GT25-TREND",
+  "category": "trend",
+  "condition_type": "market_state",
+  "expression": "adx_14 > 25",
+  "parameters": {
+    "adx_threshold": {
+      "value": 25,
+      "range": {
+        "low": 20,
+        "high": 40
+      }
+    },
+    "adx_window": {
+      "value": 14,
+      "range": {
+        "low": 7,
+        "high": 28
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 0.5,
+  "code_ref": {
+    "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/engines/regime_gate.py",
+    "lines": {
+      "low": 36,
+      "high": 73
+    }
+  },
+  "tags": [
+    "trend",
+    "market_state",
+    "adx-gt25",
+    "regime-trend"
+  ],
+  "version": "1.0",
+  "notes": "ADX>30 判定趋势市（2026-09-10 阈值从 25 提高至 30，减少误触发）。HC-TF-03 路由条件。Phase E 新增。"
+}

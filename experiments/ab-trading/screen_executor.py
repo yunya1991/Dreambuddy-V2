@@ -101,7 +101,8 @@ DEFAULT_LEVERAGE = float(os.environ.get("DEFAULT_LEVERAGE", 10))
 # EXCHANGE_MODE=aster   → 使用 AsterExecutor（趋势策略独立钱包 0x6632...A）
 # EXCHANGE_MODE=okx     → 使用 OKX（历史路径，已禁用，仅保留查询能力）
 EXCHANGE_MODE = os.environ.get("EXCHANGE_MODE", "aster").lower()
-ASTER_TREND_SYSTEM = "/home/ubuntu/Dreambuddy-V2-main/12-三屏趋势系统"
+# 动态计算 12-三屏趋势系统 路径（兼容 macOS/Linux）
+ASTER_TREND_SYSTEM = str(BASE_DIR.parent.parent / "12-三屏趋势系统")
 if ASTER_TREND_SYSTEM not in sys.path:
     sys.path.insert(0, ASTER_TREND_SYSTEM)
 
@@ -1078,7 +1079,7 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
     from screen_engine import scan_candidates, select_best_candidate, compute_screen3
     from report_loader import get_all_reports
     
-    trend_system_path = "/home/ubuntu/Dreambuddy-V2-main/12-三屏趋势系统"
+    trend_system_path = ASTER_TREND_SYSTEM
     if trend_system_path not in sys.path:
         sys.path.insert(0, trend_system_path)
     from engine import compute_full_trading_signal
@@ -1362,7 +1363,7 @@ def check_and_execute(trigger_reason: str = "scheduled") -> dict:
             if total_addons < 2 and current_position_pct < max_addon_position_pct:
                 addon_decision = None
                 try:
-                    trend_system_path = "/home/ubuntu/Dreambuddy-V2-main/12-三屏趋势系统"
+                    trend_system_path = ASTER_TREND_SYSTEM
                     if trend_system_path not in sys.path:
                         sys.path.insert(0, trend_system_path)
                     from engine import evaluate_addon_decision

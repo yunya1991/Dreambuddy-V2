@@ -1,0 +1,46 @@
+{
+  "gene_id": "CD-ADX-LT25-RANGE",
+  "category": "range",
+  "condition_type": "market_state",
+  "expression": "adx_14 < 25 AND vol_ratio < 1.8",
+  "parameters": {
+    "adx_threshold": {
+      "value": 25,
+      "range": {
+        "low": 15,
+        "high": 30
+      }
+    },
+    "adx_window": {
+      "value": 14,
+      "range": {
+        "low": 7,
+        "high": 28
+      }
+    },
+    "vol_ratio_cap": {
+      "value": 1.8,
+      "range": {
+        "low": 1.2,
+        "high": 2.5
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/engines/regime_gate.py",
+    "lines": {
+      "low": 36,
+      "high": 73
+    }
+  },
+  "tags": [
+    "range",
+    "market_state",
+    "adx-lt25",
+    "regime-range"
+  ],
+  "version": "1.0",
+  "notes": "ADX<25 且波动率正常 = 震荡市（RegimeGateSwitch 路由 V15+网格）。HC-TF-03 路由条件。Phase E 新增。"
+}

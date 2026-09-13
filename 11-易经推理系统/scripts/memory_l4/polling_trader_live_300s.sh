@@ -48,6 +48,8 @@ export FEISHU_APP_SECRET="dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70"
 export PYTHONUNBUFFERED=1
 export ODAILY_ENGINE_BOOST=1  # Spec §5.3 H8: 7日shadow观察期 — boost注入+JSONL审计
 export FUND_7ENGINES_BOOST=1  # Spec §6.3: Fundamental 7引擎shadow审计 — 注入+JSONL (7门槛×1500样本)
+# BDSM 恶化型离场信号转做空试错开关（L1=0.08 / L2=0.05，is_trial=True，MAX_TRIAL_POSITIONS=2）
+export ENABLE_BDSM_SHORT_TRIAL=1
 
 exec "$PYTHON" -u -m scripts.memory_l4.polling_trader \
   --no-guardian \

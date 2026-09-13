@@ -1,0 +1,46 @@
+{
+  "gene_id": "CD-ATR-EXPANDING",
+  "category": "volatility",
+  "condition_type": "indicator",
+  "expression": "atr_14 > ma_atr_20 * 1.2",
+  "parameters": {
+    "atr_window": {
+      "value": 14,
+      "range": {
+        "low": 7,
+        "high": 50
+      }
+    },
+    "ma_window": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 60
+      }
+    },
+    "expansion_mult": {
+      "value": 1.2,
+      "range": {
+        "low": 1.0,
+        "high": 2.0
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 0.5,
+  "code_ref": {
+    "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trend_following/trend_following_engine.py",
+    "lines": {
+      "low": 78,
+      "high": 114
+    }
+  },
+  "tags": [
+    "volatility",
+    "indicator",
+    "atr-expanding",
+    "trend-confirm"
+  ],
+  "version": "1.0",
+  "notes": "ATR 扩张确认趋势（波动率放大 = 趋势加速）。Phase E 新增。"
+}

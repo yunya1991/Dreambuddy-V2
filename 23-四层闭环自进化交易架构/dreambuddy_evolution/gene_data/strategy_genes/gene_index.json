@@ -36,13 +36,16 @@
       "CD-SENT-24H-GT062"
     ],
     "trend": [
+      "CD-ADX-GT25-TREND",
       "CD-DONCHIAN-20-BREAK",
+      "CD-DONCHIAN-55-BREAK",
       "CD-MA200GT50",
       "CD-PRICEGTEMA200",
       "CD-SUPERTREND-BUY",
       "CD-UPTREND-FIB618"
     ],
     "volatility": [
+      "CD-ATR-EXPANDING",
       "CD-IV365-GT70-WIDE",
       "CD-SHORT-GAMMA-NEG",
       "CD-VGX-ATR-HIGH"

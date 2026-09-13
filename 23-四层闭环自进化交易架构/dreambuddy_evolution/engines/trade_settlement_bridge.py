@@ -159,6 +159,56 @@ class TradeSettlementBridge:
             logger.warning("[FO] on_trade_settled crash: %s", e)
             return self._empty_result()
 
+        finally:
+            # Fix 1: 向 ShadowRL 记录基于真实 PnL 的 reward
+            # 替代 kline_event_handler 中用 quality_score 作为 reward 的做法
+            _snap = locals().get("snapshot")
+            if _snap is not None:
+                self._record_real_pnl_reward(trade_rec, _snap)
+
+    def _record_real_pnl_reward(self, trade_rec: Any, snapshot: dict) -> None:
+        """Fix 1: 将真实 PnL 归一化后注入 ShadowRL，使矛盾反馈基于真实交易结果。
+
+        Fix C: 过滤异常平仓（OKX 持仓消失等），不注入虚假 PnL。
+
+        FAIL-OPEN: 任何异常不阻断交易。
+        """
+        try:
+            from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+            pipe = EvolutionPipeline._instance
+            if pipe is None or not hasattr(pipe, "shadow_rl"):
+                return
+
+            # Fix C: 过滤异常平仓 — exit_reason 含"持仓消失"/"position_disappeared" 或 pnl=-100 且无正常 exit
+            _exit_reason = str(getattr(trade_rec, "exit_reason", "") or "").lower()
+            _pnl_raw = float(getattr(trade_rec, "pnl", 0.0) or 0.0)
+            if "持仓消失" in _exit_reason or "position_disappear" in _exit_reason:
+                logger.debug("[FixC] 跳过异常平仓(持仓消失): %s", _exit_reason)
+                return
+            if _pnl_raw == -100.0 and ("消失" in _exit_reason or "disappear" in _exit_reason
+                                        or not _exit_reason):
+                logger.debug("[FixC] 跳过疑似异常平仓(pnl=-100): %s", _exit_reason)
+                return
+
+            import math
+            _pnl_pct = float(getattr(trade_rec, "pnl_pct", 0.0) or 0.0)
+            # tanh 归一化: ±2% 波动 → ±0.96, ±0.5% → ±0.24
+            _reward = math.tanh(_pnl_pct / 0.02)
+
+            _symbol = self._extract_symbol(trade_rec)
+            _action = str(snapshot.get("action", "")).lower() or \
+                      str(getattr(trade_rec, "direction", "")).lower() or "wait"
+
+            pipe.shadow_rl.record(
+                symbol=_symbol,
+                state=snapshot,
+                action=_action,
+                reward=_reward,
+                next_state=None,
+            )
+        except Exception:
+            pass  # FAIL-OPEN
+
     # ==================================================================
     # 辅助方法
     # ==================================================================
@@ -186,6 +236,63 @@ class TradeSettlementBridge:
             return "wait"
         except Exception:
             return "wait"
+
+    # ==================================================================
+    # outcome 标签提取（Phase 3 GREEN + 入场侧 REDUCE_WEIGHT）
+    # ==================================================================
+
+    @staticmethod
+    def _extract_outcome_from_reason(
+        reason: str,
+        okx_algo_triggered: bool = False,
+        pnl: float = 0.0,
+        pos_side: str = "long",
+        weight_reduce_factor: float = 1.0,
+    ) -> str:
+        """从平仓 reason 字符串提取 outcome 标签
+
+        覆盖：
+        - evolution_sltp + OKX algo → TP_algo / SL_algo
+        - evolution_exit:adjust_sl_tp → ADJUST
+        - evolution_exit:trailing → TRAILING
+        - evolution_exit:force_close:signal_reverse → FORCE_REVERSE
+        - evolution_exit:force_close:timeout → FORCE_TIMEOUT
+        - weight_reduce_factor < 1.0 + pnl 正 → REDUCE_WEIGHT_PREMATURE
+        - weight_reduce_factor < 1.0 + pnl 负 → REDUCE_WEIGHT_CORRECT
+        - fallback: pnl≥0 → TP, pnl<0 → SL
+        """
+        reason_lower = str(reason).lower()
+
+        # 1. 入场侧 REDUCE_WEIGHT 优先判定（weight_reduce_factor < 1.0 表示被 BCRM 软权重削减）
+        if weight_reduce_factor < 1.0:
+            if float(pnl) >= 0:
+                return "REDUCE_WEIGHT_PREMATURE"
+            else:
+                return "REDUCE_WEIGHT_CORRECT"
+
+        # 2. OKX algo 触达 → TP_algo / SL_algo
+        if okx_algo_triggered and "evolution_sltp" in reason_lower:
+            return "TP_algo" if float(pnl) >= 0 else "SL_algo"
+
+        # 3. evolution_exit 离场动作分类
+        if "force_close" in reason_lower:
+            if "signal_reverse" in reason_lower:
+                return "FORCE_REVERSE"
+            if "timeout" in reason_lower:
+                return "FORCE_TIMEOUT"
+            # 其他 force_close（含 okx_algo_triggered 但非 evolution_sltp）
+            if okx_algo_triggered:
+                return "TP_algo" if float(pnl) >= 0 else "SL_algo"
+            return "FORCE_REVERSE"  # 默认归入信号反转
+        if "external_signal_reduce" in reason_lower:
+            return "PARTIAL_REDUCE"
+        if "trailing" in reason_lower:
+            return "TRAILING"
+        if "adjust_sl_tp" in reason_lower:
+            return "ADJUST"
+
+        # 4. fallback: 按 pnl 正负推断
+        return "TP" if float(pnl) >= 0 else "SL"
 
     @staticmethod
     def _empty_result() -> dict[str, Any]:

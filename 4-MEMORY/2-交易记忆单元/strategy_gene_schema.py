@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_core.default_weights import WEIGHTS  # 4 权重组（硬约束唯一权威源）
+from dreambuddy_evolution.weights import WEIGHTS  # 4 权重组（硬约束唯一权威源）
 
 logger = logging.getLogger(__name__)
 

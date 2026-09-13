@@ -23,7 +23,7 @@ import logging
 import os
 import sys
 from datetime import date, datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 # 保证 force_vector 包可被正确 import（作为脚本直接运行时 sys.path 不含父目录）
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -86,6 +86,8 @@ def _fetch_snapshot_klines(coin: str) -> list:
     """P0-A1: 从 OKX 拉取 1D K 线用于 Phase 0 计算。FAIL-OPEN → []。
 
     带进程内缓存（7 币单次 write_snapshot 内复用，不重复 HTTP 请求）。
+    分页拉取：OKX history-candles 单次 limit 上限 100，需用 before 参数翻页
+    直到凑齐 ≥200 根（满足 MA200 计算）。
     """
     cache_key = (coin or "").upper()
     if cache_key in _KLINE_CACHE:
@@ -97,26 +99,36 @@ def _fetch_snapshot_klines(coin: str) -> list:
         return []
     inst_id = f"{cache_key}-USDT-SWAP"
     url = "https://www.okx.com/api/v5/market/history-candles"
-    params = {"instId": inst_id, "bar": "1D", "limit": str(_KLINE_FETCH_LIMIT)}
     proxies = {"http": _SNAPSHOT_PROXY, "https": _SNAPSHOT_PROXY}
+    target = max(_KLINE_FETCH_LIMIT, 200)  # 确保 ≥ MA200 所需
+    all_klines: list = []
+    before_ts: Optional[int] = None
     try:
-        r = requests.get(url, params=params, proxies=proxies, timeout=12)
-        data = r.json()
-        if data.get("code") != "0":
-            return []
-        raw = data.get("data", []) or []
-        klines = []
-        for k in reversed(raw):
-            klines.append({
-                "ts": int(k[0]),
-                "o": float(k[1]),
-                "h": float(k[2]),
-                "l": float(k[3]),
-                "c": float(k[4]),
-                "v": float(k[5]),
-            })
-        _KLINE_CACHE[cache_key] = klines
-        return klines
+        while len(all_klines) < target:
+            params = {"instId": inst_id, "bar": "1D", "limit": "100"}
+            if before_ts is not None:
+                params["before"] = str(before_ts)
+            r = requests.get(url, params=params, proxies=proxies, timeout=12)
+            data = r.json()
+            if data.get("code") != "0":
+                break
+            raw = data.get("data", []) or []
+            if not raw:
+                break
+            # OKX 返回按时间降序（最新在前），反转为升序后追加
+            for k in reversed(raw):
+                all_klines.append({
+                    "ts": int(k[0]),
+                    "o": float(k[1]),
+                    "h": float(k[2]),
+                    "l": float(k[3]),
+                    "c": float(k[4]),
+                    "v": float(k[5]),
+                })
+            before_ts = int(raw[-1][0])  # 用本批最早一根 ts 作为下页 before
+        all_klines.sort(key=lambda x: x["ts"])  # 最终按时间升序
+        _KLINE_CACHE[cache_key] = all_klines
+        return all_klines
     except Exception as _exc:
         logger.warning("BDSM K线拉取失败 coin=%s: %s", coin, _exc)
         return []

@@ -213,7 +213,7 @@ def build_combinations(cond_ids: list[str], act_ids: list[str],
     ]
     def write_combo(c_ids, a_ids, H_, S_, N_):
         nonlocal idx
-        from dreambuddy_core.default_weights import WEIGHTS  # 此处导入（脚本用）
+        from dreambuddy_evolution.weights import WEIGHTS  # 此处导入（脚本用）
         from math import sqrt
         W = WEIGHTS["ESS"]
         ess_raw = W["H"]*H_ + W["S"]*S_ + W["N_ratio"]*min(sqrt(max(N_,0)/W["N_scale"]), 1.0)

@@ -1,0 +1,27 @@
+{
+  "symbol": "ETH",
+  "bars": 1440,
+  "backtest_bars": 1379,
+  "empyrical": {
+    "sharpe_ratio": 0.6365491677446877,
+    "sortino_ratio": 1.348921515112633,
+    "max_drawdown": -0.06631507711503205,
+    "calmar_ratio": 0.5185401586298607,
+    "annual_return": 0.03438703060678017,
+    "annual_volatility": 0.055490085126914175,
+    "tail_ratio": 1.141654873489756,
+    "omega_ratio": 1.4077013917270138
+  },
+  "custom": {
+    "win_rate": 0.5051194539249146,
+    "profit_factor": 1.3791669040568715,
+    "signal_coverage": 0.2124728063814358,
+    "long_ratio": 0.2124728063814358,
+    "short_ratio": 0.0,
+    "total_trades": 120
+  },
+  "benchmark": {
+    "buy_hold_return": 0.2032309747815333,
+    "random_signal_mean_sharpe": 0.0
+  }
+}

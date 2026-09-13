@@ -45,6 +45,8 @@ cd "$PROJ" || exit 2
 
 # ---------- 启动 trader：--no-guardian 让 launchd 接管保活 ----------
 export PYTHONUNBUFFERED=1
+# BDSM 恶化型离场信号转做空试错开关（L1=0.08 / L2=0.05，is_trial=True，MAX_TRIAL_POSITIONS=2）
+export ENABLE_BDSM_SHORT_TRIAL=1
 exec "$PYTHON" -u -m scripts.memory_l4.polling_trader \
   --no-guardian \
   --interval 3600 \

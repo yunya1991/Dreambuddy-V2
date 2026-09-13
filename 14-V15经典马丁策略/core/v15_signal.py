@@ -533,6 +533,108 @@ def calc_ema_align(prices, periods=[20, 50, 200]):
     }
 
 
+# ── 趋势跟踪信号：ATR + Donchian（海龟法则核心）──────────────────────────
+# 参考：SPEC-趋势跟踪正金字塔与网格策略落地.md Phase A
+# 硬约束：HC-TF-01（SL=2×ATR，下限4%，上限15%）依赖 calc_atr
+# 硬约束：HC-TF-02（0.5N 加仓）依赖 calc_atr
+# 硬约束：HC-TF-03（regime=TREND）依赖 donchian_breakout_signal
+
+
+def calc_atr(highs, lows, closes, period=14):
+    """Average True Range (ATR) — 海龟法则仓位与止损的数学基础
+
+    True Range = max(H-L, |H-PC|, |L-PC|)
+    ATR = TR 的 SMA（简单移动平均）
+
+    Args:
+        highs: 最高价序列
+        lows: 最低价序列
+        closes: 收盘价序列
+        period: ATR 周期（默认 14，海龟标准）
+
+    Returns:
+        ATR 值（float），数据不足或无波动时返回 0.0
+    """
+    n = len(closes)
+    if n < period + 1 or len(highs) < n or len(lows) < n:
+        return 0.0
+
+    tr_list = []
+    for i in range(1, n):
+        h = float(highs[i])
+        l = float(lows[i])
+        pc = float(closes[i - 1])
+        tr = max(h - l, abs(h - pc), abs(l - pc))
+        tr_list.append(tr)
+
+    if not tr_list:
+        return 0.0
+
+    atr = sum(tr_list[-period:]) / min(period, len(tr_list))
+    return round(atr, 6)
+
+
+def calc_donchian(highs, lows, period=20):
+    """Donchian 通道 — 海龟法则核心突破信号源
+
+    上轨 = period 日最高价
+    下轨 = period 日最低价
+    中轨 = (上轨 + 下轨) / 2
+
+    Args:
+        highs: 最高价序列
+        lows: 最低价序列
+        period: 通道周期（20=快系统，55=慢系统）
+
+    Returns:
+        dict: {"upper", "lower", "mid"} 或 None（数据不足）
+    """
+    if len(highs) < period or len(lows) < period:
+        return None
+
+    upper = max(float(h) for h in highs[-period:])
+    lower = min(float(l) for l in lows[-period:])
+    mid = (upper + lower) / 2.0
+
+    return {
+        "upper": round(upper, 6),
+        "lower": round(lower, 6),
+        "mid": round(mid, 6),
+    }
+
+
+def donchian_breakout_signal(closes, highs, lows, period=20):
+    """Donchian 通道突破信号 — 趋势跟踪入场触发器
+
+    收盘价 > 上轨 → "LONG"（突破做多）
+    收盘价 < 下轨 → "SHORT"（跌破做空）
+    价格在通道内 → "NEUTRAL"
+
+    Args:
+        closes: 收盘价序列（最后一根为当前 K 线）
+        highs: 最高价序列
+        lows: 最低价序列
+        period: 通道周期
+
+    Returns:
+        str: "LONG" / "SHORT" / "NEUTRAL"
+    """
+    channel = calc_donchian(highs, lows, period=period)
+    if channel is None or not closes:
+        return "NEUTRAL"
+
+    current_close = float(closes[-1])
+    upper = channel["upper"]
+    lower = channel["lower"]
+
+    if current_close > upper:
+        return "LONG"
+    elif current_close < lower:
+        return "SHORT"
+    else:
+        return "NEUTRAL"
+
+
 # ── V15 核心决策 ──────────────────────────────────────────────────────
 
 

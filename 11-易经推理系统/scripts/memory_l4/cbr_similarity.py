@@ -224,6 +224,7 @@ DEFAULT_CASE_SIM_WEIGHTS: Dict[str, float] = {
     "quadrant": 0.10,         # 象限
     "evidence_chain": 0.15,   # 证据链
     "pnl_pct": 0.05,          # 收益（用于结果过滤，通常不直接用于相似度）
+    "pattern": 0.15,          # P2 扩展：价格形态（头肩顶等）
 }
 
 
@@ -272,6 +273,7 @@ def build_default_case_retriever(
             ),
             "quadrant": QuadrantSimilarity(),
             "evidence_chain": EvidenceChainSimilarity(),
+            "pattern": CategoricalSimilarity(),  # P2 扩展：形态精确匹配
         },
         aggregator=SimilarityAggregator(
             pooling="weighted_mean",

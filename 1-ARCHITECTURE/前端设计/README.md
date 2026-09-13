@@ -40,6 +40,12 @@
 | [CHAIN_ORCHESTRATOR.md](./CHAIN_ORCHESTRATOR.md) | 链式编排设计 | ✅ |
 | [TECH_STACK_EVALUATION.md](./TECH_STACK_EVALUATION.md) | 技术栈评估 | ✅ |
 
+### 调研文档
+
+| 文档 | 描述 | 状态 |
+|------|------|------|
+| [RESEARCH_DEEPSEEK_HARNESS.md](./RESEARCH_DEEPSEEK_HARNESS.md) | DeepSeek Harness 调研 — 与 DreamOS 相似性研究与借鉴方向 | 🔬 调研中 |
+
 ---
 
 ## 🏗️ 架构概览

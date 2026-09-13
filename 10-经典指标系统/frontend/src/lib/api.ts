@@ -7389,3 +7389,53 @@ export const fetchRegimeWeightsLatest = async (params?: { symbol?: string }) =>
 
 export const fetchRegimeEvolutionParams = async (params?: { symbol?: string }) =>
   (await api.get<RegimeEvolutionParamsResponse>('/regime/evolution/params', { params, timeout: 30000 })).data;
+
+// ==================== AGI 自进化系统可视化 ====================
+
+export interface AgiSnapshot {
+  ts: string;
+  symbol: string;
+  d_star: string | null;
+  ri: number;
+  action: string | null;
+  tier: string | null;
+  regime: string;
+  agi_signature: { dim: number; norm: number; first: number } | null;
+  agi_path_integral: {
+    n_paths: number;
+    horizon: number;
+    volatility: number;
+    min_resistance_action: number;
+    expected_end_price: number;
+    start_price: number;
+  } | null;
+  agi_uncertainty: { uncertainty_score: number; level: string } | null;
+  agi_gate_decision: { decision: string; position_multiplier: number } | null;
+  agi_pattern: string | null;
+  agi_btc_regime: string | null;
+  path_info: unknown;
+  neural_sde_backend?: string;
+  neural_sde_trained?: boolean;
+  shadow_rl_samples?: number;
+  shadow_rl_activated?: boolean;
+}
+
+export interface AgiSnapshotResponse {
+  ok: boolean;
+  count: number;
+  snapshots: AgiSnapshot[];
+}
+
+export interface AgiStatusResponse {
+  ok: boolean;
+  symbols: string[];
+  latest: AgiSnapshot[];
+  neural_sde_backend: string;
+  total_snapshots: number;
+}
+
+export const fetchAgiSnapshot = async (params: { n?: number; symbol?: string }) =>
+  (await api.get<AgiSnapshotResponse>('/agi/snapshot', { params, timeout: 30000 })).data;
+
+export const fetchAgiStatus = async () =>
+  (await api.get<AgiStatusResponse>('/agi/status', { timeout: 30000 })).data;

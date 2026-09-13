@@ -68,12 +68,19 @@ class StrategicMapper:
             contradiction: ContradictionTransform = None,
             force_vectors: dict = None,
             five_scores: dict = None,
-            enable_force_vector: bool = False) -> StrategicLayerOutput:
-        """映射到 war_state/cap/mask + force_vectors。"""
+            enable_force_vector: bool = False,
+            max_position: float = 1.0) -> StrategicLayerOutput:
+        """映射到 war_state/cap/mask + force_vectors。
+
+        Args:
+            max_position: 仓位上限（Phase 3 metal 回撤控制）。cap 会被 clamp 到 max_position。
+                          默认 1.0（无约束）。precious_metal 用 0.7。
+        """
         try:
             return self._map_impl(
                 final_direction, final_magnitude, resonance_state,
                 contradiction, force_vectors, five_scores, enable_force_vector,
+                max_position,
             )
         except Exception:
             # FAIL-OPEN: 任何异常 → 保守默认
@@ -86,7 +93,8 @@ class StrategicMapper:
     # 内部实现
     # ============================================================
     def _map_impl(self, final_direction, final_magnitude, resonance_state,
-                  contradiction, force_vectors, five_scores, enable_force_vector):
+                  contradiction, force_vectors, five_scores, enable_force_vector,
+                  max_position=1.0):
         # final_score: [-1,+1] → [0,100]
         final_score = (final_direction + 1) / 2 * 100
 
@@ -94,6 +102,8 @@ class StrategicMapper:
         war_state = self._war_state(final_score, resonance_state)
         cap, mask = self._base_cap_and_mask(
             final_direction, final_magnitude, resonance_state)
+        # Phase 3：仓位上限约束（metal 回撤控制）
+        cap = min(cap, max(0.0, float(max_position)))
         position_mult = 1.0
 
         # 力向量透传（enable_force_vector=False → None，字节等价保证）

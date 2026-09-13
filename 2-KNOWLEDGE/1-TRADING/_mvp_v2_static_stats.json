@@ -1,0 +1,17 @@
+{
+  "code_ref_total": 43,
+  "code_ref_exist_ok": 43,
+  "code_ref_missing": 0,
+  "code_ref_exist_pct": 100.0,
+  "missing_examples_top5": [],
+  "ruff": {
+    "exit": -1,
+    "out": "",
+    "err": "no_run: [Errno 2] No such file or directory: 'ruff'"
+  },
+  "black": {
+    "exit": 1,
+    "out": "",
+    "err": "would reformat dreambuddy_core/alert_bridge.py\nwould reformat dreambuddy_core/default_weights.py\nwould reformat 4-MEMORY/2-交易记忆单元/strategy_gene_schema.py\nwould reformat 21-特征工程中心/feature_hub/resistance_features.py\nwould reformat 4-MEMORY/2-交易记忆单元/scripts/seed_genes.py\n\nOh no! 💥 💔 💥\n5 files would be reformatted."
+  }
+}

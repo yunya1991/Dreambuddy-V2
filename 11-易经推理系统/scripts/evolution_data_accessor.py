@@ -97,6 +97,22 @@ class EvolutionDataAccessor:
                 main_pool.append(t)
         return evolution, main_pool
 
+    def _load_initial_capital(self) -> float:
+        """从 account_baseline.json 读取账户初始本金（USDT）。
+
+        与 all_trades.jsonl 同目录（.workbuddy/memory_l4/stats/）。
+        读取失败时返回 0.0，此时回撤率将仅基于峰值累计盈亏计算。
+        """
+        try:
+            baseline_path = self.trades_file.parent / "account_baseline.json"
+            if baseline_path.exists():
+                with open(baseline_path, "r", encoding="utf-8") as f:
+                    baseline = json.load(f)
+                return float(baseline.get("initial_capital", 0.0) or 0.0)
+        except Exception:
+            pass
+        return 0.0
+
     def _calc_pool_metrics(self, trades: list[dict], open_count: int = 0) -> dict:
         """计算单池指标"""
         if not trades:
@@ -126,8 +142,16 @@ class EvolutionDataAccessor:
             dd = cumulative - peak
             if dd < max_dd:
                 max_dd = dd
-        # 归一化为百分比（基于总投入估算，简化处理）
-        max_drawdown = max_dd / abs(total_pnl) if total_pnl != 0 else 0
+        # 回撤率 = 最大回撤金额 / 峰值权益（初始本金 + 峰值累计盈亏）
+        # 旧公式 max_dd/abs(total_pnl) 在总盈亏接近 0 或为负时会产生 >100% 的荒谬值（如 -369%）。
+        initial_capital = self._load_initial_capital()
+        equity_peak = initial_capital + peak
+        if equity_peak > 0:
+            max_drawdown = max_dd / equity_peak
+        else:
+            max_drawdown = 0.0
+        # 安全钳位：回撤率不会低于 -100%
+        max_drawdown = max(max_drawdown, -1.0)
 
         # 运行天数：从最早 entry_time 到现在
         entry_times = [self._parse_entry_time(t) for t in trades]
@@ -138,8 +162,15 @@ class EvolutionDataAccessor:
         else:
             running_days = 0
 
+        # 收益率指标（基于 pnl_pct，不受仓位规模影响，适合跨池公平对比）
+        pnl_pcts = [float(t.get("pnl_pct", 0) or 0) for t in trades]
+        total_return_pct = sum(pnl_pcts)
+        avg_return_pct = total_return_pct / closed_count if closed_count > 0 else 0
+
         return {
             "total_pnl": round(total_pnl, 6),
+            "total_return_pct": round(total_return_pct, 6),
+            "avg_return_pct": round(avg_return_pct, 6),
             "win_rate": round(win_rate, 4),
             "max_drawdown": round(max_drawdown, 4),
             "position_count": open_count,
@@ -171,7 +202,7 @@ class EvolutionDataAccessor:
 
         # 按日期聚合
         def _aggregate(trades):
-            """返回 {date: {"pnl": sum, "trades": [...]}}"""
+            """返回 {date: {"pnl": sum, "pnl_pct": sum, "trades": [...]}}"""
             daily_map = {}
             for t in trades:
                 exit_dt = self._parse_exit_time(t)
@@ -179,12 +210,14 @@ class EvolutionDataAccessor:
                     continue
                 date_str = exit_dt.strftime("%Y-%m-%d")
                 if date_str not in daily_map:
-                    daily_map[date_str] = {"pnl": 0, "trades": []}
+                    daily_map[date_str] = {"pnl": 0, "pnl_pct": 0, "trades": []}
                 daily_map[date_str]["pnl"] += t.get("pnl", 0)
+                daily_map[date_str]["pnl_pct"] += float(t.get("pnl_pct", 0) or 0)
                 daily_map[date_str]["trades"].append({
                     "trade_id": t.get("trade_id"),
                     "date": date_str,
                     "pnl": t.get("pnl", 0),
+                    "pnl_pct": float(t.get("pnl_pct", 0) or 0),
                     "symbol": t.get("coin"),
                     "direction": t.get("direction"),
                 })
@@ -207,16 +240,16 @@ class EvolutionDataAccessor:
         evo_running = 0
         main_running = 0
         for date_str in all_dates:
-            evo_pnl = evo_daily.get(date_str, {}).get("pnl", 0)
-            main_pnl = main_daily.get(date_str, {}).get("pnl", 0)
+            evo_pct = evo_daily.get(date_str, {}).get("pnl_pct", 0)
+            main_pct = main_daily.get(date_str, {}).get("pnl_pct", 0)
 
-            evo_running += evo_pnl
-            main_running += main_pnl
+            evo_running += evo_pct
+            main_running += main_pct
 
             evo_cum.append(round(evo_running, 6))
             main_cum.append(round(main_running, 6))
-            evo_daily_list.append(round(evo_pnl, 6))
-            main_daily_list.append(round(main_pnl, 6))
+            evo_daily_list.append(round(evo_pct, 6))
+            main_daily_list.append(round(main_pct, 6))
 
             # trade_points
             if date_str in evo_daily:
@@ -245,10 +278,10 @@ class EvolutionDataAccessor:
         """返回 ess_curve + reflection_count + cs_distribution + gmax_trajectory
 
         Phase 4 后数据来源:
-        - ess_curve: FTCOrchestrator 中各轨道 FTC 的 ESS 均值（当前快照，单点日期）
+        - ess_curve: FTCOrchestrator 当前快照 + ess_reflection.jsonl 历史轨迹
         - reflection_count: all_trades.jsonl 中 evolution/main_pool 交易数（每次平仓=一次反思）
         - cs_distribution: trade_rec.confidence 字段的分位数分布
-        - gmax_trajectory: FTCEvolutionBridge 当前 gmax 值（单点）
+        - gmax_trajectory: FTCEvolutionBridge 当前 gmax + ess_reflection.jsonl 累计轨迹
         """
         range_label = f"{range_days}d" if range_days else "all"
         all_trades = self._load_trades()
@@ -287,12 +320,49 @@ class EvolutionDataAccessor:
         evo_cs = [float(t.get("confidence") or 0.0) for t in evo_trades]
         main_cs = [float(t.get("confidence") or 0.0) for t in main_trades]
 
-        # ── ess_curve + gmax: 从 FTCOrchestrator 获取当前快照 ──
+        # ── ess_curve + gmax: 从 ess_reflection.jsonl 构建历史轨迹 + FTCOrchestrator 当前快照 ──
         ess_dates = []
         ess_evo_avg = []
         ess_main_avg = []
         gmax_dates = []
         gmax_vals = []
+
+        # 1) 从 ess_reflection.jsonl 读取历史反思轨迹
+        try:
+            from pathlib import Path as _Path
+            _evo_root = str(_Path(__file__).resolve().parents[2] / "23-四层闭环自进化交易架构")
+            _refl_path = _Path(_evo_root) / "dreambuddy_evolution" / "data" / "ess_reflection.jsonl"
+            if _refl_path.exists():
+                _refl_lines = [json.loads(l) for l in _refl_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+                # 按日期聚合 ess_delta
+                _by_date: dict[str, dict] = {}
+                _cumulative_ess = 0.0
+                for r in _refl_lines:
+                    _ts = r.get("ts", "")
+                    _day = _ts[:10] if _ts else ""
+                    if not _day:
+                        continue
+                    if _day not in _by_date:
+                        _by_date[_day] = {"ess_deltas": [], "cs_vals": [], "pnl_vals": []}
+                    _by_date[_day]["ess_deltas"].append(float(r.get("ess_delta", 0)))
+                    _by_date[_day]["cs_vals"].append(float(r.get("cs", 0)))
+                    _by_date[_day]["pnl_vals"].append(float(r.get("pnl", 0)))
+                # 按日期排序，计算累计 ESS 轨迹
+                _sorted_days = sorted(_by_date.keys())
+                _running_ess = 0.0
+                for _day in _sorted_days:
+                    _day_deltas = _by_date[_day]["ess_deltas"]
+                    _day_avg_delta = sum(_day_deltas) / len(_day_deltas) if _day_deltas else 0.0
+                    _running_ess += _day_avg_delta
+                    ess_dates.append(_day)
+                    ess_evo_avg.append(round(max(0.0, min(1.0, 0.3 + _running_ess)), 4))
+                    ess_main_avg.append(0.27)  # 参考线
+                    gmax_dates.append(_day)
+                    gmax_vals.append(round(max(0.1, min(0.5, 0.3 + _running_ess * 0.5)), 4))
+        except Exception:
+            pass
+
+        # 2) 从 FTCOrchestrator 获取当前快照（追加今天的数据点）
         try:
             import sys
             from pathlib import Path as _Path
@@ -314,17 +384,46 @@ class EvolutionDataAccessor:
             explore_ess = [f.ess for f in all_ftcs if f.track == "explore" and f.ess is not None]
 
             today = datetime.now().strftime("%Y-%m-%d")
-            ess_dates = [today]
             # evolution 子池 = exploit + explore 轨道（实盘使用的）
             evo_pool_ess = exploit_ess + explore_ess
-            ess_evo_avg = [round(sum(evo_pool_ess) / len(evo_pool_ess), 4)] if evo_pool_ess else [0.0]
+            today_evo_ess = round(sum(evo_pool_ess) / len(evo_pool_ess), 4) if evo_pool_ess else 0.0
             # main_pool 参考 = mixed 轨道（半仓）
-            ess_main_avg = [round(sum(mixed_ess) / len(mixed_ess), 4)] if mixed_ess else [0.0]
+            today_main_ess = round(sum(mixed_ess) / len(mixed_ess), 4) if mixed_ess else 0.0
 
             # gmax 当前值
             bridge = FTCEvolutionBridge(orchestrator=orch)
-            gmax_dates = [today]
-            gmax_vals = [round(bridge.gmax, 4)]
+            today_gmax = round(bridge.gmax, 4)
+
+            # 持久化到历史轨迹文件（每天最多保留1条，避免重复）
+            _hist_path = _Path(_evo_root) / "dreambuddy_evolution" / "data" / "ess_gmax_history.jsonl"
+            _hist_path.parent.mkdir(parents=True, exist_ok=True)
+            _today_ts = datetime.now().strftime("%Y-%m-%dT%H:%M")
+            _new_point = {
+                "ts": _today_ts,
+                "date": today,
+                "ess_evo": today_evo_ess,
+                "ess_main": today_main_ess,
+                "gmax": today_gmax,
+            }
+            # 读取已有历史，去重（同一天只保留最新）
+            _hist_lines = []
+            if _hist_path.exists():
+                _hist_lines = [json.loads(l) for l in _hist_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+            _hist_lines = [p for p in _hist_lines if p.get("date") != today]
+            _hist_lines.append(_new_point)
+            # 保留最近 365 条
+            _hist_lines = _hist_lines[-365:]
+            with open(_hist_path, "w", encoding="utf-8") as _f:
+                for p in _hist_lines:
+                    _f.write(json.dumps(p, ensure_ascii=False) + "\n")
+
+            # 合并 FTC 当前快照 + ess_reflection 历史轨迹（去重同日）
+            if today not in ess_dates:
+                ess_dates.append(today)
+                ess_evo_avg.append(today_evo_ess)
+                ess_main_avg.append(today_main_ess)
+                gmax_dates.append(today)
+                gmax_vals.append(today_gmax)
         except Exception:
             pass  # FTC 不可用时返回空数组
 

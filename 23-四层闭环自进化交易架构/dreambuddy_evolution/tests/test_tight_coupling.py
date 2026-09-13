@@ -299,7 +299,8 @@ class TestTightCouplingOrchestrator:
         result = tco.reflect(snapshot, outcome)
         assert "cs" in result
         assert result["cs"] >= 0.7
-        assert result["ess_delta"] == pytest.approx(0.02)
+        # CS=1.0（全信号对齐）≥0.9 → 大步长 +0.05（Phase1.2 动态步长）
+        assert result["ess_delta"] == pytest.approx(0.05)
 
     def test_TR_TC_07_full_cycle(self):
         """完整 7 步闭环: observe→hypothesize→experiment→measure→reflect→learn→feedback"""
@@ -332,9 +333,9 @@ class TestTightCouplingOrchestrator:
         # ⑤ 反思
         refl = tco.reflect(exp["pre_trade_snapshot"], measure)
         assert refl["cs"] >= 0.7
-        # ⑥ 学习
+        # ⑥ 学习（CS=1.0≥0.9 → +0.05）
         learned = tco.learn(refl)
-        assert learned["ess_delta"] == pytest.approx(0.02)
+        assert learned["ess_delta"] == pytest.approx(0.05)
         # ⑦ 回馈
         feedback = tco.feedback(learned)
         assert "updated_ess_direction" in feedback

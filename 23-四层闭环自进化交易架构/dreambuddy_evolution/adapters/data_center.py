@@ -151,3 +151,136 @@ class DataCenterAdapter:
             logger.debug("[FO] per-coin extract fail: %s", e)
 
         return {}
+
+    # ================================================================
+    # 🆕 P1: 扩展查询 — ETF/情绪/链上/期权/机构持仓
+    # ================================================================
+    def query_etf_flow(self) -> dict[str, float]:
+        """查询最新 ETF 净流入/流出（AGI Phase4.3）。"""
+        return self._query_latest_by_source("etf_flow", "finance")
+
+    def query_fear_greed(self) -> dict[str, float]:
+        """查询最新 F&G 指数（AGI L1 感知层情绪因子）。"""
+        out: dict[str, float] = {}
+        rec = self._query_latest_record_by_source("fear_greed", "chain")
+        if rec:
+            m = rec.get("metrics", {}) if isinstance(rec, dict) else {}
+            for k in ("value", "fear_greed_value"):
+                if k in m:
+                    try:
+                        out["fear_greed"] = float(m[k])
+                    except (ValueError, TypeError):
+                        pass
+                    break
+        return out
+
+    def query_btc_onchain(self) -> dict[str, float]:
+        """查询最新 BTC 链上深度指标（MVRV/SOPR/NUPL/难度/哈希率）。"""
+        out: dict[str, float] = {}
+        # bgeometrics
+        rec = self._query_latest_record_by_source("bgeometrics", "chain")
+        if rec:
+            m = rec.get("metrics", {}) if isinstance(rec, dict) else {}
+            for k in ("mvrv", "sopr", "nupl", "active_addresses", "exchange_netflow", "puell_multiple"):
+                if k in m:
+                    try:
+                        out[k] = float(m[k])
+                    except (ValueError, TypeError):
+                        pass
+        # mempool
+        rec2 = self._query_latest_record_by_source("mempool", "chain")
+        if rec2:
+            m2 = rec2.get("metrics", {}) if isinstance(rec2, dict) else {}
+            for k in ("tip_height", "mempool_count", "difficulty_change_pct"):
+                if k in m2:
+                    try:
+                        out[k] = float(m2[k])
+                    except (ValueError, TypeError):
+                        pass
+        return out
+
+    def query_options(self) -> dict[str, float]:
+        """查询最新 Deribit 期权数据（Max Pain/P-C Ratio/OI）。"""
+        return self._query_latest_by_source("deribit", "chain")
+
+    def query_cot(self) -> dict[str, float]:
+        """查询最新 CFTC COT 机构持仓。"""
+        out: dict[str, float] = {}
+        rec = self._query_latest_record_by_source("cftc_cot", "finance")
+        if rec:
+            m = rec.get("metrics", {}) if isinstance(rec, dict) else {}
+            for k in ("non_comm_long", "non_comm_short", "non_comm_net"):
+                if k in m:
+                    try:
+                        out[k] = float(m[k])
+                    except (ValueError, TypeError):
+                        pass
+        return out
+
+    def query_coinglass_derivatives(self) -> dict[str, float]:
+        """查询最新 Coinglass 衍生品聚合数据（OI/Funding/清算/多空比）。"""
+        out: dict[str, float] = {}
+        for sub in ("open_interest", "funding_rate", "liquidations", "long_short_ratio"):
+            rec = self._query_latest_record_by_source("coinglass", "chain", sub)
+            if rec:
+                m = rec.get("metrics", {}) if isinstance(rec, dict) else {}
+                for k, v in m.items():
+                    if isinstance(v, (int, float)):
+                        try:
+                            out[f"{sub}_{k}"] = float(v)
+                        except (ValueError, TypeError):
+                            pass
+        return out
+
+    def _query_latest_by_source(self, source: str, category: str) -> dict[str, float]:
+        """通用：按 source 查最新 record，提取数值 metrics。"""
+        rec = self._query_latest_record_by_source(source, category)
+        if not rec:
+            return {}
+        m = rec.get("metrics", {}) if isinstance(rec, dict) else {}
+        out: dict[str, float] = {}
+        for k, v in m.items():
+            if isinstance(v, (int, float)):
+                try:
+                    out[k] = float(v)
+                except (ValueError, TypeError):
+                    pass
+        return out
+
+    def _query_latest_record_by_source(
+        self, source: str, category: str, sub_category: str | None = None
+    ) -> dict | None:
+        """查询最新 record by source/category/sub_category。"""
+        try:
+            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            if sub_category:
+                cursor.execute(
+                    "SELECT * FROM records "
+                    "WHERE source = ? AND category = ? AND sub_category = ? "
+                    "ORDER BY timestamp DESC LIMIT 1",
+                    (source, category, sub_category),
+                )
+            else:
+                cursor.execute(
+                    "SELECT * FROM records "
+                    "WHERE source = ? AND category = ? "
+                    "ORDER BY timestamp DESC LIMIT 1",
+                    (source, category),
+                )
+            row = cursor.fetchone()
+            conn.close()
+            if row is None:
+                return None
+            d = dict(row)
+            for key in ("metrics", "timeseries"):
+                if key in d and isinstance(d[key], str):
+                    try:
+                        d[key] = json.loads(d[key])
+                    except Exception:
+                        pass
+            return d
+        except Exception as e:
+            logger.debug("[FO] query_latest_record_by_source fail: %s", e)
+            return None

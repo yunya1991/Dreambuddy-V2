@@ -30,6 +30,10 @@
         <string>en_US.UTF-8</string>
         <key>PYTHONUNBUFFERED</key>
         <string>1</string>
+        <key>YIJING_ENABLE_TEE</key>
+        <string>1</string>
+        <key>YIJING_TEE_SHADOW_MODE</key>
+        <string>1</string>
     </dict>
 
     <key>KeepAlive</key>

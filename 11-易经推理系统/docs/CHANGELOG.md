@@ -2,7 +2,198 @@
 
 > **定位**：记录每次变更的原因、内容、验证方式
 > **格式**：`[版本] - 日期 → 变更类型（新增/修改/修复/删除）`
-> **版本**：v4.3.1 | **更新**：2026-09-07
+> **版本**：v4.4.8 | **更新**：2026-09-12
+
+---
+
+## [v4.4.8] - 2026-09-12
+
+### 战略层独立下单消费_shadow（方案A，2行修复）
+
+- **修复**: 战略层独立下单链路从读`_cache`(中性值)改为读`_shadow or _cache`(真实值)，使战略层真实控制自己的独立下单
+  - **问题**: v4.4.7 启用影子模式后，`_compute_strategy_open_signal`和`_strategy_independent_open`仍读`_cache`(中性默认值)，导致战略层独立下单链路消费中性值（war=ALLOW/cap=1.0/scores=50），战略层的 war_state/direction_state/five_scores/cap_pct 对自己的独立下单也不生效
+  - **修复**: 两处读取从`_five_domain_state_cache`改为`_five_domain_state_shadow or _five_domain_state_cache`：
+    - `_compute_strategy_open_signal` (L6973)：direction_state/five_scores 真实生效
+    - `_strategy_independent_open` (L7106)：cap_pct/position_mult 真实压缩仓位
+  - **隔离设计**: 战略层独立下单(`_shadow`真实值) vs BCRM2.0(`_cache`中性值)，通过 source_tag="strategy" 子池隔离
+  - **与 SubSystemBridge 一致**: 读取逻辑与自进化系统完全一致（`_shadow or _cache`）
+  - **触发条件**: 需显式设 `ENABLE_STRATEGY_INDEPENDENT_OPEN=1` 和 `STRATEGY_INDEPENDENT_COINS` 环境变量
+  - **测试**: 141 个测试全部通过（战略层+BCRM2.0+subsystem_bridge+byte_equivalence），语法检查通过
+  - **影响范围**: `11-易经推理系统/scripts/memory_l4/polling_trader.py` L6973, L7106、`11-易经推理系统/docs/TECHNICAL_DESIGN.md` §3.5.6
+
+---
+
+## [v4.4.7] - 2026-09-12
+
+### 战略层影子模式配置修正（1行修复）
+
+- **修复**: `enable_five_domain_shadow_mode` 从 False 改为 True，恢复影子拦截
+  - **问题**: `enable_five_domain=False`（总开关关闭）但 `enable_five_domain_shadow_mode=False`（影子模式关闭），导致 `_apply_fd_shadow_intercept` 未执行，`_five_domain_state_cache` 保存真实值（war=RESTRICT, cap=0.20, total=58），BCRM2.0 消费了非中性值
+  - **违反硬约束**: project_memory 规定"战略层开关关断或异常时，所有字段取中性默认值（war_state=ALLOW、cap=1.0、scores=50），字节等价「战略层不存在」"
+  - **修复**: `enable_five_domain_shadow_mode=True`（polling_trader.py L1590），影子拦截自动生效：
+    - `_shadow` 保存真实计算值（供 SubSystemBridge/ShadowDebug 消费，自进化系统正确读取战略层输出）
+    - `_cache` 替换为中性默认值（war=ALLOW, cap=1.0, scores=50，BCRM2.0/策略层消费中性值，字节等价"战略层不存在"）
+  - **数据流验证**: 三个入口均调用 `_apply_fd_shadow_intercept`：初始化(L1616)、缓存命中(L1954)、日级重算(L2412)
+  - **自进化消费验证**: SubSystemBridge.get_war_state() 优先读 `_five_domain_state_shadow`（真实值），ShadowDebug 同理
+  - **测试**: 33 个战略层/BCRM2.0/subsystem_bridge/byte_equivalence 测试全部通过，语法检查通过
+  - **影响范围**: `11-易经推理系统/scripts/memory_l4/polling_trader.py` L1590、`11-易经推理系统/docs/TECHNICAL_DESIGN.md` §3.5.6
+
+---
+
+## [v4.4.6] - 2026-09-12
+
+### BCRM2.0 文档三者一致性修复（文档对齐）
+
+- **修复**: BCRM2.0 核心链路文档与代码/日志不一致（三者一致性审计发现 4 个问题）
+  - **审计方法**: 技术文档 → 代码 → 日志 三者对比，验证 BCRM2.0 推理链路、方案C弹性放行、SL/TP硬门禁、direction_state闸门等核心环节
+  - **核心结论**: BCRM2.0 核心链路整体健康，推理→方案C→SL/TP→fail_closed 主链路在代码和日志中均正常运行，最近新增代码未破坏核心链路；4个不一致问题均为文档过时
+  - **修复1（SL/TP下限表）**: `TECHNICAL_DESIGN.md` §2.2b.1 SL/TP 价格空间下限表旧值（常规仓1.5%/3.0%、轻仓试错2.0%/4.0%）→ 更新为代码实际值 4.0%/12.0%（与 `MIN_SL_PCT_NORMAL/MIN_TP_PCT_NORMAL/MIN_SL_PCT_TRIAL/MIN_TP_PCT_TRIAL` L7985-L7988 对齐）
+  - **修复2（sl_atr 参数）**: `BCRM2_INFERENCE_DEEP_DIVE.md` Schema 表 sl_atr 旧值 3（硬编码）→ 更新为 2.5（P1-2 修改：原1.5→2.5，见 `BCRM2Adapter(tp_atr=3.0, sl_atr=2.5)` L4851）
+  - **修复3（行号漂移）**: `BCRM2_INFERENCE_DEEP_DIVE.md` 行号引用更新：_infer_bcrm2 L3990→L4811、direction_state 检查 L13982→L14255、SL/TP 硬门禁 L8398→L7978（因新增代码导致偏移）
+  - **修复4（direction_state 默认状态）**: `TECHNICAL_DESIGN.md` direction_state 闸门描述补充标注 `enable_bcrm_direction_state_check` 默认 False（影子模式：跳过拦截，仅 shadow_logger 记录供 A/B 对比观察）
+  - **影响范围**: `11-易经推理系统/docs/TECHNICAL_DESIGN.md` §2.2b.1 + §3.5.6、`11-易经推理系统/docs/BCRM2_INFERENCE_DEEP_DIVE.md` 第1.3节+第2章Schema
+  - **验证**: 文档修改不影响代码运行；日志验证 BCRM2.0 推理、方案C三层弹性放行、SL/TP修复（间距4.00%/12.00%）均正常运行
+
+---
+
+## [v4.4.5] - 2026-09-12
+
+### 战略层+策略层独立开仓（新功能）
+
+- **新增**: `polling_trader.py` 战略层+策略层独立开仓功能
+  - **设计目的**: 单独测试战略层+策略层效果，不依赖 BCRM2.0 推理，类似 BDSM 独立开仓模式
+  - **三层信号组合**: 战略层（war_state/direction_state）+ 策略层（select() strategy_type）+ 技术信号（d_star/ri）
+  - **新增方法**: `_compute_strategy_open_signal()` 三层组合 → (direction, confidence, strategy_type)；`_strategy_independent_open()` 主开仓入口
+  - **开关**: `enable_strategy_independent_open`（默认 False，环境变量 ENABLE_STRATEGY_INDEPENDENT_OPEN）
+  - **子池隔离**: `source_tag="strategy"`，`SUBPOOL_MAX_POSITIONS["strategy"]=3`，独立计数不串扰
+  - **仓位计算**: `cap_pct × position_mult × STRATEGY_BASE_BUDGET_USDT`（默认 200U，比 BDSM 500U 更保守）
+  - **方向闸门**: 复用 direction_state 检查（SHORT_ONLY 禁做多，LONG_ONLY 禁做空，FREEZE 禁开仓）
+  - **★ war_state/direction_state 职责分离**: war_state（ALLOW/COOLDOWN/RESTRICT/FREEZE）**只影响仓位大小**（通过 cap_pct：FREEZE=0.20, RESTRICT=0.20, COOLDOWN=0.50, ALLOW=1.0），**不拦截开仓**；direction_state 才控制是否开仓+方向。`_compute_strategy_open_signal` 仅检查 direction_state，war_state 仅通过 cap_pct 影响仓位计算。设计原则：仓位压制 ≠ 禁止开仓，方向冻结 ≠ 仓位压制
+  - **向后兼容**: `source_tag` 覆盖 `inference.get("source_tag") or _classify_source_tag(coin)`，BDSM/BCRM 路径不受影响
+  - **kline 缓存**: `_last_kline_result_by_coin` 缓存 on_kline_close 返回值，供策略独立开仓消费
+  - **FAIL-OPEN**: 所有异常 → 跳过，不阻塞主链路
+  - **验证**: 23 新测试 + 82 回归测试 = 105 passed
+
+---
+
+## [v4.4.4] - 2026-09-12
+
+### evolution 路径 direction_state 闸门缺失修复
+
+- **修复**: `polling_trader.py` `_evolution_build_position` 方法缺失 direction_state 闸门
+  - **根因**: `_evolution_build_position` 由 KlineEventHandler 直接调用，完全绕过 `_execute_trade` 中的 direction_state 闸门（L13982-L14012），导致：
+    - `direction_state=FREEZE` 时 evolution 仍可开仓（市场不明确应冻结）
+    - `direction_state=SHORT_ONLY` 时 evolution 仍可做多（市场明确看跌应禁止做多）
+    - `direction_state=LONG_ONLY` 时 evolution 仍可做空（市场明确看多应禁止做空）
+  - **修复**: 在 `_evolution_build_position` 冷却期检查后、仓位计数前（L9497-L9532）添加 direction_state 闸门，逻辑与 BCRM2.0 路径对齐
+  - **设计原则**: FAIL-OPEN（异常时放行，不阻塞交易热路径）；NEUTRAL/SHORT_PREFER/LONG_PREFER 不拦截（偏置由后续置信度调整）
+  - **影响范围**: `polling_trader.py` L9497-L9532
+  - **验证**: 8 个新测试（FREEZE/SHORT_ONLY/LONG_ONLY/NEUTRAL/FAIL-OPEN 各方向）+ 74 个回归测试 = 82 passed
+
+---
+
+## [v4.4.3] - 2026-09-12
+
+### REGIME_FACTORS 映射不匹配修复（精细市场形态分类生效）
+
+- **修复**: `strategy_algo_layer.py` REGIME_FACTORS 三套命名体系不匹配
+  - **根因**: `REGIME_FACTORS` 表仅含旧版4y大周期命名（Bull/Bear/Sideways 等7键），但 `polling_trader.py` 传入的 `market_regime` 值为弹簧力场分类器产出的 `TREND_BULL`/`STRONG_TREND_BEAR`/`TREND_BEAR`/`MEAN_REVERTING`/`RANGING`/`UNKNOWN`，`bcrm2/market_regime.py` GUA_REGIME_MAP 产出 `TREND_UP_STRONG`/`TREND_UP_MILD`/`RANGE_BOUND`/`BREAKOUT`/`VOLATILE_DROP`/`FOMO_RALLY`/`CONSOLIDATION`/`REVERSAL` — 三套命名完全不交叉，`REGIME_FACTORS.get()` 全部未命中，退化到默认 1.00，等于 regime 维度在策略层校准公式 `calibration_bias = G6_seed × regime_factor × liquidity_factor` 中完全失效
+  - **修复**: REGIME_FACTORS 从 7 键扩展到 22 键，覆盖三套命名体系：旧版4y大周期7个（向后兼容）+ 弹簧力场分类器6个 + 八卦形态分类9个
+  - **影响范围**: `strategy_algo_layer.py` L209-L244
+  - **验证**: 15 个新测试（含映射验证 + select() 端到端）+ 60 个回归测试 = 75 passed
+
+---
+
+## [v4.4.2] - 2026-09-12
+
+### 战略层 RESTRICT 状态落地 + Phase 2 自适应权重上线
+
+- **修复**: `five_domain_scorer.py` 四态状态机补齐 RESTRICT 转换
+  - **根因**: SubSystemBridge `_WAR_STATE_TEMP` 定义了 RESTRICT=0.2 温度映射，但 `FiveDomainHeuristicScorer._apply_decision_rules()` 从未生成 RESTRICT 状态，导致 50≤total<60 区间直接落入 FREEZE 或 COOLDOWN，RESTRICT 状态悬空
+  - **修复**: 在 ALLOW→降级路径添加 `50≤total<58 → RESTRICT`；在 RESTRICT/COOLDOWN/FREEZE→维护路径添加 `50≤total<60 → RESTRICT`，完成四态闭环
+  - **影响范围**: `five_domain_scorer.py` L398-L436 状态机
+
+- **修复**: `five_domain_scorer.py` 极差场景 mask 被方向状态覆盖
+  - **根因**: `is_extreme_bad`（total<50/道绝否决/法<40）设置 mask 全 False 后，`direction_state` 叠加逻辑（SHORT_ONLY/LONG_ONLY 等）会覆盖还原 mean_revert=True，导致极差场景策略未全部下架
+  - **修复**: 极差场景跳过方向状态叠加；道绝否决(`dao_jv_fou_jue`)覆盖 `di_tian_shuang_cha` 的 volatility 例外（一票否决禁一切非应急策略）
+  - **影响范围**: `five_domain_scorer.py` L535-L541, L557-L587
+
+- **修复**: `bcrm2/storage.py` CREATE TABLE 缺失 18 列导致 INSERT 静默回退
+  - **根因**: `save_shadow_log()` INSERT 引用 `fd_precious_metal_war_state`/`fd_*_score` 明细/`direction_state`/`direction_bias` 等 18 列，但 CREATE TABLE 和迁移列表仅含 14 列，触发 `sqlite3.OperationalError: table shadow_param_log has no column named fd_precious_metal_war_state`，静默回退到 fallback INSERT（旧 schema），T5 字段全部写 NULL
+  - **修复**: CREATE TABLE 补齐 18 列（fd_precious_metal_war_state/total_score + 15 个五维明细 + direction_state/direction_bias）；迁移列表同步补齐；SELECT 查询补齐新列
+  - **影响范围**: `bcrm2/storage.py` L387-L415（CREATE TABLE）、L488-L523（迁移）、L1412-L1420（SELECT）
+
+- **新增**: `polling_trader.py` Phase 2 自适应权重数据源接入
+  - **内容**: 从 `_force_vector_shadow` 提取 per_class `force_vectors`，FAIL-OPEN 传入 `score_and_decide(force_vectors_by_class=...)`
+  - **数据流**: FiveDomainFeatureComputer._force_vector_shadow → polling_trader 提取 → FiveDomainHeuristicScorer._compute_adaptive_weights
+  - **开关**: `enable_adaptive_weights` 默认 False（FAIL-OPEN），环境变量控制启用
+
+- **修复**: `test_strategy_algo_stage1.py` test_22 期望值对齐硬约束
+  - **根因**: test_22 断言 `fa<40 → position_mult=0.50`，但 project_memory 硬约束要求「法<40→不开新仓（position_mult=0.0）」，代码已按硬约束实现
+  - **修复**: 期望值从 0.50 改为 0.0
+
+- **验证**: 73 个测试通过（15 新测试 + 42 strategy_algo + 2 byte_equivalence + 1 schema_compat + 13 subsystem_bridge），语法检查通过
+
+---
+
+## [v4.4.1] - 2026-09-11
+
+### 五计庙算数据未更新修复（shadow_param_log INSERT 占位符不匹配）
+
+- **修复**: `bcrm2/storage.py` `save_shadow_log()` 主 INSERT 语句 74 列仅有 72 个占位符，触发 `sqlite3.OperationalError` 后静默回退到 fallback INSERT（旧 schema 仅 43 列），导致 `direction_state`/`direction_bias`/`fd_*`/`sal_*` 全部写入 NULL
+  - **根因**: 新增 T5 战略层字段（fd_* 15 个 + direction_* 2 个 + sal_* 6 个）时，INSERT 列名从 43 扩展到 74，但 VALUES 占位符行未同步更新，少了 2 个 `?`
+  - **修复**: 重写 VALUES 子句占位符为 74 个，与列数严格对齐
+  - **防御**: fallback INSERT 仅保留 43 列旧 schema，作为旧库兼容兜底；主 INSERT 失败时不应静默，未来可加 WARN 日志
+  - **影响范围**: `bcrm2/storage.py` `save_shadow_log()` INSERT 语句
+- **修复**: `polling_trader.py` `_record_shadow_log()` 中 `direction_state`/`direction_bias` 提取未兼容 dict 结构
+  - **根因**: `FiveDomainState.direction_state` 实际为 `{'crypto_usdt': 'SHORT_ONLY', 'us_stock': 'NEUTRAL', 'precious_metal': 'SHORT_PREFER'}` 的 dict，原代码直接对字符串调用 `.get()` 不生效
+  - **修复**: 增加 `isinstance(dict)` 判断，按币种资产类别（`_coin_asset_class`）从 dict 取值；非 dict 时直接取值
+  - **影响范围**: `polling_trader.py` `_record_shadow_log()` 方向状态提取段
+- **修改**: `data_server_fixed.py` `get_strategy_layer_shadow()` API 返回字段补全
+  - **新增**: `latest_strategic` 增加 `precious_metal`（war_state/total_score）、`direction_state`、`direction_bias`
+  - **新增**: `records` 增加 `direction_state`、`direction_bias`、`fd_pm_war_state`、`fd_pm_total_score`
+  - **影响范围**: `data_server_fixed.py` L2440-L2496
+- **修改**: `monitor.html` 前端"五计庙算"Tab 显示方向状态
+  - **新增**: 战略层卡片区新增"🧭 方向状态"卡片（direction_state 着色 + direction_bias 偏置值）
+  - **新增**: 最近影子记录表格新增"方向"和"偏置"两列
+  - **影响范围**: `experiments/ab-trading/monitor.html` L1995-L2006, L2044-L2076
+- **验证**:
+  - 数据库：最新记录 `direction_state=SHORT_ONLY`、`direction_bias=-17.65`、`fd_crypto_war_state=FREEZE`、`fd_crypto_total_score=52.0`
+  - API：`/api/shadow/strategy-layer` 返回 `fd_filled=25935/32570`，`direction_state`/`direction_bias` 非空
+  - 前端：刷新页面可见方向状态卡片和表格方向列
+
+---
+
+## [v4.4.0] - 2026-09-10
+
+### RAG 热路径集成 + 闭环反哺
+
+- **新增**: `polling_trader.py` RAG 热路径 3 接入点 + 2 平仓接入
+  - `_rag_hotpath_lookup()` (L386-429)：Hybrid 向量检索 ChromaDB
+  - `_rag_record_to_memory()` (L432-446)：检索结果→认知记忆 record
+  - `_distill_trade_to_knowledge()` (L453-496)：平仓案例→蒸馏 md→入索引
+  - `_rag_feedback_on_close()` (L523-583)：平仓→verify→boost 反哺
+  - 接入点A `[RAG-PRE-OPEN]` (L13208)：开仓前检索，注入 rag_context
+  - 接入点B `[RAG-PRE-EVO-OPEN]` (L8924)：进化开仓前检索
+  - 接入点C `[RAG-PRE-EXIT]` (L9535)：离场前检索
+  - 蒸馏接入 (L8278)：平仓后调用 `_distill_trade_to_knowledge`
+  - 反哺接入 (L8281)：平仓后调用 `_rag_feedback_on_close`
+- **验证**: daemon PID=75911，今日 RAG 378 次调用（EXIT×351, OPEN×26, EVO×1），0 异常
+- **设计原则**: RAG 只读辅助，不修改 BCRM2/力向量决策参数
+
+### CBR 案例库向量化（断层2修复）
+
+- **新增**: CBR 202 条已平仓案例入 ChromaDB，`source_type="cbr_case"`
+  - 3 维标签：`setup_type`(breakout/trend_follow/mean_reversion/momentum/consolidation)
+  - 3 维标签：`regime`(trend/range/volatile/trending_volatile)
+  - 3 维标签：`failure_reason`(sl_hit/volatility_sweep/trend_reversal/timeout/tp_missed)
+- **效果**: `hybrid_search` 现在同时返回策略文档和 CBR 案例
+
+### 硬约束总表入索引
+
+- **新增**: `2-KNOWLEDGE/1-TRADING/硬约束总表.md` 入 ChromaDB（32 chunks）
+  - 38 条硬约束按 10 域分类
+  - 检索验证：score=0.693
 
 ---
 

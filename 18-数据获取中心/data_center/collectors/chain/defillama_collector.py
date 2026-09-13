@@ -50,6 +50,9 @@ class DeFiLlamaCollector(BaseCollector):
                 return self._fetch_protocols()
             if route == "protocol_fees":
                 return self._fetch_protocol_fees(params.get("protocol", ""))
+            # 🆕 P1：稳定币总供应量路由
+            if route == "stablecoins":
+                return self._fetch_stablecoins()
             # 未知路由：静默返回空，避免意外触发网络
             return []
         except RateLimitError:
@@ -273,6 +276,69 @@ class DeFiLlamaCollector(BaseCollector):
             events=[],
             timeseries=ts,
             raw={"url": f"/summary/fees/{protocol}"},
+        )
+        validate_record(rec)
+        return [rec]
+
+    # ------------------------------------------------------------------
+    # 🆕 P1：稳定币总供应量路由
+    # ------------------------------------------------------------------
+    def _fetch_stablecoins(self) -> list[DataRecord]:
+        """GET /stablecoins → 稳定币总市值 + 分币种供应量。
+
+        用于五维设计 D7 稳定币市值 + AGI 蓝图 L1 流动性 proxy。
+        端点：https://stablecoins.llama.fi/stablecoins?includePrices=true
+        """
+        data = self._get("https://stablecoins.lllama.fi/stablecoins?includePrices=true")
+        if isinstance(data, dict):
+            data = data.get("peggedAssets", data.get("coins", data.get("data", [])))
+        if not isinstance(data, list):
+            data = []
+
+        coins: list[dict] = []
+        total_supply = 0.0
+        for item in data or []:
+            try:
+                name = str(item.get("name") or "")
+                symbol = str(item.get("symbol") or "")
+                # circulating 是 dict: {peggedUSD: 数值}
+                circ = item.get("circulating", {})
+                if isinstance(circ, dict):
+                    supply = float(circ.get("peggedUSD", 0) or 0)
+                elif isinstance(circ, (int, float, str)):
+                    supply = float(circ)
+                else:
+                    supply = 0.0
+            except (TypeError, ValueError, KeyError):
+                continue
+            coins.append({"name": name, "symbol": symbol, "supply": supply})
+            total_supply += supply
+
+        # 取 top 10 稳定币
+        coins.sort(key=lambda c: c["supply"], reverse=True)
+        top10 = coins[:10]
+
+        now = datetime.now(timezone.utc).astimezone().isoformat()
+        rec = DataRecord(
+            source="defillama",
+            category="chain",
+            sub_category="stablecoins",
+            timestamp=now,
+            metrics={
+                "total_supply": total_supply,
+                "total_supply_bln": round(total_supply / 1e9, 4),
+                "coin_count": len(coins),
+                "top1_symbol": top10[0]["symbol"] if top10 else "",
+                "top1_supply": top10[0]["supply"] if top10 else 0,
+                "top2_symbol": top10[1]["symbol"] if len(top10) > 1 else "",
+                "top2_supply": top10[1]["supply"] if len(top10) > 1 else 0,
+            },
+            events=[],
+            timeseries=[
+                {"symbol": c["symbol"], "name": c["name"], "supply": c["supply"]}
+                for c in top10
+            ],
+            raw={"url": "/stablecoins", "coin_count": len(data or [])},
         )
         validate_record(rec)
         return [rec]

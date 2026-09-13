@@ -1,19 +1,23 @@
 """TheBlockBeats DataView 页面直抓采集器（SDK 轨）。
 
-使用 Playwright Chromium headless 渲染 https://www.theblockbeats.info/dataview，
-等待 AJAX 完成 + 懒加载触发（总 ~27s），然后把整页 HTML 交给 dataview_html_parser 结构化解析，
+渲染路径优先级（FAIL-OPEN）：
+  1. Scrapling StealthyFetcher（Patchright，反爬能力最强）
+  2. Playwright Chromium headless（原路径，回退）
+
+渲染完成后把整页 HTML 交给 dataview_html_parser 结构化解析，
 最后产出符合 DataRecord 契约的 4 类记录（ECharts卡片元信息 / 市场脉动指数 / 抄底逃顶11信号 / 链上净流入Top10）。
 
 作为 BaseCollector 子类，既可被 Dispatcher 统一调度，也可独立运行。
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
-from typing import Any
 
 from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord
 
+logger = logging.getLogger("data_center.collectors.news.theblockbeats_dataview")
 
 DATAVIEW_URL = "https://www.theblockbeats.info/dataview"
 
@@ -35,6 +39,8 @@ class TheBlockBeatsDataviewCollector(BaseCollector):
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
         )
+        # 是否优先使用 Scrapling stealthy 模式（默认开启）
+        self._use_scrapling = bool(self.config.get("use_scrapling", True))
 
     # ──────────────────────────────────────────────────────────────────────
     # BaseCollector 接口
@@ -52,7 +58,7 @@ class TheBlockBeatsDataviewCollector(BaseCollector):
 
         params 可选键：
           - url: 覆盖默认 dataview URL
-          - html_override: 直接提供 HTML 字符串（调试/测试用，跳过 Playwright）
+          - html_override: 直接提供 HTML 字符串（调试/测试用，跳过渲染）
         """
         params = params or {}
         url = params.get("url", DATAVIEW_URL)
@@ -60,7 +66,7 @@ class TheBlockBeatsDataviewCollector(BaseCollector):
         if "html_override" in params and params["html_override"]:
             html = params["html_override"]
         else:
-            html = self._render_with_playwright(url)
+            html = self._render(url)
 
         if not html:
             return []
@@ -79,7 +85,34 @@ class TheBlockBeatsDataviewCollector(BaseCollector):
         return to_records(data, source=self.source, ts=ts)
 
     # ──────────────────────────────────────────────────────────────────────
-    # Playwright 渲染
+    # 渲染分发（Scrapling stealthy → Playwright 回退）
+    # ──────────────────────────────────────────────────────────────────────
+    def _render(self, url: str) -> str:
+        """优先 Scrapling StealthyFetcher，失败回退 Playwright。"""
+        if self._use_scrapling:
+            html = self._render_with_scrapling(url)
+            if html:
+                return html
+            logger.info("[theblockbeats] Scrapling stealthy 无产出，回退 Playwright")
+        return self._render_with_playwright(url)
+
+    def _render_with_scrapling(self, url: str) -> str:
+        """用 Scrapling StealthyFetcher 渲染（Patchright 反爬）。"""
+        try:
+            from data_center.crawler.scrapling_engine import ScraplingEngine
+        except Exception:
+            return ""
+        try:
+            engine = ScraplingEngine()
+            # stealthy 模式已带内部回退链（stealthy→dynamic→http→static）
+            return engine.fetch_html(url, mode="stealthy")
+        except Exception as exc:
+            logger.warning("[theblockbeats] Scrapling 渲染异常: %s: %s",
+                           type(exc).__name__, str(exc)[:120])
+            return ""
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Playwright 渲染（回退路径）
     # ──────────────────────────────────────────────────────────────────────
     def _render_with_playwright(self, url: str) -> str:
         try:

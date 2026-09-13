@@ -68,7 +68,7 @@ function renderOverview(data) {
     return;
   }
 
-  evoEl.innerHTML = renderPoolCard('演化子池 (25U)', data.evolution, 'var(--blue)');
+  evoEl.innerHTML = renderPoolCard('演化子池', data.evolution, 'var(--blue)');
   mainEl.innerHTML = renderPoolCard('主池 (非evo)', data.main_pool, 'var(--purple)');
 }
 

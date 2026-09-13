@@ -1,0 +1,27 @@
+{
+  "symbol": "SOL",
+  "bars": 1440,
+  "backtest_bars": 1379,
+  "empyrical": {
+    "sharpe_ratio": -0.0875531468495611,
+    "sortino_ratio": -0.15894088255490035,
+    "max_drawdown": -0.04786109639692136,
+    "calmar_ratio": -0.044466637621339775,
+    "annual_return": -0.002128222029641913,
+    "annual_volatility": 0.021679924172981008,
+    "tail_ratio": 0.0,
+    "omega_ratio": 0.9172986912449286
+  },
+  "custom": {
+    "win_rate": 0.39655172413793105,
+    "profit_factor": 1.356006760970764,
+    "signal_coverage": 0.04205946337926034,
+    "long_ratio": 0.005076142131979695,
+    "short_ratio": 0.03698332124728064,
+    "total_trades": 46
+  },
+  "benchmark": {
+    "buy_hold_return": -0.011590817103884876,
+    "random_signal_mean_sharpe": 0.0
+  }
+}

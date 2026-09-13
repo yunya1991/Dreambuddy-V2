@@ -141,7 +141,7 @@ def fake_alerts(monkeypatch):
 
     # 尝试 monkeypatch 项目 alert_bridge（如存在）；无论 import 是否成功，fake 都作为 fixture 提供给测试
     try:
-        from dreambuddy_core import alert_bridge as ab
+        from dreambuddy_evolution import alert_bridge as ab
         monkeypatch.setattr(ab, "send_alert", FakeAlert.send, raising=False)
     except Exception:
         pass  # CI 环境可能没有真实 alert module；所有测试 accept FakeAlert 注入

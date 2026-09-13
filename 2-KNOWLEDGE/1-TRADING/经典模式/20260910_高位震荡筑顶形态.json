@@ -1,0 +1,291 @@
+{
+  "case_id": "classic_pattern_20260910_2001",
+  "timestamp": "2026-09-10T20:01:09.186437",
+  "pattern_name": "上涨后高位震荡筑顶（滞涨形态）",
+  "market_regime": "BTC强势上涨后高位滞涨",
+  "description": "加密货币60日大涨33-88%后，近13-14天进入高位横盘震荡，RSI降至中性偏弱(38-44)，上涨动能衰竭，疑似筑顶。",
+  "positions": {
+    "BTC": {
+      "direction": "long",
+      "entry": 78272.3,
+      "confidence": 0.5
+    },
+    "ETH": {
+      "direction": "long",
+      "entry": 2486.7,
+      "confidence": 0.5
+    },
+    "SOL": {
+      "direction": "short",
+      "entry": 101.91,
+      "confidence": 0.4
+    },
+    "NVDA": {
+      "direction": "long",
+      "entry": 226.14,
+      "confidence": 0.9667
+    },
+    "AMZN": {
+      "direction": "short",
+      "entry": 257.65,
+      "confidence": 0.8397
+    },
+    "GOOGL": {
+      "direction": "long",
+      "entry": 339.52,
+      "confidence": 0.758
+    },
+    "MU": {
+      "direction": "long",
+      "entry": 1018.39,
+      "confidence": 0.8216
+    },
+    "BMNR": {
+      "direction": "long",
+      "entry": 24.34,
+      "confidence": 0.9887
+    }
+  },
+  "market_pattern": {
+    "BTC": {
+      "price": 77830.7,
+      "ma200_dist_pct": 14.1,
+      "rsi14": 41.0,
+      "chg20d_pct": 0.8,
+      "chg60d_pct": 21.3,
+      "pos60d_pct": 78,
+      "pos20d_pct": 34,
+      "atr_pct": 2.9,
+      "days_since_60d_high": 6
+    },
+    "ETH": {
+      "price": 2462.4,
+      "ma200_dist_pct": 25.4,
+      "rsi14": 44.2,
+      "chg20d_pct": 2.9,
+      "chg60d_pct": 35.3,
+      "pos60d_pct": 87,
+      "pos20d_pct": 51,
+      "atr_pct": 3.7,
+      "days_since_60d_high": 14
+    },
+    "SOL": {
+      "price": 101.1,
+      "ma200_dist_pct": 25.3,
+      "rsi14": 40.2,
+      "chg20d_pct": 10.6,
+      "chg60d_pct": 30.4,
+      "pos60d_pct": 76,
+      "pos20d_pct": 59,
+      "atr_pct": 5.6,
+      "days_since_60d_high": 13
+    },
+    "BMNR": {
+      "price": 24.1,
+      "ma200_dist_pct": 31.4,
+      "rsi14": 38.8,
+      "chg20d_pct": 6.1,
+      "chg60d_pct": 57.1,
+      "pos60d_pct": 78,
+      "pos20d_pct": 42,
+      "atr_pct": 6.4,
+      "days_since_60d_high": 13
+    },
+    "NVDA": {
+      "price": 222.4,
+      "ma200_dist_pct": 4.8,
+      "rsi14": 44.0,
+      "chg20d_pct": 2.8,
+      "chg60d_pct": 4.6
+    },
+    "AMZN": {
+      "price": 252.56,
+      "ma200_dist_pct": -0.7,
+      "rsi14": 45.3,
+      "chg20d_pct": -2.9,
+      "chg60d_pct": 2.8
+    },
+    "GOOGL": {
+      "price": 331.4,
+      "ma200_dist_pct": -7.3,
+      "rsi14": 38.8,
+      "chg20d_pct": -4.0,
+      "chg60d_pct": -7.6
+    },
+    "MU": {
+      "price": 1009.74,
+      "ma200_dist_pct": 6.7,
+      "rsi14": 75.2,
+      "chg20d_pct": 4.2,
+      "chg60d_pct": 2.8
+    }
+  },
+  "strategic_layer": {
+    "crypto_usdt": {
+      "dao": 45,
+      "tian": 49,
+      "di": 48,
+      "jiang": 60,
+      "fa": 83,
+      "war_state": "FREEZE",
+      "cap": 0.2
+    },
+    "us_stock": {
+      "dao": 44,
+      "tian": 51,
+      "di": 51,
+      "jiang": 62,
+      "fa": 82,
+      "war_state": "FREEZE",
+      "cap": 0.2
+    },
+    "precious_metal": {
+      "dao": 44,
+      "tian": 49,
+      "di": 52,
+      "jiang": 55,
+      "fa": 45,
+      "war_state": "FREEZE",
+      "cap": 0.2
+    },
+    "note": "所有类war=FREEZE，战略层冻结交易。但持仓仍有6多2空。"
+  },
+  "bcrm_pattern": {
+    "note": "头肩检测全返回NEUTRAL，形态尚未完全形成右肩。但高位滞涨特征明显。"
+  },
+  "bdsm_snapshot": {
+    "note": "技术指标全中性(rsi=50,ma200_dist=0)，因K线分页Bug未修复(daemon未重启)。"
+  },
+  "key_observations": [
+    "加密货币60日大涨33-88%后高位横盘13-14天",
+    "RSI从超买区降至38-44中性偏弱，上涨动能衰竭",
+    "20日震荡区间远窄于60日区间，波动率收缩",
+    "战略层FREEZE但持仓仍有多头(BTC/ETH/BMNR)",
+    "SOL已转空(conf=0.4)，AMZN已转空(conf=0.84)",
+    "美股分化：MU超买(RSI=75)，GOOGL低位(MA200-7.3%)"
+  ],
+  "subsystem_assessment": {
+    "strategic_layer": {
+      "current_state": "所有类 war=FREEZE, dao≈45",
+      "识别能力": "dao维度原本全是基本面因子，无法识别技术面\"高位滞涨\"",
+      "已修复": "新增子指标6\"高位滞涨风险\"(ma200>0.70且非上升趋势→35分)",
+      "效果": "高位滞涨时dao降3-5分，配合ETF流出(pn_dao_boost -0.15)可降至40否决线附近",
+      "待优化": "coin_data中需确保ma200_distance_percentile和regime字段正确填充"
+    },
+    "bcrm": {
+      "current_state": "头肩检测全返回NEUTRAL",
+      "识别能力": "能识别已形成的头肩顶/底，但无法识别\"高位震荡\"过渡形态",
+      "建议": "后续增加\"高位滞涨\"模式：60日涨幅>30% + 近20日震荡 + RSI下降",
+      "优先级": "P2（当前头肩检测已覆盖，形态完全形成后可识别）"
+    },
+    "bdsm": {
+      "current_state": "技术指标全中性(rsi=50, ma200_dist=0)",
+      "问题": "K线分页Bug导致技术评估失效（daemon未重启加载修复）",
+      "建议": "重启daemon后验证BDSM技术评估恢复正常",
+      "优先级": "P0（必须重启daemon）"
+    },
+    "self_evolution": {
+      "current_state": "有range/reversal类候选基因",
+      "识别能力": "CD-ADX-18-LOWVOL（低波动震荡）、CD-KELTNER-MID-STUCK（中轨停滞）可识别震荡",
+      "建议": "在ESS权重优化中，对\"高位滞涨→下跌\"样本增加reversal类基因权重",
+      "优先级": "P1（需积累样本后离线优化）"
+    }
+  },
+  "weight_adjustments": {
+    "已实施": [
+      {
+        "factor": "ETF flow权重",
+        "from": 0.05,
+        "to": 0.15,
+        "effect": "滞涨后ETF流出信号价值提升3倍"
+      },
+      {
+        "factor": "dao新增高位滞涨因子",
+        "from": "无",
+        "to": "子指标6(等权1/6)",
+        "effect": "高位滞涨时dao降3-5分"
+      },
+      {
+        "factor": "VIX×BTC regime动态权重",
+        "from": "无",
+        "to": "WEAK×2.0/STRONG×0.5",
+        "effect": "BTC弱势时VIX影响放大"
+      }
+    ],
+    "建议后续": [
+      {
+        "factor": "BCRM高位滞涨模式",
+        "priority": "P2",
+        "desc": "新增60日涨幅+震荡+RSI下降的模式识别"
+      },
+      {
+        "factor": "ESS reversal基因权重",
+        "priority": "P1",
+        "desc": "积累高位滞涨→下跌样本后，离线优化reversal类基因权重"
+      },
+      {
+        "factor": "di维度动量因子",
+        "priority": "P2",
+        "desc": "在di维度增加\"动量衰竭\"因子(RSI从超买下降)"
+      }
+    ]
+  },
+  "assessment_summary": "\n=== 综合评估（2026-09-10 20:05）===\n\n【市场形态】加密货币60日大涨33-88%后高位横盘13-14天，RSI降至38-44，典型\"上涨后高位震荡筑顶\"。\n\n【子系统识别能力】\n1. 战略层：dao维度原全基本面，已修复→新增高位滞涨技术因子\n2. BCRM：头肩检测未触发（形态未完全形成），建议后续增加过渡形态识别\n3. BDSM：技术评估失效（K线Bug），需重启daemon\n4. 自进化：有range/reversal基因，需样本积累后优化权重\n\n【关键持仓风险】\n- BTC/ETH/BMNR多头仍持仓，但形态已转滞涨，需警惕回调\n- SOL已转空(conf=0.4)，AMZN已转空(conf=0.84)\n- 战略层FREEZE但持仓未平，说明开仓时未及时识别风险\n",
+  "direction_state_assessment": {
+    "crypto_usdt": {
+      "dao": 37,
+      "direction_bias": -18.2,
+      "direction_state": "SHORT_ONLY",
+      "war_state": "FREEZE",
+      "strategy_mask": {
+        "trend_follow": false,
+        "breakout": false,
+        "mean_revert": true,
+        "momentum": false,
+        "volatility": true
+      },
+      "meaning": "高位滞涨+道否决 → 只允许做空，禁止做多；BTC/ETH SHORT_BAN临时解除"
+    },
+    "us_stock": {
+      "dao": 40,
+      "direction_bias": -0.9,
+      "direction_state": "NEUTRAL",
+      "war_state": "FREEZE",
+      "meaning": "道未否决+中性偏空 → 多空均可（但war=FREEZE降低仓位）"
+    },
+    "precious_metal": {
+      "dao": 40,
+      "direction_bias": -20.9,
+      "direction_state": "SHORT_PREFER",
+      "war_state": "FREEZE",
+      "meaning": "道未否决+偏空 → 做空优先，做多需更高置信度"
+    }
+  },
+  "direction_state_design": {
+    "fields": [
+      "direction_bias (-100~+100)",
+      "direction_state (6态)"
+    ],
+    "bias_components": {
+      "五维评分": "dao*0.25 + di*0.15 + tian*0.10（权重0.5）",
+      "BCRM方向预测": "UP+conf*30 / DOWN-conf*30（权重0.3）",
+      "高位滞涨因子": "(high_stall-50)*0.4（权重0.2）",
+      "BDSM估值分位": "(50-val_pct)*0.2（权重0.1）",
+      "BTC regime": "STRONG+10 / WEAK-10（权重0.1）"
+    },
+    "state_mapping": {
+      "dao<40 + bias≤-10": "SHORT_ONLY（允许做空）",
+      "dao<40 + bias>-10": "FREEZE（完全禁止）",
+      "dao≥40 + bias≥50": "LONG_ONLY",
+      "dao≥40 + 20≤bias<50": "LONG_PREFER",
+      "dao≥40 + -20<bias<20": "NEUTRAL",
+      "dao≥40 + -50<bias≤-20": "SHORT_PREFER",
+      "dao≥40 + bias≤-50": "SHORT_ONLY"
+    },
+    "ml_model_integration": {
+      "L1方向模型": "LightGBM多分类 UP/DOWN/FLAT + Meta-Labeling（BCRM2内部）",
+      "ESS自进化": "涟漪扩散引擎 R_up/R_down 方向判断",
+      "后续优化": "ESS权重优化可基于direction_bias样本调整reversal基因权重"
+    }
+  }
+}

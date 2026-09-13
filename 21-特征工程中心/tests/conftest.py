@@ -28,7 +28,7 @@ def fake_alerts(monkeypatch):
             cls.last_messages.append(str(message)[:160])
 
     try:
-        from dreambuddy_core import alert_bridge as ab
+        from dreambuddy_evolution import alert_bridge as ab
         monkeypatch.setattr(ab, "send_alert", FakeAlert.send, raising=False)
     except Exception:  # pragma: no cover — 如模块缺失（未来 refactor），Fixture 仍返回 FakeAlert 计数对象
         pass

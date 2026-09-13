@@ -20,18 +20,18 @@ from typing import Any, Literal, Optional
 import numpy as np
 
 # ---------------------------------------------------------------------------
-# 唯一权威权重 / 边界 / 降级值集中源：dreambuddy_core.default_weights 硬约束
+# 唯一权威权重 / 边界 / 降级值集中源：dreambuddy_evolution.weights 硬约束
 # ---------------------------------------------------------------------------
-from dreambuddy_core.default_weights import FALLBACK_VALUES, WEIGHTS, WEIGHTS_VERSION
+from dreambuddy_evolution.weights import FALLBACK_VALUES, WEIGHTS, WEIGHTS_VERSION
 
 BOUNDARIES: dict = WEIGHTS["BOUNDARIES"]  # 兼容式暴露（WEIGHTS 嵌套 dict 内的 BOUNDARIES 段）
 logger = logging.getLogger(__name__)
 
-# Lark alert bridge（可选依赖，CI/本地不存在则 fallback no-op。测试可 monkeypatch dreambuddy_core.alert_bridge.send_alert）
+# Lark alert bridge（可选依赖，CI/本地不存在则 fallback no-op。测试可 monkeypatch dreambuddy_evolution.alert_bridge.send_alert）
 # 注意：必须用模块查找（`_alert_bridge_mod.send_alert()`）而非值绑定 import，否则 monkeypatch 失效
 _alert_bridge_mod: Any = None
 try:
-    import dreambuddy_core.alert_bridge as _alert_bridge_mod  # type: ignore[no-redef]
+    import dreambuddy_evolution.alert_bridge as _alert_bridge_mod  # type: ignore[no-redef]
 except Exception:  # pragma: no cover
     _alert_bridge_mod = None
 
@@ -113,7 +113,7 @@ def _to_float_arr(value: Any, nan_fill: float | None = None) -> np.ndarray:
 class ResistanceVector:
     """L1 5D 阻力向量计算器。无状态，可多线程并发（FO-3 全局限流用 threading.Lock 保护）"""
 
-    WEIGHTS_VERSION: str = getattr(__import__("dreambuddy_core").default_weights, "WEIGHTS_VERSION", "1.0-MVP")
+    WEIGHTS_VERSION: str = getattr(__import__("dreambuddy_evolution").weights, "WEIGHTS_VERSION", "1.0-MVP")
 
     def __init__(self, weights_module: Any = None, sentiment_engine: Any = None,
                  lark_bridge: Any = None, adapter: Any = None):

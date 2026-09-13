@@ -1,0 +1,62 @@
+{
+  "gene_id": "AC-ATR-STOP-2N",
+  "category": "exit_stop",
+  "action_kind": "close",
+  "direction": "both",
+  "sl_template": 0.04,
+  "tp_template": 0.12,
+  "size_pct": 1.0,
+  "rr_ratio_floor": 3.0,
+  "parameters": {
+    "atr_mult": {
+      "value": 2.0,
+      "range": {
+        "low": 1.5,
+        "high": 3.0
+      }
+    },
+    "sl_floor_pct": {
+      "value": 0.04,
+      "range": {
+        "low": 0.04,
+        "high": 0.06
+      }
+    },
+    "sl_cap_pct": {
+      "value": 0.15,
+      "range": {
+        "low": 0.10,
+        "high": 0.20
+      }
+    },
+    "exit_fast_period": {
+      "value": 10,
+      "range": {
+        "low": 5,
+        "high": 20
+      }
+    },
+    "exit_slow_period": {
+      "value": 20,
+      "range": {
+        "low": 10,
+        "high": 55
+      }
+    }
+  },
+  "code_ref": {
+    "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trend_following/trend_following_engine.py",
+    "lines": {
+      "low": 78,
+      "high": 114
+    }
+  },
+  "tags": [
+    "exit_stop",
+    "atr-stop",
+    "2N",
+    "trend-follow"
+  ],
+  "version": "1.0",
+  "notes": "2×ATR 止损（海龟法则 Chandelier Exit）。HC-TF-01: SL=2×ATR 下限4% 上限15%。Phase E 新增。"
+}

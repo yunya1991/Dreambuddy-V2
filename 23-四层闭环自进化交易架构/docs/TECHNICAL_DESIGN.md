@@ -1,365 +1,563 @@
-# 23-四层闭环自进化交易架构 — 技术设计
+# 策略知识→基因库三层准入技术设计
 
-> **版本**: v1.0 | **更新日期**: 2026-09-07
-> **定位**: 模块级技术设计文档，对齐 [四层闭环进化架构-最小阻力路径总览.md](../../2-KNOWLEDGE/1-TRADING/四层闭环进化架构-最小阻力路径总览.md)
-
----
-
-## 1. 架构总览
-
-### 1.1 设计哲学
-
-本模块实现 **四层闭环自进化交易架构**：观察→推断→实验→反思→回馈，对应科学方法闭环：
-
-```
-观察（RippleEngine + ReflectionScanner）
-  → 推断（Level0 d* + ESS对齐）
-    → 实验（三层仓位建仓 + SL/TP兜底）
-      → 测量（TP/SL结算）
-        → 反思（CS一致性 → ESS奖惩）
-          → 学习（ESS delta + gmax更新）
-            → 回馈（ESS → 下一轮检测）
-```
-
-### 1.2 四层架构
-
-| 层 | 名称 | 代码入口 | 职责 |
-|:---|:---|:---|:---|
-| L1 | 状态空间层 | `core/resistance_vector.py` | 5维阻力向量 R = (R_up, R_down, R_smooth, R_flow, R_reflexivity) 实时计算 |
-| Level0 | 路径代价层 | `core/level0_path_cost.py` | d* = argmin 代价方向（long/short/WAIT） |
-| L2 | 策略知识层 | `core/strategy_gene.py` | 策略基因库加载 + ESS排序 + top1方向 |
-| L3 | 影子RL层 | `core/shadow_rl.py` | (s,a,R,s') 样本记录 + Sharpe stub |
-| L4 | 最优目标层 | `core/bellman_tracker.py` | V(s) TD(0) 时序差分更新 |
-
-### 1.3 双起点触发机制（2026-09-06 增强）
-
-```
-起点1: RippleEngine（外察式）         起点2: ReflectionScanner（内省式）
-  涟漪检测 → ripple_ri                  历史胜率 → reflection_ri
-       │                                    │
-       └───────── ri = max(ripple_ri, reflection_ri) ─────────┘
-                                  │
-                          三层仓位分级
-                  probe(0.40) / standard(0.55) / trend(0.70)
-```
-
-### 1.4 紧耦合7步闭环
-
-`TightCouplingOrchestrator` 串联7步：
-
-| 步骤 | 方法 | 输入 | 输出 |
-|:---|:---|:---|:---|
-| ① 观察 | `observe()` | market_data | `{ri, is_ripple_source, ess_top_direction}` |
-| ② 推断 | `hypothesize()` | obs | `{inference_formed, ri, cbr_boost, ess_temp_mult}` |
-| ③ 实验 | `experiment()` | r_vector, hyp | `{action, u_open, d_star, pre_trade_snapshot}` |
-| ④ 测量 | `measure()` | exp, outcome | `{real_direction, real_outcome, u_open}` |
-| ⑤ 反思 | `reflect()` | snapshot, measure | `{cs, ess_delta, gmax_mult, cluster_weight_mult}` |
-| ⑥ 学习 | `learn()` | refl | `{ess_delta, gmax_mult, anti_pattern_flag}` |
-| ⑦ 回馈 | `feedback()` | learned | `{ess_delta, updated_ess_direction, gmax_updated}` |
+> **版本**: v1.3 | **创建日期**: 2026-09-10 | **最后更新**: 2026-09-11
+> **定位**: L2 级子系统技术设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
+> **关联**: [KNOWLEDGE_STORAGE_BOUNDARY_MAP.md](../../0-系统文档管理/2-文档地图/KNOWLEDGE_STORAGE_BOUNDARY_MAP.md) · [EVOLUTION_BOUNDARY_MAP.md](../../0-系统文档管理/2-文档地图/EVOLUTION_BOUNDARY_MAP.md) · [SPEC-交易知识构建双通道方案.md](../../2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md)
+> **硬约束**: 策略知识不进 CS 评分公式；不改变 BCRM2/力向量决策条件；FAIL-OPEN 铁律
 
 ---
 
-## 2. 核心组件设计
+## 1. 概述
 
-### 2.1 KlineEventHandler — K线事件处理器
+### 1.1 系统定位
 
-**文件**: `engines/kline_event_handler.py`
+将经典交易策略知识（Livermore/Wyckoff/Darvas/ICT 等）转化为可验证的策略基因，通过三层准入机制（候选区→影子验证→实盘基因库）逐步验证并激活，解决自进化系统冷启动样本不足的问题。
 
-**核心方法**: `on_kline_close(kline_data, alpha, beta, gamma) -> dict`
+### 1.2 设计目标
 
-**处理流程**:
+- **冷启动**：用 BTC 回测数据（~297 笔信号）快速驱动影子验证，不等实盘慢积累
+- **安全渐进**：影子模式不干预交易参数，验证通过才进实盘
+- **知识→基因**：把 7 篇经典模式文档的规则转化为 condition gene JSON
+- **与现有系统兼容**：不改 CS 公式、不改 BCRM2、不改力向量
 
-1. **L1 R向量计算**: `ResistanceVector.calculate(symbol, kline_data)` → 9字段dict
-2. **三修饰子应用**: 情绪(α)/资金流(β)/叙事(γ)，权重上限[0, 0.2]
-3. **Level0 d* 计算**: `compute_d_star(r_vector)` → long/short/WAIT
-4. **起点1 - 涟漪RI**: `RippleEngine.detect_ripple_source()` + `compute_ri()`
-5. **起点2 - 反思RI**: `ReflectionScanner.get_coin_stats(symbol)` → reflection_ri
-6. **双起点聚合**: `ri = max(ripple_ri, reflection_ri)`
-7. **三层仓位分级**:
+### 1.3 业务边界
 
-| 层级 | RI范围 | position_mult | 场景 |
+| 职责 | 归属 |
+|:---|:---|
+| 策略知识文档编写与蒸馏 | 2-KNOWLEDGE（知识库系统 A） |
+| 策略知识→GeneCandidate 转换 | 本模块（基因准入层） |
+| 候选区基因管理 | 本模块 |
+| 影子验证区样本记录 | 本模块 + polling_trader |
+| 实盘基因库管理 | strategy_gene.py + ftc_gene_innovation.py（现有） |
+| CS 一致性评分 | ReflectionEngine（不改动） |
+| RAG 检索权重反哺 | weight_feedback（独立路径，不进 CS） |
+
+### 1.4 硬约束
+
+1. **策略知识不进 CS 公式**：CS = 0.4·cos(d*) + 0.3·cos(ESS) + 0.3·sign_match(CBR)，不增加 RAG/知识项维度
+2. **不改变 BCRM2/力向量决策条件**：策略基因只作为 condition gene 参与 FTC 组合，不直接修改 BCRM 参数
+3. **FAIL-OPEN 铁律**：基因准入全链路异常不阻塞交易
+4. **影子模式红线**：影子验证区基因只记录不干预参数（与 CBR shadow 一致）
+
+---
+
+## 2. 架构设计
+
+### 2.1 三层准入架构
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                     策略知识源                                     │
+│  2-KNOWLEDGE/1-TRADING/经典模式/                                   │
+│  Livermore · Wyckoff · Darvas · ICT · 动量反转 · VWAP · 形态       │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │ 规则提取
+                           ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  Layer 0: 候选区 (candidates/)                                    │
+│                                                                    │
+│  · GeneCandidate JSON，status="candidate"                          │
+│  · N=0，不参与交易决策                                              │
+│  · 来源：策略知识文档→expression 转换                                │
+│  · 准入门槛：无（转成 expression 即入）                               │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │ 回测/实盘触发 ≥ N_min_shadow
+                           ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  Layer 1: 影子验证区 (shadow_validation/)                          │
+│                                                                    │
+│  · status="shadow"，影子模式（只记录不干预参数）                      │
+│  · 样本来源：① BTC 回测 ② 实盘自然积累                                │
+│  · 准入→实盘：N≥10 且 影子胜率≥50% 且 平均PnL>0                      │
+│  · 淘汰：N≥10 且 胜率<30%，或连续5笔亏损                              │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │ 验证通过
+                           ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  Layer 2: 实盘基因库 (strategy_genes/) — 现有不变                    │
+│                                                                    │
+│  · status="active"，参与 FTC 组合                                    │
+│  · 准入：N≥100 且 ESS≥0.5（现有 L2 门槛不变）                         │
+│  · 激活：top_combinations_by_ess() 自动排名                           │
+│  · 淘汰：ESS 持续下降→gmax×0.5（现有机制不变）                         │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### 2.2 模块关系
+
+```
+2-KNOWLEDGE (策略知识)
+       │
+       ▼
+knowledge_to_gene_converter.py  ← 新增
+       │
+       ▼
+gene_data/candidates/           ← Layer 0
+       │
+       ▼
+shadow_validator.py             ← 新增
+       │                  ↕
+       │          BTC回测引擎 + polling_trader
+       │                  (样本来源)
+       ▼
+gene_data/shadow_validation/    ← Layer 1
+       │
+       ▼
+ftc_gene_innovation.py          ← 现有（write_gene_to_library）
+       │
+       ▼
+gene_data/strategy_genes/      ← Layer 2（现有，不变）
+```
+
+---
+
+## 3. 核心算法
+
+### 3.1 候选基因生成（策略知识→GeneCandidate）
+
+**输入**：经典模式文档中的触发条件
+**输出**：GeneCandidate JSON
+
+**转换规则**：
+
+| 经典策略 | expression | category | tags |
 |:---|:---|:---|:---|
-| probe | 0.40 ≤ ri < 0.55 | 0.4 | 轻仓试探（探索） |
-| standard | 0.55 ≤ ri < 0.70 | 0.7 | 标准仓 |
-| trend | ri ≥ 0.70 | 1.0 | 趋势加仓（利用） |
+| Livermore 关键点 | `price_break_20d_high AND vol_ratio > 1.5` | trend | livermore, pivotal_point, breakout |
+| Wyckoff Spring | `price_swing_low_below_range AND vol_ratio < 0.8 AND rsi_14 < 35` | reversal | wyckoff, spring, accumulation |
+| Darvas Box | `donchian_20_high_break AND atr < 1.5 * ma_atr` | trend | darvas, box, breakout |
+| ICT Order Block | `price_return_to_ob AND fvg_exists AND killzone_active` | reversal | ict, order_block, fvg |
+| 头肩顶 | `head_is_highest AND shoulders_symmetric AND neck_break` | reversal | chart_pattern, head_shoulders |
+| VWAP 回归 | `zscore_price_vwap < -2 AND rsi_2 < 5` | reversal | vwap, mean_reversion |
+| 动量突破 | `roc_20d > 0.05 AND vol_20d_quantile > 0.8` | momentum | momentum, breakout |
 
-8. **Regime乘数**: STRONG_TREND_BULL ×1.20, TREND_BULL ×1.05, BREAKOUT ×1.10, RANGING ×0.80, CONSOLIDATION ×0.70, STRONG_TREND_BEAR ×0.35, TREND_BEAR ×0.50
-9. **Phase2自动执行**: `build_position_callback(symbol, action, u_open, d_star, confidence, tier)`
+**伪代码**：
+```python
+def convert_knowledge_to_candidate(doc_path: Path) -> GeneCandidate:
+    """从策略知识文档提取触发条件，转为基因候选"""
+    md = read_markdown(doc_path)
+    trigger_rules = extract_trigger_section(md)  # 从"触发条件"章节提取
+    expression = rules_to_expression(trigger_rules)
+    return GeneCandidate(
+        gene_id=f"CD-KNOW-{slug(doc_path.stem)}",
+        gene_type="condition",
+        category=classify_category(trigger_rules),
+        condition_type="indicator",
+        description=extract_summary(md),
+        expression=expression,
+        parameters=extract_parameters(trigger_rules),
+        source="knowledge_distill",
+        tags=["knowledge", doc_path.stem],
+    )
+```
 
-**输出字段**:
+### 3.2 影子验证逻辑
+
+**准入判断**：
+```python
+def check_shadow_promotion(gene_id: str, samples: list) -> dict:
+    """检查影子基因是否达到准入标准"""
+    n = len(samples)
+    if n < SHADOW_MIN_SAMPLES:  # 10
+        return {"promote": False, "reason": f"N={n} < {SHADOW_MIN_SAMPLES}"}
+    
+    wins = sum(1 for s in samples if s["pnl"] > 0)
+    win_rate = wins / n
+    avg_pnl = sum(s["pnl"] for s in samples) / n
+    consecutive_losses = max_consecutive(samples, lambda s: s["pnl"] <= 0)
+    
+    # 淘汰条件
+    if win_rate < SHADOW_MIN_WIN_RATE:  # 0.30
+        return {"promote": False, "retire": True, "reason": f"win_rate={win_rate:.0%} < 30%"}
+    if consecutive_losses >= SHADOW_MAX_CONSEC_LOSS:  # 5
+        return {"promote": False, "retire": True, "reason": f"consecutive_losses={consecutive_losses}"}
+    
+    # 准入条件
+    if win_rate >= SHADOW_PROMOTE_WIN_RATE and avg_pnl > 0:  # 50%, >0
+        return {"promote": True, "win_rate": win_rate, "avg_pnl": avg_pnl}
+    
+    return {"promote": False, "reason": f"win_rate={win_rate:.0%} < 50%"}
+```
+
+### 3.3 BTC 回测驱动样本
+
+**方式**：不是重跑 BCRM 回测，而是对候选基因做独立的模式触发回测
 
 ```python
-{
-    "symbol", "r_vector", "d_star", "action",
-    "ri", "ripple_ri", "reflection_ri", "reflection_eligible",
-    "signal_source",  # "ripple" | "reflection"
-    "tier",           # "probe" | "standard" | "trend" | "none"
-    "position_mult", "regime", "regime_position_mult",
-    "modifiers_applied", "auto_execute", "inference_formed",
-    "is_ripple_source",
-}
+def backtest_gene_candidates(
+    kline_data: pd.DataFrame,  # BTC 1440根4h K线
+    candidates: list[GeneCandidate],
+) -> dict[str, list[dict]]:
+    """对每个候选基因逐bar计算是否触发，记录模拟交易结果"""
+    results = {}
+    for gene in candidates:
+        triggers = []
+        for i in range(LOOKBACK, len(kline_data)):
+            bar = kline_data.iloc[i]
+            if eval_expression(gene.expression, bar):
+                # 模拟开仓：入场价=close，固定持有N根bar后平仓
+                entry = bar["close"]
+                exit_bar = kline_data.iloc[i + HOLD_BARS]
+                pnl_pct = (exit_bar["close"] - entry) / entry
+                triggers.append({"entry_time": bar["timestamp"], "pnl": pnl_pct, ...})
+        results[gene.gene_id] = triggers
+    return results
 ```
-
-### 2.2 RippleEngine — 涟漪扩散引擎
-
-**文件**: `engines/ripple_engine.py`
-
-**龙头检测** (`detect_ripple_source`):
-- 方向一致: R_up < R_down (上涨有利) ↔ ess_dir == "long"
-- 放量: vol_5/vol_20 ≥ `vol_ratio_threshold` (默认2.0，训练期1.3)
-- 清算上升: liq_index_change ≥ `liq_change_threshold` (默认0.30)
-- Scale排除: Quantum级排除
-
-**RI计算** (`compute_ri`):
-```
-RI = 0.4·score₁ + 0.35·score₂ + 0.25·score₃
-score_i = (hits/candidates) · exp(−Δt / τ)
-```
-FAIL-OPEN: 空ripples → RI=0.50
-
-**RI阈值动作表** (`get_ri_action`):
-
-| RI范围 | cbr_boost | ess_temp_mult | trigger_a2 |
-|:---|:---|:---|:---|
-| <0.30 | 0.0 | 1.0 | False |
-| 0.30-0.55 | 0.10 | 1.0 | False |
-| 0.55-0.75 | 0.20 | 1.05 | False |
-| ≥0.75 | 0.25 | 1.10 | True |
-
-### 2.3 ReflectionScanner — 反思学习扫描器
-
-**文件**: `engines/reflection_scanner.py`
-
-**数据源**: `TradeIndexBuilder`（系统级交易索引库，自动发现JSONL+SQLite）
-
-**统计逻辑**:
-- 按币种分组，只统计最近90天交易
-- 计算win_rate, n_trades, avg_pnl_pct, sources分布
-
-**reflection_ri 映射**:
-```
-base_ri = 0.5 + max(0.0, win_rate - 0.5) × 2 × 0.3  (上限0.80)
-sample_discount = 0.72 + (n-1)×0.14  (n<3时), 1.0 (n≥3)
-reflection_ri = 0.5 + (base_ri - 0.5) × sample_discount
-```
-
-| win_rate | n=1 | n=2 | n≥3 |
-|:---|:---|:---|:---|
-| 0.5 | 0.50 | 0.50 | 0.50 |
-| 0.6 | 0.543 | 0.551 | 0.56 |
-| 0.7 | 0.587 | 0.601 | 0.62 |
-| 1.0 | 0.716 | 0.747 | 0.80 |
-
-**触发门槛**: `MIN_WIN_RATE=0.55`, `MIN_TRADES=1`
-
-### 2.4 TradeIndexBuilder — 系统级交易索引库
-
-**文件**: `engines/trade_index_builder.py`
-
-**自动发现机制**:
-- 扫描项目目录（限深度5层），排除node_modules/.git等
-- JSONL: 读首3行，检查含≥4个交易特征字段
-- SQLite: 检查trades/closed_trades/trade_history表
-- 已知源: `all_trades.jsonl` (bcrm), `all_trades_archived_*.jsonl` (bcrm_archive)
-
-**统一字段**: trade_id, coin, inst_id, direction, entry_price, exit_price, pnl, pnl_pct, source_system
-
-**去重**: 按 trade_id 去重
-
-**索引库路径**: `.workbuddy/trade_index/all_trades_index.jsonl`
-
-**缓存**: 构建缓存TTL=300s，发现缓存TTL=3600s
-
-### 2.5 ResistanceVector — L1 5维阻力向量
-
-**文件**: `core/resistance_vector.py`
-
-**5维定义**:
-
-| 维度 | 含义 | 输入字段 | 计算 |
-|:---|:---|:---|:---|
-| R_up | 上涨阻力 | okx_positions, liquidation_sell, ma_200, fib | 筹码5:3:2加权 |
-| R_down | 下跌阻力 | okx_positions, liquidation_buy, ma_200, fib | 筹码5:3:2加权 |
-| R_smooth | 平滑度 | close[] (≥30根) | 波动率归一化 |
-| R_flow | 流动性 | close+volume (≥20根) | 量价分析 |
-| R_reflexivity | 反身性 | news_sentiment_score, bid_ask_spread_bps | 4:3:3加权(corr:liq:sent) |
-
-**FAIL-OPEN三级**:
-- FO-1: 单维NaN → 0.50（quality扣0.15pp）
-- FO-2: ≥3维降级 → quality×0.4 + Lark ERROR
-- FO-3: 全局崩溃 → stale cache（1h TTL）或全0.50 + Lark CRITICAL
-
-### 2.6 Level0 路径代价
-
-**文件**: `core/level0_path_cost.py`
-
-**公式**:
-```
-d* = argmin_{d ∈ {long, short, WAIT}} [d^T · g_MVP · d]
-  多开代价 = g_up = R_up
-  空开代价 = g_down = R_down
-  WAIT代价 = R_smooth × R_reflexivity
-
-g_MVP = diag(R_up, R_down, R_smooth, R_flow, R_reflexivity)
-```
-
-**confidence** = 1 - (min_cost / sum_costs)
-
-### 2.7 ReflectionEngine — 反思引擎
-
-**文件**: `engines/reflection_engine.py`
-
-**CS一致性得分**:
-```
-CS = 0.4·cos(d*, real) + 0.3·cos(ESS, real) + 0.3·sign_match(CBR, real)
-```
-- cos(预测,实际): 同向+1, WAIT=0, 反向-1
-- CS ∈ [-1.0, +1.0]
-
-**四维奖惩表**:
-
-| 条件 | ESS delta | gmax mult | cluster mult |
-|:---|:---|:---|:---|
-| CS≥0.7 & TP | +0.02 | ×1.0 | ×1.0 |
-| -0.2≤CS<0.7 | 0.0 | ×1.0 | ×1.0 |
-| CS≤-0.2 & SL | -0.05 | ×0.5 | ×0.8 |
-| CS≤-0.2 & TP | 0.0 (反例保护) | ×1.0 | ×1.0 |
-| CS≥0.7 & SL | 0.0 (假失败) | ×1.2 | ×0.5 |
-
-### 2.8 三修饰子
-
-**文件**: `engines/modifiers.py`
-
-| 修饰子 | 权重 | 公式 | 约束 |
-|:---|:---|:---|:---|
-| R_sentiment | β∈[0,0.2] | 非线性80/20逆向（极度贪婪减/恐慌加） | crash→原值 |
-| R_capital | α∈[0,0.2] | 资金流方向修正 | 三角验证必跑 |
-| R_narrative | γ∈[0,0.2] | 叙事驱动力增强 | 不计入g_diag |
-
-**硬约束**: 修饰子不进入 g_diag 对角阵（永久5×5）
-
-### 2.9 TradeSettlementBridge — 平仓反思桥接
-
-**文件**: `engines/trade_settlement_bridge.py`
-
-**流程**:
-1. `store_snapshot(symbol, snapshot)` — 开仓时持久化pre_trade_snapshot
-2. 平仓时 `on_trade_settled(trade_rec)`:
-   - 检索snapshot（或降级重建）
-   - 提取real_direction, real_outcome (TP/SL)
-   - 调用 `ReflectionEngine.calculate_cs()` → `apply_reward()`
-   - 返回 `{cs, ess_delta, gmax_mult, cluster_weight_mult}`
 
 ---
 
-## 3. 数据管线架构
+## 4. 数据流
 
-### 3.1 DataPipelineAdapter
+### 4.1 主数据流
 
-**文件**: `adapters/data_pipeline.py`
+```
+策略知识md → 知识转换器 → candidates/*.json → 影子验证器 → shadow_validation/*.json
+                                                                  │
+                                                     ┌────────────┴────────────┐
+                                                     │                         │
+                                              BTC回测样本                   实盘影子样本
+                                              (快速积累N)                   (自然积累N)
+                                                     │                         │
+                                                     └────────────┬────────────┘
+                                                                  ▼
+                                                        准入判断(N≥10,胜率≥50%)
+                                                                  │
+                                                    ┌─────────────┼─────────────┐
+                                                    ▼             ▼               ▼
+                                               准入→Layer2      继续验证        淘汰→retired
+                                               write_gene_to
+                                               _library()
+```
 
-**装配流程** (`assemble(symbol, inst_id) -> dict`):
+### 4.2 数据结构
 
-| 步骤 | 适配器 | 输出字段 | 耗时 |
-|:---|:---|:---|:---|
-| 1 | OKXMarketAdapter | close[], high[], low[], volume[], ma_200, fib, spread, vol_5/20, okx_positions | ~200-300ms |
-| 2 | DataCenterAdapter | liquidation_buy/sell, liq_index_change, open_interest | ~30-50ms |
-| 3 | SentimentBridge | news_sentiment_score | ~300-500ms |
-| 4 | ESSDirectionProvider | ess_top_direction, ess_top1_id | <1ms（缓存） |
-| 5 | SubSystemBridge | scale_class, bcrm_direction, war_state | <1ms |
-| 6 | CapitalRotationAdapter | capital_rotation | ~100ms |
-| 7 | TraditionalFinanceBridge | regime, trend_strength, vol_scalar, kelly_fraction | ~50ms |
-| 8 | RippleDataProvider | ripples (R1/R2/R3) | ~200ms |
-| **总计** | | | **~550-850ms** |
+**Layer 0 候选基因 JSON**：
 
-**FAIL-OPEN**: 任一适配器异常 → 该字段缺失 → R向量该维度走0.50兜底
-
-### 3.2 CoinScanner — 50币池扫描器
-
-**文件**: `adapters/coin_scanner.py`
-
-- 基础24币 + OKX top 50扫描（去重上限50）
-- 美股代币白名单130+支（US_STOCK_COINS）
-- 美股配额50%（US_STOCK_RATIO=0.5）
-- 美股成交量门槛300K USDT（加密5M USDT）
-
----
-
-## 4. SL/TP 兜底机制（2026-09-06）
-
-建仓后立即按tier设置止损止盈（在 `polling_trader.py` `_evolution_build_position` 中）:
-
-| Tier | SL% | TP% | 场景 |
-|:---|:---|:---|:---|
-| probe | 5% | 10% | 轻仓试探，宽SL防噪音 |
-| standard | 3% | 6% | 标准仓 |
-| trend | 2% | 4% | 趋势加仓，紧SL保护利润 |
-
-**Regime调整**:
-- ranging → SL×1.3, TP×0.8（震荡宽容SL，保守TP）
-- trend_up → TP×1.2（趋势延长TP）
-
----
-
-## 5. 权重体系
-
-**文件**: `weights.py` (WEIGHTS_VERSION = "1.0-MVP")
-
-| 权重组 | 比例 | 先验来源 |
+| 字段 | 类型 | 说明 |
 |:---|:---|:---|
-| ESS | H:S:N = 4:4:2 | Livermore(把握) + Wyckoff(结构) + Schluter(样本) |
-| R_REFL | corr:liq:sent = 4:3:3 | Soros反身性(启动) + 流动性(通道) + 情绪(羊群) |
-| CS | Level0:ESS:CBR = 0.4:0.3:0.3 | 解析(无过拟合) > 统计 ≈ 案例 |
-| CM | ML:Reservoir:CrossVal = 4:3:3 | 美林时钟(长周期) > 蓄水池(月) > 交叉(即期) |
+| `gene_id` | str | `CD-KNOW-{SLUG}` |
+| `status` | str | `candidate` |
+| `category` | str | trend/reversal/momentum |
+| `expression` | str | 触发条件表达式 |
+| `parameters` | dict | 参数定义+范围 |
+| `source_doc` | str | 策略知识文档路径 |
+| `tags` | list | 策略标签 |
+| `created_at` | str | 创建时间 |
+| `n_samples` | int | 已触发次数（初始0） |
 
-**FAIL-OPEN降级值**: RI=0.29, CMScore=0.45, R_5dim=0.50
+**Layer 1 影子验证 JSON**：
 
----
-
-## 6. 策略基因库
-
-**目录**: `gene_data/`
-
-- **28个条件基因** (CD-*.json): ADX, Bollinger, Donchian, Fibonacci, MACD, RSI, Sentiment, Supertrend等
-- **16个动作基因** (AC-*.json): LONG/SHORT + SL/TP组合 + EXIT/STOP/TRAIL
-- **组合库** (library.json): 条件×动作组合 + ESS评分
-- **Schema**: condition.json, action.json, combination.json
-
-**ESS计算**:
-```
-ESS = 0.4·H + 0.4·S + 0.2·min(1.0, sqrt(N/500))
-```
-H=胜率, S=夏普, N=样本量
-
----
-
-## 7. 稳定性证明
-
-**紧耦合回路增益**: G_open = G₁ · G₂ · G₃ · G₄
-
-| 传递函数 | 含义 | 值 |
+| 字段 | 类型 | 说明 |
 |:---|:---|:---|
-| G₁ | RI→仓位 | tier加权平均0.0050 |
-| G₂ | 仓位→TP/SL概率 | ≈0.55 |
-| G₃ | TP/SL→CS | ≈0.70 |
-| G₄ | CS→ESS delta | ±0.02/0.05 |
+| `gene_id` | str | 同候选基因 |
+| `status` | str | `shadow` / `promoted` / `retired` |
+| `samples` | list | 触发样本列表 |
+| `n_samples` | int | 样本总数 |
+| `win_rate` | float | 影子胜率 |
+| `avg_pnl` | float | 平均盈亏 |
+| `consecutive_losses` | int | 当前连续亏损数 |
+| `promoted_at` | str | 准入实盘时间（或null） |
+| `retired_reason` | str | 淘汰原因（或null） |
 
-**G_open_max = 0.0197 < 1**，回路绝对稳定（不发散振荡）。
+**Layer 2 实盘基因**：使用现有 `strategy_genes/conditions/*.json` 格式，不修改。
 
 ---
 
-## 8. 关联文档
+## 5. 接口设计
 
-| 文档 | 说明 |
+### 5.1 内部接口
+
+| 函数 | 签名 | 说明 |
+|:---|:---|:---|
+| `convert_knowledge_to_candidate` | `(doc_path: Path) → GeneCandidate` | 从策略知识文档生成候选基因 |
+| `check_shadow_promotion` | `(gene_id: str, samples: list) → dict` | 检查影子基因准入/淘汰 |
+| `backtest_gene_candidates` | `(kline_data, candidates) → dict` | BTC回测驱动样本 |
+| `promote_to_active` | `(gene_id: str) → bool` | 影子验证通过→写正式基因库 |
+
+### 5.2 与现有系统的接口
+
+| 现有模块 | 交互方式 | 说明 |
+|:---|:---|:---|
+| `ftc_gene_innovation.py` | 调用 `write_gene_to_library()` | 准入时写入正式基因库 |
+| `strategy_gene.py` | 调用 `load_gene_library()` | 加载时自动包含新基因 |
+| `reflection_engine.py` | **不改动** | CS 公式不增加知识维度 |
+| `weight_feedback.py` | 独立路径 | 策略知识权重反哺走 RAG 路径 |
+| `polling_trader.py` | 记录影子样本 | 模式触发时记录到 shadow_validation |
+
+---
+
+## 6. 状态管理
+
+### 6.1 状态文件
+
+| 文件 | 作用 | 格式 |
+|:---|:---|:---|
+| `gene_data/candidates/` | 候选基因 JSON 文件 | 每基因一个 JSON |
+| `gene_data/shadow_validation/` | 影子验证基因+样本 | 每基因一个 JSON |
+| `gene_data/shadow_validation/{gene_id}_samples.jsonl` | 触发样本逐条记录 | JSONL |
+| `gene_data/strategy_genes/conditions/` | 实盘基因（现有） | 现有格式不变 |
+
+### 6.2 基因状态机
+
+```
+candidate → shadow → promoted (进入实盘基因库)
+                 ↘ retired (淘汰)
+```
+
+### 6.3 目录结构
+
+```
+gene_data/
+├── candidates/                    ← Layer 0 (新增)
+│   ├── CD-KNOW-LIVERMORE-PP.json
+│   ├── CD-KNOW-WYCKOFF-SPRING.json
+│   ├── CD-KNOW-DARVAS-BOX.json
+│   ├── CD-KNOW-ICT-ORDERBLOCK.json
+│   ├── CD-KNOW-HEAD-SHOULDERS.json
+│   ├── CD-KNOW-VWAP-REVERSION.json
+│   └── CD-KNOW-MOMENTUM-BREAK.json
+├── shadow_validation/            ← Layer 1 (新增)
+│   ├── CD-KNOW-LIVERMORE-PP.json
+│   ├── CD-KNOW-LIVERMORE-PP_samples.jsonl
+│   └── ...
+├── strategy_genes/               ← Layer 2 (现有，不变)
+│   ├── conditions/
+│   ├── actions/
+│   └── gene_index.json
+├── strategy_combinations/
+│   └── library.json
+└── evolution_snapshots.json
+```
+
+---
+
+## 7. 配置管理
+
+| 配置项 | 默认值 | 说明 |
+|:---|:---|:---|
+| `SHADOW_MIN_SAMPLES` | 10 | 影子验证最少样本数 |
+| `SHADOW_PROMOTE_WIN_RATE` | 0.50 | 影子准入胜率门槛 |
+| `SHADOW_MIN_WIN_RATE` | 0.30 | 影子淘汰胜率下限 |
+| `SHADOW_MAX_CONSEC_LOSS` | 5 | 连续亏损淘汰数 |
+| `L2_MIN_SAMPLES` | 100 | 实盘基因库准入N（现有不变） |
+| `L2_MIN_ESS` | 0.5 | 实盘基因库准入ESS（现有不变） |
+| `BACKTEST_HOLD_BARS` | 12 | 回测模拟持有bar数（4h×12=48h） |
+| `BACKTEST_LOOKBACK` | 20 | 计算指标所需回看bar数 |
+
+---
+
+## 8. 错误处理
+
+### 8.1 异常场景
+
+| 场景 | 处理策略 |
 |:---|:---|
-| [四层闭环进化架构-最小阻力路径总览.md](../../2-KNOWLEDGE/1-TRADING/四层闭环进化架构-最小阻力路径总览.md) | 蓝图SSoT（§1.7紧耦合流 + §1.13交付物） |
-| [SPEC-数据管线打通与能力落地.md](../SPEC-数据管线打通与能力落地.md) | 数据管线详细SPEC |
-| [SPEC-金融思维链层FTC设计.md](../SPEC-金融思维链层FTC设计.md) | FTC设计SPEC |
-| [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | 工程索引 |
-| [API_SPEC.md](./API_SPEC.md) | 接口规格 |
-| [CHANGELOG.md](./CHANGELOG.md) | 变更日志 |
+| 策略文档格式不合规 | skip + log，不阻塞其他文档 |
+| expression 解析失败 | 标记 `status="parse_error"`，不进候选区 |
+| 回测数据不足 | 记录 N=触发次数，不够时不准入 |
+| 影子验证写入失败 | FAIL-OPEN，不影响交易 |
+| 基因入库写入失败 | FAIL-OPEN，基因留在影子区 |
+
+### 8.2 降级机制
+
+```
+BTC回测可用 → 快速积累样本 → 正常流程
+     ↓ 不可用
+实盘自然积累 → 慢速但安全 → 正常流程
+     ↓ RAG不可用
+策略知识不影响交易 → 交易正常运行 → 无降级需要
+```
 
 ---
 
-**文档版本**: v1.0
-**最后更新**: 2026-09-07
+## 9. 扩展性设计
+
+### 9.1 如何添加新策略知识基因
+
+1. 在 `2-KNOWLEDGE/1-TRADING/经典模式/` 新增策略文档（含触发条件章节）
+2. 运行 `convert_knowledge_to_candidate()` 生成 JSON 到 `candidates/`
+3. 等待回测或实盘触发，样本自动记录到 `shadow_validation/`
+4. 达到门槛后自动准入或淘汰
+
+### 9.2 与 RAG 检索的协同
+
+未来可在 RAG 检索到经典策略文档时，同时触发对应候选基因的样本计数+1，实现"知识检索→基因验证"联动。当前不实现，留后续波次。
+
+---
+
+## 10. 与传统金融的对应
+
+| 量化流程 | 本系统对应 | 评估 |
+|:---|:---|:---|
+| 因子假设 | 策略知识文档 | 百年验证的经典理论 |
+| 因子工程化 | GeneCandidate expression | 规则量化为可计算表达式 |
+| 纸面交易验证 | 影子验证区（影子模式） | 只记录不干预，安全 |
+| 小仓位实盘试错 | 影子验证通过→实盘基因库 | ESS 权重自动调整 |
+| 正式因子配置 | top_combinations_by_ess | 按 ESS 降序自动排名 |
+| 因子退役 | gmax×0.5 | ESS 持续下降自然淘汰 |
+
+---
+
+## 11. 执行计划
+
+| 阶段 | 内容 | 前置条件 |
+|:---|:---|:---|
+| **Step 1** | RAG 代码确认完好（无需恢复） | ✅ 已完成 |
+| **Step 2** | 创建 7 个候选基因 JSON（candidates/） | ✅ 已完成 |
+| **Step 3** | 用 BTC 回测数据跑影子验证 | ✅ 已完成（1500 bar，8 个月） |
+| **Step 4** | 通过影子验证的基因→实盘影子模式 | ✅ 5 个基因已 promote |
+| **Step 5** | 积累到 N≥100→正式入库 | ⏳ 自然积累 |
+| **Step 6** | ShadowRL Phase3 自动激活 | ✅ 3104 样本≥2000，已激活 |
+| **Step 7** | REINFORCE 策略训练 | ✅ train_policy 已实现 |
+| **Step 8** | 趋势跟踪+网格+RegimeGate 落地 | ✅ 665 测试全绿 |
+
+### 11.1 影子验证回测结果（2026-09-11 更新）
+
+BTC 4H 1500 bar 回测（2026-01-04 至 2026-09-11，8 个月），总样本 3104：
+
+| 基因 | N | 胜率 | 平均PnL | 方向 | 状态 |
+|:---|:---|:---|:---|:---|:---|
+| CD-ADX-GT25-TREND | 888 | 47% | +0.08% | long | ⏳ |
+| CD-BOLL-WIDTH-NARROW | 757 | 50% | -0.20% | long | ⏳ |
+| CD-ADX-LT25-RANGE | 491 | 50% | -0.15% | long | ⏳ |
+| CD-ATR-EXPANDING | 303 | 53% | +0.75% | long | ✅ promote |
+| CD-DONCHIAN-10-BREAK | 177 | 42% | -0.21% | long | ⏳ |
+| CD-DONCHIAN-20-BREAK | 112 | 39% | -0.19% | long | ⏳ |
+| CD-DONCHIAN-55-BREAK | 67 | 31% | -0.36% | long | ⏳ |
+| CD-KNOW-ICT-ORDERBLOCK | 100 | 55% | +0.46% | long | ✅ promote |
+| CD-NECKLINE-BREAK | 62 | 53% | +1.14% | short | ✅ promote |
+| CD-KNOW-HEAD-SHOULDERS | 45 | 56% | +0.78% | short | ✅ promote |
+| CD-KNOW-DARVAS-BOX | 43 | 30% | -0.08% | long | ⏳ |
+| CD-KNOW-LIVERMORE-PP | 23 | 39% | +0.25% | long | ⏳ |
+| CD-KNOW-VWAP-REVERSION | 19 | 37% | -1.00% | long | ⏳ |
+| CD-KNOW-MOMENTUM-BREAK | 17 | 59% | +2.64% | long | ✅ promote |
+| CD-KNOW-WYCKOFF-SPRING | 0 | - | - | long | ⏳ |
+
+关键发现：
+- 5 个基因已 promote（ATR 扩张、ICT OrderBlock、颈线跌破、头肩顶、动量突破）
+- 颈线跌破做空信号 PnL +1.14%（顶部下跌识别有效）
+- 动量突破 PnL +2.64%（最高收益）
+- ShadowRL Phase3 已激活（3104 样本≥2000 阈值）
+
+### 11.2 ShadowRL 训练闭环验证（2026-09-11）
+
+| 能力 | 状态 | 说明 |
+|:---|:---|:---|
+| 样本记录 | ✅ | 3104 条 (s,a,R,s') 样本 |
+| Phase3 自动激活 | ✅ | ≥2000 样本触发 |
+| REINFORCE 训练 | ✅ | SimplePolicy 纯 numpy 实现 |
+| 策略预测 | ✅ | predict() → 动作概率 |
+| Beta 参数更新 | ✅ | alpha=985, beta=1017 |
+| Thompson 采样 | ✅ | Beta 分布采样 |
+| gmax 变异 | ✅ | ±0.01~0.05 随机扰动 |
+| FAIL-OPEN | ✅ | 训练异常→降级返回 |
+
+### 11.3 RAG 热路径状态确认
+
+| 组件 | 行号 | 状态 |
+|:---|:---|:---|
+| `_RAG_CLIENT` / `_RAG_EXECUTOR` | L95-97 | ✅ 存在 |
+| `_rag_hotpath_lookup()` | L386-429 | ✅ 存在 |
+| `_rag_record_to_memory()` | L432-446 | ✅ 存在 |
+| `_distill_trade_to_knowledge()` | L453-496 | ✅ 存在 |
+| `_rag_feedback_on_close()` | L523-583 | ✅ 存在 |
+| 接入点A: `[RAG-PRE-OPEN]` | L13208 | ✅ 今日26次调用 |
+| 接入点B: `[RAG-PRE-EVO-OPEN]` | L8924 | ✅ 今日1次调用 |
+| 接入点C: `[RAG-PRE-EXIT]` | L9535 | ✅ 今日351次调用 |
+
+daemon PID=75911，12:11 PM 启动，今日 RAG 378 次调用零异常。
+
+---
+
+## 12. L3 路径计算层 — HJB/变分法最优路径求解器（v1.5 新增）
+
+### 12.1 模块定位
+
+L3 路径计算层是自进化系统 AGI Core 的数学核心，对齐架构图"L3 路径计算层（新增·多路径+最优）"设计。本章节记录 Phase 2.6 HJB/变分法求解器的技术实现。
+
+**代码路径**: `dreambuddy_evolution/core/hjb_solver.py`
+
+### 12.2 架构层级
+
+```
+L3 路径计算层
+├── 多路径蒙特卡洛采样 (PathIntegralEngine.sample_paths)  — 已有
+├── 路径阻力计算 (PathIntegralEngine.compute_action)      — 已有
+├── 最优路径求解
+│   ├── Level 1: HJBPathSolver.solve()                    — v1.5 新增
+│   ├── Level 2: VariationalPathOptimizer.optimize()     — v1.5 新增
+│   └── Level 3: PathIntegralEngine.find_least_resistance_path() — 已有 argmin 兜底
+└── 统一入口: solve_optimal_path() 三级降级链 (HC-AGI-17)  — v1.5 新增
+```
+
+### 12.3 HJBPathSolver 数学原理
+
+**HJB PDE 离散化**:
+
+```
+连续: ∂V/∂t + min_u { L(s,u) + ∇V·f(s,u) } = 0
+离散: V(p,t) = min_u { L(p,u)·dt + Σ_{p'} P(p→p'|u)·V(p',t+dt) }
+```
+
+- **状态空间**: 价格 p ∈ [p_min, p_max] × 时间 t ∈ [0, T]
+- **策略空间**: u ∈ {long, short, wait}
+- **终端条件**: V(:, T) = 0（无仓位代价为 0）
+- **转移概率**: GBM 对数收益率高斯窗 ±2σ 截断
+- **Lagrangian**: 对齐 level0_path_cost.py 的 R_up/R_down/R_smooth·R_reflexivity
+
+### 12.4 VariationalPathOptimizer 数学原理
+
+**变分法梯度下降**:
+
+```
+作用量: S[γ] = Σ_i L(γ_i, Δγ_i)
+梯度:   ∂S/∂γ_i ≈ (S(γ+ε·e_i) - S(γ-ε·e_i)) / (2ε)    （中心差分）
+更新:   γ_{k+1} = γ_k - η·∇S
+约束:   起点 anchoring γ[0]=const, 价格 clip(p_min, p_max)
+```
+
+- `compute_action` 严格复用 PathIntegralEngine 公式（α·成本+β·风险+γ·不确定性）
+- 梯度裁剪 [-10, 10] 防爆炸
+
+### 12.5 硬约束
+
+| 约束 | 含义 | 代码位置 |
+|:---|:---|:---|
+| HC-AGI-15 | HJB 网格分辨率下限（价格≥32, 时间≥16） | `HJBPathSolver.MIN_PRICE_GRID/MIN_TIME_GRID` |
+| HC-AGI-16 | 收敛阈值 1e-6 持续≥3轮 | `CONVERGENCE_TOL/CONVERGENCE_ROUNDS` |
+| HC-AGI-17 | 异常强制降级到 argmin（FAIL-OPEN 不可跳过） | `solve_optimal_path()` 三级降级链 |
+
+### 12.6 集成点
+
+| 集成位置 | 文件 | 行号 | 说明 |
+|:---|:---|:---|:---|
+| DeepReasoningEngine | `engines/deep_reasoning_engine.py` | L302-347 | `find_min_resistance_path` 优先 HJB，FAIL-OPEN 降级 argmin |
+| EvolutionPipeline | `evolution_pipeline.py` | L590-620 | `_select_optimal_path` 注入 HJB 值函数（30% 权重） |
+| AGI 开关 | `agi_config.py` | L49-50 | `enable_hjb_solver` + `enable_variational_opt` |
+
+### 12.7 哲学差距分析 — "主要矛盾→阻力最小"逻辑链
+
+**哲学逻辑链**: 多路径(矛盾) → 识别主要矛盾 → 趋势延续性 → 回测/小仓验证 → 最小阻力
+
+| 环节 | 实现度 | 差距 |
+|:---|:---:|:---|
+| ①多路径=多矛盾 | 85% | 路径间并行收集，无对抗/共振分析 |
+| ②识别主要矛盾 | **30%** | **核心断裂**: 独立评分取最高，非矛盾间比较识别主导者 |
+| ③趋势延续性 | 40% | trend_strength/ADX 未回流路径发现层 |
+| ④回测+小仓验证 | 50% | 验证结果未回流闭环 |
+| ⑤最小阻力计算 | 70% | HJB Lagrangian 未融入矛盾强度调制 |
+
+**核心结论**: 数学算法层完备，但哲学意图层存在核心断裂 — 当前是"所有矛盾平均化下求最小阻力"，不是"识别出的主要矛盾下求最小阻力"。
+
+**完善方案**: 详见 [SPEC-主要矛盾识别与最小阻力路径设计.md](../SPEC-主要矛盾识别与最小阻力路径设计.md)
+
+---
+
+## 变更记录
+
+| 版本 | 日期 | 变更内容 |
+|:---|:---|:---|
+| v1.0 | 2026-09-10 | 初始版本：三层准入设计、知识→基因转换、影子验证逻辑、BTC回测驱动 |
+| v1.1 | 2026-09-10 | 补充：影子验证回测结果、RAG热路径状态确认、执行计划更新 |
+| v1.2 | 2026-09-11 | 更新：1500 bar 扩展数据（8个月）、3104 样本 ShadowRL Phase3 激活、REINFORCE 训练闭环、5 基因 promote、趋势跟踪+网格+RegimeGate 落地、665 测试全绿 |
+| v1.3 | 2026-09-11 | 更新：P2 CBR 扩展（pattern+case_type）、P3 AGI 模块懒初始化接入 pipeline（CausalEngine/SignatureEngine/PathIntegralEngine/UncertaintyQuantifier/MetaCognitionGate）、692 测试全绿、技术债务全部清零 |
+| v1.5 | 2026-09-11 | 新增：§12 L3 路径计算层 HJB/变分法最优路径求解器、HC-AGI-15/16/17 硬约束、哲学差距分析、715 测试全绿 |

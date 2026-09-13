@@ -644,6 +644,17 @@ class MacroDataFetcher:
         except Exception as e:
             source_status["panewslab_blockbeats"] = f"error:{type(e).__name__}:{e}"
 
+        # 🆕 P2: 新采集器快照（fear_greed/etf_flow/deribit/cftc_cot/blockchain_info 等）
+        try:
+            ns_df = self._fetch_new_sources_snapshot()
+            if ns_df is not None and not ns_df.empty:
+                all_dfs.append(ns_df)
+                source_status["new_sources"] = f"ok:{ns_df.shape[1]}cols"
+            else:
+                source_status["new_sources"] = "missing"
+        except Exception as e:
+            source_status["new_sources"] = f"error:{type(e).__name__}"
+
         # 6. Blockchain.info hash_rate（仅 BTC）
         if sym == "BTC":
             try:
@@ -864,6 +875,108 @@ class MacroDataFetcher:
         #   15:40 → floor(4h)=12:00 → -4h=08:00  (更松但 point-in-time 仍正确)
         #   16:00 边界 → floor(4h)=16:00 → -4h=12:00  (与 16:11 相同，不触发边界漏匹配)
         # 效果：非空 bars = 13:00 / 14:00 / 15:00 / 16:00 共 4 根（~ 3-4 bars，FAIL-OPEN 严苛但真实）。
+        idx_floor = idx_ts.floor("4h")
+        idx_ts_effective = idx_floor - pd.Timedelta(hours=4)
+        return pd.DataFrame(flat, index=pd.DatetimeIndex([idx_ts_effective]))
+
+    # ============================================================
+    # 🆕 P2: 从 data_center.db 读取新采集器最新快照
+    # 补充 fear_greed/etf_flow/deribit/cftc_cot/blockchain_info 等新数据
+    # ============================================================
+
+    def _fetch_new_sources_snapshot(self) -> pd.DataFrame:
+        """从 data_center.db 读取 P0-P2 新采集器的最新 metrics，展平为单行 DataFrame。
+
+        数据源：fear_greed, etf_flow, deribit, cftc_cot, blockchain_info,
+        fear_greed_enhanced, blockscout, google_trends, cryptopanic, stablecoins
+        """
+        import json as _json_mod
+
+        try:
+            from scripts.memory_l4.five_domain_sqlite_reader import DEFAULT_DB_PATH
+        except Exception:
+            _THIS_DIR = Path(__file__).resolve().parents[3]
+            DEFAULT_DB_PATH = _THIS_DIR / "18-数据获取中心" / "data_center.db"
+
+        dbp = DEFAULT_DB_PATH
+        if isinstance(dbp, Path):
+            dbp = str(dbp)
+        import os as _os_mod
+        if not dbp or not _os_mod.path.exists(dbp):
+            return pd.DataFrame()
+
+        # 新采集器 source 列表
+        new_sources = (
+            "fear_greed", "etf_flow", "deribit", "cftc_cot",
+            "blockchain_info", "fear_greed_enhanced", "blockscout",
+            "google_trends", "cryptopanic", "defillama",
+        )
+        placeholders = ",".join("?" * len(new_sources))
+
+        try:
+            conn = sqlite3.connect(f"file:{dbp}?mode=ro", uri=True)
+            rows = conn.execute(
+                f"SELECT source, sub_category, metrics, timestamp FROM records "
+                f"WHERE source IN ({placeholders}) "
+                f"ORDER BY id DESC",
+                new_sources,
+            ).fetchall()
+            conn.close()
+        except Exception as e:
+            logger.debug(f"MacroDataFetcher new_sources sqlite 读取失败: {e}")
+            return pd.DataFrame()
+
+        if not rows:
+            return pd.DataFrame()
+
+        # 按 (source, sub_category) 保留最新一条
+        latest: dict = {}
+        latest_ts: int = 0
+        for r in rows:
+            key = (r[0], r[1])
+            if key not in latest:
+                latest[key] = r[2]  # metrics_json
+                try:
+                    ts_val = r[3]
+                    if isinstance(ts_val, (int, float)) and ts_val > latest_ts:
+                        latest_ts = int(ts_val)
+                except Exception:
+                    pass
+
+        flat: Dict[str, Any] = {}
+        for (src, sub), metrics_json in latest.items():
+            if isinstance(metrics_json, str):
+                try:
+                    md = _json_mod.loads(metrics_json)
+                except Exception:
+                    md = {}
+            elif isinstance(metrics_json, dict):
+                md = metrics_json
+            else:
+                md = {}
+            if not isinstance(md, dict):
+                continue
+
+            # 为避免列名冲突，加 source 前缀
+            prefix = f"{src}_" if src != "defillama" else f"dl_{sub}_"
+            for k, v in md.items():
+                if isinstance(v, bool):
+                    flat[f"{prefix}{k}"] = float(v)
+                elif isinstance(v, (int, float)):
+                    flat[f"{prefix}{k}"] = float(v)
+                elif v is None:
+                    flat[f"{prefix}{k}"] = np.nan
+
+        if not flat:
+            return pd.DataFrame()
+
+        # 对齐到 4h 边界（与 panewslab 快照一致）
+        if latest_ts > 0:
+            idx_ts = pd.to_datetime(latest_ts, unit="s", utc=True, errors="coerce")
+        else:
+            idx_ts = pd.Timestamp.now(tz="UTC")
+        if pd.isna(idx_ts):
+            idx_ts = pd.Timestamp.now(tz="UTC")
         idx_floor = idx_ts.floor("4h")
         idx_ts_effective = idx_floor - pd.Timedelta(hours=4)
         return pd.DataFrame(flat, index=pd.DatetimeIndex([idx_ts_effective]))

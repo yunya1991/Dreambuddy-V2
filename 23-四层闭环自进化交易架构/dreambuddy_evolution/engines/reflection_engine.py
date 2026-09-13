@@ -14,6 +14,22 @@ logger = logging.getLogger(__name__)
 class ReflectionEngine:
     """系统自反思进化引擎 — 后验追溯，每笔交易结算触发"""
 
+    # REDUCE_WEIGHT 冷启动阈值：样本 < 20 只收集不调整
+    _REDUCE_WEIGHT_WARM_THRESHOLD = 20
+
+    def __init__(self) -> None:
+        # 入场侧 REDUCE_WEIGHT 样本计数器（cluster_id|ess_id → count）
+        self._reduce_weight_counter: dict[str, int] = {}
+
+    def _get_reduce_weight_count(self, cluster_id: str, ess_id: str) -> int:
+        """获取 REDUCE_WEIGHT 样本计数"""
+        return self._reduce_weight_counter.get(f"{cluster_id}|{ess_id}", 0)
+
+    def _incr_reduce_weight_count(self, cluster_id: str, ess_id: str) -> None:
+        """递增 REDUCE_WEIGHT 样本计数"""
+        key = f"{cluster_id}|{ess_id}"
+        self._reduce_weight_counter[key] = self._reduce_weight_counter.get(key, 0) + 1
+
     def create_snapshot(
         self,
         symbol: str,
@@ -100,7 +116,35 @@ class ReflectionEngine:
         """
         outcome = str(outcome).upper()
 
-        # CS≥0.7 且 TP（判断准且对）
+        # ==================================================================
+        # 入场侧 REDUCE_WEIGHT 奖励路径（软权重 ±0.01 ess_delta）
+        # ==================================================================
+        if outcome in ("REDUCE_WEIGHT_CORRECT", "REDUCE_WEIGHT_PREMATURE"):
+            count = self._get_reduce_weight_count(cluster_id, ess_id)
+            self._incr_reduce_weight_count(cluster_id, ess_id)
+            # 冷启动期（样本 < 20）→ 中性，只收集不调整
+            if count < self._REDUCE_WEIGHT_WARM_THRESHOLD:
+                return {"ess_delta": 0.0, "gmax_mult": 1.0, "cluster_weight_mult": 1.0}
+            # warm start: CORRECT → +0.01, PREMATURE → -0.01
+            if outcome == "REDUCE_WEIGHT_CORRECT":
+                return {"ess_delta": 0.01, "gmax_mult": 1.0, "cluster_weight_mult": 1.0}
+            else:
+                return {"ess_delta": -0.01, "gmax_mult": 1.0, "cluster_weight_mult": 1.0}
+
+        # PARTIAL_REDUCE 冷启动中性（离场侧 BCRM 反向信号减仓，冷启动只收集不调整）
+        if outcome == "PARTIAL_REDUCE":
+            count = self._get_reduce_weight_count(cluster_id, ess_id)
+            self._incr_reduce_weight_count(cluster_id, ess_id)
+            if count < self._REDUCE_WEIGHT_WARM_THRESHOLD:
+                return {"ess_delta": 0.0, "gmax_mult": 1.0, "cluster_weight_mult": 1.0}
+            # warm start: 减仓盈利 → 小幅 -0.01（过早减仓扣分）
+            return {"ess_delta": -0.01, "gmax_mult": 1.0, "cluster_weight_mult": 1.0}
+
+        # CS≥0.9 且 TP（高信心判断准且对）→ 大步长 +0.05
+        if cs >= 0.9 and outcome == "TP":
+            return {"ess_delta": 0.05, "gmax_mult": 1.0, "cluster_weight_mult": 1.0}
+
+        # 0.7≤CS<0.9 且 TP（中等信心）→ 小步长 +0.02
         if cs >= 0.7 and outcome == "TP":
             return {"ess_delta": 0.02, "gmax_mult": 1.0, "cluster_weight_mult": 1.0}
 

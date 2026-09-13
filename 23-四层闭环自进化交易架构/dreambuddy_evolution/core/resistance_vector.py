@@ -23,6 +23,7 @@ import numpy as np
 # 唯一权威权重 / 边界 / 降级值集中源：dreambuddy_evolution.weights 硬约束
 # ---------------------------------------------------------------------------
 from dreambuddy_evolution.weights import FALLBACK_VALUES, WEIGHTS, WEIGHTS_VERSION
+from dreambuddy_evolution.agi_config import get_switch
 
 BOUNDARIES: dict = WEIGHTS["BOUNDARIES"]  # 兼容式暴露（WEIGHTS 嵌套 dict 内的 BOUNDARIES 段）
 logger = logging.getLogger(__name__)
@@ -226,7 +227,80 @@ class ResistanceVector:
                         - W_UP[2] * trend_bias)
         R_up   = max(0.0, min(1.0, 0.5 - 0.38 * combined_up))
         R_down = max(0.0, min(1.0, 0.5 - 0.38 * combined_down))
+
+        # ---- 微观结构升级：6 组件加权（开关控制）
+        if get_switch("enable_microstructure_resistance", False):
+            funding_pressure = self._calc_funding_pressure(data, fallback_flags)
+            orderbook_imb = self._calc_orderbook_imbalance(data, fallback_flags)
+            oi_div = self._calc_oi_divergence(data, fallback_flags)
+
+            W_V2 = (0.20, 0.15, 0.15, 0.20, 0.15, 0.15)  # 筹码/清算/趋势/资金费率/订单簿/OI
+            combined_up_v2 = (W_V2[0] * chip_bias
+                            + W_V2[1] * liq_pressure
+                            + W_V2[2] * trend_bias
+                            + W_V2[3] * funding_pressure
+                            + W_V2[4] * orderbook_imb
+                            + W_V2[5] * oi_div)
+            combined_down_v2 = -combined_up_v2
+            R_up = max(0.0, min(1.0, 0.5 - 0.38 * combined_up_v2))
+            R_down = max(0.0, min(1.0, 0.5 - 0.38 * combined_down_v2))
+
         return R_up, R_down
+
+    def _calc_funding_pressure(self, data: dict, flags: dict[str, Any]) -> float:
+        """资金费率压力：funding_rate > 0 → 做多拥挤 → 做多阻力↑. Returns [-1, +1]."""
+        fr = data.get("funding_rate")
+        if fr is None:
+            flags["FUNDING_NONE"] = True
+            return 0.0
+        try:
+            fr = float(fr)
+        except (TypeError, ValueError):
+            flags["FUNDING_INVALID"] = True
+            return 0.0
+        # ±0.01% (0.0001) 满档
+        return max(-1.0, min(1.0, fr / 0.0001))
+
+    def _calc_orderbook_imbalance(self, data: dict, flags: dict[str, Any]) -> float:
+        """订单簿不平衡：bid_depth / (bid_depth + ask_depth) - 0.5. Returns [-0.5, +0.5]."""
+        bid_depth = data.get("bids_depth")
+        ask_depth = data.get("asks_depth")
+        if bid_depth is None or ask_depth is None:
+            flags["ORDERBOOK_NONE"] = True
+            return 0.0
+        try:
+            bd = float(bid_depth)
+            ad = float(ask_depth)
+        except (TypeError, ValueError):
+            flags["ORDERBOOK_INVALID"] = True
+            return 0.0
+        total = bd + ad
+        if total <= 1e-12:
+            flags["ORDERBOOK_ZERO"] = True
+            return 0.0
+        # bid 占优 → 做多阻力↓（买盘深）
+        return max(-1.0, min(1.0, (bd / total - 0.5) * 2.0))
+
+    def _calc_oi_divergence(self, data: dict, flags: dict[str, Any]) -> float:
+        """持仓量背离：OI 增加 = 新仓涌入 → 该方向后续阻力↑. Returns [-1, +1]."""
+        oi_curr = data.get("oi_current")
+        oi_prev = data.get("oi_prev")
+        if oi_curr is None or oi_prev is None:
+            flags["OI_NONE"] = True
+            return 0.0
+        try:
+            curr = float(oi_curr)
+            prev = float(oi_prev)
+        except (TypeError, ValueError):
+            flags["OI_INVALID"] = True
+            return 0.0
+        if prev <= 1e-12:
+            flags["OI_ZERO"] = True
+            return 0.0
+        delta = (curr - prev) / prev  # OI 变化率
+        # OI 增加 → 多空都在涌入 → 双向阻力都增大（但不区分方向，返回中性压力值）
+        # 正值 = OI 增加 = 阻力↑（拥挤）
+        return max(-1.0, min(1.0, delta / 0.05))  # ±5% 满档
 
     def _calc_smooth(self, data: dict, flags: dict[str, Any]) -> float:
         """R_smooth = 1 - R²(linear_fit)（Livermore 趋势纯度：线性=低锯齿阻力；正弦锯齿=高阻力）"""
@@ -341,7 +415,7 @@ class ResistanceVector:
         return R_refl
 
     # ------------------------------------------------------------------------------- Public API
-    def calculate(self, symbol: str, raw_data_dict: "dict[str, Any] | None") -> dict[str, Any]:
+    def calculate(self, symbol: str, raw_data_dict: "dict[str, Any] | None", primary_contradiction: "dict[str, Any] | None" = None) -> dict[str, Any]:
         """Phase 1 Step 6 Public API：返回 9 字段（MVP Spec §3.6 Gold Schema）。**从不抛异常** FO-3 保障。"""
         fallback_flags: dict[str, Any] = {}
         stale_cache_used = False
@@ -359,6 +433,23 @@ class ResistanceVector:
                 R_down = FALLBACK_VALUES["R_down"]
                 fallback_flags[f"CHIP_EXC:{type(e).__name__}"] = True
                 self._fallback_6stack(f"chip dim exc → FO-1 0.50: {e}", 3)
+
+            # ---- 矛盾调制：主要矛盾方向调制阻力场（与 HJB Lagrangian 一致）
+            if get_switch("enable_rv_contradiction_modulation", False) and primary_contradiction is not None:
+                try:
+                    pc_dir = str(primary_contradiction.get("direction", "neutral")).lower()
+                    pc_strength = max(0.0, min(1.0, float(primary_contradiction.get("strength", 0.0))))
+                    if pc_strength >= 0.01:
+                        if pc_dir == "long":
+                            R_up *= (1.0 - 0.3 * pc_strength)
+                            R_down *= (1.0 + 0.5 * pc_strength)
+                        elif pc_dir == "short":
+                            R_up *= (1.0 + 0.5 * pc_strength)
+                            R_down *= (1.0 - 0.3 * pc_strength)
+                        R_up = max(0.0, min(1.0, R_up))
+                        R_down = max(0.0, min(1.0, R_down))
+                except Exception:  # pragma: no cover — 调制异常不影响热路径
+                    fallback_flags["CONTRADICTION_MOD_EXC"] = True
 
             try:
                 R_smooth = self._calc_smooth(data, fallback_flags)

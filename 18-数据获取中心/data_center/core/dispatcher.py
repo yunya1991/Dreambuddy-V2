@@ -32,8 +32,25 @@ def _register_defaults(reg: Registry) -> None:
     from data_center.collectors.chain.etherscan_collector import EtherscanCollector
     from data_center.collectors.chain.panewslab_collector import PanewslabCollector
     from data_center.collectors.chain.stablecoin_transparency_collector import StablecoinTransparencyCollector
+    # 🆕 P0 数据源补全
+    from data_center.collectors.chain.fear_greed_collector import FearGreedCollector
+    from data_center.collectors.chain.mempool_collector import MempoolCollector
+    from data_center.collectors.chain.bgeometrics_collector import BGeometricsCollector
+    from data_center.collectors.chain.coinglass_collector import CoinglassCollector
+    # 🆕 P1 数据源补全
+    from data_center.collectors.chain.deribit_options_collector import DeribitOptionsCollector
+    from data_center.collectors.chain.blockscout_collector import BlockscoutCollector
+    from data_center.collectors.chain.fear_greed_enhanced_collector import FearGreedEnhancedCollector
+    from data_center.collectors.finance.cftc_cot_collector import CftcCotCollector
+    # 🆕 P2 数据源补全
+    from data_center.collectors.chain.google_trends_collector import GoogleTrendsCollector
+    from data_center.collectors.chain.blockchain_info_collector import BlockchainInfoCollector
+    from data_center.collectors.coin.coinmarketcap_collector import CoinMarketCapCollector
+    from data_center.collectors.news.cryptopanic_collector import CryptoPanicCollector
+    from data_center.collectors.finance.sosovalue_collector import SoSoValueCollector
     from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector
     from data_center.collectors.finance.yfinance_collector import YFinanceCollector
+    from data_center.collectors.finance.etf_flow_collector import EtfFlowCollector
     from data_center.collectors.macro.fred_collector import FredCollector
     from data_center.collectors.news.feedparser_collector import FeedparserCollector
     from data_center.collectors.news.gdelt_collector import GdeltCollector
@@ -41,6 +58,9 @@ def _register_defaults(reg: Registry) -> None:
     from data_center.collectors.news.rsshub_collector import RsshubCollector
     from data_center.collectors.news.tavily_collector import TavilyCollector
     from data_center.collectors.news.theblockbeats_dataview import TheBlockBeatsDataviewCollector
+    # 🆕 Scrapling 增强新闻源
+    from data_center.collectors.news.okx_announcement import OkxAnnouncementCollector
+    from data_center.collectors.news.cointelegraph_cn import CointelegraphCnCollector
     # 🆕 Phase G：BDSM 原生数据采集器（项目官网爬虫）
     from data_center.collectors.bdsm.pump_native_collector import PumpNativeCollector
     from data_center.collectors.bdsm.aave_native_collector import AaveNativeCollector
@@ -56,12 +76,32 @@ def _register_defaults(reg: Registry) -> None:
     reg.register("chain", "defillama", DeFiLlamaCollector)
     reg.register("chain", "panewslab", PanewslabCollector)
     reg.register("chain", "stablecoin_transparency", StablecoinTransparencyCollector)
+    # 🆕 P0 数据源补全
+    reg.register("chain", "fear_greed", FearGreedCollector)
+    reg.register("chain", "mempool", MempoolCollector)
+    reg.register("chain", "bgeometrics", BGeometricsCollector)
+    reg.register("chain", "coinglass", CoinglassCollector)
+    reg.register("finance", "etf_flow", EtfFlowCollector)
+    # 🆕 P1 数据源补全
+    reg.register("chain", "deribit", DeribitOptionsCollector)
+    reg.register("chain", "blockscout", BlockscoutCollector)
+    reg.register("chain", "fear_greed_enhanced", FearGreedEnhancedCollector)
+    reg.register("finance", "cftc_cot", CftcCotCollector)
+    # 🆕 P2 数据源补全
+    reg.register("chain", "google_trends", GoogleTrendsCollector)
+    reg.register("chain", "blockchain_info", BlockchainInfoCollector)
+    reg.register("coin", "coinmarketcap", CoinMarketCapCollector)
+    reg.register("news", "cryptopanic", CryptoPanicCollector)
+    reg.register("finance", "sosovalue", SoSoValueCollector)
     reg.register("news", "feedparser", FeedparserCollector)
     reg.register("news", "rsshub", RsshubCollector)
     reg.register("news", "tavily", TavilyCollector)
     reg.register("news", "gdelt", GdeltCollector)
     reg.register("news", "theblockbeats_dataview", TheBlockBeatsDataviewCollector)
     reg.register("news", "odaily_newsflash", OdailyNewsflashCollector)
+    # 🆕 Scrapling 增强新闻源
+    reg.register("news", "okx_announcement", OkxAnnouncementCollector)
+    reg.register("news", "cointelegraph_cn", CointelegraphCnCollector)
     # 🆕 Phase A4：CoinFundamentalRanker 数据源
     reg.register("coin", "coingecko", CoinGeckoCollector)
     # 🆕 Phase G：BDSM 原生采集器（项目官网爬虫，E5/E6/E7 信号数据源）
@@ -175,7 +215,10 @@ class DataCenter:
         # —— 正常分支 ——
         # H1 · Silver 中间件（Spec§E3）：EN_SILVER=true 时 result→清洗链→再回原链路
         # 默认 EN_SILVER=true（生产开启）；SILVER_FAIL_OPEN=true（fail-open兜底，秒级回滚）
+        # ★ 硬门禁：QualityGate 未通过或清洗链异常 → 拦截，返回空列表（异常数据仅保留在Bronze层审计）
         _en_silver = os.environ.get("EN_SILVER", "true").lower() not in {"0", "false", "off", "no"}
+        # SILVER_ALLOW_BRONZE_FALLBACK=true 时紧急回退到 Bronze（仅用于故障演练，默认关闭）
+        _allow_bronze_fallback = os.environ.get("SILVER_ALLOW_BRONZE_FALLBACK", "false").lower() in {"1", "true", "on", "yes"}
         if _en_silver and result:
             _fail_open = os.environ.get("SILVER_FAIL_OPEN", "true").lower() not in {"0", "false", "off", "no"}
             try:
@@ -189,7 +232,7 @@ class DataCenter:
                     category=category,   # ← news → DedupAlign FLAT 模式，保留每条 sub_category 语义
                 ))
                 _silver = _pipe.clean(result, source=source, category=category)
-                # Gate passed → 用 Silver DF 还原 records + 写入 DAL；否则原 result
+                # Gate passed → 用 Silver DF 还原 records + 写入 DAL
                 if _silver.gate_passed:
                     from data_cleaning.adapters import cleaned_df_to_records as _to_recs
                     result = _to_recs(_silver.df, source=source, category=category,
@@ -202,10 +245,26 @@ class DataCenter:
                                                category=category, sub_category=_sub)
                     except Exception:  # noqa: BLE001
                         pass  # DAL 写入失败不影响主链路
+                else:
+                    # ★ 硬门禁拦截：QualityGate 未通过 → 丢弃原始 Bronze 数据，返回空列表
+                    # 异常数据仅保留在 Bronze 层（sink_sqlite.records）用于审计，不进入交易热路径
+                    import logging as _logging
+                    _logging.getLogger(__name__).warning(
+                        "[Silver硬门禁] QualityGate未通过, 拦截Bronze数据: source=%s category=%s issues=%s",
+                        source, category,
+                        [(i.code.value, str(i.message)[:80]) for i in (_silver.quality_report or [])][:3],
+                    )
+                    result = [] if not _allow_bronze_fallback else result
             except Exception:  # noqa: BLE001
                 if not _fail_open:
                     raise
-                # fail-open: 保持原始 result 不变
+                # fail-open: Silver 清洗链异常 → 同样拦截，返回空（不回退到Bronze脏数据）
+                import logging as _logging
+                _logging.getLogger(__name__).warning(
+                    "[Silver硬门禁] 清洗链异常, 拦截Bronze数据: source=%s category=%s",
+                    source, category,
+                )
+                result = [] if not _allow_bronze_fallback else result
 
         duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
         if bundle is not None:

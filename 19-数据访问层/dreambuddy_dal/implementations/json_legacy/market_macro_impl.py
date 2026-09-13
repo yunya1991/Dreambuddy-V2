@@ -17,6 +17,7 @@ class JsonLegacyMarketMacroRepository(MarketMacroRepository):
         self._liq: List[tuple] = []
         self._lsr: List[tuple] = []
         self._tv: List[tuple] = []
+        self._metrics: List[tuple] = []
 
     # ---------- 5.1 恐惧贪婪 ----------
     def upsert_fear_greed(self, value: int, value_classification: str, ts: datetime) -> bool:
@@ -70,6 +71,24 @@ class JsonLegacyMarketMacroRepository(MarketMacroRepository):
     def query_taker_volume_by_time(self, symbol, start_ts, end_ts):
         return [r for r in self._tv
                 if r[0] == symbol and start_ts <= r[5] <= end_ts]
+
+    # ---------- 5.7 通用指标 ----------
+    def upsert_metric(self, source, sub_category, metric_name, metric_value, ts) -> bool:
+        self._metrics.append((source, sub_category, metric_name, float(metric_value), ts))
+        return True
+
+    def query_metric_by_time(self, sub_category, metric_name, start_ts, end_ts):
+        return [(r[0], r[2], r[3], r[4]) for r in self._metrics
+                if r[1] == sub_category and r[2] == metric_name
+                and start_ts <= r[4] <= end_ts]
+
+    def query_latest_metric(self, sub_category, metric_name):
+        candidates = [r for r in self._metrics
+                      if r[1] == sub_category and r[2] == metric_name]
+        if not candidates:
+            return None
+        latest = max(candidates, key=lambda r: r[4])
+        return (latest[0], latest[3], latest[4])
 
 
 __all__ = ["JsonLegacyMarketMacroRepository"]

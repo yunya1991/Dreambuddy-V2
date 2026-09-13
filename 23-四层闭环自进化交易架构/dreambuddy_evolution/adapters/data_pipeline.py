@@ -99,6 +99,88 @@ class DataPipelineAdapter:
             except Exception as e:
                 logger.warning("[FO] DataCenterAdapter crash: %s", e)
 
+        # 2b. 🆕 P1: 扩展数据源 — ETF/情绪/链上/期权/COT/Coinglass
+        #     字段名对齐下游消费方（ExogenousStrengthEvaluator / ThreeFactorShort 等）
+        if self._data_center is not None:
+            try:
+                # ETF 资金流 → etf_net_flow (float, 下游 ESE._eval_fundamental 期望)
+                etf_data = self._data_center.query_etf_flow()
+                if etf_data:
+                    # 提取总净流入数值
+                    etf_net = (
+                        etf_data.get("total_net_flow")
+                        or etf_data.get("net_flow")
+                        or etf_data.get("total_inflow")
+                        or 0.0
+                    )
+                    kline_data["etf_net_flow"] = float(etf_net)
+                    kline_data["etf_flow_detail"] = etf_data
+            except Exception as e:
+                logger.debug("[FO] query_etf_flow fail: %s", e)
+            try:
+                # F&G 情绪指数 → fear_greed_value (float, 0-100)
+                fg_data = self._data_center.query_fear_greed()
+                if fg_data:
+                    kline_data["fear_greed_value"] = float(fg_data.get("fear_greed", 0))
+            except Exception as e:
+                logger.debug("[FO] query_fear_greed fail: %s", e)
+            try:
+                # BTC 链上深度 → 展平为 ESE 期望的独立字段
+                onchain = self._data_center.query_btc_onchain()
+                if onchain:
+                    kline_data["btc_onchain"] = onchain
+                    # 展平到 ESE _eval_fundamental 期望的字段名
+                    if "active_addresses" in onchain:
+                        kline_data["active_addresses_now"] = float(onchain["active_addresses"])
+                    if "exchange_netflow" in onchain:
+                        kline_data["exchange_net_flow"] = float(onchain["exchange_netflow"])
+                    # NVT ratio + 历史中位数（bgeometrics 有 nvt 字段时写入）
+                    if "nvt" in onchain:
+                        kline_data["nvt_ratio"] = float(onchain["nvt"])
+                    elif "mvrv" in onchain:
+                        # MVRV 作为 NVT 代理
+                        kline_data["nvt_ratio"] = float(onchain["mvrv"])
+                    # SOPR 映射到 utxo_turnover_rate（ESE 可能消费）
+                    if "sopr" in onchain:
+                        kline_data["utxo_turnover_rate"] = float(onchain["sopr"])
+            except Exception as e:
+                logger.debug("[FO] query_btc_onchain fail: %s", e)
+            try:
+                # Deribit 期权 → max_pain / put_call_ratio
+                opt_data = self._data_center.query_options()
+                if opt_data:
+                    kline_data["options_data"] = opt_data
+                    if "max_pain" in opt_data:
+                        kline_data["options_max_pain"] = float(opt_data["max_pain"])
+                    if "put_call_ratio" in opt_data or "pc_ratio" in opt_data:
+                        kline_data["put_call_ratio"] = float(
+                            opt_data.get("put_call_ratio") or opt_data.get("pc_ratio", 0)
+                        )
+            except Exception as e:
+                logger.debug("[FO] query_options fail: %s", e)
+            try:
+                # CFTC COT → 机构净持仓
+                cot_data = self._data_center.query_cot()
+                if cot_data:
+                    kline_data["cot_data"] = cot_data
+                    if "non_comm_net" in cot_data:
+                        kline_data["cot_net_position"] = float(cot_data["non_comm_net"])
+            except Exception as e:
+                logger.debug("[FO] query_cot fail: %s", e)
+            try:
+                # Coinglass 衍生品 → 补充 funding_rate / open_interest 交叉验证
+                cg_data = self._data_center.query_coinglass_derivatives()
+                if cg_data:
+                    kline_data["coinglass"] = cg_data
+                    # 如果 panewslab 没提供 funding_rate，用 coinglass 补充
+                    if "funding_rate" not in kline_data:
+                        for k, v in cg_data.items():
+                            if "funding" in k.lower() and isinstance(v, (int, float)):
+                                kline_data["funding_rate"] = float(v)
+                                break
+            except Exception as e:
+                logger.debug("[FO] query_coinglass_derivatives fail: %s", e)
+
         # 3. Sentiment (映射到 kline_event_handler 期望的 sentiment key)
         try:
             sent_score = self._sentiment.get_sentiment_score(symbol)
@@ -127,8 +209,16 @@ class DataPipelineAdapter:
         if self._subsystem is not None:
             try:
                 kline_data["bcrm_direction"] = self._subsystem.get_bcrm_direction()
+                kline_data["bcrm_confidence"] = self._subsystem.get_bcrm_confidence()
+                kline_data["bcrm_pattern"] = self._subsystem.get_bcrm_pattern()
                 kline_data["war_state"] = self._subsystem.get_war_state()
                 kline_data["ess_temperature"] = self._subsystem.get_ess_temperature()
+                kline_data["five_scores"] = self._subsystem.get_five_scores()
+                kline_data["position_cap"] = self._subsystem.get_position_cap()
+                kline_data["btc_regime"] = self._subsystem.get_btc_regime()
+                kline_data["bdsm_valuation"] = self._subsystem.get_bdsm_valuation()
+                kline_data["direction_state"] = self._subsystem.get_direction_state()
+                kline_data["direction_bias"] = self._subsystem.get_direction_bias()
             except Exception as e:
                 logger.warning("[FO] SubSystemBridge crash: %s", e)
 

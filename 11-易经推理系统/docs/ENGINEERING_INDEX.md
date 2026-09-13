@@ -1,8 +1,12 @@
 # 易经推理系统 工程索引（SSoT）
 
-> **版本**: v2.8 | **更新日期**: 2026-08-29
+> **版本**: v3.2 | **更新日期**: 2026-09-12
 > **定位**: 易经推理系统的工程入口索引（Single Source of Truth），包含所有子模块的文件级索引、入口锚点、依赖关系和快速导航
 > **维护原则**: 任何子系统变更影响入口、依赖关系、配置层级的，必须同步更新本文件
+> **v3.2 变更**: 战略层+策略层独立开仓 + war_state/direction_state 职责分离 — `polling_trader.py` 新增 `_compute_strategy_open_signal()` + `_strategy_independent_open()`，三层信号组合（战略层 war_state/direction_state + 策略层 select() + 技术信号 d_star/ri）产出独立买卖信号；开关 `enable_strategy_independent_open` 默认 False；**war_state（ALLOW/COOLDOWN/RESTRICT/FREEZE）只影响仓位 cap_pct 不拦截开仓，direction_state（LONG_ONLY/NEUTRAL/SHORT_ONLY/FREEZE）才控制是否开仓+方向**；详见 [CHANGELOG v4.4.5](./CHANGELOG.md) 与 [TECHNICAL_DESIGN L870-L874](./TECHNICAL_DESIGN.md)
+> **v3.1 变更**: evolution 路径 direction_state 闸门补齐 — `polling_trader.py` `_evolution_build_position` L9497-L9532 新增 direction_state 检查，与 BCRM2.0 路径（L13982）对齐，修复 evolution 绕过方向状态闸门的 bug；详见 [CHANGELOG v4.4.4](./CHANGELOG.md)
+> **v3.0 变更**: REGIME_FACTORS 三套命名体系兼容 — `strategy_algo_layer.py` REGIME_FACTORS 从 7 键扩展到 22 键，覆盖旧版4y大周期 + 弹簧力场分类器 + 八卦形态分类三套命名体系，修复精细市场形态分类在策略层校准公式中失效的 bug；详见 [CHANGELOG v4.4.3](./CHANGELOG.md)
+> **v2.9 变更**: 战略层 RESTRICT 状态落地 + Phase 2 自适应权重上线 — `five_domain_scorer.py` 四态状态机补齐 RESTRICT（50≤total<60）；`polling_trader.py` 接入 force_vectors 数据源；`bcrm2/storage.py` CREATE TABLE 补齐 18 列修复 INSERT 静默回退；极差场景 mask 不被 direction_state 覆盖；详见 [CHANGELOG v4.4.2](./CHANGELOG.md)
 > **v2.8 变更**: Odaily policy→dao/tian boost 注入（Spec: odaily-policy-tian-integration）— `five_domain_feature_computer.py` 新增 `_od_dao_boost`/`_od_tian_boost`/`_od_engine_shadow_compute` + `enable_odaily_engine_boost` 红线；`five_domain_sqlite_reader.py` 新增 §ODAILY 9字段派生；`odaily_shadow_hitrate_eval.py` 4门槛评估
 
 ---

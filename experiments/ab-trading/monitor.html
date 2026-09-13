@@ -508,11 +508,112 @@
       </div>
     </div>
 
+    <!-- 区块4.5: 非线性多阶段最优路径指标（6机制） -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot" style="background:#ec4899"></div>非线性多阶段最优路径指标（6机制联动）
+        <span id="nlpm-ts" style="margin-left:auto;font-size:10px;color:var(--muted)"></span>
+      </div>
+      <div id="nlpm-container" style="padding:16px">
+        <!-- 组1+组2 一级展示 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <!-- 组1: 非线性路径核心 -->
+          <div style="background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.2);border-radius:8px;padding:14px">
+            <div style="font-weight:bold;font-size:12px;color:#ec4899;margin-bottom:10px">组1 · 非线性路径核心</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+              <div><span style="color:var(--muted)">主要矛盾</span><div id="nlpm-primary" style="font-weight:600">—</div></div>
+              <div><span style="color:var(--muted)">时间框架</span><div id="nlpm-tf" style="font-weight:600">—</div></div>
+              <div><span style="color:var(--muted)">方向</span><div id="nlpm-dir" style="font-weight:600">—</div></div>
+              <div><span style="color:var(--muted)">力量</span><div id="nlpm-str" style="font-weight:600">—</div></div>
+              <div><span style="color:var(--muted)">HJB收敛</span><div id="nlpm-hjb-conv" style="font-weight:600">—</div></div>
+              <div><span style="color:var(--muted)">HJB cost</span><div id="nlpm-hjb-cost" style="font-weight:600">—</div></div>
+              <div><span style="color:var(--muted)">反身性燃料</span><div id="nlpm-fuel" style="font-weight:600">—</div></div>
+              <div><span style="color:var(--muted)">质变切换</span><div id="nlpm-shift" style="font-weight:600">—</div></div>
+            </div>
+          </div>
+          <!-- 组2: 风控安全 G-05 -->
+          <div style="background:rgba(248,81,73,0.08);border:1px solid rgba(248,81,73,0.2);border-radius:8px;padding:14px">
+            <div style="font-weight:bold;font-size:12px;color:#f85149;margin-bottom:10px">组2 · 风控安全（G-05 级联熔断）</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="color:var(--muted);font-size:11px">状态:</span>
+              <span id="nlpm-g05-status" style="font-weight:600;font-size:13px;padding:2px 10px;border-radius:4px;background:var(--border)">idle</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
+              <div style="display:flex;align-items:center;gap:6px"><span id="nlpm-j1-dot" style="width:8px;height:8px;border-radius:50%;background:#333"></span>① 维度跳变</div>
+              <div style="display:flex;align-items:center;gap:6px"><span id="nlpm-j2-dot" style="width:8px;height:8px;border-radius:50%;background:#333"></span>② 机制强制</div>
+              <div style="display:flex;align-items:center;gap:6px"><span id="nlpm-j3-dot" style="width:8px;height:8px;border-radius:50%;background:#333"></span>③ 无反弹</div>
+              <div style="display:flex;align-items:center;gap:6px"><span id="nlpm-j4-dot" style="width:8px;height:8px;border-radius:50%;background:#333"></span>④ 无干预者</div>
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:var(--muted)">冷却剩余: <span id="nlpm-g05-cooldown">0</span> min</div>
+          </div>
+        </div>
+        <!-- 组3+组4 二级展开 -->
+        <details style="margin-top:8px">
+          <summary style="cursor:pointer;font-size:12px;color:var(--muted);font-weight:600">▸ 组3 反身性闭环 + 组4 弹性约束（二级）</summary>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:14px 0">
+            <!-- 组3: 反身性闭环 -->
+            <div style="background:rgba(188,140,255,0.08);border:1px solid rgba(188,140,255,0.2);border-radius:8px;padding:14px">
+              <div style="font-weight:bold;font-size:12px;color:#bc8cff;margin-bottom:10px">组3 · 反身性闭环（C∘P）</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+                <div><span style="color:var(--muted)">认知状态</span><div id="nlpm-cog" style="font-weight:600">—</div></div>
+                <div><span style="color:var(--muted)">认知变化</span><div id="nlpm-cog-delta" style="font-weight:600">—</div></div>
+                <div><span style="color:var(--muted)">反身性环</span><div id="nlpm-loop" style="font-weight:600">—</div></div>
+              </div>
+            </div>
+            <!-- 组4: 弹性约束 -->
+            <div style="background:rgba(63,185,80,0.08);border:1px solid rgba(63,185,80,0.2);border-radius:8px;padding:14px">
+              <div style="font-weight:bold;font-size:12px;color:#3fb950;margin-bottom:10px">组4 · 弹性约束</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+                <div><span style="color:var(--muted)">T_max</span><div id="nlpm-tmax" style="font-weight:600">—</div></div>
+                <div><span style="color:var(--muted)">仓位倍数</span><div id="nlpm-pmult" style="font-weight:600">—</div></div>
+                <div><span style="color:var(--muted)">约束激活</span><div id="nlpm-constr" style="font-weight:600">—</div></div>
+                <div><span style="color:var(--muted)">方向对齐</span><div id="nlpm-aligned" style="font-weight:600">—</div></div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
     <!-- 区块5: FTC 金融思维链核心指标 -->
     <div class="card full-width">
       <div class="card-title"><div class="dot" style="background:#a855f7"></div>FTC 金融思维链核心指标（自进化路径层）</div>
       <div id="evo-ftc-container" style="padding:16px">
         <div style="text-align:center;color:var(--muted);padding:30px">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 区块6: L2-L5 AGI 算法模型可视化 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:#8b5cf6"></div>L2-L5 AGI 算法模型实时状态</div>
+      <div id="agi-status-bar" style="display:flex;flex-wrap:wrap;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:12px">加载中...</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px">
+        <div>
+          <div style="font-weight:bold;margin-bottom:6px;font-size:12px">L2 Signature 范数趋势</div>
+          <div id="agi-chart-signature" style="height:180px"></div>
+        </div>
+        <div>
+          <div style="font-weight:bold;margin-bottom:6px;font-size:12px">L2 Neural SDE 后端</div>
+          <div id="agi-chart-sde" style="height:180px"></div>
+        </div>
+        <div>
+          <div style="font-weight:bold;margin-bottom:6px;font-size:12px">L3 路径阻力趋势</div>
+          <div id="agi-chart-resistance" style="height:180px"></div>
+        </div>
+        <div>
+          <div style="font-weight:bold;margin-bottom:6px;font-size:12px">L3 蒙特卡洛 波动率 vs 阻力</div>
+          <div id="agi-chart-mc" style="height:180px"></div>
+        </div>
+        <div>
+          <div style="font-weight:bold;margin-bottom:6px;font-size:12px">L4 不确定性 Gate</div>
+          <div id="agi-chart-uncertainty" style="height:180px"></div>
+        </div>
+        <div>
+          <div style="font-weight:bold;margin-bottom:6px;font-size:12px">L5 ShadowRL 训练进度</div>
+          <div id="agi-chart-shadowrl" style="height:180px"></div>
+        </div>
       </div>
     </div>
 
@@ -1550,12 +1651,13 @@
           <table class="log-table">
             <thead><tr>
               <th>时间</th><th>币种</th>
+              <th>方向</th><th>偏置</th>
               <th>战略层 war</th><th>总分</th><th>cap</th><th>mult</th>
               <th>策略层 type</th><th>regime</th><th>calib</th><th>gate</th>
               <th>实际方向</th><th>置信度</th><th>注入</th>
             </tr></thead>
             <tbody id="wm-records-tbody">
-              <tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">点击刷新加载</td></tr>
+              <tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px">点击刷新加载</td></tr>
             </tbody>
           </table>
         </div>
@@ -1992,6 +2094,18 @@ function loadWujiMiaosuan() {
           <div>总分: <b>${score}</b></div><div>cap: <b>${cap}</b></div><div>mult: <b>${mult}</b></div>
         </div></div>`;
     });
+    // 方向状态（direction_state / direction_bias）
+    const ds = ls.direction_state;
+    const db = ls.direction_bias;
+    if(ds != null || db != null){
+      const dsc = ds==='LONG_ONLY'||ds==='LONG_PREFER'?'var(--green)':ds==='SHORT_ONLY'||ds==='SHORT_PREFER'?'var(--red)':'var(--yellow)';
+      const dbc = (db||0)>0?'var(--green)':(db||0)<0?'var(--red)':'var(--muted)';
+      stratHtml += `<div style="flex:1;min-width:200px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">🧭 方向状态</div>
+        <div style="font-size:24px;font-weight:700;color:${dsc};margin-bottom:8px">${ds||'--'}</div>
+        <div style="font-size:12px">偏置: <b style="color:${dbc}">${db!=null?db.toFixed(2):'--'}</b></div>
+      </div>`;
+    }
     document.getElementById('wm-strategic').innerHTML = stratHtml || '<div style="color:var(--muted);padding:20px">无战略层数据</div>';
     // AB 闸门状态
     const sm = d.summary || {};
@@ -2030,16 +2144,20 @@ function loadWujiMiaosuan() {
 // ── 影子记录折叠/展开 ──
 function _renderWmRecords(records, limit, expanded){
   if(!records.length){
-    return '<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">无记录</td></tr>';
+    return '<tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px">无记录</td></tr>';
   }
   const shown = expanded ? records : records.slice(0, limit);
   let html = '';
   shown.forEach(r => {
     const dc = r.actual_direction==='UP'?'var(--green)':r.actual_direction==='DOWN'?'var(--red)':'var(--muted)';
     const wc = r.fd_war_state==='ALLOW'?'var(--green)':r.fd_war_state==='COOLDOWN'?'var(--yellow)':r.fd_war_state==='FREEZE'?'var(--red)':'var(--muted)';
+    const dsc = r.direction_state==='LONG_ONLY'||r.direction_state==='LONG_PREFER'?'var(--green)':r.direction_state==='SHORT_ONLY'||r.direction_state==='SHORT_PREFER'?'var(--red)':'var(--yellow)';
+    const dbc = (r.direction_bias||0)>0?'var(--green)':(r.direction_bias||0)<0?'var(--red)':'var(--muted)';
     html += `<tr>
       <td style="font-size:11px">${r.timestamp?r.timestamp.substring(11,19):'--'}</td>
       <td><b>${r.symbol||'--'}</b></td>
+      <td style="color:${dsc}">${r.direction_state||'--'}</td>
+      <td style="color:${dbc}">${r.direction_bias!=null?r.direction_bias.toFixed(1):'--'}</td>
       <td style="color:${wc}">${r.fd_war_state||'--'}</td>
       <td>${r.fd_total_score!=null?r.fd_total_score.toFixed(1):'--'}</td>
       <td>${r.fd_cap_mode!=null?r.fd_cap_mode:'--'}</td>
@@ -2053,7 +2171,7 @@ function _renderWmRecords(records, limit, expanded){
     </tr>`;
   });
   if(!expanded && records.length > limit){
-    html += `<tr><td colspan="13" style="text-align:center;color:var(--muted);font-size:11px;padding:4px">… 还有 ${records.length - limit} 条未显示</td></tr>`;
+    html += `<tr><td colspan="15" style="text-align:center;color:var(--muted);font-size:11px;padding:4px">… 还有 ${records.length - limit} 条未显示</td></tr>`;
   }
   return html;
 }
@@ -2638,6 +2756,10 @@ function switchTab(tab, evt) {
   if (tab === 'evolution' && !window._evoDataLoaded) {
     if (typeof loadEvolutionData === 'function') loadEvolutionData();
   }
+  if (tab === 'evolution') {
+    if (typeof loadAGISnapshot === 'function') loadAGISnapshot();
+    loadNonlinearPathMetrics();
+  }
   if (tab === 'trend' && !trendDataLoaded) {
     loadTrendScreenData();
   }
@@ -2698,6 +2820,7 @@ function currentTabRefresh() {
     loadGlobalTradeStats();
   } else if (currentTab === 'evolution') {
     if (typeof loadEvolutionData === 'function') loadEvolutionData();
+    loadNonlinearPathMetrics();
   }
 }
 
@@ -5925,6 +6048,7 @@ function renderResearch(research, screen) {
 // 三屏tab自动刷新
 setInterval(() => { if (currentTab === 'screen') loadScreenData(); }, 60000);
 setInterval(() => { if (currentTab === 'yijing') loadYijingData(); }, 60000);
+setInterval(() => { if (currentTab === 'evolution') loadNonlinearPathMetrics(); }, 300000);
 
 // ── Dream OS Tab ──────────────────────────────────────────────────────────
 let dreamosData = null;
@@ -7144,6 +7268,216 @@ function renderGlobalBarChart(containerId, systems, valueKey, displayKey, unit, 
       </div>
     `;
   }).join('');
+}
+
+// ========== AGI L2-L5 可视化 ==========
+var _agiChartIds = ['agi-chart-signature','agi-chart-sde','agi-chart-resistance','agi-chart-mc','agi-chart-uncertainty','agi-chart-shadowrl'];
+var _agiTimer = null;
+
+function _agiDisposeCharts() {
+  _agiChartIds.forEach(function(id) { _fvDispose(id); });
+}
+
+function _agiInitChart(id, option) {
+  var el = document.getElementById(id);
+  if (!el || !window.echarts) return null;
+  _fvDispose(id);
+  var c = echarts.init(el, null, {renderer:'canvas'});
+  c.setOption(option);
+  fvCharts[id] = c;
+  return c;
+}
+
+async function loadAGISnapshot() {
+  if (_agiTimer) { clearInterval(_agiTimer); }
+  await _agiFetchAndRender();
+  _agiTimer = setInterval(_agiFetchAndRender, 10000);
+}
+
+async function _agiFetchAndRender() {
+  try {
+    var resp = await fetch('/api/agi/snapshot?n=200');
+    var data = await resp.json();
+    if (!data.ok || !data.snapshots || data.snapshots.length === 0) {
+      document.getElementById('agi-status-bar').innerHTML = '<span style="color:var(--muted);font-size:12px">暂无 AGI 快照数据（需重启 polling_trader 产生快照）</span>';
+      return;
+    }
+    var snaps = data.snapshots;
+
+    // 状态栏
+    var latest = snaps[snaps.length - 1];
+    var sdeBackend = latest.neural_sde_backend || 'unavailable';
+    var sdeTrained = latest.neural_sde_trained ? '✅ 已训练' : '❌ 未训练';
+    var rlActivated = latest.shadow_rl_activated ? '✅ Phase3' : '⏸ 待激活';
+    var rlSamples = latest.shadow_rl_samples || 0;
+    var rlEffective = latest.effective_sample_count || 0;
+    var dColor = latest.d_star === 'long' ? '#16a34a' : latest.d_star === 'short' ? '#ef4444' : '#94a3b8';
+    document.getElementById('agi-status-bar').innerHTML =
+      '<span style="font-size:12px;color:var(--muted)">时间</span><span style="font-size:12px;font-family:monospace">' + (latest.ts||'-') + '</span>'
+      + '<span style="font-size:12px;color:var(--muted)">Symbol</span><span style="font-size:12px;font-family:monospace">' + (latest.symbol||'-') + '</span>'
+      + '<span style="font-size:12px;color:var(--muted)">d*</span><span style="font-size:12px;font-family:monospace;font-weight:bold;color:' + dColor + '">' + (latest.d_star||'-') + '</span>'
+      + '<span style="font-size:12px;color:var(--muted)">RI</span><span style="font-size:12px;font-family:monospace">' + ((latest.ri||0).toFixed(4)) + '</span>'
+      + '<span style="font-size:12px;color:var(--muted)">SDE</span><span style="font-size:12px;padding:2px 8px;border-radius:8px;background:' + (sdeBackend==='unavailable'?'#94a3b8':'#3b82f6') + ';color:#fff">' + sdeBackend + '</span><span style="font-size:11px;color:var(--muted)">' + sdeTrained + '</span>'
+      + '<span style="font-size:12px;color:var(--muted)">ShadowRL</span><span style="font-size:11px;color:var(--muted)">' + rlActivated + ' (' + rlSamples + ' samples)</span>'
+      + '<span style="font-size:12px;color:var(--muted)">快照数</span><span style="font-size:12px;font-family:monospace">' + data.count + '</span>';
+
+    // L2 Signature 范数
+    var sigData = snaps.filter(function(s){return s.agi_signature;}).map(function(s){
+      return {ts:(s.ts||'').split('T')[1]||s.ts, norm:s.agi_signature.norm, first:s.agi_signature.first};
+    });
+    if (sigData.length > 0) {
+      _agiInitChart('agi-chart-signature', {
+        tooltip:{trigger:'axis'},
+        xAxis:{type:'category',data:sigData.map(function(d){return d.ts;}),axisLabel:{fontSize:9}},
+        yAxis:{type:'value',axisLabel:{fontSize:9}},
+        series:[
+          {name:'Norm',type:'line',data:sigData.map(function(d){return d.norm;}),smooth:true,lineStyle:{color:'#8b5cf6',width:2},areaStyle:{color:'rgba(139,92,246,0.15)'}},
+          {name:'First',type:'line',data:sigData.map(function(d){return d.first;}),smooth:true,lineStyle:{color:'#06b6d4'}}
+        ],
+        grid:{left:40,right:20,top:10,bottom:25}
+      });
+    }
+
+    // L2 Neural SDE 后端
+    var sdeCounts = {};
+    snaps.forEach(function(s){var b=s.neural_sde_backend||'unavailable';sdeCounts[b]=(sdeCounts[b]||0)+1;});
+    var sdeData = Object.keys(sdeCounts).map(function(k){return {name:k,count:sdeCounts[k]};});
+    if (sdeData.length > 0) {
+      _agiInitChart('agi-chart-sde', {
+        tooltip:{},
+        xAxis:{type:'category',data:sdeData.map(function(d){return d.name;}),axisLabel:{fontSize:9}},
+        yAxis:{type:'value',axisLabel:{fontSize:9}},
+        series:[{type:'bar',data:sdeData.map(function(d){return d.count;}),itemStyle:{color:'#3b82f6'}}],
+        grid:{left:30,right:20,top:10,bottom:25}
+      });
+    }
+
+    // L3 路径阻力
+    var resData = snaps.filter(function(s){return s.agi_path_integral;}).map(function(s){
+      return {ts:(s.ts||'').split('T')[1]||s.ts, resistance:s.agi_path_integral.min_resistance_action};
+    });
+    if (resData.length > 0) {
+      _agiInitChart('agi-chart-resistance', {
+        tooltip:{trigger:'axis'},
+        xAxis:{type:'category',data:resData.map(function(d){return d.ts;}),axisLabel:{fontSize:9}},
+        yAxis:{type:'value',min:0,max:1,axisLabel:{fontSize:9}},
+        series:[{name:'阻力',type:'line',data:resData.map(function(d){return d.resistance;}),smooth:true,lineStyle:{color:'#ef4444',width:2},markLine:{data:[{yAxis:0.5,lineStyle:{type:'dashed',color:'#94a3b8'}}]}}],
+        grid:{left:30,right:20,top:10,bottom:25}
+      });
+    }
+
+    // L3 蒙特卡洛散点
+    var mcData = snaps.filter(function(s){return s.agi_path_integral;}).map(function(s){
+      return [s.agi_path_integral.volatility, s.agi_path_integral.min_resistance_action];
+    });
+    if (mcData.length > 0) {
+      _agiInitChart('agi-chart-mc', {
+        tooltip:{},
+        xAxis:{type:'value',name:'波动率',nameTextStyle:{fontSize:9},axisLabel:{fontSize:9}},
+        yAxis:{type:'value',name:'阻力',min:0,max:1,nameTextStyle:{fontSize:9},axisLabel:{fontSize:9}},
+        series:[{type:'scatter',symbolSize:8,data:mcData,itemStyle:{color:'#8b5cf6'}}],
+        grid:{left:45,right:20,top:15,bottom:30}
+      });
+    }
+
+    // L4 不确定性
+    var uncData = snaps.filter(function(s){return s.agi_uncertainty;}).map(function(s){
+      return {ts:(s.ts||'').split('T')[1]||s.ts, score:s.agi_uncertainty.uncertainty_score, multiplier:(s.agi_gate_decision?s.agi_gate_decision.position_multiplier:1)};
+    });
+    if (uncData.length > 0) {
+      _agiInitChart('agi-chart-uncertainty', {
+        tooltip:{trigger:'axis'},
+        xAxis:{type:'category',data:uncData.map(function(d){return d.ts;}),axisLabel:{fontSize:9}},
+        yAxis:{type:'value',min:0,max:1,axisLabel:{fontSize:9}},
+        series:[
+          {name:'不确定性',type:'line',data:uncData.map(function(d){return d.score;}),smooth:true,lineStyle:{color:'#f59e0b',width:2}},
+          {name:'仓位乘数',type:'line',data:uncData.map(function(d){return d.multiplier;}),smooth:true,lineStyle:{color:'#06b6d4',width:2}}
+        ],
+        legend:{data:['不确定性','仓位乘数'],textStyle:{fontSize:10}},
+        grid:{left:30,right:20,top:30,bottom:25}
+      });
+    }
+
+    // L5 ShadowRL
+    var rlData = snaps.filter(function(s){return s.shadow_rl_samples!==undefined;}).map(function(s){
+      return {ts:(s.ts||'').split('T')[1]||s.ts, samples:s.shadow_rl_samples, activated:s.shadow_rl_activated};
+    });
+    if (rlData.length > 0) {
+      var latestRL = rlData[rlData.length-1];
+      _agiInitChart('agi-chart-shadowrl', {
+        tooltip:{trigger:'axis'},
+        title:{text:latestRL.activated?'Phase3 已激活':'待激活 ('+latestRL.samples+' samples)',textStyle:{fontSize:10,color:latestRL.activated?'#16a34a':'#94a3b8'},left:'center',top:0},
+        xAxis:{type:'category',data:rlData.map(function(d){return d.ts;}),axisLabel:{fontSize:9}},
+        yAxis:{type:'value',axisLabel:{fontSize:9}},
+        series:[{name:'Samples',type:'line',data:rlData.map(function(d){return d.samples;}),smooth:true,areaStyle:{color:'rgba(22,163,74,0.15)'},lineStyle:{color:'#16a34a',width:2}}],
+        grid:{left:40,right:20,top:25,bottom:25}
+      });
+    }
+
+  } catch(e) {
+    var bar = document.getElementById('agi-status-bar');
+    if (bar) bar.innerHTML = '<span style="color:var(--red);font-size:12px">AGI 数据加载失败: ' + e.message + '</span>';
+  }
+}
+
+// ── 非线性多阶段最优路径指标（6机制） ────────────────────────────────────────
+async function loadNonlinearPathMetrics() {
+  try {
+    const resp = await fetch('/api/nonlinear-path-metrics');
+    const data = await resp.json();
+    if (!data.ok || !data.metrics) {
+      document.getElementById('nlpm-ts').textContent = '暂无数据';
+      return;
+    }
+    const m = data.metrics;
+
+    // 时间戳
+    document.getElementById('nlpm-ts').textContent = data.symbol + ' · ' + data.ts;
+
+    // 组1: 非线性路径核心
+    const g1 = m.group1;
+    const pc = g1.primary;
+    document.getElementById('nlpm-primary').textContent = pc.dimension;
+    document.getElementById('nlpm-tf').textContent = pc.timeframe;
+    document.getElementById('nlpm-dir').textContent = pc.direction;
+    document.getElementById('nlpm-str').textContent = pc.strength.toFixed(4);
+    document.getElementById('nlpm-hjb-conv').textContent = g1.hjb.converged ? '✅' : '❌';
+    document.getElementById('nlpm-hjb-cost').textContent = g1.hjb.total_cost.toFixed(6);
+    const fuelType = g1.fuel.type;
+    document.getElementById('nlpm-fuel').textContent = fuelType === 'none' ? '无' : `${fuelType}/${g1.fuel.intensity.toFixed(2)}`;
+    document.getElementById('nlpm-shift').textContent = g1.shift.detected
+      ? `✅ t=${g1.shift.shift_time} →${g1.shift.new_direction}`
+      : '无切换';
+
+    // 组2: 风控安全 G-05
+    const g2 = m.group2;
+    const statusEl = document.getElementById('nlpm-g05-status');
+    statusEl.textContent = g2.status;
+    statusEl.style.background = g2.status === 'active' ? 'rgba(248,81,73,0.3)' :
+                                g2.status === 'cooldown' ? 'rgba(210,153,34,0.3)' : 'var(--border)';
+    const judges = g2.judges || {};
+    const jColors = {true: '#f85149', false: '#333'};
+    document.getElementById('nlpm-j1-dot').style.background = jColors[judges.dim_jumped] || '#333';
+    document.getElementById('nlpm-j2-dot').style.background = jColors[judges.mech_active] || '#333';
+    document.getElementById('nlpm-j3-dot').style.background = jColors[judges.no_bounce] || '#333';
+    document.getElementById('nlpm-j4-dot').style.background = jColors[judges.no_intervener] || '#333';
+    document.getElementById('nlpm-g05-cooldown').textContent = g2.cooldown_remaining || 0;
+
+    // 组3: 反身性闭环
+    const g3 = m.group3;
+    document.getElementById('nlpm-cog').textContent = g3.cognition.toFixed(4);
+    document.getElementById('nlpm-cog-delta').textContent = (g3.cognition_delta >= 0 ? '+' : '') + g3.cognition_delta.toFixed(6);
+    document.getElementById('nlpm-loop').textContent = g3.loop_active ? '🔄 激活' : '静止';
+
+    // 组4: 弹性约束
+    const g4 = m.group4;
+    document.getElementById('nlpm-tmax').textContent = g4.t_max.toFixed(4);
+    document.getElementById('nlpm-pmult').textContent = g4.position_mult.toFixed(4);
+    document.getElementById('nlpm-constr').textContent = g4.constraint_active ? '⚠️ 激活' : '✅ 无';
+    document.getElementById('nlpm-aligned').textContent = g4.aligned ? '✅ 对齐' : '⚠️ 偏离';
+  } catch (e) {
+    document.getElementById('nlpm-ts').textContent = '加载失败: ' + e.message;
+  }
 }
 </script>
 

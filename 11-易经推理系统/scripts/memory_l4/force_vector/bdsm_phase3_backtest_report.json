@@ -1,0 +1,106 @@
+{
+  "generated_at": "2026-09-03T14:41:52.756258+00:00",
+  "backtest_days": 90,
+  "ma_long": 200,
+  "coins": [
+    "AAVE",
+    "CRCL",
+    "ETH",
+    "HYPE",
+    "PUMP",
+    "SOL",
+    "UNI"
+  ],
+  "bds_scores": {
+    "PUMP": 0.3408,
+    "ETH": 0.0,
+    "CRCL": 0.0849,
+    "UNI": 0.4976,
+    "HYPE": 0.0443,
+    "AAVE": 0.3541,
+    "SOL": -0.1264
+  },
+  "bds_data_note": "今日快照代理值 — data_center.db 无历史时序 BDS 数据；TS 技术面已日级动态",
+  "mdd_algorithm": "日级 mark-to-market 权益曲线 (v2 修正 2026-09-03)",
+  "group_a": {
+    "total_pnl": 30.060000000000038,
+    "win_rate": 100.0,
+    "mdd": 0.0,
+    "trades": 3,
+    "per_coin": {
+      "AAVE": {
+        "pnl": 10.020000000000008,
+        "wins": 1,
+        "trades": 1
+      },
+      "ETH": {
+        "pnl": 0.0,
+        "wins": 0,
+        "trades": 0
+      },
+      "HYPE": {
+        "pnl": 0.0,
+        "wins": 0,
+        "trades": 0
+      },
+      "PUMP": {
+        "pnl": 10.020000000000017,
+        "wins": 1,
+        "trades": 1
+      },
+      "SOL": {
+        "pnl": 0.0,
+        "wins": 0,
+        "trades": 0
+      },
+      "UNI": {
+        "pnl": 10.02000000000001,
+        "wins": 1,
+        "trades": 1
+      }
+    }
+  },
+  "group_b": {
+    "total_pnl": 0.7956375579598179,
+    "win_rate": 100.0,
+    "mdd": 0.009462648215327467,
+    "mdd_ratio": 0,
+    "reverse_drop_rate": 42.857142857142854,
+    "tradeable_count": 3,
+    "trades": 1,
+    "per_coin": {
+      "AAVE": {
+        "pnl": 0,
+        "wins": 0,
+        "trades": 0
+      },
+      "ETH": {
+        "pnl": 0,
+        "wins": 0,
+        "trades": 0
+      },
+      "HYPE": {
+        "pnl": 0,
+        "wins": 0,
+        "trades": 0
+      },
+      "PUMP": {
+        "pnl": 0,
+        "wins": 0,
+        "trades": 0
+      },
+      "SOL": {
+        "pnl": 0,
+        "wins": 0,
+        "trades": 0
+      },
+      "UNI": {
+        "pnl": 0.7956375579598179,
+        "wins": 4,
+        "trades": 4
+      }
+    }
+  },
+  "verdict": "FAIL",
+  "threshold_version": "v2 (2026-09-03): PnL B>A + MDD ratio ≤120% + tradeable ≥3"
+}

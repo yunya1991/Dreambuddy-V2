@@ -1,6 +1,6 @@
 # 23-四层闭环自进化交易架构 — 工程索引
 
-> **版本**: v1.0 | **更新日期**: 2026-09-07
+> **版本**: v1.4 | **更新日期**: 2026-09-11
 > **定位**: 模块级工程索引（L2），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
 
 ---
@@ -14,7 +14,7 @@
 | 核心职责 | 观察→推断→实验→反思→回馈四层闭环自进化交易策略 |
 | 主入口 | `dreambuddy_evolution/evolution_pipeline.py` (EvolutionPipeline)、`dreambuddy_evolution/engines/kline_event_handler.py` (KlineEventHandler) |
 | 依赖关系 | 上游：OKX API、data_center.db、SentimentEngine、polling_trader；下游：polling_trader 建仓回调 |
-| 文档状态 | ⚠️部分（SPEC 2 份 + 本四件套） |
+| 文档状态 | ✅完整（SPEC 4 份 + 文档四件套 + 案例库） |
 
 ---
 
@@ -26,7 +26,8 @@
 │   ├── ENGINEERING_INDEX.md            # 本文件
 │   ├── TECHNICAL_DESIGN.md             # 技术设计
 │   ├── API_SPEC.md                     # 接口规格
-│   └── CHANGELOG.md                    # 变更日志
+│   ├── CHANGELOG.md                    # 变更日志
+│   └── entry_bcrm_soft_weight_design.md # BCRM软权重设计
 ├── dreambuddy_evolution/
 │   ├── engines/                        # 引擎层（核心逻辑）
 │   │   ├── kline_event_handler.py     # K线事件处理器（双起点+三层仓位+SL/TP）
@@ -36,51 +37,64 @@
 │   │   ├── trade_index_builder.py     # 系统级交易索引库
 │   │   ├── trade_settlement_bridge.py # 平仓反思桥接器
 │   │   ├── modifiers.py                # 三修饰子（情绪/资金流/叙事）
-│   │   └── tight_coupling_orchestrator.py # 紧耦合编排器（7步闭环）
+│   │   ├── tight_coupling_orchestrator.py # 紧耦合编排器（7步闭环）
+│   │   ├── regime_gate.py              # 市场状态路由闸门（TREND/RANGE/CRISIS）
+│   │   ├── pattern_detector.py        # 形态检测器（头肩顶等）
+│   │   ├── deep_reasoning_engine.py   # 深度推理引擎（Phase2 AGI）
+│   │   ├── meta_cognition_gate.py     # 元认知门（Phase5 Conformal）
+│   │   ├── entry_signal_governor.py   # 入场信号治理器
+│   │   ├── trend_following/            # 趋势跟踪引擎（Donchian+正金字塔）
+│   │   │   └── trend_following_engine.py
+│   │   ├── grid_trading/               # 网格交易引擎（ATR自适应间距）
+│   │   │   └── grid_trading_engine.py
+│   │   └── exit_engine/                # 独立离场决策引擎
+│   │       ├── exit_engine.py          # EvolutionExitEngine
+│   │       ├── exit_decision.py        # ExitDecision 数据类
+│   │       └── exit_strategy_params.py # 离场策略参数基因
 │   ├── core/                           # 核心计算层
 │   │   ├── resistance_vector.py        # L1 5维阻力向量
 │   │   ├── level0_path_cost.py         # Level0 路径代价 d*
 │   │   ├── strategy_gene.py            # L2 策略基因库（ESS）
 │   │   ├── shadow_rl.py                # L3 影子RL追踪器
+│   │   ├── shadow_rl_trainer.py        # L3 ShadowRL训练器（REINFORCE+Thompson）
 │   │   ├── bellman_tracker.py          # L4 Bellman V(s) 追踪器
-│   │   └── strategy_gene.py            # 策略基因加载/ESS计算
-│   ├── adapters/                       # 数据适配层
-│   │   ├── data_pipeline.py            # 统一数据管线装配器
-│   │   ├── okx_market.py               # OKX行情适配
-│   │   ├── data_center.py              # data_center.db适配
-│   │   ├── sentiment_bridge.py         # SentimentEngine桥接
-│   │   ├── ess_provider.py             # ESS方向提供器
-│   │   ├── subsystem_bridge.py        # 子交易系统桥接
-│   │   ├── coin_scanner.py             # 50币池扫描器+美股配额
-│   │   ├── cognitive_bridge.py         # 认知记忆桥接（Phase3）
-│   │   ├── capital_rotation.py         # 资金轮动检测
-│   │   ├── ripple_provider.py          # 涟漪关联币数据
-│   │   ├── traditional_finance.py      # 传统金融信号（Regime/Kelly）
-│   │   ├── narrative_adapter.py        # 叙事标签适配
-│   │   ├── path_library.py             # 最优路径库
-│   │   ├── ftc_orchestrator.py         # 金融思维链编排器
-│   │   ├── ftc_executor.py             # FTC执行器
-│   │   ├── ftc_schema.py               # FTC数据模式
-│   │   ├── ftc_similarity.py           # FTC相似度
-│   │   ├── ftc_combiner.py             # FTC组合器
-│   │   ├── ftc_gene_innovation.py      # FTC基因创新
-│   │   ├── ftc_evolution_bridge.py     # FTC进化桥接
-│   │   ├── ftc_backtest.py             # FTC回测
-│   │   ├── knowledge_anchors.py        # 知识锚点
-│   │   └── okx_market.py               # OKX行情适配
+│   │   ├── causal_engine.py            # 因果推断引擎（Phase2 AGI）
+│   │   ├── counterfactual_evaluator.py # 反事实评估器（Phase2 AGI）
+│   │   ├── signature_engine.py         # 签名方法引擎（Phase2.5 AGI）
+│   │   ├── path_integral.py            # 路径积分引擎（Phase2.5 AGI）
+│   │   ├── neural_sde_model.py        # Neural SDE 连续时间建模（Phase2 AGI）
+│   │   ├── uncertainty_quantifier.py  # 不确定性量化（Conformal Prediction）
+│   │   ├── regime_classifier.py        # 市场状态分类器
+│   │   ├── strategy_synthesizer.py     # 策略合成器（Decision Transformer）
+│   │   ├── transfer_learner.py         # 迁移学习器
+│   │   ├── garch_fallback.py           # GARCH 波动率兜底
+│   │   ├── ess_ema.py                  # ESS EMA 平滑
+│   │   ├── exit_sample_generator.py   # 离场样本生成器
+│   │   ├── exit_rl_policy.py           # 离场RL策略
+│   │   └── exit_reward_calculator.py   # 离场奖励计算器
+│   ├── adapters/                       # 数据适配层（20+ 文件，详见 §3.3）
+│   ├── scripts/                        # 脚本
+│   │   ├── shadow_backtest.py          # 影子验证回测引擎
+│   │   ├── train_neural_sde.py         # Neural SDE 训练脚本
+│   │   ├── fetch_btc_close.py          # BTC 收盘价拉取
+│   │   └── train_exit_policy.py        # 离场策略训练
 │   ├── gene_data/                      # 策略基因数据
-│   │   ├── strategy_genes/             # 条件+动作基因
+│   │   ├── candidates/                 # Layer 0 候选基因
+│   │   ├── shadow_validation/          # Layer 1 影子验证（3104 样本）
+│   │   ├── strategy_genes/             # Layer 2 实盘基因（条件+动作）
 │   │   ├── strategy_combinations/      # 组合库+ESS评分
 │   │   └── schemas/                    # JSON Schema
-│   ├── tests/                          # 测试套件
+│   ├── tests/                          # 测试套件（52 文件，692 测试）
 │   ├── evolution_pipeline.py           # 四层闭环pipeline编排器
 │   ├── weights.py                      # 权威权重唯一源
 │   └── alert_bridge.py                 # Lark告警桥接
 ├── SPEC-数据管线打通与能力落地.md        # 数据管线SPEC
-└── SPEC-金融思维链层FTC设计.md          # FTC设计SPEC
+├── SPEC-金融思维链层FTC设计.md          # FTC设计SPEC
+├── SPEC-AGI升级蓝图.md                  # AGI升级蓝图（5 Phase）
+└── SPEC-趋势跟踪正金字塔与网格策略落地.md # 趋势跟踪+网格SPEC
 ```
 
-**代码统计**：`engines/` 8 个核心文件，`core/` 6 个，`adapters/` 20+ 个。
+**代码统计**：`engines/` 15+ 个核心文件（含 3 个子包），`core/` 21 个，`adapters/` 20+ 个，`scripts/` 4 个，`tests/` 52 个文件（692 测试）。
 
 ---
 
@@ -98,6 +112,16 @@
 | `trade_settlement_bridge.py` | `TradeSettlementBridge` | 平仓反思桥接器 | `store_snapshot()`, `retrieve_snapshot()`, `on_trade_settled()` |
 | `modifiers.py` | `apply_all_modifiers` 等 | 三修饰子（情绪/资金流/叙事） | `apply_sentiment_modifier()`, `apply_capital_modifier()` |
 | `tight_coupling_orchestrator.py` | `TightCouplingOrchestrator` | 紧耦合7步闭环编排器 | `observe()`, `hypothesize()`, `experiment()`, `measure()`, `reflect()`, `learn()`, `feedback()` |
+| `regime_gate.py` | `RegimeGateSwitch` | 市场状态路由闸门 | `detect_regime()`, `route_strategy()` |
+| `pattern_detector.py` | `PatternDetector` | 形态检测器（头肩顶等） | `detect_head_shoulders()` |
+| `deep_reasoning_engine.py` | `DeepReasoningEngine` | 深度推理引擎（Phase2 AGI） | `reason()` |
+| `meta_cognition_gate.py` | `MetaCognitionGate` | 元认知门（Phase5 Conformal） | `check_confidence()` |
+| `entry_signal_governor.py` | `EntrySignalGovernor` | 入场信号治理器 | `govern()` |
+| `trend_following/trend_following_engine.py` | `TrendFollowingEngine`, `DonchianChannel`, `ATRStopCalculator`, `PyramidingPositionSizer` | 趋势跟踪+正金字塔加仓 | `evaluate()`, `calc_stop()`, `calc_position_size()` |
+| `grid_trading/grid_trading_engine.py` | `GridTradingEngine`, `GridParameterCalculator`, `GridRiskGate` | 网格交易（ATR自适应间距） | `evaluate()`, `calc_params()`, `check_risk()` |
+| `exit_engine/exit_engine.py` | `EvolutionExitEngine` | 独立离场决策引擎 | `decide()`, `adjust_sl_tp()` |
+| `exit_engine/exit_decision.py` | `ExitDecision` | 离场决策数据类 | `action`, `reason`, `sl`, `tp` |
+| `exit_engine/exit_strategy_params.py` | `ExitStrategyParams` | 离场策略参数基因 | `sl_mult`, `tp_rr`, `trailing_arm` |
 
 ### 3.2 核心计算层（core/）
 
@@ -106,9 +130,23 @@
 | `resistance_vector.py` | `ResistanceVector` | L1 5维阻力向量计算器 | `calculate()` |
 | `level0_path_cost.py` | `compute_d_star()`, `compute_g_diag()` | Level0 路径代价计算 | `compute_d_star()` |
 | `strategy_gene.py` | `load_gene_library()`, `calculate_ess()`, `top_combinations_by_ess()` | L2 策略基因加载+ESS排序 | `load_gene_library()`, `calculate_ess()` |
-| `shadow_rl.py` | `ShadowRLTracker` | L3 影子RL样本追踪 | `record()`, `get_stats()` |
+| `shadow_rl.py` | `ShadowRLTracker` | L3 影子RL样本追踪+Phase3自动激活 | `record()`, `get_stats()`, `is_phase3_activated()` |
+| `shadow_rl_trainer.py` | `ShadowRLTrainer`, `SimplePolicy` | L3 RL训练器（REINFORCE+Thompson+gmax变异） | `train_policy()`, `mutate_gmax()`, `thompson_sample()`, `select_best_gene()` |
 | `bellman_tracker.py` | `BellmanVTracker` | L4 Bellman V(s) TD(0)更新 | `td_update()`, `get_ess_adjustment()` |
-| `strategy_gene.py` | 同上 | 策略基因schema校验+ESS | 同上 |
+| `causal_engine.py` | `CausalEngine` | 因果推断引擎（Phase2 AGI） | `estimate_ate()` |
+| `counterfactual_evaluator.py` | `CounterfactualEvaluator` | 反事实评估器（Phase2 AGI） | `evaluate()` |
+| `signature_engine.py` | `SignatureEngine` | 签名方法引擎（Phase2.5 AGI） | `compute_signature()` |
+| `path_integral.py` | `PathIntegralEngine` | 路径积分引擎（Phase2.5 AGI） | `integrate()` |
+| `neural_sde_model.py` | `NeuralSDEModel` | Neural SDE 连续时间建模（Phase2 AGI） | `train()`, `simulate()` |
+| `uncertainty_quantifier.py` | `UncertaintyQuantifier` | 不确定性量化（Conformal Prediction） | `conformal_predict()` |
+| `regime_classifier.py` | `RegimeClassifier` | 市场状态分类器 | `classify()` |
+| `strategy_synthesizer.py` | `StrategySynthesizer` | 策略合成器（Decision Transformer） | `synthesize()` |
+| `transfer_learner.py` | `TransferLearner` | 迁移学习器 | `transfer()` |
+| `garch_fallback.py` | `GARCHFallback` | GARCH 波动率兜底 | `predict_volatility()` |
+| `ess_ema.py` | `ESSEMA` | ESS EMA 平滑 | `smooth()` |
+| `exit_sample_generator.py` | `ExitSampleGenerator` | 离场样本生成器 | `generate()` |
+| `exit_rl_policy.py` | `ExitRLPolicy` | 离场RL策略 | `decide()` |
+| `exit_reward_calculator.py` | `ExitRewardCalculator` | 离场奖励计算器 | `calculate()` |
 
 ### 3.3 适配层（adapters/）
 
@@ -179,6 +217,8 @@ L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 对齐决策 →
 
 ## 6. 测试体系
 
+**总计**：52 个测试文件，692 个测试用例，全部通过。
+
 | 文件 | 测试内容 |
 |------|----------|
 | `test_kline_event_handler.py` | K线事件处理器双起点+三层仓位 |
@@ -186,7 +226,7 @@ L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 对齐决策 →
 | `test_evolution_pipeline.py` | 四层Pipeline |
 | `test_resistance_vector.py` | L1 5维阻力向量 |
 | `test_strategy_gene.py` | 策略基因加载+ESS |
-| `test_weights.py` | 权重一致性 |
+| `test_weights.py` | 权重一致性+敏感性 |
 | `test_data_pipeline.py` | 数据管线装配 |
 | `test_okx_market.py` | OKX行情适配 |
 | `test_data_center_adapter.py` | data_center适配 |
@@ -200,6 +240,38 @@ L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 对齐决策 →
 | `test_ripple_provider.py` | 涟漪数据提供 |
 | `test_modifiers.py` | 三修饰子 |
 | `test_v3_backtest.py` | V3回测 |
+| `test_trend_following_engine.py` | 趋势跟踪引擎（Donchian+ATR+金字塔） |
+| `test_grid_trading_engine.py` | 网格交易引擎（ATR间距+硬止损） |
+| `test_regime_gate_switch.py` | RegimeGate路由（TREND/RANGE/CRISIS） |
+| `test_evolution_exit_engine.py` | 独立离场引擎 |
+| `test_evolution_exit_engine_bcrm_reduce.py` | BCRM反向信号减仓 |
+| `test_evolution_entry_bcrm_soft_weight.py` | BCRM软权重入场 |
+| `test_exit_sample_generator.py` | 离场样本生成 |
+| `test_exit_rl_policy.py` | 离场RL策略 |
+| `test_shadow_rl_trainer.py` | ShadowRL训练器（变异+采样+Beta） |
+| `test_train_policy.py` | train_policy REINFORCE训练 |
+| `test_shadow_bidirectional.py` | 双向回测（long+short） |
+| `test_donchian_dynamic_direction.py` | Donchian动态方向突破 |
+| `test_shadow_trend_grid.py` | 趋势+网格基因回测 |
+| `test_trend_grid_genes.py` | 趋势+网格基因入库 |
+| `test_p0_dynamic_direction.py` | P0 方向动态化 |
+| `test_p1_weight_adjustment.py` | P1 权重调整 |
+| `test_p2_new_signals.py` | P2 新信号（颈线跌破等） |
+| `test_p3_adx_threshold.py` | P3 ADX阈值调整 |
+| `test_causal_engine.py` | 因果推断引擎 |
+| `test_counterfactual_transfer.py` | 反事实评估+迁移 |
+| `test_signature_path_integral.py` | 签名方法+路径积分 |
+| `test_neural_sde_model.py` | Neural SDE 模型 |
+| `test_uncertainty_meta_cognition.py` | 不确定性量化+元认知 |
+| `test_deep_reasoning_engine.py` | 深度推理引擎 |
+| `test_strategy_synthesizer.py` | 策略合成器 |
+| `test_pattern_detector.py` | 形态检测器 |
+| `test_rotation_signal_scanner.py` | 轮动信号扫描 |
+| `test_ess_adaptive.py` | ESS自适应 |
+| `test_pipeline_integration.py` | P0 RegimeGate+策略引擎接入 pipeline |
+| `test_p1_integration.py` | P1 PatternDetector+weight 接入 |
+| `test_p2_cbr_extension.py` | P2 CBR 扩展（pattern+case_type） |
+| `test_p3_agi_pipeline.py` | P3 AGI 模块懒初始化接入 |
 
 **运行命令**：
 ```bash
@@ -210,10 +282,19 @@ cd 23-四层闭环自进化交易架构 && python -m pytest dreambuddy_evolution
 
 ## 7. 技术债务
 
-| 债务项 | 严重程度 | 说明 | 关联 DEBT_INDEX ID |
-|--------|----------|------|---------------------|
-| CognitiveBridge Phase3未实现 | 低 | 预留接口，≥2000样本后解冻 | — |
-| ShadowRL Phase3未激活 | 低 | 仅记录样本，Phase3启动gmax变异 | — |
+| 债务项 | 严重程度 | 说明 | 状态 |
+|--------|----------|------|------|
+| RegimeGateSwitch 未接入 pipeline | — | ✅ 已接入 evolution_pipeline._discover_paths | **已解决** |
+| TrendFollowingEngine/GridTradingEngine 未接入 | — | ✅ 路由路径已接入 pipeline | **已解决** |
+| ShadowRLTrainer 未接入决策 | — | ✅ 实例已接入 pipeline | **已解决** |
+| PatternDetector 未接入 regime | — | ✅ TOP_DROP 路由已接入 | **已解决** |
+| 基因 weight 未参与回测 | — | ✅ load_gene_weight/calc_weighted_pnl/should_trade 已接入 | **已解决** |
+| ShadowRL Phase3 | — | ✅ 已激活（3104样本≥2000，REINFORCE训练+Thompson+gmax变异） | **已解决** |
+| CBR 案例库未结构化 | — | ✅ CBRCase/CBRQuery 新增 pattern+case_type，相似度权重已加 | **已解决** |
+| Phase2 因果+签名 | — | ✅ CausalEngine/SignatureEngine/PathIntegralEngine 懒初始化接入 pipeline | **已解决** |
+| Phase2.5 Neural SDE | — | ✅ NeuralSDEModel 已实现，可通过 pipeline 扩展接入 | **已解决** |
+| Phase3 策略合成 | — | ✅ StrategySynthesizer 已实现，可通过 pipeline 扩展接入 | **已解决** |
+| Phase5 元认知 | — | ✅ MetaCognitionGate/UncertaintyQuantifier 懒初始化接入 pipeline | **已解决** |
 
 详见 [DEBT_INDEX.md](../../DEBT_INDEX.md)。
 
@@ -228,10 +309,12 @@ cd 23-四层闭环自进化交易架构 && python -m pytest dreambuddy_evolution
 | 变更日志 | [CHANGELOG.md](./CHANGELOG.md) |
 | 数据管线SPEC | [SPEC-数据管线打通与能力落地.md](../SPEC-数据管线打通与能力落地.md) |
 | FTC设计SPEC | [SPEC-金融思维链层FTC设计.md](../SPEC-金融思维链层FTC设计.md) |
+| AGI升级蓝图 | [SPEC-AGI升级蓝图.md](../SPEC-AGI升级蓝图.md) |
+| 趋势跟踪+网格SPEC | [SPEC-趋势跟踪正金字塔与网格策略落地.md](../SPEC-趋势跟踪正金字塔与网格策略落地.md) |
 | 架构总览 | [四层闭环进化架构-最小阻力路径总览.md](../../2-KNOWLEDGE/1-TRADING/四层闭环进化架构-最小阻力路径总览.md) |
 | 项目文档索引 | [0-系统文档管理/INDEX.md](../../0-系统文档管理/INDEX.md) |
 
 ---
 
-**文档版本**: v1.0
-**最后更新**: 2026-09-07
+**文档版本**: v1.4
+**最后更新**: 2026-09-11

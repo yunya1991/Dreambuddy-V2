@@ -27,7 +27,7 @@
     }
   },
   "inverted": false,
-  "weight": 1.0,
+  "weight": 0.8,
   "code_ref": {
     "file": "13-通用风控模块/rules/gate_rules.py",
     "lines": {

@@ -409,7 +409,8 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
             "version": "1.0",
             "coins": {
                 "UNI": {"available": True, "direction_constraint": "LONG_ONLY",
-                        "cap_multiplier": 1.0, "exit_action": "NONE"},
+                        "cap_multiplier": 1.0, "exit_action": "NONE",
+                        "data_quality": "sufficient", "confidence": 0.75},
             },
         }
         t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": snap}  # TTL 不失效
@@ -439,7 +440,7 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
         # UNI NEUTRAL(dq insufficient) → 不拦截（FAIL-OPEN 中性等价 BDSM 不存在）
         is_pass_uni, reason_uni = t._apply_bdsm_direction_constraint("UNI", "DOWN")
         self.assertTrue(is_pass_uni, f"NEUTRAL 约束等价不存在: {reason_uni}")
-        self.assertEqual(reason_uni, "neutral_pass")
+        self.assertIn("bdsm_confidence_insufficient", reason_uni)
 
     # ── 缺口 2：仓位 MIN(crm, crm×cap) — 纯函数 helper ──
     def test_gap2_cap_multiplier_0175_scales_position_usdt(self) -> None:
@@ -511,7 +512,7 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
         # 模拟 _bdsm_check_exit_actions 作用到 UNI 持仓 → OKX client close_long 调用
         pos_info = {"inst_id": "UNI-USDT-SWAP", "coin": "UNI", "pos_side": "long", "pos": 10,
                     "avg_px": 10.0, "mark_px": 11.0, "upl": 10.0, "upl_ratio": 0.10,
-                    "open_time_sec": 0}
+                    "open_time_sec": 0, "source_tag": "bdsm"}
 
         t.okx_client = MagicMock()
         t.okx_client.market_close_long = MagicMock(return_value={"ok": True, "dry_run": False})

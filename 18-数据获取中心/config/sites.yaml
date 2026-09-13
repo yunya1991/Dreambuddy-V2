@@ -1,7 +1,17 @@
 # 爬虫轨目标站点配置 — 对齐 TECHNICAL_DESIGN.md §9.1
 # enabled=false 的站点不会被 runner 调用。
-# selectors 为 CSS 选择器，generic_spider 按选择器提取字段。
-# js_render=true 的站点走 playwright_fallback 渲染后再解析。
+# selectors 为 CSS 选择器，generic_spider / ScraplingEngine 按选择器提取字段。
+#
+# engine 字段（新增，可选，默认 static）：
+#   static   — 原 requests + Scrapy Selector（向后兼容）
+#   http     — Scrapling Fetcher（curl_cffi TLS 指纹模拟，适合静态站）
+#   dynamic  — Scrapling DynamicFetcher（Playwright JS 渲染）
+#   stealthy — Scrapling StealthyFetcher（Patchright + Cloudflare 绕过）
+#
+# adaptive 字段（新增，可选，默认 false）：
+#   true — 启用 Scrapling 自适应解析，页面结构变更后自动重新定位元素
+#
+# FAIL-OPEN：Scrapling 任何异常自动回退到 static 链路，不阻塞采集。
 
 sites:
   # --- 央行/政策官网 ---
@@ -11,22 +21,26 @@ sites:
     sub_category: announcement
     url: "http://www.pbc.gov.cn/goutongjiaoliu/113456/113469/index.html"
     js_render: false
+    engine: http              # 🆕 Scrapling Fetcher（TLS 指纹）
+    adaptive: true            # 🆕 自适应解析
     selectors:
-      item: ".newslist a"          # 每条新闻的容器
-      title: "text"                # 文本提取（特殊值 "text"）
+      item: ".newslist_style a"   # 修正：pbc 实际 class 为 newslist_style
+      title: "text"
       link: "href"
       date: ""
 
   fed_minutes:
-    enabled: false
+    enabled: true              # 🆕 激活（原 disabled）
     source: fed
     sub_category: minutes
-    url: "https://www.federalreserve.gov/monetarypolicy/fomcminutes.htm"
+    url: "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
     js_render: false
+    engine: http               # 🆕 Scrapling Fetcher
+    adaptive: true             # 🆕 自适应解析
     selectors:
-      item: ".col-md-8 a"
-      title: "text"
-      link: "href"
+      item: ".col-md-8 a, .fomc-meeting a"
+      title: "::text"
+      link: "::attr(href)"
 
   # --- 加密新闻站 ---
   coindesk_rss:
@@ -35,19 +49,23 @@ sites:
     sub_category: news
     url: "https://www.coindesk.com/arc/outboundfeeds/rss/"
     js_render: false
+    engine: static             # RSS/XML 用 static（Scrapy Selector XML 模式）
+    adaptive: false
     selectors:
       item: "item"
       title: "title::text"
       link: "link::text"
       date: "pubDate::text"
 
-  # --- JS 渲染站点示例 ---
+  # --- Cloudflare 保护站点 ---
   binance_announcement:
-    enabled: false
+    enabled: true              # 🆕 激活（原 disabled，因反爬）
     source: binance
     sub_category: announcement
     url: "https://www.binance.com/en/support/announcement/new-cryptocurrency-listing"
     js_render: true
+    engine: stealthy           # 🆕 StealthyFetcher 绕过 Cloudflare
+    adaptive: true             # 🆕 自适应解析
     selectors:
       item: "[class*='announcement-item']"
       title: "text"
@@ -56,19 +74,17 @@ sites:
   # ============================================================
   # 律动 PAData (data.panewslab.com) — 多板块数据补充
   # SDK 轨 panewslab collector 已覆盖 8 大板块的结构化 JSON API。
-  # 爬虫轨（Playwright 渲染）聚焦抓取 SDK 不暴露的 DOM 展示数据：
-  #   - 链上资金主体实体 (#holdings section cards)
-  #   - 单板块快照卡片 headline 数值展示（独立校验 SDK vs UI）
-  # enabled=false：默认走 SDK 轨（更稳定、更快）。需要 DOM 展示级数据时手动开。
+  # 爬虫轨聚焦抓取 SDK 不暴露的 DOM 展示数据。
   # ============================================================
   panewslab_holdings_cards:
-    enabled: false
+    enabled: true              # 🆕 激活（原 disabled）
     source: panewslab
     sub_category: holdings_cards
     url: "https://data.panewslab.com/#holdings"
     js_render: true
+    engine: dynamic            # 🆕 Scrapling DynamicFetcher
+    adaptive: true             # 🆕 自适应解析
     selectors:
-      # #holdings 区 entity 卡片：标题、持仓金额、24h/7d 流量
       item: "section#holdings [data-entity-slug]"
       slug: "[data-entity-slug]::attr(data-entity-slug)"
       title: "[data-role='entity-name']::text"
@@ -78,13 +94,14 @@ sites:
       entity_url: "a[href]::attr(href)"
 
   panewslab_overview_cards:
-    enabled: false
+    enabled: true              # 🆕 激活（原 disabled）
     source: panewslab
     sub_category: overview_cards
     url: "https://data.panewslab.com/#overview"
     js_render: true
+    engine: dynamic            # 🆕 Scrapling DynamicFetcher
+    adaptive: true             # 🆕 自适应解析
     selectors:
-      # 市场总览 6 张 snapshot 卡片：标题/数值/30日变化
       item: "section#overview article.snapshot-card"
       label: "header > span::text"
       change30d: "header > em::text"
@@ -94,28 +111,50 @@ sites:
       footer_window: "footer > b::text"
 
   # ============================================================
-  # 律动 TheBlockBeats Dataview 直抓（双轨并存）
-  #
-  # 主要采集路径（SDK轨，默认启用 / CollectionScheduler.default_tasks 已有登记）：
-  #   data_center.collectors.news.theblockbeats_dataview.TheBlockBeatsDataviewCollector
-  #   → Playwright 渲染整页 → dataview_html_parser.parse() → to_records()
-  #   → 26 条 DataRecord(宏观卡片/脉动指数/11信号/Top10净流入)
-  #
-  # 爬虫轨备用（下面这个 site，默认 disabled）：
-  #   当 SDK 轨 PlaywrightFallback 环境不可用或需要快速按 CSS selector 抓局部 DOM 时启用。
-  #   走 CrawlerRunner.js_render=true → PlaywrightFallback → GenericSpider CSS selector。
-  #   提取粒度：echarts 卡片标题/时间范围（粗粒度 meta）。
-  #   更全的结构化解析（脉动指数/信号/净流入Top10）只在 SDK 轨提供。
+  # 律动 TheBlockBeats Dataview 直抓（爬虫轨备用）
   # ============================================================
   theblockbeats_dataview_cards:
-    enabled: false
+    enabled: true              # 🆕 激活（原 disabled）
     source: theblockbeats_dataview
     sub_category: echarts_cards
     url: "https://www.theblockbeats.info/dataview"
     js_render: true
+    engine: stealthy           # 🆕 StealthyFetcher（绕过可能的反爬）
+    adaptive: true             # 🆕 自适应解析
     selectors:
       item: ".kline-chart-wrap-head"
       metric_title: ".kline-chart-wrap-head-left::text"
       time_range: ".home-inflow-top-rgt::text"
 
+  # ============================================================
+  # OKX 公告（SDK 轨 okx_announcement collector 同步注册）
+  # ============================================================
+  okx_announcement:
+    enabled: true
+    source: okx_announcement
+    sub_category: announcement
+    url: "https://www.okx.com/support/hc/zh-cn/sections/360000030652"
+    js_render: true
+    engine: stealthy           # 🆕 StealthyFetcher 绕过 OKX 反爬
+    adaptive: true
+    selectors:
+      item: "li.article-list-item a"
+      title: "::text"
+      link: "::attr(href)"
 
+  # ============================================================
+  # Cointelegraph 中文（SDK 轨 cointelegraph_cn collector 同步注册）
+  # ============================================================
+  cointelegraph_cn:
+    enabled: true
+    source: cointelegraph_cn
+    sub_category: news
+    url: "https://cn.cointelegraph.com/"
+    js_render: true
+    engine: stealthy           # 🆕 StealthyFetcher
+    adaptive: true             # 🆕 自适应解析（页面改版后自动重定位）
+    selectors:
+      item: "article, .post-card, [class*='post-card']"
+      title: "h2 span::text, h3 span::text, .post-card__title span::text"
+      link: "a::attr(href)"
+      summary: "p::text, .post-card__summary::text"

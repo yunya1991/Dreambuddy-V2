@@ -321,4 +321,134 @@ class CollectionScheduler:
                 params={"route": "stock_info", "symbol": symbol},
                 interval_sec=21600,  # 6h
             ))
+        # ── 🆕 P0 数据源补全 ──────────────────────────────────────────
+        #    覆盖 AGI 蓝图 L1 感知层核心缺口：情绪/资金流/衍生品/链上
+        # ── chain/fear_greed（1h，alternative.me F&G 指数）
+        #    每日更新1次但1h轮询确保及时获取，覆盖天维度情绪因子
+        tasks.append(CollectionTask(
+            name="fear_greed_latest",
+            category="chain", source="fear_greed",
+            params={"limit": 30},
+            interval_sec=3600,
+        ))
+        # ── chain/mempool（5min，mempool.space BTC 链上基础数据）
+        #    区块高度/Mempool状态/难度调整/矿池统计，覆盖地维度 D9 扩展
+        tasks.append(CollectionTask(
+            name="mempool_overview",
+            category="chain", source="mempool",
+            params={"kind": "overview"},
+            interval_sec=300,
+        ))
+        # ── chain/bgeometrics（4h，BTC 链上深度指标）
+        #    free tier 8次/小时 15次/天 → 每次取 top 3 (MVRV/SOPR/NUPL)
+        #    覆盖 AGI L1 数据层 + BDSM E5/E6/E7 信号
+        tasks.append(CollectionTask(
+            name="bgeometrics_top3",
+            category="chain", source="bgeometrics",
+            params={"metrics": "all"},
+            interval_sec=14400,  # 4h (free tier rate limit 友好)
+        ))
+        # ── chain/coinglass（5min，衍生品聚合数据）
+        #    OI/Funding/清算/多空比，覆盖 AGI L1 感知层衍生品缺口
+        #    stealthy mode 爬取，5min 适配高频衍生品数据
+        tasks.append(CollectionTask(
+            name="coinglass_oi",
+            category="chain", source="coinglass",
+            params={"pages": ["oi", "funding", "liquidations", "long_short"]},
+            interval_sec=300,
+        ))
+        # ── finance/etf_flow（2h，farside ETF 每日净流入/流出）
+        #    每日更新，2h 轮询确保美股收盘后及时获取
+        #    覆盖 AGI Phase4.3 ETF 资金流信号 + 五维 D7
+        #    stealthy mode 绕过 Cloudflare，频率不宜过高
+        tasks.append(CollectionTask(
+            name="etf_flow_daily",
+            category="finance", source="etf_flow",
+            params={},
+            interval_sec=7200,  # 2h
+        ))
+        # ── 🆕 P1 数据源补全 ──────────────────────────────────────────
+        #    补齐期权/机构持仓/稳定币深度/增强情绪/ETH链上
+        # ── chain/deribit（15min，期权数据）
+        #    Max Pain/DVOL/Put-Call Ratio，覆盖 AGI L1 感知层期权缺口
+        tasks.append(CollectionTask(
+            name="deribit_btc_options",
+            category="chain", source="deribit",
+            params={"currency": "BTC", "kind": "option"},
+            interval_sec=900,  # 15min
+        ))
+        # ── finance/cftc_cot（24h，COT 持仓周报）
+        #    机构/非商业持仓定位，每周二更新但每日轮询确保及时
+        tasks.append(CollectionTask(
+            name="cftc_cot_bitcoin",
+            category="finance", source="cftc_cot",
+            params={"market": "bitcoin"},
+            interval_sec=86400,  # 24h
+        ))
+        # ── chain/defillama stablecoins（1h，稳定币总供应）
+        #    覆盖五维 D7 稳定币市值 + AGI L1 流动性 proxy
+        tasks.append(CollectionTask(
+            name="defillama_stablecoins",
+            category="chain", source="defillama",
+            params={"route": "stablecoins"},
+            interval_sec=3600,
+        ))
+        # ── chain/fear_greed_enhanced（1h，增强 F&G 含链上组件）
+        #    与 alternative.me F&G 交叉验证
+        tasks.append(CollectionTask(
+            name="fear_greed_enhanced_latest",
+            category="chain", source="fear_greed_enhanced",
+            params={"action": "crypto"},
+            interval_sec=3600,
+        ))
+        # ── chain/blockscout（5min，ETH 链上基础数据）
+        #    区块号/总供应量/Gas，与 etherscan 互补
+        tasks.append(CollectionTask(
+            name="blockscout_overview",
+            category="chain", source="blockscout",
+            params={"kind": "overview"},
+            interval_sec=300,
+        ))
+        # ── 🆕 P2 数据源补全 ──────────────────────────────────────────
+        #    补齐零售情绪/排名交叉验证/新闻情绪/ETF备份/BTC链上备份
+        # ── chain/google_trends（6h，搜索热度）
+        #    "buy bitcoin"搜索热度，零售FOMO/恐慌指标（F&G组成因子10%）
+        tasks.append(CollectionTask(
+            name="google_trends_btc",
+            category="chain", source="google_trends",
+            params={"keyword": "buy bitcoin"},
+            interval_sec=21600,  # 6h
+        ))
+        # ── chain/blockchain_info（5min，BTC链上基础数据备份）
+        #    总流通量/难度/哈希率/24h交易数/市值，与mempool.space互补
+        tasks.append(CollectionTask(
+            name="blockchain_info_basics",
+            category="chain", source="blockchain_info",
+            params={},
+            interval_sec=300,
+        ))
+        # ── coin/coinmarketcap（6h，币种排名+CMC F&G）
+        #    与CoinGecko交叉验证排名，CMC F&G与alternative.me F&G交叉验证
+        tasks.append(CollectionTask(
+            name="cmc_listings",
+            category="coin", source="coinmarketcap",
+            params={"route": "listings", "limit": 20},
+            interval_sec=21600,  # 6h
+        ))
+        # ── news/cryptopanic（30min，新闻+社区情绪投票）
+        #    bullish/bearish投票，补充GDELT的per-coin新闻情绪
+        tasks.append(CollectionTask(
+            name="cryptopanic_btc",
+            category="news", source="cryptopanic",
+            params={"currencies": "BTC", "kind": "news"},
+            interval_sec=1800,  # 30min
+        ))
+        # ── finance/sosovalue（1h，ETF可视化看板备份）
+        #    与farside ETF flow交叉验证
+        tasks.append(CollectionTask(
+            name="sosovalue_etf",
+            category="finance", source="sosovalue",
+            params={},
+            interval_sec=3600,
+        ))
         return tasks

@@ -384,13 +384,35 @@ def _init_sqlite_schema(conn: sqlite3.Connection) -> None:
             -- H3-FMA 渐进：FMA=ON 影子决策（即使当前 FMA=False 也记录，用于未来评估）
             fma_on_allowed      INTEGER,  -- bool 0/1: FMA=ON 差异化过滤下是否允许该方向
             fma_on_eff_threshold REAL,    -- FMA=ON 时，经形态差异化乘数后的有效阈值
-            -- T5 战略层聚合影子（6字段）
+            -- T5 战略层聚合影子（扩展：3类war_state+total_score + 五维明细 + 方向状态）
             fd_crypto_war_state      TEXT,
             fd_crypto_total_score    REAL,
             fd_crypto_cap_mode       REAL,
             fd_crypto_mult_mode      REAL,
             fd_us_stock_war_state    TEXT,
             fd_us_stock_total_score  REAL,
+            fd_precious_metal_war_state     TEXT,
+            fd_precious_metal_total_score   REAL,
+            fd_crypto_dao_score      INTEGER,
+            fd_crypto_tian_score     INTEGER,
+            fd_crypto_di_score       INTEGER,
+            fd_crypto_jiang_score    INTEGER,
+            fd_crypto_fa_score       INTEGER,
+            fd_us_stock_dao_score    INTEGER,
+            fd_us_stock_tian_score   INTEGER,
+            fd_us_stock_di_score     INTEGER,
+            fd_us_stock_jiang_score  INTEGER,
+            fd_us_stock_fa_score     INTEGER,
+            fd_precious_metal_dao_score     INTEGER,
+            fd_precious_metal_tian_score    INTEGER,
+            fd_precious_metal_di_score     INTEGER,
+            fd_precious_metal_jiang_score   INTEGER,
+            fd_precious_metal_fa_score      INTEGER,
+            direction_state          TEXT,
+            direction_bias           REAL,
+            -- Phase 4.3 三因子共振做空信号 + BTC 强弱 regime
+            three_factor_short_signal INTEGER,  -- 0/1: ETF流出+头肩顶+BTC WEAK 共振
+            btc_regime              TEXT,       -- STRONG/WEAK/NEUTRAL
             -- T5 策略算法层影子（6字段）
             sal_type             TEXT,
             sal_regime           TEXT,
@@ -463,7 +485,7 @@ def _init_sqlite_schema(conn: sqlite3.Connection) -> None:
             cur.execute(f"ALTER TABLE shadow_param_log ADD COLUMN {_col} {_typ}")
         except Exception:
             pass  # 列已存在
-    # T5 战略/策略影子 12 列迁移
+    # T5 战略/策略影子迁移（含五维评分明细 + 方向状态 + 贵金属类）
     _t5_shadow_cols = [
         ("fd_crypto_war_state",      "TEXT"),
         ("fd_crypto_total_score",    "REAL"),
@@ -471,6 +493,27 @@ def _init_sqlite_schema(conn: sqlite3.Connection) -> None:
         ("fd_crypto_mult_mode",      "REAL"),
         ("fd_us_stock_war_state",    "TEXT"),
         ("fd_us_stock_total_score",  "REAL"),
+        ("fd_precious_metal_war_state",     "TEXT"),
+        ("fd_precious_metal_total_score",   "REAL"),
+        ("fd_crypto_dao_score",      "INTEGER"),
+        ("fd_crypto_tian_score",     "INTEGER"),
+        ("fd_crypto_di_score",       "INTEGER"),
+        ("fd_crypto_jiang_score",    "INTEGER"),
+        ("fd_crypto_fa_score",       "INTEGER"),
+        ("fd_us_stock_dao_score",    "INTEGER"),
+        ("fd_us_stock_tian_score",   "INTEGER"),
+        ("fd_us_stock_di_score",     "INTEGER"),
+        ("fd_us_stock_jiang_score",  "INTEGER"),
+        ("fd_us_stock_fa_score",     "INTEGER"),
+        ("fd_precious_metal_dao_score",     "INTEGER"),
+        ("fd_precious_metal_tian_score",    "INTEGER"),
+        ("fd_precious_metal_di_score",      "INTEGER"),
+        ("fd_precious_metal_jiang_score",   "INTEGER"),
+        ("fd_precious_metal_fa_score",      "INTEGER"),
+        ("direction_state",          "TEXT"),
+        ("direction_bias",           "REAL"),
+        ("three_factor_short_signal","INTEGER"),
+        ("btc_regime",               "TEXT"),
         ("sal_type",                 "TEXT"),
         ("sal_regime",               "TEXT"),
         ("sal_calib_median",         "REAL"),
@@ -1225,7 +1268,7 @@ class EvolutionStorageSQLite:
             (1 if bool(record.get("fma_on_allowed")) else 0) if record.get("fma_on_allowed") is not None else None,
             _b("fma_on_eff_threshold"),
         )
-        # T5 战略/策略影子 12 列额外参数
+        # T5 战略/策略影子列（含五维评分明细 + 方向状态）
         _t5_extra_params = (
             record.get("fd_crypto_war_state"),
             _b("fd_crypto_total_score"),
@@ -1233,6 +1276,18 @@ class EvolutionStorageSQLite:
             _b("fd_crypto_mult_mode"),
             record.get("fd_us_stock_war_state"),
             _b("fd_us_stock_total_score"),
+            record.get("fd_precious_metal_war_state"),
+            _b("fd_precious_metal_total_score"),
+            _b("fd_crypto_dao_score"), _b("fd_crypto_tian_score"), _b("fd_crypto_di_score"),
+            _b("fd_crypto_jiang_score"), _b("fd_crypto_fa_score"),
+            _b("fd_us_stock_dao_score"), _b("fd_us_stock_tian_score"), _b("fd_us_stock_di_score"),
+            _b("fd_us_stock_jiang_score"), _b("fd_us_stock_fa_score"),
+            _b("fd_precious_metal_dao_score"), _b("fd_precious_metal_tian_score"), _b("fd_precious_metal_di_score"),
+            _b("fd_precious_metal_jiang_score"), _b("fd_precious_metal_fa_score"),
+            record.get("direction_state"),
+            _b("direction_bias"),
+            (1 if bool(record.get("three_factor_short_signal")) else 0) if record.get("three_factor_short_signal") is not None else None,
+            record.get("btc_regime"),
             record.get("sal_type"),
             record.get("sal_regime"),
             _b("sal_calib_median"),
@@ -1260,6 +1315,12 @@ class EvolutionStorageSQLite:
                     fma_on_allowed, fma_on_eff_threshold,
                     fd_crypto_war_state, fd_crypto_total_score, fd_crypto_cap_mode, fd_crypto_mult_mode,
                     fd_us_stock_war_state, fd_us_stock_total_score,
+                    fd_precious_metal_war_state, fd_precious_metal_total_score,
+                    fd_crypto_dao_score, fd_crypto_tian_score, fd_crypto_di_score, fd_crypto_jiang_score, fd_crypto_fa_score,
+                    fd_us_stock_dao_score, fd_us_stock_tian_score, fd_us_stock_di_score, fd_us_stock_jiang_score, fd_us_stock_fa_score,
+                    fd_precious_metal_dao_score, fd_precious_metal_tian_score, fd_precious_metal_di_score, fd_precious_metal_jiang_score, fd_precious_metal_fa_score,
+                    direction_state, direction_bias,
+                    three_factor_short_signal, btc_regime,
                     sal_type, sal_regime, sal_calib_median, sal_calib_min, sal_calib_max, sal_gate
                 ) VALUES (
                     ?,?,
@@ -1272,7 +1333,12 @@ class EvolutionStorageSQLite:
                     ?,?,
                     ?,?,?,?,?,?,
                     ?,?,
-                    ?,?,?,?,?,?,
+                    ?,?,?,?,?,?,?,?,
+                    ?,?,?,?,?,
+                    ?,?,?,?,?,
+                    ?,?,?,?,?,
+                    ?,?,
+                    ?,?,
                     ?,?,?,?,?,?
                 )
             """, _common_params + _t5_extra_params)
@@ -1345,6 +1411,12 @@ class EvolutionStorageSQLite:
                        fma_on_allowed, fma_on_eff_threshold,
                        fd_crypto_war_state, fd_crypto_total_score, fd_crypto_cap_mode, fd_crypto_mult_mode,
                        fd_us_stock_war_state, fd_us_stock_total_score,
+                       fd_precious_metal_war_state, fd_precious_metal_total_score,
+                       fd_crypto_dao_score, fd_crypto_tian_score, fd_crypto_di_score, fd_crypto_jiang_score, fd_crypto_fa_score,
+                       fd_us_stock_dao_score, fd_us_stock_tian_score, fd_us_stock_di_score, fd_us_stock_jiang_score, fd_us_stock_fa_score,
+                       fd_precious_metal_dao_score, fd_precious_metal_tian_score, fd_precious_metal_di_score, fd_precious_metal_jiang_score, fd_precious_metal_fa_score,
+                       direction_state, direction_bias,
+                       three_factor_short_signal, btc_regime,
                        sal_type, sal_regime, sal_calib_median, sal_calib_min, sal_calib_max, sal_gate
                 FROM shadow_param_log
                 {where_clause}

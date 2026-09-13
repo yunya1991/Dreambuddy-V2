@@ -540,7 +540,8 @@ class TestBdsmTrendStopValueExit(unittest.TestCase):
         t._bdsm_partial_reduce_position = MagicMock(return_value={"ok": True, "reduce_ratio": 0.5})
         pos_info = {"has_position": True, "inst_id": "UNI-USDT-SWAP", "coin": "UNI",
                     "pos_side": "long", "pos": 10, "avg_px": 10.0, "mark_px": 11.0,
-                    "upl": 10.0, "upl_ratio": 0.10, "open_time_sec": 0}
+                    "upl": 10.0, "upl_ratio": 0.10, "open_time_sec": 0,
+                    "source_tag": "bdsm"}
         t._get_coin_position_info = MagicMock(return_value=pos_info)
         return t
 

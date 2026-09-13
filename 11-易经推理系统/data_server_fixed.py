@@ -2440,7 +2440,12 @@ def get_strategy_layer_shadow(limit: int = 50):
         # 最新战略层状态（从最近 fd_* 记录提取）
         cur.execute("""
             SELECT fd_crypto_war_state, fd_crypto_total_score, fd_crypto_cap_mode, fd_crypto_mult_mode,
-                   fd_us_stock_war_state, fd_us_stock_total_score
+                   fd_us_stock_war_state, fd_us_stock_total_score,
+                   fd_precious_metal_war_state, fd_precious_metal_total_score,
+                   direction_state, direction_bias,
+                   three_factor_short_signal, btc_regime,
+                   fd_crypto_dao_score, fd_crypto_tian_score, fd_crypto_di_score,
+                   fd_crypto_jiang_score, fd_crypto_fa_score
             FROM shadow_param_log
             WHERE fd_crypto_war_state IS NOT NULL
             ORDER BY id DESC LIMIT 1
@@ -2451,11 +2456,21 @@ def get_strategy_layer_shadow(limit: int = 50):
             latest_strategic = {
                 "crypto_usdt": {
                     "war_state": fd_row[0], "total_score": fd_row[1],
-                    "cap_mode": fd_row[2], "mult_mode": fd_row[3]
+                    "cap_mode": fd_row[2], "mult_mode": fd_row[3],
+                    "dao_score": fd_row[12], "tian_score": fd_row[13],
+                    "di_score": fd_row[14], "jiang_score": fd_row[15],
+                    "fa_score": fd_row[16]
                 },
                 "us_stock": {
                     "war_state": fd_row[4], "total_score": fd_row[5]
-                }
+                },
+                "precious_metal": {
+                    "war_state": fd_row[6], "total_score": fd_row[7]
+                },
+                "direction_state": fd_row[8],
+                "direction_bias": fd_row[9],
+                "three_factor_short_signal": bool(fd_row[10]) if fd_row[10] is not None else None,
+                "btc_regime": fd_row[11]
             }
 
         # 最近 N 条记录
@@ -2463,6 +2478,9 @@ def get_strategy_layer_shadow(limit: int = 50):
             SELECT timestamp, symbol,
                    fd_crypto_war_state, fd_crypto_total_score, fd_crypto_cap_mode, fd_crypto_mult_mode,
                    fd_us_stock_war_state, fd_us_stock_total_score,
+                   fd_precious_metal_war_state, fd_precious_metal_total_score,
+                   direction_state, direction_bias,
+                   three_factor_short_signal, btc_regime,
                    sal_type, sal_regime, sal_calib_median, sal_calib_min, sal_calib_max, sal_gate,
                    actual_direction, actual_confidence, actual_position_usdt,
                    enable_inject, alpha_blend
@@ -2476,12 +2494,16 @@ def get_strategy_layer_shadow(limit: int = 50):
                 "fd_war_state": r[2], "fd_total_score": r[3],
                 "fd_cap_mode": r[4], "fd_mult_mode": r[5],
                 "fd_us_war_state": r[6], "fd_us_total_score": r[7],
-                "sal_type": r[8], "sal_regime": r[9],
-                "sal_calib_median": r[10], "sal_calib_min": r[11],
-                "sal_calib_max": r[12], "sal_gate": r[13],
-                "actual_direction": r[14], "actual_confidence": r[15],
-                "actual_position": r[16],
-                "enable_inject": r[17], "alpha_blend": r[18]
+                "fd_pm_war_state": r[8], "fd_pm_total_score": r[9],
+                "direction_state": r[10], "direction_bias": r[11],
+                "three_factor_short_signal": bool(r[12]) if r[12] is not None else None,
+                "btc_regime": r[13],
+                "sal_type": r[14], "sal_regime": r[15],
+                "sal_calib_median": r[16], "sal_calib_min": r[17],
+                "sal_calib_max": r[18], "sal_gate": r[19],
+                "actual_direction": r[20], "actual_confidence": r[21],
+                "actual_position": r[22],
+                "enable_inject": r[23], "alpha_blend": r[24]
             })
 
         # AB 闸门 inject 统计
@@ -2778,7 +2800,16 @@ def _aggregate_real_data(sub_type, records, asset_class="crypto_usdt"):
 
     # ── sub_type: contradictions-top8 ──
     if sub_type == "contradictions-top8":
-        feat_corr = latest_cls.get("feature_correlation", [])
+        # 最新记录的 feature_correlation 可能为 null，回溯到最近一条有数据的记录
+        feat_corr = None
+        fc_src_ts = None
+        for r in reversed(records_sorted):
+            fc = _get_cls(r).get("feature_correlation")
+            if fc:
+                feat_corr = fc
+                fc_src_ts = _fmt_ts(_get_ts(r))
+                break
+        feat_corr = feat_corr or []
         top8 = []
         for i, fc in enumerate(feat_corr[:8]):
             top8.append({
@@ -4235,6 +4266,192 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(_acc.get_ftc_status())
             except Exception as e:
                 self._json({"degraded": True, "error": str(e)})
+
+        elif path == "/api/agi/snapshot":
+            try:
+                n = int(self._get_query_param("n") or "50")
+                symbol = self._get_query_param("symbol")
+                snap_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/data/agi_snapshot.jsonl")
+                records = []
+                if snap_file.exists():
+                    lines = snap_file.read_text(encoding="utf-8").splitlines()
+                    for line in reversed(lines):
+                        if not line.strip():
+                            continue
+                        try:
+                            rec = json.loads(line)
+                            if symbol and rec.get("symbol") != symbol:
+                                continue
+                            records.append(rec)
+                            if len(records) >= n:
+                                break
+                        except Exception:
+                            continue
+                records.reverse()
+                self._json({"ok": True, "count": len(records), "snapshots": records})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)})
+
+        elif path == "/api/agi/status":
+            try:
+                snap_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/data/agi_snapshot.jsonl")
+                records = []
+                if snap_file.exists():
+                    lines = snap_file.read_text(encoding="utf-8").splitlines()
+                    for line in reversed(lines):
+                        if not line.strip():
+                            continue
+                        try:
+                            records.append(json.loads(line))
+                            if len(records) >= 200:
+                                break
+                        except Exception:
+                            continue
+                if not records:
+                    self._json({"ok": False, "error": "no snapshots yet"})
+                else:
+                    latest_by_symbol = {}
+                    for rec in records:
+                        sym = rec.get("symbol", "?")
+                        latest_by_symbol[sym] = rec
+                    sde_backends = [r.get("neural_sde_backend") for r in latest_by_symbol.values() if r.get("neural_sde_backend")]
+                    self._json({
+                        "ok": True,
+                        "symbols": list(latest_by_symbol.keys()),
+                        "latest": list(latest_by_symbol.values()),
+                        "neural_sde_backend": sde_backends[0] if sde_backends else "unavailable",
+                        "total_snapshots": len(records),
+                    })
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)})
+
+        # ── 非线性多阶段最优路径指标 API（6机制） ──
+        elif path == "/api/nonlinear-path-metrics":
+            try:
+                snap_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/data/agi_snapshot.jsonl")
+                if not snap_file.exists():
+                    self._json({"ok": False, "error": "no snapshot file", "metrics": {}})
+                    return
+                lines = snap_file.read_text(encoding="utf-8").splitlines()
+                latest = None
+                # 优先找有 primary_contradiction 的最新快照
+                for line in reversed(lines):
+                    if not line.strip():
+                        continue
+                    try:
+                        rec = json.loads(line)
+                        _pi = rec.get("path_info", {}) or {}
+                        if _pi.get("primary_contradiction") is not None:
+                            latest = rec
+                            break
+                    except Exception:
+                        continue
+                # 回退：取最新一条
+                if not latest:
+                    for line in reversed(lines):
+                        if not line.strip():
+                            continue
+                        try:
+                            latest = json.loads(line)
+                            break
+                        except Exception:
+                            continue
+                if not latest:
+                    self._json({"ok": False, "error": "no snapshots yet", "metrics": {}})
+                    return
+
+                pi = latest.get("path_info", {}) or {}
+
+                # 组1：非线性路径核心
+                pc = pi.get("primary_contradiction") or {}
+                hjb = pi.get("hjb_policy") or {}
+                fuel = pi.get("reflexivity_fuel") or {}
+                shift = pi.get("shift_result") or {}
+
+                # 组2：风控安全（G-05 4判据）
+                # 从 polling_trader 的 fuses 状态文件读取
+                g05_state = {"status": "idle", "judges": {"dim_jumped": False, "mech_active": False, "no_bounce": False, "no_intervener": False}}
+                try:
+                    fuses_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/artifacts/fuses_state.json")
+                    if fuses_file.exists():
+                        fuses_data = json.loads(fuses_file.read_text(encoding="utf-8"))
+                        g05_state = fuses_data.get("g05", g05_state)
+                except Exception:
+                    pass
+
+                # 组3：反身性闭环
+                cog = pi.get("cognition_result") or {}
+
+                # 组4：弹性约束（兼容旧格式展开字段+新格式 elastic_result dict）
+                elastic = pi.get("elastic_result")
+                if not elastic:
+                    # 旧格式：展开字段
+                    if pi.get("elastic_position_mult") is not None:
+                        elastic = {
+                            "position_mult": pi.get("elastic_position_mult", 1.0),
+                            "t_max": pi.get("elastic_t_max", 0.0),
+                            "rebound_risk": pi.get("elastic_rebound_risk", 0.0),
+                            "constraint_active": pi.get("elastic_position_mult", 1.0) != 1.0,
+                            "aligned": True,
+                        }
+                    else:
+                        elastic = {}
+
+                self._json({
+                    "ok": True,
+                    "symbol": latest.get("symbol", "?"),
+                    "ts": latest.get("ts", "?"),
+                    "metrics": {
+                        # 组1：非线性路径核心
+                        "group1": {
+                            "title": "非线性路径核心",
+                            "primary": {
+                                "dimension": pc.get("dimension", "—"),
+                                "timeframe": pc.get("timeframe", "—"),
+                                "direction": pc.get("direction", "—"),
+                                "strength": round(pc.get("strength", 0), 4) if pc else 0,
+                            },
+                            "hjb": {
+                                "converged": hjb.get("converged", False) if hjb else False,
+                                "total_cost": round(hjb.get("total_cost", 0), 6) if hjb else 0,
+                                "backend": hjb.get("backend", "—") if hjb else "—",
+                            },
+                            "fuel": {
+                                "type": fuel.get("type", "none") if fuel else "none",
+                                "intensity": round(fuel.get("intensity", 0), 4) if fuel else 0,
+                            },
+                            "shift": {
+                                "detected": shift.get("shift_detected", False) if shift else False,
+                                "shift_time": shift.get("shift_time", "—") if shift else "—",
+                                "new_direction": (shift.get("new_primary") or {}).get("direction", "—") if shift else "—",
+                            },
+                        },
+                        # 组2：风控安全（G-05）
+                        "group2": {
+                            "title": "风控安全（G-05 级联熔断）",
+                            "status": g05_state.get("status", "idle"),
+                            "judges": g05_state.get("judges", {}),
+                            "cooldown_remaining": g05_state.get("cooldown_remaining", 0),
+                        },
+                        # 组3：反身性闭环
+                        "group3": {
+                            "title": "反身性闭环",
+                            "cognition": round(cog.get("cognition", 0.5), 4) if cog else 0.5,
+                            "cognition_delta": round(cog.get("cognition_delta", 0), 6) if cog else 0,
+                            "loop_active": cog.get("reflexivity_loop_active", False) if cog else False,
+                        },
+                        # 组4：弹性约束
+                        "group4": {
+                            "title": "弹性约束",
+                            "t_max": round(elastic.get("t_max", 0), 4) if elastic else 0,
+                            "position_mult": round(elastic.get("position_mult", 1.0), 4) if elastic else 1.0,
+                            "constraint_active": elastic.get("constraint_active", False) if elastic else False,
+                            "aligned": elastic.get("aligned", True) if elastic else True,
+                        },
+                    },
+                })
+            except Exception as e:
+                self._json({"ok": False, "error": str(e), "metrics": {}})
 
         elif path == "/" or path == "/index.html":
             self._file(BASE_DIR / "monitor.html", "text/html")

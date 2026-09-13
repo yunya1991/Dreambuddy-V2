@@ -1,0 +1,39 @@
+{
+  "gene_id": "CD-DONCHIAN-55-BREAK",
+  "category": "trend",
+  "condition_type": "indicator",
+  "expression": "close > donchian_55_high AND atr_expanding",
+  "parameters": {
+    "window": {
+      "value": 55,
+      "range": {
+        "low": 20,
+        "high": 100
+      }
+    },
+    "atr_window": {
+      "value": 14,
+      "range": {
+        "low": 7,
+        "high": 50
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 0.6,
+  "code_ref": {
+    "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trend_following/trend_following_engine.py",
+    "lines": {
+      "low": 42,
+      "high": 77
+    }
+  },
+  "tags": [
+    "trend",
+    "indicator",
+    "donchian-55",
+    "slow-system"
+  ],
+  "version": "1.0",
+  "notes": "海龟慢系统 55 日 Donchian 通道突破信号。Phase E 新增。"
+}

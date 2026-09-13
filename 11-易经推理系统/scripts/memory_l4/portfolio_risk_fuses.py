@@ -52,7 +52,7 @@ class FuseAction:
 
 
 class PortfolioRiskFuses:
-    """组合级风险熔断（G-02 + G-04）"""
+    """组合级风险熔断（G-02 黑天鹅 + G-04 终极 + G-05 不可逆级联）"""
 
     def __init__(self, enable: bool = False):
         self.enable = bool(enable)
@@ -62,6 +62,9 @@ class PortfolioRiskFuses:
         # G-04 终极熔断：触发日期 + 关断 24h
         self._g04_emergency_until_ts: float = 0.0
         self._g04_last_trigger_at: float = 0.0
+        # G-05 不可逆级联事前预防熔断：冷却 1h
+        self._g05_cascade_until_ts: float = 0.0
+        self._g05_last_trigger_at: float = 0.0
         self._last_failopen_logged_hour: str = ""
 
     # ---------------- 公共：主 tick ----------------
@@ -77,7 +80,10 @@ class PortfolioRiskFuses:
           - daily_equity_now: float（当前权益）
         """
         try:
-            from . import phase_c_constants as C
+            try:
+                from . import phase_c_constants as C
+            except ImportError:
+                import phase_c_constants as C
 
             ctx = ctx or {}
             now = time.time()
@@ -111,6 +117,42 @@ class PortfolioRiskFuses:
                         trigger_at_ts=now,
                         block_until_ts=self._g04_emergency_until_ts,
                     )
+
+            # ---- G-05 不可逆级联事前预防熔断：冷却期内 → 保持阻塞 ----
+            if now < self._g05_cascade_until_ts:
+                return FuseAction(
+                    block_new_open=True,
+                    sl_mult_adj=1.0,
+                    tp_mult_adj=1.0,
+                    emergency_shutdown=True,
+                    reason="g05_cascade_active",
+                    trigger_at_ts=self._g05_last_trigger_at,
+                    block_until_ts=self._g05_cascade_until_ts,
+                )
+
+            # ---- G-05：4事前判据 ① AND ② AND (③ OR ④) ----
+            # 信号缺失 → 默认False（FAIL-OPEN）
+            dim_jumped = bool(ctx.get("primary_dim_jumped", False))
+            mech_active = bool(ctx.get("mechanism_active", False))
+            no_bounce = bool(ctx.get("no_bounce_at_key", False))
+            no_intervener = bool(ctx.get("no_intervener", False))
+
+            if dim_jumped and mech_active and (no_bounce or no_intervener):
+                self._g05_last_trigger_at = now
+                self._g05_cascade_until_ts = now + C.G05_CASCADE_SHUTDOWN_HOURS * 3600
+                return FuseAction(
+                    block_new_open=True,
+                    sl_mult_adj=1.0,
+                    tp_mult_adj=1.0,
+                    emergency_shutdown=True,
+                    reason=(
+                        f"g05_cascade_imminent: dim={dim_jumped} "
+                        f"mech={mech_active} bounce={no_bounce} "
+                        f"intervener={no_intervener}"
+                    ),
+                    trigger_at_ts=now,
+                    block_until_ts=self._g05_cascade_until_ts,
+                )
 
             # ---- G-02 block_new_open 冷却：未到期直接返回 ----
             if now < self._g02_block_until_ts:

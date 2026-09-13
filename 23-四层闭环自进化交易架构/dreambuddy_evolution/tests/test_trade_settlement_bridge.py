@@ -65,7 +65,7 @@ class TestTradeSettlementBridgeOnTradeSettled:
         )
 
     def test_on_trade_settled_tp(self, tmp_path):
-        """盈利平仓 + 方向对 → CS≥0.7 & TP → ESS +0.02"""
+        """盈利平仓 + 方向对 → CS=1.0≥0.9 & TP → ESS +0.05（Phase1.2动态步长）"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
         # 存储 snapshot: d*=long, ess_dir=long, cbr=TP
@@ -76,7 +76,7 @@ class TestTradeSettlementBridgeOnTradeSettled:
         # trade_rec: direction=long, pnl>0 → real_direction=long, real_outcome=TP
         trade_rec = self._make_trade_rec(direction="long", exit_p=51000.0, pnl=10.0)
         result = bridge.on_trade_settled(trade_rec)
-        assert result["ess_delta"] == pytest.approx(0.02, abs=0.001)
+        assert result["ess_delta"] == pytest.approx(0.05, abs=0.001)
         assert result["cs"] >= 0.7
 
     def test_on_trade_settled_sl(self, tmp_path):

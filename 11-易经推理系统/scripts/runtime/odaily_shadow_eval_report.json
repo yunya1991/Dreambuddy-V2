@@ -1,0 +1,36 @@
+{
+  "ALL_PASS": false,
+  "SAMPLE_READY": false,
+  "effective_records": 1,
+  "gates": {
+    "G1_hit_rate": {
+      "effective": 0.0,
+      "min": 0.6,
+      "pass": false,
+      "value": 0.0
+    },
+    "G2_thaw_accuracy": {
+      "min": 0.7,
+      "note": "连续3日正贡献窗口率（缺 five_domain_state.json 解冻标签时）",
+      "pass": false,
+      "value": 0.0
+    },
+    "G3_sharpe_annual": {
+      "min": 1.05,
+      "pass": false,
+      "value": 0.0
+    },
+    "G4_IMPORT_FAIL_total": {
+      "max": 0,
+      "pass": true,
+      "value": 0
+    }
+  },
+  "generated_at_iso": "2026-08-29T03:19:23.461636Z",
+  "jsonl_path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/runtime/odaily_engine_boost_records.jsonl",
+  "no_odaily_field_records": 0,
+  "ok_records": 0,
+  "positive_days": [],
+  "reason_distribution": {},
+  "total_records": 0
+}

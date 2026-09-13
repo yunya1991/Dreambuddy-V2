@@ -209,15 +209,38 @@ class StrategyAlgorithmLayer:
     # -----------------------------------------------------------------
     # regime 平滑偏移量（§十 v1.4.1 统一二次校准公式的第二项 regime_factor）
     #   4y大周期 → 乘数；Bull > 1.0（进攻）；Bear < 1.0（防御）
+    #
+    # ★ 三套命名体系兼容（2026-09-12 修复：映射不匹配 bug）
+    #   1. 旧版4y大周期（Bull/Recovery/.../Bear）         — 原始设计，测试套件使用
+    #   2. 弹簧力场分类器（TREND_BULL/STRONG_TREND_BEAR/...） — polling_trader.py L11219 产出
+    #   3. 八卦形态分类  （TREND_UP_STRONG/TREND_UP_MILD/...） — bcrm2/market_regime.py GUA_REGIME_MAP
+    #   未命中 → DEFAULT_REGIME_FACTOR=1.00（FAIL-OPEN 中性）
     # -----------------------------------------------------------------
     REGIME_FACTORS: Dict[str, float] = {
-        "Bull":       1.08,
-        "Recovery":   1.04,
-        "Rebound":    1.02,
-        "Sideways":   1.00,
-        "LateBear":   0.95,
-        "EarlyBear":  0.90,
-        "Bear":       0.82,
+        # --- 旧版4y大周期命名（向后兼容）---
+        "Bull":           1.08,
+        "Recovery":       1.04,
+        "Rebound":        1.02,
+        "Sideways":       1.00,
+        "LateBear":       0.95,
+        "EarlyBear":      0.90,
+        "Bear":           0.82,
+        # --- 弹簧力场分类器命名（polling_trader.py L11219-L11245 产出）---
+        "TREND_BULL":         1.08,   # 多头趋势 → 进攻型，对应 Bull
+        "STRONG_TREND_BEAR":  0.82,   # 强空头趋势 → 最强防御，对应 Bear
+        "TREND_BEAR":         0.90,   # 弱空头趋势 → 防御，对应 EarlyBear
+        "MEAN_REVERTING":     1.02,   # 均值回归 → 有机会，对应 Rebound
+        "RANGING":            1.00,   # 震荡/筑底 → 中性，对应 Sideways
+        "UNKNOWN":            1.00,   # 未知 → FAIL-OPEN 中性
+        # --- 八卦形态分类命名（bcrm2/market_regime.py GUA_REGIME_MAP）---
+        "TREND_UP_STRONG":    1.08,   # 乾 - 强趋势上涨 → 进攻
+        "TREND_UP_MILD":      1.04,   # 巽 - 温和上涨 → 轻度进攻
+        "RANGE_BOUND":        1.00,   # 震荡区间 → 中性
+        "BREAKOUT":           1.06,   # 突破 → 进攻（弱于强趋势）
+        "VOLATILE_DROP":      0.85,   # 波动下跌 → 防御（强于弱空头）
+        "FOMO_RALLY":         1.05,   # FOMO反弹 → 进攻（需警惕追高）
+        "CONSOLIDATION":      1.00,   # 整理 → 中性
+        "REVERSAL":           0.95,   # 反转 → 不确定防御
     }
     DEFAULT_REGIME_FACTOR = 1.00
 

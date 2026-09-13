@@ -21,3 +21,5 @@ itemadapter>=0.7
 beautifulsoup4>=4.12
 lxml>=5.0
 pyyaml>=6.0
+# === Scrapling 增强（stealthy/dynamic/http 反爬 + 自适应解析）===
+scrapling[fetchers]>=0.4.0

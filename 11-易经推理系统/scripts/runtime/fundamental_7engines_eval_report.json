@@ -1,0 +1,57 @@
+{
+  "ALL_PASS": true,
+  "MIN_RECORDS": 1500,
+  "SAMPLE_READY": true,
+  "gates": {
+    "G1_hit_rate_effective": {
+      "min": 0.6,
+      "pass": true,
+      "unit": "",
+      "value": 0.6527
+    },
+    "G2_thaw_accuracy": {
+      "min": 0.7,
+      "note": "分母=含_thaw记录数；无_thaw→中性PASS",
+      "pass": true,
+      "unit": "",
+      "value": 0.8313
+    },
+    "G3_sharpe_annual": {
+      "min": 1.05,
+      "note": "sqrt(252)×mean/std；空/全0→中性PASS",
+      "pass": true,
+      "unit": "",
+      "value": 20.8319
+    },
+    "G4_IMPORT_FAIL_total": {
+      "max": 0,
+      "pass": true,
+      "unit": "",
+      "value": 0
+    },
+    "G5_S_ACCURACY": {
+      "min": 0.75,
+      "pass": true,
+      "unit": "",
+      "value": 0.8533
+    },
+    "G6_A_CONSISTENCY": {
+      "min": 0.6,
+      "pass": true,
+      "unit": "",
+      "value": 0.686
+    },
+    "G7_SCHEMA_PASS_RATE": {
+      "min": 0.95,
+      "pass": true,
+      "unit": "",
+      "value": 0.9687
+    }
+  },
+  "generated_at_iso": "2026-09-12T13:22:05.738003Z",
+  "jsonl_path": "/private/var/folders/bq/2szq0m2s51s_mq6l3rywb50m0000gn/T/pytest-of-zhangjiangtao/pytest-523/test_tc10_n_ge_1500_all_pass_e0/all_pass.jsonl",
+  "reason_distribution": {
+    "FD7_OK": 1500
+  },
+  "total_records": 1500
+}

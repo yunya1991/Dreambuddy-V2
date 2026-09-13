@@ -1,11 +1,12 @@
 # BCRM 2.0 推理细节深度文档 — BCRM2\_INFERENCE\_DEEP\_DIVE
 
-> **版本**: v1.0 | **更新日期**: 2026-09-03
+> **版本**: v1.1 | **更新日期**: 2026-09-12
 > **定位**: TECHNICAL\_DESIGN.md §4「BCRM 2.0 技术深度」的**推理细节增补**
 > **SSoT 优先级（冲突按此优先级裁决）**：代码 > 本文档 > TECHNICAL\_DESIGN.md §4 > 其他引用
+> **★ 2026-09-12 行号修正**：因新增代码导致行号偏移，本章行号引用已更新（_infer_bcrm2: L3990→L4811）
 > **依赖源码**:
 >
-> - 入口：[polling\_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L3990-L4255) [`_infer_bcrm2()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L3990-L4255) [L3990-L4255](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L3990-L4255)
+> - 入口：[polling\_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L4811) [`_infer_bcrm2()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L4811) [L4811](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L4811)
 >
 > - 适配层：[bcrm2\_adapter.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L518) [`BCRM2Adapter.infer()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L518) [L518](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L518)
 >
@@ -142,7 +143,7 @@ flowchart LR
 
 ## 2. inference 返回对象字段 Schema
 
-> 来源：[polling\_trader.py L4204-L4254](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L4204-L4254)
+> 来源：[polling\_trader.py L4904+](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L4904)（★ 2026-09-12 行号修正：原 L4204-L4254 → L4904+，因新增代码导致偏移）
 
 ### 2.1 完整字段表（26+ 字段）
 

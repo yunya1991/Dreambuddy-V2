@@ -732,12 +732,16 @@ class BCRM2Adapter:
             # 应用三角校验调整
             confidence = min(1.0, max(0.0, confidence + triangle_adjustment))
 
+            # 头肩顶/底形态检测（用户经验因子）
+            pattern = self._detect_head_shoulders(df, idx)
+
             return {
                 'ok': True,
                 'next_state': {
                     'direction': direction_text,
                     'confidence': confidence,
                     'derivation': f"BCRM2.0 L1={result['l1_confidence']:.2f} L2={result.get('l2_confidence', 'N/A')} A0_adj={a0_adjustment:+.3f} TRI_adj={triangle_adjustment:+.3f}",
+                    'pattern': pattern,
                 },
                 'hexagram': hexagram_info if hexagram_info else {
                     'hexagram_name': hex_name,
@@ -771,7 +775,73 @@ class BCRM2Adapter:
             import traceback
             traceback.print_exc()
             return self._fail_closed_result(f"推理失败: {e}")
-    
+
+    @staticmethod
+    def _detect_head_shoulders(df: pd.DataFrame, idx: int = -1) -> Dict[str, Any]:
+        """头肩顶/底形态检测（用户经验：头肩形态反转信号有价值）。
+
+        FAIL-OPEN: 数据不足或异常 → 中性 pattern。
+        返回: {"hs_top": bool, "hs_bottom": bool, "confidence": float}
+        """
+        try:
+            if df is None or len(df) < 55:
+                return {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
+            # 取最近 55 根
+            window = df.iloc[idx - 54: idx + 1] if idx >= 0 else df.iloc[-55:]
+            if len(window) < 55:
+                return {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
+            highs = window["high"].values
+            lows = window["low"].values
+            closes = window["close"].values
+            volumes = window["volume"].values
+
+            # ── 头肩顶 ──
+            head_idx = int(np.argmax(highs))
+            hs_top = False
+            if 5 <= head_idx <= 49:
+                left_region = highs[max(0, head_idx - 20):head_idx - 3]
+                right_region = highs[head_idx + 4:min(55, head_idx + 20)]
+                if len(left_region) > 0 and len(right_region) > 0:
+                    head_high = highs[head_idx]
+                    left_shoulder = float(np.max(left_region))
+                    right_shoulder = float(np.max(right_region))
+                    if left_shoulder >= head_high * 0.85 and right_shoulder >= head_high * 0.85:
+                        left_lows = lows[max(0, head_idx - 20):head_idx - 3]
+                        right_lows = lows[head_idx + 4:min(55, head_idx + 20)]
+                        if len(left_lows) > 0 and len(right_lows) > 0:
+                            neckline = float(min(np.min(left_lows), np.min(right_lows)))
+                            cur_close = float(closes[-1])
+                            cur_vol = float(volumes[-1])
+                            avg_vol = float(np.mean(volumes[-20:])) if len(volumes) >= 20 else 1.0
+                            if cur_close < neckline * 0.998 and avg_vol > 0 and cur_vol / avg_vol < 0.8:
+                                hs_top = True
+
+            # ── 头肩底（镜像）──
+            bottom_idx = int(np.argmin(lows))
+            hs_bottom = False
+            if 5 <= bottom_idx <= 49:
+                left_region = lows[max(0, bottom_idx - 20):bottom_idx - 3]
+                right_region = lows[bottom_idx + 4:min(55, bottom_idx + 20)]
+                if len(left_region) > 0 and len(right_region) > 0:
+                    head_low = lows[bottom_idx]
+                    left_shoulder = float(np.min(left_region))
+                    right_shoulder = float(np.min(right_region))
+                    if left_shoulder <= head_low * 1.15 and right_shoulder <= head_low * 1.15:
+                        left_highs = highs[max(0, bottom_idx - 20):bottom_idx - 3]
+                        right_highs = highs[bottom_idx + 4:min(55, bottom_idx + 20)]
+                        if len(left_highs) > 0 and len(right_highs) > 0:
+                            neckline = float(max(np.max(left_highs), np.max(right_highs)))
+                            cur_close = float(closes[-1])
+                            cur_vol = float(volumes[-1])
+                            avg_vol = float(np.mean(volumes[-20:])) if len(volumes) >= 20 else 1.0
+                            if cur_close > neckline * 1.002 and avg_vol > 0 and cur_vol / avg_vol > 1.2:
+                                hs_bottom = True
+
+            conf = 0.7 if (hs_top or hs_bottom) else 0.0
+            return {"hs_top": hs_top, "hs_bottom": hs_bottom, "confidence": conf}
+        except Exception:
+            return {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
+
     def _fail_closed_result(self, reason: str) -> Dict[str, Any]:
         """生成 fail_closed 结果"""
         return {
@@ -780,6 +850,7 @@ class BCRM2Adapter:
                 'direction': 'FLAT',
                 'confidence': 0.0,
                 'derivation': reason,
+                'pattern': {"hs_top": False, "hs_bottom": False, "confidence": 0.0},
             },
             'hexagram': {
                 'hexagram_name': '未济',

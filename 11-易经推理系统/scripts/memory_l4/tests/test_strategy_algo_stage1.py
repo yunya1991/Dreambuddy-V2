@@ -768,7 +768,7 @@ class TestDecisionInequalitiesSix:
     # TDD #22：Fa否决 fa<40 → 禁开新仓（mult=0.50 / strong=True / mask除emergency外全False）
     # ---------------------------------------------------------------
     def test_22_fa_less_than_40_blocks_new_positions_full_stack(self):
-        """TDD #22：§法否决（fa<40）→ position_mult=0.50 / forced_close.strong=True / 5非应急策略mask全False。"""
+        """TDD #22：§法否决（fa<40）→ position_mult=0.0（不开新仓）/ forced_close.strong=True / 5非应急策略mask全False。"""
         scorer = self._scorer_enable()
         # fa=30（<40），其余拉高：dao=90(27)+tian=95(14.25)+di=90(22.5)+jiang=90(13.5)+fa=30(4.5)
         # = 27+14.25=41.25+22.5=63.75+13.5=77.25+4.5=81.75 → 82 ≥60 → war_state=ALLOW ✓
@@ -776,9 +776,9 @@ class TestDecisionInequalitiesSix:
         st = scorer.score_and_decide(self._crypto_scores(**good_total_bad_fa))
         # ① fa_xiao_40=True
         assert st.dimension_veto_flags["crypto_usdt"]["fa_xiao_40"] is True, "fa<40 → fa_xiao_40=True"
-        # ② position_mult = 0.50（fa否决不同于dao/jiang，0.50而非0.30）
-        assert abs(st.position_mult["crypto_usdt"] - 0.50) < 1e-9, (
-            f"fa<40 → position_mult=0.50（不是0.30），实际={st.position_mult['crypto_usdt']}"
+        # ② position_mult = 0.0（法<40→不开新仓，project_memory硬约束）
+        assert abs(st.position_mult["crypto_usdt"] - 0.0) < 1e-9, (
+            f"fa<40 → position_mult=0.0（不开新仓），实际={st.position_mult['crypto_usdt']}"
         )
         # ③ forced_close.strong = True（纪律崩溃 → 强平候选）
         assert st.forced_close_flags["crypto_usdt"]["strong"] is True, (

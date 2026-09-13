@@ -384,7 +384,12 @@ class RiskManager:
                 if "max_position_size_pct" in data:
                     self.state.max_position_size_pct = data["max_position_size_pct"]
                 if "min_position_usdt" in data:
-                    self.state.min_position_usdt = data["min_position_usdt"]
+                    # 下限保护：硬约束要求最低名义仓位价值 ≥250U（50U保证金×5x杠杆）
+                    # 历史遗留的低值（如 20.0）不覆盖构造函数默认值，防止兜底失效
+                    _loaded_min = float(data["min_position_usdt"])
+                    if _loaded_min >= 250.0:
+                        self.state.min_position_usdt = _loaded_min
+                    # else: 保留构造函数传入的 250.0 默认值，不覆盖
             except Exception:
                 logger.exception("加载风控状态失败，使用默认状态（可能保守）")
 

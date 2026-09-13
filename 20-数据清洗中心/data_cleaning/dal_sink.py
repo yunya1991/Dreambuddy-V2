@@ -28,6 +28,10 @@ _ROUTE_MAP: dict[str, tuple[str, list[str]]] = {
         "upsert_fear_greed",
         ["value", "value_classification", "timestamp"],
     ),
+    "crypto_fear_greed": (  # fear_greed collector 实际产出的 sub_category
+        "upsert_fear_greed",
+        ["value", "value_classification", "timestamp"],
+    ),
     "funding": (
         "upsert_funding_rate",
         ["funding_rate", "timestamp"],
@@ -48,10 +52,42 @@ _ROUTE_MAP: dict[str, tuple[str, list[str]]] = {
         "upsert_liquidation",
         ["order_quantity", "side", "price", "total_quantity", "timestamp"],
     ),
+    # 🆕 P0-P2 通用指标路由：走 upsert_metric 通用 KV 存储
+    "btc_onchain": ("upsert_metric", ["timestamp"]),
+    "btc_metrics": ("upsert_metric", ["timestamp"]),
+    "btc_basics": ("upsert_metric", ["timestamp"]),
+    "btc_block": ("upsert_metric", ["timestamp"]),
+    "eth_onchain": ("upsert_metric", ["timestamp"]),
+    "eth_gas": ("upsert_metric", ["timestamp"]),
+    "etf_flow": ("upsert_metric", ["timestamp"]),
+    "etf_dashboard": ("upsert_metric", ["timestamp"]),
+    "options": ("upsert_metric", ["timestamp"]),
+    "cot": ("upsert_metric", ["timestamp"]),
+    "stablecoins": ("upsert_metric", ["timestamp"]),
+    "fear_greed_enhanced": ("upsert_metric", ["timestamp"]),
+    "cmc_fear_greed": ("upsert_metric", ["timestamp"]),
+    "search_trends": ("upsert_metric", ["timestamp"]),
+    "crypto_sentiment": ("upsert_metric", ["timestamp"]),
+}
+
+# 字段名别名：collector 产出的字段名 → DAL 期望的字段名
+_FIELD_ALIASES: dict[str, dict[str, str]] = {
+    "crypto_fear_greed": {"classification": "value_classification"},
+    "fear_greed": {"classification": "value_classification"},
 }
 
 # 需要 asset/symbol 列的 sub_category
 _NEEDS_SYMBOL = {"funding", "open_interest", "long_short_ratio", "taker_volume", "liquidation"}
+
+# 🆕 通用指标 sub_category 集合（走 upsert_metric）
+_GENERIC_METRIC_ROUTES = {
+    "btc_onchain", "btc_metrics", "btc_basics", "btc_block",
+    "eth_onchain", "eth_gas",
+    "etf_flow", "etf_dashboard",
+    "options", "cot", "stablecoins",
+    "fear_greed_enhanced", "cmc_fear_greed",
+    "search_trends", "crypto_sentiment",
+}
 
 
 class DalSink:
@@ -108,8 +144,12 @@ class DalSink:
             try:
                 kwargs = self._build_kwargs(route_key, row, source, category, sub_category)
                 if kwargs is not None:
-                    method(**kwargs)
-                    written += 1
+                    # 🆕 通用指标路由返回 __written__ 标记
+                    if "__written__" in kwargs:
+                        written += kwargs["__written__"]
+                    else:
+                        method(**kwargs)
+                        written += 1
             except Exception as exc:
                 logger.warning(
                     "[DalSink] %s 写入失败（行跳过）: %s",
@@ -129,6 +169,11 @@ class DalSink:
         """从 DataFrame 行构建 upsert 方法参数。"""
         _, required_cols = _ROUTE_MAP[route_key]
 
+        # 应用字段名别名（collector 产出字段名 → DAL 期望字段名）
+        aliases = _FIELD_ALIASES.get(route_key, {})
+        if aliases:
+            row = row.rename(index=aliases)
+
         # 检查必需列
         for col in required_cols:
             if col not in row.index:
@@ -137,7 +182,7 @@ class DalSink:
         # 解析 timestamp
         ts = _parse_ts(row["timestamp"])
 
-        if route_key == "fear_greed":
+        if route_key in ("fear_greed", "crypto_fear_greed"):
             return dict(
                 value=int(row["value"]),
                 value_classification=str(row["value_classification"]),
@@ -190,6 +235,31 @@ class DalSink:
                 total_quantity=Decimal(str(row["total_quantity"])),
                 ts=ts,
             )
+
+        # 🆕 通用指标路由：将 metrics dict 展开为多行 upsert_metric 调用
+        if route_key in _GENERIC_METRIC_ROUTES:
+            count = 0
+            skip_cols = {"timestamp", "source", "category", "sub_category"}
+            for col_name, col_val in row.items():
+                if col_name in skip_cols:
+                    continue
+                try:
+                    val = float(col_val)
+                except (ValueError, TypeError):
+                    continue  # 跳过非数值字段
+                try:
+                    self.mm_repo.upsert_metric(
+                        source=source,
+                        sub_category=sub_category,
+                        metric_name=str(col_name),
+                        metric_value=val,
+                        ts=ts,
+                    )
+                    count += 1
+                except Exception:
+                    pass
+            # 返回特殊标记，让 write_silver 知道已写入
+            return {"__written__": count} if count > 0 else None
 
         return None
 

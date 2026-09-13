@@ -120,3 +120,148 @@ class SubSystemBridge:
             return float(snapshot.get("valuation_percentile", 0.5))
         except Exception:
             return 0.5
+
+    # ---------------------------------------------------------- five_scores
+    def get_five_scores(self, cls: str = "crypto_usdt") -> dict:
+        """获取五计庙算五维原始评分（dao/di/tian/jiang/fa）。FAIL-OPEN → 全50。"""
+        try:
+            if self._trader is None:
+                return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
+            _fds = (
+                getattr(self._trader, "_five_domain_state_shadow", None)
+                or getattr(self._trader, "_five_domain_state_cache", None)
+            )
+            if _fds is None:
+                return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
+            fs = _fds.five_scores if hasattr(_fds, "five_scores") else _fds.get("five_scores", {})
+            if isinstance(fs, dict) and cls in fs:
+                return dict(fs[cls])
+            return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
+        except Exception:
+            return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
+
+    # ---------------------------------------------------------- position_cap
+    def get_position_cap(self, cls: str = "crypto_usdt") -> float:
+        """获取战略层仓位上限。FAIL-OPEN → 1.0。"""
+        try:
+            if self._trader is None:
+                return 1.0
+            _fds = (
+                getattr(self._trader, "_five_domain_state_shadow", None)
+                or getattr(self._trader, "_five_domain_state_cache", None)
+            )
+            if _fds is None:
+                return 1.0
+            cap = (
+                _fds.aggregate_position_cap_pct
+                if hasattr(_fds, "aggregate_position_cap_pct")
+                else _fds.get("aggregate_position_cap_pct", {})
+            )
+            if isinstance(cap, dict) and cls in cap:
+                return float(cap[cls])
+            return 1.0
+        except Exception:
+            return 1.0
+
+    # ---------------------------------------------------------- BCRM pattern
+    def get_bcrm_pattern(self) -> dict:
+        """获取 BCRM2 头肩形态检测结果。FAIL-OPEN → 中性。"""
+        try:
+            if self._trader is None:
+                return {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
+            result = getattr(self._trader, "_last_bcrm2_result", None)
+            if not result:
+                return {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
+            next_state = result.get("next_state") if isinstance(result, dict) else None
+            if not next_state or not isinstance(next_state, dict):
+                return {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
+            return next_state.get(
+                "pattern", {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
+            )
+        except Exception:
+            return {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
+
+    # ---------------------------------------------------------- btc_regime
+    def get_btc_regime(self) -> str:
+        """获取战略层 BTC 强弱 regime（STRONG/WEAK/NEUTRAL）。FAIL-OPEN → NEUTRAL。"""
+        try:
+            if self._trader is None:
+                return "NEUTRAL"
+            _fds = (
+                getattr(self._trader, "_five_domain_state_shadow", None)
+                or getattr(self._trader, "_five_domain_state_cache", None)
+            )
+            if _fds is None:
+                return "NEUTRAL"
+            br = (
+                getattr(_fds, "btc_regime", None)
+                if hasattr(_fds, "btc_regime")
+                else None
+            )
+            if isinstance(br, dict):
+                return br.get("crypto_usdt", "NEUTRAL")
+            return "NEUTRAL"
+        except Exception:
+            return "NEUTRAL"
+
+    def set_btc_regime(self, regime: str, cls: str = "crypto_usdt") -> None:
+        """写回 BTC regime 到战略层 shadow 状态。FAIL-OPEN：trader/状态缺失 → 静默返回。
+
+        NEUTRAL 不写回（避免覆盖已有真实值）。
+        """
+        try:
+            if regime == "NEUTRAL":
+                return  # 不覆盖
+            if self._trader is None:
+                return
+            _fds = getattr(self._trader, "_five_domain_state_shadow", None)
+            if _fds is None:
+                return
+            br = getattr(_fds, "btc_regime", None)
+            if br is None:
+                _fds.btc_regime = {}
+                br = _fds.btc_regime
+            if isinstance(br, dict):
+                br[cls] = regime
+        except Exception as e:
+            logger.debug("[FO] set_btc_regime fail: %s", e)
+
+    def attach_trader(self, trader: Any) -> None:
+        """注入 trader 引用（用于 KlineEventHandler 创建 bridge 后补充注入）。"""
+        self._trader = trader
+
+    def get_direction_state(self, cls: str = "crypto_usdt") -> str:
+        """获取战略层方向状态（LONG_ONLY/LONG_PREFER/NEUTRAL/SHORT_PREFER/SHORT_ONLY/FREEZE）。FAIL-OPEN → NEUTRAL。"""
+        try:
+            if self._trader is None:
+                return "NEUTRAL"
+            _fds = (
+                getattr(self._trader, "_five_domain_state_shadow", None)
+                or getattr(self._trader, "_five_domain_state_cache", None)
+            )
+            if _fds is None:
+                return "NEUTRAL"
+            ds = getattr(_fds, "direction_state", None) if hasattr(_fds, "direction_state") else None
+            if isinstance(ds, dict):
+                return ds.get(cls, "NEUTRAL")
+            return "NEUTRAL"
+        except Exception:
+            return "NEUTRAL"
+
+    def get_direction_bias(self, cls: str = "crypto_usdt") -> float:
+        """获取战略层方向偏置分数（-100~+100，+看多/-看空）。FAIL-OPEN → 0.0。"""
+        try:
+            if self._trader is None:
+                return 0.0
+            _fds = (
+                getattr(self._trader, "_five_domain_state_shadow", None)
+                or getattr(self._trader, "_five_domain_state_cache", None)
+            )
+            if _fds is None:
+                return 0.0
+            db = getattr(_fds, "direction_bias", None) if hasattr(_fds, "direction_bias") else None
+            if isinstance(db, dict):
+                return float(db.get(cls, 0.0))
+            return 0.0
+        except Exception:
+            return 0.0

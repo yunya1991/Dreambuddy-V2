@@ -27,6 +27,7 @@ import { AgentConsolePage } from './components/AgentConsolePage';
 import { Activity } from 'lucide-react';
 import { AgentObservabilityPage } from './components/AgentObservabilityPage';
 import { ApprovalReviewPage } from './components/ApprovalReviewPage';
+import AGIVisualizationPage from './components/AGIVisualizationPage';
 
 const UI_SESSION_STORAGE_KEY = 'ui_session_ok';
 
@@ -536,6 +537,7 @@ const ShellLayout: React.FC = () => {
           <NavLink to="/universe" icon={<Layers className="h-4 w-4" />} label="Universe" />
           <NavLink to="/macro" icon={<LineChart className="h-4 w-4" />} label="Macro" />
           <NavLink to="/evolution" icon={<LineChart className="h-4 w-4" />} label="形态演化" />
+          <NavLink to="/agi" icon={<Activity className="h-4 w-4" />} label="AGI 自进化" />
           <NavLink to="/evaluation" icon={<LineChart className="h-4 w-4" />} label="Evaluation" />
           <NavLink to="/index" icon={<List className="h-4 w-4" />} label="Index" />
         </aside>
@@ -1321,6 +1323,7 @@ export default function App() {
           <Route path="universe" element={<UniversePage />} />
           <Route path="macro" element={<MacroPage />} />
           <Route path="evolution" element={<RegimeEvolutionPage />} />
+          <Route path="agi" element={<AGIVisualizationPage />} />
           <Route path="strategy" element={<ActiveStrategyPage />} />
           <Route path="library" element={<StrategyPage />} />
           <Route path="exit" element={<RequireProdUi><ExitSystemPage /></RequireProdUi>} />

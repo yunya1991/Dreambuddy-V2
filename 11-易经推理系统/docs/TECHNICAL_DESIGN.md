@@ -1,6 +1,6 @@
 # 易经推理系统 技术设计文档
 
-> **版本**: v4.6.1 | **日期**: 2026-08-24
+> **版本**: v4.6.1 | **日期**: 2026-09-11
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引） · [CHANGELOG.md](./CHANGELOG.md)（代码级变更日志）
 > **关联 Spec**: [方案 C：CBR 双闭环+Elder-ray+三层弹性闸门](../docs/superpowers/specs/2026-08-23-cbr-ema-winprob-enhancement-spec.md) v3.0（已全量上线，8 开关默认开启）
@@ -162,10 +162,13 @@
 ┌────────────────────────────────────────────────────────────────────────────┐
 │  Layer 0: 五计庙算（战略层 / Five-Domain Heuristic Scoring）                │
 │  总开关 enable_five_domain + 7 子开关；道/天/地/将/法 五维加权总分；            │
-│  → 输出 war_state(ALLOW/COOLDOWN/FREEZE) + strategy_mask + cap + score(0~100)│
-│  → 四档决策：≥75进攻 / 60-74低仓防御 / 50-59轻仓防守 / <50全禁；仓位四档映射    │
-│  → 维度否决规则(道/将<40降仓30%, 法<40不开新仓, 地天双差只允许对冲)            │
+│  → 输出 war_state(ALLOW/COOLDOWN/RESTRICT/FREEZE) + strategy_mask + cap + score(0~100)│
+│  → 四态状态机：ALLOW(1.0) > COOLDOWN(0.5) > RESTRICT(0.2) > FREEZE(0.1)     │
+│    温度 T 映射由 SubSystemBridge._WAR_STATE_TEMP 消费（ESS 探索利用平衡）      │
+│  → 四档决策：≥75进攻(cap1.0) / 60-74低仓防御(cap0.50) / 50-59轻仓防守(cap0.20) / <50全禁(cap0.20)│
+│  → 维度否决规则(道/将<40降仓30%, 法<40不开新仓(position_mult=0.0), 地天双差只允许对冲)│
 │  → 策略风格掩码细粒度：正常档内 trend≥70/breakout≥65/mean_revert 40≤di≤60     │
+│    ★ 极差场景(total<50/道绝否决/法<40)：方向状态不覆盖mask，道绝否决覆盖volatility例外│
 │  → 跨类相关性乘数：≥2类 total<60 → 三类全部 ×0.8                              │
 │  → war_state 滞回：连续3日≥60解冻，<58回冻，道<40一票否决立即FREEZE            │
 │  ★ 力向量 Shadow：FORCE_VECTOR_SHADOW=1 已开启，JSONL 真实记录积累中           │
@@ -173,10 +176,16 @@
 │    - 前端 5 子Tab(time-series/resonance/contradictions/cycle-ma/transform)   │
 │      从 JSONL 真实记录聚合展示（_aggregate_real_data），非 demo 合成数据        │
 │    - Shadow 输入从 JSONL 历史真实方向序列构建（Phase 1B），不足时回退合成        │
-│  ★ 自适应权重（Phase 2）：_compute_adaptive_weights() 基础设施已就绪           │
+│  ★ 自适应权重（Phase 2 已上线）：_compute_adaptive_weights() + force_vectors 数据源接入│
+│    - polling_trader 从 _force_vector_shadow 提取 per_class force_vectors 传入 │
 │    - 当 force_vectors 有效且 avg_conf>0.3 → 按 alpha 混合自适应权重           │
-│    - 否则 → WEIGHTS_BY_CLASS 硬编码权重（FAIL-OPEN 回退，当前生产路径）         │
-│    - 后续 Shadow 数据积累充足后，调用方可传入 force_vectors 启用自适应           │
+│    - 否则 → WEIGHTS_BY_CLASS 硬编码权重（FAIL-OPEN 回退）                    │
+│    - enable_adaptive_weights 开关默认False（FAIL-OPEN），环境变量控制启用       │
+│  ★ 策略层 REGIME_FACTORS 三套命名体系兼容（2026-09-12 修复映射不匹配 bug）    │
+│    - 旧版4y大周期(Bull/Bear/Sideways) + 弹簧力场(TREND_BULL/STRONG_TREND_BEAR) │
+│      + 八卦形态(TREND_UP_STRONG/RANGE_BOUND/BREAKOUT) 共22键                   │
+│    - 未命中 → DEFAULT_REGIME_FACTOR=1.00（FAIL-OPEN 中性）                     │
+│    - calibration_bias = G6_seed × regime_factor × liquidity_factor            │
 │  代码锚点：[FiveDomainHeuristicScorer](../scripts/memory_l4/five_domain_*.py)│
 │            [ForceVectorCalculator](../scripts/memory_l4/force_vector/)      │
 │            polling_trader._run_once_five_domain_daily_update()             │
@@ -271,7 +280,7 @@
 
 | 层级 | 名称 | 动作类型 | 典型操作 | 失败旁路 |
 |------|------|----------|----------|----------|
-| L0 | 五计庙算（战略层） | **定总基调** | war_state / cap / mask 输出 | war_state=ALLOW, cap=1.0, mask全True |
+| L0 | 五计庙算（战略层） | **定总基调** | war_state(ALLOW/COOLDOWN/RESTRICT/FREEZE) / cap / mask / direction_state 输出 | war_state=ALLOW, cap=1.0, mask全True, direction_state=NEUTRAL |
 | L1 | 前置层（市场形态识别） | **生前瞻参数** | L_forecast / T_forecast / α blend / 弹簧5态评分（前置层只定范围，不给具体仓位） | 纯反应式 reactive 参数，弹簧评分=NONE（不做分档） |
 | L2 | 核心层（BCRM 2.0信号） | **生方向信号** | direction / confidence / hexagram | 信号丢弃不进入后续 |
 | L3 | 后置校准层 | **正常开仓=调仓位大小**；**轻仓试错=跳过** | 弹簧力场仓位分档（STRONG/NORMAL/WEAK→×1.0/0.7/0.4）+ 五维风险评分 ×position_factor + 形态乘数 ×position_mult + WinProb + 做空收紧 + SL价格空间下限 | pos_mult = 1.0 字节等价；若 is_trial=True 则完全旁路（不改变仓位基线） |
@@ -810,7 +819,41 @@ def record_polling(self, symbol: str, inference: dict,
                    enable_inject: bool = False,
                    alpha_blend: float = 0.0,
                    fma_on_allowed: bool = None,
-                   fma_on_eff_threshold: float = None) -> Optional[int]:
+                   fma_on_eff_threshold: float = None,
+                   # T5 战略层影子字段（五维评分 + 方向状态）
+                   fd_crypto_war_state: str = None,
+                   fd_crypto_total_score: float = None,
+                   fd_crypto_cap_mode: float = None,
+                   fd_crypto_mult_mode: float = None,
+                   fd_us_stock_war_state: str = None,
+                   fd_us_stock_total_score: float = None,
+                   fd_precious_metal_war_state: str = None,
+                   fd_precious_metal_total_score: float = None,
+                   fd_crypto_dao_score: float = None,
+                   fd_crypto_tian_score: float = None,
+                   fd_crypto_di_score: float = None,
+                   fd_crypto_jiang_score: float = None,
+                   fd_crypto_fa_score: float = None,
+                   fd_us_stock_dao_score: float = None,
+                   fd_us_stock_tian_score: float = None,
+                   fd_us_stock_di_score: float = None,
+                   fd_us_stock_jiang_score: float = None,
+                   fd_us_stock_fa_score: float = None,
+                   fd_precious_metal_dao_score: float = None,
+                   fd_precious_metal_tian_score: float = None,
+                   fd_precious_metal_di_score: float = None,
+                   fd_precious_metal_jiang_score: float = None,
+                   fd_precious_metal_fa_score: float = None,
+                   direction_state: str = None,
+                   direction_bias: float = None,
+                   # T5 策略算法层影子字段
+                   sal_type: str = None,
+                   sal_regime: str = None,
+                   sal_calib_median: float = None,
+                   sal_calib_min: float = None,
+                   sal_calib_max: float = None,
+                   sal_gate: int = None,
+                   ) -> Optional[int]:
 ```
 
 **关键设计**：
@@ -818,10 +861,49 @@ def record_polling(self, symbol: str, inference: dict,
 - forecast 带 1h 缓存（`SHADOW_FORECAST_CACHE_TTL = 3600`，避免每次轮询重算）
 - 非 BTC 币种使用 `predict_with_fallback()` 自动回退到 BTC 预测
 - 异常被 catch，不阻断主流程
+- **方向状态兼容**：`direction_state`/`direction_bias` 在 `FiveDomainState` 中按资产类别存储为 dict（`{'crypto_usdt': 'SHORT_ONLY', ...}`），`polling_trader._record_shadow_log` 按当前币种资产类别取值，兼容 dict 和非 dict 两种结构
+- ★ **direction_state 闘门双路径覆盖**（2026-09-12 修复）：
+  - BCRM2.0 路径：`_execute_trade` L14255-L14291 检查 direction_state（★ 开关 `enable_bcrm_direction_state_check` 默认 False，影子模式：跳过拦截，仅 shadow_logger 记录方向状态供 A/B 对比观察；验证完成后设为 True 启用）
+  - evolution 路径：`_evolution_build_position` L9678-L9757 检查 direction_state（新增，默认启用）
+  - FREEZE→禁止开仓，SHORT_ONLY→禁止做多，LONG_ONLY→禁止做空，NEUTRAL→多空均可
+  - 两路径 FAIL-OPEN 设计一致：异常时放行，不阻塞交易热路径
+- ★ **战略层影子模式配置修正**（2026-09-12 修复）：
+  - `enable_five_domain=False`（总开关关闭，战略层独立验证不干预实盘）
+  - `enable_five_domain_shadow_mode=True`（影子拦截启用：`_shadow`保存真实计算值，`_cache`替换为中性默认值 war=ALLOW/cap=1.0/scores=50）
+  - 数据流分离：BCRM2.0 读`_cache`(中性值，字节等价"战略层不存在")；战略层独立下单读`_shadow or _cache`(真实值，受战略层真实控制)；SubSystemBridge/ShadowDebug读`_shadow or _cache`(真实值，自进化系统正确消费战略层输出)
+  - 三个入口均调用`_apply_fd_shadow_intercept`：初始化(L1616)、缓存命中(L1954)、日级重算(L2412)
+  - ★ **战略层独立下单消费_shadow**（2026-09-12 修复）：
+    - `_compute_strategy_open_signal` (L6973)：读`_shadow or _cache`，direction_state/five_scores 真实生效
+    - `_strategy_independent_open` (L7106)：读`_shadow or _cache`，cap_pct/position_mult 真实压缩仓位
+    - 隔离设计：战略层独立下单(`_shadow`真实值) vs BCRM2.0(`_cache`中性值)，通过 source_tag="strategy" 子池隔离
+- ★ **war_state vs direction_state 职责分离**（2026-09-12 修正）：
+  - war_state（ALLOW/COOLDOWN/RESTRICT/FREEZE）→ **只影响仓位大小**（通过 cap_pct：FREEZE=0.20, RESTRICT=0.20, COOLDOWN=0.50, ALLOW=1.0），**不拦截开仓**
+  - direction_state（LONG_ONLY/LONG_PREFER/NEUTRAL/SHORT_PREFER/SHORT_ONLY/FREEZE）→ **控制是否开仓 + 方向**（独立的方向开关）
+  - 战略层独立开仓 `_compute_strategy_open_signal` 仅检查 direction_state，war_state 仅通过 cap_pct 影响仓位计算
+  - 设计原则：仓位压制 ≠ 禁止开仓，方向冻结 ≠ 仓位压制
 
-**shadow_param_log 表**：40+ 字段，包含 reactive/forecast/三值（baseline/ai/effective）/actual/FMA 元数据，索引 `(symbol, timestamp)`
+**shadow_param_log 表**：74 字段，分为 6 组：
+| 分组 | 字段数 | 说明 |
+|------|--------|------|
+| reactive | 4 | L/T/C + regime |
+| reactive 乘数 | 4 | pos/tp/sl/threshold mult |
+| forecast | 4 | L/T + global_ranges + sector_weights |
+| baseline 三值 | 6 | pos/tp/sl/threshold/long/short |
+| ai_injected 三值 | 7 | pos/tp/sl/threshold/long/short/ls_ratio_cap |
+| effective 三值 | 6 | pos/tp/sl/threshold/long/short |
+| 元数据 | 2 | enable_inject, alpha_blend |
+| actual 交易参数 | 6 | direction/confidence/position/tp/sl/threshold |
+| FMA | 2 | fma_on_allowed, fma_on_eff_threshold |
+| **T5 战略层** | **8** | fd_crypto/us_stock/precious_metal 的 war_state + total_score + crypto 的 cap/mult |
+| **T5 五维明细** | **15** | crypto/us_stock/precious_metal 各 5 维（dao/tian/di/jiang/fa） |
+| **T5 方向状态** | **2** | direction_state（LONG_ONLY/SHORT_ONLY/NEUTRAL 等）+ direction_bias（-100~+100） |
+| **T5 策略层** | **6** | sal_type/regime/calib_median/calib_min/calib_max/gate |
 
-**API**：`GET /api/shadow/report?symbol=BTC&days=7`
+索引 `(symbol, timestamp)`。**INSERT 占位符必须严格等于列数（74）**，否则触发 `OperationalError` 回退到旧 schema（43 列），导致新字段全部 NULL。
+
+**API**：
+- `GET /api/shadow/report?symbol=BTC&days=7`
+- `GET /api/shadow/strategy-layer?limit=50`：返回战略层/策略层影子数据，供前端"五计庙算"Tab 展示（含 `direction_state`、`direction_bias`、三类资产 war_state/total_score）
 
 #### 3.5.7 Phase C 渐进上线
 

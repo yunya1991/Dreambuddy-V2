@@ -322,8 +322,19 @@ class FiveDomainFeatureComputer:
             # 子指标5: 大周期位置 → cycle4y_t_rel（已实现）
             cycle_score = self._compute_cycle4y_position(coin_data)
 
-            # 5个子指标等权
-            dao_raw = (rate_score + sc_score + sent_score + diff_score + cycle_score) / 5.0
+            # 子指标6: 高位滞涨风险（技术面）—— 用户经验：上涨后高位横盘=筑顶信号
+            #   ma200_dist>0.70 且 regime 非上升趋势 → 滞涨减分；否则中性50
+            #   FAIL-OPEN：缺 ma200_dist 或 regime → 50
+            high_stall_score = self._compute_high_stall_risk(coin_data)
+            # 保存到 coin_data 供 direction_context 使用（战略层方向偏置）
+            try:
+                if isinstance(coin_data, dict):
+                    coin_data["high_stall_score"] = high_stall_score
+            except Exception:
+                pass
+
+            # 6个子指标等权
+            dao_raw = (rate_score + sc_score + sent_score + diff_score + cycle_score + high_stall_score) / 6.0
             # Panewslab 增强（±20% 范围微调）：缺数据中性 0 boost，不变旧值
             # Spec §5.2.4：与 Odaily (1±10%) 独立乘法叠加，乘积顶 1.2×1.1=1.32，再 clamp [0,100]
             # Spec §5.3 H8 红线：enable_odaily_engine_boost=False 时 od boost 不注入
@@ -341,17 +352,46 @@ class FiveDomainFeatureComputer:
             return DEFAULT_NEUTRAL_SCORES["dao"]
 
     # ------------------------------------------------------------------
+    # BTC 强弱 Regime 检测（用户经验：BTC 强势与美股脱钩，弱势类风险资产）
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _compute_btc_regime(coin_data: Optional[Dict[str, Any]]) -> str:
+        """基于 regime + MA200 距离判定 BTC 强弱。
+
+        STRONG: 上升趋势/突破 且 价格在 MA200 上方较远
+        WEAK:   下降趋势 或 价格在 MA200 下方
+        NEUTRAL: 其他
+        FAIL-OPEN → NEUTRAL
+        """
+        if not coin_data:
+            return "NEUTRAL"
+        regime = str(coin_data.get("regime", "ranging") or "ranging")
+        ma200_dist = coin_data.get("ma200_distance_percentile")
+        try:
+            ma200_dist = float(ma200_dist) if ma200_dist is not None else 0.5
+        except (TypeError, ValueError):
+            ma200_dist = 0.5
+        if regime in ("trend_up", "breakout") and ma200_dist > 0.55:
+            return "STRONG"
+        if regime == "trend_down" or ma200_dist < 0.45:
+            return "WEAK"
+        return "NEUTRAL"
+
+    # ------------------------------------------------------------------
     # Panewslab：dao 维度 delta boost [-0.2, 0.2]（fail-open 0）
     # 机构净流入 + ETF 流量 + 政策景气度 cycle_sentiment + 扩散广度命中
     # ------------------------------------------------------------------
     def _pn_dao_boost(self, coin_data: Optional[Dict[str, Any]]) -> float:
         if not coin_data:
             return 0.0
+        # 注入 btc_regime（供 P6 动态相关性使用；用户经验：BTC 弱势与美股关联增强）
+        if "btc_regime" not in coin_data:
+            coin_data["btc_regime"] = self._compute_btc_regime(coin_data)
         deltas: List[float] = []
-        # P1：机构净流入 ETF flow_norm ∈ [-1,1] → ±0.05
+        # P1：机构净流入 ETF flow_norm ∈ [-1,1] → ±0.15（用户经验：滞涨后 ETF 流出信号价值高）
         flow_norm = coin_data.get("pn_btc_etf_flow_norm")
         if isinstance(flow_norm, (int, float)):
-            deltas.append(float(flow_norm) * 0.05)
+            deltas.append(float(flow_norm) * 0.15)
         # P2：稳定币变化率 / BTC 集中度（越高越集中→偏多）
         btc_dom_focus = coin_data.get("pn_btc_dom_focus")
         if isinstance(btc_dom_focus, (int, float)):
@@ -372,6 +412,16 @@ class FiveDomainFeatureComputer:
         breadth = coin_data.get("pn_holdings_breadth_hit_ratio")
         if isinstance(breadth, (int, float)):
             deltas.append((float(breadth) - 0.5) * 0.06)
+        # P6：美股风险（VIX）× BTC regime 动态权重（用户经验：BTC 弱势时与美股关联增强）
+        vix = coin_data.get("pn_us_vix")
+        if vix is None:
+            vix = coin_data.get("vix_close")
+        btc_regime = coin_data.get("btc_regime", "NEUTRAL")
+        if isinstance(vix, (int, float)):
+            regime_mult = {"WEAK": 2.0, "STRONG": 0.5, "NEUTRAL": 1.0}.get(btc_regime, 1.0)
+            # VIX 归一化：20→0, 35→-0.04, 12→+0.02，乘以 regime 倍数
+            vix_norm = (20.0 - float(vix)) / 15.0 * 0.04
+            deltas.append(vix_norm * regime_mult)
         if not deltas:
             return 0.0
         avg = sum(deltas) / float(len(deltas))
@@ -398,6 +448,37 @@ class FiveDomainFeatureComputer:
             return 50  # 中段偏热
         else:
             return 35  # 顶部区域：减分
+
+    # ------------------------------------------------------------------
+    # 高位滞涨风险（技术面）—— 用户经验：60日大涨后高位横盘=筑顶信号
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _compute_high_stall_risk(coin_data: Optional[Dict[str, Any]]) -> int:
+        """价格高位 + 非上升趋势 → 滞涨减分；否则中性50。
+
+        逻辑：
+        - ma200_distance_percentile > 0.70（价格在MA200上方较远=高位）
+          且 regime 不在 ("trend_up","breakout")（非上升趋势/突破=滞涨）
+          → 高位滞涨，减至 30-40 分
+        - 高位但仍在上升趋势 → 强势，55 分
+        - 其他 → 50 中性
+        FAIL-OPEN → 50
+        """
+        if not coin_data:
+            return 50
+        ma200_dist = coin_data.get("ma200_distance_percentile")
+        if ma200_dist is None:
+            return 50
+        try:
+            ma200_dist = float(ma200_dist)
+        except (TypeError, ValueError):
+            return 50
+        regime = str(coin_data.get("regime", "ranging") or "ranging")
+        if ma200_dist > 0.70:
+            if regime in ("trend_up", "breakout"):
+                return 55  # 高位强势
+            return 35  # 高位滞涨 → 筑顶风险
+        return 50  # 非高位，中性
 
     # ==================================================================
     # 天 — 时间节奏（§三 L114-138）
@@ -2514,8 +2595,49 @@ class FiveDomainFeatureComputer:
                                 "confidence": min(1.0, abs(float(getattr(top, "combined_score", 0.0)))),
                                 "data_quality": "ok",
                             }
-                    except Exception:
-                        pass
+                    except Exception as _fc_err:
+                        # 记录真实异常便于后续诊断
+                        cls_out["feature_correlation_error"] = (
+                            f"{type(_fc_err).__name__}: {_fc_err}"
+                        )
+                        # Fallback: 用 force_vectors 的 magnitude 作为简单排序，
+                        # 保证 feature_correlation / primary_contradiction 不为 None
+                        try:
+                            _fv_dict = cls_out.get("force_vectors") or {}
+                            _fallback = []
+                            for _dim in ("dao", "tian", "di", "jiang", "fa"):
+                                _v = _fv_dict.get(_dim, {})
+                                _mag = float(_v.get("magnitude", 0.0))
+                                _dir = float(_v.get("direction", 0.0))
+                                _fallback.append({
+                                    "rank": 0,
+                                    "feature_name": _dim,
+                                    "dimension": _dim,
+                                    "ic_30d": _dir,  # 用 direction 近似 IC
+                                    "mi_30d": 0.0,
+                                    "combined_score": abs(_mag),
+                                    "ic_weight": 0.6,
+                                    "beta_weight": 1.0,
+                                    "final_weight": 0.0,
+                                })
+                            # 按 combined_score 降序赋 rank
+                            _fallback.sort(key=lambda x: x["combined_score"], reverse=True)
+                            for _i, _f in enumerate(_fallback):
+                                _f["rank"] = _i + 1
+                            cls_out["feature_correlation"] = _fallback
+                            if _fallback:
+                                _top = _fallback[0]
+                                cls_out["primary_contradiction"] = {
+                                    "feature_name": _top["feature_name"],
+                                    "ic": _top["ic_30d"],
+                                    "mi": _top["mi_30d"],
+                                    "final_score": _top["combined_score"],
+                                    "direction": "up" if _top["ic_30d"] >= 0 else "down",
+                                    "confidence": min(1.0, abs(_top["combined_score"])),
+                                    "data_quality": "fallback",
+                                }
+                        except Exception:
+                            pass  # fallback 失败保持原 None
 
                     # 3c. PCA 共振分析（定强度：要求 five_dim_powers dict + dominant_dim 名）
                     try:

@@ -21,15 +21,17 @@ _CACHE_TTL = 6 * 3600  # 6 小时
 class ESSDirectionProvider:
     """策略基因 ESS 方向提供器"""
 
-    def __init__(self, gene_data_root: str, min_sample: int = 0) -> None:
+    def __init__(self, gene_data_root: str = "", min_sample: int = 0,
+                 gene_root: str = "") -> None:
         """
         Args:
             gene_data_root: gene_data 目录路径
             min_sample: 最小样本数阈值
                        Phase 0: min_sample=0 (降级，允许样本不足)
                        Phase 1+: min_sample=30 (蓝图硬约束)
+            gene_root: gene_data_root 的别名（向后兼容测试调用）
         """
-        self._root = gene_data_root
+        self._root = gene_data_root or gene_root
         self._min_sample = min_sample
         self._cache_ts: float = 0.0
         self._cached_direction: str = ""
@@ -125,12 +127,19 @@ class ESSDirectionProvider:
         """手动失效缓存（测试用）"""
         self._cache_ts = 0.0
 
-    def update_ess(self, ess_delta: float, symbol: str = "") -> bool:
+    def update_ess(
+        self,
+        ess_delta: float = 0.0,
+        symbol: str = "",
+        combo_id: str = "",
+        ess_type: str = "entry",
+    ) -> bool:
         """
         P0 闭环修复：将平仓反思得到的 ess_delta 写回基因库。
 
-        策略: 更新 ESS 最高的组合（决策主导者），clamp 到 [0,1]，
+        策略: 更新 ESS 最高的组合（或指定 combo_id），clamp 到 [0,1]，
               n_samples+1，记录 last_updated 时间戳。
+        ess_type: "entry"（默认，入场轨）或 "exit"（离场轨），双轨隔离。
         FAIL-OPEN: 任何异常返回 False，不阻断交易。
         """
         import json
@@ -143,18 +152,28 @@ class ESSDirectionProvider:
             data = json.loads(lib_path.read_text(encoding="utf-8"))
             if not data:
                 return False
-            # 找 ESS 最高的组合（决策主导者）
-            top_idx = max(range(len(data)), key=lambda i: float(data[i].get("ess", 0)))
-            combo = data[top_idx]
-            old_ess = float(combo.get("ess", 0.5))
+            # 定位目标组合：指定 combo_id 优先，否则取 ESS 最高
+            target_idx = None
+            if combo_id:
+                for i, c in enumerate(data):
+                    if c.get("combo_id") == combo_id:
+                        target_idx = i
+                        break
+            if target_idx is None:
+                target_idx = max(range(len(data)), key=lambda i: float(data[i].get("ess", 0)))
+            combo = data[target_idx]
+            ess_key = "ess" if ess_type == "entry" else "ess_exit"
+            old_ess = float(combo.get(ess_key, 0.5))
             new_ess = max(0.0, min(1.0, old_ess + ess_delta))
-            combo["ess"] = round(new_ess, 6)
-            combo["n_samples"] = int(combo.get("n_samples", 0)) + 1
+            combo[ess_key] = round(new_ess, 6)
+            samples_key = "n_samples" if ess_type == "entry" else "n_samples_exit"
+            combo[samples_key] = int(combo.get(samples_key, 0)) + 1
             combo["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
             if symbol:
                 combo.setdefault("trade_history", []).append({
                     "symbol": symbol,
                     "ess_delta": round(ess_delta, 6),
+                    "ess_type": ess_type,
                     "ts": combo["last_updated"],
                 })
             lib_path.write_text(
