@@ -4,6 +4,9 @@
 > **状态**: 🔬 调研中 / 待持续研究
 > **创建日期**: 2026-09-13
 > **调研动机**: DeepSeek 官方发布的 agent harness 框架，其"Agent = Model + Harness"哲学与 Dreambuddy OS"调度层纯编排、不重复建设"信条高度相似，需评估借鉴价值与落地路径
+> **扩展阅读**:
+> - [RESEARCH_DREAMOS_HARNESS_FULL_ALIGNMENT.md](../RESEARCH_DREAMOS_HARNESS_FULL_ALIGNMENT.md) — 全栈八大子系统对齐调研（含边界守护理论）
+> - [RESEARCH_SACG_HARNESS_MAPPING.md](../RESEARCH_SACG_HARNESS_MAPPING.md) — SACG 四层 → Harness 扩展点详细映射设计（含伪代码与降级路径）
 > **调研来源**:
 > - 官方仓库: https://github.com/deepseek-ai/deepseek-harness
 > - 官方文档: https://deepseek.com/harness/en/

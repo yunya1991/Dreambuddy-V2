@@ -741,6 +741,9 @@ class CognitiveDaemon:
         if mgr:
             mgr.check_timeout()
 
+        # === G 层事件自动消费（Phase 2 集成）===
+        self._check_g_layer_events()
+
         # 扫描变更
         changes = scan_changed_files(str(self.watch_dir), self.snapshot)
 
@@ -792,6 +795,100 @@ class CognitiveDaemon:
             if (idle >= idle_threshold
                     and not already_ruminate_today):
                 self._ruminate()
+
+    def _check_g_layer_events(self):
+        """G 层事件自动消费（Phase 2 集成）
+
+        监听 dream-harness-bridge 的 g_layer_events.jsonl，
+        将 OS 运行事件自动 record 到认知系统。
+
+        设计边界:
+            - 只处理新增事件（通过已处理事件 ID 去重）
+            - FAIL-OPEN: 读取/record 失败不影响 daemon 主循环
+            - 不修改 g_layer_events.jsonl（只读消费）
+        """
+        try:
+            g_layer_path = self._find_g_layer_events_path()
+            if not g_layer_path or not g_layer_path.exists():
+                return
+
+            # 读取新事件（按行号去重）
+            if not hasattr(self, "_g_layer_last_pos"):
+                self._g_layer_last_pos = 0
+
+            with open(g_layer_path, "r", encoding="utf-8") as f:
+                f.seek(self._g_layer_last_pos)
+                new_lines = f.readlines()
+                self._g_layer_last_pos = f.tell()
+
+            if not new_lines:
+                return
+
+            # 导入认知闭环
+            from cognitive_loop_entry import get_cle
+            cle = get_cle()
+
+            for line in new_lines:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                    self._process_g_layer_event(event, cle)
+                except Exception:
+                    continue  # FAIL-OPEN: 跳过单条事件解析失败
+
+            if self.verbose and new_lines:
+                print(f"[Daemon][G层] 消费 {len(new_lines)} 条新事件", file=sys.stderr)
+
+        except Exception:
+            return  # FAIL-OPEN
+
+    def _find_g_layer_events_path(self) -> Optional[Path]:
+        """查找 g_layer_events.jsonl 路径"""
+        # 相对于 daemon 脚本位置查找 dream-harness-bridge
+        candidates = [
+            _SCRIPT_DIR.parent.parent / "1-ARCHITECTURE" / "dream-harness-bridge" / "packages" / ".session-projections" / "g_layer_events.jsonl",
+            _SCRIPT_DIR.parent.parent / "1-ARCHITECTURE" / "dream-harness-bridge" / "packages" / "python-server" / "g_layer_events.jsonl",
+        ]
+        for p in candidates:
+            if p.exists():
+                return p
+        return None
+
+    def _process_g_layer_event(self, event: dict, cle) -> None:
+        """将 G 层事件转化为认知 record
+
+        事件类型 → 认知记忆 tags 映射:
+            intent_gate     → OS.S层,意图识别
+            graph_node      → OS.A层/C层,图编排
+            node_execution  → OS.C层,节点执行
+            node_result     → OS.C层,节点结果
+        """
+        event_type = event.get("event_type", "unknown")
+        session_id = event.get("session_id", "unknown")
+        event_data = event.get("event_data", {})
+
+        # 构建认知记忆内容
+        tag_map = {
+            "intent_gate": "OS.S层,意图识别",
+            "graph_node": "OS.A层,图编排",
+            "node_execution": "OS.C层,节点执行",
+            "node_result": "OS.C层,节点结果",
+        }
+        tags = tag_map.get(event_type, f"OS.G层,{event_type}")
+
+        # 提取关键信息作为记忆内容
+        content_parts = [f"[G层事件][{event_type}] session={session_id}"]
+        for k, v in event_data.items():
+            content_parts.append(f"{k}={v}")
+        content = " | ".join(content_parts)[:300]
+
+        # record 到认知系统（C 级，运行事件为假设级）
+        try:
+            cle.record(content=content, quality_level="C", tags=tags)
+        except Exception:
+            pass  # FAIL-OPEN
 
     def _ruminate(self):
         """P2-7: 静息态反刍——从近期 episode 提取模式，记录为 C 级假设记忆"""

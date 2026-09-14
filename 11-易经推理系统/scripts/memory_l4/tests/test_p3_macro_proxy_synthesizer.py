@@ -202,9 +202,10 @@ _chk("T6b FOMO proxy → 把 RANGE → FOMO_RALLY（R3 覆盖）",
 
 # ========================================================================
 section("📊 汇总")
-if _all_pass:
-    print("全部 PASS ✅")
-    sys.exit(0)
-else:
-    print("有 FAIL ❌")
-    sys.exit(1)
+if __name__ == "__main__":
+    if _all_pass:
+        print("全部 PASS ✅")
+        sys.exit(0)
+    else:
+        print("有 FAIL ❌")
+        sys.exit(1)

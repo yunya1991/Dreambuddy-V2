@@ -897,11 +897,12 @@ class PollingTrader:
         # 用户决策 2026-09-09：evolution 子池上限 3→5；测试仓（BCRM is_trial / Evolution tier=probe）最多 2 单，避免挤压正常仓位
         # 用户决策 2026-09-11：分离上限 — Evolution probe 独立 4 单，BCRM is_trial 保持 2 单
         # 用户决策 2026-09-11：放大开仓容量 — evolution 5→10, probe 4→8（总名义 ~9200U < 可用 10305U）
-        self.SUBPOOL_MAX_POSITIONS: Dict[str, int] = {"bdsm": 3, "bcrm": 5, "evolution": 10, "strategy": 3}
+        # 用户决策 2026-09-14：收敛自进化开仓容量 — evolution 10→3（控制总风险敞口）
+        self.SUBPOOL_MAX_POSITIONS: Dict[str, int] = {"bdsm": 3, "bcrm": 5, "evolution": 3, "strategy": 3}
         # 测试仓（试错仓）上限：BCRM 的 is_trial=True 最多 2 单
         self.MAX_TRIAL_POSITIONS: int = 2
-        # Evolution probe tier 独立上限：4 单（从8降低，避免低确信度试探仓过多）
-        self.MAX_EVOLUTION_PROBE_POSITIONS: int = 4
+        # Evolution probe tier 独立上限：2 单（跟随总上限收敛，probe 为 evolution 子集不得超过总上限）
+        self.MAX_EVOLUTION_PROBE_POSITIONS: int = 2
         # 易经子池兜底上限（BCRM 5 + BDSM 3 = 8，不含 evolution 子池），不受启动参数覆盖
         _yijing_max = self.SUBPOOL_MAX_POSITIONS["bcrm"] + self.SUBPOOL_MAX_POSITIONS["bdsm"]
         self.max_positions = _yijing_max  # 固定 8
@@ -1060,10 +1061,10 @@ class PollingTrader:
             l0_max_hold_sec=172800,
             l0_max_loss_pct=-0.05,  # 最后防线不变
             tb_enabled=True,
-            tb_sl_atr_mult=2.5,  # 原 1.5 → 2.5：放宽ATR-based止损，避免震荡洗出
-            tb_tp_atr_mult=5.0,  # 原 3.0 → 5.0：盈亏比保持~2:1
-            tb_sl_min_pct=0.06,  # 原 0.045 → 0.06：订单级最小止损 6%（对应价格0.6%@10x）
-            tb_tp_min_pct=0.06,  # 原 0.04 → 0.06：同放宽
+            tb_sl_atr_mult=5.0,  # SL翻倍：2.5→5.0，3x杠杆适配防震荡扫损
+            tb_tp_atr_mult=2.5,  # TP减半：5.0→2.5，更容易止盈
+            tb_sl_min_pct=0.12,  # SL翻倍：0.06→0.12，订单级最小止损 12%
+            tb_tp_min_pct=0.03,  # TP减半：0.06→0.03
             trailing_enabled=True,
             trailing_arm_profit_pct=0.06,  # 原 0.04 → 0.06：达到6%订单盈利才启用追踪止盈，避免过早启动
             trailing_retrace_pct=0.05,  # 原 0.035 → 0.05：允许5%回调而非3.5%，减少利润锁定过急
@@ -3591,14 +3592,15 @@ class PollingTrader:
             # Phase 4.3 三因子共振做空信号 + BTC 强弱 regime
             _three_factor_short_signal = None
             _btc_regime = None
+            _coin_cls = None  # 预初始化，避免 _fds 为 None 时 UnboundLocalError
 
-            _fds = getattr(self, "_five_domain_state_shadow", None) or self._five_domain_state_cache
+            _fds = getattr(self, "_five_domain_state_shadow", None) or getattr(self, "_five_domain_state_cache", None)
             _fds_dir_state = getattr(_fds, "direction_state", "MISSING") if _fds is not None else "N/A"
             _fds_dir_bias = getattr(_fds, "direction_bias", "MISSING") if _fds is not None else "N/A"
             self._log(
                 f"[ShadowDebug] coin={coin} _fds_type={type(_fds).__name__} "
                 f"shadow_none={getattr(self, '_five_domain_state_shadow', None) is None} "
-                f"cache_none={self._five_domain_state_cache is None} "
+                f"cache_none={getattr(self, '_five_domain_state_cache', None) is None} "
                 f"dir_state={_fds_dir_state!r} "
                 f"dir_bias={_fds_dir_bias!r}",
                 "DEBUG",
@@ -4091,7 +4093,14 @@ class PollingTrader:
     def _sync_existing_positions(self):
         """同步 OKX 已有持仓到本地跟踪器，同步止损/止盈挂单，并修复不合理SL（如PUMP 0.586%过近止损）"""
         self._log("[持仓同步] 检查 OKX 已有持仓...", "INFO")
-        for coin in self.coins:
+        # 合并 --coins 列表和 position_tracker 中已跟踪的持仓币种，确保 evolution 等非 --coins 持仓也被检查
+        _tracked_coins = set(self.coins)
+        try:
+            for _inst in self.position_tracker.open_positions:
+                _tracked_coins.add(_inst.replace("-USDT-SWAP", ""))
+        except Exception:
+            pass
+        for coin in sorted(_tracked_coins):
             inst_id = f"{coin}-USDT-SWAP"
             pos_result = self.okx_client.get_positions(inst_id)
             if not pos_result.get("ok"):
@@ -4249,6 +4258,95 @@ class PollingTrader:
             self._log(f"[_fetch_sl_tp_from_okx] {inst_id} 读取失败（忽略）: {_e}", "DEBUG")
         return sl_px, tp_px
 
+    def _verify_algo_sltp(
+        self, inst_id: str, pos_side: str,
+        expected_sl_px: float, expected_tp_px: float,
+        max_retries: int = 1,
+    ) -> bool:
+        """P2-2: 开仓后校验 OKX algo SL/TP 单是否真正生效，缺失时重试。
+
+        PUMP案例根因：SL algo 单下单后未真正生效，导致强平时无止损保护。
+        本方法在开仓后立即调用 get_algo_orders 校验，缺失则重下并告警。
+
+        Args:
+            inst_id: 合约ID
+            pos_side: long/short
+            expected_sl_px: 期望的 SL 触发价
+            expected_tp_px: 期望的 TP 触发价
+            max_retries: 最大重试次数（默认1次）
+
+        Returns:
+            True 表示 SL/TP 均生效（或无需校验）；False 表示校验失败且重试无效。
+        """
+        okx_client = getattr(self, "okx_client", None)
+        if okx_client is None or not hasattr(okx_client, "get_algo_orders"):
+            return True  # 无校验能力，不阻塞
+
+        def _check() -> tuple:
+            """返回 (has_sl, has_tp)"""
+            try:
+                orders = okx_client.get_algo_orders(inst_id=inst_id)
+            except Exception:
+                return False, False
+            has_sl = False
+            has_tp = False
+            for od in orders.get("orders", []):
+                _sl = od.get("sl_trigger_px") or od.get("stop_loss_px") or od.get("sl_px")
+                _tp = od.get("tp_trigger_px") or od.get("take_profit_px") or od.get("tp_px")
+                if _sl:
+                    try:
+                        if float(_sl) > 0:
+                            has_sl = True
+                    except Exception:
+                        pass
+                if _tp:
+                    try:
+                        if float(_tp) > 0:
+                            has_tp = True
+                    except Exception:
+                        pass
+            return has_sl, has_tp
+
+        has_sl, has_tp = _check()
+        if has_sl and has_tp:
+            return True
+
+        # 缺失 SL 或 TP → 重试下发
+        for attempt in range(max_retries):
+            try:
+                if hasattr(okx_client, "cancel_algo_orders"):
+                    okx_client.cancel_algo_orders(instId=inst_id)
+            except Exception:
+                pass
+            try:
+                if hasattr(okx_client, "place_stop_loss_take_profit"):
+                    okx_client.place_stop_loss_take_profit(
+                        inst_id=inst_id, pos_side=pos_side,
+                        stop_loss_px=expected_sl_px,
+                        take_profit_px=expected_tp_px,
+                        reason=f"verify_retry_sl_tp_attempt_{attempt+1}",
+                    )
+            except Exception as _re:
+                self._log(
+                    f"[algo校验] {inst_id} 重试下发SL/TP异常: {_re}", "WARN",
+                )
+            # 重新校验
+            has_sl, has_tp = _check()
+            if has_sl and has_tp:
+                self._log(
+                    f"[algo校验] {inst_id} 重试后SL/TP已生效", "INFO",
+                )
+                return True
+
+        # 重试后仍缺失 → 告警
+        self._log(
+            f"[algo校验] ⚠️ {inst_id} SL/TP algo 单校验失败！"
+            f" has_sl={has_sl} has_tp={has_tp}（重试{max_retries}次仍无效，"
+            f"可能导致无止损保护！）",
+            "ERROR",
+        )
+        return False
+
     def _sync_and_repair_sl_tp_for_position(self, coin: str, inst_id: str, pos: dict):
         """对已同步过的持仓，检查OKX上实际SL/TP挂单是否合理，不合理则自动修复。
 
@@ -4314,8 +4412,8 @@ class PollingTrader:
             if _is_evo_for_check and not (_sl_missing or _tp_missing):
                 _evo_snap = (getattr(_rec_here_for_check, "market_snapshot", None) or {})
                 _evo_tier_chk = str(_evo_snap.get("tier", "") or "").lower()
-                _tier_sl_req = {"probe": 0.04, "standard": 0.04, "trend": 0.04}.get(_evo_tier_chk, 0.04)
-                _tier_tp_req = {"probe": 0.12, "standard": 0.12, "trend": 0.12}.get(_evo_tier_chk, 0.12)
+                _tier_sl_req = {"probe": 0.08, "standard": 0.08, "trend": 0.08}.get(_evo_tier_chk, 0.08)
+                _tier_tp_req = {"probe": 0.06, "standard": 0.06, "trend": 0.06}.get(_evo_tier_chk, 0.06)
                 _cur_sl_pct = abs(_sl_px - entry_px) / entry_px if _sl_px and entry_px > 0 else 0
                 _cur_tp_pct = abs(_tp_px - entry_px) / entry_px if _tp_px and entry_px > 0 else 0
                 if _cur_sl_pct < _tier_sl_req * 0.9 or _cur_tp_pct < _tier_tp_req * 0.9:
@@ -4351,11 +4449,11 @@ class PollingTrader:
                     if _evo_sl_pct <= 0 or _evo_tp_pct <= 0:
                         _evo_tier = str(_rec_snap.get("tier", "") or "").lower()
                         _tier_defaults = {
-                            "probe": (0.04, 0.12),     # SL=4%, TP=12%
-                            "standard": (0.04, 0.12),  # SL=4%, TP=12%
-                            "trend": (0.04, 0.12),     # SL=4%, TP=12%
+                            "probe": (0.08, 0.06),     # SL翻倍4→8%, TP减半12→6%
+                            "standard": (0.08, 0.06),  # SL翻倍4→8%, TP减半12→6%
+                            "trend": (0.08, 0.06),     # SL翻倍4→8%, TP减半12→6%
                         }
-                        _def_sl, _def_tp = _tier_defaults.get(_evo_tier, (0.04, 0.12))
+                        _def_sl, _def_tp = _tier_defaults.get(_evo_tier, (0.08, 0.06))
                         if _evo_sl_pct <= 0:
                             _evo_sl_pct = _def_sl
                         if _evo_tp_pct <= 0:
@@ -4396,8 +4494,49 @@ class PollingTrader:
                 _tp_px, entry_px, pos_side, leverage=_lev_here,
                 allow_lower=False, coin=coin)
 
+            # ── 时间衰减 TP：持仓越久，TP 越靠近入场价（更容易止盈退出）──
+            # 公式: tp_pct(t) = max(TP_FLOOR, TP_BASE - (TP_BASE - TP_FLOOR) * max(0, t-12)/60)
+            # t<12h: TP=6%(不衰减), 12h~72h线性衰减, >72h: TP=1.5%(下限)
+            _TP_DECAY_BASE = 0.06   # 初始 TP 间距 6%
+            _TP_DECAY_FLOOR = 0.015  # 衰减下限 1.5%（接近保本）
+            _TP_DECAY_GRACE_HOURS = 12  # 前 12h 不衰减
+            _TP_DECAY_FULL_HOURS = 72  # 72h 后到底
+            _tp_decayed = False
+            try:
+                _rec_for_age = self.position_tracker.get_open_position(inst_id)
+                if _rec_for_age:
+                    _open_ts = getattr(_rec_for_age, "open_ts", None) or getattr(_rec_for_age, "entry_ts", None)
+                    # 兼容 entry_time ISO 字符串
+                    if not _open_ts:
+                        _entry_time_str = getattr(_rec_for_age, "entry_time", None) or ""
+                        if _entry_time_str:
+                            try:
+                                from datetime import datetime as _dt
+                                _open_ts = _dt.fromisoformat(_entry_time_str.replace("Z", "+00:00")).timestamp()
+                            except Exception:
+                                _open_ts = None
+                    if _open_ts:
+                        import time as _time_mod
+                        _age_hours = (_time_mod.time() - float(_open_ts)) / 3600.0
+                        if _age_hours > _TP_DECAY_GRACE_HOURS:
+                            _decay_progress = min(1.0, (_age_hours - _TP_DECAY_GRACE_HOURS) / (_TP_DECAY_FULL_HOURS - _TP_DECAY_GRACE_HOURS))
+                            _decayed_tp_pct = _TP_DECAY_BASE - (_TP_DECAY_BASE - _TP_DECAY_FLOOR) * _decay_progress
+                            _current_tp_pct = abs(_new_tp - entry_px) / entry_px if entry_px > 0 else 0
+                            if _current_tp_pct > _decayed_tp_pct:
+                                _tp_dir = 1 if pos_side == "long" else -1
+                                _new_tp = round(entry_px * (1 + _tp_dir * _decayed_tp_pct), 6)
+                                _tp_decayed = True
+                                self._log(
+                                    f"[持仓同步·时间衰减TP] {coin} {pos_side} age={_age_hours:.1f}h "
+                                    f"TP间距 {_current_tp_pct*100:.2f}%→{_decayed_tp_pct*100:.2f}% "
+                                    f"(衰减进度={_decay_progress*100:.0f}%)",
+                                    "INFO",
+                                )
+            except Exception as _te:
+                self._log(f"[持仓同步·时间衰减TP] {coin} 计算异常(FAIL-OPEN忽略): {_te}", "DEBUG")
+
             # ── 有任一门禁钳制 或 触发缺套单重算 → 下发新套单
-            if _need_issue or _sl_clamped or _tp_clamped:
+            if _need_issue or _sl_clamped or _tp_clamped or _tp_decayed:
                 _extra = ""
                 if _sl_cfl.get("liq_conflict") or _tp_cfl.get("liq_conflict"):
                     _extra = f" 【间距/爆仓冲突→已按爆仓安全优先】L={_lev_here:.0f}x过高，请立即将{coin}杠杆降到≤20x，否则SL/TP永远在爆仓线附近漂移！"
@@ -4412,6 +4551,11 @@ class PollingTrader:
                 if _tp_clamped:
                     _parts.append(
                         f"TP修复: {_tp_px:.6f}(间距{_tp_old_pct*100:.2f}%) → {_new_tp:.6f}"
+                        f"(间距{abs(_new_tp-entry_px)/entry_px*100:.2f}%)"
+                    )
+                if _tp_decayed:
+                    _parts.append(
+                        f"TP时间衰减 → {_new_tp:.6f}"
                         f"(间距{abs(_new_tp-entry_px)/entry_px*100:.2f}%)"
                     )
                 self._log(
@@ -4851,15 +4995,16 @@ class PollingTrader:
                 reduce_ratio = b1.reduce_ratio
 
         # 经典指标离场回退：BCRM 未产生止盈止损时，用 ATR 计算止损止盈
-        # 2026-09-09 放大：SL=4.0~6.0×ATR，TP=3.0×SL，硬下限 4% 防低波扫损
+        # 2026-09-14 SL翻倍适配3x杠杆：SL=8.0~12.0×ATR，TP=3.0×SL，硬下限 8% 防低波扫损
         if sl_px == 0 or tp_px == 0:
             price = snapshot.get("price", 0)
             volatility = snapshot.get("volatility", 0.03)
             if price > 0:
                 # ATR 近似：用波动率 × 价格作为 ATR 估计
                 atr = max(price * volatility, price * 0.005)  # 至少 0.5%
-                # 波动率自适应 ATR 倍率：低波 4.0×ATR，高波 6.0×ATR，盈亏比 3:1
+                # 波动率自适应 ATR 倍率：SL翻倍适配3x杠杆
                 atr_mult_sl, atr_mult_tp = RiskManager.volatility_adaptive_atr_mult(volatility)
+                atr_mult_sl *= 2.0  # SL翻倍：防震荡扫损（3x杠杆适配）
                 # 高置信度进一步放宽：置信度 ≥0.9 时 SL/TP 再 ×1.3
                 if confidence >= 0.9:
                     atr_mult_sl *= 1.3
@@ -4871,10 +5016,10 @@ class PollingTrader:
                 else:
                     fallback_sl = round(price + atr * atr_mult_sl, 4)
                     fallback_tp = round(price - atr * atr_mult_tp, 4)
-                # 硬下限：SL 间距至少 4%（防低波扫损），TP 上限 30%
+                # 硬下限：SL 间距至少 8%（翻倍防低波扫损），TP 上限 30%
                 sl_pct_fb = abs(price - fallback_sl) / price if price > 0 else 0
-                if sl_pct_fb < 0.04:
-                    fallback_sl = round(price * (1 - 0.04), 4) if direction == "UP" else round(price * (1 + 0.04), 4)
+                if sl_pct_fb < 0.08:
+                    fallback_sl = round(price * (1 - 0.08), 4) if direction == "UP" else round(price * (1 + 0.08), 4)
                 tp_pct_fb = abs(fallback_tp - price) / price if price > 0 else 0
                 if tp_pct_fb > 0.30:
                     fallback_tp = round(price * (1 + 0.30), 4) if direction == "UP" else round(price * (1 - 0.30), 4)
@@ -5133,12 +5278,12 @@ class PollingTrader:
                 self._log(f"[{coin}] CBR 增强失败: {e}", "WARN")
 
         # 计算 ATR 止盈止损
-        # P1-2: 统一ATR止损倍率为2.5~3.0区间（adapter=2.5, 主SL=3.0, ExitConfig=2.5）
-        # 高置信度(≥0.9)再×1.3放宽至3.9×ATR，盈亏比保持~2:1
+        # P1-2: 3x杠杆适配——SL=6.0×ATR防震荡扫损，TP=3.0×ATR更容易止盈
+        # 高置信度(≥0.9)再×1.3放宽
         sl_px, tp_px = 0, 0
         if atr > 0:
-            sl_mult = 3.0  # 主止损线 3.0×ATR
-            tp_mult = 6.0  # 止盈 6.0×ATR
+            sl_mult = 6.0  # SL翻倍：3.0→6.0，3x杠杆适配防震荡扫损
+            tp_mult = 3.0  # TP减半：6.0→3.0，更容易止盈
             if confidence >= 0.9:
                 sl_mult *= 1.3
                 tp_mult *= 1.3
@@ -5699,7 +5844,7 @@ class PollingTrader:
             "position_mult":  0.35,
             "tp_mult":        0.75,
             "sl_mult":        0.65,
-            "threshold_mult": 1.15,
+            "threshold_mult": 1.25,
         },
         "FOMO_RALLY": {
             "position_mult":  0.85,
@@ -5972,9 +6117,10 @@ class PollingTrader:
         """统计指定子池内的测试仓（试错仓）数量。
 
         - BCRM/BDSM 子池：is_trial=True 的持仓（上限 MAX_TRIAL_POSITIONS=2）
-        - evolution 子池：market_snapshot["tier"]=="probe" 的持仓（上限 MAX_EVOLUTION_PROBE_POSITIONS=4）
+        - evolution 子池：market_snapshot["tier"]=="probe" 的持仓（上限 MAX_EVOLUTION_PROBE_POSITIONS=2）
 
         用户决策 2026-09-11：分离上限 — Evolution probe 独立 4 单，BCRM is_trial 保持 2 单。
+        用户决策 2026-09-14：收敛上限 — Evolution probe 4→2，跟随总上限收敛。
         """
         tag = str(source_tag or "")
         total = 0
@@ -6197,6 +6343,16 @@ class PollingTrader:
                         f"bdsm_short_only_dropped: snapshot={constraint} want_direction={direction}",
                     )
                 return True, "bdsm_short_only_same_direction"
+            # LONG_BLOCKED：禁做多（拦截 UP），允许做空（放行 DOWN）。
+            # §4.1.2 三层矛盾感知约束中间档：value_exit=full_exit+bds<0+conf≥0.70 或
+            # val_pct>85+bds<0+sufficient 触发，比 SHORT_ONLY 温和（不强制做空）。
+            if constraint == "LONG_BLOCKED":
+                if want == "long":
+                    return (
+                        False,
+                        f"bdsm_long_blocked_dropped: snapshot={constraint} want_direction={direction}",
+                    )
+                return True, "bdsm_long_blocked_short_allowed"
             # NEUTRAL / 其他：FAIL-OPEN 放行
             return True, "neutral_pass"
         except Exception as exc:
@@ -6208,11 +6364,18 @@ class PollingTrader:
     ) -> Tuple[float, float, str]:
         """缺口 2 纯函数：MIN(position_usdt, position_usdt × cap_multiplier)。
 
+        data_quality 门控：仅 sufficient（信号覆盖率≥5/7 且 confidence≥0.70）时
+        cap_multiplier 才生效；partial/insufficient → 降级 cap=1.0 放行，不干扰
+        BCRM2.0 技术面开仓（与 _apply_bdsm_direction_constraint L6175-6182 对齐）。
+        ARB 实证：连续9天 insufficient+cap=0 → BCRM2.0 做空信号被 cap_zero_blocked
+        拦截，修复后 insufficient 降级放行。
+
         Returns:
             (actual_usdt, cap_used, info_tag)
             info_tag 取值:
               - not_bdsm_coin
               - fail_open_cap_default_1.0
+              - bdsm_confidence_insufficient_cap_pass
               - bdsm_cap_applied
               - bdsm_cap_zero_blocked
         """
@@ -6224,6 +6387,19 @@ class PollingTrader:
 
             snap = self._get_bdsm_snapshot_today()
             coin_entry = (snap.get("coins") or {}).get(coin_up) or {}
+
+            # ★ data_quality 门控：信号不足时 cap 降级 1.0 放行
+            #   与方向约束 _apply_bdsm_direction_constraint L6175-6182 降级策略对齐
+            #   partial/insufficient → BDSM 不干预 BCRM2.0 技术面仓位
+            data_quality = str(coin_entry.get("data_quality") or "").lower()
+            if data_quality != "sufficient":
+                _conf = float(coin_entry.get("confidence", 0.0) or 0.0)
+                return (
+                    float(position_usdt),
+                    1.0,
+                    f"bdsm_confidence_insufficient_cap_pass:dq={data_quality},conf={_conf:.2f}",
+                )
+
             if "cap_multiplier" not in coin_entry:
                 return float(position_usdt), 1.0, "fail_open_cap_default_1.0"
             try:
@@ -7064,11 +7240,11 @@ class PollingTrader:
                     confidence = max(0.40, min(0.70, abs(bds)))
                     position_pct = 0.08 if short_level == "L1" else 0.05
 
-                    # SL/TP 计算（硬约束: SL=4.0×ATR 下限4%/上限15%, TP=3×SL 上限30%）
+                    # SL/TP 计算（SL翻倍适配3x杠杆: SL=8.0×ATR 下限8%/上限30%, TP=3×SL 上限30%不变）
                     _atr = current_price * 0.03  # volatility=0.03
-                    _sl_dist = max(_atr * 4.0, current_price * 0.04)  # 4.0×ATR, 下限4%
-                    _sl_dist = min(_sl_dist, current_price * 0.15)  # 上限15%
-                    _tp_dist = min(_sl_dist * 3.0, current_price * 0.30)  # 3×SL, 上限30%
+                    _sl_dist = max(_atr * 8.0, current_price * 0.08)  # 8.0×ATR, 下限8%（翻倍）
+                    _sl_dist = min(_sl_dist, current_price * 0.30)  # 上限30%（翻倍）
+                    _tp_dist = min(_sl_dist * 1.5, current_price * 0.15)  # TP减半：3×SL→1.5×SL, 上限30%→15%
                     # 做空: SL 在上方, TP 在下方
                     _sl_px = round(current_price + _sl_dist, 6)
                     _tp_px = round(current_price - _tp_dist, 6)
@@ -7273,7 +7449,7 @@ class PollingTrader:
                 # 构建 inference（含 ATR 自适应 SL/TP）
                 _volatility = 0.03
                 _atr_est = max(current_price * _volatility, current_price * 0.005)
-                _sl_mult, _tp_mult = 4.0, 12.0  # SL=4×ATR, TP=12×ATR, 盈亏比3:1
+                _sl_mult, _tp_mult = 8.0, 6.0  # SL翻倍4→8, TP减半12→6
                 if direction == "UP":
                     _sl_px = round(current_price - _atr_est * _sl_mult, 4)
                     _tp_px = round(current_price + _atr_est * _tp_mult, 4)
@@ -7410,6 +7586,116 @@ class PollingTrader:
         except Exception as _ssl_exc:
             self._log(f"[软止损] 整体异常(fail-open): {_ssl_exc}", "WARN")
 
+    # ── BDSM 子池移动止盈 + 保本位参数 ──────────────────────────────
+    # P0-2 修复：BDSM 子池此前完全无 trailing/保本位，PUMP 盈利后零保护最终亏损。
+    # 阈值与 evolution 对齐（后续 P1 统一优化）。
+    BDSM_BREAK_EVEN_PCT: float = 0.02       # 保本位激活：盈利 ≥ 2%
+    BDSM_TRAILING_ARM_PCT: float = 0.05     # trailing 激活：peak 盈利 ≥ 5%
+    BDSM_TRAILING_RETRACE_PCT: float = 0.05  # trailing 回撤：5%
+
+    def _bdsm_apply_trailing_breakeven(self, pos_info: Dict[str, Any]) -> bool:
+        """BDSM 子池移动止盈(Trailing) + 保本位(Break-Even) 执行。
+
+        修复(P0-2)：BDSM 子池此前完全无 trailing/保本位，盈利后零保护。
+        逻辑：
+          1. 维护 peak upl_ratio（历史最高盈利）
+          2. 保本位：upl_ratio >= 2% 且当前 SL 未保本 → SL 上移到 entry_price
+          3. Trailing：peak >= 5% 且 upl_ratio > 2% → SL = mark_px * (1 ± retrace)
+
+        Args:
+            pos_info: _get_coin_position_info 返回的持仓信息 dict
+
+        Returns:
+            True 表示执行了 SL 更新；False 表示无动作。
+        """
+        try:
+            if not hasattr(self, "_bdsm_peak_upl"):
+                self._bdsm_peak_upl: Dict[str, float] = {}
+
+            coin = str(pos_info.get("coin") or "").upper()
+            if not coin:
+                return False
+            pos_side = str(pos_info.get("pos_side") or "long").lower()
+            entry_px = float(pos_info.get("avg_px") or 0.0)
+            mark_px = float(pos_info.get("mark_px") or entry_px)
+            upl_ratio = float(pos_info.get("upl_ratio") or 0.0)
+            inst_id = str(pos_info.get("inst_id") or "")
+            if entry_px <= 0 or not inst_id:
+                return False
+
+            # ── 1. 更新 peak upl_ratio ──────────────────────────
+            prev_peak = self._bdsm_peak_upl.get(coin, 0.0)
+            current_peak = max(prev_peak, upl_ratio)
+            self._bdsm_peak_upl[coin] = current_peak
+
+            # ── 2. 获取当前 SL ─────────────────────────────────
+            rec = pos_info.get("_trade_record")
+            current_sl_px = 0.0
+            if rec is not None:
+                try:
+                    current_sl_px = float(getattr(rec, "stop_loss_px", 0.0) or 0.0)
+                except Exception:
+                    current_sl_px = 0.0
+
+            new_sl_px = 0.0
+            reason = ""
+
+            # ── 3. Trailing（优先级高于保本位，因为更紧）─────────
+            if current_peak >= self.BDSM_TRAILING_ARM_PCT and upl_ratio > self.BDSM_BREAK_EVEN_PCT:
+                retrace = self.BDSM_TRAILING_RETRACE_PCT
+                if pos_side == "long":
+                    new_sl_px = mark_px * (1 - retrace)
+                else:
+                    new_sl_px = mark_px * (1 + retrace)
+                reason = f"bdsm_trailing:peak_{current_peak:.2%}_cur_{upl_ratio:.2%}"
+
+            # ── 4. 保本位（仅当 SL 尚未保本时触发）──────────────
+            elif upl_ratio >= self.BDSM_BREAK_EVEN_PCT:
+                if pos_side == "long":
+                    # 多头：SL 应 < entry；若 SL >= entry 说明已保本，不重复触发
+                    if current_sl_px < entry_px:
+                        new_sl_px = entry_px
+                        reason = f"bdsm_break_even:upl_{upl_ratio:.2%}"
+                else:
+                    # 空头：SL 应 > entry；若 SL <= entry 说明已保本，不重复触发
+                    if current_sl_px == 0.0 or current_sl_px > entry_px:
+                        new_sl_px = entry_px
+                        reason = f"bdsm_break_even:upl_{upl_ratio:.2%}"
+
+            if new_sl_px <= 0:
+                return False
+
+            # ── 5. 执行 SL 更新（取消旧 algo → 下新 SL/TP）──────
+            okx_client = getattr(self, "okx_client", None)
+            if okx_client is None:
+                return False
+            try:
+                if hasattr(okx_client, "cancel_algo_orders"):
+                    okx_client.cancel_algo_orders(instId=inst_id)
+            except Exception as _ce:
+                self._log(f"[BDSM trailing] 取消旧algo: {_ce}", "DEBUG")
+
+            if hasattr(okx_client, "place_stop_loss_take_profit"):
+                # 保本位/移动止盈只改 SL，TP 保持原值（传 0 让客户端保留或忽略）
+                okx_client.place_stop_loss_take_profit(
+                    inst_id=inst_id,
+                    pos_side=pos_side,
+                    stop_loss_px=new_sl_px,
+                    take_profit_px=0.0,
+                    reason=reason,
+                )
+                self._log(
+                    f"[BDSM trailing] {coin} {pos_side} SL→{new_sl_px:.6f} "
+                    f"(entry={entry_px:.6f}, peak={current_peak:.2%}, "
+                    f"cur={upl_ratio:.2%}) | {reason}",
+                    "INFO",
+                )
+                return True
+            return False
+        except Exception as _te:
+            self._log(f"[BDSM trailing] {pos_info.get('coin','?')} 异常(fail-open): {_te}", "WARN")
+            return False
+
     def _bdsm_check_exit_actions(self) -> List[Dict[str, Any]]:
         """缺口 3：出场巡检入口。按 BDSM 快照 exit_action 先于 BCRM 技术出场执行。
 
@@ -7457,6 +7743,10 @@ class PollingTrader:
                         continue
                     inst_id = pos_info["inst_id"]
                     pos_side = pos_info.get("pos_side") or "long"
+
+                    # P0-2 修复：BDSM 子池 trailing + 保本位（先于快照出场信号执行）
+                    #   仅调整 SL，不平仓；快照 CLOSE_ALL 等信号仍会后续检查执行。
+                    self._bdsm_apply_trailing_breakeven(pos_info)
 
                     # Phase 2：合并出场源（方向感知，避免对空头错误应用多头离场信号）
                     #   多头持仓：使用全部三个源（exit_action + trend_stop + value_exit）
@@ -8142,18 +8432,18 @@ class PollingTrader:
 
     # ── SL/TP 硬门禁（间距% + 爆仓安全边际 双重约束） ──────────────
     # ★ 2026-09-09 ATR放大：配合动态调节逻辑放宽初始间距
-    #   约束1【间距下限】：常规仓 SL≥4.0%价格间距 / TP≥12.0%（3:1 RR），轻仓试错 SL≥4.0% / TP≥12.0%
-    #                     TIGHTEN/LOWER 收紧场景允许放宽到 常规×70%（SL≥2.8% / TP≥8.4%）
-    #                     绝对硬下限（最后保险）：SL≥2.5% / TP≥6.0%
+    #   约束1【间距下限】：常规仓 SL≥8.0%价格间距 / TP≥12.0%，轻仓试错 SL≥8.0% / TP≥12.0%
+    #                     TIGHTEN/LOWER 收紧场景允许放宽到 常规×70%（SL≥5.6% / TP≥8.4%）
+    #                     绝对硬下限（最后保险）：SL≥5.0% / TP≥6.0%
     #   约束2【爆仓安全】：SL/TP 与爆仓价之间必须有 ≥ LIQ_BUFFER_PCT 安全边际，禁止先爆仓
     #                     当约束1 vs 约束2冲突（高杠杆场景）：爆仓约束优先，同时强制告警
-    MIN_SL_PCT_NORMAL = 0.040     # 常规仓 SL 价格间距下限 4.0%
-    MIN_TP_PCT_NORMAL = 0.120     # 常规仓 TP 价格间距下限 12.0%（3:1 RR）
-    MIN_SL_PCT_TRIAL  = 0.040     # 轻仓试错 SL 价格间距下限 4.0%
-    MIN_TP_PCT_TRIAL  = 0.120     # 轻仓试错 TP 价格间距下限 12.0%
+    MIN_SL_PCT_NORMAL = 0.080     # SL翻倍：4.0%→8.0%，3x杠杆适配防震荡扫损
+    MIN_TP_PCT_NORMAL = 0.060     # TP减半：12.0%→6.0%，更容易止盈
+    MIN_SL_PCT_TRIAL  = 0.080     # SL翻倍：4.0%→8.0%
+    MIN_TP_PCT_TRIAL  = 0.060     # TP减半：12.0%→6.0%
     TIGHTEN_SL_FLOOR_RATIO = 0.70 # 收紧时最多收紧到基线的 70%
-    ABS_HARD_SL_PCT   = 0.025     # 绝对硬下限：任何情况 SL≥2.5% 价格间距
-    ABS_HARD_TP_PCT   = 0.060     # 绝对硬下限：任何情况 TP≥6.0% 价格间距
+    ABS_HARD_SL_PCT   = 0.050     # SL翻倍：2.5%→5.0%，绝对硬下限
+    ABS_HARD_TP_PCT   = 0.030     # TP减半：6.0%→3.0%，绝对硬下限
     LIQ_MMR_PCT       = 0.004     # 维持保证金率（OKX小仓位 meme USDT永续约 0.4%）
     LIQ_BUFFER_PCT    = 0.003     # 爆仓安全边际：SL 与爆仓价之间至少 0.3% 价格间距
     LIQ_HARD_WARN_L   = 25        # 超过该杠杆（约爆仓间距3.6%）就触发"建议降杠杆"告警
@@ -8365,6 +8655,143 @@ class PollingTrader:
             return entry_price * (1 - price_change)
         else:
             return entry_price * (1 + price_change)
+
+    def _calc_sl_from_key_levels(
+        self, entry_price: float, pos_side: str, atr_sl_px: float, coin: str, inst_id: str = None
+    ) -> float:
+        """基于支撑位/阻力位计算结构性止损价。
+
+        策略：取 ATR 止损和支撑位止损中较宽者（更保守）。
+        - 多头：找入场价下方最近支撑位（swing low / 0.618 fib / MA200），SL 设在支撑下方 0.3% buffer
+        - 空头：找入场价上方最近阻力位（swing high / 0.618 fib / MA200），SL 设在阻力上方 0.3% buffer
+        - 约束：支撑位 SL 间距 ∈ [4%, 15%]，超出范围回退 ATR 止损
+
+        Args:
+            entry_price: 入场价
+            pos_side: long/short
+            atr_sl_px: ATR 止损价（已有逻辑计算的值）
+            coin: 币种名
+            inst_id: 合约ID（可选）
+
+        Returns:
+            结构性止损价（取 ATR 和支撑位中较宽者）
+        """
+        try:
+            # 获取 K 线数据
+            _sym = inst_id or f"{coin.upper()}-USDT-SWAP"
+            _kline_resp = self.okx_client.get_kline(_sym, bar="1H", limit=200)
+            if not _kline_resp or not _kline_resp.get("ok"):
+                return atr_sl_px  # 数据获取失败，回退 ATR
+            _df = self._kline_to_dataframe(_kline_resp.get("data", []))
+            if _df is None or len(_df) < 50:
+                return atr_sl_px  # 数据不足，回退 ATR
+
+            import numpy as _np
+
+            highs = _df["high"].values
+            lows = _df["low"].values
+            closes = _df["close"].values
+            _n = len(closes)
+            _current = entry_price
+
+            # ── 1. Swing low/high（lookback=20, 50）──
+            _lookbacks = [20, 50]
+            _swing_levels = []  # (price, weight) 列表
+
+            for _lb in _lookbacks:
+                if _n >= _lb:
+                    if pos_side == "long":
+                        # 找入场价下方的 swing low
+                        _sl = _np.min(lows[-_lb:])
+                        if _sl < _current:
+                            _swing_levels.append((_sl, 1.0))
+                    else:
+                        # 找入场价上方的 swing high
+                        _sh = _np.max(highs[-_lb:])
+                        if _sh > _current:
+                            _swing_levels.append((_sh, 1.0))
+
+            # ── 2. Fibonacci 0.618/0.786 回撤位 ──
+            if _n >= 50:
+                _swing_high = _np.max(highs[-50:])
+                _swing_low = _np.min(lows[-50:])
+                _range = _swing_high - _swing_low
+                if _range > 0:
+                    for _fib in [0.618, 0.786]:
+                        if pos_side == "long":
+                            _fib_price = _swing_high - _range * _fib
+                            if _fib_price < _current:
+                                _swing_levels.append((_fib_price, 0.8))
+                        else:
+                            _fib_price = _swing_low + _range * _fib
+                            if _fib_price > _current:
+                                _swing_levels.append((_fib_price, 0.8))
+
+            # ── 3. MA200（长周期均线支撑/阻力）──
+            if _n >= 200:
+                _ma200 = _np.mean(closes[-200:])
+                if pos_side == "long" and _ma200 < _current:
+                    _swing_levels.append((_ma200, 0.6))
+                elif pos_side == "short" and _ma200 > _current:
+                    _swing_levels.append((_ma200, 0.6))
+            elif _n >= 128:
+                _ma128 = _np.mean(closes[-128:])
+                if pos_side == "long" and _ma128 < _current:
+                    _swing_levels.append((_ma128, 0.5))
+                elif pos_side == "short" and _ma128 > _current:
+                    _swing_levels.append((_ma128, 0.5))
+
+            if not _swing_levels:
+                return atr_sl_px  # 无支撑位，回退 ATR
+
+            # ── 4. 选择最近的支撑/阻力位 ──
+            if pos_side == "long":
+                # 取离入场价最近的下方支撑
+                _nearest = max(_swing_levels, key=lambda x: x[0])
+            else:
+                # 取离入场价最近的上方阻力
+                _nearest = min(_swing_levels, key=lambda x: x[0])
+
+            _support_price = _nearest[0]
+            _support_weight = _nearest[1]
+
+            # ── 5. 计算结构性 SL（支撑位 - 0.3% buffer）──
+            _buffer_pct = 0.003  # 0.3% buffer 防假突破
+            if pos_side == "long":
+                _structural_sl = _support_price * (1 - _buffer_pct)
+            else:
+                _structural_sl = _support_price * (1 + _buffer_pct)
+
+            # ── 6. 间距约束 [4%, 15%] ──
+            _structural_dist = abs(_structural_sl - entry_price) / entry_price
+            if _structural_dist < 0.04 or _structural_dist > 0.15:
+                # 超出范围，回退 ATR
+                return atr_sl_px
+
+            # ── 7. 取 ATR 和支撑位中较宽者 ──
+            _atr_dist = abs(atr_sl_px - entry_price) / entry_price if atr_sl_px > 0 else 0
+            if _structural_dist > _atr_dist:
+                self._log(
+                    f"[{coin}] 支撑位止损 | pos={pos_side} "
+                    f"支撑位={_support_price:.4f}(w={_support_weight:.1f}) "
+                    f"SL={_structural_sl:.4f}(间距{_structural_dist:.2%}) "
+                    f"> ATR止损(间距{_atr_dist:.2%}) → 采用支撑位止损",
+                    "INFO",
+                )
+                return round(_structural_sl, 6)
+            else:
+                self._log(
+                    f"[{coin}] 支撑位止损 | pos={pos_side} "
+                    f"支撑位={_support_price:.4f}(w={_support_weight:.1f}) "
+                    f"SL={_structural_sl:.4f}(间距{_structural_dist:.2%}) "
+                    f"≤ ATR止损(间距{_atr_dist:.2%}) → 保持ATR止损",
+                    "DEBUG",
+                )
+                return atr_sl_px
+
+        except Exception as _e:
+            self._log(f"[{coin}] 支撑位止损计算异常(FAIL-OPEN回退ATR): {_e}", "WARN")
+            return atr_sl_px
 
     def _calc_tp_price(
         self, entry_price: float, pos_side: str, tp_roi_pct: float, leverage: float = None
@@ -9928,10 +10355,10 @@ class PollingTrader:
                 # ★ P1-1 修复：跳过幽灵持仓（合约数为 0 的已强平记录）
                 and float(getattr(p, "contracts", 0) or getattr(p, "size", 0) or 0) > 0
             )
-            if _evo_count >= int(self.SUBPOOL_MAX_POSITIONS.get("evolution", 5)):
+            if _evo_count >= int(self.SUBPOOL_MAX_POSITIONS.get("evolution", 3)):
                 self._log(
                     f"[P2-S4b] {symbol} evolution 子池已满 {_evo_count}/"
-                    f"{self.SUBPOOL_MAX_POSITIONS.get('evolution', 5)}，跳过",
+                    f"{self.SUBPOOL_MAX_POSITIONS.get('evolution', 3)}，跳过",
                     "DEBUG",
                 )
                 return
@@ -9973,9 +10400,10 @@ class PollingTrader:
 
             # 2c. evolution 测试仓（tier=probe）上限保护：独立上限 MAX_EVOLUTION_PROBE_POSITIONS
             #   用户决策 2026-09-11：分离上限 — Evolution probe 独立 4 单，不串扰 BCRM 试错仓
+            #   用户决策 2026-09-14：收敛上限 — probe 4→2（跟随总上限 10→3）
             if str(tier) == "probe":
                 _probe_cnt = self._count_trial_positions("evolution")
-                _probe_max = int(getattr(self, "MAX_EVOLUTION_PROBE_POSITIONS", 4))
+                _probe_max = int(getattr(self, "MAX_EVOLUTION_PROBE_POSITIONS", 2))
                 if _probe_cnt >= _probe_max:
                     self._log(
                         f"[P2-S4b] {symbol} evolution 测试仓已满 "
@@ -10304,6 +10732,15 @@ class PollingTrader:
                         )
             except Exception as _sltp_e:
                 self._log(f"[P2-S4b] {symbol} SL/TP 异常(FAIL-OPEN): {_sltp_e}", "WARN")
+
+            # P2-2: 开仓后立即校验 algo SL/TP 单是否真正生效，缺失则重试
+            try:
+                self._verify_algo_sltp(
+                    inst_id=inst_id, pos_side=action,
+                    expected_sl_px=_sl_px, expected_tp_px=_tp_px,
+                )
+            except Exception as _v_e:
+                self._log(f"[P2-S4b] {symbol} algo校验异常(忽略): {_v_e}", "WARN")
 
             self.position_tracker.open_position(
                 coin=symbol,
@@ -15173,6 +15610,17 @@ class PollingTrader:
                     f"原TP间距={_cur_tp_pct:.2%}<{_min_tp_pct:.2%} TP {_old_tp}→{tp_px}",
                     "WARN",
                 )
+
+        # ── Phase1试点：BCRM2.0 链路支撑位止损 ──
+        # 在所有 ATR/形态/v4 调整完成后，用支撑位/阻力位交叉验证 SL
+        # 取 ATR 止损和支撑位止损中较宽者（更保守）
+        if sl_px and price > 0 and inference.get("source_tag", "bcrm") != "strategy":
+            _pos_side = "long" if direction == "UP" else "short"
+            _orig_sl = sl_px
+            sl_px = self._calc_sl_from_key_levels(
+                entry_price=price, pos_side=_pos_side,
+                atr_sl_px=sl_px, coin=coin, inst_id=inst_id
+            )
 
         # 输出：换算订单收益率（杠杆×价格波动%）
         # 同时记录 ATR 基线 SL/TP 收益率，供易经离场系统调制使用

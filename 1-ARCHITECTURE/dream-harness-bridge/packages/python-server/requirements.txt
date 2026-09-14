@@ -1,0 +1,9 @@
+# dream-harness-bridge Python server dependencies
+# 锁定版本，避免 ABI 兼容性问题（F-06）
+
+# IPC 协议
+pydantic>=2.0,<3.0
+
+# 测试
+pytest>=8.0,<9.0
+pytest-asyncio>=0.23,<1.0

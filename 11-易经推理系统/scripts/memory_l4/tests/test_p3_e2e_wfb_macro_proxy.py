@@ -274,4 +274,5 @@ if FAIL_CNT == 0:
     print("\n全部 PASS ✅  P3-05 端到端烟测结束")
 else:
     print("\n有 FAIL ❌  请检查上方日志")
-    sys.exit(1)
+    if __name__ == "__main__":
+        sys.exit(1)

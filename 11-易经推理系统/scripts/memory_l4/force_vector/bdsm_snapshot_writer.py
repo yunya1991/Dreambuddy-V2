@@ -234,6 +234,76 @@ def _compute_direction(score: float, data_quality: str) -> str:
     return "NEUTRAL"
 
 
+# ── §4.1.2 三层矛盾感知方向约束（v2）──────────────────────────────────
+# 修复旧 _compute_direction 只看 ±0.3 硬阈值忽略 confidence / value_exit /
+# valuation_percentile 三个联动信号造成的"矛盾带"（SOL 实证 88.9% 失败率）。
+# 新算法三层递进：L1 置信度加权阈值 → L2 价值退出否决 → L3 估值-BDS 矛盾。
+# 优先级：L1 > L2 > L3；L2/L3 输出 LONG_BLOCKED 中间档（禁做多不强制做空）。
+# 开关 enable_contradiction_aware_constraint 默认 True，False 走旧逻辑字节等价。
+# 阈值参数 0.3 / 0.5 / 0.70 / 85 为初始值，待回测调参（见 VM-1789302387464）。
+
+
+def _compute_direction_v2(
+    bds_score: float,
+    confidence: float,
+    data_quality: str,
+    value_exit_action: str = "none",
+    valuation_percentile: float = 50.0,
+    enable_contradiction_aware_constraint: bool = True,
+) -> str:
+    """§4.1.2 三层矛盾感知方向约束（v2）。
+
+    L1 置信度加权阈值（借鉴 Black-Litterman 连续加权）:
+        effective_threshold = 0.3 × (1 - 0.5 × confidence)
+        conf=0.875 → 0.169；conf=1.0 → 0.15；conf=0.40 → 0.24
+        bds > +effective_threshold → LONG_ONLY
+        bds < -effective_threshold → SHORT_ONLY（最强制约，优先于 L2/L3）
+
+    L2 价值退出否决（矛盾论对抗性矛盾 + LUNA 案例 + 尾部约束）:
+        value_exit=="full_exit" AND bds<0 AND confidence>=0.70 → LONG_BLOCKED
+
+    L3 估值-BDS 矛盾（2008 案例镜像，L2 未触发时的补充防线）:
+        val_pct>85 AND bds<0 AND data_quality=="sufficient" → LONG_BLOCKED
+
+    LONG_BLOCKED 语义：禁做多（拦截 UP），允许做空（放行 DOWN），
+    cap_multiplier 保持原值不放大（比 SHORT_ONLY 温和）。
+
+    data_quality=insufficient → 强制 NEUTRAL（FAIL-OPEN，信号不可靠不强拦）。
+    """
+    # data_quality 门禁：不足强制 NEUTRAL（FAIL-OPEN 铁律）
+    if data_quality == "insufficient":
+        return "NEUTRAL"
+
+    # 开关关断 → 走旧 _compute_direction 逻辑字节等价
+    if not enable_contradiction_aware_constraint:
+        return _compute_direction(bds_score, data_quality)
+
+    # L1 置信度加权阈值（最强制约，优先于 L2/L3）
+    effective_threshold = 0.3 * (1.0 - 0.5 * confidence)
+    if bds_score > effective_threshold:
+        return "LONG_ONLY"
+    if bds_score < -effective_threshold:
+        return "SHORT_ONLY"
+
+    # L2 价值退出否决 → LONG_BLOCKED
+    if (
+        value_exit_action == "full_exit"
+        and bds_score < 0.0
+        and confidence >= 0.70
+    ):
+        return "LONG_BLOCKED"
+
+    # L3 估值-BDS 矛盾 → LONG_BLOCKED（L2 未触发时的补充防线）
+    if (
+        valuation_percentile > 85.0
+        and bds_score < 0.0
+        and data_quality == "sufficient"
+    ):
+        return "LONG_BLOCKED"
+
+    return "NEUTRAL"
+
+
 def _compute_cap_multiplier(rank: str, score: float, data_quality: str) -> float:
     """§4.2 仓位上限系数 = score_cap × rank_cap × dq_cap，夹到 [0,1]。"""
     # score_cap
@@ -763,6 +833,8 @@ def _build_coin_entry(coin: str, db_path: str | None = None) -> Dict[str, Any]:
 
     direction = _compute_direction(score, data_quality)
     cap = _compute_cap_multiplier(rank, score, data_quality)
+    # direction_v2 初始占位（Phase 0 写回 value_exit 后用 v2 覆盖）
+    direction_v2 = direction
 
     entry = {
         "available": True,
@@ -847,6 +919,26 @@ def _build_coin_entry(coin: str, db_path: str | None = None) -> Dict[str, Any]:
         entry["scaling_plan"] = _neutral["scaling_plan"]
         entry["trend_stop"] = _neutral["trend_stop"]
         entry["value_exit"] = _neutral["value_exit"]
+
+    # ── §4.1.2 三层矛盾感知方向约束（v2）覆盖 ──
+    # Phase 0 写回 value_exit / valuation_percentile 后，用 v2 重新计算 direction_constraint。
+    # 修复旧 _compute_direction 只看 ±0.3 忽略 confidence / value_exit / val_pct 矛盾带。
+    try:
+        _ve_action = "none"
+        if isinstance(entry.get("value_exit"), dict):
+            _ve_action = str(entry["value_exit"].get("action", "none") or "none")
+        _val_pct_final = float(entry.get("valuation_percentile", 50.0) or 50.0)
+        direction_v2 = _compute_direction_v2(
+            bds_score=bds_score,
+            confidence=confidence,
+            data_quality=data_quality,
+            value_exit_action=_ve_action,
+            valuation_percentile=_val_pct_final,
+        )
+        entry["direction_constraint"] = direction_v2
+    except Exception as _exc_v2:
+        logger.warning("BDSM direction_v2 覆盖失败 coin=%s: %s", coin, _exc_v2)
+        # FAIL-OPEN：覆盖失败保留旧 direction（entry["direction_constraint"] 已是旧值）
 
     # ── 战术小仓资格（2026-09-06 Phase 1）────────────────────────────
     try:

@@ -1,0 +1,19 @@
+{
+  "name": "dreambuddy-c-chain",
+  "version": "0.1.0",
+  "description": "DreamBuddy C 层能力域插件：执行完整 C 链（C1技术扫描→C2动量分析→C3波动率），对外暴露交易分析能力，不直接暴露内部节点",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "import": "./lib/index.js"
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-tools": "^0.1.5-rc.1"
+  }
+}

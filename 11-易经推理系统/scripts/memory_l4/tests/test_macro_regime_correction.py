@@ -156,9 +156,10 @@ _chk("空 dict → 不修正", r == "FOMO_RALLY", f"实际={r}")
 
 # ========================================================================
 section("📊 汇总")
-if all_pass[0]:
-    print("全部测试 PASS ✅")
-    sys.exit(0)
-else:
-    print("存在失败 ❌ — 先 RED 成功，再写 GREEN 代码")
-    sys.exit(1)
+if __name__ == "__main__":
+    if all_pass[0]:
+        print("全部测试 PASS ✅")
+        sys.exit(0)
+    else:
+        print("存在失败 ❌ — 先 RED 成功，再写 GREEN 代码")
+        sys.exit(1)

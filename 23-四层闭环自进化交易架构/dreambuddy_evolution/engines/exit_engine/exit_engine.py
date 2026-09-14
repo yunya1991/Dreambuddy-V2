@@ -42,10 +42,13 @@ class EvolutionExitEngine:
     TIER_TP_PCT = {"probe": 0.12, "standard": 0.12, "trend": 0.12}  # TP 下限统一 12%
 
     # trailing 触发阈值（按 tier）
-    TRAILING_ARM_PCT = {"probe": 0.08, "standard": 0.06, "trend": 0.06}
+    # P1-2 优化：降低 arm 阈值，让更多盈利能被 trailing 保护
+    #   probe: 8%→5%, standard/trend: 6%→4%
+    TRAILING_ARM_PCT = {"probe": 0.05, "standard": 0.04, "trend": 0.04}
 
     # 保本位收紧触发阈值（盈亏达到此值 → SL 移到保本位）
-    BREAK_EVEN_ARM_PCT = 0.03
+    # P1-1 优化：3%→2%，更早保护盈利
+    BREAK_EVEN_ARM_PCT = 0.02
 
     # 保护期 60min
     PROTECTION_PERIOD_SEC = 60 * 60
@@ -213,50 +216,34 @@ class EvolutionExitEngine:
                 )
 
         # ── 规则 3b：优化3 超时 29H 信号强度评估
+        # 修复(P0-1)：超时盈利+无更强信号不再直接 return hold，
+        #   而是继续检查规则4(分批止盈)/规则5(trailing)/规则6(保本位)。
+        #   原行为导致 SKHYNIX 旧仓盈利8.18%超trailing arm却被拦截，最终亏损。
         if position_age_sec >= self.TIMEOUT_SIGNAL_EVAL_SEC:
-            if upl_ratio > 0:
+            if upl_ratio > 0 and has_stronger_signal:
                 # 盈利 + 有更强信号 → 止盈平仓换仓
-                if has_stronger_signal:
-                    _is_opposite = bool(stronger_signal_info.get("is_opposite", False))
-                    _sig_coin = stronger_signal_info.get("coin", "?")
-                    _sig_dir = stronger_signal_info.get("direction", "?")
-                    _sig_conf = float(stronger_signal_info.get("confidence", 0.0))
-                    _rotate_type = "opposite" if _is_opposite else "same"
-                    self._log(
-                        f"[EvolutionExitEngine] {symbol} 超时 {int(position_age_sec/3600)}h "
-                        f"盈利 {upl_ratio:.2%} + 更强信号({_sig_coin} {_sig_dir} "
-                        f"conf={_sig_conf:.2f} {_rotate_type}) → force_close 换仓",
-                        "INFO",
-                    )
-                    return ExitDecision(
-                        action="force_close",
-                        reason=f"evolution_exit:force_close:timeout_{int(position_age_sec/3600)}h_stronger_signal_rotate_{_rotate_type}",
-                        confidence=0.75,
-                    )
-                else:
-                    # 盈利 + 无更强信号 → 继续持有
-                    self._log(
-                        f"[EvolutionExitEngine] {symbol} 超时 {int(position_age_sec/3600)}h "
-                        f"盈利 {upl_ratio:.2%} 无更强信号 → 继续持有",
-                        "INFO",
-                    )
-                    return ExitDecision(
-                        action="hold",
-                        reason=f"evolution_exit:hold:timeout_profit_no_stronger_signal_{upl_ratio:.2%}",
-                        confidence=0.6,
-                    )
-            else:
-                # 亏损 → 继续持有（不因超时强平亏损仓）
+                _is_opposite = bool(stronger_signal_info.get("is_opposite", False))
+                _sig_coin = stronger_signal_info.get("coin", "?")
+                _sig_dir = stronger_signal_info.get("direction", "?")
+                _sig_conf = float(stronger_signal_info.get("confidence", 0.0))
+                _rotate_type = "opposite" if _is_opposite else "same"
                 self._log(
                     f"[EvolutionExitEngine] {symbol} 超时 {int(position_age_sec/3600)}h "
-                    f"亏损 {upl_ratio:.2%} → 继续持有（不超时强平亏损仓）",
+                    f"盈利 {upl_ratio:.2%} + 更强信号({_sig_coin} {_sig_dir} "
+                    f"conf={_sig_conf:.2f} {_rotate_type}) → force_close 换仓",
                     "INFO",
                 )
                 return ExitDecision(
-                    action="hold",
-                    reason=f"evolution_exit:hold:timeout_loss_continue_hold_{upl_ratio:.2%}",
-                    confidence=0.6,
+                    action="force_close",
+                    reason=f"evolution_exit:force_close:timeout_{int(position_age_sec/3600)}h_stronger_signal_rotate_{_rotate_type}",
+                    confidence=0.75,
                 )
+            # 盈利无更强信号 / 亏损 → 不 return，继续 trailing/保本位检查
+            self._log(
+                f"[EvolutionExitEngine] {symbol} 超时 {int(position_age_sec/3600)}h "
+                f"upl={upl_ratio:.2%} 无更强信号 → 继续检查 trailing/保本位",
+                "INFO",
+            )
 
         # ── 规则 4：优化2 分批止盈（R 倍数驱动）
         if r_multiple > 0 and entry_price > 0 and current_sl_px > 0:

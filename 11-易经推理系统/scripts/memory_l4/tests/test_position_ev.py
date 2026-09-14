@@ -308,13 +308,16 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         # LONG：SL < entry(65000) < TP
         self.assertLess(sl_px, 65000, f"tighten SL {sl_px} 应 < entry 65000")
         self.assertGreater(tp_px, 65000, f"tighten TP {tp_px} 应 > entry 65000")
-        # 价格精度验证：SL = 65000 × (1 − 0.021/3) = 64545；TP = 65000 × (1 + 0.0765/3) = 66657.5
-        self.assertAlmostEqual(sl_px, 64545.0, delta=0.5,
-                               msg=f"tighten SL 计算偏差：expect≈64545, actual={sl_px}")
-        self.assertAlmostEqual(tp_px, 66657.5, delta=0.5,
-                               msg=f"tighten TP 计算偏差：expect≈66657.5, actual={tp_px}")
+        # 价格精度验证：SL 被 ATR floor 钳制到 2.8% 价格间距（MIN_SL_PCT_NORMAL 4% × TIGHTEN 0.7）
+        #   SL = 65000 × (1 − 0.028) = 63180
+        # TP 被 floor 钳制到 8.4% 价格间距（MIN_TP_PCT_NORMAL 12% × TIGHTEN 0.7）
+        #   TP = 65000 × (1 + 0.084) = 70460
+        self.assertAlmostEqual(sl_px, 63180.0, delta=0.5,
+                               msg=f"tighten SL（floor 钳制到 2.8% 间距）偏差：expect≈63180, actual={sl_px}")
+        self.assertAlmostEqual(tp_px, 70460.0, delta=0.5,
+                               msg=f"tighten TP（floor 钳制到 8.4% 间距）偏差：expect≈70460, actual={tp_px}")
         # 取消旧 algo 也应调用
-        t.okx_client.cancel_all_algo_orders.assert_called_once()
+        t.okx_client.cancel_algo_orders.assert_called_once()
 
     def test_relax_long_sl_tp_price_matches_formula(self):
         """STRONG_HOLD relax: SL 放 30%，TP 放 25%，顺序 long: SL < entry < TP"""
@@ -327,12 +330,14 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
         sl_px = float(kwargs["stop_loss_px"])
         tp_px = float(kwargs["take_profit_px"])
-        # relax SL = 65000 × (1 − 0.039/3) = 65000 × 0.987 = 64155
-        # relax TP = 65000 × (1 + 0.1125/3) = 65000 × 1.0375 = 67437.5
-        self.assertAlmostEqual(sl_px, 64155.0, delta=0.5,
-                               msg=f"relax SL 计算偏差：expect≈64155, actual={sl_px}")
-        self.assertAlmostEqual(tp_px, 67437.5, delta=0.5,
-                               msg=f"relax TP 计算偏差：expect≈67437.5, actual={tp_px}")
+        # relax SL 被 floor 钳制到 4.0% 价格间距（MIN_SL_PCT_NORMAL）
+        #   SL = 65000 × (1 − 0.040) = 62400
+        # relax TP 被 floor 钳制到 12.0% 价格间距（MIN_TP_PCT_NORMAL）
+        #   TP = 65000 × (1 + 0.120) = 72800
+        self.assertAlmostEqual(sl_px, 62400.0, delta=0.5,
+                               msg=f"relax SL（floor 钳制到 4.0% 间距）偏差：expect≈62400, actual={sl_px}")
+        self.assertAlmostEqual(tp_px, 72800.0, delta=0.5,
+                               msg=f"relax TP（floor 钳制到 12.0% 间距）偏差：expect≈72800, actual={tp_px}")
         self.assertLess(sl_px, 65000)
         self.assertGreater(tp_px, 65000)
 
@@ -383,8 +388,9 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         t.okx_client.place_stop_loss_take_profit.assert_not_called()
 
     def test_atr_floor_protect_over_tighten(self):
-        """极端收紧场景：base_sl_roi 本来就很小，×0.7 后低于 1.5% ROI → floor 到 1.5%
-        例：base_sl_roi=0.01 (1%), tighten → 0.7% < 1.5% floor → 采用 1.5%"""
+        """极端收紧场景：base_sl_roi 很小，×0.7 后低于价格间距 floor → floor 钳制
+        例：base_sl_roi=0.01 (1% ROI), leverage=3 → 价格间距 0.33%, tighten ×0.7 = 0.23%
+        被 MIN_SL_PCT_NORMAL(4%)×TIGHTEN(0.7)=2.8% 价格间距 floor 钳制"""
         t = _make_trader(coins=["BTC"])
         t.position_tracker.get_open_position.return_value = self._mock_position(
             base_sl_roi=0.01, base_tp_roi=0.05, entry_price=100.0)
@@ -392,10 +398,9 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "tighten")
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
         sl_px = float(kwargs["stop_loss_px"])
-        # 未 floor 时：0.007 ROI → SL_px = 100 × (1 − 0.007/3) = 99.7667
-        # floor 后: 0.015 ROI → SL_px = 100 × (1 − 0.015/3) = 99.5
-        self.assertAlmostEqual(sl_px, 99.5, delta=0.01,
-                               msg=f"floor 到 1.5%ROI 失败: SL={sl_px}，expect 99.5")
+        # floor 后: 2.8% 价格间距 → SL_px = 100 × (1 − 0.028) = 97.2
+        self.assertAlmostEqual(sl_px, 97.2, delta=0.01,
+                               msg=f"floor 到 2.8% 价格间距失败: SL={sl_px}，expect 97.2")
 
     # ── 边界 B3: 连锁漂移修复（base_roi 冻结）验证 ─────────────
     def test_old_position_base_roi_frozen_after_first_adjust(self):
@@ -418,7 +423,8 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         rec.market_snapshot = {"stop_loss_px": 64350.0, "take_profit_px": 66950.0}
         t.position_tracker.get_open_position.return_value = rec
 
-        # Step 1: 第一次调 tighten → 基线应为反算得到的 3%/9% → SL=64545 TP=66657.5
+        # Step 1: 第一次调 tighten → 基线应为反算得到的 3%/9%
+        #   tighten SL 被 floor 钳制到 2.8% 间距 → SL=63180
         t._cycle_idx = 1
         ok1 = t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "tighten")
         self.assertTrue(ok1)
@@ -428,21 +434,21 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         self.assertAlmostEqual(rec.base_tp_roi, 0.09, delta=1e-6,
                                msg="首次调完 base_tp_roi 应被冻结回 0.09")
 
-        # Step 2: 模拟下一轮：OKX 平台上 SL/TP 已经是 tighten 后的值（64545 / 66657.5）
-        # 如果没有冻结，下一轮 _get_base_sl_roi 会 fallback 反算，得到 SL ROi =
-        # |64545-65000|/65000 *3 = 455/65000*3 = 0.7%*3 = 2.1%（漂移！）
-        rec.market_snapshot = {"stop_loss_px": 64545.0, "take_profit_px": 66657.5}
+        # Step 2: 模拟下一轮：OKX 平台上 SL/TP 已经是 tighten 后的值（63180 / 66657.5）
+        # 如果没有冻结，下一轮 _get_base_sl_roi 会 fallback 反算，得到 SL ROI =
+        # |63180-65000|/65000*3 = 2.8%*3 = 8.4%（漂移！）
+        rec.market_snapshot = {"stop_loss_px": 63180.0, "take_profit_px": 70460.0}
 
         # 过掉缓存 TTL（2 轮），调用 relax 看结果：
-        # 正确（冻结基线 3%）→ relax SL = 0.03*1.3=0.039 → SL_px = 64155
-        # 错误（漂移基线 2.1%）→ relax SL = 0.021*1.3=0.0273 → SL_px = 64408.5
+        # 冻结基线 3% → relax SL ROI = 0.03*1.3=0.039 → 被 floor 钳制到 4% 间距 → SL=62400
+        # 漂移基线 8.4% → relax SL ROI = 0.084*1.3=0.1092 → SL=62634（不同）
         t._cycle_idx = 5  # 和第 1 次差 4 轮 → TTL=2 已过期
         ok2 = t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "relax")
         self.assertTrue(ok2)
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
         sl_px = float(kwargs["stop_loss_px"])
-        self.assertAlmostEqual(sl_px, 64155.0, delta=1.0,
-                               msg=f"B3 未冻结时 relax 会漂移到 64408.5；现 SL={sl_px}（应≈64155）")
+        self.assertAlmostEqual(sl_px, 62400.0, delta=1.0,
+                               msg=f"B3 冻结后 relax 应=62400（floor 4%）；漂移值=62634；现 SL={sl_px}")
 
     def test_old_position_base_roi_via_stable_cache(self):
         """B3 stable fallback：如果 PositionRecord 是不可写对象（dict/immutable），

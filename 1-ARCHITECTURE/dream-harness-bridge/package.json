@@ -1,0 +1,25 @@
+{
+  "name": "dream-harness-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DeepSeek Harness + DreamBuddy 分层嵌入整合项目",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run tests/integration",
+    "build": "tsc --project packages/bridge-core/tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "json-schema-to-typescript": "^15.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.2"
+  }
+}

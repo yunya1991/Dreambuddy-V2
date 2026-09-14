@@ -81,9 +81,16 @@ def test_p4_xaut_to_xau_normalization():
     main_src = inspect.getsource(
         __import__("scripts.memory_l4.polling_trader", fromlist=["main"]).main
     )
-    m = re.search(r'add_argument\([\s\S]*?"--coins".*?default="([^"]+)"', main_src, re.S)
-    assert m, "找不到 --coins default 定义"
-    coins_default_list = [c.strip().upper() for c in m.group(1).split(",")]
+    # default 可能是动态表达式（如 ",".join(_load_registry_symbols() or [...])），
+    # 提取 fallback 列表中的币种
+    fb = re.search(r'_load_registry_symbols\(\)\s*or\s*\[([\s\S]*?)\]', main_src)
+    if fb:
+        coins_default_list = re.findall(r'"([A-Z]+)"', fb.group(1))
+    else:
+        # 兼容简单字符串 default
+        m = re.search(r'add_argument\([\s\S]*?"--coins".*?default="([^"]+)"', main_src, re.S)
+        assert m, "找不到 --coins default 定义"
+        coins_default_list = [c.strip().upper() for c in m.group(1).split(",")]
     assert (
         "XAU" in coins_default_list
     ), f"P4 FAIL(A)：--coins default 无 XAU -> {coins_default_list}"

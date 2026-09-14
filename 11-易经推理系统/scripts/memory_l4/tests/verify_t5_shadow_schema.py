@@ -318,4 +318,5 @@ with tempfile.TemporaryDirectory() as tmpdir:
 print("\n" + "=" * 60)
 print(f"验证汇总：共 {total} 项，PASS {passed}，FAIL {failed}")
 print("=" * 60)
-sys.exit(0 if failed == 0 else 1)
+if __name__ == "__main__":
+    sys.exit(0 if failed == 0 else 1)

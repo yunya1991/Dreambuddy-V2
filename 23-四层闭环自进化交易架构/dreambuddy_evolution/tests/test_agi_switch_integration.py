@@ -133,6 +133,9 @@ class TestAGISwitchIntegration:
         """无 L3 样本 → contradiction_feedback 为 None"""
         from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
         pipeline = EvolutionPipeline()
+        # 清空持久化样本，确保测试隔离（不依赖磁盘历史样本）
+        pipeline.shadow_rl._samples.clear()
+        pipeline.shadow_rl._effective_count = 0
         feedback = pipeline.get_feedback()
         assert feedback["contradiction_feedback"] is None
 

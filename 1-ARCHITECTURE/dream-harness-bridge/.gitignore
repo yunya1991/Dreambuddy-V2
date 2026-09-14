@@ -1,0 +1,50 @@
+# dream-harness-bridge .gitignore
+# 排除 TS/Node.js 和 Python 侧的构建产物与依赖
+
+# Node.js / TypeScript
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.npm
+.pnpm-store/
+.yarn/cache
+.parcel-cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+logs/
+
+# 环境变量与密钥
+.env
+.env.local
+*.pem
+*.key
+
+# Harness 本地数据
+.dsh/
+sessions/
+*.session.jsonl

@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "dream-harness-bridge IPC Protocol",
+  "description": "F-01 契约版本化：所有 IPC 消息必须含 schema_version",
+  "type": "object",
+  "required": ["schema_version", "message_type"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "IPC 契约版本（semver）"
+    },
+    "message_type": {
+      "type": "string",
+      "enum": ["request", "response", "event", "handshake_request", "handshake_response"],
+      "description": "消息类型"
+    },
+    "method": {
+      "type": "string",
+      "description": "请求方法名（request 类型必须）"
+    },
+    "params": {
+      "type": "object",
+      "description": "请求参数（request 类型）"
+    },
+    "ok": {
+      "type": "boolean",
+      "description": "响应是否成功（response 类型必须）"
+    },
+    "result": {
+      "description": "响应结果（response 类型，ok=true 时）"
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" }
+      },
+      "description": "响应错误（response 类型，ok=false 时）"
+    },
+    "constraint_passed": {
+      "type": "boolean",
+      "description": "F-02 协议级硬约束：交易路径必须为 true，缺失=拒绝"
+    },
+    "id": {
+      "type": "string",
+      "description": "消息 ID（请求-响应配对）"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "消息时间戳"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "message_type": { "const": "request" } } },
+      "then": { "required": ["method", "params", "id"] }
+    },
+    {
+      "if": { "properties": { "message_type": { "const": "response" } } },
+      "then": { "required": ["ok", "id"] }
+    }
+  ]
+}

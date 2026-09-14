@@ -135,6 +135,41 @@ class TestExitEngineDecide:
         assert decision.action == "adjust_sl_tp"
         assert decision.sl_px > 0  # 保本位收紧
 
+    def test_decide_break_even_at_two_pct(self, engine, hold_context):
+        """P1-1: 保本位阈值 3%→2%，upl=2% 应触发 adjust_sl_tp"""
+        ctx = dict(hold_context)
+        ctx["position_age_sec"] = 7200
+        ctx["upl_ratio"] = 0.02  # +2%（新保本位阈值）
+        ctx["current_price"] = 3060.0
+        decision = engine.decide(ctx)
+        assert decision.action == "adjust_sl_tp", (
+            f"保本位2%应触发, got {decision.action}"
+        )
+
+    def test_decide_trailing_probe_at_five_pct(self, engine, hold_context):
+        """P1-2: probe tier trailing arm 8%→5%，upl=5% 应触发 trailing"""
+        ctx = dict(hold_context)
+        ctx["tier"] = "probe"
+        ctx["position_age_sec"] = 7200
+        ctx["upl_ratio"] = 0.05  # +5%（新 probe arm）
+        ctx["current_price"] = 3150.0
+        decision = engine.decide(ctx)
+        assert decision.action == "trailing", (
+            f"probe arm 5%应触发trailing, got {decision.action}"
+        )
+
+    def test_decide_trailing_standard_at_four_pct(self, engine, hold_context):
+        """P1-2: standard tier trailing arm 6%→4%，upl=4% 应触发 trailing"""
+        ctx = dict(hold_context)
+        ctx["tier"] = "standard"
+        ctx["position_age_sec"] = 7200
+        ctx["upl_ratio"] = 0.04  # +4%（新 standard arm）
+        ctx["current_price"] = 3120.0
+        decision = engine.decide(ctx)
+        assert decision.action == "trailing", (
+            f"standard arm 4%应触发trailing, got {decision.action}"
+        )
+
     def test_decide_trailing_on_trend_tier(self, engine, hold_context):
         """tier=trend 盈亏触达 6% → trailing"""
         ctx = dict(hold_context)
@@ -194,6 +229,56 @@ class TestExitEngineDecide:
         decision = engine.decide(ctx)
         assert decision.action == "force_close"
         assert "algo" in decision.reason.lower()
+
+    def test_decide_trailing_not_blocked_by_timeout_profit(self, engine, hold_context):
+        """P0-1 修复：超时(>29h)盈利+无更强信号+达到trailing arm → 应触发trailing，而非hold
+
+        根因：规则3b(超时评估)在盈利+无更强信号时直接return hold，跳过规则5(trailing)。
+        SKHYNIX旧仓盈利8.18%超trailing6%但被规则3b拦截，最终亏损。
+        """
+        ctx = dict(hold_context)
+        ctx["tier"] = "trend"
+        ctx["position_age_sec"] = 30 * 3600  # 30h > 29h 超时
+        ctx["upl_ratio"] = 0.07  # +7% > trailing arm 6%
+        ctx["current_price"] = 3210.0
+        ctx["has_stronger_signal"] = False
+        ctx["stronger_signal_info"] = {}
+        decision = engine.decide(ctx)
+        # 修复前：action == "hold", reason 含 "timeout_profit_no_stronger_signal"
+        # 修复后：action == "trailing"
+        assert decision.action == "trailing", (
+            f"超时盈利应触发trailing而非hold, got action={decision.action} reason={decision.reason}"
+        )
+        assert "trailing" in decision.reason
+
+    def test_decide_break_even_not_blocked_by_timeout_profit(self, engine, hold_context):
+        """P0-1 修复：超时(>29h)盈利+无更强信号+达到保本位(3%) → 应触发adjust_sl_tp，而非hold"""
+        ctx = dict(hold_context)
+        ctx["tier"] = "standard"
+        ctx["position_age_sec"] = 30 * 3600  # 30h > 29h
+        ctx["upl_ratio"] = 0.035  # +3.5% > 保本位3%，< trailing 6%
+        ctx["current_price"] = 3105.0
+        ctx["has_stronger_signal"] = False
+        ctx["stronger_signal_info"] = {}
+        decision = engine.decide(ctx)
+        assert decision.action == "adjust_sl_tp", (
+            f"超时盈利应触发保本位而非hold, got action={decision.action} reason={decision.reason}"
+        )
+
+    def test_decide_timeout_stronger_signal_still_force_closes(self, engine, hold_context):
+        """P0-1 修复后：超时盈利+有更强信号 → 仍应force_close换仓（此行为不变）"""
+        ctx = dict(hold_context)
+        ctx["tier"] = "trend"
+        ctx["position_age_sec"] = 30 * 3600
+        ctx["upl_ratio"] = 0.05
+        ctx["current_price"] = 3150.0
+        ctx["has_stronger_signal"] = True
+        ctx["stronger_signal_info"] = {
+            "coin": "BTC", "direction": "long", "confidence": 0.8, "is_opposite": True,
+        }
+        decision = engine.decide(ctx)
+        assert decision.action == "force_close"
+        assert "stronger_signal" in decision.reason
 
 
 # ============================================================================
@@ -501,8 +586,12 @@ class TestTimeoutSignalEvaluation:
         assert decision.action == "force_close"
         assert "stronger_signal" in decision.reason or "换仓" in decision.reason or "rotate" in decision.reason.lower()
 
-    def test_timeout_profit_no_stronger_signal_hold(self, engine):
-        """超时 29H + 盈利 + 无更强信号 → 继续持有"""
+    def test_timeout_profit_no_stronger_signal_break_even(self, engine):
+        """超时 29H + 盈利 3.3%(>2%保本位) + 无更强信号 → 触发保本位 adjust_sl_tp
+
+        P0-1 修复：超时盈利+无更强信号不再 return hold，
+        而是继续执行保本位逻辑，避免盈利仓回吐亏损（SKHYNIX案例）。
+        """
         ctx = {
             "symbol": "ETH", "pos_side": "long",
             "entry_price": 3000.0, "current_price": 3100.0,
@@ -514,8 +603,10 @@ class TestTimeoutSignalEvaluation:
             "has_stronger_signal": False,  # 无更强信号
         }
         decision = engine.decide(ctx)
-        assert decision.action == "hold"
-        assert "no_stronger" in decision.reason or "继续持有" in decision.reason or "hold" in decision.reason.lower()
+        assert decision.action == "adjust_sl_tp"
+        assert decision.sl_px is not None
+        # 保本位 SL 应 >= 开仓价（long）
+        assert decision.sl_px >= ctx["entry_price"]
 
     def test_timeout_loss_continue_hold(self, engine):
         """超时 29H + 亏损 → 继续持有（不因超时止损）"""

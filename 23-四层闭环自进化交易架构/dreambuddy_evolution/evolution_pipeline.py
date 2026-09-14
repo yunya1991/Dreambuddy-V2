@@ -50,7 +50,6 @@ class EvolutionPipeline:
         )
 
         # L3/L4 初始化
-        from pathlib import Path
         from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
         from dreambuddy_evolution.core.bellman_tracker import BellmanVTracker
         # D方案: ShadowRL 样本 JSONL 持久化，用绝对路径避免工作目录依赖
@@ -903,6 +902,7 @@ class EvolutionPipeline:
 
         # === HJB 值函数增强（矛盾调制传入）— 在矛盾识别之后 ===
         hjb_policy = None
+        reflexivity_fuel = None  # 初始化，确保开关关闭时返回语句可访问
         try:
             from dreambuddy_evolution.agi_config import get_switch
             if get_switch("enable_hjb_solver", True):

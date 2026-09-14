@@ -71,7 +71,7 @@ class TestComputeSignalDispatch:
 
 class TestRankMapping:
     def test_rank_s_requires_score_above_06_and_two_subsignals_above_05(self):
-        sub = {"s1": 0.7, "s2": 0.6, "s3": 0.3, "s4": 0.5}
+        sub = {"revenue_stability": 0.7, "mc_fees_mean_reversion": 0.6, "tvl_growth_momentum": 0.3, "revenue_quality": 0.5}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
@@ -79,7 +79,7 @@ class TestRankMapping:
             assert sig.rank == "A"
 
     def test_rank_s_when_score_above_06_and_two_subsignals_above_05(self):
-        sub = {"s1": 0.8, "s2": 0.7, "s3": 0.5, "s4": 0.3}
+        sub = {"revenue_stability": 0.8, "mc_fees_mean_reversion": 0.7, "tvl_growth_momentum": 0.5, "revenue_quality": 0.3}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
@@ -87,7 +87,7 @@ class TestRankMapping:
             assert sig.rank == "A"
 
     def test_rank_s_when_score_above_06_and_two_subsignals_strong(self):
-        sub = {"s1": 0.9, "s2": 0.8, "s3": 0.5, "s4": 0.3}
+        sub = {"revenue_stability": 0.9, "mc_fees_mean_reversion": 0.8, "tvl_growth_momentum": 0.5, "revenue_quality": 0.3}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
@@ -95,7 +95,7 @@ class TestRankMapping:
             assert sig.rank == "S"
 
     def test_rank_a_when_score_above_03(self):
-        sub = {"s1": 0.4, "s2": 0.3, "s3": 0.2, "s4": 0.4}
+        sub = {"revenue_stability": 0.4, "mc_fees_mean_reversion": 0.3, "tvl_growth_momentum": 0.2, "revenue_quality": 0.4}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
@@ -103,7 +103,7 @@ class TestRankMapping:
             assert sig.rank == "A"
 
     def test_rank_b_when_score_neutral(self):
-        sub = {"s1": 0.1, "s2": -0.1, "s3": 0.05, "s4": -0.05}
+        sub = {"revenue_stability": 0.1, "mc_fees_mean_reversion": -0.1, "tvl_growth_momentum": 0.05, "revenue_quality": -0.05}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
@@ -111,7 +111,7 @@ class TestRankMapping:
             assert sig.rank == "B"
 
     def test_rank_c_when_score_below_neg_03(self):
-        sub = {"s1": -0.5, "s2": -0.4, "s3": -0.3, "s4": -0.2}
+        sub = {"revenue_stability": -0.5, "mc_fees_mean_reversion": -0.4, "tvl_growth_momentum": -0.3, "revenue_quality": -0.2}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
@@ -121,21 +121,21 @@ class TestRankMapping:
 
 class TestDataQuality:
     def test_data_quality_sufficient_all_nonzero(self):
-        sub = {"s1": 0.5, "s2": 0.3, "s3": 0.2, "s4": 0.4}
+        sub = {"revenue_stability": 0.5, "mc_fees_mean_reversion": 0.3, "tvl_growth_momentum": 0.2, "revenue_quality": 0.4}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
             assert sig.data_quality == "sufficient"
 
     def test_data_quality_partial_some_zero(self):
-        sub = {"s1": 0.5, "s2": 0.0, "s3": 0.2, "s4": 0.4}
+        sub = {"revenue_stability": 0.5, "mc_fees_mean_reversion": 0.0, "tvl_growth_momentum": 0.2, "revenue_quality": 0.4}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
             assert sig.data_quality == "partial"
 
     def test_data_quality_insufficient_all_zero(self):
-        sub = {"s1": 0.0, "s2": 0.0, "s3": 0.0, "s4": 0.0}
+        sub = {"revenue_stability": 0.0, "mc_fees_mean_reversion": 0.0, "tvl_growth_momentum": 0.0, "revenue_quality": 0.0}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
@@ -144,14 +144,14 @@ class TestDataQuality:
 
 class TestConfidence:
     def test_confidence_full_coverage(self):
-        sub = {"s1": 0.5, "s2": 0.3, "s3": 0.2, "s4": 0.4}
+        sub = {"revenue_stability": 0.5, "mc_fees_mean_reversion": 0.3, "tvl_growth_momentum": 0.2, "revenue_quality": 0.4}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
             assert sig.confidence == 1.0
 
     def test_confidence_half_coverage(self):
-        sub = {"s1": 0.5, "s2": 0.0, "s3": 0.2, "s4": 0.0}
+        sub = {"revenue_stability": 0.5, "mc_fees_mean_reversion": 0.0, "tvl_growth_momentum": 0.2, "revenue_quality": 0.0}
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
                    return_value=sub):
             sig = compute_signal("UNI", db_path="/fake/db.db")
@@ -165,7 +165,7 @@ class TestShadowJsonl:
             sig = CoinFundamentalSignal(
                 coin="UNI", asset_class="crypto_usdt",
                 fundamental_score=0.5, rank="A",
-                sub_signals={"s1": 0.5}, data_quality="sufficient",
+                sub_signals={"revenue_stability": 0.5}, data_quality="sufficient",
                 confidence=1.0, timestamp="2026-09-01T12:00:00+08:00",
             )
             write_shadow(sig, jsonl_path)
@@ -184,7 +184,7 @@ class TestShadowJsonl:
                 sig = CoinFundamentalSignal(
                     coin=coin, asset_class="crypto_usdt",
                     fundamental_score=0.3, rank="A",
-                    sub_signals={"s1": 0.3}, data_quality="sufficient",
+                    sub_signals={"revenue_stability": 0.3}, data_quality="sufficient",
                     confidence=1.0, timestamp="2026-09-01T12:00:00+08:00",
                 )
                 write_shadow(sig, jsonl_path)
@@ -198,7 +198,7 @@ class TestShadowJsonl:
             sig = CoinFundamentalSignal(
                 coin="UNI", asset_class="crypto_usdt",
                 fundamental_score=0.5, rank="A",
-                sub_signals={"s1": 0.5}, data_quality="sufficient",
+                sub_signals={"revenue_stability": 0.5}, data_quality="sufficient",
                 confidence=1.0, timestamp="2026-09-01T12:00:00+08:00",
             )
             write_shadow(sig, jsonl_path)
@@ -224,9 +224,9 @@ class TestFailOpen:
 class TestComputeForCoins:
     def test_compute_for_coins_batch(self):
         with patch("force_vector.coin_fundamental_ranker.crypto_compute_all",
-                   return_value={"s1": 0.3, "s2": 0.2, "s3": 0.1, "s4": 0.2}), \
+                   return_value={"revenue_stability": 0.3, "mc_fees_mean_reversion": 0.2, "tvl_growth_momentum": 0.1, "revenue_quality": 0.2}), \
              patch("force_vector.coin_fundamental_ranker.stock_compute_all",
-                   return_value={"s1": 0.4, "s2": 0.1, "s3": 0.2, "s4": 0.3}):
+                   return_value={"revenue_stability": 0.4, "mc_fees_mean_reversion": 0.1, "tvl_growth_momentum": 0.2, "revenue_quality": 0.3}):
             results = compute_for_coins(["UNI", "NVDA", "UNKNOWN"], db_path="/fake/db.db")
             assert len(results) == 3
             assert results[0].coin == "UNI"

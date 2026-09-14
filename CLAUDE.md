@@ -49,7 +49,7 @@ recall(context="当前任务描述或问题", top_k=5, min_quality="C")
 如果发现了新经验、反模式或解决方案：
 
 ```
-record(content="经验内容", quality_level="B", tags=["标签1","标签2"])
+record(content="经验内容", quality_level="B", tags="标签1,标签2")
 ```
 
 如果验证了某条已有记忆（成功或失败）：

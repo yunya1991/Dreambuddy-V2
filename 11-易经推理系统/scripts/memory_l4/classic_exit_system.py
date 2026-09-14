@@ -376,12 +376,15 @@ class ExitConfig:
 
     # ── 跟踪止损 ────────────────────────────────────────────────────────
     trailing_enabled: bool = True
-    # 回退到原始值：贝叶斯寻优值过度收紧跟踪止损
-    # v5.0再放宽：arm 6%→9%，retrace 3%→5%
-    # 理由：跟踪止损本来是给"利润已经跑出来"的仓位用的；前9%利润给它自由，回撤也放宽到5%
-    #       真正的短震荡就不会轻易把趋势单打出去
-    trailing_arm_profit_pct: float = 0.09
+    # P1-2 优化：arm 9%→4%，降低激活门槛让更多盈利被 trailing 保护
+    #   retrace 保持 5%
+    trailing_arm_profit_pct: float = 0.04
     trailing_retrace_pct: float = 0.05
+
+    # ── P1-1: 保本位（Break-Even）──────────────────────────────────────
+    # 盈利达到此阈值 → SL 上移到 entry_price 保本（仅在 trailing 未触发时生效）
+    break_even_enabled: bool = True
+    break_even_pct: float = 0.02
 
     # ── 移动止盈 (Trailing Take Profit, P3.5) ──────────────────────────
     # 与 Trailing Stop 互补：激活更早，回撤更敏感
@@ -992,6 +995,12 @@ class ClassicExitSystem:
                     decision.reason = f"TRAILING_STOP({retrace_pct*100:.1f}%)"
                     decision.confidence = 0.85
                     return decision
+            # P1-1: 保本位（trailing 未触发时，将 SL 上移到 entry_price 保本）
+            elif (self.config.break_even_enabled
+                  and pos.unrealized_pnl_pct >= self.config.break_even_pct
+                  and pos.trailing_stop_price < pos.entry_price):
+                new_stop = pos.entry_price
+                decision.reason = f"BREAK_EVEN({self.config.break_even_pct*100:.1f}%)"
         else:
             if should_arm:
                 calc_stop = pos.current_price * (1 + retrace_pct_eff)
@@ -1004,6 +1013,12 @@ class ClassicExitSystem:
                     decision.reason = f"TRAILING_STOP({retrace_pct*100:.1f}%)"
                     decision.confidence = 0.85
                     return decision
+            # P1-1: 保本位（空头：SL 下移到 entry_price 保本）
+            elif (self.config.break_even_enabled
+                  and pos.unrealized_pnl_pct >= self.config.break_even_pct
+                  and (pos.trailing_stop_price == 0.0 or pos.trailing_stop_price > pos.entry_price)):
+                new_stop = pos.entry_price
+                decision.reason = f"BREAK_EVEN({self.config.break_even_pct*100:.1f}%)"
 
         decision.new_trailing_stop = new_stop
         return decision

@@ -40,7 +40,8 @@ except Exception as e:
     pt = None
 
 if pt is None:
-    sys.exit(1)
+    if __name__ == "__main__":
+        sys.exit(1)
 
 # ========================================================================
 section("OLD-EQ — 旧签名（完全不传新参数）→ 输出完全等价旧推断")
@@ -117,9 +118,10 @@ except Exception as e:
 
 # ========================================================================
 section("📊 汇总")
-if _all_pass:
-    print("全部测试 PASS ✅")
-    sys.exit(0)
-else:
-    print("存在失败 ❌")
-    sys.exit(1)
+if __name__ == "__main__":
+    if _all_pass:
+        print("全部测试 PASS ✅")
+        sys.exit(0)
+    else:
+        print("存在失败 ❌")
+        sys.exit(1)

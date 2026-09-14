@@ -167,6 +167,7 @@ class LGBMCalibrator:
             subsample_freq=subsample_freq,
             class_weight=cw_resolved,
             random_state=self._random_state,
+            n_jobs=1,  # 避免 openmp 多线程与 loky worker 冲突导致 segfault
             verbose=-1,
         )
         # early_stopping 只在有 eval_set 时启用；为了合成数据 n=800 也能稳定训练，

@@ -325,6 +325,11 @@ class BayesianMemoryUpdater:
         
         # ---------- 保存 ----------
         self._save_memories()
+
+        # ---------- Phase 4: 高质量记忆沉淀到知识库 ----------
+        if entry.quality_level in ("S", "A"):
+            self._deposit_to_knowledge_base(entry)
+
         return posterior, entry.quality_level
     
     # ============================================================
@@ -381,6 +386,104 @@ class BayesianMemoryUpdater:
     def _get_half_life_days(self, quality_level: str) -> float:
         return self.HALF_LIFE_DAYS.get(quality_level, 60.0)  # 默认60天
     
+    # ============================================================
+    #  Phase 4: 高质量记忆沉淀到知识库
+    # ============================================================
+
+    # 已沉淀的 memory_id 集合（避免重复写入）
+    _deposited_ids: set = None
+
+    def _deposit_to_knowledge_base(self, entry: MemoryEntry) -> bool:
+        """将 S/A 级记忆沉淀到知识库 2-KNOWLEDGE/
+
+        设计:
+            - S/A 级记忆（confidence ≥ 0.70）才沉淀
+            - 写入 2-KNOWLEDGE/8-AI-COGNITION/ 蒸馏记忆目录
+            - 同一 memory_id 只沉淀一次（去重）
+            - FAIL-OPEN: 写入失败不影响贝叶斯更新
+
+        返回: True 表示新写入，False 表示已存在或失败
+        """
+        try:
+            if self._deposited_ids is None:
+                self._deposited_ids = set()
+
+            if entry.memory_id in self._deposited_ids:
+                return False  # 已沉淀
+
+            # 知识库路径: 2-KNOWLEDGE/8-AI-COGNITION/蒸馏记忆/
+            kb_path = Path(__file__).resolve().parent.parent.parent.parent / "2-KNOWLEDGE" / "8-AI-COGNITION" / "蒸馏记忆"
+            kb_path.mkdir(parents=True, exist_ok=True)
+
+            # 生成知识库文件
+            safe_id = entry.memory_id.replace("/", "-").replace(":", "-")
+            filename = f"{entry.quality_level}_{safe_id}.md"
+            filepath = kb_path / filename
+
+            # 如果文件已存在，不重复写入
+            if filepath.exists():
+                self._deposited_ids.add(entry.memory_id)
+                return False
+
+            # 构建知识库条目
+            tags_str = ", ".join(entry.tags) if entry.tags else ""
+            content = f"""# [{entry.quality_level}级记忆] {entry.memory_id}
+
+> **置信度**: {entry.confidence:.4f} | **验证次数**: {entry.verify_count} | **矛盾次数**: {entry.conflict_count}
+> **来源**: {entry.source or '未知'} | **标签**: {tags_str}
+> **创建**: {entry.created_at} | **更新**: {entry.last_updated}
+
+## 内容
+
+{entry.content}
+
+## 贝叶斯参数
+
+- Beta(α={entry.beta_alpha}, β={entry.beta_beta})
+- 期望概率: {entry.beta_alpha / (entry.beta_alpha + entry.beta_beta):.4f}
+
+---
+*最后更新：{entry.last_updated[:10]} | 来源：认知系统贝叶斯蒸馏*
+"""
+            filepath.write_text(content, encoding="utf-8")
+            self._deposited_ids.add(entry.memory_id)
+            # G10: 沉淀后触发向量索引增量构建（FAIL-OPEN）
+            self._trigger_vector_index_build()
+            return True
+        except Exception:
+            return False  # FAIL-OPEN
+
+    def _trigger_vector_index_build(self) -> None:
+        """G10: 认知蒸馏产物写入知识库后，触发向量索引增量构建
+
+        使 Phase 4 沉淀的 S/A 级记忆能被 RAG 检索到。
+        FAIL-OPEN: 构建失败不影响贝叶斯更新。
+        """
+        try:
+            import os
+            import sys
+            from pathlib import Path
+
+            vs_path = str(
+                Path(__file__).resolve().parent.parent.parent.parent
+                / "2-KNOWLEDGE" / "9-RAG-INFRA" / "vector_store"
+            )
+            if vs_path not in sys.path:
+                sys.path.insert(0, vs_path)
+
+            kb_path = str(
+                Path(__file__).resolve().parent.parent.parent.parent
+                / "2-KNOWLEDGE"
+            )
+
+            try:
+                from build_index import build_index
+                build_index(kb_path, force=False)  # 增量构建
+            except ImportError:
+                pass  # ChromaDB 未安装，跳过
+        except Exception:
+            pass  # FAIL-OPEN
+
     def _calc_entry_age_seconds(self, entry: MemoryEntry) -> float:
         """记忆从创建到现在经过的秒数。"""
         if not entry.created_at:

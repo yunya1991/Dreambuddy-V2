@@ -444,7 +444,10 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
 
     # ── 缺口 2：仓位 MIN(crm, crm×cap) — 纯函数 helper ──
     def test_gap2_cap_multiplier_0175_scales_position_usdt(self) -> None:
-        """UNI cap=0.175 → 原 1000 U → 175 U，cap_applied=True 用于日志。"""
+        """UNI cap=0.175 + sufficient → 原 1000 U → 175 U，cap_applied=True 用于日志。
+
+        ★ data_quality 门控：仅 sufficient 时 cap 生效（旧测试用 partial 已改为 sufficient）。
+        """
         from unittest.mock import MagicMock, patch
         from scripts.memory_l4.polling_trader import PollingTrader
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
@@ -453,7 +456,7 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
         t.BDSM_COINS = frozenset({"UNI"})
         t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {
             "version": "1.0", "coins": {
-                "UNI": {"available": True, "data_quality": "partial",
+                "UNI": {"available": True, "data_quality": "sufficient",
                         "direction_constraint": "NEUTRAL", "cap_multiplier": 0.175,
                         "exit_action": "NONE"}}}}
         actual, cap_used, info_tag = t._apply_bdsm_cap_multiplier("UNI", 1000.0)
@@ -462,38 +465,108 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
         self.assertEqual(info_tag, "bdsm_cap_applied")
 
     def test_gap2_non_bdsm_or_missing_cap_defaults_1(self) -> None:
-        """FAIL-OPEN: 非 BDSM 或 cap 缺失 → 返回原仓位，cap=1.0 不生效。"""
+        """FAIL-OPEN: 非 BDSM 或 cap 缺失 → 返回原仓位，cap=1.0 不生效。
+
+        ★ 空快照 data_quality="" → 降级 cap=1.0 放行（tag 为 insufficient_pass）。
+        """
         from unittest.mock import MagicMock, patch
         from scripts.memory_l4.polling_trader import PollingTrader
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t.BDSM_COINS = frozenset({"UNI"})
-        # 空快照 coins 表 → UNI 不存在
+        # 空快照 coins 表 → UNI 不存在 → data_quality="" → 降级放行
         t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {"version": "1.0", "coins": {}}}
         actual1, cap1, tag1 = t._apply_bdsm_cap_multiplier("UNI", 2000.0)
         self.assertAlmostEqual(actual1, 2000.0, delta=1e-6)
         self.assertAlmostEqual(cap1, 1.0, delta=1e-6)
-        self.assertEqual(tag1, "fail_open_cap_default_1.0")
+        self.assertIn("insufficient", tag1)
         # BTC 非 BDSM
         actual2, cap2, tag2 = t._apply_bdsm_cap_multiplier("BTC", 5000.0)
         self.assertAlmostEqual(actual2, 5000.0, delta=1e-6)
         self.assertEqual(tag2, "not_bdsm_coin")
 
     def test_gap2_cap_zero_blocks_open(self) -> None:
-        """cap=0 → 返回 (0.0, 0.0, blocked)。上层据此拦截不开仓。"""
+        """sufficient + cap=0 → 返回 (0.0, 0.0, blocked)。上层据此拦截不开仓。
+
+        ★ data_quality 门控：仅 sufficient 时 cap=0 才拦截（旧测试用 insufficient
+        已改为 sufficient，因 insufficient 现在降级为 cap=1.0 放行）。
+        """
         from unittest.mock import MagicMock, patch
         from scripts.memory_l4.polling_trader import PollingTrader
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t.BDSM_COINS = frozenset({"ETH"})
         t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {"version": "1.0", "coins": {
-            "ETH": {"available": False, "data_quality": "insufficient",
+            "ETH": {"available": False, "data_quality": "sufficient",
                     "direction_constraint": "NEUTRAL", "cap_multiplier": 0.0,
                     "exit_action": "NONE"}}}}
         actual, cap, tag = t._apply_bdsm_cap_multiplier("ETH", 3000.0)
         self.assertAlmostEqual(actual, 0.0, delta=1e-6)
         self.assertAlmostEqual(cap, 0.0, delta=1e-6)
         self.assertEqual(tag, "bdsm_cap_zero_blocked")
+
+    # ── 缺口 2.1：data_quality 门控 — 信号不足时 cap 降级放行 ──
+    def test_gap2_insufficient_cap_degrades_to_1_0(self) -> None:
+        """data_quality=insufficient → cap 降级 1.0 放行，不拦截 BCRM2.0 技术面开仓。
+
+        与 _apply_bdsm_direction_constraint L6175-6182 的降级策略对齐：
+        信号不足时 BDSM 不干扰 BCRM2.0 技术方向独立决策。
+        ARB 实证：连续9天 insufficient+cap=0 → BCRM2.0 做空信号被 cap_zero_blocked 拦截。
+        """
+        from unittest.mock import MagicMock, patch
+        from scripts.memory_l4.polling_trader import PollingTrader
+        with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
+            t = PollingTrader.__new__(PollingTrader)
+        t._log = MagicMock()
+        t.BDSM_COINS = frozenset({"ARB"})
+        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {
+            "version": "1.0", "coins": {
+                "ARB": {"data_quality": "insufficient", "cap_multiplier": 0.0,
+                        "direction_constraint": "NEUTRAL", "confidence": 0.0}}}}
+        actual, cap, tag = t._apply_bdsm_cap_multiplier("ARB", 1000.0)
+        self.assertAlmostEqual(actual, 1000.0, delta=1e-6,
+                               msg=f"insufficient 应降级 cap=1.0 放行，实际 actual={actual} cap={cap} tag={tag}")
+        self.assertAlmostEqual(cap, 1.0, delta=1e-6)
+        self.assertIn("insufficient", tag)
+
+    def test_gap2_partial_cap_degrades_to_1_0(self) -> None:
+        """data_quality=partial → cap 降级 1.0 放行（与方向约束对齐）。
+
+        ZEC 实证：partial+cap=0.448 → 仓位被缩放，但信号不足时不应干预。
+        """
+        from unittest.mock import MagicMock, patch
+        from scripts.memory_l4.polling_trader import PollingTrader
+        with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
+            t = PollingTrader.__new__(PollingTrader)
+        t._log = MagicMock()
+        t.BDSM_COINS = frozenset({"ZEC"})
+        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {
+            "version": "1.0", "coins": {
+                "ZEC": {"data_quality": "partial", "cap_multiplier": 0.448,
+                        "direction_constraint": "LONG_ONLY", "confidence": 0.5}}}}
+        actual, cap, tag = t._apply_bdsm_cap_multiplier("ZEC", 1000.0)
+        self.assertAlmostEqual(actual, 1000.0, delta=1e-6,
+                               msg=f"partial 应降级 cap=1.0 放行，实际 actual={actual} cap={cap} tag={tag}")
+        self.assertAlmostEqual(cap, 1.0, delta=1e-6)
+        self.assertIn("insufficient", tag)
+
+    def test_gap2_sufficient_cap_applies_normally(self) -> None:
+        """data_quality=sufficient → cap_multiplier 正常生效（门控不影响高置信度场景）。"""
+        from unittest.mock import MagicMock, patch
+        from scripts.memory_l4.polling_trader import PollingTrader
+        with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
+            t = PollingTrader.__new__(PollingTrader)
+        t._log = MagicMock()
+        t.BDSM_COINS = frozenset({"SOL"})
+        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {
+            "version": "1.0", "coins": {
+                "SOL": {"data_quality": "sufficient", "cap_multiplier": 0.25,
+                        "direction_constraint": "LONG_BLOCKED", "confidence": 0.875}}}}
+        actual, cap, tag = t._apply_bdsm_cap_multiplier("SOL", 1000.0)
+        self.assertAlmostEqual(actual, 250.0, delta=1e-6,
+                               msg=f"sufficient 时 cap=0.25 应正常生效，实际 actual={actual} cap={cap} tag={tag}")
+        self.assertAlmostEqual(cap, 0.25, delta=1e-6)
+        self.assertEqual(tag, "bdsm_cap_applied")
 
     # ── 缺口 3：出场 OR 逻辑 ──
     def test_gap3_close_all_calls_okx_full_close_and_handle_close(self) -> None:
