@@ -424,12 +424,14 @@ class DreamOSScheduler:
 
                                 # A层币池接线: job配置 > coin_pool.json(每周选币cron产出) > 默认池
                                 # PROP-20260816 模块2/4: V15路径仅消费多池(按合并分top6);
-                                # 对冲候选=多/空池合并分top1; regime透传给对冲激活门禁
+                                # PROP-20260816B 模块1: 对冲候选=周报多/空池各Top8(大模型粗选),
+                                # 排名权交还引擎(模块2/3); regime透传给对冲激活门禁
+                                HEDGE_CAND_TOP_N = 8
                                 target_symbols = list(_symbols or [])
                                 pool_source = "job_config"
                                 pool_regime = ""
-                                hedge_long_cand = None
-                                hedge_short_cand = None
+                                hedge_long_cands: List[Dict[str, Any]] = []
+                                hedge_short_cands: List[Dict[str, Any]] = []
                                 if not target_symbols:
                                     try:
                                         pools = orch.coin_selector._load_persisted_pools()
@@ -445,10 +447,10 @@ class DreamOSScheduler:
                                                     ordered.append(s)
                                             target_symbols = ordered[:6]
                                             pool_source = pools.get("source", "coin_pool.json")
-                                            if long_merged:
-                                                hedge_long_cand = long_merged[0]
-                                            if short_merged:
-                                                hedge_short_cand = short_merged[0]
+                                            # PROP-20260816B: 候选供给=周报原始排序Top8
+                                            # (hermes-weekly 已是大模型排序产出, 切Top8即粗选)
+                                            hedge_long_cands = list(pools.get("long_pool", []))[:HEDGE_CAND_TOP_N]
+                                            hedge_short_cands = list(pools.get("short_pool", []))[:HEDGE_CAND_TOP_N]
                                     except Exception as e:
                                         logger.warning(f"F层编排: 币池加载失败({e}), 回退默认池")
                                 if not target_symbols:
@@ -456,6 +458,9 @@ class DreamOSScheduler:
                                     pool_source = "default"
                                 logger.info(f"F层编排启动: {len(target_symbols)}币种 {target_symbols} | 来源={pool_source}")
                                 results = []
+                                # PROP-20260816B: V15循环中收集注入价, 供对冲候选复用
+                                # (避免重复行情拉取; 未注入到的币 price=0 → price_ok=False)
+                                v15_prices: Dict[str, float] = {}
                                 # PROP-20260816 P1: B层指标注入(修复F-1数据饥饿)
                                 from dreamos.cli.auto_trader import AutoTrader
                                 from dreamos.capabilities.trading.market_enrichment import enrich_market_data
@@ -477,6 +482,7 @@ class DreamOSScheduler:
                                                 )
                                         except Exception as e:
                                             logger.warning(f"F层编排 {sym}: 指标注入失败(降级): {e}")
+                                    v15_prices[sym] = float(md.get("close_price") or 0.0)
                                     cr = orch.run_cycle(md)
                                     results.append({
                                         "symbol": sym,
@@ -527,43 +533,121 @@ class DreamOSScheduler:
                                             open_pair.short_symbol: _hedge_px(open_pair.short_symbol),
                                         }
                                         hedge_report["exits"] = hedge.manage_exits(px_open)
-                                    # 2) 新对入场评估（仅有币池来源且无存量对时）
-                                    if hedge_long_cand and hedge_short_cand and not hedge.has_open_pair():
-                                        ls = hedge_long_cand.get("symbol", "")
-                                        ss = hedge_short_cand.get("symbol", "")
-                                        # 长腿信号: 复用本周期 B层结果（多池top1必在 target_symbols 内）
-                                        long_sig = next(
-                                            (
-                                                {"direction": r.get("direction") or "",
-                                                 "confidence": float(r.get("confidence") or 0.0)}
-                                                for r in results if r.get("symbol") == ls
-                                            ),
-                                            {"direction": "", "confidence": 0.0},
-                                        )
-                                        # 短腿信号: 对空池 top1 跑一次 B层（long_only 门禁兜底,
-                                        # 即使 B层误发 SHORT 也不会被 V15 执行）
-                                        try:
-                                            md_s = {"symbol": ss, "entry_price": 0.0, "close_price": 0.0}
+                                    # 2) PROP-20260816B: 新对入场评估 — Top8候选→引擎逐个推导→conf排名择优
+                                    #    （仅有币池来源且无存量对时）
+                                    if hedge_long_cands and hedge_short_cands and not hedge.has_open_pair():
+                                        from dreamos.capabilities.trading.hedge_executor import pick_best_candidate
+                                        results_by_sym = {r.get("symbol"): r for r in results if r.get("symbol")}
+                                        eval_cache: Dict[str, Dict[str, Any]] = {}
+
+                                        def _hedge_b_signal(sym: str) -> Dict[str, Any]:
+                                            """B层纯信号推导（无C层执行, 不触碰V15账本）。
+
+                                            与 run_cycle 信号口径对齐: generate() + 认知调整。
+                                            行情拉取失败(close_price≤0) → price_ok=False,
+                                            排名阶段自动淘汰（根治 KPEPE 类无数据候选）。
+                                            """
+                                            md_c = {"symbol": sym, "entry_price": 0.0, "close_price": 0.0}
                                             if trader is not None:
-                                                md_s = enrich_market_data(ss, md_s, trader._fetch_market_data)
-                                            cr_s = orch.run_cycle(md_s)
-                                            short_sig = {
-                                                "direction": cr_s.get("signal", {}).get("direction") or "",
-                                                "confidence": float(cr_s.get("signal", {}).get("confidence") or 0.0),
-                                            }
+                                                try:
+                                                    md_c = enrich_market_data(sym, md_c, trader._fetch_market_data)
+                                                except Exception as e:
+                                                    logger.warning(f"F层编排: 对冲候选 {sym} 指标注入失败(降级): {e}")
+                                            px_c = float(md_c.get("close_price") or 0.0)
+                                            if px_c <= 0:
+                                                return {"symbol": sym, "direction": "", "confidence": 0.0,
+                                                        "price": 0.0, "price_ok": False, "reused": False}
                                             try:
-                                                from dreamos.capabilities.trading import coin_selector as _cs_s
-                                                _cs_s.record_dynamic_score(ss, short_sig["confidence"], short_sig["direction"])
+                                                ctx_c = orch.reviewer.get_cognitive_context(sym)
+                                                adj_c = float(ctx_c.get("confidence_adjustment", 0.0) or 0.0)
                                             except Exception:
-                                                pass
+                                                adj_c = 0.0
+                                            sig_c = orch.signal_generator.generate(md_c)
+                                            raw_c = float(sig_c.get("confidence", 0.0) or 0.0)
+                                            return {
+                                                "symbol": sym,
+                                                "direction": sig_c.get("direction", "HOLD") or "HOLD",
+                                                "confidence": round(max(0.0, min(1.0, raw_c + adj_c)), 4),
+                                                "confidence_raw": raw_c,
+                                                "price": px_c,
+                                                "price_ok": True,
+                                                "reused": False,
+                                            }
+
+                                        def _eval_candidate(sym: str) -> Dict[str, Any]:
+                                            """单候选评估: V15周期已跑过→复用; 否则B层纯推导。"""
+                                            if sym in eval_cache:
+                                                return eval_cache[sym]
+                                            r = results_by_sym.get(sym)
+                                            if r is not None:
+                                                px_r = float(v15_prices.get(sym, 0.0) or 0.0)
+                                                ev = {
+                                                    "symbol": sym,
+                                                    "direction": r.get("direction") or "",
+                                                    "confidence": float(r.get("confidence") or 0.0),
+                                                    "price": px_r,
+                                                    "price_ok": px_r > 0,
+                                                    "reused": True,
+                                                }
+                                            else:
+                                                ev = _hedge_b_signal(sym)
+                                            eval_cache[sym] = ev
+                                            return ev
+
+                                        long_evals = [
+                                            _eval_candidate((c or {}).get("symbol", ""))
+                                            for c in hedge_long_cands if (c or {}).get("symbol")
+                                        ]
+                                        short_evals = [
+                                            _eval_candidate((c or {}).get("symbol", ""))
+                                            for c in hedge_short_cands if (c or {}).get("symbol")
+                                        ]
+
+                                        # PROP-20260816B 模块5: 新评估候选动态分回写
+                                        # （V15已回写的复用候选跳过, 避免 cycles_seen 重复计数;
+                                        #   无数据候选不回写, degenerate conf 会污染动态层）
+                                        try:
+                                            from dreamos.capabilities.trading import coin_selector as _cs_s
+                                            for ev in long_evals + short_evals:
+                                                if ev.get("reused") or not ev.get("price_ok"):
+                                                    continue
+                                                _cs_s.record_dynamic_score(
+                                                    ev["symbol"], ev["confidence"], ev["direction"]
+                                                )
                                         except Exception as e:
-                                            logger.warning(f"F层编排: 对冲短腿B层评估失败({e})")
-                                            short_sig = {"direction": "", "confidence": 0.0}
-                                        px_en = {ls: _hedge_px(ls), ss: _hedge_px(ss)}
-                                        hedge_report["entry"] = hedge.evaluate_entry(
-                                            hedge_long_cand, hedge_short_cand,
-                                            long_sig, short_sig, pool_regime, px_en,
-                                        )
+                                            logger.warning(f"F层编排: 对冲候选动态分回写失败({e})")
+
+                                        best_long = pick_best_candidate(long_evals, "LONG")
+                                        best_short = pick_best_candidate(short_evals, "SHORT")
+                                        hedge_report["selection"] = {
+                                            "long_evaluated": len(long_evals),
+                                            "short_evaluated": len(short_evals),
+                                            "best_long": (
+                                                {"symbol": best_long["symbol"], "confidence": best_long["confidence"]}
+                                                if best_long else None
+                                            ),
+                                            "best_short": (
+                                                {"symbol": best_short["symbol"], "confidence": best_short["confidence"]}
+                                                if best_short else None
+                                            ),
+                                        }
+                                        if best_long is None or best_short is None:
+                                            hedge_report["entry"] = {
+                                                "status": "SKIPPED",
+                                                "reason": "no_direction_matched_candidate",
+                                                "best_long": best_long is not None,
+                                                "best_short": best_short is not None,
+                                            }
+                                        else:
+                                            ls = best_long["symbol"]
+                                            ss = best_short["symbol"]
+                                            px_en = {ls: best_long["price"], ss: best_short["price"]}
+                                            hedge_report["entry"] = hedge.evaluate_entry(
+                                                {"symbol": ls}, {"symbol": ss},
+                                                {"direction": best_long["direction"], "confidence": best_long["confidence"]},
+                                                {"direction": best_short["direction"], "confidence": best_short["confidence"]},
+                                                pool_regime, px_en,
+                                            )
                                     if hedge_report:
                                         logger.info(f"F层对冲路径: {hedge_report}")
                                 except Exception as e:

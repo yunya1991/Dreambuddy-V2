@@ -13,12 +13,25 @@ import { decrypt, encrypt } from '@/lib/encryption';
 // 类型定义
 // ============================================================
 
+export interface LLMFunctionDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
 export interface LLMCallOptions {
   prompt: string;
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
   timeoutMs?: number;
+  functions?: LLMFunctionDefinition[];
+  functionCall?: 'auto' | 'none' | string;
+}
+
+export interface LLMFunctionCall {
+  name: string;
+  arguments: Record<string, unknown>;
 }
 
 export interface LLMCallResult {
@@ -26,6 +39,7 @@ export interface LLMCallResult {
   model: string;
   tokensUsed: number;
   latencyMs: number;
+  functionCall?: LLMFunctionCall | null;
 }
 
 interface LLMCredential {
@@ -43,7 +57,7 @@ interface LLMCredential {
 const PROVIDER_DEFAULTS: Record<string, { endpoint: string; model: string }> = {
   openai: { endpoint: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o' },
   deepseek: { endpoint: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat' },
-  dashscope: { endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus' },
+  dashscope: { endpoint: 'https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen3.8-max' },
   anthropic: { endpoint: 'https://api.anthropic.com/v1/messages', model: 'claude-sonnet-4-20250514' },
   custom: { endpoint: '', model: 'gpt-4o' },
 };
@@ -130,12 +144,21 @@ async function getLLMCredential(uid?: string): Promise<LLMCredential | null> {
  * 获取降级凭证（从环境变量）
  */
 function getFallbackCredential(): LLMCredential {
-  const apiKey = process.env.DEEPSEEK_API_KEY || '';
+  // 优先使用阿里云 DashScope 凭证
+  const dashscopeKey = process.env.DASHSCOPE_API_KEY || process.env.DEEPSEEK_API_KEY || '';
+  if (dashscopeKey) {
+    return {
+      provider: 'dashscope',
+      apiKey: dashscopeKey,
+      baseUrl: process.env.DASHSCOPE_BASE_URL,
+      model: process.env.DASHSCOPE_MODEL || process.env.DEEPSEEK_MODEL || 'qwen3.8-max',
+    };
+  }
   return {
     provider: 'deepseek',
-    apiKey,
+    apiKey: '',
     baseUrl: undefined,
-    model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+    model: 'deepseek-chat',
   };
 }
 
@@ -182,18 +205,39 @@ export async function callLLM(options: LLMCallOptions, uid?: string): Promise<LL
     }
     messages.push({ role: 'user', content: options.prompt });
 
+    // 构建 Function Calling 工具定义
+    const tools = options.functions?.map(fn => ({
+      type: 'function' as const,
+      function: {
+        name: fn.name,
+        description: fn.description,
+        parameters: fn.parameters,
+      },
+    }));
+
+    const requestBody: Record<string, unknown> = {
+      model,
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 2000,
+      // PROP-20260829-C P2.1: 对齐 fallback-engine L153 P0 痕迹——
+      // qwen3 思考链会导致 15s 超时；dashscope 必需，其余供应商忽略此字段
+      enable_thinking: false,
+    };
+
+    // 添加 Function Calling 参数
+    if (tools && tools.length > 0) {
+      requestBody.tools = tools;
+      requestBody.tool_choice = options.functionCall || 'auto';
+    }
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${credential.apiKey}`,
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: options.temperature ?? 0.7,
-        max_tokens: options.maxTokens ?? 2000,
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
 
@@ -205,10 +249,32 @@ export async function callLLM(options: LLMCallOptions, uid?: string): Promise<LL
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content ?? '';
+    const message = data.choices?.[0]?.message;
+    const content = message?.content ?? '';
     const tokensUsed = data.usage?.total_tokens || 0;
 
-    return { content, model, tokensUsed, latencyMs };
+    // 解析 Function Call 结果
+    let functionCall: LLMFunctionCall | null = null;
+    if (message?.tool_calls?.[0]?.function) {
+      const fc = message.tool_calls[0].function;
+      try {
+        const args = typeof fc.arguments === 'string' ? JSON.parse(fc.arguments) : fc.arguments;
+        functionCall = { name: fc.name, arguments: args };
+      } catch {
+        functionCall = { name: fc.name, arguments: { raw: fc.arguments } };
+      }
+    } else if (message?.function_call) {
+      // 兼容旧版 function_call 格式
+      const fc = message.function_call;
+      try {
+        const args = typeof fc.arguments === 'string' ? JSON.parse(fc.arguments) : fc.arguments;
+        functionCall = { name: fc.name, arguments: args };
+      } catch {
+        functionCall = { name: fc.name, arguments: { raw: fc.arguments } };
+      }
+    }
+
+    return { content, model, tokensUsed, latencyMs, functionCall };
   } catch (error: unknown) {
     if (error instanceof Error && error.name === 'AbortError') {
       return {

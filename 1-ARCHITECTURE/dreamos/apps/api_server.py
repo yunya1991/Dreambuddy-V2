@@ -28,11 +28,22 @@ Dreambuddy OS — HTTP API 服务
 from __future__ import annotations
 
 import os
+import threading
 from typing import Any, Dict, Optional
 
 from flask import Flask, jsonify, request
 
 from dreamos.apps.trading_agent import TradingAgent
+
+
+def _parse_phase(raw: Any) -> Optional[int]:
+    """解析请求体中的 phase 参数（渐进式编排档位）
+
+    仅接受 1 或 2；其余（None/非法值）返回 None = 完整编排。
+    """
+    if raw in (1, 2, "1", "2"):
+        return int(raw)
+    return None
 
 
 def create_app(agent: Optional[TradingAgent] = None,
@@ -101,13 +112,16 @@ def create_app(agent: Optional[TradingAgent] = None,
             {
                 "user_input": "",               // 可选：用户自然语言输入
                 "market_data": { ... },         // 可选：市场数据
-                "context": {}                   // 可选：上下文
+                "context": {},                  // 可选：上下文
+                "phase": 1                      // 可选：渐进式编排档位（1=仅必要节点）
             }
         """
         data = request.get_json(silent=True) or {}
         user_input = data.get("user_input", "")
         market_data = data.get("market_data", {})
         context = data.get("context", {})
+        intent_hint = data.get("intent_hint")
+        phase = _parse_phase(data.get("phase"))
 
         if not market_data and not user_input:
             return jsonify({"error": "user_input or market_data required"}), 400
@@ -117,10 +131,90 @@ def create_app(agent: Optional[TradingAgent] = None,
                 user_input=user_input,
                 market_data=market_data,
                 context=context,
+                intent_hint=intent_hint if isinstance(intent_hint, dict) else None,
+                phase=phase,
             )
             return jsonify(result)
         except Exception as e:
             return jsonify({"error": f"执行失败: {str(e)}"}), 500
+
+    # ── 异步编排（20260829-bridge S7）：提交即返，轮询取果 ──
+    # 解决同步 /run 54s 级延迟阻塞前端的问题。
+    # 内存注册表 + 锁；容量上限 200 条，超出淘汰最旧。
+    _async_results: Dict[str, Dict[str, Any]] = {}
+    _async_lock = threading.Lock()
+    _ASYNC_MAX_ENTRIES = 200
+
+    def _async_trim_locked() -> None:
+        while len(_async_results) > _ASYNC_MAX_ENTRIES:
+            _async_results.pop(next(iter(_async_results)), None)
+
+    @app.post("/api/v1/run/async")
+    def run_analysis_async():
+        """异步执行完整推理：立即返回 {cycle_id, status:"accepted"}（HTTP 202），
+        后台线程执行，GET /api/v1/result/<cycle_id> 轮询结果。
+
+        请求体同 /api/v1/run（user_input/market_data/context/intent_hint/phase）。
+        """
+        data = request.get_json(silent=True) or {}
+        user_input = data.get("user_input", "")
+        market_data = data.get("market_data", {})
+        context = data.get("context", {})
+        intent_hint = data.get("intent_hint")
+        phase = _parse_phase(data.get("phase"))
+
+        if not market_data and not user_input:
+            return jsonify({"error": "user_input or market_data required"}), 400
+
+        from dreamos.shared.utils import gen_cycle_id
+        async_cycle_id = gen_cycle_id("async")
+        # 把异步句柄写入 context，便于结果回溯
+        if isinstance(context, dict):
+            context.setdefault("async_cycle_id", async_cycle_id)
+
+        with _async_lock:
+            _async_results[async_cycle_id] = {
+                "status": "pending", "result": None, "error": None,
+            }
+            _async_trim_locked()
+
+        def _worker() -> None:
+            with _async_lock:
+                entry = _async_results.get(async_cycle_id)
+                if entry is not None:
+                    entry["status"] = "running"
+            try:
+                result = _agent.run(
+                    user_input=user_input,
+                    market_data=market_data,
+                    context=context,
+                    intent_hint=intent_hint if isinstance(intent_hint, dict) else None,
+                    phase=phase,
+                )
+                with _async_lock:
+                    _async_results[async_cycle_id] = {
+                        "status": "done", "result": result, "error": None,
+                    }
+            except Exception as e:  # noqa: BLE001 — 异步任务必须兜底
+                with _async_lock:
+                    _async_results[async_cycle_id] = {
+                        "status": "error", "result": None, "error": str(e),
+                    }
+
+        threading.Thread(
+            target=_worker, name=f"dreamos-async-{async_cycle_id}", daemon=True,
+        ).start()
+        return jsonify({"cycle_id": async_cycle_id, "status": "accepted"}), 202
+
+    @app.get("/api/v1/result/<cycle_id>")
+    def get_async_result(cycle_id: str):
+        """轮询异步编排结果：{cycle_id, status, result?, error?}
+        status: pending → running → done | error；未知 cycle_id 返回 404。"""
+        with _async_lock:
+            entry = _async_results.get(cycle_id)
+            if entry is None:
+                return jsonify({"error": f"unknown cycle_id: {cycle_id}"}), 404
+            return jsonify({"cycle_id": cycle_id, **entry})
 
     @app.post("/api/v1/intent")
     def recognize_intent():

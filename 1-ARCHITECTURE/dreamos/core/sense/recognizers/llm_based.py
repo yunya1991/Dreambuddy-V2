@@ -32,6 +32,7 @@ SYSTEM_PROMPT = """你是 Dreambuddy OS 的意图识别引擎。
   - FUNDAMENTAL_PLAY: 基本面驱动，新闻/资金流/链上数据
   - BREAKOUT: 突破策略，关键位突破
   - KNOWLEDGE_MATCH: 知识库匹配，历史模式
+  - DEEP_ANALYSIS: A系列深度分析（用户显式要求深度分析/深度调研/矛盾论/第一性原理/A0-A3 时使用）
   - UNCERTAIN: 不确定，需要更多信息
 
 输出严格的 JSON 格式:

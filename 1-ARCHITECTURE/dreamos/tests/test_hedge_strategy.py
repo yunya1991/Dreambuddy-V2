@@ -6,6 +6,10 @@
     3. V15 long_only 门禁（SHORT 拒单, LONG 不受影响）
     4. 动态分: 合并排序 / 冷启动 / 回写往返
 
+PROP-20260816B 引擎驱动择优（2026-08-16 用户批准）:
+    5. pick_best_candidate: 引擎conf排名择优 / 方向过滤 / 无数据淘汰 / 宁缺毋滥
+    6. MIN_LEG_CONF 重标定 0.62→0.45 边界验证
+
 隔离: conftest 将 HEDGE_POSITIONS_FILE / DYNAMIC_SCORES_FILE 重定向到 tmp_path,
 测试永不触碰生产 scheduler_data。
 """
@@ -15,6 +19,7 @@ from dreamos.capabilities.trading.hedge_executor import (
     MIN_LEG_CONF,
     TP_COMBINED_PCT,
     SL_COMBINED_PCT,
+    pick_best_candidate,
 )
 from dreamos.capabilities.trading import coin_selector
 from dreamos.capabilities.trading.v15_executor import V15Executor
@@ -109,6 +114,75 @@ def test_direction_mismatch_blocks():
     )
     assert r["status"] == "SKIPPED"
     assert r["reason"] == "direction_mismatch"
+
+
+# ============================================================
+# PROP-20260816B: 引擎驱动择优 pick_best_candidate
+# ============================================================
+
+def _ev(symbol, direction, conf, price_ok=True, price=100.0):
+    return {
+        "symbol": symbol, "direction": direction, "confidence": conf,
+        "price": price, "price_ok": price_ok,
+    }
+
+
+def test_pick_best_ranks_by_engine_conf():
+    """排名择优: 方向匹配候选中取引擎 conf 最高（非池序 top1）。"""
+    evals = [
+        _ev("AAA", "LONG", 0.55),
+        _ev("BBB", "LONG", 0.68),   # conf 最高 → 胜出
+        _ev("CCC", "LONG", 0.47),
+    ]
+    best = pick_best_candidate(evals, "LONG")
+    assert best is not None and best["symbol"] == "BBB"
+
+
+def test_pick_best_direction_filter():
+    """方向过滤: 只有方向匹配的候选参与排名。"""
+    evals = [
+        _ev("AAA", "LONG", 0.90),   # 方向不符（目标 SHORT）→ 忽略
+        _ev("BBB", "SHORT", 0.52),  # 匹配 → 胜出
+        _ev("CCC", "HOLD", 0.88),
+    ]
+    best = pick_best_candidate(evals, "SHORT")
+    assert best is not None and best["symbol"] == "BBB"
+
+
+def test_pick_best_no_data_eliminated():
+    """无数据淘汰: conf 更高但 price_ok=False（KPEPE 类）被自动淘汰。"""
+    evals = [
+        _ev("KPEPE", "SHORT", 0.95, price_ok=False),  # 无行情 → 淘汰
+        _ev("ACE", "SHORT", 0.53, price_ok=True),     # 有数据 → 胜出
+    ]
+    best = pick_best_candidate(evals, "SHORT")
+    assert best is not None and best["symbol"] == "ACE"
+
+
+def test_pick_best_none_when_no_match():
+    """宁缺毋滥: 无方向匹配候选 / 空列表 → None（跳过本周期对冲入场）。"""
+    assert pick_best_candidate([_ev("AAA", "LONG", 0.9)], "SHORT") is None
+    assert pick_best_candidate([], "LONG") is None
+    assert pick_best_candidate(None, "LONG") is None
+
+
+def test_conf_gate_045_recalibrated():
+    """PROP-20260816B 门禁重标定: 0.45 为边界（含）, 0.44 被拦。"""
+    assert abs(MIN_LEG_CONF - 0.45) < 1e-9
+    # 边界下方先测（拒绝路径不留仓, 不污染共享隔离账本）: 0.44 → conf_below_gate
+    h2 = HedgeExecutor(dry_run=True)
+    r2 = h2.evaluate_entry(
+        _cand("AAA"), _cand("BBB"), _sig("LONG", 0.44), _sig("SHORT", 0.80),
+        RANGE_REGIME, PRICES,
+    )
+    assert r2["status"] == "SKIPPED" and r2["reason"] == "conf_below_gate"
+    # 边界通过: 双腿恰 0.45 → OPEN
+    h = HedgeExecutor(dry_run=True)
+    r = h.evaluate_entry(
+        _cand("AAA"), _cand("BBB"), _sig("LONG", 0.45), _sig("SHORT", 0.45),
+        RANGE_REGIME, PRICES,
+    )
+    assert r["status"] == "OPEN" and h.has_open_pair()
 
 
 def test_same_symbol_blocked():

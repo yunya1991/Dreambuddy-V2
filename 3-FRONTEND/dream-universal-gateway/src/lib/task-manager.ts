@@ -28,6 +28,10 @@ import {
   type IntentRecognitionResult,
   type RoutingDecision,
 } from './intent';
+// PROP-20260828B P3: 统一意图管线（task 链接入，INTENT_METHOD=fc 启用）
+import { recognizeIntentUnified } from './intent/intent-unified';
+import { canonToLegacy } from './intent/intent-schema';
+import type { UnifiedIntentResult } from './intent/intent-schema';
 import {
   fetchMarketData,
   formatMarketData,
@@ -366,8 +370,30 @@ function convertIntentToTaskFile(result: IntentRecognitionResult): TaskFile['int
 }
 
 /**
- * 创建任务
+ * PROP-20260828B P3: 统一管线结果 → 旧 IntentRecognitionResult 适配器
+ * 正典 35 型无损降级为 legacy 15 型（scenario 系归并 deep_analysis），
+ * 澄清字段原样透传，保持 task 链下游（convertIntentToTaskFile/routeIntent）契约不变
  */
+function unifiedToLegacyResult(u: UnifiedIntentResult): IntentRecognitionResult {
+  return {
+    intent: canonToLegacy(u.intent) as IntentType,
+    confidence: u.confidence,
+    entities: u.entities,
+    complexity: u.complexity,
+    reasoning: u.reasoning,
+    method: u.method === 'fc' ? 'llm' : u.method === 'rule' ? 'rule' : 'default',
+    context_aware: u.context_aware,
+    matchedPatternId: u.matchedPatternId,
+    clarification_options: u.clarification_options?.map(o => ({
+      key: o.key,
+      label: o.label,
+      target_intent: canonToLegacy(o.target_intent) as IntentType,
+      entities: o.entities,
+    })),
+    clarification_question: u.clarification_question,
+  };
+}
+
 export async function createTask(params: {
   message: string;
   thinking_mode?: ThinkingMode;
@@ -375,6 +401,7 @@ export async function createTask(params: {
   llm_model?: string;
   intent_method?: string;
   trading_mode?: 'ai_skill' | 'classic';
+  user_role?: 'FREE' | 'PRO' | 'ADMIN';
 }): Promise<TaskFile> {
   ensureDir(TASKS_DIR);
   ensureDir(RESULTS_DIR);
@@ -386,13 +413,29 @@ export async function createTask(params: {
 
   const context = await getContextForLLM(sessionId);
 
-  const intentResult = await recognizeIntent(params.message, {
+  // PROP-20260828B P3: 统一管线接入 —— INTENT_METHOD=fc 走统一管线，
+  // 否则保持旧路径（零漂移）。user_role 由调用方传入，不再硬编码 'FREE'。
+  const sessionCtx = {
     session_id: sessionId,
-    user_role: 'FREE',
+    user_role: params.user_role ?? 'FREE',
     thinking_mode: thinkingMode,
     trading_mode: params.trading_mode || 'ai_skill',
-    message_history: context.type === 'raw' ? context.content : context.content,
-  });
+    message_history: context.content ? [context.content] : [],
+  } as const;
+
+  let intentResult: IntentRecognitionResult;
+  let gateAudit: { role: string; allowed: boolean; loop: string } | undefined;
+  if (process.env.INTENT_METHOD === 'fc') {
+    const unified = await recognizeIntentUnified(params.message, { ...sessionCtx }, { method: 'fc' });
+    intentResult = unifiedToLegacyResult(unified);
+    gateAudit = { role: unified.gate.role, allowed: unified.gate.allowed, loop: unified.loop };
+    if (!unified.gate.allowed) {
+      // 角色矩阵为草案（待评审签署）：仅审计留痕，不拦截
+      console.warn(`[ROLE-GATE-AUDIT] denied role=${unified.gate.role} intent=${unified.intent} loop=${unified.loop}（草案矩阵，仅审计）`);
+    }
+  } else {
+    intentResult = await recognizeIntent(params.message, { ...sessionCtx });
+  }
 
   const intent = convertIntentToTaskFile(intentResult);
   const now = new Date().toISOString();
@@ -413,7 +456,9 @@ export async function createTask(params: {
     metadata: {
       user_agent: 'DreamGateway/1.0',
       llm_model: params.llm_model,
-      intent_method: intentResult.method,
+      intent_method: process.env.INTENT_METHOD === 'fc' ? 'fc' : intentResult.method,
+      // PROP-20260828B P3: 角色门禁审计留痕（草案矩阵，仅审计不拦截）
+      ...(gateAudit ? { role_gate: gateAudit } : {}),
     },
   };
 
@@ -1101,7 +1146,8 @@ async function executeWithPlanner(
     // 3. 创建 ExecutionPlanner
     const planner = new ExecutionPlanner(registry);
 
-    // 4. 意图映射
+    // 4. 意图映射（legacy 8 型 + PROP-20260828B P4 正典别名层：
+    //    fc 模式下 task 文件可能携带正典 35 型意图，此处归并到 planner 可消费的意图）
     const intentMap: Record<string, string> = {
       'market_query': 'market_query',
       'deep_analysis': 'deep_analysis',
@@ -1111,6 +1157,21 @@ async function executeWithPlanner(
       'risk_alert': 'risk_alert',
       'simple_qa': 'simple_qa',
       'command': 'command',
+      // ── 正典别名（canon → planner）─────────────────────
+      'indicator_query': 'market_query',     // 指标查询 → 行情链
+      'pattern_recognition': 'market_query', // 形态识别 → 行情链
+      'data_export': 'market_query',         // 数据导出 → 行情链
+      'macro_analysis': 'deep_analysis',     // 宏观分析 → 深度分析
+      'news_impact': 'deep_analysis',        // 新闻冲击 → 深度分析
+      'sentiment_gauge': 'deep_analysis',    // 情绪测量 → 深度分析
+      'position_review': 'deep_analysis',    // 持仓复盘 → 深度分析
+      'trade_journal': 'deep_analysis',      // 交易日志 → 深度分析
+      'report_gen': 'deep_analysis',         // 报告生成 → 深度分析
+      'cross_analysis': 'deep_analysis',     // 交叉分析 → 深度分析
+      'sector_rotation': 'deep_analysis',    // 板块轮动 → 深度分析
+      'risk_check': 'risk_alert',            // 风险检查 → 风险告警
+      'backtest_request': 'strategy_verify', // 回测请求 → 策略验证
+      'knowledge_query': 'simple_qa',        // 知识查询 → 简单问答
     };
 
     // 5. 复杂度映射
@@ -1280,7 +1341,7 @@ Core requirements:
       + detailedAnalysis
       + deepenOptions
       + reportLink
-      + (internalDetails ? `\n\n<details>\n<summary>📊 编排详情（${summaryStats}）</summary>\n\n${internalDetails}\n\n${supplementInfo ? supplementInfo + '\n' : ''}</details>` : '');
+      + (internalDetails ? `\n\n> 📊 ${summaryStats}` : '');
 
     let chatContent = '';
     if (isAnalysisIntent && coreView) {

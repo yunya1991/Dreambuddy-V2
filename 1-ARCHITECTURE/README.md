@@ -42,7 +42,7 @@ SSoT v3.0 覆盖 12 章：
 | 前端设计/ | 前端架构、UI 规范 | [README.md](./前端设计/README.md) |
 | 工作索引/ | SKILL 索引、部门矩阵、工具映射 | [README.md](./工作索引/README.md) |
 | FAQ/ | 常见问题 | [README.md](./FAQ/README.md) |
-| dreamos/ | DreamOS CLI | [docs/ENGINEERING_INDEX.md](./dreamos/docs/ENGINEERING_INDEX.md) |
+| dreamos/ | Dreambuddy OS 内核（代码+文档） | [docs/ENGINEERING_INDEX.md](./dreamos/docs/ENGINEERING_INDEX.md) |
 
 ---
 

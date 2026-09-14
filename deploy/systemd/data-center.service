@@ -1,0 +1,15 @@
+[Unit]
+Description=Data Collection Center Scheduler - PROP-20260828A P3
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/Dreambuddy-V2-main/18-数据获取中心
+ExecStart=/home/ubuntu/.hermes/hermes-agent/venv/bin/python3 /home/ubuntu/Dreambuddy-V2-main/18-数据获取中心/data_center_scheduler.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

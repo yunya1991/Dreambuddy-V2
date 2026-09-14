@@ -1,0 +1,15 @@
+[Unit]
+Description=Fundamental Analysis API (Flask :9094) - PROP-20260828A P1
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/Dreambuddy-V2-main/9-基本面分析
+ExecStart=/home/ubuntu/.hermes/hermes-agent/venv/bin/python3 /home/ubuntu/Dreambuddy-V2-main/9-基本面分析/ml_trade_service_v2.py --port 9094 --host 127.0.0.1 --no-collect
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

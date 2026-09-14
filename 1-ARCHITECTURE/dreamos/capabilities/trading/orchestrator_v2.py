@@ -189,6 +189,27 @@ class OrchestratorV2:
         errors: List[str] = []
         status = "COMPLETED"
 
+        # PROP-20260828A P2: 基本面数据前置注入（F层数据接线）
+        # 沿用 trading_agent 既有范式: env 开关(默认启用) + 懒加载单例 + 1h缓存
+        # 静默降级语义: 注入失败/数据源不可用 → 仅告警, 绝不阻断编排周期
+        try:
+            if os.environ.get("DREAMOS_FUNDAMENTAL_INJECTION", "1") == "1":
+                if not hasattr(self, "_fundamental_injector"):
+                    from dreamos.capabilities.trading.fundamental_injector import (
+                        FundamentalDataInjector,
+                    )
+                    self._fundamental_injector = FundamentalDataInjector()
+                injected = self._fundamental_injector.inject(
+                    market_data, market_data.get("symbol", "BTC")
+                )
+                logger.info(
+                    f"基本面注入完成: {market_data.get('symbol', 'BTC')} | "
+                    f"字段数={injected.get('_fundamental_field_count', 0)} | "
+                    f"source={injected.get('_fundamental_source', 'unknown')}"
+                )
+        except Exception as e:
+            logger.warning(f"基本面注入失败(降级继续): {e}")
+
         # Layer A: Coin selection (mock mode uses market data symbols)
         try:
             symbols = [market_data.get("symbol", "BTC")]

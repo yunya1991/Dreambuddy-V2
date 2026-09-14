@@ -66,6 +66,7 @@ export interface MonitorEvent {
   error?: string;
   artifact_file?: string;
   message_preview?: string;   // 用户消息前50字
+  extra?: Record<string, unknown>;  // 扩展遥测字段（PROP-20260829-C P0.2：补齐 smart-router 已在用的字段）
 }
 
 export interface MonitorStats {

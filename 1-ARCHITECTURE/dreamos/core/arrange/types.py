@@ -318,6 +318,14 @@ class ExecutionPlan:
     estimated_total_latency_ms: int = 0
     capability_id: str = ""                # 能力域 ID（用于追溯路由结果）
 
+    # ── 渐进式编排（PROP-20260829D Phase 2）──────────────
+    # phase=None: 完整编排（向后兼容，零回归）
+    # phase=1:    仅执行必要节点（is_required），可选节点延期
+    # phase=2:    完整执行（与 phase=None 等价，语义上为"深化"）
+    phase: Optional[int] = None
+    deferred_nodes: List[str] = field(default_factory=list)  # phase=1 延期的可选节点
+    next_step_hint: str = ""               # 深化提示（供对话层呈现"先呈现后追问"）
+
     @property
     def node_ids(self) -> List[str]:
         """执行顺序的节点 ID 列表"""
@@ -344,4 +352,7 @@ class ExecutionPlan:
             "estimated_total_tokens": self.estimated_total_tokens,
             "estimated_total_latency_ms": self.estimated_total_latency_ms,
             "capability_id": self.capability_id,
+            "phase": self.phase,
+            "deferred_nodes": self.deferred_nodes,
+            "next_step_hint": self.next_step_hint,
         }

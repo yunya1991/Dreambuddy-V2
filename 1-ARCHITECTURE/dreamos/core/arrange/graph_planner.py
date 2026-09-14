@@ -92,6 +92,8 @@ class GraphPlanner:
         confidence = intent.get("confidence", 0.0)
         scenario_id = intent.get("scenario_id")
         enable_subsystem = intent.get("enable_subsystem", True)
+        # 渐进式编排（PROP-20260829D Phase 2）：phase=None 完整 / 1 仅必要 / 2 完整
+        phase = intent.get("phase")
 
         # 读取能力域路由结果，用于影响编排
         capability_id = intent.get("capability_id", "trading")
@@ -123,6 +125,7 @@ class GraphPlanner:
             confidence=confidence,
             scenario_id=scenario_id if enable_subsystem else None,
             capability_id=capability_id,
+            phase=phase,
         )
 
         state.plan = plan.to_dict()
@@ -139,8 +142,16 @@ class GraphPlanner:
                          confidence: float = 0.5,
                          budget_total: Optional[int] = None,
                          budget_mode: Optional[str] = None,
-                         scenario_id: Optional[str] = None) -> ExecutionPlan:
-        """直接从意图参数构建执行计划（不依赖 State）"""
+                         scenario_id: Optional[str] = None,
+                         phase: Optional[int] = None) -> ExecutionPlan:
+        """直接从意图参数构建执行计划（不依赖 State）
+
+        Args:
+            phase: 渐进式编排档位（PROP-20260829D Phase 2）
+                None = 完整编排（默认，向后兼容）
+                1    = 仅执行必要节点，可选节点延期（轻量首答）
+                2    = 完整执行（语义上的"深化追问"）
+        """
         if not recommended_chain:
             recommended_chain = self._infer_chain(intent_type)
 
@@ -152,6 +163,7 @@ class GraphPlanner:
             budget_total=budget_total,
             budget_mode=budget_mode,
             scenario_id=scenario_id,
+            phase=phase,
         )
 
     def build_graph(self, plan: ExecutionPlan,
@@ -187,8 +199,15 @@ class GraphPlanner:
                     budget_total: Optional[int] = None,
                     budget_mode: Optional[str] = None,
                     scenario_id: Optional[str] = None,
-                    capability_id: str = "") -> ExecutionPlan:
-        """构建执行计划"""
+                    capability_id: str = "",
+                    phase: Optional[int] = None) -> ExecutionPlan:
+        """构建执行计划
+
+        Args:
+            phase: 渐进式编排档位。1 = 仅保留 is_required 节点，
+                可选节点记入 deferred_nodes 并生成深化提示；
+                None/2 = 完整编排（默认，零行为变化）。
+        """
         total = budget_total or self._budget_total
         mode = budget_mode or self._budget_mode
 
@@ -206,6 +225,25 @@ class GraphPlanner:
         for meta in metas:
             meta.allocated_tokens = allocation.get(meta.node_id)
 
+        # ── 渐进式编排过滤（PROP-20260829D Phase 2）──────────────
+        # phase=1: 只保留必要节点，可选节点延期到深化追问时展开。
+        # 安全兜底：若过滤后为空（链路无必要节点），回退完整编排。
+        deferred_ids: List[str] = []
+        next_step_hint = ""
+        if phase == 1:
+            kept = [m for m in metas if m.is_required]
+            deferred = [m for m in metas if not m.is_required]
+            if kept and deferred:
+                deferred_ids = [m.node_id for m in deferred]
+                d_tokens = sum(m.allocated_tokens or 0 for m in deferred)
+                d_latency = sum(m.estimated_latency_ms for m in deferred)
+                next_step_hint = (
+                    f"如需深化，可追问展开可选节点: {', '.join(deferred_ids)}"
+                    f"（约 +{d_tokens} tokens / +{d_latency}ms）"
+                )
+                metas = kept
+            # kept 为空则不过滤，避免产出空计划
+
         chain_spec = self._selector.get_chain_spec(chain)
 
         est_tokens = sum(m.allocated_tokens for m in metas)
@@ -216,10 +254,14 @@ class GraphPlanner:
             selected_nodes=metas,
             budget=allocation,
             chain_spec=chain_spec,
-            rationale=self._build_rationale(chain, metas, confidence, scenario_id),
+            rationale=self._build_rationale(chain, metas, confidence,
+                                            scenario_id, phase),
             estimated_total_tokens=est_tokens,
             estimated_total_latency_ms=est_latency,
             capability_id=capability_id,
+            phase=phase,
+            deferred_nodes=deferred_ids,
+            next_step_hint=next_step_hint,
         )
 
     def _infer_chain(self, intent_type: str) -> str:
@@ -272,12 +314,14 @@ class GraphPlanner:
             return []
 
     def _build_rationale(self, chain: str, metas: List[NodeMeta],
-                         confidence: float, scenario_id: Optional[str] = None) -> str:
+                         confidence: float, scenario_id: Optional[str] = None,
+                         phase: Optional[int] = None) -> str:
         chain_name = STANDARD_CHAINS.get(chain, STANDARD_CHAINS["A"]).name
         node_count = len(metas)
         required = sum(1 for m in metas if m.is_required)
         optional = node_count - required
         scenario_str = f", 场景={scenario_id}" if scenario_id else ""
+        phase_str = f", phase={phase}" if phase is not None else ""
         return (f"链路={chain}({chain_name})，"
                 f"节点={node_count}(必须{required}+可选{optional})，"
-                f"置信度={confidence:.0%}{scenario_str}")
+                f"置信度={confidence:.0%}{scenario_str}{phase_str}")

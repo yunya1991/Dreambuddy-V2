@@ -655,7 +655,7 @@ export default intentMemory;
 function isFinanceMessage(message: string, _recognizedIntent: string): boolean {
   const msg = message.toLowerCase();
   const financeKeywords = [
-    'btc', 'eth', 'sol', 'bnb', 'xrp', 'usdt', 'usdc', 'doge', 'ada', 'crypto',
+    'btc', 'eth', 'sol', 'bnb', 'xrp', 'usdt', 'usdc', 'doge', 'ada', 'hype', 'crypto',
     'bitcoin', 'ethereum', '比特币', '以太坊', '代币', '合约', 'swap', '永续',
     'stock', '股票', '指数', 'nasdaq', '纳斯达克', '外汇', 'forex', '汇率',
     '黄金', 'gold', '白银', 'silver', '原油', 'oil',

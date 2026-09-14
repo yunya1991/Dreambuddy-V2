@@ -1,0 +1,53 @@
+{
+  "created_at": "2026-08-29T12:27:43.527214",
+  "canonical_question": "BTC 现在能做多吗",
+  "registered_node_count": 24,
+  "intent": {
+    "type": "TREND_FOLLOWING",
+    "confidence": 0.315,
+    "chain": "A",
+    "base_chain": [
+      "C1",
+      "F2",
+      "F3",
+      "A2",
+      "A4",
+      "A5",
+      "A9"
+    ],
+    "extend_nodes": []
+  },
+  "complexity_tier": {
+    "tier": "T1",
+    "rationale": "未命中 T0/T2/T3 规则，默认单域档",
+    "rule_hit": "default",
+    "domain_signals": []
+  },
+  "plan": {
+    "node_ids": [
+      "C1",
+      "F2",
+      "F3",
+      "A2",
+      "A4",
+      "A5",
+      "A9",
+      "A6"
+    ],
+    "node_count": 8,
+    "required": [
+      "C1",
+      "A2",
+      "A4",
+      "A5",
+      "A9"
+    ],
+    "optional": [
+      "F2",
+      "F3",
+      "A6"
+    ],
+    "est_tokens": 5300,
+    "est_latency_ms": 640
+  }
+}

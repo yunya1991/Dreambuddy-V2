@@ -12,7 +12,7 @@
 |------|------|------|
 | Agent A 主链路 | ✅ 正常（LLM决策+离场+记忆+进化参数） | Hyperliquid 合约，20币种 |
 | Agent B 主链路 | ✅ 正常（BAC三层+动态链+图压缩+记忆闭环）| Hyperliquid 合约，20币种 |
-| Agent C (DreamOS) | ✅ 正常（SACG四层+节点注册表+TradingAgent应用） | 共用 Agent B 账户，16个交易节点 |
+| Agent C (DreamOS 交易系统) | ✅ 正常（SACG四层+节点注册表+TradingAgent应用） | 共用 Agent B 账户，16个交易节点 |
 | data_server :8765 | ✅ 正常 | 需从 `experiments/ab-trading/` 目录启动 |
 | bridge_server :3847 | ✅ 正常 | 35模块 + 11节点 |
 | 三屏马丁交易 | ✅ 正常（OKX实盘+V15-CT策略+4H周期） | OKX profile=screen_trade，6币种，5种策略模式 |

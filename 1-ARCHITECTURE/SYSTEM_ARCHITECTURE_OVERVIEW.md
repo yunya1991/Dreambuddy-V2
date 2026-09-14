@@ -2,6 +2,7 @@
 
 > **版本**: v3.0 (DRAFT)
 > **更新日期**: 2026-07-31
+> **修订**: 2026-08-29 (PROP-20260829, 用户批准): 新增 §1.3.3 术语锚点 / §1.3.4 四支柱 / §5.4.1 四闭环；§2.6 计数与路径修正；§4.3 补双重身份引用
 > **文档分工（视角 B）**: **本文档 = 架构内容（唯一事实源 SSoT）**；「到哪里找文档」由 [0-系统文档管理/](../0-系统文档管理/) 的三张地图（ARCHITECTURE_MAP / SYSTEM_MAP / TOPIC_MAP）负责，不在本文档重复。
 > **维护说明**: 本文档为全项目架构的唯一事实来源（SSoT）。任何架构层面的变更必须先更新本文档，再实施代码修改；文档内容与代码不一致时，先修文档再修代码。
 > **核心理念**: 意图驱动 + 图编排 + 高度模块化 + OS内核 + 适配器接入 + 双认知闭环对称
@@ -179,6 +180,27 @@ DreamBuddy v2 是一个**AI驱动的交易决策与开发认知双闭环操作�
 | **记忆系统交互** | L0工作记忆(信号/仓位) + L1应用记忆(MU-TRD) | L0工作记忆(会话) + L1应用记忆(MU-DEV) + L2总记忆 |
 | **进化机制** | A8知行合一 gap_score路由 + EvolutionEngine | 贝叶斯v2 + 应用/元模板双向反馈(1/√N加权衰减) |
 | **代码位置** | `dreamos/capabilities/trading/nodes/` + `10-16/` | `4-MEMORY/9-工具与接口/cognitive_*.py` |
+
+#### 1.3.3 术语锚点（统一写法，硬约束）
+
+| 术语 | 规范写法 | 说明 |
+|------|---------|------|
+| 操作系统内核 | **Dreambuddy OS**（简称 DreamOS） | 通用意图驱动编排框架（SACG 四层），代码位于 `1-ARCHITECTURE/dreamos/`；别名：Dream OS（旧文档写法）/ dreamos（仅目录名） |
+| 交易系统 | **DreamOS 交易系统** | Dreambuddy OS 的核心内建能力域（旗舰能力），含四闭环与 23 个交易节点 |
+
+> **硬约束**：「DreamOS」单独出现一律指操作系统内核；指交易能力域必须写全「DreamOS 交易系统」，禁止用「DreamOS」直接指代交易系统。
+> 完整区分表见 [TECHNICAL_DESIGN.md §1.1.1 系统定位：操作系统 vs 交易系统](./dreamos/docs/TECHNICAL_DESIGN.md)。
+
+#### 1.3.4 系统核心四支柱
+
+| 支柱 | 定位 | 对应章节/位置 |
+|------|------|--------------|
+| 认知系统 | 开发认知闭环，驱动系统自我进化 | §六（认知系统与记忆进化） |
+| 易经推理引擎 | 纯自建推理模型，以交易数据为基，优化成型后成为底层交易推理引擎 | 11-易经推理系统（子系统11） |
+| Dreambuddy OS | 泛化能力操作系统，纯编排底座 | §二（Dreambuddy OS 内核） |
+| 子系统交易系统/能力节点 | 各交易策略实现与能力模块 | §四（7大交易子系统 + A/C/F/G/T 能力域） |
+
+> 四支柱为并列关系；其中 Dreambuddy OS（OS 底座）与 DreamOS 交易系统（能力域）分属不同层级，不可混同。
 
 ---
 
@@ -463,6 +485,8 @@ dreamos/                              # Dreambuddy OS 内核主目录
 │   │   ├── f1_news.py / f2_flow_analysis.py / f3_valuation.py
 │   │   ├── f4_onchain_data.py / f5_macro_analysis.py
 │   │   ├── g1_risk_control.py / g2_governance.py
+│   │   ├── c_martin_v15.py            # V15马丁能力节点
+│   │   ├── subsystem_adapter_nodes.py # 子系统适配节点组（10-17号子系统经适配器接入）
 │   ├── execution/ / evaluators/ / backtest/  # 执行/评估/回测
 │   └── evaluator.py / loss_diagnoser.py / ...
 ├── adapters/                         # 横切：适配器框架 🟢
@@ -475,12 +499,16 @@ dreamos/                              # Dreambuddy OS 内核主目录
 ├── budget/                           # 横切：预算管理 🟢
 │   ├── global_budget.py / cost_tracker.py
 ├── config/
-│   └── nodes.yaml                    # 节点注册表YAML（35+模块）
+│   └── nodes.yaml                    # 节点注册表YAML（27个节点条目）
 ├── data/graph_store/                 # G层检查点存储目录
-├── dreamos-tests/                    # OS内核测试
-│   └── test_*.py（8个测试套件）
-└── README.md
+├── registry/                         # NodeRegistry 注册表（node_registry.py / loader.py）
+├── shared/                           # 共享基础设施（llm_client.py LLM降级链 / errors / interfaces / state）
+├── evolution/                        # 自我进化引擎（lesson_distiller / gap_analyzer / node_optimizer）
+├── tests/                            # OS内核测试（13个测试套件）
+└── nodes/                            # 预留节点目录（当前空壳；节点实现在 capabilities/trading/nodes/）
 ```
+
+> ⚠️ **易混淆目录**（位于 `1-ARCHITECTURE/` 下，不在 `dreamos/` 内）：`dreamos-tests/`（空壳预留，测试实际在 `dreamos/tests/`）与 `dreamos-nodes/`（a/c/f_domain 空壳预留）。
 
 ---
 
@@ -856,6 +884,8 @@ TradingAgent（S-A-C-G 全链路调度）
 
 **重要区分**：7个交易子系统 **≠** Dreambuddy OS 内核。两者关系如下：
 
+> **双重身份参考**：OS 内核与「DreamOS 交易系统」的完整区分表见 [TECHNICAL_DESIGN.md §1.1.1](./dreamos/docs/TECHNICAL_DESIGN.md)。两个命题不矛盾：「7大子系统 ≠ OS 内核」指子系统可独立运行的部署事实；「交易系统是 OS 核心能力域」指四闭环等交易能力（§5.4.1）经节点注册表内建于 `capabilities/trading/` 的逻辑归属。
+
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │ Dreambuddy OS 内核（1-ARCHITECTURE/dreamos/）                         │
@@ -1131,6 +1161,28 @@ S5 执行      ←→  A5 决策执行(dream-tactical-executor)
    周期：每次交易离场后 + 每日收盘后
    核心指标：gap_score 趋势、策略库升级频率
 ```
+
+#### 5.4.1 四闭环（DreamOS 交易系统的生产流水线）
+
+> ⚠️ **与 §5.4 三大核心闭环的区分**：三大核心闭环是 **A系列节点的业务组织**（执行/情报/治理）；四闭环是 **DreamOS 交易系统**在 Hyperliquid 上的生产编排流水线。两套体系的字母 A/B/C 含义完全不同，勿混。
+
+```
+A 选币池(coin_pool.json) → B 易经推理信号(BCRM) → C1 双腿对冲(仅RANGE) / C2 V15马丁(long_only)
+                                                        ↓
+E 认知复盘 ← D 信号路由(SignalRouter)          F 编排调度(每小时:30触发)
+```
+
+| 环 | 职责 | 核心代码 |
+|----|------|---------|
+| A 选币 | 从每周选币 cron 的币池取多/空池 | `capabilities/trading/coin_selector.py` |
+| B 易经信号 | 卦象/方向/置信度生成 | `capabilities/trading/yijing_signal_generator.py` |
+| C1 双腿对冲 | 多空 1:1 市场中性 | `capabilities/trading/hedge_executor.py` |
+| C2 V15马丁 | 金字塔加仓（V9 红线基线） | `capabilities/trading/v15_executor.py` |
+| D 路由 | B+C 统一路由 | `capabilities/trading/signal_router.py` |
+| E 复盘 | 认知教训回填 confidence_adjustment | `capabilities/trading/cognitive_reviewer.py` |
+| F 调度 | 驱动 A→B→C→D→E 全链路 | `capabilities/trading/orchestrator_v2.py` + `cli/scheduler.py` |
+
+**状态**：2026-08-15 物理验证导通，详见 [FOUR_LOOP_VERIFICATION_20260815.md](./dreamos/capabilities/trading/reports/FOUR_LOOP_VERIFICATION_20260815.md) 与 [FOUR_LOOP_GUIDE.md](./four-loop/FOUR_LOOP_GUIDE.md)。
 
 ### 5.5 A0 矛盾论内嵌机制
 

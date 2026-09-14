@@ -31,14 +31,15 @@ def test_intent_types():
     """测试意图类型"""
     from dreamos.core.sense import IntentType, get_intent_definition
 
-    # 6 种标准类型
+    # 6 种标准类型（含 DEEP_ANALYSIS，20260829 合入）
     all_types = IntentType.all_types()
-    assert len(all_types) == 5  # 排除 UNCERTAIN
+    assert len(all_types) == 6  # 排除 UNCERTAIN
     assert "TREND_FOLLOWING" in all_types
     assert "MEAN_REVERSION" in all_types
     assert "FUNDAMENTAL_PLAY" in all_types
     assert "BREAKOUT" in all_types
     assert "KNOWLEDGE_MATCH" in all_types
+    assert "DEEP_ANALYSIS" in all_types
 
     # 定义存在
     defn = get_intent_definition("TREND_FOLLOWING")

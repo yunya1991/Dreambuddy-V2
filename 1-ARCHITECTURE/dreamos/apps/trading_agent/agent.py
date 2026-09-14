@@ -229,7 +229,9 @@ class TradingAgent:
             user_input: str = "",
             market_data: Optional[Dict[str, Any]] = None,
             context: Optional[Dict[str, Any]] = None,
-            budget_mode: Optional[str] = None) -> Dict[str, Any]:
+            budget_mode: Optional[str] = None,
+            intent_hint: Optional[Dict[str, Any]] = None,
+            phase: Optional[int] = None) -> Dict[str, Any]:
         """执行一次完整的交易分析周期
 
         Args:
@@ -237,6 +239,13 @@ class TradingAgent:
             market_data: 市场数据（价格/指标等）
             context: 额外上下文
             budget_mode: 临时覆盖预算模式
+            intent_hint: 外部意图提示（20260829-bridge S5，网关正典对齐）。
+                上游已完成意图识别时传入 {"intent_type", "confidence"?,
+                "chain"?, "provenance"?, "canon_intent"?}，
+                直接跳过 S 层 LLM 识别（省 10-50s），物理管道不变。
+            phase: 渐进式编排档位（PROP-20260829D Phase 2）。
+                None = 完整编排（默认，零行为变化）；
+                1 = 仅必要节点（轻量首答）；2 = 完整执行（深化追问）。
 
         Returns:
             交易决策结果字典:
@@ -262,7 +271,39 @@ class TradingAgent:
         self._init_working_memory(cycle_id, user_input, market_data, context)
 
         # ── 1. S 层：意图识别 ─────────────────
-        intent_result = self._sense(user_input, market_data, context)
+        # 20260829-bridge S5: 外部意图提示（网关正典对齐）——
+        # 上游（前端桥/MCP 桥）已完成意图识别时直接采用，
+        # 跳过 S 层内部 LLM 识别（实测 10-50s），物理管道不变。
+        if intent_hint and isinstance(intent_hint, dict) and intent_hint.get("intent_type"):
+            intent_result = IntentResult(
+                intent_type=str(intent_hint["intent_type"]),
+                confidence=float(intent_hint.get("confidence", 0.85) or 0.85),
+                recommended_chain=str(intent_hint.get("chain") or ""),
+                rationale=(
+                    f"external intent_hint "
+                    f"(provenance={intent_hint.get('provenance', 'external')}, "
+                    f"canon={intent_hint.get('canon_intent', '-')})"
+                ),
+                recognizers_used=["external_intent_hint"],
+            )
+            logger.info(
+                f"[{cycle_id}] S 层: 采用外部 intent_hint → "
+                f"{intent_result.intent_type}（跳过内部识别）"
+            )
+        else:
+            intent_result = self._sense(user_input, market_data, context)
+
+        # ── 1.1b T0 快速回答短路（PROP-20260829D Phase 2/4）──────
+        # 简单查询（价格/仓位等）零编排直答，跳过 A/C 层。
+        # 门禁：环境变量 DREAMOS_PHASED_ORCHESTRATION=on 才启用（灰度）。
+        if (phase is None
+                and getattr(intent_result, "complexity_tier", None) == "T0"
+                and os.environ.get("DREAMOS_PHASED_ORCHESTRATION", "").lower()
+                in ("1", "on", "true")):
+            logger.info(f"[{cycle_id}] T0 短路: 简单查询零编排直答")
+            self.budget.end_cycle(tokens_total=0, status="success")
+            return self._t0_direct_answer(cycle_id, user_input, market_data,
+                                          intent_result, start_time)
 
         # ── 1.2 能力域路由 ───────────────────
         routing_result = self._route_capability(intent_result)
@@ -315,6 +356,9 @@ class TradingAgent:
             "recognizer": getattr(intent_result, "recognizer", ""),
             "scenario_id": context.get("scenario_id") or self._classify_scenario(market_data),
             "enable_subsystem": context.get("enable_subsystem", True),
+            # 渐进式编排（PROP-20260829D Phase 2）：phase=None 完整 / 1 仅必要 / 2 完整
+            "phase": phase,
+            "complexity_tier": getattr(intent_result, "complexity_tier", None),
             "capability_id": routing_result.capability_id,
             "capability_match_type": routing_result.match_type,
             "capability_config": routing_result.capability_config,
@@ -563,6 +607,39 @@ class TradingAgent:
     def _arrange(self, intent: IntentResult, state: State) -> ExecutionPlan:
         """A 层：图编排"""
         return self.graph_planner.plan(state)
+
+    def _t0_direct_answer(self, cycle_id: str, user_input: str,
+                          market_data: Dict[str, Any], intent_result: IntentResult,
+                          start_time: float) -> Dict[str, Any]:
+        """T0 简单查询直答（PROP-20260829D）— 零编排零 Token
+
+        返回与完整分析同构的结果字典（action=INFO），
+        附 market_snapshot 供对话层直接呈现。
+        """
+        latency_ms = (time.time() - start_time) * 1000
+        snapshot = {k: market_data.get(k) for k in
+                    ("symbol", "coin", "price", "funding_rate", "rsi14",
+                     "change_24h", "oi", "volume_24h")
+                    if market_data.get(k) is not None}
+        snapshot_str = ", ".join(f"{k}={v}" for k, v in snapshot.items()) or "无行情数据"
+        return {
+            "cycle_id": cycle_id,
+            "mode": "T0_direct_answer",
+            "intent": intent_result.to_dict(),
+            "plan": {
+                "node_ids": [],
+                "phase": None,
+                "deferred_nodes": [],
+                "next_step_hint": "如需深入分析，可追问（如「能做多吗」「帮我评估风险」）",
+            },
+            "execution": {"executed_nodes": 0, "total_nodes": 0, "total_tokens": 0},
+            "action": "INFO",
+            "confidence": 0.0,
+            "rationale": [f"T0 快速回答: {snapshot_str}"],
+            "market_snapshot": snapshot,
+            "tokens_used": 0,
+            "latency_ms": round(latency_ms, 1),
+        }
 
     # ── C 层 ────────────────────────────────
 

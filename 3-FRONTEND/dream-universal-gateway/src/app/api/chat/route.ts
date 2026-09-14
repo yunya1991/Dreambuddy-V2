@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { emitMonitorEvent } from "@/lib/monitor-bus";
 import { routeIntent } from "@/lib/intent";
 import type { ComplexityLevel } from "@/lib/intent";
+// PROP-20260828B P2: 统一意图管线（fc 模式）
+import { recognizeIntentUnified } from "@/lib/intent/intent-unified";
+// PROP-20260829-C P2: 影子对比探针（旧结果为准，差异写 shadow.jsonl）
+import { runShadowProbe } from "@/lib/intent/shadow-probe";
+import type { UnifiedIntentResult } from "@/lib/intent/intent-schema";
+import { getGatewayLLMConfig } from "@/lib/llm-config";
 import {
   default as userPrefMemory,
   detectPreferenceSignal,
@@ -10,6 +16,8 @@ import {
 
 // P0-1: 真实市场数据适配器（OKX CLI + Tavily API）
 import { fetchMarketData, SYMBOL_DEFINITIONS, extractSymbolFromMessage } from "@/lib/market-data-adapter";
+// 阶段1修复(2026-08-28): 真实技术指标模块（Hyperliquid K线计算），替代 LLM 编造指标
+import { fetchMultiDimensionMarketData, formatMultiDimensionData } from "@/lib/market-data-sources";
 
 // P1-2: 知识库文件化加载器（2-KNOWLEDGE/ 目录中读取）
 import { getKnowledgeContext, loadAllKnowledge, getKnowledgeStats } from "@/lib/knowledge-loader";
@@ -35,6 +43,7 @@ import {
 // ========================================
 import {
   initCostKeeper,
+  aliasSession,
   markStepStart,
   markStepEnd,
   markStepSkipped,
@@ -137,25 +146,178 @@ interface IntentResult {
 const sessionContexts = new Map<string, SessionContext>();
 
 function getDeepSeekApiKey(): string {
-  const key = process.env.DEEPSEEK_API_KEY;
+  // P0修复(2026-08-28): 优先使用 DashScope(百炼) key，兼容旧 DEEPSEEK_API_KEY
+  const key = process.env.DASHSCOPE_API_KEY || process.env.DEEPSEEK_API_KEY;
   if (!key) {
-    throw new Error('DEEPSEEK_API_KEY environment variable is not set');
+    throw new Error('DASHSCOPE_API_KEY/DEEPSEEK_API_KEY environment variable is not set');
   }
   return key;
 }
 
 /**
  * DeepSeek API 配置（支持动态切换模型）
+ * PROP-20260828B P2: 配置归一 —— 端点/模型解析收敛到 llm-config.ts 单一真源
  */
+const _chatLlmCfg = getGatewayLLMConfig();
 const DEEPSEEK_CONFIG = {
-  endpoint: 'https://api.deepseek.com/chat/completions',
-  model: process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro',
+  endpoint: _chatLlmCfg.endpoint,
+  model: _chatLlmCfg.model,
 };
+
+/**
+ * P1a修复(2026-08-28): 从基本面网关(:9094)拉取真实基本面数据
+ * 失败时静默返回空字符串，不阻塞主链路
+ */
+async function fetchFundamentalSnapshot(symbol: string): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(
+      `http://127.0.0.1:9094/fundamental/overview?symbol=${encodeURIComponent(symbol)}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timer);
+    if (!res.ok) return '';
+    const data: any = await res.json();
+    const c = data?.composite;
+    if (!c) return '';
+    const modules = (c.best_opportunities || [])
+      .slice(0, 3)
+      .map((b: any) => `${b.module}(${b.signal === 'buy' ? '偏多' : b.signal === 'sell' ? '偏空' : b.signal} ${b.strength}%)`)
+      .join('、');
+    const riskLine = Array.isArray(c.risk_warnings) && c.risk_warnings.length > 0
+      ? ` | 风险提示: ${String(c.risk_warnings[0]).slice(0, 60)}`
+      : '';
+    // P0修复(2026-08-28): 注入更多真实字段（模块共识+细节），给 LLM 更多真实素材，减少编造冲动
+    const consensusLine = c.module_consensus
+      ? ` | 模块共识: ${Object.entries(c.module_consensus).map(([m, s]) => `${m}=${s}`).join(', ').slice(0, 180)}`
+      : '';
+    const reasonsLine = Array.isArray(c.reasons) && c.reasons.length > 0
+      ? ` | 细节: ${c.reasons.join('；').slice(0, 150)}`
+      : '';
+    return `【基本面实时数据 · ${symbol} · 来自基本面网关 :9094】综合评分: ${c.score} | 建议: ${c.recommendation} | 置信度: ${c.confidence} | 模块信号: ${modules}${consensusLine}${reasonsLine}${riskLine}（分析时仅可引用本行数据，不得编造其他精确指标）`;
+  } catch {
+    return '';
+  }
+}
 
 /**
  * LLM 状态追踪
  */
 let llmStatus: 'online' | 'offline' | 'degraded' = 'offline';
+
+// ============ 阶段1修复(2026-08-28): 真实技术指标接线 ============
+// 数据源: Hyperliquid K线(1h×24) + alternative.me 恐贪指数 —— 全部模块计算的真实值
+// 60秒缓存：同一请求内多步骤共享，避免重复网络调用
+let multiDimCache: { text: string; ts: number; symbol: string } = { text: '', ts: 0, symbol: '' };
+async function getMultiDimContext(symbol: string): Promise<string> {
+  const now = Date.now();
+  if (multiDimCache.symbol === symbol && now - multiDimCache.ts < 60_000) return multiDimCache.text;
+  try {
+    const data = await fetchMultiDimensionMarketData(symbol);
+    const text = formatMultiDimensionData(data);
+    multiDimCache = { text, ts: now, symbol };
+    return text;
+  } catch {
+    return ''; // 静默降级：数据源不可用时不阻断
+  }
+}
+
+// ============ 阶段0修复(2026-08-28): 数字溯源验证器（物理门禁） ============
+// 设计原则（用户架构要求）：防 LLM 编造不能靠 prompt 软规则，必须事后物理校验。
+// LLM 输出中的每个数字都必须能溯源到数据卡（行情/指标/基本面/知识库注入的真实值），
+// 无出处的指标句在返回用户前被物理剥离，剥离记录写入 chain_trace 审计。
+
+interface ProvenanceCard {
+  nums: Set<string>;       // 合法数值集合（toFixed(6) 归一）
+  price: number | null;    // 当前价（价格合理性校验基准）
+}
+
+const DERIVE_PCTS = [-0.05, -0.03, -0.02, -0.01, 0.01, 0.02, 0.03, 0.05, 0.10]; // 支撑/阻力常见衍生位容差
+
+function buildProvenanceCard(market: Record<string, unknown> | null, texts: unknown[]): ProvenanceCard {
+  const nums = new Set<string>();
+  const addNum = (v: unknown) => { if (typeof v === 'number' && isFinite(v)) nums.add(v.toFixed(6)); };
+  // 千分位感知数字提取（$79,545.50 → 79545.50）
+  const NUM_RE = /-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?/g;
+  const addStr = (s: unknown) => {
+    if (typeof s !== 'string' || !s) return; // 健壮性：非字符串/空值直接跳过
+    for (const m of s.matchAll(NUM_RE)) {
+      const v = parseFloat(m[0].replace(/,/g, ''));
+      if (isFinite(v)) nums.add(v.toFixed(6));
+    }
+  };
+  if (market) {
+    for (const k of ['price', 'open24h', 'high24h', 'low24h', 'change24h', 'volume']) addNum(market[k]);
+    for (const arr of [market.support, market.resistance]) {
+      if (Array.isArray(arr)) for (const lv of arr) addNum(lv);
+    }
+  }
+  for (const t of texts) if (t) addStr(t);
+  // 衍生价位容差：目标/止损等合法衍生 = 任一真实价位 × (1±pct)
+  const bases = [...nums].map(s => parseFloat(s)).filter(v => isFinite(v) && v > 100);
+  for (const b of bases) for (const pct of DERIVE_PCTS) nums.add((b * (1 + pct)).toFixed(6));
+  return { nums, price: typeof market?.price === 'number' ? market.price : null };
+}
+
+function hasProvenance(v: number, card: ProvenanceCard, tol = 0.006): boolean {
+  if (card.nums.has(v.toFixed(6))) return true;
+  for (const s of card.nums) {
+    const c = parseFloat(s);
+    if (c !== 0 && Math.abs(c - v) / Math.abs(c) <= tol) return true;
+  }
+  return false;
+}
+
+/**
+ * 物理门禁：剥离无数字出处的句子。
+ * 规则A：指标类句子（RSI/MACD/布林/相关性/ETF/胜率/夏普/减半/量能…）——至少一个数字在数据卡内，否则剥离
+ * 规则B：价格合理性——偏离现价 >30% 且无出处的价格 → 剥离
+ * 规则C：B/M/K 单位大额美元（编造的资金流/成交量）——无出处 → 剥离
+ * 规则D：概率必须带"估计"标注
+ */
+function validateNumericProvenance(content: string, card: ProvenanceCard): { content: string; removals: string[] } {
+  const removals: string[] = [];
+  if (typeof content !== 'string' || !content) return { content: String(content ?? ''), removals };
+  const INDICATOR_KW = /RSI|MACD|布林|带宽|相关性|相关系数|ETF|净流入|净流出|胜率|夏普|回撤|减半|历史|分位|资金流|成交量|量能/;
+  const BIG_USD = /[$￥]\s*[\d.]+\s*[BMK](?:美元|美金)?|[\d.]+\s*[BMK]\s*(?:美元|美金)/i;
+  const NUM_RE = /-?\d{1,3}(?:,\d{3})+(?:\.\d+)?|-?\d+(?:\.\d+)?/g; // 千分位感知
+  const extractNums = (s: string) => [...s.matchAll(NUM_RE)].map(m => parseFloat(m[0].replace(/,/g, ''))).filter(v => isFinite(v));
+
+  const sentences = content.split(/(?<=[。！？\n|])/);
+  const kept: string[] = [];
+  for (const sent of sentences) {
+    if (!sent.trim()) { kept.push(sent); continue; }
+
+    if (INDICATOR_KW.test(sent)) {
+      const nums = extractNums(sent);
+      if (nums.length > 0 && !nums.some(v => hasProvenance(v, card))) {
+        removals.push(`A:${sent.trim().slice(0, 60)}`);
+        continue;
+      }
+    }
+    if (BIG_USD.test(sent)) {
+      const nums = [...sent.matchAll(/([\d.]+)\s*[BMK]/gi)].map(m => parseFloat(m[1])).filter(v => isFinite(v));
+      if (nums.length > 0 && !nums.some(v => hasProvenance(v, card))) {
+        removals.push(`C:${sent.trim().slice(0, 60)}`);
+        continue;
+      }
+    }
+    if (card.price) {
+      const priceNums = [...sent.matchAll(/\$([\d,]+(?:\.\d+)?)/g)]
+        .map(m => parseFloat(m[1].replace(/,/g, '')))
+        .filter(v => isFinite(v) && v > 100);
+      if (priceNums.some(v => !hasProvenance(v, card) && Math.abs(v - (card.price as number)) / (card.price as number) > 0.30)) {
+        removals.push(`B:${sent.trim().slice(0, 60)}`);
+        continue;
+      }
+    }
+    kept.push(sent);
+  }
+  let out = kept.join('');
+  out = out.replace(/概率(?![^，。\n]{0,4}估计)\s*(\d+(?:\.\d+)?\s*[%％])/g, '概率估计 $1');
+  return { content: out, removals };
+}
 let llmLastCheck = 0;
 const LLM_CHECK_INTERVAL = 60_000; // 1分钟检查一次
 
@@ -210,7 +372,7 @@ async function callDeepSeekAPI(
   tracking?: { sessionId: string; stepId: string; stepName: string }
 ): Promise<string> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+  const timeoutId = setTimeout(() => controller.abort(), 60_000);
 
   // P0: CostKeeper 计时起点（若提供了 tracking 信息）
   if (tracking) {
@@ -229,6 +391,8 @@ async function callDeepSeekAPI(
         messages: messages,
         temperature: temperature,
         max_tokens: 2000,
+        // P0修复(2026-08-28): qwen3 系列默认开启思考链导致 >30s 超时，关闭后 3-5s 返回
+        enable_thinking: false,
       }),
       signal: controller.signal,
     });
@@ -286,8 +450,16 @@ async function callDeepSeekAPI(
 
 /**
  * 配置：意图识别方法
+ * PROP-20260828B P2: 新增 'fc'（Function Calling 统一管线），
+ * 环境变量 INTENT_METHOD=fc|rule 切换，默认 'llm' 保持旧行为（零漂移）
+ * PROP-20260829-C P2: 新增 'fc_shadow'（影子对比）——旧 llm 路径为准，
+ * 并行跑统一管线，差异写 intent-shadow/shadow.jsonl，预算 200 样本自动停
  */
-let intentMethod: 'rule' | 'llm' = 'llm';
+let intentMethod: 'rule' | 'llm' | 'fc' | 'fc_shadow' =
+  process.env.INTENT_METHOD === 'fc_shadow' ? 'fc_shadow'
+  : process.env.INTENT_METHOD === 'fc' ? 'fc'
+  : process.env.INTENT_METHOD === 'rule' ? 'rule'
+  : 'llm';
 
 /**
  * 基于规则的意图识别（后备方案）
@@ -882,9 +1054,54 @@ function buildCombinedIntentHeader(combinedIntents: string[]): string {
 }
 
 /**
+ * PROP-20260828B P2: 统一管线结果 → chat IntentResult 适配器
+ * chat 的 IntentType 不含 need_clarification/clarification_result：
+ * 降级为 simple_qa 并把澄清字段挂到索引签名上，保持 chat 契约不变
+ */
+function unifiedToChatResult(u: UnifiedIntentResult): IntentResult {
+  const chatIntent =
+    u.intent === 'need_clarification' || u.intent === 'clarification_result'
+      ? 'simple_qa'
+      : u.intent;
+  return {
+    intent: chatIntent as IntentType,
+    confidence: u.confidence,
+    entities: u.entities,
+    complexity: u.complexity,
+    method: 'llm',
+    matched_pattern_id: u.matchedPatternId,
+    intent_method_actual: 'fc',
+    loop: u.loop,
+    gate_allowed: u.gate.allowed,
+    repair_applied: u.repair_applied,
+    clarification_question: u.clarification_question,
+  };
+}
+
+/**
  * 意图识别入口
  */
 async function recognizeIntent(message: string, context?: SessionContext): Promise<IntentResult> {
+  if (intentMethod === 'fc_shadow') {
+    // PROP-20260829-C P2.2: 影子对比 —— 旧路径（llm）结果为准，
+    // 统一管线仅并行执行记录差异，不 await、不改变任何对外行为
+    const legacy = await recognizeIntentLLM(message, context);
+    void runShadowProbe(
+      message,
+      context as unknown as Parameters<typeof recognizeIntentUnified>[1],
+      legacy
+    ).catch(() => {});
+    return legacy;
+  }
+  if (intentMethod === 'fc') {
+    // route.ts 本地 IntentType 与 intent 模块名义不同，结构兼容，桥接转换
+    const unified = await recognizeIntentUnified(
+      message,
+      context as unknown as Parameters<typeof recognizeIntentUnified>[1],
+      { method: 'fc' }
+    );
+    return unifiedToChatResult(unified);
+  }
   if (intentMethod === 'llm') {
     return await recognizeIntentLLM(message, context);
   } else {
@@ -1270,6 +1487,28 @@ async function callSkill(skillName: string, params: Record<string, unknown>): Pr
     case 'dream-strategy-research-s': // S1 - 策略调研（S系列专用）
       const isTraditionalFinance = symbol === 'XAU' || symbol === 'GOLD' || symbol.includes('XAU');
       const isCryptoMarket = symbol === 'BTC' || symbol === 'ETH' || symbol === 'SOL' || symbol === 'BNB';
+
+      // ===== P3修复(2026-08-28): 趋势判定改为数据驱动，禁止硬编码 NEUTRAL =====
+      const _md: any = params.market || {};
+      const _change24h: number = typeof _md.change24h === 'number' ? _md.change24h : 0;
+      const _high: number = _md.high24h || price * 1.01;
+      const _low: number = _md.low24h || price * 0.99;
+      const _rangePos = _high > _low ? (price - _low) / (_high - _low) : 0.5;
+      const _ampPct = price > 0 ? ((_high - _low) / price) * 100 : 0;
+      const _trendDir = _change24h > 1.5 ? 'BULLISH' : _change24h < -1.5 ? 'BEARISH' : 'NEUTRAL';
+      const _trendZh = _change24h > 1.5 ? '偏多' : _change24h < -1.5 ? '偏空' : '中性震荡';
+      const _volLevel = _ampPct > 5 ? 'high' : _ampPct > 2 ? 'moderate' : 'low';
+      const _funding = typeof _md.fundingRate === 'number' ? _md.fundingRate : null;
+      const _dataInsights: string[] = [
+        `24h 涨跌幅 ${_change24h >= 0 ? '+' : ''}${_change24h.toFixed(2)}%，现价处于 24h 区间 ${Math.round(_rangePos * 100)}% 位置（数据驱动判定: ${_trendZh}）`,
+        `24h 区间 ${_low.toFixed(2)} - ${_high.toFixed(2)}，振幅 ${_ampPct.toFixed(2)}%`,
+        _funding !== null
+          ? `资金费率 ${(_funding * 100).toFixed(4)}%（${_funding > 0.01 ? '多头拥挤' : _funding < -0.01 ? '空头拥挤' : '多空均衡'}）`
+          : '资金费率数据暂缺',
+      ];
+      // P1a: 拉取基本面网关真实数据
+      const _fundStr = await fetchFundamentalSnapshot(symbol);
+      if (_fundStr) _dataInsights.push(_fundStr);
       
       // 根据市场类型生成不同的社区调研和压力测试数据
       const communityResearch = isTraditionalFinance ? {
@@ -1379,13 +1618,14 @@ async function callSkill(skillName: string, params: Record<string, unknown>): Pr
             },
             market_state: {
               price,
-              trend_direction: 'NEUTRAL',
-              support_levels: [price * 0.992, price * 0.985, price * 0.975],
-              resistance_levels: [price * 1.008, price * 1.015, price * 1.025],
-              rsi_state: 'neutral',
-              macd_state: 'bullish',
+              // P3修复: 数据驱动趋势判定（原硬编码 'NEUTRAL'）
+              trend_direction: _trendDir,
+              support_levels: Array.isArray(params.support) ? params.support : [price * 0.992, price * 0.985, price * 0.975],
+              resistance_levels: Array.isArray(params.resistance) ? params.resistance : [price * 1.008, price * 1.015, price * 1.025],
+              rsi_state: _rangePos > 0.75 ? 'overbought_zone' : _rangePos < 0.25 ? 'oversold_zone' : 'neutral',
+              macd_state: _trendDir === 'BULLISH' ? 'bullish' : _trendDir === 'BEARISH' ? 'bearish' : 'neutral',
               volume_state: 'normal',
-              volatility: 'moderate'
+              volatility: _volLevel
             },
             key_insights: isTraditionalFinance ? [
               '央行持续购金支撑长期趋势',
@@ -1393,13 +1633,7 @@ async function callSkill(skillName: string, params: Record<string, unknown>): Pr
               '美元指数与黄金负相关性增强',
               '通胀预期支撑金价',
               '技术面呈现高位震荡格局'
-            ] : [
-              '宏观环境支持避险需求',
-              '技术面呈现区间震荡格局',
-              '成交量维持正常水平',
-              '资金流向显示机构持续增持',
-              '与相关资产相关性分析完成'
-            ],
+            ] : _dataInsights,
             risk_warnings: isTraditionalFinance ? [
               '美联储政策不确定性',
               '美元指数走强风险',
@@ -2210,6 +2444,36 @@ async function generateChainResponse(
 ): Promise<{ content: string; chainState: any; strategyChainState: any; stepProgress: any; market: MarketPriceData | null; needsConfirmation: boolean; nextStep: string | null }> {
   const symbol = entities.symbol || "BTC";
 
+  // P2a修复(2026-08-28): 多币种问题 → 逐个拉实时行情生成对比卡片（原实现只分析第一个币种）
+  // 意图引擎可能走 LLM 路径（entities 无 symbols），因此同时扫描 userMessage 兜底
+  const _msgUp = (schedulerCtx?.userMessage || '').toUpperCase();
+  const _coinNames = ['BTC', 'ETH', 'SOL', 'HYPE', 'BNB', 'DOGE', 'ADA', 'LINK', 'AVAX', 'DOT', 'LTC'];
+  const _detectedCoins = _coinNames.filter(c => _msgUp.includes(c));
+  const _fromEntities = (entities.symbols || '').split(',').filter(Boolean);
+  const _multiSymbols = (_fromEntities.length > 1 ? _fromEntities : _detectedCoins);
+  if (_multiSymbols.length > 1) {
+    const cards: string[] = [];
+    const rows: string[] = [];
+    for (const sym of _multiSymbols.slice(0, 5)) {
+      try {
+        const m = await fetchMarketPrice(sym);
+        const ch = (m.change24h >= 0 ? '+' : '') + m.change24h.toFixed(2) + '%';
+        const sup = m.support.slice(0, 2).map(v => fmtPrice(v, m.unit)).join(' / ');
+        const res = m.resistance.slice(0, 2).map(v => fmtPrice(v, m.unit)).join(' / ');
+        cards.push(`### ${m.displayName}\n- 现价: ${fmtPrice(m.price, m.unit)} (24h ${ch})\n- 支撑: ${sup}\n- 阻力: ${res}`);
+        rows.push(`| ${m.displayName} | ${fmtPrice(m.price, m.unit)} | ${ch} | ${fmtPrice(m.support[0], m.unit)} | ${fmtPrice(m.resistance[0], m.unit)} |`);
+      } catch (e) {
+        console.warn(`[MultiSymbol] fetch failed for ${sym}:`, e);
+      }
+    }
+    if (cards.length > 1) {
+      const table = `| 资产 | 现价 | 24h涨跌 | 支撑1 | 阻力1 |\n|------|------|---------|-------|-------|\n` + rows.join('\n');
+      const content = `**📊 多资产对比: ${_multiSymbols.join(' / ')}**\n\n${table}\n\n` + cards.join('\n\n') + `\n\n*数据来源: Hyperliquid 实时行情*`;
+      const chainState = get_or_init_chain_state(sessionId, `${_multiSymbols.join('/')} 多资产对比`);
+      return { content, chainState, strategyChainState: null, stepProgress: null, market: null, needsConfirmation: false, nextStep: null };
+    }
+  }
+
   // ===== Hermes 记忆学习：链初始化时学习标的偏好 =====
   const userId = sessionId;
   userPrefMemory.learn({
@@ -2483,10 +2747,63 @@ async function executeStepWithSkill(
     );
 
     if (gateResult.skip) {
-      // 被跳过 — 记录到成本报告，返回简短 fallback 信息
+      // 被跳过 — 记录到成本报告
       markStepSkipped(sessionId, step, step, gateResult.reason);
       console.log(`[SkipGate] SKIP ${step}: ${gateResult.reason}`);
+      // P1b/P2b修复(2026-08-28): 跳过 ≠ 空输出
+      // 1) 知识/概念类问题 → 用知识库 RAG 兜底
+      try {
+        const kbIntents = ['concept_explain', 'knowledge_query', 'backtest_help', 'simple_qa'];
+        if (kbIntents.includes(schedulerContext.intent)) {
+          const kb = await getKnowledgeContext(schedulerContext.userInput, schedulerContext.intent, 2500);
+          if (kb && kb.trim().length > 30) {
+            return `\n---\n**📚 知识库检索结果**\n${kb}\n\n*（来源: 本地知识库 2-KNOWLEDGE/）*\n---\n`;
+          }
+        }
+      } catch (kbErr) {
+        console.warn('[SkipGate] knowledge fallback failed:', kbErr);
+      }
+      // 2) 有行情数据的 S 系列步骤 → 返回实时快照卡片而非空白
+      if (step.startsWith('S') && market && market.price) {
+        const change = (market.change24h >= 0 ? '+' : '') + market.change24h.toFixed(2) + '%';
+        return `\n---\n**${step}: 已跳过**（${gateResult.reason}）\n\n📊 **${displayName || symbol} 实时快照**: ${priceStr} (24h ${change})\n- 支撑位: ${supportStr}\n- 阻力位: ${resistanceStr}\n---\n`;
+      }
       return `\n---\n**${step}: 已跳过**（${gateResult.reason}）\n---\n`;
+    }
+  }
+
+  // ============ P2b修复(2026-08-28): S0_DIRECT_ANSWER 知识问答专用路径 ============
+  // 原实现：S0 走通用 S 分支 → callLLMStep 失败 → 返回占位符"收到请求，正在处理..."
+  // 新实现：知识库 RAG + LLM 直接回答（知识/概念类问题不走行情分析模板）
+  if (step === 'S0_DIRECT_ANSWER') {
+    const question = schedulerContext?.userInput || '';
+    try {
+      const kb = question ? await getKnowledgeContext(question, schedulerContext?.intent || 'simple_qa', 3000) : '';
+      const sysContent = '你是 Dream 智能助手。请基于下方知识库参考资料回答用户问题，回答简洁、结构化、用中文。若参考资料无相关内容，基于自身知识回答并注明。' + (kb ? '\n\n【知识库参考资料】\n' + kb : '');
+      const answer = await callDeepSeekAPI(
+        [
+          { role: 'system', content: sysContent },
+          { role: 'user', content: question || `介绍一下 ${displayName || symbol}` },
+        ],
+        0.4,
+        sessionId ? { sessionId: sessionId, stepId: step, stepName: step } : undefined
+      );
+      if (answer && answer.trim().length > 10) {
+        return answer.trim() + (kb ? '\n\n*（参考: 本地知识库 2-KNOWLEDGE/）*' : '');
+      }
+    } catch (e) {
+      console.warn('[S0_DIRECT_ANSWER] LLM 回答失败:', e);
+    }
+    // 兜底：纯知识库检索结果
+    try {
+      if (question) {
+        const kb = await getKnowledgeContext(question, schedulerContext?.intent || 'simple_qa', 2500);
+        if (kb && kb.trim().length > 30) {
+          return `\n---\n**📚 知识库检索结果**\n${kb}\n\n*（来源: 本地知识库 2-KNOWLEDGE/）*\n---\n`;
+        }
+      }
+    } catch (kbErr) {
+      console.warn('[S0_DIRECT_ANSWER] 知识库兜底失败:', kbErr);
     }
   }
 
@@ -2515,6 +2832,7 @@ async function executeStepWithSkill(
         supportStr, resistanceStr,
         support1, support2, resist1, resist2,
         isGold, price: market.price,
+        userMessage: schedulerContext?.userInput || '',  // P2b修复(2026-08-28): 用户原话供 RAG 检索
       },
       style,
       sessionId,
@@ -2537,6 +2855,7 @@ async function executeStepWithSkill(
     if (skillName) {
       const skillResult = await callSkill(skillName, {
         symbol, price: market.price, support: market.support, resistance: market.resistance,
+        market,  // P3/P1a修复(2026-08-28): 传完整行情，模板据此计算趋势/振幅/资金费率
       });
       if (skillResult.success && skillResult.data) {
         const base = formatSkillResult(step, skillResult.data, displayName, symbol, priceStr, supportStr, resistanceStr, support1, support2, resist1, changeStr, isGold);
@@ -3609,6 +3928,7 @@ async function callLLMStep(
     resist2: string;
     isGold: boolean;
     price: number;
+    userMessage?: string;  // P2b修复(2026-08-28): 用户原话，用于 RAG 语义检索
   },
   style: 'data_driven' | 'macro_narrative' | 'structured_list',
   sessionId: string = '',
@@ -3617,7 +3937,7 @@ async function callLLMStep(
   previousStepOutput?: string
 ): Promise<string | null> {
   try {
-    const { symbol, displayName, priceStr, changeStr, supportStr, resistanceStr, support1, support2, resist1, resist2, isGold, price } = context;
+    const { symbol, displayName, priceStr, changeStr, supportStr, resistanceStr, support1, support2, resist1, resist2, isGold, price, userMessage } = context;
 
     // ===== 注入用户记忆上下文（Hermes 记忆系统）=====
     // 系统推荐模式：不注入用户偏好记忆
@@ -3632,8 +3952,15 @@ async function callLLMStep(
     }
 
     // P0-2: 构造思维链上下文注入（仅在有上一步输出时）
+    // 去重修复(2026-08-28): 明确要求不重复上一步已给出的数据，解决各维度间内容高度重复问题
     const chainContext = previousStepOutput && previousStepOutput.trim().length > 10
-      ? `\n\n【思维链上下文】上一步 (${stepNameOf(prevStepName(step))}) 的输出如下。请基于该上一步的结论，做出前后自洽、延续性的分析，不要与上一步结论矛盾。\n\n--- 上一步输出开始 ---\n${previousStepOutput.trim()}\n--- 上一步输出结束 ---\n\n`
+      ? `\n\n【思维链上下文】上一步 (${stepNameOf(prevStepName(step))}) 的输出如下。请基于该上一步的结论做增量分析：\n【硬性要求】① 严禁重复上一步已给出的数据（价格、涨跌幅、支撑/阻力位、基本面评分、新闻情绪、市场广度等数字一律不要再罗列）；② 直接引用上一步结论展开本步骤独有的新内容；③ 不得与上一步结论矛盾。\n\n--- 上一步输出开始 ---\n${previousStepOutput.trim()}\n--- 上一步输出结束 ---\n\n`
+      : '';
+
+    // 阶段1修复(2026-08-28): 注入真实技术指标（模块计算：Hyperliquid K线 → SMA/RSI/波动率 + 恐贪指数）
+    // 有真实指标后，S1/S2 引用指标即有出处，消除编造动机
+    const multiDimCtx = (step === 'S1_RESEARCH' || step === 'S2_ANALYSIS')
+      ? await getMultiDimContext(symbol)
       : '';
 
     // 每个步骤的定制 prompt
@@ -3648,7 +3975,7 @@ async function callLLMStep(
 - 支撑位：${supportStr}
 - 阻力位：${resistanceStr}
 - 标的属性：${isGold ? '传统避险资产（黄金）' : '风险资产（加密货币 / 股票）'}
-- ${isGold ? '黄金作为避险资产，关注：央行政策、美元指数、实际利率、地缘政治风险' : '加密 / 风险资产，关注：宏观流动性、ETF 资金流向、机构持仓、监管与宏观事件'}${chainContext}
+- ${isGold ? '黄金作为避险资产，关注：央行政策、美元指数、实际利率、地缘政治风险' : '加密 / 风险资产，关注：宏观流动性、ETF 资金流向、机构持仓、监管与宏观事件'}${multiDimCtx}${chainContext}
 
 请生成一份约 180-250 字的中文 Markdown 调研简报，包含：
 1. **宏观环境**（3个要点）
@@ -3669,14 +3996,19 @@ async function callLLMStep(
 - 阻力带：${resistanceStr}
 - 近支撑：${support1} / 远支撑：${support2}
 - 近阻力：${resist1} / 远阻力：${resist2}
-- 标的属性：${isGold ? '避险资产，关注实际利率 & 美元相关性' : '风险资产，关注情绪 & 资金流'}${chainContext}
+- 标的属性：${isGold ? '避险资产，关注实际利率 & 美元相关性' : '风险资产，关注情绪 & 资金流'}${multiDimCtx}${chainContext}
 
 请生成一份约 200-300 字的中文 Markdown 分析报告，包含：
-1. **技术面分析**（趋势方向、RSI 状态、波动状态、关键位判断）
-2. **基本面分析**（资金流向、相关性、周期位置——基于 ${displayName} 的合理推断）
-3. **情景推演**（3 个路径 + 各自触发条件 + 概率估计）
+1. **技术面分析**（趋势方向、波动状态、关键位判断——仅基于上方已知的价格/区间/支撑阻力数据）
+2. **基本面分析**（仅引用"基本面实时数据"中的模块信号与评分；若某维度无数据则定性说明，不得编造）
+3. **情景推演**（3 个路径 + 各自触发条件 + 概率；概率为主观估计，必须写"估计 xx%"）
 
-输出要求：Markdown 格式，第一行写 \`🧠 **S2 分析 (Analysis)**\`，语气专业、推理清晰，避免机械套话。${memoryNote}`,
+【数据真实性约束 — 严格】
+- 只可引用"已知信息"与"基本面实时数据"中出现的数字（价格、涨跌幅、支撑阻力位、模块信号百分比、综合评分等）
+- 禁止编造无数据源的精确指标：RSI/MACD/布林带数值、ETF 资金流金额、与股指的相关系数、历史统计值等；没有数据时用定性表述（如"动能中性"而非"RSI 52"）
+- 推导出的目标价、量能阈值等属估计值，须标注"估计"或"约"
+
+输出要求：Markdown 格式，第一行写 \`🧠 **S2 分析 (Analysis)**\`，语气专业、推理清晰，避免机械套话。**去重要求：不要复述 S1 已给出的行情快照（价格/涨跌/支撑阻力位等数字），直接从技术面判断与情景推演切入。**${memoryNote}`,
 
       S3_DESIGN: `你正在执行"${displayName} (${symbol})" 的策略思维链 S3 阶段——**策略设计**。
 
@@ -3696,7 +4028,7 @@ async function callLLMStep(
 4. **交易参数**（入场 / 止损 / 止盈 / 仓位 / 盈亏比）
 5. **关键设计原则**（1句话说明该策略的核心理念）
 
-输出要求：Markdown 格式，第一行写 \`🎯 **S3 设计 (Design)**\`，情景用表格，参数用列表。${memoryNote}`,
+输出要求：Markdown 格式，第一行写 \`🎯 **S3 设计 (Design)**\`，情景用表格，参数用列表。**去重要求：不要复述 S1/S2 已给出的行情数据与分析过程，直接给出策略设计；关键价位仅在参数表中出现一次。**${memoryNote}`,
 
       S4_VALIDATE: `你正在执行"${displayName} (${symbol})" 的策略思维链 S4 阶段——**策略验证**。
 
@@ -3742,7 +4074,7 @@ async function callLLMStep(
 
     // 基于响应风格注入额外的 prompt 引导词
     const styleGuide: Record<string, string> = {
-      data_driven: `【写作风格：数据驱动】请用具体数字支撑每个结论，多用"价格"、"百分比"、"历史区间"等量化表达。避免模糊的定性描述。`,
+      data_driven: `【写作风格：数据驱动】用"已知信息/实时数据/基本面实时数据"中提供的具体数字支撑结论。**严禁编造数据源之外的精确指标**（RSI/MACD数值、ETF金额、相关系数、历史统计等）——数据缺失时用定性表述并注明"暂无数据"；推导/估计值必须标注"估计"或"约"。`,
       macro_narrative: `【写作风格：叙事解读】请把数据融入一个连贯的市场叙事中——告诉读者当前市场的"故事线"是什么，参与者的预期如何变化。`,
       structured_list: `【写作风格：清单式】请用简洁的要点清单格式表达内容，每行≤15字，重点突出，便于快速扫读。`,
     };
@@ -3766,13 +4098,18 @@ async function callLLMStep(
       S5_EXECUTE: 'entry_timing',
     };
     const kbIntent = stepToIntent[step] || 'trading_analysis';
-    const kbMessage = `${displayName} ${symbol} ${step}`;
+    // P2b修复(2026-08-28): 优先用用户原话做 RAG 检索（原实现只拼币种+步骤名，语义检索命中率低）
+    const kbMessage = context.userMessage && context.userMessage.trim().length > 0
+      ? context.userMessage
+      : `${displayName} ${symbol} ${step}`;
     const knowledgeBase = await getKnowledgeContext(kbMessage, kbIntent, 3000);
+    // P1a修复(2026-08-28): 注入基本面网关实时数据
+    const fundamentalCtx = await fetchFundamentalSnapshot(symbol);
 
-    // 调用 DeepSeek API —— P0: 启用 tracking 以记录该步骤 LLM token 用量
+    // DeepSeek API call — P0: 启用追踪记录该步骤的 LLM token 消耗
     const generated = await callDeepSeekAPI(
       [
-        { role: 'system', content: '你是一个专业的量化交易策略分析师。输出必须是结构化的中文 Markdown，第一行必须是带 emoji 的标题行。内容必须直接、可用、专业。' + knowledgeBase },
+        { role: 'system', content: '你是一个专业的量化交易策略分析师。输出必须是结构化中文 Markdown，第一行必须是带 emoji 的标题行。内容要直接可执行、专业。所有价格数字必须写成 $79,584 这种带 $ 前缀和千分位的格式。【数据真实性】只可引用用户消息中提供的实时数据里的数字；禁止编造 RSI/MACD/布林带数值、ETF 资金金额、相关系数等无数据源的精确指标，数据缺失时用定性表述；概率与推导值须标注"估计"。' + knowledgeBase + (fundamentalCtx ? '\n' + fundamentalCtx : '') },
         { role: 'user', content: fullPrompt },
       ],
       temperatureByStyle[style] || 0.7,
@@ -3872,7 +4209,9 @@ export async function POST(request: NextRequest) {
 
   try {
     chatTraceId = `chat_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    const { message, session_id, thinking_mode, user_role, confirm_step, trading_mode } = body;
+    const { message, thinking_mode, user_role, confirm_step, trading_mode } = body;
+    // 兼容两种字段名（前端发 sessionId，旧客户端发 session_id）
+    const session_id: string | undefined = body.session_id || body.sessionId;
 
     if (!message) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
@@ -3886,6 +4225,10 @@ export async function POST(request: NextRequest) {
     
     if (shouldEnableScheduler) {
       initCostKeeper(chatTraceId, 'pending', 'moderate');
+      // P0修复(2026-08-28): LLM 步骤的 tracking 用用户 sessionId（ctxSessionId），
+      // 而 CostKeeper 用 chatTraceId 注册 → 记录全丢。注册别名指向同一状态对象。
+      aliasSession(chatTraceId, session_id || 'anonymous');
+      aliasSession(chatTraceId, 'anonymous');
       console.log(`[Hermes-Planner] CostKeeper initialized: session=${chatTraceId}, mode=${thinking_mode || 'default'}`);
     }
 
@@ -4597,6 +4940,60 @@ export async function POST(request: NextRequest) {
       { userMessage: message, complexity: (intentResult.complexity as any) || 'moderate' },
       executionMode as ExecMode);
 
+    // P0修复(2026-08-28): 多步路由中每个被跳过的步骤都会追加一份相同的知识库兜底块，
+    // 最终拼接后重复出现。保留第一份，删除后续重复块。
+    if (typeof response.content === 'string' && response.content.includes('**📚 知识库检索结果**')) {
+      const marker = '**📚 知识库检索结果**';
+      let content = response.content;
+      const firstIdx = content.indexOf(marker);
+      if (firstIdx >= 0) {
+        let searchFrom = firstIdx + marker.length;
+        while (true) {
+          const next = content.indexOf(marker, searchFrom);
+          if (next < 0) break;
+          // 块起点：紧邻标记前的分隔线
+          let start = content.lastIndexOf('\n---\n', next);
+          if (start < 0 || start < firstIdx) start = next;
+          // 块终点：来源行后的分隔线
+          const srcIdx = content.indexOf('*（来源', next);
+          let end = -1;
+          if (srcIdx >= 0) {
+            end = content.indexOf('\n---\n', srcIdx);
+            if (end >= 0) end += 5;
+          }
+          if (end < 0 || end <= start) end = content.length;
+          content = content.slice(0, start) + content.slice(end);
+          searchFrom = Math.max(0, start);
+        }
+        response.content = content;
+      }
+    }
+
+    // 阶段0物理门禁(2026-08-28): 数字溯源验证器 —— 无出处的指标句在返回用户前被物理剥离
+    // 数据卡 = 行情 + 真实指标 + 基本面 + 知识库注入文本中的全部数值
+    let provenanceRemovals: string[] = [];
+    try {
+      const vSymbol = String(intentResult.entities.symbol || 'BTC').toUpperCase();
+      const [vMarket, vFund] = await Promise.all([
+        fetchMarketPrice(vSymbol).catch(() => null),
+        fetchFundamentalSnapshot(vSymbol).catch(() => ''),
+      ]);
+      const vMultiDim = await getMultiDimContext(vSymbol);
+      const vKb = getKnowledgeContext(message, intentResult.intent);  // P2基线修复: 原传 false 与签名 maxChars:number 不符（TS2345），用默认 3500
+      const card = buildProvenanceCard(
+        (vMarket as unknown as Record<string, unknown>) || null,
+        [vMultiDim, vFund, vKb]
+      );
+      const gated = validateNumericProvenance(response.content, card);
+      if (gated.removals.length > 0) {
+        provenanceRemovals = gated.removals;
+        console.warn(`[provenance-gate] 剥离 ${gated.removals.length} 句无出处数字:`, gated.removals);
+      }
+      response.content = gated.content;
+    } catch (e) {
+      console.warn('[provenance-gate] 校验跳过（降级放行）:', e);
+    }
+
     // Phase A: 将执行模式写入 strategyState，供后续"继续"回复时使用
     const sState = get_or_init_strategy_state(ctxSessionId, executionMode as ExecMode);
     sState.executionMode = executionMode as ExecMode;
@@ -4820,6 +5217,21 @@ export async function POST(request: NextRequest) {
         grade: intentResult.confidence > 0.8 ? 'good' : 'degraded',
       },
     };
+
+    // P0修复(2026-08-28): chain_trace 落盘（按日 JSONL），供审计回溯
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const traceDir = path.join(process.cwd(), 'data', 'chain_trace');
+      fs.mkdirSync(traceDir, { recursive: true });
+      const day = new Date().toISOString().slice(0, 10);
+      fs.appendFileSync(
+        path.join(traceDir, `${day}.jsonl`),
+        JSON.stringify({ ts: new Date().toISOString(), session_id: session_id || 'anonymous', chain_trace, provenance_removals: provenanceRemovals }) + '\n'
+      );
+    } catch (e) {
+      console.warn('[chain_trace] persist failed:', e);
+    }
 
     return NextResponse.json({
       success: true,
