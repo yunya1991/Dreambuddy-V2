@@ -230,6 +230,54 @@ class SignalRouter:
             "source": "signal-router-batch",
         }
 
+    def manage_positions(self) -> Dict[str, Any]:
+        """Manage all existing V15 positions via V15Executor.
+
+        Delegates position management to V15Executor.manage_positions(),
+        which calls 14-V15's manage_all_positions() high-level interface.
+
+        This method is called by OrchestratorV2 during the position
+        management phase of the four-loop cycle, after signal routing
+        (B+C+D) and before cognitive review (E).
+
+        Returns:
+            Dict: Management result summary (transparent passthrough)
+            {
+                "managed_count": int,
+                "closed_count": int,
+                "addon_count": int,
+                "cooldown_active": bool,
+                "details": [{"coin": str, "action": str, "pnl": float}, ...]
+            }
+        """
+        if not self.executor:
+            return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
+                    "cooldown_active": False, "details": [], "error": "executor unavailable"}
+
+        try:
+            result = self.executor.manage_positions()
+            logger.info(f"SignalRouter manage_positions: managed={result.get('managed_count', 0)} "
+                        f"closed={result.get('closed_count', 0)} addon={result.get('addon_count', 0)}")
+
+            # 方案B：对冲价差止盈止损监控
+            hedge_results = []
+            if self.hedge_executor:
+                try:
+                    hedge_results = self.hedge_executor.check_spread_exit({})
+                    hedge_closed = sum(1 for r in hedge_results if r.get("action") in ("TP_SPREAD", "SL_SPREAD"))
+                    if hedge_closed > 0:
+                        logger.info(f"SignalRouter hedge_spread_exit: closed={hedge_closed}")
+                except Exception as e:
+                    logger.error(f"SignalRouter hedge_spread_exit error: {e}")
+                    hedge_results = []
+
+            result["hedge_spread_exit"] = hedge_results
+            return result
+        except Exception as e:
+            logger.error(f"SignalRouter manage_positions error: {e}")
+            return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
+                    "cooldown_active": False, "details": [], "error": str(e)}
+
 
 # ---- Task 2: SignalRouterNode ----
 

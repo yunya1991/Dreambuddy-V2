@@ -1385,6 +1385,30 @@ export default function ChatPage() {
    * 中台即时触发：POST创建任务后直接返回结果（秒级），无需轮询
    * 回退：如果返回processing状态，仍然走轮询逻辑
    */
+  // 前端轻量币种提取（避免导入服务端模块 market-data-adapter）
+  const extractSymbolClient = (msg: string): string => {
+    const lower = msg.toLowerCase();
+    const map: [string[], string][] = [
+      [['btc', '比特币', 'bitcoin'], 'BTC'],
+      [['eth', '以太坊', 'ethereum'], 'ETH'],
+      [['sol', 'solana'], 'SOL'],
+      [['bnb'], 'BNB'],
+      [['xrp', '瑞波'], 'XRP'],
+      [['doge', '狗狗币', 'dogecoin'], 'DOGE'],
+      [['ordi'], 'ORDI'],
+      [['sui'], 'SUI'],
+      [['黄金', 'gold', 'xau', '金价'], 'GOLD'],
+      [['白银', 'silver', 'xag'], 'SILVER'],
+      [['原油', 'oil', 'brent', 'wti', '油价'], 'OIL'],
+    ];
+    for (const [patterns, symbol] of map) {
+      for (const p of patterns) {
+        if (lower.includes(p)) return symbol;
+      }
+    }
+    return 'BTC';
+  };
+
   const handleWorkbuddyTask = async (userMessage: string) => {
     // 📌 幂等保护：若 messages 末尾已经是 thinking 或同样的任务结果，短路返回
     const tail = messages[messages.length - 1];
@@ -1393,6 +1417,219 @@ export default function ChatPage() {
       return;
     }
 
+    // ═══════════════════════════════════════════════════════
+    // A1 Skill 直接调用路径：检测到 A1/调研/screen1 关键词时直接走 orchestrate（内部 A1 Skill 分支）
+    // DreamOS 路径仅保留 dreamos/深度分析/完整分析 关键词触发
+    // ═══════════════════════════════════════════════════════
+    const a1DirectKeywords = /a1|调研|第一屏|screen1|dream-screen1/i;
+    const dreamosKeywords = /dreamos|深度分析|完整分析/i;
+    const symbol = extractSymbolClient(userMessage);
+
+    // A1 关键词直接跳过 DreamOS，走 orchestrate（内部 A1 Skill 分支直接执行）
+    if (!a1DirectKeywords.test(userMessage) && dreamosKeywords.test(userMessage)) {
+      try {
+        const dreamosResponse = await fetch("/api/dreamos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: userMessage,
+            symbol,
+            mode: "async",
+            intent_type: "deep_analysis",
+          }),
+        });
+
+        if (dreamosResponse.ok) {
+          const dreamosData = await dreamosResponse.json();
+
+          if (dreamosData.ok && dreamosData.mode === "async") {
+            // async 模式：轮询等待结果
+            const cycleId = dreamosData.cycle_id;
+            let pollCount = 0;
+            let dreamosResult: any = null;
+
+            while (pollCount < 20) {
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              pollCount++;
+
+              try {
+                const pollRes = await fetch(`/api/dreamos?cycle_id=${cycleId}`);
+                if (pollRes.ok) {
+                  const pollData = await pollRes.json();
+                  if (pollData.ok && (pollData.status === "done" || pollData.status === "error")) {
+                    dreamosResult = pollData;
+                    break;
+                  }
+                }
+              } catch {
+                // 继续轮询
+              }
+            }
+
+            if (dreamosResult && dreamosResult.status === "done" && dreamosResult.result) {
+              const r = dreamosResult.result;
+              const direction = r.action || 'HOLD';
+              const directionEmoji = direction === 'LONG' ? '📈' : direction === 'SHORT' ? '📉' : '➡️';
+              const confidence = Math.round((r.confidence || 0) * 100);
+
+              let resultContent = `## ${directionEmoji} DreamOS A1 完整调研结果\n\n`;
+              resultContent += `**方向: ${direction} | 置信度: ${confidence}%**\n\n`;
+              resultContent += `### 📊 分析理由\n\n`;
+
+              if (r.rationale && Array.isArray(r.rationale)) {
+                for (const reason of r.rationale) {
+                  resultContent += `- ${reason}\n`;
+                }
+              }
+
+              resultContent += `\n### 🔧 执行节点\n\n`;
+              if (r.execution && r.execution.nodes) {
+                for (const node of r.execution.nodes) {
+                  resultContent += `- **${node.node_id || node.id}**: ${node.status || 'done'}${node.direction ? ` (${node.direction})` : ''}${node.confidence ? ` conf=${Math.round(node.confidence * 100)}%` : ''}\n`;
+                }
+              }
+
+              resultContent += `\n> ⏱️ 延迟: ${Math.round(r.latency_ms / 1000)}s | Tokens: ${r.tokens_used || 0}`;
+
+              setMessages((prev) => {
+                const filtered = prev.filter((m: any) => !(m.intent === 'thinking' || (m as any).in_flight));
+                return [...filtered, { role: "assistant", content: resultContent, intent: 'dreamos_analysis' } as any];
+              });
+
+              setAnalysisConfidence(confidence);
+              setIsLoading(false);
+              return;
+            }
+          } else if (dreamosData.ok && dreamosData.action) {
+            // sync 模式：直接返回结果
+            const direction = dreamosData.action || 'HOLD';
+            const directionEmoji = direction === 'LONG' ? '📈' : direction === 'SHORT' ? '📉' : '➡️';
+            const confidence = Math.round((dreamosData.confidence || 0) * 100);
+
+            let resultContent = `## ${directionEmoji} DreamOS A1 完整调研结果\n\n`;
+            resultContent += `**方向: ${direction} | 置信度: ${confidence}%**\n\n`;
+            if (dreamosData.rationale) {
+              resultContent += `### 📊 分析理由\n\n`;
+              for (const reason of (Array.isArray(dreamosData.rationale) ? dreamosData.rationale : [dreamosData.rationale])) {
+                resultContent += `- ${reason}\n`;
+              }
+            }
+
+            setMessages((prev) => {
+              const filtered = prev.filter((m: any) => !(m.intent === 'thinking' || (m as any).in_flight));
+              return [...filtered, { role: "assistant", content: resultContent, intent: 'dreamos_analysis' } as any];
+            });
+
+            setAnalysisConfidence(confidence);
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (dreamosError) {
+        console.warn('[DreamOS] 调用失败，降级到编排API:', dreamosError);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // 降级：调用大模型编排 API（/api/orchestrate）
+    // ═══════════════════════════════════════════════════════
+    try {
+      const orchResponse = await fetch("/api/orchestrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userRequest: userMessage,
+          symbol: extractSymbolClient(userMessage),
+          sessionId,
+        }),
+      });
+
+      if (orchResponse.ok) {
+        const orchData = await orchResponse.json();
+
+        if (orchData.success) {
+          // 构建大模型分析结果展示
+          const steps = orchData.steps || [];
+          const conclusion = orchData.conclusion || {};
+          const confidence = orchData.overallConfidence || 0;
+          const direction = conclusion.direction || 'neutral';
+          const directionEmoji = direction === 'long' ? '📈' : direction === 'short' ? '📉' : '➡️';
+
+          // 检测是否为 A1 Skill 结果（直接展示原始 Markdown，不套模板）
+          const firstStep = steps[0];
+          const firstSkillName = (firstStep?.skillsCalled?.[0]?.skillName || firstStep?.stepId || '').toLowerCase();
+          const isA1Skill = firstStep && (
+            firstSkillName.includes('a1') ||
+            firstSkillName.includes('调研') ||
+            firstSkillName.includes('screen1') ||
+            firstSkillName.includes('dream-screen1') ||
+            firstSkillName.includes('first')
+          );
+
+          let resultContent: string;
+
+          if (isA1Skill && firstStep?.answer) {
+            // A1 Skill 结果：直接展示原始 Markdown（含表格、三阶段调研内容）
+            resultContent = `## ${directionEmoji} A1 深度调研报告\n\n`;
+            resultContent += `**置信度: ${firstStep.confidence || confidence}%** | **方向: ${direction}**\n\n`;
+            resultContent += `---\n\n`;
+            resultContent += firstStep.answer;
+            resultContent += `\n\n> 📊 置信度: ${firstStep.confidence || confidence}%`;
+          } else {
+            // 非 A1 结果：保持原有模板逻辑
+            resultContent = `## ${directionEmoji} 综合分析结果\n\n`;
+            resultContent += `**综合置信度: ${confidence}%**\n\n`;
+
+            // 展示各技能分析结果
+            if (steps.length > 0) {
+              resultContent += `### 技能分析\n\n`;
+              for (const step of steps) {
+                const skillName = step.skillsCalled?.[0]?.skillName || step.stepId;
+                const skillConf = step.confidence || 0;
+                const skillAnswer = step.answer || '';
+                if (skillAnswer) {
+                  resultContent += `**${skillName}** (置信度: ${skillConf}%)\n${skillAnswer}\n\n`;
+                } else {
+                  resultContent += `**${skillName}** (置信度: ${skillConf}%)\n\n`;
+                }
+              }
+            }
+
+            // 展示结论
+            if (conclusion.keyDecisionPoints?.length > 0) {
+              resultContent += `### 关键发现\n\n`;
+              for (const point of conclusion.keyDecisionPoints) {
+                resultContent += `- ${point}\n`;
+              }
+              resultContent += '\n';
+            }
+
+            if (conclusion.nextSteps?.[0]?.action) {
+              resultContent += `### 建议\n\n${conclusion.nextSteps[0].action}\n`;
+            }
+
+            // 展示简短置信度提示
+            resultContent += `\n> 📊 综合置信度: ${confidence}%`;
+          }
+
+          // 移除 thinking 消息，展示结果
+          setMessages((prev) => {
+            const filtered = prev.filter((m: any) => !(m.intent === 'thinking' || (m as any).in_flight));
+            return [...filtered, { role: "assistant", content: resultContent, intent: 'analysis' } as any];
+          });
+
+          setAnalysisConfidence(confidence);
+          setIsLoading(false);
+          return;
+        }
+      }
+    } catch (orchError) {
+      console.warn('[Orchestrate] 大模型编排API不可用，降级到流式模式:', orchError);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // 降级：原有的流式/同步模式
+    // ═══════════════════════════════════════════════════════
     const thinkingText = thinkingMode === 'quick'
       ? "⏳ ⚡ 任务已发送，中台即时执行中..."
       : "⏳ 🧠 深度任务已发送，中台即时执行中...";

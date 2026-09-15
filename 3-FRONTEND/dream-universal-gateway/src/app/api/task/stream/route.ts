@@ -40,14 +40,14 @@ export async function POST(request: NextRequest) {
 
       if (!message || typeof message !== 'string') {
         sendEvent('error', { error: 'message is required and must be a string' });
-        controller?.close();
+        (controller as ReadableStreamDefaultController<Uint8Array> | null)?.close();
         return;
       }
 
       // 并发限制检查
       if (!canCreateTask()) {
         sendEvent('error', { error: 'Too many pending tasks', pending_limit: 3 });
-        controller?.close();
+        (controller as ReadableStreamDefaultController<Uint8Array> | null)?.close();
         return;
       }
 
@@ -198,11 +198,11 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      controller?.close();
+      (controller as ReadableStreamDefaultController<Uint8Array> | null)?.close();
     } catch (error) {
       console.error('[TaskStreamAPI] Error:', error);
       sendEvent('error', { error: error instanceof Error ? error.message : 'Unknown error' });
-      controller?.close();
+      (controller as ReadableStreamDefaultController<Uint8Array> | null)?.close();
     }
   })();
 

@@ -120,7 +120,7 @@ async function testDashscope(
   const start = Date.now();
   try {
     const url = baseUrl
-      ? `${baseUrl.replace(/\/$/, '')}/api/v1/models`
+      ? `${baseUrl.replace(/\/$/, '')}/models`
       : 'https://dashscope.aliyuncs.com/api/v1/models';
 
     const response = await fetch(url, {

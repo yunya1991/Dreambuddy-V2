@@ -46,6 +46,31 @@ def _parse_phase(raw: Any) -> Optional[int]:
     return None
 
 
+def _fetch_live_price(symbol: str) -> float:
+    """从 Hyperliquid 拉取实时中间价。失败返回 0。"""
+    import json as _json
+    import urllib.request
+    try:
+        req = urllib.request.Request(
+            "https://api.hyperliquid.xyz/info",
+            data=_json.dumps({"type": "allMids"}).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            mids = _json.loads(resp.read().decode())
+        return float(mids.get(symbol.upper(), 0))
+    except Exception:
+        return 0.0
+
+
+def _enrich_market_data(market_data: Dict) -> Dict:
+    """如果 market_data 中没有 price，从 Hyperliquid 获取实时价格注入。"""
+    if not market_data.get("price") and market_data.get("symbol"):
+        price = _fetch_live_price(market_data["symbol"])
+        if price > 0:
+            market_data["price"] = price
+    return market_data
+
+
 def create_app(agent: Optional[TradingAgent] = None,
                budget_mode: str = "standard") -> Flask:
     """创建 Flask 应用
@@ -126,6 +151,8 @@ def create_app(agent: Optional[TradingAgent] = None,
         if not market_data and not user_input:
             return jsonify({"error": "user_input or market_data required"}), 400
 
+        market_data = _enrich_market_data(market_data)
+
         try:
             result = _agent.run(
                 user_input=user_input,
@@ -165,6 +192,8 @@ def create_app(agent: Optional[TradingAgent] = None,
 
         if not market_data and not user_input:
             return jsonify({"error": "user_input or market_data required"}), 400
+
+        market_data = _enrich_market_data(market_data)
 
         from dreamos.shared.utils import gen_cycle_id
         async_cycle_id = gen_cycle_id("async")

@@ -659,7 +659,7 @@ async function recognizeIntentLLM(message: string, context?: SessionContext): Pr
 - developer: 代码开发、bug修复、代码重构、代码审阅（D-Z-E开发链）
 
 输出格式:
-{"intent":"类型","confidence":0.0-1.0,"entities":{"symbol":"BTC","timeframe":"4h"},"reasoning":"理由"}
+{"intent":"类型","confidence":0.0-1.0,"entities":{"symbol":"从消息中提取的实际币种如BTC/ETH/SOL","timeframe":"4h"},"reasoning":"理由"}
 
 规则:
 1. 用户请求"制定策略"、"帮我分析+制定"、"给我一个策略"等 → triple_chain (S系列完整链路)
@@ -729,10 +729,19 @@ ${context?.message_history && context.message_history.length > 0 ? `近3条:${co
     const isSimple = simpleIntents.has(parsed.intent);
     const isComplex = complexIntents.has(parsed.intent);
 
+    // 本地币种提取优先：用 extractSymbolFromMessage 覆盖 LLM 返回的 symbol，避免 LLM 默认返回 BTC
+    const localSymbolDef = extractSymbolFromMessage(message);
+    const mergedEntities = { ...(parsed.entities || {}) } as Record<string, string>;
+    if (localSymbolDef) {
+      mergedEntities.symbol = localSymbolDef.symbol;
+    } else if (context?.last_symbol && !mergedEntities.symbol) {
+      mergedEntities.symbol = context.last_symbol;
+    }
+
     return {
       intent: parsed.intent as IntentType,
       confidence: parsed.confidence || 0.7,
-      entities: (parsed.entities || {}) as Record<string, string>,
+      entities: mergedEntities,
       complexity: isSimple ? "simple" : isComplex ? "complex" : "moderate",
       method: "llm",
       thinking_mode: thinkingMode,

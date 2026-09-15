@@ -1,111 +1,187 @@
-# Z3 实施路径 — PROP-20260829C 统一意图引擎：边界与门禁
+# 实施计划（Z3）：DreamOS OS自进化三缺口 — Step-by-step 路径
 
-> 2026-08-29 | 四步推导：前置条件 → 执行步骤（做什么+怎么做+验证）→ 回滚反向操作 → token 预估
-> 输入：`_plan/z2-boundaries.md` | 消费方：E1 执行者（本文件须自包含，含精确路径）
-> 路径根：`~/Dreambuddy-V2-main`（前端根：`3-FRONTEND/dream-universal-gateway`，下称 GW）
-
----
-
-## 1. 前置条件
-
-| 项 | 内容 | 验证 |
-|:---|:---|:---|
-| 审批 | 本提案（PROP-20260829C）走飞书审批获批后方可动 Phase 1+ 代码；Phase 0 基线入库可先行（纯归档无行为变更） | 审批实例 timeline 有人工批准 |
-| 提交纪律 | 共享仓库：`git add` 只圈定本任务文件，**禁 add -A / add .**；提交前 `git status` 排除他工作流变更 | 每次提交前检查 |
-| 依赖 | vitest 已就位（GW/tests/ 已有用例）；手工验签兜底用 jose（next-auth 传递依赖，E1 先 `grep jose GW/package.json node_modules 确认`，缺失才装） | npx vitest --version |
-| 环境变量 | 新增 `INTENT_METHOD`（fc_shadow / fc / llm / rule，缺省=现状内联）、`INTENT_ROLE_GATE`（off / shadow / on，缺省 off） | .env 登记 |
-| 解释器 | 门禁脚本用 `~/.hermes/hermes-agent/venv/bin/python3` | — |
+> **Z3身份**: 路径师 · 四步推导法(反推验收→产出推导→异常预判→组装整链) · 工具 read_file/write_file
+> **前置引用**: `z1-scan-report.md`(接触点行号) + `z2-boundaries.md`(P1/P2/P3划分) · **覆盖** Aug29旧文件
+> **前置降级**: `d2-analysis.md`/`feedback-e2.md` 不存在 → 基于对话 D2 矛盾分析体现(见§五)
+> **核心**: Z3不决定做什么(Z2已定)，Z3决定**怎么做** — 每步"做什么→怎么做→怎么验收→怎么回滚"闭环
 
 ---
 
-## 2. 执行步骤
+## 一、前置条件
 
-### Phase 0 — 基线入库（可先行，~10min，~5k token）
-
-| # | 做什么+怎么做 | 验证 |
-|:---:|:---|:---|
-| 0.1 | `cd GW && git status --short` 确认脏文件=Z1 清单（4 untracked + 2 modified，均在 src/lib/intent/） | 与 z1-scan-report §2 一致 |
-| 0.2 | `git add src/lib/intent/intent-schema.ts src/lib/intent/intent-unified.ts src/lib/intent/command-fastpath.ts src/lib/intent/intent-args-repair.ts src/lib/intent/fallback-engine.ts src/lib/intent/intent-memory.ts`；提案文档 `../../3-EVOLUTION/proposals/PROP-20260829C-*.md` + `_plan/z1-scan-report.md z2-boundaries.md z3-implementation-plan.md` 按仓库归属分别 add | `git diff --cached --stat` 无任务外文件 |
-| 0.3 | commit："chore(gateway): PROP-20260828B 统一意图引擎产物基线入库（PROP-20260829C P0）" | `git log -1` |
-| 回滚 | `git reset --soft HEAD~1`（文件不丢） | — |
-
-### Phase 1 — 黄金集 + Harness（~1-2h，~30k token）
-
-| # | 做什么+怎么做 | 验证 |
-|:---:|:---|:---|
-| 1.1 | 手写 `GW/tests/intent/golden-set.json` ≥20 条，字段：`{id, input, user_role, expected_canon, expected_legacy, expected_loop, gate_branch}`。分布硬指标：15 legacy 意图各≥1；场景意图≥3；门禁分支：developer/command/execute_trade+FREE/scenario_sim+FREE+complex 各 1；环映射 4 环各 1；follow_up≥2；低价值输入（<4字符/问候语）≥2 | 分布清单逐项打勾 |
-| 1.2 | 写 `GW/tests/intent/harness.test.ts` 双模式：**offline**（默认：只测 rule 快路径/command 快路径/canon 映射/canonToLegacy/gateAllows，零 LLM 零 token）+ **online**（手动触发：真 LLM 比对，跑一致率） | offline 模式 npx vitest run tests/intent 全绿 |
-| 1.3 | 输出门禁分支覆盖报告（哪些 gate_branch 有 case） | 报告列出全部分支且非空 |
-| 回滚 | 删 `GW/tests/intent/`（纯新增） | — |
-
-### Phase 2 — P0 痕迹继承 + 影子接线（~1h + 观察期 ≤3 天，~15k token）
-
-| # | 做什么+怎么做 | 验证 |
-|:---:|:---|:---|
-| 2.1 | `GW/src/lib/orchestration/llm-bridge.ts` 请求体构造处补 `enable_thinking: false`（dashscope/deepseek 两分支都加；对齐 fallback-engine L153 P0 痕迹） | `grep -c enable_thinking llm-bridge.ts` ≥1 |
-| 2.2 | chat route（`GW/src/app/api/chat/route.ts` 意图识别段 ~L454/L633）接影子：`INTENT_METHOD=fc_shadow` 时，现有内联路径照常出结果（**旧结果为准**），并行调 `recognizeIntentUnified`，差异写 `GW/intent-shadow/shadow.jsonl`（appendFileSync 原子追加） | 本地发 3 条测试消息，shadow.jsonl 有条目且响应走旧结果 |
-| 2.3 | **影子预算上限（硬编码）**：计数器满 200 样本自动停影子；影子 FC 调用 max_tokens≤50 | grep 到计数器与上限常量 |
-| 2.4 | 部署观察 ≤3 天或 200 样本；期间每日看一次 shadow.jsonl 摘要 | 样本数达标 |
-| 回滚 | 移除 `INTENT_METHOD` 环境变量即恢复（零代码） | — |
-
-### Phase 3 — 门禁封闭（~2-3h，~40k token，与 P1/P2 并行）
-
-| # | 做什么+怎么做 | 验证 |
-|:---:|:---|:---|
-| 3a.1 | **auth() 探针**：写临时探针路由（或 dev 环境现有受保护路由实测）调 `auth()`（GW/src/lib/auth.ts L125 导出）验证 Next 15.5 route handler 内服务端会话可用性 | 探针输出 session/null 明确 |
-| 3a.2 | **分支决策**：可用 → 3b 直接用 auth()；不可用 → 写 `GW/src/lib/route-auth.ts`：jose 手工验签会话 cookie（用同一 AUTH_SECRET，算法对齐 next-auth 默认），返回 {uid, role}（role 从 Prisma User 读或 JWT claims） | 探针用例登录/未登录两种态都正确 |
-| 3b.1 | `GW/src/app/api/intent/memory/route.ts` 加门禁：record/feedback 需登录；evolve/adopt 需 `role==='ADMIN'`；未授权 401/403 | curl 三连：匿名 401 / FREE evolve 403 / ADMIN adopt 200 |
-| 3b.2 | `gateAllows()`（intent-schema.ts）接入 `INTENT_ROLE_GATE` 开关：shadow=只记日志，on=拦截返回 upgrade_required；缺省 off | 三种模式行为各测 1 次 |
-| 3c.1 | 隔离仓：`GW/src/lib/intent/quarantine.ts` — append-only JSONL + 进程内互斥；条目含 {record_id, user_uid, role, feedback, corrected_intent, ts} | 单元级读写测试 |
-| 3c.2 | **直写路径移除**：intent-memory.ts 的 `adoptCandidate` 改为非导出（仅晋升流程内部用）；/api/intent/memory 的 adopt 动作改写隔离仓（不再调 adoptCandidate）；experience-memory 写入只留"晋升流程"一条路径 | `grep -rn "adoptCandidate" GW/src/app` = 0 命中；`grep -rn writeExperienceMemory GW/src/app` = 0 |
-| 3c.3 | 价值过滤：recordRecognition 前判断 —— 输入 <4 字符 / 命中问候语表 / 无实体 → 只计内存统计不落 records | 低价值样本测试不落盘 |
-| 3c.4 | records 异步化：saveToDisk 改防抖批量（2s 或 50 条缓冲），消除热路径 writeFileSync | grep 热路径无同步全量写 |
-| 回滚 | `git revert` 本阶段 commit（纯增量；回滚=污染面重现，限回滚期） | — |
-
-### Phase 4 — 切主 + canon→strategy 映射（~2h，~25k token，硬依赖 P1+P2）
-
-| # | 做什么+怎么做 | 验证 |
-|:---:|:---|:---|
-| 4.1 | 分析 shadow.jsonl：一致率 = 一致样本/总样本；**≥95% 才继续**；<95% → 差异归因（映射缺口/规则缺口/提示词），修复后重新观察，不切流 | 一致率报告落盘 |
-| 4.2 | `INTENT_METHOD=fc` 设为默认（.env）；chat route 按开关走 intent-unified 主路径 | 实测对话走 FC（日志 method=fc） |
-| 4.3 | 35↔6 映射：intent-schema.ts 增 `CANON_TO_STRATEGY` 表（35 → DreamOS 6 战略意图 + 环归属），数据源=smart-router L575-587 环映射 + DreamOS core/sense 6 意图 | 映射表无悬空键 |
-| 4.4 | DreamOS `1-ARCHITECTURE/dreamos/apps/api_server.py` /api/v1/intent 响应加 `canon` 字段（增量，不动既有字段） | curl /intent 见 canon 字段 |
-| 4.5 | smart-router 门禁分支回归：跑 P1 online harness + 手工过 developer/command/FREE 拦截/scenario_sim 各 1 例 | 全绿 |
-| 回滚 | `INTENT_METHOD` 切回 llm（旧路径代码保留=结构性回滚）；canon 字段为增量无需回滚 | — |
-
-### Phase 5 — 优化闭环成文（~1h，~10k token，依赖 P3）
-
-| # | 做什么+怎么做 | 验证 |
-|:---:|:---|:---|
-| 5.1 | 写流程文档 `GW/docs/intent-optimization-loop.md`：调优 → 黄金集回归（命令）→ 提案 → 飞书审批 → canonical 版本晋升（单向阀：前端隔离仓数据跨域进认知系统须治理审批，对齐认知边界四规则） | 文档落盘 |
-| 5.2 | 晋升演练：隔离仓取首批候选，ADMIN 审核 → 通过 1 条 + **拒绝 1 条**（两条路径都必须走） | 演练记录（含拒绝理由） |
-| 回滚 | 文档类 N/A | — |
+| 类别 | 须确认 |
+|:---|:---|
+| 环境 | DreamOS venv(`~/.hermes/hermes-agent/venv/bin/python3`依赖全) + Hermes运行环境 |
+| 数据 | `data/bcrm_trades.db`存在(6表LIVE) + `core/memory/orchestration_memory.json`存在 |
+| 权限 | 飞书审批链路(`approval_sync.py` known-codes)可用 + bcrm2/orchestration_memory写权限 |
+| 备份 | **P3改status前必备份** `bcrm_trades.db`；P2前备份 `orchestration_memory.json` |
+| 依赖坐实 | save_model_version(L278)/check_rollback(L855)/record_evolution_event(L788)/run_hourly_sacg(L874) 均LIVE(Z1✅) |
+| D链输入 | d2/feedback物理文件缺→降级，D2矛盾(进化效率vs安全/回滚误触发/双审计/监督边界/审批张力)纳入§五 |
 
 ---
 
-## 3. 回滚预案总表
+## 二、执行步骤
 
-| Phase | 回滚方式 | 耗时 |
-|:---:|:---|:---:|
-| P0 | git reset --soft | <1min |
-| P1 | 删 tests/intent/ | <1min |
-| P2 | 移除 INTENT_METHOD env | <1min |
-| P3 | git revert commit | <5min |
-| P4 | INTENT_METHOD 切回 llm | <1min |
-| P5 | N/A | — |
+### Phase 1: G-A Hermes旁路只读监督器 (🟢低, 叶节点先行)
 
-## 4. Token/预算预估
+#### Step 1.1: 建只读观测器骨架（读3数据源）
+- **做什么**: Hermes侧新建独立监督模块，只读观测 DreamOS 自进化状态。
+- **怎么做**:
+  - 新建 `~/.hermes/scripts/dreamos_evolution_monitor.py`（Hermes侧，监督者独立性，不入DreamOS仓）
+  - 读源1: `core/memory/orchestration_memory.json` → scenarios进化状态(best_pattern/score/confidence/sparse/evolved_at)
+  - 读源2: `data/bcrm_trades.db` **只读连接**(`sqlite3.connect('file:...?mode=ro', uri=True)`) → model_evolution审计 + performance_snapshots绩效
+  - 读源3: `evolution/engine.py` evolve输出(EvolutionReport结构，只读解析)
+- **验收条件**:
+  1. `python3 dreamos_evolution_monitor.py --dump` 打印当前scenarios数+最近5条model_evolution审计 → 有输出
+  2. 只读断言: 运行后 `bcrm_trades.db` 的 mtime 不变 + 无写事务(mode=ro强制)
+  3. orchestration_memory.json 内容哈希运行前后一致
+- **卡住判定**: json路径不存在 / db被锁(SQLite并发) / EvolutionReport结构不明
+- **异常预案**: db锁→只读URI+`timeout=5`；json格式变→`try/except`容错+告警"格式异常"；不阻断DreamOS
+- **回滚方法**: `git revert`(新模块删除，零状态残留，纯只读未写任何数据) 🟢低
 
-| Phase | 开发 token | 运行时消耗 |
-|:---:|:---:|:---|
-| P0 | ~5k | 无 |
-| P1 | ~30k | offline harness 零 LLM |
-| P2 | ~15k | 影子 ≤200 次小调用（max_tokens≤50），约 ¥1-2 |
-| P3 | ~40k（auth 探针为主要不确定项） | 无 |
-| P4 | ~25k | online harness 1 次 |
-| P5 | ~10k | 无 |
-| **合计** | **~125k** | 影子预算硬上限已编码 |
+#### Step 1.2: 异常进化检测 + 告警（监督不阻断）
+- **做什么**: 检测异常自进化，告警通知，**不干预**evolve上线。
+- **怎么做**:
+  - 异常规则: ①score骤降(new<old×0.7) ②sparse样本上线(sample_count<10且confidence≠high) ③evolved_at频繁(同scenario 1h内多次进化)
+  - 告警通道: 飞书消息(复用send_message) + 本地日志，**仅通知**
+- **验收条件**:
+  1. 注入异常scenario(score骤降)→触发飞书告警
+  2. 正常进化→不告警(无误报)
+  3. **断言告警不写回DreamOS**(evolve上线流程不受影响，纯旁路)
+- **卡住判定**: 异常阈值难定 / 告警通道不通
+- **异常预案**: 误报→阈值config化可调；告警失败→降级本地日志，不抛异常
+- **回滚方法**: 关告警开关 / `git revert` Step1.2 commit 🟢低
+
+#### Step 1.3: 聚合两套审计统一视图 + 接入cron
+- **做什么**: 聚合OS编排审计(P2产出)+子系统model_evolution审计→统一视图；接入Hermes定期观测。
+- **怎么做**:
+  - 统一视图: 合并 orchestration_memory.json的scenarios进化 + model_evolution表 + (P2后的)OS编排审计 → 单一时间线
+  - 接入: Hermes cron(参考MEMORY: `cronjob` 定期跑monitor，no_agent或轻agent)
+- **验收条件**:
+  1. 统一视图展示两套审计(OS编排+子系统)按时间排序
+  2. cron定期(如每30min)跑monitor，输出进化健康摘要
+  3. P2完成后，OS编排审计自动出现在统一视图(读同源，无需改P1)
+- **卡住判定**: cron接入点冲突 / 两套审计schema差异大
+- **异常预案**: schema差异→视图层适配(各审计保留原schema，视图统一展示)；cron失败→告警不阻断
+- **回滚方法**: 移除cron job / `git revert` 🟢低
 
 ---
 
-→ Z4 验收方案读取本文件：按 Phase 产出 P0-P3 四级验收矩阵（P0 不过=阻塞不进 E3）。
+### Phase 2: G-C OS编排进化审计补全 (🟡中, 弱依赖P1)
+
+#### Step 2.1: update_from_evolution 落OS侧独立审计
+- **做什么**: 编排进化时记录审计，**不碰bcrm2**(避免分层倒置+P3交叉)。
+- **怎么做**:
+  - 改 `core/memory/orchestration_memory.py` `update_from_evolution`(L332)：进化写scenarios后，**追加OS侧审计**
+  - 审计落点(二选一，建议json内嵌轻量): 
+    - 方案A: orchestration_memory.json内嵌 `audit_log[]`(scenario_id/old_pattern→new_pattern/old_score→new_score/evidence/timestamp)
+    - 方案B: OS层新表`orchestration_evolution`(独立于bcrm2)
+  - feature flag: `audit_orchestration_enabled`(默认True)
+- **验收条件**:
+  1. 触发update_from_evolution→审计落点新增1条(含old→new pattern/score/evidence/timestamp)
+  2. flag=False→不写审计，scenarios进化仍正常(审计与进化解耦)
+  3. **断言未碰bcrm2_scheduler.py**(git diff只含orchestration_memory.py)
+  4. 影子验证: evolve流程(_sandbox_validate)不受影响，自动上线仍正常
+- **卡住判定**: 审计落点选择(json内嵌膨胀? 新表迁移?) / update_from_evolution签名变
+- **异常预案**: json膨胀→audit_log限长(保留最近N条)；影响evolve→影子验证回退；**D2矛盾#2(双审计不统一)→G-C落OS侧，由P1(Step1.3)聚合统一**
+- **回滚方法**: 关flag `audit_orchestration_enabled=False` + `git revert`；已写审计条目无害保留 🟡中
+
+---
+
+### Phase 3: G-B bcrm2回滚执行器 + 审批门禁 (🔴高, 强依赖P1+P2, 独占)
+
+#### Step 3.1: restore/activate 回滚执行方法（先dry_run）
+- **做什么**: 补"执行回滚"动作(现check_rollback只返回"建议"dict)。
+- **怎么做**:
+  - `bcrm2_scheduler.py` 新增 `restore_model_version(symbol, version_from, version_to, dry_run=True)`
+  - 逻辑: 切换 model_versions.status — version_from: `active→archived`；version_to: `→active`(事务原子)
+  - 版本定位: check_rollback(L855)的current_version → 查model_versions上一active版本(按created_at DESC)
+  - **dry_run优先**: 默认只预览status切换，不实改
+- **验收条件**:
+  1. `restore_model_version(dry_run=True)` → 打印"将切换 version_from(X)→version_to(Y) status"，db不变
+  2. dry_run=False(测试db) → model_versions.status正确切换(事务，失败回滚)
+  3. 版本定位准确(上一active版本)
+- **卡住判定**: 上一版本定位逻辑(多版本/无历史版本) / status切换并发
+- **异常预案**: 无上一版本→拒绝回滚+告警；并发→事务+锁；**D2矛盾#1(回滚误触发实盘损失)→dry_run强制先行**
+- **回滚方法**: model_versions.status手动恢复(备份db还原) 🔴高
+
+#### Step 3.2: 飞书审批门禁接入（复用现有链路）
+- **做什么**: 回滚执行前必过审批，**不改造**审批链路本身。
+- **怎么做**:
+  - 回滚触发→创建飞书审批实例(复用MEMORY: `approval_sync.py` known-codes架构，add注册+GET轮询)
+  - 审批内容: symbol/version_from→to/触发原因(win_rate/sharpe)/绩效证据
+  - 批准→执行restore(dry_run=False)；拒绝/超时→**不执行**+record_evolution_event(event_type='rollback_rejected')
+- **验收条件**:
+  1. 触发回滚→飞书创建审批实例(可见可批，参考MEMORY V1模板客户端可见)
+  2. 模拟批准→执行restore；模拟拒绝→不执行+审计记录rejected
+  3. **审批超时→安全默认不执行**(不回滚)
+- **卡住判定**: approval_sync集成(known-codes注册) / 审批模板可见性(MEMORY: V2新模板有可见性延迟)
+- **异常预案**: 审批链路故障→**fail-safe不执行回滚**(安全优先)；用V1可见模板；**D2矛盾#4(审批张力)→P3必过审批，OS编排(P1/P2)不需**
+- **回滚方法**: 关审批接入 / `git revert` Step3.2 🔴高
+
+#### Step 3.3: feature flag + 集成run_hourly_sacg
+- **做什么**: 回滚执行默认关闭，集成到每小时调度，三重保护。
+- **怎么做**:
+  - `rollback_execute_enabled` **默认False**(回滚执行不自动触发)
+  - 集成点: `run_hourly_sacg`(L874) check_rollback(L916)后 — 现仅logger.warning+record_evolution；改为: 若flag=True且审批通过→调restore执行
+  - 三重保护: flag默认关 + dry_run + 审批门禁
+- **验收条件**:
+  1. flag=False(默认)→check_rollback仍只建议+审计，**不执行回滚**(现状不变，安全)
+  2. flag=True+审批过→执行回滚(dry_run=False)
+  3. flag=True+审批拒→不执行
+  4. **断言不动V9规则/auto_trader加载逻辑**(只切model_versions.status)
+- **卡住判定**: 集成点(L916-924)改动影响现有warning流程
+- **异常预案**: 🔴误触发→flag默认关+dry_run+审批三重；集成破坏现有→保留原warning逻辑，flag控制新增执行分支
+- **回滚方法**: `rollback_execute_enabled=False`(默认关，立即停执行) + `git revert` + status恢复 🔴高
+
+---
+
+## 三、总回滚方案（最坏情况→基线）
+
+```
+全程出问题 → 恢复基线步骤:
+1. 关所有feature flag: audit_orchestration_enabled=False + rollback_execute_enabled=False
+   (立即停止G-C审计写入 + G-B回滚执行, DreamOS回到Z1扫描时的LIVE状态)
+2. git revert P3→P2→P1 commits (逆序, 各Phase独立可revert无交叉)
+3. 数据恢复: bcrm_trades.db从P3前备份还原(model_versions.status) + orchestration_memory.json从P2前备份还原
+4. 验证: auto_trader(L392)加载正确active版本 + run_hourly_sacg(L874)正常跑 + evolve自动上线不受影响
+5. P1纯只读零状态: 删Hermes monitor模块即可, 无DreamOS侧残留
+→ 回到基线: 子系统审计LIVE + check_rollback只建议 + 编排进化只写json (Z1现状)
+```
+
+---
+
+## 四、时间预估
+
+| Phase | 步数 | 预估 | 备注 |
+|:---|:---:|:---:|:---|
+| P1 G-A监督 | 3 | 4-6h | 新模块只读，风险低，可先行 |
+| P2 G-C审计 | 1 | 2-3h | 改1函数+flag，影子验证 |
+| P3 G-B回滚 | 3 | 5-7h | 🔴审批门禁+dry_run+三重保护，最重 |
+| **合计** | **7** | **11-16h** | P1→P2→P3顺序，P3阻塞于审批设计 |
+
+---
+
+## 五、D链/跨链反馈响应（前置降级，基于对话D2矛盾分析）
+
+> d2-analysis.md/feedback-e2.md 物理文件缺，以下基于对话中 D2 矛盾分析体现(Z3不修改矛盾，只体现到异常预案+验收)。
+
+| D2矛盾/风险 | Z3响应(落到具体Step) |
+|:---|:---|
+| **主要矛盾**: 进化效率(自动上线) vs 进化安全(可控) | P1/P2不需审批(效率,OS编排域) + P3审批门禁(安全,交易域) — 分层平衡 |
+| **风险#1**: G-B回滚误触发→实盘损失(最高) | Step3.1 dry_run强制先行 + Step3.3 flag默认False + Step3.2审批门禁 = **三重保护** |
+| **风险#2**: 双审计不统一→进化不可追溯 | Step2.1 G-C落OS侧独立审计 + Step1.3 P1聚合两套审计统一视图 |
+| **风险#3**: G-A监督边界(只读不干预) | Step1.1 mode=ro只读连接 + Step1.2告警仅通知不阻断evolve + 验收断言"不写回DreamOS" |
+| **风险#4**: 审批门禁张力(OS自动vs子系统审批) | §三审批分层: P1/P2❌不需 + P3🔴需审批 — 进化域不可混层(MEMORY用户9-09纠偏) |
+
+---
+
+## Z3 自检
+- [x] 前置检查d2/feedback(不存在→降级，§五基于对话D2体现)
+- [x] D2矛盾/风险已体现到对应Step异常预案(#1→Step3.1/3.3, #2→Step2.1/1.3, #3→Step1.1/1.2, #4→§三)
+- [x] 含「五、D链反馈响应」章节
+- [x] 验收条件写在"怎么做"前(每Step先验收靶子)
+- [x] 验收精确到命令/断言(--dump/mtime不变/git diff只含X/flag=False现状不变)，非"This should work"
+- [x] 每Step独立回滚(git revert/flag/数据恢复)
+- [x] 整链无断裂(P1观测源=P2/P3写入源，读同源无断裂)+无遗漏(G-A/G-B/G-C全覆盖)+总回滚覆盖最坏(§三)
+- [x] 前置条件列全(环境/数据/权限/备份/依赖坐实/D链降级)

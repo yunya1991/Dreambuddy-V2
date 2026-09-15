@@ -79,7 +79,7 @@ class V15Executor:
     def __init__(
         self,
         dry_run: Optional[bool] = None,
-        long_only: bool = False,
+        long_only: bool = True,
         agent_id: str = "c",
     ):
         """Initialize V15 executor adapter.
@@ -298,6 +298,48 @@ class V15Executor:
                 "reason": f"adapter exception: {e}",
                 "source": "14-V15-adapter",
             }
+
+    def manage_positions(self) -> Dict[str, Any]:
+        """Manage all existing positions via 14-V15 high-level interface.
+
+        Thin wrapper that delegates all position management logic to
+        14-V15's manage_all_positions() function. This includes:
+        - Cooldown period check
+        - Monthly capital rebuild
+        - Bounce signal monitoring (shadow mode)
+        - Per-position: take-profit → time-exit → grid status → addon → dynamic TP/SL
+
+        Returns:
+            Dict: Management result summary (transparent passthrough from 14-V15)
+            {
+                "managed_count": int,
+                "closed_count": int,
+                "addon_count": int,
+                "cooldown_active": bool,
+                "details": [{"coin": str, "action": str, "pnl": float}, ...]
+            }
+        """
+        if not _V15_AVAILABLE:
+            logger.error("14-V15 module not available, cannot manage positions")
+            return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
+                    "cooldown_active": False, "details": [], "error": "14-V15 unavailable"}
+
+        try:
+            client = self._get_client()
+            if not client:
+                logger.error("Trading client unavailable, cannot manage positions")
+                return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
+                        "cooldown_active": False, "details": [], "error": "client unavailable"}
+
+            result = v15_trader.manage_all_positions(client)
+            logger.info(f"V15Executor manage_positions: managed={result.get('managed_count', 0)} "
+                        f"closed={result.get('closed_count', 0)} addon={result.get('addon_count', 0)}")
+            return result
+
+        except Exception as e:
+            logger.error(f"V15Executor manage_positions error: {e}")
+            return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
+                    "cooldown_active": False, "details": [], "error": str(e)}
 
 
 # ---- DreamOS Node Wrapper ----
