@@ -69,7 +69,7 @@ except ImportError:
 # ── 交易标的池（实验允许范围） ───────────────────────────────────────────────
 UNIVERSE = ["BTC", "ETH", "HYPE", "UNI", "SOL", "ZEC", "LIT", "ARB", "XRP", "WLD", "NEAR", "SUI", "LDO", "ADA", "ZRO", "ENA", "ETHFI", "JUP", "JTO", "SYRUP"]
 MAX_LEVERAGE = 5
-DEFAULT_LEVERAGE = 5
+DEFAULT_LEVERAGE = 3
 
 
 def _now_ms() -> int:
@@ -489,8 +489,17 @@ class HyperliquidClient:
         resp = self._exchange(action)
         ok = resp.get("status") == "ok"
         filled = {}
+        oid = None
+        error = None
         try:
             filled = resp.get("response", {}).get("data", {}).get("statuses", [{}])[0]
+            if "error" in filled:
+                ok = False
+                error = filled["error"]
+            elif "resting" in filled:
+                oid = filled["resting"].get("oid")
+            elif "filled" in filled:
+                oid = filled["filled"].get("oid")
         except Exception:
             pass
         return {
@@ -500,6 +509,8 @@ class HyperliquidClient:
             "sz":       sz,
             "leverage": leverage,
             "filled":   filled,
+            "ord_id":   oid,
+            "error":    error,
             "raw":      resp,
         }
 
@@ -754,6 +765,168 @@ class HyperliquidClient:
             return r
         except Exception:
             return []
+
+    # ================================================================
+    # V15 马丁策略适配层：将 OKX 风格调用转换为 Hyperliquid 风格
+    # ================================================================
+
+    @staticmethod
+    def _inst_id_to_coin(inst_id: str) -> str:
+        """inst_id (如 'ETH-USDT-SWAP') → coin (如 'ETH')"""
+        return inst_id.split("-")[0] if inst_id else ""
+
+    def place_order(self, inst_id: str, side: str, sz: float,
+                    td_mode: str = "isolated", pos_side: str = "long",
+                    **kwargs) -> Dict:
+        """OKX 风格下单适配 → Hyperliquid market_order。
+
+        Args:
+            inst_id: 如 'ETH-USDT-SWAP'
+            side: 'buy' / 'sell'
+            sz: 张数（Hyperliquid 原生 size）
+            td_mode: 忽略（Hyperliquid 全仓/逐仓由杠杆设置控制）
+            pos_side: 'long' / 'short'（决定 is_buy）
+        """
+        coin = self._inst_id_to_coin(inst_id)
+        is_buy = (side == "buy") if side else (pos_side == "long")
+        try:
+            r = self.market_order(coin=coin, is_buy=is_buy, sz=sz)
+            if r.get("ok"):
+                return {
+                    "ok": True,
+                    "data": {
+                        "ord_id": r.get("ord_id"),
+                        "coin": coin,
+                        "side": r.get("side"),
+                        "sz": sz,
+                    },
+                    "ord_id": r.get("ord_id"),
+                }
+            return {"ok": False, "error": r.get("error", "unknown")}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def get_pending_orders(self, inst_id: str) -> Dict:
+        """OKX 风格查询挂单适配 → Hyperliquid get_open_orders。
+
+        Returns:
+            {'ok': True, 'orders': [{'ord_id': int, ...}, ...]}
+        """
+        coin = self._inst_id_to_coin(inst_id)
+        try:
+            orders = self.get_open_orders(coin=coin)
+            result = []
+            for o in orders:
+                oid = o.get("orderId") or o.get("oid") or o.get("order", {}).get("id")
+                result.append({"ord_id": oid, **o})
+            return {"ok": True, "orders": result}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "orders": []}
+
+    def cancel_algo_orders(self, inst_id: str) -> Dict:
+        """OKX 风格取消条件单适配 → Hyperliquid cancel_all_tpsl。
+
+        取消指定币种的所有止盈止损条件单。
+        """
+        coin = self._inst_id_to_coin(inst_id)
+        try:
+            return self.cancel_all_tpsl(coin=coin)
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def place_stop_loss_take_profit(self, inst_id: str, pos_side: str = "long",
+                                    stop_loss_px: float = None,
+                                    take_profit_px: float = None,
+                                    sz: float = None,
+                                    reason: str = "") -> Dict:
+        """OKX 风格止盈止损适配 → Hyperliquid set_tpsl_orders。
+
+        Args:
+            inst_id: 如 'ETH-USDT-SWAP'
+            pos_side: 'long' / 'short'
+            stop_loss_px: 止损价（None=不设止损）
+            take_profit_px: 止盈价
+            sz: 仓位大小（忽略，Hyperliquid 自动用当前仓位）
+            reason: 描述（忽略）
+        """
+        coin = self._inst_id_to_coin(inst_id)
+        try:
+            return self.set_tpsl_orders(
+                coin=coin,
+                stop_loss_price=stop_loss_px,
+                take_profit_price=take_profit_px,
+            )
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def get_order(self, inst_id: str, ord_id: int) -> Dict:
+        """OKX 风格查询单个订单状态适配。
+
+        从 openOrders 中查找，如果不在挂单中则视为已成交。
+
+        Returns:
+            {'ok': True, 'state': 'filled'/'cancelled', 'filled_sz': float, 'avg_px': float}
+        """
+        coin = self._inst_id_to_coin(inst_id)
+        try:
+            orders = self.get_open_orders(coin=coin)
+            for o in orders:
+                oid = o.get("orderId") or o.get("oid")
+                if str(oid) == str(ord_id):
+                    # 仍在挂单中 → 未成交
+                    return {"ok": True, "state": "pending", "filled_sz": 0, "avg_px": 0}
+            # 不在挂单中 → 假设已成交
+            # 获取当前价格作为成交价近似
+            try:
+                avg_px = self.get_mid_price(coin)
+            except Exception:
+                avg_px = 0
+            return {"ok": True, "state": "filled", "filled_sz": 0, "avg_px": avg_px}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def get_all_positions(self) -> Dict:
+        """OKX 风格查询所有持仓适配 → Hyperliquid get_account。
+
+        Returns:
+            {'ok': True, 'positions': [{'coin': str, 'size': float, 'entry_price': float, ...}, ...]}
+        """
+        try:
+            acct = self.get_account()
+            positions = []
+            for coin, pos in acct.get("positions", {}).items():
+                if pos.get("size", 0) != 0:
+                    positions.append({
+                        "coin": coin,
+                        "inst_id": f"{coin}-USDT-SWAP",
+                        "size": pos.get("size", 0),
+                        "entry_price": pos.get("entry_price", 0),
+                        "unrealized_pnl": pos.get("unrealized_pnl", 0),
+                        "margin": pos.get("margin", 0),
+                        "leverage": pos.get("leverage", 1),
+                        "liquidation_price": pos.get("liquidation_price", 0),
+                    })
+            return {"ok": True, "positions": positions}
+        except Exception as e:
+            return {"ok": False, "error": str(e), "positions": []}
+
+    def cancel_order(self, inst_id_or_coin: str, oid: int) -> Dict:
+        """重载 cancel_order：兼容 inst_id 和 coin 两种参数格式。
+
+        Args:
+            inst_id_or_coin: 'ETH-USDT-SWAP' 或 'ETH'
+            oid: 订单 ID
+        """
+        coin = self._inst_id_to_coin(inst_id_or_coin) if "-" in inst_id_or_coin else inst_id_or_coin
+        try:
+            action = {
+                "type": "cancel",
+                "cancels": [{"a": self._asset_index(coin), "o": oid}],
+            }
+            r = self._exchange(action)
+            return {"ok": True, "data": r}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     def modify_tpsl(self, coin: str,
                     new_sl: Optional[float] = None,

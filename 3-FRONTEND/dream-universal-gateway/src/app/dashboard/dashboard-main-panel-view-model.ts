@@ -101,7 +101,7 @@ export function buildDashboardMainPanelViewModel(input: unknown): DashboardMainP
           label: "系统策略 Feed",
           value: "进入系统策略与系统产物入口",
           tone: "info",
-          href: "http://127.0.0.1:3456/feed",
+          href: `${process.env.HUB_BASE_URL || "http://49.233.123.96:3456"}/feed`,
         },
         {
           label: "统一承接",

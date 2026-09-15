@@ -240,6 +240,32 @@ class Checkpointer:
         filepath = os.path.join(self._storage_dir, f"{cp.checkpoint_id}.json")
         with open(filepath, "w") as f:
             f.write(safe_json(cp.to_dict()))
+        self._evict_files()
+
+    def _evict_files(self) -> None:
+        """P0.6 修复: 磁盘检查点 FIFO 淘汰
+        (原实现仅内存淘汰,文件无限堆积 → 8/15 达 29,459 个,
+         成为 inode 耗尽/ENOSPC 事故的推手之一)
+        """
+        try:
+            storage_dir = self._storage_dir
+            if not storage_dir:
+                return
+            files = [
+                os.path.join(storage_dir, f)
+                for f in os.listdir(storage_dir)
+                if f.startswith("ckpt") and f.endswith(".json")
+            ]
+            if len(files) <= self._max:
+                return
+            files.sort(key=lambda p: os.path.getmtime(p))
+            for stale in files[: len(files) - self._max]:
+                try:
+                    os.remove(stale)
+                except OSError:
+                    pass
+        except OSError:
+            pass
 
     def _load_from_file(self, checkpoint_id: str) -> Optional[Checkpoint]:
         """从文件加载"""

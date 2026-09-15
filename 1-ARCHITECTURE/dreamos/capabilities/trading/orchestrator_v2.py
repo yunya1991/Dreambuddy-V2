@@ -267,6 +267,26 @@ class OrchestratorV2:
             errors.append(f"routing(B+C+D): {e}")
             status = "PARTIAL"
 
+        # Layer B+C+D-Post: 持仓管理（14-V15 子系统完整调用）
+        # 编排层仅决定何时调用，由 14-V15 内部自主决定管理逻辑
+        # 包括：冷却期检查、月度重建、反弹监控、止盈/退出/加仓/动态止盈止损
+        position_management = {"status": "SKIPPED"}
+        try:
+            position_management = self._router.manage_positions()
+            managed = position_management.get("managed_count", 0)
+            closed = position_management.get("closed_count", 0)
+            addon = position_management.get("addon_count", 0)
+            if managed > 0 or closed > 0 or addon > 0:
+                logger.info(
+                    f"持仓管理: managed={managed} closed={closed} addon={addon} "
+                    f"cooldown={position_management.get('cooldown_active', False)}"
+                )
+        except Exception as e:
+            position_management = {"status": "ERROR", "error": str(e)}
+            errors.append(f"position_management: {e}")
+            if status == "OK":
+                status = "PARTIAL"
+
         # Layer E: 认知层 —— P1-3: 不再喂 pnl=0 伪造交易结果(自我欺骗已移除)
         # 真实盈亏审查由平仓路径回填: cli/auto_trader.run_exit_check_all()
         #   → record_real_exit() → reviewer.review(真实结果) + lessons 落盘

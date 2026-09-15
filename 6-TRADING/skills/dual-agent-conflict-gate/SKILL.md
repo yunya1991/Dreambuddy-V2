@@ -202,3 +202,9 @@ python3 scripts/conflict_gate.py \
 | 并行条件三检 | §6.4 并行条件 |
 | 分支规则检查 | §7 分支与里程碑规则 |
 | 冲突裁决建议 | §12 冲突处理机制 |
+
+---
+
+## 参考文件
+
+- `references/merge-in-shared-repo.md` — 多代理共享仓库合并 local+remote 的验证协议（worktree 隔离/四层验证/三 worktree 差分归因）+ 两个实战冲突案例的处置剧本。其中**案例二**：PR 建成后并行代理全量重写同一 SSoT 文档 → grep 包含性检查 + 标准三选项交用户裁决。还含**上传前盘点**节：本地未进 origin 的工作分三层（已提交未推送 / 未提交工作区 / 运行时噪音）、squash PR 祖先检查假阴性的内容比对正解、Dreambuddy-V2 运行时噪音清单、guard cron 占用 main 时禁切主 worktree 分支。

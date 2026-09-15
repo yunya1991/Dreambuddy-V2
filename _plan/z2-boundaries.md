@@ -1,115 +1,112 @@
-# Z2 范围划分 — PROP-20260829C 统一意图引擎：边界与门禁
+# 修改范围与依赖表（Z2）：DreamOS OS自进化三缺口 — Phase切割
 
-> 2026-08-29 | 三原则切割：最小可验收 / 依赖排序 / 每阶段回滚点
-> 输入：`_plan/z1-scan-report.md`（含 4 项 D4 假设修订）
-
----
-
-## D4 Spec 修订记录（Z1 实测驱动，逐条留痕）
-
-| # | 修订项 | 依据（Z1 实测） |
-|:---:|:---|:---|
-| R1 | Phase 3 映射工作量缩减：旧链映射已由 intent-schema 双向覆盖，仅新建 35↔6 canon→strategy | 映射无缺口实测（15 legacy 恒等 + 20 场景归并 + planner 11 型） |
-| R2 | 门禁基座由 auth-runtime.ts 改为 auth.ts 服务端 auth() + Prisma User.role，首步为可用性探针 | auth-runtime.ts 仅 31 行 URL 工厂 |
-| R3 | 角色×意图门禁不新设计，直接强制接入 gateAllows() 草案 | intent-schema 内置草案实测 |
-| R4 | 新增 Phase 0 基线入库（D4 未预见） | 4 untracked + 2 modified 从未提交 |
+> **任务**: G-A Hermes监督 / G-B 自动回滚执行 / G-C 编排审计补全
+> **Z2身份**: 规划师 · 三原则切割法(依赖优先/风险隔离/可交付) · 工具 read_file/write_file
+> **前置引用**: `_plan/z1-scan-report.md`(四维扫描+5冲突) · **覆盖** 8-29旧 z2-boundaries.md
+> **核心任务**: 先改什么、后改什么、每步能不能独立回退
 
 ---
 
-## 阶段切分（6 阶段）
+## 〇、切割结论（先给答案）
 
-### Phase 0 — 基线入库（依赖根）
-| 项 | 内容 |
-|:---|:---|
-| 做什么 | 提交 PROP-20260828B 产物（intent-schema/unified/command-fastpath/intent-args-repair + fallback-engine/intent-memory 修改）+ 提案文档；打基线标记 |
-| 最小可验收 | 意图层 `git status` 干净；基线 commit 存在且可 diff |
-| 回滚点 | git reset 可退（纯归档，无行为变更） |
-| 依赖 | 无 |
+**三块缺口按「进化域 + 审批需求 + 风险」切成 3 个独立 Phase，审批门禁只锁 P3：**
 
-### Phase 1 — 黄金集 + 回归 Harness（质量基线）
-| 项 | 内容 |
-|:---|:---|
-| 做什么 | 手写 ≥20 条黄金集（覆盖 35 意图分布 + smart-router 门禁分支标记：developer/command/FREE 拦截/scenario_sim/环映射）；vitest harness：对 intent-unified 与旧链分别跑集合并输出一致率 |
-| 最小可验收 | harness 可执行出报告；门禁分支覆盖清单逐项有 case |
-| 回滚点 | 纯新增（tests/ 目录），删除即净 |
-| 依赖 | Phase 0 |
+| Phase | 缺口 | 进化域(MEMORY三域) | 审批 | 风险 |
+|:---:|:---|:---|:---:|:---:|
+| **P1** | G-A Hermes旁路只读监督器 | Hermes监督层(跨域旁路) | **不需**(监督者非审批者) | 🟢低 |
+| **P2** | G-C OS编排进化审计补全 | ①OS编排自进化域 | **不需**(evolve自动上线) | 🟡中 |
+| **P3** | G-B bcrm2回滚执行器 | ②子系统交易参数进化域 | 🔴**需审批门禁**(涉交易+V9) | 🔴高 |
 
-### Phase 2 — P0 痕迹继承 + 影子接线（安全观察）
-| 项 | 内容 |
-|:---|:---|
-| 做什么 | ① llm-bridge 补 `enable_thinking:false`（对齐 fallback-engine L153 P0 痕迹）② chat route 接 INTENT_METHOD=fc_shadow：新旧同跑、**旧结果为准**、差异写影子日志 |
-| 最小可验收 | 影子日志采集 ≥200 样本或 3 天（取先到）；意图识别延迟实测回归正常区间（思考链关闭验证） |
-| 回滚点 | INTENT_METHOD 环境变量关闭影子，零代码回滚 |
-| 依赖 | Phase 0（与 Phase 1/3 **文件无交集，可并行**：仅触 chat route + llm-bridge） |
-
-### Phase 3 — 门禁封闭（安全面，独立价值）
-| 子步 | 内容 |
-|:---|:---|
-| 3a 探针 | auth() 可用性实测：Next 15.5 route handler 内 next-auth v5 服务端会话；不可用 → 手工验签 JWT（同 secret）兜底 |
-| 3b 写门禁 | /api/intent/memory：record/feedback=登录，evolve/adopt=ADMIN；gateAllows() 接入强制（意图×角色） |
-| 3c 隔离仓 | quarantine 存储（进程内互斥）；adoptCandidate 直写经验库路径移除；价值过滤（<4 字符/纯问候/无实体不落 records） |
-| 最小可验收 | curl 未授权写 = 401；全仓 grep 反馈直写经验库路径 = 0；隔离仓抽样可查 |
-| 回滚点 | 纯增量撤除即复原（回滚=污染面重现，限回滚期） |
-| 依赖 | Phase 0（与 Phase 1/2 并行：仅触 memory route + auth + intent-memory 写路径） |
-
-### Phase 4 — 切主 + canon→strategy 映射
-| 项 | 内容 |
-|:---|:---|
-| 做什么 | ① 影子一致率 ≥95% → INTENT_METHOD=fc 默认（保留 llm/rule 回滚开关）② 35↔6 canon→strategy 映射表（含环归属）③ DreamOS /intent 响应加 canon 字段（增量）④ smart-router 门禁分支回归用例全绿 |
-| 最小可验收 | AC2/AC6 + 黄金集全绿 + 门禁分支回归通过 |
-| 回滚点 | INTENT_METHOD 一键切回旧路径（旧代码保留=结构性回滚） |
-| 依赖 | Phase 1（harness）+ Phase 2（影子数据）——**硬依赖，不可提前** |
-
-### Phase 5 — 研发域优化闭环成文（文档，非代码）
-| 项 | 内容 |
-|:---|:---|
-| 做什么 | 黄金集回归脚本入仓；优化流程成文：调优 → 黄金集回归 → 提案 → 飞书审批 → canonical 版本晋升（单向阀）；隔离仓首批候选走完整晋升演练（**必须包含一次"拒绝"路径**） |
-| 最小可验收 | 流程文档落盘；演练记录（通过+拒绝各一） |
-| 回滚点 | 文档类，N/A |
-| 依赖 | Phase 3（隔离仓存在） |
+> **关键切分**：G-B 回滚 = 切换 active 模型 → auto_trader 实盘交易 → 属"子系统交易域"，**必须审批**；G-A/G-C 属"OS编排域+只读监督"，**自动不需审批**。三者风险层级根本不同，不可混 Phase。
 
 ---
 
-## 依赖图与并行机会
+## 一、阶段划分
+
+| 阶段 | 内容 | 风险 | 依赖 | 回滚点 | 回滚成本 | 工时 |
+|:---:|:---|:---:|:---:|:---|:---:|:---:|
+| **P1** | G-A: Hermes 新模块旁路**只读**观测 orchestration_memory.json + bcrm_trades.db(model_evolution/performance_snapshots) + evolve输出 → 审计闸/告警；**聚合两套审计为统一视图** | 🟢低 | 无(叶节点) | git revert 删新模块(零状态) | 🟢低 | 4-6h |
+| **P2** | G-C: `orchestration_memory.update_from_evolution`(L332) 进化时落**OS侧独立审计**(json内嵌audit_log 或 OS层新表)，**不碰bcrm2**(避免分层倒置+Phase交叉) | 🟡中 | P1(审计被监督观测,弱依赖非阻塞) | git revert + feature flag(写审计开关) + 已写条目无害保留 | 🟡中 | 2-3h |
+| **P3** | G-B: `bcrm2_scheduler.py` 补回滚执行器 restore/activate(version_from→version_to 切换 model_versions.status) + **飞书审批门禁集成**(复用现有approval链路,不改造) | 🔴高 | P1+P2(回滚动作须被监督+被审计) | feature flag(rollback_execute_enabled默认False) + git revert + status手动恢复 | 🔴高 | 5-7h |
+
+---
+
+## 二、依赖图
 
 ```
-Phase 0 基线入库（依赖根）
-   ├─→ Phase 1 黄金集+Harness ──┐
-   ├─→ Phase 2 影子接线 ────────┼─→ Phase 4 切主+映射（硬依赖 1+2）
-   └─→ Phase 3 门禁封闭 ────────┴─→ Phase 5 闭环成文
-        （P1/P2/P3 文件无交集，可并行）
+  P1 (G-A Hermes只读监督, 🟢, 叶节点)
+   │  建立监督基座 — 独立先行, 不依赖任何改动
+   │
+   ├──弱依赖──► P2 (G-C OS编排审计, 🟡)
+   │              │  update_from_evolution 落OS侧独立审计
+   │              │  (P1做完→P2审计自动被监督观测, 但P2不阻塞于P1)
+   │              │
+   └──────────────┴──强依赖──► P3 (G-B 回滚执行, 🔴, 审批门禁)
+                                  回滚动作必须: 被P1监督 + 被P2审计 + 过审批闸
+                                  → P3 强制最后, 独占Phase
+
+并行可能: P1 独立先做; P2 可与 P1 后期并行(弱依赖)
+阻塞条件: P3 阻塞于 ①P1+P2就位 ②审批门禁设计(Z3细化)
+风险标记: 🔴P3涉auto_trader(L392)实盘交易 → feature flag默认关闭, 审批通过才执行
 ```
-
-**关键路径**：P0 → P2（影子观察期 3 天为最长计时器）→ P4。P1/P3 在观察期内并行完成。
-
-## 阶段×验收标准映射（对照 D4 AC）
-
-| Phase | 覆盖 AC |
-|:---:|:---|
-| P1 | AC1 |
-| P2 | AC5 |
-| P3 | AC3, AC4, AC7（异步写可并入 3c 或降级 P2 后续） |
-| P4 | AC2, AC6 |
-| P5 | AC8 |
-
-→ Z3 路径设计读取本报告：每步具体操作 + 验证 + 回滚反向操作 + token 预估；**Z3 必须处理**：3a 探针失败的兜底分支、影子期双倍 token 预算上限。
 
 ---
 
-## 补遗 — 双轨大脑架构定位（2026-08-29 用户对齐确认，不改本提案范围）
+## 三、审批门禁边界（Z1冲突#3 — Z2核心切分）
 
-**用户确认的完整链路**：五官（前端意图识别=是什么）→ 大脑（Hermes=怎么处理）→ 神经网络（DreamOS=组织协调）→ 执行工具（子域能力节点）→ 大模型汇总输出。
+| Phase | 是否需审批 | 依据(MEMORY) | 门禁机制 |
+|:---:|:---:|:---|:---|
+| P1 G-A | ❌不需 | "Hermes在OS自进化=监督者非审批者(旁路观测/审计闸/告警,不阻断上线)" | 纯只读, 无写操作, 无需门禁 |
+| P2 G-C | ❌不需 | "DreamOS OS编排自进化=evolve影子验证→自动上线,不需审批" | 审计仅记录, 不阻断编排进化 |
+| P3 G-B | 🔴**需审批** | "子系统交易参数进化=trading审批,V9基线不可改" + 回滚→auto_trader实盘 | **飞书审批门禁**: 触发回滚→创建审批实例→用户批准→才执行activate切换 |
 
-**双轨分工（本提案的架构前提）**：
+> **进化域不可混层**(MEMORY用户2026-09-09纠偏): P3回滚是"子系统模型版本切换"(②域,需审批)，**不是**"OS编排自进化"(①域,自动)。Z2严格隔离: P3只动bcrm2模型版本层，**绝不动V9规则/OS编排evolve**。
 
-| 轨 | 承担者 | 职责 | 特性 |
-|:---|:---|:---|:---|
-| 脊髓反射（在线快路径） | Gateway 规则快路径 + 意图映射 + LLM | 简单/高并发请求：识别→路由→执行→汇总 | 低延迟，Hermes 仅借出模型能力 |
-| 大脑皮层（异步慢思考） | Hermes Agent 本体 | 复杂问题：调用**认知系统（mcp_cognitive_*）+ 知识库 + 经验 Skill + 联网搜索**提供解决方案，甚至扩展系统尚不具备的能力 | 单实例不接高并发，走异步/治理通道 |
+---
 
-**核实留痕（2026-08-29 实测）**：
-1. Gateway 内"Hermes 记忆学习 / Hermes 记忆系统"（chat route L2461/L3926/L4323/L4909）为**本地 userPrefMemory 实现**，非真 Hermes 远程调用（无 fetch 至 hermes/cognitive 端点）；
-2. `src/lib/intent/smart-router.ts` 与 `src/lib/intent-router.ts` 对 hermes/delegate/handoff/agent_session **零命中** —— 在线链路无"复杂意图→Hermes 会话"移交通道。
+## 四、边界声明
 
-**结论**：大脑皮层轨目前存在于 Gateway 之外（飞书直连 + cron）。**扩展点（不在本提案范围，未来单独立项）**：复杂意图判定 → 异步委托 Hermes 会话（携带认知系统/知识库/Skill/联网能力）→ 结果回传前端。本提案 P4 的 INTENT_METHOD 开关与 35 canonical 分类已为该扩展点预留判定基础（复杂度/环归属字段）。
+### ✅ 在本阶段范围内
+- **P1**: Hermes侧新建只读观测器(读3数据源→审计闸/告警/聚合视图)；接入Hermes cron或gateway
+- **P2**: orchestration_memory.update_from_evolution(L332)增加OS侧审计落点(json内嵌或OS新表)
+- **P3**: bcrm2新增restore/activate回滚执行方法 + 飞书审批门禁接入(复用现有approval_sync链路)
 
+### ❌ 明确不在本阶段范围内
+- ❌ **不改V9基线**(8%×vol加仓/4%止盈/3次加仓 — 回滚只在模型版本层, 不动V9规则)
+- ❌ **不改evolve自动上线机制**(OS编排进化仍影子验证→自动, G-A只监督不阻断)
+- ❌ **不改子系统进化算法**(self_evolution_engine逻辑不变, G-B只补"执行回滚"动作)
+- ❌ **不改造飞书审批链路本身**(P3只接入复用, 不动approval_sync.py架构)
+- ❌ **不动auto_trader交易执行核心**(G-B只切model_versions.status, auto_trader加载逻辑不变)
+- ❌ **G-A不做任何写操作**(纯只读旁路, 监督不干预DreamOS运行)
+- ❌ **G-C不碰bcrm2文件**(避免OS编排→子系统分层倒置 + P2/P3文件交叉)
+- ❌ **不引入新config/env**(G-A旁路读现有文件)
+
+---
+
+## 五、Z1 五冲突的 Z2 回应
+
+| Z1冲突 | Z2处理 |
+|:---|:---|
+| #1 认知修正(审计LIVE非死代码) | 已纳入: G-B是"补回滚执行"非"补建表"; G-C是"补编排审计"非"修崩溃" |
+| #2 _plan残留(8-29旧产物) | 本报告覆盖z2; z3/z4旧文件待各阶段覆盖 |
+| #3 🔴G-B审批边界冲突 | **核心切分**: P3独占+飞书审批门禁锁(见§三); P1/P2不需审批 |
+| #4 双进化审计不统一 | G-C落**OS侧独立审计**(不复用bcrm2表,避免分层倒置); **P1(G-A)聚合两套审计为统一视图** |
+| #5 G-A方向反转 | P1新模块只读旁路(Hermes→DreamOS观测), 不复用现有T3委托路径(DreamOS→Hermes) |
+
+---
+
+## 六、回滚点设计
+
+| Phase | 回滚类型 | 方案 | 成本 |
+|:---:|:---|:---|:---:|
+| P1 | git revert | 删除Hermes新模块, 零状态残留(纯只读未写任何DreamOS数据) | 🟢低 |
+| P2 | feature flag + git revert | `audit_orchestration_enabled`默认True, 异常时关flag停写; 已写审计条目无害保留 | 🟡中 |
+| P3 | feature flag + git revert + 数据恢复 | `rollback_execute_enabled`**默认False**(回滚执行不自动触发); 异常时关flag→git revert→model_versions.status手动恢复active版本 | 🔴高(影响交易状态, 须验证恢复后auto_trader加载正确版本) |
+
+---
+
+## Z2 自检
+- [x] 每Phase边界一句话说清（P1只读监督 / P2编排审计 / P3回滚执行+审批）
+- [x] 无Phase交叉（P1=Hermes侧新模块 / P2=orchestration_memory / P3=bcrm2_scheduler，**改不同文件**；G-C明确不碰bcrm2）
+- [x] 每Phase可操作回滚（P1 revert / P2 flag+revert / P3 flag默认关+revert+status恢复）
+- [x] 高风险没混在低风险Phase（🔴P3独占 / 🟡P2单独 / 🟢P1先行）

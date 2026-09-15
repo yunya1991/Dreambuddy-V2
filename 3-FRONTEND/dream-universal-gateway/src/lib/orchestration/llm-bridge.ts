@@ -4,6 +4,10 @@
  * 从 api_configs 表读取用户配置的 LLM 凭证（category=LLM），
  * 解密后注入到 LLM 请求中。支持 OpenAI/DeepSeek/百炼/Claude 等多提供商。
  * 如果用户未配置 LLM，降级到 process.env.DEEPSEEK_API_KEY。
+ *
+ * 多凭证降级（2026-09-06）：getLLMCredentials 返回所有已验证配置（createdAt desc），
+ * callLLM 依次尝试，遇 402（余额不足）/401（认证失败）自动降级到下一个凭证；
+ * 末尾追加 .env 兜底。非凭证错误（超时/500/网络）直接抛出，不降级。
  */
 
 import { prisma } from '@/lib/prisma';
@@ -49,6 +53,17 @@ interface LLMCredential {
   model?: string;
 }
 
+/** 携带 HTTP status 的调用错误，用于精确识别 402/401 触发降级 */
+class LLMHTTPError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = 'LLMHTTPError';
+  }
+}
+
+/** 触发自动降级的 HTTP 状态码：402=余额不足，401=认证失败 */
+const FALLBACK_STATUS_CODES = new Set([401, 402]);
+
 // ============================================================
 // 提供商配置
 // ============================================================
@@ -67,16 +82,17 @@ const PROVIDER_DEFAULTS: Record<string, { endpoint: string; model: string }> = {
 // ============================================================
 
 /**
- * 从数据库获取用户配置的默认 LLM 凭证
- * 优先使用 isVerified=true 的配置
+ * 从数据库获取用户配置的所有可用 LLM 凭证（按 createdAt desc 排序）
+ * 仅返回 isVerified=true 的配置；解密失败的配置尝试用环境变量 key 重新加密恢复。
  */
-async function getLLMCredential(uid?: string): Promise<LLMCredential | null> {
+async function getLLMCredentials(uid?: string): Promise<LLMCredential[]> {
   // 开发环境使用固定 uid
   const effectiveUid = uid || process.env.DEV_ROUTE_UID || 'dev-user';
+  const results: LLMCredential[] = [];
 
   try {
-    // 优先按 uid 查找
-    let config = await prisma.apiConfig.findFirst({
+    // 优先按 uid 查找所有已验证配置
+    let configs = await prisma.apiConfig.findMany({
       where: {
         uid: effectiveUid,
         category: 'LLM',
@@ -86,8 +102,8 @@ async function getLLMCredential(uid?: string): Promise<LLMCredential | null> {
     });
 
     // 开发环境降级：如果指定 uid 找不到，读取任何已验证的 LLM 配置
-    if (!config) {
-      config = await prisma.apiConfig.findFirst({
+    if (configs.length === 0) {
+      configs = await prisma.apiConfig.findMany({
         where: {
           category: 'LLM',
           isVerified: true,
@@ -96,48 +112,52 @@ async function getLLMCredential(uid?: string): Promise<LLMCredential | null> {
       });
     }
 
-    if (!config) return null;
+    for (const config of configs) {
+      try {
+        const decrypted = decrypt(config.encryptedData, config.iv, config.authTag);
+        const credentials = JSON.parse(decrypted) as { apiKey?: string; model?: string };
 
-    try {
-      const decrypted = decrypt(config.encryptedData, config.iv, config.authTag);
-      const credentials = JSON.parse(decrypted) as { apiKey?: string; model?: string };
-
-      if (!credentials.apiKey) return null;
-
-      return {
-        provider: config.provider,
-        apiKey: credentials.apiKey,
-        baseUrl: config.baseUrl || undefined,
-        model: credentials.model || undefined,
-      };
-    } catch (decryptError) {
-      // 数据库凭证解密失败（如 ENCRYPTION_KEY 变更）→ 用环境变量 key 重新加密并更新
-      console.warn('[llm-bridge] 数据库凭证解密失败，用环境变量 key 重新加密并更新');
-      const envApiKey = process.env.DEEPSEEK_API_KEY;
-      if (envApiKey) {
-        const newCreds = JSON.stringify({ apiKey: envApiKey, model: 'deepseek-chat' });
-        const newEnc = encrypt(newCreds);
-        await prisma.apiConfig.update({
-          where: { id: config.id },
-          data: {
-            encryptedData: newEnc.encryptedData,
-            iv: newEnc.iv,
-            authTag: newEnc.authTag,
-          },
-        });
-        return {
-          provider: config.provider,
-          apiKey: envApiKey,
-          baseUrl: config.baseUrl || undefined,
-          model: 'deepseek-chat',
-        };
+        if (credentials.apiKey) {
+          results.push({
+            provider: config.provider,
+            apiKey: credentials.apiKey,
+            baseUrl: config.baseUrl || undefined,
+            model: credentials.model || undefined,
+          });
+        }
+      } catch (decryptError) {
+        // 数据库凭证解密失败（如 ENCRYPTION_KEY 变更）→ 用环境变量 key 重新加密并更新
+        console.warn(`[llm-bridge] 配置 ${config.provider}(${config.id}) 解密失败，尝试用环境变量 key 重新加密`, decryptError);
+        const envApiKey = process.env.DEEPSEEK_API_KEY;
+        if (envApiKey) {
+          try {
+            const newCreds = JSON.stringify({ apiKey: envApiKey, model: 'deepseek-chat' });
+            const newEnc = encrypt(newCreds);
+            await prisma.apiConfig.update({
+              where: { id: config.id },
+              data: {
+                encryptedData: newEnc.encryptedData,
+                iv: newEnc.iv,
+                authTag: newEnc.authTag,
+              },
+            });
+            results.push({
+              provider: config.provider,
+              apiKey: envApiKey,
+              baseUrl: config.baseUrl || undefined,
+              model: 'deepseek-chat',
+            });
+          } catch (reEncryptError) {
+            console.warn(`[llm-bridge] 配置 ${config.id} 重新加密失败，跳过`, reEncryptError);
+          }
+        }
       }
-      return null;
     }
   } catch (error) {
     console.warn('[llm-bridge] 读取用户 LLM 配置失败，将使用环境变量', error);
-    return null;
   }
+
+  return results;
 }
 
 /**
@@ -169,16 +189,54 @@ function getFallbackCredential(): LLMCredential {
 /**
  * 调用 LLM（统一入口）
  *
- * 优先使用用户配置的 LLM 凭证，降级到环境变量。
+ * 依次尝试所有已验证凭证（createdAt desc）+ .env 兜底；
+ * 遇 402/401 自动降级到下一个凭证，非凭证错误直接抛出。
  * 支持 OpenAI/DeepSeek/百炼（兼容 OpenAI 格式）和 Claude。
  */
 export async function callLLM(options: LLMCallOptions, uid?: string): Promise<LLMCallResult> {
-  const credential = (await getLLMCredential(uid)) || getFallbackCredential();
+  const credentials = await getLLMCredentials(uid);
 
-  if (!credential.apiKey) {
+  // 末尾追加 .env 兜底凭证（去重：避免与数据库配置重复）
+  const fallback = getFallbackCredential();
+  if (fallback.apiKey && !credentials.some(c => c.apiKey === fallback.apiKey)) {
+    credentials.push(fallback);
+  }
+
+  const usable = credentials.filter(c => c.apiKey);
+  if (usable.length === 0) {
     throw new Error('[llm-bridge] 无可用 LLM 凭证：未配置用户 LLM 且 DEEPSEEK_API_KEY 未设置');
   }
 
+  let lastError: unknown = null;
+  for (let i = 0; i < usable.length; i++) {
+    const credential = usable[i];
+    try {
+      const result = await callLLMWithCredential(credential, options);
+      if (i > 0) {
+        console.log(`[llm-bridge] ✅ 降级成功：第 ${i + 1}/${usable.length} 个凭证 (${credential.provider}) 调用成功`);
+      }
+      return result;
+    } catch (error: unknown) {
+      lastError = error;
+      const hasNext = i < usable.length - 1;
+      // 仅对 402（余额）/401（认证）降级到下一个凭证；超时/500/网络错误直接抛出
+      if (error instanceof LLMHTTPError && FALLBACK_STATUS_CODES.has(error.status) && hasNext) {
+        console.warn(
+          `[llm-bridge] ⚠️ ${credential.provider} 凭证失败 (HTTP ${error.status})，自动降级到下一个配置 (${i + 2}/${usable.length})`
+        );
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('[llm-bridge] 无可用 LLM 凭证');
+}
+
+/**
+ * 用单个凭证调用 LLM（从 callLLM 拆出，供降级遍历复用）
+ */
+async function callLLMWithCredential(credential: LLMCredential, options: LLMCallOptions): Promise<LLMCallResult> {
   const defaults = PROVIDER_DEFAULTS[credential.provider] || PROVIDER_DEFAULTS.deepseek;
   const endpoint = credential.baseUrl
     ? `${credential.baseUrl.replace(/\/$/, '')}${credential.provider === 'anthropic' ? '/v1/messages' : '/chat/completions'}`
@@ -245,7 +303,10 @@ export async function callLLM(options: LLMCallOptions, uid?: string): Promise<LL
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`[llm-bridge] LLM 调用失败 (${response.status}): ${errorData.error?.message || response.statusText}`);
+      throw new LLMHTTPError(
+        response.status,
+        `[llm-bridge] LLM 调用失败 (${response.status}): ${errorData.error?.message || response.statusText}`
+      );
     }
 
     const data = await response.json();
@@ -319,7 +380,10 @@ async function callAnthropic(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(`[llm-bridge] Claude 调用失败 (${response.status}): ${errorData.error?.message || response.statusText}`);
+    throw new LLMHTTPError(
+      response.status,
+      `[llm-bridge] Claude 调用失败 (${response.status}): ${errorData.error?.message || response.statusText}`
+    );
   }
 
   const data = await response.json();

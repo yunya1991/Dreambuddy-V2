@@ -22,6 +22,9 @@ import {
   createFailureResult,
 } from '@yunya/graph-context-compressor';
 
+// 大模型驱动的智能编排器
+import { executeLLMPlan } from '@/lib/orchestration/llm-planner';
+
 // ============================================================
 // 类型定义
 // ============================================================
@@ -34,7 +37,7 @@ interface OrchestrateRequest {
   complexity?: 'quick' | 'standard' | 'deep';
   tradingMode?: 'ai_skill' | 'classic' | 'hybrid';
   chainWeights?: {
-    s_chain: number;
+    a_chain: number;
     c_chain: number;
     f_chain: number;
   };
@@ -136,7 +139,7 @@ interface OrchestrateResponse {
 /**
  * 自动识别用户请求的意图类型
  */
-function detectIntent(userRequest: string): OrchestrateRequest['intent'] {
+function detectIntent(userRequest: string): NonNullable<OrchestrateRequest['intent']> {
   const lower = userRequest.toLowerCase();
 
   if (lower.includes('买') || lower.includes('卖') || lower.includes('交易') || lower.includes('execute')) {
@@ -166,12 +169,12 @@ function getDefaultWeights(
 ): NonNullable<OrchestrateRequest['chainWeights']> {
   switch (tradingMode) {
     case 'classic':
-      return { s_chain: 0.1, c_chain: 0.8, f_chain: 0.1 };
+      return { a_chain: 0.1, c_chain: 0.8, f_chain: 0.1 };
     case 'hybrid':
-      return { s_chain: 0.45, c_chain: 0.35, f_chain: 0.2 };
+      return { a_chain: 0.45, c_chain: 0.35, f_chain: 0.2 };
     case 'ai_skill':
     default:
-      return { s_chain: 0.7, c_chain: 0.2, f_chain: 0.1 };
+      return { a_chain: 0.7, c_chain: 0.2, f_chain: 0.1 };
   }
 }
 
@@ -208,7 +211,79 @@ export async function POST(request: NextRequest): Promise<NextResponse<Orchestra
 
     // 4. 构建执行上下文
     const sessionId = body.sessionId || `session_${Date.now()}`;
-    const intent = body.intent || detectIntent(body.userRequest);
+
+    // ═══════════════════════════════════════════════════════
+    // 分支 A: 大模型驱动的智能编排（默认）
+    // ═══════════════════════════════════════════════════════
+    const useLLMPlanner = process.env.USE_LLM_PLANNER !== 'false';
+    if (useLLMPlanner) {
+      const llmResult = await executeLLMPlan({
+        sessionId,
+        userRequest: body.userRequest,
+        symbol: body.symbol,
+        maxLatencyMs: body.maxLatencyMs || 60000,
+        budgetTokens: 5000,
+      });
+
+      const llmResponse: OrchestrateResponse = {
+        success: llmResult.success,
+        planId: `llm_plan_${sessionId}_${Date.now()}`,
+        sessionId,
+        totalTokensUsed: llmResult.totalTokensUsed,
+        totalLatencyMs: llmResult.totalLatencyMs,
+        overallConfidence: llmResult.overallConfidence,
+        steps: llmResult.steps.map((s, i) => ({
+          stepId: s.skillId,
+          stage: `S${Math.floor(i / 4) + 1}`,
+          chain: 'llm',
+          status: s.confidence > 0 ? 'completed' : 'failed',
+          answer: s.answer,
+          confidence: s.confidence,
+          skillsCalled: [{
+            skillId: s.skillId,
+            skillName: s.skillName,
+            confidence: s.confidence,
+            latencyMs: s.latencyMs,
+          }],
+        })),
+        conclusion: {
+          direction: llmResult.direction,
+          confidence: llmResult.overallConfidence,
+          keyDecisionPoints: llmResult.keyFindings,
+          reasoningPath: [llmResult.summary, llmResult.planRationale],
+          nextSteps: [{
+            action: llmResult.recommendation,
+            reasoning: '大模型综合建议',
+            estimatedConfidence: llmResult.overallConfidence,
+          }],
+        },
+        graphData: {
+          nodes: llmResult.steps.map(s => ({
+            id: s.skillId,
+            type: 'llm-skill',
+            name: s.skillName,
+            level: 'llm',
+            status: s.confidence > 0 ? 'completed' : 'failed',
+            tokens: s.tokensUsed,
+            summary: s.answer.slice(0, 200),
+            metadata: { direction: s.direction, confidence: s.confidence },
+          })),
+          edges: [],
+          stats: {
+            totalNodes: llmResult.steps.length,
+            avgConfidence: llmResult.overallConfidence,
+            executionTime: llmResult.totalLatencyMs,
+          },
+        },
+      };
+
+      return NextResponse.json(llmResponse);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // 分支 B: 规则引擎编排（fallback，USE_LLM_PLANNER=false 时启用）
+    // ═══════════════════════════════════════════════════════
+    const intent: NonNullable<OrchestrateRequest['intent']> = body.intent ?? detectIntent(body.userRequest);
     const complexity = body.complexity || 'standard';
     const tradingMode = body.tradingMode || 'hybrid';
     const chainWeights = body.chainWeights || getDefaultWeights(tradingMode);
@@ -227,7 +302,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Orchestra
       maxLatencyMs: body.maxLatencyMs || 30000,
       budgetTokens: 5000,
       userRole: 'USER' as const,
-      priorHistory: [],
+      priorHistory: {},
     };
 
     // 6. 执行编排
