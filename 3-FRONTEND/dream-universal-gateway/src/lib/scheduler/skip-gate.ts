@@ -99,7 +99,8 @@ const STEP_META: Record<StepName, StepMeta> = {
     stepName: 'S1_RESEARCH',
     requiredWhen: [],
     neverNeededWhen: [],
-    intentWhitelist: ['deep_analysis', 'execute_trade', 'scenario_sim', 'strategy_verify', 'triple_chain', 'asset_comparison', 'entry_timing', 'exit_timing', 'portfolio_allocation', 'strategy_recommendation'],
+    // P1b修复(2026-08-28): 行情类意图加入白名单，否则 simple 行情问题会被 skip 且无兜底输出
+    intentWhitelist: ['deep_analysis', 'execute_trade', 'scenario_sim', 'strategy_verify', 'triple_chain', 'asset_comparison', 'entry_timing', 'exit_timing', 'portfolio_allocation', 'strategy_recommendation', 'market_query', 'trend_analysis', 'technical_signal', 'support_resistance', 'volatility_analysis', 'market_sentiment'],
     intentBlacklist: ['simple_qa', 'concept_explain', 'system_config', 'credits_query', 'risk_alert_response', 'artifact_query', 'command'],
     compactModeSupport: true,
     description: 'S1 调研（通常 500-1500 tokens LLM 输出）',

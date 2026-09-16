@@ -107,7 +107,7 @@ export default function MetricsCard({ metrics, title }: MetricsCardProps) {
                 className="text-sm ml-1"
                 style={{ color: getTrendColor(metric.type) }}
               >
-                {getTrendIcon(metric.trend)}
+                {getTrendIcon(metric.trend ?? "neutral")}
               </span>
             </div>
           </div>

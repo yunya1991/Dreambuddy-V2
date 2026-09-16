@@ -317,9 +317,17 @@ class FreeFundamentalProvider:
         全部为公开端点，无需认证。
         """
         result: Dict[str, Any] = {"_source": "okx_failed"}
+        # 优先使用 Hyperliquid 数据源（OKX 在大陆网络不可达）
+        hl_data = self._hl_derivative_data(symbol)
+        if hl_data is not None:
+            result.update(hl_data)
+            result["_source"] = "hyperliquid"
+            return result
+
+        # OKX 降级路径（网络可达时使用）
         inst_id = self._okx_inst_id(symbol)
         if not inst_id:
-            return {"_source": "okx_unsupported_symbol"}
+            return {"_source": "no_data_source_available"}
 
         ccy = symbol.upper()
         uly = f"{ccy}-USDT"
@@ -346,6 +354,56 @@ class FreeFundamentalProvider:
 
         result["_source"] = "okx"
         return result
+
+    def _hl_derivative_data(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """Hyperliquid 衍生品数据 — 资金费率/持仓量/标记价/成交量"""
+        try:
+            r = requests.post(
+                "https://api.hyperliquid.xyz/info",
+                json={"type": "metaAndAssetCtxs"},
+                timeout=10,
+            )
+            if not r.ok:
+                return None
+            data = r.json()
+            if not data or not isinstance(data, list) or len(data) < 2:
+                return None
+            universe = data[0] if isinstance(data[0], list) else data[0].get("universe", [])
+            ctxs = data[1] if isinstance(data[1], list) else []
+            coin = symbol.upper()
+            idx = None
+            for i, asset in enumerate(universe if isinstance(universe, list) else []):
+                if asset.get("name", "").upper() == coin:
+                    idx = i
+                    break
+            if idx is None or idx >= len(ctxs):
+                return None
+            ctx = ctxs[idx]
+            funding = float(ctx.get("funding", 0) or 0)
+            open_interest = float(ctx.get("openInterest", 0) or 0)
+            mark_px = float(ctx.get("markPx", 0) or 0)
+            prev_day_px = float(ctx.get("prevDayPx", 0) or 0)
+            day_ntl_vlm = float(ctx.get("dayNtlVlm", 0) or 0)
+            premium = float(ctx.get("premium", 0) or 0)
+            return {
+                "hl_funding_rate_current": funding,
+                "hl_funding_rate_daily": funding * 3,
+                "hl_funding_rate_annual": funding * 3 * 365,
+                "hl_open_interest": open_interest,
+                "hl_open_interest_usd": open_interest * mark_px if mark_px > 0 else 0,
+                "hl_mark_price": mark_px,
+                "hl_prev_day_px": prev_day_px,
+                "hl_day_ntl_vlm": day_ntl_vlm,
+                "hl_premium": premium,
+                "okx_funding_rate_current": funding,
+                "okx_funding_rate_daily": funding * 3,
+                "okx_funding_rate_annual": funding * 3 * 365,
+                "okx_current_funding_rate": funding,
+                "okx_mark_price": mark_px,
+                "liquidation_pressure": 0,
+            }
+        except Exception:
+            return None
 
     def _okx_funding_rate_history(self, inst_id: str) -> Optional[Dict[str, Any]]:
         """资金费率历史 — 趋势/分位数分析"""

@@ -554,6 +554,80 @@ export default function V2Dashboard() {
         contentAccumulated: "",
       });
 
+      // ═══════════════════════════════════════════════════════
+      // 优先调用大模型编排 API（/api/orchestrate）
+      // ═══════════════════════════════════════════════════════
+      try {
+        const orchResponse = await fetch("/api/orchestrate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userRequest: processedMessage,
+            symbol: 'BTC',
+            sessionId: "v2-session",
+          }),
+        });
+
+        if (orchResponse.ok) {
+          const orchData = await orchResponse.json();
+
+          if (orchData.success) {
+            const steps = orchData.steps || [];
+            const conclusion = orchData.conclusion || {};
+            const confidence = orchData.overallConfidence || 0;
+            const direction = conclusion.direction || 'neutral';
+            const directionEmoji = direction === 'long' ? '📈' : direction === 'short' ? '📉' : '➡️';
+
+            let resultContent = `## ${directionEmoji} 综合分析结果\n\n`;
+            resultContent += `**综合置信度: ${confidence}%**\n\n`;
+
+            if (steps.length > 0) {
+              resultContent += `### 技能分析\n\n`;
+              for (const step of steps) {
+                const skillName = step.skillsCalled?.[0]?.skillName || step.stepId;
+                const skillConf = step.confidence || 0;
+                const skillAnswer = step.answer || '';
+                if (skillAnswer) {
+                  resultContent += `**${skillName}** (置信度: ${skillConf}%)\n${skillAnswer}\n\n`;
+                } else {
+                  resultContent += `**${skillName}** (置信度: ${skillConf}%)\n\n`;
+                }
+              }
+            }
+
+            if (conclusion.keyDecisionPoints?.length > 0) {
+              resultContent += `### 关键发现\n\n`;
+              for (const point of conclusion.keyDecisionPoints) {
+                resultContent += `- ${point}\n`;
+              }
+              resultContent += '\n';
+            }
+
+            if (conclusion.nextSteps?.[0]?.action) {
+              resultContent += `### 建议\n\n${conclusion.nextSteps[0].action}\n`;
+            }
+
+            resultContent += `\n> 📊 综合置信度: ${confidence}%`;
+
+            setMessages((prev) =>
+              prev.map((m, i) =>
+                i === assistantMsgIdx ? { ...m, content: resultContent, intent: 'analysis', confidence } : m
+              )
+            );
+
+            setAnalysisChain(prev => prev.map(s => ({ ...s, status: 'completed' as const })));
+            setStreamProgress({ isStreaming: false, currentStep: null, currentSkill: null, planSteps: [], skillStatuses: {}, contentAccumulated: resultContent });
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (orchError) {
+        console.warn('[Orchestrate] 大模型编排API不可用，降级到流式模式:', orchError);
+      }
+
+      // ═══════════════════════════════════════════════════════
+      // 降级：原有的 SSE 流式模式
+      // ═══════════════════════════════════════════════════════
       // Try SSE stream first
       try {
         const controller = new AbortController();
@@ -640,7 +714,10 @@ export default function V2Dashboard() {
         }
       } catch (err: any) {
         if (err.name === "AbortError") {
-          // User cancelled — do nothing special, cleanup handled elsewhere
+          // User cancelled — reset loading state so the input is not left disabled
+          setStreamProgress(null);
+          setIsLoading(false);
+          submitLockRef.current = false;
           return;
         }
         // Fallback to sync

@@ -41,6 +41,21 @@ class RuleBasedRecognizer(BaseRecognizer):
     level = "local"
     estimated_tokens = 0
 
+    # ── A系列深度分析显式标记（确定性路由，零 Token，跳过 LLM 复判） ──
+    # 这些是用户显式指令词，语义无歧义，直接路由到 A_HERMES_SKILL 桥接
+    _DEEP_MARKERS = (
+        "深度分析", "深度调研", "深度报告", "调研报告", "战略分析", "战略研究",
+        "矛盾论", "主要矛盾", "第一性原理", "六因子", "a系列", "a链",
+    )
+    # 裸节点代号 A0/A1/A2/A3（带边界，避免误伤 MA200/a3 等子串）
+    _DEEP_NODE_RE = re.compile(r"(?<![a-z0-9])a[0-3](?![0-9a-z])")
+
+    def _match_deep_analysis(self, text: str) -> bool:
+        t = (text or "").lower()
+        if any(m in t for m in self._DEEP_MARKERS):
+            return True
+        return bool(self._DEEP_NODE_RE.search(t))
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # 各意图的关键词（用于 NLP 打分）
@@ -48,6 +63,24 @@ class RuleBasedRecognizer(BaseRecognizer):
 
     def recognize(self, _input: IntentInput) -> RecognizerResult:
         timer = Timer("rule_based")
+
+        # 0. A系列深度分析显式标记 → 确定性短路（零 Token，防 LLM 误改写）
+        if _input.user_message and self._match_deep_analysis(_input.user_message):
+            definition = get_intent_definition(IntentType.DEEP_ANALYSIS.value)
+            base_chain = self._recommend_chain(IntentType.DEEP_ANALYSIS.value, definition)
+            with timer:
+                pass
+            return RecognizerResult(
+                recognizer=self.name,
+                intent_type=IntentType.DEEP_ANALYSIS.value,
+                confidence=0.88,
+                rationale="显式A系列深度分析标记，确定性路由到 Hermes SKILL 桥接",
+                base_chain=base_chain,
+                context={"explicit_marker": True},
+                latency_ms=timer.elapsed_ms,
+                tokens_used=0,
+                level=self.level,
+            )
 
         scores: Dict[str, float] = {}
         reasons: Dict[str, List[str]] = {}
@@ -311,6 +344,7 @@ class RuleBasedRecognizer(BaseRecognizer):
             FUNDAMENTAL_PLAY: A1→F1→F5→A2→A4→A5→A9   (基本面驱动, F链)
             BREAKOUT:         C1→A2→C3→A4→A5→A9       (突破, C链)
             KNOWLEDGE_MATCH:  C3→A4→A5→A9              (知识库快捷路径)
+            DEEP_ANALYSIS:    A_HERMES_SKILL             (A系列深度分析, 委托Hermes SKILL桥接)
             UNCERTAIN:        C1→A1→A2→A4→A5→A9       (不确定, A链完整)
 
         注意:
@@ -324,6 +358,8 @@ class RuleBasedRecognizer(BaseRecognizer):
             "FUNDAMENTAL_PLAY":  ["A1", "F1", "F5", "A2", "A4", "A5", "A9"],
             "BREAKOUT":          ["C1", "A2", "C3", "A4", "A5", "A9"],
             "KNOWLEDGE_MATCH":   ["C3", "A4", "A5", "A9"],
+            # A系列深度分析: 委托 Hermes 大模型 SKILL 桥接（A0/A1/A2 重 LLM 任务）
+            "DEEP_ANALYSIS":     ["A_HERMES_SKILL"],
             "UNCERTAIN":         ["C1", "A1", "A2", "A4", "A5", "A9"],
         }
         return chain_map.get(intent_type, ["C1", "A1", "A2", "A4", "A5", "A9"])

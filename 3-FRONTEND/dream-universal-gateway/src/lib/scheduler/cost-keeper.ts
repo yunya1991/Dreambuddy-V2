@@ -150,6 +150,17 @@ export function initCostKeeper(
 }
 
 /**
+ * P0修复(2026-08-28): 会话别名 — 让同一状态对象注册在多个 ID 下。
+ * 背景：initCostKeeper 用 chatTraceId 注册，但 LLM 步骤的 tracking 参数
+ * 传的是用户 sessionId，导致 markStepEnd 找不到会话、token 记录全部丢失。
+ */
+export function aliasSession(sourceId: string, aliasId: string): void {
+  if (!aliasId || aliasId === sourceId) return;
+  const state = sessionStates.get(sourceId);
+  if (state) sessionStates.set(aliasId, state);
+}
+
+/**
  * 标记一个步骤开始执行（开始计时）
  */
 export function markStepStart(sessionId: string, stepId: string, stepName: string): void {
