@@ -106,6 +106,10 @@ class HedgePair:
     close_reason: Optional[str] = None
     closed_at: Optional[str] = None
     realized_pnl: float = 0.0
+    # 方案B：价差止盈止损（价差百分比，不计算杠杆）
+    entry_spread: float = 0.0   # 开仓时价差 = long_entry - short_entry
+    tp_spread_pct: float = 0.03  # 止盈：价差收敛 3%
+    sl_spread_pct: float = 0.05  # 止损：价差扩大 5%
 
 
 class HedgeExecutor:
@@ -289,9 +293,11 @@ class HedgeExecutor:
             r1 = client.open_long(long_symbol, margin, leverage=LEVERAGE, tag="hedge")
         except Exception as e:
             r1 = {"ok": False, "error": str(e)}
-        if not r1.get("ok"):
-            logger.warning(f"对冲长腿开仓失败: {long_symbol} {r1.get('error', r1)}")
-            return {"status": "REJECTED", "reason": "long_leg_failed", "detail": r1.get("error")}
+        _fill1 = r1.get("filled") if isinstance(r1.get("filled"), dict) else {}
+        if not r1.get("ok") or _fill1.get("error"):
+            _err = _fill1.get("error") or r1.get("error", "unknown")
+            logger.warning(f"对冲长腿开仓失败: {long_symbol} {_err}")
+            return {"status": "REJECTED", "reason": "long_leg_failed", "detail": _err}
 
         l_fill = r1.get("filled") or {}
         long_entry = float(l_fill.get("avgPx") or long_entry)
@@ -302,7 +308,8 @@ class HedgeExecutor:
             r2 = client.open_short(short_symbol, margin, leverage=LEVERAGE, tag="hedge")
         except Exception as e:
             r2 = {"ok": False, "error": str(e)}
-        if not r2.get("ok"):
+        _fill2 = r2.get("filled") if isinstance(r2.get("filled"), dict) else {}
+        if not r2.get("ok") or _fill2.get("error"):
             logger.warning(
                 f"对冲短腿开仓失败 → 孤儿腿保护平多腿: {short_symbol} {r2.get('error', r2)}"
             )
@@ -330,22 +337,135 @@ class HedgeExecutor:
         short_entry = float(s_fill.get("avgPx") or short_entry)
         short_size = float(r2.get("sz") or notional / short_entry)
 
+        entry_spread = long_entry - short_entry
         pair = HedgePair(
             pair_id=pair_id,
             long_symbol=long_symbol, long_entry=long_entry, long_size=long_size,
             short_symbol=short_symbol, short_entry=short_entry, short_size=short_size,
             notional_per_leg=notional, long_conf=long_conf, short_conf=short_conf,
             regime=regime,
+            entry_spread=entry_spread,
         )
         self._pairs[pair_id] = pair
         self._save_pairs()
         logger.info(
             f"对冲对开仓(实盘): {pair_id} LONG {long_symbol}@{long_entry} × "
-            f"SHORT {short_symbol}@{short_entry} | 每腿{notional}U"
+            f"SHORT {short_symbol}@{short_entry} | 每腿{notional}U | "
+            f"entry_spread={entry_spread:.4f} TP={pair.tp_spread_pct:.0%}/SL={pair.sl_spread_pct:.0%}"
         )
         return {"status": "OPEN", "pair_id": pair_id, "dry_run": False}
 
     # ── 离场 ────────────────────────────────────────────────────
+
+    def check_spread_exit(self, prices: Dict[str, float]) -> List[Dict[str, Any]]:
+        """方案B：价差止盈止损监控
+
+        遍历所有 OPEN 对冲对，检查价差变化率：
+        - 价差收敛 <= tp_spread_pct（3%）→ 止盈平仓
+        - 价差扩大 >= sl_spread_pct（5%）→ 止损平仓
+
+        价差变化率 = |current_spread - entry_spread| / |entry_spread|
+        注意：这是价差百分比，不计算杠杆。
+
+        Args:
+            prices: 当前价格字典 {symbol: price}
+
+        Returns:
+            List[Dict]: 每个对冲对的检查/平仓结果
+        """
+        actions: List[Dict[str, Any]] = []
+        client = self._get_client()
+
+        for pair in list(self._pairs.values()):
+            if pair.status != "OPEN":
+                continue
+
+            # 自动获取价格：优先用传入的 prices，缺失时从 HyperliquidClient 获取
+            lp = float(prices.get(pair.long_symbol, 0.0) or 0.0)
+            sp = float(prices.get(pair.short_symbol, 0.0) or 0.0)
+            if lp <= 0:
+                try:
+                    lp = client.get_mid_price(pair.long_symbol)
+                except Exception:
+                    lp = 0.0
+            if sp <= 0:
+                try:
+                    sp = client.get_mid_price(pair.short_symbol)
+                except Exception:
+                    sp = 0.0
+            if lp <= 0 or sp <= 0:
+                actions.append({"pair_id": pair.pair_id, "action": "SKIPPED",
+                                "reason": "missing_price"})
+                continue
+
+            current_spread = lp - sp
+            entry_spread = pair.entry_spread
+
+            if abs(entry_spread) < 1e-10:
+                actions.append({"pair_id": pair.pair_id, "action": "SKIPPED",
+                                "reason": "zero_entry_spread"})
+                continue
+
+            # 价差收敛率：正值=收敛（价差变小），负值=扩大（价差变大）
+            # 使用 |entry_spread| 和 |current_spread| 比较，适用于正负价差
+            spread_shrink_pct = (abs(entry_spread) - abs(current_spread)) / abs(entry_spread)
+
+            action = "HOLD"
+            close_reason = None
+
+            if spread_shrink_pct >= pair.tp_spread_pct:
+                # 价差收敛 >= 3% → 止盈
+                action = "TP_SPREAD"
+                close_reason = f"价差收敛 {spread_shrink_pct:.2%} >= TP {pair.tp_spread_pct:.0%}"
+            elif spread_shrink_pct <= -pair.sl_spread_pct:
+                # 价差扩大 >= 5% → 止损
+                action = "SL_SPREAD"
+                close_reason = f"价差扩大 {abs(spread_shrink_pct):.2%} >= SL {pair.sl_spread_pct:.0%}"
+
+            if action in ("TP_SPREAD", "SL_SPREAD"):
+                # 同时平仓两腿
+                close_results = []
+                for symbol, tag in [(pair.long_symbol, "hedge_tp_sl"), (pair.short_symbol, "hedge_tp_sl")]:
+                    try:
+                        cr = client.close_position(symbol, tag=tag)
+                        close_results.append({"symbol": symbol, "ok": cr.get("ok", False)})
+                    except Exception as e:
+                        close_results.append({"symbol": symbol, "ok": False, "error": str(e)})
+
+                all_closed = all(r.get("ok") for r in close_results)
+                pair.status = "CLOSED" if all_closed else "PARTIAL_CLOSED"
+                pair.close_reason = close_reason
+                pair.closed_at = datetime.utcnow().isoformat() + "Z"
+
+                # 计算已实现 PnL
+                long_pnl = (lp - pair.long_entry) * pair.long_size
+                short_pnl = (pair.short_entry - sp) * pair.short_size
+                pair.realized_pnl = long_pnl + short_pnl
+
+                self._save_pairs()
+                logger.info(
+                    f"对冲价差{'止盈' if action == 'TP_SPREAD' else '止损'}: {pair.pair_id} "
+                    f"spread_change={spread_change_pct:.2%} {close_reason} "
+                    f"pnl={pair.realized_pnl:.2f}"
+                )
+
+                actions.append({
+                    "pair_id": pair.pair_id,
+                    "action": action,
+                    "spread_shrink_pct": round(spread_shrink_pct, 4),
+                    "close_results": close_results,
+                    "realized_pnl": pair.realized_pnl,
+                })
+            else:
+                actions.append({
+                    "pair_id": pair.pair_id,
+                    "action": "HOLD",
+                    "spread_shrink_pct": round(spread_shrink_pct, 4),
+                    "current_spread": round(current_spread, 4),
+                    "entry_spread": round(entry_spread, 4),
+                })
+
+        return actions
 
     @staticmethod
     def combined_pnl(pair: HedgePair, long_price: float, short_price: float):

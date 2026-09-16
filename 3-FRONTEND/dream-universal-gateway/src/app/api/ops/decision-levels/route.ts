@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
-const HUB_BASE_URL = process.env.HUB_BASE_URL || "http://127.0.0.1:3456";
+const HUB_BASE_URL = process.env.HUB_BASE_URL || "http://49.233.123.96:3456";
 
 export async function GET() {
   try {
-    const res = await fetch(`${HUB_BASE_URL}/ops/decision-levels`, {
+    const res = await fetch(`${HUB_BASE_URL}/api/ops/decision-levels`, {
       headers: { Accept: "application/json" },
       next: { revalidate: 60 },
     });

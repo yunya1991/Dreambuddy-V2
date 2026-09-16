@@ -45,6 +45,184 @@ class TradeLesson:
         }
 
 
+class CognitiveLoopEntry:
+    """Statistical model for cognitive loop analysis.
+
+    Provides rigorous statistical metrics to complement the Bayesian
+    confidence adjustment in get_cognitive_context().
+
+    Metrics:
+        - Expected value E[PnL] and standard deviation σ
+        - Sharpe-like ratio (risk-adjusted return)
+        - Maximum drawdown (peak-to-trough decline)
+        - Wilson score interval for win rate (lower/upper bound)
+        - Profit factor (gross profit / gross loss)
+        - Consecutive loss streak tracking
+        - Kelly criterion fraction (optimal bet size)
+
+    Design:
+        - Incremental update: O(1) per new observation
+        - No external dependencies (pure Python math/statistics)
+        - Complements Bayesian model: statistics describe, Bayes predicts
+    """
+
+    def __init__(self) -> None:
+        # --- Sufficient statistics for incremental update ---
+        self._n: int = 0
+        self._sum_pnl: float = 0.0
+        self._sum_pnl_sq: float = 0.0  # For variance: Σ(x²)
+        self._wins: int = 0
+        self._losses: int = 0
+        self._gross_profit: float = 0.0
+        self._gross_loss: float = 0.0
+        self._peak: float = 0.0  # Running peak for drawdown
+        self._max_drawdown: float = 0.0
+        self._cumulative: float = 0.0  # Running cumulative PnL
+        self._consecutive_losses: int = 0
+        self._max_consecutive_losses: int = 0
+        self._pnl_history: List[float] = []  # Bounded history for Sharpe
+        self._max_history: int = 50  # Rolling window size
+
+    def update(self, pnl_usdt: float) -> None:
+        """Incrementally update statistics with a new PnL observation."""
+        self._n += 1
+        self._sum_pnl += pnl_usdt
+        self._sum_pnl_sq += pnl_usdt * pnl_usdt
+        self._cumulative += pnl_usdt
+
+        # Win/loss tracking
+        if pnl_usdt > 0:
+            self._wins += 1
+            self._gross_profit += pnl_usdt
+            self._consecutive_losses = 0
+        elif pnl_usdt < 0:
+            self._losses += 1
+            self._gross_loss += abs(pnl_usdt)
+            self._consecutive_losses += 1
+            self._max_consecutive_losses = max(
+                self._max_consecutive_losses, self._consecutive_losses
+            )
+
+        # Drawdown tracking
+        if self._cumulative > self._peak:
+            self._peak = self._cumulative
+        drawdown = self._peak - self._cumulative
+        if drawdown > self._max_drawdown:
+            self._max_drawdown = drawdown
+
+        # Bounded history for rolling Sharpe
+        self._pnl_history.append(pnl_usdt)
+        if len(self._pnl_history) > self._max_history:
+            self._pnl_history.pop(0)
+
+    @property
+    def expected_value(self) -> float:
+        """E[PnL] = Σ(x) / n"""
+        return self._sum_pnl / self._n if self._n > 0 else 0.0
+
+    @property
+    def std_dev(self) -> float:
+        """σ = sqrt(E[x²] - E[x]²)"""
+        if self._n < 2:
+            return 0.0
+        mean = self._sum_pnl / self._n
+        variance = (self._sum_pnl_sq / self._n) - (mean * mean)
+        return max(0.0, variance) ** 0.5
+
+    @property
+    def sharpe_ratio(self) -> float:
+        """Risk-adjusted return: E[PnL] / σ (per-trade Sharpe)."""
+        sigma = self.std_dev
+        if sigma < 1e-9:
+            return 0.0
+        return self.expected_value / sigma
+
+    @property
+    def max_drawdown(self) -> float:
+        """Maximum peak-to-trough decline in cumulative PnL."""
+        return self._max_drawdown
+
+    @property
+    def win_rate(self) -> float:
+        """Observed win rate = wins / n."""
+        return self._wins / self._n if self._n > 0 else 0.0
+
+    @property
+    def win_rate_wilson_lower(self) -> float:
+        """Wilson score interval lower bound (95% confidence).
+
+        More conservative than naive win_rate for small samples.
+        Formula: (p + z²/2n - z√(p(1-p)/n + z²/4n²)) / (1 + z²/n)
+        where z = 1.96 for 95% CI.
+        """
+        if self._n == 0:
+            return 0.0
+        z = 1.96
+        n = self._n
+        p = self.win_rate
+        denom = 1 + z * z / n
+        numerator = p + z * z / (2 * n) - z * (
+            p * (1 - p) / n + z * z / (4 * n * n)
+        ) ** 0.5
+        return max(0.0, numerator / denom)
+
+    @property
+    def profit_factor(self) -> float:
+        """Gross profit / gross loss. >1.0 = profitable system."""
+        if self._gross_loss < 1e-9:
+            return float('inf') if self._gross_profit > 1e-9 else 0.0
+        return self._gross_profit / self._gross_loss
+
+    @property
+    def kelly_fraction(self) -> float:
+        """Kelly criterion: f* = (b·p - q) / b
+
+        where p = win_rate, q = 1-p, b = avg_win/avg_loss.
+        Capped to [0, 0.25] for safety (quarter-Kelly).
+        """
+        if self._n < 5 or self._losses == 0 or self._wins == 0:
+            return 0.0
+        p = self.win_rate
+        q = 1 - p
+        avg_win = self._gross_profit / self._wins
+        avg_loss = self._gross_loss / self._losses
+        if avg_loss < 1e-9:
+            return 0.25
+        b = avg_win / avg_loss
+        kelly = (b * p - q) / b
+        return max(0.0, min(0.25, kelly))  # Quarter-Kelly cap
+
+    @property
+    def consecutive_losses(self) -> int:
+        """Current consecutive loss streak."""
+        return self._consecutive_losses
+
+    @property
+    def max_consecutive_losses(self) -> int:
+        """Historical maximum consecutive loss streak."""
+        return self._max_consecutive_losses
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Export all statistical metrics as a dictionary."""
+        return {
+            "sample_size": self._n,
+            "expected_value": round(self.expected_value, 4),
+            "std_dev": round(self.std_dev, 4),
+            "sharpe_ratio": round(self.sharpe_ratio, 4),
+            "max_drawdown": round(self.max_drawdown, 4),
+            "win_rate": round(self.win_rate, 4),
+            "win_rate_wilson_lower": round(self.win_rate_wilson_lower, 4),
+            "profit_factor": (
+                round(self.profit_factor, 4)
+                if self.profit_factor != float('inf')
+                else 999.0
+            ),
+            "kelly_fraction": round(self.kelly_fraction, 4),
+            "consecutive_losses": self.consecutive_losses,
+            "max_consecutive_losses": self.max_consecutive_losses,
+        }
+
+
 class CognitiveReviewer:
     """Cognitive reviewer for trade result analysis and lesson extraction.
 
@@ -62,6 +240,7 @@ class CognitiveReviewer:
         self._lessons_filepath = lessons_filepath
         self._review_count = 0
         self._total_pnl = 0.0
+        self._stats_model = CognitiveLoopEntry()  # Statistical model for cognitive loop
 
     def review(self, trade_result: Dict[str, Any]) -> Dict[str, Any]:
         """Review a completed trade and produce cognitive assessment.
@@ -95,6 +274,7 @@ class CognitiveReviewer:
         # Update tracking
         self._review_count += 1
         self._total_pnl += pnl_usdt
+        self._stats_model.update(pnl_usdt)  # Update statistical model
 
         # Compute assessment score
         score = self._compute_score(pnl_pct, confidence, addon_count, hold_hours, exit_reason)
@@ -218,6 +398,153 @@ class CognitiveReviewer:
                 created_at=now,
             ))
 
+        # ── T0-T5 交易认知体系增强规则（10个）──
+
+        # T3: 波动率风控 — C5 熔断检测
+        pnl_pct = trade_result.get("pnl_pct", 0.0)
+        if abs(pnl_pct) >= 0.15:
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-c5vol",
+                category="risk",
+                description=f"C5熔断触发: {symbol} 单次亏损 {pnl_pct:.1%} >= 15%: "
+                           f"立即平仓+反思闭环，禁止补仓摊平",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
+        # T3: 连败风控 — 连续3次亏损
+        consecutive_losses = trade_result.get("consecutive_losses", 0)
+        if consecutive_losses >= 3:
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-c5loss",
+                category="risk",
+                description=f"C5熔断触发: {symbol} 连续{consecutive_losses}次亏损: "
+                           f"降低confidence+触发冷却期，进入反思闭环",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
+        # T2: 止损纪律 — 无止损或止损放宽
+        stop_loss_set = trade_result.get("stop_loss_set", True)
+        stop_loss_widened = trade_result.get("stop_loss_widened", False)
+        if not stop_loss_set or stop_loss_widened:
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-sl discipline",
+                category="risk",
+                description=f"止损纪律违规: {symbol} "
+                           f"{'无止损设置' if not stop_loss_set else '止损被放宽'}: "
+                           f"无止损=禁止开仓，止损只能收紧不能放宽",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
+        # T2: 资金管理 — 可用资金不足
+        available_pct = trade_result.get("available_balance_pct", 1.0)
+        if available_pct < 0.20:
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-capital",
+                category="capital",
+                description=f"资金管理告警: {symbol} 可用资金仅 {available_pct:.0%}: "
+                           f"限制仓位，只允许P1侦察仓(10-15%)",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
+        # T2: 验证前置 — 未通过验证
+        validated = trade_result.get("validated", True)
+        practice_count = trade_result.get("practice_count", 2)
+        if not validated or practice_count < 2:
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-validate",
+                category="validation",
+                description=f"验证前置未通过: {symbol} "
+                           f"实践次数={practice_count}(<2): "
+                           f"只允许P1侦察仓，禁止大仓执行",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
+        # T0+T4: 趋势跟踪 — MA方向不一致
+        ma_trend_consistent = trade_result.get("ma_trend_consistent", True)
+        if not ma_trend_consistent:
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-trend",
+                category="trend",
+                description=f"趋势不一致: {symbol} MA5/MA10/MA20方向冲突: "
+                           f"降低confidence，T4 Level 1.5告警",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
+        # T2+T4: 离场纪律 — 离场层命中
+        exit_layer = trade_result.get("exit_layer", 0)
+        if exit_layer > 0:
+            layer_names = {1: "技术离场", 2: "风险事件", 3: "情报联动", 4: "强制审计"}
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-exit",
+                category="exit",
+                description=f"四层离场链命中: {symbol} Layer{exit_layer}({layer_names.get(exit_layer, '?')}): "
+                           f"立即离场，记录离场原因",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
+        # T5: 纸上谈兵检测 — 无实际执行
+        skill_executed = trade_result.get("skill_executed", True)
+        if not skill_executed:
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-paper",
+                category="execution",
+                description=f"纸上谈兵检测: {symbol} 仅分析未实际执行: "
+                           f"禁止进入大仓阶段，C8强制试探未满足",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
+        # T1: 情景证伪 — 证伪条件触发
+        scenario_invalidated = trade_result.get("scenario_invalidated", False)
+        if scenario_invalidated:
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-falsify",
+                category="strategy",
+                description=f"情景证伪: {symbol} S1/S2/S3某情景证伪条件触发: "
+                           f"调整strategy_directive，重新评估方向",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
+        # T5: 回滚机制 — P&L回撤>3%
+        pnl_drawdown = trade_result.get("pnl_drawdown", 0.0)
+        if pnl_drawdown > 0.03:
+            lessons.append(TradeLesson(
+                lesson_id=f"lesson-{self._review_count:04d}-rollback",
+                category="rollback",
+                description=f"回滚机制触发: {symbol} P&L回撤 {pnl_drawdown:.1%} > 3%: "
+                           f"回滚到上一个稳定状态，进入观察期",
+                symbol=symbol,
+                trade_pnl=pnl_usdt,
+                confidence_at_entry=confidence,
+                created_at=now,
+            ))
+
         return lessons
 
     def get_cognitive_context(self, symbol: Optional[str] = None) -> Dict[str, Any]:
@@ -246,15 +573,78 @@ class CognitiveReviewer:
         total = len(self._lessons)
         win_rate = winning / total if total > 0 else 0.0
 
-        # Compute confidence adjustment based on recent performance
-        recent = self._lessons[-10:] if len(self._lessons) > 10 else self._lessons
-        recent_pnl = sum(l.trade_pnl for l in recent)
-        if recent_pnl > 0:
-            confidence_adjustment = min(0.1, recent_pnl / 1000.0)
-        elif recent_pnl < 0:
-            confidence_adjustment = max(-0.1, recent_pnl / 1000.0)
+        # ===== Bayesian confidence adjustment (Beta-Binomial conjugate model) =====
+        # Replaces naive linear PnL mapping with rigorous Bayesian posterior.
+        #
+        # Model:
+        #   alpha = 1 + wins    (pseudo-count + observed successes)
+        #   beta  = 1 + losses  (pseudo-count + observed failures)
+        #   posterior_mean = alpha / (alpha + beta)  ← E[P(success)]
+        #
+        # Integration with T-series cognitive framework:
+        #   - T3 Risk Gatekeeper: consecutive losses ≥3 triggers circuit breaker
+        #   - T5 Meta-Reflection: exponential forgetting (half-life 30d)
+        #   - Mapping: (posterior - 0.5) × 0.2 → [-0.1, +0.1]
+        #
+        import math
+
+        recent = self._lessons[-20:] if len(self._lessons) > 20 else self._lessons
+
+        # --- Step 1: Beta-Binomial sufficient statistics ---
+        wins = sum(1 for l in recent if l.trade_pnl > 0)
+        losses = sum(1 for l in recent if l.trade_pnl < 0)
+        alpha = 1 + wins   # Beta prior α (uninformative: Beta(1,1))
+        beta_param = 1 + losses  # Beta prior β
+        posterior_mean = alpha / (alpha + beta_param)  # E[P(success)]
+
+        # --- Step 2: Exponential forgetting (T5 observation period) ---
+        # ff = exp(-ln2 × age / half_life), forgotten = ff × posterior + (1-ff) × 0.5
+        # Half-life: 30 days (C-level memory, fast adaptation to regime change)
+        _FORGET_LAMBDA = math.log(2)
+        _HALF_LIFE_SECS = 30 * 86400.0  # 30 days in seconds
+        now = datetime.now()
+
+        forgotten_posteriors = []
+        for l in recent:
+            try:
+                created = datetime.fromisoformat(l.created_at)
+                age_secs = max(0.0, (now - created).total_seconds())
+            except (ValueError, TypeError):
+                age_secs = 0.0
+            if _HALF_LIFE_SECS > 0:
+                ff = math.exp(-_FORGET_LAMBDA * age_secs / _HALF_LIFE_SECS)
+                ff = max(0.0, min(1.0, ff))
+            else:
+                ff = 1.0
+            # Per-lesson posterior: win→1.0, loss→0.0, flat→0.5
+            obs = 1.0 if l.trade_pnl > 0 else (0.0 if l.trade_pnl < 0 else 0.5)
+            forgotten_posteriors.append(ff * obs + (1.0 - ff) * 0.5)
+
+        # Weighted average of forgotten posteriors
+        if forgotten_posteriors:
+            bayesian_estimate = sum(forgotten_posteriors) / len(forgotten_posteriors)
         else:
-            confidence_adjustment = 0.0
+            bayesian_estimate = 0.5
+
+        # Blend global Beta posterior with per-lesson forgotten estimate
+        blended = 0.5 * posterior_mean + 0.5 * bayesian_estimate
+
+        # --- Step 3: T3 circuit breaker (consecutive losses ≥3) ---
+        consecutive_losses = 0
+        for l in reversed(recent):
+            if l.trade_pnl < 0:
+                consecutive_losses += 1
+            else:
+                break
+        circuit_breaker_penalty = 0.0
+        if consecutive_losses >= 3:
+            # T3 熔断: scale penalty with consecutive loss count
+            circuit_breaker_penalty = -0.05 * min(1.0, consecutive_losses / 5.0)
+
+        # --- Step 4: Map to [-0.1, +0.1] range ---
+        # (blended - 0.5) × 0.2 maps [0,1] → [-0.1, +0.1]
+        confidence_adjustment = (blended - 0.5) * 0.2 + circuit_breaker_penalty
+        confidence_adjustment = max(-0.1, min(0.1, confidence_adjustment))
 
         return {
             "total_reviews": self._review_count,
@@ -263,6 +653,7 @@ class CognitiveReviewer:
             "recent_lessons": [l.to_dict() for l in recent],
             "symbol_lessons": [l.to_dict() for l in relevant_lessons[-5:]] if symbol else [],
             "confidence_adjustment": round(confidence_adjustment, 4),
+            "statistics": self._stats_model.to_dict(),
         }
 
     def load_lessons(self, filepath: Optional[str] = None) -> int:
@@ -396,11 +787,12 @@ class CognitiveReviewer:
 
     @property
     def stats(self) -> Dict[str, Any]:
-        """Get reviewer statistics."""
+        """Get reviewer statistics including CognitiveLoopEntry metrics."""
         return {
             "total_reviews": self._review_count,
             "total_pnl": self._total_pnl,
             "total_lessons": len(self._lessons),
+            "statistics": self._stats_model.to_dict(),
         }
 
 
@@ -453,6 +845,7 @@ class CognitiveReviewerNode(BaseNode):
                 "pnl_usdt": review.get("pnl_usdt", 0.0),
                 "pnl_pct": review.get("pnl_pct", 0.0),
                 "review_id": review.get("review_id", ""),
+                "statistics": self._reviewer.stats.get("statistics", {}),
                 "source": "cognitive-review",
             },
         )

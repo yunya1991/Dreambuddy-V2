@@ -37,8 +37,8 @@ const RAG_CONFIG = {
   chunkOverlap: 100,    // 切片之间重叠字符（保证上下文完整性）
 
   // 检索参数
-  topK: 5,              // 默认返回最相关的 5 个 chunk
-  similarityThreshold: 0.35, // 相似度阈值（余弦相似度，范围 -1 ~ 1）
+  topK: 8,              // 默认返回最相关的 8 个 chunk（5→8, 2026-08-28修复: 避免参数表段落被挤出）
+  similarityThreshold: 0.30, // 相似度阈值（0.35→0.30, 2026-08-28修复: ngram fallback 模式下 0.35 过严导致漏检）
 
   // 向量缓存路径（相对项目根目录）
   vectorCacheFile: 'data/knowledge_vector_cache_v2.json',
@@ -84,11 +84,26 @@ export interface RetrievalResult {
 // 3. 路径与缓存管理
 // ============================================================
 
-// 项目根目录 — knowledge-loader.ts 在 src/lib/，
-// cache 文件在 3-FRONTEND/dream-universal-gateway/data/
-const PROJECT_ROOT = path.resolve(__dirname, '../../../../');
-const KNOWLEDGE_ROOT = path.join(PROJECT_ROOT, '2-KNOWLEDGE');
-const CACHE_PATH = path.join(PROJECT_ROOT, RAG_CONFIG.vectorCacheFile);
+// 项目根目录 — P0修复(2026-08-28): 生产构建时 __dirname 在 .next/server/ 下，
+// 相对路径解析错位导致 2-KNOWLEDGE 永远找不到（RAG 全空的根因）。
+// 改为从 cwd 和 __dirname 分别向上最多 6 层探测含 2-KNOWLEDGE 的目录。
+function findKnowledgeRoot(): string {
+  const seeds = [process.cwd(), __dirname];
+  for (const seed of seeds) {
+    let dir = seed;
+    for (let i = 0; i < 6; i++) {
+      const candidate = path.join(dir, '2-KNOWLEDGE');
+      if (fs.existsSync(candidate)) return candidate;
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  }
+  console.warn('[RAG] 2-KNOWLEDGE not found from cwd/__dirname, fallback to cwd/2-KNOWLEDGE');
+  return path.join(process.cwd(), '2-KNOWLEDGE');
+}
+const KNOWLEDGE_ROOT = findKnowledgeRoot();
+const CACHE_PATH = path.join(process.cwd(), RAG_CONFIG.vectorCacheFile);
 
 /**
  * 检查缓存目录是否存在，不存在则创建
@@ -296,6 +311,9 @@ function getApiKey(): string {
   return key;
 }
 
+// P0修复(2026-08-28): embedding 熔断器时间戳（进程级）
+let embeddingDisabledUntil = 0;
+
 /**
  * 调用 DeepSeek Embeddings API — 批量获取向量
  * 一次最多 100 个文本
@@ -304,6 +322,12 @@ function getApiKey(): string {
  */
 async function embedTexts(texts: string[]): Promise<number[][]> {
   if (texts.length === 0) return [];
+
+  // P0修复(2026-08-28): 熔断器 — embedding 服务不可用（402余额/401无效/404）时
+  // 10 分钟内不再发起网络请求，直接走本地检索，避免每次 RAG 调用浪费重试
+  if (Date.now() < embeddingDisabledUntil) {
+    throw new Error('embedding circuit-breaker open (service unavailable)');
+  }
 
   const apiKey = getApiKey();
   const batchSize = 100; // DeepSeek 单次上限
@@ -362,6 +386,11 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
     }
 
     if (lastError) {
+      // P0修复(2026-08-28): 402/401/404 属持久性错误 → 打开熔断器
+      if (/HTTP (401|402|404)/.test(lastError.message)) {
+        embeddingDisabledUntil = Date.now() + 10 * 60 * 1000;
+        console.warn('[RAG] Embedding service unavailable, circuit-breaker open for 10min');
+      }
       throw lastError;
     }
 
@@ -553,11 +582,12 @@ export async function retrieveRelevantChunks(
       const hits: string[] = [];
       for (const kw of keywords) {
         if (chunk.content.toLowerCase().includes(kw.toLowerCase())) {
-          keywordBoost += 0.08;
+          // P0修复(2026-08-28): 含数字的标识符（v9/ma200）是强特指信号，加权 3 倍
+          keywordBoost += /\d/.test(kw) ? 0.25 : 0.08;
           hits.push(kw);
         }
       }
-      keywordBoost = Math.min(keywordBoost, 0.35); // 上限 0.35
+      keywordBoost = Math.min(keywordBoost, 0.6); // 上限 0.35→0.6，让强标识符命中能过阈值
 
       const finalScore = similarity + keywordBoost;
 
@@ -572,7 +602,29 @@ export async function retrieveRelevantChunks(
 
     // 排序 & 过滤
     results.sort((a, b) => b.finalScore - a.finalScore);
-    const filtered = results.filter((r) => r.finalScore >= RAG_CONFIG.similarityThreshold);
+    let filtered = results.filter((r) => r.finalScore >= RAG_CONFIG.similarityThreshold);
+
+    // P0修复(2026-08-28): 文档亲缘提升 — 某文档有 chunk 命中字母+数字标识符（v9/ma200 等强特指信号）时，
+    // 该文档的其他 chunk（如参数表段落）也大概率相关，统一 +0.2，避免只召回标题段而漏掉核心参数。
+    // 文档标题段本身含该标识符（文档以标识符命名）→ 再 +0.15，让"本尊文档"压过"引用文档"。
+    const relatedDocIds = new Set<string>();
+    for (const r of results) {
+      if (r.highlight.some((h) => /\d/.test(h))) relatedDocIds.add(r.chunk.docPath);
+    }
+    if (relatedDocIds.size > 0) {
+      for (const r of results) {
+        if (relatedDocIds.has(r.chunk.docPath)) {
+          r.finalScore += 0.2;
+          const endBracket = r.chunk.content.indexOf('】');
+          const titleSeg = endBracket > 0 ? r.chunk.content.slice(0, endBracket + 1).toLowerCase() : '';
+          if (titleSeg && r.highlight.some((h) => /\d/.test(h) && titleSeg.includes(h))) {
+            r.finalScore += 0.15;
+          }
+        }
+      }
+      results.sort((a, b) => b.finalScore - a.finalScore);
+      filtered = results.filter((r) => r.finalScore >= RAG_CONFIG.similarityThreshold);
+    }
 
     return filtered.slice(0, topK);
   } catch (e) {
@@ -600,6 +652,11 @@ function extractKeywords(query: string, intentHint: string): string[] {
   // 英文词: 3+ chars
   const engWords = query.toLowerCase().match(/[a-z]{3,}/g) || [];
   for (const w of engWords) if (!stopwords.has(w)) keywords.push(w);
+
+  // P0修复(2026-08-28): 字母数字混合标识符（V9/MA200/BCRM2.0 等）是强检索信号。
+  // 原实现 [a-z]{3,} 会丢弃 "v9"（2字符+数字）导致私有策略文档（如 V9-马丁基线）检索不到
+  const idTokens = query.match(/[a-zA-Z][a-zA-Z0-9_.]{1,}/g) || [];
+  for (const t of idTokens) keywords.push(t.toLowerCase());
 
   // 中文: 2-4 char 子串
   const chineseChars = (query.match(/[\u4e00-\u9fa5]{2,4}/g) || []);

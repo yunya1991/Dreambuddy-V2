@@ -31,6 +31,27 @@ export interface RoutingDecision {
   is_dev_chain?: boolean;
   /** 经典交易模式标记 */
   is_classic_mode?: boolean;
+  /**
+   * DreamOS 桥接指令（20260829-bridge S3）
+   * 由 src/lib/intent/index.ts 的 routeIntent 包装器在
+   * DREAMOS_BRIDGE_ENABLED=true 时附加；与
+   * src/lib/dreamos/bridge.ts 的 DreamOSBridgeDirective 结构一致
+   * （此处内联声明避免 smart-router ↔ dreamos 类型循环）。
+   * 消费方：chat/orchestrate 路由见 decision.dreamos 即走
+   * /api/dreamos 物理编排（只读分析，执行环意图不附加）。
+   */
+  dreamos?: {
+    eligible: true;
+    intent_hint: {
+      intent_type: string;
+      confidence?: number;
+      chain?: string;
+      provenance?: string;
+      canon_intent?: string;
+    };
+    canon_intent: string;
+    note: string;
+  };
 }
 
 // ============ 动态链配置 (Phase 2) ============
@@ -576,6 +597,7 @@ export function getLoopColor(loop: LoopType): string {
     case 'intelligence': return '#f59e0b'; // amber
     case 'governance':  return '#8b5cf6'; // purple
     case 'general':     return '#6b7280'; // gray
+    case 'classic':     return '#10b981'; // emerald — 经典交易模式（PROP-20260829-C P0.2 基线修复：LoopType 5 成员补全）
   }
 }
 
@@ -585,6 +607,7 @@ export function getLoopLabel(loop: LoopType): string {
     case 'intelligence': return '情报环';
     case 'governance':  return '治理环';
     case 'general':     return '通用';
+    case 'classic':     return '经典模式';
   }
 }
 

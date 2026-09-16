@@ -19,8 +19,29 @@ export type {
   LLMConfig,
 } from './fallback-engine';
 
+// ============ routeIntent：DreamOS 桥接包装（20260829-bridge S3）============
+// flag 默认关 → 行为与原版 100% 一致（纯透传）；
+// DREAMOS_BRIDGE_ENABLED=true 时，intelligence 环分析意图的决策
+// 会附加 decision.dreamos 指令，消费方改走 /api/dreamos 物理编排。
+import { routeIntent as routeIntentRaw } from './smart-router';
+import type {
+  IntentType as _IntentType,
+  ComplexityLevel as _ComplexityLevel,
+  SessionContext as _SessionContext,
+} from './fallback-engine';
+import type { RoutingDecision as _RoutingDecision } from './smart-router';
+import { attachDreamOSDirective } from '../dreamos/bridge';
+
+export function routeIntent(
+  intent: _IntentType,
+  complexity: _ComplexityLevel,
+  context?: _SessionContext,
+): _RoutingDecision {
+  const decision = routeIntentRaw(intent, complexity, context);
+  return attachDreamOSDirective(decision, String(intent));
+}
+
 export {
-  routeIntent,
   downgradeChain,
   getLoopColor,
   getLoopLabel,

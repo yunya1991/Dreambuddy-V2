@@ -189,6 +189,27 @@ class OrchestratorV2:
         errors: List[str] = []
         status = "COMPLETED"
 
+        # PROP-20260828A P2: 基本面数据前置注入（F层数据接线）
+        # 沿用 trading_agent 既有范式: env 开关(默认启用) + 懒加载单例 + 1h缓存
+        # 静默降级语义: 注入失败/数据源不可用 → 仅告警, 绝不阻断编排周期
+        try:
+            if os.environ.get("DREAMOS_FUNDAMENTAL_INJECTION", "1") == "1":
+                if not hasattr(self, "_fundamental_injector"):
+                    from dreamos.capabilities.trading.fundamental_injector import (
+                        FundamentalDataInjector,
+                    )
+                    self._fundamental_injector = FundamentalDataInjector()
+                injected = self._fundamental_injector.inject(
+                    market_data, market_data.get("symbol", "BTC")
+                )
+                logger.info(
+                    f"基本面注入完成: {market_data.get('symbol', 'BTC')} | "
+                    f"字段数={injected.get('_fundamental_field_count', 0)} | "
+                    f"source={injected.get('_fundamental_source', 'unknown')}"
+                )
+        except Exception as e:
+            logger.warning(f"基本面注入失败(降级继续): {e}")
+
         # Layer A: Coin selection (mock mode uses market data symbols)
         try:
             symbols = [market_data.get("symbol", "BTC")]
@@ -245,6 +266,26 @@ class OrchestratorV2:
             execution = {"status": "ERROR", "error": str(e)}
             errors.append(f"routing(B+C+D): {e}")
             status = "PARTIAL"
+
+        # Layer B+C+D-Post: 持仓管理（14-V15 子系统完整调用）
+        # 编排层仅决定何时调用，由 14-V15 内部自主决定管理逻辑
+        # 包括：冷却期检查、月度重建、反弹监控、止盈/退出/加仓/动态止盈止损
+        position_management = {"status": "SKIPPED"}
+        try:
+            position_management = self._router.manage_positions()
+            managed = position_management.get("managed_count", 0)
+            closed = position_management.get("closed_count", 0)
+            addon = position_management.get("addon_count", 0)
+            if managed > 0 or closed > 0 or addon > 0:
+                logger.info(
+                    f"持仓管理: managed={managed} closed={closed} addon={addon} "
+                    f"cooldown={position_management.get('cooldown_active', False)}"
+                )
+        except Exception as e:
+            position_management = {"status": "ERROR", "error": str(e)}
+            errors.append(f"position_management: {e}")
+            if status == "OK":
+                status = "PARTIAL"
 
         # Layer E: 认知层 —— P1-3: 不再喂 pnl=0 伪造交易结果(自我欺骗已移除)
         # 真实盈亏审查由平仓路径回填: cli/auto_trader.run_exit_check_all()

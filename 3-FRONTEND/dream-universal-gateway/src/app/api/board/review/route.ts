@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const hubBaseUrl = process.env.HUB_BASE_URL || "http://127.0.0.1:3456";
-    const res = await fetch(`${hubBaseUrl}/chain/performance`, {
+    const hubBaseUrl = process.env.HUB_BASE_URL || "http://49.233.123.96:3456";
+    const res = await fetch(`${hubBaseUrl}/api/chain/performance`, {
       headers: { Accept: "application/json" },
       next: { revalidate: 15 },
     });

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const HUB_BASE_URL = process.env.HUB_BASE_URL || "http://127.0.0.1:3467";
+const HUB_BASE_URL = process.env.HUB_BASE_URL || "http://49.233.123.96:3456";
 
 export async function GET(request: NextRequest) {
   const workflowType = request.nextUrl.searchParams.get("workflow_type") ?? "";
   const qs = workflowType ? `?workflow_type=${encodeURIComponent(workflowType)}` : "";
   try {
-    const res = await fetch(`${HUB_BASE_URL}/chain/artifacts${qs}`, {
+    const res = await fetch(`${HUB_BASE_URL}/api/chain/artifacts${qs}`, {
       headers: { Accept: "application/json" },
       next: { revalidate: 15 },
     });

@@ -35,6 +35,7 @@ class IntentType(str, Enum):
     FUNDAMENTAL_PLAY = "FUNDAMENTAL_PLAY"      # 基本面驱动
     BREAKOUT = "BREAKOUT"                       # 突破
     KNOWLEDGE_MATCH = "KNOWLEDGE_MATCH"         # 知识库匹配
+    DEEP_ANALYSIS = "DEEP_ANALYSIS"             # A系列深度分析（委托 Hermes SKILL 桥接）
     UNCERTAIN = "UNCERTAIN"                     # 不确定/需要澄清
 
     @classmethod
@@ -100,6 +101,17 @@ def get_intent_definition(intent_type: str) -> Dict[str, Any]:
             "chain": "A",
             "priority": 4,
             "keywords": ["模式", "历史", "教训", "lesson", "记忆"],
+        },
+        "DEEP_ANALYSIS": {
+            "name": "深度分析(A系列)",
+            "description": "A系列深度分析任务，委托 Hermes 大模型 SKILL 桥接执行（A0矛盾论/A1深度调研/A2第一性原理）",
+            "chain": "A",
+            "priority": 1,
+            "keywords": [
+                "深度分析", "深度调研", "深度报告", "调研报告", "战略分析", "战略研究",
+                "a系列", "a链", "a0", "a1", "a2", "a3",
+                "矛盾论", "矛盾分析", "主要矛盾", "第一性原理", "六因子",
+            ],
         },
         "UNCERTAIN": {
             "name": "不确定",
@@ -219,6 +231,11 @@ class IntentResult:
     clarify_question: Optional[str] = None
     clarify_options: Optional[List[Dict[str, Any]]] = None
 
+    # 复杂度分级（PROP-20260829D Phase 1，零 Token 规则分类）
+    # T0 简单查询 / T1 单域问题(默认) / T2 多域战略 / T3 深度研究
+    complexity_tier: Optional[str] = None
+    complexity_rationale: str = ""
+
     # 元信息
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
@@ -238,6 +255,8 @@ class IntentResult:
             "clarify_needed": self.clarify_needed,
             "clarify_question": self.clarify_question,
             "clarify_options": self.clarify_options,
+            "complexity_tier": self.complexity_tier,
+            "complexity_rationale": self.complexity_rationale,
             "created_at": self.created_at,
         }
 

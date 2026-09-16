@@ -35,6 +35,32 @@ export interface MarketData {
 // ============================================================
 
 async function fetchOKXData(instId: string): Promise<Omit<MarketData, 'category' | 'symbol' | 'displayName' | 'instId'>> {
+  // ═══════════════════════════════════════════════════════
+  // 优先使用 HyperLiquid API（公开接口，无需 API 密钥）
+  // ═══════════════════════════════════════════════════════
+  try {
+    const { fetchHyperLiquidTicker } = await import('@/lib/hyperliquid-adapter');
+    const hlData = await fetchHyperLiquidTicker(instId);
+
+    if (hlData.price !== null) {
+      return {
+        price: hlData.price,
+        open24h: hlData.open24h,
+        high24h: hlData.high24h,
+        low24h: hlData.low24h,
+        change24h: hlData.change24h,
+        fundingRate: hlData.fundingRate,
+        timestamp: hlData.timestamp,
+        source: 'okx' as const, // 保持 source 字段兼容
+      };
+    }
+  } catch (hlError) {
+    console.warn('[MarketData] HyperLiquid API 不可用，降级到 OKX CLI:', hlError);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 降级：OKX CLI（如果 HyperLiquid 不可用）
+  // ═══════════════════════════════════════════════════════
   const result = {
     price: null as number | null,
     open24h: null as number | null,

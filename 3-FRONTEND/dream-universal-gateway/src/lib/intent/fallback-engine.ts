@@ -26,7 +26,7 @@ export interface SessionContext {
   last_analysis_result?: string;
   message_history: string[];
   thinking_mode: 'quick' | 'deep' | 'stepwise' | 'scheduler';
-  trading_mode: 'ai_skill' | 'classic';
+  trading_mode?: 'ai_skill' | 'classic';
   active_strategy_id?: string;
 }
 
@@ -73,10 +73,14 @@ export interface LLMConfig {
 
 // ============ LLM 状态管理 ============
 
+// PROP-20260828B P2: 配置归一 —— 端点/密钥解析收敛到 llm-config.ts（修复 /v1 分歧）
+import { getGatewayLLMConfig } from '@/lib/llm-config';
+
+const _gwCfg = getGatewayLLMConfig();
 const DEEPSEEK_CONFIG: LLMConfig = {
-  apiKey: process.env.DEEPSEEK_API_KEY || '',
-  endpoint: 'https://api.deepseek.com/v1/chat/completions',
-  model: process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro',
+  apiKey: _gwCfg.apiKey,
+  endpoint: _gwCfg.endpoint,
+  model: _gwCfg.model,
 };
 
 let llmStatusCache: 'online' | 'offline' | 'degraded' = 'offline';
@@ -108,6 +112,7 @@ async function checkLLMStatus(): Promise<'online' | 'offline' | 'degraded'> {
         model: DEEPSEEK_CONFIG.model,
         messages: [{ role: 'user', content: 'ping' }],
         max_tokens: 5,
+        enable_thinking: false,
       }),
       signal: controller.signal,
     });
@@ -146,6 +151,7 @@ async function callLLM(messages: Array<{ role: string; content: string }>, tempe
         messages,
         temperature,
         max_tokens: 500,
+        enable_thinking: false,  // P0修复: qwen3 思考链会导致 15s 超时
       }),
       signal: controller.signal,
     });
@@ -171,21 +177,36 @@ async function callLLM(messages: Array<{ role: string; content: string }>, tempe
 function extractEntities(msg: string): Record<string, string> {
   const entities: Record<string, string> = {};
 
-  // Symbol 检测
+  // Symbol 检测 — P2a修复(2026-08-28): 支持多币种提取 + 扩充币种表(原缺失 HYPE/DOGE 等)
   const symbolMap: Record<string, string[]> = {
-    'BTC': ['btc', 'bitcoin', '比特币'],
+    'BTC': ['btc', 'bitcoin', '比特币', '大饼'],
     'ETH': ['eth', 'ethereum', '以太坊'],
     'SOL': ['sol', 'solana'],
     'BNB': ['bnb'],
     'XRP': ['xrp', 'ripple'],
+    'HYPE': ['hype', 'hyperliquid'],
+    'DOGE': ['doge', '狗狗币'],
+    'ADA': ['ada', 'cardano'],
+    'LINK': ['link', 'chainlink'],
+    'AVAX': ['avax', 'avalanche'],
+    'DOT': ['dot', 'polkadot'],
+    'LTC': ['ltc', '莱特币'],
+    'TON': ['ton'],
+    'TRX': ['trx', '波场'],
     'XAU': ['xau', 'gold', '黄金', '金价', '黄金价格'],
   };
 
   const lower = msg.toLowerCase();
+  const found: string[] = [];
   for (const [symbol, keywords] of Object.entries(symbolMap)) {
-    if (keywords.some(k => lower.includes(k))) {
-      entities.symbol = symbol;
-      break;
+    if (keywords.some(k => lower.includes(k)) && !found.includes(symbol)) {
+      found.push(symbol);
+    }
+  }
+  if (found.length > 0) {
+    entities.symbol = found[0];
+    if (found.length > 1) {
+      entities.symbols = found.join(',');  // 多币种: "BTC,ETH,HYPE"
     }
   }
 
@@ -204,7 +225,7 @@ function detectFollowUp(message: string, context?: SessionContext): { isFollowUp
   if (!context?.last_intent) return { isFollowUp: false };
 
   const short = message.trim().length < 15;
-  const followUpWords = ['为什么', '原因', '详细', '详细点', '解释', '什么意思', '如何', '还能', '然后', '接着', '呢', '为什么跌', '为什么涨'];
+  const followUpWords = ['为什么', '原因', '详细', '详细点', '解释', '什么意思', '如何', '还能', '然后', '接着', '呢', '为什么跌', '为什么涨', '继续', '接着说', '继续分析', '再'];
 
   if (short && followUpWords.some(w => message.includes(w))) {
     // 如果上一轮是分析类，延续分析
@@ -275,7 +296,7 @@ const HARDCODED_INTENT_RULES: Array<{
     intent: 'market_query',
     complexity: 'simple',
     confidence: 0.85,
-    keywords: ['行情', '价格', '现在', '当前', '实时', '最新', '查询', '多少', '报价', '实时行情', '现价', '市场概况', '走势', '行情分析', '市场分析', '价格走势', '行情走势', '市场状态', '市场情况', '概况', '市场数据', 'ticker', 'market', 'price', 'quote'],
+    keywords: ['行情', '价格', '现在', '当前', '实时', '最新', '查询', '多少', '报价', '实时行情', '现价', '市场概况', '走势', '行情分析', '市场分析', '价格走势', '行情走势', '市场状态', '市场情况', '概况', '市场数据', '小时线', '分钟线', '日线', '周线', '月线', '4小时', '1小时', '2小时', '15分钟', '30分钟', 'ticker', 'market', 'price', 'quote'],
   },
   {
     id: 'hc_triple_chain',
@@ -288,7 +309,7 @@ const HARDCODED_INTENT_RULES: Array<{
 
 // ============ 规则引擎匹配 ============
 
-function matchRuleEngine(message: string, context?: SessionContext): IntentRecognitionResult | null {
+export function matchRuleEngine(message: string, context?: SessionContext): IntentRecognitionResult | null {
   const lower = message.toLowerCase().trim();
 
   // Step 0.1: 组合词匹配（避免泛化词误匹配）
@@ -387,7 +408,7 @@ function matchRuleEngine(message: string, context?: SessionContext): IntentRecog
 
 // ============ 默认兜底 ============
 
-function defaultFallback(message: string, context?: SessionContext): IntentRecognitionResult {
+export function defaultFallback(message: string, context?: SessionContext): IntentRecognitionResult {
   const entities = extractEntities(message);
   if (context?.last_symbol && !entities.symbol) {
     entities.symbol = context.last_symbol;
@@ -839,4 +860,4 @@ function pickAlternativeIntents(primaryIntent: string, symbol: string) {
 
 // ============ 导出 ============
 
-export { extractEntities, checkLLMStatus, DEEPSEEK_CONFIG };
+export { extractEntities, detectFollowUp, checkLLMStatus, DEEPSEEK_CONFIG };

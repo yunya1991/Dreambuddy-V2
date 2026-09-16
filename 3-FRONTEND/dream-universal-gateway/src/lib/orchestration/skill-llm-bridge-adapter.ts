@@ -14,7 +14,23 @@ import {
   parseDirection,
   type SkillMeta,
 } from './node-prompts';
-import type { SkillLLMBridge } from '../../../../../6-图结构上下文压缩/planner/skills-registry-init';
+// 本地定义 SkillLLMBridge 接口（与 6-图结构上下文压缩 对齐）
+interface SkillLLMBridge {
+  analyzeSkill(params: {
+    skillId: string;
+    skillName: string;
+    description: string;
+    stage: string;
+    symbol: string;
+    userRequest?: string;
+    priorResults?: Record<string, string>;
+  }): Promise<{
+    content: string;
+    confidence: number;
+    direction: string;
+    tokensUsed: number;
+  }>;
+}
 
 export type { SkillLLMBridge };
 
@@ -40,7 +56,15 @@ export function createSkillLLMBridge(
   },
 ): SkillLLMBridge {
   return {
-    async analyzeSkill(params) {
+    async analyzeSkill(params: {
+      skillId: string;
+      skillName: string;
+      description: string;
+      stage: string;
+      symbol: string;
+      userRequest?: string;
+      priorResults?: Record<string, string>;
+    }) {
       const { skillId, skillName, description, stage, symbol, userRequest, priorResults } = params;
 
       // 获取市场数据（带缓存）
@@ -74,7 +98,7 @@ export function createSkillLLMBridge(
       };
 
       const priorResultsMap = priorResults
-        ? new Map(Object.entries(priorResults))
+        ? new Map(Object.entries(priorResults).map(([k, v]) => [k, String(v)]))
         : undefined;
 
       const prompt = buildSkillPrompt(meta, {

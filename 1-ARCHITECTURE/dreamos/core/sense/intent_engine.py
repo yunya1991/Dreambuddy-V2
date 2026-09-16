@@ -27,6 +27,7 @@ S 层的核心对外接口，职责:
 
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List, Optional
 
 from .types import IntentInput, IntentResult, RecognizerResult, IntentType, get_intent_definition
@@ -165,6 +166,17 @@ class IntentEngine:
 
         need_llm = self._should_use_llm(best_local)
 
+        # T0 快速通道（PROP-20260829D AC5）：纯查询问题跳过 LLM 兜底。
+        # 门禁：DREAMOS_PHASED_ORCHESTRATION=on（灰度）；默认行为完全不变。
+        if need_llm and os.environ.get(
+                "DREAMOS_PHASED_ORCHESTRATION", "").lower() in ("1", "on", "true"):
+            try:
+                from .complexity_classifier import classify_complexity, TIER_T0
+                if classify_complexity(user_message).tier == TIER_T0:
+                    need_llm = False  # 纯查询：无需意图细分，零 LLM
+            except Exception:  # noqa: BLE001 — 快速通道失败回退原流程
+                pass
+
         if need_llm:
             llm_rec = self._find_recognizer("llm_based")
             if llm_rec and self.budget.can_afford_layer("sense", llm_rec.estimated_tokens):
@@ -187,6 +199,21 @@ class IntentEngine:
         final = self._fuse_results(all_results, best_local)
         final.recognizers_used = recognizers_used
         final.total_tokens = total_tokens
+
+        # ── 第3.5步：复杂度分级（PROP-20260829D Phase 1）─────
+        # 纯规则、零 Token、毫秒级；供 A 层渐进式编排参考
+        try:
+            from .complexity_classifier import classify_complexity, log_shadow_event
+            tier_decision = classify_complexity(
+                user_message=user_message,
+                intent_type=final.intent_type,
+                context=context,
+            )
+            final.complexity_tier = tier_decision.tier
+            final.complexity_rationale = tier_decision.rationale
+            log_shadow_event(user_message, tier_decision, final.intent_type)
+        except Exception:
+            pass  # 分级失败不影响主链路，tier 保持 None
 
         with total_timer:
             pass

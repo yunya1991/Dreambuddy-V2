@@ -1,10 +1,18 @@
 /**
  * 行情快照 API
- * GET /api/market/snapshot?symbol=BTC-USDT-SWAP
- * 调用 OKX CLI 获取实时行情数据，60秒缓存
+ * GET /api/market/snapshot?symbol=BTC
+ *
+ * PROP-20260828A P5（2026-08-28，用户批准）:
+ *   OKX CLI 在当前服务器网络环境不可达（www.okx.com 被墙），原实现恒 500。
+ *   加密行情主源切换为 Hyperliquid 官方 REST API（api.hyperliquid.xyz，可达），
+ *   备用源 alternative.me（仅 BTC）。外汇/大宗商品仍走本地 mock。60秒缓存保留。
+ *
+ * 数据源说明:
+ *   - metaAndAssetCtxs: 最新价/前日价(≈24h open)/24h名义成交量/资金费率
+ *   - candleSnapshot(1d): 当日 UTC 高/低
+ *   - 持仓字段: OKX CLI 不可用, 恒返回空数组 + 说明
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { execSync } from 'child_process';
 
 // 缓存
 interface MarketCache {
@@ -14,14 +22,9 @@ interface MarketCache {
 let cache: MarketCache | null = null;
 const CACHE_TTL = 60 * 1000; // 60秒
 
-const DEFAULT_SYMBOL = 'BTC-USDT-SWAP';
-const SYMBOL_MAP: Record<string, string> = {
-  BTC: 'BTC-USDT-SWAP',
-  ETH: 'ETH-USDT-SWAP',
-  SOL: 'SOL-USDT-SWAP',
-  XAU: 'XAU-USD',
-  GOLD: 'XAU-USD',
-};
+const DEFAULT_SYMBOL = 'BTC';
+const HL_API = 'https://api.hyperliquid.xyz/info';
+const FETCH_TIMEOUT_MS = 10000;
 
 // 黄金/外汇 mock 数据（基于市场最近值 + 轻微随机波动，模拟实时行情）
 const FOREX_MOCKS: Record<string, () => Record<string, unknown>> = {
@@ -55,153 +58,126 @@ const FOREX_MOCKS: Record<string, () => Record<string, unknown>> = {
   },
 };
 
-function resolveSymbol(input: string): string {
-  const upper = input.toUpperCase();
-  if (SYMBOL_MAP[upper]) return SYMBOL_MAP[upper];
-  if (upper.includes('-')) return upper;
-  // XAU/GOLD 特殊处理（不追加 -USDT-SWAP）
-  if (upper === 'XAU' || upper === 'GOLD' || upper.startsWith('XAU')) return 'XAU-USD';
-  return `${upper}-USDT-SWAP`;
+/** 归一化币种代码: 兼容 OKX 风格（BTC-USDT-SWAP）与裸代码（BTC） */
+function resolveCoin(input: string): string {
+  const upper = input.toUpperCase().trim();
+  if (upper === 'GOLD' || upper === 'XAU' || upper.startsWith('XAU')) return 'XAU-USD';
+  // OKX instId 风格: 取首段
+  if (upper.includes('-')) return upper.split('-')[0];
+  return upper;
 }
 
 function isForexOrCommodity(symbol: string): boolean {
   return FOREX_MOCKS.hasOwnProperty(symbol) || symbol.includes('XAU') || symbol === 'XAU-USD';
 }
 
-function parseTickerOutput(output: string): Record<string, unknown> | null {
-  try {
-    // OKX CLI 输出格式:
-    //   instId                BTC-USDT-SWAP
-    //   last                  79408.1
-    //   24h open              80881.1
-    //   24h high              80882.5
-    //   24h low               78721.5
-    //   24h vol               9269879.12
-    //   24h change %          -1.82%
-    //   time                  5/14/2026, 6:42:34 PM
-
-    // 尝试JSON解析（某些版本可能输出JSON）
-    try {
-      const json = JSON.parse(output);
-      if (json.data) return json.data;
-    } catch {}
-
-    const result: Record<string, unknown> = {};
-    const lines = output.split('\n').filter((l) => l.trim());
-
-    for (const line of lines) {
-      // 精确key匹配: key和value之间用2个以上空格分隔
-      const kvMatch = line.match(/^([\w %]+?)\s{2,}(.+)$/);
-      if (!kvMatch) continue;
-
-      const key = kvMatch[1].trim().toLowerCase();
-      const value = kvMatch[2].trim();
-
-      if (key === 'last') {
-        result.price = parseFloat(value);
-      } else if (key === '24h open') {
-        result.open24h = parseFloat(value);
-      } else if (key === '24h high') {
-        result.high24h = parseFloat(value);
-      } else if (key === '24h low') {
-        result.low24h = parseFloat(value);
-      } else if (key === '24h vol') {
-        result.volume24h = value;
-      } else if (key === '24h change %') {
-        // 值如 "-1.82%" 或 "2.15%"
-        result.change24h = parseFloat(value.replace('%', ''));
-      } else if (key === 'instid') {
-        result.instId = value;
-      } else if (key === 'time') {
-        result.time = value;
-      }
-    }
-
-    return Object.keys(result).length > 0 ? result : null;
-  } catch {
-    return null;
-  }
+async function hlPost(body: Record<string, unknown>): Promise<unknown> {
+  const res = await fetch(HL_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`Hyperliquid HTTP ${res.status}`);
+  return res.json();
 }
 
-function parseFundingRateOutput(output: string): string | null {
-  try {
-    // OKX CLI 输出格式:
-    //   instId                BTC-USDT-SWAP
-    //   fundingRate           0.0000431149958820
-    //   nextFundingRate       
-    //   fundingTime           5/15/2026, 12:00:00 AM
-    //   nextFundingTime       5/15/2026, 8:00:00 AM
-
-    const lines = output.split('\n').filter((l) => l.trim());
-    for (const line of lines) {
-      const kvMatch = line.match(/^([\w %]+?)\s{2,}(.+)$/);
-      if (!kvMatch) continue;
-
-      const key = kvMatch[1].trim().toLowerCase();
-      const value = kvMatch[2].trim();
-
-      // 精确匹配 fundingRate（不是 nextFundingRate）
-      if (key === 'fundingrate' && value) {
-        return value;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
+interface HlAssetCtx {
+  funding?: string;
+  prevDayPx?: string;
+  dayNtlVlm?: string;
+  markPx?: string;
+  midPx?: string;
+  openInterest?: string;
 }
 
-function parsePositionsOutput(output: string): Array<Record<string, unknown>> {
-  try {
-    if (output.includes('No open positions') || output.includes('空仓')) {
-      return [];
-    }
+/** 主源: Hyperliquid metaAndAssetCtxs + candleSnapshot(1d) */
+async function fetchFromHyperliquid(coin: string): Promise<Record<string, unknown>> {
+  const [metaAndCtxs, candles] = await Promise.all([
+    hlPost({ type: 'metaAndAssetCtxs' }),
+    hlPost({
+      type: 'candleSnapshot',
+      req: {
+        coin,
+        interval: '1d',
+        startTime: Date.now() - 2 * 86400 * 1000,
+        endTime: Date.now(),
+      },
+    }).catch(() => [] as unknown[]), // K线失败不阻断主流程
+  ]);
 
-    const positions: Array<Record<string, unknown>> = [];
-    const lines = output.split('\n').filter((l) => l.trim());
+  const [meta, assetCtxs] = metaAndCtxs as [
+    { universe: Array<{ name: string }> },
+    HlAssetCtx[],
+  ];
+  const idx = meta.universe.findIndex((u) => u.name === coin);
+  if (idx < 0) throw new Error(`Hyperliquid 无此币种: ${coin}`);
+  const ctx = assetCtxs[idx];
 
-    let currentPos: Record<string, unknown> = {};
-    for (const line of lines) {
-      const kvMatch = line.match(/^([\w %]+?)\s{2,}(.+)$/);
-      const trimmed = line.trim();
+  const price = parseFloat(ctx.markPx || ctx.midPx || '0');
+  const open24h = parseFloat(ctx.prevDayPx || '0');
+  if (!price) throw new Error(`Hyperliquid 无 ${coin} 价格`);
 
-      if (trimmed.match(/[A-Z]+-USDT-SWAP/)) {
-        if (Object.keys(currentPos).length > 0) positions.push(currentPos);
-        currentPos = { symbol: trimmed.match(/[A-Z]+-USDT-SWAP/)?.[0] || trimmed };
-      }
-
-      if (kvMatch) {
-        const key = kvMatch[1].trim().toLowerCase();
-        const value = kvMatch[2].trim();
-
-        if (key === 'posside' || key === 'side') {
-          currentPos.side = value.toLowerCase();
-        } else if (key === 'lever') {
-          currentPos.leverage = value;
-        } else if (key === 'upl') {
-          currentPos.upl = parseFloat(value);
-        }
-      } else {
-        // fallback: 旧的模糊匹配
-        if (trimmed.includes('long') || trimmed.includes('多头')) currentPos.side = 'long';
-        if (trimmed.includes('short') || trimmed.includes('空头')) currentPos.side = 'short';
-      }
-    }
-    if (Object.keys(currentPos).length > 0) positions.push(currentPos);
-
-    return positions;
-  } catch {
-    return [];
+  let high24h = price;
+  let low24h = price;
+  const candleArr = candles as Array<{ h?: string; l?: string }>;
+  if (Array.isArray(candleArr) && candleArr.length > 0) {
+    const last = candleArr[candleArr.length - 1];
+    high24h = parseFloat(last.h || String(price));
+    low24h = parseFloat(last.l || String(price));
   }
+
+  const change24h = open24h ? ((price - open24h) / open24h) * 100 : 0;
+
+  return {
+    symbol: `${coin}-USDT-SWAP`,
+    instId: `${coin}-USDT-SWAP`,
+    price,
+    open24h,
+    high24h,
+    low24h,
+    change24h: parseFloat(change24h.toFixed(2)),
+    volume24h: ctx.dayNtlVlm || '0',
+    fundingRate: ctx.funding || null,
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    source: 'hyperliquid',
+  };
+}
+
+/** 备用源: alternative.me（仅 BTC） */
+async function fetchFromAlternativeMe(): Promise<Record<string, unknown>> {
+  const res = await fetch('https://api.alternative.me/v2/ticker/BTC/', {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`alternative.me HTTP ${res.status}`);
+  const json = await res.json();
+  const btc = json?.data?.BTC;
+  if (!btc) throw new Error('alternative.me 无 BTC 数据');
+  const price = parseFloat(btc.price_usd);
+  const change24h = parseFloat(btc.percent_change_24h || '0');
+  return {
+    symbol: 'BTC-USDT-SWAP',
+    instId: 'BTC-USDT-SWAP',
+    price,
+    open24h: change24h ? price / (1 + change24h / 100) : price,
+    high24h: null,
+    low24h: null,
+    change24h,
+    volume24h: btc.volume_24h || '0',
+    fundingRate: null,
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    source: 'alternative.me',
+    note: '备用源数据: 无24h高低/资金费率',
+  };
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const symbolInput = searchParams.get('symbol') || DEFAULT_SYMBOL;
-  const symbol = resolveSymbol(symbolInput);
+  const coin = resolveCoin(symbolInput);
 
   // 检查缓存
-  const cacheKey = symbol;
+  const cacheKey = coin;
   if (cache && cache.data[cacheKey] && Date.now() - cache.timestamp < CACHE_TTL) {
     return NextResponse.json({
       success: true,
@@ -210,17 +186,16 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // ====== 外汇/大宗商品（黄金等）优先处理 —— 不调用 OKX CLI ======
-  if (isForexOrCommodity(symbol)) {
+  // ====== 外汇/大宗商品（黄金等）优先处理 —— 本地 mock ======
+  if (isForexOrCommodity(coin)) {
     let result: Record<string, unknown> = {};
-    if (FOREX_MOCKS[symbol]) {
-      result = FOREX_MOCKS[symbol]();
+    if (FOREX_MOCKS[coin]) {
+      result = FOREX_MOCKS[coin]();
     } else {
-      // 其他品种的默认 mock
       result = {
-        instId: symbol,
-        symbol: symbol,
-        displayName: symbol,
+        instId: coin,
+        symbol: coin,
+        displayName: coin,
         category: 'commodity',
         price: 100,
         open24h: 99.5,
@@ -231,12 +206,11 @@ export async function GET(request: NextRequest) {
         time: new Date().toLocaleString('zh-CN', { hour12: false }),
         unit: 'USD',
         currency: 'USD',
-        note: `${symbol} 参考行情（模拟数据）`,
+        note: `${coin} 参考行情（模拟数据）`,
         isMock: true,
       };
     }
 
-    // 更新缓存
     if (!cache || Date.now() - cache.timestamp >= CACHE_TTL) {
       cache = { data: { [cacheKey]: result }, timestamp: Date.now() };
     } else {
@@ -246,62 +220,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: result, cached: false, source: 'forex-mock' });
   }
 
+  // ====== 加密货币: Hyperliquid 主源 → alternative.me 备源（仅BTC） ======
   try {
-    // 并行获取行情数据
-    let tickerData: Record<string, unknown> = {};
-    let fundingRate: string | null = null;
-    let positions: Array<Record<string, unknown>> = [];
-
-    // 1. 获取Ticker
+    let tickerData: Record<string, unknown>;
     try {
-      const tickerOutput = execSync(
-        `okx market ticker ${symbol} --profile dreamdemo`,
-        { timeout: 15000, encoding: 'utf-8' }
-      );
-      const parsed = parseTickerOutput(tickerOutput);
-      if (parsed) tickerData = parsed;
-    } catch (error) {
-      console.error('获取ticker失败:', error);
-    }
-
-    // 2. 获取资金费率
-    try {
-      const fundingOutput = execSync(
-        `okx market funding-rate ${symbol} --profile dreamdemo`,
-        { timeout: 15000, encoding: 'utf-8' }
-      );
-      fundingRate = parseFundingRateOutput(fundingOutput);
-    } catch (error) {
-      console.error('获取费率失败:', error);
-    }
-
-    // 3. 获取持仓（仅BTC）
-    if (symbol === 'BTC-USDT-SWAP') {
-      try {
-        const positionsOutput = execSync(
-          `okx account positions --profile dreamdemo`,
-          { timeout: 15000, encoding: 'utf-8' }
-        );
-        positions = parsePositionsOutput(positionsOutput);
-      } catch (error) {
-        console.error('获取持仓失败:', error);
+      tickerData = await fetchFromHyperliquid(coin);
+    } catch (hlError) {
+      if (coin === 'BTC') {
+        tickerData = await fetchFromAlternativeMe();
+        console.warn(`Hyperliquid 失败, 已降级 alternative.me: ${hlError}`);
+      } else {
+        throw hlError;
       }
     }
 
     const result = {
-      symbol,
       ...tickerData,
-      fundingRate,
-      positions,
+      positions: [] as Array<Record<string, unknown>>,
+      positionsNote: 'OKX CLI 在当前环境不可用, 持仓数据暂缺',
       timestamp: new Date().toISOString(),
     };
 
-    // 更新缓存
     if (!cache || Date.now() - cache.timestamp >= CACHE_TTL) {
-      cache = {
-        data: { [cacheKey]: result },
-        timestamp: Date.now(),
-      };
+      cache = { data: { [cacheKey]: result }, timestamp: Date.now() };
     } else {
       cache.data[cacheKey] = result;
     }
@@ -310,12 +251,18 @@ export async function GET(request: NextRequest) {
       success: true,
       data: result,
       cached: false,
+      source: result.source,
     });
   } catch (error) {
     console.error('获取行情快照失败:', error);
     return NextResponse.json(
-      { success: false, error: '获取行情数据失败' },
-      { status: 500 }
+      {
+        success: false,
+        error: `获取行情数据失败: ${coin}`,
+        detail: error instanceof Error ? error.message : String(error),
+        sources_tried: coin === 'BTC' ? ['hyperliquid', 'alternative.me'] : ['hyperliquid'],
+      },
+      { status: 502 }
     );
   }
 }
