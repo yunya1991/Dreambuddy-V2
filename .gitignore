@@ -109,6 +109,52 @@ BAK_M1_START
 11-易经推理系统/tests/data/
 10-经典指标系统/user_data/ai_integration/
 
+# === 工具/沙箱/会话运行时目录（本地工具生成，不纳入版本控制）===
+.bsk-home/
+.dsh-home/
+.trae-html-share-packages/
+1-ARCHITECTURE/dream-harness-bridge/.dsh-home/
+1-ARCHITECTURE/dream-harness-bridge/_plan/
+1-ARCHITECTURE/dream-harness-bridge/integration/
+30-真实环境交互系统/.chrome-data/
+30-真实环境交互系统/reports/
+11-易经推理系统/runtime/
+
+# === SQLite 临时文件 + 通用临时文件 ===
+*.sqlite-shm
+*.sqlite-wal
+*.tmp
+
+# === 备份文件 ===
+4-MEMORY/2-交易记忆单元/bayesian_memories_backup_*.json
+4-MEMORY/2-交易记忆单元/bayesian_memories.json
+4-MEMORY/data/cognitive_memory.db
+
+# === 归档目录 ===
+0-系统文档管理/archive/
+18-数据获取中心/docs/archive/
+20-数据清洗中心/docs/archive/
+tests/archive/
+
+# === 经典指标系统运行时产物 ===
+10-经典指标系统/user_data/hyperopt_results/
+10-经典指标系统/user_data/plot/
+10-经典指标系统/user_data/strategies/*_*.py
+
+# === 11-易经推理系统已跟踪运行时状态（git rm --cached 后转为 ignore）===
+11-易经推理系统/.workbuddy/
+11-易经推理系统/data/self_evolution/
+11-易经推理系统/data/okx_sim/state/
+
+# === 1-ARCHITECTURE/dreamos 已跟踪调度状态 ===
+1-ARCHITECTURE/dreamos/cli/scheduler_data/
+
+# === 14-V15经典马丁策略 已跟踪运行时状态 ===
+14-V15经典马丁策略/data/backtest_cache/
+14-V15经典马丁策略/data/ai_logs/
+14-V15经典马丁策略/data/v15_state.json
+14-V15经典马丁策略/data/ab_comparator_state.json
+
 # === 运行时数据/缓存/日志/模型权重(不纳入版本控制) ===
 *.db
 *.sqlite3
