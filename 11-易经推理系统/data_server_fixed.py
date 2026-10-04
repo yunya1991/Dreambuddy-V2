@@ -755,6 +755,44 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
+# ── 数据驱动三屏分析（接入 18-数据获取中心 多维基本面） ─────────────────────
+# 12-三屏趋势系统/data_driven_screens.py 的 compute_data_driven_three_screens
+# 整合 18-数据获取中心 SQLite 多维数据（情绪/ETF/链上/衍生品/宏观）与
+# screen_engine 技术面信号，输出 Screen1/2/3 完整分析。
+# FAIL-OPEN：data_driven_screens / data_center_adapter 不可用时返回错误字典，
+# 不影响 /api/trend-screen 与 /api/v4-wave-strategy 主链路。
+_DATA_DRIVEN_DIR = V4_WAVE_BASE_DIR  # 同属 12-三屏趋势系统
+
+
+def get_data_driven_screens(symbol: str = "BTC"):
+    try:
+        if _DATA_DRIVEN_DIR not in sys.path:
+            sys.path.insert(0, _DATA_DRIVEN_DIR)
+        from data_driven_screens import compute_data_driven_three_screens
+
+        symbol_upper = symbol.upper()
+
+        # 优先复用已缓存的 /api/trend-screen 技术面信号，避免重复 OKX 拉取。
+        # data_driven_screens 默认会 HTTP 调用 8765 取技术面，本进程就是 8765
+        # 会造成自调用循环，所以显式传入 technical_signal。
+        cached_trend = _cache_get(f"trend_screen_{symbol_upper}")
+        technical_signal = None
+        if (
+            cached_trend
+            and isinstance(cached_trend.get("data"), dict)
+            and not cached_trend["data"].get("error")
+        ):
+            technical_signal = cached_trend["data"]
+
+        return compute_data_driven_three_screens(
+            symbol=symbol_upper,
+            technical_signal=technical_signal,
+        )
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+
 def get_executor_state():
     try:
         from screen_executor import get_executor_state
@@ -3515,6 +3553,27 @@ class Handler(BaseHTTPRequestHandler):
                 except Exception as e:
                     import traceback
                     self._json({"error": str(e), "traceback": traceback.format_exc()})
+
+        # ── 数据驱动三屏分析（Screen1 战略层 + 多维基本面） ─────────────────
+        # 整合 18-数据获取中心 的多维基本面数据（情绪/ETF/链上/衍生品/宏观）。
+        # 前端 /dashboard/three-screens 通过 three-screens-api.fetchDataDrivenScreens 调用。
+        # 300s 缓存与前端 data-driven 轮询周期对齐，避免高频重算。
+        # FAIL-OPEN：data_center_adapter 不可用时返回错误但不阻塞主链路。
+        elif path == "/api/data-driven-screens":
+            symbol = (self._get_query_param("symbol") or "BTC").upper()
+            cache_key = f"data_driven_screens_{symbol}"
+            cached = _cache_get(cache_key)
+            if cached and (time.time() - cached["ts"] < 300):
+                self._json(cached["data"])
+            else:
+                try:
+                    data = get_data_driven_screens(symbol)
+                    # 仅缓存成功结果，错误结果每次重试
+                    if data and not data.get("error"):
+                        _cache_set(cache_key, data)
+                    self._json(data)
+                except Exception as e:
+                    self._json({"error": str(e)})
 
         elif path == "/api/reports":
             cached = _cache_get("reports")
