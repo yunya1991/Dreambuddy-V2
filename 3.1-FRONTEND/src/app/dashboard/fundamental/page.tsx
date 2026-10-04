@@ -6,6 +6,10 @@ import { OnchainMetrics } from '@/components/features/fundamental/OnchainMetrics
 import { MacroDashboard } from '@/components/features/fundamental/MacroDashboard';
 import { SentimentHeatmap } from '@/components/features/fundamental/SentimentHeatmap';
 import { ModuleDetail } from '@/components/features/fundamental/ModuleDetail';
+import NetFlowTrendChart from '@/components/features/fundamental/NetFlowTrendChart';
+import WhaleTracker from '@/components/features/fundamental/WhaleTracker';
+import UTXOAgeDistribution from '@/components/features/fundamental/UTXOAgeDistribution';
+import MVRVZoneChart from '@/components/features/fundamental/MVRVZoneChart';
 
 const tabModules: Record<string, string> = {
   flow: 'flow',
@@ -50,10 +54,31 @@ export default function FundamentalPage() {
       </div>
       <div>
         {activeTab === 'overview' && <FundamentalGrid />}
-        {activeTab === 'onchain' && <OnchainMetrics />}
+        {activeTab === 'onchain' && (
+          <div className="space-y-4">
+            <OnchainMetrics />
+            <UTXOAgeDistribution buckets={[]} />
+          </div>
+        )}
         {activeTab === 'macro' && <MacroDashboard />}
         {activeTab === 'sentiment' && <SentimentHeatmap />}
-        {tabModules[activeTab] && (
+        {activeTab === 'flow' && (
+          <div className="space-y-4">
+            <NetFlowTrendChart timeseries={[]} />
+            <WhaleTracker transactions={[]} />
+          </div>
+        )}
+        {activeTab === 'valuation' && (
+          <div className="space-y-4">
+            <MVRVZoneChart zScore={0} />
+            <ModuleDetail
+              key={activeTab}
+              module={tabModules[activeTab]}
+              title={tabs.find(t => t.id === activeTab)?.label || activeTab}
+            />
+          </div>
+        )}
+        {activeTab !== 'overview' && activeTab !== 'onchain' && activeTab !== 'macro' && activeTab !== 'sentiment' && activeTab !== 'flow' && activeTab !== 'valuation' && tabModules[activeTab] && (
           <ModuleDetail
             key={activeTab}
             module={tabModules[activeTab]}
