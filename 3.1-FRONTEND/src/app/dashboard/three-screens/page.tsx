@@ -174,8 +174,9 @@ export default function ThreeScreensPage() {
       timer = setTimeout(() => runWithBackoff(sym), delay);
     };
 
-    // 错峰：WAVE_INITIAL_DELAY_MS 后启轮
-    timer = setTimeout(() => runWithBackoff(symbol), WAVE_INITIAL_DELAY_MS);
+    // 首屏立即拉取（之前 60s 错峰延迟导致首屏看不到 Screen2 数据）
+    // 后续轮询按 WAVE_INTERVAL_MS 错峰，仍保留 backoff 防雪崩
+    runWithBackoff(symbol);
     return () => {
       active = false;
       clearTimeout(timer);
@@ -196,8 +197,9 @@ export default function ThreeScreensPage() {
       timer = setTimeout(() => runWithBackoff(sym), delay);
     };
 
-    // 错峰：DATA_DRIVEN_INITIAL_DELAY_MS 后启轮
-    timer = setTimeout(() => runWithBackoff(symbol), DATA_DRIVEN_INITIAL_DELAY_MS);
+    // 首屏立即拉取（之前 120s 错峰延迟导致首屏看不到 Screen1 多维基本面数据）
+    // 后续轮询按 DATA_DRIVEN_INTERVAL_MS 错峰，仍保留 backoff 防雪崩
+    runWithBackoff(symbol);
     return () => {
       active = false;
       clearTimeout(timer);

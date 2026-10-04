@@ -557,7 +557,24 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
         daily_df = df[["o", "h", "l", "c", "vol"]].rename(
             columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}
         )
-        current_price = float(daily_df["close"].iloc[-1])
+        historical_close = float(daily_df["close"].iloc[-1])
+        # 优先用实时 OKX 价（从 /api/trend-screen 缓存复用，避免重复拉取），
+        # fallback 到历史文件最后一条收盘价。
+        # 之前用 historical_close 作为 current_price，导致 Screen2 显示
+        # 的是历史回测文件最后一天的价格（非实时），用户看到"不是真实数据"。
+        cached_trend = _cache_get(f"trend_screen_{symbol_upper}")
+        realtime_price = None
+        if (
+            cached_trend
+            and isinstance(cached_trend.get("data"), dict)
+            and cached_trend["data"].get("price")
+            and not cached_trend["data"].get("error")
+        ):
+            try:
+                realtime_price = float(cached_trend["data"]["price"])
+            except (TypeError, ValueError):
+                pass
+        current_price = realtime_price if realtime_price else historical_close
         data_days = len(daily_df)
 
         # 加载 BTC 数据（非BTC币种需要）
