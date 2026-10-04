@@ -1,0 +1,22 @@
+[
+  {"id": "case_01", "input": "BTC现在多少钱", "expected_intent": "market_query", "category": "base"},
+  {"id": "case_02", "input": "深度分析BTC趋势", "expected_intent": "deep_analysis", "category": "base"},
+  {"id": "case_03", "input": "买入1手BTC", "expected_intent": "execute_trade", "category": "base"},
+  {"id": "case_04", "input": "止损怎么设置", "expected_intent": "concept_explain", "category": "scenario"},
+  {"id": "case_05", "input": "RSI是什么意思", "expected_intent": "concept_explain", "category": "scenario"},
+  {"id": "case_06", "input": "BTC和ETH哪个更值得买", "expected_intent": "asset_comparison", "category": "scenario"},
+  {"id": "case_07", "input": "能做多吗", "expected_intent": "entry_timing", "category": "scenario"},
+  {"id": "case_08", "input": "该止盈吗", "expected_intent": "exit_timing", "category": "scenario"},
+  {"id": "case_09", "input": "推荐一个策略", "expected_intent": "strategy_recommendations", "category": "scenario"},
+  {"id": "case_10", "input": "现在有什么信号", "expected_intent": "technical_signal", "category": "scenario"},
+  {"id": "case_11", "input": "如果BTC跌破6万会怎样", "expected_intent": "scenario_sim", "category": "scenario"},
+  {"id": "case_12", "input": "回测这个均线策略", "expected_intent": "strategy_verify", "category": "scenario"},
+  {"id": "case_13", "input": "风险大吗", "expected_intent": "risk_analysis", "category": "scenario"},
+  {"id": "case_14", "input": "仓位多少合适", "expected_intent": "position_sizing", "category": "scenario"},
+  {"id": "case_15", "input": "现在市场情绪如何", "expected_intent": "market_sentiment", "category": "scenario"},
+  {"id": "case_16", "input": "BTC趋势分析", "expected_intent": "trend_analysis", "category": "scenario"},
+  {"id": "case_17", "input": "支撑位阻力位在哪", "expected_intent": "support_resistance", "category": "scenario"},
+  {"id": "case_18", "input": "BTC减半有什么影响", "expected_intent": "event_analysis", "category": "scenario"},
+  {"id": "case_19", "input": "组合配置建议", "expected_intent": "portfolio_allocation", "category": "scenario"},
+  {"id": "case_20", "input": "波动率分析", "expected_intent": "volatility_analysis", "category": "scenario"}
+]
