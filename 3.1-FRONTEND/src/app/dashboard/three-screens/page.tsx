@@ -8,56 +8,215 @@ import { Screen3Panel } from '@/components/features/three-screens/Screen3Panel';
 import { PipelineView } from '@/components/features/three-screens/PipelineView';
 import { V3Card, V3Badge, V3StatusDot } from '@/components';
 import { ThreeScreensAPI } from '@/lib/three-screens-api';
-import { mapThreeScreens } from '@/lib/three-screens-mapper';
+import { mapScreen1, mapScreen2, mapScreen3 } from '@/lib/three-screens-mapper';
 
 type TabKey = 'overview' | 'screen1' | 'screen2' | 'screen3' | 'pipeline';
 
 const SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP'] as const;
-const REFRESH_INTERVAL_MS = 60_000;
+
+// === 分层轮询间隔（与后端缓存对齐，趋势策略不需要高频）===
+// 后端缓存：trend-screen 60s, v4-wave-strategy 60s, data-driven-screens 无缓存
+// 后端 _bg_refresh_screen 180s, _bg_refresh_token_signals 300s
+// 前端间隔 > 后端缓存，避免每次触发重算
+const TREND_INTERVAL_MS = 120_000;       // 2 分钟（战略层：周线/日线趋势变化慢）
+const WAVE_INTERVAL_MS = 120_000;        // 2 分钟（战术层：与 trend 错开 60s）
+const DATA_DRIVEN_INTERVAL_MS = 300_000; // 5 分钟（基本面/多维数据变化最慢）
+const WAVE_INITIAL_DELAY_MS = 60_000;     // wave 错峰 60s 启动
+const DATA_DRIVEN_INITIAL_DELAY_MS = 120_000; // data-driven 错峰 120s 启动
+const MAX_BACKOFF_MS = 600_000;          // 失败 backoff 封顶 10 分钟
+
+interface ApiStatus {
+  loading: boolean;
+  error: string | null;
+  lastUpdated: number | null;
+  failStreak: number;
+}
+
+const initialStatus: ApiStatus = {
+  loading: false,
+  error: null,
+  lastUpdated: null,
+  failStreak: 0,
+};
+
+function nextBackoff(streak: number, baseMs: number): number {
+  // 指数退避：base * 2^min(streak, 4)，封顶 MAX_BACKOFF_MS
+  const factor = Math.pow(2, Math.min(streak, 4));
+  return Math.min(baseMs * factor, MAX_BACKOFF_MS);
+}
 
 export default function ThreeScreensPage() {
   const { screen1, screen2, screen3, propagationStatus,
           setScreen1, setScreen2, setScreen3 } = useThreeScreensStore();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [symbol, setSymbol] = useState<string>('BTC');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  const fetchRef = useRef<Promise<void> | null>(null);
 
-  const fetchData = useCallback(async (sym: string) => {
-    setLoading(true);
-    setError(null);
+  // 每个 API 独立状态（失败不擦旧数据，独立显示）
+  const [trendStatus, setTrendStatus] = useState<ApiStatus>(initialStatus);
+  const [waveStatus, setWaveStatus] = useState<ApiStatus>(initialStatus);
+  const [dataDrivenStatus, setDataDrivenStatus] = useState<ApiStatus>(initialStatus);
+
+  const trendFailRef = useRef(0);
+  const waveFailRef = useRef(0);
+  const dataDrivenFailRef = useRef(0);
+
+  // === Trend-screen 轮询（Screen1 战略层，2 分钟）===
+  const fetchTrend = useCallback(async (sym: string) => {
+    setTrendStatus(s => ({ ...s, loading: true, error: null }));
     try {
-      const { trend, wave, dataDriven } = await ThreeScreensAPI.fetchAll(sym);
-      const mapped = mapThreeScreens(trend, wave, dataDriven);
-      if (mapped.screen1) setScreen1(mapped.screen1);
-      if (mapped.screen2) setScreen2(mapped.screen2);
-      if (mapped.screen3) setScreen3(mapped.screen3);
-      setLastUpdated(Date.now());
+      const trend = await ThreeScreensAPI.fetchTrendScreen(sym);
+      // 只更新 screen1，不传空 wave 避免覆盖 screen2/3
+      const screen1Data = mapScreen1(trend, null);
+      setScreen1(screen1Data);
+      trendFailRef.current = 0;
+      setTrendStatus({ loading: false, error: null, lastUpdated: Date.now(), failStreak: 0 });
     } catch (e: any) {
-      setError(e?.message || String(e));
-    } finally {
-      setLoading(false);
+      const streak = trendFailRef.current + 1;
+      trendFailRef.current = streak;
+      setTrendStatus(s => ({
+        ...s,
+        loading: false,
+        error: e?.message || String(e),
+        failStreak: streak,
+        // 失败不擦 lastUpdated，保留上次成功时间显示
+      }));
     }
-  }, [setScreen1, setScreen2, setScreen3]);
+  }, [setScreen1]);
 
-  // 初次加载 + 币种切换
-  useEffect(() => {
-    fetchRef.current = fetchData(symbol);
-    return () => { fetchRef.current = null; };
-  }, [symbol, fetchData]);
+  // === V4-wave-strategy 轮询（Screen2/3 战术执行层，2 分钟，错峰 60s）===
+  const fetchWave = useCallback(async (sym: string) => {
+    setWaveStatus(s => ({ ...s, loading: true, error: null }));
+    try {
+      const wave = await ThreeScreensAPI.fetchV4WaveStrategy(sym);
+      // 用独立 mapper 只更新 screen2/3，不传空 trend 避免覆盖 screen1
+      setScreen2(mapScreen2(wave));
+      setScreen3(mapScreen3(wave));
+      waveFailRef.current = 0;
+      setWaveStatus({ loading: false, error: null, lastUpdated: Date.now(), failStreak: 0 });
+    } catch (e: any) {
+      const streak = waveFailRef.current + 1;
+      waveFailRef.current = streak;
+      setWaveStatus(s => ({
+        ...s,
+        loading: false,
+        error: e?.message || String(e),
+        failStreak: streak,
+      }));
+    }
+  }, [setScreen2, setScreen3]);
 
-  // 60 秒定时刷新
+  // === Data-driven-screens 轮询（多维基本面，5 分钟，错峰 120s）===
+  const fetchDataDriven = useCallback(async (sym: string) => {
+    setDataDrivenStatus(s => ({ ...s, loading: true, error: null }));
+    try {
+      const dataDriven = await ThreeScreensAPI.fetchDataDrivenScreens(sym);
+      // data-driven 包含 screen1 的基本面扩展字段，合并到现有 screen1
+      if (dataDriven?.screen1) {
+        const prev = useThreeScreensStore.getState().screen1;
+        if (prev) {
+          setScreen1({
+            ...prev,
+            fundamentalDirection: dataDriven.screen1.fundamental_direction as any,
+            fundamentalConfidence: dataDriven.screen1.fundamental_confidence,
+            fundamentalDimensions: dataDriven.screen1.fundamental_dimensions,
+            fusionConsistent: dataDriven.screen1.fusion?.consistent,
+            fusionReason: dataDriven.screen1.fusion?.reason,
+          });
+        }
+      }
+      dataDrivenFailRef.current = 0;
+      setDataDrivenStatus({ loading: false, error: null, lastUpdated: Date.now(), failStreak: 0 });
+    } catch (e: any) {
+      const streak = dataDrivenFailRef.current + 1;
+      dataDrivenFailRef.current = streak;
+      setDataDrivenStatus(s => ({
+        ...s,
+        loading: false,
+        error: e?.message || String(e),
+        failStreak: streak,
+      }));
+    }
+  }, [setScreen1]);
+
+  // === 三个独立轮询 useEffect（带失败 backoff）===
   useEffect(() => {
-    const id = setInterval(() => { fetchData(symbol); }, REFRESH_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [symbol, fetchData]);
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const runWithBackoff = async (sym: string) => {
+      await fetchTrend(sym);
+      if (!active) return;
+      const base = TREND_INTERVAL_MS;
+      const delay = trendFailRef.current > 0
+        ? nextBackoff(trendFailRef.current, base)
+        : base;
+      timer = setTimeout(() => runWithBackoff(sym), delay);
+    };
+
+    runWithBackoff(symbol);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [symbol, fetchTrend]);
+
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const runWithBackoff = async (sym: string) => {
+      await fetchWave(sym);
+      if (!active) return;
+      const base = WAVE_INTERVAL_MS;
+      const delay = waveFailRef.current > 0
+        ? nextBackoff(waveFailRef.current, base)
+        : base;
+      timer = setTimeout(() => runWithBackoff(sym), delay);
+    };
+
+    // 错峰：WAVE_INITIAL_DELAY_MS 后启轮
+    timer = setTimeout(() => runWithBackoff(symbol), WAVE_INITIAL_DELAY_MS);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [symbol, fetchWave]);
+
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const runWithBackoff = async (sym: string) => {
+      await fetchDataDriven(sym);
+      if (!active) return;
+      const base = DATA_DRIVEN_INTERVAL_MS;
+      const delay = dataDrivenFailRef.current > 0
+        ? nextBackoff(dataDrivenFailRef.current, base)
+        : base;
+      timer = setTimeout(() => runWithBackoff(sym), delay);
+    };
+
+    // 错峰：DATA_DRIVEN_INITIAL_DELAY_MS 后启轮
+    timer = setTimeout(() => runWithBackoff(symbol), DATA_DRIVEN_INITIAL_DELAY_MS);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [symbol, fetchDataDriven]);
 
   const handleManualRefresh = useCallback(() => {
-    if (loading) return;
-    fetchData(symbol);
-  }, [loading, fetchData, symbol]);
+    fetchTrend(symbol);
+    fetchWave(symbol);
+    fetchDataDriven(symbol);
+  }, [fetchTrend, fetchWave, fetchDataDriven, symbol]);
+
+  // 总状态汇总
+  const anyLoading = trendStatus.loading || waveStatus.loading || dataDrivenStatus.loading;
+  const allErrors = [trendStatus.error, waveStatus.error, dataDrivenStatus.error].filter(Boolean);
+  const anyError = allErrors.length > 0;
+  const lastUpdated = [trendStatus.lastUpdated, waveStatus.lastUpdated, dataDrivenStatus.lastUpdated]
+    .filter(Boolean)
+    .reduce((max, t) => ((t as number) > (max as number) ? t : max), 0) || null;
 
   const tabs: Array<{ key: TabKey; label: string; status?: string }> = [
     { key: 'overview', label: '总览' },
@@ -87,6 +246,26 @@ export default function ThreeScreensPage() {
     }
   };
 
+  // 单 API 状态指示器
+  const ApiStatusBadge = ({ name, status, intervalMs }: { name: string; status: ApiStatus; intervalMs: number }) => {
+    const variant = status.error ? (status.failStreak >= 3 ? 'danger' : 'warning') : (status.lastUpdated ? 'success' : 'default');
+    const tip = status.error
+      ? `${name} 失败×${status.failStreak}（backoff ${Math.round(nextBackoff(status.failStreak, intervalMs) / 1000)}s）`
+      : status.lastUpdated
+        ? `${name} 更新于 ${new Date(status.lastUpdated).toLocaleTimeString('zh-CN')}`
+        : `${name} 待加载`;
+    return (
+      <span className="inline-flex items-center gap-1" title={tip}>
+        <V3StatusDot
+          status={status.error ? (status.failStreak >= 3 ? 'error' : 'warning') : (status.lastUpdated ? 'success' : 'idle')}
+          size="sm"
+          pulse={status.loading}
+        />
+        <span className="text-[10px] text-slate-500">{name}</span>
+      </span>
+    );
+  };
+
   return (
     <div className="p-4 h-full flex flex-col">
       {/* 头部 */}
@@ -97,7 +276,7 @@ export default function ThreeScreensPage() {
           <select
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
-            disabled={loading}
+            disabled={anyLoading}
             className="text-xs bg-slate-800/60 border border-slate-700/40 rounded px-2 py-1 text-slate-200 disabled:opacity-50"
           >
             {SYMBOLS.map(s => <option key={s} value={s}>{s}/USDT</option>)}
@@ -105,15 +284,15 @@ export default function ThreeScreensPage() {
           <V3Badge variant={getPropagationVariant()}>
             {getPropagationLabel()}
           </V3Badge>
-          {loading && (
+          {anyLoading && (
             <V3Badge variant="info" dot pulse>加载中</V3Badge>
           )}
-          {error && (
-            <V3Badge variant="danger" dot>错误</V3Badge>
+          {anyError && (
+            <V3Badge variant="danger" dot>部分异常</V3Badge>
           )}
-          {lastUpdated && !loading && !error && (
+          {lastUpdated && !anyLoading && !anyError && (
             <span className="text-[10px] text-slate-500">
-              更新于 {new Date(lastUpdated).toLocaleTimeString('zh-CN')}
+              最近更新 {new Date(lastUpdated).toLocaleTimeString('zh-CN')}
             </span>
           )}
         </div>
@@ -128,19 +307,36 @@ export default function ThreeScreensPage() {
           )}
           <button
             onClick={handleManualRefresh}
-            disabled={loading}
+            disabled={anyLoading}
             className="text-xs px-2 py-1 rounded border border-slate-700/40 hover:border-blue-500/40 text-slate-300 hover:text-blue-400 disabled:opacity-50"
           >
-            {loading ? '⏳ 加载中' : '⟳ 刷新'}
+            {anyLoading ? '⏳ 加载中' : '⟳ 刷新全部'}
           </button>
         </div>
       </div>
 
-      {/* 错误提示 */}
-      {error && (
+      {/* API 状态条 + 错误提示 */}
+      {(anyError || trendStatus.lastUpdated || waveStatus.lastUpdated || dataDrivenStatus.lastUpdated) && (
+        <div className="mb-3 px-3 py-2 bg-slate-900/40 border border-slate-700/30 rounded flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-4 flex-wrap">
+            <ApiStatusBadge name="战略层 trend" status={trendStatus} intervalMs={TREND_INTERVAL_MS} />
+            <ApiStatusBadge name="战术层 wave" status={waveStatus} intervalMs={WAVE_INTERVAL_MS} />
+            <ApiStatusBadge name="基本面 driven" status={dataDrivenStatus} intervalMs={DATA_DRIVEN_INTERVAL_MS} />
+          </div>
+          <div className="text-[10px] text-slate-600">
+            轮询: 战略 2min · 战术 2min · 基本面 5min · 失败指数退避封顶 10min
+          </div>
+        </div>
+      )}
+
+      {anyError && (
         <div className="mb-3 px-3 py-2 bg-red-950/30 border border-red-800/30 rounded flex items-center justify-between">
-          <span className="text-xs text-red-300">⚠ 三屏数据加载失败: {error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300 text-xs">×</button>
+          <span className="text-xs text-red-300">⚠ 部分接口异常（旧数据保留）: {allErrors.join(' | ').slice(0, 200)}</span>
+          <button onClick={() => {
+            setTrendStatus(s => ({ ...s, error: null }));
+            setWaveStatus(s => ({ ...s, error: null }));
+            setDataDrivenStatus(s => ({ ...s, error: null }));
+          }} className="text-red-400 hover:text-red-300 text-xs">×</button>
         </div>
       )}
 
@@ -284,3 +480,4 @@ export default function ThreeScreensPage() {
     </div>
   );
 }
+
