@@ -274,6 +274,23 @@ enum StrategyStatus {
 }
 
 // ============================================
+// 提案投票 (P1: 关联 Strategy 但无外键约束, voter 为字符串 uid)
+// ============================================
+model ProposalVote {
+  id          String   @id @default(cuid())
+  proposalId  String                            // 关联 Strategy.id (无外键, 因 mock proposal 不在 strategies 表)
+  voter       String                            // 投票人 uid (P1 硬编码 anonymous, P2 接 next-auth)
+  vote        Vote
+  createdAt   DateTime @default(now())
+  @@map("proposal_votes")
+}
+
+enum Vote {
+  FOR           // 赞成
+  AGAINST       // 反对
+}
+
+// ============================================
 // 策略定时任务 (1:N with Strategy)
 // ============================================
 
