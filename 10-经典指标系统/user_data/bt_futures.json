@@ -1,0 +1,26 @@
+{
+  "max_open_trades": 3,
+  "trading_mode": "futures",
+  "margin_mode": "isolated",
+  "leverage": 1,
+  "liquidation_buffer": 0.05,
+  "stake_currency": "USDT",
+  "stake_amount": 60,
+  "dry_run": true,
+  "exchange": {
+    "name": "okx",
+    "key": "",
+    "secret": "",
+    "password": "",
+    "skip_pair_validation": true,
+    "ccxt_config": {"enableRateLimit": true, "rateLimit": 2500, "options": {"defaultType": "swap"}},
+    "pair_whitelist": ["BTC/USDT:USDT", "ETH/USDT:USDT", "SOL/USDT:USDT"]
+  },
+  "pairlists": [{"method": "StaticPairList"}],
+  "entry_pricing": {"price_side": "other", "use_order_book": true, "order_book_top": 1},
+  "exit_pricing": {"price_side": "other", "use_order_book": true, "order_book_top": 1},
+  "api_server": {"enabled": false, "listen_ip_address": "127.0.0.1", "listen_port": 8080, "username": "x", "password": "x"},
+  "strategy": "Bot2StrategyTrend",
+  "timeframe": "1h",
+  "internals": {"process_throttle_secs": 5}
+}

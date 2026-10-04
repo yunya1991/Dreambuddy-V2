@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "mode": "shadow",
+  "cache_ttl_sec": 3600,
+  "trades_file": "11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl",
+  "shrinkage_prior_strength": 30,
+  "shrinkage_threshold": 30,
+  "kelly_fraction": 0.5,
+  "min_position_pct": 0.03,
+  "max_position_pct": 0.25,
+  "default_pct": 0.10,
+  "cold_start_min_trades": 5,
+  "subpool_weights": {
+    "bdsm": 0.25,
+    "bcrm": 0.40,
+    "evolution": 0.20,
+    "strategy": 0.15
+  },
+  "min_subpool_weight": 0.10,
+  "expansion_window": 30,
+  "expansion_ladder": [
+    {"w_l_ratio_min": 2.0, "position_pct_mult": 1.5},
+    {"w_l_ratio_min": 1.0, "position_pct_mult": 1.2},
+    {"w_l_ratio_min": 0.5, "position_pct_mult": 1.0},
+    {"w_l_ratio_min": 0.0, "position_pct_mult": 0.7}
+  ],
+  "max_total_exposure": 0.80,
+  "min_total_exposure": 0.10,
+  "expansion_cooldown_hours": 6
+}

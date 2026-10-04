@@ -1,0 +1,21 @@
+{
+  "playbook_id": "PB-20260727111511",
+  "name": "CPU高负载处理预案",
+  "trigger_condition": "cpu > 85%",
+  "steps": [
+    "检查进程",
+    "分析周期",
+    "降低频率"
+  ],
+  "estimated_time_minutes": 15,
+  "required_access": [
+    "ssh"
+  ],
+  "created_at": "2026-07-27T11:15:11.432671",
+  "last_used": null,
+  "usage_count": 0,
+  "success_rate": 0.0,
+  "tags": [
+    "CPU"
+  ]
+}

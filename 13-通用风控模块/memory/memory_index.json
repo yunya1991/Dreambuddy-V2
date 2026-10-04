@@ -1,0 +1,24 @@
+{
+  "cases": {
+    "RSK-20260727111450": {
+      "case_id": "RSK-20260727111450",
+      "trigger_type": "drawdown",
+      "severity": "critical",
+      "timestamp": "2026-07-27T11:14:50.430009",
+      "context": {
+        "system": "11-易经推理",
+        "drawdown_pct": 12.5
+      },
+      "action_taken": "block",
+      "outcome": "prevented_loss",
+      "review": null,
+      "lessons": [],
+      "tags": [
+        "回撤控制",
+        "爆仓预警"
+      ]
+    }
+  },
+  "distill": {},
+  "stats": {}
+}

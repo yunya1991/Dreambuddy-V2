@@ -1,0 +1,82 @@
+{
+    "max_open_trades": 1,
+    "trading_mode": "futures",
+    "margin_mode": "isolated",
+    "leverage": 1,
+    "liquidation_buffer": 0.05,
+    "stake_currency": "USDT",
+    "stake_amount": 10,
+    "tradable_balance_ratio": 0.05,
+    "fiat_display_currency": "USD",
+    "timeframe": "1h",
+    "dry_run": false,
+    "cancel_open_orders_on_exit": true,
+    "exchange": {
+        "name": "gate",
+        "key": "c50f940ea36e04149c5b7350b9f27739",
+        "secret": "9d4c4162b359400e51265e177a0e93fdcb5294d1364204934f6acad55c86bd81",
+        "skip_pair_validation": true,
+        "ccxt_config": {
+            "enableRateLimit": true,
+            "timeout": 180000,
+            "rateLimit": 200,
+            "options": {
+                "defaultType": "swap"
+            }
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": true,
+            "timeout": 180000,
+            "rateLimit": 300
+        },
+        "pair_whitelist": [
+            "BTC/USDT:USDT"
+        ],
+        "pair_blacklist": []
+    },
+    "entry_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0
+    },
+    "exit_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "pairlists": [
+        {"method": "StaticPairList"}
+    ],
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    },
+    "webhook": {
+        "enabled": true,
+        "url": "http://localhost:8096/webhook/freqtrade",
+        "webhookentry": "{\"type\":\"entry\",\"pair\":\"{pair}\",\"action\":\"{action}\",\"price\":{limit_rate},\"amount\":{amount},\"strategy\":\"{strategy}\",\"tag\":\"{enter_tag}\",\"timestamp\":{timestamp}}",
+        "webhookentrycancel": "{\"type\":\"entry_cancel\",\"pair\":\"{pair}\",\"strategy\":\"{strategy}\",\"timestamp\":{timestamp}}",
+        "webhookexit": "{\"type\":\"exit\",\"pair\":\"{pair}\",\"action\":\"{action}\",\"price\":{limit_rate},\"amount\":{amount},\"strategy\":\"{strategy}\",\"tag\":\"{exit_tag}\",\"timestamp\":{timestamp}}",
+        "webhookexitcancel": "{\"type\":\"exit_cancel\",\"pair\":\"{pair}\",\"strategy\":\"{strategy}\",\"timestamp\":{timestamp}}",
+        "webhookstatus": "{\"type\":\"status\",\"status\":\"{status}\",\"strategy\":\"{strategy}\",\"timestamp\":{timestamp}}"
+    },
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8082,
+        "username": "freqtrader",
+        "password": "SuperSecurePassword",
+        "verbosity": "error",
+        "jwt_secret_key": "e2e_test_secret"
+    },
+    "bot_name": "freqtrade_e2e_test",
+    "strategy": "Strategy005",
+    "initial_state": "running",
+    "force_entry_enable": true,
+    "internals": {
+        "process_throttle_secs": 5
+    }
+}

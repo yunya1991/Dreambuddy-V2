@@ -1,0 +1,46 @@
+{
+  "strategy_name": "Bot2StrategyTrend",
+  "params": {
+    "roi": {
+      "0": 0.138,
+      "73": 0.025,
+      "173": 0.028,
+      "255": 0.0
+    },
+    "stoploss": {
+      "stoploss": -0.028
+    },
+    "trailing": {
+      "trailing_stop": false,
+      "trailing_stop_positive": null,
+      "trailing_stop_positive_offset": 0.0,
+      "trailing_only_offset_is_reached": false
+    },
+    "max_open_trades": {
+      "max_open_trades": 3
+    },
+    "sell": {
+      "sell_atr_mult": 2.0,
+      "sell_rsi_range": 70,
+      "sell_rsi_trend": 70
+    },
+    "buy": {
+      "anti_chase_adx_slope_min": -2.0,
+      "anti_chase_bb_percent": 0.9,
+      "anti_chase_lookback": 34,
+      "anti_chase_max_dev": 0.109,
+      "anti_chase_max_rsi": 66,
+      "anti_chase_recent_pump_max": 0.15,
+      "buy_adx_trend": 40,
+      "buy_ema_fast_period": 26,
+      "buy_ema_slow_period": 52,
+      "buy_ema_trend_period": 159,
+      "buy_mr_ema_dev": 0.022,
+      "buy_rsi_range": 23,
+      "buy_vol_threshold": 0.015,
+      "buy_volume_factor": 1.99
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2026-10-02 17:39:53.383334+00:00"
+}

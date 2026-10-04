@@ -1,0 +1,45 @@
+{
+  "currency_pairs": [
+    {
+      "coin": "BTC",
+      "delta_return_pct": 0.0,
+      "delta_sharpe": 0.0,
+      "delta_drawdown_pct": 0
+    },
+    {
+      "coin": "ETH",
+      "delta_return_pct": 0.0,
+      "delta_sharpe": 0.0,
+      "delta_drawdown_pct": 0
+    },
+    {
+      "coin": "SOL",
+      "delta_return_pct": 0.0,
+      "delta_sharpe": 0.0,
+      "delta_drawdown_pct": 0
+    },
+    {
+      "coin": "ARB",
+      "delta_return_pct": 0.0,
+      "delta_sharpe": 0.0,
+      "delta_drawdown_pct": 0
+    },
+    {
+      "coin": "OP",
+      "delta_return_pct": 2.0,
+      "delta_sharpe": 0.2684,
+      "delta_drawdown_pct": 0
+    },
+    {
+      "coin": "UNI",
+      "delta_return_pct": 0.0,
+      "delta_sharpe": 0.0,
+      "delta_drawdown_pct": 0
+    }
+  ],
+  "avg_delta_return_pct": 0.3333,
+  "n_improved": 0,
+  "n_flat": 6,
+  "n_worse": 0,
+  "decision": "⚠️  组合平均 Δ 在 [-5%,+5%]，swing 收益边际不足，推荐保持 false"
+}
