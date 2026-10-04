@@ -8,7 +8,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveChannelsRouteUid } from '@/lib/development-route-uids';
-import { encrypt } from '@/lib/encryption';
+import { encrypt, decrypt } from '@/lib/encryption';
+import { syncChannelsToClassic, type ChannelSync } from '@/lib/classic-system-bridge';
+
+/** 拉取用户所有渠道（解密凭证）并同步到经典系统 */
+async function syncAllChannelsToClassic(uid: string): Promise<string | undefined> {
+  try {
+    const allChannels = await prisma.channelConfig.findMany({
+      where: { uid },
+      select: {
+        channelType: true,
+        label: true,
+        encryptedData: true,
+        iv: true,
+        authTag: true,
+        format: true,
+        pushRules: true,
+      },
+    });
+    const syncItems: ChannelSync[] = allChannels.map((c) => {
+      let credentials: Record<string, string> = {};
+      try {
+        credentials = JSON.parse(decrypt(c.encryptedData, c.iv, c.authTag));
+      } catch { /* ignore */ }
+      const rules = c.pushRules as { enabledTypes?: string[] } | null;
+      return {
+        channelType: c.channelType,
+        label: c.label,
+        credentials,
+        format: c.format ?? undefined,
+        enabledTypes: rules?.enabledTypes,
+      };
+    });
+    const res = await syncChannelsToClassic(syncItems);
+    if (!res.ok) return `经典系统同步失败: ${res.error}`;
+    return undefined;
+  } catch (err) {
+    return `经典系统同步异常: ${err instanceof Error ? err.message : 'unknown'}`;
+  }
+}
 
 // GET /api/config/channels
 export async function GET(request: NextRequest) {
@@ -77,6 +115,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // ===== 同步所有渠道到经典系统 =====
+    const classicSyncWarning = await syncAllChannelsToClassic(uid);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -85,6 +126,7 @@ export async function POST(request: NextRequest) {
         label: channel.label,
         isOnline: channel.isOnline,
       },
+      ...(classicSyncWarning ? { warnings: [classicSyncWarning] } : {}),
     });
   } catch (error) {
     console.error('添加渠道失败:', error);
@@ -131,7 +173,13 @@ export async function PATCH(request: NextRequest) {
 
     await prisma.channelConfig.update({ where: { id }, data: updateData });
 
-    return NextResponse.json({ success: true });
+    // ===== 同步所有渠道到经典系统 =====
+    const classicSyncWarning = await syncAllChannelsToClassic(uid);
+
+    return NextResponse.json({
+      success: true,
+      ...(classicSyncWarning ? { warnings: [classicSyncWarning] } : {}),
+    });
   } catch (error) {
     console.error('更新渠道失败:', error);
     return NextResponse.json({ success: false, error: '更新渠道失败' }, { status: 500 });
@@ -157,7 +205,13 @@ export async function DELETE(request: NextRequest) {
 
     await prisma.channelConfig.delete({ where: { id } });
 
-    return NextResponse.json({ success: true });
+    // ===== 同步剩余渠道到经典系统 =====
+    const classicSyncWarning = await syncAllChannelsToClassic(uid);
+
+    return NextResponse.json({
+      success: true,
+      ...(classicSyncWarning ? { warnings: [classicSyncWarning] } : {}),
+    });
   } catch (error) {
     console.error('删除渠道失败:', error);
     return NextResponse.json({ success: false, error: '删除渠道失败' }, { status: 500 });

@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveTradingParamsRouteUid } from '@/lib/development-route-uids';
+import { syncTradingParamsToClassic, syncGateThresholds } from '@/lib/classic-system-bridge';
 
 // GET /api/config/trading-params
 export async function GET(request: NextRequest) {
@@ -158,7 +159,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Upsert UserProfile
-    await prisma.userProfile.upsert({
+    const updatedProfile = await prisma.userProfile.upsert({
       where: { uid },
       update: updateData,
       create: {
@@ -167,11 +168,44 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
+    // ===== 同步交易参数到经典系统 =====
+    const classicSync = await syncTradingParamsToClassic({
+      leverageMax: updatedProfile.leverageMax ?? undefined,
+      capitalPercentage: updatedProfile.capitalPercentage ?? undefined,
+      riskTolerance: updatedProfile.riskTolerance ?? undefined,
+      tradeMode: updatedProfile.tradeMode ?? undefined,
+      tradeType: updatedProfile.tradeType ?? undefined,
+      allowedSymbols: updatedProfile.allowedSymbols as string[] | string | undefined,
+      preferredFrequency: updatedProfile.preferredFrequency ?? undefined,
+      isTradingEnabled: updatedProfile.isTradingEnabled ?? undefined,
+      dailyLossLimit: updatedProfile.dailyLossLimit ?? undefined,
+      accountLossLimit: updatedProfile.accountLossLimit ?? undefined,
+    });
+
+    if (!classicSync.ok) {
+      warnings.push(`经典系统同步失败: ${classicSync.error}`);
+    }
+
+    // 同步 Gate 阈值
+    if (updatedProfile.riskTolerance && updatedProfile.leverageMax) {
+      const gateSync = await syncGateThresholds(
+        updatedProfile.riskTolerance,
+        updatedProfile.leverageMax
+      );
+      if (!gateSync.ok) {
+        warnings.push(`Gate 阈值同步失败: ${gateSync.error}`);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         updatedFields: Object.keys(updateData),
         warnings: warnings.length > 0 ? warnings : undefined,
+        classic_sync: {
+          ok: classicSync.ok,
+          trace_id: classicSync.trace_id,
+        },
       },
     });
   } catch (error) {

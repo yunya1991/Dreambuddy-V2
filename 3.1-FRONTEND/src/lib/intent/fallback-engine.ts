@@ -318,6 +318,30 @@ function matchRuleEngine(message: string, context?: SessionContext): IntentRecog
     };
   }
 
+  // Step 0.15: 分析类组合词匹配（"分析...趋势/走势/后市" → deep_analysis）
+  // 避免"分析比特币趋势"因中间有币种名而无法匹配连续关键词
+  const deepAnalysisActionTerms = ['分析', '研判', '判断', '看看', '怎么看', '研究', '解读'];
+  const deepAnalysisObjectTerms = ['趋势', '走势', '后市', '方向', '行情', '盘面'];
+  const hasDeepAction = deepAnalysisActionTerms.some(term => lower.includes(term));
+  const hasDeepObject = deepAnalysisObjectTerms.some(term => lower.includes(term));
+  const isPurePriceQuery = /(价格|多少钱|现价|报价).{0,3}(多少|查询|看看)|(现在|当前|实时).{0,5}(价格|行情|多少)/.test(lower);
+  if (hasDeepAction && hasDeepObject && !isPurePriceQuery && lower.length < 200) {
+    const entities = extractEntities(message);
+    if (context?.last_symbol && !entities.symbol) {
+      entities.symbol = context.last_symbol;
+    }
+    return {
+      intent: 'deep_analysis',
+      confidence: 0.85,
+      entities,
+      complexity: 'moderate',
+      reasoning: 'Composite keyword match: analysis action + trend object pattern (deep analysis)',
+      method: 'rule',
+      matchedPatternId: 'hc_composite_deep_analysis',
+      context_aware: !!context?.last_intent,
+    };
+  }
+
   // Step 0: 先检查硬编码规则（保障 S 系列请求能被正确识别）
   for (const rule of HARDCODED_INTENT_RULES) {
     const matched = rule.keywords.some(kw => lower.includes(kw.toLowerCase()));

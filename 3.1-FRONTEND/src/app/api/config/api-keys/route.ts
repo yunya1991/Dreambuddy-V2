@@ -8,7 +8,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveApiKeysRouteUid } from '@/lib/development-route-uids';
-import { encrypt, generateKeyHint } from '@/lib/encryption';
+import { encrypt, decrypt, generateKeyHint } from '@/lib/encryption';
+import { syncApiKeysToClassic, type ApiConfigSync } from '@/lib/classic-system-bridge';
+
+/** 解密 API 凭证（返回 { apiKey, secretKey, passphrase }） */
+function decryptApiCredentials(
+  encryptedData: string,
+  iv: string,
+  authTag: string
+): { apiKey?: string; secretKey?: string; passphrase?: string } {
+  try {
+    const json = decrypt(encryptedData, iv, authTag);
+    return JSON.parse(json);
+  } catch {
+    return {};
+  }
+}
+
+/** 拉取用户所有 EXCHANGE Key（解密凭证）并同步到经典系统 */
+async function syncAllExchangeKeysToClassic(uid: string): Promise<string | undefined> {
+  try {
+    const allKeys = await prisma.apiConfig.findMany({
+      where: { uid, category: 'EXCHANGE' },
+      select: {
+        provider: true,
+        label: true,
+        environment: true,
+        encryptedData: true,
+        iv: true,
+        authTag: true,
+      },
+    });
+    const syncItems: ApiConfigSync[] = allKeys.map((k) => {
+      const creds = decryptApiCredentials(k.encryptedData, k.iv, k.authTag);
+      return {
+        category: 'EXCHANGE',
+        provider: k.provider,
+        apiKey: creds.apiKey || null,
+        secretKey: creds.secretKey || null,
+        passphrase: creds.passphrase || null,
+        environment: k.environment ?? undefined,
+        label: k.label,
+      };
+    });
+    const res = await syncApiKeysToClassic(syncItems);
+    if (!res.ok) return `经典系统同步失败: ${res.error}`;
+    return undefined;
+  } catch (err) {
+    return `经典系统同步异常: ${err instanceof Error ? err.message : 'unknown'}`;
+  }
+}
 
 // GET /api/config/api-keys
 export async function GET(request: NextRequest) {
@@ -90,6 +139,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // ===== 同步所有 EXCHANGE Key 到经典系统 =====
+    const classicSyncWarning = await syncAllExchangeKeysToClassic(uid);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -101,6 +153,7 @@ export async function POST(request: NextRequest) {
         environment: config.environment,
         isVerified: config.isVerified,
       },
+      ...(classicSyncWarning ? { warnings: [classicSyncWarning] } : {}),
     });
   } catch (error) {
     console.error('添加API配置失败:', error);
@@ -159,7 +212,14 @@ export async function PUT(request: NextRequest) {
       data: updateData,
     });
 
-    return NextResponse.json({ success: true, data: { id } });
+    // ===== 同步所有 EXCHANGE Key 到经典系统 =====
+    const classicSyncWarning = await syncAllExchangeKeysToClassic(uid);
+
+    return NextResponse.json({
+      success: true,
+      data: { id },
+      ...(classicSyncWarning ? { warnings: [classicSyncWarning] } : {}),
+    });
   } catch (error) {
     console.error('更新API配置失败:', error);
     return NextResponse.json(
@@ -195,7 +255,13 @@ export async function DELETE(request: NextRequest) {
 
     await prisma.apiConfig.delete({ where: { id } });
 
-    return NextResponse.json({ success: true });
+    // ===== 同步剩余 EXCHANGE Key 到经典系统（清除已删除凭证）=====
+    const classicSyncWarning = await syncAllExchangeKeysToClassic(uid);
+
+    return NextResponse.json({
+      success: true,
+      ...(classicSyncWarning ? { warnings: [classicSyncWarning] } : {}),
+    });
   } catch (error) {
     console.error('删除API配置失败:', error);
     return NextResponse.json(

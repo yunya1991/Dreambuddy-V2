@@ -1297,25 +1297,55 @@ Core requirements:
         // 降级：取第一个有效结果作为主要输出
         summaryReport = validResults[0]?.answer || '分析完成，但未能生成综合报告。';
       }
+    } else if (isAnalysisIntent) {
+      // 分析类意图但无编排结果：直接用 LLM 基于用户问题生成分析
+      try {
+        const fallbackSystemPrompt = lang === 'zh'
+          ? `你是一位资深的数字资产分析师。请直接回答用户的分析请求，给出专业、有深度的行情分析。
+
+要求：
+1. 用 \`## 核心结论\` 开头，给出明确方向判断
+2. 用 \`## 详细分析\` 展开技术面、资金面、情绪面等维度
+3. 用 \`## 操作建议与风险提示\` 结尾
+4. 语气专业但易懂，控制在 600-1000 字
+5. 不要暴露内部调度信息`
+          : `You are a senior digital asset analyst. Answer the user's analysis request directly with a professional, in-depth market analysis.
+
+Requirements:
+1. Start with \`## Core Conclusion\` with clear direction
+2. Use \`## Detailed Analysis\` for technical, flow, sentiment dimensions
+3. End with \`## Actionable Advice & Risk Warnings\`
+4. Professional but accessible tone, 600-1000 words
+5. Don't expose internal scheduling info`;
+
+        const fallbackUserPrompt = lang === 'zh'
+          ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n\n请直接分析${displayName || rawSymbol}的未来走势。`
+          : `User question: ${message}\nAsset: ${displayName || rawSymbol}\n\nPlease analyze the future trend of ${displayName || rawSymbol}.`;
+
+        const llmResult = await callLLM({
+          prompt: fallbackUserPrompt,
+          systemPrompt: fallbackSystemPrompt,
+          temperature: 0.5,
+          timeoutMs: 60000,
+        });
+        summaryReport = llmResult.content;
+        console.log(`[executeWithPlanner] 无编排结果，直接 LLM 生成分析，${llmResult.tokensUsed} tokens`);
+      } catch (err) {
+        console.warn('[executeWithPlanner] 直接 LLM 分析失败:', err instanceof Error ? err.message : err);
+        summaryReport = '分析完成。建议结合当前行情数据综合判断。';
+      }
     } else {
       // 非分析类意图或无有效结果，直接拼接
       summaryReport = validResults.map(s => s.answer).join('\n\n') || '执行完成。';
     }
 
-    // 10. 构建调度器内部详情（折叠区域，默认不展开）
+    // 10. 构建调度器内部详情（仅用于日志，不展示给用户）
     const overallConfidence = execResult.overallConfidence / 100;
-    const internalDetails = stepRawResults.map(s =>
-      `### ${s.stepId} (${s.label})\n\n**调用技能**: ${s.skillsCalled}\n\n置信度: ${s.confidence}% | 决策: ${s.decision}\n\n${s.answer}`
-    ).join('\n\n---\n\n');
+    const stepCount = execResult.steps.length;
+    const skipCount = execResult.steps.filter(s => s.decision === 'skip').length;
+    console.log(`[executeWithPlanner] 编排完成: 置信度 ${(overallConfidence * 100).toFixed(0)}%, ${stepCount}步(跳过${skipCount}个), ${execResult.totalTokensUsed} tokens, ${execResult.totalLatencyMs}ms`);
 
-    const summaryStats = `整体置信度: ${(overallConfidence * 100).toFixed(0)}% | Token消耗: ${execResult.totalTokensUsed} | 耗时: ${execResult.totalLatencyMs}ms | 执行步骤: ${execResult.steps.length}（跳过 ${execResult.steps.filter(s => s.decision === 'skip').length} 个）`;
-
-    // 11. 分析类结果追加深化选项
-    const deepenOptions = isAnalysisIntent
-      ? buildDeepenOptions(intentType, rawSymbol, lang)
-      : '';
-
-    // 12. 拼装最终内容：核心观点前置 + 详细分析 + 深化选项 + 报告链接 + 折叠的调度详情
+    // 11. 分析类结果追加报告链接
     const reportLink = isAnalysisIntent && execResult.steps.length > 0
       ? `\n\n🔗 [查看完整报告](/reports/${task.task_id})`
       : '';
@@ -1341,9 +1371,7 @@ Core requirements:
 
     const finalContent = coreView
       + detailedAnalysis
-      + deepenOptions
-      + reportLink
-      + (internalDetails ? `\n\n<details>\n<summary>📊 编排详情（${summaryStats}）</summary>\n\n${internalDetails}\n\n${supplementInfo ? supplementInfo + '\n' : ''}</details>` : '');
+      + reportLink;
 
     // 9.6 Superpower 模式：上报补充节点执行结果到记忆存储（用于后期进化）
     if (memoryEntryIds.length > 0) {

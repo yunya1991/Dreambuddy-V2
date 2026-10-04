@@ -208,7 +208,7 @@ export function ChatPanel() {
               onChange={(e) => setActiveSession(e.target.value)}
               className="text-[10px] bg-slate-800/50 border border-slate-700/30 rounded px-1.5 py-0.5 text-slate-300"
             >
-              {sessions.map(s => (
+              {Array.from(new Map(sessions.map(s => [s.id, s])).values()).map(s => (
                 <option key={s.id} value={s.id}>{s.title}</option>
               ))}
             </select>

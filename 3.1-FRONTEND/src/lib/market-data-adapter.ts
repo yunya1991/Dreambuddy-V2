@@ -46,41 +46,73 @@ async function fetchOKXData(instId: string): Promise<Omit<MarketData, 'category'
     source: 'okx' as const,
   };
 
+  // 主路径：直接调用 OKX 公开 REST API（无需 API Key、不依赖外部 CLI 的 PATH 可见性）
   try {
-    const output = execSync(`okx market ticker ${instId} --profile dreamdemo`, {
-      timeout: 10000,
-      encoding: 'utf-8',
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const resp = await fetch(`https://www.okx.com/api/v5/market/ticker?instId=${encodeURIComponent(instId)}`, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' },
     });
+    clearTimeout(timeout);
 
-    for (const line of output.split('\n')) {
-      const kvMatch = line.match(/^([\w\s%]+?)\s{2,}(.+)$/);
-      if (!kvMatch) continue;
-      const key = kvMatch[1].trim().toLowerCase();
-      const value = kvMatch[2].trim();
-      if (key === 'last') result.price = parseFloat(value);
-      else if (key === '24h open') result.open24h = parseFloat(value);
-      else if (key === '24h high') result.high24h = parseFloat(value);
-      else if (key === '24h low') result.low24h = parseFloat(value);
-      else if (key === '24h change %') result.change24h = parseFloat(value.replace('%', ''));
+    if (!resp.ok) {
+      return { ...result, source: 'error', error: `OKX ticker API ${resp.status}` };
+    }
+
+    const json = await resp.json() as { code?: string; data?: Array<{ last?: string; open24h?: string; high24h?: string; low24h?: string }>; msg?: string };
+    if (json.code !== '0' || !json.data || json.data.length === 0) {
+      return { ...result, source: 'error', error: `OKX API error: code=${json.code} msg=${json.msg || 'no data'}` };
+    }
+
+    const t = json.data[0];
+    if (t.last) result.price = parseFloat(t.last);
+    if (t.open24h) result.open24h = parseFloat(t.open24h);
+    if (t.high24h) result.high24h = parseFloat(t.high24h);
+    if (t.low24h) result.low24h = parseFloat(t.low24h);
+
+    // 24h 变化百分比（自行计算，OKX ticker 不直接返回 change%）
+    if (result.price !== null && result.open24h !== null && result.open24h !== 0) {
+      result.change24h = ((result.price - result.open24h) / result.open24h) * 100;
     }
   } catch (error) {
-    return { ...result, source: 'error', error: error instanceof Error ? error.message : String(error) };
+    const errMsg = error instanceof Error ? error.message : String(error);
+    // 降级 fallback：尝试用绝对路径调用 okx CLI（仅当环境已安装时可用）
+    try {
+      const output = execSync(`/opt/homebrew/bin/okx market ticker ${instId} --profile dreamdemo`, {
+        timeout: 10000,
+        encoding: 'utf-8',
+      });
+      for (const line of output.split('\n')) {
+        const kvMatch = line.match(/^([\w\s%]+?)\s{2,}(.+)$/);
+        if (!kvMatch) continue;
+        const key = kvMatch[1].trim().toLowerCase();
+        const value = kvMatch[2].trim();
+        if (key === 'last' && !result.price) result.price = parseFloat(value);
+        else if (key === '24h open' && !result.open24h) result.open24h = parseFloat(value);
+        else if (key === '24h high' && !result.high24h) result.high24h = parseFloat(value);
+        else if (key === '24h low' && !result.low24h) result.low24h = parseFloat(value);
+        else if (key === '24h change %' && result.change24h === null) result.change24h = parseFloat(value.replace('%', ''));
+      }
+    } catch {
+      return { ...result, source: 'error', error: `REST API: ${errMsg}; CLI fallback also failed` };
+    }
   }
 
-  // 资金费率
+  // 资金费率：直接调用 OKX 公开 REST API
   try {
-    const fundingOutput = execSync(`okx market funding-rate ${instId} --profile dreamdemo`, {
-      timeout: 10000,
-      encoding: 'utf-8',
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const resp = await fetch(`https://www.okx.com/api/v5/public/funding-rate?instId=${encodeURIComponent(instId)}`, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' },
     });
-    for (const line of fundingOutput.split('\n')) {
-      const kvMatch = line.match(/^([\w\s%]+?)\s{2,}(.+)$/);
-      if (!kvMatch) continue;
-      const key = kvMatch[1].trim().toLowerCase();
-      const value = kvMatch[2].trim();
-      if (key === 'fundingrate' && value) {
-        result.fundingRate = value;
-        break;
+    clearTimeout(timeout);
+
+    if (resp.ok) {
+      const json = await resp.json() as { code?: string; data?: Array<{ fundingRate?: string }>; };
+      if (json.code === '0' && json.data && json.data.length > 0 && json.data[0].fundingRate) {
+        result.fundingRate = json.data[0].fundingRate;
       }
     }
   } catch {
