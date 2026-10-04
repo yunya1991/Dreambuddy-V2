@@ -242,5 +242,41 @@ def _approval_ok(approval_id: str, *, max_age_ms: int = 86400_000) -> bool:
     return (now_ms - ts) <= int(max_age_ms)
 
 
+def _approval_list(*, limit: int = 100, max_lines: int = 4000, max_bytes: int = 2_000_000):
+    """列出审批请求（最新在前）。
 
-__all__ = ["_approval_request_for_changeset_draft", "_approval_append", "_approval_lookup", "_approval_ok"]
+    从 approvals.jsonl 倒序读取，返回去重后的审批对象列表。
+    每个对象至少包含 id / decision / ts，保留原始字段供前端展示。
+    """
+    p = _approvals_log_path()
+    items: list[Dict[str, Any]] = []
+    seen: set[str] = set()
+    if p.exists() and p.is_file():
+        lines = _tail_lines(p, max_lines=int(max_lines), max_bytes=int(max_bytes))
+        for ln in reversed(lines):
+            s = str(ln or "").strip()
+            if not s:
+                continue
+            try:
+                obj = json.loads(s)
+            except Exception:
+                continue
+            if not isinstance(obj, dict):
+                continue
+            aid = str(obj.get("id") or "").strip()
+            if not aid or aid in seen:
+                continue
+            seen.add(aid)
+            items.append(obj)
+            if len(items) >= int(limit):
+                break
+    return items
+
+
+__all__ = [
+    "_approval_request_for_changeset_draft",
+    "_approval_append",
+    "_approval_lookup",
+    "_approval_ok",
+    "_approval_list",
+]

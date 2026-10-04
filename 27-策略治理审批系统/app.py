@@ -222,6 +222,41 @@ def approval_create():
     return jsonify({"ok": True, "approval_id": rid})
 
 
+@app.route("/api/v1/approvals", methods=["GET"])
+def approval_list():
+    """列出审批请求（最新在前）。
+
+    支持查询参数：
+    - limit: 返回条数（默认 100）
+    - decision: 按 decision 过滤（如 pending / approved / rejected）
+    """
+    limit = int(request.args.get("limit", "100"))
+    decision_filter = request.args.get("decision")
+    items = approval_engine._approval_list(limit=max(limit, 1))
+    if decision_filter:
+        df = decision_filter.strip().lower()
+        items = [
+            it for it in items
+            if str(it.get("decision") or "").strip().lower() == df
+        ]
+    pending_count = sum(
+        1 for it in items
+        if str(it.get("decision") or "").strip().lower() in ("pending", "awaiting", "")
+    )
+    approved_count = sum(
+        1 for it in items
+        if str(it.get("decision") or "").strip().lower()
+        in ("approve", "approved", "ok", "pass", "yes")
+    )
+    return jsonify({
+        "ok": True,
+        "count": len(items),
+        "pending_count": pending_count,
+        "approved_count": approved_count,
+        "items": items,
+    })
+
+
 @app.route("/api/v1/approvals/<approval_id>", methods=["GET"])
 def approval_lookup(approval_id):
     """查询审批请求。"""
