@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 760 1040" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ab" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" fill="#4B3FE3"/></marker>
+    <marker id="aa" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" fill="#27D2BF"/></marker>
+    <marker id="am" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" fill="#52525B"/></marker>
+    <marker id="as4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" fill="#22A5F7"/></marker>
+  </defs>
+
+  <style>
+    text { font-family: "SF Pro Text", "PingFang SC", system-ui, sans-serif; }
+  </style>
+
+  <rect width="760" height="1040" fill="#F7F7F8"/>
+
+  <!-- Title -->
+  <text x="380" y="22" text-anchor="middle" font-weight="600" font-size="16" fill="#171717">DreamBuddy V2 架构图（C-Drive 修正版）</text>
+
+  <!-- ====== 前端 ====== -->
+  <rect x="120" y="35" width="380" height="48" rx="8" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="1.5"/>
+  <text x="310" y="53" text-anchor="middle" font-weight="600" font-size="13" fill="#1A1759">前端 3.1</text>
+  <text x="310" y="70" text-anchor="middle" font-size="11" fill="#52525B">意图识别 → ExecutionPlanner → route.ts 策略链</text>
+  <text x="310" y="80" text-anchor="middle" font-size="9" fill="#52525B">端口: 8092(经典指标) / 3456(基本面) / 9094(前端基本面)</text>
+
+  <path d="M310 83 L310 97" fill="none" stroke="#4B3FE3" stroke-width="2" marker-end="url(#ab)"/>
+
+  <!-- ====== DreamOS SACG ====== -->
+  <rect x="30" y="99" width="490" height="680" rx="12" fill="#F7F7F8" stroke="#4B3FE3" stroke-width="1.5" stroke-opacity="0.4"/>
+  <text x="42" y="117" font-weight="600" font-size="12" fill="#4B3FE3">DreamOS — SACG 四层 + E层</text>
+  <text x="508" y="117" text-anchor="end" font-size="10" fill="#52525B">S10% A5% C75% G5% E5%</text>
+
+  <!-- S层 -->
+  <rect x="50" y="128" width="450" height="36" rx="8" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8" stroke-opacity="0.4"/>
+  <text x="62" y="145" font-weight="500" font-size="12" fill="#1A1759">S: Sense</text>
+  <text x="62" y="158" font-size="10" fill="#52525B">IntentEngine 意图解析 — market_query / deep_analysis / scenario_sim / execute_trade</text>
+  <text x="488" y="150" text-anchor="end" font-size="10" fill="#52525B">10%</text>
+
+  <path d="M275 164 L275 170" fill="none" stroke="#4B3FE3" stroke-width="1.5" marker-end="url(#ab)"/>
+
+  <!-- A层 -->
+  <rect x="50" y="172" width="450" height="36" rx="8" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8" stroke-opacity="0.4"/>
+  <text x="62" y="189" font-weight="500" font-size="12" fill="#1A1759">A: Arrange</text>
+  <text x="62" y="202" font-size="10" fill="#52525B">GraphPlanner 蓝图编排 — 生成 DAG 执行图 / 节点注册 / 预算分配</text>
+  <text x="488" y="194" text-anchor="end" font-size="10" fill="#52525B">5%</text>
+
+  <path d="M275 208 L275 216" fill="none" stroke="#4B3FE3" stroke-width="3" marker-end="url(#ab)"/>
+  <text x="290" y="215" font-size="10" fill="#4B3FE3" font-weight="600">C-Drive 核心</text>
+
+  <!-- ====== C层 EXPANDED ====== -->
+  <rect x="50" y="218" width="450" height="385" rx="8" fill="#E5EAFF" stroke="#4B3FE3" stroke-width="2.5"/>
+  <text x="62" y="236" font-weight="600" font-size="13" fill="#4B3FE3">C: Compute — C-Drive 核心驱动</text>
+  <text x="488" y="236" text-anchor="end" font-weight="600" font-size="12" fill="#4B3FE3">75%</text>
+
+  <!-- C-1: GraphExecutor 引擎层 -->
+  <text x="62" y="254" font-weight="500" font-size="10" fill="#1A1759">① 执行引擎</text>
+  <rect x="60" y="258" width="135" height="42" rx="6" fill="#F7F7F8" stroke="#4B3FE3" stroke-width="1"/>
+  <text x="127" y="274" text-anchor="middle" font-weight="500" font-size="11" fill="#1A1759">GraphExecutor</text>
+  <text x="127" y="288" text-anchor="middle" font-size="9" fill="#52525B">节点执行 / 拓扑序 / 重试</text>
+  <text x="127" y="298" text-anchor="middle" font-size="9" fill="#52525B">预算管控 / 检查点</text>
+
+  <rect x="205" y="258" width="135" height="42" rx="6" fill="#F7F7F8" stroke="#27D2BF" stroke-width="1"/>
+  <text x="272" y="274" text-anchor="middle" font-weight="500" font-size="11" fill="#0F766E">Reflector</text>
+  <text x="272" y="288" text-anchor="middle" font-size="9" fill="#52525B">CONTINUE/REDO/INSERT</text>
+  <text x="272" y="298" text-anchor="middle" font-size="9" fill="#52525B">JUMP/TERMINATE/SKIP</text>
+
+  <rect x="350" y="258" width="135" height="42" rx="6" fill="#F7F7F8" stroke="#4B3FE3" stroke-width="1"/>
+  <text x="417" y="274" text-anchor="middle" font-weight="500" font-size="11" fill="#1A1759">Aggregator</text>
+  <text x="417" y="288" text-anchor="middle" font-size="9" fill="#52525B">结果聚合</text>
+  <text x="417" y="298" text-anchor="middle" font-size="9" fill="#52525B">ExecutionReport</text>
+
+  <!-- C-2: C-Drive-Agent 四步循环 -->
+  <text x="62" y="318" font-weight="500" font-size="10" fill="#1A1759">② C-Drive-Agent 四步循环（DSH 驱动 C 层核心逻辑）</text>
+  <rect x="60" y="322" width="98" height="36" rx="6" fill="#EAFBF8" stroke="#27D2BF" stroke-width="0.8"/>
+  <text x="109" y="338" text-anchor="middle" font-weight="500" font-size="10" fill="#0F766E">recall</text>
+  <text x="109" y="350" text-anchor="middle" font-size="8" fill="#52525B">认知查询</text>
+
+  <path d="M158 340 L168 340" fill="none" stroke="#27D2BF" stroke-width="1.2" marker-end="url(#aa)"/>
+
+  <rect x="170" y="322" width="98" height="36" rx="6" fill="#EAFBF8" stroke="#27D2BF" stroke-width="0.8"/>
+  <text x="219" y="338" text-anchor="middle" font-weight="500" font-size="10" fill="#0F766E">反思推理</text>
+  <text x="219" y="350" text-anchor="middle" font-size="8" fill="#52525B">Bull / Bear</text>
+
+  <path d="M268 340 L278 340" fill="none" stroke="#27D2BF" stroke-width="1.2" marker-end="url(#aa)"/>
+
+  <rect x="280" y="322" width="98" height="36" rx="6" fill="#EAFBF8" stroke="#27D2BF" stroke-width="0.8"/>
+  <text x="329" y="338" text-anchor="middle" font-weight="500" font-size="10" fill="#0F766E">jeval</text>
+  <text x="329" y="350" text-anchor="middle" font-size="8" fill="#52525B">Jev 模型评估</text>
+
+  <path d="M378 340 L388 340" fill="none" stroke="#27D2BF" stroke-width="1.2" marker-end="url(#aa)"/>
+
+  <rect x="390" y="322" width="98" height="36" rx="6" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="1"/>
+  <text x="439" y="338" text-anchor="middle" font-weight="500" font-size="10" fill="#1A1759">subagent</text>
+  <text x="439" y="350" text-anchor="middle" font-size="8" fill="#52525B">不足时补充</text>
+
+  <!-- C-3: C链 -->
+  <text x="62" y="378" font-weight="500" font-size="10" fill="#1A1759">③ C 链 C-Chain（execute_c_chain → SequentialGraph）</text>
+  <rect x="70" y="382" width="120" height="38" rx="6" fill="#F7F7F8" stroke="#22A5F7" stroke-width="1"/>
+  <text x="130" y="398" text-anchor="middle" font-weight="500" font-size="11" fill="#22A5F7">C1: scan</text>
+  <text x="130" y="412" text-anchor="middle" font-size="9" fill="#52525B">技术扫描 → 8092</text>
+
+  <path d="M190 401 L204 401" fill="none" stroke="#22A5F7" stroke-width="1.5" marker-end="url(#as4)"/>
+
+  <rect x="206" y="382" width="120" height="38" rx="6" fill="#F7F7F8" stroke="#22A5F7" stroke-width="1"/>
+  <text x="266" y="398" text-anchor="middle" font-weight="500" font-size="11" fill="#22A5F7">C2: momentum</text>
+  <text x="266" y="412" text-anchor="middle" font-size="9" fill="#52525B">动量分析</text>
+
+  <path d="M326 401 L340 401" fill="none" stroke="#22A5F7" stroke-width="1.5" marker-end="url(#as4)"/>
+
+  <rect x="342" y="382" width="120" height="38" rx="6" fill="#F7F7F8" stroke="#22A5F7" stroke-width="1"/>
+  <text x="402" y="398" text-anchor="middle" font-weight="500" font-size="11" fill="#22A5F7">C3: volatility</text>
+  <text x="402" y="412" text-anchor="middle" font-size="9" fill="#52525B">波动率分析</text>
+
+  <text x="275" y="434" text-anchor="middle" font-size="9" fill="#52525B">C1/C2/C3 → 均路由到 technical subagent</text>
+
+  <!-- C-4: DSH 9 Subagents -->
+  <text x="62" y="450" font-weight="500" font-size="10" fill="#1A1759">④ DSH 9 Subagents（SubagentNode 适配器 → DreamOS Node）</text>
+
+  <rect x="60" y="454" width="138" height="32" rx="6" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8"/>
+  <text x="129" y="469" text-anchor="middle" font-weight="500" font-size="10" fill="#1A1759">technical</text>
+  <text x="129" y="481" text-anchor="middle" font-size="8" fill="#52525B">覆盖 C1/C2/C3</text>
+
+  <rect x="206" y="454" width="138" height="32" rx="6" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8"/>
+  <text x="275" y="469" text-anchor="middle" font-weight="500" font-size="10" fill="#1A1759">sentiment</text>
+  <text x="275" y="481" text-anchor="middle" font-size="8" fill="#52525B">情绪分析</text>
+
+  <rect x="352" y="454" width="138" height="32" rx="6" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8"/>
+  <text x="421" y="469" text-anchor="middle" font-weight="500" font-size="10" fill="#1A1759">macro</text>
+  <text x="421" y="481" text-anchor="middle" font-size="8" fill="#52525B">宏观分析</text>
+
+  <rect x="60" y="490" width="138" height="32" rx="6" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8"/>
+  <text x="129" y="505" text-anchor="middle" font-weight="500" font-size="10" fill="#1A1759">flow</text>
+  <text x="129" y="517" text-anchor="middle" font-size="8" fill="#52525B">资金流</text>
+
+  <rect x="206" y="490" width="138" height="32" rx="6" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8"/>
+  <text x="275" y="505" text-anchor="middle" font-weight="500" font-size="10" fill="#1A1759">valuation</text>
+  <text x="275" y="517" text-anchor="middle" font-size="8" fill="#52525B">估值分析</text>
+
+  <rect x="352" y="490" width="138" height="32" rx="6" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8"/>
+  <text x="421" y="505" text-anchor="middle" font-weight="500" font-size="10" fill="#1A1759">onchain</text>
+  <text x="421" y="517" text-anchor="middle" font-size="8" fill="#52525B">链上数据</text>
+
+  <rect x="60" y="526" width="138" height="32" rx="6" fill="#EAFBF8" stroke="#27D2BF" stroke-width="1.2"/>
+  <text x="129" y="541" text-anchor="middle" font-weight="500" font-size="10" fill="#0F766E">risk</text>
+  <text x="129" y="553" text-anchor="middle" font-size="8" fill="#0F766E">风控 veto · 无LLM</text>
+
+  <rect x="206" y="526" width="138" height="32" rx="6" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8"/>
+  <text x="275" y="541" text-anchor="middle" font-weight="500" font-size="10" fill="#1A1759">portfolio</text>
+  <text x="275" y="553" text-anchor="middle" font-size="8" fill="#52525B">组合管理</text>
+
+  <rect x="352" y="526" width="138" height="32" rx="6" fill="#E5EAFF" stroke="#4B3FE3" stroke-width="1.2"/>
+  <text x="421" y="541" text-anchor="middle" font-weight="600" font-size="10" fill="#1A1759">synthesizer</text>
+  <text x="421" y="553" text-anchor="middle" font-size="8" fill="#52525B">综合器 ★新增</text>
+
+  <!-- C-5: IPC Method → 外部API -->
+  <text x="62" y="574" font-weight="500" font-size="10" fill="#1A1759">⑤ IPC Method → 外部 API / 子域</text>
+  <rect x="60" y="578" width="210" height="20" rx="4" fill="#EFEFF2" stroke="rgba(23,23,23,0.12)" stroke-width="0.5"/>
+  <text x="165" y="592" text-anchor="middle" font-size="9" fill="#52525B">technical_indicators → 8092 经典指标API</text>
+  <rect x="280" y="578" width="210" height="20" rx="4" fill="#EFEFF2" stroke="rgba(23,23,23,0.12)" stroke-width="0.5"/>
+  <text x="385" y="592" text-anchor="middle" font-size="9" fill="#52525B">fundamental_analysis → 3456 基本面API</text>
+
+  <rect x="60" y="601" width="138" height="20" rx="4" fill="#EFEFF2" stroke="rgba(23,23,23,0.12)" stroke-width="0.5"/>
+  <text x="129" y="615" text-anchor="middle" font-size="9" fill="#52525B">intent_gateway</text>
+  <rect x="206" y="601" width="138" height="20" rx="4" fill="#EFEFF2" stroke="rgba(23,23,23,0.12)" stroke-width="0.5"/>
+  <text x="275" y="615" text-anchor="middle" font-size="9" fill="#52525B">reflection_decide</text>
+  <rect x="352" y="601" width="138" height="20" rx="4" fill="#EFEFF2" stroke="rgba(23,23,23,0.12)" stroke-width="0.5"/>
+  <text x="421" y="615" text-anchor="middle" font-size="9" fill="#52525B">artifact_index</text>
+
+  <!-- G层 -->
+  <path d="M275 603 L275 632" fill="none" stroke="#4B3FE3" stroke-width="1.5" marker-end="url(#ab)"/>
+  <rect x="50" y="634" width="450" height="36" rx="8" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8" stroke-opacity="0.4"/>
+  <text x="62" y="651" font-weight="500" font-size="12" fill="#1A1759">G: GraphStore</text>
+  <text x="62" y="664" font-size="10" fill="#52525B">图存储 — 执行状态追溯 / 节点结果持久化</text>
+  <text x="488" y="656" text-anchor="end" font-size="10" fill="#52525B">5%</text>
+
+  <!-- E层 -->
+  <path d="M275 670 L275 676" fill="none" stroke="#4B3FE3" stroke-width="1.5" marker-end="url(#ab)"/>
+  <rect x="50" y="678" width="450" height="36" rx="8" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="0.8" stroke-opacity="0.4"/>
+  <text x="62" y="695" font-weight="500" font-size="12" fill="#1A1759">E: Evolution</text>
+  <text x="62" y="708" font-size="10" fill="#52525B">自进化 — hermes 反思 / ParamOptimizer / CaseIngestGate / DocSyncTrigger</text>
+  <text x="488" y="700" text-anchor="end" font-size="10" fill="#52525B">5%</text>
+
+  <!-- ====== 基础底层能力 ====== -->
+  <rect x="540" y="99" width="200" height="680" rx="12" fill="#EFEFF2" stroke="rgba(23,23,23,0.12)" stroke-width="1"/>
+  <text x="640" y="117" text-anchor="middle" font-weight="600" font-size="11" fill="#52525B">基础底层能力</text>
+
+  <rect x="555" y="128" width="170" height="38" rx="8" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
+  <text x="640" y="145" text-anchor="middle" font-weight="500" font-size="11" fill="#171717">知识库</text>
+  <text x="640" y="158" text-anchor="middle" font-size="9" fill="#52525B">2-KNOWLEDGE / RAG / 向量</text>
+
+  <rect x="555" y="174" width="170" height="48" rx="8" fill="#EAFBF8" stroke="#27D2BF" stroke-width="2"/>
+  <text x="640" y="190" text-anchor="middle" font-weight="600" font-size="11" fill="#0F766E">认知系统 ★</text>
+  <text x="640" y="204" text-anchor="middle" font-size="9" fill="#0F766E">TAG_HOOKS 自动闭环</text>
+  <text x="640" y="216" text-anchor="middle" font-size="9" fill="#0F766E">recall / record / verify</text>
+
+  <rect x="555" y="230" width="170" height="38" rx="8" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
+  <text x="640" y="247" text-anchor="middle" font-weight="500" font-size="11" fill="#171717">数据采集系统</text>
+  <text x="640" y="260" text-anchor="middle" font-size="9" fill="#52525B">data_center / compat</text>
+
+  <rect x="555" y="276" width="170" height="38" rx="8" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
+  <text x="640" y="293" text-anchor="middle" font-weight="500" font-size="11" fill="#171717">索引系统</text>
+  <text x="640" y="306" text-anchor="middle" font-size="9" fill="#52525B">INDEX / doc_lint / coverage</text>
+
+  <rect x="555" y="322" width="170" height="38" rx="8" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
+  <text x="640" y="339" text-anchor="middle" font-weight="500" font-size="11" fill="#171717">LLM wiki</text>
+  <text x="640" y="352" text-anchor="middle" font-size="9" fill="#52525B">wiki-ingest-trigger</text>
+
+  <rect x="555" y="368" width="170" height="38" rx="8" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
+  <text x="640" y="385" text-anchor="middle" font-weight="500" font-size="11" fill="#171717">Jev模型</text>
+  <text x="640" y="398" text-anchor="middle" font-size="9" fill="#52525B">Reflector 决策替代 LLM judge</text>
+
+  <rect x="555" y="414" width="170" height="30" rx="8" fill="#F7F7F8" stroke="#E8463A" stroke-width="0.8" stroke-dasharray="3 2"/>
+  <text x="640" y="434" text-anchor="middle" font-size="9" fill="#E8463A">⚠ Security Master (待补)</text>
+
+  <!-- 基础→SACG 连接 -->
+  <path d="M540 198 L520 198" fill="none" stroke="#27D2BF" stroke-width="1.5" stroke-dasharray="3 2" marker-end="url(#aa)"/>
+  <text x="530" y="193" text-anchor="middle" font-size="8" fill="#0F766E">TAG</text>
+  <path d="M540 249 L520 249" fill="none" stroke="#52525B" stroke-width="0.8" stroke-dasharray="3 2"/>
+  <path d="M540 295 L520 295" fill="none" stroke="#52525B" stroke-width="0.8" stroke-dasharray="3 2"/>
+  <path d="M540 341 L520 341" fill="none" stroke="#52525B" stroke-width="0.8" stroke-dasharray="3 2"/>
+  <path d="M540 387 L520 387" fill="none" stroke="#52525B" stroke-width="0.8" stroke-dasharray="3 2"/>
+
+  <!-- ====== 子域系统能力 ====== -->
+  <rect x="30" y="800" width="490" height="160" rx="12" fill="#EFEFF2" stroke="rgba(23,23,23,0.12)" stroke-width="1"/>
+  <text x="42" y="818" font-weight="600" font-size="12" fill="#52525B">子域系统能力 — 被 IPC Method 调用（HTTP API）</text>
+
+  <rect x="50" y="828" width="108" height="40" rx="8" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
+  <text x="104" y="845" text-anchor="middle" font-weight="500" font-size="10" fill="#171717">经典指标系统</text>
+  <text x="104" y="858" text-anchor="middle" font-size="8" fill="#52525B">:8092 API</text>
+
+  <rect x="168" y="828" width="108" height="40" rx="8" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
+  <text x="222" y="845" text-anchor="middle" font-weight="500" font-size="10" fill="#171717">基本面分析</text>
+  <text x="222" y="858" text-anchor="middle" font-size="8" fill="#52525B">:3456 API</text>
+
+  <rect x="286" y="828" width="108" height="40" rx="8" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
+  <text x="340" y="845" text-anchor="middle" font-weight="500" font-size="10" fill="#171717">AI skill扩展</text>
+  <text x="340" y="858" text-anchor="middle" font-size="8" fill="#52525B">154+ MCP</text>
+
+  <rect x="404" y="828" width="86" height="40" rx="8" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.8"/>
+  <text x="447" y="845" text-anchor="middle" font-weight="500" font-size="10" fill="#171717">Superpower</text>
+  <text x="447" y="858" text-anchor="middle" font-size="8" fill="#52525B">skill-creator</text>
+
+  <rect x="50" y="880" width="310" height="68" rx="8" fill="#F7F7F8" stroke="#3C2ECA" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="60" y="898" font-weight="500" font-size="11" fill="#3C2ECA">易经推理系统</text>
+  <rect x="60" y="906" width="88" height="28" rx="14" fill="#E5EAFF" stroke="#3C2ECA" stroke-width="0.8"/>
+  <text x="104" y="924" text-anchor="middle" font-weight="500" font-size="10" fill="#3C2ECA">BCRM2.0</text>
+  <rect x="156" y="906" width="88" height="28" rx="14" fill="#E5EAFF" stroke="#3C2ECA" stroke-width="0.8"/>
+  <text x="200" y="924" text-anchor="middle" font-weight="500" font-size="10" fill="#3C2ECA">BDSM</text>
+  <rect x="252" y="906" width="98" height="28" rx="14" fill="#E5EAFF" stroke="#3C2ECA" stroke-width="0.8"/>
+  <text x="301" y="924" text-anchor="middle" font-weight="500" font-size="10" fill="#3C2ECA">宏观模型</text>
+
+  <rect x="375" y="880" width="115" height="68" rx="8" fill="#F7F7F8" stroke="#6F6FFF" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="432" y="898" text-anchor="middle" font-weight="500" font-size="11" fill="#6F6FFF">自进化子系统</text>
+  <text x="432" y="914" text-anchor="middle" font-size="9" fill="#52525B">evolution_pipeline</text>
+  <text x="432" y="928" text-anchor="middle" font-size="9" fill="#52525B">三bridge</text>
+  <text x="432" y="942" text-anchor="middle" font-size="9" fill="#52525B">hermes反思</text>
+
+  <path d="M165 621 L165 800" fill="none" stroke="#52525B" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#am)"/>
+  <path d="M385 621 L385 800" fill="none" stroke="#52525B" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#am)"/>
+  <rect x="225" y="700" width="100" height="16" rx="8" fill="#EFEFF2"/>
+  <text x="275" y="712" text-anchor="middle" font-size="9" fill="#52525B">HTTP API 调用</text>
+
+  <!-- ====== 产物中台 ====== -->
+  <rect x="120" y="980" width="380" height="48" rx="8" fill="#F2F7FF" stroke="#4B3FE3" stroke-width="1.5"/>
+  <text x="310" y="998" text-anchor="middle" font-weight="600" font-size="13" fill="#1A1759">产物中台</text>
+  <text x="310" y="1016" text-anchor="middle" font-size="11" fill="#52525B">产物管理 + 投递 + 索引 + 关系 + 展示（7-产物中台/）</text>
+
+  <path d="M275 714 L275 800 L275 980" fill="none" stroke="#4B3FE3" stroke-width="1.5" stroke-opacity="0.5" marker-end="url(#ab)"/>
+
+  <!-- TAG_HOOKS 闭环 -->
+  <path d="M500 1004 Q540 1004 540 500 L540 198" fill="none" stroke="#27D2BF" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#aa)"/>
+  <rect x="545" y="600" width="76" height="16" rx="8" fill="#EAFBF8" stroke="#27D2BF" stroke-width="0.5"/>
+  <text x="583" y="612" text-anchor="middle" font-size="9" fill="#0F766E">产物→认知</text>
+
+  <path d="M555 198 Q520 198 520 59 L500 59" fill="none" stroke="#27D2BF" stroke-width="1.5" marker-end="url(#aa)"/>
+
+  <!-- 修正标注 -->
+  <rect x="555" y="750" width="170" height="110" rx="8" fill="#EAFBF8" stroke="#27D2BF" stroke-width="0.8" stroke-opacity="0.5"/>
+  <text x="640" y="768" text-anchor="middle" font-weight="600" font-size="10" fill="#0F766E">本次修正清单</text>
+  <text x="562" y="784" font-size="9" fill="#0F766E">① 补 E层 Evolution 5%</text>
+  <text x="562" y="798" font-size="9" fill="#0F766E">② C层展开5子模块</text>
+  <text x="562" y="812" font-size="9" fill="#0F766E">③ C-Drive-Agent 四步循环</text>
+  <text x="562" y="826" font-size="9" fill="#0F766E">④ 补 synthesizer 第9agent</text>
+  <text x="562" y="840" font-size="9" fill="#0F766E">⑤ 端口修正 8092/3456/9094</text>
+  <text x="562" y="854" font-size="9" fill="#0F766E">⑥ DSH→子域 改 HTTP API</text>
+
+  <!-- 图例 -->
+  <rect x="30" y="1000" width="80" height="28" rx="6" fill="#F7F7F8" stroke="rgba(23,23,23,0.12)" stroke-width="0.5"/>
+  <circle cx="42" cy="1010" r="4" fill="#4B3FE3"/>
+  <text x="50" y="1013" font-size="8" fill="#52525B">SACG+E</text>
+  <circle cx="42" cy="1020" r="4" fill="#27D2BF"/>
+  <text x="50" y="1023" font-size="8" fill="#52525B">TAG_HOOKS</text>
+</svg>
