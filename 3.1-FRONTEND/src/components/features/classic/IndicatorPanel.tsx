@@ -2,19 +2,39 @@
 
 import { useState } from 'react';
 import { useClassicStore } from '@/stores';
-import { V3Card, V3Badge, V3Button, IconSearch } from '@/components';
+import { V3Card, V3Badge } from '@/components';
+import { IconSearch } from '@/components';
 
 export function IndicatorPanel() {
-  const { indicators, timeframe, toggleIndicator, setTimeframe } = useClassicStore();
+  const { indicators, timeframe, toggleIndicator, setTimeframe, gateThresholds } = useClassicStore();
   const [search, setSearch] = useState('');
 
   const filtered = indicators.filter(ind => ind.name.toLowerCase().includes(search.toLowerCase()));
 
   const timeframes = ['5M', '15M', '1H', '4H', '1D', '1W'];
 
+  // Gate 阈值展示
+  const gateEntries = gateThresholds
+    ? Object.entries(gateThresholds).filter(([k]) => k !== 'oos_ok' && k !== 'sensitivity_ok')
+    : [];
+
   return (
     <V3Card title="技术指标配置" padding="sm">
       <div className="space-y-3">
+        {/* ===== Gate 阈值（来自经典系统）===== */}
+        {gateEntries.length > 0 && (
+          <div className="p-2 rounded-lg bg-emerald-900/10 border border-emerald-500/20">
+            <p className="text-[10px] text-emerald-400 mb-1.5">Gate 阈值（经典系统）</p>
+            <div className="flex flex-wrap gap-1">
+              {gateEntries.map(([k, v]) => (
+                <span key={k} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-900/30 text-emerald-300">
+                  {k}: {typeof v === 'number' ? v.toFixed(2) : String(v)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center gap-2">
           <div className="flex-1 relative">
             <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600" />

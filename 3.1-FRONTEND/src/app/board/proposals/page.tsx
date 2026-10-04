@@ -2,20 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { boardApi } from "@/lib/v3/api";
-
-interface Proposal {
-  id: string;
-  title: string;
-  status: "DRAFT" | "APPROVED" | "APPLIED" | "PAUSED" | "EXPIRED";
-  type: string;
-  department: string;
-  direction: string;
-  symbol: string;
-  confidence: number | null;
-  edgeScore: number | null;
-  createdAt: string;
-}
+import { boardApi, type Proposal } from "@/lib/v3/api";
 
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "#9ca3af", APPROVED: "#60a5fa", APPLIED: "#4ade80", PAUSED: "#f59e0b", EXPIRED: "#6b7280"
@@ -32,7 +19,7 @@ export default function ProposalListPage() {
 
   useEffect(() => {
     boardApi.listProposals()
-      .then(data => setProposals((data as unknown as Proposal[]) ?? []))
+      .then(data => setProposals(data ?? []))
       .catch(e => setError(e.message)).finally(() => setLoading(false));
   }, []);
 
