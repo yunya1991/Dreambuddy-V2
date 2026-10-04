@@ -17,7 +17,7 @@ steps:
 - name: 输入问法
   action: type
   selector: textarea, input[type='text'], [contenteditable]
-  text: BTC 突破信号，现在能入场吗
+  text: XRP 突破前高了，能追突破吗
   human: true
 - name: 提交查询
   action: click

@@ -17,7 +17,7 @@ steps:
 - name: 输入问法
   action: type
   selector: textarea, input[type='text'], [contenteditable]
-  text: ETH 现在趋势方向
+  text: ETH 趋势怎么看，向上吗
   human: true
 - name: 提交查询
   action: click

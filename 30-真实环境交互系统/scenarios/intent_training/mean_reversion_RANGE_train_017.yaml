@@ -1,0 +1,28 @@
+name: P1-MEAN_REVERSION-RANGE-train-017
+description: mean_reversion 意图 × RANGE 场景 (train)
+timeout: 60
+retry: 0
+intent_training:
+  gold_intent: mean_reversion
+  scenario_id: RANGE
+  split: train
+  market_features:
+    regime: ranging
+    volatility: low
+    data_freshness: realtime
+steps:
+- name: 打开聊天页面
+  action: navigate
+  url: http://localhost:3001/chat
+- name: 输入问法
+  action: type
+  selector: textarea, input[type='text'], [contenteditable]
+  text: ETH 横盘，均值回归策略可行吗
+  human: true
+- name: 提交查询
+  action: click
+  selector: button[type='submit'], button:has-text('发送')
+  human: true
+- name: 等待响应
+  action: wait
+  seconds: 3

@@ -17,7 +17,7 @@ steps:
 - name: 输入问法
   action: type
   selector: textarea, input[type='text'], [contenteditable]
-  text: 看看 BTC 趋势，向上还是向下
+  text: BNB 现在是上升趋势吗，要不要顺势加仓
   human: true
 - name: 提交查询
   action: click

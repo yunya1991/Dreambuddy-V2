@@ -1,0 +1,28 @@
+name: P1-TREND_FOLLOWING-TREND_UP-train-029
+description: trend_following 意图 × TREND_UP 场景 (train)
+timeout: 60
+retry: 0
+intent_training:
+  gold_intent: trend_following
+  scenario_id: TREND_UP
+  split: train
+  market_features:
+    regime: trending
+    volatility: medium
+    data_freshness: realtime
+steps:
+- name: 打开聊天页面
+  action: navigate
+  url: http://localhost:3001/chat
+- name: 输入问法
+  action: type
+  selector: textarea, input[type='text'], [contenteditable]
+  text: 顺势操作 BNB，向上趋势确认吗
+  human: true
+- name: 提交查询
+  action: click
+  selector: button[type='submit'], button:has-text('发送')
+  human: true
+- name: 等待响应
+  action: wait
+  seconds: 3

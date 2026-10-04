@@ -52,24 +52,31 @@ class IntentTrainer:
 
     # ── Step 1: 贝叶斯后验更新 ──────────────────────────
     def update_weights(self, bucket_key: Tuple[str, str], samples: List) -> None:
-        """贝叶斯后验更新（Beta 分布：alpha += correct, beta += wrong）
+        """贝叶斯后验更新（Beta 分布全量重算）
 
-        简化版贝叶斯（spec §3.4 提到的 bayesian_memory_updater.py 不存在，SD-2）
+        简化版贝叶斯（spec §3.4 提到的 bayesian_memory_updater.py 不存在，SD-2）。
+
+        设计说明：IntentSamplePipeline 触发训练时传入的是全桶样本（_load_bucket
+        加载桶目录所有 JSON），因此本方法做**全量重算**而非累积更新，避免历史
+        样本被重复计数。Beta 先验 alpha=1, beta=1，后验 alpha=1+correct, beta=1+wrong。
         """
         weights = self.load_weights()
         key = _bucket_key_str(bucket_key)
-        prior = weights.get(key, {"alpha": 1.0, "beta": 1.0, "sample_count": 0})
         correct = sum(1 for s in samples if s.human_label.get("confirmed"))
         wrong = len(samples) - correct
-        prior["alpha"] += correct
-        prior["beta"] += wrong
-        prior["sample_count"] = prior.get("sample_count", 0) + len(samples)
+        alpha = 1.0 + correct
+        beta = 1.0 + wrong
         # 后验均值（Beta 分布均值 = alpha/(alpha+beta)）
-        prior["posterior_mean"] = prior["alpha"] / (prior["alpha"] + prior["beta"])
-        weights[key] = prior
+        posterior_mean = alpha / (alpha + beta)
+        weights[key] = {
+            "alpha": alpha,
+            "beta": beta,
+            "sample_count": len(samples),
+            "posterior_mean": posterior_mean,
+        }
         self._save_weights(weights)
-        logger.info("贝叶斯更新 %s: alpha=%s beta=%s mean=%.3f",
-                    key, prior["alpha"], prior["beta"], prior["posterior_mean"])
+        logger.info("贝叶斯更新 %s: alpha=%s beta=%s mean=%.3f (samples=%s)",
+                    key, alpha, beta, posterior_mean, len(samples))
 
     # ── Step 2: 规则蒸馏 ────────────────────────────────
     def distill_to_rules(self, bucket_key: Tuple[str, str], samples: List) -> bool:

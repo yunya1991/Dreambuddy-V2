@@ -17,7 +17,7 @@ steps:
 - name: 输入问法
   action: type
   selector: textarea, input[type='text'], [contenteditable]
-  text: 向上突破 BTC，目标位在哪
+  text: BTC 向上突破，突破策略怎么做
   human: true
 - name: 提交查询
   action: click

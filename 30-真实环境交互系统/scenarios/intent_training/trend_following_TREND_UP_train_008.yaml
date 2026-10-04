@@ -17,7 +17,7 @@ steps:
 - name: 输入问法
   action: type
   selector: textarea, input[type='text'], [contenteditable]
-  text: 顺势操作 BTC，向上趋势确认吗
+  text: SOL 涨得不错，趋势还能延续吗
   human: true
 - name: 提交查询
   action: click

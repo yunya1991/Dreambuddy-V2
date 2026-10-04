@@ -1,4 +1,11 @@
-"""生成 P1 场景矩阵 YAML（45 个：3 意图 × 15 样本）
+"""生成 P1 场景矩阵 YAML（120 个：3 意图 × 40 样本）
+
+扩容版：每意图 30 train + 10 eval = 40 样本，3 意图 = 120 场景。
+每桶 train ≥ BUCKET_THRESHOLD(30)，可触发 IntentTrainer 贝叶斯训练。
+
+生成策略：句式模板 × 币种组合，保持意图关键词不变以确保意图可识别。
+- train: 6 模板 × 5 币种 = 30
+- eval:  2 模板 × 5 币种 = 10
 
 用法: cd 30-真实环境交互系统 && python scripts/gen_p1_scenarios.py
 输出: scenarios/intent_training/*.yaml
@@ -6,81 +13,73 @@
 import yaml
 from pathlib import Path
 
-# 3 意图 × 1 场景 × (10 train + 5 eval) = 45 场景
+# 5 个币种，用于模板组合
+COINS = ["BTC", "ETH", "SOL", "BNB", "XRP"]
+
+# 3 意图 × 1 场景 × (30 train + 10 eval) = 120 场景
+# 每个意图的模板必须含意图关键词（趋势/顺势/涨势 | 震荡/高抛低吸/均值回归 | 突破）
 MATRIX = [
     {
         "gold_intent": "trend_following",
         "scenario_id": "TREND_UP",
         "market_features": {"regime": "trending", "volatility": "medium", "data_freshness": "realtime"},
-        "queries_train": [
-            "BTC 现在是上升趋势吗，要不要顺势加仓",
-            "以太坊涨得不错，趋势还能延续吗",
-            "现在适合追多 BTC 吗，趋势向上",
-            "看看 BTC 趋势，向上还是向下",
-            "ETH 趋势跟随，现在入场合适吗",
-            "BTC 涨势明确，加仓还是等回调",
-            "趋势交易，BTC 现在什么方向",
-            "顺势操作 BTC，向上趋势确认吗",
-            "BTC 趋势强度如何，能跟进吗",
-            "以太坊上升趋势，要不要追",
+        "train_templates": [
+            "{coin} 现在是上升趋势吗，要不要顺势加仓",
+            "{coin} 涨得不错，趋势还能延续吗",
+            "现在适合追多 {coin} 吗，趋势向上",
+            "{coin} 趋势跟随，现在入场合适吗",
+            "{coin} 涨势明确，加仓还是等回调",
+            "顺势操作 {coin}，向上趋势确认吗",
         ],
-        "queries_eval": [
-            "BTC 趋势怎么看，向上吗",
-            "ETH 现在趋势方向",
-            "顺势 BTC，趋势确认了吗",
-            "BTC 涨势还能持续吗",
-            "趋势跟随策略，BTC 现在能做吗",
+        "eval_templates": [
+            "{coin} 趋势怎么看，向上吗",
+            "顺势 {coin}，趋势确认了吗",
         ],
     },
     {
         "gold_intent": "mean_reversion",
         "scenario_id": "RANGE",
         "market_features": {"regime": "ranging", "volatility": "low", "data_freshness": "realtime"},
-        "queries_train": [
-            "BTC 在区间震荡，高抛低吸怎么做",
-            "以太坊来回震荡，适合做均值回归吗",
-            "BTC 区间上下沿在哪，能反向操作吗",
-            "现在 BTC 震荡，适合低买高卖吗",
-            "ETH 横盘，均值回归策略可行吗",
-            "BTC 偏离均线多少，会回归吗",
-            "震荡行情 BTC，高抛低吸点位",
-            "均值回归，BTC 现在偏离多少",
-            "BTC 区间震荡，反向做单可以吗",
-            "ETH 震荡区间，适合做反转吗",
+        "train_templates": [
+            "{coin} 在区间震荡，高抛低吸怎么做",
+            "{coin} 来回震荡，适合做均值回归吗",
+            "{coin} 区间上下沿在哪，能反向操作吗",
+            "{coin} 横盘，均值回归策略可行吗",
+            "{coin} 偏离均线多少，会回归吗",
+            "震荡行情 {coin}，高抛低吸点位",
         ],
-        "queries_eval": [
-            "BTC 震荡，高抛低吸怎么做",
-            "ETH 均值回归，现在偏离吗",
-            "BTC 区间上下沿",
-            "震荡行情 BTC 怎么操作",
-            "ETH 横盘，能反向做吗",
+        "eval_templates": [
+            "{coin} 震荡，高抛低吸怎么做",
+            "{coin} 均值回归，现在偏离吗",
         ],
     },
     {
         "gold_intent": "breakout",
         "scenario_id": "BREAKOUT_UP",
         "market_features": {"regime": "breakout", "volatility": "high", "data_freshness": "realtime"},
-        "queries_train": [
-            "BTC 突破前高了，能追突破吗",
-            "以太坊向上突破，突破策略怎么做",
-            "BTC 突破阻力位，跟进吗",
-            "ETH 放量突破，突破交易可行吗",
-            "BTC 突破信号，现在能入场吗",
-            "向上突破 BTC，目标位在哪",
-            "BTC 突破确认，突破策略生效吗",
-            "ETH 跌破支撑，向下突破吗",
-            "BTC 突破后回踩，能追吗",
-            "突破行情 BTC，怎么操作",
+        "train_templates": [
+            "{coin} 突破前高了，能追突破吗",
+            "{coin} 向上突破，突破策略怎么做",
+            "{coin} 突破阻力位，跟进吗",
+            "{coin} 放量突破，突破交易可行吗",
+            "{coin} 突破信号，现在能入场吗",
+            "突破行情 {coin}，怎么操作",
         ],
-        "queries_eval": [
-            "BTC 突破了吗，能追吗",
-            "ETH 突破策略",
-            "BTC 突破阻力位",
-            "突破行情 BTC 怎么做",
-            "ETH 向上突破，跟进吗",
+        "eval_templates": [
+            "{coin} 突破了吗，能追吗",
+            "{coin} 突破策略怎么做",
         ],
     },
 ]
+
+
+def expand_queries(templates, coins):
+    """句式模板 × 币种组合生成问法列表"""
+    queries = []
+    for t in templates:
+        for c in coins:
+            queries.append(t.format(coin=c))
+    return queries
 
 
 def gen_scenario(intent: str, scenario_id: str, split: str, idx: int,
@@ -114,19 +113,23 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     count = 0
     for entry in MATRIX:
-        for idx, q in enumerate(entry["queries_train"], 1):
+        train_queries = expand_queries(entry["train_templates"], COINS)
+        eval_queries = expand_queries(entry["eval_templates"], COINS)
+        for idx, q in enumerate(train_queries, 1):
             sc = gen_scenario(entry["gold_intent"], entry["scenario_id"], "train", idx, q, entry["market_features"])
             fname = f"{entry['gold_intent']}_{entry['scenario_id']}_train_{idx:03d}.yaml"
             with open(out_dir / fname, "w", encoding="utf-8") as f:
                 yaml.dump(sc, f, allow_unicode=True, sort_keys=False)
             count += 1
-        for idx, q in enumerate(entry["queries_eval"], 1):
+        for idx, q in enumerate(eval_queries, 1):
             sc = gen_scenario(entry["gold_intent"], entry["scenario_id"], "eval", idx, q, entry["market_features"])
             fname = f"{entry['gold_intent']}_{entry['scenario_id']}_eval_{idx:03d}.yaml"
             with open(out_dir / fname, "w", encoding="utf-8") as f:
                 yaml.dump(sc, f, allow_unicode=True, sort_keys=False)
             count += 1
     print(f"生成 {count} 个场景文件 → {out_dir}")
+    for entry in MATRIX:
+        print(f"  {entry['gold_intent']}: train={len(entry['train_templates'])*len(COINS)}, eval={len(entry['eval_templates'])*len(COINS)}")
 
 
 if __name__ == "__main__":

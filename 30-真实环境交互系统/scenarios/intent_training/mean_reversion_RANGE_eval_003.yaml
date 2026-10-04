@@ -17,7 +17,7 @@ steps:
 - name: 输入问法
   action: type
   selector: textarea, input[type='text'], [contenteditable]
-  text: BTC 区间上下沿
+  text: SOL 震荡，高抛低吸怎么做
   human: true
 - name: 提交查询
   action: click

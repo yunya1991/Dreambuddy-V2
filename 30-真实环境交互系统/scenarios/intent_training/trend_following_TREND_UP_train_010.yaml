@@ -17,7 +17,7 @@ steps:
 - name: 输入问法
   action: type
   selector: textarea, input[type='text'], [contenteditable]
-  text: 以太坊上升趋势，要不要追
+  text: XRP 涨得不错，趋势还能延续吗
   human: true
 - name: 提交查询
   action: click
