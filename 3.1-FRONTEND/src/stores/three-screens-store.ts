@@ -13,14 +13,23 @@ export interface Screen1Data {
   };
   debate: string;
   updatedAt?: number;
+  // 扩展字段（来自 data-driven-screens 的基本面融合数据，可选）
+  fundamentalDirection?: 'bullish' | 'bearish' | 'neutral' | undefined;
+  fundamentalConfidence?: number | undefined;
+  fundamentalDimensions?: any;
+  fusionConsistent?: boolean | undefined;
+  fusionReason?: string | undefined;
 }
 
 export interface Screen2Data {
   directionConstraint: 'bullish' | 'bearish' | 'neutral' | null;
-  presets: Array<{ id: string; symbol: string; entry: number; stop: number; target: number; timeframe: string; confidence: number }>;
+  presets: Array<{ id: string; symbol: string; entry: number; stop: number; target: number; timeframe: string; confidence: number; takeProfitPct?: number; stopLossPct?: number }>;
   backtest: { winRate: number; avgR: number; maxDD: number; sharpe: number };
   bayesianOpt: { iterations: number; bestParams: Record<string, number>; improvement: number };
   updatedAt?: number;
+  // 扩展字段（来自 data-driven-screens 的波动率/衍生品数据，可选）
+  volatility?: { reversalScore: number; volMultiplier: number };
+  derivatives?: { fundingRate: number; fundingDirection: string; optionsOi: number };
 }
 
 export interface PipelineStep {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { useThreeScreensStore, type Screen1Data } from '@/stores';
 import { V3Card, V3Badge, V3StatusDot, V3Empty, V3Button } from '@/components';
+import { RadarDimensions, ConfidenceGauge } from './charts';
 
 // 七维颜色
 const dimColors = ['blue', 'purple', 'amber', 'emerald', 'cyan', 'rose', 'orange'];
@@ -79,6 +80,23 @@ export function Screen1Panel() {
               <span className="text-[9px] text-slate-300">{dim.label}</span>
             </div>
           ))}
+        </div>
+      </V3Card>
+
+      {/* 七维评分雷达 + 贝叶斯置信度仪表盘 */}
+      <V3Card title="评分雷达 / 贝叶斯置信度" padding="sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+          <div className="md:col-span-2">
+            <RadarDimensions dimensions={screen1.dimensions} height={260} />
+          </div>
+          <div className="flex flex-col items-center justify-center">
+            <ConfidenceGauge
+              value={screen1.dimensions.risk?.score ?? 0}
+              direction={screen1.directionAnchor ?? 'neutral'}
+              label="贝叶斯置信度"
+              size={140}
+            />
+          </div>
         </div>
       </V3Card>
 

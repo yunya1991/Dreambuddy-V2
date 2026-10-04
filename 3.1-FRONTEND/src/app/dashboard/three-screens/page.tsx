@@ -1,18 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useThreeScreensStore } from '@/stores';
 import { Screen1Panel } from '@/components/features/three-screens/Screen1Panel';
 import { Screen2Panel } from '@/components/features/three-screens/Screen2Panel';
 import { Screen3Panel } from '@/components/features/three-screens/Screen3Panel';
 import { PipelineView } from '@/components/features/three-screens/PipelineView';
 import { V3Card, V3Badge, V3StatusDot } from '@/components';
+import { ThreeScreensAPI } from '@/lib/three-screens-api';
+import { mapThreeScreens } from '@/lib/three-screens-mapper';
 
 type TabKey = 'overview' | 'screen1' | 'screen2' | 'screen3' | 'pipeline';
 
+const SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP'] as const;
+const REFRESH_INTERVAL_MS = 60_000;
+
 export default function ThreeScreensPage() {
-  const { screen1, screen2, screen3, propagationStatus } = useThreeScreensStore();
+  const { screen1, screen2, screen3, propagationStatus,
+          setScreen1, setScreen2, setScreen3 } = useThreeScreensStore();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const [symbol, setSymbol] = useState<string>('BTC');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const fetchRef = useRef<Promise<void> | null>(null);
+
+  const fetchData = useCallback(async (sym: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { trend, wave, dataDriven } = await ThreeScreensAPI.fetchAll(sym);
+      const mapped = mapThreeScreens(trend, wave, dataDriven);
+      if (mapped.screen1) setScreen1(mapped.screen1);
+      if (mapped.screen2) setScreen2(mapped.screen2);
+      if (mapped.screen3) setScreen3(mapped.screen3);
+      setLastUpdated(Date.now());
+    } catch (e: any) {
+      setError(e?.message || String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [setScreen1, setScreen2, setScreen3]);
+
+  // 初次加载 + 币种切换
+  useEffect(() => {
+    fetchRef.current = fetchData(symbol);
+    return () => { fetchRef.current = null; };
+  }, [symbol, fetchData]);
+
+  // 60 秒定时刷新
+  useEffect(() => {
+    const id = setInterval(() => { fetchData(symbol); }, REFRESH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [symbol, fetchData]);
+
+  const handleManualRefresh = useCallback(() => {
+    if (loading) return;
+    fetchData(symbol);
+  }, [loading, fetchData, symbol]);
 
   const tabs: Array<{ key: TabKey; label: string; status?: string }> = [
     { key: 'overview', label: '总览' },
@@ -48,20 +93,56 @@ export default function ThreeScreensPage() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <h1 className="text-base font-semibold text-slate-200">三屏交易系统</h1>
-          <V3Badge variant="default">BTC/USDT</V3Badge>
+          {/* 币种切换 */}
+          <select
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value)}
+            disabled={loading}
+            className="text-xs bg-slate-800/60 border border-slate-700/40 rounded px-2 py-1 text-slate-200 disabled:opacity-50"
+          >
+            {SYMBOLS.map(s => <option key={s} value={s}>{s}/USDT</option>)}
+          </select>
           <V3Badge variant={getPropagationVariant()}>
             {getPropagationLabel()}
           </V3Badge>
+          {loading && (
+            <V3Badge variant="info" dot pulse>加载中</V3Badge>
+          )}
+          {error && (
+            <V3Badge variant="danger" dot>错误</V3Badge>
+          )}
+          {lastUpdated && !loading && !error && (
+            <span className="text-[10px] text-slate-500">
+              更新于 {new Date(lastUpdated).toLocaleTimeString('zh-CN')}
+            </span>
+          )}
         </div>
-        {screen1?.directionAnchor && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">方向锚定:</span>
-            <V3Badge variant={screen1.directionAnchor === 'bullish' ? 'success' : screen1.directionAnchor === 'bearish' ? 'danger' : 'default'}>
-              {screen1.directionAnchor === 'bullish' ? '看多' : screen1.directionAnchor === 'bearish' ? '看空' : '中性'}
-            </V3Badge>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {screen1?.directionAnchor && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">方向锚定:</span>
+              <V3Badge variant={screen1.directionAnchor === 'bullish' ? 'success' : screen1.directionAnchor === 'bearish' ? 'danger' : 'default'}>
+                {screen1.directionAnchor === 'bullish' ? '看多' : screen1.directionAnchor === 'bearish' ? '看空' : '中性'}
+              </V3Badge>
+            </div>
+          )}
+          <button
+            onClick={handleManualRefresh}
+            disabled={loading}
+            className="text-xs px-2 py-1 rounded border border-slate-700/40 hover:border-blue-500/40 text-slate-300 hover:text-blue-400 disabled:opacity-50"
+          >
+            {loading ? '⏳ 加载中' : '⟳ 刷新'}
+          </button>
+        </div>
       </div>
+
+      {/* 错误提示 */}
+      {error && (
+        <div className="mb-3 px-3 py-2 bg-red-950/30 border border-red-800/30 rounded flex items-center justify-between">
+          <span className="text-xs text-red-300">⚠ 三屏数据加载失败: {error}</span>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300 text-xs">×</button>
+        </div>
+      )}
 
       {/* Tab 切换 */}
       <div className="flex gap-1 mb-4 border-b border-slate-700/30 pb-0">

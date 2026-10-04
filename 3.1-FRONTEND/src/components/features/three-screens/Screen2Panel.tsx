@@ -3,6 +3,7 @@
 import React from 'react';
 import { useThreeScreensStore } from '@/stores';
 import { V3Card, V3Badge, V3Empty, V3Button } from '@/components';
+import { ConfidenceGauge } from './charts';
 
 export function Screen2Panel() {
   const { screen2, propagationStatus } = useThreeScreensStore();
@@ -69,6 +70,23 @@ export function Screen2Panel() {
             <MetricItem label="平均 R 倍" value={backtest.avgR.toFixed(2)} positive={backtest.avgR > 1} />
             <MetricItem label="最大回撤" value={`${(backtest.maxDD * 100).toFixed(2)}%`} positive={false} />
             <MetricItem label="Sharpe" value={backtest.sharpe.toFixed(2)} positive={backtest.sharpe > 1} />
+          </div>
+          {/* 胜率仪表盘 */}
+          <div className="mt-3 pt-3 border-t border-slate-700/30 flex flex-wrap items-center justify-around gap-3">
+            <ConfidenceGauge
+              value={Math.round(backtest.winRate * 100)}
+              label="胜率"
+              direction="neutral"
+              size={130}
+            />
+            {presets && presets.length > 0 && (
+              <ConfidenceGauge
+                value={Math.round(presets[0].confidence * 100)}
+                label={`预设 ${presets[0].symbol} 置信`}
+                direction={isLong ? 'bullish' : directionConstraint === 'bearish' ? 'bearish' : 'neutral'}
+                size={130}
+              />
+            )}
           </div>
         </V3Card>
       )}
