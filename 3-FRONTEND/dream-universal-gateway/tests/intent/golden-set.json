@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "name": "统一意图识别管线黄金集",
+    "purpose": "验证统一意图识别管线（method='rule' 离线路径）四级链路正确性",
+    "levels": {
+      "L1_command": "命令快路径（matchCommandFastpath，零 LLM）—— /斜杠命令 或 中文命令词典精确匹配",
+      "L3_rule": "规则引擎（matchRuleEngine，零 LLM）—— 硬编码规则 + 组合词 + 经验记忆",
+      "L4_default": "默认兜底（defaultFallback）—— 无任何匹配时落 simple_qa"
+    },
+    "note": "L2 FC 结构化识别依赖 LLM，离线时跳过（method='rule'）。本集仅覆盖可离线验证的路径。",
+    "acceptance": "通过率 >= 90% 视为基线达标"
+  },
+  "cases": [
+    {"id": 1,  "q": "/help",                  "expected": "command",        "level": "L1_command", "note": "斜杠命令无参数"},
+    {"id": 2,  "q": "/start trading",          "expected": "command",        "level": "L1_command", "note": "斜杠命令带参数"},
+    {"id": 3,  "q": "/pause",                  "expected": "command",        "level": "L1_command", "note": "斜杠简短命令"},
+    {"id": 4,  "q": "查看状态",                 "expected": "command",        "level": "L1_command", "note": "中文命令词典精确匹配"},
+    {"id": 5,  "q": "查看余额",                 "expected": "command",        "level": "L1_command", "note": "中文命令词典"},
+    {"id": 6,  "q": "暂停交易",                 "expected": "command",        "level": "L1_command", "note": "中文命令词典"},
+    {"id": 7,  "q": "清空会话",                 "expected": "command",        "level": "L1_command", "note": "中文命令词典"},
+
+    {"id": 8,  "q": "BTC 现在多少钱",          "expected": "market_query",   "level": "L3_rule",    "note": "hc_market_query: 现在+多少"},
+    {"id": 9,  "q": "ETH 价格",                "expected": "market_query",   "level": "L3_rule",    "note": "hc_market_query: 价格"},
+    {"id": 10, "q": "BTC 行情",                "expected": "market_query",   "level": "L3_rule",    "note": "hc_market_query: 行情"},
+    {"id": 11, "q": "查询账户余额",             "expected": "market_query",   "level": "L3_rule",    "note": "hc_market_query: 查询"},
+
+    {"id": 12, "q": "做多 BTC",                "expected": "execute_trade",  "level": "L3_rule",    "note": "hc_execute_trade: 做多"},
+    {"id": 13, "q": "卖出 ETH",                "expected": "execute_trade",  "level": "L3_rule",    "note": "hc_execute_trade: 卖出"},
+    {"id": 14, "q": "开仓",                    "expected": "execute_trade",  "level": "L3_rule",    "note": "hc_execute_trade: 开仓"},
+
+    {"id": 15, "q": "深度分析 BTC",            "expected": "deep_analysis",  "level": "L3_rule",    "note": "hc_deep_analysis: 深度分析"},
+    {"id": 16, "q": "情景推演 如果 BTC 跌破 10 万", "expected": "scenario_sim",     "level": "L3_rule",    "note": "hc_scenario_sim: 情景推演"},
+
+    {"id": 17, "q": "回测策略",                "expected": "strategy_verify","level": "L3_rule",    "note": "Step 0.1 组合词: 回测(action)+策略(object)"},
+    {"id": 18, "q": "验证策略有效性",          "expected": "strategy_verify","level": "L3_rule",    "note": "Step 0.1 组合词: 验证+策略"},
+
+    {"id": 19, "q": "全面规划本周交易",        "expected": "triple_chain",   "level": "L3_rule",    "note": "hc_triple_chain: 全面规划"},
+
+    {"id": 20, "q": "xyzrandom12345",          "expected": "simple_qa",      "level": "L4_default", "note": "无任何规则/模式匹配 → 默认兜底"},
+    {"id": 21, "q": "asdfghjkl 无意义文本",    "expected": "simple_qa",      "level": "L4_default", "note": "无任何规则/模式匹配 → 默认兜底"}
+  ]
+}
