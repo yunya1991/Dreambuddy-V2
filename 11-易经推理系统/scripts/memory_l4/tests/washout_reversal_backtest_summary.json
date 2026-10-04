@@ -1,0 +1,17 @@
+{
+  "total_windows": 1628,
+  "washout_signals": 104,
+  "ending_signals": 69,
+  "trades_simulated": 69,
+  "success_count": 46,
+  "fail_count": 23,
+  "total_pnl_pct": 2.0791607833960266,
+  "tp_count": 10,
+  "sl_count": 1,
+  "timeout_count": 58,
+  "win_rate": 0.6666666666666666,
+  "avg_pnl_pct": 0.03013276497675401,
+  "total_cases": 69,
+  "output_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/tests/washout_reversal_backtest_cases.jsonl",
+  "generated_at": "2026-09-22T12:59:14.176344+00:00"
+}

@@ -1,0 +1,17 @@
+{
+  "total_windows": 1628,
+  "weakness_signals": 104,
+  "ending_signals": 93,
+  "trades_simulated": 93,
+  "success_count": 30,
+  "fail_count": 63,
+  "total_pnl_pct": -2.7590212349827343,
+  "tp_count": 1,
+  "sl_count": 4,
+  "timeout_count": 88,
+  "win_rate": 0.3225806451612903,
+  "avg_pnl_pct": -0.02966689499981435,
+  "total_cases": 93,
+  "output_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/tests/pump_dump_reversal_backtest_cases.jsonl",
+  "generated_at": "2026-09-22T13:05:05.448836+00:00"
+}

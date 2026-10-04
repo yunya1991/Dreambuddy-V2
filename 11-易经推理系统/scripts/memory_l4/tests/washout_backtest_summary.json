@@ -1,0 +1,16 @@
+{
+  "total_stoploss_trades": 47,
+  "valid_samples": 47,
+  "trigger_gate_activated": 1,
+  "trigger_gate_valid_base": 47,
+  "trigger_activation_rate": 0.0213,
+  "rebound_24h_count": 42,
+  "rebound_24h_rate": 0.8936,
+  "rebound_48h_strong_count": 29,
+  "rebound_48h_strong_rate": 0.617,
+  "w5_potential_value_pct": 1.2704,
+  "w5_misjudge_risk_pct": 0.4758,
+  "w5_net_value_pct": 0.7947,
+  "direction_note": "long 止损看 max_high>=entry；short 止损看 min_low<=entry（方向感知）",
+  "data_issues": []
+}

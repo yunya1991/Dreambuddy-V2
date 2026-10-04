@@ -17,13 +17,16 @@ import json
 import os
 import sys
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-if _THIS_DIR not in sys.path:
-    sys.path.insert(0, _THIS_DIR)
+_PARENT_DIR = os.path.dirname(_THIS_DIR)
+# 脚本直接运行时(python3 script.py)，需父目录在 path 上才能 import force_vector.*
+for p in (_PARENT_DIR, _THIS_DIR):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 
 # ===========================================================================
@@ -132,6 +135,9 @@ class CoinFundamentalSignal:
     phase_confidence: float = 0.0
     phase_switch_triggers: List[str] = field(default_factory=list)
     phase_strategy_hint: Dict[str, Any] = field(default_factory=dict)
+    # --- 真实行情字段（用于榜单决策卡入场价/止损/止盈）---
+    current_price: float = 0.0   # 实时市场价（USD），0 表示不可用
+    atr: float = 0.0             # 14 日 ATR（USD），0 表示不可用
 
 
 # ===========================================================================
@@ -427,9 +433,115 @@ def compute_signal(coin: str, db_path: str = None) -> CoinFundamentalSignal:
         return neutral
 
 
+def _compute_atr(closes: List[float], highs: List[float], lows: List[float], period: int = 14) -> float:
+    """ATR(period) 绝对值。数据不足返回 0.0。"""
+    if len(closes) < period + 1:
+        return 0.0
+    trs: List[float] = []
+    for i in range(1, len(closes)):
+        tr = max(
+            highs[i] - lows[i],
+            abs(highs[i] - closes[i - 1]),
+            abs(lows[i] - closes[i - 1]),
+        )
+        trs.append(tr)
+    return sum(trs[-period:]) / period
+
+
+def _get_okx_inst_id(coin: str, asset_class: str) -> str:
+    """将币种代码映射为 OKX SWAP instId（{SYMBOL}-USDT-SWAP）。
+
+    OKX 支持加密货币、美股 CFD、贵金属 CFD 的 USDT 永续合约，
+    无需 API Key 即可通过公开 REST API 获取行情。
+    """
+    if asset_class == "precious_metal":
+        # XAUUSD → XAU, XAGUSD → XAG
+        symbol = coin.replace("USD", "")
+    else:
+        symbol = coin
+    return f"{symbol}-USDT-SWAP"
+
+
+def _fetch_kline_data(coin: str, asset_class: str, db_path: str = None) -> Optional[Dict[str, Any]]:
+    """获取币种实时价格 + ATR(14)，供榜单 DecisionCard 计算真实入场/止损/止盈。
+
+    数据源：OKX 公开 REST API（加密货币/美股 CFD/贵金属 CFD 统一走 OKX）。
+      - 价格：最新收盘价
+      - ATR：14 日 ATR（从 1D K线计算）
+    无需 API Key，不依赖系统 PATH。
+
+    Returns:
+      {"inst_id", "price", "atr", "high", "low", "candle_count"} 或 None（获取失败）
+    """
+    import requests
+
+    inst_id = _get_okx_inst_id(coin, asset_class)
+    try:
+        proxy = os.environ.get("SNAPSHOT_PROXY") or os.environ.get("HTTP_PROXY")
+        proxies = {"http": proxy, "https": proxy} if proxy else None
+
+        # 1D K线，取 15 根计算 ATR(14)
+        url = "https://www.okx.com/api/v5/market/history-candles"
+        params = {"instId": inst_id, "bar": "1D", "limit": "15"}
+        resp = requests.get(url, params=params, proxies=proxies, timeout=10)
+        data = resp.json()
+        raw = list(reversed(data.get("data", []) or []))
+
+        if len(raw) < 15:
+            return None
+
+        closes = [float(k[4]) for k in raw if len(k) > 4]
+        highs = [float(k[2]) for k in raw if len(k) > 4]
+        lows = [float(k[3]) for k in raw if len(k) > 4]
+
+        if not closes:
+            return None
+
+        price = closes[-1]
+        atr = _compute_atr(closes, highs, lows, 14)
+        return {
+            "inst_id": inst_id,
+            "price": round(price, 6),
+            "atr": round(atr, 6),
+            "high": round(max(highs[-14:]), 6),
+            "low": round(min(lows[-14:]), 6),
+            "candle_count": len(closes),
+        }
+    except Exception:
+        return None
+
+
 def compute_for_coins(coin_list: List[str], db_path: str = None) -> List[CoinFundamentalSignal]:
-    """批量计算多币种的基本面信号。"""
-    return [compute_signal(coin, db_path) for coin in coin_list]
+    """批量计算多币种的基本面信号，并附加实时 K线数据。
+
+    K线获取使用线程池并发，避免串行 OKX 请求拖慢榜单生成。
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    signals = [compute_signal(coin, db_path) for coin in coin_list]
+
+    # 并发获取所有币种的 OKX 行情（加密货币/美股/贵金属统一走 OKX）
+    kline_map: Dict[str, Optional[Dict[str, Any]]] = {}
+    fetch_targets = [
+        sig for sig in signals
+        if sig.asset_class and sig.asset_class != "unknown"
+    ]
+
+    def _fetch(sig: CoinFundamentalSignal) -> tuple:
+        return sig.coin, _fetch_kline_data(sig.coin, sig.asset_class, db_path)
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(_fetch, sig): sig for sig in fetch_targets}
+        for future in as_completed(futures):
+            coin, kline = future.result()
+            kline_map[coin] = kline
+
+    for sig in signals:
+        kline = kline_map.get(sig.coin)
+        if kline:
+            sig.current_price = kline["price"]
+            sig.atr = kline["atr"]
+    return signals
 
 
 def write_shadow(signal: CoinFundamentalSignal, jsonl_path: str = SHADOW_JSONL_PATH) -> None:
@@ -465,3 +577,35 @@ def write_shadow(signal: CoinFundamentalSignal, jsonl_path: str = SHADOW_JSONL_P
 
     with open(jsonl_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+# ===========================================================================
+# CLI 入口：python3 coin_fundamental_ranker.py [--force]
+# 输出 JSON 数组到 stdout，供 7-产物中台 trigger 路由解析
+# ===========================================================================
+
+# 榜单覆盖币种：加密货币 + 美股 + 贵金属
+_RANKING_COINS: List[str] = (
+    list(CRYPTO_MAP.keys())
+    + list(STOCK_MAP.keys())
+    + list(METAL_MAP.keys())
+)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="基本面评分 + 实时行情")
+    parser.add_argument("--force", action="store_true", help="强制重新计算")
+    parser.add_argument(
+        "--coins", nargs="*", default=None,
+        help="指定币种列表（默认全量）",
+    )
+    args = parser.parse_args()
+
+    coin_list = args.coins if args.coins else _RANKING_COINS
+    signals = compute_for_coins(coin_list)
+
+    # 序列化为 JSON 数组输出到 stdout
+    output = [asdict(s) for s in signals]
+    print(json.dumps(output, ensure_ascii=False))
