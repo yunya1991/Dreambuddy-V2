@@ -1,0 +1,12 @@
+# 30-真实环境交互系统 依赖
+# 双引擎架构：脚本引擎 + Browser Use AI 引擎
+playwright>=1.40.0
+pyyaml>=6.0
+Pillow>=10.0.0
+numpy>=1.24.0
+requests>=2.31.0
+# AI 引擎核心：Browser Use（Python >= 3.11）
+# 文档：https://docs.browser-use.com/open-source/introduction
+browser-use>=0.1.0
+# dotenv 用于读取 .env 中的 LLM API key
+python-dotenv>=1.0.0

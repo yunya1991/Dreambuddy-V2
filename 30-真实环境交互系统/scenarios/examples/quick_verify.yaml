@@ -1,0 +1,37 @@
+# 快速验证场景 — 测试真实浏览器连接和基本操作
+name: "快速验证-真实浏览器连接"
+description: "验证系统能连接真实 Chrome 并执行基本操作"
+timeout: 60
+
+steps:
+  - name: "访问 example.com"
+    action: navigate
+    url: "https://example.com"
+    wait_until: "networkidle"
+
+  - name: "验证页面加载"
+    action: verify
+    assertions:
+      name: "页面加载验证"
+      dom:
+        - selector: "h1"
+          action: text_equals
+          expected: "Example Domain"
+
+  - name: "截图验证"
+    action: screenshot
+    path: "./reports/screenshots/example_com.png"
+    full_page: true
+
+  - name: "点击更多信息链接"
+    action: click
+    selector: "a"
+    human: true
+
+  - name: "验证跳转到 iana.org"
+    action: verify
+    assertions:
+      name: "跳转验证"
+      dom:
+        - selector: "body"
+          action: exists

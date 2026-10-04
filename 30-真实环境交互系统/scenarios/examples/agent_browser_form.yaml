@@ -1,0 +1,49 @@
+# agent-browser 引擎示例场景 — 表单提交测试
+#
+# 原生命令风格 YAML（与 agent-browser CLI 1:1 映射）：
+# - 每步是一个 dict，键=命令，值=参数
+# - GLM-5.2 通过 Bash 逐条调用 agent-browser CLI，无需 Qwen LLM
+# - snapshot -i 输出结构化 DOM 文本（@e1 [input type='email']），省 token
+#
+# 三引擎架构中的线2：
+# - 线1 脚本引擎：scenarios/frontend_smoke.yaml（YAML 驱动 Playwright）
+# - 线2 agent-browser 引擎：本场景（GLM-5.2 + CLI，省 token）
+# - 线3 AI 引擎：ai_semantic_task.yaml（Browser Use + Qwen VL）
+
+name: agent-browser 表单提交测试
+description: 用 agent-browser CLI 引擎测试登录表单提交，验证跳转
+mode: agent_browser
+session: form_test  # 会话持久化，浏览器在命令间复用
+
+steps:
+  # 打开登录页
+  - open: https://example.com/login
+
+  # 获取交互元素快照（-i 仅输出可交互元素，省 token）
+  # 输出形如：@e1 [input type='email'] @e2 [input type='password'] @e3 [button type='submit']
+  - snapshot: {interactive: true}
+
+  # 填写表单（ref 引用 snapshot 输出的 @e1/@e2）
+  - fill: {ref: "@e1", value: "user@example.com"}
+  - fill: {ref: "@e2", value: "P@ssw0rd!"}
+
+  # 截图留证
+  - screenshot: "/tmp/agent_browser_before_click.png"
+
+  # 点击提交按钮
+  - click: {ref: "@e3"}
+
+  # 等待网络空闲（页面跳转完成）
+  - wait: {load: networkidle}
+
+  # 跳转后再次 snapshot 验证
+  - snapshot: {interactive: true}
+
+# 三重验证（agent-browser 原生支持）
+assertions:
+  # DOM 断言：调用 snapshot -i 检查 .dashboard 元素存在
+  dom:
+    - selector: ".dashboard"
+      action: exists
+  # URL 断言：调用 get url 检查跳转路径
+  url_contains: "/dashboard"

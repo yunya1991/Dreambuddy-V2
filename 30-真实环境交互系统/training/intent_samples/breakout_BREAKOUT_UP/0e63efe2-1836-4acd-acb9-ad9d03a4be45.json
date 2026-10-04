@@ -1,0 +1,27 @@
+{
+  "sample_id": "0e63efe2-1836-4acd-acb9-ad9d03a4be45",
+  "input": {
+    "user_query": "XRP 突破策略怎么做",
+    "scenario_id": "BREAKOUT_UP",
+    "market_features": {
+      "regime": "breakout",
+      "volatility": "high",
+      "data_freshness": "realtime"
+    }
+  },
+  "gold": {
+    "gold_chain": "C",
+    "gold_intent": "breakout"
+  },
+  "recognizer_output": {
+    "predicted_intent": "deep_analysis",
+    "confidence": 0.0,
+    "level": "ui_s_layer"
+  },
+  "human_label": {
+    "confirmed": false,
+    "corrected_intent": "breakout"
+  },
+  "dataset_split": "eval",
+  "created_at": "2026-10-04T12:57:06.409412+00:00"
+}

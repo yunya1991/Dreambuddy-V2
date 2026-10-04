@@ -1,0 +1,27 @@
+{
+  "sample_id": "80fed2c7-4ae0-4a46-b0c7-95c8f1da9855",
+  "input": {
+    "user_query": "顺势 BTC，趋势确认了吗",
+    "scenario_id": "TREND_UP",
+    "market_features": {
+      "regime": "trending",
+      "volatility": "medium",
+      "data_freshness": "realtime"
+    }
+  },
+  "gold": {
+    "gold_chain": "C",
+    "gold_intent": "trend_following"
+  },
+  "recognizer_output": {
+    "predicted_intent": "deep_analysis",
+    "confidence": 0.0,
+    "level": "ui_s_layer"
+  },
+  "human_label": {
+    "confirmed": false,
+    "corrected_intent": "trend_following"
+  },
+  "dataset_split": "eval",
+  "created_at": "2026-10-04T12:47:21.251061+00:00"
+}

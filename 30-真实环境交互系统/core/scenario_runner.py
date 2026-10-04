@@ -74,6 +74,8 @@ class ScenarioResult:
     steps: List[StepResult] = field(default_factory=list)
     duration_ms: float = 0.0
     error: Optional[str] = None
+    # Trade 页 UI 验证结果（S 层徽章 / 链路追踪）
+    trade_ui: Optional[dict] = None
 
 
 class ScenarioRunner:
@@ -183,6 +185,14 @@ class ScenarioRunner:
                 self._capture_intent_sample(scenario, page, result)
             except Exception as e:
                 logger.warning("IntentSample capture failed (FAIL-OPEN): %s", e)
+
+        # === 新增：Trade 页 UI 断言（S 层徽章 / 链路追踪）===
+        if "/dashboard/trade" in str(scenario.get("steps", [{}])[0].get("url", "")):
+            try:
+                result.trade_ui = self._verify_trade_page_ui(page)
+            except Exception as e:
+                logger.warning("Trade UI verify failed (FAIL-OPEN): %s", e)
+                result.trade_ui = {"error": str(e), "passed": None}
 
         return result
 
@@ -394,15 +404,78 @@ class ScenarioRunner:
     # 意图训练钩子（spec §3.2, SD-5）
     # ------------------------------------------------------------------
     def _capture_intent_sample(self, scenario: Dict, page: Page, result: ScenarioResult) -> None:
-        """从 YAML 场景 + 执行结果构建 IntentSample 并落盘"""
+        """从 YAML 场景 + 执行结果构建 IntentSample 并落盘
+
+        意图识别优先级：
+        1. DreamOS /api/v1/intent/route（真实意图识别）
+        2. UI S 层感知意图徽章（DreamOS 不可用时的降级，前端已识别的意图）
+        """
         user_input = self._extract_user_input(scenario)
         sample = self._build_intent_sample(scenario, result, user_input=user_input)
         recognizer_output = self._call_dreamos_intent_route(user_input)
+
+        # FAIL-OPEN 降级：DreamOS 不可用时，用前端 S 层徽章展示的意图
+        if not recognizer_output.get("predicted_intent"):
+            s_layer_intent = self._extract_s_layer_intent(page)
+            if s_layer_intent:
+                recognizer_output = {
+                    "predicted_intent": s_layer_intent,
+                    "confidence": recognizer_output.get("confidence", 0.8),
+                    "level": "ui_s_layer",
+                }
+                logger.info("DreamOS 降级，使用 UI S 层意图: %s", s_layer_intent)
+
         sample.recognizer_output = recognizer_output
         sample.human_label = self._auto_label(
             recognizer_output, scenario["intent_training"]["gold_intent"]
         )
         self._pipeline.ingest(sample)
+
+    def _extract_s_layer_intent(self, page: Page) -> Optional[str]:
+        """从 Trade 页 S 层感知意图徽章提取意图值
+
+        结构: div.flex.items-center.justify-between.mb-3 > div:last-child
+              > span("感知层:") + span.inline-flex(意图值)
+
+        若徽章显示"执行中"（任务未完成），轮询等待最多 20 秒
+        直至出现真实意图值。
+        """
+        import time
+        max_wait = 20
+        poll_interval = 2
+        elapsed = 0
+        last_intent = None
+
+        while elapsed <= max_wait:
+            try:
+                intent = page.evaluate("""
+                    () => {
+                        const header = document.querySelector('div.flex.items-center.justify-between.mb-3');
+                        if (!header) return null;
+                        const rightDiv = header.querySelector(':scope > div:last-child');
+                        if (!rightDiv) return null;
+                        const spans = rightDiv.querySelectorAll('span');
+                        for (let i = 0; i < spans.length; i++) {
+                            if (spans[i].textContent?.trim() === '感知层:') {
+                                const badge = spans[i + 1];
+                                if (badge) return badge.textContent?.trim() || null;
+                            }
+                        }
+                        const badge = rightDiv.querySelector('span.inline-flex');
+                        return badge ? badge.textContent?.trim() : null;
+                    }
+                """)
+                last_intent = intent
+                # 任务执行中显示"执行中"，需等待 done 事件设置真实意图
+                if intent and intent != "执行中" and intent != "识别中":
+                    return intent
+            except Exception as e:
+                logger.warning("提取 S 层意图失败: %s", e)
+
+            time.sleep(poll_interval)
+            elapsed += poll_interval
+
+        return last_intent
 
     def _build_intent_sample(self, scenario: Dict, result: ScenarioResult,
                             user_input: str) -> IntentSample:
@@ -463,3 +536,75 @@ class ScenarioRunner:
             if step.get("action") == "type" and step.get("text"):
                 return step["text"]
         return ""
+
+    # ------------------------------------------------------------------
+    # Trade 页 UI 断言（spec: /dashboard/trade 意图识别验证）
+    # ------------------------------------------------------------------
+    def _verify_trade_page_ui(self, page: Page) -> dict:
+        """验证 Trade 页 S 层意图徽章 + 链路追踪状态
+
+        Returns:
+            {
+                "s_layer_intent": str | None,    # 感知层意图值
+                "s_layer_visible": bool,         # 徽章是否展示
+                "chain_active": bool,            # 链路追踪是否有活跃链路
+                "chain_text": str,               # 链路追踪区域文本
+                "passed": bool | None            # 综合是否通过（徽章非空）
+            }
+        """
+        result = {
+            "s_layer_intent": None,
+            "s_layer_visible": False,
+            "chain_active": False,
+            "chain_text": "",
+            "passed": None,
+        }
+
+        try:
+            # 1. S 层感知意图徽章
+            # 结构: div.flex.items-center.justify-between.mb-3 > div:last-child > span.inline-flex
+            s_layer = page.evaluate("""
+                () => {
+                    const header = document.querySelector('div.flex.items-center.justify-between.mb-3');
+                    if (!header) return null;
+                    const rightDiv = header.querySelector(':scope > div:last-child');
+                    if (!rightDiv) return null;
+                    // 找包含 "感知层:" 的 span 后面的 badge
+                    const spans = rightDiv.querySelectorAll('span');
+                    for (let i = 0; i < spans.length; i++) {
+                        if (spans[i].textContent?.trim() === '感知层:') {
+                            const badge = spans[i + 1];
+                            if (badge) return badge.textContent?.trim() || null;
+                        }
+                    }
+                    // 备选：直接取最后一个 inline-flex span
+                    const badge = rightDiv.querySelector('span.inline-flex');
+                    return badge ? badge.textContent?.trim() : null;
+                }
+            """)
+            if s_layer:
+                result["s_layer_intent"] = s_layer
+                result["s_layer_visible"] = True
+
+            # 2. 链路追踪状态
+            chain_text = page.evaluate("""
+                () => {
+                    const headings = Array.from(document.querySelectorAll('h3'));
+                    const chainHeading = headings.find(h => h.textContent?.includes('链路追踪'));
+                    if (!chainHeading) return '';
+                    // 取 heading 父容器的文本
+                    const container = chainHeading.closest('div') || chainHeading.parentElement;
+                    return container ? container.textContent?.slice(0, 200) : '';
+                }
+            """)
+            result["chain_text"] = chain_text or ""
+            result["chain_active"] = "暂无活跃链路" not in result["chain_text"] and bool(result["chain_text"])
+
+            # 综合判定：S 层徽章展示即通过（链路追踪非必须，market_query 可能无链路）
+            result["passed"] = result["s_layer_visible"]
+
+        except Exception as e:
+            logger.warning("Trade UI verification error: %s", e)
+            result["error"] = str(e)
+
+        return result

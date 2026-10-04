@@ -1,0 +1,27 @@
+{
+  "sample_id": "d61c0cc6-268d-4ebd-9130-04fbb9e6922e",
+  "input": {
+    "user_query": "XRP 震荡，高抛低吸怎么做",
+    "scenario_id": "RANGE",
+    "market_features": {
+      "regime": "ranging",
+      "volatility": "low",
+      "data_freshness": "realtime"
+    }
+  },
+  "gold": {
+    "gold_chain": "C",
+    "gold_intent": "mean_reversion"
+  },
+  "recognizer_output": {
+    "predicted_intent": "deep_analysis",
+    "confidence": 0.0,
+    "level": "ui_s_layer"
+  },
+  "human_label": {
+    "confirmed": false,
+    "corrected_intent": "mean_reversion"
+  },
+  "dataset_split": "eval",
+  "created_at": "2026-10-04T12:51:33.636389+00:00"
+}

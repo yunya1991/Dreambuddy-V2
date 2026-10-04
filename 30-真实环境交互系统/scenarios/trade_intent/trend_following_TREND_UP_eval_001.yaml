@@ -1,0 +1,31 @@
+name: TRADE-TREND_FOLLOWING-TREND_UP-eval-001
+description: trend_following 意图 × TREND_UP 场景 (eval) @ /dashboard/trade
+timeout: 60
+retry: 0
+intent_training:
+  gold_intent: trend_following
+  scenario_id: TREND_UP
+  split: eval
+  market_features:
+    regime: trending
+    volatility: medium
+    data_freshness: realtime
+steps:
+- name: 打开 Trade 页
+  action: navigate
+  url: http://localhost:3001/dashboard/trade
+- name: 等待页面加载
+  action: wait
+  seconds: 2
+- name: 输入问法
+  action: type
+  selector: textarea, input[type='text'], [contenteditable]
+  text: BTC 趋势怎么看，向上吗
+  human: true
+- name: 提交查询
+  action: click
+  selector: button[type='submit'], button:has-text('发送')
+  human: true
+- name: 等待响应
+  action: wait
+  seconds: 10

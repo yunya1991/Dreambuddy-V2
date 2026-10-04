@@ -1,0 +1,53 @@
+# 前端冒烟测试场景
+# 验证前端核心页面是否正常加载和渲染
+name: "前端冒烟测试"
+description: "测试前端首页、仪表盘、经典系统等核心页面是否正常加载"
+timeout: 120
+retry: 1
+
+steps:
+  - name: "打开前端首页"
+    action: navigate
+    url: "http://localhost:3001"
+    wait_until: "networkidle"
+
+  - name: "验证页面标题"
+    action: verify
+    assertions:
+      name: "首页加载验证"
+      dom:
+        - selector: "body"
+          action: exists
+        - selector: "h1, h2, [class*='title']"
+          action: exists
+      screenshot:
+        full_page: false
+
+  - name: "检查导航栏"
+    action: verify
+    assertions:
+      name: "导航栏验证"
+      dom:
+        - selector: "nav, [class*='nav'], header"
+          action: exists
+
+  - name: "导航到仪表盘"
+    action: click
+    selector: "a[href*='/dashboard'], [class*='dashboard']"
+    human: true
+
+  - name: "验证仪表盘加载"
+    action: verify
+    assertions:
+      name: "仪表盘验证"
+      dom:
+        - selector: "[class*='dashboard'], main"
+          action: exists
+      network:
+        - action: request_exists
+          url_pattern: "/api/"
+
+  - name: "截图仪表盘"
+    action: screenshot
+    path: "./reports/screenshots/dashboard.png"
+    full_page: true

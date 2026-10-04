@@ -1,0 +1,31 @@
+# 跨应用场景示例 — 浏览器+终端+文件系统三端闭环（模式 A）
+# 验证「点击报告生成按钮 → 终端看到日志 → 下载夹出现文件」
+#
+# 模式 A：trae 主对话介入执行（CI 不可用）
+# CLI: python cli.py computer-use-run --scenario scenarios/examples/computer_use_cross_app.yaml
+#
+# 模式 B（纯 Python pyautogui+osascript）见 computer_use_cross_app_native.yaml
+name: "跨应用验证 — 报告生成端到端（模式 A）"
+mode: computer_use
+default_app: "Google Chrome"
+steps:
+  - activate: {app: "Google Chrome"}
+  - click: {target: "地址栏", expect: "地址栏获得焦点"}
+  - type: {target: "地址栏", text: "http://localhost:3001/dashboard/reports"}
+  - press_key: {key: "return"}
+  - wait: {ms: 2000}
+  - screenshot: {path: "/tmp/cu_reports_page.png"}
+  - click: {target: "生成报告按钮", expect: "按钮变为生成中状态"}
+  - wait: {ms: 3000}
+  - screenshot: {path: "/tmp/cu_after_generate.png"}
+  - open_app: {name: "Terminal"}
+  - activate: {app: "Terminal"}
+  - type: {target: "终端输入区", text: "tail -n 20 ~/.workbuddy/logs/exec.log"}
+  - press_key: {key: "return"}
+  - wait: {ms: 1000}
+  - screenshot: {path: "/tmp/cu_terminal_log.png"}
+assertions:
+  - file_exists: {path: "~/.workbuddy/artifacts/trading/index.json"}
+  - file_contains: {path: "~/.workbuddy/logs/exec.log", text: "execution_complete"}
+  - terminal_contains: {text: "execution_complete"}
+  - ui_visual_match: {current: "/tmp/cu_reports_page.png", baseline: "/tmp/cu_reports_page.png", threshold: 0.05}

@@ -1,0 +1,58 @@
+# 端到端市场查询测试场景
+# 模拟用户输入"分析比特币价格"，验证完整链路
+name: "端到端市场查询测试"
+description: "模拟用户输入市场查询请求，验证从输入到结果展示的完整链路"
+timeout: 180
+retry: 1
+
+steps:
+  - name: "打开聊天页面"
+    action: navigate
+    url: "http://localhost:3001/chat"
+    wait_until: "networkidle"
+
+  - name: "验证聊天输入框存在"
+    action: verify
+    assertions:
+      name: "聊天页面验证"
+      dom:
+        - selector: "textarea, input[type='text'], [contenteditable]"
+          action: exists
+
+  - name: "输入市场查询"
+    action: type
+    selector: "textarea, input[type='text'], [contenteditable]"
+    text: "分析比特币价格"
+    human: true
+
+  - name: "提交查询"
+    action: click
+    selector: "button[type='submit'], button:has-text('发送'), button:has-text('Send')"
+    human: true
+
+  - name: "等待 AI 响应"
+    action: wait
+    seconds: 5
+
+  - name: "验证响应内容"
+    action: verify
+    assertions:
+      name: "AI响应验证"
+      dom:
+        - selector: "[class*='message'], [class*='response'], [class*='chat']"
+          action: count_greater_than
+          expected: 1
+        - selector: "[class*='message'], [class*='response']"
+          action: text_contains
+          expected: "BTC"
+      network:
+        - action: request_exists
+          url_pattern: "/api/chat"
+        - action: response_status
+          url_pattern: "/api/chat"
+          status: 200
+
+  - name: "截图完整对话"
+    action: screenshot
+    path: "./reports/screenshots/market_query_result.png"
+    full_page: true

@@ -1,0 +1,59 @@
+# AI 能力验证场景 — 反幻觉测试
+# 通过真实 DOM 和网络请求验证 AI 输出的准确性
+name: "AI能力验证-反幻觉测试"
+description: "验证 AI 输出与真实数据的一致性，检测幻觉"
+timeout: 180
+retry: 1
+
+steps:
+  - name: "打开聊天页面"
+    action: navigate
+    url: "http://localhost:3001/chat"
+    wait_until: "networkidle"
+
+  - name: "输入具体数据查询"
+    action: type
+    selector: "textarea, input[type='text'], [contenteditable]"
+    text: "比特币当前价格是多少？只返回数字"
+    human: true
+
+  - name: "提交查询"
+    action: click
+    selector: "button[type='submit'], button:has-text('发送'), button:has-text('Send')"
+    human: true
+
+  - name: "等待响应"
+    action: wait
+    seconds: 8
+
+  - name: "捕获 AI 响应文本"
+    action: javascript
+    expression: >
+      (() => {
+        const messages = document.querySelectorAll('[class*="message"], [class*="response"]');
+        const lastMessage = messages[messages.length - 1];
+        return lastMessage ? lastMessage.innerText : '';
+      })()
+
+  - name: "验证价格数据真实性"
+    action: verify
+    assertions:
+      name: "价格数据真实性验证"
+      dom:
+        # 验证 AI 响应中包含数字（价格）
+        - selector: "[class*='message'], [class*='response']"
+          action: text_contains
+          expected: "0"  # 价格应包含数字
+      network:
+        # 验证后端确实请求了真实市场数据 API
+        - action: request_exists
+          url_pattern: "market"
+        # 验证 API 响应成功
+        - action: response_status
+          url_pattern: "market"
+          status: 200
+
+  - name: "截图验证结果"
+    action: screenshot
+    path: "./reports/screenshots/ai_verification.png"
+    full_page: true

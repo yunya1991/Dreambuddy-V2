@@ -1,0 +1,174 @@
+# 30-真实环境交互系统 — 配置文件
+# 真实浏览器环境交互测试系统配置
+
+browser:
+  # Chrome 可执行文件路径（macOS 默认）
+  chrome_path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  # CDP 远程调试端口
+  cdp_port: 9222
+  # 默认用户数据目录（空则使用项目内临时目录，避免 TRAE 沙箱限制）
+  user_data_dir: ""
+  # 是否显示浏览器窗口（headed=true 为真实环境，false 为 headless）
+  headed: true
+  # 启动参数
+  launch_args:
+    - "--remote-debugging-port=9222"
+    - "--no-first-run"
+    - "--no-default-browser-check"
+    - "--disable-blink-features=AutomationControlled"
+  # 视口大小
+  viewport:
+    width: 1440
+    height: 900
+
+user_simulation:
+  # 鼠标移动延迟范围（毫秒）
+  mouse_move_delay:
+    min: 10
+    max: 50
+  # 键盘输入延迟范围（毫秒）
+  typing_delay:
+    min: 30
+    max: 120
+  # 点击前停留时间（毫秒）
+  pre_click_delay:
+    min: 50
+    max: 200
+  # 滚动步长范围（像素）
+  scroll_step:
+    min: 100
+    max: 300
+  # 滚动间隔（毫秒）
+  scroll_interval:
+    min: 50
+    max: 150
+  # 贝塞尔曲线控制点数量（越大越平滑）
+  bezier_points: 20
+
+verification:
+  # DOM 断言超时（毫秒）
+  dom_timeout: 10000
+  # 截图对比阈值（0-1，越小越严格）
+  screenshot_threshold: 0.05
+  # 网络请求捕获超时（毫秒）
+  network_timeout: 15000
+  # 三重验证模式：all(全部通过) | any(任一通过) | majority(多数通过)
+  mode: "all"
+
+report:
+  # 报告输出目录
+  output_dir: "./reports"
+  # 是否保存截图
+  save_screenshots: true
+  # 是否保存网络请求日志
+  save_network_logs: true
+  # 报告格式：html | json | both
+  format: "both"
+
+scenarios:
+  # 场景文件目录
+  directory: "./scenarios"
+  # 默认超时（秒）
+  default_timeout: 120
+  # 失败重试次数
+  retry_count: 1
+
+# LLM 配置 — 驱动 Browser Use AI Agent
+# 文档：https://docs.browser-use.com/open-source/supported-models
+llm:
+  # 提供商：qwen | openai | anthropic | ollama | browser_use
+  provider: "qwen"
+  # ⚠️ Browser Use 官方仅推荐 qwen-vl-max（非 VL 版本 action schema 格式有 bug）
+  # qwen-vl-max 是动态别名，指向最新 VL Max 版本
+  model: "qwen-vl-max"
+  # 国际版：https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+  # 国内版：https://dashscope.aliyuncs.com/compatible-mode/v1
+  base_url: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+  # API key 优先从环境变量读取（ALIBABA_CLOUD 或 DASHSCOPE_API_KEY）
+  # 也可在此直接配置（不推荐，有泄露风险）
+  # api_key: "sk-xxx"
+  # 视觉模式（Qwen VL 必须 True）
+  use_vision: true
+
+# AI Agent 配置 — Browser Use Agent 引擎
+ai_agent:
+  # Browser Use Browser 创建模式：from_system_chrome | playwright_chromium | connect_cdp
+  # from_system_chrome: 复用系统 Chrome profile（推荐，复用登录态）
+  # playwright_chromium: 沙箱内可用，无依赖
+  browser_use_mode: "from_system_chrome"
+  # Agent 最大步数（单任务）
+  max_steps: 50
+  # 整体超时（秒）= max_steps * 30
+  # 是否在任务完成后自动执行三重验证
+  auto_verify: true
+
+# agent-browser 引擎配置 — 三引擎架构中的线2（省 token 引擎）
+# 已安装：/opt/homebrew/bin/agent-browser v0.25.3（在 PATH 中）
+# 原理：GLM-5.2 通过 Bash 调用 agent-browser CLI，无需 Qwen LLM token
+# 文档：/Users/zhangjiangtao/.trae-cn/skills/agent-browser/SKILL.md
+agent_browser:
+  # agent-browser 可执行文件路径（默认在 PATH）
+  executable: "agent-browser"
+  # 默认会话名（浏览器在命令间持久化）
+  default_session: "real_env_test"
+  # 单命令超时（秒）
+  timeout: 30
+  # 是否启用 headless（CI 模式 true，调试模式 false）
+  headless: true
+  # 是否在任务完成后自动执行三重验证（snapshot/screenshot/network）
+  auto_verify: true
+
+# bsk 引擎配置 — 四引擎架构中的线4（腾讯 BrowserSkill，DSH 原生）
+# 已安装：/Users/zhangjiangtao/.local/bin/bsk v0.3.2（在 PATH 中）
+# 原理：腾讯 BrowserSkill CLI，DSH 原生插件 @wxg-prc-cpg/browser-skill-dsh-plugin@^0.3.0
+# 独特能力：多 session 并发 / 多 tab borrow-return / request-help 人工接管 / emulate 设备模拟
+# 文档：/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.dsh-home/profiles/web/node_modules/@wxg-prc-cpg/browser-skill-dsh-plugin/README.md
+# GitHub：https://github.com/Tencent/BrowserSkill
+bsk:
+  # bsk 可执行文件路径（默认在 PATH）
+  executable: "bsk"
+  # 默认任务名（用于 bsk session start --name，不是 --session flag）
+  default_session: "real_env_test"
+  # 单命令超时（秒，bsk 默认 120000ms）
+  timeout: 120
+  # 是否输出 JSON（bsk --json，便于解析）
+  json_output: true
+  # 是否在任务完成后自动执行三重验证（snapshot/console/evaluate）
+  auto_verify: true
+
+# computer_use 引擎配置 — 五引擎架构中的线5 模式 A（trae 电脑控制插件）
+# 物理限制：trae 电脑控制插件无 CLI 可执行文件（plugin.json 仅声明 interface），
+#           只能由 trae 主对话通过 Agent(subagent_type=computer_use) 调用。
+# Python 退化为「计划生成器+结果聚合器+验证器」，桌面操作由 trae 主对话介入执行。
+# 适用场景：跨应用任务、需要多模态视觉、trae 协作场景
+computer_use:
+  # trae subagent 类型（Agent 工具 subagent_type 参数）
+  subagent_type: "computer_use"
+  # 默认应用（null 表示跨应用任务）
+  default_app: null
+  # 单步 subagent 超时（秒）
+  step_timeout: 60
+  # 截图目录
+  screenshot_dir: "/tmp/cu_screenshots"
+  # 是否在任务完成后自动执行桌面验证（file/terminal/ui_visual_match）
+  auto_verify: true
+  # UI 视觉对比阈值（0-1，越小越严格）
+  visual_threshold: 0.05
+  # CLI 默认行为：true 仅生成 plan（需 trae 介入）；false 报错
+  plan_only: true
+
+# desktop_native 引擎配置 — 五引擎架构中的线5 模式 B（纯 Python 桌面控制）
+# 30 系统自实现桌面控制：pyautogui（图像匹配+点击+键盘） + osascript（macOS 应用管理+终端读取）
+# 保持与线1-4 一致的 Python 控制流，CI 无人值守可用
+# 适用场景：CI 自动化、无人值守、无 trae 介入的桌面测试
+desktop_native:
+  # pyautogui 图像匹配置信度（需 opencv-python）
+  pyautogui_confidence: 0.8
+  # 截图目录
+  screenshot_dir: "/tmp/desktop_screenshots"
+  # osascript 路径（macOS Terminal.app 读取用）
+  osascript_path: "/usr/bin/osascript"
+  # 是否在任务完成后自动执行桌面验证
+  auto_verify: true
+  # UI 视觉对比阈值
+  visual_threshold: 0.05

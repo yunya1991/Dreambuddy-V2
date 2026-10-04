@@ -1,0 +1,34 @@
+# 跨应用场景示例 — 浏览器+终端+文件系统三端闭环（模式 B）
+# 模式 B：纯 Python pyautogui+osascript，CI 无人值守可用
+#
+# CLI: python cli.py desktop-run --scenario scenarios/examples/computer_use_cross_app_native.yaml
+#
+# 使用前需准备（如需 click_image）：
+#   - /tmp/generate_btn.png（生成报告按钮截图，pyautogui 图像匹配定位）
+#   - pip install pyautogui opencv-python
+#
+# 模式 A（trae 主对话介入）见 computer_use_cross_app.yaml
+name: "跨应用验证 — 报告生成端到端（模式 B）"
+mode: desktop_native
+steps:
+  - open_app: {name: "Google Chrome"}
+  - wait: {ms: 1000}
+  # 注：如需点击按钮而非走地址栏，准备按钮截图后取消注释
+  # - click_image: {image: "/tmp/generate_btn.png", confidence: 0.8}
+  - type_text: {text: "http://localhost:3001/dashboard/reports"}
+  - press_key: {key: "return"}
+  - wait: {ms: 2000}
+  - screenshot: {path: "/tmp/cu_reports_page.png"}
+  - wait: {ms: 3000}
+  - screenshot: {path: "/tmp/cu_after_generate.png"}
+  - open_app: {name: "Terminal"}
+  - wait: {ms: 500}
+  - type_text: {text: "tail -n 20 ~/.workbuddy/logs/exec.log"}
+  - press_key: {key: "return"}
+  - wait: {ms: 1000}
+  - screenshot: {path: "/tmp/cu_terminal_log.png"}
+assertions:
+  - file_exists: {path: "~/.workbuddy/artifacts/trading/index.json"}
+  - file_contains: {path: "~/.workbuddy/logs/exec.log", text: "execution_complete"}
+  - terminal_contains: {text: "execution_complete"}
+  - ui_visual_match: {current: "/tmp/cu_reports_page.png", baseline: "/tmp/cu_reports_page.png", threshold: 0.05}

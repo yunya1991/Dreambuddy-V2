@@ -1,0 +1,46 @@
+# AI 驱动的语义化场景示例
+# 与脚本场景不同：用自然语言描述任务，由 Browser Use Agent 自动规划多步操作
+# 任务完成后自动执行三重验证（DOM+截图+网络请求）确保结果真实
+
+name: "AI 语义化任务 — 访问 example.com 并验证"
+description: |
+  用自然语言描述任务，Browser Use Agent 自动执行。
+  任务完成后，三重验证层独立校验结果（反幻觉）。
+
+# 标识 AI 模式（与脚本模式区分）
+mode: ai
+
+# 自然语言任务描述
+# Agent 会自动规划：navigate → 等待加载 → 提取页面信息
+task: |
+  打开 https://example.com，
+  等待页面完全加载，
+  然后报告页面的 <title> 标签内容和页面上第一个 <h1> 标签的文本。
+
+# 任务完成后的三重验证（独立于 AI Agent 执行）
+# 这是反幻觉核心：不信任 AI 的主观判断，用真实 DOM 数据校验
+assertions:
+  dom:
+    - selector: "body"
+      action: exists
+      description: "页面 body 元素必须存在"
+    - selector: "h1"
+      action: exists
+      description: "至少一个 h1 标题必须存在"
+    - selector: "a"
+      action: exists
+      description: "至少一个链接必须存在（example.com 有 More information 链接）"
+  # 截图验证（可选）：保存当前状态作为基准
+  screenshot:
+    save_baseline: true
+    baseline_name: "ai_example_com_baseline"
+  # 网络请求验证（可选）：检查关键请求
+  network:
+    - request_exists: "https://example.com/"
+      description: "主页请求必须发出"
+
+# 元数据
+metadata:
+  category: ai_semantic
+  difficulty: easy
+  tags: [ai, semantic, example, smoke]

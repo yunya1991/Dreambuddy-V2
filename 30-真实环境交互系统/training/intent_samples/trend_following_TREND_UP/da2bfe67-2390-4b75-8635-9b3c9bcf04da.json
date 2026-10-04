@@ -1,0 +1,27 @@
+{
+  "sample_id": "da2bfe67-2390-4b75-8635-9b3c9bcf04da",
+  "input": {
+    "user_query": "顺势 BNB，趋势确认了吗",
+    "scenario_id": "TREND_UP",
+    "market_features": {
+      "regime": "trending",
+      "volatility": "medium",
+      "data_freshness": "realtime"
+    }
+  },
+  "gold": {
+    "gold_chain": "C",
+    "gold_intent": "trend_following"
+  },
+  "recognizer_output": {
+    "predicted_intent": "deep_analysis",
+    "confidence": 0.0,
+    "level": "ui_s_layer"
+  },
+  "human_label": {
+    "confirmed": false,
+    "corrected_intent": "trend_following"
+  },
+  "dataset_split": "eval",
+  "created_at": "2026-10-04T12:48:26.436041+00:00"
+}

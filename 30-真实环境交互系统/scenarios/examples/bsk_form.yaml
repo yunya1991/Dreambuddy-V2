@@ -1,0 +1,57 @@
+# bsk 第四引擎示例场景 — 腾讯 BrowserSkill CLI
+#
+# 原生命令风格 YAML（与 bsk CLI 1:1 映射）：
+# - 每步是 dict，键=命令，值=参数
+# - bsk --json 输出结构化 JSON，GLM-5.2 读文本编排
+# - 含 agent-browser 不具备的独特能力：emulate/request-help/console/observe
+#
+# 四引擎架构中的线4：
+# - 线1 脚本引擎：frontend_smoke.yaml（YAML + Playwright）
+# - 线2 agent-browser 引擎：agent_browser_form.yaml（GLM-5.2 + CLI 省 token）
+# - 线3 AI 引擎：ai_semantic_task.yaml（Browser Use + Qwen VL）
+# - 线4 bsk 引擎：本场景（腾讯 BrowserSkill，DSH 原生）
+
+name: bsk 表单提交测试（含验证码人工接管）
+description: 用腾讯 BrowserSkill CLI 测试登录表单，演示 emulate + request-help 独特能力
+mode: bsk
+session: bsk_form_test  # 任务名（用于 bsk session start --name）
+
+steps:
+  # 设备模拟（bsk 独特：移动端测试）
+  - emulate: {device: "iPhone 14"}
+
+  # 导航到登录页
+  - navigate: https://example.com/login
+
+  # 获取 aria-snapshot（含 @eN 引用，用于后续 click/fill）
+  - snapshot: {}
+
+  # 填写表单
+  - fill: {ref: "@e1", value: "user@example.com"}
+  - fill: {ref: "@e2", value: "P@ssw0rd!"}
+
+  # 点击提交按钮
+  - click: {ref: "@e3"}
+
+  # 等待页面跳转完成
+  - wait-for-navigation: {}
+
+  # 反爬虫关键能力：遇到验证码时人工接管（bsk 独特）
+  - request-help: {prompt: "请完成图形验证码"}
+
+  # 跳转后再次 snapshot 验证
+  - snapshot: {}
+
+  # 读取控制台日志（bsk 独特：检查是否有 JS 报错）
+  - console: {}
+
+# 三重验证（bsk 原生支持）
+assertions:
+  # DOM 断言：调用 snapshot 检查 .dashboard 元素存在
+  dom:
+    - selector: ".dashboard"
+      action: exists
+  # URL 断言：调用 evaluate 'location.href' 检查跳转路径
+  url_contains: "/dashboard"
+  # 控制台断言：调用 console 检查无 error 级别日志（bsk 独特）
+  console_no_errors: true

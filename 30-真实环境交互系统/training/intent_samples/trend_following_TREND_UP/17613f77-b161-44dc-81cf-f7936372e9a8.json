@@ -1,0 +1,27 @@
+{
+  "sample_id": "17613f77-b161-44dc-81cf-f7936372e9a8",
+  "input": {
+    "user_query": "XRP 趋势怎么看，向上吗",
+    "scenario_id": "TREND_UP",
+    "market_features": {
+      "regime": "trending",
+      "volatility": "medium",
+      "data_freshness": "realtime"
+    }
+  },
+  "gold": {
+    "gold_chain": "C",
+    "gold_intent": "trend_following"
+  },
+  "recognizer_output": {
+    "predicted_intent": "deep_analysis",
+    "confidence": 0.0,
+    "level": "ui_s_layer"
+  },
+  "human_label": {
+    "confirmed": false,
+    "corrected_intent": "trend_following"
+  },
+  "dataset_split": "eval",
+  "created_at": "2026-10-04T12:46:50.111273+00:00"
+}
