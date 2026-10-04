@@ -1397,37 +1397,38 @@ class DataCollector:
             combined = " ".join(a.get("content", "") + " " + a.get("title", "") for a in articles)
             etf_net = _parse_number_from_text(combined, ["net inflow", "net flow", "etf inflow", "亿美元流入", "million inflow"])
             funding = _parse_number_from_text(combined, ["funding rate", "资金费率", "funding:"])
-            etf_net_flow = float(etf_net) if etf_net is not None else random.uniform(-300, 600)
-            funding_rate = float(funding) / 100 if funding is not None and abs(funding) < 5 else random.uniform(-0.02, 0.05)
+            etf_net_flow = float(etf_net) if etf_net is not None else 80.0
+            funding_rate = float(funding) / 100 if funding is not None and abs(funding) < 5 else 0.01
             # 从文字情绪推断综合评分
             bull_hits = sum(1 for w in ["inflow", "流入", "positive", "bullish", "买入"] if w in combined.lower())
             bear_hits = sum(1 for w in ["outflow", "流出", "negative", "bearish", "卖出"] if w in combined.lower())
             fund_flow_score = round(_clamp((bull_hits - bear_hits) * 0.15, -0.8, 0.8), 4)
             print(f"[Flow] Tavily real data: etf_net={etf_net_flow:.0f}M, funding={funding_rate:.4f}, score={fund_flow_score}")
         else:
-            fund_flow_score = round(random.uniform(-0.3, 0.7), 4)
-            etf_net_flow = round(fund_flow_score * 800 + random.uniform(-150, 150), 2)
-            funding_rate = round(fund_flow_score * 0.05 + random.uniform(-0.01, 0.01), 4)
+            # Tavily 不可用时的确定性兜底（不再随机）
+            fund_flow_score = 0.1
+            etf_net_flow = round(fund_flow_score * 800, 2)
+            funding_rate = round(fund_flow_score * 0.05, 4)
 
-        # 派生指标（保持原逻辑，基于真实 score）
-        etf_inflow_24h = round(max(0, etf_net_flow) + random.uniform(100, 600), 2)
-        etf_outflow_24h = round(max(0, -etf_net_flow) + random.uniform(80, 400), 2)
-        long_short_ratio = round(1.0 + fund_flow_score * 0.3 + random.uniform(-0.1, 0.1), 2)
-        liquidation_pressure = round(_clamp((1.0 - fund_flow_score) * 40 + random.uniform(0, 25), 0, 100), 2)
-        long_pressure = round(_clamp((long_short_ratio - 0.8) * 80 + random.uniform(0, 20), 0, 100), 2)
-        short_pressure = round(_clamp((1.3 - long_short_ratio) * 80 + random.uniform(0, 20), 0, 100), 2)
-        whale_activity = round(random.uniform(30, 90), 2)
-        whale_buying = round(_clamp(whale_activity * fund_flow_score + 50 + random.uniform(-10, 10), 0, 100), 2)
-        whale_selling = round(_clamp(whale_activity * (1 - fund_flow_score) + 20 + random.uniform(-10, 10), 0, 100), 2)
-        stablecoin_supply_change = round(fund_flow_score * 2.0 + random.uniform(-0.6, 0.6), 3)
-        usdt_supply_change = round(stablecoin_supply_change + random.uniform(-0.5, 0.5), 3)
-        usdc_supply_change = round(stablecoin_supply_change * 0.8 + random.uniform(-0.4, 0.4), 3)
-        institutional_exposure = round(_clamp(50 + fund_flow_score * 30 + random.uniform(-10, 10), 0, 100), 2)
-        retail_exposure = round(_clamp(50 - fund_flow_score * 15 + random.uniform(-10, 10), 0, 100), 2)
+        # 派生指标（保持原逻辑，基于真实 score，去除随机噪声）
+        etf_inflow_24h = round(max(0, etf_net_flow) + 100, 2)
+        etf_outflow_24h = round(max(0, -etf_net_flow) + 80, 2)
+        long_short_ratio = round(1.0 + fund_flow_score * 0.3, 2)
+        liquidation_pressure = round(_clamp((1.0 - fund_flow_score) * 40 + 10, 0, 100), 2)
+        long_pressure = round(_clamp((long_short_ratio - 0.8) * 80 + 5, 0, 100), 2)
+        short_pressure = round(_clamp((1.3 - long_short_ratio) * 80 + 5, 0, 100), 2)
+        whale_activity = round(_clamp(50 + fund_flow_score * 30, 30, 90), 2)
+        whale_buying = round(_clamp(whale_activity * fund_flow_score + 50, 0, 100), 2)
+        whale_selling = round(_clamp(whale_activity * (1 - fund_flow_score) + 20, 0, 100), 2)
+        stablecoin_supply_change = round(fund_flow_score * 2.0, 3)
+        usdt_supply_change = round(stablecoin_supply_change, 3)
+        usdc_supply_change = round(stablecoin_supply_change * 0.8, 3)
+        institutional_exposure = round(_clamp(50 + fund_flow_score * 30, 0, 100), 2)
+        retail_exposure = round(_clamp(50 - fund_flow_score * 15, 0, 100), 2)
         smart_money_direction = ("显著流入" if etf_net_flow > 200 and whale_activity > 60
                                  else "温和流入" if etf_net_flow > 0
                                  else "显著流出" if etf_net_flow < -200 else "观望")
-        flow_velocity_score = round(_clamp(abs(fund_flow_score) * 80 + random.uniform(10, 30), 0, 100), 2)
+        flow_velocity_score = round(_clamp(abs(fund_flow_score) * 80 + 15, 0, 100), 2)
 
         now = _now_iso()
         events: List[Dict[str, Any]] = []
@@ -1487,21 +1488,23 @@ class DataCollector:
             fng_label = fng["classification"]
             print(f"[Sentiment] Real Fear&Greed: {fear_greed_index} ({fng_label})")
         else:
-            fear_greed_index = random.randint(20, 80)
+            fear_greed_index = 50  # API 不可用时的中性兜底
             fng_label = "Neutral"
 
         sentiment_index = fear_greed_index  # 对齐原有字段
-        narrative_heat = round(_clamp(sentiment_index * 0.9 + random.uniform(-10, 10), 10, 100), 2)
-        consensus_level = round(_clamp(60 - abs(sentiment_index - 55) * 1.5 + random.uniform(-10, 10), 20, 95), 2)
-        reversal_risk = round(_clamp(abs(sentiment_index - 50) * 1.5 + random.uniform(5, 20), 5, 95), 2)
-        social_volume = random.randint(5000, 90000)
-        news_sentiment = round(_clamp(sentiment_index + random.uniform(-12, 12), 10, 100), 2)
-        social_sentiment = round(_clamp(sentiment_index * 0.95 + random.uniform(-10, 10), 10, 100), 2)
-        bullish_ratio = round(_clamp(sentiment_index * 0.8 + random.uniform(-8, 8), 5, 95), 2)
-        bearish_ratio = round(_clamp((100 - sentiment_index) * 0.7 + random.uniform(-8, 8), 5, 95), 2)
-        neutral_ratio = round(_clamp(100 - bullish_ratio - bearish_ratio + random.uniform(-5, 5), 5, 60), 2)
-        hype_level = round(_clamp(max(0, sentiment_index - 55) * 2 + random.uniform(0, 15), 0, 100), 2)
-        panic_level = round(_clamp(max(0, 50 - sentiment_index) * 2 + random.uniform(0, 15), 0, 100), 2)
+        # 所有派生指标均为 fear_greed_index 的确定性函数，不引入随机噪声
+        narrative_heat = round(_clamp(sentiment_index * 0.9, 10, 100), 2)
+        consensus_level = round(_clamp(60 - abs(sentiment_index - 55) * 1.5, 20, 95), 2)
+        reversal_risk = round(_clamp(abs(sentiment_index - 50) * 1.5 + 10, 5, 95), 2)
+        # social_volume 从 F&G 确定性映射（极端情绪对应高声量）
+        social_volume = round(5000 + abs(sentiment_index - 50) * 1500 + sentiment_index * 200)
+        news_sentiment = round(_clamp(sentiment_index, 10, 100), 2)
+        social_sentiment = round(_clamp(sentiment_index * 0.95, 10, 100), 2)
+        bullish_ratio = round(_clamp(sentiment_index * 0.8, 5, 95), 2)
+        bearish_ratio = round(_clamp((100 - sentiment_index) * 0.7, 5, 95), 2)
+        neutral_ratio = round(_clamp(100 - bullish_ratio - bearish_ratio, 5, 60), 2)
+        hype_level = round(_clamp(max(0, sentiment_index - 55) * 2, 0, 100), 2)
+        panic_level = round(_clamp(max(0, 50 - sentiment_index) * 2, 0, 100), 2)
         fomo_score = hype_level
         capitulation_score = panic_level
 
@@ -1546,11 +1549,11 @@ class DataCollector:
             {"category": "社交媒体", "score": round(social_sentiment, 1)},
             {"category": "新闻舆情", "score": round(news_sentiment, 1)},
             {"category": "搜索热度", "score": round(narrative_heat, 1)},
-            {"category": "衍生品", "score": round(sentiment_index * 0.8 + random.uniform(-10, 10), 1)},
-            {"category": "资金流向", "score": round(50 + flow_hint * 30 + random.uniform(-5, 5), 1)},
+            {"category": "衍生品", "score": round(sentiment_index * 0.8, 1)},
+            {"category": "资金流向", "score": round(50 + flow_hint * 30, 1)},
             {"category": "链上活动", "score": round(consensus_level, 1)},
-            {"category": "宏观环境", "score": round(50 + random.uniform(-15, 15), 1)},
-            {"category": "技术面", "score": round(sentiment_index * 0.9 + random.uniform(-8, 8), 1)},
+            {"category": "宏观环境", "score": round(50 + (sentiment_index - 50) * 0.3, 1)},
+            {"category": "技术面", "score": round(sentiment_index * 0.9, 1)},
         ]
         timeseries = _make_timeseries(sentiment_index, days=30, vmin=0.0, vmax=100.0)
         _MODULE_CONTEXT["scores"]["sentiment"] = sentiment_index
@@ -1583,24 +1586,24 @@ class DataCollector:
         if combined:
             dxy_raw = _parse_number_from_text(combined, ["DXY", "dollar index", "美元指数"])
             us10y_raw = _parse_number_from_text(combined, ["10-year", "10y yield", "US10Y", "treasury yield"])
-            dxy_strength = float(dxy_raw) if dxy_raw and 80 < dxy_raw < 130 else round(random.uniform(98, 108), 2)
-            us10y_yield = float(us10y_raw) if us10y_raw and 1 < us10y_raw < 8 else round(random.uniform(3.8, 4.8), 3)
+            dxy_strength = float(dxy_raw) if dxy_raw and 80 < dxy_raw < 130 else 103.0
+            us10y_yield = float(us10y_raw) if us10y_raw and 1 < us10y_raw < 8 else 4.3
             # 鹰鸽判断
             hawk_hits = sum(1 for w in ["hawkish", "hike", "higher for longer", "鹰派", "加息"] if w in combined.lower())
             dove_hits = sum(1 for w in ["dovish", "cut", "easing", "鸽派", "降息"] if w in combined.lower())
             policy_score = round(_clamp((dove_hits - hawk_hits) * 0.15, -0.8, 0.8), 4)
             print(f"[Macro] Tavily real data: DXY={dxy_strength}, 10Y={us10y_yield}, policy={policy_score}")
         else:
-            policy_score = round(random.uniform(-0.4, 0.5), 4)
-            dxy_strength = round(_clamp(100 - policy_score * 12 + random.uniform(-3, 3), 85, 115), 2)
-            us10y_yield = round(_clamp(3.5 - policy_score * 1.5 + random.uniform(-0.3, 0.3), 1.5, 5.5), 3)
+            policy_score = 0.0
+            dxy_strength = 103.0
+            us10y_yield = 4.3
 
-        rate_impact = round(_clamp(-policy_score * 80 + random.uniform(-15, 15), -100, 100), 2)
-        growth_expectation = round(_clamp(policy_score * 60 + random.uniform(-15, 15), -50, 50), 2)
-        inflation_pressure = round(_clamp((1 - policy_score) * 40 + random.uniform(0, 30), 0, 100), 2)
-        fed_hawkishness = round(_clamp((1 - policy_score) * 50 + random.uniform(10, 30), 0, 100), 2)
-        market_liquidity = round(_clamp(50 + policy_score * 30 + random.uniform(-10, 10), 0, 100), 2)
-        crypto_friendly_score = round(_clamp(50 + policy_score * 40 + random.uniform(-10, 10), 0, 100), 2)
+        rate_impact = round(_clamp(-policy_score * 80, -100, 100), 2)
+        growth_expectation = round(_clamp(policy_score * 60, -50, 50), 2)
+        inflation_pressure = round(_clamp((1 - policy_score) * 40 + 15, 0, 100), 2)
+        fed_hawkishness = round(_clamp((1 - policy_score) * 50 + 20, 0, 100), 2)
+        market_liquidity = round(_clamp(50 + policy_score * 30, 0, 100), 2)
+        crypto_friendly_score = round(_clamp(50 + policy_score * 40, 0, 100), 2)
         liquidity_clock = "扩张" if policy_score > 0.3 else "紧缩" if policy_score < -0.2 else "转向"
 
         events: List[Dict[str, Any]] = []
@@ -1634,17 +1637,17 @@ class DataCollector:
                 "policy_score": policy_score, "dxy_strength": dxy_strength,
                 "rate_impact": rate_impact, "growth_expectation": growth_expectation,
                 "inflation_pressure": inflation_pressure, "us10y_yield": us10y_yield,
-                "macro_risk_score": round(_clamp(60 - policy_score * 30 + random.uniform(-10, 10), 0, 100), 2),
+                "macro_risk_score": round(_clamp(60 - policy_score * 30, 0, 100), 2),
                 "crypto_friendly_score": crypto_friendly_score, "liquidity_clock": liquidity_clock,
             }, "breakdown": {
                 "fed_policy_hawkishness": fed_hawkishness,
-                "ecb_policy_hawkishness": round(_clamp(fed_hawkishness + random.uniform(-15, 15), 0, 100), 2),
+                "ecb_policy_hawkishness": round(_clamp(fed_hawkishness, 0, 100), 2),
                 "market_liquidity": market_liquidity,
-                "yield_curve_slope": round(_clamp(policy_score * 80 + random.uniform(-15, 15), -100, 100), 2),
-                "inflation_vs_target": round(_clamp(1.0 + (100 - inflation_pressure) * -0.005 + random.uniform(-0.2, 0.2), 0.3, 3.0), 3),
-                "growth_vs_potential": round(_clamp(0.8 + policy_score * 0.4 + random.uniform(-0.1, 0.1), 0.3, 1.8), 3),
-                "risk_on_sentiment": round(_clamp(50 + policy_score * 40 + random.uniform(-10, 10), 0, 100), 2),
-                "safe_haven_demand": round(_clamp(50 - policy_score * 30 + random.uniform(-10, 10), 0, 100), 2),
+                "yield_curve_slope": round(_clamp(policy_score * 80, -100, 100), 2),
+                "inflation_vs_target": round(_clamp(1.0 + (100 - inflation_pressure) * -0.005, 0.3, 3.0), 3),
+                "growth_vs_potential": round(_clamp(0.8 + policy_score * 0.4, 0.3, 1.8), 3),
+                "risk_on_sentiment": round(_clamp(50 + policy_score * 40, 0, 100), 2),
+                "safe_haven_demand": round(_clamp(50 - policy_score * 30, 0, 100), 2),
             }},
             "events": events, "timeseries": timeseries, "timestamp": now,
         }
@@ -1660,24 +1663,24 @@ class DataCollector:
 
         if combined:
             btc_dom_raw = _parse_number_from_text(combined, ["BTC.D", "bitcoin dominance", "btc dominance", "占比"])
-            btc_dominance = float(btc_dom_raw) if btc_dom_raw and 30 < btc_dom_raw < 75 else round(random.uniform(48, 62), 2)
+            btc_dominance = float(btc_dom_raw) if btc_dom_raw and 30 < btc_dom_raw < 75 else 54.0
             bull_hits = sum(1 for w in ["altseason", "altcoin rally", "broad rally", "山寨季", "全面上涨"] if w in combined.lower())
             bear_hits = sum(1 for w in ["dominance rising", "alts bleeding", "risk off", "山寨跌", "广度恶化"] if w in combined.lower())
-            advance_decline_line = round(_clamp((bull_hits - bear_hits) * 15 + random.uniform(-20, 20), -60, 70), 2)
+            advance_decline_line = round(_clamp((bull_hits - bear_hits) * 15, -60, 70), 2)
             print(f"[Breadth] Tavily real data: BTC.D={btc_dominance:.1f}%, adl={advance_decline_line:.1f}")
         else:
-            btc_dominance = round(random.uniform(48, 62), 2)
-            advance_decline_line = round(random.uniform(-50, 60), 2)
+            btc_dominance = 54.0
+            advance_decline_line = 0.0
 
-        advance_count = round(_clamp(50 + advance_decline_line * 0.5 + random.uniform(-5, 5), 0, 100), 2)
-        decline_count = round(_clamp(50 - advance_decline_line * 0.5 + random.uniform(-5, 5), 0, 100), 2)
-        new_high_low_ratio = round(_clamp(1.0 + advance_decline_line * 0.02 + random.uniform(-0.15, 0.15), 0.3, 3.0), 3)
-        new_highs_count = random.randint(5, 80)
+        advance_count = round(_clamp(50 + advance_decline_line * 0.5, 0, 100), 2)
+        decline_count = round(_clamp(50 - advance_decline_line * 0.5, 0, 100), 2)
+        new_high_low_ratio = round(_clamp(1.0 + advance_decline_line * 0.02, 0.3, 3.0), 3)
+        new_highs_count = round(_clamp(30 + advance_decline_line * 0.5, 5, 80), 0)
         new_lows_count = max(2, int(new_highs_count / new_high_low_ratio))
-        l1_breadth = round(_clamp(50 + advance_decline_line * 0.4 + random.uniform(-10, 10), 0, 100), 2)
-        l2_breadth = round(_clamp(50 + advance_decline_line * 0.3 + random.uniform(-15, 15), 0, 100), 2)
-        defi_breadth = round(_clamp(50 + advance_decline_line * 0.35 + random.uniform(-10, 10), 0, 100), 2)
-        meme_breadth = round(_clamp(50 + advance_decline_line * 0.2 + random.uniform(-20, 20), 0, 100), 2)
+        l1_breadth = round(_clamp(50 + advance_decline_line * 0.4, 0, 100), 2)
+        l2_breadth = round(_clamp(50 + advance_decline_line * 0.3, 0, 100), 2)
+        defi_breadth = round(_clamp(50 + advance_decline_line * 0.35, 0, 100), 2)
+        meme_breadth = round(_clamp(50 + advance_decline_line * 0.2, 0, 100), 2)
         breadth_confirmation = ("确认趋势" if advance_decline_line > 30 and new_high_low_ratio > 1.5
                                 else "存在分歧" if advance_decline_line > 0 else "广度恶化")
         divergence_signal = ("顶背离" if advance_decline_line > 20 and meme_breadth < 40
@@ -1689,7 +1692,7 @@ class DataCollector:
         if articles:
             for a in articles[:2]:
                 text = a.get("content", "")[:200]
-                sent = round(_clamp((advance_decline_line / 60) * 0.6 + random.uniform(-0.2, 0.2), -1, 1), 3)
+                sent = round(_clamp((advance_decline_line / 60) * 0.6, -1, 1), 3)
                 events.append({
                     "title": a.get("title", "")[:80], "content": summarize_content(text),
                     "category": "广度", "impact_score": 0.55, "sentiment": sent,
@@ -1709,13 +1712,13 @@ class DataCollector:
                 "advance_decline_line": advance_decline_line, "advance_count": advance_count,
                 "decline_count": decline_count, "new_high_low_ratio": new_high_low_ratio,
                 "breadth_confirmation": breadth_confirmation, "divergence_signal": divergence_signal,
-                "breadth_divergence_score": round(_clamp(abs(advance_decline_line - 40) * 0.8 + random.uniform(0, 20), 0, 100), 2),
-                "market_participation_index": round(_clamp(50 + advance_decline_line * 0.3 + random.uniform(-10, 10), 0, 100), 2),
+                "breadth_divergence_score": round(_clamp(abs(advance_decline_line - 40) * 0.8, 0, 100), 2),
+                "market_participation_index": round(_clamp(50 + advance_decline_line * 0.3, 0, 100), 2),
                 "btc_dominance": btc_dominance,
             }, "breakdown": {
                 "new_highs_count": new_highs_count, "new_lows_count": new_lows_count,
-                "sector_count_up": round(_clamp(6 + advance_decline_line * 0.08 + random.randint(-2, 2), 0, 12), 0),
-                "sector_count_down": round(_clamp(6 - advance_decline_line * 0.08 + random.randint(-2, 2), 0, 12), 0),
+                "sector_count_up": round(_clamp(6 + advance_decline_line * 0.08, 0, 12), 0),
+                "sector_count_down": round(_clamp(6 - advance_decline_line * 0.08, 0, 12), 0),
                 "l1_breadth": l1_breadth, "l2_breadth": l2_breadth,
                 "defi_breadth": defi_breadth, "meme_breadth": meme_breadth,
             }},
@@ -1734,19 +1737,19 @@ class DataCollector:
         if combined:
             mvrv_raw = _parse_number_from_text(combined, ["MVRV", "mvrv ratio", "MVRV Z"])
             sopr_raw = _parse_number_from_text(combined, ["SOPR", "sopr"])
-            mvrv_ratio = float(mvrv_raw) if mvrv_raw and 0.5 < mvrv_raw < 6.0 else round(random.uniform(1.3, 3.2), 2)
-            sopr = float(sopr_raw) if sopr_raw and 0.7 < sopr_raw < 2.0 else round(_clamp(0.95 + (mvrv_ratio - 1.3) * 0.25 + random.uniform(-0.05, 0.05), 0.8, 1.8), 3)
+            mvrv_ratio = float(mvrv_raw) if mvrv_raw and 0.5 < mvrv_raw < 6.0 else 2.2
+            sopr = float(sopr_raw) if sopr_raw and 0.7 < sopr_raw < 2.0 else round(_clamp(0.95 + (mvrv_ratio - 1.3) * 0.25, 0.8, 1.8), 3)
             print(f"[Valuation] Tavily real data: MVRV={mvrv_ratio:.2f}, SOPR={sopr:.3f}")
         else:
-            mvrv_ratio = round(random.uniform(1.3, 3.2), 2)
-            sopr = round(_clamp(0.95 + (mvrv_ratio - 1.3) * 0.25 + random.uniform(-0.05, 0.05), 0.8, 1.8), 3)
+            mvrv_ratio = 2.2
+            sopr = round(_clamp(0.95 + (mvrv_ratio - 1.3) * 0.25, 0.8, 1.8), 3)
 
-        mvrv_z_score = round((mvrv_ratio - 2.0) / 0.7 + random.uniform(-0.1, 0.1), 2)
-        ahr999_index = round(_clamp(1.0 + (mvrv_ratio - 2.0) * 0.8 + random.uniform(-0.2, 0.2), 0.3, 3.0), 3)
-        pi_cycle_top = round(_clamp(max(0, mvrv_ratio - 2.0) / 1.5 + random.uniform(-0.05, 0.05), 0, 1), 3)
-        therm_index = round(_clamp((mvrv_ratio - 1.3) / (3.2 - 1.3) * 100 + random.uniform(-5, 5), 0, 100), 2)
-        mayer_multiple = round(_clamp(1.0 + (mvrv_ratio - 2.0) * 0.4 + random.uniform(-0.1, 0.1), 0.5, 2.5), 3)
-        puell_multiple = round(_clamp(1.0 + (mvrv_ratio - 2.0) * 0.35 + random.uniform(-0.15, 0.15), 0.3, 2.5), 3)
+        mvrv_z_score = round((mvrv_ratio - 2.0) / 0.7, 2)
+        ahr999_index = round(_clamp(1.0 + (mvrv_ratio - 2.0) * 0.8, 0.3, 3.0), 3)
+        pi_cycle_top = round(_clamp(max(0, mvrv_ratio - 2.0) / 1.5, 0, 1), 3)
+        therm_index = round(_clamp((mvrv_ratio - 1.3) / (3.2 - 1.3) * 100, 0, 100), 2)
+        mayer_multiple = round(_clamp(1.0 + (mvrv_ratio - 2.0) * 0.4, 0.5, 2.5), 3)
+        puell_multiple = round(_clamp(1.0 + (mvrv_ratio - 2.0) * 0.35, 0.3, 2.5), 3)
         valuation_range = ("严重低估" if mvrv_ratio < 1.5 else "低估" if mvrv_ratio < 2.0
                            else "合理" if mvrv_ratio < 2.5 else "偏高" if mvrv_ratio < 3.2 else "高估")
         valuation_heat_level = ("超冷" if mvrv_z_score < -1.0 else "冷" if mvrv_z_score < 0
@@ -1756,7 +1759,7 @@ class DataCollector:
         if articles:
             for a in articles[:2]:
                 text = a.get("content", "")[:200]
-                sent = round(_clamp((2.0 - mvrv_ratio) * 0.3 + random.uniform(-0.1, 0.1), -1, 1), 3)
+                sent = round(_clamp((2.0 - mvrv_ratio) * 0.3, -1, 1), 3)
                 events.append({
                     "title": a.get("title", "")[:80], "content": summarize_content(text),
                     "category": "估值", "impact_score": 0.65, "sentiment": sent,
@@ -1770,7 +1773,7 @@ class DataCollector:
             "source": "Aggregate", "published_at": now,
         })
         nupl = round(_clamp((mvrv_ratio - 1) / mvrv_ratio, 0, 1), 3)
-        realized_price = round(38000 + random.uniform(-2000, 5000), 0)
+        realized_price = 40000.0
         market_price = round(realized_price * mvrv_ratio, 0)
         timeseries = _make_timeseries(mvrv_ratio, days=30, vmin=0.5, vmax=4.0)
         _MODULE_CONTEXT["scores"]["valuation"] = mvrv_ratio
@@ -1783,14 +1786,14 @@ class DataCollector:
                 "puell_multiple": puell_multiple, "valuation_range": valuation_range,
                 "valuation_heat_level": valuation_heat_level,
             }, "breakdown": {
-                "short_term_holder_pnl": round((mvrv_ratio - 1.5) * 40 + random.uniform(-10, 10), 2),
-                "long_term_holder_pnl": round((mvrv_ratio - 1.2) * 30 + random.uniform(-8, 8), 2),
-                "realized_profit": round(_clamp(max(0, mvrv_ratio - 1.5) * 0.5 + random.uniform(-0.05, 0.05), 0, 1.5), 3),
-                "realized_loss": round(_clamp(max(0, 1.8 - mvrv_ratio) * 0.3 + random.uniform(-0.05, 0.05), 0, 1.5), 3),
-                "market_value_growth": round(_clamp((mvrv_ratio - 1.5) * 0.4 + random.uniform(-0.1, 0.1), -0.5, 1.5), 3),
-                "realised_value_growth": round(_clamp((mvrv_ratio - 1.5) * 0.25 + random.uniform(-0.08, 0.08), -0.3, 1.2), 3),
-                "sopr_long_term": round(_clamp(1.0 + (mvrv_ratio - 2.0) * 0.15 + random.uniform(-0.05, 0.05), 0.9, 1.5), 3),
-                "sopr_short_term": round(_clamp(sopr + random.uniform(-0.1, 0.1), 0.8, 1.3), 3),
+                "short_term_holder_pnl": round((mvrv_ratio - 1.5) * 40, 2),
+                "long_term_holder_pnl": round((mvrv_ratio - 1.2) * 30, 2),
+                "realized_profit": round(_clamp(max(0, mvrv_ratio - 1.5) * 0.5, 0, 1.5), 3),
+                "realized_loss": round(_clamp(max(0, 1.8 - mvrv_ratio) * 0.3, 0, 1.5), 3),
+                "market_value_growth": round(_clamp((mvrv_ratio - 1.5) * 0.4, -0.5, 1.5), 3),
+                "realised_value_growth": round(_clamp((mvrv_ratio - 1.5) * 0.25, -0.3, 1.2), 3),
+                "sopr_long_term": round(_clamp(1.0 + (mvrv_ratio - 2.0) * 0.15, 0.9, 1.5), 3),
+                "sopr_short_term": round(_clamp(sopr, 0.8, 1.3), 3),
             }},
             "events": events, "timeseries": timeseries,
             "nupl": nupl, "realized_price": realized_price, "market_price": market_price,
@@ -1813,24 +1816,24 @@ class DataCollector:
             tx_score = round(_clamp((n_tx - 300000) / 500000, -1, 1), 4)  # 300K tx/day 基准
             print(f"[Onchain] Real data: n_tx={n_tx}, hash_rate={hash_rate_eh:.0f}EH/s")
         else:
-            hash_rate_eh = round(random.uniform(400, 1000), 2)
-            n_tx = random.randint(300000, 800000)
-            minutes_between_blocks = round(random.uniform(9.0, 11.5), 2)
-            hash_rate_score = round(random.uniform(-0.3, 0.7), 4)
-            tx_score = round(random.uniform(-0.3, 0.7), 4)
+            hash_rate_eh = 650.0
+            n_tx = 400000
+            minutes_between_blocks = 10.0
+            hash_rate_score = round(_clamp((hash_rate_eh - 500) / 500, -1, 1), 4)
+            tx_score = round(_clamp((n_tx - 300000) / 500000, -1, 1), 4)
 
         onchain_score = round(_clamp((hash_rate_score + tx_score) / 2, -1, 1), 4)
 
-        # 其余链上指标派生
-        exchange_net_flow = round(random.uniform(-300, 500), 2)
-        active_addresses = random.randint(30, 120)
-        transaction_volume = round(random.uniform(3.0, 30.0), 2)
-        whale_transfers = random.randint(5, 50)
-        miner_outflow = round(random.uniform(0, 100), 2)
-        long_term_holder_supply = round(random.uniform(60, 80), 2)
-        short_term_holder_supply = round(100 - long_term_holder_supply - random.uniform(2, 8), 2)
-        hodl_waves_1y_plus = round(random.uniform(55, 75), 2)
-        exchange_reserve = round(random.uniform(10, 20), 2)
+        # 其余链上指标派生（确定性，前端会用真实数据覆盖）
+        exchange_net_flow = round(onchain_score * 200, 2)
+        active_addresses = round(_clamp(60 + onchain_score * 30, 30, 120), 0)
+        transaction_volume = round(_clamp(15.0 + onchain_score * 10, 3.0, 30.0), 2)
+        whale_transfers = round(_clamp(20 + onchain_score * 15, 5, 50), 0)
+        miner_outflow = round(_clamp(40 - onchain_score * 30, 0, 100), 2)
+        long_term_holder_supply = round(_clamp(70 + onchain_score * 5, 60, 80), 2)
+        short_term_holder_supply = round(100 - long_term_holder_supply, 2)
+        hodl_waves_1y_plus = round(_clamp(65 + onchain_score * 5, 55, 75), 2)
+        exchange_reserve = round(_clamp(15 - onchain_score * 3, 10, 20), 2)
 
         onchain_trend = ("流入" if exchange_net_flow > 150 else "流出" if exchange_net_flow < -150 else "中性")
         network_health = ("优秀" if hash_rate_score > 0.3 else "良好" if hash_rate_score > -0.1 else "偏弱")
@@ -1862,8 +1865,8 @@ class DataCollector:
                 "exchange_reserve": exchange_reserve, "onchain_trend": onchain_trend,
                 "network_health": network_health, "accumulation_signal": accumulation_signal,
             }, "breakdown": {
-                "exchange_inflow_24h": round(max(0, -exchange_net_flow) + random.uniform(100, 500), 2),
-                "exchange_outflow_24h": round(max(0, exchange_net_flow) + random.uniform(120, 600), 2),
+                "exchange_inflow_24h": round(max(0, -exchange_net_flow) + 300, 2),
+                "exchange_outflow_24h": round(max(0, exchange_net_flow) + 350, 2),
                 "whale_transfers": whale_transfers, "miner_outflow": miner_outflow,
                 "short_term_holder_supply": short_term_holder_supply,
                 "hodl_waves_1y_plus": hodl_waves_1y_plus,
@@ -1890,19 +1893,19 @@ class DataCollector:
                 text_lower = (title + " " + content).lower()
                 if any(w in text_lower for w in ["fomc", "federal reserve", "fed meeting", "rate decision"]):
                     category = "央行"
-                    impact_score = round(random.uniform(0.7, 0.95), 3)
+                    impact_score = 0.85
                 elif any(w in text_lower for w in ["cpi", "inflation", "pce", "jobs report", "nonfarm"]):
                     category = "数据"
-                    impact_score = round(random.uniform(0.6, 0.9), 3)
+                    impact_score = 0.75
                 elif any(w in text_lower for w in ["option expiry", "options expiration", "deribit", "期权到期"]):
                     category = "衍生品"
-                    impact_score = round(random.uniform(0.5, 0.75), 3)
+                    impact_score = 0.62
                 elif any(w in text_lower for w in ["ecb", "european central bank", "boe", "boj"]):
                     category = "央行"
-                    impact_score = round(random.uniform(0.5, 0.8), 3)
+                    impact_score = 0.68
                 else:
                     category = "市场事件"
-                    impact_score = round(random.uniform(0.4, 0.65), 3)
+                    impact_score = 0.52
 
                 bull = sum(1 for w in ["positive", "bullish", "rate cut", "dovish", "利好"] if w in text_lower)
                 bear = sum(1 for w in ["negative", "hawkish", "rate hike", "ban", "利空"] if w in text_lower)
@@ -1919,11 +1922,11 @@ class DataCollector:
         if len(events) < 2:
             fallback = [
                 ("美联储 FOMC 议息会议", "关注点阵图及会后声明，对利率路径影响显著", "央行",
-                 round(random.uniform(0.6, 0.9), 3), round(random.uniform(-0.3, 0.3), 3), 3),
+                 0.80, 0.0, 3),
                 ("美国 CPI / PCE 数据", "通胀读数将影响降息预期及美元走势", "数据",
-                 round(random.uniform(0.55, 0.85), 3), round(random.uniform(-0.2, 0.2), 3), 6),
+                 0.70, 0.0, 6),
                 ("BTC 季度期权到期", "大额期权到期或放大短时波动", "衍生品",
-                 round(random.uniform(0.45, 0.7), 3), round(random.uniform(-0.3, 0.1), 3), 14),
+                 0.58, -0.1, 14),
             ]
             for title, content, cat, impact, sent, days_offset in fallback:
                 events.append({
@@ -1965,25 +1968,25 @@ class DataCollector:
             gold_raw = _parse_number_from_text(combined, ["gold price", "XAU", "gold at", "黄金"])
             spx_raw = _parse_number_from_text(combined, ["S&P 500", "SPX", "S&P500"])
             vix_raw = _parse_number_from_text(combined, ["VIX", "volatility index"])
-            dxy = float(dxy_raw) if dxy_raw and 80 < dxy_raw < 130 else round(random.uniform(98, 108), 2)
-            gold = float(gold_raw) if gold_raw and 1500 < gold_raw < 4000 else round(random.uniform(2200, 3400), 2)
-            spx = float(spx_raw) if spx_raw and 3000 < spx_raw < 8000 else round(random.uniform(5000, 6000), 2)
-            volatility_vix = float(vix_raw) if vix_raw and 5 < vix_raw < 80 else round(random.uniform(12, 32), 2)
+            dxy = float(dxy_raw) if dxy_raw and 80 < dxy_raw < 130 else 103.0
+            gold = float(gold_raw) if gold_raw and 1500 < gold_raw < 4000 else 2800.0
+            spx = float(spx_raw) if spx_raw and 3000 < spx_raw < 8000 else 5500.0
+            volatility_vix = float(vix_raw) if vix_raw and 5 < vix_raw < 80 else 18.0
             # 风险偏好：VIX低+SPX高 = risk-on
             risk_on_raw = _clamp((6000 - spx) / 1000 * -0.3 + (30 - volatility_vix) / 30 * 0.5, -1, 1)
             print(f"[Intermarket] Tavily real data: DXY={dxy}, gold={gold:.0f}, SPX={spx:.0f}, VIX={volatility_vix:.1f}")
         else:
-            dxy = round(random.uniform(98, 108), 2)
-            gold = round(random.uniform(2200, 3400), 2)
-            spx = round(random.uniform(5000, 6000), 2)
-            volatility_vix = round(random.uniform(12, 32), 2)
-            risk_on_raw = random.uniform(-0.3, 0.5)
+            dxy = 103.0
+            gold = 2800.0
+            spx = 5500.0
+            volatility_vix = 18.0
+            risk_on_raw = 0.1
 
-        wti = round(random.uniform(60, 90), 2)
-        ndx = round(spx * 3.5 + random.uniform(-500, 500), 0)
-        btc_correlation_spx = round(_clamp(risk_on_raw * 0.8 + random.uniform(-0.1, 0.1), -0.5, 0.8), 3)
-        btc_correlation_gold = round(random.uniform(-0.3, 0.5), 3)
-        dxy_correlation = round(-btc_correlation_spx * 0.6 + random.uniform(-0.2, 0.2), 3)
+        wti = 75.0
+        ndx = round(spx * 3.5, 0)
+        btc_correlation_spx = round(_clamp(risk_on_raw * 0.8, -0.5, 0.8), 3)
+        btc_correlation_gold = round(risk_on_raw * 0.3, 3)
+        dxy_correlation = round(-btc_correlation_spx * 0.6, 3)
         risk_on_index = round(_clamp(50 + risk_on_raw * 50, 0, 100), 2)
 
         events: List[Dict[str, Any]] = []
@@ -2015,8 +2018,8 @@ class DataCollector:
                 "btc_correlation_spx": btc_correlation_spx, "btc_correlation_gold": btc_correlation_gold,
                 "dxy_correlation": dxy_correlation, "risk_on_index": risk_on_index, "vix": volatility_vix,
             }, "breakdown": {
-                "equity_strength": round(_clamp((spx - 4800) / 12 + random.uniform(-10, 10), 0, 100), 2),
-                "commodity_strength": round(_clamp((gold - 1800) / 16 + random.uniform(-10, 10), 0, 100), 2),
+                "equity_strength": round(_clamp((spx - 4800) / 12, 0, 100), 2),
+                "commodity_strength": round(_clamp((gold - 1800) / 16, 0, 100), 2),
             }},
             "events": events, "timeseries": timeseries, "timestamp": now,
         }

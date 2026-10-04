@@ -1,15 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { FundamentalGrid } from '@/components/features/fundamental/FundamentalGrid';
-import { OnchainMetrics } from '@/components/features/fundamental/OnchainMetrics';
-import { MacroDashboard } from '@/components/features/fundamental/MacroDashboard';
-import { SentimentHeatmap } from '@/components/features/fundamental/SentimentHeatmap';
 import { ModuleDetail } from '@/components/features/fundamental/ModuleDetail';
-import NetFlowTrendChart from '@/components/features/fundamental/NetFlowTrendChart';
-import WhaleTracker from '@/components/features/fundamental/WhaleTracker';
-import UTXOAgeDistribution from '@/components/features/fundamental/UTXOAgeDistribution';
-import MVRVZoneChart from '@/components/features/fundamental/MVRVZoneChart';
+import { FlowPanel } from '@/components/features/fundamental/FlowPanel';
+import { OnchainPanel } from '@/components/features/fundamental/OnchainPanel';
+import { MacroPanel } from '@/components/features/fundamental/MacroPanel';
+import { SentimentPanel } from '@/components/features/fundamental/SentimentPanel';
+import { ValuationPanel } from '@/components/features/fundamental/ValuationPanel';
+import { OverviewPanel } from '@/components/features/fundamental/OverviewPanel';
+import { IntermarketPanel } from '@/components/features/fundamental/IntermarketPanel';
+import { BreadthPanel } from '@/components/features/fundamental/BreadthPanel';
 
 const tabModules: Record<string, string> = {
   flow: 'flow',
@@ -53,24 +53,16 @@ export default function FundamentalPage() {
         ))}
       </div>
       <div>
-        {activeTab === 'overview' && <FundamentalGrid />}
-        {activeTab === 'onchain' && (
-          <div className="space-y-4">
-            <OnchainMetrics />
-            <UTXOAgeDistribution buckets={[]} />
-          </div>
-        )}
-        {activeTab === 'macro' && <MacroDashboard />}
-        {activeTab === 'sentiment' && <SentimentHeatmap />}
-        {activeTab === 'flow' && (
-          <div className="space-y-4">
-            <NetFlowTrendChart timeseries={[]} />
-            <WhaleTracker transactions={[]} />
-          </div>
-        )}
+        {activeTab === 'overview' && <OverviewPanel />}
+        {activeTab === 'onchain' && <OnchainPanel />}
+        {activeTab === 'macro' && <MacroPanel />}
+        {activeTab === 'sentiment' && <SentimentPanel />}
+        {activeTab === 'flow' && <FlowPanel />}
+        {activeTab === 'intermarket' && <IntermarketPanel />}
+        {activeTab === 'breadth' && <BreadthPanel />}
         {activeTab === 'valuation' && (
           <div className="space-y-4">
-            <MVRVZoneChart zScore={0} />
+            <ValuationPanel />
             <ModuleDetail
               key={activeTab}
               module={tabModules[activeTab]}
@@ -78,7 +70,7 @@ export default function FundamentalPage() {
             />
           </div>
         )}
-        {activeTab !== 'overview' && activeTab !== 'onchain' && activeTab !== 'macro' && activeTab !== 'sentiment' && activeTab !== 'flow' && activeTab !== 'valuation' && tabModules[activeTab] && (
+        {activeTab !== 'overview' && activeTab !== 'onchain' && activeTab !== 'macro' && activeTab !== 'sentiment' && activeTab !== 'flow' && activeTab !== 'valuation' && activeTab !== 'intermarket' && activeTab !== 'breadth' && tabModules[activeTab] && (
           <ModuleDetail
             key={activeTab}
             module={tabModules[activeTab]}

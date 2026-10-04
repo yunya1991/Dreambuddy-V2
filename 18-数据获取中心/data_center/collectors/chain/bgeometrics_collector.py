@@ -23,19 +23,19 @@ from data_center.core.contract import DataRecord, validate_record
 
 _BASE = "https://bitcoin-data.com/v1"
 
-# 指标端点 → API 路径映射（free tier 可用，无需 token）
+# 指标端点 → API 路径 + 响应字段名映射
 _ENDPOINTS = {
-    "mvrv": "/mvrv",
-    "sopr": "/sopr",
-    "nupl": "/nupl",
-    "active_addresses": "/active-addresses",
-    "puell_multiple": "/puell-multiple",
-    "hashribbons": "/hashribbons",
-    "aviv": "/aviv",
-    "realized_price": "/realized-price",
-    "profit_loss": "/profit-loss",
-    "cdd": "/cdd",
-    "nvt_ratio": "/nvt-ratio",
+    "mvrv": ("/mvrv", "mvrv"),
+    "sopr": ("/sopr", "sopr"),
+    "nupl": ("/nupl", "nupl"),
+    "active_addresses": ("/active-addresses", "activeAddresses"),
+    "puell_multiple": ("/puell-multiple", "puellMultiple"),
+    "hashribbons": ("/hashribbons", "hashribbons"),
+    "aviv": ("/aviv", "aviv"),
+    "realized_price": ("/realized-price", "realizedPrice"),
+    "profit_loss": ("/profit-loss", "profitLoss"),
+    "cdd": ("/cdd", "cdd"),
+    "nvt_ratio": ("/nvt-ratio", "nvtRatio"),
 }
 
 
@@ -88,7 +88,7 @@ class BGeometricsCollector(BaseCollector):
                 # 检查是否是 rate limit 错误
                 if isinstance(data, dict) and "error" in data:
                     continue  # 跳过 rate-limited 端点
-                val = self._extract_latest(data)
+                val = self._extract_latest(data, name)
                 if val is not None:
                     all_metrics[name] = val
                 all_raw[name] = data
@@ -113,9 +113,10 @@ class BGeometricsCollector(BaseCollector):
         return [rec]
 
     def _fetch_one(self, name: str) -> dict | None:
-        path = _ENDPOINTS.get(name)
-        if not path:
+        endpoint = _ENDPOINTS.get(name)
+        if not endpoint:
             return None
+        path = endpoint[0]
         try:
             resp = requests.get(
                 f"{_BASE}{path}",
@@ -128,13 +129,24 @@ class BGeometricsCollector(BaseCollector):
             return None  # fail-open per metric
 
     @staticmethod
-    def _extract_latest(data: dict | list) -> float | None:
-        """从响应中提取最新值。"""
+    def _extract_latest(data: dict | list, name: str | None = None) -> float | None:
+        """从响应中提取最新值。bitcoin-data.com 返回 list，字段名为指标本身。"""
         try:
             if isinstance(data, list) and data:
-                return float(data[-1].get("value", 0))
+                last = data[-1]
+                if name and name in _ENDPOINTS:
+                    field = _ENDPOINTS[name][1]
+                    if field in last:
+                        return float(last[field])
+                # 回退：尝试常见字段
+                for key in ("value", "latest", "current", name):
+                    if key and key in last:
+                        return float(last[key])
+                # 最后回退：取第一个数值字段
+                for v in last.values():
+                    if isinstance(v, (int, float)):
+                        return float(v)
             if isinstance(data, dict):
-                # 尝试常见字段名
                 for key in ("value", "latest", "current"):
                     if key in data:
                         v = data[key]
@@ -154,12 +166,13 @@ class BGeometricsCollector(BaseCollector):
         ts_list: list[dict] = []
         try:
             items = data if isinstance(data, list) else data.get("data", [])
+            field = _ENDPOINTS.get(name, ("", "value"))[1]
             if isinstance(items, list):
                 for item in items[-10:]:  # 最近10条
                     ts_list.append({
                         "metric": name,
-                        "date": str(item.get("date", item.get("timestamp", ""))),
-                        "value": float(item.get("value", 0)),
+                        "date": str(item.get("d", item.get("date", item.get("timestamp", "")))),
+                        "value": float(item.get(field, item.get("value", 0))),
                     })
         except (ValueError, TypeError, KeyError):
             pass
