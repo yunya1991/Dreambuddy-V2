@@ -1,0 +1,203 @@
+{
+  "config": {
+    "symbols": [
+      "BTC",
+      "ETH",
+      "SKHYNIX"
+    ],
+    "hold_bars": 40,
+    "timeout_sec": 104400,
+    "use_okx": false
+  },
+  "results": {
+    "BTC": {
+      "bars": 600,
+      "trades": 54,
+      "baseline": {
+        "n": 54,
+        "total_pnl": -0.3449,
+        "win_rate": 0.4259,
+        "max_drawdown": 0.8455,
+        "force_close_count": 54
+      },
+      "soft_vote": {
+        "n": 54,
+        "total_pnl": -0.3753,
+        "win_rate": 0.4444,
+        "max_drawdown": 1.0124,
+        "force_close_count": 10
+      },
+      "voter_stats": {
+        "A": {
+          "n": 567,
+          "win_rate": 0.8289,
+          "force_close_count": 201,
+          "hold_count": 366
+        },
+        "B": {
+          "n": 567,
+          "win_rate": 0.5097,
+          "force_close_count": 132,
+          "hold_count": 435
+        },
+        "C": {
+          "n": 567,
+          "win_rate": 0.3263,
+          "force_close_count": 224,
+          "hold_count": 0
+        },
+        "D": {
+          "n": 567,
+          "win_rate": 0.4797,
+          "force_close_count": 23,
+          "hold_count": 544
+        }
+      },
+      "improvement": {
+        "pnl_delta": -0.0304,
+        "force_close_reduction": 44
+      }
+    },
+    "ETH": {
+      "bars": 6100,
+      "trades": 604,
+      "baseline": {
+        "n": 604,
+        "total_pnl": -1.778,
+        "win_rate": 0.4785,
+        "max_drawdown": 2.2114,
+        "force_close_count": 604
+      },
+      "soft_vote": {
+        "n": 604,
+        "total_pnl": -2.6761,
+        "win_rate": 0.4652,
+        "max_drawdown": 3.1872,
+        "force_close_count": 192
+      },
+      "voter_stats": {
+        "A": {
+          "n": 5671,
+          "win_rate": 0.8563,
+          "force_close_count": 2297,
+          "hold_count": 3374
+        },
+        "B": {
+          "n": 5671,
+          "win_rate": 0.4646,
+          "force_close_count": 1003,
+          "hold_count": 4668
+        },
+        "C": {
+          "n": 5671,
+          "win_rate": 0.3807,
+          "force_close_count": 3130,
+          "hold_count": 0
+        },
+        "D": {
+          "n": 5671,
+          "win_rate": 0.4606,
+          "force_close_count": 312,
+          "hold_count": 5359
+        }
+      },
+      "improvement": {
+        "pnl_delta": -0.8981,
+        "force_close_reduction": 412
+      }
+    },
+    "SKHYNIX": {
+      "bars": 1453,
+      "trades": 140,
+      "baseline": {
+        "n": 140,
+        "total_pnl": -0.7042,
+        "win_rate": 0.5429,
+        "max_drawdown": 1.8594,
+        "force_close_count": 140
+      },
+      "soft_vote": {
+        "n": 140,
+        "total_pnl": -1.0282,
+        "win_rate": 0.5143,
+        "max_drawdown": 2.4315,
+        "force_close_count": 21
+      },
+      "voter_stats": {
+        "A": {
+          "n": 1523,
+          "win_rate": 0.8713,
+          "force_close_count": 579,
+          "hold_count": 944
+        },
+        "B": {
+          "n": 1523,
+          "win_rate": 0.4885,
+          "force_close_count": 284,
+          "hold_count": 1239
+        },
+        "C": {
+          "n": 1523,
+          "win_rate": 0.2127,
+          "force_close_count": 453,
+          "hold_count": 0
+        },
+        "D": {
+          "n": 1523,
+          "win_rate": 0.4997,
+          "force_close_count": 69,
+          "hold_count": 1454
+        }
+      },
+      "improvement": {
+        "pnl_delta": -0.324,
+        "force_close_reduction": 119
+      }
+    }
+  },
+  "skhynix_case_replay": {
+    "case": "SKHYNIX 1289 超时强平案例",
+    "entry_price": 1289.38,
+    "current_price": 1278.0,
+    "upl_ratio": -0.0088,
+    "support_level": 1270.0,
+    "voter_votes": {
+      "A": {
+        "action": "hold",
+        "confidence": 0.6,
+        "reason": "voter_a:above_swing_low_atr_2.50%"
+      },
+      "B": {
+        "action": "force_close",
+        "confidence": 0.65,
+        "reason": "voter_b:atr_no_progress_0.0088_<_0.0367"
+      },
+      "C": {
+        "action": "force_close",
+        "confidence": 0.7,
+        "reason": "voter_c:below_support_1270.00_current_1278.00"
+      },
+      "D": {
+        "action": "hold",
+        "confidence": 0.6,
+        "reason": "voter_d:decay_age_30h_upl_0.0088_>_thr_0.0050"
+      }
+    },
+    "arbitration": {
+      "action": "hold",
+      "reason": "soft_vote:hold_conf_0.60|force_close_votes_2_wrate_0.50|voter_a:above_swing_low_atr_2.50%",
+      "expected": "hold or adjust_sl_tp (支撑位上方不误强平)"
+    },
+    "baseline_would": "force_close (固定29H超时)",
+    "improvement": "软投票仲裁层应 hold/adjust_sl_tp（支撑位上方）"
+  },
+  "summary": {
+    "valid_symbols": 3,
+    "total_baseline_pnl": -2.8271,
+    "total_soft_vote_pnl": -4.0796,
+    "pnl_improvement": -1.2525,
+    "baseline_force_close": 798,
+    "soft_vote_force_close": 223,
+    "force_close_reduction_pct": 72.06
+  }
+}
