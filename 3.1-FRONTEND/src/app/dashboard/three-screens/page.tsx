@@ -50,6 +50,9 @@ export default function ThreeScreensPage() {
           setScreen1, setScreen2, setScreen3 } = useThreeScreensStore();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [symbol, setSymbol] = useState<string>('BTC');
+  // data-driven 是否已启动：等 trend 首次完成（lastUpdated 有值）后再启动，
+  // 避免 trend cache 未建好时 data-driven fallback HTTP 调 8765/api/trend-screen 自调用
+  const [dataDrivenStarted, setDataDrivenStarted] = useState(false);
 
   // 每个 API 独立状态（失败不擦旧数据，独立显示）
   const [trendStatus, setTrendStatus] = useState<ApiStatus>(initialStatus);
@@ -183,6 +186,19 @@ export default function ThreeScreensPage() {
     };
   }, [symbol, fetchWave]);
 
+  // 切币时重置 dataDrivenStarted，让新币种 trend 完成后重新等待启动
+  useEffect(() => {
+    setDataDrivenStarted(false);
+  }, [symbol]);
+
+  // Starter: 等 trend 首次完成（lastUpdated 有值 + 不在 loading）后再启动 data-driven
+  // 避免 trend cache 未建好时 data-driven fallback HTTP 调 8765/api/trend-screen 自调用
+  useEffect(() => {
+    if (trendStatus.lastUpdated && !trendStatus.loading && !dataDrivenStarted) {
+      setDataDrivenStarted(true);
+    }
+  }, [trendStatus.lastUpdated, trendStatus.loading, dataDrivenStarted]);
+
   useEffect(() => {
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
@@ -197,14 +213,15 @@ export default function ThreeScreensPage() {
       timer = setTimeout(() => runWithBackoff(sym), delay);
     };
 
-    // 首屏立即拉取（之前 120s 错峰延迟导致首屏看不到 Screen1 多维基本面数据）
+    // 等 trend 首次完成后才启动（由上方 starter effect 控制 dataDrivenStarted）
     // 后续轮询按 DATA_DRIVEN_INTERVAL_MS 错峰，仍保留 backoff 防雪崩
+    if (!dataDrivenStarted) return;
     runWithBackoff(symbol);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [symbol, fetchDataDriven]);
+  }, [dataDrivenStarted, symbol, fetchDataDriven]);
 
   const handleManualRefresh = useCallback(() => {
     fetchTrend(symbol);
