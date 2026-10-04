@@ -1,0 +1,114 @@
+{
+  "schema_version": "1.0",
+  "total_drifted": 12,
+  "drifted": [
+    {
+      "name": "dream-backtest-verify",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-eng-mgmt-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-qwen-eval-collab",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "wiki-ingest-trigger",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dreambuddy-os",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-bugfix-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-tdd-dev-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-genome-factor-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "tee-red-green-progress",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-research-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-doc-sync-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-skill-index-governance",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "total_conflicts": 3,
+  "conflicts": [
+    {
+      "trigger": "事件订阅",
+      "skills": [
+        "feishu-gateway-setup",
+        "hermes-feishu-bot-debug"
+      ]
+    },
+    {
+      "trigger": "群聊不回复",
+      "skills": [
+        "feishu-gateway-setup",
+        "hermes-feishu-bot-debug"
+      ]
+    },
+    {
+      "trigger": "飞书通信",
+      "skills": [
+        "feishu-gateway-setup",
+        "hermes-feishu-bot-debug"
+      ]
+    }
+  ]
+}

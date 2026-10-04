@@ -1,0 +1,277 @@
+{
+  "schema_version": "1.0",
+  "nodes": [
+    {
+      "id": "dream-backtest-verify",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "dream-eng-mgmt-workflow",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "dream-qwen-eval-collab",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "wiki-ingest-trigger",
+      "category": "trigger",
+      "status": "active"
+    },
+    {
+      "id": "dreambuddy-os",
+      "category": "system-kernel",
+      "status": "active"
+    },
+    {
+      "id": "dream-bugfix-workflow",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "dream-tdd-dev-workflow",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "dream-genome-factor-workflow",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "tee-red-green-progress",
+      "category": "tooling",
+      "status": "active"
+    },
+    {
+      "id": "dream-research-workflow",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "dream-doc-sync-workflow",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "dream-skill-index-governance",
+      "category": "orchestration",
+      "status": "active"
+    }
+  ],
+  "edges": [
+    {
+      "from": "dream-backtest-verify",
+      "to": "bcrm2.data_fetcher",
+      "resolved": false
+    },
+    {
+      "from": "dream-backtest-verify",
+      "to": "washout_trigger_gate",
+      "resolved": false
+    },
+    {
+      "from": "dream-backtest-verify",
+      "to": "washout_detector",
+      "resolved": false
+    },
+    {
+      "from": "dream-eng-mgmt-workflow",
+      "to": "dream-strategy-research",
+      "resolved": false
+    },
+    {
+      "from": "dream-eng-mgmt-workflow",
+      "to": "dream-operation-director",
+      "resolved": false
+    },
+    {
+      "from": "dream-eng-mgmt-workflow",
+      "to": "dream-cost-control",
+      "resolved": false
+    },
+    {
+      "from": "dream-eng-mgmt-workflow",
+      "to": "dream-task-creator",
+      "resolved": false
+    },
+    {
+      "from": "dream-qwen-eval-collab",
+      "to": "bsk",
+      "resolved": false
+    },
+    {
+      "from": "dream-qwen-eval-collab",
+      "to": "skill-creator",
+      "resolved": false
+    },
+    {
+      "from": "wiki-ingest-trigger",
+      "to": "cognitive_mcp_server.py",
+      "resolved": false
+    },
+    {
+      "from": "wiki-ingest-trigger",
+      "to": "wiki_compiler.py",
+      "resolved": false
+    },
+    {
+      "from": "wiki-ingest-trigger",
+      "to": "cordis-plugin-knowledge-wiki",
+      "resolved": false
+    },
+    {
+      "from": "dreambuddy-os",
+      "to": "A0-A9系列",
+      "resolved": false
+    },
+    {
+      "from": "dreambuddy-os",
+      "to": "graph-compressor",
+      "resolved": false
+    },
+    {
+      "from": "dreambuddy-os",
+      "to": "chain_guard",
+      "resolved": false
+    },
+    {
+      "from": "dream-bugfix-workflow",
+      "to": "dream-contradiction-theory",
+      "resolved": false
+    },
+    {
+      "from": "dream-bugfix-workflow",
+      "to": "auto-repair",
+      "resolved": false
+    },
+    {
+      "from": "dream-bugfix-workflow",
+      "to": "test-driven-development",
+      "resolved": false
+    },
+    {
+      "from": "dream-bugfix-workflow",
+      "to": "tee-red-green-progress",
+      "resolved": true
+    },
+    {
+      "from": "dream-tdd-dev-workflow",
+      "to": "dream-contradiction-theory",
+      "resolved": false
+    },
+    {
+      "from": "dream-tdd-dev-workflow",
+      "to": "tee-red-green-progress",
+      "resolved": true
+    },
+    {
+      "from": "dream-tdd-dev-workflow",
+      "to": "test-driven-development",
+      "resolved": false
+    },
+    {
+      "from": "dream-genome-factor-workflow",
+      "to": "dream-tdd-dev-workflow",
+      "resolved": true
+    },
+    {
+      "from": "dream-genome-factor-workflow",
+      "to": "dream-contradiction-theory",
+      "resolved": false
+    },
+    {
+      "from": "dream-genome-factor-workflow",
+      "to": "tee-red-green-progress",
+      "resolved": true
+    },
+    {
+      "from": "dream-genome-factor-workflow",
+      "to": "test-driven-development",
+      "resolved": false
+    },
+    {
+      "from": "tee-red-green-progress",
+      "to": "recall",
+      "resolved": false
+    },
+    {
+      "from": "tee-red-green-progress",
+      "to": "pytest",
+      "resolved": false
+    },
+    {
+      "from": "dream-research-workflow",
+      "to": "dream-contradiction-theory",
+      "resolved": false
+    },
+    {
+      "from": "dream-research-workflow",
+      "to": "dream-strategy-research",
+      "resolved": false
+    },
+    {
+      "from": "dream-research-workflow",
+      "to": "tavily",
+      "resolved": false
+    },
+    {
+      "from": "dream-research-workflow",
+      "to": "deep-research-pro",
+      "resolved": false
+    },
+    {
+      "from": "dream-research-workflow",
+      "to": "baidu-scholar-search-skill",
+      "resolved": false
+    },
+    {
+      "from": "dream-research-workflow",
+      "to": "bsk",
+      "resolved": false
+    },
+    {
+      "from": "dream-doc-sync-workflow",
+      "to": "doc_lint.py",
+      "resolved": false
+    },
+    {
+      "from": "dream-doc-sync-workflow",
+      "to": "doc_coverage.py",
+      "resolved": false
+    },
+    {
+      "from": "dream-doc-sync-workflow",
+      "to": "index_generator.py",
+      "resolved": false
+    },
+    {
+      "from": "dream-doc-sync-workflow",
+      "to": "link_checker.py",
+      "resolved": false
+    },
+    {
+      "from": "dream-doc-sync-workflow",
+      "to": "index-ops",
+      "resolved": false
+    },
+    {
+      "from": "dream-skill-index-governance",
+      "to": "hermes-skill-governance",
+      "resolved": false
+    },
+    {
+      "from": "dream-skill-index-governance",
+      "to": "hermes-shadow-verification-gate",
+      "resolved": false
+    },
+    {
+      "from": "dream-skill-index-governance",
+      "to": "hermes-rollback-actuator",
+      "resolved": false
+    }
+  ]
+}

@@ -1,0 +1,920 @@
+{
+  "version": "1.0",
+  "date": "2026-09-16",
+  "description": "交易系统意图识别测试用例集 - 覆盖6大类25+二级意图，含基础用例和边界用例",
+  "total_count": 55,
+  "test_cases": [
+    // ============================================================
+    // 一、查询类 (query) - 8条
+    // ============================================================
+    {
+      "id": "TC-001",
+      "input": "茅台现在多少钱？",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "market_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": "贵州茅台"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-002",
+      "input": "我现在有什么持仓？",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "holding_query",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-003",
+      "input": "今天的成交怎么样？",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "order_query",
+        "risk_level": "low",
+        "slots": {
+          "time_range": "today"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-004",
+      "input": "我总资产多少？",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "account_query",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-005",
+      "input": "今天大盘涨了还是跌了",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "market_overview",
+        "risk_level": "low",
+        "slots": {
+          "time_range": "today"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-006",
+      "input": "看看BTC的最新价",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "market_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": "BTC"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-007",
+      "input": "茅台的成本价是多少",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "holding_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": "贵州茅台"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-008",
+      "input": "新能源板块今天什么情况",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "sector_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "新能源",
+          "time_range": "today"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+
+    // ============================================================
+    // 二、分析类 (analysis) - 8条
+    // ============================================================
+    {
+      "id": "TC-009",
+      "input": "茅台走势怎么样？",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "implied_holding": false
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-010",
+      "input": "我手里的茅台还能拿吗？",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "implied_holding": true
+        }
+      },
+      "difficulty": "medium",
+      "category": "edge",
+      "notes": "隐含持仓状态推断 - 关键词'手里的'"
+    },
+    {
+      "id": "TC-011",
+      "input": "深度分析一下BTC",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "deep_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "BTC"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-012",
+      "input": "用三屏法看看ETH",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "three_screen_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "ETH"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-013",
+      "input": "茅台该卖吗",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "implied_holding": true
+        }
+      },
+      "difficulty": "hard",
+      "category": "edge",
+      "notes": "隐含持仓+卖出倾向，需判断是持仓分析还是直接卖出"
+    },
+    {
+      "id": "TC-014",
+      "input": "新能源板块现在什么情况？",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "sector_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "新能源"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-015",
+      "input": "ETH有没有突破迹象，技术面如何",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "ETH",
+          "indicator": "breakout"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-016",
+      "input": "好好研究一下宁德时代",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "deep_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "宁德时代"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+
+    // ============================================================
+    // 三、交易类 (trade) - 9条（高风险场景重点覆盖）
+    // ============================================================
+    {
+      "id": "TC-017",
+      "input": "帮我买100股茅台",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "quantity": 100,
+          "quantity_unit": "share",
+          "order_type": "market"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-018",
+      "input": "把宁德时代卖了",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "sell",
+        "risk_level": "high",
+        "slots": {
+          "stock": "宁德时代",
+          "quantity": "all",
+          "implied_holding": true
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic",
+      "notes": "'卖了'默认全卖，需确认"
+    },
+    {
+      "id": "TC-019",
+      "input": "茅台再加50股",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "add_position",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "quantity": 50,
+          "quantity_unit": "share",
+          "implied_holding": true
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-020",
+      "input": "全部清仓",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "close_position",
+        "risk_level": "high",
+        "slots": {
+          "stock": "all"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-021",
+      "input": "跌到1800帮我止损",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "conditional_order",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "price": 1800,
+          "action": "sell",
+          "condition_type": "stop_loss",
+          "implied_holding": true
+        }
+      },
+      "difficulty": "hard",
+      "category": "edge",
+      "notes": "缺少标的名，需结合上下文推断；条件单类型推断"
+    },
+    {
+      "id": "TC-022",
+      "input": "把刚才那单撤了",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "order_manage",
+        "risk_level": "high",
+        "slots": {
+          "action": "cancel",
+          "order_reference": "last"
+        }
+      },
+      "difficulty": "medium",
+      "category": "contextual",
+      "notes": "需结合上下文获取具体订单"
+    },
+    {
+      "id": "TC-023",
+      "input": "梭哈BTC",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "BTC",
+          "quantity": "all_in",
+          "order_type": "market"
+        }
+      },
+      "difficulty": "hard",
+      "category": "colloquial",
+      "notes": "口语化表达，'梭哈'=全仓买入，需特别警示"
+    },
+    {
+      "id": "TC-024",
+      "input": "砍了宁德",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "sell",
+        "risk_level": "high",
+        "slots": {
+          "stock": "宁德时代",
+          "quantity": "all",
+          "implied_holding": true
+        }
+      },
+      "difficulty": "hard",
+      "category": "colloquial",
+      "notes": "口语化表达，'砍'=卖出/止损"
+    },
+    {
+      "id": "TC-025",
+      "input": "BTC到7万提醒我并止盈",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "conditional_order",
+        "risk_level": "high",
+        "slots": {
+          "stock": "BTC",
+          "price": 70000,
+          "action": "sell",
+          "condition_type": "take_profit",
+          "alert": true
+        }
+      },
+      "difficulty": "hard",
+      "category": "multi-intent",
+      "notes": "混合意图：预警 + 条件单止盈"
+    },
+
+    // ============================================================
+    // 四、策略类 (strategy) - 6条
+    // ============================================================
+    {
+      "id": "TC-026",
+      "input": "推荐几只新能源股",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "stock_recommendation",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "新能源"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-027",
+      "input": "哪些股RSI超卖了？",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "factor_screen",
+        "risk_level": "medium",
+        "slots": {
+          "indicator": "RSI",
+          "condition": "oversold"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-028",
+      "input": "帮我设计一个均线策略",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "strategy_design",
+        "risk_level": "medium",
+        "slots": {
+          "strategy_name": "均线策略",
+          "strategy_type": "trend_following"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-029",
+      "input": "优化一下马丁策略参数",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "strategy_optimization",
+        "risk_level": "medium",
+        "slots": {
+          "strategy_name": "马丁策略"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-030",
+      "input": "有什么好的AI概念股？",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "stock_recommendation",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "AI"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-031",
+      "input": "筛选创历史新高的股票",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "factor_screen",
+        "risk_level": "medium",
+        "slots": {
+          "indicator": "all_time_high",
+          "condition": "breakout"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+
+    // ============================================================
+    // 五、风控类 (risk) - 6条
+    // ============================================================
+    {
+      "id": "TC-032",
+      "input": "我现在仓位风险大吗？",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "risk_assessment",
+        "risk_level": "medium",
+        "slots": {}
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-033",
+      "input": "回撤超5%了怎么办？",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "risk_advice",
+        "risk_level": "medium",
+        "slots": {
+          "risk_scenario": "drawdown_exceed_5pct"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-034",
+      "input": "BTC到7万提醒我",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "alert_setup",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "BTC",
+          "price": 70000,
+          "direction": "up"
+        }
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-035",
+      "input": "看看我组合的VaR",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "portfolio_risk",
+        "risk_level": "medium",
+        "slots": {
+          "risk_metric": "VaR"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-036",
+      "input": "茅台跌破1800通知我",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "alert_setup",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "price": 1800,
+          "direction": "down"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-037",
+      "input": "计算一下我组合的最大回撤",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "portfolio_risk",
+        "risk_level": "medium",
+        "slots": {
+          "risk_metric": "max_drawdown"
+        }
+      },
+      "difficulty": "medium",
+      "category": "basic"
+    },
+
+    // ============================================================
+    // 六、对话管理类 (dialog) - 5条
+    // ============================================================
+    {
+      "id": "TC-038",
+      "input": "好的",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "confirm",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "difficulty": "easy",
+      "category": "basic",
+      "notes": "需结合上下文判断确认什么"
+    },
+    {
+      "id": "TC-039",
+      "input": "算了",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "cancel",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-040",
+      "input": "改成200股",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "modify",
+        "risk_level": "low",
+        "slots": {
+          "quantity": 200
+        }
+      },
+      "difficulty": "medium",
+      "category": "contextual",
+      "notes": "需结合上下文知道改什么的数量"
+    },
+    {
+      "id": "TC-041",
+      "input": "再说一遍",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "repeat",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-042",
+      "input": "你能做什么？",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "chitchat",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "difficulty": "easy",
+      "category": "basic"
+    },
+
+    // ============================================================
+    // 七、边界/难例 (edge cases) - 13条
+    // ============================================================
+    {
+      "id": "TC-043",
+      "input": "那个什么酒的股票怎么样",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "unknown"
+        },
+        "clarify_needed": true,
+        "clarify_question": "请问您指的是哪只酒类股票？贵州茅台、五粮液还是其他？"
+      },
+      "difficulty": "hard",
+      "category": "ambiguity",
+      "notes": "模糊表述 - 标的不明确，需追问澄清"
+    },
+    {
+      "id": "TC-044",
+      "input": "茅台该卖吗，还有哪些新能源值得买",
+      "expected": {
+        "intent_primary": "multi",
+        "intent_secondary": "mixed",
+        "risk_level": "medium",
+        "multi_intent": true,
+        "intents": [
+          {
+            "intent_primary": "analysis",
+            "intent_secondary": "holding_analysis",
+            "slots": { "stock": "贵州茅台", "implied_holding": true },
+            "priority": 1
+          },
+          {
+            "intent_primary": "strategy",
+            "intent_secondary": "stock_recommendation",
+            "slots": { "sector": "新能源" },
+            "priority": 2
+          }
+        ]
+      },
+      "difficulty": "hard",
+      "category": "multi-intent",
+      "notes": "多意图混合 - 持仓分析 + 选股推荐"
+    },
+    {
+      "id": "TC-045",
+      "input": "不是买，是卖",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "modify",
+        "risk_level": "low",
+        "slots": {
+          "action": "sell",
+          "modify_field": "action"
+        }
+      },
+      "difficulty": "hard",
+      "category": "contextual",
+      "notes": "否定/纠正 - 需结合上下午理解修改什么"
+    },
+    {
+      "id": "TC-046",
+      "input": "那它呢",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "context_referenced"
+        }
+      },
+      "difficulty": "hard",
+      "category": "contextual",
+      "notes": "指代消解 - '它'指代上一轮讨论的标的"
+    },
+    {
+      "id": "TC-047",
+      "input": "抄底BTC",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "BTC",
+          "order_type": "market",
+          "strategy_style": "buy_the_dip"
+        }
+      },
+      "difficulty": "hard",
+      "category": "colloquial",
+      "notes": "口语化表达 - '抄底'=在低位买入"
+    },
+    {
+      "id": "TC-048",
+      "input": "100股还是100手",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "clarify",
+        "risk_level": "low",
+        "slots": {
+          "quantity": 100,
+          "quantity_unit": "ambiguous"
+        },
+        "clarify_needed": true
+      },
+      "difficulty": "hard",
+      "category": "edge",
+      "notes": "数字陷阱 - 单位歧义：股 vs 手（1手=100股）"
+    },
+    {
+      "id": "TC-049",
+      "input": "帮我测试一下买入茅台",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "test_mode": true
+        },
+        "require_confirmation": true
+      },
+      "difficulty": "hard",
+      "category": "adversarial",
+      "notes": "对抗样本 - '测试一下'可能是试探，需谨慎处理"
+    },
+    {
+      "id": "TC-050",
+      "input": "茅台怎么样？那该卖吗",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "implied_holding": true
+        }
+      },
+      "difficulty": "hard",
+      "category": "contextual",
+      "notes": "两句话上下文关联 - 第二句继承第一句的标的和隐含持仓"
+    },
+    {
+      "id": "TC-051",
+      "input": "帮我看看...算了",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "cancel",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "difficulty": "medium",
+      "category": "edge",
+      "notes": "中途取消 - 用户先说了一半然后取消"
+    },
+    {
+      "id": "TC-052",
+      "input": "止盈止损怎么设置",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "chitchat",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "difficulty": "hard",
+      "category": "ambiguity",
+      "notes": "歧义 - 是询问怎么设置（帮助），还是要我帮你设置（操作）？"
+    },
+    {
+      "id": "TC-053",
+      "input": "BTC和ETH哪个更值得买",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "stock_recommendation",
+        "risk_level": "medium",
+        "slots": {
+          "candidates": ["BTC", "ETH"],
+          "comparison": true
+        }
+      },
+      "difficulty": "hard",
+      "category": "edge",
+      "notes": "比较型问题 - 是推荐还是分析？"
+    },
+    {
+      "id": "TC-054",
+      "input": "你好，帮我查一下茅台的价格，顺便分析一下走势，最后帮我买入100股吧",
+      "expected": {
+        "intent_primary": "multi",
+        "intent_secondary": "mixed",
+        "risk_level": "high",
+        "multi_intent": true,
+        "intents": [
+          {
+            "intent_primary": "query",
+            "intent_secondary": "market_query",
+            "slots": { "stock": "贵州茅台" },
+            "priority": 1
+          },
+          {
+            "intent_primary": "analysis",
+            "intent_secondary": "technical_analysis",
+            "slots": { "stock": "贵州茅台" },
+            "priority": 2
+          },
+          {
+            "intent_primary": "trade",
+            "intent_secondary": "buy",
+            "slots": { "stock": "贵州茅台", "quantity": 100 },
+            "priority": 3
+          }
+        ]
+      },
+      "difficulty": "hard",
+      "category": "multi-intent",
+      "notes": "三意图混合 - 查询 + 分析 + 交易"
+    },
+    {
+      "id": "TC-055",
+      "input": "如果明天茅台跌破1800就卖了，否则再等等看",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "conditional_order",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "price": 1800,
+          "action": "sell",
+          "condition_type": "stop_loss",
+          "trigger_time": "tomorrow",
+          "otherwise_action": "hold"
+        }
+      },
+      "difficulty": "hard",
+      "category": "edge",
+      "notes": "复杂条件句 - 如果...就...否则...，条件单类型推断"
+    }
+  ],
+
+  "stats": {
+    "by_primary_intent": {
+      "query": 8,
+      "analysis": 8,
+      "trade": 9,
+      "strategy": 6,
+      "risk": 6,
+      "dialog": 5,
+      "multi": 3
+    },
+    "by_difficulty": {
+      "easy": 20,
+      "medium": 17,
+      "hard": 18
+    },
+    "by_category": {
+      "basic": 30,
+      "edge": 8,
+      "colloquial": 3,
+      "multi-intent": 3,
+      "contextual": 5,
+      "ambiguity": 3,
+      "adversarial": 1
+    },
+    "risk_levels": {
+      "low": 13,
+      "medium": 22,
+      "high": 20
+    }
+  }
+}

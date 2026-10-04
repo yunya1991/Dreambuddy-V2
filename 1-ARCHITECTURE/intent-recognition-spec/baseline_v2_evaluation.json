@@ -1,0 +1,2004 @@
+{
+  "total": 55,
+  "primary_accuracy": 90.9090909090909,
+  "secondary_accuracy": 87.27272727272727,
+  "slot_accuracy": 65.1685393258427,
+  "primary_correct": 50,
+  "secondary_correct": 48,
+  "slot_correct": 58,
+  "slot_total": 89,
+  "results": [
+    {
+      "id": "TC-001",
+      "input": "茅台现在多少钱？",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "market_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": "贵州茅台"
+        }
+      },
+      "actual": {
+        "intent_primary": "query",
+        "intent_secondary": "market_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": "贵州茅台"
+        },
+        "confidence": 0.98,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-002",
+      "input": "我现在有什么持仓？",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "holding_query",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "actual": {
+        "intent_primary": "query",
+        "intent_secondary": "holding_query",
+        "risk_level": "low",
+        "slots": {},
+        "confidence": 0.98,
+        "multi_intent": false,
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-003",
+      "input": "今天的成交怎么样？",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "order_query",
+        "risk_level": "low",
+        "slots": {
+          "time_range": "today"
+        }
+      },
+      "actual": {
+        "intent_primary": "query",
+        "intent_secondary": "market_overview",
+        "risk_level": "low",
+        "slots": {
+          "time_range": "today"
+        },
+        "confidence": 0.78,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": false,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-004",
+      "input": "我总资产多少？",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "account_query",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "actual": {
+        "intent_primary": "query",
+        "intent_secondary": "account_query",
+        "risk_level": "low",
+        "slots": {},
+        "confidence": 0.98,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-005",
+      "input": "今天大盘涨了还是跌了",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "market_overview",
+        "risk_level": "low",
+        "slots": {
+          "time_range": "today"
+        }
+      },
+      "actual": {
+        "intent_primary": "query",
+        "intent_secondary": "market_overview",
+        "risk_level": "low",
+        "slots": {
+          "time_range": "today"
+        },
+        "confidence": 0.98,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-006",
+      "input": "看看BTC的最新价",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "market_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": "BTC"
+        }
+      },
+      "actual": {
+        "intent_primary": "query",
+        "intent_secondary": "market_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": "BTC",
+          "stock_code": null,
+          "action": null,
+          "quantity": null,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": false
+        },
+        "confidence": 0.98,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": null
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-007",
+      "input": "茅台的成本价是多少",
+      "expected": {
+        "intent_primary": "query",
+        "intent_secondary": "holding_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": "贵州茅台"
+        }
+      },
+      "actual": {
+        "intent_primary": "query",
+        "intent_secondary": "holding_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": "贵州茅台",
+          "implied_holding": true
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-008",
+      "input": "新能源板块今天什么情况",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "sector_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "新能源",
+          "time_range": "today"
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "sector_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "新能源",
+          "time_range": "today",
+          "timeframe": "1d",
+          "implied_holding": false
+        },
+        "confidence": 0.92,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-009",
+      "input": "茅台走势怎么样？",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "implied_holding": false
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "stock_code": null,
+          "timeframe": null,
+          "implied_holding": false
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": null
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-010",
+      "input": "我手里的茅台还能拿吗？",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "implied_holding": true
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "stock_code": "600519",
+          "action": "hold",
+          "quantity": null,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": true
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "edge"
+    },
+    {
+      "id": "TC-011",
+      "input": "深度分析一下BTC",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "deep_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "BTC"
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "deep_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "BTC",
+          "implied_holding": false
+        },
+        "confidence": 0.98,
+        "multi_intent": false,
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-012",
+      "input": "用三屏法看看ETH",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "three_screen_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "ETH"
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "three_screen_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "ETH",
+          "implied_holding": false
+        },
+        "confidence": 0.96,
+        "multi_intent": false,
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-013",
+      "input": "茅台该卖吗",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "implied_holding": true
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "action": "sell",
+          "implied_holding": true
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "edge"
+    },
+    {
+      "id": "TC-014",
+      "input": "新能源板块现在什么情况？",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "sector_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "新能源"
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "sector_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "新能源",
+          "implied_holding": false
+        },
+        "confidence": 0.92,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-015",
+      "input": "ETH有没有突破迹象，技术面如何",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "ETH",
+          "indicator": "breakout"
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "ETH",
+          "indicator": "突破迹象",
+          "timeframe": null,
+          "implied_holding": false
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-016",
+      "input": "好好研究一下宁德时代",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "deep_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "宁德时代"
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "deep_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "宁德时代",
+          "implied_holding": false
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-017",
+      "input": "帮我买100股茅台",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "quantity": 100,
+          "quantity_unit": "share",
+          "order_type": "market"
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "stock_code": "600519",
+          "action": "buy",
+          "quantity": 100,
+          "price": null,
+          "order_type": null
+        },
+        "confidence": 0.97,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-018",
+      "input": "把宁德时代卖了",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "sell",
+        "risk_level": "high",
+        "slots": {
+          "stock": "宁德时代",
+          "quantity": "all",
+          "implied_holding": true
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "sell",
+        "risk_level": "high",
+        "slots": {
+          "stock": "宁德时代",
+          "stock_code": null,
+          "action": "sell",
+          "quantity": "all",
+          "implied_holding": true
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-019",
+      "input": "茅台再加50股",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "add_position",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "quantity": 50,
+          "quantity_unit": "share",
+          "implied_holding": true
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "add_position",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "quantity": 50,
+          "action": "buy"
+        },
+        "confidence": 0.97,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-020",
+      "input": "全部清仓",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "close_position",
+        "risk_level": "high",
+        "slots": {
+          "stock": "all"
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "close_position",
+        "risk_level": "high",
+        "slots": {
+          "stock": null,
+          "stock_code": null,
+          "action": "sell",
+          "quantity": "all",
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": true
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": null
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-021",
+      "input": "跌到1800帮我止损",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "conditional_order",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "price": 1800,
+          "action": "sell",
+          "condition_type": "stop_loss",
+          "implied_holding": true
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "conditional_order",
+        "risk_level": "high",
+        "slots": {
+          "stock": null,
+          "stock_code": null,
+          "action": "sell",
+          "quantity": null,
+          "price": 1800,
+          "order_type": "stop",
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": true
+        },
+        "confidence": 0.86,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请问您要对哪个标的设置跌到1800的止损？是卖出全部持仓还是指定数量？"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "edge"
+    },
+    {
+      "id": "TC-022",
+      "input": "把刚才那单撤了",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "order_manage",
+        "risk_level": "high",
+        "slots": {
+          "action": "cancel",
+          "order_reference": "last"
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "order_manage",
+        "risk_level": "high",
+        "slots": {
+          "stock": null,
+          "stock_code": null,
+          "action": "cancel",
+          "quantity": null,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": false,
+          "order_reference": "last",
+          "context_dependent": true
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "contextual"
+    },
+    {
+      "id": "TC-023",
+      "input": "梭哈BTC",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "BTC",
+          "quantity": "all_in",
+          "order_type": "market"
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "BTC",
+          "quantity": "all_in",
+          "action": "buy",
+          "implied_holding": false
+        },
+        "confidence": 0.98,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "colloquial"
+    },
+    {
+      "id": "TC-024",
+      "input": "砍了宁德",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "sell",
+        "risk_level": "high",
+        "slots": {
+          "stock": "宁德时代",
+          "quantity": "all",
+          "implied_holding": true
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "close_position",
+        "risk_level": "high",
+        "slots": {
+          "stock": "宁德时代",
+          "quantity": "all",
+          "action": "sell",
+          "implied_holding": true
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": false,
+      "difficulty": "hard",
+      "category": "colloquial"
+    },
+    {
+      "id": "TC-025",
+      "input": "BTC到7万提醒我并止盈",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "conditional_order",
+        "risk_level": "high",
+        "slots": {
+          "stock": "BTC",
+          "price": 70000,
+          "action": "sell",
+          "condition_type": "take_profit",
+          "alert": true
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "conditional_order",
+        "risk_level": "high",
+        "slots": {
+          "stock": "BTC",
+          "stock_code": null,
+          "action": "sell",
+          "quantity": null,
+          "price": 70000,
+          "order_type": "stop",
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": true
+        },
+        "confidence": 0.86,
+        "multi_intent": true,
+        "intents": [
+          {
+            "intent_primary": "trade",
+            "intent_secondary": "conditional_order",
+            "risk_level": "high",
+            "slots": {
+              "stock": "BTC",
+              "action": "sell",
+              "quantity": null,
+              "price": 70000,
+              "order_type": "stop",
+              "implied_holding": true
+            }
+          },
+          {
+            "intent_primary": "risk",
+            "intent_secondary": "alert_setup",
+            "risk_level": "medium",
+            "slots": {
+              "stock": "BTC",
+              "price": 70000
+            }
+          }
+        ],
+        "clarify_needed": true,
+        "clarify_question": "BTC到70000时您要止盈多少？请确认止盈数量或比例（例如全部平仓或指定数量）。"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "multi-intent"
+    },
+    {
+      "id": "TC-026",
+      "input": "推荐几只新能源股",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "stock_recommendation",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "新能源"
+        }
+      },
+      "actual": {
+        "intent_primary": "strategy",
+        "intent_secondary": "stock_recommendation",
+        "risk_level": "medium",
+        "slots": {
+          "stock": null,
+          "stock_code": null,
+          "action": null,
+          "quantity": null,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": "新能源",
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": false
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-027",
+      "input": "哪些股RSI超卖了？",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "factor_screen",
+        "risk_level": "medium",
+        "slots": {
+          "indicator": "RSI",
+          "condition": "oversold"
+        }
+      },
+      "actual": {
+        "intent_primary": "strategy",
+        "intent_secondary": "factor_screen",
+        "risk_level": "medium",
+        "slots": {
+          "indicator": "RSI",
+          "condition": "oversold",
+          "threshold": 30,
+          "timeframe": "1d"
+        },
+        "confidence": 0.88,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-028",
+      "input": "帮我设计一个均线策略",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "strategy_design",
+        "risk_level": "medium",
+        "slots": {
+          "strategy_name": "均线策略",
+          "strategy_type": "trend_following"
+        }
+      },
+      "actual": {
+        "intent_primary": "unknown",
+        "intent_secondary": "unknown",
+        "risk_level": "low",
+        "slots": {},
+        "confidence": 0.0,
+        "parse_error": true,
+        "raw_content": "下面给你一个**通用、可回测、偏趋势跟踪的均线策略模板**。默认按“波段趋势策略”设计，适合股票、ETF、加密货币、期货等流动性较好的品种。\n\n---\n\n# 均线趋势策略：EMA20 / EMA60 双均线策略\n\n## 一、策略核心思想\n\n利用短期均线上穿长期均线判断趋势启动，利用长期均线方向过滤震荡，只做顺势交易。\n\n策略目标不是抓最低点，而是抓一段趋势中段。\n\n---\n\n## 二、推荐参数\n\n### 默认版本：波段趋势型\n\n- 快线：EMA20\n- 慢线：EMA60\n- 趋势过滤线：EMA200\n- K线周期：日线 或 4小时\n- 交易方向：先只做多，不做空\n- 单笔风险：账户总资金的 1%～2%\n\n---\n\n## 三、买入条件\n\n满足以下全部条件时，考虑买入：\n\n1. **趋势过滤**\n   - 收盘价 > EMA200  \n   - 或 EMA200 方向向上\n\n2. **均线金叉**\n   - EMA20 上穿 EMA60\n\n3. **K线确认**\n   - 金叉当天或次日收盘价站稳在 EMA20 上方\n\n4. **可选过滤**\n   - 成交量放大，高于近20日均量\n   - ADX > 20，表示趋势较强\n   - 避开重大消息、财报、数据公布前后\n\n简化表达：\n\n```text\n买入信号 =\n收盘价 > EMA200\n且 EMA20 上穿 EMA60\n且收盘价 > EMA20\n```\n\n---\n\n## 四、卖出条件\n\n满足任一条件即可卖出：\n\n### 1. 均线死叉\n\n```text\nEMA20 下穿 EMA60\n```\n\n这是主离场信号。\n\n---\n\n### 2. 跌破趋势线\n\n```text\n收盘价跌破 EMA60\n```\n\n如果希望更敏感，可以用：\n\n```text\n收盘价跌破 EMA20\n```\n\n但这样更容易被震荡洗出去。\n\n---\n\n### 3. 固定止损\n\n买入后设置初始止损：\n\n```text\n止损价 = 买入价 × (1 - 5%)\n```\n\n激进一点可以设为 8%，保守一点可以设为 3%～5%。\n\n---\n\n### 4. ATR动态止损\n\n更推荐用 ATR：\n\n```text\n止损价 = 买入价 - 2 × ATR(14)\n```\n\n这种方式可以根据波动率自动调整止损距离。\n\n---\n\n## 五、仓位管理\n\n不要用固定金额买入，建议用风险倒推仓位。\n\n公式：\n\n```text\n买入仓位 = 账户总资金 × 单笔风险比例 ÷ 止损距离\n```\n\n例如：\n\n- 账户资金：100,000\n- 单笔风险：1%\n- 可承受亏损：1,000\n- 买入价：10元\n- 止损价：9元\n- 每股风险：1元\n\n则：\n\n```text\n可买数量 = 1000 ÷ 1 = 1000股\n```\n\n这样即使止损，也只亏账户的1%。\n\n---\n\n## 六、止盈方式\n\n均线策略不建议设固定止盈，因为它会限制趋势利润。\n\n推荐三种方式：\n\n---\n\n### 方式一：均线离场\n\n```text\n收盘价跌破 EMA20，减半仓\n收盘价跌破 EMA60，清仓\n```\n\n适合波段趋势。\n\n---\n\n### 方式二：移动止盈\n\n入场后，用最高价回撤一定幅度离场：\n\n```text\n止盈价 = 最高价 × (1 - 8%)\n```\n\n或者：\n\n```text\n止盈价 = 最高价 - 2 × ATR\n```\n\n---\n\n### 方式三：分批止盈\n\n```text\n盈利 10%：卖出 1/3\n盈利 20%：再卖出 1/3\n剩余仓位跟随 EMA60 持有\n```\n\n这种方式体验更平滑。\n\n---\n\n## 七、震荡过滤规则\n\n均线策略最大的问题是震荡市反复止损。可以加过滤条件：\n\n### 过滤一：只做趋势方向\n\n```text\nEMA20 > EMA60 > EMA200\n```\n\n只有多头排列时才允许买入。\n\n---\n\n### 过滤二：均线斜率\n\n```text\nEMA60 最近5日向上\n```\n\n如果 EMA60 走平，说明趋势不明显，不开仓。\n\n---\n\n### 过滤三：ADX过滤\n\n```text\nADX"
+      },
+      "primary_correct": false,
+      "secondary_correct": false,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-029",
+      "input": "优化一下马丁策略参数",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "strategy_optimization",
+        "risk_level": "medium",
+        "slots": {
+          "strategy_name": "马丁策略"
+        }
+      },
+      "actual": {
+        "intent_primary": "strategy",
+        "intent_secondary": "strategy_optimization",
+        "risk_level": "medium",
+        "slots": {
+          "strategy_name": "马丁策略"
+        },
+        "confidence": 0.88,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请说明需要优化的马丁策略参数范围、优化目标（如收益率、最大回撤、夏普比率等），以及回测标的和时间周期。"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-030",
+      "input": "有什么好的AI概念股？",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "stock_recommendation",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "AI"
+        }
+      },
+      "actual": {
+        "intent_primary": "strategy",
+        "intent_secondary": "stock_recommendation",
+        "risk_level": "medium",
+        "slots": {
+          "sector": "AI概念股",
+          "implied_holding": false
+        },
+        "confidence": 0.92,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-031",
+      "input": "筛选创历史新高的股票",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "factor_screen",
+        "risk_level": "medium",
+        "slots": {
+          "indicator": "all_time_high",
+          "condition": "breakout"
+        }
+      },
+      "actual": {
+        "intent_primary": "strategy",
+        "intent_secondary": "factor_screen",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "",
+          "indicator": "all_time_high",
+          "timeframe": ""
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-032",
+      "input": "我现在仓位风险大吗？",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "risk_assessment",
+        "risk_level": "medium",
+        "slots": {}
+      },
+      "actual": {
+        "intent_primary": "risk",
+        "intent_secondary": "risk_assessment",
+        "risk_level": "medium",
+        "slots": {
+          "stock": null,
+          "stock_code": null,
+          "action": null,
+          "quantity": null,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": "position_risk",
+          "time_range": null,
+          "implied_holding": true
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": null
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-033",
+      "input": "回撤超5%了怎么办？",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "risk_advice",
+        "risk_level": "medium",
+        "slots": {
+          "risk_scenario": "drawdown_exceed_5pct"
+        }
+      },
+      "actual": {
+        "intent_primary": "risk",
+        "intent_secondary": "risk_advice",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "",
+          "risk_metric": "drawdown",
+          "threshold": "5%",
+          "implied_holding": true
+        },
+        "confidence": 0.86,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请问是账户整体回撤超过5%，还是某只持仓回撤超过5%？"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-034",
+      "input": "BTC到7万提醒我",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "alert_setup",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "BTC",
+          "price": 70000,
+          "direction": "up"
+        }
+      },
+      "actual": {
+        "intent_primary": "risk",
+        "intent_secondary": "alert_setup",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "BTC",
+          "price": 70000
+        },
+        "confidence": 0.97,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-035",
+      "input": "看看我组合的VaR",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "portfolio_risk",
+        "risk_level": "medium",
+        "slots": {
+          "risk_metric": "VaR"
+        }
+      },
+      "actual": {
+        "intent_primary": "risk",
+        "intent_secondary": "portfolio_risk",
+        "risk_level": "medium",
+        "slots": {
+          "risk_metric": "VaR",
+          "implied_holding": true
+        },
+        "confidence": 0.9,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请问您想查看哪个持有期和置信水平的组合VaR？例如：1日95% VaR。"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-036",
+      "input": "茅台跌破1800通知我",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "alert_setup",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "price": 1800,
+          "direction": "down"
+        }
+      },
+      "actual": {
+        "intent_primary": "risk",
+        "intent_secondary": "alert_setup",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "price": "1800",
+          "alert_condition": "below"
+        },
+        "confidence": 0.98,
+        "multi_intent": false,
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-037",
+      "input": "计算一下我组合的最大回撤",
+      "expected": {
+        "intent_primary": "risk",
+        "intent_secondary": "portfolio_risk",
+        "risk_level": "medium",
+        "slots": {
+          "risk_metric": "max_drawdown"
+        }
+      },
+      "actual": {
+        "intent_primary": "risk",
+        "intent_secondary": "portfolio_risk",
+        "risk_level": "medium",
+        "slots": {
+          "stock": null,
+          "stock_code": null,
+          "risk_metric": "max_drawdown",
+          "time_range": null,
+          "implied_holding": true
+        },
+        "confidence": 0.92,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请问要计算哪个时间范围的最大回撤？例如近1月、近3月、今年以来或全部历史。"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "basic"
+    },
+    {
+      "id": "TC-038",
+      "input": "好的",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "confirm",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "actual": {
+        "intent_primary": "dialog",
+        "intent_secondary": "confirm",
+        "risk_level": "low",
+        "slots": {},
+        "confidence": 0.98,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-039",
+      "input": "算了",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "cancel",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "actual": {
+        "intent_primary": "dialog",
+        "intent_secondary": "cancel",
+        "risk_level": "low",
+        "slots": {},
+        "confidence": 0.95,
+        "multi_intent": false,
+        "clarify_needed": false
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-040",
+      "input": "改成200股",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "modify",
+        "risk_level": "low",
+        "slots": {
+          "quantity": 200
+        }
+      },
+      "actual": {
+        "intent_primary": "dialog",
+        "intent_secondary": "modify",
+        "risk_level": "low",
+        "slots": {
+          "quantity": 200
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "contextual"
+    },
+    {
+      "id": "TC-041",
+      "input": "再说一遍",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "repeat",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "actual": {
+        "intent_primary": "dialog",
+        "intent_secondary": "repeat",
+        "risk_level": "low",
+        "slots": {},
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-042",
+      "input": "你能做什么？",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "chitchat",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "actual": {
+        "intent_primary": "dialog",
+        "intent_secondary": "chitchat",
+        "risk_level": "low",
+        "slots": {},
+        "confidence": 0.98,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "easy",
+      "category": "basic"
+    },
+    {
+      "id": "TC-043",
+      "input": "那个什么酒的股票怎么样",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "unknown"
+        },
+        "clarify_needed": true,
+        "clarify_question": "请问您指的是哪只酒类股票？贵州茅台、五粮液还是其他？"
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": null,
+          "stock_code": null,
+          "action": null,
+          "quantity": null,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": "酒",
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": false
+        },
+        "confidence": 0.55,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "您指的是哪只酒股？比如贵州茅台、五粮液，还是想分析白酒板块？"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "ambiguity"
+    },
+    {
+      "id": "TC-044",
+      "input": "茅台该卖吗，还有哪些新能源值得买",
+      "expected": {
+        "intent_primary": "multi",
+        "intent_secondary": "mixed",
+        "risk_level": "medium",
+        "multi_intent": true,
+        "intents": [
+          {
+            "intent_primary": "analysis",
+            "intent_secondary": "holding_analysis",
+            "slots": {
+              "stock": "贵州茅台",
+              "implied_holding": true
+            },
+            "priority": 1
+          },
+          {
+            "intent_primary": "strategy",
+            "intent_secondary": "stock_recommendation",
+            "slots": {
+              "sector": "新能源"
+            },
+            "priority": 2
+          }
+        ]
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "action": "sell",
+          "implied_holding": true
+        },
+        "confidence": 0.92,
+        "multi_intent": true,
+        "intents": [
+          {
+            "intent_primary": "analysis",
+            "intent_secondary": "holding_analysis",
+            "risk_level": "medium",
+            "slots": {
+              "stock": "贵州茅台",
+              "action": "sell",
+              "implied_holding": true
+            },
+            "confidence": 0.92
+          },
+          {
+            "intent_primary": "strategy",
+            "intent_secondary": "stock_recommendation",
+            "risk_level": "medium",
+            "slots": {
+              "sector": "新能源",
+              "action": "buy"
+            },
+            "confidence": 0.9
+          }
+        ],
+        "clarify_needed": false
+      },
+      "primary_correct": false,
+      "secondary_correct": false,
+      "difficulty": "hard",
+      "category": "multi-intent"
+    },
+    {
+      "id": "TC-045",
+      "input": "不是买，是卖",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "modify",
+        "risk_level": "low",
+        "slots": {
+          "action": "sell",
+          "modify_field": "action"
+        }
+      },
+      "actual": {
+        "intent_primary": "dialog",
+        "intent_secondary": "modify",
+        "risk_level": "low",
+        "slots": {
+          "action": "sell",
+          "context_dependent": true
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "contextual"
+    },
+    {
+      "id": "TC-046",
+      "input": "那它呢",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "technical_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "context_referenced"
+        }
+      },
+      "actual": {
+        "intent_primary": "query",
+        "intent_secondary": "market_query",
+        "risk_level": "low",
+        "slots": {
+          "stock": null,
+          "stock_code": null,
+          "implied_holding": false
+        },
+        "confidence": 0.2,
+        "multi_intent": false,
+        "clarify_needed": true,
+        "clarify_question": "您指的是哪只标的？请提供名称或代码，以及您想查询价格、走势还是进行分析。"
+      },
+      "primary_correct": false,
+      "secondary_correct": false,
+      "difficulty": "hard",
+      "category": "contextual"
+    },
+    {
+      "id": "TC-047",
+      "input": "抄底BTC",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "BTC",
+          "order_type": "market",
+          "strategy_style": "buy_the_dip"
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "BTC",
+          "stock_code": "BTC",
+          "action": "buy",
+          "quantity": null,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": false
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请问您要买入多少 BTC？"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "colloquial"
+    },
+    {
+      "id": "TC-048",
+      "input": "100股还是100手",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "clarify",
+        "risk_level": "low",
+        "slots": {
+          "quantity": 100,
+          "quantity_unit": "ambiguous"
+        },
+        "clarify_needed": true
+      },
+      "actual": {
+        "intent_primary": "dialog",
+        "intent_secondary": "clarify",
+        "risk_level": "low",
+        "slots": {
+          "quantity": "100股或100手"
+        },
+        "confidence": 0.95,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请确认您要使用的是100股还是100手？"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "edge"
+    },
+    {
+      "id": "TC-049",
+      "input": "帮我测试一下买入茅台",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "test_mode": true
+        },
+        "require_confirmation": true
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "stock_code": "600519",
+          "action": "buy",
+          "quantity": null,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": false
+        },
+        "confidence": 0.86,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请问您是要模拟测试还是真实买入茅台？请补充买入数量、价格或订单类型（如市价/限价）。"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "adversarial"
+    },
+    {
+      "id": "TC-050",
+      "input": "茅台怎么样？那该卖吗",
+      "expected": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "implied_holding": true
+        }
+      },
+      "actual": {
+        "intent_primary": "analysis",
+        "intent_secondary": "holding_analysis",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "贵州茅台",
+          "stock_code": null,
+          "action": "sell",
+          "quantity": null,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "indicator": null,
+          "sector": null,
+          "strategy_name": null,
+          "risk_metric": null,
+          "time_range": null,
+          "implied_holding": true
+        },
+        "confidence": 0.9,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "contextual"
+    },
+    {
+      "id": "TC-051",
+      "input": "帮我看看...算了",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "cancel",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "actual": {
+        "intent_primary": "dialog",
+        "intent_secondary": "cancel",
+        "risk_level": "low",
+        "slots": {},
+        "confidence": 0.9,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "medium",
+      "category": "edge"
+    },
+    {
+      "id": "TC-052",
+      "input": "止盈止损怎么设置",
+      "expected": {
+        "intent_primary": "dialog",
+        "intent_secondary": "chitchat",
+        "risk_level": "low",
+        "slots": {}
+      },
+      "actual": {
+        "intent_primary": "risk",
+        "intent_secondary": "alert_setup",
+        "risk_level": "medium",
+        "slots": {
+          "stock": null,
+          "risk_metric": "止盈止损",
+          "price": null,
+          "timeframe": null
+        },
+        "confidence": 0.78,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请问您想为哪只标的设置止盈止损？希望按价格还是涨跌幅设置止盈位和止损位？"
+      },
+      "primary_correct": false,
+      "secondary_correct": false,
+      "difficulty": "hard",
+      "category": "ambiguity"
+    },
+    {
+      "id": "TC-053",
+      "input": "BTC和ETH哪个更值得买",
+      "expected": {
+        "intent_primary": "strategy",
+        "intent_secondary": "stock_recommendation",
+        "risk_level": "medium",
+        "slots": {
+          "candidates": [
+            "BTC",
+            "ETH"
+          ],
+          "comparison": true
+        }
+      },
+      "actual": {
+        "intent_primary": "strategy",
+        "intent_secondary": "stock_recommendation",
+        "risk_level": "medium",
+        "slots": {
+          "stock": "BTC/ETH",
+          "action": "buy"
+        },
+        "confidence": 0.82,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": true,
+        "clarify_question": "请问您更关注短线交易还是长期配置？您的风险承受能力如何？"
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "edge"
+    },
+    {
+      "id": "TC-054",
+      "input": "你好，帮我查一下茅台的价格，顺便分析一下走势，最后帮我买入100股吧",
+      "expected": {
+        "intent_primary": "multi",
+        "intent_secondary": "mixed",
+        "risk_level": "high",
+        "multi_intent": true,
+        "intents": [
+          {
+            "intent_primary": "query",
+            "intent_secondary": "market_query",
+            "slots": {
+              "stock": "贵州茅台"
+            },
+            "priority": 1
+          },
+          {
+            "intent_primary": "analysis",
+            "intent_secondary": "technical_analysis",
+            "slots": {
+              "stock": "贵州茅台"
+            },
+            "priority": 2
+          },
+          {
+            "intent_primary": "trade",
+            "intent_secondary": "buy",
+            "slots": {
+              "stock": "贵州茅台",
+              "quantity": 100
+            },
+            "priority": 3
+          }
+        ]
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "buy",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "stock_code": "600519",
+          "action": "buy",
+          "quantity": 100,
+          "price": null,
+          "order_type": null,
+          "timeframe": null,
+          "implied_holding": false
+        },
+        "confidence": 0.92,
+        "multi_intent": true,
+        "intents": [
+          {
+            "intent_primary": "trade",
+            "intent_secondary": "buy",
+            "risk_level": "high",
+            "slots": {
+              "stock": "贵州茅台",
+              "stock_code": "600519",
+              "action": "buy",
+              "quantity": 100,
+              "price": null,
+              "order_type": null,
+              "timeframe": null,
+              "implied_holding": false
+            },
+            "confidence": 0.92
+          },
+          {
+            "intent_primary": "analysis",
+            "intent_secondary": "technical_analysis",
+            "risk_level": "medium",
+            "slots": {
+              "stock": "贵州茅台",
+              "stock_code": "600519",
+              "timeframe": null,
+              "indicator": null,
+              "implied_holding": false
+            },
+            "confidence": 0.95
+          },
+          {
+            "intent_primary": "query",
+            "intent_secondary": "market_query",
+            "risk_level": "low",
+            "slots": {
+              "stock": "贵州茅台",
+              "stock_code": "600519"
+            },
+            "confidence": 0.98
+          }
+        ],
+        "clarify_needed": true,
+        "clarify_question": "请确认是否买入贵州茅台100股，并说明使用市价单还是限价单（若限价请提供价格）。"
+      },
+      "primary_correct": false,
+      "secondary_correct": false,
+      "difficulty": "hard",
+      "category": "multi-intent"
+    },
+    {
+      "id": "TC-055",
+      "input": "如果明天茅台跌破1800就卖了，否则再等等看",
+      "expected": {
+        "intent_primary": "trade",
+        "intent_secondary": "conditional_order",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "price": 1800,
+          "action": "sell",
+          "condition_type": "stop_loss",
+          "trigger_time": "tomorrow",
+          "otherwise_action": "hold"
+        }
+      },
+      "actual": {
+        "intent_primary": "trade",
+        "intent_secondary": "conditional_order",
+        "risk_level": "high",
+        "slots": {
+          "stock": "贵州茅台",
+          "stock_code": "600519",
+          "action": "sell",
+          "quantity": "all",
+          "price": 1800,
+          "order_type": "stop",
+          "timeframe": "1d",
+          "time_range": "tomorrow",
+          "implied_holding": true
+        },
+        "confidence": 0.92,
+        "multi_intent": false,
+        "intents": [],
+        "clarify_needed": false,
+        "clarify_question": ""
+      },
+      "primary_correct": true,
+      "secondary_correct": true,
+      "difficulty": "hard",
+      "category": "edge"
+    }
+  ],
+  "by_difficulty": {
+    "easy": {
+      "total": 21,
+      "primary_correct": 20,
+      "secondary_correct": 19
+    },
+    "medium": {
+      "total": 17,
+      "primary_correct": 17,
+      "secondary_correct": 17
+    },
+    "hard": {
+      "total": 17,
+      "primary_correct": 13,
+      "secondary_correct": 12
+    }
+  },
+  "by_category": {
+    "basic": {
+      "total": 34,
+      "primary_correct": 33,
+      "secondary_correct": 32
+    },
+    "edge": {
+      "total": 7,
+      "primary_correct": 7,
+      "secondary_correct": 7
+    },
+    "contextual": {
+      "total": 5,
+      "primary_correct": 4,
+      "secondary_correct": 4
+    },
+    "colloquial": {
+      "total": 3,
+      "primary_correct": 3,
+      "secondary_correct": 2
+    },
+    "multi-intent": {
+      "total": 3,
+      "primary_correct": 1,
+      "secondary_correct": 1
+    },
+    "ambiguity": {
+      "total": 2,
+      "primary_correct": 1,
+      "secondary_correct": 1
+    },
+    "adversarial": {
+      "total": 1,
+      "primary_correct": 1,
+      "secondary_correct": 1
+    }
+  }
+}

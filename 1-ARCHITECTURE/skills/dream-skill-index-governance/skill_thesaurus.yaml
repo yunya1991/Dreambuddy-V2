@@ -1,0 +1,80 @@
+# SKILL 触发词权威词表（Authority Thesaurus）
+# 借鉴图书馆学 LCSH 权威控制：每个术语有 canonical 形式 + 同义词 + domain 消歧
+# 用于消解 skill_indexer 检测到的 36 个触发词冲突
+
+# ─── 同义词归一（USE/UF） ───
+synonyms:
+  深度调研:
+    canonical: 深度调研
+    uf: [市场调研, 技术调研, 多源研究, 情报收集, 调研]
+  矛盾分析:
+    canonical: 矛盾分析
+    uf: [第一性原理, 主要矛盾, 矛盾论]
+  TDD开发:
+    canonical: TDD开发
+    uf: [红-绿-重构, red-green-refactor, 测试驱动]
+  bug修复:
+    canonical: bug修复
+    uf: [缺陷修复, 根因分析, 5why, 排障]
+  代码审查:
+    canonical: 代码审查
+    uf: [code review, CR, 代码评审]
+
+# ─── domain 消歧（冲突 trigger 按 domain 路由到目标 SKILL） ───
+disambiguation:
+  analysis:
+    trading: dream-data-analysis
+    intelligence: dream-intelligence-analysis
+    default: dream-data-analysis
+  code:
+    review: code-review-merge-assistant
+    receiving: receiving-code-review
+    requesting: requesting-code-review
+    default: code-review-merge-assistant
+  development:
+    branch: finishing-a-development-branch
+    subagent: subagent-driven-development
+    tdd: test-driven-development
+    default: test-driven-development
+  cost:
+    control: dream-cost-control
+    model: dream-execution-cost-model
+    default: dream-cost-control
+  branch:
+    lifecycle: branch-lifecycle-automation
+    finishing: finishing-a-development-branch
+    default: branch-lifecycle-automation
+  driven:
+    subagent: subagent-driven-development
+    test: test-driven-development
+    default: test-driven-development
+  research:
+    strategy: dream-strategy-research
+    general: dream-research-workflow
+    default: dream-research-workflow
+
+# ─── 泛化 trigger 黑名单（自动推断的无意义 trigger，应忽略） ───
+# 这些 trigger 太泛化，无法唯一标识 SKILL，从冲突检测中排除
+generic_triggers:
+  - "a"
+  - "an"
+  - "the"
+  - "to"
+  - "of"
+  - "in"
+  - "on"
+  - "for"
+  - "and"
+  - "or"
+  - "is"
+  - "are"
+  - "be"
+  - "by"
+  - "with"
+  - "from"
+  - "at"
+  - "as"
+  - "it"
+  - "this"
+  - "that"
+  - "channel directory"

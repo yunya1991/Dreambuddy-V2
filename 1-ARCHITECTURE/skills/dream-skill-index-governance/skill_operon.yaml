@@ -1,0 +1,40 @@
+# SKILL 套件定义（操纵子 Operon）
+# 借鉴生物学操纵子：功能相关的 SKILL 在同一 trigger 下协同加载
+# 当套件中任一 SKILL 被触发时，自动加载同套件的所有成员
+
+tdd-suite:
+  description: "TDD 开发全流程套件"
+  members:
+    - dream-tdd-dev-workflow
+    - tee-red-green-progress
+    - test-driven-development
+  trigger: "TDD"
+
+research-suite:
+  description: "深度调研套件"
+  members:
+    - dream-research-workflow
+    - dream-strategy-research
+    - dream-qwen-eval-collab
+  trigger: "调研"
+
+bugfix-suite:
+  description: "Bug 修复套件"
+  members:
+    - dream-bugfix-workflow
+    - dream-contradiction-theory
+  trigger: "bug修复"
+
+skill-governance-suite:
+  description: "SKILL 治理套件"
+  members:
+    - dream-skill-index-governance
+    - skill-creator
+  trigger: "SKILL治理"
+
+backtest-suite:
+  description: "回测验证套件"
+  members:
+    - dream-backtest-verify
+    - dream-classic-pipeline-tdd-migration
+  trigger: "回测"

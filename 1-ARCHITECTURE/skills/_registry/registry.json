@@ -1,0 +1,982 @@
+{
+  "schema_version": "1.0",
+  "total_count": 20,
+  "skills": [
+    {
+      "name": "dream-backtest-verify",
+      "description": "Orchestrates 5-step post-hoc backtest verification: load trades → fetch klines → run detector gate → rebound attribution → value report. Invoke for backtest verification of trading subsystems (BDSM/BCRM/strategy/evolution/washout).",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dream-backtest-verify/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "事后归因",
+        "回测验证",
+        "价值评估",
+        "backtest verify",
+        "验证子系统价值",
+        "止损反弹率",
+        "触发门召回率"
+      ],
+      "depends_on": [
+        "bcrm2.data_fetcher",
+        "washout_trigger_gate",
+        "washout_detector"
+      ],
+      "provides": [
+        "backtest-verify-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790008785279-4f8e9a51",
+        "VM-1789994567129-791d228a"
+      ],
+      "content_hash": "fd751f109109e883181d76aa635f59970dd99801c376f6f23cbddd8da92fc34a",
+      "parse_error": null,
+      "override_fields": null
+    },
+    {
+      "name": "dream-eng-mgmt-workflow",
+      "description": "Orchestrates eng mgmt: requirement breakdown → milestone planning → dependency graph → scheduling → risk plan → hermes reflection. Invoke for eng mgmt, scheduling, milestone.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dream-eng-mgmt-workflow/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "工程管理",
+        "排期",
+        "里程碑",
+        "依赖关系"
+      ],
+      "depends_on": [
+        "dream-strategy-research",
+        "dream-operation-director",
+        "dream-cost-control",
+        "dream-task-creator"
+      ],
+      "provides": [
+        "eng-mgmt-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "c9fd1afb4771b59bcfa1b001f9e9b99279307c8d25741a9d2ec7b755a266865f",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-eng-mgmt-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-eng-mgmt-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-eng-mgmt-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-qwen-eval-collab",
+      "description": "Orchestrates 5-step Qwen collab: user need → trae analysis → bsk calls Qwen research → trae evaluates & generates spec → user review. Invoke for Qwen/second-round eval, or complex 4-dim research (finance+github+modular+code).",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dream-qwen-eval-collab/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "千问评估",
+        "二轮评估",
+        "回送千问",
+        "老师评估",
+        "蒸馏评估",
+        "形成 SKILL",
+        "hermes 反思"
+      ],
+      "depends_on": [
+        "bsk",
+        "skill-creator"
+      ],
+      "provides": [
+        "qwen-eval-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001192903-2224e07e",
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "82bc438a002a56056503b6e153c6df24faeb24c1980afe49c6fc1e37431b4758",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-qwen-eval-collab",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-qwen-eval-collab",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-qwen-eval-collab",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dreambuddy-os",
+      "description": "Dreambuddy V2 AI 驱动操作系统 — 系统级 SKILL 内核\n\n定位： Dreambuddy OS 的核心调度层，通过调用已有 SKILL 和 API 实现完整协作，\n本身是纯编排层，不重复建设任何能力。\n\n核心能力：\n1. 意图识别 — 零 Token 本地计算，6 种意图类型\n2. 架构规划（SACG 四层）— 基于 A1 Feed + 知识库 + 记忆构建蓝图/执行图/时间线/图存储\n3. 节点注册表 NodeRegistry — 35个模块配置 + 11个本地实现\n4. 统一节点执行器 UnifiedNodeExecutor — 整合注册表+适配器+重试+降级\n5. 动态执行 — 三大思维链主链 + 节点动态组合 + 反思决策\n6. 错误码体系 — 6大类错误码，标准化错误处理\n7. 压力测试框架 — 6种压测场景，性能验证\n8. 自我进化 — A7/A8 实践论 + gap_score 路由 + 做梦部\n9. D-Z-E 开发链 — 自进化引擎驱动，向外学习创建新能力\n10. 预算管理 — Token 三档 + 仓位风控 + 成本核算\n\n验证实验： Agent B（系统架构验证组）通过执行本 SKILL 来验证整个系统设计的可行性。\n\n调用原则：\n- 调用的不重复建设\n- 能力清单在总架构中已存在\n- 架构检查模块可定期验证执行效果\n",
+      "version": "1.1.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dreambuddy-os/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "system-kernel",
+      "triggers": [
+        "Dreambuddy OS",
+        "SACG架构",
+        "系统调度",
+        "操作系统内核"
+      ],
+      "depends_on": [
+        "A0-A9系列",
+        "graph-compressor",
+        "chain_guard"
+      ],
+      "provides": [
+        "os-kernel",
+        "sacg-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "e9d807962e65746ce9c54987dac7442c4b85f26594f26318ff7cf65bf44ba794",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dreambuddy-os",
+        "locations": [
+          {
+            "path": ".trae/skills/dreambuddy-os",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dreambuddy-os",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-06-27"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-bugfix-workflow",
+      "description": "Orchestrates bugfix: symptom collect → reproduce → root cause (5why) → fix proposal → TDD verify → hermes reflection. Invoke for bug fix, root cause analysis.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dream-bugfix-workflow/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "bug 修复",
+        "根因分析",
+        "5why",
+        "缺陷修复"
+      ],
+      "depends_on": [
+        "dream-contradiction-theory",
+        "auto-repair",
+        "test-driven-development",
+        "tee-red-green-progress"
+      ],
+      "provides": [
+        "bugfix-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "4ae72089829b8650bb4f954191942f9efecc2fb6eb688bc82a01cb96fe88990d",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-bugfix-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-bugfix-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-bugfix-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-tdd-dev-workflow",
+      "description": "Orchestrates TDD cycle: need analysis → RED (failing test) → GREEN (minimal impl) → REFACTOR → hermes reflection. Invoke for TDD dev, red-green-refactor.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dream-tdd-dev-workflow/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "TDD 开发",
+        "红-绿-重构",
+        "red-green-refactor"
+      ],
+      "depends_on": [
+        "dream-contradiction-theory",
+        "tee-red-green-progress",
+        "test-driven-development"
+      ],
+      "provides": [
+        "tdd-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86",
+        "VM-1790003713722-e05028a2"
+      ],
+      "content_hash": "ec5af184841ab10ceef56d8b209bd0e98e3199caff401fd24c6d141cfa5dcfee",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-tdd-dev-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-tdd-dev-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-tdd-dev-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "tee-red-green-progress",
+      "description": "Standard TDD workflow for TEE Tasks N→N+1 in dreambuddy-v2: (1) recall before any coding (hard constraint), (2) write RED spec tests asserting ModuleNotFoundError for new module, (3) run to confirm red count, (4) implement production code to reach GREEN, (5) run full TEE suite (22-执行引擎中心/tests/) to validate 0 regression, (6) append TR evidence blocks to tasks.md. Invoke on every new TEE task (Task 1–N) or when the user asks to continue the next TEE stage.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/tee-red-green-progress/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "tooling",
+      "triggers": [
+        "TEE Task",
+        "RED-GREEN",
+        "TDD进度",
+        "红绿重构"
+      ],
+      "depends_on": [
+        "recall",
+        "pytest"
+      ],
+      "provides": [
+        "tee-tdd-workflow"
+      ],
+      "cognitive_links": [
+        "VM-1790003713722-e05028a2"
+      ],
+      "content_hash": "1ab5607e8b447e298b7db2f1bf4543fcd6388932f0797c8a55432e0c9b585fc1",
+      "parse_error": null,
+      "override_fields": {
+        "id": "tee-red-green-progress",
+        "locations": [
+          {
+            "path": ".trae/skills/tee-red-green-progress",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/tee-red-green-progress",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-research-workflow",
+      "description": "Orchestrates 5-step research: need analysis → multi-source research (finance+github+modular+code) → cross-validation → report → hermes reflection. Invoke for deep research, market research, or tech research.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dream-research-workflow/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "深度调研",
+        "市场调研",
+        "技术调研",
+        "多源研究"
+      ],
+      "depends_on": [
+        "dream-contradiction-theory",
+        "dream-strategy-research",
+        "tavily",
+        "deep-research-pro",
+        "baidu-scholar-search-skill",
+        "bsk"
+      ],
+      "provides": [
+        "research-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "00a1098c86c87e212e35a78577bc537d13d530e8b932fdd7e48a34cdefe35cd0",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-research-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-research-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-research-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-skill-index-governance",
+      "description": "Meta-SKILL: governs SKILL index/version/dependency/lifecycle/conflict/drift. Invoke for SKILL registry build, lifecycle transition, conflict detection, or drift monitoring.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dream-skill-index-governance/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "SKILL 索引",
+        "SKILL 治理",
+        "SKILL 生命周期",
+        "SKILL 冲突检测",
+        "SKILL 漂移",
+        "skill-indexer"
+      ],
+      "depends_on": [
+        "hermes-skill-governance",
+        "hermes-shadow-verification-gate",
+        "hermes-rollback-actuator"
+      ],
+      "provides": [
+        "skill-index-governance",
+        "skill-lifecycle-management",
+        "skill-conflict-detection",
+        "skill-drift-monitoring"
+      ],
+      "cognitive_links": [
+        "VM-1790002963075-0b027747",
+        "VM-1790001702811-24bffe86",
+        "VM-1790001192903-2224e07e"
+      ],
+      "content_hash": "0ed1244002e7ab9ec29d477749f765f1bf6bde39208fa6efb2a328896b0cc03d",
+      "parse_error": null,
+      "override_fields": null
+    },
+    {
+      "name": "dream-backtest-verify",
+      "description": "Orchestrates 5-step post-hoc backtest verification: load trades → fetch klines → run detector gate → rebound attribution → value report. Invoke for backtest verification of trading subsystems (BDSM/BCRM/strategy/evolution/washout).",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-backtest-verify/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "事后归因",
+        "回测验证",
+        "价值评估",
+        "backtest verify",
+        "验证子系统价值",
+        "止损反弹率",
+        "触发门召回率"
+      ],
+      "depends_on": [
+        "bcrm2.data_fetcher",
+        "washout_trigger_gate",
+        "washout_detector"
+      ],
+      "provides": [
+        "backtest-verify-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790008785279-4f8e9a51",
+        "VM-1789994567129-791d228a"
+      ],
+      "content_hash": "fd751f109109e883181d76aa635f59970dd99801c376f6f23cbddd8da92fc34a",
+      "parse_error": null,
+      "override_fields": null
+    },
+    {
+      "name": "dream-eng-mgmt-workflow",
+      "description": "Orchestrates eng mgmt: requirement breakdown → milestone planning → dependency graph → scheduling → risk plan → hermes reflection. Invoke for eng mgmt, scheduling, milestone.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-eng-mgmt-workflow/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "工程管理",
+        "排期",
+        "里程碑",
+        "依赖关系"
+      ],
+      "depends_on": [
+        "dream-strategy-research",
+        "dream-operation-director",
+        "dream-cost-control",
+        "dream-task-creator"
+      ],
+      "provides": [
+        "eng-mgmt-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "c9fd1afb4771b59bcfa1b001f9e9b99279307c8d25741a9d2ec7b755a266865f",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-eng-mgmt-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-eng-mgmt-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-eng-mgmt-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-qwen-eval-collab",
+      "description": "Orchestrates 5-step Qwen collab: user need → trae analysis → bsk calls Qwen research → trae evaluates & generates spec → user review. Invoke for Qwen/second-round eval, or complex 4-dim research (finance+github+modular+code).",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-qwen-eval-collab/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "千问评估",
+        "二轮评估",
+        "回送千问",
+        "老师评估",
+        "蒸馏评估",
+        "形成 SKILL",
+        "hermes 反思"
+      ],
+      "depends_on": [
+        "bsk",
+        "skill-creator"
+      ],
+      "provides": [
+        "qwen-eval-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001192903-2224e07e",
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "642ce5a4f0c164c6f1e9323f87144489c37265cecae24065388d7c94e107d18f",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-qwen-eval-collab",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-qwen-eval-collab",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-qwen-eval-collab",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dreambuddy-os",
+      "description": "Dreambuddy V2 AI 驱动操作系统 — 系统级 SKILL 内核\n\n定位： Dreambuddy OS 的核心调度层，通过调用已有 SKILL 和 API 实现完整协作，\n本身是纯编排层，不重复建设任何能力。\n\n核心能力：\n1. 意图识别 — 零 Token 本地计算，6 种意图类型\n2. 架构规划（SACG 四层）— 基于 A1 Feed + 知识库 + 记忆构建蓝图/执行图/时间线/图存储\n3. 节点注册表 NodeRegistry — 35个模块配置 + 11个本地实现\n4. 统一节点执行器 UnifiedNodeExecutor — 整合注册表+适配器+重试+降级\n5. 动态执行 — 三大思维链主链 + 节点动态组合 + 反思决策\n6. 错误码体系 — 6大类错误码，标准化错误处理\n7. 压力测试框架 — 6种压测场景，性能验证\n8. 自我进化 — A7/A8 实践论 + gap_score 路由 + 做梦部\n9. D-Z-E 开发链 — 自进化引擎驱动，向外学习创建新能力\n10. 预算管理 — Token 三档 + 仓位风控 + 成本核算\n\n验证实验： Agent B（系统架构验证组）通过执行本 SKILL 来验证整个系统设计的可行性。\n\n调用原则：\n- 调用的不重复建设\n- 能力清单在总架构中已存在\n- 架构检查模块可定期验证执行效果\n",
+      "version": "1.1.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dreambuddy-os/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "system-kernel",
+      "triggers": [
+        "Dreambuddy OS",
+        "SACG架构",
+        "系统调度",
+        "操作系统内核"
+      ],
+      "depends_on": [
+        "A0-A9系列",
+        "graph-compressor",
+        "chain_guard"
+      ],
+      "provides": [
+        "os-kernel",
+        "sacg-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "e9d807962e65746ce9c54987dac7442c4b85f26594f26318ff7cf65bf44ba794",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dreambuddy-os",
+        "locations": [
+          {
+            "path": ".trae/skills/dreambuddy-os",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dreambuddy-os",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-06-27"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-bugfix-workflow",
+      "description": "Orchestrates bugfix: symptom collect → reproduce → root cause (5why) → fix proposal → TDD verify → hermes reflection. Invoke for bug fix, root cause analysis.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-bugfix-workflow/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "bug 修复",
+        "根因分析",
+        "5why",
+        "缺陷修复"
+      ],
+      "depends_on": [
+        "dream-contradiction-theory",
+        "auto-repair",
+        "test-driven-development",
+        "tee-red-green-progress"
+      ],
+      "provides": [
+        "bugfix-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "4ae72089829b8650bb4f954191942f9efecc2fb6eb688bc82a01cb96fe88990d",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-bugfix-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-bugfix-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-bugfix-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-tdd-dev-workflow",
+      "description": "Orchestrates TDD cycle: need analysis → RED (failing test) → GREEN (minimal impl) → REFACTOR → hermes reflection. Invoke for TDD dev, red-green-refactor.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-tdd-dev-workflow/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "TDD 开发",
+        "红-绿-重构",
+        "red-green-refactor"
+      ],
+      "depends_on": [
+        "dream-contradiction-theory",
+        "tee-red-green-progress",
+        "test-driven-development"
+      ],
+      "provides": [
+        "tdd-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86",
+        "VM-1790003713722-e05028a2"
+      ],
+      "content_hash": "ec5af184841ab10ceef56d8b209bd0e98e3199caff401fd24c6d141cfa5dcfee",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-tdd-dev-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-tdd-dev-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-tdd-dev-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "tee-red-green-progress",
+      "description": "Standard TDD workflow for TEE Tasks N→N+1 in dreambuddy-v2: (1) recall before any coding (hard constraint), (2) write RED spec tests asserting ModuleNotFoundError for new module, (3) run to confirm red count, (4) implement production code to reach GREEN, (5) run full TEE suite (22-执行引擎中心/tests/) to validate 0 regression, (6) append TR evidence blocks to tasks.md. Invoke on every new TEE task (Task 1–N) or when the user asks to continue the next TEE stage.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/tee-red-green-progress/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "tooling",
+      "triggers": [
+        "TEE Task",
+        "RED-GREEN",
+        "TDD进度",
+        "红绿重构"
+      ],
+      "depends_on": [
+        "recall",
+        "pytest"
+      ],
+      "provides": [
+        "tee-tdd-workflow"
+      ],
+      "cognitive_links": [
+        "VM-1790003713722-e05028a2"
+      ],
+      "content_hash": "1ab5607e8b447e298b7db2f1bf4543fcd6388932f0797c8a55432e0c9b585fc1",
+      "parse_error": null,
+      "override_fields": {
+        "id": "tee-red-green-progress",
+        "locations": [
+          {
+            "path": ".trae/skills/tee-red-green-progress",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/tee-red-green-progress",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-research-workflow",
+      "description": "Orchestrates 5-step research: need analysis → multi-source research (finance+github+modular+code) → cross-validation → report → hermes reflection. Invoke for deep research, market research, or tech research.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-research-workflow/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "深度调研",
+        "市场调研",
+        "技术调研",
+        "多源研究"
+      ],
+      "depends_on": [
+        "dream-contradiction-theory",
+        "dream-strategy-research",
+        "tavily",
+        "deep-research-pro",
+        "baidu-scholar-search-skill",
+        "bsk"
+      ],
+      "provides": [
+        "research-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790001702811-24bffe86"
+      ],
+      "content_hash": "00a1098c86c87e212e35a78577bc537d13d530e8b932fdd7e48a34cdefe35cd0",
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-research-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-research-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-research-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-21",
+          "activated_at": "2026-09-21"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-skill-index-governance",
+      "description": "Meta-SKILL: governs SKILL index/version/dependency/lifecycle/conflict/drift. Invoke for SKILL registry build, lifecycle transition, conflict detection, or drift monitoring.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-skill-index-governance/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "SKILL 索引",
+        "SKILL 治理",
+        "SKILL 生命周期",
+        "SKILL 冲突检测",
+        "SKILL 漂移",
+        "skill-indexer"
+      ],
+      "depends_on": [
+        "hermes-skill-governance",
+        "hermes-shadow-verification-gate",
+        "hermes-rollback-actuator"
+      ],
+      "provides": [
+        "skill-index-governance",
+        "skill-lifecycle-management",
+        "skill-conflict-detection",
+        "skill-drift-monitoring"
+      ],
+      "cognitive_links": [
+        "VM-1790002963075-0b027747",
+        "VM-1790001702811-24bffe86",
+        "VM-1790001192903-2224e07e"
+      ],
+      "content_hash": "0ed1244002e7ab9ec29d477749f765f1bf6bde39208fa6efb2a328896b0cc03d",
+      "parse_error": null,
+      "override_fields": null
+    },
+    {
+      "name": "dream-arch-gap-analysis-workflow",
+      "description": "Orchestrates architecture gap analysis: recall → two-round audit → SPEC-A (gap list) → 3-dimension parallel Agent research (finance/AI multi-agent/GitHub) → integrate insights → SPEC-B (4-layer optimization + P0-P3 roadmap) → NotifyUser → hermes reflection. Invoke for 架构盘点/架构缺口/全局架构/SPEC-A/SPEC-B/架构现状/架构优化方案.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dream-arch-gap-analysis-workflow/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "架构盘点",
+        "架构缺口",
+        "全局架构",
+        "SPEC-A",
+        "SPEC-B",
+        "架构现状",
+        "架构优化方案",
+        "架构缺口分析"
+      ],
+      "depends_on": [
+        "dream-research-workflow",
+        "recall",
+        "record",
+        "verify",
+        "Agent",
+        "WebSearch",
+        "Glob",
+        "Grep",
+        "Read",
+        "skill-creator"
+      ],
+      "provides": [
+        "arch-gap-analysis-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790608324891-417ef57c"
+      ],
+      "content_hash": null,
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-arch-gap-analysis-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-arch-gap-analysis-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-arch-gap-analysis-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-28",
+          "activated_at": "2026-09-28"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    },
+    {
+      "name": "dream-arch-gap-analysis-workflow",
+      "description": "Orchestrates architecture gap analysis: recall → two-round audit → SPEC-A (gap list) → 3-dimension parallel Agent research (finance/AI multi-agent/GitHub) → integrate insights → SPEC-B (4-layer optimization + P0-P3 roadmap) → NotifyUser → hermes reflection. Invoke for 架构盘点/架构缺口/全局架构/SPEC-A/SPEC-B/架构现状/架构优化方案.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-arch-gap-analysis-workflow/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "架构盘点",
+        "架构缺口",
+        "全局架构",
+        "SPEC-A",
+        "SPEC-B",
+        "架构现状",
+        "架构优化方案",
+        "架构缺口分析"
+      ],
+      "depends_on": [
+        "dream-research-workflow",
+        "recall",
+        "record",
+        "verify",
+        "Agent",
+        "WebSearch",
+        "Glob",
+        "Grep",
+        "Read",
+        "skill-creator"
+      ],
+      "provides": [
+        "arch-gap-analysis-orchestration"
+      ],
+      "cognitive_links": [
+        "VM-1790608324891-417ef57c"
+      ],
+      "content_hash": null,
+      "parse_error": null,
+      "override_fields": {
+        "id": "dream-arch-gap-analysis-workflow",
+        "locations": [
+          {
+            "path": ".trae/skills/dream-arch-gap-analysis-workflow",
+            "role": "trae-entry"
+          },
+          {
+            "path": "1-ARCHITECTURE/skills/dream-arch-gap-analysis-workflow",
+            "role": "project-index"
+          }
+        ],
+        "lifecycle": {
+          "status": "active",
+          "proposed_at": "2026-09-28",
+          "activated_at": "2026-09-28"
+        },
+        "conflicts_with": [],
+        "replaces": [],
+        "replaced_by": null,
+        "integrity_hash": null
+      }
+    }
+  ]
+}
