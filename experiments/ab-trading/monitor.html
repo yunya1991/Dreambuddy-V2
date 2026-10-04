@@ -212,196 +212,146 @@
   <div id="tab-local" class="tab-content active">
   <div class="tab-grid">
 
-  <!-- 账户总览 -->
+  <!-- 账户总览（保留总资产 stat · 删除 Agent A/B 对比） -->
   <div class="card full-width">
-    <div class="card-title"><div class="dot dot-green"></div>账户总览</div>
+    <div class="card-title"><div class="dot dot-green"></div>事件驱动策略 · 影子模式</div>
     <div class="stats-grid" id="account-stats">
-      <div class="stat"><div class="stat-label">合约账户（Agent A）</div><div class="stat-value" id="perp-equity">--</div><div class="stat-sub" id="perp-positions">加载中...</div></div>
-      <div class="stat"><div class="stat-label">合约账户·子账户（Agent B）</div><div class="stat-value" id="spot-usdc">--</div><div class="stat-sub">0x6632...004A</div></div>
-      <div class="stat"><div class="stat-label">总资产</div><div class="stat-value" id="total-equity">--</div><div class="stat-sub" id="total-change">初始资金 $125</div></div>
+      <div class="stat"><div class="stat-label">信号方向</div><div class="stat-value" id="ed-signal">--</div><div class="stat-sub" id="ed-event-type">等待 K 线收盘</div></div>
+      <div class="stat"><div class="stat-label">信号强度</div><div class="stat-value" id="ed-strength">--</div><div class="stat-sub" id="ed-phase">阶段: --</div></div>
+      <div class="stat"><div class="stat-label">主链路 d*</div><div class="stat-value" id="ed-d-star">--</div><div class="stat-sub" id="ed-regime">regime: --</div></div>
     </div>
   </div>
 
-  <!-- Agent A 状态 -->
+  <!-- 事件驱动 · 信号卡片 -->
   <div class="card">
-    <div class="agent-header">
-      <div class="agent-name a">Agent A — Raw Claude</div>
-      <span class="badge badge-perp">合约 3x</span>
-    </div>
-    <div id="agent-a-positions"></div>
-    <div class="divider"></div>
+    <div class="card-title"><div class="dot dot-b"></div>事件信号</div>
     <div class="gate-row">
-      <span class="gate-label">最新决策</span>
-      <span id="a-last-action" class="badge">--</span>
+      <span class="gate-label">方向</span>
+      <span id="ed-card-signal" class="badge">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">强度</span>
+      <div class="conf-bar-wrap" style="flex:1;margin-left:8px">
+        <div class="conf-bar-bg"><div class="conf-bar-fill" id="ed-strength-bar" style="width:0%"></div></div>
+        <span class="conf-value" id="ed-strength-val">--</span>
+      </div>
     </div>
     <div class="gate-row">
       <span class="gate-label">置信度</span>
       <div class="conf-bar-wrap" style="flex:1;margin-left:8px">
-        <div class="conf-bar-bg"><div class="conf-bar-fill" id="a-conf-bar" style="width:0%;background:var(--a-color)"></div></div>
-        <span class="conf-value" id="a-conf-val">--</span>
+        <div class="conf-bar-bg"><div class="conf-bar-fill" id="ed-conf-bar" style="width:0%;background:var(--b-color)"></div></div>
+        <span class="conf-value" id="ed-conf-val">--</span>
       </div>
     </div>
     <div class="gate-row">
-      <span class="gate-label">风控门禁</span>
-      <span id="a-risk-gate" class="badge">--</span>
-    </div>
-    <div class="gate-row" id="a-countdown-row" style="display:none">
-      <span class="gate-label">保护倒计时</span>
-      <span id="a-loss-countdown" class="badge badge-block">--</span>
+      <span class="gate-label">事件类型</span>
+      <span id="ed-card-event-type" style="font-weight:600">--</span>
     </div>
     <div class="gate-row">
-      <span class="gate-label">当前大师</span>
-      <span class="master-badge">📈 Jesse Livermore</span>
+      <span class="gate-label">事件阶段</span>
+      <span id="ed-card-phase" style="font-size:12px;color:var(--muted)">--</span>
     </div>
     <div class="gate-row">
-      <span class="gate-label">本轮标的</span>
-      <span id="a-coin" style="font-weight:600">--</span>
+      <span class="gate-label">弹性系数</span>
+      <span id="ed-elasticity" style="font-weight:600">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">前瞻指引</span>
+      <span id="ed-guidance" class="badge">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">决策理由</span>
+      <span id="ed-reason" style="font-size:11px;color:var(--muted);flex:1;margin-left:8px">--</span>
     </div>
   </div>
 
-  <!-- Agent B 状态 -->
+  <!-- 事件驱动 · 多维评分卡片 -->
   <div class="card">
-    <div class="agent-header">
-      <div class="agent-name b">Agent B — DreamBuddy v2</div>
-      <span class="badge badge-perp">合约 子账户</span>
-    </div>
-    <div id="agent-b-positions">
-      <div class="no-position">无持仓（观望中）</div>
+    <div class="card-title"><div class="dot dot-b"></div>多维评分</div>
+    <div id="ed-scores" style="display:flex;flex-direction:column;gap:8px">
+      <div style="text-align:center;color:var(--muted);padding:20px">等待评分数据</div>
     </div>
     <div class="divider"></div>
     <div class="gate-row">
-      <span class="gate-label">最新决策</span>
-      <span id="b-last-action" class="badge">--</span>
+      <span class="gate-label">数据模式</span>
+      <span id="ed-mode" class="badge">--</span>
     </div>
+  </div>
+
+  <!-- 事件驱动 · 脉冲响应卡片 -->
+  <div class="card">
+    <div class="card-title"><div class="dot dot-b"></div>脉冲响应</div>
     <div class="gate-row">
-      <span class="gate-label">置信度</span>
+      <span class="gate-label">当前脉冲</span>
       <div class="conf-bar-wrap" style="flex:1;margin-left:8px">
-        <div class="conf-bar-bg"><div class="conf-bar-fill" id="b-conf-bar" style="width:0%;background:var(--b-color)"></div></div>
-        <span class="conf-value" id="b-conf-val">--</span>
+        <div class="conf-bar-bg"><div class="conf-bar-fill" id="ed-impulse-bar" style="width:0%;background:var(--green)"></div></div>
+        <span class="conf-value" id="ed-impulse-val">--</span>
       </div>
     </div>
     <div class="gate-row">
-      <span class="gate-label">A7门禁</span>
-      <span id="b-gate" class="badge">--</span>
+      <span class="gate-label">半衰期 τ</span>
+      <span id="ed-tau" style="font-weight:600">--</span>
     </div>
     <div class="gate-row">
-      <span class="gate-label">矛盾面</span>
-      <span id="b-regime" style="font-size:12px;color:var(--muted)">--</span>
+      <span class="gate-label">距事件落地</span>
+      <span id="ed-days-since" style="font-weight:600">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">衰减进度</span>
+      <div class="conf-bar-wrap" style="flex:1;margin-left:8px">
+        <div class="conf-bar-bg"><div class="conf-bar-fill" id="ed-decay-bar" style="width:0%;background:var(--muted)"></div></div>
+        <span class="conf-value" id="ed-decay-val">--</span>
+      </div>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">事件窗口</span>
+      <span id="ed-window" style="font-size:11px;color:var(--muted);flex:1;margin-left:8px">--</span>
     </div>
   </div>
 
-  <!-- PnL 收益率对比图 -->
-  <div class="card full-width">
-    <div class="card-title"><div class="dot dot-green"></div>收益率对比（每轮权益变化）</div>
-    <canvas id="pnl-chart"></canvas>
-    <div class="chart-legend">
-      <div class="legend-item"><div class="legend-line" style="background:var(--a-color)"></div>Agent A（Raw Claude）</div>
-      <div class="legend-item"><div class="legend-line" style="background:var(--b-color)"></div>Agent B（DreamBuddy v2）</div>
-      <div class="legend-item"><div class="legend-line" style="background:var(--border);border-top:1px dashed var(--muted)"></div>基准（$125）</div>
-    </div>
-  </div>
-
-  <!-- 操作记录 + 推理过程 -->
-  <div class="card full-width">
-    <div class="card-title"><div class="dot dot-green"></div>操作记录 & 推理过程（最近20条）</div>
-    <div class="scrollable">
-      <table class="log-table">
-        <thead>
-          <tr>
-            <th>时间</th>
-            <th>Agent</th>
-            <th>标的</th>
-            <th>决策</th>
-            <th>置信度</th>
-            <th>Regime</th>
-            <th>推理依据</th>
-            <th>执行结果</th>
-          </tr>
-        </thead>
-        <tbody id="log-tbody">
-          <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">加载中...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Agent B 记忆系统 -->
+  <!-- 事件驱动 · 持仓状态卡片（影子模式） -->
   <div class="card">
-    <div class="card-title"><div class="dot dot-b"></div>Agent B — 记忆 & 系统状态</div>
-
-    <!-- 三层架构流程展示 -->
-    <div class="memory-section">
-      <div class="memory-label">决策流程（三环架构）</div>
-      <div id="b-pipeline" style="font-size:11px;line-height:1.8">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-          <span class="memory-tag" style="background:rgba(88,166,255,0.15);border-color:rgba(88,166,255,0.3);color:var(--a-color)">意图识别</span>
-          <span style="color:var(--muted)">→</span>
-          <span class="memory-tag" style="background:rgba(63,185,80,0.15);border-color:rgba(63,185,80,0.3);color:var(--green)">ChainPlanner <span id="b-plan-badge">--</span></span>
-          <span style="color:var(--muted)">→</span>
-          <span class="memory-tag" style="background:rgba(188,140,255,0.15);border-color:rgba(188,140,255,0.3);color:var(--b-color)">ChainRouter</span>
-        </div>
-        <div id="b-plan-detail" style="color:var(--muted);font-size:10px;padding:4px 6px;background:rgba(255,255,255,0.03);border-radius:4px;border:1px solid var(--border)">加载中...</div>
-      </div>
+    <div class="card-title"><div class="dot dot-b"></div>持仓状态 · 影子模式</div>
+    <div class="gate-row">
+      <span class="gate-label">运行模式</span>
+      <span id="ed-mode-badge" class="badge badge-block">影子模式</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">持仓状态</span>
+      <span id="ed-position" class="badge">无持仓（影子观察）</span>
     </div>
     <div class="divider"></div>
-
-    <div class="memory-section">
-      <div class="memory-label">调用的系统模块</div>
-      <div id="b-features"></div>
+    <div class="gate-row">
+      <span class="gate-label">标的</span>
+      <span id="ed-symbol" style="font-weight:600">--</span>
     </div>
-    <div class="divider"></div>
-    <div class="memory-section">
-      <div class="memory-label">矛盾维度分析</div>
-      <div id="b-contradictions" style="font-size:12px;line-height:1.8;color:var(--muted)">--</div>
+    <div class="gate-row">
+      <span class="gate-label">K线收盘</span>
+      <span id="ed-kline-close" style="font-weight:600">--</span>
     </div>
-    <div class="divider"></div>
-    <div class="memory-section">
-      <div class="memory-label">经验教训（Lessons）</div>
-      <div id="b-lessons">
-        <div class="empty-lessons">暂无教训记录，等待交易结果回填</div>
-      </div>
+    <div class="gate-row">
+      <span class="gate-label">主链路 action</span>
+      <span id="ed-action" class="badge">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">主链路 RI</span>
+      <span id="ed-ri" style="font-weight:600">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">状态可用</span>
+      <span id="ed-available" class="badge">--</span>
+    </div>
+    <div class="gate-row">
+      <span class="gate-label">最后更新</span>
+      <span id="ed-updated" style="font-size:11px;color:var(--muted);flex:1;margin-left:8px">--</span>
     </div>
   </div>
 
-  <!-- AB 对比指标 -->
-  <div class="card">
-    <div class="card-title"><div class="dot dot-green"></div>AB 对比指标</div>
-    <div id="compare-metrics">
-      <div class="compare-row">
-        <div class="compare-metric">总交易次数</div>
-        <div class="compare-bars">
-          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-trades" style="width:0%"></div></div><span class="compare-val" id="val-a-trades">0</span></div>
-          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-trades" style="width:0%"></div></div><span class="compare-val" id="val-b-trades">0</span></div>
-        </div>
-      </div>
-      <div class="compare-row">
-        <div class="compare-metric">平均置信度</div>
-        <div class="compare-bars">
-          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-conf" style="width:0%"></div></div><span class="compare-val" id="val-a-conf">--</span></div>
-          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-conf" style="width:0%"></div></div><span class="compare-val" id="val-b-conf">--</span></div>
-        </div>
-      </div>
-      <div class="compare-row">
-        <div class="compare-metric">A7拦截率</div>
-        <div class="compare-bars">
-          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-hold" style="width:0%"></div></div><span class="compare-val" id="val-a-hold">--</span></div>
-          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-hold" style="width:0%"></div></div><span class="compare-val" id="val-b-hold">--</span></div>
-        </div>
-      </div>
-      <div class="compare-row">
-        <div class="compare-metric">推理步骤深度</div>
-        <div class="compare-bars">
-          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-depth" style="width:0%"></div></div><span class="compare-val" id="val-a-depth">--</span></div>
-          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-depth" style="width:0%"></div></div><span class="compare-val" id="val-b-depth">--</span></div>
-        </div>
-      </div>
-      <div class="compare-row">
-        <div class="compare-metric">系统模块调用</div>
-        <div class="compare-bars">
-          <div class="compare-bar-row"><span class="compare-bar-label a">A</span><div class="bar-bg"><div class="bar-fill-a" id="bar-a-feat" style="width:0%"></div></div><span class="compare-val" id="val-a-feat">--</span></div>
-          <div class="compare-bar-row"><span class="compare-bar-label b">B</span><div class="bar-bg"><div class="bar-fill-b" id="bar-b-feat" style="width:0%"></div></div><span class="compare-val" id="val-b-feat">--</span></div>
-        </div>
-      </div>
+  <!-- 事件驱动 · 推理依据卡片（full-width） -->
+  <div class="card full-width">
+    <div class="card-title"><div class="dot dot-b"></div>事件驱动策略 · 状态详情</div>
+    <div class="scrollable" style="max-height:200px">
+      <pre id="ed-raw-state" style="font-size:11px;line-height:1.6;white-space:pre-wrap;color:var(--muted)">等待状态文件写入...</pre>
     </div>
   </div>
   </div>
@@ -2003,54 +1953,188 @@ function render(data) {
   document.getElementById('last-update').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
 }
 
-// ── 数据加载：优先本地实时 API，fallback 到静态 state.json，最后尝试本地日志 ──
-let _loadFailCount = 0;
+// ── 事件驱动策略 · 影子模式数据加载 ──────────────────────────────────
+// 数据来源：/api/event-driven（由 11-易经推理系统/data_server_fixed.py 提供）
+// 状态文件由 kline_event_handler._write_event_driven_state() 在 K 线收盘时写入
+// 影子模式：仅评估 + 写状态，不影响实盘交易，验证策略准确性
+let _edLoadFailCount = 0;
+const EVENT_HALF_LIFE_DAYS = { fomc: 3.0, cpi: 2.0, nfp: 1.5, ppi: 1.0, none: 0.0 };
 
-async function loadData() {
-  const candidates = [
-    { url: '/api/state',  label: '本地实时 API',   mode: 'live'  },
-    { url: 'state.json',  label: '静态快照',        mode: 'snap'  },
-  ];
-  for (const src of candidates) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch(src.url, { signal: controller.signal, cache: 'no-store' });
-      clearTimeout(timer);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (!data || (!data.logs_a && !data.logs_b)) continue;
-      render(data);
-      const tag = src.mode === 'live' ? '实盘运行中' : '快照模式';
-      const dot = src.mode === 'live' ? '' : '<div class="live-dot" style="background:var(--yellow)"></div>';
-      const color = src.mode === 'live' ? 'var(--green)' : 'var(--yellow)';
-      const liveEl = document.querySelector('.header .live');
-      if (liveEl) {
-        liveEl.style.color = color;
-        liveEl.innerHTML = dot + tag;
-      }
-      if (src.mode === 'snap' && data.generated_at) {
-        const d = new Date(data.generated_at);
-        document.getElementById('last-update').textContent =
-          '快照生成于 ' + d.toLocaleString('zh-CN');
-      }
-      _loadFailCount = 0;
-      return;
-    } catch (e) {
-      // 尝试下一个
-    }
-  }
-  _loadFailCount++;
-  const msg = _loadFailCount > 1
-    ? `⚠️ 数据加载失败（第${_loadFailCount}次）· 30秒后自动重试`
-    : '⚠️ 数据加载失败 · 30秒后自动重试';
-  document.getElementById('last-update').textContent = msg;
+function _edSet(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }
 
-// 初始加载 + 每30秒自动刷新
-loadData();
-setInterval(loadData, 30000);
-window.addEventListener('resize', () => { if (STATE.loaded) drawChart(STATE.logs_a, STATE.logs_b); });
+function _edSetBar(id, pct, color) {
+  const bar = document.getElementById(id);
+  if (bar) {
+    bar.style.width = Math.max(0, Math.min(100, pct * 100)).toFixed(1) + '%';
+    if (color) bar.style.background = color;
+  }
+}
+
+function _edSignalColor(signal) {
+  if (signal === 'long') return 'var(--green)';
+  if (signal === 'short') return 'var(--red, #ef4444)';
+  return 'var(--muted)';
+}
+
+function _edFormatNum(v, digits = 3) {
+  if (v === null || v === undefined || v === '') return '--';
+  const n = Number(v);
+  if (isNaN(n)) return String(v);
+  return n.toFixed(digits);
+}
+
+function _edComputeImpulse(eventType, daysSince, strength) {
+  const tau = EVENT_HALF_LIFE_DAYS[eventType] || 1.0;
+  if (tau <= 0 || daysSince < 0) return 0.0;
+  return strength * Math.exp(-daysSince / tau);
+}
+
+function _edComputeDaysSince(windowEnd) {
+  if (!windowEnd) return null;
+  try {
+    const end = new Date(windowEnd);
+    if (isNaN(end.getTime())) return null;
+    return (Date.now() - end.getTime()) / 86400000;
+  } catch { return null; }
+}
+
+async function loadEventDrivenData() {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch('/api/event-driven', { signal: controller.signal, cache: 'no-store' });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const state = await res.json();
+    renderEventDriven(state);
+    _edLoadFailCount = 0;
+    const liveEl = document.querySelector('.header .live');
+    if (liveEl) {
+      liveEl.style.color = 'var(--green)';
+      liveEl.innerHTML = '<div class="live-dot"></div>影子模式运行中';
+    }
+  } catch (e) {
+    _edLoadFailCount++;
+    const msg = _edLoadFailCount > 1
+      ? `⚠️ 事件驱动状态加载失败（第${_edLoadFailCount}次）· 10秒后重试`
+      : '⚠️ 事件驱动状态加载失败 · 10秒后重试';
+    const updateEl = document.getElementById('last-update');
+    if (updateEl) updateEl.textContent = msg;
+  }
+}
+
+function renderEventDriven(state) {
+  if (!state) return;
+  const sig = state.signal || {};
+  const main = state.main_chain || {};
+  const kline = state.kline || {};
+  const available = state.available !== false;
+
+  // ===== 顶部 stats =====
+  _edSet('ed-signal', (sig.signal || '--').toUpperCase());
+  const sigEl = document.getElementById('ed-signal');
+  if (sigEl) sigEl.style.color = _edSignalColor(sig.signal);
+  _edSet('ed-event-type', sig.event_type ? `事件: ${sig.event_type}` : '无事件');
+  _edSet('ed-strength', _edFormatNum(sig.strength, 2));
+  _edSet('ed-phase', sig.event_phase ? `阶段: ${sig.event_phase}` : '阶段: --');
+  _edSet('ed-d-star', (main.d_star || '--').toUpperCase());
+  _edSet('ed-regime', main.regime ? `regime: ${main.regime}` : 'regime: --');
+
+  // ===== 信号卡片 =====
+  const cardSignalEl = document.getElementById('ed-card-signal');
+  if (cardSignalEl) {
+    cardSignalEl.textContent = (sig.signal || '--').toUpperCase();
+    cardSignalEl.style.color = _edSignalColor(sig.signal);
+  }
+  _edSetBar('ed-strength-bar', sig.strength || 0, _edSignalColor(sig.signal));
+  _edSet('ed-strength-val', _edFormatNum(sig.strength, 2));
+  _edSetBar('ed-conf-bar', sig.confidence || 0);
+  _edSet('ed-conf-val', _edFormatNum(sig.confidence, 2));
+  _edSet('ed-card-event-type', sig.event_type || 'none');
+  _edSet('ed-card-phase', sig.event_phase || 'neutral');
+  _edSet('ed-elasticity', _edFormatNum(sig.elasticity, 3));
+  _edSet('ed-guidance', sig.forward_guidance || '--');
+  _edSet('ed-reason', sig.reason || '--');
+
+  // ===== 多维评分卡片 =====
+  const scoresEl = document.getElementById('ed-scores');
+  if (scoresEl) {
+    const scores = sig.scores || {};
+    const keys = Object.keys(scores);
+    if (keys.length === 0) {
+      scoresEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">无评分数据</div>';
+    } else {
+      scoresEl.innerHTML = keys.map(k => {
+        const v = Number(scores[k]);
+        const pct = isNaN(v) ? 0 : Math.max(0, Math.min(1, v));
+        const pctStr = (pct * 100).toFixed(1) + '%';
+        return `<div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+            <span style="color:var(--muted)">${k}</span>
+            <span style="font-weight:600">${pctStr}</span>
+          </div>
+          <div class="conf-bar-bg"><div class="conf-bar-fill" style="width:${pctStr};background:var(--b-color)"></div></div>
+        </div>`;
+      }).join('');
+    }
+  }
+  _edSet('ed-mode', sig.mode || 'none');
+
+  // ===== 脉冲响应卡片 =====
+  const eventType = sig.event_type || 'none';
+  const tau = EVENT_HALF_LIFE_DAYS[eventType] || 0;
+  const daysSince = _edComputeDaysSince(sig.window_end);
+  const impulse = (tau > 0 && daysSince !== null)
+    ? _edComputeImpulse(eventType, daysSince, sig.strength || 0)
+    : 0;
+  _edSetBar('ed-impulse-bar', impulse);
+  _edSet('ed-impulse-val', impulse.toFixed(3));
+  _edSet('ed-tau', tau > 0 ? `${tau.toFixed(1)} 天` : '无事件');
+  _edSet('ed-days-since', daysSince !== null ? `${daysSince.toFixed(2)} 天` : '未落地');
+  const decayPct = (tau > 0 && daysSince !== null) ? Math.min(1, daysSince / (3 * tau)) : 0;
+  _edSetBar('ed-decay-bar', decayPct);
+  _edSet('ed-decay-val', (decayPct * 100).toFixed(1) + '%');
+  const windowStr = sig.window_start && sig.window_end
+    ? `${sig.window_start} → ${sig.window_end}`
+    : (sig.window_end || '无窗口');
+  _edSet('ed-window', windowStr);
+
+  // ===== 持仓状态卡片 =====
+  _edSet('ed-symbol', state.symbol || '--');
+  _edSet('ed-kline-close', kline.close ? `$${Number(kline.close).toFixed(2)}` : '--');
+  _edSet('ed-action', (main.action || '--').toUpperCase());
+  _edSet('ed-ri', _edFormatNum(main.ri, 3));
+  const availEl = document.getElementById('ed-available');
+  if (availEl) {
+    availEl.textContent = available ? '✓ 可用' : '✗ 待写入';
+    availEl.style.color = available ? 'var(--green)' : 'var(--yellow)';
+  }
+  _edSet('ed-updated', state.updated_at || '--');
+
+  // ===== 状态详情 raw =====
+  const rawEl = document.getElementById('ed-raw-state');
+  if (rawEl) {
+    rawEl.textContent = JSON.stringify(state, null, 2);
+  }
+
+  // ===== 顶部最后更新时间 =====
+  const updateEl = document.getElementById('last-update');
+  if (updateEl && state.updated_at) {
+    try {
+      const d = new Date(state.updated_at);
+      updateEl.textContent = '最后更新: ' + d.toLocaleString('zh-CN');
+    } catch {
+      updateEl.textContent = '最后更新: ' + state.updated_at;
+    }
+  }
+}
+
+// 初始加载 + 每10秒自动刷新（K线收盘后状态文件更新）
+loadEventDrivenData();
+setInterval(loadEventDrivenData, 10000);
 
 // ── Tab 切换 ────────────────────────────────────────────────────────────
 let currentTab = 'local';

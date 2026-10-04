@@ -70,12 +70,14 @@ class ExitSampleGenerator:
 
     def __init__(
         self,
-        trades_path: str,
-        output_path: str,
+        trades_path: str = "",
+        output_path: str = "",
         target_samples: int = 2000,
         seed: int = 42,
+        trades_paths: List[str] | None = None,
     ):
         self.trades_path = trades_path
+        self.trades_paths = trades_paths  # 多源文件路径列表（P1b）
         self.output_path = output_path
         self.target_samples = target_samples
         self._rng = random.Random(seed)
@@ -91,6 +93,49 @@ class ExitSampleGenerator:
                     trades.append(json.loads(line))
         logger.info("加载 %d 笔历史交易", len(trades))
         return trades
+
+    def _load_trades_multi(self) -> List[Dict[str, Any]]:
+        """P1b: 从多个源文件加载交易，按 (coin, entry_time, exit_time, direction) 去重。
+
+        每条交易标记 meta_source = "real" | "backtest"（基于 source_system 字段）。
+        FAIL-OPEN: 单文件加载失败 → 跳过该文件，继续加载其他文件。
+        """
+        if not self.trades_paths:
+            return self.load_trades()
+
+        all_trades: List[Dict[str, Any]] = []
+        seen: set = set()
+        for path in self.trades_paths:
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            trade = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+                        # 去重键
+                        key = (
+                            str(trade.get("coin", "")),
+                            str(trade.get("entry_time", "")),
+                            str(trade.get("exit_time", "")),
+                            str(trade.get("direction", "")),
+                        )
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        # 标记来源
+                        src = trade.get("source_system", "")
+                        trade["meta_source"] = "backtest" if src == "backtest" else "real"
+                        all_trades.append(trade)
+                logger.info("加载 %s: %d 笔", path, len([t for t in all_trades if t.get("meta_source") in ("real", "backtest")]))
+            except Exception as e:
+                logger.warning("[FO] load trades fail %s: %s", path, e)
+                continue
+        logger.info("多源合并: 共 %d 笔交易", len(all_trades))
+        return all_trades
 
     def _simulate_price_path(
         self, entry_price: float, exit_price: float, n_steps: int, noise_scale: float = 0.003
@@ -233,8 +278,8 @@ class ExitSampleGenerator:
         base_atr = float(snap.get("volatility", 0.02) or 0.02)
         base_vol_ratio = 1.0
 
-        # tier 随机选择（权重：standard 60%, probe 20%, trend 20%）
-        tier = self._rng.choices(
+        # tier：优先使用 trade 自带的 tier 字段，否则随机选择（权重：standard 60%, probe 20%, trend 20%）
+        tier = trade.get("tier") or self._rng.choices(
             ["probe", "standard", "trend"], weights=[2, 6, 2]
         )[0]
 
@@ -325,52 +370,100 @@ class ExitSampleGenerator:
         return samples
 
     def generate(self) -> int:
-        """生成扩充样本并写入文件"""
-        trades = self.load_trades()
+        """生成扩充样本并写入文件
+
+        P1b: 支持多源交易（trades_paths）、meta_source 标记、sample_weight（real=1.0/backtest=0.3）、
+        大样本量时流式写入避免内存爆炸。
+        """
+        trades = self._load_trades_multi() if self.trades_paths else self.load_trades()
         if not trades:
             logger.error("无历史交易可生成样本")
             return 0
 
         all_samples: List[Dict[str, Any]] = []
         n_variants = self.VARIANTS_PER_TRADE
+        use_streaming = self.target_samples > 100_000
 
-        for trade in trades:
-            for v in range(n_variants):
-                traj = self._generate_trajectory(trade, v)
-                all_samples.extend(traj)
-
-        # 如果不足 target_samples，再从随机交易+随机变体补充
-        while len(all_samples) < self.target_samples:
-            trade = self._rng.choice(trades)
-            v = self._rng.randint(0, n_variants - 1)
-            traj = self._generate_trajectory(trade, v)
-            all_samples.extend(traj[:5])  # 每次补 5 条
-
-        # 截断到 target
-        if len(all_samples) > self.target_samples:
-            all_samples = all_samples[: self.target_samples]
-
-        # 写入文件
         output = Path(self.output_path)
         output.parent.mkdir(parents=True, exist_ok=True)
-        with open(output, "w", encoding="utf-8") as f:
-            for s in all_samples:
-                f.write(json.dumps(s, ensure_ascii=False) + "\n")
 
-        logger.info("生成 %d 条样本 → %s", len(all_samples), self.output_path)
-
-        # 统计动作分布
+        written = 0
         action_dist = {name: 0 for name in ACTION_NAMES}
-        for s in all_samples:
-            action_dist[ACTION_NAMES[s["action"]]] += 1
-        logger.info("动作分布: %s", action_dist)
 
-        return len(all_samples)
+        def _flush(samples_buf: List[Dict[str, Any]]) -> None:
+            nonlocal written
+            with open(output, "a", encoding="utf-8") as f:
+                for s in samples_buf:
+                    f.write(json.dumps(s, ensure_ascii=False) + "\n")
+                    written += 1
+            samples_buf.clear()
+
+        # 流式模式：先清空输出文件
+        if use_streaming:
+            open(output, "w").close()
+            buf: List[Dict[str, Any]] = []
+
+        for trade in trades:
+            meta_source = trade.get("meta_source", "real")
+            sample_weight = 0.3 if meta_source == "backtest" else 1.0
+            for v in range(n_variants):
+                traj = self._generate_trajectory(trade, v)
+                for s in traj:
+                    s["meta"]["meta_source"] = meta_source
+                    s["meta"]["sample_weight"] = sample_weight
+                    action_dist[ACTION_NAMES[s["action"]]] += 1
+                    if use_streaming:
+                        buf.append(s)
+                        if len(buf) >= 10000:
+                            _flush(buf)
+                        if written >= self.target_samples:
+                            break
+                    else:
+                        all_samples.append(s)
+                if use_streaming and written >= self.target_samples:
+                    break
+            if use_streaming and written >= self.target_samples:
+                break
+
+        if use_streaming:
+            if buf:
+                _flush(buf)
+            count = written
+        else:
+            # 不足 target 时补充
+            while len(all_samples) < self.target_samples:
+                trade = self._rng.choice(trades)
+                v = self._rng.randint(0, n_variants - 1)
+                traj = self._generate_trajectory(trade, v)
+                meta_source = trade.get("meta_source", "real")
+                sample_weight = 0.3 if meta_source == "backtest" else 1.0
+                for s in traj[:5]:
+                    s["meta"]["meta_source"] = meta_source
+                    s["meta"]["sample_weight"] = sample_weight
+                    action_dist[ACTION_NAMES[s["action"]]] += 1
+                    all_samples.append(s)
+
+            if len(all_samples) > self.target_samples:
+                all_samples = all_samples[: self.target_samples]
+
+            with open(output, "w", encoding="utf-8") as f:
+                for s in all_samples:
+                    f.write(json.dumps(s, ensure_ascii=False) + "\n")
+            count = len(all_samples)
+
+        logger.info("生成 %d 条样本 → %s", count, self.output_path)
+        logger.info("动作分布: %s", action_dist)
+        return count
 
 
 def main():
-    """CLI 入口：生成 RL 离场样本"""
-    import sys
+    """CLI 入口：生成 RL 离场样本
+
+    用法:
+      python -m dreambuddy_evolution.core.exit_sample_generator [target] [trades_path]
+      python -m dreambuddy_evolution.core.exit_sample_generator --trades-paths a.jsonl,b.jsonl --target 500000
+    """
+    import argparse
 
     logging.basicConfig(
         level=logging.INFO,
@@ -379,7 +472,7 @@ def main():
 
     # 默认路径
     project_root = Path(__file__).resolve().parents[3]
-    trades_path = str(
+    default_trades = str(
         project_root
         / "11-易经推理系统"
         / ".workbuddy"
@@ -387,25 +480,33 @@ def main():
         / "stats"
         / "all_trades.jsonl"
     )
-    output_path = str(
+    default_output = str(
         Path(__file__).resolve().parents[1]
         / "data"
         / "exit_rl_samples.jsonl"
     )
 
-    target = 2000
-    if len(sys.argv) > 1:
-        target = int(sys.argv[1])
-    if len(sys.argv) > 2:
-        trades_path = sys.argv[2]
+    parser = argparse.ArgumentParser(description="生成 RL 离场样本")
+    parser.add_argument("target", nargs="?", type=int, default=2000, help="目标样本数")
+    parser.add_argument("trades_path", nargs="?", type=str, default=default_trades, help="交易文件路径")
+    parser.add_argument("--output", type=str, default=default_output, help="输出路径")
+    parser.add_argument("--trades-paths", type=str, default=None, help="多源路径（逗号分隔）")
+    parser.add_argument("--seed", type=int, default=42, help="随机种子")
+    args = parser.parse_args()
+
+    trades_paths = None
+    if args.trades_paths:
+        trades_paths = [p.strip() for p in args.trades_paths.split(",") if p.strip()]
 
     gen = ExitSampleGenerator(
-        trades_path=trades_path,
-        output_path=output_path,
-        target_samples=target,
+        trades_path=args.trades_path if not trades_paths else "",
+        output_path=args.output,
+        target_samples=args.target,
+        seed=args.seed,
+        trades_paths=trades_paths,
     )
     count = gen.generate()
-    print(f"生成 {count} 条样本 → {output_path}")
+    print(f"生成 {count} 条样本 → {args.output}")
 
 
 if __name__ == "__main__":

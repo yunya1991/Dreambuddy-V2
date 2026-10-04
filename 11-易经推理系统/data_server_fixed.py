@@ -1876,6 +1876,41 @@ def _refresh_global_trade_stats_async():
         pass
 
 
+def get_event_driven_state() -> dict:
+    """读取事件驱动策略影子模式状态文件。
+
+    跨进程 JSON 文件通信：kline_event_handler._write_event_driven_state() 写入，
+    本接口读取后返回给前端 monitor.html 的事件驱动策略面板。
+
+    影子模式语义：仅评估 + 写状态，不影响实盘交易。
+    预留接口：成熟后可被 SubSystemBridge.get_event_signal() 消费。
+
+    FAIL-OPEN：文件不存在或读取异常时返回中性兜底状态。
+    """
+    try:
+        state_path = Path(__file__).parent / "data" / "event_driven_state.json"
+        if not state_path.exists():
+            return {
+                "mode": "shadow",
+                "available": False,
+                "reason": "state file not yet written (waiting for first kline close)",
+                "signal": {"signal": "neutral", "reason": "no_data_yet"},
+                "updated_at": None,
+            }
+        import json as _json
+        state = _json.loads(state_path.read_text(encoding="utf-8"))
+        state["available"] = True
+        return state
+    except Exception as e:
+        return {
+            "mode": "shadow",
+            "available": False,
+            "reason": f"read_fail: {e}",
+            "signal": {"signal": "neutral", "reason": "read_error"},
+            "updated_at": None,
+        }
+
+
 def get_global_trade_stats():
     """获取跨系统交易统计：从 L4 案例库读取各系统的胜率、PnL 等指标"""
     try:
@@ -3614,6 +3649,22 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(cached["data"])
             else:
                 self._json(get_yijing_account_overview())
+
+        # ── 事件驱动策略系统（29 号子系统 · 影子模式） ───────────────────
+        # 跨进程 JSON 通信：kline_event_handler._write_event_driven_state() 写入
+        # 状态文件，本接口读取返回给前端 monitor.html 事件驱动策略面板。
+        # 现阶段主要验证事件驱动策略系统的准确性（影子模式，不影响实盘）。
+        elif path == "/api/event-driven":
+            try:
+                self._json(get_event_driven_state())
+            except Exception as e:
+                self._json({
+                    "mode": "shadow",
+                    "available": False,
+                    "reason": f"endpoint_fail: {e}",
+                    "signal": {"signal": "neutral", "reason": "endpoint_error"},
+                    "updated_at": None,
+                })
 
         # ── V15-CT 马丁策略 API ────────────────────────────────────────
         elif path == "/api/v15-ct/account-overview":

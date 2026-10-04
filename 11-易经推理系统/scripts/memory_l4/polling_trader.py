@@ -884,7 +884,7 @@ class PollingTrader:
         # 可被 config.json 的 blacklist_coins 字段热重载覆盖（追加手动黑名单）
         # 静态永久封禁（回测验证历史表现极差，即使趋势过滤下仍持续亏损）
         # — BDSM 2026-09 调整：ETH 从全黑名单降级为仅做空禁（SHORT_BAN），做多按 BDSM/BCRM 信号允许
-        self.blacklist_coins: set = {"NEAR", "XRP", "DOT", "ADA", "AVAX", "LINK", "BNB"}  # 手动永久黑名单
+        self.blacklist_coins: set = {"RIVER"}  # 手动永久黑名单
         # SHORT_BAN：这些币种只允许做多，不允许做空（历史验证做空持续亏损，或 BDSM 协议模型为 LONG_ONLY）
         # ETH：历史做空样本亏损率高，且 BDSM 方向约束默认 LONG_ONLY；BTC：BCRM 做空信号已 100% 亏损
         self.SHORT_ONLY_BLACKLIST: set = {"ETH", "BTC"}

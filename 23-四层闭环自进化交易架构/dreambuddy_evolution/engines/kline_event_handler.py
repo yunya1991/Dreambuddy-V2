@@ -82,6 +82,10 @@ class KlineEventHandler:
         self._trader: Any = None  # Phase 4.2: trader 引用，注入到 bridge
         self._last_agi_pattern: dict | None = None  # Phase 4.1: 最近一次形态检测结果
         self._path_layer_enabled: bool = False  # 延迟检测是否可用
+        # 事件驱动策略（29 号子系统 · 影子模式集成）
+        # 集成自进化交易系统：仅评估 + 写状态文件，不影响 d* 决策。
+        # 预留接口：成熟后可被 SubSystemBridge.get_event_signal() 消费。
+        self._event_driven_strategy: Any = None
 
     # ==================================================================
     # AGI 增强统一入口（开关检查 + FAIL-OPEN）
@@ -194,6 +198,104 @@ class KlineEventHandler:
     def attach_trader(self, trader: Any) -> None:
         """Phase 4.2: 注入 trader 引用，用于 SubSystemBridge 写回 regime 状态。"""
         self._trader = trader
+
+    def _get_event_driven_strategy(self) -> Any:
+        """懒初始化 EventDrivenStrategy（影子模式）。
+
+        集成自进化交易系统：现阶段仅用于评估事件驱动信号并写入状态文件，
+        供前端 /api/event-driven 接口读取展示。不影响 d* 决策、不执行实盘交易。
+        成熟后通过 SubSystemBridge.get_event_signal() 开放给其他子系统消费。
+        """
+        if self._event_driven_strategy is None:
+            try:
+                import sys
+                from pathlib import Path
+                # 29 号目录：dreambuddy-v2/29-事件驱动策略系统
+                repo_root = Path(__file__).resolve().parents[3]
+                _29_dir = repo_root / "29-事件驱动策略系统"
+                if str(_29_dir) not in sys.path:
+                    sys.path.insert(0, str(_29_dir))
+                from event_driven import EventDrivenStrategy
+                self._event_driven_strategy = EventDrivenStrategy()
+                logger.info("[EventDriven] EventDrivenStrategy 初始化成功（影子模式）")
+            except Exception as e:
+                logger.warning("[EventDriven] EventDrivenStrategy init fail: %s", e)
+                self._event_driven_strategy = False
+        return self._event_driven_strategy or None
+
+    def _write_event_driven_state(self, kline_data: dict, result: dict) -> None:
+        """将 EventSignal 写入 JSON 状态文件（跨进程通信 · 影子模式）。
+
+        供 11-易经推理系统/data_server_fixed.py 的 GET /api/event-driven 接口读取。
+        预留接口：成熟后可被 SubSystemBridge.get_event_signal() 消费。
+
+        影子模式语义：
+        - 仅评估 + 写状态文件，不影响 on_kline_close 主链路的 d* 决策
+        - 不执行实盘交易（EventDrivenTrader._open_position 不调用）
+        - 现阶段主要验证事件驱动策略系统的准确性
+
+        FAIL-OPEN：写入失败不影响主链路。
+        """
+        try:
+            import json
+            from datetime import datetime
+            from pathlib import Path
+
+            repo_root = Path(__file__).resolve().parents[3]
+            state_path = repo_root / "11-易经推理系统" / "data" / "event_driven_state.json"
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # 影子模式评估 EventSignal
+            strategy = self._get_event_driven_strategy()
+            signal_dict: dict = {}
+            if strategy is not None:
+                try:
+                    signal = strategy.evaluate(kline_data)
+                    signal_dict = signal.to_dict() if hasattr(signal, "to_dict") else {}
+                except Exception as e:
+                    logger.warning("[EventDriven] evaluate() crash (FAIL-OPEN): %s", e)
+                    signal_dict = {"signal": "neutral", "reason": f"evaluate_fail: {e}"}
+
+            # 跨进程状态文件：包含信号 + 持仓 + 主链路结果摘要
+            closes = kline_data.get("close", [])
+            close_price = None
+            try:
+                if closes is None:
+                    close_price = None
+                elif hasattr(closes, "__len__") and len(closes) > 0:
+                    close_price = float(closes[-1])
+                else:
+                    close_price = float(closes) if closes else None
+            except (TypeError, ValueError):
+                close_price = None
+
+            state = {
+                "updated_at": datetime.now().isoformat(),
+                "symbol": str(kline_data.get("symbol", "UNKNOWN")),
+                "mode": "shadow",  # 影子模式标识
+                "signal": signal_dict,
+                "main_chain": {
+                    "d_star": result.get("d_star"),
+                    "action": result.get("action"),
+                    "ri": result.get("ri"),
+                    "regime": result.get("regime"),
+                },
+                "kline": {
+                    "close": close_price,
+                    "timestamp": kline_data.get("timestamp"),
+                },
+            }
+            state_path.write_text(
+                json.dumps(state, ensure_ascii=False, indent=2, default=str),
+                encoding="utf-8",
+            )
+            logger.debug(
+                "[EventDriven] state written: %s signal=%s",
+                state["symbol"],
+                signal_dict.get("signal", "n/a"),
+            )
+        except Exception as e:
+            logger.warning("[EventDriven] _write_event_driven_state fail (FAIL-OPEN): %s", e)
 
     def _get_subsystem_bridge(self) -> Any:
         """懒初始化 SubSystemBridge（高阶因子阻力调制）"""
@@ -878,6 +980,21 @@ class KlineEventHandler:
                     l4_v = _pipeline.bellman.get_v(symbol)
             except Exception as _e:
                 logger.warning("[FO] L3/L4/AGI-H/I record crash(FAIL-OPEN): %s", _e)
+
+            # ===== 事件驱动策略 · 影子模式集成 =====
+            # 集成自进化交易系统：仅评估 + 写状态文件，不影响 d* 决策。
+            # 预留接口：成熟后可被 SubSystemBridge.get_event_signal() 消费。
+            # 现阶段主要验证事件驱动策略系统的准确性。
+            try:
+                _shadow_result = {
+                    "d_star": d_star,
+                    "action": action,
+                    "ri": ri,
+                    "regime": regime,
+                }
+                self._write_event_driven_state(kline_data, _shadow_result)
+            except Exception as _e:
+                logger.warning("[EventDriven] shadow integration crash (FAIL-OPEN): %s", _e)
 
             return {
                 "symbol": symbol,

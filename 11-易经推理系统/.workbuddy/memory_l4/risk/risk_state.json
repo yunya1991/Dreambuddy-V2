@@ -1,14 +1,14 @@
 {
-  "date": "2026-08-26",
+  "date": "2026-10-05",
   "daily_pnl": 0.0,
-  "consecutive_losses": 2,
+  "consecutive_losses": 0,
   "trading_halted": false,
   "halt_reason": "",
   "daily_loss_limit": -30.0,
   "loss_limit_pct": 0.2,
   "max_consecutive_losses": 999,
-  "position_size_pct": 0.2,
+  "position_size_pct": 0.03,
   "min_position_size_pct": 0.02,
   "max_position_size_pct": 0.2,
-  "min_position_usdt": 20.0
+  "min_position_usdt": 250.0
 }

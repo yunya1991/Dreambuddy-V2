@@ -64,6 +64,10 @@ AGI_SWITCHES: Dict[str, bool] = {
     # --- Phase 3 弹性约束 + 反身性 ---
     "enable_elastic_constraint": False,            # 弹性约束
     "enable_reflexivity_monitor": False,           # 反身性监测
+    # --- 事件驱动策略系统 (29 号子系统) ---
+    # SPEC-事件驱动策略P0盲区修复-非农CPI加息预期.md 第 750/752 行明确标注"已有"
+    "enable_contradiction_driven_layer": True,     # 主要矛盾驱动层总开关 (P1-2 双层门控第一层)
+    "enable_event_dominance": True,                # 事件主导控制开关 (P1-2 双层门控第二层)
 }
 
 
@@ -105,9 +109,13 @@ def list_enabled() -> Dict[str, bool]:
 
 
 def set_switch(name: str, value: bool) -> None:
-    """运行时设置开关（不写入环境变量，仅当前进程）"""
-    if name in AGI_SWITCHES:
-        AGI_SWITCHES[name] = value
+    """运行时设置开关（不写入环境变量，仅当前进程）
+
+    修复（2026-10-04）：原实现 `if name in AGI_SWITCHES` 守卫导致
+    测试中 set_switch 未注册开关时静默无效，使 EventDominanceController
+    双层门控测试失败。改为始终写入，允许运行时新增开关（仍不写入环境变量）。
+    """
+    AGI_SWITCHES[name] = value
 
 
 def reset_switches() -> None:

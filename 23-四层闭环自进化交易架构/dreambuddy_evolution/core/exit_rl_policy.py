@@ -152,8 +152,9 @@ class CQLTrainer:
         """CQL 训练一个 batch
 
         Args:
-            batch: [{state, action, reward, next_state, done}, ...]
+            batch: [{state, action, reward, next_state, done, weight?}, ...]
                   state/next_state 为原始尺度，内部自动归一化
+                  weight: 可选，per-sample loss 权重（默认 1.0）
 
         Returns:
             loss 值
@@ -176,6 +177,16 @@ class CQLTrainer:
             np.array([normalize_state(b["next_state"]) for b in batch])
         ).to(self.device)
         dones = t.FloatTensor([float(b.get("done", False)) for b in batch]).to(self.device)
+        # per-sample weight（默认 1.0，向后兼容）
+        # P1b: 优先读取 meta.sample_weight（回测样本 0.3，真实样本 1.0）
+        weights = t.FloatTensor(
+            [
+                float(
+                    b.get("weight", b.get("meta", {}).get("sample_weight", 1.0))
+                )
+                for b in batch
+            ]
+        ).to(self.device)
 
         # 当前 Q(s,a)
         q_values = self.q_net(states)  # (B, n_actions)
@@ -187,12 +198,13 @@ class CQLTrainer:
             next_q_max = next_q.max(dim=1)[0]  # (B,)
             target = rewards + self.gamma * (1 - dones) * next_q_max
 
-        # TD loss
-        td_loss = nn.functional.mse_loss(q_a, target)
+        # TD loss（per-sample 加权）
+        td_loss = nn.functional.mse_loss(q_a, target, reduction="none")  # (B,)
+        td_loss = (td_loss * weights).mean()
 
         # CQL 保守惩罚: α × (logsumexp(Q(s,a')) - Q(s,a))
         logsumexp_q = t.logsumexp(q_values, dim=1)  # (B,)
-        cql_penalty = self.cql_alpha * (logsumexp_q - q_a).mean()
+        cql_penalty = self.cql_alpha * ((logsumexp_q - q_a) * weights).mean()
 
         # 总损失
         loss = td_loss + cql_penalty

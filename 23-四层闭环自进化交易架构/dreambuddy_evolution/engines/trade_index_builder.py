@@ -64,6 +64,11 @@ class TradeIndexBuilder:
             "source": "bcrm_archive",
             "type": "closed",
         },
+        {
+            "path": ".workbuddy/trade_index/backtest_trades.jsonl",
+            "source": "backtest",
+            "type": "closed",
+        },
     ]
 
     # 缓存 TTL
