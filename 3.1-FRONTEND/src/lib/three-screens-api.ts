@@ -15,9 +15,10 @@ async function trendRequest<T = any>(endpoint: string): Promise<T> {
   const url = `${TREND_BASE}${endpoint}`;
   // GET 请求不设置 Content-Type，避免触发 CORS 预检（OPTIONS）
   // 后端 BaseHTTPRequestHandler 不支持 OPTIONS 方法
-  // 设置 30s 超时（后端首次请求可能需要 15-20s 从 OKX 拉取数据）
+  // 60s 超时：后端首次冷启动需 OKX 拉取 15-20s + compute_full_trading_signal 3-6s，
+  // 三个 API 并发首屏拉取时可能叠加，30s 不够会 abort "signal is aborted without reason"
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+  const timeoutId = setTimeout(() => controller.abort(), 60_000);
 
   try {
     const response = await fetch(url, {
