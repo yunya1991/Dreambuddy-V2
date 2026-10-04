@@ -5,6 +5,17 @@ import { FundamentalGrid } from '@/components/features/fundamental/FundamentalGr
 import { OnchainMetrics } from '@/components/features/fundamental/OnchainMetrics';
 import { MacroDashboard } from '@/components/features/fundamental/MacroDashboard';
 import { SentimentHeatmap } from '@/components/features/fundamental/SentimentHeatmap';
+import { ModuleDetail } from '@/components/features/fundamental/ModuleDetail';
+
+const tabModules: Record<string, string> = {
+  flow: 'flow',
+  valuation: 'valuation',
+  narrative: 'narrative',
+  news: 'news',
+  breadth: 'breadth',
+  calendar: 'calendar',
+  intermarket: 'intermarket',
+};
 
 const tabs = [
   { id: 'overview', label: '总览' },
@@ -42,10 +53,12 @@ export default function FundamentalPage() {
         {activeTab === 'onchain' && <OnchainMetrics />}
         {activeTab === 'macro' && <MacroDashboard />}
         {activeTab === 'sentiment' && <SentimentHeatmap />}
-        {activeTab !== 'overview' && activeTab !== 'onchain' && activeTab !== 'macro' && activeTab !== 'sentiment' && (
-          <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-slate-500">「{tabs.find(t => t.id === activeTab)?.label}」后续版本实现</p>
-          </div>
+        {tabModules[activeTab] && (
+          <ModuleDetail
+            key={activeTab}
+            module={tabModules[activeTab]}
+            title={tabs.find(t => t.id === activeTab)?.label || activeTab}
+          />
         )}
       </div>
     </div>
