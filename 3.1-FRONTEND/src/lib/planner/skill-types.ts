@@ -291,6 +291,18 @@ export interface SkillResult {
   /** 建议（如下一步可以做什么） */
   suggestions?: string[];
 
+  /** 结构化数据（TDD/方法论执行器使用的扩展字段） */
+  data?: Record<string, unknown>;
+
+  /** 摘要（TDD/方法论执行器使用的扩展字段） */
+  summary?: string;
+
+  /** 不确定因素列表（方法论两阶段审查使用） */
+  uncertainty?: string[];
+
+  /** 风险列表（方法论两阶段审查使用） */
+  risks?: string[];
+
   /** 额外元信息 */
   metadata?: Record<string, unknown>;
 }

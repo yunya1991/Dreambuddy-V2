@@ -68,6 +68,8 @@ export interface MonitorEvent {
   error?: string;
   artifact_file?: string;
   message_preview?: string;   // 用户消息前50字
+  /** 扩展字段（如 trading_mode 等） */
+  extra?: Record<string, unknown>;
 }
 
 export interface MonitorStats {

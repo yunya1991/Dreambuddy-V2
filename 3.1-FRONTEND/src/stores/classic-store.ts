@@ -63,7 +63,7 @@ export const useClassicStore = create<ClassicState>((set) => ({
     { name: 'MACD', enabled: true, params: { fast: 12, slow: 26, signal: 9 } },
     { name: 'BB', enabled: false, params: { period: 20, stdDev: 2 } },
     { name: 'EMA', enabled: true, params: { period: 21 } },
-  ],
+  ] as IndicatorConfig[],
   timeframe: '1D',
 
   setActivePhase: (phase) => set({ activePhase: phase }),

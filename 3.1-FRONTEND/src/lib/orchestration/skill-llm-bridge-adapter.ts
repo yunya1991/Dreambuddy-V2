@@ -14,9 +14,27 @@ import {
   parseDirection,
   type SkillMeta,
 } from './node-prompts';
-import type { SkillLLMBridge } from '.././planner/skills-registry-init';
 
-export type { SkillLLMBridge };
+/**
+ * SkillLLMBridge — planner 与 LLM 桥接接口
+ * 注入 ExecutionContext.extensions.__skillLLMBridge，供 skills 调用
+ */
+export interface SkillLLMBridge {
+  analyzeSkill(params: {
+    skillId: string;
+    skillName: string;
+    description: string;
+    stage: string;
+    symbol?: string;
+    userRequest?: string;
+    priorResults?: Record<string, unknown>;
+  }): Promise<{
+    content: string;
+    confidence: number;
+    direction: string;
+    tokensUsed: number;
+  }>;
+}
 
 /**
  * 市场数据缓存（避免同一会话内重复请求）
@@ -74,13 +92,13 @@ export function createSkillLLMBridge(
       };
 
       const priorResultsMap = priorResults
-        ? new Map(Object.entries(priorResults))
+        ? new Map(Object.entries(priorResults) as [string, string][])
         : undefined;
 
       const prompt = buildSkillPrompt(meta, {
         userRequest: userRequest || '',
-        symbol,
-        displayName: marketData?.displayName || symbol,
+        symbol: symbol || '',
+        displayName: marketData?.displayName || symbol || '',
         marketData,
       }, priorResultsMap);
 

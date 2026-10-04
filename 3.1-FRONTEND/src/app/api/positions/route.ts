@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: { positions: [], summary: null } });
     }
 
-    const openPositions = tradingAccount.positions.filter((p) => p.status === "OPEN");
+    const openPositions = (tradingAccount.positions as Array<{ status: string; [k: string]: unknown }>).filter((p) => p.status === "OPEN");
 
     return NextResponse.json({
       success: true,

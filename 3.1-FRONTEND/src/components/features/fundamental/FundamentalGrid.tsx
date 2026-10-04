@@ -27,7 +27,7 @@ export function FundamentalGrid() {
         <V3Card key={m.name} padding="sm" hover>
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-slate-500">{m.name}</span>
-            <V3Badge variant={signalVariant[m.signal]} label={signalLabel[m.signal]} />
+            <V3Badge variant={signalVariant[m.signal as 'bullish' | 'bearish' | 'neutral']} label={signalLabel[m.signal as 'bullish' | 'bearish' | 'neutral']} />
           </div>
           <p className="text-lg font-semibold text-slate-200 mb-0.5">{m.value}</p>
           <p className="text-[10px] text-slate-500">{m.desc}</p>

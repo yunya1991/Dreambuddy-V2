@@ -465,7 +465,7 @@ export async function GET(request: NextRequest) {
           has_compressed_summary: !!ctx?.compressedSummary,
           compressed_summary_preview: ctx?.compressedSummary?.slice(0, 200) || '',
           compressed_context_items: compressed.length,
-          compression_status: ctx?.turns.length <= 5 ? 'full' : ctx?.turns.length <= 10 ? 'light' : 'heavy',
+          compression_status: ((ctx?.turns?.length ?? 0) <= 5) ? 'full' : ((ctx?.turns?.length ?? 0) <= 10 ? 'light' : 'heavy'),
         },
       });
     }

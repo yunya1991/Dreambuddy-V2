@@ -160,7 +160,7 @@ export class ConfidenceEvaluator {
     // 检查方向一致性
     const directions = results
       .map(r => r.outputs.direction)
-      .filter((d): d is string => d !== undefined);
+      .filter((d): d is NonNullable<typeof d> => d !== undefined);
 
     if (directions.length < 2) return 80;
 
@@ -224,7 +224,8 @@ export class ConfidenceEvaluator {
    */
   private identifyGaps(
     results: SkillResult[],
-    stepDef: ThinkingStepDefinition
+    stepDef: ThinkingStepDefinition,
+    _context?: ExecutionContext
   ): Gap[] {
     const gaps: Gap[] = [];
 
@@ -260,7 +261,7 @@ export class ConfidenceEvaluator {
     // 3. 检查逻辑冲突
     const directions = results
       .map(r => r.outputs.direction)
-      .filter((d): d is string => d !== undefined);
+      .filter((d): d is NonNullable<typeof d> => d !== undefined);
 
     if (directions.length >= 2) {
       const uniqueDirections = new Set(directions);

@@ -337,7 +337,7 @@ export class DynamicNodePlanner {
 
       const totalQuota = Object.values(chainQuotas).reduce((a, b) => a + b, 0);
       if (totalQuota < remainingSlots) {
-        const diff = remainingSlots - totalQuota;
+        let diff = remainingSlots - totalQuota;
         for (let i = 0; i < strategy.primaryChains.length && diff > 0; i++) {
           const chain = strategy.primaryChains[i];
           const available = (skillsByChain[chain]?.length || 0) - chainQuotas[chain];

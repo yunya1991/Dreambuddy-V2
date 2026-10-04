@@ -54,7 +54,7 @@ import {
   CROSS_VALIDATION_CONFIGS,
   SignalDirection,
 } from './cross-validation-types.ts';
-import { SerializedNode } from '../types.ts';
+import { SerializedNode } from '../compressor-adapter/types.ts';
 import { ChainPlanner, DynamicInsertionPlanner } from './chain-planner.ts';
 
 // ============================================================
@@ -681,7 +681,7 @@ export class ExecutionPlanner {
     const result: PlannedStep[] = [];
 
     for (const ins of insertions) {
-      const stepDef = getStepDefinition(ins.stepId, ins.chain);
+      const stepDef = getStepDefinition(ins.stepId);
       if (stepDef) {
         result.push(this.createPlannedStep(stepDef, context));
       }

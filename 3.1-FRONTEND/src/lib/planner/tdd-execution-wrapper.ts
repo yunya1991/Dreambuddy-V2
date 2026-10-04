@@ -188,6 +188,8 @@ export class TDDExecutionWrapper {
         if (this.config.strictMode) {
           finalResult = {
             success: false,
+            capabilityId: 'tdd-execution-wrapper',
+            outputs: {},
             error: 'TDD 违规：RED 阶段测试应失败但实际通过',
             summary: state.violationDescription,
             confidence: 0,
@@ -252,6 +254,8 @@ export class TDDExecutionWrapper {
     if (!finalResult) {
       finalResult = {
         success: false,
+        capabilityId: 'tdd-execution-wrapper',
+        outputs: {},
         error: `TDD 超过最大循环次数 (${this.config.maxCycles})`,
         summary: '测试未能在最大循环次数内通过',
         confidence: 0,

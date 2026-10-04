@@ -30,7 +30,7 @@ import {
   getAgreementLevelLabel,
 } from './cross-validation-types.ts';
 import { VotingCalculator } from './voting-calculator.ts';
-import { SerializedNode } from '../types.ts';
+import { SerializedNode } from '../compressor-adapter/types.ts';
 
 // ============================================================
 // 交叉验证器

@@ -258,7 +258,7 @@ function buildGraphCompression(turns: ConversationTurn[]): string {
 
   for (const turn of turns) {
     const intent = turn.intent;
-    const symbols = extractSymbolsFromMessage(turn.message);
+    const symbols = extractSymbolFromMessage(turn.message);
     
     if (!nodes[intent]) {
       nodes[intent] = { count: 0, summaries: [] };
@@ -415,6 +415,8 @@ export interface TaskFile {
     llm_model?: string;
     intent_method?: string;
   };
+  /** 错误信息（任务失败/超时等场景写入，便于诊断） */
+  error?: string;
 }
 
 /**
@@ -1606,8 +1608,9 @@ export async function executeConversationTaskInline(
   // ============================================================
   // ExecutionPlanner 动态编排（最高优先级）
   // 对所有非 simple_qa/command 意图优先尝试，成功直接返回，失败降级
+  // 注: developer 已在上方 (line 1495) 早返回处理，此处无需重复判断
   // ============================================================
-  if (intentType !== 'simple_qa' && intentType !== 'command' && intentType !== 'developer') {
+  if (intentType !== 'simple_qa' && intentType !== 'command') {
     const plannerResult = await executeWithPlanner(
       task, intentType, thinkingMode, rawSymbol, displayName, category, instId, message, lang, startTime, onProgress
     );
@@ -1619,7 +1622,7 @@ export async function executeConversationTaskInline(
 
       // 更新 task 状态为 completed（避免占用 pending 槽位）
       task.status = 'completed';
-      task.updated_at = Date.now();
+      task.updated_at = new Date().toISOString();
       const plannerTaskPath = path.join(TASKS_DIR, `${task.task_id}.json`);
       fs.writeFileSync(plannerTaskPath, JSON.stringify(task, null, 2), 'utf-8');
 

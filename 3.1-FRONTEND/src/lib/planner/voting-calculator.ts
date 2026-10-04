@@ -144,7 +144,7 @@ export class VotingCalculator {
    */
   private getChainWeight(chain: SkillChain): number {
     switch (chain) {
-      case 'S':
+      case 'A':
         return this.config.weights.s_chain;
       case 'C':
         return this.config.weights.c_chain;

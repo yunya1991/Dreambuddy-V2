@@ -8,7 +8,7 @@
  */
 
 import { SkillChain, SkillResult, ThinkStage } from './skill-types.ts';
-import { SerializedNode } from '../types.ts';
+import { SerializedNode } from '../compressor-adapter/types.ts';
 
 // ============================================================
 // 步骤定义
@@ -78,6 +78,9 @@ export interface ThinkingStepDefinition {
 
   /** 参与交叉验证的链 */
   crossValidationChains?: SkillChain[];
+
+  /** 节点类别（方法论执行器使用：strategy_development/research/analysis/...） */
+  category?: string;
 }
 
 /** 置信度阈值配置 */

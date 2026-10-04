@@ -8,7 +8,8 @@
  */
 
 import { ChainPlanner, DynamicInsertionPlanner } from './chain-planner.ts';
-import { IntentType, ComplexityLevel, SkillChain } from './planner-types.ts';
+import { IntentType, ComplexityLevel } from './planner-types.ts';
+import { SkillChain } from './skill-types.ts';
 
 // ============================================================
 // 测试工具

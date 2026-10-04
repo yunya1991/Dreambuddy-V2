@@ -576,6 +576,8 @@ export function getLoopColor(loop: LoopType): string {
     case 'intelligence': return '#f59e0b'; // amber
     case 'governance':  return '#8b5cf6'; // purple
     case 'general':     return '#6b7280'; // gray
+    case 'classic':     return '#10b981'; // emerald
+    default:            return '#6b7280';
   }
 }
 
@@ -585,6 +587,8 @@ export function getLoopLabel(loop: LoopType): string {
     case 'intelligence': return '情报环';
     case 'governance':  return '治理环';
     case 'general':     return '通用';
+    case 'classic':     return '经典';
+    default:            return '通用';
   }
 }
 

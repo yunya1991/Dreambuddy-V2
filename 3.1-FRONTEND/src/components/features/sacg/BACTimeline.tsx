@@ -32,10 +32,12 @@ export function BACTimeline() {
       </div>
       <V3Card title={`${levelLabels[selectedLevel]} 层`} padding="sm">
         <div className="space-y-2">
-          {checkpoints.filter(cp => cp.level === selectedLevel).map(cp => (
-            <div key={cp.id} className={`flex items-center justify-between p-3 rounded-lg border ${levelColors[cp.level]}`}>
+          {checkpoints.filter(cp => cp.level === selectedLevel).map(cp => {
+            const lv = cp.level as BACLevel;
+            return (
+            <div key={cp.id} className={`flex items-center justify-between p-3 rounded-lg border ${levelColors[lv]}`}>
               <div className="flex items-center gap-3">
-                <V3Badge variant={levelVariant[cp.level]} label={cp.level} />
+                <V3Badge variant={levelVariant[lv]} label={cp.level} />
                 <div>
                   <p className="text-xs text-slate-300">{cp.entries} 条记录</p>
                   <p className="text-[10px] text-slate-500">{new Date(cp.timestamp).toLocaleString('zh-CN')}</p>
@@ -43,7 +45,8 @@ export function BACTimeline() {
               </div>
               {cp.compressed && <V3Badge variant="success" label="已压缩" />}
             </div>
-          ))}
+          );
+          })}
           {checkpoints.filter(cp => cp.level === selectedLevel).length === 0 && (
             <p className="text-xs text-slate-500 text-center py-4">暂无检查点</p>
           )}

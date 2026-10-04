@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -559,4 +559,235 @@ model Session {
   createdAt     DateTime  @default(now())
 
   @@map("sessions")
+}
+
+// ============================================
+// P1 业务模型 (Customer / 三账户 / KYC / TradeOrder)
+// 注: 这些模型为 stub，用于支持 acceptance-data-layer / seed / api routes 的类型检查
+// 真实 schema 应基于 USER_SYSTEM_DESIGN.md 完善，当前仅保证字段覆盖
+// ============================================
+
+model Customer {
+  uid           String   @id                       // 关联User.uid
+  realName      String?
+  kycStatus     String   @default("UNVERIFIED")
+  kycLevel      Int      @default(0)
+  riskLevel     String?
+  riskScore     Int?
+  investorType  String?
+
+  fundsAccount      FundsAccount?
+  tradingAccount    TradingAccount?
+  kycEvents         KycEvent[]
+  tradeOrders       TradeOrder[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("customers")
+}
+
+model FundsAccount {
+  id                String   @id @default(cuid())
+  customerUid       String   @unique
+  customer          Customer @relation(fields: [customerUid], references: [uid], onDelete: Cascade)
+  available         Float    @default(0)
+  frozen            Float    @default(0)
+  pending           Float    @default(0)
+  total             Float    @default(0)
+  currency          String   @default("USDT")
+  creditsAccountId  String?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("funds_accounts")
+}
+
+model TradingAccount {
+  id                String   @id @default(cuid())
+  customerUid       String   @unique
+  customer          Customer @relation(fields: [customerUid], references: [uid], onDelete: Cascade)
+  marginBalance     Float    @default(0)
+  usedMargin       Float    @default(0)
+  availableMargin  Float    @default(0)
+  marginCallLevel  Float    @default(0.3)
+  liquidationLevel Float    @default(0.1)
+  marginCallThreshold  Float?   // migrate-user-to-customer 脚本使用的别名
+  liquidationThreshold Float?   // 同上
+  totalPositionValue Float  @default(0)
+  unrealizedPnl    Float    @default(0)
+  positions         Position[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("trading_accounts")
+}
+
+model Position {
+  id              String   @id @default(cuid())
+  tradingAccountId String
+  tradingAccount  TradingAccount @relation(fields: [tradingAccountId], references: [id], onDelete: Cascade)
+  symbol          String
+  direction       String
+  status          String   @default("OPEN")
+  quantity        Float    @default(0)
+  entryPrice      Float?
+  openedAt        DateTime @default(now())
+  closedAt        DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([tradingAccountId])
+  @@map("positions")
+}
+
+model TradeOrder {
+  id              String   @id @default(cuid())
+  orderNo         String   @unique
+  customerUid     String
+  customer        Customer @relation(fields: [customerUid], references: [uid], onDelete: Cascade)
+  symbol          String
+  direction       String
+  orderType       String
+  quantity        Float
+  price           Float?
+  stopPrice       Float?
+  leverage        Int      @default(1)
+  strategyId      String?
+  status          String   @default("DRAFT")
+  filledQuantity  Float?
+  avgFillPrice    Float?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("trade_orders")
+}
+
+model KycEvent {
+  id            String   @id @default(cuid())
+  customerUid   String
+  customer      Customer @relation(fields: [customerUid], references: [uid], onDelete: Cascade)
+  eventType     String
+  status        String
+  reason        String?
+  evidence      Json?
+  detail        Json?
+
+  createdAt     DateTime  @default(now())
+
+  @@map("kyc_events")
+}
+
+// ============================================
+// P0 Audit / Ledger 复式记账
+// ============================================
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  uid           String
+  action        String
+  resource      String
+  resourceId    String?
+  before        Json?
+  after         Json?
+
+  createdAt     DateTime  @default(now())
+
+  @@map("audit_logs")
+}
+
+model LedgerTransaction {
+  id            String   @id @default(cuid())
+  txId          String   @unique
+  uid           String
+  type          String
+  amount        Float
+  description   String?
+  status        String   @default("POSTED")
+  postings      LedgerPosting[]
+
+  createdAt     DateTime  @default(now())
+
+  @@map("ledger_transactions")
+}
+
+model LedgerPosting {
+  id            String   @id @default(cuid())
+  transactionId String
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  accountCode   String
+  accountUid    String?
+  direction     String   // DEBIT / CREDIT
+  amount        Float
+
+  createdAt     DateTime  @default(now())
+
+  @@map("ledger_postings")
+}
+
+// ============================================
+// P2 Risk / Idempotency / Reconciliation
+// ============================================
+
+model RiskRule {
+  id            String   @id @default(cuid())
+  uid           String
+  name          String
+  ruleType      String   // PRE_TRADE / POST_TRADE / MONITOR
+  ruleCode      String   @unique
+  threshold     Float
+  action        String   // BLOCK / ALERT
+  severity      String   // LOW / MEDIUM / HIGH
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("risk_rules")
+}
+
+model RiskEvent {
+  id            String   @id @default(cuid())
+  uid           String
+  ruleId        String?
+  eventType     String
+  severity      String
+  status        String   @default("OPEN")
+  detail        Json?
+
+  createdAt     DateTime  @default(now())
+
+  @@map("risk_events")
+}
+
+model IdempotencyKey {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  uid           String
+  resourceType  String
+  status        String   @default("SUCCESS")
+
+  createdAt     DateTime  @default(now())
+
+  @@map("idempotency_keys")
+}
+
+model ReconciliationRecord {
+  id              String   @id @default(cuid())
+  reconDate       DateTime @unique
+  reconType       String   // MANUAL / AUTO / DAILY
+  status          String   // MATCHED / MISMATCHED
+  expectedAmount  Float
+  actualAmount    Float
+  difference      Float
+  detail          Json?
+  remark          String?
+  reconciledAt    DateTime?
+
+  createdAt       DateTime  @default(now())
+
+  @@map("reconciliation_records")
 }

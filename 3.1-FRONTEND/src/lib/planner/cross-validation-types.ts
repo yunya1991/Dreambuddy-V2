@@ -9,7 +9,7 @@
 
 import { SkillChain } from './skill-types.ts';
 import type { ThinkStage } from './skill-types.ts';
-import { SerializedNode } from '../types.ts';
+import { SerializedNode } from '../compressor-adapter/types.ts';
 
 // ============================================================
 // 交叉验证配置

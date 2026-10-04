@@ -20,20 +20,19 @@ import type {
   VisualizationData,
 } from './types';
 import { createFallbackResult, estimateTokens } from './fallback';
+// 外部通用模块 — tsc 通过 tsconfig paths 解析到 external-stub.ts（仅类型），
+// 运行时由 Next.js webpack/tsx 解析到真实路径 6-图结构上下文压缩/index.ts
 import {
   createCompressor,
   VERSION as MODULE_VERSION,
   PROTOCOL_VERSION,
-} from '../../../../../6-图结构上下文压缩/index';
+} from '@yunya/graph-context-compressor';
 import type {
-  CompressInput,
-  CompressResult,
   Compressor,
   CompressorOptions,
   CompressorStats,
   HealthStatus,
-  VisualizationData,
-} from '../../../../../6-图结构上下文压缩/index';
+} from '@yunya/graph-context-compressor';
 
 // 注意：上面的 `createCompressor` 返回的是通用模块的 `Compressor` 类型，
 // 它和我们 adapter 中使用的 `CompressInput / CompressResult` 结构一致，
@@ -91,11 +90,11 @@ function tryLoadGraphModule(): void {
     _moduleRef = {
       version: MODULE_VERSION as string,
       protocolVersion: PROTOCOL_VERSION as string,
-      compress: (input) => instance.compress(input),
-      expand: (id, level) => instance.expand(id, level),
+      compress: (input) => instance.compress(input) as unknown as Promise<CompressResult>,
+      expand: (id, level) => instance.expand(id, level) as unknown as Promise<GraphData>,
       health: () => instance.health(),
       getStats: () => instance.getStats(),
-      getVisualizationData: (input) => instance.getVisualizationData(input),
+      getVisualizationData: (input) => instance.getVisualizationData(input) as unknown as Promise<VisualizationData>,
       getMode: () => instance.getMode(),
       analyzeFromMessages: (messages) =>
         typeof (instance as any).analyzeFromMessages === 'function'

@@ -22,7 +22,7 @@ const positionClasses = {
 
 export function V3Tooltip({ content, children, position = 'top', delay = 300 }: V3TooltipProps) {
   const [visible, setVisible] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const show = () => {
     timeoutRef.current = setTimeout(() => setVisible(true), delay);

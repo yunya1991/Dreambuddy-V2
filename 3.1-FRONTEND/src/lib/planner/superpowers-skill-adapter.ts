@@ -15,7 +15,15 @@
  *   它们不直接执行交易逻辑，而是约束执行流程
  */
 
-import {
+export {
+  type SkillCapability,
+  type SkillMetadata,
+  type SkillResult,
+  type ExecutionContext,
+  type SkillChain,
+  type ThinkStage,
+} from './skill-types';
+import type {
   SkillCapability,
   SkillMetadata,
   SkillResult,

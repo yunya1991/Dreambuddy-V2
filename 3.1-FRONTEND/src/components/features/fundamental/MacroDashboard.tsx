@@ -27,7 +27,7 @@ export function MacroDashboard() {
                 <span className="text-sm font-semibold text-slate-200">{m.value}</span>
                 <span className="text-[10px] text-slate-600">前值: {m.prev}</span>
               </div>
-              <V3Badge variant={impactVariant[m.impact]} label={impactLabel[m.impact]} />
+              <V3Badge variant={impactVariant[m.impact as 'bullish' | 'bearish' | 'neutral']} label={impactLabel[m.impact as 'bullish' | 'bearish' | 'neutral']} />
             </div>
           </V3Card>
         ))}

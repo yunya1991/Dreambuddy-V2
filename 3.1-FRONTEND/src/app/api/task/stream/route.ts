@@ -18,6 +18,14 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
   let controller: ReadableStreamDefaultController<Uint8Array> | null = null;
+  // closeStream: 安全关闭流，避免 TS 在闭包中对 controller 做窄化（never）
+  const closeStream = () => {
+    const c = controller;
+    if (c) {
+      try { c.close(); } catch { /* already closed */ }
+      controller = null;
+    }
+  };
 
   const stream = new ReadableStream({
     start(c) {
@@ -29,10 +37,11 @@ export async function POST(request: NextRequest) {
   });
 
   const sendEvent = (event: string, data: Record<string, unknown>) => {
-    if (!controller) return;
+    const c = controller;
+    if (!c) return;
     try {
       const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-      controller.enqueue(encoder.encode(payload));
+      c.enqueue(encoder.encode(payload));
     } catch {
       // 客户端断开连接，忽略错误
     }
@@ -46,7 +55,7 @@ export async function POST(request: NextRequest) {
 
       if (!message || typeof message !== 'string') {
         sendEvent('error', { error: 'message is required and must be a string' });
-        controller?.close();
+        closeStream();
         return;
       }
 
@@ -81,7 +90,7 @@ export async function POST(request: NextRequest) {
       // 并发限制检查
       if (!canCreateTask()) {
         sendEvent('error', { error: 'Too many pending tasks', pending_limit: 3 });
-        controller?.close();
+        closeStream();
         return;
       }
 
@@ -120,7 +129,7 @@ export async function POST(request: NextRequest) {
         trading_mode: trading_mode || 'ai_skill',
         onProgress: (event) => {
           // 将Planner进度事件转发到SSE
-          sendEvent('progress', event);
+          sendEvent('progress', event as unknown as Record<string, unknown>);
         },
       });
 
@@ -238,11 +247,11 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      controller?.close();
+      closeStream();
     } catch (error) {
       console.error('[TaskStreamAPI] Error:', error);
       sendEvent('error', { error: error instanceof Error ? error.message : 'Unknown error' });
-      controller?.close();
+      closeStream();
     }
   })();
 

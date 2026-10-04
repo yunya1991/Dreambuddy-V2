@@ -58,7 +58,7 @@ export default function NetFlowTrendChart({ timeseries, title = '净流入趋势
           <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
           <XAxis dataKey="date" stroke="#6b7280" fontSize={11} tickLine={false} />
           <YAxis stroke="#6b7280" fontSize={11} tickFormatter={v => formatValue(v)} domain={[-maxVal * 1.2, maxVal * 1.2]} />
-          <Tooltip contentStyle={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#e0e0e0' }} formatter={(value: number) => [formatValue(value), '净流入']} labelFormatter={label => `日期: ${label}`} />
+          <Tooltip contentStyle={{ backgroundColor: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 8, color: '#e0e0e0' }} formatter={((value: number) => [formatValue(value), '净流入']) as any} labelFormatter={label => `日期: ${label}`} />
           <ReferenceLine y={0} stroke="#4a4a4a" strokeWidth={1} />
           <Area type="monotone" dataKey="netFlow" fill="url(#netFlowGradient)" stroke="#3b82f6" strokeWidth={2} />
           <defs>

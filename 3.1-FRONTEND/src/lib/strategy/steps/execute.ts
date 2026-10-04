@@ -127,7 +127,7 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
-class ${strategyId.split('_')[0].upper()}Strategy(IStrategy):
+class ${strategyId.split('_')[0].toUpperCase()}Strategy(IStrategy):
     """
     经典指标驱动策略 - 基于 RSI + 移动均线 + 布林带
     特性: 可回测、可审计、可高频复用
@@ -257,7 +257,7 @@ class ${strategyId.split('_')[0].upper()}Strategy(IStrategy):
     `🔬 下一步: 执行回测 → 沙箱测试 → 审计 → 上线`,
   ];
 
-  const backtestCommand = `freqtrade backtesting --strategy ${strategyId.split('_')[0].upper()}Strategy --timerange 20240101-20251231 --timeframe 1h`;
+  const backtestCommand = `freqtrade backtesting --strategy ${strategyId.split('_')[0].toUpperCase()}Strategy --timerange 20240101-20251231 --timeframe 1h`;
 
   const deployNotes = [
     `📝 治理流程: Draft → Gate 评估 → 审批 → Apply 应用 → Audit 记录`,

@@ -10,7 +10,10 @@ type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'sac
 
 interface V3BadgeProps {
   variant?: BadgeVariant;
-  children: React.ReactNode;
+  /** 文本标签（与 children 二选一；优先使用 label） */
+  label?: React.ReactNode;
+  /** 子节点（当不传 label 时使用） */
+  children?: React.ReactNode;
   dot?: boolean;
   pulse?: boolean;
   className?: string;
@@ -40,7 +43,7 @@ const dotColorClasses: Record<BadgeVariant, string> = {
   'sacg-g': 'bg-red-400',
 };
 
-export function V3Badge({ variant = 'default', children, dot = false, pulse = false, className = '' }: V3BadgeProps) {
+export function V3Badge({ variant = 'default', label, children, dot = false, pulse = false, className = '' }: V3BadgeProps) {
   return (
     <span className={`
       inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium
@@ -54,7 +57,7 @@ export function V3Badge({ variant = 'default', children, dot = false, pulse = fa
           <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${dotColorClasses[variant]}`} />
         </span>
       )}
-      {children}
+      {label ?? children}
     </span>
   );
 }

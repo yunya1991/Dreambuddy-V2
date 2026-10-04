@@ -17,10 +17,8 @@ import {
   ExecutionContext,
   SkillChain,
 } from './skill-types.ts';
-import {
-  ThinkingStepDefinition,
-  PlannedSkillCall,
-} from './planner-types.ts';
+import { PlannedSkillCall } from './planner-types.ts';
+import { ThinkingStepDefinition } from './step-types.ts';
 import { SkillsRegistry } from './skills-registry.ts';
 
 // ============================================================

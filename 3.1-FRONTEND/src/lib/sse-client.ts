@@ -27,6 +27,8 @@ export interface SSEStartedEvent {
   chainName: string;
   chainType: string;
   totalSteps: number;
+  /** 任务开始消息（task-stream 携带的可选字段） */
+  message?: string;
 }
 
 export interface SSEThinkingEvent {

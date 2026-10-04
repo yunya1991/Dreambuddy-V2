@@ -83,6 +83,38 @@ export interface PlannerContext {
     c_chain: number;
     f_chain: number;
   };
+
+  /** 扩展上下文（task-manager/方法论执行器使用的可选字段） */
+  extensions?: Record<string, unknown>;
+
+  /** 目标置信度（方法论两阶段审查使用） */
+  targetConfidence?: number;
+
+  /** 执行进度回调（task-manager 注入，供 planner/bridge 上报进度） */
+  onProgress?: (event: PlannerProgressEvent) => void;
+}
+
+/**
+ * Planner 执行进度事件
+ * 由 planner/bridge 在步骤执行过程中上报，task-manager 转发给前端 SSE
+ */
+export interface PlannerProgressEvent {
+  /** 事件类型 */
+  type:
+    | 'plan_created'
+    | 'step_start'
+    | 'step_end'
+    | 'cross_validation'
+    | 'completed'
+    | 'error';
+  /** 关联步骤 ID（如 'S1', 'C2'） */
+  stepId?: string;
+  /** 人类可读消息 */
+  message?: string;
+  /** 时间戳（ms） */
+  timestamp: number;
+  /** 扩展数据 */
+  data?: Record<string, unknown>;
 }
 
 /** 规划约束 */
@@ -244,6 +276,20 @@ export interface ExecutionPlan {
     complexity: ComplexityLevel;
     chains: SkillChain[];
     primaryChain: SkillChain;
+    /** ChainPlanner 四维规划说明（可选扩展） */
+    chainPlanRationale?: string;
+    /** 是否走了知识库命中捷径 */
+    shortcutTaken?: boolean;
+    /** 命中的知识库节点（字符串 ID 或完整对象） */
+    knowledgeHit?: unknown;
+    /** 被剪枝的节点（字符串数组或带 reason 的对象数组） */
+    prunedNodes?: unknown;
+    /** 动态插入的节点（字符串数组或带 reason 的对象数组） */
+    addedNodes?: unknown;
+    /** 预算模式 */
+    budgetMode?: string;
+    /** 是否启用动态插入 */
+    dynamicInsertionsEnabled?: boolean;
   };
 }
 

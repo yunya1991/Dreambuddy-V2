@@ -23,6 +23,7 @@ import {
   SkillStatus,
   SkillResult,
   createFallbackResult,
+  SkillCategory,
 } from './skill-types.ts';
 
 // ============================================================
@@ -124,7 +125,7 @@ export class SkillsRegistry {
     // 按分类过滤
     if (params.category) {
       const categories = Array.isArray(params.category) ? params.category : [params.category];
-      results = results.filter(s => categories.includes(s.metadata.category));
+      results = results.filter(s => categories.includes(s.metadata.category as SkillCategory));
     }
 
     // 按阶段过滤
@@ -215,10 +216,11 @@ export class SkillsRegistry {
 
     // 4. 评分排序
     return candidates
-      .map(skill => ({
+      .map((skill, idx) => ({
         skill,
         score: this.calculateRecommendationScore(skill, context),
         reason: this.getRecommendationReason(skill, context),
+        priority: idx + 1,
       }))
       .filter(r => r.score > 0)
       .sort((a, b) => b.score - a.score);
@@ -254,10 +256,11 @@ export class SkillsRegistry {
     }
 
     return candidates
-      .map(skill => ({
+      .map((skill, idx) => ({
         skill,
         score: this.calculateRecommendationScore(skill, context) * 0.8, // 降权
         reason: `填补 ${gapType} 类型的缺口`,
+        priority: idx + 1,
       }))
       .filter(r => r.score > 0)
       .sort((a, b) => b.score - a.score);
