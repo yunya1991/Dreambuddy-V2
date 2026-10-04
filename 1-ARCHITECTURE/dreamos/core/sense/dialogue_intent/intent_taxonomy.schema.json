@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DreamOS Dialogue Intent Taxonomy",
+  "description": "DreamOS 对话意图分类体系（6×30）— 单一真相源（SSoT）",
+  "version": "1.0.0",
+  "type": "object",
+  "definitions": {
+    "PrimaryIntent": {
+      "type": "string",
+      "enum": ["query", "analysis", "trade", "strategy", "risk", "dialog"],
+      "description": "一级意图（6 大类）"
+    },
+    "RiskLevel": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "风险等级"
+    },
+    "CapabilityRoute": {
+      "type": "string",
+      "enum": [
+        "knowledge_base",
+        "cognitive_memory",
+        "index_system",
+        "database",
+        "trading_nodes",
+        "harness",
+        "direct_response"
+      ],
+      "description": "能力路由决策"
+    },
+    "DialogueIntentResult": {
+      "type": "object",
+      "required": ["intent_primary", "intent_secondary", "risk_level", "in_scope", "capability_route"],
+      "properties": {
+        "intent_primary": {
+          "$ref": "#/definitions/PrimaryIntent"
+        },
+        "intent_secondary": {
+          "type": "string",
+          "description": "二级意图"
+        },
+        "slots": {
+          "type": "object",
+          "description": "类型化槽位",
+          "properties": {
+            "stock": {"type": "string"},
+            "stock_code": {"type": "string"},
+            "action": {"type": "string"},
+            "quantity": {"type": ["number", "string"]},
+            "quantity_unit": {"type": "string"},
+            "price": {"type": "number"},
+            "order_type": {"type": "string"},
+            "timeframe": {"type": "string"},
+            "indicator": {"type": "string"},
+            "sector": {"type": "string"},
+            "strategy_name": {"type": "string"},
+            "risk_metric": {"type": "string"},
+            "time_range": {"type": "string"}
+          }
+        },
+        "risk_level": {
+          "$ref": "#/definitions/RiskLevel"
+        },
+        "in_scope": {
+          "type": "boolean",
+          "description": "是否在 DreamOS 能力范围内"
+        },
+        "capability_route": {
+          "$ref": "#/definitions/CapabilityRoute"
+        },
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "is_multi": {"type": "boolean"},
+        "multi_intent": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "rationale": {"type": "string"}
+      }
+    }
+  },
+  "taxonomy": {
+    "query": {
+      "description": "查询类",
+      "risk_level": "low",
+      "default_route": "database",
+      "secondaries": {
+        "market_query": "行情查询",
+        "holding_query": "持仓查询",
+        "order_query": "订单查询",
+        "account_query": "账户查询",
+        "market_overview": "市场概览"
+      }
+    },
+    "analysis": {
+      "description": "分析类",
+      "risk_level": "medium",
+      "default_route": "trading_nodes",
+      "secondaries": {
+        "technical_analysis": "技术分析",
+        "holding_analysis": "持仓分析",
+        "deep_analysis": "深度分析",
+        "three_screen_analysis": "三屏分析",
+        "sector_analysis": "板块分析"
+      }
+    },
+    "trade": {
+      "description": "交易类（高风险）",
+      "risk_level": "high",
+      "default_route": "trading_nodes",
+      "secondaries": {
+        "buy": "买入",
+        "add_position": "加仓",
+        "sell": "卖出",
+        "close_position": "平仓",
+        "conditional_order": "条件单",
+        "order_manage": "订单管理"
+      }
+    },
+    "strategy": {
+      "description": "策略类",
+      "risk_level": "medium",
+      "default_route": "trading_nodes",
+      "secondaries": {
+        "stock_recommendation": "股票推荐",
+        "factor_screen": "因子筛选",
+        "strategy_design": "策略设计",
+        "strategy_optimization": "策略优化"
+      }
+    },
+    "risk": {
+      "description": "风控类",
+      "risk_level": "medium",
+      "default_route": "trading_nodes",
+      "secondaries": {
+        "risk_assessment": "风险评估",
+        "risk_advice": "风控建议",
+        "alert_setup": "预警设置",
+        "portfolio_risk": "组合风险"
+      }
+    },
+    "dialog": {
+      "description": "对话类",
+      "risk_level": "low",
+      "default_route": "direct_response",
+      "secondaries": {
+        "confirm": "确认",
+        "cancel": "取消",
+        "modify": "修改",
+        "repeat": "重复",
+        "clarify": "澄清",
+        "chitchat": "闲聊"
+      }
+    }
+  }
+}

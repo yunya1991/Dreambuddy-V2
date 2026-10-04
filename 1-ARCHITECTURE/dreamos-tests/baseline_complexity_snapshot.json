@@ -1,0 +1,306 @@
+{
+  "created_at": "2026-09-15T09:12:03.384782",
+  "canonical_question": "BTC 现在能做多吗",
+  "registered_node_count": 23,
+  "intent": {
+    "type": "TREND_FOLLOWING",
+    "confidence": 0.315,
+    "chain": "A",
+    "base_chain": [
+      "C1",
+      "F2",
+      "F3",
+      "A2",
+      "A4",
+      "A5",
+      "A9"
+    ],
+    "extend_nodes": []
+  },
+  "complexity_tier": "T1",
+  "complexity_rule_hit": "default",
+  "plan": {
+    "planned_chain": "A",
+    "selected_nodes": [
+      {
+        "node_id": "C1",
+        "name": "技术扫描",
+        "chain": "C",
+        "priority": 0,
+        "allocated_tokens": 200,
+        "estimated_latency_ms": 100,
+        "depends_on": [],
+        "tags": [
+          "technical",
+          "classic",
+          "trend"
+        ],
+        "condition": null
+      },
+      {
+        "node_id": "F2",
+        "name": "资金流分析",
+        "chain": "F",
+        "priority": 1,
+        "allocated_tokens": 100,
+        "estimated_latency_ms": 100,
+        "depends_on": [],
+        "tags": [
+          "flow",
+          "fundamental",
+          "money_flow",
+          "etf",
+          "stablecoin"
+        ],
+        "condition": null
+      },
+      {
+        "node_id": "F3",
+        "name": "估值分析",
+        "chain": "F",
+        "priority": 1,
+        "allocated_tokens": 100,
+        "estimated_latency_ms": 100,
+        "depends_on": [],
+        "tags": [
+          "valuation",
+          "fundamental",
+          "onchain",
+          "mvrv",
+          "sopr"
+        ],
+        "condition": null
+      },
+      {
+        "node_id": "A2",
+        "name": "综合分析",
+        "chain": "A",
+        "priority": 0,
+        "allocated_tokens": 200,
+        "estimated_latency_ms": 80,
+        "depends_on": [],
+        "tags": [
+          "analysis",
+          "fusion",
+          "multi-dimension"
+        ],
+        "condition": null
+      },
+      {
+        "node_id": "A4",
+        "name": "门禁闸门",
+        "chain": "A",
+        "priority": 0,
+        "allocated_tokens": 200,
+        "estimated_latency_ms": 50,
+        "depends_on": [],
+        "tags": [
+          "gate",
+          "risk-control",
+          "practice-theory"
+        ],
+        "condition": null
+      },
+      {
+        "node_id": "A5",
+        "name": "交易执行",
+        "chain": "A",
+        "priority": 0,
+        "allocated_tokens": 200,
+        "estimated_latency_ms": 60,
+        "depends_on": [],
+        "tags": [
+          "execution",
+          "trade",
+          "final-decision"
+        ],
+        "condition": null
+      },
+      {
+        "node_id": "A9",
+        "name": "离场决策",
+        "chain": "A",
+        "priority": 0,
+        "allocated_tokens": 200,
+        "estimated_latency_ms": 70,
+        "depends_on": [],
+        "tags": [
+          "exit",
+          "stop-loss",
+          "take-profit"
+        ],
+        "condition": null
+      },
+      {
+        "node_id": "A6",
+        "name": "情报监控",
+        "chain": "A",
+        "priority": 2,
+        "allocated_tokens": 4100,
+        "estimated_latency_ms": 80,
+        "depends_on": [],
+        "tags": [
+          "regime",
+          "monitor",
+          "intelligence"
+        ],
+        "condition": null
+      }
+    ],
+    "budget": {
+      "total_budget": 6000,
+      "allocated": {
+        "C1": 200,
+        "A2": 200,
+        "A4": 200,
+        "A5": 200,
+        "A9": 200,
+        "F2": 100,
+        "F3": 100,
+        "A6": 4100
+      },
+      "reserved": 900,
+      "mode": "standard",
+      "total_allocated": 5300,
+      "remaining": -200
+    },
+    "chain_spec": {
+      "chain_id": "A",
+      "name": "执行环·技术分析主线",
+      "description": "C1技术面→C2动量→C3波动率→A1发现矛盾(含A0)→A2辩证矛盾(含C/F信号)→A3解决矛盾→A4门禁→A5执行→A9离场",
+      "node_ids": [
+        "C1",
+        "C2",
+        "C3",
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A9"
+      ],
+      "optional_nodes": [
+        "A6"
+      ],
+      "scenario_nodes": {
+        "BULL_LOW_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BULL_LOW_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BULL_LOW_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "BULL_NORMAL_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BULL_NORMAL_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BULL_NORMAL_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "BULL_HIGH_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BULL_HIGH_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BULL_HIGH_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "BULL_EXTREME_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BULL_EXTREME_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BULL_EXTREME_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_LOW_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_LOW_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_LOW_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_NORMAL_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_NORMAL_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_NORMAL_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_HIGH_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_HIGH_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_HIGH_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_EXTREME_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_EXTREME_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "BEAR_EXTREME_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_LOW_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_LOW_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_LOW_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_NORMAL_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_NORMAL_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_NORMAL_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_HIGH_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_HIGH_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_HIGH_EXHAUSTION": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_EXTREME_ACCELERATING": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_EXTREME_DECELERATING": [
+          "A_YJ_INFER"
+        ],
+        "NEUTRAL_EXTREME_EXHAUSTION": [
+          "A_YJ_INFER"
+        ]
+      }
+    },
+    "conditions": {},
+    "rationale": "链路=A(执行环·技术分析主线)，节点=8(必须5+可选3)，置信度=32%",
+    "estimated_total_tokens": 5300,
+    "estimated_total_latency_ms": 640,
+    "capability_id": "",
+    "phase": null,
+    "deferred_nodes": [],
+    "next_step_hint": ""
+  },
+  "regression_note": "AC3 零回归基线：phase 缺省（None）时 plan 字段与此快照逐字段一致。若 plan.phase != None 或 deferred_nodes 非空，说明渐进式过滤误触发。"
+}

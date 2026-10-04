@@ -1,0 +1,39 @@
+# DreamOS 意图路由配置
+# 此文件定义意图类型到执行链路和节点序列的映射
+# 修改后无需重启，GraphPlanner 会在下次 plan 时重新加载
+#
+# 字段说明:
+#   intent_type: 意图类型 (TREND_FOLLOWING / MEAN_REVERSION / ...)
+#   chain: 推荐执行链路 (A / C / F)
+#   nodes: 推荐节点序列 (按执行顺序)
+
+routing:
+  TREND_FOLLOWING:
+    chain: "A"
+    nodes: ["C1", "C2", "C3", "A2", "A3", "A3B", "A4", "A5"]
+    description: "趋势跟随: 技术面→动量→波动率→综合→策略→多空辩论→闸门→执行"
+
+  MEAN_REVERSION:
+    chain: "A"
+    nodes: ["C1", "C3", "A2", "A3B", "A4", "A5"]
+    description: "均值回归: 技术面→波动率→综合→多空辩论→闸门→执行"
+
+  FUNDAMENTAL_PLAY:
+    chain: "F"
+    nodes: ["A1", "F1", "F2", "F3", "F5", "BDSM", "A2", "A3B", "A4"]
+    description: "基本面驱动: 调研→新闻→资金流→估值→宏观→BDSM→综合→多空辩论→闸门"
+
+  BREAKOUT:
+    chain: "C"
+    nodes: ["C1", "C2", "BCRM2", "A2", "C3", "A3B", "A4", "A5"]
+    description: "突破: 技术面→动量→BCRM2→综合→波动率→多空辩论→闸门→执行"
+
+  KNOWLEDGE_MATCH:
+    chain: "C"
+    nodes: ["C3", "A4"]
+    description: "知识库快捷路径: 波动率→闸门"
+
+  UNCERTAIN:
+    chain: "A"
+    nodes: ["C1", "A1", "A2", "A3", "A3B", "A4"]
+    description: "不确定: 技术面→调研→综合→策略→多空辩论→闸门"
