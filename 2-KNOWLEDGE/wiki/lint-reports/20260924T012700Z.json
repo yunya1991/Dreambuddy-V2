@@ -1,0 +1,15 @@
+{
+  "node_id": "wiki_lint",
+  "status": "ok",
+  "timestamp": "2026-09-24T01:27:00Z",
+  "total_pages": 9,
+  "orphans": [
+    "4-memory"
+  ],
+  "orphan_count": 1,
+  "stale": [],
+  "stale_count": 0,
+  "broken_links": [],
+  "broken_link_count": 0,
+  "health_score": 98
+}

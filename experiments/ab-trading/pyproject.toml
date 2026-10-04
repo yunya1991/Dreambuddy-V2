@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "dreamos-ab-trading"
+version = "1.0.0"
+description = "Dreambuddy V2 — DreamOS SACG core + AB trading orchestration"
+requires-python = ">=3.10"
+dependencies = [
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+    "msgpack>=1.0.7",
+    "eth-account>=0.9.0",
+    "eth-utils>=2.3.0",
+]
+
+[project.optional-dependencies]
+hyperliquid = ["hyperliquid>=0.4.0"]
+research = ["tavily>=1.0.0"]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "agents*", "execution*", "modules*", "scoring*"]
+exclude = ["tests*", "data*", "scripts*"]

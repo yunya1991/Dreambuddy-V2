@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.ft.strategy_gen.8095</string>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/25-用户策略生成系统</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string>
+    <string>STRATEGY_GEN_PORT=8095</string>
+    <string>python3</string>
+    <string>app.py</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/logs/strategy_gen_8095.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/logs/strategy_gen_8095.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONUNBUFFERED</key>
+    <string>1</string>
+  </dict>
+
+  <key>ThrottleInterval</key>
+  <integer>3</integer>
+</dict>
+</plist>
