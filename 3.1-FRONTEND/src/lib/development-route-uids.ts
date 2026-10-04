@@ -128,3 +128,31 @@ export async function resolveTradeBalanceRouteUid(
 ): Promise<string> {
   return resolveDevelopmentUid(request, deps);
 }
+
+export async function resolveCustomerRouteUid(
+  request?: NextRequest,
+  deps: DevelopmentUidDeps = { prisma, getDevelopmentUid },
+): Promise<string> {
+  return resolveDevelopmentUid(request, deps);
+}
+
+export async function resolveKycRouteUid(
+  request?: NextRequest,
+  deps: DevelopmentUidDeps = { prisma, getDevelopmentUid },
+): Promise<string> {
+  return resolveDevelopmentUid(request, deps);
+}
+
+export async function resolvePositionsRouteUid(
+  request?: NextRequest,
+  deps: DevelopmentUidDeps = { prisma, getDevelopmentUid },
+): Promise<string> {
+  return resolveDevelopmentUid(request, deps);
+}
+
+export async function resolveTradeOrdersRouteUid(
+  request?: NextRequest,
+  deps: DevelopmentUidDeps = { prisma, getDevelopmentUid },
+): Promise<string> {
+  return resolveDevelopmentUid(request, deps);
+}

@@ -423,3 +423,17 @@ export function getStats(): {
     today: state.tasks.filter((t) => t.startedAt.startsWith(today)).length,
   };
 }
+
+// ---------- Mock 数据种子 ----------
+
+/**
+ * seedMockData — 首次访问时确保目录与状态文件就绪。
+ *
+ * 当前实现为 no-op 兜底：只调用 ensureDirectories + 检查状态文件是否存在。
+ * 若未来需要插入示例任务，可在此扩展。API 路由引用此函数避免空状态报错。
+ */
+export function seedMockData(): void {
+  ensureDirectories();
+  // 触发 loadState 以初始化 memoryState（文件系统不可用时）
+  loadState();
+}

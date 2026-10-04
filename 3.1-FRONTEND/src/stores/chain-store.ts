@@ -56,6 +56,10 @@ export interface ChainTraceNode {
   tokens_used?: number;
   latency_ms?: number;
   reflect_action?: string;
+  risk?: { score?: number; level?: string; factors?: string[] } & Record<string, unknown>;
+  tokens_budget?: { input?: number; output?: number; total?: number };
+  skip_reason?: string;
+  artifact?: { id: string; type: string; title: string };
 }
 
 export interface ChainTrace {
@@ -63,6 +67,8 @@ export interface ChainTrace {
   plan?: { chain_id: string; chain_name: string; planned_steps: Array<Record<string, unknown>>; complexity: string; total_budget: number; rationale: string };
   nodes: ChainTraceNode[];
   final?: { execution_chain: string; quality_score: number; risk_score: number; grade: string };
+  cost_report?: { total_tokens?: number; total_cost?: number; by_node?: Array<Record<string, unknown>>; budget_tokens?: number; prompt_tokens?: number; completion_tokens?: number; skipped_steps?: string[] } & Record<string, unknown>;
+  compression?: { ratio?: number; original_size?: number; compressed_size?: number; method?: string; original_tokens?: number; compressed_tokens?: number } & Record<string, unknown>;
 }
 
 interface ChainState {
