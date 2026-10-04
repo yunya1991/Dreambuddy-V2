@@ -247,6 +247,19 @@ export function ChatPanel() {
                 message={msg}
                 isLast={isLast}
                 streamingContent={isLast && isStreaming ? streamingContent : undefined}
+                onSelectClarifyOption={(optionKey, optionLabel) => {
+                  // 把用户选项作为新消息发送
+                  if (activeSessionId) {
+                    addMessage(activeSessionId, {
+                      id: `msg_${Date.now()}`,
+                      role: 'user',
+                      content: optionLabel,
+                      timestamp: Date.now(),
+                    });
+                    // 用 optionLabel 作为新一轮输入触发任务流
+                    sendToTaskStream(optionLabel, activeSessionId);
+                  }
+                }}
               />
               {/* 最后一条 assistant 消息之后：报告链接 + 综合卡片 + 导出按钮 */}
               {isLastAssistant && !isStreaming && (
