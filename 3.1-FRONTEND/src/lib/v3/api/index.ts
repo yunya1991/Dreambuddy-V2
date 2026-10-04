@@ -46,6 +46,8 @@ export { chainApi } from './chain';
 
 // === 治理域 ===
 export { boardApi } from './board';
+export type { Proposal, ProposalVote, StrategyStatus, Stage } from './board';
+export { deriveStageFromStatus } from './board';
 
 // === 基本面域 ===
 export { fundamentalApi } from './fundamental';
