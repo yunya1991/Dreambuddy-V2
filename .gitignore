@@ -129,6 +129,7 @@ BAK_M1_START
 4-MEMORY/2-交易记忆单元/bayesian_memories_backup_*.json
 4-MEMORY/2-交易记忆单元/bayesian_memories.json
 4-MEMORY/data/cognitive_memory.db
+4-MEMORY/0-元记忆/template_mappings.json
 
 # === 归档目录 ===
 0-系统文档管理/archive/
