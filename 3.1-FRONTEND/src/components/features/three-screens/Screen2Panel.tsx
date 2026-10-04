@@ -2,28 +2,35 @@
 
 import React from 'react';
 import { useThreeScreensStore } from '@/stores';
-import { V3Card, V3Badge, V3Empty, V3Button } from '@/components';
+import { V3Card, V3Badge, V3Empty } from '@/components';
 import { ConfidenceGauge } from './charts';
 
-export function Screen2Panel() {
-  const { screen2, propagationStatus } = useThreeScreensStore();
+interface Screen2PanelProps {
+  /** wave API 是否正在加载（true=计算中, false=已就绪） */
+  loading?: boolean;
+  /** 最后更新时间戳（ms），用于显示新鲜度 */
+  lastUpdated?: number | null;
+}
+
+export function Screen2Panel({ loading = false, lastUpdated = null }: Screen2PanelProps) {
+  const { screen2 } = useThreeScreensStore();
 
   if (!screen2) {
     return (
       <V3Card title="Screen 2 — 战术层" subtitle="日线入场预设" padding="lg">
         <V3Empty
           title="等待方向约束"
-          description={propagationStatus === 'idle' ? '需要 Screen1 先输出方向锚' : '计算预设价位中...'}
-          action={propagationStatus === 's1_complete' && (
-            <V3Button variant="primary" size="sm">启动 Screen2 计算</V3Button>
-          )}
+          description={loading ? '正在拉取 wave 策略数据...' : '需要 Screen1 先输出方向锚'}
         />
       </V3Card>
     );
   }
 
-  const { directionConstraint, presets, backtest, bayesianOpt } = screen2;
+  const { directionConstraint, presets, backtest, bayesianOpt, updatedAt } = screen2;
   const isLong = directionConstraint === 'bullish';
+  // 状态 badge：用 loading prop 判断（不再依赖 store.propagationStatus，避免轮询覆盖）
+  const fresh = lastUpdated ?? updatedAt;
+  const isStale = fresh ? (Date.now() - fresh > 5 * 60_000) : true; // 5min 外算过期
 
   return (
     <div className="space-y-4">
@@ -33,9 +40,14 @@ export function Screen2Panel() {
         <V3Badge variant={isLong ? 'success' : directionConstraint === 'bearish' ? 'danger' : 'default'}>
           {directionConstraint?.toUpperCase() || 'NEUTRAL'}
         </V3Badge>
-        <V3Badge variant={propagationStatus === 's2_complete' ? 'success' : 'info'}>
-          {propagationStatus === 's2_complete' ? '完成' : '计算中'}
+        <V3Badge variant={loading ? 'info' : isStale ? 'warning' : 'success'} dot pulse={loading}>
+          {loading ? '计算中' : isStale ? '数据过期' : '已就绪'}
         </V3Badge>
+        {fresh && !loading && (
+          <span className="ml-auto text-[10px] text-slate-500">
+            更新于 {new Date(fresh).toLocaleTimeString('zh-CN')}
+          </span>
+        )}
       </div>
 
       {/* 预设策略列表 */}

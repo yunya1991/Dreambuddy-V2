@@ -473,7 +473,12 @@ export default function ThreeScreensPage() {
           </div>
         )}
         {activeTab === 'screen1' && <Screen1Panel />}
-        {activeTab === 'screen2' && <Screen2Panel />}
+        {activeTab === 'screen2' && (
+          <Screen2Panel
+            loading={waveStatus.loading}
+            lastUpdated={waveStatus.lastUpdated}
+          />
+        )}
         {activeTab === 'screen3' && <Screen3Panel />}
         {activeTab === 'pipeline' && <PipelineView />}
       </div>
