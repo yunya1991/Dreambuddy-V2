@@ -24,6 +24,56 @@ export interface IntentInfo {
   entities?: Record<string, unknown>;
 }
 
+// === 综合分析数据 (ReportExport / InsightCard / RecommendationCard / EnhancementHints) ===
+// 字段定义与 chat 子组件 InsightItem / RecommendationItem / EnhancementHint 精确匹配，
+// 保证 SynthesisInsight[] 可赋值给 InsightItem[] 等。
+
+export interface SynthesisInsight {
+  title: string;
+  content: string;
+  severity?: 'info' | 'warning' | 'critical';
+  confidence?: number;
+  source_modules?: string[];
+}
+
+export interface SynthesisRecommendation {
+  action: string;
+  reason: string;
+  priority?: 'low' | 'medium' | 'high';
+  confidence?: number;
+  source_modules?: string[];
+}
+
+export interface SynthesisEnhancementHint {
+  skill_key: string;
+  skill_name: string;
+  description?: string;
+  reason: string;
+  target_modules?: string[];
+  priority?: 'low' | 'medium' | 'high';
+}
+
+export interface FinalSynthesisData {
+  final_summary?: string;
+  insights?: SynthesisInsight[];
+  recommendations?: SynthesisRecommendation[];
+  enhancement_hints?: SynthesisEnhancementHint[];
+}
+
+// === 步骤确认 (StepConfirmation) ===
+
+export interface StepConfirmationOption {
+  key?: string;
+  label?: string;
+  action: 'continue' | 'finalize' | 'skip';
+}
+
+export interface StepConfirmation {
+  current_step: string;
+  next_step?: string;
+  options: StepConfirmationOption[];
+}
+
 interface SessionState {
   sessions: ChatSession[];
   activeSessionId: string | null;
@@ -35,6 +85,8 @@ interface SessionState {
   lastIntent: IntentInfo | null;
   lastTaskStatus: string | null;
   lastReportId: string | null;
+  pendingStepConfirmation: StepConfirmation | null;
+  lastSynthesis: FinalSynthesisData | null;
 
   createSession: (title?: string) => string;
   setActiveSession: (id: string) => void;
@@ -48,6 +100,8 @@ interface SessionState {
   setLastIntent: (intent: IntentInfo | null) => void;
   setLastTaskStatus: (status: string | null) => void;
   setLastReportId: (reportId: string | null) => void;
+  setPendingStepConfirmation: (data: StepConfirmation | null) => void;
+  setLastSynthesis: (data: FinalSynthesisData | null) => void;
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
@@ -61,6 +115,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   lastIntent: null,
   lastTaskStatus: null,
   lastReportId: null,
+  pendingStepConfirmation: null,
+  lastSynthesis: null,
 
   createSession: (title = '新会话') => {
     const id = `sess_${Date.now()}`;
@@ -98,4 +154,6 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   setLastIntent: (intent) => set({ lastIntent: intent }),
   setLastTaskStatus: (status) => set({ lastTaskStatus: status }),
   setLastReportId: (reportId) => set({ lastReportId: reportId }),
+  setPendingStepConfirmation: (data) => set({ pendingStepConfirmation: data }),
+  setLastSynthesis: (data) => set({ lastSynthesis: data }),
 }));

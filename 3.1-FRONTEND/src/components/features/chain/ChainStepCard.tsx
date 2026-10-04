@@ -13,6 +13,7 @@ interface ChainStepCardProps {
 
 const statusLabels: Record<string, string> = {
   pending: '等待中',
+  running: '执行中',
   active: '执行中',
   done: '已完成',
   failed: '失败',
@@ -21,6 +22,7 @@ const statusLabels: Record<string, string> = {
 
 const statusDotMap: Record<string, 'idle' | 'active' | 'success' | 'error' | 'loading'> = {
   pending: 'idle',
+  running: 'active',
   active: 'active',
   done: 'success',
   failed: 'error',
@@ -29,7 +31,7 @@ const statusDotMap: Record<string, 'idle' | 'active' | 'success' | 'error' | 'lo
 
 export function ChainStepCard({ step, isActive }: ChainStepCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const hasDetails = step.reflectorReason || step.artifact;
+  const hasDetails = step.reflectorReason || step.outputSummary;
 
   return (
     <div
@@ -42,7 +44,7 @@ export function ChainStepCard({ step, isActive }: ChainStepCardProps) {
       <div className="flex items-center gap-2.5 px-3 py-2">
         <V3StatusDot status={statusDotMap[step.status]} size="sm" pulse={isActive} />
         <span className="text-xs font-medium text-gray-200 flex-1 truncate">{step.name}</span>
-        <V3Badge variant={step.status === 'done' ? 'success' : step.status === 'active' ? 'info' : step.status === 'failed' ? 'danger' : 'default'}>
+        <V3Badge variant={step.status === 'done' ? 'success' : step.status === 'running' ? 'info' : step.status === 'failed' ? 'danger' : 'default'}>
           {statusLabels[step.status]}
         </V3Badge>
         {hasDetails && (
@@ -52,23 +54,23 @@ export function ChainStepCard({ step, isActive }: ChainStepCardProps) {
 
       {expanded && hasDetails && (
         <div className="px-3 pb-2.5 space-y-2 border-t border-gray-700/20 pt-2">
-          {step.reflectorAction && (
+          {step.reflectorDecision && (
             <div className="flex items-center gap-2 text-xs">
               <span className="text-gray-500">Reflector:</span>
-              <span className="text-amber-400 font-medium">{step.reflectorAction}</span>
+              <span className="text-amber-400 font-medium">{step.reflectorDecision}</span>
             </div>
           )}
           {step.reflectorReason && (
             <p className="text-xs text-gray-400">{step.reflectorReason}</p>
           )}
-          {step.artifact && (
+          {step.outputSummary && (
             <div className="text-xs text-gray-400 bg-gray-800/30 rounded p-2">
-              <span className="text-gray-500">产物: </span>{step.artifact}
+              <span className="text-gray-500">产物: </span>{step.outputSummary}
             </div>
           )}
-          {(step.tokensUsed || step.latencyMs) && (
+          {(step.tokens || step.latencyMs) && (
             <div className="flex gap-3 text-[10px] text-gray-500">
-              {step.tokensUsed && <span>tokens: {step.tokensUsed}</span>}
+              {step.tokens && <span>tokens: {step.tokens}</span>}
               {step.latencyMs && <span>latency: {step.latencyMs}ms</span>}
             </div>
           )}

@@ -1,5 +1,15 @@
 export { useSessionStore } from './session-store';
-export type { ChatMessage, ChatSession, IntentInfo } from './session-store';
+export type {
+  ChatMessage,
+  ChatSession,
+  IntentInfo,
+  FinalSynthesisData,
+  SynthesisInsight,
+  SynthesisRecommendation,
+  SynthesisEnhancementHint,
+  StepConfirmation,
+  StepConfirmationOption,
+} from './session-store';
 export { useChainStore } from './chain-store';
 export type { ChainType, ReflectorAction, SACELayer, ChainStep, DAGNode, DAGEdge, CrossValidation, ChainTrace, ChainTraceNode } from './chain-store';
 export { useTradingStore } from './trading-store';

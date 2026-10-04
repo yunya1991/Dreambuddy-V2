@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { V3Card, V3Badge } from '@/components';
+import { LiveStatusPanel } from '@/components/features/dashboard/LiveStatusPanel';
 
 const quickLinks = [
   { label: 'AI Skill 交易', href: '/dashboard/trade', desc: '自然语言驱动 SACG 链执行', color: 'border-blue-500/20 hover:border-blue-500/40' },
@@ -45,6 +46,12 @@ export default function DashboardPage() {
             <p className="text-[10px] text-slate-500">{link.desc}</p>
           </Link>
         ))}
+      </div>
+
+      {/* 实时产物状态 */}
+      <div className="mt-6">
+        <h2 className="text-sm font-semibold text-slate-400 mb-3">实时状态</h2>
+        <LiveStatusPanel />
       </div>
     </div>
   );

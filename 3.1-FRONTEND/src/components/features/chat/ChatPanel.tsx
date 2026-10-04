@@ -3,10 +3,21 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSessionStore, useChainStore } from '@/stores';
-import { V3Button, V3Badge, V3Spinner } from '@/components';
-import { IconSend, IconPlus } from '@/components';
+import type { FinalSynthesisData } from '@/stores/session-store';
+import { V3Badge } from '@/components';
 import { createSSEConnection, type SSEConnection } from '@/lib/sse-client';
 import { createTaskStreamHandlers } from '@/lib/sse-dispatcher';
+
+// 9 个子组件
+import { MessageItem } from './MessageItem';
+import { ChatInput } from './ChatInput';
+import { ThinkingCard } from './ThinkingCard';
+import { StreamingIndicator } from './StreamingIndicator';
+import { StepConfirmation } from './StepConfirmation';
+import { ReportExport } from './ReportExport';
+import { EnhancementHints } from './EnhancementHints';
+import { InsightCard } from './InsightCard';
+import { RecommendationCard } from './RecommendationCard';
 
 /**
  * ChatPanel — 聊天主面板 (DREAM OS 核心交互入口)
@@ -14,16 +25,20 @@ import { createTaskStreamHandlers } from '@/lib/sse-dispatcher';
  * 对接 /api/task/stream SSE 流式任务执行
  * 布局：
  *   - 顶部：当前会话信息 + 意图识别状态
- *   - 中间：消息列表（自动滚动到底部）
- *   - 底部：输入框 + 快捷命令按钮
+ *   - 中间：消息列表（自动滚动到底部）+ 思考链 + 流式指示 + 步骤确认
+ *   - 底部：快捷命令栏 + 输入框
+ *
+ * 接入 9 个 chat 子组件，消除孤儿状态。
  */
 export function ChatPanel() {
   const {
     activeSessionId, messages, isStreaming, streamingContent,
     sLayerIntent, sessions, lastIntent, lastReportId, lastTaskStatus,
+    pendingStepConfirmation, lastSynthesis,
     createSession, setActiveSession, addMessage,
     setStreaming, setSLayerIntent,
     setCurrentTaskId, setLastIntent, setLastTaskStatus, setLastReportId,
+    setPendingStepConfirmation,
   } = useSessionStore();
 
   const { resetChain } = useChainStore();
@@ -34,7 +49,6 @@ export function ChatPanel() {
 
   // 消息列表底部锚点
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sseConnectionRef = useRef<SSEConnection | null>(null);
 
   // 当前会话消息
@@ -146,13 +160,10 @@ export function ChatPanel() {
     }
   }, []);
 
-  // 键盘快捷键
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  // StepConfirmation 选择回调 — FAIL-OPEN: 当前仅 dismiss，实际 action 路由由 SSE 层处理
+  const handleStepChoose = useCallback((action: 'continue' | 'finalize' | 'skip') => {
+    setPendingStepConfirmation(null);
+  }, [setPendingStepConfirmation]);
 
   // 快捷命令
   const quickCommands = [
@@ -226,30 +237,51 @@ export function ChatPanel() {
           </div>
         )}
 
-        {/* 消息渲染 */}
-        {currentMessages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`
-              max-w-[80%] rounded-xl px-4 py-2.5 text-sm leading-relaxed
-              ${msg.role === 'user'
-                ? 'bg-blue-600/20 text-blue-100 border border-blue-500/20'
-                : 'bg-slate-800/60 text-slate-200 border border-slate-700/30'}
-            `}>
-              <div className="whitespace-pre-wrap">{msg.content}</div>
-              {/* 报告链接 */}
-              {msg.role === 'assistant' && lastReportId && msg.id === currentMessages[currentMessages.length - 1]?.id && (
-                <div className="mt-3 pt-3 border-t border-slate-700/30">
-                  <Link
-                    href={`/dashboard/reports`}
-                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                  >
-                    📋 查看完整报告 →
-                  </Link>
+        {/* 消息渲染 — MessageItem */}
+        {currentMessages.map((msg, idx) => {
+          const isLast = idx === currentMessages.length - 1;
+          const isLastAssistant = isLast && msg.role === 'assistant';
+          return (
+            <React.Fragment key={msg.id}>
+              <MessageItem
+                message={msg}
+                isLast={isLast}
+                streamingContent={isLast && isStreaming ? streamingContent : undefined}
+              />
+              {/* 最后一条 assistant 消息之后：报告链接 + 综合卡片 + 导出按钮 */}
+              {isLastAssistant && !isStreaming && (
+                <div className="ml-9 mt-2 space-y-3">
+                  {lastReportId && (
+                    <div>
+                      <Link
+                        href="/dashboard/reports"
+                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                      >
+                        📋 查看完整报告 →
+                      </Link>
+                    </div>
+                  )}
+                  <InsightCard
+                    insights={lastSynthesis?.insights || []}
+                    defaultExpandFirst
+                  />
+                  <RecommendationCard
+                    recommendations={lastSynthesis?.recommendations || []}
+                  />
+                  <EnhancementHints
+                    hints={lastSynthesis?.enhancement_hints || []}
+                  />
+                  <ReportExport
+                    synthesis={(lastSynthesis ?? {}) as FinalSynthesisData}
+                  />
                 </div>
               )}
-            </div>
-          </div>
-        ))}
+            </React.Fragment>
+          );
+        })}
+
+        {/* ThinkingCard — 流式中显示 S0-S5 / research→execute 思维链 */}
+        <ThinkingCard isStreaming={isStreaming} />
 
         {/* 流式输出 */}
         {isStreaming && streamingContent && (
@@ -260,18 +292,26 @@ export function ChatPanel() {
           </div>
         )}
 
-        {/* 流式输出指示器 */}
+        {/* 流式输出指示器 — StreamingIndicator */}
         {isStreaming && (
-          <div className="flex items-center gap-2 text-xs text-slate-400 px-2">
-            <V3Spinner size="sm" />
-            <span>DREAM OS 执行中...</span>
+          <div className="flex items-center gap-2 px-2">
+            <StreamingIndicator isActive={isStreaming} stepName="DREAM OS 执行中..." />
             <button
               onClick={handleCancel}
-              className="ml-2 text-red-400 hover:text-red-300 text-xs"
+              className="text-red-400 hover:text-red-300 text-xs"
             >
               取消
             </button>
           </div>
+        )}
+
+        {/* StepConfirmation — 步骤确认对话框（从 useSessionStore.pendingStepConfirmation 读取） */}
+        {pendingStepConfirmation && (
+          <StepConfirmation
+            data={pendingStepConfirmation}
+            onChoose={handleStepChoose}
+            disabled={isStreaming}
+          />
         )}
 
         {/* 滚动锚点 */}
@@ -293,44 +333,17 @@ export function ChatPanel() {
         </div>
       )}
 
-      {/* 输入区 */}
+      {/* 输入区 — ChatInput */}
       <div className="px-4 py-3 border-t border-slate-700/30">
-        <div className="flex items-end gap-2">
-          {/* 模式切换 */}
-          <button
-            onClick={() => setInputMode(inputMode === 'chat' ? 'command' : 'chat')}
-            className="shrink-0 p-2 text-slate-400 hover:text-slate-200 transition-colors"
-            title="切换输入模式"
-          >
-            <IconPlus className="w-5 h-5" />
-          </button>
-
-          {/* 输入框 */}
-          <div className="flex-1 relative">
-            <textarea
-              ref={textareaRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={inputMode === 'chat' ? '输入你的问题...' : '输入命令...'}
-              rows={1}
-              className="w-full resize-none bg-slate-800/50 border border-slate-700/30 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500/40 transition-colors"
-              style={{ minHeight: '40px', maxHeight: '120px' }}
-            />
-          </div>
-
-          {/* 发送按钮 */}
-          <V3Button
-            variant="primary"
-            size="md"
-            onClick={handleSend}
-            disabled={!inputValue.trim() || isStreaming}
-            loading={isStreaming}
-            icon={<IconSend className="w-4 h-4" />}
-          >
-            发送
-          </V3Button>
-        </div>
+        <ChatInput
+          value={inputValue}
+          onChange={setInputValue}
+          onSend={handleSend}
+          disabled={isStreaming}
+          loading={isStreaming}
+          mode={inputMode}
+          onModeToggle={() => setInputMode(inputMode === 'chat' ? 'command' : 'chat')}
+        />
       </div>
     </div>
   );

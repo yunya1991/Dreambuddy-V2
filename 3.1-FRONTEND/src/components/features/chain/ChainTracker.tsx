@@ -2,8 +2,13 @@
 
 import React from 'react';
 import { useChainStore } from '@/stores';
-import type { ChainStep, ChainTraceNode } from '@/stores';
+import type { ChainTraceNode } from '@/stores';
 import { V3Badge, V3StatusDot, V3Empty } from '@/components';
+import { ChainStepCard } from './ChainStepCard';
+import { SACELayerBadge } from './SACELayerBadge';
+import { ReflectorDecisionBadge } from './ReflectorDecisionBadge';
+import { StepInterventionPanel } from './StepInterventionPanel';
+import { BullBearDebate, type BullBearDebateData } from './BullBearDebate';
 
 // SACG 层颜色映射
 const layerColors: Record<string, string> = {
@@ -106,7 +111,7 @@ export function ChainTracker() {
       {/* 步骤列表 */}
       <div className="space-y-1.5">
         {steps.map((step, index) => (
-          <ChainStepRow key={step.id} step={step} isActive={index === currentStepIndex} />
+          <ChainStepCard key={step.id} step={step} isActive={index === currentStepIndex} />
         ))}
       </div>
 
@@ -118,10 +123,7 @@ export function ChainTracker() {
             {reflectorHistory.slice(0, 5).map((rd, i) => (
               <div key={i} className="flex items-center gap-2 text-xs">
                 <span className="text-slate-500 w-16 truncate">{rd.stepId}</span>
-                <V3Badge variant={reflectorColors[rd.action] || 'default'}>
-                  {rd.action}
-                </V3Badge>
-                <span className="text-slate-400 truncate flex-1">{rd.reason}</span>
+                <ReflectorDecisionBadge action={rd.action} reason={rd.reason} showReason />
               </div>
             ))}
           </div>
@@ -142,6 +144,9 @@ export function ChainTracker() {
           </div>
         </div>
       )}
+
+      {/* 人工干预面板 (常驻) */}
+      <StepInterventionPanel />
     </div>
   );
 }
@@ -154,6 +159,10 @@ function ChainTraceView({ trace, qualityScore, artifacts }: {
 }) {
   const totalTokens = trace.nodes.reduce((sum, n) => sum + (n.tokens_used || 0), 0);
   const completedNodes = trace.nodes.filter(n => n.status === 'done').length;
+  // FAIL-OPEN: trace.final 类型未声明 bull_bear_debate 字段，后端可能下发，运行时探测
+  const debateData = trace.final
+    ? (trace.final as { bull_bear_debate?: BullBearDebateData }).bull_bear_debate
+    : undefined;
 
   return (
     <div className="space-y-3">
@@ -238,6 +247,9 @@ function ChainTraceView({ trace, qualityScore, artifacts }: {
         </div>
       )}
 
+      {/* Bull/Bear 辩论 (FAIL-OPEN: 仅当 trace.final 含 bull_bear_debate 数据时渲染，无数据则跳过) */}
+      {debateData && <BullBearDebate debate={debateData} defaultExpanded />}
+
       {/* 产物 */}
       {artifacts.length > 0 && (
         <div className="mt-3 pt-3 border-t border-slate-700/30">
@@ -261,6 +273,8 @@ function ChainNodeRow({ node }: { node: ChainTraceNode }) {
   const layerColor = layerColors[node.layer] || 'border-l-slate-500';
   const isSkill = node.is_skill;
   const statusKey = node.status || 'idle';
+  const isSacgLayer = node.layer === 'S' || node.layer === 'A' || node.layer === 'C' || node.layer === 'G';
+  const isActiveStatus = statusKey === 'running' || statusKey === 'active';
 
   return (
     <div className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg bg-slate-800/20 border-l-2 ${layerColor} ${isSkill ? 'ml-3' : ''}`}>
@@ -271,6 +285,11 @@ function ChainNodeRow({ node }: { node: ChainTraceNode }) {
           <span className={`text-xs font-medium truncate ${stepStatusColors[statusKey] || 'text-slate-400'}`}>
             {node.name}
           </span>
+          {isSacgLayer ? (
+            <SACELayerBadge layer={node.layer as 'S' | 'A' | 'C' | 'G'} pulse={isActiveStatus} />
+          ) : (
+            <V3Badge variant="default" className="text-[9px]">{node.layer}</V3Badge>
+          )}
           {isSkill && (
             <V3Badge variant="default" className="text-[9px]">SKILL</V3Badge>
           )}
@@ -293,41 +312,6 @@ function ChainNodeRow({ node }: { node: ChainTraceNode }) {
         )}
         {node.latency_ms !== undefined && node.latency_ms > 0 && (
           <span className="text-[9px] text-slate-500">{node.latency_ms}ms</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// 单步骤行 (用于 live progress)
-function ChainStepRow({ step, isActive }: { step: ChainStep; isActive: boolean }) {
-  return (
-    <div className={`
-      flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors
-      ${isActive ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-slate-800/20 border border-transparent hover:bg-slate-800/40'}
-    `}>
-      <V3StatusDot status={stepStatusDot[step.status] || 'idle'} size="sm" pulse={isActive} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-medium truncate ${stepStatusColors[step.status] || 'text-slate-400'}`}>
-            {step.name}
-          </span>
-          {step.reflectorDecision && (
-            <V3Badge variant={reflectorColors[step.reflectorDecision] || 'default'} className="text-[10px]">
-              {step.reflectorDecision}
-            </V3Badge>
-          )}
-        </div>
-        {step.reflectorReason && (
-          <p className="text-[10px] text-slate-500 mt-0.5 truncate">{step.reflectorReason}</p>
-        )}
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        {step.tokens && (
-          <span className="text-[10px] text-slate-500">{step.tokens}tok</span>
-        )}
-        {step.latencyMs && (
-          <span className="text-[10px] text-slate-500">{step.latencyMs}ms</span>
         )}
       </div>
     </div>
