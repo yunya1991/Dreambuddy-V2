@@ -131,10 +131,15 @@ function resolveRepoRoot(): string {
     path.resolve(cwd, '..', '..'),
     path.resolve(cwd, '..', '..', '..'),
   ];
+  // 项目根特征：同时存在 3.1-FRONTEND 和 1-ARCHITECTURE 子目录
+  // 兼容 dreambuddy-v2 重命名场景，避免 fallback 跳出项目根
   for (const dir of candidates) {
-    if (fs.existsSync(path.join(dir, 'dreambuddy'))) return dir;
+    if (fs.existsSync(path.join(dir, '3.1-FRONTEND')) && fs.existsSync(path.join(dir, '1-ARCHITECTURE'))) {
+      return dir;
+    }
   }
-  return path.resolve(cwd, '..', '..');
+  // fallback：从 cwd 向上一层（dev server 通常在 3.1-FRONTEND 启动）
+  return path.resolve(cwd, '..');
 }
 
 const REPO_ROOT = resolveRepoRoot();
@@ -327,9 +332,9 @@ export function getCompressedContext(sessionId: string): string[] {
   return contextLines;
 }
 
-export const ARTIFACTS_DIR = fs.existsSync(path.join(REPO_ROOT, 'dreambuddy', 'artifacts'))
-  ? path.join(REPO_ROOT, 'dreambuddy', 'artifacts')
-  : path.join(REPO_ROOT, 'artifacts');
+// ARTIFACTS_DIR 固定在项目根内（沙箱可写），不再 fallback 到项目外
+// 避免 EPERM: mkdir '~/WorkBuddy/artifacts/tasks' 越界写
+export const ARTIFACTS_DIR = path.join(REPO_ROOT, 'artifacts');
 
 export const TASKS_DIR = path.join(ARTIFACTS_DIR, 'tasks');
 export const RESULTS_DIR = path.join(ARTIFACTS_DIR, 'results');
@@ -1511,7 +1516,7 @@ export async function executeConversationTaskInline(
   //   - 简单问答/命令类不触发澄清（直接执行）
   //   - 澄清问题由 LLM 动态生成，每次只问一个
   // ============================================================
-  const CLARIFY_INTENTS = ['deep_analysis', 'market_query', 'scenario_sim', 'strategy_verify', 'execute_trade', 'risk_alert'];
+  const CLARIFY_INTENTS = ['deep_analysis', 'scenario_sim', 'strategy_verify', 'execute_trade', 'risk_alert'];
   if (CLARIFY_INTENTS.includes(intentType)) {
     const clarifyResult = await checkIntentAmbiguity(
       task, message, intentType, rawSymbol, lang, startTime,
@@ -1519,6 +1524,83 @@ export async function executeConversationTaskInline(
     if (clarifyResult) {
       return clarifyResult;
     }
+  }
+
+  // ============================================================
+  // market_query 快速路径：直接返回价格卡片，跳过 ExecutionPlanner / S 链
+  // 经验 (VM-1789576537236): market_query 走完整 S 链会调 LLM 生成调研内容（10-30s），
+  //   而用户问"查询比特币价格"只需即时行情，无需深度分析。
+  // 经验 (VM-1789570716119): ExecutionPlanner.execute() 不短路 market_query，
+  //   对所有意图都跑完整技能编排（市场状态/A0/技术指标/回测/贝叶斯），导致过度响应。
+  // 修复：market_query 直接用 fetchMarketData + formatMarketData 生成价格卡片返回。
+  // ============================================================
+  if (intentType === 'market_query') {
+    const marketData = await fetchMarketData(
+      rawSymbol, instId, category, displayName, undefined, lang,
+    );
+    const priceCard = formatMarketData(marketData, ['market_query'], lang);
+    const now = new Date().toISOString();
+    const elapsed = Date.now() - startTime;
+
+    const fastResult: ResultFile = {
+      task_id: task.task_id,
+      session_id: task.session_id,
+      status: 'completed',
+      created_at: now,
+      execution_time_ms: elapsed,
+      content: priceCard,
+      content_type: 'markdown',
+      intent: {
+        type: 'market_query',
+        method: 'rule_prefilter',
+        entities: { symbol: rawSymbol, instId },
+      },
+      artifacts_produced: [{
+        file: `s1_market_intel_${now.replace(/[-:T]/g, '').slice(0, 14)}.md`,
+        type: 'intelligence_brief',
+        chain_phase: 'S1_RESEARCH',
+      }],
+      execution_summary: {
+        chain_executed: ['market_query_fast_path'],
+        total_steps: 1,
+        skipped_steps: [],
+        intent_recognized: 'market_query',
+        total_time_ms: elapsed,
+      },
+      persisted: false,
+    };
+
+    // 写入 result 文件（与 ExecutionPlanner 路径一致）
+    ensureDir(RESULTS_DIR);
+    fs.writeFileSync(
+      path.join(RESULTS_DIR, `result_${task.task_id}.json`),
+      JSON.stringify(fastResult, null, 2),
+      'utf-8',
+    );
+
+    // 更新 task 状态为 completed
+    task.status = 'completed';
+    task.updated_at = new Date().toISOString();
+    fs.writeFileSync(
+      path.join(TASKS_DIR, `${task.task_id}.json`),
+      JSON.stringify(task, null, 2),
+      'utf-8',
+    );
+
+    emitMonitorEvent({
+      trace_id: task.task_id,
+      uid: task.session_id,
+      layer: 'gateway',
+      phase: 'inline_exec_done',
+      status: 'completed',
+      intent: 'market_query',
+      thinking_mode: thinkingMode,
+      duration_ms: elapsed,
+      chain: ['market_query_fast_path'],
+    });
+
+    console.log(`[TaskManager] market_query fast path completed: ${task.task_id} (${elapsed}ms)`);
+    return fastResult;
   }
 
   // ============================================================

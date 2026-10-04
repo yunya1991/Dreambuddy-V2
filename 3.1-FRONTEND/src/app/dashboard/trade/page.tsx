@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ChatPanel } from '@/components/features/chat/ChatPanel';
+import { SteerPanel } from '@/components/features/chat/SteerPanel';
 import { ChainTracker } from '@/components/features/chain/ChainTracker';
 import { CrossValidationPanel } from '@/components/features/chain/CrossValidationPanel';
 import { V3Card, V3Badge } from '@/components';
@@ -44,6 +45,11 @@ export default function TradePage() {
 
       {/* 右侧：链追踪 + 数据 */}
       <div className="w-[380px] shrink-0 overflow-y-auto space-y-3">
+        {/* 实时干预面板（人工干预入口） */}
+        <V3Card title="🛡️ 实时干预" padding="sm">
+          <SteerPanel />
+        </V3Card>
+
         {/* 链追踪 */}
         <V3Card title="链路追踪" padding="sm">
           <ChainTracker />

@@ -24,10 +24,18 @@ export interface SessionContext {
   last_symbol?: string;
   last_complexity?: ComplexityLevel;
   last_analysis_result?: string;
+  last_clarification_options?: ClarificationOption[];
   message_history: string[];
   thinking_mode: 'quick' | 'deep' | 'stepwise' | 'scheduler';
   trading_mode: 'ai_skill' | 'classic';
   active_strategy_id?: string;
+}
+
+export interface ClarificationOption {
+  key: string;
+  label: string;
+  target_intent: IntentType;
+  entities?: Record<string, string>;
 }
 
 export interface IntentRecognitionResult {
@@ -40,12 +48,7 @@ export interface IntentRecognitionResult {
   context_aware: boolean;
   matchedPatternId?: string;
   // 澄清相关字段（仅当 intent == 'need_clarification' 时有值）
-  clarification_options?: Array<{
-    key: string;        // 用户回复时可匹配的关键词
-    label: string;      // 向用户展示的标签
-    target_intent: IntentType;  // 用户选择该选项后应使用的意图
-    entities?: Record<string, string>;  // 建议的实体
-  }>;
+  clarification_options?: ClarificationOption[];
   clarification_question?: string;  // 向用户提问的问题
   // 用户澄清后的结果字段（仅当 intent == 'clarification_result' 时有值）
   selected_option_key?: string;     // 用户实际选择的选项key
@@ -177,7 +180,8 @@ function extractEntities(msg: string): Record<string, string> {
     'ETH': ['eth', 'ethereum', '以太坊'],
     'SOL': ['sol', 'solana'],
     'BNB': ['bnb'],
-    'XRP': ['xrp', 'ripple'],
+    'XRP': ['xrp', 'ripple', '瑞波币', '瑞波'],
+    'DOGE': ['doge', 'dogecoin', '狗狗币', '狗币'],
     'XAU': ['xau', 'gold', '黄金', '金价', '黄金价格'],
   };
 
@@ -242,7 +246,7 @@ const HARDCODED_INTENT_RULES: Array<{
     intent: 'deep_analysis',
     complexity: 'moderate',
     confidence: 0.85,
-    keywords: ['深度分析', '深入分析', '深度分析', '技术分析', '走势分析', '趋势分析', '入场策略', '策略分析', '分析策略', '机会分析', '制定策略', '交易策略', '策略建议', '持仓策略', '规划入场', '全面分析'],
+    keywords: ['深度分析', '深入分析', '技术分析', '走势分析', '趋势分析', '入场策略', '策略分析', '分析策略', '机会分析', '策略建议', '持仓策略', '规划入场', '全面分析'],
   },
   {
     id: 'hc_scenario_sim',
@@ -268,7 +272,7 @@ const HARDCODED_INTENT_RULES: Array<{
     intent: 'execute_trade',
     complexity: 'complex',
     confidence: 0.9,
-    keywords: ['开仓', '下单', '买入', '卖出', '做多', '做空', '止损', '止盈', '加仓', '减仓', '平仓', '执行交易', '立即交易', 'execute', 'place order', 'buy', 'sell'],
+    keywords: ['开仓', '下单', '买入', '卖出', '做多', '做空', '加仓', '减仓', '平仓', '执行交易', '立即交易', 'execute', 'place order', 'buy', 'sell'],
   },
   {
     id: 'hc_market_query',
@@ -282,7 +286,7 @@ const HARDCODED_INTENT_RULES: Array<{
     intent: 'triple_chain',
     complexity: 'complex',
     confidence: 0.9,
-    keywords: ['全面规划', '完整策略', '综合分析', '从分析到执行', '全流程', '系统策略', '端到端', '一站式'],
+    keywords: ['全面规划', '完整策略', '综合分析', '从分析到执行', '全流程', '系统策略', '端到端', '一站式', '制定交易策略', '设计交易策略', '交易策略', '入场止损止盈', '止损止盈', '设计入场'],
   },
 ];
 
@@ -563,6 +567,75 @@ export async function recognizeIntent(
   let llmResult: IntentRecognitionResult | null = null;
   let matchedPatternId: string | undefined;
 
+  // Step 0: 澄清选项数字回复解析
+  // 如果上一轮提供了澄清选项，且用户回复数字，则直接选择对应选项
+  const opts = context?.last_clarification_options;
+  if (opts && opts.length > 0) {
+    const trimmed = message.trim();
+    // 匹配数字 1-9
+    const numMatch = trimmed.match(/^([1-9])$/);
+    if (numMatch) {
+      const idx = parseInt(numMatch[1], 10) - 1;
+      if (idx >= 0 && idx < opts.length) {
+        const selected = opts[idx];
+        const entities = { ...(selected.entities || {}) };
+        // 继承 context 中的 symbol
+        if (context?.last_symbol && !entities.symbol) {
+          entities.symbol = context.last_symbol;
+        }
+        const result: IntentRecognitionResult = {
+          intent: selected.target_intent as IntentType,
+          confidence: 0.9,
+          entities,
+          complexity: 'simple',
+          reasoning: `用户选择澄清选项 #${idx + 1}: ${selected.label}`,
+          method: 'follow_up',
+          context_aware: true,
+        };
+
+        emitMonitorEvent({
+          trace_id: `intent_${Date.now()}`,
+          uid: context?.session_id || 'anonymous',
+          layer: 'intent',
+          phase: 'recognized',
+          status: 'completed',
+          intent: result.intent,
+          duration_ms: Date.now() - startTime,
+        });
+
+        recordRecognition({
+          input: message,
+          recognized_intent: result.intent,
+          recognized_confidence: result.confidence,
+          recognized_method: 'follow_up',
+          recognized_complexity: result.complexity,
+          routing_chain: [],
+          session_id: context?.session_id || 'anonymous',
+          user_role: context?.user_role || 'FREE',
+        });
+
+        return result;
+      } else {
+        // 数字超出选项范围 → 返回 need_clarification
+        const entities = extractEntities(message);
+        if (context?.last_symbol && !entities.symbol) {
+          entities.symbol = context.last_symbol;
+        }
+        return {
+          intent: 'need_clarification',
+          confidence: 0.5,
+          entities,
+          complexity: 'simple',
+          reasoning: `选项编号 ${numMatch[1]} 超出范围（1-${opts.length}）`,
+          method: 'rule',
+          context_aware: true,
+          clarification_options: opts,
+          clarification_question: `请输入有效的选项编号（1-${opts.length}）`,
+        };
+      }
+    }
+  }
+
   // Step 1: 追问检测 (最快速路径)
   const followUp = detectFollowUp(message, context);
   if (followUp.isFollowUp && followUp.intent) {
@@ -602,6 +675,37 @@ export async function recognizeIntent(
     });
 
     return result;
+  }
+
+  // Step 1.5: 规则预过滤（高置信度快速路径）
+  // 硬编码规则 confidence >= 0.85 时直接返回，跳过 LLM 调用
+  // 避免简单意图（如"查询比特币价格"）被 LLM 误判为复杂分析
+  // 同时节省 10-30s LLM 延迟
+  const preFilterResult = matchRuleEngine(message, context);
+  if (preFilterResult && preFilterResult.confidence >= 0.85) {
+    matchedPatternId = (preFilterResult as any).matchedPatternId;
+    emitMonitorEvent({
+      trace_id: `intent_${Date.now()}`,
+      uid: context?.session_id || 'anonymous',
+      layer: 'intent',
+      phase: 'rule_prefilter',
+      status: 'completed',
+      intent: preFilterResult.intent,
+      duration_ms: Date.now() - startTime,
+    });
+
+    recordRecognition({
+      input: message,
+      recognized_intent: preFilterResult.intent,
+      recognized_confidence: preFilterResult.confidence,
+      recognized_method: 'rule',
+      recognized_complexity: preFilterResult.complexity,
+      routing_chain: [],
+      session_id: context?.session_id || 'anonymous',
+      user_role: context?.user_role || 'FREE',
+    });
+
+    return preFilterResult;
   }
 
   // Step 2: 尝试 LLM (主路径)

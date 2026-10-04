@@ -8,6 +8,8 @@ import { V3StatusDot } from '@/components';
 const navItems = [
   { label: '概览', href: '/dashboard', icon: '◉' },
   { label: 'AI 交易', href: '/dashboard/trade', icon: '⚡' },
+  { label: '交易榜单', href: '/dashboard/ranking', icon: '🏆' },
+  { label: '人工审批', href: '/board/approval', icon: '🛡️' },
   { label: '经典系统', href: '/dashboard/classic', icon: '📊' },
   { label: '基本面', href: '/dashboard/fundamental', icon: '📈' },
   { label: '三屏系统', href: '/dashboard/three-screens', icon: '🖥' },

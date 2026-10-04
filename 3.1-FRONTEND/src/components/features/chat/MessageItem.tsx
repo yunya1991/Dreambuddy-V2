@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/types';
-import { V3Badge } from '@/components';
+import { V3badge } from '@/components';
 import { IconCopy } from '@/components';
 
 interface MessageItemProps {
@@ -67,10 +68,18 @@ export function MessageItem({ message, isLast, streamingContent }: MessageItemPr
             ? 'bg-blue-600/20 text-blue-100 border border-blue-500/20 rounded-br-sm'
             : 'bg-gray-800/60 text-gray-200 border border-gray-700/30 rounded-bl-sm'}
         `}>
-          <span>{message.content}</span>
+          {isUser ? (
+            <span>{message.content}</span>
+          ) : (
+            <div className="markdown-body [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-base [&_h3]:text-sm [&_blockquote]:border-l-2 [&_blockquote]:border-gray-500/50 [&_blockquote]:pl-3 [&_blockquote]:text-gray-300">
+              <ReactMarkdown>{message.content || ''}</ReactMarkdown>
+            </div>
+          )}
           {/* 最后一条 assistant 消息追加流式内容 */}
           {isLast && streamingContent && (
-            <span className="text-gray-300">{streamingContent}</span>
+            <div className="markdown-body mt-1 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5">
+              <ReactMarkdown>{streamingContent}</ReactMarkdown>
+            </div>
           )}
         </div>
 

@@ -46,7 +46,9 @@ export type MonitorPhase =
   | 'clarification_requested'
   | 'low_confidence_clarification'
   | 'non_financial_skip'
-  | 'clarification_sent';
+  | 'clarification_sent'
+  | 'rule_prefilter'
+  | 'jev_evaluated';
 
 export interface MonitorEvent {
   id: string;

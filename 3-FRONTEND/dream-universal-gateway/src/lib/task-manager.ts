@@ -142,10 +142,15 @@ function resolveRepoRoot(): string {
     path.resolve(cwd, '..', '..'),
     path.resolve(cwd, '..', '..', '..'),
   ];
+  // 项目根特征：同时存在 3.1-FRONTEND 和 1-ARCHITECTURE 子目录
+  // 兼容 dreambuddy-v2 重命名场景，避免 fallback 跳出项目根
   for (const dir of candidates) {
-    if (fs.existsSync(path.join(dir, 'dreambuddy'))) return dir;
+    if (fs.existsSync(path.join(dir, '3.1-FRONTEND')) && fs.existsSync(path.join(dir, '1-ARCHITECTURE'))) {
+      return dir;
+    }
   }
-  return path.resolve(cwd, '..', '..');
+  // fallback：从 cwd 向上一层（dev server 通常在 3.1-FRONTEND 启动）
+  return path.resolve(cwd, '..');
 }
 
 const REPO_ROOT = resolveRepoRoot();
@@ -153,9 +158,9 @@ const REPO_ROOT = resolveRepoRoot();
 // 会话级 graph state 引用（供 chat/route.ts 压缩使用）
 export const sessionGraphStates = new Map<string, any>();
 
-export const ARTIFACTS_DIR = fs.existsSync(path.join(REPO_ROOT, 'dreambuddy', 'artifacts'))
-  ? path.join(REPO_ROOT, 'dreambuddy', 'artifacts')
-  : path.join(REPO_ROOT, 'artifacts');
+// ARTIFACTS_DIR 固定在项目根内（沙箱可写），不再 fallback 到项目外
+// 避免 EPERM: mkdir '~/WorkBuddy/artifacts/tasks' 越界写
+export const ARTIFACTS_DIR = path.join(REPO_ROOT, 'artifacts');
 
 export const TASKS_DIR = path.join(ARTIFACTS_DIR, 'tasks');
 export const RESULTS_DIR = path.join(ARTIFACTS_DIR, 'results');
