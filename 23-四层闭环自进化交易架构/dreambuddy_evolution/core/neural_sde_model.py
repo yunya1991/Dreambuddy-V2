@@ -1233,6 +1233,10 @@ class NeuralSDEModel:
             "moe_routing": self.moe_routing,  # P2.1: soft/hard routing
             "use_exogenous": self.use_exogenous,  # P1: exogenous drift 输入
             "exogenous_dim": self.exogenous_dim,  # P1: 维度 (0 = 关闭)
+            "use_cross_attention": self.use_cross_attention,  # P1+: Cross-Attention
+            "cross_attn_dim": self.cross_attn_dim,  # P1+: cross-attention dim
+            "cross_attn_heads": self.cross_attn_heads,  # P1+: cross-attention heads
+            "exogenous_factor_dim": self.exogenous_factor_dim,  # P1+: 外生因子维度
             "sample_count": self._sample_count,
             "activated": self._activated,
         }, str(path))
@@ -1264,6 +1268,11 @@ class NeuralSDEModel:
             # P1: 读取 use_exogenous / exogenous_dim (旧 ckpt 默认 False/0)
             ckpt_use_exogenous = bool(ckpt.get("use_exogenous", False))
             ckpt_exogenous_dim = int(ckpt.get("exogenous_dim", 0))
+            # P1+: 读取 cross-attention 配置 (旧 ckpt 默认 False/0)
+            ckpt_use_cross_attn = bool(ckpt.get("use_cross_attention", False))
+            ckpt_cross_attn_dim = int(ckpt.get("cross_attn_dim", 0))
+            ckpt_cross_attn_heads = int(ckpt.get("cross_attn_heads", 0))
+            ckpt_exog_factor_dim = int(ckpt.get("exogenous_factor_dim", 0))
             need_rebuild = (
                 ckpt_n_regimes != self.n_regimes
                 or ckpt_use_transition != self.use_transition
@@ -1272,18 +1281,18 @@ class NeuralSDEModel:
                 or ckpt_moe_routing != self.moe_routing
                 or ckpt_use_exogenous != self.use_exogenous
                 or ckpt_exogenous_dim != self.exogenous_dim
+                or ckpt_use_cross_attn != self.use_cross_attention
+                or ckpt_cross_attn_dim != self.cross_attn_dim
+                or ckpt_cross_attn_heads != self.cross_attn_heads
+                or ckpt_exog_factor_dim != self.exogenous_factor_dim
             )
             if need_rebuild:
                 logger.debug(
                     "[NeuralSDE] load: drift_net config 不一致 (n_regimes ckpt=%d/cur=%d, "
-                    "use_transition ckpt=%s/cur=%s, dropout ckpt=%s/cur=%s, "
-                    "use_moe ckpt=%s/cur=%s, use_exogenous ckpt=%s/cur=%s dim=%d/%d), 重建 drift_net",
+                    "use_moe ckpt=%s/cur=%s, cross_attn ckpt=%s/cur=%s), 重建 drift_net",
                     ckpt_n_regimes, self.n_regimes,
-                    ckpt_use_transition, self.use_transition,
-                    ckpt_dropout, self.dropout,
                     ckpt_use_moe, self.use_moe,
-                    ckpt_use_exogenous, self.use_exogenous,
-                    ckpt_exogenous_dim, self.exogenous_dim,
+                    ckpt_use_cross_attn, self.use_cross_attention,
                 )
                 self.n_regimes = ckpt_n_regimes
                 self.use_transition = ckpt_use_transition
@@ -1293,22 +1302,31 @@ class NeuralSDEModel:
                 self.moe_routing = ckpt_moe_routing
                 self.use_exogenous = ckpt_use_exogenous
                 self.exogenous_dim = ckpt_exogenous_dim if self.use_exogenous else 0
+                self.use_cross_attention = ckpt_use_cross_attn
+                self.cross_attn_dim = ckpt_cross_attn_dim if self.use_cross_attention else 0
+                self.cross_attn_heads = ckpt_cross_attn_heads if self.use_cross_attention else 0
+                self.exogenous_factor_dim = ckpt_exog_factor_dim if self.use_cross_attention else 0
                 if self._available:
+                    base_kwargs = dict(
+                        hidden_dim=self.hidden_dim, sig_dim=self.sig_dim,
+                        clip=self.drift_clip, n_transition=self.n_transition,
+                        dropout=self.dropout, exogenous_dim=self.exogenous_dim,
+                    )
+                    if self.use_cross_attention and self.exogenous_factor_dim > 0:
+                        base_kwargs.update(
+                            use_cross_attention=True,
+                            cross_attn_dim=self.cross_attn_dim,
+                            cross_attn_heads=self.cross_attn_heads,
+                            exogenous_factor_dim=self.exogenous_factor_dim,
+                        )
                     if self.use_moe and self.n_regimes > 0:
                         self.drift_net = _MoEDriftNet(
-                            n_experts=self.n_regimes, hidden_dim=self.hidden_dim,
-                            sig_dim=self.sig_dim, clip=self.drift_clip,
-                            n_transition=self.n_transition, dropout=self.dropout,
-                            routing=self.moe_routing,
-                            exogenous_dim=self.exogenous_dim,
+                            n_experts=self.n_regimes, routing=self.moe_routing,
+                            **base_kwargs,
                         ).to(self.device)
                     else:
                         self.drift_net = _PathSignatureDriftNet(
-                            hidden_dim=self.hidden_dim, sig_dim=self.sig_dim,
-                            clip=self.drift_clip, n_regimes=self.n_regimes,
-                            n_transition=self.n_transition,
-                            dropout=self.dropout,
-                            exogenous_dim=self.exogenous_dim,
+                            n_regimes=self.n_regimes, **base_kwargs,
                         ).to(self.device)
             self.drift_net.load_state_dict(ckpt["drift_net_state_dict"])
             self.diffusion_net.load_state_dict(ckpt["diffusion_net_state_dict"])
