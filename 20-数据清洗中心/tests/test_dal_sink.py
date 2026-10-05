@@ -166,8 +166,9 @@ def test_route_taker_volume():
     repo.upsert_taker_volume.assert_called_once()
 
 
-# ── T8 · 未知 sub_category → 跳过 ─────────────────
-def test_unknown_sub_category_skipped():
+# ── T8 · 未知 sub_category → 通用 upsert_metric ────
+def test_unknown_sub_category_routes_to_generic_metric():
+    """未知 sub_category 不再跳过，自动走 upsert_metric 通用路由。"""
     repo = _mock_repo()
     sink = DalSink(mm_repo=repo)
     df = pd.DataFrame({"some_col": [1], "timestamp": [datetime(2024, 1, 1, tzinfo=timezone.utc)]})
@@ -175,7 +176,8 @@ def test_unknown_sub_category_skipped():
 
     written = sink.write_silver(silver, source="fred", category="macro", sub_category="unknown_metric")
 
-    assert written == 0
+    assert written >= 1
+    repo.upsert_metric.assert_called_once()
 
 
 # ── T9 · upsert 异常 → fail-open 继续写入 ──────────

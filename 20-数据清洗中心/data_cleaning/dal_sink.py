@@ -128,11 +128,11 @@ class DalSink:
             return 0
 
         route_key = sub_category.lower()
+        # 未知 sub_category 自动走通用指标路由（upsert_metric），不再跳过
         if route_key not in _ROUTE_MAP:
-            logger.warning("[DalSink] 未知 sub_category=%r，跳过 DAL 写入", sub_category)
-            return 0
-
-        method_name, required_cols = _ROUTE_MAP[route_key]
+            method_name = "upsert_metric"
+        else:
+            method_name, _ = _ROUTE_MAP[route_key]
         method = getattr(self.mm_repo, method_name, None)
         if method is None:
             logger.warning("[DalSink] repo 缺少方法 %s，跳过", method_name)
@@ -167,7 +167,12 @@ class DalSink:
         sub_category: str,
     ) -> Optional[dict[str, Any]]:
         """从 DataFrame 行构建 upsert 方法参数。"""
-        _, required_cols = _ROUTE_MAP[route_key]
+        # 未知 sub_category 或已注册通用路由 → 走 upsert_metric 展开
+        is_generic = (route_key not in _ROUTE_MAP) or (route_key in _GENERIC_METRIC_ROUTES)
+        if not is_generic:
+            _, required_cols = _ROUTE_MAP[route_key]
+        else:
+            required_cols = ["timestamp"]
 
         # 应用字段名别名（collector 产出字段名 → DAL 期望字段名）
         aliases = _FIELD_ALIASES.get(route_key, {})
@@ -237,7 +242,7 @@ class DalSink:
             )
 
         # 🆕 通用指标路由：将 metrics dict 展开为多行 upsert_metric 调用
-        if route_key in _GENERIC_METRIC_ROUTES:
+        if is_generic:
             count = 0
             skip_cols = {"timestamp", "source", "category", "sub_category"}
             for col_name, col_val in row.items():

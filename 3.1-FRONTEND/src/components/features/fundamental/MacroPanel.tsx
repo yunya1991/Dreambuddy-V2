@@ -13,14 +13,13 @@ interface MacroModule {
 }
 
 const MACRO_ITEMS: { key: string; label: string; digits?: number; suffix?: string; invert?: boolean }[] = [
-  { key: 'dxy_strength', label: '美元指数', digits: 2 },
-  { key: 'us10y_yield', label: '美债10Y收益率', digits: 3, suffix: '%' },
-  { key: 'inflation_pressure', label: '通胀压力', digits: 1, suffix: '', invert: true },
-  { key: 'macro_risk_score', label: '宏观风险', digits: 1, invert: true },
-  { key: 'crypto_friendly_score', label: '加密友好度', digits: 1 },
-  { key: 'liquidity_clock', label: '流动性时钟' },
-  { key: 'growth_expectation', label: '增长预期', digits: 2 },
-  { key: 'policy_score', label: '政策得分', digits: 3 },
+  { key: 'policy_score', label: '政策得分', digits: 1 },
+  { key: 'cpi_yoy', label: 'CPI同比', digits: 2, suffix: '%' },
+  { key: 'fed_funds_rate', label: '联邦基金利率', digits: 2, suffix: '%' },
+  { key: 'rate_cycle', label: '利率周期' },
+  { key: 'cut_probability', label: '降息概率', digits: 1, suffix: '%' },
+  { key: 'hold_probability', label: '维持概率', digits: 1, suffix: '%' },
+  { key: 'hike_probability', label: '加息概率', digits: 1, suffix: '%' },
 ];
 
 function fmt(v: number | string, digits = 2): string {
@@ -64,12 +63,11 @@ export function MacroPanel() {
   type Sig = keyof typeof signalVariant;
 
   const extraItems: { label: string; value: string; signal: Sig }[] = [
-    { label: '美联储鹰派度', value: fmt(bd.fed_policy_hawkishness, 1), signal: 'bearish' },
-    { label: '欧央行鹰派度', value: fmt(bd.ecb_policy_hawkishness, 1), signal: 'bearish' },
-    { label: '收益率曲线斜率', value: fmt(bd.yield_curve_slope, 2), signal: (bd.yield_curve_slope ?? 0) < 0 ? 'bearish' : 'bullish' },
-    { label: '市场流动性', value: fmt(bd.market_liquidity, 1), signal: (bd.market_liquidity ?? 0) >= 50 ? 'bullish' : 'bearish' },
-    { label: '避险需求', value: fmt(bd.safe_haven_demand, 1), signal: 'bearish' },
-    { label: '风险偏好情绪', value: fmt(bd.risk_on_sentiment, 1), signal: (bd.risk_on_sentiment ?? 0) >= 50 ? 'bullish' : 'bearish' },
+    { label: 'M2 供应', value: fmt(bd.m2_supply, 1), signal: (bd.m2_supply ?? 0) >= 0 ? 'bullish' : 'bearish' },
+    { label: 'PPI', value: fmt(bd.ppi, 2), signal: (bd.ppi ?? 0) < 0 ? 'bullish' : 'bearish' },
+    { label: '工业产出', value: fmt(bd.industrial_production, 2), signal: (bd.industrial_production ?? 0) >= 0 ? 'bullish' : 'bearish' },
+    { label: '点阵图中位数', value: fmt(bd.dot_plot_median, 2), signal: 'neutral' },
+    { label: '资产负债表', value: fmt(bd.balance_sheet, 1), signal: (bd.balance_sheet ?? 0) >= 0 ? 'bullish' : 'bearish' },
   ];
 
   return (

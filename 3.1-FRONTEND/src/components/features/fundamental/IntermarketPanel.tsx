@@ -20,8 +20,8 @@ interface IntermarketModule {
 }
 
 const ASSET_MAP: { key: string; label: string; symbol: string; norm: string; isRisk?: boolean }[] = [
-  { key: 'gold', label: '黄金', symbol: 'GC=F', norm: 'GC_F' },
-  { key: 'spx', label: '标普500', symbol: '^GSPC', norm: '__GSPC', isRisk: true },
+  { key: 'gold_price', label: '黄金', symbol: 'GC=F', norm: 'GC_F' },
+  { key: 'spx_price', label: '标普500', symbol: '^GSPC', norm: '__GSPC', isRisk: true },
   { key: 'ndx', label: '纳斯达克', symbol: '^IXIC', norm: '__IXIC', isRisk: true },
   { key: 'vix', label: 'VIX恐慌', symbol: '^VIX', norm: '__VIX' },
   { key: 'wti', label: 'WTI原油', symbol: 'CL=F', norm: 'CL_F', isRisk: true },
@@ -82,8 +82,8 @@ export function IntermarketPanel() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {ASSET_MAP.map(a => {
             const q = quotes[a.symbol];
-            const mockVal = (mod?.metrics?.core?.[a.key] as number) ?? null;
-            const price = q?.price ?? mockVal;
+            const snapshotVal = (mod?.metrics?.core?.[a.key] as number) ?? null;
+            const price = q?.price ?? snapshotVal;
             const change = q?.change24h;
             // 信号：风险资产上涨=利多，避险资产/美元/VIX上涨=利空
             let signal: 'bullish' | 'bearish' | 'neutral' = 'neutral';
@@ -98,7 +98,7 @@ export function IntermarketPanel() {
                   <span className="text-[10px] text-slate-500">{a.label}</span>
                   {q ? (
                     <V3Badge variant={signalVariant[signal]} label={signal === 'bullish' ? '利多' : signal === 'bearish' ? '利空' : '中性'} />
-                  ) : mockVal ? (
+                  ) : snapshotVal ? (
                     <V3Badge variant="default" label="快照" />
                   ) : null}
                 </div>
@@ -115,19 +115,23 @@ export function IntermarketPanel() {
       </V3Card>
 
       <V3Card padding="md">
-        <h3 className="text-sm font-semibold text-slate-200 mb-3">BTC 跨市场相关性（快照）</h3>
+        <h3 className="text-sm font-semibold text-slate-200 mb-3">BTC 跨市场相关性与宏观利率（快照）</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <V3Card padding="sm">
-            <p className="text-[10px] text-slate-500 mb-1">BTC-黄金相关性</p>
-            <p className="text-base font-semibold text-slate-200">{fmt(Number(mod?.metrics?.core?.btc_correlation_gold ?? 0), 3)}</p>
-          </V3Card>
-          <V3Card padding="sm">
-            <p className="text-[10px] text-slate-500 mb-1">BTC-标普相关性</p>
-            <p className="text-base font-semibold text-slate-200">{fmt(Number(mod?.metrics?.core?.btc_correlation_spx ?? 0), 3)}</p>
-          </V3Card>
           <V3Card padding="sm">
             <p className="text-[10px] text-slate-500 mb-1">BTC-美元相关性</p>
             <p className="text-base font-semibold text-slate-200">{fmt(Number(mod?.metrics?.core?.dxy_correlation ?? 0), 3)}</p>
+          </V3Card>
+          <V3Card padding="sm">
+            <p className="text-[10px] text-slate-500 mb-1">BTC 价格</p>
+            <p className="text-base font-semibold text-slate-200">${fmt(Number(mod?.metrics?.core?.btc_price ?? 0), 0)}</p>
+          </V3Card>
+          <V3Card padding="sm">
+            <p className="text-[10px] text-slate-500 mb-1">美债10Y收益率</p>
+            <p className="text-base font-semibold text-slate-200">{fmt(Number(mod?.metrics?.core?.us10y_yield ?? 0), 3)}%</p>
+          </V3Card>
+          <V3Card padding="sm">
+            <p className="text-[10px] text-slate-500 mb-1">风险周期</p>
+            <p className="text-base font-semibold text-slate-200">{String(mod?.metrics?.core?.risk_regime ?? '--')}</p>
           </V3Card>
         </div>
         <p className="text-[10px] text-slate-600 mt-2">注：相关性指标为快照数据，资产价格为实时数据。</p>

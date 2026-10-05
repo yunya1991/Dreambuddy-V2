@@ -68,30 +68,49 @@ function fmtPct(n: number): string {
 
 // 各模块 metrics.core 字段中文标签
 const METRIC_LABELS: Record<string, string> = {
-  // news
-  avg_impact: '平均影响', avg_sentiment: '平均情绪', category_count: '分类数',
-  high_impact_count: '高影响数', negative_count: '利空数', positive_count: '利好数',
-  sentiment: '情绪值', sentiment_sum: '情绪总和', top_category: '头条分类', total_articles: '文章总数',
+  // onchain
+  active_addresses: '活跃地址', hash_rate: '哈希率', tx_count_24h: '24h交易笔数',
+  exchange_net_flow: '交易所净流', exchange_reserve_btc: '交易所储备',
+  accumulation_signal: '积累信号', network_health: '网络健康', onchain_trend: '链上趋势',
+  market_cap_usd: '市值',
   // flow
-  etf_net_flow: 'ETF净流入', flow_velocity_score: '流速得分', fund_flow_score: '资金得分',
+  etf_total_flow: 'ETF净流入', etf_net_flow: 'ETF净流入', flow_velocity_score: '流速得分', fund_flow_score: '资金得分',
   funding_rate: '资金费率', liquidation_pressure: '清算压力', long_short_ratio: '多空比',
   smart_money_direction: '聪明钱方向', stablecoin_supply_change: '稳定币变化', whale_activity: '鲸鱼活跃',
+  stablecoin_dominance_usdt: 'USDT占比', stablecoin_dominance_usdc: 'USDC占比', flow_regime: '流向状态',
   // valuation
-  ahr999_index: 'AHR999', mayer_multiple: '梅耶倍数', mvrv_ratio: 'MVRV', mvrv_z_score: 'MVRV-Z',
-  pi_cycle_top: '顶圆周', puell_multiple: '普尔倍数', sopr: 'SOPR', therm_index: '热度指数',
-  valuation_heat_level: '估值热度', valuation_range: '估值区间',
-  // narrative
-  avg_momentum: '平均动量', consensus: '共识度', market_consensus: '市场共识', total_narratives: '叙事数',
+  mvrv_ratio: 'MVRV', mvrv_z_score: 'MVRV-Z', nvt_ratio: 'NVT', nvt_z_score: 'NVT-Z',
+  valuation_zone: '估值区间', valuation_range: '估值区间', valuation_heat_level: '估值热度',
+  ahr999_index: 'AHR999', mayer_multiple: '梅耶倍数', pi_cycle_top: '顶圆周',
+  puell_multiple: '普尔倍数', sopr: 'SOPR', therm_index: '热度指数',
+  output_volume_btc: '输出量(BTC)',
   // breadth
   advance_count: '上涨数', advance_decline_line: '涨跌线', breadth_confirmation: '广度确认',
   breadth_divergence_score: '广度背离', btc_dominance: 'BTC主导', decline_count: '下跌数',
   divergence_signal: '背离信号', market_participation_index: '参与指数', new_high_low_ratio: '新高新低比',
+  global_change_24h: '全球24h涨跌', defi_tvl_bln: 'DeFi TVL',
+  // macro
+  policy_score: '政策得分', cpi_yoy: 'CPI同比', fed_funds_rate: '联邦基金利率',
+  rate_cycle: '利率周期', cut_probability: '降息概率', hold_probability: '维持概率',
+  hike_probability: '加息概率',
+  // sentiment
+  sentiment_index: '情绪指数', sentiment_classification: '情绪分类', sentiment_regime: '情绪周期',
+  fear_greed_index: '恐惧贪婪', market_psychology: '市场心理', social_volume: '社交声量',
   // calendar
   high_impact_events: '高影响事件', impact_score: '影响得分', total_events: '事件总数',
+  cpi_surprise: 'CPI超预期', nfp_surprise: '非农超预期', ppi_surprise: 'PPI超预期',
+  cpi_actual: 'CPI实际', cpi_forecast: 'CPI预期',
   // intermarket
   btc_correlation_gold: 'BTC-黄金相关', btc_correlation_spx: 'BTC-标普相关',
-  dxy: '美元指数', dxy_correlation: '美元相关', gold: '黄金', ndx: '纳指',
-  risk_on_index: '风险偏好', spx: '标普500', vix: 'VIX', wti: '原油',
+  dxy: '美元指数', dxy_correlation: '美元相关', gold: '黄金', gold_price: '黄金价格',
+  ndx: '纳指', risk_on_index: '风险偏好', spx: '标普500', spx_price: '标普价格',
+  vix: 'VIX', wti: '原油', us10y_yield: '美债10Y', btc_price: 'BTC价格', risk_regime: '风险周期',
+  // news
+  avg_impact: '平均影响', avg_sentiment: '平均情绪', category_count: '分类数',
+  high_impact_count: '高影响数', negative_count: '利空数', positive_count: '利好数',
+  sentiment: '情绪值', sentiment_sum: '情绪总和', top_category: '头条分类', total_articles: '文章总数',
+  // narrative
+  avg_momentum: '平均动量', consensus: '共识度', market_consensus: '市场共识', total_narratives: '叙事数',
 };
 
 function labelOf(key: string): string {

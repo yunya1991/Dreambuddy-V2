@@ -4,7 +4,8 @@ import { promisify } from 'util';
 import path from 'path';
 
 const execFileAsync = promisify(execFile);
-const DB_PATH = path.join(process.cwd(), '..', '18-数据获取中心', 'data_center.db');
+// 统一接入 19-数据访问层（DAL），不再直连 18-数据获取中心的 data_center.db
+const DB_PATH = path.join(process.cwd(), '..', '19-数据访问层', 'data', 'dreambuddy_core.db');
 
 async function queryDb(sql: string): Promise<any[]> {
   try {
@@ -15,49 +16,65 @@ async function queryDb(sql: string): Promise<any[]> {
   }
 }
 
-async function getLatest(source: string, subCategory: string): Promise<any> {
+async function getLatestMetric(subCategory: string, metricName: string): Promise<number | null> {
   const rows = await queryDb(
-    `SELECT timestamp, metrics FROM records WHERE source='${source}' AND sub_category='${subCategory}' ORDER BY rowid DESC LIMIT 1`
+    `SELECT metric_value FROM mm_metrics WHERE sub_category='${subCategory}' AND metric_name='${metricName}' ORDER BY timestamp DESC LIMIT 1`
   );
   if (!rows[0]) return null;
-  try {
-    const m = JSON.parse(rows[0].metrics);
-    return { as_of: rows[0].timestamp, ...m };
-  } catch {
-    return null;
-  }
+  const v = Number(rows[0].metric_value);
+  return isFinite(v) ? v : null;
 }
 
 export async function GET() {
-  const [funding, longShort, liquidations, etfFlow, tether, usdc, fearGreed] = await Promise.all([
-    getLatest('coinglass', 'funding_rate'),
-    getLatest('coinglass', 'long_short_ratio'),
-    getLatest('coinglass', 'liquidations'),
-    getLatest('etf_flow', 'etf_flow'),
-    getLatest('stablecoin_transparency', 'tether_current'),
-    getLatest('stablecoin_transparency', 'usdc_current'),
-    getLatest('fear_greed', 'crypto_fear_greed'),
+  const [
+    totalFlow,
+    tetherSupply, tetherChg7d,
+    usdcSupply, usdcChg7d,
+    fearGreed,
+    liqTotal,
+    fundingScore,
+  ] = await Promise.all([
+    getLatestMetric('etf_flow', 'total_flow'),
+    getLatestMetric('tether_current', 'usdt_circulating_usd_bln'),
+    getLatestMetric('tether_current', 'change_7d_pct'),
+    getLatestMetric('usdc_current', 'usdc_circulating_usd_bln'),
+    getLatestMetric('usdc_current', 'change_7d_pct'),
+    getLatestMetric('crypto_fear_greed', 'value'),
+    getLatestMetric('derivatives_spot', 'fut_liq_total_24h_usd'),
+    getLatestMetric('fear_greed_enhanced', 'funding'),
   ]);
+
+  // 恐惧贪婪分类
+  let classification: string | null = null;
+  if (fearGreed != null) {
+    if (fearGreed < 25) classification = '极度恐惧';
+    else if (fearGreed < 45) classification = '恐惧';
+    else if (fearGreed < 55) classification = '中性';
+    else if (fearGreed < 75) classification = '贪婪';
+    else classification = '极度贪婪';
+  }
 
   return NextResponse.json({
     ok: true,
+    source: '19-DAL',
     flow: {
-      funding_rate: funding?.funding_rate ?? funding?.avg_funding_rate ?? null,
-      long_short_ratio: longShort?.long_short_ratio ?? longShort?.global_long_short_ratio ?? null,
-      liquidations_24h_usd: liquidations?.total_liquidation_usd ?? liquidations?.liquidation_total_usd ?? null,
-      etf_net_flow_usd: etfFlow?.total_net_flow_usd ?? etfFlow?.net_flow_usd ?? null,
-      etf_inflow_24h: etfFlow?.total_inflow_usd ?? null,
-      etf_outflow_24h: etfFlow?.total_outflow_usd ?? null,
+      // total_flow 单位为百万美元，转回美元
+      funding_rate: fundingScore,
+      long_short_ratio: null,
+      liquidations_24h_usd: liqTotal,
+      etf_net_flow_usd: totalFlow != null ? totalFlow * 1e6 : null,
+      etf_inflow_24h: null,
+      etf_outflow_24h: null,
     },
     stablecoin: {
-      usdt_supply_bln: tether?.usdt_total_supply_usd_bln ?? null,
-      usdc_supply_bln: usdc?.usdc_total_supply_usd_bln ?? null,
-      usdt_change_7d_pct: tether?.change_7d_pct ?? null,
-      usdc_change_7d_pct: usdc?.change_7d_pct ?? null,
+      usdt_supply_bln: tetherSupply,
+      usdc_supply_bln: usdcSupply,
+      usdt_change_7d_pct: tetherChg7d,
+      usdc_change_7d_pct: usdcChg7d,
     },
     sentiment: {
-      fear_greed_index: fearGreed?.value ?? fearGreed?.fear_greed_index ?? null,
-      classification: fearGreed?.value_classification ?? fearGreed?.classification ?? null,
+      fear_greed_index: fearGreed,
+      classification,
     },
   });
 }

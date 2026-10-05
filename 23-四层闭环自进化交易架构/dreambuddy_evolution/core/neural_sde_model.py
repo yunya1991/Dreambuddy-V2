@@ -121,6 +121,11 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
 
     理论依据: Lyons 粗路径理论 — signature 是 SDE 解的结构性必需对象
     (跨学科 Agent-3, 公理级). log_sig=None 或 zeros 时退化到马尔可夫 (FAIL-OPEN).
+
+    P1 集成 (PLAN-exogenous-integration.md §三):
+      exogenous_dim (默认 0 = 关闭, 向后兼容): > 0 时 drift_net 输入追加
+      exogenous_dim 维外生力量向量 (drift_net.forward(exogenous=...)).
+      exogenous=None → pad zeros (FAIL-OPEN, 行为等价 exogenous_dim=0).
     """
 
     def __init__(
@@ -131,6 +136,7 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         n_regimes: int = 3,
         n_transition: int = 0,
         dropout: float = 0.0,
+        exogenous_dim: int = 0,
     ):
         if not _TORCH_AVAILABLE:
             return
@@ -142,9 +148,12 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         self.n_transition = int(n_transition)
         # P3: dropout 概率 (0.0 = 旧模型无正则, 向后兼容)
         self.dropout = float(dropout)
+        # P1: exogenous_dim 维外生力量向量 (0 = 关闭, 向后兼容; 9 = 标准 9 维)
+        self.exogenous_dim = int(exogenous_dim)
         # 输入: 3 (S_t + 时间特征) + sig_dim (log-signature)
         #       + n_regimes (regime one-hot) + n_transition (transition vector)
-        in_dim = 3 + self.sig_dim + self.n_regimes + self.n_transition
+        #       + exogenous_dim (P1 外生力量)
+        in_dim = 3 + self.sig_dim + self.n_regimes + self.n_transition + self.exogenous_dim
         # P3: 隐藏层间加 Dropout (经验 1583511: 结构正则)
         layers = [
             nn.Linear(in_dim, hidden_dim),
@@ -168,6 +177,7 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         log_sig: Optional["torch.Tensor"] = None,
         regime: Optional["torch.Tensor"] = None,
         transition: Optional["torch.Tensor"] = None,
+        exogenous: Optional["torch.Tensor"] = None,
     ) -> "torch.Tensor":
         """计算 drift.
 
@@ -178,6 +188,8 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
             regime: (B, n_regimes) one-hot, 或 None → pad zeros (FAIL-OPEN, 旧模型兼容)
             transition: (B, n_transition) transition vector (Q[current_regime]),
                         或 None → pad zeros (FAIL-OPEN, 旧模型兼容)
+            exogenous: (B, exogenous_dim) 外生力量向量 (P1),
+                       或 None → pad zeros (FAIL-OPEN, exogenous_dim=0 时无效果)
 
         Returns:
             (B, 1) drift, 经 tanh 裁剪
@@ -243,7 +255,27 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
                 transition_t = transition_t[..., : self.n_transition]
             if transition_t.size(0) != B:
                 transition_t = transition_t[:1].expand(B, -1).contiguous()
-        x = torch.cat([y, time_features, log_sig_t, regime_t, transition_t], dim=-1)
+        # P1: exogenous vector: None → pad zeros (FAIL-OPEN, exogenous_dim=0 时无效果)
+        if self.exogenous_dim <= 0:
+            exo_t = torch.zeros(B, 0, device=y.device)
+        elif exogenous is None:
+            exo_t = torch.zeros(B, self.exogenous_dim, device=y.device)
+        else:
+            exo_t = exogenous
+            if exo_t.dim() == 1:
+                exo_t = exo_t.unsqueeze(0).expand(B, -1)
+            cur_edim = exo_t.size(-1) if exo_t.dim() > 1 else 0
+            if cur_edim < self.exogenous_dim:
+                pad = torch.zeros(B, self.exogenous_dim - cur_edim, device=y.device)
+                exo_t = torch.cat([exo_t, pad], dim=-1)
+            elif cur_edim > self.exogenous_dim:
+                exo_t = exo_t[..., : self.exogenous_dim]
+            if exo_t.size(0) != B:
+                exo_t = exo_t[:1].expand(B, -1).contiguous()
+        x = torch.cat(
+            [y, time_features, log_sig_t, regime_t, transition_t, exo_t],
+            dim=-1,
+        )
         out = self.net(x)
         return torch.tanh(out) * self.clip
 
@@ -275,6 +307,7 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         n_transition: int = 0,
         dropout: float = 0.0,
         routing: str = "soft",
+        exogenous_dim: int = 0,
     ):
         if not _TORCH_AVAILABLE:
             return
@@ -284,11 +317,13 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         self.routing = routing
         self.clip = clip
         self.sig_dim = int(sig_dim)
+        self.exogenous_dim = int(exogenous_dim)
         # 每个 expert 独立 drift net, n_regimes=0 (regime 由 router 处理, 不拼到 expert 输入)
         self.experts = nn.ModuleList([
             _PathSignatureDriftNet(
                 hidden_dim=hidden_dim, sig_dim=self.sig_dim, clip=clip,
                 n_regimes=0, n_transition=self.n_transition, dropout=dropout,
+                exogenous_dim=self.exogenous_dim,
             )
             for _ in range(self.n_experts)
         ])
@@ -375,6 +410,7 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         log_sig: Optional["torch.Tensor"] = None,
         regime: Optional["torch.Tensor"] = None,
         transition: Optional["torch.Tensor"] = None,
+        exogenous: Optional["torch.Tensor"] = None,
     ) -> "torch.Tensor":
         """计算 MoE drift.
 
@@ -384,6 +420,7 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
             log_sig: (B, sig_dim) log-signature, None → pad zeros
             regime: (B, n_experts) one-hot, None → 均匀权重
             transition: (B, n_transition) transition vector, None → pad zeros
+            exogenous: (B, exogenous_dim) 外生力量向量 (P1), None → pad zeros
 
         Returns:
             (B, 1) drift, 经 tanh 裁剪
@@ -392,10 +429,10 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
             return torch.zeros(y.size(0), 1)
         B = y.size(0)
         device = y.device
-        # 各 expert drift
+        # 各 expert drift (P1: 透传 exogenous)
         expert_drifts = []
         for expert in self.experts:
-            d = expert(t, y, log_sig, None, transition)  # regime=None (expert 不看 regime)
+            d = expert(t, y, log_sig, None, transition, exogenous)  # regime=None (expert 不看 regime)
             expert_drifts.append(d)
         expert_drifts = torch.cat(expert_drifts, dim=-1)  # (B, n_experts)
         # 权重 (P2.3: router 接收 transition)
@@ -458,6 +495,8 @@ class NeuralSDEModel:
         dropout: float = 0.0,
         use_moe: bool = False,
         moe_routing: str = "soft",
+        use_exogenous: bool = False,
+        exogenous_dim: int = 9,
         device: str = "cpu",
     ):
         self._available = _TORCH_AVAILABLE
@@ -483,6 +522,10 @@ class NeuralSDEModel:
         # P2.1: MoE-SDE 开关, 默认 False (向后兼容)
         self.use_moe = bool(use_moe)
         self.moe_routing = moe_routing  # "soft" or "hard"
+        # P1: 外生力量接入 drift_net 开关, 默认 False (向后兼容)
+        # use_exogenous=True 时 drift_net 输入追加 exogenous_dim 维外生向量
+        self.use_exogenous = bool(use_exogenous)
+        self.exogenous_dim = int(exogenous_dim) if self.use_exogenous else 0
 
         # 归一化参数
         self._price_mean = 0.0
@@ -513,6 +556,8 @@ class NeuralSDEModel:
         self._current_regime: Optional["torch.Tensor"] = None
         # P0.2: 当前 transition vector 上下文 (B, n_transition), None → drift_net pad zeros
         self._current_transition: Optional["torch.Tensor"] = None
+        # P1: 当前 exogenous 上下文 (B, exogenous_dim), None → drift_net pad zeros
+        self._current_exogenous: Optional["torch.Tensor"] = None
 
         if self._available:
             self._torch = torch
@@ -524,13 +569,15 @@ class NeuralSDEModel:
                     hidden_dim=hidden_dim, sig_dim=self.sig_dim, clip=drift_clip,
                     n_transition=self.n_transition, dropout=self.dropout,
                     routing=self.moe_routing,
+                    exogenous_dim=self.exogenous_dim,
                 ).to(device)
             else:
-                # 路径依赖 + regime one-hot T2 + transition P0.2
+                # 路径依赖 + regime one-hot T2 + transition P0.2 + exogenous P1
                 self.drift_net = _PathSignatureDriftNet(
                     hidden_dim=hidden_dim, sig_dim=self.sig_dim, clip=drift_clip,
                     n_regimes=self.n_regimes, n_transition=self.n_transition,
                     dropout=self.dropout,
+                    exogenous_dim=self.exogenous_dim,
                 ).to(device)
             self.diffusion_net = _DiffusionNet(diffusion_hidden, diffusion_floor).to(device)
         else:
@@ -693,13 +740,16 @@ class NeuralSDEModel:
         return "diagonal"
 
     def f(self, t: "torch.Tensor", y: "torch.Tensor") -> "torch.Tensor":
-        """Drift 函数 fθ(S_t, t, log_sig, regime, transition).
+        """Drift 函数 fθ(S_t, t, log_sig, regime, transition, exogenous).
 
-        通过 self._current_log_sig / _current_regime / _current_transition 传递上下文
-        (单线程安全). 兼容 torchsde.sdeint 的 f(t, y) 签名.
+        通过 self._current_log_sig / _current_regime / _current_transition /
+        _current_exogenous 传递上下文 (单线程安全).
+        兼容 torchsde.sdeint 的 f(t, y) 签名.
         """
-        return self.drift_net(t, y, self._current_log_sig, self._current_regime,
-                              self._current_transition)
+        return self.drift_net(
+            t, y, self._current_log_sig, self._current_regime,
+            self._current_transition, self._current_exogenous,
+        )
 
     def g(self, t: "torch.Tensor", y: "torch.Tensor") -> "torch.Tensor":
         """Diffusion 函数 gφ(S_t, t)."""
@@ -716,6 +766,7 @@ class NeuralSDEModel:
         log_sig: Optional[np.ndarray] = None,
         regime: Optional[int] = None,
         transition: Optional[np.ndarray] = None,
+        exogenous_snapshot: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Level 1: 使用 torchsde.sdeint() 生成路径 (路径依赖 + regime-conditional SDE).
 
@@ -724,6 +775,7 @@ class NeuralSDEModel:
             log_sig: (sig_dim,) log-signature, None 则 pad zeros
             regime: int regime 标签 (0=bull, 1=chop, 2=bear), None 则 pad zeros
             transition: (n_regimes,) transition vector Q[current_regime], None 则 pad zeros
+            exogenous_snapshot: (exogenous_dim,) P1 外生力量快照, None 则 pad zeros
 
         Returns:
             shape (n_paths, horizon+1) numpy 数组
@@ -756,11 +808,14 @@ class NeuralSDEModel:
             regime_t = self._build_regime_onehot(regime, n_paths)
             # P0.2: 设置 transition vector 上下文 (broadcast 到 n_paths)
             transition_t = self._build_transition(transition, n_paths)
+            # P1: 设置 exogenous 上下文 (broadcast 到 n_paths)
+            exogenous_t = self._build_exogenous(exogenous_snapshot, n_paths)
 
             # 设置上下文供 f(t,y) 读取
             self._current_log_sig = log_sig_t
             self._current_regime = regime_t
             self._current_transition = transition_t
+            self._current_exogenous = exogenous_t
 
             # torchsde 积分
             z_t = torchsde.sdeint(
@@ -774,6 +829,7 @@ class NeuralSDEModel:
             self._current_log_sig = None
             self._current_regime = None
             self._current_transition = None
+            self._current_exogenous = None
 
             # z_t: (horizon+1, n_paths, 1) → (n_paths, horizon+1)
             z_t = z_t.squeeze(-1).transpose(0, 1).cpu().numpy()
@@ -831,6 +887,33 @@ class NeuralSDEModel:
         trans_t = trans_t.unsqueeze(0).expand(n_paths, -1).contiguous()
         return trans_t
 
+    def _build_exogenous(self, exogenous_snapshot: Optional[np.ndarray], n_paths: int):
+        """P1: 把 exogenous_snapshot (exogenous_dim,) 转为 (n_paths, exogenous_dim) tensor.
+
+        - use_exogenous=False → None (drift_net 内部 pad zeros, 向后兼容)
+        - exogenous_snapshot=None → None (drift_net pad zeros, FAIL-OPEN)
+        - exogenous_snapshot=(exogenous_dim,) → broadcast 到 (n_paths, exogenous_dim)
+        """
+        if self.exogenous_dim <= 0:
+            return None
+        if exogenous_snapshot is None:
+            return None  # drift_net pad zeros
+        try:
+            exo = np.asarray(exogenous_snapshot, dtype=np.float32).ravel()
+        except Exception:
+            return None
+        if exo.size == 0:
+            return None
+        exo_t = torch.tensor(exo, device=self.device)
+        # 对齐到 exogenous_dim
+        if exo_t.size(0) < self.exogenous_dim:
+            pad = torch.zeros(self.exogenous_dim - exo_t.size(0), device=self.device)
+            exo_t = torch.cat([exo_t, pad])
+        elif exo_t.size(0) > self.exogenous_dim:
+            exo_t = exo_t[: self.exogenous_dim]
+        exo_t = exo_t.unsqueeze(0).expand(n_paths, -1).contiguous()
+        return exo_t
+
     # ------------------------------------------------------------------
     # Level 2: 手写 Euler-Maruyama 积分
     # ------------------------------------------------------------------
@@ -842,6 +925,7 @@ class NeuralSDEModel:
         log_sig: Optional[np.ndarray] = None,
         regime: Optional[int] = None,
         transition: Optional[np.ndarray] = None,
+        exogenous_snapshot: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Level 2: 手写 EM 离散积分（torchsde 不可用时, 路径依赖 + regime-conditional SDE）.
 
@@ -850,9 +934,11 @@ class NeuralSDEModel:
             log_sig: (sig_dim,) log-signature, None 则 pad zeros
             regime: int regime 标签 (0=bull, 1=chop, 2=bear), None 则 pad zeros
             transition: (n_regimes,) transition vector Q[current_regime], None 则 pad zeros
+            exogenous_snapshot: (exogenous_dim,) P1 外生力量快照, None 则 pad zeros
 
         Euler-Maruyama:
-          S_{t+1} = S_t + fθ(S_t, t, log_sig, regime, transition)·dt + gφ(S_t, t)·√dt · Z
+          S_{t+1} = S_t + fθ(S_t, t, log_sig, regime, transition, exogenous)·dt
+                     + gφ(S_t, t)·√dt · Z
 
         Returns:
             shape (n_paths, horizon+1) numpy 数组
@@ -885,10 +971,13 @@ class NeuralSDEModel:
             regime_t = self._build_regime_onehot(regime, n_paths)
             # P0.2: 设置 transition vector 上下文
             transition_t = self._build_transition(transition, n_paths)
+            # P1: 设置 exogenous 上下文
+            exogenous_t = self._build_exogenous(exogenous_snapshot, n_paths)
 
             self._current_log_sig = log_sig_t
             self._current_regime = regime_t
             self._current_transition = transition_t
+            self._current_exogenous = exogenous_t
 
             for t_step in range(horizon):
                 t_val = float(t_step)
@@ -904,6 +993,7 @@ class NeuralSDEModel:
             self._current_log_sig = None
             self._current_regime = None
             self._current_transition = None
+            self._current_exogenous = None
 
         # NaN 检测
         if np.any(np.isnan(paths)) or np.any(np.isinf(paths)):
@@ -922,8 +1012,10 @@ class NeuralSDEModel:
         state: Optional[np.ndarray] = None,
         regime: Optional[int] = None,
         transition: Optional[np.ndarray] = None,
+        exogenous_snapshot: Optional[np.ndarray] = None,
     ) -> Optional[np.ndarray]:
-        """统一预测入口 (路径依赖 + regime-conditional SDE, TDD-002/003/004/005 + T4 + P0.2).
+        """统一预测入口 (路径依赖 + regime-conditional SDE,
+        TDD-002/003/004/005 + T4 + P0.2 + P1 exogenous).
 
         Args:
             history: 最近 N 步 close 价格序列 (≥ N_step=32 用 path-signature,
@@ -935,6 +1027,8 @@ class NeuralSDEModel:
             regime: 可选 int regime 标签 (0=bull, 1=chop, 2=bear);
                     None → drift_net pad zeros (FAIL-OPEN, 兼容旧推理路径)
             transition: 可选 (n_regimes,) transition vector Q[current_regime];
+                    None → drift_net pad zeros (FAIL-OPEN, 兼容旧推理路径)
+            exogenous_snapshot: 可选 (exogenous_dim,) P1 外生力量快照;
                     None → drift_net pad zeros (FAIL-OPEN, 兼容旧推理路径)
 
         Returns:
@@ -969,6 +1063,7 @@ class NeuralSDEModel:
                 return self.forecast_torchsde(
                     np.array([init_price]), horizon, n_paths,
                     log_sig=log_sig, regime=regime, transition=transition,
+                    exogenous_snapshot=exogenous_snapshot,
                 )
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-03] torchsde 积分失败, 降级 EM: %s", e)
@@ -977,6 +1072,7 @@ class NeuralSDEModel:
             return self.forecast_euler_maruyama(
                 np.array([init_price]), horizon, n_paths,
                 log_sig=log_sig, regime=regime, transition=transition,
+                exogenous_snapshot=exogenous_snapshot,
             )
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-03] EM 积分失败: %s", e)
@@ -1010,6 +1106,8 @@ class NeuralSDEModel:
             "dropout": self.dropout,  # P3: drift_net dropout
             "use_moe": self.use_moe,  # P2.1: MoE-SDE
             "moe_routing": self.moe_routing,  # P2.1: soft/hard routing
+            "use_exogenous": self.use_exogenous,  # P1: exogenous drift 输入
+            "exogenous_dim": self.exogenous_dim,  # P1: 维度 (0 = 关闭)
             "sample_count": self._sample_count,
             "activated": self._activated,
         }, str(path))
@@ -1038,15 +1136,29 @@ class NeuralSDEModel:
             # P2.1: 读取 use_moe / moe_routing
             ckpt_use_moe = bool(ckpt.get("use_moe", False))
             ckpt_moe_routing = ckpt.get("moe_routing", "soft")
-            need_rebuild = (ckpt_n_regimes != self.n_regimes) or (ckpt_use_transition != self.use_transition) or (ckpt_dropout != self.dropout) or (ckpt_use_moe != self.use_moe) or (ckpt_moe_routing != self.moe_routing)
+            # P1: 读取 use_exogenous / exogenous_dim (旧 ckpt 默认 False/0)
+            ckpt_use_exogenous = bool(ckpt.get("use_exogenous", False))
+            ckpt_exogenous_dim = int(ckpt.get("exogenous_dim", 0))
+            need_rebuild = (
+                ckpt_n_regimes != self.n_regimes
+                or ckpt_use_transition != self.use_transition
+                or ckpt_dropout != self.dropout
+                or ckpt_use_moe != self.use_moe
+                or ckpt_moe_routing != self.moe_routing
+                or ckpt_use_exogenous != self.use_exogenous
+                or ckpt_exogenous_dim != self.exogenous_dim
+            )
             if need_rebuild:
                 logger.debug(
                     "[NeuralSDE] load: drift_net config 不一致 (n_regimes ckpt=%d/cur=%d, "
-                    "use_transition ckpt=%s/cur=%s, dropout ckpt=%s/cur=%s, use_moe ckpt=%s/cur=%s), 重建 drift_net",
+                    "use_transition ckpt=%s/cur=%s, dropout ckpt=%s/cur=%s, "
+                    "use_moe ckpt=%s/cur=%s, use_exogenous ckpt=%s/cur=%s dim=%d/%d), 重建 drift_net",
                     ckpt_n_regimes, self.n_regimes,
                     ckpt_use_transition, self.use_transition,
                     ckpt_dropout, self.dropout,
                     ckpt_use_moe, self.use_moe,
+                    ckpt_use_exogenous, self.use_exogenous,
+                    ckpt_exogenous_dim, self.exogenous_dim,
                 )
                 self.n_regimes = ckpt_n_regimes
                 self.use_transition = ckpt_use_transition
@@ -1054,6 +1166,8 @@ class NeuralSDEModel:
                 self.dropout = ckpt_dropout
                 self.use_moe = ckpt_use_moe
                 self.moe_routing = ckpt_moe_routing
+                self.use_exogenous = ckpt_use_exogenous
+                self.exogenous_dim = ckpt_exogenous_dim if self.use_exogenous else 0
                 if self._available:
                     if self.use_moe and self.n_regimes > 0:
                         self.drift_net = _MoEDriftNet(
@@ -1061,6 +1175,7 @@ class NeuralSDEModel:
                             sig_dim=self.sig_dim, clip=self.drift_clip,
                             n_transition=self.n_transition, dropout=self.dropout,
                             routing=self.moe_routing,
+                            exogenous_dim=self.exogenous_dim,
                         ).to(self.device)
                     else:
                         self.drift_net = _PathSignatureDriftNet(
@@ -1068,6 +1183,7 @@ class NeuralSDEModel:
                             clip=self.drift_clip, n_regimes=self.n_regimes,
                             n_transition=self.n_transition,
                             dropout=self.dropout,
+                            exogenous_dim=self.exogenous_dim,
                         ).to(self.device)
             self.drift_net.load_state_dict(ckpt["drift_net_state_dict"])
             self.diffusion_net.load_state_dict(ckpt["diffusion_net_state_dict"])
@@ -1170,8 +1286,9 @@ class NeuralSDETrainer:
         max_windows: int = 3000,
         regime_labels: Optional[np.ndarray] = None,
         regime_balance: str = "balanced",
-    ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray, int]]:
-        """滑动窗口切分 (路径依赖 SDE + regime-conditional, T3).
+        exogenous_series: Optional[np.ndarray] = None,
+    ) -> list[tuple]:
+        """滑动窗口切分 (路径依赖 SDE + regime-conditional, T3 + P1 exogenous).
 
         两阶段流程 (TDD-010):
           1. 第一阶段: 用 _compute_log_sig_raw 累积所有窗口的 raw log_sig
@@ -1182,25 +1299,31 @@ class NeuralSDETrainer:
           - regime_labels=None → 所有窗口 regime=0 (向后兼容, drift_net pad zeros)
           - regime_labels 给定 → 每个窗口 regime = regime_labels[start_idx]
           - regime_balance="balanced" (默认): 子采样按 regime 均衡
-            (max_windows / n_regimes 每 regime, 防止 bull 占主导)
-          - regime_balance="natural" (T3.7, Option D): 随机子采样保留自然分布,
-            但仍携带 regime 标签. 适用于测试点 regime 占比高 (e.g. 2y BTC 59.6%
-            bull) 的场景, 避免 balanced 把 bull 拉到 33% 导致测试分布失配.
-          - regime_balance="oversample" (P2.2): 每 regime 取 max_windows/n_regimes
-            个窗口, 少数派 regime 用放回采样. 确保 MoE 每个 expert 都有足够数据.
+          - regime_balance="natural" (T3.7, Option D): 随机子采样保留自然分布
+          - regime_balance="oversample" (P2.2): 少数派 regime 放回采样
+
+        P1 exogenous 扩展 (PLAN-exogenous-integration.md §三):
+          - exogenous_series=None → 窗口 exo = 零向量 (FAIL-OPEN, 行为等价当前)
+          - exogenous_series=(N, 9) → 每窗口取末尾点 exo[start+seq_len-1]
+            (与 regime 取法对齐: regime 取起点, exo 取窗口末尾, 反映"到该窗口
+            末尾时观察到的最新外生状态")
+          - exogenous_series 长度 < closes → 越界点 exo = 零向量 (FAIL-OPEN)
+          - 窗口元组扩展为 5-tuple: (inp, tgt, log_sig, reg, exo_vec)
 
         Args:
             closes: 历史 close 序列
             max_windows: 最大窗口数（子采样以控制训练时间）
             regime_labels: 与 closes 等长的 regime 标签 (None → 全 0 兜底)
-            regime_balance: "balanced" (默认, 向后兼容) 或 "natural"
+            regime_balance: "balanced" (默认) / "natural" / "oversample"
+            exogenous_series: 可选 (N, exo_dim) 外生力量时序, None → 零向量
 
         Returns:
-            list of (input_window, target_window, log_sig, regime_label_int)
+            list of 5-tuple (input_window, target_window, log_sig, regime_label, exo_vec)
             - input_window: 归一化后的输入窗口 (seq_len,)
             - target_window: 归一化后的目标窗口 (horizon,)
             - log_sig: z-score 归一化后的 log-signature (sig_dim,)
-            - regime_label_int: 窗口起点对应的 regime 标签 (0=bull, 1=chop, 2=bear)
+            - regime_label: 窗口起点对应的 regime 标签 (int)
+            - exo_vec: 窗口末尾点的外生向量 (exo_dim,) (P1, 零向量 = FAIL-OPEN)
         """
         closes = np.asarray(closes, dtype=np.float64).ravel()
         n_closes = closes.size
@@ -1210,6 +1333,25 @@ class NeuralSDETrainer:
         # 价格归一化
         self.model.set_normalization(closes)
         normed = (closes - self.model._price_mean) / max(self.model._price_std, 1e-8)
+
+        # P1: 外生时序预处理 (None → 空数组, 后续按零向量兜底)
+        exo_dim = getattr(self.model, "exogenous_dim", 0)
+        if exogenous_series is not None:
+            exo_arr = np.asarray(exogenous_series, dtype=np.float64)
+            if exo_arr.ndim == 1:
+                # (N,) → 视为单维 exo, 广播到 (N, exo_dim) (若 exo_dim > 1) 或 (N, 1)
+                if exo_dim > 1:
+                    exo_arr = np.tile(exo_arr.reshape(-1, 1), (1, exo_dim))
+                else:
+                    exo_arr = exo_arr.reshape(-1, 1)
+            # 维度对齐: exo_arr.shape[1] vs exo_dim
+            if exo_arr.shape[1] < exo_dim:
+                pad = np.full((exo_arr.shape[0], exo_dim - exo_arr.shape[1]), 0.5)
+                exo_arr = np.concatenate([exo_arr, pad], axis=1)
+            elif exo_arr.shape[1] > exo_dim:
+                exo_arr = exo_arr[:, :exo_dim]
+        else:
+            exo_arr = None
 
         n_windows_total = n_closes - self.seq_len - self.horizon + 1
         if n_windows_total <= 0:
@@ -1230,7 +1372,6 @@ class NeuralSDETrainer:
             per_window_regime = regime_labels[:n_windows_total].astype(int)
 
         # T3: 子采样 — 按 regime 均衡 (balanced / oversample) 或 自然分布 (natural)
-        # 每 regime 至少 1 个窗口 (若该 regime 有数据), 总数受 max_windows 限制
         unique_regimes = np.unique(per_window_regime)
         use_balanced = (
             regime_balance == "balanced"
@@ -1251,7 +1392,6 @@ class NeuralSDETrainer:
                 take = min(per_regime_quota, idx_in_regime.size)
                 sampled = np.random.choice(idx_in_regime, take, replace=False)
                 indices.extend(sampled.tolist())
-            # 若总样本不足 max_windows, 从剩余 idx 中补足
             if len(indices) < max_windows:
                 remaining = np.setdiff1d(np.arange(n_windows_total), indices)
                 extra = min(remaining.size, max_windows - len(indices))
@@ -1259,21 +1399,17 @@ class NeuralSDETrainer:
                     indices.extend(np.random.choice(remaining, extra, replace=False).tolist())
             indices = np.array(sorted(indices))
         elif use_oversample:
-            # P2.2: 过采样 — 每 regime 取 per_regime_quota, 少数派用放回采样
-            # 确保每个 expert (regime) 都有足够训练数据, 改善 MoE 均衡
             per_regime_quota = max(1, max_windows // len(unique_regimes))
             indices = []
             for k in unique_regimes:
                 idx_in_regime = np.where(per_window_regime == k)[0]
                 if idx_in_regime.size == 0:
                     continue
-                # 放回采样: 即使该 regime 窗口不足也能达到 quota
                 replace = idx_in_regime.size < per_regime_quota
                 sampled = np.random.choice(idx_in_regime, per_regime_quota, replace=replace)
                 indices.extend(sampled.tolist())
             indices = np.array(sorted(indices))
         else:
-            # natural 模式 OR 无 regime 信息 OR 样本充足 → 随机子采样
             if n_windows_total > max_windows:
                 indices = np.random.choice(n_windows_total, max_windows, replace=False)
                 indices.sort()
@@ -1291,15 +1427,28 @@ class NeuralSDETrainer:
         if raw_log_sigs:
             self.model._fit_log_sig_normalization(np.array(raw_log_sigs))
 
-        # 第二阶段: 生成归一化 windows (4-tuple 含 regime_label)
+        # 第二阶段: 生成归一化 windows (5-tuple 含 regime_label + exo_vec)
         windows = []
         for idx, i in enumerate(indices):
             inp = normed[i:i + self.seq_len]
             tgt = normed[i + self.seq_len:i + self.seq_len + self.horizon]
-            # 用归一化后的 log_sig (TDD-010)
             log_sig = self.model._normalize_log_sig(raw_log_sigs[idx])
             reg = int(per_window_regime[i])
-            windows.append((inp, tgt, log_sig, reg))
+            # P1: 取窗口末尾点的外生向量 (对齐 regime 取法)
+            # 末尾 idx = i + seq_len - 1; 越界 (exo_arr 太短) → 零向量
+            # 向后兼容: exo_dim=0 时返回 4-tuple (T3 行为不变), exo_dim>0 时 5-tuple
+            if exo_dim > 0:
+                if exo_arr is not None:
+                    end_idx = i + self.seq_len - 1
+                    if end_idx < exo_arr.shape[0]:
+                        exo_vec = exo_arr[end_idx].astype(np.float64)
+                    else:
+                        exo_vec = np.zeros(exo_dim, dtype=np.float64)
+                else:
+                    exo_vec = np.zeros(exo_dim, dtype=np.float64)
+                windows.append((inp, tgt, log_sig, reg, exo_vec))
+            else:
+                windows.append((inp, tgt, log_sig, reg))
 
         return windows
 
@@ -1326,19 +1475,32 @@ class NeuralSDETrainer:
                 continue
             bs = len(batch)
 
-            # 兼容 3-tuple (旧) 和 4-tuple (T3 regime-conditional) 两种格式
+            # 兼容 3-tuple (旧) / 4-tuple (T3) / 5-tuple (P1 exogenous) 三种格式
             sample = batch[0]
-            has_regime = len(sample) >= 4
-            if has_regime:
+            n_fields = len(sample)
+            has_regime = n_fields >= 4
+            has_exo = n_fields >= 5
+            if has_exo:
+                # P1: 5-tuple (inp, tgt, log_sig, reg, exo_vec)
+                s0_arr = np.array([[inp[-1]] for inp, _, _, _, _ in batch], dtype=np.float32)
+                tgt_arr = np.array([tgt for _, tgt, _, _, _ in batch], dtype=np.float32)
+                log_sig_arr = np.array([ls for _, _, ls, _, _ in batch], dtype=np.float32)
+                regime_arr = np.array([reg for _, _, _, reg, _ in batch], dtype=np.int64)
+                exo_arr = np.array([exo for _, _, _, _, exo in batch], dtype=np.float32)
+            elif has_regime:
+                # T3: 4-tuple (inp, tgt, log_sig, reg)
                 s0_arr = np.array([[inp[-1]] for inp, _, _, _ in batch], dtype=np.float32)
                 tgt_arr = np.array([tgt for _, tgt, _, _ in batch], dtype=np.float32)
                 log_sig_arr = np.array([ls for _, _, ls, _ in batch], dtype=np.float32)
                 regime_arr = np.array([reg for _, _, _, reg in batch], dtype=np.int64)
+                exo_arr = None
             else:
+                # 旧 3-tuple (inp, tgt, log_sig)
                 s0_arr = np.array([[inp[-1]] for inp, _, _ in batch], dtype=np.float32)
                 tgt_arr = np.array([tgt for _, tgt, _ in batch], dtype=np.float32)
                 log_sig_arr = np.array([ls for _, _, ls in batch], dtype=np.float32)
                 regime_arr = np.zeros(bs, dtype=np.int64)
+                exo_arr = None
 
             y = self._torch.tensor(s0_arr, device=self.model.device)  # (bs, 1)
             targets = self._torch.tensor(tgt_arr, device=self.model.device)  # (bs, horizon)
@@ -1366,12 +1528,28 @@ class NeuralSDETrainer:
             else:
                 transition_t = None
 
+            # P1: 构建 exogenous 上下文 (bs, exo_dim)
+            exo_dim = getattr(self.model, "exogenous_dim", 0)
+            if exo_dim > 0 and exo_arr is not None and exo_arr.size > 0:
+                exo_t = torch.tensor(exo_arr, dtype=torch.float32, device=self.model.device)
+                if exo_t.dim() == 1:
+                    exo_t = exo_t.view(bs, -1)
+                # 维度对齐
+                if exo_t.size(-1) < exo_dim:
+                    pad = torch.zeros(bs, exo_dim - exo_t.size(-1), device=self.model.device)
+                    exo_t = torch.cat([exo_t, pad], dim=-1)
+                elif exo_t.size(-1) > exo_dim:
+                    exo_t = exo_t[..., :exo_dim]
+            else:
+                exo_t = None
+
             self._optimizer.zero_grad()
 
-            # 设置上下文 (训练时每个窗口的 log_sig / regime / transition 不同)
+            # 设置上下文 (训练时每个窗口的 log_sig / regime / transition / exo 不同)
             self.model._current_log_sig = log_sig_t
             self.model._current_regime = regime_onehot
             self.model._current_transition = transition_t
+            self.model._current_exogenous = exo_t
 
             # 向量化 SDE 积分: 整个 batch 同时推进 horizon 步
             path = torch.zeros(bs, self.horizon, device=self.model.device)
@@ -1387,6 +1565,7 @@ class NeuralSDETrainer:
             self.model._current_log_sig = None
             self.model._current_regime = None
             self.model._current_transition = None
+            self.model._current_exogenous = None
 
             # TDD-012: 根据 loss_type 选择 loss 函数
             batch_loss = self._compute_loss(path, targets)
@@ -1452,14 +1631,17 @@ class NeuralSDETrainer:
         epochs: int = 200,
         regime_labels: Optional[np.ndarray] = None,
         regime_balance: str = "balanced",
+        exogenous_series: Optional[np.ndarray] = None,
     ) -> dict[str, Any]:
-        """完整训练流程 (T5: regime-conditional 扩展).
+        """完整训练流程 (T5: regime-conditional + P1 exogenous 扩展).
 
         Args:
             closes: 历史 close 序列
             epochs: 训练轮数
             regime_labels: 可选 regime 标签 (None → 全 0 兜底, 旧行为)
             regime_balance: "balanced" (默认) 或 "natural" (T3.7)
+            exogenous_series: 可选 (N, exo_dim) 外生力量时序 (P1),
+                              None → 零向量 (FAIL-OPEN, 行为等价当前)
 
         Returns:
             training report dict
@@ -1485,6 +1667,7 @@ class NeuralSDETrainer:
 
         windows = self.prepare_data(
             closes, regime_labels=regime_labels, regime_balance=regime_balance,
+            exogenous_series=exogenous_series,
         )
         if len(windows) < MIN_SAMPLES_FOR_ACTIVATION:
             logger.warning(
@@ -1580,10 +1763,28 @@ class NeuralSDETrainer:
                     continue
                 batch_size = len(batch)
 
-                s0_arr = np.array([[inp[-1]] for inp, _, _, _ in batch], dtype=np.float32)
-                tgt_arr = np.array([tgt for _, tgt, _, _ in batch], dtype=np.float32)
-                log_sig_arr = np.array([ls for _, _, ls, _ in batch], dtype=np.float32)
-                regime_arr = np.array([reg for _, _, _, reg in batch], dtype=np.int64)
+                # 兼容 3/4/5-tuple (P1 exogenous)
+                sample = batch[0]
+                n_fields = len(sample)
+                has_exo = n_fields >= 5
+                if has_exo:
+                    s0_arr = np.array([[inp[-1]] for inp, _, _, _, _ in batch], dtype=np.float32)
+                    tgt_arr = np.array([tgt for _, tgt, _, _, _ in batch], dtype=np.float32)
+                    log_sig_arr = np.array([ls for _, _, ls, _, _ in batch], dtype=np.float32)
+                    regime_arr = np.array([reg for _, _, _, reg, _ in batch], dtype=np.int64)
+                    exo_arr = np.array([exo for _, _, _, _, exo in batch], dtype=np.float32)
+                elif n_fields >= 4:
+                    s0_arr = np.array([[inp[-1]] for inp, _, _, _ in batch], dtype=np.float32)
+                    tgt_arr = np.array([tgt for _, tgt, _, _ in batch], dtype=np.float32)
+                    log_sig_arr = np.array([ls for _, _, ls, _ in batch], dtype=np.float32)
+                    regime_arr = np.array([reg for _, _, _, reg in batch], dtype=np.int64)
+                    exo_arr = None
+                else:
+                    s0_arr = np.array([[inp[-1]] for inp, _, _ in batch], dtype=np.float32)
+                    tgt_arr = np.array([tgt for _, tgt, _ in batch], dtype=np.float32)
+                    log_sig_arr = np.array([ls for _, _, ls in batch], dtype=np.float32)
+                    regime_arr = np.zeros(batch_size, dtype=np.int64)
+                    exo_arr = None
 
                 y = torch.tensor(s0_arr)
                 targets = torch.tensor(tgt_arr)
@@ -1604,9 +1805,24 @@ class NeuralSDETrainer:
                 else:
                     transition_t = None
 
+                # P1: exogenous 上下文
+                exo_dim = getattr(self.model, "exogenous_dim", 0)
+                if exo_dim > 0 and exo_arr is not None and exo_arr.size > 0:
+                    exo_t = torch.tensor(exo_arr, dtype=torch.float32)
+                    if exo_t.dim() == 1:
+                        exo_t = exo_t.view(batch_size, -1)
+                    if exo_t.size(-1) < exo_dim:
+                        pad = torch.zeros(batch_size, exo_dim - exo_t.size(-1))
+                        exo_t = torch.cat([exo_t, pad], dim=-1)
+                    elif exo_t.size(-1) > exo_dim:
+                        exo_t = exo_t[..., :exo_dim]
+                else:
+                    exo_t = None
+
                 self.model._current_log_sig = log_sig_t
                 self.model._current_regime = regime_onehot
                 self.model._current_transition = transition_t
+                self.model._current_exogenous = exo_t
 
                 path = torch.zeros(batch_size, self.horizon)
                 for t_step in range(self.horizon):
@@ -1619,6 +1835,7 @@ class NeuralSDETrainer:
                 self.model._current_log_sig = None
                 self.model._current_regime = None
                 self.model._current_transition = None
+                self.model._current_exogenous = None
 
                 loss = self._compute_loss(path, targets)
                 total_loss += float(loss.item())

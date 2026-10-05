@@ -1,17 +1,13 @@
 """Blockchain.com BTC 链上基础数据采集器 — 免费 REST API，无需 Key。
 
-数据源: https://blockchain.info/q
-- BTC 地址数/交易数/难度/哈希率
-- 与 mempool.space 互补
-- 完全免费无限制
+数据源:
+  - https://blockchain.info/q          — 实时单值端点（totalbc / 24hrtransactioncount / marketcap / hashrate）
+  - https://api.blockchain.info/charts — 图表数据（n-unique-addresses 活跃地址 / n-transactions / difficulty）
 
-端点：
-  GET /q/totalbc — BTC 总流通量
-  GET /q/difficulty — 当前难度
-  GET /q/hashrate — 当前哈希率
-  GET /q/24hrtransactioncount — 24h 交易数
-  GET /q/activeaddresses — 活跃地址数
-  GET /q/marketcap — BTC 市值
+修复记录（2026-10-05）：
+  1. tx_count_24h=0 根因：_get 返回 float，str(float).isdigit() 因小数点返回 False → 改用 _to_number() 安全转换
+  2. difficulty 路径错误：/q/difficulty 实际请求 /q/q/difficulty → 404 → 修正为 /difficulty，并增加 charts API 兜底
+  3. 新增 active_addresses：blockchain.info /q/activeaddresses 已 404 → 改用 charts/n-unique-addresses
 """
 from __future__ import annotations
 
@@ -23,10 +19,29 @@ from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord, validate_record
 
 _BASE = "https://blockchain.info/q"
+_CHARTS = "https://api.blockchain.info/charts"
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat()
+
+
+def _to_number(v, *, as_int: bool = False):
+    """安全数值转换：兼容 int/float/str/scientific notation，失败返回 0。"""
+    if v is None:
+        return 0
+    if isinstance(v, bool):
+        return 0
+    if isinstance(v, (int, float)):
+        return int(v) if as_int else float(v)
+    if isinstance(v, str):
+        s = v.strip()
+        try:
+            f = float(s)
+            return int(f) if as_int else f
+        except ValueError:
+            return 0
+    return 0
 
 
 class BlockchainInfoCollector(BaseCollector):
@@ -39,22 +54,30 @@ class BlockchainInfoCollector(BaseCollector):
         return True  # 免费 API 无需 Key
 
     def fetch(self, params: dict) -> list[DataRecord]:
-        # 各端点独立拉取，单个失败不影响其他
+        # 实时单值端点
         total_bc = self._safe_get("/totalbc")
-        tx_count_24h = self._safe_get("/24hrtransactioncount")
+        tx_count_q = self._safe_get("/24hrtransactioncount")
         mcap = self._safe_get("/marketcap")
-        difficulty = self._safe_get("/q/difficulty") or 0
-        hashrate = self._safe_get("/q/hashrate") or 0
+        difficulty_q = self._safe_get("/difficulty")  # 修正：原 /q/difficulty 导致 404
+        hashrate = self._safe_get("/hashrate")
 
-        if total_bc is None and tx_count_24h is None and mcap is None:
+        # charts API：活跃地址（/q/activeaddresses 已 404）+ 日交易数 + 难度兜底 + 链上交易量
+        active_addr = self._safe_chart("n-unique-addresses")
+        tx_count_chart = self._safe_chart("n-transactions")
+        difficulty_chart = self._safe_chart("difficulty")
+        output_volume_btc = self._safe_chart("output-volume")  # 每日链上 BTC 转账总量
+
+        if total_bc is None and tx_count_q is None and mcap is None and active_addr is None:
             return []  # fail-open
 
-        # 转换 BTC 单位（totalbc 返回 satoshis）
-        total_btc = float(total_bc) / 1e8 if isinstance(total_bc, (int, float, str)) and str(total_bc).replace(".", "").isdigit() else 0
-        diff_val = float(difficulty) if isinstance(difficulty, (int, float, str)) and str(difficulty).replace(".", "").isdigit() else 0
-        hr_val = float(hashrate) if isinstance(hashrate, (int, float, str)) and str(hashrate).replace(".", "").replace("e", "").replace("+", "").isdigit() else 0
-        tx_val = int(tx_count_24h) if isinstance(tx_count_24h, (int, float, str)) and str(tx_count_24h).isdigit() else 0
-        mcap_val = float(mcap) if isinstance(mcap, (int, float, str)) and str(mcap).replace(".", "").isdigit() else 0
+        total_btc = _to_number(total_bc) / 1e8  # satoshis → BTC
+        diff_val = _to_number(difficulty_chart or difficulty_q)
+        hr_val = _to_number(hashrate)
+        # 交易数：优先 charts n-transactions（日粒度更准），回退 /q/24hrtransactioncount
+        tx_val = int(_to_number(tx_count_chart or tx_count_q))
+        mcap_val = _to_number(mcap)
+        active_addr_val = int(_to_number(active_addr))
+        output_vol_val = _to_number(output_volume_btc)
 
         rec = DataRecord(
             source="blockchain_info",
@@ -67,6 +90,8 @@ class BlockchainInfoCollector(BaseCollector):
                 "hashrate": hr_val,
                 "tx_count_24h": tx_val,
                 "market_cap_usd": mcap_val,
+                "active_addresses": active_addr_val,
+                "output_volume_btc": output_vol_val,
             },
             events=[],
             timeseries=[],
@@ -77,7 +102,7 @@ class BlockchainInfoCollector(BaseCollector):
 
     @staticmethod
     def _safe_get(path: str):
-        """安全 GET，单个端点失败返回 None 不影响其他。"""
+        """安全 GET /q 端点，单个失败返回 None 不影响其他。"""
         try:
             return BlockchainInfoCollector._get(path)
         except Exception:
@@ -87,9 +112,26 @@ class BlockchainInfoCollector(BaseCollector):
     def _get(path: str):
         resp = requests.get(f"{_BASE}{path}", timeout=15)
         resp.raise_for_status()
-        # blockchain.info /q 返回纯文本或数字
         text = resp.text.strip()
         try:
             return float(text)
         except ValueError:
             return text
+
+    @staticmethod
+    def _safe_chart(chart_name: str):
+        """从 charts API 获取最新值，失败返回 None。"""
+        try:
+            resp = requests.get(
+                f"{_CHARTS}/{chart_name}",
+                params={"timespan": "1days", "format": "json"},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            values = data.get("values", [])
+            if values:
+                return values[-1].get("y")
+        except Exception:
+            pass
+        return None

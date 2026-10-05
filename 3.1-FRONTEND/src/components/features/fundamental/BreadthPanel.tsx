@@ -16,10 +16,9 @@ const BREADTH_LABELS: Record<string, string> = {
   btc_dominance: 'BTC 主导率',
   advance_decline_line: '涨跌线',
   breadth_confirmation: '广度确认',
-  breadth_divergence_score: '广度背离分',
+  global_change_24h: '全球24h涨跌',
+  defi_tvl_bln: 'DeFi TVL(B)',
   market_participation_index: '市场参与指数',
-  new_high_low_ratio: '新高新低比',
-  divergence_signal: '背离信号',
 };
 
 function fmt(n: number | string, digits = 2): string {
@@ -67,14 +66,9 @@ export function BreadthPanel() {
     }));
 
   const sectorItems = [
-    { label: 'DeFi 广度', value: fmt(bd.defi_breadth, 1) },
-    { label: 'L1 广度', value: fmt(bd.l1_breadth, 1) },
-    { label: 'L2 广度', value: fmt(bd.l2_breadth, 1) },
-    { label: 'Meme 广度', value: fmt(bd.meme_breadth, 1) },
-    { label: '新高数', value: String(bd.new_highs_count ?? '--') },
-    { label: '新低数', value: String(bd.new_lows_count ?? '--') },
-    { label: '上涨板块', value: String(bd.sector_count_up ?? '--') },
-    { label: '下跌板块', value: String(bd.sector_count_down ?? '--') },
+    { label: '上涨资产数', value: fmt(bd.advance_count, 0) },
+    { label: '下跌资产数', value: fmt(bd.decline_count, 0) },
+    { label: '涨跌比', value: bd.decline_count ? (Number(bd.advance_count) / Number(bd.decline_count)).toFixed(2) : '--' },
   ];
 
   return (

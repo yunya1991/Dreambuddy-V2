@@ -7,35 +7,40 @@ import UTXOAgeDistribution from './UTXOAgeDistribution';
 
 interface OnchainModule {
   metrics?: {
-    core?: Record<string, number | string>;
+    core?: Record<string, number | string | null>;
     breakdown?: Record<string, number>;
   };
   meta?: { last_update?: string; source?: string[]; data_quality?: string };
 }
 
-function fmt(n: number | string, digits = 2): string {
+function fmt(n: number | string | null | undefined, digits = 2): string {
+  if (n === null || n === undefined) return '--';
   if (typeof n === 'string') return n;
   if (typeof n !== 'number' || !isFinite(n)) return '--';
-  if (Math.abs(n) >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-  if (Math.abs(n) >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  if (Math.abs(n) >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+  if (Math.abs(n) >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (Math.abs(n) >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  if (Math.abs(n) >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
   return n.toFixed(digits);
 }
 
 const ONCHAIN_LABELS: Record<string, string> = {
   active_addresses: '活跃地址',
   hash_rate: '哈希率(EH/s)',
-  n_tx_24h: '24h交易笔数',
+  tx_count_24h: '24h交易笔数',
   exchange_net_flow: '交易所净流(BTC)',
-  exchange_reserve: '交易所储备',
+  exchange_reserve_btc: '交易所储备(BTC)',
+  whale_netflow_btc: '巨鲸净流(BTC)',
   accumulation_signal: '积累信号',
   network_health: '网络健康',
   onchain_trend: '链上趋势',
-  transaction_volume: '交易量',
+  market_cap_usd: '市值(USD)',
 };
 
-function signalOf(v: number | string): 'bullish' | 'bearish' | 'neutral' {
+function signalOf(v: number | string | null | undefined): 'bullish' | 'bearish' | 'neutral' {
+  if (v === null || v === undefined) return 'neutral';
   if (typeof v === 'string') {
-    if (/流出|卖出|恶化|下降/.test(v)) return 'bearish';
+    if (/流出|卖出|恶化|下降|提币/.test(v)) return 'bearish';
     if (/流入|买入|积累|优秀|上升/.test(v)) return 'bullish';
     return 'neutral';
   }
@@ -48,8 +53,6 @@ export function OnchainPanel() {
   const [mod, setMod] = useState<OnchainModule | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [realOnchain, setRealOnchain] = useState<{ active_addresses?: number; hash_rate_ehs?: number; tx_24h?: number } | null>(null);
-  const [panewslab, setPanewslab] = useState<{ exchange?: any } | null>(null);
 
   useEffect(() => {
     fundamentalApi
@@ -62,20 +65,6 @@ export function OnchainPanel() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    fetch('/api/onchain/btc', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => { if (d?.ok) setRealOnchain(d); })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/onchain/panewslab', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => { if (d?.ok) setPanewslab({ exchange: d.exchange }); })
-      .catch(() => {});
-  }, []);
-
   if (loading) {
     return <div className="h-64 rounded-xl bg-slate-800/50 animate-pulse" />;
   }
@@ -85,28 +74,6 @@ export function OnchainPanel() {
 
   const core = { ...(mod?.metrics?.core ?? {}) };
   const bd = mod?.metrics?.breakdown ?? {};
-
-  // 用 blockchain.info 真实数据覆盖 mock 值
-  if (realOnchain) {
-    if (realOnchain.active_addresses) core.active_addresses = realOnchain.active_addresses;
-    if (realOnchain.hash_rate_ehs) core.hash_rate = realOnchain.hash_rate_ehs;
-    if (realOnchain.tx_24h) core.n_tx_24h = realOnchain.tx_24h;
-  }
-
-  // 用 panewslab (CryptoQuant) 真实交易所数据覆盖
-  if (panewslab?.exchange) {
-    const ex = panewslab.exchange;
-    if (ex.whale_netflow_to_ex_usd !== undefined) {
-      // 巨鲸净流向交易所：负值=流出交易所(积累)，正值=流入交易所(抛售)
-      const netBtc = ex.whale_netflow_to_ex_usd / 85000; // 按 ~8.5万 USD/BTC 估算
-      core.exchange_net_flow = Number(netBtc.toFixed(2));
-      core.onchain_trend = ex.whale_netflow_to_ex_usd < 0 ? '流出(积累)' : '流入(抛售)';
-      core.accumulation_signal = ex.whale_netflow_to_ex_usd < 0 ? '巨鲸积累' : '巨鲸抛售';
-    }
-    if (ex.btc_balance !== undefined) {
-      core.exchange_reserve = Number((ex.btc_balance / 10000).toFixed(2)); // 万枚
-    }
-  }
 
   const signalVariant = { bullish: 'success' as const, bearish: 'danger' as const, neutral: 'default' as const };
   const signalLabel = { bullish: '利多', bearish: '利空', neutral: '中性' };

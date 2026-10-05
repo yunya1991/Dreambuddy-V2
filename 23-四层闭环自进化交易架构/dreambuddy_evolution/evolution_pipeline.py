@@ -86,6 +86,7 @@ class EvolutionPipeline:
 
         # ---- Phase 1-3 组件初始化（开关控制，FAIL-OPEN） ----
         self._exogenous_evaluator = None
+        self._exogenous_bridge = None
         self._structural_break_detector = None
         self._shift_accumulator = None
         self._elastic_resolver = None
@@ -245,6 +246,17 @@ class EvolutionPipeline:
                 logger.debug("[FO-Phase1] ExogenousStrengthEvaluator init fail: %s", e)
                 self._exogenous_evaluator = False
         return self._exogenous_evaluator or None
+
+    def _get_exogenous_bridge(self) -> Any:
+        """Phase 1: 外生数据桥（19-DAL → 评估器字段，懒初始化）"""
+        if getattr(self, "_exogenous_bridge", None) is None:
+            try:
+                from dreambuddy_evolution.core.exogenous_data_bridge import ExogenousDataBridge
+                self._exogenous_bridge = ExogenousDataBridge()
+            except Exception as e:
+                logger.debug("[FO-Phase1] ExogenousDataBridge init fail: %s", e)
+                self._exogenous_bridge = False
+        return self._exogenous_bridge or None
 
     def _get_structural_break_detector(self) -> Any:
         """Phase 2: 结构断裂检测器（懒初始化）"""
@@ -833,6 +845,15 @@ class EvolutionPipeline:
         try:
             _eval = self._get_exogenous_evaluator()
             if _eval is not None and market_data:
+                # 从 19-DAL 注入真实外生数据（不覆盖已有字段）
+                _bridge = self._get_exogenous_bridge()
+                if _bridge is not None:
+                    try:
+                        _exo = _bridge.fetch()
+                        for _k, _v in _exo.items():
+                            market_data.setdefault(_k, _v)
+                    except Exception as _be:
+                        logger.debug("[FO-Phase1][ExogenousBridge] fetch fail: %s", _be)
                 _exogenous_pc = _eval.get_primary_contradiction(market_data)
                 if _exogenous_pc is not None:
                     # 外生度量优先：替换或增强原有矛盾识别

@@ -60,14 +60,14 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_rv_contradiction_modulation": False,  # RV 层矛盾调制
     "enable_hjb_dominant": False,               # HJB 权重 70% 增强模式
     # --- Phase 1 外生力量度量 ---
-    "enable_exogenous_strength": False,           # 外生力量度量器
+    "enable_exogenous_strength": True,            # 外生力量度量器（19-DAL 真实数据已接入）
     # --- Phase 2 因果传导 + 质变检测 ---
-    "enable_granger_causality": False,            # Granger 因果检验
-    "enable_structural_break_detection": False,   # 质变检测
-    "enable_contradiction_shift_detection": False,  # 矛盾转化检测
+    "enable_granger_causality": True,             # Granger 因果检验
+    "enable_structural_break_detection": True,    # 质变检测
+    "enable_contradiction_shift_detection": True, # 矛盾转化检测
     # --- Phase 3 弹性约束 + 反身性 ---
-    "enable_elastic_constraint": False,            # 弹性约束
-    "enable_reflexivity_monitor": False,           # 反身性监测
+    "enable_elastic_constraint": True,            # 弹性约束
+    "enable_reflexivity_monitor": True,           # 反身性监测
     # --- 事件驱动策略系统 (29 号子系统) ---
     # SPEC-事件驱动策略P0盲区修复-非农CPI加息预期.md 第 750/752 行明确标注"已有"
     "enable_contradiction_driven_layer": True,     # 主要矛盾驱动层总开关 (P1-2 双层门控第一层)

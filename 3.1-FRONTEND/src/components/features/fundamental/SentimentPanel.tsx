@@ -12,7 +12,7 @@ interface HeatmapCell {
 interface SentimentModule {
   heatmap_data?: HeatmapCell[];
   metrics?: {
-    core?: Record<string, number | string>;
+    core?: Record<string, number | string | null>;
     breakdown?: Record<string, number>;
   };
   meta?: { last_update?: string; source?: string[]; data_quality?: string };
@@ -25,7 +25,8 @@ function getHeatColor(score: number): string {
   return 'bg-red-500/30';
 }
 
-function fmt(n: number | string, digits = 1): string {
+function fmt(n: number | string | null | undefined, digits = 1): string {
+  if (n === null || n === undefined) return '--';
   if (typeof n === 'string') return n;
   if (typeof n !== 'number' || !isFinite(n)) return '--';
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -37,7 +38,6 @@ export function SentimentPanel() {
   const [mod, setMod] = useState<SentimentModule | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dc, setDc] = useState<{ sentiment?: any } | null>(null);
 
   useEffect(() => {
     fundamentalApi
@@ -50,43 +50,23 @@ export function SentimentPanel() {
       .finally(() => setLoading(false));
   }, []);
 
-  // 用数据中心真实 fear_greed 覆盖（alternative.me）
-  useEffect(() => {
-    fetch('/api/onchain/datacenter', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => { if (d?.ok) setDc({ sentiment: d.sentiment }); })
-      .catch(() => {});
-  }, []);
-
   if (loading) return <div className="h-64 rounded-xl bg-slate-800/50 animate-pulse" />;
   if (error) return <div className="rounded-lg bg-red-950/30 border border-red-800/30 p-4 text-xs text-red-300">情绪数据加载失败：{error}</div>;
 
   const heatmap = mod?.heatmap_data ?? [];
   const core = { ...(mod?.metrics?.core ?? {}) };
-  const bd = mod?.metrics?.breakdown ?? {};
 
-  // 用数据中心真实 fear_greed 覆盖
-  if (dc?.sentiment?.fear_greed_index != null) {
-    core.fear_greed_index = dc.sentiment.fear_greed_index;
-    core.sentiment_index = dc.sentiment.fear_greed_index;
-  }
-
-  const fgIndex = Number(core.fear_greed_index) ?? 0;
-  const marketPsych = String(core.market_psychology || '');
-  const fomo = Number(bd.fomo_score) ?? 0;
-  const panic = Number(bd.panic_level) ?? 0;
+  const fgIndex = Number(core.sentiment_index ?? core.fear_greed_index ?? 0);
+  const marketPsych = String(core.sentiment_classification || core.market_psychology || '');
+  const regime = String(core.sentiment_regime || '');
 
   const signalVariant = { bullish: 'success' as const, bearish: 'danger' as const, neutral: 'default' as const };
   type Sig = keyof typeof signalVariant;
 
   const summaryItems: { label: string; value: string; signal: Sig }[] = [
-    { label: '恐惧贪婪指数', value: `${fmt(fgIndex, 0)}`, signal: fgIndex >= 55 ? 'bullish' : fgIndex <= 45 ? 'bearish' : 'neutral' },
-    { label: '市场心理', value: marketPsych || '--', signal: /贪婪|乐观/.test(marketPsych) ? 'bullish' : 'bearish' },
-    { label: 'FOMO 得分', value: fmt(fomo), signal: fomo >= 50 ? 'bullish' : 'bearish' },
-    { label: '恐慌水平', value: fmt(panic), signal: panic <= 20 ? 'bullish' : 'bearish' },
-    { label: '看多比例', value: `${fmt(bd.bullish_ratio, 1)}%`, signal: 'bullish' },
-    { label: '看空比例', value: `${fmt(bd.bearish_ratio, 1)}%`, signal: 'bearish' },
-    { label: '社交情绪', value: fmt(bd.social_sentiment), signal: (bd.social_sentiment ?? 0) >= 50 ? 'bullish' : 'bearish' },
+    { label: '情绪指数', value: `${fmt(fgIndex, 0)}`, signal: fgIndex >= 55 ? 'bullish' : fgIndex <= 45 ? 'bearish' : 'neutral' },
+    { label: '情绪分类', value: marketPsych || '--', signal: /贪婪|乐观/.test(marketPsych) ? 'bullish' : /恐惧|悲观/.test(marketPsych) ? 'bearish' : 'neutral' },
+    { label: '情绪周期', value: regime || '--', signal: /贪婪|乐观/.test(regime) ? 'bullish' : /恐惧|悲观/.test(regime) ? 'bearish' : 'neutral' },
     { label: '社交声量', value: fmt(core.social_volume), signal: 'neutral' },
   ];
 

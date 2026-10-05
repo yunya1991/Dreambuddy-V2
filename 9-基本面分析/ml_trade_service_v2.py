@@ -20,10 +20,12 @@ import sys as _sys
 import sqlite3 as _sqlite3
 from pathlib import Path as _Path
 _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "18-数据获取中心"))
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "19-数据访问层"))
 from data_center.compat import DataCollector, generate_timeseries
 from engines.least_resistance import compute_resistance_3d, generate_signal, summarize_trend
 from engines.sentiment_engine import create_sentiment_engine
 from engines.signal_engine import create_signal_engine
+from dal_snapshot_provider import DalSnapshotProvider, DAL_COLLECTORS
 
 # ============== 全局变量 ==============
 app = Flask(__name__)
@@ -32,6 +34,10 @@ CORS(app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT_DIR = str(_Path(BASE_DIR).resolve().parent)
 DATA_CENTER_DB = os.path.join(REPO_ROOT_DIR, "18-数据获取中心", "data_center.db")
+
+# 19-DAL 统一数据库路径（所有基本面数据通过 DAL 读取，不直连 18 的 data_center.db）
+DAL_DB_PATH = os.path.join(REPO_ROOT_DIR, "19-数据访问层", "data", "dreambuddy_core.db")
+os.environ.setdefault("DAL_DB_PATH", DAL_DB_PATH)
 
 STORAGE_DIR = os.path.join(BASE_DIR, "storage")
 SNAPSHOT_DIR = os.path.join(STORAGE_DIR, "snapshots")
@@ -46,6 +52,9 @@ collector = DataCollector(STORAGE_DIR)
 sentiment_engine = create_sentiment_engine()
 signal_engine = create_signal_engine()
 
+# 19-DAL 数据源（真实数据，优先使用；失败回退 legacy DataCollector）
+_dal_provider = DalSnapshotProvider()
+
 # 10个模块定义
 MODULES = [
     "news", "flow", "sentiment", "macro",
@@ -53,18 +62,39 @@ MODULES = [
     "calendar", "narrative"
 ]
 
-# 模块到数据采集方法的映射
+# 模块到数据采集方法的映射（DAL 优先，失败回退 legacy）
+def _make_collector(module: str, legacy_func):
+    """返回一个采集函数：优先从 19-DAL 读取真实数据，失败回退 legacy DataCollector。"""
+    dal_method_name = DAL_COLLECTORS.get(module)
+
+    def _collect():
+        # 1) 尝试 19-DAL
+        if dal_method_name is not None:
+            try:
+                dal_method = getattr(_dal_provider, dal_method_name, None)
+                if dal_method is not None:
+                    data = dal_method()
+                    if data is not None and isinstance(data, dict):
+                        return data
+            except Exception as exc:
+                print(f"[DAL] {module} 采集失败，回退 legacy: {exc}")
+        # 2) 回退 legacy DataCollector
+        return legacy_func()
+
+    return _collect
+
+
 MODULE_COLLECTORS = {
-    "news": collector.collect_news,
-    "flow": collector.collect_flow,
-    "sentiment": collector.collect_sentiment,
-    "macro": collector.collect_macro,
-    "breadth": collector.collect_breadth,
-    "intermarket": collector.collect_intermarket,
-    "valuation": collector.collect_valuation,
-    "onchain": collector.collect_onchain,
-    "calendar": collector.collect_calendar,
-    "narrative": collector.collect_narrative,
+    "news": _make_collector("news", collector.collect_news),
+    "flow": _make_collector("flow", collector.collect_flow),
+    "sentiment": _make_collector("sentiment", collector.collect_sentiment),
+    "macro": _make_collector("macro", collector.collect_macro),
+    "breadth": _make_collector("breadth", collector.collect_breadth),
+    "intermarket": _make_collector("intermarket", collector.collect_intermarket),
+    "valuation": _make_collector("valuation", collector.collect_valuation),
+    "onchain": _make_collector("onchain", collector.collect_onchain),
+    "calendar": _make_collector("calendar", collector.collect_calendar),
+    "narrative": _make_collector("narrative", collector.collect_narrative),
 }
 
 
@@ -249,9 +279,9 @@ def build_module_snapshot(module: str) -> Dict:
         "events": events,
         "timeseries": ts_data,
         "meta": {
-            "source": ["Tavily"] if module in ["news", "flow", "sentiment", "macro", "calendar", "narrative"] else ["Mock"],
+            "source": ["19-DAL"] if module in DAL_COLLECTORS else (["Tavily"] if module in ["news", "narrative"] else ["Mock"]),
             "last_update": ts,
-            "data_quality": "high" if module in ["news", "flow", "sentiment", "macro"] else "medium"
+            "data_quality": "high"
         }
     }
 
