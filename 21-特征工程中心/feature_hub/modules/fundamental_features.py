@@ -56,25 +56,28 @@ def compute(
     if num_df.empty:
         return pd.DataFrame()
 
+    # 对每列做滚动 Z-score 标准化，消除量级差异后取横截面均值
+    col_mean = num_df.rolling(20, min_periods=5).mean()
+    col_std = num_df.rolling(20, min_periods=5).std().replace(0, np.nan)
+    normalized = (num_df - col_mean) / col_std
+    normalized = normalized.fillna(0.0)
+    close_proxy = normalized.mean(axis=1)
+
     result = pd.DataFrame(index=df.index)
 
-    # 对每列计算，然后取横截面均值（适合多指标场景）
-    # 若只有一列，直接用该列
-    close_proxy = num_df.mean(axis=1) if num_df.shape[1] > 1 else num_df.iloc[:, 0]
-
-    # 1. momentum_1d：1日动量
-    result["momentum_1d"] = close_proxy.pct_change(1).fillna(0.0)
+    # 1. momentum_1d：1日动量（用 diff 因为 proxy 可能为负）
+    result["momentum_1d"] = close_proxy.diff(1).fillna(0.0)
 
     # 2. momentum_7d：7日动量
-    result["momentum_7d"] = close_proxy.pct_change(7).fillna(0.0)
+    result["momentum_7d"] = close_proxy.diff(7).fillna(0.0)
 
     # 3. zscore_20d：20日 Z-score
     roll_mean = close_proxy.rolling(20, min_periods=1).mean()
     roll_std = close_proxy.rolling(20, min_periods=1).std().replace(0, np.nan)
     result["zscore_20d"] = ((close_proxy - roll_mean) / roll_std).fillna(0.0)
 
-    # 4. volatility_20d：20日波动率
-    daily_ret = close_proxy.pct_change().fillna(0.0)
+    # 4. volatility_20d：20日波动率（用 diff 的标准差）
+    daily_ret = close_proxy.diff().fillna(0.0)
     result["volatility_20d"] = daily_ret.rolling(20, min_periods=1).std().fillna(0.0)
 
     # 5. trend_strength：趋势强度 = |20日斜率| / 波动率
@@ -83,13 +86,13 @@ def compute(
         slope.abs() / (result["volatility_20d"] + 1e-10)
     ).clip(-10, 10).fillna(0.0)
 
-    # 6. mean_reversion：均值回归压力 = (当前值 - 20日均值) / 20日均值
+    # 6. mean_reversion：均值回归压力 = (当前值 - 20日均值) / 20日标准差
     result["mean_reversion"] = (
-        (close_proxy - roll_mean) / (roll_mean.abs() + 1e-10)
+        (close_proxy - roll_mean) / (roll_std + 1e-10)
     ).clip(-5, 5).fillna(0.0)
 
     # 7. rate_of_change_3d：3日变化率
-    result["rate_of_change_3d"] = close_proxy.pct_change(3).fillna(0.0)
+    result["rate_of_change_3d"] = close_proxy.diff(3).fillna(0.0)
 
     # 8. acceleration：加速度 = momentum_1d 的动量
     result["acceleration"] = result["momentum_1d"].diff().fillna(0.0)

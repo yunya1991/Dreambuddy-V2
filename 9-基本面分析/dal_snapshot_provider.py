@@ -546,8 +546,9 @@ class DalSnapshotProvider:
                 try:
                     rows = repo.query_metric_by_time(sub, metric_name, start, end)
                     if rows:
+                        # r[3] 已是 datetime 对象
                         series[df_col] = {
-                            datetime.fromtimestamp(r[3], tz=timezone.utc): float(r[2])
+                            r[3]: float(r[2])
                             for r in rows
                         }
                 except Exception:
@@ -598,8 +599,9 @@ class DalSnapshotProvider:
                 try:
                     rows = repo.query_metric_by_time(sub_category, metric_name, start, end)
                     if rows:
+                        # r[3] 已是 datetime 对象
                         series[col_name] = {
-                            datetime.fromtimestamp(r[3], tz=timezone.utc): float(r[2])
+                            r[3]: float(r[2])
                             for r in rows
                         }
                 except Exception:

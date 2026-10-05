@@ -151,6 +151,7 @@ class SignalEngine:
         metrics: Dict[str, Any],
         events: List[Dict[str, Any]] = None,
         stress: str = "normal",
+        features: Optional[Dict[str, float]] = None,
     ) -> List[Dict[str, Any]]:
         """
         生成交易信号列表。
@@ -160,12 +161,14 @@ class SignalEngine:
             metrics: 模块指标（支持平铺旧格式或 {core: {...}, breakdown: {...}} 新格式）
             events: 事件列表
             stress: 压力状态
+            features: FeatureHub 衍生特征字典（可选，用于增强信号置信度）
 
         Returns:
             信号列表
         """
         signals: List[Dict[str, Any]] = []
         events = events or []
+        features = features or {}
 
         core = self._normalize_metrics(metrics)
         module_name = self._detect_module(core)
@@ -176,8 +179,16 @@ class SignalEngine:
         # 模块专用信号
         signals.extend(self._module_specific_signals(module_name, core, resistance_3d or {}))
 
+        # FeatureHub 特征驱动信号（仅当有特征时）
+        if features:
+            signals.extend(self._feature_signals(features, core))
+
         # 事件驱动信号
         signals.extend(self._event_signals(events, core))
+
+        # 特征增强：对已有信号的 confidence/strength 做微调
+        if features:
+            signals = self._apply_feature_boost(signals, features)
 
         # 信号去重（按 reason）
         seen_reasons = set()
@@ -517,6 +528,123 @@ class SignalEngine:
                 "priority": 6,
             })
         return out
+
+    # ---------- FeatureHub 特征驱动信号 ----------
+    def _feature_signals(self, features: Dict[str, float], core: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """基于 FeatureHub 衍生特征生成信号。
+
+        使用的关键特征：
+          - fund_momentum_7d: 7日动量（趋势方向）
+          - fund_zscore_20d: 20日 Z-score（极值偏离）
+          - fund_trend_strength: 趋势强度（置信度增强）
+          - fund_mean_reversion: 均值回归压力
+          - fund_stability_score: 稳定性评分
+          - price_pe_proxy: 估值代理
+        """
+        out: List[Dict[str, Any]] = []
+        if not features:
+            return out
+
+        mom_7d = features.get("fund_momentum_7d", 0.0)
+        zscore = features.get("fund_zscore_20d", 0.0)
+        trend_strength = features.get("fund_trend_strength", 0.0)
+        mean_rev = features.get("fund_mean_reversion", 0.0)
+        stability = features.get("fund_stability_score", 0.5)
+
+        # 1. 趋势动量信号
+        if abs(mom_7d) > 0.03:
+            sig_type = "buy" if mom_7d > 0 else "sell"
+            strength = min(abs(mom_7d) * 5, 0.8)
+            confidence = min(0.4 + trend_strength * 0.1 + stability * 0.2, 0.85)
+            self.signal_counter += 1
+            out.append({
+                "id": f"sig_feat_mom_{self.signal_counter:04d}",
+                "type": sig_type,
+                "module": "feature",
+                "strength": round(strength, 3),
+                "confidence": round(confidence, 3),
+                "reason": f"FeatureHub 7日动量 {mom_7d:+.3f}，趋势强度 {trend_strength:.2f}",
+                "horizon": "medium",
+                "factors": ["momentum_7d", "trend_strength"],
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "priority": 5,
+            })
+
+        # 2. Z-score 极值信号（均值回归）
+        if abs(zscore) > 1.5:
+            sig_type = "sell" if zscore > 0 else "buy"  # 高抛低吸
+            strength = min(abs(zscore) / 4.0, 0.7)
+            confidence = min(0.35 + abs(mean_rev) * 0.1, 0.75)
+            self.signal_counter += 1
+            out.append({
+                "id": f"sig_feat_zscore_{self.signal_counter:04d}",
+                "type": sig_type,
+                "module": "feature",
+                "strength": round(strength, 3),
+                "confidence": round(confidence, 3),
+                "reason": f"FeatureHub Z-score {zscore:+.2f}σ 偏离，均值回归压力 {mean_rev:+.2f}",
+                "horizon": "short",
+                "factors": ["zscore_20d", "mean_reversion"],
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "priority": 6,
+            })
+
+        # 3. 稳定性预警（低稳定性 → 风险提示）
+        if stability < 0.3:
+            self.signal_counter += 1
+            out.append({
+                "id": f"sig_feat_vol_{self.signal_counter:04d}",
+                "type": "risk_alert",
+                "module": "feature",
+                "strength": round((0.5 - stability) * 1.2, 3),
+                "confidence": 0.6,
+                "reason": f"FeatureHub 稳定性评分 {stability:.2f} 偏低，波动加剧",
+                "horizon": "short",
+                "factors": ["stability_score", "volatility"],
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "priority": 4,
+            })
+
+        return out
+
+    def _apply_feature_boost(
+        self, signals: List[Dict[str, Any]], features: Dict[str, float]
+    ) -> List[Dict[str, Any]]:
+        """用 FeatureHub 特征对已有信号的 confidence/strength 做微调（±15%）。"""
+        if not signals or not features:
+            return signals
+
+        mom_7d = features.get("fund_momentum_7d", 0.0)
+        trend_strength = features.get("fund_trend_strength", 0.0)
+        stability = features.get("fund_stability_score", 0.5)
+
+        boosted: List[Dict[str, Any]] = []
+        for sig in signals:
+            sig = dict(sig)  # 浅拷贝，不修改原信号
+            sig_type = sig.get("type", "")
+
+            # 方向一致性增强：动量方向与信号方向一致 → confidence 提升
+            direction_match = (
+                (sig_type == "buy" and mom_7d > 0) or
+                (sig_type == "sell" and mom_7d < 0)
+            )
+            boost = 0.0
+            if direction_match:
+                boost += min(abs(mom_7d) * 2, 0.1)  # 最多 +10%
+            else:
+                boost -= min(abs(mom_7d) * 1.5, 0.08)  # 最多 -8%
+
+            # 趋势强度增强
+            boost += min(trend_strength * 0.02, 0.05)
+
+            # 稳定性影响置信度
+            confidence = _to_float(sig.get("confidence", 0.5), 0.5)
+            new_conf = max(0.1, min(0.95, confidence * (1 + boost)))
+            sig["confidence"] = round(new_conf, 3)
+            sig["feature_boost"] = round(boost, 4)
+            boosted.append(sig)
+
+        return boosted
 
     # ---------- 原有信号生成器 ----------
     def _trend_signal(self, direction: str, velocity: float, sentiment: float) -> Optional[Dict]:

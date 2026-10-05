@@ -21,6 +21,7 @@ import sqlite3 as _sqlite3
 from pathlib import Path as _Path
 _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "18-数据获取中心"))
 _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "19-数据访问层"))
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "21-特征工程中心"))
 from data_center.compat import DataCollector, generate_timeseries
 from engines.least_resistance import compute_resistance_3d, generate_signal, summarize_trend
 from engines.sentiment_engine import create_sentiment_engine
@@ -56,16 +57,14 @@ signal_engine = create_signal_engine()
 _dal_provider = DalSnapshotProvider()
 
 # FeatureHub 特征工程：用于计算衍生特征的关键基本面指标时序
-# {列名: "sub_category.metric_name"}
+# {列名: "sub_category.metric_name"} — 仅使用 DAL 中有足够历史数据的指标
 FEATURE_METRIC_SPECS = {
-    "funding_rate": "funding_rate.funding_rate_pct",
-    "long_short_ratio": "long_short_ratio.long_short_ratio",
-    "whale_netflow": "exchanges_whales.whale_netflow_to_ex_usd",
-    "etf_total_flow": "etf_flow.total_flow",
-    "hash_rate": "btc_basics.hash_rate",
-    "exchange_reserve": "exchanges_summary.total_reserve_btc",
+    "funding_rate": "funding_rate.funding_rate",
     "market_cap": "btc_basics.market_cap_usd",
-    "fear_greed": "fear_greed_enhanced.fear_greed_index",
+    "hash_rate": "btc_onchain.hash_rate",
+    "active_addresses": "btc_onchain.active_addresses",
+    "tx_count": "btc_basics.tx_count_24h",
+    "tether_change_1d": "tether_current.change_1d_pct",
 }
 
 # 10个模块定义
