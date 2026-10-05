@@ -68,6 +68,11 @@ def _register_defaults(reg: Registry) -> None:
     from data_center.collectors.bdsm.uniswap_native_collector import UniswapNativeCollector
     from data_center.collectors.bdsm.circle_native_collector import CircleNativeCollector
     from data_center.collectors.bdsm.solana_native_collector import SolanaNativeCollector
+    # 🆕 P0 基本面缺失数据补全（Binance 免费 API + 派生）
+    from data_center.collectors.chain.long_short_ratio_collector import LongShortRatioCollector
+    from data_center.collectors.chain.binance_funding_rate_collector import BinanceFundingRateCollector
+    from data_center.collectors.chain.utxo_age_collector import UTXOAgeDistributionCollector
+    from data_center.collectors.chain.social_volume_collector import SocialVolumeCollector
 
     reg.register("macro", "fred", FredCollector)
     reg.register("finance", "yfinance", YFinanceCollector)
@@ -111,6 +116,11 @@ def _register_defaults(reg: Registry) -> None:
     reg.register("bdsm", "uniswap", UniswapNativeCollector)
     reg.register("bdsm", "circle", CircleNativeCollector)
     reg.register("bdsm", "solana", SolanaNativeCollector)
+    # 🆕 P0 基本面缺失数据补全（Binance 免费 API + 派生）
+    reg.register("chain", "long_short_ratio", LongShortRatioCollector)
+    reg.register("chain", "binance_funding_rate", BinanceFundingRateCollector)
+    reg.register("chain", "utxo_age_distribution", UTXOAgeDistributionCollector)
+    reg.register("chain", "social_volume", SocialVolumeCollector)
 
 
 class DataCenter:

@@ -137,6 +137,10 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         n_transition: int = 0,
         dropout: float = 0.0,
         exogenous_dim: int = 0,
+        use_cross_attention: bool = False,
+        exogenous_factor_dim: int = 0,
+        cross_attn_dim: int = 32,
+        cross_attn_heads: int = 4,
     ):
         if not _TORCH_AVAILABLE:
             return
@@ -150,10 +154,28 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         self.dropout = float(dropout)
         # P1: exogenous_dim 维外生力量向量 (0 = 关闭, 向后兼容; 9 = 标准 9 维)
         self.exogenous_dim = int(exogenous_dim)
-        # 输入: 3 (S_t + 时间特征) + sig_dim (log-signature)
-        #       + n_regimes (regime one-hot) + n_transition (transition vector)
-        #       + exogenous_dim (P1 外生力量)
-        in_dim = 3 + self.sig_dim + self.n_regimes + self.n_transition + self.exogenous_dim
+        # P1+: Cross-Attention 外生因子注入
+        self.use_cross_attention = bool(use_cross_attention)
+        self.exogenous_factor_dim = int(exogenous_factor_dim) if self.use_cross_attention else 0
+        self.cross_attn_dim = int(cross_attn_dim) if self.use_cross_attention else 0
+        self.cross_attn_heads = int(cross_attn_heads) if self.use_cross_attention else 0
+
+        if self.use_cross_attention and self.exogenous_factor_dim > 0:
+            # 延迟导入 cross_attention 组件
+            from dreambuddy_evolution.core.cross_attention import (
+                FactorEncoder,
+                MultiHeadCrossAttention,
+            )
+            self.factor_encoder = FactorEncoder(factor_dim=1, d_model=self.cross_attn_dim)
+            self.cross_attn = MultiHeadCrossAttention(
+                d_model=self.cross_attn_dim, n_heads=self.cross_attn_heads
+            )
+            self.q_proj = nn.Linear(self.sig_dim, self.cross_attn_dim)
+            # drift_net 输入: 3 (S_t + time) + cross_attn_dim + n_regimes + n_transition
+            in_dim = 3 + self.cross_attn_dim + self.n_regimes + self.n_transition
+        else:
+            # 原路径: 3 (S_t + 时间特征) + sig_dim + n_regimes + n_transition + exogenous_dim
+            in_dim = 3 + self.sig_dim + self.n_regimes + self.n_transition + self.exogenous_dim
         # P3: 隐藏层间加 Dropout (经验 1583511: 结构正则)
         layers = [
             nn.Linear(in_dim, hidden_dim),
@@ -178,6 +200,7 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         regime: Optional["torch.Tensor"] = None,
         transition: Optional["torch.Tensor"] = None,
         exogenous: Optional["torch.Tensor"] = None,
+        exogenous_factors: Optional["torch.Tensor"] = None,
     ) -> "torch.Tensor":
         """计算 drift.
 
@@ -190,6 +213,8 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
                         或 None → pad zeros (FAIL-OPEN, 旧模型兼容)
             exogenous: (B, exogenous_dim) 外生力量向量 (P1),
                        或 None → pad zeros (FAIL-OPEN, exogenous_dim=0 时无效果)
+            exogenous_factors: (B, N, factor_dim) 外生因子张量 (P1+ Cross-Attention),
+                               或 None → cross-attention context=0 (FAIL-OPEN)
 
         Returns:
             (B, 1) drift, 经 tanh 裁剪
@@ -272,10 +297,30 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
                 exo_t = exo_t[..., : self.exogenous_dim]
             if exo_t.size(0) != B:
                 exo_t = exo_t[:1].expand(B, -1).contiguous()
-        x = torch.cat(
-            [y, time_features, log_sig_t, regime_t, transition_t, exo_t],
-            dim=-1,
-        )
+        # P1+: Cross-Attention 外生因子注入
+        if self.use_cross_attention and self.exogenous_factor_dim > 0:
+            # Q 来自 log_sig (价格问"当前外生环境如何")
+            q = self.q_proj(log_sig_t).unsqueeze(1)  # (B, 1, cross_attn_dim)
+            # K, V 来自外生因子
+            if exogenous_factors is not None:
+                # exogenous_factors: (B, N, factor_dim)
+                ef = exogenous_factors
+                if ef.dim() == 2:
+                    ef = ef.unsqueeze(-1)  # (B, N, 1)
+                kv = self.factor_encoder(ef)  # (B, N, cross_attn_dim)
+                ctx = self.cross_attn(q, kv, kv)  # (B, cross_attn_dim)
+            else:
+                # FAIL-OPEN: factors=None → zero context
+                ctx = torch.zeros(B, self.cross_attn_dim, device=y.device)
+            x = torch.cat(
+                [y, time_features, ctx, regime_t, transition_t],
+                dim=-1,
+            )
+        else:
+            x = torch.cat(
+                [y, time_features, log_sig_t, regime_t, transition_t, exo_t],
+                dim=-1,
+            )
         out = self.net(x)
         return torch.tanh(out) * self.clip
 
@@ -308,6 +353,10 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         dropout: float = 0.0,
         routing: str = "soft",
         exogenous_dim: int = 0,
+        use_cross_attention: bool = False,
+        exogenous_factor_dim: int = 0,
+        cross_attn_dim: int = 32,
+        cross_attn_heads: int = 4,
     ):
         if not _TORCH_AVAILABLE:
             return
@@ -318,12 +367,19 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         self.clip = clip
         self.sig_dim = int(sig_dim)
         self.exogenous_dim = int(exogenous_dim)
+        # P1+: Cross-Attention
+        self.use_cross_attention = bool(use_cross_attention)
+        self.exogenous_factor_dim = int(exogenous_factor_dim) if self.use_cross_attention else 0
         # 每个 expert 独立 drift net, n_regimes=0 (regime 由 router 处理, 不拼到 expert 输入)
         self.experts = nn.ModuleList([
             _PathSignatureDriftNet(
                 hidden_dim=hidden_dim, sig_dim=self.sig_dim, clip=clip,
                 n_regimes=0, n_transition=self.n_transition, dropout=dropout,
                 exogenous_dim=self.exogenous_dim,
+                use_cross_attention=self.use_cross_attention,
+                exogenous_factor_dim=self.exogenous_factor_dim,
+                cross_attn_dim=cross_attn_dim,
+                cross_attn_heads=cross_attn_heads,
             )
             for _ in range(self.n_experts)
         ])
@@ -411,6 +467,7 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         regime: Optional["torch.Tensor"] = None,
         transition: Optional["torch.Tensor"] = None,
         exogenous: Optional["torch.Tensor"] = None,
+        exogenous_factors: Optional["torch.Tensor"] = None,
     ) -> "torch.Tensor":
         """计算 MoE drift.
 
@@ -421,6 +478,7 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
             regime: (B, n_experts) one-hot, None → 均匀权重
             transition: (B, n_transition) transition vector, None → pad zeros
             exogenous: (B, exogenous_dim) 外生力量向量 (P1), None → pad zeros
+            exogenous_factors: (B, N, factor_dim) 外生因子张量 (P1+), None → FAIL-OPEN
 
         Returns:
             (B, 1) drift, 经 tanh 裁剪
@@ -429,10 +487,10 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
             return torch.zeros(y.size(0), 1)
         B = y.size(0)
         device = y.device
-        # 各 expert drift (P1: 透传 exogenous)
+        # 各 expert drift (P1: 透传 exogenous; P1+: 透传 exogenous_factors)
         expert_drifts = []
         for expert in self.experts:
-            d = expert(t, y, log_sig, None, transition, exogenous)  # regime=None (expert 不看 regime)
+            d = expert(t, y, log_sig, None, transition, exogenous, exogenous_factors)
             expert_drifts.append(d)
         expert_drifts = torch.cat(expert_drifts, dim=-1)  # (B, n_experts)
         # 权重 (P2.3: router 接收 transition)
@@ -497,6 +555,10 @@ class NeuralSDEModel:
         moe_routing: str = "soft",
         use_exogenous: bool = False,
         exogenous_dim: int = 9,
+        use_cross_attention: bool = False,
+        exogenous_factor_dim: int = 0,
+        cross_attn_dim: int = 32,
+        cross_attn_heads: int = 4,
         device: str = "cpu",
     ):
         self._available = _TORCH_AVAILABLE
@@ -526,6 +588,11 @@ class NeuralSDEModel:
         # use_exogenous=True 时 drift_net 输入追加 exogenous_dim 维外生向量
         self.use_exogenous = bool(use_exogenous)
         self.exogenous_dim = int(exogenous_dim) if self.use_exogenous else 0
+        # P1+: Cross-Attention 外生因子注入
+        self.use_cross_attention = bool(use_cross_attention)
+        self.exogenous_factor_dim = int(exogenous_factor_dim) if self.use_cross_attention else 0
+        self.cross_attn_dim = int(cross_attn_dim)
+        self.cross_attn_heads = int(cross_attn_heads)
 
         # 归一化参数
         self._price_mean = 0.0
@@ -558,6 +625,8 @@ class NeuralSDEModel:
         self._current_transition: Optional["torch.Tensor"] = None
         # P1: 当前 exogenous 上下文 (B, exogenous_dim), None → drift_net pad zeros
         self._current_exogenous: Optional["torch.Tensor"] = None
+        # P1+: 当前 exogenous_factors 上下文 (B, N, factor_dim), None → FAIL-OPEN
+        self._current_exogenous_factors: Optional["torch.Tensor"] = None
 
         if self._available:
             self._torch = torch
@@ -570,6 +639,10 @@ class NeuralSDEModel:
                     n_transition=self.n_transition, dropout=self.dropout,
                     routing=self.moe_routing,
                     exogenous_dim=self.exogenous_dim,
+                    use_cross_attention=self.use_cross_attention,
+                    exogenous_factor_dim=self.exogenous_factor_dim,
+                    cross_attn_dim=self.cross_attn_dim,
+                    cross_attn_heads=self.cross_attn_heads,
                 ).to(device)
             else:
                 # 路径依赖 + regime one-hot T2 + transition P0.2 + exogenous P1
@@ -578,6 +651,10 @@ class NeuralSDEModel:
                     n_regimes=self.n_regimes, n_transition=self.n_transition,
                     dropout=self.dropout,
                     exogenous_dim=self.exogenous_dim,
+                    use_cross_attention=self.use_cross_attention,
+                    exogenous_factor_dim=self.exogenous_factor_dim,
+                    cross_attn_dim=self.cross_attn_dim,
+                    cross_attn_heads=self.cross_attn_heads,
                 ).to(device)
             self.diffusion_net = _DiffusionNet(diffusion_hidden, diffusion_floor).to(device)
         else:
@@ -740,15 +817,16 @@ class NeuralSDEModel:
         return "diagonal"
 
     def f(self, t: "torch.Tensor", y: "torch.Tensor") -> "torch.Tensor":
-        """Drift 函数 fθ(S_t, t, log_sig, regime, transition, exogenous).
+        """Drift 函数 fθ(S_t, t, log_sig, regime, transition, exogenous, exogenous_factors).
 
         通过 self._current_log_sig / _current_regime / _current_transition /
-        _current_exogenous 传递上下文 (单线程安全).
+        _current_exogenous / _current_exogenous_factors 传递上下文 (单线程安全).
         兼容 torchsde.sdeint 的 f(t, y) 签名.
         """
         return self.drift_net(
             t, y, self._current_log_sig, self._current_regime,
             self._current_transition, self._current_exogenous,
+            self._current_exogenous_factors,
         )
 
     def g(self, t: "torch.Tensor", y: "torch.Tensor") -> "torch.Tensor":

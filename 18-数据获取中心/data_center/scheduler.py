@@ -55,15 +55,18 @@ class CollectionScheduler:
         quality: QualityChecker,
         tasks: list[CollectionTask],
         alerts_router: Optional[AlertRouter] = None,
+        backfill_interval_sec: int = 600,
     ) -> None:
         self.dc = dc
         self.sink = sink
         self.quality = quality
         self.tasks = tasks
         self.alerts_router = alerts_router
+        self.backfill_interval_sec = backfill_interval_sec
         self._thread: Optional[threading.Thread] = None
         self._stop_flag = threading.Event()
         self._last_run: dict[str, float] = {}  # task.name -> last ts
+        self._last_backfill: float = 0.0
 
     # ------------------------------------------------------------------
     # 单次采集
@@ -132,7 +135,7 @@ class CollectionScheduler:
             self._thread = None
 
     def _run_loop(self) -> None:
-        """主循环：每秒检查各 task 是否到期。"""
+        """主循环：每秒检查各 task 是否到期；每 backfill_interval_sec 执行 18→19 回填。"""
         now = time.time()
         for task in self.tasks:
             self._last_run[task.name] = 0.0  # 初始 0，启动后立即跑一次
@@ -145,7 +148,30 @@ class CollectionScheduler:
                     except Exception:
                         pass  # collect_once 内部已处理异常，这里防兜底
                     self._last_run[task.name] = time.time()
+            # 周期性 18→19 DAL 回填
+            if now - self._last_backfill >= self.backfill_interval_sec:
+                try:
+                    self._run_backfill()
+                except Exception:
+                    pass
+                self._last_backfill = time.time()
             self._stop_flag.wait(1.0)  # 1 秒 tick
+
+    @staticmethod
+    def _run_backfill() -> None:
+        """执行 18 data_center.db → 19-DAL mm_metrics 回填。"""
+        import logging
+        from pathlib import Path
+        _logger = logging.getLogger("dc.scheduler.backfill")
+        try:
+            from backfill_18_records import backfill  # type: ignore
+            _repo = Path(__file__).resolve().parents[2]
+            _src = str(_repo / "18-数据获取中心" / "data_center.db")
+            _dst = str(_repo / "19-数据访问层" / "data" / "dreambuddy_core.db")
+            result = backfill(_src, _dst)
+            _logger.info("18→19 backfill: %s", result)
+        except Exception as e:
+            _logger.warning("18→19 backfill failed: %s", e)
 
     # ------------------------------------------------------------------
     # 默认任务清单（9 collector × 频率分级）
@@ -450,5 +476,39 @@ class CollectionScheduler:
             category="finance", source="sosovalue",
             params={},
             interval_sec=3600,
+        ))
+        # ── 🆕 P0 基本面缺失数据补全 ──────────────────────────────────────
+        #    覆盖前端基本面面板缺失的真实数据：资金费率/多空比/UTXO/社交声量
+        # ── chain/binance_funding_rate（8h，Binance Futures 真实资金费率）
+        #    Binance 每 8h 结算一次（00/08/16 UTC），8h 轮询刚好覆盖每次结算
+        tasks.append(CollectionTask(
+            name="binance_funding_rate",
+            category="chain", source="binance_funding_rate",
+            params={"symbol": "BTCUSDT", "limit": 5},
+            interval_sec=28800,  # 8 小时
+        ))
+        # ── chain/long_short_ratio（5min，Binance Futures 真实多空比）
+        #    5min 轮询与 Binance 数据更新频率对齐
+        tasks.append(CollectionTask(
+            name="long_short_ratio",
+            category="chain", source="long_short_ratio",
+            params={"symbol": "BTCUSDT", "period": "5m"},
+            interval_sec=300,  # 5 分钟
+        ))
+        # ── chain/utxo_age_distribution（4h，UTXO 年龄分布）
+        #    blockchain.info UTXO count + profit-supply 派生，变化缓慢
+        tasks.append(CollectionTask(
+            name="utxo_age_distribution",
+            category="chain", source="utxo_age_distribution",
+            params={},
+            interval_sec=14400,  # 4 小时
+        ))
+        # ── chain/social_volume（30min，社交声量）
+        #    从新闻采集器记录计数派生，30min 与新闻采集频率对齐
+        tasks.append(CollectionTask(
+            name="social_volume",
+            category="chain", source="social_volume",
+            params={},
+            interval_sec=1800,  # 30 分钟
         ))
         return tasks

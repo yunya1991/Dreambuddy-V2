@@ -21,10 +21,19 @@ import sys
 import time
 from pathlib import Path
 
-# 确保 data_center 包可导入（脚本可能在任意 cwd 被调用）
+# 确保 data_center + data_cleaning 包可导入（脚本可能在任意 cwd 被调用）
 _BASE_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _BASE_DIR.parent
 if str(_BASE_DIR) not in sys.path:
     sys.path.insert(0, str(_BASE_DIR))
+# Silver 清洗链依赖 20-数据清洗中心
+_CLEANING_DIR = _REPO_ROOT / "20-数据清洗中心"
+if _CLEANING_DIR.exists() and str(_CLEANING_DIR) not in sys.path:
+    sys.path.insert(0, str(_CLEANING_DIR))
+# 18→19 backfill 脚本
+_BACKFILL_DIR = _REPO_ROOT / "19-数据访问层" / "scripts"
+if _BACKFILL_DIR.exists() and str(_BACKFILL_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKFILL_DIR))
 
 from data_center import DataCenter  # noqa: E402
 from data_center.monitoring.quality import QualityChecker  # noqa: E402

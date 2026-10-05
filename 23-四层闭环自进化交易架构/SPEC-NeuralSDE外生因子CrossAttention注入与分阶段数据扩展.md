@@ -111,6 +111,22 @@
 
 **注意**：ETF flow 仅能回溯到 2024-01（比特币ETF 2024年1月才上市），但恰好覆盖回测窗口 2024。
 
+#### 阶段3 补采 API 明细（已验证可用）
+
+| 指标 | API 端点 | 频率 | 预计数据量 | 写入 DAL |
+|------|----------|------|-----------|----------|
+| funding_rate | `GET https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&startTime=1569888000000&limit=1000` | 8h | ~5500 条 | sub_cat=`funding_rate`, metric=`value` |
+| 稳定币总流通 | `GET https://stablecoins.llama.fi/stablecoincharts/all?stablecoin=1` | 1d | ~1400 条 | sub_cat=`stablecoin_total`, metric=`circulating_usd` |
+| 交易所BTC余额 | `GET https://api.llama.fi/exchanges` + 历史接口 | 1d | ~1200 条 | sub_cat=`exchange_balance`, metric=`btc_total` |
+| ETF flow | Farside CSV（比特币ETF上市日起） | 1d | ~300 条 | sub_cat=`etf_flow`, metric=`total_flow` |
+| 恐惧贪婪 | `GET https://api.alternative.me/fng/?limit=2000&date_format=cn` | 1d | ~2400 条 | sub_cat=`fear_greed`, metric=`value` |
+| 期货OI | `GET https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1d&limit=500` | 1d | ~1500 条 | sub_cat=`fut_oi`, metric=`btc_oi` |
+
+**补采优先级**：
+- P0: funding_rate（多空情绪最直接）
+- P1: 稳定币流通量（流动性脉冲）、交易所BTC余额（抛压/吸筹）
+- P2: ETF flow（2024机构资金）、恐惧贪婪（情绪）、期货OI
+
 ***
 
 ## 三 · 因子有效性筛选机制（IC 分析）

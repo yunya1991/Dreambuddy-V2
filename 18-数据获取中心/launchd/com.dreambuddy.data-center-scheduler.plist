@@ -45,7 +45,7 @@
         <key>PATH</key>
         <string>/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
         <key>PYTHONPATH</key>
-        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心</string>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心:/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/20-数据清洗中心</string>
     </dict>
 </dict>
 </plist>

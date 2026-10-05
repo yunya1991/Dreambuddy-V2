@@ -45,18 +45,18 @@ class LongShortRatioCollector(BaseCollector):
         """采集多空比数据。
 
         Args:
-            params: {"symbol": "BTCUSDT", "interval": "5min"}
+            params: {"symbol": "BTCUSDT", "period": "5m"}
 
         Returns:
-            list[DataRecord] — 含 long_ratio/short_ratio。
+            list[DataRecord] — 含 long_ratio/short_ratio/long_short_ratio。
             API 异常时返回空列表（FAIL-OPEN）。
         """
         symbol = params.get("symbol", "BTCUSDT")
-        interval = params.get("interval", "5min")
+        period = params.get("period", "5m")
         try:
             resp = requests.get(
                 f"{_API_BASE}/globalLongShortAccountRatio",
-                params={"symbol": symbol, "interval": interval, "limit": 1},
+                params={"symbol": symbol, "period": period, "limit": 1},
                 timeout=15,
             )
             resp.raise_for_status()
@@ -86,15 +86,18 @@ class LongShortRatioCollector(BaseCollector):
 
         item = items[-1]  # 最新一条
         try:
+            lsr = float(item.get("longShortRatio", 0.0))
             rec = DataRecord(
                 source=self.source,
                 category=self.category,
-                sub_category=symbol,
+                sub_category="long_short_ratio",
                 timestamp=datetime.now(timezone.utc).astimezone().isoformat(),
                 metrics={
-                    "long_ratio": float(item.get("longShortRatio", 0.0)),
+                    "long_short_ratio": lsr,
+                    "long_ratio": float(item.get("longAccount", 0.0)),
                     "short_ratio": float(item.get("shortAccount", 0.0)),
-                    "long_account": float(item.get("longAccount", 0.0)),
+                    "long_account_pct": float(item.get("longAccount", 0.0)) * 100,
+                    "short_account_pct": float(item.get("shortAccount", 0.0)) * 100,
                 },
                 events=[],
                 timeseries=[],
