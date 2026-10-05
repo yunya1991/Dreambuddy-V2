@@ -13,6 +13,23 @@ provides: [orphan-component-scan, commit-lock-verification, untracked-file-detec
 cognitive_links: [VM-1791105132530-a174481c]
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 任务编排与流程调度
+- 节点间数据流转发
+- 编排优化与节点选择
+- 执行状态监控与汇报
+
+需用户确认：
+- 涉及实盘交易的编排执行
+- 修改核心编排规则
+
+禁止：
+- 将编排结论直接作为交易指令执行
+- 绕过风控或审批流程
+
+
 # Dream Code Sync Orphan Scan Workflow — 代码同步孤儿扫描工作流
 
 > 把"git commit/push 完成 → 前端 src/ 全量扫描 → 孤儿组件接入 → untracked 暴露 → commit 锁定 → 认知闭环"的 6 步流程固化为可复用编排。本 SKILL 是 commit 纪律的最后一道防线，专门捕获"声称已完成但实际未 commit / 未接入"的回归（9-28 P0-P3 事故级别）。

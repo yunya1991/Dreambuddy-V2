@@ -13,6 +13,23 @@ provides: [arch-gap-analysis-orchestration]
 cognitive_links: [VM-1790608324891-417ef57c]
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 任务编排与流程调度
+- 节点间数据流转发
+- 编排优化与节点选择
+- 执行状态监控与汇报
+
+需用户确认：
+- 涉及实盘交易的编排执行
+- 修改核心编排规则
+
+禁止：
+- 将编排结论直接作为交易指令执行
+- 绕过风控或审批流程
+
+
 # Dream Arch Gap Analysis Workflow — 架构盘点与优化方案 SPEC 工作流 SKILL
 
 > 把"recall（硬约束）→ 两轮盘点 → SPEC-A（缺口清单）→ 3 维度并行 Agent 调研 → 整合启示 → SPEC-B（4 层优化方案 + P0-P3 路线图）→ NotifyUser → hermes 反思"的 8 步架构盘点流程固化为可复用编排，元 SKILL 为 `dream-research-workflow`，结尾执行 hermes 反思决定是否再衍生新 SKILL。

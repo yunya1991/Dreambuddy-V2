@@ -3,6 +3,24 @@ name: "evolution-case-ingest"
 description: "为自进化系统案例库（washout/washout_reversal/pump_dump_reversal）新增闭环训练案例。Invoke when 用户要求为自进化系统增加训练案例、入库市场行情样本、或补充 CBR/KNN 案例库。"
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 治理规则检查与合规报告
+- SKILL 索引与生命周期管理
+- 架构同步校验
+- 代码审查与合并建议
+
+需用户确认：
+- 执行代码合并（merge 到主分支）
+- 修改治理规则本身
+- 执行系统级重启或部署
+
+禁止：
+- 未经审查直接合并到主分支
+- 修改核心治理规则而不经过审批
+
+
 # 自进化训练案例入库
 
 为自进化系统的 CBR/KNN 案例库新增闭环训练案例。案例库存储于 `4-MEMORY/data/evolution_cases/{library_name}.json`，供 WashoutClassifier 等模块做 KNN 检索 + 贝叶斯后验推理。

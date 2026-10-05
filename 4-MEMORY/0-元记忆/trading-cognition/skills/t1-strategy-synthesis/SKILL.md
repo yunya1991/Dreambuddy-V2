@@ -3,6 +3,22 @@ name: t1-strategy-synthesis
 description: "Synthesize strategic directive, three-scenario Bayesian deduction, and contingency plan from T0 market cognition output."
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 记忆检索与查询
+- 经验编码与存储建议
+- 记忆统计与健康检查
+
+需用户确认：
+- 删除或覆盖已有记忆
+- 修改记忆系统核心配置
+
+禁止：
+- 未经确认删除重要记忆
+- 写入未经验证的虚假经验
+
+
 # T1 战略合成 (Strategy Synthesis)
 
 基于 T0 的 `market_cognition_report`，合成可执行的战略指令、三情景推演与三层应急预案。T1 不重新调研市场，只把 T0 的认知转化为"做什么 + 如果错怎么办"。

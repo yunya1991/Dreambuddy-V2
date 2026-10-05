@@ -3,6 +3,22 @@ name: t3-risk-gatekeeper
 description: "Pre-trade gatekeeping, in-trade circuit breaker and post-trade attribution. The hard gate itself — all checks are non-negotiable constraints derived from A7 (practice gate) + A4 constraint system."
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 记忆检索与查询
+- 经验编码与存储建议
+- 记忆统计与健康检查
+
+需用户确认：
+- 删除或覆盖已有记忆
+- 修改记忆系统核心配置
+
+禁止：
+- 未经确认删除重要记忆
+- 写入未经验证的虚假经验
+
+
 # Risk Gatekeeper (风控门禁)
 
 风控门禁是交易决策链中的 HARD-GATE 守护者。本 Skill 本身就是硬约束，所有检查项均为不可协商的门禁。职责三段：事前门禁 → 事中熔断 → 事后归因。

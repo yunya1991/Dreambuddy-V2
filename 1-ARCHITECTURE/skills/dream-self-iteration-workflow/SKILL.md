@@ -3,6 +3,24 @@ name: "dream-self-iteration-workflow"
 description: "Orchestrates L4 self-iteration: hermes reflection (trace analysis → skill-creator) + param optimization (Bayesian + walk-forward) + case ingest gate (4-dim value assessment) + doc sync (checksum → dream-doc-sync). Invoke for L4 self-iteration, hermes auto-reflection, parameter auto-optimization, case library ingest, or document auto-sync."
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 治理规则检查与合规报告
+- SKILL 索引与生命周期管理
+- 架构同步校验
+- 代码审查与合并建议
+
+需用户确认：
+- 执行代码合并（merge 到主分支）
+- 修改治理规则本身
+- 执行系统级重启或部署
+
+禁止：
+- 未经审查直接合并到主分支
+- 修改核心治理规则而不经过审批
+
+
 # Dream Self-Iteration Workflow
 
 L4 自迭代编排 SKILL — 自运行系统四层落地路径的顶层闭环。

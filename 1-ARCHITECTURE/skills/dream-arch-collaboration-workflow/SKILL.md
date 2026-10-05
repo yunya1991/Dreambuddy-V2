@@ -3,6 +3,24 @@ name: "dream-arch-collaboration-workflow"
 description: "三层架构能力协同调用规范+认知系统协作流程。Invoke for 主骨架调用链编排、跨子系统协同、LLM四阶段协作、认知recall命中架构记忆、或需调用DreamOS/DSH/子域能力时。"
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 治理规则检查与合规报告
+- SKILL 索引与生命周期管理
+- 架构同步校验
+- 代码审查与合并建议
+
+需用户确认：
+- 执行代码合并（merge 到主分支）
+- 修改治理规则本身
+- 执行系统级重启或部署
+
+禁止：
+- 未经审查直接合并到主分支
+- 修改核心治理规则而不经过审批
+
+
 # Dream Architecture Collaboration Workflow — 三层架构协同调用规范 SKILL
 
 > 定位：DreamBuddy-v2 三层协同架构的**能力调用规范层**。本 SKILL 是纯编排指引，不重复建设任何能力，通过调用已有 SKILL 和子系统实现完整协作。

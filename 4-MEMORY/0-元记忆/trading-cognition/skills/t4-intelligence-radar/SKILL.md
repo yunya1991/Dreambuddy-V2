@@ -3,6 +3,22 @@ name: intelligence-radar
 description: Use when monitoring market intelligence, detecting signal regime shifts across the three-screen MA system, or tiering response triggers (P0/P1, Level 1-3) across the trading decision chain
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 记忆检索与查询
+- 经验编码与存储建议
+- 记忆统计与健康检查
+
+需用户确认：
+- 删除或覆盖已有记忆
+- 修改记忆系统核心配置
+
+禁止：
+- 未经确认删除重要记忆
+- 写入未经验证的虚假经验
+
+
 # Intelligence Radar (情报雷达)
 
 ## Overview

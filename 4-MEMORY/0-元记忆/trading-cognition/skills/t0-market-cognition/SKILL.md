@@ -3,6 +3,22 @@ name: t0-market-cognition
 description: "Multi-dimensional market cognition: information collection, conflict analysis, path-of-least-resistance, regime classification, and direction determination."
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 记忆检索与查询
+- 经验编码与存储建议
+- 记忆统计与健康检查
+
+需用户确认：
+- 删除或覆盖已有记忆
+- 修改记忆系统核心配置
+
+禁止：
+- 未经确认删除重要记忆
+- 写入未经验证的虚假经验
+
+
 # T0 市场认知 (Market Cognition)
 
 将多源信息采集、多维度冲突分析、阻力最小路径判定、Regime 分类与方向判定合并为单一认知环节。它是 T1 战略合成的唯一输入源：T0 不出结论，T1 不能开工。

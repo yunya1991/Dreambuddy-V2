@@ -3,6 +3,23 @@ name: receiving-code-review
 description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 工具调用与数据转换
+- 文档格式转换（Markdown/JSON/CSV）
+- 通用查询与搜索操作
+- 代码生成与重构建议
+
+需用户确认：
+- 执行破坏性操作（删除/覆盖重要文件）
+- 修改系统核心配置
+
+禁止：
+- 未经授权执行不可逆操作
+- 访问未授权的外部资源
+
+
 # Code Review Reception
 
 ## Overview

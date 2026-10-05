@@ -26,6 +26,23 @@ provides:
 cognitive_links: []
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 工具调用与数据转换
+- 文档格式转换（Markdown/JSON/CSV）
+- 通用查询与搜索操作
+- 代码生成与重构建议
+
+需用户确认：
+- 执行破坏性操作（删除/覆盖重要文件）
+- 修改系统核心配置
+
+禁止：
+- 未经授权执行不可逆操作
+- 访问未授权的外部资源
+
+
 # nature-figure Skill — Nature 投稿级科研图
 
 > 源自 Yuan1z0825/nature-skills（MIT 协议）。面向 Nature / 高影响力期刊的 Python 或 R 投稿级科研图工作流。

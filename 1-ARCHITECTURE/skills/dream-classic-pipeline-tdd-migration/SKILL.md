@@ -3,6 +3,24 @@ name: "dream-classic-pipeline-tdd-migration"
 description: "Orchestrates Classic Pipeline C0-C8 nine-node TDD migration: RED test (assert real business logic) → GREEN impl (simplified extraction from ml_trade_service.py) → REFACTOR (full suite no regression) → E2E serial validation → frontend agent-browser acceptance. Invoke for classic pipeline node migration, C0-C8 TDD, node RED-GREEN-REFACTOR cycle, or frontend pipeline acceptance testing."
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 治理规则检查与合规报告
+- SKILL 索引与生命周期管理
+- 架构同步校验
+- 代码审查与合并建议
+
+需用户确认：
+- 执行代码合并（merge 到主分支）
+- 修改治理规则本身
+- 执行系统级重启或部署
+
+禁止：
+- 未经审查直接合并到主分支
+- 修改核心治理规则而不经过审批
+
+
 # Dream Classic Pipeline C0-C8 TDD Migration
 
 Orchestrates the complete TDD migration of Classic Pipeline's 9 nodes (C0 EnvScan → C8 PerfAttribution) from skeleton stubs to real business logic.

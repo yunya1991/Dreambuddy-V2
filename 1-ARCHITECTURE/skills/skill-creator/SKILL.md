@@ -13,6 +13,24 @@ provides: [skill-creation, skill-iteration, multi-domain-research]
 cognitive_links: [VM-1790765308904-4f460e48, VM-1790864180936-faa44e02]
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 治理规则检查与合规报告
+- SKILL 索引与生命周期管理
+- 架构同步校验
+- 代码审查与合并建议
+
+需用户确认：
+- 执行代码合并（merge 到主分支）
+- 修改治理规则本身
+- 执行系统级重启或部署
+
+禁止：
+- 未经审查直接合并到主分支
+- 修改核心治理规则而不经过审批
+
+
 # Skill Creator
 
 This skill provides guidance for creating effective skills.

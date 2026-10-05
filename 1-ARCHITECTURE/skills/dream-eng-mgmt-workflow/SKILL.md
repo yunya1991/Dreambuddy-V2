@@ -13,6 +13,23 @@ provides: [eng-mgmt-orchestration]
 cognitive_links: [VM-1790001702811-24bffe86]
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 任务编排与流程调度
+- 节点间数据流转发
+- 编排优化与节点选择
+- 执行状态监控与汇报
+
+需用户确认：
+- 涉及实盘交易的编排执行
+- 修改核心编排规则
+
+禁止：
+- 将编排结论直接作为交易指令执行
+- 绕过风控或审批流程
+
+
 # Dream Eng Mgmt Workflow — 工程管理工作流 SKILL
 
 > 把"需求拆解（WBS）→ 里程碑规划（M1-M4）→ 依赖关系图（DAG）→ 排期+估时 → 风险预案 → hermes 反思"的工程管理流程固化为可复用编排，元 SKILL 为 `dream-qwen-eval-collab`，结尾执行 hermes 反思决定是否再衍生新 SKILL。

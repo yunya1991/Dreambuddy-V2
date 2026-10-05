@@ -3,6 +3,22 @@ name: t2-trade-execution
 description: "Tactical validation, position execution and four-layer exit decision flow for live trading. Merges A4 (tactical validation) + A5 (execution) + A9 (exit decision) into one three-stage skill: validate → execute → exit."
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 记忆检索与查询
+- 经验编码与存储建议
+- 记忆统计与健康检查
+
+需用户确认：
+- 删除或覆盖已有记忆
+- 修改记忆系统核心配置
+
+禁止：
+- 未经确认删除重要记忆
+- 写入未经验证的虚假经验
+
+
 # Trade Execution (交易执行)
 
 交易执行的统一入口。把原 A 系列的战术验证、大仓执行、离场决策三段合并为一条内部流水线，确保"验证过的策略才能上大仓、有止损才能开仓、有离场预案才能持仓"。

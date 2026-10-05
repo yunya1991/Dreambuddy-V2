@@ -13,6 +13,23 @@ provides: [code-commit-sync, commit-orchestration, post-commit-scan]
 cognitive_links: [VM-1791126204667-1d31ec21]
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 任务编排与流程调度
+- 节点间数据流转发
+- 编排优化与节点选择
+- 执行状态监控与汇报
+
+需用户确认：
+- 涉及实盘交易的编排执行
+- 修改核心编排规则
+
+禁止：
+- 将编排结论直接作为交易指令执行
+- 绕过风控或审批流程
+
+
 # Dream Code Commit Sync Workflow — 代码改动自动提交同步工作流
 
 > 把「代码变更 → 变更解析 → 精确暂存 → 校验 → 生成 commit message → 提交 → 孤儿扫描 → 认知闭环」的 7 步代码提交流程固化为可复用编排。本 SKILL 对标 `dream-doc-sync-workflow`（文档自动同步），是代码侧的"改动即提交"自动化通道，杜绝"代码写完但未 commit / 未扫描孤儿"的回归。

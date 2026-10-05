@@ -13,6 +13,21 @@ provides: [cognitive-to-wiki-bridge]
 cognitive_links: []
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 信号检测与触发判断
+- 触发条件评估与告警
+- 触发后通知与日志记录
+
+需用户确认：
+- 触发后自动执行交易操作
+
+禁止：
+- 将触发信号直接转化为交易订单
+- 绕过人工确认执行高风险操作
+
+
 # Wiki Ingest Trigger — 认知→Wiki 反向触发 SKILL
 
 > 认知系统 `record` 时 `tags` 含 `wiki-compile` → TAG_HOOKS 返回 `triggered_skills: ["wiki-ingest-trigger"]` → Agent 识别信号 → 调用 `wiki_ingest` 将经验编译为 Wiki 页面。本 SKILL 是认知记忆与 Wiki 编译层之间的桥梁。

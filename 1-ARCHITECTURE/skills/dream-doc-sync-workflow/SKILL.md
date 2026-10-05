@@ -13,6 +13,23 @@ provides: [doc-index-sync, knowledge-base-sync, doc-index-governance]
 cognitive_links: [VM-1790001702811-24bffe86, VM-1790003285544-0df90409]
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 任务编排与流程调度
+- 节点间数据流转发
+- 编排优化与节点选择
+- 执行状态监控与汇报
+
+需用户确认：
+- 涉及实盘交易的编排执行
+- 修改核心编排规则
+
+禁止：
+- 将编排结论直接作为交易指令执行
+- 绕过风控或审批流程
+
+
 # Dream Doc Sync Workflow — 文档索引同步工作流 SKILL
 
 > 把"文档变更 → 0-系统文档管理/INDEX.md 更新 → 2-KNOWLEDGE 知识库索引更新 → 校验 → 覆盖率 → 飞书 Base 同步 → 认知闭环"的 7 步文档索引同步流程固化为可复用编排。本 SKILL 是认知系统与文档管理体系之间的桥梁，让认知系统 `record` 的经验能自动驱动文档索引/知识库同步。

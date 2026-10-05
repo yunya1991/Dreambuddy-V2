@@ -13,6 +13,23 @@ provides: [skill-index-governance, skill-lifecycle-management, skill-conflict-de
 cognitive_links: [VM-1790002963075-0b027747, VM-1790001702811-24bffe86, VM-1790001192903-2224e07e]
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 任务编排与流程调度
+- 节点间数据流转发
+- 编排优化与节点选择
+- 执行状态监控与汇报
+
+需用户确认：
+- 涉及实盘交易的编排执行
+- 修改核心编排规则
+
+禁止：
+- 将编排结论直接作为交易指令执行
+- 绕过风控或审批流程
+
+
 # Dream Skill Index Governance — SKILL 索引治理元 SKILL
 
 > 治理 SKILL 的索引/版本/依赖/生命周期/冲突检测/漂移监控，形成"SKILL 治理 SKILL"的递归闭环。基于 spec 方案 C（混合 manifest + 自动索引，综合评分 44/50）固化落地，配合认知系统 `recall`/`record`/`verify` 形成自我进化闭环，结尾执行 hermes 反思决定是否再衍生新 SKILL。
