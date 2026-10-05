@@ -219,6 +219,7 @@ class NeuralSDEOnlineTrainer:
         new_closes: np.ndarray,
         regime_labels: Optional[np.ndarray] = None,
         epochs: int = 10,
+        exogenous_factors: Optional[np.ndarray] = None,
     ) -> dict[str, Any]:
         """增量 fine-tune 现有权重 (低 lr, 少 epochs + EWC 防遗忘).
 
@@ -226,6 +227,8 @@ class NeuralSDEOnlineTrainer:
             new_closes: 新数据窗口 close 序列
             regime_labels: 可选 regime 标签 (与 new_closes 等长)
             epochs: fine-tune 轮数 (默认 10, 远少于 full retrain)
+            exogenous_factors: 可选 (N, n_factors) 外生因子时序 (P1+ Cross-Attention),
+                               None → zero context (FAIL-OPEN)
 
         Returns:
             report dict (status, n_windows, final_loss)
@@ -256,6 +259,7 @@ class NeuralSDEOnlineTrainer:
         from .neural_sde_model import MIN_SAMPLES_FOR_ACTIVATION
         windows = trainer.prepare_data(
             closes, regime_labels=regime_labels, regime_balance="natural",
+            exogenous_factors=exogenous_factors,
         )
         if len(windows) < MIN_SAMPLES_FOR_ACTIVATION:
             return {"status": "insufficient_samples", "n_windows": len(windows)}
@@ -281,10 +285,22 @@ class NeuralSDEOnlineTrainer:
                     continue
                 batch_size = len(batch)
 
-                s0_arr = np.array([[inp[-1]] for inp, _, _, _ in batch], dtype=np.float32)
-                tgt_arr = np.array([tgt for _, tgt, _, _ in batch], dtype=np.float32)
-                log_sig_arr = np.array([ls for _, _, ls, _ in batch], dtype=np.float32)
-                regime_arr = np.array([reg for _, _, _, reg in batch], dtype=np.int64)
+                # 兼容 4-tuple (inp, tgt, log_sig, reg) / 5-tuple (含 factor_vec)
+                sample = batch[0]
+                n_fields = len(sample)
+                has_factors = n_fields >= 5
+                if has_factors:
+                    s0_arr = np.array([[inp[-1]] for inp, _, _, _, _ in batch], dtype=np.float32)
+                    tgt_arr = np.array([tgt for _, tgt, _, _, _ in batch], dtype=np.float32)
+                    log_sig_arr = np.array([ls for _, _, ls, _, _ in batch], dtype=np.float32)
+                    regime_arr = np.array([reg for _, _, _, reg, _ in batch], dtype=np.int64)
+                    factor_arr = np.array([f for _, _, _, _, f in batch], dtype=np.float32)
+                else:
+                    s0_arr = np.array([[inp[-1]] for inp, _, _, _ in batch], dtype=np.float32)
+                    tgt_arr = np.array([tgt for _, tgt, _, _ in batch], dtype=np.float32)
+                    log_sig_arr = np.array([ls for _, _, ls, _ in batch], dtype=np.float32)
+                    regime_arr = np.array([reg for _, _, _, reg in batch], dtype=np.int64)
+                    factor_arr = None
 
                 y = torch.tensor(s0_arr)
                 targets = torch.tensor(tgt_arr)
@@ -298,9 +314,19 @@ class NeuralSDEOnlineTrainer:
                 else:
                     regime_onehot = None
 
+                # P1+: exogenous_factors 上下文 (batch_size, n_factors, 1)
+                factor_t = None
+                if factor_arr is not None and factor_arr.size > 0:
+                    factor_t = torch.tensor(factor_arr, dtype=torch.float32)
+                    if factor_t.dim() == 1:
+                        factor_t = factor_t.view(batch_size, -1)
+                    if factor_t.dim() == 2:
+                        factor_t = factor_t.unsqueeze(-1)
+
                 self.model._current_log_sig = log_sig_t
                 self.model._current_regime = regime_onehot
                 self.model._current_transition = None
+                self.model._current_exogenous_factors = factor_t
 
                 path = torch.zeros(batch_size, trainer.horizon)
                 for t_step in range(trainer.horizon):
@@ -313,6 +339,7 @@ class NeuralSDEOnlineTrainer:
                 self.model._current_log_sig = None
                 self.model._current_regime = None
                 self.model._current_transition = None
+                self.model._current_exogenous_factors = None
 
                 # task loss + EWC loss
                 task_loss = torch.nn.functional.mse_loss(path, targets)

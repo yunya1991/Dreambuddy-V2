@@ -156,17 +156,42 @@ class TestNeuralSDEModelCrossAttention:
             cross_attn_dim=32,
             n_regimes=3,
         )
+        model._activated = True
 
         closes = np.cumsum(np.random.randn(100) * 10) + 50000
         factors = np.random.randn(10, 1)  # 10 个因子
 
         result = model.forecast(
-            closes=closes,
+            history=closes,
             horizon=20,
             exogenous_factors=factors,
         )
-        assert "forecast" in result
-        assert not np.isnan(result["forecast"]).any()
+        assert result is not None
+        assert not np.isnan(result).any()
+        assert result.shape[0] > 0  # n_paths
+        assert result.shape[1] == 21  # horizon + 1
+
+    def test_model_forecast_fail_open_no_factors(self):
+        """forecast() 不传 exogenous_factors 时 FAIL-OPEN，不崩溃。"""
+        from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel
+        import numpy as np
+
+        model = NeuralSDEModel(
+            use_cross_attention=True,
+            exogenous_factor_dim=10,
+            cross_attn_dim=32,
+        )
+        model._activated = True
+
+        closes = np.cumsum(np.random.randn(100) * 10) + 50000
+
+        result = model.forecast(
+            history=closes,
+            horizon=20,
+            exogenous_factors=None,
+        )
+        assert result is not None
+        assert not np.isnan(result).any()
 
 
 if __name__ == "__main__":

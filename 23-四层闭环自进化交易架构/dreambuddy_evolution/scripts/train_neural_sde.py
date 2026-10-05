@@ -126,6 +126,15 @@ def main():
                         default="natural", help="regime 均衡策略 (P2 最优: natural)")
     parser.add_argument("--patience", type=int, default=10, help="early stopping patience")
     parser.add_argument("--val-split", type=float, default=0.1, help="验证集比例")
+    # P1+ Cross-Attention 外生因子
+    parser.add_argument("--use-cross-attention", action="store_true", default=False,
+                        help="启用 Cross-Attention 外生因子注入")
+    parser.add_argument("--cross-attn-dim", type=int, default=16,
+                        help="Cross-Attention 隐藏维度 (默认 16)")
+    parser.add_argument("--cross-attn-heads", type=int, default=2,
+                        help="Cross-Attention 注意力头数 (默认 2)")
+    parser.add_argument("--exogenous-factors-file", default=None,
+                        help="外生因子时序 JSON 文件 (N, F) 数组, 启用 cross-attention 时使用")
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -152,14 +161,24 @@ def main():
                     ", ".join(f"r{i}={counts[i]} ({100*counts[i]/len(closes):.1f}%)"
                               for i in range(min(args.n_regimes, len(counts)))))
 
-    # 初始化模型 (P2+P4 最优配置)
-    model = NeuralSDEModel(
+    # 初始化模型 (P2+P4 最优配置 + P1+ Cross-Attention)
+    model_kwargs = dict(
         device="cpu",
         n_regimes=args.n_regimes,
         use_moe=args.use_moe,
         moe_routing=args.moe_routing,
         dropout=args.dropout,
     )
+    if args.use_cross_attention:
+        model_kwargs.update(
+            use_cross_attention=True,
+            cross_attn_dim=args.cross_attn_dim,
+            cross_attn_heads=args.cross_attn_heads,
+            exogenous_factor_dim=5,  # 默认 5 因子
+        )
+        logger.info("启用 Cross-Attention: dim=%d heads=%d",
+                    args.cross_attn_dim, args.cross_attn_heads)
+    model = NeuralSDEModel(**model_kwargs)
     if not model.is_available:
         logger.error("torch 不可用，无法训练 Neural SDE")
         return 1
@@ -180,11 +199,30 @@ def main():
     # 训练
     logger.info("=== 开始训练: epochs=%d batch_size=%d moe=%s routing=%s ===",
                 args.epochs, args.batch_size, args.use_moe, args.moe_routing)
-    report = trainer.train(
-        closes, epochs=args.epochs,
+    train_kwargs = dict(
+        epochs=args.epochs,
         regime_labels=regime_labels,
         regime_balance=args.regime_balance,
     )
+    # P1+: Cross-Attention 训练时注入外生因子
+    if args.use_cross_attention and args.exogenous_factors_file:
+        factors = load_closes(args.exogenous_factors_file)
+        if factors.ndim == 1:
+            factors = factors.reshape(-1, 1)
+        # 截断或 pad 到 closes 长度
+        if len(factors) > len(closes):
+            factors = factors[:len(closes)]
+        elif len(factors) < len(closes):
+            pad = np.zeros((len(closes) - len(factors), factors.shape[1]))
+            factors = np.concatenate([pad, factors], axis=0)
+        # z-score 归一化
+        f_mean = factors.mean(axis=0)
+        f_std = factors.std(axis=0)
+        f_std[f_std < 1e-8] = 1.0
+        factors = (factors - f_mean) / f_std
+        train_kwargs["exogenous_factors"] = factors
+        logger.info("注入外生因子: shape=%s", factors.shape)
+    report = trainer.train(closes, **train_kwargs)
 
     if report["status"] != "ok":
         logger.error("训练失败: %s", report)

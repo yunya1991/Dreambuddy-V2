@@ -5,6 +5,23 @@ license: Internal
 version: 2.0.0
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 运营数据统计与报表生成
+- 系统状态监控与告警
+- 文档生成、同步与归档
+- 成本与效率分析
+
+需用户确认：
+- 涉及资金变动的操作
+- 修改系统核心配置
+
+禁止：
+- 未经授权修改生产环境配置
+- 执行不可逆的破坏性操作
+
+
 # AI Trading Compliance v2.0 - 可执行合规门禁
 
 > **现在可以执行！** 运行 `python scripts/run_compliance_check.py <change_bundle.json>` 即可看到效果。

@@ -845,6 +845,7 @@ class NeuralSDEModel:
         regime: Optional[int] = None,
         transition: Optional[np.ndarray] = None,
         exogenous_snapshot: Optional[np.ndarray] = None,
+        exogenous_factors: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Level 1: 使用 torchsde.sdeint() 生成路径 (路径依赖 + regime-conditional SDE).
 
@@ -854,6 +855,7 @@ class NeuralSDEModel:
             regime: int regime 标签 (0=bull, 1=chop, 2=bear), None 则 pad zeros
             transition: (n_regimes,) transition vector Q[current_regime], None 则 pad zeros
             exogenous_snapshot: (exogenous_dim,) P1 外生力量快照, None 则 pad zeros
+            exogenous_factors: (N, factor_dim) P1+ 外生因子张量, None 则 FAIL-OPEN (zero context)
 
         Returns:
             shape (n_paths, horizon+1) numpy 数组
@@ -888,12 +890,15 @@ class NeuralSDEModel:
             transition_t = self._build_transition(transition, n_paths)
             # P1: 设置 exogenous 上下文 (broadcast 到 n_paths)
             exogenous_t = self._build_exogenous(exogenous_snapshot, n_paths)
+            # P1+: 设置 exogenous_factors 上下文 (broadcast 到 n_paths)
+            exogenous_factors_t = self._build_exogenous_factors(exogenous_factors, n_paths)
 
             # 设置上下文供 f(t,y) 读取
             self._current_log_sig = log_sig_t
             self._current_regime = regime_t
             self._current_transition = transition_t
             self._current_exogenous = exogenous_t
+            self._current_exogenous_factors = exogenous_factors_t
 
             # torchsde 积分
             z_t = torchsde.sdeint(
@@ -908,6 +913,7 @@ class NeuralSDEModel:
             self._current_regime = None
             self._current_transition = None
             self._current_exogenous = None
+            self._current_exogenous_factors = None
 
             # z_t: (horizon+1, n_paths, 1) → (n_paths, horizon+1)
             z_t = z_t.squeeze(-1).transpose(0, 1).cpu().numpy()
@@ -992,6 +998,36 @@ class NeuralSDEModel:
         exo_t = exo_t.unsqueeze(0).expand(n_paths, -1).contiguous()
         return exo_t
 
+    def _build_exogenous_factors(
+        self,
+        exogenous_factors: Optional[np.ndarray],
+        n_paths: int,
+    ):
+        """P1+: 把 exogenous_factors (N, factor_dim) 转为 (n_paths, N, factor_dim) tensor.
+
+        - use_cross_attention=False → None (drift_net 不使用 cross-attention)
+        - exogenous_factors=None → None (drift_net zero context, FAIL-OPEN)
+        - exogenous_factors=(N, factor_dim) → broadcast 到 (n_paths, N, factor_dim)
+        - exogenous_factors=(N,) → 自动 unsqueeze 为 (N, 1)
+        """
+        if not self.use_cross_attention or self.exogenous_factor_dim <= 0:
+            return None
+        if exogenous_factors is None:
+            return None  # drift_net zero context (FAIL-OPEN)
+        try:
+            ef = np.asarray(exogenous_factors, dtype=np.float32)
+            if ef.ndim == 1:
+                ef = ef.reshape(-1, 1)  # (N,) → (N, 1)
+            elif ef.ndim != 2:
+                return None
+            if ef.size == 0:
+                return None
+        except Exception:
+            return None
+        ef_t = torch.tensor(ef, device=self.device)  # (N, factor_dim)
+        ef_t = ef_t.unsqueeze(0).expand(n_paths, -1, -1).contiguous()
+        return ef_t
+
     # ------------------------------------------------------------------
     # Level 2: 手写 Euler-Maruyama 积分
     # ------------------------------------------------------------------
@@ -1004,6 +1040,7 @@ class NeuralSDEModel:
         regime: Optional[int] = None,
         transition: Optional[np.ndarray] = None,
         exogenous_snapshot: Optional[np.ndarray] = None,
+        exogenous_factors: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Level 2: 手写 EM 离散积分（torchsde 不可用时, 路径依赖 + regime-conditional SDE）.
 
@@ -1013,6 +1050,7 @@ class NeuralSDEModel:
             regime: int regime 标签 (0=bull, 1=chop, 2=bear), None 则 pad zeros
             transition: (n_regimes,) transition vector Q[current_regime], None 则 pad zeros
             exogenous_snapshot: (exogenous_dim,) P1 外生力量快照, None 则 pad zeros
+            exogenous_factors: (N, factor_dim) P1+ 外生因子张量, None 则 FAIL-OPEN
 
         Euler-Maruyama:
           S_{t+1} = S_t + fθ(S_t, t, log_sig, regime, transition, exogenous)·dt
@@ -1051,11 +1089,14 @@ class NeuralSDEModel:
             transition_t = self._build_transition(transition, n_paths)
             # P1: 设置 exogenous 上下文
             exogenous_t = self._build_exogenous(exogenous_snapshot, n_paths)
+            # P1+: 设置 exogenous_factors 上下文
+            exogenous_factors_t = self._build_exogenous_factors(exogenous_factors, n_paths)
 
             self._current_log_sig = log_sig_t
             self._current_regime = regime_t
             self._current_transition = transition_t
             self._current_exogenous = exogenous_t
+            self._current_exogenous_factors = exogenous_factors_t
 
             for t_step in range(horizon):
                 t_val = float(t_step)
@@ -1072,6 +1113,7 @@ class NeuralSDEModel:
             self._current_regime = None
             self._current_transition = None
             self._current_exogenous = None
+            self._current_exogenous_factors = None
 
         # NaN 检测
         if np.any(np.isnan(paths)) or np.any(np.isinf(paths)):
@@ -1091,9 +1133,10 @@ class NeuralSDEModel:
         regime: Optional[int] = None,
         transition: Optional[np.ndarray] = None,
         exogenous_snapshot: Optional[np.ndarray] = None,
+        exogenous_factors: Optional[np.ndarray] = None,
     ) -> Optional[np.ndarray]:
         """统一预测入口 (路径依赖 + regime-conditional SDE,
-        TDD-002/003/004/005 + T4 + P0.2 + P1 exogenous).
+        TDD-002/003/004/005 + T4 + P0.2 + P1 exogenous + P1+ Cross-Attention).
 
         Args:
             history: 最近 N 步 close 价格序列 (≥ N_step=32 用 path-signature,
@@ -1108,6 +1151,8 @@ class NeuralSDEModel:
                     None → drift_net pad zeros (FAIL-OPEN, 兼容旧推理路径)
             exogenous_snapshot: 可选 (exogenous_dim,) P1 外生力量快照;
                     None → drift_net pad zeros (FAIL-OPEN, 兼容旧推理路径)
+            exogenous_factors: 可选 (N, factor_dim) P1+ 外生因子张量;
+                    None → cross-attention zero context (FAIL-OPEN)
 
         Returns:
             shape (n_paths, horizon+1) numpy 数组, 或 None 表示不可用
@@ -1142,6 +1187,7 @@ class NeuralSDEModel:
                     np.array([init_price]), horizon, n_paths,
                     log_sig=log_sig, regime=regime, transition=transition,
                     exogenous_snapshot=exogenous_snapshot,
+                    exogenous_factors=exogenous_factors,
                 )
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-03] torchsde 积分失败, 降级 EM: %s", e)
@@ -1151,6 +1197,7 @@ class NeuralSDEModel:
                 np.array([init_price]), horizon, n_paths,
                 log_sig=log_sig, regime=regime, transition=transition,
                 exogenous_snapshot=exogenous_snapshot,
+                exogenous_factors=exogenous_factors,
             )
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-03] EM 积分失败: %s", e)
@@ -1365,8 +1412,9 @@ class NeuralSDETrainer:
         regime_labels: Optional[np.ndarray] = None,
         regime_balance: str = "balanced",
         exogenous_series: Optional[np.ndarray] = None,
+        exogenous_factors: Optional[np.ndarray] = None,
     ) -> list[tuple]:
-        """滑动窗口切分 (路径依赖 SDE + regime-conditional, T3 + P1 exogenous).
+        """滑动窗口切分 (路径依赖 SDE + regime-conditional, T3 + P1 + P1+).
 
         两阶段流程 (TDD-010):
           1. 第一阶段: 用 _compute_log_sig_raw 累积所有窗口的 raw log_sig
@@ -1388,20 +1436,21 @@ class NeuralSDETrainer:
           - exogenous_series 长度 < closes → 越界点 exo = 零向量 (FAIL-OPEN)
           - 窗口元组扩展为 5-tuple: (inp, tgt, log_sig, reg, exo_vec)
 
+        P1+ cross-attention 扩展:
+          - exogenous_factors=None → 窗口 factor_vec = None (drift_net zero context)
+          - exogenous_factors=(N, n_factors) → 每窗口取末尾点 factor[start+seq_len-1]
+          - 窗口元组扩展为 6-tuple: (inp, tgt, log_sig, reg, exo_vec, factor_vec)
+
         Args:
             closes: 历史 close 序列
             max_windows: 最大窗口数（子采样以控制训练时间）
             regime_labels: 与 closes 等长的 regime 标签 (None → 全 0 兜底)
             regime_balance: "balanced" (默认) / "natural" / "oversample"
             exogenous_series: 可选 (N, exo_dim) 外生力量时序, None → 零向量
+            exogenous_factors: 可选 (N, n_factors) 外生因子时序, None → zero context
 
         Returns:
-            list of 5-tuple (input_window, target_window, log_sig, regime_label, exo_vec)
-            - input_window: 归一化后的输入窗口 (seq_len,)
-            - target_window: 归一化后的目标窗口 (horizon,)
-            - log_sig: z-score 归一化后的 log-signature (sig_dim,)
-            - regime_label: 窗口起点对应的 regime 标签 (int)
-            - exo_vec: 窗口末尾点的外生向量 (exo_dim,) (P1, 零向量 = FAIL-OPEN)
+            list of tuples (inp, tgt, log_sig, regime_label, exo_vec[, factor_vec])
         """
         closes = np.asarray(closes, dtype=np.float64).ravel()
         n_closes = closes.size
@@ -1430,6 +1479,13 @@ class NeuralSDETrainer:
                 exo_arr = exo_arr[:, :exo_dim]
         else:
             exo_arr = None
+
+        # P1+: 外生因子时序预处理 (None → None, drift_net zero context)
+        factor_arr = None
+        if exogenous_factors is not None:
+            factor_arr = np.asarray(exogenous_factors, dtype=np.float64)
+            if factor_arr.ndim == 1:
+                factor_arr = factor_arr.reshape(-1, 1)
 
         n_windows_total = n_closes - self.seq_len - self.horizon + 1
         if n_windows_total <= 0:
@@ -1512,21 +1568,36 @@ class NeuralSDETrainer:
             tgt = normed[i + self.seq_len:i + self.seq_len + self.horizon]
             log_sig = self.model._normalize_log_sig(raw_log_sigs[idx])
             reg = int(per_window_regime[i])
+            # P1+: 取窗口末尾点的外生因子向量
+            end_idx = i + self.seq_len - 1
+            factor_vec = None
+            if factor_arr is not None:
+                if end_idx < factor_arr.shape[0]:
+                    factor_vec = factor_arr[end_idx].astype(np.float64)
+                else:
+                    factor_vec = np.zeros(factor_arr.shape[1], dtype=np.float64)
+
             # P1: 取窗口末尾点的外生向量 (对齐 regime 取法)
             # 末尾 idx = i + seq_len - 1; 越界 (exo_arr 太短) → 零向量
             # 向后兼容: exo_dim=0 时返回 4-tuple (T3 行为不变), exo_dim>0 时 5-tuple
+            # P1+: 如果有 factor_vec, 扩展为 6-tuple
             if exo_dim > 0:
                 if exo_arr is not None:
-                    end_idx = i + self.seq_len - 1
                     if end_idx < exo_arr.shape[0]:
                         exo_vec = exo_arr[end_idx].astype(np.float64)
                     else:
                         exo_vec = np.zeros(exo_dim, dtype=np.float64)
                 else:
                     exo_vec = np.zeros(exo_dim, dtype=np.float64)
-                windows.append((inp, tgt, log_sig, reg, exo_vec))
+                if factor_vec is not None:
+                    windows.append((inp, tgt, log_sig, reg, exo_vec, factor_vec))
+                else:
+                    windows.append((inp, tgt, log_sig, reg, exo_vec))
             else:
-                windows.append((inp, tgt, log_sig, reg))
+                if factor_vec is not None:
+                    windows.append((inp, tgt, log_sig, reg, factor_vec))
+                else:
+                    windows.append((inp, tgt, log_sig, reg))
 
         return windows
 
@@ -1553,32 +1624,53 @@ class NeuralSDETrainer:
                 continue
             bs = len(batch)
 
-            # 兼容 3-tuple (旧) / 4-tuple (T3) / 5-tuple (P1 exogenous) 三种格式
+            # P1/P1+: 模型维度 (供 tuple 格式判断)
+            exo_dim = getattr(self.model, "exogenous_dim", 0)
+
+            # 兼容 3/4/5/6-tuple (P1 exogenous + P1+ cross-attention)
             sample = batch[0]
             n_fields = len(sample)
             has_regime = n_fields >= 4
-            has_exo = n_fields >= 5
-            if has_exo:
-                # P1: 5-tuple (inp, tgt, log_sig, reg, exo_vec)
+            has_exo = n_fields >= 5 and not (n_fields == 5 and exo_dim == 0)
+            # 6-tuple: (inp, tgt, log_sig, reg, exo_vec, factor_vec) — 有 exo + factors
+            # 5-tuple with exo_dim>0: (inp, tgt, log_sig, reg, exo_vec) — 有 exo, 无 factors
+            # 5-tuple with exo_dim==0: (inp, tgt, log_sig, reg, factor_vec) — 无 exo, 有 factors
+            has_factors = n_fields >= 6 or (n_fields == 5 and exo_dim == 0)
+            if n_fields >= 6:
+                s0_arr = np.array([[inp[-1]] for inp, _, _, _, _, _ in batch], dtype=np.float32)
+                tgt_arr = np.array([tgt for _, tgt, _, _, _, _ in batch], dtype=np.float32)
+                log_sig_arr = np.array([ls for _, _, ls, _, _, _ in batch], dtype=np.float32)
+                regime_arr = np.array([reg for _, _, _, reg, _, _ in batch], dtype=np.int64)
+                exo_arr = np.array([exo for _, _, _, _, exo, _ in batch], dtype=np.float32)
+                factor_arr = np.array([f for _, _, _, _, _, f in batch], dtype=np.float32)
+            elif n_fields == 5 and exo_dim > 0:
                 s0_arr = np.array([[inp[-1]] for inp, _, _, _, _ in batch], dtype=np.float32)
                 tgt_arr = np.array([tgt for _, tgt, _, _, _ in batch], dtype=np.float32)
                 log_sig_arr = np.array([ls for _, _, ls, _, _ in batch], dtype=np.float32)
                 regime_arr = np.array([reg for _, _, _, reg, _ in batch], dtype=np.int64)
                 exo_arr = np.array([exo for _, _, _, _, exo in batch], dtype=np.float32)
+                factor_arr = None
+            elif n_fields == 5 and exo_dim == 0:
+                s0_arr = np.array([[inp[-1]] for inp, _, _, _, _ in batch], dtype=np.float32)
+                tgt_arr = np.array([tgt for _, tgt, _, _, _ in batch], dtype=np.float32)
+                log_sig_arr = np.array([ls for _, _, ls, _, _ in batch], dtype=np.float32)
+                regime_arr = np.array([reg for _, _, _, reg, _ in batch], dtype=np.int64)
+                exo_arr = None
+                factor_arr = np.array([f for _, _, _, _, f in batch], dtype=np.float32)
             elif has_regime:
-                # T3: 4-tuple (inp, tgt, log_sig, reg)
                 s0_arr = np.array([[inp[-1]] for inp, _, _, _ in batch], dtype=np.float32)
                 tgt_arr = np.array([tgt for _, tgt, _, _ in batch], dtype=np.float32)
                 log_sig_arr = np.array([ls for _, _, ls, _ in batch], dtype=np.float32)
                 regime_arr = np.array([reg for _, _, _, reg in batch], dtype=np.int64)
                 exo_arr = None
+                factor_arr = None
             else:
-                # 旧 3-tuple (inp, tgt, log_sig)
                 s0_arr = np.array([[inp[-1]] for inp, _, _ in batch], dtype=np.float32)
                 tgt_arr = np.array([tgt for _, tgt, _ in batch], dtype=np.float32)
                 log_sig_arr = np.array([ls for _, _, ls in batch], dtype=np.float32)
                 regime_arr = np.zeros(bs, dtype=np.int64)
                 exo_arr = None
+                factor_arr = None
 
             y = self._torch.tensor(s0_arr, device=self.model.device)  # (bs, 1)
             targets = self._torch.tensor(tgt_arr, device=self.model.device)  # (bs, horizon)
@@ -1607,7 +1699,6 @@ class NeuralSDETrainer:
                 transition_t = None
 
             # P1: 构建 exogenous 上下文 (bs, exo_dim)
-            exo_dim = getattr(self.model, "exogenous_dim", 0)
             if exo_dim > 0 and exo_arr is not None and exo_arr.size > 0:
                 exo_t = torch.tensor(exo_arr, dtype=torch.float32, device=self.model.device)
                 if exo_t.dim() == 1:
@@ -1621,13 +1712,24 @@ class NeuralSDETrainer:
             else:
                 exo_t = None
 
+            # P1+: 构建 exogenous_factors 上下文 (bs, n_factors, factor_dim)
+            factor_t = None
+            if factor_arr is not None and factor_arr.size > 0:
+                # factor_arr shape: (bs, n_factors) → (bs, n_factors, 1)
+                factor_t = torch.tensor(factor_arr, dtype=torch.float32, device=self.model.device)
+                if factor_t.dim() == 1:
+                    factor_t = factor_t.view(bs, -1)
+                if factor_t.dim() == 2:
+                    factor_t = factor_t.unsqueeze(-1)  # (bs, n_factors, 1)
+
             self._optimizer.zero_grad()
 
-            # 设置上下文 (训练时每个窗口的 log_sig / regime / transition / exo 不同)
+            # 设置上下文 (训练时每个窗口的 log_sig / regime / transition / exo / factors 不同)
             self.model._current_log_sig = log_sig_t
             self.model._current_regime = regime_onehot
             self.model._current_transition = transition_t
             self.model._current_exogenous = exo_t
+            self.model._current_exogenous_factors = factor_t
 
             # 向量化 SDE 积分: 整个 batch 同时推进 horizon 步
             path = torch.zeros(bs, self.horizon, device=self.model.device)
@@ -1644,6 +1746,7 @@ class NeuralSDETrainer:
             self.model._current_regime = None
             self.model._current_transition = None
             self.model._current_exogenous = None
+            self.model._current_exogenous_factors = None
 
             # TDD-012: 根据 loss_type 选择 loss 函数
             batch_loss = self._compute_loss(path, targets)
@@ -1710,8 +1813,9 @@ class NeuralSDETrainer:
         regime_labels: Optional[np.ndarray] = None,
         regime_balance: str = "balanced",
         exogenous_series: Optional[np.ndarray] = None,
+        exogenous_factors: Optional[np.ndarray] = None,
     ) -> dict[str, Any]:
-        """完整训练流程 (T5: regime-conditional + P1 exogenous 扩展).
+        """完整训练流程 (T5: regime-conditional + P1 exogenous + P1+ cross-attention).
 
         Args:
             closes: 历史 close 序列
@@ -1720,6 +1824,8 @@ class NeuralSDETrainer:
             regime_balance: "balanced" (默认) 或 "natural" (T3.7)
             exogenous_series: 可选 (N, exo_dim) 外生力量时序 (P1),
                               None → 零向量 (FAIL-OPEN, 行为等价当前)
+            exogenous_factors: 可选 (N, n_factors) 外生因子时序 (P1+ Cross-Attention),
+                               None → zero context (FAIL-OPEN)
 
         Returns:
             training report dict
@@ -1745,7 +1851,7 @@ class NeuralSDETrainer:
 
         windows = self.prepare_data(
             closes, regime_labels=regime_labels, regime_balance=regime_balance,
-            exogenous_series=exogenous_series,
+            exogenous_series=exogenous_series, exogenous_factors=exogenous_factors,
         )
         if len(windows) < MIN_SAMPLES_FOR_ACTIVATION:
             logger.warning(
@@ -1840,18 +1946,34 @@ class NeuralSDETrainer:
                 if not batch:
                     continue
                 batch_size = len(batch)
+                exo_dim = getattr(self.model, "exogenous_dim", 0)
 
-                # 兼容 3/4/5-tuple (P1 exogenous)
+                # 兼容 3/4/5/6-tuple (P1 exogenous + P1+ cross-attention)
                 sample = batch[0]
                 n_fields = len(sample)
-                has_exo = n_fields >= 5
-                if has_exo:
+                has_regime = n_fields >= 4
+                factor_arr = None
+                if n_fields >= 6:
+                    s0_arr = np.array([[inp[-1]] for inp, _, _, _, _, _ in batch], dtype=np.float32)
+                    tgt_arr = np.array([tgt for _, tgt, _, _, _, _ in batch], dtype=np.float32)
+                    log_sig_arr = np.array([ls for _, _, ls, _, _, _ in batch], dtype=np.float32)
+                    regime_arr = np.array([reg for _, _, _, reg, _, _ in batch], dtype=np.int64)
+                    exo_arr = np.array([exo for _, _, _, _, exo, _ in batch], dtype=np.float32)
+                    factor_arr = np.array([f for _, _, _, _, _, f in batch], dtype=np.float32)
+                elif n_fields == 5 and exo_dim > 0:
                     s0_arr = np.array([[inp[-1]] for inp, _, _, _, _ in batch], dtype=np.float32)
                     tgt_arr = np.array([tgt for _, tgt, _, _, _ in batch], dtype=np.float32)
                     log_sig_arr = np.array([ls for _, _, ls, _, _ in batch], dtype=np.float32)
                     regime_arr = np.array([reg for _, _, _, reg, _ in batch], dtype=np.int64)
                     exo_arr = np.array([exo for _, _, _, _, exo in batch], dtype=np.float32)
-                elif n_fields >= 4:
+                elif n_fields == 5 and exo_dim == 0:
+                    s0_arr = np.array([[inp[-1]] for inp, _, _, _, _ in batch], dtype=np.float32)
+                    tgt_arr = np.array([tgt for _, tgt, _, _, _ in batch], dtype=np.float32)
+                    log_sig_arr = np.array([ls for _, _, ls, _, _ in batch], dtype=np.float32)
+                    regime_arr = np.array([reg for _, _, _, reg, _ in batch], dtype=np.int64)
+                    exo_arr = None
+                    factor_arr = np.array([f for _, _, _, _, f in batch], dtype=np.float32)
+                elif has_regime:
                     s0_arr = np.array([[inp[-1]] for inp, _, _, _ in batch], dtype=np.float32)
                     tgt_arr = np.array([tgt for _, tgt, _, _ in batch], dtype=np.float32)
                     log_sig_arr = np.array([ls for _, _, ls, _ in batch], dtype=np.float32)
@@ -1884,7 +2006,6 @@ class NeuralSDETrainer:
                     transition_t = None
 
                 # P1: exogenous 上下文
-                exo_dim = getattr(self.model, "exogenous_dim", 0)
                 if exo_dim > 0 and exo_arr is not None and exo_arr.size > 0:
                     exo_t = torch.tensor(exo_arr, dtype=torch.float32)
                     if exo_t.dim() == 1:
@@ -1897,10 +2018,20 @@ class NeuralSDETrainer:
                 else:
                     exo_t = None
 
+                # P1+: exogenous_factors 上下文 (batch_size, n_factors, 1)
+                factor_t = None
+                if factor_arr is not None and factor_arr.size > 0:
+                    factor_t = torch.tensor(factor_arr, dtype=torch.float32)
+                    if factor_t.dim() == 1:
+                        factor_t = factor_t.view(batch_size, -1)
+                    if factor_t.dim() == 2:
+                        factor_t = factor_t.unsqueeze(-1)
+
                 self.model._current_log_sig = log_sig_t
                 self.model._current_regime = regime_onehot
                 self.model._current_transition = transition_t
                 self.model._current_exogenous = exo_t
+                self.model._current_exogenous_factors = factor_t
 
                 path = torch.zeros(batch_size, self.horizon)
                 for t_step in range(self.horizon):
@@ -1914,6 +2045,7 @@ class NeuralSDETrainer:
                 self.model._current_regime = None
                 self.model._current_transition = None
                 self.model._current_exogenous = None
+                self.model._current_exogenous_factors = None
 
                 loss = self._compute_loss(path, targets)
                 total_loss += float(loss.item())

@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 import traceback
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -165,6 +165,7 @@ class DeepReasoningEngine:
         state: np.ndarray,
         horizon: int,
         n_paths: int = 1000,
+        exogenous_factors: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Neural SDE 模拟市场连续时间动态（4 级降级链）.
 
@@ -179,6 +180,8 @@ class DeepReasoningEngine:
             state: [price, volatility]
             horizon: 预测步数
             n_paths: 模拟路径数
+            exogenous_factors: (N, factor_dim) 外生因子张量 (P1+ Cross-Attention),
+                               None → zero context (FAIL-OPEN)
 
         Returns:
             shape (n_paths, horizon+1) 的价格路径数组
@@ -196,7 +199,11 @@ class DeepReasoningEngine:
             model = self._get_neural_sde_model()
             if model is not None and model.is_activated:
                 try:
-                    paths = model.forecast(state, horizon, n_paths)
+                    # P1+: 传入 cross-attention 外生因子 (模型不支持时自动 FAIL-OPEN)
+                    forecast_kwargs = {}
+                    if exogenous_factors is not None and getattr(model, "use_cross_attention", False):
+                        forecast_kwargs["exogenous_factors"] = exogenous_factors
+                    paths = model.forecast(state, horizon, n_paths, **forecast_kwargs)
                     if paths is not None:
                         self._sde_backend_used = (
                             "torchsde" if model.torchsde_available else "euler_maruyama"
@@ -376,6 +383,7 @@ class DeepReasoningEngine:
         price_path: np.ndarray,
         horizon: int = 20,
         n_paths: int = 1000,
+        exogenous_factors: Optional[np.ndarray] = None,
     ) -> dict[str, Any]:
         """完整推理流程：签名→SDE→预测→采样→最优路径.
 
@@ -425,6 +433,7 @@ class DeepReasoningEngine:
                 np.array([start_price, max(vol, 0.001)]),
                 horizon=horizon,
                 n_paths=n_paths,
+                exogenous_factors=exogenous_factors,
             )
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-03] SDE 路径生成失败: %s", e)

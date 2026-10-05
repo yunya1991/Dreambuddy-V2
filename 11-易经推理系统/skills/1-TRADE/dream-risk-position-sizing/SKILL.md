@@ -4,6 +4,24 @@ description: 基于风险预算与波动率缩放，将评分结果映射为仓�
 license: Internal
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 市场数据查询、技术指标计算
+- 策略信号生成与验证
+- 风险评估与仓位计算建议
+- 回测与历史数据分析
+
+需用户确认（escalation_required）：
+- 任何实盘交易操作（开仓/平仓/加仓/减仓）
+- 修改交易参数（止损/止盈/仓位大小）
+- 调用交易所 API 执行订单
+
+禁止自主执行：
+- 未经用户确认直接下单
+- 绕过风控网关执行交易
+
+
 # Dream-Risk-Position-Sizing: 风险预算式仓位与杠杆
 
 > **⚠️ 顾问集成 (v2.0)**: 仓位计算本身不直接调用顾问评审，但 A5 执行链路在仓位确定后会调用 `advisor_direct_call.advisors_review(scene="RISK_REVIEW")` 让 RM 确认风险占用是否合理。见 `dream-tactical-executor` 铁律四。

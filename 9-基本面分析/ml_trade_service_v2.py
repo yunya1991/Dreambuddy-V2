@@ -55,6 +55,19 @@ signal_engine = create_signal_engine()
 # 19-DAL 数据源（真实数据，优先使用；失败回退 legacy DataCollector）
 _dal_provider = DalSnapshotProvider()
 
+# FeatureHub 特征工程：用于计算衍生特征的关键基本面指标时序
+# {列名: "sub_category.metric_name"}
+FEATURE_METRIC_SPECS = {
+    "funding_rate": "funding_rate.funding_rate_pct",
+    "long_short_ratio": "long_short_ratio.long_short_ratio",
+    "whale_netflow": "exchanges_whales.whale_netflow_to_ex_usd",
+    "etf_total_flow": "etf_flow.total_flow",
+    "hash_rate": "btc_basics.hash_rate",
+    "exchange_reserve": "exchanges_summary.total_reserve_btc",
+    "market_cap": "btc_basics.market_cap_usd",
+    "fear_greed": "fear_greed_enhanced.fear_greed_index",
+}
+
 # 10个模块定义
 MODULES = [
     "news", "flow", "sentiment", "macro",
@@ -237,12 +250,20 @@ def build_module_snapshot(module: str) -> Dict:
     # metrics 直接存 {core, breakdown} 结构
     metrics = raw_data.get('metrics', {}) if isinstance(raw_data, Dict) else {}
 
-    # signals：把整个 metrics 对象传给 signal_engine.generate_signals
+    # FeatureHub 特征工程：基于 DAL 时序数据计算衍生特征
+    features: Dict[str, float] = {}
+    try:
+        features = _dal_provider.compute_features(FEATURE_METRIC_SPECS, days=60)
+    except Exception as exc:
+        print(f"[FeatureHub] {module} 特征计算失败（fail-open）: {exc}")
+
+    # signals：把整个 metrics 对象 + features 传给 signal_engine.generate_signals
     signals = signal_engine.generate_signals(
         resistance_3d,
         metrics,
         events=raw_data.get('events', []),
-        stress="normal"
+        stress="normal",
+        features=features,
     )
     signals = signal_engine.rank_signals(signals)
 
@@ -276,12 +297,14 @@ def build_module_snapshot(module: str) -> Dict:
         "signals": signals,
         "metrics": metrics,
         "metrics_flat": metrics_flat,
+        "features": features,
         "events": events,
         "timeseries": ts_data,
         "meta": {
             "source": ["19-DAL"] if module in DAL_COLLECTORS else (["Tavily"] if module in ["news", "narrative"] else ["Mock"]),
             "last_update": ts,
-            "data_quality": "high"
+            "data_quality": "high",
+            "feature_count": len(features),
         }
     }
 

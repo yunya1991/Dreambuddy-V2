@@ -11,6 +11,22 @@ created: 2026-04-26
 updated: 2026-04-26
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 情报收集与整理
+- 数据分析与报告生成
+- 知识库检索与匹配
+- 市场情绪与资金流分析
+
+需用户确认：
+- 无（分析类操作均可自主执行）
+
+禁止：
+- 输出未经验证的虚假信息
+- 将分析结论直接作为交易指令执行
+
+
 # 情报分析核心理论与工具箱
 
 > **⚠️ 顾问集成 (v1.1)**: 情报分析结论可调用 `advisor_direct_call.advisors_review(scene="MACRO_ANALYSIS")` 获取 advisor-mr + advisor-tr 的交叉验证，提升分析可信度。

@@ -1,6 +1,6 @@
 """sqlite 落库 — 对齐 TECHNICAL_DESIGN.md §6。
 
-默认落库表 records，schema 对齐 DataRecord；dedupe_key 唯一 + INSERT OR IGNORE 去重。
+默认落库表 records，schema 对齐 DataRecord；dedupe_key 唯一 + INSERT OR REPLACE 去重。
 
 扩展（持续采集调度器配套）：
   - metrics 表：持久化 InvocationMetric，支持按 (source, category) 聚合统计
@@ -38,7 +38,7 @@ _COLUMNS = [
     "metrics", "events", "timeseries", "raw", "schema_version",
 ]
 _INSERT_SQL = (
-    f"INSERT OR IGNORE INTO records ({', '.join(_COLUMNS)}) "
+    f"INSERT OR REPLACE INTO records ({', '.join(_COLUMNS)}) "
     f"VALUES ({', '.join(['?'] * len(_COLUMNS))})"
 )
 
@@ -111,7 +111,7 @@ class SqliteSink:
     # records 表（DataRecord 原始采集结果）
     # ──────────────────────────────────────────────────────────────────────
     def write(self, records: list[DataRecord]) -> int:
-        """落库 DataRecord，返回实际新增行数（同 dedupe_key 被忽略）。"""
+        """落库 DataRecord，返回实际写入行数（同 dedupe_key 覆盖旧值）。"""
         conn = sqlite3.connect(self.db_path)
         inserted = 0
         for r in records:

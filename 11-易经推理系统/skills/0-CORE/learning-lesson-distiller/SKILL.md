@@ -4,6 +4,24 @@ description: 从 episodes 蒸馏 lessons（规则/禁令/偏好），引入频�
 license: Internal
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 治理规则检查与合规报告
+- 架构同步校验
+- 代码审查与合并建议
+- 知识库与记忆管理
+
+需用户确认：
+- 执行代码合并（merge 到主分支）
+- 修改治理规则本身
+- 执行系统级重启或部署
+
+禁止：
+- 未经审查直接合并到主分支
+- 修改核心治理规则而不经过审批
+
+
 # Learning Lesson Distiller
 
 ## 目标

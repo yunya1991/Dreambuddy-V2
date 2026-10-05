@@ -3,6 +3,22 @@ name: ontology
 description: Typed knowledge graph for structured agent memory and composable skills. Use when creating/querying entities (Person, Project, Task, Event, Document), linking related objects, enforcing constraints, planning multi-step actions as graph transformations, or when skills need to share state. Trigger on "remember", "what do I know about", "link X to Y", "show dependencies", entity CRUD, or cross-skill data access.
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 工具调用与数据转换
+- 文档格式转换（Markdown/JSON/CSV）
+- 通用查询与搜索操作
+- 技能发现与注册
+
+需用户确认：
+- 无（通用工具操作可自主执行）
+
+禁止：
+- 执行破坏性操作（删除/覆盖重要文件）
+- 访问未授权的外部资源
+
+
 # Ontology
 
 A typed vocabulary + constraint system for representing knowledge as a verifiable graph.

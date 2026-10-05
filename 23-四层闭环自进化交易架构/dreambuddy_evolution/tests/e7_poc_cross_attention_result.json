@@ -1,0 +1,30 @@
+{
+  "configs": {
+    "A": {
+      "mean_ratio": 1.0428,
+      "median_ratio": 1.0708,
+      "max_ratio": 1.3892,
+      "min_ratio": 0.624,
+      "mean_mae": 815.6251,
+      "n_windows": 12
+    },
+    "B": {
+      "mean_ratio": 1.3234,
+      "median_ratio": 1.0961,
+      "max_ratio": 2.4009,
+      "min_ratio": 0.7884,
+      "mean_mae": 837.6368,
+      "n_windows": 12
+    },
+    "C": {
+      "mean_ratio": 1.0411,
+      "median_ratio": 0.9031,
+      "max_ratio": 2.0715,
+      "min_ratio": 0.5984,
+      "mean_mae": 840.9948,
+      "n_windows": 12
+    }
+  },
+  "target_ratio": 0.93,
+  "timestamp": "2026-10-05T18:22:11.405206+00:00"
+}

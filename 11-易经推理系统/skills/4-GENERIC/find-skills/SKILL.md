@@ -3,6 +3,22 @@ name: find-skills
 description: Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 工具调用与数据转换
+- 文档格式转换（Markdown/JSON/CSV）
+- 通用查询与搜索操作
+- 技能发现与注册
+
+需用户确认：
+- 无（通用工具操作可自主执行）
+
+禁止：
+- 执行破坏性操作（删除/覆盖重要文件）
+- 访问未授权的外部资源
+
+
 # Find Skills
 
 This skill helps you discover and install skills from the open agent skills ecosystem.

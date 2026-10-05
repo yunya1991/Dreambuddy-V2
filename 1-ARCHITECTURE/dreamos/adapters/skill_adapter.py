@@ -50,6 +50,7 @@ def parse_skill_metadata(skill_md_path: str) -> Dict[str, Any]:
         "estimated_tokens": 0,
         "entry_point": "",
         "system_prompt": "",
+        "autonomy_boundary": "",
         "skill_content": content,
     }
 
@@ -91,6 +92,13 @@ def parse_skill_metadata(skill_md_path: str) -> Dict[str, Any]:
     if sys_match:
         meta["system_prompt"] = sys_match.group(1).strip()
 
+    boundary_match = re.search(
+        r"^##\s+(?:Autonomy Boundary|自主性边界)\s*\n(.+?)(?=^##|\Z)",
+        content, re.MULTILINE | re.DOTALL,
+    )
+    if boundary_match:
+        meta["autonomy_boundary"] = boundary_match.group(1).strip()
+
     if not meta["chain"]:
         parent = path.parent.name.lower()
         if parent.startswith("a"):
@@ -112,7 +120,14 @@ def parse_skill_metadata(skill_md_path: str) -> Dict[str, Any]:
 RESULT_TEMPLATE = """
 你是一个交易分析节点。根据 SKILL 描述和当前状态，执行分析并返回结构化结果。
 
-输出必须是严格的 JSON 格式，不要包含任何额外文本：
+输出分为两个通道：
+
+## Commentary（执行过程）
+用简短文字描述你的分析推理过程（1-3 句），可包含中间观察。
+此部分仅供日志记录，不会被解析为结果。
+
+## Final（最终结果）
+在 "Final:" 标记后输出严格的 JSON 格式，不要包含任何额外文本：
 {{
   "direction": "LONG" | "SHORT" | "NEUTRAL" | "HOLD",
   "confidence": 0.0 ~ 1.0,
@@ -131,7 +146,7 @@ SKILL 说明:
 当前状态摘要:
 {state_summary}
 
-请执行分析并返回 JSON。
+请先输出 Commentary 分析过程，再输出 Final JSON 结果。
 """.strip()
 
 
@@ -145,6 +160,7 @@ class SkillNode(BaseNode):
                  name: str = "", chain: str = "",
                  estimated_tokens: int = 0,
                  system_prompt: str = "",
+                 autonomy_boundary: str = "",
                  skill_content: str = "",
                  **kwargs):
         super().__init__(config=kwargs)
@@ -154,6 +170,7 @@ class SkillNode(BaseNode):
         self.chain = chain
         self.estimated_tokens = estimated_tokens or 500
         self._system_prompt = system_prompt
+        self._autonomy_boundary = autonomy_boundary
         self._skill_content = skill_content
 
     def _load_content(self) -> str:
@@ -203,10 +220,16 @@ class SkillNode(BaseNode):
 
         state_summary = self._build_state_summary(state)
 
-        system_msg = (
+        base_prompt = (
             self._system_prompt
             or "你是一个专业的交易分析助手，严格按照 SKILL 说明执行分析。"
         )
+        # 注入自主性边界（借鉴 Codex 沙箱边界机制）
+        if self._autonomy_boundary:
+            system_msg = f"{base_prompt}\n\n## 自主性边界\n{self._autonomy_boundary}"
+        else:
+            system_msg = base_prompt
+
         user_msg = RESULT_TEMPLATE.format(
             skill_content=skill_content[:4000],
             state_summary=state_summary,
@@ -249,8 +272,18 @@ class SkillNode(BaseNode):
             )
 
     def _parse_output(self, content: str) -> Dict[str, Any]:
-        """解析 LLM 输出为结构化结果"""
+        """解析 LLM 输出为结构化结果
+
+        支持双通道输出（Commentary + Final）：
+        - 若存在 "Final:" 标记，优先解析其后的 JSON
+        - 否则回退到全文 JSON 解析（向后兼容）
+        """
         text = content.strip()
+
+        # 双通道：优先提取 Final 标记后的内容
+        final_match = re.search(r"Final\s*[:：]\s*(.+)", text, re.DOTALL | re.IGNORECASE)
+        if final_match:
+            text = final_match.group(1).strip()
 
         match = re.search(r"```(?:json)?\s*(.+?)\s*```", text, re.DOTALL)
         if match:
@@ -321,5 +354,110 @@ class SkillAdapter(BaseAdapter):
             chain=config.get("chain") or meta.get("chain", ""),
             estimated_tokens=meta.get("estimated_tokens", 500),
             system_prompt=meta.get("system_prompt", ""),
+            autonomy_boundary=meta.get("autonomy_boundary", ""),
             skill_content=meta.get("skill_content", ""),
         )
+
+
+# ── SKILL 治理系统接入 ──────────────────────────────────
+
+# DreamOS chain 映射（从 SKILL category 推断）
+_CHAIN_MAP = {
+    "trade": "T",
+    "trading": "T",
+    "intelligence": "G",
+    "support": "G",
+    "core": "C",
+    "orchestration": "F",
+    "governance": "F",
+    "memory": "G",
+    "uncategorized": "G",
+}
+
+
+def _infer_chain_from_category(category: str) -> str:
+    """从 SKILL category 推断 DreamOS chain（A/C/F/G/T）。"""
+    if not category:
+        return "G"
+    cat = category.lower().strip()
+    return _CHAIN_MAP.get(cat, "G")
+
+
+def _resolve_governance_dir() -> Optional[Path]:
+    """定位 dream-skill-index-governance 目录。"""
+    # dreamos/adapters/skill_adapter.py → dreamos → 1-ARCHITECTURE → repo root
+    repo_root = Path(__file__).resolve().parents[3]
+    candidate = repo_root / "1-ARCHITECTURE" / "skills" / "dream-skill-index-governance"
+    if candidate.exists():
+        return candidate
+    return None
+
+
+def load_skills_from_governance(registry) -> int:
+    """通过 dream-skill-index-governance 统一索引加载 SKILL 节点。
+
+    复用治理系统的 scan_skills()（覆盖 14 个 SKILL 根目录），
+    用 parse_skill_metadata + SkillNode 创建可执行节点，
+    注册到 NodeRegistry。
+
+    FAIL-OPEN：治理系统不可用时返回 0，不阻塞启动。
+
+    Args:
+        registry: NodeRegistry 实例
+
+    Returns:
+        成功注册的 SKILL 节点数量
+    """
+    governance_dir = _resolve_governance_dir()
+    if governance_dir is None:
+        return 0
+
+    try:
+        import sys
+        if str(governance_dir) not in sys.path:
+            sys.path.insert(0, str(governance_dir))
+        from skill_indexer import ALL_SKILL_ROOTS, scan_skills
+    except Exception:
+        return 0  # FAIL-OPEN：治理系统不可用
+
+    try:
+        entries = scan_skills(ALL_SKILL_ROOTS)
+    except Exception:
+        return 0  # FAIL-OPEN
+
+    registered = 0
+    for entry in entries:
+        # 只加载 active 状态的 SKILL（治理系统生命周期过滤）
+        if getattr(entry, "status", "active") != "active":
+            continue
+
+        skill_path = getattr(entry, "path", None)
+        if skill_path is None or not Path(skill_path).exists():
+            continue
+
+        try:
+            meta = parse_skill_metadata(str(skill_path))
+            node_id = f"SKILL_{entry.name}"
+
+            # 避免重复注册
+            if registry.get(node_id) is not None:
+                continue
+
+            chain = _infer_chain_from_category(getattr(entry, "category", ""))
+
+            node = SkillNode(
+                skill_path=str(skill_path),
+                node_id=node_id,
+                name=entry.name,
+                chain=chain,
+                estimated_tokens=500,
+                system_prompt=meta.get("system_prompt", ""),
+                autonomy_boundary=meta.get("autonomy_boundary", ""),
+                skill_content=meta.get("skill_content", ""),
+            )
+            registry.register(node)
+            registered += 1
+        except Exception:
+            continue  # FAIL-OPEN：单个 SKILL 加载失败不阻塞其他
+
+    return registered

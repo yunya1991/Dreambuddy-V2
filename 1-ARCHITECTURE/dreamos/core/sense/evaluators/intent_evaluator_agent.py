@@ -37,12 +37,16 @@ class EvalResult:
         keep_static_fallback: 是否保留静态回退 (默认 True)
             - True: 保留 IntentEngine 原有澄清逻辑
             - False: 评估结果足够可信, 无需静态回退
+        escalation_required: 是否需要升级到用户确认 (交易类意图强制 True)
+        justification: 放行/升级理由 (escalation_required=True 时非空)
         reasoning: 评估推理过程 (用于 record)
     """
     adjusted_confidence: float
     clarified_intent: Optional[str] = None
     route_suggestion: Optional[str] = None
     keep_static_fallback: bool = True
+    escalation_required: bool = False
+    justification: str = ""
     reasoning: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
@@ -51,6 +55,8 @@ class EvalResult:
             "clarified_intent": self.clarified_intent,
             "route_suggestion": self.route_suggestion,
             "keep_static_fallback": self.keep_static_fallback,
+            "escalation_required": self.escalation_required,
+            "justification": self.justification,
             "reasoning": self.reasoning,
         }
 
@@ -97,6 +103,9 @@ class IntentEvaluatorAgent:
         self._jev_fn = jev_fn
         self._laya_fn = laya_fn
 
+    # 交易类意图集合（需强制 escalation）
+    TRADE_INTENT_TYPES = {"EXECUTE_TRADE"}
+
     # ── 主入口 ──────────────────────────────────────────
 
     def evaluate(self, intent_result: Any, context: Dict[str, Any]) -> EvalResult:
@@ -114,11 +123,12 @@ class IntentEvaluatorAgent:
 
         # 高置信度 → 直接透传, 不触发评估
         if original_conf >= self.EVAL_TRIGGER_THRESHOLD:
-            return EvalResult(
+            result = EvalResult(
                 adjusted_confidence=original_conf,
                 keep_static_fallback=True,
                 reasoning=f"confidence={original_conf:.2f} >= {self.EVAL_TRIGGER_THRESHOLD}, skip evaluation",
             )
+            return self._apply_escalation(result, intent_type)
 
         # 认知闭环 Step 1: recall 检索历史评估经验 (FAIL-OPEN)
         recalled = self._recall(intent_type, original_conf, context)
@@ -126,24 +136,46 @@ class IntentEvaluatorAgent:
         # jev/laya 评估 (优先于 LLM, 校准质量更高)
         if self._jev_fn is not None or self._laya_fn is not None:
             try:
-                return self._jev_evaluate(intent_result, context, recalled)
+                result = self._jev_evaluate(intent_result, context, recalled)
+                return self._apply_escalation(result, intent_type)
             except Exception:  # noqa: BLE001 FAIL-OPEN
                 traceback.print_exc()
                 # jev 评估异常 → 降级到 LLM/规则路径
 
         # LLM 评估或规则降级
         if self._llm_fn is None:
-            return self._rule_based_evaluate(intent_result, recalled)
+            result = self._rule_based_evaluate(intent_result, recalled)
+            return self._apply_escalation(result, intent_type)
 
         try:
-            return self._llm_evaluate(intent_result, context, recalled)
+            result = self._llm_evaluate(intent_result, context, recalled)
+            return self._apply_escalation(result, intent_type)
         except Exception:  # noqa: BLE001 FAIL-OPEN
             traceback.print_exc()
-            return EvalResult(
+            result = EvalResult(
                 adjusted_confidence=original_conf,
                 keep_static_fallback=True,
                 reasoning="LLM evaluation failed, FAIL-OPEN passthrough",
             )
+            return self._apply_escalation(result, intent_type)
+
+    # ── Escalation 机制 ─────────────────────────────────
+
+    def _apply_escalation(self, result: EvalResult, intent_type: str) -> EvalResult:
+        """根据意图类型应用 escalation 规则
+
+        交易类意图（EXECUTE_TRADE）强制 escalation_required=True，
+        并填充 justification。非交易类保持默认（escalation_required=False）。
+
+        FAIL-OPEN：即使是规则降级路径，交易意图也必须 escalation。
+        """
+        if intent_type in self.TRADE_INTENT_TYPES:
+            result.escalation_required = True
+            if not result.justification:
+                result.justification = (
+                    f"交易操作({intent_type})需用户确认，已触发 escalation 守卫"
+                )
+        return result
 
     # ── jev/laya 评估路径 ──────────────────────────────
 

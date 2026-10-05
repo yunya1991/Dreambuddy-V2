@@ -517,6 +517,168 @@ class DalSnapshotProvider:
             "timestamp": _now_iso(),
         }
 
+    # ------------------------------------------------------------------
+    # FeatureHub 桥接：将 DAL 数据转为 DataFrame 并运行特征工程
+    # ------------------------------------------------------------------
+    def _build_ohlcv_dataframe(self, days: int = 60) -> Optional[Any]:
+        """从 DAL 获取 BTC/USDT OHLCV 数据并构建 DataFrame。
+
+        Returns:
+            pd.DataFrame with columns [open, high, low, close, volume] 或 None
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            return None
+
+        repo = self.get_repo()
+        if repo is None:
+            return None
+
+        try:
+            end = datetime.now(timezone.utc)
+            start = end - timedelta(days=days)
+            # BTC/USDT 在 mm_metrics 中的 sub_category
+            sub = "BTC/USDT"
+            cols = {"open": "open", "high": "high", "low": "low", "close": "last", "volume": "volume"}
+            series = {}
+            for df_col, metric_name in cols.items():
+                try:
+                    rows = repo.query_metric_by_time(sub, metric_name, start, end)
+                    if rows:
+                        series[df_col] = {
+                            datetime.fromtimestamp(r[3], tz=timezone.utc): float(r[2])
+                            for r in rows
+                        }
+                except Exception:
+                    continue
+
+            if not series:
+                return None
+
+            df = pd.DataFrame(series)
+            df = df.sort_index().dropna(how="all")
+            # 至少需要 close 和 volume
+            if "close" not in df.columns or df["close"].dropna().empty:
+                return None
+            return df
+        except Exception as exc:
+            logger.debug("[DalSnapshotProvider] _build_ohlcv_dataframe 失败: %s", exc)
+            return None
+
+    def _build_metrics_dataframe(
+        self, metric_specs: Dict[str, str], days: int = 60
+    ) -> Optional[Any]:
+        """从 DAL 获取多个基本面指标时序并构建 DataFrame。
+
+        Args:
+            metric_specs: {列名: "sub_category.metric_name"} 映射
+            days: 回溯天数
+
+        Returns:
+            pd.DataFrame 或 None
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            return None
+
+        repo = self.get_repo()
+        if repo is None:
+            return None
+
+        try:
+            end = datetime.now(timezone.utc)
+            start = end - timedelta(days=days)
+            series = {}
+            for col_name, spec in metric_specs.items():
+                if "." not in spec:
+                    continue
+                sub_category, metric_name = spec.split(".", 1)
+                try:
+                    rows = repo.query_metric_by_time(sub_category, metric_name, start, end)
+                    if rows:
+                        series[col_name] = {
+                            datetime.fromtimestamp(r[3], tz=timezone.utc): float(r[2])
+                            for r in rows
+                        }
+                except Exception:
+                    continue
+
+            if not series:
+                return None
+            df = pd.DataFrame(series).sort_index().dropna(how="all")
+            return df if not df.empty else None
+        except Exception as exc:
+            logger.debug("[DalSnapshotProvider] _build_metrics_dataframe 失败: %s", exc)
+            return None
+
+    def compute_features(
+        self,
+        metric_specs: Optional[Dict[str, str]] = None,
+        days: int = 60,
+    ) -> Dict[str, float]:
+        """运行 FeatureHub 特征工程，返回最新特征值字典。
+
+        包含两类特征：
+          1. fundamental_ratios：基于 BTC/USDT OHLCV 的价格代理比率（8列）
+          2. fundamental_features：基于基本面指标时序的衍生特征（12列）
+
+        Args:
+            metric_specs: 基本面指标映射 {列名: "sub_category.metric_name"}
+            days: 回溯天数
+
+        Returns:
+            {特征名: 最新值} 字典，失败返回空 dict（fail-open）
+        """
+        features: Dict[str, float] = {}
+        try:
+            from feature_hub.pipeline.feature_pipeline import FeaturePipeline
+            from feature_hub.modules.loader import load_default_sets
+        except Exception as exc:
+            logger.debug("[DalSnapshotProvider] FeatureHub 导入失败: %s", exc)
+            return features
+
+        try:
+            pipe = FeaturePipeline()
+            load_default_sets(pipe)
+        except Exception as exc:
+            logger.debug("[DalSnapshotProvider] FeaturePipeline 初始化失败: %s", exc)
+            return features
+
+        # 1. 价格代理比率特征（fundamental_ratios，需要 OHLCV）
+        ohlcv_df = self._build_ohlcv_dataframe(days=days)
+        if ohlcv_df is not None and not ohlcv_df.empty:
+            try:
+                fv = pipe.run("fundamental_full", ohlcv_df, symbol="BTC/USDT")
+                feat_df = getattr(fv, "df", None)
+                if feat_df is not None and not feat_df.empty:
+                    latest = feat_df.iloc[-1]
+                    for k in feat_df.columns:
+                        v = latest[k]
+                        if isinstance(v, (int, float)) and not (isinstance(v, float) and (v != v)):
+                            features[f"price_{k}"] = round(float(v), 6)
+            except Exception as exc:
+                logger.debug("[DalSnapshotProvider] fundamental_ratios 计算失败: %s", exc)
+
+        # 2. 基本面时序衍生特征（fundamental_features，需要指标时序）
+        if metric_specs:
+            metrics_df = self._build_metrics_dataframe(metric_specs, days=days)
+            if metrics_df is not None and not metrics_df.empty:
+                try:
+                    from feature_hub.modules import fundamental_features
+                    feat_df = fundamental_features.compute(metrics_df)
+                    if not feat_df.empty:
+                        latest_row = feat_df.iloc[-1]
+                        for k in feat_df.columns:
+                            v = latest_row[k]
+                            if isinstance(v, (int, float)) and not (isinstance(v, float) and (v != v)):
+                                features[f"fund_{k}"] = round(float(v), 6)
+                except Exception as exc:
+                    logger.debug("[DalSnapshotProvider] fundamental_features 计算失败: %s", exc)
+
+        return features
+
 
 # 模块 → provider 方法映射（与 legacy MODULE_COLLECTORS 对齐）
 DAL_COLLECTORS = {

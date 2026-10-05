@@ -869,11 +869,20 @@ class TradingAgent:
         }
 
     def _import_skills(self):
-        """自动导入 SKILL.md 文件到注册表（借鉴 Grok Build）
+        """通过 SKILL 治理系统统一索引加载可执行 SKILL 节点。
 
-        在启动时扫描 skills 目录，解析 SKILL.md 文件，
-        同时注册到 SkillEngine 和 NodeRegistry。
+        优先使用 dream-skill-index-governance 的统一索引（覆盖 14 个目录），
+        用 skill_adapter.SkillNode 创建可执行节点（支持 system_prompt + autonomy_boundary）。
+        治理系统不可用时回退到 skill_importer（FAIL-OPEN）。
         """
+        from dreamos.adapters.skill_adapter import load_skills_from_governance
+
+        count = load_skills_from_governance(self.registry)
+        if count > 0:
+            print(f"[SKILL导入] 治理系统索引加载 {count} 个可执行 SKILL 节点")
+            return
+
+        # FAIL-OPEN 降级：治理系统不可用时回退到 skill_importer
         import sys
         from pathlib import Path
 
@@ -892,7 +901,7 @@ class TradingAgent:
 
             success_count = len(results["success"])
             if success_count > 0:
-                print(f"[SKILL导入] 成功导入 {success_count} 个技能")
+                print(f"[SKILL导入] 降级模式导入 {success_count} 个技能")
             if results["failed"]:
                 print(f"[SKILL导入] 失败 {len(results['failed'])} 个")
                 for f in results["failed"]:

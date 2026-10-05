@@ -3,6 +3,22 @@ name: markdown-new
 description: "Convert public web pages into clean Markdown with markdown.new for AI workflows. Use when tasks require URL-to-Markdown conversion for summarization, RAG ingestion, extraction, archiving, or token reduction, including selecting conversion method (auto/ai/browser), enabling image retention, and handling rate limits or conversion failures."
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 工具调用与数据转换
+- 文档格式转换（Markdown/JSON/CSV）
+- 通用查询与搜索操作
+- 技能发现与注册
+
+需用户确认：
+- 无（通用工具操作可自主执行）
+
+禁止：
+- 执行破坏性操作（删除/覆盖重要文件）
+- 访问未授权的外部资源
+
+
 # Markdown.new
 
 Use this skill to convert public URLs into LLM-ready Markdown via [markdown.new](https://markdown.new).

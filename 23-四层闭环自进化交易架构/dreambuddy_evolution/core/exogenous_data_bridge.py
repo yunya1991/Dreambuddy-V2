@@ -413,3 +413,151 @@ class ExogenousDataBridge:
             result.append(d)
 
         return result
+
+
+# ----------------------------------------------------------------------
+# P1+ Cross-Attention 因子桥接
+# ----------------------------------------------------------------------
+
+# 候选因子清单 (sub_category, metric_name, factor_name)
+# 来自 19-DAL mm_metrics 中 ≥50 数据点的宏观/链上/衍生品指标
+CROSS_ATTENTION_FACTOR_METRICS: list[tuple[str, str, str]] = [
+    # --- 宏观 (Macro) ---
+    ("cpi", "actual", "cpi_actual"),
+    ("cpi", "forecast", "cpi_forecast"),
+    ("fedwatch", "hike_prob", "rate_hike_prob"),
+    ("fomc_decision", "rate_change", "fomc_rate_change"),
+    ("DX-Y.NYB", "close", "dxy"),
+    # --- 链上 (On-chain) ---
+    ("btc_basics", "market_cap_usd", "btc_market_cap"),
+    ("btc_basics", "tx_count_24h", "btc_tx_count"),
+    ("btc_onchain", "active_addresses", "active_addresses"),
+    ("exchanges_whales", "ex_bal_BTC_chg30d_pct", "exchange_balance_chg"),
+    # --- 衍生品/资金流 (Derivatives/Flows) ---
+    ("funding_rate", "funding_rate", "funding_rate"),
+    ("etf_flow", "total_flow", "etf_net_flow"),
+    ("stablecoin_tvl", "total_tvl_usd", "stablecoin_tvl"),
+]
+
+
+def build_exogenous_factors_for_cross_attention(
+    timestamps: list,
+    bridge: Optional["ExogenousDataBridge"] = None,
+    factor_names: Optional[list[str]] = None,
+) -> tuple[np.ndarray, list[str]]:
+    """构建 Cross-Attention 外生因子时序矩阵.
+
+    从 19-DAL 加载候选因子的历史时序, 按给定时间戳前向填充对齐,
+    返回 (N, F) 因子矩阵 + 因子名列表. 缺失因子用 0.0 填充 (FAIL-OPEN).
+
+    Args:
+        timestamps: list[datetime], 价格序列时间戳 (对齐目标)
+        bridge: 可选 ExogenousDataBridge, None 则尝试自建
+        factor_names: 可选指定因子子集 (来自 CROSS_ATTENTION_FACTOR_METRICS 的 factor_name),
+                      None 则使用全部候选因子
+
+    Returns:
+        (factors: np.ndarray shape (N, F), names: list[str] length F)
+        N = len(timestamps), F = 因子数
+        缺失因子列全 0 (FAIL-OPEN)
+    """
+    if not timestamps:
+        return np.zeros((0, 0), dtype=np.float64), []
+
+    if bridge is None:
+        bridge = ExogenousDataBridge()
+
+    # 确定要加载的因子
+    metric_list = [
+        (sub, metric, name)
+        for sub, metric, name in CROSS_ATTENTION_FACTOR_METRICS
+        if factor_names is None or name in factor_names
+    ]
+    if not metric_list:
+        return np.zeros((len(timestamps), 0), dtype=np.float64), []
+
+    repo = bridge.get_repo()
+    n = len(timestamps)
+    factor_data: dict[str, np.ndarray] = {}
+    factor_names_result: list[str] = []
+
+    if repo is None:
+        # DAL 不可用 → 全 0 (FAIL-OPEN)
+        names = [name for _, _, name in metric_list]
+        return np.zeros((n, len(names)), dtype=np.float64), names
+
+    from datetime import timedelta as _td
+
+    t_min = min(timestamps) - _td(days=180)
+    t_max = max(timestamps)
+
+    for sub, metric, name in metric_list:
+        try:
+            rows = repo.query_metric_by_time(sub, metric, t_min, t_max)
+            ts_vals = [(r[3], float(r[2])) for r in rows if r[2] is not None]
+            ts_vals.sort(key=lambda x: x[0])
+        except Exception:
+            ts_vals = []
+
+        if not ts_vals:
+            # 无数据 → 全 0 列 (FAIL-OPEN)
+            factor_data[name] = np.zeros(n, dtype=np.float64)
+            factor_names_result.append(name)
+            continue
+
+        # 前向填充对齐
+        col = np.zeros(n, dtype=np.float64)
+        last_val = 0.0
+        idx = 0
+        for i, t in enumerate(timestamps):
+            while idx < len(ts_vals) and ts_vals[idx][0] <= t:
+                last_val = ts_vals[idx][1]
+                idx += 1
+            col[i] = last_val
+        factor_data[name] = col
+        factor_names_result.append(name)
+
+    if not factor_names_result:
+        return np.zeros((n, 0), dtype=np.float64), []
+
+    factors = np.column_stack([factor_data[name] for name in factor_names_result])
+    # NaN/Inf → 0
+    factors = np.where(np.isfinite(factors), factors, 0.0)
+    return factors.astype(np.float64), factor_names_result
+
+
+def build_cross_attention_factors_from_closes(
+    closes: np.ndarray,
+    timestamps: Optional[list] = None,
+    bridge: Optional["ExogenousDataBridge"] = None,
+    factor_names: Optional[list[str]] = None,
+) -> tuple[np.ndarray, list[str]]:
+    """便捷接口: 从 closes 价格序列构建 Cross-Attention 因子矩阵.
+
+    若 timestamps 为 None, 则用最近 365 天逐日时间戳近似.
+    若 bridge 不可用, 返回全 0 矩阵 (FAIL-OPEN, 不影响价格路径预测).
+
+    Args:
+        closes: (N,) close 价格序列
+        timestamps: 可选 list[datetime], 与 closes 对齐; None 则生成近似时间戳
+        bridge: 可选 ExogenousDataBridge
+        factor_names: 可选指定因子子集
+
+    Returns:
+        (factors: (N, F), names: list[str])
+    """
+    closes = np.asarray(closes, dtype=np.float64).ravel()
+    n = closes.size
+    if n == 0:
+        return np.zeros((0, 0), dtype=np.float64), []
+
+    if timestamps is None:
+        from datetime import datetime, timedelta, timezone
+        end = datetime.now(timezone.utc)
+        timestamps = [end - timedelta(days=n - 1 - i) for i in range(n)]
+
+    return build_exogenous_factors_for_cross_attention(
+        timestamps=timestamps,
+        bridge=bridge,
+        factor_names=factor_names,
+    )

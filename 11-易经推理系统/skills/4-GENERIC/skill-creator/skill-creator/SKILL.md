@@ -5,6 +5,22 @@ description_zh: "创建和维护自定义技能的指南"
 description_en: "Guide for creating custom skills"
 ---
 
+## Autonomy Boundary
+
+可自主执行：
+- 工具调用与数据转换
+- 文档格式转换（Markdown/JSON/CSV）
+- 通用查询与搜索操作
+- 技能发现与注册
+
+需用户确认：
+- 无（通用工具操作可自主执行）
+
+禁止：
+- 执行破坏性操作（删除/覆盖重要文件）
+- 访问未授权的外部资源
+
+
 # Skill Creator
 
 This skill provides guidance for creating effective skills.

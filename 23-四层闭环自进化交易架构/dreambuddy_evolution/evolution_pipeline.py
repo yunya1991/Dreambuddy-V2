@@ -135,6 +135,30 @@ class EvolutionPipeline:
                 self._deep_reasoning = False
         return self._deep_reasoning or None
 
+    def _get_latest_exogenous_factors(self) -> Any:
+        """P1+: 获取最新外生因子向量 (Cross-Attention, FAIL-OPEN).
+
+        从 19-DAL 加载最新可用因子值, 返回 (n_factors, 1) 数组.
+        DAL 不可用或因子缺失时返回 None (drift_net zero context).
+        """
+        try:
+            from datetime import datetime, timezone
+            from dreambuddy_evolution.core.exogenous_data_bridge import (
+                build_exogenous_factors_for_cross_attention,
+            )
+            now = datetime.now(timezone.utc)
+            factors, names = build_exogenous_factors_for_cross_attention(
+                timestamps=[now],
+                factor_names=["cpi_actual", "funding_rate", "etf_net_flow", "dxy", "stablecoin_tvl"],
+            )
+            if factors.size > 0 and np.any(factors[-1] != 0):
+                # 返回最后一个时间点的因子向量 (n_factors,)
+                return factors[-1]
+            return None
+        except Exception as e:
+            logger.debug("[FO-AGI] exogenous_factors 加载失败: %s", e)
+            return None
+
     def _get_strategy_synth(self) -> Any:
         """懒初始化 StrategySynthesizer"""
         if self._strategy_synth is None:
@@ -668,6 +692,8 @@ class EvolutionPipeline:
                 dr_engine = self._get_deep_reasoning()
                 if dr_engine is not None:
                     price_path = np.array(closes_raw, dtype=float)
+                    # P1+: 加载最新外生因子 (Cross-Attention, FAIL-OPEN)
+                    exogenous_factors = self._get_latest_exogenous_factors()
                     dr_result = self._agi_enhance(
                         "enable_deep_reasoning",
                         fn=dr_engine.reason,
@@ -675,6 +701,7 @@ class EvolutionPipeline:
                         price_path=price_path,
                         horizon=20,
                         n_paths=500,
+                        exogenous_factors=exogenous_factors,
                     )
                     if dr_result is not None:
                         forecast = dr_result.get("forecast", [])
