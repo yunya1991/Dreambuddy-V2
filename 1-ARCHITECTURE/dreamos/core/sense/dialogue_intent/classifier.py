@@ -103,14 +103,41 @@ SECONDARY_WEIGHTS: Dict[str, float] = {
 }
 
 
-def _rule_classify(text: str) -> Optional[str]:
-    """规则快速匹配二级意图（带权重）
+# 组合关键词优先匹配 — 解决关键词重叠导致的误判
+# 当文本中同时出现所有指定关键词时，直接命中目标意图（跳过权重计算）
+# 按优先级排序：更具体的组合排在前面
+COMPOSITE_RULES: List[tuple] = [
+    # ── 交易类边界 ──
+    ({"止损", "平仓"}, "close_position"),       # 止损平仓 → 平仓动作（非普通卖出）
+    ({"止损单"}, "conditional_order"),            # 止损单 → 条件单（非止损动作本身）
+    ({"止盈单"}, "conditional_order"),            # 止盈单 → 条件单
+    ({"条件单"}, "conditional_order"),            # 条件单 → 条件单
+    ({"撤销", "订单"}, "order_manage"),           # 撤销订单 → 订单管理（非订单查询）
+    ({"修改", "订单"}, "order_manage"),           # 修改订单 → 订单管理
+    ({"改单"}, "order_manage"),                   # 改单 → 订单管理
+    # ── 风险类边界 ──
+    ({"控制", "风险"}, "risk_advice"),            # 控制风险 → 风控建议（非风险评估）
+    ({"风控"}, "risk_advice"),                    # 风控 → 风控建议
+    ({"止损位"}, "risk_advice"),                  # 止损位 → 风控建议
+    ({"组合", "风险"}, "portfolio_risk"),         # 组合风险 → 组合风险（非评估）
+    ({"仓位", "风险"}, "portfolio_risk"),         # 仓位风险 → 组合风险
+    ({"集中度"}, "portfolio_risk"),               # 集中度 → 组合风险
+]
 
-    优化（2026-09-17）：
-      - 引入意图权重，解决同分冲突
-      - 同分时优先选择权重更高的意图（分析/交易 > 查询）
-      - 例如："分析比特币价格走势" → technical_analysis(2.5) 而非 market_query(1.0)
+
+def _rule_classify(text: str) -> Optional[str]:
+    """规则快速匹配二级意图（带权重 + 组合优先）
+
+    匹配优先级：
+      1. 组合关键词优先匹配（解决关键词重叠导致的误判）
+      2. 加权关键词匹配（同分时高权重意图优先）
     """
+    # Layer 0: 组合关键词优先匹配
+    for keywords, target in COMPOSITE_RULES:
+        if all(kw in text for kw in keywords):
+            return target
+
+    # Layer 1: 加权关键词匹配
     scores: Dict[str, float] = {}
     for secondary, keywords in SECONDARY_KEYWORDS.items():
         match_count = sum(1 for kw in keywords if kw in text)
