@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from dreamos.registry.base import BaseNode
+from dreamos.shared.capability import CapabilitySpec, ProviderType, CapabilityStatus
 from dreamos.shared.state import State, NodeResult, NodeStatus
 
 logger = logging.getLogger("subsystem_adapter_nodes")
@@ -47,6 +48,18 @@ class CS3TrendNode(BaseNode):
     tags = ["trend", "multi-timeframe", "screen3", "external"]
     estimated_tokens = 0
     estimated_latency_ms = 300
+    capabilities = [
+        CapabilitySpec(
+            capability_id="analysis.trend",
+            category="analysis",
+            name="三屏趋势分析",
+            description="周/日/H1 多周期共振趋势分析",
+            provider_id="C_S3_TREND",
+            provider_type=ProviderType.SUBSYSTEM,
+            status=CapabilityStatus.AVAILABLE,
+            tags=["trend", "multi-timeframe"],
+        )
+    ]
 
     def __init__(self):
         super().__init__()
@@ -227,6 +240,18 @@ class AYJInferNode(BaseNode):
     tags = ["inference", "yijing", "bcrm", "external"]
     estimated_tokens = 0
     estimated_latency_ms = 500
+    capabilities = [
+        CapabilitySpec(
+            capability_id="inference.yijing",
+            category="inference",
+            name="易经卦象推理",
+            description="36卦+变爻+互卦推理分析",
+            provider_id="A_YJ_INFER",
+            provider_type=ProviderType.SUBSYSTEM,
+            status=CapabilityStatus.AVAILABLE,
+            tags=["yijing", "bcrm"],
+        )
+    ]
 
     def __init__(self):
         super().__init__()
@@ -358,6 +383,18 @@ class CMartinV15Node(BaseNode):
     tags = ["martin", "fibonacci", "bbands", "external"]
     estimated_tokens = 0
     estimated_latency_ms = 200
+    capabilities = [
+        CapabilitySpec(
+            capability_id="analysis.martin",
+            category="analysis",
+            name="V15马丁策略分析",
+            description="斐波那契回调+布林带+RSI共振策略分析",
+            provider_id="C_MARTIN_V15",
+            provider_type=ProviderType.SUBSYSTEM,
+            status=CapabilityStatus.AVAILABLE,
+            tags=["martin", "fibonacci"],
+        )
+    ]
 
     def __init__(self):
         super().__init__()

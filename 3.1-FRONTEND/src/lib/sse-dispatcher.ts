@@ -42,25 +42,61 @@ export function createTaskStreamHandlers(options?: {
     },
 
     progress: (data) => {
-      // 链路步骤进度
+      // 兼容 PlannerProgressEvent 格式：{ type, stepId, message, timestamp, data: {...} }
       const stepId = data.stepId || `step_${data.stepIndex ?? 0}`;
-      const status = data.status === 'done' ? 'done' : data.status === 'skipped' ? 'skipped' : data.status === 'failed' ? 'failed' : 'running';
+      const rawStatus = (data.status ?? data.data?.status) as string | undefined;
+      const evtType = data.type as string | undefined;
+      let status: 'done' | 'skipped' | 'failed' | 'running' = 'running';
+      if (rawStatus === 'done' || rawStatus === 'skipped' || rawStatus === 'failed' || rawStatus === 'running') {
+        status = rawStatus;
+      } else if (evtType === 'step_end') status = 'done';
+      else if (evtType === 'step_start') status = 'running';
+
+      const stepName = (data.stepName || data.data?.stepName || data.message || stepId) as string;
 
       chain().updateStep(stepId, {
         status,
-        outputSummary: data.stepName,
+        outputSummary: stepName,
       });
 
-      // Reflector 决策
-      if (data.reflectorAction) {
-        chain().reflectorDecision(stepId, data.reflectorAction as any, data.reflectorReason || '');
+      // Reflector 决策（从 PlannerProgressEvent.data 中读取）
+      const reflectorAction = (data.reflectorAction || data.data?.reflectorAction) as string | undefined;
+      const reflectorReason = (data.reflectorReason || data.data?.reflectorReason || '') as string;
+      if (reflectorAction) {
+        chain().reflectorDecision(stepId, reflectorAction as any, reflectorReason);
       }
 
       monitor().addEvent('C', {
         id: `evt_${Date.now()}`,
         layer: 'C',
-        type: 'step_progress',
-        description: `${data.stepName || stepId}: ${status}`,
+        type: evtType || 'step_progress',
+        description: `${stepName}: ${status}`,
+        timestamp: Date.now(),
+      });
+    },
+
+    cross_validation: (data) => {
+      // 交叉验证结果 — 写入 chain-store 供 CrossValidationPanel 消费
+      const stepName = (data.stepName || data.data?.stepName || data.stepId || 'unknown') as string;
+      const issues = (data.issuesFound || data.data?.issuesFound || []) as string[];
+      const corrections = (data.corrections || data.data?.corrections || []) as string[];
+      const confidence = (data.confidence || data.data?.confidence || 0) as number;
+      const gatePassed = (data.gatePassed ?? data.data?.gatePassed ?? true) as boolean;
+      const result: 'pass' | 'fail' | 'partial' = gatePassed && issues.length === 0 ? 'pass' : issues.length > 0 && corrections.length > 0 ? 'partial' : 'fail';
+      const disagreements = [...issues, ...corrections];
+
+      chain().addCrossValidation({
+        chainId: stepName,
+        result,
+        confidence,
+        disagreements,
+      });
+
+      monitor().addEvent('C', {
+        id: `evt_${Date.now()}`,
+        layer: 'C',
+        type: 'cross_validation',
+        description: `${stepName} 交叉验证: ${result} (conf=${confidence.toFixed(2)})`,
         timestamp: Date.now(),
       });
     },
@@ -200,5 +236,6 @@ export interface TaskDoneData {
   execution_summary?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
   chain_trace?: Record<string, unknown>;
+  graph_reflection?: Record<string, unknown> | null;
   trade_requires_confirmation?: boolean;
 }

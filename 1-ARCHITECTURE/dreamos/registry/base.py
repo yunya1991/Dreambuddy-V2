@@ -26,6 +26,7 @@ from dreamos.shared.interfaces import Node
 from dreamos.shared.llm_client import LLMClient, get_default_client
 from dreamos.shared.utils import Timer
 from dreamos.shared.errors import ErrorCode
+from dreamos.shared.capability import CapabilitySpec, ProviderType, CapabilityStatus
 
 
 class BaseNode(Node):
@@ -54,6 +55,7 @@ class BaseNode(Node):
     description: str = ""
     chain: str = ""
     tags: list = []
+    required_capabilities: list = []  # 执行前必须可用的能力 ID 列表
 
     def __init__(self, llm: Optional[LLMClient] = None, config: Optional[Dict[str, Any]] = None):
         self._llm = llm
@@ -69,6 +71,101 @@ class BaseNode(Node):
     @property
     def config(self) -> Dict[str, Any]:
         return self._config
+
+    # ── 能力声明（统一能力注册表）────────────────────────
+
+    @property
+    def capabilities(self) -> list:
+        """节点能力规格列表
+
+        优先级:
+            1. 实例显式设置的 _explicit_capabilities（通过 setter）
+            2. 子类在类属性中显式声明的 capabilities 列表（会 shadow 本 property）
+            3. 从 chain/tags 自动推断（结果缓存在 _inferred_capabilities，确保状态可更新）
+
+        注: 若子类定义了 `capabilities = [...]` 类属性，会直接覆盖本 property，
+        返回该列表；本 property 仅在子类未声明时被调用，走推断逻辑。
+        """
+        explicit = getattr(self, "_explicit_capabilities", None)
+        if explicit:
+            return explicit
+        # 子类显式声明的类属性会 shadow 此 property，走到这里说明未声明 → 推断
+        # 缓存推断结果，确保 update_node_capability_status 修改的对象可被再次读取
+        inferred = getattr(self, "_inferred_capabilities", None)
+        if inferred is None:
+            inferred = self.infer_capabilities()
+            self._inferred_capabilities = inferred
+        return inferred
+
+    @capabilities.setter
+    def capabilities(self, value):
+        self._explicit_capabilities = value
+
+    def infer_capabilities(self) -> list:
+        """从 chain / tags 自动推断节点能力（向后兼容）
+
+        未显式声明 capabilities 的现有节点通过此方法获得基础能力描述。
+        """
+        caps = []
+        chain = getattr(self, "chain", "") or ""
+        tags = getattr(self, "tags", []) or []
+        node_id = getattr(self, "node_id", "")
+
+        # 按 chain 推断核心能力
+        chain_map = {
+            "A": ("analysis.reasoning", "矛盾论/策略设计/辩证分析"),
+            "C": ("analysis.technical", "技术指标分析"),
+            "F": ("analysis.fundamental", "基本面分析"),
+            "G": ("governance", "治理/审批"),
+            "T": ("execution.trade", "交易执行"),
+            "I": ("analysis.intelligence", "情报监控"),
+        }
+        if chain in chain_map:
+            cap_id, desc = chain_map[chain]
+            caps.append(CapabilitySpec(
+                capability_id=cap_id,
+                category=cap_id.split(".")[0],
+                name=getattr(self, "name", "") or cap_id,
+                description=desc,
+                provider_id=node_id,
+                provider_type=ProviderType.NODE,
+                status=CapabilityStatus.AVAILABLE,
+                tags=[chain] if chain else [],
+            ))
+
+        # 按 tags 推断附加能力
+        if "external" in tags:
+            caps.append(CapabilitySpec(
+                capability_id="integration.subsystem",
+                category="integration",
+                name="外部子系统集成",
+                description="封装外部子系统（三屏/易经/V15 等）",
+                provider_id=node_id,
+                provider_type=ProviderType.SUBSYSTEM,
+                status=CapabilityStatus.AVAILABLE,
+            ))
+        if "dsh" in tags:
+            module = next((t for t in tags if t not in ("dsh", "external")), "")
+            caps.append(CapabilitySpec(
+                capability_id=f"analysis.{module}" if module else "analysis.dsh",
+                category="analysis",
+                name=f"DSH {module} subagent" if module else "DSH subagent",
+                provider_id=node_id,
+                provider_type=ProviderType.SUBAGENT,
+                status=CapabilityStatus.AVAILABLE,
+            ))
+
+        # 兜底：至少一条
+        if not caps:
+            caps.append(CapabilitySpec(
+                capability_id=f"node.{node_id or 'unknown'}",
+                category="node",
+                name=getattr(self, "name", "") or node_id or "Node",
+                provider_id=node_id,
+                provider_type=ProviderType.NODE,
+                status=CapabilityStatus.AVAILABLE,
+            ))
+        return caps
 
     # ── 子类实现这个方法 ────────────────────────────────
 
@@ -106,6 +203,17 @@ class BaseNode(Node):
                 confidence=0.0,
             )
 
+        # 优雅降级 — 检查 required_capabilities 是否可用
+        missing = self._check_capabilities()
+        if missing:
+            return NodeResult(
+                node_id=self.node_id,
+                status=NodeStatus.DEGRADED,
+                direction="HOLD",
+                confidence=0.0,
+                warnings=[f"依赖能力不可用，降级执行: {', '.join(missing)}"],
+            )
+
         # 执行 + 计时
         timer = Timer(self.node_id)
         try:
@@ -133,7 +241,75 @@ class BaseNode(Node):
         if getattr(self, "chain", "") == "F" and result.status.value == "SUCCESS":
             self._smooth_f_signal(result)
 
+        # 能力状态同步 — 根据执行结果更新 capability status
+        self._sync_capability_status(result)
+
         return result
+
+    def _sync_capability_status(self, result: NodeResult) -> None:
+        """根据执行结果同步节点能力状态
+
+        将 NodeResult.status 映射为 CapabilityStatus:
+            SUCCESS   → AVAILABLE
+            DEGRADED  → DEGRADED
+            FAILED    → UNAVAILABLE
+
+        直接修改 node.capabilities 中缓存的 CapabilitySpec 对象状态，
+        NodeRegistry.get_node_capabilities() 读取时即可看到最新状态。
+        """
+        try:
+            from dreamos.shared.capability import CapabilityStatus
+        except Exception:  # noqa: BLE001
+            return
+
+        status_map = {
+            NodeStatus.SUCCESS: CapabilityStatus.AVAILABLE,
+            NodeStatus.DEGRADED: CapabilityStatus.DEGRADED,
+            NodeStatus.FAILED: CapabilityStatus.UNAVAILABLE,
+        }
+        target = status_map.get(result.status)
+        if target is None:
+            return
+
+        caps = self.capabilities
+        for cap in caps:
+            if hasattr(cap, "status"):
+                cap.status = target
+
+    def _check_capabilities(self) -> Optional[List[str]]:
+        """检查 required_capabilities 是否在注册表中可用
+
+        Returns:
+            None — 全部满足或无需检查
+            List[str] — 缺失/不可用的能力 ID 列表
+        """
+        required = getattr(self, "required_capabilities", []) or []
+        if not required:
+            return None
+
+        try:
+            from dreamos.registry.node_registry import get_default_registry
+            from dreamos.shared.capability import CapabilityStatus
+        except Exception:  # noqa: BLE001
+            return None
+
+        try:
+            registry = get_default_registry()
+        except Exception:  # noqa: BLE001
+            return None
+
+        missing: List[str] = []
+        for cap_id in required:
+            providers = registry.find_nodes_by_capability(cap_id)
+            available = any(
+                getattr(c, "status", None) == CapabilityStatus.AVAILABLE
+                for node in providers
+                for c in (getattr(node, "capabilities", []) or [])
+                if getattr(c, "capability_id", None) == cap_id
+            )
+            if not available:
+                missing.append(cap_id)
+        return missing or None
 
     def _smooth_f_signal(self, result: NodeResult) -> None:
         """对 F 链节点输出做信号平滑（就地修改 result）

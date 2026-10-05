@@ -129,7 +129,7 @@ export function ApiKeyManager() {
         if (form.environment) body.environment = form.environment;
         if (form.baseUrl !== undefined) body.baseUrl = form.baseUrl;
         if (form.label) body.label = form.label;
-        await api.patch('/api/config/api-keys', body);
+        await api.put('/api/config/api-keys', body);
       } else {
         await api.post('/api/config/api-keys', {
           category: form.category,

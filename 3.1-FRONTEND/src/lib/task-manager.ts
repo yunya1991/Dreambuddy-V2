@@ -1772,8 +1772,24 @@ export async function executeConversationTaskInline(
       if (routingDecision.skipStep) {
         stepResults.push(`### ${step}\n\n*${routingDecision.reason}*`);
         skippedSteps.push(step);
+        onProgress?.({
+          type: 'step_end',
+          stepId: step,
+          message: `${step} 跳过: ${routingDecision.reason}`,
+          timestamp: Date.now(),
+          data: { status: 'skipped', stepName: step },
+        });
         continue;
       }
+
+      // 📡 上报步骤开始进度（联动 SACG 监控 C 层）
+      onProgress?.({
+        type: 'step_start',
+        stepId: step,
+        message: `开始执行 ${step}`,
+        timestamp: Date.now(),
+        data: { status: 'running', stepName: step },
+      });
 
       // 生成步骤内容
       const stepContent = generateNonDZEStepContent(
@@ -1833,6 +1849,45 @@ export async function executeConversationTaskInline(
         );
       }
       stepMetadatas.push(metadata);
+
+      // 📡 上报步骤完成进度 + 反射决策（联动 SACG 监控 C 层 + ReflectorPanel）
+      const reflectorAction = metadata.gatePassed ? 'proceed' : 'review';
+      const reflectorReason = metadata.issuesFound.length > 0
+        ? metadata.issuesFound.join('; ')
+        : '自省 gate 通过';
+      onProgress?.({
+        type: 'step_end',
+        stepId: step,
+        message: `${step} 完成 (conf=${metadata.confidence.toFixed(2)}, risk=${metadata.riskScore.toFixed(2)})`,
+        timestamp: Date.now(),
+        data: {
+          status: 'done',
+          stepName: step,
+          confidence: metadata.confidence,
+          riskScore: metadata.riskScore,
+          reflectorAction,
+          reflectorReason,
+          issuesFound: metadata.issuesFound,
+          corrections: metadata.corrections,
+        },
+      });
+
+      // 📡 上报交叉验证数据（联动 SACG 监控 CrossValidationPanel）
+      if (metadata.issuesFound.length > 0 || metadata.corrections.length > 0) {
+        onProgress?.({
+          type: 'cross_validation',
+          stepId: step,
+          message: `${step} 交叉验证`,
+          timestamp: Date.now(),
+          data: {
+            stepName: step,
+            issuesFound: metadata.issuesFound,
+            corrections: metadata.corrections,
+            confidence: metadata.confidence,
+            gatePassed: metadata.gatePassed,
+          },
+        });
+      }
 
       // [Graph] 将 reflection 结果写入 graph 节点
       if (graphState) {

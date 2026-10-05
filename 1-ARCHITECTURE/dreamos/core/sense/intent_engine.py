@@ -34,6 +34,7 @@ from .recognizers.base import BaseRecognizer
 from .recognizers.rule_based import RuleBasedRecognizer
 from .recognizers.llm_based import LLMBasedRecognizer
 from .recognizers.dynamic import DynamicIntentRecognizer
+from .evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
 from .token_budget import TokenBudgetManager, BudgetLevel
 from dreamos.shared.llm_client import LLMClient
 from dreamos.shared.utils import Timer
@@ -67,9 +68,12 @@ class IntentEngine:
                  llm: Optional[LLMClient] = None,
                  use_rule_based: bool = True,
                  use_llm_based: bool = True,
-                 use_dynamic: bool = True):
-        # 预算管理
-        self.budget = TokenBudgetManager(mode=budget_mode)
+                 use_dynamic: bool = True,
+                 use_token_budget: bool = False,
+                 jev_fn=None,
+                 laya_fn=None):
+        # 预算管理（默认关闭：分析类任务可能较长，预算耗尽会导致 LLM 被跳过）
+        self.budget = TokenBudgetManager(mode=budget_mode, enabled=use_token_budget)
         self._llm_trigger_threshold = llm_trigger_threshold
         self._clarify_threshold = clarify_threshold
 
@@ -84,6 +88,12 @@ class IntentEngine:
         if use_dynamic:
             self._dynamic_recognizer = DynamicIntentRecognizer()
             self._recognizers.append(self._dynamic_recognizer)
+
+        # L3 意图评估器（jev choice 重分类 + noul 正确性校验）
+        self._evaluator = IntentEvaluatorAgent(
+            jev_fn=jev_fn,
+            laya_fn=laya_fn,
+        )
 
     # ── 动态识别器快捷方法 ────────────────────────
 
@@ -143,9 +153,10 @@ class IntentEngine:
         recognizers_used: List[str] = []
         total_tokens = 0
 
-        # ── 第1步：零成本识别（规则 + 动态） ─────────
+        # ── 第1步：零成本识别（规则 L1 + 动态 L2） ─────────
+        # local=规则, hybrid=动态贝叶斯，两者都是零 Token
         for rec in self._recognizers:
-            if rec.level == "local":
+            if rec.level in ("local", "hybrid"):
                 try:
                     result = rec.recognize(_input)
                     all_results.append(result)
@@ -191,6 +202,25 @@ class IntentEngine:
         with total_timer:
             pass
         final.total_latency_ms = total_timer.elapsed_ms
+
+        # ── 第3.5步：L3 意图评估（jev choice 重分类 + noul 校验） ──
+        # 当 jev_fn 注入且置信度 < 0.65 时触发，校准置信度或重分类
+        try:
+            eval_ctx = {
+                "user_message": user_message,
+                "market": market,
+                "symbol": symbol,
+            }
+            eval_result: EvalResult = self._evaluator.evaluate(final, eval_ctx)
+            final.confidence = eval_result.adjusted_confidence
+            if eval_result.clarified_intent and eval_result.clarified_intent != final.intent_type:
+                final.intent_type = eval_result.clarified_intent
+                final.rationale += f" | jev重分类: {eval_result.clarified_intent}"
+            if eval_result.reasoning:
+                final.context["jev_eval"] = eval_result.reasoning
+        except Exception:
+            # L3 评估异常 → FAIL-OPEN 透传，不影响主链路
+            pass
 
         # ── 第4步：是否需要澄清 ────────────────────
 

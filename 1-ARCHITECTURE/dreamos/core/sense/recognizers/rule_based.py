@@ -353,6 +353,13 @@ class RuleBasedRecognizer(BaseRecognizer):
             - A9 离场策略记录止损止盈, 必须包含
         """
         chain_map = {
+            # 通用用户意图
+            "MARKET_QUERY":      ["S0_DIRECT_ANSWER"],
+            "EXECUTE_TRADE":     ["S1_RESEARCH", "S2_ANALYSIS", "S3_DESIGN", "S4_VALIDATE", "S5_EXECUTE"],
+            "STRATEGY_VERIFY":   ["S2_ANALYSIS", "S3_DESIGN", "S4_VALIDATE"],
+            "SCENARIO_SIM":      ["S1_RESEARCH", "S2_ANALYSIS", "S3_DESIGN", "S4_VALIDATE"],
+            "SIMPLE_QA":         ["S0_DIRECT_ANSWER"],
+            # 交易策略意图
             "TREND_FOLLOWING":   ["C1", "F2", "F3", "A2", "A4", "A5", "A9"],
             "MEAN_REVERSION":    ["C1", "F2", "F3", "A2", "A4", "A5", "A9"],
             "FUNDAMENTAL_PLAY":  ["A1", "F1", "F5", "A2", "A4", "A5", "A9"],

@@ -17,10 +17,13 @@ Dreambuddy OS — 核心接口定义
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Iterable
+from typing import Any, Callable, Dict, List, Optional, Iterable, TYPE_CHECKING
 from dataclasses import dataclass, field
 
 from .state import State, NodeResult, NodeStatus
+
+if TYPE_CHECKING:
+    from .capability import CapabilitySpec
 
 
 # ============================================================
@@ -66,6 +69,10 @@ class Node(ABC):
     required_tokens: int = 0       # 文档标准字段：预计消耗 token
     priority: int = 0              # 文档标准字段：节点优先级（越大越高）
     estimated_latency_ms: int = 0
+
+    # ── 能力声明（统一能力注册表）────────────────────────
+    capabilities: List["CapabilitySpec"] = []          # 显式声明的能力规格
+    required_capabilities: List[str] = []               # 执行前必须可用的能力 ID
 
     # ── 兼容别名（旧代码可继续用） ─────────────────────
     @property

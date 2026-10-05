@@ -26,16 +26,27 @@ from datetime import datetime
 # ============================================================
 
 class IntentType(str, Enum):
-    """标准意图类型（与 SKILL 文档对齐）
+    """标准意图类型
 
-    6 种预定义意图，可通过 register_intent_type() 扩展
+    分为两大类：
+    1. 通用用户意图（用户交互层）— market_query/execute_trade/strategy_verify/scenario_sim/simple_qa
+    2. 交易策略意图（A 层编排层）— trend_following/mean_reversion/fundamental_play/breakout/knowledge_match/deep_analysis
+
+    通用意图由 L1 规则/L4 LLM 直接识别；策略意图由市场数据打分或通用意图的子分类得出。
     """
-    TREND_FOLLOWING = "TREND_FOLLOWING"        # 趋势跟随
-    MEAN_REVERSION = "MEAN_REVERSION"          # 均值回归
-    FUNDAMENTAL_PLAY = "FUNDAMENTAL_PLAY"      # 基本面驱动
+    # ── 通用用户意图 ──
+    MARKET_QUERY = "MARKET_QUERY"               # 行情查询（价格/仓位/余额等数据点）
+    EXECUTE_TRADE = "EXECUTE_TRADE"             # 执行交易（开仓/平仓/加减仓）
+    STRATEGY_VERIFY = "STRATEGY_VERIFY"         # 策略验证（回测/有效性评估）
+    SCENARIO_SIM = "SCENARIO_SIM"               # 情景推演（假设/压力测试）
+    SIMPLE_QA = "SIMPLE_QA"                     # 简单问答（闲聊/概念解释）
+    # ── 交易策略意图 ──
+    TREND_FOLLOWING = "TREND_FOLLOWING"         # 趋势跟随
+    MEAN_REVERSION = "MEAN_REVERSION"           # 均值回归
+    FUNDAMENTAL_PLAY = "FUNDAMENTAL_PLAY"       # 基本面驱动
     BREAKOUT = "BREAKOUT"                       # 突破
     KNOWLEDGE_MATCH = "KNOWLEDGE_MATCH"         # 知识库匹配
-    DEEP_ANALYSIS = "DEEP_ANALYSIS"             # A系列深度分析（委托 Hermes SKILL 桥接）
+    DEEP_ANALYSIS = "DEEP_ANALYSIS"             # A系列深度分析
     UNCERTAIN = "UNCERTAIN"                     # 不确定/需要澄清
 
     @classmethod
@@ -67,6 +78,43 @@ def get_intent_definition(intent_type: str) -> Dict[str, Any]:
     """获取意图类型定义"""
     # 标准意图
     standard = {
+        # ── 通用用户意图 ──
+        "MARKET_QUERY": {
+            "name": "行情查询",
+            "description": "查询价格/仓位/余额等数据点，零编排直答",
+            "chain": "S0",
+            "priority": 1,
+            "keywords": ["价格", "多少钱", "现价", "报价", "行情", "多少", "查询", "查一下", "看看", "现在", "当前", "实时", "最新", "仓位", "持仓", "余额", "保证金", "资金费率", "费率", "爆仓价", "强平价", "market", "price", "quote", "ticker"],
+        },
+        "EXECUTE_TRADE": {
+            "name": "执行交易",
+            "description": "开仓/平仓/加减仓等交易操作",
+            "chain": "S",
+            "priority": 1,
+            "keywords": ["开仓", "下单", "买入", "卖出", "做多", "做空", "加仓", "减仓", "平仓", "执行交易", "立即交易", "入场", "出场", "建仓", "补仓", "抄底", "逃顶", "buy", "sell", "execute", "place order"],
+        },
+        "STRATEGY_VERIFY": {
+            "name": "策略验证",
+            "description": "回测/策略有效性评估/信号质量检验",
+            "chain": "S",
+            "priority": 2,
+            "keywords": ["回测", "策略验证", "验证策略", "测试策略", "检验策略", "策略有效性", "策略质量", "信号质量", "信号验证", "策略评估", "评估策略", "backtest", "validate strategy", "strategy validation"],
+        },
+        "SCENARIO_SIM": {
+            "name": "情景推演",
+            "description": "假设情景/压力测试/极端行情推演",
+            "chain": "S",
+            "priority": 2,
+            "keywords": ["情景", "假设", "如果", "推演", "模拟", "极端行情", "压力测试", "最坏情况", "最好情况", "敏感性分析", "scenario", "hypothetical", "simulation"],
+        },
+        "SIMPLE_QA": {
+            "name": "简单问答",
+            "description": "闲聊/概念解释/通用问答",
+            "chain": "S0",
+            "priority": 9,
+            "keywords": ["是什么", "什么是", "怎么理解", "解释一下", "介绍", "聊聊", "你好", "谢谢", "help"],
+        },
+        # ── 交易策略意图 ──
         "TREND_FOLLOWING": {
             "name": "趋势跟随",
             "description": "识别趋势行情，顺势操作",

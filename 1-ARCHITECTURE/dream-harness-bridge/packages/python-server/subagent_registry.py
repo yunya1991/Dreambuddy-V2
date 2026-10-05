@@ -33,6 +33,7 @@ SUBAGENT_REGISTRY_CONFIG: List[Dict[str, Any]] = [
         "node_id": "DSH_TECHNICAL",
         "name": "技术面 Subagent",
         "module": "technical",
+        "capability_id": "analysis.technical",
         "chain": "C",
         "tags": ["dsh", "technical", "indicators"],
         "description": "C1/C2/C3 技术指标 → EMA排列/RSI14/MACD 信号 + line 图表",
@@ -42,6 +43,7 @@ SUBAGENT_REGISTRY_CONFIG: List[Dict[str, Any]] = [
         "node_id": "DSH_SENTIMENT",
         "name": "情绪面 Subagent",
         "module": "sentiment",
+        "capability_id": "analysis.sentiment",
         "chain": "C",
         "tags": ["dsh", "sentiment", "fgi"],
         "description": "F1 情绪指标 → 新闻情绪/FGI 信号 + gauge+line 图表",
@@ -51,6 +53,7 @@ SUBAGENT_REGISTRY_CONFIG: List[Dict[str, Any]] = [
         "node_id": "DSH_MACRO",
         "name": "宏观面 Subagent",
         "module": "macro",
+        "capability_id": "analysis.macro",
         "chain": "C",
         "tags": ["dsh", "macro", "fundamental"],
         "description": "宏观经济指标 → 利率/通胀/GDP 信号",
@@ -60,6 +63,7 @@ SUBAGENT_REGISTRY_CONFIG: List[Dict[str, Any]] = [
         "node_id": "DSH_FLOW",
         "name": "资金面 Subagent",
         "module": "flow",
+        "capability_id": "analysis.flow",
         "chain": "C",
         "tags": ["dsh", "flow", "capital"],
         "description": "资金流向指标 → 主力资金/北向资金 信号",
@@ -69,6 +73,7 @@ SUBAGENT_REGISTRY_CONFIG: List[Dict[str, Any]] = [
         "node_id": "DSH_VALUATION",
         "name": "估值面 Subagent",
         "module": "valuation",
+        "capability_id": "analysis.valuation",
         "chain": "C",
         "tags": ["dsh", "valuation", "fundamental"],
         "description": "估值指标 → PE/PB/DCF 信号",
@@ -78,6 +83,7 @@ SUBAGENT_REGISTRY_CONFIG: List[Dict[str, Any]] = [
         "node_id": "DSH_ONCHAIN",
         "name": "链上面 Subagent",
         "module": "onchain",
+        "capability_id": "analysis.onchain",
         "chain": "C",
         "tags": ["dsh", "onchain", "crypto"],
         "description": "链上数据 → 活跃地址/交易所余额 信号",
@@ -87,6 +93,7 @@ SUBAGENT_REGISTRY_CONFIG: List[Dict[str, Any]] = [
         "node_id": "DSH_RISK",
         "name": "风险面 Subagent",
         "module": "risk",
+        "capability_id": "analysis.risk",
         "chain": "C",
         "tags": ["dsh", "risk", "var"],
         "description": "风险指标 → VaR95/VaR99/压力损失 信号 + heatmap 图表 (纯算法, 不调 LLM)",
@@ -96,6 +103,7 @@ SUBAGENT_REGISTRY_CONFIG: List[Dict[str, Any]] = [
         "node_id": "DSH_PORTFOLIO",
         "name": "组合面 Subagent",
         "module": "portfolio",
+        "capability_id": "analysis.portfolio",
         "chain": "C",
         "tags": ["dsh", "portfolio", "rebalance"],
         "description": "仓位/再平衡指标 → 漂移度/总仓位 信号 + pie+bar 图表 (LLM 综合)",
@@ -131,7 +139,34 @@ class SubagentNode:
         self.tags = config.get("tags", [])
         self.description = config.get("description", "")
         self.module = config["module"]
+        self.capability_id = config.get("capability_id", f"analysis.{config['module']}")
         self._subagent = subagent
+        self._capabilities: Optional[List] = None
+
+    @property
+    def capabilities(self) -> List:
+        """声明该 subagent 的细粒度能力（供 NodeRegistry 查询）
+
+        延迟创建并缓存，避免启动时导入 dreamos.shared.capability 失败（FAIL-OPEN）。
+        """
+        if self._capabilities is None:
+            try:
+                from dreamos.shared.capability import (
+                    CapabilitySpec, ProviderType, CapabilityStatus,
+                )
+                self._capabilities = [CapabilitySpec(
+                    capability_id=self.capability_id,
+                    category="analysis",
+                    name=self.name,
+                    description=self.description,
+                    provider_id=self.node_id,
+                    provider_type=ProviderType.SUBAGENT,
+                    status=CapabilityStatus.AVAILABLE,
+                    tags=list(self.tags),
+                )]
+            except Exception:  # noqa: BLE001 FAIL-OPEN: 导入失败返回空列表
+                self._capabilities = []
+        return self._capabilities
 
     def execute(self, node_output: dict) -> SubagentOutput:
         """执行 subagent (适配 Node 接口)

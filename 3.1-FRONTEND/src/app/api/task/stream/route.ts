@@ -222,6 +222,81 @@ export async function POST(request: NextRequest) {
               grade: 'good',
             },
           };
+        } else {
+          // 回退路径：内联执行（gateway_inline_v2_with_graph_reflection）
+          // 从 execution_summary.graph_reflection + step_metadata 构建 chain_trace
+          const execSummary = result.execution_summary as any;
+          const graphReflection = execSummary?.graph_reflection;
+          const stepMetadatas = (result.metadata as any)?.step_metadata || [];
+          const chainExecuted: string[] = execSummary?.chain_executed || [];
+
+          const STEP_ICONS: Record<string, string> = {
+            S1_RESEARCH: '🔍', S2_ANALYSIS: '🧠', S3_DESIGN: '📐',
+            S4_VALIDATE: '✅', S5_EXECUTE: '⚡',
+          };
+          const STEP_NAMES: Record<string, string> = {
+            S1_RESEARCH: '市场感知', S2_ANALYSIS: '第一性分析', S3_DESIGN: '场景设计',
+            S4_VALIDATE: '策略验证', S5_EXECUTE: '执行计划',
+          };
+
+          const aNodes = stepMetadatas.map((sm: any) => ({
+            id: sm.step,
+            name: STEP_NAMES[sm.step] || sm.step,
+            icon: STEP_ICONS[sm.step] || '⚙️',
+            layer: 'A',
+            stage: sm.step?.split('_')[0]?.toLowerCase() || 'execute',
+            chain: 'S_SERIES',
+            is_skill: false,
+            status: 'done',
+            confidence: sm.confidence,
+            risk_score: sm.riskScore,
+            issues: sm.issues || [],
+            corrections: sm.corrections || [],
+            gate_passed: sm.gatePassed,
+          }));
+
+          const quality = execSummary?.quality || {};
+
+          chain_trace = {
+            intent: {
+              type: task.intent.type,
+              confidence: task.intent.confidence,
+              method: 'llm',
+              entities: task.intent.entities || {},
+            },
+            plan: {
+              chain_id: 'inline_s_series',
+              chain_name: chainExecuted.join(' → '),
+              planned_steps: chainExecuted.map((s: string) => ({
+                step_id: s,
+                stage: s?.split('_')[0]?.toLowerCase() || 'execute',
+                chain: 'S_SERIES',
+                selected_skills: [],
+              })),
+              complexity: execSummary?.thinking_depth || task.thinking_mode || 'standard',
+              total_budget: 6000,
+              rationale: '内联执行 S 系列链路（Graph Reflection 融合）',
+            },
+            nodes: [
+              { id: 'B1_intent', name: '意图识别', icon: '🎯', layer: 'B', status: 'done', confidence: task.intent.confidence },
+              { id: 'B2_route', name: '链路选择', icon: '🔀', layer: 'B', status: 'done' },
+              { id: 'B3_complexity', name: '复杂度评估', icon: '📏', layer: 'B', status: 'done' },
+              ...aNodes,
+              { id: 'C1_execute', name: '链路执行', icon: '⚡', layer: 'C', status: 'done', latency_ms: result.execution_time_ms },
+              { id: 'C2_reflect', name: '反射决策', icon: '🔄', layer: 'C', status: 'done' },
+              { id: 'C3_aggregate', name: '结果聚合', icon: '📦', layer: 'C', status: 'done' },
+            ],
+            final: {
+              execution_chain: chainExecuted.join(' → '),
+              quality_score: quality.average_confidence ?? execSummary?.confidence ?? 0.7,
+              risk_score: quality.max_risk ?? 0.3,
+              grade: quality.overall_quality || 'good',
+            },
+            // 缺口4: 暴露图架构上下文数据（G 层）
+            graph_reflection: graphReflection || null,
+            step_metadata: stepMetadatas,
+            rollbacks: (result.metadata as any)?.rollbacks || [],
+          };
         }
 
         sendEvent('done', {
@@ -236,6 +311,8 @@ export async function POST(request: NextRequest) {
           execution_summary: result.execution_summary,
           metadata: result.metadata,
           chain_trace,
+          // 缺口4: 顶层暴露图架构上下文数据，便于前端 G 层消费
+          graph_reflection: (result.execution_summary as any)?.graph_reflection || null,
           trade_requires_confirmation: result.status === 'completed' && task.intent.type === 'execute_trade',
         });
       } else {

@@ -7,6 +7,7 @@ export type SSEEventType =
   | 'started'
   | 'thinking'
   | 'progress'
+  | 'cross_validation'
   | 'text_delta'
   | 'data_card'
   | 'artifact_ref'
@@ -37,13 +38,22 @@ export interface SSEThinkingEvent {
 }
 
 export interface SSEProgressEvent {
-  stepId: string;
-  stepName: string;
-  stepIndex: number;
-  totalSteps: number;
-  status: 'active' | 'done' | 'skipped' | 'failed';
+  stepId?: string;
+  stepName?: string;
+  stepIndex?: number;
+  totalSteps?: number;
+  status?: 'active' | 'running' | 'done' | 'skipped' | 'failed';
   reflectorAction?: string;
   reflectorReason?: string;
+  // PlannerProgressEvent 兼容字段
+  type?: string;
+  message?: string;
+  timestamp?: number;
+  data?: Record<string, unknown>;
+  issuesFound?: string[];
+  corrections?: string[];
+  confidence?: number;
+  gatePassed?: boolean;
 }
 
 export interface SSETextDeltaEvent {
@@ -90,6 +100,7 @@ export interface SSEHandlerMap {
   started?: SSEEventHandler<SSEStartedEvent>;
   thinking?: SSEEventHandler<SSEThinkingEvent>;
   progress?: SSEEventHandler<SSEProgressEvent>;
+  cross_validation?: SSEEventHandler<SSEProgressEvent>;
   text_delta?: SSEEventHandler<SSETextDeltaEvent>;
   data_card?: SSEEventHandler<SSEDataCardEvent>;
   artifact_ref?: SSEEventHandler<SSEArtifactRefEvent>;
@@ -192,6 +203,9 @@ function dispatchSSEEvent(type: SSEEventType, data: Record<string, unknown>, han
       break;
     case 'progress':
       handlers.progress?.(data as unknown as SSEProgressEvent);
+      break;
+    case 'cross_validation':
+      handlers.cross_validation?.(data as unknown as SSEProgressEvent);
       break;
     case 'text_delta':
       handlers.text_delta?.(data as unknown as SSETextDeltaEvent);

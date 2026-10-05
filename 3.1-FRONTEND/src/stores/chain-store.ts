@@ -69,6 +69,19 @@ export interface ChainTrace {
   final?: { execution_chain: string; quality_score: number; risk_score: number; grade: string };
   cost_report?: { total_tokens?: number; total_cost?: number; by_node?: Array<Record<string, unknown>>; budget_tokens?: number; prompt_tokens?: number; completion_tokens?: number; skipped_steps?: string[] } & Record<string, unknown>;
   compression?: { ratio?: number; original_size?: number; compressed_size?: number; method?: string; original_tokens?: number; compressed_tokens?: number } & Record<string, unknown>;
+  // 图架构上下文数据（G 层，来自内联执行 graph_reflection）
+  graph_reflection?: {
+    total_nodes?: number;
+    avg_confidence?: number;
+    max_risk?: number;
+    completed_ratio?: number;
+    high_value_nodes?: number;
+    compressible_nodes?: number;
+    rollback_count?: number;
+    node_statuses?: Array<Record<string, unknown>>;
+  } | null;
+  step_metadata?: Array<Record<string, unknown>>;
+  rollbacks?: string[];
 }
 
 interface ChainState {

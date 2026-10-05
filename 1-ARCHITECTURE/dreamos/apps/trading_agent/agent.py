@@ -88,7 +88,10 @@ class TradingAgent:
         )
 
         # 内核四层
-        self.intent_engine = IntentEngine()
+        self.intent_engine = IntentEngine(
+            jev_fn=self._build_jev_fn(),
+            laya_fn=self._build_laya_fn(),
+        )
         self.graph_planner = GraphPlanner(registry=self.registry)
         self.graph_executor = GraphExecutor(registry=self.registry)
         # G 层默认启用文件持久化，确保跨会话检查点和历史不丢失
@@ -120,6 +123,97 @@ class TradingAgent:
 
         # 统计
         self._cycle_count = 0
+
+    def _load_dsh_env(self):
+        """加载 DSH (dream-harness-bridge) 的 .env 配置
+
+        dreamos 进程不会自动加载 DSH 的 .env，需要显式加载
+        以获取 TYPESAFE_API_KEY / ENABLE_JEV_JUDGE 等配置。
+        """
+        import os
+        dsh_env = os.path.join(
+            os.path.dirname(__file__), "..", "..", "..",
+            "dream-harness-bridge", ".env"
+        )
+        dsh_env = os.path.abspath(dsh_env)
+        if not os.path.exists(dsh_env):
+            return
+        try:
+            with open(dsh_env, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, _, val = line.partition("=")
+                    key = key.strip()
+                    val = val.strip().strip('"').strip("'")
+                    if key and key not in os.environ:
+                        os.environ[key] = val
+        except Exception:
+            pass
+
+    def _build_jev_fn(self):
+        """构建 jev (TypeSafe System One) 调用函数
+
+        复用 DSH (dream-harness-bridge) 已有的 jev_judge 模块，
+        避免重复建设。FAIL-OPEN: 导入失败或未配置时返回 None。
+        """
+        try:
+            import os
+
+            # 先加载 DSH .env（确保 TYPESAFE_API_KEY 等可用）
+            self._load_dsh_env()
+
+            # DSH jev_judge 路径
+            jev_path = os.path.join(
+                os.path.dirname(__file__), "..", "..", "..",
+                "dream-harness-bridge", "packages", "python-server"
+            )
+            jev_path = os.path.abspath(jev_path)
+            import sys
+            if jev_path not in sys.path:
+                sys.path.insert(0, jev_path)
+
+            import jev_judge  # type: ignore
+
+            # 检查环境变量开关（与 jev_judge.py 一致："1" 开启）
+            if os.environ.get("ENABLE_JEV_JUDGE", "0") != "1":
+                return None
+            if not os.environ.get("TYPESAFE_API_KEY"):
+                return None
+
+            def jev_fn(state, questions):
+                # handle_jev_judge 接收 dict {state, questions}
+                return jev_judge.handle_jev_judge({"state": state, "questions": questions})
+
+            return jev_fn
+        except Exception:
+            return None
+
+    def _build_laya_fn(self):
+        """构建 laya (本地 System 1) 调用函数，作为 jev 的备用"""
+        try:
+            import os
+
+            self._load_dsh_env()
+
+            jev_path = os.path.join(
+                os.path.dirname(__file__), "..", "..", "..",
+                "dream-harness-bridge", "packages", "python-server"
+            )
+            jev_path = os.path.abspath(jev_path)
+            import sys
+            if jev_path not in sys.path:
+                sys.path.insert(0, jev_path)
+
+            import laya_judge  # type: ignore
+
+            def laya_fn(state, questions):
+                return laya_judge.handle_laya_judge({"state": state, "questions": questions})
+
+            return laya_fn
+        except Exception:
+            return None
 
     def _inject_wm_to_llm_recognizer(self) -> None:
         """将工作记忆注入到 IntentEngine 的 LLMBasedRecognizer"""

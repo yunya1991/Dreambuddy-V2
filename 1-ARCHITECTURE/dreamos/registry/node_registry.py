@@ -20,6 +20,7 @@ from typing import Dict, List, Optional, Iterable
 
 from dreamos.shared.interfaces import Node, Registry
 from dreamos.shared.errors import ErrorCode, OSError
+from dreamos.shared.capability import CapabilitySpec, CapabilityStatus, ProviderType
 
 
 class NodeRegistry(Registry):
@@ -115,6 +116,117 @@ class NodeRegistry(Registry):
             "total": len(nodes),
             **{f"chain_{k}": v for k, v in chains.items()},
         }
+
+    # ── 能力查询 API（第3层细粒度能力）──────────────────
+
+    def list_node_capabilities(self,
+                               category: Optional[str] = None,
+                               provider_type: Optional[str] = None,
+                               status: Optional[str] = None) -> List[CapabilitySpec]:
+        """列出所有节点声明的细粒度能力（第3层 CapabilitySpec）
+
+        注意: 区别于第1层 CapabilityRegistry.list_capabilities()（返回 CapabilityDomain）。
+
+        Args:
+            category:      按能力域过滤 (trading/data/analysis/execution/integration)
+            provider_type: 按提供者类型过滤 (node/subagent/exchange/subsystem)
+            status:        按状态过滤 (available/degraded/unavailable)
+        """
+        with self._lock:
+            nodes = list(self._nodes.values())
+
+        caps: List[CapabilitySpec] = []
+        for node in nodes:
+            node_caps = getattr(node, "capabilities", None) or []
+            for cap in node_caps:
+                if category and cap.category != category:
+                    continue
+                if provider_type:
+                    pt = cap.provider_type.value if isinstance(cap.provider_type, ProviderType) else str(cap.provider_type)
+                    if pt != provider_type:
+                        continue
+                if status:
+                    st = cap.status.value if isinstance(cap.status, CapabilityStatus) else str(cap.status)
+                    if st != status:
+                        continue
+                caps.append(cap)
+        return caps
+
+    def get_node_capabilities(self, provider_id: str) -> List[CapabilitySpec]:
+        """按提供者 ID 获取其声明的所有能力"""
+        with self._lock:
+            node = self._nodes.get(provider_id)
+        if node is None:
+            return []
+        return list(getattr(node, "capabilities", None) or [])
+
+    def find_nodes_by_capability(self, capability_id: str) -> List[Node]:
+        """返回提供指定能力 ID 的所有节点（仅 status=available 的能力计入）"""
+        with self._lock:
+            nodes = list(self._nodes.values())
+
+        matched: List[Node] = []
+        for node in nodes:
+            node_caps = getattr(node, "capabilities", None) or []
+            for cap in node_caps:
+                if cap.capability_id == capability_id and cap.status == CapabilityStatus.AVAILABLE:
+                    matched.append(node)
+                    break
+        return matched
+
+    def node_capability_summary(self) -> Dict[str, object]:
+        """能力统计摘要（按 category / provider_type / status 分组）"""
+        with self._lock:
+            nodes = list(self._nodes.values())
+
+        by_category: Dict[str, int] = {}
+        by_provider_type: Dict[str, int] = {}
+        by_status: Dict[str, int] = {}
+        total = 0
+
+        for node in nodes:
+            for cap in (getattr(node, "capabilities", None) or []):
+                total += 1
+                by_category[cap.category] = by_category.get(cap.category, 0) + 1
+                pt = cap.provider_type.value if isinstance(cap.provider_type, ProviderType) else str(cap.provider_type)
+                by_provider_type[pt] = by_provider_type.get(pt, 0) + 1
+                st = cap.status.value if isinstance(cap.status, CapabilityStatus) else str(cap.status)
+                by_status[st] = by_status.get(st, 0) + 1
+
+        return {
+            "total": total,
+            "by_category": by_category,
+            "by_provider_type": by_provider_type,
+            "by_status": by_status,
+        }
+
+    def update_node_capability_status(self,
+                                      provider_id: str,
+                                      status: str,
+                                      reason: str = "") -> bool:
+        """更新某提供者所有能力的 status
+
+        Args:
+            provider_id: 节点 ID（= capability 的 provider_id）
+            status:      新状态 (available/degraded/unavailable)
+            reason:      降级原因（status=degraded 时建议填写）
+
+        Returns:
+            是否更新成功（提供者不存在返回 False）
+        """
+        with self._lock:
+            node = self._nodes.get(provider_id)
+        if node is None:
+            return False
+
+        target_status = CapabilityStatus(status) if isinstance(status, str) else status
+        for cap in (getattr(node, "capabilities", None) or []):
+            cap.status = target_status
+            if target_status == CapabilityStatus.DEGRADED:
+                cap.degraded_reason = reason or cap.degraded_reason
+            elif target_status == CapabilityStatus.AVAILABLE:
+                cap.degraded_reason = ""
+        return True
 
     def __len__(self) -> int:
         return len(self._nodes)

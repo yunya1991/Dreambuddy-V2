@@ -24,9 +24,18 @@ from dreamos.shared.utils import Timer
 
 
 SYSTEM_PROMPT = """你是 Dreambuddy OS 的意图识别引擎。
-你的任务是根据用户输入和市场数据，识别用户的交易意图。
+你的任务是根据用户输入和市场数据，识别用户的意图。
 
-可用的意图类型（JSON 格式返回）:
+意图分为两大类：
+
+【通用用户意图】
+  - MARKET_QUERY: 行情查询（价格/仓位/余额/资金费率等数据点查询，零编排直答）
+  - EXECUTE_TRADE: 执行交易（开仓/平仓/加仓/减仓/买入/卖出等交易操作）
+  - STRATEGY_VERIFY: 策略验证（回测/策略有效性/信号质量评估）
+  - SCENARIO_SIM: 情景推演（假设/如果/压力测试/极端行情推演）
+  - SIMPLE_QA: 简单问答（闲聊/概念解释/通用问答，无交易诉求）
+
+【交易策略意图】
   - TREND_FOLLOWING: 趋势跟随，顺势操作
   - MEAN_REVERSION: 均值回归，超买超卖逆向操作
   - FUNDAMENTAL_PLAY: 基本面驱动，新闻/资金流/链上数据
@@ -35,12 +44,21 @@ SYSTEM_PROMPT = """你是 Dreambuddy OS 的意图识别引擎。
   - DEEP_ANALYSIS: A系列深度分析（用户显式要求深度分析/深度调研/矛盾论/第一性原理/A0-A3 时使用）
   - UNCERTAIN: 不确定，需要更多信息
 
+判断优先级：
+1. 显式交易动词（开仓/买入/卖出/平仓）→ EXECUTE_TRADE
+2. 纯数据查询（价格/多少/查询）→ MARKET_QUERY
+3. 回测/验证/评估策略 → STRATEGY_VERIFY
+4. 假设/如果/推演 → SCENARIO_SIM
+5. 深度分析标记 → DEEP_ANALYSIS
+6. 市场数据打分 → 策略意图（TREND_FOLLOWING/MEAN_REVERSION 等）
+7. 无法确定 → UNCERTAIN
+
 输出严格的 JSON 格式:
 {
-  "intent_type": "TREND_FOLLOWING",
-  "confidence": 0.75,
+  "intent_type": "MARKET_QUERY",
+  "confidence": 0.85,
   "rationale": "简短说明理由",
-  "recommended_chain": "A",
+  "recommended_chain": "S0",
   "key_factors": ["因素1", "因素2"]
 }
 """
